@@ -315,7 +315,7 @@ static Vec4 MakeVec4Id(uint32_t id) {
 }
 
 void Batch::Flush_SelectionPass() {
-    const Vec3 id = MakeVec3Id(surfSpace->def->index);
+    const Vec3 id = MakeVec3Id(surfSpace->def->GetIndex());
 
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
@@ -330,7 +330,7 @@ void Batch::Flush_SelectionPass() {
     int stateBits = mtrlPass->stateBits | RHI::DepthWrite | RHI::ColorWrite | RHI::DF_LEqual;
     stateBits &= ~RHI::MaskBF;
 
-    if (backEnd.camera->def->state.flags & RenderCamera::WireFrameMode) {
+    if (backEnd.camera->def->GetState().flags & RenderCamera::WireFrameMode) {
         stateBits |= RHI::PM_Wireframe;
 
         rhi.SetLineWidth(8);
@@ -340,7 +340,7 @@ void Batch::Flush_SelectionPass() {
 
     RenderSelection(mtrlPass, id);
 
-    if (backEnd.camera->def->state.flags & RenderCamera::WireFrameMode) {
+    if (backEnd.camera->def->GetState().flags & RenderCamera::WireFrameMode) {
         rhi.SetLineWidth(1);
     }
 }
@@ -444,7 +444,7 @@ void Batch::Flush_LitPass() {
     stateBits &= ~RHI::DepthWrite;
     stateBits |= RHI::DF_Equal;
 
-    const Material *lightMaterial = surfLight->def->state.material;
+    const Material *lightMaterial = surfLight->def->GetState().material;
     int lightMaterialType = lightMaterial->GetType();
     switch (lightMaterialType) {
     case Material::FogLightMaterialType:
@@ -496,10 +496,10 @@ void Batch::Flush_TrisPass() {
     if (r_showWireframe.GetInteger() > 0) {
         wireframeMode = r_showWireframe.GetInteger();
     } else {
-        wireframeMode = surfSpace->def->state.wireframeMode;
+        wireframeMode = surfSpace->def->GetState().wireframeMode;
     }
 
-    DrawDebugWireframe(wireframeMode, surfSpace->def->state.wireframeColor);
+    DrawDebugWireframe(wireframeMode, surfSpace->def->GetState().wireframeColor);
 }
 
 void Batch::Flush_VelocityMapPass() {

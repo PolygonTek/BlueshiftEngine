@@ -278,11 +278,11 @@ void RenderWorld::FinishMapLoading() {
 void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
     BE_PROFILE_CPU_SCOPE("RenderWorld::RenderScene", Color3::orange);
 
-    if (renderCamera->state.renderRect.w <= 0.0f || renderCamera->state.renderRect.h <= 0.0f) {
+    if (renderCamera->GetState().renderRect.w <= 0.0f || renderCamera->GetState().renderRect.h <= 0.0f) {
         return;
     }
 
-    if (renderCamera->state.layerMask == 0) {
+    if (renderCamera->GetState().layerMask == 0) {
         return;
     }
 

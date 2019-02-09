@@ -1006,10 +1006,10 @@ void PP_SSAO(const Texture *depthTexture, const Texture *downscaledDepthTexture,
     shader->SetTexture("downscaledDepthMap", downscaledDepthTexture);
     shader->SetTexture("randomDir4x4Map", textureManager.randomDir4x4Texture);
     shader->SetConstantArray3f("randomKernel", 8, ssaoRandomKernel);
-    shader->SetConstant2f("screenSize", Vec2(camera->def->state.renderRect.w, camera->def->state.renderRect.h));
-    shader->SetConstant2f("screenTanHalfFov", Vec2(camera->def->frustum.GetLeft() / camera->def->frustum.GetFarDistance(), camera->def->frustum.GetUp() / camera->def->frustum.GetFarDistance()));
-    shader->SetConstant4f("projComp1", Vec4(camera->def->projMatrix[0][0], camera->def->projMatrix[1][1], camera->def->projMatrix[0][2], camera->def->projMatrix[1][2]));
-    shader->SetConstant4f("projComp2", Vec4(camera->def->projMatrix[2][2], camera->def->projMatrix[2][3], 0.0f, 0.0f));
+    shader->SetConstant2f("screenSize", Vec2(camera->def->GetState().renderRect.w, camera->def->GetState().renderRect.h));
+    shader->SetConstant2f("screenTanHalfFov", Vec2(camera->def->GetFrustum().GetLeft() / camera->def->GetFrustum().GetFarDistance(), camera->def->GetFrustum().GetUp() / camera->def->GetFrustum().GetFarDistance()));
+    shader->SetConstant4f("projComp1", Vec4(camera->def->GetProjMatrix()[0][0], camera->def->GetProjMatrix()[1][1], camera->def->GetProjMatrix()[0][2], camera->def->GetProjMatrix()[1][2]));
+    shader->SetConstant4f("projComp2", Vec4(camera->def->GetProjMatrix()[2][2], camera->def->GetProjMatrix()[2][3], 0.0f, 0.0f));
     shader->SetConstant1f("radius", CentiToUnit(r_SSAO_radius.GetFloat()));
     shader->SetConstant1f("validRange", CentiToUnit(r_SSAO_validRange.GetFloat()));
     shader->SetConstant1f("threshold", CentiToUnit(r_SSAO_threshold.GetFloat()));

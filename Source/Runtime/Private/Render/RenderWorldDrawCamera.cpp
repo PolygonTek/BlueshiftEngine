@@ -91,24 +91,18 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
         }
 
         // Skip if object layer is not visible with this camera
-        if (!(BIT(renderLight->state.layer) & camera->def->state.layerMask)) {
+        if (!(BIT(renderLight->state.layer) & camera->def->GetState().layerMask)) {
             return true;
         }
 
         // Skip if a light is farther than maximum visible distance
-        if (renderLight->state.origin.DistanceSqr(camera->def->state.origin) > renderLight->maxVisDistSquared) {
+        if (renderLight->state.origin.DistanceSqr(camera->def->GetState().origin) > renderLight->maxVisDistSquared) {
             return true;
         }
 
         // Cull exact light bounding volume
-        if (camera->def->state.orthogonal) {
-            if (renderLight->Cull(camera->def->box)) {
-                return true;
-            }
-        } else {
-            if (renderLight->Cull(camera->def->frustum)) {
-                return true;
-            }
+        if (renderLight->Cull(*camera->def)) {
+            return true;
         }
 
         // Calculate light scissor rect
@@ -136,7 +130,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
         }
 
         // Skip if object layer is not visible with this camera
-        if (!(BIT(renderObject->state.layer) & camera->def->state.layerMask)) {
+        if (!(BIT(renderObject->state.layer) & camera->def->GetState().layerMask)) {
             return true;
         }
 
@@ -151,7 +145,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
         }
 
         // Skip if a object is farther than maximum visible distance
-        if (renderObject->state.origin.DistanceSqr(camera->def->state.origin) > renderObject->maxVisDistSquared) {
+        if (renderObject->state.origin.DistanceSqr(camera->def->GetState().origin) > renderObject->maxVisDistSquared) {
             return true;
         }
 
@@ -181,13 +175,13 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
         }
 
         if (visObject->def->state.numJoints > 0 && r_showSkeleton.GetInteger() > 0) {
-            DebugJoints(visObject->def, r_showSkeleton.GetInteger() == 2, camera->def->state.axis);
+            DebugJoints(visObject->def, r_showSkeleton.GetInteger() == 2, camera->def->GetState().axis);
         }
 
         return true;
     };
 
-    if (camera->def->state.orthogonal) {
+    if (camera->def->GetState().orthogonal) {
         lightDbvt.Query(camera->def->box, addVisibleLights);
         objectDbvt.Query(camera->def->box, addVisibleObjects);
     } else {
@@ -251,7 +245,7 @@ void RenderWorld::AddStaticMeshes(VisCamera *camera) {
         return true;
     };
 
-    if (camera->def->state.orthogonal) {
+    if (camera->def->GetState().orthogonal) {
         staticMeshDbvt.Query(camera->def->box, addStaticMeshSurfs);
     } else {
         staticMeshDbvt.Query(camera->def->frustum, addStaticMeshSurfs);
@@ -410,7 +404,7 @@ void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
     // Skybox object parameters
     RenderObject::State roDef;
     roDef.flags = RenderObject::StaticFlag | RenderObject::SkipSelectionFlag;
-    roDef.origin = camera->def->state.origin;
+    roDef.origin = camera->def->GetState().origin;
     roDef.scale = Vec3(camera->def->zNear * 4);
     roDef.materialParms[RenderObject::RedParm] = 1.0f;
     roDef.materialParms[RenderObject::GreenParm] = 1.0f;
@@ -425,7 +419,7 @@ void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
     // Add skybox object
     VisObject *visObject = RegisterVisObject(camera, &renderObject);
 
-    if (camera->def->state.orthogonal) {
+    if (camera->def->GetState().orthogonal) {
         Mat4 projMatrix;
         R_SetPerspectiveProjectionMatrix(45, 45, 0.01, 1000, false, projMatrix);
         visObject->modelViewMatrix = camera->def->viewMatrix * renderObject.GetObjectToWorldMatrix();
@@ -480,7 +474,7 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
             if ((renderObject->state.flags & RenderObject::CastShadowsFlag) && material->IsShadowCaster()) {
                 OBB surfBounds = OBB(surf->subMesh->GetAABB() * renderObject->state.scale, renderObject->state.origin, renderObject->state.axis);
 
-                if (!visLight->def->CullShadowCasterOBB(surfBounds, camera->def->frustum, camera->worldAABB)) {
+                if (!visLight->def->CullShadowCaster(surfBounds, camera->def->frustum, camera->worldAABB)) {
                     isShadowCaster = true;
                 }
             }
@@ -577,7 +571,8 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
 
         if ((visLight->def->state.flags & RenderLight::CastShadowsFlag) && (renderObject->state.flags & RenderObject::CastShadowsFlag)) {
             OBB worldOBB = OBB(renderObject->GetLocalAABB(), renderObject->state.origin, renderObject->state.axis);
-            if (!visLight->def->CullShadowCasterOBB(worldOBB, camera->def->frustum, camera->worldAABB)) {
+
+            if (!visLight->def->CullShadowCaster(worldOBB, camera->def->frustum, camera->worldAABB)) {
                 isShadowCaster = true;
             }
         }
@@ -630,7 +625,7 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
     for (visLight = camera->visLights.Next(); visLight; visLight = visLight->node.Next()) {
         const RenderLight *renderLight = visLight->def;
 
-        if (!(BIT(visLight->def->state.layer) & camera->def->state.layerMask)) {
+        if (!(BIT(visLight->def->state.layer) & camera->def->GetState().layerMask)) {
             continue;
         }
 
@@ -822,7 +817,7 @@ void RenderWorld::DrawCamera(VisCamera *camera) {
 }
 
 void RenderWorld::AddSubCamera(VisCamera *camera) {
-    if (!(camera->def->state.flags & RenderCamera::Flag::NoSubViews)) {
+    if (!(camera->def->GetState().flags & RenderCamera::Flag::NoSubViews)) {
         for (int i = 0; i < camera->numDrawSurfs; i++) {
             DrawSurf *drawSurf = camera->drawSurfs[i];
 

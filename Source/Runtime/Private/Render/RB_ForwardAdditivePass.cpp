@@ -47,7 +47,8 @@ static void RB_LitPass(const VisLight *visLight) {
         bool isDifferentObject = surf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
         bool isDifferentMaterial = surf->material != prevMaterial;
-        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->state.flags != surf->space->def->state.flags || prevSpace->def->state.layer != surf->space->def->state.layer ? true : false;
+        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+            prevSpace->def->GetState().flags != surf->space->def->GetState().flags || prevSpace->def->GetState().layer != surf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
@@ -60,7 +61,7 @@ static void RB_LitPass(const VisLight *visLight) {
             prevMaterial = surf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
                     if (surf->flags & DrawSurf::UseInstancing) {
@@ -115,7 +116,7 @@ void RB_ForwardAdditivePass(const LinkList<VisLight> *visLights) {
     for (VisLight *visLight = visLights->Next(); visLight; visLight = visLight->node.Next()) {
         const RenderLight *renderLight = visLight->def;
 
-        if (renderLight->state.flags & RenderLight::PrimaryLightFlag) {
+        if (renderLight->GetState().flags & RenderLight::PrimaryLightFlag) {
             continue;
         }
 
@@ -126,13 +127,13 @@ void RB_ForwardAdditivePass(const LinkList<VisLight> *visLights) {
         if (r_useDepthBoundTest.GetBool()) {
             float lightDepthMin, lightDepthMax;
 
-            if (!backEnd.camera->def->CalcDepthBoundsFromLight(renderLight, backEnd.camera->def->viewProjMatrix, &lightDepthMin, &lightDepthMax)) {
+            if (!backEnd.camera->def->CalcDepthBoundsFromLight(renderLight, backEnd.camera->def->GetViewProjMatrix(), &lightDepthMin, &lightDepthMax)) {
                 continue;
             }
 
             float visSurfDepthMin, visSurfDepthMax;
 
-            if (backEnd.camera->def->CalcDepthBoundsFromAABB(visLight->litSurfsAABB, backEnd.camera->def->viewProjMatrix, &visSurfDepthMin, &visSurfDepthMax)) {
+            if (backEnd.camera->def->CalcDepthBoundsFromAABB(visLight->litSurfsAABB, backEnd.camera->def->GetViewProjMatrix(), &visSurfDepthMin, &visSurfDepthMax)) {
                 // FIXME:
                 visSurfDepthMin = Max(visSurfDepthMin - 0.001, 0.0);
                 visSurfDepthMax = Min(visSurfDepthMax + 0.001, 1.0);
@@ -145,7 +146,7 @@ void RB_ForwardAdditivePass(const LinkList<VisLight> *visLights) {
         RB_SetupLight(visLight);
 
         if (r_shadows.GetInteger() != 0) {
-            if ((visLight->def->state.flags & RenderLight::CastShadowsFlag) && !(backEnd.camera->def->state.flags & RenderCamera::NoShadows)) {
+            if ((visLight->def->GetState().flags & RenderLight::CastShadowsFlag) && !(backEnd.camera->def->GetState().flags & RenderCamera::NoShadows)) {
                 RB_ShadowPass(visLight);
             }
         }

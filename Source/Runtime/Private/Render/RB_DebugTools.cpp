@@ -159,7 +159,7 @@ static void RB_DrawDebugPrimsElements(int numElements, const int *elements, int 
     const Shader *shader = ShaderManager::vertexColorShader;
 
     shader->Bind();
-    shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->viewProjMatrix);
+    shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->GetViewProjMatrix());
     
     rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
@@ -463,7 +463,7 @@ static void RB_DrawDebugTextElements(int numElements, const int *elements, int n
     const Shader *shader = ShaderManager::vertexColorShader;
 
     shader->Bind();
-    shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->viewProjMatrix);
+    shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->GetViewProjMatrix());
     
     rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
@@ -573,7 +573,8 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
         bool isDifferentObject = surf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
         bool isDifferentMaterial = surf->material != prevMaterial;
-        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->state.flags != surf->space->def->state.flags || prevSpace->def->state.layer != surf->space->def->state.layer ? true : false;
+        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+            prevSpace->def->GetState().flags != surf->space->def->GetState().flags || prevSpace->def->GetState().layer != surf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
@@ -586,7 +587,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
             prevMaterial = surf->material;
 
             if (isDifferentObject) {
-                depthhack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
+                depthhack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthhack) {
                     if (surf->flags & DrawSurf::UseInstancing) {
@@ -642,15 +643,15 @@ static void RB_DrawDebugLights(int mode) {
         const Shader *shader = ShaderManager::constantColorShader;
 
         shader->Bind();
-        shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->viewProjMatrix);
+        shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->GetViewProjMatrix());
 
-        shader->SetConstant4f("color", Color4(Color3(&visLight->def->state.materialParms[RenderObject::RedParm]), 0.25f));
+        shader->SetConstant4f("color", Color4(Color3(&visLight->def->GetState().materialParms[RenderObject::RedParm]), 0.25f));
         RB_DrawLightVolume(visLight->def);
 
         rhi.SetStateBits(RHI::ColorWrite | RHI::PM_Wireframe | RHI::DF_LEqual);
         rhi.SetCullFace(RHI::NoCull);
 
-        shader->SetConstant4f("color", &visLight->def->state.materialParms[RenderObject::RedParm]);
+        shader->SetConstant4f("color", &visLight->def->GetState().materialParms[RenderObject::RedParm]);
     
         RB_DrawLightVolume(visLight->def);
 
@@ -675,7 +676,7 @@ static void RB_DrawDebugLightScissorRects() {
 
         shader->Bind();
         shader->SetTexture("tex0", textureManager.whiteTexture);
-        shader->SetConstant3f("color", &visLight->def->state.materialParms[RenderObject::RedParm]);
+        shader->SetConstant3f("color", &visLight->def->GetState().materialParms[RenderObject::RedParm]);
 
         Rect drawRect = visLight->scissorRect;
         drawRect.y = backEnd.ctx->GetRenderingHeight() - drawRect.Y2();

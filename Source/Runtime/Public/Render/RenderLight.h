@@ -73,10 +73,10 @@ public:
     RenderLight();
     ~RenderLight();
 
-                            /// Updates this render light with the given state.
-    void                    Update(const State *state);
+                            /// Returns state.
+    const State &           GetState() const { return state; }
 
-                            /// Returns light type one of the [Point, Spot, Directional].
+                            /// Returns light type which is one of the [Point, Spot, Directional].
     Type                    GetType() const { return state.type; }
 
                             /// Returns light material.
@@ -109,26 +109,40 @@ public:
                             /// Returns view matrix.
     const Mat4 &            GetViewMatrix() const { return viewMatrix; }
 
-                            // 라이트 bias * scale * proj * view matrix (곱셈은 OpenGL 순서)
+                            /// Returns matrix = bias * scale * proj * view (multiplication in OpenGL way)
     const Mat4 &            GetViewProjScaleBiasMatrix() const { return viewProjScaleBiasMatrix; }
 
-                            // aabb 가 light bounding volume 과 교차하는지 테스트
+                            /// Returns fall off matrix.
+    const Mat3x4 &          GetFallOffMatrix() const { return fallOffMatrix; }
+
+                            /// Check intersection of AABB and light bounding volume.
     bool                    IsIntersectAABB(const AABB &aabb) const;
 
-                            // obb 가 light bounding volume 과 교차하는지 테스트
+                            /// Check intersection of OBB and light bounding volume.
     bool                    IsIntersectOBB(const OBB &obb) const;
 
-                            // light type 별로 bounding volume culling
-    bool                    Cull(const Frustum &viewFrustum) const;
+                            /// Camera culling of lighting bounding volume.
+    bool                    Cull(const RenderCamera &camera) const;
 
-                            // light type 별로 bounding volume culling
-    bool                    Cull(const OBB &viewBox) const;
-
-                            // shadow caster OBB culling
-    bool                    CullShadowCasterOBB(const OBB &casterOBB, const Frustum &viewFrustum, const AABB &visAABB) const;
+                            /// Frustum culling of shadow caster OBB.
+    bool                    CullShadowCaster(const OBB &casterOBB, const Frustum &viewFrustum, const AABB &visAABB) const;
 
                             //
     bool                    ComputeScreenClipRect(const RenderCamera *viewDef, Rect &clipRect) const;
+
+private:
+                            /// Updates this render light with the given state.
+    void                    Update(const State *state);
+
+                            /// Frustum culling of light bounding volume.
+    bool                    Cull(const Frustum &viewFrustum) const;
+
+                            /// Box culling of light bounding volume.
+    bool                    Cull(const OBB &viewBox) const;
+
+    bool                    DirLight_ShadowBVFromCaster(const OBB &casterOBB, OBB &shadowOBB) const;
+    bool                    PointLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &shadowFrustum) const;
+    bool                    SpotLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &shadowFrustum) const;
 
     int                     index;              // light index in world
 

@@ -148,8 +148,14 @@ public:
     RenderObject();
     ~RenderObject();
 
-                            /// Updates this render object with the given state.
-    void                    Update(const State *state);
+                            /// Returns object index in world.
+    int                     GetIndex() const { return index; }
+
+                            /// Returns view count.
+    int                     GetViewCount() const { return viewCount; }
+
+                            /// Returns state.
+    const State &           GetState() const { return state; }
 
                             /// Returns non-scaled AABB in local space.
     const AABB              GetLocalAABB() const;
@@ -159,6 +165,13 @@ public:
 
                             /// Returns local to world matrix.
     const Mat3x4 &          GetObjectToWorldMatrix() const { return worldMatrix; }
+
+                            /// Returns previous local to world matrix.
+    const Mat3x4 &          GetPrevObjectToWorldMatrix() const { return prevWorldMatrix; }
+
+private:
+                            /// Updates this render object with the given state.
+    void                    Update(const State *state);
 
     int                     index;                      // object index in world
 

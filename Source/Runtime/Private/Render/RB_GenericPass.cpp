@@ -85,7 +85,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         bool isDifferentMaterial = surf->material != prevMaterial;
 
         if (isDifferentMaterial || isDifferentObject) {
-            if (surf->space->def->state.flags & RenderObject::SkipSelectionFlag) {
+            if (surf->space->def->GetState().flags & RenderObject::SkipSelectionFlag) {
                 continue;
             }
 
@@ -102,7 +102,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevMaterial = surf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
@@ -155,7 +155,7 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         bool isDifferentMaterial = surf->material != prevMaterial;
             
         if (isDifferentMaterial || isDifferentObject) {
-            if (!(surf->space->def->state.flags & RenderObject::OccluderFlag)) {
+            if (!(surf->space->def->GetState().flags & RenderObject::OccluderFlag)) {
                 continue;
             }
 
@@ -175,7 +175,7 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevMaterial = surf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
@@ -232,7 +232,8 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         bool isDifferentObject = surf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
         bool isDifferentMaterial = surf->material != prevMaterial;
-        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->state.flags != surf->space->def->state.flags || prevSpace->def->state.layer != surf->space->def->state.layer ? true : false;
+        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+            prevSpace->def->GetState().flags != surf->space->def->GetState().flags || prevSpace->def->GetState().layer != surf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
@@ -245,7 +246,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevMaterial = surf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
                     if (surf->flags & DrawSurf::UseInstancing) {
@@ -308,7 +309,8 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         bool isDifferentObject = surf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
         bool isDifferentMaterial = surf->material != prevMaterial;
-        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->state.flags != surf->space->def->state.flags || prevSpace->def->state.layer != surf->space->def->state.layer ? true : false;
+        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+            prevSpace->def->GetState().flags != surf->space->def->GetState().flags || prevSpace->def->GetState().layer != surf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
@@ -321,7 +323,7 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevMaterial = surf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
                     if (surf->flags & DrawSurf::UseInstancing) {
@@ -402,9 +404,9 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevMaterial = surf->material;
 
             if (isDifferentObject) {
-                Mesh *mesh = surf->space->def->state.mesh;
+                Mesh *mesh = surf->space->def->GetState().mesh;
 
-                if (!mesh->IsSkinnedMesh() && (surf->space->def->worldMatrix == surf->space->def->prevWorldMatrix)) {
+                if (!mesh->IsSkinnedMesh() && (surf->space->def->GetObjectToWorldMatrix() == surf->space->def->GetPrevObjectToWorldMatrix())) {
                     skipObject = surf->space;
                     continue;
                 }
@@ -484,7 +486,8 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         bool isDifferentObject = surf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
         bool isDifferentMaterial = surf->material != prevMaterial;
-        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->state.flags != surf->space->def->state.flags || prevSpace->def->state.layer != surf->space->def->state.layer ? true : false;
+        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+            prevSpace->def->GetState().flags != surf->space->def->GetState().flags || prevSpace->def->GetState().layer != surf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
@@ -497,7 +500,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevMaterial = surf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
                     if (surf->flags & DrawSurf::UseInstancing) {
@@ -562,7 +565,7 @@ void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevMaterial = surf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {

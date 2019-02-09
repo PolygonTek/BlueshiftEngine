@@ -26,9 +26,12 @@
 
 BE_NAMESPACE_BEGIN
 
+class RenderWorld;
 class RenderLight;
 
 class RenderCamera {
+    friend class RenderWorld;
+
 public:
     enum Flag {
         WireFrameMode       = BIT(0),
@@ -67,7 +70,14 @@ public:
         bool            orthogonal = false;     ///< True for orthogonal projection or perspective projection
     };
 
-    void                Update(const State *viewParms);
+    void                Update(const State *state);
+
+                        /// Returns state.
+    const State &       GetState() const { return state; }
+
+    float               GetZNear() const { return zNear; }
+
+    float               GetZFar() const { return zFar; }
 
     void                RecalcZFar(float zFar);
 
@@ -82,7 +92,7 @@ public:
     bool                WorldToPixel(const Vec3 &worldCoords, Vec3 &pixelCoords) const;
     bool                WorldToPixel(const Vec3 &worldCoords, Point &pixelPoint) const;
 
-                        /// Calculates clipping rectangle from bounding sphere (Eric Lengyel's method 와 카메라 축이 다르다)
+                        /// Calculates clipping rectangle from bounding sphere (Different camera axis with Eric Lengyel's method)
     bool                CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) const;
 
                         /// Calculates clipping rectangle from axis-aligned bounding box.
@@ -101,10 +111,21 @@ public:
     bool                CalcDepthBoundsFromFrustum(const Frustum &frustum, const Mat4 &mvp, float *depthMin, float *depthMax) const;
     bool                CalcDepthBoundsFromLight(const RenderLight *light, const Mat4 &mvp, float *depthMin, float *depthMax) const;
 
+    const OBB           GetBox() const { return box; }
+
+    const Frustum &     GetFrustum() const { return frustum; }
+
+    const Plane &       GetFrustumPlane(int index) const { return frustumPlanes[index]; }
+
+    const Mat4 &        GetViewMatrix() const { return viewMatrix; }
+    const Mat4 &        GetProjMatrix() const { return projMatrix; }
+    const Mat4 &        GetViewProjMatrix() const { return viewProjMatrix; }
+
     static void         ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY);
 
     static const Ray    RayFromScreenND(const RenderCamera::State &sceneView, float ndx, float ndy);
 
+private:
     State               state;
 
     OBB                 box;

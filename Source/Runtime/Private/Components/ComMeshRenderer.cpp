@@ -252,7 +252,7 @@ void ComMeshRenderer::SetReceiveShadows(bool receiveShadows) {
     UpdateVisuals();
 }
 
-bool ComMeshRenderer::GetClosestVertex(const RenderCamera *view, const Point &mousePixelLocation, Vec3 &closestVertex, float &closestDistance) const {
+bool ComMeshRenderer::GetClosestVertex(const RenderCamera *camera, const Point &mousePixelLocation, Vec3 &closestVertex, float &closestDistance) const {
     const float initialClosestDistance = closestDistance;
 
     const ComTransform *transform = GetEntity()->GetTransform();
@@ -270,7 +270,7 @@ bool ComMeshRenderer::GetClosestVertex(const RenderCamera *view, const Point &mo
 
             bool isBackface;
             // Ignore backface vertices 
-            if (!view->state.orthogonal && !worldNormal.IsZero() && worldNormal.Dot(view->state.origin - worldPosition) < 0) {
+            if (!camera->GetState().orthogonal && !worldNormal.IsZero() && worldNormal.Dot(camera->GetState().origin - worldPosition) < 0) {
                 isBackface = true;
             } else {
                 isBackface = false;
@@ -279,7 +279,7 @@ bool ComMeshRenderer::GetClosestVertex(const RenderCamera *view, const Point &mo
             if (!isBackface) {
                 Point pixelLocation;
 
-                if (view->WorldToPixel(worldPosition, pixelLocation)) {
+                if (camera->WorldToPixel(worldPosition, pixelLocation)) {
                     float dist = pixelLocation.DistanceSqr(mousePixelLocation);
 
                     if (dist < closestDistance) {

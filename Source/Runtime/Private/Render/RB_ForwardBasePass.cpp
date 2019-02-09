@@ -46,7 +46,8 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
         bool isDifferentObject = surf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
         bool isDifferentMaterial = surf->material != prevMaterial;
-        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->state.flags != surf->space->def->state.flags || prevSpace->def->state.layer != surf->space->def->state.layer ? true : false;
+        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+            prevSpace->def->GetState().flags != surf->space->def->GetState().flags || prevSpace->def->GetState().layer != surf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
@@ -59,7 +60,7 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
             prevMaterial = surf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
                     if (surf->flags & DrawSurf::UseInstancing) {
@@ -106,7 +107,7 @@ void RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         RB_SetupLight(backEnd.primaryLight);
 
         if (r_shadows.GetInteger() != 0) {
-            if ((backEnd.primaryLight->def->state.flags & RenderLight::CastShadowsFlag) && !(backEnd.camera->def->state.flags & RenderCamera::NoShadows)) {
+            if ((backEnd.primaryLight->def->GetState().flags & RenderLight::CastShadowsFlag) && !(backEnd.camera->def->GetState().flags & RenderCamera::NoShadows)) {
                 RB_ShadowPass(backEnd.primaryLight);
             }
         }

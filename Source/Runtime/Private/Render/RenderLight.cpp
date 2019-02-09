@@ -150,12 +150,14 @@ const AABB RenderLight::GetWorldAABB() const {
     return worldFrustum.ToOBB().ToAABB();
 }
 
-static bool DirLight_ShadowBVFromCaster(const RenderLight *light, const OBB &casterOBB, OBB &shadowOBB) {
-    assert(light->state.type == RenderLight::DirectionalLight);
+bool RenderLight::DirLight_ShadowBVFromCaster(const OBB &casterOBB, OBB &shadowOBB) const {
+    assert(state.type == RenderLight::DirectionalLight);
 
     AABB b1, b2;
-    casterOBB.AxisProjection(light->state.axis, b1); // light 축에서의 caster bounds
-    light->worldOBB.AxisProjection(light->state.axis, b2); // light 축에서의 light bounds
+    // Compute caster bounds for light axis
+    casterOBB.AxisProjection(state.axis, b1);
+    // Compute light bounds for light axis
+    worldOBB.AxisProjection(state.axis, b2); 
 
     b1.IntersectSelf(b2);
     if (b1.IsCleared()) {
@@ -169,43 +171,51 @@ static bool DirLight_ShadowBVFromCaster(const RenderLight *light, const OBB &cas
     b1[1].y = BE1::Min(b1[1].y, b2[1].y);
     b1[1].z = BE1::Min(b1[1].z, b2[1].z);
 
-    shadowOBB = OBB(b1, Vec3::origin, light->state.axis);
+    shadowOBB = OBB(b1, Vec3::origin, state.axis);
     return true;
 }
 
-static bool PointLight_ShadowBVFromCaster(const RenderLight *light, const OBB &casterOBB, Frustum &shadowFrustum) {
-    assert(light->state.type == RenderLight::PointLight);
+bool RenderLight::PointLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &shadowFrustum) const {
+    assert(state.type == RenderLight::PointLight);
 
-    Vec3 dir = casterOBB.Center() - light->state.origin;
+    Vec3 dir = casterOBB.Center() - state.origin;
     dir.Normalize();
 
-    float dFar = light->worldOBB.Extents().Length();
-    if (!shadowFrustum.FromProjection(casterOBB, light->state.origin, dFar)) {
+    float dFar = worldOBB.Extents().Length();
+    if (!shadowFrustum.FromProjection(casterOBB, state.origin, dFar)) {
         return false;
     }
 
-    //renderSystem.GetRenderWorld()->DebugFrustum(shadowFrustum, false, 1.0f, true, true);	
+    //renderSystem.GetRenderWorld()->DebugFrustum(shadowFrustum, false, 1.0f, true, true);
     return true;
 }
 
-static bool SpotLight_ShadowBVFromCaster(const RenderLight *light, const OBB &casterOBB, Frustum &shadowFrustum) {
-    assert(light->state.type == RenderLight::SpotLight);
+bool RenderLight::SpotLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &shadowFrustum) const {
+    assert(state.type == RenderLight::SpotLight);
 
-    Vec3 dir = light->worldFrustum.GetAxis()[0];
+    Vec3 dir = worldFrustum.GetAxis()[0];
     dir.Normalize();
 
     float dmin, dmax;
     casterOBB.AxisProjection(dir, dmin, dmax);
 
-    float dNear = dmin - light->state.origin.Dot(dir);
-    if (dNear < light->worldFrustum.GetNearDistance()) {
-        dNear = light->worldFrustum.GetNearDistance();
+    float dNear = dmin - state.origin.Dot(dir);
+    if (dNear < worldFrustum.GetNearDistance()) {
+        dNear = worldFrustum.GetNearDistance();
     }
 
-    shadowFrustum = light->worldFrustum;
+    shadowFrustum = worldFrustum;
     shadowFrustum.MoveNearDistance(dNear);
 
     return true;
+}
+
+bool RenderLight::Cull(const RenderCamera &camera) const {
+    if (camera.GetState().orthogonal) {
+        return Cull(camera.GetBox());
+    } else {
+        return Cull(camera.GetFrustum());
+    }
 }
 
 bool RenderLight::Cull(const Frustum &viewFrustum) const {
@@ -268,14 +278,14 @@ bool RenderLight::Cull(const OBB &viewBox) const {
     return false;
 }
 
-bool RenderLight::CullShadowCasterOBB(const OBB &casterOBB, const Frustum &viewFrustum, const AABB &visAABB) const {
+bool RenderLight::CullShadowCaster(const OBB &casterOBB, const Frustum &viewFrustum, const AABB &visAABB) const {
     if (viewFrustum.CullAABB(visAABB)) {
         return true;
     }
 
     if (state.type == DirectionalLight) {
         OBB shadowOBB;
-        if (!DirLight_ShadowBVFromCaster(this, casterOBB, shadowOBB)) {
+        if (!DirLight_ShadowBVFromCaster(casterOBB, shadowOBB)) {
             return true;
         }
 
@@ -292,7 +302,7 @@ bool RenderLight::CullShadowCasterOBB(const OBB &casterOBB, const Frustum &viewF
 
     if (state.type == PointLight) {
         Frustum shadowFrustum;
-        if (PointLight_ShadowBVFromCaster(this, casterOBB, shadowFrustum)) {
+        if (PointLight_ShadowBVFromCaster(casterOBB, shadowFrustum)) {
             if (shadowFrustum.GetFarDistance() <= r_shadowCubeMapZNear.GetFloat()) {
                 return true;
             }
@@ -311,7 +321,7 @@ bool RenderLight::CullShadowCasterOBB(const OBB &casterOBB, const Frustum &viewF
 
     if (state.type == SpotLight) {
         Frustum shadowFrustum;
-        SpotLight_ShadowBVFromCaster(this, casterOBB, shadowFrustum);
+        SpotLight_ShadowBVFromCaster(casterOBB, shadowFrustum);
         if (viewFrustum.CullFrustum(shadowFrustum)) {
             return true;
         }

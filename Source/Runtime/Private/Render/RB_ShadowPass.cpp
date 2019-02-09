@@ -214,7 +214,7 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
         bool isDifferentObject = surf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
         bool isDifferentMaterial = surf->material != prevMaterial;
-        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->state.flags != surf->space->def->state.flags || prevSpace->def->state.layer != surf->space->def->state.layer ? true : false;
+        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->GetState().flags != surf->space->def->GetState().flags || prevSpace->def->GetState().layer != surf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
@@ -229,11 +229,11 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
             if (isDifferentObject) {
                 prevSpace = surf->space;
 
-                if (!(surf->space->def->state.flags & RenderObject::CastShadowsFlag)) {
+                if (!(surf->space->def->GetState().flags & RenderObject::CastShadowsFlag)) {
                     continue;
                 }
 
-                OBB obb(surf->space->def->GetLocalAABB(), surf->space->def->state.origin, surf->space->def->state.axis);
+                OBB obb(surf->space->def->GetLocalAABB(), surf->space->def->GetState().origin, surf->space->def->GetState().axis);
                 if (lightFrustum.CullOBB(obb)) {
                     skipObject = surf->space;
                     continue;
@@ -243,8 +243,8 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
             }
         }
 
-        if (!surf->space->def->state.joints) {
-            OBB obb(surf->subMesh->GetAABB() * surf->space->def->state.scale, surf->space->def->state.origin, surf->space->def->state.axis);
+        if (!surf->space->def->GetState().joints) {
+            OBB obb(surf->subMesh->GetAABB() * surf->space->def->GetState().scale, surf->space->def->GetState().origin, surf->space->def->GetState().axis);
             if (lightFrustum.CullOBB(obb)) {
                 continue;
             }
@@ -334,7 +334,7 @@ static void RB_ShadowCubeMapPass(const VisLight *visLight, const Frustum &viewFr
     R_SetPerspectiveProjectionMatrix(fov, fov, zNear, zFar, false, backEnd.shadowProjectionMatrix);
 
     Frustum lightFrustum;
-    lightFrustum.SetOrigin(visLight->def->state.origin);
+    lightFrustum.SetOrigin(visLight->def->GetState().origin);
     float size = zFar * Math::Tan(Math::OneFourthPi);
     lightFrustum.SetSize(zNear, zFar, size, size);
 
@@ -357,12 +357,12 @@ static void RB_ShadowCubeMapPass(const VisLight *visLight, const Frustum &viewFr
         }
 
         Mat4 lightViewMatrix;
-        R_SetViewMatrix(axis, visLight->def->state.origin, lightViewMatrix);
+        R_SetViewMatrix(axis, visLight->def->GetState().origin, lightViewMatrix);
 
         backEnd.viewProjMatrix = backEnd.shadowProjectionMatrix * lightViewMatrix;
 
-        backEnd.shadowMapOffsetFactor = visLight->def->state.shadowOffsetFactor;
-        backEnd.shadowMapOffsetUnits = visLight->def->state.shadowOffsetUnits;
+        backEnd.shadowMapOffsetFactor = visLight->def->GetState().shadowOffsetFactor;
+        backEnd.shadowMapOffsetUnits = visLight->def->GetState().shadowOffsetUnits;
 
         rhi.SetDepthBias(backEnd.shadowMapOffsetFactor, backEnd.shadowMapOffsetUnits);
 
@@ -402,7 +402,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
     Mat4 prevViewProjMatrix = backEnd.viewProjMatrix;
 
     backEnd.projMatrix = backEnd.shadowProjectionMatrix;
-    backEnd.viewProjMatrix = backEnd.shadowProjectionMatrix * visLight->def->viewMatrix;
+    backEnd.viewProjMatrix = backEnd.shadowProjectionMatrix * visLight->def->GetViewMatrix();
     
     for (int i = 0; i < visLight->numDrawSurfs; i++) {
         const DrawSurf *surf = backEnd.drawSurfs[visLight->firstDrawSurf + i];
@@ -432,7 +432,8 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
         bool isDifferentObject = surf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
         bool isDifferentMaterial = surf->material != prevMaterial;
-        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->state.flags != surf->space->def->state.flags || prevSpace->def->state.layer != surf->space->def->state.layer ? true : false;
+        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+            prevSpace->def->GetState().flags != surf->space->def->GetState().flags || prevSpace->def->GetState().layer != surf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
@@ -446,7 +447,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
 
             if (isDifferentObject) {
                 if (!(surf->flags & DrawSurf::UseInstancing)) {
-                    backEnd.modelViewMatrix = visLight->def->viewMatrix * surf->space->def->GetObjectToWorldMatrix();
+                    backEnd.modelViewMatrix = visLight->def->GetViewMatrix() * surf->space->def->GetObjectToWorldMatrix();
                     backEnd.modelViewProjMatrix = backEnd.shadowProjectionMatrix * backEnd.modelViewMatrix;
                 }
 
@@ -501,21 +502,21 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
 static void RB_OrthogonalShadowMapPass(const VisLight *visLight, const Frustum &viewFrustum) {
     backEnd.shadowViewProjectionScaleBiasMatrix[0].SetZero();
 
-    backEnd.shadowMapOffsetFactor = visLight->def->state.shadowOffsetFactor;
-    backEnd.shadowMapOffsetUnits = visLight->def->state.shadowOffsetUnits;
+    backEnd.shadowMapOffsetFactor = visLight->def->GetState().shadowOffsetFactor;
+    backEnd.shadowMapOffsetUnits = visLight->def->GetState().shadowOffsetUnits;
 
     float dNear, dFar;
-    if (!RB_ComputeNearFar(visLight->def->state.origin, visLight->def->worldOBB, visLight->shadowCastersAABB, viewFrustum, &dNear, &dFar)) {
+    if (!RB_ComputeNearFar(visLight->def->GetState().origin, visLight->def->GetWorldOBB(), visLight->shadowCastersAABB, viewFrustum, &dNear, &dFar)) {
         return;
     }
 
-    R_SetOrthogonalProjectionMatrix(visLight->def->worldOBB.Extents()[1], visLight->def->worldOBB.Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
+    R_SetOrthogonalProjectionMatrix(visLight->def->GetWorldOBB().Extents()[1], visLight->def->GetWorldOBB().Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
 
     if (r_optimizedShadowProjection.GetInteger() == 2) {
         Mat4 shadowCropMatrix;
-        OBB lightOBB = visLight->def->worldOBB;
+        OBB lightOBB = visLight->def->GetWorldOBB();
 
-        lightOBB.SetCenter(visLight->def->state.origin + visLight->def->state.axis[0] * (dFar + dNear) * 0.5f);
+        lightOBB.SetCenter(visLight->def->GetState().origin + visLight->def->GetState().axis[0] * (dFar + dNear) * 0.5f);
 
         Vec3 extents = lightOBB.Extents();
         lightOBB.SetExtents(Vec3((dFar - dNear) * 0.5f, extents.y, extents.z));
@@ -531,7 +532,7 @@ static void RB_OrthogonalShadowMapPass(const VisLight *visLight, const Frustum &
     backEnd.shadowMapFilterSize[0] = r_shadowMapFilterSize.GetFloat();
 
     static const Mat4 textureScaleBiasMatrix(Vec4(0.5, 0, 0, 0.5), Vec4(0, 0.5, 0, 0.5), Vec4(0, 0, 0.5, 0.5), Vec4(0.0, 0.0, 0.0, 1));
-    backEnd.shadowViewProjectionScaleBiasMatrix[0] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * visLight->def->viewMatrix;
+    backEnd.shadowViewProjectionScaleBiasMatrix[0] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * visLight->def->GetViewMatrix();
 
     if (RB_ShadowMapPass(visLight, viewFrustum, 0, false)) {
         backEnd.ctx->renderCounter.numShadowMapDraw++;
@@ -541,16 +542,16 @@ static void RB_OrthogonalShadowMapPass(const VisLight *visLight, const Frustum &
 static void RB_ProjectedShadowMapPass(const VisLight *visLight, const Frustum &viewFrustum) {
     backEnd.shadowViewProjectionScaleBiasMatrix[0].SetZero();
 
-    backEnd.shadowMapOffsetFactor = visLight->def->state.shadowOffsetFactor;
-    backEnd.shadowMapOffsetUnits = visLight->def->state.shadowOffsetUnits;
+    backEnd.shadowMapOffsetFactor = visLight->def->GetState().shadowOffsetFactor;
+    backEnd.shadowMapOffsetUnits = visLight->def->GetState().shadowOffsetUnits;
 
     float dNear, dFar;
-    if (!RB_ComputeNearFar(visLight->def->worldFrustum, visLight->shadowCastersAABB, viewFrustum, &dNear, &dFar)) {
+    if (!RB_ComputeNearFar(visLight->def->GetWorldFrustum(), visLight->shadowCastersAABB, viewFrustum, &dNear, &dFar)) {
         return;
     }
 
-    float xFov = RAD2DEG(Math::ATan(visLight->def->worldFrustum.GetLeft(), dFar)) * 2.0f;
-    float yFov = RAD2DEG(Math::ATan(visLight->def->worldFrustum.GetUp(), dFar)) * 2.0f;
+    float xFov = RAD2DEG(Math::ATan(visLight->def->GetWorldFrustum().GetLeft(), dFar)) * 2.0f;
+    float yFov = RAD2DEG(Math::ATan(visLight->def->GetWorldFrustum().GetUp(), dFar)) * 2.0f;
 
     R_SetPerspectiveProjectionMatrix(xFov, yFov, dNear, dFar, false, backEnd.shadowProjectionMatrix);
 
@@ -576,7 +577,7 @@ static void RB_ProjectedShadowMapPass(const VisLight *visLight, const Frustum &v
     backEnd.shadowMapFilterSize[0] = r_shadowMapFilterSize.GetFloat();
 
     static const Mat4 textureScaleBiasMatrix(Vec4(0.5, 0, 0, 0.5), Vec4(0, 0.5, 0, 0.5), Vec4(0, 0, 0.5, 0.5), Vec4(0.0, 0.0, 0.0, 1));
-    backEnd.shadowViewProjectionScaleBiasMatrix[0] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * visLight->def->viewMatrix;
+    backEnd.shadowViewProjectionScaleBiasMatrix[0] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * visLight->def->GetViewMatrix();
 
     if (RB_ShadowMapPass(visLight, viewFrustum, 0, false)) {
         backEnd.ctx->renderCounter.numShadowMapDraw++;
@@ -612,17 +613,17 @@ static bool RB_SingleCascadedShadowMapPass(const VisLight *visLight, const Frust
     }
 
     float dNear, dFar;
-    if (!RB_ComputeNearFar(visLight->def->state.origin, visLight->def->worldOBB, visLight->shadowCastersAABB, splitViewFrustum, &dNear, &dFar)) {
+    if (!RB_ComputeNearFar(visLight->def->GetState().origin, visLight->def->GetWorldOBB(), visLight->shadowCastersAABB, splitViewFrustum, &dNear, &dFar)) {
         return false;
     }
 
-    R_SetOrthogonalProjectionMatrix(visLight->def->worldOBB.Extents()[1], visLight->def->worldOBB.Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
+    R_SetOrthogonalProjectionMatrix(visLight->def->GetWorldOBB().Extents()[1], visLight->def->GetWorldOBB().Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
 
     if (r_optimizedShadowProjection.GetInteger() > 0) {
         Mat4 shadowCropMatrix;
-        OBB lightOBB = visLight->def->worldOBB;
+        OBB lightOBB = visLight->def->GetWorldOBB();
 
-        lightOBB.SetCenter(visLight->def->state.origin + visLight->def->state.axis[0] * (dFar + dNear) * 0.5f);
+        lightOBB.SetCenter(visLight->def->GetState().origin + visLight->def->GetState().axis[0] * (dFar + dNear) * 0.5f);
 
         Vec3 extents = lightOBB.Extents();
         lightOBB.SetExtents(Vec3((dFar - dNear) * 0.5f, extents.y, extents.z));
@@ -645,13 +646,13 @@ static bool RB_SingleCascadedShadowMapPass(const VisLight *visLight, const Frust
     }
 
     static const Mat4 textureScaleBiasMatrix(Vec4(0.5, 0, 0, 0.5), Vec4(0, 0.5, 0, 0.5), Vec4(0, 0, 0.5, 0.5), Vec4(0.0, 0.0, 0.0, 1));
-    backEnd.shadowViewProjectionScaleBiasMatrix[cascadeIndex] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * visLight->def->viewMatrix;
+    backEnd.shadowViewProjectionScaleBiasMatrix[cascadeIndex] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * visLight->def->GetViewMatrix();
 
     return RB_ShadowMapPass(visLight, splitViewFrustum, cascadeIndex, forceClear);
 }
 
 static void RB_CascadedShadowMapPass(const VisLight *visLight) {
-    float dNear = backEnd.camera->def->frustum.GetNearDistance();
+    float dNear = backEnd.camera->def->GetFrustum().GetNearDistance();
     float dFar = r_CSM_maxDistance.GetFloat();
     int csmCount = r_CSM_count.GetInteger();
 
@@ -672,7 +673,7 @@ static void RB_CascadedShadowMapPass(const VisLight *visLight) {
         }
         backEnd.csmUpdate[cascadeIndex] -= 1.0f;
 
-        Frustum splitViewFrustum = backEnd.camera->def->frustum;
+        Frustum splitViewFrustum = backEnd.camera->def->GetFrustum();
         float dNear = backEnd.csmDistances[cascadeIndex];
         float dFar = backEnd.csmDistances[cascadeIndex + 1];
 
@@ -691,15 +692,15 @@ static void RB_CascadedShadowMapPass(const VisLight *visLight) {
 }
 
 void RB_ShadowPass(const VisLight *visLight) {
-    if (visLight->def->state.type == RenderLight::PointLight) {
-        RB_ShadowCubeMapPass(visLight, backEnd.camera->def->frustum);
-    } else if (visLight->def->state.type == RenderLight::SpotLight) {
-        RB_ProjectedShadowMapPass(visLight, backEnd.camera->def->frustum);
-    } else if (visLight->def->state.type == RenderLight::DirectionalLight) {
-        if ((visLight->def->state.flags & RenderLight::PrimaryLightFlag) && r_CSM_count.GetInteger() > 1) {
+    if (visLight->def->GetState().type == RenderLight::PointLight) {
+        RB_ShadowCubeMapPass(visLight, backEnd.camera->def->GetFrustum());
+    } else if (visLight->def->GetState().type == RenderLight::SpotLight) {
+        RB_ProjectedShadowMapPass(visLight, backEnd.camera->def->GetFrustum());
+    } else if (visLight->def->GetState().type == RenderLight::DirectionalLight) {
+        if ((visLight->def->GetState().flags & RenderLight::PrimaryLightFlag) && r_CSM_count.GetInteger() > 1) {
             RB_CascadedShadowMapPass(visLight);
         } else {
-            RB_OrthogonalShadowMapPass(visLight, backEnd.camera->def->frustum);
+            RB_OrthogonalShadowMapPass(visLight, backEnd.camera->def->GetFrustum());
         }
     }
 }
