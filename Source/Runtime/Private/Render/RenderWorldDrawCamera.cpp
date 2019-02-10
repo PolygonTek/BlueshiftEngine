@@ -468,17 +468,7 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
 
         const Material *material = renderObject->state.materials[surf->materialIndex];
 
-        bool isShadowCaster = false;
-
-        if (visLight->def->state.flags & RenderLight::CastShadowsFlag) {
-            if ((renderObject->state.flags & RenderObject::CastShadowsFlag) && material->IsShadowCaster()) {
-                OBB surfBounds = OBB(surf->subMesh->GetAABB() * renderObject->state.scale, renderObject->state.origin, renderObject->state.axis);
-
-                if (!visLight->def->CullShadowCaster(surfBounds, camera->def->frustum, camera->worldAABB)) {
-                    isShadowCaster = true;
-                }
-            }
-        }
+        bool isShadowCaster = (visLight->def->state.flags & RenderLight::CastShadowsFlag) && (renderObject->state.flags & RenderObject::CastShadowsFlag) && material->IsShadowCaster();
 
         // Already visible in this frame.
         if (surf->viewCount == this->viewCount) {
@@ -494,18 +484,22 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
                 }
             }
         } else if (isShadowCaster) {
-            // This surface is not visible but shadow might be visible as a shadow caster.
-            // Register a visObject used only for shadow caster.
-            VisObject *shadowCasterObject = RegisterVisObject(camera, renderObject);
-            shadowCasterObject->shadowVisible = true;
+            OBB surfBounds = OBB(surf->subMesh->GetAABB() * renderObject->state.scale, renderObject->state.origin, renderObject->state.axis);
 
-            AddDrawSurf(camera, visLight, shadowCasterObject, material, surf->subMesh, DrawSurf::ShadowCaster);
+            if (!visLight->def->CullShadowCaster(surfBounds, camera->def->frustum, camera->worldAABB)) {
+                // This surface is not visible but shadow might be visible as a shadow caster.
+                // Register a visObject used only for shadow caster.
+                VisObject *shadowCasterObject = RegisterVisObject(camera, renderObject);
+                shadowCasterObject->shadowVisible = true;
 
-            surf->viewCount = this->viewCount;
-            surf->drawSurf = camera->drawSurfs[camera->numDrawSurfs - 1];
+                AddDrawSurf(camera, visLight, shadowCasterObject, material, surf->subMesh, DrawSurf::ShadowCaster);
 
-            visLight->numDrawSurfs++;
-            visLight->shadowCastersAABB.AddAABB(proxy->worldAABB);
+                surf->viewCount = this->viewCount;
+                surf->drawSurf = camera->drawSurfs[camera->numDrawSurfs - 1];
+
+                visLight->numDrawSurfs++;
+                visLight->shadowCastersAABB.AddAABB(proxy->worldAABB);
+            }
         }
 
         return true;
@@ -567,14 +561,13 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
             return true;
         }
 
-        bool isShadowCaster = false;
+        bool isShadowCaster = (visLight->def->state.flags & RenderLight::CastShadowsFlag) && (renderObject->state.flags & RenderObject::CastShadowsFlag);
+        bool shadowCasterCulled = false;
 
-        if ((visLight->def->state.flags & RenderLight::CastShadowsFlag) && (renderObject->state.flags & RenderObject::CastShadowsFlag)) {
+        if (isShadowCaster && !renderObject->visObject) {
             OBB worldOBB = OBB(renderObject->GetLocalAABB(), renderObject->state.origin, renderObject->state.axis);
 
-            if (!visLight->def->CullShadowCaster(worldOBB, camera->def->frustum, camera->worldAABB)) {
-                isShadowCaster = true;
-            }
+            shadowCasterCulled = visLight->def->CullShadowCaster(worldOBB, camera->def->frustum, camera->worldAABB);
         }
 
         VisObject *shadowCasterObject = nullptr;
@@ -598,24 +591,26 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
                     }
                 }
             } else if (isShadowCaster && material->IsShadowCaster()) {
-                // This surface is not visible but shadow might be visible as a shadow caster.
-                // Register a visObject used only for shadow caster
-                if (!shadowCasterObject) {
-                    shadowCasterObject = RegisterVisObject(camera, renderObject);
-                    shadowCasterObject->shadowVisible = true;
+                if (!shadowCasterCulled) {
+                    // This surface is not visible but shadow might be visible as a shadow caster.
+                    // Register a visObject used only for shadow caster
+                    if (!shadowCasterObject) {
+                        shadowCasterObject = RegisterVisObject(camera, renderObject);
+                        shadowCasterObject->shadowVisible = true;
+                    }
+
+                    if (shadowCasterObject->def->state.skeleton && shadowCasterObject->def->state.joints) {
+                        shadowCasterObject->def->state.mesh->UpdateSkinningJointCache(shadowCasterObject->def->state.skeleton, shadowCasterObject->def->state.joints);
+                    }
+
+                    AddDrawSurf(camera, visLight, shadowCasterObject, material, surf->subMesh, DrawSurf::ShadowCaster);
+
+                    surf->viewCount = this->viewCount;
+                    surf->drawSurf = camera->drawSurfs[camera->numDrawSurfs - 1];
+
+                    visLight->numDrawSurfs++;
+                    visLight->shadowCastersAABB.AddAABB(proxy->worldAABB);
                 }
-
-                if (shadowCasterObject->def->state.skeleton && shadowCasterObject->def->state.joints) {
-                    shadowCasterObject->def->state.mesh->UpdateSkinningJointCache(shadowCasterObject->def->state.skeleton, shadowCasterObject->def->state.joints);
-                }
-
-                AddDrawSurf(camera, visLight, shadowCasterObject, material, surf->subMesh, DrawSurf::ShadowCaster);
-
-                surf->viewCount = this->viewCount;
-                surf->drawSurf = camera->drawSurfs[camera->numDrawSurfs - 1];
-
-                visLight->numDrawSurfs++;
-                visLight->shadowCastersAABB.AddAABB(proxy->worldAABB);
             }
         }
 
@@ -650,11 +645,16 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
 }
 
 void RenderWorld::CacheInstanceBuffer(VisCamera *camera) {
+    if (renderGlobal.instancingMethod == Mesh::NoInstancing) {
+        return;
+    }
+
     int numInstances = 0;
 
     for (VisObject *visObject = camera->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
         const RenderObject *renderObject = visObject->def;
 
+        // Only for mesh type render object
         if (!renderObject->state.mesh) {
             continue;
         }
@@ -666,48 +666,50 @@ void RenderWorld::CacheInstanceBuffer(VisCamera *camera) {
                 continue;
             }
 
-            if (surf->drawSurf->flags & DrawSurf::UseInstancing) {
-                byte *instanceData = ((byte *)renderGlobal.instanceBufferData + numInstances * renderGlobal.instanceBufferOffsetAlignment);
-
-                const Mat3x4 &localToWorldMatrix = renderObject->GetObjectToWorldMatrix();
-                *(Mat3x4 *)instanceData = localToWorldMatrix;
-                instanceData += 48;
-
-                /*if (surf->drawSurf->material->GetPass()->shader->GetPropertyInfoHashMap().Get("_PARALLAX")) {
-                    Mat3 worldToLocalMatrix = renderObject->state.axis.Transpose();
-                    *(Mat3 *)instanceData = worldToLocalMatrix; 
-                    instanceData += 36;
-                }*/
-
-                if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
-                    if (surf->drawSurf->material->GetPass()->useOwnerColor) {
-                        *(uint32_t *)instanceData = Color4(&renderObject->state.materialParms[RenderObject::RedParm]).ToUInt32();
-                    } else {
-                        *(uint32_t *)instanceData = surf->drawSurf->material->GetPass()->constantColor.ToUInt32();
-                    }
-                    instanceData += sizeof(uint32_t);
-                } else {
-                    if (surf->drawSurf->material->GetPass()->useOwnerColor) {
-                        *(Color4 *)instanceData = Color4(&renderObject->state.materialParms[RenderObject::RedParm]);
-                    } else {
-                        *(Color4 *)instanceData = surf->drawSurf->material->GetPass()->constantColor;
-                    }
-                    instanceData += sizeof(Color4);
-                }
-
-                if (surf->subMesh->IsGpuSkinning()) {
-                    const SkinningJointCache *skinningJointCache = renderObject->state.mesh->skinningJointCache;
-
-                    if (renderGlobal.vtUpdateMethod == BufferCacheManager::TboUpdate) {
-                        *(uint32_t *)instanceData = (uint32_t)skinningJointCache->GetBufferCache().tcBase[0];
-                    } else {
-                        *(Vec2 *)instanceData = Vec2(skinningJointCache->GetBufferCache().tcBase[0], skinningJointCache->GetBufferCache().tcBase[1]);
-                    }
-                }
-
-                visObject->instanceIndex = numInstances++;
-                break;
+            if (!(surf->drawSurf->flags & DrawSurf::UseInstancing)) {
+                continue;
             }
+
+            byte *instanceData = ((byte *)renderGlobal.instanceBufferData + numInstances * renderGlobal.instanceBufferOffsetAlignment);
+
+            const Mat3x4 &localToWorldMatrix = renderObject->GetObjectToWorldMatrix();
+            *(Mat3x4 *)instanceData = localToWorldMatrix;
+            instanceData += 48;
+
+            /*if (surf->drawSurf->material->GetPass()->shader->GetPropertyInfoHashMap().Get("_PARALLAX")) {
+                Mat3 worldToLocalMatrix = renderObject->state.axis.Transpose();
+                *(Mat3 *)instanceData = worldToLocalMatrix; 
+                instanceData += 36;
+            }*/
+
+            if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
+                if (surf->drawSurf->material->GetPass()->useOwnerColor) {
+                    *(uint32_t *)instanceData = Color4(&renderObject->state.materialParms[RenderObject::RedParm]).ToUInt32();
+                } else {
+                    *(uint32_t *)instanceData = surf->drawSurf->material->GetPass()->constantColor.ToUInt32();
+                }
+                instanceData += sizeof(uint32_t);
+            } else {
+                if (surf->drawSurf->material->GetPass()->useOwnerColor) {
+                    *(Color4 *)instanceData = Color4(&renderObject->state.materialParms[RenderObject::RedParm]);
+                } else {
+                    *(Color4 *)instanceData = surf->drawSurf->material->GetPass()->constantColor;
+                }
+                instanceData += sizeof(Color4);
+            }
+
+            if (surf->subMesh->IsGpuSkinning()) {
+                const SkinningJointCache *skinningJointCache = renderObject->state.mesh->skinningJointCache;
+
+                if (renderGlobal.vtUpdateMethod == BufferCacheManager::TboUpdate) {
+                    *(uint32_t *)instanceData = (uint32_t)skinningJointCache->GetBufferCache().tcBase[0];
+                } else {
+                    *(Vec2 *)instanceData = Vec2(skinningJointCache->GetBufferCache().tcBase[0], skinningJointCache->GetBufferCache().tcBase[1]);
+                }
+            }
+
+            visObject->instanceIndex = numInstances++;
+            break;
         }
     }
 
@@ -806,10 +808,9 @@ void RenderWorld::DrawCamera(VisCamera *camera) {
     // Compute scissor rect of each visLights and exclude if it is not visible.
     OptimizeLights(camera);
 
-    if (renderGlobal.instancingMethod != Mesh::NoInstancing) {
-        CacheInstanceBuffer(camera);
-    }
-
+    // Cache instance data for instancing.
+    CacheInstanceBuffer(camera);
+    
     // Sort drawing surfaces.
     SortDrawSurfs(camera);
 
@@ -974,15 +975,15 @@ void RenderWorld::SortDrawSurfs(VisCamera *camera) {
 
     VisLight *visLight = camera->visLights.Next();
 
-    for (int drawSurfIndex = 0; drawSurfIndex < camera->numDrawSurfs; drawSurfIndex++) {
+    for (int i = 0; i < camera->numDrawSurfs; i++) {
         if (!visLight) {
             break;
         }
         
-        int lightIndex = (camera->drawSurfs[drawSurfIndex]->sortKey & 0xFFF0000000000000) >> 52;
+        int lightIndex = (camera->drawSurfs[i]->sortKey & 0xFFF0000000000000) >> 52;
 
         if (lightIndex == visLight->index + 1) {
-            visLight->firstDrawSurf = drawSurfIndex;
+            visLight->firstDrawSurf = i;
             assert(i + visLight->numDrawSurfs <= camera->numDrawSurfs);
 
             visLight = visLight->node.Next();

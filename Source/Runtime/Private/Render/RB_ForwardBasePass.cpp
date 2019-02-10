@@ -104,10 +104,12 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
 
 void RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
     if (backEnd.primaryLight) {
+        // Prepare light for rendering
         RB_SetupLight(backEnd.primaryLight);
 
         if (r_shadows.GetInteger() != 0) {
-            if ((backEnd.primaryLight->def->GetState().flags & RenderLight::CastShadowsFlag) && !(backEnd.camera->def->GetState().flags & RenderCamera::NoShadows)) {
+            if ((backEnd.primaryLight->def->GetState().flags & RenderLight::CastShadowsFlag) && 
+                !(backEnd.camera->def->GetState().flags & RenderCamera::NoShadows)) {
                 RB_ShadowPass(backEnd.primaryLight);
             }
         }

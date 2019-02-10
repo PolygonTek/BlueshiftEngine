@@ -148,33 +148,33 @@ void RB_SetupLight(VisLight *visLight) {
     }
 
     if (rhi.IsSRGBWriteEnabled()) {
-        // Linearize visLight color
+        // Linearize light color
         visLight->lightColor.ToColor3() = visLight->lightColor.ToColor3().SRGBToLinear();
     }
 
-    // visLight texture transform matrix
+    // Build light texture transform matrix
+    float lightTexMatrix[2][4];
+    lightTexMatrix[0][0] = lightPass->tcScale[0];
+    lightTexMatrix[0][1] = 0.0f;
+    lightTexMatrix[0][2] = 0.0f;
+    lightTexMatrix[0][3] = lightPass->tcTranslation[0];
+
+    lightTexMatrix[1][0] = 0.0f;
+    lightTexMatrix[1][1] = lightPass->tcScale[1];
+    lightTexMatrix[1][2] = 0.0f;
+    lightTexMatrix[1][3] = lightPass->tcTranslation[1];
+
     const Mat4 &viewProjScaleBiasMat = visLight->def->GetViewProjScaleBiasMatrix();
 
-    float lightTexMat[2][4];
-    lightTexMat[0][0] = lightPass->tcScale[0];
-    lightTexMat[0][1] = 0.0f;
-    lightTexMat[0][2] = 0.0f;
-    lightTexMat[0][3] = lightPass->tcTranslation[0];
+    visLight->viewProjTexMatrix[0][0] = lightTexMatrix[0][0] * viewProjScaleBiasMat[0][0] + lightTexMatrix[0][1] * viewProjScaleBiasMat[1][0] + lightTexMatrix[0][3] * viewProjScaleBiasMat[3][0];
+    visLight->viewProjTexMatrix[0][1] = lightTexMatrix[0][0] * viewProjScaleBiasMat[0][1] + lightTexMatrix[0][1] * viewProjScaleBiasMat[1][1] + lightTexMatrix[0][3] * viewProjScaleBiasMat[3][1];
+    visLight->viewProjTexMatrix[0][2] = lightTexMatrix[0][0] * viewProjScaleBiasMat[0][2] + lightTexMatrix[0][1] * viewProjScaleBiasMat[1][2] + lightTexMatrix[0][3] * viewProjScaleBiasMat[3][2];
+    visLight->viewProjTexMatrix[0][3] = lightTexMatrix[0][0] * viewProjScaleBiasMat[0][3] + lightTexMatrix[0][1] * viewProjScaleBiasMat[1][3] + lightTexMatrix[0][3] * viewProjScaleBiasMat[3][3];
 
-    lightTexMat[1][0] = 0.0f;
-    lightTexMat[1][1] = lightPass->tcScale[1];
-    lightTexMat[1][2] = 0.0f;
-    lightTexMat[1][3] = lightPass->tcTranslation[1];
-
-    visLight->viewProjTexMatrix[0][0] = lightTexMat[0][0] * viewProjScaleBiasMat[0][0] + lightTexMat[0][1] * viewProjScaleBiasMat[1][0] + lightTexMat[0][3] * viewProjScaleBiasMat[3][0];
-    visLight->viewProjTexMatrix[0][1] = lightTexMat[0][0] * viewProjScaleBiasMat[0][1] + lightTexMat[0][1] * viewProjScaleBiasMat[1][1] + lightTexMat[0][3] * viewProjScaleBiasMat[3][1];
-    visLight->viewProjTexMatrix[0][2] = lightTexMat[0][0] * viewProjScaleBiasMat[0][2] + lightTexMat[0][1] * viewProjScaleBiasMat[1][2] + lightTexMat[0][3] * viewProjScaleBiasMat[3][2];
-    visLight->viewProjTexMatrix[0][3] = lightTexMat[0][0] * viewProjScaleBiasMat[0][3] + lightTexMat[0][1] * viewProjScaleBiasMat[1][3] + lightTexMat[0][3] * viewProjScaleBiasMat[3][3];
-
-    visLight->viewProjTexMatrix[1][0] = lightTexMat[1][0] * viewProjScaleBiasMat[0][0] + lightTexMat[1][1] * viewProjScaleBiasMat[1][0] + lightTexMat[1][3] * viewProjScaleBiasMat[3][0];
-    visLight->viewProjTexMatrix[1][1] = lightTexMat[1][0] * viewProjScaleBiasMat[0][1] + lightTexMat[1][1] * viewProjScaleBiasMat[1][1] + lightTexMat[1][3] * viewProjScaleBiasMat[3][1];
-    visLight->viewProjTexMatrix[1][2] = lightTexMat[1][0] * viewProjScaleBiasMat[0][2] + lightTexMat[1][1] * viewProjScaleBiasMat[1][2] + lightTexMat[1][3] * viewProjScaleBiasMat[3][2];
-    visLight->viewProjTexMatrix[1][3] = lightTexMat[1][0] * viewProjScaleBiasMat[0][3] + lightTexMat[1][1] * viewProjScaleBiasMat[1][3] + lightTexMat[1][3] * viewProjScaleBiasMat[3][3];
+    visLight->viewProjTexMatrix[1][0] = lightTexMatrix[1][0] * viewProjScaleBiasMat[0][0] + lightTexMatrix[1][1] * viewProjScaleBiasMat[1][0] + lightTexMatrix[1][3] * viewProjScaleBiasMat[3][0];
+    visLight->viewProjTexMatrix[1][1] = lightTexMatrix[1][0] * viewProjScaleBiasMat[0][1] + lightTexMatrix[1][1] * viewProjScaleBiasMat[1][1] + lightTexMatrix[1][3] * viewProjScaleBiasMat[3][1];
+    visLight->viewProjTexMatrix[1][2] = lightTexMatrix[1][0] * viewProjScaleBiasMat[0][2] + lightTexMatrix[1][1] * viewProjScaleBiasMat[1][2] + lightTexMatrix[1][3] * viewProjScaleBiasMat[3][2];
+    visLight->viewProjTexMatrix[1][3] = lightTexMatrix[1][0] * viewProjScaleBiasMat[0][3] + lightTexMatrix[1][1] * viewProjScaleBiasMat[1][3] + lightTexMatrix[1][3] * viewProjScaleBiasMat[3][3];
 
     visLight->viewProjTexMatrix[2][0] = viewProjScaleBiasMat[2][0];
     visLight->viewProjTexMatrix[2][1] = viewProjScaleBiasMat[2][1];
@@ -572,11 +572,6 @@ static void RB_RenderView() {
         // Render all solid (non-translucent) geometry (depth + ambient + [primary lit])
         if (!r_skipAmbientPass.GetBool()) {
             RB_ForwardBasePass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
-        }
-
-        // depth buffer 와 관련된 post processing 을 먼저 한다
-        if (!(backEnd.camera->def->GetState().flags & RenderCamera::SkipPostProcess) && r_usePostProcessing.GetBool()) {
-            RB_PostProcessDepth();
         }
 
         // Render all shadow and light interaction
