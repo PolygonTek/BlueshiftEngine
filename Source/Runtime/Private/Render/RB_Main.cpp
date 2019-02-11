@@ -463,7 +463,7 @@ static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occlud
         if (visibilityPtr[2] == 0) {
             const VisObject *space = surf->space;
 
-            surf->flags &= ~DrawSurf::AmbientVisible;
+            surf->flags &= ~DrawSurf::Visible;
 
             if (space->def->GetState().joints) {
                 int sameEntityIndex = index + 1;
@@ -473,7 +473,7 @@ static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occlud
                         break;
                     }
 
-                    surf->flags &= ~DrawSurf::AmbientVisible;
+                    surf->flags &= ~DrawSurf::Visible;
                     sameEntityIndex++;
                 }
             }
@@ -498,9 +498,6 @@ static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
     
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
-        if (!(surf->flags & DrawSurf::AmbientVisible)) {
-            continue;
-        }
 
         const VisObject *space = surf->space;
 
@@ -569,8 +566,8 @@ static void RB_RenderView() {
             RB_DepthPrePass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
         }
 
-        // Render all solid (non-translucent) geometry (depth + ambient + [primary lit])
-        if (!r_skipAmbientPass.GetBool()) {
+        // Render all solid (non-translucent) geometry ([depth] + base + [primary lit])
+        if (!r_skipBasePass.GetBool()) {
             RB_ForwardBasePass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
         }
 

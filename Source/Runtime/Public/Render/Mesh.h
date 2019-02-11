@@ -58,7 +58,7 @@ public:
         StaticMesh,         // vertex 데이터는 static buffer 에 들어간다.
         DynamicMesh,        // vertex 데이터를 CPU 에서 deform 하는 용도의 mesh (GUI, text, particle)
         SkinnedMesh         // skinning 용 mesh
-    };    
+    };
 
     enum InstancingMethod {
         NoInstancing,
@@ -115,7 +115,11 @@ public:
     bool                    LineIntersection(const Vec3 &start, const Vec3 &end, bool backFaceCull) const;
     bool                    RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &scale) const;
 
+                            /// Returns volume of solid mesh.
+                            /// Should be a closed polytope to calculate exactly or AABB approximation.
     float                   ComputeVolume() const;
+                            /// Returns centroid of solid mesh. 
+                            /// Should be a closed polytope to calculate exactly or AABB approximation.
     const Vec3              ComputeCentroid() const;
 
     void                    Purge();

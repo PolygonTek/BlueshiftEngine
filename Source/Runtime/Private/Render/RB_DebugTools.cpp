@@ -558,10 +558,6 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
 
-        if (!(surf->flags & DrawSurf::AmbientVisible)) {
-            continue;
-        }
-
         if (!forceToDraw && !(surf->flags & DrawSurf::ShowWires)) {
             continue;
         }

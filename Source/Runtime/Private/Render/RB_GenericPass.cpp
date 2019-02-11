@@ -28,11 +28,8 @@ void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
-        if (!(surf->flags & DrawSurf::AmbientVisible)) {
-            continue;
-        }
 
-        if (!surf->material->IsSkySurface()) {
+        if (surf->material->GetSort() == Material::Sort::SkySort) {
             continue;
         }
 
@@ -59,6 +56,7 @@ void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
+    // Flush previous batch
     if (prevMaterial) {
         backEnd.batch.Flush();
     }
@@ -73,7 +71,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
-        if ((surf->flags & DrawSurf::SkipSelection) || !(surf->flags & DrawSurf::AmbientVisible)) {
+        if ((surf->flags & DrawSurf::SkipSelection) || !(surf->flags & DrawSurf::Visible)) {
             continue;
         }
 
@@ -124,11 +122,12 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
+    // Flush previous batch
     if (prevMaterial) {
         backEnd.batch.Flush();
     }
     
-    // restore depthHack
+    // Restore depth hack
     if (prevDepthHack) {
         rhi.SetDepthRange(0.0f, 1.0f);
     }
@@ -143,9 +142,6 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
-        if (!(surf->flags & DrawSurf::AmbientVisible)) {
-            continue;
-        }
 
         if (surf->material->GetSort() != Material::Sort::OpaqueSort) {
             continue;
@@ -197,11 +193,12 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
+    // Flush previous batch
     if (prevMaterial) {
         backEnd.batch.Flush();
     }
 
-    // restore depthHack
+    // Restore depth hack
     if (prevDepthHack) {
         rhi.SetDepthRange(0.0f, 1.0f);
     }
@@ -217,13 +214,6 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
-        if (!(surf->flags & DrawSurf::AmbientVisible)) {
-            continue;
-        }
-
-        if (!surf->material->IsLitSurface()) {
-            continue;
-        }
 
         if (surf->material->GetSort() != Material::Sort::OpaqueSort) {
             continue;
@@ -278,11 +268,12 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
+    // Flush previous batch
     if (prevMaterial) {
         backEnd.batch.Flush();
     }
     
-    // restore depthHack
+    // Restore depth hack
     if (prevDepthHack) {
         rhi.SetDepthRange(0.0f, 1.0f);
     }
@@ -298,9 +289,6 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
-        if (!(surf->flags & DrawSurf::AmbientVisible)) {
-            continue;
-        }
 
         if (surf->material->IsLitSurface() || surf->material->IsSkySurface()) {
             continue;
@@ -355,11 +343,12 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
+    // Flush previous batch
     if (prevMaterial) {
         backEnd.batch.Flush();
     }
 
-    // restore depthHack
+    // Restore depth hack
     if (prevDepthHack) {
         rhi.SetDepthRange(0.0f, 1.0f);
     }
@@ -375,9 +364,6 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
-        if (!(surf->flags & DrawSurf::AmbientVisible)) {
-            continue;
-        }
 
         if (surf->space == skipObject) {
             continue;
@@ -471,9 +457,6 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
-        if (!(surf->flags & DrawSurf::AmbientVisible)) {
-            continue;
-        }
         
         if (surf->material->GetSort() == Material::Sort::SkySort) {
             continue;
@@ -532,11 +515,12 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
+    // Flush previous batch
     if (prevMaterial) {
         backEnd.batch.Flush();
     }
 
-    // restore depthHack
+    // Restore depth hack
     if (prevDepthHack) {
         rhi.SetDepthRange(0.0f, 1.0f);
     }
@@ -587,11 +571,12 @@ void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
+    // Flush previous batch
     if (prevMaterial) {
         backEnd.batch.Flush();
     }
 
-    // restore depthHack
+    // Restore depth hack
     if (prevDepthHack) {
         rhi.SetDepthRange(0.0f, 1.0f);
     }

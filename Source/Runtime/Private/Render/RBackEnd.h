@@ -35,7 +35,7 @@ public:
         DepthFlush,
         ShadowFlush,
         OccluderFlush,
-        AmbientFlush,
+        BaseFlush,
         LitFlush,
         UnlitFlush,
         VelocityFlush,
@@ -62,7 +62,7 @@ private:
     void                    Flush_SelectionPass();
     void                    Flush_BackgroundPass();
     void                    Flush_DepthPass();
-    void                    Flush_AmbientPass();
+    void                    Flush_BasePass();
     void                    Flush_ShadowDepthPass();
     void                    Flush_LitPass();
     void                    Flush_UnlitPass();

@@ -126,7 +126,7 @@ extern CVar     r_useLightOcclusionQuery;
 extern CVar     r_usePostProcessing;
 
 extern CVar     r_skipBackEnd;
-extern CVar     r_skipAmbientPass;
+extern CVar     r_skipBasePass;
 extern CVar     r_skipShadowAndLitPass;
 extern CVar     r_skipFogLights;
 extern CVar     r_skipBlendPass;

@@ -245,8 +245,8 @@ void Batch::Flush() {
     case ShadowFlush:
         Flush_ShadowDepthPass(); 
         break;
-    case AmbientFlush:
-        Flush_AmbientPass(); 
+    case BaseFlush:
+        Flush_BasePass();
         break;
     case LitFlush:
         Flush_LitPass();
@@ -399,7 +399,7 @@ void Batch::Flush_ShadowDepthPass() {
     RenderDepth(mtrlPass);
 }
 
-void Batch::Flush_AmbientPass() {
+void Batch::Flush_BasePass() {
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
     rhi.SetCullFace(mtrlPass->cullType);

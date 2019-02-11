@@ -117,7 +117,7 @@ CVAR(r_useLightOcclusionQuery, "0", CVar::Bool, "");
 CVAR(r_usePostProcessing, "1", CVar::Bool | CVar::Archive, "");
 
 CVAR(r_skipBackEnd, "0", CVar::Bool, "don't draw anything");
-CVAR(r_skipAmbientPass, "0", CVar::Bool, "skip ambient draw pass");
+CVAR(r_skipBasePass, "0", CVar::Bool, "skip base draw pass");
 CVAR(r_skipShadowAndLitPass, "0", CVar::Bool, "skip shadow and lighting pass");
 CVAR(r_skipFogLights, "0", CVar::Bool, "skip fog lights");
 CVAR(r_skipBlendLights, "0", CVar::Bool, "skip blend lights");

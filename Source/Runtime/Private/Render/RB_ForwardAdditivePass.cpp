@@ -40,7 +40,7 @@ static void RB_LitPass(const VisLight *visLight) {
     for (int i = 0; i < visLight->numDrawSurfs; i++) {
         const DrawSurf *surf = backEnd.drawSurfs[visLight->firstDrawSurf + i];
 
-        if (!(surf->flags & DrawSurf::AmbientVisible)) {
+        if (!(surf->flags & DrawSurf::Visible)) {
             continue;
         }
 
@@ -93,11 +93,12 @@ static void RB_LitPass(const VisLight *visLight) {
         backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
+    // Flush previous batch
     if (prevMaterial) {
         backEnd.batch.Flush();
     }
 
-    // restore depthHack
+    // Restore depth hack
     if (prevDepthHack) {
         rhi.SetDepthRange(0.0f, 1.0f);
     }
@@ -146,7 +147,8 @@ void RB_ForwardAdditivePass(const LinkList<VisLight> *visLights) {
         RB_SetupLight(visLight);
 
         if (r_shadows.GetInteger() != 0) {
-            if ((visLight->def->GetState().flags & RenderLight::CastShadowsFlag) && !(backEnd.camera->def->GetState().flags & RenderCamera::NoShadows)) {
+            if ((visLight->def->GetState().flags & RenderLight::CastShadowsFlag) && 
+                !(backEnd.camera->def->GetState().flags & RenderCamera::NoShadows)) {
                 RB_ShadowPass(visLight);
             }
         }

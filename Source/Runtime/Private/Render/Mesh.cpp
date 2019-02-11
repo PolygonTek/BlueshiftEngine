@@ -309,11 +309,10 @@ float Mesh::ComputeVolume() const {
         const MeshSurf *surf = GetSurface(i);
         const SubMesh *subMesh = surf->subMesh;
 
-        // NOTE: should be a solid polytope to calculate volume exactly
         if (subMesh->IsClosed()) {
             totalVolume += subMesh->ComputeVolume();
         } else {
-            // compute volume using AABB
+            // Compute volume using AABB
             totalVolume = subMesh->GetAABB().Volume();
         }
     }
@@ -331,12 +330,11 @@ const Vec3 Mesh::ComputeCentroid() const {
         const MeshSurf *surf = GetSurface(i);
         const SubMesh *subMesh = surf->subMesh;
 
-        // NOTE: should be a solid polytope to calculate volume & centroid exactly
         if (subMesh->IsClosed()) {
             volume = subMesh->ComputeVolume();
             centroid = subMesh->ComputeCentroid();
         } else {
-            // compute volume & centroid using AABB
+            // Compute volume and centroid using AABB
             volume = subMesh->GetAABB().Volume();
             centroid = subMesh->GetAABB().Center();
         }

@@ -74,7 +74,7 @@ VisLight *RenderWorld::RegisterVisLight(VisCamera *camera, RenderLight *renderLi
     return visLight;
 }
 
-// Add visible lights/objects using view volume.
+// Add visible lights/objects using bounding view volume.
 void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
     camera->worldAABB.Clear();
     camera->visLights.Clear();
@@ -190,7 +190,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
     }
 }
 
-// Add drawSurf for visible static meshes.
+// Add drawing surfaces of visible static meshes.
 void RenderWorld::AddStaticMeshes(VisCamera *camera) {
     // Called for each static mesh surfaces intersecting with camera frustum 
     // Returns true if it want to proceed next query
@@ -224,7 +224,7 @@ void RenderWorld::AddStaticMeshes(VisCamera *camera) {
         }
 #endif
 
-        int flags = DrawSurf::AmbientVisible;
+        int flags = DrawSurf::Visible;
         if (proxy->renderObject->state.wireframeMode != RenderObject::WireframeMode::ShowNone || r_showWireframe.GetInteger() > 0) {
             flags |= DrawSurf::ShowWires;
         }
@@ -252,7 +252,7 @@ void RenderWorld::AddStaticMeshes(VisCamera *camera) {
     }
 }
 
-// Add drawSurf for visible skinned meshes.
+// Add drawing surfaces of visible skinned meshes.
 void RenderWorld::AddSkinnedMeshes(VisCamera *camera) {
     for (VisObject *visObject = camera->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
         if (!visObject->ambientVisible) {
@@ -273,7 +273,7 @@ void RenderWorld::AddSkinnedMeshes(VisCamera *camera) {
         }
 #endif
 
-        int flags = DrawSurf::AmbientVisible;
+        int flags = DrawSurf::Visible;
         if (renderObjectDef.wireframeMode != RenderObject::WireframeMode::ShowNone || r_showWireframe.GetInteger() > 0) {
             flags |= DrawSurf::ShowWires;
         }
@@ -296,7 +296,7 @@ void RenderWorld::AddSkinnedMeshes(VisCamera *camera) {
     }
 }
 
-// Add drawSurf for visible particle meshes.
+// Add drawing surfaces of visible particle meshes.
 void RenderWorld::AddParticleMeshes(VisCamera *camera) {
     for (VisObject *visObject = camera->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
         if (!visObject->ambientVisible) {
@@ -309,7 +309,7 @@ void RenderWorld::AddParticleMeshes(VisCamera *camera) {
             continue;
         }
 
-        int flags = DrawSurf::AmbientVisible | DrawSurf::SkipSelection;
+        int flags = DrawSurf::Visible | DrawSurf::SkipSelection;
         if (renderObjectDef.wireframeMode != RenderObject::WireframeMode::ShowNone || r_showWireframe.GetInteger() > 0) {
             flags |= DrawSurf::ShowWires;
         }
@@ -345,7 +345,7 @@ void RenderWorld::AddParticleMeshes(VisCamera *camera) {
     }
 }
 
-// Add drawSurf for visible text meshes.
+// Add drawing surfaces of visible text meshes.
 void RenderWorld::AddTextMeshes(VisCamera *camera) {
     for (VisObject *visObject = camera->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
         if (!visObject->ambientVisible) {
@@ -358,7 +358,7 @@ void RenderWorld::AddTextMeshes(VisCamera *camera) {
             continue;
         }
 
-        int flags = DrawSurf::AmbientVisible;
+        int flags = DrawSurf::Visible;
         if (renderObjectDef.wireframeMode != RenderObject::WireframeMode::ShowNone || r_showWireframe.GetInteger() > 0) {
             flags |= DrawSurf::ShowWires;
         }
@@ -395,7 +395,7 @@ void RenderWorld::AddTextMeshes(VisCamera *camera) {
     }
 }
 
-// Add drawSurf for an skybox.
+// Add drawing surfaces of the skybox mesh.
 void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
     if (camera->def->state.clearMethod != RenderCamera::SkyboxClear) {
         return;
@@ -430,12 +430,12 @@ void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
     }
 
     MeshSurf *meshSurf = meshManager.defaultBoxMesh->GetSurface(0);
-    AddDrawSurf(camera, nullptr, visObject, skyboxMaterial, meshSurf->subMesh, DrawSurf::AmbientVisible);
+    AddDrawSurf(camera, nullptr, visObject, skyboxMaterial, meshSurf->subMesh, DrawSurf::Visible);
 
     camera->numAmbientSurfs++;
 }
 
-// Add lit drawSurfs for visible static meshes for each light.
+// Add lit drawing surfaces of visible static meshes for each light.
 void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
     VisLight *visLight;
 
@@ -472,7 +472,7 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
 
         // Already visible in this frame.
         if (surf->viewCount == this->viewCount) {
-            if ((surf->drawSurf->flags & DrawSurf::AmbientVisible) && material->IsLitSurface()) {
+            if ((surf->drawSurf->flags & DrawSurf::Visible) && material->IsLitSurface()) {
                 // Add drawSurf from visible drawSurf.
                 AddDrawSurfFromAmbient(camera, visLight, isShadowCaster, surf->drawSurf);
 
@@ -532,7 +532,7 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
     }
 }
 
-// Add lit drawSurfs for visible skinned meshes for each light.
+// Add lit drawing surfaces of visible skinned meshes for each light.
 void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
     VisLight *visLight;
 
@@ -542,11 +542,11 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
         const DbvtProxy *proxy = (const DbvtProxy *)this->objectDbvt.GetUserData(proxyId);
         RenderObject *renderObject = proxy->renderObject;
 
-        // renderObject 가 없다면 mesh 가 아님
         if (!renderObject) {
             return true;
         }
 
+        // Skip if not skinned mesh
         if (!renderObject->state.joints) {
             return true;
         }
@@ -579,7 +579,7 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
 
             // Already visible in this frame
             if (surf->viewCount == this->viewCount) {
-                if ((surf->drawSurf->flags & DrawSurf::AmbientVisible) && material->IsLitSurface()) {
+                if ((surf->drawSurf->flags & DrawSurf::Visible) && material->IsLitSurface()) {
                     // Add drawSurf from visible drawSurf
                     AddDrawSurfFromAmbient(camera, visLight, isShadowCaster && material->IsShadowCaster(), surf->drawSurf);
 
@@ -785,7 +785,6 @@ void RenderWorld::DrawCamera(VisCamera *camera) {
     // Add drawing surfaces of skinned meshes by searching in visObjects.
     AddSkinnedMeshes(camera);
 
-    //
     //AddSubCamera(camera);
 
     // Add drawing surfaces of particle meshes by searching in visObjects.
@@ -822,7 +821,7 @@ void RenderWorld::AddSubCamera(VisCamera *camera) {
         for (int i = 0; i < camera->numDrawSurfs; i++) {
             DrawSurf *drawSurf = camera->drawSurfs[i];
 
-            if (!(drawSurf->flags & DrawSurf::AmbientVisible)) {
+            if (!(drawSurf->flags & DrawSurf::Visible)) {
                 continue;
             }
 
@@ -939,19 +938,19 @@ void RenderWorld::AddDrawSurf(VisCamera *camera, VisLight *visLight, VisObject *
     camera->drawSurfs[camera->numDrawSurfs++] = drawSurf;
 }
 
-void RenderWorld::AddDrawSurfFromAmbient(VisCamera *camera, const VisLight *visLight, bool isShadowCaster, const DrawSurf *ambientDrawSurf) {
+void RenderWorld::AddDrawSurfFromAmbient(VisCamera *camera, const VisLight *visLight, bool isShadowCaster, const DrawSurf *visibleDrawSurf) {
     if (camera->numDrawSurfs + 1 > camera->maxDrawSurfs) {
         BE_WARNLOG("RenderWorld::AddDrawSurfFromAmbient: not enough renderable surfaces\n");
         return;
     }
 
     DrawSurf *drawSurf = (DrawSurf *)frameData.Alloc(sizeof(DrawSurf));
-    drawSurf->sortKey = (ambientDrawSurf->sortKey & 0x000FFFFFFFFFFFFF) | ((uint64_t)(visLight->index + 1) << 52);
-    drawSurf->flags = ambientDrawSurf->flags | (isShadowCaster ? DrawSurf::ShadowCaster : 0);
-    drawSurf->space = ambientDrawSurf->space;
-    drawSurf->material = ambientDrawSurf->material;
-    drawSurf->materialRegisters = ambientDrawSurf->materialRegisters;
-    drawSurf->subMesh = ambientDrawSurf->subMesh;
+    drawSurf->sortKey = (visibleDrawSurf->sortKey & 0x000FFFFFFFFFFFFF) | ((uint64_t)(visLight->index + 1) << 52);
+    drawSurf->flags = visibleDrawSurf->flags | (isShadowCaster ? DrawSurf::ShadowCaster : 0);
+    drawSurf->space = visibleDrawSurf->space;
+    drawSurf->material = visibleDrawSurf->material;
+    drawSurf->materialRegisters = visibleDrawSurf->materialRegisters;
+    drawSurf->subMesh = visibleDrawSurf->subMesh;
 
     camera->drawSurfs[camera->numDrawSurfs++] = drawSurf;
 }

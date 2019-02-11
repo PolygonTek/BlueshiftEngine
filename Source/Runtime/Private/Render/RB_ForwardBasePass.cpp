@@ -30,10 +30,6 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
 
-        if (!(surf->flags & DrawSurf::AmbientVisible)) {
-            continue;
-        }
-
         if (!surf->material->IsLitSurface() && !surf->material->IsSkySurface()) {
             continue;
         }
@@ -54,7 +50,7 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(surf->material->IsSkySurface() ? Batch::BackgroundFlush : Batch::AmbientFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(surf->material->IsSkySurface() ? Batch::BackgroundFlush : Batch::BaseFlush, surf->material, surf->materialRegisters, surf->space);
 
             prevSubMesh = surf->subMesh;
             prevMaterial = surf->material;
@@ -92,11 +88,12 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
         backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
+    // Flush previous batch
     if (prevMaterial) {
         backEnd.batch.Flush();
     }
 
-    // restore depthHack
+    // Restore depth hack
     if (prevDepthHack) {
         rhi.SetDepthRange(0.0f, 1.0f);
     }
@@ -104,7 +101,6 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
 
 void RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
     if (backEnd.primaryLight) {
-        // Prepare light for rendering
         RB_SetupLight(backEnd.primaryLight);
 
         if (r_shadows.GetInteger() != 0) {
@@ -115,7 +111,6 @@ void RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
     }
 
-    // BaseLit or BaseAmbient or Sky
     RB_BasePass(numDrawSurfs, drawSurfs, backEnd.primaryLight);
 }
 
