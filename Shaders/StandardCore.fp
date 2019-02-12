@@ -191,17 +191,45 @@ uniform float subSurfaceShadowDensity;// = 0.5;
 #endif
 
 #if _PARALLAX != 0
-vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
+vec2 ParallaxMapping(vec2 texCoords, vec3 tangentViewDir) {
+#ifdef GL_ES
     float height = tex2D(heightMap, texCoords).x * 2.0 - 1.0;
-    vec2 p = height * heightScale * (viewDir.xy / viewDir.z);
+    vec2 p = height * heightScale * tangentViewDir.xy / tangentViewDir.z;
     return texCoords + p;
+#else
+    const float minLayers = 8;
+    const float maxLayers = 32;
+    float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), tangentViewDir)));
+
+    float layerDepth = 1.0 / numLayers;
+
+    // the amount to shift the texture coordinates per layer (from vector P)
+    vec2 p = heightScale * tangentViewDir.xy / tangentViewDir.z;
+    vec2 deltaTexCoords = p / numLayers;
+
+    vec2 currentTexCoords = texCoords;
+
+    float currentHeight = tex2D(heightMap, currentTexCoords).x * 2.0 - 1.0;
+    float currentLayerDepth = -1.0;
+    
+    while (currentHeight >= currentLayerDepth) {
+        // shift texture coordinates along direction of P
+        currentTexCoords += deltaTexCoords * currentHeight;
+        // get heightmap value at current texture coordinates
+        currentHeight = tex2D(heightMap, currentTexCoords).x * 2.0 - 1.0;
+        // get depth of next layer
+        currentLayerDepth += layerDepth;
+    }
+
+    return currentTexCoords;
+#endif
 }
 #endif
 
 void main() {
 #ifdef NEED_BASE_TC
     #if _PARALLAX != 0
-        baseTc = ParallaxMapping(fs_in.tex, fs_in.tangentViewDir);
+        baseTc = ParallaxMapping(fs_in.tex, normalize(fs_in.tangentViewDir));
     #else
         baseTc = fs_in.tex;
     #endif
