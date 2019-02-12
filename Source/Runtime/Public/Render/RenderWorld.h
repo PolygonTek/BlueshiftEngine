@@ -135,7 +135,7 @@ private:
     void                        CacheInstanceBuffer(VisCamera *camera);
     void                        OptimizeLights(VisCamera *camera);
     void                        AddDrawSurf(VisCamera *camera, VisLight *light, VisObject *entity, const Material *material, SubMesh *subMesh, int flags);
-    void                        AddDrawSurfFromAmbient(VisCamera *camera, const VisLight *light, bool isShadowCaster, const DrawSurf *ambientDrawSurf);
+    void                        AddDrawSurfFromAmbient(VisCamera *camera, const VisLight *light, bool shadowVisible, const DrawSurf *ambientDrawSurf);
     void                        SortDrawSurfs(VisCamera *camera);
 
     void                        DrawCamera(VisCamera *camera);

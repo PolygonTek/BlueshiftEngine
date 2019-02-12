@@ -530,9 +530,24 @@ static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
     RB_MarkOccludeeVisibility(numAmbientOccludees, occludeeSurfIndexes, numDrawSurfs, drawSurfs);
 }
 
+static void RB_HiOcclusionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
+    if (!r_HOM.GetBool()) {
+        return;
+    }
+
+    // Render occluder to HiZ occlusion buffer
+    RB_RenderOcclusionMap(backEnd.numAmbientSurfs, backEnd.drawSurfs);
+
+    // Generate depth hierarchy
+    RB_GenerateOcclusionMapHierarchy();
+
+    // Test all the ambient occludee's AABB using HiZ occlusion buffer
+    RB_TestOccludeeBounds(backEnd.numAmbientSurfs, backEnd.drawSurfs);
+}
+
 static void RB_ClearView() {
     int clearBits = 0;
-    
+
     if (backEnd.camera->def->GetState().clearMethod == RenderCamera::DepthOnlyClear || 
         backEnd.camera->def->GetState().clearMethod == RenderCamera::SkyboxClear) {
         clearBits = RHI::DepthBit | RHI::StencilBit;
@@ -550,48 +565,28 @@ static void RB_ClearView() {
 
 static void RB_RenderView() {
     if (backEnd.camera->def->GetState().flags & RenderCamera::TexturedMode) {
-        if (r_HOM.GetBool()) {
-            // Render occluder to HiZ occlusion buffer
-            RB_RenderOcclusionMap(backEnd.numAmbientSurfs, backEnd.drawSurfs);
+        // Render pass for HiZ occlusion culling.
+        RB_HiOcclusionPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
-            // Generate depth hierarchy
-            RB_GenerateOcclusionMapHierarchy();
-
-            // Test all the ambient occludee's AABB using HiZ occlusion buffer
-            RB_TestOccludeeBounds(backEnd.numAmbientSurfs, backEnd.drawSurfs);
-        }
-
-        // Render depth only first for early-z culling
-        if (r_useDepthPrePass.GetBool()) {
-            RB_DepthPrePass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
-        }
+        // Render opaque surface to depth buffer fast for early-z culling.
+        RB_DepthPrePass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
         // Render all solid (non-translucent) geometry ([depth] + base + [primary lit])
-        if (!r_skipBasePass.GetBool()) {
-            RB_ForwardBasePass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
-        }
+        RB_ForwardBasePass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
-        // Render all shadow and light interaction
-        if (!r_skipShadowAndLitPass.GetBool()) {
-            RB_ForwardAdditivePass(backEnd.visLights);
-        }
+        // Render all shadow and light interaction.
+        RB_ForwardAdditivePass(backEnd.visLights);
 
-        // Render any stage with unlit surfaces
-        if (!r_skipBlendPass.GetBool()) {
-            RB_UnlitPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
-        }
+        // Render any stage with unlit surfaces.
+        RB_UnlitPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
-        // Render to velocity map
-        if (!(backEnd.camera->def->GetState().flags & RenderCamera::SkipPostProcess) && r_usePostProcessing.GetBool() && (r_motionBlur.GetInteger() & 2)) {
-            RB_VelocityMapPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
-        }
+        // Render to velocity map.
+        RB_VelocityMapPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
-        // Render no lighting interaction surfaces
-        if (!r_skipFinalPass.GetBool()) {
-            RB_FinalPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
-        }
+        // Render no lighting interaction surfaces.
+        RB_FinalPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
-        // Render wireframe for option
+        // Render wireframe for option.
         RB_DrawTris(backEnd.numAmbientSurfs, backEnd.drawSurfs, false);
     }
 
@@ -600,13 +595,13 @@ static void RB_RenderView() {
             RB_BackgroundPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
         }
 
-        // Render wireframes
+        // Render wireframes.
         RB_DrawTris(backEnd.numAmbientSurfs, backEnd.drawSurfs, true);
     }
 
-    // Render debug surfaces
+    // Render debug surfaces.
     if (!(backEnd.camera->def->GetState().flags & RenderCamera::SkipDebugDraw)) {
-        RB_DebugPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
+        RB_DebugToolsPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
     }
 }
 

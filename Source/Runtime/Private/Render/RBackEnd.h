@@ -223,7 +223,7 @@ void    RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw);
-void    RB_DebugPass(int numDrawSurfs, DrawSurf **drawSurfs);
+void    RB_DebugToolsPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs);
 
 void    RB_ShadowPass(const VisLight *visLight);

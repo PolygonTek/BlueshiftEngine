@@ -19,9 +19,9 @@ BE_NAMESPACE_BEGIN
 class DrawSurf {
 public:
     enum Flag {
-        Visible             = BIT(0),           ///< means visible surface
-        ShadowCaster        = BIT(1),           ///< means shadow caster surface (may be invisible but shadow caster)
-        ShowWires           = BIT(2),           ///< means to draw wireframes
+        Visible             = BIT(0),           ///< Surface is visible by camera
+        ShadowVisible       = BIT(1),           ///< Shadow of surface is visible by camera
+        ShowWires           = BIT(2),
         SkipSelection       = BIT(3),
         UseInstancing       = BIT(4)
     };

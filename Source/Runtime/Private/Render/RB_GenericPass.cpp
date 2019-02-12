@@ -27,33 +27,33 @@ void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     backEnd.batch.SetCurrentLight(nullptr);
 
     for (int i = 0; i < numDrawSurfs; i++) {
-        const DrawSurf *surf = drawSurfs[i];
+        const DrawSurf *drawSurf = drawSurfs[i];
 
-        if (surf->material->GetSort() == Material::Sort::SkySort) {
+        if (drawSurf->material->GetSort() == Material::Sort::SkySort) {
             continue;
         }
 
-        bool isDifferentObject = surf->space != prevSpace;
-        bool isDifferentMaterial = surf->material != prevMaterial;
+        bool isDifferentObject = drawSurf->space != prevSpace;
+        bool isDifferentMaterial = drawSurf->material != prevMaterial;
 
         if (isDifferentMaterial || isDifferentObject) {
             if (prevMaterial) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::BackgroundFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::BackgroundFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
-            prevMaterial = surf->material;
+            prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                prevSpace = surf->space;
+                prevSpace = drawSurf->space;
 
-                backEnd.modelViewMatrix = surf->space->modelViewMatrix;
-                backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
+                backEnd.modelViewMatrix = drawSurf->space->modelViewMatrix;
+                backEnd.modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
             }
         }
 
-        backEnd.batch.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
     }
 
     // Flush previous batch
@@ -70,37 +70,38 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     backEnd.batch.SetCurrentLight(nullptr);
 
     for (int i = 0; i < numDrawSurfs; i++) {
-        const DrawSurf *surf = drawSurfs[i];
-        if ((surf->flags & DrawSurf::SkipSelection) || !(surf->flags & DrawSurf::Visible)) {
+        const DrawSurf *drawSurf = drawSurfs[i];
+
+        if ((drawSurf->flags & DrawSurf::SkipSelection) || !(drawSurf->flags & DrawSurf::Visible)) {
             continue;
         }
 
-        if (surf->material->GetSort() == Material::Sort::SkySort) {
+        if (drawSurf->material->GetSort() == Material::Sort::SkySort) {
             continue;
         }
 
-        bool isDifferentObject = surf->space != prevSpace;
-        bool isDifferentMaterial = surf->material != prevMaterial;
+        bool isDifferentObject = drawSurf->space != prevSpace;
+        bool isDifferentMaterial = drawSurf->material != prevMaterial;
 
         if (isDifferentMaterial || isDifferentObject) {
-            if (surf->space->def->GetState().flags & RenderObject::SkipSelectionFlag) {
+            if (drawSurf->space->def->GetState().flags & RenderObject::SkipSelectionFlag) {
                 continue;
             }
 
             if (!prevMaterial) {
-                backEnd.batch.Begin(Batch::SelectionFlush, surf->material, surf->materialRegisters, surf->space);
+                backEnd.batch.Begin(Batch::SelectionFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
             } else {
-                if (isDifferentObject || prevMaterial->GetCullType() != surf->material->GetCullType() ||
-                    (prevMaterial->GetSort() == Material::Sort::AlphaTestSort) || (surf->material->GetSort() == Material::Sort::AlphaTestSort)) {
+                if (isDifferentObject || prevMaterial->GetCullType() != drawSurf->material->GetCullType() ||
+                    (prevMaterial->GetSort() == Material::Sort::AlphaTestSort) || (drawSurf->material->GetSort() == Material::Sort::AlphaTestSort)) {
                     backEnd.batch.Flush();
-                    backEnd.batch.Begin(Batch::SelectionFlush, surf->material, surf->materialRegisters, surf->space);
+                    backEnd.batch.Begin(Batch::SelectionFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
                 }
             }
 
-            prevMaterial = surf->material;
+            prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
@@ -112,14 +113,14 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                     prevDepthHack = depthHack;
                 }
 
-                backEnd.modelViewMatrix = surf->space->modelViewMatrix;
-                backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
+                backEnd.modelViewMatrix = drawSurf->space->modelViewMatrix;
+                backEnd.modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
 
-                prevSpace = surf->space;
+                prevSpace = drawSurf->space;
             }
         }
 
-        backEnd.batch.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
     }
 
     // Flush previous batch
@@ -141,17 +142,17 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     backEnd.batch.SetCurrentLight(nullptr);
 
     for (int i = 0; i < numDrawSurfs; i++) {
-        const DrawSurf *surf = drawSurfs[i];
+        const DrawSurf *drawSurf = drawSurfs[i];
 
-        if (surf->material->GetSort() != Material::Sort::OpaqueSort) {
+        if (drawSurf->material->GetSort() != Material::Sort::OpaqueSort) {
             continue;
         }
 
-        bool isDifferentObject = surf->space != prevSpace;
-        bool isDifferentMaterial = surf->material != prevMaterial;
+        bool isDifferentObject = drawSurf->space != prevSpace;
+        bool isDifferentMaterial = drawSurf->material != prevMaterial;
             
         if (isDifferentMaterial || isDifferentObject) {
-            if (!(surf->space->def->GetState().flags & RenderObject::OccluderFlag)) {
+            if (!(drawSurf->space->def->GetState().flags & RenderObject::OccluderFlag)) {
                 continue;
             }
 
@@ -160,18 +161,18 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             }*/
 
             if (!prevMaterial) {
-                backEnd.batch.Begin(Batch::OccluderFlush, surf->material, surf->materialRegisters, surf->space);
+                backEnd.batch.Begin(Batch::OccluderFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
             } else {
                 if (isDifferentObject) {
                     backEnd.batch.Flush();
-                    backEnd.batch.Begin(Batch::OccluderFlush, surf->material, surf->materialRegisters, surf->space);
+                    backEnd.batch.Begin(Batch::OccluderFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
                 }
             }
 
-            prevMaterial = surf->material;
+            prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
@@ -183,14 +184,14 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                     prevDepthHack = depthHack;
                 }
 
-                backEnd.modelViewMatrix = surf->space->modelViewMatrix;
-                backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
+                backEnd.modelViewMatrix = drawSurf->space->modelViewMatrix;
+                backEnd.modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
 
-                prevSpace = surf->space;
+                prevSpace = drawSurf->space;
             }
         }
 
-        backEnd.batch.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
     }
 
     // Flush previous batch
@@ -205,6 +206,10 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
+    if (!r_useDepthPrePass.GetBool()) {
+        return;
+    }
+
     const VisObject *   prevSpace = nullptr;
     const SubMesh *     prevSubMesh = nullptr;
     const Material *    prevMaterial = nullptr;
@@ -213,33 +218,33 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
     backEnd.batch.SetCurrentLight(nullptr);
 
     for (int i = 0; i < numDrawSurfs; i++) {
-        const DrawSurf *surf = drawSurfs[i];
+        const DrawSurf *drawSurf = drawSurfs[i];
 
-        if (surf->material->GetSort() != Material::Sort::OpaqueSort) {
+        if (drawSurf->material->GetSort() != Material::Sort::OpaqueSort) {
             continue;
         }
 
-        bool isDifferentObject = surf->space != prevSpace;
-        bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
-        bool isDifferentMaterial = surf->material != prevMaterial;
-        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
-            prevSpace->def->GetState().flags != surf->space->def->GetState().flags || prevSpace->def->GetState().layer != surf->space->def->GetState().layer ? true : false;
+        bool isDifferentObject = drawSurf->space != prevSpace;
+        bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentMaterial = drawSurf->material != prevMaterial;
+        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+            prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::DepthFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::DepthFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
-            prevSubMesh = surf->subMesh;
-            prevMaterial = surf->material;
+            prevSubMesh = drawSurf->subMesh;
+            prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
-                    if (surf->flags & DrawSurf::UseInstancing) {
+                    if (drawSurf->flags & DrawSurf::UseInstancing) {
                         backEnd.batch.Flush();
                     }
 
@@ -252,20 +257,20 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
                     prevDepthHack = depthHack;
                 }
 
-                if (!(surf->flags & DrawSurf::UseInstancing)) {
-                    backEnd.modelViewMatrix = surf->space->modelViewMatrix;
-                    backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
+                if (!(drawSurf->flags & DrawSurf::UseInstancing)) {
+                    backEnd.modelViewMatrix = drawSurf->space->modelViewMatrix;
+                    backEnd.modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
                 }
 
-                prevSpace = surf->space;
+                prevSpace = drawSurf->space;
             }
         }
 
-        if (surf->flags & DrawSurf::UseInstancing) {
-            backEnd.batch.AddInstance(surf);
+        if (drawSurf->flags & DrawSurf::UseInstancing) {
+            backEnd.batch.AddInstance(drawSurf);
         }
 
-        backEnd.batch.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
     }
 
     // Flush previous batch
@@ -280,6 +285,10 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
+    if (r_skipBlendPass.GetBool()) {
+        return;
+    }
+
     const VisObject *   prevSpace = nullptr;
     const SubMesh *     prevSubMesh = nullptr;
     const Material *    prevMaterial = nullptr;
@@ -288,33 +297,33 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     backEnd.batch.SetCurrentLight(nullptr);
 
     for (int i = 0; i < numDrawSurfs; i++) {
-        const DrawSurf *surf = drawSurfs[i];
+        const DrawSurf *drawSurf = drawSurfs[i];
 
-        if (surf->material->IsLitSurface() || surf->material->IsSkySurface()) {
+        if (drawSurf->material->IsLitSurface() || drawSurf->material->IsSkySurface()) {
             continue;
         }
 
-        bool isDifferentObject = surf->space != prevSpace;
-        bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
-        bool isDifferentMaterial = surf->material != prevMaterial;
-        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
-            prevSpace->def->GetState().flags != surf->space->def->GetState().flags || prevSpace->def->GetState().layer != surf->space->def->GetState().layer ? true : false;
+        bool isDifferentObject = drawSurf->space != prevSpace;
+        bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentMaterial = drawSurf->material != prevMaterial;
+        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+            prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::UnlitFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::UnlitFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
-            prevSubMesh = surf->subMesh;
-            prevMaterial = surf->material;
+            prevSubMesh = drawSurf->subMesh;
+            prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
-                    if (surf->flags & DrawSurf::UseInstancing) {
+                    if (drawSurf->flags & DrawSurf::UseInstancing) {
                         backEnd.batch.Flush();
                     }
 
@@ -327,20 +336,20 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                     prevDepthHack = depthHack;
                 }
 
-                if (!(surf->flags & DrawSurf::UseInstancing)) {
-                    backEnd.modelViewMatrix = surf->space->modelViewMatrix;
-                    backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
+                if (!(drawSurf->flags & DrawSurf::UseInstancing)) {
+                    backEnd.modelViewMatrix = drawSurf->space->modelViewMatrix;
+                    backEnd.modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
                 }
 
-                prevSpace = surf->space;
+                prevSpace = drawSurf->space;
             }
         }
 
-        if (surf->flags & DrawSurf::UseInstancing) {
-            backEnd.batch.AddInstance(surf);
+        if (drawSurf->flags & DrawSurf::UseInstancing) {
+            backEnd.batch.AddInstance(drawSurf);
         }
 
-        backEnd.batch.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
     }
 
     // Flush previous batch
@@ -355,6 +364,10 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
+    if ((backEnd.camera->def->GetState().flags & RenderCamera::SkipPostProcess) || !r_usePostProcessing.GetBool() || !(r_motionBlur.GetInteger() & 2)) {
+        return;
+    }
+
     const VisObject *   prevSpace = nullptr;
     const VisObject *   skipObject = nullptr;
     const Material *    prevMaterial = nullptr;
@@ -363,46 +376,46 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     backEnd.batch.SetCurrentLight(nullptr);
 
     for (int i = 0; i < numDrawSurfs; i++) {
-        const DrawSurf *surf = drawSurfs[i];
+        const DrawSurf *drawSurf = drawSurfs[i];
 
-        if (surf->space == skipObject) {
+        if (drawSurf->space == skipObject) {
             continue;
         }
 
-        if (surf->material->GetSort() == Material::Sort::SkySort) {
+        if (drawSurf->material->GetSort() == Material::Sort::SkySort) {
             continue;
         }
 
-        bool isDifferentObject = surf->space != prevSpace;
-        bool isDifferentMaterial = surf->material != prevMaterial;
+        bool isDifferentObject = drawSurf->space != prevSpace;
+        bool isDifferentMaterial = drawSurf->material != prevMaterial;
             
         if (isDifferentMaterial || isDifferentObject) {
             if (!prevMaterial) {
-                backEnd.batch.Begin(Batch::VelocityFlush, surf->material, surf->materialRegisters, surf->space);
+                backEnd.batch.Begin(Batch::VelocityFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
             } else {
-                if (isDifferentObject || prevMaterial->GetCullType() != surf->material->GetCullType() ||
-                    (prevMaterial->GetSort() == Material::Sort::AlphaTestSort) || (surf->material->GetSort() == Material::Sort::AlphaTestSort)) {
+                if (isDifferentObject || prevMaterial->GetCullType() != drawSurf->material->GetCullType() ||
+                    (prevMaterial->GetSort() == Material::Sort::AlphaTestSort) || (drawSurf->material->GetSort() == Material::Sort::AlphaTestSort)) {
                     backEnd.batch.Flush();
-                    backEnd.batch.Begin(Batch::VelocityFlush, surf->material, surf->materialRegisters, surf->space);
+                    backEnd.batch.Begin(Batch::VelocityFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
                 }
             }
 
-            prevMaterial = surf->material;
+            prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                Mesh *mesh = surf->space->def->GetState().mesh;
+                Mesh *mesh = drawSurf->space->def->GetState().mesh;
 
-                if (!mesh->IsSkinnedMesh() && (surf->space->def->GetObjectToWorldMatrix() == surf->space->def->GetPrevObjectToWorldMatrix())) {
-                    skipObject = surf->space;
+                if (!mesh->IsSkinnedMesh() && (drawSurf->space->def->GetObjectToWorldMatrix() == drawSurf->space->def->GetPrevObjectToWorldMatrix())) {
+                    skipObject = drawSurf->space;
                     continue;
                 }
 
                 skipObject = nullptr;
 
-                backEnd.modelViewMatrix = surf->space->modelViewMatrix;
-                backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
+                backEnd.modelViewMatrix = drawSurf->space->modelViewMatrix;
+                backEnd.modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
 
-                prevSpace = surf->space;
+                prevSpace = drawSurf->space;
             }
         }
 
@@ -416,7 +429,7 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             rhi.Clear(RHI::ColorBit | RHI::DepthBit, Color4(0.0f, 0.0f, 0.0f, 1.0f), 1.0f, 0);
         }
 
-        backEnd.batch.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
     }
 
     if (!firstDraw) {
@@ -443,6 +456,10 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
+    if (r_skipFinalPass.GetBool()) {
+        return;
+    }
+
     const VisObject *   prevSpace = nullptr;
     const SubMesh *     prevSubMesh = nullptr;
     const Material *    prevMaterial = nullptr;
@@ -456,9 +473,9 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     }
         
     for (int i = 0; i < numDrawSurfs; i++) {
-        const DrawSurf *surf = drawSurfs[i];
+        const DrawSurf *drawSurf = drawSurfs[i];
         
-        if (surf->material->GetSort() == Material::Sort::SkySort) {
+        if (drawSurf->material->GetSort() == Material::Sort::SkySort) {
             continue;
         }
 
@@ -466,27 +483,27 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             continue;
         }
 
-        bool isDifferentObject = surf->space != prevSpace;
-        bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
-        bool isDifferentMaterial = surf->material != prevMaterial;
-        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
-            prevSpace->def->GetState().flags != surf->space->def->GetState().flags || prevSpace->def->GetState().layer != surf->space->def->GetState().layer ? true : false;
+        bool isDifferentObject = drawSurf->space != prevSpace;
+        bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentMaterial = drawSurf->material != prevMaterial;
+        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+            prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::FinalFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::FinalFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
-            prevSubMesh = surf->subMesh;
-            prevMaterial = surf->material;
+            prevSubMesh = drawSurf->subMesh;
+            prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
-                    if (surf->flags & DrawSurf::UseInstancing) {
+                    if (drawSurf->flags & DrawSurf::UseInstancing) {
                         backEnd.batch.Flush();
                     }
 
@@ -499,20 +516,20 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                     prevDepthHack = depthHack;
                 }
 
-                if (!(surf->flags & DrawSurf::UseInstancing)) {
-                    backEnd.modelViewMatrix = surf->space->modelViewMatrix;
-                    backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
+                if (!(drawSurf->flags & DrawSurf::UseInstancing)) {
+                    backEnd.modelViewMatrix = drawSurf->space->modelViewMatrix;
+                    backEnd.modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
                 }
 
-                prevSpace = surf->space;
+                prevSpace = drawSurf->space;
             }
         }
 
-        if (surf->flags & DrawSurf::UseInstancing) {
-            backEnd.batch.AddInstance(surf);
+        if (drawSurf->flags & DrawSurf::UseInstancing) {
+            backEnd.batch.AddInstance(drawSurf);
         }
 
-        backEnd.batch.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
     }
 
     // Flush previous batch
@@ -534,22 +551,22 @@ void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     backEnd.batch.SetCurrentLight(nullptr);
         
     for (int i = 0; i < numDrawSurfs; i++) {
-        const DrawSurf *surf = drawSurfs[i];
+        const DrawSurf *drawSurf = drawSurfs[i];
 
-        bool isDifferentObject = surf->space != prevSpace;
-        bool isDifferentMaterial = surf->material != prevMaterial;
+        bool isDifferentObject = drawSurf->space != prevSpace;
+        bool isDifferentMaterial = drawSurf->material != prevMaterial;
 
         if (isDifferentMaterial || isDifferentObject) {
             if (prevMaterial) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::GuiFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::GuiFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
-            prevMaterial = surf->material;
+            prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
@@ -561,14 +578,14 @@ void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                     prevDepthHack = depthHack;
                 }
 
-                backEnd.modelViewMatrix = surf->space->modelViewMatrix;
-                backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
+                backEnd.modelViewMatrix = drawSurf->space->modelViewMatrix;
+                backEnd.modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
 
-                prevSpace = surf->space;
+                prevSpace = drawSurf->space;
             }
         }
         
-        backEnd.batch.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
     }
 
     // Flush previous batch

@@ -492,7 +492,7 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
                 VisObject *shadowCasterObject = RegisterVisObject(camera, renderObject);
                 shadowCasterObject->shadowVisible = true;
 
-                AddDrawSurf(camera, visLight, shadowCasterObject, material, surf->subMesh, DrawSurf::ShadowCaster);
+                AddDrawSurf(camera, visLight, shadowCasterObject, material, surf->subMesh, DrawSurf::ShadowVisible);
 
                 surf->viewCount = this->viewCount;
                 surf->drawSurf = camera->drawSurfs[camera->numDrawSurfs - 1];
@@ -603,7 +603,7 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
                         shadowCasterObject->def->state.mesh->UpdateSkinningJointCache(shadowCasterObject->def->state.skeleton, shadowCasterObject->def->state.joints);
                     }
 
-                    AddDrawSurf(camera, visLight, shadowCasterObject, material, surf->subMesh, DrawSurf::ShadowCaster);
+                    AddDrawSurf(camera, visLight, shadowCasterObject, material, surf->subMesh, DrawSurf::ShadowVisible);
 
                     surf->viewCount = this->viewCount;
                     surf->drawSurf = camera->drawSurfs[camera->numDrawSurfs - 1];
@@ -938,7 +938,7 @@ void RenderWorld::AddDrawSurf(VisCamera *camera, VisLight *visLight, VisObject *
     camera->drawSurfs[camera->numDrawSurfs++] = drawSurf;
 }
 
-void RenderWorld::AddDrawSurfFromAmbient(VisCamera *camera, const VisLight *visLight, bool isShadowCaster, const DrawSurf *visibleDrawSurf) {
+void RenderWorld::AddDrawSurfFromAmbient(VisCamera *camera, const VisLight *visLight, bool shadowVisible, const DrawSurf *visibleDrawSurf) {
     if (camera->numDrawSurfs + 1 > camera->maxDrawSurfs) {
         BE_WARNLOG("RenderWorld::AddDrawSurfFromAmbient: not enough renderable surfaces\n");
         return;
@@ -946,7 +946,7 @@ void RenderWorld::AddDrawSurfFromAmbient(VisCamera *camera, const VisLight *visL
 
     DrawSurf *drawSurf = (DrawSurf *)frameData.Alloc(sizeof(DrawSurf));
     drawSurf->sortKey = (visibleDrawSurf->sortKey & 0x000FFFFFFFFFFFFF) | ((uint64_t)(visLight->index + 1) << 52);
-    drawSurf->flags = visibleDrawSurf->flags | (isShadowCaster ? DrawSurf::ShadowCaster : 0);
+    drawSurf->flags = visibleDrawSurf->flags | (shadowVisible ? DrawSurf::ShadowVisible : 0);
     drawSurf->space = visibleDrawSurf->space;
     drawSurf->material = visibleDrawSurf->material;
     drawSurf->materialRegisters = visibleDrawSurf->materialRegisters;

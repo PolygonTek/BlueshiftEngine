@@ -408,9 +408,9 @@ void Batch::Flush_BasePass() {
 
     int vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? 
         VertexFormat::GenericXyzStColorNT : VertexFormat::GenericXyzStNT;
-    
+
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
-    
+
     int stateBits = mtrlPass->stateBits;
 
     if (r_useDepthPrePass.GetBool() && mtrlPass->renderingMode == Material::RenderingMode::Opaque) {
@@ -423,6 +423,20 @@ void Batch::Flush_BasePass() {
     rhi.SetStateBits(stateBits);
 
     RenderBase(mtrlPass, r_ambientScale.GetFloat());
+}
+
+void Batch::Flush_UnlitPass() {
+    const Material::ShaderPass *mtrlPass = material->GetPass();
+
+    rhi.SetCullFace(mtrlPass->cullType);
+
+    rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
+
+    SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyzStColor);
+
+    rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_LEqual);
+
+    RenderGeneric(mtrlPass);
 }
 
 void Batch::Flush_LitPass() {
@@ -461,20 +475,6 @@ void Batch::Flush_LitPass() {
         RenderLightInteraction(mtrlPass);
         break;
     }
-}
-
-void Batch::Flush_UnlitPass() {
-    const Material::ShaderPass *mtrlPass = material->GetPass();
-
-    rhi.SetCullFace(mtrlPass->cullType);
-
-    rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
-
-    SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyzStColor);
-
-    rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_LEqual);
-
-    RenderGeneric(mtrlPass);
 }
 
 void Batch::Flush_FinalPass() {

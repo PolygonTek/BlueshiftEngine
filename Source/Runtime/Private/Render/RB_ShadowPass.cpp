@@ -196,46 +196,46 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
     backEnd.batch.SetCurrentLight(visLight);
     
     for (int i = 0; i < visLight->numDrawSurfs; i++) {
-        const DrawSurf *surf = backEnd.drawSurfs[visLight->firstDrawSurf + i];
+        const DrawSurf *drawSurf = backEnd.drawSurfs[visLight->firstDrawSurf + i];
 
-        if (!(surf->flags & DrawSurf::ShadowCaster)) {
+        if (!(drawSurf->flags & DrawSurf::ShadowVisible)) {
             continue;
         }
 
-        if (surf->space == skipObject) {
+        if (drawSurf->space == skipObject) {
             continue;
         }
 
-        if (!(surf->material->GetSort() == Material::Sort::OpaqueSort || surf->material->GetSort() == Material::Sort::AlphaTestSort) &&
-            !(surf->material->GetFlags() & Material::ForceShadow)) {
+        if (!(drawSurf->material->GetSort() == Material::Sort::OpaqueSort || drawSurf->material->GetSort() == Material::Sort::AlphaTestSort) &&
+            !(drawSurf->material->GetFlags() & Material::ForceShadow)) {
             continue;
         }
 
-        bool isDifferentObject = surf->space != prevSpace;
-        bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
-        bool isDifferentMaterial = surf->material != prevMaterial;
-        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->GetState().flags != surf->space->def->GetState().flags || prevSpace->def->GetState().layer != surf->space->def->GetState().layer ? true : false;
+        bool isDifferentObject = drawSurf->space != prevSpace;
+        bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentMaterial = drawSurf->material != prevMaterial;
+        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::ShadowFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::ShadowFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
-            prevSubMesh = surf->subMesh;
-            prevMaterial = surf->material;
+            prevSubMesh = drawSurf->subMesh;
+            prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                prevSpace = surf->space;
+                prevSpace = drawSurf->space;
 
-                if (!(surf->space->def->GetState().flags & RenderObject::CastShadowsFlag)) {
+                if (!(drawSurf->space->def->GetState().flags & RenderObject::CastShadowsFlag)) {
                     continue;
                 }
 
-                OBB obb(surf->space->def->GetLocalAABB(), surf->space->def->GetState().origin, surf->space->def->GetState().axis);
+                OBB obb(drawSurf->space->def->GetLocalAABB(), drawSurf->space->def->GetState().origin, drawSurf->space->def->GetState().axis);
                 if (lightFrustum.CullOBB(obb)) {
-                    skipObject = surf->space;
+                    skipObject = drawSurf->space;
                     continue;
                 }
 
@@ -243,8 +243,8 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
             }
         }
 
-        if (!surf->space->def->GetState().joints) {
-            OBB obb(surf->subMesh->GetAABB() * surf->space->def->GetState().scale, surf->space->def->GetState().origin, surf->space->def->GetState().axis);
+        if (!drawSurf->space->def->GetState().joints) {
+            OBB obb(drawSurf->subMesh->GetAABB() * drawSurf->space->def->GetState().scale, drawSurf->space->def->GetState().origin, drawSurf->space->def->GetState().axis);
             if (lightFrustum.CullOBB(obb)) {
                 continue;
             }
@@ -275,18 +275,18 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
             }
         }
 
-        if (surf->space != entity2) {
-            if (!(surf->flags & DrawSurf::UseInstancing)) {
-                backEnd.modelViewMatrix = lightViewMatrix * surf->space->def->GetObjectToWorldMatrix();
+        if (drawSurf->space != entity2) {
+            if (!(drawSurf->flags & DrawSurf::UseInstancing)) {
+                backEnd.modelViewMatrix = lightViewMatrix * drawSurf->space->def->GetObjectToWorldMatrix();
                 backEnd.modelViewProjMatrix = backEnd.projMatrix * backEnd.modelViewMatrix;
             } else {
-                backEnd.batch.AddInstance(surf);
+                backEnd.batch.AddInstance(drawSurf);
             }
 
-            entity2 = surf->space;
+            entity2 = drawSurf->space;
         }
 
-        backEnd.batch.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
     }
 
     if (!firstDraw) {
@@ -405,14 +405,14 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
     backEnd.viewProjMatrix = backEnd.shadowProjectionMatrix * visLight->def->GetViewMatrix();
     
     for (int i = 0; i < visLight->numDrawSurfs; i++) {
-        const DrawSurf *surf = backEnd.drawSurfs[visLight->firstDrawSurf + i];
+        const DrawSurf *drawSurf = backEnd.drawSurfs[visLight->firstDrawSurf + i];
 
-        if (!(surf->flags & DrawSurf::ShadowCaster)) {
+        if (!(drawSurf->flags & DrawSurf::ShadowVisible)) {
             continue;
         }
         
-        if (!(surf->material->GetSort() == Material::Sort::OpaqueSort || surf->material->GetSort() == Material::Sort::AlphaTestSort) && 
-            !(surf->material->GetFlags() & Material::ForceShadow)) {
+        if (!(drawSurf->material->GetSort() == Material::Sort::OpaqueSort || drawSurf->material->GetSort() == Material::Sort::AlphaTestSort) && 
+            !(drawSurf->material->GetFlags() & Material::ForceShadow)) {
             continue;
         }
 
@@ -429,37 +429,37 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
             rhi.Clear(RHI::DepthBit, Color4::black, 1.0f, 0);
         }
 
-        bool isDifferentObject = surf->space != prevSpace;
-        bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
-        bool isDifferentMaterial = surf->material != prevMaterial;
-        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
-            prevSpace->def->GetState().flags != surf->space->def->GetState().flags || prevSpace->def->GetState().layer != surf->space->def->GetState().layer ? true : false;
+        bool isDifferentObject = drawSurf->space != prevSpace;
+        bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentMaterial = drawSurf->material != prevMaterial;
+        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+            prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::ShadowFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::ShadowFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
-            prevSubMesh = surf->subMesh;
-            prevMaterial = surf->material;
+            prevSubMesh = drawSurf->subMesh;
+            prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                if (!(surf->flags & DrawSurf::UseInstancing)) {
-                    backEnd.modelViewMatrix = visLight->def->GetViewMatrix() * surf->space->def->GetObjectToWorldMatrix();
+                if (!(drawSurf->flags & DrawSurf::UseInstancing)) {
+                    backEnd.modelViewMatrix = visLight->def->GetViewMatrix() * drawSurf->space->def->GetObjectToWorldMatrix();
                     backEnd.modelViewProjMatrix = backEnd.shadowProjectionMatrix * backEnd.modelViewMatrix;
                 }
 
-                prevSpace = surf->space;
+                prevSpace = drawSurf->space;
             }
         }
 
-        if (surf->flags & DrawSurf::UseInstancing) {
-            backEnd.batch.AddInstance(surf);
+        if (drawSurf->flags & DrawSurf::UseInstancing) {
+            backEnd.batch.AddInstance(drawSurf);
         }
 
-        backEnd.batch.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
     }
 
     if (!firstDraw) {

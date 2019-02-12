@@ -686,7 +686,7 @@ static void RB_DrawDebugLightScissorRects() {
     }
 }
 
-void RB_DebugPass(int numDrawSurfs, DrawSurf **drawSurfs) {
+void RB_DebugToolsPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     /*if (r_showTangentSpace.GetBool()) {
         DrawDebugTangentSpace(r_showTangentSpace.GetInteger() - 1);
     }

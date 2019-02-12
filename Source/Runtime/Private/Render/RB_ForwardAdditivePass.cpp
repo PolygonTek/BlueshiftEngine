@@ -38,33 +38,33 @@ static void RB_LitPass(const VisLight *visLight) {
     }
 
     for (int i = 0; i < visLight->numDrawSurfs; i++) {
-        const DrawSurf *surf = backEnd.drawSurfs[visLight->firstDrawSurf + i];
+        const DrawSurf *drawSurf = backEnd.drawSurfs[visLight->firstDrawSurf + i];
 
-        if (!(surf->flags & DrawSurf::Visible)) {
+        if (!(drawSurf->flags & DrawSurf::Visible)) {
             continue;
         }
 
-        bool isDifferentObject = surf->space != prevSpace;
-        bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
-        bool isDifferentMaterial = surf->material != prevMaterial;
-        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
-            prevSpace->def->GetState().flags != surf->space->def->GetState().flags || prevSpace->def->GetState().layer != surf->space->def->GetState().layer ? true : false;
+        bool isDifferentObject = drawSurf->space != prevSpace;
+        bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentMaterial = drawSurf->material != prevMaterial;
+        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+            prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::LitFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::LitFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
-            prevSubMesh = surf->subMesh;
-            prevMaterial = surf->material;
+            prevSubMesh = drawSurf->subMesh;
+            prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
                 if (prevDepthHack != depthHack) {
-                    if (surf->flags & DrawSurf::UseInstancing) {
+                    if (drawSurf->flags & DrawSurf::UseInstancing) {
                         backEnd.batch.Flush();
                     }
 
@@ -77,20 +77,20 @@ static void RB_LitPass(const VisLight *visLight) {
                     prevDepthHack = depthHack;
                 }
 
-                if (!(surf->flags & DrawSurf::UseInstancing)) {
-                    backEnd.modelViewMatrix = surf->space->modelViewMatrix;
-                    backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
+                if (!(drawSurf->flags & DrawSurf::UseInstancing)) {
+                    backEnd.modelViewMatrix = drawSurf->space->modelViewMatrix;
+                    backEnd.modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
                 }
 
-                prevSpace = surf->space;
+                prevSpace = drawSurf->space;
             }
         }
 
-        if (surf->flags & DrawSurf::UseInstancing) {
-            backEnd.batch.AddInstance(surf);
+        if (drawSurf->flags & DrawSurf::UseInstancing) {
+            backEnd.batch.AddInstance(drawSurf);
         }
 
-        backEnd.batch.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
     }
 
     // Flush previous batch
@@ -114,6 +114,10 @@ static void RB_LitPass(const VisLight *visLight) {
 
 // Forward lighting renders each surfaces depending on lights that affect the surface.
 void RB_ForwardAdditivePass(const LinkList<VisLight> *visLights) {
+    if (r_skipShadowAndLitPass.GetBool()) {
+        return;
+    }
+
     for (VisLight *visLight = visLights->Next(); visLight; visLight = visLight->node.Next()) {
         const RenderLight *renderLight = visLight->def;
 
