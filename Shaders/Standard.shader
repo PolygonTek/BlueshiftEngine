@@ -28,7 +28,7 @@ shader "Lit/Standard" {
         clearCoatNormalMap("Clear Coat Normal Map") : texture = "_flatNormalTexture"
         _PARALLAX("Parallax") : enum "None;Texture (R)" = "0" (shaderDefine)
         heightMap("Height Map") : texture = "_whiteTexture"
-        heightScale("Height Scale") : float range 0.01 1.0 0.001 = "0.008"
+        heightScale("Height Scale") : float range 0.01 0.1 0.001 = "1.0"
         _OCC("Occlusion") : enum "None;Texture (R);From Metallic Map (R);From Metallic Map (G);From Metallic Map (B);From Metallic Map (A)" = "0" (shaderDefine)
         occlusionMap("Occlusion Map") : texture = "_whiteTexture"
         occlusionStrength("Occlusion Strength") : float range 0 1 0.001 = "1"

@@ -28,7 +28,7 @@ shader "Lit/StandardSpec" {
         _CC_NORMAL("Clear Coat Normal") : enum "Surface Normal;Texture" = "0" (shaderDefine)
         _PARALLAX("Parallax") : enum "None;Texture (R)" = "0" (shaderDefine)
         heightMap("Height Map") : texture = "_whiteTexture"
-        heightScale("Height Scale") : float range 0.01 1.0 0.001 = "0.008"
+        heightScale("Height Scale") : float range 0.01 0.1 0.001 = "1."
         _OCC("Occlusion") : enum "None;Texture (R);From Albedo Map (A);From Specular Map (A)" = "0" (shaderDefine)
         occlusionMap("Occlusion Map") : texture = "_whiteTexture"
         occlusionStrength("Occlusion Strength") : float range 0 1 0.001 = "1"

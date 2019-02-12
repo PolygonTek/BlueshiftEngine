@@ -4,20 +4,20 @@ shader "HDRFinal" {
 		in vec2 in_st : TEXCOORD0;
 
 		out vec2 v2f_texCoord0;
-		out vec2 v2f_texCoord1;
+		//out vec2 v2f_texCoord1;
 
 		uniform vec2 frameRand;
 
 		void main() {
 			gl_Position = in_position;
 			v2f_texCoord0.xy = in_st.xy;
-			v2f_texCoord1.xy = in_st.xy * vec2(800, 600) / 4.0 + frameRand.xy;
+			//v2f_texCoord1.xy = in_st.xy * vec2(800, 600) / 4.0 + frameRand.xy;
 		}
 	}
 
 	glsl_fp {
 		in vec2 v2f_texCoord0;
-		in vec2 v2f_texCoord1;
+		//in vec2 v2f_texCoord1;
 
 		out vec4 o_fragColor : FRAG_COLOR;
 
