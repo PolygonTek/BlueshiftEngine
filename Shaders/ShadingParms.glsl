@@ -45,12 +45,12 @@ struct ShadingParms {
 ShadingParms shading;
 
 void PrepareShadingParms(vec4 albedo) {
-    shading.v = normalize(v2f_viewVector.yzx);
+    shading.v = normalize(fs_in.viewVector.yzx);
 
 #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-    shading.tagentToWorldMatrix[0] = normalize(v2f_tangentToWorldAndPackedWorldPosS.yzx);
-    shading.tagentToWorldMatrix[1] = normalize(v2f_tangentToWorldAndPackedWorldPosT.yzx);
-    shading.tagentToWorldMatrix[2] = normalize(v2f_tangentToWorldAndPackedWorldPosR.yzx);
+    shading.tagentToWorldMatrix[0] = normalize(fs_in.tangentToWorldAndPackedWorldPosS.yzx);
+    shading.tagentToWorldMatrix[1] = normalize(fs_in.tangentToWorldAndPackedWorldPosT.yzx);
+    shading.tagentToWorldMatrix[2] = normalize(fs_in.tangentToWorldAndPackedWorldPosR.yzx);
 
     #if _NORMAL != 0
         vec3 tangentN = normalize(GetNormal(normalMap, baseTc));
@@ -66,7 +66,7 @@ void PrepareShadingParms(vec4 albedo) {
         shading.n = shading.tagentToWorldMatrix[2];
     #endif
 #else
-    shading.n = normalize(v2f_normal.yzx);
+    shading.n = normalize(fs_in.normal.yzx);
 #endif
 
 #ifdef TWO_SIDED

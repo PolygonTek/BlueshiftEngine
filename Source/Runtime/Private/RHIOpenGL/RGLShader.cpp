@@ -28,6 +28,8 @@ struct InOut {
     Str precision;
     Str type;
     Str name;
+    Str blockText;
+    Str blockName;
     int index;
     int location;
 };
@@ -151,38 +153,72 @@ static const InOutSemantic *FindInOutSemantic(const char *semanticName) {
     return nullptr;
 }
 
-static void ParseInOut(Lexer &lexer, bool hasSemantic, InOut &inOut) {
-    Str token;
-    Str semanticName;
+static void ParseInOutSemantic(Lexer &lexer, InOut &inOut) {
+    inOut.blockName = "";
+    inOut.blockText = "";
+    inOut.index = -1;
+    inOut.location = -1;
 
-    lexer.ReadToken(&token); // type or precision qualifier
+    Str token;
+    lexer.ReadToken(&token);
 
     if (token == "LOWP" || token == "MEDIUMP" || token == "HIGHP") {
         inOut.precision = token;
 
-        lexer.ReadToken(&token); // type
+        lexer.ReadToken(&token);
     } else {
         inOut.precision = "";
     }
 
     inOut.type = token;
 
-    lexer.ReadToken(&token); // name
+    lexer.ReadToken(&token);
     inOut.name = token;
 
+    if (lexer.ExpectPunctuation(P_COLON)) { // :
+        Str semanticName;
+
+        if (lexer.ReadToken(&semanticName)) { // semantic name
+            const InOutSemantic *inOutSemantic = FindInOutSemantic(semanticName);
+            inOut.index = inOutSemantic->index;
+            inOut.location = inOutSemantic->location;
+        } else {
+            lexer.Warning("ParseInOutSemantic: missing semantic for inOut %s", inOut.name.c_str());
+        }
+    }
+}
+
+static void ParseInOut(Lexer &lexer, InOut &inOut) {
     inOut.index = -1;
     inOut.location = -1;
+    inOut.name = "";
+    inOut.blockName = "";
+    inOut.blockText = "";
 
-    if (hasSemantic) {
-        if (lexer.ExpectPunctuation(P_COLON)) { // :
-            if (lexer.ReadToken(&semanticName)) { // semantic name
-                const InOutSemantic *inOutSemantic = FindInOutSemantic(semanticName);
-                inOut.index = inOutSemantic->index;
-                inOut.location = inOutSemantic->location;
-            } else {
-                lexer.Warning("ParseInOut: missing semantic for inOut %s", inOut.name.c_str());
-            }
-        }
+    Str token;
+    lexer.ReadToken(&token);
+
+    if (token == "LOWP" || token == "MEDIUMP" || token == "HIGHP") {
+        inOut.precision = token;
+
+        lexer.ReadToken(&token);
+    } else {
+        inOut.precision = "";
+    }
+
+    // type or block tag
+    inOut.type = token;
+
+    lexer.ReadToken(&token);
+
+    if (token == "{") {
+        lexer.UnreadToken(&token);
+        lexer.ParseBracedSection(inOut.blockText);
+
+        // block name
+        lexer.ReadToken(&inOut.blockName);
+    } else {
+        inOut.name = token;
     }
 }
 
@@ -270,11 +306,9 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
         if (token == "in" && parentheses == 0) {
             processedText += (lexer.LinesCrossed() > 0) ? newline : (lexer.WhiteSpaceBeforeToken() > 0 ? " " : "");
 
-            ParseInOut(lexer, isVertexShader, inOut);
-
-            lexer.SkipUntilString(";");
-
             if (isVertexShader) {
+                ParseInOutSemantic(lexer, inOut);
+
                 inOutList.Append(inOut);
 
                 if (OpenGL::GLSL_VERSION < 130) {
@@ -285,6 +319,8 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
                     processedText += va("layout (location = %i) in ", inOut.location);
                 }
             } else {
+                ParseInOut(lexer, inOut);
+
                 if (OpenGL::GLSL_VERSION < 130) {
                     processedText += "varying ";
                 } else {
@@ -292,39 +328,51 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
                 }
             }
 
+            lexer.SkipUntilString(";");
+
             if (!inOut.precision.IsEmpty()) {
                 processedText += inOut.precision + " ";
             }
-            processedText += inOut.type + " " + inOut.name + ";";
+            processedText += inOut.type + " " + inOut.name;
+            if (!inOut.blockName.IsEmpty()) {
+                processedText += "{" + inOut.blockText + "}" + inOut.blockName;
+            }
+            processedText += ";";
             continue;
         }
         
         if (token == "out" && parentheses == 0) {
             processedText += (lexer.LinesCrossed() > 0) ? newline : (lexer.WhiteSpaceBeforeToken() > 0 ? " " : "");
 
-            ParseInOut(lexer, !isVertexShader, inOut);
+            if (!isVertexShader) {
+                ParseInOutSemantic(lexer, inOut);
 
-            lexer.SkipUntilString(";");
-
-            if (isVertexShader) {
-                if (OpenGL::GLSL_VERSION < 130) {
-                    processedText += "varying ";
-                } else {
-                    processedText += "out ";
-                }
-            } else {
                 inOutList.Append(inOut);
 
                 if (OpenGL::GLSL_VERSION < 130) {
                 } else {
                     processedText += va("layout (location = %i) out ", inOut.location);
                 }
+            } else {
+                ParseInOut(lexer, inOut);
+
+                if (OpenGL::GLSL_VERSION < 130) {
+                    processedText += "varying ";
+                } else {
+                    processedText += "out ";
+                }
             }
+
+            lexer.SkipUntilString(";");
 
             if (!inOut.precision.IsEmpty()) {
                 processedText += inOut.precision + " ";
             }
-            processedText += inOut.type + " " + inOut.name + ";";
+            processedText += inOut.type + " " + inOut.name;
+            if (!inOut.blockName.IsEmpty()) {
+                processedText += "{" + inOut.blockText + "}" + inOut.blockName;
+            }
+            processedText += ";";
             continue;
         }
 
