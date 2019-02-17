@@ -76,6 +76,7 @@ uniform vec3 viewOrigin;                // eye position in world space
 uniform vec4 lightVec;                  // light position or light direction in world space
 uniform mat4 viewProjectionMatrix;
 uniform mat4 modelViewProjectionMatrix;
+
 uniform vec3 lightInvRadius;
 uniform mat4x3 lightFallOffMatrix;
 uniform mat4 lightTextureMatrix;
@@ -86,7 +87,7 @@ void main() {
     vec4 localPos;
     vec3 localNormal;
     vec3 localTangent;
-    vec3 localBiTangent;
+    vec3 localBitangent;
 
     #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
         vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
@@ -97,12 +98,12 @@ void main() {
     #endif
 
     #ifdef GPU_SKINNING
-        skinningMatrix(in_position, localPos, vNormal, localNormal, vTangent, localTangent, localBiTangent);
+        skinningMatrix(in_position, localPos, vNormal, localNormal, vTangent, localTangent, localBitangent);
     #else
         localPos = in_position;
         localNormal = vNormal;
         localTangent = vTangent.xyz;
-        localBiTangent = normalize(cross(vNormal, vTangent.xyz) * vTangent.w);
+        localBitangent = normalize(cross(vNormal, vTangent.xyz) * vTangent.w);
     #endif
 #else
     vec4 localPos;
@@ -134,13 +135,13 @@ void main() {
             vec3 localV = worldToLocalMatrix * worldV;
 
             vs_out.tangentViewDir.x = dot(localTangent, localV);
-            vs_out.tangentViewDir.y = dot(localBiTangent, localV);
+            vs_out.tangentViewDir.y = dot(localBitangent, localV);
             vs_out.tangentViewDir.z = dot(localNormal, localV);
         #endif
 
         // Build the matrix to transform tangent space into GL world space
         vs_out.tangentToWorldAndPackedWorldPosS.xyz = localToWorldMatrix * vec4(localTangent, 0.0);
-        vs_out.tangentToWorldAndPackedWorldPosT.xyz = localToWorldMatrix * vec4(localBiTangent, 0.0);
+        vs_out.tangentToWorldAndPackedWorldPosT.xyz = localToWorldMatrix * vec4(localBitangent, 0.0);
         vs_out.tangentToWorldAndPackedWorldPosR.xyz = localToWorldMatrix * vec4(localNormal, 0.0);
 
         #ifdef INDIRECT_LIGHTING
