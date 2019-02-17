@@ -1,4 +1,4 @@
-#if _ALBEDO != 0 || _EMISSION == 2
+#if _ALBEDO != 0
     #define NEED_BASE_TC
 #endif
 
