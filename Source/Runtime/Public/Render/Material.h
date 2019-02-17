@@ -59,8 +59,8 @@ public:
         BadSort                 = 0,
         SubViewSort             = 1,
         OpaqueSort              = 2,
-        SkySort                 = 3,
-        AlphaTestSort           = 4,
+        AlphaTestSort           = 3,
+        SkySort                 = 4,
         TranslucentSort         = 10,
         OverlaySort             = 11,
         NearestSort             = 15
@@ -90,9 +90,18 @@ public:
         AlphaBlend
     };
 
+    // Controls how transparent objects are rendered.
+    // This is only valid when the blending mode is alpha blend.
+    enum Transparency {
+        Default,            ///< Render normally.
+        TwoPassesOneSide,   ///< Render in the depth buffer, then again in color buffer.
+        TwoPassesTwoSides   ///< Render twice in the color buffer first with its back faces, then with its front faces.
+    };
+
     struct ShaderPass {
         RenderingMode       renderingMode;
         int                 cullType;
+        int                 transparency;
         int                 stateBits;
         float               cutoffAlpha;
         VertexColorMode     vertexColorMode;

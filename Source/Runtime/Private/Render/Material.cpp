@@ -143,6 +143,20 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
             } else {
                 BE_WARNLOG("missing parameter cull keyword in material '%s'\n", hashName.c_str());
             }
+        } else if (!token.Icmp("transparency")) {
+            if (lexer.ReadToken(&token, false)) {
+                if (!token.Icmp("default")) {
+                    pass->transparency = Transparency::Default;
+                } else if (!token.Icmp("twoPassesOneSide")) {
+                    pass->transparency = Transparency::TwoPassesOneSide;
+                } else if (!token.Icmp("twoPassesTwoSides")) {
+                    pass->transparency = Transparency::TwoPassesTwoSides;
+                } else {
+                    BE_WARNLOG("invalid transparency parm '%s' in material '%s'\n", token.c_str(), hashName.c_str());
+                }
+            } else {
+                BE_WARNLOG("missing transparency cull keyword in material '%s'\n", hashName.c_str());
+            }
         } else if (!token.Icmp("shader")) {
             if (lexer.ReadToken(&token, false)) {
                 const Guid shaderGuid = Guid::FromString(token);
@@ -652,6 +666,14 @@ void Material::Write(const char *filename) {
     case RHI::NoCull: default: cullStr = "none"; break;
     }
     fp->Printf("%scull %s\n", indentSpace.c_str(), cullStr.c_str());
+
+    Str transparencyStr;
+    switch (pass->transparency) {
+    case Transparency::Default: transparencyStr = "default"; break;
+    case Transparency::TwoPassesOneSide: transparencyStr = "twoPassesOneSide"; break;
+    case Transparency::TwoPassesTwoSides: default: transparencyStr = "twoPassesTwoSides"; break;
+    }
+    fp->Printf("%stransparency %s\n", indentSpace.c_str(), transparencyStr.c_str());
 
     if (pass->referenceShader) {
         const Guid shaderGuid = resourceGuidMapper.Get(pass->referenceShader->GetHashName());

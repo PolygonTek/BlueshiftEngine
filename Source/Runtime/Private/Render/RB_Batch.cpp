@@ -239,8 +239,10 @@ void Batch::Flush() {
         Flush_BackgroundPass();
         break;
     case DepthFlush:
+        Flush_DepthPass();
+        break;
     case OccluderFlush:
-        Flush_DepthPass(); 
+        Flush_DepthPass();
         break;
     case ShadowFlush:
         Flush_ShadowDepthPass(); 
@@ -406,37 +408,75 @@ void Batch::Flush_BasePass() {
 
     rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
 
-    int vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? 
+    int vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ?
         VertexFormat::GenericXyzStColorNT : VertexFormat::GenericXyzStNT;
 
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
 
     int stateBits = mtrlPass->stateBits;
 
-    if (r_useDepthPrePass.GetBool() && mtrlPass->renderingMode == Material::RenderingMode::Opaque) {
-        stateBits &= ~RHI::DepthWrite;
-        stateBits |= RHI::DF_Equal;
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaBlend) {
+        if (mtrlPass->transparency == Material::Transparency::TwoPassesOneSide) {
+            rhi.SetStateBits((stateBits & ~(RHI::MaskBF | RHI::ColorWrite)) | RHI::DepthWrite | RHI::DF_LEqual);
+            RenderDepth(mtrlPass);
+
+            rhi.SetStateBits(stateBits | RHI::DF_Equal);
+            RenderBase(mtrlPass, r_ambientScale.GetFloat());
+        } else if (mtrlPass->transparency == Material::Transparency::TwoPassesTwoSides) {
+            rhi.SetStateBits(stateBits | RHI::DF_LEqual);
+            rhi.SetCullFace(RHI::FrontCull);
+            RenderBase(mtrlPass, r_ambientScale.GetFloat());
+
+            rhi.SetCullFace(RHI::BackCull);
+            DrawPrimitives();
+        } else {
+            rhi.SetStateBits(stateBits | RHI::DF_LEqual);
+            RenderBase(mtrlPass, r_ambientScale.GetFloat());
+        }
     } else {
-        stateBits |= RHI::DF_LEqual;
+        if (r_useDepthPrePass.GetBool()) {
+            stateBits &= ~RHI::DepthWrite;
+            stateBits |= RHI::DF_Equal;
+        } else {
+            stateBits |= RHI::DF_LEqual;
+        }
+
+        rhi.SetStateBits(stateBits);
+        RenderBase(mtrlPass, r_ambientScale.GetFloat());
     }
-
-    rhi.SetStateBits(stateBits);
-
-    RenderBase(mtrlPass, r_ambientScale.GetFloat());
 }
 
 void Batch::Flush_UnlitPass() {
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
-    rhi.SetCullFace(mtrlPass->cullType);
-
     rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
 
     SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyzStColor);
 
-    rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_LEqual);
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaBlend) {
+        if (mtrlPass->transparency == Material::Transparency::TwoPassesOneSide) {
+            rhi.SetStateBits((mtrlPass->stateBits & ~(RHI::MaskBF | RHI::ColorWrite)) | RHI::DepthWrite | RHI::DF_LEqual);
+            RenderDepth(mtrlPass);
 
-    RenderGeneric(mtrlPass);
+            rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_Equal);
+            RenderGeneric(mtrlPass);
+        } else if (mtrlPass->transparency == Material::Transparency::TwoPassesTwoSides) {
+            rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_LEqual);
+            rhi.SetCullFace(RHI::FrontCull);
+            RenderGeneric(mtrlPass);
+
+            rhi.SetCullFace(RHI::BackCull);
+            DrawPrimitives();
+        } else {
+            rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_LEqual);
+            rhi.SetCullFace(mtrlPass->cullType);
+            RenderGeneric(mtrlPass);
+        }
+    } else {
+        rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_LEqual);
+        rhi.SetCullFace(mtrlPass->cullType);
+        RenderGeneric(mtrlPass);
+    }
 }
 
 void Batch::Flush_LitPass() {
@@ -470,9 +510,29 @@ void Batch::Flush_LitPass() {
         break;
     case Material::LightMaterialType:
         stateBits |= (RHI::BS_One | RHI::BD_One);
-        stateBits |= material->sort == Material::TranslucentSort ? RHI::DF_LEqual : RHI::DF_Equal;
-        rhi.SetStateBits(stateBits);
-        RenderLightInteraction(mtrlPass);
+
+        if (mtrlPass->renderingMode == Material::RenderingMode::AlphaBlend) {
+            if (mtrlPass->transparency == Material::Transparency::TwoPassesOneSide) {
+                rhi.SetStateBits((stateBits & ~(RHI::MaskBF | RHI::ColorWrite)) | RHI::DepthWrite | RHI::DF_LEqual);
+                RenderDepth(mtrlPass);
+
+                rhi.SetStateBits(stateBits | RHI::DF_Equal);
+                RenderLightInteraction(mtrlPass);
+            } else if (mtrlPass->transparency == Material::Transparency::TwoPassesTwoSides) {
+                rhi.SetStateBits(stateBits | RHI::DF_LEqual);
+                rhi.SetCullFace(RHI::FrontCull);
+                RenderLightInteraction(mtrlPass);
+
+                rhi.SetCullFace(RHI::BackCull);
+                DrawPrimitives();
+            } else {
+                rhi.SetStateBits(stateBits | RHI::DF_LEqual);
+                RenderLightInteraction(mtrlPass);
+            }
+        } else {
+            rhi.SetStateBits(stateBits | RHI::DF_Equal);
+            RenderLightInteraction(mtrlPass);
+        }
         break;
     }
 }
