@@ -237,7 +237,7 @@ static CGDisplayModeRef desktopDisplayMode = nullptr;
 
 static NSOpenGLPixelFormat *mainContextPixelFormat;
 
-static CVar         gl_debug("gl_debug", "1", CVar::Bool, "");
+static CVar         gl_debug("gl_debug", "0", CVar::Bool, "");
 static CVar         gl_debugLevel("gl_debugLevel", "3", CVar::Integer, "");
 static CVar         gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Bool, "");
 static CVar         gl_finish("gl_finish", "0", CVar::Bool, "");
