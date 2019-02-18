@@ -568,7 +568,7 @@ static void RB_RenderView() {
         // Render pass for HiZ occlusion culling.
         RB_HiOcclusionPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
-        // Render opaque surface to depth buffer fast for early-z culling.
+        // Render opaque/perforated surface to depth buffer fast for early-z culling (depth + unlit + [normal])
         RB_DepthPrePass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
         // Render all solid (non-translucent) geometry ([depth] + base + [primary lit])
@@ -577,8 +577,8 @@ static void RB_RenderView() {
         // Render all shadow and light interaction.
         RB_ForwardAdditivePass(backEnd.visLights);
 
-        // Render any stage with unlit surfaces.
-        RB_UnlitPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
+        // Render any stage with blend surfaces.
+        RB_BlendPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
         // Render to velocity map.
         RB_VelocityMapPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
@@ -854,9 +854,9 @@ void RB_DrawDebugTextures() {
     }
 }
 
-// FIXME: Consider this view is subview
-static void RB_DrawView() {
-    BE_PROFILE_CPU_SCOPE("RB_DrawView", Color3::red);
+// FIXME: Consider this view is sub camera
+static void RB_DrawCamera() {
+    BE_PROFILE_CPU_SCOPE("RB_DrawCamera", Color3::red);
 
     if (backEnd.ctx->flags & RenderContext::UseSelectionBuffer) {
         backEnd.ctx->screenSelectionRT->Begin();
@@ -946,8 +946,8 @@ static void RB_DrawView() {
     rhi.SetScissor(Rect::empty);
 }
 
-static void RB_Draw2DView() {
-    BE_PROFILE_CPU_SCOPE("RB_Draw2DView", Color3::blue);
+static void RB_DrawCamera2D() {
+    BE_PROFILE_CPU_SCOPE("RB_DrawCamera2D", Color3::blue);
 
     if (!backEnd.numDrawSurfs) {
         return;
@@ -984,9 +984,9 @@ static const void *RB_ExecuteDrawCamera(const void *data) {
     backEnd.screenRect.y        = backEnd.ctx->GetDeviceHeight() - backEnd.screenRect.Y2();
     
     if (backEnd.camera->is2D) {
-        RB_Draw2DView();
+        RB_DrawCamera2D();
     } else {
-        RB_DrawView();
+        RB_DrawCamera();
     }
 
     return (const void *)(cmd + 1);
