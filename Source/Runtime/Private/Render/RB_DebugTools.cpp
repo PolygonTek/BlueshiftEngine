@@ -504,7 +504,7 @@ static void RB_DrawDebugTextWithDepthTest(bool depthTest) {
     const DebugText *text = rb_debugText;
     for (int i = 0; i < rb_numDebugText; i++, text++) {
         //if (text->origin.DistanceSqr(backEnd.camera->def->state.origin) > MeterToUnit(100*100)) {
-        //	continue;
+        //  continue;
         //}
 
         if (text->depthTest != depthTest) {
@@ -547,10 +547,9 @@ static void RB_DrawDebugText() {
 }
 
 void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
-    const Material *    prevMaterial = nullptr;
     const VisObject *   prevSpace = nullptr;
     const SubMesh *     prevSubMesh = nullptr;
-    bool                depthhack = false;
+    const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
 
     backEnd.batch.SetCurrentLight(nullptr);
@@ -583,20 +582,20 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
             prevMaterial = surf->material;
 
             if (isDifferentObject) {
-                depthhack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
 
-                if (prevDepthHack != depthhack) {
+                if (prevDepthHack != depthHack) {
                     if (surf->flags & DrawSurf::UseInstancing) {
                         backEnd.batch.Flush();
                     }
 
-                    if (depthhack) {
+                    if (depthHack) {
                         rhi.SetDepthRange(0.0f, 0.1f);
                     } else {
                         rhi.SetDepthRange(0.0f, 1.0f);
                     }
 
-                    prevDepthHack = depthhack;
+                    prevDepthHack = depthHack;
                 }
 
                 backEnd.modelViewMatrix = surf->space->modelViewMatrix;
@@ -613,12 +612,13 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
         backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
+    // Flush previous batch
     if (prevMaterial) {
         backEnd.batch.Flush();
     }
 
-    // restore depthhack
-    if (depthhack) {
+    // Restore depthHack
+    if (prevDepthHack) {
         rhi.SetDepthRange(0.0f, 1.0f);
     }
 }

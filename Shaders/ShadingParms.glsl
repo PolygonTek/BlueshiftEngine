@@ -14,7 +14,9 @@ struct ShadingParms {
     vec2 preDFG;
     vec3 energyCompensation;
 
-    HIGHP mat3 tagentToWorldMatrix;
+#if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
+    mat3 tagentToWorldMatrix;
+#endif
 
 #ifdef LEGACY_PHONG_LIGHTING
     float specularPower;
@@ -45,7 +47,7 @@ struct ShadingParms {
 ShadingParms shading;
 
 void PrepareShadingParms(vec4 albedo) {
-    shading.v = normalize(fs_in.viewVector.yzx);
+    shading.v = normalize(fs_in.viewWS.yzx);
 
 #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
     shading.tagentToWorldMatrix[0] = normalize(fs_in.tangentToWorldAndPackedWorldPosS.yzx);
@@ -53,20 +55,20 @@ void PrepareShadingParms(vec4 albedo) {
     shading.tagentToWorldMatrix[2] = normalize(fs_in.tangentToWorldAndPackedWorldPosR.yzx);
 
     #if _NORMAL != 0
-        vec3 tangentN = normalize(GetNormal(normalMap, baseTc));
+        vec3 normalTS = normalize(GetNormal(normalMap, baseTc));
 
         #if _NORMAL == 2
-            vec3 tangentN2 = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
-            tangentN = normalize(tangentN + tangentN2);
+            vec3 detailNormalTS = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
+            normalTS = normalize(normalTS + detailNormalTS);
         #endif
 
         // Convert coordinates from tangent space to GL world space
-        shading.n = shading.tagentToWorldMatrix * tangentN;
+        shading.n = shading.tagentToWorldMatrix * normalTS;
     #else
         shading.n = shading.tagentToWorldMatrix[2];
     #endif
 #else
-    shading.n = normalize(fs_in.normal.yzx);
+    shading.n = normalize(fs_in.normalWS.yzx);
 #endif
 
 #ifdef TWO_SIDED

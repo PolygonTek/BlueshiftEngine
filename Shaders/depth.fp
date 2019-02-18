@@ -8,10 +8,10 @@ uniform LOWP vec4 constantColor;
 
 void main() {
 #ifdef PERFORATED
-	vec4 diffuse = tex2D(albedoMap, v2f_texCoord);
-	if (diffuse.w < perforatedAlpha) {
-		discard;
-	}
+    vec4 diffuse = tex2D(albedoMap, v2f_texCoord);
+    if (diffuse.w < perforatedAlpha) {
+        discard;
+    }
 #endif
-	o_fragColor = constantColor;
+    o_fragColor = constantColor;
 }

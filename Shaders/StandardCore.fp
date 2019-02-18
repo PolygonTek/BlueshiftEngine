@@ -17,11 +17,11 @@ in VS_OUT {
 #endif
 
 #if _NORMAL == 0
-    LOWP vec3 normal;
+    LOWP vec3 normalWS;
 #endif
 
 #if _PARALLAX
-    vec3 tangentViewDir;
+    vec3 viewTS;
 #endif
 
 #ifdef DIRECT_LIGHTING
@@ -31,14 +31,14 @@ in VS_OUT {
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
-    vec3 viewVector;
+    vec3 viewWS;
 
     #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
         vec4 tangentToWorldAndPackedWorldPosS;
         vec4 tangentToWorldAndPackedWorldPosT;
         vec4 tangentToWorldAndPackedWorldPosR;
     #else
-        vec3 worldPos;
+        vec3 positionWS;
     #endif
 #endif
 } fs_in;
@@ -191,45 +191,13 @@ uniform float subSurfaceShadowDensity;// = 0.5;
 #endif
 
 #if _PARALLAX != 0
-vec2 ParallaxMapping(vec2 texCoords, vec3 tangentViewDir) {
-#ifdef GL_ES
-    float height = tex2D(heightMap, texCoords).x * 2.0 - 1.0;
-    vec2 p = height * heightScale * tangentViewDir.xy / tangentViewDir.z;
-    return texCoords + p;
-#else
-    const float minLayers = 8;
-    const float maxLayers = 32;
-    float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), tangentViewDir)));
-
-    float layerDepth = 1.0 / numLayers;
-
-    // the amount to shift the texture coordinates per layer (from vector P)
-    vec2 p = heightScale * tangentViewDir.xy / tangentViewDir.z;
-    vec2 deltaTexCoords = p / numLayers;
-
-    vec2 currentTexCoords = texCoords;
-
-    float currentHeight = tex2D(heightMap, currentTexCoords).x * 2.0 - 1.0;
-    float currentLayerDepth = -1.0;
-    
-    while (currentHeight >= currentLayerDepth) {
-        // shift texture coordinates along direction of P
-        currentTexCoords += deltaTexCoords * currentHeight;
-        // get heightmap value at current texture coordinates
-        currentHeight = tex2D(heightMap, currentTexCoords).x * 2.0 - 1.0;
-        // get depth of next layer
-        currentLayerDepth += layerDepth;
-    }
-
-    return currentTexCoords;
-#endif
-}
+    $include "ParallaxMapping.glsl"
 #endif
 
 void main() {
 #ifdef NEED_BASE_TC
     #if _PARALLAX != 0
-        baseTc = ParallaxMapping(fs_in.tex, normalize(fs_in.tangentViewDir));
+        baseTc = ParallaxMapping(heightMap, fs_in.tex, heightScale, normalize(fs_in.viewTS));
     #else
         baseTc = fs_in.tex;
     #endif
@@ -270,7 +238,7 @@ void main() {
                 worldPos.y = fs_in.tangentToWorldAndPackedWorldPosT.w;
                 worldPos.z = fs_in.tangentToWorldAndPackedWorldPosR.w;
             #else
-                worldPos = fs_in.worldPos.yzx;
+                worldPos = fs_in.positionWS.yzx;
             #endif
 
             vec4 sampleVec;
