@@ -416,6 +416,8 @@ void Batch::Flush_BasePass() {
     int stateBits = mtrlPass->stateBits;
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaBlend) {
+        stateBits |= (RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha);
+
         if (mtrlPass->transparency == Material::Transparency::TwoPassesOneSide) {
             rhi.SetStateBits((stateBits & ~(RHI::MaskBF | RHI::ColorWrite)) | RHI::DepthWrite | RHI::DF_LEqual);
             RenderDepth(mtrlPass);
@@ -496,7 +498,7 @@ void Batch::Flush_LitPass() {
 
     int stateBits = mtrlPass->stateBits;
     stateBits &= ~RHI::DepthWrite;
-    stateBits |= RHI::DF_Equal;
+    stateBits &= ~RHI::MaskBF;
 
     const Material *lightMaterial = surfLight->def->GetState().material;
     int lightMaterialType = lightMaterial->GetType();
@@ -509,28 +511,23 @@ void Batch::Flush_LitPass() {
         RenderBlendLightInteraction(mtrlPass);
         break;
     case Material::LightMaterialType:
-        stateBits |= (RHI::BS_One | RHI::BD_One);
-
         if (mtrlPass->renderingMode == Material::RenderingMode::AlphaBlend) {
             if (mtrlPass->transparency == Material::Transparency::TwoPassesOneSide) {
-                rhi.SetStateBits((stateBits & ~(RHI::MaskBF | RHI::ColorWrite)) | RHI::DepthWrite | RHI::DF_LEqual);
-                RenderDepth(mtrlPass);
-
-                rhi.SetStateBits(stateBits | RHI::DF_Equal);
+                rhi.SetStateBits(stateBits | RHI::BS_SrcAlpha | RHI::BD_One | RHI::DF_Equal);
                 RenderLightInteraction(mtrlPass);
             } else if (mtrlPass->transparency == Material::Transparency::TwoPassesTwoSides) {
-                rhi.SetStateBits(stateBits | RHI::DF_LEqual);
+                rhi.SetStateBits(stateBits | RHI::BS_SrcAlpha | RHI::BD_One | RHI::DF_LEqual);
                 rhi.SetCullFace(RHI::FrontCull);
                 RenderLightInteraction(mtrlPass);
 
                 rhi.SetCullFace(RHI::BackCull);
                 DrawPrimitives();
             } else {
-                rhi.SetStateBits(stateBits | RHI::DF_LEqual);
+                rhi.SetStateBits(stateBits | RHI::BS_SrcAlpha | RHI::BD_One | RHI::DF_LEqual);
                 RenderLightInteraction(mtrlPass);
             }
         } else {
-            rhi.SetStateBits(stateBits | RHI::DF_Equal);
+            rhi.SetStateBits(stateBits | RHI::BS_One | RHI::BD_One | RHI::DF_Equal);
             RenderLightInteraction(mtrlPass);
         }
         break;

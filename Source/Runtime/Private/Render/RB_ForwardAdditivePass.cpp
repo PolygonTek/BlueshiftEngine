@@ -25,6 +25,7 @@ static void RB_LitPass(const VisLight *visLight) {
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
     Rect                prevScissorRect;
+    bool                depthBoundTestEnabled = false;
 
     backEnd.batch.SetCurrentLight(visLight);
 
@@ -33,15 +34,22 @@ static void RB_LitPass(const VisLight *visLight) {
         rhi.SetScissor(visLight->scissorRect);
     }
 
-    if (r_useDepthBoundTest.GetBool()) {
-        rhi.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
-    }
-
     for (int i = 0; i < visLight->numDrawSurfs; i++) {
         const DrawSurf *drawSurf = backEnd.drawSurfs[visLight->firstDrawSurf + i];
 
         if (!(drawSurf->flags & DrawSurf::Visible)) {
             continue;
+        }
+
+        if (drawSurf->material->GetPass()->renderingMode != Material::RenderingMode::AlphaBlend || 
+            drawSurf->material->GetPass()->transparency == Material::Transparency::TwoPassesOneSide) {
+            if (!depthBoundTestEnabled && r_useDepthBoundTest.GetBool()) {
+                depthBoundTestEnabled = true;
+                rhi.SetDepthBounds(backEnd.depthMin, backEnd.depthMax);
+            }
+        } else {
+            depthBoundTestEnabled = false;
+            rhi.SetDepthBounds(0.0f, 1.0f);
         }
 
         bool isDifferentObject = drawSurf->space != prevSpace;
@@ -103,7 +111,7 @@ static void RB_LitPass(const VisLight *visLight) {
         rhi.SetDepthRange(0.0f, 1.0f);
     }
 
-    if (r_useDepthBoundTest.GetBool()) {
+    if (depthBoundTestEnabled) {
         rhi.SetDepthBounds(0.0f, 1.0f);
     }
 

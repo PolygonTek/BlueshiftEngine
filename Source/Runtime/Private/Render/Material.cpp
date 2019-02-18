@@ -100,6 +100,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
     int depthWrite = RHI::DepthWrite;
 
     pass->renderingMode     = RenderingMode::Opaque;
+    pass->transparency      = Transparency::Default;
     pass->cullType          = RHI::BackCull;
     pass->stateBits         = 0;
     pass->cutoffAlpha       = 0.004f;
