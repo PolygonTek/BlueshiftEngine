@@ -2,7 +2,9 @@ Version History
 ---------------
 
 ### 0.6.0 (Work In Progress)
+- Refined PBR standard shader
 - Added support for environment probe for lighting
+- Added support for various HDR tonemapping operators
 - Added support for UI system
 - Added support for profiler with graphical interface for performance measurements
 - Added support for integration [Google Analytics](https://analytics.google.com/) into the player
