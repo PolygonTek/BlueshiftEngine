@@ -233,7 +233,7 @@ void OpenGLRHI::DestroyRenderTarget(Handle renderTargetHandle) {
     renderTargetList[renderTargetHandle] = nullptr;
 }
 
-void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int sliceIndex, unsigned int mrtBitMask) {
+void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int sliceIndex) {
     if (currentContext->state->renderTargetHandleStackDepth > 0 && currentContext->state->renderTargetHandleStack[currentContext->state->renderTargetHandleStackDepth - 1] == renderTargetHandle) {
         BE_WARNLOG("OpenGLRHI::BeginRenderTarget: same render target\n");
     }
@@ -272,21 +272,6 @@ void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int slic
         }
     } 
 
-    if (renderTarget->numColorTextures > 1 && mrtBitMask != 0) {
-        GLenum drawBuffers[16];
-        int numDrawBuffers = 0;
-
-        for (int i = 0; i < renderTarget->numColorTextures; i++) {
-            if (mrtBitMask & 1) {
-                drawBuffers[numDrawBuffers] = GL_COLOR_ATTACHMENT0 + numDrawBuffers;
-                numDrawBuffers++;
-            }
-            mrtBitMask >>= 1;
-        }
-
-        OpenGL::DrawBuffers(numDrawBuffers, drawBuffers);
-    }
-
     if (gl_sRGB.GetBool()) {
         SetSRGBWrite(!!(renderTarget->flags & SRGBWrite));
     }
@@ -307,6 +292,25 @@ void OpenGLRHI::EndRenderTarget() {
 
     if (gl_sRGB.GetBool()) {
         SetSRGBWrite(!!(oldRenderTarget->flags & SRGBWrite));
+    }
+}
+
+void OpenGLRHI::SetDrawBuffersMask(unsigned int colorBufferBitMask) {
+    if (colorBufferBitMask > 0) {
+        GLenum drawBuffers[16];
+        int numDrawBuffers = 0;
+
+        while (colorBufferBitMask) {
+            if (colorBufferBitMask & 1) {
+                drawBuffers[numDrawBuffers] = GL_COLOR_ATTACHMENT0 + numDrawBuffers;
+                numDrawBuffers++;
+            }
+            colorBufferBitMask >>= 1;
+        }
+
+        OpenGL::DrawBuffers(numDrawBuffers, drawBuffers);
+    } else {
+        OpenGL::DrawBuffer(GL_NONE);
     }
 }
 

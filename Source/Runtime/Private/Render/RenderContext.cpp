@@ -139,7 +139,7 @@ void RenderContext::InitScreenMapRT() {
     FreeScreenMapRT();
 
     //--------------------------------------
-    // screenRT 만들기
+    // Create screenRT
     //--------------------------------------
 
     int screenTextureFlags = Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality | Texture::NonPowerOfTwo | Texture::HighPriority;
@@ -148,23 +148,30 @@ void RenderContext::InitScreenMapRT() {
 
     screenColorTexture = textureManager.AllocTexture(va("_%i_screenColor", (int)contextHandle));
     screenColorTexture->CreateEmpty(RHI::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::SRGBColorSpace);
-    
-    screenDepthTexture = textureManager.AllocTexture(va("_%i_screenDepthstencil", (int)contextHandle));
+
+    screenDepthTexture = textureManager.AllocTexture(va("_%i_screenDepthStencil", (int)contextHandle));
     screenDepthTexture->CreateEmpty(RHI::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::Depth_24, screenTextureFlags | Texture::Nearest);
 
     if (r_useDeferredLighting.GetBool()) {
         screenNormalTexture = textureManager.AllocTexture(va("_%i_screenNormal", (int)contextHandle));
-        screenNormalTexture->CreateEmpty(RHI::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::LA_16F_16F, screenTextureFlags | Texture::Nearest);
+        screenNormalTexture->CreateEmpty(RHI::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::RG_16F_16F, screenTextureFlags | Texture::Nearest);
 
-        Texture *colorTextures[2];
-        colorTextures[0] = screenColorTexture;
-        colorTextures[1] = screenNormalTexture;
-        screenRT = RenderTarget::Create(2, (const Texture **)colorTextures, screenDepthTexture, RHI::SRGBWrite);
-        //screenRT->SetMRTMask(3);
+        Texture *mrtTextures[2];
+        mrtTextures[0] = screenColorTexture;
+        mrtTextures[1] = screenNormalTexture;
+        screenRT = RenderTarget::Create(2, (const Texture **)mrtTextures, screenDepthTexture, RHI::SRGBWrite);
 
         screenLitAccTexture = textureManager.AllocTexture(va("_%i_screenLitAcc", (int)contextHandle));
         screenLitAccTexture->CreateEmpty(RHI::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, screenImageFormat, screenTextureFlags | Texture::Nearest | Texture::SRGBColorSpace);
         screenLitAccRT = RenderTarget::Create(screenLitAccTexture, nullptr, RHI::SRGBWrite);
+    } else if (r_usePostProcessing.GetBool() && r_SSAO.GetBool()) {
+        screenNormalTexture = textureManager.AllocTexture(va("_%i_screenNormal", (int)contextHandle));
+        screenNormalTexture->CreateEmpty(RHI::Texture2D, renderingWidth, renderingHeight, 1, 1, 1, Image::RGBA_8_8_8_8, screenTextureFlags | Texture::Nearest);
+
+        Texture *mrtTextures[2];
+        mrtTextures[0] = screenColorTexture;
+        mrtTextures[1] = screenNormalTexture;
+        screenRT = RenderTarget::Create(2, (const Texture **)mrtTextures, screenDepthTexture, RHI::SRGBWrite);
     } else {
         screenRT = RenderTarget::Create(screenColorTexture, screenDepthTexture, RHI::SRGBWrite);
     }
@@ -190,7 +197,7 @@ void RenderContext::InitScreenMapRT() {
     }
 
     //--------------------------------------
-    // Post processing 용 RT 만들기
+    // Create RT for post processing
     //--------------------------------------
 
     int halfWidth = Math::Ceil(renderingWidth * 0.5f);
@@ -251,7 +258,7 @@ void RenderContext::InitScreenMapRT() {
     ppRTs[PP_RT_AO_TEMP] = RenderTarget::Create(ppTextures[PP_TEXTURE_AO_TEMP], nullptr, 0);
 
     //--------------------------------------
-    // refraction 등을 구현하기 위한 screen 복사 texture 만들기
+    // Create screen copy texture for refraction
     //--------------------------------------
 
     if (!currentRenderTexture) {

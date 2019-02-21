@@ -57,6 +57,8 @@ public:
     enum BuiltInConstant {
         ModelViewMatrixConst,
         ModelViewMatrixTransposeConst,
+        ViewMatrixConst,
+        ViewMatrixTransposeConst,
         ProjectionMatrixConst,
         ProjectionMatrixTransposeConst,
         ViewProjectionMatrixConst,
@@ -129,11 +131,14 @@ public:
 
     int                     GetFlags() const;
 
-                            /// Create instantiated shader
+                            /// Create instantiated shader.
     Shader *                InstantiateShader(const Array<Define> &defineArray);
 
-                            /// Reinstantiate itself
+                            /// Reinstantiate itself.
     void                    Reinstantiate();
+
+                            /// Returns original shader. Instantiated shader has it's original shader
+    Shader *                GetOriginalShader() const { return originalShader; }
 
     Shader *                GetPerforatedVersion();
     Shader *                GetPremulAlphaVersion();
@@ -148,9 +153,13 @@ public:
 
     void                    Bind() const;
 
+                            /// Returns constant index with the given name.
     int                     GetConstantIndex(const char *name) const;
+
+                            /// Returns constant block index with the given name.
     int                     GetConstantBlockIndex(const char *name) const;
 
+                            /// Sets constant of integer type.
     void                    SetConstant1i(int index, const int constant) const;
     void                    SetConstant2i(int index, const int *constant) const;
     void                    SetConstant3i(int index, const int *constant) const;
@@ -160,6 +169,7 @@ public:
     void                    SetConstant3i(const char *name, const int *constant) const;
     void                    SetConstant4i(const char *name, const int *constant) const;
 
+                            /// Sets constant of float type.
     void                    SetConstant1f(int index, const float constant) const;
     void                    SetConstant2f(int index, const float *constant) const;
     void                    SetConstant3f(int index, const float *constant) const;
@@ -175,6 +185,7 @@ public:
     void                    SetConstant3f(const char *name, const Vec3 &constant) const;
     void                    SetConstant4f(const char *name, const Vec4 &constant) const;
 
+                            /// Sets matrix constant.
     void                    SetConstant2x2f(int index, bool rowMajor, const Mat2 &constant) const;
     void                    SetConstant3x3f(int index, bool rowMajor, const Mat3 &constant) const;
     void                    SetConstant4x4f(int index, bool rowMajor, const Mat4 &constant) const;
@@ -184,6 +195,7 @@ public:
     void                    SetConstant4x4f(const char *name, bool rowMajor, const Mat4 &constant) const;
     void                    SetConstant4x3f(const char *name, bool rowMajor, const Mat3x4 &constant) const;
 
+                            /// Sets array constant of integer type.
     void                    SetConstantArray1i(int index, int num, const int *constant) const;
     void                    SetConstantArray2i(int index, int num, const int *constant) const;
     void                    SetConstantArray3i(int index, int num, const int *constant) const;
@@ -193,6 +205,7 @@ public:
     void                    SetConstantArray3i(const char *name, int num, const int *constant) const;
     void                    SetConstantArray4i(const char *name, int num, const int *constant) const;
 
+                            /// Sets array constant of float type.
     void                    SetConstantArray1f(int index, int num, const float *constant) const;
     void                    SetConstantArray2f(int index, int num, const float *constant) const;
     void                    SetConstantArray3f(int index, int num, const float *constant) const;
@@ -208,6 +221,7 @@ public:
     void                    SetConstantArray3f(const char *name, int num, const Vec3 *constant) const;
     void                    SetConstantArray4f(const char *name, int num, const Vec4 *constant) const;
 
+                            /// Sets matrix array constant.
     void                    SetConstantArray2x2f(int index, bool rowMajor, int num, const Mat2 *constant) const;
     void                    SetConstantArray3x3f(int index, bool rowMajor, int num, const Mat3 *constant) const;
     void                    SetConstantArray4x4f(int index, bool rowMajor, int num, const Mat4 *constant) const;
@@ -217,13 +231,18 @@ public:
     void                    SetConstantArray4x4f(const char *name, bool rowMajor, int num, const Mat4 *constant) const;
     void                    SetConstantArray4x3f(const char *name, bool rowMajor, int num, const Mat3x4 *constant) const;
 
+                            /// Sets constant buffer.
     void                    SetConstantBuffer(int index, int bindingIndex) const;
     void                    SetConstantBuffer(const char *name, int bindingIndex) const;
 
+                            /// Returns sampler unit index with the given name.
     int                     GetSamplerUnit(const char *name) const;
 
+                            /// Sets texture.
     void                    SetTexture(int unit, const Texture *texture) const;
     void                    SetTexture(const char *name, const Texture *texture) const;
+
+                            /// Sets texture array.
     void                    SetTextureArray(const char *name, int num, const Texture **textures) const;
 
     bool                    Create(const char *text, const char *baseDir);
@@ -240,12 +259,11 @@ private:
     bool                    ParseProperties(Lexer &lexer);
     Shader *                GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, int skinningWeightCount, bool instancing);
     bool                    GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool instancing);
-    bool                    GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool generateGpuSkinningVersion, bool generateGpuInstancingVersion);
-    bool                    GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool generateGpuSkinningVersion, bool generateGpuInstancingVersion);
+    bool                    GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool genGpuSkinningVersion, bool genGpuInstancingVersion);
+    bool                    GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool genGpuSkinningVersion, bool genGpuInstancingVersion);
     bool                    Instantiate(const Array<Define> &defineArray);  // internal function of instantiate
 
-    bool                    Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion,
-                                bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion);
+    bool                    Finish(bool genPerforatedVersion, bool genGpuSkinningVersion, bool genGpuInstancingVersion, bool genParallelShadowVersion, bool genSpotShadowVersion, bool genPointShadowVersion);
     bool                    ProcessShaderText(const char *text, const char *baseDir, const Array<Define> &defineArray, Str &outStr) const;
     bool                    ProcessIncludeRecursive(const char *baseDir, Str &text) const;
 
@@ -263,7 +281,6 @@ private:
     int                     shaderFlags;
     Str                     vsText;                 ///< Vertex shader souce code text
     Str                     fsText;                 ///< Fragment shader source code text
-    //int                   interactionParms[MaxInteractionParms];
     int                     builtInConstantIndices[MaxBuiltInConstants];
     int                     builtInSamplerUnits[MaxBuiltInSamplers];
 
@@ -322,6 +339,7 @@ public:
         UnlitShader,
         SelectionIdShader,
         DepthShader,
+        DepthNormalShader,
         ConstantColorShader,
         VertexColorShader,
         ObjectMotionBlurShader,
@@ -399,6 +417,7 @@ public:
     static Shader *         unlitShader;
     static Shader *         selectionIdShader;
     static Shader *         depthShader;
+    static Shader *         depthNormalShader;
     static Shader *         constantColorShader;
     static Shader *         vertexColorShader;
     static Shader *         objectMotionBlurShader;

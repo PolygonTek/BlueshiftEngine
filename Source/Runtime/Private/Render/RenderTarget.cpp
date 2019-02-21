@@ -42,12 +42,16 @@ int RenderTarget::GetHeight() const {
     return 0;
 }
 
-void RenderTarget::Begin(int level, int sliceIndex, unsigned int mrtBitMask) const {
-    rhi.BeginRenderTarget(rtHandle, level, sliceIndex, mrtBitMask);
+void RenderTarget::Begin(int level, int sliceIndex) const {
+    rhi.BeginRenderTarget(rtHandle, level, sliceIndex);
 }
 
 void RenderTarget::End() const {
     rhi.EndRenderTarget();
+}
+
+void RenderTarget::SetMRTMask(unsigned int mrtBitMask) const {
+    rhi.SetDrawBuffersMask(mrtBitMask);
 }
 
 void RenderTarget::Discard(bool depth, bool stencil, int colorBitMask) const {

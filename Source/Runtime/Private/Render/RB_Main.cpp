@@ -535,6 +535,11 @@ static void RB_HiOcclusionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         return;
     }
 
+    if (backEnd.camera->def->GetState().clearMethod != RenderCamera::ColorClear || 
+        backEnd.camera->def->GetState().clearMethod != RenderCamera::SkyboxClear) {
+        return;
+    }
+
     // Render occluder to HiZ occlusion buffer
     RB_RenderOcclusionMap(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
@@ -975,6 +980,7 @@ static const void *RB_ExecuteDrawCamera(const void *data) {
     backEnd.drawSurfs           = cmd->camera.drawSurfs;
     backEnd.instanceBufferCache = cmd->camera.instanceBufferCache;
     backEnd.projMatrix          = cmd->camera.def->GetProjMatrix();
+    backEnd.viewMatrix          = cmd->camera.def->GetViewMatrix();
     backEnd.viewProjMatrix      = cmd->camera.def->GetViewProjMatrix();
     backEnd.renderRect          = cmd->camera.def->GetState().renderRect;
     backEnd.upscaleFactor       = Vec2(backEnd.ctx->GetUpscaleFactorX(), backEnd.ctx->GetUpscaleFactorY());
@@ -982,7 +988,10 @@ static const void *RB_ExecuteDrawCamera(const void *data) {
     // NOTE: glViewport() 의 y 는 밑에서부터 증가되므로 여기서 뒤집어 준다
     backEnd.renderRect.y        = backEnd.ctx->GetRenderingHeight() - backEnd.renderRect.Y2();
     backEnd.screenRect.y        = backEnd.ctx->GetDeviceHeight() - backEnd.screenRect.Y2();
-    
+
+    backEnd.useDepthPrePass     = r_useDepthPrePass.GetBool() &&
+        (backEnd.camera->def->GetState().clearMethod == RenderCamera::ColorClear || backEnd.camera->def->GetState().clearMethod == RenderCamera::SkyboxClear);
+
     if (backEnd.camera->is2D) {
         RB_DrawCamera2D();
     } else {

@@ -373,12 +373,30 @@ void Batch::Flush_DepthPass() {
     rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
 
     int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ? 
-        VertexFormat::GenericXyzSt : VertexFormat::GenericXyz;
+        VertexFormat::GenericXyzStColor : VertexFormat::GenericXyz;
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
 
     rhi.SetStateBits(RHI::DepthWrite | RHI::DF_LEqual);
 
     RenderDepth(mtrlPass);
+}
+
+void Batch::Flush_DepthNormalPass() {
+    const Material::ShaderPass *mtrlPass = material->GetPass();
+
+    if (!(mtrlPass->stateBits & RHI::DepthWrite) || mtrlPass->stateBits & RHI::MaskBF) {
+        return;
+    }
+
+    rhi.SetCullFace(mtrlPass->cullType);
+
+    rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
+
+    SetSubMeshVertexFormat(subMesh, VertexFormat::GenericXyzStNT);
+
+    rhi.SetStateBits(RHI::DepthWrite | RHI::DF_LEqual);
+
+    RenderDepthNormal(mtrlPass);
 }
 
 void Batch::Flush_ShadowDepthPass() {
@@ -436,7 +454,7 @@ void Batch::Flush_BasePass() {
             RenderBase(mtrlPass, r_ambientScale.GetFloat());
         }
     } else {
-        if (r_useDepthPrePass.GetBool()) {
+        if (backEnd.useDepthPrePass) {
             stateBits &= ~RHI::DepthWrite;
             stateBits |= RHI::DF_Equal;
         } else {

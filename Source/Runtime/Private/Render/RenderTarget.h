@@ -40,8 +40,9 @@ public:
     const Texture *         ColorTexture(int index = 0) const { return colorTextures[index]; }
     const Texture *         DepthStencilTexture() const { return depthStencilTexture; }
 
-    void                    Begin(int level = 0, int sliceIndex = 0, unsigned int mrtBitMask = 0) const;
+    void                    Begin(int level = 0, int sliceIndex = 0) const;
     void                    End() const;
+    void                    SetMRTMask(unsigned int mrtBitMask) const;
     void                    Discard(bool depth, bool stencil, int colorBitMask) const;
 
     void                    Clear(const Color4 &clearColor, float clearDepth, int clearStencil) const;

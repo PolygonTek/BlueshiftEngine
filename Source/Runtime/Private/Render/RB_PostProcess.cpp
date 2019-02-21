@@ -20,6 +20,7 @@
 BE_NAMESPACE_BEGIN
 
 void RB_PostProcessDepth() {
+    return;
     if (r_SSAO.GetBool() || r_DOF.GetBool()) {
         PP_Downscale2x2(backEnd.ctx->screenRT->DepthStencilTexture(), backEnd.ctx->ppRTs[PP_RT_DEPTH_2X]);
         

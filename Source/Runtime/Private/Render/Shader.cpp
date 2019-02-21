@@ -28,6 +28,8 @@ static const char *directiveInclude = "$include";
 static const char *builtInConstantNames[] = {
     "modelViewMatrix",                      // ModelViewMatrixConst
     "modelViewMatrixTranspose",             // ModelViewMatrixTransposeConst
+    "viewMatrix",                           // ViewMatrixConst
+    "viewMatrixTranspose",                  // ViewMatrixTransposeConst
     "projectionMatrix",                     // ProjectionMatrixConst
     "projectionMatrixTranspose",            // ProjectionMatrixTransposeConst
     "viewProjectionMatrix",                 // ViewProjectionMatrixConst
@@ -295,7 +297,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
         } else if (!token.Icmp("generatePointShadowVersion")) {
             generatePointShadowVersion = true;
         } else if (!token.Icmp("generateSpotShadowVersion")) {
-            generateSpotShadowVersion = true;        
+            generateSpotShadowVersion = true;
         } else if (!token.Icmp("glsl_vp")) {
             lexer.ParseBracedSectionExact(vsText);
         } else if (!token.Icmp("glsl_fp")) {

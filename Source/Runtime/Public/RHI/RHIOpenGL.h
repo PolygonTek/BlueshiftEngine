@@ -154,10 +154,11 @@ public:
 
     Handle                  CreateRenderTarget(RenderTargetType type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, int flags);
     void                    DestroyRenderTarget(Handle renderTargetHandle);
-    void                    BeginRenderTarget(Handle renderTargetHandle, int level = 0, int sliceIndex = 0, unsigned int mrtBitMask = 0);
+    void                    BeginRenderTarget(Handle renderTargetHandle, int level = 0, int sliceIndex = 0);
     void                    EndRenderTarget();
     void                    DiscardRenderTarget(bool depth, bool stencil, uint32_t colorBitMask);
     void                    BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRect, Handle dstRenderTargetHandle, const Rect &dstRect, int mask, int filter) const;
+    void                    SetDrawBuffersMask(unsigned int mrtBitMask);
 
     Handle                  CreateShader(const char *name, const char *vsText, const char *fsText);
     void                    DestroyShader(Handle shaderHandle);
@@ -227,14 +228,19 @@ public:
     bool                    UnmapBuffer(Handle bufferHandle);
     void                    FlushMappedBufferRange(Handle bufferHandle, int offset = 0, int size = -1);
 
-                            // 기존에 쓰던 buffer 를 버리고 새 버퍼에 data 를 write 한다. written start offset 을 리턴한다. (항상 0)
+                            /// Discards current buffer and write data to new buffer. 
+                            /// Returns written start offset. (Always 0)
     int                     BufferDiscardWrite(Handle bufferHandle, int size, const void *data);
-                            // 기존에 쓰던 buffer 를 유지하면서 data 를 asyncronous 하게 write 한다. written start offset 을 리턴한다.
-                            // overflow 되면 -1 을 리턴, data == nullptr 이면 write 를 안하기 때문에 overflow 여부만 체크할 수 있다.
+
+                            /// 기존에 쓰던 buffer 를 유지하면서 data 를 asyncronous 하게 write 한다. 
+                            /// Returns written start offset.
+                            /// overflow 되면 -1 을 리턴, data == nullptr 이면 write 를 안하기 때문에 overflow 여부만 체크할 수 있다.
     int                     BufferWrite(Handle bufferHandle, int alignSize, int size, const void *data);
-                            // CopyReadBuffer 로 생성한 버퍼를 CPU 메모리 카피 부담없이 GPU 상에서 빠르게 카피
+
+                            /// CopyReadBuffer 로 생성한 버퍼를 CPU 메모리 카피 부담없이 GPU 상에서 빠르게 카피
     int                     BufferCopy(Handle readBufferHandle, Handle writeBufferHandle, int alignSize, int size);
-                            // write offset 을 0 으로 만든다.
+
+                            /// Sets write offset to 0.
     void                    BufferRewind(Handle bufferHandle);
 
     Handle                  CreateSync();
@@ -247,7 +253,7 @@ public:
     Handle                  CreateVertexFormat(int numElements, const VertexElement *elements);
     void                    DestroyVertexFormat(Handle vertexFormatHandle);
     void                    SetVertexFormat(Handle vertexFormatHandle);
-                            // D3D 의 SetStreamSource 와 유사. (SetVertexFormat 호출 후에 실행되어야 한다)
+                            // Similar with SetStreamSource in D3D. Must be called after SetVertexFormat()
     void                    SetStreamSource(int stream, Handle vertexBufferHandle, int base, int stride);
 
     void                    DrawArrays(Primitive primitives, int startVertex, int numVerts) const;

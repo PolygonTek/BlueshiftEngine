@@ -62,6 +62,7 @@ private:
     void                    Flush_SelectionPass();
     void                    Flush_BackgroundPass();
     void                    Flush_DepthPass();
+    void                    Flush_DepthNormalPass();
     void                    Flush_BasePass();
     void                    Flush_ShadowDepthPass();
     void                    Flush_LitPass();
@@ -89,6 +90,7 @@ private:
     void                    RenderColor(const Material::ShaderPass *mtrlPass, const Color4 &color) const;
     void                    RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &idInVec3) const;
     void                    RenderDepth(const Material::ShaderPass *mtrlPass) const;
+    void                    RenderDepthNormal(const Material::ShaderPass *mtrlPass) const;
     void                    RenderVelocity(const Material::ShaderPass *mtrlPass) const;
     void                    RenderBase(const Material::ShaderPass *mtrlPass, float ambientScale) const;
     void                    RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientScale) const;
@@ -180,8 +182,10 @@ struct RenderBackEnd {
     Vec2                    upscaleFactor;
     double                  depthMin;
     double                  depthMax; 
+    bool                    useDepthPrePass;
 
     Mat4                    projMatrix;
+    Mat4                    viewMatrix;
     Mat4                    viewProjMatrix;
     Mat4                    viewMatrixPrev;
 

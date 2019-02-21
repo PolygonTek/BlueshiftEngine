@@ -132,7 +132,11 @@ void Batch::SetMatrixConstants(const Shader *shader) const {
     if (shader->builtInConstantIndices[Shader::ModelViewMatrixConst] >= 0) {
         shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ModelViewMatrixConst], true, backEnd.modelViewMatrix);
     }
-    
+
+    if (shader->builtInConstantIndices[Shader::ViewMatrixConst] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ViewMatrixConst], true, backEnd.viewMatrix);
+    }
+
     if (shader->builtInConstantIndices[Shader::ProjectionMatrixConst] >= 0) {
         shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ProjectionMatrixConst], true, backEnd.projMatrix);
     }
@@ -151,6 +155,10 @@ void Batch::SetMatrixConstants(const Shader *shader) const {
 
     if (shader->builtInConstantIndices[Shader::ProjectionMatrixTransposeConst] >= 0) {
         shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ProjectionMatrixTransposeConst], false, backEnd.projMatrix);
+    }
+
+    if (shader->builtInConstantIndices[Shader::ViewMatrixTransposeConst] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ViewMatrixTransposeConst], false, backEnd.viewMatrix);
     }
 
     if (shader->builtInConstantIndices[Shader::ViewProjectionMatrixTransposeConst] >= 0) {
@@ -361,13 +369,45 @@ void Batch::RenderDepth(const Material::ShaderPass *mtrlPass) const {
         const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
         shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
 
-        Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
-        Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
+        SetMaterialConstants(mtrlPass, shader);
+    }
 
-        shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixSConst], textureMatrixS);
-        shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixTConst], textureMatrixT);
+    DrawPrimitives();
+}
 
-        shader->SetConstant1f(shader->builtInConstantIndices[Shader::PerforatedAlphaConst], mtrlPass->cutoffAlpha);
+void Batch::RenderDepthNormal(const Material::ShaderPass *mtrlPass) const {
+    Shader *shader = ShaderManager::depthNormalShader;
+
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
+        if (shader->GetPerforatedVersion()) {
+            shader = shader->GetPerforatedVersion();
+        }
+    }
+
+    if (subMesh->useGpuSkinning) {
+        Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
+        if (skinningShader) {
+            shader = skinningShader;
+        }
+    }
+
+    if (numInstances > 0) {
+        if (shader->GetGPUInstancingVersion()) {
+            shader = shader->GetGPUInstancingVersion();
+        }
+    }
+
+    shader->Bind();
+
+    SetMatrixConstants(shader);
+
+    SetEntityConstants(mtrlPass, shader);
+
+    if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
+        const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
+
+        SetMaterialConstants(mtrlPass, shader);
     }
 
     DrawPrimitives();
@@ -449,6 +489,7 @@ void Batch::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
         }
 
         shader->Bind();
+
         SetShaderProperties(shader, mtrlPass->shaderProperties);
     } else {
         shader = ShaderManager::standardDefaultShader;

@@ -206,21 +206,34 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
-    if (!r_useDepthPrePass.GetBool()) {
+    if (!backEnd.useDepthPrePass) {
         return;
+    }
+
+    if (r_usePostProcessing.GetBool() && r_SSAO.GetBool()) {
+        backEnd.ctx->screenRT->SetMRTMask(3);
     }
 
     const VisObject *   prevSpace = nullptr;
     const SubMesh *     prevSubMesh = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
+    Batch::FlushType    drawType;
 
     backEnd.batch.SetCurrentLight(nullptr);
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *drawSurf = drawSurfs[i];
 
-        if (drawSurf->material->GetSort() != Material::Sort::OpaqueSort) {
+        if (drawSurf->material->IsSkySurface()) {
+            continue;
+        }
+
+        if (drawSurf->material->IsLitSurface()) {
+            drawType = Batch::FlushType::DepthFlush;
+        } else if (drawSurf->material->GetRenderingMode() != Material::RenderingMode::AlphaBlend) {
+            drawType = Batch::FlushType::UnlitFlush;
+        } else {
             continue;
         }
 
@@ -235,7 +248,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::DepthFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
+            backEnd.batch.Begin(drawType, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
             prevSubMesh = drawSurf->subMesh;
             prevMaterial = drawSurf->material;
@@ -282,9 +295,13 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
     if (prevDepthHack) {
         rhi.SetDepthRange(0.0f, 1.0f);
     }
+
+    if (r_usePostProcessing.GetBool() && r_SSAO.GetBool()) {
+        backEnd.ctx->screenRT->SetMRTMask(1);
+    }
 }
 
-void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
+void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     if (r_skipBlendPass.GetBool()) {
         return;
     }
@@ -293,13 +310,18 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     const SubMesh *     prevSubMesh = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
+    Batch::FlushType    flushType = Batch::FlushType::UnlitFlush;
 
     backEnd.batch.SetCurrentLight(nullptr);
 
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *drawSurf = drawSurfs[i];
 
-        if (drawSurf->material->IsLitSurface() || drawSurf->material->IsSkySurface()) {
+        if (drawSurf->material->IsLitSurface()) {
+            continue;
+        }
+
+        if (drawSurf->material->GetRenderingMode() != Material::RenderingMode::AlphaBlend) {
             continue;
         }
 
@@ -314,7 +336,7 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::UnlitFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
+            backEnd.batch.Begin(flushType, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
             prevSubMesh = drawSurf->subMesh;
             prevMaterial = drawSurf->material;
@@ -364,7 +386,13 @@ void RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
-    if ((backEnd.camera->def->GetState().flags & RenderCamera::SkipPostProcess) || !r_usePostProcessing.GetBool() || !(r_motionBlur.GetInteger() & 2)) {
+    if ((backEnd.camera->def->GetState().flags & RenderCamera::SkipPostProcess) || 
+        !r_usePostProcessing.GetBool() || !(r_motionBlur.GetInteger() & 2)) {
+        return;
+    }
+
+    if (backEnd.camera->def->GetState().clearMethod != RenderCamera::ColorClear ||
+        backEnd.camera->def->GetState().clearMethod != RenderCamera::SkyboxClear) {
         return;
     }
 

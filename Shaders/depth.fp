@@ -1,17 +1,23 @@
-in MEDIUMP vec2 v2f_texCoord;
+out vec4 o_fragDepth : FRAG_DEPTH;
 
-out vec4 o_fragColor : FRAG_COLOR;
+#ifdef PERFORATED
+    in MEDIUMP vec2 v2f_texCoord;
+    in LOWP float v2f_alpha;
+#endif
 
-uniform sampler2D albedoMap;
-uniform LOWP float perforatedAlpha;
-uniform LOWP vec4 constantColor;
+#ifdef PERFORATED
+    uniform sampler2D albedoMap;
+    uniform LOWP float perforatedAlpha;
+    uniform LOWP vec4 constantColor;
+#endif
 
 void main() {
 #ifdef PERFORATED
-    vec4 diffuse = tex2D(albedoMap, v2f_texCoord);
-    if (diffuse.w < perforatedAlpha) {
+    LOWP float alpha = tex2D(albedoMap, v2f_texCoord).a * v2f_alpha;
+    if (alpha < perforatedAlpha) {
         discard;
     }
 #endif
-    o_fragColor = constantColor;
+
+    o_fragDepth = gl_FragCoord.z;
 }

@@ -29,6 +29,7 @@ static const engineShader_t originalShaderList[] = {
     { "Shaders/Unlit" },
     { "Shaders/SelectionId" },
     { "Shaders/Depth" },
+    { "Shaders/DepthNormal" },
     { "Shaders/constantColor" },
     { "Shaders/vertexColor" },
     { "Shaders/objectMotionBlur" },
@@ -89,6 +90,7 @@ Shader *            ShaderManager::drawArrayTextureShader;
 Shader *            ShaderManager::unlitShader;
 Shader *            ShaderManager::selectionIdShader;
 Shader *            ShaderManager::depthShader;
+Shader *            ShaderManager::depthNormalShader;
 Shader *            ShaderManager::constantColorShader;
 Shader *            ShaderManager::vertexColorShader;
 Shader *            ShaderManager::objectMotionBlurShader;
