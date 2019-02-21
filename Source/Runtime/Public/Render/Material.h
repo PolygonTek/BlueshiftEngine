@@ -72,9 +72,7 @@ public:
         InverseModulateVertexColor
     };
 
-    //--------------------------------------------------------------------------------------------------
-    // hints for material by one texture
-    //--------------------------------------------------------------------------------------------------
+    // Hints for material by one texture
     enum TextureHint {
         NoHint,
         LightHint,
@@ -91,7 +89,7 @@ public:
     };
 
     // Controls how transparent objects are rendered.
-    // This is only valid when the blending mode is alpha blend.
+    // This is only valid when the rendering mode is alpha blend.
     enum Transparency {
         Default,            ///< Render normally.
         TwoPassesOneSide,   ///< Render in the depth buffer, then again in color buffer.
@@ -100,8 +98,8 @@ public:
 
     struct ShaderPass {
         RenderingMode       renderingMode;
+        Transparency        transparency;
         int                 cullType;
-        int                 transparency;
         int                 stateBits;
         float               cutoffAlpha;
         VertexColorMode     vertexColorMode;
@@ -111,9 +109,9 @@ public:
         Vec2                tcScale;
         Vec2                tcTranslation;
         bool                instancingEnabled;
-        Shader *            shader;
         Shader *            referenceShader;
-        StrHashMap<Shader::Property> shaderProperties;          // define prop 이 바뀌면 reinstantiate 해야 할듯
+        Shader *            shader;
+        StrHashMap<Shader::Property> shaderProperties;
     };
 
     Material();
@@ -149,7 +147,7 @@ public:
     const Material *        AddRefCount() const { refCount++; return this; }
 
     void                    ChangeShader(Shader *shader);
-    void                    EndShaderPropertiesChanged();
+    void                    CommitShaderPropertiesChanged();
 
 private:
     void                    Finish();

@@ -162,8 +162,10 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
             if (lexer.ReadToken(&token, false)) {
                 const Guid shaderGuid = Guid::FromString(token);
                 const Str shaderPath = resourceGuidMapper.Get(shaderGuid);
+
                 pass->referenceShader = shaderManager.GetShader(shaderPath);
 
+                // Parse shader property string values in dictionary
                 Dict propDict;
                 if (!ParseShaderProperties(lexer, propDict)) {
                     if (pass->referenceShader) {
@@ -173,32 +175,36 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                 }
 
                 if (pass->referenceShader) {
+                    // Shader has property info
                     const auto &shaderPropInfoHashMap = pass->referenceShader->GetPropertyInfoHashMap();
 
+                    // Set shader property values
                     for (int i = 0; i < shaderPropInfoHashMap.Count(); i++) {
                         const auto entry = shaderPropInfoHashMap.GetByIndex(i);
                         const auto &propName = entry->first;
                         const auto &propInfo = entry->second;
 
-                        Shader::Property shaderProp;
+                        Shader::Property property;
 
                         if (propInfo.GetType() == Variant::GuidType) {
+                            // Texture GUID
                             if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
-                                Str name = resourceGuidMapper.Get(propInfo.GetDefaultValue().As<Guid>());
-                                shaderProp.data = Variant::FromString(propInfo.GetType(), propDict.GetString(propName, name));
-                                const Guid textureGuid = shaderProp.data.As<Guid>();
+                                Str defaultName = resourceGuidMapper.Get(propInfo.GetDefaultValue().As<Guid>());
+                                property.data = Variant::FromString(propInfo.GetType(), propDict.GetString(propName, defaultName));
+
+                                const Guid textureGuid = property.data.As<Guid>();
                                 const Str texturePath = resourceGuidMapper.Get(textureGuid);
-                                shaderProp.texture = textureManager.GetTexture(texturePath);
+                                property.texture = textureManager.GetTexture(texturePath);
                             }
                         } else {
-                            shaderProp.data = Variant::FromString(propInfo.GetType(), propDict.GetString(propName, propInfo.GetDefaultValue().ToString()));
-                            shaderProp.texture = nullptr;
+                            property.data = Variant::FromString(propInfo.GetType(), propDict.GetString(propName, propInfo.GetDefaultValue().ToString()));
+                            property.texture = nullptr;
                         }
 
-                        pass->shaderProperties.Set(propName, shaderProp);
+                        pass->shaderProperties.Set(propName, property);
                     }
 
-                    EndShaderPropertiesChanged();
+                    CommitShaderPropertiesChanged();
                 }
             } else {
                 BE_WARNLOG("missing shader name in material '%s'\n", hashName.c_str());
@@ -315,7 +321,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
         }
     }
 
-    // TEMP: DST_ALPHA 는 안쓴다
+    // We don't use DST_ALPHA
     if (blendSrc == RHI::BS_OneMinusDstAlpha) {
         blendSrc = RHI::BS_Zero;
     }
@@ -386,27 +392,23 @@ void Material::ChangeShader(Shader *shader) {
     pass->shaderProperties.Swap(newShaderProperties);
 
     // Instantiate shader with changed define properites 
-    EndShaderPropertiesChanged();
+    CommitShaderPropertiesChanged();
 
     Finish();
 }
 
-void Material::EndShaderPropertiesChanged() {
-    if (pass->shader) {
-        shaderManager.ReleaseShader(pass->shader);
-    }
+void Material::CommitShaderPropertiesChanged() {
+    Array<Shader::Define> defineArray;
 
     const auto &shaderPropInfoHashMap = pass->referenceShader->GetPropertyInfoHashMap();
 
-    Array<Shader::Define> defineArray;
-
-    // List up define list for re-instantiating shader
+    // List up define list for re-instantiating shader.
     for (int i = 0; i < shaderPropInfoHashMap.Count(); i++) {
         const auto entry = shaderPropInfoHashMap.GetByIndex(i);
         const auto &propName = entry->first;
         const auto &propInfo = entry->second;
 
-        // property propInfo with shaderDefine allows only bool/enum type
+        // property propInfo with shaderDefine allows only bool/enum type.
         if (propInfo.GetFlags() & PropertyInfo::ShaderDefineFlag) {
             const auto *entry = pass->shaderProperties.Get(propName);
             const Shader::Property &shaderProp = entry->second;
@@ -420,12 +422,15 @@ void Material::EndShaderPropertiesChanged() {
                 defineArray.Append(Shader::Define(propName, enumIndex));
             }
         }
-    }    
+    }
     
-    // 작성된 shader define list 로 instantiate
+    // Instantiate shader with the given define list.
+    if (pass->shader) {
+        shaderManager.ReleaseShader(pass->shader);
+    }
     pass->shader = pass->referenceShader->InstantiateShader(defineArray);
 
-    // Reload shader's texture
+    // Reload shader's texture.
     for (int i = 0; i < shaderPropInfoHashMap.Count(); i++) {
         const auto entry = shaderPropInfoHashMap.GetByIndex(i);
         const auto &propName = entry->first;
@@ -449,11 +454,7 @@ void Material::EndShaderPropertiesChanged() {
 
 bool Material::ParseShaderProperties(Lexer &lexer, Dict &properties) {
     Str token;
-    Str propValue;
-
-    if (!pass->referenceShader) {
-        BE_WARNLOG("shader must be specified before shader properties in material '%s'\n", hashName.c_str());
-    }
+    Str value;
 
     if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
         return false;
@@ -468,8 +469,8 @@ bool Material::ParseShaderProperties(Lexer &lexer, Dict &properties) {
         } else if (token[0] == '}') {
             break;
         } else {
-            if (lexer.ReadToken(&propValue, false)) {
-                properties.Set(token, propValue);
+            if (lexer.ReadToken(&value, false)) {
+                properties.Set(token, value);
             } else {
                 BE_WARNLOG("missing property value for property '%s' in material '%s'\n", token.c_str(), hashName.c_str());
             }
@@ -676,12 +677,12 @@ void Material::Write(const char *filename) {
     }
     fp->Printf("%stransparency %s\n", indentSpace.c_str(), transparencyStr.c_str());
 
-    if (pass->referenceShader) {
-        const Guid shaderGuid = resourceGuidMapper.Get(pass->referenceShader->GetHashName());
+    if (pass->shader) {
+        const Guid shaderGuid = resourceGuidMapper.Get(pass->shader->GetOriginalShader()->GetHashName());
         fp->Printf("%sshader \"%s\" {\n", indentSpace.c_str(), shaderGuid.ToString());
         indentSpace += "  ";
 
-        const auto &propertyInfoHashMap = pass->referenceShader->GetPropertyInfoHashMap();
+        const auto &propertyInfoHashMap = pass->shader->GetOriginalShader()->GetPropertyInfoHashMap();
         
         for (int i = 0; i < propertyInfoHashMap.Count(); i++) {
             const auto *keyValue = propertyInfoHashMap.GetByIndex(i);

@@ -1,14 +1,10 @@
-#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2 || _CLEARCOAT == 2 || (_CLEARCOAT != 0 && _CC_NORMAL == 1) || _ANISO == 2 || _OCC == 1
-    #define NEED_BASE_TC
-#endif
-
 in HIGHP vec4 in_position   : POSITION;
 in LOWP vec3 in_normal      : NORMAL;
 in LOWP vec4 in_color       : COLOR;
 in MEDIUMP vec2 in_st       : TEXCOORD0;
 
-#if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-    in LOWP vec4 in_tangent : TANGENT;
+#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2 || _CLEARCOAT == 2 || (_CLEARCOAT != 0 && _CC_NORMAL == 1) || _ANISO == 2 || _OCC == 1
+    #define NEED_BASE_TC
 #endif
 
 out VS_OUT {
@@ -44,6 +40,10 @@ out VS_OUT {
     #endif
 #endif
 } vs_out;
+
+#if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
+    in LOWP vec4 in_tangent : TANGENT;
+#endif
 
 #ifdef USE_SHADOW_MAP
     $include "ShadowLibrary.vp"

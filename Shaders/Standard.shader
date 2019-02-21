@@ -37,7 +37,7 @@ shader "Lit/Standard" {
         emissionMap("Emission Map") : texture = "_blackTexture"
         emissionScale("Emission Scale") : float range 0 16 0.001 = "1"
     }
-    
+
     generatePerforatedVersion
     generatePremulAlphaVersion
     generateGpuSkinningVersion
@@ -46,7 +46,7 @@ shader "Lit/Standard" {
     ambientLitVersion "StandardAmbientLit"
     directLitVersion "StandardDirectLit"
     ambientLitDirectLitVersion "StandardAmbientLitDirectLit"
-    
+
     glsl_vp {
         $include "StandardCore.vp"
     }

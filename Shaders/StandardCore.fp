@@ -1,6 +1,8 @@
 $include "FragmentCommon.glsl"
 $include "StandardConfig.glsl"
 
+out vec4 o_fragColor : FRAG_COLOR;
+
 #if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2 || _CLEARCOAT == 2 || (_CLEARCOAT != 0 && _CC_NORMAL == 1) || _ANISO == 2 || _OCC == 1
     #define NEED_BASE_TC
 #endif
@@ -46,8 +48,6 @@ in VS_OUT {
 #ifdef USE_SHADOW_MAP
     $include "ShadowLibrary.fp"
 #endif
-
-out vec4 o_fragColor : FRAG_COLOR;
 
 //
 // Material parameters
@@ -266,7 +266,7 @@ void main() {
     float attenuation = 1.0 - min(dot(fs_in.lightFallOff, fs_in.lightFallOff), 1.0);
     attenuation = pow(attenuation, lightFallOffExponent);
 
-    vec3 Cl = tex2Dproj(lightProjectionMap, fs_in.lightProjection).xyz * lightColor.xyz * attenuation;
+    vec3 Cl = tex2Dproj(lightProjectionMap, fs_in.lightProjection).rgb * lightColor.rgb * attenuation;
 
     #ifdef USE_SHADOW_MAP
         vec3 shadowLighting = ShadowFunc();

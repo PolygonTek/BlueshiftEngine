@@ -4,18 +4,18 @@
 struct ShadingParms {
     vec4 diffuse;
     vec4 specular;
-    float roughness;
-    float linearRoughness;
+    LOWP float roughness;
+    LOWP float linearRoughness;
 
     vec3 v; // view vector in world space
     vec3 l; // light vector in world space
     vec3 n; // normal vector in world space
-    float ndotv;
+    LOWP float ndotv;
     vec2 preDFG;
     vec3 energyCompensation;
 
 #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-    mat3 tagentToWorldMatrix;
+    MEDIUMP mat3 tagentToWorldMatrix;
 #endif
 
 #ifdef LEGACY_PHONG_LIGHTING
@@ -29,14 +29,14 @@ struct ShadingParms {
 #endif
 
 #if _CLEARCOAT != 0
-    float clearCoat;
-    float clearCoatRoughness;
-    float clearCoatLinearRoughness;
-    vec3 clearCoatN;
+    LOWP float clearCoat;
+    LOWP float clearCoatRoughness;
+    LOWP float clearCoatLinearRoughness;
+    MEDIUMP vec3 clearCoatN;
 #endif
 
 #if _OCC != 0
-    float ambientOcclusion;
+    LOWP float ambientOcclusion;
 #endif
 
 #if _EMISSION != 0
@@ -71,7 +71,7 @@ void PrepareShadingParms(vec4 albedo) {
     shading.n = normalize(fs_in.normalWS.yzx);
 #endif
 
-#ifdef TWO_SIDED
+#ifdef TWOSIDED
     shading.n = gl_FrontFacing ? shading.n : -shading.n;
 #endif
 
