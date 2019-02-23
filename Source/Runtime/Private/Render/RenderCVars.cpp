@@ -23,7 +23,7 @@ CVAR(r_stencilBits, "8", CVar::Integer | CVar::Archive, "number of stencil bits"
 CVAR(r_multiSamples, "0", CVar::Integer | CVar::Archive, "number of antialiasing samples");
 
 CVAR(r_gamma, "1.0", CVar::Float | CVar::Archive, "changes gamma tables");
-CVAR(r_swapInterval, "0", CVar::Integer | CVar::Archive, "");
+CVAR(r_swapInterval, "-1", CVar::Integer | CVar::Archive, "control vsync, 0 = no vsync, 1 = vsync, -1 = adaptive vsync");
 CVAR(r_dynamicVertexCacheSize, "0x800000", CVar::Integer, "size of dynamic vertex buffer");
 CVAR(r_dynamicIndexCacheSize, "0x300000", CVar::Integer, "size of dynamic index buffer");
 CVAR(r_dynamicUniformCacheSize, "0x200000", CVar::Integer, "size of dynamic uniform buffer");
