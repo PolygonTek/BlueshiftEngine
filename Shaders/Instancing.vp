@@ -4,9 +4,7 @@
 
 #ifdef INSTANCED_ARRAY
 
-in HIGHP vec4 in_localToWorldMatrixS    : TEXCOORD1;
-in HIGHP vec4 in_localToWorldMatrixT    : TEXCOORD2;
-in HIGHP vec4 in_localToWorldMatrixR    : TEXCOORD3;
+in HIGHP mat4x3 in_localToWorldMatrix   : TEXCOORD1;
 in LOWP  vec4 in_constantColor          : TEXCOORD4;
 
 #ifdef GPU_SKINNING
@@ -15,9 +13,7 @@ in LOWP  vec4 in_constantColor          : TEXCOORD4;
     #endif
 #endif
 
-#define localToWorldMatrixS in_localToWorldMatrixS
-#define localToWorldMatrixT in_localToWorldMatrixT
-#define localToWorldMatrixR in_localToWorldMatrixR
+#define localToWorldMatrix in_localToWorldMatrix
 //#define worldToLocalMatrixS in_worldToLocalMatrixS
 //#define worldToLocalMatrixT in_worldToLocalMatrixT
 //#define worldToLocalMatrixR in_worldToLocalMatrixR
@@ -27,9 +23,7 @@ in LOWP  vec4 in_constantColor          : TEXCOORD4;
 #else
 
 struct InstanceData {
-    vec4 localToWorldMatrixS;       // 16
-    vec4 localToWorldMatrixT;       // 32
-    vec4 localToWorldMatrixR;       // 48
+    mat4x3 localToWorldMatrix;      // 48
     //vec4 worldToLocalMatrixS;
     //vec4 worldToLocalMatrixT;
     //vec4 worldToLocalMatrixR;
@@ -51,9 +45,7 @@ uniform int instanceIndexes[MAX_INSTANCE_COUNT];
 #define instanceIndex instanceIndexes[gl_InstanceID]
 #define instance instanceData[instanceIndex]
 
-#define localToWorldMatrixS instance.localToWorldMatrixS
-#define localToWorldMatrixT instance.localToWorldMatrixT
-#define localToWorldMatrixR instance.localToWorldMatrixR
+#define localToWorldMatrix instance.localToWorldMatrix
 //#define worldToLocalMatrixS instance.worldToLocalMatrixS
 //#define worldToLocalMatrixT instance.worldToLocalMatrixT
 //#define worldToLocalMatrixR instance.worldToLocalMatrixR

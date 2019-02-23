@@ -196,10 +196,8 @@ void VertexFormat::CreateSkinningVertexFormats(int stream, int originalIndex, in
 // Create instanced array vertex format
 void VertexFormat::CreateInstancingVertexFormats(int stream, int originalIndex, int instancingIndex, bool useVtfSkinning) {
     vertexFormats[instancingIndex].CopyFrom(vertexFormats[originalIndex]);
-    vertexFormats[instancingIndex].Append(stream,  0, RHI::VertexElement::TexCoord1, 4, RHI::VertexElement::FloatType, false, 1); // localToWorldMatrixS
-    vertexFormats[instancingIndex].Append(stream, 16, RHI::VertexElement::TexCoord2, 4, RHI::VertexElement::FloatType, false, 1); // localToWorldMatrixT
-    vertexFormats[instancingIndex].Append(stream, 32, RHI::VertexElement::TexCoord3, 4, RHI::VertexElement::FloatType, false, 1); // localToWorldMatrixR
-    vertexFormats[instancingIndex].Append(stream, 48, RHI::VertexElement::TexCoord4, 4, RHI::VertexElement::UByteType, true, 1);  // entityColor
+    vertexFormats[instancingIndex].Append(stream,  0, RHI::VertexElement::TexCoord1, 12, RHI::VertexElement::FloatType, false, 1);  // localToWorldMatrix
+    vertexFormats[instancingIndex].Append(stream, 48, RHI::VertexElement::TexCoord4, 4, RHI::VertexElement::UByteType, true, 1);    // entityColor
 
     if (useVtfSkinning) {
         if (renderGlobal.vtUpdateMethod == BufferCacheManager::TboUpdate) {

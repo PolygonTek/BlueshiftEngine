@@ -121,9 +121,9 @@ void main() {
     #endif
 #endif
 
-#if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
     vec4 positionWS = vec4(localToWorldMatrix * positionLS, 1.0);
 
+#if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
     vs_out.viewWS = viewOrigin.xyz - positionWS.xyz;
 
     #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)

@@ -2,7 +2,6 @@
 #define IBL_INCLUDED
 
 $include "BRDFLibrary.glsl"
-$include "ShadingParms.glsl"
 
 // http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
 // efficient VanDerCorpus calculation.
@@ -90,6 +89,8 @@ vec3 ImportanceSampleGGX(vec2 xi, float linearRoughness) {
 }
 
 #ifdef INDIRECT_LIGHTING
+
+$include "ShadingParms.glsl"
 
 vec3 IBLDiffuseLambert(samplerCube radMap) {
     const int numSamples = 64;
