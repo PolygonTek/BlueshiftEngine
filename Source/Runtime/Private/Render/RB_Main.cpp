@@ -860,8 +860,8 @@ void RB_DrawDebugTextures() {
 }
 
 // FIXME: Consider this view is sub camera
-static void RB_DrawCamera() {
-    BE_PROFILE_CPU_SCOPE("RB_DrawCamera", Color3::red);
+static void RB_DrawCamera3D() {
+    BE_PROFILE_CPU_SCOPE("RB_DrawCamera3D", Color3::red);
 
     if (backEnd.ctx->flags & RenderContext::UseSelectionBuffer) {
         backEnd.ctx->screenSelectionRT->Begin();
@@ -876,8 +876,10 @@ static void RB_DrawCamera() {
         renderRect.h = backEnd.renderRect.h * scaleY;
 
         rhi.SetViewport(renderRect);
-        rhi.SetScissor(Rect::empty);
         rhi.SetDepthRange(0, 1);
+
+        rhi.SetScissor(Rect::empty);
+
         rhi.SetStateBits(RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
         rhi.Clear(RHI::ColorBit | RHI::DepthBit, Color4::white, 1.0f, 0);
 
@@ -897,8 +899,9 @@ static void RB_DrawCamera() {
         backEnd.ctx->screenRT->Begin();
 
         rhi.SetViewport(backEnd.renderRect);
-        rhi.SetScissor(Rect::empty);
         rhi.SetDepthRange(0, 1);
+
+        rhi.SetScissor(Rect::empty);
 
         RB_ClearView();
 
@@ -913,42 +916,14 @@ static void RB_DrawCamera() {
         RB_PostProcess();
     } else {
         rhi.SetViewport(upscaledRenderRect);
-        rhi.SetScissor(Rect::empty);
         rhi.SetDepthRange(0, 1);
+
+        rhi.SetScissor(Rect::empty);
 
         RB_ClearView();
 
         RB_RenderView();
     }
-
-    backEnd.viewMatrixPrev = backEnd.camera->def->GetViewMatrix();
-
-    rhi.SetViewport(backEnd.screenRect);
-    rhi.SetScissor(backEnd.screenRect);
-    rhi.SetDepthRange(0, 0);
-    rhi.SetCullFace(RHI::NoCull);
-
-    if (r_showTextures.GetInteger() > 0) {
-        RB_DrawDebugTextures();
-    }
-
-    if (r_showShadows.GetInteger() > 0 && r_shadows.GetInteger() == 1) {
-        RB_DrawDebugShadowMap();
-    }
-
-    if (r_showRenderTarget.GetInteger() > 0) {
-        RB_DrawRenderTargetTexture();
-    }
-
-    if (r_HDR.GetInteger() > 0 && r_HDR_debug.GetInteger() > 0) {
-        RB_DrawDebugHdrMap();
-    }
-
-    if (r_HOM.GetBool() && r_HOM_debug.GetBool()) {
-        RB_DrawDebugHOMap();
-    }
-
-    rhi.SetScissor(Rect::empty);
 }
 
 static void RB_DrawCamera2D() {
@@ -958,9 +933,9 @@ static void RB_DrawCamera2D() {
         return;
     }
     
-    rhi.SetViewport(backEnd.screenRect);
-    rhi.SetScissor(backEnd.screenRect);
+    rhi.SetViewport(backEnd.renderRect);
     rhi.SetDepthRange(0, 0);
+    rhi.SetScissor(backEnd.renderRect);
     
     RB_GuiPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
 
@@ -984,19 +959,16 @@ static const void *RB_ExecuteDrawCamera(const void *data) {
     backEnd.viewProjMatrix      = cmd->camera.def->GetViewProjMatrix();
     backEnd.renderRect          = cmd->camera.def->GetState().renderRect;
     backEnd.upscaleFactor       = Vec2(backEnd.ctx->GetUpscaleFactorX(), backEnd.ctx->GetUpscaleFactorY());
-    backEnd.screenRect.Set(0, 0, backEnd.ctx->GetDeviceWidth(), backEnd.ctx->GetDeviceHeight());
-    // NOTE: glViewport() 의 y 는 밑에서부터 증가되므로 여기서 뒤집어 준다
-    backEnd.renderRect.y        = backEnd.ctx->GetRenderingHeight() - backEnd.renderRect.Y2();
-    backEnd.screenRect.y        = backEnd.ctx->GetDeviceHeight() - backEnd.screenRect.Y2();
-
     backEnd.useDepthPrePass     = r_useDepthPrePass.GetBool() &&
         (backEnd.camera->def->GetState().clearMethod == RenderCamera::ColorClear || backEnd.camera->def->GetState().clearMethod == RenderCamera::SkyboxClear);
 
     if (backEnd.camera->is2D) {
         RB_DrawCamera2D();
     } else {
-        RB_DrawCamera();
+        RB_DrawCamera3D();
     }
+
+    backEnd.viewMatrixPrev = backEnd.camera->def->GetViewMatrix();
 
     return (const void *)(cmd + 1);
 }
@@ -1063,6 +1035,36 @@ static const void *RB_ExecuteScreenshot(const void *data) {
 
 static const void *RB_ExecuteSwapBuffers(const void *data) {
     SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)data;
+
+    Rect deviceRect(0, 0, backEnd.ctx->GetDeviceWidth(), backEnd.ctx->GetDeviceHeight());
+
+    rhi.SetViewport(deviceRect);
+    rhi.SetDepthRange(0, 0);
+
+    rhi.SetScissor(deviceRect);
+    rhi.SetCullFace(RHI::NoCull);
+
+    if (r_showTextures.GetInteger() > 0) {
+        RB_DrawDebugTextures();
+    }
+
+    if (r_showShadows.GetInteger() > 0 && r_shadows.GetInteger() == 1) {
+        RB_DrawDebugShadowMap();
+    }
+
+    if (r_showRenderTarget.GetInteger() > 0) {
+        RB_DrawRenderTargetTexture();
+    }
+
+    if (r_HDR.GetInteger() > 0 && r_HDR_debug.GetInteger() > 0) {
+        RB_DrawDebugHdrMap();
+    }
+
+    if (r_HOM.GetBool() && r_HOM_debug.GetBool()) {
+        RB_DrawDebugHOMap();
+    }
+
+    rhi.SetScissor(Rect::empty);
 
     rhi.SwapBuffers();
     

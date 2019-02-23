@@ -178,7 +178,6 @@ struct RenderBackEnd {
     VisCamera *             camera;
 
     Rect                    renderRect;
-    Rect                    screenRect;
     Vec2                    upscaleFactor;
     double                  depthMin;
     double                  depthMax; 

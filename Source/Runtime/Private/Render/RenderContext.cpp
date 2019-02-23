@@ -526,8 +526,6 @@ void RenderContext::Display() {
 }
 
 void RenderContext::BeginFrame() {
-    renderSystem.currentContext = this;
-
     startFrameMsec = PlatformTime::Milliseconds();
 
     frameTime = startFrameMsec * 0.001f - elapsedTime;
@@ -546,12 +544,8 @@ void RenderContext::BeginFrame() {
         InitScreenMapRT();
         InitHdrMapRT();
     }
-    
-    BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)renderSystem.GetCommandBuffer(sizeof(BeginContextRenderCommand));
-    cmd->commandId = BeginContextCommand;
-    cmd->renderContext = this;
 
-    bufferCacheManager.BeginWrite();
+    BeginCommands();
 }
 
 void RenderContext::EndFrame() {
@@ -564,15 +558,9 @@ void RenderContext::EndFrame() {
     SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)renderSystem.GetCommandBuffer(sizeof(SwapBuffersRenderCommand));
     cmd->commandId = SwapBuffersCommand;
 
-    bufferCacheManager.BeginBackEnd();
-    
-    renderSystem.IssueCommands();
-
-    bufferCacheManager.EndDrawCommand();
+    RenderCommands();
 
     guiMesh.Clear();
-
-    frameData.ToggleFrame();
 
     renderCounter.frameMsec = PlatformTime::Milliseconds() - startFrameMsec;
 
@@ -593,6 +581,28 @@ void RenderContext::EndFrame() {
             break;
         }
     }
+}
+
+void RenderContext::BeginCommands() {
+    renderSystem.currentContext = this;
+
+    rhi.SetContext(GetContextHandle());
+
+    bufferCacheManager.BeginWrite();
+
+    BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)renderSystem.GetCommandBuffer(sizeof(BeginContextRenderCommand));
+    cmd->commandId = BeginContextCommand;
+    cmd->renderContext = this;
+}
+
+void RenderContext::RenderCommands() {
+    bufferCacheManager.BeginBackEnd();
+
+    renderSystem.IssueCommands();
+
+    bufferCacheManager.EndDrawCommand();
+
+    frameData.ToggleFrame();
 
     renderSystem.currentContext = nullptr;
 }
@@ -790,24 +800,24 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     char path[256];
 
     RenderCamera renderCamera;
-    RenderCamera::State rvDef;
-    rvDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews | RenderCamera::Flag::SkipDebugDraw;
-    rvDef.clearMethod = RenderCamera::SkyboxClear;
-    rvDef.clearColor = Color4(0.29f, 0.33f, 0.35f, 0);
-    rvDef.layerMask = layerMask;
-    rvDef.renderRect.Set(0, 0, width, height);
-    rvDef.origin = origin;
-    rvDef.axis = axis;
-    rvDef.orthogonal = false;
+    RenderCamera::State cameraDef;
+    cameraDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews | RenderCamera::Flag::SkipDebugDraw;
+    cameraDef.clearMethod = RenderCamera::SkyboxClear;
+    cameraDef.clearColor = Color4(0.29f, 0.33f, 0.35f, 0);
+    cameraDef.layerMask = layerMask;
+    cameraDef.renderRect.Set(0, 0, width, height);
+    cameraDef.origin = origin;
+    cameraDef.axis = axis;
+    cameraDef.orthogonal = false;
 
     Vec3 v;
     renderWorld->GetStaticAABB().GetFarthestVertexFromDir(axis[0], v);
-    rvDef.zFar = Max(BE1::MeterToUnit(100.0f), origin.Distance(v));
-    rvDef.zNear = BE1::CentiToUnit(5.0f);
+    cameraDef.zFar = Max(BE1::MeterToUnit(100.0f), origin.Distance(v));
+    cameraDef.zNear = BE1::CentiToUnit(5.0f);
 
-    RenderCamera::ComputeFov(fov, 1.25f, (float)width / height, &rvDef.fovX, &rvDef.fovY);
+    RenderCamera::ComputeFov(fov, 1.25f, (float)width / height, &cameraDef.fovX, &cameraDef.fovY);
 
-    renderCamera.Update(&rvDef);
+    renderCamera.Update(&cameraDef);
 
     BeginFrame();
     renderWorld->RenderScene(&renderCamera);
@@ -818,20 +828,20 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     BE_DLOG("Screenshot saved to \"%s\"\n", path);
 }
 
-void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, const Vec3 &origin, int size, Image &envCubeImage) {
+void RenderContext::CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, const Vec3 &origin, RenderTarget *targetCubeRT) {
     RenderCamera renderCamera;
-    RenderCamera::State rvDef;
-    memset(&rvDef, 0, sizeof(rvDef));
-    rvDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews | RenderCamera::Flag::SkipDebugDraw;
-    rvDef.clearMethod = RenderCamera::SkyboxClear;
-    rvDef.layerMask = layerMask;
-    rvDef.renderRect.Set(0, 0, size, size);
-    rvDef.fovX = 90;
-    rvDef.fovY = 90;
-    rvDef.zNear = BE1::CentiToUnit(5.0f);
-    rvDef.zFar = BE1::MeterToUnit(100.0f);
-    rvDef.origin = origin;
-    rvDef.orthogonal = false;
+    RenderCamera::State cameraDef;
+    memset(&cameraDef, 0, sizeof(cameraDef));
+    cameraDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews | RenderCamera::Flag::SkipDebugDraw | RenderCamera::Flag::SkipPostProcess;
+    cameraDef.clearMethod = RenderCamera::ClearMethod::SkyboxClear;
+    cameraDef.layerMask = layerMask;
+    cameraDef.renderRect.Set(0, 0, targetCubeRT->GetWidth(), targetCubeRT->GetHeight());
+    cameraDef.fovX = 90;
+    cameraDef.fovY = 90;
+    cameraDef.zNear = BE1::CentiToUnit(5.0f);
+    cameraDef.zFar = BE1::MeterToUnit(100.0f);
+    cameraDef.origin = origin;
+    cameraDef.orthogonal = false;
 
     Mat3 viewAxis[6];
     viewAxis[0] = Angles(0,   0,  90).ToMat3();
@@ -841,77 +851,37 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask,
     viewAxis[4] = Angles(0,   0,   0).ToMat3();
     viewAxis[5] = Angles(0,   0, 180).ToMat3();
 
-#if 0
-    Image emptyImage;
-    emptyImage.Create2D(size, size, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
-
-    Texture *targetTexture = new Texture;
-    targetTexture->Create(RHI::Texture2D, emptyImage, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
-    RenderTarget *targetRT = RenderTarget::Create(targetTexture, nullptr, 0);
-
-    Rect srcRect = Rect(0, 0, size, size);
-    Rect dstRect = Rect(0, 0, size, size);
-
-    srcRect.y = screenRT->GetHeight() - (srcRect.y + srcRect.h);
-
-    Image faceImages[6];
-
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-        rvDef.axis = viewAxis[faceIndex];
-        renderCamera.Update(&rvDef);
+        cameraDef.axis = viewAxis[faceIndex];
+        renderCamera.Update(&cameraDef);
 
-        BeginFrame();
-
-        renderWorld->RenderScene(&renderCamera);
-
-        EndFrame();
-
-        screenRT->Blit(srcRect, dstRect, targetRT, RHI::ColorBlitMask, RHI::NearestBlitFilter);
-
-        faceImages[faceIndex].Create2D(size, size, 1, Image::RGB_32F_32F_32F, nullptr, 0);
-
-        targetRT->ColorTexture()->Bind();
-        targetRT->ColorTexture()->GetTexels2D(Image::RGB_32F_32F_32F, faceImages[faceIndex].GetPixels());
-
-        faceImages[faceIndex].FlipX(); // Flip for environment image to cubemap face image
-        faceImages[faceIndex].FlipY(); // Flip upside down
-
-        //faceImages[faceIndex].WriteDDS(va("EnvProbes/%i.dds", faceIndex));
-    }
-
-    envCubeImage.CreateCubeFrom6Faces(faceImages);
-
-    SAFE_DELETE(targetTexture);
-
-    RenderTarget::Delete(targetRT);
-#else
-    Texture *targetCubeTexture = new Texture;
-    targetCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, Image::RGB_32F_32F_32F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
-    
-    RenderTarget *targetCubeRT = RenderTarget::Create(targetCubeTexture, nullptr, 0);
-
-    for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
         targetCubeRT->Begin(0, faceIndex);
 
-        rvDef.axis = viewAxis[faceIndex];
-        renderCamera.Update(&rvDef);
+        BeginCommands();
 
-        BeginFrame();
-        
         renderWorld->RenderScene(&renderCamera);
-        
-        EndFrame();
+
+        RenderCommands();
 
         targetCubeRT->End();
     }
+}
+
+void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, const Vec3 &origin, int size, Image &envCubeImage) {
+    Texture *targetCubeTexture = new Texture;
+    targetCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, Image::RGB_32F_32F_32F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    
+    RenderTarget *targetCubeRT = RenderTarget::Create(targetCubeTexture, nullptr, RHI::HasDepthBuffer);
+
+    CaptureEnvCubeRT(renderWorld, layerMask, origin, targetCubeRT);
 
     Image faceImages[6];
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-        faceImages[faceIndex].Create2D(size, size, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
+        faceImages[faceIndex].Create2D(size, size, 1, targetCubeTexture->GetFormat(), nullptr, Image::LinearSpaceFlag);
 
         targetCubeRT->ColorTexture()->Bind();
-        targetCubeRT->ColorTexture()->GetTexelsCubemap(faceIndex, Image::RGB_32F_32F_32F, faceImages[faceIndex].GetPixels());
+        targetCubeRT->ColorTexture()->GetTexelsCubemap(faceIndex, targetCubeTexture->GetFormat(), faceImages[faceIndex].GetPixels());
 
         faceImages[faceIndex].FlipX(); // Flip for environment image to cubemap face image
         faceImages[faceIndex].FlipY(); // Flip upside down
@@ -922,7 +892,6 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask,
     SAFE_DELETE(targetCubeTexture);
 
     RenderTarget::Delete(targetCubeRT);
-#endif
 }
 
 void RenderContext::TakeEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin, int size) {
