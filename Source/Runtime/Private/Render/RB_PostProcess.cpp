@@ -162,7 +162,7 @@ void RB_PostProcess() {
     if (r_HDR.GetInteger() > 0) {
         RenderTarget *luminanceRT;
 
-        if (!r_HDR_toneMapping.GetBool() || (bc->flags & RenderContext::ConstantToneMapping)) {
+        if (!r_HDR_toneMapping.GetBool() || (backEnd.camera->def->GetState().flags & RenderCamera::Flag::ConstantToneMapping)) {
             luminanceRT = bc->hdrLuminanceRT[0];
 
             PP_WriteDefaultLuminance(luminanceRT);
@@ -173,7 +173,7 @@ void RB_PostProcess() {
             // Compute Geometric average luminance.
             PP_MeasureLuminance(bc->ppRTs[PP_RT_4X]->ColorTexture(), screenTc, bc->hdrLuminanceRT[0]);
 
-            if (bc->flags & RenderContext::InstantToneMapping) {
+            if (backEnd.camera->def->GetState().flags & RenderCamera::Flag::InstantToneMapping) {
                 luminanceRT = bc->hdrLuminanceRT[0];
             } else {
                 // Luminance adaptation using luminance of previous frame.
@@ -187,7 +187,7 @@ void RB_PostProcess() {
         }
 
         if (r_HDR_bloomScale.GetFloat() > 0) {
-            if (!r_HDR_toneMapping.GetBool() || (bc->flags & RenderContext::ConstantToneMapping)) {
+            if (!r_HDR_toneMapping.GetBool() || (backEnd.camera->def->GetState().flags & RenderCamera::Flag::ConstantToneMapping)) {
                 PP_Downscale4x4(bc->screenRT->ColorTexture(), bc->ppRTs[PP_RT_4X]);
             }
 

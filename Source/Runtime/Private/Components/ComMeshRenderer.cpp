@@ -279,7 +279,7 @@ bool ComMeshRenderer::GetClosestVertex(const RenderCamera *camera, const Point &
             if (!isBackface) {
                 Point pixelLocation;
 
-                if (camera->WorldToPixel(worldPosition, pixelLocation)) {
+                if (camera->TransformWorldToPixel(worldPosition, pixelLocation)) {
                     float dist = pixelLocation.DistanceSqr(mousePixelLocation);
 
                     if (dist < closestDistance) {

@@ -85,8 +85,6 @@ public:
     enum Flag {
         OnDemandDrawing         = BIT(0),
         UseSelectionBuffer      = BIT(1),
-        InstantToneMapping      = BIT(2),
-        ConstantToneMapping     = BIT(3),
         UseSharedContext        = BIT(4),
     };
 
@@ -128,6 +126,9 @@ public:
     void                    BeginFrame();
     void                    EndFrame();
 
+    void                    BeginCommands();
+    void                    RenderCommands();
+
     Color4                  GetColor() const;
     Color4                  GetClearColor() const;
     float                   GetClearDepth() const;
@@ -162,6 +163,7 @@ public:
 
     void                    WriteDFGSumGGX(const char *filename, int size) const;
 
+    void                    CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, const Vec3 &origin, RenderTarget *targetCubeRT);
     void                    CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, const Vec3 &origin, int size, Image &envCubeImage);
 
                             // Generate irradiance environment cubemap using SH convolution method

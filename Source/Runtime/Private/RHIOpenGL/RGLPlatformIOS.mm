@@ -205,7 +205,7 @@ const float userContentScaleFactor = 2.0f;
     
     gglBindRenderbuffer(GL_RENDERBUFFER, colorbuffer);
     
-    // Discard the unncessary depth buffer for now
+    // Discard the unncessary depth/stencil buffer
     const GLenum discards[]  = { GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT };
     //gglDiscardFramebufferEXT(GL_READ_FRAMEBUFFER, 2, discards);
     gglInvalidateFramebuffer(GL_READ_FRAMEBUFFER, 2, discards);

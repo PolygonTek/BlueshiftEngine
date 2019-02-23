@@ -39,7 +39,9 @@ public:
         NoShadows           = BIT(2),
         NoSubViews          = BIT(3),
         SkipPostProcess     = BIT(4),
-        SkipDebugDraw       = BIT(5)
+        SkipDebugDraw       = BIT(5),
+        InstantToneMapping  = BIT(6),
+        ConstantToneMapping = BIT(7),
     };
 
     enum ClearMethod {
@@ -81,16 +83,16 @@ public:
 
     void                RecalcZFar(float zFar);
 
-                        /// Transforms world coordinates to NDC (normalized deivice coordinates).
-    Vec4                WorldToNormalizedDevice(const Vec3 &worldCoords) const;
+                        /// Transforms world coordinates to clip coordinates.
+    Vec4                TransformWorldToClip(const Vec3 &worldCoords) const;
 
-                        /// Transforms NDC (normalized device coordinates) to pixel coordinates.
-    bool                NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Vec3 &pixelCoords) const;
-    bool                NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Point &pixelPoint) const;
+                        /// Transforms clip coordinates to pixel coordinates.
+    bool                TransformClipToPixel(const Vec4 &clipCoords, Vec3 &pixelCoords) const;
+    bool                TransformClipToPixel(const Vec4 &clipCoords, Point &pixelPoint) const;
 
                         /// Transforms world coordinates to pixel coordinates
-    bool                WorldToPixel(const Vec3 &worldCoords, Vec3 &pixelCoords) const;
-    bool                WorldToPixel(const Vec3 &worldCoords, Point &pixelPoint) const;
+    bool                TransformWorldToPixel(const Vec3 &worldCoords, Vec3 &pixelCoords) const;
+    bool                TransformWorldToPixel(const Vec3 &worldCoords, Point &pixelPoint) const;
 
                         /// Calculates clipping rectangle from bounding sphere (Different camera axis with Eric Lengyel's method)
     bool                CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) const;

@@ -85,37 +85,38 @@ void RenderCamera::RecalcZFar(float zFar) {
     viewProjMatrix = projMatrix * viewMatrix;
 }
 
-Vec4 RenderCamera::WorldToNormalizedDevice(const Vec3 &worldPosition) const {
+Vec4 RenderCamera::TransformWorldToClip(const Vec3 &worldPosition) const {
     return viewProjMatrix * Vec4(worldPosition, 1.0f);
 }
 
-bool RenderCamera::NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Vec3 &pixelCoords) const {
-    if (normalizedDeviceCoords.w > 0) {
-        float invW = 1.0f / normalizedDeviceCoords.w;
+bool RenderCamera::TransformClipToPixel(const Vec4 &clipCoords, Vec3 &pixelCoords) const {
+    if (clipCoords.w > 0) {
+        float invW = 1.0f / clipCoords.w;
 
-        float fx = (normalizedDeviceCoords.x * invW + 1.0f) * 0.5f;
-        float fy = (normalizedDeviceCoords.y * invW + 1.0f) * 0.5f;
+        float fx = (clipCoords.x * invW + 1.0f) * 0.5f; // [0, 1]
+        float fy = (clipCoords.y * invW + 1.0f) * 0.5f; // [0, 1]
 
-        // invert Y axis
+        // Invert Y axis
         fy = 1.0f - fy;
 
         pixelCoords.x = fx * (state.renderRect.x + state.renderRect.w);
         pixelCoords.y = fy * (state.renderRect.y + state.renderRect.h);
-        pixelCoords.z = normalizedDeviceCoords.z * invW; // depth value
+        pixelCoords.z = clipCoords.z * invW; // depth value
         return true;
     } else {
         return false;
     }
 }
 
-bool RenderCamera::NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, Point &pixelPoint) const {
-    if (normalizedDeviceCoords.w > 0) {
-        float invW = 1.0f / normalizedDeviceCoords.w;
+bool RenderCamera::TransformClipToPixel(const Vec4 &clipCoords, Point &pixelPoint) const {
+    if (clipCoords.w > 0) {
+        float invW = 1.0f / clipCoords.w;
 
-        float fx = (normalizedDeviceCoords.x * invW + 1.0f) * 0.5f;
-        float fy = (normalizedDeviceCoords.y * invW + 1.0f) * 0.5f;
+        float fx = (clipCoords.x * invW + 1.0f) * 0.5f; // [0, 1]
+        float fy = (clipCoords.y * invW + 1.0f) * 0.5f; // [0, 1]
 
-        fy = 1.0f - fy; // invert Y axis
+        // Invert Y axis
+        fy = 1.0f - fy;
 
         pixelPoint.x = fx * (state.renderRect.x + state.renderRect.w);
         pixelPoint.y = fy * (state.renderRect.y + state.renderRect.h);
@@ -125,16 +126,16 @@ bool RenderCamera::NormalizedDeviceToPixel(const Vec4 &normalizedDeviceCoords, P
     }
 }
 
-bool RenderCamera::WorldToPixel(const Vec3 &worldPosition, Vec3 &pixelCoords) const {
-    Vec4 normalizedDeviceCoords = WorldToNormalizedDevice(worldPosition);
+bool RenderCamera::TransformWorldToPixel(const Vec3 &worldPosition, Vec3 &pixelCoords) const {
+    Vec4 clipCoords = TransformWorldToClip(worldPosition);
 
-    return NormalizedDeviceToPixel(normalizedDeviceCoords, pixelCoords);
+    return TransformClipToPixel(clipCoords, pixelCoords);
 }
 
-bool RenderCamera::WorldToPixel(const Vec3 &worldPosition, Point &pixelPoint) const {
-    Vec4 normalizedDeviceCoords = WorldToNormalizedDevice(worldPosition);
+bool RenderCamera::TransformWorldToPixel(const Vec3 &worldPosition, Point &pixelPoint) const {
+    Vec4 clipCoords = TransformWorldToClip(worldPosition);
 
-    return NormalizedDeviceToPixel(normalizedDeviceCoords, pixelPoint);
+    return TransformClipToPixel(clipCoords, pixelPoint);
 }
 
 bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) const {
