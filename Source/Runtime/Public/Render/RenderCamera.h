@@ -86,13 +86,14 @@ public:
                         /// Transforms world coordinates to clip coordinates.
     Vec4                TransformWorldToClip(const Vec3 &worldCoords) const;
 
-                        /// Transforms clip coordinates to pixel coordinates.
-    bool                TransformClipToPixel(const Vec4 &clipCoords, Vec3 &pixelCoords) const;
-    bool                TransformClipToPixel(const Vec4 &clipCoords, Point &pixelPoint) const;
+                        /// Transforms clip coordinates to normlized device coordinates.
+    bool                TransformClipToNDC(const Vec4 &clipCoords, Vec3 &normalizedDeviceCoords) const;
 
-                        /// Transforms world coordinates to pixel coordinates
-    bool                TransformWorldToPixel(const Vec3 &worldCoords, Vec3 &pixelCoords) const;
-    bool                TransformWorldToPixel(const Vec3 &worldCoords, Point &pixelPoint) const;
+                        /// Transform normlized device coordinates to pixel coordinates.
+    void                TransformNDCToPixel(const Vec3 normalizedDeviceCoords, Point &pixelCoords) const;
+
+                        /// Transforms world coordinates to pixel coordinates.
+    bool                TransformWorldToPixel(const Vec3 &worldCoords, Point &pixelCoords) const;
 
                         /// Calculates clipping rectangle from bounding sphere (Different camera axis with Eric Lengyel's method)
     bool                CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) const;

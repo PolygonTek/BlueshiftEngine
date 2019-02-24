@@ -89,53 +89,40 @@ Vec4 RenderCamera::TransformWorldToClip(const Vec3 &worldPosition) const {
     return viewProjMatrix * Vec4(worldPosition, 1.0f);
 }
 
-bool RenderCamera::TransformClipToPixel(const Vec4 &clipCoords, Vec3 &pixelCoords) const {
+bool RenderCamera::TransformClipToNDC(const Vec4 &clipCoords, Vec3 &normalizedDeviceCoords) const {
     if (clipCoords.w > 0) {
-        float invW = 1.0f / clipCoords.w;
+        const float invW = 1.0f / clipCoords.w;
 
-        float fx = (clipCoords.x * invW + 1.0f) * 0.5f; // [0, 1]
-        float fy = (clipCoords.y * invW + 1.0f) * 0.5f; // [0, 1]
-
-        // Invert Y axis
-        fy = 1.0f - fy;
-
-        pixelCoords.x = fx * (state.renderRect.x + state.renderRect.w);
-        pixelCoords.y = fy * (state.renderRect.y + state.renderRect.h);
-        pixelCoords.z = clipCoords.z * invW; // depth value
+        normalizedDeviceCoords.x = clipCoords.x * invW; // [-1, 1]
+        normalizedDeviceCoords.y = clipCoords.y * invW; // [-1, 1]
+        normalizedDeviceCoords.z = clipCoords.z * invW; // [-1, 1] or [0, 1] in D3D
         return true;
     } else {
         return false;
     }
 }
 
-bool RenderCamera::TransformClipToPixel(const Vec4 &clipCoords, Point &pixelPoint) const {
-    if (clipCoords.w > 0) {
-        float invW = 1.0f / clipCoords.w;
+void RenderCamera::TransformNDCToPixel(const Vec3 normalizedDeviceCoords, Point &pixelCoords) const {
+    float fx = (normalizedDeviceCoords.x * 1.0f) * 0.5f; // [0, 1]
+    float fy = (normalizedDeviceCoords.y * 1.0f) * 0.5f; // [0, 1]
 
-        float fx = (clipCoords.x * invW + 1.0f) * 0.5f; // [0, 1]
-        float fy = (clipCoords.y * invW + 1.0f) * 0.5f; // [0, 1]
+    // Invert Y axis
+    fy = 1.0f - fy;
 
-        // Invert Y axis
-        fy = 1.0f - fy;
+    pixelCoords.x = fx * (state.renderRect.x + state.renderRect.w);
+    pixelCoords.y = fy * (state.renderRect.y + state.renderRect.h);
+}
 
-        pixelPoint.x = fx * (state.renderRect.x + state.renderRect.w);
-        pixelPoint.y = fy * (state.renderRect.y + state.renderRect.h);
-        return true;
-    } else {
+bool RenderCamera::TransformWorldToPixel(const Vec3 &worldPosition, Point &pixelCoords) const {
+    Vec4 clipCoords = TransformWorldToClip(worldPosition);
+
+    Vec3 normalizedDeviceCoords;
+    if (!TransformClipToNDC(clipCoords, normalizedDeviceCoords)) {
         return false;
     }
-}
 
-bool RenderCamera::TransformWorldToPixel(const Vec3 &worldPosition, Vec3 &pixelCoords) const {
-    Vec4 clipCoords = TransformWorldToClip(worldPosition);
-
-    return TransformClipToPixel(clipCoords, pixelCoords);
-}
-
-bool RenderCamera::TransformWorldToPixel(const Vec3 &worldPosition, Point &pixelPoint) const {
-    Vec4 clipCoords = TransformWorldToClip(worldPosition);
-
-    return TransformClipToPixel(clipCoords, pixelPoint);
+    TransformNDCToPixel(normalizedDeviceCoords, pixelCoords);
+    return true;
 }
 
 bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) const {
