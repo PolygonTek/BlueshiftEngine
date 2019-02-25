@@ -348,7 +348,7 @@ static void RB_ShadowCubeMapPass(const VisLight *visLight, const Frustum &viewFr
     backEnd.projMatrix = backEnd.shadowProjectionMatrix;
 
     for (int faceIndex = RHI::PositiveX; faceIndex <= RHI::NegativeZ; faceIndex++) {
-        R_CubeMapFaceToAxis((RHI::CubeMapFace)faceIndex, axis);
+        R_EnvCubeMapFaceToOpenGLAxis((RHI::CubeMapFace)faceIndex, axis);
 
         lightFrustum.SetAxis(axis);
 

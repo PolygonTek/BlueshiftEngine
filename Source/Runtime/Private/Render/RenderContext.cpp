@@ -843,16 +843,9 @@ void RenderContext::CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, co
     cameraDef.origin = origin;
     cameraDef.orthogonal = false;
 
-    Mat3 viewAxis[6];
-    viewAxis[0] = Angles(0,   0,  90).ToMat3();
-    viewAxis[1] = Angles(0,   0, -90).ToMat3();
-    viewAxis[2] = Angles(0, -90,   0).ToMat3();
-    viewAxis[3] = Angles(0,  90,   0).ToMat3();
-    viewAxis[4] = Angles(0,   0,   0).ToMat3();
-    viewAxis[5] = Angles(0,   0, 180).ToMat3();
-
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-        cameraDef.axis = viewAxis[faceIndex];
+        R_EnvCubeMapFaceToEngineAxis((RHI::CubeMapFace)faceIndex, cameraDef.axis);
+
         renderCamera.Update(&cameraDef);
 
         targetCubeRT->Begin(0, faceIndex);
@@ -882,9 +875,6 @@ void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask,
 
         targetCubeRT->ColorTexture()->Bind();
         targetCubeRT->ColorTexture()->GetTexelsCubemap(faceIndex, targetCubeTexture->GetFormat(), faceImages[faceIndex].GetPixels());
-
-        faceImages[faceIndex].FlipX(); // Flip for environment image to cubemap face image
-        faceImages[faceIndex].FlipY(); // Flip upside down
     }
 
     envCubeImage.CreateCubeFrom6Faces(faceImages);
