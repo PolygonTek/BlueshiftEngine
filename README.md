@@ -22,6 +22,7 @@ Features
   * Directional, spot, point lights
   * Shadow mapping (cascaded shadow map, omni directional shadow map, projected shadow map)
   * Particle system
+  * HDR rendering and filmic tone mapping
   * Post-processing
   * PBR rendering
   * Physics using [Bullet](http://www.bulletphysics.org/)
