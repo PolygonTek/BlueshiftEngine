@@ -72,7 +72,7 @@ void Texture::CreateFromBuffer(Image::Format format, RHI::Handle bufferHandle) {
     rhi.BindBuffer(RHI::TexelBuffer, RHI::NullBuffer);
 }
 
-// Indirection Cube map : cubic coord -> VCM coord
+// Indirection cubemap : Converts cubic coords to VCM coords
 void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, int flags) {
     Image cubeImage;
     cubeImage.CreateCube(size, 1, Image::LA_16_16, nullptr, Image::LinearSpaceFlag);
@@ -587,32 +587,32 @@ void Texture::Upload(const Image *srcImage) {
     }
 }
 
-void Texture::Update2D(int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data) {
-    rhi.SetTextureSubImage2D(0, xoffset, yoffset, width, height, format, data);
+void Texture::Update2D(int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data) {
+    rhi.SetTextureSubImage2D(mipLevel, xoffset, yoffset, width, height, format, data);
 }
 
-void Texture::Update3D(int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format format, const byte *data) {
+void Texture::Update3D(int mipLevel, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format format, const byte *data) {
     rhi.SetTextureSubImage3D(0, xoffset, yoffset, zoffset, width, height, depth, format, data);
 }
 
-void Texture::UpdateCubemap(int face, int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data) {
-    rhi.SetTextureSubImageCube((RHI::CubeMapFace)face, 0, xoffset, yoffset, width, height, format, data);
+void Texture::UpdateCubemap(int face, int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data) {
+    rhi.SetTextureSubImageCube((RHI::CubeMapFace)face, mipLevel, xoffset, yoffset, width, height, format, data);
 }
 
 void Texture::UpdateRect(int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data) {
     rhi.SetTextureSubImageRect(xoffset, yoffset, width, height, format, data);
 }
 
-void Texture::GetTexels2D(Image::Format format, void *pixels) const {
-    rhi.GetTextureImage2D(0, format, pixels);
+void Texture::GetTexels2D(int mipLevel, Image::Format format, void *pixels) const {
+    rhi.GetTextureImage2D(mipLevel, format, pixels);
 }
 
-void Texture::GetTexels3D(Image::Format format, void *pixels) const {
-    rhi.GetTextureImage3D(0, format, pixels);
+void Texture::GetTexels3D(int mipLevel, Image::Format format, void *pixels) const {
+    rhi.GetTextureImage3D(mipLevel, format, pixels);
 }
 
-void Texture::GetTexelsCubemap(int face, Image::Format format, void *pixels) const {
-    rhi.GetTextureImageCube((RHI::CubeMapFace)face, 0, format, pixels);
+void Texture::GetTexelsCubemap(int face, int mipLevel, Image::Format format, void *pixels) const {
+    rhi.GetTextureImageCube((RHI::CubeMapFace)face, mipLevel, format, pixels);
 }
 
 void Texture::GetTexelsRect(Image::Format format, void *pixels) const {
@@ -693,6 +693,24 @@ bool Texture::Reload() {
 
 void Texture::Bind() const {
     rhi.BindTexture(textureHandle);
+}
+
+void Texture::GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, Image &cubeImage) {
+    Image faceImages[6];
+
+    int imageFlags = Image::IsFloatFormat(cubeTexture->GetFormat()) ? Image::LinearSpaceFlag : 0;
+
+    for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
+        faceImages[faceIndex].Create2D(cubeTexture->GetWidth(), cubeTexture->GetWidth(), numMipLevels, cubeTexture->GetFormat(), nullptr, imageFlags);
+
+        cubeTexture->Bind();
+
+        for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
+            cubeTexture->GetTexelsCubemap(faceIndex, mipLevel, cubeTexture->GetFormat(), faceImages[faceIndex].GetPixels(mipLevel));
+        }
+    }
+
+    cubeImage.CreateCubeFrom6Faces(faceImages);
 }
 
 //--------------------------------------------------------------------------------------------------

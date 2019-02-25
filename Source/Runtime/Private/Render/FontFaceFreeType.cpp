@@ -361,7 +361,7 @@ FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar) {
     rhi.SelectTextureUnit(0);
 
     texture->Bind();
-    texture->Update2D(x, y, width + GLYPH_BORDER_PIXELS * 2, bitmap->rows + GLYPH_BORDER_PIXELS * 2, GLYPH_CACHE_TEXTURE_FORMAT, glyphBuffer);
+    texture->Update2D(0, x, y, width + GLYPH_BORDER_PIXELS * 2, bitmap->rows + GLYPH_BORDER_PIXELS * 2, GLYPH_CACHE_TEXTURE_FORMAT, glyphBuffer);
 
     // NOTE: ascender 의 의미가 폰트 포맷마다 해석이 좀 다양하다
     // (base line 에서부터 위쪽으로 top bearing 을 포함해서 그 위쪽까지의 거리가 필요함)

@@ -98,14 +98,14 @@ public:
 
     void                    Upload(const Image *srcImage);
 
-    void                    Update2D(int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data);
-    void                    Update3D(int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format format, const byte *data);
-    void                    UpdateCubemap(int face, int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data);
+    void                    Update2D(int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data);
+    void                    Update3D(int mipLevel, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format format, const byte *data);
+    void                    UpdateCubemap(int face, int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data);
     void                    UpdateRect(int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data);
 
-    void                    GetTexels2D(Image::Format format, void *pixels) const;
-    void                    GetTexels3D(Image::Format format, void *pixels) const;
-    void                    GetTexelsCubemap(int face, Image::Format format, void *pixels) const;
+    void                    GetTexels2D(int mipLevel, Image::Format format, void *pixels) const;
+    void                    GetTexels3D(int mipLevel, Image::Format format, void *pixels) const;
+    void                    GetTexelsCubemap(int face, int mipLevel, Image::Format format, void *pixels) const;
     void                    GetTexelsRect(Image::Format format, void *pixels) const;
 
     void                    Purge();
@@ -116,6 +116,8 @@ public:
     const Texture *         AddRefCount() const { refCount++; return this; }
 
     void                    Bind() const;
+
+    static void             GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, Image &cubeImage);
 
 private:
     Str                     hashName;                   // texture filename including path

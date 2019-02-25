@@ -453,7 +453,7 @@ static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occlud
     int size = backEnd.homCullingOutputTexture->MemRequired(false);
     byte *visibilityBuffer = (byte *)_alloca(size);
     backEnd.homCullingOutputTexture->Bind();
-    backEnd.homCullingOutputTexture->GetTexels2D(Image::RGBA_8_8_8_8, visibilityBuffer);
+    backEnd.homCullingOutputTexture->GetTexels2D(0, Image::RGBA_8_8_8_8, visibilityBuffer);
     byte *visibilityPtr = visibilityBuffer;
 
     for (int i = 0; i < numAmbientOccludees; i++) {

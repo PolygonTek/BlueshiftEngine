@@ -611,7 +611,7 @@ void BufferCacheManager::UpdatePBOTexture() const {
 
         const double startUpdatePBO = PlatformTime::Seconds();
 
-        frameData[0].texture->Update2D(0, 0, updateW, updateH, Image::RGBA_32F_32F_32F_32F, nullptr);
+        frameData[0].texture->Update2D(0, 0, 0, updateW, updateH, Image::RGBA_32F_32F_32F_32F, nullptr);
 
         const double endUpdatePBO = PlatformTime::Seconds();
         if (endUpdatePBO - startUpdatePBO > 1) {
