@@ -26,6 +26,27 @@ BE_NAMESPACE_BEGIN
 
 class ReflectionProbe {
 public:
+    enum Type {
+        Baked,
+        Realtime
+    };
+
+    enum ClearMethod {
+        NoClear,
+        ColorClear,
+        SkyClear
+    };
+
+    Type            type;
+    ClearMethod     clearMethod;
+    int             importance;
+    bool            useBoxProjection;
+
+    Vec3            origin;
+    Mat3            axis;
+    Vec3            boxOffset;
+    Vec3            boxSize;
+
     Texture *       diffuseCubeMap;
     Texture *       specularCubeMap;
 };
