@@ -526,11 +526,11 @@ void RenderContext::Display() {
 }
 
 void RenderContext::BeginFrame() {
-    startFrameMsec = PlatformTime::Milliseconds();
+    startFrameSec = PlatformTime::Seconds();
 
-    frameTime = startFrameMsec * 0.001f - elapsedTime;
+    frameTime = startFrameSec - elapsedTime;
 
-    elapsedTime = startFrameMsec * 0.001f;
+    elapsedTime = startFrameSec;
 
     memset(&renderCounter, 0, sizeof(renderCounter));
 
@@ -562,7 +562,7 @@ void RenderContext::EndFrame() {
 
     guiMesh.Clear();
 
-    renderCounter.frameMsec = PlatformTime::Milliseconds() - startFrameMsec;
+    renderCounter.frameMsec = PlatformTime::Milliseconds() - SEC2MS(startFrameSec);
 
     if (r_showStats.GetInteger() > 0) {
         switch (r_showStats.GetInteger()) {

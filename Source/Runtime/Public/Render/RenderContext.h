@@ -220,7 +220,7 @@ public:
     int                     currLumTarget;
 
     RenderCounter           renderCounter;
-    int                     startFrameMsec;
+    int                     startFrameSec;
 
     Texture *               screenColorTexture;
     Texture *               screenDepthTexture;
