@@ -173,7 +173,7 @@ private:
                             /// Updates this render object with the given state.
     void                    Update(const State *state);
 
-    int                     index;                      // object index in world
+    int                     index;                      // index of object list in world
 
     bool                    firstUpdate;
 

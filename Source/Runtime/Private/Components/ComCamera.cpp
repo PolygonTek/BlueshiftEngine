@@ -33,10 +33,10 @@ END_EVENTS
 void ComCamera::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("projection", "Projection", int, GetProjectionMethod, SetProjectionMethod, 0, 
         "", PropertyInfo::EditorFlag).SetEnumString("Perspective;Orthographic");
-    REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, MeterToUnit(0.1f),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(CentiToUnit(1.0f), MeterToUnit(100.0f), CentiToUnit(10.0f));
-    REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetFar, SetFar, MeterToUnit(500.0f),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(CentiToUnit(1.0f), MeterToUnit(1000.0f), CentiToUnit(10.0f));
+    REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, 0.1,
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(0.01, 10000, 0.02);
+    REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetFar, SetFar, 500,
+        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(0.01, 10000, 0.02);
     REGISTER_PROPERTY("fov", "FOV", float, fov, 60.f, 
         "", PropertyInfo::EditorFlag).SetRange(1, 179, 1);
     REGISTER_PROPERTY("size", "Size", float, size, 1000.f, 
@@ -617,6 +617,10 @@ float ComCamera::GetNear() const {
 void ComCamera::SetNear(float zNear) {
     renderCameraDef.zNear = zNear;
 
+    if (renderCameraDef.zNear > renderCameraDef.zFar) {
+        SetProperty("far", renderCameraDef.zNear);
+    }
+
     UpdateVisuals();
 }
 
@@ -625,9 +629,11 @@ float ComCamera::GetFar() const {
 }
 
 void ComCamera::SetFar(float zFar) {
-    renderCameraDef.zFar = zFar;
+    if (zFar >= renderCameraDef.zNear) {
+        renderCameraDef.zFar = zFar;
 
-    UpdateVisuals();
+        UpdateVisuals();
+    }
 }
 
 RenderCamera::ClearMethod ComCamera::GetClearMethod() const {

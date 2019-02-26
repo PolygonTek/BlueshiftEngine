@@ -144,7 +144,7 @@ private:
     bool                    PointLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &shadowFrustum) const;
     bool                    SpotLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &shadowFrustum) const;
 
-    int                     index;              // light index in world
+    int                     index;              // index of light list in world
 
     bool                    firstUpdate;
 
