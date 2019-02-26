@@ -41,6 +41,42 @@ public:
 
     virtual const AABB      GetAABB() override;
 
+    ReflectionProbe::Type   GetType() const;
+    void                    SetType(ReflectionProbe::Type type);
+
+    int                     GetImportance() const;
+    void                    SetImportance(int importance);
+
+    int                     GetResolution() const;
+    void                    SetResolution(int resolution);
+
+    bool                    IsHDR() const;
+    void                    SetHDR(bool hdr);
+
+    ReflectionProbe::ClearMethod GetClearMethod() const;
+    void                    SetClearMethod(ReflectionProbe::ClearMethod clearMethod);
+
+    Color3                  GetClearColor() const;
+    void                    SetClearColor(const Color3 &clearColor);
+
+    float                   GetClearAlpha() const;
+    void                    SetClearAlpha(float clearAlpha);
+
+    float                   GetClippingNear() const;
+    void                    SetClippingNear(float clippingNear);
+
+    float                   GetClippingFar() const;
+    void                    SetClippingFar(float clippingFar);
+
+    bool                    IsBoxProjection() const;
+    void                    SetBoxProjection(bool boxProjection);
+
+    Vec3                    GetBoxOffset() const;
+    void                    SetBoxOffset(const Vec3 &boxOffset);
+
+    Vec3                    GetBoxSize() const;
+    void                    SetBoxSize(const Vec3 &boxSize);
+
 protected:
     virtual void            OnActive() override;
     virtual void            OnInactive() override;

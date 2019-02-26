@@ -26,22 +26,35 @@ BEGIN_EVENTS(ComReflectionProbe)
 END_EVENTS
 
 void ComReflectionProbe::RegisterProperties() {
-    /*PROPERTY_INT("importance", "Importance", "", 1, PropertyInfo::EditorFlag),
-    PROPERTY_ENUM("resolution", "Resolution", "", "16;32;64;128;256;1024;2048", 3, PropertyInfo::EditorFlag),
-    PROPERTY_BOOL("hdr", "HDR", "", true, PropertyInfo::EditorFlag),
-    PROPERTY_ENUM("clear", "Clear", "", "Color;Skybox", 1, PropertyInfo::EditorFlag),
-    PROPERTY_COLOR3("clearColor", "Clear Color", "", Color3(0, 0, 0), PropertyInfo::EditorFlag),
-    PROPERTY_FLOAT("clearAlpha", "Clear Alpha", "", 0.0f, PropertyInfo::EditorFlag),
-    PROPERTY_RANGED_FLOAT("near", "Near", "near plane distance", Rangef(0.01, 1000, 10), 0.3f, PropertyInfo::EditorFlag),
-    PROPERTY_RANGED_FLOAT("far", "Far", "far plane distance", Rangef(1, 1000, 10), 1000.f, PropertyInfo::EditorFlag),
-    PROPERTY_VEC3("boxOffset", "Box Offset", "", Vec3(0, 0, 0), PropertyInfo::EditorFlag),
-    PROPERTY_VEC3("boxSize", "Box Size", "", Vec3(10, 10, 10), PropertyInfo::EditorFlag);*/
+    REGISTER_ACCESSOR_PROPERTY("type", "Type", ReflectionProbe::Type, GetType, SetType, ReflectionProbe::Baked,
+        "", PropertyInfo::EditorFlag).SetEnumString("Baked;Realtime");
+    REGISTER_ACCESSOR_PROPERTY("importance", "Importance", int, GetImportance, SetImportance, 1,
+        "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("resolution", "Resolution", int, GetResolution, SetResolution, 3,
+        "", PropertyInfo::EditorFlag).SetEnumString("16;32;64;128;256;1024;2048");
+    REGISTER_ACCESSOR_PROPERTY("hdr", "HDR", bool, IsHDR, SetHDR, true,
+        "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("clear", "Clear", ReflectionProbe::ClearMethod, GetClearMethod, SetClearMethod, 1,
+        "", PropertyInfo::EditorFlag).SetEnumString("Color;Skybox");
+    REGISTER_MIXED_ACCESSOR_PROPERTY("clearColor", "Clear Color", Color3, GetClearColor, SetClearColor, Color3(0, 0, 0),
+        "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("clearAlpha", "Clear Alpha", float, GetClearAlpha, SetClearAlpha, 0.0f,
+        "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetClippingNear, SetClippingNear, 0.3f,
+        "Near clipping plane distance", PropertyInfo::EditorFlag).SetRange(0.01, 1000, 10);
+    REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetClippingFar, SetClippingFar, 1000.f,
+        "Far clipping plane distance", PropertyInfo::EditorFlag).SetRange(1, 1000, 10);
+    REGISTER_ACCESSOR_PROPERTY("boxProjection", "Box Projection", bool, IsBoxProjection, SetBoxProjection, false,
+        "", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("boxOffset", "Box Offset", Vec3, GetBoxOffset, SetBoxOffset, Vec3(0, 0, 0), 
+        "The center of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag),
+    REGISTER_MIXED_ACCESSOR_PROPERTY("boxSize", "Box Size", Vec3, GetBoxSize, SetBoxSize, Vec3(10, 10, 10), 
+        "The size of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag);
 }
 
 ComReflectionProbe::ComReflectionProbe() {
     sphereHandle = -1;
     sphereMesh = nullptr;
-    memset(&sphereDef, 0, sizeof(sphereDef));
 }
 
 ComReflectionProbe::~ComReflectionProbe() {
@@ -79,14 +92,15 @@ void ComReflectionProbe::Init() {
     // sphereDef
     sphereMesh = meshManager.GetMesh("_defaultSphereMesh");
 
-    memset(&sphereDef, 0, sizeof(sphereDef));
     sphereDef.layer = TagLayerSettings::EditorLayer;
     sphereDef.maxVisDist = MeterToUnit(50.0f);
 
-    Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/Camera2.png", Texture::Clamp | Texture::HighQuality);
+    // FIXME
+    Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/ReflectionProbe.png", Texture::Clamp | Texture::HighQuality);
     sphereDef.materials.SetCount(1);
-    sphereDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
+    sphereDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture);
     textureManager.ReleaseTexture(spriteTexture);
+    //
 
     sphereDef.mesh = sphereMesh->InstantiateMesh(Mesh::StaticMesh);
     sphereDef.localAABB = sphereMesh->GetAABB();
@@ -133,13 +147,9 @@ void ComReflectionProbe::DrawGizmos(const RenderCamera::State &viewState, bool s
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     if (selected) {
-        /*OBB cameraBox;
-        cameraBox.SetAxis(this->viewParms.axis);
-        cameraBox.SetCenter(this->viewParms.origin + this->viewParms.axis[0] * sizeZ);
-        cameraBox.SetExtents(Vec3(sizeZ, this->viewParms.sizeX, this->viewParms.sizeY));
-
-        renderWorld->SetDebugColor(Color4(0.5f, 0.5f, 0.5f, 0.5f), Color4::zero);
-        renderWorld->DebugOBB(cameraBox, 1.0f, false, false, true);*/
+        //AABB aabb;
+        //renderWorld->SetDebugColor(Color4(1.0f, 1.0f, 0.5f, 0.5f), Color4::zero);
+        //renderWorld->DebugAABB(aabb, 1.0f, false, false, true);
     }
 }
 
@@ -166,6 +176,90 @@ void ComReflectionProbe::TransformUpdated(const ComTransform *transform) {
     sphereDef.origin = transform->GetOrigin();
 
     UpdateVisuals();
+}
+
+ReflectionProbe::Type ComReflectionProbe::GetType() const {
+    return ReflectionProbe::Type::Baked;
+}
+
+void ComReflectionProbe::SetType(ReflectionProbe::Type type) { 
+}
+
+int ComReflectionProbe::GetImportance() const { 
+    return 1;
+}
+
+void ComReflectionProbe::SetImportance(int importance) { 
+}
+
+int ComReflectionProbe::GetResolution() const { 
+    return 3;
+}
+
+void ComReflectionProbe::SetResolution(int resolution) { 
+}
+
+bool ComReflectionProbe::IsHDR() const { 
+    return true;
+}
+
+void ComReflectionProbe::SetHDR(bool hdr) { 
+}
+
+ReflectionProbe::ClearMethod ComReflectionProbe::GetClearMethod() const { 
+    return ReflectionProbe::ClearMethod::SkyClear;
+}
+
+void ComReflectionProbe::SetClearMethod(ReflectionProbe::ClearMethod clearMethod) { 
+}
+
+Color3 ComReflectionProbe::GetClearColor() const { 
+    return Color3::black;
+}
+
+void ComReflectionProbe::SetClearColor(const Color3 &clearColor) { 
+}
+
+float ComReflectionProbe::GetClearAlpha() const { 
+    return 0.0f;
+}
+
+void ComReflectionProbe::SetClearAlpha(float clearAlpha) { 
+}
+
+float ComReflectionProbe::GetClippingNear() const { 
+    return 0.3f;
+}
+
+void ComReflectionProbe::SetClippingNear(float clippingNear) { 
+}
+
+float ComReflectionProbe::GetClippingFar() const { 
+    return 1000.0f;
+}
+
+void ComReflectionProbe::SetClippingFar(float clippingFar) { 
+}
+
+bool ComReflectionProbe::IsBoxProjection() const { 
+    return false;
+}
+
+void ComReflectionProbe::SetBoxProjection(bool boxProjection) { 
+}
+
+Vec3 ComReflectionProbe::GetBoxOffset() const { 
+    return Vec3(0, 0, 0);
+}
+
+void ComReflectionProbe::SetBoxOffset(const Vec3 &boxOffset) { 
+}
+
+Vec3 ComReflectionProbe::GetBoxSize() const {
+    return Vec3(10, 10, 10);
+}
+
+void ComReflectionProbe::SetBoxSize(const Vec3 &boxSize) { 
 }
 
 BE_NAMESPACE_END

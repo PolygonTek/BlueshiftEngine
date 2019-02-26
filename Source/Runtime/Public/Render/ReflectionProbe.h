@@ -32,20 +32,26 @@ public:
     };
 
     enum ClearMethod {
-        NoClear,
         ColorClear,
         SkyClear
     };
 
     Type            type;
-    ClearMethod     clearMethod;
     int             importance;
+    int             resolution;
+    bool            useHDR;
+    int             layerMask;
+    ClearMethod     clearMethod;
+    Vec4            clearColor;
+    float           clippingNear;
+    float           clippingFar;
+
     bool            useBoxProjection;
+    Vec3            boxOffset;
+    Vec3            boxSize;
 
     Vec3            origin;
     Mat3            axis;
-    Vec3            boxOffset;
-    Vec3            boxSize;
 
     Texture *       diffuseCubeMap;
     Texture *       specularCubeMap;

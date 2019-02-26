@@ -120,6 +120,7 @@ static void RegisterEngineObjects() {
     ComParticleSystem::RegisterProperties();
     ComTextRenderer::RegisterProperties();
     ComLight::RegisterProperties();
+    ComReflectionProbe::RegisterProperties();
     ComCamera::RegisterProperties();
     ComSpline::RegisterProperties();
     ComScript::RegisterProperties();
