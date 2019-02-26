@@ -18,4 +18,11 @@
 
 BE_NAMESPACE_BEGIN
 
+void ReflectionProbe::Update(const ReflectionProbe::State *stateDef) {
+    state = *stateDef;
+
+    worldAABB = AABB(-state.boxSize, state.boxSize);
+    worldAABB += state.origin + state.boxOffset;
+}
+
 BE_NAMESPACE_END

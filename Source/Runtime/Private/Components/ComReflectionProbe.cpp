@@ -30,7 +30,7 @@ void ComReflectionProbe::RegisterProperties() {
         "", PropertyInfo::EditorFlag).SetEnumString("Baked;Realtime");
     REGISTER_ACCESSOR_PROPERTY("importance", "Importance", int, GetImportance, SetImportance, 1,
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("resolution", "Resolution", int, GetResolution, SetResolution, 3,
+    REGISTER_ACCESSOR_PROPERTY("resolution", "Resolution", ReflectionProbe::Resolution, GetResolution, SetResolution, ReflectionProbe::Resolution128,
         "", PropertyInfo::EditorFlag).SetEnumString("16;32;64;128;256;1024;2048");
     REGISTER_ACCESSOR_PROPERTY("hdr", "HDR", bool, IsHDR, SetHDR, true,
         "", PropertyInfo::EditorFlag);
@@ -40,16 +40,16 @@ void ComReflectionProbe::RegisterProperties() {
         "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("clearAlpha", "Clear Alpha", float, GetClearAlpha, SetClearAlpha, 0.0f,
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetClippingNear, SetClippingNear, 0.3f,
-        "Near clipping plane distance", PropertyInfo::EditorFlag).SetRange(0.01, 1000, 10);
-    REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetClippingFar, SetClippingFar, 1000.f,
-        "Far clipping plane distance", PropertyInfo::EditorFlag).SetRange(1, 1000, 10);
+    REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetClippingNear, SetClippingNear, 0.1,
+        "Near clipping plane distance", PropertyInfo::EditorFlag).SetRange(0.01, 10000, 0.02);
+    REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetClippingFar, SetClippingFar, 500,
+        "Far clipping plane distance", PropertyInfo::EditorFlag).SetRange(0.01, 10000, 0.02);
     REGISTER_ACCESSOR_PROPERTY("boxProjection", "Box Projection", bool, IsBoxProjection, SetBoxProjection, false,
         "", PropertyInfo::EditorFlag);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("boxOffset", "Box Offset", Vec3, GetBoxOffset, SetBoxOffset, Vec3(0, 0, 0), 
-        "The center of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag),
-    REGISTER_MIXED_ACCESSOR_PROPERTY("boxSize", "Box Size", Vec3, GetBoxSize, SetBoxSize, Vec3(10, 10, 10), 
-        "The size of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("boxSize", "Box Size", Vec3, GetBoxSize, SetBoxSize, Vec3(10, 10, 10),
+        "The size of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag).SetRange(0, 1e8, 0.05);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("boxOffset", "Box Offset", Vec3, GetBoxOffset, SetBoxOffset, Vec3(0, 0, 0),
+        "The center of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag);
 }
 
 ComReflectionProbe::ComReflectionProbe() {
@@ -89,6 +89,10 @@ void ComReflectionProbe::Init() {
 
     ComTransform *transform = GetEntity()->GetTransform();
 
+    probeDef.origin = transform->GetOrigin();
+
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComReflectionProbe::TransformUpdated, SignalObject::Unique);
+
     // sphereDef
     sphereMesh = meshManager.GetMesh("_defaultSphereMesh");
 
@@ -113,8 +117,6 @@ void ComReflectionProbe::Init() {
     sphereDef.materialParms[RenderObject::AlphaParm] = 1.0f;
     sphereDef.materialParms[RenderObject::TimeOffsetParm] = 0.0f;
     sphereDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
-
-    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComReflectionProbe::TransformUpdated, SignalObject::Unique);
 
     // Mark as initialized
     SetInitialized(true);
@@ -147,9 +149,11 @@ void ComReflectionProbe::DrawGizmos(const RenderCamera::State &viewState, bool s
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     if (selected) {
-        //AABB aabb;
-        //renderWorld->SetDebugColor(Color4(1.0f, 1.0f, 0.5f, 0.5f), Color4::zero);
-        //renderWorld->DebugAABB(aabb, 1.0f, false, false, true);
+        AABB aabb = AABB(-probeDef.boxSize, probeDef.boxSize);
+        aabb += probeDef.origin + probeDef.boxOffset;
+        
+        renderWorld->SetDebugColor(Color4(1.0f, 1.0f, 0.5f, 1.0f), Color4::zero);
+        renderWorld->DebugAABB(aabb, 1.0f, false, true, true);
     }
 }
 
@@ -170,8 +174,7 @@ void ComReflectionProbe::UpdateVisuals() {
 }
 
 void ComReflectionProbe::TransformUpdated(const ComTransform *transform) {
-    //viewParms.origin = transform->GetOrigin();
-    //viewParms.axis = transform->GetAxis();
+    probeDef.origin = transform->GetOrigin();
 
     sphereDef.origin = transform->GetOrigin();
 
@@ -179,87 +182,135 @@ void ComReflectionProbe::TransformUpdated(const ComTransform *transform) {
 }
 
 ReflectionProbe::Type ComReflectionProbe::GetType() const {
-    return ReflectionProbe::Type::Baked;
+    return probeDef.type;
 }
 
 void ComReflectionProbe::SetType(ReflectionProbe::Type type) { 
+    probeDef.type = type;
 }
 
 int ComReflectionProbe::GetImportance() const { 
-    return 1;
+    return probeDef.importance;
 }
 
 void ComReflectionProbe::SetImportance(int importance) { 
+    probeDef.importance = importance;
 }
 
-int ComReflectionProbe::GetResolution() const { 
-    return 3;
+ReflectionProbe::Resolution ComReflectionProbe::GetResolution() const {
+    return probeDef.resolution;
 }
 
-void ComReflectionProbe::SetResolution(int resolution) { 
+void ComReflectionProbe::SetResolution(ReflectionProbe::Resolution resolution) { 
+    probeDef.resolution = resolution;
 }
 
 bool ComReflectionProbe::IsHDR() const { 
-    return true;
+    return probeDef.useHDR;
 }
 
-void ComReflectionProbe::SetHDR(bool hdr) { 
+void ComReflectionProbe::SetHDR(bool useHDR) {
+    probeDef.useHDR = useHDR;
 }
 
 ReflectionProbe::ClearMethod ComReflectionProbe::GetClearMethod() const { 
-    return ReflectionProbe::ClearMethod::SkyClear;
+    return probeDef.clearMethod;
 }
 
 void ComReflectionProbe::SetClearMethod(ReflectionProbe::ClearMethod clearMethod) { 
+    probeDef.clearMethod = clearMethod;
 }
 
 Color3 ComReflectionProbe::GetClearColor() const { 
-    return Color3::black;
+    return probeDef.clearColor.ToColor3();
 }
 
 void ComReflectionProbe::SetClearColor(const Color3 &clearColor) { 
+    probeDef.clearColor.ToColor3() = clearColor;
 }
 
 float ComReflectionProbe::GetClearAlpha() const { 
-    return 0.0f;
+    return probeDef.clearColor.a;
 }
 
 void ComReflectionProbe::SetClearAlpha(float clearAlpha) { 
+    probeDef.clearColor.a = clearAlpha;
 }
 
 float ComReflectionProbe::GetClippingNear() const { 
-    return 0.3f;
+    return probeDef.clippingNear;
 }
 
 void ComReflectionProbe::SetClippingNear(float clippingNear) { 
+    probeDef.clippingNear = clippingNear;
+
+    if (probeDef.clippingNear > probeDef.clippingFar) {
+        SetProperty("far", probeDef.clippingNear);
+    }
 }
 
 float ComReflectionProbe::GetClippingFar() const { 
-    return 1000.0f;
+    return probeDef.clippingFar;
 }
 
 void ComReflectionProbe::SetClippingFar(float clippingFar) { 
+    if (clippingFar >= probeDef.clippingNear) {
+        probeDef.clippingFar = clippingFar;
+    }
 }
 
 bool ComReflectionProbe::IsBoxProjection() const { 
-    return false;
+    return probeDef.useBoxProjection;
 }
 
-void ComReflectionProbe::SetBoxProjection(bool boxProjection) { 
-}
-
-Vec3 ComReflectionProbe::GetBoxOffset() const { 
-    return Vec3(0, 0, 0);
-}
-
-void ComReflectionProbe::SetBoxOffset(const Vec3 &boxOffset) { 
+void ComReflectionProbe::SetBoxProjection(bool useBoxProjection) { 
+    probeDef.useBoxProjection = useBoxProjection;
 }
 
 Vec3 ComReflectionProbe::GetBoxSize() const {
-    return Vec3(10, 10, 10);
+    return probeDef.boxSize;
 }
 
-void ComReflectionProbe::SetBoxSize(const Vec3 &boxSize) { 
+void ComReflectionProbe::SetBoxSize(const Vec3 &boxSize) {
+    probeDef.boxSize = boxSize;
+
+    // The origin must be included in the box range.
+    // So if it doesn't we need to adjust box offset.
+    Vec3 adjustedBoxOffset = probeDef.boxOffset;
+
+    for (int i = 0; i < 3; i++) {
+        float delta = probeDef.boxOffset[i] - probeDef.boxSize[i];
+        if (delta > 0) {
+            adjustedBoxOffset[i] = probeDef.boxOffset[i] - delta;
+        }
+    }
+
+    if (adjustedBoxOffset != probeDef.boxSize) {
+        SetProperty("boxOffset", adjustedBoxOffset);
+    }
+}
+
+Vec3 ComReflectionProbe::GetBoxOffset() const { 
+    return probeDef.boxOffset;
+}
+
+void ComReflectionProbe::SetBoxOffset(const Vec3 &boxOffset) { 
+    probeDef.boxOffset = boxOffset;
+
+    // The origin must be included in the box range.
+    // So if it doesn't we need to adjust box size.
+    Vec3 adjustedBoxSize = probeDef.boxSize;
+
+    for (int i = 0; i < 3; i++) {
+        float delta = probeDef.boxOffset[i] - probeDef.boxSize[i];
+        if (delta > 0) {
+            adjustedBoxSize[i] = probeDef.boxSize[i] + delta;
+        }
+    }
+
+    if (adjustedBoxSize != probeDef.boxSize) {
+        SetProperty("boxSize", adjustedBoxSize);
+    }
 }
 
 BE_NAMESPACE_END

@@ -47,11 +47,11 @@ public:
     int                     GetImportance() const;
     void                    SetImportance(int importance);
 
-    int                     GetResolution() const;
-    void                    SetResolution(int resolution);
+    ReflectionProbe::Resolution GetResolution() const;
+    void                    SetResolution(ReflectionProbe::Resolution resolution);
 
     bool                    IsHDR() const;
-    void                    SetHDR(bool hdr);
+    void                    SetHDR(bool useHDR);
 
     ReflectionProbe::ClearMethod GetClearMethod() const;
     void                    SetClearMethod(ReflectionProbe::ClearMethod clearMethod);
@@ -69,13 +69,13 @@ public:
     void                    SetClippingFar(float clippingFar);
 
     bool                    IsBoxProjection() const;
-    void                    SetBoxProjection(bool boxProjection);
-
-    Vec3                    GetBoxOffset() const;
-    void                    SetBoxOffset(const Vec3 &boxOffset);
+    void                    SetBoxProjection(bool useBoxProjection);
 
     Vec3                    GetBoxSize() const;
     void                    SetBoxSize(const Vec3 &boxSize);
+
+    Vec3                    GetBoxOffset() const;
+    void                    SetBoxOffset(const Vec3 &boxOffset);
 
 protected:
     virtual void            OnActive() override;
@@ -85,7 +85,7 @@ protected:
 
     void                    TransformUpdated(const ComTransform *transform);
 
-    RenderObject::State     probeDef;
+    ReflectionProbe::State  probeDef;
     int                     probeHandle;
 
     Mesh *                  sphereMesh;
