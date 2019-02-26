@@ -203,6 +203,8 @@ ReflectionProbe::Resolution ComReflectionProbe::GetResolution() const {
 
 void ComReflectionProbe::SetResolution(ReflectionProbe::Resolution resolution) { 
     probeDef.resolution = resolution;
+
+    //Invalidate();
 }
 
 bool ComReflectionProbe::IsHDR() const { 
@@ -211,6 +213,8 @@ bool ComReflectionProbe::IsHDR() const {
 
 void ComReflectionProbe::SetHDR(bool useHDR) {
     probeDef.useHDR = useHDR;
+
+    //Invalidate();
 }
 
 ReflectionProbe::ClearMethod ComReflectionProbe::GetClearMethod() const { 
@@ -219,6 +223,8 @@ ReflectionProbe::ClearMethod ComReflectionProbe::GetClearMethod() const {
 
 void ComReflectionProbe::SetClearMethod(ReflectionProbe::ClearMethod clearMethod) { 
     probeDef.clearMethod = clearMethod;
+
+    //Invalidate();
 }
 
 Color3 ComReflectionProbe::GetClearColor() const { 
@@ -227,6 +233,8 @@ Color3 ComReflectionProbe::GetClearColor() const {
 
 void ComReflectionProbe::SetClearColor(const Color3 &clearColor) { 
     probeDef.clearColor.ToColor3() = clearColor;
+
+    //Invalidate();
 }
 
 float ComReflectionProbe::GetClearAlpha() const { 
@@ -235,6 +243,8 @@ float ComReflectionProbe::GetClearAlpha() const {
 
 void ComReflectionProbe::SetClearAlpha(float clearAlpha) { 
     probeDef.clearColor.a = clearAlpha;
+
+    //Invalidate();
 }
 
 float ComReflectionProbe::GetClippingNear() const { 
@@ -247,6 +257,8 @@ void ComReflectionProbe::SetClippingNear(float clippingNear) {
     if (probeDef.clippingNear > probeDef.clippingFar) {
         SetProperty("far", probeDef.clippingNear);
     }
+
+    //Invalidate();
 }
 
 float ComReflectionProbe::GetClippingFar() const { 
@@ -257,6 +269,8 @@ void ComReflectionProbe::SetClippingFar(float clippingFar) {
     if (clippingFar >= probeDef.clippingNear) {
         probeDef.clippingFar = clippingFar;
     }
+
+    //Invalidate();
 }
 
 bool ComReflectionProbe::IsBoxProjection() const { 
