@@ -1,0 +1,17 @@
+in LOWP vec4 in_position    : POSITION;
+
+out MEDIUMP vec3 v2f_texCoord;
+
+uniform mat4 modelViewMatrix;
+uniform mat4 modelViewProjectionMatrix;
+
+void main() {
+    vec3 dir = in_position.xyz;
+
+    // Convert z-up axis to GL axis
+    v2f_texCoord.x = dir.y;
+    v2f_texCoord.y = dir.z;
+    v2f_texCoord.z = dir.x;
+
+    gl_Position = modelViewProjectionMatrix * in_position;
+}

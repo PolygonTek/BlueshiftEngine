@@ -19,9 +19,10 @@
 
 BE_NAMESPACE_BEGIN
 
-RenderLight::RenderLight() {
+RenderLight::RenderLight(int index) {
     memset(&state, 0, sizeof(state));
-    index = 0;
+
+    this->index = index;
 
     worldOBB.SetZero();
     worldFrustum.SetOrigin(Vec3::origin);

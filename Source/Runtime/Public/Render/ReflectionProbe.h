@@ -33,6 +33,11 @@ public:
         Realtime
     };
 
+    enum RefreshMode {
+        OnAwake,
+        EveryFrame
+    };
+
     enum Resolution {
         Resolution16,
         Resolution32,
@@ -50,15 +55,16 @@ public:
 
     struct State {
         Type            type;
-        int             importance;
+        RefreshMode     refreshMode;
         Resolution      resolution;
         bool            useHDR;
-
-        int             layerMask;
         ClearMethod     clearMethod;
         Color4          clearColor;
         float           clippingNear;
         float           clippingFar;
+
+        int             importance;
+        int             layerMask;
 
         Vec3            origin;
 
@@ -72,12 +78,24 @@ public:
         bool            useBoxProjection;
     };
 
+    ReflectionProbe(int index);
+    ~ReflectionProbe();
+
                         /// Returns AABB in world space.
     const AABB          GetWorldAABB() const { return worldAABB; }
+
+                        /// Returns prefiltered specular cube texture.
+    Texture *           GetDiffuseSumCubeTexture() const { return diffuseSumCubeTexture; }
+
+                        /// Returns irradiance diffuse cube texture.
+    Texture *           GetSpecularSumCubeTexture() const { return specularSumCubeTexture; }
 
 private:
                         /// Updates this probe with the given state.
     void                Update(const State *state);
+
+    void                Invalidate();
+    void                ForceToRefresh(RenderWorld *renderWorld);
 
     int                 index;              // index of reflection probe list in world
 
@@ -85,8 +103,13 @@ private:
 
     AABB                worldAABB;
 
-    Texture *           diffuseCubeMap;
-    Texture *           specularCubeMap;
+    Texture *           diffuseSumCubeTexture = nullptr;
+    Texture *           specularSumCubeTexture = nullptr;
+
+    RenderTarget *      diffuseSumCubeRT = nullptr;
+    RenderTarget *      specularSumCubeRT = nullptr;
+
+    bool                needToRefresh = false;
 
     DbvtProxy *         proxy;
 };

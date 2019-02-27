@@ -145,7 +145,7 @@ public:
         Skin *              customSkin = nullptr;
     };
 
-    RenderObject();
+    RenderObject(int index);
     ~RenderObject();
 
                             /// Returns object index in world.

@@ -36,6 +36,13 @@ public:
 
     virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
 
+                            /// Called once when game started before Start()
+                            /// When game already started, called immediately after spawned
+    virtual void            Awake() override;
+
+                            /// Called on game world update, variable timestep.
+    virtual void            Update() override;
+
                             /// Visualize the component in editor
     virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
 
@@ -43,6 +50,9 @@ public:
 
     ReflectionProbe::Type   GetType() const;
     void                    SetType(ReflectionProbe::Type type);
+
+    ReflectionProbe::RefreshMode GetRefreshMode() const;
+    void                    SetRefreshMode(ReflectionProbe::RefreshMode refreshMode);
 
     int                     GetImportance() const;
     void                    SetImportance(int importance);
@@ -52,6 +62,9 @@ public:
 
     bool                    IsHDR() const;
     void                    SetHDR(bool useHDR);
+
+    int                     GetLayerMask() const;
+    void                    SetLayerMask(int layerMask);
 
     ReflectionProbe::ClearMethod GetClearMethod() const;
     void                    SetClearMethod(ReflectionProbe::ClearMethod clearMethod);

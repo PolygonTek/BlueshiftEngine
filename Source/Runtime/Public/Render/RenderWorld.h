@@ -60,7 +60,7 @@ public:
     void                        RemoveRenderObject(int handle);
 
                                 /// Gets RenderObject pointer by given render object handle.
-    const RenderObject *        GetRenderObject(int handle) const;
+    RenderObject *              GetRenderObject(int handle) const;
 
                                 /// Adds render light to this world.
     int                         AddRenderLight(const RenderLight::State *def);
@@ -72,7 +72,7 @@ public:
     void                        RemoveRenderLight(int handle);
 
                                 /// Gets RenderLight pointer by given render light handle.
-    const RenderLight *         GetRenderLight(int handle) const;
+    RenderLight *               GetRenderLight(int handle) const;
 
                                 /// Adds reflection probe to this world.
     int                         AddReflectionProbe(const ReflectionProbe::State *def);
@@ -84,7 +84,9 @@ public:
     void                        RemoveReflectionProbe(int handle);
 
                                 /// Gets ReflectionProbe pointer by given reflection probe handle.
-    const ReflectionProbe *     GetReflectionProbe(int handle) const;
+    ReflectionProbe *           GetReflectionProbe(int handle) const;
+
+    void                        RefreshReflectionProbe(int handle);
 
     int                         GetViewCount() const { return viewCount; }
 

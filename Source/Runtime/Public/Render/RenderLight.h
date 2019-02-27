@@ -70,7 +70,7 @@ public:
         float               materialParms[RenderObject::MaxMaterialParms] = { 1, 1, 1, 1, 0, 1 };
     };
 
-    RenderLight();
+    RenderLight(int index);
     ~RenderLight();
 
                             /// Returns state.

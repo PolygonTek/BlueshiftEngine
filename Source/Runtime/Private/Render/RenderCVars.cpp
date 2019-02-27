@@ -59,6 +59,10 @@ CVAR(r_CSM_offsetUnits2, "250", CVar::Float, "bias value added to depth test for
 CVAR(r_CSM_offsetUnits3, "125", CVar::Float, "bias value added to depth test for CSM3 drawing");
 CVAR(r_optimizedShadowProjection, "1", CVar::Integer, "");
 
+CVAR(r_envCubeMapHdr, "1", CVar::Bool, "");
+CVAR(r_envCubeMapSize, "256", CVar::Integer, "");
+CVAR(r_envCubeMapBounces, "1", CVar::Integer, "");
+
 CVAR(r_HOM, "0", CVar::Bool, "use hierarchical occlusion map culling");
 CVAR(r_HOM_debug, "0", CVar::Bool, "");
 

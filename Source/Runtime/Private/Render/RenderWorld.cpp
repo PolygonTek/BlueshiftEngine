@@ -53,7 +53,7 @@ void RenderWorld::ClearScene() {
     }
 }
 
-const RenderObject *RenderWorld::GetRenderObject(int handle) const {
+RenderObject *RenderWorld::GetRenderObject(int handle) const {
     if (handle < 0 || handle >= renderObjects.Count()) {
         BE_WARNLOG("RenderWorld::GetRenderObject: handle %i > %i\n", handle, renderObjects.Count() - 1);
         return nullptr;
@@ -86,10 +86,9 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
 
     RenderObject *renderObject = renderObjects[handle];
     if (!renderObject) {
-        renderObject = new RenderObject;
+        renderObject = new RenderObject(handle);
         renderObjects[handle] = renderObject;
 
-        renderObject->index = handle;
         renderObject->Update(def);
 
         // Add proxy in the DBVT for the renderObjects
@@ -183,7 +182,7 @@ void RenderWorld::RemoveRenderObject(int handle) {
     renderObjects[handle] = nullptr;
 }
 
-const RenderLight *RenderWorld::GetRenderLight(int handle) const {
+RenderLight *RenderWorld::GetRenderLight(int handle) const {
     if (handle < 0 || handle >= renderLights.Count()) {
         BE_WARNLOG("RenderWorld::GetRenderLight: handle %i > %i\n", handle, renderLights.Count() - 1);
         return nullptr;
@@ -216,10 +215,9 @@ void RenderWorld::UpdateRenderLight(int handle, const RenderLight::State *def) {
 
     RenderLight *renderLight = renderLights[handle];
     if (!renderLight) {
-        renderLight = new RenderLight;
+        renderLight = new RenderLight(handle);
         renderLights[handle] = renderLight;
 
-        renderLight->index = handle;
         renderLight->Update(def);
 
         renderLight->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
@@ -258,7 +256,7 @@ void RenderWorld::RemoveRenderLight(int handle) {
     renderLights[handle] = nullptr;
 }
 
-const ReflectionProbe *RenderWorld::GetReflectionProbe(int handle) const {
+ReflectionProbe *RenderWorld::GetReflectionProbe(int handle) const {
     if (handle < 0 || handle >= reflectionProbes.Count()) {
         BE_WARNLOG("RenderWorld::GetReflectionProbe: handle %i > %i\n", handle, reflectionProbes.Count() - 1);
         return nullptr;
@@ -291,10 +289,9 @@ void RenderWorld::UpdateReflectionProbe(int handle, const ReflectionProbe::State
 
     ReflectionProbe *reflectionProbe = reflectionProbes[handle];
     if (!reflectionProbe) {
-        reflectionProbe = new ReflectionProbe;
+        reflectionProbe = new ReflectionProbe(handle);
         reflectionProbes[handle] = reflectionProbe;
 
-        reflectionProbe->index = handle;
         reflectionProbe->Update(def);
 
         reflectionProbe->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
@@ -330,6 +327,12 @@ void RenderWorld::RemoveReflectionProbe(int handle) {
 
     delete reflectionProbes[handle];
     reflectionProbes[handle] = nullptr;
+}
+
+void RenderWorld::RefreshReflectionProbe(int handle) {
+    ReflectionProbe *probe = GetReflectionProbe(handle);
+
+    probe->ForceToRefresh(this);
 }
 
 void RenderWorld::SetSkyboxMaterial(Material *skyboxMaterial) {
@@ -406,8 +409,8 @@ void RenderWorld::DrawGUICamera(GuiMesh &guiMesh) {
     def.materialParms[RenderObject::AlphaParm] = 1.0f;
     def.materialParms[RenderObject::TimeScaleParm] = 1.0f;
 
-    static RenderObject renderObject;
-    new (&renderObject) RenderObject();
+    static RenderObject renderObject(-1);
+    new (&renderObject) RenderObject(-1);
     renderObject.Update(&def);
 
     // GUI camera

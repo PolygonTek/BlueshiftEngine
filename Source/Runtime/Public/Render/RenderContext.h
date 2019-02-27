@@ -191,6 +191,8 @@ public:
     void                    FreeHdrMapRT();
     void                    InitShadowMapRT();
     void                    FreeShadowMapRT();
+    void                    InitEnvCubeMapRT();
+    void                    FreeEnvCubeMapRT();
 
     RHI::Handle             contextHandle;
 
@@ -222,43 +224,47 @@ public:
     RenderCounter           renderCounter;
     int                     startFrameSec;
 
-    Texture *               screenColorTexture;
-    Texture *               screenDepthTexture;
-    Texture *               screenNormalTexture;
-    Texture *               screenLitAccTexture;
-    Texture *               screenSelectionTexture;
+    Texture *               screenColorTexture = nullptr;
+    Texture *               screenDepthTexture = nullptr;
+    Texture *               screenNormalTexture = nullptr;
+    Texture *               screenLitAccTexture = nullptr;
+    Texture *               screenSelectionTexture = nullptr;
 
-    Texture *               homTexture;
-    Texture *               ppTextures[MAX_PP_TEXTURES];
+    Texture *               homTexture = nullptr;
+    Texture *               ppTextures[MAX_PP_TEXTURES] = { nullptr, };
 
-    Texture *               hdrBloomTexture[2];
-    Texture *               hdrLumAverageTexture[6];
-    Texture *               hdrLuminanceTexture[3];
+    Texture *               hdrBloomTexture[2] = { nullptr, };
+    Texture *               hdrLumAverageTexture[6] = { nullptr, };
+    Texture *               hdrLuminanceTexture[3] = { nullptr, };
 
-    Texture *               currentRenderTexture;
+    Texture *               envCubeTexture = nullptr;
+
+    Texture *               currentRenderTexture = nullptr;
     bool                    updateCurrentRenderTexture;
 
-    RenderTarget *          screenRT;
-    RenderTarget *          screenLitAccRT;
-    RenderTarget *          screenSelectionRT;
-    RenderTarget *          homRT;
-    RenderTarget *          ppRTs[MAX_PP_RTS];
+    RenderTarget *          screenRT = nullptr;
+    RenderTarget *          screenLitAccRT = nullptr;
+    RenderTarget *          screenSelectionRT = nullptr;
+    RenderTarget *          homRT = nullptr;
+    RenderTarget *          ppRTs[MAX_PP_RTS] = { nullptr, };
 
-    RenderTarget *          hdrBloomRT[2];
-    RenderTarget *          hdrLumAverageRT[6];
-    RenderTarget *          hdrLuminanceRT[3];
+    RenderTarget *          hdrBloomRT[2] = { nullptr, };
+    RenderTarget *          hdrLumAverageRT[6] = { nullptr, };
+    RenderTarget *          hdrLuminanceRT[3] = { nullptr, };
 
-    Texture *               indirectionCubeMapTexture;
+    RenderTarget *          envCubeRT = nullptr;
+
+    Texture *               indirectionCubeMapTexture = nullptr;;
     float                   vscmBiasedScale;
     float                   vscmBiasedFov;
 
-    bool                    vscmCleared[6];
+    bool                    vscmCleared[6] = { false, };
 
-    Texture *               shadowRenderTexture;
-    Texture *               vscmTexture;
+    Texture *               shadowRenderTexture = nullptr;;
+    Texture *               vscmTexture = nullptr;;
 
-    RenderTarget *          shadowMapRT;
-    RenderTarget *          vscmRT;         // VSCM (Virtual Shadow Cube Map)
+    RenderTarget *          shadowMapRT = nullptr;;
+    RenderTarget *          vscmRT = nullptr;;          // VSCM (Virtual Shadow Cube Map)
 };
 
 BE_INLINE Color4 RenderContext::GetColor() const {

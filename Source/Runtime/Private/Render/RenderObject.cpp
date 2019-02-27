@@ -19,9 +19,10 @@
 
 BE_NAMESPACE_BEGIN
 
-RenderObject::RenderObject() {
+RenderObject::RenderObject(int index) {
     memset(&state, 0, sizeof(state));
-    index = 0;
+
+    this->index = index;
 
     worldOBB.SetZero();
 
