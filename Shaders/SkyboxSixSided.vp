@@ -8,8 +8,6 @@ uniform mat4 modelViewMatrix;
 uniform mat4 modelViewProjectionMatrix;
 
 uniform mat4x3 localToWorldMatrix;
-uniform vec4 textureMatrixS;
-uniform vec4 textureMatrixT;
 uniform LOWP vec4 constantColor;
 
 uniform LOWP vec4 vertexColorScale;

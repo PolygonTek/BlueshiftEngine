@@ -197,6 +197,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                                 property.texture = textureManager.GetTexture(texturePath);
                             }
                         } else {
+                            // Value
                             property.data = Variant::FromString(propInfo.GetType(), propDict.GetString(propName, propInfo.GetDefaultValue().ToString()));
                             property.texture = nullptr;
                         }
