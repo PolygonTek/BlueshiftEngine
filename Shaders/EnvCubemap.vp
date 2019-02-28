@@ -1,17 +1,20 @@
-in LOWP vec4 in_position    : POSITION;
+in HIGHP vec4 in_position   : POSITION;
 
-out MEDIUMP vec3 v2f_texCoord;
+out LOWP vec3 v2f_viewWS;
+out LOWP vec3 v2f_normal;
 
 uniform mat4 modelViewMatrix;
 uniform mat4 modelViewProjectionMatrix;
 
-void main() {
-    vec3 dir = in_position.xyz;
+uniform mat4x3 localToWorldMatrix;
 
-    // Convert z-up axis to GL axis
-    v2f_texCoord.x = dir.y;
-    v2f_texCoord.y = dir.z;
-    v2f_texCoord.z = dir.x;
+uniform vec3 viewOrigin;    // eye position in world space
+
+void main() {
+    vec4 positionWS = vec4(localToWorldMatrix * in_position, 1.0);
+    v2f_viewWS = viewOrigin.yzx - positionWS.yzx;
+
+    v2f_normal = in_position.yzx;
 
     gl_Position = modelViewProjectionMatrix * in_position;
 }
