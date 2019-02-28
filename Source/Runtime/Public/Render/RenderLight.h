@@ -52,6 +52,7 @@ public:
     struct State {
         int                 flags = 0;
         int                 layer = 0;
+        int                 staticMask = 0;
         Type                type = PointLight;
         float               maxVisDist = MeterToUnit(10);
 

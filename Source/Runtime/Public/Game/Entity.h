@@ -75,10 +75,10 @@ public:
                                 /// Sets layer index.
     void                        SetLayer(int layer);
 
-                                /// Returns if this entity is static.
-    bool                        IsStatic() const { return isStatic; }
-                                /// Sets this entity static.
-    void                        SetStatic(bool isStatic);
+                                /// Returns entity static mask.
+    int                         GetStaticMask() const { return staticMask; }
+                                /// Sets entity static mask.
+    void                        SetStaticMask(int staticMask);
 
                                 /// Returns if this entity is frozen. Frozen entity will not be selectable in editor.
     bool                        IsFrozen() const { return frozen; }
@@ -235,6 +235,7 @@ public:
     static const SignalDef      SIG_ActiveInHierarchyChanged;
     static const SignalDef      SIG_NameChanged;
     static const SignalDef      SIG_LayerChanged;
+    static const SignalDef      SIG_StaticMaskChanged;
     static const SignalDef      SIG_FrozenChanged;
     static const SignalDef      SIG_ParentChanged;
     static const SignalDef      SIG_ComponentInserted;
@@ -259,11 +260,11 @@ protected:
     int                         tagHash;            ///< Hash key for GameWorld::entityTagHash
     int                         entityNum;          ///< Index for GameWorld::entities
     int                         layer;              ///< Layer number
+    int                         staticMask;
     Hierarchy<Entity>           node;
     Guid                        prefabSourceGuid;
 
     bool                        initialized;
-    bool                        isStatic;
     bool                        awaked;
     bool                        started;
     bool                        activeSelf;         ///< Local active state

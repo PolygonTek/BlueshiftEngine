@@ -89,8 +89,10 @@ void ReflectionProbe::ForceToRefresh(RenderWorld *renderWorld) {
 
     RenderContext *renderContext = renderSystem.GetMainRenderContext();
 
+    int staticMask = state.type == ReflectionProbe::Type::Baked ? -1 : 0;
+
     // Capture environment probe
-    renderContext->CaptureEnvCubeRT(renderWorld, state.layerMask, state.origin, renderContext->envCubeRT);
+    renderContext->CaptureEnvCubeRT(renderWorld, state.layerMask, staticMask, state.origin, renderContext->envCubeRT);
 
     // Generate irradiance cube map
     renderContext->GenerateIrradianceEnvCubeRT(renderContext->envCubeTexture, diffuseSumCubeRT);

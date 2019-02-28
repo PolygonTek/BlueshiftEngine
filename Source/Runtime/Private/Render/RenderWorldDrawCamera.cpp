@@ -95,6 +95,13 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
             return true;
         }
 
+        // Skip if camera uses static lights and light is not static
+        if (camera->def->GetState().flags & RenderCamera::StaticOnly) {
+            if (!(renderLight->state.staticMask & camera->def->GetState().staticMask)) {
+                return true;
+            }
+        }
+
         // Skip if a light is farther than maximum visible distance
         if (renderLight->state.origin.DistanceSqr(camera->def->GetState().origin) > renderLight->maxVisDistSquared) {
             return true;
@@ -132,6 +139,13 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
         // Skip if object layer is not visible with this camera
         if (!(BIT(renderObject->state.layer) & camera->def->GetState().layerMask)) {
             return true;
+        }
+
+        // Skip if camera renders static objects and this object is not static
+        if (camera->def->GetState().flags & RenderCamera::StaticOnly) {
+            if (!(renderObject->state.staticMask & camera->def->GetState().staticMask)) {
+                return true;
+            }
         }
 
         // Skip first person camera only object in sub camera
@@ -508,7 +522,7 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
     for (visLight = camera->visLights.Next(); visLight; visLight = visLight->node.Next()) {
         const RenderLight *renderLight = visLight->def;
 
-        if (!(BIT(visLight->def->state.layer) & camera->def->state.layerMask)) {
+        if (!(BIT(visLight->def->state.layer) & camera->def->GetState().layerMask)) {
             continue;
         }
 

@@ -96,6 +96,7 @@ protected:
     void                    UpdateVisuals();
 
     void                    LayerChanged(const Entity *entity);
+    void                    StaticMaskChanged(const Entity *entity);
     void                    TransformUpdated(const ComTransform *transform);
 
     RenderLight::State      renderLightDef;

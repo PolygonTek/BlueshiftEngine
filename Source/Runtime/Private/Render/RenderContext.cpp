@@ -817,7 +817,7 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     BE_DLOG("Screenshot saved to \"%s\"\n", path);
 }
 
-void RenderContext::CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, const Vec3 &origin, RenderTarget *targetCubeRT) {
+void RenderContext::CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, RenderTarget *targetCubeRT) {
     RenderCamera renderCamera;
     RenderCamera::State cameraDef;
 
@@ -825,6 +825,7 @@ void RenderContext::CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, co
     cameraDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews | RenderCamera::Flag::SkipDebugDraw | RenderCamera::Flag::SkipPostProcess;
     cameraDef.clearMethod = RenderCamera::ClearMethod::SkyboxClear;
     cameraDef.layerMask = layerMask;
+    cameraDef.staticMask = staticMask;
     cameraDef.renderRect.Set(0, 0, targetCubeRT->GetWidth(), targetCubeRT->GetHeight());
     cameraDef.fovX = 90;
     cameraDef.fovY = 90;
@@ -832,6 +833,10 @@ void RenderContext::CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, co
     cameraDef.zFar = BE1::MeterToUnit(100.0f);
     cameraDef.origin = origin;
     cameraDef.orthogonal = false;
+
+    if (staticMask) {
+        cameraDef.flags |= RenderCamera::Flag::StaticOnly;
+    }
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
         R_EnvCubeMapFaceToEngineAxis((RHI::CubeMapFace)faceIndex, cameraDef.axis);
@@ -850,15 +855,15 @@ void RenderContext::CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, co
     }
 }
 
-void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, const Vec3 &origin, int size, Image &envCubeImage) {
-    CaptureEnvCubeRT(renderWorld, layerMask, origin, envCubeRT);
+void RenderContext::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, int size, Image &envCubeImage) {
+    CaptureEnvCubeRT(renderWorld, layerMask, staticMask, origin, envCubeRT);
 
     Texture::GetCubeImageFromCubeTexture(envCubeTexture, 1, envCubeImage);
 }
 
-void RenderContext::TakeEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin, int size) {
+void RenderContext::TakeEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, int size) {
     Image envCubeImage;
-    CaptureEnvCubeImage(renderWorld, layerMask, origin, size, envCubeImage);
+    CaptureEnvCubeImage(renderWorld, layerMask, staticMask, origin, size, envCubeImage);
 
     char path[256];
     Str::snPrintf(path, sizeof(path), "%s.dds", filename);
@@ -868,8 +873,8 @@ void RenderContext::TakeEnvShot(const char *filename, RenderWorld *renderWorld, 
     BE_LOG("Environment cubemap snapshot saved to \"%s\"\n", path);
 }
 
-void RenderContext::TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin) {
-    CaptureEnvCubeRT(renderWorld, layerMask, origin, envCubeRT);
+void RenderContext::TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin) {
+    CaptureEnvCubeRT(renderWorld, layerMask, staticMask, origin, envCubeRT);
 
     Texture *irradianceEnvCubeTexture = new Texture;
     irradianceEnvCubeTexture->CreateEmpty(RHI::TextureCubeMap, 64, 64, 1, 1, 1, Image::RGB_32F_32F_32F, 
@@ -895,8 +900,8 @@ void RenderContext::TakeIrradianceEnvShot(const char *filename, RenderWorld *ren
     BE_LOG("Generated diffuse irradiance cubemap to \"%s\"\n", path);
 }
 
-void RenderContext::TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin) {
-    CaptureEnvCubeRT(renderWorld, layerMask, origin, envCubeRT);
+void RenderContext::TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin) {
+    CaptureEnvCubeRT(renderWorld, layerMask, staticMask, origin, envCubeRT);
 
     int size = 256;
     int numMipLevels = Math::Log(2, size) + 1;

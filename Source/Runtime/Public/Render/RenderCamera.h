@@ -38,10 +38,11 @@ public:
         TexturedMode        = BIT(1),
         NoShadows           = BIT(2),
         NoSubViews          = BIT(3),
-        SkipPostProcess     = BIT(4),
-        SkipDebugDraw       = BIT(5),
-        InstantToneMapping  = BIT(6),
-        ConstantToneMapping = BIT(7),
+        StaticOnly          = BIT(4),
+        SkipPostProcess     = BIT(5),
+        SkipDebugDraw       = BIT(6),
+        InstantToneMapping  = BIT(7),
+        ConstantToneMapping = BIT(8),
     };
 
     enum ClearMethod {
@@ -55,6 +56,7 @@ public:
         int             time = 0;               ///< Time in milliseconds for shader effects and other time dependent rendering issues
         int             flags = TexturedMode;
         int             layerMask;
+        int             staticMask = -1;
 
         Vec3            origin;                 ///< View origin
         Mat3            axis;                   ///< View axis [FORWARD, LEFT, UP]

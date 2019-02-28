@@ -26,6 +26,7 @@ const SignalDef Entity::SIG_ActiveChanged("Entity::ActiveChanged", "ai");
 const SignalDef Entity::SIG_ActiveInHierarchyChanged("Entity::ActiveInHierachyChanged", "ai");
 const SignalDef Entity::SIG_NameChanged("Entity::NameChanged", "as");
 const SignalDef Entity::SIG_LayerChanged("Entity::LayerChanged", "a");
+const SignalDef Entity::SIG_StaticMaskChanged("Entity::StaticMaskChanged", "ai");
 const SignalDef Entity::SIG_FrozenChanged("Entity::FrozenChanged", "ai");
 const SignalDef Entity::SIG_ParentChanged("Entity::ParentChanged", "aa");
 const SignalDef Entity::SIG_ComponentInserted("Entity::ComponentInserted", "ai");
@@ -49,13 +50,13 @@ void Entity::RegisterProperties() {
         "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("layer", "Layer", int, GetLayer, SetLayer, 0,
         "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("staticMask", "Static Mask", int, GetStaticMask, SetStaticMask, 0,
+        "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("active", "Active", bool, IsActiveSelf, SetActive, true,
         "", PropertyInfo::EditorFlag);
     REGISTER_PROPERTY("activeInHierarchy", "Active In Hierarchy", bool, activeInHierarchy, true,
         "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("frozen", "Frozen", bool, IsFrozen, SetFrozen, false,
-        "", PropertyInfo::EditorFlag);
-    REGISTER_PROPERTY("static", "Static", bool, isStatic, false,
         "", PropertyInfo::EditorFlag);
 }
 
@@ -65,7 +66,7 @@ Entity::Entity() {
     node.SetOwner(this);
     layer = 0;
     frozen = false;
-    isStatic = false;
+    staticMask = 0;
     prefab = false;
     prefabSourceGuid = Guid::zero;
     activeSelf = true;
@@ -600,6 +601,12 @@ void Entity::SetLayer(int layer) {
     }
 }
 
+void Entity::SetStaticMask(int staticMask) {
+    this->staticMask = staticMask;
+
+    EmitSignal(&SIG_StaticMaskChanged, this, staticMask);
+}
+
 void Entity::SetParent(Entity *parentEntity) {
     SetParentGuid(parentEntity->GetGuid());
 }
@@ -636,10 +643,6 @@ Guid Entity::GetPrefabSourceGuid() const {
 
 void Entity::SetPrefabSourceGuid(const Guid &prefabSourceGuid) {
     this->prefabSourceGuid = prefabSourceGuid;
-}
-
-void Entity::SetStatic(bool isStatic) {
-    this->isStatic = isStatic;
 }
 
 void Entity::SetFrozen(bool frozen) {

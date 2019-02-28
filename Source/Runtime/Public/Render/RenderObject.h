@@ -95,6 +95,7 @@ public:
     struct State {
         int                 flags = 0;
         int                 layer = 0;
+        int                 staticMask = 0;
         int                 time = 0;
         float               maxVisDist = MeterToUnit(100);
 

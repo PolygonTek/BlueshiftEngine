@@ -126,6 +126,7 @@ void ComLight::Init() {
     renderWorld = GetGameWorld()->GetRenderWorld();
 
     renderLightDef.layer = GetEntity()->GetLayer();
+    renderLightDef.staticMask = GetEntity()->GetStaticMask();
 
     ComTransform *transform = GetEntity()->GetTransform();
     renderLightDef.origin = transform->GetOrigin();
@@ -159,6 +160,7 @@ void ComLight::Init() {
     //
 
     GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComLight::LayerChanged, SignalObject::Unique);
+    GetEntity()->Connect(&Entity::SIG_StaticMaskChanged, this, (SignalCallback)&ComLight::StaticMaskChanged, SignalObject::Unique);
 
     // Mark as initialized
     SetInitialized(true);
@@ -275,7 +277,13 @@ void ComLight::UpdateVisuals() {
 }
 
 void ComLight::LayerChanged(const Entity *entity) {
-    renderLightDef.layer = entity->GetProperty("layer").As<int>();
+    renderLightDef.layer = entity->GetLayer();
+
+    UpdateVisuals();
+}
+
+void ComLight::StaticMaskChanged(const Entity *entity) {
+    renderLightDef.staticMask = entity->GetStaticMask();
 
     UpdateVisuals();
 }

@@ -78,6 +78,7 @@ void ComRenderable::Init() {
     renderWorld = GetGameWorld()->GetRenderWorld();
 
     renderObjectDef.layer = GetEntity()->GetLayer();
+    renderObjectDef.staticMask = GetEntity()->GetStaticMask();
     renderObjectDef.wireframeColor.Set(1, 1, 1, 1);
 
     ComTransform *transform = GetEntity()->GetTransform();
@@ -88,6 +89,7 @@ void ComRenderable::Init() {
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRenderable::TransformUpdated, SignalObject::Unique);
 
     GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComRenderable::LayerChanged, SignalObject::Unique);
+    GetEntity()->Connect(&Entity::SIG_StaticMaskChanged, this, (SignalCallback)&ComRenderable::StaticMaskChanged, SignalObject::Unique);
 }
 
 void ComRenderable::OnActive() {
@@ -185,8 +187,14 @@ void ComRenderable::SetWireframeMode(RenderObject::WireframeMode wireframeMode) 
 }
 
 void ComRenderable::LayerChanged(const Entity *entity) {
-    renderObjectDef.layer = entity->GetProperty("layer").As<int>();
+    renderObjectDef.layer = entity->GetLayer();
     
+    UpdateVisuals();
+}
+
+void ComRenderable::StaticMaskChanged(const Entity *entity) {
+    renderObjectDef.staticMask = entity->GetStaticMask();
+
     UpdateVisuals();
 }
 

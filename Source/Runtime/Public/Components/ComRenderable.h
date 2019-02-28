@@ -80,6 +80,7 @@ protected:
     virtual void            UpdateVisuals();
 
     void                    LayerChanged(const Entity *entity);
+    void                    StaticMaskChanged(const Entity *entity);
     void                    TransformUpdated(const ComTransform *transform);
 
     RenderObject::State     renderObjectDef;
