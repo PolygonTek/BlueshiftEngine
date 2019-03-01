@@ -126,9 +126,6 @@ public:
     void                    BeginFrame();
     void                    EndFrame();
 
-    void                    BeginCommands();
-    void                    RenderCommands();
-
     Color4                  GetColor() const;
     Color4                  GetClearColor() const;
     float                   GetClearDepth() const;
@@ -157,32 +154,6 @@ public:
     bool                    QuerySelection(const Rect &rect, Inclusion inclusion, Array<int> &indexes);
 
     void                    TakeScreenShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height);
-    void                    TakeEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, int size = 256);
-    void                    TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin);
-    void                    TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin);
-
-    void                    WriteGGXDFGSum(const char *filename, int size) const;
-
-                            // Capture environment cubemap
-    void                    CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, RenderTarget *targetCubeRT);
-
-                            // Capture environment cubemap image
-    void                    CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, int size, Image &envCubeImage);
-
-                            // Generate irradiance environment cubemap using SH convolution method
-    void                    GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const;
-
-                            // Generate irradiance environment cubemap
-    void                    GenerateIrradianceEnvCubeRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const;
-
-                            // Generate Phong specular prefiltered environment cubemap
-    void                    GeneratePhongSpecularLDSumRT(const Texture *envCubeTexture, int maxSpecularPower, RenderTarget *targetCubeRT) const;
-
-                            // Generate GGX specular prefiltered environment cubemap
-    void                    GenerateGGXLDSumRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const;
-
-                            // Generate GGX DFG integration 2D LUT
-    void                    GenerateGGXDFGSumImage(int size, Image &integrationImage) const;
 
 //private:
     void                    InitScreenMapRT();
@@ -191,8 +162,6 @@ public:
     void                    FreeHdrMapRT();
     void                    InitShadowMapRT();
     void                    FreeShadowMapRT();
-    void                    InitEnvCubeMapRT();
-    void                    FreeEnvCubeMapRT();
 
     RHI::Handle             contextHandle;
 
@@ -237,8 +206,6 @@ public:
     Texture *               hdrLumAverageTexture[6] = { nullptr, };
     Texture *               hdrLuminanceTexture[3] = { nullptr, };
 
-    Texture *               envCubeTexture = nullptr;
-
     Texture *               currentRenderTexture = nullptr;
     bool                    updateCurrentRenderTexture;
 
@@ -251,8 +218,6 @@ public:
     RenderTarget *          hdrBloomRT[2] = { nullptr, };
     RenderTarget *          hdrLumAverageRT[6] = { nullptr, };
     RenderTarget *          hdrLuminanceRT[3] = { nullptr, };
-
-    RenderTarget *          envCubeRT = nullptr;
 
     Texture *               indirectionCubeMapTexture = nullptr;;
     float                   vscmBiasedScale;

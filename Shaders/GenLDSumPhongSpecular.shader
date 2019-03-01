@@ -38,7 +38,7 @@ shader "GenLDSumPhongSpecular" {
                     // F_N = 1/N * Sigma^N { Li * BRDF * NdotL / PDF }
                     //     = 1/N * Sigma^N { Li * (power + 2) / (power + 1) }
                     //     = (power + 2) / (power + 1) * Sigma^N { Li } / N
-                    color += texCUBE(radianceCubeMap, L).rgb;
+                    color += texCUBElod(radianceCubeMap, vec4(L, 0.0)).rgb;
 
                     numSamples += 1.0;
                 }
@@ -56,7 +56,7 @@ shader "GenLDSumPhongSpecular" {
                         if (SdotL > 0.0) {
                             float dw = CubeMapTexelSolidAngle(x, y, radianceCubeMapSize);
                         
-                            color += texCUBE(radianceCubeMap, L).rgb * pow(SdotL, specularPower) * dw;
+                            color += texCUBElod(radianceCubeMap, vec4(L, 0.0)).rgb * pow(SdotL, specularPower) * dw;
                         }
                     }
                 }

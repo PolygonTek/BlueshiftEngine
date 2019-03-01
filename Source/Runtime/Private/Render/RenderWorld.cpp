@@ -329,15 +329,29 @@ void RenderWorld::RemoveReflectionProbe(int handle) {
 
     probeDbvt.DestroyProxy(reflectionProbe->proxy->id);
 
+    // Cancel reflection probe in refreshing
+    for (int i = 0; i < renderSystem.reflectionProbeJobs.Count(); ) {
+        ReflectionProbeJob *job = &renderSystem.reflectionProbeJobs[i];
+
+        if (job->GetRenderWorld() == this && job->GetReflectionProbe() == reflectionProbe) {
+            renderSystem.reflectionProbeJobs.RemoveIndex(i);
+        } else {
+            i++;
+        }
+    }
+
     delete reflectionProbes[handle];
     reflectionProbes[handle] = nullptr;
 }
 
-void RenderWorld::ScheduleToRefreshReflectionProbe(int handle) {
-    ReflectionProbe *probe = GetReflectionProbe(handle);
+void RenderWorld::ScheduleToRefreshRealtimeReflectionProbes() {
+    for (int i = 0; i < reflectionProbes.Count(); i++) {
+        ReflectionProbe *reflectionProbe = reflectionProbes[i];
 
-    RenderContext *renderContext = renderSystem.GetMainRenderContext();
-    //probe->ForceToRefresh(this);
+        if (reflectionProbe->state.type == ReflectionProbe::Type::Realtime && reflectionProbe->needToRefresh) {
+            renderSystem.ScheduleToRefreshReflectionProbe(this, i);
+        }
+    }
 }
 
 void RenderWorld::SetSkyboxMaterial(Material *skyboxMaterial) {
@@ -351,6 +365,7 @@ void RenderWorld::FinishMapLoading() {
 //    objectDbvt.RebuildBottomUp();
 //    staticMeshDbvt.RebuildBottomUp();
 //    lightDbvt.RebuildBottomUp();
+//    probeDbvt.RebuildBottomUp();
 //
 //    int elapsedTime = PlatformTime::Milliseconds() - startTime;
 //    BE_LOG("%i msec to build dynamic AABB tree\n", elapsedTime);

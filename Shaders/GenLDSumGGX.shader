@@ -46,7 +46,7 @@ shader "GenLDSumGGX" {
                     float NdotL = max(dot(N, L), 0.0);
 
                     if (NdotL > 0.0) {
-                        color += texCUBE(radianceCubeMap, L).rgb * NdotL;
+                        color += texCUBElod(radianceCubeMap, vec4(L, 0.0)).rgb * NdotL;
 
                         // We have found weighting by cos(theta) achieves better results.
                         totalWeights += NdotL;

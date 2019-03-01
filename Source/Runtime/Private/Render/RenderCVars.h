@@ -68,10 +68,6 @@ extern CVar     r_CSM_offsetUnits2;
 extern CVar     r_CSM_offsetUnits3;
 extern CVar     r_optimizedShadowProjection;
 
-extern CVar     r_envCubeMapHdr;
-extern CVar     r_envCubeMapSize;
-extern CVar     r_envCubeMapBounces;
-
 extern CVar     r_HOM;
 extern CVar     r_HOM_debug;
 

@@ -20,6 +20,7 @@
 #include "Render/Font.h"
 #include "Core/Cmds.h"
 #include "File/FileSystem.h"
+#include "Platform/PlatformTime.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -181,6 +182,30 @@ void RenderSystem::FreeRenderContext(RenderContext *rc) {
 
     renderContexts.Remove(rc);
     delete rc;
+}
+
+void RenderSystem::BeginCommands(RenderContext *renderContext) {
+    renderSystem.currentContext = renderContext;
+
+    rhi.SetContext(renderContext->GetContextHandle());
+
+    bufferCacheManager.BeginWrite();
+
+    BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)renderSystem.GetCommandBuffer(sizeof(BeginContextRenderCommand));
+    cmd->commandId = BeginContextCommand;
+    cmd->renderContext = renderContext;
+}
+
+void RenderSystem::EndCommands() {
+    bufferCacheManager.BeginBackEnd();
+
+    renderSystem.IssueCommands();
+
+    bufferCacheManager.EndDrawCommand();
+
+    frameData.ToggleFrame();
+
+    renderSystem.currentContext = nullptr;
 }
 
 RenderWorld *RenderSystem::AllocRenderWorld() {
@@ -500,6 +525,507 @@ void RenderSystem::CheckModifiedCVars() {
             shaderManager.ReloadLitSurfaceShaders();
         }
     }
+}
+
+void RenderSystem::UpdateReflectionProbes() {
+    // Need any render context to render environment cubemap
+    if (!renderSystem.renderContexts.Count()) {
+        return;
+    }
+
+    for (int i = 0; i < reflectionProbeJobs.Count(); ) {
+        ReflectionProbeJob *job = &reflectionProbeJobs[i];
+
+        job->Refresh();
+
+        if (job->reflectionProbe->IsTimeSlicing()) {
+            while (!job->IsFinished()) {
+                job->Refresh();
+            }
+        }
+
+        if (job->IsFinished()) {
+            reflectionProbeJobs.RemoveIndexFast(i);
+        } else {
+            i++;
+        }
+    }
+}
+
+void RenderSystem::ScheduleToRefreshReflectionProbe(RenderWorld *renderWorld, int probeHandle) {
+    ReflectionProbeJob job;
+    job.renderWorld = renderWorld;
+    job.reflectionProbe = renderWorld->GetReflectionProbe(probeHandle);
+    job.specularConvolutionCubemapMaxLevel = Math::Log(2, job.reflectionProbe->GetSize());
+
+    reflectionProbeJobs.Append(job);
+}
+
+void RenderSystem::CaptureEnvCubeRTFace(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT, int faceIndex) {
+    RenderCamera renderCamera;
+    RenderCamera::State cameraDef;
+
+    memset(&cameraDef, 0, sizeof(cameraDef));
+    cameraDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews | RenderCamera::Flag::SkipDebugDraw | RenderCamera::Flag::SkipPostProcess;
+    cameraDef.clearMethod = RenderCamera::ClearMethod::SkyboxClear;
+    cameraDef.layerMask = layerMask;
+    cameraDef.staticMask = staticMask;
+    cameraDef.renderRect.Set(0, 0, targetCubeRT->GetWidth(), targetCubeRT->GetHeight());
+    cameraDef.fovX = 90;
+    cameraDef.fovY = 90;
+    cameraDef.zNear = zNear;
+    cameraDef.zFar = zFar;
+    cameraDef.origin = origin;
+    cameraDef.orthogonal = false;
+
+    if (staticMask) {
+        cameraDef.flags |= RenderCamera::Flag::StaticOnly;
+    }
+
+    // Use any render context
+    RenderContext *renderContext = renderSystem.renderContexts[0];
+
+    R_EnvCubeMapFaceToEngineAxis((RHI::CubeMapFace)faceIndex, cameraDef.axis);
+
+    renderCamera.Update(&cameraDef);
+
+    targetCubeRT->Begin(0, faceIndex);
+
+    renderSystem.BeginCommands(renderContext);
+
+    renderWorld->RenderScene(&renderCamera);
+
+    renderSystem.EndCommands();
+
+    targetCubeRT->End();
+}
+
+void RenderSystem::CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT) {
+    for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
+        CaptureEnvCubeRTFace(renderWorld, layerMask, staticMask, origin, zNear, zFar, targetCubeRT, faceIndex);
+    }
+}
+
+void RenderSystem::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, int size, Image &envCubeImage) {
+    Texture *envCubeTexture = new Texture;
+    envCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, Image::RGB_16F_16F_16F,
+        Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+
+    RenderTarget *envCubeRT = RenderTarget::Create(envCubeTexture, nullptr, RHI::HasDepthBuffer);
+
+    CaptureEnvCubeRT(renderWorld, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), envCubeRT);
+
+    Texture::GetCubeImageFromCubeTexture(envCubeTexture, 1, envCubeImage);
+
+    delete envCubeTexture;
+    RenderTarget::Delete(envCubeRT);
+}
+
+void RenderSystem::TakeEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, int size) {
+    Image envCubeImage;
+    CaptureEnvCubeImage(renderWorld, layerMask, staticMask, origin, size, envCubeImage);
+
+    char path[256];
+    Str::snPrintf(path, sizeof(path), "%s.dds", filename);
+    envCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
+    envCubeImage.WriteDDS(path);
+
+    BE_LOG("Environment cubemap snapshot saved to \"%s\"\n", path);
+}
+
+void RenderSystem::TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin) {
+    Texture *envCubeTexture = new Texture;
+    envCubeTexture->CreateEmpty(RHI::TextureCubeMap, 256, 256, 1, 1, 1, Image::RGB_16F_16F_16F,
+        Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+
+    RenderTarget *envCubeRT = RenderTarget::Create(envCubeTexture, nullptr, RHI::HasDepthBuffer);
+
+    CaptureEnvCubeRT(renderWorld, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), envCubeRT);
+
+    Texture *irradianceEnvCubeTexture = new Texture;
+    irradianceEnvCubeTexture->CreateEmpty(RHI::TextureCubeMap, 64, 64, 1, 1, 1, Image::RGB_32F_32F_32F,
+        Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    RenderTarget *irradianceEnvCubeRT = RenderTarget::Create(irradianceEnvCubeTexture, nullptr, 0);
+#if 1
+    GenerateIrradianceEnvCubeRT(envCubeTexture, irradianceEnvCubeRT);
+#else
+    GenerateSHConvolvIrradianceEnvCubeRT(envCubeTexture, irradianceEnvCubeRT);
+#endif
+
+    delete envCubeTexture;
+    RenderTarget::Delete(envCubeRT);
+
+    Image irradianceEnvCubeImage;
+    Texture::GetCubeImageFromCubeTexture(irradianceEnvCubeTexture, 1, irradianceEnvCubeImage);
+
+    delete irradianceEnvCubeTexture;
+    RenderTarget::Delete(irradianceEnvCubeRT);
+
+    char path[256];
+    Str::snPrintf(path, sizeof(path), "%s.dds", filename);
+    irradianceEnvCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
+    irradianceEnvCubeImage.WriteDDS(path);
+
+    BE_LOG("Generated diffuse irradiance cubemap to \"%s\"\n", path);
+}
+
+void RenderSystem::TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin) {
+    Texture *envCubeTexture = new Texture;
+    envCubeTexture->CreateEmpty(RHI::TextureCubeMap, 256, 256, 1, 1, 1, Image::RGB_16F_16F_16F,
+        Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+
+    RenderTarget *envCubeRT = RenderTarget::Create(envCubeTexture, nullptr, RHI::HasDepthBuffer);
+
+    CaptureEnvCubeRT(renderWorld, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), envCubeRT);
+
+    int size = 256;
+    int numMipLevels = Math::Log(2, size) + 1;
+
+    Texture *prefilteredCubeTexture = new Texture;
+    prefilteredCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels, Image::RGB_32F_32F_32F,
+        Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    RenderTarget *prefilteredCubeRT = RenderTarget::Create(prefilteredCubeTexture, nullptr, 0);
+#if 1
+    GenerateGGXLDSumRT(envCubeTexture, prefilteredCubeRT);
+#else
+    GeneratePhongSpecularLDSumRT(envCubeTexture, 2048, prefilteredCubeRT);
+#endif
+
+    delete envCubeTexture;
+    RenderTarget::Delete(envCubeRT);
+
+    Image prefilteredCubeImage;
+    Texture::GetCubeImageFromCubeTexture(prefilteredCubeTexture, numMipLevels, prefilteredCubeImage);
+
+    delete prefilteredCubeTexture;
+    RenderTarget::Delete(prefilteredCubeRT);
+
+    char path[256];
+    Str::snPrintf(path, sizeof(path), "%s.dds", filename);
+    prefilteredCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
+    prefilteredCubeImage.WriteDDS(path);
+
+    BE_LOG("Generated specular prefiltered cubemap to \"%s\"\n", path);
+}
+
+void RenderSystem::WriteGGXDFGSum(const char *filename, int size) const {
+    Image integrationImage;
+    GenerateGGXDFGSumImage(size, integrationImage);
+
+    char path[256];
+    Str::snPrintf(path, sizeof(path), "%s.dds", filename);
+    integrationImage.WriteDDS(path);
+
+    BE_LOG("Generated GGX integration LUT to \"%s\"\n", path);
+}
+
+void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const {
+    //-------------------------------------------------------------------------------
+    // Create 4-by-4 envmap sized block weight map for each faces
+    //------------------------------------------------------------------------------- 
+    int envMapSize = envCubeTexture->GetWidth();
+    Texture *weightTextures[6];
+
+    float *weightData = (float *)Mem_Alloc(envMapSize * 4 * envMapSize * 4 * sizeof(float));
+    float invSize = 1.0f / (envMapSize - 1);
+
+    for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
+        for (int y = 0; y < envMapSize; y++) {
+            for (int x = 0; x < envMapSize; x++) {
+                float s = (x + 0.5f) * invSize;
+                float t = (y + 0.5f) * invSize;
+
+                // Gets sample direction for each faces 
+                Vec3 dir = Image::FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, s, t);
+                dir.Normalize();
+
+                // 9 terms are required for order 3 SH basis functions
+                float basisEval[16] = { 0, };
+                // Evaluates the 9 SH basis functions Ylm with the given direction
+                SphericalHarmonics::EvalBasis(3, dir, basisEval);
+
+                // Solid angle of the cubemap texel
+                float dw = Image::CubeMapTexelSolidAngle(x, y, envMapSize);
+
+                // Precalculates 9 terms (basisEval * dw) for each envmap pixel in the 4-by-4 envmap sized block texture for each faces  
+                for (int j = 0; j < 4; j++) {
+                    for (int i = 0; i < 4; i++) {
+                        int offset = (((j * envMapSize + y) * envMapSize) << 2) + i * envMapSize + x;
+
+                        weightData[offset] = basisEval[(j << 2) + i] * dw;
+                    }
+                }
+            }
+        }
+
+        weightTextures[faceIndex] = new Texture;
+        weightTextures[faceIndex]->Create(RHI::Texture2D, Image(envMapSize * 4, envMapSize * 4, 1, 1, 1, Image::L_32F, (byte *)weightData, Image::LinearSpaceFlag),
+            Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    }
+
+    Mem_Free(weightData);
+
+    //-------------------------------------------------------------------------------
+    // SH projection of (Li * dw) and create 9 coefficents in a single 4x4 texture
+    //-------------------------------------------------------------------------------
+    Shader *weightedSHProjShader = shaderManager.GetShader("Shaders/WeightedSHProj")->InstantiateShader(Array<Shader::Define>());
+
+    Image image;
+    image.Create2D(4, 4, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
+    Texture *incidentCoeffTexture = new Texture;
+    incidentCoeffTexture->Create(RHI::Texture2D, image, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+
+    RenderTarget *incidentCoeffRT = RenderTarget::Create(incidentCoeffTexture, nullptr, 0);
+
+    incidentCoeffRT->Begin();
+
+    rhi.SetViewport(Rect(0, 0, 4, 4));
+    rhi.SetStateBits(RHI::ColorWrite);
+    rhi.SetCullFace(RHI::NoCull);
+
+    weightedSHProjShader->Bind();
+    weightedSHProjShader->SetTextureArray("weightMap", 6, (const Texture **)weightTextures);
+    weightedSHProjShader->SetTexture("radianceCubeMap", envCubeTexture);
+    weightedSHProjShader->SetConstant1i("radianceCubeMapSize", envCubeTexture->GetWidth());
+    weightedSHProjShader->SetConstant1f("radianceScale", 1.0f);
+
+    RB_DrawClipRect(0, 0, 1.0f, 1.0f);
+
+    //rhi.ReadPixels(0, 0, 4, 4, Image::RGB_32F_32F_32F, image.GetPixels());
+
+    incidentCoeffRT->End();
+
+    shaderManager.ReleaseShader(weightedSHProjShader);
+    shaderManager.ReleaseShader(weightedSHProjShader->GetOriginalShader());
+
+    for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
+        SAFE_DELETE(weightTextures[faceIndex]);
+    }
+
+    //-------------------------------------------------------------------------------
+    // SH convolution
+    //-------------------------------------------------------------------------------
+    Shader *genDiffuseCubeMapSHConvolv = shaderManager.GetShader("Shaders/GenIrradianceEnvCubeMapSHConvolv")->InstantiateShader(Array<Shader::Define>());
+
+    int size = targetCubeRT->GetWidth();
+
+    // Precompute ZH coefficients * sqrt(4PI/(2l + 1)) of Lambert diffuse spherical function cos(theta) / PI
+    // which function is rotationally symmetric so only 3 terms are needed
+    float al[3];
+    al[0] = SphericalHarmonics::Lambert_Al_Evaluator(0); // 1
+    al[1] = SphericalHarmonics::Lambert_Al_Evaluator(1); // 2/3
+    al[2] = SphericalHarmonics::Lambert_Al_Evaluator(2); // 1/4
+
+    for (int faceIndex = RHI::PositiveX; faceIndex <= RHI::NegativeZ; faceIndex++) {
+        targetCubeRT->Begin(0, faceIndex);
+
+        rhi.SetViewport(Rect(0, 0, size, size));
+        rhi.SetStateBits(RHI::ColorWrite);
+        rhi.SetCullFace(RHI::NoCull);
+
+        genDiffuseCubeMapSHConvolv->Bind();
+        genDiffuseCubeMapSHConvolv->SetTexture("incidentCoeffMap", incidentCoeffRT->ColorTexture());
+        genDiffuseCubeMapSHConvolv->SetConstant1i("targetCubeMapSize", size);
+        genDiffuseCubeMapSHConvolv->SetConstant1i("targetCubeMapFace", faceIndex);
+        genDiffuseCubeMapSHConvolv->SetConstantArray1f("lambertCoeff", COUNT_OF(al), al);
+
+        RB_DrawClipRect(0, 0, 1.0f, 1.0f);
+
+        targetCubeRT->End();
+    }
+
+    SAFE_DELETE(incidentCoeffTexture);
+    RenderTarget::Delete(incidentCoeffRT);
+
+    shaderManager.ReleaseShader(genDiffuseCubeMapSHConvolv);
+    shaderManager.ReleaseShader(genDiffuseCubeMapSHConvolv->GetOriginalShader());
+}
+
+void RenderSystem::GenerateIrradianceEnvCubeRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const {
+    //int t0 = PlatformTime::Milliseconds();
+
+    Shader *genDiffuseCubeMapShader = shaderManager.GetShader("Shaders/GenIrradianceEnvCubeMap")->InstantiateShader(Array<Shader::Define>());
+
+    int size = targetCubeRT->GetWidth();
+
+    for (int faceIndex = RHI::PositiveX; faceIndex <= RHI::NegativeZ; faceIndex++) {
+        targetCubeRT->Begin(0, faceIndex);
+
+        rhi.SetViewport(Rect(0, 0, size, size));
+        rhi.SetStateBits(RHI::ColorWrite);
+        rhi.SetCullFace(RHI::NoCull);
+
+        genDiffuseCubeMapShader->Bind();
+        genDiffuseCubeMapShader->SetTexture("radianceCubeMap", envCubeTexture);
+        genDiffuseCubeMapShader->SetConstant1i("radianceCubeMapSize", envCubeTexture->GetWidth());
+        genDiffuseCubeMapShader->SetConstant1i("targetCubeMapSize", size);
+        genDiffuseCubeMapShader->SetConstant1i("targetCubeMapFace", faceIndex);
+
+        RB_DrawClipRect(0, 0, 1.0f, 1.0f);
+
+        targetCubeRT->End();
+    }
+
+    shaderManager.ReleaseShader(genDiffuseCubeMapShader);
+    shaderManager.ReleaseShader(genDiffuseCubeMapShader->GetOriginalShader());
+
+    //int t1 = PlatformTime::Milliseconds();
+    //BE_LOG("GenerateIrradianceEnvCubeRT() takes %ims\n", t1 - t0);
+}
+
+void RenderSystem::GeneratePhongSpecularLDSumRT(const Texture *envCubeTexture, int maxSpecularPower, RenderTarget *targetCubeRT) const {
+    Shader *genLDSumPhongSpecularShader = shaderManager.GetShader("Shaders/GenLDSumPhongSpecular")->InstantiateShader(Array<Shader::Define>());
+
+    int size = targetCubeRT->GetWidth();
+
+    int numMipLevels = Math::Log(2, size) + 1;
+
+    // power drop range [maxSpecularPower, 2]
+    float powerDropOnMip = Math::Pow(maxSpecularPower, -1.0f / numMipLevels);
+
+    for (int faceIndex = RHI::PositiveX; faceIndex <= RHI::NegativeZ; faceIndex++) {
+        float specularPower = maxSpecularPower;
+
+        for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
+            int mipSize = size >> mipLevel;
+
+            targetCubeRT->Begin(mipLevel, faceIndex);
+
+            rhi.SetViewport(Rect(0, 0, mipSize, mipSize));
+            rhi.SetStateBits(RHI::ColorWrite);
+            rhi.SetCullFace(RHI::NoCull);
+
+            genLDSumPhongSpecularShader->Bind();
+            genLDSumPhongSpecularShader->SetTexture("radianceCubeMap", envCubeTexture);
+            genLDSumPhongSpecularShader->SetConstant1i("radianceCubeMapSize", envCubeTexture->GetWidth());
+            genLDSumPhongSpecularShader->SetConstant1i("targetCubeMapSize", mipSize);
+            genLDSumPhongSpecularShader->SetConstant1i("targetCubeMapFace", faceIndex);
+            genLDSumPhongSpecularShader->SetConstant1f("specularPower", specularPower);
+
+            RB_DrawClipRect(0, 0, 1.0f, 1.0f);
+
+            targetCubeRT->End();
+
+            specularPower *= powerDropOnMip;
+        }
+    }
+
+    shaderManager.ReleaseShader(genLDSumPhongSpecularShader);
+    shaderManager.ReleaseShader(genLDSumPhongSpecularShader->GetOriginalShader());
+}
+
+void RenderSystem::GenerateGGXLDSumRTFirstLevel(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const {
+    Shader *passThruCubeFaceShader = shaderManager.GetShader("Shaders/PassThruCubeFace")->InstantiateShader(Array<Shader::Define>());
+
+    int size = targetCubeRT->GetWidth();
+
+    // We can skip complex calculation for mipLevel 0 for perfect specular mirror.
+    for (int faceIndex = RHI::PositiveX; faceIndex <= RHI::NegativeZ; faceIndex++) {
+        targetCubeRT->Begin(0, faceIndex);
+
+        rhi.SetViewport(Rect(0, 0, size, size));
+        rhi.SetStateBits(RHI::ColorWrite);
+        rhi.SetCullFace(RHI::NoCull);
+
+        passThruCubeFaceShader->Bind();
+        passThruCubeFaceShader->SetTexture("cubemap", envCubeTexture);
+        passThruCubeFaceShader->SetConstant1i("targetCubeMapSize", size);
+        passThruCubeFaceShader->SetConstant1i("targetCubeMapFace", faceIndex);
+
+        RB_DrawClipRect(0, 0, 1.0f, 1.0f);
+
+        targetCubeRT->End();
+    }
+
+    shaderManager.ReleaseShader(passThruCubeFaceShader);
+    shaderManager.ReleaseShader(passThruCubeFaceShader->GetOriginalShader());
+}
+
+void RenderSystem::GenerateGGXLDSumRTRestLevel(const Texture *envCubeTexture, RenderTarget *targetCubeRT, int numMipLevels, int mipLevel) const {
+    Shader *genLDSumGGXShader = shaderManager.GetShader("Shaders/GenLDSumGGX")->InstantiateShader(Array<Shader::Define>());
+
+    int size = targetCubeRT->GetWidth();
+
+    for (int faceIndex = RHI::PositiveX; faceIndex <= RHI::NegativeZ; faceIndex++) {
+        int mipSize = size >> mipLevel;
+
+        float roughness = (float)mipLevel / (numMipLevels - 1);
+
+        targetCubeRT->Begin(mipLevel, faceIndex);
+
+        rhi.SetViewport(Rect(0, 0, mipSize, mipSize));
+        rhi.SetStateBits(RHI::ColorWrite);
+        rhi.SetCullFace(RHI::NoCull);
+
+        genLDSumGGXShader->Bind();
+        genLDSumGGXShader->SetTexture("radianceCubeMap", envCubeTexture);
+        genLDSumGGXShader->SetConstant1i("radianceCubeMapSize", envCubeTexture->GetWidth());
+        genLDSumGGXShader->SetConstant1i("targetCubeMapSize", mipSize);
+        genLDSumGGXShader->SetConstant1i("targetCubeMapFace", faceIndex);
+        genLDSumGGXShader->SetConstant1f("roughness", roughness);
+
+        RB_DrawClipRect(0, 0, 1.0f, 1.0f);
+
+        targetCubeRT->End();
+    }
+
+    shaderManager.ReleaseShader(genLDSumGGXShader);
+    shaderManager.ReleaseShader(genLDSumGGXShader->GetOriginalShader());
+}
+
+void RenderSystem::GenerateGGXLDSumRTLevel(const Texture *envCubeTexture, RenderTarget *targetCubeRT, int numMipLevels, int mipLevel) const {
+    //int t0 = PlatformTime::Milliseconds();
+
+    if (mipLevel == 0) {
+        GenerateGGXLDSumRTFirstLevel(envCubeTexture, targetCubeRT);
+    } else {
+        GenerateGGXLDSumRTRestLevel(envCubeTexture, targetCubeRT, numMipLevels, mipLevel);
+    }
+
+    //int t1 = PlatformTime::Milliseconds();
+    //BE_LOG("GenerateGGXLDSumRTLevel(%i/%i) takes %ims\n", mipLevel, numMipLevels, t1 - t0);
+}
+
+void RenderSystem::GenerateGGXLDSumRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const {
+    int size = targetCubeRT->GetWidth();
+    int numMipLevels = Math::Log(2, size) + 1;
+
+    for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
+        GenerateGGXLDSumRTLevel(envCubeTexture, targetCubeRT, numMipLevels, mipLevel);
+    }
+}
+
+void RenderSystem::GenerateGGXDFGSumImage(int size, Image &integrationImage) const {
+    Shader *genDFGSumGGXShader = shaderManager.GetShader("Shaders/GenDFGSumGGX")->InstantiateShader(Array<Shader::Define>());
+
+    Texture *integrationLutTexture = new Texture;
+    integrationLutTexture->CreateEmpty(RHI::Texture2D, size, size, 1, 1, 1, Image::RG_16F_16F,
+        Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+
+    RenderTarget *integrationLutRT = RenderTarget::Create(integrationLutTexture, nullptr, 0);
+
+    integrationLutRT->Begin(0, 0);
+
+    rhi.SetViewport(Rect(0, 0, size, size));
+    rhi.SetStateBits(RHI::ColorWrite);
+    rhi.SetCullFace(RHI::NoCull);
+
+    genDFGSumGGXShader->Bind();
+
+    RB_DrawClipRect(0, 0, 1.0f, 1.0f);
+
+    integrationImage.Create2D(size, size, 1, Image::RG_16F_16F, nullptr, Image::LinearSpaceFlag);
+
+    rhi.ReadPixels(0, 0, size, size, Image::RG_16F_16F, integrationImage.GetPixels());
+
+    integrationLutRT->End();
+
+    SAFE_DELETE(integrationLutTexture);
+
+    RenderTarget::Delete(integrationLutRT);
+
+    shaderManager.ReleaseShader(genDFGSumGGXShader);
+    shaderManager.ReleaseShader(genDFGSumGGXShader->GetOriginalShader());
 }
 
 //--------------------------------------------------------------------------------------------------

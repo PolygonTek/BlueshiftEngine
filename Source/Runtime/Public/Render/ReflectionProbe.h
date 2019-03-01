@@ -24,7 +24,10 @@
 
 BE_NAMESPACE_BEGIN
 
+class ReflectionProbeJob;
+
 class ReflectionProbe {
+    friend class ReflectionProbeJob;
     friend class RenderWorld;
 
 public:
@@ -55,6 +58,7 @@ public:
 
     struct State {
         Type            type;
+        bool            timeSlicing;
         RefreshMode     refreshMode;
         Resolution      resolution;
         bool            useHDR;
@@ -90,12 +94,20 @@ public:
                         /// Returns irradiance diffuse cube texture.
     Texture *           GetSpecularSumCubeTexture() const { return specularSumCubeTexture; }
 
+                        /// Is this probe should be refreshed in time slicing ? time slcing imply realtime type.
+    bool                IsTimeSlicing() const { return state.timeSlicing; }
+
+                        /// Returns size.
+    int                 GetSize() const { return ToActualResolution(state.resolution); }
+
+                        /// Converts Resolution enum to actual size.
+    static int          ToActualResolution(Resolution resolution);
+
 private:
                         /// Updates this probe with the given state.
     void                Update(const State *state);
 
     void                Invalidate();
-    void                ForceToRefresh(RenderWorld *renderWorld);
 
     int                 index;              // index of reflection probe list in world
 
