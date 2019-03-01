@@ -1,14 +1,6 @@
 shader "GenLDSumPhongSpecular" {
     glsl_vp {
-        in vec4 in_position : POSITION;
-        in vec2 in_st : TEXCOORD0;
-
-        out vec2 v2f_texCoord;
-
-        void main() {
-            gl_Position = in_position;
-            v2f_texCoord = in_st;
-        }
+        $include "clipQuad.vp"
     }
 
     glsl_fp {

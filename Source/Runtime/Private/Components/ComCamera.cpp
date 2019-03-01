@@ -534,38 +534,38 @@ bool ComCamera::ProcessTouchPointerInput() {
 }
 
 void ComCamera::RenderScene() {
-    // Get current render context which is unique for each OS-level window in general
+    // Get current render context which is unique for each OS-level window in general.
     const RenderContext *ctx = renderSystem.GetCurrentRenderContext();
     if (!ctx) {
         return;
     }
 
-    // Get the actual screen rendering resolution
+    // Get the actual screen rendering resolution.
     float renderingWidth = ctx->GetRenderingWidth();
     float renderingHeight = ctx->GetRenderingHeight();
 
-    // Offset and scale with the normalized [0, 1] screen fraction values
+    // Offset and scale with the normalized [0, 1] screen fraction values.
     renderCameraDef.renderRect.x = renderingWidth * nx;
     renderCameraDef.renderRect.y = renderingHeight * ny;
     renderCameraDef.renderRect.w = renderingWidth * nw;
     renderCameraDef.renderRect.h = renderingHeight * nh;
 
-    // Get the aspect ratio from device screen size
+    // Get the aspect ratio from device screen size.
     float aspectRatio = (float)ctx->GetScreenWidth() / ctx->GetScreenHeight();
 
     if (renderCameraDef.orthogonal) {
-        // Compute viewport rectangle size in orthogonal projection
+        // Compute viewport rectangle size in orthogonal projection.
         renderCameraDef.sizeX = size;
         renderCameraDef.sizeY = size / aspectRatio;
     } else {
-        // Compute fovX, fovY with the given fov and aspect ratio
+        // Compute fovX, fovY with the given fov and aspect ratio.
         RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &renderCameraDef.fovX, &renderCameraDef.fovY);
     }
 
-    // Update render camera with the given parameters
+    // Update render camera with the given parameters.
     renderCamera->Update(&renderCameraDef);
 
-    // Render scene scene view
+    // Render scene with the given camera.
     GetGameWorld()->GetRenderWorld()->RenderScene(renderCamera);
 }
 

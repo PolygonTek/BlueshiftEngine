@@ -158,7 +158,7 @@ uniform float subSurfaceShadowDensity;// = 0.5;
 // Indirect lighting parameters
 //
 #if defined(INDIRECT_LIGHTING)
-    uniform samplerCube envCubeMap;
+    uniform samplerCube envCubeMap; // for use in brute force IBL
 
     uniform samplerCube irradianceEnvCubeMap0;
     uniform samplerCube prefilteredEnvCubeMap0;
