@@ -91,6 +91,7 @@ public:
 
     int                         GetViewCount() const { return viewCount; }
 
+                                /// Render scene with the given camera
     void                        RenderScene(const RenderCamera *camera);
 
     void                        SetSkyboxMaterial(Material *skyboxMaterial);
@@ -164,7 +165,7 @@ private:
     Color4                      debugLineColor;
     Color4                      debugFillColor;
 
-    VisCamera *                 currentCamera;
+    VisCamera *                 currentVisCamera;
     int                         viewCount;
 
     Material *                  skyboxMaterial;
@@ -174,7 +175,6 @@ private:
     Array<RenderObject *>       renderObjects;          ///< Array of render objects
     Array<RenderLight *>        renderLights;           ///< Array of render lights
     Array<ReflectionProbe *>    reflectionProbes;       ///< Array of local reflection probes
-
     //ReflectionProbe *         globalProbe;            ///< Global light probe
 
     DynamicAABBTree             objectDbvt;             ///< Dynamic bounding volume tree for render objects

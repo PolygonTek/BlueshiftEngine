@@ -510,7 +510,7 @@ set(COMMON_ENGINE_FILES
     Private/Render/RenderCamera.cpp
     Private/Render/RenderWorld.cpp
     Private/Render/RenderWorldDrawCamera.cpp
-    Private/Render/RenderWorldDebug.cpp
+    Private/Render/RenderWorldDebugTools.cpp
     Private/Render/Shader.cpp
     Private/Render/ShaderManager.cpp
     Private/Render/Skeleton.cpp

@@ -44,12 +44,16 @@ void RenderWorld::ClearScene() {
     objectDbvt.Purge();
     lightDbvt.Purge();
     staticMeshDbvt.Purge();
+    probeDbvt.Purge();
 
     for (int i = 0; i < renderObjects.Count(); i++) {
         SAFE_DELETE(renderObjects[i]);
     }
     for (int i = 0; i < renderLights.Count(); i++) {
         SAFE_DELETE(renderLights[i]);
+    }
+    for (int i = 0; i < reflectionProbes.Count(); i++) {
+        SAFE_DELETE(reflectionProbes[i]);
     }
 }
 
@@ -365,16 +369,16 @@ void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
     }
 
     // Create current camera in frame data
-    currentCamera = (VisCamera *)frameData.ClearedAlloc(sizeof(*currentCamera));
-    currentCamera->def = renderCamera;
-    currentCamera->maxDrawSurfs = MaxViewDrawSurfs; 
-    currentCamera->drawSurfs = (DrawSurf **)frameData.Alloc(currentCamera->maxDrawSurfs * sizeof(DrawSurf *));
-    currentCamera->instanceBufferCache = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
+    currentVisCamera = (VisCamera *)frameData.ClearedAlloc(sizeof(*currentVisCamera));
+    currentVisCamera->def = renderCamera;
+    currentVisCamera->maxDrawSurfs = MaxViewDrawSurfs; 
+    currentVisCamera->drawSurfs = (DrawSurf **)frameData.Alloc(currentVisCamera->maxDrawSurfs * sizeof(DrawSurf *));
+    currentVisCamera->instanceBufferCache = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
 
-    new (&currentCamera->visObjects) LinkList<VisObject>();
-    new (&currentCamera->visLights) LinkList<VisLight>();
+    new (&currentVisCamera->visObjects) LinkList<VisObject>();
+    new (&currentVisCamera->visLights) LinkList<VisLight>();
 
-    DrawCamera(currentCamera);
+    DrawCamera(currentVisCamera);
 }
 
 void RenderWorld::DrawGUICamera(GuiMesh &guiMesh) {
