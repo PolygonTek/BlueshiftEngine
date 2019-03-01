@@ -189,11 +189,15 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                         if (propInfo.GetType() == Variant::GuidType) {
                             // Texture GUID
                             if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
-                                Str defaultName = resourceGuidMapper.Get(propInfo.GetDefaultValue().As<Guid>());
-                                property.data = Variant::FromString(propInfo.GetType(), propDict.GetString(propName, defaultName));
-
+                                // Get default texture GUID
+                                Str defaultGuidString = propInfo.GetDefaultValue().As<Guid>().ToString();
+                                // Get texture GUID 
+                                property.data = Variant::FromString(Variant::GuidType, propDict.GetString(propName, defaultGuidString));
                                 const Guid textureGuid = property.data.As<Guid>();
+
+                                // Get texture path from GUID
                                 const Str texturePath = resourceGuidMapper.Get(textureGuid);
+                                // Get texture from path
                                 property.texture = textureManager.GetTexture(texturePath);
                             }
                         } else {
@@ -373,9 +377,8 @@ void Material::ChangeShader(Shader *shader) {
 
             if (propInfo.GetType() == Variant::GuidType) {
                 if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
-                    Str name = resourceGuidMapper.Get(propInfo.GetDefaultValue().As<Guid>());
-                    Texture *defaultTexture = textureManager.FindTexture(name);
-                    assert(defaultTexture);
+                    Str defaultName = resourceGuidMapper.Get(propInfo.GetDefaultValue().As<Guid>());
+                    Texture *defaultTexture = textureManager.FindTexture(defaultName);
                     const Guid defaultTextureGuid = resourceGuidMapper.Get(defaultTexture->GetHashName());
 
                     prop.data = defaultTextureGuid;

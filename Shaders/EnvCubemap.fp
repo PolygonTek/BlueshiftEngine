@@ -13,7 +13,8 @@ void main() {
 #if _EXPLICIT_MIPMAPS == 1
     vec3 color = texCUBElod(envCubeMap, vec4(worldS, mipLevel)).rgb;
 #else
-    vec3 color = texCUBE(envCubeMap, worldS).rgb;
+    //vec3 color = texCUBE(envCubeMap, worldS).rgb;
+    vec3 color = texCUBElod(envCubeMap, vec4(worldS, 0)).rgb;
 #endif
 
     o_fragColor = vec4(color, 1.0);

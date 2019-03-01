@@ -470,7 +470,7 @@ void RenderContext::InitEnvCubeMapRT() {
 
     envCubeTexture = textureManager.AllocTexture(va("_%i_envCube", (int)contextHandle));
     envCubeTexture->CreateEmpty(RHI::TextureCubeMap, envCubeTextureSize, envCubeTextureSize, 1, 1, 1, format,
-        Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+        Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
     envCubeRT = RenderTarget::Create(envCubeTexture, nullptr, RHI::HasDepthBuffer);
 }
@@ -533,6 +533,8 @@ void RenderContext::BeginFrame() {
         InitScreenMapRT();
         InitHdrMapRT();
     }
+
+
 
     BeginCommands();
 }
@@ -990,8 +992,7 @@ void RenderContext::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeT
     //-------------------------------------------------------------------------------
     // SH projection of (Li * dw) and create 9 coefficents in a single 4x4 texture
     //-------------------------------------------------------------------------------
-    Shader *weightedSHProjShader = shaderManager.GetShader("Shaders/WeightedSHProj");
-    Shader *shader = weightedSHProjShader->InstantiateShader(Array<Shader::Define>());
+    Shader *weightedSHProjShader = shaderManager.GetShader("Shaders/WeightedSHProj")->InstantiateShader(Array<Shader::Define>());
 
     Image image;
     image.Create2D(4, 4, 1, Image::RGB_32F_32F_32F, nullptr, Image::LinearSpaceFlag);
@@ -1006,11 +1007,11 @@ void RenderContext::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeT
     rhi.SetStateBits(RHI::ColorWrite);
     rhi.SetCullFace(RHI::NoCull);
 
-    shader->Bind();
-    shader->SetTextureArray("weightMap", 6, (const Texture **)weightTextures);
-    shader->SetTexture("radianceCubeMap", envCubeTexture);
-    shader->SetConstant1i("radianceCubeMapSize", envCubeTexture->GetWidth());
-    shader->SetConstant1f("radianceScale", 1.0f);
+    weightedSHProjShader->Bind();
+    weightedSHProjShader->SetTextureArray("weightMap", 6, (const Texture **)weightTextures);
+    weightedSHProjShader->SetTexture("radianceCubeMap", envCubeTexture);
+    weightedSHProjShader->SetConstant1i("radianceCubeMapSize", envCubeTexture->GetWidth());
+    weightedSHProjShader->SetConstant1f("radianceScale", 1.0f);
 
     RB_DrawClipRect(0, 0, 1.0f, 1.0f);
 
@@ -1018,8 +1019,8 @@ void RenderContext::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeT
 
     incidentCoeffRT->End();
 
-    shaderManager.ReleaseShader(shader);
     shaderManager.ReleaseShader(weightedSHProjShader);
+    shaderManager.ReleaseShader(weightedSHProjShader->GetOriginalShader());
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
         SAFE_DELETE(weightTextures[faceIndex]);
@@ -1028,8 +1029,7 @@ void RenderContext::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeT
     //-------------------------------------------------------------------------------
     // SH convolution
     //-------------------------------------------------------------------------------
-    Shader *genDiffuseCubeMapSHConvolv = shaderManager.GetShader("Shaders/GenIrradianceEnvCubeMapSHConvolv");
-    shader = genDiffuseCubeMapSHConvolv->InstantiateShader(Array<Shader::Define>());
+    Shader *genDiffuseCubeMapSHConvolv = shaderManager.GetShader("Shaders/GenIrradianceEnvCubeMapSHConvolv")->InstantiateShader(Array<Shader::Define>());
 
     int size = targetCubeRT->GetWidth();
 
@@ -1047,11 +1047,11 @@ void RenderContext::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeT
         rhi.SetStateBits(RHI::ColorWrite);
         rhi.SetCullFace(RHI::NoCull);
 
-        shader->Bind();
-        shader->SetTexture("incidentCoeffMap", incidentCoeffRT->ColorTexture());
-        shader->SetConstant1i("targetCubeMapSize", size);
-        shader->SetConstant1i("targetCubeMapFace", faceIndex);
-        shader->SetConstantArray1f("lambertCoeff", COUNT_OF(al), al);
+        genDiffuseCubeMapSHConvolv->Bind();
+        genDiffuseCubeMapSHConvolv->SetTexture("incidentCoeffMap", incidentCoeffRT->ColorTexture());
+        genDiffuseCubeMapSHConvolv->SetConstant1i("targetCubeMapSize", size);
+        genDiffuseCubeMapSHConvolv->SetConstant1i("targetCubeMapFace", faceIndex);
+        genDiffuseCubeMapSHConvolv->SetConstantArray1f("lambertCoeff", COUNT_OF(al), al);
 
         RB_DrawClipRect(0, 0, 1.0f, 1.0f);
 
@@ -1061,13 +1061,12 @@ void RenderContext::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeT
     SAFE_DELETE(incidentCoeffTexture);
     RenderTarget::Delete(incidentCoeffRT);
 
-    shaderManager.ReleaseShader(shader);
     shaderManager.ReleaseShader(genDiffuseCubeMapSHConvolv);
+    shaderManager.ReleaseShader(genDiffuseCubeMapSHConvolv->GetOriginalShader());
 }
 
 void RenderContext::GenerateIrradianceEnvCubeRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const {
-    Shader *genDiffuseCubeMapShader = shaderManager.GetShader("Shaders/GenIrradianceEnvCubeMap");
-    Shader *shader = genDiffuseCubeMapShader->InstantiateShader(Array<Shader::Define>());
+    Shader *genDiffuseCubeMapShader = shaderManager.GetShader("Shaders/GenIrradianceEnvCubeMap")->InstantiateShader(Array<Shader::Define>());
 
     int size = targetCubeRT->GetWidth();
 
@@ -1078,24 +1077,23 @@ void RenderContext::GenerateIrradianceEnvCubeRT(const Texture *envCubeTexture, R
         rhi.SetStateBits(RHI::ColorWrite);
         rhi.SetCullFace(RHI::NoCull);
 
-        shader->Bind();
-        shader->SetTexture("radianceCubeMap", envCubeTexture);
-        shader->SetConstant1i("radianceCubeMapSize", envCubeTexture->GetWidth());
-        shader->SetConstant1i("targetCubeMapSize", size);
-        shader->SetConstant1i("targetCubeMapFace", faceIndex);
+        genDiffuseCubeMapShader->Bind();
+        genDiffuseCubeMapShader->SetTexture("radianceCubeMap", envCubeTexture);
+        genDiffuseCubeMapShader->SetConstant1i("radianceCubeMapSize", envCubeTexture->GetWidth());
+        genDiffuseCubeMapShader->SetConstant1i("targetCubeMapSize", size);
+        genDiffuseCubeMapShader->SetConstant1i("targetCubeMapFace", faceIndex);
 
         RB_DrawClipRect(0, 0, 1.0f, 1.0f);
 
         targetCubeRT->End();
     }
 
-    shaderManager.ReleaseShader(shader);
     shaderManager.ReleaseShader(genDiffuseCubeMapShader);
+    shaderManager.ReleaseShader(genDiffuseCubeMapShader->GetOriginalShader());
 }
 
 void RenderContext::GeneratePhongSpecularLDSumRT(const Texture *envCubeTexture, int maxSpecularPower, RenderTarget *targetCubeRT) const {
-    Shader *genLDSumPhongSpecularShader = shaderManager.GetShader("Shaders/GenLDSumPhongSpecular");
-    Shader *shader = genLDSumPhongSpecularShader->InstantiateShader(Array<Shader::Define>());
+    Shader *genLDSumPhongSpecularShader = shaderManager.GetShader("Shaders/GenLDSumPhongSpecular")->InstantiateShader(Array<Shader::Define>());
 
     int size = targetCubeRT->GetWidth();
 
@@ -1116,12 +1114,12 @@ void RenderContext::GeneratePhongSpecularLDSumRT(const Texture *envCubeTexture, 
             rhi.SetStateBits(RHI::ColorWrite);
             rhi.SetCullFace(RHI::NoCull);
 
-            shader->Bind();
-            shader->SetTexture("radianceCubeMap", envCubeTexture);
-            shader->SetConstant1i("radianceCubeMapSize", envCubeTexture->GetWidth());
-            shader->SetConstant1i("targetCubeMapSize", mipSize);
-            shader->SetConstant1i("targetCubeMapFace", faceIndex);
-            shader->SetConstant1f("specularPower", specularPower);
+            genLDSumPhongSpecularShader->Bind();
+            genLDSumPhongSpecularShader->SetTexture("radianceCubeMap", envCubeTexture);
+            genLDSumPhongSpecularShader->SetConstant1i("radianceCubeMapSize", envCubeTexture->GetWidth());
+            genLDSumPhongSpecularShader->SetConstant1i("targetCubeMapSize", mipSize);
+            genLDSumPhongSpecularShader->SetConstant1i("targetCubeMapFace", faceIndex);
+            genLDSumPhongSpecularShader->SetConstant1f("specularPower", specularPower);
 
             RB_DrawClipRect(0, 0, 1.0f, 1.0f);
 
@@ -1131,21 +1129,39 @@ void RenderContext::GeneratePhongSpecularLDSumRT(const Texture *envCubeTexture, 
         }
     }
 
-    shaderManager.ReleaseShader(shader);
     shaderManager.ReleaseShader(genLDSumPhongSpecularShader);
+    shaderManager.ReleaseShader(genLDSumPhongSpecularShader->GetOriginalShader());
 }
 
 void RenderContext::GenerateGGXLDSumRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const {
-    Shader *genLDSumGGXShader = shaderManager.GetShader("Shaders/GenLDSumGGX");
-    Shader *shader = genLDSumGGXShader->InstantiateShader(Array<Shader::Define>());
+    Shader *genLDSumGGXShader = shaderManager.GetShader("Shaders/GenLDSumGGX")->InstantiateShader(Array<Shader::Define>());
+    Shader *passThruCubeFaceShader = shaderManager.GetShader("Shaders/PassThruCubeFace")->InstantiateShader(Array<Shader::Define>());
 
     int size = targetCubeRT->GetWidth();
 
     int numMipLevels = Math::Log(2, size) + 1;
 
+    // We can skip complex calculation for mipLevel 0 for perfect specular mirror.
     for (int faceIndex = RHI::PositiveX; faceIndex <= RHI::NegativeZ; faceIndex++) {
-        // TODO: We can skip mip level 0 for perfect specular mirror.
-        for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
+        targetCubeRT->Begin(0, faceIndex);
+
+        rhi.SetViewport(Rect(0, 0, size, size));
+        rhi.SetStateBits(RHI::ColorWrite);
+        rhi.SetCullFace(RHI::NoCull);
+
+        passThruCubeFaceShader->Bind();
+        passThruCubeFaceShader->SetTexture("cubemap", envCubeTexture);
+        passThruCubeFaceShader->SetConstant1i("targetCubeMapSize", size);
+        passThruCubeFaceShader->SetConstant1i("targetCubeMapFace", faceIndex);
+
+        RB_DrawClipRect(0, 0, 1.0f, 1.0f);
+
+        targetCubeRT->End();
+    }
+
+    for (int faceIndex = RHI::PositiveX; faceIndex <= RHI::NegativeZ; faceIndex++) {
+        // mipLevel 0 already calculated so we can skip them.
+        for (int mipLevel = 1; mipLevel < numMipLevels; mipLevel++) {
             int mipSize = size >> mipLevel;
 
             float roughness = (float)mipLevel / (numMipLevels - 1);
@@ -1156,12 +1172,12 @@ void RenderContext::GenerateGGXLDSumRT(const Texture *envCubeTexture, RenderTarg
             rhi.SetStateBits(RHI::ColorWrite);
             rhi.SetCullFace(RHI::NoCull);
 
-            shader->Bind();
-            shader->SetTexture("radianceCubeMap", envCubeTexture);
-            shader->SetConstant1i("radianceCubeMapSize", envCubeTexture->GetWidth());
-            shader->SetConstant1i("targetCubeMapSize", mipSize);
-            shader->SetConstant1i("targetCubeMapFace", faceIndex);
-            shader->SetConstant1f("roughness", roughness);
+            genLDSumGGXShader->Bind();
+            genLDSumGGXShader->SetTexture("radianceCubeMap", envCubeTexture);
+            genLDSumGGXShader->SetConstant1i("radianceCubeMapSize", envCubeTexture->GetWidth());
+            genLDSumGGXShader->SetConstant1i("targetCubeMapSize", mipSize);
+            genLDSumGGXShader->SetConstant1i("targetCubeMapFace", faceIndex);
+            genLDSumGGXShader->SetConstant1f("roughness", roughness);
 
             RB_DrawClipRect(0, 0, 1.0f, 1.0f);
 
@@ -1169,13 +1185,15 @@ void RenderContext::GenerateGGXLDSumRT(const Texture *envCubeTexture, RenderTarg
         }
     }
 
-    shaderManager.ReleaseShader(shader);
     shaderManager.ReleaseShader(genLDSumGGXShader);
+    shaderManager.ReleaseShader(genLDSumGGXShader->GetOriginalShader());
+
+    shaderManager.ReleaseShader(passThruCubeFaceShader);
+    shaderManager.ReleaseShader(passThruCubeFaceShader->GetOriginalShader());
 }
 
 void RenderContext::GenerateGGXDFGSumImage(int size, Image &integrationImage) const {
-    Shader *genDFGSumGGXShader = shaderManager.GetShader("Shaders/GenDFGSumGGX");
-    Shader *shader = genDFGSumGGXShader->InstantiateShader(Array<Shader::Define>());
+    Shader *genDFGSumGGXShader = shaderManager.GetShader("Shaders/GenDFGSumGGX")->InstantiateShader(Array<Shader::Define>());
 
     Texture *integrationLutTexture = new Texture;
     integrationLutTexture->CreateEmpty(RHI::Texture2D, size, size, 1, 1, 1, Image::RG_16F_16F, 
@@ -1189,7 +1207,7 @@ void RenderContext::GenerateGGXDFGSumImage(int size, Image &integrationImage) co
     rhi.SetStateBits(RHI::ColorWrite);
     rhi.SetCullFace(RHI::NoCull);
 
-    shader->Bind();
+    genDFGSumGGXShader->Bind();
 
     RB_DrawClipRect(0, 0, 1.0f, 1.0f);
 
@@ -1203,8 +1221,8 @@ void RenderContext::GenerateGGXDFGSumImage(int size, Image &integrationImage) co
 
     RenderTarget::Delete(integrationLutRT);
 
-    shaderManager.ReleaseShader(shader);
     shaderManager.ReleaseShader(genDFGSumGGXShader);
+    shaderManager.ReleaseShader(genDFGSumGGXShader->GetOriginalShader());
 }
 
 BE_NAMESPACE_END

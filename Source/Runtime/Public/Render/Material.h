@@ -79,7 +79,8 @@ public:
         VertexColorHint,
         LightmappedHint,
         SpriteHint,
-        OverlayHint
+        OverlayHint,
+        EnvCubeMapHint
     };
 
     enum RenderingMode {

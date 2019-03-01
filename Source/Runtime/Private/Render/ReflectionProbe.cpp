@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
+#include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -30,6 +31,9 @@ ReflectionProbe::ReflectionProbe(int index) {
 
     diffuseSumCubeTexture = textureManager.AllocTexture(va("diffuseSum(%i)", index));
     specularSumCubeTexture = textureManager.AllocTexture(va("specularSum(%i)", index));
+
+    resourceGuidMapper.Set(Guid::CreateGuid(), diffuseSumCubeTexture->GetHashName());
+    resourceGuidMapper.Set(Guid::CreateGuid(), specularSumCubeTexture->GetHashName());
 }
 
 ReflectionProbe::~ReflectionProbe() {
@@ -62,6 +66,7 @@ void ReflectionProbe::Invalidate() {
     needToRefresh = true;
 }
 
+// TODO: Add time slicing implementation
 void ReflectionProbe::ForceToRefresh(RenderWorld *renderWorld) {
     int size = resolutions[state.resolution];
     int numMipLevels = Math::Log(2, size) + 1;
@@ -69,7 +74,7 @@ void ReflectionProbe::ForceToRefresh(RenderWorld *renderWorld) {
 
     if ((state.useHDR ^ Image::IsFloatFormat(diffuseSumCubeTexture->GetFormat()))) {
         diffuseSumCubeTexture->CreateEmpty(RHI::TextureCubeMap, 64, 64, 1, 1, 1, format, // fixed size (64) for irradiance cubemap
-            Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+            Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
     }
 
     if (!diffuseSumCubeRT) {
@@ -80,7 +85,7 @@ void ReflectionProbe::ForceToRefresh(RenderWorld *renderWorld) {
         (state.useHDR ^ Image::IsFloatFormat(specularSumCubeTexture->GetFormat()))) {
 
         specularSumCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
-            Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+            Texture::Clamp | Texture::HighQuality);
     }
 
     if (!specularSumCubeRT) {
@@ -89,6 +94,7 @@ void ReflectionProbe::ForceToRefresh(RenderWorld *renderWorld) {
 
     RenderContext *renderContext = renderSystem.GetMainRenderContext();
 
+    // FIXME: use ReflectionProbeStatic instead of -1
     int staticMask = state.type == ReflectionProbe::Type::Baked ? -1 : 0;
 
     // Capture environment probe

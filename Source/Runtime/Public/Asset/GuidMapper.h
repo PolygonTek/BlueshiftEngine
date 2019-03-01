@@ -66,6 +66,7 @@ public:
     static Guid             phongLightingShaderGuid;
     static Guid             skyboxCubemapShaderGuid;
     static Guid             skyboxSixSidedShaderGuid;
+    static Guid             envCubemapShaderGuid;
 
     static Guid             defaultMaterialGuid;
     static Guid             whiteMaterialGuid;

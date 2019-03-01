@@ -60,7 +60,7 @@ CVAR(r_CSM_offsetUnits3, "125", CVar::Float, "bias value added to depth test for
 CVAR(r_optimizedShadowProjection, "1", CVar::Integer, "");
 
 CVAR(r_envCubeMapHdr, "1", CVar::Bool, "");
-CVAR(r_envCubeMapSize, "256", CVar::Integer, "");
+CVAR(r_envCubeMapSize, "128", CVar::Integer, "");
 CVAR(r_envCubeMapBounces, "1", CVar::Integer, "");
 
 CVAR(r_HOM, "0", CVar::Bool, "use hierarchical occlusion map culling");

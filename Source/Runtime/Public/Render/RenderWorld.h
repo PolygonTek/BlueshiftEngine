@@ -86,7 +86,8 @@ public:
                                 /// Gets ReflectionProbe pointer by given reflection probe handle.
     ReflectionProbe *           GetReflectionProbe(int handle) const;
 
-    void                        RefreshReflectionProbe(int handle);
+                                /// Schedule to refresh reflection probe in the next frame.
+    void                        ScheduleToRefreshReflectionProbe(int handle);
 
     int                         GetViewCount() const { return viewCount; }
 

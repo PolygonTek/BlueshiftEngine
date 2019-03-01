@@ -40,14 +40,16 @@ static const engineShader_t originalShaderList[] = {
 
     { "Shaders/skyboxCubemap" },
     { "Shaders/skyboxSixSided" },
+    { "Shaders/envCubemap" },
 
     { "Shaders/fogLight" },
     { "Shaders/blendLight" },
     
     { "Shaders/postObjectMotionBlur" },
     { "Shaders/postCameraMotionBlur" },
-    { "Shaders/passThru" },
-    { "Shaders/passThruColor" },
+    { "Shaders/PassThru" },
+    { "Shaders/PassThruColor" },
+    { "Shaders/PassThruCubeFace" },
     { "Shaders/downscale2x2" },
     { "Shaders/downscale4x4" },
     { "Shaders/downscale4x4LogLum" },
@@ -100,12 +102,14 @@ Shader *            ShaderManager::standardDefaultDirectLitShader;
 Shader *            ShaderManager::standardDefaultAmbientLitDirectLitShader;
 Shader *            ShaderManager::skyboxCubemapShader;
 Shader *            ShaderManager::skyboxSixSidedShader;
+Shader *            ShaderManager::envCubemapShader;
 Shader *            ShaderManager::fogLightShader;
 Shader *            ShaderManager::blendLightShader;
 Shader *            ShaderManager::postObjectMotionBlurShader;
 Shader *            ShaderManager::postCameraMotionBlurShader;
 Shader *            ShaderManager::postPassThruShader;
 Shader *            ShaderManager::postPassThruColorShader;
+Shader *            ShaderManager::postPassThruCubeFaceShader;
 Shader *            ShaderManager::downscale2x2Shader;
 Shader *            ShaderManager::downscale4x4Shader;
 Shader *            ShaderManager::downscale4x4LogLumShader;
@@ -294,6 +298,8 @@ void ShaderManager::InstantiateEngineShaders() {
 
     skyboxSixSidedShader = originalShaders[SkyboxSixSidedShader]->InstantiateShader(Array<Shader::Define>());
 
+    envCubemapShader = originalShaders[EnvCubemapShader]->InstantiateShader(Array<Shader::Define>());
+
     fogLightShader = originalShaders[FogLightShader]->InstantiateShader(Array<Shader::Define>());
     blendLightShader = originalShaders[BlendLightShader]->InstantiateShader(Array<Shader::Define>());
 
@@ -301,6 +307,7 @@ void ShaderManager::InstantiateEngineShaders() {
     postCameraMotionBlurShader = originalShaders[PostCameraMotionBlurShader]->InstantiateShader(Array<Shader::Define>());
     postPassThruShader = originalShaders[PostPassThruShader]->InstantiateShader(Array<Shader::Define>());
     postPassThruColorShader = originalShaders[PostPassThruColorShader]->InstantiateShader(Array<Shader::Define>());
+    postPassThruCubeFaceShader = originalShaders[PostPassThruCubeFaceShader]->InstantiateShader(Array<Shader::Define>());
 
     downscale2x2Shader = originalShaders[Downscale2x2Shader]->InstantiateShader(Array<Shader::Define>());
     downscale4x4Shader = originalShaders[Downscale4x4Shader]->InstantiateShader(Array<Shader::Define>());

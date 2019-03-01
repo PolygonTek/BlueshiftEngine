@@ -41,6 +41,7 @@ Guid        GuidMapper::skyboxSixSidedShaderGuid(0, 0, 0, 202);
 Guid        GuidMapper::standardShaderGuid(0, 0, 0, 203);
 Guid        GuidMapper::unlitShaderGuid(0, 0, 0, 204);
 Guid        GuidMapper::phongLightingShaderGuid(0, 0, 0, 205);
+Guid        GuidMapper::envCubemapShaderGuid(0, 0, 0, 206);
 // predefined material GUID
 Guid        GuidMapper::defaultMaterialGuid(0, 0, 0, 300);
 Guid        GuidMapper::whiteMaterialGuid(0, 0, 0, 301);

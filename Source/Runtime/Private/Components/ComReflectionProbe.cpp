@@ -124,6 +124,10 @@ void ComReflectionProbe::Init() {
     SetInitialized(true);
 
     UpdateVisuals();
+
+    if (probeDef.type == ReflectionProbe::Type::Realtime && probeDef.refreshMode == ReflectionProbe::RefreshMode::OnAwake) {
+        renderWorld->ScheduleToRefreshReflectionProbe(probeHandle);
+    }
 }
 
 void ComReflectionProbe::OnActive() {
@@ -148,14 +152,14 @@ bool ComReflectionProbe::RayIntersection(const Vec3 &start, const Vec3 &dir, boo
 }
 
 void ComReflectionProbe::Awake() {
-    if (probeDef.type == ReflectionProbe::Type::Realtime && probeDef.refreshMode == ReflectionProbe::RefreshMode::OnAwake) {
-        renderWorld->RefreshReflectionProbe(probeHandle);
+    if (probeDef.type == ReflectionProbe::Type::Realtime && probeDef.refreshMode == ReflectionProbe::RefreshMode::OnAwake) {        
+        renderWorld->ScheduleToRefreshReflectionProbe(probeHandle);
     }
 }
 
 void ComReflectionProbe::Update() {
     if (probeDef.type == ReflectionProbe::Type::Realtime && probeDef.refreshMode == ReflectionProbe::RefreshMode::EveryFrame) {
-        renderWorld->RefreshReflectionProbe(probeHandle);
+        renderWorld->ScheduleToRefreshReflectionProbe(probeHandle);
     }
 }
 
@@ -191,7 +195,7 @@ void ComReflectionProbe::UpdateVisuals() {
         Texture *specularSumCubeTexture = reflectionProbe->GetSpecularSumCubeTexture();
 
         sphereDef.materials.SetCount(1);
-        sphereDef.materials[0] = materialManager.GetSingleTextureMaterial(specularSumCubeTexture);
+        sphereDef.materials[0] = materialManager.GetSingleTextureMaterial(specularSumCubeTexture, Material::EnvCubeMapHint);
     }
 
     if (sphereHandle == -1) {

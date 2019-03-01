@@ -348,12 +348,14 @@ public:
         PhongShader,
         SkyboxCubemapShader,
         SkyboxSixSidedShader,
+        EnvCubemapShader,
         FogLightShader,
         BlendLightShader,
         PostObjectMotionBlurShader,
         PostCameraMotionBlurShader,
         PostPassThruShader,
         PostPassThruColorShader,
+        PostPassThruCubeFaceShader,
         Downscale2x2Shader,
         Downscale4x4Shader,
         Downscale4x4LogLumShader,
@@ -427,12 +429,14 @@ public:
     static Shader *         standardDefaultAmbientLitDirectLitShader;
     static Shader *         skyboxCubemapShader;
     static Shader *         skyboxSixSidedShader;
+    static Shader *         envCubemapShader;
     static Shader *         fogLightShader;
     static Shader *         blendLightShader;
     static Shader *         postObjectMotionBlurShader;
     static Shader *         postCameraMotionBlurShader;
     static Shader *         postPassThruShader;
     static Shader *         postPassThruColorShader;
+    static Shader *         postPassThruCubeFaceShader;
     static Shader *         downscale2x2Shader;
     static Shader *         downscale4x4Shader;
     static Shader *         downscale4x4LogLumShader;

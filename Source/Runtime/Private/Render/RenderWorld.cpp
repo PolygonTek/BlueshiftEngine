@@ -329,10 +329,11 @@ void RenderWorld::RemoveReflectionProbe(int handle) {
     reflectionProbes[handle] = nullptr;
 }
 
-void RenderWorld::RefreshReflectionProbe(int handle) {
+void RenderWorld::ScheduleToRefreshReflectionProbe(int handle) {
     ReflectionProbe *probe = GetReflectionProbe(handle);
 
-    probe->ForceToRefresh(this);
+    RenderContext *renderContext = renderSystem.GetMainRenderContext();
+    //probe->ForceToRefresh(this);
 }
 
 void RenderWorld::SetSkyboxMaterial(Material *skyboxMaterial) {

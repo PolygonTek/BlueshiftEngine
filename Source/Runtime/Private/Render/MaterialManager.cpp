@@ -279,6 +279,16 @@ Material *MaterialManager::GetSingleTextureMaterial(const Texture *texture, Mate
             "   mapPath \"%s\"\n"
             "}\n", texture->GetHashName());
         break;
+    case Material::EnvCubeMapHint:
+        Str::snPrintf(buffer, sizeof(buffer),
+            "noShadow\n"
+            "pass {\n"
+            "   shader \"%s\" {\n"
+            "       envCubeMap \"%s\"\n"
+            "       mipLevel 0\n"
+            "   }\n"
+            "}\n", GuidMapper::envCubemapShaderGuid.ToString(), resourceGuidMapper.Get(texture->GetHashName()).ToString());
+        break;
     default:
         Str::snPrintf(buffer, sizeof(buffer),
             "pass {\n"
