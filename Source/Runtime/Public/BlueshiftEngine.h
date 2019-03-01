@@ -165,7 +165,7 @@
 #include "Components/ComCharacterController.h"
 #include "Components/ComCamera.h"
 #include "Components/ComLight.h"
-#include "Components/ComReflectionProbe.h"
+#include "Components/ComEnvironmentProbe.h"
 #include "Components/ComRenderable.h"
 #include "Components/ComMeshRenderer.h"
 #include "Components/ComStaticMeshRenderer.h"

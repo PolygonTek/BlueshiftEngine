@@ -52,8 +52,8 @@ void RenderWorld::ClearScene() {
     for (int i = 0; i < renderLights.Count(); i++) {
         SAFE_DELETE(renderLights[i]);
     }
-    for (int i = 0; i < reflectionProbes.Count(); i++) {
-        SAFE_DELETE(reflectionProbes[i]);
+    for (int i = 0; i < envProbes.Count(); i++) {
+        SAFE_DELETE(envProbes[i]);
     }
 }
 
@@ -260,98 +260,88 @@ void RenderWorld::RemoveRenderLight(int handle) {
     renderLights[handle] = nullptr;
 }
 
-ReflectionProbe *RenderWorld::GetReflectionProbe(int handle) const {
-    if (handle < 0 || handle >= reflectionProbes.Count()) {
-        BE_WARNLOG("RenderWorld::GetReflectionProbe: handle %i > %i\n", handle, reflectionProbes.Count() - 1);
+EnvProbe *RenderWorld::GetEnvProbe(int handle) const {
+    if (handle < 0 || handle >= envProbes.Count()) {
+        BE_WARNLOG("RenderWorld::GetEnvProbe: handle %i > %i\n", handle, envProbes.Count() - 1);
         return nullptr;
     }
 
-    ReflectionProbe *reflectionProbe = reflectionProbes[handle];
-    if (!reflectionProbe) {
-        BE_WARNLOG("RenderWorld::GetReflectionProbe: handle %i is nullptr\n", handle);
+    EnvProbe *envProbe = envProbes[handle];
+    if (!envProbe) {
+        BE_WARNLOG("RenderWorld::GetEnvProbe: handle %i is nullptr\n", handle);
         return nullptr;
     }
 
-    return reflectionProbe;
+    return envProbe;
 }
 
-int RenderWorld::AddReflectionProbe(const ReflectionProbe::State *def) {
-    int handle = reflectionProbes.FindNull();
+int RenderWorld::AddEnvProbe(const EnvProbe::State *def) {
+    int handle = envProbes.FindNull();
     if (handle == -1) {
-        handle = reflectionProbes.Append(nullptr);
+        handle = envProbes.Append(nullptr);
     }
 
-    UpdateReflectionProbe(handle, def);
+    UpdateEnvProbe(handle, def);
 
     return handle;
 }
 
-void RenderWorld::UpdateReflectionProbe(int handle, const ReflectionProbe::State *def) {
-    while (handle >= reflectionProbes.Count()) {
-        reflectionProbes.Append(nullptr);
+void RenderWorld::UpdateEnvProbe(int handle, const EnvProbe::State *def) {
+    while (handle >= envProbes.Count()) {
+        envProbes.Append(nullptr);
     }
 
-    ReflectionProbe *reflectionProbe = reflectionProbes[handle];
-    if (!reflectionProbe) {
-        reflectionProbe = new ReflectionProbe(handle);
-        reflectionProbes[handle] = reflectionProbe;
+    EnvProbe *envProbe = envProbes[handle];
+    if (!envProbe) {
+        envProbe = new EnvProbe(handle);
+        envProbes[handle] = envProbe;
 
-        reflectionProbe->Update(def);
+        envProbe->Update(def);
 
-        reflectionProbe->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
-        reflectionProbe->proxy->reflectionProbe = reflectionProbe;
-        reflectionProbe->proxy->worldAABB = reflectionProbe->GetWorldAABB();
-        reflectionProbe->proxy->id = probeDbvt.CreateProxy(reflectionProbe->proxy->worldAABB, MeterToUnit(0.0f), reflectionProbe->proxy);
+        envProbe->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
+        envProbe->proxy->envProbe = envProbe;
+        envProbe->proxy->worldAABB = envProbe->GetWorldAABB();
+        envProbe->proxy->id = probeDbvt.CreateProxy(envProbe->proxy->worldAABB, MeterToUnit(0.0f), envProbe->proxy);
     } else {
-        bool originMatch = (def->origin == reflectionProbe->state.origin);
-        bool boxSizeMatch = (def->boxSize == reflectionProbe->state.boxSize);
+        bool originMatch = (def->origin == envProbe->state.origin);
+        bool boxSizeMatch = (def->boxSize == envProbe->state.boxSize);
 
         if (!originMatch || !boxSizeMatch) {
-            reflectionProbe->proxy->worldAABB = reflectionProbe->proxy->reflectionProbe->GetWorldAABB();
-            probeDbvt.MoveProxy(reflectionProbe->proxy->id, reflectionProbe->proxy->worldAABB, MeterToUnit(0.5f), def->origin - reflectionProbe->state.origin);
+            envProbe->proxy->worldAABB = envProbe->proxy->envProbe->GetWorldAABB();
+            probeDbvt.MoveProxy(envProbe->proxy->id, envProbe->proxy->worldAABB, MeterToUnit(0.5f), def->origin - envProbe->state.origin);
         }
 
-        reflectionProbe->Update(def);
+        envProbe->Update(def);
     }
 }
 
-void RenderWorld::RemoveReflectionProbe(int handle) {
-    if (handle < 0 || handle >= reflectionProbes.Count()) {
-        BE_WARNLOG("RenderWorld::RemoveReflectionProbe: handle %i > %i\n", handle, reflectionProbes.Count() - 1);
+void RenderWorld::RemoveEnvProbe(int handle) {
+    if (handle < 0 || handle >= envProbes.Count()) {
+        BE_WARNLOG("RenderWorld::RemoveEnvProbe: handle %i > %i\n", handle, envProbes.Count() - 1);
         return;
     }
 
-    ReflectionProbe *reflectionProbe = reflectionProbes[handle];
-    if (!reflectionProbe) {
-        BE_WARNLOG("RenderWorld::RemoveReflectionProbe: handle %i is nullptr\n", handle);
+    EnvProbe *envProbe = envProbes[handle];
+    if (!envProbe) {
+        BE_WARNLOG("RenderWorld::RemoveEnvProbe: handle %i is nullptr\n", handle);
         return;
     }
 
-    probeDbvt.DestroyProxy(reflectionProbe->proxy->id);
+    probeDbvt.DestroyProxy(envProbe->proxy->id);
 
-    // Cancel reflection probe in refreshing
-    for (int i = 0; i < renderSystem.reflectionProbeJobs.Count(); ) {
-        ReflectionProbeJob *job = &renderSystem.reflectionProbeJobs[i];
+    // Cancel environment probe in refreshing
+    for (int i = 0; i < renderSystem.envProbeJobs.Count(); ) {
+        EnvProbeJob *job = &renderSystem.envProbeJobs[i];
 
-        if (job->GetRenderWorld() == this && job->GetReflectionProbe() == reflectionProbe) {
-            renderSystem.reflectionProbeJobs.RemoveIndex(i);
+        if (job->GetRenderWorld() == this && job->GetEnvProbe() == envProbe) {
+            renderSystem.envProbeJobs.RemoveIndex(i);
         } else {
             i++;
         }
     }
 
-    delete reflectionProbes[handle];
-    reflectionProbes[handle] = nullptr;
-}
-
-void RenderWorld::ScheduleToRefreshRealtimeReflectionProbes() {
-    for (int i = 0; i < reflectionProbes.Count(); i++) {
-        ReflectionProbe *reflectionProbe = reflectionProbes[i];
-
-        if (reflectionProbe->state.type == ReflectionProbe::Type::Realtime && reflectionProbe->needToRefresh) {
-            renderSystem.ScheduleToRefreshReflectionProbe(this, i);
-        }
-    }
+    delete envProbes[handle];
+    envProbes[handle] = nullptr;
 }
 
 void RenderWorld::SetSkyboxMaterial(Material *skyboxMaterial) {

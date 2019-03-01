@@ -17,17 +17,17 @@
 /*
 -------------------------------------------------------------------------------
 
-    Reflection Probe
+    Environment Probe
 
 -------------------------------------------------------------------------------
 */
 
 BE_NAMESPACE_BEGIN
 
-class ReflectionProbeJob;
+class EnvProbeJob;
 
-class ReflectionProbe {
-    friend class ReflectionProbeJob;
+class EnvProbe {
+    friend class EnvProbeJob;
     friend class RenderWorld;
 
 public:
@@ -57,42 +57,45 @@ public:
     };
 
     struct State {
-        Type            type;
-        bool            timeSlicing;
-        RefreshMode     refreshMode;
-        Resolution      resolution;
-        bool            useHDR;
-        ClearMethod     clearMethod;
-        Color4          clearColor;
-        float           clippingNear;
-        float           clippingFar;
+        Type            type = Type::Baked;
+        bool            timeSlicing = true;
+        RefreshMode     refreshMode = RefreshMode::OnAwake;
+        Resolution      resolution = Resolution::Resolution128;
+        bool            useHDR = true;
+        ClearMethod     clearMethod = ClearMethod::SkyClear;
+        Color4          clearColor = Color4::black;
+        float           clippingNear = 0.1f;
+        float           clippingFar = 500.0f;
 
-        int             importance;
-        int             layerMask;
+        int             importance = 0;
+        int             layerMask = -1;
 
-        Vec3            origin;
+        Vec3            origin = Vec3::origin;
 
                         // Box offset from the origin.
-        Vec3            boxOffset;
+        Vec3            boxOffset = Vec3::zero;
 
-                        // Box extents for each axis from the origin which is translated by offset. 
+                        // Box extents for each axis from the origin which is translated by offset.
                         // The origin must be included in the box range.
-        Vec3            boxSize;
+        Vec3            boxSize = Vec3::zero;
 
-        bool            useBoxProjection;
+        bool            useBoxProjection = false;
+
+        Texture *       bakedDiffuseProbeTexture = nullptr;
+        Texture *       bakedSpecularProbeTexture = nullptr;
     };
 
-    ReflectionProbe(int index);
-    ~ReflectionProbe();
+    EnvProbe(int index);
+    ~EnvProbe();
 
                         /// Returns AABB in world space.
     const AABB          GetWorldAABB() const { return worldAABB; }
 
                         /// Returns prefiltered specular cube texture.
-    Texture *           GetDiffuseSumCubeTexture() const { return diffuseSumCubeTexture; }
+    Texture *           GetDiffuseProbeTexture() const { return diffuseProbeTexture; }
 
                         /// Returns irradiance diffuse cube texture.
-    Texture *           GetSpecularSumCubeTexture() const { return specularSumCubeTexture; }
+    Texture *           GetSpecularProbeTexture() const { return specularProbeTexture; }
 
                         /// Is this probe should be refreshed in time slicing ? time slcing imply realtime type.
     bool                IsTimeSlicing() const { return state.timeSlicing; }
@@ -109,17 +112,17 @@ private:
 
     void                Invalidate();
 
-    int                 index;              // index of reflection probe list in world
+    int                 index;              // index of environment probe list in world
 
     State               state;
 
     AABB                worldAABB;
 
-    Texture *           diffuseSumCubeTexture = nullptr;
-    Texture *           specularSumCubeTexture = nullptr;
+    Texture *           diffuseProbeTexture = nullptr;
+    Texture *           specularProbeTexture = nullptr;
 
-    RenderTarget *      diffuseSumCubeRT = nullptr;
-    RenderTarget *      specularSumCubeRT = nullptr;
+    RenderTarget *      diffuseProbeRT = nullptr;
+    RenderTarget *      specularProbeRT = nullptr;
 
     bool                needToRefresh = false;
 

@@ -20,12 +20,12 @@ BE_NAMESPACE_BEGIN
 
 class ComTransform;
 
-class ComReflectionProbe : public Component {
+class ComEnvironmentProbe : public Component {
 public:
-    OBJECT_PROTOTYPE(ComReflectionProbe);
+    OBJECT_PROTOTYPE(ComEnvironmentProbe);
 
-    ComReflectionProbe();
-    virtual ~ComReflectionProbe();
+    ComEnvironmentProbe();
+    virtual ~ComEnvironmentProbe();
 
     virtual void            Purge(bool chainPurge = true) override;
 
@@ -48,17 +48,20 @@ public:
 
     virtual const AABB      GetAABB() override;
 
-    ReflectionProbe::Type   GetType() const;
-    void                    SetType(ReflectionProbe::Type type);
+    EnvProbe::Type          GetType() const;
+    void                    SetType(EnvProbe::Type type);
 
-    ReflectionProbe::RefreshMode GetRefreshMode() const;
-    void                    SetRefreshMode(ReflectionProbe::RefreshMode refreshMode);
+    EnvProbe::RefreshMode   GetRefreshMode() const;
+    void                    SetRefreshMode(EnvProbe::RefreshMode refreshMode);
+
+    bool                    IsTimeSlicing() const;
+    void                    SetTimeSlicing(bool timeSlicing);
 
     int                     GetImportance() const;
     void                    SetImportance(int importance);
 
-    ReflectionProbe::Resolution GetResolution() const;
-    void                    SetResolution(ReflectionProbe::Resolution resolution);
+    EnvProbe::Resolution    GetResolution() const;
+    void                    SetResolution(EnvProbe::Resolution resolution);
 
     bool                    IsHDR() const;
     void                    SetHDR(bool useHDR);
@@ -66,8 +69,8 @@ public:
     int                     GetLayerMask() const;
     void                    SetLayerMask(int layerMask);
 
-    ReflectionProbe::ClearMethod GetClearMethod() const;
-    void                    SetClearMethod(ReflectionProbe::ClearMethod clearMethod);
+    EnvProbe::ClearMethod   GetClearMethod() const;
+    void                    SetClearMethod(EnvProbe::ClearMethod clearMethod);
 
     Color3                  GetClearColor() const;
     void                    SetClearColor(const Color3 &clearColor);
@@ -90,7 +93,18 @@ public:
     Vec3                    GetBoxOffset() const;
     void                    SetBoxOffset(const Vec3 &boxOffset);
 
+    Guid                    GetBakedDiffuseProbeTextureGuid() const;
+    void                    SetBakedDiffuseProbeTextureGuid(const Guid &textureGuid);
+
+    Guid                    GetBakedSpecularProbeTextureGuid() const;
+    void                    SetBakedSpecularProbeTextureGuid(const Guid &textureGuid);
+
+    void                    Bake();
+
 protected:
+    Str                     WriteDiffuseProbeTexture();
+    Str                     WriteSpecularProbeTexture();
+
     virtual void            OnActive() override;
     virtual void            OnInactive() override;
 
@@ -98,12 +112,15 @@ protected:
 
     void                    TransformUpdated(const ComTransform *transform);
 
-    ReflectionProbe::State  probeDef;
+    EnvProbe::State         probeDef;
     int                     probeHandle;
 
     Mesh *                  sphereMesh;
     RenderObject::State     sphereDef;
     int                     sphereHandle;
+
+    int                     gizmoCurrentTime = 0;
+    int                     gizmoRefreshTime = 0;
 
     RenderWorld *           renderWorld;
 };

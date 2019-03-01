@@ -30,7 +30,7 @@
 #include "Render/Anim.h"
 #include "Render/RenderObject.h"
 #include "Render/RenderLight.h"
-#include "Render/ReflectionProbe.h"
+#include "Render/EnvProbe.h"
 #include "Render/RenderCamera.h"
 #include "Render/RenderWorld.h"
 #include "Render/RenderContext.h"

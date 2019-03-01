@@ -51,8 +51,8 @@ public:
     Material *              GetMaterial(int index) const;
     void                    SetMaterial(int index, const Material *material);
 
-    bool                    IsUseLightProbe() const;
-    void                    SetUseLightProbe(bool useLightProbe);
+    bool                    IsUseEnvProbeLighting() const;
+    void                    SetUseEnvProbeLighting(bool useEnvProbeLighting);
 
     bool                    IsCastShadows() const;
     void                    SetCastShadows(bool castShadows);

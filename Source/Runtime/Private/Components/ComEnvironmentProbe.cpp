@@ -59,9 +59,9 @@ void ComEnvironmentProbe::RegisterProperties() {
         "The size of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag).SetRange(0, 1e8, 0.05);
     REGISTER_MIXED_ACCESSOR_PROPERTY("boxOffset", "Box Offset", Vec3, GetBoxOffset, SetBoxOffset, Vec3(0, 0, 0),
         "The center of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("bakedDiffuseProbeTexture", "Baked Diffuse Probe Texture", Guid, GetBakedDiffuseProbeTextureGuid, SetBakedDiffuseProbeTextureGuid, GuidMapper::defaultCubeTextureGuid,
+    REGISTER_MIXED_ACCESSOR_PROPERTY("bakedDiffuseProbeTexture", "Baked Diffuse Probe Texture", Guid, GetBakedDiffuseProbeTextureGuid, SetBakedDiffuseProbeTextureGuid, Guid::zero,
         "", PropertyInfo::EditorFlag).SetMetaObject(&TextureAsset::metaObject);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("bakedSpecularProbeTexture", "Baked Specular Probe Texture", Guid, GetBakedSpecularProbeTextureGuid, SetBakedSpecularProbeTextureGuid, GuidMapper::defaultCubeTextureGuid,
+    REGISTER_MIXED_ACCESSOR_PROPERTY("bakedSpecularProbeTexture", "Baked Specular Probe Texture", Guid, GetBakedSpecularProbeTextureGuid, SetBakedSpecularProbeTextureGuid, Guid::zero,
         "", PropertyInfo::EditorFlag).SetMetaObject(&TextureAsset::metaObject);
 }
 
@@ -214,11 +214,11 @@ void ComEnvironmentProbe::UpdateVisuals() {
     }
 
     if (sphereDef.materials.Count() == 0) {
-        EnvProbe *reflectionProbe = renderWorld->GetEnvProbe(probeHandle);
-        Texture *specularSumTexture = reflectionProbe->GetSpecularSumCubeTexture();
+        EnvProbe *envProbe = renderWorld->GetEnvProbe(probeHandle);
+        Texture *specularProbeTexture = envProbe->GetSpecularProbeTexture();
 
         sphereDef.materials.SetCount(1);
-        sphereDef.materials[0] = materialManager.GetSingleTextureMaterial(specularSumTexture, Material::EnvCubeMapHint);
+        sphereDef.materials[0] = materialManager.GetSingleTextureMaterial(specularProbeTexture, Material::EnvCubeMapHint);
     }
 
     if (sphereHandle == -1) {
@@ -423,82 +423,98 @@ void ComEnvironmentProbe::SetBoxOffset(const Vec3 &boxOffset) {
 }
 
 Guid ComEnvironmentProbe::GetBakedDiffuseProbeTextureGuid() const {
-    if (probeDef.bakedDiffuseSumTexture) {
-        const Str texturePath = probeDef.bakedDiffuseSumTexture->GetHashName();
+    if (probeDef.bakedDiffuseProbeTexture) {
+        const Str texturePath = probeDef.bakedDiffuseProbeTexture->GetHashName();
         return resourceGuidMapper.Get(texturePath);
     }
     return Guid();
 }
 
 void ComEnvironmentProbe::SetBakedDiffuseProbeTextureGuid(const Guid &textureGuid) {
-    if (probeDef.bakedDiffuseSumTexture) {
-        textureManager.ReleaseTexture(probeDef.bakedDiffuseSumTexture);
+    if (probeDef.bakedDiffuseProbeTexture) { 
+        textureManager.ReleaseTexture(probeDef.bakedDiffuseProbeTexture);
     }
-    const Str texturePath = resourceGuidMapper.Get(textureGuid);
-    probeDef.bakedDiffuseSumTexture = textureManager.GetTexture(texturePath);
+
+    if (!textureGuid.IsZero()) {
+        const Str texturePath = resourceGuidMapper.Get(textureGuid);
+        probeDef.bakedDiffuseProbeTexture = textureManager.GetTexture(texturePath);
+    }
+
+    UpdateVisuals();
 }
 
 Guid ComEnvironmentProbe::GetBakedSpecularProbeTextureGuid() const {
-    if (probeDef.bakedSpecularSumTexture) {
-        const Str texturePath = probeDef.bakedSpecularSumTexture->GetHashName();
+    if (probeDef.bakedSpecularProbeTexture) {
+        const Str texturePath = probeDef.bakedSpecularProbeTexture->GetHashName();
         return resourceGuidMapper.Get(texturePath);
     }
     return Guid();
 }
 
 void ComEnvironmentProbe::SetBakedSpecularProbeTextureGuid(const Guid &textureGuid) {
-    if (probeDef.bakedSpecularSumTexture) {
-        textureManager.ReleaseTexture(probeDef.bakedSpecularSumTexture);
+    if (probeDef.bakedSpecularProbeTexture) {
+        textureManager.ReleaseTexture(probeDef.bakedSpecularProbeTexture);
     }
-    const Str texturePath = resourceGuidMapper.Get(textureGuid);
-    probeDef.bakedSpecularSumTexture = textureManager.GetTexture(texturePath);
+
+    if (!textureGuid.IsZero()) {
+        const Str texturePath = resourceGuidMapper.Get(textureGuid);
+        probeDef.bakedSpecularProbeTexture = textureManager.GetTexture(texturePath);
+    }
+
+    UpdateVisuals();
 }
 
-void ComEnvironmentProbe::BakeDiffuseProbeTexture() {
-    EnvProbe *reflectionProbe = renderWorld->GetEnvProbe(probeHandle);
+Str ComEnvironmentProbe::WriteDiffuseProbeTexture() {
+    EnvProbe *envProbe = renderWorld->GetEnvProbe(probeHandle);
 
-    Texture *diffuseSumTexture = reflectionProbe->GetDiffuseSumCubeTexture();
+    Texture *diffuseProbeTexture = envProbe->GetDiffuseProbeTexture();
 
-    Image diffuseSumImage;
-    Texture::GetCubeImageFromCubeTexture(diffuseSumTexture, 1, diffuseSumImage);
+    Image diffuseProbeImage;
+    Texture::GetCubeImageFromCubeTexture(diffuseProbeTexture, 1, diffuseProbeImage);
 
     // Convert format to RGB_11F_11F_10F if texture format is HDR
-    if (diffuseSumImage.IsFloatFormat()) {
-        diffuseSumImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
+    if (diffuseProbeImage.IsFloatFormat()) {
+        diffuseProbeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
     }
 
     Str path = GetGameWorld()->MapName();
     path.StripFileExtension();
     path.AppendPath(va("DiffuseProbe-%i.dds", probeHandle));
     
-    diffuseSumImage.WriteDDS(path);
+    diffuseProbeImage.WriteDDS(path);
+
+    return path;
 }
 
-void ComEnvironmentProbe::BakeSpecularProbeTexture() {
-    EnvProbe *reflectionProbe = renderWorld->GetEnvProbe(probeHandle);
+Str ComEnvironmentProbe::WriteSpecularProbeTexture() {
+    EnvProbe *envProbe = renderWorld->GetEnvProbe(probeHandle);
 
-    Texture *specularSumTexture = reflectionProbe->GetSpecularSumCubeTexture();
+    Texture *specularProbeTexture = envProbe->GetSpecularProbeTexture();
 
-    Image specularSumImage;
-    int numMipLevels = Math::Log(2, specularSumTexture->GetWidth()) + 1;
-    Texture::GetCubeImageFromCubeTexture(specularSumTexture, numMipLevels, specularSumImage);
+    Image specularProbeImage;
+    int numMipLevels = Math::Log(2, specularProbeTexture->GetWidth()) + 1;
+    Texture::GetCubeImageFromCubeTexture(specularProbeTexture, numMipLevels, specularProbeImage);
 
     // Convert format to RGB_11F_11F_10F if texture format is HDR
-    if (specularSumImage.IsFloatFormat()) {
-        specularSumImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
+    if (specularProbeImage.IsFloatFormat()) {
+        specularProbeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
     }
 
     Str path = GetGameWorld()->MapName();
     path.StripFileExtension();
     path.AppendPath(va("SpecularProbe-%i.dds", probeHandle));
 
-    specularSumImage.WriteDDS(path);
+    specularProbeImage.WriteDDS(path);
+
+    return path;
 }
 
 void ComEnvironmentProbe::Bake() {
-    BakeDiffuseProbeTexture();
+    renderSystem.ForceToRefreshEnvProbe(renderWorld, probeHandle);
 
-    BakeSpecularProbeTexture();
+    WriteDiffuseProbeTexture();
+
+    WriteSpecularProbeTexture();
 }
 
 BE_NAMESPACE_END

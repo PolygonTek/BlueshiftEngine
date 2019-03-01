@@ -494,6 +494,8 @@ void RenderContext::BeginFrame() {
 
     memset(&renderCounter, 0, sizeof(renderCounter));
 
+    renderSystem.UpdateEnvProbes();
+
     renderSystem.BeginCommands(this);
 
     // Window size have changed since last call of BeginFrame()

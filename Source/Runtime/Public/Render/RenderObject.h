@@ -49,7 +49,7 @@ public:
         ThirdPersonOnlyFlag = BIT(2),
         BillboardFlag       = BIT(3),
         DepthHackFlag       = BIT(4),
-        UseLightProbeFlag   = BIT(5),
+        UseEnvProbeLightingFlag = BIT(5),
         CastShadowsFlag     = BIT(6),
         ReceiveShadowsFlag  = BIT(7),
         OccluderFlag        = BIT(8),   // for use in HOM

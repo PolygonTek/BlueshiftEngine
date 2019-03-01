@@ -171,7 +171,7 @@ set(COMMON_ENGINE_FILES
     Public/Components/ComHingeJoint.h
     Public/Components/ComJoint.h
     Public/Components/ComLight.h
-    Public/Components/ComReflectionProbe.h
+    Public/Components/ComEnvironmentProbe.h
     Public/Components/ComLogic.h
     Public/Components/ComScript.h
     Public/Components/ComMeshCollider.h
@@ -236,7 +236,7 @@ set(COMMON_ENGINE_FILES
     Public/Render/RenderSystem.h
     Public/Render/RenderContext.h  
     Public/Render/ParticleSystem.h
-    Public/Render/ReflectionProbe.h
+    Public/Render/EnvProbe.h
     Public/Render/RenderObject.h
     Public/Render/RenderLight.h
     Public/Render/RenderCamera.h
@@ -414,7 +414,7 @@ set(COMMON_ENGINE_FILES
     Private/Components/ComHingeJoint.cpp
     Private/Components/ComJoint.cpp
     Private/Components/ComLight.cpp
-    Private/Components/ComReflectionProbe.cpp
+    Private/Components/ComEnvironmentProbe.cpp
     Private/Components/ComLogic.cpp
     Private/Components/ComScript.cpp
     Private/Components/ComMeshCollider.cpp
@@ -504,7 +504,7 @@ set(COMMON_ENGINE_FILES
     Private/Render/RenderContext.cpp
     Private/Render/ParticleSystem.cpp
     Private/Render/ParticleSystemManager.cpp
-    Private/Render/ReflectionProbe.cpp
+    Private/Render/EnvProbe.cpp
     Private/Render/RenderObject.cpp
     Private/Render/RenderLight.cpp
     Private/Render/RenderCamera.cpp

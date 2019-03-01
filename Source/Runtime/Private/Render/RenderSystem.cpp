@@ -527,41 +527,63 @@ void RenderSystem::CheckModifiedCVars() {
     }
 }
 
-void RenderSystem::UpdateReflectionProbes() {
-    // Need any render context to render environment cubemap
+void RenderSystem::UpdateEnvProbes() {
+    // Needs any render context to render environment cubemap
     if (!renderSystem.renderContexts.Count()) {
         return;
     }
 
-    for (int i = 0; i < reflectionProbeJobs.Count(); ) {
-        ReflectionProbeJob *job = &reflectionProbeJobs[i];
+    for (int i = 0; i < envProbeJobs.Count(); ) {
+        EnvProbeJob *job = &envProbeJobs[i];
 
-        job->Refresh();
+        bool finished = job->Refresh();
 
-        if (job->reflectionProbe->IsTimeSlicing()) {
-            while (!job->IsFinished()) {
-                job->Refresh();
+        if (!job->envProbe->IsTimeSlicing()) {
+            while (!finished) {
+                finished = job->Refresh();
             }
         }
 
-        if (job->IsFinished()) {
-            reflectionProbeJobs.RemoveIndexFast(i);
+        if (finished) {
+            envProbeJobs.RemoveIndexFast(i);
         } else {
             i++;
         }
     }
 }
 
-void RenderSystem::ScheduleToRefreshReflectionProbe(RenderWorld *renderWorld, int probeHandle) {
-    ReflectionProbeJob job;
-    job.renderWorld = renderWorld;
-    job.reflectionProbe = renderWorld->GetReflectionProbe(probeHandle);
-    job.specularConvolutionCubemapMaxLevel = Math::Log(2, job.reflectionProbe->GetSize());
+void RenderSystem::ScheduleToRefreshEnvProbe(RenderWorld *renderWorld, int probeHandle) {
+    for (int i = 0; i < envProbeJobs.Count(); i++) {
+        EnvProbeJob *job = &envProbeJobs[i];
 
-    reflectionProbeJobs.Append(job);
+        if (job->GetRenderWorld() == renderWorld && job->GetEnvProbe() == renderWorld->GetEnvProbe(probeHandle)) {
+            return;
+        }
+    }
+
+    EnvProbeJob job;
+    job.renderWorld = renderWorld;
+    job.envProbe = renderWorld->GetEnvProbe(probeHandle);
+    job.specularConvolutionCubemapMaxLevel = Math::Log(2, job.envProbe->GetSize());
+
+    envProbeJobs.Append(job);
+}
+
+void RenderSystem::ForceToRefreshEnvProbe(RenderWorld *renderWorld, int probeHandle) {
+    EnvProbeJob job;
+    job.renderWorld = renderWorld;
+    job.envProbe = renderWorld->GetEnvProbe(probeHandle);
+    job.specularConvolutionCubemapMaxLevel = Math::Log(2, job.envProbe->GetSize());
+
+    bool finished;
+    do {
+        finished = job.Refresh();
+    } while (!finished);
 }
 
 void RenderSystem::CaptureEnvCubeRTFace(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT, int faceIndex) {
+    //int t0 = PlatformTime::Milliseconds();
+
     RenderCamera renderCamera;
     RenderCamera::State cameraDef;
 
@@ -598,6 +620,9 @@ void RenderSystem::CaptureEnvCubeRTFace(RenderWorld *renderWorld, int layerMask,
     renderSystem.EndCommands();
 
     targetCubeRT->End();
+
+    //int t1 = PlatformTime::Milliseconds();
+    //BE_LOG("CaptureEnvCubeRTFace(%i) takes %ims\n", faceIndex, t1 - t0);
 }
 
 void RenderSystem::CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT) {

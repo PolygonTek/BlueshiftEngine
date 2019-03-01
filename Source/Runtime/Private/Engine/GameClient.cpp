@@ -202,8 +202,6 @@ void GameClient::RunFrame() {
     // FIXME: use thread
     soundSystem.Update();
 
-    renderSystem.UpdateReflectionProbes();
-
     renderSystem.CheckModifiedCVars();
 
     physicsSystem.CheckModifiedCVars();

@@ -35,7 +35,7 @@ struct DbvtProxy {
     AABB                    worldAABB;      ///< World bounding volume for this node
     RenderObject *          renderObject;
     RenderLight *           renderLight;
-    ReflectionProbe *       reflectionProbe;
+    EnvProbe *       envProbe;
     Mesh *                  mesh;           ///< Static mesh pointer
     int32_t                 meshSurfIndex;  ///< Sub mesh index
 };
@@ -74,19 +74,17 @@ public:
                             /// Gets RenderLight pointer by given render light handle.
     RenderLight *           GetRenderLight(int handle) const;
 
-                            /// Adds reflection probe to this world.
-    int                     AddReflectionProbe(const ReflectionProbe::State *def);
+                            /// Adds environment probe to this world.
+    int                     AddEnvProbe(const EnvProbe::State *def);
 
-                            /// Updates reflection probe.
-    void                    UpdateReflectionProbe(int handle, const ReflectionProbe::State *def);
+                            /// Updates environment probe.
+    void                    UpdateEnvProbe(int handle, const EnvProbe::State *def);
 
-                            /// Removes reflection probe.
-    void                    RemoveReflectionProbe(int handle);
+                            /// Removes environment probe.
+    void                    RemoveEnvProbe(int handle);
 
-                            /// Gets ReflectionProbe pointer by given reflection probe handle.
-    ReflectionProbe *       GetReflectionProbe(int handle) const;
-
-    void                    ScheduleToRefreshRealtimeReflectionProbes();
+                            /// Gets EnvProbe pointer by given environment probe handle.
+    EnvProbe *              GetEnvProbe(int handle) const;
 
     int                     GetViewCount() const { return viewCount; }
 
@@ -173,12 +171,12 @@ private:
 
     Array<RenderObject *>   renderObjects;          ///< Array of render objects
     Array<RenderLight *>    renderLights;           ///< Array of render lights
-    Array<ReflectionProbe *>reflectionProbes;       ///< Array of local reflection probes
-    //ReflectionProbe *     globalProbe;            ///< Global light probe
+    Array<EnvProbe *>       envProbes;              ///< Array of local environment probes
+    //EnvProbe *            globalProbe;            ///< Global light probe
 
     DynamicAABBTree         objectDbvt;             ///< Dynamic bounding volume tree for render objects
     DynamicAABBTree         lightDbvt;              ///< Dynamic bounding volume tree for render lights
-    DynamicAABBTree         probeDbvt;              ///< Dynamic bounding volume tree for reflection probes
+    DynamicAABBTree         probeDbvt;              ///< Dynamic bounding volume tree for environment probes
     DynamicAABBTree         staticMeshDbvt;         ///< Dynamic bounding volume tree for static meshes
 };
 

@@ -31,10 +31,8 @@ void ComMeshRenderer::RegisterProperties() {
         "", PropertyInfo::EditorFlag).SetMetaObject(&MeshAsset::metaObject);
     REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("materials", "Materials", Guid, GetMaterialGuid, SetMaterialGuid, GetMaterialCount, SetMaterialCount, GuidMapper::defaultMaterialGuid, 
         "List of materials to use when rendering.", PropertyInfo::EditorFlag).SetMetaObject(&MaterialAsset::metaObject);
-    REGISTER_ACCESSOR_PROPERTY("useLightProve", "Use Light Probe", bool, IsUseLightProbe, SetUseLightProbe, true, 
+    REGISTER_ACCESSOR_PROPERTY("useEnvironmentProveLighting", "Use Env Probe Lighting", bool, IsUseEnvProbeLighting, SetUseEnvProbeLighting, true, 
         "", PropertyInfo::EditorFlag);
-    //REGISTER_ACCESSOR_PROPERTY("useReflectionProbe", "Use Reflection Probe", bool, IsUseReflectionProbe, SetUseReflectionProbe, false,
-        //"", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("castShadows", "Cast Shadows", bool, IsCastShadows, SetCastShadows, true, 
         "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("receiveShadows", "Receive Shadows", bool, IsReceiveShadows, SetReceiveShadows, true, 
@@ -210,15 +208,15 @@ void ComMeshRenderer::SetMaterial(int index, const Material *material) {
     SetMaterialGuid(index, materialGuid);
 }
 
-bool ComMeshRenderer::IsUseLightProbe() const {
-    return !!(renderObjectDef.flags & RenderObject::UseLightProbeFlag);
+bool ComMeshRenderer::IsUseEnvProbeLighting() const {
+    return !!(renderObjectDef.flags & RenderObject::UseEnvProbeLightingFlag);
 }
 
-void ComMeshRenderer::SetUseLightProbe(bool useLightProbe) {
-    if (useLightProbe) {
-        renderObjectDef.flags |= RenderObject::UseLightProbeFlag;
+void ComMeshRenderer::SetUseEnvProbeLighting(bool useEnvProbe) {
+    if (useEnvProbe) {
+        renderObjectDef.flags |= RenderObject::UseEnvProbeLightingFlag;
     } else {
-        renderObjectDef.flags &= ~RenderObject::UseLightProbeFlag;
+        renderObjectDef.flags &= ~RenderObject::UseEnvProbeLightingFlag;
     }
 
     UpdateVisuals();

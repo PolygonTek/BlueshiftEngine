@@ -26,27 +26,27 @@ BE_NAMESPACE_BEGIN
 
 class CmdArgs;
 class VisCamera;
-class ReflectionProbe;
+class EnvProbe;
 class RenderSystem;
 
-class ReflectionProbeJob {
+class EnvProbeJob {
     friend class RenderSystem;
 
 public:
     RenderWorld *           GetRenderWorld() const { return renderWorld; }
 
-    ReflectionProbe *       GetReflectionProbe() const { return reflectionProbe; }
+    EnvProbe *              GetEnvProbe() const { return envProbe; }
 
     bool                    IsFinished() const;
 
-    void                    Refresh();
+    bool                    Refresh();
 
 private:
     void                    RevalidateDiffuseConvolutionCubemap();
     void                    RevalidateSpecularConvolutionCubemap();
 
     RenderWorld *           renderWorld;
-    ReflectionProbe *       reflectionProbe;
+    EnvProbe *              envProbe;
     bool                    diffuseConvolutionCubemapComputed = false;
     int                     specularConvolutionCubemapComputedLevel = -1;
     int                     specularConvolutionCubemapComputedLevel0Face = -1;
@@ -56,7 +56,7 @@ private:
 class RenderSystem {
     friend class RenderContext;
     friend class RenderWorld;
-    friend class ReflectionProbeJob;
+    friend class EnvProbeJob;
     friend class PhysDebugDraw;
 
 public:
@@ -75,7 +75,7 @@ public:
     RenderContext *         AllocRenderContext(bool isMainContext = false);
     void                    FreeRenderContext(RenderContext *renderContext);
 
-                            // valid only between BeginFrame()/EndFrame()
+                            /// This function is valid only between BeginFrame()/EndFrame()
     RenderContext *         GetCurrentRenderContext() { return currentContext; }
 
     RenderContext *         GetMainRenderContext() { return mainContext; }
@@ -90,10 +90,11 @@ public:
 
     void                    CheckModifiedCVars();
 
-    void                    UpdateReflectionProbes();
+                            /// Schedules to refresh environment probe in the next frame.
+    void                    ScheduleToRefreshEnvProbe(RenderWorld *renderWorld, int probeHandle);
 
-                            /// Schedule to refresh reflection probe in the next frame.
-    void                    ScheduleToRefreshReflectionProbe(RenderWorld *renderWorld, int probeHandle);
+                            /// Forces to refresh environment probe immediately.
+    void                    ForceToRefreshEnvProbe(RenderWorld *renderWorld, int probeHandle);
 
     void                    TakeEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, int size = 256);
     void                    TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin);
@@ -101,27 +102,31 @@ public:
 
     void                    WriteGGXDFGSum(const char *filename, int size) const;
 
-                            // Capture environment cubemap
+                            /// Captures environment cubemap.
     void                    CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT);
+
+                            /// Captures environment cubemap for specific face.
     void                    CaptureEnvCubeRTFace(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT, int faceIndex);
 
-                            // Capture environment cubemap image
+                            /// Captures environment cubemap image.
     void                    CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, int size, Image &envCubeImage);
 
-                            // Generate irradiance environment cubemap using SH convolution method
+                            /// Generates irradiance environment cubemap using SH convolution method.
     void                    GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const;
 
-                            // Generate irradiance environment cubemap
+                            /// Generates irradiance environment cubemap.
     void                    GenerateIrradianceEnvCubeRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const;
 
-                            // Generate Phong specular prefiltered environment cubemap
+                            /// Generates Phong specular prefiltered environment cubemap.
     void                    GeneratePhongSpecularLDSumRT(const Texture *envCubeTexture, int maxSpecularPower, RenderTarget *targetCubeRT) const;
 
-                            // Generate GGX specular prefiltered environment cubemap
+                            /// Generates GGX specular prefiltered environment cubemap.
     void                    GenerateGGXLDSumRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const;
+
+                            /// Generates GGX specular prefiltered environment cubemap for specific mip level.
     void                    GenerateGGXLDSumRTLevel(const Texture *envCubeTexture, RenderTarget *targetCubeRT, int numMipLevels, int mipLevel) const;
 
-                            // Generate GGX DFG integration 2D LUT
+                            /// Generates GGX DFG integration 2D LUT.
     void                    GenerateGGXDFGSumImage(int size, Image &integrationImage) const;
 
 private:
@@ -130,6 +135,8 @@ private:
     void                    RecreateShadowMapRT();
     void *                  GetCommandBuffer(int bytes);
     void                    IssueCommands();
+
+    void                    UpdateEnvProbes();
 
     void                    GenerateGGXLDSumRTFirstLevel(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const;
     void                    GenerateGGXLDSumRTRestLevel(const Texture *envCubeTexture, RenderTarget *targetCubeRT, int numMipLevels, int mipLevel) const;
@@ -146,7 +153,7 @@ private:
     RenderContext *         currentContext;
     RenderContext *         mainContext;
 
-    Array<ReflectionProbeJob> reflectionProbeJobs;
+    Array<EnvProbeJob>      envProbeJobs;
 
     static void             Cmd_ScreenShot(const CmdArgs &args);
 };
