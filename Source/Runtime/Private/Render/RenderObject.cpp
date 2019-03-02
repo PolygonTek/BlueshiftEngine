@@ -20,8 +20,6 @@
 BE_NAMESPACE_BEGIN
 
 RenderObject::RenderObject(int index) {
-    memset(&state, 0, sizeof(state));
-
     this->index = index;
 
     worldOBB.SetZero();

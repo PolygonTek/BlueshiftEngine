@@ -20,8 +20,6 @@
 BE_NAMESPACE_BEGIN
 
 RenderLight::RenderLight(int index) {
-    memset(&state, 0, sizeof(state));
-
     this->index = index;
 
     worldOBB.SetZero();
