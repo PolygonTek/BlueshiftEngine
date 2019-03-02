@@ -465,6 +465,13 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
             return true;
         }
 
+        // Skip if camera renders static objects and this object is not static
+        if (camera->def->GetState().flags & RenderCamera::StaticOnly) {
+            if (!(renderObject->state.staticMask & camera->def->GetState().staticMask)) {
+                return true;
+            }
+        }
+
         // Skip first person camera only object in sub camera.
         if ((renderObject->state.flags & RenderObject::FirstPersonOnlyFlag) && camera->isSubCamera) {
             return true;
@@ -563,6 +570,13 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
         // Skip if not skinned mesh
         if (!renderObject->state.joints) {
             return true;
+        }
+
+        // Skip if camera renders static objects and this object is not static
+        if (camera->def->GetState().flags & RenderCamera::StaticOnly) {
+            if (!(renderObject->state.staticMask & camera->def->GetState().staticMask)) {
+                return true;
+            }
         }
 
         // Skip first person camera only object in sub camera 

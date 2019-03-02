@@ -54,7 +54,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
 
     if (state.bakedDiffuseProbeTexture) {
         if (diffuseProbeTexture) {
-            textureManager.ReleaseTexture(diffuseProbeTexture, true);
+            textureManager.ReleaseTexture(diffuseProbeTexture);
         }
 
         // Use baked diffuse convolution cubemap 
@@ -72,7 +72,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
 
     if (state.bakedSpecularProbeTexture) {
         if (specularProbeTexture) {
-            textureManager.ReleaseTexture(specularProbeTexture, true);
+            textureManager.ReleaseTexture(specularProbeTexture);
         }
 
         // Use baked specular convolution cubemap 
@@ -107,7 +107,7 @@ int EnvProbe::ToActualResolution(Resolution resolution) {
 void EnvProbeJob::RevalidateDiffuseConvolutionCubemap() {
     // Recreate diffuse convolution texture if its format have changed.
     if ((envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->diffuseProbeTexture->GetFormat()))) {
-        Image::Format format = envProbe->state.useHDR ? Image::RGB_16F_16F_16F : Image::RGB_8_8_8;
+        Image::Format format = envProbe->state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8;
 
         envProbe->diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, 64, 64, 1, 1, 1, format, // fixed size (64) for irradiance cubemap
             Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
@@ -125,7 +125,7 @@ void EnvProbeJob::RevalidateSpecularConvolutionCubemap() {
     // Recreate diffuse convolution texture if its format or size have changed.
     if (size != envProbe->specularProbeTexture->GetWidth() ||
         (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->specularProbeTexture->GetFormat()))) {
-        Image::Format format = envProbe->state.useHDR ? Image::RGB_16F_16F_16F : Image::RGB_8_8_8;
+        Image::Format format = envProbe->state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8;
 
         int numMipLevels = Math::Log(2, size) + 1;
 

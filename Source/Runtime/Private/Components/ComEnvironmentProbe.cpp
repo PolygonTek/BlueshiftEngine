@@ -24,7 +24,7 @@
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Reflection Probe", ComEnvironmentProbe, Component)
+OBJECT_DECLARATION("Environment Probe", ComEnvironmentProbe, Component)
 BEGIN_EVENTS(ComEnvironmentProbe)
 END_EVENTS
 
@@ -60,9 +60,9 @@ void ComEnvironmentProbe::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("boxOffset", "Box Offset", Vec3, GetBoxOffset, SetBoxOffset, Vec3(0, 0, 0),
         "The center of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("bakedDiffuseProbeTexture", "Baked Diffuse Probe Texture", Guid, GetBakedDiffuseProbeTextureGuid, SetBakedDiffuseProbeTextureGuid, Guid::zero,
-        "", PropertyInfo::EditorFlag).SetMetaObject(&TextureAsset::metaObject);
+        "", 0).SetMetaObject(&TextureAsset::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("bakedSpecularProbeTexture", "Baked Specular Probe Texture", Guid, GetBakedSpecularProbeTextureGuid, SetBakedSpecularProbeTextureGuid, Guid::zero,
-        "", PropertyInfo::EditorFlag).SetMetaObject(&TextureAsset::metaObject);
+        "", 0).SetMetaObject(&TextureAsset::metaObject);
 }
 
 ComEnvironmentProbe::ComEnvironmentProbe() {
@@ -464,57 +464,20 @@ void ComEnvironmentProbe::SetBakedSpecularProbeTextureGuid(const Guid &textureGu
     UpdateVisuals();
 }
 
-Str ComEnvironmentProbe::WriteDiffuseProbeTexture() {
+Texture *ComEnvironmentProbe::GetDiffuseProbeTexture() const {
     EnvProbe *envProbe = renderWorld->GetEnvProbe(probeHandle);
 
-    Texture *diffuseProbeTexture = envProbe->GetDiffuseProbeTexture();
-
-    Image diffuseProbeImage;
-    Texture::GetCubeImageFromCubeTexture(diffuseProbeTexture, 1, diffuseProbeImage);
-
-    // Convert format to RGB_11F_11F_10F if texture format is HDR
-    if (diffuseProbeImage.IsFloatFormat()) {
-        diffuseProbeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
-    }
-
-    Str path = GetGameWorld()->MapName();
-    path.StripFileExtension();
-    path.AppendPath(va("DiffuseProbe-%i.dds", probeHandle));
-    
-    diffuseProbeImage.WriteDDS(path);
-
-    return path;
+    return envProbe->GetDiffuseProbeTexture();
 }
 
-Str ComEnvironmentProbe::WriteSpecularProbeTexture() {
+Texture *ComEnvironmentProbe::GetSpecularProbeTexture() const {
     EnvProbe *envProbe = renderWorld->GetEnvProbe(probeHandle);
 
-    Texture *specularProbeTexture = envProbe->GetSpecularProbeTexture();
-
-    Image specularProbeImage;
-    int numMipLevels = Math::Log(2, specularProbeTexture->GetWidth()) + 1;
-    Texture::GetCubeImageFromCubeTexture(specularProbeTexture, numMipLevels, specularProbeImage);
-
-    // Convert format to RGB_11F_11F_10F if texture format is HDR
-    if (specularProbeImage.IsFloatFormat()) {
-        specularProbeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
-    }
-
-    Str path = GetGameWorld()->MapName();
-    path.StripFileExtension();
-    path.AppendPath(va("SpecularProbe-%i.dds", probeHandle));
-
-    specularProbeImage.WriteDDS(path);
-
-    return path;
+    return envProbe->GetSpecularProbeTexture();
 }
 
-void ComEnvironmentProbe::Bake() {
+void ComEnvironmentProbe::ForceToRefresh() {
     renderSystem.ForceToRefreshEnvProbe(renderWorld, probeHandle);
-
-    WriteDiffuseProbeTexture();
-
-    WriteSpecularProbeTexture();
 }
 
 BE_NAMESPACE_END

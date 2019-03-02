@@ -99,12 +99,14 @@ public:
     Guid                    GetBakedSpecularProbeTextureGuid() const;
     void                    SetBakedSpecularProbeTextureGuid(const Guid &textureGuid);
 
-    void                    Bake();
+    void                    ForceToRefresh();
+
+    Texture *               GetDiffuseProbeTexture() const;
+    Texture *               GetSpecularProbeTexture() const;
+
+    int                     GetProbeHandle() const { return probeHandle; }
 
 protected:
-    Str                     WriteDiffuseProbeTexture();
-    Str                     WriteSpecularProbeTexture();
-
     virtual void            OnActive() override;
     virtual void            OnInactive() override;
 
