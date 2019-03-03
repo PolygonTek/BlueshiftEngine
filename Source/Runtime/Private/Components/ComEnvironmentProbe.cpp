@@ -450,7 +450,7 @@ void ComEnvironmentProbe::SetBakedDiffuseProbeTextureGuid(const Guid &textureGui
         const Texture *texture = textureManager.FindTexture(texturePath);
 
         // Don't allow sharing this texture
-        if (!texture) {
+        if (!texture || texture->GetRefCount() == 0) {
             probeDef.bakedDiffuseProbeTexture = textureManager.GetTexture(texturePath);
 
             if (probeDef.bakedDiffuseProbeTexture->IsDefaultTexture()) {
@@ -480,7 +480,7 @@ void ComEnvironmentProbe::SetBakedSpecularProbeTextureGuid(const Guid &textureGu
         const Texture *texture = textureManager.FindTexture(texturePath);
 
         // Don't allow sharing this texture
-        if (!texture) {
+        if (!texture || texture->GetRefCount() == 0) {
             probeDef.bakedSpecularProbeTexture = textureManager.GetTexture(texturePath);
 
             if (probeDef.bakedSpecularProbeTexture->IsDefaultTexture()) {
