@@ -40,6 +40,14 @@ void Material::Purge() {
             pass->texture = nullptr;
         }
 
+        for (int i = 0; i < pass->shaderProperties.Count(); i++) {
+            const auto entry = pass->shaderProperties.GetByIndex(i);
+            if (entry->second.texture) {
+                textureManager.ReleaseTexture(entry->second.texture);
+                entry->second.texture = nullptr;
+            }
+        }
+
         delete pass;
         pass = nullptr;
     }
