@@ -65,7 +65,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
             // Create default diffuse convolution cubemap 
             diffuseProbeTexture = textureManager.AllocTexture(va("diffuseProbe-%i", index));
             diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, 16, 16, 1, 1, 1, Image::RGB_8_8_8,
-                Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+                Texture::Clamp | Texture::NoCompression | Texture::NoMipmaps | Texture::HighQuality);
 
             resourceGuidMapper.Set(Guid::CreateGuid(), diffuseProbeTexture->GetHashName());
         }
@@ -87,7 +87,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
 
             specularProbeTexture = textureManager.AllocTexture(va("specularProbe-%i", index));
             specularProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels, Image::RGB_8_8_8,
-                Texture::Clamp | Texture::HighQuality);
+                Texture::Clamp | Texture::NoCompression | Texture::HighQuality);
 
             resourceGuidMapper.Set(Guid::CreateGuid(), specularProbeTexture->GetHashName());
         }
