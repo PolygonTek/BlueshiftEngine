@@ -348,7 +348,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
         DdsFileHeaderDX10 *dx10Header = (DdsFileHeaderDX10 *)ptr;
         ptr += sizeof(DdsFileHeaderDX10);
 
-        switch (dx10Header->dxgiFormat){
+        switch (dx10Header->dxgiFormat) {
         case DX10_FORMAT_R8_UNORM: format = R_8; break;
         case DX10_FORMAT_R8G8_UNORM: format = RG_8_8; break;
         case DX10_FORMAT_R8G8B8A8_UNORM: format = RGBA_8_8_8_8; break;

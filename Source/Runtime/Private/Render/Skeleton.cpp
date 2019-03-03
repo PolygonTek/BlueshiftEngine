@@ -24,7 +24,7 @@
 BE_NAMESPACE_BEGIN
 
 bool Skeleton::IsDefaultSkeleton() const {
-    return (this == SkeletonManager::defaultSkeleton ? true : false);
+    return this == SkeletonManager::defaultSkeleton;
 }
 
 void Skeleton::Purge() {
