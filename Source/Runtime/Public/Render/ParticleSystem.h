@@ -281,7 +281,9 @@ public:
     bool                        Load(const char *filename);
     bool                        Reload();
     void                        Write(const char *filename);
+
     const ParticleSystem *      AddRefCount() const { refCount++; return this; }
+    int                         GetRefCount() const { return refCount; }
 
 private:
     bool                        ParseStage(Lexer &lexer, Stage &stage) const;

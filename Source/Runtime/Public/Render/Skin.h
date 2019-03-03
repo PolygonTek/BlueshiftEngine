@@ -49,6 +49,7 @@ public:
     void                    Write(const char *filename);
 
     const Skin *            AddRefCount() const { refCount++; return this; }
+    int                     GetRefCount() const { return refCount; }
 
     const Material *        RemapMaterialBySkin(const Material *material) const;
 

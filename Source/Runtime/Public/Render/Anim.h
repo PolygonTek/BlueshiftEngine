@@ -116,7 +116,9 @@ public:
     bool                    Load(const char *filename);
     bool                    Reload();
     void                    Write(const char *filename);
+
     const Anim *            AddRefCount() const { refCount++; return this; }
+    int                     GetRefCount() const { return refCount; }
     
                             /// Check if the hierarchy is the same with the given skeleton (must have same joint names)
     bool                    CheckHierarchy(const Skeleton *skeleton) const;

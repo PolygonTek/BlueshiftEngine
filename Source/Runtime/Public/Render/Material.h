@@ -146,6 +146,7 @@ public:
     void                    Write(const char *filename);
 
     const Material *        AddRefCount() const { refCount++; return this; }
+    int                     GetRefCount() const { return refCount; }
 
     void                    ChangeShader(Shader *shader);
     void                    CommitShaderPropertiesChanged();

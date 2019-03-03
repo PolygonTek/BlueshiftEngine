@@ -72,7 +72,9 @@ public:
     bool                    Load(const char *filename);
     bool                    Reload();
     void                    Write(const char *filename);
+
     const Skeleton *        AddRefCount() const { refCount++; return this; }
+    int                     GetRefCount() const { return refCount; }
 
 private:
     Str                     hashName;

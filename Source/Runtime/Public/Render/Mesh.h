@@ -138,6 +138,7 @@ public:
     void                    Write(const char *filename);
 
     const Mesh *            AddRefCount() const { refCount++; return this; }
+    int                     GetRefCount() const { return refCount; }
 
 private:
     void                    FreeSurface(MeshSurf *surf) const;

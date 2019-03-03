@@ -116,6 +116,7 @@ public:
     bool                    Reload();
 
     const Texture *         AddRefCount() const { refCount++; return this; }
+    int                     GetRefCount() const { return refCount; }
 
     void                    Bind() const;
 

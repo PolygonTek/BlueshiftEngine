@@ -91,6 +91,7 @@ public:
     void                    Write(const char *filename);
 
     const Collider *        AddRefCount() const { refCount++; return this; }
+    int                     GetRefCount() const { return refCount; }
 
 private:
     int                     NumCollisionMeshes() const { return collisionMeshes.Count(); }

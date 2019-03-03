@@ -246,7 +246,9 @@ public:
     void                    SetTextureArray(const char *name, int num, const Texture **textures) const;
 
     bool                    Create(const char *text, const char *baseDir);
+
     const Shader *          AddRefCount() const { refCount++; return this; }
+    int                     GetRefCount() const { return refCount; }
 
     void                    Purge();
 
