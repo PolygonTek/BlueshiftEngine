@@ -64,12 +64,12 @@ public:
         Empty               = 0,
         ReadOnlyFlag        = BIT(1),   // Don't allow to set
         SkipSerializationFlag = BIT(2), // Don't serialize
-        EditorFlag          = BIT(3),   // Used in editor
-        SystemUnits         = BIT(4),
-        MultiLinesFlag      = BIT(5),   // Str type in multilines
-        ArrayFlag           = BIT(6),   // Is array property ?
-        NetworkFlag         = BIT(7),   // Not used yet
-        ShaderDefineFlag    = BIT(8),
+        EditorFlag          = BIT(3),   // Show in editor
+        SystemUnits         = BIT(5),
+        MultiLinesFlag      = BIT(6),   // Str type in multilines
+        ArrayFlag           = BIT(7),   // Is array property ?
+        NetworkFlag         = BIT(8),   // Not used yet
+        ShaderDefineFlag    = BIT(9),
     };
 
     PropertyInfo();
