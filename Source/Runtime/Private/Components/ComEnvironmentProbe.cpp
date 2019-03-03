@@ -76,6 +76,16 @@ ComEnvironmentProbe::~ComEnvironmentProbe() {
 }
 
 void ComEnvironmentProbe::Purge(bool chainPurge) {
+    if (probeDef.bakedDiffuseProbeTexture) {
+        textureManager.ReleaseTexture(probeDef.bakedDiffuseProbeTexture);
+        probeDef.bakedDiffuseProbeTexture = nullptr;
+    }
+
+    if (probeDef.bakedSpecularProbeTexture) {
+        textureManager.ReleaseTexture(probeDef.bakedSpecularProbeTexture);
+        probeDef.bakedSpecularProbeTexture = nullptr;
+    }
+
     if (sphereDef.mesh) {
         meshManager.ReleaseMesh(sphereDef.mesh);
         sphereDef.mesh = nullptr;
@@ -431,13 +441,18 @@ Guid ComEnvironmentProbe::GetBakedDiffuseProbeTextureGuid() const {
 }
 
 void ComEnvironmentProbe::SetBakedDiffuseProbeTextureGuid(const Guid &textureGuid) {
-    if (probeDef.bakedDiffuseProbeTexture) { 
+    if (probeDef.bakedDiffuseProbeTexture) {
         textureManager.ReleaseTexture(probeDef.bakedDiffuseProbeTexture);
     }
 
     if (!textureGuid.IsZero()) {
         const Str texturePath = resourceGuidMapper.Get(textureGuid);
-        probeDef.bakedDiffuseProbeTexture = textureManager.GetTexture(texturePath);
+        const Texture *texture = textureManager.FindTexture(texturePath);
+
+        // Don't allow sharing this texture
+        if (!texture) {
+            probeDef.bakedDiffuseProbeTexture = textureManager.GetTexture(texturePath);
+        }
     }
 
     UpdateVisuals();
@@ -458,7 +473,12 @@ void ComEnvironmentProbe::SetBakedSpecularProbeTextureGuid(const Guid &textureGu
 
     if (!textureGuid.IsZero()) {
         const Str texturePath = resourceGuidMapper.Get(textureGuid);
-        probeDef.bakedSpecularProbeTexture = textureManager.GetTexture(texturePath);
+        const Texture *texture = textureManager.FindTexture(texturePath);
+
+        // Don't allow sharing this texture
+        if (!texture) {
+            probeDef.bakedSpecularProbeTexture = textureManager.GetTexture(texturePath);
+        }
     }
 
     UpdateVisuals();

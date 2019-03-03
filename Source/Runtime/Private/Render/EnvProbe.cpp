@@ -52,13 +52,14 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
     worldAABB = AABB(-state.boxSize, state.boxSize);
     worldAABB += state.origin + state.boxOffset;
 
-    if (state.bakedDiffuseProbeTexture) {
+    if (state.bakedDiffuseProbeTexture && state.bakedDiffuseProbeTexture != diffuseProbeTexture) {
         if (diffuseProbeTexture) {
             textureManager.ReleaseTexture(diffuseProbeTexture);
         }
 
-        // Use baked diffuse convolution cubemap 
+        // Use baked diffuse convolution cubemap
         diffuseProbeTexture = state.bakedDiffuseProbeTexture;
+        diffuseProbeTexture->AddRefCount();
     } else {
         if (!diffuseProbeTexture) {
             // Create default diffuse convolution cubemap 
@@ -70,13 +71,14 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
         }
     }
 
-    if (state.bakedSpecularProbeTexture) {
+    if (state.bakedSpecularProbeTexture && state.bakedSpecularProbeTexture != specularProbeTexture) {
         if (specularProbeTexture) {
             textureManager.ReleaseTexture(specularProbeTexture);
         }
 
         // Use baked specular convolution cubemap 
         specularProbeTexture = state.bakedSpecularProbeTexture;
+        specularProbeTexture->AddRefCount();
     } else {
         if (!specularProbeTexture) {
             // Create default specular convolution cubemap
