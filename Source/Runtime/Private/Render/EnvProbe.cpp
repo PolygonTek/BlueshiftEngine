@@ -30,6 +30,12 @@ EnvProbe::~EnvProbe() {
     if (specularProbeTexture) {
         textureManager.ReleaseTexture(specularProbeTexture);
     }
+    if (diffuseProbeRT) {
+        RenderTarget::Delete(diffuseProbeRT);
+    }
+    if (specularProbeRT) {
+        RenderTarget::Delete(specularProbeRT);
+    }
 }
 
 void EnvProbe::Update(const EnvProbe::State *stateDef) {
@@ -43,7 +49,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
         bool originMatch = state.origin == stateDef->origin;
 
         if (!resolutionMatch || !useHDRMatch || !clearMethodMatch || (stateDef->clearMethod == ClearMethod::ColorClear && !clearColorMatch) || !clippingNearMatch || !clippingFarMatch || !originMatch) {
-            Invalidate();
+            needToRefresh = true;
         }
     }
 
@@ -94,25 +100,26 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
     }
 }
 
-void EnvProbe::Invalidate() {
-    needToRefresh = true;
-}
-
 int EnvProbe::ToActualResolution(Resolution resolution) {
     // resolution value same order with EnvProbe::Resolution
     static const int size[] = {
-        16, 32, 64, 128, 256, 1024, 2048
+        16, 32, 64, 128, 256, 512, 1024, 2048
     };
     return size[(int)resolution];
 }
 
-void EnvProbeJob::RevalidateDiffuseConvolutionCubemap() {
+void EnvProbeJob::RevalidateDiffuseProbeRT() {
     // Recreate diffuse convolution texture if its format have changed.
     if ((envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->diffuseProbeTexture->GetFormat()))) {
         Image::Format format = envProbe->state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8;
 
         envProbe->diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, 64, 64, 1, 1, 1, format, // fixed size (64) for irradiance cubemap
             Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+
+        if (envProbe->diffuseProbeRT) {
+            RenderTarget::Delete(envProbe->diffuseProbeRT);
+            envProbe->diffuseProbeRT = nullptr;
+        }
     }
 
     // Create diffuse convolution render target if it is not created yet.
@@ -121,7 +128,7 @@ void EnvProbeJob::RevalidateDiffuseConvolutionCubemap() {
     }
 }
 
-void EnvProbeJob::RevalidateSpecularConvolutionCubemap() {
+void EnvProbeJob::RevalidateSpecularProbeRT() {
     int size = envProbe->GetSize();
 
     // Recreate diffuse convolution texture if its format or size have changed.
@@ -133,6 +140,11 @@ void EnvProbeJob::RevalidateSpecularConvolutionCubemap() {
 
         envProbe->specularProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
             Texture::Clamp | Texture::HighQuality);
+
+        if (envProbe->specularProbeRT) {
+            RenderTarget::Delete(envProbe->specularProbeRT);
+            envProbe->specularProbeRT = nullptr;
+        }
     }
 
     // Create specular convolution render target if it is not created yet.
@@ -142,58 +154,57 @@ void EnvProbeJob::RevalidateSpecularConvolutionCubemap() {
 }
 
 bool EnvProbeJob::IsFinished() const {
-    if (!diffuseConvolutionCubemapComputed || specularConvolutionCubemapComputedLevel < specularConvolutionCubemapMaxLevel) {
+    if (!diffuseProbeCubemapComputed || specularProbeCubemapComputedLevel < specularProbeCubemapMaxLevel) {
         return false;
     }
     return true;
 }
 
 bool EnvProbeJob::Refresh() {
-    if (specularConvolutionCubemapComputedLevel == -1) {
-        if (specularConvolutionCubemapComputedLevel0Face == -1) {
-            RevalidateSpecularConvolutionCubemap();
+    if (specularProbeCubemapComputedLevel == -1) {
+        if (specularProbeCubemapComputedLevel0Face == -1) {
+            RevalidateSpecularProbeRT();
         }
 
-        if (specularConvolutionCubemapComputedLevel0Face < 5) {
+        if (specularProbeCubemapComputedLevel0Face < 5) {
             // FIXME: use EnvProbeStatic instead of -1
             int staticMask = envProbe->state.type == EnvProbe::Type::Baked ? -1 : 0;
 
             // We can skip complex calculation of specular convolution cubemap for mipLevel 0.
             // It is same as perfect specular mirror. so we just render environment cubmap.
-            renderSystem.CaptureEnvCubeRTFace(renderWorld, envProbe->state.layerMask, staticMask, envProbe->state.origin,
-                envProbe->state.clippingNear, envProbe->state.clippingFar, 
-                envProbe->specularProbeRT, specularConvolutionCubemapComputedLevel0Face + 1);
+            renderSystem.CaptureEnvCubeRTFace(renderWorld,
+                envProbe->state.clearMethod == EnvProbe::ClearMethod::ColorClear,
+                envProbe->state.clearColor,
+                envProbe->state.layerMask, staticMask, envProbe->state.origin,
+                envProbe->state.clippingNear, envProbe->state.clippingFar,
+                envProbe->specularProbeRT, specularProbeCubemapComputedLevel0Face + 1);
 
-            specularConvolutionCubemapComputedLevel0Face++;
+            specularProbeCubemapComputedLevel0Face++;
             return false;
         } else {
-            specularConvolutionCubemapComputedLevel = 0;
+            specularProbeCubemapComputedLevel = 0;
         }
     }
 
-    if (!diffuseConvolutionCubemapComputed) {
-        RevalidateDiffuseConvolutionCubemap();
+    if (specularProbeCubemapComputedLevel < specularProbeCubemapMaxLevel) {
+        // Generate specular convolution cube map from mipLevel 1 to specularProbeCubemapMaxLevel using environment cubemap.
+        renderSystem.GenerateGGXLDSumRTLevel(envProbe->specularProbeTexture, envProbe->specularProbeRT, specularProbeCubemapMaxLevel, specularProbeCubemapComputedLevel + 1);
+
+        specularProbeCubemapComputedLevel++;
+        return false;
+    }
+
+    if (!diffuseProbeCubemapComputed) {
+        RevalidateDiffuseProbeRT();
 
         // Generate diffuse convolution cube map using environment cubemap.
         renderSystem.GenerateIrradianceEnvCubeRT(envProbe->specularProbeTexture, envProbe->diffuseProbeRT);
 
-        diffuseConvolutionCubemapComputed = true;
-        return false;
+        diffuseProbeCubemapComputed = true;
     }
 
-    if (specularConvolutionCubemapComputedLevel < specularConvolutionCubemapMaxLevel) {
-        // Generate specular convolution cube map from mipLevel 1 to specularConvolutionCubemapMaxLevel using environment cubemap.
-        renderSystem.GenerateGGXLDSumRTLevel(envProbe->specularProbeTexture, envProbe->specularProbeRT, specularConvolutionCubemapMaxLevel, specularConvolutionCubemapComputedLevel + 1);
-
-        specularConvolutionCubemapComputedLevel++;
-    }
-
-    if (specularConvolutionCubemapComputedLevel == specularConvolutionCubemapMaxLevel) {
-        envProbe->needToRefresh = false;
-        return true;
-    }
-
-    return false;
+    envProbe->needToRefresh = false;
+    return true;
 }
 
 BE_NAMESPACE_END

@@ -42,15 +42,16 @@ public:
     bool                    Refresh();
 
 private:
-    void                    RevalidateDiffuseConvolutionCubemap();
-    void                    RevalidateSpecularConvolutionCubemap();
+    void                    RevalidateDiffuseProbeRT();
+    void                    RevalidateSpecularProbeRT();
 
     RenderWorld *           renderWorld;
     EnvProbe *              envProbe;
-    bool                    diffuseConvolutionCubemapComputed = false;
-    int                     specularConvolutionCubemapComputedLevel = -1;
-    int                     specularConvolutionCubemapComputedLevel0Face = -1;
-    int                     specularConvolutionCubemapMaxLevel;
+
+    bool                    diffuseProbeCubemapComputed = false;
+    int                     specularProbeCubemapComputedLevel = -1;
+    int                     specularProbeCubemapComputedLevel0Face = -1;
+    int                     specularProbeCubemapMaxLevel = 0;
 };
 
 class RenderSystem {
@@ -103,13 +104,13 @@ public:
     void                    WriteGGXDFGSum(const char *filename, int size) const;
 
                             /// Captures environment cubemap.
-    void                    CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT);
+    void                    CaptureEnvCubeRT(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT);
 
                             /// Captures environment cubemap for specific face.
-    void                    CaptureEnvCubeRTFace(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT, int faceIndex);
+    void                    CaptureEnvCubeRTFace(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT, int faceIndex);
 
                             /// Captures environment cubemap image.
-    void                    CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, int size, Image &envCubeImage);
+    void                    CaptureEnvCubeImage(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, int size, Image &envCubeImage);
 
                             /// Generates irradiance environment cubemap using SH convolution method.
     void                    GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const;

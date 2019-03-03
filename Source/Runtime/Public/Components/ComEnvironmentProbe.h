@@ -104,7 +104,8 @@ public:
     Texture *               GetDiffuseProbeTexture() const;
     Texture *               GetSpecularProbeTexture() const;
 
-    int                     GetProbeHandle() const { return probeHandle; }
+    Str                     WriteDiffuseProbeTexture(const Str &probesDir) const;
+    Str                     WriteSpecularProbeTexture(const Str &probesDir) const;
 
 protected:
     virtual void            OnActive() override;

@@ -38,7 +38,7 @@ void ComEnvironmentProbe::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("importance", "Importance", int, GetImportance, SetImportance, 1,
         "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("resolution", "Resolution", EnvProbe::Resolution, GetResolution, SetResolution, EnvProbe::Resolution128,
-        "", PropertyInfo::EditorFlag).SetEnumString("16;32;64;128;256;1024;2048");
+        "", PropertyInfo::EditorFlag).SetEnumString("16;32;64;128;256;512;1024;2048");
     REGISTER_ACCESSOR_PROPERTY("hdr", "HDR", bool, IsHDR, SetHDR, true,
         "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("cullingMask", "Culling Mask", int, GetLayerMask, SetLayerMask, -1,
@@ -506,6 +506,34 @@ Texture *ComEnvironmentProbe::GetSpecularProbeTexture() const {
 
 void ComEnvironmentProbe::ForceToRefresh() {
     renderSystem.ForceToRefreshEnvProbe(renderWorld, probeHandle);
+}
+
+Str ComEnvironmentProbe::WriteDiffuseProbeTexture(const Str &probesDir) const {
+    Str diffuseProbeFilename = probesDir;
+    diffuseProbeFilename.AppendPath(va("DiffuseProbe-%i.dds", probeHandle));
+
+    const Texture *diffuseProbeTexture = GetDiffuseProbeTexture();
+    Image diffuseProbeImage;
+    Texture::GetCubeImageFromCubeTexture(diffuseProbeTexture, 1, diffuseProbeImage);
+
+    diffuseProbeImage.WriteDDS(diffuseProbeFilename);
+
+    return diffuseProbeFilename;
+}
+
+Str ComEnvironmentProbe::WriteSpecularProbeTexture(const Str &probesDir) const {
+    Str specularProbeFilename = probesDir;
+    specularProbeFilename.AppendPath(va("SpecularProbe-%i.dds", probeHandle));
+
+    const Texture *specularProbeTexture = GetSpecularProbeTexture();
+
+    Image specularProbeImage;
+    int numMipLevels = Math::Log(2, specularProbeTexture->GetWidth()) + 1;
+    Texture::GetCubeImageFromCubeTexture(specularProbeTexture, numMipLevels, specularProbeImage);
+
+    specularProbeImage.WriteDDS(specularProbeFilename);
+
+    return specularProbeFilename;
 }
 
 BE_NAMESPACE_END

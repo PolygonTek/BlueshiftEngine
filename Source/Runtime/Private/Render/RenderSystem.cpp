@@ -564,7 +564,7 @@ void RenderSystem::ScheduleToRefreshEnvProbe(RenderWorld *renderWorld, int probe
     EnvProbeJob job;
     job.renderWorld = renderWorld;
     job.envProbe = renderWorld->GetEnvProbe(probeHandle);
-    job.specularConvolutionCubemapMaxLevel = Math::Log(2, job.envProbe->GetSize());
+    job.specularProbeCubemapMaxLevel = Math::Log(2, job.envProbe->GetSize());
 
     envProbeJobs.Append(job);
 }
@@ -573,7 +573,7 @@ void RenderSystem::ForceToRefreshEnvProbe(RenderWorld *renderWorld, int probeHan
     EnvProbeJob job;
     job.renderWorld = renderWorld;
     job.envProbe = renderWorld->GetEnvProbe(probeHandle);
-    job.specularConvolutionCubemapMaxLevel = Math::Log(2, job.envProbe->GetSize());
+    job.specularProbeCubemapMaxLevel = Math::Log(2, job.envProbe->GetSize());
 
     bool finished;
     do {
@@ -581,7 +581,7 @@ void RenderSystem::ForceToRefreshEnvProbe(RenderWorld *renderWorld, int probeHan
     } while (!finished);
 }
 
-void RenderSystem::CaptureEnvCubeRTFace(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT, int faceIndex) {
+void RenderSystem::CaptureEnvCubeRTFace(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT, int faceIndex) {
     //int t0 = PlatformTime::Milliseconds();
 
     RenderCamera renderCamera;
@@ -589,7 +589,8 @@ void RenderSystem::CaptureEnvCubeRTFace(RenderWorld *renderWorld, int layerMask,
 
     memset(&cameraDef, 0, sizeof(cameraDef));
     cameraDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews | RenderCamera::Flag::SkipDebugDraw | RenderCamera::Flag::SkipPostProcess;
-    cameraDef.clearMethod = RenderCamera::ClearMethod::SkyboxClear;
+    cameraDef.clearMethod = colorClear ? RenderCamera::ClearMethod::ColorClear : RenderCamera::ClearMethod::SkyboxClear;
+    cameraDef.clearColor = clearColor;
     cameraDef.layerMask = layerMask;
     cameraDef.staticMask = staticMask;
     cameraDef.renderRect.Set(0, 0, targetCubeRT->GetWidth(), targetCubeRT->GetHeight());
@@ -625,20 +626,20 @@ void RenderSystem::CaptureEnvCubeRTFace(RenderWorld *renderWorld, int layerMask,
     //BE_LOG("CaptureEnvCubeRTFace(%i) takes %ims\n", faceIndex, t1 - t0);
 }
 
-void RenderSystem::CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT) {
+void RenderSystem::CaptureEnvCubeRT(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT) {
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-        CaptureEnvCubeRTFace(renderWorld, layerMask, staticMask, origin, zNear, zFar, targetCubeRT, faceIndex);
+        CaptureEnvCubeRTFace(renderWorld, colorClear, clearColor, layerMask, staticMask, origin, zNear, zFar, targetCubeRT, faceIndex);
     }
 }
 
-void RenderSystem::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, int size, Image &envCubeImage) {
+void RenderSystem::CaptureEnvCubeImage(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, int size, Image &envCubeImage) {
     Texture *envCubeTexture = new Texture;
     envCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, Image::RGB_16F_16F_16F,
         Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
     RenderTarget *envCubeRT = RenderTarget::Create(envCubeTexture, nullptr, RHI::HasDepthBuffer);
 
-    CaptureEnvCubeRT(renderWorld, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), envCubeRT);
+    CaptureEnvCubeRT(renderWorld, colorClear, clearColor, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), envCubeRT);
 
     Texture::GetCubeImageFromCubeTexture(envCubeTexture, 1, envCubeImage);
 
@@ -648,7 +649,7 @@ void RenderSystem::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, 
 
 void RenderSystem::TakeEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, int size) {
     Image envCubeImage;
-    CaptureEnvCubeImage(renderWorld, layerMask, staticMask, origin, size, envCubeImage);
+    CaptureEnvCubeImage(renderWorld, false, Color4::black, layerMask, staticMask, origin, size, envCubeImage);
 
     char path[256];
     Str::snPrintf(path, sizeof(path), "%s.dds", filename);
@@ -665,7 +666,7 @@ void RenderSystem::TakeIrradianceEnvShot(const char *filename, RenderWorld *rend
 
     RenderTarget *envCubeRT = RenderTarget::Create(envCubeTexture, nullptr, RHI::HasDepthBuffer);
 
-    CaptureEnvCubeRT(renderWorld, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), envCubeRT);
+    CaptureEnvCubeRT(renderWorld, false, Color4::black, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), envCubeRT);
 
     Texture *irradianceEnvCubeTexture = new Texture;
     irradianceEnvCubeTexture->CreateEmpty(RHI::TextureCubeMap, 64, 64, 1, 1, 1, Image::RGB_32F_32F_32F,
@@ -701,7 +702,7 @@ void RenderSystem::TakePrefilteredEnvShot(const char *filename, RenderWorld *ren
 
     RenderTarget *envCubeRT = RenderTarget::Create(envCubeTexture, nullptr, RHI::HasDepthBuffer);
 
-    CaptureEnvCubeRT(renderWorld, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), envCubeRT);
+    CaptureEnvCubeRT(renderWorld, false, Color4::black, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), envCubeRT);
 
     int size = 256;
     int numMipLevels = Math::Log(2, size) + 1;

@@ -47,6 +47,7 @@ public:
         Resolution64,
         Resolution128,
         Resolution256,
+        Resolution512,
         Resolution1024,
         Resolution2048
     };
@@ -110,21 +111,19 @@ private:
                         /// Updates this probe with the given state.
     void                Update(const State *state);
 
-    void                Invalidate();
-
     int                 index;              // index of environment probe list in world
 
     State               state;
 
     AABB                worldAABB;
 
+    bool                needToRefresh = false;
+
     Texture *           diffuseProbeTexture = nullptr;
     Texture *           specularProbeTexture = nullptr;
 
     RenderTarget *      diffuseProbeRT = nullptr;
     RenderTarget *      specularProbeRT = nullptr;
-
-    bool                needToRefresh = false;
 
     DbvtProxy *         proxy;
 };
