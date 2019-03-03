@@ -37,8 +37,10 @@ shader "GenLDSumGGX" {
 
             float totalWeights = 0.0;
 
-            for (float y = 0.0; y < 1.0; y += 0.01) {
-                for (float x = 0.0; x < 1.0; x += 0.01) {
+            const float inc = 1.0 / (log2(radianceCubeMapSize) * 5.0);
+
+            for (float y = 0.0; y < 1.0; y += inc) {
+                for (float x = 0.0; x < 1.0; x += inc) {
                     vec3 H = tangentToWorld * ImportanceSampleGGX(vec2(x, y), linearRoughness);
                     vec3 L = 2.0 * dot(V, H) * H - V;
 

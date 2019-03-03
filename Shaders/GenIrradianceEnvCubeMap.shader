@@ -26,10 +26,12 @@ shader "GenIrradianceEnvCubeMap" {
 #if 1 // Quasi Monte Carlo integration
             float numSamples = 0.0;
 
+            const float inc = 1.0 / (log2(radianceCubeMapSize) * 5.0);
+
             mat3 tangentToWorld = GetLocalFrame(N);
 
-            for (float y = 0.0; y < 1.0; y += 0.01) {
-                for (float x = 0.0; x < 1.0; x += 0.01) {
+            for (float y = 0.0; y < 1.0; y += inc) {
+                for (float x = 0.0; x < 1.0; x += inc) {
                     vec3 L = tangentToWorld * ImportanceSampleLambert(vec2(x, y));
                     // BRDF = 1 / PI
                     // PDF = NdotL / PI
