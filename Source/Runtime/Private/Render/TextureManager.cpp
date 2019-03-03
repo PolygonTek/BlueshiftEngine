@@ -286,29 +286,29 @@ int TextureManager::LoadTextureInfo(const char *filename) const {
     if (version >= 1) {
         int textureType = *dataPtr++;
         switch (textureType) {
-            case 1:
+            case 1: // TextureType::TextureUI
             flags |= Texture::HighQuality | Texture::NonPowerOfTwo;
             break;
         }
 
         int wrapMode = *dataPtr++;
         switch (wrapMode) {
-        case 0:
+        case 0: // WrapMode::Repeat
             flags |= Texture::Repeat;
             break;
-        case 1:
+        case 1: // WrapMode::Clamp
             flags |= Texture::Clamp;
             break;
         }
 
         int filterMode = *dataPtr++;
         switch (filterMode) {
-        case 0:
+        case 0: // FilterMode::Point
             flags |= Texture::Nearest | Texture::NoMipmaps;
             break;
-        case 1:
-            break;        
-        case 2:
+        case 1: // FilterMode::Bilinear
+            break;
+        case 2: // FilterMode::Trilinear
             break;
         }
 
@@ -326,6 +326,13 @@ int TextureManager::LoadTextureInfo(const char *filename) const {
             int generateMipmaps = *dataPtr++;
             if (!generateMipmaps) {
                 flags |= Texture::NoMipmaps;
+            }
+        }
+
+        if (version >= 3) {
+            int compressionLevel = *dataPtr++;
+            if (compressionLevel == 0) {
+                flags |= Texture::NoCompression;
             }
         }
 
