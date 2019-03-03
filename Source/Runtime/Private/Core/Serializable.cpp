@@ -49,7 +49,7 @@ bool Serializable::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo)
     return false;
 }
 
-void Serializable::Serialize(Json::Value &out) const {
+void Serializable::Serialize(Json::Value &out, bool forCopying) const {
     Array<PropertyInfo> propertyInfoList;
 
     GetPropertyInfoList(propertyInfoList);
@@ -58,6 +58,10 @@ void Serializable::Serialize(Json::Value &out) const {
         const PropertyInfo &propertyInfo = propertyInfoList[propertyIndex];
 
         if (propertyInfo.GetFlags() & PropertyInfo::SkipSerializationFlag) {
+            continue;
+        }
+
+        if (forCopying && (propertyInfo.GetFlags() & PropertyInfo::NonCopying)) {
             continue;
         }
 

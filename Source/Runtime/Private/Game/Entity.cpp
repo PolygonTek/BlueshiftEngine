@@ -363,17 +363,17 @@ void Entity::OnApplicationPause(bool pause) {
     }
 }
 
-void Entity::Serialize(Json::Value &value) const {
+void Entity::Serialize(Json::Value &value, bool forCopying) const {
     Json::Value componentsValue;
 
-    Serializable::Serialize(value);
+    Serializable::Serialize(value, forCopying);
 
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component) {
             Json::Value componentValue;
-            component->Serialize(componentValue);
+            component->Serialize(componentValue, forCopying);
 
             componentsValue.append(componentValue);
         }
@@ -414,15 +414,15 @@ void Entity::Deserialize(const Json::Value &entityValue) {
     }
 }
 
-void Entity::SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue) {
+void Entity::SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue, bool forCopying) {
     Json::Value entityValue;
 
-    entity->Serialize(entityValue);
+    entity->Serialize(entityValue, forCopying);
 
     entitiesValue.append(entityValue);
 
     for (Entity *child = entity->GetNode().GetChild(); child; child = child->GetNode().GetNextSibling()) {
-        Entity::SerializeHierarchy(child, entitiesValue);
+        Entity::SerializeHierarchy(child, entitiesValue, forCopying);
     }
 }
 

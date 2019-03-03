@@ -33,7 +33,7 @@ public:
     virtual void            GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const = 0;
 
                             /// Serialize to JSON value.
-    virtual void            Serialize(Json::Value &out) const;
+    virtual void            Serialize(Json::Value &out, bool forCopying = false) const;
                             /// Deserialize from JSON value.
     virtual void            Deserialize(const Json::Value &in);
 

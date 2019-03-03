@@ -188,11 +188,11 @@ public:
     void                        FixedLateUpdate(float timeStep);
 
                                 /// Serializes entity to JSON value.
-    virtual void                Serialize(Json::Value &data) const override;
+    virtual void                Serialize(Json::Value &data, bool forCopying = false) const override;
                                 /// Deserializes entity from JSON value.
     virtual void                Deserialize(const Json::Value &data) override;
                                 /// Serializes given entity hierarchy to JSON value.
-    static void                 SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue);
+    static void                 SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue, bool forCopying = false);
 
                                 /// Returns if this entity is active. 
                                 /// Note that an entity may be inactive because a parent is not active, even if this returns true.

@@ -65,6 +65,7 @@ public:
         ReadOnlyFlag        = BIT(1),   // Don't allow to set
         SkipSerializationFlag = BIT(2), // Don't serialize
         EditorFlag          = BIT(3),   // Show in editor
+        NonCopying          = BIT(4),   // Don't allow to copy
         SystemUnits         = BIT(5),
         MultiLinesFlag      = BIT(6),   // Str type in multilines
         ArrayFlag           = BIT(7),   // Is array property ?

@@ -59,10 +59,10 @@ void ComEnvironmentProbe::RegisterProperties() {
         "The size of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag).SetRange(0, 1e8, 0.05);
     REGISTER_MIXED_ACCESSOR_PROPERTY("boxOffset", "Box Offset", Vec3, GetBoxOffset, SetBoxOffset, Vec3(0, 0, 0),
         "The center of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("bakedDiffuseProbeTexture", "Baked Diffuse Probe Texture", Guid, GetBakedDiffuseProbeTextureGuid, SetBakedDiffuseProbeTextureGuid, Guid::zero,
-        "", 0).SetMetaObject(&TextureAsset::metaObject);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("bakedSpecularProbeTexture", "Baked Specular Probe Texture", Guid, GetBakedSpecularProbeTextureGuid, SetBakedSpecularProbeTextureGuid, Guid::zero,
-        "", 0).SetMetaObject(&TextureAsset::metaObject);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("bakedDiffuseProbeTexture", "Baked Diffuse Probe", Guid, GetBakedDiffuseProbeTextureGuid, SetBakedDiffuseProbeTextureGuid, Guid::zero,
+        "", PropertyInfo::NonCopying).SetMetaObject(&TextureAsset::metaObject);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("bakedSpecularProbeTexture", "Baked Specular Probe", Guid, GetBakedSpecularProbeTextureGuid, SetBakedSpecularProbeTextureGuid, Guid::zero,
+        "", PropertyInfo::NonCopying).SetMetaObject(&TextureAsset::metaObject);
 }
 
 ComEnvironmentProbe::ComEnvironmentProbe() {
@@ -447,15 +447,11 @@ void ComEnvironmentProbe::SetBakedDiffuseProbeTextureGuid(const Guid &textureGui
 
     if (!textureGuid.IsZero()) {
         const Str texturePath = resourceGuidMapper.Get(textureGuid);
-        const Texture *texture = textureManager.FindTexture(texturePath);
 
-        // Don't allow sharing this texture
-        if (!texture || texture->GetRefCount() == 0) {
-            probeDef.bakedDiffuseProbeTexture = textureManager.GetTexture(texturePath);
+        probeDef.bakedDiffuseProbeTexture = textureManager.GetTexture(texturePath);
 
-            if (probeDef.bakedDiffuseProbeTexture->IsDefaultTexture()) {
-                probeDef.bakedDiffuseProbeTexture = nullptr;
-            }
+        if (probeDef.bakedDiffuseProbeTexture->IsDefaultTexture()) {
+            probeDef.bakedDiffuseProbeTexture = nullptr;
         }
     }
 
@@ -477,15 +473,11 @@ void ComEnvironmentProbe::SetBakedSpecularProbeTextureGuid(const Guid &textureGu
 
     if (!textureGuid.IsZero()) {
         const Str texturePath = resourceGuidMapper.Get(textureGuid);
-        const Texture *texture = textureManager.FindTexture(texturePath);
 
-        // Don't allow sharing this texture
-        if (!texture || texture->GetRefCount() == 0) {
-            probeDef.bakedSpecularProbeTexture = textureManager.GetTexture(texturePath);
+        probeDef.bakedSpecularProbeTexture = textureManager.GetTexture(texturePath);
 
-            if (probeDef.bakedSpecularProbeTexture->IsDefaultTexture()) {
-                probeDef.bakedSpecularProbeTexture = nullptr;
-            }
+        if (probeDef.bakedSpecularProbeTexture->IsDefaultTexture()) {
+            probeDef.bakedSpecularProbeTexture = nullptr;
         }
     }
 
