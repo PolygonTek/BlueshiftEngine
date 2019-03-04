@@ -323,8 +323,8 @@ int TextureManager::LoadTextureInfo(const char *filename) const {
         }
 
         if (version >= 2) {
-            int generateMipmaps = *dataPtr++;
-            if (!generateMipmaps) {
+            int useMipmaps = *dataPtr++;
+            if (!useMipmaps) {
                 flags |= Texture::NoMipmaps;
             }
         }

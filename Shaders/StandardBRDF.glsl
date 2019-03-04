@@ -174,8 +174,8 @@ vec3 DirectLit_Standard() {
 #if defined(INDIRECT_LIGHTING)
 
 vec3 GetDiffuseEnv(vec3 N, vec3 albedo) {
-    vec3 d1 = texCUBE(irradianceEnvCubeMap0, N).rgb;
-    //vec3 d2 = texCUBE(irradianceEnvCubeMap1, N).rgb;
+    vec3 d1 = texCUBE(probe0DiffuseCubeMap, N).rgb;
+    //vec3 d2 = texCUBE(probe1DiffuseCubeMap, N).rgb;
 
 #if USE_SRGB_TEXTURE == 0
     d1 = LinearToGamma(d1);
@@ -185,15 +185,16 @@ vec3 GetDiffuseEnv(vec3 N, vec3 albedo) {
     return albedo * d1;//mix(d1, d2, ambientLerp);
 }
 
-float LinearRoughnessToMipLevel(float linearRoughness) {
-    return 7.0 * linearRoughness * (1.7 - 0.7 * linearRoughness);
+float LinearRoughnessToMipLevel(float linearRoughness, float maxLevel) {
+    return maxLevel * linearRoughness * (1.7 - 0.7 * linearRoughness);
 }
 
 vec3 GetSpecularEnvFirstSum(vec3 S, float linearRoughness) {
-    vec4 sampleVec = vec4(S, LinearRoughnessToMipLevel(linearRoughness));
+    vec4 sampleVec0 = vec4(S, LinearRoughnessToMipLevel(linearRoughness, probe0SpecularCubeMapMaxMipLevel));
+    vec3 preLD1 = texCUBElod(probe0SpecularCubeMap, sampleVec0).rgb;
 
-    vec3 preLD1 = texCUBElod(prefilteredEnvCubeMap0, sampleVec).rgb;
-    //vec3 preLD2 = texCUBElod(prefilteredEnvCubeMap1, sampleVec).rgb;
+    //vec4 sampleVec1 = vec4(S, LinearRoughnessToMipLevel(linearRoughness, probe1SpecularCubeMapMaxMipLevel));
+    //vec3 preLD2 = texCUBElod(probe1SpecularCubeMap, sampleVec1).rgb;
 
 #if USE_SRGB_TEXTURE == 0
     preLD1 = LinearToGamma(preLD1);

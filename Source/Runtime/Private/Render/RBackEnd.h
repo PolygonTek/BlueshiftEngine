@@ -202,10 +202,7 @@ struct RenderBackEnd {
     float                   csmUpdateRatio[8];
     float                   csmUpdate[8];
 
-    Texture *               envCubeTexture;
     Texture *               integrationLUTTexture;
-    Texture *               irradianceEnvCubeTexture;
-    Texture *               prefilteredEnvCubeTexture;
 
     Texture *               homCullingOutputTexture;
     RenderTarget *          homCullingOutputRT;

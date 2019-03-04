@@ -538,9 +538,13 @@ void RenderSystem::UpdateEnvProbes() {
 
         bool finished = job->Refresh();
 
-        if (!job->envProbe->IsTimeSlicing()) {
+        if (job->envProbe->GetTimeSlicing() == EnvProbe::TimeSlicing::NoTimeSlicing) {
             while (!finished) {
                 finished = job->Refresh();
+            }
+        } else if (job->envProbe->GetTimeSlicing() == EnvProbe::TimeSlicing::AllFacesAtOnce) {
+            while (job->specularProbeCubemapComputedLevel0Face != 5) {
+                job->Refresh();
             }
         }
 

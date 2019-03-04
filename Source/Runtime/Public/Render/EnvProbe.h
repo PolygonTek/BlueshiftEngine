@@ -41,6 +41,12 @@ public:
         EveryFrame
     };
 
+    enum TimeSlicing {
+        AllFacesAtOnce,
+        IndividualFaces,
+        NoTimeSlicing
+    };
+
     enum Resolution {
         Resolution16,
         Resolution32,
@@ -59,8 +65,8 @@ public:
 
     struct State {
         Type            type = Type::Baked;
-        bool            timeSlicing = true;
         RefreshMode     refreshMode = RefreshMode::OnAwake;
+        TimeSlicing     timeSlicing = TimeSlicing::AllFacesAtOnce;
         Resolution      resolution = Resolution::Resolution128;
         bool            useHDR = true;
         ClearMethod     clearMethod = ClearMethod::SkyClear;
@@ -78,7 +84,7 @@ public:
 
                         // Box extents for each axis from the origin which is translated by offset.
                         // The origin must be included in the box range.
-        Vec3            boxSize = Vec3::zero;
+        Vec3            boxExtent = Vec3::zero;
 
         bool            useBoxProjection = false;
 
@@ -92,14 +98,18 @@ public:
                         /// Returns AABB in world space.
     const AABB          GetWorldAABB() const { return worldAABB; }
 
+                        /// Returns importance for blending.
+    int                 GetImportance() const { return state.importance; }
+
                         /// Returns prefiltered specular cube texture.
     Texture *           GetDiffuseProbeTexture() const { return diffuseProbeTexture; }
 
                         /// Returns irradiance diffuse cube texture.
     Texture *           GetSpecularProbeTexture() const { return specularProbeTexture; }
 
-                        /// Is this probe should be refreshed in time slicing ? time slcing imply realtime type.
-    bool                IsTimeSlicing() const { return state.timeSlicing; }
+                        /// Returns time slicing mode. Time slicing means how the probe should distribute its updates over time. 
+                        /// This is valid only in realtime type.
+    TimeSlicing         GetTimeSlicing() const { return state.timeSlicing; }
 
                         /// Returns size.
     int                 GetSize() const { return ToActualResolution(state.resolution); }

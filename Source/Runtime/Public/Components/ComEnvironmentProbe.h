@@ -34,8 +34,6 @@ public:
 
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
-    virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
-
                             /// Called once when game started before Start()
                             /// When game already started, called immediately after spawned
     virtual void            Awake() override;
@@ -54,8 +52,8 @@ public:
     EnvProbe::RefreshMode   GetRefreshMode() const;
     void                    SetRefreshMode(EnvProbe::RefreshMode refreshMode);
 
-    bool                    IsTimeSlicing() const;
-    void                    SetTimeSlicing(bool timeSlicing);
+    EnvProbe::TimeSlicing   GetTimeSlicing() const;
+    void                    SetTimeSlicing(EnvProbe::TimeSlicing timeSlicing);
 
     int                     GetImportance() const;
     void                    SetImportance(int importance);
@@ -87,8 +85,8 @@ public:
     bool                    IsBoxProjection() const;
     void                    SetBoxProjection(bool useBoxProjection);
 
-    Vec3                    GetBoxSize() const;
-    void                    SetBoxSize(const Vec3 &boxSize);
+    Vec3                    GetBoxExtent() const;
+    void                    SetBoxExtent(const Vec3 &boxExtent);
 
     Vec3                    GetBoxOffset() const;
     void                    SetBoxOffset(const Vec3 &boxOffset);

@@ -158,19 +158,19 @@ uniform float subSurfaceShadowDensity;// = 0.5;
 // Indirect lighting parameters
 //
 #if defined(INDIRECT_LIGHTING)
-    uniform samplerCube envCubeMap; // for use in brute force IBL
+    uniform samplerCube probe0DiffuseCubeMap;
+    uniform samplerCube probe0SpecularCubeMap;
+    uniform float probe0SpecularCubeMapMaxMipLevel;
+    uniform vec3 probe0Position;
+    uniform vec3 probe0Mins;
+    uniform vec3 probe0Maxs;
 
-    uniform samplerCube irradianceEnvCubeMap0;
-    uniform samplerCube prefilteredEnvCubeMap0;
-    uniform vec3 probePosition0;
-    uniform vec3 probeMins0;
-    uniform vec3 probeMaxs0;
-
-    uniform samplerCube irradianceEnvCubeMap1;
-    uniform samplerCube prefilteredEnvCubeMap1;
-    uniform vec3 probePosition1;
-    uniform vec3 probeMins1;
-    uniform vec3 probeMaxs1;
+    uniform samplerCube probe1DiffuseCubeMap;
+    uniform samplerCube probe1SpecularCubeMap;
+    uniform float probe1SpecularCubeMapMaxMipLevel;
+    uniform vec3 probe1Position;
+    uniform vec3 probe1Mins;
+    uniform vec3 probe1Maxs;
 
     uniform sampler2D prefilteredDfgMap;
     uniform LOWP float ambientLerp;
@@ -242,7 +242,7 @@ void main() {
             #endif
 
             vec4 sampleVec;
-            sampleVec.xyz = BoxProjectedCubemapDirection(worldS, worldPos, vec4(0, 50, 250, 1.0), vec3(-2500, 0, -2500), vec3(2500, 250, 2500)); // FIXME
+            sampleVec.xyz = BoxProjectedCubemapDirection(worldS, worldPos, probe0Position, probe0Mins, probe0Maxs);
         #else
             vec4 sampleVec;
             sampleVec.xyz = worldS;

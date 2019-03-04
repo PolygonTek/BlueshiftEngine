@@ -29,6 +29,8 @@ public:
 
     int                     instanceIndex;
 
+    EnvProbeBlendInfo       envProbeInfo[2];
+
     bool                    ambientVisible;
     bool                    shadowVisible;
 

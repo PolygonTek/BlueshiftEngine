@@ -35,9 +35,14 @@ struct DbvtProxy {
     AABB                    worldAABB;      ///< World bounding volume for this node
     RenderObject *          renderObject;
     RenderLight *           renderLight;
-    EnvProbe *       envProbe;
+    EnvProbe *              envProbe;
     Mesh *                  mesh;           ///< Static mesh pointer
     int32_t                 meshSurfIndex;  ///< Sub mesh index
+};
+
+struct EnvProbeBlendInfo {
+    EnvProbe *              envProbe;
+    float                   weight;
 };
 
 class RenderWorld {
@@ -45,6 +50,11 @@ class RenderWorld {
     friend class RenderContext;
 
 public:
+    enum EnvProbeBlending {
+        Simple,
+        Blending
+    };
+
     RenderWorld();
     ~RenderWorld();
 
@@ -85,6 +95,8 @@ public:
 
                             /// Gets EnvProbe pointer by given environment probe handle.
     EnvProbe *              GetEnvProbe(int handle) const;
+
+    void                    GetClosestProbes(const AABB &worldAABB, EnvProbeBlending blending, Array<EnvProbeBlendInfo> &outProbes) const;
 
     int                     GetViewCount() const { return viewCount; }
 

@@ -24,7 +24,7 @@ BE_NAMESPACE_BEGIN
 static const int HOM_CULL_TEXTURE_WIDTH = 4096;
 static const int HOM_CULL_TEXTURE_HEIGHT = 1;
 
-RenderBackEnd	backEnd;
+RenderBackEnd   backEnd;
 
 static void RB_InitStencilStates() {
     backEnd.stencilStates[RenderBackEnd::VolumeIntersectionZPass] = 
@@ -83,16 +83,6 @@ void RB_Init() {
     backEnd.integrationLUTTexture = textureManager.AllocTexture("integrationLUT");
     backEnd.integrationLUTTexture->Load("Data/EngineTextures/IntegrationLUT_GGX.dds", Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
 
-    // FIXME: TEMPORARY CODE
-    backEnd.envCubeTexture = textureManager.AllocTexture("envCubeMap");
-    backEnd.envCubeTexture->Load("EnvProbes/env.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
-
-    backEnd.irradianceEnvCubeTexture = textureManager.AllocTexture("irradianceEnvCubeMap");
-    backEnd.irradianceEnvCubeTexture->Load("EnvProbes/iem.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
-
-    backEnd.prefilteredEnvCubeTexture = textureManager.AllocTexture("prefilteredEnvCubeMap");
-    backEnd.prefilteredEnvCubeTexture->Load("EnvProbes/pem.dds", Texture::Clamp | Texture::Trilinear | Texture::HighQuality);
-
     if (r_HOM.GetBool()) {
         // TODO: create one for each context
         backEnd.homCullingOutputTexture = textureManager.AllocTexture("_homCullingOutput");
@@ -106,8 +96,6 @@ void RB_Init() {
 
 void RB_Shutdown() {
     backEnd.initialized = false;
-
-    //Texture::DestroyInstanceImmediate(backEnd.irradianceEnvCubeTexture);
 
     PP_Free();
 

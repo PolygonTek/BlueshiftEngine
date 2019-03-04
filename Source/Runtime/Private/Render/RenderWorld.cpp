@@ -304,9 +304,9 @@ void RenderWorld::UpdateEnvProbe(int handle, const EnvProbe::State *def) {
         envProbe->proxy->id = probeDbvt.CreateProxy(envProbe->proxy->worldAABB, MeterToUnit(0.0f), envProbe->proxy);
     } else {
         bool originMatch = (def->origin == envProbe->state.origin);
-        bool boxSizeMatch = (def->boxSize == envProbe->state.boxSize);
+        bool boxExtentMatch = (def->boxExtent == envProbe->state.boxExtent);
 
-        if (!originMatch || !boxSizeMatch) {
+        if (!originMatch || !boxExtentMatch) {
             envProbe->proxy->worldAABB = envProbe->proxy->envProbe->GetWorldAABB();
             probeDbvt.MoveProxy(envProbe->proxy->id, envProbe->proxy->worldAABB, MeterToUnit(0.5f), def->origin - envProbe->state.origin);
         }
@@ -342,6 +342,88 @@ void RenderWorld::RemoveEnvProbe(int handle) {
 
     delete envProbes[handle];
     envProbes[handle] = nullptr;
+}
+
+static float CalculateEnvProbeLerpValue(const AABB &objectAABB,
+    float probe0IntersectVolume, float probe0Importance, const AABB &probe0AABB,
+    float probe1IntersectVolume, float probe1Importance, const AABB &probe1AABB) {
+    float objectVolume = Max(objectAABB.Volume(), 0.001f);
+
+    if (probe1IntersectVolume > 0.0f) {
+        if (probe0Importance > probe1Importance) {
+            return probe0IntersectVolume / objectVolume;
+        }
+        if (probe1Importance > probe0Importance) {
+            return 1.0f - probe1IntersectVolume / objectVolume;
+        }
+        if (probe1AABB.IsContainAABB(probe0AABB)) {
+            return probe0IntersectVolume / objectVolume;
+        }
+        if (probe0AABB.IsContainAABB(probe1AABB)) {
+            return 1.0f - probe1IntersectVolume / objectVolume;
+        }
+        return probe0IntersectVolume / (probe0IntersectVolume + probe1IntersectVolume);
+    }
+    return 1.0f;
+}
+
+void RenderWorld::GetClosestProbes(const AABB &objectAABB, EnvProbeBlending blending, Array<EnvProbeBlendInfo> &outProbes) const {
+    auto addProbe = [this, &objectAABB, &outProbes](int32_t proxyId) -> bool {
+        const DbvtProxy *proxy = (const DbvtProxy *)probeDbvt.GetUserData(proxyId);
+
+        AABB intersectAABB = objectAABB.Intersect(proxy->worldAABB);
+        if (intersectAABB.IsCleared()) {
+            return true;
+        }
+
+        EnvProbeBlendInfo info;
+        info.envProbe = proxy->envProbe;
+        info.weight = intersectAABB.Volume();
+        outProbes.Append(info);
+        return true;
+    };
+
+    probeDbvt.Query(objectAABB, addProbe);
+
+    if (outProbes.Count() == 0) {
+        return;
+    }
+
+    if (outProbes.Count() == 1) {
+        outProbes[0].weight = 1.0;
+        return;
+    }
+
+    if (outProbes.Count() >= 2) {
+        outProbes.Sort([](const EnvProbeBlendInfo &a, const EnvProbeBlendInfo &b) -> bool {
+            const int importanceA = a.envProbe->GetImportance();
+            const int importanceB = b.envProbe->GetImportance();
+
+            if (importanceA != importanceB) {
+                return importanceA > importanceB;
+            }
+            return a.weight > b.weight;
+        });
+
+        if (blending == EnvProbeBlending::Simple) {
+            outProbes[0].weight = 1.0f;
+
+            for (int i = 1; i < outProbes.Count(); i++) {
+                outProbes[i].weight = 0.0f;
+            }
+        } else {
+            float value = CalculateEnvProbeLerpValue(objectAABB,
+                outProbes[0].weight, outProbes[0].envProbe->GetImportance(), outProbes[0].envProbe->GetWorldAABB(), 
+                outProbes[1].weight, outProbes[1].envProbe->GetImportance(), outProbes[1].envProbe->GetWorldAABB());
+
+            outProbes[0].weight = value;
+            outProbes[1].weight = 1.0f - value;
+
+            for (int i = 2; i < outProbes.Count(); i++) {
+                outProbes[i].weight = 0.0f;
+            }
+        }
+    }
 }
 
 void RenderWorld::SetSkyboxMaterial(Material *skyboxMaterial) {

@@ -224,6 +224,20 @@ void Batch::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shade
         SetSkinningConstants(shader, surfSpace->def->GetState().mesh->skinningJointCache);
     }
 
+    if (surfSpace->envProbeInfo[0].envProbe) {
+        shader->SetTexture("probe0DiffuseCubeMap", surfSpace->envProbeInfo[0].envProbe->GetDiffuseProbeTexture());
+        shader->SetTexture("probe0SpecularCubeMap", surfSpace->envProbeInfo[0].envProbe->GetSpecularProbeTexture());
+        shader->SetConstant1f("probe0SpecularCubeMapMaxMipLevel", Math::Log(2.0f, surfSpace->envProbeInfo[0].envProbe->GetSpecularProbeTexture()->GetWidth()));
+        shader->SetConstant1f("ambientLerp", 0.0f);// surfSpace->envProbeInfo[0].envProbe->weight);
+    }
+
+    if (surfSpace->envProbeInfo[1].envProbe) {
+        shader->SetTexture("probe1DiffuseCubeMap", surfSpace->envProbeInfo[1].envProbe->GetDiffuseProbeTexture());
+        shader->SetTexture("probe1SpecularCubeMap", surfSpace->envProbeInfo[1].envProbe->GetSpecularProbeTexture());
+        shader->SetConstant1f("probe1SpecularCubeMapMaxMipLevel", Math::Log(2.0f, surfSpace->envProbeInfo[1].envProbe->GetSpecularProbeTexture()->GetWidth()));
+        //shader->SetConstant1f("ambientLerp", surfSpace->envProbeInfo[1].envProbe->weight);
+    }
+
     if (numIndirectCommands > 0) {
         rhi.BindBuffer(RHI::DrawIndirectBuffer, indirectBuffer);
         rhi.BufferDiscardWrite(indirectBuffer, numIndirectCommands * sizeof(indirectCommands[0]), indirectCommands);
@@ -609,14 +623,7 @@ void Batch::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambient
         shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], mtrlPass->texture);
     }
 
-    // TODO:
-    shader->SetTexture("envCubeMap", backEnd.envCubeTexture);
     shader->SetTexture("prefilteredDfgMap", backEnd.integrationLUTTexture);
-    shader->SetTexture("irradianceEnvCubeMap0", backEnd.irradianceEnvCubeTexture);
-    shader->SetTexture("irradianceEnvCubeMap1", backEnd.irradianceEnvCubeTexture);
-    shader->SetTexture("prefilteredEnvCubeMap0", backEnd.prefilteredEnvCubeTexture);
-    shader->SetTexture("prefilteredEnvCubeMap1", backEnd.prefilteredEnvCubeTexture);
-    shader->SetConstant1f("ambientLerp", 0.0f);
     shader->SetConstant1f("ambientScale", ambientScale);
 
     SetMatrixConstants(shader);
@@ -743,14 +750,7 @@ void Batch::RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, flo
 
     shader->Bind();
 
-    // TODO:
-    shader->SetTexture("envCubeMap", backEnd.envCubeTexture);
     shader->SetTexture("prefilteredDfgMap", backEnd.integrationLUTTexture);
-    shader->SetTexture("irradianceEnvCubeMap0", backEnd.irradianceEnvCubeTexture);
-    shader->SetTexture("irradianceEnvCubeMap1", backEnd.irradianceEnvCubeTexture);
-    shader->SetTexture("prefilteredEnvCubeMap0", backEnd.prefilteredEnvCubeTexture);
-    shader->SetTexture("prefilteredEnvCubeMap1", backEnd.prefilteredEnvCubeTexture);
-    shader->SetConstant1f("ambientLerp", 0.0f);
     shader->SetConstant1f("ambientScale", ambientScale);
 
     if (mtrlPass->shader) {

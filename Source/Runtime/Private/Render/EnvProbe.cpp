@@ -48,14 +48,15 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
         bool clippingFarMatch = state.clippingFar == stateDef->clippingFar;
         bool originMatch = state.origin == stateDef->origin;
 
-        if (!resolutionMatch || !useHDRMatch || !clearMethodMatch || (stateDef->clearMethod == ClearMethod::ColorClear && !clearColorMatch) || !clippingNearMatch || !clippingFarMatch || !originMatch) {
+        if (!resolutionMatch || !useHDRMatch || !clearMethodMatch || (stateDef->clearMethod == ClearMethod::ColorClear && !clearColorMatch) || 
+            !clippingNearMatch || !clippingFarMatch || !originMatch) {
             needToRefresh = true;
         }
     }
 
     state = *stateDef;
 
-    worldAABB = AABB(-state.boxSize, state.boxSize);
+    worldAABB = AABB(-state.boxExtent, state.boxExtent);
     worldAABB += state.origin + state.boxOffset;
 
     if (state.bakedDiffuseProbeTexture && state.bakedDiffuseProbeTexture != diffuseProbeTexture) {
@@ -69,6 +70,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
     } else {
         if (!diffuseProbeTexture) {
             // Create default diffuse convolution cubemap 
+            // TODO: Create using skybox
             diffuseProbeTexture = textureManager.AllocTexture(va("diffuseProbe-%i", index));
             diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, 16, 16, 1, 1, 1, Image::RGB_8_8_8,
                 Texture::Clamp | Texture::NoCompression | Texture::NoMipmaps | Texture::HighQuality);
@@ -88,6 +90,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
     } else {
         if (!specularProbeTexture) {
             // Create default specular convolution cubemap
+            // TODO: Create using skybox
             int size = 16;
             int numMipLevels = Math::Log(2, size) + 1;
 

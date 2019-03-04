@@ -33,8 +33,8 @@ void ComEnvironmentProbe::RegisterProperties() {
         "", PropertyInfo::EditorFlag).SetEnumString("Baked;Realtime");
     REGISTER_ACCESSOR_PROPERTY("refreshMode", "Refresh Mode", EnvProbe::RefreshMode, GetRefreshMode, SetRefreshMode, EnvProbe::OnAwake,
         "", PropertyInfo::EditorFlag).SetEnumString("OnAwake;EveryFrame");
-    REGISTER_ACCESSOR_PROPERTY("timeSlicing", "Time Slicing", bool, IsTimeSlicing, SetTimeSlicing, true,
-        "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("timeSlicing", "Time Slicing", EnvProbe::TimeSlicing, GetTimeSlicing, SetTimeSlicing, EnvProbe::AllFacesAtOnce,
+        "", PropertyInfo::EditorFlag).SetEnumString("All faces at once;Individual faces;No time slicing");
     REGISTER_ACCESSOR_PROPERTY("importance", "Importance", int, GetImportance, SetImportance, 1,
         "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("resolution", "Resolution", EnvProbe::Resolution, GetResolution, SetResolution, EnvProbe::Resolution128,
@@ -43,9 +43,9 @@ void ComEnvironmentProbe::RegisterProperties() {
         "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("cullingMask", "Culling Mask", int, GetLayerMask, SetLayerMask, -1,
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("clear", "Clear", EnvProbe::ClearMethod, GetClearMethod, SetClearMethod, 1,
+    REGISTER_ACCESSOR_PROPERTY("clear", "Clear", EnvProbe::ClearMethod, GetClearMethod, SetClearMethod, EnvProbe::SkyClear,
         "", PropertyInfo::EditorFlag).SetEnumString("Color;Skybox");
-    REGISTER_MIXED_ACCESSOR_PROPERTY("clearColor", "Clear Color", Color3, GetClearColor, SetClearColor, Color3(0, 0, 0),
+    REGISTER_MIXED_ACCESSOR_PROPERTY("clearColor", "Clear Color", Color3, GetClearColor, SetClearColor, Color3(0.18, 0.30, 0.47),
         "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("clearAlpha", "Clear Alpha", float, GetClearAlpha, SetClearAlpha, 0.0f,
         "", PropertyInfo::EditorFlag);
@@ -55,10 +55,10 @@ void ComEnvironmentProbe::RegisterProperties() {
         "Far clipping plane distance", PropertyInfo::EditorFlag).SetRange(0.01, 10000, 0.02);
     REGISTER_ACCESSOR_PROPERTY("boxProjection", "Box Projection", bool, IsBoxProjection, SetBoxProjection, false,
         "", PropertyInfo::EditorFlag);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("boxSize", "Box Size", Vec3, GetBoxSize, SetBoxSize, Vec3(10, 10, 10),
-        "The size of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag).SetRange(0, 1e8, 0.05);
     REGISTER_MIXED_ACCESSOR_PROPERTY("boxOffset", "Box Offset", Vec3, GetBoxOffset, SetBoxOffset, Vec3(0, 0, 0),
         "The center of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("boxExtent", "Box Extent", Vec3, GetBoxExtent, SetBoxExtent, Vec3(10, 10, 10),
+        "The size of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag).SetRange(0, 1e8, 0.05);
     REGISTER_MIXED_ACCESSOR_PROPERTY("bakedDiffuseProbeTexture", "Baked Diffuse Probe", Guid, GetBakedDiffuseProbeTextureGuid, SetBakedDiffuseProbeTextureGuid, Guid::zero,
         "", PropertyInfo::NonCopying).SetMetaObject(&TextureAsset::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("bakedSpecularProbeTexture", "Baked Specular Probe", Guid, GetBakedSpecularProbeTextureGuid, SetBakedSpecularProbeTextureGuid, Guid::zero,
@@ -158,15 +158,14 @@ bool ComEnvironmentProbe::HasRenderEntity(int renderEntityHandle) const {
     if (this->sphereHandle == renderEntityHandle) {
         return true;
     }
-
-    return false;
-}
-
-bool ComEnvironmentProbe::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
     return false;
 }
 
 void ComEnvironmentProbe::Awake() {
+    if (!IsActiveInHierarchy()) {
+        return;
+    }
+
     if (probeDef.type == EnvProbe::Type::Realtime) {
         if (probeDef.refreshMode == EnvProbe::RefreshMode::OnAwake) {
             renderSystem.ScheduleToRefreshEnvProbe(renderWorld, probeHandle);
@@ -190,7 +189,7 @@ void ComEnvironmentProbe::DrawGizmos(const RenderCamera::State &viewState, bool 
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     if (selected) {
-        AABB aabb = AABB(-probeDef.boxSize, probeDef.boxSize);
+        AABB aabb = AABB(-probeDef.boxExtent, probeDef.boxExtent);
         aabb += probeDef.origin + probeDef.boxOffset;
         
         renderWorld->SetDebugColor(Color4(0.0f, 0.5f, 1.0f, 1.0f), Color4::zero);
@@ -266,11 +265,11 @@ void ComEnvironmentProbe::SetRefreshMode(EnvProbe::RefreshMode refreshMode) {
     UpdateVisuals();
 }
 
-bool ComEnvironmentProbe::IsTimeSlicing() const {
+EnvProbe::TimeSlicing ComEnvironmentProbe::GetTimeSlicing() const {
     return probeDef.timeSlicing;
 }
 
-void ComEnvironmentProbe::SetTimeSlicing(bool timeSlicing) {
+void ComEnvironmentProbe::SetTimeSlicing(EnvProbe::TimeSlicing timeSlicing) {
     probeDef.timeSlicing = timeSlicing;
 
     UpdateVisuals();
@@ -281,7 +280,7 @@ int ComEnvironmentProbe::GetImportance() const {
 }
 
 void ComEnvironmentProbe::SetImportance(int importance) {
-    probeDef.importance = importance;
+    probeDef.importance = Max(importance, 0);
 
     UpdateVisuals();
 }
@@ -351,7 +350,7 @@ float ComEnvironmentProbe::GetClippingNear() const {
 }
 
 void ComEnvironmentProbe::SetClippingNear(float clippingNear) {
-    probeDef.clippingNear = clippingNear;
+    probeDef.clippingNear = Max(clippingNear, 0.01f);
 
     if (probeDef.clippingNear > probeDef.clippingFar) {
         SetProperty("far", probeDef.clippingNear);
@@ -382,25 +381,25 @@ void ComEnvironmentProbe::SetBoxProjection(bool useBoxProjection) {
     UpdateVisuals();
 }
 
-Vec3 ComEnvironmentProbe::GetBoxSize() const {
-    return probeDef.boxSize;
+Vec3 ComEnvironmentProbe::GetBoxExtent() const {
+    return probeDef.boxExtent;
 }
 
-void ComEnvironmentProbe::SetBoxSize(const Vec3 &boxSize) {
-    probeDef.boxSize = boxSize;
+void ComEnvironmentProbe::SetBoxExtent(const Vec3 &boxExtent) {
+    probeDef.boxExtent = boxExtent;
 
     // The origin must be included in the box range.
     // So if it doesn't we need to adjust box offset.
     Vec3 adjustedBoxOffset = probeDef.boxOffset;
 
     for (int i = 0; i < 3; i++) {
-        float delta = probeDef.boxOffset[i] - probeDef.boxSize[i];
+        float delta = probeDef.boxOffset[i] - probeDef.boxExtent[i];
         if (delta > 0) {
             adjustedBoxOffset[i] = probeDef.boxOffset[i] - delta;
         }
     }
 
-    if (adjustedBoxOffset != probeDef.boxSize) {
+    if (adjustedBoxOffset != probeDef.boxExtent) {
         SetProperty("boxOffset", adjustedBoxOffset);
     }
 
@@ -416,17 +415,17 @@ void ComEnvironmentProbe::SetBoxOffset(const Vec3 &boxOffset) {
 
     // The origin must be included in the box range.
     // So if it doesn't we need to adjust box size.
-    Vec3 adjustedBoxSize = probeDef.boxSize;
+    Vec3 adjustedBoxExtent = probeDef.boxExtent;
 
     for (int i = 0; i < 3; i++) {
-        float delta = probeDef.boxOffset[i] - probeDef.boxSize[i];
+        float delta = probeDef.boxOffset[i] - probeDef.boxExtent[i];
         if (delta > 0) {
-            adjustedBoxSize[i] = probeDef.boxSize[i] + delta;
+            adjustedBoxExtent[i] = probeDef.boxExtent[i] + delta;
         }
     }
 
-    if (adjustedBoxSize != probeDef.boxSize) {
-        SetProperty("boxSize", adjustedBoxSize);
+    if (adjustedBoxExtent != probeDef.boxExtent) {
+        SetProperty("boxExtent", adjustedBoxExtent);
     }
 
     UpdateVisuals();

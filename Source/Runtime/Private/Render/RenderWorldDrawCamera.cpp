@@ -183,6 +183,25 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
 
         camera->worldAABB.AddAABB(proxy->worldAABB);
 
+        if (renderObject->state.flags & RenderObject::UseEnvProbeLightingFlag) {
+            Array<EnvProbeBlendInfo> envProbes;
+            GetClosestProbes(proxy->worldAABB, EnvProbeBlending::Simple, envProbes);
+
+            if (envProbes.Count() > 0) {
+                visObject->envProbeInfo[0] = envProbes[0];
+            } else {
+                visObject->envProbeInfo[0].envProbe = nullptr;//envProbes[0].envProbe;
+                visObject->envProbeInfo[0].weight = 1.0f;
+            }
+
+            if (envProbes.Count() > 1) {
+                visObject->envProbeInfo[1] = envProbes[1];
+            } else {
+                visObject->envProbeInfo[1].envProbe = nullptr;
+                visObject->envProbeInfo[1].weight = 0.0f;
+            }
+        }
+
         if (r_showAABB.GetInteger() > 0) {
             SetDebugColor(Color4::blue, Color4::zero);
             DebugAABB(proxy->worldAABB, 1, true, r_showAABB.GetInteger() == 1 ? true : false);
