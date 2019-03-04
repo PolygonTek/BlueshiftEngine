@@ -39,8 +39,8 @@ public:
         NoShadows           = BIT(2),
         NoSubViews          = BIT(3),
         StaticOnly          = BIT(4),
-        SkipPostProcess     = BIT(5),
-        SkipDebugDraw       = BIT(6),
+        SkipDebugDraw       = BIT(5),
+        SkipPostProcess     = BIT(6),
         InstantToneMapping  = BIT(7),
         ConstantToneMapping = BIT(8),
     };

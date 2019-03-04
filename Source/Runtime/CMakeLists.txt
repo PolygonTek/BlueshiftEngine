@@ -1005,7 +1005,7 @@ if (USE_LUAJIT)
 
     include(FindLuaJIT)
     target_link_libraries(${PROJECT_NAME} ${LUAJIT_LIBRARY})
-else ()    
+else ()
     target_include_directories(${PROJECT_NAME} PUBLIC ${ENGINE_INCLUDE_DIR}/ThirdParty/lua)
 
     target_link_libraries(${PROJECT_NAME} lua)
