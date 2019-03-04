@@ -2,8 +2,8 @@ Version History
 ---------------
 
 ### 0.6.0 (Work In Progress)
-- Refined PBR standard shader
-- Added support for environment probe for lighting
+- Refined PBR shaders
+- Added support for baking and blending environment probes
 - Added support for various HDR tonemapping operators
 - Added support for UI system
 - Added support for profiler with graphical interface for performance measurements
