@@ -10,6 +10,8 @@ struct ShadingParms {
     vec3 v; // view vector in world space
     vec3 l; // light vector in world space
     vec3 n; // normal vector in world space
+    vec3 s0;
+    vec3 s1;
     LOWP float ndotv;
     vec2 preDFG;
     vec3 energyCompensation;
@@ -47,12 +49,12 @@ struct ShadingParms {
 ShadingParms shading;
 
 void PrepareShadingParms(vec4 albedo) {
-    shading.v = normalize(fs_in.viewWS.yzx);
+    shading.v = normalize(fs_in.viewWS.xyz);
 
 #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-    shading.tagentToWorldMatrix[0] = normalize(fs_in.tangentToWorldAndPackedWorldPosS.yzx);
-    shading.tagentToWorldMatrix[1] = normalize(fs_in.tangentToWorldAndPackedWorldPosT.yzx);
-    shading.tagentToWorldMatrix[2] = normalize(fs_in.tangentToWorldAndPackedWorldPosR.yzx);
+    shading.tagentToWorldMatrix[0] = normalize(fs_in.tangentToWorldAndPackedWorldPosS.xyz);
+    shading.tagentToWorldMatrix[1] = normalize(fs_in.tangentToWorldAndPackedWorldPosT.xyz);
+    shading.tagentToWorldMatrix[2] = normalize(fs_in.tangentToWorldAndPackedWorldPosR.xyz);
 
     #if _NORMAL != 0
         vec3 normalTS = normalize(GetNormal(normalMap, baseTc));
@@ -68,7 +70,7 @@ void PrepareShadingParms(vec4 albedo) {
         shading.n = shading.tagentToWorldMatrix[2];
     #endif
 #else
-    shading.n = normalize(fs_in.normalWS.yzx);
+    shading.n = normalize(fs_in.normalWS.xyz);
 #endif
 
 #ifdef TWOSIDED

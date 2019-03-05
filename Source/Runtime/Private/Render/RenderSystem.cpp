@@ -210,8 +210,12 @@ void RenderSystem::EndCommands() {
 
 RenderWorld *RenderSystem::AllocRenderWorld() {
     RenderWorld *renderWorld = new RenderWorld;
+    renderWorld->index = renderWorldCount++;
 
-    this->primaryWorld = renderWorld;
+    renderWorld->AddGlobalEnvProbe();
+
+    primaryWorld = renderWorld;
+
     return renderWorld;
 }
 
@@ -536,19 +540,7 @@ void RenderSystem::UpdateEnvProbes() {
     for (int i = 0; i < envProbeJobs.Count(); ) {
         EnvProbeJob *job = &envProbeJobs[i];
 
-        bool finished = job->Refresh();
-
-        if (job->envProbe->GetTimeSlicing() == EnvProbe::TimeSlicing::NoTimeSlicing) {
-            while (!finished) {
-                finished = job->Refresh();
-            }
-        } else if (job->envProbe->GetTimeSlicing() == EnvProbe::TimeSlicing::AllFacesAtOnce) {
-            while (job->specularProbeCubemapComputedLevel0Face != 5) {
-                job->Refresh();
-            }
-        }
-
-        if (finished) {
+        if (job->Refresh()) {
             envProbeJobs.RemoveIndexFast(i);
         } else {
             i++;
@@ -585,7 +577,68 @@ void RenderSystem::ForceToRefreshEnvProbe(RenderWorld *renderWorld, int probeHan
     } while (!finished);
 }
 
-void RenderSystem::CaptureEnvCubeRTFace(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT, int faceIndex) {
+void RenderSystem::CaptureScreenRT(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height, RenderTarget *targetRT) {
+    RenderCamera renderCamera;
+    RenderCamera::State cameraDef;
+
+    memset(&cameraDef, 0, sizeof(cameraDef));
+    cameraDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews | RenderCamera::Flag::SkipDebugDraw | RenderCamera::Flag::SkipPostProcess;
+    cameraDef.clearMethod = colorClear ? RenderCamera::ColorClear : RenderCamera::SkyboxClear;
+    cameraDef.clearColor = clearColor;
+    cameraDef.layerMask = layerMask;
+    cameraDef.renderRect.Set(0, 0, width, height);
+    cameraDef.origin = origin;
+    cameraDef.axis = axis;
+
+    Vec3 v;
+    renderWorld->GetStaticAABB().GetFarthestVertexFromDir(axis[0], v);
+    cameraDef.zFar = Max(BE1::MeterToUnit(100.0f), origin.Distance(v));
+    cameraDef.zNear = BE1::CentiToUnit(5.0f);
+
+    RenderCamera::ComputeFov(fov, 1.25f, (float)width / height, &cameraDef.fovX, &cameraDef.fovY);
+
+    // Use any render context
+    RenderContext *renderContext = renderSystem.renderContexts[0];
+
+    renderCamera.Update(&cameraDef);
+
+    targetRT->Begin();
+
+    renderSystem.BeginCommands(renderContext);
+
+    renderWorld->RenderScene(&renderCamera);
+
+    renderSystem.EndCommands();
+
+    targetRT->End();
+}
+
+Texture *RenderSystem::CaptureScreenTexture(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height) {
+    Texture *screenTexture = new Texture;
+    screenTexture->CreateEmpty(RHI::Texture2D, width, height, 1, 1, 1, useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
+        Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+
+    RenderTarget *screenRT = RenderTarget::Create(screenTexture, nullptr, RHI::HasDepthBuffer);
+
+    CaptureScreenRT(renderWorld, colorClear, clearColor, layerMask, origin, axis, fov, width, height, screenRT);
+
+    RenderTarget::Delete(screenRT);
+
+    return screenTexture;
+}
+
+void RenderSystem::CaptureScreenImage(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height, Image &screenImage) {
+    Texture *screenTexture = CaptureScreenTexture(renderWorld, colorClear, clearColor, layerMask, origin, axis, fov, useHDR, width, height);
+
+    int imageFlags = Image::IsFloatFormat(screenTexture->GetFormat()) ? Image::LinearSpaceFlag : 0;
+
+    screenImage.Create2D(screenTexture->GetWidth(), screenTexture->GetHeight(), 1, screenTexture->GetFormat(), nullptr, imageFlags);
+
+    screenTexture->Bind();
+    screenTexture->GetTexels2D(0, screenTexture->GetFormat(), screenImage.GetPixels(0));
+}
+
+void RenderSystem::CaptureEnvCubeFaceRT(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT, int faceIndex) {
     //int t0 = PlatformTime::Milliseconds();
 
     RenderCamera renderCamera;
@@ -627,126 +680,35 @@ void RenderSystem::CaptureEnvCubeRTFace(RenderWorld *renderWorld, bool colorClea
     targetCubeRT->End();
 
     //int t1 = PlatformTime::Milliseconds();
-    //BE_LOG("CaptureEnvCubeRTFace(%i) takes %ims\n", faceIndex, t1 - t0);
+    //BE_LOG("CaptureEnvCubeFaceRT(%i) takes %ims\n", faceIndex, t1 - t0);
 }
 
 void RenderSystem::CaptureEnvCubeRT(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT) {
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-        CaptureEnvCubeRTFace(renderWorld, colorClear, clearColor, layerMask, staticMask, origin, zNear, zFar, targetCubeRT, faceIndex);
+        CaptureEnvCubeFaceRT(renderWorld, colorClear, clearColor, layerMask, staticMask, origin, zNear, zFar, targetCubeRT, faceIndex);
     }
 }
 
-void RenderSystem::CaptureEnvCubeImage(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, int size, Image &envCubeImage) {
+Texture *RenderSystem::CaptureEnvCubeTexture(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, bool useHDR, int size) {
     Texture *envCubeTexture = new Texture;
-    envCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, Image::RGB_16F_16F_16F,
+    envCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
         Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
     RenderTarget *envCubeRT = RenderTarget::Create(envCubeTexture, nullptr, RHI::HasDepthBuffer);
 
-    CaptureEnvCubeRT(renderWorld, colorClear, clearColor, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), envCubeRT);
+    CaptureEnvCubeRT(renderWorld, colorClear, clearColor, layerMask, staticMask, origin, zNear, zFar, envCubeRT);
+
+    RenderTarget::Delete(envCubeRT);
+
+    return envCubeTexture;
+}
+
+void RenderSystem::CaptureEnvCubeImage(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, bool useHDR, int size, Image &envCubeImage) {
+    Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, colorClear, clearColor, layerMask, staticMask, origin, zNear, zFar, useHDR, size);
 
     Texture::GetCubeImageFromCubeTexture(envCubeTexture, 1, envCubeImage);
 
     delete envCubeTexture;
-    RenderTarget::Delete(envCubeRT);
-}
-
-void RenderSystem::TakeEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, int size) {
-    Image envCubeImage;
-    CaptureEnvCubeImage(renderWorld, false, Color4::black, layerMask, staticMask, origin, size, envCubeImage);
-
-    char path[256];
-    Str::snPrintf(path, sizeof(path), "%s.dds", filename);
-    envCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
-    envCubeImage.WriteDDS(path);
-
-    BE_LOG("Environment cubemap snapshot saved to \"%s\"\n", path);
-}
-
-void RenderSystem::TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin) {
-    Texture *envCubeTexture = new Texture;
-    envCubeTexture->CreateEmpty(RHI::TextureCubeMap, 256, 256, 1, 1, 1, Image::RGB_16F_16F_16F,
-        Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
-
-    RenderTarget *envCubeRT = RenderTarget::Create(envCubeTexture, nullptr, RHI::HasDepthBuffer);
-
-    CaptureEnvCubeRT(renderWorld, false, Color4::black, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), envCubeRT);
-
-    Texture *irradianceEnvCubeTexture = new Texture;
-    irradianceEnvCubeTexture->CreateEmpty(RHI::TextureCubeMap, 64, 64, 1, 1, 1, Image::RGB_32F_32F_32F,
-        Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
-    RenderTarget *irradianceEnvCubeRT = RenderTarget::Create(irradianceEnvCubeTexture, nullptr, 0);
-#if 1
-    GenerateIrradianceEnvCubeRT(envCubeTexture, irradianceEnvCubeRT);
-#else
-    GenerateSHConvolvIrradianceEnvCubeRT(envCubeTexture, irradianceEnvCubeRT);
-#endif
-
-    delete envCubeTexture;
-    RenderTarget::Delete(envCubeRT);
-
-    Image irradianceEnvCubeImage;
-    Texture::GetCubeImageFromCubeTexture(irradianceEnvCubeTexture, 1, irradianceEnvCubeImage);
-
-    delete irradianceEnvCubeTexture;
-    RenderTarget::Delete(irradianceEnvCubeRT);
-
-    char path[256];
-    Str::snPrintf(path, sizeof(path), "%s.dds", filename);
-    irradianceEnvCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
-    irradianceEnvCubeImage.WriteDDS(path);
-
-    BE_LOG("Generated diffuse irradiance cubemap to \"%s\"\n", path);
-}
-
-void RenderSystem::TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin) {
-    Texture *envCubeTexture = new Texture;
-    envCubeTexture->CreateEmpty(RHI::TextureCubeMap, 256, 256, 1, 1, 1, Image::RGB_16F_16F_16F,
-        Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
-
-    RenderTarget *envCubeRT = RenderTarget::Create(envCubeTexture, nullptr, RHI::HasDepthBuffer);
-
-    CaptureEnvCubeRT(renderWorld, false, Color4::black, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), envCubeRT);
-
-    int size = 256;
-    int numMipLevels = Math::Log(2, size) + 1;
-
-    Texture *prefilteredCubeTexture = new Texture;
-    prefilteredCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels, Image::RGB_32F_32F_32F,
-        Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
-    RenderTarget *prefilteredCubeRT = RenderTarget::Create(prefilteredCubeTexture, nullptr, 0);
-#if 1
-    GenerateGGXLDSumRT(envCubeTexture, prefilteredCubeRT);
-#else
-    GeneratePhongSpecularLDSumRT(envCubeTexture, 2048, prefilteredCubeRT);
-#endif
-
-    delete envCubeTexture;
-    RenderTarget::Delete(envCubeRT);
-
-    Image prefilteredCubeImage;
-    Texture::GetCubeImageFromCubeTexture(prefilteredCubeTexture, numMipLevels, prefilteredCubeImage);
-
-    delete prefilteredCubeTexture;
-    RenderTarget::Delete(prefilteredCubeRT);
-
-    char path[256];
-    Str::snPrintf(path, sizeof(path), "%s.dds", filename);
-    prefilteredCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
-    prefilteredCubeImage.WriteDDS(path);
-
-    BE_LOG("Generated specular prefiltered cubemap to \"%s\"\n", path);
-}
-
-void RenderSystem::WriteGGXDFGSum(const char *filename, int size) const {
-    Image integrationImage;
-    GenerateGGXDFGSumImage(size, integrationImage);
-
-    char path[256];
-    Str::snPrintf(path, sizeof(path), "%s.dds", filename);
-    integrationImage.WriteDDS(path);
-
-    BE_LOG("Generated GGX integration LUT to \"%s\"\n", path);
 }
 
 void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const {
@@ -1056,6 +1018,102 @@ void RenderSystem::GenerateGGXDFGSumImage(int size, Image &integrationImage) con
 
     shaderManager.ReleaseShader(genDFGSumGGXShader);
     shaderManager.ReleaseShader(genDFGSumGGXShader->GetOriginalShader());
+}
+
+void RenderSystem::WriteGGXDFGSum(const char *filename, int size) const {
+    Image integrationImage;
+    GenerateGGXDFGSumImage(size, integrationImage);
+
+    char path[256];
+    Str::snPrintf(path, sizeof(path), "%s.dds", filename);
+    integrationImage.WriteDDS(path);
+
+    BE_LOG("Generated GGX integration LUT to \"%s\"\n", path);
+}
+
+void RenderSystem::TakeScreenShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height) {
+    Image screenImage;
+    CaptureScreenImage(renderWorld, false, Color4::black, layerMask, origin, axis, fov, useHDR, width, height, screenImage);
+
+    char path[256];
+    Str::snPrintf(path, sizeof(path), "%s.png", filename);
+    screenImage.WritePNG(path);
+
+    BE_LOG("Screenshot saved to \"%s\"\n", path);
+}
+
+void RenderSystem::TakeEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size) {
+    Image envCubeImage;
+    CaptureEnvCubeImage(renderWorld, false, Color4::black, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), useHDR, size, envCubeImage);
+
+    char path[256];
+    Str::snPrintf(path, sizeof(path), "%s.dds", filename);
+    //envCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
+    envCubeImage.WriteDDS(path);
+
+    BE_LOG("Environment cubemap snapshot saved to \"%s\"\n", path);
+}
+
+void RenderSystem::TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size, int envSize) {
+    Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, false, Color4::black, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), useHDR, envSize);
+
+    Texture *irradianceEnvCubeTexture = new Texture;
+    irradianceEnvCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
+        Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    RenderTarget *irradianceEnvCubeRT = RenderTarget::Create(irradianceEnvCubeTexture, nullptr, 0);
+#if 1
+    GenerateIrradianceEnvCubeRT(envCubeTexture, irradianceEnvCubeRT);
+#else
+    GenerateSHConvolvIrradianceEnvCubeRT(envCubeTexture, irradianceEnvCubeRT);
+#endif
+
+    RenderTarget::Delete(irradianceEnvCubeRT);
+
+    delete envCubeTexture;
+
+    Image irradianceEnvCubeImage;
+    Texture::GetCubeImageFromCubeTexture(irradianceEnvCubeTexture, 1, irradianceEnvCubeImage);
+
+    delete irradianceEnvCubeTexture;
+
+    char path[256];
+    Str::snPrintf(path, sizeof(path), "%s.dds", filename);
+    //irradianceEnvCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
+    irradianceEnvCubeImage.WriteDDS(path);
+
+    BE_LOG("Generated diffuse irradiance cubemap to \"%s\"\n", path);
+}
+
+void RenderSystem::TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size, int envSize) {
+    Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, false, Color4::black, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), useHDR, envSize);
+
+    int numMipLevels = Math::Log(2, size) + 1;
+
+    Texture *prefilteredCubeTexture = new Texture;
+    prefilteredCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels, useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
+        Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    RenderTarget *prefilteredCubeRT = RenderTarget::Create(prefilteredCubeTexture, nullptr, 0);
+#if 1
+    GenerateGGXLDSumRT(envCubeTexture, prefilteredCubeRT);
+#else
+    GeneratePhongSpecularLDSumRT(envCubeTexture, 2048, prefilteredCubeRT);
+#endif
+
+    RenderTarget::Delete(prefilteredCubeRT);
+
+    delete envCubeTexture;
+
+    Image prefilteredCubeImage;
+    Texture::GetCubeImageFromCubeTexture(prefilteredCubeTexture, numMipLevels, prefilteredCubeImage);
+
+    delete prefilteredCubeTexture;
+
+    char path[256];
+    Str::snPrintf(path, sizeof(path), "%s.dds", filename);
+    //prefilteredCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
+    prefilteredCubeImage.WriteDDS(path);
+
+    BE_LOG("Generated specular prefiltered cubemap to \"%s\"\n", path);
 }
 
 //--------------------------------------------------------------------------------------------------

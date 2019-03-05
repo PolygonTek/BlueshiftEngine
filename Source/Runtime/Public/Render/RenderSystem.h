@@ -97,20 +97,26 @@ public:
                             /// Forces to refresh environment probe immediately.
     void                    ForceToRefreshEnvProbe(RenderWorld *renderWorld, int probeHandle);
 
-    void                    TakeEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, int size = 256);
-    void                    TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin);
-    void                    TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin);
+                            /// Captures screen.
+    void                    CaptureScreenRT(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height, RenderTarget *targetRT);
 
-    void                    WriteGGXDFGSum(const char *filename, int size) const;
+                            /// Captures screen texture.
+    Texture *               CaptureScreenTexture(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height);
+
+                            /// Capture screen image.
+    void                    CaptureScreenImage(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height, Image &screenImage);
+
+                            /// Captures environment cubemap for specific face.
+    void                    CaptureEnvCubeFaceRT(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT, int faceIndex);
 
                             /// Captures environment cubemap.
     void                    CaptureEnvCubeRT(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT);
 
-                            /// Captures environment cubemap for specific face.
-    void                    CaptureEnvCubeRTFace(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT, int faceIndex);
+                            /// Captures environment cubemap texture.
+    Texture *               CaptureEnvCubeTexture(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, bool useHDR, int size);
 
                             /// Captures environment cubemap image.
-    void                    CaptureEnvCubeImage(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, int size, Image &envCubeImage);
+    void                    CaptureEnvCubeImage(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, bool useHDR, int size, Image &envCubeImage);
 
                             /// Generates irradiance environment cubemap using SH convolution method.
     void                    GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const;
@@ -121,14 +127,22 @@ public:
                             /// Generates Phong specular prefiltered environment cubemap.
     void                    GeneratePhongSpecularLDSumRT(const Texture *envCubeTexture, int maxSpecularPower, RenderTarget *targetCubeRT) const;
 
-                            /// Generates GGX specular prefiltered environment cubemap.
-    void                    GenerateGGXLDSumRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const;
-
                             /// Generates GGX specular prefiltered environment cubemap for specific mip level.
     void                    GenerateGGXLDSumRTLevel(const Texture *envCubeTexture, RenderTarget *targetCubeRT, int numMipLevels, int mipLevel) const;
 
+                            /// Generates GGX specular prefiltered environment cubemap.
+    void                    GenerateGGXLDSumRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const;
+
                             /// Generates GGX DFG integration 2D LUT.
     void                    GenerateGGXDFGSumImage(int size, Image &integrationImage) const;
+
+                            /// Writes GGX DFG integration 2D LUT.
+    void                    WriteGGXDFGSum(const char *filename, int size) const;
+
+    void                    TakeScreenShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height);
+    void                    TakeEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size = 256);
+    void                    TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size = 32, int envSize = 256);
+    void                    TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size = 256, int envSize = 256);
 
 private:
     void                    RecreateScreenMapRT();
@@ -147,6 +161,8 @@ private:
 
     bool                    initialized;
     unsigned short          savedGammaRamp[768];
+
+    int                     renderWorldCount = 0;
 
     RenderWorld *           primaryWorld;
     

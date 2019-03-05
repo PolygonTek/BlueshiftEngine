@@ -146,7 +146,7 @@ public:
         Skin *              customSkin = nullptr;
     };
 
-    RenderObject(int index);
+    RenderObject(RenderWorld *renderWorld, int index);
     ~RenderObject();
 
                             /// Returns object index in world.
@@ -174,7 +174,8 @@ private:
                             /// Updates this render object with the given state.
     void                    Update(const State *state);
 
-    int                     index;                      // index of object list in world
+    RenderWorld *           renderWorld;
+    int                     index;                      // index of object list in RenderWorld
 
     bool                    firstUpdate;
 

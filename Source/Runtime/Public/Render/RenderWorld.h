@@ -58,6 +58,8 @@ public:
     RenderWorld();
     ~RenderWorld();
 
+    int                     GetIndex() const { return index; }
+
     void                    ClearScene();
 
                             /// Adds render object to this world.
@@ -95,6 +97,9 @@ public:
 
                             /// Gets EnvProbe pointer by given environment probe handle.
     EnvProbe *              GetEnvProbe(int handle) const;
+
+                            /// Adds global environment probe to this world.
+    void                    AddGlobalEnvProbe();
 
     void                    GetClosestProbes(const AABB &worldAABB, EnvProbeBlending blending, Array<EnvProbeBlendInfo> &outProbes) const;
 
@@ -167,6 +172,8 @@ private:
     void                    DrawSubCamera(const VisObject *object, const DrawSurf *drawSurf, const Material *material);
     void                    DrawGUICamera(GuiMesh &guiMesh);
 
+    int                     index;
+
     Color4                  color;
     Color4                  clearColor;
     float                   clearDepth;
@@ -178,13 +185,13 @@ private:
     int                     viewCount;
 
     Material *              skyboxMaterial;
-    ParticleMesh            particleMesh;           ///< particle mesh
+    ParticleMesh            particleMesh;           ///< Particle mesh
     GuiMesh                 textMesh;               ///< 3D text mesh
 
     Array<RenderObject *>   renderObjects;          ///< Array of render objects
     Array<RenderLight *>    renderLights;           ///< Array of render lights
     Array<EnvProbe *>       envProbes;              ///< Array of local environment probes
-    //EnvProbe *            globalProbe;            ///< Global light probe
+    EnvProbe *              globalEnvProbe;         ///< Global environment probe
 
     DynamicAABBTree         objectDbvt;             ///< Dynamic bounding volume tree for render objects
     DynamicAABBTree         lightDbvt;              ///< Dynamic bounding volume tree for render lights

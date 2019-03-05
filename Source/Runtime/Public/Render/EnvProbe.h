@@ -64,78 +64,89 @@ public:
     };
 
     struct State {
-        Type            type = Type::Baked;
-        RefreshMode     refreshMode = RefreshMode::OnAwake;
-        TimeSlicing     timeSlicing = TimeSlicing::AllFacesAtOnce;
-        Resolution      resolution = Resolution::Resolution128;
-        bool            useHDR = true;
-        ClearMethod     clearMethod = ClearMethod::SkyClear;
-        Color4          clearColor = Color4::black;
-        float           clippingNear = 0.1f;
-        float           clippingFar = 500.0f;
+        Type                type = Type::Baked;
+        RefreshMode         refreshMode = RefreshMode::OnAwake;
+        TimeSlicing         timeSlicing = TimeSlicing::AllFacesAtOnce;
 
-        int             importance = 0;
-        int             layerMask = -1;
+        Resolution          resolution = Resolution::Resolution128;
+        bool                useHDR = true;
+        ClearMethod         clearMethod = ClearMethod::SkyClear;
+        Color4              clearColor = Color4::black;
+        float               clippingNear = 0.1f;
+        float               clippingFar = 500.0f;
 
-        Vec3            origin = Vec3::origin;
+        int                 importance = 0;
+        int                 layerMask = -1;
 
-                        // Box offset from the origin.
-        Vec3            boxOffset = Vec3::zero;
+        Vec3                origin = Vec3::origin;
 
-                        // Box extents for each axis from the origin which is translated by offset.
-                        // The origin must be included in the box range.
-        Vec3            boxExtent = Vec3::zero;
+                            // Box offset from the origin.
+        Vec3                boxOffset = Vec3::zero;
 
-        bool            useBoxProjection = false;
+                            // Box extents for each axis from the origin which is translated by offset.
+                            // The origin must be included in the box range.
+        Vec3                boxExtent = Vec3::zero;
 
-        Texture *       bakedDiffuseProbeTexture = nullptr;
-        Texture *       bakedSpecularProbeTexture = nullptr;
+        bool                useBoxProjection = false;
+
+        Texture *           bakedDiffuseProbeTexture = nullptr;
+        Texture *           bakedSpecularProbeTexture = nullptr;
     };
 
-    EnvProbe(int index);
+    EnvProbe(RenderWorld *renderWorld, int index);
     ~EnvProbe();
 
-                        /// Returns AABB in world space.
-    const AABB          GetWorldAABB() const { return worldAABB; }
+                            /// Returns AABB in world space.
+    const AABB              GetWorldAABB() const { return worldAABB; }
 
-                        /// Returns importance for blending.
-    int                 GetImportance() const { return state.importance; }
+                            /// Returns box center.
+    const Vec3              GetBoxCenter() const { return state.origin + state.boxOffset; }
 
-                        /// Returns prefiltered specular cube texture.
-    Texture *           GetDiffuseProbeTexture() const { return diffuseProbeTexture; }
+                            /// Returns box extent.
+    const Vec3              GetBoxExtent() const { return state.boxExtent; }
 
-                        /// Returns irradiance diffuse cube texture.
-    Texture *           GetSpecularProbeTexture() const { return specularProbeTexture; }
+                            /// Returns box projection.
+    bool                    IsBoxProjection() const { return state.useBoxProjection; }
 
-                        /// Returns time slicing mode. Time slicing means how the probe should distribute its updates over time. 
-                        /// This is valid only in realtime type.
-    TimeSlicing         GetTimeSlicing() const { return state.timeSlicing; }
+                            /// Returns importance for blending.
+    int                     GetImportance() const { return state.importance; }
 
-                        /// Returns size.
-    int                 GetSize() const { return ToActualResolution(state.resolution); }
+                            /// Returns prefiltered specular cube texture.
+    Texture *               GetDiffuseProbeTexture() const { return diffuseProbeTexture; }
 
-                        /// Converts Resolution enum to actual size.
-    static int          ToActualResolution(Resolution resolution);
+                            /// Returns irradiance diffuse cube texture.
+    Texture *               GetSpecularProbeTexture() const { return specularProbeTexture; }
+
+                            /// Returns time slicing mode. Time slicing means how the probe should distribute its updates over time. 
+                            /// This is valid only in realtime type.
+    TimeSlicing             GetTimeSlicing() const { return state.timeSlicing; }
+
+                            /// Returns size.
+    int                     GetSize() const { return ToActualResolution(state.resolution); }
+
+                            /// Converts Resolution enum to actual size.
+    static int              ToActualResolution(Resolution resolution);
 
 private:
-                        /// Updates this probe with the given state.
-    void                Update(const State *state);
+                            /// Updates this probe with the given state.
+    void                    Update(const State *state);
 
-    int                 index;              // index of environment probe list in world
+    RenderWorld *           renderWorld;
+    int                     index;              // index of probe list in RenderWorld
 
-    State               state;
+    State                   state;
 
-    AABB                worldAABB;
+    AABB                    worldAABB;
 
-    bool                needToRefresh = false;
+    bool                    needToRefresh = false;
 
-    Texture *           diffuseProbeTexture = nullptr;
-    Texture *           specularProbeTexture = nullptr;
+    Texture *               diffuseProbeTexture = nullptr;
+    Texture *               specularProbeTexture = nullptr;
 
-    RenderTarget *      diffuseProbeRT = nullptr;
-    RenderTarget *      specularProbeRT = nullptr;
+    RenderTarget *          diffuseProbeRT = nullptr;
+    RenderTarget *          specularProbeRT = nullptr;
 
-    DbvtProxy *         proxy;
+    DbvtProxy *             proxy;
 };
 
 BE_NAMESPACE_END

@@ -19,7 +19,8 @@
 
 BE_NAMESPACE_BEGIN
 
-EnvProbe::EnvProbe(int index) {
+EnvProbe::EnvProbe(RenderWorld *renderWorld, int index) {
+    this->renderWorld = renderWorld;
     this->index = index;
 }
 
@@ -69,11 +70,11 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
         diffuseProbeTexture->AddRefCount();
     } else {
         if (!diffuseProbeTexture) {
-            // Create default diffuse convolution cubemap 
-            // TODO: Create using skybox
-            diffuseProbeTexture = textureManager.AllocTexture(va("diffuseProbe-%i", index));
-            diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, 16, 16, 1, 1, 1, Image::RGB_8_8_8,
-                Texture::Clamp | Texture::NoCompression | Texture::NoMipmaps | Texture::HighQuality);
+            // Create default diffuse convolution cubemap
+            diffuseProbeTexture = textureManager.AllocTexture(va("diffuseProbe-%i/%i", renderWorld->GetIndex(), index));
+            diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, 32, 32, 1, 1, 1, 
+                state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
+                Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
             resourceGuidMapper.Set(Guid::CreateGuid(), diffuseProbeTexture->GetHashName());
         }
@@ -90,13 +91,12 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
     } else {
         if (!specularProbeTexture) {
             // Create default specular convolution cubemap
-            // TODO: Create using skybox
-            int size = 16;
+            int size = ToActualResolution(state.resolution);
             int numMipLevels = Math::Log(2, size) + 1;
 
-            specularProbeTexture = textureManager.AllocTexture(va("specularProbe-%i", index));
+            specularProbeTexture = textureManager.AllocTexture(va("specularProbe-%i/%i", renderWorld->GetIndex(), index));
             specularProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels, Image::RGB_8_8_8,
-                Texture::Clamp | Texture::NoCompression | Texture::HighQuality);
+                Texture::Clamp | Texture::HighQuality);
 
             resourceGuidMapper.Set(Guid::CreateGuid(), specularProbeTexture->GetHashName());
         }
@@ -114,9 +114,8 @@ int EnvProbe::ToActualResolution(Resolution resolution) {
 void EnvProbeJob::RevalidateDiffuseProbeRT() {
     // Recreate diffuse convolution texture if its format have changed.
     if ((envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->diffuseProbeTexture->GetFormat()))) {
-        Image::Format format = envProbe->state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8;
-
-        envProbe->diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, 64, 64, 1, 1, 1, format, // fixed size (64) for irradiance cubemap
+        envProbe->diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, 32, 32, 1, 1, 1, // fixed size (32) for irradiance cubemap
+            envProbe->state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8, 
             Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
         if (envProbe->diffuseProbeRT) {
@@ -169,13 +168,13 @@ bool EnvProbeJob::Refresh() {
             RevalidateSpecularProbeRT();
         }
 
-        if (specularProbeCubemapComputedLevel0Face < 5) {
-            // FIXME: use EnvProbeStatic instead of -1
-            int staticMask = envProbe->state.type == EnvProbe::Type::Baked ? -1 : 0;
+        // FIXME: use EnvProbeStatic instead of -1
+        int staticMask = envProbe->state.type == EnvProbe::Type::Baked ? -1 : 0;
 
+        while (specularProbeCubemapComputedLevel0Face < 5) {
             // We can skip complex calculation of specular convolution cubemap for mipLevel 0.
             // It is same as perfect specular mirror. so we just render environment cubmap.
-            renderSystem.CaptureEnvCubeRTFace(renderWorld,
+            renderSystem.CaptureEnvCubeFaceRT(renderWorld,
                 envProbe->state.clearMethod == EnvProbe::ClearMethod::ColorClear,
                 envProbe->state.clearColor,
                 envProbe->state.layerMask, staticMask, envProbe->state.origin,
@@ -183,18 +182,30 @@ bool EnvProbeJob::Refresh() {
                 envProbe->specularProbeRT, specularProbeCubemapComputedLevel0Face + 1);
 
             specularProbeCubemapComputedLevel0Face++;
-            return false;
-        } else {
+
+            if (envProbe->GetTimeSlicing() == EnvProbe::IndividualFaces) {
+                break;
+            }
+        }
+
+        if (specularProbeCubemapComputedLevel0Face == 5) {
             specularProbeCubemapComputedLevel = 0;
+        }
+
+        if (envProbe->GetTimeSlicing() != EnvProbe::NoTimeSlicing) {
+            return false;
         }
     }
 
-    if (specularProbeCubemapComputedLevel < specularProbeCubemapMaxLevel) {
+    while (specularProbeCubemapComputedLevel < specularProbeCubemapMaxLevel) {
         // Generate specular convolution cube map from mipLevel 1 to specularProbeCubemapMaxLevel using environment cubemap.
         renderSystem.GenerateGGXLDSumRTLevel(envProbe->specularProbeTexture, envProbe->specularProbeRT, specularProbeCubemapMaxLevel, specularProbeCubemapComputedLevel + 1);
 
         specularProbeCubemapComputedLevel++;
-        return false;
+
+        if (envProbe->GetTimeSlicing() != EnvProbe::NoTimeSlicing) {
+            return false;
+        }
     }
 
     if (!diffuseProbeCubemapComputed) {

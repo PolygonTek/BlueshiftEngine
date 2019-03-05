@@ -19,7 +19,8 @@
 
 BE_NAMESPACE_BEGIN
 
-RenderObject::RenderObject(int index) {
+RenderObject::RenderObject(RenderWorld *renderWorld, int index) {
+    this->renderWorld = renderWorld;
     this->index = index;
 
     worldOBB.SetZero();

@@ -34,6 +34,8 @@ RenderWorld::RenderWorld() {
 
     debugLineColor.Set(0, 0, 0, 0);
     debugFillColor.Set(0, 0, 0, 0);
+
+    globalEnvProbe = nullptr;
 }
 
 RenderWorld::~RenderWorld() {
@@ -90,7 +92,7 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
 
     RenderObject *renderObject = renderObjects[handle];
     if (!renderObject) {
-        renderObject = new RenderObject(handle);
+        renderObject = new RenderObject(this, handle);
         renderObjects[handle] = renderObject;
 
         renderObject->Update(def);
@@ -219,7 +221,7 @@ void RenderWorld::UpdateRenderLight(int handle, const RenderLight::State *def) {
 
     RenderLight *renderLight = renderLights[handle];
     if (!renderLight) {
-        renderLight = new RenderLight(handle);
+        renderLight = new RenderLight(this, handle);
         renderLights[handle] = renderLight;
 
         renderLight->Update(def);
@@ -293,7 +295,7 @@ void RenderWorld::UpdateEnvProbe(int handle, const EnvProbe::State *def) {
 
     EnvProbe *envProbe = envProbes[handle];
     if (!envProbe) {
-        envProbe = new EnvProbe(handle);
+        envProbe = new EnvProbe(this, handle);
         envProbes[handle] = envProbe;
 
         envProbe->Update(def);
@@ -342,6 +344,23 @@ void RenderWorld::RemoveEnvProbe(int handle) {
 
     delete envProbes[handle];
     envProbes[handle] = nullptr;
+}
+
+void RenderWorld::AddGlobalEnvProbe() {
+    if (globalEnvProbe) {
+        BE_WARNLOG("Couldn't add global environment probe twice.\n");
+        return;
+    }
+
+    EnvProbe::State def;
+    def.timeSlicing = EnvProbe::TimeSlicing::NoTimeSlicing;
+    def.resolution = EnvProbe::Resolution256;
+    def.layerMask = 0;
+
+    int handle = envProbes.Append(nullptr);
+    globalEnvProbe = new EnvProbe(this, handle);
+    envProbes[handle] = globalEnvProbe;
+    globalEnvProbe->Update(&def);
 }
 
 static float CalculateEnvProbeLerpValue(const AABB &objectAABB,
@@ -395,14 +414,21 @@ void RenderWorld::GetClosestProbes(const AABB &objectAABB, EnvProbeBlending blen
     }
 
     if (outProbes.Count() >= 2) {
-        outProbes.Sort([](const EnvProbeBlendInfo &a, const EnvProbeBlendInfo &b) -> bool {
+        outProbes.Sort([&objectAABB](const EnvProbeBlendInfo &a, const EnvProbeBlendInfo &b) -> bool {
             const int importanceA = a.envProbe->GetImportance();
             const int importanceB = b.envProbe->GetImportance();
 
             if (importanceA != importanceB) {
                 return importanceA > importanceB;
             }
-            return a.weight > b.weight;
+            if (a.weight != b.weight) {
+                return a.weight > b.weight;
+            }
+            Vec3 centerA = a.envProbe->GetBoxCenter();
+            Vec3 centerB = b.envProbe->GetBoxCenter();
+            Vec3 centerObject = objectAABB.Center();
+
+            return centerA.DistanceSqr(centerObject) < centerB.DistanceSqr(centerObject);
         });
 
         if (blending == EnvProbeBlending::Simple) {
@@ -428,6 +454,8 @@ void RenderWorld::GetClosestProbes(const AABB &objectAABB, EnvProbeBlending blen
 
 void RenderWorld::SetSkyboxMaterial(Material *skyboxMaterial) {
     this->skyboxMaterial = skyboxMaterial;
+
+    renderSystem.ScheduleToRefreshEnvProbe(this, globalEnvProbe->index);
 }
 
 void RenderWorld::FinishMapLoading() {
@@ -448,10 +476,6 @@ void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
     BE_PROFILE_CPU_SCOPE("RenderWorld::RenderScene", Color3::orange);
 
     if (renderCamera->GetState().renderRect.w <= 0.0f || renderCamera->GetState().renderRect.h <= 0.0f) {
-        return;
-    }
-
-    if (renderCamera->GetState().layerMask == 0) {
         return;
     }
 
@@ -501,8 +525,8 @@ void RenderWorld::DrawGUICamera(GuiMesh &guiMesh) {
     def.materialParms[RenderObject::AlphaParm] = 1.0f;
     def.materialParms[RenderObject::TimeScaleParm] = 1.0f;
 
-    static RenderObject renderObject(-1);
-    new (&renderObject) RenderObject(-1);
+    static RenderObject renderObject(this, -1);
+    new (&renderObject) RenderObject(this, -1);
     renderObject.Update(&def);
 
     // GUI camera

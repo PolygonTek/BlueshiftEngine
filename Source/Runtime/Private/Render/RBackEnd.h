@@ -83,6 +83,7 @@ private:
     void                    SetVertexColorConstants(const Shader *shader, const Material::VertexColorMode &vertexColor) const;
     void                    SetSkinningConstants(const Shader *shader, const SkinningJointCache *cache) const;
     void                    SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const;
+    void                    SetProbeConstants(const Shader *shader) const;
     void                    SetMaterialConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const;
 
     void                    SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shader *shader, bool useShadowMap) const;
@@ -94,9 +95,9 @@ private:
     void                    RenderVelocity(const Material::ShaderPass *mtrlPass) const;
     void                    RenderBase(const Material::ShaderPass *mtrlPass, float ambientScale) const;
     void                    RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientScale) const;
-    void                    RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambientScale) const;
     void                    RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float ambientScale) const;
-    void                    RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, float ambientScale) const;
+    void                    RenderIndirectLit(const Material::ShaderPass *mtrlPass) const;
+    void                    RenderIndirectLit_DirectLit(const Material::ShaderPass *mtrlPass) const;
     void                    RenderGeneric(const Material::ShaderPass *mtrlPass) const;
 
     void                    RenderLightInteraction(const Material::ShaderPass *mtrlPass) const;

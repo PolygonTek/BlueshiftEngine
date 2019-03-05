@@ -224,20 +224,6 @@ void Batch::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shade
         SetSkinningConstants(shader, surfSpace->def->GetState().mesh->skinningJointCache);
     }
 
-    if (surfSpace->envProbeInfo[0].envProbe) {
-        shader->SetTexture("probe0DiffuseCubeMap", surfSpace->envProbeInfo[0].envProbe->GetDiffuseProbeTexture());
-        shader->SetTexture("probe0SpecularCubeMap", surfSpace->envProbeInfo[0].envProbe->GetSpecularProbeTexture());
-        shader->SetConstant1f("probe0SpecularCubeMapMaxMipLevel", Math::Log(2.0f, surfSpace->envProbeInfo[0].envProbe->GetSpecularProbeTexture()->GetWidth()));
-        shader->SetConstant1f("ambientLerp", 0.0f);// surfSpace->envProbeInfo[0].envProbe->weight);
-    }
-
-    if (surfSpace->envProbeInfo[1].envProbe) {
-        shader->SetTexture("probe1DiffuseCubeMap", surfSpace->envProbeInfo[1].envProbe->GetDiffuseProbeTexture());
-        shader->SetTexture("probe1SpecularCubeMap", surfSpace->envProbeInfo[1].envProbe->GetSpecularProbeTexture());
-        shader->SetConstant1f("probe1SpecularCubeMapMaxMipLevel", Math::Log(2.0f, surfSpace->envProbeInfo[1].envProbe->GetSpecularProbeTexture()->GetWidth()));
-        //shader->SetConstant1f("ambientLerp", surfSpace->envProbeInfo[1].envProbe->weight);
-    }
-
     if (numIndirectCommands > 0) {
         rhi.BindBuffer(RHI::DrawIndirectBuffer, indirectBuffer);
         rhi.BufferDiscardWrite(indirectBuffer, numIndirectCommands * sizeof(indirectCommands[0]), indirectCommands);
@@ -265,6 +251,35 @@ void Batch::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shade
             const Color4 &color = mtrlPass->useOwnerColor ? reinterpret_cast<const Color4 &>(surfSpace->def->GetState().materialParms[RenderObject::RedParm]) : mtrlPass->constantColor;
             shader->SetConstant4f(shader->builtInConstantIndices[Shader::ConstantColorConst], color);
         }
+    }
+}
+
+void Batch::SetProbeConstants(const Shader *shader) const {
+    if (surfSpace->envProbeInfo[0].envProbe) {
+        const EnvProbeBlendInfo &probe0 = surfSpace->envProbeInfo[0];
+
+        Vec3 probe0Extent = probe0.envProbe->GetWorldAABB().Extents();
+
+        shader->SetTexture("probe0DiffuseCubeMap", probe0.envProbe->GetDiffuseProbeTexture());
+        shader->SetTexture("probe0SpecularCubeMap", probe0.envProbe->GetSpecularProbeTexture());
+        shader->SetConstant1f("probe0SpecularCubeMapMaxMipLevel", Math::Log(2.0f, probe0.envProbe->GetSpecularProbeTexture()->GetWidth()));
+        shader->SetConstant4f("probe0Position", Vec4(probe0.envProbe->GetBoxCenter(), probe0.envProbe->IsBoxProjection() ? 1.0f : 0.0f));
+        shader->SetConstant3f("probe0Mins", -probe0Extent);
+        shader->SetConstant3f("probe0Maxs", +probe0Extent);
+        shader->SetConstant1f("probeLerp", probe0.weight);
+    }
+
+    if (surfSpace->envProbeInfo[1].envProbe) {
+        const EnvProbeBlendInfo &probe1 = surfSpace->envProbeInfo[1];
+
+        Vec3 probe1Extent = probe1.envProbe->GetWorldAABB().Extents();
+
+        shader->SetTexture("probe1DiffuseCubeMap", probe1.envProbe->GetDiffuseProbeTexture());
+        shader->SetTexture("probe1SpecularCubeMap", probe1.envProbe->GetSpecularProbeTexture());
+        shader->SetConstant1f("probe1SpecularCubeMapMaxMipLevel", Math::Log(2.0f, probe1.envProbe->GetSpecularProbeTexture()->GetWidth()));
+        shader->SetConstant4f("probe1Position", Vec4(probe1.envProbe->GetBoxCenter(), probe1.envProbe->IsBoxProjection() ? 1.0f : 0.0f));
+        shader->SetConstant3f("probe1Mins", -probe1Extent);
+        shader->SetConstant3f("probe1Maxs", +probe1Extent);
     }
 }
 
@@ -582,7 +597,7 @@ void Batch::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientSca
     DrawPrimitives();
 }
 
-void Batch::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambientScale) const {
+void Batch::RenderIndirectLit(const Material::ShaderPass *mtrlPass) const {
     Shader *shader = shader = mtrlPass->shader;
 
     if (shader && shader->GetAmbientLitVersion()) {
@@ -624,9 +639,10 @@ void Batch::RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambient
     }
 
     shader->SetTexture("prefilteredDfgMap", backEnd.integrationLUTTexture);
-    shader->SetConstant1f("ambientScale", ambientScale);
 
     SetMatrixConstants(shader);
+
+    SetProbeConstants(shader);
 
     SetEntityConstants(mtrlPass, shader);
 
@@ -687,8 +703,6 @@ void Batch::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float 
     }
 
     shader->Bind();
-
-    shader->SetConstant1f("ambientScale", ambientScale);
     
     if (mtrlPass->shader) {
         if (mtrlPass->shader->GetDirectLitVersion()) {
@@ -712,7 +726,7 @@ void Batch::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float 
     DrawPrimitives();
 }
 
-void Batch::RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, float ambientScale) const {
+void Batch::RenderIndirectLit_DirectLit(const Material::ShaderPass *mtrlPass) const {
     Shader *shader = shader = mtrlPass->shader;
 
     if (shader && shader->GetAmbientLitDirectLitVersion()) {
@@ -751,7 +765,6 @@ void Batch::RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, flo
     shader->Bind();
 
     shader->SetTexture("prefilteredDfgMap", backEnd.integrationLUTTexture);
-    shader->SetConstant1f("ambientScale", ambientScale);
 
     if (mtrlPass->shader) {
         if (mtrlPass->shader->GetAmbientLitDirectLitVersion()) {
@@ -766,6 +779,8 @@ void Batch::RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, flo
 
     SetMatrixConstants(shader);
 
+    SetProbeConstants(shader);
+
     SetEntityConstants(mtrlPass, shader);
 
     SetMaterialConstants(mtrlPass, shader);
@@ -778,9 +793,9 @@ void Batch::RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, flo
 void Batch::RenderBase(const Material::ShaderPass *mtrlPass, float ambientScale) const {
     if (r_ambientLit.GetBool()) {
         if (surfLight) {
-            RenderAmbientLit_DirectLit(mtrlPass, ambientScale);
+            RenderIndirectLit_DirectLit(mtrlPass);
         } else {
-            RenderAmbientLit(mtrlPass, ambientScale);
+            RenderIndirectLit(mtrlPass);
         }
     } else {
         if (surfLight) {

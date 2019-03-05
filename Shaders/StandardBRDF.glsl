@@ -174,8 +174,8 @@ vec3 DirectLit_Standard() {
 #if defined(INDIRECT_LIGHTING)
 
 vec3 GetDiffuseEnv(vec3 N, vec3 albedo) {
-    vec3 d1 = texCUBE(probe0DiffuseCubeMap, N).rgb;
-    //vec3 d2 = texCUBE(probe1DiffuseCubeMap, N).rgb;
+    vec3 d1 = texCUBE(probe0DiffuseCubeMap, N.yzx).rgb;
+    //vec3 d2 = texCUBE(probe1DiffuseCubeMap, N.yzx).rgb;
 
 #if USE_SRGB_TEXTURE == 0
     d1 = LinearToGamma(d1);
@@ -191,10 +191,10 @@ float LinearRoughnessToMipLevel(float linearRoughness, float maxLevel) {
 
 vec3 GetSpecularEnvFirstSum(vec3 S, float linearRoughness) {
     vec4 sampleVec0 = vec4(S, LinearRoughnessToMipLevel(linearRoughness, probe0SpecularCubeMapMaxMipLevel));
-    vec3 preLD1 = texCUBElod(probe0SpecularCubeMap, sampleVec0).rgb;
+    vec3 preLD1 = texCUBElod(probe0SpecularCubeMap, sampleVec0.yzxw).rgb;
 
     //vec4 sampleVec1 = vec4(S, LinearRoughnessToMipLevel(linearRoughness, probe1SpecularCubeMapMaxMipLevel));
-    //vec3 preLD2 = texCUBElod(probe1SpecularCubeMap, sampleVec1).rgb;
+    //vec3 preLD2 = texCUBElod(probe1SpecularCubeMap, sampleVec1.yzxw).rgb;
 
 #if USE_SRGB_TEXTURE == 0
     preLD1 = LinearToGamma(preLD1);
@@ -225,8 +225,8 @@ float GetSpecularOcclusionFromAmbientOcclusion(float NdotV, float ao, float roug
 //----------------------------------
 // Indirect Lighting
 //----------------------------------
-vec3 IndirectLit_Standard(vec3 S) {
-    vec3 DS = GetSpecularDominantDir(shading.n, S, shading.linearRoughness);
+vec3 IndirectLit_Standard() {
+    vec3 DS = GetSpecularDominantDir(shading.n, shading.s0, shading.linearRoughness);
 
     vec3 specularEnvSum1 = GetSpecularEnvFirstSum(DS, shading.linearRoughness);
     vec3 specularEnvSum2 = GetSpecularEnvSecondSum(shading.preDFG, shading.specular.rgb);
@@ -268,12 +268,12 @@ vec3 IndirectLit_Standard(vec3 S) {
     #else
         float clearCoatNdotV = shading.ndotv;
 
-        vec3 clearCoatS = S;
+        vec3 clearCoatS = shading.s0;
     #endif
 
     vec2 preDfgCC = tex2D(prefilteredDfgMap, vec2(clearCoatNdotV, shading.clearCoatRoughness)).xy;
 
-    vec3 clearCoatEnvSum1 = GetSpecularEnvFirstSum(S, shading.clearCoatLinearRoughness);
+    vec3 clearCoatEnvSum1 = GetSpecularEnvFirstSum(shading.s0, shading.clearCoatLinearRoughness);
     vec3 clearCoatEnvSum2 = GetSpecularEnvSecondSum(preDfgCC, vec3(0.04));
 
     vec3 Ccc = clearCoatEnvSum1 * clearCoatEnvSum2 * shading.clearCoat;

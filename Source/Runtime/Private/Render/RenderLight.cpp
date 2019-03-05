@@ -19,7 +19,8 @@
 
 BE_NAMESPACE_BEGIN
 
-RenderLight::RenderLight(int index) {
+RenderLight::RenderLight(RenderWorld *renderWorld, int index) {
+    this->renderWorld = renderWorld;
     this->index = index;
 
     worldOBB.SetZero();

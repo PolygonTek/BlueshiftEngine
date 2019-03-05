@@ -738,7 +738,7 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
 
     RenderCamera renderCamera;
     RenderCamera::State cameraDef;
-    cameraDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews | RenderCamera::Flag::SkipDebugDraw;
+    cameraDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews | RenderCamera::Flag::SkipDebugDraw | RenderCamera::Flag::ConstantToneMapping; // FIXME
     cameraDef.clearMethod = RenderCamera::SkyboxClear;
     cameraDef.clearColor = Color4(0.29f, 0.33f, 0.35f, 0);
     cameraDef.layerMask = layerMask;

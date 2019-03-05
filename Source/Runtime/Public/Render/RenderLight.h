@@ -71,7 +71,7 @@ public:
         float               materialParms[RenderObject::MaxMaterialParms] = { 1, 1, 1, 1, 0, 1 };
     };
 
-    RenderLight(int index);
+    RenderLight(RenderWorld *renderWorld, int index);
     ~RenderLight();
 
                             /// Returns state.
@@ -145,7 +145,8 @@ private:
     bool                    PointLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &shadowFrustum) const;
     bool                    SpotLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &shadowFrustum) const;
 
-    int                     index;              // index of light list in world
+    RenderWorld *           renderWorld;
+    int                     index;              // index of light list in RenderWorld
 
     bool                    firstUpdate;
 

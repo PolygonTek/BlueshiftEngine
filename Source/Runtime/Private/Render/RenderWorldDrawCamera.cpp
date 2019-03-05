@@ -90,7 +90,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
             return true;
         }
 
-        // Skip if object layer is not visible with this camera
+        // Skip if light layer is not visible with this camera
         if (!(BIT(renderLight->state.layer) & camera->def->GetState().layerMask)) {
             return true;
         }
@@ -190,7 +190,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
             if (envProbes.Count() > 0) {
                 visObject->envProbeInfo[0] = envProbes[0];
             } else {
-                visObject->envProbeInfo[0].envProbe = nullptr;//envProbes[0].envProbe;
+                visObject->envProbeInfo[0].envProbe = globalEnvProbe;
                 visObject->envProbeInfo[0].weight = 1.0f;
             }
 
@@ -445,8 +445,8 @@ void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
     roDef.materialParms[RenderObject::AlphaParm] = 1.0f;
     roDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
 
-    static RenderObject renderObject(-1);
-    new (&renderObject) RenderObject(-1);
+    static RenderObject renderObject(this, -1);
+    new (&renderObject) RenderObject(this, -1);
     renderObject.Update(&roDef);
 
     // Add skybox object
@@ -481,6 +481,11 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
         MeshSurf *surf = proxy->mesh->GetSurface(proxy->meshSurfIndex);
 
         if (!surf) {
+            return true;
+        }
+
+        // Skip if object layer is not visible with this camera
+        if (!(BIT(renderObject->state.layer) & camera->def->GetState().layerMask)) {
             return true;
         }
 
@@ -588,6 +593,11 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
 
         // Skip if not skinned mesh
         if (!renderObject->state.joints) {
+            return true;
+        }
+
+        // Skip if object layer is not visible with this camera
+        if (!(BIT(renderObject->state.layer) & camera->def->GetState().layerMask)) {
             return true;
         }
 

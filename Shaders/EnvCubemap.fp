@@ -10,7 +10,7 @@ uniform HIGHP samplerCube envCubeMap;
 void main() {
     vec3 worldS = reflect(-normalize(v2f_viewWS), normalize(v2f_normal));
 
-    vec3 color = texCUBElod(envCubeMap, vec4(worldS, mipLevel)).rgb;
+    vec3 color = texCUBElod(envCubeMap, vec4(worldS.yzx, mipLevel)).rgb;
 
     o_fragColor = vec4(color, 1.0);
 }

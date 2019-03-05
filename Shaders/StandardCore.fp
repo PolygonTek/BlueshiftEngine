@@ -161,19 +161,19 @@ uniform float subSurfaceShadowDensity;// = 0.5;
     uniform samplerCube probe0DiffuseCubeMap;
     uniform samplerCube probe0SpecularCubeMap;
     uniform float probe0SpecularCubeMapMaxMipLevel;
-    uniform vec3 probe0Position;
+    uniform vec4 probe0Position;
     uniform vec3 probe0Mins;
     uniform vec3 probe0Maxs;
 
     uniform samplerCube probe1DiffuseCubeMap;
     uniform samplerCube probe1SpecularCubeMap;
     uniform float probe1SpecularCubeMapMaxMipLevel;
-    uniform vec3 probe1Position;
+    uniform vec4 probe1Position;
     uniform vec3 probe1Mins;
     uniform vec3 probe1Maxs;
 
     uniform sampler2D prefilteredDfgMap;
-    uniform LOWP float ambientLerp;
+    uniform LOWP float probeLerp;
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
@@ -231,27 +231,28 @@ void main() {
     #else
         vec3 worldS = reflect(-shading.v, shading.n);
 
-        #ifdef PARALLAX_CORRECTED_INDIRECT_LIGHTING
+//#define SPECCUBE_BOX_PROJECTION
+        #ifdef SPECCUBE_BOX_PROJECTION
             #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
                 vec3 worldPos;
                 worldPos.x = fs_in.tangentToWorldAndPackedWorldPosS.w;
                 worldPos.y = fs_in.tangentToWorldAndPackedWorldPosT.w;
                 worldPos.z = fs_in.tangentToWorldAndPackedWorldPosR.w;
             #else
-                worldPos = fs_in.positionWS.yzx;
+                vec3 worldPos = fs_in.positionWS.xyz;
             #endif
 
-            vec4 sampleVec;
-            sampleVec.xyz = BoxProjectedCubemapDirection(worldS, worldPos, probe0Position, probe0Mins, probe0Maxs);
+            shading.s0 = BoxProjectedCubemapDirection(worldS, worldPos, probe0Position, probe0Mins, probe0Maxs);
+            //shading.s1 = BoxProjectedCubemapDirection(worldS, worldPos, probe1Position, probe1Mins, probe1Maxs);
         #else
-            vec4 sampleVec;
-            sampleVec.xyz = worldS;
+            shading.s0 = worldS;
+            //shading.s1 = worldS;
         #endif
 
         #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
-            shadingColor += IndirectLit_Standard(sampleVec.xyz);
+            shadingColor += IndirectLit_Standard();
         #elif defined(LEGACY_PHONG_LIGHTING)
-            shadingColor += IndirectLit_PhongFresnel(sampleVec.xyz);
+            shadingColor += IndirectLit_PhongFresnel();
         #endif
     #endif
 
@@ -274,7 +275,7 @@ void main() {
         vec3 shadowLighting = vec3(1.0);
     #endif
 
-    shading.l = normalize(fs_in.lightVector.yzx);
+    shading.l = normalize(fs_in.lightVector.xyz);
 
     #ifdef USE_LIGHT_CUBE_MAP
         if (useLightCube) {
