@@ -242,10 +242,16 @@ void main() {
             #endif
 
             shading.s0 = BoxProjectedCubemapDirection(worldS, worldPos, probe0Position, probe0Mins, probe0Maxs);
-            //shading.s1 = BoxProjectedCubemapDirection(worldS, worldPos, probe1Position, probe1Mins, probe1Maxs);
+
+            #ifdef PROBE_BLENDING
+                shading.s1 = BoxProjectedCubemapDirection(worldS, worldPos, probe1Position, probe1Mins, probe1Maxs);
+            #endif
         #else
             shading.s0 = worldS;
-            //shading.s1 = worldS;
+
+            #ifdef PROBE_BLENDING
+                shading.s1 = worldS;
+            #endif
         #endif
 
         #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)

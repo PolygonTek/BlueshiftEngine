@@ -97,18 +97,26 @@ float CubeMapTexelSolidAngle(float x, float y, int size) {
     return AreaElement(x0, y0) - AreaElement(x0, y1) - AreaElement(x1, y0) + AreaElement(x1, y1);
 }
 
-vec3 BoxProjectedCubemapDirection(vec3 worldS, vec3 worldPos, vec4 cubemapCenter, vec3 boxMin, vec3 boxMax) {
+vec3 BoxProjectedCubemapDirection(vec3 worldS, vec3 worldPos, vec4 cubemapCenter, vec3 boxWorldMins, vec3 boxWorldMaxs) {
+    // .w holds boolean value for box projection.
     if (cubemapCenter.w > 0.0) {
         worldS = normalize(worldS);
 
-        vec3 rbmax = (boxMax - worldPos) / worldS;
-        vec3 rbmin = (boxMin - worldPos) / worldS;
-        vec3 rbminmax = mix(rbmin, rbmax, greaterThan(worldS, vec3(0.0)));
+        vec3 intersectMaxPointPlanes = (boxWorldMaxs - worldPos) / worldS;
+        vec3 intersectMinPointPlanes = (boxWorldMins - worldPos) / worldS;
 
-        float fa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);
+        // Looking only for intersections in the forward direction of the ray.
+        vec3 largestRayParams = max(intersectMinPointPlanes, intersectMaxPointPlanes);
+        //vec3 largestRayParams = mix(intersectMinPointPlanes, intersectMaxPointPlanes, greaterThan(worldS, vec3(0.0)));
 
-        worldPos -= cubemapCenter.xyz;
-        worldS = worldPos + worldS * fa;
+        // Smallest value of the ray parameters gives us the intersection.
+        float distToIntersect = min(min(largestRayParams.x, largestRayParams.y), largestRayParams.z);
+
+        // Find the position of the intersection point.
+        vec3 intersectionPosition = worldPos + worldS * distToIntersect;
+
+        // Get local corrected reflection vector.
+        worldS = intersectionPosition - cubemapCenter.xyz;
     }
 
     return worldS;

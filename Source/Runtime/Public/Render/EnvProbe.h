@@ -97,7 +97,7 @@ public:
     ~EnvProbe();
 
                             /// Returns AABB in world space.
-    const AABB              GetWorldAABB() const { return worldAABB; }
+    const AABB &            GetWorldAABB() const { return worldAABB; }
 
                             /// Returns box center.
     const Vec3              GetBoxCenter() const { return state.origin + state.boxOffset; }

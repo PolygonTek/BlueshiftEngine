@@ -264,11 +264,10 @@ void Batch::SetProbeConstants(const Shader *shader) const {
         shader->SetConstant1f(shader->builtInConstantIndices[Shader::Probe0SpecularCubeMapMaxMipLevelConst], Math::Log(2.0f, probe0->GetSpecularProbeTexture()->GetWidth()));
 
         if (r_probeBoxProjection.GetBool()) {
-            const Vec3 probe0Extent = probe0->GetWorldAABB().Extents();
-
+            // .w holds boolean value for box projection 
             shader->SetConstant4f(shader->builtInConstantIndices[Shader::Probe0PositionConst], Vec4(probe0->GetBoxCenter(), probe0->UseBoxProjection() ? 1.0f : 0.0f));
-            shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe0MinsConst], -probe0Extent);
-            shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe0MaxsConst], +probe0Extent);
+            shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe0MinsConst], probe0->GetWorldAABB()[0]);
+            shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe0MaxsConst], probe0->GetWorldAABB()[1]);
         }
     }
 
@@ -284,11 +283,10 @@ void Batch::SetProbeConstants(const Shader *shader) const {
             shader->SetConstant1f(shader->builtInConstantIndices[Shader::Probe1SpecularCubeMapMaxMipLevelConst], Math::Log(2.0f, probe1->GetSpecularProbeTexture()->GetWidth()));
 
             if (r_probeBoxProjection.GetBool()) {
-                const Vec3 probe1Extent = probe1->GetWorldAABB().Extents();
-
+                // .w holds boolean value for box projection 
                 shader->SetConstant4f(shader->builtInConstantIndices[Shader::Probe1PositionConst], Vec4(probe1->GetBoxCenter(), probe1->UseBoxProjection() ? 1.0f : 0.0f));
-                shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe1MinsConst], -probe1Extent);
-                shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe1MinsConst], +probe1Extent);
+                shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe1MinsConst], probe1->GetWorldAABB()[0]);
+                shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe1MinsConst], probe1->GetWorldAABB()[1]);
             }
         }
     }
