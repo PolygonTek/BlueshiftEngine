@@ -58,6 +58,14 @@ static const char *builtInConstantNames[] = {
     "shadowProjMatrix",                     // ShadowProjMatrixConst
     "shadowCascadeProjMatrix",              // ShadowCascadeProjMatrixConst
     "shadowSplitFar",                       // ShadowSplitFarConst
+    "probe0SpecularCubeMapMaxMipLevel",     // Probe0SpecularCubeMapMaxMipLevelConst
+    "probe0Position",                       // Probe0PositionConst
+    "probe0Mins",                           // Probe0MinsConst
+    "probe0Maxs",                           // Probe0MaxsConst
+    "probe1SpecularCubeMapMaxMipLevel",     // Probe1SpecularCubeMapMaxMipLevelConst
+    "probe1Position",                       // Probe1PositionConst
+    "probe1Mins",                           // Probe1MinsConst
+    "probe1Maxs"                            // Probe1MaxsConst
 };
 
 // NOTE: BuiltInSampler enum 과 반드시 순서가 같아야 함
@@ -70,6 +78,10 @@ static const char *builtInSamplerNames[] = {
     "lightProjectionMap",                   // LightProjectionMapSampler
     "shadowMap",                            // ShadowMapSampler
     "shadowArrayMap",                       // ShadowArrayMapSampler
+    "probe0DiffuseCubeMap",                 // Probe0DiffuseCubeMapSampler
+    "probe0SpecularCubeMap",                // Probe0SpecularCubeMapSampler
+    "probe1DiffuseCubeMap",                 // Probe1DiffuseCubeMapSampler
+    "probe1SpecularCubeMap",                // Probe1SpecularCubeMapSampler
 };
 
 int Shader::GetFlags() const {
@@ -641,7 +653,8 @@ bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePos
     return true;
 }
 
-bool Shader::Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion,
+bool Shader::Finish(bool generatePerforatedVersion, 
+    bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion,
     bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion) {
     if (generateGpuInstancingVersion) {
         if (!gpuInstancingVersion) {

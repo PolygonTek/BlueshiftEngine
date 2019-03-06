@@ -106,7 +106,7 @@ public:
     const Vec3              GetBoxExtent() const { return state.boxExtent; }
 
                             /// Returns box projection.
-    bool                    IsBoxProjection() const { return state.useBoxProjection; }
+    bool                    UseBoxProjection() const { return state.useBoxProjection; }
 
                             /// Returns importance for blending.
     int                     GetImportance() const { return state.importance; }

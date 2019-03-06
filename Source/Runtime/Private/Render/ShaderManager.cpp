@@ -219,6 +219,14 @@ void ShaderManager::InitGlobalDefines() {
 
     shaderManager.AddGlobalHeader(va("#define USE_SRGB_TEXTURE %i\n", TextureManager::texture_sRGB.GetBool() ? 1 : 0));
 
+    if (r_probeBoxProjection.GetBool()) {
+        shaderManager.AddGlobalHeader("#define SPECULAR_PROBE_BOX_PROJECTION\n");
+    }
+
+    if (r_probeBlending.GetBool()) {
+        shaderManager.AddGlobalHeader("#define PROBE_BLENDING\n");
+    }
+
     if (r_shadows.GetInteger() == 1) {
         shaderManager.AddGlobalHeader("#define USE_SHADOW_MAP\n");
     }

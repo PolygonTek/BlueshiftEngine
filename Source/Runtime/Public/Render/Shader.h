@@ -87,6 +87,14 @@ public:
         ShadowProjMatrixConst,
         ShadowCascadeProjMatrixConst,
         ShadowSplitFarConst,
+        Probe0SpecularCubeMapMaxMipLevelConst,
+        Probe0PositionConst,
+        Probe0MinsConst,
+        Probe0MaxsConst,
+        Probe1SpecularCubeMapMaxMipLevelConst,
+        Probe1PositionConst,
+        Probe1MinsConst,
+        Probe1MaxsConst,
         MaxBuiltInConstants
     };
 
@@ -99,6 +107,10 @@ public:
         LightProjectionMapSampler,
         ShadowMapSampler,
         ShadowArrayMapSampler,
+        Probe0DiffuseCubeMapSampler,
+        Probe0SpecularCubeMapSampler,
+        Probe1DiffuseCubeMapSampler,
+        Probe1SpecularCubeMapSampler,
         MaxBuiltInSamplers
     };
 

@@ -231,7 +231,7 @@ void main() {
     #else
         vec3 worldS = reflect(-shading.v, shading.n);
 
-        #ifdef SPECCUBE_BOX_PROJECTION
+        #ifdef SPECULAR_PROBE_BOX_PROJECTION
             #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
                 vec3 worldPos;
                 worldPos.x = fs_in.tangentToWorldAndPackedWorldPosS.w;

@@ -243,7 +243,7 @@ void Batch::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shade
         }
 
         if (shader->builtInConstantIndices[Shader::WorldToLocalMatrixConst] >= 0) {
-            Mat3 worldToLocalMatrix = surfSpace->def->GetState().axis.Transpose();
+            const Mat3 worldToLocalMatrix = surfSpace->def->GetState().axis.Transpose();
             shader->SetConstant3x3f(shader->builtInConstantIndices[Shader::WorldToLocalMatrixConst], false, worldToLocalMatrix);
         }
 
@@ -256,30 +256,41 @@ void Batch::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shade
 
 void Batch::SetProbeConstants(const Shader *shader) const {
     if (surfSpace->envProbeInfo[0].envProbe) {
-        const EnvProbeBlendInfo &probe0 = surfSpace->envProbeInfo[0];
+        const EnvProbe *probe0 = surfSpace->envProbeInfo[0].envProbe;
 
-        Vec3 probe0Extent = probe0.envProbe->GetWorldAABB().Extents();
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::Probe0DiffuseCubeMapSampler], probe0->GetDiffuseProbeTexture());
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::Probe0SpecularCubeMapSampler], probe0->GetSpecularProbeTexture());
 
-        shader->SetTexture("probe0DiffuseCubeMap", probe0.envProbe->GetDiffuseProbeTexture());
-        shader->SetTexture("probe0SpecularCubeMap", probe0.envProbe->GetSpecularProbeTexture());
-        shader->SetConstant1f("probe0SpecularCubeMapMaxMipLevel", Math::Log(2.0f, probe0.envProbe->GetSpecularProbeTexture()->GetWidth()));
-        shader->SetConstant4f("probe0Position", Vec4(probe0.envProbe->GetBoxCenter(), probe0.envProbe->IsBoxProjection() ? 1.0f : 0.0f));
-        shader->SetConstant3f("probe0Mins", -probe0Extent);
-        shader->SetConstant3f("probe0Maxs", +probe0Extent);
-        shader->SetConstant1f("probeLerp", probe0.weight);
+        shader->SetConstant1f(shader->builtInConstantIndices[Shader::Probe0SpecularCubeMapMaxMipLevelConst], Math::Log(2.0f, probe0->GetSpecularProbeTexture()->GetWidth()));
+
+        if (r_probeBoxProjection.GetBool()) {
+            const Vec3 probe0Extent = probe0->GetWorldAABB().Extents();
+
+            shader->SetConstant4f(shader->builtInConstantIndices[Shader::Probe0PositionConst], Vec4(probe0->GetBoxCenter(), probe0->UseBoxProjection() ? 1.0f : 0.0f));
+            shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe0MinsConst], -probe0Extent);
+            shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe0MaxsConst], +probe0Extent);
+        }
     }
 
-    if (surfSpace->envProbeInfo[1].envProbe) {
-        const EnvProbeBlendInfo &probe1 = surfSpace->envProbeInfo[1];
+    if (r_probeBlending.GetBool()) {
+        shader->SetConstant1f("probeLerp", surfSpace->envProbeInfo[0].weight);
 
-        Vec3 probe1Extent = probe1.envProbe->GetWorldAABB().Extents();
+        if (surfSpace->envProbeInfo[1].envProbe) {
+            const EnvProbe *probe1 = surfSpace->envProbeInfo[1].envProbe;
 
-        shader->SetTexture("probe1DiffuseCubeMap", probe1.envProbe->GetDiffuseProbeTexture());
-        shader->SetTexture("probe1SpecularCubeMap", probe1.envProbe->GetSpecularProbeTexture());
-        shader->SetConstant1f("probe1SpecularCubeMapMaxMipLevel", Math::Log(2.0f, probe1.envProbe->GetSpecularProbeTexture()->GetWidth()));
-        shader->SetConstant4f("probe1Position", Vec4(probe1.envProbe->GetBoxCenter(), probe1.envProbe->IsBoxProjection() ? 1.0f : 0.0f));
-        shader->SetConstant3f("probe1Mins", -probe1Extent);
-        shader->SetConstant3f("probe1Maxs", +probe1Extent);
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::Probe1DiffuseCubeMapSampler], probe1->GetDiffuseProbeTexture());
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::Probe1SpecularCubeMapSampler], probe1->GetSpecularProbeTexture());
+
+            shader->SetConstant1f(shader->builtInConstantIndices[Shader::Probe1SpecularCubeMapMaxMipLevelConst], Math::Log(2.0f, probe1->GetSpecularProbeTexture()->GetWidth()));
+
+            if (r_probeBoxProjection.GetBool()) {
+                const Vec3 probe1Extent = probe1->GetWorldAABB().Extents();
+
+                shader->SetConstant4f(shader->builtInConstantIndices[Shader::Probe1PositionConst], Vec4(probe1->GetBoxCenter(), probe1->UseBoxProjection() ? 1.0f : 0.0f));
+                shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe1MinsConst], -probe1Extent);
+                shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe1MinsConst], +probe1Extent);
+            }
+        }
     }
 }
 
@@ -630,6 +641,8 @@ void Batch::RenderIndirectLit(const Material::ShaderPass *mtrlPass) const {
     if (mtrlPass->shader) {
         if (mtrlPass->shader->GetIndirectLitVersion()) {
             SetShaderProperties(shader, mtrlPass->shaderProperties);
+
+            SetProbeConstants(shader);
         } else {
             const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
             shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
@@ -641,8 +654,6 @@ void Batch::RenderIndirectLit(const Material::ShaderPass *mtrlPass) const {
     shader->SetTexture("prefilteredDfgMap", backEnd.integrationLUTTexture);
 
     SetMatrixConstants(shader);
-
-    SetProbeConstants(shader);
 
     SetEntityConstants(mtrlPass, shader);
 
@@ -769,6 +780,8 @@ void Batch::RenderIndirectLit_DirectLit(const Material::ShaderPass *mtrlPass) co
     if (mtrlPass->shader) {
         if (mtrlPass->shader->GetIndirectLitDirectLitVersion()) {
             SetShaderProperties(shader, mtrlPass->shaderProperties);
+
+            SetProbeConstants(shader);
         } else {
             const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
             shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
@@ -778,8 +791,6 @@ void Batch::RenderIndirectLit_DirectLit(const Material::ShaderPass *mtrlPass) co
     }
 
     SetMatrixConstants(shader);
-
-    SetProbeConstants(shader);
 
     SetEntityConstants(mtrlPass, shader);
 
