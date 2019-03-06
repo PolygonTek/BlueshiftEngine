@@ -242,7 +242,7 @@ void ShaderManager::InitGlobalDefines() {
     shaderManager.AddGlobalHeader(va("#define CASCADE_SELECTION_METHOD %i\n", r_CSM_selectionMethod.GetInteger()));
 
     if (r_CSM_blend.GetBool()) {
-        shaderManager.AddGlobalHeader("#define BLEND_CASCADE\n");
+        shaderManager.AddGlobalHeader("#define CASCADE_BLENDING\n");
     }
 
     if (r_showShadows.GetInteger() == 1) {

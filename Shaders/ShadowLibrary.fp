@@ -162,7 +162,7 @@ vec3 SampleCascadedShadowMap() {
     s1 *= cascadeDebugColor[cascadeIndex];
 #endif
 
-#ifdef BLEND_CASCADE
+#ifdef CASCADE_BLENDING
     float blendBand = min(min(shadowCascadedTC.x, shadowCascadedTC.y), min(1.0 - shadowCascadedTC.x, 1.0 - shadowCascadedTC.y));
 
     if (blendBand < cascadeBlendSize) {
@@ -183,7 +183,7 @@ vec3 SampleCascadedShadowMap() {
 
         s1 = mix(s1, s2, t);
     }
-#endif // BLEND_CASCADE
+#endif // CASCADE_BLENDING
 
     return s1;
 }

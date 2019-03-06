@@ -507,13 +507,13 @@ void RenderSystem::CheckModifiedCVars() {
         r_CSM_blend.ClearModified();
 
         if (r_CSM_blend.GetBool()) {
-            if (!shaderManager.FindGlobalHeader("#define BLEND_CASCADE\n")) {
-                shaderManager.AddGlobalHeader("#define BLEND_CASCADE\n");
+            if (!shaderManager.FindGlobalHeader("#define CASCADE_BLENDING\n")) {
+                shaderManager.AddGlobalHeader("#define CASCADE_BLENDING\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define BLEND_CASCADE\n")) {
-                shaderManager.RemoveGlobalHeader("#define BLEND_CASCADE\n");
+            if (shaderManager.FindGlobalHeader("#define CASCADE_BLENDING\n")) {
+                shaderManager.RemoveGlobalHeader("#define CASCADE_BLENDING\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
         }
