@@ -1,4 +1,4 @@
-shader "Lit/PhongAmbientLit" {
+shader "Lit/PhongIndirectLit" {
     litSurface
     inheritProperties "Phong"
 

@@ -142,9 +142,9 @@ public:
 
     Shader *                GetPerforatedVersion();
     Shader *                GetPremulAlphaVersion();
-    Shader *                GetAmbientLitVersion();
+    Shader *                GetIndirectLitVersion();
     Shader *                GetDirectLitVersion();
-    Shader *                GetAmbientLitDirectLitVersion();
+    Shader *                GetIndirectLitDirectLitVersion();
     Shader *                GetParallelShadowVersion();
     Shader *                GetSpotShadowVersion();
     Shader *                GetPointShadowVersion();
@@ -293,9 +293,9 @@ private:
 
     Shader *                perforatedVersion;
     Shader *                premulAlphaVersion;
-    Shader *                ambientLitVersion;
+    Shader *                indirectLitVersion;
     Shader *                directLitVersion;
-    Shader *                ambientLitDirectLitVersion;
+    Shader *                indirectLitDirectLitVersion;
     Shader *                parallelShadowVersion;
     Shader *                spotShadowVersion;
     Shader *                pointShadowVersion;
@@ -314,9 +314,9 @@ BE_INLINE Shader::Shader() {
     shaderFlags             = 0;
     perforatedVersion       = nullptr;
     premulAlphaVersion      = nullptr;
-    ambientLitVersion       = nullptr;
+    indirectLitVersion       = nullptr;
     directLitVersion        = nullptr;
-    ambientLitDirectLitVersion = nullptr;
+    indirectLitDirectLitVersion = nullptr;
     parallelShadowVersion   = nullptr;
     spotShadowVersion       = nullptr;
     pointShadowVersion      = nullptr;
@@ -426,9 +426,9 @@ public:
     static Shader *         vertexColorShader;
     static Shader *         objectMotionBlurShader;
     static Shader *         standardDefaultShader;
-    static Shader *         standardDefaultAmbientLitShader;
+    static Shader *         standardDefaultIndirectLitShader;
     static Shader *         standardDefaultDirectLitShader;
-    static Shader *         standardDefaultAmbientLitDirectLitShader;
+    static Shader *         standardDefaultIndirectLitDirectLitShader;
     static Shader *         skyboxCubemapShader;
     static Shader *         skyboxSixSidedShader;
     static Shader *         envCubemapShader;

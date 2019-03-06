@@ -92,9 +92,9 @@ void Shader::Purge() {
         shaderHandle = RHI::NullShader;
     }
 
-    if (ambientLitVersion) {
-        shaderManager.ReleaseShader(ambientLitVersion);
-        ambientLitVersion = nullptr;
+    if (indirectLitVersion) {
+        shaderManager.ReleaseShader(indirectLitVersion);
+        indirectLitVersion = nullptr;
     }
 
     if (directLitVersion) {
@@ -102,9 +102,9 @@ void Shader::Purge() {
         directLitVersion = nullptr;
     }
 
-    if (ambientLitDirectLitVersion) {
-        shaderManager.ReleaseShader(ambientLitDirectLitVersion);
-        ambientLitDirectLitVersion = nullptr;
+    if (indirectLitDirectLitVersion) {
+        shaderManager.ReleaseShader(indirectLitDirectLitVersion);
+        indirectLitDirectLitVersion = nullptr;
     }
 
     if (perforatedVersion) {
@@ -194,14 +194,14 @@ bool Shader::Create(const char *text, const char *baseDir) {
             } else {
                 BE_WARNLOG("missing inheritProperties name in shader '%s'\n", hashName.c_str());
             }
-        } else if (!token.Icmp("ambientLitVersion")) {
+        } else if (!token.Icmp("indirectLitVersion")) {
             if (lexer.ReadToken(&token)) {
                 Str path = baseDir;
                 path.AppendPath(token, '/');
 
-                ambientLitVersion = shaderManager.GetShader(path);
+                indirectLitVersion = shaderManager.GetShader(path);
             } else {
-                BE_WARNLOG("missing ambientLitVersion name in shader '%s'\n", hashName.c_str());
+                BE_WARNLOG("missing indirectLitVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("directLitVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -212,14 +212,14 @@ bool Shader::Create(const char *text, const char *baseDir) {
             } else {
                 BE_WARNLOG("missing directLitVersion name in shader '%s'\n", hashName.c_str());
             }
-        } else if (!token.Icmp("ambientLitDirectLitVersion")) {
+        } else if (!token.Icmp("indirectLitDirectLitVersion")) {
             if (lexer.ReadToken(&token)) {
                 Str path = baseDir;
                 path.AppendPath(token, '/');
 
-                ambientLitDirectLitVersion = shaderManager.GetShader(path);
+                indirectLitDirectLitVersion = shaderManager.GetShader(path);
             } else {
-                BE_WARNLOG("missing ambientLitDirectLitVersion name in shader '%s'\n", hashName.c_str());
+                BE_WARNLOG("missing indirectLitDirectLitVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("perforatedVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -842,15 +842,15 @@ Shader *Shader::GetPremulAlphaVersion() {
     return nullptr;
 }
 
-Shader *Shader::GetAmbientLitVersion() {
-    if (ambientLitVersion) {
-        return ambientLitVersion;
+Shader *Shader::GetIndirectLitVersion() {
+    if (indirectLitVersion) {
+        return indirectLitVersion;
     }
 
     if (originalShader) {
-        if (originalShader->ambientLitVersion) {
-            ambientLitVersion = originalShader->ambientLitVersion->InstantiateShader(defineArray);
-            return ambientLitVersion;
+        if (originalShader->indirectLitVersion) {
+            indirectLitVersion = originalShader->indirectLitVersion->InstantiateShader(defineArray);
+            return indirectLitVersion;
         }
     }
 
@@ -872,15 +872,15 @@ Shader *Shader::GetDirectLitVersion() {
     return nullptr;
 }
 
-Shader *Shader::GetAmbientLitDirectLitVersion() {
-    if (ambientLitDirectLitVersion) {
-        return ambientLitDirectLitVersion;
+Shader *Shader::GetIndirectLitDirectLitVersion() {
+    if (indirectLitDirectLitVersion) {
+        return indirectLitDirectLitVersion;
     }
 
     if (originalShader) {
-        if (originalShader->ambientLitDirectLitVersion) {
-            ambientLitDirectLitVersion = originalShader->ambientLitDirectLitVersion->InstantiateShader(defineArray);
-            return ambientLitDirectLitVersion;
+        if (originalShader->indirectLitDirectLitVersion) {
+            indirectLitDirectLitVersion = originalShader->indirectLitDirectLitVersion->InstantiateShader(defineArray);
+            return indirectLitDirectLitVersion;
         }
     }
 
@@ -966,17 +966,17 @@ void Shader::Reinstantiate() {
     assert(originalShader);
     Instantiate(defineArray);
 
-    if (originalShader->ambientLitVersion) {
-        if (ambientLitVersion) {
-            ambientLitVersion->originalShader = originalShader->ambientLitVersion;
-            ambientLitVersion->Reinstantiate();
+    if (originalShader->indirectLitVersion) {
+        if (indirectLitVersion) {
+            indirectLitVersion->originalShader = originalShader->indirectLitVersion;
+            indirectLitVersion->Reinstantiate();
         } else {
-            ambientLitVersion = originalShader->ambientLitVersion->InstantiateShader(defineArray);
+            indirectLitVersion = originalShader->indirectLitVersion->InstantiateShader(defineArray);
         }
     } else {
-        if (ambientLitVersion) {
-            shaderManager.ReleaseShader(ambientLitVersion);
-            ambientLitVersion = nullptr;
+        if (indirectLitVersion) {
+            shaderManager.ReleaseShader(indirectLitVersion);
+            indirectLitVersion = nullptr;
         }
     }
 
@@ -994,17 +994,17 @@ void Shader::Reinstantiate() {
         }
     }
 
-    if (originalShader->ambientLitDirectLitVersion) {
-        if (ambientLitDirectLitVersion) {
-            ambientLitDirectLitVersion->originalShader = originalShader->ambientLitDirectLitVersion;
-            ambientLitDirectLitVersion->Reinstantiate();
+    if (originalShader->indirectLitDirectLitVersion) {
+        if (indirectLitDirectLitVersion) {
+            indirectLitDirectLitVersion->originalShader = originalShader->indirectLitDirectLitVersion;
+            indirectLitDirectLitVersion->Reinstantiate();
         } else {
-            ambientLitDirectLitVersion = originalShader->ambientLitDirectLitVersion->InstantiateShader(defineArray);
+            indirectLitDirectLitVersion = originalShader->indirectLitDirectLitVersion->InstantiateShader(defineArray);
         }
     } else {
-        if (ambientLitDirectLitVersion) {
-            shaderManager.ReleaseShader(ambientLitDirectLitVersion);
-            ambientLitDirectLitVersion = nullptr;
+        if (indirectLitDirectLitVersion) {
+            shaderManager.ReleaseShader(indirectLitDirectLitVersion);
+            indirectLitDirectLitVersion = nullptr;
         }
     }
 

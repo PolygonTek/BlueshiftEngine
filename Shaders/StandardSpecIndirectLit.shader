@@ -1,4 +1,4 @@
-shader "Lit/StandardSpecAmbientLit" {
+shader "Lit/StandardSpecIndirectLit" {
     litSurface
     inheritProperties "StandardSpec"
 

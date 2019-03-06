@@ -97,9 +97,9 @@ Shader *            ShaderManager::constantColorShader;
 Shader *            ShaderManager::vertexColorShader;
 Shader *            ShaderManager::objectMotionBlurShader;
 Shader *            ShaderManager::standardDefaultShader;
-Shader *            ShaderManager::standardDefaultAmbientLitShader;
+Shader *            ShaderManager::standardDefaultIndirectLitShader;
 Shader *            ShaderManager::standardDefaultDirectLitShader;
-Shader *            ShaderManager::standardDefaultAmbientLitDirectLitShader;
+Shader *            ShaderManager::standardDefaultIndirectLitDirectLitShader;
 Shader *            ShaderManager::skyboxCubemapShader;
 Shader *            ShaderManager::skyboxSixSidedShader;
 Shader *            ShaderManager::envCubemapShader;
@@ -282,7 +282,7 @@ void ShaderManager::InstantiateEngineShaders() {
 
     defineArray.Clear();
     defineArray.Append(Shader::Define("_ALBEDO", 1));
-    standardDefaultAmbientLitShader = originalShaders[StandardSpecShader]->ambientLitVersion->InstantiateShader(defineArray);
+    standardDefaultIndirectLitShader = originalShaders[StandardSpecShader]->indirectLitVersion->InstantiateShader(defineArray);
 
     defineArray.Clear();
     defineArray.Append(Shader::Define("_ALBEDO", 1));
@@ -290,7 +290,7 @@ void ShaderManager::InstantiateEngineShaders() {
 
     defineArray.Clear();
     defineArray.Append(Shader::Define("_ALBEDO", 1));
-    standardDefaultAmbientLitDirectLitShader = originalShaders[StandardSpecShader]->ambientLitDirectLitVersion->InstantiateShader(defineArray);
+    standardDefaultIndirectLitDirectLitShader = originalShaders[StandardSpecShader]->indirectLitDirectLitVersion->InstantiateShader(defineArray);
 
     objectMotionBlurShader = originalShaders[ObjectMotionBlurShader]->InstantiateShader(Array<Shader::Define>());
 

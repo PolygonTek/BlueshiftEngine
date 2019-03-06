@@ -71,8 +71,8 @@ extern CVar     r_optimizedShadowProjection;
 extern CVar     r_HOM;
 extern CVar     r_HOM_debug;
 
-extern CVar     r_ambientLit;
 extern CVar     r_ambientScale;
+extern CVar     r_indirectLit;
 extern CVar     r_lightScale;
 extern CVar     r_offsetFactor;
 extern CVar     r_offsetUnits;

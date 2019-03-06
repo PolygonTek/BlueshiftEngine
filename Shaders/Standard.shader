@@ -43,9 +43,9 @@ shader "Lit/Standard" {
     generateGpuSkinningVersion
     generateGpuInstancingVersion
 
-    ambientLitVersion "StandardAmbientLit"
+    indirectLitVersion "StandardIndirectLit"
     directLitVersion "StandardDirectLit"
-    ambientLitDirectLitVersion "StandardAmbientLitDirectLit"
+    indirectLitDirectLitVersion "StandardIndirectLitDirectLit"
 
     glsl_vp {
         $include "StandardCore.vp"

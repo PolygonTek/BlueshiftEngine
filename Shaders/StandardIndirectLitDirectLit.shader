@@ -1,6 +1,6 @@
-shader "Lit/StandardSpecAmbientLitDirectLit" {
+shader "Lit/StandardIndirectLitDirectLit" {
     litSurface
-    inheritProperties "StandardSpec"
+    inheritProperties "Standard"
     
     generatePerforatedVersion
     generatePremulAlphaVersion
@@ -11,13 +11,13 @@ shader "Lit/StandardSpecAmbientLitDirectLit" {
     generatePointShadowVersion
 
     glsl_vp {
-        #define STANDARD_SPECULAR_LIGHTING
+        #define STANDARD_METALLIC_LIGHTING
         #define INDIRECT_LIGHTING
         #define DIRECT_LIGHTING
         $include "StandardCore.vp"
     }
     glsl_fp {
-        #define STANDARD_SPECULAR_LIGHTING
+        #define STANDARD_METALLIC_LIGHTING
         #define INDIRECT_LIGHTING
         #define DIRECT_LIGHTING
         $include "StandardCore.fp"

@@ -600,10 +600,10 @@ void Batch::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientSca
 void Batch::RenderIndirectLit(const Material::ShaderPass *mtrlPass) const {
     Shader *shader = shader = mtrlPass->shader;
 
-    if (shader && shader->GetAmbientLitVersion()) {
-        shader = shader->GetAmbientLitVersion();
+    if (shader && shader->GetIndirectLitVersion()) {
+        shader = shader->GetIndirectLitVersion();
     } else {
-        shader = ShaderManager::standardDefaultAmbientLitShader;
+        shader = ShaderManager::standardDefaultIndirectLitShader;
     }
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
@@ -628,7 +628,7 @@ void Batch::RenderIndirectLit(const Material::ShaderPass *mtrlPass) const {
     shader->Bind();
 
     if (mtrlPass->shader) {
-        if (mtrlPass->shader->GetAmbientLitVersion()) {
+        if (mtrlPass->shader->GetIndirectLitVersion()) {
             SetShaderProperties(shader, mtrlPass->shaderProperties);
         } else {
             const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
@@ -729,10 +729,10 @@ void Batch::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float 
 void Batch::RenderIndirectLit_DirectLit(const Material::ShaderPass *mtrlPass) const {
     Shader *shader = shader = mtrlPass->shader;
 
-    if (shader && shader->GetAmbientLitDirectLitVersion()) {
-        shader = shader->GetAmbientLitDirectLitVersion();
+    if (shader && shader->GetIndirectLitDirectLitVersion()) {
+        shader = shader->GetIndirectLitDirectLitVersion();
     } else {
-        shader = ShaderManager::standardDefaultAmbientLitDirectLitShader;
+        shader = ShaderManager::standardDefaultIndirectLitDirectLitShader;
     }
 
     bool useShadowMap = false;
@@ -767,7 +767,7 @@ void Batch::RenderIndirectLit_DirectLit(const Material::ShaderPass *mtrlPass) co
     shader->SetTexture("prefilteredDfgMap", backEnd.integrationLUTTexture);
 
     if (mtrlPass->shader) {
-        if (mtrlPass->shader->GetAmbientLitDirectLitVersion()) {
+        if (mtrlPass->shader->GetIndirectLitDirectLitVersion()) {
             SetShaderProperties(shader, mtrlPass->shaderProperties);
         } else {
             const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
@@ -791,7 +791,7 @@ void Batch::RenderIndirectLit_DirectLit(const Material::ShaderPass *mtrlPass) co
 }
 
 void Batch::RenderBase(const Material::ShaderPass *mtrlPass, float ambientScale) const {
-    if (r_ambientLit.GetBool()) {
+    if (r_indirectLit.GetBool()) {
         if (surfLight) {
             RenderIndirectLit_DirectLit(mtrlPass);
         } else {

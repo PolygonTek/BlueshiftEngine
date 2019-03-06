@@ -11,7 +11,7 @@ shader "Lighting/Toon" {
 	generateParallelShadowVersion
 	generateSpotShadowVersion
 	generatePointShadowVersion
-	ambientLitVersion "ForwardBase"
+	indirectLitVersion "ForwardBase"
 
 	glsl_vp {
 		$include "lightingToon.vp"
