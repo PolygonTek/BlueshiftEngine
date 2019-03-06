@@ -103,8 +103,8 @@ bool RenderCamera::TransformClipToNDC(const Vec4 &clipCoords, Vec3 &normalizedDe
 }
 
 void RenderCamera::TransformNDCToPixel(const Vec3 normalizedDeviceCoords, Point &pixelCoords) const {
-    float fx = (normalizedDeviceCoords.x * 1.0f) * 0.5f; // [0, 1]
-    float fy = (normalizedDeviceCoords.y * 1.0f) * 0.5f; // [0, 1]
+    float fx = (normalizedDeviceCoords.x + 1.0f) * 0.5f; // [0, 1]
+    float fy = (normalizedDeviceCoords.y + 1.0f) * 0.5f; // [0, 1]
 
     // Invert Y axis
     fy = 1.0f - fy;
