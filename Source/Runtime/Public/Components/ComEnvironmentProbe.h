@@ -110,7 +110,6 @@ protected:
     virtual void            OnInactive() override;
 
     void                    UpdateVisuals();
-    void                    UpdateSphereMaterial();
 
     void                    TransformUpdated(const ComTransform *transform);
 
