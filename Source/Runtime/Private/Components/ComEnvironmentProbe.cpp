@@ -86,6 +86,11 @@ void ComEnvironmentProbe::Purge(bool chainPurge) {
         probeDef.bakedSpecularProbeTexture = nullptr;
     }
 
+    if (probeHandle != -1) {
+        renderWorld->RemoveEnvProbe(probeHandle);
+        probeHandle = -1;
+    }
+
     if (sphereDef.mesh) {
         meshManager.ReleaseMesh(sphereDef.mesh);
         sphereDef.mesh = nullptr;
@@ -118,6 +123,7 @@ void ComEnvironmentProbe::Init() {
 
     ComTransform *transform = GetEntity()->GetTransform();
 
+    probeDef.guid = GetGuid();
     probeDef.origin = transform->GetOrigin();
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComEnvironmentProbe::TransformUpdated, SignalObject::Unique);
@@ -216,19 +222,21 @@ void ComEnvironmentProbe::UpdateVisuals() {
         return;
     }
 
+    if (sphereDef.materials.Count() > 0) {
+        materialManager.ReleaseMaterial(sphereDef.materials[0], true);
+    }
+
     if (probeHandle == -1) {
         probeHandle = renderWorld->AddEnvProbe(&probeDef);
     } else {
         renderWorld->UpdateEnvProbe(probeHandle, &probeDef);
     }
 
-    if (sphereDef.materials.Count() == 0) {
-        EnvProbe *envProbe = renderWorld->GetEnvProbe(probeHandle);
-        Texture *specularProbeTexture = envProbe->GetSpecularProbeTexture();
+    const EnvProbe *envProbe = renderWorld->GetEnvProbe(probeHandle);
+    const Texture *specularProbeTexture = envProbe->GetSpecularProbeTexture();
 
-        sphereDef.materials.SetCount(1);
-        sphereDef.materials[0] = materialManager.GetSingleTextureMaterial(specularProbeTexture, Material::EnvCubeMapHint);
-    }
+    sphereDef.materials.SetCount(1);
+    sphereDef.materials[0] = materialManager.GetSingleTextureMaterial(specularProbeTexture, Material::EnvCubeMapHint);
 
     if (sphereHandle == -1) {
         sphereHandle = renderWorld->AddRenderObject(&sphereDef);
@@ -442,6 +450,7 @@ Guid ComEnvironmentProbe::GetBakedDiffuseProbeTextureGuid() const {
 void ComEnvironmentProbe::SetBakedDiffuseProbeTextureGuid(const Guid &textureGuid) {
     if (probeDef.bakedDiffuseProbeTexture) {
         textureManager.ReleaseTexture(probeDef.bakedDiffuseProbeTexture);
+        probeDef.bakedDiffuseProbeTexture = nullptr;
     }
 
     if (!textureGuid.IsZero()) {
@@ -468,6 +477,7 @@ Guid ComEnvironmentProbe::GetBakedSpecularProbeTextureGuid() const {
 void ComEnvironmentProbe::SetBakedSpecularProbeTextureGuid(const Guid &textureGuid) {
     if (probeDef.bakedSpecularProbeTexture) {
         textureManager.ReleaseTexture(probeDef.bakedSpecularProbeTexture);
+        probeDef.bakedSpecularProbeTexture = nullptr;
     }
 
     if (!textureGuid.IsZero()) {
@@ -500,28 +510,27 @@ void ComEnvironmentProbe::ForceToRefresh() {
 }
 
 Str ComEnvironmentProbe::WriteDiffuseProbeTexture(const Str &probesDir) const {
-    Str diffuseProbeFilename = probesDir;
-    diffuseProbeFilename.AppendPath(va("DiffuseProbe-%i.dds", probeHandle));
-
     const Texture *diffuseProbeTexture = GetDiffuseProbeTexture();
+
     Image diffuseProbeImage;
     Texture::GetCubeImageFromCubeTexture(diffuseProbeTexture, 1, diffuseProbeImage);
 
+    Str diffuseProbeFilename = probesDir;
+    diffuseProbeFilename.AppendPath(va("DiffuseProbe-%s.dds", GetGuid().ToString()));
     diffuseProbeImage.WriteDDS(diffuseProbeFilename);
 
     return diffuseProbeFilename;
 }
 
 Str ComEnvironmentProbe::WriteSpecularProbeTexture(const Str &probesDir) const {
-    Str specularProbeFilename = probesDir;
-    specularProbeFilename.AppendPath(va("SpecularProbe-%i.dds", probeHandle));
-
     const Texture *specularProbeTexture = GetSpecularProbeTexture();
 
     Image specularProbeImage;
     int numMipLevels = Math::Log(2, specularProbeTexture->GetWidth()) + 1;
     Texture::GetCubeImageFromCubeTexture(specularProbeTexture, numMipLevels, specularProbeImage);
 
+    Str specularProbeFilename = probesDir;
+    specularProbeFilename.AppendPath(va("SpecularProbe-%s.dds", GetGuid().ToString()));
     specularProbeImage.WriteDDS(specularProbeFilename);
 
     return specularProbeFilename;

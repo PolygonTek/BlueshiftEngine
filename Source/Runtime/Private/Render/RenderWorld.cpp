@@ -57,6 +57,8 @@ void RenderWorld::ClearScene() {
     for (int i = 0; i < envProbes.Count(); i++) {
         SAFE_DELETE(envProbes[i]);
     }
+
+    globalEnvProbe = nullptr;
 }
 
 RenderObject *RenderWorld::GetRenderObject(int handle) const {
@@ -295,7 +297,7 @@ void RenderWorld::UpdateEnvProbe(int handle, const EnvProbe::State *def) {
 
     EnvProbe *envProbe = envProbes[handle];
     if (!envProbe) {
-        envProbe = new EnvProbe(this, handle);
+        envProbe = new EnvProbe(handle);
         envProbes[handle] = envProbe;
 
         envProbe->Update(def);
@@ -354,19 +356,34 @@ void RenderWorld::AddGlobalEnvProbe() {
 
     EnvProbe::State def;
     def.timeSlicing = EnvProbe::TimeSlicing::NoTimeSlicing;
-    def.resolution = EnvProbe::Resolution256;
     def.layerMask = 0;
+    def.guid = Guid::CreateGuid();
 
-    int handle = envProbes.Append(nullptr);
-    globalEnvProbe = new EnvProbe(this, handle);
+    int handle = envProbes.FindNull();
+    if (handle == -1) {
+        handle = envProbes.Append(nullptr);
+    }
+
+    globalEnvProbe = new EnvProbe(handle);
     envProbes[handle] = globalEnvProbe;
     globalEnvProbe->Update(&def);
+}
+
+void RenderWorld::RemoveGlobalEnvProbe() {
+    if (!globalEnvProbe) {
+        return;
+    }
+
+    delete envProbes[0];
+    envProbes[0] = nullptr;
+
+    globalEnvProbe = nullptr;
 }
 
 static float CalculateEnvProbeLerpValue(const AABB &objectAABB,
     float probe0IntersectVolume, float probe0Importance, const AABB &probe0AABB,
     float probe1IntersectVolume, float probe1Importance, const AABB &probe1AABB) {
-    float objectVolume = Max(objectAABB.Volume(), 0.001f);
+    float objectVolume = Max(objectAABB.Volume(), 0.00001f);
 
     if (probe1IntersectVolume > 0.0f) {
         if (probe0Importance > probe1Importance) {
@@ -390,14 +407,14 @@ void RenderWorld::GetClosestProbes(const AABB &objectAABB, EnvProbeBlending blen
     auto addProbe = [this, &objectAABB, &outProbes](int32_t proxyId) -> bool {
         const DbvtProxy *proxy = (const DbvtProxy *)probeDbvt.GetUserData(proxyId);
 
-        AABB intersectAABB = objectAABB.Intersect(proxy->worldAABB);
+        AABB intersectAABB = objectAABB.Intersect(proxy->envProbe->GetWorldAABB());
         if (intersectAABB.IsCleared()) {
             return true;
         }
 
         EnvProbeBlendInfo info;
         info.envProbe = proxy->envProbe;
-        info.weight = intersectAABB.Volume();
+        info.weight = Max(intersectAABB.Volume(), 0.00001f);
         outProbes.Append(info);
         return true;
     };
@@ -418,9 +435,11 @@ void RenderWorld::GetClosestProbes(const AABB &objectAABB, EnvProbeBlending blen
             const int importanceA = a.envProbe->GetImportance();
             const int importanceB = b.envProbe->GetImportance();
 
+            // Compare importances.
             if (importanceA != importanceB) {
                 return importanceA > importanceB;
             }
+            // Compare intersection volumes.
             if (a.weight != b.weight) {
                 return a.weight > b.weight;
             }

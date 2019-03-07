@@ -232,7 +232,7 @@ void Mesh::ComputeAABB() {
     }
 
     // add small epsilon
-    aabb.Expand(CentiToUnit(0.01f));
+    aabb.ExpandSelf(CentiToUnit(0.01f));
 }
 
 void Mesh::ComputeNormals() {

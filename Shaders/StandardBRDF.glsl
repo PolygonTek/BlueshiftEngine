@@ -173,35 +173,27 @@ vec3 DirectLit_Standard() {
 
 #if defined(INDIRECT_LIGHTING)
 
-vec3 GetDiffuseEnv(vec3 N, vec3 albedo) {
-    vec3 d1 = texCUBE(probe0DiffuseCubeMap, N.yzx).rgb;
-    //vec3 d2 = texCUBE(probe1DiffuseCubeMap, N.yzx).rgb;
+vec3 GetDiffuseEnv(samplerCube diffuseProbeCubeMap, vec3 N, vec3 albedo) {
+    vec3 d = texCUBE(diffuseProbeCubeMap, N.yzx).rgb;
 
 #if USE_SRGB_TEXTURE == 0
-    d1 = LinearToGamma(d1);
-    //d2 = LinearToGamma(d2);
+    d = LinearToGamma(d);
 #endif
-
-    return albedo * d1;//mix(d1, d2, ambientLerp);
+    return albedo * d;
 }
 
 float LinearRoughnessToMipLevel(float linearRoughness, float maxLevel) {
     return maxLevel * linearRoughness * (1.7 - 0.7 * linearRoughness);
 }
 
-vec3 GetSpecularEnvFirstSum(vec3 S, float linearRoughness) {
-    vec4 sampleVec0 = vec4(S, LinearRoughnessToMipLevel(linearRoughness, probe0SpecularCubeMapMaxMipLevel));
-    vec3 preLD1 = texCUBElod(probe0SpecularCubeMap, sampleVec0.yzxw).rgb;
-
-    //vec4 sampleVec1 = vec4(S, LinearRoughnessToMipLevel(linearRoughness, probe1SpecularCubeMapMaxMipLevel));
-    //vec3 preLD2 = texCUBElod(probe1SpecularCubeMap, sampleVec1.yzxw).rgb;
+vec3 GetSpecularEnvFirstSum(samplerCube specularProbeCubeMap, float specularProbeCubeMapMaxMipLevel, vec3 S, float linearRoughness) {
+    vec4 sampleVec = vec4(S, LinearRoughnessToMipLevel(linearRoughness, specularProbeCubeMapMaxMipLevel));
+    vec3 preLD = texCUBElod(specularProbeCubeMap, sampleVec.yzxw).rgb;
 
 #if USE_SRGB_TEXTURE == 0
-    preLD1 = LinearToGamma(preLD1);
-    //preLD2 = LinearToGamma(preLD2);
+    preLD = LinearToGamma(preLD);
 #endif
-
-    return preLD1;
+    return preLD;
 }
 
 vec3 GetSpecularEnvSecondSum(vec2 preDFG, vec3 F0) {
@@ -226,9 +218,15 @@ float GetSpecularOcclusionFromAmbientOcclusion(float NdotV, float ao, float roug
 // Indirect Lighting
 //----------------------------------
 vec3 IndirectLit_Standard() {
-    vec3 DS = GetSpecularDominantDir(shading.n, shading.s0, shading.linearRoughness);
+    vec3 DS0 = GetSpecularDominantDir(shading.n, shading.s0, shading.linearRoughness);
+    vec3 specularEnvSum1 = GetSpecularEnvFirstSum(probe0SpecularCubeMap, probe0SpecularCubeMapMaxMipLevel, DS0, shading.linearRoughness);
 
-    vec3 specularEnvSum1 = GetSpecularEnvFirstSum(DS, shading.linearRoughness);
+#ifdef PROBE_BLENDING
+    vec3 DS1 = GetSpecularDominantDir(shading.n, shading.s1, shading.linearRoughness);
+    specularEnvSum1 *= probeLerp;
+    specularEnvSum1 += GetSpecularEnvFirstSum(probe1SpecularCubeMap, probe1SpecularCubeMapMaxMipLevel, DS1, shading.linearRoughness) * (1.0 - probeLerp);
+#endif
+
     vec3 specularEnvSum2 = GetSpecularEnvSecondSum(shading.preDFG, shading.specular.rgb);
 
     vec3 Cs = specularEnvSum1 * specularEnvSum2;
@@ -243,7 +241,12 @@ vec3 IndirectLit_Standard() {
     vec3 Fs = shading.specular.rgb + (max(vec3(1.0 - shading.roughness), shading.specular.rgb) - shading.specular.rgb) * FSecondFactor;
     //vec3 Fs = shading.specular.rgb + (vec3(1.0) - shading.specular.rgb) * FSecondFactor;
 
-    vec3 diffuseEnv = GetDiffuseEnv(shading.n, shading.diffuse.rgb);
+    vec3 diffuseEnv = GetDiffuseEnv(probe0DiffuseCubeMap, shading.n, shading.diffuse.rgb);
+
+#ifdef PROBE_BLENDING
+    diffuseEnv *= probeLerp;
+    diffuseEnv += GetDiffuseEnv(probe1DiffuseCubeMap, shading.n, shading.diffuse.rgb) * (1.0 - probeLerp);
+#endif
 
     vec3 Cd = diffuseEnv * (vec3(1.0) - Fs);
 
@@ -258,9 +261,7 @@ vec3 IndirectLit_Standard() {
     Cs *= specularOcclusion;
 #endif
 
-#if _CLEARCOAT == 0
-    vec3 color = Cd + Cs;
-#else
+#if _CLEARCOAT == 1
     #if _CC_NORMAL == 1
         float clearCoatNdotV = max(dot(shading.clearCoatN, shading.v), 0.0);
 
@@ -273,7 +274,7 @@ vec3 IndirectLit_Standard() {
 
     vec2 preDfgCC = tex2D(prefilteredDfgMap, vec2(clearCoatNdotV, shading.clearCoatRoughness)).xy;
 
-    vec3 clearCoatEnvSum1 = GetSpecularEnvFirstSum(shading.s0, shading.clearCoatLinearRoughness);
+    vec3 clearCoatEnvSum1 = GetSpecularEnvFirstSum(probe0SpecularCubeMap, probe0SpecularCubeMapMaxMipLevel, shading.s0, shading.clearCoatLinearRoughness);
     vec3 clearCoatEnvSum2 = GetSpecularEnvSecondSum(preDfgCC, vec3(0.04));
 
     vec3 Ccc = clearCoatEnvSum1 * clearCoatEnvSum2 * shading.clearCoat;
@@ -290,6 +291,8 @@ vec3 IndirectLit_Standard() {
     float Fattenuation = 1.0 - Fcc;
 
     vec3 color = (Cd + Cs) * Fattenuation * Fattenuation + Ccc;
+#else
+    vec3 color = Cd + Cs;
 #endif
 
     return color;

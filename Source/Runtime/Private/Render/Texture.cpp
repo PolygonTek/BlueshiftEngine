@@ -626,6 +626,9 @@ void Texture::GetTexelsRect(Image::Format format, void *pixels) const {
 void Texture::Purge() {
     if (textureHandle != RHI::NullTexture) {
         rhi.DestroyTexture(textureHandle);
+
+        // Invalidates render target which is linked with this texture.
+        renderTarget = nullptr;
     }
 
     textureHandle = RHI::NullTexture;

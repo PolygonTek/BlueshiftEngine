@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "Core/Guid.h"
+
 /*
 -------------------------------------------------------------------------------
 
@@ -78,6 +80,7 @@ public:
         int                 importance = 0;
         int                 layerMask = -1;
 
+                            // Cubemap center to render.
         Vec3                origin = Vec3::origin;
 
                             // Box offset from the origin.
@@ -89,17 +92,26 @@ public:
 
         bool                useBoxProjection = false;
 
+                            // Component GUID for texture hash name.
+        Guid                guid;
+
         Texture *           bakedDiffuseProbeTexture = nullptr;
         Texture *           bakedSpecularProbeTexture = nullptr;
     };
 
-    EnvProbe(RenderWorld *renderWorld, int index);
+    EnvProbe(int index);
     ~EnvProbe();
+
+                            /// Returns type.
+    Type                    GetType() const { return state.type; }
 
                             /// Returns AABB in world space.
     const AABB &            GetWorldAABB() const { return worldAABB; }
 
-                            /// Returns box center.
+                            /// Returns position in world space.
+    const Vec3 &            GetOrigin() const { return state.origin; }
+
+                            /// Returns box center in world space.
     const Vec3              GetBoxCenter() const { return state.origin + state.boxOffset; }
 
                             /// Returns box extent.
@@ -131,7 +143,6 @@ private:
                             /// Updates this probe with the given state.
     void                    Update(const State *state);
 
-    RenderWorld *           renderWorld;
     int                     index;              // index of probe list in RenderWorld
 
     State                   state;

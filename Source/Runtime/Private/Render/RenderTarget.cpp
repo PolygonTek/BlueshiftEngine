@@ -154,12 +154,18 @@ RenderTarget *RenderTarget::Create(int numColorTextures, const Texture **colorTe
     int i = 0;
     for (; i < numColorTextures; i++) {
         rt->colorTextures[i] = colorTextures[i];
+
+        colorTextures[i]->renderTarget = rt;
     }
     for (; i < MaxMultipleColorTextures; i++) {
         rt->colorTextures[i] = nullptr;
     }
 
     rt->depthStencilTexture = depthStencilTexture;
+    if (depthStencilTexture) {
+        depthStencilTexture->renderTarget = rt;
+    }
+
     rt->flags = flags;
 
     rts.Append(rt);
@@ -168,6 +174,16 @@ RenderTarget *RenderTarget::Create(int numColorTextures, const Texture **colorTe
 }
 
 void RenderTarget::Delete(RenderTarget *renderTarget) {
+    for (int i = 0; i < MaxMultipleColorTextures; i++) {
+        if (renderTarget->colorTextures[i]) {
+            renderTarget->colorTextures[i]->renderTarget = nullptr;
+        }
+    }
+
+    if (renderTarget->depthStencilTexture) {
+        renderTarget->depthStencilTexture->renderTarget = nullptr;
+    }
+
     rhi.DestroyRenderTarget(renderTarget->rtHandle);
     rts.RemoveIndex(rts.FindIndex(renderTarget));
     delete renderTarget;

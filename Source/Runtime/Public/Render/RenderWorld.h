@@ -101,6 +101,9 @@ public:
                             /// Adds global environment probe to this world.
     void                    AddGlobalEnvProbe();
 
+                            /// Removes global environemnt probe.
+    void                    RemoveGlobalEnvProbe();
+
     void                    GetClosestProbes(const AABB &worldAABB, EnvProbeBlending blending, Array<EnvProbeBlendInfo> &outProbes) const;
 
     int                     GetViewCount() const { return viewCount; }

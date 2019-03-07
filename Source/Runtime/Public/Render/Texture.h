@@ -30,6 +30,8 @@
 
 BE_NAMESPACE_BEGIN
 
+class RenderTarget;
+
 class Texture {
     friend class TextureManager;
     friend class RenderTarget;
@@ -75,6 +77,8 @@ public:
     int                     MemRequired(bool includingMipmaps) const;
 
     bool                    IsDefaultTexture() const;
+
+    RenderTarget *          GetRenderTarget() const { return renderTarget; }
 
     void                    Create(RHI::TextureType type, const Image &srcImage, int flags);
     void                    CreateEmpty(RHI::TextureType type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, int flags);
@@ -146,6 +150,8 @@ private:
     int                     depth;                      // scaled depth
 
     bool                    hasMipmaps;
+
+    mutable RenderTarget *  renderTarget = nullptr;
 };
 
 BE_INLINE Texture::Texture() {

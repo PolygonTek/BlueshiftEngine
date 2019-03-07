@@ -67,6 +67,7 @@ CVAR(r_lightScale, "1.0", CVar::Float | CVar::Archive, "all light intensities ar
 CVAR(r_indirectLit, "1", CVar::Bool | CVar::Archive, "use indirect lighting");
 CVAR(r_probeBlending, "1", CVar::Bool | CVar::Archive, "use blending probe lighting");
 CVAR(r_probeBoxProjection, "1", CVar::Bool | CVar::Archive, "use box projected cubemap");
+CVAR_MINMAX(r_probeBakeBounces, "2", CVar::Integer | CVar::Archive, "", 1, 5);
 
 CVAR(r_offsetFactor, "1", CVar::Float, "polygon offset parameter");
 CVAR(r_offsetUnits, "2", CVar::Float, "polygon offset parameter");

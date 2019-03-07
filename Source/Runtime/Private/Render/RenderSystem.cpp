@@ -540,7 +540,7 @@ void RenderSystem::UpdateEnvProbes() {
     for (int i = 0; i < envProbeJobs.Count(); ) {
         EnvProbeJob *job = &envProbeJobs[i];
 
-        if (job->Refresh()) {
+        if (job->Refresh(job->envProbe->GetTimeSlicing())) {
             envProbeJobs.RemoveIndexFast(i);
         } else {
             i++;
@@ -571,10 +571,7 @@ void RenderSystem::ForceToRefreshEnvProbe(RenderWorld *renderWorld, int probeHan
     job.envProbe = renderWorld->GetEnvProbe(probeHandle);
     job.specularProbeCubemapMaxLevel = Math::Log(2, job.envProbe->GetSize());
 
-    bool finished;
-    do {
-        finished = job.Refresh();
-    } while (!finished);
+    job.Refresh(EnvProbe::NoTimeSlicing);
 }
 
 void RenderSystem::CaptureScreenRT(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height, RenderTarget *targetRT) {
