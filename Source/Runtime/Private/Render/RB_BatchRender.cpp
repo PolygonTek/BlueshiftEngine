@@ -265,7 +265,7 @@ void Batch::SetProbeConstants(const Shader *shader) const {
 
         if (r_probeBoxProjection.GetBool()) {
             // .w holds boolean value for box projection 
-            shader->SetConstant4f(shader->builtInConstantIndices[Shader::Probe0PositionConst], Vec4(probe0->GetBoxCenter(), probe0->UseBoxProjection() ? 1.0f : 0.0f));
+            shader->SetConstant4f(shader->builtInConstantIndices[Shader::Probe0PositionConst], Vec4(probe0->GetOrigin(), probe0->UseBoxProjection() ? 1.0f : 0.0f));
             shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe0MinsConst], probe0->GetWorldAABB()[0]);
             shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe0MaxsConst], probe0->GetWorldAABB()[1]);
         }
@@ -284,7 +284,7 @@ void Batch::SetProbeConstants(const Shader *shader) const {
 
             if (r_probeBoxProjection.GetBool()) {
                 // .w holds boolean value for box projection 
-                shader->SetConstant4f(shader->builtInConstantIndices[Shader::Probe1PositionConst], Vec4(probe1->GetBoxCenter(), probe1->UseBoxProjection() ? 1.0f : 0.0f));
+                shader->SetConstant4f(shader->builtInConstantIndices[Shader::Probe1PositionConst], Vec4(probe1->GetOrigin(), probe1->UseBoxProjection() ? 1.0f : 0.0f));
                 shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe1MinsConst], probe1->GetWorldAABB()[0]);
                 shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe1MinsConst], probe1->GetWorldAABB()[1]);
             }

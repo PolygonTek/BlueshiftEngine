@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "EnvProbe.h"
+
 BE_NAMESPACE_BEGIN
 
 /*
@@ -26,7 +28,6 @@ BE_NAMESPACE_BEGIN
 
 class CmdArgs;
 class VisCamera;
-class EnvProbe;
 class RenderSystem;
 
 class EnvProbeJob {
@@ -39,7 +40,7 @@ public:
 
     bool                    IsFinished() const;
 
-    bool                    Refresh();
+    bool                    Refresh(EnvProbe::TimeSlicing timeSlicing);
 
 private:
     void                    RevalidateDiffuseProbeRT();
@@ -52,6 +53,7 @@ private:
     int                     specularProbeCubemapComputedLevel = -1;
     int                     specularProbeCubemapComputedLevel0Face = -1;
     int                     specularProbeCubemapMaxLevel = 0;
+    int                     bounces = 0;
 };
 
 class RenderSystem {

@@ -185,7 +185,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
 
         if (renderObject->state.flags & RenderObject::UseEnvProbeLightingFlag) {
             Array<EnvProbeBlendInfo> envProbes;
-            GetClosestProbes(proxy->worldAABB, EnvProbeBlending::Simple, envProbes);
+            GetClosestProbes(proxy->worldAABB, EnvProbeBlending::Blending, envProbes);
 
             if (envProbes.Count() > 0) {
                 visObject->envProbeInfo[0] = envProbes[0];

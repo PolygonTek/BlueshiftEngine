@@ -584,14 +584,18 @@ void GameWorld::Event_RestartGame(const char *mapName) {
 }
 
 void GameWorld::NewMap() {
+    ClearEntities();
+
+    Reset();
+
+    BeginMapLoading();
+
     Json::Value defaultMapRenderSettingsValue;
     defaultMapRenderSettingsValue["classname"] = MapRenderSettings::metaObject.ClassName();
 
     mapRenderSettings->Deserialize(defaultMapRenderSettingsValue);
 
-    ClearEntities();
-
-    Reset();
+    FinishMapLoading();
 }
 
 bool GameWorld::LoadMap(const char *filename, LoadSceneMode mode) {

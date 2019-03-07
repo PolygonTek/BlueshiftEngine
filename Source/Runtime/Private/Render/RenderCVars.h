@@ -76,6 +76,7 @@ extern CVar     r_lightScale;
 extern CVar     r_indirectLit;
 extern CVar     r_probeBlending;
 extern CVar     r_probeBoxProjection;
+extern CVar     r_probeBakeBounces;
 
 extern CVar     r_offsetFactor;
 extern CVar     r_offsetUnits;
