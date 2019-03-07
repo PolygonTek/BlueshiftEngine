@@ -60,6 +60,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
     worldAABB += state.origin + state.boxOffset;
 
     if (state.bakedDiffuseProbeTexture && state.bakedDiffuseProbeTexture != diffuseProbeTexture) {
+        // Replace diffuse probe texture to new baked one.
         if (diffuseProbeTexture) {
             textureManager.ReleaseTexture(diffuseProbeTexture, true);
         }
@@ -69,12 +70,12 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
             diffuseProbeRT = nullptr;
         }
 
-        // Use baked diffuse convolution cubemap.
+        // Use baked diffuse probe cubemap.
         diffuseProbeTexture = state.bakedDiffuseProbeTexture;
         diffuseProbeTexture->AddRefCount();
     } else {
         if (!diffuseProbeTexture) {
-            // Create default diffuse convolution cubemap.
+            // Create default diffuse probe cubemap.
             diffuseProbeTexture = textureManager.AllocTexture(va("DiffuseProbe-%s", state.guid.ToString()));
             diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, 32, 32, 1, 1, 1,
                 state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
@@ -85,6 +86,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
     }
 
     if (state.bakedSpecularProbeTexture && state.bakedSpecularProbeTexture != specularProbeTexture) {
+        // Replace specular probe texture to new baked one.
         if (specularProbeTexture) {
             textureManager.ReleaseTexture(specularProbeTexture, true);
         }
@@ -94,12 +96,13 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
             specularProbeRT = nullptr;
         }
 
-        // Use baked specular convolution cubemap.
+        // Use baked specular probe cubemap.
         specularProbeTexture = state.bakedSpecularProbeTexture;
         specularProbeTexture->AddRefCount();
+        specularProbeTextureMaxMipLevel = Math::Log(2.0f, specularProbeTexture->GetWidth());
     } else {
         if (!specularProbeTexture) {
-            // Create default specular convolution cubemap.
+            // Create default specular probe cubemap.
             int size = ToActualResolution(state.resolution);
             int numMipLevels = Math::Log(2, size) + 1;
 
@@ -107,6 +110,8 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
             specularProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels,
                 state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
                 Texture::Clamp | Texture::HighQuality);
+
+            specularProbeTextureMaxMipLevel = Math::Log(2.0f, specularProbeTexture->GetWidth());
 
             resourceGuidMapper.Set(Guid::CreateGuid(), specularProbeTexture->GetHashName());
         }
@@ -137,7 +142,7 @@ void EnvProbeJob::RevalidateDiffuseProbeRT() {
         }
     }
 
-    // Create diffuse convolution render target if it is not created yet.
+    // Create diffuse probe render target if it is not created yet.
     if (!envProbe->diffuseProbeRT) {
         envProbe->diffuseProbeRT = RenderTarget::Create(envProbe->diffuseProbeTexture, nullptr, 0);
     }
@@ -165,7 +170,7 @@ void EnvProbeJob::RevalidateSpecularProbeRT() {
         }
     }
 
-    // Create specular convolution render target if it is not created yet.
+    // Create specular probe render target if it is not created yet.
     if (!envProbe->specularProbeRT) {
         envProbe->specularProbeRT = RenderTarget::Create(envProbe->specularProbeTexture, nullptr, RHI::HasDepthBuffer);
     }

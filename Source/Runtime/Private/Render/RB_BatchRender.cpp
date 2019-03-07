@@ -261,7 +261,7 @@ void Batch::SetProbeConstants(const Shader *shader) const {
         shader->SetTexture(shader->builtInSamplerUnits[Shader::Probe0DiffuseCubeMapSampler], probe0->GetDiffuseProbeTexture());
         shader->SetTexture(shader->builtInSamplerUnits[Shader::Probe0SpecularCubeMapSampler], probe0->GetSpecularProbeTexture());
 
-        shader->SetConstant1f(shader->builtInConstantIndices[Shader::Probe0SpecularCubeMapMaxMipLevelConst], Math::Log(2.0f, probe0->GetSpecularProbeTexture()->GetWidth()));
+        shader->SetConstant1f(shader->builtInConstantIndices[Shader::Probe0SpecularCubeMapMaxMipLevelConst], probe0->GetSpecularProbeTextureMaxMipLevel());
 
         if (r_probeBoxProjection.GetBool()) {
             // .w holds boolean value for box projection 
@@ -280,7 +280,7 @@ void Batch::SetProbeConstants(const Shader *shader) const {
             shader->SetTexture(shader->builtInSamplerUnits[Shader::Probe1DiffuseCubeMapSampler], probe1->GetDiffuseProbeTexture());
             shader->SetTexture(shader->builtInSamplerUnits[Shader::Probe1SpecularCubeMapSampler], probe1->GetSpecularProbeTexture());
 
-            shader->SetConstant1f(shader->builtInConstantIndices[Shader::Probe1SpecularCubeMapMaxMipLevelConst], Math::Log(2.0f, probe1->GetSpecularProbeTexture()->GetWidth()));
+            shader->SetConstant1f(shader->builtInConstantIndices[Shader::Probe1SpecularCubeMapMaxMipLevelConst], probe1->GetSpecularProbeTextureMaxMipLevel());
 
             if (r_probeBoxProjection.GetBool()) {
                 // .w holds boolean value for box projection 

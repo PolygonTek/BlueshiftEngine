@@ -123,11 +123,14 @@ public:
                             /// Returns importance for blending.
     int                     GetImportance() const { return state.importance; }
 
-                            /// Returns prefiltered specular cube texture.
+                            /// Returns diffuse probe cubemap texture.
     Texture *               GetDiffuseProbeTexture() const { return diffuseProbeTexture; }
 
-                            /// Returns irradiance diffuse cube texture.
+                            /// Returns specular probe cubemap texture.
     Texture *               GetSpecularProbeTexture() const { return specularProbeTexture; }
+
+                            /// Returns specular probe cubemap max mip level.
+    int                     GetSpecularProbeTextureMaxMipLevel() const { return specularProbeTextureMaxMipLevel; }
 
                             /// Returns time slicing mode. Time slicing means how the probe should distribute its updates over time. 
                             /// This is valid only in realtime type.
@@ -153,6 +156,7 @@ private:
 
     Texture *               diffuseProbeTexture = nullptr;
     Texture *               specularProbeTexture = nullptr;
+    int                     specularProbeTextureMaxMipLevel = 0;
 
     RenderTarget *          diffuseProbeRT = nullptr;
     RenderTarget *          specularProbeRT = nullptr;

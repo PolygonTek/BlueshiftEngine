@@ -430,6 +430,38 @@ void RenderSystem::CheckModifiedCVars() {
         }
     }
 
+    if (r_probeBoxProjection.IsModified()) {
+        r_probeBoxProjection.ClearModified();
+
+        if (r_probeBoxProjection.GetBool()) {
+            if (!shaderManager.FindGlobalHeader("#define SPECULAR_PROBE_BOX_PROJECTION\n")) {
+                shaderManager.AddGlobalHeader("#define SPECULAR_PROBE_BOX_PROJECTION\n");
+                shaderManager.ReloadLitSurfaceShaders();
+            }
+        } else {
+            if (shaderManager.FindGlobalHeader("#define SPECULAR_PROBE_BOX_PROJECTION\n")) {
+                shaderManager.RemoveGlobalHeader("#define SPECULAR_PROBE_BOX_PROJECTION\n");
+                shaderManager.ReloadLitSurfaceShaders();
+            }
+        }
+    }
+
+    if (r_probeBlending.IsModified()) {
+        r_probeBlending.ClearModified();
+
+        if (r_probeBlending.GetBool()) {
+            if (!shaderManager.FindGlobalHeader("#define PROBE_BLENDING\n")) {
+                shaderManager.AddGlobalHeader("#define PROBE_BLENDING\n");
+                shaderManager.ReloadLitSurfaceShaders();
+            }
+        } else {
+            if (shaderManager.FindGlobalHeader("#define PROBE_BLENDING\n")) {
+                shaderManager.RemoveGlobalHeader("#define PROBE_BLENDING\n");
+                shaderManager.ReloadLitSurfaceShaders();
+            }
+        }
+    }
+
     if (r_shadowMapSize.IsModified()) {
         r_shadowMapSize.ClearModified();
         RecreateShadowMapRT();
@@ -571,7 +603,15 @@ void RenderSystem::ForceToRefreshEnvProbe(RenderWorld *renderWorld, int probeHan
     job.envProbe = renderWorld->GetEnvProbe(probeHandle);
     job.specularProbeCubemapMaxLevel = Math::Log(2, job.envProbe->GetSize());
 
-    job.Refresh(EnvProbe::NoTimeSlicing);
+    int numPasses = r_probeBakeBounces.GetInteger();
+    while (numPasses--) {
+        job.Refresh(EnvProbe::NoTimeSlicing);
+
+        job.diffuseProbeCubemapComputed = false;
+        job.specularProbeCubemapComputedLevel = -1;
+        job.specularProbeCubemapComputedLevel0Face = -1;
+        job.bounces++;
+    }
 }
 
 void RenderSystem::CaptureScreenRT(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height, RenderTarget *targetRT) {
