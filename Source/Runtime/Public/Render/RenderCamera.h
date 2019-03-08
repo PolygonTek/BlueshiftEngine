@@ -43,6 +43,7 @@ public:
         SkipPostProcess     = BIT(6),
         InstantToneMapping  = BIT(7),
         ConstantToneMapping = BIT(8),
+        LocalProbeAlpha     = BIT(9),
     };
 
     enum ClearMethod {
@@ -71,6 +72,7 @@ public:
         float           sizeY;                  ///< Orthogonal projection size in vertical axis
         float           zNear;                  ///< Near distance in z axis
         float           zFar;                   ///< Far distance in z axis
+        float           blendDistance;          ///< Blend distance for local probe rendering
         bool            orthogonal = false;     ///< True for orthogonal projection or perspective projection
     };
 

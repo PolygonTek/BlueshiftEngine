@@ -99,25 +99,25 @@ public:
     void                    ForceToRefreshEnvProbe(RenderWorld *renderWorld, int probeHandle);
 
                             /// Captures screen.
-    void                    CaptureScreenRT(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height, RenderTarget *targetRT);
+    void                    CaptureScreenRT(RenderWorld *renderWorld, int layerMask, bool colorClear, const Color4 &clearColor, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height, RenderTarget *targetRT);
 
                             /// Captures screen texture.
-    Texture *               CaptureScreenTexture(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height);
+    Texture *               CaptureScreenTexture(RenderWorld *renderWorld, int layerMask, bool colorClear, const Color4 &clearColor, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height);
 
                             /// Capture screen image.
-    void                    CaptureScreenImage(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height, Image &screenImage);
+    void                    CaptureScreenImage(RenderWorld *renderWorld, int layerMask, bool colorClear, const Color4 &clearColor, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height, Image &screenImage);
 
                             /// Captures environment cubemap for specific face.
-    void                    CaptureEnvCubeFaceRT(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT, int faceIndex);
+    void                    CaptureEnvCubeFaceRT(RenderWorld *renderWorld, int layerMask, int staticMask, bool colorClear, const Color4 &clearColor, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT, int faceIndex);
 
                             /// Captures environment cubemap.
-    void                    CaptureEnvCubeRT(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT);
+    void                    CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, int staticMask, bool colorClear, const Color4 &clearColor, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT);
 
                             /// Captures environment cubemap texture.
-    Texture *               CaptureEnvCubeTexture(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, bool useHDR, int size);
+    Texture *               CaptureEnvCubeTexture(RenderWorld *renderWorld, int layerMask, int staticMask, bool colorClear, const Color4 &clearColor, const Vec3 &origin, float zNear, float zFar, bool useHDR, int size);
 
                             /// Captures environment cubemap image.
-    void                    CaptureEnvCubeImage(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, bool useHDR, int size, Image &envCubeImage);
+    void                    CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, int staticMask, bool colorClear, const Color4 &clearColor, const Vec3 &origin, float zNear, float zFar, bool useHDR, int size, Image &envCubeImage);
 
                             /// Generates irradiance environment cubemap using SH convolution method.
     void                    GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const;

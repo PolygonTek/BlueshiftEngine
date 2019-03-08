@@ -190,7 +190,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
             if (envProbes.Count() > 0) {
                 visObject->envProbeInfo[0] = envProbes[0];
             } else {
-                visObject->envProbeInfo[0].envProbe = globalEnvProbe;
+                visObject->envProbeInfo[0].envProbe = distantEnvProbe;
                 visObject->envProbeInfo[0].weight = 1.0f;
             }
 

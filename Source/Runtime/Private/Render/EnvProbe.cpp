@@ -225,10 +225,9 @@ bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing timeSlicing) {
         while (specularProbeCubemapComputedLevel0Face < 5) {
             // We can skip complex calculation of specular convolution cubemap for mipLevel 0.
             // It is same as perfect specular mirror. so we just render environment cubmap.
-            renderSystem.CaptureEnvCubeFaceRT(renderWorld,
-                envProbe->state.clearMethod == EnvProbe::ClearMethod::ColorClear,
-                envProbe->state.clearColor,
-                envProbe->state.layerMask, staticMask, envProbe->state.origin,
+            renderSystem.CaptureEnvCubeFaceRT(renderWorld, envProbe->state.layerMask, staticMask,
+                envProbe->state.clearMethod == EnvProbe::ClearMethod::ColorClear, Color4(envProbe->state.clearColor, 0.0f),
+                envProbe->state.origin,
                 envProbe->state.clippingNear, envProbe->state.clippingFar,
                 envProbe->specularProbeRT, specularProbeCubemapComputedLevel0Face + 1);
 

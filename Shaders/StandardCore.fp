@@ -158,6 +158,22 @@ uniform float subSurfaceShadowDensity;// = 0.5;
 // Indirect lighting parameters
 //
 #if defined(INDIRECT_LIGHTING)
+    uniform samplerCube distantProbeDiffuseCubeMap;
+    uniform samplerCube distantProbeSpecularCubeMap;
+    uniform float distantProbeSpecularCubeMapMaxMipLevel;
+
+    struct LocalProbe {
+        samplerCube diffuseCubeMap;
+        samplerCube specularCubeMap;
+        float specularCubeMapMaxMipLevel;
+        vec4 position;
+        vec3 mins;
+        vec3 maxs;
+    };
+
+    uniform LocalProbe localProbes[16];
+    uniform int numLocalProbes;
+
     uniform samplerCube probe0DiffuseCubeMap;
     uniform samplerCube probe0SpecularCubeMap;
     uniform float probe0SpecularCubeMapMaxMipLevel;

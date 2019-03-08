@@ -212,7 +212,7 @@ RenderWorld *RenderSystem::AllocRenderWorld() {
     RenderWorld *renderWorld = new RenderWorld;
     renderWorld->index = renderWorldCount++;
 
-    renderWorld->AddGlobalEnvProbe();
+    renderWorld->AddDistantEnvProbe();
 
     primaryWorld = renderWorld;
 
@@ -615,7 +615,8 @@ void RenderSystem::ForceToRefreshEnvProbe(RenderWorld *renderWorld, int probeHan
     }
 }
 
-void RenderSystem::CaptureScreenRT(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height, RenderTarget *targetRT) {
+void RenderSystem::CaptureScreenRT(RenderWorld *renderWorld, int layerMask, 
+    bool colorClear, const Color4 &clearColor, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height, RenderTarget *targetRT) {
     RenderCamera renderCamera;
     RenderCamera::State cameraDef;
 
@@ -651,22 +652,24 @@ void RenderSystem::CaptureScreenRT(RenderWorld *renderWorld, bool colorClear, co
     targetRT->End();
 }
 
-Texture *RenderSystem::CaptureScreenTexture(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height) {
+Texture *RenderSystem::CaptureScreenTexture(RenderWorld *renderWorld, int layerMask, 
+    bool colorClear, const Color4 &clearColor, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height) {
     Texture *screenTexture = new Texture;
     screenTexture->CreateEmpty(RHI::Texture2D, width, height, 1, 1, 1, useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
         Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
     RenderTarget *screenRT = RenderTarget::Create(screenTexture, nullptr, RHI::HasDepthBuffer);
 
-    CaptureScreenRT(renderWorld, colorClear, clearColor, layerMask, origin, axis, fov, width, height, screenRT);
+    CaptureScreenRT(renderWorld, layerMask, colorClear, clearColor, origin, axis, fov, width, height, screenRT);
 
     RenderTarget::Delete(screenRT);
 
     return screenTexture;
 }
 
-void RenderSystem::CaptureScreenImage(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height, Image &screenImage) {
-    Texture *screenTexture = CaptureScreenTexture(renderWorld, colorClear, clearColor, layerMask, origin, axis, fov, useHDR, width, height);
+void RenderSystem::CaptureScreenImage(RenderWorld *renderWorld, int layerMask, 
+    bool colorClear, const Color4 &clearColor, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height, Image &screenImage) {
+    Texture *screenTexture = CaptureScreenTexture(renderWorld, layerMask, colorClear, clearColor, origin, axis, fov, useHDR, width, height);
 
     int imageFlags = Image::IsFloatFormat(screenTexture->GetFormat()) ? Image::LinearSpaceFlag : 0;
 
@@ -676,7 +679,9 @@ void RenderSystem::CaptureScreenImage(RenderWorld *renderWorld, bool colorClear,
     screenTexture->GetTexels2D(0, screenTexture->GetFormat(), screenImage.GetPixels(0));
 }
 
-void RenderSystem::CaptureEnvCubeFaceRT(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT, int faceIndex) {
+void RenderSystem::CaptureEnvCubeFaceRT(RenderWorld *renderWorld, int layerMask, int staticMask, 
+    bool colorClear, const Color4 &clearColor,
+    const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT, int faceIndex) {
     //int t0 = PlatformTime::Milliseconds();
 
     RenderCamera renderCamera;
@@ -721,28 +726,31 @@ void RenderSystem::CaptureEnvCubeFaceRT(RenderWorld *renderWorld, bool colorClea
     //BE_LOG("CaptureEnvCubeFaceRT(%i) takes %ims\n", faceIndex, t1 - t0);
 }
 
-void RenderSystem::CaptureEnvCubeRT(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT) {
+void RenderSystem::CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, int staticMask, 
+    bool colorClear, const Color4 &clearColor, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT) {
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-        CaptureEnvCubeFaceRT(renderWorld, colorClear, clearColor, layerMask, staticMask, origin, zNear, zFar, targetCubeRT, faceIndex);
+        CaptureEnvCubeFaceRT(renderWorld, layerMask, staticMask, colorClear, clearColor, origin, zNear, zFar, targetCubeRT, faceIndex);
     }
 }
 
-Texture *RenderSystem::CaptureEnvCubeTexture(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, bool useHDR, int size) {
+Texture *RenderSystem::CaptureEnvCubeTexture(RenderWorld *renderWorld, int layerMask, int staticMask, 
+    bool colorClear, const Color4 &clearColor, const Vec3 &origin, float zNear, float zFar, bool useHDR, int size) {
     Texture *envCubeTexture = new Texture;
     envCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
         Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
     RenderTarget *envCubeRT = RenderTarget::Create(envCubeTexture, nullptr, RHI::HasDepthBuffer);
 
-    CaptureEnvCubeRT(renderWorld, colorClear, clearColor, layerMask, staticMask, origin, zNear, zFar, envCubeRT);
+    CaptureEnvCubeRT(renderWorld, layerMask, staticMask, colorClear, clearColor, origin, zNear, zFar, envCubeRT);
 
     RenderTarget::Delete(envCubeRT);
 
     return envCubeTexture;
 }
 
-void RenderSystem::CaptureEnvCubeImage(RenderWorld *renderWorld, bool colorClear, const Color4 &clearColor, int layerMask, int staticMask, const Vec3 &origin, float zNear, float zFar, bool useHDR, int size, Image &envCubeImage) {
-    Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, colorClear, clearColor, layerMask, staticMask, origin, zNear, zFar, useHDR, size);
+void RenderSystem::CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, int staticMask, bool colorClear, const Color4 &clearColor,
+    const Vec3 &origin, float zNear, float zFar, bool useHDR, int size, Image &envCubeImage) {
+    Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, layerMask, staticMask, colorClear, clearColor, origin, zNear, zFar, useHDR, size);
 
     Texture::GetCubeImageFromCubeTexture(envCubeTexture, 1, envCubeImage);
 
@@ -1071,7 +1079,7 @@ void RenderSystem::WriteGGXDFGSum(const char *filename, int size) const {
 
 void RenderSystem::TakeScreenShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height) {
     Image screenImage;
-    CaptureScreenImage(renderWorld, false, Color4::black, layerMask, origin, axis, fov, useHDR, width, height, screenImage);
+    CaptureScreenImage(renderWorld, layerMask, false, Color4::black, origin, axis, fov, useHDR, width, height, screenImage);
 
     char path[256];
     Str::snPrintf(path, sizeof(path), "%s.png", filename);
@@ -1082,7 +1090,7 @@ void RenderSystem::TakeScreenShot(const char *filename, RenderWorld *renderWorld
 
 void RenderSystem::TakeEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size) {
     Image envCubeImage;
-    CaptureEnvCubeImage(renderWorld, false, Color4::black, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), useHDR, size, envCubeImage);
+    CaptureEnvCubeImage(renderWorld, layerMask, staticMask, false, Color4::black, origin, CentiToUnit(5), MeterToUnit(100), useHDR, size, envCubeImage);
 
     char path[256];
     Str::snPrintf(path, sizeof(path), "%s.dds", filename);
@@ -1093,7 +1101,7 @@ void RenderSystem::TakeEnvShot(const char *filename, RenderWorld *renderWorld, i
 }
 
 void RenderSystem::TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size, int envSize) {
-    Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, false, Color4::black, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), useHDR, envSize);
+    Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, layerMask, staticMask, false, Color4::black, origin, CentiToUnit(5), MeterToUnit(100), useHDR, envSize);
 
     Texture *irradianceEnvCubeTexture = new Texture;
     irradianceEnvCubeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
@@ -1123,7 +1131,7 @@ void RenderSystem::TakeIrradianceEnvShot(const char *filename, RenderWorld *rend
 }
 
 void RenderSystem::TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size, int envSize) {
-    Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, false, Color4::black, layerMask, staticMask, origin, CentiToUnit(5), MeterToUnit(100), useHDR, envSize);
+    Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, layerMask, staticMask, false, Color4::black, origin, CentiToUnit(5), MeterToUnit(100), useHDR, envSize);
 
     int numMipLevels = Math::Log(2, size) + 1;
 

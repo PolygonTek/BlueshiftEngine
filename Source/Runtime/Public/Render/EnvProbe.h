@@ -74,7 +74,7 @@ public:
         Resolution          resolution = Resolution::Resolution128;
         bool                useHDR = true;
         ClearMethod         clearMethod = ClearMethod::SkyClear;
-        Color4              clearColor = Color4::black;
+        Color3              clearColor = Color3::black;
         float               clippingNear = 0.1f;
         float               clippingFar = 500.0f;
 
@@ -90,6 +90,8 @@ public:
                             // Box extents for each axis from the origin which is translated by offset.
                             // The origin must be included in the box range.
         Vec3                boxExtent = Vec3::zero;
+
+        float               blendDistance = 1.0f;
 
         bool                useBoxProjection = false;
 

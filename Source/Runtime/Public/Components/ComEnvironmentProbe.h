@@ -73,9 +73,6 @@ public:
     Color3                  GetClearColor() const;
     void                    SetClearColor(const Color3 &clearColor);
 
-    float                   GetClearAlpha() const;
-    void                    SetClearAlpha(float clearAlpha);
-
     float                   GetClippingNear() const;
     void                    SetClippingNear(float clippingNear);
 
@@ -84,6 +81,9 @@ public:
 
     bool                    IsBoxProjection() const;
     void                    SetBoxProjection(bool useBoxProjection);
+
+    float                   GetBlendDistance() const;
+    void                    SetBlendDistance(float blendDistance);
 
     Vec3                    GetBoxExtent() const;
     void                    SetBoxExtent(const Vec3 &boxExtent);

@@ -47,14 +47,14 @@ void ComEnvironmentProbe::RegisterProperties() {
         "", PropertyInfo::EditorFlag).SetEnumString("Color;Skybox");
     REGISTER_MIXED_ACCESSOR_PROPERTY("clearColor", "Clear Color", Color3, GetClearColor, SetClearColor, Color3(0.18, 0.30, 0.47),
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("clearAlpha", "Clear Alpha", float, GetClearAlpha, SetClearAlpha, 0.0f,
-        "", PropertyInfo::EditorFlag);
     REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetClippingNear, SetClippingNear, 0.1,
         "Near clipping plane distance", PropertyInfo::EditorFlag).SetRange(0.01, 10000, 0.02);
     REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetClippingFar, SetClippingFar, 500,
         "Far clipping plane distance", PropertyInfo::EditorFlag).SetRange(0.01, 10000, 0.02);
     REGISTER_ACCESSOR_PROPERTY("boxProjection", "Box Projection", bool, IsBoxProjection, SetBoxProjection, false,
         "", PropertyInfo::EditorFlag);
+    REGISTER_ACCESSOR_PROPERTY("blendDistance", "Blend Distance", float, GetBlendDistance, SetBlendDistance, 1.0f,
+        "", PropertyInfo::EditorFlag).SetRange(0.01, 100, 0.01);
     REGISTER_MIXED_ACCESSOR_PROPERTY("boxOffset", "Box Offset", Vec3, GetBoxOffset, SetBoxOffset, Vec3(0, 0, 0),
         "The center of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("boxExtent", "Box Extent", Vec3, GetBoxExtent, SetBoxExtent, Vec3(10, 10, 10),
@@ -200,7 +200,11 @@ void ComEnvironmentProbe::DrawGizmos(const RenderCamera::State &viewState, bool 
         aabb += probeDef.origin + probeDef.boxOffset;
         
         renderWorld->SetDebugColor(Color4(0.0f, 0.5f, 1.0f, 1.0f), Color4(0.0f, 0.5f, 1.0f, 0.15f));
-        renderWorld->DebugAABB(aabb, 1.0f, false, false, true);
+        renderWorld->DebugAABB(aabb, 1.0f, true, true);
+
+        aabb.ExpandSelf(probeDef.blendDistance);
+        renderWorld->SetDebugColor(Color4(1.0f, 0.5f, 0.0f, 1.0f), Color4(1.0f, 0.5f, 0.0f, 0.15f));
+        renderWorld->DebugAABB(aabb, 1.0f, true, true);
 
 #if 0
         gizmoCurrentTime = PlatformTime::Milliseconds();
@@ -337,21 +341,11 @@ void ComEnvironmentProbe::SetClearMethod(EnvProbe::ClearMethod clearMethod) {
 }
 
 Color3 ComEnvironmentProbe::GetClearColor() const {
-    return probeDef.clearColor.ToColor3();
+    return probeDef.clearColor;
 }
 
 void ComEnvironmentProbe::SetClearColor(const Color3 &clearColor) {
-    probeDef.clearColor.ToColor3() = clearColor;
-
-    UpdateVisuals();
-}
-
-float ComEnvironmentProbe::GetClearAlpha() const {
-    return probeDef.clearColor.a;
-}
-
-void ComEnvironmentProbe::SetClearAlpha(float clearAlpha) {
-    probeDef.clearColor.a = clearAlpha;
+    probeDef.clearColor = clearColor;
 
     UpdateVisuals();
 }
@@ -388,6 +382,16 @@ bool ComEnvironmentProbe::IsBoxProjection() const {
 
 void ComEnvironmentProbe::SetBoxProjection(bool useBoxProjection) {
     probeDef.useBoxProjection = useBoxProjection;
+
+    UpdateVisuals();
+}
+
+float ComEnvironmentProbe::GetBlendDistance() const {
+    return probeDef.blendDistance;
+}
+
+void ComEnvironmentProbe::SetBlendDistance(float blendDistance) {
+    probeDef.blendDistance = blendDistance;
 
     UpdateVisuals();
 }

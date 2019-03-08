@@ -99,10 +99,10 @@ public:
     EnvProbe *              GetEnvProbe(int handle) const;
 
                             /// Adds global environment probe to this world.
-    void                    AddGlobalEnvProbe();
+    void                    AddDistantEnvProbe();
 
                             /// Removes global environemnt probe.
-    void                    RemoveGlobalEnvProbe();
+    void                    RemoveDistantEnvProbe();
 
     void                    GetClosestProbes(const AABB &worldAABB, EnvProbeBlending blending, Array<EnvProbeBlendInfo> &outProbes) const;
 
@@ -194,7 +194,7 @@ private:
     Array<RenderObject *>   renderObjects;          ///< Array of render objects
     Array<RenderLight *>    renderLights;           ///< Array of render lights
     Array<EnvProbe *>       envProbes;              ///< Array of local environment probes
-    EnvProbe *              globalEnvProbe;         ///< Global environment probe
+    EnvProbe *              distantEnvProbe;        ///< Distant environment probe
 
     DynamicAABBTree         objectDbvt;             ///< Dynamic bounding volume tree for render objects
     DynamicAABBTree         lightDbvt;              ///< Dynamic bounding volume tree for render lights

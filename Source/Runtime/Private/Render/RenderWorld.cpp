@@ -35,7 +35,7 @@ RenderWorld::RenderWorld() {
     debugLineColor.Set(0, 0, 0, 0);
     debugFillColor.Set(0, 0, 0, 0);
 
-    globalEnvProbe = nullptr;
+    distantEnvProbe = nullptr;
 }
 
 RenderWorld::~RenderWorld() {
@@ -58,7 +58,7 @@ void RenderWorld::ClearScene() {
         SAFE_DELETE(envProbes[i]);
     }
 
-    globalEnvProbe = nullptr;
+    distantEnvProbe = nullptr;
 }
 
 RenderObject *RenderWorld::GetRenderObject(int handle) const {
@@ -348,9 +348,9 @@ void RenderWorld::RemoveEnvProbe(int handle) {
     envProbes[handle] = nullptr;
 }
 
-void RenderWorld::AddGlobalEnvProbe() {
-    if (globalEnvProbe) {
-        BE_WARNLOG("Couldn't add global environment probe twice.\n");
+void RenderWorld::AddDistantEnvProbe() {
+    if (distantEnvProbe) {
+        BE_WARNLOG("Couldn't add distant environment probe twice.\n");
         return;
     }
 
@@ -364,20 +364,20 @@ void RenderWorld::AddGlobalEnvProbe() {
         handle = envProbes.Append(nullptr);
     }
 
-    globalEnvProbe = new EnvProbe(handle);
-    envProbes[handle] = globalEnvProbe;
-    globalEnvProbe->Update(&def);
+    distantEnvProbe = new EnvProbe(handle);
+    envProbes[handle] = distantEnvProbe;
+    distantEnvProbe->Update(&def);
 }
 
-void RenderWorld::RemoveGlobalEnvProbe() {
-    if (!globalEnvProbe) {
+void RenderWorld::RemoveDistantEnvProbe() {
+    if (!distantEnvProbe) {
         return;
     }
 
     delete envProbes[0];
     envProbes[0] = nullptr;
 
-    globalEnvProbe = nullptr;
+    distantEnvProbe = nullptr;
 }
 
 static float CalculateEnvProbeLerpValue(const AABB &objectAABB,
@@ -463,10 +463,6 @@ void RenderWorld::GetClosestProbes(const AABB &objectAABB, EnvProbeBlending blen
 
             outProbes[0].weight = value;
             outProbes[1].weight = 1.0f - value;
-
-            for (int i = 2; i < outProbes.Count(); i++) {
-                outProbes[i].weight = 0.0f;
-            }
         }
     }
 }
@@ -474,7 +470,7 @@ void RenderWorld::GetClosestProbes(const AABB &objectAABB, EnvProbeBlending blen
 void RenderWorld::SetSkyboxMaterial(Material *skyboxMaterial) {
     this->skyboxMaterial = skyboxMaterial;
 
-    renderSystem.ScheduleToRefreshEnvProbe(this, globalEnvProbe->index);
+    renderSystem.ScheduleToRefreshEnvProbe(this, distantEnvProbe->index);
 }
 
 void RenderWorld::FinishMapLoading() {

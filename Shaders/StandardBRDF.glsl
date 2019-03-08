@@ -188,12 +188,12 @@ float LinearRoughnessToMipLevel(float linearRoughness, float maxLevel) {
 
 vec3 GetSpecularEnvFirstSum(samplerCube specularProbeCubeMap, float specularProbeCubeMapMaxMipLevel, vec3 S, float linearRoughness) {
     vec4 sampleVec = vec4(S, LinearRoughnessToMipLevel(linearRoughness, specularProbeCubeMapMaxMipLevel));
-    vec3 preLD = texCUBElod(specularProbeCubeMap, sampleVec.yzxw).rgb;
+    vec4 preLD = texCUBElod(specularProbeCubeMap, sampleVec.yzxw);
 
 #if USE_SRGB_TEXTURE == 0
-    preLD = LinearToGamma(preLD);
+    preLD.rgb = LinearToGamma(preLD.rgb);
 #endif
-    return preLD;
+    return preLD.rgb;
 }
 
 vec3 GetSpecularEnvSecondSum(vec2 preDFG, vec3 F0) {
@@ -219,6 +219,13 @@ vec3 IndirectLit_Standard() {
 #ifdef PROBE_BLENDING
     specularEnvSum1 *= probeLerp;
     specularEnvSum1 += GetSpecularEnvFirstSum(probe1SpecularCubeMap, probe1SpecularCubeMapMaxMipLevel, shading.s1, shading.linearRoughness) * (1.0 - probeLerp);
+#endif
+
+#if 0
+    vec3 specularEnvSum1 = vec3(0.0);
+    for (int i = 0; i < numLocalProbes; i++) {
+        specularEnvSum1 += GetSpecularEnvFirstSum(localProbes[i].specularCubeMap, localProbes[i].specularCubeMapMaxMipLevel, shading.s[i], shading.linearRoughness);
+    }
 #endif
 
     vec3 specularEnvSum2 = GetSpecularEnvSecondSum(shading.preDFG, shading.specular.rgb);
