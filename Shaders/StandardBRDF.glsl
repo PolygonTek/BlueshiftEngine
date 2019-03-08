@@ -201,12 +201,8 @@ vec3 GetSpecularEnvSecondSum(vec2 preDFG, vec3 F0) {
 }
 
 vec3 GetSpecularDominantDir(vec3 N, vec3 S, float linearRoughness) {
-#if defined(IBL_OFF_SPECULAR_PEAK)
     float linearSmoothness = 1.0 - linearRoughness;
     return mix(N, S, linearSmoothness * (sqrt(linearSmoothness) + linearRoughness));
-#else
-    return S;
-#endif
 }
 
 // Computes a specular occlusion term from the ambient occlusion term.
@@ -218,13 +214,11 @@ float GetSpecularOcclusionFromAmbientOcclusion(float NdotV, float ao, float roug
 // Indirect Lighting
 //----------------------------------
 vec3 IndirectLit_Standard() {
-    vec3 DS0 = GetSpecularDominantDir(shading.n, shading.s0, shading.linearRoughness);
-    vec3 specularEnvSum1 = GetSpecularEnvFirstSum(probe0SpecularCubeMap, probe0SpecularCubeMapMaxMipLevel, DS0, shading.linearRoughness);
+    vec3 specularEnvSum1 = GetSpecularEnvFirstSum(probe0SpecularCubeMap, probe0SpecularCubeMapMaxMipLevel, shading.s0, shading.linearRoughness);
 
 #ifdef PROBE_BLENDING
-    vec3 DS1 = GetSpecularDominantDir(shading.n, shading.s1, shading.linearRoughness);
     specularEnvSum1 *= probeLerp;
-    specularEnvSum1 += GetSpecularEnvFirstSum(probe1SpecularCubeMap, probe1SpecularCubeMapMaxMipLevel, DS1, shading.linearRoughness) * (1.0 - probeLerp);
+    specularEnvSum1 += GetSpecularEnvFirstSum(probe1SpecularCubeMap, probe1SpecularCubeMapMaxMipLevel, shading.s1, shading.linearRoughness) * (1.0 - probeLerp);
 #endif
 
     vec3 specularEnvSum2 = GetSpecularEnvSecondSum(shading.preDFG, shading.specular.rgb);
