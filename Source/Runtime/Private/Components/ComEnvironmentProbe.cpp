@@ -199,8 +199,8 @@ void ComEnvironmentProbe::DrawGizmos(const RenderCamera::State &viewState, bool 
         AABB aabb = AABB(-probeDef.boxExtent, probeDef.boxExtent);
         aabb += probeDef.origin + probeDef.boxOffset;
         
-        renderWorld->SetDebugColor(Color4(0.0f, 0.5f, 1.0f, 1.0f), Color4::zero);
-        renderWorld->DebugAABB(aabb, 1.0f, false, true, true);
+        renderWorld->SetDebugColor(Color4(0.0f, 0.5f, 1.0f, 1.0f), Color4(0.0f, 0.5f, 1.0f, 0.25f));
+        renderWorld->DebugAABB(aabb, 1.0f, false, false, true);
 
 #if 0
         gizmoCurrentTime = PlatformTime::Milliseconds();
