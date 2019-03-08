@@ -125,6 +125,7 @@ void ComEnvironmentProbe::Init() {
 
     probeDef.guid = GetGuid();
     probeDef.origin = transform->GetOrigin();
+    probeDef.bounces = 0;
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComEnvironmentProbe::TransformUpdated, SignalObject::Unique);
 
@@ -174,7 +175,7 @@ void ComEnvironmentProbe::Awake() {
 
     if (probeDef.type == EnvProbe::Type::Realtime) {
         if (probeDef.refreshMode == EnvProbe::RefreshMode::OnAwake) {
-            renderSystem.ScheduleToRefreshEnvProbe(renderWorld, probeHandle);
+            renderSystem.ForceToRefreshEnvProbe(renderWorld, probeHandle);
         }
     }
 }
@@ -201,6 +202,7 @@ void ComEnvironmentProbe::DrawGizmos(const RenderCamera::State &viewState, bool 
         renderWorld->SetDebugColor(Color4(0.0f, 0.5f, 1.0f, 1.0f), Color4::zero);
         renderWorld->DebugAABB(aabb, 1.0f, false, true, true);
 
+#if 0
         gizmoCurrentTime = PlatformTime::Milliseconds();
 
         if (gizmoCurrentTime > gizmoRefreshTime + 3000) {
@@ -210,6 +212,7 @@ void ComEnvironmentProbe::DrawGizmos(const RenderCamera::State &viewState, bool 
                 renderSystem.ScheduleToRefreshEnvProbe(renderWorld, probeHandle);
             }
         }
+#endif
     }
 }
 

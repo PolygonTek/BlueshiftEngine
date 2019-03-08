@@ -603,6 +603,8 @@ void RenderSystem::ForceToRefreshEnvProbe(RenderWorld *renderWorld, int probeHan
     job.envProbe = renderWorld->GetEnvProbe(probeHandle);
     job.specularProbeCubemapMaxLevel = Math::Log(2, job.envProbe->GetSize());
 
+    job.envProbe->bounces = 0;
+
     int numPasses = r_probeBakeBounces.GetInteger();
     while (numPasses--) {
         job.Refresh(EnvProbe::NoTimeSlicing);
@@ -610,7 +612,6 @@ void RenderSystem::ForceToRefreshEnvProbe(RenderWorld *renderWorld, int probeHan
         job.diffuseProbeCubemapComputed = false;
         job.specularProbeCubemapComputedLevel = -1;
         job.specularProbeCubemapComputedLevel0Face = -1;
-        job.bounces++;
     }
 }
 

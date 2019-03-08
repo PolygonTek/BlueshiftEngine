@@ -43,8 +43,8 @@ public:
     bool                    Refresh(EnvProbe::TimeSlicing timeSlicing);
 
 private:
-    void                    RevalidateDiffuseProbeRT();
-    void                    RevalidateSpecularProbeRT();
+    void                    RevalidateDiffuseProbeRT(bool clearToBlack);
+    void                    RevalidateSpecularProbeRT(bool clearToBlack);
 
     RenderWorld *           renderWorld;
     EnvProbe *              envProbe;
@@ -53,7 +53,6 @@ private:
     int                     specularProbeCubemapComputedLevel = -1;
     int                     specularProbeCubemapComputedLevel0Face = -1;
     int                     specularProbeCubemapMaxLevel = 0;
-    int                     bounces = 0;
 };
 
 class RenderSystem {

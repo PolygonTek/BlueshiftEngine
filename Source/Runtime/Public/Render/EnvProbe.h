@@ -31,6 +31,7 @@ class EnvProbeJob;
 class EnvProbe {
     friend class EnvProbeJob;
     friend class RenderWorld;
+    friend class RenderSystem;
 
 public:
     enum Type {
@@ -97,6 +98,8 @@ public:
 
         Texture *           bakedDiffuseProbeTexture = nullptr;
         Texture *           bakedSpecularProbeTexture = nullptr;
+
+        int                 bounces = 0;
     };
 
     EnvProbe(int index);
@@ -152,14 +155,15 @@ private:
 
     AABB                    worldAABB;
 
-    bool                    needToRefresh = false;
-
     Texture *               diffuseProbeTexture = nullptr;
     Texture *               specularProbeTexture = nullptr;
     int                     specularProbeTextureMaxMipLevel = 0;
 
     RenderTarget *          diffuseProbeRT = nullptr;
     RenderTarget *          specularProbeRT = nullptr;
+
+    int                     bounces = 0;
+    bool                    needToRefresh = false;
 
     DbvtProxy *             proxy;
 };

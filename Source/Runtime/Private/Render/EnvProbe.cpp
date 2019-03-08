@@ -39,7 +39,7 @@ EnvProbe::~EnvProbe() {
 }
 
 void EnvProbe::Update(const EnvProbe::State *stateDef) {
-    if (!needToRefresh) {
+    if (stateDef->type == EnvProbe::Type::Realtime && !needToRefresh) {
         bool resolutionMatch = state.resolution == stateDef->resolution;
         bool useHDRMatch = state.useHDR == stateDef->useHDR;
         bool clearMethodMatch = state.clearMethod == stateDef->clearMethod;
@@ -55,6 +55,8 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
     }
 
     state = *stateDef;
+
+    bounces = state.bounces;
 
     worldAABB = AABB(-state.boxExtent, state.boxExtent);
     worldAABB += state.origin + state.boxOffset;
@@ -78,7 +80,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
             // Create default diffuse probe cubemap.
             diffuseProbeTexture = textureManager.AllocTexture(va("DiffuseProbe-%s", state.guid.ToString()));
             diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, 32, 32, 1, 1, 1,
-                state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
+                state.useHDR ? Image::RGBA_16F_16F_16F_16F : Image::RGB_8_8_8,
                 Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
             resourceGuidMapper.Set(Guid::CreateGuid(), diffuseProbeTexture->GetHashName());
@@ -108,7 +110,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
 
             specularProbeTexture = textureManager.AllocTexture(va("SpecularProbe-%s", state.guid.ToString()));
             specularProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels,
-                state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
+                state.useHDR ? Image::RGBA_16F_16F_16F_16F : Image::RGB_8_8_8,
                 Texture::Clamp | Texture::HighQuality);
 
             specularProbeTextureMaxMipLevel = Math::Log(2.0f, specularProbeTexture->GetWidth());
@@ -126,12 +128,28 @@ int EnvProbe::ToActualResolution(Resolution resolution) {
     return size[(int)resolution];
 }
 
-void EnvProbeJob::RevalidateDiffuseProbeRT() {
+void EnvProbeJob::RevalidateDiffuseProbeRT(bool clearToBlack) {
+    // fixed size (32) for irradiance cubemap
+    int size = 32;
+
     // Recreate diffuse convolution texture if its format have changed.
     if ((envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->diffuseProbeTexture->GetFormat()))) {
-        envProbe->diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, 32, 32, 1, 1, 1, // fixed size (32) for irradiance cubemap
-            envProbe->state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
+        Image::Format format = envProbe->state.useHDR ? Image::RGBA_16F_16F_16F_16F : Image::RGB_8_8_8;
+
+        envProbe->diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, format, 
             Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+    }
+
+    if (clearToBlack) {
+        int dataSize = size * size * Image::BytesPerPixel(envProbe->diffuseProbeTexture->GetFormat());
+        byte *data = (byte *)_alloca16(dataSize);
+        memset(data, 0, dataSize);
+
+        envProbe->diffuseProbeTexture->Bind();
+
+        for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
+            envProbe->diffuseProbeTexture->UpdateCubemap(faceIndex, 0, 0, 0, size, size, envProbe->diffuseProbeTexture->GetFormat(), data);
+        }
     }
 
     if (envProbe->diffuseProbeRT) {
@@ -148,18 +166,30 @@ void EnvProbeJob::RevalidateDiffuseProbeRT() {
     }
 }
 
-void EnvProbeJob::RevalidateSpecularProbeRT() {
+void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
     int size = envProbe->GetSize();
+    int numMipLevels = Math::Log(2, size) + 1;
 
     // Recreate diffuse convolution texture if its format or size have changed.
-    if (size != envProbe->specularProbeTexture->GetWidth() ||
-        (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->specularProbeTexture->GetFormat()))) {
-        Image::Format format = envProbe->state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8;
-
-        int numMipLevels = Math::Log(2, size) + 1;
+    if (size != envProbe->specularProbeTexture->GetWidth() || (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->specularProbeTexture->GetFormat()))) {
+        Image::Format format = envProbe->state.useHDR ? Image::RGBA_16F_16F_16F_16F : Image::RGB_8_8_8;
 
         envProbe->specularProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
             Texture::Clamp | Texture::HighQuality);
+    }
+
+    if (clearToBlack) {
+        int dataSize = size * size * Image::BytesPerPixel(envProbe->specularProbeTexture->GetFormat());
+        byte *data = (byte *)_alloca16(dataSize);
+        memset(data, 0, dataSize);
+
+        envProbe->specularProbeTexture->Bind();
+
+        for (int mipLevel = 0; size > 0; mipLevel++, size >>= 1) {
+            for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
+                envProbe->specularProbeTexture->UpdateCubemap(faceIndex, mipLevel, 0, 0, size, size, envProbe->specularProbeTexture->GetFormat(), data);
+            }
+        }
     }
 
     if (envProbe->specularProbeRT) {
@@ -186,7 +216,7 @@ bool EnvProbeJob::IsFinished() const {
 bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing timeSlicing) {
     if (specularProbeCubemapComputedLevel == -1) {
         if (specularProbeCubemapComputedLevel0Face == -1) {
-            RevalidateSpecularProbeRT();
+            RevalidateSpecularProbeRT(envProbe->bounces == 0);
         }
 
         // FIXME: use EnvProbeStatic instead of -1
@@ -230,7 +260,7 @@ bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing timeSlicing) {
     }
 
     if (!diffuseProbeCubemapComputed) {
-        RevalidateDiffuseProbeRT();
+        RevalidateDiffuseProbeRT(envProbe->bounces == 0);
 
         // Generate diffuse convolution cube map using environment cubemap.
         renderSystem.GenerateIrradianceEnvCubeRT(envProbe->specularProbeTexture, envProbe->diffuseProbeRT);
@@ -238,14 +268,7 @@ bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing timeSlicing) {
         diffuseProbeCubemapComputed = true;
     }
 
-    bounces++;
-
-    if (envProbe->state.type == EnvProbe::Type::Baked) {
-        if (bounces < r_probeBakeBounces.GetInteger()) {
-            return false;
-        }
-    }
-
+    envProbe->bounces++;
     envProbe->needToRefresh = false;
     return true;
 }
