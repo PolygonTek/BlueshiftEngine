@@ -154,7 +154,7 @@ void MeshCombiner::MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMesh
 
 void MeshCombiner::EnumerateCombinableEntities(const Hierarchy<Entity> &rootNode, Array<Entity *> &staticChildren) {
     for (Entity *entity = rootNode.GetChild(); entity; entity = entity->GetNode().GetNext()) {
-        if (entity->GetStaticMask()) { // TODO: Check BatchingStatic
+        if (!entity->GetStaticMask()) { // TODO: Check BatchingStatic
             continue;
         }
 
