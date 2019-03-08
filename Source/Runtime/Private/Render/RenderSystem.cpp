@@ -430,7 +430,7 @@ void RenderSystem::CheckModifiedCVars() {
         }
     }
 
-    if (r_probeBoxProjection.IsModified()) {
+    /*if (r_probeBoxProjection.IsModified()) {
         r_probeBoxProjection.ClearModified();
 
         if (r_probeBoxProjection.GetBool()) {
@@ -460,7 +460,7 @@ void RenderSystem::CheckModifiedCVars() {
                 shaderManager.ReloadLitSurfaceShaders();
             }
         }
-    }
+    }*/
 
     if (r_shadowMapSize.IsModified()) {
         r_shadowMapSize.ClearModified();
