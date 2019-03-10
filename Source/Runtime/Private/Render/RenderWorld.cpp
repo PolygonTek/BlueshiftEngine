@@ -304,14 +304,14 @@ void RenderWorld::UpdateEnvProbe(int handle, const EnvProbe::State *def) {
 
         envProbe->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
         envProbe->proxy->envProbe = envProbe;
-        envProbe->proxy->worldAABB = envProbe->GetWorldAABB();
+        envProbe->proxy->worldAABB = envProbe->GetInfluenceAABB();
         envProbe->proxy->id = probeDbvt.CreateProxy(envProbe->proxy->worldAABB, MeterToUnit(0.0f), envProbe->proxy);
     } else {
         bool originMatch = (def->origin == envProbe->state.origin);
         bool boxExtentMatch = (def->boxExtent == envProbe->state.boxExtent);
 
         if (!originMatch || !boxExtentMatch) {
-            envProbe->proxy->worldAABB = envProbe->proxy->envProbe->GetWorldAABB();
+            envProbe->proxy->worldAABB = envProbe->proxy->envProbe->GetInfluenceAABB();
             probeDbvt.MoveProxy(envProbe->proxy->id, envProbe->proxy->worldAABB, MeterToUnit(0.5f), def->origin - envProbe->state.origin);
         }
 
@@ -381,8 +381,8 @@ void RenderWorld::RemoveDistantEnvProbe() {
 }
 
 static float CalculateEnvProbeLerpValue(const AABB &objectAABB,
-    float probe0IntersectVolume, float probe0Importance, const AABB &probe0AABB,
-    float probe1IntersectVolume, float probe1Importance, const AABB &probe1AABB) {
+    float probe0IntersectVolume, float probe0Importance, const AABB &probe0InfluenceAABB,
+    float probe1IntersectVolume, float probe1Importance, const AABB &probe1InfluenceAABB) {
     float objectVolume = Max(objectAABB.Volume(), 0.00001f);
 
     if (probe1IntersectVolume > 0.0f) {
@@ -392,10 +392,10 @@ static float CalculateEnvProbeLerpValue(const AABB &objectAABB,
         if (probe1Importance > probe0Importance) {
             return 1.0f - probe1IntersectVolume / objectVolume;
         }
-        if (probe1AABB.IsContainAABB(probe0AABB)) {
+        if (probe1InfluenceAABB.IsContainAABB(probe0InfluenceAABB)) {
             return probe0IntersectVolume / objectVolume;
         }
-        if (probe0AABB.IsContainAABB(probe1AABB)) {
+        if (probe0InfluenceAABB.IsContainAABB(probe1InfluenceAABB)) {
             return 1.0f - probe1IntersectVolume / objectVolume;
         }
         return probe0IntersectVolume / (probe0IntersectVolume + probe1IntersectVolume);
@@ -403,11 +403,11 @@ static float CalculateEnvProbeLerpValue(const AABB &objectAABB,
     return 1.0f;
 }
 
-void RenderWorld::GetClosestProbes(const AABB &objectAABB, EnvProbeBlending blending, Array<EnvProbeBlendInfo> &outProbes) const {
-    auto addProbe = [this, &objectAABB, &outProbes](int32_t proxyId) -> bool {
+void RenderWorld::GetClosestProbes(const AABB &sourceAABB, EnvProbeBlending blending, Array<EnvProbeBlendInfo> &outProbes) const {
+    auto addProbe = [this, &sourceAABB, &outProbes](int32_t proxyId) -> bool {
         const DbvtProxy *proxy = (const DbvtProxy *)probeDbvt.GetUserData(proxyId);
 
-        AABB intersectAABB = objectAABB.Intersect(proxy->envProbe->GetWorldAABB());
+        AABB intersectAABB = sourceAABB.Intersect(proxy->envProbe->GetInfluenceAABB());
         if (intersectAABB.IsCleared()) {
             return true;
         }
@@ -419,19 +419,16 @@ void RenderWorld::GetClosestProbes(const AABB &objectAABB, EnvProbeBlending blen
         return true;
     };
 
-    probeDbvt.Query(objectAABB, addProbe);
+    probeDbvt.Query(sourceAABB, addProbe);
 
     if (outProbes.Count() == 0) {
         return;
     }
 
-    if (outProbes.Count() == 1) {
-        outProbes[0].weight = 1.0;
-        return;
-    }
+    int actualCount;
 
     if (outProbes.Count() >= 2) {
-        outProbes.Sort([&objectAABB](const EnvProbeBlendInfo &a, const EnvProbeBlendInfo &b) -> bool {
+        outProbes.Sort([&sourceAABB](const EnvProbeBlendInfo &a, const EnvProbeBlendInfo &b) -> bool {
             const int importanceA = a.envProbe->GetImportance();
             const int importanceB = b.envProbe->GetImportance();
 
@@ -445,7 +442,7 @@ void RenderWorld::GetClosestProbes(const AABB &objectAABB, EnvProbeBlending blen
             }
             Vec3 centerA = a.envProbe->GetBoxCenter();
             Vec3 centerB = b.envProbe->GetBoxCenter();
-            Vec3 centerObject = objectAABB.Center();
+            Vec3 centerObject = sourceAABB.Center();
 
             return centerA.DistanceSqr(centerObject) < centerB.DistanceSqr(centerObject);
         });
@@ -456,13 +453,30 @@ void RenderWorld::GetClosestProbes(const AABB &objectAABB, EnvProbeBlending blen
             for (int i = 1; i < outProbes.Count(); i++) {
                 outProbes[i].weight = 0.0f;
             }
+
+            actualCount = 1;
         } else {
-            float value = CalculateEnvProbeLerpValue(objectAABB,
-                outProbes[0].weight, outProbes[0].envProbe->GetImportance(), outProbes[0].envProbe->GetWorldAABB(), 
-                outProbes[1].weight, outProbes[1].envProbe->GetImportance(), outProbes[1].envProbe->GetWorldAABB());
+            float value = CalculateEnvProbeLerpValue(sourceAABB,
+                outProbes[0].weight, outProbes[0].envProbe->GetImportance(), outProbes[0].envProbe->GetInfluenceAABB(),
+                outProbes[1].weight, outProbes[1].envProbe->GetImportance(), outProbes[1].envProbe->GetInfluenceAABB());
 
             outProbes[0].weight = value;
             outProbes[1].weight = 1.0f - value;
+
+            actualCount = 2;
+        }
+    } else {
+        outProbes[0].weight = 1.0;
+
+        actualCount = 1;
+    }
+
+    for (int i = 0; i < actualCount; i++) {
+        outProbes[i].proxyAABB = outProbes[i].envProbe->GetProxyAABB();
+
+        // Adjust probe's AABB for better box projection
+        if (outProbes[i].envProbe->UseBoxProjection()) {
+            outProbes[i].proxyAABB += sourceAABB;
         }
     }
 }

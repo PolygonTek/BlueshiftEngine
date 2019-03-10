@@ -110,8 +110,11 @@ public:
                             /// Returns type.
     Type                    GetType() const { return state.type; }
 
-                            /// Returns AABB in world space.
-    const AABB &            GetWorldAABB() const { return worldAABB; }
+                            /// Returns proxy AABB in world space.
+    const AABB &            GetProxyAABB() const { return proxyAABB; }
+
+                            /// Returns influence AABB in world space.
+    const AABB &            GetInfluenceAABB() const { return influenceAABB; }
 
                             /// Returns position in world space.
     const Vec3 &            GetOrigin() const { return state.origin; }
@@ -155,7 +158,8 @@ private:
 
     State                   state;
 
-    AABB                    worldAABB;
+    AABB                    proxyAABB;
+    AABB                    influenceAABB;
 
     Texture *               diffuseProbeTexture = nullptr;
     Texture *               specularProbeTexture = nullptr;

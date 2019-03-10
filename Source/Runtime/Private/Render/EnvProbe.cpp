@@ -58,8 +58,11 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
 
     bounces = state.bounces;
 
-    worldAABB = AABB(-state.boxExtent, state.boxExtent);
-    worldAABB += state.origin + state.boxOffset;
+    proxyAABB = AABB(-state.boxExtent, state.boxExtent);
+    proxyAABB += state.origin + state.boxOffset;
+
+    influenceAABB = proxyAABB;
+    influenceAABB.ExpandSelf(state.blendDistance);
 
     if (state.bakedDiffuseProbeTexture && state.bakedDiffuseProbeTexture != diffuseProbeTexture) {
         // Replace diffuse probe texture to new baked one.
@@ -79,7 +82,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
         if (!diffuseProbeTexture) {
             // Create default diffuse probe cubemap.
             diffuseProbeTexture = textureManager.AllocTexture(va("DiffuseProbe-%s", state.guid.ToString()));
-            diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, 32, 32, 1, 1, 1,
+            diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, 16, 16, 1, 1, 1,
                 state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
                 Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
@@ -129,8 +132,8 @@ int EnvProbe::ToActualResolution(Resolution resolution) {
 }
 
 void EnvProbeJob::RevalidateDiffuseProbeRT(bool clearToBlack) {
-    // fixed size (32) for irradiance cubemap
-    int size = 32;
+    // fixed size (16) for irradiance cubemap
+    int size = 16;
 
     // Recreate diffuse convolution texture if its format have changed.
     if ((envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->diffuseProbeTexture->GetFormat()))) {

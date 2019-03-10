@@ -42,6 +42,7 @@ struct DbvtProxy {
 
 struct EnvProbeBlendInfo {
     EnvProbe *              envProbe;
+    AABB                    proxyAABB;
     float                   weight;
 };
 
@@ -104,7 +105,7 @@ public:
                             /// Removes global environemnt probe.
     void                    RemoveDistantEnvProbe();
 
-    void                    GetClosestProbes(const AABB &worldAABB, EnvProbeBlending blending, Array<EnvProbeBlendInfo> &outProbes) const;
+    void                    GetClosestProbes(const AABB &sourceAABB, EnvProbeBlending blending, Array<EnvProbeBlendInfo> &outProbes) const;
 
     int                     GetViewCount() const { return viewCount; }
 

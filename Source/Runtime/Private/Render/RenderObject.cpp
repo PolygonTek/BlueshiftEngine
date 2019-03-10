@@ -81,4 +81,11 @@ const AABB RenderObject::GetLocalAABB() const {
     return state.mesh->GetAABB() * state.scale;
 }
 
+const AABB RenderObject::GetWorldAABB() const {
+    if (proxy) {
+        return proxy->worldAABB;
+    }
+    return AABB();
+}
+
 BE_NAMESPACE_END

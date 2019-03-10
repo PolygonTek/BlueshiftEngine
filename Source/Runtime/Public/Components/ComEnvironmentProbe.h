@@ -82,14 +82,14 @@ public:
     bool                    IsBoxProjection() const;
     void                    SetBoxProjection(bool useBoxProjection);
 
-    float                   GetBlendDistance() const;
-    void                    SetBlendDistance(float blendDistance);
-
     Vec3                    GetBoxExtent() const;
     void                    SetBoxExtent(const Vec3 &boxExtent);
 
     Vec3                    GetBoxOffset() const;
     void                    SetBoxOffset(const Vec3 &boxOffset);
+
+    float                   GetBlendDistance() const;
+    void                    SetBlendDistance(float blendDistance);
 
     Guid                    GetBakedDiffuseProbeTextureGuid() const;
     void                    SetBakedDiffuseProbeTextureGuid(const Guid &textureGuid);

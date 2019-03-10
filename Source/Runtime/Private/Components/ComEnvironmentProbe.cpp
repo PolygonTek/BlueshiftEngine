@@ -53,12 +53,12 @@ void ComEnvironmentProbe::RegisterProperties() {
         "Far clipping plane distance", PropertyInfo::EditorFlag).SetRange(0.01, 10000, 0.02);
     REGISTER_ACCESSOR_PROPERTY("boxProjection", "Box Projection", bool, IsBoxProjection, SetBoxProjection, false,
         "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("blendDistance", "Blend Distance", float, GetBlendDistance, SetBlendDistance, 1.0f,
-        "", PropertyInfo::EditorFlag).SetRange(0.01, 100, 0.01);
     REGISTER_MIXED_ACCESSOR_PROPERTY("boxOffset", "Box Offset", Vec3, GetBoxOffset, SetBoxOffset, Vec3(0, 0, 0),
         "The center of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag);
     REGISTER_MIXED_ACCESSOR_PROPERTY("boxExtent", "Box Extent", Vec3, GetBoxExtent, SetBoxExtent, Vec3(10, 10, 10),
         "The size of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag).SetRange(0, 1e8, 0.05);
+    REGISTER_ACCESSOR_PROPERTY("blendDistance", "Blend Distance", float, GetBlendDistance, SetBlendDistance, 1.0f,
+        "", PropertyInfo::EditorFlag).SetRange(0.0f, 100.0f, 0.01f);
     REGISTER_MIXED_ACCESSOR_PROPERTY("bakedDiffuseProbeTexture", "Baked Diffuse Probe", Guid, GetBakedDiffuseProbeTextureGuid, SetBakedDiffuseProbeTextureGuid, Guid::zero,
         "", PropertyInfo::NonCopying).SetMetaObject(&TextureAsset::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("bakedSpecularProbeTexture", "Baked Specular Probe", Guid, GetBakedSpecularProbeTextureGuid, SetBakedSpecularProbeTextureGuid, Guid::zero,
@@ -76,6 +76,26 @@ ComEnvironmentProbe::~ComEnvironmentProbe() {
 }
 
 void ComEnvironmentProbe::Purge(bool chainPurge) {
+    if (sphereDef.mesh) {
+        meshManager.ReleaseMesh(sphereDef.mesh);
+        sphereDef.mesh = nullptr;
+    }
+
+    if (sphereMesh) {
+        meshManager.ReleaseMesh(sphereMesh);
+        sphereMesh = nullptr;
+    }
+
+    for (int i = 0; i < sphereDef.materials.Count(); i++) {
+        materialManager.ReleaseMaterial(sphereDef.materials[i], true);
+    }
+    sphereDef.materials.Clear();
+
+    if (sphereHandle != -1) {
+        renderWorld->RemoveRenderObject(sphereHandle);
+        sphereHandle = -1;
+    }
+
     if (probeDef.bakedDiffuseProbeTexture) {
         textureManager.ReleaseTexture(probeDef.bakedDiffuseProbeTexture);
         probeDef.bakedDiffuseProbeTexture = nullptr;
@@ -89,26 +109,6 @@ void ComEnvironmentProbe::Purge(bool chainPurge) {
     if (probeHandle != -1) {
         renderWorld->RemoveEnvProbe(probeHandle);
         probeHandle = -1;
-    }
-
-    if (sphereDef.mesh) {
-        meshManager.ReleaseMesh(sphereDef.mesh);
-        sphereDef.mesh = nullptr;
-    }
-
-    if (sphereMesh) {
-        meshManager.ReleaseMesh(sphereMesh);
-        sphereMesh = nullptr;
-    }
-
-    for (int i = 0; i < sphereDef.materials.Count(); i++) {
-        materialManager.ReleaseMaterial(sphereDef.materials[i]);
-    }
-    sphereDef.materials.Clear();
-
-    if (sphereHandle != -1) {
-        renderWorld->RemoveRenderObject(sphereHandle);
-        sphereHandle = -1;
     }
 
     if (chainPurge) {
@@ -393,16 +393,6 @@ void ComEnvironmentProbe::SetBoxProjection(bool useBoxProjection) {
     UpdateVisuals();
 }
 
-float ComEnvironmentProbe::GetBlendDistance() const {
-    return probeDef.blendDistance;
-}
-
-void ComEnvironmentProbe::SetBlendDistance(float blendDistance) {
-    probeDef.blendDistance = blendDistance;
-
-    UpdateVisuals();
-}
-
 Vec3 ComEnvironmentProbe::GetBoxExtent() const {
     return probeDef.boxExtent;
 }
@@ -449,6 +439,16 @@ void ComEnvironmentProbe::SetBoxOffset(const Vec3 &boxOffset) {
     if (adjustedBoxExtent != probeDef.boxExtent) {
         SetProperty("boxExtent", adjustedBoxExtent);
     }
+
+    UpdateVisuals();
+}
+
+float ComEnvironmentProbe::GetBlendDistance() const {
+    return probeDef.blendDistance;
+}
+
+void ComEnvironmentProbe::SetBlendDistance(float blendDistance) {
+    probeDef.blendDistance = blendDistance;
 
     UpdateVisuals();
 }

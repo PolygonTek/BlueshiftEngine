@@ -161,6 +161,9 @@ public:
                             /// Returns non-scaled AABB in local space.
     const AABB              GetLocalAABB() const;
 
+                            /// Returns AABB in world space.
+    const AABB              GetWorldAABB() const;
+
                             /// Returns OBB in world space.
     const OBB &             GetWorldOBB() const { return worldOBB; }
 
