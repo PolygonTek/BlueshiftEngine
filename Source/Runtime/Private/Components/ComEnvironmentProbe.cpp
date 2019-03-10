@@ -157,8 +157,15 @@ void ComEnvironmentProbe::OnActive() {
 }
 
 void ComEnvironmentProbe::OnInactive() {
-    renderWorld->RemoveRenderObject(sphereHandle);
-    sphereHandle = -1;
+    if (probeHandle != -1) {
+        renderWorld->RemoveEnvProbe(probeHandle);
+        probeHandle = -1;
+    }
+
+    if (sphereHandle != -1) {
+        renderWorld->RemoveRenderObject(sphereHandle);
+        sphereHandle = -1;
+    }
 }
 
 bool ComEnvironmentProbe::HasRenderEntity(int renderEntityHandle) const {
