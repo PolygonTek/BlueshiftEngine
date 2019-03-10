@@ -1562,10 +1562,10 @@ static void RGB16FToRGBA32F(const byte *src, byte *dst, int numPixels, bool isGa
 }
 static void RGBA16FToRGBA32F(const byte *src, byte *dst, int numPixels, bool isGamma) {
     const float16_t *srcPtr = (const float16_t *)src;
-    const float16_t *srcEnd = srcPtr + numPixels * 3;
+    const float16_t *srcEnd = srcPtr + numPixels * 4;
     float *dstPtr = (float *)dst;
 
-    for (; srcPtr < srcEnd; srcPtr += 3, dstPtr += 4) {
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
         dstPtr[0] = F16Converter::ToF32(srcPtr[0]);
         dstPtr[1] = F16Converter::ToF32(srcPtr[1]);
         dstPtr[2] = F16Converter::ToF32(srcPtr[2]);
