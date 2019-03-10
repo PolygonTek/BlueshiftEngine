@@ -80,7 +80,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
             // Create default diffuse probe cubemap.
             diffuseProbeTexture = textureManager.AllocTexture(va("DiffuseProbe-%s", state.guid.ToString()));
             diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, 32, 32, 1, 1, 1,
-                state.useHDR ? Image::RGBA_16F_16F_16F_16F : Image::RGB_8_8_8,
+                state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
                 Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
 
             resourceGuidMapper.Set(Guid::CreateGuid(), diffuseProbeTexture->GetHashName());
@@ -110,7 +110,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
 
             specularProbeTexture = textureManager.AllocTexture(va("SpecularProbe-%s", state.guid.ToString()));
             specularProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels,
-                state.useHDR ? Image::RGBA_16F_16F_16F_16F : Image::RGB_8_8_8,
+                state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
                 Texture::Clamp | Texture::HighQuality);
 
             specularProbeTextureMaxMipLevel = Math::Log(2.0f, specularProbeTexture->GetWidth());
@@ -134,7 +134,7 @@ void EnvProbeJob::RevalidateDiffuseProbeRT(bool clearToBlack) {
 
     // Recreate diffuse convolution texture if its format have changed.
     if ((envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->diffuseProbeTexture->GetFormat()))) {
-        Image::Format format = envProbe->state.useHDR ? Image::RGBA_16F_16F_16F_16F : Image::RGB_8_8_8;
+        Image::Format format = envProbe->state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8;
 
         envProbe->diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, format, 
             Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
@@ -172,7 +172,7 @@ void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
 
     // Recreate diffuse convolution texture if its format or size have changed.
     if (size != envProbe->specularProbeTexture->GetWidth() || (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->specularProbeTexture->GetFormat()))) {
-        Image::Format format = envProbe->state.useHDR ? Image::RGBA_16F_16F_16F_16F : Image::RGB_8_8_8;
+        Image::Format format = envProbe->state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8;
 
         envProbe->specularProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
             Texture::Clamp | Texture::HighQuality);
