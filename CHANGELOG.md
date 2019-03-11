@@ -3,10 +3,9 @@ Version History
 
 ### 0.6.0 (Work In Progress)
 - Refined PBR shaders
-- Added support for baking and blending environment probes
+- Added support for environment probes
 - Added support for various HDR tonemapping operators
 - Added support for UI system
-- Added support for profiler with graphical interface for performance measurements
 - Added support for integration [Google Analytics](https://analytics.google.com/) into the player
 - Added support for integration three ad formats of [Google AdMob](https://www.google.com/admob/) into the player
 - Added support for Unicode (UTF-8) almost everywhere
