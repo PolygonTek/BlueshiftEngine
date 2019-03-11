@@ -46,6 +46,11 @@ public:
     int32_t                 viewCount;
 };
 
+struct BatchSubMesh {
+    SubMesh *               subMesh;
+    Mat3x4                  localTransform;
+};
+
 class Mesh {
     friend class MeshManager;
     friend class RenderWorld;
@@ -209,7 +214,7 @@ public:
     Mesh *                  FindMesh(const char *name) const;
     Mesh *                  GetMesh(const char *name);
 
-    Mesh *                  CreateCombinedMesh(const char *name, const Array<SubMesh *> &subMeshes, const Array<Mat3x4> &subMeshMatrices);
+    Mesh *                  CreateCombinedMesh(const char *name, const Array<BatchSubMesh> &batchSubMeshes);
 
     void                    ReleaseMesh(Mesh *mesh, bool immediateDestroy = false);
     void                    DestroyMesh(Mesh *mesh);

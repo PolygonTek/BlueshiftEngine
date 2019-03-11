@@ -21,10 +21,11 @@ class Entity;
 
 class MeshCombiner {
 public:
-    static void CombineRoot(const Hierarchy<Entity> &staticRoot);
+    static void CombineHierarchy(const Hierarchy<Entity> &staticRoot);
 
 private:
     static void EnumerateCombinableEntities(const Hierarchy<Entity> &parentNode, Array<Entity *> &staticChildren);
+    static void MakeCombiendMeshes(const Array<Entity *> combinableEntities);
     static void MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMeshRenderer *> &meshRenderers, int batchIndex);
 };
 

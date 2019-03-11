@@ -244,17 +244,19 @@ Mesh *MeshManager::GetMesh(const char *hashName) {
     return mesh;
 }
 
-Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const Array<SubMesh *> &subMeshes, const Array<Mat3x4> &subMeshMatrices) {
+Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const Array<BatchSubMesh> &batchSubMeshes) {
+    // Counts total verts/indices for combined mesh.
     int numTotalVerts = 0;
     int numTotalIndexes = 0;
 
-    for (int subMeshIndex = 0; subMeshIndex < subMeshes.Count(); subMeshIndex++) {
-        const SubMesh *subMesh = subMeshes[subMeshIndex];
+    for (int subMeshIndex = 0; subMeshIndex < batchSubMeshes.Count(); subMeshIndex++) {
+        const SubMesh *subMesh = batchSubMeshes[subMeshIndex].subMesh;
 
         numTotalVerts += subMesh->NumVerts();
         numTotalIndexes += subMesh->NumIndexes();
     }
 
+    // Allocates a combiend mesh.
     Mesh *mesh = AllocMesh(hashName);
     MeshSurf *surf = mesh->AllocSurface(numTotalVerts, numTotalIndexes);
     mesh->surfaces.Append(surf);
@@ -263,17 +265,18 @@ Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const Array<SubMesh 
     TriIndex *dstIndexPtr = surf->subMesh->indexes;
     int baseVertex = 0;
 
-    for (int subMeshIndex = 0; subMeshIndex < subMeshes.Count(); subMeshIndex++) {
-        const SubMesh *srcSubMesh = subMeshes[subMeshIndex];
+    for (int subMeshIndex = 0; subMeshIndex < batchSubMeshes.Count(); subMeshIndex++) {
+        const SubMesh *srcSubMesh = batchSubMeshes[subMeshIndex].subMesh;
 
-        for (int index = 0; index < srcSubMesh->numVerts; index++) {
-            *dstVertPtr = srcSubMesh->verts[index];
-            dstVertPtr->Transform(subMeshMatrices[subMeshIndex]);
+        for (int i = 0; i < srcSubMesh->numVerts; i++) {
+            *dstVertPtr = srcSubMesh->verts[i];
+
+            dstVertPtr->Transform(batchSubMeshes[subMeshIndex].localTransform);
             dstVertPtr++;
         }
 
-        for (int index = 0; index < srcSubMesh->numIndexes; index++) {
-            *dstIndexPtr = srcSubMesh->indexes[index] + baseVertex;
+        for (int i = 0; i < srcSubMesh->numIndexes; i++) {
+            *dstIndexPtr = srcSubMesh->indexes[i] + baseVertex;
             dstIndexPtr++;
         }
 
