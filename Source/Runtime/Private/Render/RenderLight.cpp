@@ -96,6 +96,12 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
         assert(0);
     }
 
+    if (state.type == DirectionalLight || state.type == PointLight) {
+        worldAABB = worldOBB.ToAABB();
+    } else {
+        worldAABB = worldFrustum.ToOBB().ToAABB();
+    }
+
     static const Mat4 textureScaleBiasMatrix(Vec4(0.5f, 0.0f, 0.0f, 0.5f), Vec4(0.0f, 0.5f, 0.0f, 0.5f), Vec4(0.0f, 0.0f, 0.5f, 0.5f), Vec4(0.0, 0.0, 0.0, 1.0f));
     viewProjScaleBiasMatrix = textureScaleBiasMatrix * projMatrix * viewMatrix;
 
@@ -140,14 +146,6 @@ bool RenderLight::IsIntersectOBB(const OBB &obb) const {
 
     assert(0);
     return false;
-}
-
-const AABB RenderLight::GetWorldAABB() const {
-    if (state.type == DirectionalLight || state.type == PointLight) {
-        return worldOBB.ToAABB();
-    }
-
-    return worldFrustum.ToOBB().ToAABB();
 }
 
 bool RenderLight::DirLight_ShadowBVFromCaster(const OBB &casterOBB, OBB &shadowOBB) const {

@@ -58,12 +58,16 @@ public:
                     /// Computes the volume of this sphere.
     float           Volume() const { return 4.0f * Math::Pi * radius * radius * radius / 3.0f; }
 
-                    // includes touching
+                    /// Tests if this sphere contain the given point.
     bool            IsContainPoint(const Vec3 &p) const;
-    bool            IsIntersectSphere(const Sphere &sphere) const;
-    bool            IsIntersectAABB(const AABB &aabb) const;
 
-    bool            LineIntersection(const Vec3 &start, const Vec3 &end) const;
+                    /// Tests if this sphere intersect with the given sphere.
+    bool            IsIntersectSphere(const Sphere &sphere) const;
+                    /// Tests if this sphere intersect with the given AABB.
+    bool            IsIntersectAABB(const AABB &aabb) const;
+                    /// Tests if this sphere intersect with the given line segment.
+    bool            IsIntersectLine(const Vec3 &start, const Vec3 &end) const;
+
     float           RayIntersection(const Vec3 &start, const Vec3 &dir) const;
 
                     // 구를 dir 축으로 투영했을 때 min, max 값

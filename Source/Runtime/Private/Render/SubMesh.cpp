@@ -1011,7 +1011,7 @@ bool SubMesh::IsClosed() const {
     return true;
 }
 
-bool SubMesh::LineIntersection(const Vec3 &start, const Vec3 &end, bool backFaceCull) const {
+bool SubMesh::IsIntersectLine(const Vec3 &start, const Vec3 &end, bool backFaceCull) const {
     if (!edgesCalculated) {
         return false;
     }

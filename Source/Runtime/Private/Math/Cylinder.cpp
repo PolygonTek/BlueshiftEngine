@@ -99,7 +99,7 @@ float Cylinder::RayIntersection(const Vec3 &start, const Vec3 &n) const {
     return scale;
 }
 
-bool Cylinder::LineIntersection(const Vec3 &start, const Vec3 &end) const {
+bool Cylinder::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     Vec3 d = p[1] - p[0];
     Vec3 m = start - p[0];
     Vec3 n = end - start;

@@ -117,7 +117,8 @@ public:
 
     void                    UpdateSkinningJointCache(const Skeleton *skeleton, const Mat3x4 *joints);
 
-    bool                    LineIntersection(const Vec3 &start, const Vec3 &end, bool backFaceCull) const;
+    bool                    IsIntersectLine(const Vec3 &start, const Vec3 &end, bool backFaceCull) const;
+
     bool                    RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &scale) const;
 
                             /// Returns volume of solid mesh.

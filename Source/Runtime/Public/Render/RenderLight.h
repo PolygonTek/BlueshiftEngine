@@ -99,7 +99,7 @@ public:
     bool                    IsRadiusUniform() const { return (state.size.x == state.size.y && state.size.x == state.size.z) ? true : false; }
 
                             /// Returns world AABB.
-    const AABB              GetWorldAABB() const;
+    const AABB &            GetWorldAABB() const { return worldAABB; }
 
                             /// Returns world bounding frustum. Valid only for projected light.
     const Frustum &         GetWorldFrustum() const { return worldFrustum; }
@@ -152,6 +152,7 @@ private:
 
     State                   state;
 
+    AABB                    worldAABB;
     OBB                     worldOBB;           // used for PointLight / DirectionalLight
     Frustum                 worldFrustum;       // used for SpotLight
     Mat4                    viewMatrix;

@@ -42,7 +42,7 @@ void LuaVM::RegisterPlane(LuaCpp::Module &module) {
         "rotate_self", &Plane::RotateSelf,
         "distance", &Plane::Distance,
         "side", &Plane::GetSide,
-        "line_intersection", &Plane::LineIntersection,
+        "is_intersect_line", &Plane::IsIntersectLine,
         "ray_intersection", &Plane::RayIntersection
     );
     _Plane.AddClassMembers<Plane>(

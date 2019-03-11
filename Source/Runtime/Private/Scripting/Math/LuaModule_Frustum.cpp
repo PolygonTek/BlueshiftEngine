@@ -51,7 +51,7 @@ void LuaVM::RegisterFrustum(LuaCpp::Module &module) {
         "is_intersect_obb", &Frustum::IsIntersectOBB,
         "is_intersect_sphere", &Frustum::IsIntersectSphere,
         "is_intersect_frustum", &Frustum::IsIntersectFrustum,
-        "line_intersection", &Frustum::LineIntersection,
+        "is_intersect_line", &Frustum::IsIntersectLine,
         "ray_intersection", &Frustum::RayIntersection,
         "to_obb", &Frustum::ToOBB,
         "to_minimum_sphere", &Frustum::ToMinimumSphere,

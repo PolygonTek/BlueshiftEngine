@@ -184,10 +184,10 @@ void Mesh::OptimizeIndexedTriangles() {
 void Mesh::Voxelize() {
 }
 
-bool Mesh::LineIntersection(const Vec3 &start, const Vec3 &end, bool backFaceCull) const {
+bool Mesh::IsIntersectLine(const Vec3 &start, const Vec3 &end, bool backFaceCull) const {
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
         MeshSurf *surf = surfaces[surfaceIndex];
-        if (surf->subMesh->LineIntersection(start, end, backFaceCull)) {
+        if (surf->subMesh->IsIntersectLine(start, end, backFaceCull)) {
             return true;
         }
     }

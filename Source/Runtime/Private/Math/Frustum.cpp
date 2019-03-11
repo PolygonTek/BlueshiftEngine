@@ -697,21 +697,21 @@ bool Frustum::LocalFrustumIntersectsBounds(const Vec3 points[8], const AABB &bou
 
     // test if any edges of the other frustum intersect this frustum
     for (i = 0; i < 4; i++) {
-        if (bounds.LineIntersection(points[i], points[4+i])) {
+        if (bounds.IsIntersectLine(points[i], points[4+i])) {
             return true;
         }
     }
 
     if (dNear > 0.0f) {
         for (i = 0; i < 4; i++) {
-            if (bounds.LineIntersection(points[i], points[(i+1)&3])) {
+            if (bounds.IsIntersectLine(points[i], points[(i+1)&3])) {
                 return true;
             }
         }
     }
 
     for (i = 0; i < 4; i++) {
-        if (bounds.LineIntersection(points[4+i], points[4+((i+1)&3)])) {
+        if (bounds.IsIntersectLine(points[4+i], points[4+((i+1)&3)])) {
             return true;
         }
     }
@@ -873,18 +873,18 @@ bool Frustum::IsIntersectSphere(const Sphere &sphere) const {
         case VORONOI_INDEX(2, 1, 2): return sphere.IsContainPoint(points[6]);
         case VORONOI_INDEX(1, 2, 2): return sphere.IsContainPoint(points[3]);
         case VORONOI_INDEX(2, 2, 2): return sphere.IsContainPoint(points[7]);
-        case VORONOI_INDEX(1, 1, 0): return sphere.LineIntersection(points[0], points[2]);
-        case VORONOI_INDEX(2, 1, 0): return sphere.LineIntersection(points[4], points[6]);
-        case VORONOI_INDEX(1, 2, 0): return sphere.LineIntersection(points[1], points[3]);
-        case VORONOI_INDEX(2, 2, 0): return sphere.LineIntersection(points[5], points[7]);
-        case VORONOI_INDEX(1, 0, 1): return sphere.LineIntersection(points[0], points[1]);
-        case VORONOI_INDEX(2, 0, 1): return sphere.LineIntersection(points[4], points[5]);
-        case VORONOI_INDEX(0, 1, 1): return sphere.LineIntersection(points[0], points[4]);
-        case VORONOI_INDEX(0, 2, 1): return sphere.LineIntersection(points[1], points[5]);
-        case VORONOI_INDEX(1, 0, 2): return sphere.LineIntersection(points[2], points[3]);
-        case VORONOI_INDEX(2, 0, 2): return sphere.LineIntersection(points[6], points[7]);
-        case VORONOI_INDEX(0, 1, 2): return sphere.LineIntersection(points[2], points[6]);
-        case VORONOI_INDEX(0, 2, 2): return sphere.LineIntersection(points[3], points[7]);
+        case VORONOI_INDEX(1, 1, 0): return sphere.IsIntersectLine(points[0], points[2]);
+        case VORONOI_INDEX(2, 1, 0): return sphere.IsIntersectLine(points[4], points[6]);
+        case VORONOI_INDEX(1, 2, 0): return sphere.IsIntersectLine(points[1], points[3]);
+        case VORONOI_INDEX(2, 2, 0): return sphere.IsIntersectLine(points[5], points[7]);
+        case VORONOI_INDEX(1, 0, 1): return sphere.IsIntersectLine(points[0], points[1]);
+        case VORONOI_INDEX(2, 0, 1): return sphere.IsIntersectLine(points[4], points[5]);
+        case VORONOI_INDEX(0, 1, 1): return sphere.IsIntersectLine(points[0], points[4]);
+        case VORONOI_INDEX(0, 2, 1): return sphere.IsIntersectLine(points[1], points[5]);
+        case VORONOI_INDEX(1, 0, 2): return sphere.IsIntersectLine(points[2], points[3]);
+        case VORONOI_INDEX(2, 0, 2): return sphere.IsIntersectLine(points[6], points[7]);
+        case VORONOI_INDEX(0, 1, 2): return sphere.IsIntersectLine(points[2], points[6]);
+        case VORONOI_INDEX(0, 2, 2): return sphere.IsIntersectLine(points[3], points[7]);
         }
         break;
     }
@@ -934,7 +934,7 @@ bool Frustum::IsIntersectFrustum(const Frustum &frustum) const {
 }
 
 // Returns true if the line intersects the box between the start and end point.
-bool Frustum::LineIntersection(const Vec3 &start, const Vec3 &end) const {
+bool Frustum::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     return LocalLineIntersection(axis.TransposedMulVec(start - origin), axis.TransposedMulVec(end - origin));
 }
 

@@ -162,7 +162,7 @@ public:
     const AABB              GetLocalAABB() const;
 
                             /// Returns AABB in world space.
-    const AABB              GetWorldAABB() const;
+    const AABB &            GetWorldAABB() const { return worldAABB; }
 
                             /// Returns OBB in world space.
     const OBB &             GetWorldOBB() const { return worldOBB; }
@@ -184,6 +184,7 @@ private:
 
     State                   state;
 
+    AABB                    worldAABB;
     OBB                     worldOBB;
     Mat3x4                  worldMatrix;
     Mat3x4                  prevWorldMatrix;

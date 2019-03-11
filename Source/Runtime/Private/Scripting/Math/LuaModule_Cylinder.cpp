@@ -31,7 +31,7 @@ void LuaVM::RegisterCylinder(LuaCpp::Module &module) {
         "p2", &Cylinder::P2,
         "radius", &Cylinder::Radius,
         "equals", static_cast<bool(Cylinder::*)(const Cylinder&, const float)const>(&Cylinder::Equals),
-        "line_intersection", &Cylinder::LineIntersection,
+        "is_intersect_line", &Cylinder::IsIntersectLine,
         "ray_intersection", &Cylinder::RayIntersection,
         "to_sphere", &Cylinder::ToSphere,
         "to_obb", &Cylinder::ToOBB);

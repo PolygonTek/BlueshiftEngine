@@ -86,19 +86,19 @@ public:
 
                             /// Finds a edge index by two vertex indexes.
                             /// if v1 is larger than v2, negative number will be returned.
-                            /// To use this function, edge information must be pre-calculated
+                            /// To use this function, edge information must be pre-calculated.
     int                     FindEdge(int v1, int v2) const;
 
-                            /// Test if this sub mesh is closed surface form
-                            /// To use this function, edge information must be pre-calculated
+                            /// Test if this sub mesh is closed surface form.
+                            /// To use this function, edge information must be pre-calculated.
     bool                    IsClosed() const;
 
-                            /// Line intersection
-                            /// To use this function, edge information must be pre-calculated
-    bool                    LineIntersection(const Vec3 &start, const Vec3 &end, bool backFaceCull) const;
+                            /// Tests if this sub mesh intersect with the given line segment.
+                            /// To use this function, edge information must be pre-calculated.
+    bool                    IsIntersectLine(const Vec3 &start, const Vec3 &end, bool backFaceCull) const;
 
-                            /// Ray intersection
-                            /// To use this function, edge information must be pre-calculated
+                            /// Ray intersection.
+                            /// To use this function, edge information must be pre-calculated.
     bool                    RayIntersection(const Vec3 &start, const Vec3 &dir, float &scale, bool backFaceCull) const;
 
     const AABB &            GetAABB() const { return aabb; }

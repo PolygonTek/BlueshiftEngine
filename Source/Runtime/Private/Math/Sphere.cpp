@@ -45,7 +45,7 @@ float Sphere::RayIntersection(const Vec3 &start, const Vec3 &dir) const {
     return scale;
 }
 
-bool Sphere::LineIntersection(const Vec3 &start, const Vec3 &end) const {
+bool Sphere::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     Vec3 m = start - origin;
     float c = m.Dot(m) - radius * radius;
     // If there is definitely at least one real root, there must be an intersection	

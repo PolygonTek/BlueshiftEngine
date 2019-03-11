@@ -109,8 +109,10 @@ public:
     float           Distance(const Vec3 &v) const;
     int             GetSide(const Vec3 &v, const float epsilon) const;
 
+                    /// Tests if this plane intersect with the given line segment.
+    bool            IsIntersectLine(const Vec3 &start, const Vec3 &end) const;
+
     float           RayIntersection(const Vec3 &start, const Vec3 &dir) const;
-    bool            LineIntersection(const Vec3 &start, const Vec3 &end) const;
 
                     /// Returns "a b c d".
     const char *    ToString() const { return ToString(4); }
@@ -261,7 +263,7 @@ BE_INLINE float Plane::RayIntersection(const Vec3 &start, const Vec3 &dir) const
         return false;
     }
 
-    t = -(d1 / d2);	
+    t = -(d1 / d2);
     return true;
     */
     float d1 = Normal().Dot(start) + d;
@@ -274,7 +276,7 @@ BE_INLINE float Plane::RayIntersection(const Vec3 &start, const Vec3 &dir) const
     return -(d1 / d2);
 }
 
-BE_INLINE bool Plane::LineIntersection(const Vec3 &start, const Vec3 &end) const {
+BE_INLINE bool Plane::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
 /*	float d1 = Normal().Dot(start) + d;
     if (d1 <= 0) {
         return false;

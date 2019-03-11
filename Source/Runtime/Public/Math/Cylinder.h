@@ -50,7 +50,9 @@ public:
                         /// Exact compare, no epsilon
     bool                operator!=(const Cylinder &rhs) const { return !Equals(rhs); }
 
-    bool                LineIntersection(const Vec3 &start, const Vec3 &end) const;
+                        /// Tests if this cylinder intersect with the given line segment.
+    bool                IsIntersectLine(const Vec3 &start, const Vec3 &end) const;
+
     float               RayIntersection(const Vec3 &start, const Vec3 &dir) const;
 
     Sphere              ToSphere() const;

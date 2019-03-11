@@ -153,7 +153,7 @@ float AABB::Distance(const Vec3 &p) const {
     return Math::Sqrt(dsq);
 }
 
-bool AABB::LineIntersection(const Vec3 &start, const Vec3 &end) const {
+bool AABB::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     Vec3 center = (b[0] + b[1]) * 0.5f;
     Vec3 extents = b[1] - center;
     Vec3 lineDir = 0.5f * (end - start);
@@ -259,20 +259,14 @@ void AABB::SetFromPointTranslation(const Vec3 &point, const Vec3 &translation) {
     }
 }
 
-void AABB::SetFromAABBTranslation(const AABB &aabb, const Vec3 &origin, const Mat3 &axis, const Vec3 &translation) {
-    if (!axis.IsIdentity()) {
-        SetFromTransformedAABB(aabb, origin, axis);
-    } else {
-        b[0] = aabb[0] + origin;
-        b[1] = aabb[1] + origin;
-    }
-
-    // 이동 성분만큼 확장
+void AABB::SetFromAABBTranslation(const AABB &aabb, const Vec3 &translation) {
     for (int i = 0; i < 3; i++) {
         if (translation[i] < 0.0f) {
-            b[0][i] += translation[i];
+            b[0][i] = aabb[0][i] + translation[i];
+            b[1][i] = aabb[1][i];
         } else {
-            b[1][i] += translation[i];
+            b[0][i] = aabb[0][i];
+            b[1][i] = aabb[1][i] + translation[i];
         }
     }
 }
@@ -283,12 +277,13 @@ void AABB::SetFromTransformedAABB(const AABB &aabb, const Vec3 &origin, const Ma
 
     Vec3 rotatedExtents;
     for (int i = 0; i < 3; i++) {
-        rotatedExtents[i] = Math::Fabs(extents[0] * axis[0][i]) + 
+        rotatedExtents[i] = 
+            Math::Fabs(extents[0] * axis[0][i]) + 
             Math::Fabs(extents[1] * axis[1][i]) + 
             Math::Fabs(extents[2] * axis[2][i]);
     }
-    
-    center = axis * center + origin;
+
+    center = origin + axis * center;
     b[0] = center - rotatedExtents;
     b[1] = center + rotatedExtents;
 }
@@ -366,7 +361,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // dot(a00, v0) = dot(a00, v1)
     p0 = -v0.y * v1.z + v0.z * v1.y;
     // dot(a00, v2)
-    p2 = -v2.y * (v1.z - v0.z) + v2.z * (v1.y - v0.y); 	
+    p2 = -v2.y * (v1.z - v0.z) + v2.z * (v1.y - v0.y);
     // projection intervals are disjoint if Min(p0, p1, p2) > r or -Max(p0, p1, p2) > r
     if (Max(-Max(p0, p2), Min(p0, p2)) > r) {
         return false;
@@ -418,7 +413,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // dot(a11, v0)
     p0 = v0.x * (v2.z - v1.z) - v0.z * (v2.x - v1.x);
     // dot(a11, v1) = dot(a11, v2)
-    p1 = v1.x * v2.z - v1.z * v2.x;	
+    p1 = v1.x * v2.z - v1.z * v2.x;
     // projection intervals are disjoint if Min(p0, p1, p2) > r or -Max(p0, p1, p2) > r
     if (Max(-Max(p0, p1), Min(p0, p1)) > r) {
         return false;
@@ -431,7 +426,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // dot(a12, v0) = dot(a12, v2)
     p0 = -v0.x * v2.z + v0.z * v2.x;
     // dot(a12, v1)
-    p1 = v1.x * (v0.z - v2.z) - v1.z * (v0.x - v2.x);	
+    p1 = v1.x * (v0.z - v2.z) - v1.z * (v0.x - v2.x);
     // projection intervals are disjoint if Min(p0, p1, p2) > r or -Max(p0, p1, p2) > r
     if (Max(-Max(p0, p1), Min(p0, p1)) > r) {
         return false;
@@ -444,7 +439,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // dot(a20, v0) = dot(v20, v1)
     p0 = -v0.x * v1.y + v0.y * v1.x;
     // dot(a20, v2)
-    p2 = -v2.x * (v1.y - v0.y) + v2.y * (v1.x - v0.x);	
+    p2 = -v2.x * (v1.y - v0.y) + v2.y * (v1.x - v0.x);
     // projection intervals are disjoint if Min(p0, p1, p2) > r or -Max(p0, p1, p2) > r
     if (Max(-Max(p0, p2), Min(p0, p2)) > r) {
         return false;

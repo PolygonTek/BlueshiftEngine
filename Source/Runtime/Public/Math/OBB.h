@@ -122,9 +122,9 @@ public:
     bool                IsIntersectOBB(const OBB &b, float epsilon = 1e-3f) const;
                         // 구 교차 여부 리턴
     bool                IsIntersectSphere(const Sphere &sphere) const;
+                        /// Tests if this OBB intersect with the given line segment.
+    bool                IsIntersectLine(const Vec3 &start, const Vec3 &end) const;
 
-                        // Line segment vs AABB intersection
-    bool                LineIntersection(const Vec3 &start, const Vec3 &end) const;
                         // Ray vs OBB intersection 
                         // intersection points is start + dir * scale
     float               RayIntersection(const Vec3 &start, const Vec3 &dir) const;

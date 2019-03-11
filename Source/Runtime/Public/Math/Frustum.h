@@ -36,19 +36,19 @@ class BE_API Frustum {
 public:
     Frustum();
     
-                    /// Returns origin
+                    /// Returns origin.
     const Vec3 &    GetOrigin() const { return origin; }
-                    /// Returns axis
+                    /// Returns axis.
     const Mat3 &    GetAxis() const { return axis; }
-                    /// Returns center of frustum
+                    /// Returns center of frustum.
     Vec3            GetCenter() const;
                     /// Returns distance of near plane from frustum origin.
     float           GetNearDistance() const { return dNear; }
                     /// Returns distance of far plane from frustum origin.
     float           GetFarDistance() const { return dFar; }
-                    /// Returns half the width at the far plane
+                    /// Returns half the width at the far plane.
     float           GetLeft() const { return dLeft; }
-                    /// Returns half the height at the far plane
+                    /// Returns half the height at the far plane.
     float           GetUp() const { return dUp; }
 
     void            SetOrigin(const Vec3 &origin) { this->origin = origin; }
@@ -63,46 +63,45 @@ public:
                     /// Tests if far plane distance is farther than near
     bool            IsValid() const { return dFar > dNear; }
 
-                    // d 만큼 확장된 frustum 리턴
+                    /// Returns expanded frustum.
     Frustum         Expand(float d) const;
-                    // d 만큼 frustum 확장
+                    /// Expands this frustum.
     Frustum &       ExpandSelf(float d);
-                    // 이동된 frustum 리턴
+                    /// Returns translated frustum.
     Frustum         Translate(const Vec3 &translation) const;
-                    // frustum 이동
+                    /// Translates this frustum.
     Frustum &       TranslateSelf(const Vec3 &translation);
-                    // 회전된 frustum 리턴
-    Frustum         Rotate(const Mat3 &rotation) const;	
-                    // frustum 회전
+                    /// Returns rotated frustum.
+    Frustum         Rotate(const Mat3 &rotation) const;
+                    /// Rotates this frustum.
     Frustum &       RotateSelf(const Mat3 &rotation);
 
-                    /// Tests frustum is which side of the plane
-                    /// Plane::Side::Front or Plane::Side::Back or Plane::Side::Cross
+                    /// Returns this frustum is in which side of the plane.
     int             PlaneSide(const Plane &plane, const float epsilon = ON_EPSILON) const;
-                    // frustum 과 평면 사이의 거리
+                    /// Returns distance between frustum and plane.
     float           PlaneDistance(const Plane &plane) const;
 
-                    // fast culling but might not cull everything outside the frustum
+                    /// Fast culling but might not cull everything outside the frustum.
                     /// Tests if any of the planes of the frustum can be used as a separating plane.
     bool            CullPoint(const Vec3 &point) const;
-                    /// Tests if any of the planes of the frustum can be used as a separating plane.
     bool            CullAABB(const AABB &bounds) const;
-                    /// Tests if any of the planes of the frustum can be used as a separating plane.
     bool            CullOBB(const OBB &box) const;
-                    /// Tests if any of the planes of the frustum can be used as a separating plane.
     bool            CullSphere(const Sphere &sphere) const;
-                    /// Tests if any of the planes of this frustum can be used as a separating plane.
     bool            CullFrustum(const Frustum &frustum) const;
 
-                    // exact intersection tests
+                    /// Tests if this frustum contain the given point.
     bool            IsContainPoint(const Vec3 &point) const;
+                    /// Tests if this frustum intersect with the given AABB.
     bool            IsIntersectAABB(const AABB &bounds) const;
+                    /// Tests if this frustum intersect with the given OBB.
     bool            IsIntersectOBB(const OBB &box) const;
+                    /// Tests if this frustum intersect with the given sphere.
     bool            IsIntersectSphere(const Sphere &sphere) const;
+                    /// Tests if this frustum intersect with the given frustum.
     bool            IsIntersectFrustum(const Frustum &frustum) const;
+                    /// Tests if this frustum intersect with the given line segment.
+    bool            IsIntersectLine(const Vec3 &start, const Vec3 &end) const;
 
-                    /// Returns true if the line intersects the box between the start and end point.
-    bool            LineIntersection(const Vec3 &start, const Vec3 &end) const;
                     /// Returns true if the ray intersects the bounds.
                     /// The ray can intersect the bounds in both directions from the start point.
                     /// If start is inside the frustum then scale1 < 0 and scale2 > 0.
@@ -126,27 +125,27 @@ public:
                     /// Returns false if no part of the frustum extends beyond the near plane.
     bool            ConstrainToFrustum(const Frustum &frustum);
 
-                    /// OBB conversion
+                    /// OBB conversion.
     OBB             ToOBB() const;
-                    /// Minimum sphere enclosing frustum
+                    /// Minimum sphere enclosing frustum.
     Sphere          ToMinimumSphere() const;
-                    /// Planes point outwards
+                    /// Planes point outwards.
     void            ToPlanes(Plane planes[6]) const;
-                    /// 8 corners of the frustum
-    void            ToPoints(Vec3 points[8]) const;	
+                    /// 8 corners of the frustum.
+    void            ToPoints(Vec3 points[8]) const;
 
                     // frustum 을 dir 축으로 투영했을 때 min, max 값
     void            AxisProjection(const Vec3 &dir, float &min, float &max) const;
                     // frustum 을 각각의 ax[3] 축으로 투영했을 때 mins, maxs 값
     void            AxisProjection(const Mat3 &ax, AABB &bounds) const;
 
-                    // Calculates the bounds for the projection in this frustum
+                    // Calculates the bounds for the projection in this frustum.
     bool            ProjectionBounds(const AABB &bounds, AABB &projectionBounds) const;
     bool            ProjectionBounds(const OBB &box, AABB &projectionBounds) const;
     bool            ProjectionBounds(const Sphere &sphere, AABB &projectionBounds) const;
     bool            ProjectionBounds(const Frustum &frustum, AABB &projectionBounds) const;
 
-                    /// Calculates the bounds for the projection in this frustum of the given frustum clipped to the given box
+                    /// Calculates the bounds for the projection in this frustum of the given frustum clipped to the given box.
     bool            ClippedProjectionBounds(const Frustum &frustum, const OBB &clipBox, AABB &projectionBounds) const;
 
 private:

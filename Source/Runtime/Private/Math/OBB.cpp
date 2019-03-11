@@ -517,7 +517,7 @@ bool OBB::IsIntersectSphere(const Sphere &sphere) const {
     return p.DistanceSqr(sphere.Origin()) < sphere.Radius() * sphere.Radius();
 }
 
-bool OBB::LineIntersection(const Vec3 &start, const Vec3 &end) const {    
+bool OBB::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     Vec3 lineDir = 0.5f * (end - start);
     Vec3 lineCenter = start + lineDir;
     Vec3 dir = lineCenter - center;
