@@ -20,6 +20,7 @@
 #include "Input/InputSystem.h"
 #include "Sound/SoundSystem.h"
 #include "AnimController/AnimController.h"
+#include "Asset/GuidMapper.h"
 #include "Components/ComTransform.h"
 #include "Components/ComCamera.h"
 #include "Components/ComScript.h"
@@ -52,15 +53,18 @@ GameWorld::GameWorld() {
 
     firstFreeIndex = 0;
 
-    // Create render settings
-    mapRenderSettings = static_cast<MapRenderSettings *>(MapRenderSettings::metaObject.CreateInstance());
-    mapRenderSettings->gameWorld = this;
-
     // Create render world
     renderWorld = renderSystem.AllocRenderWorld();
 
     // Create physics world
     physicsWorld = physicsSystem.AllocPhysicsWorld();
+
+    // Create render settings
+    mapRenderSettings = static_cast<MapRenderSettings *>(MapRenderSettings::metaObject.CreateInstance());
+    mapRenderSettings->gameWorld = this;
+
+    //defaultSkyboxMaterial = materialManager.GetMaterial("Data/EngineMaterials/defaultSkybox.material");
+    //mapRenderSettings->SetProperty("skyboxMaterial", resourceGuidMapper.Get(defaultSkyboxMaterial->GetHashName()));
 
     luaVM.Init();
 
@@ -75,6 +79,8 @@ GameWorld::~GameWorld() {
     if (mapRenderSettings) {
         MapRenderSettings::DestroyInstanceImmediate(mapRenderSettings);
     }
+
+    //materialManager.ReleaseMaterial(defaultSkyboxMaterial);
 
     // Free render world
     renderSystem.FreeRenderWorld(renderWorld);
