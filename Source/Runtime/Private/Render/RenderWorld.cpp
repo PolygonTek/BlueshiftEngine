@@ -320,10 +320,11 @@ void RenderWorld::UpdateEnvProbe(int handle, const EnvProbe::State *def) {
         envProbe->proxy->id = probeDbvt.CreateProxy(envProbe->proxy->worldAABB, MeterToUnit(0.0f), envProbe->proxy);
     } else {
         const bool originMatch = (def->origin == envProbe->state.origin);
+        const bool boxOffsetMatch = (def->boxOffset == envProbe->state.boxOffset);
         const bool boxExtentMatch = (def->boxExtent == envProbe->state.boxExtent);
         const bool blendDistanceMatch = (def->blendDistance == envProbe->state.blendDistance);
 
-        if (!originMatch || !boxExtentMatch || !blendDistanceMatch) {
+        if (!originMatch || !boxOffsetMatch || !boxExtentMatch || !blendDistanceMatch) {
             const Vec3 displacement = def->origin - envProbe->state.origin;
 
             envProbe->Update(def);
