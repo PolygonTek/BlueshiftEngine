@@ -153,9 +153,9 @@ bool RenderLight::DirLight_ShadowBVFromCaster(const OBB &casterOBB, OBB &shadowO
 
     AABB b1, b2;
     // Compute caster bounds for light axis
-    casterOBB.AxisProjection(state.axis, b1);
+    casterOBB.ProjectOnAxis(state.axis, b1);
     // Compute light bounds for light axis
-    worldOBB.AxisProjection(state.axis, b2); 
+    worldOBB.ProjectOnAxis(state.axis, b2);
 
     b1.IntersectSelf(b2);
     if (b1.IsCleared()) {
@@ -195,7 +195,7 @@ bool RenderLight::SpotLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &sh
     dir.Normalize();
 
     float dmin, dmax;
-    casterOBB.AxisProjection(dir, dmin, dmax);
+    casterOBB.ProjectOnAxis(dir, dmin, dmax);
 
     float dNear = dmin - state.origin.Dot(dir);
     if (dNear < worldFrustum.GetNearDistance()) {

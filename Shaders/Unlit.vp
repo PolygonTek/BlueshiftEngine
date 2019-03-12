@@ -18,7 +18,7 @@ out VS_OUT {
     $include "Instancing.vp"
 #else
     uniform mat4x3 localToWorldMatrix;
-    uniform mat3 worldToLocalMatrix;
+    uniform mat4x3 worldToLocalMatrix;
     uniform LOWP vec4 constantColor;
 #endif
 

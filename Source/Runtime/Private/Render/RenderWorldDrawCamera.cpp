@@ -183,7 +183,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
 
         camera->worldAABB.AddAABB(proxy->worldAABB);
 
-        if (renderObject->state.flags & RenderObject::UseEnvProbeLightingFlag) {
+        if (renderObject->state.flags & RenderObject::EnvProbeLitFlag) {
             Array<EnvProbeBlendInfo> localEnvProbes;
             GetClosestProbes(proxy->worldAABB, r_probeBlending.GetBool() ? EnvProbeBlending::Blending : EnvProbeBlending::Simple, localEnvProbes);
 
@@ -734,9 +734,9 @@ void RenderWorld::CacheInstanceBuffer(VisCamera *camera) {
             instanceData += 48;
 
             /*if (surf->drawSurf->material->GetPass()->shader->GetPropertyInfoHashMap().Get("_PARALLAX")) {
-                Mat3 worldToLocalMatrix = renderObject->state.axis.Transpose();
-                *(Mat3 *)instanceData = worldToLocalMatrix; 
-                instanceData += 36;
+                Mat3x4 worldToLocalMatrix = renderObject->GetWorldMatrixInverse();
+                *(Mat3x4 *)instanceData = worldToLocalMatrix; 
+                instanceData += 48;
             }*/
 
             if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {

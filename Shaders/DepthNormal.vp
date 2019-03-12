@@ -32,7 +32,7 @@ out VS_OUT {
     $include "Instancing.vp"
 #else
     uniform mat4x3 localToWorldMatrix;
-    uniform mat3 worldToLocalMatrix;
+    uniform mat4x3 worldToLocalMatrix;
 #endif
 
 #ifdef GPU_SKINNING
@@ -100,7 +100,7 @@ void main() {
         vec4 positionWS = vec4(localToWorldMatrix * positionLS, 1.0);
 
         vec3 viewWS = viewOrigin.xyz - positionWS.xyz;
-        vec3 viewLS = worldToLocalMatrix * viewWS;
+        vec3 viewLS = mat3(worldToLocalMatrix) * viewWS;
 
         vs_out.viewTS.x = dot(tangentLS, viewLS);
         vs_out.viewTS.y = dot(bitangentLS, viewLS);

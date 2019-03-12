@@ -56,11 +56,11 @@ public:
         Type                type = PointLight;
         float               maxVisDist = MeterToUnit(10);
 
-        Vec3                origin = Vec3::origin;
-        Vec3                size = Vec3::one;       // extent for each axis
-        Mat3                axis = Mat3::identity;
+        Vec3                origin = Vec3::origin;      ///< Light position in world space
+        Vec3                size = Vec3::one;           ///< Light extents for each axis
+        Mat3                axis = Mat3::identity;      ///< Light orientation
 
-        float               zNear = 1.0f;           // near distance for SpotLight
+        float               zNear = 1.0f;               // near distance for SpotLight
 
         float               intensity = 1.0f;
         float               fallOffExponent = 1.25f;

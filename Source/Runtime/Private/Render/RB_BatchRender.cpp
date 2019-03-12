@@ -243,8 +243,8 @@ void Batch::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shade
         }
 
         if (shader->builtInConstantIndices[Shader::WorldToLocalMatrixConst] >= 0) {
-            const Mat3 worldToLocalMatrix = surfSpace->def->GetState().axis.Transpose();
-            shader->SetConstant3x3f(shader->builtInConstantIndices[Shader::WorldToLocalMatrixConst], false, worldToLocalMatrix);
+            const Mat3x4 worldToLocalMatrix = surfSpace->def->GetWorldMatrixInverse();
+            shader->SetConstant4x3f(shader->builtInConstantIndices[Shader::WorldToLocalMatrixConst], true, worldToLocalMatrix);
         }
 
         if (shader->builtInConstantIndices[Shader::ConstantColorConst] >= 0) {

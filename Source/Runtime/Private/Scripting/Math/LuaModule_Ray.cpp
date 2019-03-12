@@ -27,7 +27,7 @@ void LuaVM::RegisterRay(LuaCpp::Module &module) {
         "set", &Ray::Set,
         "origin", &Ray::GetOrigin,
         "direction", &Ray::GetDirection,
-        "distance_point", &Ray::GetDistancePoint);
+        "get_point", &Ray::GetPoint);
 }
 
 BE_NAMESPACE_END

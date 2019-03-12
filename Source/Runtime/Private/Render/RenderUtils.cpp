@@ -432,8 +432,8 @@ void R_GenerateSphereTriangleStripVerts(const Sphere &sphere, int lats, int long
             float x = Math::Cos(lng);
             float y = Math::Sin(lng);
 
-            *vptr++ = sphere.origin + Vec3(x * r0, y * r0, z0);
-            *vptr++ = sphere.origin + Vec3(x * r1, y * r1, z1);
+            *vptr++ = sphere.center + Vec3(x * r0, y * r0, z0);
+            *vptr++ = sphere.center + Vec3(x * r1, y * r1, z1);
         }
     }
 }

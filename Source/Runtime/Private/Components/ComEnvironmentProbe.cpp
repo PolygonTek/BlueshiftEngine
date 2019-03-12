@@ -206,11 +206,11 @@ void ComEnvironmentProbe::DrawGizmos(const RenderCamera::State &viewState, bool 
         AABB aabb = AABB(-probeDef.boxExtent, probeDef.boxExtent);
         aabb += probeDef.origin + probeDef.boxOffset;
         
-        renderWorld->SetDebugColor(Color4(0.0f, 0.5f, 1.0f, 1.0f), Color4(0.0f, 0.5f, 1.0f, 0.15f));
+        renderWorld->SetDebugColor(Color4(0.0f, 0.5f, 1.0f, 1.0f), Color4(0.0f, 0.5f, 1.0f, 0.1f));
         renderWorld->DebugAABB(aabb, 1.0f, true, true);
 
         aabb.ExpandSelf(probeDef.blendDistance);
-        renderWorld->SetDebugColor(Color4(1.0f, 0.5f, 0.0f, 1.0f), Color4(1.0f, 0.5f, 0.0f, 0.15f));
+        renderWorld->SetDebugColor(Color4(1.0f, 0.5f, 0.0f, 1.0f), Color4(1.0f, 0.5f, 0.0f, 0.1f));
         renderWorld->DebugAABB(aabb, 1.0f, true, true);
 
 #if 0

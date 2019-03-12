@@ -53,7 +53,7 @@ out VS_OUT {
     $include "Instancing.vp"
 #else
     uniform mat4x3 localToWorldMatrix;
-    uniform mat3 worldToLocalMatrix;
+    uniform mat4x3 worldToLocalMatrix;
     uniform LOWP vec4 constantColor;
 #endif
 
@@ -128,7 +128,7 @@ void main() {
 
     #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
         #if _PARALLAX
-            vec3 viewLS = worldToLocalMatrix * vs_out.viewWS;
+            vec3 viewLS = mat3(worldToLocalMatrix) * vs_out.viewWS;
 
             vs_out.viewTS.x = dot(tangentLS, viewLS);
             vs_out.viewTS.y = dot(bitangentLS, viewLS);

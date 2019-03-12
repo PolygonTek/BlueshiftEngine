@@ -209,14 +209,14 @@ void ComMeshRenderer::SetMaterial(int index, const Material *material) {
 }
 
 bool ComMeshRenderer::IsUseEnvProbeLighting() const {
-    return !!(renderObjectDef.flags & RenderObject::UseEnvProbeLightingFlag);
+    return !!(renderObjectDef.flags & RenderObject::EnvProbeLitFlag);
 }
 
 void ComMeshRenderer::SetUseEnvProbeLighting(bool useEnvProbe) {
     if (useEnvProbe) {
-        renderObjectDef.flags |= RenderObject::UseEnvProbeLightingFlag;
+        renderObjectDef.flags |= RenderObject::EnvProbeLitFlag;
     } else {
-        renderObjectDef.flags &= ~RenderObject::UseEnvProbeLightingFlag;
+        renderObjectDef.flags &= ~RenderObject::EnvProbeLitFlag;
     }
 
     UpdateVisuals();

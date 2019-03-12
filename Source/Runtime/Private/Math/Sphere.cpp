@@ -22,7 +22,7 @@ bool Sphere::IsIntersectAABB(const AABB &aabb) const {
 }
     
 float Sphere::RayIntersection(const Vec3 &start, const Vec3 &dir) const {
-    Vec3 m = start - origin;
+    Vec3 m = start - center;
     float b = m.Dot(dir); // * 2 생략
     float c = m.Dot(m) - radius * radius;
 
@@ -46,16 +46,16 @@ float Sphere::RayIntersection(const Vec3 &start, const Vec3 &dir) const {
 }
 
 bool Sphere::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
-    Vec3 m = start - origin;
+    Vec3 m = start - center;
     float c = m.Dot(m) - radius * radius;
     // If there is definitely at least one real root, there must be an intersection	
     if (c <= 0) {
         return true;
     }
 
-    Vec3 d = end - start;	
-    float l = d.Length();	
-    float b = m.Dot(d) / l;	
+    Vec3 d = end - start;
+    float l = d.Length();
+    float b = m.Dot(d) / l;
     // Exit if line's origin outside sphere (c > 0) and line pointing away from sphere (b > 0)	
     if (b > 0) {
         return false;
@@ -76,7 +76,7 @@ bool Sphere::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
 }
 
 AABB Sphere::ToAABB() const {
-    AABB aabb(origin, origin);
+    AABB aabb(center, center);
     aabb.ExpandSelf(radius);
     return aabb;
 }

@@ -100,7 +100,7 @@ public:
                     /// Tests if this frustum intersect with the given frustum.
     bool            IsIntersectFrustum(const Frustum &frustum) const;
                     /// Tests if this frustum intersect with the given line segment.
-    bool            IsIntersectLine(const Vec3 &start, const Vec3 &end) const;
+    bool            IsIntersectLine(const Vec3 &p0, const Vec3 &p1) const;
 
                     /// Returns true if the ray intersects the bounds.
                     /// The ray can intersect the bounds in both directions from the start point.
@@ -125,19 +125,19 @@ public:
                     /// Returns false if no part of the frustum extends beyond the near plane.
     bool            ConstrainToFrustum(const Frustum &frustum);
 
-                    /// OBB conversion.
+                    /// Converts to OBB.
     OBB             ToOBB() const;
-                    /// Minimum sphere enclosing frustum.
+                    /// Converts to minimum sphere enclosing frustum.
     Sphere          ToMinimumSphere() const;
-                    /// Planes point outwards.
+                    /// Calculates planes point outwards.
     void            ToPlanes(Plane planes[6]) const;
-                    /// 8 corners of the frustum.
+                    /// Calculates 8 corners of the frustum.
     void            ToPoints(Vec3 points[8]) const;
 
-                    // frustum 을 dir 축으로 투영했을 때 min, max 값
-    void            AxisProjection(const Vec3 &dir, float &min, float &max) const;
-                    // frustum 을 각각의 ax[3] 축으로 투영했을 때 mins, maxs 값
-    void            AxisProjection(const Mat3 &ax, AABB &bounds) const;
+                    /// Calculates minimum / maximum value by projecting frustum onto the given axis.
+    void            ProjectOnAxis(const Vec3 &axis, float &min, float &max) const;
+                    /// Calculates minimum / maximum values by projecting frustum onto the given axis.
+    void            ProjectOnAxis(const Mat3 &axis, AABB &minmaxs) const;
 
                     // Calculates the bounds for the projection in this frustum.
     bool            ProjectionBounds(const AABB &bounds, AABB &projectionBounds) const;
@@ -160,7 +160,7 @@ private:
     void            ToClippedPoints(const float fractions[4], Vec3 points[8]) const;
     void            ToIndexPoints(Vec3 indexPoints[8]) const;
     void            ToIndexPointsAndCornerVecs(Vec3 indexPoints[8], Vec3 cornerVecs[4]) const;
-    void            AxisProjection(const Vec3 indexPoints[8], const Vec3 cornerVecs[4], const Vec3 &dir, float &min, float &max) const;
+    void            ProjectOnAxis(const Vec3 indexPoints[8], const Vec3 cornerVecs[4], const Vec3 &dir, float &min, float &max) const;
     void            AddLocalLineToProjectionBoundsSetCull(const Vec3 &start, const Vec3 &end, int &startCull, int &endCull, AABB &bounds) const;
     void            AddLocalLineToProjectionBoundsUseCull(const Vec3 &start, const Vec3 &end, int startCull, int endCull, AABB &bounds) const;
     bool            AddLocalCapsToProjectionBounds(const Vec3 endPoints[4], const int endPointCull[4], const Vec3 &point, int pointCull, int pointClip, AABB &projectionBounds) const;

@@ -38,28 +38,31 @@ public:
     OBB() {}
     constexpr OBB(const Vec3 &center, const Vec3 &extents, const Mat3 &axis);
     OBB(const AABB &aabb, const Vec3 &origin, const Mat3 &axis);
+    OBB(const AABB &aabb, const Mat3x4 &transform);
     explicit OBB(const Vec3 &point);
     explicit OBB(const AABB &aabb);
 
                         /// Returns true if this OBB is inside out.
     bool                IsCleared() const;
-
                         /// Resets this OBB. If you invoke this method, IsCleared() shall returns true.
     void                Clear();
 
-                        /// Sets to zero sized OBB.
-    void                SetZero();
-
-    void                SetCenter(const Vec3 &center);
-    void                SetExtents(const Vec3 &extents);
-    void                SetAxis(const Mat3 &axis);
+                        /// Sets center of this OBB.
+    void                SetCenter(const Vec3 &center) { this->center = center; }
+                        /// Sets extents of this OBB.
+    void                SetExtents(const Vec3 &extents) { this->extents = extents; }
+                        /// Sets axis of this OBB.
+    void                SetAxis(const Mat3 &axis) { this->axis = axis; }
 
                         /// Returns center of the OBB.
-    const Vec3 &        Center() const;
+    const Vec3 &        Center() const { return center; }
                         /// Returns extents of the OBB.
-    const Vec3 &        Extents() const;
+    const Vec3 &        Extents() const { return extents; }
                         /// Returns the axis of the OBB.
-    const Mat3 &        Axis() const;
+    const Mat3 &        Axis() const { return axis; }
+
+                        /// Sets to zero sized OBB.
+    void                SetZero();
 
                         /// Returns the volume of the OBB.
     float               Volume() const;
@@ -135,24 +138,32 @@ public:
                         /// Tests if this OBB intersect with the given sphere.
     bool                IsIntersectSphere(const Sphere &sphere) const;
                         /// Tests if this OBB intersect with the given line segment.
-    bool                IsIntersectLine(const Vec3 &start, const Vec3 &end) const;
+    bool                IsIntersectLine(const Vec3 &p0, const Vec3 &p1) const;
 
-                        /// Calculates intersection scale in direction from the start point.
-                        /// Intersection point can be calculated as 'start + dir * scale'.
+                        /// Returns intersection distance in direction from the start point.
+                        /// Intersection point can be calculated like 'start + dir * distance'.
     float               RayIntersection(const Vec3 &start, const Vec3 &dir) const;
 
                         /// Sets OBB with the given points using PCA (Principal Component Analysis).
     void                SetFromPoints(const Vec3 *points, int numPoints);
 
-                        /// Calculates minimum / maximum value by projecting OBB in dir direction.
-    void                AxisProjection(const Vec3 &dir, float &min, float &max) const;
-                        /// Calculates minimum / maximum values by projecting OBB in each direction.
-    void                AxisProjection(const Mat3 &ax, AABB &bounds) const;
+                        /// Calculates minimum / maximum value by projecting OBB onto the given axis.
+    void                ProjectOnAxis(const Vec3 &axis, float &min, float &max) const;
 
-                        // bounding volume 을 axis 별로 projection 했을 때 bounds 값 [-1, 1]
-    bool                ProjectionBounds(const Sphere &sphere, AABB &projectionBounds) const;
-    bool                ProjectionBounds(const OBB &obb, AABB &projectionBounds) const;
-    bool                ProjectionBounds(const Frustum &frustum, AABB &projectionBounds) const;
+                        /// Calculates minimum / maximum values by projecting OBB onto the given axis.
+    void                ProjectOnAxis(const Mat3 &axis, AABB &minmaxs) const;
+
+                        /// Calculates local bounds [-1, 1] by projecting sphere in this OBB volume.
+                        /// Returns false if the sphere is completely outside this OBB.
+    bool                ProjectionBounds(const Sphere &sphere, AABB &localBounds) const;
+
+                        /// Calculates local bounds [-1, 1] by projecting OBB in this OBB volume.
+                        /// Returns false if the OBB is completely outside this OBB.
+    bool                ProjectionBounds(const OBB &obb, AABB &localBounds) const;
+
+                        /// Calculates local bounds [-1, 1] by projecting frustum in this OBB volume.
+                        /// Returns false if the frustum is completely outside this OBB.
+    bool                ProjectionBounds(const Frustum &frustum, AABB &localBounds) const;
 
                         /// Calcuates 8 vertices of OBB.
     void                ToPoints(Vec3 points[8]) const;
@@ -192,6 +203,13 @@ BE_INLINE OBB::OBB(const AABB &aabb, const Vec3 &origin, const Mat3 &axis) {
     this->extents = aabb[1] - this->center;
     this->center = origin + axis * this->center;
     this->axis = axis;
+}
+
+BE_INLINE OBB::OBB(const AABB &aabb, const Mat3x4 &transform) {
+    this->center = (aabb[0] + aabb[1]) * 0.5f;
+    this->extents = aabb[1] - this->center;
+    this->center = transform * this->center;
+    this->axis = transform.ToMat3().OrthoNormalize();
 }
 
 BE_INLINE OBB OBB::operator+(const Vec3 &t) const {
@@ -245,30 +263,6 @@ BE_INLINE void OBB::SetZero() {
     axis.SetIdentity();
 }
 
-BE_INLINE void OBB::SetCenter(const Vec3 &c) {
-    center = c;
-}
-
-BE_INLINE void OBB::SetExtents(const Vec3 &e) {
-    extents = e;
-}
-
-BE_INLINE void OBB::SetAxis(const Mat3 &a) {
-    axis = a;
-}
-
-BE_INLINE const Vec3 &OBB::Center() const {
-    return center;
-}
-
-BE_INLINE const Vec3 &OBB::Extents() const {
-    return extents;
-}
-
-BE_INLINE const Mat3 &OBB::Axis() const {
-    return axis;
-}
-
 BE_INLINE float OBB::Volume() const {
     return (extents * 2.0f).LengthSqr();
 }
@@ -317,23 +311,23 @@ BE_INLINE bool OBB::IsContainPoint(const Vec3 &p) const {
     return true;
 }
 
-BE_INLINE void OBB::AxisProjection(const Vec3 &dir, float &min, float &max) const {
-    float d1 = dir.Dot(center);
-    float d2 = Math::Fabs(extents[0] * axis[0].Dot(dir)) + 
-               Math::Fabs(extents[1] * axis[1].Dot(dir)) + 
-               Math::Fabs(extents[2] * axis[2].Dot(dir));
+BE_INLINE void OBB::ProjectOnAxis(const Vec3 &axis, float &min, float &max) const {
+    float d1 = axis.Dot(center);
+    float d2 = Math::Fabs(extents[0] * this->axis[0].Dot(axis)) +
+               Math::Fabs(extents[1] * this->axis[1].Dot(axis)) +
+               Math::Fabs(extents[2] * this->axis[2].Dot(axis));
     min = d1 - d2;
     max = d1 + d2;
 }
 
-BE_INLINE void OBB::AxisProjection(const Mat3 &ax, AABB &aabb) const {
+BE_INLINE void OBB::ProjectOnAxis(const Mat3 &axis, AABB &minmaxs) const {
     for (int i = 0; i < 3; i++) {
-        float d1 = ax[i].Dot(center);
-        float d2 = Math::Fabs(extents[0] * axis[0].Dot(ax[i])) +
-                   Math::Fabs(extents[1] * axis[1].Dot(ax[i])) +
-                   Math::Fabs(extents[2] * axis[2].Dot(ax[i]));
-        aabb[0][i] = d1 - d2;
-        aabb[1][i] = d1 + d2;
+        float d1 = axis[i].Dot(center);
+        float d2 = Math::Fabs(extents[0] * this->axis[0].Dot(axis[i])) +
+                   Math::Fabs(extents[1] * this->axis[1].Dot(axis[i])) +
+                   Math::Fabs(extents[2] * this->axis[2].Dot(axis[i]));
+        minmaxs[0][i] = d1 - d2;
+        minmaxs[1][i] = d1 + d2;
     }
 }
 

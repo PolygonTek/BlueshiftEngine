@@ -144,7 +144,7 @@ const AABB ComRenderable::GetAABB() {
     return renderObjectDef.localAABB * transform->GetScale();
 }
 
-bool ComRenderable::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
+bool ComRenderable::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastDist) const {
     if (!renderObjectDef.mesh) {
         return false;
     }
@@ -153,20 +153,20 @@ bool ComRenderable::RayIntersection(const Vec3 &start, const Vec3 &dir, bool bac
     Vec3 localDir = renderObjectDef.axis.TransposedMulVec(dir) / renderObjectDef.scale;
     localDir.Normalize();
 
-    float localS = renderObjectDef.mesh->GetAABB().RayIntersection(localStart, localDir);
-    if (localS == FLT_MAX) {
+    float localDist = renderObjectDef.mesh->GetAABB().RayIntersection(localStart, localDir);
+    if (localDist == FLT_MAX) {
         return false;
     }
 
-    float s = localS * (localDir * renderObjectDef.scale).Length();
-    if (s > lastScale) {
+    float s = localDist * (localDir * renderObjectDef.scale).Length();
+    if (s > lastDist) {
         return false;
     }
 
-    if (renderObjectDef.mesh->RayIntersection(localStart, localDir, backFaceCull, localS)) {
-        s = localS * (localDir * renderObjectDef.scale).Length();
-        if (s > 0.0f && s < lastScale) {
-            lastScale = s;
+    if (renderObjectDef.mesh->RayIntersection(localStart, localDir, backFaceCull, localDist)) {
+        s = localDist * (localDir * renderObjectDef.scale).Length();
+        if (s > 0.0f && s < lastDist) {
+            lastDist = s;
             return true;
         }
     }

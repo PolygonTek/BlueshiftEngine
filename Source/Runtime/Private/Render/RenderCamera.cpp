@@ -133,13 +133,13 @@ bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) 
     float r2 = sphere.radius * sphere.radius;
 
     // in case camera in in sphere
-    if (state.origin.DistanceSqr(sphere.origin) < r2) {
+    if (state.origin.DistanceSqr(sphere.center) < r2) {
         clipRect = state.renderRect;
         return true;
     }
 
     // sphere 의 중심좌표(L) 를 카메라 로컬좌표계(X, Y, Z = FORWARD, LEFT, UP) 로 변환
-    Vec3 localOrigin = state.axis.TransposedMulVec(sphere.origin - state.origin);
+    Vec3 localOrigin = state.axis.TransposedMulVec(sphere.center - state.origin);
 
     float x2 = localOrigin.x * localOrigin.x;
     float y2 = localOrigin.y * localOrigin.y;
@@ -376,8 +376,8 @@ bool RenderCamera::CalcDepthBoundsFromPoints(int numPoints, const Vec3 *points, 
 
 bool RenderCamera::CalcDepthBoundsFromSphere(const Sphere &sphere, const Mat4 &mvp, float *depthMin, float *depthMax) const {
     Vec3 points[2];
-    points[0] = sphere.Origin() + state.axis[0] * sphere.Radius();
-    points[1] = sphere.Origin() - state.axis[0] * sphere.Radius();
+    points[0] = sphere.center + state.axis[0] * sphere.radius;
+    points[1] = sphere.center - state.axis[0] * sphere.radius;
     return CalcDepthBoundsFromPoints(2, points, mvp, depthMin, depthMax);
 }
 
@@ -441,19 +441,19 @@ const Ray RenderCamera::RayFromScreenND(const RenderCamera::State &renderCamera,
         ray.origin -= renderCamera.axis[1] * ndx * renderCamera.sizeX;
         ray.origin -= renderCamera.axis[2] * ndy * renderCamera.sizeY;
 
-        ray.direction = renderCamera.axis[0];
-        ray.direction.Normalize();
+        ray.dir = renderCamera.axis[0];
+        ray.dir.Normalize();
     } else {
         float half_w = Math::Tan(DEG2RAD(renderCamera.fovX * 0.5f)) * renderCamera.zNear;
         float half_h = Math::Tan(DEG2RAD(renderCamera.fovY * 0.5f)) * renderCamera.zNear;
 
-        ray.direction = renderCamera.axis[0] * renderCamera.zNear;
-        ray.direction -= renderCamera.axis[1] * ndx * half_w;
-        ray.direction -= renderCamera.axis[2] * ndy * half_h;
+        ray.dir = renderCamera.axis[0] * renderCamera.zNear;
+        ray.dir -= renderCamera.axis[1] * ndx * half_w;
+        ray.dir -= renderCamera.axis[2] * ndy * half_h;
         
-        ray.origin = renderCamera.origin + ray.direction;
+        ray.origin = renderCamera.origin + ray.dir;
 
-        ray.direction.Normalize();
+        ray.dir.Normalize();
     }
 
     return ray;

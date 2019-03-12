@@ -37,6 +37,7 @@ public:
     AABB() {}
     /// Constructs this AABB by specifying the minimum and maximum extending corners of the box.
     AABB(const Vec3 &mins, const Vec3 &maxs);
+    /// Constructs this AABB by single point.
     explicit AABB(const Vec3 &point);
 
                         /// Returns true if this AABB is inside out.
@@ -163,10 +164,10 @@ public:
                         /// Tests if this AABB intersect with the given triangle.
     bool                IsIntersectTriangle(const Vec3 &v0, const Vec3 &v1, const Vec3 &v2) const;
                         /// Tests if this AABB intersect with the given line segment.
-    bool                IsIntersectLine(const Vec3 &start, const Vec3 &end) const;
+    bool                IsIntersectLine(const Vec3 &p0, const Vec3 &p1) const;
 
-                        /// Calculates intersection scale in direction from the start point.
-                        /// Intersection point can be calculated as 'start + dir * scale'.
+                        /// Returns intersection distance in direction from the start point.
+                        /// Intersection point can be calculated like 'start + dir * distance'.
     float               RayIntersection(const Vec3 &start, const Vec3 &dir) const;
     
                         /// Sets AABB enclosing all points.
@@ -188,11 +189,11 @@ public:
                         /// This is not mathematically correct for non-uniform scaled transform matrix.
     void                SetFromTransformedAABBFast(const AABB &aabb, const Mat3x4 &transform);
 
-                        /// Calculates minimum / maximum value by projecting AABB in the dir direction.
-    void                AxisProjection(const Vec3 &dir, float &min, float &max) const;
+                        /// Calculates minimum / maximum value by projecting AABB onto the given axis.
+    void                ProjectOnAxis(const Vec3 &axis, float &min, float &max) const;
 
-                        /// Calculates minimum / maximum value by projecting transformed AABB in the dir direction.
-    void                AxisProjection(const Vec3 &origin, const Mat3 &axis, const Vec3 &dir, float &min, float &max) const;
+                        /// Calculates minimum / maximum value by projecting transformed AABB onto the given axis.
+    void                ProjectOnAxis(const Vec3 &transformOrigin, const Mat3 &transformAxis, const Vec3 &axis, float &min, float &max) const;
 
                         /// Calcuates 8 vertices of AABB.
     void                ToPoints(Vec3 points[8]) const;
@@ -463,7 +464,7 @@ BE_INLINE bool AABB::IsIntersectAABB(const AABB &a, bool ignoreBorders) const {
 }
 
 BE_INLINE bool AABB::IsIntersectSphere(const Sphere &s) const {
-    if (DistanceSqr(s.origin) > s.radius * s.radius) {
+    if (DistanceSqr(s.center) > s.radius * s.radius) {
         return false;
     }
     return true;
@@ -471,8 +472,8 @@ BE_INLINE bool AABB::IsIntersectSphere(const Sphere &s) const {
 
 BE_INLINE Sphere AABB::ToSphere() const {
     Sphere sphere;
-    sphere.origin = (b[0] + b[1]) * 0.5f;
-    sphere.radius = (b[1] - sphere.origin).Length();
+    sphere.center = (b[0] + b[1]) * 0.5f;
+    sphere.radius = (b[1] - sphere.center).Length();
     return sphere;
 }
 

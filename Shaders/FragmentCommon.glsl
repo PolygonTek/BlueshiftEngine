@@ -117,7 +117,6 @@ vec3 BoxProjectedCubemapDirection(vec3 worldS, vec3 worldPos, vec4 cubemapCenter
         // Get local corrected reflection vector.
         return intersectionPosition - cubemapCenter.xyz;
     }
-
     return worldS;
 }
 

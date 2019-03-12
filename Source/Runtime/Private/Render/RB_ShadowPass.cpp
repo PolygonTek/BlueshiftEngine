@@ -27,8 +27,8 @@ static bool RB_ComputeNearFar(const Vec3 &lightOrigin, const OBB &lightOBB, cons
     Vec3 lightDir = lightOBB.Axis()[0];
     float lightFar = lightOBB.Extents()[0] * 2.0f;
 
-    litVisAABB.AxisProjection(lightDir, dmin1, dmax1);
-    viewFrustum.AxisProjection(lightDir, dmin2, dmax2);
+    litVisAABB.ProjectOnAxis(lightDir, dmin1, dmax1);
+    viewFrustum.ProjectOnAxis(lightDir, dmin2, dmax2);
 
     *dNear = dmin1 - lightDir.Dot(lightOrigin);
     
@@ -49,11 +49,11 @@ static bool RB_ComputeNearFar(const Frustum &lightFrustum, const AABB &litVisAAB
     
     Vec3 lightDir = lightFrustum.GetAxis()[0];
 
-    litVisAABB.AxisProjection(lightDir, dmin1, dmax1);
-    viewFrustum.AxisProjection(lightDir, dmin2, dmax2);
+    litVisAABB.ProjectOnAxis(lightDir, dmin1, dmax1);
+    viewFrustum.ProjectOnAxis(lightDir, dmin2, dmax2);
 
     *dNear = Max(lightFrustum.GetNearDistance(), dmin1 - lightDir.Dot(lightFrustum.GetOrigin()) - 4.0f);
-    *dFar = Min(lightFrustum.GetFarDistance(), Max(dmax1, dmax2) - lightDir.Dot(lightFrustum.GetOrigin()));	
+    *dFar = Min(lightFrustum.GetFarDistance(), Max(dmax1, dmax2) - lightDir.Dot(lightFrustum.GetOrigin()));
 
     if (*dFar <= lightFrustum.GetNearDistance() || *dNear >= *dFar) {
         return false;
@@ -94,18 +94,26 @@ static void RB_AlignProjectionBounds(float &xmin, float &xmax, float &ymin, floa
 }
 
 static bool RB_ComputeShadowCropMatrix(const OBB &lightOBB, const OBB &shadowCasterOBB, const Frustum &viewFrustum, Mat4 &shadowCropMatrix) {
-    // crop bounds 를 만든다
-    AABB casterCropBounds, viewCropBounds;
-    lightOBB.ProjectionBounds(viewFrustum, viewCropBounds);
-    lightOBB.ProjectionBounds(shadowCasterOBB, casterCropBounds);
+    // Calculates crop bounds of view frustum in light OBB space
+    AABB viewCropBounds;
+    if (!lightOBB.ProjectionBounds(viewFrustum, viewCropBounds)) {
+        return false;
+    }
 
-    // 두개의 crop bounds 의 교집합
+    // Calculates crop bounds of shadow caster OBB in light OBB space.
+    AABB casterCropBounds;
+    if (!lightOBB.ProjectionBounds(shadowCasterOBB, casterCropBounds)) {
+        return false;
+    }
+
+    // Intersects crop bounds.
     AABB cropBounds;
     cropBounds[0][LeftAxis] = (casterCropBounds[0][LeftAxis] > viewCropBounds[0][LeftAxis]) ? casterCropBounds[0][LeftAxis] : viewCropBounds[0][LeftAxis];
     cropBounds[1][LeftAxis] = (casterCropBounds[1][LeftAxis] < viewCropBounds[1][LeftAxis]) ? casterCropBounds[1][LeftAxis] : viewCropBounds[1][LeftAxis];
     cropBounds[0][UpAxis] = (casterCropBounds[0][UpAxis] > viewCropBounds[0][UpAxis]) ? casterCropBounds[0][UpAxis] : viewCropBounds[0][UpAxis];		
     cropBounds[1][UpAxis] = (casterCropBounds[1][UpAxis] < viewCropBounds[1][UpAxis]) ? casterCropBounds[1][UpAxis] : viewCropBounds[1][UpAxis];
 
+    // Returns false if there is no intersection.
     if (cropBounds[0][LeftAxis] > cropBounds[1][LeftAxis] || cropBounds[0][UpAxis] > cropBounds[1][UpAxis]) {
         return false;
     }
@@ -116,14 +124,15 @@ static bool RB_ComputeShadowCropMatrix(const OBB &lightOBB, const OBB &shadowCas
     float ymax =  cropBounds[1][UpAxis];
 
     R_Set2DCropMatrix(xmin, xmax, ymin, ymax, shadowCropMatrix);
-
     return true;
 }
 
 static bool RB_ComputeShadowCropMatrix(const OBB &lightOBB, const Sphere &viewSphere, Mat4 &shadowCropMatrix) {
-    // Calculate projection bounds [-1 ~ +1] of viewSphere in lightOBB space
+    // Calculate crop bounds [-1, 1] of view sphere in light OBB space
     AABB cropBounds;
-    lightOBB.ProjectionBounds(viewSphere, cropBounds);
+    if (!lightOBB.ProjectionBounds(viewSphere, cropBounds)) {
+        return false;
+    }
 
     float xmin = -cropBounds[1][LeftAxis];
     float xmax = -cropBounds[0][LeftAxis];
@@ -138,7 +147,6 @@ static bool RB_ComputeShadowCropMatrix(const OBB &lightOBB, const Sphere &viewSp
     }
 
     R_Set2DCropMatrix(xmin, xmax, ymin, ymax, shadowCropMatrix);
-    
     return true;
 }
 
@@ -146,7 +154,7 @@ static bool RB_ComputeShadowCropMatrix(const Frustum &lightFrustum, const OBB &s
     // crop bounds 를 만든다
     AABB casterCropBounds, viewCropBounds;
     lightFrustum.ProjectionBounds(viewFrustum, viewCropBounds);
-    lightFrustum.ProjectionBounds(shadowCasterOBB, casterCropBounds);		
+    lightFrustum.ProjectionBounds(shadowCasterOBB, casterCropBounds);
 
     // 두개의 crop bounds 의 교집합
     AABB cropBounds;
@@ -567,7 +575,9 @@ static void RB_ProjectedShadowMapPass(const VisLight *visLight, const Frustum &v
                 return;
             }
         } else {
-            RB_ComputeShadowCropMatrix(lightFrustum, viewFrustum, shadowCropMatrix);
+            if (!RB_ComputeShadowCropMatrix(lightFrustum, viewFrustum, shadowCropMatrix)) {
+                return false;
+            }
         }
 
         // crop matrix 를 곱해서 effective 'zoomed in' shadow view-projection matrix 를 만든다
@@ -637,8 +647,10 @@ static bool RB_SingleCascadedShadowMapPass(const VisLight *visLight, const Frust
             float viewSize = viewSphere.Radius() * 2;
             float texelsPerCenti = r_shadowMapSize.GetFloat() / UnitToCenti(viewSize);
             backEnd.shadowMapFilterSize[cascadeIndex] = Max(r_shadowMapFilterSize.GetFloat() * texelsPerCenti, 1.0f);
-                
-            RB_ComputeShadowCropMatrix(lightOBB, viewSphere, shadowCropMatrix);
+
+            if (!RB_ComputeShadowCropMatrix(lightOBB, viewSphere, shadowCropMatrix)) {
+                return false;
+            }
         }
 
         // crop matrix 를 곱해서 effective 'zoomed in' shadow view-projection matrix 를 만든다

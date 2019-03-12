@@ -316,29 +316,29 @@ void AABB::SetFromTransformedAABB(const AABB &aabb, const Mat3x4 &transform) {
     }
 }
 
-void AABB::AxisProjection(const Vec3 &dir, float &min, float &max) const {
+void AABB::ProjectOnAxis(const Vec3 &axis, float &min, float &max) const {
     Vec3 center = (b[0] + b[1]) * 0.5f;
     Vec3 extents = b[1] - center;
 
-    float d1 = dir.Dot(center);
-    float d2 = Math::Fabs(extents[0] * dir[0]) + 
-               Math::Fabs(extents[1] * dir[1]) + 
-               Math::Fabs(extents[2] * dir[2]);
+    float d1 = axis.Dot(center);
+    float d2 = Math::Fabs(extents[0] * axis[0]) +
+               Math::Fabs(extents[1] * axis[1]) +
+               Math::Fabs(extents[2] * axis[2]);
 
     min = d1 - d2;
     max = d1 + d2;
 }
 
-void AABB::AxisProjection(const Vec3 &origin, const Mat3 &axis, const Vec3 &dir, float &min, float &max) const {
+void AABB::ProjectOnAxis(const Vec3 &transformOrigin, const Mat3 &transformAxis, const Vec3 &axis, float &min, float &max) const {
     Vec3 center = (b[0] + b[1]) * 0.5f;
     Vec3 extents = b[1] - center;
 
-    center = axis * center + origin;
+    center = transformAxis * center + transformOrigin;
 
-    float d1 = dir.Dot(center);
-    float d2 = Math::Fabs(extents[0] * axis[0].Dot(dir)) + 
-               Math::Fabs(extents[1] * axis[1].Dot(dir)) + 
-               Math::Fabs(extents[2] * axis[2].Dot(dir));
+    float d1 = axis.Dot(center);
+    float d2 = Math::Fabs(extents[0] * transformAxis[0].Dot(axis)) +
+               Math::Fabs(extents[1] * transformAxis[1].Dot(axis)) +
+               Math::Fabs(extents[2] * transformAxis[2].Dot(axis));
 
     min = d1 - d2;
     max = d1 + d2;

@@ -42,8 +42,8 @@ struct DbvtProxy {
 
 struct EnvProbeBlendInfo {
     EnvProbe *              envProbe;
-    AABB                    proxyAABB;
     float                   weight;
+    AABB                    proxyAABB;      ///< Used for parallax correction
 };
 
 class RenderWorld {

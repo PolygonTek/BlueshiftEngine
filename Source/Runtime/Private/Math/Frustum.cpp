@@ -61,7 +61,7 @@ static void BoxToPoints(const Vec3 &center, const Vec3 &extents, const Mat3 &axi
 float Frustum::PlaneDistance(const Plane &plane) const {
     float min, max;
 
-    AxisProjection(plane.Normal(), min, max);
+    ProjectOnAxis(plane.Normal(), min, max);
     if (min + plane[3] > 0.0f) {
         return min + plane[3];
     }
@@ -76,7 +76,7 @@ float Frustum::PlaneDistance(const Plane &plane) const {
 int Frustum::PlaneSide(const Plane &plane, const float epsilon) const {
     float min, max;
 
-    AxisProjection(plane.Normal(), min, max);
+    ProjectOnAxis(plane.Normal(), min, max);
     if (min + plane[3] > epsilon) {
         return Plane::Side::Front;
     }
@@ -198,7 +198,7 @@ bool Frustum::CullOBB(const OBB &box) const {
 //   9 muls best case
 //  21 muls worst case
 bool Frustum::CullSphere(const Sphere &sphere) const {
-    Vec3 center = axis.TransposedMulVec(sphere.Origin() - origin);
+    Vec3 center = axis.TransposedMulVec(sphere.Center() - origin);
     float r = sphere.Radius();
 
     // test near plane
@@ -811,7 +811,7 @@ bool Frustum::IsIntersectSphere(const Sphere &sphere) const {
     x = y = z = 0;
     Vec3 dir = Vec3::FromScalar(0);
 
-    p = axis.TransposedMulVec(sphere.Origin() - origin);
+    p = axis.TransposedMulVec(sphere.Center() - origin);
 
     if (p.x <= dNear) {
         scale = dNear * invFar;
@@ -1121,7 +1121,7 @@ bool Frustum::FromProjection(const Sphere &sphere, const Vec3 &projectionOrigin,
 
     assert(dFar > 0.0f);
 
-    dir = sphere.Origin() - projectionOrigin;
+    dir = sphere.Center() - projectionOrigin;
     d = dir.Normalize();
     r = sphere.Radius();
 
@@ -1150,7 +1150,7 @@ bool Frustum::FromProjection(const Sphere &sphere, const Vec3 &projectionOrigin,
 bool Frustum::ConstrainToAABB(const AABB &bounds) {
     float min, max, newdFar;
 
-    bounds.AxisProjection(axis[0], min, max);
+    bounds.ProjectOnAxis(axis[0], min, max);
     newdFar = max - axis[0].Dot(origin);
     if (newdFar <= dNear) {
         MoveFarDistance(dNear + 1.0f);
@@ -1167,7 +1167,7 @@ bool Frustum::ConstrainToAABB(const AABB &bounds) {
 bool Frustum::ConstrainToOBB(const OBB &box) {
     float min, max, newdFar;
 
-    box.AxisProjection(axis[0], min, max);
+    box.ProjectOnAxis(axis[0], min, max);
     newdFar = max - axis[0].Dot(origin);
     if (newdFar <= dNear) {
         MoveFarDistance(dNear + 1.0f);
@@ -1184,7 +1184,7 @@ bool Frustum::ConstrainToOBB(const OBB &box) {
 bool Frustum::ConstrainToSphere(const Sphere &sphere) {
     float min, max, newdFar;
 
-    sphere.AxisProjection(axis[0], min, max);
+    sphere.ProjectOnAxis(axis[0], min, max);
     newdFar = max - axis[0].Dot(origin);
     if (newdFar <= dNear) {
         MoveFarDistance(dNear + 1.0f);
@@ -1201,7 +1201,7 @@ bool Frustum::ConstrainToSphere(const Sphere &sphere) {
 bool Frustum::ConstrainToFrustum(const Frustum &frustum) {
     float min, max, newdFar;
 
-    frustum.AxisProjection(axis[0], min, max);
+    frustum.ProjectOnAxis(axis[0], min, max);
     newdFar = max - axis[0].Dot(origin);
     if (newdFar <= dNear) {
         MoveFarDistance(dNear + 1.0f);
@@ -1381,38 +1381,35 @@ void Frustum::ToIndexPointsAndCornerVecs(Vec3 indexPoints[8], Vec3 cornerVecs[4]
 }
 
 // 18 muls
-void Frustum::AxisProjection(const Vec3 indexPoints[8], const Vec3 cornerVecs[4], const Vec3 &dir, float &min, float &max) const {
-    float dx, dy, dz;
-    int index;
-
-    dy = dir.x * axis[1].x + dir.y * axis[1].y + dir.z * axis[1].z;
-    dz = dir.x * axis[2].x + dir.y * axis[2].y + dir.z * axis[2].z;
-    index = (IEEE_FLT_SIGNBITSET(dy) << 1) | IEEE_FLT_SIGNBITSET(dz);
-    dx = dir.x * cornerVecs[index].x + dir.y * cornerVecs[index].y + dir.z * cornerVecs[index].z;
+void Frustum::ProjectOnAxis(const Vec3 indexPoints[8], const Vec3 cornerVecs[4], const Vec3 &axis, float &min, float &max) const {
+    float dy = axis.x * this->axis[1].x + axis.y * this->axis[1].y + axis.z * this->axis[1].z;
+    float dz = axis.x * this->axis[2].x + axis.y * this->axis[2].y + axis.z * this->axis[2].z;
+    int index = (IEEE_FLT_SIGNBITSET(dy) << 1) | IEEE_FLT_SIGNBITSET(dz);
+    float dx = axis.x * cornerVecs[index].x + axis.y * cornerVecs[index].y + axis.z * cornerVecs[index].z;
     index |= (IEEE_FLT_SIGNBITSET(dx) << 2);
-    min = indexPoints[index].Dot(dir);
+    min = indexPoints[index].Dot(axis);
     index = ~index & 3;
-    dx = -dir.x * cornerVecs[index].x - dir.y * cornerVecs[index].y - dir.z * cornerVecs[index].z;
+    dx = -axis.x * cornerVecs[index].x - axis.y * cornerVecs[index].y - axis.z * cornerVecs[index].z;
     index |= (IEEE_FLT_SIGNBITSET(dx) << 2);
-    max = indexPoints[index].Dot(dir);
+    max = indexPoints[index].Dot(axis);
 }
 
 // 40 muls
-void Frustum::AxisProjection(const Vec3 &dir, float &min, float &max) const {
+void Frustum::ProjectOnAxis(const Vec3 &axis, float &min, float &max) const {
     Vec3 indexPoints[8], cornerVecs[4];
 
     ToIndexPointsAndCornerVecs(indexPoints, cornerVecs);
-    AxisProjection(indexPoints, cornerVecs, dir, min, max);
+    ProjectOnAxis(indexPoints, cornerVecs, axis, min, max);
 }
 
 // 76 muls
-void Frustum::AxisProjection(const Mat3 &ax, AABB &bounds) const {
+void Frustum::ProjectOnAxis(const Mat3 &axis, AABB &minmaxs) const {
     Vec3 indexPoints[8], cornerVecs[4];
 
     ToIndexPointsAndCornerVecs(indexPoints, cornerVecs);
-    AxisProjection(indexPoints, cornerVecs, ax[0], bounds[0][0], bounds[1][0]);
-    AxisProjection(indexPoints, cornerVecs, ax[1], bounds[0][1], bounds[1][1]);
-    AxisProjection(indexPoints, cornerVecs, ax[2], bounds[0][2], bounds[1][2]);
+    ProjectOnAxis(indexPoints, cornerVecs, axis[0], minmaxs[0][0], minmaxs[1][0]);
+    ProjectOnAxis(indexPoints, cornerVecs, axis[1], minmaxs[0][1], minmaxs[1][1]);
+    ProjectOnAxis(indexPoints, cornerVecs, axis[2], minmaxs[0][2], minmaxs[1][2]);
 }
 
 void Frustum::AddLocalLineToProjectionBoundsSetCull(const Vec3 &start, const Vec3 &end, int &startCull, int &endCull, AABB &bounds) const {
@@ -1730,7 +1727,7 @@ bool Frustum::ProjectionBounds(const OBB &box, AABB &projectionBounds) const {
         float boxMin, boxMax, base;
 
         base = origin.Dot(axis[0]);
-        box.AxisProjection(axis[0], boxMin, boxMax);
+        box.ProjectOnAxis(axis[0], boxMin, boxMax);
 
         projectionBounds[0].x = boxMin - base;
         projectionBounds[1].x = boxMax - base;
@@ -1829,7 +1826,7 @@ bool Frustum::ProjectionBounds(const OBB &box, AABB &projectionBounds) const {
 bool Frustum::ProjectionBounds(const Sphere &sphere, AABB &projectionBounds) const {
     projectionBounds.Clear();
 
-    Vec3 center = axis.TransposedMulVec(sphere.Origin() - origin);
+    Vec3 center = axis.TransposedMulVec(sphere.Center() - origin);
     float r = sphere.Radius();
     float rs = r * r;
     float sFar = dFar * dFar;
@@ -1867,7 +1864,7 @@ bool Frustum::ProjectionBounds(const Frustum &frustum, AABB &projectionBounds) c
         // bounds that cover the whole frustum
         float frustumMin, frustumMax;
         float base = origin.Dot(axis[0]);
-        frustum.AxisProjection(axis[0], frustumMin, frustumMax);
+        frustum.ProjectOnAxis(axis[0], frustumMin, frustumMax);
 
         projectionBounds[0].x = frustumMin - base;
         projectionBounds[1].x = frustumMax - base;
@@ -2173,8 +2170,8 @@ bool Frustum::ClippedProjectionBounds(const Frustum &frustum, const OBB &clipBox
         float clipBoxMin, clipBoxMax, frustumMin, frustumMax, base;
 
         base = origin.Dot(axis[0]);
-        clipBox.AxisProjection(axis[0], clipBoxMin, clipBoxMax);
-        frustum.AxisProjection(axis[0], frustumMin, frustumMax);
+        clipBox.ProjectOnAxis(axis[0], clipBoxMin, clipBoxMax);
+        frustum.ProjectOnAxis(axis[0], frustumMin, frustumMax);
 
         projectionBounds[0].x = Max(clipBoxMin, frustumMin) - base;
         projectionBounds[1].x = Min(clipBoxMax, frustumMax) - base;

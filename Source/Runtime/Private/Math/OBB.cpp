@@ -121,7 +121,7 @@ bool OBB::AddPoint(const Vec3 &p) {
     }
 
     // local axis 로 변환해서 AABB 로 다룬다.
-    AABB aabb1;	
+    AABB aabb1;
     aabb1[0][0] = aabb1[1][0] = center.Dot(axis[0]);
     aabb1[0][1] = aabb1[1][1] = center.Dot(axis[1]);
     aabb1[0][2] = aabb1[1][2] = center.Dot(axis[2]);
@@ -148,7 +148,7 @@ bool OBB::AddPoint(const Vec3 &p) {
     
     AABB aabb2;
     // axis2 에 투영해서 AABB 를 만든다.
-    AxisProjection(axis2, aabb2);
+    ProjectOnAxis(axis2, aabb2);
     // p 를 local axis 로 변환해서 AABB 에 추가
     aabb2.AddPoint(Vec3(p.Dot(axis2[0]), p.Dot(axis2[1]), p.Dot(axis2[2])));
 
@@ -192,7 +192,7 @@ bool OBB::AddOBB(const OBB &a) {
     aabbs[0][0] -= extents;
     aabbs[0][1] += extents;
     // a 를 this.axis 에 투영해서 local AABB 를 만든다.
-    a.AxisProjection(ax[0], b);
+    a.ProjectOnAxis(ax[0], b);
     if (!aabbs[0].AddAABB(b)) {
         // a 는 이미 포함되어 있다.
         return false;
@@ -206,7 +206,7 @@ bool OBB::AddOBB(const OBB &a) {
     aabbs[1][0] -= a.extents;
     aabbs[1][1] += a.extents;
     // this 를 a.axis 에 투영해서 local AABB 를 만든다.
-    AxisProjection(ax[1], b);
+    ProjectOnAxis(ax[1], b);
     if (!aabbs[1].AddAABB(b)) {
         // this OBB 는 이미 a 에 포함되어 있다.
         center = a.center;
@@ -231,8 +231,8 @@ bool OBB::AddOBB(const OBB &a) {
         ax[i][2].SetFromCross(dir, ax[i][1]);
 
         // this 와 a 를 각각 ax[i] 에 투영해서 AABB 를 만들고 합친다.
-        AxisProjection(ax[i], aabbs[i]);
-        a.AxisProjection(ax[i], b);
+        ProjectOnAxis(ax[i], aabbs[i]);
+        a.ProjectOnAxis(ax[i], b);
         aabbs[i].AddAABB(b);
     }
 
@@ -513,8 +513,8 @@ bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
 
 bool OBB::IsIntersectSphere(const Sphere &sphere) const {
     Vec3 p;
-    GetClosestPoint(sphere.Origin(), p);
-    return p.DistanceSqr(sphere.Origin()) < sphere.Radius() * sphere.Radius();
+    GetClosestPoint(sphere.Center(), p);
+    return p.DistanceSqr(sphere.Center()) < sphere.Radius() * sphere.Radius();
 }
 
 bool OBB::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
@@ -625,7 +625,7 @@ void OBB::ToPoints(Vec3 points[8]) const {
 
 AABB OBB::ToAABB() const {
     AABB aabb;
-    AxisProjection(Mat3::identity, aabb);
+    ProjectOnAxis(Mat3::identity, aabb);
     return aabb;
 }
 
@@ -683,8 +683,9 @@ int OBB::GetParallelProjectionSilhouetteVerts(const Vec3 &projectionDir, Vec3 si
     
     return index[0];
 }
-/*
-void OBB::SetFromPoints(const Vec3 *points, const int numPoints) {
+
+void OBB::SetFromPoints(const Vec3 *points, int numPoints) {
+#if 0
     // compute mean of points
     center = points[0];
     for (int i = 1; i < numPoints; i++) {
@@ -720,7 +721,7 @@ void OBB::SetFromPoints(const Vec3 *points, const int numPoints) {
     // compute eigenvectors for covariance matrix
     MatX eigenVectors;
     VecX eigenValues;
-    eigenVectors.SetData(3, 3, MATX_ALLOCA(3 * 3));	
+    eigenVectors.SetData(3, 3, MATX_ALLOCA(3 * 3));
     eigenValues.SetData(3, VECX_ALLOCA(3));
 
     eigenVectors[0][0] = covXX;
@@ -752,21 +753,26 @@ void OBB::SetFromPoints(const Vec3 *points, const int numPoints) {
     center = (aabb[0] + aabb[1]) * 0.5f;
     extents = aabb[1] - center;
     center *= axis;
-}*/
+#endif
+}
 
 bool OBB::ProjectionBounds(const Sphere &sphere, AABB &projectionBounds) const {
     float min, max;
     float centerProj;
 
     for (int i = 0; i < 3; i++) {
-        sphere.AxisProjection(axis[i], min, max);
+        sphere.ProjectOnAxis(axis[i], min, max);
         centerProj = center.Dot(axis[i]);
 
         projectionBounds[0][i] = (min - centerProj) / extents[i];
-        Clamp(projectionBounds[0][i], -1.0f, +1.0f);
+        if (projectionBounds[0][i] > 1.0f) {
+            return false;
+        }
 
         projectionBounds[1][i] = (max - centerProj) / extents[i];
-        Clamp(projectionBounds[1][i], -1.0f, +1.0f);
+        if (projectionBounds[1][i] < -1.0f) {
+            return false;
+        }
     }
     return true;
 }
@@ -776,14 +782,18 @@ bool OBB::ProjectionBounds(const OBB &obb, AABB &projectionBounds) const {
     float centerProj;
 
     for (int i = 0; i < 3; i++) {
-        obb.AxisProjection(axis[i], min, max);
+        obb.ProjectOnAxis(axis[i], min, max);
         centerProj = center.Dot(axis[i]);
 
         projectionBounds[0][i] = (min - centerProj) / extents[i];
-        Clamp(projectionBounds[0][i], -1.0f, +1.0f);
+        if (projectionBounds[0][i] > 1.0f) {
+            return false;
+        }
 
         projectionBounds[1][i] = (max - centerProj) / extents[i];
-        Clamp(projectionBounds[1][i], -1.0f, +1.0f);
+        if (projectionBounds[1][i] < -1.0f) {
+            return false;
+        }
     }
     return true;
 }
@@ -793,14 +803,18 @@ bool OBB::ProjectionBounds(const Frustum &frustum, AABB &projectionBounds) const
     float centerProj;
 
     for (int i = 0; i < 3; i++) {
-        frustum.AxisProjection(axis[i], min, max);
+        frustum.ProjectOnAxis(axis[i], min, max);
         centerProj = center.Dot(axis[i]);
 
         projectionBounds[0][i] = (min - centerProj) / extents[i];
-        Clamp(projectionBounds[0][i], -1.0f, +1.0f);
+        if (projectionBounds[0][i] > 1.0f) {
+            return false;
+        }
 
         projectionBounds[1][i] = (max - centerProj) / extents[i];
-        Clamp(projectionBounds[1][i], -1.0f, +1.0f);
+        if (projectionBounds[1][i] < -1.0f) {
+            return false;
+        }
     }
     return true;
 }

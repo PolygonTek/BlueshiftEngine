@@ -49,7 +49,7 @@ public:
         ThirdPersonOnlyFlag = BIT(2),
         BillboardFlag       = BIT(3),
         DepthHackFlag       = BIT(4),
-        UseEnvProbeLightingFlag = BIT(5),
+        EnvProbeLitFlag     = BIT(5),
         CastShadowsFlag     = BIT(6),
         ReceiveShadowsFlag  = BIT(7),
         OccluderFlag        = BIT(8),   // for use in HOM
@@ -170,6 +170,9 @@ public:
                             /// Returns local to world matrix.
     const Mat3x4 &          GetWorldMatrix() const { return worldMatrix; }
 
+                            /// Returns world to local matrix.
+    const Mat3x4 &          GetWorldMatrixInverse() const { return worldMatrixInverse; }
+
                             /// Returns previous local to world matrix.
     const Mat3x4 &          GetPrevWorldMatrix() const { return prevWorldMatrix; }
 
@@ -184,6 +187,7 @@ private:
     AABB                    worldAABB;
     OBB                     worldOBB;
     Mat3x4                  worldMatrix;
+    Mat3x4                  worldMatrixInverse;
     Mat3x4                  prevWorldMatrix;
     float                   maxVisDistSquared;
 

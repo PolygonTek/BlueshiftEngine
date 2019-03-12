@@ -26,6 +26,7 @@ RenderObject::RenderObject(RenderWorld *renderWorld, int index) {
     worldOBB.SetZero();
 
     worldMatrix.SetIdentity();
+    worldMatrixInverse.SetIdentity();
     prevWorldMatrix.SetIdentity();
 
     viewCount = 0;
@@ -68,6 +69,8 @@ void RenderObject::Update(const State *stateDef) {
         prevWorldMatrix = worldMatrix;
         worldMatrix.SetTRS(state.origin, state.axis, state.scale);
     }
+
+    worldMatrixInverse = worldMatrix.Inverse();
 
     maxVisDistSquared = state.maxVisDist * state.maxVisDist;
 

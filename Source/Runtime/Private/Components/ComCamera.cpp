@@ -357,7 +357,7 @@ bool ComCamera::ProcessMousePointerInput(const Point &screenPoint) {
     Entity *hitTestEntity = nullptr;
     CastResultEx castResult;
 
-    if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetDistancePoint(MeterToUnit(1000.0f)), GetLayerMask(), castResult)) {
+    if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetPoint(MeterToUnit(1000.0f)), GetLayerMask(), castResult)) {
         ComRigidBody *hitTestRigidBody = castResult.GetRigidBody();
         if (hitTestRigidBody) {
             hitTestEntity = hitTestRigidBody->GetEntity();
@@ -444,7 +444,7 @@ bool ComCamera::ProcessTouchPointerInput() {
 
             CastResultEx castResult;
 
-            if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetDistancePoint(MeterToUnit(1000.0f)), GetLayerMask(), castResult)) {
+            if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetPoint(MeterToUnit(1000.0f)), GetLayerMask(), castResult)) {
                 ComRigidBody *hitTestRigidBody = castResult.GetRigidBody();
                 if (hitTestRigidBody) {
                     hitTestEntity = hitTestRigidBody->GetEntity();

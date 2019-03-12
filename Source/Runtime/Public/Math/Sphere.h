@@ -32,9 +32,12 @@ public:
     /// The default constructor does not initialize any members of this class.
     Sphere() = default;
     /// Constructs a sphere with a given position and radius.
-    constexpr Sphere(const Vec3 &origin, float radius);
+    constexpr Sphere(const Vec3 &center, float radius);
 
-    const Vec3 &    Origin() const { return origin; }
+                    /// Returns center position of this sphere.
+    const Vec3 &    Center() const { return center; }
+
+                    /// Returns radius of this sphere.
     float           Radius() const { return radius; }
 
                     /// Exact compare, no epsilon
@@ -49,8 +52,13 @@ public:
                     /// Clear to undefined state.
     void            Clear();
 
+                    /// Sets to zero sized sphere.
     void            SetZero();
-    void            SetOrigin(const Vec3 &origin) { this->origin = origin; }
+
+                    /// Sets center position of this sphere.
+    void            SetCenter(const Vec3 &center) { this->center = center; }
+
+                    /// Sets radius of this sphere.
     void            SetRadius(float radius) { this->radius = radius; }
 
                     /// Computes the surface area of this sphere.
@@ -66,46 +74,49 @@ public:
                     /// Tests if this sphere intersect with the given AABB.
     bool            IsIntersectAABB(const AABB &aabb) const;
                     /// Tests if this sphere intersect with the given line segment.
-    bool            IsIntersectLine(const Vec3 &start, const Vec3 &end) const;
+    bool            IsIntersectLine(const Vec3 &p0, const Vec3 &p1) const;
 
+                    /// Returns intersection distance in direction from the start point.
+                    /// Intersection point can be calculated like 'start + dir * distance'.
     float           RayIntersection(const Vec3 &start, const Vec3 &dir) const;
 
-                    // 구를 dir 축으로 투영했을 때 min, max 값
-    void            AxisProjection(const Vec3 &dir, float &min, float &max) const;
+                    /// Calculates minimum / maximum value by projecting sphere onto the given axis.
+    void            ProjectOnAxis(const Vec3 &axis, float &min, float &max) const;
 
+                    /// Converts to surrounding AABB.
     AABB            ToAABB() const;
 
                     /// Returns dimension of this type
     int             GetDimension() const { return 4; }
 
-    Vec3            origin;     ///< The center point of this sphere.
+    Vec3            center;     ///< The center position of this sphere.
     float           radius;     ///< The radius of this sphere.
 };
 
 BE_INLINE constexpr Sphere::Sphere(const Vec3 &inOrigin, float inRadius) :
-    origin(inOrigin), radius(inRadius) {
+    center(inOrigin), radius(inRadius) {
 }
 
 BE_INLINE void Sphere::Clear() {
-    origin.SetFromScalar(0);
+    center.SetFromScalar(0);
     radius = -1.0f;
 }
 
 BE_INLINE void Sphere::SetZero() {
-    origin.SetFromScalar(0);
+    center.SetFromScalar(0);
     radius = 0.0f;
 }
 
 BE_INLINE bool Sphere::Equals(const Sphere &a) const {
-    return (origin.Equals(a.origin) && radius == a.radius);
+    return (center.Equals(a.center) && radius == a.radius);
 }
 
 BE_INLINE bool Sphere::Equals(const Sphere &a, const float epsilon) const {
-    return (origin.Equals(a.origin, epsilon) && Math::Fabs(radius - a.radius) <= epsilon);
+    return (center.Equals(a.center, epsilon) && Math::Fabs(radius - a.radius) <= epsilon);
 }
 
 BE_INLINE bool Sphere::IsContainPoint(const Vec3 &p) const {
-    if ((p - origin).LengthSqr() > radius * radius) {
+    if ((p - center).LengthSqr() > radius * radius) {
         return false;
     }
     return true;
@@ -113,14 +124,14 @@ BE_INLINE bool Sphere::IsContainPoint(const Vec3 &p) const {
 
 BE_INLINE bool Sphere::IsIntersectSphere(const Sphere &s) const {
     float r = s.radius + radius;
-    if ((s.origin - origin).LengthSqr() > r * r) {
+    if ((s.center - center).LengthSqr() > r * r) {
         return false;
     }
     return true;
 }
 
-BE_INLINE void Sphere::AxisProjection(const Vec3 &dir, float &min, float &max) const {
-    float d = dir.Dot(origin);
+BE_INLINE void Sphere::ProjectOnAxis(const Vec3 &dir, float &min, float &max) const {
+    float d = dir.Dot(center);
     min = d - radius;
     max = d + radius;
 }

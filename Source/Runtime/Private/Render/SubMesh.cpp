@@ -1011,23 +1011,25 @@ bool SubMesh::IsClosed() const {
     return true;
 }
 
-bool SubMesh::IsIntersectLine(const Vec3 &start, const Vec3 &end, bool backFaceCull) const {
+bool SubMesh::IsIntersectLine(const Vec3 &start, const Vec3 &end, bool cullBackFace) const {
     if (!edgesCalculated) {
         return false;
     }
 
-    float scale;
-    RayIntersection(start, end - start, scale, false);
-    return (scale >= 0.0f && scale <= 1.0f);
+    Vec3 dir = end - start;
+    dir.Normalize();
+
+    float dist;
+    return RayIntersection(start, dir, cullBackFace, dist);
 }
 
-bool SubMesh::RayIntersection(const Vec3 &start, const Vec3 &dir, float &scale, bool backFaceCull) const {
+bool SubMesh::RayIntersection(const Vec3 &start, const Vec3 &dir, bool cullBackFace, float &dist) const {
     if (!edgesCalculated) {
         return false;
     }
 
     byte *sidedness = (byte *)_alloca(numEdges * sizeof(byte));
-    scale = Math::Infinity;
+    dist = Math::Infinity;
 
     Pluecker rayPl, pl;
     rayPl.SetFromRay(start, dir);
@@ -1051,16 +1053,16 @@ bool SubMesh::RayIntersection(const Vec3 &start, const Vec3 &dir, float &scale, 
         const int32_t s1 = sidedness[Math::Abs(i1)] ^ INT32_SIGNBITSET(i1);
         const int32_t s2 = sidedness[Math::Abs(i2)] ^ INT32_SIGNBITSET(i2);
 
-        if ((s0 & s1 & s2) || (!backFaceCull && !(s0 | s1 | s2))) {
+        if ((s0 & s1 & s2) || (!cullBackFace && !(s0 | s1 | s2))) {
             plane.SetFromPoints(verts[indexes[i + 0]].xyz, verts[indexes[i + 1]].xyz, verts[indexes[i + 2]].xyz);
-            const float s = plane.RayIntersection(start, dir);
-            if (Math::Fabs(s) < Math::Fabs(scale)) {
-                scale = s;
+            float d = plane.RayIntersection(start, dir);
+            if (Math::Fabs(d) < Math::Fabs(dist)) {
+                dist = d;
             }
         }
     }
 
-    if (Math::Fabs(scale) < Math::Infinity) {
+    if (Math::Fabs(dist) < Math::Infinity) {
         return true;
     }
 
