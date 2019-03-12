@@ -104,7 +104,7 @@ public:
         int                 bounces = 0;
     };
 
-    EnvProbe(int index);
+    EnvProbe(RenderWorld *renderWorld, int index);
     ~EnvProbe();
 
                             /// Returns type.
@@ -154,8 +154,6 @@ private:
                             /// Updates this probe with the given state.
     void                    Update(const State *state);
 
-    int                     index;              // index of probe list in RenderWorld
-
     State                   state;
 
     AABB                    proxyAABB;
@@ -172,6 +170,8 @@ private:
     bool                    needToRefresh = false;
 
     DbvtProxy *             proxy;
+    RenderWorld *           renderWorld;
+    int                     index;              // index of probe list in RenderWorld
 };
 
 BE_NAMESPACE_END

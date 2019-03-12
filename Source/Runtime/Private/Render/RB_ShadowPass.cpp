@@ -277,7 +277,7 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
 
         if (drawSurf->space != entity2) {
             if (!(drawSurf->flags & DrawSurf::UseInstancing)) {
-                backEnd.modelViewMatrix = lightViewMatrix * drawSurf->space->def->GetObjectToWorldMatrix();
+                backEnd.modelViewMatrix = lightViewMatrix * drawSurf->space->def->GetWorldMatrix();
                 backEnd.modelViewProjMatrix = backEnd.projMatrix * backEnd.modelViewMatrix;
             } else {
                 backEnd.batch.AddInstance(drawSurf);
@@ -447,7 +447,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
 
             if (isDifferentObject) {
                 if (!(drawSurf->flags & DrawSurf::UseInstancing)) {
-                    backEnd.modelViewMatrix = visLight->def->GetViewMatrix() * drawSurf->space->def->GetObjectToWorldMatrix();
+                    backEnd.modelViewMatrix = visLight->def->GetViewMatrix() * drawSurf->space->def->GetWorldMatrix();
                     backEnd.modelViewProjMatrix = backEnd.shadowProjectionMatrix * backEnd.modelViewMatrix;
                 }
 

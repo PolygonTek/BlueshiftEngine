@@ -758,67 +758,33 @@ bool OBB::ProjectionBounds(const Sphere &sphere, AABB &projectionBounds) const {
     float min, max;
     float centerProj;
 
-    sphere.AxisProjection(axis[0], min, max);
-    centerProj = center.Dot(axis[0]);
+    for (int i = 0; i < 3; i++) {
+        sphere.AxisProjection(axis[i], min, max);
+        centerProj = center.Dot(axis[i]);
 
-    projectionBounds[0][0] = (min - centerProj) / extents[0];
-    Clamp(projectionBounds[0][0], -1.0f, +1.0f);
+        projectionBounds[0][i] = (min - centerProj) / extents[i];
+        Clamp(projectionBounds[0][i], -1.0f, +1.0f);
 
-    projectionBounds[1][0] = (max - centerProj) / extents[0];
-    Clamp(projectionBounds[1][0], -1.0f, +1.0f);
-
-    sphere.AxisProjection(axis[1], min, max);
-    centerProj = center.Dot(axis[1]);
-
-    projectionBounds[0][1] = (min - centerProj) / extents[1];
-    Clamp(projectionBounds[0][1], -1.0f, +1.0f);
-
-    projectionBounds[1][1] = (max - centerProj) / extents[1];
-    Clamp(projectionBounds[1][1], -1.0f, +1.0f);
-
-    sphere.AxisProjection(axis[2], min, max);
-    centerProj = center.Dot(axis[2]);
-
-    projectionBounds[0][2] = (min - centerProj) / extents[2];
-    Clamp(projectionBounds[0][2], -1.0f, +1.0f);
-
-    projectionBounds[1][2] = (max - centerProj) / extents[2];
-    Clamp(projectionBounds[1][2], -1.0f, +1.0f);
-
+        projectionBounds[1][i] = (max - centerProj) / extents[i];
+        Clamp(projectionBounds[1][i], -1.0f, +1.0f);
+    }
     return true;
 }
 
-bool OBB::ProjectionBounds(const OBB &box, AABB &projectionBounds) const {
+bool OBB::ProjectionBounds(const OBB &obb, AABB &projectionBounds) const {
     float min, max;
     float centerProj;
 
-    box.AxisProjection(axis[0], min, max);
-    centerProj = center.Dot(axis[0]);
+    for (int i = 0; i < 3; i++) {
+        obb.AxisProjection(axis[i], min, max);
+        centerProj = center.Dot(axis[i]);
 
-    projectionBounds[0][0] = (min - centerProj) / extents[0];
-    Clamp(projectionBounds[0][0], -1.0f, +1.0f);
+        projectionBounds[0][i] = (min - centerProj) / extents[i];
+        Clamp(projectionBounds[0][i], -1.0f, +1.0f);
 
-    projectionBounds[1][0] = (max - centerProj) / extents[0];
-    Clamp(projectionBounds[1][0], -1.0f, +1.0f);
-
-    box.AxisProjection(axis[1], min, max);
-    centerProj = center.Dot(axis[1]);
-
-    projectionBounds[0][1] = (min - centerProj) / extents[1];
-    Clamp(projectionBounds[0][1], -1.0f, +1.0f);
-
-    projectionBounds[1][1] = (max - centerProj) / extents[1];
-    Clamp(projectionBounds[1][1], -1.0f, +1.0f);
-
-    box.AxisProjection(axis[2], min, max);
-    centerProj = center.Dot(axis[2]);
-
-    projectionBounds[0][2] = (min - centerProj) / extents[2];
-    Clamp(projectionBounds[0][2], -1.0f, +1.0f);
-
-    projectionBounds[1][2] = (max - centerProj) / extents[2];
-    Clamp(projectionBounds[1][2], -1.0f, +1.0f);
-
+        projectionBounds[1][i] = (max - centerProj) / extents[i];
+        Clamp(projectionBounds[1][i], -1.0f, +1.0f);
+    }
     return true;
 }
 
@@ -826,33 +792,16 @@ bool OBB::ProjectionBounds(const Frustum &frustum, AABB &projectionBounds) const
     float min, max;
     float centerProj;
 
-    frustum.AxisProjection(axis[0], min, max);
-    centerProj = center.Dot(axis[0]);
+    for (int i = 0; i < 3; i++) {
+        frustum.AxisProjection(axis[i], min, max);
+        centerProj = center.Dot(axis[i]);
 
-    projectionBounds[0][0] = (min - centerProj) / extents[0];
-    Clamp(projectionBounds[0][0], -1.0f, +1.0f);
+        projectionBounds[0][i] = (min - centerProj) / extents[i];
+        Clamp(projectionBounds[0][i], -1.0f, +1.0f);
 
-    projectionBounds[1][0] = (max - centerProj) / extents[0];
-    Clamp(projectionBounds[1][0], -1.0f, +1.0f);
-    
-    frustum.AxisProjection(axis[1], min, max);
-    centerProj = center.Dot(axis[1]);
-
-    projectionBounds[0][1] = (min - centerProj) / extents[1];
-    Clamp(projectionBounds[0][1], -1.0f, +1.0f);
-
-    projectionBounds[1][1] = (max - centerProj) / extents[1];
-    Clamp(projectionBounds[1][1], -1.0f, +1.0f);
-
-    frustum.AxisProjection(axis[2], min, max);
-    centerProj = center.Dot(axis[2]);
-
-    projectionBounds[0][2] = (min - centerProj) / extents[2];
-    Clamp(projectionBounds[0][2], -1.0f, +1.0f);
-
-    projectionBounds[1][2] = (max - centerProj) / extents[2];
-    Clamp(projectionBounds[1][2], -1.0f, +1.0f);
-
+        projectionBounds[1][i] = (max - centerProj) / extents[i];
+        Clamp(projectionBounds[1][i], -1.0f, +1.0f);
+    }
     return true;
 }
 

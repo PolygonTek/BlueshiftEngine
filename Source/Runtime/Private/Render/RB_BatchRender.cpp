@@ -238,7 +238,7 @@ void Batch::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shade
         shader->SetConstantArray1i(shader->builtInConstantIndices[Shader::InstanceIndexesConst], numInstances, instanceLocalIndexes);
     } else {
         if (shader->builtInConstantIndices[Shader::LocalToWorldMatrixConst] >= 0) {
-            const Mat3x4 &localToWorldMatrix = surfSpace->def->GetObjectToWorldMatrix();
+            const Mat3x4 &localToWorldMatrix = surfSpace->def->GetWorldMatrix();
             shader->SetConstant4x3f(shader->builtInConstantIndices[Shader::LocalToWorldMatrixConst], true, localToWorldMatrix);
         }
 
@@ -470,7 +470,7 @@ void Batch::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
 
     SetMatrixConstants(shader);
 
-    Mat4 prevModelViewMatrix = backEnd.camera->def->GetViewMatrix() * surfSpace->def->GetPrevObjectToWorldMatrix();
+    Mat4 prevModelViewMatrix = backEnd.camera->def->GetViewMatrix() * surfSpace->def->GetPrevWorldMatrix();
     //shader->SetConstantMatrix4fv("prevModelViewMatrix", 1, true, prevModelViewMatrix);
 
     Mat4 prevModelViewProjMatrix = backEnd.camera->def->GetProjMatrix() * prevModelViewMatrix;
@@ -980,7 +980,7 @@ void Batch::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) cons
     shader->Bind();
 
     // light texture transform matrix
-    Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetObjectToWorldMatrix();
+    Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetWorldMatrix();
     shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::LightTextureMatrixConst], true, viewProjScaleBiasMat);
     shader->SetConstant3f("fogColor", &surfLight->def->GetState().materialParms[RenderObject::RedParm]);
 
@@ -1026,7 +1026,7 @@ void Batch::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) co
     shader->Bind();
 
     // light texture transform matrix
-    Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetObjectToWorldMatrix();
+    Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetWorldMatrix();
     shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::LightTextureMatrixConst], true, viewProjScaleBiasMat);
     shader->SetConstant3f("blendColor", blendColor);
 

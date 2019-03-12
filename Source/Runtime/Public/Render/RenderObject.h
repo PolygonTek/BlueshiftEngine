@@ -168,17 +168,14 @@ public:
     const OBB &             GetWorldOBB() const { return worldOBB; }
 
                             /// Returns local to world matrix.
-    const Mat3x4 &          GetObjectToWorldMatrix() const { return worldMatrix; }
+    const Mat3x4 &          GetWorldMatrix() const { return worldMatrix; }
 
                             /// Returns previous local to world matrix.
-    const Mat3x4 &          GetPrevObjectToWorldMatrix() const { return prevWorldMatrix; }
+    const Mat3x4 &          GetPrevWorldMatrix() const { return prevWorldMatrix; }
 
 private:
                             /// Updates this render object with the given state.
     void                    Update(const State *state);
-
-    RenderWorld *           renderWorld;
-    int                     index;                      // index of object list in RenderWorld
 
     bool                    firstUpdate;
 
@@ -193,7 +190,10 @@ private:
     VisObject *             visObject;
     int                     viewCount;
 
+    RenderWorld *           renderWorld;
+    int                     index;                      // index of object list in RenderWorld
     DbvtProxy *             proxy;                      // proxy for render object
+
     int                     numMeshSurfProxies;         // number of proxies for static sub mesh
     DbvtProxy *             meshSurfProxies;            // proxies for static sub mesh
 };

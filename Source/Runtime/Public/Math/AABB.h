@@ -39,7 +39,7 @@ public:
     AABB(const Vec3 &mins, const Vec3 &maxs);
     explicit AABB(const Vec3 &point);
 
-                        /// Returns true if this AABB is cleared.
+                        /// Returns true if this AABB is inside out.
     bool                IsCleared() const;
 
                         /// Resets mins and maxs values. If you invoke this method, IsCleared() shall returns true.
@@ -181,13 +181,23 @@ public:
                         /// Sets AABB to enclose transformed AABB.
     void                SetFromTransformedAABB(const AABB &aabb, const Vec3 &origin, const Mat3 &axis);
 
-                        // AABB 를 dir 축으로 투영했을 때 min, max 값
+                        /// Sets AABB to enclose transformed AABB.
+    void                SetFromTransformedAABB(const AABB &aabb, const Mat3x4 &transform);
+
+                        /// Sets AABB to enclose transformed AABB fast.
+                        /// This is not mathematically correct for non-uniform scaled transform matrix.
+    void                SetFromTransformedAABBFast(const AABB &aabb, const Mat3x4 &transform);
+
+                        /// Calculates minimum / maximum value by projecting AABB in the dir direction.
     void                AxisProjection(const Vec3 &dir, float &min, float &max) const;
 
-                        // transformed AABB (OBB) 를 dir 축으로 투영했을 때 min, max 값
+                        /// Calculates minimum / maximum value by projecting transformed AABB in the dir direction.
     void                AxisProjection(const Vec3 &origin, const Mat3 &axis, const Vec3 &dir, float &min, float &max) const;
 
+                        /// Calcuates 8 vertices of AABB.
     void                ToPoints(Vec3 points[8]) const;
+
+                        /// Converts to surrounding sphere.
     Sphere              ToSphere() const;
 
     static const AABB   zero;   ///< (0 0 0) (0 0 0)

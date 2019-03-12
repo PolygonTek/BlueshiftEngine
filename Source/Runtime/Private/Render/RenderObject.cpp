@@ -60,10 +60,10 @@ void RenderObject::Update(const State *stateDef) {
     }
 
     if (firstUpdate) {
+        firstUpdate = false;
+
         worldMatrix.SetTRS(state.origin, state.axis, state.scale);
         prevWorldMatrix = worldMatrix;
-
-        firstUpdate = false;
     } else {
         prevWorldMatrix = worldMatrix;
         worldMatrix.SetTRS(state.origin, state.axis, state.scale);

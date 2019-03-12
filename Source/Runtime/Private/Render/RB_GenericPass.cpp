@@ -433,7 +433,7 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             if (isDifferentObject) {
                 Mesh *mesh = drawSurf->space->def->GetState().mesh;
 
-                if (!mesh->IsSkinnedMesh() && (drawSurf->space->def->GetObjectToWorldMatrix() == drawSurf->space->def->GetPrevObjectToWorldMatrix())) {
+                if (!mesh->IsSkinnedMesh() && (drawSurf->space->def->GetWorldMatrix() == drawSurf->space->def->GetPrevWorldMatrix())) {
                     skipObject = drawSurf->space;
                     continue;
                 }

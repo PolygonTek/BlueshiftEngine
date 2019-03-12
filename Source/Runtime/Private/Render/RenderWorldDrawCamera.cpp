@@ -167,11 +167,11 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
         VisObject *visObject = RegisterVisObject(camera, renderObject);
 
         visObject->ambientVisible = true;
-        visObject->modelViewMatrix = camera->def->viewMatrix * renderObject->GetObjectToWorldMatrix();
-        visObject->modelViewProjMatrix = camera->def->viewProjMatrix * renderObject->GetObjectToWorldMatrix();
+        visObject->modelViewMatrix = camera->def->viewMatrix * renderObject->GetWorldMatrix();
+        visObject->modelViewProjMatrix = camera->def->viewProjMatrix * renderObject->GetWorldMatrix();
 
         if (renderObject->state.flags & RenderObject::BillboardFlag) {
-            Mat3 inverse = (camera->def->viewMatrix.ToMat3() * renderObject->GetObjectToWorldMatrix().ToMat3()).Inverse();
+            Mat3 inverse = (camera->def->viewMatrix.ToMat3() * renderObject->GetWorldMatrix().ToMat3()).Inverse();
             //inverse = inverse * Mat3(0, 0, 1, 1, 0, 0, 0, 1, 0);
             Swap(inverse[0], inverse[2]);
             Swap(inverse[1], inverse[2]);
@@ -455,11 +455,11 @@ void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
     if (camera->def->GetState().orthogonal) {
         Mat4 projMatrix;
         R_SetPerspectiveProjectionMatrix(45, 45, 0.01, 1000, false, projMatrix);
-        visObject->modelViewMatrix = camera->def->viewMatrix * renderObject.GetObjectToWorldMatrix();
+        visObject->modelViewMatrix = camera->def->viewMatrix * renderObject.GetWorldMatrix();
         visObject->modelViewProjMatrix = projMatrix * visObject->modelViewMatrix;
     } else {
-        visObject->modelViewMatrix = camera->def->viewMatrix * renderObject.GetObjectToWorldMatrix();
-        visObject->modelViewProjMatrix = camera->def->viewProjMatrix * renderObject.GetObjectToWorldMatrix();
+        visObject->modelViewMatrix = camera->def->viewMatrix * renderObject.GetWorldMatrix();
+        visObject->modelViewProjMatrix = camera->def->viewProjMatrix * renderObject.GetWorldMatrix();
     }
 
     MeshSurf *meshSurf = meshManager.defaultBoxMesh->GetSurface(0);
@@ -729,7 +729,7 @@ void RenderWorld::CacheInstanceBuffer(VisCamera *camera) {
 
             byte *instanceData = ((byte *)renderGlobal.instanceBufferData + numInstances * renderGlobal.instanceBufferOffsetAlignment);
 
-            const Mat3x4 &localToWorldMatrix = renderObject->GetObjectToWorldMatrix();
+            const Mat3x4 &localToWorldMatrix = renderObject->GetWorldMatrix();
             *(Mat3x4 *)instanceData = localToWorldMatrix;
             instanceData += 48;
 

@@ -19,7 +19,8 @@
 
 BE_NAMESPACE_BEGIN
 
-EnvProbe::EnvProbe(int index) {
+EnvProbe::EnvProbe(RenderWorld *renderWorld, int index) {
+    this->renderWorld = renderWorld;
     this->index = index;
 }
 

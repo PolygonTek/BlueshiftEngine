@@ -309,7 +309,7 @@ void RenderWorld::UpdateEnvProbe(int handle, const EnvProbe::State *def) {
 
     EnvProbe *envProbe = envProbes[handle];
     if (!envProbe) {
-        envProbe = new EnvProbe(handle);
+        envProbe = new EnvProbe(this, handle);
         envProbes[handle] = envProbe;
 
         envProbe->Update(def);
@@ -382,7 +382,7 @@ void RenderWorld::AddDistantEnvProbe() {
         handle = envProbes.Append(nullptr);
     }
 
-    distantEnvProbe = new EnvProbe(handle);
+    distantEnvProbe = new EnvProbe(this, handle);
     envProbes[handle] = distantEnvProbe;
     distantEnvProbe->Update(&def);
 }

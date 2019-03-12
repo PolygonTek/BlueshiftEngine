@@ -677,7 +677,7 @@ void RenderBackEnd::DrawDebugNormals(int mode) const {
 
     vptr = (cDrawVert *)m_dp.systemVb;
     for (i = 0; i < numVerts; i++, vptr++) {
-        //vec = m_entity->GetObjectToWorldMatrix() * vptr->xyz;
+        //vec = m_entity->GetWorldMatrix() * vptr->xyz;
         //drawLength = vec.Distance(m_view.m_vieworg) * distanceScale;
         //if (drawLength < 1.0f)
         //drawLength = 1.0f;
@@ -727,7 +727,7 @@ void RenderBackEnd::DrawDebugTangents(int mode) const {
 
     vptr = (cDrawVert *)m_dp.systemVb;
     for (i = 0; i < numVerts; i++, vptr++) {
-        //vec = m_entity->GetObjectToWorldMatrix() * vptr->xyz;
+        //vec = m_entity->GetWorldMatrix() * vptr->xyz;
         //drawLength = vec.Distance(m_view.m_vieworg) * distanceScale;
         //if (drawLength < 1.0f)
         //drawLength = 1.0f;

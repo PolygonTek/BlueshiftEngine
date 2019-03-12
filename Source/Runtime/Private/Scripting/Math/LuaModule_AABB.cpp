@@ -69,8 +69,7 @@ void LuaVM::RegisterAABB(LuaCpp::Module &module) {
         "ray_intersection", &AABB::RayIntersection,
         "set_from_points", &AABB::SetFromPoints,
         "set_from_point_translation", &AABB::SetFromPointTranslation,
-        "set_from_aabb_translation", &AABB::SetFromAABBTranslation,
-        "set_from_transformed_aabb", &AABB::SetFromTransformedAABB);
+        "set_from_aabb_translation", &AABB::SetFromAABBTranslation);
 
     _AABB["zero"] = AABB::zero;
 }

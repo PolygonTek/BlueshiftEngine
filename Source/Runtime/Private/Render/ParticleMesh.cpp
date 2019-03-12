@@ -232,7 +232,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
                     for (int pivotIndex = 0; pivotIndex < pivotCount; pivotIndex++) {
                         const Particle::Trail *trail = &particle->trails[pivotIndex];
 
-                        worldPos[pivotIndex] = renderObject->GetObjectToWorldMatrix() * trail->position;
+                        worldPos[pivotIndex] = renderObject->GetWorldMatrix() * trail->position;
                     }
 
                     // Compute cameraDir/tangentDir of all particle pivots including trails

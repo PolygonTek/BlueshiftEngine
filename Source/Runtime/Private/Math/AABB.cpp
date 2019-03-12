@@ -224,7 +224,7 @@ float AABB::RayIntersection(const Vec3 &start, const Vec3 &dir) const {
     return tmin;
 }
 
-void AABB::SetFromPoints(const Vec3 *points, const int numPoints) {
+void AABB::SetFromPoints(const Vec3 *points, int numPoints) {
     b[0][0] = Math::Infinity;
     b[0][1] = Math::Infinity;
     b[0][2] = Math::Infinity;
@@ -283,9 +283,37 @@ void AABB::SetFromTransformedAABB(const AABB &aabb, const Vec3 &origin, const Ma
             Math::Fabs(extents[2] * axis[2][i]);
     }
 
-    center = origin + axis * center;
+    center = axis * center + origin;
     b[0] = center - rotatedExtents;
     b[1] = center + rotatedExtents;
+}
+
+void AABB::SetFromTransformedAABBFast(const AABB &aabb, const Mat3x4 &transform) {
+    Vec3 center = (aabb[0] + aabb[1]) * 0.5f;
+    Vec3 extents = aabb[1] - center;
+
+    Vec3 rotatedExtents;
+    for (int i = 0; i < 3; i++) {
+        rotatedExtents[i] =
+            Math::Fabs(extents[0] * transform[i][0]) +
+            Math::Fabs(extents[1] * transform[i][1]) +
+            Math::Fabs(extents[2] * transform[i][2]);
+    }
+
+    center = transform * center;
+    b[0] = center - rotatedExtents;
+    b[1] = center + rotatedExtents;
+}
+
+void AABB::SetFromTransformedAABB(const AABB &aabb, const Mat3x4 &transform) {
+    Vec3 points[8];
+    ToPoints(points);
+
+    Clear();
+
+    for (int i = 0; i < 8; i++) {
+        AddPoint(transform * points[i]);
+    }
 }
 
 void AABB::AxisProjection(const Vec3 &dir, float &min, float &max) const {
@@ -294,14 +322,14 @@ void AABB::AxisProjection(const Vec3 &dir, float &min, float &max) const {
 
     float d1 = dir.Dot(center);
     float d2 = Math::Fabs(extents[0] * dir[0]) + 
-        Math::Fabs(extents[1] * dir[1]) + 
-        Math::Fabs(extents[2] * dir[2]);
+               Math::Fabs(extents[1] * dir[1]) + 
+               Math::Fabs(extents[2] * dir[2]);
 
     min = d1 - d2;
     max = d1 + d2;
 }
 
-void AABB::AxisProjection(const Vec3 &origin, const Mat3 &axis, const Vec3 &dir, float &min, float &max) const {	
+void AABB::AxisProjection(const Vec3 &origin, const Mat3 &axis, const Vec3 &dir, float &min, float &max) const {
     Vec3 center = (b[0] + b[1]) * 0.5f;
     Vec3 extents = b[1] - center;
 
@@ -331,9 +359,9 @@ void AABB::AxisProjection(const Vec3 &origin, const Mat3 &axis, const Vec3 &dir,
 //
 void AABB::ToPoints(Vec3 points[8]) const {
     for (int i = 0; i < 8; i++) {
-        points[i][0] = b[(i^(i>>1))&1][0];
-        points[i][1] = b[(i>>1)&1][1];
-        points[i][2] = b[(i>>2)&1][2];
+        points[i][0] = b[(i ^ (i >> 1)) & 1][0];
+        points[i][1] = b[     (i >> 1)  & 1][1];
+        points[i][2] = b[     (i >> 2)  & 1][2];
     }
 }
 

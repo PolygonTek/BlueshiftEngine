@@ -41,35 +41,28 @@ public:
     explicit OBB(const Vec3 &point);
     explicit OBB(const AABB &aabb);
 
-    void                Clear();
-    void                SetZero();
-    void                SetCenter(const Vec3 &c);
-    void                SetExtents(const Vec3 &e);
-    void                SetAxis(const Mat3 &a);
-
-                        // returns true if box are inside out
+                        /// Returns true if this OBB is inside out.
     bool                IsCleared() const;
-                        // returns center of the box
-    const Vec3 &        Center() const;
-                        // returns extents of the box
-    const Vec3 &        Extents() const;
-                        // returns the axis of the box
-    const Mat3 &        Axis() const;
-                        // returns the volume of the box
-    float               Volume() const;
 
-                        // 이동된 OBB 리턴
-    OBB                 operator+(const Vec3 &t) const;
-                        // OBB 이동
-    OBB &               operator+=(const Vec3 &t);
-                        // 회전된 OBB 리턴
-    OBB                 operator*(const Mat3 &r) const;
-                        // OBB 회전
-    OBB &               operator*=(const Mat3 &r);
-                        // 더해진 OBB 리턴
-    OBB                 operator+(const OBB &a) const;
-                        // OBB 더하기
-    OBB &               operator+=(const OBB &a);
+                        /// Resets this OBB. If you invoke this method, IsCleared() shall returns true.
+    void                Clear();
+
+                        /// Sets to zero sized OBB.
+    void                SetZero();
+
+    void                SetCenter(const Vec3 &center);
+    void                SetExtents(const Vec3 &extents);
+    void                SetAxis(const Mat3 &axis);
+
+                        /// Returns center of the OBB.
+    const Vec3 &        Center() const;
+                        /// Returns extents of the OBB.
+    const Vec3 &        Extents() const;
+                        /// Returns the axis of the OBB.
+    const Mat3 &        Axis() const;
+
+                        /// Returns the volume of the OBB.
+    float               Volume() const;
 
                         /// Exact compare, no epsilon
     bool                Equals(const OBB &a) const;
@@ -80,74 +73,94 @@ public:
                         /// Exact compare, no epsilon
     bool                operator!=(const OBB &a) const { return !Equals(a); }
 
-                        // point 더하기, OBB 가 확장됐으면 true 를 리턴
+                        /// Returns translated OBB.
+    OBB                 operator+(const Vec3 &t) const;
+                        /// Translates OBB.
+    OBB &               operator+=(const Vec3 &t);
+
+                        /// Returns rotated OBB.
+    OBB                 operator*(const Mat3 &r) const;
+                        /// Rotates OBB.
+    OBB &               operator*=(const Mat3 &r);
+
+                        /// Returns added OBB.
+    OBB                 operator+(const OBB &a) const;
+                        /// Adds OBB.
+    OBB &               operator+=(const OBB &a);
+
+                        /// Adds a point. Returns true if this OBB is expanded.
     bool                AddPoint(const Vec3 &v);
-                        // OBB 더하기, OBB 가 확장됐으면 true 를 리턴
+                        /// Adds a OBB. Returns true if this OBB is expanded.
     bool                AddOBB(const OBB &a);
-                        // d 만큼 확장된 OBB 리턴
+
+                        /// Returns expanded OBB.
     OBB                 Expand(const float d) const;
-                        // d 만큼 OBB 확장
+                        /// Expands this OBB.
     OBB &               ExpandSelf(const float d);
-                        // 이동된 OBB 리턴
+                        /// Returns translated OBB.
     OBB                 Translate(const Vec3 &translation) const;
-                        // OBB 이동
+                        /// Translates this OBB.
     OBB &               TranslateSelf(const Vec3 &translation);
-                        // 회전된 OBB 리턴
+                        /// Returns rotated OBB.
     OBB                 Rotate(const Mat3 &rotation) const;
-                        // OBB 회전
+                        /// Rotates this OBB.
     OBB &               RotateSelf(const Mat3 &rotation);
 
-                        // OBB 가 평면의 어느쪽에 존재하는지 판단
-                        // Plane::Side::Front or Plane::Side::Back or Plane::Side::Cross
+                        /// Returns this OBB is in which side of the plane.
     int                 PlaneSide(const Plane &plane, const float epsilon = ON_EPSILON) const;
-                        // OBB 와 평면 사이의 거리
+                        /// Returns distance between OBB and plane.
     float               PlaneDistance(const Plane &plane) const;
 
-                        // 8 개의 꼭지점중에서 from 과 가장 가까운 점 구하기
-    void                GetNearestVertex(const Vec3 &from, Vec3 &point) const;	
-                        // 8 개의 꼭지점중에서 from 과 가장 먼 점 구하기
-    void                GetFarthestVertex(const Vec3 &from, Vec3 &point) const;	
+                        /// Calculates nearest point among 8 vertices of OBB with the given point.
+    void                GetNearestVertex(const Vec3 &from, Vec3 &point) const;
+                        /// Calculates farthest point among 8 vertices of OBBB with the given point.
+    void                GetFarthestVertex(const Vec3 &from, Vec3 &point) const;
 
-                        // OBB 점들의 집합 중에서 from 과 가장 가까운 점 구하기
+                        /// Calculates closest point with the given point.
     void                GetClosestPoint(const Vec3 &from, Vec3 &point) const;
 
-                        // point 와 OBB 사이 거리의 제곱
+                        /// Calculates the silhouette of the OBB
+    int                 GetProjectionSilhouetteVerts(const Vec3 &projectionOrigin, Vec3 silVerts[6]) const;
+    int                 GetParallelProjectionSilhouetteVerts(const Vec3 &projectionDir, Vec3 silVerts[6]) const;
+
+                        /// Returns squared distance between this OBB and the given point.
     float               DistanceSqr(const Vec3 &p) const;
-                        // point 와 OBB 사이 거리
+                        /// Returns distance between this OBB and the given point.
     float               Distance(const Vec3 &p) const;
 
-                        // point 포함 여부 리턴
+                        /// Tests if this OBB contain the given point.
     bool                IsContainPoint(const Vec3 &p) const;
-                        // OBB 교차 여부 리턴
+                        /// Tests if this OBB intersect with the given OBB.
     bool                IsIntersectOBB(const OBB &b, float epsilon = 1e-3f) const;
-                        // 구 교차 여부 리턴
+                        /// Tests if this OBB intersect with the given sphere.
     bool                IsIntersectSphere(const Sphere &sphere) const;
                         /// Tests if this OBB intersect with the given line segment.
     bool                IsIntersectLine(const Vec3 &start, const Vec3 &end) const;
 
-                        // Ray vs OBB intersection 
-                        // intersection points is start + dir * scale
+                        /// Calculates intersection scale in direction from the start point.
+                        /// Intersection point can be calculated as 'start + dir * scale'.
     float               RayIntersection(const Vec3 &start, const Vec3 &dir) const;
-                        
-                        // OBB 를 dir 축으로 투영했을 때 min, max 값
+
+                        /// Sets OBB with the given points using PCA (Principal Component Analysis).
+    void                SetFromPoints(const Vec3 *points, int numPoints);
+
+                        /// Calculates minimum / maximum value by projecting OBB in dir direction.
     void                AxisProjection(const Vec3 &dir, float &min, float &max) const;
-                        // OBB 를 각각의 ax[3] 축으로 투영했을 때 mins, maxs 값
+                        /// Calculates minimum / maximum values by projecting OBB in each direction.
     void                AxisProjection(const Mat3 &ax, AABB &bounds) const;
 
-                        // calculates the silhouette of the box
-    int                 GetProjectionSilhouetteVerts(const Vec3 &projectionOrigin, Vec3 silVerts[6]) const;
-    int                 GetParallelProjectionSilhouetteVerts(const Vec3 &projectionDir, Vec3 silVerts[6]) const;
-
-                        // PCA 를 이용해서 point 들의 OBB 를 계산한다
-    void                SetFromPoints(const Vec3 *points, const int numPoints);
-
-                        // bounding volume 을 axis 별로 projection 했을 때 bounds 값 [-1 ~ +1]
+                        // bounding volume 을 axis 별로 projection 했을 때 bounds 값 [-1, 1]
     bool                ProjectionBounds(const Sphere &sphere, AABB &projectionBounds) const;
-    bool                ProjectionBounds(const OBB &box, AABB &projectionBounds) const;
+    bool                ProjectionBounds(const OBB &obb, AABB &projectionBounds) const;
     bool                ProjectionBounds(const Frustum &frustum, AABB &projectionBounds) const;
 
+                        /// Calcuates 8 vertices of OBB.
     void                ToPoints(Vec3 points[8]) const;
+
+                        /// Converts to AABB.
     AABB                ToAABB() const;
+
+                        /// Converts to surrounding sphere.
     Sphere              ToSphere() const;
 
     static const OBB    zero;

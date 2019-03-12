@@ -56,15 +56,15 @@ public:
         Type                type = PointLight;
         float               maxVisDist = MeterToUnit(10);
 
-        Vec3                origin;
-        Vec3                size = Vec3(1.0);       // extent for each axis
+        Vec3                origin = Vec3::origin;
+        Vec3                size = Vec3::one;       // extent for each axis
         Mat3                axis = Mat3::identity;
 
         float               zNear = 1.0f;           // near distance for SpotLight
 
         float               intensity = 1.0f;
         float               fallOffExponent = 1.25f;
-        float               shadowOffsetFactor = 3.f;
+        float               shadowOffsetFactor = 3.0f;
         float               shadowOffsetUnits = 200.f;
 
         Material *          material = nullptr;
@@ -145,12 +145,9 @@ private:
     bool                    PointLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &shadowFrustum) const;
     bool                    SpotLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &shadowFrustum) const;
 
-    RenderWorld *           renderWorld;
-    int                     index;              // index of light list in RenderWorld
+    State                   state;
 
     bool                    firstUpdate;
-
-    State                   state;
 
     AABB                    worldAABB;
     OBB                     worldOBB;           // used for PointLight / DirectionalLight
@@ -164,6 +161,8 @@ private:
     VisLight *              visLight;
     int                     viewCount;
 
+    RenderWorld *           renderWorld;
+    int                     index;              // index of light list in RenderWorld
     DbvtProxy *             proxy;
 };
 
