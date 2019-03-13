@@ -1011,28 +1011,29 @@ bool SubMesh::IsClosed() const {
     return true;
 }
 
-bool SubMesh::IsIntersectLine(const Vec3 &start, const Vec3 &end, bool cullBackFace) const {
+bool SubMesh::IsIntersectLine(const Vec3 &start, const Vec3 &end, bool ignoreBackFace) const {
     if (!edgesCalculated) {
         return false;
     }
 
-    Vec3 dir = end - start;
-    dir.Normalize();
+    Ray ray;
+    ray.origin = start;
+    ray.dir = end - start;
+    ray.dir.Normalize();
 
-    float dist;
-    return RayIntersection(start, dir, cullBackFace, dist);
+    return IntersectRay(ray, ignoreBackFace);
 }
 
-bool SubMesh::RayIntersection(const Vec3 &start, const Vec3 &dir, bool cullBackFace, float &dist) const {
+bool SubMesh::IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist) const {
     if (!edgesCalculated) {
         return false;
     }
 
     byte *sidedness = (byte *)_alloca(numEdges * sizeof(byte));
-    dist = Math::Infinity;
+    float dist = Math::Infinity;
 
     Pluecker rayPl, pl;
-    rayPl.SetFromRay(start, dir);
+    rayPl.SetFromRay(ray.origin, ray.dir);
 
     // ray sidedness for edges
     for (int i = 0; i < numEdges; i++) {
@@ -1053,20 +1054,28 @@ bool SubMesh::RayIntersection(const Vec3 &start, const Vec3 &dir, bool cullBackF
         const int32_t s1 = sidedness[Math::Abs(i1)] ^ INT32_SIGNBITSET(i1);
         const int32_t s2 = sidedness[Math::Abs(i2)] ^ INT32_SIGNBITSET(i2);
 
-        if ((s0 & s1 & s2) || (!cullBackFace && !(s0 | s1 | s2))) {
+        if ((s0 & s1 & s2) || (!ignoreBackFace && !(s0 | s1 | s2))) {
             plane.SetFromPoints(verts[indexes[i + 0]].xyz, verts[indexes[i + 1]].xyz, verts[indexes[i + 2]].xyz);
-            float d = plane.RayIntersection(start, dir);
-            if (Math::Fabs(d) < Math::Fabs(dist)) {
-                dist = d;
+
+            float d;
+            if (plane.IntersectRay(ray, ignoreBackFace, &d)) {
+                if (!hitDist) {
+                    return true;
+                }
+
+                if (d < dist) {
+                    dist = d;
+                }
             }
         }
     }
 
-    if (Math::Fabs(dist) < Math::Infinity) {
-        return true;
+    if (dist == Math::Infinity) {
+        return false;
     }
 
-    return false;
+    *hitDist = dist;
+    return true;
 }
 
 float SubMesh::ComputeVolume() const {

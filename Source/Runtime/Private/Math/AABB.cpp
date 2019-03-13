@@ -56,9 +56,9 @@ int AABB::PlaneSide(const Plane &plane, const float epsilon) const {
     Vec3 center = (b[0] + b[1]) * 0.5f;
 
     float d1 = plane.Distance(center);
-    float d2 = Math::Fabs((b[1][0] - center[0]) * plane.Normal()[0]) + 
-        Math::Fabs((b[1][1] - center[1]) * plane.Normal()[1]) + 
-        Math::Fabs((b[1][2] - center[2]) * plane.Normal()[2]);
+    float d2 = Math::Fabs((b[1][0] - center[0]) * plane.normal[0]) + 
+        Math::Fabs((b[1][1] - center[1]) * plane.normal[1]) +
+        Math::Fabs((b[1][2] - center[2]) * plane.normal[2]);
 
     if (d1 - d2 > epsilon) {
         return Plane::Side::Front;
@@ -77,9 +77,9 @@ float AABB::PlaneDistance(const Plane &plane) const {
     // d1 = center 와 평면의 거리
     float d1 = plane.Distance(center);
     // d2 = extent 벡터를 분리축(평면의 normal) 에 투영한 거리
-    float d2 = Math::Fabs((b[1][0] - center[0]) * plane.Normal()[0]) + 
-        Math::Fabs((b[1][1] - center[1]) * plane.Normal()[1]) +
-        Math::Fabs((b[1][2] - center[2]) * plane.Normal()[2]);
+    float d2 = Math::Fabs((b[1][0] - center[0]) * plane.normal[0]) +
+        Math::Fabs((b[1][1] - center[1]) * plane.normal[1]) +
+        Math::Fabs((b[1][2] - center[2]) * plane.normal[2]);
 
     if (d1 - d2 > 0.0f) {
         return d1 - d2;
@@ -197,31 +197,40 @@ bool AABB::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     return true;
 }
 
-float AABB::RayIntersection(const Vec3 &start, const Vec3 &dir) const {
-    float tmin = 0.0f;
+bool AABB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const {
+    float tmin = -FLT_MAX;
     float tmax = FLT_MAX;
 
     for (int i = 0; i < 3; i++) {
-        if (Math::Fabs(dir[i]) < FLT_EPSILON) {
-            if (start[i] < b[0][i] || start[i] > b[1][i]) {
-                return FLT_MAX;
+        if (Math::Fabs(ray.dir[i]) < 0.000001f) {
+            if (ray.origin[i] < b[0][i] || ray.origin[i] > b[1][i]) {
+                return false;
             }
         } else {
-            float ood = 1.0f / dir[i];
-            float t1 = (b[0][i] - start[i]) * ood;
-            float t2 = (b[1][i] - start[i]) * ood;
+            float ood = 1.0f / ray.dir[i];
+            float t1 = (b[0][i] - ray.origin[i]) * ood;
+            float t2 = (b[1][i] - ray.origin[i]) * ood;
+            
             if (t1 > t2) {
                 Swap(t1, t2);
             }
+            
             tmin = Max(tmin, t1);
             tmax = Min(tmax, t2);
+
             if (tmin > tmax) {
-                return FLT_MAX;
+                return false;
             }
         }
     }
 
-    return tmin;
+    if (hitDistMin) {
+        *hitDistMin = tmin;
+    }
+    if (hitDistMax) {
+        *hitDistMax = tmax;
+    }
+    return true;
 }
 
 void AABB::SetFromPoints(const Vec3 *points, int numPoints) {

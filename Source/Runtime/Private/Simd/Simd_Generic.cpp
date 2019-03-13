@@ -272,7 +272,7 @@ void BE_FASTCALL SIMD_Generic::DeriveTriPlanes(Plane *planes, const VertexGeneri
         n.y *= f;
         n.z *= f;
 
-        planes->SetNormal(n);
+        planes->normal = n;
         planes->FitThroughPoint(a->xyz);
         planes++;
     }

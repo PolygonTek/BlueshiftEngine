@@ -30,6 +30,7 @@ class Rotation;
 class Plane;
 class AABB;
 class Frustum;
+class Ray;
 
 /// A 3D oriented bounding box.
 class BE_API OBB {
@@ -138,11 +139,11 @@ public:
                         /// Tests if this OBB intersect with the given sphere.
     bool                IsIntersectSphere(const Sphere &sphere) const;
                         /// Tests if this OBB intersect with the given line segment.
-    bool                IsIntersectLine(const Vec3 &p0, const Vec3 &p1) const;
+    bool                IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
 
-                        /// Returns intersection distance in direction from the start point.
-                        /// Intersection point can be calculated like 'start + dir * distance'.
-    float               RayIntersection(const Vec3 &start, const Vec3 &dir) const;
+                        /// Intersects a ray with this OBB.
+                        /// Returns false if there is no intersection.
+    bool                IntersectRay(const Ray &ray, float *hitDistMin = nullptr, float *hitDistMax = nullptr) const;
 
                         /// Sets OBB with the given points using PCA (Principal Component Analysis).
     void                SetFromPoints(const Vec3 *points, int numPoints);

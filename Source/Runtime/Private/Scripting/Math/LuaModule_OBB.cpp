@@ -56,7 +56,7 @@ void LuaVM::RegisterOBB(LuaCpp::Module &module) {
         "is_intersect_aabb", &OBB::IsIntersectOBB,
         "is_intersect_sphere", &OBB::IsIntersectSphere,
         "is_intersect_line", &OBB::IsIntersectLine,
-        "ray_intersection", &OBB::RayIntersection,
+        "intersect_ray", &OBB::IntersectRay,
         //"set_from_points", &OBB::SetFromPoints,
         "to_points", &OBB::ToPoints,
         "to_aabb", &OBB::ToAABB,

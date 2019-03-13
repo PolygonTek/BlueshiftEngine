@@ -97,9 +97,9 @@ public:
     void                        ProcessPointerInput();
 
                                 /// Ray intersection test for all entities.
-    Entity *                    RayIntersection(const Vec3 &start, const Vec3 &dir, int layerMask) const;
+    Entity *                    RayCastForEntity(const Vec3 &start, const Vec3 &dir, int layerMask) const;
                                 /// Ray intersection test for all entities.
-    Entity *                    RayIntersection(const Vec3 &start, const Vec3 &dir, int layerMask, const Array<Entity *> &excludingList, float *scale) const;
+    Entity *                    RayCastForEntity(const Vec3 &start, const Vec3 &dir, int layerMask, const Array<Entity *> &excludingEntities, float *scale) const;
 
                                 /// Render camera component from all registered entities.
     void                        Render();

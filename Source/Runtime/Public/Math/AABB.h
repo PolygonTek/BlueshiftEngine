@@ -29,6 +29,7 @@ class Mat3;
 class Plane;
 class Sphere;
 class OBB;
+class Ray;
 
 /// A 3D axis-aligned bounding box.
 class BE_API AABB {
@@ -164,11 +165,11 @@ public:
                         /// Tests if this AABB intersect with the given triangle.
     bool                IsIntersectTriangle(const Vec3 &v0, const Vec3 &v1, const Vec3 &v2) const;
                         /// Tests if this AABB intersect with the given line segment.
-    bool                IsIntersectLine(const Vec3 &p0, const Vec3 &p1) const;
+    bool                IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
 
-                        /// Returns intersection distance in direction from the start point.
-                        /// Intersection point can be calculated like 'start + dir * distance'.
-    float               RayIntersection(const Vec3 &start, const Vec3 &dir) const;
+                        /// Intersects a ray with this AABB.
+                        /// Returns false if there is no intersection.
+    bool                IntersectRay(const Ray &ray, float *hitDistMin = nullptr, float *hitDistMax = nullptr) const;
     
                         /// Sets AABB enclosing all points.
     void                SetFromPoints(const Vec3 *points, const int numPoints);

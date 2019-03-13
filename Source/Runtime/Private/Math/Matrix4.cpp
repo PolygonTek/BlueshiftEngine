@@ -657,8 +657,8 @@ void Mat4::SetOrtho(float left, float right, float bottom, float top, float zNea
 //
 //--------------------------------------------------------------------------------------------
 void Mat4::SetReflect(const Plane &plane) {
-    Vec3 normal = plane.Normal();
-    float dist = plane.Dist();
+    Vec3 normal = plane.normal;
+    float dist = -plane.offset;
 
     mat[0][0] = 1.0f - 2.0f * normal.x * normal.x;
     mat[0][1] = 0.0f - 2.0f * normal.x * normal.y;

@@ -153,8 +153,8 @@ bool ComRenderable::RayIntersection(const Vec3 &start, const Vec3 &dir, bool bac
     Vec3 localDir = renderObjectDef.axis.TransposedMulVec(dir) / renderObjectDef.scale;
     localDir.Normalize();
 
-    float localDist = renderObjectDef.mesh->GetAABB().RayIntersection(localStart, localDir);
-    if (localDist == FLT_MAX) {
+    float localDist;
+    if (!renderObjectDef.mesh->GetAABB().IntersectRay(Ray(localStart, localDir), &localDist)) {
         return false;
     }
 

@@ -117,7 +117,7 @@ public:
 
     void                    UpdateSkinningJointCache(const Skeleton *skeleton, const Mat3x4 *joints);
 
-    bool                    IsIntersectLine(const Vec3 &p0, const Vec3 &p1, bool backFaceCull) const;
+    bool                    IsIntersectLine(const Vec3 &p1, const Vec3 &p2, bool backFaceCull) const;
 
     bool                    RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &scale) const;
 

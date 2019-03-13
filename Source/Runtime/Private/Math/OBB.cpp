@@ -260,9 +260,9 @@ int OBB::PlaneSide(const Plane &plane, const float epsilon) const {
     float d1, d2;
 
     d1 = plane.Distance(center);
-    d2 = Math::Fabs(extents[0] * axis[0].Dot(plane.Normal())) +
-         Math::Fabs(extents[1] * axis[1].Dot(plane.Normal())) +
-         Math::Fabs(extents[2] * axis[2].Dot(plane.Normal()));
+    d2 = Math::Fabs(extents[0] * axis[0].Dot(plane.normal)) +
+         Math::Fabs(extents[1] * axis[1].Dot(plane.normal)) +
+         Math::Fabs(extents[2] * axis[2].Dot(plane.normal));
 
     if (d1 - d2 > epsilon) {
         return Plane::Side::Front;
@@ -279,9 +279,9 @@ float OBB::PlaneDistance(const Plane &plane) const {
     float d1, d2;
 
     d1 = plane.Distance(center);
-    d2 = Math::Fabs(extents[0] * axis[0].Dot(plane.Normal())) +
-         Math::Fabs(extents[1] * axis[1].Dot(plane.Normal())) +
-         Math::Fabs(extents[2] * axis[2].Dot(plane.Normal()));
+    d2 = Math::Fabs(extents[0] * axis[0].Dot(plane.normal)) +
+         Math::Fabs(extents[1] * axis[1].Dot(plane.normal)) +
+         Math::Fabs(extents[2] * axis[2].Dot(plane.normal));
 
     if (d1 - d2 > 0.0f) {
         return d1 - d2;
@@ -559,34 +559,43 @@ bool OBB::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     return true;
 }
 
-float OBB::RayIntersection(const Vec3 &start, const Vec3 &dir) const {
-    float tmin = 0.0f;
+bool OBB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const {
+    float tmin = -FLT_MAX;
     float tmax = FLT_MAX;
 
     for (int i = 0; i < 3; i++) {
-        float ld = dir.Dot(axis[i]);
-        float ls = (start - center).Dot(axis[i]);
+        float ld = ray.dir.Dot(axis[i]);
+        float ls = (ray.origin - center).Dot(axis[i]);
 
-        if (Math::Fabs(ld) < FLT_EPSILON) {
+        if (Math::Fabs(ld) < 0.000001f) {
             if (ls < -extents[i] || ls > extents[i]) {
-                return FLT_MAX;
+                return false;
             }
         } else {
             float ood = 1.0f / ld;
             float t1 = (-extents[i] - ls) * ood;
             float t2 = (+extents[i] - ls) * ood;
+            
             if (t1 > t2) {
                 Swap(t1, t2);
             }
+
             tmin = Max(tmin, t1);
             tmax = Min(tmax, t2);
+            
             if (tmin > tmax) {
-                return FLT_MAX;
+                return false;
             }
         }
     }
 
-    return tmin;
+    if (hitDistMin) {
+        *hitDistMin = tmin;
+    }
+    if (hitDistMax) {
+        *hitDistMax = tmax;
+    }
+    return true;
 }
 
 //       +Z.axis

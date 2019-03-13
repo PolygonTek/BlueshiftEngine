@@ -24,11 +24,9 @@ void LuaVM::RegisterPlane(LuaCpp::Module &module) {
     _Plane.SetClass<Plane>();
     _Plane.AddClassCtor<Plane, const Vec3 &, float>();
     _Plane.AddClassMembers<Plane>(
+        "normal", &Plane::normal,
+        "offset", &Plane::offset,
         "element", static_cast<float&(Plane::*)(int)>(&Plane::operator[]), // index start from zero
-        "set_normal", &Plane::SetNormal,
-        "set_dist", &Plane::SetDist,
-        "normal", static_cast<Vec3&(Plane::*)(void)>(&Plane::Normal),
-        "dist", &Plane::Dist,
         "set_from_points", &Plane::SetFromPoints,
         "set_from_vecs", &Plane::SetFromVecs,
         "fit_through_point", &Plane::FitThroughPoint,
@@ -43,7 +41,7 @@ void LuaVM::RegisterPlane(LuaCpp::Module &module) {
         "distance", &Plane::Distance,
         "side", &Plane::GetSide,
         "is_intersect_line", &Plane::IsIntersectLine,
-        "ray_intersection", &Plane::RayIntersection
+        "intersect_ray", &Plane::IntersectRay
     );
     _Plane.AddClassMembers<Plane>(
         "__tostring", static_cast<const char*(Plane::*)(void)const>(&Plane::ToString)

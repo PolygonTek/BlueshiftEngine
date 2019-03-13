@@ -25,6 +25,7 @@
 BE_NAMESPACE_BEGIN
 
 class OBB;
+class Ray;
 
 /// A cylinder
 class BE_API Cylinder {
@@ -51,11 +52,11 @@ public:
     bool                operator!=(const Cylinder &rhs) const { return !Equals(rhs); }
 
                         /// Tests if this cylinder intersect with the given line segment.
-    bool                IsIntersectLine(const Vec3 &p0, const Vec3 &p1) const;
+    bool                IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
 
-                        /// Returns intersection distance in direction from the start point.
-                        /// Intersection point can be calculated like 'start + dir * distance'.
-    float               RayIntersection(const Vec3 &start, const Vec3 &dir) const;
+                        /// Intersects a ray with this cylinder.
+                        /// Returns false if there is no intersection.
+    bool                IntersectRay(const Ray &ray, float *hitDist) const;
 
     Sphere              ToSphere() const;
     OBB                 ToOBB() const;

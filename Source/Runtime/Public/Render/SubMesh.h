@@ -95,11 +95,11 @@ public:
 
                             /// Tests if this sub mesh intersect with the given line segment.
                             /// To use this function, edge information must be pre-calculated.
-    bool                    IsIntersectLine(const Vec3 &p0, const Vec3 &p1, bool cullBackFace) const;
+    bool                    IsIntersectLine(const Vec3 &p1, const Vec3 &p2, bool ignoreBackFace) const;
 
                             /// Ray intersection.
                             /// To use this function, edge information must be pre-calculated.
-    bool                    RayIntersection(const Vec3 &start, const Vec3 &dir, bool cullBackFace, float &dist) const;
+    bool                    IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist = nullptr) const;
 
     const AABB &            GetAABB() const { return aabb; }
 

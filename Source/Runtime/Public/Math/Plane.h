@@ -19,7 +19,10 @@
 
     Plane
 
-    a*x + b*y + c*z + d = 0 ( d = - a*x0 - b*y0 - c*z0 )
+    a*x + b*y + c*z = d
+
+    abc = plane normal
+    d = plane offset from origin
 
 -------------------------------------------------------------------------------
 */
@@ -28,6 +31,8 @@ BE_NAMESPACE_BEGIN
 
 #define ON_EPSILON                  0.1f
 #define DEGENERATE_DIST_EPSILON     1e-4f
+
+class Ray;
 
 /// Surface in three-dimensional space.
 class BE_API Plane {
@@ -60,20 +65,17 @@ public:
     constexpr Plane(float a, float b, float c, float d);
     constexpr Plane(const Vec3 &n, float d);
 
-    void            SetNormal(const Vec3 &normal);
-    void            SetDist(const float dist);
-
     int             GetType() const;
     
                     /// Casts this Plane to a C array.
                     /// This function simply returns a C pointer view to this data structure.
-    const float *   Ptr() const { return (const float *)&a; }
-    float *         Ptr() { return (float *)&a; }
+    const float *   Ptr() const { return (const float *)&normal; }
+    float *         Ptr() { return (float *)&normal; }
                     /// Casts this Plane to a C array.
                     /// This function simply returns a C pointer view to this data structure.
                     /// This function is identical to the member function Ptr().
-                    operator const float *() const { return (const float *)&a; }
-                    operator float *() { return (float *)&a; }
+                    operator const float *() const { return (const float *)&normal; }
+                    operator float *() { return (float *)&normal; }
 
                     /// Accesses an element of this plane.
     float &         At(int index) { return (*this)[index]; }
@@ -81,17 +83,12 @@ public:
     float           operator[](int index) const;
     float &         operator[](int index);
 
-    const Vec3 &    Normal() const;
-    Vec3 &          Normal();
-
-                    // returns: -d
-    float           Dist() const;
-
     bool            SetFromPoints(const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, bool fixDegenerate = true);
     bool            SetFromVecs(const Vec3 &dir1, const Vec3 &dir2, const Vec3 &p, bool fixDegenerate = true);
                     
                     // assumes normal is valid
     void            FitThroughPoint(const Vec3 &p);
+
     void            Flip();
 
                     /// Normalize plane. 
@@ -110,11 +107,11 @@ public:
     int             GetSide(const Vec3 &v, const float epsilon) const;
 
                     /// Tests if this plane intersect with the given line segment.
-    bool            IsIntersectLine(const Vec3 &p0, const Vec3 &p1) const;
+    bool            IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
 
-                    /// Returns intersection distance in direction from the start point.
-                    /// Intersection point can be calculated like 'start + dir * distance'.
-    float           RayIntersection(const Vec3 &start, const Vec3 &dir) const;
+                    /// Intersects a ray with this plane.
+                    /// Returns false if there is no intersection.
+    bool            IntersectRay(const Ray &ray, bool ignoreBackside, float *hitDist = nullptr) const;
 
                     /// Returns "a b c d".
     const char *    ToString() const { return ToString(4); }
@@ -124,86 +121,59 @@ public:
                     /// Returns dimension of this type
     int             GetDimension() const { return 4; }
 
-    float           a;
-    float           b;
-    float           c;
-    float           d;
+    Vec3            normal;     ///< The direction this plane is facing at.
+    float           offset;     ///< The offset of this plane from the origin.
 };
 
-BE_INLINE constexpr Plane::Plane(float inA, float inB, float inC, float inD) :
-    a(inA), b(inB), c(inC), d(inD) {
+BE_INLINE constexpr Plane::Plane(float a, float b, float c, float d) :
+    normal(a, b, c), offset(d) {
 }
 
-BE_INLINE constexpr Plane::Plane(const Vec3 &n, float inD) :
-    a(n.x), b(n.y), c(n.z), d(inD) {
+BE_INLINE constexpr Plane::Plane(const Vec3 &n, float d) :
+    normal(n), offset(d) {
 }
 
 BE_INLINE float Plane::operator[](int index) const {
     assert(index >= 0 && index < 4);
-    return (&a)[index];
+    return normal.Ptr()[index];
 }
 
 BE_INLINE float &Plane::operator[](int index) {
     assert(index >= 0 && index < 4);
-    return (&a)[index];
-}
-
-BE_INLINE const Vec3 &Plane::Normal() const {
-    return *reinterpret_cast<const Vec3 *>(&a);
-}
-
-BE_INLINE Vec3 &Plane::Normal() {
-    return *reinterpret_cast<Vec3 *>(&a);
-}
-
-BE_INLINE float Plane::Dist() const {
-    return -d;
-}
-
-BE_INLINE void Plane::SetNormal(const Vec3 &normal) {
-    this->a = normal.x;
-    this->b = normal.y;
-    this->c = normal.z;
-}
-
-BE_INLINE void Plane::SetDist(const float dist) {
-    d = -dist;
+    return normal.Ptr()[index];
 }
 
 BE_INLINE bool Plane::SetFromPoints(const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, bool fixDegenerate) {
-    Normal() = (p1 - p2).Cross(p3 - p2);
+    normal = (p1 - p2).Cross(p3 - p2);
     if (Normalize(fixDegenerate) == 0.0f) {
         return false;
     }
 
-    d = -Normal().Dot(p2);
+    offset = normal.Dot(p2);
     return true;
 }
 
 BE_INLINE bool Plane::SetFromVecs(const Vec3 &dir1, const Vec3 &dir2, const Vec3 &p, bool fixDegenerate) {
-    Normal() = dir1.Cross(dir2);
+    normal = dir1.Cross(dir2);
     if (Normalize(fixDegenerate) == 0.0f) {
         return false;
     }
 
-    d = -Normal().Dot(p);
+    offset = normal.Dot(p);
     return true;
 }
 
-
 BE_INLINE void Plane::FitThroughPoint(const Vec3 &p) {
-    d = -(Normal().Dot(p));
+    offset = normal.Dot(p);
 }
 
 BE_INLINE void Plane::Flip() {
-    a = -a;
-    b = -b;
-    c = -c;
-    d = -d;
+    normal = -normal;
+    offset = -offset;
 }
 
 BE_INLINE float Plane::Normalize(bool fixDegenerate) {
-    float length = Normal().Normalize();
+    float length = normal.Normalize();
 
     if (fixDegenerate) {
         FixDegenerateNormal();
@@ -213,34 +183,34 @@ BE_INLINE float Plane::Normalize(bool fixDegenerate) {
 }
 
 BE_INLINE bool Plane::FixDegenerateNormal() {
-    return Normal().FixDegenerateNormal();
+    return normal.FixDegenerateNormal();
 }
 
 BE_INLINE Plane Plane::Translate(const Vec3 &translation) const {
-    return Plane(Normal(), d - translation.Dot(Normal()));
+    return Plane(normal, offset + translation.Dot(normal));
 }
 
 BE_INLINE Plane &Plane::TranslateSelf(const Vec3 &translation) {
-    d -= translation.Dot(Normal());
+    offset += translation.Dot(normal);
     return *this;
 }
 
 BE_INLINE Plane Plane::Rotate(const Vec3 &origin, const Mat3 &axis) const {
     Plane p;
-    p.Normal() = axis * Normal();
-    p.d = d + origin.Dot(Normal()) - origin.Dot(p.Normal());
+    p.normal = axis * normal;
+    p.offset = offset - origin.Dot(normal) + origin.Dot(p.normal);
     return p;
 }
 
 BE_INLINE Plane &Plane::RotateSelf(const Vec3 &origin, const Mat3 &axis) {
-    d += origin.Dot(Normal());
-    Normal() = axis * Normal();
-    d -= origin.Dot(Normal());
+    offset -= origin.Dot(normal);
+    normal = axis * normal;
+    offset += origin.Dot(normal);
     return *this;
 }
 
 BE_INLINE float Plane::Distance(const Vec3 &v) const { 
-    return a * v.x + b * v.y + c * v.z + d; 
+    return normal.Dot(v) - offset;
 }
 
 BE_INLINE int Plane::GetSide(const Vec3 &v, const float epsilon) const {
@@ -252,68 +222,6 @@ BE_INLINE int Plane::GetSide(const Vec3 &v, const float epsilon) const {
     } else {
         return Side::On;
     }
-}
-
-BE_INLINE float Plane::RayIntersection(const Vec3 &start, const Vec3 &dir) const {
-    /*float d1 = Normal().Dot(start) + d;
-    if (d1 <= 0) {
-        return false;
-    }
-
-    float d2 = Normal().Dot(dir);
-    if (d2 >= 0) {
-        return false;
-    }
-
-    t = -(d1 / d2);
-    return true;
-    */
-    float d1 = Normal().Dot(start) + d;
-    float d2 = Normal().Dot(dir);
-
-    if (d2 == 0.0f) {
-        return FLT_MAX;
-    }
-    
-    return -(d1 / d2);
-}
-
-BE_INLINE bool Plane::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
-/*	float d1 = Normal().Dot(start) + d;
-    if (d1 <= 0) {
-        return false;
-    }
-
-    float d2 = Normal().Dot(end - start);
-    if (d2 >= 0) {
-        return false;
-    }
-
-    float t = -(d1 / d2);
-    if (t < 0.0f || t > 1.0f) {
-        return false;
-    }
-
-    return true;*/
-
-    float d1 = Normal().Dot(start) + d;
-    float d2 = Normal().Dot(end) + d;
-
-    if (d1 == d2) {
-        return false;
-    }
-
-    if (d1 > 0.0f && d2 > 0.0f) {
-        return false;
-    }
-    
-    if (d1 < 0.0f && d2 < 0.0f) {
-        return false;
-    }
-
-    float fraction = (d1 / (d1 - d2));
-
-    return (fraction >= 0.0f && fraction <= 1.0f);
 }
 
 BE_NAMESPACE_END

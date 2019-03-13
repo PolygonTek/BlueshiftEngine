@@ -100,7 +100,7 @@ public:
                     /// Tests if this frustum intersect with the given frustum.
     bool            IsIntersectFrustum(const Frustum &frustum) const;
                     /// Tests if this frustum intersect with the given line segment.
-    bool            IsIntersectLine(const Vec3 &p0, const Vec3 &p1) const;
+    bool            IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
 
                     /// Returns true if the ray intersects the bounds.
                     /// The ray can intersect the bounds in both directions from the start point.

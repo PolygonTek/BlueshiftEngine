@@ -195,13 +195,13 @@ bool Mesh::IsIntersectLine(const Vec3 &start, const Vec3 &end, bool backFaceCull
     return false;
 }
 
-bool Mesh::RayIntersection(const Vec3 &start, const Vec3 &dir, bool cullBackFace, float &dist) const {
+bool Mesh::RayIntersection(const Vec3 &start, const Vec3 &dir, bool ignoreBackface, float &dist) const {
     float minDist = Math::Infinity;
 
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
         MeshSurf *surf = surfaces[surfaceIndex];
 
-        if (surf->subMesh->RayIntersection(start, dir, cullBackFace, dist)) {
+        if (surf->subMesh->IntersectRay(Ray(start, dir), ignoreBackface, &dist)) {
             if (dist > 0.0f && dist < minDist) {
                 minDist = dist;
             }

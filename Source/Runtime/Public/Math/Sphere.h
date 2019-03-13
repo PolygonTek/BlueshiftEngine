@@ -25,6 +25,7 @@
 BE_NAMESPACE_BEGIN
 
 class AABB;
+class Ray;
 
 /// A 3D sphere.
 class BE_API Sphere {
@@ -74,11 +75,11 @@ public:
                     /// Tests if this sphere intersect with the given AABB.
     bool            IsIntersectAABB(const AABB &aabb) const;
                     /// Tests if this sphere intersect with the given line segment.
-    bool            IsIntersectLine(const Vec3 &p0, const Vec3 &p1) const;
+    bool            IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
 
-                    /// Returns intersection distance in direction from the start point.
-                    /// Intersection point can be calculated like 'start + dir * distance'.
-    float           RayIntersection(const Vec3 &start, const Vec3 &dir) const;
+                    /// Intersects a ray with this sphere.
+                    /// Returns false if there is no intersection.
+    bool            IntersectRay(const Ray &ray, float *hitDistMin = nullptr, float *hitDistMax = nullptr) const;
 
                     /// Calculates minimum / maximum value by projecting sphere onto the given axis.
     void            ProjectOnAxis(const Vec3 &axis, float &min, float &max) const;

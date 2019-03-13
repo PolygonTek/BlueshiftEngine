@@ -61,7 +61,7 @@ static void BoxToPoints(const Vec3 &center, const Vec3 &extents, const Mat3 &axi
 float Frustum::PlaneDistance(const Plane &plane) const {
     float min, max;
 
-    ProjectOnAxis(plane.Normal(), min, max);
+    ProjectOnAxis(plane.normal, min, max);
     if (min + plane[3] > 0.0f) {
         return min + plane[3];
     }
@@ -76,7 +76,7 @@ float Frustum::PlaneDistance(const Plane &plane) const {
 int Frustum::PlaneSide(const Plane &plane, const float epsilon) const {
     float min, max;
 
-    ProjectOnAxis(plane.Normal(), min, max);
+    ProjectOnAxis(plane.normal, min, max);
     if (min + plane[3] > epsilon) {
         return Plane::Side::Front;
     }
@@ -1246,10 +1246,10 @@ void Frustum::ToPlanes(Plane planes[6]) const {
     Vec3 scaled[2];
     Vec3 points[4];
 
-    planes[0].Normal() = -axis[0];
-    planes[0].SetDist(-dNear);
-    planes[1].Normal() = axis[0];
-    planes[1].SetDist(dFar);
+    planes[0].normal = -axis[0];
+    planes[0].offset = dNear;
+    planes[1].normal = axis[0];
+    planes[1].offset = -dFar;
 
     scaled[0] = axis[1] * dLeft;
     scaled[1] = axis[2] * dUp;
@@ -1259,7 +1259,7 @@ void Frustum::ToPlanes(Plane planes[6]) const {
     points[3] = scaled[0] - scaled[1];
 
     for (i = 0; i < 4; i++) {
-        planes[i+2].Normal() = points[i].Cross(points[(i+1)&3] - points[i]);
+        planes[i+2].normal = points[i].Cross(points[(i+1)&3] - points[i]);
         planes[i+2].Normalize();
         planes[i+2].FitThroughPoint(points[i]);
     }
