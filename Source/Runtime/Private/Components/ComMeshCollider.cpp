@@ -58,10 +58,6 @@ void ComMeshCollider::SetMeshGuid(const Guid &meshGuid) {
     }
 }
 
-bool ComMeshCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
-    return false;
-}
-
 void ComMeshCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     //collider;
 }

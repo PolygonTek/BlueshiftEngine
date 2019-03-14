@@ -509,9 +509,9 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
 const AABB Entity::GetWorldAABB(bool includingChildren) const {
     const ComTransform *transform = GetTransform();
 
-    AABB worldAabb;
-    worldAabb.SetFromTransformedAABB(GetLocalAABB(includingChildren), transform->GetOrigin(), transform->GetAxis());
-    return worldAabb;
+    AABB worldAABB;
+    worldAABB.SetFromTransformedAABB(GetLocalAABB(includingChildren), transform->GetOrigin(), transform->GetAxis());
+    return worldAABB;
 }
 
 const Vec3 Entity::GetWorldPosition(WorldPosTrait posTrait, bool includingChildren) const {
@@ -546,19 +546,24 @@ void Entity::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     }
 }
 
-bool Entity::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
-    float s = lastScale;
+bool Entity::IntersectRay(const Ray &ray, bool backFaceCull, float &lastDist) const {
+    float minDist = lastDist;
+    float dist;
 
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
-        Component *component = components[componentIndex];
+        const Component *component = components[componentIndex];
 
         if (component && component->IsActiveInHierarchy()) {
-            component->RayIntersection(start, dir, backFaceCull, s);
+            if (component->IntersectRay(ray, backFaceCull, &dist)) {
+                if (dist < minDist) {
+                    minDist = dist;
+                }
+            }
         }
     }
 
-    if (s < lastScale) {
-        lastScale = s;
+    if (minDist < lastDist) {
+        lastDist = minDist;
         return true;
     }
 

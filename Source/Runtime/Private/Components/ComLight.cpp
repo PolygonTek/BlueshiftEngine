@@ -254,10 +254,6 @@ const AABB ComLight::GetAABB() {
     return Sphere(Vec3::origin, MeterToUnit(0.5f)).ToAABB();
 }
 
-bool ComLight::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
-    return false;
-}
-
 void ComLight::UpdateVisuals() {
     if (!IsInitialized() || !IsActiveInHierarchy()) {
         return;

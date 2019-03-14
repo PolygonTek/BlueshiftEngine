@@ -787,10 +787,9 @@ void GameWorld::ProcessPointerInput() {
     }
 }
 
-Entity *GameWorld::RayCastForEntity(const Vec3 &start, const Vec3 &dir, int layerMask) const {
+Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask) const {
     Entity *minEntity = nullptr;
-
-    float minScale = FLT_MAX;
+    float minDist = FLT_MAX;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
@@ -798,7 +797,7 @@ Entity *GameWorld::RayCastForEntity(const Vec3 &start, const Vec3 &dir, int laye
                 continue;
             }
 
-            if (ent->RayIntersection(start, dir, true, minScale)) {
+            if (ent->IntersectRay(ray, true, minDist)) {
                 minEntity = ent;
             }
         }
@@ -807,12 +806,11 @@ Entity *GameWorld::RayCastForEntity(const Vec3 &start, const Vec3 &dir, int laye
     return minEntity;
 }
 
-Entity *GameWorld::RayCastForEntity(const Vec3 &start, const Vec3 &dir, int layerMask, const Array<Entity *> &excludingEntities, float *scale) const {
+Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask, const Array<Entity *> &excludingEntities, float *hitDist) const {
     Entity *minEntity = nullptr;
-
-    float minScale = FLT_MAX;
-    if (scale) {
-        *scale = minScale;
+    float minDist = FLT_MAX;
+    if (hitDist) {
+        *hitDist = minDist;
     }
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
@@ -825,10 +823,10 @@ Entity *GameWorld::RayCastForEntity(const Vec3 &start, const Vec3 &dir, int laye
                 continue;
             }
 
-            if (ent->RayIntersection(start, dir, true, minScale)) {
+            if (ent->IntersectRay(ray, true, minDist)) {
                 minEntity = ent;
-                if (scale) {
-                    *scale = minScale;
+                if (hitDist) {
+                    *hitDist = minDist;
                 }
             }
         }

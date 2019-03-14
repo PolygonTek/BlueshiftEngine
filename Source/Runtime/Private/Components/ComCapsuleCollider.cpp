@@ -79,10 +79,6 @@ void ComCapsuleCollider::SetHeight(float height) {
     }
 }
 
-bool ComCapsuleCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
-    return false;
-}
-
 void ComCapsuleCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 

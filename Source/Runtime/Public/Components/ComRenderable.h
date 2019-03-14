@@ -43,7 +43,7 @@ public:
 
     virtual const AABB      GetAABB() override;
 
-    virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
+    virtual bool            IntersectRay(const Ray &ray, bool backFaceCull, float *hitDist) const override;
 
     void                    SetWireframeColor(const Color4 &color);
 

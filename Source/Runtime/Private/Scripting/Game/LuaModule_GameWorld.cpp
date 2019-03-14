@@ -34,7 +34,7 @@ void LuaVM::RegisterGameWorld(LuaCpp::Module &module) {
         "find_entity_by_name", &GameWorld::FindEntityByName,
         "find_entity_by_tag", &GameWorld::FindEntityByTag,
         "find_entities_by_tag", &GameWorld::FindEntitiesByTag,
-        "ray_cast_for_entity", static_cast<Entity*(GameWorld::*)(const Vec3 &, const Vec3 &, int)const>(&GameWorld::RayCastForEntity),
+        "intersect_ray", static_cast<Entity*(GameWorld::*)(const Ray &, int)const>(&GameWorld::IntersectRay),
         "instantiate_entity", &GameWorld::InstantiateEntity,
         "instantiate_entity_with_transform", &GameWorld::InstantiateEntityWithTransform,
         "dont_destroy_on_load", &GameWorld::DontDestroyOnLoad,

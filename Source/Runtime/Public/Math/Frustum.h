@@ -30,6 +30,7 @@ class Plane;
 class AABB;
 class Sphere;
 class OBB;
+class Ray;
 
 /// A perspective viewing frustum.
 class BE_API Frustum {
@@ -104,8 +105,9 @@ public:
 
                     /// Returns true if the ray intersects the bounds.
                     /// The ray can intersect the bounds in both directions from the start point.
-                    /// If start is inside the frustum then scale1 < 0 and scale2 > 0.
-    bool            RayIntersection(const Vec3 &start, const Vec3 &dir, float &scale1, float &scale2) const;
+                    /// If start is inside the frustum then hitDistMin < 0 and hitDistMax > 0.
+    bool            IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const;
+    float           IntersectRay(const Ray &ray) const;
 
                     // returns true if the projection origin is far enough away from the bounding volume to create a valid frustum
                     /// Creates a frustum which contains the projection of the AABB.

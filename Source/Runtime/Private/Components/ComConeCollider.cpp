@@ -79,10 +79,6 @@ void ComConeCollider::SetHeight(float height) {
     }
 }
 
-bool ComConeCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
-    return false;
-}
-
 void ComConeCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 

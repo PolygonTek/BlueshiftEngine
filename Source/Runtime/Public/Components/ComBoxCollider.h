@@ -29,8 +29,6 @@ public:
     ComBoxCollider();
     virtual ~ComBoxCollider();
 
-    virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
-
                             /// Visualize the component in editor
     virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
 

@@ -42,8 +42,6 @@ public:
 
     virtual const AABB      GetAABB() override;
 
-    virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
-
     Collider *              GetCollider() const { return collider; }
 
 protected:

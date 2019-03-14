@@ -189,10 +189,6 @@ void ComCamera::Update() {
     renderCameraDef.time = GetGameWorld()->GetTime();
 }
 
-bool ComCamera::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
-    return false;
-}
-
 void ComCamera::DrawGizmos(const RenderCamera::State &renderCameraDef, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
     

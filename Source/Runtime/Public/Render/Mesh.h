@@ -37,6 +37,7 @@ class Mat3x4;
 class SkinningJointCache;
 class DrawSurf;
 class SubMesh;
+class Ray;
 
 class MeshSurf {
 public:
@@ -119,7 +120,10 @@ public:
 
     bool                    IsIntersectLine(const Vec3 &p1, const Vec3 &p2, bool backFaceCull) const;
 
-    bool                    RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &scale) const;
+                            /// Intersects a ray with this mesh.
+                            /// Returns false if there is no intersection.
+    bool                    IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist = nullptr) const;
+    float                   IntersectRay(const Ray &ray, bool ignoreBackFace) const;
 
                             /// Returns volume of solid mesh.
                             /// Should be a closed polytope to calculate exactly or AABB approximation.

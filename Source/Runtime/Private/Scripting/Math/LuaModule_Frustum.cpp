@@ -52,7 +52,7 @@ void LuaVM::RegisterFrustum(LuaCpp::Module &module) {
         "is_intersect_sphere", &Frustum::IsIntersectSphere,
         "is_intersect_frustum", &Frustum::IsIntersectFrustum,
         "is_intersect_line", &Frustum::IsIntersectLine,
-        "ray_intersection", &Frustum::RayIntersection,
+        "intersect_ray", static_cast<float(Frustum::*)(const Ray&)const>(&Frustum::IntersectRay),
         "to_obb", &Frustum::ToOBB,
         "to_minimum_sphere", &Frustum::ToMinimumSphere,
         "to_planes", &Frustum::ToPlanes,

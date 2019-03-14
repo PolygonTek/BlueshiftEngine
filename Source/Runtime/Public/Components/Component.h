@@ -83,7 +83,7 @@ public:
     virtual const AABB      GetAABB() { return AABB::zero; }
 
                             ///
-    virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const { return false; }
+    virtual bool            IntersectRay(const Ray &ray, bool backFaceCull, float *hitDist) const { return false; }
 
                             /// Visualize the component in editor.
     virtual void            DrawGizmos(const RenderCamera::State &sceneView, bool selected) {}

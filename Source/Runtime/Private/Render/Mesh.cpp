@@ -195,25 +195,39 @@ bool Mesh::IsIntersectLine(const Vec3 &start, const Vec3 &end, bool backFaceCull
     return false;
 }
 
-bool Mesh::RayIntersection(const Vec3 &start, const Vec3 &dir, bool ignoreBackface, float &dist) const {
+bool Mesh::IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist) const {
     float minDist = Math::Infinity;
 
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
         MeshSurf *surf = surfaces[surfaceIndex];
 
-        if (surf->subMesh->IntersectRay(Ray(start, dir), ignoreBackface, &dist)) {
+        float dist;
+        if (surf->subMesh->IntersectRay(ray, ignoreBackFace, &dist)) {
+            if (!hitDist) {
+                return true;
+            }
+
             if (dist > 0.0f && dist < minDist) {
                 minDist = dist;
             }
         }
     }
 
-    if (minDist < Math::Infinity) {
-        dist = minDist;
-        return true;
+    if (minDist == Math::Infinity) {
+        return false;
     }
 
-    return false;
+    *hitDist = minDist;
+    return true;
+}
+
+float Mesh::IntersectRay(const Ray &ray, bool ignoreBackFace) const {
+    float hitDist;
+
+    if (IntersectRay(ray, ignoreBackFace, &hitDist)) {
+        return hitDist;
+    }
+    return FLT_MAX;
 }
 
 void Mesh::SplitMirroredVerts() {

@@ -938,17 +938,32 @@ bool Frustum::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     return LocalLineIntersection(axis.TransposedMulVec(start - origin), axis.TransposedMulVec(end - origin));
 }
 
-// Returns true if the ray intersects the bounds.
-// The ray can intersect the bounds in both directions from the start point.
-// If start is inside the frustum then scale1 < 0 and scale2 > 0.
-bool Frustum::RayIntersection(const Vec3 &start, const Vec3 &dir, float &scale1, float &scale2) const {
-    if (LocalRayIntersection(axis.TransposedMulVec(start - origin), axis.TransposedMulVec(dir), scale1, scale2)) {
-        return true;
+bool Frustum::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const {
+    Vec3 localOrigin = axis.TransposedMulVec(ray.origin - origin);
+    Vec3 localDir = axis.TransposedMulVec(ray.dir);
+    float scale1, scale2;
+
+    if (!LocalRayIntersection(localOrigin, localDir, scale1, scale2)) {
+        if (scale1 > scale2) {
+            return false;
+        }
     }
-    if (scale1 <= scale2) {
-        return true;
+    if (hitDistMin) {
+        *hitDistMin = scale1;
     }
-    return false;
+    if (hitDistMax) {
+        *hitDistMax = scale2;
+    }
+    return true;
+}
+
+float Frustum::IntersectRay(const Ray &ray) const {
+    float hitDistMin, hitDistMax;
+
+    if (IntersectRay(ray, &hitDistMin, &hitDistMax)) {
+        return hitDistMin;
+    }
+    return FLT_MAX;
 }
 
 // Creates a frustum which contains the projection of the AABB.

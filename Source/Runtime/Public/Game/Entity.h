@@ -215,7 +215,7 @@ public:
     void                        DrawGizmos(const RenderCamera::State &viewState, bool selected);
 
                                 /// Ray cast to this entity.
-    bool                        RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const;
+    bool                        IntersectRay(const Ray &ray, bool backFaceCull, float &lastDist) const;
 
                                 /// Creates an entity by JSON text.
     static Entity *             CreateEntity(Json::Value &data, GameWorld *gameWorld = nullptr, int sceneIndex = 0);

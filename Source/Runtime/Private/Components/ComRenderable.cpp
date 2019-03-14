@@ -144,34 +144,30 @@ const AABB ComRenderable::GetAABB() {
     return renderObjectDef.localAABB * transform->GetScale();
 }
 
-bool ComRenderable::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastDist) const {
+bool ComRenderable::IntersectRay(const Ray &ray, bool backFaceCull, float *hitDist) const {
     if (!renderObjectDef.mesh) {
         return false;
     }
 
-    Vec3 localStart = renderObjectDef.axis.TransposedMulVec(start - renderObjectDef.origin) / renderObjectDef.scale;
-    Vec3 localDir = renderObjectDef.axis.TransposedMulVec(dir) / renderObjectDef.scale;
-    localDir.Normalize();
+    Ray localRay;
+    localRay.origin = renderObjectDef.axis.TransposedMulVec(ray.origin - renderObjectDef.origin) / renderObjectDef.scale;
+    localRay.dir = renderObjectDef.axis.TransposedMulVec(ray.dir) / renderObjectDef.scale;
+    localRay.dir.Normalize();
 
-    float localDist;
-    if (!renderObjectDef.mesh->GetAABB().IntersectRay(Ray(localStart, localDir), &localDist)) {
+    float dist;
+    if (!renderObjectDef.mesh->GetAABB().IntersectRay(localRay, &dist)) {
         return false;
     }
 
-    float s = localDist * (localDir * renderObjectDef.scale).Length();
-    if (s > lastDist) {
+    if (!renderObjectDef.mesh->IntersectRay(localRay, backFaceCull, &dist)) {
         return false;
     }
 
-    if (renderObjectDef.mesh->RayIntersection(localStart, localDir, backFaceCull, localDist)) {
-        s = localDist * (localDir * renderObjectDef.scale).Length();
-        if (s > 0.0f && s < lastDist) {
-            lastDist = s;
-            return true;
-        }
+    if (hitDist) {
+        *hitDist = dist * (localRay.dir * renderObjectDef.scale).Length();
     }
 
-    return false;
+    return true;
 }
 
 void ComRenderable::SetWireframeColor(const Color4 &color) {
