@@ -200,6 +200,9 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
                 visObject->envProbeInfo[1].envProbe = nullptr;
                 visObject->envProbeInfo[1].weight = 0.0f;
             }
+        } else {
+            visObject->envProbeInfo[0].envProbe = nullptr;
+            visObject->envProbeInfo[1].envProbe = nullptr;
         }
 
         if (r_showAABB.GetInteger() > 0) {

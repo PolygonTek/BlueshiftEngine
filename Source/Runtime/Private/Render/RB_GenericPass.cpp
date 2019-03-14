@@ -206,10 +206,6 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
-    if (!backEnd.useDepthPrePass) {
-        return;
-    }
-
     if (r_usePostProcessing.GetBool() && r_SSAO.GetBool()) {
         backEnd.ctx->screenRT->SetMRTMask(3);
     }
@@ -230,6 +226,10 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         }
 
         if (drawSurf->material->IsLitSurface()) {
+            if (!backEnd.useDepthPrePass) {
+                continue;
+            }
+
             drawType = Batch::FlushType::DepthFlush;
         } else if (drawSurf->material->GetRenderingMode() != Material::RenderingMode::AlphaBlend) {
             drawType = Batch::FlushType::UnlitFlush;

@@ -561,7 +561,7 @@ static void RB_RenderView() {
         // Render pass for HiZ occlusion culling.
         RB_HiOcclusionPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
-        // Render opaque/perforated surface to depth buffer fast for early-z culling (depth + unlit + [normal])
+        // Render opaque/perforated surface to depth buffer fast for early-z culling ([depth] + unlit + [normal])
         RB_DepthPrePass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
         // Render all solid (non-translucent) geometry ([depth] + base + [primary lit])

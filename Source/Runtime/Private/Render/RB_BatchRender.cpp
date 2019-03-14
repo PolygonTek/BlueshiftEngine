@@ -800,7 +800,7 @@ void Batch::RenderIndirectLit_DirectLit(const Material::ShaderPass *mtrlPass) co
 }
 
 void Batch::RenderBase(const Material::ShaderPass *mtrlPass, float ambientScale) const {
-    if (r_indirectLit.GetBool()) {
+    if (r_indirectLit.GetBool() && surfSpace->envProbeInfo[0].envProbe) {
         if (surfLight) {
             RenderIndirectLit_DirectLit(mtrlPass);
         } else {
