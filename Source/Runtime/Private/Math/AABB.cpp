@@ -233,6 +233,15 @@ bool AABB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) co
     return true;
 }
 
+float AABB::IntersectRay(const Ray &ray) const {
+    float hitDistMin;
+
+    if (IntersectRay(ray, &hitDistMin)) {
+        return hitDistMin;
+    }
+    return FLT_MAX;
+}
+
 void AABB::SetFromPoints(const Vec3 *points, int numPoints) {
     b[0][0] = Math::Infinity;
     b[0][1] = Math::Infinity;

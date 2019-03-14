@@ -112,6 +112,7 @@ public:
                     /// Intersects a ray with this plane.
                     /// Returns false if there is no intersection.
     bool            IntersectRay(const Ray &ray, bool ignoreBackside, float *hitDist = nullptr) const;
+    float           IntersectRay(const Ray &ray, bool ignoreBackside) const;
 
                     /// Returns "a b c d".
     const char *    ToString() const { return ToString(4); }

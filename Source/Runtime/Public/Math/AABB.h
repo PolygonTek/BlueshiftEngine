@@ -170,6 +170,7 @@ public:
                         /// Intersects a ray with this AABB.
                         /// Returns false if there is no intersection.
     bool                IntersectRay(const Ray &ray, float *hitDistMin = nullptr, float *hitDistMax = nullptr) const;
+    float               IntersectRay(const Ray &ray) const;
     
                         /// Sets AABB enclosing all points.
     void                SetFromPoints(const Vec3 *points, const int numPoints);

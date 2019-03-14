@@ -598,6 +598,15 @@ bool OBB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) con
     return true;
 }
 
+float OBB::IntersectRay(const Ray &ray) const {
+    float hitDistMin;
+
+    if (IntersectRay(ray, &hitDistMin)) {
+        return hitDistMin;
+    }
+    return FLT_MAX;
+}
+
 //       +Z.axis
 //
 //       4------7

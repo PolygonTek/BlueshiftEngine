@@ -80,6 +80,7 @@ public:
                     /// Intersects a ray with this sphere.
                     /// Returns false if there is no intersection.
     bool            IntersectRay(const Ray &ray, float *hitDistMin = nullptr, float *hitDistMax = nullptr) const;
+    float           IntersectRay(const Ray &ray) const;
 
                     /// Calculates minimum / maximum value by projecting sphere onto the given axis.
     void            ProjectOnAxis(const Vec3 &axis, float &min, float &max) const;

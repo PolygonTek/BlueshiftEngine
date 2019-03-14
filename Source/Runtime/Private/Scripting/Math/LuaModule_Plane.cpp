@@ -41,7 +41,7 @@ void LuaVM::RegisterPlane(LuaCpp::Module &module) {
         "distance", &Plane::Distance,
         "side", &Plane::GetSide,
         "is_intersect_line", &Plane::IsIntersectLine,
-        "intersect_ray", &Plane::IntersectRay
+        "intersect_ray", static_cast<float(Plane::*)(const Ray&, bool)const>(&Plane::IntersectRay)
     );
     _Plane.AddClassMembers<Plane>(
         "__tostring", static_cast<const char*(Plane::*)(void)const>(&Plane::ToString)

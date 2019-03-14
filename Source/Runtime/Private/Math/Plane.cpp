@@ -80,8 +80,16 @@ bool Plane::IntersectRay(const Ray &ray, bool ignoreBackside, float *hitDist) co
     if (hitDist) {
         *hitDist = dist;
     }
-
     return true;
+}
+
+float Plane::IntersectRay(const Ray &ray, bool ignoreBackside) const { 
+    float hitDist;
+
+    if (IntersectRay(ray, ignoreBackside, &hitDist)) { 
+        return hitDist;
+    } 
+    return FLT_MAX;
 }
 
 const char *Plane::ToString(int precision) const {

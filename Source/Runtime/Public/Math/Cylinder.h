@@ -57,6 +57,7 @@ public:
                         /// Intersects a ray with this cylinder.
                         /// Returns false if there is no intersection.
     bool                IntersectRay(const Ray &ray, float *hitDist) const;
+    float               IntersectRay(const Ray &ray) const;
 
     Sphere              ToSphere() const;
     OBB                 ToOBB() const;

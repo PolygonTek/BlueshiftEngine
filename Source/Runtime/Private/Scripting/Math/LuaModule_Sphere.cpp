@@ -34,7 +34,7 @@ void LuaVM::RegisterSphere(LuaCpp::Module &module) {
         "is_intersect_sphere", &Sphere::IsIntersectSphere,
         "is_intersect_aabb", &Sphere::IsIntersectAABB,
         "is_intersect_line", &Sphere::IsIntersectLine,
-        "intersect_ray", &Sphere::IntersectRay,
+        "intersect_ray", static_cast<float(Sphere::*)(const Ray&)const>(&Sphere::IntersectRay),
         "project_on_axis", &Sphere::ProjectOnAxis,
         "to_aabb", &Sphere::ToAABB
     );

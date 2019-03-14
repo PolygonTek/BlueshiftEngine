@@ -108,6 +108,15 @@ bool Cylinder::IntersectRay(const Ray &ray, float *hitDist) const {
     return true;
 }
 
+float Cylinder::IntersectRay(const Ray &ray) const {
+    float hitDist;
+
+    if (IntersectRay(ray, &hitDist)) {
+        return hitDist;
+    }
+    return FLT_MAX;
+}
+
 bool Cylinder::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     Vec3 d = p[1] - p[0];
     Vec3 m = start - p[0];

@@ -66,7 +66,7 @@ void LuaVM::RegisterAABB(LuaCpp::Module &module) {
         "is_intersect_sphere", &AABB::IsIntersectSphere,
         "is_intersect_triangle", &AABB::IsIntersectTriangle,
         "is_intersect_line", &AABB::IsIntersectLine,
-        "intersect_ray", &AABB::IntersectRay,
+        "intersect_ray", static_cast<float(AABB::*)(const Ray&)const>(&AABB::IntersectRay),
         "set_from_points", &AABB::SetFromPoints,
         "set_from_point_translation", &AABB::SetFromPointTranslation,
         "set_from_aabb_translation", &AABB::SetFromAABBTranslation);

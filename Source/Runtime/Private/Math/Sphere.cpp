@@ -50,6 +50,15 @@ bool Sphere::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) 
     return true;
 }
 
+float Sphere::IntersectRay(const Ray &ray) const {
+    float hitDistMin;
+
+    if (IntersectRay(ray, &hitDistMin)) {
+        return hitDistMin;
+    }
+    return FLT_MAX;
+}
+
 bool Sphere::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     Vec3 m = start - center;
     float c = m.Dot(m) - radius * radius;

@@ -144,6 +144,7 @@ public:
                         /// Intersects a ray with this OBB.
                         /// Returns false if there is no intersection.
     bool                IntersectRay(const Ray &ray, float *hitDistMin = nullptr, float *hitDistMax = nullptr) const;
+    float               IntersectRay(const Ray &ray) const;
 
                         /// Sets OBB with the given points using PCA (Principal Component Analysis).
     void                SetFromPoints(const Vec3 *points, int numPoints);
