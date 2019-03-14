@@ -149,22 +149,20 @@ bool ComRenderable::IntersectRay(const Ray &ray, bool backFaceCull, float *hitDi
         return false;
     }
 
+    Mat3x4 worldToLocal(renderObjectDef.scale, renderObjectDef.axis, renderObjectDef.origin);
+    worldToLocal.InverseSelf();
+
     Ray localRay;
-    localRay.origin = renderObjectDef.axis.TransposedMulVec(ray.origin - renderObjectDef.origin) / renderObjectDef.scale;
-    localRay.dir = renderObjectDef.axis.TransposedMulVec(ray.dir) / renderObjectDef.scale;
-    localRay.dir.Normalize();
+    localRay.origin = worldToLocal.Transform(ray.origin);
+    localRay.dir = worldToLocal.TransformNormal(ray.dir);
+    //localRay.dir.Normalize();
 
-    float dist;
-    if (!renderObjectDef.mesh->GetAABB().IntersectRay(localRay, &dist)) {
+    if (!renderObjectDef.mesh->GetAABB().IntersectRay(localRay, hitDist)) {
         return false;
     }
 
-    if (!renderObjectDef.mesh->IntersectRay(localRay, backFaceCull, &dist)) {
+    if (!renderObjectDef.mesh->IntersectRay(localRay, backFaceCull, hitDist)) {
         return false;
-    }
-
-    if (hitDist) {
-        *hitDist = dist * (localRay.dir * renderObjectDef.scale).Length();
     }
 
     return true;

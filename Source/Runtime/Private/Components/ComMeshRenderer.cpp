@@ -263,7 +263,7 @@ bool ComMeshRenderer::GetClosestVertex(const RenderCamera *camera, const Point &
             Vec3 localPosition = v->GetPosition();
             Vec3 localNormal = v->GetNormal();
 
-            Vec3 worldPosition = transform->GetMatrix() * localPosition;
+            Vec3 worldPosition = transform->GetMatrix().Transform(localPosition);
             Vec3 worldNormal = transform->GetMatrix().TransformNormal(localNormal);
 
             bool isBackface;
