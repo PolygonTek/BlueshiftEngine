@@ -33,13 +33,13 @@ bool Vec3::FixDegenerateNormal() {
                     return true;
                 }
             } else {
-                if (z != -1.0f)	{
+                if (z != -1.0f) {
                     z = -1.0f;
                     return true;
                 }
             }
             return false;
-        } else if (z == 0.0f)	{
+        } else if (z == 0.0f) {
             if (y > 0.0f) {
                 if (y != 1.0f) {
                     y = 1.0f;
@@ -61,7 +61,7 @@ bool Vec3::FixDegenerateNormal() {
                     return true;
                 }
             } else {
-                if (x != -1.0f)	{
+                if (x != -1.0f) {
                     x = -1.0f;
                     return true;
                 }
@@ -83,7 +83,7 @@ bool Vec3::FixDegenerateNormal() {
         }
         return false;
     } else if (Math::Fabs(z) == 1.0f) {
-        if (x != 0.0f || y != 0.0f)	{
+        if (x != 0.0f || y != 0.0f) {
             x = y = 0.0f;
             return true;
         }

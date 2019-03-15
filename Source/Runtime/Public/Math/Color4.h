@@ -170,10 +170,10 @@ public:
 
                         /// Returns "r g b a".
     const char *        ToString() const { return ToString(4); }
-                        /// Returns "r g b a" with the given precision
+                        /// Returns "r g b a" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Color4       FromString(const char *str);
 
                         /// Casts this Color4 to a Color3.
@@ -191,17 +191,17 @@ public:
                         /// Convert color packed to a 32-bit integer, with R component in the lowest 8 bits. Components are clamped to [0, 1] range.
     uint32_t            ToUInt32() const;
 
-                        /// Convert RGB to HSL
+                        /// Convert RGB to HSL.
     Color4              ToHSL() const { return Color4(ToColor3().ToHSL(), a); }
-                        /// Convert HSL to RGB
+                        /// Convert HSL to RGB.
     Color4              FromHSL() const { return Color4(ToColor3().FromHSL(), a); }
 
-                        /// Convert sRGB to Linear
+                        /// Convert sRGB to Linear.
     Color4              SRGBToLinear() const { return Color4(ToColor3().SRGBToLinear(), a); }
-                        /// Convert Linear to sRGB
+                        /// Convert Linear to sRGB.
     Color4              LinearToSRGB() const { return Color4(ToColor3().LinearToSRGB(), a); }
 
-                        /// Returns dimension of this type
+                        /// Returns dimension of this type.
     int                 GetDimension() const { return Size; }
 
     static const Color4 zero;       ///< (0.0, 0.0, 0.0, 0.0)

@@ -71,23 +71,23 @@ public:
     Complex                 operator-(const float rhs) const;
     friend Complex          operator-(const float lhs, const Complex &rhs);
 
-                            /// Exact compare, no epsilon
+                            /// Exact compare, no epsilon.
     bool                    Equals(const Complex &a) const;
-                            /// Compare with epsilon
+                            /// Compare with epsilon.
     bool                    Equals(const Complex &a, const float epsilon) const;
-                            /// Exact compare, no epsilon
+                            /// Exact compare, no epsilon.
     bool                    operator==(const Complex &a) const { return Equals(a); }
-                            /// Exact compare, no epsilon
+                            /// Exact compare, no epsilon.
     bool                    operator!=(const Complex &a) const { return !Equals(a); }
 
-                            /// Returns the complex conjugate
+                            /// Returns the complex conjugate.
     Complex                 Conjugate() const;
 
     Complex                 Reciprocal() const;
 
     Complex                 Sqrt() const;
     
-                            /// Returns the magnitude of a complex number
+                            /// Returns the magnitude of a complex number.
     float                   Abs() const;
 
                             /// Returns "re im".
@@ -95,7 +95,7 @@ public:
                             /// Returns "re im" with the given precision.
     const char *            ToString(int precision) const;
 
-                            /// Returns dimension of this type
+                            /// Returns dimension of this type.
     int                     GetDimension() const { return 2; }
 
     static const Complex    origin;

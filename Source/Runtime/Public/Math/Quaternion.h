@@ -110,13 +110,13 @@ public:
                         /// Multiplies two quaternions, in-place.
     Quat &              operator*=(const Quat &rhs);
 
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const Quat &a) const;
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const Quat &a, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const Quat &rhs) const { return Equals(rhs); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const Quat &rhs) const { return !Equals(rhs); }
 
                         /// Sets all elements of this quaternion.
@@ -171,10 +171,10 @@ public:
                         /// Returns "x y z w" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Quat         FromString(const char *str);
 
-                        /// Returns dimension of this type
+                        /// Returns dimension of this type.
     int                 GetDimension() const { return 4; }
 
     static const Quat   identity;

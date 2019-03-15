@@ -102,7 +102,7 @@ public:
                         /// Multiplies this vector by a scalar.
                         /// This function is identical to the member function Mul().
     Vec3                operator*(float rhs) const { return Vec3(x * rhs, y * rhs, z * rhs); }
-                        /// Multiplies vector v by a scalar.
+                        /// Multiplies vector by a scalar.
     friend Vec3         operator*(float lhs, const Vec3 &rhs) { return Vec3(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z); }
 
                         /// Multiplies this vector by a vector, element-wise.
