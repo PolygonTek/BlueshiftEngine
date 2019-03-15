@@ -4,7 +4,7 @@ in MEDIUMP vec2 in_st       : TEXCOORD0;
 out MEDIUMP vec2 v2f_texCoord;
 
 #if defined(INSTANCING)
-$include "Instancing.vp"
+    $include "Instancing.vp"
 #else
     uniform mat4x3 localToWorldMatrix;
 #endif

@@ -319,6 +319,10 @@ bool Shader::Create(const char *text, const char *baseDir) {
         }
     }
 
+    if (renderGlobal.instancingMethod == Mesh::NoInstancing) {
+        generateGpuInstancingVersion = false;
+    }
+
     return Finish(generatePerforatedVersion, generateGpuSkinningVersion, generateGpuInstancingVersion, generateParallelShadowVersion, generateSpotShadowVersion, generatePointShadowVersion);
 }
 
@@ -688,8 +692,8 @@ bool Shader::Finish(bool generatePerforatedVersion,
                 return false;
             }
 
-            if (!parallelShadowVersion->gpuInstancingVersion) {
-                parallelShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, true);
+            if (generateGpuInstancingVersion && !parallelShadowVersion->gpuInstancingVersion) {
+                parallelShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, false);
                 if (!parallelShadowVersion->gpuInstancingVersion) {
                     return false;
                 }
@@ -720,8 +724,8 @@ bool Shader::Finish(bool generatePerforatedVersion,
                 return false;
             }
 
-            if (!spotShadowVersion->gpuInstancingVersion) {
-                spotShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, true);
+            if (generateGpuInstancingVersion && !spotShadowVersion->gpuInstancingVersion) {
+                spotShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, false);
                 if (!spotShadowVersion->gpuInstancingVersion) {
                     return false;
                 }
@@ -752,8 +756,8 @@ bool Shader::Finish(bool generatePerforatedVersion,
                 return false;
             }
 
-            if (!pointShadowVersion->gpuInstancingVersion) {
-                pointShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, true);
+            if (generateGpuInstancingVersion && !pointShadowVersion->gpuInstancingVersion) {
+                pointShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, false);
                 if (!pointShadowVersion->gpuInstancingVersion) {
                     return false;
                 }
