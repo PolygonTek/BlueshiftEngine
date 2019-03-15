@@ -159,7 +159,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
         }
 
         // Skip if a object is farther than maximum visible distance
-        if (renderObject->state.origin.DistanceSqr(camera->def->GetState().origin) > renderObject->maxVisDistSquared) {
+        if (renderObject->state.worldMatrix.ToTranslationVec3().DistanceSqr(camera->def->GetState().origin) > renderObject->maxVisDistSquared) {
             return true;
         }
 
@@ -176,7 +176,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
             Swap(inverse[0], inverse[2]);
             Swap(inverse[1], inverse[2]);
 
-            Mat3 billboardMatrix = inverse * Mat3::FromScale(renderObject->state.scale);
+            Mat3 billboardMatrix = inverse * Mat3::FromScale(renderObject->GetWorldMatrix().ToScaleVec3());
             visObject->modelViewMatrix *= billboardMatrix;
             visObject->modelViewProjMatrix *= billboardMatrix;
         }
@@ -440,8 +440,7 @@ void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
     // Skybox object parameters
     RenderObject::State roDef;
     roDef.flags = RenderObject::StaticFlag | RenderObject::SkipSelectionFlag;
-    roDef.origin = camera->def->GetState().origin;
-    roDef.scale = Vec3(camera->def->zNear * 4);
+    roDef.worldMatrix.SetTRS(camera->def->GetState().origin, Mat3::identity, Vec3(camera->def->zNear * 4));
     roDef.materialParms[RenderObject::RedParm] = 1.0f;
     roDef.materialParms[RenderObject::GreenParm] = 1.0f;
     roDef.materialParms[RenderObject::BlueParm] = 1.0f;
@@ -510,7 +509,7 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
         }
 
         // Skip if the object is farther than maximum visible distance.
-        if (renderObject->state.origin.DistanceSqr(camera->def->state.origin) > renderObject->maxVisDistSquared) {
+        if (renderObject->state.worldMatrix.ToTranslationVec3().DistanceSqr(camera->def->state.origin) > renderObject->maxVisDistSquared) {
             return true;
         }
 
@@ -532,7 +531,7 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
                 }
             }
         } else if (isShadowCaster) {
-            OBB surfBounds = OBB(surf->subMesh->GetAABB() * renderObject->state.scale, renderObject->state.origin, renderObject->state.axis);
+            OBB surfBounds = OBB(surf->subMesh->GetAABB(), renderObject->state.worldMatrix);
 
             if (!visLight->def->CullShadowCaster(surfBounds, camera->def->frustum, camera->worldAABB)) {
                 // This surface is not visible but shadow might be visible as a shadow caster.
@@ -625,7 +624,7 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
         bool shadowCasterCulled = false;
 
         if (isShadowCaster && !renderObject->visObject) {
-            OBB worldOBB = OBB(renderObject->GetLocalAABB(), renderObject->state.origin, renderObject->state.axis);
+            OBB worldOBB = renderObject->GetWorldOBB();
 
             shadowCasterCulled = visLight->def->CullShadowCaster(worldOBB, camera->def->frustum, camera->worldAABB);
         }

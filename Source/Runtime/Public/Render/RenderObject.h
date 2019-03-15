@@ -102,10 +102,8 @@ public:
         //
         // Transform info
         //
-        Vec3                origin = Vec3::origin;      ///< Object position in world space
-        Vec3                scale = Vec3::one;          ///< Object scaling
-        Mat3                axis = Mat3::identity;      ///< Object orientation
-        AABB                localAABB = AABB::zero;     ///< Non-scaled local AABB (shouldn't be empty)
+        Mat3x4              worldMatrix = Mat3x4::identity;
+        AABB                aabb = AABB::zero;          ///< non-scaled AABB in local space
 
         //
         // Wireframe info
@@ -158,9 +156,6 @@ public:
                             /// Returns state.
     const State &           GetState() const { return state; }
 
-                            /// Returns non-scaled AABB in local space.
-    const AABB              GetLocalAABB() const;
-
                             /// Returns AABB in world space.
     const AABB &            GetWorldAABB() const { return worldAABB; }
 
@@ -180,26 +175,25 @@ private:
                             /// Updates this render object with the given state.
     void                    Update(const State *state);
 
-    bool                    firstUpdate;
-
     State                   state;
 
-    AABB                    worldAABB;
-    OBB                     worldOBB;
-    Mat3x4                  worldMatrix;
-    Mat3x4                  worldMatrixInverse;
-    Mat3x4                  prevWorldMatrix;
+    AABB                    worldAABB = AABB::zero;
+    OBB                     worldOBB = OBB::zero;
+    Mat3x4                  worldMatrix = Mat3x4::identity;
+    Mat3x4                  worldMatrixInverse = Mat3x4::identity;
+    Mat3x4                  prevWorldMatrix = Mat3x4::identity;
+
     float                   maxVisDistSquared;
 
-    VisObject *             visObject;
-    int                     viewCount;
+    VisObject *             visObject = nullptr;
+    int                     viewCount = 0;
 
     RenderWorld *           renderWorld;
     int                     index;                      // index of object list in RenderWorld
-    DbvtProxy *             proxy;                      // proxy for render object
+    DbvtProxy *             proxy = nullptr;            // proxy for render object
 
-    int                     numMeshSurfProxies;         // number of proxies for static sub mesh
-    DbvtProxy *             meshSurfProxies;            // proxies for static sub mesh
+    int                     numMeshSurfProxies = 0;     // number of proxies for static sub mesh
+    DbvtProxy *             meshSurfProxies = nullptr;  // proxies for static sub mesh
 };
 
 BE_NAMESPACE_END

@@ -695,21 +695,21 @@ void RenderWorld::DebugJoints(const RenderObject *renderObject, bool showJointsN
     const Mat3x4 *jointMat = renderObject->state.joints;
 
     for (int i = 0; i < renderObject->state.numJoints; i++, joint++, jointMat++) {
-        Vec3 pos = renderObject->state.origin + renderObject->state.axis * (renderObject->state.scale * jointMat->ToTranslationVec3());
+        Vec3 pos = renderObject->state.worldMatrix * jointMat->ToTranslationVec3();
         Mat3 mat = jointMat->ToMat3();
 
         if (joint->parent) {
             int parentIndex = (int)(joint->parent - renderObject->state.mesh->GetJoints());
             SetDebugColor(Color4::white, Color4::zero);
-            DebugLine(pos, renderObject->state.origin + renderObject->state.axis * (renderObject->state.scale * renderObject->state.joints[parentIndex].ToTranslationVec3()), 1);
+            DebugLine(pos, renderObject->state.worldMatrix * renderObject->state.joints[parentIndex].ToTranslationVec3(), 1);
         }
 
         SetDebugColor(Color4::red, Color4::zero);
-        DebugLine(pos, pos + renderObject->state.axis * mat[0] * CentiToUnit(1.0f), 1);
+        DebugLine(pos, pos + renderObject->state.worldMatrix.ToMat3() * mat[0] * CentiToUnit(1.0f), 1);
         SetDebugColor(Color4::green, Color4::zero);
-        DebugLine(pos, pos + renderObject->state.axis * mat[1] * CentiToUnit(1.0f), 1);
+        DebugLine(pos, pos + renderObject->state.worldMatrix.ToMat3() * mat[1] * CentiToUnit(1.0f), 1);
         SetDebugColor(Color4::blue, Color4::zero);
-        DebugLine(pos, pos + renderObject->state.axis * mat[2] * CentiToUnit(1.0f), 1);
+        DebugLine(pos, pos + renderObject->state.worldMatrix.ToMat3() * mat[2] * CentiToUnit(1.0f), 1);
 
         if (showJointsNames) {
             SetDebugColor(Color4::white, Color4::zero);

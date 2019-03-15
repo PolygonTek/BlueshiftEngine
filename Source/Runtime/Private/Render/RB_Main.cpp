@@ -493,9 +493,9 @@ static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
             if (space == prevSpace) {
                 continue;
             }
-            occludeeAABB[numAmbientOccludees].SetFromTransformedAABB(space->def->GetLocalAABB(), space->def->GetState().origin, space->def->GetState().axis);
+            occludeeAABB[numAmbientOccludees] = space->def->GetWorldAABB();
         } else {
-            occludeeAABB[numAmbientOccludees].SetFromTransformedAABB(surf->subMesh->GetAABB() * space->def->GetState().scale, space->def->GetState().origin, space->def->GetState().axis);
+            occludeeAABB[numAmbientOccludees].SetFromTransformedAABBFast(surf->subMesh->GetAABB(), space->def->GetWorldMatrix());
         }
         
         //BE_LOG("%.2f %.2f %.2f %.2f\n", nearPlane.a, nearPlane.b, nearPlane.c, nearPlane.d);

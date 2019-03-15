@@ -241,7 +241,7 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
                     continue;
                 }
 
-                OBB obb(drawSurf->space->def->GetLocalAABB(), drawSurf->space->def->GetState().origin, drawSurf->space->def->GetState().axis);
+                OBB obb(drawSurf->space->def->GetWorldOBB());
                 if (lightFrustum.CullOBB(obb)) {
                     skipObject = drawSurf->space;
                     continue;
@@ -252,7 +252,7 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
         }
 
         if (!drawSurf->space->def->GetState().joints) {
-            OBB obb(drawSurf->subMesh->GetAABB() * drawSurf->space->def->GetState().scale, drawSurf->space->def->GetState().origin, drawSurf->space->def->GetState().axis);
+            OBB obb(drawSurf->subMesh->GetAABB(), drawSurf->space->def->GetWorldMatrix());
             if (lightFrustum.CullOBB(obb)) {
                 continue;
             }

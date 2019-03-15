@@ -204,7 +204,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
 
             if (stage.standardModule.orientation != ParticleSystem::StandardModule::Aimed &&
                 stage.standardModule.orientation != ParticleSystem::StandardModule::AimedZ) {
-                localAxis = ComputeParticleAxis(stage.standardModule.orientation, renderObject->GetState().axis, renderCamera->GetState().axis);
+                localAxis = ComputeParticleAxis(stage.standardModule.orientation, renderObject->GetWorldMatrix().ToMat3(), renderCamera->GetState().axis);
             }
 
             // Cache vertices
@@ -267,7 +267,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
 
                         rtv.SetFromCross(cameraDir[quadIndex], tangentDir[quadIndex]);
                         rtv.Normalize();
-                        rtv = renderObject->GetState().axis.TransposedMulVec(rtv);
+                        rtv = renderObject->GetWorldMatrix().ToMat3().TransposedMulVec(rtv);
                         rtv *= particle->trails[0].size * 0.5f;
 
                         vertexPointer->xyz = trail[0].position - rtv;
@@ -284,7 +284,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
 
                         rtv.SetFromCross(cameraDir[quadIndex + 1], tangentDir[quadIndex + 1]);
                         rtv.Normalize();
-                        rtv = renderObject->GetState().axis.TransposedMulVec(rtv);
+                        rtv = renderObject->GetWorldMatrix().ToMat3().TransposedMulVec(rtv);
                         rtv *= particle->trails[0].size * 0.5f;
 
                         vertexPointer->xyz = trail[1].position - rtv;

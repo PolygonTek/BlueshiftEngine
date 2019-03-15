@@ -73,7 +73,7 @@ void ComStaticMeshRenderer::MeshUpdated() {
     renderObjectHandle = -1;
 
     renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
-    renderObjectDef.localAABB = referenceMesh->GetAABB();
+    renderObjectDef.aabb = referenceMesh->GetAABB();
 
     UpdateVisuals();
 }

@@ -100,10 +100,8 @@ void ComParticleSystem::Init() {
     textureManager.ReleaseTexture(spriteTexture);
 
     spriteDef.mesh = spriteReferenceMesh->InstantiateMesh(Mesh::StaticMesh);
-    spriteDef.localAABB = spriteReferenceMesh->GetAABB();
-    spriteDef.origin = GetEntity()->GetTransform()->GetOrigin();
-    spriteDef.scale = Vec3(1, 1, 1);
-    spriteDef.axis = Mat3::identity;
+    spriteDef.aabb = spriteReferenceMesh->GetAABB();
+    spriteDef.worldMatrix = GetEntity()->GetTransform()->GetMatrix();
     spriteDef.materialParms[RenderObject::RedParm] = 1.0f;
     spriteDef.materialParms[RenderObject::GreenParm] = 1.0f;
     spriteDef.materialParms[RenderObject::BlueParm] = 1.0f;
@@ -251,7 +249,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
 
     renderObjectDef.time = currentTime;
 
-    renderObjectDef.localAABB.SetZero();
+    renderObjectDef.aabb.SetZero();
 
     const Mat3x4 worldMatrix = GetEntity()->GetTransform()->GetMatrix();
 
@@ -615,7 +613,7 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
             radius = trail->size * 0.5f;
         }
 
-        renderObjectDef.localAABB.AddAABB(Sphere(trail->position, radius).ToAABB());
+        renderObjectDef.aabb.AddAABB(Sphere(trail->position, radius).ToAABB());
     }
 }
 
@@ -667,7 +665,7 @@ void ComParticleSystem::ComputeTrailPositionFromCustomPath(const ParticleSystem:
 
 void ComParticleSystem::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     // Fade icon alpha in near distance
-    float alpha = BE1::Clamp(spriteDef.origin.Distance(viewState.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
+    float alpha = BE1::Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(viewState.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
 
     spriteDef.materials[0]->GetPass()->constantColor[3] = alpha;
 }
@@ -711,7 +709,7 @@ void ComParticleSystem::UpdateVisuals() {
 }
 
 void ComParticleSystem::TransformUpdated(const ComTransform *transform) {
-    spriteDef.origin = transform->GetOrigin();
+    spriteDef.worldMatrix.SetTranslation(transform->GetOrigin());
 
     UpdateVisuals();
 }

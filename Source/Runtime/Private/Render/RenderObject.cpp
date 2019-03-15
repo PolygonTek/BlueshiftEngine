@@ -22,20 +22,6 @@ BE_NAMESPACE_BEGIN
 RenderObject::RenderObject(RenderWorld *renderWorld, int index) {
     this->renderWorld = renderWorld;
     this->index = index;
-
-    worldOBB.SetZero();
-
-    worldMatrix.SetIdentity();
-    worldMatrixInverse.SetIdentity();
-    prevWorldMatrix.SetIdentity();
-
-    viewCount = 0;
-    visObject = nullptr;
-    proxy = nullptr;
-    meshSurfProxies = nullptr;
-    numMeshSurfProxies = 0;
-
-    firstUpdate = true;
 }
 
 RenderObject::~RenderObject() {
@@ -50,40 +36,21 @@ RenderObject::~RenderObject() {
 void RenderObject::Update(const State *stateDef) {
     state = *stateDef;
 
-    // Saturate object color RGBA in range [0, 1]
+    // Saturates object color components in range [0, 1].
     Clamp(state.materialParms[RedParm], 0.0f, 1.0f);
     Clamp(state.materialParms[GreenParm], 0.0f, 1.0f);
     Clamp(state.materialParms[BlueParm], 0.0f, 1.0f);
     Clamp(state.materialParms[AlphaParm], 0.0f, 1.0f);
 
-    if (state.joints || state.mesh) {
-        worldOBB = OBB(GetLocalAABB(), state.origin, state.axis);
-    }
+    maxVisDistSquared = state.maxVisDist * state.maxVisDist;
+    
+    prevWorldMatrix = worldMatrix;
 
-    if (firstUpdate) {
-        firstUpdate = false;
-
-        worldMatrix.SetTRS(state.origin, state.axis, state.scale);
-        prevWorldMatrix = worldMatrix;
-    } else {
-        prevWorldMatrix = worldMatrix;
-        worldMatrix.SetTRS(state.origin, state.axis, state.scale);
-    }
-
+    worldMatrix = state.worldMatrix;
     worldMatrixInverse = worldMatrix.Inverse();
 
-    maxVisDistSquared = state.maxVisDist * state.maxVisDist;
-
-    worldAABB.SetFromTransformedAABB(state.localAABB * state.scale, state.origin, state.axis);
-}
-
-const AABB RenderObject::GetLocalAABB() const {
-    if (state.joints) {
-        return state.localAABB * state.scale;
-    }
-
-    assert(state.mesh);
-    return state.mesh->GetAABB() * state.scale;
+    worldAABB.SetFromTransformedAABBFast(state.aabb, worldMatrix);
+    worldOBB = OBB(state.aabb, worldMatrix);
 }
 
 BE_NAMESPACE_END

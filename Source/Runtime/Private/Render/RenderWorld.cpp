@@ -117,26 +117,24 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
                 meshSurfProxy->renderObject = renderObject;
                 meshSurfProxy->mesh = def->mesh;
                 meshSurfProxy->meshSurfIndex = surfaceIndex;
-                meshSurfProxy->worldAABB.SetFromTransformedAABB(meshSurf->subMesh->GetAABB() * def->scale, def->origin, def->axis);
+                meshSurfProxy->worldAABB.SetFromTransformedAABBFast(meshSurf->subMesh->GetAABB(), def->worldMatrix);
                 meshSurfProxy->id = staticMeshDbvt.CreateProxy(renderObject->meshSurfProxies[surfaceIndex].worldAABB, MeterToUnit(0.0f), &renderObject->meshSurfProxies[surfaceIndex]);
             }
         }
     } else {
-        const bool originMatch = (def->origin == renderObject->state.origin);
-        const bool axisMatch = (def->axis == renderObject->state.axis);
-        const bool scaleMatch = (def->scale == renderObject->state.scale);
-        const bool aabbMatch = (def->localAABB == renderObject->state.localAABB);
+        const bool worldMatrixMatch = (def->worldMatrix == renderObject->state.worldMatrix);
+        const bool aabbMatch = (def->aabb == renderObject->state.aabb);
         const bool meshMatch = (def->mesh == renderObject->state.mesh);
-        const bool proxyMoved = !originMatch || !axisMatch || !scaleMatch || !aabbMatch;
+        const bool proxyMoved = !worldMatrixMatch || !aabbMatch;
 
         Vec3 displacement;
         if (proxyMoved) {
-            displacement = def->origin - renderObject->state.origin;
+            displacement = def->worldMatrix.ToTranslationVec3() - renderObject->state.worldMatrix.ToTranslationVec3();
         }
 
         if (proxyMoved || !meshMatch) {
             if (proxyMoved) {
-                renderObject->proxy->worldAABB.SetFromTransformedAABB(def->localAABB * def->scale, def->origin, def->axis);
+                renderObject->proxy->worldAABB.SetFromTransformedAABBFast(def->aabb, def->worldMatrix);
                 objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->worldAABB, MeterToUnit(0.5f), displacement);
             }
 
@@ -158,13 +156,13 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
                         meshSurfProxy->renderObject = renderObject;
                         meshSurfProxy->mesh = def->mesh;
                         meshSurfProxy->meshSurfIndex = surfaceIndex;
-                        meshSurfProxy->worldAABB.SetFromTransformedAABB(meshSurf->subMesh->GetAABB() * def->scale, def->origin, def->axis);
+                        meshSurfProxy->worldAABB.SetFromTransformedAABBFast(meshSurf->subMesh->GetAABB(), def->worldMatrix);
                         meshSurfProxy->id = staticMeshDbvt.CreateProxy(renderObject->meshSurfProxies[surfaceIndex].worldAABB, MeterToUnit(0.0f), &renderObject->meshSurfProxies[surfaceIndex]);
                     }
                 } else {
                     if (proxyMoved) {
                         for (int surfaceIndex = 0; surfaceIndex < def->mesh->NumSurfaces(); surfaceIndex++) {
-                            renderObject->meshSurfProxies[surfaceIndex].worldAABB.SetFromTransformedAABB(def->mesh->GetSurface(surfaceIndex)->subMesh->GetAABB() * def->scale, def->origin, def->axis);
+                            renderObject->meshSurfProxies[surfaceIndex].worldAABB.SetFromTransformedAABBFast(def->mesh->GetSurface(surfaceIndex)->subMesh->GetAABB(), def->worldMatrix);
                             staticMeshDbvt.MoveProxy(renderObject->meshSurfProxies[surfaceIndex].id, renderObject->meshSurfProxies[surfaceIndex].worldAABB, MeterToUnit(0.5f), displacement);
                         }
                     }

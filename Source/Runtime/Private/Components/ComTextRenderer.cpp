@@ -167,7 +167,7 @@ void ComTextRenderer::SetFontSize(int fontSize) {
 }
 
 void ComTextRenderer::UpdateAABB() {
-    renderObjectDef.localAABB = GetGameWorld()->GetRenderWorld()->GetTextMesh().Compute3DTextAABB(renderObjectDef.font, 
+    renderObjectDef.aabb = GetGameWorld()->GetRenderWorld()->GetTextMesh().Compute3DTextAABB(renderObjectDef.font, 
         renderObjectDef.textAnchor, renderObjectDef.lineSpacing, renderObjectDef.textScale, renderObjectDef.text);
 }
 

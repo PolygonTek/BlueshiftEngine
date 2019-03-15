@@ -79,7 +79,7 @@ public:
                             /// Called on scene update, variable timestep.
     virtual void            Update() {}
 
-                            ///
+                            /// Returns non-scaled local AABB.
     virtual const AABB      GetAABB() { return AABB::zero; }
 
                             ///

@@ -147,10 +147,8 @@ void ComLight::Init() {
     textureManager.ReleaseTexture(spriteTexture);
     
     spriteDef.mesh = spriteMesh->InstantiateMesh(Mesh::StaticMesh);
-    spriteDef.localAABB = spriteMesh->GetAABB();
-    spriteDef.origin = transform->GetOrigin();
-    spriteDef.scale = Vec3(1, 1, 1);
-    spriteDef.axis = Mat3::identity;
+    spriteDef.aabb = spriteMesh->GetAABB();
+    spriteDef.worldMatrix = transform->GetMatrix();
     spriteDef.materialParms[RenderObject::RedParm] = renderLightDef.materialParms[RenderObject::RedParm];
     spriteDef.materialParms[RenderObject::GreenParm] = renderLightDef.materialParms[RenderObject::GreenParm];
     spriteDef.materialParms[RenderObject::BlueParm] = renderLightDef.materialParms[RenderObject::BlueParm];
@@ -245,7 +243,7 @@ void ComLight::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     }
 
     // Fade icon alpha in near distance
-    float alpha = BE1::Clamp(spriteDef.origin.Distance(viewState.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
+    float alpha = BE1::Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(viewState.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
 
     spriteDef.materials[0]->GetPass()->constantColor[3] = alpha;
 }
@@ -288,7 +286,7 @@ void ComLight::TransformUpdated(const ComTransform *transform) {
     renderLightDef.origin = transform->GetOrigin();
     renderLightDef.axis = transform->GetAxis();
     
-    spriteDef.origin = renderLightDef.origin;
+    spriteDef.worldMatrix.SetTranslation(renderLightDef.origin);
     
     UpdateVisuals();
 }

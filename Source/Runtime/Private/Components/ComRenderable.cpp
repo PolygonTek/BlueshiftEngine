@@ -82,9 +82,7 @@ void ComRenderable::Init() {
     renderObjectDef.wireframeColor.Set(1, 1, 1, 1);
 
     ComTransform *transform = GetEntity()->GetTransform();
-    renderObjectDef.origin = transform->GetOrigin();
-    renderObjectDef.scale = transform->GetScale();
-    renderObjectDef.axis = transform->GetAxis();
+    renderObjectDef.worldMatrix = transform->GetMatrix();
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRenderable::TransformUpdated, SignalObject::Unique);
 
@@ -140,8 +138,7 @@ bool ComRenderable::IsVisibleInPreviousFrame() const {
 }
 
 const AABB ComRenderable::GetAABB() {
-    const ComTransform *transform = GetEntity()->GetTransform();
-    return renderObjectDef.localAABB * transform->GetScale();
+    return renderObjectDef.aabb;
 }
 
 bool ComRenderable::IntersectRay(const Ray &ray, bool backFaceCull, float *hitDist) const {
@@ -149,8 +146,7 @@ bool ComRenderable::IntersectRay(const Ray &ray, bool backFaceCull, float *hitDi
         return false;
     }
 
-    Mat3x4 worldToLocal(renderObjectDef.scale, renderObjectDef.axis, renderObjectDef.origin);
-    worldToLocal.InverseSelf();
+    Mat3x4 worldToLocal = renderObjectDef.worldMatrix.Inverse();
 
     Ray localRay;
     localRay.origin = worldToLocal.Transform(ray.origin);
@@ -193,9 +189,7 @@ void ComRenderable::StaticMaskChanged(const Entity *entity) {
 }
 
 void ComRenderable::TransformUpdated(const ComTransform *transform) {
-    renderObjectDef.origin = transform->GetOrigin();
-    renderObjectDef.axis = transform->GetAxis();
-    renderObjectDef.scale = transform->GetScale();
+    renderObjectDef.worldMatrix = transform->GetMatrix();
 
     UpdateVisuals();
 }

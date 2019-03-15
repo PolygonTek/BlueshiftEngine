@@ -481,7 +481,7 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
     }
 
     if (includingChildren) {
-        Mat3x4 rootMatrixInverse = GetTransform()->GetMatrixNoScale().Inverse();
+        Mat3x4 rootMatrixInverse = GetTransform()->GetMatrix().Inverse();
 
         Array<Entity *> children;
         GetChildren(children);
@@ -489,15 +489,12 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
         for (int childIndex = 0; childIndex < children.Count(); childIndex++) {
             const Entity *child = children[childIndex];
 
-            Mat3x4 localMatrix = rootMatrixInverse * child->GetTransform()->GetMatrixNoScale();
-            Vec3 translation, scale;
-            Mat3 rotation;
-            localMatrix.GetTRS(translation, rotation, scale);
+            Mat3x4 localMatrix = rootMatrixInverse * child->GetTransform()->GetMatrix();
 
             AABB childLocalAabb;
             childLocalAabb = child->GetLocalAABB();
             if (childLocalAabb != AABB::zero) {
-                childLocalAabb.SetFromTransformedAABB(childLocalAabb, translation, rotation);
+                childLocalAabb.SetFromTransformedAABB(childLocalAabb, localMatrix);
 
                 outAabb += childLocalAabb;
             }
@@ -510,7 +507,7 @@ const AABB Entity::GetWorldAABB(bool includingChildren) const {
     const ComTransform *transform = GetTransform();
 
     AABB worldAABB;
-    worldAABB.SetFromTransformedAABB(GetLocalAABB(includingChildren), transform->GetOrigin(), transform->GetAxis());
+    worldAABB.SetFromTransformedAABBFast(GetLocalAABB(includingChildren), transform->GetMatrix());
     return worldAABB;
 }
 

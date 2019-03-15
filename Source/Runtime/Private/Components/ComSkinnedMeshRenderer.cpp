@@ -114,7 +114,7 @@ void ComSkinnedMeshRenderer::UpdateVisuals() {
     }
 
     // FIXME
-    renderObjectDef.localAABB = referenceMesh->GetAABB();
+    renderObjectDef.aabb = referenceMesh->GetAABB();
 
     ComRenderable::UpdateVisuals();
 }

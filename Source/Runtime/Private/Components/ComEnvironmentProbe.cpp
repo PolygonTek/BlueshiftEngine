@@ -135,10 +135,8 @@ void ComEnvironmentProbe::Init() {
     sphereMesh = meshManager.GetMesh("_defaultSphereMesh");
 
     sphereDef.mesh = sphereMesh->InstantiateMesh(Mesh::StaticMesh);
-    sphereDef.localAABB = sphereMesh->GetAABB();
-    sphereDef.origin = transform->GetOrigin();
-    sphereDef.scale = Vec3(1, 1, 1);
-    sphereDef.axis = Mat3::identity;
+    sphereDef.aabb = sphereMesh->GetAABB();
+    sphereDef.worldMatrix = transform->GetMatrix();
     sphereDef.materialParms[RenderObject::RedParm] = 1.0f;
     sphereDef.materialParms[RenderObject::GreenParm] = 1.0f;
     sphereDef.materialParms[RenderObject::BlueParm] = 1.0f;
@@ -262,7 +260,7 @@ void ComEnvironmentProbe::UpdateVisuals() {
 void ComEnvironmentProbe::TransformUpdated(const ComTransform *transform) {
     probeDef.origin = transform->GetOrigin();
 
-    sphereDef.origin = transform->GetOrigin();
+    sphereDef.worldMatrix.SetTranslation(transform->GetOrigin());
 
     UpdateVisuals();
 }
