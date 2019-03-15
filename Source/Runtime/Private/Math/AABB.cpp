@@ -325,7 +325,7 @@ void AABB::SetFromTransformedAABBFast(const AABB &aabb, const Mat3x4 &transform)
 
 void AABB::SetFromTransformedAABB(const AABB &aabb, const Mat3x4 &transform) {
     Vec3 points[8];
-    ToPoints(points);
+    aabb.ToPoints(points);
 
     Clear();
 
