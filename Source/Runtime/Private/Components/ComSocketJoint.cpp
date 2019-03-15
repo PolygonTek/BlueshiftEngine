@@ -113,6 +113,7 @@ void ComSocketJoint::SetImpulseClamp(float impulseClamp) {
     }
 }
 
+#if 1
 void ComSocketJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
@@ -124,5 +125,6 @@ void ComSocketJoint::DrawGizmos(const RenderCamera::State &viewState, bool selec
     renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(1.0f), worldOrigin + Mat3::identity[1] * CentiToUnit(1.0f), 1);
     renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * CentiToUnit(1.0f), worldOrigin + Mat3::identity[2] * CentiToUnit(1.0f), 1);
 }
+#endif
 
 BE_NAMESPACE_END

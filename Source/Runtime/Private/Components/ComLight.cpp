@@ -62,8 +62,10 @@ void ComLight::RegisterProperties() {
 ComLight::ComLight() {
     renderLightHandle = -1;
 
+#if 1
     spriteHandle = -1;
     spriteMesh = nullptr;
+#endif
 }
 
 ComLight::~ComLight() {
@@ -71,16 +73,7 @@ ComLight::~ComLight() {
 }
 
 void ComLight::Purge(bool chainPurge) {
-    if (renderLightDef.material) {
-        materialManager.ReleaseMaterial(renderLightDef.material);
-        renderLightDef.material = nullptr;
-    }
-
-    if (renderLightHandle != -1) {
-        renderWorld->RemoveRenderLight(renderLightHandle);
-        renderLightHandle = -1;
-    }
-
+#if 1
     for (int i = 0; i < spriteDef.materials.Count(); i++) {
         materialManager.ReleaseMaterial(spriteDef.materials[i]);
     }
@@ -99,6 +92,17 @@ void ComLight::Purge(bool chainPurge) {
     if (spriteHandle != -1) {
         renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
+    }
+#endif
+
+    if (renderLightDef.material) {
+        materialManager.ReleaseMaterial(renderLightDef.material);
+        renderLightDef.material = nullptr;
+    }
+
+    if (renderLightHandle != -1) {
+        renderWorld->RemoveRenderLight(renderLightHandle);
+        renderLightHandle = -1;
     }
 
     if (chainPurge) {
@@ -134,6 +138,7 @@ void ComLight::Init() {
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComLight::TransformUpdated, SignalObject::Unique);
 
+#if 1
     // 3d sprite for editor
     spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
 
@@ -155,7 +160,7 @@ void ComLight::Init() {
     spriteDef.materialParms[RenderObject::AlphaParm] = 1.0f;
     spriteDef.materialParms[RenderObject::TimeOffsetParm] = renderLightDef.materialParms[RenderObject::TimeOffsetParm];
     spriteDef.materialParms[RenderObject::TimeScaleParm] = renderLightDef.materialParms[RenderObject::TimeScaleParm];
-    //
+#endif
 
     GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComLight::LayerChanged, SignalObject::Unique);
     GetEntity()->Connect(&Entity::SIG_StaticMaskChanged, this, (SignalCallback)&ComLight::StaticMaskChanged, SignalObject::Unique);
@@ -176,20 +181,25 @@ void ComLight::OnInactive() {
         renderLightHandle = -1;
     }
 
+#if 1
     if (spriteHandle != -1) {
         renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
     }
+#endif
 }
 
 bool ComLight::HasRenderEntity(int renderEntityHandle) const { 
+#if 1
     if (spriteHandle == renderEntityHandle) {
         return true;
     }
+#endif
 
     return false;
 }
 
+#if 1
 void ComLight::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     const Color4 lightColor = Color4(GetColor(), 1.0f);
 
@@ -247,6 +257,7 @@ void ComLight::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
 
     spriteDef.materials[0]->GetPass()->constantColor[3] = alpha;
 }
+#endif
 
 const AABB ComLight::GetAABB() {
     return Sphere(Vec3::origin, MeterToUnit(0.5f)).ToAABB();
@@ -263,11 +274,13 @@ void ComLight::UpdateVisuals() {
         renderWorld->UpdateRenderLight(renderLightHandle, &renderLightDef);
     }
 
+#if 1
     if (spriteHandle == -1) {
         spriteHandle = renderWorld->AddRenderObject(&spriteDef);
     } else {
         renderWorld->UpdateRenderObject(spriteHandle, &spriteDef);
     }
+#endif
 }
 
 void ComLight::LayerChanged(const Entity *entity) {
@@ -285,9 +298,11 @@ void ComLight::StaticMaskChanged(const Entity *entity) {
 void ComLight::TransformUpdated(const ComTransform *transform) {
     renderLightDef.origin = transform->GetOrigin();
     renderLightDef.axis = transform->GetAxis();
-    
+
+#if 1
     spriteDef.worldMatrix.SetTranslation(renderLightDef.origin);
-    
+#endif
+
     UpdateVisuals();
 }
 
@@ -299,11 +314,13 @@ void ComLight::SetLightType(RenderLight::Type type) {
     renderLightDef.type = type;
 
     if (IsInitialized()) {
+#if 1
         materialManager.ReleaseMaterial(spriteDef.materials[0]);
 
         Texture *spriteTexture = textureManager.GetTexture(LightSpriteTexturePath(renderLightDef.type), Texture::Clamp | Texture::HighQuality);
         spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
         textureManager.ReleaseTexture(spriteTexture);
+#endif
 
         UpdateVisuals();
     }
@@ -385,9 +402,11 @@ void ComLight::SetColor(const Color3 &color) {
     renderLightDef.materialParms[RenderObject::GreenParm] = color.g;
     renderLightDef.materialParms[RenderObject::BlueParm] = color.b;
 
+#if 1
     spriteDef.materialParms[RenderObject::RedParm] = color.r;
     spriteDef.materialParms[RenderObject::GreenParm] = color.g;
     spriteDef.materialParms[RenderObject::BlueParm] = color.b;
+#endif
 
     UpdateVisuals();
 }

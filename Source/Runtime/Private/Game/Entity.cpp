@@ -533,6 +533,7 @@ const Vec3 Entity::GetWorldPosition(WorldPosTrait posTrait, bool includingChildr
     return vec;
 }
 
+#if 1
 void Entity::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
@@ -542,6 +543,7 @@ void Entity::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
         }
     }
 }
+#endif
 
 bool Entity::IntersectRay(const Ray &ray, bool backFaceCull, float &lastDist) const {
     float minDist = lastDist;

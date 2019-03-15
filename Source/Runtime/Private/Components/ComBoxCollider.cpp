@@ -68,6 +68,7 @@ void ComBoxCollider::SetExtents(const Vec3 &extents) {
     }
 }
 
+#if 1
 void ComBoxCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
@@ -84,5 +85,6 @@ void ComBoxCollider::DrawGizmos(const RenderCamera::State &viewState, bool selec
         }
     }
 }
+#endif
 
 BE_NAMESPACE_END

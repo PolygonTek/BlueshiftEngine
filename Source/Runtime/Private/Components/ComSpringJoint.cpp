@@ -186,6 +186,7 @@ void ComSpringJoint::SetDamping(float damping) {
     }
 }
 
+#if 1
 void ComSpringJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
@@ -204,5 +205,6 @@ void ComSpringJoint::DrawGizmos(const RenderCamera::State &viewState, bool selec
         renderWorld->DebugCircle(worldOrigin + worldAxis[2] * CentiToUnit(2.0f), worldAxis[2], CentiToUnit(2.5f));
     }
 }
+#endif
 
 BE_NAMESPACE_END

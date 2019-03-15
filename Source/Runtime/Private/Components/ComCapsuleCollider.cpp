@@ -79,6 +79,7 @@ void ComCapsuleCollider::SetHeight(float height) {
     }
 }
 
+#if 1
 void ComCapsuleCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
@@ -96,5 +97,6 @@ void ComCapsuleCollider::DrawGizmos(const RenderCamera::State &viewState, bool s
         }
     }
 }
+#endif
 
 BE_NAMESPACE_END

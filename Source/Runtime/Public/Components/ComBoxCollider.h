@@ -29,8 +29,10 @@ public:
     ComBoxCollider();
     virtual ~ComBoxCollider();
 
+#if 1
                             /// Visualize the component in editor
     virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
+#endif
 
     Vec3                    GetCenter() const { return center; }
     void                    SetCenter(const Vec3 &center);

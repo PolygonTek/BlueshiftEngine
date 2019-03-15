@@ -37,8 +37,10 @@ void ComParticleSystem::RegisterProperties() {
 ComParticleSystem::ComParticleSystem() {
     particleSystemAsset = nullptr;
 
+#if 1
     spriteHandle = -1;
     spriteReferenceMesh = nullptr;
+#endif
 }
 
 ComParticleSystem::~ComParticleSystem() {
@@ -46,19 +48,7 @@ ComParticleSystem::~ComParticleSystem() {
 }
 
 void ComParticleSystem::Purge(bool chainPurge) {
-    if (renderObjectDef.particleSystem) {
-        particleSystemManager.ReleaseParticleSystem(renderObjectDef.particleSystem);
-        renderObjectDef.particleSystem = nullptr;
-    }
-
-    if (renderObjectDef.stageParticles.Count() > 0) {
-        for (int stageIndex = 0; stageIndex < renderObjectDef.stageParticles.Count(); stageIndex++) {
-            Mem_Free(renderObjectDef.stageParticles[stageIndex]);
-        }
-
-        renderObjectDef.stageParticles.Clear();
-    }
-
+#if 1
     if (spriteDef.mesh) {
         meshManager.ReleaseMesh(spriteDef.mesh);
         spriteDef.mesh = nullptr;
@@ -72,6 +62,20 @@ void ComParticleSystem::Purge(bool chainPurge) {
     if (spriteHandle != -1) {
         renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
+    }
+#endif
+
+    if (renderObjectDef.particleSystem) {
+        particleSystemManager.ReleaseParticleSystem(renderObjectDef.particleSystem);
+        renderObjectDef.particleSystem = nullptr;
+    }
+
+    if (renderObjectDef.stageParticles.Count() > 0) {
+        for (int stageIndex = 0; stageIndex < renderObjectDef.stageParticles.Count(); stageIndex++) {
+            Mem_Free(renderObjectDef.stageParticles[stageIndex]);
+        }
+
+        renderObjectDef.stageParticles.Clear();
     }
 
     if (chainPurge) {
@@ -92,6 +96,7 @@ void ComParticleSystem::Init() {
 
     ComTransform *transform = GetEntity()->GetTransform();
 
+#if 1
     spriteDef.flags = RenderObject::BillboardFlag;
     spriteDef.layer = TagLayerSettings::EditorLayer;
     spriteDef.maxVisDist = MeterToUnit(50.0f);
@@ -110,6 +115,7 @@ void ComParticleSystem::Init() {
     spriteDef.materialParms[RenderObject::AlphaParm] = 1.0f;
     spriteDef.materialParms[RenderObject::TimeOffsetParm] = 0.0f;
     spriteDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
+#endif
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComParticleSystem::TransformUpdated, SignalObject::Unique);
 
@@ -190,18 +196,22 @@ void ComParticleSystem::OnActive() {
 }
 
 void ComParticleSystem::OnInactive() {
+#if 1
     if (spriteHandle != -1) {
         renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
     }
+#endif
 
     ComRenderable::OnInactive();
 }
 
 bool ComParticleSystem::HasRenderEntity(int renderEntityHandle) const {
+#if 1
     if (this->spriteHandle == renderEntityHandle) {
         return true;
     }
+#endif
 
     return ComRenderable::HasRenderEntity(renderEntityHandle);
 }
@@ -665,12 +675,14 @@ void ComParticleSystem::ComputeTrailPositionFromCustomPath(const ParticleSystem:
     assert(0);
 }
 
+#if 1
 void ComParticleSystem::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     // Fade icon alpha in near distance
     float alpha = BE1::Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(viewState.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
 
     spriteDef.materials[0]->GetPass()->constantColor[3] = alpha;
 }
+#endif
 
 bool ComParticleSystem::IsAlive() const {
     return simulationStarted;
@@ -701,17 +713,21 @@ void ComParticleSystem::UpdateVisuals() {
         return;
     }
 
+#if 1
     if (spriteHandle == -1) {
         spriteHandle = renderWorld->AddRenderObject(&spriteDef);
     } else {
         renderWorld->UpdateRenderObject(spriteHandle, &spriteDef);
     }
+#endif
 
     ComRenderable::UpdateVisuals();
 }
 
 void ComParticleSystem::TransformUpdated(const ComTransform *transform) {
+#if 1
     spriteDef.worldMatrix.SetTranslation(transform->GetOrigin());
+#endif
 
     UpdateVisuals();
 }

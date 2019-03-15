@@ -36,8 +36,10 @@ public:
                             /// When game already started, called immediately after spawned
     virtual void            Awake() override;
 
+#if 1
                             /// Visualize the component in editor
     virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
+#endif
 
     float                   Length();
 

@@ -211,8 +211,10 @@ public:
                                 /// Returns position in world space with given trait.
     const Vec3                  GetWorldPosition(WorldPosTrait posTrait, bool includingChildren = false) const;
 
+#if 1
                                 /// Visualizes the component in editor.
     void                        DrawGizmos(const RenderCamera::State &viewState, bool selected);
+#endif
 
                                 /// Ray cast to this entity.
     bool                        IntersectRay(const Ray &ray, bool backFaceCull, float &lastDist) const;

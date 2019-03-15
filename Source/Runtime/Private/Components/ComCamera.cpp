@@ -66,11 +66,13 @@ void ComCamera::RegisterProperties() {
 ComCamera::ComCamera() {
     renderCamera = nullptr;
 
-    spriteHandle = -1;
-    spriteMesh = nullptr;
-
     mousePointerState.oldHitEntityGuid = Guid::zero;
     mousePointerState.captureEntityGuid = Guid::zero;
+
+#if 1
+    spriteHandle = -1;
+    spriteMesh = nullptr;
+#endif
 }
 
 ComCamera::~ComCamera() {
@@ -78,11 +80,7 @@ ComCamera::~ComCamera() {
 }
 
 void ComCamera::Purge(bool chainPurge) {
-    if (renderCamera) {
-        delete renderCamera;
-        renderCamera = nullptr;
-    }
-
+#if 1
     for (int i = 0; i < spriteDef.materials.Count(); i++) {
         materialManager.ReleaseMaterial(spriteDef.materials[i]);
     }
@@ -101,6 +99,12 @@ void ComCamera::Purge(bool chainPurge) {
     if (spriteHandle != -1) {
         renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
+    }
+#endif
+
+    if (renderCamera) {
+        delete renderCamera;
+        renderCamera = nullptr;
     }
 
     mousePointerState.oldHitEntityGuid = Guid::zero;
@@ -132,6 +136,7 @@ void ComCamera::Init() {
     renderCameraDef.origin = transform->GetOrigin();
     renderCameraDef.axis = transform->GetAxis();
 
+#if 1
     // 3d sprite for editor
     spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
 
@@ -153,6 +158,7 @@ void ComCamera::Init() {
     spriteDef.materialParms[RenderObject::AlphaParm] = 1.0f;
     spriteDef.materialParms[RenderObject::TimeOffsetParm] = 0.0f;
     spriteDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
+#endif
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCamera::TransformUpdated, SignalObject::Unique);
 
@@ -169,16 +175,20 @@ void ComCamera::OnActive() {
 void ComCamera::OnInactive() {
     touchPointerStateTable.Clear();
 
+#if 1
     if (spriteHandle != -1) {
         renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
     }
+#endif
 }
 
 bool ComCamera::HasRenderEntity(int renderEntityHandle) const { 
+#if 1
     if (this->spriteHandle == renderEntityHandle) {
         return true;
     }
+#endif
 
     return false;
 }
@@ -187,6 +197,7 @@ void ComCamera::Update() {
     renderCameraDef.time = GetGameWorld()->GetTime();
 }
 
+#if 1
 void ComCamera::DrawGizmos(const RenderCamera::State &renderCameraDef, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
     
@@ -255,6 +266,7 @@ void ComCamera::DrawGizmos(const RenderCamera::State &renderCameraDef, bool sele
 
     spriteDef.materials[0]->GetPass()->constantColor[3] = alpha;
 }
+#endif 
 
 const AABB ComCamera::GetAABB() {
     return Sphere(Vec3::origin, MeterToUnit(0.5f)).ToAABB();
@@ -568,19 +580,23 @@ void ComCamera::UpdateVisuals() {
         return;
     }
 
+#if 1
     if (spriteHandle == -1) {
         spriteHandle = renderWorld->AddRenderObject(&spriteDef);
     } else {
         renderWorld->UpdateRenderObject(spriteHandle, &spriteDef);
     }
+#endif
 }
 
 void ComCamera::TransformUpdated(const ComTransform *transform) {
     renderCameraDef.origin = transform->GetOrigin();
     renderCameraDef.axis = transform->GetAxis();
 
+#if 1
     spriteDef.worldMatrix.SetTranslation(renderCameraDef.origin);
-    
+#endif
+
     UpdateVisuals();
 }
 

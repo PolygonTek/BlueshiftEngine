@@ -206,6 +206,7 @@ float ComSpline::Length() {
     return originCurve->GetLengthForTime(1.0f);
 }
 
+#if 1
 void ComSpline::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     if (!curveUpdated) {
         UpdateCurve();
@@ -272,6 +273,7 @@ void ComSpline::DrawGizmos(const RenderCamera::State &viewState, bool selected) 
         renderWorld->DebugOBB(OBB(pos, Vec3(MeterToUnit(0.04)), pointTransform->GetAxis()), 1.0f, false, true);
     }
 }
+#endif
 
 bool ComSpline::IsLoop() const {
     return loop;

@@ -188,6 +188,7 @@ void ComHingeJoint::SetMaxMotorImpulse(float maxMotorImpulse) {
     }
 }
 
+#if 1
 void ComHingeJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
@@ -214,5 +215,6 @@ void ComHingeJoint::DrawGizmos(const RenderCamera::State &viewState, bool select
         renderWorld->DebugArrow(worldOrigin - worldAxis[2] * CentiToUnit(5), worldOrigin + worldAxis[2] * CentiToUnit(5.0f), CentiToUnit(3.0f), CentiToUnit(0.75f));
     }
 }
+#endif
 
 BE_NAMESPACE_END

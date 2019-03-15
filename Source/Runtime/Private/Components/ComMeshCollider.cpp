@@ -58,8 +58,10 @@ void ComMeshCollider::SetMeshGuid(const Guid &meshGuid) {
     }
 }
 
+#if 1
 void ComMeshCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     //collider;
 }
+#endif
 
 BE_NAMESPACE_END

@@ -196,6 +196,7 @@ float ComVehicleWheel::GetSuspensionRelativeVelocity() const {
     return 1.0f;
 }
 
+#if 1
 void ComVehicleWheel::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
@@ -224,5 +225,6 @@ void ComVehicleWheel::DrawGizmos(const RenderCamera::State &viewState, bool sele
         }
     }
 }
+#endif
 
 BE_NAMESPACE_END

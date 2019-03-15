@@ -67,8 +67,11 @@ void ComEnvironmentProbe::RegisterProperties() {
 
 ComEnvironmentProbe::ComEnvironmentProbe() {
     probeHandle = -1;
+
+#if 1
     sphereHandle = -1;
     sphereMesh = nullptr;
+#endif
 }
 
 ComEnvironmentProbe::~ComEnvironmentProbe() {
@@ -76,6 +79,7 @@ ComEnvironmentProbe::~ComEnvironmentProbe() {
 }
 
 void ComEnvironmentProbe::Purge(bool chainPurge) {
+#if 1
     if (sphereDef.mesh) {
         meshManager.ReleaseMesh(sphereDef.mesh);
         sphereDef.mesh = nullptr;
@@ -95,6 +99,7 @@ void ComEnvironmentProbe::Purge(bool chainPurge) {
         renderWorld->RemoveRenderObject(sphereHandle);
         sphereHandle = -1;
     }
+#endif
 
     if (probeDef.bakedDiffuseProbeTexture) {
         textureManager.ReleaseTexture(probeDef.bakedDiffuseProbeTexture);
@@ -129,6 +134,7 @@ void ComEnvironmentProbe::Init() {
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComEnvironmentProbe::TransformUpdated, SignalObject::Unique);
 
+#if 1
     sphereDef.layer = TagLayerSettings::EditorLayer;
     sphereDef.maxVisDist = MeterToUnit(50.0f);
 
@@ -143,6 +149,7 @@ void ComEnvironmentProbe::Init() {
     sphereDef.materialParms[RenderObject::AlphaParm] = 1.0f;
     sphereDef.materialParms[RenderObject::TimeOffsetParm] = 0.0f;
     sphereDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
+#endif
 
     // Mark as initialized
     SetInitialized(true);
@@ -160,16 +167,20 @@ void ComEnvironmentProbe::OnInactive() {
         probeHandle = -1;
     }
 
+#if 1
     if (sphereHandle != -1) {
         renderWorld->RemoveRenderObject(sphereHandle);
         sphereHandle = -1;
     }
+#endif
 }
 
 bool ComEnvironmentProbe::HasRenderEntity(int renderEntityHandle) const {
+#if 1
     if (this->sphereHandle == renderEntityHandle) {
         return true;
     }
+#endif
     return false;
 }
 
@@ -197,6 +208,7 @@ void ComEnvironmentProbe::Update() {
     }
 }
 
+#if 1
 void ComEnvironmentProbe::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
@@ -224,6 +236,7 @@ void ComEnvironmentProbe::DrawGizmos(const RenderCamera::State &viewState, bool 
 #endif
     }
 }
+#endif
 
 const AABB ComEnvironmentProbe::GetAABB() {
     return Sphere(Vec3::origin, MeterToUnit(0.5f)).ToAABB();
@@ -234,9 +247,11 @@ void ComEnvironmentProbe::UpdateVisuals() {
         return;
     }
 
+#if 1
     if (sphereDef.materials.Count() > 0) {
         materialManager.ReleaseMaterial(sphereDef.materials[0], true);
     }
+#endif
 
     if (probeHandle == -1) {
         probeHandle = renderWorld->AddEnvProbe(&probeDef);
@@ -247,6 +262,7 @@ void ComEnvironmentProbe::UpdateVisuals() {
     const EnvProbe *envProbe = renderWorld->GetEnvProbe(probeHandle);
     const Texture *specularProbeTexture = envProbe->GetSpecularProbeTexture();
 
+#if 1
     sphereDef.materials.SetCount(1);
     sphereDef.materials[0] = materialManager.GetSingleTextureMaterial(specularProbeTexture, Material::EnvCubeMapHint);
 
@@ -255,12 +271,15 @@ void ComEnvironmentProbe::UpdateVisuals() {
     } else {
         renderWorld->UpdateRenderObject(sphereHandle, &sphereDef);
     }
+#endif
 }
 
 void ComEnvironmentProbe::TransformUpdated(const ComTransform *transform) {
     probeDef.origin = transform->GetOrigin();
 
+#if 1
     sphereDef.worldMatrix.SetTranslation(transform->GetOrigin());
+#endif
 
     UpdateVisuals();
 }

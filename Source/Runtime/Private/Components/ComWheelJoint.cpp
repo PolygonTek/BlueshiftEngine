@@ -242,6 +242,7 @@ void ComWheelJoint::SetMaxMotorImpulse(float maxMotorImpulse) {
     }
 }
 
+#if 1
 void ComWheelJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
@@ -269,5 +270,6 @@ void ComWheelJoint::DrawGizmos(const RenderCamera::State &viewState, bool select
         renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[2] * CentiToUnit(5.0f), 1);
     }
 }
+#endif
 
 BE_NAMESPACE_END
