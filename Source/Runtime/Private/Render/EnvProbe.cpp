@@ -136,8 +136,9 @@ void EnvProbeJob::RevalidateDiffuseProbeRT(bool clearToBlack) {
     // fixed size (16) for irradiance cubemap
     int size = 16;
 
-    // Recreate diffuse convolution texture if its format have changed.
-    if ((envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->diffuseProbeTexture->GetFormat()))) {
+    // Recreate diffuse probe texture if it need to.
+    if (Image::IsCompressed(envProbe->diffuseProbeTexture->GetFormat()) ||
+        (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->diffuseProbeTexture->GetFormat()))) {
         Image::Format format = envProbe->state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8;
 
         envProbe->diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, format, 
@@ -174,8 +175,10 @@ void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
     int size = envProbe->GetSize();
     int numMipLevels = Math::Log(2, size) + 1;
 
-    // Recreate diffuse convolution texture if its format or size have changed.
-    if (size != envProbe->specularProbeTexture->GetWidth() || (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->specularProbeTexture->GetFormat()))) {
+    // Recreate specular probe texture if it need to.
+    if (size != envProbe->specularProbeTexture->GetWidth() || 
+        Image::IsCompressed(envProbe->specularProbeTexture->GetFormat()) ||
+        (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->specularProbeTexture->GetFormat()))) {
         Image::Format format = envProbe->state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8;
 
         envProbe->specularProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
