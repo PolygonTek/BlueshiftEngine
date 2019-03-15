@@ -90,6 +90,8 @@ void ComParticleSystem::Init() {
     // 3d spriteDef
     spriteReferenceMesh = meshManager.GetMesh("_defaultQuadMesh");
 
+    ComTransform *transform = GetEntity()->GetTransform();
+
     spriteDef.flags = RenderObject::BillboardFlag;
     spriteDef.layer = TagLayerSettings::EditorLayer;
     spriteDef.maxVisDist = MeterToUnit(50.0f);
@@ -101,7 +103,7 @@ void ComParticleSystem::Init() {
 
     spriteDef.mesh = spriteReferenceMesh->InstantiateMesh(Mesh::StaticMesh);
     spriteDef.aabb = spriteReferenceMesh->GetAABB();
-    spriteDef.worldMatrix = GetEntity()->GetTransform()->GetMatrix();
+    spriteDef.worldMatrix = transform->GetMatrixNoScale();
     spriteDef.materialParms[RenderObject::RedParm] = 1.0f;
     spriteDef.materialParms[RenderObject::GreenParm] = 1.0f;
     spriteDef.materialParms[RenderObject::BlueParm] = 1.0f;
@@ -109,7 +111,7 @@ void ComParticleSystem::Init() {
     spriteDef.materialParms[RenderObject::TimeOffsetParm] = 0.0f;
     spriteDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
 
-    GetEntity()->GetTransform()->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComParticleSystem::TransformUpdated, SignalObject::Unique);
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComParticleSystem::TransformUpdated, SignalObject::Unique);
 
     // Mark as initialized
     SetInitialized(true);

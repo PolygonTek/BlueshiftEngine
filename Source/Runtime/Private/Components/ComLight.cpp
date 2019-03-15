@@ -148,7 +148,7 @@ void ComLight::Init() {
     
     spriteDef.mesh = spriteMesh->InstantiateMesh(Mesh::StaticMesh);
     spriteDef.aabb = spriteMesh->GetAABB();
-    spriteDef.worldMatrix = transform->GetMatrix();
+    spriteDef.worldMatrix = transform->GetMatrixNoScale();
     spriteDef.materialParms[RenderObject::RedParm] = renderLightDef.materialParms[RenderObject::RedParm];
     spriteDef.materialParms[RenderObject::GreenParm] = renderLightDef.materialParms[RenderObject::GreenParm];
     spriteDef.materialParms[RenderObject::BlueParm] = renderLightDef.materialParms[RenderObject::BlueParm];

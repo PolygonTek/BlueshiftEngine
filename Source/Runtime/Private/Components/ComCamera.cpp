@@ -146,7 +146,7 @@ void ComCamera::Init() {
     
     spriteDef.mesh = spriteMesh->InstantiateMesh(Mesh::StaticMesh);
     spriteDef.aabb = spriteMesh->GetAABB();
-    spriteDef.worldMatrix = transform->GetMatrix();
+    spriteDef.worldMatrix = transform->GetMatrixNoScale();
     spriteDef.materialParms[RenderObject::RedParm] = 1.0f;
     spriteDef.materialParms[RenderObject::GreenParm] = 1.0f;
     spriteDef.materialParms[RenderObject::BlueParm] = 1.0f;
