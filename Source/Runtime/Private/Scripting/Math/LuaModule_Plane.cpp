@@ -28,7 +28,6 @@ void LuaVM::RegisterPlane(LuaCpp::Module &module) {
         "offset", &Plane::offset,
         "element", static_cast<float&(Plane::*)(int)>(&Plane::operator[]), // index start from zero
         "set_from_points", &Plane::SetFromPoints,
-        "set_from_vecs", &Plane::SetFromVecs,
         "fit_through_point", &Plane::FitThroughPoint,
         "to_string", static_cast<const char*(Plane::*)()const>(&Plane::ToString),
         "flip", &Plane::Flip,

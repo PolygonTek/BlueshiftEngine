@@ -1058,7 +1058,7 @@ bool SubMesh::IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist) 
             plane.SetFromPoints(verts[indexes[i + 0]].xyz, verts[indexes[i + 1]].xyz, verts[indexes[i + 2]].xyz);
 
             float d;
-            if (plane.IntersectRay(ray, ignoreBackFace, &d)) {
+            if (plane.IntersectRay(ray, false, &d)) {
                 if (!hitDist) {
                     return true;
                 }

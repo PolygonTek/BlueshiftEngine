@@ -38,8 +38,9 @@ class Shader {
 
 public:
     enum Flag {
-        LitSurface              = BIT(0),
-        SkySurface              = BIT(1),
+        Shadowing               = BIT(0),
+        LitSurface              = BIT(1),
+        SkySurface              = BIT(2),
         LoadedFromFile          = BIT(8)
     };
 
@@ -271,10 +272,10 @@ public:
 
 private:
     bool                    ParseProperties(Lexer &lexer);
-    Shader *                GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, int skinningWeightCount, bool instancing);
-    bool                    GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool instancing);
-    bool                    GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool genGpuSkinningVersion, bool genGpuInstancingVersion);
-    bool                    GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool genGpuSkinningVersion, bool genGpuInstancingVersion);
+    Shader *                GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool shadowing, int skinningWeightCount, bool instancing);
+    bool                    GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool shadowing, bool instancing);
+    bool                    GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool shadowing, bool genGpuSkinningVersion, bool genGpuInstancingVersion);
+    bool                    GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool shadowing, bool genGpuSkinningVersion, bool genGpuInstancingVersion);
     bool                    Instantiate(const Array<Define> &defineArray);  // internal function of instantiate
 
     bool                    Finish(bool genPerforatedVersion, bool genGpuSkinningVersion, bool genGpuInstancingVersion, bool genParallelShadowVersion, bool genSpotShadowVersion, bool genPointShadowVersion);

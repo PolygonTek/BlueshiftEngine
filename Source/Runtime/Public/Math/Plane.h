@@ -83,12 +83,14 @@ public:
     float           operator[](int index) const;
     float &         operator[](int index);
 
+                    /// Sets this plane by specifying three points on the plane.
+                    /// The normal of the plane will be oriented in counter-clockwise order.
     bool            SetFromPoints(const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, bool fixDegenerate = true);
-    bool            SetFromVecs(const Vec3 &dir1, const Vec3 &dir2, const Vec3 &p, bool fixDegenerate = true);
-                    
-                    // assumes normal is valid
+
+                    /// Moves this plane by specifying a single point on the plane.
     void            FitThroughPoint(const Vec3 &p);
 
+                    /// Reverses the direction of the plane.
     void            Flip();
 
                     /// Normalize plane. 
@@ -97,14 +99,19 @@ public:
 
     bool            FixDegenerateNormal();
 
+                    /// Translates this Plane
     Plane           Translate(const Vec3 &translation) const;
     Plane &         TranslateSelf(const Vec3 &translation);
 
+                    /// Rotates this Plane
     Plane           Rotate(const Vec3 &origin, const Mat3 &axis) const;
     Plane &         RotateSelf(const Vec3 &origin, const Mat3 &axis);
 
-    float           Distance(const Vec3 &v) const;
-    int             GetSide(const Vec3 &v, const float epsilon) const;
+                    /// Returns the distance of this plane to the given point.
+    float           Distance(const Vec3 &p) const;
+
+                    /// Examines which side of the plane to the given point.
+    int             GetSide(const Vec3 &p, const float epsilon) const;
 
                     /// Tests if this plane intersect with the given line segment.
     bool            IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
@@ -145,22 +152,12 @@ BE_INLINE float &Plane::operator[](int index) {
 }
 
 BE_INLINE bool Plane::SetFromPoints(const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, bool fixDegenerate) {
-    normal = (p1 - p2).Cross(p3 - p2);
+    normal = (p3 - p2).Cross(p1 - p2);
     if (Normalize(fixDegenerate) == 0.0f) {
         return false;
     }
 
     offset = normal.Dot(p2);
-    return true;
-}
-
-BE_INLINE bool Plane::SetFromVecs(const Vec3 &dir1, const Vec3 &dir2, const Vec3 &p, bool fixDegenerate) {
-    normal = dir1.Cross(dir2);
-    if (Normalize(fixDegenerate) == 0.0f) {
-        return false;
-    }
-
-    offset = normal.Dot(p);
     return true;
 }
 

@@ -807,11 +807,12 @@ Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask) const {
 }
 
 Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask, const Array<Entity *> &excludingEntities, float *hitDist) const {
-    Entity *minEntity = nullptr;
     float minDist = FLT_MAX;
     if (hitDist) {
         *hitDist = minDist;
     }
+
+    Entity *minEntity = nullptr;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {

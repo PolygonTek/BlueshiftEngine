@@ -24,7 +24,7 @@ BE_NAMESPACE_BEGIN
 
 static const char *directiveInclude = "$include";
 
-// NOTE: BuiltInConstant enum 과 반드시 순서가 같아야 함
+// NOTE: must be same order with Shader::BuiltInConstant enum.
 static const char *builtInConstantNames[] = {
     "modelViewMatrix",                      // ModelViewMatrixConst
     "modelViewMatrixTranspose",             // ModelViewMatrixTransposeConst
@@ -68,7 +68,7 @@ static const char *builtInConstantNames[] = {
     "probe1Maxs"                            // Probe1MaxsConst
 };
 
-// NOTE: BuiltInSampler enum 과 반드시 순서가 같아야 함
+// NOTE: must be same order with Shader::BuiltInSampler enum.
 static const char *builtInSamplerNames[] = {
     "cubicNormalCubeMap",                   // CubicNormalCubeMapSampler
     "indirectionCubeMap",                   // IndirectionCubeMapSampler
@@ -473,7 +473,7 @@ bool Shader::ParseProperties(Lexer &lexer) {
     return true;
 }
 
-Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, int skinningWeightCount, bool instancing) {
+Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool shadowing, int skinningWeightCount, bool instancing) {
     Str skinningPostfix;
     Str skinningVsHeaderText;
     Str skinningVsHeaderTextCommon;
@@ -532,28 +532,33 @@ Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHea
         return nullptr;
     }
 
+    if (shadowing) {
+        shader->flags |= Shadowing;
+    }
+
     shader->propertyInfoHashMap = propertyInfoHashMap;
 
     return shader;
 }
 
-bool Shader::GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool generateGpuInstancingVersion) {
+bool Shader::GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, 
+    bool shadowing, bool generateGpuInstancingVersion) {
     if (!shader->gpuSkinningVersion[0]) {
-        shader->gpuSkinningVersion[0] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 1, false);
+        shader->gpuSkinningVersion[0] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, shadowing, 1, false);
         if (!shader->gpuSkinningVersion[0]) {
             return false;
         }
     }
 
     if (!shader->gpuSkinningVersion[1]) {
-        shader->gpuSkinningVersion[1] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 4, false);
+        shader->gpuSkinningVersion[1] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, shadowing, 4, false);
         if (!shader->gpuSkinningVersion[1]) {
             return false;
         }
     }
 
     if (!shader->gpuSkinningVersion[2]) {
-        shader->gpuSkinningVersion[2] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 8, false);
+        shader->gpuSkinningVersion[2] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, shadowing, 8, false);
         if (!shader->gpuSkinningVersion[2]) {
             return false;
         }
@@ -561,21 +566,21 @@ bool Shader::GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePos
 
     if (generateGpuInstancingVersion) {
         if (!shader->gpuSkinningVersion[0]->gpuInstancingVersion) {
-            shader->gpuSkinningVersion[0]->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 1, true);
+            shader->gpuSkinningVersion[0]->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, shadowing, 1, true);
             if (!shader->gpuSkinningVersion[0]->gpuInstancingVersion) {
                 return false;
             }
         }
 
         if (!shader->gpuSkinningVersion[1]->gpuInstancingVersion) {
-            shader->gpuSkinningVersion[1]->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 4, true);
+            shader->gpuSkinningVersion[1]->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, shadowing, 4, true);
             if (!shader->gpuSkinningVersion[1]->gpuInstancingVersion) {
                 return false;
             }
         }
 
         if (!shader->gpuSkinningVersion[2]->gpuInstancingVersion) {
-            shader->gpuSkinningVersion[2]->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 8, true);
+            shader->gpuSkinningVersion[2]->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, shadowing, 8, true);
             if (!shader->gpuSkinningVersion[2]->gpuInstancingVersion) {
                 return false;
             }
@@ -585,10 +590,11 @@ bool Shader::GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePos
     return true;
 }
 
-bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion) {
+bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, 
+    bool shadowing, bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion) {
     if (!shader->perforatedVersion) {
         shader->perforatedVersion = GenerateSubShader(shaderNamePostfix + "-perforated",
-            vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", 0, false);
+            vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", shadowing, 0, false);
         if (!shader->perforatedVersion) {
             return false;
         }
@@ -596,7 +602,7 @@ bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePost
 
     if (genereateGpuSkinningVersion) {
         if (!GenerateGpuSkinningVersion(shader->perforatedVersion,
-            shaderNamePostfix + "-perforated", vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", false)) {
+            shaderNamePostfix + "-perforated", vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", shadowing, false)) {
             return false;
         }
     }
@@ -604,7 +610,7 @@ bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePost
     if (generateGpuInstancingVersion) {
         if (!shader->perforatedVersion->gpuInstancingVersion) {
             shader->perforatedVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix + "-perforated",
-                vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", 0, true);
+                vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", shadowing, 0, true);
             if (!shader->perforatedVersion->gpuInstancingVersion) {
                 return false;
             }
@@ -612,7 +618,7 @@ bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePost
 
         if (genereateGpuSkinningVersion) {
             if (!GenerateGpuSkinningVersion(shader->perforatedVersion->gpuInstancingVersion,
-                shaderNamePostfix + "-perforated", vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", true)) {
+                shaderNamePostfix + "-perforated", vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", shadowing, true)) {
                 return false;
             }
         }
@@ -621,10 +627,11 @@ bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePost
     return true;
 }
 
-bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion) {
+bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, 
+    bool shadowing, bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion) {
     if (!shader->premulAlphaVersion) {
         shader->premulAlphaVersion = GenerateSubShader(shaderNamePostfix + "-premulAlpha",
-            vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", 0, false);
+            vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", shadowing, 0, false);
         if (!shader->premulAlphaVersion) {
             return false;
         }
@@ -632,7 +639,7 @@ bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePos
 
     if (genereateGpuSkinningVersion) {
         if (!GenerateGpuSkinningVersion(shader->premulAlphaVersion,
-            shaderNamePostfix + "-premulAlpha", vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", false)) {
+            shaderNamePostfix + "-premulAlpha", vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", shadowing, false)) {
             return false;
         }
     }
@@ -640,7 +647,7 @@ bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePos
     if (generateGpuInstancingVersion) {
         if (!shader->premulAlphaVersion->gpuInstancingVersion) {
             shader->premulAlphaVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix + "-premulAlpha",
-                vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", 0, true);
+                vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", shadowing, 0, true);
             if (!shader->premulAlphaVersion->gpuInstancingVersion) {
                 return false;
             }
@@ -648,7 +655,7 @@ bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePos
 
         if (genereateGpuSkinningVersion) {
             if (!GenerateGpuSkinningVersion(shader->premulAlphaVersion->gpuInstancingVersion,
-                shaderNamePostfix + "-premulAlpha", vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", true)) {
+                shaderNamePostfix + "-premulAlpha", vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", shadowing, true)) {
                 return false;
             }
         }
@@ -662,7 +669,7 @@ bool Shader::Finish(bool generatePerforatedVersion,
     bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion) {
     if (generateGpuInstancingVersion) {
         if (!gpuInstancingVersion) {
-            gpuInstancingVersion = GenerateSubShader("", "", "", 0, true);
+            gpuInstancingVersion = GenerateSubShader("", "", "", false, 0, true);
             if (!gpuInstancingVersion) {
                 return false;
             }
@@ -670,13 +677,13 @@ bool Shader::Finish(bool generatePerforatedVersion,
     }
 
     if (genereateGpuSkinningVersion) {
-        if (!GenerateGpuSkinningVersion(this, "", "", "", generateGpuInstancingVersion)) {
+        if (!GenerateGpuSkinningVersion(this, "", "", "", false, generateGpuInstancingVersion)) {
             return false;
         }
     }
 
     if (generatePerforatedVersion) {
-        if (!GeneratePerforatedVersion(this, "", "", "", genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
+        if (!GeneratePerforatedVersion(this, "", "", "", false, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
             return false;
         }
     }
@@ -687,13 +694,13 @@ bool Shader::Finish(bool generatePerforatedVersion,
         const Str fsHeaderText = "#define USE_SHADOW_CASCADE\n";
 
         if (!parallelShadowVersion) {
-            parallelShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, false);
+            parallelShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, true, 0, false);
             if (!parallelShadowVersion) {
                 return false;
             }
 
             if (generateGpuInstancingVersion && !parallelShadowVersion->gpuInstancingVersion) {
-                parallelShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, false);
+                parallelShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, true, 0, false);
                 if (!parallelShadowVersion->gpuInstancingVersion) {
                     return false;
                 }
@@ -701,13 +708,13 @@ bool Shader::Finish(bool generatePerforatedVersion,
         }
 
         if (genereateGpuSkinningVersion) {
-            if (!GenerateGpuSkinningVersion(parallelShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, generateGpuInstancingVersion)) {
+            if (!GenerateGpuSkinningVersion(parallelShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, true, generateGpuInstancingVersion)) {
                 return false;
             }
         }
 
         if (generatePerforatedVersion) {
-            if (!GeneratePerforatedVersion(parallelShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
+            if (!GeneratePerforatedVersion(parallelShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, true, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
                 return false;
             }
         }
@@ -719,13 +726,13 @@ bool Shader::Finish(bool generatePerforatedVersion,
         const Str fsHeaderText = "#define USE_SHADOW_SPOT\n";
 
         if (!spotShadowVersion) {
-            spotShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, false);
+            spotShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, true, 0, false);
             if (!spotShadowVersion) {
                 return false;
             }
 
             if (generateGpuInstancingVersion && !spotShadowVersion->gpuInstancingVersion) {
-                spotShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, false);
+                spotShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, true, 0, false);
                 if (!spotShadowVersion->gpuInstancingVersion) {
                     return false;
                 }
@@ -733,13 +740,13 @@ bool Shader::Finish(bool generatePerforatedVersion,
         }
 
         if (genereateGpuSkinningVersion) {
-            if (!GenerateGpuSkinningVersion(spotShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, generateGpuInstancingVersion)) {
+            if (!GenerateGpuSkinningVersion(spotShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, true, generateGpuInstancingVersion)) {
                 return false;
             }
         }
 
         if (generatePerforatedVersion) {
-            if (!GeneratePerforatedVersion(spotShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
+            if (!GeneratePerforatedVersion(spotShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, true, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
                 return false;
             }
         }
@@ -751,13 +758,13 @@ bool Shader::Finish(bool generatePerforatedVersion,
         const Str fsHeaderText = "#define USE_SHADOW_POINT\n";
 
         if (!pointShadowVersion) {
-            pointShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, false);
+            pointShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, true, 0, false);
             if (!pointShadowVersion) {
                 return false;
             }
 
             if (generateGpuInstancingVersion && !pointShadowVersion->gpuInstancingVersion) {
-                pointShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, false);
+                pointShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, true, 0, false);
                 if (!pointShadowVersion->gpuInstancingVersion) {
                     return false;
                 }
@@ -765,13 +772,13 @@ bool Shader::Finish(bool generatePerforatedVersion,
         }
 
         if (genereateGpuSkinningVersion) {
-            if (!GenerateGpuSkinningVersion(pointShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, generateGpuInstancingVersion)) {
+            if (!GenerateGpuSkinningVersion(pointShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, true, generateGpuInstancingVersion)) {
                 return false;
             }
         }
 
         if (generatePerforatedVersion) {
-            if (!GeneratePerforatedVersion(pointShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
+            if (!GeneratePerforatedVersion(pointShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, true, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
                 return false;
             }
         }
