@@ -24,8 +24,8 @@
 
 #include "Containers/HashMap.h"
 #include "Math/Math.h"
-#include "Core/Property.h"
 #include "Core/CmdArgs.h"
+#include "Core/Property.h"
 #include "RHI/RHI.h"
 
 BE_NAMESPACE_BEGIN
@@ -53,6 +53,20 @@ public:
         VertexShader            = BIT(0),
         FragmentShader          = BIT(1),
         GeometryShader          = BIT(2)
+    };
+
+    enum PropertyType {
+        BoolType,
+        IntType,
+        FloatType,
+        Vec2Type,
+        Vec3Type,
+        Vec4Type,
+        Color3Type,
+        Color4Type,
+        Texture2DType,
+        Texture3DType,
+        TextureCubeType,
     };
 
     enum BuiltInConstant {
@@ -276,7 +290,7 @@ private:
     bool                    GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool shadowing, bool instancing);
     bool                    GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool shadowing, bool genGpuSkinningVersion, bool genGpuInstancingVersion);
     bool                    GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool shadowing, bool genGpuSkinningVersion, bool genGpuInstancingVersion);
-    bool                    Instantiate(const Array<Define> &defineArray);  // internal function of instantiate
+    bool                    InstantiateShaderInternal(const Array<Define> &defineArray);
 
     bool                    Finish(bool genPerforatedVersion, bool genGpuSkinningVersion, bool genGpuInstancingVersion, bool genParallelShadowVersion, bool genSpotShadowVersion, bool genPointShadowVersion);
     bool                    ProcessShaderText(const char *text, const char *baseDir, const Array<Define> &defineArray, Str &outStr) const;
@@ -286,58 +300,39 @@ private:
 
     Str                     hashName;
     Str                     name;
-    Str                     baseDir;                ///< Base directory to include other shaders
-    int                     flags;
-    mutable int             refCount;
-    bool                    permanence;
-    int                     frameCount;
+    Str                     baseDir;                    ///< Base directory to include other shaders
+    int                     flags = 0;
+    mutable int             refCount = 0;
+    bool                    permanence = false;
+    int                     frameCount = 0;
 
-    RHI::Handle             shaderHandle;
-    int                     shaderFlags;
-    Str                     vsText;                 ///< Vertex shader souce code text
-    Str                     fsText;                 ///< Fragment shader source code text
+    RHI::Handle             shaderHandle = RHI::NullShader;
+    int                     shaderFlags = 0;
+    Str                     vsText;                     ///< Vertex shader souce code text
+    Str                     fsText;                     ///< Fragment shader source code text
     int                     builtInConstantIndices[MaxBuiltInConstants];
     int                     builtInSamplerUnits[MaxBuiltInSamplers];
 
-    Array<Define>           defineArray;            ///< Define list for instantiated shader
+    Array<Define>           defineArray;                ///< Define list for instantiated shader
 
-    Shader *                originalShader;         ///< Original shader pointer. Instantiated shader has a pointer to the original shader
+    Shader *                originalShader = nullptr;   ///< Original shader pointer. Instantiated shader has a pointer to the original shader
     Array<Shader *>         instantiatedShaders;
 
-    Shader *                perforatedVersion;
-    Shader *                premulAlphaVersion;
-    Shader *                indirectLitVersion;
-    Shader *                directLitVersion;
-    Shader *                indirectLitDirectLitVersion;
-    Shader *                parallelShadowVersion;
-    Shader *                spotShadowVersion;
-    Shader *                pointShadowVersion;
-    Shader *                gpuSkinningVersion[3];
-    Shader *                gpuInstancingVersion;
+    Shader *                perforatedVersion = nullptr;
+    Shader *                premulAlphaVersion = nullptr;
+    Shader *                indirectLitVersion = nullptr;
+    Shader *                directLitVersion = nullptr;
+    Shader *                indirectLitDirectLitVersion = nullptr;
+    Shader *                parallelShadowVersion = nullptr;
+    Shader *                spotShadowVersion = nullptr;
+    Shader *                pointShadowVersion = nullptr;
+    Shader *                gpuSkinningVersion[3] = { nullptr, };
+    Shader *                gpuInstancingVersion = nullptr;
 
     StrHashMap<PropertyInfo> propertyInfoHashMap;
 };
 
 BE_INLINE Shader::Shader() {
-    flags                   = 0;
-    refCount                = 0;
-    permanence              = false;
-    frameCount              = 0; 
-    shaderHandle            = RHI::NullShader;
-    shaderFlags             = 0;
-    perforatedVersion       = nullptr;
-    premulAlphaVersion      = nullptr;
-    indirectLitVersion       = nullptr;
-    directLitVersion        = nullptr;
-    indirectLitDirectLitVersion = nullptr;
-    parallelShadowVersion   = nullptr;
-    spotShadowVersion       = nullptr;
-    pointShadowVersion      = nullptr;
-    gpuSkinningVersion[0]   = nullptr;
-    gpuSkinningVersion[1]   = nullptr;
-    gpuSkinningVersion[2]   = nullptr;
-    gpuInstancingVersion    = nullptr;
-    originalShader          = nullptr;
 }
 
 BE_INLINE Shader::~Shader() {

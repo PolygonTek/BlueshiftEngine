@@ -831,7 +831,7 @@ Shader *Shader::InstantiateShader(const Array<Define> &defineArray) {
 
     instantiatedShaders.Append(shader);
     
-    shader->Instantiate(defineArray);
+    shader->InstantiateShaderInternal(defineArray);
 
     return shader;
 }
@@ -988,7 +988,7 @@ Shader *Shader::GetGPUInstancingVersion() {
 
 void Shader::Reinstantiate() {
     assert(originalShader);
-    Instantiate(defineArray);
+    InstantiateShaderInternal(defineArray);
 
     if (originalShader->indirectLitVersion) {
         if (indirectLitVersion) {
@@ -1133,7 +1133,7 @@ void Shader::Reinstantiate() {
     }
 }
 
-bool Shader::Instantiate(const Array<Define> &defineArray) {
+bool Shader::InstantiateShaderInternal(const Array<Define> &defineArray) {
     Str processedVsText;
     Str processedFsText;
 

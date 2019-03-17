@@ -88,7 +88,7 @@ public:
     bool            SetFromPoints(const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, bool fixDegenerate = true);
 
                     /// Moves this plane by specifying a single point on the plane.
-    void            FitThroughPoint(const Vec3 &p);
+    void            FitThroughPoint(const Vec3 &p) { offset = normal.Dot(p); }
 
                     /// Reverses the direction of the plane.
     void            Flip();
@@ -97,7 +97,7 @@ public:
                     /// Only normalizes the plane normal, does not adjust d
     float           Normalize(bool fixDegenerate = true);
 
-    bool            FixDegenerateNormal();
+    bool            FixDegenerateNormal() { return normal.FixDegenerateNormal(); }
 
                     /// Translates this Plane
     Plane           Translate(const Vec3 &translation) const;
@@ -108,7 +108,7 @@ public:
     Plane &         RotateSelf(const Vec3 &origin, const Mat3 &axis);
 
                     /// Returns the distance of this plane to the given point.
-    float           Distance(const Vec3 &p) const;
+    float           Distance(const Vec3 &p) const { return normal.Dot(p) - offset; }
 
                     /// Examines which side of the plane to the given point.
     int             GetSide(const Vec3 &p, const float epsilon) const;
@@ -161,10 +161,6 @@ BE_INLINE bool Plane::SetFromPoints(const Vec3 &p1, const Vec3 &p2, const Vec3 &
     return true;
 }
 
-BE_INLINE void Plane::FitThroughPoint(const Vec3 &p) {
-    offset = normal.Dot(p);
-}
-
 BE_INLINE void Plane::Flip() {
     normal = -normal;
     offset = -offset;
@@ -178,10 +174,6 @@ BE_INLINE float Plane::Normalize(bool fixDegenerate) {
     }
 
     return length;
-}
-
-BE_INLINE bool Plane::FixDegenerateNormal() {
-    return normal.FixDegenerateNormal();
 }
 
 BE_INLINE Plane Plane::Translate(const Vec3 &translation) const {
@@ -205,10 +197,6 @@ BE_INLINE Plane &Plane::RotateSelf(const Vec3 &origin, const Mat3 &axis) {
     normal = axis * normal;
     offset += origin.Dot(normal);
     return *this;
-}
-
-BE_INLINE float Plane::Distance(const Vec3 &v) const { 
-    return normal.Dot(v) - offset;
 }
 
 BE_INLINE int Plane::GetSide(const Vec3 &v, const float epsilon) const {
