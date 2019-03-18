@@ -233,11 +233,11 @@ public:
     const Vec3 &        ToVec3() const;
     Vec3 &              ToVec3();
 
-    /// Casts this Vec3 to a Color3.
+                        /// Casts this Vec3 to a Color3.
     const Color3 &      ToColor3() const;
     Color3 &            ToColor3();
 
-    /// Casts this Vec3 to a Color4.
+                        /// Casts this Vec3 to a Color4.
     const Color4 &      ToColor4() const;
     Color4 &            ToColor4();
 

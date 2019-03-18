@@ -186,7 +186,7 @@ public:
                         /// Creates from the string
     static Mat2         FromString(const char *str);
 
-    /// Returns dimension of this type
+                        /// Returns dimension of this type
     int                 GetDimension() const { return Rows * Cols; }
 
     static const Mat2   zero;

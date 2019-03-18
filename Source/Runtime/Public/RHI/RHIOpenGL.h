@@ -56,6 +56,10 @@ public:
 
     bool                    IsInitialized() const { return initialized; }
 
+    Str                     GetGPUString() const;
+
+    const HWLimit &         HWLimit() const { return hwLimit; }
+
     bool                    SupportsPolygonMode() const;
     bool                    SupportsPackedFloat() const;
     bool                    SupportsDepthBufferFloat() const;
@@ -71,16 +75,6 @@ public:
     bool                    SupportsMultiDrawIndirect() const;
     bool                    SupportsDebugLabel() const;
 
-    Handle                  CreateContext(WindowHandle windowHandle, bool useSharedContext);
-    void                    DestroyContext(Handle ctxHandle);
-    void                    ActivateSurface(Handle ctxHandle, WindowHandle windowHandle);
-    void                    DeactivateSurface(Handle ctxHandle);
-    void                    SetContext(Handle ctxHandle);
-    void                    SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing);
-    void                    DisplayContext(Handle ctxHandle);
-    WindowHandle            GetWindowHandleFromContext(Handle ctxHandle);
-    void                    GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetrics) const;
-
     bool                    IsFullscreen() const;
     bool                    SetFullscreen(Handle windowHandle, int width, int height);
     void                    ResetFullscreen(Handle windowHandle);
@@ -92,7 +86,28 @@ public:
     void                    SwapInterval(int interval) const;
 
     void                    Clear(int clearBits, const Color4 &color, float depth, unsigned int stencil);
+
     void                    ReadPixels(int x, int y, int width, int height, Image::Format imageFormat, byte *data);
+
+    void                    CheckError(const char *fmt, ...) const;
+
+    //---------------------------------------------------------------------------------------------
+    // Context
+    //---------------------------------------------------------------------------------------------
+
+    Handle                  CreateContext(WindowHandle windowHandle, bool useSharedContext);
+    void                    DestroyContext(Handle ctxHandle);
+    void                    ActivateSurface(Handle ctxHandle, WindowHandle windowHandle);
+    void                    DeactivateSurface(Handle ctxHandle);
+    void                    SetContext(Handle ctxHandle);
+    void                    SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing);
+    void                    DisplayContext(Handle ctxHandle);
+    WindowHandle            GetWindowHandleFromContext(Handle ctxHandle);
+    void                    GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetrics) const;
+
+    //---------------------------------------------------------------------------------------------
+    // Render State
+    //---------------------------------------------------------------------------------------------
 
     unsigned int            GetStateBits() const;
     const Rect &            GetViewport() const;
@@ -115,9 +130,17 @@ public:
     float                   GetLineWidth() const;
     void                    SetLineWidth(float width);
 
+    //---------------------------------------------------------------------------------------------
+    // Depth Stencil
+    //---------------------------------------------------------------------------------------------
+
     Handle                  CreateStencilState(int readMask, int writeMask, StencilFunc funcBack, int failBack, int zfailBack, int zpassBack, StencilFunc funcFront, int failFront, int zfailFront, int zpassFront);
     void                    DestroyStencilState(Handle stencilStateHandle);
     void                    SetStencilState(Handle stencilStateHandle, int ref);
+
+    //---------------------------------------------------------------------------------------------
+    // Texture
+    //---------------------------------------------------------------------------------------------
 
     Handle                  CreateTexture(TextureType type);
     void                    DestroyTexture(Handle textureHandle);
@@ -152,6 +175,10 @@ public:
     void                    GetTextureImageCube(CubeMapFace face, int level, Image::Format format, void *pixels);
     void                    GetTextureImageRect(Image::Format format, void *pixels);
 
+    //---------------------------------------------------------------------------------------------
+    // Render Target
+    //---------------------------------------------------------------------------------------------
+
     Handle                  CreateRenderTarget(RenderTargetType type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, int flags);
     void                    DestroyRenderTarget(Handle renderTargetHandle);
     void                    BeginRenderTarget(Handle renderTargetHandle, int level = 0, int sliceIndex = 0);
@@ -159,6 +186,10 @@ public:
     void                    DiscardRenderTarget(bool depth, bool stencil, uint32_t colorBitMask);
     void                    BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRect, Handle dstRenderTargetHandle, const Rect &dstRect, int mask, int filter) const;
     void                    SetDrawBuffersMask(unsigned int mrtBitMask);
+
+    //---------------------------------------------------------------------------------------------
+    // Shader
+    //---------------------------------------------------------------------------------------------
 
     Handle                  CreateShader(const char *name, const char *vsText, const char *fsText);
     void                    DestroyShader(Handle shaderHandle);
@@ -217,6 +248,10 @@ public:
 
     void                    SetShaderConstantBlock(int index, int bindingIndex);
 
+    //---------------------------------------------------------------------------------------------
+    // Buffer
+    //---------------------------------------------------------------------------------------------
+
     Handle                  CreateBuffer(BufferType type, BufferUsage usage, int size, int pitch = 0, const void *data = nullptr);
     void                    DestroyBuffer(Handle bufferHandle);
     void                    BindBuffer(BufferType type, Handle bufferHandle);
@@ -243,6 +278,10 @@ public:
                             /// Sets write offset to 0.
     void                    BufferRewind(Handle bufferHandle);
 
+    //---------------------------------------------------------------------------------------------
+    // GPU Synchronization
+    //---------------------------------------------------------------------------------------------
+
     Handle                  CreateSync();
     void                    DestroySync(Handle syncHandle);
     bool                    IsSync(Handle syncHandle) const;
@@ -250,9 +289,18 @@ public:
     void                    DeleteSync(Handle syncHandle);
     void                    WaitSync(Handle syncHandle);
 
+    //---------------------------------------------------------------------------------------------
+    // Vertex Format
+    //---------------------------------------------------------------------------------------------
+
     Handle                  CreateVertexFormat(int numElements, const VertexElement *elements);
     void                    DestroyVertexFormat(Handle vertexFormatHandle);
     void                    SetVertexFormat(Handle vertexFormatHandle);
+
+    //---------------------------------------------------------------------------------------------
+    // Drawing
+    //---------------------------------------------------------------------------------------------
+    
                             // Similar with SetStreamSource in D3D. Must be called after SetVertexFormat()
     void                    SetStreamSource(int stream, Handle vertexBufferHandle, int base, int stride);
 
@@ -265,6 +313,10 @@ public:
     void                    DrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset) const;
     void                    MultiDrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset, int drawCount, int stride) const;
 
+    //---------------------------------------------------------------------------------------------
+    // Query (Occlusion, Timestamp)
+    //---------------------------------------------------------------------------------------------
+
     Handle                  CreateQuery(QueryType queryType);
     void                    DestroyQuery(Handle queryHandle);
     void                    BeginQuery(Handle queryHandle);
@@ -272,12 +324,6 @@ public:
     void                    QueryTimestamp(Handle queryHandle);
     bool                    QueryResultAvailable(Handle queryHandle) const;
     unsigned int            QueryResult(Handle queryHandle) const;
-
-    void                    CheckError(const char *fmt, ...) const;
-
-    Str                     GetGPUString() const;
-
-    const HWLimit &         HWLimit() const { return hwLimit; }
 
 protected:
     void                    InitMainContext(WindowHandle windowHandle, const Settings *settings);

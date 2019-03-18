@@ -425,21 +425,19 @@ void Material::CommitShaderPropertiesChanged() {
             const auto *entry = pass->shaderProperties.Get(propName);
             const Shader::Property &shaderProp = entry->second;
 
-            if (propInfo.GetType() == Variant::BoolType) {
-                if (shaderProp.data.As<bool>()) {
-                    defineArray.Append(Shader::Define(propName, 1));
-                }
+            if (propInfo.GetType() == Variant::BoolType && shaderProp.data.As<bool>()) {
+                defineArray.Append(Shader::Define(propName, 1));
             } else if (propInfo.GetType() == Variant::IntType && propInfo.GetEnum().Count() > 0) {
-                int enumIndex = shaderProp.data.As<int>();
-                defineArray.Append(Shader::Define(propName, enumIndex));
+                defineArray.Append(Shader::Define(propName, shaderProp.data.As<int>()));
             }
         }
     }
     
-    // Instantiate shader with the given define list.
+    // Release previous one
     if (pass->shader) {
         shaderManager.ReleaseShader(pass->shader);
     }
+    // Instantiate shader with the given define list.
     pass->shader = pass->referenceShader->InstantiateShader(defineArray);
 
     // Reload shader's texture.
