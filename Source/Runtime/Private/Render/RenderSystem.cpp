@@ -37,11 +37,11 @@ void RenderSystem::Init(void *windowHandle, const RHI::Settings *settings) {
     rhi.GetGammaRamp(savedGammaRamp);
 
     if (r_fastSkinning.GetInteger() == 2 && rhi.HWLimit().maxVertexTextureImageUnits > 0) {
-        renderGlobal.skinningMethod = SkinningJointCache::VertexTextureFetchSkinning;
+        renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::VertexTextureFetchSkinning;
     } else if (r_fastSkinning.GetInteger() == 1) {
-        renderGlobal.skinningMethod = SkinningJointCache::VertexShaderSkinning;
+        renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::VertexShaderSkinning;
     } else {
-        renderGlobal.skinningMethod = SkinningJointCache::CpuSkinning;
+        renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::CpuSkinning;
     }
 
     if (r_vertexTextureUpdate.GetInteger() == 2 && rhi.SupportsTextureBufferObject()) {

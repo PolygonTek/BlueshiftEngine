@@ -97,7 +97,7 @@ void Mesh::Instantiate(int meshType) {
     SAFE_DELETE(skinningJointCache);
 
     if (isSkinnedMesh) {
-        useGpuSkinning = SkinningJointCache::CapableGPUJointSkinning((SkinningJointCache::SkinningMethod)renderGlobal.skinningMethod, numJoints);
+        useGpuSkinning = SkinningJointCache::CapableGPUJointSkinning((SkinningJointCache::SkinningMethod::Enum)renderGlobal.skinningMethod, numJoints);
 
         if (useGpuSkinning) {
             skinningJointCache = new SkinningJointCache(numJoints);

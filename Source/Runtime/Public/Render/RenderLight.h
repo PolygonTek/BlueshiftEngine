@@ -64,7 +64,7 @@ public:
         Vec3                size = Vec3::one;           ///< Light extents for each axis
         Mat3                axis = Mat3::identity;      ///< Light orientation
 
-        float               zNear = 1.0f;               // near distance for SpotLight
+        float               zNear = 1.0f;               // near distance for Light::Spot
 
         float               intensity = 1.0f;
         float               fallOffExponent = 1.25f;
@@ -154,8 +154,8 @@ private:
     bool                    firstUpdate;
 
     AABB                    worldAABB;
-    OBB                     worldOBB;           // used for PointLight / DirectionalLight
-    Frustum                 worldFrustum;       // used for SpotLight
+    OBB                     worldOBB;           // used for Light::Point, Light::Directional
+    Frustum                 worldFrustum;       // used for Light::Spot
     Mat4                    viewMatrix;
     Mat4                    projMatrix;
     Mat4                    viewProjScaleBiasMatrix;

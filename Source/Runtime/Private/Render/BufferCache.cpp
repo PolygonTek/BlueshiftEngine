@@ -254,7 +254,7 @@ void BufferCacheManager::BeginBackEnd() {
     unmappedNum = mappedNum;
 
     // Update buffered texture
-    if (renderGlobal.skinningMethod == SkinningJointCache::VertexTextureFetchSkinning) {
+    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetchSkinning) {
         if (renderGlobal.vertexTextureMethod == BufferCacheManager::VertexTextureMethod::Tbo) {
             // The update to the data is not guaranteed to affect the texture until next time it is bound to a texture image unit
             rhi.SelectTextureUnit(0);

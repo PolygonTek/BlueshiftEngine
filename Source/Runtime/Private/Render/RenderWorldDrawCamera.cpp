@@ -939,7 +939,7 @@ void RenderWorld::AddDrawSurf(VisCamera *camera, VisLight *visLight, VisObject *
     if (renderGlobal.instancingMethod != Mesh::InstancingMethod::NoInstancing) {
         if (actualMaterial->GetPass()->instancingEnabled) {
             if (subMesh->IsGpuSkinning()) {
-                if (renderGlobal.skinningMethod == SkinningJointCache::VertexTextureFetchSkinning) {
+                if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetchSkinning) {
                     flags |= DrawSurf::UseInstancing;
                 }
             } else {

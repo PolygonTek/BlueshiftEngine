@@ -25,10 +25,12 @@ class SkinningJointCache {
     friend class Batch;
 
 public:
-    enum SkinningMethod {
-        CpuSkinning,
-        VertexShaderSkinning,
-        VertexTextureFetchSkinning
+    struct SkinningMethod {
+        enum Enum {
+            CpuSkinning,
+            VertexShaderSkinning,
+            VertexTextureFetchSkinning
+        };
     };
 
     SkinningJointCache() = delete;
@@ -41,7 +43,7 @@ public:
 
     void                Update(const Skeleton *skeleton, const Mat3x4 *jointMats);
 
-    static bool         CapableGPUJointSkinning(SkinningMethod skinningMethod, int numJoints);
+    static bool         CapableGPUJointSkinning(SkinningMethod::Enum skinningMethod, int numJoints);
 
 private:
     int                 numJoints;              // motion blur 를 사용하면 원래 model joints 의 2배를 사용한다
