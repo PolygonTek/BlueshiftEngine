@@ -47,10 +47,10 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
     state = *stateDef;
 
     // Saturate light color RGBA in range [0, 1]
-    BE1::Clamp(state.materialParms[RenderObject::RedParm], 0.0f, 1.0f);
-    BE1::Clamp(state.materialParms[RenderObject::GreenParm], 0.0f, 1.0f);
-    BE1::Clamp(state.materialParms[RenderObject::BlueParm], 0.0f, 1.0f);
-    BE1::Clamp(state.materialParms[RenderObject::AlphaParm], 0.0f, 1.0f);
+    BE1::Clamp(state.materialParms[RenderObject::MaterialParm::Red], 0.0f, 1.0f);
+    BE1::Clamp(state.materialParms[RenderObject::MaterialParm::Green], 0.0f, 1.0f);
+    BE1::Clamp(state.materialParms[RenderObject::MaterialParm::Blue], 0.0f, 1.0f);
+    BE1::Clamp(state.materialParms[RenderObject::MaterialParm::Alpha], 0.0f, 1.0f);
 
     // NOTE: shader 에서 이미 한번 square 처리가 되므로 여기서 sqrt 해준다
     state.fallOffExponent = Math::Sqrt(state.fallOffExponent);
@@ -58,7 +58,7 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
     // Calculate view matrix with the given origin and axis
     R_SetViewMatrix(state.axis, state.origin, viewMatrix);
 
-    if (state.type == PointLight) {
+    if (state.type == Type::Point) {
         // Set bounding volume for point light
         worldOBB = OBB(state.origin, state.size, state.axis);
 
@@ -67,7 +67,7 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
 
         // Calculate light fall-off matrix
         fallOffMatrix = projMatrix * viewMatrix;
-    } else if (state.type == DirectionalLight) {
+    } else if (state.type == Type::Directional) {
         // Bounding volume for box light
         worldOBB = OBB(state.origin + state.axis[0] * state.size[0] * 0.5f, Vec3(state.size[0] * 0.5f, state.size[1], state.size[2]), state.axis);
 
@@ -76,7 +76,7 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
 
         // No fall-off for directional light
         fallOffMatrix = Mat3x4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-    } else if (state.type == SpotLight) {
+    } else if (state.type == Type::Spot) {
         // Set bounding frustum for spot light
         worldFrustum.SetOrigin(state.origin);
         worldFrustum.SetAxis(state.axis);
@@ -96,7 +96,7 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
         assert(0);
     }
 
-    if (state.type == DirectionalLight || state.type == PointLight) {
+    if (state.type == Type::Directional || state.type == Type::Point) {
         worldAABB = worldOBB.ToAABB();
     } else {
         worldAABB = worldFrustum.ToOBB().ToAABB();
@@ -111,14 +111,14 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
 }
 
 bool RenderLight::IsIntersectAABB(const AABB &aabb) const {
-    if (state.type == DirectionalLight || state.type == PointLight) {
+    if (state.type == Type::Directional || state.type == Type::Point) {
         if (this->worldOBB.IsIntersectOBB(OBB(aabb))) {
             return true;
         }
         return false;
     }
 
-    if (state.type == SpotLight) {
+    if (state.type == Type::Spot) {
         if (!worldFrustum.CullAABB(aabb)) {
             return true;
         }
@@ -130,14 +130,14 @@ bool RenderLight::IsIntersectAABB(const AABB &aabb) const {
 }
 
 bool RenderLight::IsIntersectOBB(const OBB &obb) const {
-    if (state.type == DirectionalLight || state.type == PointLight) {
+    if (state.type == Type::Directional || state.type == Type::Point) {
         if (this->worldOBB.IsIntersectOBB(obb)) {
             return true;
         }
         return false;
     }
 
-    if (state.type == SpotLight) {
+    if (state.type == Type::Spot) {
         if (!worldFrustum.CullOBB(obb)) {
             return true;
         }
@@ -149,7 +149,7 @@ bool RenderLight::IsIntersectOBB(const OBB &obb) const {
 }
 
 bool RenderLight::DirLight_ShadowBVFromCaster(const OBB &casterOBB, OBB &shadowOBB) const {
-    assert(state.type == RenderLight::DirectionalLight);
+    assert(state.type == RenderLight::Type::Directional);
 
     AABB b1, b2;
     // Compute caster bounds for light axis
@@ -174,7 +174,7 @@ bool RenderLight::DirLight_ShadowBVFromCaster(const OBB &casterOBB, OBB &shadowO
 }
 
 bool RenderLight::PointLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &shadowFrustum) const {
-    assert(state.type == RenderLight::PointLight);
+    assert(state.type == RenderLight::Type::Point);
 
     Vec3 dir = casterOBB.Center() - state.origin;
     dir.Normalize();
@@ -189,7 +189,7 @@ bool RenderLight::PointLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &s
 }
 
 bool RenderLight::SpotLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &shadowFrustum) const {
-    assert(state.type == RenderLight::SpotLight);
+    assert(state.type == RenderLight::Type::Spot);
 
     Vec3 dir = worldFrustum.GetAxis()[0];
     dir.Normalize();
@@ -218,17 +218,17 @@ bool RenderLight::Cull(const RenderCamera &camera) const {
 
 bool RenderLight::Cull(const Frustum &viewFrustum) const {
     switch (state.type) {
-    case DirectionalLight:
+    case Type::Directional:
         if (viewFrustum.CullOBB(worldOBB)) {
             return true;
         }
         break;
-    case SpotLight:
+    case Type::Spot:
         if (viewFrustum.CullFrustum(worldFrustum)) {
             return true;
         }
         break;
-    case PointLight:
+    case Type::Point:
         if (IsRadiusUniform()) {
             if (viewFrustum.CullSphere(Sphere(state.origin, state.size[0]))) {
                 return true;
@@ -248,17 +248,17 @@ bool RenderLight::Cull(const Frustum &viewFrustum) const {
 
 bool RenderLight::Cull(const OBB &viewBox) const {
     switch (state.type) {
-    case DirectionalLight:
+    case Type::Directional:
         if (!viewBox.IsIntersectOBB(worldOBB)) {
             return true;
         }
         break;
-    case SpotLight:
+    case Type::Spot:
         if (worldFrustum.CullOBB(viewBox)) {
             return true;
         }
         break;
-    case PointLight:
+    case Type::Point:
         if (IsRadiusUniform()) {
             if (!viewBox.IsIntersectSphere(Sphere(state.origin, state.size[0]))) {
                 return true;
@@ -281,7 +281,7 @@ bool RenderLight::CullShadowCaster(const OBB &casterOBB, const Frustum &viewFrus
         return true;
     }
 
-    if (state.type == DirectionalLight) {
+    if (state.type == Type::Directional) {
         OBB shadowOBB;
         if (!DirLight_ShadowBVFromCaster(casterOBB, shadowOBB)) {
             return true;
@@ -298,7 +298,7 @@ bool RenderLight::CullShadowCaster(const OBB &casterOBB, const Frustum &viewFrus
         return false;
     }
 
-    if (state.type == PointLight) {
+    if (state.type == Type::Point) {
         Frustum shadowFrustum;
         if (PointLight_ShadowBVFromCaster(casterOBB, shadowFrustum)) {
             if (shadowFrustum.GetFarDistance() <= r_shadowCubeMapZNear.GetFloat()) {
@@ -317,7 +317,7 @@ bool RenderLight::CullShadowCaster(const OBB &casterOBB, const Frustum &viewFrus
         return false;
     }
 
-    if (state.type == SpotLight) {
+    if (state.type == Type::Spot) {
         Frustum shadowFrustum;
         SpotLight_ShadowBVFromCaster(casterOBB, shadowFrustum);
         if (viewFrustum.CullFrustum(shadowFrustum)) {
@@ -337,17 +337,17 @@ bool RenderLight::CullShadowCaster(const OBB &casterOBB, const Frustum &viewFrus
 
 bool RenderLight::ComputeScreenClipRect(const RenderCamera *viewDef, Rect &clipRect) const {
     switch (state.type) {
-    case DirectionalLight:
+    case Type::Directional:
         if (!viewDef->CalcClipRectFromOBB(worldOBB, clipRect)) {
             return false;
         }
         break;
-    case SpotLight:
+    case Type::Spot:
         if (!viewDef->CalcClipRectFromFrustum(worldFrustum, clipRect)) {
             return false;
         }
         break;
-    case PointLight:
+    case Type::Point:
         if (IsRadiusUniform()) {
             if (!viewDef->CalcClipRectFromSphere(Sphere(state.origin, GetRadius()[0]), clipRect)) {
                 return false;

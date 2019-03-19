@@ -27,7 +27,7 @@ static const byte trailingBytes[64] = {
 
 static const uint32_t trailingMask[6] = { 0x0000007f, 0x0000001f, 0x0000000f, 0x00000007, 0x00000003, 0x00000001 };
 
-bool UTF8::IsValid(const char *s, const int maxLen, Encoding &encoding) {
+bool UTF8::IsValid(const char *s, const int maxLen, Encoding::Enum &encoding) {
     struct Local {
         static int GetNumEncodedUTF8Bytes(const uint8_t c) {
             if (c < 0x80) { // 0xxxxxxx
@@ -62,10 +62,10 @@ bool UTF8::IsValid(const char *s, const int maxLen, Encoding &encoding) {
     };
 
     // check for byte-order-marker
-    encoding = UTF8_PURE_ASCII;
-    Encoding utf8Type = UTF8_ENCODED_NO_BOM;
+    encoding = Encoding::PureASCII;
+    Encoding::Enum utf8Type = Encoding::EncodedNoBOM;
     if (maxLen > 3 && (byte)s[0] == 0xEF && (byte)s[1] == 0xBB && (byte)s[2] == 0xBF) {
-        utf8Type = UTF8_ENCODED_BOM;
+        utf8Type = Encoding::EncodedBOM;
     }
 
     for (int i = 0; s[i] != '\0' && i < maxLen; i++) {
@@ -98,10 +98,10 @@ bool UTF8::IsValid(const char *s, const int maxLen, Encoding &encoding) {
             encoding = utf8Type;
         } else {
             // this isnt' a valid UTF-8 character
-            if (utf8Type == UTF8_ENCODED_BOM) {
-                encoding = UTF8_INVALID_BOM;
+            if (utf8Type == Encoding::EncodedBOM) {
+                encoding = Encoding::InvalidBOM;
             } else {
-                encoding = UTF8_INVALID;
+                encoding = Encoding::Invalid;
             }
             return false;
         }

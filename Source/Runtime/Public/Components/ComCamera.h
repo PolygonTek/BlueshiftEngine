@@ -70,8 +70,8 @@ public:
     float                   GetFar() const;
     void                    SetFar(const float zFar);
 
-    RenderCamera::ClearMethod GetClearMethod() const;
-    void                    SetClearMethod(RenderCamera::ClearMethod clearMethod);
+    RenderCamera::ClearMethod::Enum GetClearMethod() const;
+    void                    SetClearMethod(RenderCamera::ClearMethod::Enum clearMethod);
 
     const Color3 &          GetClearColor() const;
     void                    SetClearColor(const Color3 &clearColor);

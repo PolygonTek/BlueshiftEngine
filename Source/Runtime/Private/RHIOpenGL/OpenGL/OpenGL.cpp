@@ -105,11 +105,11 @@ void OpenGLBase::Init() {
 #endif
 }
 
-bool OpenGLBase::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal) {
+bool OpenGLBase::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal) {
     return false;
 }
 
-Image::Format OpenGLBase::ToCompressedImageFormat(Image::Format inFormat, bool useNormalMap) {
+Image::Format::Enum OpenGLBase::ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap) {
     assert(0);
     return Image::Format::UnknownFormat;
 }

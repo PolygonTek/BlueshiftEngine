@@ -65,7 +65,7 @@ void StaticBatch::CombineAll(Hierarchy<Entity> &entityHierarchy) {
                 if (staticMeshRenderer->renderObjectDef.mesh) {
                     meshManager.ReleaseMesh(staticMeshRenderer->renderObjectDef.mesh);
 
-                    staticMeshRenderer->renderObjectDef.mesh = staticBatch->GetMesh()->InstantiateMesh(Mesh::StaticMesh);
+                    staticMeshRenderer->renderObjectDef.mesh = staticBatch->GetMesh()->InstantiateMesh(Mesh::Type::Static);
                     staticMeshRenderer->renderObjectDef.aabb = staticBatch->GetMesh()->GetAABB();
 
                     staticMeshRenderer->UpdateVisuals();

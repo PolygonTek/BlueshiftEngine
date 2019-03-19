@@ -25,7 +25,7 @@ BE_NAMESPACE_BEGIN
 SoundSystem     soundSystem;
 
 CVar            SoundSystem::s_nosound("s_nosound", "0", 0, "");
-CVar            SoundSystem::s_volume("s_volume", "0.8", CVar::Float | CVar::Archive, "");
+CVar            SoundSystem::s_volume("s_volume", "0.8", CVar::Flag::Float | CVar::Flag::Archive, "");
 
 void SoundSystem::Init(void *windowHandle) {
     BE_LOG("Initializing SoundSystem...\n");

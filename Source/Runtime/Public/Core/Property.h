@@ -60,32 +60,34 @@ class BE_API PropertyInfo {
 
 public:
     /// Property flags
-    enum Flag {
-        Empty               = 0,
-        ReadOnlyFlag        = BIT(1),   // Don't allow to set
-        SkipSerializationFlag = BIT(2), // Don't serialize
-        EditorFlag          = BIT(3),   // Show in editor
-        NonCopying          = BIT(4),   // Don't allow to copy
-        SystemUnits         = BIT(5),
-        MultiLinesFlag      = BIT(6),   // Str type in multilines
-        ArrayFlag           = BIT(7),   // Is array property ?
-        NetworkFlag         = BIT(8),   // Not used yet
-        ShaderDefineFlag    = BIT(9),
+    struct Flag {
+        enum Enum {
+            Empty               = 0,
+            ReadOnly            = BIT(1),   // Don't allow to set
+            SkipSerialization   = BIT(2),   // Don't serialize
+            Editor              = BIT(3),   // Show in editor
+            NonCopying          = BIT(4),   // Don't allow to copy
+            SystemUnits         = BIT(5),
+            MultiLines          = BIT(6),   // Str type in multilines
+            Array               = BIT(7),   // Is array property ?
+            Network             = BIT(8),   // Not used yet
+            ShaderDefine        = BIT(9),
+        };
     };
 
     PropertyInfo();
-    PropertyInfo(const char *name, const char *label, Variant::Type type, intptr_t offset, const Variant &defaultValue, const char *desc, int flags);
-    PropertyInfo(const char *name, const char *label, Variant::Type type, PropertyAccessor *accessor, const Variant &defaultValue, const char *desc, int flags);
+    PropertyInfo(const char *name, const char *label, Variant::Type::Enum type, intptr_t offset, const Variant &defaultValue, const char *desc, int flags);
+    PropertyInfo(const char *name, const char *label, Variant::Type::Enum type, PropertyAccessor *accessor, const Variant &defaultValue, const char *desc, int flags);
 
-    Variant::Type           GetType() const { return type; }
+    Variant::Type::Enum     GetType() const { return type; }
     const char *            GetName() const { return name; }
     const Variant &         GetDefaultValue() const { return defaultValue; }
     const char *            GetLabel() const { return label; }
     const char *            GetDescription() const { return desc; }
     int                     GetFlags() const { return flags; }
 
-    bool                    IsArray() const { return !!(flags & Flag::ArrayFlag); }
-    bool                    IsReadOnly() const { return !!(flags & Flag::ReadOnlyFlag); }
+    bool                    IsArray() const { return !!(flags & Flag::Array); }
+    bool                    IsReadOnly() const { return !!(flags & Flag::ReadOnly); }
     bool                    IsRanged() const { return range.IsValid(); }
 
     float                   GetMinValue() const { return range.minValue; }
@@ -105,7 +107,7 @@ public:
     friend bool             ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo);
 
 private:
-    Variant::Type           type;               ///< Property type
+    Variant::Type::Enum     type;               ///< Property type
     Variant                 defaultValue;       ///< Default value
     Str                     name;               ///< Property name
     Str                     label;              ///< Label in Editor
@@ -119,13 +121,13 @@ private:
 };
 
 BE_INLINE PropertyInfo::PropertyInfo() :
-    type(Variant::None),
+    type(Variant::Type::None),
     offset(0),
     metaObject(nullptr),
-    flags(Empty) {
+    flags(Flag::Empty) {
 }
 
-BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Variant::Type _type, intptr_t _offset, const Variant &_defaultValue, const char *_desc, int _flags) :
+BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Variant::Type::Enum _type, intptr_t _offset, const Variant &_defaultValue, const char *_desc, int _flags) :
     type(_type),
     name(_name),
     label(_label),
@@ -136,7 +138,7 @@ BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Vari
     flags(_flags) {
 }
 
-BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Variant::Type _type, PropertyAccessor *_accessor, const Variant &_defaultValue, const char *_desc, int _flags) :
+BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Variant::Type::Enum _type, PropertyAccessor *_accessor, const Variant &_defaultValue, const char *_desc, int _flags) :
     type(_type),
     name(_name),
     label(_label),
@@ -382,7 +384,7 @@ public:
 
 #define REGISTER_ARRAY_PROPERTY(name, label, type, var, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
-        ::offset_of(&Class::var), defaultValue, desc, flags | BE1::PropertyInfo::ArrayFlag))
+        ::offset_of(&Class::var), defaultValue, desc, flags | BE1::PropertyInfo::Flag::Array))
 
 #define REGISTER_ACCESSOR_PROPERTY(name, label, type, getter, setter, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
@@ -391,7 +393,7 @@ public:
 #define REGISTER_ACCESSOR_ARRAY_PROPERTY(name, label, type, getter, setter, getCount, setCount, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
         new BE1::ArrayPropertyAccessorImpl<Class, type>(&Class::getter, &Class::setter, &Class::getCount, &Class::setCount), \
-        defaultValue, desc, flags | BE1::PropertyInfo::ArrayFlag))
+        defaultValue, desc, flags | BE1::PropertyInfo::Flag::Array))
 
 #define REGISTER_MIXED_ACCESSOR_PROPERTY(name, label, type, getter, setter, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
@@ -401,6 +403,6 @@ public:
 #define REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY(name, label, type, getter, setter, getCount, setCount, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
         new BE1::ArrayPropertyAccessorImpl<Class, type, BE1::MixedPropertyTrait>(&Class::getter, &Class::setter, &Class::getCount, &Class::setCount), \
-        defaultValue, desc, flags | BE1::PropertyInfo::ArrayFlag))
+        defaultValue, desc, flags | BE1::PropertyInfo::Flag::Array))
 
 BE_NAMESPACE_END

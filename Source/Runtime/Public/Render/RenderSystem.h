@@ -40,7 +40,7 @@ public:
 
     bool                    IsFinished() const;
 
-    bool                    Refresh(EnvProbe::TimeSlicing timeSlicing);
+    bool                    Refresh(EnvProbe::TimeSlicing::Enum timeSlicing);
 
 private:
     void                    RevalidateDiffuseProbeRT(bool clearToBlack);

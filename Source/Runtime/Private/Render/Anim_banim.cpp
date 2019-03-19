@@ -108,7 +108,7 @@ bool Anim::LoadBinaryAnim(const char *filename) {
 }
 
 void Anim::WriteBinaryAnim(const char *filename) {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
         BE_WARNLOG("Anim::WriteBinaryAnim: file open error\n");
         return;

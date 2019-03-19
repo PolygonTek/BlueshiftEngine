@@ -26,9 +26,9 @@ END_EVENTS
 
 void ComSpline::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("loop", "Loop", bool, IsLoop, SetLoop, false, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("points", "Points", Guid, GetPointGuid, SetPointGuid, GetPointCount, SetPointCount, Guid::zero, 
-        "", PropertyInfo::EditorFlag).SetMetaObject(&ComTransform::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&ComTransform::metaObject);
 }
 
 ComSpline::ComSpline() {
@@ -152,7 +152,7 @@ void ComSpline::UpdateCurve() {
                 continue;
             }
 
-            pointTransform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSpline::PointTransformUpdated, SignalObject::Unique);
+            pointTransform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSpline::PointTransformUpdated, SignalObject::ConnectionType::Unique);
 
             const Vec3 origin = pointTransform->GetLocalOrigin();
             originCurve->AddValue(t, origin);

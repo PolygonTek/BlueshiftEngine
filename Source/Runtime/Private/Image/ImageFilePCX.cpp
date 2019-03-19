@@ -50,7 +50,7 @@ bool Image::LoadPCXFromMemory(const char *name, const byte *data, size_t size) {
         return false;
     }
     
-    Create2D(header->xmax - header->xmin + 1, header->ymax - header->ymin + 1, 1, RGB_8_8_8, nullptr, 0);
+    Create2D(header->xmax - header->xmin + 1, header->ymax - header->ymin + 1, 1, Format::RGB_8_8_8, nullptr, 0);
 
     if (header->planes == 1) { // 8 bits paletted color
         const byte *palette = data + size - 768;
@@ -104,7 +104,7 @@ bool Image::LoadPCXFromMemory(const char *name, const byte *data, size_t size) {
 }
 
 bool Image::WritePCX(const char *filename) const {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
         BE_WARNLOG("Image::WritePCX: file open error\n");
         return false;
@@ -112,8 +112,8 @@ bool Image::WritePCX(const char *filename) const {
 
     Image convertedImage;
     byte *src = pic;
-    if (format != BGR_8_8_8) {
-        if (!ConvertFormat(BGR_8_8_8, convertedImage)) {
+    if (format != Format::BGR_8_8_8) {
+        if (!ConvertFormat(Format::BGR_8_8_8, convertedImage)) {
             fileSystem.CloseFile(fp);
             return false;
         }

@@ -48,20 +48,20 @@ public:
 
     virtual const AABB      GetAABB() override;
 
-    EnvProbe::Type          GetType() const;
-    void                    SetType(EnvProbe::Type type);
+    EnvProbe::Type::Enum    GetType() const;
+    void                    SetType(EnvProbe::Type::Enum type);
 
-    EnvProbe::RefreshMode   GetRefreshMode() const;
-    void                    SetRefreshMode(EnvProbe::RefreshMode refreshMode);
+    EnvProbe::RefreshMode::Enum GetRefreshMode() const;
+    void                    SetRefreshMode(EnvProbe::RefreshMode::Enum refreshMode);
 
-    EnvProbe::TimeSlicing   GetTimeSlicing() const;
-    void                    SetTimeSlicing(EnvProbe::TimeSlicing timeSlicing);
+    EnvProbe::TimeSlicing::Enum GetTimeSlicing() const;
+    void                    SetTimeSlicing(EnvProbe::TimeSlicing::Enum timeSlicing);
 
     int                     GetImportance() const;
     void                    SetImportance(int importance);
 
-    EnvProbe::Resolution    GetResolution() const;
-    void                    SetResolution(EnvProbe::Resolution resolution);
+    EnvProbe::Resolution::Enum GetResolution() const;
+    void                    SetResolution(EnvProbe::Resolution::Enum resolution);
 
     bool                    IsHDR() const;
     void                    SetHDR(bool useHDR);
@@ -69,8 +69,8 @@ public:
     int                     GetLayerMask() const;
     void                    SetLayerMask(int layerMask);
 
-    EnvProbe::ClearMethod   GetClearMethod() const;
-    void                    SetClearMethod(EnvProbe::ClearMethod clearMethod);
+    EnvProbe::ClearMethod::Enum GetClearMethod() const;
+    void                    SetClearMethod(EnvProbe::ClearMethod::Enum clearMethod);
 
     Color3                  GetClearColor() const;
     void                    SetClearColor(const Color3 &clearColor);

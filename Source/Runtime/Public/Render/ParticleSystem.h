@@ -181,7 +181,7 @@ public:
 
     // speed over lifetime module
     struct LTSpeedModule {
-        void                    Reset() { speed.Reset(MinMaxCurve::ConstantType, 2.0f, 0.0f, 1.0f); }
+        void                    Reset() { speed.Reset(MinMaxCurve::Type::Constant, 2.0f, 0.0f, 1.0f); }
 
         MinMaxCurve             speed;
     };
@@ -195,14 +195,14 @@ public:
 
     // rotation over lifetime module
     struct LTRotationModule {
-        void                    Reset() { rotation.Reset(MinMaxCurve::ConstantType, 180, 0.0f, 0.0f); }
+        void                    Reset() { rotation.Reset(MinMaxCurve::Type::Constant, 180, 0.0f, 0.0f); }
 
         MinMaxCurve             rotation;               ///< angular velocity
     };
 
     // rotation by speed module
     struct RotationBySpeedModule {
-        void                    Reset() { rotation.Reset(MinMaxCurve::CurveType, 180.0f, 0.0f, 0.0f); speedRange.Set(0, 1); }
+        void                    Reset() { rotation.Reset(MinMaxCurve::Type::Curve, 180.0f, 0.0f, 0.0f); speedRange.Set(0, 1); }
 
         MinMaxCurve             rotation;
         Vec2                    speedRange;
@@ -210,14 +210,14 @@ public:
 
     // size over lifetime module
     struct LTSizeModule {
-        void                    Reset() { size.Reset(MinMaxCurve::ConstantType, 1.0f, 0.0f, 1.0f); }
+        void                    Reset() { size.Reset(MinMaxCurve::Type::Constant, 1.0f, 0.0f, 1.0f); }
 
         MinMaxCurve             size;                   ///< size in meter
     };
 
     // size by speed module
     struct SizeBySpeedModule {
-        void                    Reset() { size.Reset(MinMaxCurve::CurveType, 1.0f, 0.0f, 1.0f); speedRange.Set(0, 1); }
+        void                    Reset() { size.Reset(MinMaxCurve::Type::Curve, 1.0f, 0.0f, 1.0f); speedRange.Set(0, 1); }
 
         MinMaxCurve             size;                   ///< size in meter
         Vec2                    speedRange;
@@ -225,7 +225,7 @@ public:
 
     // aspect ratio over lifetime module
     struct LTAspectRatioModule {
-        void                    Reset() { aspectRatio.Reset(MinMaxCurve::ConstantType, 1.0f, 1.0f, 1.0f); }
+        void                    Reset() { aspectRatio.Reset(MinMaxCurve::Type::Constant, 1.0f, 1.0f, 1.0f); }
 
         MinMaxCurve             aspectRatio;
     };
@@ -339,12 +339,12 @@ BE_INLINE void ParticleSystem::StandardModule::Reset() {
     animFrames[1] = 1;
     animFps = 8;
     orientation = Orientation::View;
-    startDelay.Reset(MinMaxCurve::ConstantType, 1.0f, 0.0f, 0.0f);
+    startDelay.Reset(MinMaxCurve::Type::Constant, 1.0f, 0.0f, 0.0f);
     startColor.Set(1, 1, 1, 1);
-    startSpeed.Reset(MinMaxCurve::ConstantType, 1.0f, 1.0f, 1.0f);
-    startSize.Reset(MinMaxCurve::ConstantType, 1.0f, 1.0f, 1.0f);
-    startAspectRatio.Reset(MinMaxCurve::ConstantType, 1.0f, 1.0f, 1.0f);
-    startRotation.Reset(MinMaxCurve::ConstantType, 180.0f, 0.0f, 0.0f);
+    startSpeed.Reset(MinMaxCurve::Type::Constant, 1.0f, 1.0f, 1.0f);
+    startSize.Reset(MinMaxCurve::Type::Constant, 1.0f, 1.0f, 1.0f);
+    startAspectRatio.Reset(MinMaxCurve::Type::Constant, 1.0f, 1.0f, 1.0f);
+    startRotation.Reset(MinMaxCurve::Type::Constant, 180.0f, 0.0f, 0.0f);
     randomizeRotation = 1.0f;
     gravity = 0.0f;
 }
@@ -367,9 +367,9 @@ BE_INLINE void ParticleSystem::CustomPathModule::Reset() {
 }
 
 BE_INLINE void ParticleSystem::LTForceModule::Reset() {
-    force[0].Reset(MinMaxCurve::ConstantType, 1.0f, 0.0f, 0.0f); 
-    force[1].Reset(MinMaxCurve::ConstantType, 1.0f, 0.0f, 0.0f); 
-    force[2].Reset(MinMaxCurve::ConstantType, 1.0f, 0.0f, 0.0f);
+    force[0].Reset(MinMaxCurve::Type::Constant, 1.0f, 0.0f, 0.0f); 
+    force[1].Reset(MinMaxCurve::Type::Constant, 1.0f, 0.0f, 0.0f); 
+    force[2].Reset(MinMaxCurve::Type::Constant, 1.0f, 0.0f, 0.0f);
 }
 
 BE_INLINE void ParticleSystem::Stage::Reset() {

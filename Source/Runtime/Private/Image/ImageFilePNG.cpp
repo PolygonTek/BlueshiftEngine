@@ -86,7 +86,7 @@ bool Image::LoadPNGFromMemory(const char *name, const byte *data, size_t size) {
     png_read_update_info(png, info);
 
     // allocate the memory to hold the image
-    Create2D(w, h, 1, color_type & PNG_COLOR_MASK_ALPHA ? RGBA_8_8_8_8 : RGB_8_8_8, nullptr, 0);
+    Create2D(w, h, 1, color_type & PNG_COLOR_MASK_ALPHA ? Format::RGBA_8_8_8_8 : Format::RGB_8_8_8, nullptr, 0);
     
     png_bytep *row_pointers = (png_bytep *)Mem_Alloc16(sizeof(png_bytep) * h);
 
@@ -145,24 +145,24 @@ bool Image::WritePNG(const char *filename) const {
     Image convertedImage;
     const byte *src = this->pic;
 
-    if (format == RGB_8_8_8) {
+    if (format == Format::RGB_8_8_8) {
         colorType = PNG_COLOR_TYPE_RGB;
         bpp = 3;
-    } else if (format == RGBA_8_8_8_8) {
+    } else if (format == Format::RGBA_8_8_8_8) {
         colorType = PNG_COLOR_TYPE_RGBA;
         bpp = 4;
     } else {
         if (Image::HasAlpha(format)) {
             colorType = PNG_COLOR_TYPE_RGBA;
             bpp = 4;
-            if (!ConvertFormat(RGBA_8_8_8_8, convertedImage)) {
+            if (!ConvertFormat(Format::RGBA_8_8_8_8, convertedImage)) {
                 png_destroy_write_struct(&png, (png_infopp)nullptr);
                 return false;
             }
         } else {
             colorType = PNG_COLOR_TYPE_RGB;
             bpp = 3;
-            if (!ConvertFormat(RGB_8_8_8, convertedImage)) {
+            if (!ConvertFormat(Format::RGB_8_8_8, convertedImage)) {
                 png_destroy_write_struct(&png, (png_infopp)nullptr);
                 return false;
             }

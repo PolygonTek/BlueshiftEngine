@@ -29,7 +29,7 @@ void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *drawSurf = drawSurfs[i];
 
-        if (drawSurf->material->GetSort() == Material::Sort::SkySort) {
+        if (drawSurf->material->GetSort() == Material::Sort::Sky) {
             continue;
         }
 
@@ -76,7 +76,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             continue;
         }
 
-        if (drawSurf->material->GetSort() == Material::Sort::SkySort) {
+        if (drawSurf->material->GetSort() == Material::Sort::Sky) {
             continue;
         }
 
@@ -84,7 +84,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         bool isDifferentMaterial = drawSurf->material != prevMaterial;
 
         if (isDifferentMaterial || isDifferentObject) {
-            if (drawSurf->space->def->GetState().flags & RenderObject::SkipSelectionFlag) {
+            if (drawSurf->space->def->GetState().flags & RenderObject::Flag::SkipSelection) {
                 continue;
             }
 
@@ -92,7 +92,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 backEnd.batch.Begin(Batch::SelectionFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
             } else {
                 if (isDifferentObject || prevMaterial->GetCullType() != drawSurf->material->GetCullType() ||
-                    (prevMaterial->GetSort() == Material::Sort::AlphaTestSort) || (drawSurf->material->GetSort() == Material::Sort::AlphaTestSort)) {
+                    (prevMaterial->GetSort() == Material::Sort::AlphaTest) || (drawSurf->material->GetSort() == Material::Sort::AlphaTest)) {
                     backEnd.batch.Flush();
                     backEnd.batch.Begin(Batch::SelectionFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
                 }
@@ -101,7 +101,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::Flag::DepthHack);
 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
@@ -144,7 +144,7 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *drawSurf = drawSurfs[i];
 
-        if (drawSurf->material->GetSort() != Material::Sort::OpaqueSort) {
+        if (drawSurf->material->GetSort() != Material::Sort::Opaque) {
             continue;
         }
 
@@ -152,7 +152,7 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         bool isDifferentMaterial = drawSurf->material != prevMaterial;
             
         if (isDifferentMaterial || isDifferentObject) {
-            if (!(drawSurf->space->def->GetState().flags & RenderObject::OccluderFlag)) {
+            if (!(drawSurf->space->def->GetState().flags & RenderObject::Flag::Occluder)) {
                 continue;
             }
 
@@ -172,7 +172,7 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::Flag::DepthHack);
 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {
@@ -254,7 +254,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::Flag::DepthHack);
 
                 if (prevDepthHack != depthHack) {
                     if (drawSurf->flags & DrawSurf::UseInstancing) {
@@ -342,7 +342,7 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::Flag::DepthHack);
 
                 if (prevDepthHack != depthHack) {
                     if (drawSurf->flags & DrawSurf::UseInstancing) {
@@ -386,13 +386,13 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
-    if ((backEnd.camera->def->GetState().flags & RenderCamera::SkipPostProcess) || 
+    if ((backEnd.camera->def->GetState().flags & RenderCamera::Flag::SkipPostProcess) ||
         !r_usePostProcessing.GetBool() || !(r_motionBlur.GetInteger() & 2)) {
         return;
     }
 
-    if (backEnd.camera->def->GetState().clearMethod != RenderCamera::ColorClear ||
-        backEnd.camera->def->GetState().clearMethod != RenderCamera::SkyboxClear) {
+    if (backEnd.camera->def->GetState().clearMethod != RenderCamera::ClearMethod::Color ||
+        backEnd.camera->def->GetState().clearMethod != RenderCamera::ClearMethod::Skybox) {
         return;
     }
 
@@ -410,7 +410,7 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             continue;
         }
 
-        if (drawSurf->material->GetSort() == Material::Sort::SkySort) {
+        if (drawSurf->material->GetSort() == Material::Sort::Sky) {
             continue;
         }
 
@@ -422,7 +422,7 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 backEnd.batch.Begin(Batch::VelocityFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
             } else {
                 if (isDifferentObject || prevMaterial->GetCullType() != drawSurf->material->GetCullType() ||
-                    (prevMaterial->GetSort() == Material::Sort::AlphaTestSort) || (drawSurf->material->GetSort() == Material::Sort::AlphaTestSort)) {
+                    (prevMaterial->GetSort() == Material::Sort::AlphaTest) || (drawSurf->material->GetSort() == Material::Sort::AlphaTest)) {
                     backEnd.batch.Flush();
                     backEnd.batch.Begin(Batch::VelocityFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
                 }
@@ -503,7 +503,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *drawSurf = drawSurfs[i];
         
-        if (drawSurf->material->GetSort() == Material::Sort::SkySort) {
+        if (drawSurf->material->GetSort() == Material::Sort::Sky) {
             continue;
         }
 
@@ -528,7 +528,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::Flag::DepthHack);
 
                 if (prevDepthHack != depthHack) {
                     if (drawSurf->flags & DrawSurf::UseInstancing) {
@@ -594,7 +594,7 @@ void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::Flag::DepthHack);
 
                 if (prevDepthHack != depthHack) {
                     if (depthHack) {

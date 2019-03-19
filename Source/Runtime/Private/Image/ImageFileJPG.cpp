@@ -152,19 +152,19 @@ bool Image::LoadJPGFromMemory(const char *name, const byte *data, size_t size) {
   /* Make a one-row-high sample array that will go away when done with image */
   buffer = (*cinfo.mem->alloc_sarray)((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1); 
 
-  Image::Format imageFormat;
+  Image::Format::Enum imageFormat;
   switch (cinfo.output_components) {
   case 1:
-    imageFormat = L_8;
+    imageFormat = Format::L_8;
     break;
   case 2:
-    imageFormat = RG_8_8;
+    imageFormat = Format::RG_8_8;
     break;
   case 3:
-    imageFormat = RGB_8_8_8;
+    imageFormat = Format::RGB_8_8_8;
     break;
   case 4:
-    imageFormat = RGBX_8_8_8_8;
+    imageFormat = Format::RGBX_8_8_8_8;
     break;
   }
 
@@ -292,8 +292,8 @@ bool Image::WriteJPG(const char *filename, int quality) const {
 
   Image convertedImage;
   byte *src = pic;
-  if (format != RGB_8_8_8) {
-    if (!ConvertFormat(RGB_8_8_8, convertedImage)) {
+  if (format != Format::RGB_8_8_8) {
+    if (!ConvertFormat(Format::RGB_8_8_8, convertedImage)) {
       fclose(outfile);
       return false;
     }

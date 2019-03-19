@@ -185,7 +185,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
         return body;
     }
     
-    if (desc.type == PhysCollidable::Sensor) {
+    if (desc.type == PhysCollidable::Type::Sensor) {
         btPairCachingGhostObject *ghost = new btPairCachingGhostObject;
         ghost->setWorldTransform(initialTransform);
         ghost->setCollisionShape(shape);
@@ -255,35 +255,35 @@ PhysConstraint *PhysicsSystem::CreateConstraint(const PhysConstraintDesc &desc) 
     PhysConstraint *constraint = nullptr;
 
     switch (desc.type) {
-    case PhysConstraint::Generic:
+    case PhysConstraint::Type::Generic:
         if (!desc.bodyB) {
             constraint = new PhysGenericConstraint(desc.bodyA, desc.anchorInA, desc.axisInA);
         } else {
             constraint = new PhysGenericConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }
         break;
-    case PhysConstraint::GenericSpring:
+    case PhysConstraint::Type::GenericSpring:
         if (!desc.bodyB) {
             constraint = new PhysGenericSpringConstraint(desc.bodyA, desc.anchorInA, desc.axisInA);
         } else {
             constraint = new PhysGenericSpringConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }
         break;
-    case PhysConstraint::Point2Point:
+    case PhysConstraint::Type::Point2Point:
         if (!desc.bodyB) {
             constraint = new PhysP2PConstraint(desc.bodyA, desc.anchorInA);
         } else {
             constraint = new PhysP2PConstraint(desc.bodyA, desc.anchorInA, desc.bodyB, desc.anchorInB);
         }
         break;
-    case PhysConstraint::Hinge:
+    case PhysConstraint::Type::Hinge:
         if (!desc.bodyB) {
             constraint = new PhysHingeConstraint(desc.bodyA, desc.anchorInA, desc.axisInA);
         } else {
             constraint = new PhysHingeConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }
         break;
-    case PhysConstraint::Slider:
+    case PhysConstraint::Type::Slider:
         if (!desc.bodyB) {
             constraint = new PhysSliderConstraint(desc.bodyA, desc.anchorInA, desc.axisInA);
         } else {

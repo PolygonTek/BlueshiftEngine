@@ -604,7 +604,7 @@ void GameWorld::NewMap() {
     FinishMapLoading();
 }
 
-bool GameWorld::LoadMap(const char *filename, LoadSceneMode mode) {
+bool GameWorld::LoadMap(const char *filename, LoadSceneMode::Enum mode) {
     BE_LOG("Loading map '%s'...\n", filename);
 
     if (mode != LoadSceneMode::Additive) {

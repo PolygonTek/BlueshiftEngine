@@ -76,7 +76,7 @@ void PlatformGeneric::GetEvent(Platform::Event *ev) {
     ev->time = PlatformTime::Milliseconds();
 }
 
-void PlatformGeneric::QueEvent(Platform::EventType type, int64_t value, int64_t value2, int ptrLength, void *ptr) {
+void PlatformGeneric::QueEvent(Platform::EventType::Enum type, int64_t value, int64_t value2, int ptrLength, void *ptr) {
     Platform::Event *ev = &eventQueue[numEvents & (Platform::MaxPlatformEvents - 1)];
 
     if (numEvents - numProcessedEvents == Platform::MaxPlatformEvents) {

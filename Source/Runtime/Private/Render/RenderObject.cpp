@@ -37,10 +37,10 @@ void RenderObject::Update(const State *stateDef) {
     state = *stateDef;
 
     // Saturates object color components in range [0, 1].
-    Clamp(state.materialParms[RedParm], 0.0f, 1.0f);
-    Clamp(state.materialParms[GreenParm], 0.0f, 1.0f);
-    Clamp(state.materialParms[BlueParm], 0.0f, 1.0f);
-    Clamp(state.materialParms[AlphaParm], 0.0f, 1.0f);
+    Clamp(state.materialParms[MaterialParm::Red], 0.0f, 1.0f);
+    Clamp(state.materialParms[MaterialParm::Green], 0.0f, 1.0f);
+    Clamp(state.materialParms[MaterialParm::Blue], 0.0f, 1.0f);
+    Clamp(state.materialParms[MaterialParm::Alpha], 0.0f, 1.0f);
 
     maxVisDistSquared = state.maxVisDist * state.maxVisDist;
     

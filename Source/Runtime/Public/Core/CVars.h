@@ -40,17 +40,19 @@ class BE_API CVar {
     friend class CVarSystem;
 
 public:
-    enum Flag {
-        All                 = -1,
-        Modified            = BIT(0),
-        Static              = BIT(1),
-        ReadOnly            = BIT(2),
-        Integer             = BIT(3),
-        Float               = BIT(4),
-        Bool                = BIT(5),
-        Archive             = BIT(6),
+    struct Flag {
+        enum Enum {
+            All             = -1,
+            Modified        = BIT(0),
+            Static          = BIT(1),
+            ReadOnly        = BIT(2),
+            Integer         = BIT(3),
+            Float           = BIT(4),
+            Bool            = BIT(5),
+            Archive         = BIT(6),
+        };
     };
-
+    
     // do not use default ctor
     CVar() = delete;
     CVar(const char *name, const char *value, int flags, const char *description);
@@ -63,9 +65,9 @@ public:
     float                   GetMinValue() const { return valueMin; }
     float                   GetMaxValue() const { return valueMax; }
     
-    bool                    IsModified() const { return flags & Modified; }
-    void                    SetModified() { flags |= Modified; }
-    void                    ClearModified() { flags &= ~Modified; }
+    bool                    IsModified() const { return flags & Flag::Modified; }
+    void                    SetModified() { flags |= Flag::Modified; }
+    void                    ClearModified() { flags &= ~Flag::Modified; }
 
     const char *            GetString() const { return valueString; }
     float                   GetFloat() const { return valueFloat; }

@@ -222,8 +222,8 @@ static HashTable<Guid, Object *> instanceHash;
 static std::atomic<int> instanceCounter(0);
 
 void Object::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("classname", "Classname", Str, ClassName, SetClassName, "", "", PropertyInfo::ReadOnlyFlag),
-    REGISTER_PROPERTY("guid", "GUID", Guid, guid, Guid::zero, "", PropertyInfo::ReadOnlyFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("classname", "Classname", Str, ClassName, SetClassName, "", "", PropertyInfo::Flag::ReadOnly),
+    REGISTER_PROPERTY("guid", "GUID", Guid, guid, Guid::zero, "", PropertyInfo::Flag::ReadOnly);
 }
 
 bool Object::InitInstance(Guid guid) {

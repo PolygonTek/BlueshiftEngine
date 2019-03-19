@@ -29,9 +29,9 @@ END_EVENTS
 
 void ComParticleSystem::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("particleSystem", "Particle System", Guid, GetParticleSystemGuid, SetParticleSystemGuid, GuidMapper::defaultParticleSystemGuid, 
-        "", PropertyInfo::EditorFlag).SetMetaObject(&ParticleSystemAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&ParticleSystemAsset::metaObject);
     REGISTER_PROPERTY("playOnAwake", "Play On Awake", bool, playOnAwake, true, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
 }
 
 ComParticleSystem::ComParticleSystem() {
@@ -97,27 +97,27 @@ void ComParticleSystem::Init() {
     ComTransform *transform = GetEntity()->GetTransform();
 
 #if 1
-    spriteDef.flags = RenderObject::BillboardFlag;
-    spriteDef.layer = TagLayerSettings::EditorLayer;
+    spriteDef.flags = RenderObject::Flag::Billboard;
+    spriteDef.layer = TagLayerSettings::BuiltInLayer::Editor;
     spriteDef.maxVisDist = MeterToUnit(50.0f);
 
-    Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/ParticleSystem.png", Texture::Clamp | Texture::HighQuality);
+    Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/ParticleSystem.png", Texture::Flag::Clamp | Texture::Flag::HighQuality);
     spriteDef.materials.SetCount(1);
-    spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
+    spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::TextureHint::Sprite);
     textureManager.ReleaseTexture(spriteTexture);
 
-    spriteDef.mesh = spriteReferenceMesh->InstantiateMesh(Mesh::StaticMesh);
+    spriteDef.mesh = spriteReferenceMesh->InstantiateMesh(Mesh::Type::Static);
     spriteDef.aabb = spriteReferenceMesh->GetAABB();
     spriteDef.worldMatrix = transform->GetMatrixNoScale();
-    spriteDef.materialParms[RenderObject::RedParm] = 1.0f;
-    spriteDef.materialParms[RenderObject::GreenParm] = 1.0f;
-    spriteDef.materialParms[RenderObject::BlueParm] = 1.0f;
-    spriteDef.materialParms[RenderObject::AlphaParm] = 1.0f;
-    spriteDef.materialParms[RenderObject::TimeOffsetParm] = 0.0f;
-    spriteDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
+    spriteDef.materialParms[RenderObject::MaterialParm::Red] = 1.0f;
+    spriteDef.materialParms[RenderObject::MaterialParm::Green] = 1.0f;
+    spriteDef.materialParms[RenderObject::MaterialParm::Blue] = 1.0f;
+    spriteDef.materialParms[RenderObject::MaterialParm::Alpha] = 1.0f;
+    spriteDef.materialParms[RenderObject::MaterialParm::TimeOffset] = 0.0f;
+    spriteDef.materialParms[RenderObject::MaterialParm::TimeScale] = 1.0f;
 #endif
 
-    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComParticleSystem::TransformUpdated, SignalObject::Unique);
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComParticleSystem::TransformUpdated, SignalObject::ConnectionType::Unique);
 
     // Mark as initialized
     SetInitialized(true);
@@ -150,7 +150,7 @@ void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
     // Need to particleSystem asset to be reloaded in editor
     particleSystemAsset = (ParticleSystemAsset *)ParticleSystemAsset::FindInstance(particleSystemGuid);
     if (particleSystemAsset) {
-        particleSystemAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComParticleSystem::ParticleSystemReloaded, SignalObject::Queued);
+        particleSystemAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComParticleSystem::ParticleSystemReloaded, SignalObject::ConnectionType::Queued);
     }
 #endif
 }

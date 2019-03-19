@@ -55,7 +55,7 @@ bool SignalObject::IsConnected(const SignalDef *sigdef, SignalObject *receiver) 
 }
 
 bool SignalObject::Connect(const SignalDef *sigdef, SignalObject *receiver, SignalCallback function, int connectionType) {
-    if (connectionType == Unique) {
+    if (connectionType == ConnectionType::Unique) {
         for (int i = 0; i < publications.Count(); i++) {
             const Connection *con = publications[i];
 
@@ -173,7 +173,7 @@ bool SignalObject::EmitSignalArgs(const SignalDef *sigdef, int numArgs, ...) {
             continue;
         }
 
-        if (con->connectionType & Queued) {
+        if (con->connectionType & ConnectionType::Queued) {
             va_start(args, numArgs);
             Signal *signal = SignalSystem::AllocSignal(sigdef, con->function, numArgs, args);
             va_end(args);

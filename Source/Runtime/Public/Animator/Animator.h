@@ -57,10 +57,8 @@ class Entity;
 
 class Animator {
 public:
-    enum {
-        MaxBlendersPerLayer = 4,
-        MaxLayers           = 32
-    };
+    static constexpr int MaxBlendersPerLayer = 4;
+    static constexpr int MaxLayers = 32;
 
     struct AnimAABB {
         Array<AABB>         frameAABBs;

@@ -41,13 +41,13 @@ static const int    CONSOLE_FONT_HEIGHT = 14;
 static const int    CONSOLE_FONT_Y_SPACING = 2;
 static const int    CONSOLE_TEXT_BORDER = 8;
 
-static CVAR(cl_updateFps, "500", CVar::Integer, "FPS update duration in milliseconds");
-static CVAR(cl_conSize, "0.6", CVar::Float | CVar::Archive, "");
-static CVAR(cl_conSpeed, "5.0", CVar::Float | CVar::Archive, "");
-static CVAR(cl_conNoPrint, "1", CVar::Bool, "");
-static CVAR(cl_conNotifyTime, "3.0", CVar::Float | CVar::Archive, "");
-static CVAR(cl_showFps, "0", CVar::Bool, "");
-static CVAR(cl_showTimer, "0", CVar::Bool, "");
+static CVAR(cl_updateFps, "500", CVar::Flag::Integer, "FPS update duration in milliseconds");
+static CVAR(cl_conSize, "0.6", CVar::Flag::Float | CVar::Flag::Archive, "");
+static CVAR(cl_conSpeed, "5.0", CVar::Flag::Float | CVar::Flag::Archive, "");
+static CVAR(cl_conNoPrint, "1", CVar::Flag::Bool, "");
+static CVAR(cl_conNotifyTime, "3.0", CVar::Flag::Float | CVar::Flag::Archive, "");
+static CVAR(cl_showFps, "0", CVar::Flag::Bool, "");
+static CVAR(cl_showTimer, "0", CVar::Flag::Bool, "");
 
 GameClient          gameClient;
 
@@ -655,8 +655,8 @@ void GameClient::ConsoleKeyEvent(KeyCode::Enum key) {
 
     switch (key) {
     case KeyCode::Enter: // Enter
-        cmdSystem.BufferCommandText(CmdSystem::Append, lineText + 1); // skip the CMDLINE_PROMPT_MARK
-        cmdSystem.BufferCommandText(CmdSystem::Append, "\n");
+        cmdSystem.BufferCommandText(CmdSystem::Execution::Append, lineText + 1); // skip the CMDLINE_PROMPT_MARK
+        cmdSystem.BufferCommandText(CmdSystem::Execution::Append, "\n");
 
         BE_LOG("%s\n", lineText);
 
@@ -887,7 +887,7 @@ void GameClient::KeyEvent(KeyCode::Enum key, bool down) {
         if (down) {
             cursorLocked = inputSystem.LockCursor(keyFocus == KEYFOCUS_CONSOLE ? cursorLocked : false);
 
-            cmdSystem.BufferCommandText(CmdSystem::Append, "toggleConsole\n");
+            cmdSystem.BufferCommandText(CmdSystem::Execution::Append, "toggleConsole\n");
             return;
         }
     } 
@@ -897,7 +897,7 @@ void GameClient::KeyEvent(KeyCode::Enum key, bool down) {
             if (key == KeyCode::Escape) {
                 inputSystem.LockCursor(cursorLocked);
 
-                cmdSystem.BufferCommandText(CmdSystem::Append, "toggleConsole\n");
+                cmdSystem.BufferCommandText(CmdSystem::Execution::Append, "toggleConsole\n");
                 return;
             }
 

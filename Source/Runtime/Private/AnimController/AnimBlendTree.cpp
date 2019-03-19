@@ -164,7 +164,7 @@ void AnimBlendTree::RemoveChild(int childIndex) {
     node->children.RemoveIndex(childIndex);
 }
 
-int AnimBlendTree::BlendTypeDimensions(BlendType blendType) {
+int AnimBlendTree::BlendTypeDimensions(BlendType::Enum blendType) {
     switch (blendType) {
     case AnimBlendTree::BlendType::BlendAngle:
     case AnimBlendTree::BlendType::Blend1D:
@@ -227,7 +227,7 @@ void AnimBlendTree::ComputeChildrenBarycentricWeights(const Animator *animator, 
         return p1.distanceSqr - p2.distanceSqr < 0;
     });
 
-    if (blendType == AnimBlendTree::Blend2DBarycentric) {
+    if (blendType == AnimBlendTree::BlendType::Blend2DBarycentric) {
         if (samplePoints.Count() >= 3) {
             int indexA = samplePoints[0].childIndex;
             int indexB = samplePoints[1].childIndex;
@@ -246,7 +246,7 @@ void AnimBlendTree::ComputeChildrenBarycentricWeights(const Animator *animator, 
         }
     }
 
-    if (blendType == AnimBlendTree::Blend1D) {
+    if (blendType == AnimBlendTree::BlendType::Blend1D) {
         if (samplePoints.Count() >= 2) {
             int indexA = samplePoints[0].childIndex;
             int indexB = samplePoints[1].childIndex;
@@ -673,19 +673,19 @@ void AnimBlendTree::Write(File *fp, const Str &indentSpace) const {
 
             Str blendTypeStr;
             switch (childBlendTree->GetBlendType()) {
-            case AnimBlendTree::BlendAngle:
+            case AnimBlendTree::BlendType::BlendAngle:
                 blendTypeStr = "blendAngle";
                 break;
-            case AnimBlendTree::Blend1D:
+            case AnimBlendTree::BlendType::Blend1D:
                 blendTypeStr = "blend1D";
                 break; 
-            case AnimBlendTree::Blend2DDirectional:
+            case AnimBlendTree::BlendType::Blend2DDirectional:
                 blendTypeStr = "blend2DDirectional";
                 break;
-            case AnimBlendTree::Blend2DBarycentric:
+            case AnimBlendTree::BlendType::Blend2DBarycentric:
                 blendTypeStr = "blend2DBarycentric";
                 break;            
-            case AnimBlendTree::Blend3DBarycentric:
+            case AnimBlendTree::BlendType::Blend3DBarycentric:
                 blendTypeStr = "blend3DBarycentric";
                 break;
             }

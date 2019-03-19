@@ -21,16 +21,20 @@ struct WaveFormatEx;
 
 class Pcm {
 public:
-    enum FileType {
-        UnknownFile,
-        WavFile,
-        OggFile
+    struct FileType {
+        enum Enum {
+            Unknown,
+            Wav,
+            Ogg
+        };
     };
 
-    enum Format {
-        MS_PCM          = 0x0001,
-        MS_ADPCM        = 0x0002,
-        IMA_ADPCM       = 0x0011,
+    struct Format {
+        enum Enum {
+            MS_PCM      = 0x0001,
+            MS_ADPCM    = 0x0002,
+            IMA_ADPCM   = 0x0011
+        };
     };
 
     Pcm();
@@ -39,7 +43,7 @@ public:
     bool                IsOpened() const;
     bool                IsLoaded() const;
 
-    Pcm::FileType       GetFileType() const { return fileType; }
+    Pcm::FileType::Enum GetFileType() const { return fileType; }
     int                 NumChannels() const { return channels; }
     int                 SampleRates() const { return sampleRates; }
     int                 BitsWidth() const { return bitsWidth; }
@@ -80,7 +84,7 @@ private:
                         // decode Ogg memory
     bool                DecodeMemory_OggVorbis(byte *base, size_t fileSize);
 
-    FileType            fileType;
+    FileType::Enum      fileType;
     WaveFormatEx *      waveFormat;         ///< Used only for wave file type
     int                 channels;           ///< Number of channels
     int                 sampleRates;        ///< Samples per second
@@ -96,7 +100,7 @@ private:
 };
 
 BE_INLINE Pcm::Pcm() {
-    fileType = FileType::UnknownFile;
+    fileType = FileType::Unknown;
     waveFormat = nullptr;
     data = nullptr;
     fp = nullptr;

@@ -43,53 +43,63 @@ class RenderObject {
     friend class RenderWorld;
 
 public:
-    enum Flag {
-        StaticFlag          = BIT(0),
-        FirstPersonOnlyFlag = BIT(1),
-        ThirdPersonOnlyFlag = BIT(2),
-        BillboardFlag       = BIT(3),
-        DepthHackFlag       = BIT(4),
-        EnvProbeLitFlag     = BIT(5),
-        CastShadowsFlag     = BIT(6),
-        ReceiveShadowsFlag  = BIT(7),
-        OccluderFlag        = BIT(8),   // for use in HOM
-        SkipSelectionFlag   = BIT(9),
-        RichTextFlag        = BIT(10),
+    struct Flag {
+        enum Enum {
+            Static              = BIT(0),
+            FirstPersonOnly     = BIT(1),
+            ThirdPersonOnly     = BIT(2),
+            Billboard           = BIT(3),
+            DepthHack           = BIT(4),
+            EnvProbeLit         = BIT(5),
+            CastShadows         = BIT(6),
+            ReceiveShadows      = BIT(7),
+            Occluder            = BIT(8),   // for use in HOM
+            SkipSelection       = BIT(9),
+            RichText            = BIT(10),
+        };
     };
 
-    enum MaterialParm {
-        RedParm,
-        GreenParm,
-        BlueParm,
-        AlphaParm,
-        TimeOffsetParm,
-        TimeScaleParm,
-        MaxMaterialParms                // should be less than MAX_EXPR_LOCALPARMS
+    struct MaterialParm {
+        enum Enum {
+            Red,
+            Green,
+            Blue,
+            Alpha,
+            TimeOffset,
+            TimeScale,
+            MaxMaterialParms                // should be less than MAX_EXPR_LOCALPARMS
+        };
     };
 
-    enum TextAnchor {
-        UpperLeft,
-        UpperCenter,
-        UpperRight,
-        MiddleLeft,
-        MiddleCenter,
-        MiddleRight,
-        LowerLeft,
-        LowerCenter,
-        LowerRight
+    struct TextAnchor {
+        enum Enum {
+            UpperLeft,
+            UpperCenter,
+            UpperRight,
+            MiddleLeft,
+            MiddleCenter,
+            MiddleRight,
+            LowerLeft,
+            LowerCenter,
+            LowerRight
+        };
     };
 
-    enum TextAlignment {
-        Left,
-        Center,
-        Right
+    struct TextAlignment {
+        enum Enum {
+            Left,
+            Center,
+            Right
+        };
     };
 
-    enum WireframeMode {
-        ShowNone,
-        ShowVisibleFront,
-        ShowAllFront,
-        ShowAllFrontAndBack
+    struct WireframeMode {
+        enum Enum {
+            ShowNone,
+            ShowVisibleFront,
+            ShowAllFront,
+            ShowAllFrontAndBack
+        };
     };
 
     struct State {
@@ -108,7 +118,7 @@ public:
         //
         // Wireframe info
         //
-        WireframeMode       wireframeMode = ShowNone;
+        WireframeMode::Enum wireframeMode = WireframeMode::ShowNone;
         Color4              wireframeColor = Color4::white;
 
         //
@@ -124,8 +134,8 @@ public:
         //
         Font *              font = nullptr;
         Str                 text;                       ///< UTF8 encoded string
-        TextAnchor          textAnchor = UpperLeft;
-        TextAlignment       textAlignment = Left;
+        TextAnchor::Enum    textAnchor = TextAnchor::UpperLeft;
+        TextAlignment::Enum textAlignment = TextAlignment::Left;
         float               textScale = 1.0f;
         float               lineSpacing = 1.0f;
 
@@ -140,7 +150,7 @@ public:
         // Materials
         //
         Array<Material *>   materials;
-        float               materialParms[MaxMaterialParms] = { 1, 1, 1, 1, 0, 1 };
+        float               materialParms[MaterialParm::MaxMaterialParms] = { 1, 1, 1, 1, 0, 1 };
         Skin *              customSkin = nullptr;
     };
 

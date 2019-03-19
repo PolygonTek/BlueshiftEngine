@@ -2014,120 +2014,120 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "ABGR_8_8_8_8",           4,  4,  8,  8,  8,  8,  0, ABGR8888ToRGBA8888, RGBA8888ToABGR8888, ABGR8888ToRGBA32F, RGBA32FToABGR8888 },
     { "ARGB_8_8_8_8",           4,  4,  8,  8,  8,  8,  0, ARGB8888ToRGBA8888, RGBA8888ToARGB8888, ARGB8888ToRGBA32F, RGBA32FToARGB8888 },
     // packed format ------------------------------------------------------------------------------
-    { "RGBX_4_4_4_4",           2,  4,  4,  4,  4,  0,  Image::Packed, RGBX4444ToRGBA8888, RGBA8888ToRGBX4444, nullptr, nullptr },
-    { "BGRX_4_4_4_4",           2,  4,  4,  4,  4,  0,  Image::Packed, BGRX4444ToRGBA8888, RGBA8888ToBGRX4444, nullptr, nullptr },
-    { "RGBA_4_4_4_4",           2,  4,  4,  4,  4,  4,  Image::Packed, RGBA4444ToRGBA8888, RGBA8888ToRGBA4444, nullptr, nullptr },
-    { "BGRA_4_4_4_4",           2,  4,  4,  4,  4,  4,  Image::Packed, BGRA4444ToRGBA8888, RGBA8888ToBGRA4444, nullptr, nullptr },
-    { "ABGR_4_4_4_4",           2,  4,  4,  4,  4,  4,  Image::Packed, ABGR4444ToRGBA8888, RGBA8888ToABGR4444, nullptr, nullptr },
-    { "ARGB_4_4_4_4",           2,  4,  4,  4,  4,  4,  Image::Packed, ARGB4444ToRGBA8888, RGBA8888ToARGB4444, nullptr, nullptr },
-    { "RGBX_5_5_5_1",           2,  4,  5,  5,  5,  0,  Image::Packed, RGBX5551ToRGBA8888, RGBA8888ToRGBX5551, nullptr, nullptr },
-    { "BGRX_5_5_5_1",           2,  4,  5,  5,  5,  0,  Image::Packed, BGRX5551ToRGBA8888, RGBA8888ToBGRX5551, nullptr, nullptr },
-    { "RGBA_5_5_5_1",           2,  4,  5,  5,  5,  1,  Image::Packed, RGBA5551ToRGBA8888, RGBA8888ToRGBA5551, nullptr, nullptr },
-    { "BGRA_5_5_5_1",           2,  4,  5,  5,  5,  1,  Image::Packed, BGRA5551ToRGBA8888, RGBA8888ToBGRA5551, nullptr, nullptr },
-    { "ABGR_1_5_5_5",           2,  4,  5,  5,  5,  1,  Image::Packed, ABGR1555ToRGBA8888, RGBA8888ToABGR1555, nullptr, nullptr },
-    { "ARGB_1_5_5_5",           2,  4,  5,  5,  5,  1,  Image::Packed, ARGB1555ToRGBA8888, RGBA8888ToARGB1555, nullptr, nullptr },
-    { "RGB_5_6_5",              2,  3,  5,  6,  5,  0,  Image::Packed, RGB565ToRGBA8888, RGBA8888ToRGB565, nullptr, nullptr },
-    { "BGR_5_6_5",              2,  3,  5,  6,  5,  0,  Image::Packed, BGR565ToRGBA8888, RGBA8888ToBGR565, nullptr, nullptr },
+    { "RGBX_4_4_4_4",           2,  4,  4,  4,  4,  0,  Image::FormatType::Packed, RGBX4444ToRGBA8888, RGBA8888ToRGBX4444, nullptr, nullptr },
+    { "BGRX_4_4_4_4",           2,  4,  4,  4,  4,  0,  Image::FormatType::Packed, BGRX4444ToRGBA8888, RGBA8888ToBGRX4444, nullptr, nullptr },
+    { "RGBA_4_4_4_4",           2,  4,  4,  4,  4,  4,  Image::FormatType::Packed, RGBA4444ToRGBA8888, RGBA8888ToRGBA4444, nullptr, nullptr },
+    { "BGRA_4_4_4_4",           2,  4,  4,  4,  4,  4,  Image::FormatType::Packed, BGRA4444ToRGBA8888, RGBA8888ToBGRA4444, nullptr, nullptr },
+    { "ABGR_4_4_4_4",           2,  4,  4,  4,  4,  4,  Image::FormatType::Packed, ABGR4444ToRGBA8888, RGBA8888ToABGR4444, nullptr, nullptr },
+    { "ARGB_4_4_4_4",           2,  4,  4,  4,  4,  4,  Image::FormatType::Packed, ARGB4444ToRGBA8888, RGBA8888ToARGB4444, nullptr, nullptr },
+    { "RGBX_5_5_5_1",           2,  4,  5,  5,  5,  0,  Image::FormatType::Packed, RGBX5551ToRGBA8888, RGBA8888ToRGBX5551, nullptr, nullptr },
+    { "BGRX_5_5_5_1",           2,  4,  5,  5,  5,  0,  Image::FormatType::Packed, BGRX5551ToRGBA8888, RGBA8888ToBGRX5551, nullptr, nullptr },
+    { "RGBA_5_5_5_1",           2,  4,  5,  5,  5,  1,  Image::FormatType::Packed, RGBA5551ToRGBA8888, RGBA8888ToRGBA5551, nullptr, nullptr },
+    { "BGRA_5_5_5_1",           2,  4,  5,  5,  5,  1,  Image::FormatType::Packed, BGRA5551ToRGBA8888, RGBA8888ToBGRA5551, nullptr, nullptr },
+    { "ABGR_1_5_5_5",           2,  4,  5,  5,  5,  1,  Image::FormatType::Packed, ABGR1555ToRGBA8888, RGBA8888ToABGR1555, nullptr, nullptr },
+    { "ARGB_1_5_5_5",           2,  4,  5,  5,  5,  1,  Image::FormatType::Packed, ARGB1555ToRGBA8888, RGBA8888ToARGB1555, nullptr, nullptr },
+    { "RGB_5_6_5",              2,  3,  5,  6,  5,  0,  Image::FormatType::Packed, RGB565ToRGBA8888, RGBA8888ToRGB565, nullptr, nullptr },
+    { "BGR_5_6_5",              2,  3,  5,  6,  5,  0,  Image::FormatType::Packed, BGR565ToRGBA8888, RGBA8888ToBGR565, nullptr, nullptr },
     // float format -------------------------------------------------------------------------------
-    { "L_16F",                  2,  1,  0,  0,  0,  0,  Image::Half, L16FToRGBA8888, RGBA8888ToL16F, L16FToRGBA32F, RGBA32FToL16F },
-    { "A_16F",                  2,  1,  0,  0,  0,  16, Image::Half, A16FToRGBA8888, RGBA8888ToA16F, A16FToRGBA32F, RGBA32FToA16F },
-    { "LA_16F_16F",             4,  2,  0,  0,  0,  16, Image::Half, LA16FToRGBA8888, RGBA8888ToLA16F, LA16FToRGBA32F, RGBA32FToLA16F },
-    { "R_16F",                  2,  1,  16, 0,  0,  0,  Image::Half, R16FToRGBA8888, RGBA8888ToR16F, R16FToRGBA32F, RGBA32FToR16F },
-    { "RG_16F_16F",             4,  2,  16, 16, 0,  0,  Image::Half, RG16FToRGBA8888, RGBA8888ToRG16F, RG16FToRGBA32F, RGBA32FToRG16F },
-    { "RGB_16F_16F_16F",        6,  3,  16, 16, 16, 0,  Image::Half, RGB16FToRGBA8888, RGBA8888ToRGB16F, RGB16FToRGBA32F, RGBA32FToRGB16F },
-    { "RGBA_16F_16F_16F_16F",   8,  4,  16, 16, 16, 16, Image::Half, RGBA16FToRGBA8888, RGBA8888ToRGBA16F, RGBA16FToRGBA32F, RGBA32FToRGBA16F },
-    { "L_32F",                  4,  1,  0,  0,  0,  0,  Image::Float, L32FToRGBA8888, RGBA8888ToL32F, L32FToRGBA32F, RGBA32FToL32F },
-    { "A_32F",                  4,  1,  0,  0,  0,  32, Image::Float, A32FToRGBA8888, RGBA8888ToA32F, A32FToRGBA32F, RGBA32FToA32F },
-    { "LA_32F_32F",             8,  2,  0,  0,  0,  32, Image::Float, LA32FToRGBA8888, RGBA8888ToLA32F, LA32FToRGBA32F, RGBA32FToLA32F },
-    { "R_32F",                  4,  1,  32, 0,  0,  0,  Image::Float, R32FToRGBA8888, RGBA8888ToR32F, R32FToRGBA32F, RGBA32FToR32F },
-    { "RG_32F_32F",             8,  2,  32, 32, 0,  0,  Image::Float, RG32FToRGBA8888, RGBA8888ToRG32F, RG32FToRGBA32F, RGBA32FToRG32F },
-    { "RGB_32F_32F_32F",        12, 3,  32, 32, 32, 0,  Image::Float, RGB32FToRGBA8888, RGBA8888ToRGB32F, RGB32FToRGBA32F, RGBA32FToRGB32F },
-    { "RGBA_32F_32F_32F_32F",   16, 4,  32, 32, 32, 32, Image::Float, RGBA32FToRGBA8888, RGBA8888ToRGBA32F, RGBA32FToRGBA32F, RGBA32FToRGBA32F },
-    { "RGB_11F_11F_10F",        4,  3,  11, 11, 10, 0,  Image::Float | Image::Packed, RGB11F11F10FToRGBA8888, RGBA8888ToRGB11F11F10F, RGB11F11F10FToRGBA32F, RGBA32FToRGB11F11F10F },
-    { "RGBE_9_9_9_5",           4,  3,  9,  9,  9,  0,  Image::Float | Image::Packed, RGBE9995ToRGBA8888, RGBA8888ToRGBE9995, RGBE9995ToRGBA32F, RGBA32FToRGBE9995 },
+    { "L_16F",                  2,  1,  0,  0,  0,  0,  Image::FormatType::Half, L16FToRGBA8888, RGBA8888ToL16F, L16FToRGBA32F, RGBA32FToL16F },
+    { "A_16F",                  2,  1,  0,  0,  0,  16, Image::FormatType::Half, A16FToRGBA8888, RGBA8888ToA16F, A16FToRGBA32F, RGBA32FToA16F },
+    { "LA_16F_16F",             4,  2,  0,  0,  0,  16, Image::FormatType::Half, LA16FToRGBA8888, RGBA8888ToLA16F, LA16FToRGBA32F, RGBA32FToLA16F },
+    { "R_16F",                  2,  1,  16, 0,  0,  0,  Image::FormatType::Half, R16FToRGBA8888, RGBA8888ToR16F, R16FToRGBA32F, RGBA32FToR16F },
+    { "RG_16F_16F",             4,  2,  16, 16, 0,  0,  Image::FormatType::Half, RG16FToRGBA8888, RGBA8888ToRG16F, RG16FToRGBA32F, RGBA32FToRG16F },
+    { "RGB_16F_16F_16F",        6,  3,  16, 16, 16, 0,  Image::FormatType::Half, RGB16FToRGBA8888, RGBA8888ToRGB16F, RGB16FToRGBA32F, RGBA32FToRGB16F },
+    { "RGBA_16F_16F_16F_16F",   8,  4,  16, 16, 16, 16, Image::FormatType::Half, RGBA16FToRGBA8888, RGBA8888ToRGBA16F, RGBA16FToRGBA32F, RGBA32FToRGBA16F },
+    { "L_32F",                  4,  1,  0,  0,  0,  0,  Image::FormatType::Float, L32FToRGBA8888, RGBA8888ToL32F, L32FToRGBA32F, RGBA32FToL32F },
+    { "A_32F",                  4,  1,  0,  0,  0,  32, Image::FormatType::Float, A32FToRGBA8888, RGBA8888ToA32F, A32FToRGBA32F, RGBA32FToA32F },
+    { "LA_32F_32F",             8,  2,  0,  0,  0,  32, Image::FormatType::Float, LA32FToRGBA8888, RGBA8888ToLA32F, LA32FToRGBA32F, RGBA32FToLA32F },
+    { "R_32F",                  4,  1,  32, 0,  0,  0,  Image::FormatType::Float, R32FToRGBA8888, RGBA8888ToR32F, R32FToRGBA32F, RGBA32FToR32F },
+    { "RG_32F_32F",             8,  2,  32, 32, 0,  0,  Image::FormatType::Float, RG32FToRGBA8888, RGBA8888ToRG32F, RG32FToRGBA32F, RGBA32FToRG32F },
+    { "RGB_32F_32F_32F",        12, 3,  32, 32, 32, 0,  Image::FormatType::Float, RGB32FToRGBA8888, RGBA8888ToRGB32F, RGB32FToRGBA32F, RGBA32FToRGB32F },
+    { "RGBA_32F_32F_32F_32F",   16, 4,  32, 32, 32, 32, Image::FormatType::Float, RGBA32FToRGBA8888, RGBA8888ToRGBA32F, RGBA32FToRGBA32F, RGBA32FToRGBA32F },
+    { "RGB_11F_11F_10F",        4,  3,  11, 11, 10, 0,  Image::FormatType::Float | Image::FormatType::Packed, RGB11F11F10FToRGBA8888, RGBA8888ToRGB11F11F10F, RGB11F11F10FToRGBA32F, RGBA32FToRGB11F11F10F },
+    { "RGBE_9_9_9_5",           4,  3,  9,  9,  9,  0,  Image::FormatType::Float | Image::FormatType::Packed, RGBE9995ToRGBA8888, RGBA8888ToRGBE9995, RGBE9995ToRGBA32F, RGBA32FToRGBE9995 },
     // DXT (BTC) ----------------------------------------------------------------------------------
-    { "DXT1",                   8,  4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "DXT3",                   16, 4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "DXT5",                   16, 4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "DXT5_RXGB",              16, 4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "DXN1",                   8,  2,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "DXN2",                   16, 2,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "DXT1",                   8,  4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "DXT3",                   16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "DXT5",                   16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "DXT5_RXGB",              16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "DXN1",                   8,  2,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "DXN2",                   16, 2,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
     // PVRTC --------------------------------------------------------------------------------------
-    { "RGB_PVRTC_2BPPV1",       8,  3,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "RGB_PVRTC_4BPPV1",       8,  3,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "RGBA_PVRTC_2BPPV1",      8,  4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "RGBA_PVRTC_4BPPV1",      8,  4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "RGBA_PVRTC_2BPPV2",      8,  4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "RGBA_PVRTC_4BPPV2",      8,  4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "RGB_PVRTC_2BPPV1",       8,  3,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "RGB_PVRTC_4BPPV1",       8,  3,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "RGBA_PVRTC_2BPPV1",      8,  4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "RGBA_PVRTC_4BPPV1",      8,  4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "RGBA_PVRTC_2BPPV2",      8,  4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "RGBA_PVRTC_4BPPV2",      8,  4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
     // ETC ----------------------------------------------------------------------------------------
-    { "RGB_8_ETC1",             8,  3,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "RGB_8_ETC2",             8,  3,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "RGBA_8_1_ETC2",          8,  4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "RGBA_8_8_ETC2",          16, 4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "R_11_EAC",               8,  1,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "RG_11_11_EAC",           16, 2,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "SignedR_11_EAC",         8,  1,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "SignedRG_11_11_EAC",     16, 2,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "RGB_8_ETC1",             8,  3,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "RGB_8_ETC2",             8,  3,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "RGBA_8_1_ETC2",          8,  4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "RGBA_8_8_ETC2",          16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "R_11_EAC",               8,  1,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "RG_11_11_EAC",           16, 2,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "SignedR_11_EAC",         8,  1,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "SignedRG_11_11_EAC",     16, 2,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
     // ATC ----------------------------------------------------------------------------------------
-    { "RGB_ATC",                8,  3,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "RGBA_EA_ATC",            16, 4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "RGBA_IA_ATC",            16, 4,  0,  0,  0,  0,  Image::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "RGB_ATC",                8,  3,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "RGBA_EA_ATC",            16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "RGBA_IA_ATC",            16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
     // depth --------------------------------------------------------------------------------------
-    { "Depth_16",               2,  1,  0,  0,  0,  0,  Image::Depth, nullptr, nullptr, nullptr, nullptr },
-    { "Depth_24",               3,  1,  0,  0,  0,  0,  Image::Depth, nullptr, nullptr, nullptr, nullptr },
-    { "Depth_32F",              4,  1,  0,  0,  0,  0,  Image::Depth | Image::Float, nullptr, nullptr, nullptr, nullptr },
-    { "DepthStencil_24_8",      4,  2,  0,  0,  0,  0,  Image::DepthStencil, nullptr, nullptr, nullptr, nullptr },
-    { "DepthStencil_32F_8",     5,  2,  0,  0,  0,  0,  Image::DepthStencil, nullptr, nullptr, nullptr, nullptr },
+    { "Depth_16",               2,  1,  0,  0,  0,  0,  Image::FormatType::Depth, nullptr, nullptr, nullptr, nullptr },
+    { "Depth_24",               3,  1,  0,  0,  0,  0,  Image::FormatType::Depth, nullptr, nullptr, nullptr, nullptr },
+    { "Depth_32F",              4,  1,  0,  0,  0,  0,  Image::FormatType::Depth | Image::FormatType::Float, nullptr, nullptr, nullptr, nullptr },
+    { "DepthStencil_24_8",      4,  2,  0,  0,  0,  0,  Image::FormatType::DepthStencil, nullptr, nullptr, nullptr, nullptr },
+    { "DepthStencil_32F_8",     5,  2,  0,  0,  0,  0,  Image::FormatType::DepthStencil, nullptr, nullptr, nullptr, nullptr },
 };
 
-const ImageFormatInfo *GetImageFormatInfo(Image::Format imageFormat) {
-    assert(imageFormat < Image::NumImageFormats);
+const ImageFormatInfo *GetImageFormatInfo(Image::Format::Enum imageFormat) {
+    assert(imageFormat < Image::Format::NumImageFormats);
     return &imageFormatInfo[imageFormat];
 }
 
-bool CompressedFormatMinDimensions(Image::Format imageFormat, int &minWidth, int &minHeight) {
+bool CompressedFormatMinDimensions(Image::Format::Enum imageFormat, int &minWidth, int &minHeight) {
     switch (imageFormat) {
-    case Image::RGBA_DXT1:
-    case Image::RGBA_DXT3:
-    case Image::RGBA_DXT5:
-    case Image::XGBR_DXT5:
-    case Image::DXN1:
-    case Image::DXN2:
+    case Image::Format::RGBA_DXT1:
+    case Image::Format::RGBA_DXT3:
+    case Image::Format::RGBA_DXT5:
+    case Image::Format::XGBR_DXT5:
+    case Image::Format::DXN1:
+    case Image::Format::DXN2:
         minWidth = 4;
         minHeight = 4;
         return true;
-    case Image::RGB_PVRTC_2BPPV1:
-    case Image::RGBA_PVRTC_2BPPV1:
+    case Image::Format::RGB_PVRTC_2BPPV1:
+    case Image::Format::RGBA_PVRTC_2BPPV1:
         minWidth = 16;
         minHeight = 8;
         return true;
-    case Image::RGB_PVRTC_4BPPV1:
-    case Image::RGBA_PVRTC_4BPPV1:
+    case Image::Format::RGB_PVRTC_4BPPV1:
+    case Image::Format::RGBA_PVRTC_4BPPV1:
         minWidth = 8;
         minHeight = 8;
         return true;
-    case Image::RGBA_PVRTC_2BPPV2:
+    case Image::Format::RGBA_PVRTC_2BPPV2:
         minWidth = 8;
         minHeight = 4;
         return true;
-    case Image::RGBA_PVRTC_4BPPV2:
+    case Image::Format::RGBA_PVRTC_4BPPV2:
         minWidth = 4;
         minHeight = 4;
         return true;
-    case Image::RGB_8_ETC1:
-    case Image::RGB_8_ETC2:
-    case Image::RGBA_8_1_ETC2:
-    case Image::RGBA_8_8_ETC2:
-    case Image::R_11_EAC:
-    case Image::SignedR_11_EAC:
-    case Image::RG_11_11_EAC:
-    case Image::SignedRG_11_11_EAC:
+    case Image::Format::RGB_8_ETC1:
+    case Image::Format::RGB_8_ETC2:
+    case Image::Format::RGBA_8_1_ETC2:
+    case Image::Format::RGBA_8_8_ETC2:
+    case Image::Format::R_11_EAC:
+    case Image::Format::SignedR_11_EAC:
+    case Image::Format::RG_11_11_EAC:
+    case Image::Format::SignedRG_11_11_EAC:
         minWidth = 4;
         minHeight = 4;
         return true;
-    case Image::RGB_ATC:
-    case Image::RGBA_EA_ATC: // Explicit alpha
-    case Image::RGBA_IA_ATC: // Interpolated alpha
+    case Image::Format::RGB_ATC:
+    case Image::Format::RGBA_EA_ATC: // Explicit alpha
+    case Image::Format::RGBA_IA_ATC: // Interpolated alpha
         minWidth = 4;
         minHeight = 4;
         return false;
@@ -2138,49 +2138,49 @@ bool CompressedFormatMinDimensions(Image::Format imageFormat, int &minWidth, int
     return false;
 }
 
-bool CompressedFormatBlockDimensions(Image::Format imageFormat, int &blockWidth, int &blockHeight) {
+bool CompressedFormatBlockDimensions(Image::Format::Enum imageFormat, int &blockWidth, int &blockHeight) {
     switch (imageFormat) {
-    case Image::RGBA_DXT1:
-    case Image::RGBA_DXT3:
-    case Image::RGBA_DXT5:
-    case Image::XGBR_DXT5:
-    case Image::DXN1:
-    case Image::DXN2:
+    case Image::Format::RGBA_DXT1:
+    case Image::Format::RGBA_DXT3:
+    case Image::Format::RGBA_DXT5:
+    case Image::Format::XGBR_DXT5:
+    case Image::Format::DXN1:
+    case Image::Format::DXN2:
         blockWidth = 4;
         blockHeight = 4;
         return true;
-    case Image::RGB_PVRTC_2BPPV1:
-    case Image::RGBA_PVRTC_2BPPV1:
+    case Image::Format::RGB_PVRTC_2BPPV1:
+    case Image::Format::RGBA_PVRTC_2BPPV1:
         blockWidth = 8;
         blockHeight = 4;
         return true;
-    case Image::RGB_PVRTC_4BPPV1:
-    case Image::RGBA_PVRTC_4BPPV1:
+    case Image::Format::RGB_PVRTC_4BPPV1:
+    case Image::Format::RGBA_PVRTC_4BPPV1:
         blockWidth = 4;
         blockHeight = 4;
         return true;
-    case Image::RGBA_PVRTC_2BPPV2:
+    case Image::Format::RGBA_PVRTC_2BPPV2:
         blockWidth = 4;
         blockHeight = 4;
         return true;
-    case Image::RGBA_PVRTC_4BPPV2:
+    case Image::Format::RGBA_PVRTC_4BPPV2:
         blockWidth = 4;
         blockHeight = 4;
         return true;
-    case Image::RGB_8_ETC1:
-    case Image::RGB_8_ETC2:
-    case Image::RGBA_8_1_ETC2:
-    case Image::RGBA_8_8_ETC2:
-    case Image::R_11_EAC:
-    case Image::SignedR_11_EAC:
-    case Image::RG_11_11_EAC:
-    case Image::SignedRG_11_11_EAC:
+    case Image::Format::RGB_8_ETC1:
+    case Image::Format::RGB_8_ETC2:
+    case Image::Format::RGBA_8_1_ETC2:
+    case Image::Format::RGBA_8_8_ETC2:
+    case Image::Format::R_11_EAC:
+    case Image::Format::SignedR_11_EAC:
+    case Image::Format::RG_11_11_EAC:
+    case Image::Format::SignedRG_11_11_EAC:
         blockWidth = 4;
         blockHeight = 4;
         return true;
-    case Image::RGB_ATC:
-    case Image::RGBA_EA_ATC: // Explicit alpha
-    case Image::RGBA_IA_ATC: // Interpolated alpha
+    case Image::Format::RGB_ATC:
+    case Image::Format::RGBA_EA_ATC: // Explicit alpha
+    case Image::Format::RGBA_IA_ATC: // Interpolated alpha
         blockWidth = 4;
         blockHeight = 4;
         return false;

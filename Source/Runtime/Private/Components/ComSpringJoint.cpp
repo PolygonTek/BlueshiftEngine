@@ -27,19 +27,19 @@ END_EVENTS
 
 void ComSpringJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, 
-        "Joint position in local space", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "Joint position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, 
-        "Joint angles in local space", PropertyInfo::EditorFlag);
+        "Joint angles in local space", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("useLimits", "Limits/Use Limits", bool, GetEnableLimitDistances, SetEnableLimitDistances, false, 
-        "Activate joint limits", PropertyInfo::EditorFlag);
+        "Activate joint limits", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("minDist", "Limits/Minimum Distance", float, GetMinimumDistance, SetMinimumDistance, 0.f, 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("maxDist", "Limits/Maximum Distance", float, GetMaximumDistance, SetMaximumDistance, 0.f, 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("stiffness", "Spring/Stiffness", float, GetStiffness, SetStiffness, 30.f, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("damping", "Spring/Damping", float, GetDamping, SetDamping, 0.2f, 
-        "", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
+        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
 }
 
 ComSpringJoint::ComSpringJoint() {
@@ -62,7 +62,7 @@ void ComSpringJoint::CreateConstraint() {
 
     // Fill up a constraint description
     PhysConstraintDesc desc;
-    desc.type = PhysConstraint::GenericSpring;
+    desc.type = PhysConstraint::Type::GenericSpring;
     desc.collision = collisionEnabled;
     desc.breakImpulse = breakImpulse;
 

@@ -96,7 +96,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
         }
 
         // Skip if camera uses static lights and light is not static
-        if (camera->def->GetState().flags & RenderCamera::StaticOnly) {
+        if (camera->def->GetState().flags & RenderCamera::Flag::StaticOnly) {
             if (!(renderLight->state.staticMask & camera->def->GetState().staticMask)) {
                 return true;
             }
@@ -142,19 +142,19 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
         }
 
         // Skip if camera renders static objects and this object is not static
-        if (camera->def->GetState().flags & RenderCamera::StaticOnly) {
+        if (camera->def->GetState().flags & RenderCamera::Flag::StaticOnly) {
             if (!(renderObject->state.staticMask & camera->def->GetState().staticMask)) {
                 return true;
             }
         }
 
         // Skip first person camera only object in sub camera
-        if ((renderObject->state.flags & RenderObject::FirstPersonOnlyFlag) && camera->isSubCamera) {
+        if ((renderObject->state.flags & RenderObject::Flag::FirstPersonOnly) && camera->isSubCamera) {
             return true;
         }
 
         // Skip 3rd person camera only object in sub camera
-        if ((renderObject->state.flags & RenderObject::ThirdPersonOnlyFlag) && !camera->isSubCamera) {
+        if ((renderObject->state.flags & RenderObject::Flag::ThirdPersonOnly) && !camera->isSubCamera) {
             return true;
         }
 
@@ -170,7 +170,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
         visObject->modelViewMatrix = camera->def->viewMatrix * renderObject->GetWorldMatrix();
         visObject->modelViewProjMatrix = camera->def->viewProjMatrix * renderObject->GetWorldMatrix();
 
-        if (renderObject->state.flags & RenderObject::BillboardFlag) {
+        if (renderObject->state.flags & RenderObject::Flag::Billboard) {
             Mat3 inverse = (camera->def->viewMatrix.ToMat3() * renderObject->GetWorldMatrix().ToMat3()).Inverse();
             //inverse = inverse * Mat3(0, 0, 1, 1, 0, 0, 0, 1, 0);
             Swap(inverse[0], inverse[2]);
@@ -183,7 +183,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
 
         camera->worldAABB.AddAABB(proxy->worldAABB);
 
-        if (renderObject->state.flags & RenderObject::EnvProbeLitFlag) {
+        if (renderObject->state.flags & RenderObject::Flag::EnvProbeLit) {
             Array<EnvProbeBlendInfo> localEnvProbes;
             GetClosestProbes(proxy->worldAABB, r_probeBlending.GetBool() ? EnvProbeBlending::Blending : EnvProbeBlending::Simple, localEnvProbes);
 
@@ -364,7 +364,7 @@ void RenderWorld::AddParticleMeshes(VisCamera *camera) {
             SubMesh *subMesh = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
             new (subMesh) SubMesh();
 
-            subMesh->type           = Mesh::DynamicMesh;
+            subMesh->type           = Mesh::Type::Dynamic;
             subMesh->numIndexes     = prtMeshSurf->numIndexes;
             subMesh->numVerts       = prtMeshSurf->numVerts;
 
@@ -400,7 +400,7 @@ void RenderWorld::AddTextMeshes(VisCamera *camera) {
         }
 
         textMesh.Clear();
-        textMesh.SetColor(Color4(&renderObjectDef.materialParms[RenderObject::RedParm]));
+        textMesh.SetColor(Color4(&renderObjectDef.materialParms[RenderObject::MaterialParm::Red]));
         textMesh.Draw(renderObjectDef.font, renderObjectDef.textAnchor, renderObjectDef.textAlignment, renderObjectDef.lineSpacing, renderObjectDef.textScale, renderObjectDef.text);
         textMesh.CacheIndexes();
 
@@ -414,7 +414,7 @@ void RenderWorld::AddTextMeshes(VisCamera *camera) {
             SubMesh *subMesh = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
             new (subMesh) SubMesh();
 
-            subMesh->type           = Mesh::DynamicMesh;
+            subMesh->type           = Mesh::Type::Dynamic;
             subMesh->numIndexes     = guiMeshSurf->numIndexes;
             subMesh->numVerts       = guiMeshSurf->numVerts;
 
@@ -433,19 +433,19 @@ void RenderWorld::AddTextMeshes(VisCamera *camera) {
 
 // Add drawing surfaces of the skybox mesh.
 void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
-    if (camera->def->state.clearMethod != RenderCamera::SkyboxClear) {
+    if (camera->def->state.clearMethod != RenderCamera::ClearMethod::Skybox) {
         return;
     }
 
     // Skybox object parameters
     RenderObject::State roDef;
-    roDef.flags = RenderObject::StaticFlag | RenderObject::SkipSelectionFlag;
+    roDef.flags = RenderObject::Flag::Static | RenderObject::Flag::SkipSelection;
     roDef.worldMatrix.SetTRS(camera->def->GetState().origin, Mat3::identity, Vec3(camera->def->zNear * 4));
-    roDef.materialParms[RenderObject::RedParm] = 1.0f;
-    roDef.materialParms[RenderObject::GreenParm] = 1.0f;
-    roDef.materialParms[RenderObject::BlueParm] = 1.0f;
-    roDef.materialParms[RenderObject::AlphaParm] = 1.0f;
-    roDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
+    roDef.materialParms[RenderObject::MaterialParm::Red] = 1.0f;
+    roDef.materialParms[RenderObject::MaterialParm::Green] = 1.0f;
+    roDef.materialParms[RenderObject::MaterialParm::Blue] = 1.0f;
+    roDef.materialParms[RenderObject::MaterialParm::Alpha] = 1.0f;
+    roDef.materialParms[RenderObject::MaterialParm::TimeScale] = 1.0f;
 
     static RenderObject renderObject(this, -1);
     new (&renderObject) RenderObject(this, -1);
@@ -492,19 +492,19 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
         }
 
         // Skip if camera renders static objects and this object is not static
-        if (camera->def->GetState().flags & RenderCamera::StaticOnly) {
+        if (camera->def->GetState().flags & RenderCamera::Flag::StaticOnly) {
             if (!(renderObject->state.staticMask & camera->def->GetState().staticMask)) {
                 return true;
             }
         }
 
         // Skip first person camera only object in sub camera.
-        if ((renderObject->state.flags & RenderObject::FirstPersonOnlyFlag) && camera->isSubCamera) {
+        if ((renderObject->state.flags & RenderObject::Flag::FirstPersonOnly) && camera->isSubCamera) {
             return true;
         }
 
         // Skip 3rd person camera only object in sub camera.
-        if ((renderObject->state.flags & RenderObject::ThirdPersonOnlyFlag) && !camera->isSubCamera) {
+        if ((renderObject->state.flags & RenderObject::Flag::ThirdPersonOnly) && !camera->isSubCamera) {
             return true;
         }
 
@@ -515,7 +515,7 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
 
         const Material *material = renderObject->state.materials[surf->materialIndex];
 
-        bool isShadowCaster = (visLight->def->state.flags & RenderLight::CastShadowsFlag) && (renderObject->state.flags & RenderObject::CastShadowsFlag) && material->IsShadowCaster();
+        bool isShadowCaster = (visLight->def->state.flags & RenderLight::Flag::CastShadows) && (renderObject->state.flags & RenderObject::Flag::CastShadows) && material->IsShadowCaster();
 
         // Already visible in this frame.
         if (surf->viewCount == this->viewCount) {
@@ -560,17 +560,17 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
         }
 
         switch (renderLight->state.type) {
-        case RenderLight::DirectionalLight:
+        case RenderLight::Type::Directional:
             staticMeshDbvt.Query(renderLight->worldOBB, addStaticMeshSurfsForLights);
             break;
-        case RenderLight::PointLight:
+        case RenderLight::Type::Point:
             if (renderLight->IsRadiusUniform()) {
                 staticMeshDbvt.Query(Sphere(renderLight->GetOrigin(), renderLight->GetRadius()[0]), addStaticMeshSurfsForLights);
             } else {
                 staticMeshDbvt.Query(renderLight->worldOBB, addStaticMeshSurfsForLights);
             }
             break;
-        case RenderLight::SpotLight:
+        case RenderLight::Type::Spot:
             staticMeshDbvt.Query(renderLight->worldFrustum, addStaticMeshSurfsForLights);
             break;
         default:
@@ -604,23 +604,23 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
         }
 
         // Skip if camera renders static objects and this object is not static
-        if (camera->def->GetState().flags & RenderCamera::StaticOnly) {
+        if (camera->def->GetState().flags & RenderCamera::Flag::StaticOnly) {
             if (!(renderObject->state.staticMask & camera->def->GetState().staticMask)) {
                 return true;
             }
         }
 
         // Skip first person camera only object in sub camera 
-        if ((renderObject->state.flags & RenderObject::FirstPersonOnlyFlag) && camera->isSubCamera) {
+        if ((renderObject->state.flags & RenderObject::Flag::FirstPersonOnly) && camera->isSubCamera) {
             return true;
         }
 
         // Skip 3rd person camera only object in sub camera
-        if ((renderObject->state.flags & RenderObject::ThirdPersonOnlyFlag) && !camera->isSubCamera) {
+        if ((renderObject->state.flags & RenderObject::Flag::ThirdPersonOnly) && !camera->isSubCamera) {
             return true;
         }
 
-        bool isShadowCaster = (visLight->def->state.flags & RenderLight::CastShadowsFlag) && (renderObject->state.flags & RenderObject::CastShadowsFlag);
+        bool isShadowCaster = (visLight->def->state.flags & RenderLight::Flag::CastShadows) && (renderObject->state.flags & RenderObject::Flag::CastShadows);
         bool shadowCasterCulled = false;
 
         if (isShadowCaster && !renderObject->visObject) {
@@ -684,17 +684,17 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
         }
 
         switch (renderLight->state.type) {
-        case RenderLight::DirectionalLight:
+        case RenderLight::Type::Directional:
             objectDbvt.Query(renderLight->worldOBB, addShadowCasterObjects);
             break;
-        case RenderLight::PointLight:
+        case RenderLight::Type::Point:
             if (renderLight->IsRadiusUniform()) {
                 objectDbvt.Query(Sphere(renderLight->GetOrigin(), renderLight->GetRadius()[0]), addShadowCasterObjects);
             } else {
                 objectDbvt.Query(renderLight->worldOBB, addShadowCasterObjects);
             }
             break;
-        case RenderLight::SpotLight:
+        case RenderLight::Type::Spot:
             objectDbvt.Query(renderLight->worldFrustum, addShadowCasterObjects);
             break;
         default:
@@ -704,7 +704,7 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
 }
 
 void RenderWorld::CacheInstanceBuffer(VisCamera *camera) {
-    if (renderGlobal.instancingMethod == Mesh::NoInstancing) {
+    if (renderGlobal.instancingMethod == Mesh::InstancingMethod::NoInstancing) {
         return;
     }
 
@@ -741,16 +741,16 @@ void RenderWorld::CacheInstanceBuffer(VisCamera *camera) {
                 instanceData += 48;
             }*/
 
-            if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
+            if (renderGlobal.instancingMethod == Mesh::InstancingMethod::InstancedArrays) {
                 if (surf->drawSurf->material->GetPass()->useOwnerColor) {
-                    *(uint32_t *)instanceData = Color4(&renderObject->state.materialParms[RenderObject::RedParm]).ToUInt32();
+                    *(uint32_t *)instanceData = Color4(&renderObject->state.materialParms[RenderObject::MaterialParm::Red]).ToUInt32();
                 } else {
                     *(uint32_t *)instanceData = surf->drawSurf->material->GetPass()->constantColor.ToUInt32();
                 }
                 instanceData += sizeof(uint32_t);
             } else {
                 if (surf->drawSurf->material->GetPass()->useOwnerColor) {
-                    *(Color4 *)instanceData = Color4(&renderObject->state.materialParms[RenderObject::RedParm]);
+                    *(Color4 *)instanceData = Color4(&renderObject->state.materialParms[RenderObject::MaterialParm::Red]);
                 } else {
                     *(Color4 *)instanceData = surf->drawSurf->material->GetPass()->constantColor;
                 }
@@ -760,7 +760,7 @@ void RenderWorld::CacheInstanceBuffer(VisCamera *camera) {
             if (surf->subMesh->IsGpuSkinning()) {
                 const SkinningJointCache *skinningJointCache = renderObject->state.mesh->skinningJointCache;
 
-                if (renderGlobal.vtUpdateMethod == BufferCacheManager::TboUpdate) {
+                if (renderGlobal.vertexTextureMethod == BufferCacheManager::VertexTextureMethod::Tbo) {
                     *(uint32_t *)instanceData = (uint32_t)skinningJointCache->GetBufferCache().tcBase[0];
                 } else {
                     *(Vec2 *)instanceData = Vec2(skinningJointCache->GetBufferCache().tcBase[0], skinningJointCache->GetBufferCache().tcBase[1]);
@@ -773,9 +773,9 @@ void RenderWorld::CacheInstanceBuffer(VisCamera *camera) {
     }
 
     if (numInstances > 0) {
-        if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
+        if (renderGlobal.instancingMethod == Mesh::InstancingMethod::InstancedArrays) {
             bufferCacheManager.AllocVertex(numInstances, renderGlobal.instanceBufferOffsetAlignment, renderGlobal.instanceBufferData, camera->instanceBufferCache);
-        } else if (renderGlobal.instancingMethod == Mesh::UniformBufferInstancing) {
+        } else if (renderGlobal.instancingMethod == Mesh::InstancingMethod::UniformBuffer) {
             bufferCacheManager.AllocUniform(numInstances * renderGlobal.instanceBufferOffsetAlignment, renderGlobal.instanceBufferData, camera->instanceBufferCache);
         }
     }
@@ -803,7 +803,7 @@ void RenderWorld::OptimizeLights(VisCamera *camera) {
         visLight->litSurfsAABB.IntersectSelf(lightAABB);
         visLight->shadowCastersAABB.IntersectSelf(lightAABB);
         
-        if (visLight->def->state.flags & RenderLight::PrimaryLightFlag) {
+        if (visLight->def->state.flags & RenderLight::Flag::PrimaryLight) {
             camera->primaryLight = visLight;
             continue;
         }
@@ -884,12 +884,12 @@ void RenderWorld::AddSubCamera(VisCamera *camera) {
                 continue;
             }
 
-            if (drawSurf->material->GetSort() > Material::SubViewSort) {
+            if (drawSurf->material->GetSort() > Material::Sort::SubView) {
                 break;
             }
 
-            if (drawSurf->material->GetSort() == Material::BadSort) {
-                BE_ERRLOG("Material '%s' with sort == BadSort\n", drawSurf->material->GetName());
+            if (drawSurf->material->GetSort() == Material::Sort::Bad) {
+                BE_ERRLOG("Material '%s' with sort == Sort::Bad\n", drawSurf->material->GetName());
             }
 
             DrawSubCamera(drawSurf->space, drawSurf, drawSurf->material);
@@ -927,16 +927,16 @@ void RenderWorld::AddDrawSurf(VisCamera *camera, VisLight *visLight, VisObject *
     actualMaterial->GetExprChunk()->Evaluate(localParms, outputValues);*/
 
     if (!bufferCacheManager.IsCached(subMesh->vertexCache)) {
-        if (subMesh->GetType() == Mesh::ReferenceMesh ||
-            subMesh->GetType() == Mesh::StaticMesh ||
-            subMesh->GetType() == Mesh::SkinnedMesh) {
+        if (subMesh->GetType() == Mesh::Type::Reference ||
+            subMesh->GetType() == Mesh::Type::Static ||
+            subMesh->GetType() == Mesh::Type::Skinned) {
             subMesh->CacheStaticDataToGpu();
         } else {
             subMesh->CacheDynamicDataToGpu(visObject->def->state.joints, actualMaterial);
         }
     }
 
-    if (renderGlobal.instancingMethod != Mesh::NoInstancing) {
+    if (renderGlobal.instancingMethod != Mesh::InstancingMethod::NoInstancing) {
         if (actualMaterial->GetPass()->instancingEnabled) {
             if (subMesh->IsGpuSkinning()) {
                 if (renderGlobal.skinningMethod == SkinningJointCache::VertexTextureFetchSkinning) {
@@ -962,7 +962,7 @@ void RenderWorld::AddDrawSurf(VisCamera *camera, VisLight *visLight, VisObject *
     uint64_t materialIndex = materialManager.GetIndexByMaterial(actualMaterial);
 
     // Rough sorting back-to-front order for translucent surfaces.
-    if (materialSort == Material::TranslucentSort || materialSort == Material::OverlaySort) {
+    if (materialSort == Material::Sort::Translucent || materialSort == Material::Sort::Overlay) {
         float depthMin = 0.0f;
         float depthMax = 1.0f;
 

@@ -27,9 +27,9 @@ END_EVENTS
 
 void ComSphereCollider::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, 
-        "The position of the Collider in the object's local space.", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "The position of the Collider in the object's local space.", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, MeterToUnit(0.5f),
-        "The size of the Collider.", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "The size of the Collider.", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
 }
 
 ComSphereCollider::ComSphereCollider() {

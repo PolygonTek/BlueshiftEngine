@@ -28,11 +28,11 @@ static TCHAR                szTitle[100];    // The title bar text
 
 LRESULT CALLBACK            WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-static BE1::CVar            disp_width("disp_width", "1280", BE1::CVar::Integer | BE1::CVar::Archive, "");
-static BE1::CVar            disp_height("disp_height", "720", BE1::CVar::Integer | BE1::CVar::Archive, "");
-static BE1::CVar            disp_fullscreen("disp_fullscreen", "0", BE1::CVar::Bool | BE1::CVar::Archive, "");
-static BE1::CVar            disp_bpp("disp_bpp", "0", BE1::CVar::Integer | BE1::CVar::Archive, "");
-static BE1::CVar            disp_frequency("disp_frequency", "0", BE1::CVar::Integer | BE1::CVar::Archive, "");
+static BE1::CVar            disp_width("disp_width", "1280", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "");
+static BE1::CVar            disp_height("disp_height", "720", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "");
+static BE1::CVar            disp_fullscreen("disp_fullscreen", "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "");
+static BE1::CVar            disp_bpp("disp_bpp", "0", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "");
+static BE1::CVar            disp_frequency("disp_frequency", "0", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "");
 
 static HWND CreateRenderWindow(const TCHAR *title, const TCHAR *classname, int width, int height, bool fullscreen) {
     int style = WS_VISIBLE;
@@ -386,19 +386,19 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
             // use lower 8 bit and set extended bit to it's MSB
             key = ((lParam >> 16) & 0xFF ) | (((lParam >> 24) & 1) << 7);
 
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, key, true, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, key, true, 0, NULL);
         }
         return 0;
     case WM_KEYUP:
     case WM_SYSKEYUP:
         key = ((lParam >> 16) & 0xFF ) | (((lParam >> 24) & 1) << 7);
 
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, key, false, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, key, false, 0, NULL);
         return 0;
     case WM_SYSCHAR:
     case WM_CHAR: // WM_CHAR message uses Unicode Transformation Format UCS-2
     case WM_IME_CHAR:
-        BE1::platform->QueEvent(BE1::Platform::CharEvent, (char32_t)wParam, 0, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Char, (char32_t)wParam, 0, 0, NULL);
         return 0;
     case WM_IME_KEYDOWN:
     case WM_IME_KEYUP:
@@ -413,53 +413,53 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
             int bytes = ImmGetCompositionString(hImmContext, GCS_COMPSTR, NULL, 0);
             if (bytes > 0) {
                 ImmGetCompositionString(hImmContext, GCS_COMPSTR, compStr, bytes);
-                BE1::platform->QueEvent(BE1::Platform::CompositionEvent, (char32_t)compStr[0], 0, 0, NULL);
+                BE1::platform->QueEvent(BE1::Platform::EventType::Composition, (char32_t)compStr[0], 0, 0, NULL);
             } else {
-                BE1::platform->QueEvent(BE1::Platform::CompositionEvent, U'\b', 0, 0, NULL);
+                BE1::platform->QueEvent(BE1::Platform::EventType::Composition, U'\b', 0, 0, NULL);
             }
         } else if (lParam & GCS_RESULTSTR) {
             int bytes = ImmGetCompositionString(hImmContext, GCS_RESULTSTR, NULL, 0);
             if (bytes > 0) {
                 ImmGetCompositionString(hImmContext, GCS_RESULTSTR, compStr, bytes);
-                BE1::platform->QueEvent(BE1::Platform::CharEvent, (char32_t)compStr[0], 0, 0, NULL);
+                BE1::platform->QueEvent(BE1::Platform::EventType::Char, (char32_t)compStr[0], 0, 0, NULL);
             }
         }
                 
         ImmReleaseContext(hwnd, hImmContext);
         return 0;
     case WM_LBUTTONDOWN:
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse1, true, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse1, true, 0, NULL);
         return 0;
     case WM_RBUTTONDOWN:
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse2, true, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse2, true, 0, NULL);
         return 0;
     case WM_MBUTTONDOWN:
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse3, true, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse3, true, 0, NULL);
         return 0;
     case WM_XBUTTONDOWN: {
         int button = GET_XBUTTON_WPARAM(wParam);
         if (button == 1) {
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse4, true, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse4, true, 0, NULL);
         } else if (button == 2) {
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse5, true, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse5, true, 0, NULL);
         }
         return 0; 
     }
     case WM_LBUTTONUP:
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse1, false, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse1, false, 0, NULL);
         return 0;
     case WM_RBUTTONUP:
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse2, false, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse2, false, 0, NULL);
         return 0;
     case WM_MBUTTONUP:
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse3, false, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse3, false, 0, NULL);
         return 0;
     case WM_XBUTTONUP: {
         int button = GET_XBUTTON_WPARAM(wParam);
         if (button == 1) {
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse4, false, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse4, false, 0, NULL);
         } else if (button == 2) {
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse5, false, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse5, false, 0, NULL);
         }
         return 0; 
     }
@@ -467,16 +467,16 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
         const int x = GET_X_LPARAM(lParam);
         const int y = GET_Y_LPARAM(lParam);
 
-        BE1::platform->QueEvent(BE1::Platform::MouseMoveEvent, x, y, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::MouseMove, x, y, 0, NULL);
         return 0; 
     }
     case WM_MOUSEWHEEL:
         if ((short)HIWORD(wParam) > 0) {
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::MouseWheelUp, true, 0, NULL);
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::MouseWheelUp, false, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::MouseWheelUp, true, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::MouseWheelUp, false, 0, NULL);
         } else {
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::MouseWheelDown, true, 0, NULL);
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::MouseWheelDown, false, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::MouseWheelDown, true, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::MouseWheelDown, false, 0, NULL);
         }
         return 0;
     }

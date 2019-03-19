@@ -22,30 +22,34 @@ BE_NAMESPACE_BEGIN
 class BE_API DateTime {
 public:
     // Days of the week in 7-day calendars
-    enum DayOfWeek {
-        Monday = 0,
-        Tuesday,
-        Wednesday,
-        Thursday,
-        Friday,
-        Saturday,
-        Sunday
+    struct DayOfWeek {
+        enum Enum {
+            Monday = 0,
+            Tuesday,
+            Wednesday,
+            Thursday,
+            Friday,
+            Saturday,
+            Sunday
+        };
     };
 
     // Months of the year in 12-month calendars.
-    enum MonthOfYear {
-        January = 1,
-        February,
-        March,
-        April,
-        May,
-        June,
-        July,
-        August,
-        September,
-        October,
-        November,
-        December
+    struct MonthOfYear {
+        enum Enum {
+            January = 1,
+            February,
+            March,
+            April,
+            May,
+            June,
+            July,
+            August,
+            September,
+            October,
+            November,
+            December
+        };
     };
 
     struct Date {
@@ -80,11 +84,11 @@ public:
     
     int32_t             Year() const { return ToDate().year; }
     int32_t             Month() const { return ToDate().month; }
-    MonthOfYear         GetMonthOfYear() const { return static_cast<MonthOfYear>(Month()); }
+    MonthOfYear::Enum   GetMonthOfYear() const { return static_cast<MonthOfYear::Enum>(Month()); }
     int32_t             Day() const { return ToDate().day; }
     double              JulianDay() const { return (double)(1721425.5 + ticks / Timespan::TicksPerDay); }
     double              ModifiedJulianDay() const { return (JulianDay() - 2400000.5); }
-    enum DayOfWeek      DayOfWeek() const { return static_cast<enum DayOfWeek>((ticks / Timespan::TicksPerDay) % 7); }
+    DayOfWeek::Enum     DayOfWeek() const { return static_cast<DayOfWeek::Enum>((ticks / Timespan::TicksPerDay) % 7); }
     int32_t             DayOfYear() const;
     int32_t             Hour() const { return (int32_t)((ticks / Timespan::TicksPerHour) % 24); }
     int32_t             Hour12() const;

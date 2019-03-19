@@ -44,15 +44,17 @@ class Collider {
     friend class PhysicsWorld;
 
 public:
-    enum Type {
-        Box,
-        Sphere,
-        Capsule,
-        Cylinder,
-        Cone,
-        MultiSphere,
-        ConvexHull,
-        Bvh
+    struct Type {
+        enum Enum {
+            Box,
+            Sphere,
+            Capsule,
+            Cylinder,
+            Cone,
+            MultiSphere,
+            ConvexHull,
+            Bvh
+        };
     };
 
     Collider();
@@ -108,7 +110,7 @@ private:
     mutable int             refCount;
     int                     unnamedIndex;
 
-    Type                    type;
+    Type::Enum              type;
     Vec3                    centroid;           ///< Position of center of mass in system units
     float                   volume;             ///< Volume in system units
     Vec3                    modelScale;

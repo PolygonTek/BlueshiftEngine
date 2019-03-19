@@ -42,17 +42,19 @@ class Anim {
     friend class ::AnimImporter;
 
 public:
-    enum ComponentBit {
-        Tx                  = BIT(0),
-        Ty                  = BIT(1),
-        Tz                  = BIT(2),
-        Qx                  = BIT(3),
-        Qy                  = BIT(4),
-        Qz                  = BIT(5),
-        Sx                  = BIT(6),
-        Sy                  = BIT(7),
-        Sz                  = BIT(8),
-        AllBits             = Tx | Ty | Tz | Qx | Qy | Qz | Sx | Sy | Sz
+    struct ComponentBit {
+        enum Enum {
+            Tx              = BIT(0),
+            Ty              = BIT(1),
+            Tz              = BIT(2),
+            Qx              = BIT(3),
+            Qy              = BIT(4),
+            Qz              = BIT(5),
+            Sx              = BIT(6),
+            Sy              = BIT(7),
+            Sz              = BIT(8),
+            AllBits         = Tx | Ty | Tz | Qx | Qy | Qz | Sx | Sy | Sz
+        };
     };
 
     struct JointInfo {

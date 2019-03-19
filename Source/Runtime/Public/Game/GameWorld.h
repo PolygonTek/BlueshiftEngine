@@ -55,10 +55,12 @@ public:
         MaxEntityNum            = (MaxEntities - 2)
     };
 
-    enum LoadSceneMode {
-        Single,
-        Additive,
-        Editor
+    struct LoadSceneMode {
+        enum Enum {
+            Single,
+            Additive,
+            Editor
+        };
     };
 
     OBJECT_PROTOTYPE(GameWorld);
@@ -164,7 +166,7 @@ public:
     const char *                MapName() const { return mapName.c_str(); }
 
     void                        NewMap();
-    bool                        LoadMap(const char *filename, LoadSceneMode mode);
+    bool                        LoadMap(const char *filename, LoadSceneMode::Enum mode);
     void                        SaveMap(const char *filename);
 
     static const SignalDef      SIG_EntityRegistered;

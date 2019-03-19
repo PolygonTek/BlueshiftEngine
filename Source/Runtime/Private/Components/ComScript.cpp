@@ -29,7 +29,7 @@ END_EVENTS
 
 void ComScript::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("script", "Script", Guid, GetScriptGuid, SetScriptGuid, Guid::zero, 
-        "", PropertyInfo::EditorFlag).SetMetaObject(&ScriptAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&ScriptAsset::metaObject);
 }
 
 ComScript::ComScript() {
@@ -208,7 +208,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
         scriptAsset = scriptObject->Cast<ScriptAsset>();
 
         if (scriptAsset) {
-            scriptAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComScript::ScriptReloaded, SignalObject::Queued);
+            scriptAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComScript::ScriptReloaded, SignalObject::ConnectionType::Queued);
         }
     }
 #endif
@@ -274,7 +274,7 @@ void ComScript::InitScriptFields() {
                             }
 #endif
                         }
-                    ), (int)propValue, desc, PropertyInfo::EditorFlag);
+                    ), (int)propValue, desc, PropertyInfo::Flag::Editor);
 
                 propInfo.SetRange(minimum, maximum, step);
 
@@ -295,7 +295,7 @@ void ComScript::InitScriptFields() {
                             }
 #endif
                         }
-                    ), (int)propValue, desc, PropertyInfo::EditorFlag);
+                    ), (int)propValue, desc, PropertyInfo::Flag::Editor);
 
                 fieldInfos.Append(propInfo);
             }
@@ -317,7 +317,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (int)propValue, desc, PropertyInfo::EditorFlag);
+                ), (int)propValue, desc, PropertyInfo::Flag::Editor);
 
                 propInfo.SetEnumString(enumSequence);
 
@@ -338,7 +338,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (bool)propValue, desc, PropertyInfo::EditorFlag);
+                ), (bool)propValue, desc, PropertyInfo::Flag::Editor);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "float")) {
@@ -367,7 +367,7 @@ void ComScript::InitScriptFields() {
                             }
 #endif
                         }
-                    ), (float)propValue, desc, PropertyInfo::EditorFlag);
+                    ), (float)propValue, desc, PropertyInfo::Flag::Editor);
 
                 propInfo.SetRange(minimum, maximum, step);
 
@@ -388,7 +388,7 @@ void ComScript::InitScriptFields() {
                             }
 #endif
                         }
-                    ), (float)propValue, desc, PropertyInfo::EditorFlag);
+                    ), (float)propValue, desc, PropertyInfo::Flag::Editor);
 
                 fieldInfos.Append(propInfo);
             }
@@ -408,7 +408,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Vec2 &)propValue, desc, PropertyInfo::EditorFlag);
+                ), (Vec2 &)propValue, desc, PropertyInfo::Flag::Editor);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "vec3")) {
@@ -427,7 +427,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Vec3 &)propValue, desc, PropertyInfo::EditorFlag);
+                ), (Vec3 &)propValue, desc, PropertyInfo::Flag::Editor);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "vec4")) {
@@ -446,7 +446,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Vec4 &)propValue, desc, PropertyInfo::EditorFlag);
+                ), (Vec4 &)propValue, desc, PropertyInfo::Flag::Editor);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "color3")) {
@@ -465,7 +465,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Color3 &)propValue, desc, PropertyInfo::EditorFlag);
+                ), (Color3 &)propValue, desc, PropertyInfo::Flag::Editor);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "color4")) {
@@ -484,7 +484,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Color4 &)propValue, desc, PropertyInfo::EditorFlag);
+                ), (Color4 &)propValue, desc, PropertyInfo::Flag::Editor);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "angles")) {
@@ -503,7 +503,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Angles &)propValue, desc, PropertyInfo::EditorFlag);
+                ), (Angles &)propValue, desc, PropertyInfo::Flag::Editor);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "quat")) {
@@ -522,7 +522,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Quat &)propValue, desc, PropertyInfo::EditorFlag);
+                ), (Quat &)propValue, desc, PropertyInfo::Flag::Editor);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "mat2")) {
@@ -541,7 +541,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Mat2 &)propValue, desc, PropertyInfo::EditorFlag);
+                ), (Mat2 &)propValue, desc, PropertyInfo::Flag::Editor);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "mat3")) {
@@ -560,7 +560,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Mat3 &)propValue, desc, PropertyInfo::EditorFlag);
+                ), (Mat3 &)propValue, desc, PropertyInfo::Flag::Editor);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "mat3x4")) {
@@ -579,7 +579,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Mat3x4 &)propValue, desc, PropertyInfo::EditorFlag);
+                ), (Mat3x4 &)propValue, desc, PropertyInfo::Flag::Editor);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "mat4")) {
@@ -598,7 +598,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Mat4 &)propValue, desc, PropertyInfo::EditorFlag);
+                ), (Mat4 &)propValue, desc, PropertyInfo::Flag::Editor);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "point")) {
@@ -617,7 +617,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Point &)propValue, desc, PropertyInfo::EditorFlag);
+                ), (Point &)propValue, desc, PropertyInfo::Flag::Editor);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "rect")) {
@@ -636,7 +636,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (Rect &)propValue, desc, PropertyInfo::EditorFlag);
+                ), (Rect &)propValue, desc, PropertyInfo::Flag::Editor);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "string")) {
@@ -655,7 +655,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), (const char *)propValue, desc, PropertyInfo::EditorFlag);
+                ), (const char *)propValue, desc, PropertyInfo::Flag::Editor);
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "object")) {
@@ -679,7 +679,7 @@ void ComScript::InitScriptFields() {
                         }
 #endif
                     }
-                ), pairPtr->second.As<Guid>(), desc, PropertyInfo::EditorFlag);
+                ), pairPtr->second.As<Guid>(), desc, PropertyInfo::Flag::Editor);
             
             propInfo.SetMetaObject(metaObject);
 
@@ -767,64 +767,64 @@ void ComScript::SetScriptProperties() {
     for (int i = 0; i < fieldInfos.Count(); i++) {
         const PropertyInfo *propInfo = &fieldInfos[i];
         const char *name = propInfo->GetName();
-        const Variant::Type type = propInfo->GetType();
+        const Variant::Type::Enum type = propInfo->GetType();
         const Variant value = GetProperty(name);
 
         auto property = properties[name];
 
         switch (type) {
-        case Variant::IntType:
+        case Variant::Type::Int:
             property["value"] = value.As<int>();
             break;
-        case Variant::BoolType:
+        case Variant::Type::Bool:
             property["value"] = value.As<bool>();
             break;
-        case Variant::FloatType:
+        case Variant::Type::Float:
             property["value"] = value.As<float>();
             break;
-        case Variant::Vec2Type:
+        case Variant::Type::Vec2:
             (Vec2 &)property["value"] = value.As<Vec2>();
             break;
-        case Variant::Vec3Type:
+        case Variant::Type::Vec3:
             (Vec3 &)property["value"] = value.As<Vec3>();
             break;
-        case Variant::Vec4Type:
+        case Variant::Type::Vec4:
             (Vec4 &)property["value"] = value.As<Vec4>();
             break;
-        case Variant::Color3Type:
+        case Variant::Type::Color3:
             (Color3 &)property["value"] = value.As<Color3>();
             break;
-        case Variant::Color4Type:
+        case Variant::Type::Color4:
             (Color4 &)property["value"] = value.As<Color4>();
             break;
-        case Variant::AnglesType:
+        case Variant::Type::Angles:
             (Angles &)property["value"] = value.As<Angles>();
             break;
-        case Variant::QuatType:
+        case Variant::Type::Quat:
             (Quat &)property["value"] = value.As<Quat>();
             break;
-        case Variant::Mat2Type:
+        case Variant::Type::Mat2:
             (Mat2 &)property["value"] = value.As<Mat2>();
             break;
-        case Variant::Mat3Type:
+        case Variant::Type::Mat3:
             (Mat3 &)property["value"] = value.As<Mat3>();
             break;
-        case Variant::Mat3x4Type:
+        case Variant::Type::Mat3x4:
             (Mat3x4 &)property["value"] = value.As<Mat3x4>();
             break;
-        case Variant::Mat4Type:
+        case Variant::Type::Mat4:
             (Mat4 &)property["value"] = value.As<Mat4>();
             break;
-        case Variant::PointType:
+        case Variant::Type::Point:
             (Point &)property["value"] = value.As<Point>();
             break;
-        case Variant::RectType:
+        case Variant::Type::Rect:
             (Rect &)property["value"] = value.As<Rect>();
             break;
-        case Variant::StrType:
+        case Variant::Type::Str:
             property["value"] = value.As<Str>().c_str();
             break;
-        case Variant::GuidType: {
+        case Variant::Type::Guid: {
             Guid objectGuid = value.As<Guid>();
             Object *object = Object::FindInstance(objectGuid);
             if (object) {

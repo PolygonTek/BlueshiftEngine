@@ -28,17 +28,17 @@ END_EVENTS
 
 void ComTextRenderer::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("text", "Text", Str, GetText, SetText, "Hello World", 
-        "The text that will be rendered.", PropertyInfo::EditorFlag | PropertyInfo::MultiLinesFlag);
-    REGISTER_ACCESSOR_PROPERTY("textAnchor", "Anchor", RenderObject::TextAnchor, GetAnchor, SetAnchor, 0, 
-        "Which point of the text shares the position of the Transform.", PropertyInfo::EditorFlag).SetEnumString("Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right");
-    REGISTER_ACCESSOR_PROPERTY("textAlignment", "Alignment", RenderObject::TextAlignment, GetAlignment, SetAlignment, 0, 
-        "How lines of text are aligned (Left, Right, Center).", PropertyInfo::EditorFlag).SetEnumString("Left;Center;Right");
+        "The text that will be rendered.", PropertyInfo::Flag::Editor | PropertyInfo::Flag::MultiLines);
+    REGISTER_ACCESSOR_PROPERTY("textAnchor", "Anchor", RenderObject::TextAnchor::Enum, GetAnchor, SetAnchor, 0, 
+        "Which point of the text shares the position of the Transform.", PropertyInfo::Flag::Editor).SetEnumString("Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right");
+    REGISTER_ACCESSOR_PROPERTY("textAlignment", "Alignment", RenderObject::TextAlignment::Enum, GetAlignment, SetAlignment, 0, 
+        "How lines of text are aligned (Left, Right, Center).", PropertyInfo::Flag::Editor).SetEnumString("Left;Center;Right");
     REGISTER_ACCESSOR_PROPERTY("lineSpacing", "Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f, 
-        "How much space will be in-between lines of text.", PropertyInfo::EditorFlag);
+        "How much space will be in-between lines of text.", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("fontSize", "Font Size", int, GetFontSize, SetFontSize, 14, 
-        "The size of the font.", PropertyInfo::EditorFlag);
+        "The size of the font.", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("font", "Font", Guid, GetFontGuid, SetFontGuid, GuidMapper::defaultFontGuid, 
-        "The TrueType Font to use when rendering the text.", PropertyInfo::EditorFlag).SetMetaObject(&FontAsset::metaObject);
+        "The TrueType Font to use when rendering the text.", PropertyInfo::Flag::Editor).SetMetaObject(&FontAsset::metaObject);
 }
 
 ComTextRenderer::ComTextRenderer() {
@@ -95,11 +95,11 @@ void ComTextRenderer::SetTextCString(const char *text) {
     SetText(Str(text));
 }
 
-RenderObject::TextAnchor ComTextRenderer::GetAnchor() const {
+RenderObject::TextAnchor::Enum ComTextRenderer::GetAnchor() const {
     return renderObjectDef.textAnchor;
 }
 
-void ComTextRenderer::SetAnchor(RenderObject::TextAnchor anchor) {
+void ComTextRenderer::SetAnchor(RenderObject::TextAnchor::Enum anchor) {
     renderObjectDef.textAnchor = anchor;
 
     if (IsInitialized()) {
@@ -108,11 +108,11 @@ void ComTextRenderer::SetAnchor(RenderObject::TextAnchor anchor) {
     }
 }
 
-RenderObject::TextAlignment ComTextRenderer::GetAlignment() const {
+RenderObject::TextAlignment::Enum ComTextRenderer::GetAlignment() const {
     return renderObjectDef.textAlignment;
 }
 
-void ComTextRenderer::SetAlignment(RenderObject::TextAlignment alignment) {
+void ComTextRenderer::SetAlignment(RenderObject::TextAlignment::Enum alignment) {
     renderObjectDef.textAlignment = alignment;
     
     if (IsInitialized()) {

@@ -400,11 +400,11 @@ bool RenderCamera::CalcDepthBoundsFromFrustum(const Frustum &frustum, const Mat4
 }
 
 bool RenderCamera::CalcDepthBoundsFromLight(const RenderLight *light, const Mat4 &viewProjMatrix, float *depthMin, float *depthMax) const {
-    if (light->state.type == RenderLight::DirectionalLight) {
+    if (light->state.type == RenderLight::Type::Directional) {
         if (!CalcDepthBoundsFromOBB(light->worldOBB, viewProjMatrix, depthMin, depthMax)) {
             return false;
         }
-    } else if (light->state.type == RenderLight::PointLight) {
+    } else if (light->state.type == RenderLight::Type::Point) {
         if (light->IsRadiusUniform()) {
             if (!CalcDepthBoundsFromSphere(Sphere(light->GetOrigin(), light->GetRadius()[0]), viewProjMatrix, depthMin, depthMax)) {
                 return false;
@@ -414,7 +414,7 @@ bool RenderCamera::CalcDepthBoundsFromLight(const RenderLight *light, const Mat4
                 return false;
             }
         }
-    } else if (light->state.type == RenderLight::SpotLight) {
+    } else if (light->state.type == RenderLight::Type::Spot) {
         if (!CalcDepthBoundsFromFrustum(light->worldFrustum, viewProjMatrix, depthMin, depthMax)) {
             return false;
         }

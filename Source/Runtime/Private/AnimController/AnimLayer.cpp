@@ -442,8 +442,8 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
 
         if (token == "parameter") { // blendTree 가 참조하는 parameter
             switch (blendTree->GetBlendType()) {
-            case AnimBlendTree::BlendAngle:
-            case AnimBlendTree::Blend1D:
+            case AnimBlendTree::BlendType::BlendAngle:
+            case AnimBlendTree::BlendType::Blend1D:
                 if (!lexer.ReadToken(&token2)) {
                     lexer.Warning("Unexpected end of file");
                     return false;
@@ -451,8 +451,8 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
 
                 blendTree->SetParameterIndex(0, animController->FindParameterIndex(token2.c_str()));
                 break;
-            case AnimBlendTree::Blend2DDirectional:
-            case AnimBlendTree::Blend2DBarycentric:
+            case AnimBlendTree::BlendType::Blend2DDirectional:
+            case AnimBlendTree::BlendType::Blend2DBarycentric:
                 for (int i = 0; i < 2; i++) {
                     if (!lexer.ReadToken(&token2)) {
                         lexer.Warning("Unexpected end of file");
@@ -462,7 +462,7 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
                     blendTree->SetParameterIndex(i, animController->FindParameterIndex(token2.c_str()));
                 }
                 break;
-            case AnimBlendTree::Blend3DBarycentric:
+            case AnimBlendTree::BlendType::Blend3DBarycentric:
                 for (int i = 0; i < 3; i++) {
                     if (!lexer.ReadToken(&token2)) {
                         lexer.Warning("Unexpected end of file");
@@ -504,17 +504,17 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
             // blendTree 내부의 blendTree 역시 blend space point 를 갖는다.
             Vec3 blendSpacePoint = Vec3::zero;
             switch (blendTree->GetBlendType()) {
-            case AnimBlendTree::BlendAngle:
-            case AnimBlendTree::Blend1D:
+            case AnimBlendTree::BlendType::BlendAngle:
+            case AnimBlendTree::BlendType::Blend1D:
                 lexer.Parse1DMatrix(1, (float *)blendSpacePoint);
                 break;
-            case AnimBlendTree::Blend2DDirectional:
+            case AnimBlendTree::BlendType::Blend2DDirectional:
                 lexer.Parse1DMatrix(2, (float *)blendSpacePoint);
                 break;
-            case AnimBlendTree::Blend2DBarycentric:
+            case AnimBlendTree::BlendType::Blend2DBarycentric:
                 lexer.Parse1DMatrix(2, (float *)blendSpacePoint);
                 break;            
-            case AnimBlendTree::Blend3DBarycentric:
+            case AnimBlendTree::BlendType::Blend3DBarycentric:
                 lexer.Parse1DMatrix(3, (float *)blendSpacePoint);
                 break;
             }

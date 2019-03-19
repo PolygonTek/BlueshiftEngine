@@ -167,7 +167,7 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
 }
 
 void Mesh::WriteBinaryMesh(const char *filename) {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
         BE_WARNLOG("Mesh::WriteBinaryMesh: file open error\n");
         return;

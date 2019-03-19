@@ -51,9 +51,11 @@ class RenderWorld {
     friend class RenderContext;
 
 public:
-    enum EnvProbeBlending {
-        Simple,
-        Blending
+    struct EnvProbeBlending {
+        enum Enum {
+            Simple,
+            Blending
+        };
     };
 
     RenderWorld();
@@ -105,7 +107,7 @@ public:
                             /// Removes global environemnt probe.
     void                    RemoveDistantEnvProbe();
 
-    void                    GetClosestProbes(const AABB &sourceAABB, EnvProbeBlending blending, Array<EnvProbeBlendInfo> &outProbes) const;
+    void                    GetClosestProbes(const AABB &sourceAABB, EnvProbeBlending::Enum blending, Array<EnvProbeBlendInfo> &outProbes) const;
 
     int                     GetViewCount() const { return viewCount; }
 

@@ -59,12 +59,12 @@ public:
     
     float                   DrawChar(float x, float y, float sx, float sy, Font *font, char32_t unicodeChar);
 
-    void                    Draw(Font *font, RenderObject::TextAnchor anchor, RenderObject::TextAlignment alignment, float lineSpacing, float textScale, const Str &text);
+    void                    Draw(Font *font, RenderObject::TextAnchor::Enum anchor, RenderObject::TextAlignment::Enum alignment, float lineSpacing, float textScale, const Str &text);
 
                             // Call this function when drawing ends
     void                    CacheIndexes();
 
-    AABB                    Compute3DTextAABB(Font *font, RenderObject::TextAnchor anchor, float lineSpacing, float textScale, const Str &text) const;
+    AABB                    Compute3DTextAABB(Font *font, RenderObject::TextAnchor::Enum anchor, float lineSpacing, float textScale, const Str &text) const;
 
 private:
     void                    PrepareNextSurf();

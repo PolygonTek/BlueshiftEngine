@@ -283,7 +283,7 @@ Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const Array<BatchSub
         baseVertex += srcSubMesh->numVerts;
     }
 
-    mesh->FinishSurfaces(Mesh::ComputeAABBFlag);
+    mesh->FinishSurfaces(Mesh::FinishFlag::ComputeAABB);
 
     return mesh;
 }

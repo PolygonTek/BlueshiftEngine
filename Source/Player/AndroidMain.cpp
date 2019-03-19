@@ -398,14 +398,14 @@ static int32_t HandleInput(android_app *appState, AInputEvent *event) {
                 x = (int)AMotionEvent_getX(event, 0);
                 y = (int)AMotionEvent_getY(event, 0);
                 locationQword = BE1::MakeQWord(x, y);
-                BE1::platform->QueEvent(BE1::Platform::TouchBeganEvent, pointerId, locationQword, 0, NULL);
+                BE1::platform->QueEvent(BE1::Platform::TouchBegan, pointerId, locationQword, 0, NULL);
                 break;
             case AMOTION_EVENT_ACTION_UP:
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, 0);
                 x = (int)AMotionEvent_getX(event, 0);
                 y = (int)AMotionEvent_getY(event, 0);
                 locationQword = BE1::MakeQWord(x, y);
-                BE1::platform->QueEvent(BE1::Platform::TouchEndedEvent, pointerId, locationQword, 0, NULL);
+                BE1::platform->QueEvent(BE1::Platform::TouchEnded, pointerId, locationQword, 0, NULL);
                 break;
             case AMOTION_EVENT_ACTION_POINTER_DOWN:
                 pointerIndex = (size_t)((action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
@@ -413,7 +413,7 @@ static int32_t HandleInput(android_app *appState, AInputEvent *event) {
                 x = (int)AMotionEvent_getX(event, pointerIndex);
                 y = (int)AMotionEvent_getY(event, pointerIndex);
                 locationQword = BE1::MakeQWord(x, y);
-                BE1::platform->QueEvent(BE1::Platform::TouchBeganEvent, pointerId, locationQword, 0, NULL);
+                BE1::platform->QueEvent(BE1::Platform::TouchBegan, pointerId, locationQword, 0, NULL);
                 break;
             case AMOTION_EVENT_ACTION_POINTER_UP:
                 pointerIndex = (size_t)((action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
@@ -421,7 +421,7 @@ static int32_t HandleInput(android_app *appState, AInputEvent *event) {
                 x = (int)AMotionEvent_getX(event, pointerIndex);
                 y = (int)AMotionEvent_getY(event, pointerIndex);
                 locationQword = BE1::MakeQWord(x, y);
-                BE1::platform->QueEvent(BE1::Platform::TouchEndedEvent, pointerId, locationQword, 0, NULL);
+                BE1::platform->QueEvent(BE1::Platform::TouchEnded, pointerId, locationQword, 0, NULL);
                 break;
             case AMOTION_EVENT_ACTION_MOVE:
                 // ACTION_MOVE events are batched, unlike the other events.
@@ -431,7 +431,7 @@ static int32_t HandleInput(android_app *appState, AInputEvent *event) {
                     x = (int)AMotionEvent_getX(event, i);
                     y = (int)AMotionEvent_getY(event, i);
                     locationQword = BE1::MakeQWord(x, y);
-                    BE1::platform->QueEvent(BE1::Platform::TouchMovedEvent, pointerId, locationQword, 0, NULL);
+                    BE1::platform->QueEvent(BE1::Platform::TouchMoved, pointerId, locationQword, 0, NULL);
                 }
                 break;
             }

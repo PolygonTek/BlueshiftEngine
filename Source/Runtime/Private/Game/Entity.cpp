@@ -39,25 +39,25 @@ END_EVENTS
 
 void Entity::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("parent", "Parent", Guid, GetParentGuid, SetParentGuid, Guid::zero,
-        "Parent Entity", PropertyInfo::EditorFlag).SetMetaObject(&Entity::metaObject);
+        "Parent Entity", PropertyInfo::Flag::Editor).SetMetaObject(&Entity::metaObject);
     REGISTER_PROPERTY("prefab", "Prefab", bool, prefab, false,
-        "Is prefab ?", PropertyInfo::EditorFlag);
+        "Is prefab ?", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("prefabSource", "Prefab Source", Guid, GetPrefabSourceGuid, SetPrefabSourceGuid, Guid::zero,
-        "", PropertyInfo::EditorFlag).SetMetaObject(&Entity::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&Entity::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("name", "Name", Str, GetName, SetName, "Entity",
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("tag", "Tag", Str, GetTag, SetTag, "Untagged",
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("layer", "Layer", int, GetLayer, SetLayer, 0,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("staticMask", "Static Mask", int, GetStaticMask, SetStaticMask, 0,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("active", "Active", bool, IsActiveSelf, SetActive, true,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("activeInHierarchy", "Active In Hierarchy", bool, activeInHierarchy, true,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("frozen", "Frozen", bool, IsFrozen, SetFrozen, false,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
 }
 
 Entity::Entity() {
@@ -511,19 +511,19 @@ const AABB Entity::GetWorldAABB(bool includingChildren) const {
     return worldAABB;
 }
 
-const Vec3 Entity::GetWorldPosition(WorldPosTrait posTrait, bool includingChildren) const {
+const Vec3 Entity::GetWorldPosition(WorldPosTrait::Enum posTrait, bool includingChildren) const {
     Vec3 vec;
 
-    if (posTrait == Pivot) {
+    if (posTrait == WorldPosTrait::Pivot) {
         vec = GetTransform()->GetOrigin();
     } else {
         AABB aabb = GetWorldAABB(includingChildren);
 
-        if (posTrait == Minimum) {
+        if (posTrait == WorldPosTrait::Minimum) {
             vec = aabb.b[0];
-        } else if (posTrait == Maximum) {
+        } else if (posTrait == WorldPosTrait::Maximum) {
             vec = aabb.b[1];
-        } else if (posTrait == Center) {
+        } else if (posTrait == WorldPosTrait::Center) {
             vec = aabb.Center();
         } else {
             assert(0);
@@ -725,8 +725,8 @@ void Entity::RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMa
     for (int propIndex = 0; propIndex < propertyInfoList.Count(); propIndex++) {
         const auto &propInfo = propertyInfoList[propIndex];
             
-        if (propInfo.GetType() == Variant::GuidType) {
-            if (propInfo.GetFlags() & PropertyInfo::ArrayFlag) {
+        if (propInfo.GetType() == Variant::Type::Guid) {
+            if (propInfo.GetFlags() & PropertyInfo::Flag::Array) {
                 for (int arrayIndex = 0; arrayIndex < entity->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
                     const Guid fromGuid = entity->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
 
@@ -753,8 +753,8 @@ void Entity::RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMa
         for (int propIndex = 0; propIndex < propertyInfoList.Count(); propIndex++) {
             const auto &propInfo = propertyInfoList[propIndex];
 
-            if (propInfo.GetType() == Variant::GuidType) {
-                if (propInfo.GetFlags() & PropertyInfo::ArrayFlag) {
+            if (propInfo.GetType() == Variant::Type::Guid) {
+                if (propInfo.GetFlags() & PropertyInfo::Flag::Array) {
                     for (int arrayIndex = 0; arrayIndex < component->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
                         const Guid fromGuid = component->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
 

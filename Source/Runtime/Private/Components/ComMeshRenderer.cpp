@@ -28,15 +28,15 @@ END_EVENTS
 
 void ComMeshRenderer::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("mesh", "Mesh", Guid, GetMeshGuid, SetMeshGuid, GuidMapper::defaultMeshGuid, 
-        "", PropertyInfo::EditorFlag).SetMetaObject(&MeshAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&MeshAsset::metaObject);
     REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("materials", "Materials", Guid, GetMaterialGuid, SetMaterialGuid, GetMaterialCount, SetMaterialCount, GuidMapper::defaultMaterialGuid, 
-        "List of materials to use when rendering.", PropertyInfo::EditorFlag).SetMetaObject(&MaterialAsset::metaObject);
+        "List of materials to use when rendering.", PropertyInfo::Flag::Editor).SetMetaObject(&MaterialAsset::metaObject);
     REGISTER_ACCESSOR_PROPERTY("useEnvironmentProveLighting", "Use Env Probe Lighting", bool, IsUseEnvProbeLighting, SetUseEnvProbeLighting, true, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("castShadows", "Cast Shadows", bool, IsCastShadows, SetCastShadows, true, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("receiveShadows", "Receive Shadows", bool, IsReceiveShadows, SetReceiveShadows, true, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
 }
 
 ComMeshRenderer::ComMeshRenderer() {
@@ -127,7 +127,7 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     // Need mesh asset to be reloaded in editor
     meshAsset = (MeshAsset *)MeshAsset::FindInstance(meshGuid);
     if (meshAsset) {
-        meshAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComMeshRenderer::MeshReloaded, SignalObject::Queued);
+        meshAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComMeshRenderer::MeshReloaded, SignalObject::ConnectionType::Queued);
     }
 #endif
 }
@@ -209,42 +209,42 @@ void ComMeshRenderer::SetMaterial(int index, const Material *material) {
 }
 
 bool ComMeshRenderer::IsUseEnvProbeLighting() const {
-    return !!(renderObjectDef.flags & RenderObject::EnvProbeLitFlag);
+    return !!(renderObjectDef.flags & RenderObject::Flag::EnvProbeLit);
 }
 
 void ComMeshRenderer::SetUseEnvProbeLighting(bool useEnvProbe) {
     if (useEnvProbe) {
-        renderObjectDef.flags |= RenderObject::EnvProbeLitFlag;
+        renderObjectDef.flags |= RenderObject::Flag::EnvProbeLit;
     } else {
-        renderObjectDef.flags &= ~RenderObject::EnvProbeLitFlag;
+        renderObjectDef.flags &= ~RenderObject::Flag::EnvProbeLit;
     }
 
     UpdateVisuals();
 }
 
 bool ComMeshRenderer::IsCastShadows() const {
-    return !!(renderObjectDef.flags & RenderObject::CastShadowsFlag);
+    return !!(renderObjectDef.flags & RenderObject::Flag::CastShadows);
 }
 
 void ComMeshRenderer::SetCastShadows(bool castShadows) {
     if (castShadows) {
-        renderObjectDef.flags |= RenderObject::CastShadowsFlag;
+        renderObjectDef.flags |= RenderObject::Flag::CastShadows;
     } else {
-        renderObjectDef.flags &= ~RenderObject::CastShadowsFlag;
+        renderObjectDef.flags &= ~RenderObject::Flag::CastShadows;
     }
     
     UpdateVisuals();
 }
 
 bool ComMeshRenderer::IsReceiveShadows() const {
-    return !!(renderObjectDef.flags & RenderObject::ReceiveShadowsFlag);
+    return !!(renderObjectDef.flags & RenderObject::Flag::ReceiveShadows);
 }
 
 void ComMeshRenderer::SetReceiveShadows(bool receiveShadows) {
     if (receiveShadows) {
-        renderObjectDef.flags |= RenderObject::ReceiveShadowsFlag;
+        renderObjectDef.flags |= RenderObject::Flag::ReceiveShadows;
     } else {
-        renderObjectDef.flags &= ~RenderObject::ReceiveShadowsFlag;
+        renderObjectDef.flags &= ~RenderObject::Flag::ReceiveShadows;
     }
 
     UpdateVisuals();

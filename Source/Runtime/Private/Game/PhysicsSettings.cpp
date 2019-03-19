@@ -25,17 +25,17 @@ END_EVENTS
 
 void PhysicsSettings::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("frameRate", "Frame Rate", int, GetFrameRate, SetFrameRate, 50, 
-        "", PropertyInfo::EditorFlag).SetRange(1, 120, 1);
+        "", PropertyInfo::Flag::Editor).SetRange(1, 120, 1);
     REGISTER_ACCESSOR_PROPERTY("maximumAllowedTimeStep", "Maximum Allowed Timestep", float, GetMaximumAllowedTimeStep, SetMaximumAllowedTimeStep, 1.0f/5.0f, 
-        "", PropertyInfo::EditorFlag).SetRange(1.0f/120, 1.0f, 1.0f/120);
+        "", PropertyInfo::Flag::Editor).SetRange(1.0f/120, 1.0f, 1.0f/120);
     REGISTER_ACCESSOR_PROPERTY("solver", "Solver", int, GetSolver, SetSolver, 0, 
-        "", PropertyInfo::EditorFlag).SetEnumString("Sequential Impulse;NNCG Solver;MLCP (PGS);MLCP (Dantzig)");
+        "", PropertyInfo::Flag::Editor).SetEnumString("Sequential Impulse;NNCG Solver;MLCP (PGS);MLCP (Dantzig)");
     REGISTER_ACCESSOR_PROPERTY("solverIterations", "solverIterations", int, GetSolverIterations, SetSolverIterations, 10, 
-        "", PropertyInfo::EditorFlag).SetRange(1, 100, 1);
+        "", PropertyInfo::Flag::Editor).SetRange(1, 100, 1);
     REGISTER_MIXED_ACCESSOR_PROPERTY("gravity", "Gravity", Vec3, GetGravity, SetGravity, Vec3(0, 0, -980), 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_ARRAY_PROPERTY("filterMasks", "Filter Mask", int, GetFilterMaskElement, SetFilterMaskElement, GetFilterMaskCount, SetFilterMaskCount, -1, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
 }
 
 PhysicsSettings::PhysicsSettings() {

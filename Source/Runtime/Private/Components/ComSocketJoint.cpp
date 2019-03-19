@@ -27,9 +27,9 @@ END_EVENTS
 
 void ComSocketJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, 
-        "Joint position in local space", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "Joint position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("impulseClamp", "Impulse Clamp", float, GetImpulseClamp, SetImpulseClamp, 0, 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
 }
 
 ComSocketJoint::ComSocketJoint() {
@@ -53,7 +53,7 @@ void ComSocketJoint::CreateConstraint() {
 
     // Fill up a constraint description 
     PhysConstraintDesc desc;
-    desc.type = PhysConstraint::Point2Point;
+    desc.type = PhysConstraint::Type::Point2Point;
     desc.collision = collisionEnabled;
     desc.breakImpulse = breakImpulse;
 

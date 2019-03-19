@@ -58,27 +58,33 @@ class Mesh {
     friend class Batch;
     friend class ::MeshImporter;
 
-public:    
-    enum Type {
-        ReferenceMesh,      // 직접적으로 사용하지 않고, 다른 type 의 mesh 가 참조하는 용도로 사용한다.
-        StaticMesh,         // vertex 데이터는 static buffer 에 들어간다.
-        DynamicMesh,        // vertex 데이터를 CPU 에서 deform 하는 용도의 mesh (GUI, text, particle)
-        SkinnedMesh         // skinning 용 mesh
+public:
+    struct Type {
+        enum Enum {
+            Reference,      // 직접적으로 사용하지 않고, 다른 type 의 mesh 가 참조하는 용도로 사용한다.
+            Static,         // vertex 데이터는 static buffer 에 들어간다.
+            Dynamic,        // vertex 데이터를 CPU 에서 deform 하는 용도의 mesh (GUI, text, particle)
+            Skinned         // skinning 용 mesh
+        };
     };
 
-    enum InstancingMethod {
-        NoInstancing,
-        UniformBufferInstancing,
-        InstancedArraysInstancing
+    struct InstancingMethod {
+        enum Enum {
+            NoInstancing,
+            UniformBuffer,
+            InstancedArrays
+        };
     };
 
-    enum FinishFlag {
-        ComputeAABBFlag     = BIT(0),
-        ComputeNormalsFlag  = BIT(1),
-        ComputeTangentsFlag = BIT(2),
-        UseUnsmoothedTangentsFlag = BIT(3),
-        SortAndMergeFlag    = BIT(4),
-        OptimizeIndicesFlag = BIT(5)
+    struct FinishFlag {
+        enum Enum {
+            ComputeAABB             = BIT(0),
+            ComputeNormals          = BIT(1),
+            ComputeTangents         = BIT(2),
+            UseUnsmoothedTangents   = BIT(3),
+            SortAndMerge            = BIT(4),
+            OptimizeIndices         = BIT(5)
+        };
     };
 
     Mesh();

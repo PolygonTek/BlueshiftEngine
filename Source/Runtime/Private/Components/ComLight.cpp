@@ -29,34 +29,34 @@ BEGIN_EVENTS(ComLight)
 END_EVENTS
 
 void ComLight::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("lightType", "Light Type", RenderLight::Type, GetLightType, SetLightType, 0, 
-        "", PropertyInfo::EditorFlag).SetEnumString("Point;Spot;Directional");
+    REGISTER_ACCESSOR_PROPERTY("lightType", "Light Type", RenderLight::Type::Enum, GetLightType, SetLightType, 0, 
+        "", PropertyInfo::Flag::Editor).SetEnumString("Point;Spot;Directional");
     REGISTER_ACCESSOR_PROPERTY("primaryLight", "Is Main Light", bool, IsPrimaryLight, SetPrimaryLight, false,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("material", "Material", Guid, GetMaterialGuid, SetMaterialGuid, GuidMapper::zeroClampLightMaterialGuid, 
-        "", PropertyInfo::EditorFlag).SetMetaObject(&MaterialAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&MaterialAsset::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("color", "Color", Color3, GetColor, SetColor, Color3::white, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("intensity", "Intensity", float, GetIntensity, SetIntensity, 2.f,
-        "", PropertyInfo::EditorFlag).SetRange(0, 100, 0.01f);
+        "", PropertyInfo::Flag::Editor).SetRange(0, 100, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("fallOffExponent", "Fall Off Exponent", float, GetFallOffExponent, SetFallOffExponent, 1.25f,
-        "", PropertyInfo::EditorFlag).SetRange(0.01f, 100, 0.1f);
+        "", PropertyInfo::Flag::Editor).SetRange(0.01f, 100, 0.1f);
     REGISTER_MIXED_ACCESSOR_PROPERTY("lightSize", "Light Size", Vec3, GetLightSize, SetLightSize, Vec3(MeterToUnit(3.0f)),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("lightZNear", "Near Distance", float, GetLightZNear, SetLightZNear, MeterToUnit(0.1f),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(MeterToUnit(0.01f), 100, 0.01f);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(MeterToUnit(0.01f), 100, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("castShadows", "Shadows/Cast Shadows", bool, IsCastShadows, SetCastShadows, false,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("shadowOffsetFactor", "Shadows/Offset Factor", float, GetShadowOffsetFactor, SetShadowOffsetFactor, 3.f,
-        "", PropertyInfo::EditorFlag).SetRange(0, 16, 0.01f);
+        "", PropertyInfo::Flag::Editor).SetRange(0, 16, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("shadowOffsetUnits", "Shadows/Offset Units", float, GetShadowOffsetUnits, SetShadowOffsetUnits, 200.f,
-        "", PropertyInfo::EditorFlag).SetRange(0, 1000, 1);
+        "", PropertyInfo::Flag::Editor).SetRange(0, 1000, 1);
     REGISTER_ACCESSOR_PROPERTY("timerOffset", "Time Offset", float, GetTimeOffset, SetTimeOffset, 0.f, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("timeScale", "Time Scale", float, GetTimeScale, SetTimeScale, 1.f, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("maxVisDist", "Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 16384.f, 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
 }
 
 ComLight::ComLight() {
@@ -110,13 +110,13 @@ void ComLight::Purge(bool chainPurge) {
     }
 }
 
-static const char *LightSpriteTexturePath(RenderLight::Type lightType) {
+static const char *LightSpriteTexturePath(RenderLight::Type::Enum lightType) {
     switch (lightType) {
-    case RenderLight::PointLight:
+    case RenderLight::Type::Point:
         return "Data/EditorUI/OmniLight.png";
-    case RenderLight::SpotLight:
+    case RenderLight::Type::Spot:
         return "Data/EditorUI/ProjectedLight.png";
-    case RenderLight::DirectionalLight:
+    case RenderLight::Type::Directional:
         return "Data/EditorUI/DirectionalLight.png";
     default:
         assert(0);
@@ -136,34 +136,34 @@ void ComLight::Init() {
     renderLightDef.origin = transform->GetOrigin();
     renderLightDef.axis = transform->GetAxis();
 
-    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComLight::TransformUpdated, SignalObject::Unique);
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComLight::TransformUpdated, SignalObject::ConnectionType::Unique);
 
 #if 1
     // 3d sprite for editor
     spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
 
-    spriteDef.flags = RenderObject::BillboardFlag;
-    spriteDef.layer = TagLayerSettings::EditorLayer;
+    spriteDef.flags = RenderObject::Flag::Billboard;
+    spriteDef.layer = TagLayerSettings::BuiltInLayer::Editor;
     spriteDef.maxVisDist = MeterToUnit(50.0f);
 
-    Texture *spriteTexture = textureManager.GetTexture(LightSpriteTexturePath(renderLightDef.type), Texture::Clamp | Texture::HighQuality);
+    Texture *spriteTexture = textureManager.GetTexture(LightSpriteTexturePath(renderLightDef.type), Texture::Flag::Clamp | Texture::Flag::HighQuality);
     spriteDef.materials.SetCount(1);
-    spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
+    spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::TextureHint::Sprite);
     textureManager.ReleaseTexture(spriteTexture);
     
-    spriteDef.mesh = spriteMesh->InstantiateMesh(Mesh::StaticMesh);
+    spriteDef.mesh = spriteMesh->InstantiateMesh(Mesh::Type::Static);
     spriteDef.aabb = spriteMesh->GetAABB();
     spriteDef.worldMatrix = transform->GetMatrixNoScale();
-    spriteDef.materialParms[RenderObject::RedParm] = renderLightDef.materialParms[RenderObject::RedParm];
-    spriteDef.materialParms[RenderObject::GreenParm] = renderLightDef.materialParms[RenderObject::GreenParm];
-    spriteDef.materialParms[RenderObject::BlueParm] = renderLightDef.materialParms[RenderObject::BlueParm];
-    spriteDef.materialParms[RenderObject::AlphaParm] = 1.0f;
-    spriteDef.materialParms[RenderObject::TimeOffsetParm] = renderLightDef.materialParms[RenderObject::TimeOffsetParm];
-    spriteDef.materialParms[RenderObject::TimeScaleParm] = renderLightDef.materialParms[RenderObject::TimeScaleParm];
+    spriteDef.materialParms[RenderObject::MaterialParm::Red] = renderLightDef.materialParms[RenderObject::MaterialParm::Red];
+    spriteDef.materialParms[RenderObject::MaterialParm::Green] = renderLightDef.materialParms[RenderObject::MaterialParm::Green];
+    spriteDef.materialParms[RenderObject::MaterialParm::Blue] = renderLightDef.materialParms[RenderObject::MaterialParm::Blue];
+    spriteDef.materialParms[RenderObject::MaterialParm::Alpha] = 1.0f;
+    spriteDef.materialParms[RenderObject::MaterialParm::TimeOffset] = renderLightDef.materialParms[RenderObject::MaterialParm::TimeOffset];
+    spriteDef.materialParms[RenderObject::MaterialParm::TimeScale] = renderLightDef.materialParms[RenderObject::MaterialParm::TimeScale];
 #endif
 
-    GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComLight::LayerChanged, SignalObject::Unique);
-    GetEntity()->Connect(&Entity::SIG_StaticMaskChanged, this, (SignalCallback)&ComLight::StaticMaskChanged, SignalObject::Unique);
+    GetEntity()->Connect(&Entity::SIG_LayerChanged, this, (SignalCallback)&ComLight::LayerChanged, SignalObject::ConnectionType::Unique);
+    GetEntity()->Connect(&Entity::SIG_StaticMaskChanged, this, (SignalCallback)&ComLight::StaticMaskChanged, SignalObject::ConnectionType::Unique);
 
     // Mark as initialized
     SetInitialized(true);
@@ -203,7 +203,7 @@ bool ComLight::HasRenderEntity(int renderEntityHandle) const {
 void ComLight::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     const Color4 lightColor = Color4(GetColor(), 1.0f);
 
-    if (renderLightDef.type == RenderLight::DirectionalLight || renderLightDef.type == RenderLight::SpotLight) {
+    if (renderLightDef.type == RenderLight::Type::Directional || renderLightDef.type == RenderLight::Type::Spot) {
         if (selected) {
             renderWorld->SetDebugColor(Color4::white, Color4::zero);
         } else {
@@ -213,7 +213,7 @@ void ComLight::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
         if (selected) {
             renderWorld->SetDebugColor(lightColor, Color4::zero);
 
-            if (renderLightDef.type == RenderLight::DirectionalLight) {
+            if (renderLightDef.type == RenderLight::Type::Directional) {
                 OBB box;
                 box.SetCenter(renderLightDef.origin + renderLightDef.axis[0] * renderLightDef.size[0] * 0.5f);
                 box.SetExtents(Vec3(renderLightDef.size[0] * 0.5f, renderLightDef.size[1], renderLightDef.size[2]));
@@ -227,7 +227,7 @@ void ComLight::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
                 renderWorld->DebugFrustum(frustum, false, 1.0f, true, true);
             }
         }
-    } else if (renderLightDef.type == RenderLight::PointLight) {
+    } else if (renderLightDef.type == RenderLight::Type::Point) {
         if (selected) {
             renderWorld->SetDebugColor(Color4::white, Color4::zero);
         } else {
@@ -306,19 +306,19 @@ void ComLight::TransformUpdated(const ComTransform *transform) {
     UpdateVisuals();
 }
 
-RenderLight::Type ComLight::GetLightType() const {
+RenderLight::Type::Enum ComLight::GetLightType() const {
     return renderLightDef.type;
 }
 
-void ComLight::SetLightType(RenderLight::Type type) {
+void ComLight::SetLightType(RenderLight::Type::Enum type) {
     renderLightDef.type = type;
 
     if (IsInitialized()) {
 #if 1
         materialManager.ReleaseMaterial(spriteDef.materials[0]);
 
-        Texture *spriteTexture = textureManager.GetTexture(LightSpriteTexturePath(renderLightDef.type), Texture::Clamp | Texture::HighQuality);
-        spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
+        Texture *spriteTexture = textureManager.GetTexture(LightSpriteTexturePath(renderLightDef.type), Texture::Flag::Clamp | Texture::Flag::HighQuality);
+        spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::TextureHint::Sprite);
         textureManager.ReleaseTexture(spriteTexture);
 #endif
 
@@ -327,14 +327,14 @@ void ComLight::SetLightType(RenderLight::Type type) {
 }
 
 bool ComLight::IsPrimaryLight() const {
-    return !!(renderLightDef.flags & RenderLight::PrimaryLightFlag);
+    return !!(renderLightDef.flags & RenderLight::Flag::PrimaryLight);
 }
 
 void ComLight::SetPrimaryLight(bool isPrimaryLight) {
     if (isPrimaryLight) {
-        renderLightDef.flags |= RenderLight::PrimaryLightFlag;
+        renderLightDef.flags |= RenderLight::Flag::PrimaryLight;
     } else {
-        renderLightDef.flags &= ~RenderLight::PrimaryLightFlag;
+        renderLightDef.flags &= ~RenderLight::Flag::PrimaryLight;
     }
 
     UpdateVisuals();
@@ -394,52 +394,52 @@ void ComLight::SetMaterialGuid(const Guid &materialGuid) {
 }
 
 Color3 ComLight::GetColor() const {
-    return Color3(&renderLightDef.materialParms[RenderObject::RedParm]);
+    return Color3(&renderLightDef.materialParms[RenderObject::MaterialParm::Red]);
 }
 
 void ComLight::SetColor(const Color3 &color) {
-    renderLightDef.materialParms[RenderObject::RedParm] = color.r;
-    renderLightDef.materialParms[RenderObject::GreenParm] = color.g;
-    renderLightDef.materialParms[RenderObject::BlueParm] = color.b;
+    renderLightDef.materialParms[RenderObject::MaterialParm::Red] = color.r;
+    renderLightDef.materialParms[RenderObject::MaterialParm::Green] = color.g;
+    renderLightDef.materialParms[RenderObject::MaterialParm::Blue] = color.b;
 
 #if 1
-    spriteDef.materialParms[RenderObject::RedParm] = color.r;
-    spriteDef.materialParms[RenderObject::GreenParm] = color.g;
-    spriteDef.materialParms[RenderObject::BlueParm] = color.b;
+    spriteDef.materialParms[RenderObject::MaterialParm::Red] = color.r;
+    spriteDef.materialParms[RenderObject::MaterialParm::Green] = color.g;
+    spriteDef.materialParms[RenderObject::MaterialParm::Blue] = color.b;
 #endif
 
     UpdateVisuals();
 }
 
 float ComLight::GetTimeOffset() const {
-    return renderLightDef.materialParms[RenderObject::TimeOffsetParm];
+    return renderLightDef.materialParms[RenderObject::MaterialParm::TimeOffset];
 }
 
 void ComLight::SetTimeOffset(float timeOffset) {
-    renderLightDef.materialParms[RenderObject::TimeOffsetParm] = timeOffset;
+    renderLightDef.materialParms[RenderObject::MaterialParm::TimeOffset] = timeOffset;
 
     UpdateVisuals();
 }
 
 float ComLight::GetTimeScale() const {
-    return renderLightDef.materialParms[RenderObject::TimeScaleParm];
+    return renderLightDef.materialParms[RenderObject::MaterialParm::TimeScale];
 }
 
 void ComLight::SetTimeScale(float timeScale) {
-    renderLightDef.materialParms[RenderObject::TimeScaleParm] = timeScale;
+    renderLightDef.materialParms[RenderObject::MaterialParm::TimeScale] = timeScale;
 
     UpdateVisuals();
 }
 
 bool ComLight::IsCastShadows() const {
-    return !!(renderLightDef.flags & RenderLight::CastShadowsFlag);
+    return !!(renderLightDef.flags & RenderLight::Flag::CastShadows);
 }
 
 void ComLight::SetCastShadows(bool castShadows) {
     if (castShadows) {
-        renderLightDef.flags |= RenderLight::CastShadowsFlag;
+        renderLightDef.flags |= RenderLight::Flag::CastShadows;
     } else {
-        renderLightDef.flags &= ~RenderLight::CastShadowsFlag;
+        renderLightDef.flags &= ~RenderLight::Flag::CastShadows;
     }
 
     UpdateVisuals();

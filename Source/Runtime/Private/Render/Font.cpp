@@ -37,14 +37,14 @@ bool Font::Load(const char *filename) {
             delete fontFace;
             return false;
         }
-        fontType = BitmapFont;
+        fontType = FontType::Bitmap;
     } else {
         fontFace = new FontFaceFreeType;
         if (!fontFace->Load(filename, fontSize)) {
             delete fontFace;
             return false;
         }
-        fontType = FreeTypeFont;
+        fontType = FontType::FreeType;
     }
 
     return true;

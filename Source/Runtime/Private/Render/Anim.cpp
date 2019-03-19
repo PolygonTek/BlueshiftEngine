@@ -131,44 +131,44 @@ Anim *Anim::CreateAdditiveAnim(const char *hashName, const JointPose *firstFrame
 
             float *componentPtr = &additiveAnim->components[jointInfoPtr->componentOffset + i * numComponentsPerFrame];
 
-            if (jointInfoPtr->componentBits & (Tx | Ty | Tz)) {
-                if (jointInfoPtr->componentBits & Tx) {
+            if (jointInfoPtr->componentBits & (ComponentBit::Tx | ComponentBit::Ty | ComponentBit::Tz)) {
+                if (jointInfoPtr->componentBits & ComponentBit::Tx) {
                     *componentPtr++ = jointFrame[jointIndex].t[0];
                 }
 
-                if (jointInfoPtr->componentBits & Ty) {
+                if (jointInfoPtr->componentBits & ComponentBit::Ty) {
                     *componentPtr++ = jointFrame[jointIndex].t[1];
                 }
 
-                if (jointInfoPtr->componentBits & Tz) {
+                if (jointInfoPtr->componentBits & ComponentBit::Tz) {
                     *componentPtr++ = jointFrame[jointIndex].t[2];
                 }
             }
 
-            if (jointInfoPtr->componentBits & (Qx | Qy | Qz)) {
-                if (jointInfoPtr->componentBits & Qx) {
+            if (jointInfoPtr->componentBits & (ComponentBit::Qx | ComponentBit::Qy | ComponentBit::Qz)) {
+                if (jointInfoPtr->componentBits & ComponentBit::Qx) {
                     *componentPtr++ = jointFrame[jointIndex].q[0];
                 }
 
-                if (jointInfoPtr->componentBits & Qy) {
+                if (jointInfoPtr->componentBits & ComponentBit::Qy) {
                     *componentPtr++ = jointFrame[jointIndex].q[1];
                 }
 
-                if (jointInfoPtr->componentBits & Qz) {
+                if (jointInfoPtr->componentBits & ComponentBit::Qz) {
                     *componentPtr++ = jointFrame[jointIndex].q[2];
                 }
             }
 
-            if (jointInfoPtr->componentBits & (Sx | Sy | Sz)) {
-                if (jointInfoPtr->componentBits & Sx) {
+            if (jointInfoPtr->componentBits & (ComponentBit::Sx | ComponentBit::Sy | ComponentBit::Sz)) {
+                if (jointInfoPtr->componentBits & ComponentBit::Sx) {
                     *componentPtr++ = jointFrame[jointIndex].s[0];
                 }
 
-                if (jointInfoPtr->componentBits & Sy) {
+                if (jointInfoPtr->componentBits & ComponentBit::Sy) {
                     *componentPtr++ = jointFrame[jointIndex].s[1];
                 }
 
-                if (jointInfoPtr->componentBits & Sz) {
+                if (jointInfoPtr->componentBits & ComponentBit::Sz) {
                     *componentPtr++ = jointFrame[jointIndex].s[2];
                 }
             }
@@ -293,21 +293,21 @@ void Anim::ComputeTotalDelta() {
 
         const float *componentPtr = &components[rootJoint.componentOffset];
 
-        if (rootJoint.componentBits & Tx) {
+        if (rootJoint.componentBits & ComponentBit::Tx) {
             totalDelta.x = componentPtr[numComponentsPerFrame * (numFrames - 1)] - baseFrame[0].t[0];
             componentPtr++;
         } else {
             totalDelta.x = 0.0f;
         }
 
-        if (rootJoint.componentBits & Ty) {
+        if (rootJoint.componentBits & ComponentBit::Ty) {
             totalDelta.y = componentPtr[numComponentsPerFrame * (numFrames - 1)] - baseFrame[0].t[1];
             componentPtr++;
         } else {
             totalDelta.y = 0.0f;
         }
 
-        if (rootJoint.componentBits & Tz) {
+        if (rootJoint.componentBits & ComponentBit::Tz) {
             totalDelta.z = componentPtr[numComponentsPerFrame * (numFrames - 1)] - baseFrame[0].t[2];
         } else {
             totalDelta.z = 0.0f;
@@ -475,7 +475,7 @@ void Anim::GetTranslation(Vec3 &outTranslation, int time, bool isCyclicTranslati
 
     const JointInfo &rootJoint = joints[0];
 
-    if (!(rootJoint.componentBits & (Tx | Ty | Tz))) {
+    if (!(rootJoint.componentBits & (ComponentBit::Tx | ComponentBit::Ty | ComponentBit::Tz))) {
         // just use the baseframe
         return;
     }
@@ -485,19 +485,19 @@ void Anim::GetTranslation(Vec3 &outTranslation, int time, bool isCyclicTranslati
     const float *componentPtr1 = &components[rootJoint.componentOffset + numComponentsPerFrame * frame.frame1];
     const float *componentPtr2 = &components[rootJoint.componentOffset + numComponentsPerFrame * frame.frame2];
 
-    if (rootJoint.componentBits & Tx) {
+    if (rootJoint.componentBits & ComponentBit::Tx) {
         outTranslation.x = *componentPtr1 * frame.frontlerp + *componentPtr2 * frame.backlerp;
         componentPtr1++;
         componentPtr2++;
     }
 
-    if (rootJoint.componentBits & Ty) {
+    if (rootJoint.componentBits & ComponentBit::Ty) {
         outTranslation.y = *componentPtr1 * frame.frontlerp + *componentPtr2 * frame.backlerp;
         componentPtr1++;
         componentPtr2++;
     }
 
-    if (rootJoint.componentBits & Tz) {
+    if (rootJoint.componentBits & ComponentBit::Tz) {
         outTranslation.z = *componentPtr1 * frame.frontlerp + *componentPtr2 * frame.backlerp;
     }
 
@@ -524,7 +524,7 @@ void Anim::GetRotation(Quat &outRotation, int time) const {
     const JointInfo &rootJoint = joints[0];
 
     int componentBits = rootJoint.componentBits;
-    if (!(componentBits & (Qx | Qy | Qz))) {
+    if (!(componentBits & (ComponentBit::Qx | ComponentBit::Qy | ComponentBit::Qz))) {
         // just use the baseframe
         outRotation[0] = baseFrame[0].q[0];
         outRotation[1] = baseFrame[0].q[1];
@@ -539,17 +539,17 @@ void Anim::GetRotation(Quat &outRotation, int time) const {
     const float *componentPtr1 = &components[rootJoint.componentOffset + numComponentsPerFrame * frame.frame1];
     const float *componentPtr2 = &components[rootJoint.componentOffset + numComponentsPerFrame * frame.frame2];
 
-    if (componentBits & Tx) {
+    if (componentBits & ComponentBit::Tx) {
         componentPtr1++;
         componentPtr2++;
     }
 
-    if (componentBits & Ty) {
+    if (componentBits & ComponentBit::Ty) {
         componentPtr1++;
         componentPtr2++;
     }
 
-    if (componentBits & Tz) {
+    if (componentBits & ComponentBit::Tz) {
         componentPtr1++;
         componentPtr2++;
     }
@@ -557,8 +557,8 @@ void Anim::GetRotation(Quat &outRotation, int time) const {
     Quat q1;
     Quat q2;
 
-    switch (componentBits & (Qx | Qy | Qz)) {
-    case Qx:
+    switch (componentBits & (ComponentBit::Qx | ComponentBit::Qy | ComponentBit::Qz)) {
+    case ComponentBit::Qx:
         q1.x = componentPtr1[0];
         q2.x = componentPtr2[0];
         q1.y = baseFrame[0].q[1];
@@ -568,7 +568,7 @@ void Anim::GetRotation(Quat &outRotation, int time) const {
         q1.w = q1.CalcW();
         q2.w = q2.CalcW();
         break;
-    case Qy:
+    case ComponentBit::Qy:
         q1.y = componentPtr1[0];
         q2.y = componentPtr2[0];
         q1.x = baseFrame[0].q[0];
@@ -578,7 +578,7 @@ void Anim::GetRotation(Quat &outRotation, int time) const {
         q1.w = q1.CalcW();
         q2.w = q2.CalcW();
         break;
-    case Qz:
+    case ComponentBit::Qz:
         q1.z = componentPtr1[0];
         q2.z = componentPtr2[0];
         q1.x = baseFrame[0].q[0];
@@ -588,7 +588,7 @@ void Anim::GetRotation(Quat &outRotation, int time) const {
         q1.w = q1.CalcW();
         q2.w = q2.CalcW();
         break;
-    case Qx | Qy:
+    case ComponentBit::Qx | ComponentBit::Qy:
         q1.x = componentPtr1[0];
         q1.y = componentPtr1[1];
         q2.x = componentPtr2[0];
@@ -598,7 +598,7 @@ void Anim::GetRotation(Quat &outRotation, int time) const {
         q1.w = q1.CalcW();
         q2.w = q2.CalcW();
         break;
-    case Qx | Qz:
+    case ComponentBit::Qx | ComponentBit::Qz:
         q1.x = componentPtr1[0];
         q1.z = componentPtr1[1];
         q2.x = componentPtr2[0];
@@ -608,7 +608,7 @@ void Anim::GetRotation(Quat &outRotation, int time) const {
         q1.w = q1.CalcW();
         q2.w = q2.CalcW();
         break;
-    case Qy | Qz:
+    case ComponentBit::Qy | ComponentBit::Qz:
         q1.y = componentPtr1[0];
         q1.z = componentPtr1[1];
         q2.y = componentPtr2[0];
@@ -618,7 +618,7 @@ void Anim::GetRotation(Quat &outRotation, int time) const {
         q1.w = q1.CalcW();
         q2.w = q2.CalcW();
         break;
-    case Qx | Qy | Qz:
+    case ComponentBit::Qx | ComponentBit::Qy | ComponentBit::Qz:
         q1.x = componentPtr1[0];
         q1.y = componentPtr1[1];
         q1.z = componentPtr1[2];
@@ -637,7 +637,7 @@ void Anim::GetScaling(Vec3 &outScaling, int time) const {
     const JointInfo &rootJoint = joints[0];
 
     int componentBits = rootJoint.componentBits;
-    if (!(componentBits & (Sx | Sy | Sz))) {
+    if (!(componentBits & (ComponentBit::Sx | ComponentBit::Sy | ComponentBit::Sz))) {
         // just use the baseframe
         outScaling = baseFrame[0].s;
         return;
@@ -649,53 +649,53 @@ void Anim::GetScaling(Vec3 &outScaling, int time) const {
     const float *componentPtr1 = &components[rootJoint.componentOffset + numComponentsPerFrame * frame.frame1];
     const float *componentPtr2 = &components[rootJoint.componentOffset + numComponentsPerFrame * frame.frame2];
 
-    if (componentBits & (Tx | Ty | Tz)) {
-        if (componentBits & Tx) {
+    if (componentBits & (ComponentBit::Tx | ComponentBit::Ty | ComponentBit::Tz)) {
+        if (componentBits & ComponentBit::Tx) {
             componentPtr1++;
             componentPtr2++;
         }
 
-        if (componentBits & Ty) {
+        if (componentBits & ComponentBit::Ty) {
             componentPtr1++;
             componentPtr2++;
         }
 
-        if (componentBits & Tz) {
-            componentPtr1++;
-            componentPtr2++;
-        }
-    }
-
-    if (componentBits & (Qx | Qy | Qz)) {
-        if (componentBits & Qx) {
-            componentPtr1++;
-            componentPtr2++;
-        }
-
-        if (componentBits & Qy) {
-            componentPtr1++;
-            componentPtr2++;
-        }
-
-        if (componentBits & Qz) {
+        if (componentBits & ComponentBit::Tz) {
             componentPtr1++;
             componentPtr2++;
         }
     }
 
-    if (rootJoint.componentBits & Sx) {
+    if (componentBits & (ComponentBit::Qx | ComponentBit::Qy | ComponentBit::Qz)) {
+        if (componentBits & ComponentBit::Qx) {
+            componentPtr1++;
+            componentPtr2++;
+        }
+
+        if (componentBits & ComponentBit::Qy) {
+            componentPtr1++;
+            componentPtr2++;
+        }
+
+        if (componentBits & ComponentBit::Qz) {
+            componentPtr1++;
+            componentPtr2++;
+        }
+    }
+
+    if (rootJoint.componentBits & ComponentBit::Sx) {
         outScaling.x = *componentPtr1 * frame.frontlerp + *componentPtr2 * frame.backlerp;
         componentPtr1++;
         componentPtr2++;
     }
 
-    if (rootJoint.componentBits & Sy) {
+    if (rootJoint.componentBits & ComponentBit::Sy) {
         outScaling.y = *componentPtr1 * frame.frontlerp + *componentPtr2 * frame.backlerp;
         componentPtr1++;
         componentPtr2++;
     }
 
-    if (rootJoint.componentBits & Sz) {
+    if (rootJoint.componentBits & ComponentBit::Sz) {
         outScaling.z = *componentPtr1 * frame.frontlerp + *componentPtr2 * frame.backlerp;
     }
 }
@@ -741,46 +741,46 @@ static void DecodeSingleFrame(const Anim::JointInfo *joints, int numJointIndexes
         JointPose *frameJointPtr = &frame[jointIndex];
         const float *jointComponentPtr = frameComponents + jointInfoPtr->componentOffset;
 
-        if (componentBits & (Anim::Tx | Anim::Ty | Anim::Tz)) {
-            if (componentBits & Anim::Tx) {
+        if (componentBits & (Anim::ComponentBit::Tx | Anim::ComponentBit::Ty | Anim::ComponentBit::Tz)) {
+            if (componentBits & Anim::ComponentBit::Tx) {
                 frameJointPtr->t.x = *jointComponentPtr++;
             }
 
-            if (componentBits & Anim::Ty) {
+            if (componentBits & Anim::ComponentBit::Ty) {
                 frameJointPtr->t.y = *jointComponentPtr++;
             }
 
-            if (componentBits & Anim::Tz) {
+            if (componentBits & Anim::ComponentBit::Tz) {
                 frameJointPtr->t.z = *jointComponentPtr++;
             }
         }
 
-        if (componentBits & (Anim::Qx | Anim::Qy | Anim::Qz)) {
-            if (componentBits & Anim::Qx) {
+        if (componentBits & (Anim::ComponentBit::Qx | Anim::ComponentBit::Qy | Anim::ComponentBit::Qz)) {
+            if (componentBits & Anim::ComponentBit::Qx) {
                 frameJointPtr->q.x = *jointComponentPtr++;
             }
 
-            if (componentBits & Anim::Qy) {
+            if (componentBits & Anim::ComponentBit::Qy) {
                 frameJointPtr->q.y = *jointComponentPtr++;
             }
 
-            if (componentBits & Anim::Qz) {
+            if (componentBits & Anim::ComponentBit::Qz) {
                 frameJointPtr->q.z = *jointComponentPtr++;
             }
 
             frameJointPtr->q.w = frameJointPtr->q.CalcW();
         }
 
-        if (componentBits & (Anim::Sx | Anim::Sy | Anim::Sz)) {
-            if (componentBits & Anim::Sx) {
+        if (componentBits & (Anim::ComponentBit::Sx | Anim::ComponentBit::Sy | Anim::ComponentBit::Sz)) {
+            if (componentBits & Anim::ComponentBit::Sx) {
                 frameJointPtr->s.x = *jointComponentPtr++;
             }
 
-            if (componentBits & Anim::Sy) {
+            if (componentBits & Anim::ComponentBit::Sy) {
                 frameJointPtr->s.y = *jointComponentPtr++;
             }
 
-            if (componentBits & Anim::Sz) {
+            if (componentBits & Anim::ComponentBit::Sz) {
                 frameJointPtr->s.z = *jointComponentPtr++;
             }
         }
@@ -835,11 +835,11 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
         const float *jointComponentPtr1 = frameComponents1 + jointInfoPtr->componentOffset;
         const float *jointComponentPtr2 = frameComponents2 + jointInfoPtr->componentOffset;
 
-        switch (componentBits & (Anim::Tx | Anim::Ty | Anim::Tz)) {
+        switch (componentBits & (Anim::ComponentBit::Tx | Anim::ComponentBit::Ty | Anim::ComponentBit::Tz)) {
         case 0:
             blendJointPtr->t = frameJointPtr->t;
             break;
-        case Anim::Tx:
+        case Anim::ComponentBit::Tx:
             frameJointPtr->t.x = jointComponentPtr1[0];
             blendJointPtr->t.x = jointComponentPtr2[0];
             blendJointPtr->t.y = frameJointPtr->t.y;
@@ -847,7 +847,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             jointComponentPtr1++;
             jointComponentPtr2++;
             break;
-        case Anim::Ty:
+        case Anim::ComponentBit::Ty:
             frameJointPtr->t.y = jointComponentPtr1[0];
             blendJointPtr->t.y = jointComponentPtr2[0];
             blendJointPtr->t.x = frameJointPtr->t.x;
@@ -855,7 +855,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             jointComponentPtr1++;
             jointComponentPtr2++;
             break;
-        case Anim::Tz:
+        case Anim::ComponentBit::Tz:
             frameJointPtr->t.z = jointComponentPtr1[0];
             blendJointPtr->t.z = jointComponentPtr2[0];
             blendJointPtr->t.x = frameJointPtr->t.x;
@@ -863,7 +863,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             jointComponentPtr1++;
             jointComponentPtr2++;
             break;
-        case Anim::Tx | Anim::Ty:
+        case Anim::ComponentBit::Tx | Anim::ComponentBit::Ty:
             frameJointPtr->t.x = jointComponentPtr1[0];
             frameJointPtr->t.y = jointComponentPtr1[1];
             blendJointPtr->t.x = jointComponentPtr2[0];
@@ -872,7 +872,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             jointComponentPtr1 += 2;
             jointComponentPtr2 += 2;
             break;
-        case Anim::Tx | Anim::Tz:
+        case Anim::ComponentBit::Tx | Anim::ComponentBit::Tz:
             frameJointPtr->t.x = jointComponentPtr1[0];
             frameJointPtr->t.z = jointComponentPtr1[1];
             blendJointPtr->t.x = jointComponentPtr2[0];
@@ -881,7 +881,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             jointComponentPtr1 += 2;
             jointComponentPtr2 += 2;
             break;
-        case Anim::Ty | Anim::Tz:
+        case Anim::ComponentBit::Ty | Anim::ComponentBit::Tz:
             frameJointPtr->t.y = jointComponentPtr1[0];
             frameJointPtr->t.z = jointComponentPtr1[1];
             blendJointPtr->t.y = jointComponentPtr2[0];
@@ -890,7 +890,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             jointComponentPtr1 += 2;
             jointComponentPtr2 += 2;
             break;
-        case Anim::Tx | Anim::Ty | Anim::Tz:
+        case Anim::ComponentBit::Tx | Anim::ComponentBit::Ty | Anim::ComponentBit::Tz:
             frameJointPtr->t.x = jointComponentPtr1[0];
             frameJointPtr->t.y = jointComponentPtr1[1];
             frameJointPtr->t.z = jointComponentPtr1[2];
@@ -902,11 +902,11 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             break;
         }
 
-        switch (componentBits & (Anim::Qx | Anim::Qy | Anim::Qz)) {
+        switch (componentBits & (Anim::ComponentBit::Qx | Anim::ComponentBit::Qy | Anim::ComponentBit::Qz)) {
         case 0:
             blendJointPtr->q = frameJointPtr->q;
             break;
-        case Anim::Qx:
+        case Anim::ComponentBit::Qx:
             frameJointPtr->q.x = jointComponentPtr1[0];
             blendJointPtr->q.x = jointComponentPtr2[0];
             blendJointPtr->q.y = frameJointPtr->q.y;
@@ -914,7 +914,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             frameJointPtr->q.w = frameJointPtr->q.CalcW();
             blendJointPtr->q.w = blendJointPtr->q.CalcW();
             break;
-        case Anim::Qy:
+        case Anim::ComponentBit::Qy:
             frameJointPtr->q.y = jointComponentPtr1[0];
             blendJointPtr->q.y = jointComponentPtr2[0];
             blendJointPtr->q.x = frameJointPtr->q.x;
@@ -922,7 +922,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             frameJointPtr->q.w = frameJointPtr->q.CalcW();
             blendJointPtr->q.w = blendJointPtr->q.CalcW();
             break;
-        case Anim::Qz:
+        case Anim::ComponentBit::Qz:
             frameJointPtr->q.z = jointComponentPtr1[0];
             blendJointPtr->q.z = jointComponentPtr2[0];
             blendJointPtr->q.x = frameJointPtr->q.x;
@@ -930,7 +930,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             frameJointPtr->q.w = frameJointPtr->q.CalcW();
             blendJointPtr->q.w = blendJointPtr->q.CalcW();
             break;
-        case Anim::Qx | Anim::Qy:
+        case Anim::ComponentBit::Qx | Anim::ComponentBit::Qy:
             frameJointPtr->q.x = jointComponentPtr1[0];
             frameJointPtr->q.y = jointComponentPtr1[1];
             blendJointPtr->q.x = jointComponentPtr2[0];
@@ -939,7 +939,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             frameJointPtr->q.w = frameJointPtr->q.CalcW();
             blendJointPtr->q.w = blendJointPtr->q.CalcW();
             break;
-        case Anim::Qx | Anim::Qz:
+        case Anim::ComponentBit::Qx | Anim::ComponentBit::Qz:
             frameJointPtr->q.x = jointComponentPtr1[0];
             frameJointPtr->q.z = jointComponentPtr1[1];
             blendJointPtr->q.x = jointComponentPtr2[0];
@@ -948,7 +948,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             frameJointPtr->q.w = frameJointPtr->q.CalcW();
             blendJointPtr->q.w = blendJointPtr->q.CalcW();
             break;
-        case Anim::Qy | Anim::Qz:
+        case Anim::ComponentBit::Qy | Anim::ComponentBit::Qz:
             frameJointPtr->q.y = jointComponentPtr1[0];
             frameJointPtr->q.z = jointComponentPtr1[1];
             blendJointPtr->q.y = jointComponentPtr2[0];
@@ -957,7 +957,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             frameJointPtr->q.w = frameJointPtr->q.CalcW();
             blendJointPtr->q.w = blendJointPtr->q.CalcW();
             break;
-        case Anim::Qx | Anim::Qy | Anim::Qz:
+        case Anim::ComponentBit::Qx | Anim::ComponentBit::Qy | Anim::ComponentBit::Qz:
             frameJointPtr->q.x = jointComponentPtr1[0];
             frameJointPtr->q.y = jointComponentPtr1[1];
             frameJointPtr->q.z = jointComponentPtr1[2];
@@ -969,11 +969,11 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             break;
         }
 
-        switch (componentBits & (Anim::Sx | Anim::Sy | Anim::Sz)) {
+        switch (componentBits & (Anim::ComponentBit::Sx | Anim::ComponentBit::Sy | Anim::ComponentBit::Sz)) {
         case 0:
             blendJointPtr->s = frameJointPtr->s;
             break;
-        case Anim::Sx:
+        case Anim::ComponentBit::Sx:
             frameJointPtr->s.x = jointComponentPtr1[0];
             blendJointPtr->s.x = jointComponentPtr2[0];
             blendJointPtr->s.y = frameJointPtr->s.y;
@@ -981,7 +981,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             jointComponentPtr1++;
             jointComponentPtr2++;
             break;
-        case Anim::Sy:
+        case Anim::ComponentBit::Sy:
             frameJointPtr->s.y = jointComponentPtr1[0];
             blendJointPtr->s.y = jointComponentPtr2[0];
             blendJointPtr->s.x = frameJointPtr->s.x;
@@ -989,7 +989,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             jointComponentPtr1++;
             jointComponentPtr2++;
             break;
-        case Anim::Sz:
+        case Anim::ComponentBit::Sz:
             frameJointPtr->s.z = jointComponentPtr1[0];
             blendJointPtr->s.z = jointComponentPtr2[0];
             blendJointPtr->s.x = frameJointPtr->s.x;
@@ -997,7 +997,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             jointComponentPtr1++;
             jointComponentPtr2++;
             break;
-        case Anim::Sx | Anim::Sy:
+        case Anim::ComponentBit::Sx | Anim::ComponentBit::Sy:
             frameJointPtr->s.x = jointComponentPtr1[0];
             frameJointPtr->s.y = jointComponentPtr1[1];
             blendJointPtr->s.x = jointComponentPtr2[0];
@@ -1006,7 +1006,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             jointComponentPtr1 += 2;
             jointComponentPtr2 += 2;
             break;
-        case Anim::Sx | Anim::Sz:
+        case Anim::ComponentBit::Sx | Anim::ComponentBit::Sz:
             frameJointPtr->s.x = jointComponentPtr1[0];
             frameJointPtr->s.z = jointComponentPtr1[1];
             blendJointPtr->s.x = jointComponentPtr2[0];
@@ -1015,7 +1015,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             jointComponentPtr1 += 2;
             jointComponentPtr2 += 2;
             break;
-        case Anim::Sy | Anim::Sz:
+        case Anim::ComponentBit::Sy | Anim::ComponentBit::Sz:
             frameJointPtr->s.y = jointComponentPtr1[0];
             frameJointPtr->s.z = jointComponentPtr1[1];
             blendJointPtr->s.y = jointComponentPtr2[0];
@@ -1024,7 +1024,7 @@ static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIn
             jointComponentPtr1 += 2;
             jointComponentPtr2 += 2;
             break;
-        case Anim::Sx | Anim::Sy | Anim::Sz:
+        case Anim::ComponentBit::Sx | Anim::ComponentBit::Sy | Anim::ComponentBit::Sz:
             frameJointPtr->s.x = jointComponentPtr1[0];
             frameJointPtr->s.y = jointComponentPtr1[1];
             frameJointPtr->s.z = jointComponentPtr1[2];

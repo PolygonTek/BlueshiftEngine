@@ -33,7 +33,7 @@ OpenGLRHI       rhi;
 
 Str             GLShader::programCacheDir;
 
-CVar            gl_sRGB("gl_sRGB", "1", CVar::Bool | CVar::Archive, "enable sRGB color calibration");
+CVar            gl_sRGB("gl_sRGB", "1", CVar::Flag::Bool | CVar::Flag::Archive, "enable sRGB color calibration");
 
 OpenGLRHI::OpenGLRHI() {
     initialized = false;
@@ -453,7 +453,7 @@ void OpenGLRHI::Clear(int clearBits, const Color4 &color, float depth, unsigned 
 #endif
 }
 
-void OpenGLRHI::ReadPixels(int x, int y, int width, int height, Image::Format imageFormat, byte *data) {
+void OpenGLRHI::ReadPixels(int x, int y, int width, int height, Image::Format::Enum imageFormat, byte *data) {
     GLenum  format;
     GLenum  type;
     

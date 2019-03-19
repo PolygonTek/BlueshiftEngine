@@ -185,7 +185,7 @@ static int ETCTextureDecompress(const void * const pSrcData, const int &x, const
 @Description	Decompresses ETC to RGBA 8888
 *************************************************************************/
 void DecompressETC1(const Image &srcImage, Image &dstImage) {
-    assert(dstImage.GetFormat() == Image::RGBA_8_8_8_8);
+    assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
     assert(dstImage.GetPixels());
 
     int x = srcImage.GetWidth();

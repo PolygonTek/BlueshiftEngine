@@ -22,52 +22,52 @@
 BE_NAMESPACE_BEGIN
 
 static bool DecompressImage(const Image &srcImage, Image &dstImage) {
-    assert(dstImage.GetFormat() == Image::RGBA_8_8_8_8);
+    assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
     assert(dstImage.GetPixels());
 
     switch (srcImage.GetFormat()) {
-    case Image::RGBA_DXT1:
+    case Image::Format::RGBA_DXT1:
         DecompressDXT1(srcImage, dstImage);
         break;
-    case Image::RGBA_DXT3:
+    case Image::Format::RGBA_DXT3:
         DecompressDXT3(srcImage, dstImage);
         break;
-    case Image::RGBA_DXT5:
+    case Image::Format::RGBA_DXT5:
         DecompressDXT5(srcImage, dstImage);
         break;
-    case Image::XGBR_DXT5:
+    case Image::Format::XGBR_DXT5:
         DecompressDXT5(srcImage, dstImage);
         BE_WARNLOG("XGBR_DXT5n\n");
         break;
-    case Image::DXN2:
+    case Image::Format::DXN2:
         DecompressDXN2(srcImage, dstImage);
         break;
-    case Image::RGB_PVRTC_2BPPV1:
-    case Image::RGBA_PVRTC_2BPPV1:
-    case Image::RGBA_PVRTC_2BPPV2:
+    case Image::Format::RGB_PVRTC_2BPPV1:
+    case Image::Format::RGBA_PVRTC_2BPPV1:
+    case Image::Format::RGBA_PVRTC_2BPPV2:
         DecompressPVRTC(srcImage, dstImage, 1);
         break;
-    case Image::RGB_PVRTC_4BPPV1:
-    case Image::RGBA_PVRTC_4BPPV1:
-    case Image::RGBA_PVRTC_4BPPV2:
+    case Image::Format::RGB_PVRTC_4BPPV1:
+    case Image::Format::RGBA_PVRTC_4BPPV1:
+    case Image::Format::RGBA_PVRTC_4BPPV2:
         DecompressPVRTC(srcImage, dstImage, 0);
         break;
-    case Image::RGB_8_ETC1:
+    case Image::Format::RGB_8_ETC1:
         DecompressETC1(srcImage, dstImage);
         break;
-    case Image::RGB_8_ETC2:
+    case Image::Format::RGB_8_ETC2:
         DecompressETC2_RGB8(srcImage, dstImage);
         break;
-    case Image::RGBA_8_1_ETC2:
+    case Image::Format::RGBA_8_1_ETC2:
         DecompressETC2_RGB8A1(srcImage, dstImage);
         break;
-    case Image::RGBA_8_8_ETC2:
+    case Image::Format::RGBA_8_8_ETC2:
         DecompressETC2_RGBA8(srcImage, dstImage);
         break;
-    case Image::RG_11_11_EAC:
+    case Image::Format::RG_11_11_EAC:
         DecompressETC2_RG11(srcImage, dstImage);
         break;
-    case Image::SignedRG_11_11_EAC:
+    case Image::Format::SignedRG_11_11_EAC:
         DecompressETC2_Signed_RG11(srcImage, dstImage);
         break;
     default:
@@ -78,38 +78,38 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
     return true;
 }
 
-static bool CompressImage(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality) {
-    assert(srcImage.GetFormat() == Image::RGBA_8_8_8_8);
+static bool CompressImage(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
+    assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
     assert(srcImage.GetPixels());
 
     //uint64_t startClocks = rdtsc();
 
     switch (dstImage.GetFormat()) {
-    case Image::RGBA_DXT1:
+    case Image::Format::RGBA_DXT1:
         CompressDXT1(srcImage, dstImage, compressoinQuality);
         break;
-    case Image::RGBA_DXT3:
+    case Image::Format::RGBA_DXT3:
         CompressDXT3(srcImage, dstImage, compressoinQuality);
         break;
-    case Image::RGBA_DXT5:
+    case Image::Format::RGBA_DXT5:
         CompressDXT5(srcImage, dstImage, compressoinQuality);
         break;
-    case Image::DXN2:
+    case Image::Format::DXN2:
         CompressDXN2(srcImage, dstImage, compressoinQuality);
         break;
-    case Image::RGB_8_ETC1:
+    case Image::Format::RGB_8_ETC1:
         CompressETC1(srcImage, dstImage, compressoinQuality);
         break;
-    case Image::RGB_8_ETC2:
+    case Image::Format::RGB_8_ETC2:
         CompressETC2_RGB8(srcImage, dstImage, compressoinQuality);
         break;
-    case Image::RGBA_8_1_ETC2:
+    case Image::Format::RGBA_8_1_ETC2:
         CompressETC2_RGBA1(srcImage, dstImage, compressoinQuality);
         break;
-    case Image::RGBA_8_8_ETC2:
+    case Image::Format::RGBA_8_8_ETC2:
         CompressETC2_RGBA8(srcImage, dstImage, compressoinQuality);
         break;
-    case Image::SignedRG_11_11_EAC:
+    case Image::Format::SignedRG_11_11_EAC:
         CompressETC2_Signed_RG11(srcImage, dstImage, compressoinQuality);
         break;
     default:
@@ -123,7 +123,7 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
     return true;
 }
 
-bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regenerateMipmaps, Image::CompressionQuality compressionQuality) const {
+bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool regenerateMipmaps, Image::CompressionQuality::Enum compressionQuality) const {
     const Image *srcImage = this;
     const ImageFormatInfo *srcFormatInfo = GetImageFormatInfo(srcImage->GetFormat());
     const ImageFormatInfo *dstFormatInfo = GetImageFormatInfo(dstFormat);
@@ -140,8 +140,8 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
 
     // If source format is compressed, then decompress to RGBA_8_8_8_8
     Image decompressedImage;
-    if (srcFormatInfo->type & Compressed) {
-        decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, RGBA_8_8_8_8, nullptr, srcImage->flags);
+    if (srcFormatInfo->type & FormatType::Compressed) {
+        decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, Format::RGBA_8_8_8_8, nullptr, srcImage->flags);
 
         DecompressImage(*this, decompressedImage);
 
@@ -150,7 +150,7 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
         }
 
         srcImage = &decompressedImage;
-        srcFormatInfo = GetImageFormatInfo(RGBA_8_8_8_8);
+        srcFormatInfo = GetImageFormatInfo(Format::RGBA_8_8_8_8);
     } else {
         if (regenerateMipmaps) {
             decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, srcImage->format, nullptr, srcImage->flags);
@@ -162,11 +162,11 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
     }
 
     Image rgba8888Image;
-    if (dstFormatInfo->type & Compressed) {
-        if (srcImage->GetFormat() != RGBA_8_8_8_8) {
-            srcImage->ConvertFormat(RGBA_8_8_8_8, rgba8888Image);
+    if (dstFormatInfo->type & FormatType::Compressed) {
+        if (srcImage->GetFormat() != Format::RGBA_8_8_8_8) {
+            srcImage->ConvertFormat(Format::RGBA_8_8_8_8, rgba8888Image);
             srcImage = &rgba8888Image;
-            srcFormatInfo = GetImageFormatInfo(RGBA_8_8_8_8);
+            srcFormatInfo = GetImageFormatInfo(Format::RGBA_8_8_8_8);
         }
 
         if (!CompressImage(*srcImage, dstImage, compressionQuality)) {
@@ -180,7 +180,7 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
     ImageUnpackFunc unpackFunc;
     ImagePackFunc packFunc;
 
-    bool unpackFloat = (srcFormatInfo->type & Float) || (dstFormatInfo->type & Float);
+    bool unpackFloat = (srcFormatInfo->type & FormatType::Float) || (dstFormatInfo->type & FormatType::Float);
 
     if (unpackFloat) {
         unpackFunc = srcFormatInfo->unpackRGBA32F;
@@ -196,7 +196,7 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
         return false;
     }
 
-    bool isGamma = !(flags & LinearSpaceFlag);
+    bool isGamma = !(flags & Flag::LinearSpace);
 
     byte *unpackedBuffer = (byte *)Mem_Alloc16(width * 4 * (unpackFloat ? sizeof(float) : 1));
 
@@ -226,7 +226,7 @@ bool Image::ConvertFormat(Image::Format dstFormat, Image &dstImage, bool regener
     return true;
 }
 
-bool Image::ConvertFormatSelf(Image::Format dstFormat, bool regenerateMipmaps, Image::CompressionQuality compressionQuality) {
+bool Image::ConvertFormatSelf(Image::Format::Enum dstFormat, bool regenerateMipmaps, Image::CompressionQuality::Enum compressionQuality) {
     if (this->format == dstFormat) {
         return true;
     }

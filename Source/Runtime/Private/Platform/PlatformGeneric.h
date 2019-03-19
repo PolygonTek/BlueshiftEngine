@@ -28,7 +28,7 @@ public:
     virtual void        EnableMouse(bool enable) override;
 
     virtual void        GetEvent(Platform::Event *ev) override;
-    virtual void        QueEvent(Platform::EventType type, int64_t value, int64_t value2, int ptrLength, void *ptr) override;
+    virtual void        QueEvent(Platform::EventType::Enum type, int64_t value, int64_t value2, int ptrLength, void *ptr) override;
 
     virtual bool        IsActive() const override;
     virtual void        AppActivate(bool active, bool minimized) override;

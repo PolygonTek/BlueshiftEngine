@@ -37,7 +37,7 @@ static int CompareMesh(const RenderObject::State *renderObjectDef1, const Render
 
         compare = materialIndex1 - materialIndex2;
         if (compare == 0) {
-            for (int i = 0; i < RenderObject::MaxMaterialParms; i++) {
+            for (int i = 0; i < RenderObject::MaterialParm::MaxMaterialParms; i++) {
                 compare = *reinterpret_cast<const int32_t *>(&renderObjectDef1->materialParms[i]) - *reinterpret_cast<const int32_t *>(&renderObjectDef2->materialParms[i]);
                 if (compare != 0) {
                     break;

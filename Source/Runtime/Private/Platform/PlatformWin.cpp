@@ -173,7 +173,7 @@ void PlatformWin::GenerateMouseDeltaEvent() {
         mouseDelta.x = cursorPos.x - oldCursorPos.x;
         mouseDelta.y = cursorPos.y - oldCursorPos.y;
 
-        QueEvent(Platform::MouseDeltaEvent, mouseDelta.x, mouseDelta.y, 0, nullptr);
+        QueEvent(Platform::EventType::MouseDelta, mouseDelta.x, mouseDelta.y, 0, nullptr);
 
         oldCursorPos = cursorPos;
     } else {
@@ -196,7 +196,7 @@ void PlatformWin::GenerateMouseDeltaEvent() {
         rawMouseDeltaOld.y = rawMouseDelta.y;
 
         if (mouseDelta.x != 0 || mouseDelta.y != 0) {
-            QueEvent(Platform::MouseDeltaEvent, mouseDelta.x, mouseDelta.y, 0, nullptr);
+            QueEvent(Platform::EventType::MouseDelta, mouseDelta.x, mouseDelta.y, 0, nullptr);
         }
 
         if (rawMouseDelta.x != 0 || rawMouseDelta.y != 0) {

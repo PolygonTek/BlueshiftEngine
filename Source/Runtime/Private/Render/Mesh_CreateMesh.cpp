@@ -78,7 +78,7 @@ void Mesh::CreateDefaultBox() {
     idx[30] = 20;   idx[31] = 21;   idx[32] = 22;
     idx[33] = 22;   idx[34] = 23;   idx[35] = 20;
     
-    FinishSurfaces(ComputeAABBFlag | ComputeTangentsFlag | UseUnsmoothedTangentsFlag);
+    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents | FinishFlag::UseUnsmoothedTangents);
 }
 
 void Mesh::CreatePlane(const Vec3 &origin, const Mat3 &axis, float size, int numSegments) {
@@ -131,7 +131,7 @@ void Mesh::CreatePlane(const Vec3 &origin, const Mat3 &axis, float size, int num
         }
     }
     
-    FinishSurfaces(ComputeAABBFlag);
+    FinishSurfaces(FinishFlag::ComputeAABB);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         TransformVerts(axis, Vec3::one, origin);
@@ -196,7 +196,7 @@ void Mesh::CreateBox(const Vec3 &origin, const Mat3 &axis, const Vec3 &extents) 
     idx[30] = 20;   idx[31] = 21;   idx[32] = 22;
     idx[33] = 22;   idx[34] = 23;   idx[35] = 20;
     
-    FinishSurfaces(ComputeAABBFlag | ComputeTangentsFlag | UseUnsmoothedTangentsFlag);
+    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents | FinishFlag::UseUnsmoothedTangents);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         TransformVerts(axis, Vec3::one, origin);
@@ -255,7 +255,7 @@ void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numTess) {
         }
     }
 
-    FinishSurfaces(ComputeAABBFlag | ComputeTangentsFlag);
+    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
 
     if (!origin.IsZero()) {
         TransformVerts(Mat3::identity, Vec3::one, origin);
@@ -362,7 +362,7 @@ void Mesh::CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, fl
         *idx++ = offset + b + 1;
     }
 
-    FinishSurfaces(ComputeAABBFlag | ComputeTangentsFlag);
+    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         TransformVerts(axis, Vec3::one, origin);
@@ -465,7 +465,7 @@ void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, flo
         }
     }
 
-    FinishSurfaces(ComputeAABBFlag | ComputeTangentsFlag);
+    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         TransformVerts(axis, Vec3::one, origin);

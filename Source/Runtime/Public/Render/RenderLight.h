@@ -37,23 +37,27 @@ class RenderLight {
     friend class RenderWorld;
 
 public:
-    enum Type {
-        PointLight,
-        SpotLight,
-        DirectionalLight
+    struct Type {
+        enum Enum {
+            Point,
+            Spot,
+            Directional
+        };
     };
 
-    enum Flag {
-        StaticFlag          = BIT(0),
-        CastShadowsFlag     = BIT(1),
-        PrimaryLightFlag    = BIT(2)
+    struct Flag {
+        enum Enum {
+            Static          = BIT(0),
+            CastShadows     = BIT(1),
+            PrimaryLight    = BIT(2)
+        };
     };
 
     struct State {
         int                 flags = 0;
         int                 layer = 0;
         int                 staticMask = 0;
-        Type                type = PointLight;
+        Type::Enum          type = Type::Point;
         float               maxVisDist = MeterToUnit(10);
 
         Vec3                origin = Vec3::origin;      ///< Light position in world space
@@ -68,7 +72,7 @@ public:
         float               shadowOffsetUnits = 200.f;
 
         Material *          material = nullptr;
-        float               materialParms[RenderObject::MaxMaterialParms] = { 1, 1, 1, 1, 0, 1 };
+        float               materialParms[RenderObject::MaterialParm::MaxMaterialParms] = { 1, 1, 1, 1, 0, 1 };
     };
 
     RenderLight(RenderWorld *renderWorld, int index);
@@ -78,7 +82,7 @@ public:
     const State &           GetState() const { return state; }
 
                             /// Returns light type which is one of the [Point, Spot, Directional].
-    Type                    GetType() const { return state.type; }
+    Type::Enum              GetType() const { return state.type; }
 
                             /// Returns light material.
     const Material *        GetMaterial() const { return state.material; }

@@ -157,11 +157,11 @@ public:
     static void             DrawElementsIndirect(GLenum mode, GLenum type, const void *indirect);
     static void             MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride);
 
-    static void             SetTextureSwizzling(GLenum target, Image::Format format);
-    static bool             ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
-    static bool             SupportedImageFormat(Image::Format imageFormat) { return ImageFormatToGLFormat(imageFormat, false, nullptr, nullptr, nullptr); }
-    static Image::Format    ToCompressedImageFormat(Image::Format inFormat, bool useNormalMap);
-    static Image::Format    ToUncompressedImageFormat(Image::Format inFormat);
+    static void             SetTextureSwizzling(GLenum target, Image::Format::Enum format);
+    static bool             ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
+    static bool             SupportedImageFormat(Image::Format::Enum imageFormat) { return ImageFormatToGLFormat(imageFormat, false, nullptr, nullptr, nullptr); }
+    static Image::Format::Enum ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
+    static Image::Format::Enum ToUncompressedImageFormat(Image::Format::Enum inFormat);
 
 private:
     static bool             supportsFrameBufferSRGB;

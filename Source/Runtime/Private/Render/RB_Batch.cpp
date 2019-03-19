@@ -38,7 +38,7 @@ void Batch::Init() {
     instanceLocalIndexes = nullptr;
     indirectCommands = nullptr;
 
-    if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
+    if (renderGlobal.instancingMethod == Mesh::InstancingMethod::InstancedArrays) {
         indirectBuffer = rhi.CreateBuffer(RHI::DrawIndirectBuffer, RHI::Stream, 0);
         
         maxInstancingCount = r_maxInstancingCount.GetInteger();
@@ -46,7 +46,7 @@ void Batch::Init() {
         if (maxInstancingCount > 0) {
             indirectCommands = (RHI::DrawElementsIndirectCommand *)Mem_Alloc16(maxInstancingCount * sizeof(indirectCommands[0]));
         }
-    } else if (renderGlobal.instancingMethod == Mesh::UniformBufferInstancing) {
+    } else if (renderGlobal.instancingMethod == Mesh::InstancingMethod::UniformBuffer) {
         indirectBuffer = rhi.CreateBuffer(RHI::DrawIndirectBuffer, RHI::Stream, 0);
         
         maxInstancingCount = Min(r_maxInstancingCount.GetInteger(), rhi.HWLimit().maxUniformBlockSize / renderGlobal.instanceBufferOffsetAlignment);
@@ -90,7 +90,7 @@ void Batch::Begin(int flushType, const Material *material, const float *material
 }
 
 void Batch::AddInstance(const DrawSurf *drawSurf) {
-    if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
+    if (renderGlobal.instancingMethod == Mesh::InstancingMethod::InstancedArrays) {
         if (numIndirectCommands > 0) {
             RHI::DrawElementsIndirectCommand *currentIndirectCommand = &indirectCommands[numIndirectCommands - 1];
 
@@ -118,7 +118,7 @@ void Batch::AddInstance(const DrawSurf *drawSurf) {
         numIndirectCommands++;
         numInstances++;
     } else { 
-        //assert(renderGlobal.instancingMethod == Mesh::UniformBufferInstancing);
+        //assert(renderGlobal.instancingMethod == Mesh::InstancingMethod::UniformBuffer);
         if (instanceStartIndex < 0) {
             instanceStartIndex = drawSurf->space->instanceIndex;
         } else if (drawSurf->space->instanceIndex - instanceStartIndex + 1 >= maxInstancingCount) {
@@ -136,9 +136,9 @@ void Batch::AddInstance(const DrawSurf *drawSurf) {
 }
 
 void Batch::DrawSubMesh(SubMesh *subMesh) {
-    if (subMesh->GetType() == Mesh::ReferenceMesh || 
-        subMesh->GetType() == Mesh::StaticMesh || 
-        subMesh->GetType() == Mesh::SkinnedMesh) {
+    if (subMesh->GetType() == Mesh::Type::Reference || 
+        subMesh->GetType() == Mesh::Type::Static || 
+        subMesh->GetType() == Mesh::Type::Skinned) {
         DrawStaticSubMesh(subMesh);
     } else {
         DrawDynamicSubMesh(subMesh);
@@ -190,9 +190,9 @@ void Batch::DrawDynamicSubMesh(SubMesh *subMesh) {
 void Batch::SetSubMeshVertexFormat(const SubMesh *subMesh, int vertexFormatIndex) const {
     // HACK!!
     // TODO: check vertex type of the subMesh instead of this
-    int vertexSize = subMesh->GetType() != Mesh::DynamicMesh ? sizeof(VertexGenericLit) : sizeof(VertexGeneric);
+    int vertexSize = subMesh->GetType() != Mesh::Type::Dynamic ? sizeof(VertexGenericLit) : sizeof(VertexGeneric);
 
-    if (numIndirectCommands > 0 && renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
+    if (numIndirectCommands > 0 && renderGlobal.instancingMethod == Mesh::InstancingMethod::InstancedArrays) {
         if (subMesh->useGpuSkinning) {
             rhi.SetVertexFormat(vertexFormats[vertexFormatIndex + 4 + subMesh->gpuSkinningVersionIndex + 1].vertexFormatHandle);
 
@@ -226,7 +226,7 @@ void Batch::Flush() {
 
     bool polygonOffset = false;
 
-    if (flushType != ShadowFlush && (material->flags & Material::PolygonOffset)) {
+    if (flushType != ShadowFlush && (material->flags & Material::Flag::PolygonOffset)) {
         rhi.SetDepthBias(r_offsetFactor.GetFloat(), r_offsetUnits.GetFloat());
         polygonOffset = true;
     }
@@ -332,7 +332,7 @@ void Batch::Flush_SelectionPass() {
     int stateBits = mtrlPass->stateBits | RHI::DepthWrite | RHI::ColorWrite | RHI::DF_LEqual;
     stateBits &= ~RHI::MaskBF;
 
-    if (backEnd.camera->def->GetState().flags & RenderCamera::WireFrameMode) {
+    if (backEnd.camera->def->GetState().flags & RenderCamera::Flag::WireFrameMode) {
         stateBits |= RHI::PM_Wireframe;
 
         rhi.SetLineWidth(8);
@@ -342,7 +342,7 @@ void Batch::Flush_SelectionPass() {
 
     RenderSelection(mtrlPass, id);
 
-    if (backEnd.camera->def->GetState().flags & RenderCamera::WireFrameMode) {
+    if (backEnd.camera->def->GetState().flags & RenderCamera::Flag::WireFrameMode) {
         rhi.SetLineWidth(1);
     }
 }
@@ -426,7 +426,7 @@ void Batch::Flush_BasePass() {
 
     rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
 
-    int vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ?
+    int vertexFormatIndex = mtrlPass->vertexColorMode != Material::VertexColorMode::Ignore ?
         VertexFormat::GenericXyzStColorNT : VertexFormat::GenericXyzStNT;
 
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
@@ -510,7 +510,7 @@ void Batch::Flush_LitPass() {
  
     rhi.BindBuffer(RHI::VertexBuffer, vertexBuffer);
 
-    int vertexFormatIndex = mtrlPass->vertexColorMode != Material::IgnoreVertexColor ? 
+    int vertexFormatIndex = mtrlPass->vertexColorMode != Material::VertexColorMode::Ignore ?
         VertexFormat::GenericXyzStColorNT : VertexFormat::GenericXyzStNT;
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
 
@@ -521,14 +521,14 @@ void Batch::Flush_LitPass() {
     const Material *lightMaterial = surfLight->def->GetState().material;
     int lightMaterialType = lightMaterial->GetType();
     switch (lightMaterialType) {
-    case Material::FogLightMaterialType:
+    case Material::Type::FogLight:
         rhi.SetStateBits(stateBits | (RHI::DF_Equal | RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha));
         RenderFogLightInteraction(mtrlPass);
-    case Material::BlendLightMaterialType:
+    case Material::Type::BlendLight:
         rhi.SetStateBits(stateBits | (RHI::DF_Equal | RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha));
         RenderBlendLightInteraction(mtrlPass);
         break;
-    case Material::LightMaterialType:
+    case Material::Type::Light:
         if (mtrlPass->renderingMode == Material::RenderingMode::AlphaBlend) {
             if (mtrlPass->transparency == Material::Transparency::TwoPassesOneSide) {
                 rhi.SetStateBits(stateBits | RHI::BS_SrcAlpha | RHI::BD_One | RHI::DF_Equal);
@@ -623,21 +623,21 @@ void Batch::DrawDebugWireframe(int mode, const Color4 &rgba) const {
         blendState = RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha;
     }
 
-    if (mode == RenderObject::ShowNone) {
-        mode = RenderObject::ShowVisibleFront;
+    if (mode == RenderObject::WireframeMode::ShowNone) {
+        mode = RenderObject::WireframeMode::ShowVisibleFront;
     }
     
     switch (mode) {
-    case RenderObject::ShowVisibleFront:
+    case RenderObject::WireframeMode::ShowVisibleFront:
         rhi.SetStateBits(RHI::ColorWrite | RHI::DF_LEqual | RHI::PM_Wireframe | blendState);
         rhi.SetCullFace(mtrlPass->cullType);
         rhi.SetDepthBias(-0.5f, -2.0f);
         break;
-    case RenderObject::ShowAllFront:
+    case RenderObject::WireframeMode::ShowAllFront:
         rhi.SetStateBits(RHI::ColorWrite | RHI::DF_Always | RHI::PM_Wireframe | blendState);
         rhi.SetCullFace(mtrlPass->cullType);
         break;
-    case RenderObject::ShowAllFrontAndBack:
+    case RenderObject::WireframeMode::ShowAllFrontAndBack:
         rhi.SetStateBits(RHI::ColorWrite | RHI::DF_Always | RHI::PM_Wireframe | blendState);
         rhi.SetCullFace(RHI::NoCull);
         break;  
@@ -645,7 +645,7 @@ void Batch::DrawDebugWireframe(int mode, const Color4 &rgba) const {
 
     RenderColor(mtrlPass, rgba);
 
-    if (mode == RenderObject::ShowVisibleFront) {
+    if (mode == RenderObject::WireframeMode::ShowVisibleFront) {
         rhi.SetDepthBias(0.0f, 0.0f);
     }
 }
@@ -816,7 +816,7 @@ void RenderBackEnd::RenderFogSurface(const volumeFog_t *fog) {
     int				i;
 
     // 포그 면이 아닌 블렌딩 쉐이더는 칼라값에서 빼주므로 여기서는 무시한다.
-    if (!m_material->fog && (m_material->GetSort() >= OverlaySort)) {
+    if (!m_material->fog && (m_material->GetSort() >= Material::Sort::Overlay)) {
         return;
     }
 

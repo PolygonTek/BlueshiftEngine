@@ -30,15 +30,15 @@ END_EVENTS
 
 void ComCharacterController::RegisterProperties() {
     REGISTER_PROPERTY("mass", "Mass", float, mass, 1.f, 
-        "", PropertyInfo::EditorFlag).SetRange(0, 100, 0.1f);
+        "", PropertyInfo::Flag::Editor).SetRange(0, 100, 0.1f);
     REGISTER_ACCESSOR_PROPERTY("capsuleRadius", "Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, MeterToUnit(0.5f),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("capsuleHeight", "Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, MeterToUnit(0.8f),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("stepOffset", "Step Offset", float, GetStepOffset, SetStepOffset, CentiToUnit(40.0f),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(0, CentiToUnit(50.0f), CentiToUnit(1.0f));
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0, CentiToUnit(50.0f), CentiToUnit(1.0f));
     REGISTER_ACCESSOR_PROPERTY("slopeLimit", "Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, 60.0f, 
-        "", PropertyInfo::EditorFlag).SetRange(0, 90, 1);
+        "", PropertyInfo::Flag::Editor).SetRange(0, 90, 1);
 }
 
 ComCharacterController::ComCharacterController() {
@@ -84,7 +84,7 @@ void ComCharacterController::Init() {
     Component::Init();
 
     ComTransform *transform = GetEntity()->GetTransform();
-    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCharacterController::TransformUpdated, SignalObject::Unique);
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCharacterController::TransformUpdated, SignalObject::ConnectionType::Unique);
 
     // Mark as initialized
     SetInitialized(true);
@@ -135,7 +135,7 @@ void ComCharacterController::CreateBodyAndSensor() {
     body->SetUserPointer(this);
     //body->SetCollisionListener(this);
 
-    desc.type = PhysCollidable::Sensor;
+    desc.type = PhysCollidable::Type::Sensor;
     desc.character = false;
     desc.kinematic = false;
     desc.ccd = false;

@@ -216,26 +216,26 @@ void MaterialManager::PrecacheMaterial(const char *filename) {
     ReleaseMaterial(material);
 }
 
-static const char *HintName(Material::TextureHint hint) {
+static const char *HintName(Material::TextureHint::Enum hint) {
     switch (hint) {
-    case Material::LightHint:
-        return "LightHint";
-    case Material::VertexColorHint:
-        return "VertexColorHint";
-    case Material::LightmappedHint:
-        return "LightmappedHint";
-    case Material::SpriteHint:
-        return "SpriteHint";
-    case Material::OverlayHint:
-        return "OverlayHint";
+    case Material::TextureHint::Light:
+        return "Light";
+    case Material::TextureHint::VertexColor:
+        return "VertexColor";
+    case Material::TextureHint::Lightmapped:
+        return "Lightmapped";
+    case Material::TextureHint::Sprite:
+        return "Sprite";
+    case Material::TextureHint::Overlay:
+        return "Overlay";
     default:
         break;
     }
 
-    return "NoHint";
+    return "None";
 }
 
-Material *MaterialManager::GetSingleTextureMaterial(const Texture *texture, Material::TextureHint hint) {
+Material *MaterialManager::GetSingleTextureMaterial(const Texture *texture, Material::TextureHint::Enum hint) {
     if (!texture) {
         return defaultMaterial;
     }
@@ -251,7 +251,7 @@ Material *MaterialManager::GetSingleTextureMaterial(const Texture *texture, Mate
 
     char buffer[1024];
     switch (hint) {
-    case Material::SpriteHint:
+    case Material::TextureHint::Sprite:
         Str::snPrintf(buffer, sizeof(buffer),
             "noShadow\n"
             "pass {\n"
@@ -260,7 +260,7 @@ Material *MaterialManager::GetSingleTextureMaterial(const Texture *texture, Mate
             "   mapPath \"%s\"\n"
             "}\n", texture->GetHashName());
         break;
-    case Material::LightHint:
+    case Material::TextureHint::Light:
         Str::snPrintf(buffer, sizeof(buffer),
             "light\n"
             "pass {\n"
@@ -268,7 +268,7 @@ Material *MaterialManager::GetSingleTextureMaterial(const Texture *texture, Mate
             "   useOwnerColor\n"
             "}\n", texture->GetHashName());
         break;
-    case Material::OverlayHint:
+    case Material::TextureHint::Overlay:
         Str::snPrintf(buffer, sizeof(buffer),
             "noShadow\n"
             "pass {\n"
@@ -279,7 +279,7 @@ Material *MaterialManager::GetSingleTextureMaterial(const Texture *texture, Mate
             "   mapPath \"%s\"\n"
             "}\n", texture->GetHashName());
         break;
-    case Material::EnvCubeMapHint:
+    case Material::TextureHint::EnvCubeMap:
         Str::snPrintf(buffer, sizeof(buffer),
             "noShadow\n"
             "pass {\n"

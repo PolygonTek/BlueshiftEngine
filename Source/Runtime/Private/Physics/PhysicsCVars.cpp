@@ -17,13 +17,13 @@
 
 BE_NAMESPACE_BEGIN
 
-CVAR(physics_enable, "1", CVar::Bool, "");
-CVAR(physics_showWireframe, "0", CVar::Integer, "show debug wireframe in physics engine");
-CVAR(physics_showAABB, "0", CVar::Integer, "show debug AABB in physics engine");
-CVAR(physics_showContactPoints, "0", CVar::Integer, "");
-CVAR(physics_showNormals, "0", CVar::Integer, "");
-CVAR(physics_showConstraints, "0", CVar::Integer, "");
-CVAR(physics_noDeactivation, "0", CVar::Bool, "");
-CVAR(physics_enableCCD, "1", CVar::Bool, "");
+CVAR(physics_enable, "1", CVar::Flag::Bool, "");
+CVAR(physics_showWireframe, "0", CVar::Flag::Integer, "show debug wireframe in physics engine");
+CVAR(physics_showAABB, "0", CVar::Flag::Integer, "show debug AABB in physics engine");
+CVAR(physics_showContactPoints, "0", CVar::Flag::Integer, "");
+CVAR(physics_showNormals, "0", CVar::Flag::Integer, "");
+CVAR(physics_showConstraints, "0", CVar::Flag::Integer, "");
+CVAR(physics_noDeactivation, "0", CVar::Flag::Bool, "");
+CVAR(physics_enableCCD, "1", CVar::Flag::Bool, "");
 
 BE_NAMESPACE_END

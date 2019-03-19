@@ -54,7 +54,7 @@ void Batch::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::P
         const auto &propInfo = entry->second;
 
         // Skip if it is a shader define
-        if (propInfo.GetFlags() & PropertyInfo::ShaderDefineFlag) {
+        if (propInfo.GetFlags() & PropertyInfo::Flag::ShaderDefine) {
             continue;
         }
 
@@ -67,43 +67,43 @@ void Batch::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::P
         const Shader::Property &prop = propEntry->second;
 
         switch (propInfo.GetType()) {
-        case Variant::IntType:
+        case Variant::Type::Int:
             shader->SetConstant1i(key, prop.data.As<int>());
             break;
-        case Variant::PointType:
+        case Variant::Type::Point:
             shader->SetConstant2i(key, prop.data.As<Point>());
             break;
-        case Variant::RectType:
+        case Variant::Type::Rect:
             shader->SetConstant4i(key, prop.data.As<Rect>());
             break;
-        case Variant::FloatType:
+        case Variant::Type::Float:
             shader->SetConstant1f(key, prop.data.As<float>());
             break;
-        case Variant::Vec2Type:
+        case Variant::Type::Vec2:
             shader->SetConstant2f(key, prop.data.As<Vec2>());
             break;
-        case Variant::Vec3Type:
+        case Variant::Type::Vec3:
             shader->SetConstant3f(key, prop.data.As<Vec3>());
             break;
-        case Variant::Vec4Type:
+        case Variant::Type::Vec4:
             shader->SetConstant4f(key, prop.data.As<Vec4>());
             break;
-        case Variant::Color3Type:
+        case Variant::Type::Color3:
             shader->SetConstant3f(key, rhi.IsSRGBWriteEnabled() ? prop.data.As<Color3>().SRGBToLinear() : prop.data.As<Color3>());
             break;
-        case Variant::Color4Type:
+        case Variant::Type::Color4:
             shader->SetConstant4f(key, rhi.IsSRGBWriteEnabled() ? prop.data.As<Color4>().SRGBToLinear() : prop.data.As<Color4>());
             break;
-        case Variant::Mat2Type:
+        case Variant::Type::Mat2:
             shader->SetConstant2x2f(key, true, prop.data.As<Mat2>());
             break;
-        case Variant::Mat3Type:
+        case Variant::Type::Mat3:
             shader->SetConstant3x3f(key, true, prop.data.As<Mat3>());
             break;
-        case Variant::Mat4Type:
+        case Variant::Type::Mat4:
             shader->SetConstant4x4f(key, true, prop.data.As<Mat4>());
             break;
-        case Variant::GuidType: // 
+        case Variant::Type::Guid: // 
             shader->SetTexture(key, prop.texture);
             break;
         default:
@@ -120,7 +120,7 @@ const Texture *Batch::TextureFromShaderProperties(const Material::ShaderPass *mt
     }
 
     const auto &propInfo = entry->second;
-    if ((propInfo.GetFlags() & PropertyInfo::ShaderDefineFlag) || (propInfo.GetType() != Variant::GuidType)) {
+    if ((propInfo.GetFlags() & PropertyInfo::Flag::ShaderDefine) || (propInfo.GetType() != Variant::Type::Guid)) {
         return nullptr;
     }
 
@@ -129,55 +129,55 @@ const Texture *Batch::TextureFromShaderProperties(const Material::ShaderPass *mt
 }
 
 void Batch::SetMatrixConstants(const Shader *shader) const {
-    if (shader->builtInConstantIndices[Shader::ModelViewMatrixConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ModelViewMatrixConst], true, backEnd.modelViewMatrix);
+    if (shader->builtInConstantIndices[Shader::BuiltInConstant::ModelViewMatrix] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ModelViewMatrix], true, backEnd.modelViewMatrix);
     }
 
-    if (shader->builtInConstantIndices[Shader::ViewMatrixConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ViewMatrixConst], true, backEnd.viewMatrix);
+    if (shader->builtInConstantIndices[Shader::BuiltInConstant::ViewMatrix] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ViewMatrix], true, backEnd.viewMatrix);
     }
 
-    if (shader->builtInConstantIndices[Shader::ProjectionMatrixConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ProjectionMatrixConst], true, backEnd.projMatrix);
+    if (shader->builtInConstantIndices[Shader::BuiltInConstant::ProjectionMatrix] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ProjectionMatrix], true, backEnd.projMatrix);
     }
 
-    if (shader->builtInConstantIndices[Shader::ViewProjectionMatrixConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ViewProjectionMatrixConst], true, backEnd.viewProjMatrix);
+    if (shader->builtInConstantIndices[Shader::BuiltInConstant::ViewProjectionMatrix] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ViewProjectionMatrix], true, backEnd.viewProjMatrix);
     }
 
-    if (shader->builtInConstantIndices[Shader::ModelViewProjectionMatrixConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ModelViewProjectionMatrixConst], true, backEnd.modelViewProjMatrix);
+    if (shader->builtInConstantIndices[Shader::BuiltInConstant::ModelViewProjectionMatrix] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ModelViewProjectionMatrix], true, backEnd.modelViewProjMatrix);
     }
 
-    if (shader->builtInConstantIndices[Shader::ModelViewMatrixTransposeConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ModelViewMatrixTransposeConst], false, backEnd.modelViewMatrix);
+    if (shader->builtInConstantIndices[Shader::BuiltInConstant::ModelViewMatrixTranspose] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ModelViewMatrixTranspose], false, backEnd.modelViewMatrix);
     }
 
-    if (shader->builtInConstantIndices[Shader::ProjectionMatrixTransposeConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ProjectionMatrixTransposeConst], false, backEnd.projMatrix);
+    if (shader->builtInConstantIndices[Shader::BuiltInConstant::ProjectionMatrixTranspose] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ProjectionMatrixTranspose], false, backEnd.projMatrix);
     }
 
-    if (shader->builtInConstantIndices[Shader::ViewMatrixTransposeConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ViewMatrixTransposeConst], false, backEnd.viewMatrix);
+    if (shader->builtInConstantIndices[Shader::BuiltInConstant::ViewMatrixTranspose] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ViewMatrixTranspose], false, backEnd.viewMatrix);
     }
 
-    if (shader->builtInConstantIndices[Shader::ViewProjectionMatrixTransposeConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ViewProjectionMatrixTransposeConst], false, backEnd.viewProjMatrix);
+    if (shader->builtInConstantIndices[Shader::BuiltInConstant::ViewProjectionMatrixTranspose] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ViewProjectionMatrixTranspose], false, backEnd.viewProjMatrix);
     }
 
-    if (shader->builtInConstantIndices[Shader::ModelViewProjectionMatrixTransposeConst] >= 0) {
-        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ModelViewProjectionMatrixTransposeConst], false, backEnd.modelViewProjMatrix);
+    if (shader->builtInConstantIndices[Shader::BuiltInConstant::ModelViewProjectionMatrixTranspose] >= 0) {
+        shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ModelViewProjectionMatrixTranspose], false, backEnd.modelViewProjMatrix);
     }
 }
 
-void Batch::SetVertexColorConstants(const Shader *shader, const Material::VertexColorMode &vertexColor) const {
+void Batch::SetVertexColorConstants(const Shader *shader, const Material::VertexColorMode::Enum &vertexColor) const {
     Vec4 vertexColorScale;
     Vec4 vertexColorAdd;
 
-    if (vertexColor == Material::ModulateVertexColor) {
+    if (vertexColor == Material::VertexColorMode::Modulate) {
         vertexColorScale.Set(1.0f, 1.0f, 1.0f, 1.0f);
         vertexColorAdd.Set(0.0f, 0.0f, 0.0f, 0.0f);
-    } else if (vertexColor == Material::InverseModulateVertexColor) {
+    } else if (vertexColor == Material::VertexColorMode::InverseModulate) {
         vertexColorScale.Set(-1.0f, -1.0f, -1.0f, 1.0f);
         vertexColorAdd.Set(1.0f, 1.0f, 1.0f, 0.0f);
     } else {
@@ -185,8 +185,8 @@ void Batch::SetVertexColorConstants(const Shader *shader, const Material::Vertex
         vertexColorAdd.Set(1.0f, 1.0f, 1.0f, 1.0f);
     }
     
-    shader->SetConstant4f(shader->builtInConstantIndices[Shader::VertexColorScaleConst], vertexColorScale);
-    shader->SetConstant4f(shader->builtInConstantIndices[Shader::VertexColorAddConst], vertexColorAdd);
+    shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::VertexColorScale], vertexColorScale);
+    shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::VertexColorAdd], vertexColorAdd);
 }
 
 void Batch::SetSkinningConstants(const Shader *shader, const SkinningJointCache *cache) const {
@@ -195,26 +195,26 @@ void Batch::SetSkinningConstants(const Shader *shader, const SkinningJointCache 
     }
 
     if (renderGlobal.skinningMethod == SkinningJointCache::VertexShaderSkinning) {
-        shader->SetConstantArray4f(shader->builtInConstantIndices[Shader::JointsConst], cache->numJoints * 3, cache->skinningJoints[0].Ptr());
+        shader->SetConstantArray4f(shader->builtInConstantIndices[Shader::BuiltInConstant::Joints], cache->numJoints * 3, cache->skinningJoints[0].Ptr());
     } else if (renderGlobal.skinningMethod == SkinningJointCache::VertexTextureFetchSkinning) {
         const Texture *jointsMapTexture = cache->bufferCache.texture;
 
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::JointsMapSampler], jointsMapTexture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::JointsMap], jointsMapTexture);
 
-        if (renderGlobal.vtUpdateMethod == BufferCacheManager::TboUpdate) {
+        if (renderGlobal.vertexTextureMethod == BufferCacheManager::VertexTextureMethod::Tbo) {
             if (numInstances == 0) {
-                shader->SetConstant1i(shader->builtInConstantIndices[Shader::SkinningBaseTcConst], cache->bufferCache.tcBase[0]);
+                shader->SetConstant1i(shader->builtInConstantIndices[Shader::BuiltInConstant::SkinningBaseTc], cache->bufferCache.tcBase[0]);
             }
         } else {
-            shader->SetConstant2f(shader->builtInConstantIndices[Shader::InvJointsMapSizeConst], Vec2(1.0f / jointsMapTexture->GetWidth(), 1.0f / jointsMapTexture->GetHeight()));
+            shader->SetConstant2f(shader->builtInConstantIndices[Shader::BuiltInConstant::InvJointsMapSize], Vec2(1.0f / jointsMapTexture->GetWidth(), 1.0f / jointsMapTexture->GetHeight()));
 
             if (numInstances == 0) {
-                shader->SetConstant2f(shader->builtInConstantIndices[Shader::SkinningBaseTcConst], Vec2(cache->bufferCache.tcBase[0], cache->bufferCache.tcBase[1]));
+                shader->SetConstant2f(shader->builtInConstantIndices[Shader::BuiltInConstant::SkinningBaseTc], Vec2(cache->bufferCache.tcBase[0], cache->bufferCache.tcBase[1]));
             }
         }
 
         if (r_usePostProcessing.GetBool() && (r_motionBlur.GetInteger() & 2)) {
-            shader->SetConstant2i(shader->builtInConstantIndices[Shader::JointIndexOffsetConst], cache->jointIndexOffset);
+            shader->SetConstant2i(shader->builtInConstantIndices[Shader::BuiltInConstant::JointIndexOffset], cache->jointIndexOffset);
         }
     }
 }
@@ -235,21 +235,21 @@ void Batch::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shade
         rhi.BindIndexedBufferRange(RHI::UniformBuffer, 0, backEnd.instanceBufferCache->buffer, bufferOffset, bufferSize);
         shader->SetConstantBuffer("instanceDataBuffer", 0);
 
-        shader->SetConstantArray1i(shader->builtInConstantIndices[Shader::InstanceIndexesConst], numInstances, instanceLocalIndexes);
+        shader->SetConstantArray1i(shader->builtInConstantIndices[Shader::BuiltInConstant::InstanceIndexes], numInstances, instanceLocalIndexes);
     } else {
-        if (shader->builtInConstantIndices[Shader::LocalToWorldMatrixConst] >= 0) {
+        if (shader->builtInConstantIndices[Shader::BuiltInConstant::LocalToWorldMatrix] >= 0) {
             const Mat3x4 &localToWorldMatrix = surfSpace->def->GetWorldMatrix();
-            shader->SetConstant4x3f(shader->builtInConstantIndices[Shader::LocalToWorldMatrixConst], true, localToWorldMatrix);
+            shader->SetConstant4x3f(shader->builtInConstantIndices[Shader::BuiltInConstant::LocalToWorldMatrix], true, localToWorldMatrix);
         }
 
-        if (shader->builtInConstantIndices[Shader::WorldToLocalMatrixConst] >= 0) {
+        if (shader->builtInConstantIndices[Shader::BuiltInConstant::WorldToLocalMatrix] >= 0) {
             const Mat3x4 worldToLocalMatrix = surfSpace->def->GetWorldMatrixInverse();
-            shader->SetConstant4x3f(shader->builtInConstantIndices[Shader::WorldToLocalMatrixConst], true, worldToLocalMatrix);
+            shader->SetConstant4x3f(shader->builtInConstantIndices[Shader::BuiltInConstant::WorldToLocalMatrix], true, worldToLocalMatrix);
         }
 
-        if (shader->builtInConstantIndices[Shader::ConstantColorConst] >= 0) {
-            const Color4 &color = mtrlPass->useOwnerColor ? reinterpret_cast<const Color4 &>(surfSpace->def->GetState().materialParms[RenderObject::RedParm]) : mtrlPass->constantColor;
-            shader->SetConstant4f(shader->builtInConstantIndices[Shader::ConstantColorConst], color);
+        if (shader->builtInConstantIndices[Shader::BuiltInConstant::ConstantColor] >= 0) {
+            const Color4 &color = mtrlPass->useOwnerColor ? reinterpret_cast<const Color4 &>(surfSpace->def->GetState().materialParms[RenderObject::MaterialParm::Red]) : mtrlPass->constantColor;
+            shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ConstantColor], color);
         }
     }
 }
@@ -258,16 +258,16 @@ void Batch::SetProbeConstants(const Shader *shader) const {
     if (surfSpace->envProbeInfo[0].envProbe) {
         const EnvProbe *probe0 = surfSpace->envProbeInfo[0].envProbe;
 
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::Probe0DiffuseCubeMapSampler], probe0->GetDiffuseProbeTexture());
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::Probe0SpecularCubeMapSampler], probe0->GetSpecularProbeTexture());
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::Probe0DiffuseCubeMap], probe0->GetDiffuseProbeTexture());
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::Probe0SpecularCubeMap], probe0->GetSpecularProbeTexture());
 
-        shader->SetConstant1f(shader->builtInConstantIndices[Shader::Probe0SpecularCubeMapMaxMipLevelConst], probe0->GetSpecularProbeTextureMaxMipLevel());
+        shader->SetConstant1f(shader->builtInConstantIndices[Shader::BuiltInConstant::Probe0SpecularCubeMapMaxMipLevel], probe0->GetSpecularProbeTextureMaxMipLevel());
 
         if (r_probeBoxProjection.GetBool()) {
             // .w holds boolean value for box projection 
-            shader->SetConstant4f(shader->builtInConstantIndices[Shader::Probe0PositionConst], Vec4(probe0->GetOrigin(), probe0->UseBoxProjection() ? 1.0f : 0.0f));
-            shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe0MinsConst], surfSpace->envProbeInfo[0].proxyAABB[0]);
-            shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe0MaxsConst], surfSpace->envProbeInfo[0].proxyAABB[1]);
+            shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::Probe0Position], Vec4(probe0->GetOrigin(), probe0->UseBoxProjection() ? 1.0f : 0.0f));
+            shader->SetConstant3f(shader->builtInConstantIndices[Shader::BuiltInConstant::Probe0Mins], surfSpace->envProbeInfo[0].proxyAABB[0]);
+            shader->SetConstant3f(shader->builtInConstantIndices[Shader::BuiltInConstant::Probe0Maxs], surfSpace->envProbeInfo[0].proxyAABB[1]);
         }
     }
 
@@ -277,32 +277,32 @@ void Batch::SetProbeConstants(const Shader *shader) const {
         if (surfSpace->envProbeInfo[1].envProbe) {
             const EnvProbe *probe1 = surfSpace->envProbeInfo[1].envProbe;
 
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::Probe1DiffuseCubeMapSampler], probe1->GetDiffuseProbeTexture());
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::Probe1SpecularCubeMapSampler], probe1->GetSpecularProbeTexture());
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::Probe1DiffuseCubeMap], probe1->GetDiffuseProbeTexture());
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::Probe1SpecularCubeMap], probe1->GetSpecularProbeTexture());
 
-            shader->SetConstant1f(shader->builtInConstantIndices[Shader::Probe1SpecularCubeMapMaxMipLevelConst], probe1->GetSpecularProbeTextureMaxMipLevel());
+            shader->SetConstant1f(shader->builtInConstantIndices[Shader::BuiltInConstant::Probe1SpecularCubeMapMaxMipLevel], probe1->GetSpecularProbeTextureMaxMipLevel());
 
             if (r_probeBoxProjection.GetBool()) {
                 // .w holds boolean value for box projection 
-                shader->SetConstant4f(shader->builtInConstantIndices[Shader::Probe1PositionConst], Vec4(probe1->GetOrigin(), probe1->UseBoxProjection() ? 1.0f : 0.0f));
-                shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe1MinsConst], surfSpace->envProbeInfo[1].proxyAABB[0]);
-                shader->SetConstant3f(shader->builtInConstantIndices[Shader::Probe1MaxsConst], surfSpace->envProbeInfo[1].proxyAABB[1]);
+                shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::Probe1Position], Vec4(probe1->GetOrigin(), probe1->UseBoxProjection() ? 1.0f : 0.0f));
+                shader->SetConstant3f(shader->builtInConstantIndices[Shader::BuiltInConstant::Probe1Mins], surfSpace->envProbeInfo[1].proxyAABB[0]);
+                shader->SetConstant3f(shader->builtInConstantIndices[Shader::BuiltInConstant::Probe1Maxs], surfSpace->envProbeInfo[1].proxyAABB[1]);
             }
         }
     }
 }
 
 void Batch::SetMaterialConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const {
-    if (shader->builtInConstantIndices[Shader::TextureMatrixSConst] >= 0) {
+    if (shader->builtInConstantIndices[Shader::BuiltInConstant::TextureMatrixS] >= 0) {
         Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
 
-        shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixSConst], textureMatrixS);
-        shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixTConst], textureMatrixT);
+        shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::TextureMatrixS], textureMatrixS);
+        shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::TextureMatrixT], textureMatrixT);
     }
 
-    if (shader->builtInConstantIndices[Shader::PerforatedAlphaConst] >= 0) {
-        shader->SetConstant1f(shader->builtInConstantIndices[Shader::PerforatedAlphaConst], mtrlPass->cutoffAlpha);
+    if (shader->builtInConstantIndices[Shader::BuiltInConstant::PerforatedAlpha] >= 0) {
+        shader->SetConstant1f(shader->builtInConstantIndices[Shader::BuiltInConstant::PerforatedAlpha], mtrlPass->cutoffAlpha);
     }
 
     SetVertexColorConstants(shader, mtrlPass->vertexColorMode);
@@ -359,15 +359,15 @@ void Batch::RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &id
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
         const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
 
         Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
 
-        shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixSConst], textureMatrixS);
-        shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixTConst], textureMatrixT);
+        shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::TextureMatrixS], textureMatrixS);
+        shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::TextureMatrixT], textureMatrixT);
 
-        shader->SetConstant1f(shader->builtInConstantIndices[Shader::PerforatedAlphaConst], mtrlPass->cutoffAlpha);
+        shader->SetConstant1f(shader->builtInConstantIndices[Shader::BuiltInConstant::PerforatedAlpha], mtrlPass->cutoffAlpha);
     }
 
     shader->SetConstant3f("id", idInVec3);
@@ -405,7 +405,7 @@ void Batch::RenderDepth(const Material::ShaderPass *mtrlPass) const {
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
         const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
 
         SetMaterialConstants(mtrlPass, shader);
     }
@@ -443,7 +443,7 @@ void Batch::RenderDepthNormal(const Material::ShaderPass *mtrlPass) const {
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
         const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
 
         SetMaterialConstants(mtrlPass, shader);
     }
@@ -483,15 +483,15 @@ void Batch::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
         const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
         
         Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
 
-        shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixSConst], textureMatrixS);
-        shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixTConst], textureMatrixT);
+        shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::TextureMatrixS], textureMatrixS);
+        shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::TextureMatrixT], textureMatrixT);
 
-        shader->SetConstant1f(shader->builtInConstantIndices[Shader::PerforatedAlphaConst], mtrlPass->cutoffAlpha);
+        shader->SetConstant1f(shader->builtInConstantIndices[Shader::BuiltInConstant::PerforatedAlpha], mtrlPass->cutoffAlpha);
     }
 
     if (subMesh->useGpuSkinning) {
@@ -552,7 +552,7 @@ void Batch::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
         }
 
         shader->Bind();
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], mtrlPass->texture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
     }
 
     shader->SetConstant1f("ambientScale", 1.0f);
@@ -563,7 +563,7 @@ void Batch::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
 
     SetMaterialConstants(mtrlPass, shader);
 
-    shader->SetConstant3f(shader->builtInConstantIndices[Shader::ViewOriginConst], backEnd.camera->def->GetState().origin);
+    shader->SetConstant3f(shader->builtInConstantIndices[Shader::BuiltInConstant::ViewOrigin], backEnd.camera->def->GetState().origin);
 
     DrawPrimitives();
 }
@@ -593,7 +593,7 @@ void Batch::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientSca
     shader->Bind();
 
     const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
-    shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
+    shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
 
     shader->SetConstant1f("ambientScale", ambientScale);
 
@@ -643,10 +643,10 @@ void Batch::RenderIndirectLit(const Material::ShaderPass *mtrlPass) const {
             SetProbeConstants(shader);
         } else {
             const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
         }
     } else {
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], mtrlPass->texture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
     }
 
     shader->SetTexture("prefilteredDfgMap", backEnd.integrationLUTTexture);
@@ -657,19 +657,19 @@ void Batch::RenderIndirectLit(const Material::ShaderPass *mtrlPass) const {
 
     SetMaterialConstants(mtrlPass, shader);
 
-    shader->SetConstant3f(shader->builtInConstantIndices[Shader::ViewOriginConst], backEnd.camera->def->GetState().origin);
+    shader->SetConstant3f(shader->builtInConstantIndices[Shader::BuiltInConstant::ViewOrigin], backEnd.camera->def->GetState().origin);
 
     DrawPrimitives();
 }
 
-static Shader *GetShadowShader(Shader *shader, RenderLight::Type lightType) {
-    if (lightType == RenderLight::PointLight) {
+static Shader *GetShadowShader(Shader *shader, RenderLight::Type::Enum lightType) {
+    if (lightType == RenderLight::Type::Point) {
         return shader->GetPointShadowVersion();
     }
-    if (lightType == RenderLight::SpotLight) {
+    if (lightType == RenderLight::Type::Spot) {
         return shader->GetSpotShadowVersion();
     }
-    if (lightType == RenderLight::DirectionalLight) {
+    if (lightType == RenderLight::Type::Directional) {
         return shader->GetParallelShadowVersion();
     }
     return shader;
@@ -686,7 +686,7 @@ void Batch::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float 
 
     bool useShadowMap = false;
     if (r_shadows.GetInteger()) {
-        if ((surfLight->def->GetState().flags & RenderLight::CastShadowsFlag) && (surfSpace->def->GetState().flags & RenderObject::ReceiveShadowsFlag)) {
+        if ((surfLight->def->GetState().flags & RenderLight::Flag::CastShadows) && (surfSpace->def->GetState().flags & RenderObject::Flag::ReceiveShadows)) {
             shader = GetShadowShader(shader, surfLight->def->GetState().type);
             useShadowMap = true;
         }
@@ -718,10 +718,10 @@ void Batch::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float 
             SetShaderProperties(shader, mtrlPass->shaderProperties);
         } else {
             const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
         }
     } else {
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], mtrlPass->texture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
     }
 
     SetMatrixConstants(shader);
@@ -746,7 +746,7 @@ void Batch::RenderIndirectLit_DirectLit(const Material::ShaderPass *mtrlPass) co
 
     bool useShadowMap = false;
     if (r_shadows.GetInteger()) {
-        if ((surfLight->def->GetState().flags & RenderLight::CastShadowsFlag) && (surfSpace->def->GetState().flags & RenderObject::ReceiveShadowsFlag)) {
+        if ((surfLight->def->GetState().flags & RenderLight::Flag::CastShadows) && (surfSpace->def->GetState().flags & RenderObject::Flag::ReceiveShadows)) {
             shader = GetShadowShader(shader, surfLight->def->GetState().type);
             useShadowMap = true;
         }
@@ -782,10 +782,10 @@ void Batch::RenderIndirectLit_DirectLit(const Material::ShaderPass *mtrlPass) co
             SetProbeConstants(shader);
         } else {
             const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
         }
     } else {
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], mtrlPass->texture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
     }
 
     SetMatrixConstants(shader);
@@ -818,32 +818,32 @@ void Batch::RenderBase(const Material::ShaderPass *mtrlPass, float ambientScale)
 void Batch::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shader *shader, bool useShadowMap) const {
     Vec4 lightVec;
 
-    if (surfLight->def->GetState().type == RenderLight::DirectionalLight) {
+    if (surfLight->def->GetState().type == RenderLight::Type::Directional) {
         lightVec = Vec4(-surfLight->def->GetState().axis[0], 0);
     } else {
         lightVec = Vec4(surfLight->def->GetState().origin, 1);
     }
-    shader->SetConstant4f(shader->builtInConstantIndices[Shader::LightVecConst], lightVec);
+    shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::LightVec], lightVec);
 
-    shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::LightTextureMatrixConst], true, surfLight->viewProjTexMatrix);
-    shader->SetConstant4x3f(shader->builtInConstantIndices[Shader::LightFallOffMatrixConst], true, surfLight->def->GetFallOffMatrix());
-    shader->SetConstant1f(shader->builtInConstantIndices[Shader::LightFallOffExponentConst], surfLight->def->GetState().fallOffExponent);
+    shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::LightTextureMatrix], true, surfLight->viewProjTexMatrix);
+    shader->SetConstant4x3f(shader->builtInConstantIndices[Shader::BuiltInConstant::LightFallOffMatrix], true, surfLight->def->GetFallOffMatrix());
+    shader->SetConstant1f(shader->builtInConstantIndices[Shader::BuiltInConstant::LightFallOffExponent], surfLight->def->GetState().fallOffExponent);
 
-    shader->SetConstant3f(shader->builtInConstantIndices[Shader::ViewOriginConst], backEnd.camera->def->GetState().origin);
+    shader->SetConstant3f(shader->builtInConstantIndices[Shader::BuiltInConstant::ViewOrigin], backEnd.camera->def->GetState().origin);
 
     if (useShadowMap) {
-        if (surfLight->def->GetState().type == RenderLight::PointLight) {
+        if (surfLight->def->GetState().type == RenderLight::Type::Point) {
             shader->SetConstant2f("shadowProjectionDepth", backEnd.shadowProjectionDepth);
             shader->SetConstant1f("vscmBiasedScale", backEnd.ctx->vscmBiasedScale);
 
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::CubicNormalCubeMapSampler], textureManager.cubicNormalCubeMapTexture);
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::IndirectionCubeMapSampler], backEnd.ctx->indirectionCubeMapTexture);
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::ShadowMapSampler], backEnd.ctx->vscmRT->DepthStencilTexture());
-        } else if (surfLight->def->GetState().type == RenderLight::SpotLight) {
-            shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::ShadowProjMatrixConst], true, backEnd.shadowViewProjectionScaleBiasMatrix[0]);
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::ShadowArrayMapSampler], backEnd.ctx->shadowMapRT->DepthStencilTexture());
-        } else if (surfLight->def->GetState().type == RenderLight::DirectionalLight) {
-            shader->SetConstantArray4x4f(shader->builtInConstantIndices[Shader::ShadowCascadeProjMatrixConst], true, r_CSM_count.GetInteger(), backEnd.shadowViewProjectionScaleBiasMatrix);
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::CubicNormalCubeMap], textureManager.cubicNormalCubeMapTexture);
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::IndirectionCubeMap], backEnd.ctx->indirectionCubeMapTexture);
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::ShadowMap], backEnd.ctx->vscmRT->DepthStencilTexture());
+        } else if (surfLight->def->GetState().type == RenderLight::Type::Spot) {
+            shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ShadowProjMatrix], true, backEnd.shadowViewProjectionScaleBiasMatrix[0]);
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::ShadowArrayMap], backEnd.ctx->shadowMapRT->DepthStencilTexture());
+        } else if (surfLight->def->GetState().type == RenderLight::Type::Directional) {
+            shader->SetConstantArray4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ShadowCascadeProjMatrix], true, r_CSM_count.GetInteger(), backEnd.shadowViewProjectionScaleBiasMatrix);
 
             if (r_CSM_selectionMethod.GetInteger() == 0) {
                 // z-based selection shader needs shadowSplitFar value
@@ -853,11 +853,11 @@ void Batch::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shad
                     sFar[cascadeIndex] = (backEnd.projMatrix[2][2] * -dFar + backEnd.projMatrix[2][3]) / dFar;
                     sFar[cascadeIndex] = sFar[cascadeIndex] * 0.5f + 0.5f;
                 }
-                shader->SetConstant4f(shader->builtInConstantIndices[Shader::ShadowSplitFarConst], sFar);
+                shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ShadowSplitFar], sFar);
             }
             shader->SetConstant1f("cascadeBlendSize", r_CSM_blendSize.GetFloat());
             shader->SetConstantArray1f("shadowMapFilterSize", r_CSM_count.GetInteger(), backEnd.shadowMapFilterSize);
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::ShadowArrayMapSampler], backEnd.ctx->shadowMapRT->DepthStencilTexture());
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::ShadowArrayMap], backEnd.ctx->shadowMapRT->DepthStencilTexture());
         }
 
         if (r_shadowMapQuality.GetInteger() == 3) {
@@ -866,7 +866,7 @@ void Batch::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shad
 
         Vec2 shadowMapTexelSize;
 
-        if (surfLight->def->GetState().type == RenderLight::PointLight) {
+        if (surfLight->def->GetState().type == RenderLight::Type::Point) {
             shadowMapTexelSize.x = 1.0f / backEnd.ctx->vscmRT->GetWidth();
             shadowMapTexelSize.y = 1.0f / backEnd.ctx->vscmRT->GetHeight();
         } else {
@@ -890,10 +890,10 @@ void Batch::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shad
 
     const Material *lightMaterial = surfLight->def->GetMaterial();
 
-    shader->SetTexture(shader->builtInSamplerUnits[Shader::LightProjectionMapSampler], lightMaterial->GetPass()->texture);
+    shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::LightProjectionMap], lightMaterial->GetPass()->texture);
 
     Color4 lightColor = surfLight->lightColor * surfLight->def->GetState().intensity * r_lightScale.GetFloat();
-    shader->SetConstant4f(shader->builtInConstantIndices[Shader::LightColorConst], lightColor);
+    shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::LightColor], lightColor);
 
     /*bool useLightCube = lightStage->textureStage.texture->GetType() == TextureCubeMap ? true : false;
     shader->SetConstant1i("useLightCube", useLightCube);
@@ -916,7 +916,7 @@ void Batch::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const {
 
     bool useShadowMap = false;
     if (r_shadows.GetInteger()) {
-        if ((surfLight->def->GetState().flags & RenderLight::CastShadowsFlag) && (surfSpace->def->GetState().flags & RenderObject::ReceiveShadowsFlag)) {
+        if ((surfLight->def->GetState().flags & RenderLight::Flag::CastShadows) && (surfSpace->def->GetState().flags & RenderObject::Flag::ReceiveShadows)) {
             shader = GetShadowShader(shader, surfLight->def->GetState().type);
             useShadowMap = true;
         }
@@ -944,10 +944,10 @@ void Batch::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const {
             SetShaderProperties(shader, mtrlPass->shaderProperties);
         } else {
             const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], baseTexture);
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
         }
     } else {
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::AlbedoMapSampler], mtrlPass->texture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
     }
 
     SetMatrixConstants(shader);
@@ -981,8 +981,8 @@ void Batch::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) cons
 
     // light texture transform matrix
     Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetWorldMatrix();
-    shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::LightTextureMatrixConst], true, viewProjScaleBiasMat);
-    shader->SetConstant3f("fogColor", &surfLight->def->GetState().materialParms[RenderObject::RedParm]);
+    shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::LightTextureMatrix], true, viewProjScaleBiasMat);
+    shader->SetConstant3f("fogColor", &surfLight->def->GetState().materialParms[RenderObject::MaterialParm::Red]);
 
     Vec3 vec = surfLight->def->GetState().origin - backEnd.camera->def->GetState().origin;
     bool fogEnter = vec.Dot(surfLight->def->GetState().axis[0]) < 0.0f ? true : false;
@@ -1017,7 +1017,7 @@ void Batch::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) co
         }
     }
 
-    Color3 blendColor(&surfLight->def->GetState().materialParms[RenderObject::RedParm]);
+    Color3 blendColor(&surfLight->def->GetState().materialParms[RenderObject::MaterialParm::Red]);
 
     if (rhi.IsSRGBWriteEnabled()) {
         blendColor = blendColor.SRGBToLinear();
@@ -1027,7 +1027,7 @@ void Batch::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) co
 
     // light texture transform matrix
     Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetWorldMatrix();
-    shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::LightTextureMatrixConst], true, viewProjScaleBiasMat);
+    shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::LightTextureMatrix], true, viewProjScaleBiasMat);
     shader->SetConstant3f("blendColor", blendColor);
 
     const Material *lightMaterial = surfLight->def->GetState().material;
@@ -1056,19 +1056,19 @@ void Batch::RenderGui(const Material::ShaderPass *mtrlPass) const {
     Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
     Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
 
-    shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixSConst], textureMatrixS);
-    shader->SetConstant4f(shader->builtInConstantIndices[Shader::TextureMatrixTConst], textureMatrixT);
+    shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::TextureMatrixS], textureMatrixS);
+    shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::TextureMatrixT], textureMatrixT);
 
     Color4 color;
     if (mtrlPass->useOwnerColor) {
-        color = Color4(&surfSpace->def->GetState().materialParms[RenderObject::RedParm]);
+        color = Color4(&surfSpace->def->GetState().materialParms[RenderObject::MaterialParm::Red]);
     } else {
         color = mtrlPass->constantColor;
     }
 
-    shader->SetConstant4f(shader->builtInConstantIndices[Shader::ConstantColorConst], color);
+    shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ConstantColor], color);
 
-    SetVertexColorConstants(shader, Material::ModulateVertexColor);
+    SetVertexColorConstants(shader, Material::VertexColorMode::Modulate);
 
     DrawPrimitives();
 }

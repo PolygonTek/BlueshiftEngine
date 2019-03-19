@@ -106,7 +106,7 @@ void PP_Downscale2x2(const Texture *srcTexture, RenderTarget *dstRT) {
     float texelOffsetX = 1.0f / srcTexture->GetWidth();
     float texelOffsetY = 1.0f / srcTexture->GetHeight();
 
-    if (!(srcTexture->GetFlags() & Texture::Nearest)) {
+    if (!(srcTexture->GetFlags() & Texture::Flag::Nearest)) {
         sampleOffsets[0] = Vec2(0.0f, 0.0f);
 
         shader->Bind();
@@ -149,7 +149,7 @@ void PP_Downscale4x4(const Texture *srcTexture, RenderTarget *dstRT) {
     float texelOffsetX = 1.0f / srcTexture->GetWidth();
     float texelOffsetY = 1.0f / srcTexture->GetHeight();
 
-    if (!(srcTexture->GetFlags() & Texture::Nearest)) {
+    if (!(srcTexture->GetFlags() & Texture::Flag::Nearest)) {
         sampleOffsets[0] = Vec2(-texelOffsetX, -texelOffsetX);
         sampleOffsets[1] = Vec2(+texelOffsetX, -texelOffsetX);
         sampleOffsets[2] = Vec2(-texelOffsetX, +texelOffsetX);
@@ -195,7 +195,7 @@ void PP_Downscale4x4LogLum(const Texture *srcTexture, float s, float t, float s2
 
     Vec2 sampleOffsets[16];
     
-    if (!(srcTexture->GetFlags() & Texture::Nearest)) {
+    if (!(srcTexture->GetFlags() & Texture::Flag::Nearest)) {
         sampleOffsets[0] = Vec2(-texelOffsetX, -texelOffsetX);
         sampleOffsets[1] = Vec2(+texelOffsetX, -texelOffsetX);
         sampleOffsets[2] = Vec2(-texelOffsetX, +texelOffsetX);
@@ -241,7 +241,7 @@ void PP_Downscale4x4ExpLum(const Texture *srcTexture, RenderTarget *dstRT) {
     float texelOffsetX = 1.0f / srcTexture->GetWidth();
     float texelOffsetY = 1.0f / srcTexture->GetHeight();
 
-    if (!(srcTexture->GetFlags() & Texture::Nearest)) {
+    if (!(srcTexture->GetFlags() & Texture::Flag::Nearest)) {
         sampleOffsets[0] = Vec2(-texelOffsetX, -texelOffsetX);
         sampleOffsets[1] = Vec2(+texelOffsetX, -texelOffsetX);
         sampleOffsets[2] = Vec2(-texelOffsetX, +texelOffsetX);
@@ -576,7 +576,7 @@ void PP_VBlurAlphaMaskedBilinear8x(const Texture *srcTexture, const Texture *mas
 }
 
 void PP_GaussianBlur5x5(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT) {
-    if (srcTexture->GetFlags() & Texture::Nearest) {
+    if (srcTexture->GetFlags() & Texture::Flag::Nearest) {
         PP_HBlur5x(srcTexture, gaussKernel5x.discreteWeights, tempRT);
         PP_VBlur5x(tempRT->ColorTexture(), gaussKernel5x.discreteWeights, dstRT);
     } else {
@@ -586,7 +586,7 @@ void PP_GaussianBlur5x5(const Texture *srcTexture, RenderTarget *tempRT, RenderT
 }
 
 void PP_GaussianBlur7x7(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT) {
-    if (srcTexture->GetFlags() & Texture::Nearest) {
+    if (srcTexture->GetFlags() & Texture::Flag::Nearest) {
         PP_HBlur7x(srcTexture, gaussKernel7x.discreteWeights, tempRT);
         PP_VBlur7x(tempRT->ColorTexture(), gaussKernel7x.discreteWeights, dstRT);
     } else {
@@ -596,7 +596,7 @@ void PP_GaussianBlur7x7(const Texture *srcTexture, RenderTarget *tempRT, RenderT
 }
 
 void PP_GaussianBlur15x15(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT) {
-    if (srcTexture->GetFlags() & Texture::Nearest) {
+    if (srcTexture->GetFlags() & Texture::Flag::Nearest) {
         PP_HBlur15x(srcTexture, gaussKernel15x.discreteWeights, tempRT);
         PP_VBlur15x(tempRT->ColorTexture(), gaussKernel15x.discreteWeights, dstRT);
     } else {

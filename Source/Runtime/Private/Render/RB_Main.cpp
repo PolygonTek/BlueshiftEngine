@@ -81,13 +81,14 @@ void RB_Init() {
     memset(backEnd.csmUpdate, 0, sizeof(backEnd.csmUpdate));
 
     backEnd.integrationLUTTexture = textureManager.AllocTexture("integrationLUT");
-    backEnd.integrationLUTTexture->Load("Data/EngineTextures/IntegrationLUT_GGX.dds", Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+    backEnd.integrationLUTTexture->Load("Data/EngineTextures/IntegrationLUT_GGX.dds", 
+        Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
     if (r_HOM.GetBool()) {
         // TODO: create one for each context
         backEnd.homCullingOutputTexture = textureManager.AllocTexture("_homCullingOutput");
         backEnd.homCullingOutputTexture->CreateEmpty(RHI::Texture2D, HOM_CULL_TEXTURE_WIDTH, HOM_CULL_TEXTURE_HEIGHT, 1, 1, 1,
-            Image::RGBA_8_8_8_8, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+            Image::Format::RGBA_8_8_8_8, Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
         backEnd.homCullingOutputRT = RenderTarget::Create(backEnd.homCullingOutputTexture, nullptr, 0);
     }
 
@@ -130,7 +131,7 @@ void RB_SetupLight(VisLight *visLight) {
     const Material::ShaderPass *lightPass = lightMaterial->GetPass();
 
     if (lightPass->useOwnerColor) {
-        visLight->lightColor = Color4(&renderLight->GetState().materialParms[RenderObject::RedParm]);
+        visLight->lightColor = Color4(&renderLight->GetState().materialParms[RenderObject::MaterialParm::Red]);
     } else {
         visLight->lightColor = Color4(lightPass->constantColor);
     }
@@ -177,10 +178,10 @@ void RB_SetupLight(VisLight *visLight) {
 
 void RB_DrawLightVolume(const RenderLight *light) {
     switch (light->GetType()) {
-    case RenderLight::DirectionalLight:
+    case RenderLight::Type::Directional:
         RB_DrawOBB(light->GetWorldOBB());
         break;
-    case RenderLight::PointLight:
+    case RenderLight::Type::Point:
         if (light->IsRadiusUniform()) {
             RB_DrawSphere(Sphere(light->GetOrigin(), light->GetRadius()[0]), 16, 16);
         } else {
@@ -188,7 +189,7 @@ void RB_DrawLightVolume(const RenderLight *light) {
             RB_DrawOBB(light->GetWorldOBB());
         }
         break;
-    case RenderLight::SpotLight:
+    case RenderLight::Type::Spot:
         RB_DrawFrustum(light->GetWorldFrustum());
         break;
     default:
@@ -226,7 +227,7 @@ static void RB_MarkOcclusionVisibleLights(int numLights, VisLight **lights) {
 
     for (int i = 0; i < numLights; i++) {
         VisLight *light = lights[i];
-        if (light->def->GetState().flags & RenderLight::PrimaryLightFlag) {
+        if (light->def->GetState().flags & RenderLight::PrimaryLight) {
             continue;
         }
 
@@ -441,7 +442,7 @@ static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occlud
     int size = backEnd.homCullingOutputTexture->MemRequired(false);
     byte *visibilityBuffer = (byte *)_alloca(size);
     backEnd.homCullingOutputTexture->Bind();
-    backEnd.homCullingOutputTexture->GetTexels2D(0, Image::RGBA_8_8_8_8, visibilityBuffer);
+    backEnd.homCullingOutputTexture->GetTexels2D(0, Image::Format::RGBA_8_8_8_8, visibilityBuffer);
     byte *visibilityPtr = visibilityBuffer;
 
     for (int i = 0; i < numAmbientOccludees; i++) {
@@ -523,8 +524,8 @@ static void RB_HiOcclusionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         return;
     }
 
-    if (backEnd.camera->def->GetState().clearMethod != RenderCamera::ColorClear || 
-        backEnd.camera->def->GetState().clearMethod != RenderCamera::SkyboxClear) {
+    if (backEnd.camera->def->GetState().clearMethod != RenderCamera::ClearMethod::Color || 
+        backEnd.camera->def->GetState().clearMethod != RenderCamera::ClearMethod::Skybox) {
         return;
     }
 
@@ -541,13 +542,13 @@ static void RB_HiOcclusionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 static void RB_ClearView() {
     int clearBits = 0;
 
-    if (backEnd.camera->def->GetState().clearMethod == RenderCamera::DepthOnlyClear || 
-        backEnd.camera->def->GetState().clearMethod == RenderCamera::SkyboxClear) {
+    if (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::DepthOnly || 
+        backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Skybox) {
         clearBits = RHI::DepthBit | RHI::StencilBit;
 
         rhi.SetStateBits(rhi.GetStateBits() | RHI::DepthWrite);
         rhi.Clear(clearBits, Color4::black, 1.0f, 0);
-    } else if (backEnd.camera->def->GetState().clearMethod == RenderCamera::ColorClear) {
+    } else if (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Color) {
         clearBits = RHI::DepthBit | RHI::StencilBit | RHI::ColorBit;
         Color4 clearColor = backEnd.camera->def->GetState().clearColor;
 
@@ -557,7 +558,7 @@ static void RB_ClearView() {
 }
 
 static void RB_RenderView() {
-    if (backEnd.camera->def->GetState().flags & RenderCamera::TexturedMode) {
+    if (backEnd.camera->def->GetState().flags & RenderCamera::Flag::TexturedMode) {
         // Render pass for HiZ occlusion culling.
         RB_HiOcclusionPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
@@ -583,8 +584,8 @@ static void RB_RenderView() {
         RB_DrawTris(backEnd.numAmbientSurfs, backEnd.drawSurfs, false);
     }
 
-    if (backEnd.camera->def->GetState().flags & RenderCamera::WireFrameMode) {
-        if (!(backEnd.camera->def->GetState().flags & RenderCamera::TexturedMode)) {
+    if (backEnd.camera->def->GetState().flags & RenderCamera::Flag::WireFrameMode) {
+        if (!(backEnd.camera->def->GetState().flags & RenderCamera::Flag::TexturedMode)) {
             RB_BackgroundPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
         }
 
@@ -593,7 +594,7 @@ static void RB_RenderView() {
     }
 
     // Render debug surfaces.
-    if (!(backEnd.camera->def->GetState().flags & RenderCamera::SkipDebugDraw)) {
+    if (!(backEnd.camera->def->GetState().flags & RenderCamera::Flag::SkipDebugDraw)) {
         RB_DebugToolsPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
     }
 }
@@ -818,7 +819,7 @@ void RB_DrawDebugTextures() {
             shader->Bind();
             shader->SetTexture("tex0", texture);
             
-            if (texture->GetFlags() & Texture::Shadow) {
+            if (texture->GetFlags() & Texture::Flag::Shadow) {
                 texture->Bind();
                 rhi.SetTextureShadowFunc(false);
             }
@@ -829,7 +830,7 @@ void RB_DrawDebugTextures() {
                 RB_DrawScreenRect(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f);
             }
             
-            if (texture->GetFlags() & Texture::Shadow) {
+            if (texture->GetFlags() & Texture::Flag::Shadow) {
                 rhi.SetTextureShadowFunc(true);
             }
         }
@@ -851,7 +852,7 @@ void RB_DrawDebugTextures() {
 static void RB_DrawCamera3D() {
     BE_PROFILE_CPU_SCOPE("RB_DrawCamera3D", Color3::red);
 
-    if (backEnd.ctx->flags & RenderContext::UseSelectionBuffer) {
+    if (backEnd.ctx->flags & RenderContext::Flag::UseSelectionBuffer) {
         backEnd.ctx->screenSelectionRT->Begin();
 
         float scaleX = (float)backEnd.ctx->screenSelectionRT->GetWidth() / backEnd.ctx->screenRT->GetWidth();
@@ -883,7 +884,7 @@ static void RB_DrawCamera3D() {
     upscaledRenderRect.w = Math::Rint(backEnd.renderRect.w * backEnd.upscaleFactor.x);
     upscaledRenderRect.h = Math::Rint(backEnd.renderRect.h * backEnd.upscaleFactor.y);
 
-    if (!(backEnd.camera->def->GetState().flags & RenderCamera::SkipPostProcess) && r_usePostProcessing.GetBool()) {
+    if (!(backEnd.camera->def->GetState().flags & RenderCamera::Flag::SkipPostProcess) && r_usePostProcessing.GetBool()) {
         backEnd.ctx->screenRT->Begin();
 
         rhi.SetViewport(backEnd.renderRect);
@@ -948,7 +949,7 @@ static const void *RB_ExecuteDrawCamera(const void *data) {
     backEnd.renderRect          = cmd->camera.def->GetState().renderRect;
     backEnd.upscaleFactor       = Vec2(backEnd.ctx->GetUpscaleFactorX(), backEnd.ctx->GetUpscaleFactorY());
     backEnd.useDepthPrePass     = r_useDepthPrePass.GetBool() &&
-        (backEnd.camera->def->GetState().clearMethod == RenderCamera::ColorClear || backEnd.camera->def->GetState().clearMethod == RenderCamera::SkyboxClear);
+        (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Color || backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Skybox);
 
     if (backEnd.camera->is2D) {
         RB_DrawCamera2D();
@@ -972,8 +973,8 @@ static const void *RB_ExecuteScreenshot(const void *data) {
     }
     
     Image screenImage;
-    screenImage.Create2D(captureRect.w, captureRect.h, 1, Image::BGR_8_8_8, nullptr, 0);
-    rhi.ReadPixels(captureRect.x, captureRect.y, captureRect.w, captureRect.h, Image::BGR_8_8_8, screenImage.GetPixels());
+    screenImage.Create2D(captureRect.w, captureRect.h, 1, Image::Format::BGR_8_8_8, nullptr, 0);
+    rhi.ReadPixels(captureRect.x, captureRect.y, captureRect.w, captureRect.h, Image::Format::BGR_8_8_8, screenImage.GetPixels());
     screenImage.FlipY();
 
     // Apply gamma ramp table

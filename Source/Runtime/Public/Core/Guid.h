@@ -19,14 +19,16 @@ BE_NAMESPACE_BEGIN
 /// A GUID class
 class BE_API Guid {
 public:
-    enum Format {
-        Digits,                             ///< 00000000000000000000000000000000
-        DigitsWithHyphens,                  ///< 00000000-0000-0000-0000-000000000000
-        DigitsWithHyphensInBraces,          ///< {00000000-0000-0000-0000-000000000000}
-        DigitsWithHyphensInParentheses,     ///< (00000000-0000-0000-0000-000000000000)
+    struct Format {
+        enum Enum {
+            Digits,                         ///< 00000000000000000000000000000000
+            DigitsWithHyphens,              ///< 00000000-0000-0000-0000-000000000000
+            DigitsWithHyphensInBraces,      ///< {00000000-0000-0000-0000-000000000000}
+            DigitsWithHyphensInParentheses, ///< (00000000-0000-0000-0000-000000000000)
+        };
     };
 
-    Guid() : u1(0), u2(0), u3(0), u4(0) { }
+    Guid() : u1(0), u2(0), u3(0), u4(0) {}
     Guid(uint32_t a, uint32_t b, uint32_t c, uint32_t d) : u1(a), u2(b), u3(c), u4(d) {}
 
     friend bool         operator==(const Guid &lhs, const Guid &rhs);
@@ -43,7 +45,7 @@ public:
     void                Set(uint32_t a, uint32_t b, uint32_t c, uint32_t d) { u1 = a; u2 = b; u3 = c; u4 = d; }
     bool                SetFromString(const char *str);
 
-    const char *        ToString(Format format = Digits) const;
+    const char *        ToString(Format::Enum format = Format::Digits) const;
 
     static Guid         FromString(const char *str);
 

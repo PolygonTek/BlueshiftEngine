@@ -369,7 +369,7 @@ bool ParticleSystem::ParseMinMaxCurve(Lexer &lexer, MinMaxCurve *var) const {
     if (lexer.ReadToken(&token, false)) {
         for (int i = 0; i < COUNT_OF(timedMinMaxVarTypeNames); i++) {
             if (!token.Icmp(timedMinMaxVarTypeNames[i])) {
-                var->type = (MinMaxCurve::Type)i;
+                var->type = (MinMaxCurve::Type::Enum)i;
 
                 if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
                     return false;
@@ -931,7 +931,7 @@ static void WriteMinMaxCurve(File *fp, const Str &name, const MinMaxCurve &var, 
 }
 
 void ParticleSystem::Write(const char *filename) {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
         BE_WARNLOG("ParticleSystem::Write: file open error\n");
         return;

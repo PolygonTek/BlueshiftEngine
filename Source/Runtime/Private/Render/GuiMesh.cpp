@@ -275,7 +275,7 @@ float GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, char32
     return pitch;
 }
 
-void GuiMesh::Draw(Font *font, RenderObject::TextAnchor anchor, RenderObject::TextAlignment alignment, float lineSpacing, float textScale, const Str &text) {
+void GuiMesh::Draw(Font *font, RenderObject::TextAnchor::Enum anchor, RenderObject::TextAlignment::Enum alignment, float lineSpacing, float textScale, const Str &text) {
     static constexpr int MaxTextLines = 256;
     int lineOffsets[MaxTextLines];
     int lineLen[MaxTextLines];
@@ -357,7 +357,7 @@ void GuiMesh::Draw(Font *font, RenderObject::TextAnchor anchor, RenderObject::Te
     }
 }
 
-AABB GuiMesh::Compute3DTextAABB(Font *font, RenderObject::TextAnchor anchor, float lineSpacing, float textScale, const Str &text) const {
+AABB GuiMesh::Compute3DTextAABB(Font *font, RenderObject::TextAnchor::Enum anchor, float lineSpacing, float textScale, const Str &text) const {
     float lineWidth = 0;
     float maxWidth = 0;
     int numLines = 0;

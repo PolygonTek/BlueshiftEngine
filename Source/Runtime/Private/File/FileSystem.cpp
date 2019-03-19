@@ -27,7 +27,7 @@ BE_NAMESPACE_BEGIN
 #define FILEHASH_SIZE   1024
 
 static CVar             fs_baseDir("fs_baseDir", ".", 0, "");
-static CVar             fs_debug("fs_debug", "0", CVar::Bool, "");
+static CVar             fs_debug("fs_debug", "0", CVar::Flag::Bool, "");
 
 FileSystem              fileSystem;
 
@@ -664,8 +664,8 @@ File *FileSystem::OpenFileWrite(const char *filename) {
     if (!pf) {
         if (PlatformFile::FileExists(filename)) {
             int fileMode = PlatformFile::GetFileMode(filename);
-            if (!(fileMode & PlatformFile::Writable)) {
-                PlatformFile::SetFileMode(filename, fileMode | PlatformFile::Writable);
+            if (!(fileMode & PlatformFile::Mode::Writable)) {
+                PlatformFile::SetFileMode(filename, fileMode | PlatformFile::Mode::Writable);
                 pf = (PlatformFile *)PlatformFile::OpenFileWrite(filename);
             }
         }
@@ -699,13 +699,13 @@ File *FileSystem::OpenFileAppend(const char *filename) {
     return file;
 }
 
-File *FileSystem::OpenFile(const char *filename, File::Mode mode, bool searchDirs) {
+File *FileSystem::OpenFile(const char *filename, File::Mode::Enum mode, bool searchDirs) {
     switch (mode) {
-    case File::ReadMode:
+    case File::Mode::Read:
         return OpenFileRead(filename, searchDirs);
-    case File::WriteMode:
+    case File::Mode::Write:
         return OpenFileWrite(filename);
-    case File::AppendMode:
+    case File::Mode::Append:
         return OpenFileAppend(filename);
     }
 
@@ -818,7 +818,7 @@ void FileSystem::WriteFile(const char *filename, const void *buffer, int size) {
         CreateDirectory(writeDir, true);
     }
 
-    File *fp = OpenFile(filename, File::WriteMode);
+    File *fp = OpenFile(filename, File::Mode::Write);
     if (!fp) {
         BE_FATALERROR("FileSystem::WriteFile: failed to open %s", filename);
         return;
@@ -848,7 +848,7 @@ bool FileSystem::ReadDict(const char *filename, Dict &dict) {
 }
 
 bool FileSystem::WriteDict(const char *filename, const Dict &dict) {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
         BE_WARNLOG("FileSystem::WriteDict: file open error\n");
         return false;

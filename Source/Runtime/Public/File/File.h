@@ -25,10 +25,12 @@ class BE_API File {
     friend class FileSystem;
 
 public:
-    enum Mode {
-        ReadMode,
-        WriteMode,
-        AppendMode
+    struct Mode {
+        enum Enum {
+            Read,
+            Write,
+            Append
+        };
     };
     
     virtual ~File() = 0;

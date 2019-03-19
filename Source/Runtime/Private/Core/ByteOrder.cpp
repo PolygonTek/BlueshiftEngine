@@ -17,7 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
-ByteOrder::Endianness ByteOrder::systemEndianness = Endianness::Unknown;
+ByteOrder::Endianness::Enum ByteOrder::systemEndianness = Endianness::Unknown;
 
 void ByteOrder::Init() {
     byte swaptest[2] = { 1, 0 };

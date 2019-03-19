@@ -38,14 +38,20 @@ struct BE_API FileInfo {
 
 class BE_API PlatformBaseFile {
 public:
-    enum Origin {
-        Start, Current, End
+    struct Origin {
+        enum Enum {
+            Start, 
+            Current, 
+            End
+        };
     };
 
-    enum Mode {
-        Writable            = BIT(0),
-        Readable            = BIT(1),
-        Executable          = BIT(2)
+    struct Mode {
+        enum Enum {
+            Writable            = BIT(0),
+            Readable            = BIT(1),
+            Executable          = BIT(2)
+        };
     };
     
     virtual ~PlatformBaseFile() = 0;
@@ -55,7 +61,7 @@ public:
                                 /// Returns file size
     virtual int                 Size() const = 0;
                                 /// Seek from the start on a file.
-    virtual int                 Seek(long offset, Origin origin) = 0;
+    virtual int                 Seek(long offset, Origin::Enum origin) = 0;
                                 /// Reads data from the file to the buffer.
     virtual size_t              Read(void *buffer, size_t bytesToRead) const = 0;
                                 /// Writes data from the buffer to the file.

@@ -138,7 +138,7 @@ bool Image::LoadHDRFromMemory(const char *name, const byte *data, size_t size) {
         return false;
     }
 
-    Create2D(headerInfo.width, headerInfo.height, 1, RGB_16F_16F_16F, nullptr, LinearSpaceFlag);
+    Create2D(headerInfo.width, headerInfo.height, 1, Format::RGB_16F_16F_16F, nullptr, Flag::LinearSpace);
 
     float16_t *dest = (float16_t *)this->pic;
 
@@ -217,7 +217,7 @@ bool Image::WriteHDR(const char *filename) const {
         return false;
     }
 
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
         BE_WARNLOG("Image::WriteHDR: file open error\n");
         return false;

@@ -561,7 +561,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
             continue;
         }
         
-        if (surf->material->GetSort() == Material::Sort::SkySort) {
+        if (surf->material->GetSort() == Material::Sort::Sky) {
             continue;
         }
 
@@ -582,7 +582,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
             prevMaterial = surf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::Flag::DepthHack);
 
                 if (prevDepthHack != depthHack) {
                     if (surf->flags & DrawSurf::UseInstancing) {
@@ -641,13 +641,13 @@ static void RB_DrawDebugLights(int mode) {
         shader->Bind();
         shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->GetViewProjMatrix());
 
-        shader->SetConstant4f("color", Color4(Color3(&visLight->def->GetState().materialParms[RenderObject::RedParm]), 0.25f));
+        shader->SetConstant4f("color", Color4(Color3(&visLight->def->GetState().materialParms[RenderObject::MaterialParm::Red]), 0.25f));
         RB_DrawLightVolume(visLight->def);
 
         rhi.SetStateBits(RHI::ColorWrite | RHI::PM_Wireframe | RHI::DF_LEqual);
         rhi.SetCullFace(RHI::NoCull);
 
-        shader->SetConstant4f("color", &visLight->def->GetState().materialParms[RenderObject::RedParm]);
+        shader->SetConstant4f("color", &visLight->def->GetState().materialParms[RenderObject::MaterialParm::Red]);
     
         RB_DrawLightVolume(visLight->def);
 
@@ -672,7 +672,7 @@ static void RB_DrawDebugLightScissorRects() {
 
         shader->Bind();
         shader->SetTexture("tex0", textureManager.whiteTexture);
-        shader->SetConstant3f("color", &visLight->def->GetState().materialParms[RenderObject::RedParm]);
+        shader->SetConstant3f("color", &visLight->def->GetState().materialParms[RenderObject::MaterialParm::Red]);
 
         Rect drawRect = visLight->scissorRect;
         drawRect.y = backEnd.ctx->GetRenderingHeight() - drawRect.Y2();

@@ -34,46 +34,56 @@ class EnvProbe {
     friend class RenderSystem;
 
 public:
-    enum Type {
-        Baked,
-        Realtime
+    struct Type {
+        enum Enum {
+            Baked,
+            Realtime
+        };
     };
 
-    enum RefreshMode {
-        OnAwake,
-        EveryFrame
+    struct RefreshMode {
+        enum Enum {
+            OnAwake,
+            EveryFrame
+        };
     };
 
-    enum TimeSlicing {
-        AllFacesAtOnce,
-        IndividualFaces,
-        NoTimeSlicing
+    struct TimeSlicing {
+        enum Enum {
+            AllFacesAtOnce,
+            IndividualFaces,
+            NoTimeSlicing
+        };
     };
 
-    enum Resolution {
-        Resolution16,
-        Resolution32,
-        Resolution64,
-        Resolution128,
-        Resolution256,
-        Resolution512,
-        Resolution1024,
-        Resolution2048
+    struct Resolution {
+        enum Enum {
+            Resolution16,
+            Resolution32,
+            Resolution64,
+            Resolution128,
+            Resolution256,
+            Resolution512,
+            Resolution1024,
+            Resolution2048
+        };
     };
 
-    enum ClearMethod {
-        ColorClear,
-        SkyClear
+    struct ClearMethod {
+        enum Enum {
+            Color,
+            Sky
+        };
     };
 
     struct State {
-        Type                type = Type::Baked;
-        RefreshMode         refreshMode = RefreshMode::OnAwake;
-        TimeSlicing         timeSlicing = TimeSlicing::AllFacesAtOnce;
+        Type::Enum          type = Type::Baked;
+        RefreshMode::Enum   refreshMode = RefreshMode::OnAwake;
+        TimeSlicing::Enum   timeSlicing = TimeSlicing::AllFacesAtOnce;
 
-        Resolution          resolution = Resolution::Resolution128;
+        Resolution::Enum    resolution = Resolution::Resolution128;
         bool                useHDR = true;
-        ClearMethod         clearMethod = ClearMethod::SkyClear;
+        ClearMethod::Enum   clearMethod = ClearMethod::Sky;
         Color3              clearColor = Color3::black;
         float               clippingNear = 0.1f;
         float               clippingFar = 500.0f;
@@ -108,7 +118,7 @@ public:
     ~EnvProbe();
 
                             /// Returns type.
-    Type                    GetType() const { return state.type; }
+    Type::Enum              GetType() const { return state.type; }
 
                             /// Returns proxy AABB in world space.
     const AABB &            GetProxyAABB() const { return proxyAABB; }
@@ -142,13 +152,13 @@ public:
 
                             /// Returns time slicing mode. Time slicing means how the probe should distribute its updates over time. 
                             /// This is valid only in realtime type.
-    TimeSlicing             GetTimeSlicing() const { return state.timeSlicing; }
+    TimeSlicing::Enum       GetTimeSlicing() const { return state.timeSlicing; }
 
                             /// Returns size.
     int                     GetSize() const { return ToActualResolution(state.resolution); }
 
                             /// Converts Resolution enum to actual size.
-    static int              ToActualResolution(Resolution resolution);
+    static int              ToActualResolution(Resolution::Enum resolution);
 
 private:
                             /// Updates this probe with the given state.

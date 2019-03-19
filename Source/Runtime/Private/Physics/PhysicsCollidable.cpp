@@ -18,7 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-PhysCollidable::PhysCollidable(PhysCollidable::Type type, btCollisionObject *collisionObject, const Vec3 &centroid) {
+PhysCollidable::PhysCollidable(PhysCollidable::Type::Enum type, btCollisionObject *collisionObject, const Vec3 &centroid) {
     this->type = type;
     this->collisionObject = collisionObject;
     this->centroid = centroid;

@@ -46,11 +46,13 @@ class Entity : public Object {
     friend class Component;
 
 public:
-    enum WorldPosTrait {
-        Pivot,
-        Center,
-        Minimum,
-        Maximum
+    struct WorldPosTrait {
+        enum Enum {
+            Pivot,
+            Center,
+            Minimum,
+            Maximum
+        };
     };
 
     OBJECT_PROTOTYPE(Entity);
@@ -209,7 +211,7 @@ public:
                                 /// Returns AABB in world space.
     const AABB                  GetWorldAABB(bool includingChildren = false) const;
                                 /// Returns position in world space with given trait.
-    const Vec3                  GetWorldPosition(WorldPosTrait posTrait, bool includingChildren = false) const;
+    const Vec3                  GetWorldPosition(WorldPosTrait::Enum posTrait, bool includingChildren = false) const;
 
 #if 1
                                 /// Visualizes the component in editor.

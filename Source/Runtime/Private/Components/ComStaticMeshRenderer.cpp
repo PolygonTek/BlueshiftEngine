@@ -27,7 +27,7 @@ END_EVENTS
 
 void ComStaticMeshRenderer::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("occluder", "Occluder", bool, IsOccluder, SetOccluder, false, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
 }
 
 ComStaticMeshRenderer::ComStaticMeshRenderer() {
@@ -53,7 +53,7 @@ void ComStaticMeshRenderer::Purge(bool chainPurge) {
 void ComStaticMeshRenderer::Init() {
     ComMeshRenderer::Init();
 
-    renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
+    renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::Type::Static);
 
     // Mark as initialized
     SetInitialized(true);
@@ -72,21 +72,21 @@ void ComStaticMeshRenderer::MeshUpdated() {
     renderWorld->RemoveRenderObject(renderObjectHandle);
     renderObjectHandle = -1;
 
-    renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::StaticMesh);
+    renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::Type::Static);
     renderObjectDef.aabb = referenceMesh->GetAABB();
 
     UpdateVisuals();
 }
 
 bool ComStaticMeshRenderer::IsOccluder() const {
-    return !!(renderObjectDef.flags & RenderObject::OccluderFlag);
+    return !!(renderObjectDef.flags & RenderObject::Flag::Occluder);
 }
 
 void ComStaticMeshRenderer::SetOccluder(bool occluder) {
     if (occluder) {
-        renderObjectDef.flags |= RenderObject::OccluderFlag;
+        renderObjectDef.flags |= RenderObject::Flag::Occluder;
     } else {
-        renderObjectDef.flags &= ~RenderObject::OccluderFlag;
+        renderObjectDef.flags &= ~RenderObject::Flag::Occluder;
     }
     UpdateVisuals();
 }

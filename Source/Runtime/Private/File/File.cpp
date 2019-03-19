@@ -254,7 +254,7 @@ int FileReal::Seek(int64_t offset) {
         return 0;
     }
 
-    return pf->Seek(offset, PlatformFile::Start);
+    return pf->Seek(offset, PlatformFile::Origin::Start);
 }
 
 int FileReal::SeekFromEnd(int64_t offset) {
@@ -262,7 +262,7 @@ int FileReal::SeekFromEnd(int64_t offset) {
         return 0;
     }
     
-    return pf->Seek(offset, PlatformFile::End);
+    return pf->Seek(offset, PlatformFile::Origin::End);
 }
 
 size_t FileReal::Read(void *buffer, size_t bytesToRead) const {

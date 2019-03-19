@@ -82,16 +82,20 @@ public:
     friend class RenderSystem;
 
     /// Flags for initialization
-    enum Flag {
-        OnDemandDrawing         = BIT(0),
-        UseSelectionBuffer      = BIT(1),
-        UseSharedContext        = BIT(4),
+    struct Flag {
+        enum Enum {
+            OnDemandDrawing     = BIT(0),
+            UseSelectionBuffer  = BIT(1),
+            UseSharedContext    = BIT(4),
+        };
     };
 
     /// Inclusion type for query selection
-    enum Inclusion {
-        Crossing,           ///< Select all objects within the region, plus any objects crossing the boundaries of the region
-        Window              ///< Select only the objects within the selection
+    struct Inclusion {
+        enum Enum {
+            Crossing,           ///< Select all objects within the region, plus any objects crossing the boundaries of the region
+            Window              ///< Select only the objects within the selection
+        };
     };
 
     RenderContext();
@@ -151,7 +155,7 @@ public:
                             // Query in render coordinates
     float                   QueryDepth(const Point &pt);
     int                     QuerySelection(const Point &pt);
-    bool                    QuerySelection(const Rect &rect, Inclusion inclusion, Array<int> &indexes);
+    bool                    QuerySelection(const Rect &rect, Inclusion::Enum inclusion, Array<int> &indexes);
 
     void                    TakeScreenShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height);
 

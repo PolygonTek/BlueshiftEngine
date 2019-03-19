@@ -41,7 +41,7 @@ void CVar::Init(const char *name, const char *value, int flags, const char *desc
     this->valueInteger  = 0;
 
     if (CVar::staticVars != (CVar *)(-1)) {
-        this->flags |= Static;
+        this->flags |= Flag::Static;
         this->nextStatic = CVar::staticVars;
         CVar::staticVars = this;
     } else {
@@ -87,7 +87,7 @@ void CVarSystem::Shutdown() {
     for (int i = 0; i < cvars.Count(); i++) {
         Mem_Free(cvars[i]->valueString);
 
-        if (!(cvars[i]->flags & CVar::Static)) {
+        if (!(cvars[i]->flags & CVar::Flag::Static)) {
             Mem_Free((void *)cvars[i]->name);
             Mem_Free((void *)cvars[i]->defaultValue);
 
@@ -163,7 +163,7 @@ void CVarSystem::WriteVariables(File *fp) const {
     for (int i = 0; i < cvars.Count(); i++) {
         CVar *cvar = cvars[i];
 
-        if (cvar->flags & CVar::Archive) {
+        if (cvar->flags & CVar::Flag::Archive) {
             fp->Printf("set %s \"%s\"\n", cvar->name, cvar->valueString);
         }
     }
@@ -189,7 +189,7 @@ CVar *CVarSystem::Set(const char *name, const char *value) {
         return nullptr;
     }
 
-    if (cvar->flags & CVar::ReadOnly) {
+    if (cvar->flags & CVar::Flag::ReadOnly) {
         BE_LOG("%s is readonly\n", name);
         return cvar;
     }
@@ -202,7 +202,7 @@ CVar *CVarSystem::Set(const char *name, const char *value) {
         return cvar;
     }
 
-    cvar->flags |= CVar::Modified;
+    cvar->flags |= CVar::Flag::Modified;
     Mem_Free(cvar->valueString);
     cvar->valueString   = Mem_AllocString(value);
     cvar->valueFloat    = atof(value);
@@ -284,7 +284,7 @@ bool CVarSystem::Command(const CmdArgs &args) {
 }
 
 void CVarSystem::ValidateMinMax(CVar *cvar) {
-    if (cvar->flags & (CVar::Float | CVar::Integer) && (cvar->valueMax - cvar->valueMin) > 0.0f) {
+    if (cvar->flags & (CVar::Flag::Float | CVar::Flag::Integer) && (cvar->valueMax - cvar->valueMin) > 0.0f) {
         if (cvar->valueFloat < cvar->valueMin) {
             BE_WARNLOG("cvar '%s' out of range (%.3f < %.3f)\n", cvar->name, cvar->valueFloat, cvar->valueMin);
             cvar->SetFloat(cvar->valueMin);
@@ -326,16 +326,16 @@ void CVarSystem::Cmd_ListCVars(const CmdArgs &args) {
         }
 
         char flags[32];
-        flags[0] = cvar->flags & CVar::Archive  ? 'A' : ' ';
-        flags[1] = cvar->flags & CVar::ReadOnly ? 'R' : ' ';
+        flags[0] = cvar->flags & CVar::Flag::Archive  ? 'A' : ' ';
+        flags[1] = cvar->flags & CVar::Flag::ReadOnly ? 'R' : ' ';
         flags[2] = 0;
         
         const char *type;
-        if (cvar->flags & CVar::Float) {
+        if (cvar->flags & CVar::Flag::Float) {
             type = "float";
-        } else if (cvar->flags & CVar::Integer) {
+        } else if (cvar->flags & CVar::Flag::Integer) {
             type = "integer";
-        } else if (cvar->flags & CVar::Bool) {
+        } else if (cvar->flags & CVar::Flag::Bool) {
             type = "bool";
         } else {
             type = "string";

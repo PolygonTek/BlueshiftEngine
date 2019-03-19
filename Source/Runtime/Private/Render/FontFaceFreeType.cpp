@@ -29,9 +29,9 @@ BE_NAMESPACE_BEGIN
 // 나중에 RGBA 텍스쳐로 통합해서, 되는 폰트만 LCD 로 하는 편이 나을 수도 있겠다
 //#define LCD_MODE_RENDERING
 #ifdef LCD_MODE_RENDERING
-#define GLYPH_CACHE_TEXTURE_FORMAT  Image::RGBA_8_8_8_8
+#define GLYPH_CACHE_TEXTURE_FORMAT  Image::Format::RGBA_8_8_8_8
 #else
-#define GLYPH_CACHE_TEXTURE_FORMAT  Image::LA_8_8
+#define GLYPH_CACHE_TEXTURE_FORMAT  Image::Format::LA_8_8
 #endif
 
 #define GLYPH_CACHE_TEXTURE_SIZE    1024
@@ -70,7 +70,7 @@ void FontFaceFreeType::Init() {
         // 대략 8x8 조각의 glyph 들을 하나의 텍스쳐에 packing 했을 경우 개수 만큼 할당..
         atlas->chunks.Resize(GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE / 64);
         atlas->texture = textureManager.AllocTexture(va("_glyph_cache_%i", i));
-        atlas->texture->Create(RHI::Texture2D, image, Texture::Clamp | Texture::HighQuality | Texture::NoMipmaps);
+        atlas->texture->Create(RHI::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
     }
 }
 
@@ -391,7 +391,7 @@ FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar) {
     glyph->s2           = (float)(x + GLYPH_BORDER_PIXELS + width) / texture->GetWidth();
     glyph->t2           = (float)(y + GLYPH_BORDER_PIXELS + bitmap->rows) / texture->GetHeight();
 
-    glyph->material = materialManager.GetSingleTextureMaterial(texture, Material::OverlayHint);
+    glyph->material = materialManager.GetSingleTextureMaterial(texture, Material::TextureHint::Overlay);
                 
     glyphHashMap.Set(unicodeChar, glyph);
                 

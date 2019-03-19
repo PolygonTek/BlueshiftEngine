@@ -419,7 +419,7 @@ static float CalculateEnvProbeLerpValue(const AABB &objectAABB,
     return 1.0f;
 }
 
-void RenderWorld::GetClosestProbes(const AABB &sourceAABB, EnvProbeBlending blending, Array<EnvProbeBlendInfo> &outProbes) const {
+void RenderWorld::GetClosestProbes(const AABB &sourceAABB, EnvProbeBlending::Enum blending, Array<EnvProbeBlendInfo> &outProbes) const {
     auto addProbe = [this, &sourceAABB, &outProbes](int32_t proxyId) -> bool {
         const DbvtProxy *proxy = (const DbvtProxy *)probeDbvt.GetUserData(proxyId);
 
@@ -564,11 +564,11 @@ void RenderWorld::DrawGUICamera(GuiMesh &guiMesh) {
 
     // GUI object def
     RenderObject::State def;
-    def.materialParms[RenderObject::RedParm] = 1.0f;
-    def.materialParms[RenderObject::GreenParm] = 1.0f;
-    def.materialParms[RenderObject::BlueParm] = 1.0f;
-    def.materialParms[RenderObject::AlphaParm] = 1.0f;
-    def.materialParms[RenderObject::TimeScaleParm] = 1.0f;
+    def.materialParms[RenderObject::MaterialParm::Red] = 1.0f;
+    def.materialParms[RenderObject::MaterialParm::Green] = 1.0f;
+    def.materialParms[RenderObject::MaterialParm::Blue] = 1.0f;
+    def.materialParms[RenderObject::MaterialParm::Alpha] = 1.0f;
+    def.materialParms[RenderObject::MaterialParm::TimeScale] = 1.0f;
 
     static RenderObject renderObject(this, -1);
     new (&renderObject) RenderObject(this, -1);
@@ -604,7 +604,7 @@ void RenderWorld::DrawGUICamera(GuiMesh &guiMesh) {
         SubMesh *subMesh = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
         new (subMesh) SubMesh();
 
-        subMesh->type = Mesh::DynamicMesh;
+        subMesh->type = Mesh::Type::Dynamic;
         subMesh->numIndexes = guiSurf->numIndexes;
         subMesh->numVerts = guiSurf->numVerts;
 #if 1

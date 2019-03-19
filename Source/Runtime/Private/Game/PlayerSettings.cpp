@@ -24,9 +24,9 @@ BEGIN_EVENTS(PlayerSettings)
 END_EVENTS
 
 void PlayerSettings::RegisterProperties() {
-    REGISTER_PROPERTY("companyName", "Company Name", Str, companyName, "DefaultCompany", "", PropertyInfo::EditorFlag);
-    REGISTER_PROPERTY("productName", "Product Name", Str, productName, "MyApp", "", PropertyInfo::EditorFlag);
-    REGISTER_PROPERTY("appScript", "App Script", Guid, appScriptGuid, Guid::zero, "", PropertyInfo::EditorFlag)
+    REGISTER_PROPERTY("companyName", "Company Name", Str, companyName, "DefaultCompany", "", PropertyInfo::Flag::Editor);
+    REGISTER_PROPERTY("productName", "Product Name", Str, productName, "MyApp", "", PropertyInfo::Flag::Editor);
+    REGISTER_PROPERTY("appScript", "App Script", Guid, appScriptGuid, Guid::zero, "", PropertyInfo::Flag::Editor)
         .SetMetaObject(&ScriptAsset::metaObject);
 }
 

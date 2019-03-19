@@ -697,7 +697,7 @@ static int pvrtcDecompress(PVRTuint8 *pCompressedData,
 @Description	Decompresses PVRTC to RGBA 8888
 *************************************************************************/
 void DecompressPVRTC(const Image &srcImage, Image &dstImage, int Do2bitMode) {
-    assert(dstImage.GetFormat() == Image::RGBA_8_8_8_8);
+    assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
     assert(dstImage.GetPixels());
 
     int XDim = srcImage.GetWidth();

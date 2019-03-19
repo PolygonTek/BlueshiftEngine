@@ -86,11 +86,11 @@ Mesh *Mesh::InstantiateMesh(int meshType) {
 }
 
 void Mesh::Instantiate(int meshType) {
-    if (meshType == SkinnedMesh && numJoints > 0) {
+    if (meshType == Type::Skinned && numJoints > 0) {
         isSkinnedMesh = true;
     } else {
         isStaticMesh = true;
-        meshType = StaticMesh; // override to static mesh
+        meshType = Type::Static; // override to static mesh
     }
 
     // Free previously allocated skinning joint cache
@@ -121,31 +121,31 @@ void Mesh::Instantiate(int meshType) {
 void Mesh::Reinstantiate() {
     int meshType;
     if (isSkinnedMesh) {
-        meshType = SkinnedMesh;
+        meshType = Type::Skinned;
     } else {
-        meshType = StaticMesh;
+        meshType = Type::Static;
     }
 
     Instantiate(meshType);
 }
 
 void Mesh::FinishSurfaces(int flags) {
-    if (flags & SortAndMergeFlag) {
+    if (flags & FinishFlag::SortAndMerge) {
         SortAndMerge();
         ComputeAABB();
     }
 
-    if (flags & ComputeAABBFlag) {
+    if (flags & FinishFlag::ComputeAABB) {
         ComputeAABB();
     }
 
     //SplitMirroredVerts();
 
-    if (flags & OptimizeIndicesFlag) {
+    if (flags & FinishFlag::OptimizeIndices) {
         OptimizeIndexedTriangles();
     }
 
-    if ((flags & ComputeNormalsFlag) && !(flags & ComputeTangentsFlag)) {
+    if ((flags & FinishFlag::ComputeNormals) && !(flags & FinishFlag::ComputeTangents)) {
         ComputeNormals();
     }
 
@@ -154,8 +154,8 @@ void Mesh::FinishSurfaces(int flags) {
         subMesh->FixMirroredVerts();
     }*/
 
-    if (flags & ComputeTangentsFlag) {
-        ComputeTangents((flags & ComputeNormalsFlag) ? true : false, (flags & UseUnsmoothedTangentsFlag) ? true : false);
+    if (flags & FinishFlag::ComputeTangents) {
+        ComputeTangents((flags & FinishFlag::ComputeNormals) ? true : false, (flags & FinishFlag::UseUnsmoothedTangents) ? true : false);
     }
 
     // TODO: consider to remove this

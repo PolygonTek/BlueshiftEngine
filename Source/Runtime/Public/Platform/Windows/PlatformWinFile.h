@@ -28,7 +28,7 @@ public:
                                 /// Returns file size.
     virtual int                 Size() const;
                                 /// Seek from the start on a file.
-    virtual int                 Seek(long offset, Origin origin);
+    virtual int                 Seek(long offset, Origin::Enum origin);
     
                                 /// Reads data from the file to the buffer.
     virtual size_t              Read(void *buffer, size_t bytesToRead) const;

@@ -47,7 +47,7 @@ void ComFixedJoint::CreateConstraint() {
 
     // Fill up a constraint description 
     PhysConstraintDesc desc;
-    desc.type = PhysConstraint::Hinge;
+    desc.type = PhysConstraint::Type::Hinge;
     desc.collision = collisionEnabled;
     desc.breakImpulse = breakImpulse;
 

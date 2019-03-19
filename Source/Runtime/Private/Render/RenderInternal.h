@@ -93,7 +93,7 @@ public:
 
 struct renderGlobal_t {
     int                     skinningMethod;
-    int                     vtUpdateMethod;          // vertex texture update method
+    int                     vertexTextureMethod;
     int                     instancingMethod;
     int                     instanceBufferOffsetAlignment;
     void *                  instanceBufferData;

@@ -40,10 +40,12 @@ class Font {
     friend class FontManager;
 
 public:
-    enum FontType {
-        None,
-        BitmapFont,
-        FreeTypeFont
+    struct FontType {
+        enum Enum {
+            None,
+            Bitmap,
+            FreeType
+        };
     };
 
     Font();
@@ -71,7 +73,7 @@ private:
     mutable int             refCount;
     bool                    permanence;
 
-    FontType                fontType;
+    FontType::Enum          fontType;
     int                     fontSize;
     FontFace *              fontFace;
 };

@@ -88,10 +88,10 @@ void RB_PostProcess() {
             PP_PassThruPass(bc->screenRT->ColorTexture(), 0.0f, 0.0f, 1.0f, 1.0f, bc->ppRTs[PP_RT_TEMP]);
 
             Vec4 sunColor = Vec4(
-                sunLight->GetState().materialParms[RenderObject::RedParm],
-                sunLight->GetState().materialParms[RenderObject::GreenParm],
-                sunLight->GetState().materialParms[RenderObject::BlueParm],
-                sunLight->GetState().materialParms[RenderObject::AlphaParm]);
+                sunLight->GetState().materialParms[RenderObject::MaterialParm::Red],
+                sunLight->GetState().materialParms[RenderObject::MaterialParm::Green],
+                sunLight->GetState().materialParms[RenderObject::MaterialParm::Blue],
+                sunLight->GetState().materialParms[RenderObject::MaterialParm::Alpha]);
 
             //sunColor *= sunLight->intensity;
             PP_SunShaftsDisplay(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->ppRTs[PP_RT_TEMP_2X]->ColorTexture(), sunColor, bc->screenRT);

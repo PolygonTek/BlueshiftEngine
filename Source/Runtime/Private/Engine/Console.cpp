@@ -100,7 +100,7 @@ void Console::Print(const Str &inString) {
 }
 
 void Console::DumpToFile(const char *filename) {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
         BE_LOG("Console::DumpToFile: Couldn't open %s.\n", filename);
         return;

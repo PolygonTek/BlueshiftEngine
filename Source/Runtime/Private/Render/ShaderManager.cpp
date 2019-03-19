@@ -83,64 +83,64 @@ static const engineShader_t originalShaderList[] = {
     { "Shaders/queryHOM" }
 };
 
-ShaderManager       shaderManager;
+ShaderManager   shaderManager;
 
-Shader *            ShaderManager::originalShaders[MaxPredefinedOriginalShaders];
+Shader *        ShaderManager::originalShaders[MaxPredefinedOriginalShaders];
 
-Shader *            ShaderManager::writeValueShader;
-Shader *            ShaderManager::drawArrayTextureShader;
-Shader *            ShaderManager::unlitShader;
-Shader *            ShaderManager::selectionIdShader;
-Shader *            ShaderManager::depthShader;
-Shader *            ShaderManager::depthNormalShader;
-Shader *            ShaderManager::constantColorShader;
-Shader *            ShaderManager::vertexColorShader;
-Shader *            ShaderManager::objectMotionBlurShader;
-Shader *            ShaderManager::standardDefaultShader;
-Shader *            ShaderManager::standardDefaultIndirectLitShader;
-Shader *            ShaderManager::standardDefaultDirectLitShader;
-Shader *            ShaderManager::standardDefaultIndirectLitDirectLitShader;
-Shader *            ShaderManager::skyboxCubemapShader;
-Shader *            ShaderManager::skyboxSixSidedShader;
-Shader *            ShaderManager::envCubemapShader;
-Shader *            ShaderManager::fogLightShader;
-Shader *            ShaderManager::blendLightShader;
-Shader *            ShaderManager::postObjectMotionBlurShader;
-Shader *            ShaderManager::postCameraMotionBlurShader;
-Shader *            ShaderManager::postPassThruShader;
-Shader *            ShaderManager::postPassThruColorShader;
-Shader *            ShaderManager::postPassThruCubeFaceShader;
-Shader *            ShaderManager::downscale2x2Shader;
-Shader *            ShaderManager::downscale4x4Shader;
-Shader *            ShaderManager::downscale4x4LogLumShader;
-Shader *            ShaderManager::downscale4x4ExpLumShader;
-Shader *            ShaderManager::blur5xShader;
-Shader *            ShaderManager::blur7xShader;
-Shader *            ShaderManager::blur15xShader;
-Shader *            ShaderManager::blurBilinear3xShader;
-Shader *            ShaderManager::blurBilinear4xShader;
-Shader *            ShaderManager::blurBilinear8xShader;
-Shader *            ShaderManager::blurAlphaMaskedBilinear8xShader;
-Shader *            ShaderManager::kawaseBlurShader;
-Shader *            ShaderManager::radialBlurShader;
-Shader *            ShaderManager::aoBlurShader;
-Shader *            ShaderManager::postColorTransformShader;
-Shader *            ShaderManager::postGammaCorrectionShader;
-Shader *            ShaderManager::linearizeDepthShader;
-Shader *            ShaderManager::copyDownscaledCocToAlphaShader;
-Shader *            ShaderManager::copyColorAndCocShader;
-Shader *            ShaderManager::applyDofShader;
-Shader *            ShaderManager::sunShaftsMaskGenShader;
-Shader *            ShaderManager::sunShaftsGenShader;
-Shader *            ShaderManager::sunShaftsDisplayShader;
-Shader *            ShaderManager::brightFilterShader;
-Shader *            ShaderManager::luminanceAdaptationShader;
-Shader *            ShaderManager::ldrFinalShader;
-Shader *            ShaderManager::hdrFinalShader;
-Shader *            ShaderManager::chromaShiftShader;
-Shader *            ShaderManager::ssaoShader;
-Shader *            ShaderManager::generateHomShader;
-Shader *            ShaderManager::queryHomShader;
+Shader *        ShaderManager::writeValueShader;
+Shader *        ShaderManager::drawArrayTextureShader;
+Shader *        ShaderManager::unlitShader;
+Shader *        ShaderManager::selectionIdShader;
+Shader *        ShaderManager::depthShader;
+Shader *        ShaderManager::depthNormalShader;
+Shader *        ShaderManager::constantColorShader;
+Shader *        ShaderManager::vertexColorShader;
+Shader *        ShaderManager::objectMotionBlurShader;
+Shader *        ShaderManager::standardDefaultShader;
+Shader *        ShaderManager::standardDefaultIndirectLitShader;
+Shader *        ShaderManager::standardDefaultDirectLitShader;
+Shader *        ShaderManager::standardDefaultIndirectLitDirectLitShader;
+Shader *        ShaderManager::skyboxCubemapShader;
+Shader *        ShaderManager::skyboxSixSidedShader;
+Shader *        ShaderManager::envCubemapShader;
+Shader *        ShaderManager::fogLightShader;
+Shader *        ShaderManager::blendLightShader;
+Shader *        ShaderManager::postObjectMotionBlurShader;
+Shader *        ShaderManager::postCameraMotionBlurShader;
+Shader *        ShaderManager::postPassThruShader;
+Shader *        ShaderManager::postPassThruColorShader;
+Shader *        ShaderManager::postPassThruCubeFaceShader;
+Shader *        ShaderManager::downscale2x2Shader;
+Shader *        ShaderManager::downscale4x4Shader;
+Shader *        ShaderManager::downscale4x4LogLumShader;
+Shader *        ShaderManager::downscale4x4ExpLumShader;
+Shader *        ShaderManager::blur5xShader;
+Shader *        ShaderManager::blur7xShader;
+Shader *        ShaderManager::blur15xShader;
+Shader *        ShaderManager::blurBilinear3xShader;
+Shader *        ShaderManager::blurBilinear4xShader;
+Shader *        ShaderManager::blurBilinear8xShader;
+Shader *        ShaderManager::blurAlphaMaskedBilinear8xShader;
+Shader *        ShaderManager::kawaseBlurShader;
+Shader *        ShaderManager::radialBlurShader;
+Shader *        ShaderManager::aoBlurShader;
+Shader *        ShaderManager::postColorTransformShader;
+Shader *        ShaderManager::postGammaCorrectionShader;
+Shader *        ShaderManager::linearizeDepthShader;
+Shader *        ShaderManager::copyDownscaledCocToAlphaShader;
+Shader *        ShaderManager::copyColorAndCocShader;
+Shader *        ShaderManager::applyDofShader;
+Shader *        ShaderManager::sunShaftsMaskGenShader;
+Shader *        ShaderManager::sunShaftsGenShader;
+Shader *        ShaderManager::sunShaftsDisplayShader;
+Shader *        ShaderManager::brightFilterShader;
+Shader *        ShaderManager::luminanceAdaptationShader;
+Shader *        ShaderManager::ldrFinalShader;
+Shader *        ShaderManager::hdrFinalShader;
+Shader *        ShaderManager::chromaShiftShader;
+Shader *        ShaderManager::ssaoShader;
+Shader *        ShaderManager::generateHomShader;
+Shader *        ShaderManager::queryHomShader;
 
 void ShaderManager::Init() {
     cmdSystem.AddCommand("listShaders", Cmd_ListShaders);
@@ -200,11 +200,11 @@ void ShaderManager::InitGlobalDefines() {
         }
     }
 
-    if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
+    if (renderGlobal.instancingMethod == Mesh::InstancingMethod::InstancedArrays) {
         shaderManager.AddGlobalHeader("#define INSTANCED_ARRAY\n");
         shaderManager.AddGlobalHeader(va("#define INSTANCE_DATA_SIZE %i\n", renderGlobal.instanceBufferOffsetAlignment));
         shaderManager.AddGlobalHeader(va("#define MAX_INSTANCE_COUNT %i\n", r_maxInstancingCount.GetInteger()));
-    } else if (renderGlobal.instancingMethod == Mesh::UniformBufferInstancing) {
+    } else if (renderGlobal.instancingMethod == Mesh::InstancingMethod::UniformBuffer) {
         shaderManager.AddGlobalHeader(va("#define INSTANCE_DATA_SIZE %i\n", renderGlobal.instanceBufferOffsetAlignment));
         shaderManager.AddGlobalHeader(va("#define MAX_INSTANCE_COUNT %i\n", Min(r_maxInstancingCount.GetInteger(), rhi.HWLimit().maxUniformBlockSize / renderGlobal.instanceBufferOffsetAlignment)));
     }
@@ -213,7 +213,7 @@ void ShaderManager::InitGlobalDefines() {
         shaderManager.AddGlobalHeader("#define VTF_SKINNING\n");
     }
 
-    if (renderGlobal.vtUpdateMethod == BufferCacheManager::TboUpdate) {
+    if (renderGlobal.vertexTextureMethod == BufferCacheManager::VertexTextureMethod::Tbo) {
         shaderManager.AddGlobalHeader("#define USE_BUFFER_TEXTURE\n");
     }
 
@@ -377,7 +377,7 @@ void ShaderManager::ReloadLitSurfaceShaders() {
         Shader *shader = entry->second;
 
         if (shader->IsOriginalShader()) {
-            if (shader->flags & Shader::LitSurface) {
+            if (shader->flags & Shader::Flag::LitSurface) {
                 shader->Reload();
             }
         }

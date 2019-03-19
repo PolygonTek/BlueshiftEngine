@@ -88,7 +88,7 @@ public:
     bool                CreateDirectory(const char *dirname, bool tree) const;
     bool                RemoveDirectory(const char *dirname, bool tree) const;
         
-    File *              OpenFile(const char *filename, File::Mode mode, bool searchDirs = true);
+    File *              OpenFile(const char *filename, File::Mode::Enum mode, bool searchDirs = true);
     File *              OpenFileRead(const char *filename, bool useSearchPath, size_t *fileSize = nullptr);
     File *              OpenFileWrite(const char *filename);
     File *              OpenFileAppend(const char *filename);

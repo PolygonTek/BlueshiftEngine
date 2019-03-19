@@ -29,40 +29,40 @@ BEGIN_EVENTS(ComEnvironmentProbe)
 END_EVENTS
 
 void ComEnvironmentProbe::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("type", "Type", EnvProbe::Type, GetType, SetType, EnvProbe::Baked,
-        "", PropertyInfo::EditorFlag).SetEnumString("Baked;Realtime");
-    REGISTER_ACCESSOR_PROPERTY("refreshMode", "Refresh Mode", EnvProbe::RefreshMode, GetRefreshMode, SetRefreshMode, EnvProbe::OnAwake,
-        "", PropertyInfo::EditorFlag).SetEnumString("OnAwake;EveryFrame");
-    REGISTER_ACCESSOR_PROPERTY("timeSlicing", "Time Slicing", EnvProbe::TimeSlicing, GetTimeSlicing, SetTimeSlicing, EnvProbe::AllFacesAtOnce,
-        "", PropertyInfo::EditorFlag).SetEnumString("All faces at once;Individual faces;No time slicing");
+    REGISTER_ACCESSOR_PROPERTY("type", "Type", EnvProbe::Type::Enum, GetType, SetType, EnvProbe::Type::Baked,
+        "", PropertyInfo::Flag::Editor).SetEnumString("Baked;Realtime");
+    REGISTER_ACCESSOR_PROPERTY("refreshMode", "Refresh Mode", EnvProbe::RefreshMode::Enum, GetRefreshMode, SetRefreshMode, EnvProbe::RefreshMode::OnAwake,
+        "", PropertyInfo::Flag::Editor).SetEnumString("OnAwake;EveryFrame");
+    REGISTER_ACCESSOR_PROPERTY("timeSlicing", "Time Slicing", EnvProbe::TimeSlicing::Enum, GetTimeSlicing, SetTimeSlicing, EnvProbe::TimeSlicing::AllFacesAtOnce,
+        "", PropertyInfo::Flag::Editor).SetEnumString("All faces at once;Individual faces;No time slicing");
     REGISTER_ACCESSOR_PROPERTY("importance", "Importance", int, GetImportance, SetImportance, 1,
-        "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("resolution", "Resolution", EnvProbe::Resolution, GetResolution, SetResolution, EnvProbe::Resolution128,
-        "", PropertyInfo::EditorFlag).SetEnumString("16;32;64;128;256;512;1024;2048");
+        "", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("resolution", "Resolution", EnvProbe::Resolution::Enum, GetResolution, SetResolution, EnvProbe::Resolution::Resolution128,
+        "", PropertyInfo::Flag::Editor).SetEnumString("16;32;64;128;256;512;1024;2048");
     REGISTER_ACCESSOR_PROPERTY("hdr", "HDR", bool, IsHDR, SetHDR, true,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("cullingMask", "Culling Mask", int, GetLayerMask, SetLayerMask, -1,
-        "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("clear", "Clear", EnvProbe::ClearMethod, GetClearMethod, SetClearMethod, EnvProbe::SkyClear,
-        "", PropertyInfo::EditorFlag).SetEnumString("Color;Skybox");
+        "", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("clear", "Clear", EnvProbe::ClearMethod::Enum, GetClearMethod, SetClearMethod, EnvProbe::ClearMethod::Sky,
+        "", PropertyInfo::Flag::Editor).SetEnumString("Color;Skybox");
     REGISTER_MIXED_ACCESSOR_PROPERTY("clearColor", "Clear Color", Color3, GetClearColor, SetClearColor, Color3(0.18, 0.30, 0.47),
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetClippingNear, SetClippingNear, 0.1,
-        "Near clipping plane distance", PropertyInfo::EditorFlag).SetRange(0.01, 10000, 0.02);
+        "Near clipping plane distance", PropertyInfo::Flag::Editor).SetRange(0.01, 10000, 0.02);
     REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetClippingFar, SetClippingFar, 500,
-        "Far clipping plane distance", PropertyInfo::EditorFlag).SetRange(0.01, 10000, 0.02);
+        "Far clipping plane distance", PropertyInfo::Flag::Editor).SetRange(0.01, 10000, 0.02);
     REGISTER_ACCESSOR_PROPERTY("boxProjection", "Box Projection", bool, IsBoxProjection, SetBoxProjection, false,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("boxOffset", "Box Offset", Vec3, GetBoxOffset, SetBoxOffset, Vec3(0, 0, 0),
-        "The center of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag);
+        "The center of the box in which the reflections will be applied to objects", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("boxExtent", "Box Extent", Vec3, GetBoxExtent, SetBoxExtent, Vec3(10, 10, 10),
-        "The size of the box in which the reflections will be applied to objects", PropertyInfo::EditorFlag).SetRange(0, 1e8, 0.05);
+        "The size of the box in which the reflections will be applied to objects", PropertyInfo::Flag::Editor).SetRange(0, 1e8, 0.05);
     REGISTER_ACCESSOR_PROPERTY("blendDistance", "Blend Distance", float, GetBlendDistance, SetBlendDistance, 1.0f,
-        "", PropertyInfo::EditorFlag).SetRange(0.0f, 100.0f, 0.01f);
+        "", PropertyInfo::Flag::Editor).SetRange(0.0f, 100.0f, 0.01f);
     REGISTER_MIXED_ACCESSOR_PROPERTY("bakedDiffuseProbeTexture", "Baked Diffuse Probe", Guid, GetBakedDiffuseProbeTextureGuid, SetBakedDiffuseProbeTextureGuid, Guid::zero,
-        "", PropertyInfo::NonCopying).SetMetaObject(&TextureAsset::metaObject);
+        "", PropertyInfo::Flag::NonCopying).SetMetaObject(&TextureAsset::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("bakedSpecularProbeTexture", "Baked Specular Probe", Guid, GetBakedSpecularProbeTextureGuid, SetBakedSpecularProbeTextureGuid, Guid::zero,
-        "", PropertyInfo::NonCopying).SetMetaObject(&TextureAsset::metaObject);
+        "", PropertyInfo::Flag::NonCopying).SetMetaObject(&TextureAsset::metaObject);
 }
 
 ComEnvironmentProbe::ComEnvironmentProbe() {
@@ -132,23 +132,23 @@ void ComEnvironmentProbe::Init() {
     probeDef.origin = transform->GetOrigin();
     probeDef.bounces = 0;
 
-    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComEnvironmentProbe::TransformUpdated, SignalObject::Unique);
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComEnvironmentProbe::TransformUpdated, SignalObject::ConnectionType::Unique);
 
 #if 1
-    sphereDef.layer = TagLayerSettings::EditorLayer;
+    sphereDef.layer = TagLayerSettings::BuiltInLayer::Editor;
     sphereDef.maxVisDist = MeterToUnit(50.0f);
 
     sphereMesh = meshManager.GetMesh("_defaultSphereMesh");
 
-    sphereDef.mesh = sphereMesh->InstantiateMesh(Mesh::StaticMesh);
+    sphereDef.mesh = sphereMesh->InstantiateMesh(Mesh::Type::Static);
     sphereDef.aabb = sphereMesh->GetAABB();
     sphereDef.worldMatrix = transform->GetMatrix();
-    sphereDef.materialParms[RenderObject::RedParm] = 1.0f;
-    sphereDef.materialParms[RenderObject::GreenParm] = 1.0f;
-    sphereDef.materialParms[RenderObject::BlueParm] = 1.0f;
-    sphereDef.materialParms[RenderObject::AlphaParm] = 1.0f;
-    sphereDef.materialParms[RenderObject::TimeOffsetParm] = 0.0f;
-    sphereDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
+    sphereDef.materialParms[RenderObject::MaterialParm::Red] = 1.0f;
+    sphereDef.materialParms[RenderObject::MaterialParm::Green] = 1.0f;
+    sphereDef.materialParms[RenderObject::MaterialParm::Blue] = 1.0f;
+    sphereDef.materialParms[RenderObject::MaterialParm::Alpha] = 1.0f;
+    sphereDef.materialParms[RenderObject::MaterialParm::TimeOffset] = 0.0f;
+    sphereDef.materialParms[RenderObject::MaterialParm::TimeScale] = 1.0f;
 #endif
 
     // Mark as initialized
@@ -264,7 +264,7 @@ void ComEnvironmentProbe::UpdateVisuals() {
 
 #if 1
     sphereDef.materials.SetCount(1);
-    sphereDef.materials[0] = materialManager.GetSingleTextureMaterial(specularProbeTexture, Material::EnvCubeMapHint);
+    sphereDef.materials[0] = materialManager.GetSingleTextureMaterial(specularProbeTexture, Material::TextureHint::EnvCubeMap);
 
     if (sphereHandle == -1) {
         sphereHandle = renderWorld->AddRenderObject(&sphereDef);
@@ -284,31 +284,31 @@ void ComEnvironmentProbe::TransformUpdated(const ComTransform *transform) {
     UpdateVisuals();
 }
 
-EnvProbe::Type ComEnvironmentProbe::GetType() const {
+EnvProbe::Type::Enum ComEnvironmentProbe::GetType() const {
     return probeDef.type;
 }
 
-void ComEnvironmentProbe::SetType(EnvProbe::Type type) {
+void ComEnvironmentProbe::SetType(EnvProbe::Type::Enum type) {
     probeDef.type = type;
 
     UpdateVisuals();
 }
 
-EnvProbe::RefreshMode ComEnvironmentProbe::GetRefreshMode() const {
+EnvProbe::RefreshMode::Enum ComEnvironmentProbe::GetRefreshMode() const {
     return probeDef.refreshMode;
 }
 
-void ComEnvironmentProbe::SetRefreshMode(EnvProbe::RefreshMode refreshMode) {
+void ComEnvironmentProbe::SetRefreshMode(EnvProbe::RefreshMode::Enum refreshMode) {
     probeDef.refreshMode = refreshMode;
 
     UpdateVisuals();
 }
 
-EnvProbe::TimeSlicing ComEnvironmentProbe::GetTimeSlicing() const {
+EnvProbe::TimeSlicing::Enum ComEnvironmentProbe::GetTimeSlicing() const {
     return probeDef.timeSlicing;
 }
 
-void ComEnvironmentProbe::SetTimeSlicing(EnvProbe::TimeSlicing timeSlicing) {
+void ComEnvironmentProbe::SetTimeSlicing(EnvProbe::TimeSlicing::Enum timeSlicing) {
     probeDef.timeSlicing = timeSlicing;
 
     UpdateVisuals();
@@ -324,11 +324,11 @@ void ComEnvironmentProbe::SetImportance(int importance) {
     UpdateVisuals();
 }
 
-EnvProbe::Resolution ComEnvironmentProbe::GetResolution() const {
+EnvProbe::Resolution::Enum ComEnvironmentProbe::GetResolution() const {
     return probeDef.resolution;
 }
 
-void ComEnvironmentProbe::SetResolution(EnvProbe::Resolution resolution) {
+void ComEnvironmentProbe::SetResolution(EnvProbe::Resolution::Enum resolution) {
     probeDef.resolution = resolution;
 
     UpdateVisuals();
@@ -354,11 +354,11 @@ void ComEnvironmentProbe::SetLayerMask(int layerMask) {
     UpdateVisuals();
 }
 
-EnvProbe::ClearMethod ComEnvironmentProbe::GetClearMethod() const {
+EnvProbe::ClearMethod::Enum ComEnvironmentProbe::GetClearMethod() const {
     return probeDef.clearMethod;
 }
 
-void ComEnvironmentProbe::SetClearMethod(EnvProbe::ClearMethod clearMethod) {
+void ComEnvironmentProbe::SetClearMethod(EnvProbe::ClearMethod::Enum clearMethod) {
     probeDef.clearMethod = clearMethod;
 
     UpdateVisuals();

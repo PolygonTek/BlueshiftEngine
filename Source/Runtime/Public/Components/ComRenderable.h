@@ -47,8 +47,8 @@ public:
 
     void                    SetWireframeColor(const Color4 &color);
 
-    RenderObject::WireframeMode GetWireframeMode() const { return renderObjectDef.wireframeMode; }
-    void                    SetWireframeMode(RenderObject::WireframeMode wireframeMode);
+    RenderObject::WireframeMode::Enum GetWireframeMode() const { return renderObjectDef.wireframeMode; }
+    void                    SetWireframeMode(RenderObject::WireframeMode::Enum wireframeMode);
 
     float                   GetMaxVisDist() const;
     void                    SetMaxVisDist(float maxVisDist);

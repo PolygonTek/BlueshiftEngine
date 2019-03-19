@@ -37,96 +37,103 @@ class Shader {
     friend class Batch;
 
 public:
-    enum Flag {
-        Shadowing               = BIT(0),
-        LitSurface              = BIT(1),
-        SkySurface              = BIT(2),
-        LoadedFromFile          = BIT(8)
+    struct Flag {
+        enum Enum {
+            HasVertexShader     = BIT(0),
+            HasFragmentShader   = BIT(1),
+            HasGeometryShader   = BIT(2),
+            Shadowing           = BIT(5),
+            LitSurface          = BIT(6),
+            SkySurface          = BIT(7),
+            LoadedFromFile      = BIT(8)
+        };
     };
 
-    enum Lang {
-        GlslShader,
-        CgShader
+    struct Lang {
+        enum Enum {
+            GlslShader,
+            CgShader
+        };
     };
 
-    enum ShaderFlag {
-        VertexShader            = BIT(0),
-        FragmentShader          = BIT(1),
-        GeometryShader          = BIT(2)
+    struct PropertyType {
+        enum Enum {
+            BoolType,
+            IntType,
+            FloatType,
+            Vec2Type,
+            Vec3Type,
+            Vec4Type,
+            Color3Type,
+            Color4Type,
+            Texture2DType,
+            Texture3DType,
+            TextureCubeType
+        };
     };
 
-    enum PropertyType {
-        BoolType,
-        IntType,
-        FloatType,
-        Vec2Type,
-        Vec3Type,
-        Vec4Type,
-        Color3Type,
-        Color4Type,
-        Texture2DType,
-        Texture3DType,
-        TextureCubeType,
+    struct BuiltInConstant {
+        enum Enum {
+            ModelViewMatrix,
+            ModelViewMatrixTranspose,
+            ViewMatrix,
+            ViewMatrixTranspose,
+            ProjectionMatrix,
+            ProjectionMatrixTranspose,
+            ViewProjectionMatrix,
+            ViewProjectionMatrixTranspose,
+            ModelViewProjectionMatrix,
+            ModelViewProjectionMatrixTranspose,
+            InstanceIndexes,
+            LocalToWorldMatrix,
+            WorldToLocalMatrix,
+            TextureMatrixS,
+            TextureMatrixT,
+            ConstantColor,
+            VertexColorScale,
+            VertexColorAdd,
+            PerforatedAlpha,
+            ViewOrigin,
+            LightVec,
+            LightTextureMatrix,
+            LightColor,
+            LightFallOffMatrix,
+            LightFallOffExponent,
+            Joints,
+            InvJointsMapSize,
+            SkinningBaseTc,
+            JointIndexOffset,
+            ShadowProjMatrix,
+            ShadowCascadeProjMatrix,
+            ShadowSplitFar,
+            Probe0SpecularCubeMapMaxMipLevel,
+            Probe0Position,
+            Probe0Mins,
+            Probe0Maxs,
+            Probe1SpecularCubeMapMaxMipLevel,
+            Probe1Position,
+            Probe1Mins,
+            Probe1Maxs,
+            Count
+        };
     };
 
-    enum BuiltInConstant {
-        ModelViewMatrixConst,
-        ModelViewMatrixTransposeConst,
-        ViewMatrixConst,
-        ViewMatrixTransposeConst,
-        ProjectionMatrixConst,
-        ProjectionMatrixTransposeConst,
-        ViewProjectionMatrixConst,
-        ViewProjectionMatrixTransposeConst,
-        ModelViewProjectionMatrixConst,
-        ModelViewProjectionMatrixTransposeConst,
-        InstanceIndexesConst,
-        LocalToWorldMatrixConst,
-        WorldToLocalMatrixConst,
-        TextureMatrixSConst,
-        TextureMatrixTConst,
-        ConstantColorConst,
-        VertexColorScaleConst,
-        VertexColorAddConst,
-        PerforatedAlphaConst,
-        ViewOriginConst,
-        LightVecConst,
-        LightTextureMatrixConst,
-        LightColorConst,
-        LightFallOffMatrixConst,
-        LightFallOffExponentConst,
-        JointsConst,
-        InvJointsMapSizeConst,
-        SkinningBaseTcConst,
-        JointIndexOffsetConst,
-        ShadowProjMatrixConst,
-        ShadowCascadeProjMatrixConst,
-        ShadowSplitFarConst,
-        Probe0SpecularCubeMapMaxMipLevelConst,
-        Probe0PositionConst,
-        Probe0MinsConst,
-        Probe0MaxsConst,
-        Probe1SpecularCubeMapMaxMipLevelConst,
-        Probe1PositionConst,
-        Probe1MinsConst,
-        Probe1MaxsConst,
-        MaxBuiltInConstants
-    };
-
-    enum BuiltInSampler {
-        CubicNormalCubeMapSampler,
-        IndirectionCubeMapSampler,
-        AlbedoMapSampler,
-        NormalMapSampler,
-        JointsMapSampler,
-        LightProjectionMapSampler,
-        ShadowMapSampler,
-        ShadowArrayMapSampler,
-        Probe0DiffuseCubeMapSampler,
-        Probe0SpecularCubeMapSampler,
-        Probe1DiffuseCubeMapSampler,
-        Probe1SpecularCubeMapSampler,
-        MaxBuiltInSamplers
+    struct BuiltInSampler {
+        enum Enum {
+            CubicNormalCubeMap,
+            IndirectionCubeMap,
+            AlbedoMap,
+            NormalMap,
+            JointsMap,
+            LightProjectionMap,
+            ShadowMap,
+            ShadowArrayMap,
+            Probe0DiffuseCubeMap,
+            Probe0SpecularCubeMap,
+            Probe1DiffuseCubeMap,
+            Probe1SpecularCubeMap,
+            Count
+        };
     };
 
     struct Define {
@@ -149,9 +156,9 @@ public:
     const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
 
-    bool                    HasVertexShader() const { return !!(shaderFlags & VertexShader); }
-    bool                    HasFragmentShader() const { return !!(shaderFlags & FragmentShader); }
-    bool                    HasGeometryShader() const { return !!(shaderFlags & GeometryShader); }
+    bool                    HasVertexShader() const { return !!(flags & Flag::HasVertexShader); }
+    bool                    HasFragmentShader() const { return !!(flags & Flag::HasFragmentShader); }
+    bool                    HasGeometryShader() const { return !!(flags & Flag::HasGeometryShader); }
 
     bool                    IsOriginalShader() const { return !originalShader; }
     bool                    IsInstantiatedShader() const { return !!originalShader; }
@@ -307,11 +314,10 @@ private:
     int                     frameCount = 0;
 
     RHI::Handle             shaderHandle = RHI::NullShader;
-    int                     shaderFlags = 0;
     Str                     vsText;                     ///< Vertex shader souce code text
     Str                     fsText;                     ///< Fragment shader source code text
-    int                     builtInConstantIndices[MaxBuiltInConstants];
-    int                     builtInSamplerUnits[MaxBuiltInSamplers];
+    int                     builtInConstantIndices[BuiltInConstant::Count];
+    int                     builtInSamplerUnits[BuiltInSampler::Count];
 
     Array<Define>           defineArray;                ///< Define list for instantiated shader
 

@@ -22,14 +22,16 @@ class TagLayerSettings : public Object {
     friend class GameSettings;
 
 public:
-    enum BuiltInLayer {
-        DefaultLayer,
-        EditorLayer,
-        UILayer,
-        Reserved0Layer,
-        Reserved1Layer,
-        Reserved2Layer,
-        NumBuiltInLayers = 6
+    struct BuiltInLayer {
+        enum Enum {
+            Default,
+            Editor,
+            UI,
+            Reserved0,
+            Reserved1,
+            Reserved2,
+            Count
+        };
     };
 
     OBJECT_PROTOTYPE(TagLayerSettings);

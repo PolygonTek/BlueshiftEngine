@@ -27,7 +27,7 @@ BEGIN_EVENTS(MapRenderSettings)
 END_EVENTS
 
 void MapRenderSettings::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("skyboxMaterial", "Skybox Material", Guid, GetSkyboxMaterialGuid, SetSkyboxMaterialGuid, GuidMapper::defaultSkyboxMaterialGuid, "", PropertyInfo::EditorFlag)
+    REGISTER_MIXED_ACCESSOR_PROPERTY("skyboxMaterial", "Skybox Material", Guid, GetSkyboxMaterialGuid, SetSkyboxMaterialGuid, GuidMapper::defaultSkyboxMaterialGuid, "", PropertyInfo::Flag::Editor)
         .SetMetaObject(&MaterialAsset::metaObject);
 }
 

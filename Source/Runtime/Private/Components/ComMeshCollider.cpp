@@ -29,9 +29,9 @@ END_EVENTS
 
 void ComMeshCollider::RegisterProperties() {
     REGISTER_PROPERTY("convex", "Convex", bool, convex, true, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("mesh", "Mesh", Guid, GetMeshGuid, SetMeshGuid, GuidMapper::defaultMeshGuid, 
-        "", PropertyInfo::EditorFlag).SetMetaObject(&MeshAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&MeshAsset::metaObject);
 }
 
 ComMeshCollider::ComMeshCollider() {

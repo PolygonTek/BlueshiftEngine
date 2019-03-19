@@ -44,8 +44,8 @@ public:
 
     virtual const AABB      GetAABB() override;
 
-    RenderLight::Type       GetLightType() const;
-    void                    SetLightType(RenderLight::Type type);
+    RenderLight::Type::Enum GetLightType() const;
+    void                    SetLightType(RenderLight::Type::Enum type);
 
     bool                    IsPrimaryLight() const;
     void                    SetPrimaryLight(bool isPrimaryLight);

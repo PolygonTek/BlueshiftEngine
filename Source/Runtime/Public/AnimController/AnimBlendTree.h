@@ -36,12 +36,14 @@ class File;
 
 class AnimBlendTree {
 public:
-    enum BlendType {
-        BlendAngle,
-        Blend1D,
-        Blend2DDirectional,
-        Blend2DBarycentric, // TO BE IMPLEMENTED
-        Blend3DBarycentric  // TO BE IMPLEMENTED
+    struct BlendType {
+        enum Enum {
+            BlendAngle,
+            Blend1D,
+            Blend2DDirectional,
+            Blend2DBarycentric, // TO BE IMPLEMENTED
+            Blend3DBarycentric  // TO BE IMPLEMENTED
+        };
     };
 
     AnimBlendTree(AnimLayer *animLayer, int32_t nodeNum);
@@ -53,10 +55,10 @@ public:
     const Str &             GetName() const { return name; }
     void                    SetName(const char *name) { this->name = name; }
 
-    BlendType               GetBlendType() const { return blendType; }
-    void                    SetBlendType(BlendType blendType) { this->blendType = blendType; }
+    BlendType::Enum         GetBlendType() const { return blendType; }
+    void                    SetBlendType(BlendType::Enum blendType) { this->blendType = blendType; }
 
-    static int              BlendTypeDimensions(BlendType blendType);
+    static int              BlendTypeDimensions(BlendType::Enum blendType);
 
                             // blend type 에 따라 사용되는 parameter 개수가 다르다
     int                     GetParameterIndex(int index) const { return parameterIndex[index]; }
@@ -107,7 +109,7 @@ private:
 
     Str                     name;
     int32_t                 nodeNum;
-    BlendType               blendType;
+    BlendType::Enum         blendType;
     int                     parameterIndex[3];      // animator 에 등록된 parameter index, 최대 3개
     //DelaunayTriangles *     triangles;
 

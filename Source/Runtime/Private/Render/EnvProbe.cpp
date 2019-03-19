@@ -49,7 +49,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
         bool clippingFarMatch = state.clippingFar == stateDef->clippingFar;
         bool originMatch = state.origin == stateDef->origin;
 
-        if (!resolutionMatch || !useHDRMatch || !clearMethodMatch || (stateDef->clearMethod == ClearMethod::ColorClear && !clearColorMatch) || 
+        if (!resolutionMatch || !useHDRMatch || !clearMethodMatch || (stateDef->clearMethod == ClearMethod::Color && !clearColorMatch) || 
             !clippingNearMatch || !clippingFarMatch || !originMatch) {
             needToRefresh = true;
         }
@@ -84,8 +84,8 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
             // Create default diffuse probe cubemap.
             diffuseProbeTexture = textureManager.AllocTexture(va("DiffuseProbe-%s", state.guid.ToString()));
             diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, 16, 16, 1, 1, 1,
-                state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
-                Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+                state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
+                Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
             resourceGuidMapper.Set(Guid::CreateGuid(), diffuseProbeTexture->GetHashName());
         }
@@ -114,8 +114,8 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
 
             specularProbeTexture = textureManager.AllocTexture(va("SpecularProbe-%s", state.guid.ToString()));
             specularProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels,
-                state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8,
-                Texture::Clamp | Texture::HighQuality);
+                state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
+                Texture::Flag::Clamp | Texture::Flag::HighQuality);
 
             specularProbeTextureMaxMipLevel = Math::Log(2.0f, specularProbeTexture->GetWidth());
 
@@ -124,7 +124,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
     }
 }
 
-int EnvProbe::ToActualResolution(Resolution resolution) {
+int EnvProbe::ToActualResolution(Resolution::Enum resolution) {
     // Resolution value same order with EnvProbe::Resolution.
     static const int size[] = {
         16, 32, 64, 128, 256, 512, 1024, 2048
@@ -139,10 +139,10 @@ void EnvProbeJob::RevalidateDiffuseProbeRT(bool clearToBlack) {
     // Recreate diffuse probe texture if it need to.
     if (Image::IsCompressed(envProbe->diffuseProbeTexture->GetFormat()) ||
         (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->diffuseProbeTexture->GetFormat()))) {
-        Image::Format format = envProbe->state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8;
+        Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8;
 
         envProbe->diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, format, 
-            Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
+            Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
     }
 
     if (clearToBlack) {
@@ -179,10 +179,10 @@ void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
     if (size != envProbe->specularProbeTexture->GetWidth() || 
         Image::IsCompressed(envProbe->specularProbeTexture->GetFormat()) ||
         (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->specularProbeTexture->GetFormat()))) {
-        Image::Format format = envProbe->state.useHDR ? Image::RGB_11F_11F_10F : Image::RGB_8_8_8;
+        Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8;
 
         envProbe->specularProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
-            Texture::Clamp | Texture::HighQuality);
+            Texture::Flag::Clamp | Texture::Flag::HighQuality);
     }
 
     if (clearToBlack) {
@@ -220,7 +220,7 @@ bool EnvProbeJob::IsFinished() const {
     return true;
 }
 
-bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing timeSlicing) {
+bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing::Enum timeSlicing) {
     if (specularProbeCubemapComputedLevel == -1) {
         if (specularProbeCubemapComputedLevel0Face == -1) {
             RevalidateSpecularProbeRT(envProbe->bounces == 0);
@@ -233,14 +233,14 @@ bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing timeSlicing) {
             // We can skip complex calculation of specular convolution cubemap for mipLevel 0.
             // It is same as perfect specular mirror. so we just render environment cubmap.
             renderSystem.CaptureEnvCubeFaceRT(renderWorld, envProbe->state.layerMask, staticMask,
-                envProbe->state.clearMethod == EnvProbe::ClearMethod::ColorClear, Color4(envProbe->state.clearColor, 0.0f),
+                envProbe->state.clearMethod == EnvProbe::ClearMethod::Color, Color4(envProbe->state.clearColor, 0.0f),
                 envProbe->state.origin,
                 envProbe->state.clippingNear, envProbe->state.clippingFar,
                 envProbe->specularProbeRT, specularProbeCubemapComputedLevel0Face + 1);
 
             specularProbeCubemapComputedLevel0Face++;
 
-            if (timeSlicing == EnvProbe::IndividualFaces) {
+            if (timeSlicing == EnvProbe::TimeSlicing::IndividualFaces) {
                 break;
             }
         }
@@ -249,7 +249,7 @@ bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing timeSlicing) {
             specularProbeCubemapComputedLevel = 0;
         }
 
-        if (timeSlicing != EnvProbe::NoTimeSlicing) {
+        if (timeSlicing != EnvProbe::TimeSlicing::NoTimeSlicing) {
             return false;
         }
     }
@@ -260,7 +260,7 @@ bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing timeSlicing) {
 
         specularProbeCubemapComputedLevel++;
 
-        if (timeSlicing != EnvProbe::NoTimeSlicing) {
+        if (timeSlicing != EnvProbe::TimeSlicing::NoTimeSlicing) {
             return false;
         }
     }

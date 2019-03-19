@@ -71,18 +71,18 @@ int PlatformAndroidFile::Size() const {
     return -1;
 }
 
-int PlatformAndroidFile::Seek(long offset, Origin origin) {
+int PlatformAndroidFile::Seek(long offset, Origin::Enum origin) {
     assert(offset >= 0);
 
     int whence;
     switch (origin) {
-    case Start:
+    case Origin::Start:
         whence = SEEK_SET;
         break;
-    case End:
+    case Origin::End:
         whence = SEEK_END;
         break;
-    case Current:
+    case Origin::Current:
         whence = SEEK_CUR;
         break;
     default:

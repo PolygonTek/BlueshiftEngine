@@ -132,11 +132,11 @@ void CmdSystem::RemoveCommand(const char *name) {
     }
 }
 
-void CmdSystem::BufferCommandText(Execution exec, const char *text) {
-    if (exec == ExecuteNow) {
-        BufferCommandText(Insert, text);
+void CmdSystem::BufferCommandText(Execution::Enum exec, const char *text) {
+    if (exec == Execution::Now) {
+        BufferCommandText(Execution::Insert, text);
         ExecuteCommandBuffer();
-    } else if (exec == Insert) {
+    } else if (exec == Execution::Insert) {
         // copy off any commands still remaining in the exec buffer
         char *temp;
         int tempSize = commandBufferSize;
@@ -150,7 +150,7 @@ void CmdSystem::BufferCommandText(Execution exec, const char *text) {
         }
             
         // add the entire text of the file
-        BufferCommandText(Append, text);
+        BufferCommandText(Execution::Append, text);
         
         // add the copied off data
         if (tempSize) {
@@ -315,7 +315,7 @@ void CmdSystem::Cmd_Exec(const CmdArgs &args) {
 
     BE_LOG("executing %s...\n", arg.c_str());
     
-    cmdSystem.BufferCommandText(Insert, (const char *)data);
+    cmdSystem.BufferCommandText(Execution::Insert, (const char *)data);
 
     fileSystem.FreeFile(data);
 }
@@ -326,7 +326,7 @@ void CmdSystem::Cmd_Vstr(const CmdArgs &args) {
         return;
     }
 
-    cmdSystem.BufferCommandText(ExecuteNow, cvarSystem.GetCVarString(args.Argv(1)));
+    cmdSystem.BufferCommandText(Execution::Now, cvarSystem.GetCVarString(args.Argv(1)));
 }
 
 void CmdSystem::Cmd_Inc(const CmdArgs &args) {

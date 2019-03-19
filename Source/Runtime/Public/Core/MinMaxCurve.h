@@ -19,12 +19,14 @@
 BE_NAMESPACE_BEGIN
 
 struct BE_API MinMaxCurve {
-    enum Type {
-        InvalidType = -1,
-        ConstantType = 0,
-        CurveType,
-        RandomBetweenTwoConstantsType,
-        RandomBetweenTwoCurvesType
+    struct Type {
+        enum Enum {
+            Invalid = -1,
+            Constant = 0,
+            Curve,
+            RandomBetweenTwoConstants,
+            RandomBetweenTwoCurves
+        };
     };
 
     MinMaxCurve();
@@ -32,8 +34,8 @@ struct BE_API MinMaxCurve {
     bool                    operator==(const MinMaxCurve &rhs) const;
     bool                    operator!=(const MinMaxCurve &rhs) const;
 
-    void                    Reset(Type type);
-    void                    Reset(Type type, float scalar, float minValue, float maxValue);
+    void                    Reset(Type::Enum type);
+    void                    Reset(Type::Enum type, float scalar, float minValue, float maxValue);
 
     float                   Evaluate(float random, float t) const;
 
@@ -41,14 +43,14 @@ struct BE_API MinMaxCurve {
 
     static MinMaxCurve      empty;
 
-    Type                    type;
+    Type::Enum              type;
     float                   scalar;
     Hermite<float>          minCurve;
     Hermite<float>          maxCurve;
 };
 
 BE_INLINE MinMaxCurve::MinMaxCurve() {
-    type = InvalidType;
+    type = Type::Invalid;
     scalar = 1.0f;
 }
 
@@ -66,14 +68,14 @@ BE_INLINE bool MinMaxCurve::operator!=(const MinMaxCurve &rhs) const {
     return false;
 }
 
-BE_INLINE void MinMaxCurve::Reset(Type type) {
+BE_INLINE void MinMaxCurve::Reset(Type::Enum type) {
     this->type = type;
     this->scalar = 1.0f;
     this->minCurve.Clear();
     this->maxCurve.Clear();
 }
 
-BE_INLINE void MinMaxCurve::Reset(Type type, float scalar, float minValue, float maxValue) {
+BE_INLINE void MinMaxCurve::Reset(Type::Enum type, float scalar, float minValue, float maxValue) {
     assert(minValue >= -1.0f && minValue <= 1.0f);
     assert(maxValue >= -1.0f && maxValue <= 1.0f);
     this->type = type;
@@ -86,13 +88,13 @@ BE_INLINE void MinMaxCurve::Reset(Type type, float scalar, float minValue, float
 
 BE_INLINE float MinMaxCurve::Evaluate(float random, float t) const {
     switch (type) {
-    case ConstantType:
+    case Type::Constant:
         return scalar * maxCurve.GetPoint(0);
-    case CurveType:
+    case Type::Curve:
         return scalar * maxCurve.Evaluate(t);
-    case RandomBetweenTwoConstantsType:
+    case Type::RandomBetweenTwoConstants:
         return scalar * Lerp(minCurve.GetPoint(0), maxCurve.GetPoint(0), random);
-    case RandomBetweenTwoCurvesType:
+    case Type::RandomBetweenTwoCurves:
         return scalar * Lerp(minCurve.Evaluate(t), maxCurve.Evaluate(t), random);
     default:
         assert(0);
@@ -102,13 +104,13 @@ BE_INLINE float MinMaxCurve::Evaluate(float random, float t) const {
 
 BE_INLINE float MinMaxCurve::Integrate(float random, float t) const {
     switch (type) {
-    case ConstantType:
+    case Type::Constant:
         return scalar * maxCurve.GetPoint(0) * t;
-    case CurveType:
+    case Type::Curve:
         return scalar * maxCurve.Integrate(0, t);
-    case RandomBetweenTwoConstantsType:
+    case Type::RandomBetweenTwoConstants:
         return scalar * Lerp(minCurve.GetPoint(0), maxCurve.GetPoint(0), random) * t;
-    case RandomBetweenTwoCurvesType:
+    case Type::RandomBetweenTwoCurves:
         return scalar * Lerp(minCurve.Integrate(0, t), maxCurve.Integrate(0, t), random);
     default:
         assert(0);

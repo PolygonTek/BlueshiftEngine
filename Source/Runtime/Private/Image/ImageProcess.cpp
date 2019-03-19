@@ -187,7 +187,7 @@ Image &Image::SwapRedAlphaRGBA8888() {
 
 Image Image::MakeNormalMapRGBA8888(float bumpiness) const {
     Image image;
-    image.Create2D(width, height, 1, Image::RGBA_8_8_8_8, nullptr, LinearSpaceFlag);
+    image.Create2D(width, height, 1, Image::Format::RGBA_8_8_8_8, nullptr, Flag::LinearSpace);
 
     byte *dst_ptr = image.pic;
 
@@ -424,7 +424,7 @@ Image &Image::GenerateMipmaps() {
                     BuildMipMap<float>((float *)dst, (float *)src, w, h, d, numComponents);
                 }
             } else {
-                if (!(flags & LinearSpaceFlag)) {
+                if (!(flags & Flag::LinearSpace)) {
                     BuildMipMapWithGamma(dst, src, w, h, d, numComponents);
                 } else {
                     BuildMipMap(dst, src, w, h, d, numComponents);

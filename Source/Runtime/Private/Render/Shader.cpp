@@ -70,18 +70,18 @@ static const char *builtInConstantNames[] = {
 
 // NOTE: must be same order with Shader::BuiltInSampler enum.
 static const char *builtInSamplerNames[] = {
-    "cubicNormalCubeMap",                   // CubicNormalCubeMapSampler
-    "indirectionCubeMap",                   // IndirectionCubeMapSampler
-    "albedoMap",                            // AlbedoMapSampler
-    "normalMap",                            // NormalMapSampler
-    "jointsMap",                            // JointsMapSampler
-    "lightProjectionMap",                   // LightProjectionMapSampler
-    "shadowMap",                            // ShadowMapSampler
-    "shadowArrayMap",                       // ShadowArrayMapSampler
-    "probe0DiffuseCubeMap",                 // Probe0DiffuseCubeMapSampler
-    "probe0SpecularCubeMap",                // Probe0SpecularCubeMapSampler
-    "probe1DiffuseCubeMap",                 // Probe1DiffuseCubeMapSampler
-    "probe1SpecularCubeMap",                // Probe1SpecularCubeMapSampler
+    "cubicNormalCubeMap",                   // CubicNormalCubeMap
+    "indirectionCubeMap",                   // IndirectionCubeMap
+    "albedoMap",                            // AlbedoMap
+    "normalMap",                            // NormalMap
+    "jointsMap",                            // JointsMap
+    "lightProjectionMap",                   // LightProjectionMap
+    "shadowMap",                            // ShadowMap
+    "shadowArrayMap",                       // ShadowArrayMap
+    "probe0DiffuseCubeMap",                 // Probe0DiffuseCubeMap
+    "probe0SpecularCubeMap",                // Probe0SpecularCubeMap
+    "probe1DiffuseCubeMap",                 // Probe1DiffuseCubeMap
+    "probe1SpecularCubeMap",                // Probe1SpecularCubeMap
 };
 
 int Shader::GetFlags() const {
@@ -189,9 +189,9 @@ bool Shader::Create(const char *text, const char *baseDir) {
         } else if (token[0] == '}') {
             break;
         } else if (!token.Icmp("litSurface")) {
-            flags |= LitSurface;
+            flags |= Flag::LitSurface;
         } else if (!token.Icmp("skySurface")) {
-            flags |= SkySurface;
+            flags |= Flag::SkySurface;
         } else if (!token.Icmp("properties")) {
             ParseProperties(lexer);
         } else if (!token.Icmp("inheritProperties")) {
@@ -319,7 +319,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
         }
     }
 
-    if (renderGlobal.instancingMethod == Mesh::NoInstancing) {
+    if (renderGlobal.instancingMethod == Mesh::InstancingMethod::NoInstancing) {
         generateGpuInstancingVersion = false;
     }
 
@@ -327,8 +327,8 @@ bool Shader::Create(const char *text, const char *baseDir) {
 }
 
 bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
-    propInfo.type = Variant::None;
-    propInfo.flags = PropertyInfo::EditorFlag;
+    propInfo.type = Variant::Type::None;
+    propInfo.flags = PropertyInfo::Flag::Editor;
     propInfo.range = Rangef(0, 0, 1);
     propInfo.metaObject = nullptr;
 
@@ -358,43 +358,43 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
     }
 
     if (!Str::Cmp(typeStr, "bool")) {
-        propInfo.type = Variant::BoolType;
+        propInfo.type = Variant::Type::Bool;
     } else if (!Str::Cmp(typeStr, "int")) {
-        propInfo.type = Variant::IntType;
+        propInfo.type = Variant::Type::Int;
     } else if (!Str::Cmp(typeStr, "point")) {
-        propInfo.type = Variant::PointType;
+        propInfo.type = Variant::Type::Point;
     } else if (!Str::Cmp(typeStr, "rect")) {
-        propInfo.type = Variant::RectType;
+        propInfo.type = Variant::Type::Rect;
     } else if (!Str::Cmp(typeStr, "float")) {
-        propInfo.type = Variant::FloatType;
+        propInfo.type = Variant::Type::Float;
     } else if (!Str::Cmp(typeStr, "vec2")) {
-        propInfo.type = Variant::Vec2Type;
+        propInfo.type = Variant::Type::Vec2;
     } else if (!Str::Cmp(typeStr, "vec3")) {
-        propInfo.type = Variant::Vec3Type;
+        propInfo.type = Variant::Type::Vec3;
     } else if (!Str::Cmp(typeStr, "vec4")) {
-        propInfo.type = Variant::Vec4Type;
+        propInfo.type = Variant::Type::Vec4;
     } else if (!Str::Cmp(typeStr, "color3")) {
-        propInfo.type = Variant::Color3Type;
+        propInfo.type = Variant::Type::Color3;
     } else if (!Str::Cmp(typeStr, "color4")) {
-        propInfo.type = Variant::Color4Type;
+        propInfo.type = Variant::Type::Color4;
     } else if (!Str::Cmp(typeStr, "enum")) {
         Str enumSequence;
         if (!lexer.ExpectTokenType(TokenType::TT_STRING, &enumSequence)) {
             return false;
         }
-        propInfo.type = Variant::IntType;
+        propInfo.type = Variant::Type::Int;
         propInfo.enumeration.Clear();
         SplitStringIntoList(propInfo.enumeration, enumSequence, ";");
     } else if (!Str::Cmp(typeStr, "texture")) {
-        propInfo.type = Variant::GuidType;
+        propInfo.type = Variant::Type::Guid;
         propInfo.metaObject = &TextureAsset::metaObject;
     }
 
-    if (propInfo.type == Variant::IntType ||
-        propInfo.type == Variant::FloatType ||
-        propInfo.type == Variant::Vec2Type ||
-        propInfo.type == Variant::Vec3Type ||
-        propInfo.type == Variant::Vec4Type) {
+    if (propInfo.type == Variant::Type::Int ||
+        propInfo.type == Variant::Type::Float ||
+        propInfo.type == Variant::Type::Vec2 ||
+        propInfo.type == Variant::Type::Vec3 ||
+        propInfo.type == Variant::Type::Vec4) {
         Str token;
         lexer.ReadToken(&token, false);
 
@@ -429,7 +429,7 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
             if (token == ")") {
                 break;
             } else if (token == "shaderDefine") {
-                propInfo.flags |= PropertyInfo::ShaderDefineFlag;
+                propInfo.flags |= PropertyInfo::Flag::ShaderDefine;
             } else {
                 return false;
             }
@@ -533,7 +533,7 @@ Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHea
     }
 
     if (shadowing) {
-        shader->flags |= Shadowing;
+        shader->flags |= Flag::Shadowing;
     }
 
     shader->propertyInfoHashMap = propertyInfoHashMap;
@@ -1137,10 +1137,10 @@ bool Shader::InstantiateShaderInternal(const Array<Define> &defineArray) {
     Str processedVsText;
     Str processedFsText;
 
-    shaderFlags |= ProcessShaderText(originalShader->vsText, originalShader->baseDir, defineArray, processedVsText) ? VertexShader : 0;
-    shaderFlags |= ProcessShaderText(originalShader->fsText, originalShader->baseDir, defineArray, processedFsText) ? FragmentShader : 0;
+    flags |= ProcessShaderText(originalShader->vsText, originalShader->baseDir, defineArray, processedVsText) ? Flag::HasVertexShader : 0;
+    flags |= ProcessShaderText(originalShader->fsText, originalShader->baseDir, defineArray, processedFsText) ? Flag::HasFragmentShader : 0;
 
-    if (!(shaderFlags & VertexShader) || !(shaderFlags & FragmentShader)) {
+    if (!(flags & Flag::HasVertexShader) || !(flags & Flag::HasFragmentShader)) {
         return false;
     }
 
@@ -1150,14 +1150,14 @@ bool Shader::InstantiateShaderInternal(const Array<Define> &defineArray) {
 
     shaderHandle = rhi.CreateShader(hashName, processedVsText, processedFsText);
 
-    assert(MaxBuiltInConstants == COUNT_OF(builtInConstantNames));
-    assert(MaxBuiltInSamplers == COUNT_OF(builtInSamplerNames));
+    assert(BuiltInConstant::Count == COUNT_OF(builtInConstantNames));
+    assert(BuiltInSampler::Count == COUNT_OF(builtInSamplerNames));
 
-    for (int i = 0; i < MaxBuiltInConstants; i++) {
+    for (int i = 0; i < BuiltInConstant::Count; i++) {
         builtInConstantIndices[i] = rhi.GetShaderConstantIndex(shaderHandle, builtInConstantNames[i]);
     }
 
-    for (int i = 0; i < MaxBuiltInSamplers; i++) {
+    for (int i = 0; i < BuiltInSampler::Count; i++) {
         builtInSamplerUnits[i] = rhi.GetSamplerUnit(shaderHandle, builtInSamplerNames[i]);
     }
 
@@ -1712,7 +1712,7 @@ bool Shader::Load(const char *hashName) {
 
     fileSystem.FreeFile(data);
 
-    this->flags |= LoadedFromFile;
+    this->flags |= Flag::LoadedFromFile;
 
     return true;
 }
@@ -1723,7 +1723,7 @@ bool Shader::Reload() {
         shader = originalShader;
     }
 
-    if (!(shader->flags & LoadedFromFile)) {
+    if (!(shader->flags & Flag::LoadedFromFile)) {
         return false;
     }
 

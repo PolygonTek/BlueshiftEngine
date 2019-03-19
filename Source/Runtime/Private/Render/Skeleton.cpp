@@ -161,7 +161,7 @@ bool Skeleton::Load(const char *filename) {
 }
 
 void Skeleton::Write(const char *filename) {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
         BE_WARNLOG("Skeleton::Write: file open error\n");
         return;

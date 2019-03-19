@@ -626,7 +626,7 @@ bool AnimController::ParseBaseAnimLayer(Lexer &lexer) {
 
     AnimLayer *animLayer = new AnimLayer(this);
     animLayer->SetName("Base Layer");
-    animLayer->SetBlending(AnimLayer::Override);
+    animLayer->SetBlending(AnimLayer::Blending::Override);
     animLayer->SetWeight(1.0f);
     animLayer->maskJoints.SetCount(joints.Count());
     for (int i = 0; i < joints.Count(); i++) {
@@ -742,7 +742,7 @@ bool AnimController::ParseParameter(Lexer &lexer) {
 }
 
 void AnimController::Write(const char *filename) {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
         BE_WARNLOG("AnimController::Write: file open error\n");
         return;
@@ -898,10 +898,10 @@ void AnimController::Write(const char *filename) {
 
             Str blendingStr;
             switch (animLayer->GetBlending()) {
-            case AnimLayer::Override:
+            case AnimLayer::Blending::Override:
                 blendingStr = "override";
                 break;
-            case AnimLayer::Additive:
+            case AnimLayer::Blending::Additive:
                 blendingStr = "additive";
                 break;
             }

@@ -32,35 +32,35 @@ END_EVENTS
 
 void ComCamera::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("projection", "Projection", int, GetProjectionMethod, SetProjectionMethod, 0, 
-        "", PropertyInfo::EditorFlag).SetEnumString("Perspective;Orthographic");
+        "", PropertyInfo::Flag::Editor).SetEnumString("Perspective;Orthographic");
     REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, 0.1,
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(0.01, 10000, 0.02);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0.01, 10000, 0.02);
     REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetFar, SetFar, 500,
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag).SetRange(0.01, 10000, 0.02);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0.01, 10000, 0.02);
     REGISTER_PROPERTY("fov", "FOV", float, fov, 60.f, 
-        "", PropertyInfo::EditorFlag).SetRange(1, 179, 1);
+        "", PropertyInfo::Flag::Editor).SetRange(1, 179, 1);
     REGISTER_PROPERTY("size", "Size", float, size, 1000.f, 
-        "", PropertyInfo::EditorFlag).SetRange(1, 16384, 1);
+        "", PropertyInfo::Flag::Editor).SetRange(1, 16384, 1);
     REGISTER_PROPERTY("x", "Viewport Rect/X", float, nx, 0.f, 
-        "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
+        "", PropertyInfo::Flag::Editor).SetRange(0, 1.0f, 0.01f);
     REGISTER_PROPERTY("y", "Viewport Rect/Y", float, ny, 0.f, 
-        "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
+        "", PropertyInfo::Flag::Editor).SetRange(0, 1.0f, 0.01f);
     REGISTER_PROPERTY("w", "Viewport Rect/W", float, nw, 1.f, 
-        "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
+        "", PropertyInfo::Flag::Editor).SetRange(0, 1.0f, 0.01f);
     REGISTER_PROPERTY("h", "Viewport Rect/H", float, nh, 1.f, 
-        "", PropertyInfo::EditorFlag).SetRange(0, 1.0f, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("clear", "Clear/Clear Method", RenderCamera::ClearMethod, GetClearMethod, SetClearMethod, 1, 
-        "", PropertyInfo::EditorFlag).SetEnumString("No Clear;Depth Only;Color;Skybox");
+        "", PropertyInfo::Flag::Editor).SetRange(0, 1.0f, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("clear", "Clear/Clear Method", RenderCamera::ClearMethod::Enum, GetClearMethod, SetClearMethod, 1, 
+        "", PropertyInfo::Flag::Editor).SetEnumString("No Clear;Depth Only;Color;Skybox");
     REGISTER_ACCESSOR_PROPERTY("clearColor", "Clear/Color", Color3, GetClearColor, SetClearColor, Color3::black, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("clearAlpha", "Clear/Alpha", float, GetClearAlpha, SetClearAlpha, 0.f, 
-        "", PropertyInfo::EditorFlag);
-    REGISTER_ACCESSOR_PROPERTY("layerMask", "Layer Mask", int, GetLayerMask, SetLayerMask, (int)(BIT(TagLayerSettings::DefaultLayer) | BIT(TagLayerSettings::UILayer)),
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("layerMask", "Layer Mask", int, GetLayerMask, SetLayerMask, (int)(BIT(TagLayerSettings::BuiltInLayer::Default) | BIT(TagLayerSettings::BuiltInLayer::UI)),
+        "", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("order", "Order", int, order, 0,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("applyPostProcessing", "Apply Post Processing", bool, applyPostProcessing, true,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
 }
 
 ComCamera::ComCamera() {
@@ -140,27 +140,27 @@ void ComCamera::Init() {
     // 3d sprite for editor
     spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
 
-    spriteDef.flags = RenderObject::BillboardFlag;
-    spriteDef.layer = TagLayerSettings::EditorLayer;
+    spriteDef.flags = RenderObject::Flag::Billboard;
+    spriteDef.layer = TagLayerSettings::BuiltInLayer::Editor;
     spriteDef.maxVisDist = MeterToUnit(50.0f);
 
-    Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/Camera2.png", Texture::Clamp | Texture::HighQuality);
+    Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/Camera2.png", Texture::Flag::Clamp | Texture::Flag::HighQuality);
     spriteDef.materials.SetCount(1);
-    spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::SpriteHint);
+    spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::TextureHint::Sprite);
     textureManager.ReleaseTexture(spriteTexture);
     
-    spriteDef.mesh = spriteMesh->InstantiateMesh(Mesh::StaticMesh);
+    spriteDef.mesh = spriteMesh->InstantiateMesh(Mesh::Type::Static);
     spriteDef.aabb = spriteMesh->GetAABB();
     spriteDef.worldMatrix = transform->GetMatrixNoScale();
-    spriteDef.materialParms[RenderObject::RedParm] = 1.0f;
-    spriteDef.materialParms[RenderObject::GreenParm] = 1.0f;
-    spriteDef.materialParms[RenderObject::BlueParm] = 1.0f;
-    spriteDef.materialParms[RenderObject::AlphaParm] = 1.0f;
-    spriteDef.materialParms[RenderObject::TimeOffsetParm] = 0.0f;
-    spriteDef.materialParms[RenderObject::TimeScaleParm] = 1.0f;
+    spriteDef.materialParms[RenderObject::MaterialParm::Red] = 1.0f;
+    spriteDef.materialParms[RenderObject::MaterialParm::Green] = 1.0f;
+    spriteDef.materialParms[RenderObject::MaterialParm::Blue] = 1.0f;
+    spriteDef.materialParms[RenderObject::MaterialParm::Alpha] = 1.0f;
+    spriteDef.materialParms[RenderObject::MaterialParm::TimeOffset] = 0.0f;
+    spriteDef.materialParms[RenderObject::MaterialParm::TimeScale] = 1.0f;
 #endif
 
-    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCamera::TransformUpdated, SignalObject::Unique);
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCamera::TransformUpdated, SignalObject::ConnectionType::Unique);
 
     // Mark as initialized
     SetInitialized(true);
@@ -646,11 +646,11 @@ void ComCamera::SetFar(float zFar) {
     }
 }
 
-RenderCamera::ClearMethod ComCamera::GetClearMethod() const {
+RenderCamera::ClearMethod::Enum ComCamera::GetClearMethod() const {
     return renderCameraDef.clearMethod;
 }
 
-void ComCamera::SetClearMethod(RenderCamera::ClearMethod clearMethod) {
+void ComCamera::SetClearMethod(RenderCamera::ClearMethod::Enum clearMethod) {
     renderCameraDef.clearMethod = clearMethod;
 
     UpdateVisuals();

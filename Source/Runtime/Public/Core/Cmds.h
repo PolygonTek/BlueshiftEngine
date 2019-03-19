@@ -38,14 +38,14 @@ struct Cmd {
 
 class BE_API CmdSystem {
 public:
-    enum {
-        MaxBufferLength     = 8192
-    };
+    static constexpr int MaxBufferLength = 8192;
 
-    enum Execution {
-        ExecuteNow,         ///< don't return until completed
-        Insert,             ///< insert at current position, but don't run yet
-        Append              ///< add to end of the command buffer (normal case)
+    struct Execution {
+        enum Enum {
+            Now,            ///< don't return until completed
+            Insert,         ///< insert at current position, but don't run yet
+            Append          ///< add to end of the command buffer (normal case)
+        };
     };
 
     void                    Init();
@@ -60,7 +60,7 @@ public:
     void                    AddCommand(const char *name, cmdFunction_t function, const char *description = nullptr);
     void                    RemoveCommand(const char *name);
 
-    void                    BufferCommandText(Execution exec, const char *text);
+    void                    BufferCommandText(Execution::Enum exec, const char *text);
 
                             // buffer 에 쌓여있는 command 실행
     void                    ExecuteCommandBuffer();

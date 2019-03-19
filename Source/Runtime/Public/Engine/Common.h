@@ -23,40 +23,42 @@ class CmdArgs;
 
 class Common {
 public:
-    enum PlatformId {
-        WindowsPlatform,
-        LinuxPlatform,
-        MacOSPlatform,
-        IOSPlatform,
-        AndroidPlatform
+    struct PlatformId {
+        enum Enum {
+            Windows,
+            Linux,
+            MacOS,
+            IOS,
+            Android
+        };
     };
 
-    void            Init(const char *baseDir);
-    void            Shutdown();
+    void                Init(const char *baseDir);
+    void                Shutdown();
 
-    void            RunFrame(int frameMsec);
+    void                RunFrame(int frameMsec);
 
-    PlatformId      GetPlatformId() const;
+    PlatformId::Enum    GetPlatformId() const;
 
-    Str             GetAppPreferenceDir() const;
+    Str                 GetAppPreferenceDir() const;
 
-    Random          random;
+    Random              random;
 
-    int             realTime;       // absolute time in milliseconds
-    int             frameTime;      // frame time in milliseconds
-    float           frameSec;       // frame time in seconds
+    int                 realTime;       // absolute time in milliseconds
+    int                 frameTime;      // frame time in milliseconds
+    float               frameSec;       // frame time in seconds
 
 private:
-    void            SaveConfig(const char *filename);
+    void                SaveConfig(const char *filename);
 
-    int             ProcessPlatformEvent();
-    void            GetPlatformEvent(Platform::Event *ev);
+    int                 ProcessPlatformEvent();
+    void                GetPlatformEvent(Platform::Event *ev);
 
-    static void     Cmd_Version(const CmdArgs &args);
-    static void     Cmd_Error(const CmdArgs &args);
-    static void     Cmd_Quit(const CmdArgs &args);
+    static void         Cmd_Version(const CmdArgs &args);
+    static void         Cmd_Error(const CmdArgs &args);
+    static void         Cmd_Quit(const CmdArgs &args);
 };
 
-extern Common       common;
+extern Common           common;
 
 BE_NAMESPACE_END

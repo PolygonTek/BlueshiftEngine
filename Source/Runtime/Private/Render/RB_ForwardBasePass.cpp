@@ -56,7 +56,7 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
             prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::Flag::DepthHack);
 
                 if (prevDepthHack != depthHack) {
                     if (drawSurf->flags & DrawSurf::UseInstancing) {
@@ -108,8 +108,8 @@ void RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         RB_SetupLight(backEnd.primaryLight);
 
         if (r_shadows.GetInteger() != 0) {
-            if ((backEnd.primaryLight->def->GetState().flags & RenderLight::CastShadowsFlag) && 
-                !(backEnd.camera->def->GetState().flags & RenderCamera::NoShadows)) {
+            if ((backEnd.primaryLight->def->GetState().flags & RenderLight::Flag::CastShadows) &&
+                !(backEnd.camera->def->GetState().flags & RenderCamera::Flag::NoShadows)) {
                 RB_ShadowPass(backEnd.primaryLight);
             }
         }

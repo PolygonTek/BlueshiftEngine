@@ -49,13 +49,15 @@ class PhysCollidable {
     friend class CollisionFilterCallback;
 
 public:
-    enum Type {
-        RigidBody,
-        SoftBody,
-        Sensor
+    struct Type {
+        enum Enum {
+            RigidBody,
+            SoftBody,
+            Sensor
+        };
     };
 
-    PhysCollidable(Type type, btCollisionObject *collisionObject, const Vec3 &centroid);
+    PhysCollidable(Type::Enum type, btCollisionObject *collisionObject, const Vec3 &centroid);
     virtual ~PhysCollidable();
 
     virtual const Vec3      GetOrigin() const;
@@ -107,7 +109,7 @@ public:
     void                    SetCollisionListener(PhysCollisionListener *listener);
 
 protected:
-    Type                    type;                   ///< Collidable type
+    Type::Enum              type;                   ///< Collidable type
     Vec3                    centroid;               ///< Position of the center of mass in system units
     int                     collisionFilterBit;
     int                     collisionFilterMask;

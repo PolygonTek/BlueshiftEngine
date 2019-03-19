@@ -375,7 +375,7 @@ void KeyCmdSystem::KeyEvent(KeyCode::Enum keynum, bool down) {
 
         if (kb[0] == '+') {
             Str::snPrintf(cmd, COUNT_OF(cmd), "-%s\n", kb + 1);
-            cmdSystem.BufferCommandText(CmdSystem::Append, cmd);
+            cmdSystem.BufferCommandText(CmdSystem::Execution::Append, cmd);
         }
         return;
     }
@@ -390,8 +390,8 @@ void KeyCmdSystem::KeyEvent(KeyCode::Enum keynum, bool down) {
     
     kb = key->binding;
     if (kb && kb[0]) {
-        cmdSystem.BufferCommandText(CmdSystem::Append, kb);
-        cmdSystem.BufferCommandText(CmdSystem::Append, "\n");
+        cmdSystem.BufferCommandText(CmdSystem::Execution::Append, kb);
+        cmdSystem.BufferCommandText(CmdSystem::Execution::Append, "\n");
     }
 }
 

@@ -76,7 +76,7 @@ bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
         h = -h;
     }
 
-    Create2D(w, h, 1, Image::BGR_8_8_8, nullptr, 0);
+    Create2D(w, h, 1, Image::Format::BGR_8_8_8, nullptr, 0);
         
     int padbytes = (((bmih->bpp * w + 31) & ~31) - (bmih->bpp * w)) >> 3;
     const byte *palette;
@@ -176,7 +176,7 @@ bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
 }
 
 bool Image::WriteBMP(const char *filename) const {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
         BE_WARNLOG("Image::WriteBMP: file open error\n");
         return false;
@@ -184,8 +184,8 @@ bool Image::WriteBMP(const char *filename) const {
 
     Image convertedImage;
     byte *src = pic;
-    if (format != Image::BGR_8_8_8) {
-        if (!ConvertFormat(Image::BGR_8_8_8, convertedImage)) {
+    if (format != Image::Format::BGR_8_8_8) {
+        if (!ConvertFormat(Image::Format::BGR_8_8_8, convertedImage)) {
             fileSystem.CloseFile(fp);
             return false;
         }

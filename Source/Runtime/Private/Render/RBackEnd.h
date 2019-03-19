@@ -80,7 +80,7 @@ private:
     void                    SetShaderProperties(const Shader *shader, const StrHashMap<Shader::Property> &shaderProperties) const;
     const Texture *         TextureFromShaderProperties(const Material::ShaderPass *mtrlPass, const Str &textureName) const;
     void                    SetMatrixConstants(const Shader *shader) const;
-    void                    SetVertexColorConstants(const Shader *shader, const Material::VertexColorMode &vertexColor) const;
+    void                    SetVertexColorConstants(const Shader *shader, const Material::VertexColorMode::Enum &vertexColor) const;
     void                    SetSkinningConstants(const Shader *shader, const SkinningJointCache *cache) const;
     void                    SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const;
     void                    SetProbeConstants(const Shader *shader) const;

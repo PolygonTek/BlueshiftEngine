@@ -54,7 +54,7 @@ void SubMesh::AllocSubMesh(int numVerts, int numIndexes) {
     this->tangentsCalculated        = false;
     this->edgesCalculated           = false;
 
-    this->type                      = Mesh::ReferenceMesh;
+    this->type                      = Mesh::Type::Reference;
     this->refSubMesh                = nullptr;
     this->subMeshIndex              = subMeshCounter++;
 
@@ -84,7 +84,7 @@ void SubMesh::AllocSubMesh(int numVerts, int numIndexes) {
 }
 
 void SubMesh::AllocInstantiatedSubMesh(const SubMesh *ref, int meshType) {
-    assert(ref->type == Mesh::ReferenceMesh);
+    assert(ref->type == Mesh::Type::Reference);
 
     this->alloced                   = true;
     this->normalsCalculated         = ref->normalsCalculated;
@@ -112,12 +112,12 @@ void SubMesh::AllocInstantiatedSubMesh(const SubMesh *ref, int meshType) {
     this->jointWeightVerts          = ref->jointWeightVerts;
 
     this->vertWeights               = ref->vertWeights;
-    this->useGpuSkinning            = (ref->vertWeights && meshType == Mesh::SkinnedMesh) ? true : false;
+    this->useGpuSkinning            = (ref->vertWeights && meshType == Mesh::Type::Skinned) ? true : false;
     this->gpuSkinningVersionIndex   = ref->gpuSkinningVersionIndex;
 
     this->aabb                      = ref->aabb;
 
-    if (this->type == Mesh::StaticMesh || this->useGpuSkinning) {
+    if (this->type == Mesh::Type::Static || this->useGpuSkinning) {
         this->verts                 = ref->verts;
 
         this->vertexCache           = ref->vertexCache;
@@ -139,7 +139,7 @@ void SubMesh::FreeSubMesh() {
 
     alloced = false;
 
-    if (type == Mesh::ReferenceMesh) {
+    if (type == Mesh::Type::Reference) {
         if (vertexCache->buffer != RHI::NullBuffer) {
             rhi.DestroyBuffer(vertexCache->buffer);
         }
@@ -163,7 +163,7 @@ void SubMesh::FreeSubMesh() {
         return;
     }
 
-    if (type == Mesh::DynamicMesh || (type == Mesh::SkinnedMesh && !useGpuSkinning)) {
+    if (type == Mesh::Type::Dynamic || (type == Mesh::Type::Skinned && !useGpuSkinning)) {
         Mem_AlignedFree(verts);
         Mem_Free(vertexCache);
     }

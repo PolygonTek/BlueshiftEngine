@@ -38,28 +38,30 @@ class Texture {
     friend class Shader;
 
 public:
-    enum Flag {
-        Repeat              = BIT(0),
-        MirroredRepeat      = BIT(1),
-        Clamp               = BIT(2),       ///< Set wrap mode to Clamp (can be set with Mirror).
-        ClampToBorder       = BIT(3),       ///< Set wrap mode to ClampToBorder (can be set with Mirror).
-        ZeroClamp           = BIT(4),       ///< Set wrap mode to ClampToBorder and set border color to black.
-        Shadow              = BIT(5),       ///< Set shadow func (You must turn this flag on to use samperXDShadow on the shader).
-        Nearest             = BIT(6),       ///< Use nearest filtering (should be set with NoMipmaps).
-        NoMipmaps           = BIT(7),       ///< Don't use mipmaps.
-        NoScaleDown         = BIT(8),       ///< Don't reduce size by texture_mip cvar value.
-        NoCompression       = BIT(9),       ///< Don't use compression by texture_useCompression cvar value. (Useless if original format is compressed).
-        NonPowerOfTwo       = BIT(10),      ///< This is a non-power-of-two texture.
-        NormalMap           = BIT(11),      ///< This is a normal map.
-        HighPriority        = BIT(12),
-        LowPriority         = BIT(13),
-        SRGBColorSpace      = BIT(14),      ///< Generally color images are encoded in sRGB space. So we need to tell the GPU to upload it to memory in a linear fashion.
-        Trilinear           = BIT(15),
-        HighQuality         = NoScaleDown | NoCompression,
-        CubeMap             = BIT(28),      ///< This is a cube map.
-        CameraCubeMap       = BIT(29),
-        LoadedFromFile      = BIT(30),      ///< Mark it as loaded from a file.
-        Permanence          = BIT(31)
+    struct Flag {
+        enum Enum {
+            Repeat              = BIT(0),
+            MirroredRepeat      = BIT(1),
+            Clamp               = BIT(2),       ///< Set wrap mode to Clamp (can be set with Mirror).
+            ClampToBorder       = BIT(3),       ///< Set wrap mode to ClampToBorder (can be set with Mirror).
+            ZeroClamp           = BIT(4),       ///< Set wrap mode to ClampToBorder and set border color to black.
+            Shadow              = BIT(5),       ///< Set shadow func (You must turn this flag on to use samperXDShadow on the shader).
+            Nearest             = BIT(6),       ///< Use nearest filtering (should be set with NoMipmaps).
+            NoMipmaps           = BIT(7),       ///< Don't use mipmaps.
+            NoScaleDown         = BIT(8),       ///< Don't reduce size by texture_mip cvar value.
+            NoCompression       = BIT(9),       ///< Don't use compression by texture_useCompression cvar value. (Useless if original format is compressed).
+            NonPowerOfTwo       = BIT(10),      ///< This is a non-power-of-two texture.
+            NormalMap           = BIT(11),      ///< This is a normal map.
+            HighPriority        = BIT(12),
+            LowPriority         = BIT(13),
+            SRGBColorSpace      = BIT(14),      ///< Generally color images are encoded in sRGB space. So we need to tell the GPU to upload it to memory in a linear fashion.
+            Trilinear           = BIT(15),
+            HighQuality         = NoScaleDown | NoCompression,
+            CubeMap             = BIT(28),      ///< This is a cube map.
+            CameraCubeMap       = BIT(29),
+            LoadedFromFile      = BIT(30),      ///< Mark it as loaded from a file.
+            Permanence          = BIT(31)
+        };
     };
 
     Texture();
@@ -71,7 +73,7 @@ public:
     int                     GetHeight() const { return height; }
     int                     GetDepth() const { return depth; }
     int                     NumSlices() const { return numSlices; }
-    Image::Format           GetFormat() const { return format; }
+    Image::Format::Enum     GetFormat() const { return format; }
     int                     GetFlags() const { return flags; }
 
     int                     MemRequired(bool includingMipmaps) const;
@@ -81,8 +83,8 @@ public:
     RenderTarget *          GetRenderTarget() const { return renderTarget; }
 
     void                    Create(RHI::TextureType type, const Image &srcImage, int flags);
-    void                    CreateEmpty(RHI::TextureType type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, int flags);
-    void                    CreateFromBuffer(Image::Format format, RHI::Handle bufferHandle);
+    void                    CreateEmpty(RHI::TextureType type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, int flags);
+    void                    CreateFromBuffer(Image::Format::Enum format, RHI::Handle bufferHandle);
 
                             /// Create indirection cubemap
                             /// @param size         size of indirection cubemap
@@ -104,15 +106,15 @@ public:
 
     void                    Upload(const Image *srcImage);
 
-    void                    Update2D(int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data);
-    void                    Update3D(int mipLevel, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format format, const byte *data);
-    void                    UpdateCubemap(int face, int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data);
-    void                    UpdateRect(int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data);
+    void                    Update2D(int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format::Enum format, const byte *data);
+    void                    Update3D(int mipLevel, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format::Enum format, const byte *data);
+    void                    UpdateCubemap(int face, int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format::Enum format, const byte *data);
+    void                    UpdateRect(int xoffset, int yoffset, int width, int height, Image::Format::Enum format, const byte *data);
 
-    void                    GetTexels2D(int mipLevel, Image::Format format, void *pixels) const;
-    void                    GetTexels3D(int mipLevel, Image::Format format, void *pixels) const;
-    void                    GetTexelsCubemap(int face, int mipLevel, Image::Format format, void *pixels) const;
-    void                    GetTexelsRect(Image::Format format, void *pixels) const;
+    void                    GetTexels2D(int mipLevel, Image::Format::Enum format, void *pixels) const;
+    void                    GetTexels3D(int mipLevel, Image::Format::Enum format, void *pixels) const;
+    void                    GetTexelsCubemap(int face, int mipLevel, Image::Format::Enum format, void *pixels) const;
+    void                    GetTexelsRect(Image::Format::Enum format, void *pixels) const;
 
     void                    Purge();
 
@@ -138,7 +140,7 @@ private:
     RHI::TextureType        type;
     RHI::AddressMode        addressMode;
 
-    Image::Format           format;                     // internal image format
+    Image::Format::Enum     format;                     // internal image format
 
     int                     srcWidth;                   // original width
     int                     srcHeight;                  // original height

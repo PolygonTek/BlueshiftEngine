@@ -63,18 +63,18 @@ int PlatformWinFile::Size() const {
     return GetFileSize(fileHandle, nullptr);
 }
 
-int PlatformWinFile::Seek(long offset, Origin origin) {
+int PlatformWinFile::Seek(long offset, Origin::Enum origin) {
     assert(offset >= 0);
 
     DWORD moveMethod;
     switch (origin) {
-    case Start:
+    case Origin::Start:
         moveMethod = FILE_BEGIN;
         break;
-    case End:
+    case Origin::End:
         moveMethod = FILE_END;
         break;
-    case Current:
+    case Origin::Current:
         moveMethod = FILE_CURRENT;
         break;
     default:
@@ -273,26 +273,26 @@ int PlatformWinFile::GetFileMode(const char *filename) {
     }
     int fileMode = 0;
     if (fileInfo.st_mode & _S_IREAD) {
-        fileMode |= Readable;
+        fileMode |= Mode::Readable;
     }
     if (fileInfo.st_mode & _S_IWRITE) {
-        fileMode |= Writable;
+        fileMode |= Mode::Writable;
     }
     if (fileInfo.st_mode & _S_IEXEC) {
-        fileMode |= Executable;
+        fileMode |= Mode::Executable;
     }
     return fileMode;
 }
 
 void PlatformWinFile::SetFileMode(const char *filename, int fileMode) {
     int mode = 0;
-    if (fileMode & Readable) {
+    if (fileMode & Mode::Readable) {
         mode |= _S_IREAD;
     }
-    if (fileMode & Writable) {
+    if (fileMode & Mode::Writable) {
         mode |= _S_IWRITE;
     }
-    if (fileMode & Executable) {
+    if (fileMode & Mode::Executable) {
         mode |= _S_IEXEC;
     }
     wchar_t wFilename[1024];

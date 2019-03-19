@@ -154,7 +154,7 @@ static void ResizeImageBicubic(const T *src, int srcWidth, int srcHeight, T *dst
 }
 
 template <typename T>
-static void ResizeImage(const T *src, int srcWidth, int srcHeight, T *dst, int dstWidth, int dstHeight, int numComponents, Image::ResampleFilter filter) {
+static void ResizeImage(const T *src, int srcWidth, int srcHeight, T *dst, int dstWidth, int dstHeight, int numComponents, Image::ResampleFilter::Enum filter) {
     switch (filter) {
     case Image::ResampleFilter::Nearest:
         ResizeImageNearest(src, srcWidth, srcHeight, dst, dstWidth, dstHeight, numComponents);
@@ -168,7 +168,7 @@ static void ResizeImage(const T *src, int srcWidth, int srcHeight, T *dst, int d
     }
 }
 
-bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter filter, Image &dstImage) const {
+bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter::Enum filter, Image &dstImage) const {
     assert(width && height);
     assert(dstWidth && dstHeight);
     
@@ -203,7 +203,7 @@ bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter filter, Im
     return true;
 }
 
-bool Image::ResizeSelf(int dstWidth, int dstHeight, Image::ResampleFilter filter) {
+bool Image::ResizeSelf(int dstWidth, int dstHeight, Image::ResampleFilter::Enum filter) {
     assert(width && height);
     assert(dstWidth && dstHeight);
 

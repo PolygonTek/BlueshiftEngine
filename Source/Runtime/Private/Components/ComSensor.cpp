@@ -52,7 +52,7 @@ void ComSensor::Purge(bool chainPurge) {
 void ComSensor::Init() {
     Component::Init();
 
-    physicsDesc.type = PhysCollidable::Sensor;
+    physicsDesc.type = PhysCollidable::Type::Sensor;
     physicsDesc.shapes.Clear();
 
     // Mark as initialized
@@ -96,7 +96,7 @@ void ComSensor::Awake() {
             }
 
             ComTransform *transform = GetEntity()->GetTransform();
-            transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSensor::TransformUpdated, SignalObject::Unique);
+            transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSensor::TransformUpdated, SignalObject::ConnectionType::Unique);
         }
     }
 

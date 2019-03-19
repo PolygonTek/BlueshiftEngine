@@ -128,7 +128,7 @@ void VertexFormat::Init() {
         VertexFormat::Type::GenericXyzStColorNTSkinning4, 
         VertexFormat::Type::GenericXyzStColorNTSkinning8);
 
-    if (renderGlobal.instancingMethod == Mesh::InstancedArraysInstancing) {
+    if (renderGlobal.instancingMethod == Mesh::InstancingMethod::InstancedArrays) {
         CreateInstancingVertexFormats(1, VertexFormat::Type::GenericXyz, VertexFormat::Type::GenericXyzInstancing, false);
         CreateInstancingVertexFormats(2, VertexFormat::Type::GenericXyzSkinning1, VertexFormat::Type::GenericXyzInstancingSkinning1, true);
         CreateInstancingVertexFormats(2, VertexFormat::Type::GenericXyzSkinning4, VertexFormat::Type::GenericXyzInstancingSkinning4, true);
@@ -200,7 +200,7 @@ void VertexFormat::CreateInstancingVertexFormats(int stream, int originalIndex, 
     vertexFormats[instancingIndex].Append(stream, 48, RHI::VertexElement::TexCoord4, 4, RHI::VertexElement::UByteType, true, 1);    // entityColor
 
     if (useVtfSkinning) {
-        if (renderGlobal.vtUpdateMethod == BufferCacheManager::TboUpdate) {
+        if (renderGlobal.vertexTextureMethod == BufferCacheManager::VertexTextureMethod::Tbo) {
             vertexFormats[instancingIndex].Append(stream, 52, RHI::VertexElement::TexCoord5, 1, RHI::VertexElement::UIntType, false, 1);
         } else {
             vertexFormats[instancingIndex].Append(stream, 52, RHI::VertexElement::TexCoord5, 2, RHI::VertexElement::FloatType, false, 1);

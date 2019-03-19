@@ -126,7 +126,7 @@ bool Skin::Reload() {
 }
 
 void Skin::Write(const char *filename) {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
         BE_WARNLOG("Skin::Write: file open error\n");
         return;

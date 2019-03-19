@@ -306,7 +306,7 @@ void OpenGLRHI::AdjustTextureSize(TextureType type, bool useNPOT, int inWidth, i
     if (outDepth) *outDepth = d;
 }
 
-void OpenGLRHI::AdjustTextureFormat(TextureType type, bool useCompression, bool useNormalMap, Image::Format inFormat, Image::Format *outFormat) {
+void OpenGLRHI::AdjustTextureFormat(TextureType type, bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat) {
     if (Image::IsDepthFormat(inFormat) || Image::IsDepthStencilFormat(inFormat)) {
         *outFormat = inFormat;
         return;
@@ -340,14 +340,14 @@ void OpenGLRHI::EndUnpackAlignment() {
     }
 }
 
-void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, Image::Format dstFormat, bool useMipmaps, bool isSRGB) {
+void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps, bool isSRGB) {
     GLenum format;
     GLenum type;
     GLenum internalFormat;
     Image uncompressedImage;
     Image tmpImage;
 
-    Image::Format srcFormat = srcImage->GetFormat();
+    Image::Format::Enum srcFormat = srcImage->GetFormat();
     
     bool srcCompressed = Image::IsCompressed(srcFormat);
     bool dstCompressed = Image::IsCompressed(dstFormat);
@@ -356,7 +356,7 @@ void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, 
     bool dstFormatSupported = OpenGL::SupportedImageFormat(dstFormat);
     
     if (srcCompressed && !srcFormatSupported) {
-        Image::Format uncompressedFormat = OpenGL::ToUncompressedImageFormat(srcFormat);
+        Image::Format::Enum uncompressedFormat = OpenGL::ToUncompressedImageFormat(srcFormat);
         
         srcImage->ConvertFormat(uncompressedFormat, uncompressedImage);
         srcImage = &uncompressedImage;
@@ -370,18 +370,18 @@ void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, 
             dstFormat = OpenGL::ToUncompressedImageFormat(dstFormat);
             dstCompressed = false;
         } else {
-            if (dstFormat == Image::DXN2 && srcFormat != Image::DXN2) {
-                srcImage->ConvertFormat(Image::DXN2, tmpImage);
+            if (dstFormat == Image::Format::DXN2 && srcFormat != Image::Format::DXN2) {
+                srcImage->ConvertFormat(Image::Format::DXN2, tmpImage);
                 srcImage = &tmpImage;
 
-                srcFormat = Image::DXN2;
+                srcFormat = Image::Format::DXN2;
                 srcCompressed = true;
-            } else if (dstFormat == Image::XGBR_DXT5 && srcFormat != Image::XGBR_DXT5) {
-                srcImage->ConvertFormat(Image::RGBA_8_8_8_8, tmpImage);
+            } else if (dstFormat == Image::Format::XGBR_DXT5 && srcFormat != Image::Format::XGBR_DXT5) {
+                srcImage->ConvertFormat(Image::Format::RGBA_8_8_8_8, tmpImage);
                 tmpImage.SwapRedAlphaRGBA8888();
                 srcImage = &tmpImage;
 
-                srcFormat = Image::RGBA_8_8_8_8;
+                srcFormat = Image::Format::RGBA_8_8_8_8;
                 srcCompressed = false;
             }
         }
@@ -539,7 +539,7 @@ void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, 
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::SetTextureImageBuffer(Image::Format dstFormat, bool isSRGB, int bufferHandle) {
+void OpenGLRHI::SetTextureImageBuffer(Image::Format::Enum dstFormat, bool isSRGB, int bufferHandle) {
     GLenum internalFormat;
 
     bool dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, isSRGB, nullptr, nullptr, &internalFormat);
@@ -555,7 +555,7 @@ void OpenGLRHI::SetTextureImageBuffer(Image::Format dstFormat, bool isSRGB, int 
     OpenGL::SetTextureSwizzling(GL_TEXTURE_BUFFER, dstFormat);
 }
 
-void OpenGLRHI::SetTextureSubImage2D(int level, int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels) {
+void OpenGLRHI::SetTextureSubImage2D(int level, int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
@@ -565,7 +565,7 @@ void OpenGLRHI::SetTextureSubImage2D(int level, int xoffset, int yoffset, int wi
         return;
     }
 
-    bool srcCompressed = Image::IsCompressed(srcFormat);	
+    bool srcCompressed = Image::IsCompressed(srcFormat);
 
     BeginUnpackAlignment(Image::BytesPerPixel(srcFormat) * width);
 
@@ -579,7 +579,7 @@ void OpenGLRHI::SetTextureSubImage2D(int level, int xoffset, int yoffset, int wi
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::SetTextureSubImage3D(int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format srcFormat, const void *pixels) {
+void OpenGLRHI::SetTextureSubImage3D(int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format::Enum srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
@@ -589,7 +589,7 @@ void OpenGLRHI::SetTextureSubImage3D(int level, int xoffset, int yoffset, int zo
         return;
     }
     
-    bool srcCompressed = Image::IsCompressed(srcFormat);	
+    bool srcCompressed = Image::IsCompressed(srcFormat);
 
     BeginUnpackAlignment(Image::BytesPerPixel(srcFormat) * width);
 
@@ -603,7 +603,7 @@ void OpenGLRHI::SetTextureSubImage3D(int level, int xoffset, int yoffset, int zo
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::SetTextureSubImage2DArray(int level, int xoffset, int yoffset, int zoffset, int width, int height, int arrays, Image::Format srcFormat, const void *pixels) {
+void OpenGLRHI::SetTextureSubImage2DArray(int level, int xoffset, int yoffset, int zoffset, int width, int height, int arrays, Image::Format::Enum srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
@@ -627,7 +627,7 @@ void OpenGLRHI::SetTextureSubImage2DArray(int level, int xoffset, int yoffset, i
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::SetTextureSubImageCube(CubeMapFace face, int level, int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels) {
+void OpenGLRHI::SetTextureSubImageCube(CubeMapFace face, int level, int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
@@ -651,7 +651,7 @@ void OpenGLRHI::SetTextureSubImageCube(CubeMapFace face, int level, int xoffset,
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::SetTextureSubImageRect(int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels) {
+void OpenGLRHI::SetTextureSubImageRect(int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
@@ -683,7 +683,7 @@ void OpenGLRHI::CopyTextureSubImage2D(int xoffset, int yoffset, int x, int y, in
     gglCopyTexSubImage2D(texture->target, 0, xoffset, yoffset, x, y, width, height);
 }
 
-void OpenGLRHI::GetTextureImage2D(int level, Image::Format dstFormat, void *pixels) {
+void OpenGLRHI::GetTextureImage2D(int level, Image::Format::Enum dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;
     GLenum type;
@@ -699,7 +699,7 @@ void OpenGLRHI::GetTextureImage2D(int level, Image::Format dstFormat, void *pixe
 #endif
 }
 
-void OpenGLRHI::GetTextureImage3D(int level, Image::Format dstFormat, void *pixels) {
+void OpenGLRHI::GetTextureImage3D(int level, Image::Format::Enum dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;
     GLenum type;
@@ -715,7 +715,7 @@ void OpenGLRHI::GetTextureImage3D(int level, Image::Format dstFormat, void *pixe
 #endif
 }
 
-void OpenGLRHI::GetTextureImageCube(CubeMapFace face, int level, Image::Format dstFormat, void *pixels) {
+void OpenGLRHI::GetTextureImageCube(CubeMapFace face, int level, Image::Format::Enum dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;
     GLenum type;
@@ -731,7 +731,7 @@ void OpenGLRHI::GetTextureImageCube(CubeMapFace face, int level, Image::Format d
 #endif
 }
 
-void OpenGLRHI::GetTextureImageRect(Image::Format dstFormat, void *pixels) {
+void OpenGLRHI::GetTextureImageRect(Image::Format::Enum dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;
     GLenum type;

@@ -61,7 +61,7 @@ const Str Asset::GetMetaFileNameFromAssetPath(const char *assetPath) {
 const Str Asset::GetCacheDirectory(const char *baseLibraryDir) const {
     Str cacheDir = baseLibraryDir;
     cacheDir.AppendPath("metadata");
-    cacheDir.AppendPath(va("%s", GetGuid().ToString(Guid::DigitsWithHyphens)));
+    cacheDir.AppendPath(va("%s", GetGuid().ToString(Guid::Format::DigitsWithHyphens)));
 
     Str::ConvertPathSeperator(cacheDir, PATHSEPERATOR_CHAR);
     

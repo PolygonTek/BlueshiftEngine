@@ -214,8 +214,8 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
             continue;
         }
 
-        if (!(drawSurf->material->GetSort() == Material::Sort::OpaqueSort || drawSurf->material->GetSort() == Material::Sort::AlphaTestSort) &&
-            !(drawSurf->material->GetFlags() & Material::ForceShadow)) {
+        if (!(drawSurf->material->GetSort() == Material::Sort::Opaque || drawSurf->material->GetSort() == Material::Sort::AlphaTest) &&
+            !(drawSurf->material->GetFlags() & Material::Flag::ForceShadow)) {
             continue;
         }
 
@@ -237,7 +237,7 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
             if (isDifferentObject) {
                 prevSpace = drawSurf->space;
 
-                if (!(drawSurf->space->def->GetState().flags & RenderObject::CastShadowsFlag)) {
+                if (!(drawSurf->space->def->GetState().flags & RenderObject::Flag::CastShadows)) {
                     continue;
                 }
 
@@ -419,8 +419,8 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
             continue;
         }
         
-        if (!(drawSurf->material->GetSort() == Material::Sort::OpaqueSort || drawSurf->material->GetSort() == Material::Sort::AlphaTestSort) && 
-            !(drawSurf->material->GetFlags() & Material::ForceShadow)) {
+        if (!(drawSurf->material->GetSort() == Material::Sort::Opaque || drawSurf->material->GetSort() == Material::Sort::AlphaTest) && 
+            !(drawSurf->material->GetFlags() & Material::Flag::ForceShadow)) {
             continue;
         }
 
@@ -704,12 +704,12 @@ static void RB_CascadedShadowMapPass(const VisLight *visLight) {
 }
 
 void RB_ShadowPass(const VisLight *visLight) {
-    if (visLight->def->GetState().type == RenderLight::PointLight) {
+    if (visLight->def->GetState().type == RenderLight::Type::Point) {
         RB_ShadowCubeMapPass(visLight, backEnd.camera->def->GetFrustum());
-    } else if (visLight->def->GetState().type == RenderLight::SpotLight) {
+    } else if (visLight->def->GetState().type == RenderLight::Type::Spot) {
         RB_ProjectedShadowMapPass(visLight, backEnd.camera->def->GetFrustum());
-    } else if (visLight->def->GetState().type == RenderLight::DirectionalLight) {
-        if ((visLight->def->GetState().flags & RenderLight::PrimaryLightFlag) && r_CSM_count.GetInteger() > 1) {
+    } else if (visLight->def->GetState().type == RenderLight::Type::Directional) {
+        if ((visLight->def->GetState().flags & RenderLight::Flag::PrimaryLight) && r_CSM_count.GetInteger() > 1) {
             RB_CascadedShadowMapPass(visLight);
         } else {
             RB_OrthogonalShadowMapPass(visLight, backEnd.camera->def->GetFrustum());

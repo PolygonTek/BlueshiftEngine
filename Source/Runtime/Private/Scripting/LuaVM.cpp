@@ -32,8 +32,8 @@ BE_NAMESPACE_BEGIN
 // MobDebug in ZeroBrane Studio https://github.com/pkulchenko/MobDebug
 // Set lua_debuggeeController to "mobdebug_controller"
 
-static CVAR(lua_debug, "0", CVar::Bool | CVar::Archive, "Enable Lua debugging");
-static CVAR(lua_debuggerServer, "localhost", CVar::Archive, "Lua debugger server address for remote debugging");
+static CVAR(lua_debug, "0", CVar::Flag::Bool | CVar::Flag::Archive, "Enable Lua debugging");
+static CVAR(lua_debuggerServer, "localhost", CVar::Flag::Archive, "Lua debugger server address for remote debugging");
 static CVAR(lua_debuggeeController, "mobdebug_controller", 0, "Lua debuggee controller script name");
 
 static int engine_print(lua_State *L) {
