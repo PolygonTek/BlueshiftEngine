@@ -206,10 +206,7 @@ void SubMesh::CacheDynamicDataToGpu(const Mat3x4 *joints, const Material *materi
         simdProcessor->TransformVerts(verts, numVerts, joints, jointWeightVerts, reinterpret_cast<int *>(jointWeights), numJointWeights);
     }
 
-    bool unsmoothedTangents = false;
-    if (material->GetFlags() & Material::UnsmoothTangents) {
-        unsmoothedTangents = true;
-    }
+    bool unsmoothedTangents = (material->GetFlags() & Material::Flag::UnsmoothTangents) ? true : false;
 
     ComputeTangents(true, unsmoothedTangents);
 

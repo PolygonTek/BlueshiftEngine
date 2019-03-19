@@ -2081,7 +2081,7 @@ static const ImageFormatInfo imageFormatInfo[] = {
 };
 
 const ImageFormatInfo *GetImageFormatInfo(Image::Format::Enum imageFormat) {
-    assert(imageFormat < Image::Format::NumImageFormats);
+    assert(imageFormat < Image::Format::Count);
     return &imageFormatInfo[imageFormat];
 }
 

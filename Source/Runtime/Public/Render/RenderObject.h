@@ -67,7 +67,7 @@ public:
             Alpha,
             TimeOffset,
             TimeScale,
-            MaxMaterialParms                // should be less than MAX_EXPR_LOCALPARMS
+            Count       // should be less than MAX_EXPR_LOCALPARMS
         };
     };
 
@@ -150,7 +150,7 @@ public:
         // Materials
         //
         Array<Material *>   materials;
-        float               materialParms[MaterialParm::MaxMaterialParms] = { 1, 1, 1, 1, 0, 1 };
+        float               materialParms[MaterialParm::Count] = { 1, 1, 1, 1, 0, 1 };
         Skin *              customSkin = nullptr;
     };
 

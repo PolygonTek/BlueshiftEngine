@@ -72,7 +72,7 @@ public:
         float               shadowOffsetUnits = 200.f;
 
         Material *          material = nullptr;
-        float               materialParms[RenderObject::MaterialParm::MaxMaterialParms] = { 1, 1, 1, 1, 0, 1 };
+        float               materialParms[RenderObject::MaterialParm::Count] = { 1, 1, 1, 1, 0, 1 };
     };
 
     RenderLight(RenderWorld *renderWorld, int index);

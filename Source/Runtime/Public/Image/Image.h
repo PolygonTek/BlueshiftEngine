@@ -110,7 +110,7 @@ public:
             Depth_32F,
             DepthStencil_24_8,
             DepthStencil_32F_8,
-            NumImageFormats
+            Count
         };
     };
 
