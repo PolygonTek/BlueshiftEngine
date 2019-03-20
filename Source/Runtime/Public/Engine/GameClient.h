@@ -16,34 +16,37 @@
 
 BE_NAMESPACE_BEGIN
 
-#define CMDLINE_SIZE        256
-#define CMDLINE_HISTORY     32
-
-enum KeyFocus {
-    KEYFOCUS_GAME           = 0,
-    KEYFOCUS_CONSOLE        = 1
+struct KeyFocus {
+    enum Enum {
+        Game                = 0,
+        Console             = 1
+    };
 };
 
-enum ClientState {
-    CS_IDLE,
-    CS_ACTIVE,
-    CS_CONNECTING,
-    CS_CONNECTED,
-    CS_DISCONNECTED,
-    CS_LOADING,
-    CS_CINEMATIC,
+struct ClientState {
+    enum Enum {
+        Idle,
+        Active,
+        Connecting,
+        Connected,
+        Disconnected,
+        Loading,
+        Cinematic
+    };
 };
 
-enum DrawTextFlag {
-    DTF_RIGHT               = BIT(0),
-    DTF_CENTER              = BIT(1),
-    DTF_BOTTOM              = BIT(2),
-    DTF_VCENTER             = BIT(3),
-    DTF_MULTILINE           = BIT(5),
-    DTF_WORDWRAP            = BIT(6),
-    DTF_DROPSHADOW          = BIT(7),
-    DTF_OUTLINE             = BIT(8),
-    DTF_TRUNCATE            = BIT(9)
+struct DrawTextFlag {
+    enum Enum {
+        Right               = BIT(0),
+        Center              = BIT(1),
+        Bottom              = BIT(2),
+        VCenter             = BIT(3),
+        MultiLines          = BIT(5),
+        WordWrap            = BIT(6),
+        DropShadow          = BIT(7),
+        Outline             = BIT(8),
+        Truncate            = BIT(9)
+    };
 };
 
 class Font;
@@ -51,90 +54,93 @@ class Material;
 
 class GameClient {
 public:
-    void                Init(void *windowHandle, bool useMouseInput);
-    void                Shutdown();
+    static constexpr int    CommandLineSize = 256;
+    static constexpr int    CommandLineHistory = 32;
 
-    void                EnableConsole(bool flag);
-    void                ClearCommandLine();
+    void                    Init(void *windowHandle, bool useMouseInput);
+    void                    Shutdown();
 
-    void                RunFrame();
-    void                EndFrame();
+    void                    EnableConsole(bool flag);
+    void                    ClearCommandLine();
 
-    int	                GetKeyFocus() const { return keyFocus; }
-    void                SetKeyFocus(int focus) { keyFocus = focus; }
+    void                    RunFrame();
+    void                    EndFrame();
 
-    Color4              GetColor() const { return currentColor; }
-    Color4              GetTextColor() const { return currentTextColor; }
-    Vec2                GetTextScale() const { return currentTextScale; }
-    Font *              GetFont() const { return currentFont; }
+    KeyFocus::Enum          GetKeyFocus() const { return keyFocus; }
+    void                    SetKeyFocus(KeyFocus::Enum keyFocus) { this->keyFocus = keyFocus; }
 
-    void                SetColor(const Color4 &rgba);
-    void                SetTextColor(const Color4 &rgba);
-    void                SetTextScale(float xscale, float yscale);
-    void                SetFont(Font *font);
+    Color4                  GetColor() const { return currentColor; }
+    Color4                  GetTextColor() const { return currentTextColor; }
+    Vec2                    GetTextScale() const { return currentTextScale; }
+    Font *                  GetFont() const { return currentFont; }
 
-    void                DrawPic(float x, float y, float w, float h, const Material *material);
-    void                DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Material *material);
-    void                DrawBar(float x, float y, float w, float h, const Color4 &rgba);
-    void                DrawString(int x, int y, const Str &str, int size = -1, int flags = 0);
-    void                DrawStringInRect(const Rect &rect, int marginX, int marginY, const Str &str, int size = -1, int flags = 0);
+    void                    SetColor(const Color4 &rgba);
+    void                    SetTextColor(const Color4 &rgba);
+    void                    SetTextScale(float xscale, float yscale);
+    void                    SetFont(Font *font);
 
-    void                KeyEvent(KeyCode::Enum key, bool down);
-    void                CharEvent(char32_t unicodeChar);
-    void                CompositionEvent(char32_t unicodeChar);
-    void                MouseMoveEvent(int x, int y, int time);
-    void                MouseDeltaEvent(int dx, int dy, int time);
-    void                JoyAxisEvent(int dx, int dy, int time);
-    void                TouchEvent(InputSystem::Touch::Phase phase, uint64_t touchId, int x, int y, int time);
-    void                PacketEvent();
+    void                    DrawPic(float x, float y, float w, float h, const Material *material);
+    void                    DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Material *material);
+    void                    DrawBar(float x, float y, float w, float h, const Color4 &rgba);
+    void                    DrawString(int x, int y, const Str &str, int size = -1, int flags = 0);
+    void                    DrawStringInRect(const Rect &rect, int marginX, int marginY, const Str &str, int size = -1, int flags = 0);
 
-    void                DrawConsole();
+    void                    KeyEvent(KeyCode::Enum key, bool down);
+    void                    CharEvent(char32_t unicodeChar);
+    void                    CompositionEvent(char32_t unicodeChar);
+    void                    MouseMoveEvent(int x, int y, int time);
+    void                    MouseDeltaEvent(int dx, int dy, int time);
+    void                    JoyAxisEvent(int dx, int dy, int time);
+    void                    TouchEvent(InputSystem::Touch::Phase phase, uint64_t touchId, int x, int y, int time);
+    void                    PacketEvent();
+
+    void                    DrawConsole();
 
 private:
-    void                InitDefaultGuids();
-    void                ConsoleKeyEvent(KeyCode::Enum key);
-    void                ConsoleCharEvent(char32_t unicodeChar);
-    void                ConsoleCompositionEvent(char32_t ch);
-    void                UpdateConsole();
+    void                    InitDefaultGuids();
+    void                    ConsoleKeyEvent(KeyCode::Enum key);
+    void                    ConsoleCharEvent(char32_t unicodeChar);
+    void                    ConsoleCompositionEvent(char32_t ch);
+    void                    UpdateConsole();
 
-    void                DrawConsoleScreen();
-    void                DrawConsoleNotify();
-    void                DrawConsoleCmdLine();
+    void                    DrawConsoleScreen();
+    void                    DrawConsoleNotify();
+    void                    DrawConsoleCmdLine();
     
-    ClientState         state;
+    ClientState::Enum       state;
 
-    int                 frameCount;
-    int                 time;
-    int                 oldTime;
+    int                     frameCount;
+    int                     time;
+    int                     oldTime;
 
-    int                 fps;
-    int                 fpsFrames;
-    int                 fpsFrametime;
+    int                     fps;
+    int                     fpsFrames;
+    int                     fpsFrametime;
     
-    Color4              currentColor;
-    Color4              currentTextColor;
-    Vec2                currentTextScale;
-    Font *              currentFont;
+    Color4                  currentColor;
+    Color4                  currentTextColor;
+    Vec2                    currentTextScale;
+    Font *                  currentFont;
     
-    bool                consoleEnabled;
-    float               consoleHeight;
-    int                 consoleUpScroll;
-    Material *          consoleMaterial;
+    bool                    consoleEnabled;
+    float                   consoleHeight;
+    int                     consoleUpScroll;
+    Material *              consoleMaterial;
 
-    char                cmdLines[CMDLINE_HISTORY][CMDLINE_SIZE];
-    int                 editLine;       ///< Current edit line index
-    int                 historyLine;    ///< Current history line index
-    int                 lineOffset;     ///< Current command line position in byte offset
+    char                    cmdLines[CommandLineHistory][CommandLineSize];
+    int                     editLine;       ///< Current edit line index
+    int                     historyLine;    ///< Current history line index
+    int                     lineOffset;     ///< Current command line position in byte offset
 
-    int                 keyFocus;
-    bool                replaceMode;
-    bool                compositionMode;
+    KeyFocus::Enum          keyFocus;
+    bool                    replaceMode;
+    bool                    compositionMode;
 
-    static void         Cmd_Connect(const CmdArgs &args);
-    static void         Cmd_Disconnect(const CmdArgs &args);
-    static void         Cmd_ToggleConsole(const CmdArgs &args);
+    static void             Cmd_Connect(const CmdArgs &args);
+    static void             Cmd_Disconnect(const CmdArgs &args);
+    static void             Cmd_ToggleConsole(const CmdArgs &args);
 };
 
-extern GameClient       gameClient;
+extern GameClient           gameClient;
 
 BE_NAMESPACE_END

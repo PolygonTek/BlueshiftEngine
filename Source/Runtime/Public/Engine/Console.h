@@ -26,7 +26,7 @@ class CmdArgs;
 
 class Console : public SignalObject {
 public:
-    Console() { initialized = false; }
+    Console() = default;
 
     void                Init();
     void                Shutdown();
@@ -40,7 +40,7 @@ public:
 
     void                DumpToFile(const char *filename);
 
-    bool                initialized;
+    bool                initialized = false;
 
     StrArray            textLines;
     int                 currentLineIndex;

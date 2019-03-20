@@ -56,7 +56,7 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
     cmdSystem.AddCommand("disconnect", Cmd_Disconnect);
     cmdSystem.AddCommand("toggleConsole", Cmd_ToggleConsole);
 
-    state = CS_DISCONNECTED;
+    state = ClientState::Disconnected;
 
     time = 0;
     oldTime = 0;
@@ -74,11 +74,11 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
     historyLine = 0;
     lineOffset = 1;
 
-    keyFocus = KEYFOCUS_GAME;
+    keyFocus = KeyFocus::Game;
     compositionMode = false;
     replaceMode = false;
 
-    for (int i = 0; i < CMDLINE_HISTORY; i++) {
+    for (int i = 0; i < CommandLineHistory; i++) {
         cmdLines[i][0] = CMDLINE_PROMPT_MARK;
         cmdLines[i][1] = 0;
     }
@@ -218,7 +218,7 @@ void GameClient::EndFrame() {
 void GameClient::UpdateConsole() {
     float targetHeight;
 
-    if (keyFocus == KEYFOCUS_CONSOLE) {
+    if (keyFocus == KeyFocus::Console) {
         targetHeight = 720 * cl_conSize.GetFloat();
     } else {
         targetHeight = 0.0f;
@@ -235,9 +235,9 @@ void GameClient::UpdateConsole() {
 }
 
 void GameClient::EnableConsole(bool flag) {
-    if (flag == false && keyFocus == KEYFOCUS_CONSOLE) {
+    if (flag == false && keyFocus == KeyFocus::Console) {
         ClearCommandLine();
-        SetKeyFocus(KEYFOCUS_GAME);
+        SetKeyFocus(KeyFocus::Game);
     }
 
     consoleEnabled = flag;
@@ -332,7 +332,7 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
             }
         }
 
-        if ((flags & DTF_MULTILINE) && unicodeChar == U'\n') {
+        if ((flags & DrawTextFlag::MultiLines) && unicodeChar == U'\n') {
             // Save current line length
             lineLen[numLines++] = currentLineLength;
 
@@ -344,7 +344,7 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
         } else {
             int charWidth = currentFont->GetGlyphAdvance(unicodeChar) * currentTextScale.x;
 
-            if (flags & DTF_WORDWRAP) {
+            if (flags & DrawTextFlag::WordWrap) {
                 if (currentLineWidth + charWidth > rect.w - marginX) {
                     // Save current line length
                     lineLen[numLines++] = currentLineLength;
@@ -357,7 +357,7 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
                     continue;
                 }
             } else if (currentLineWidth + charWidth > rect.w - marginX) {
-                if (flags & DTF_TRUNCATE) {
+                if (flags & DrawTextFlag::Truncate) {
                     if (currentLineWidth > 0) {
                         int dotdotdotWidth = currentFont->GetGlyphAdvance(U'.') * currentTextScale.x * 3;
                 
@@ -384,12 +384,12 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
 
     // Calculate the y-coordinate
     int y;
-    if (flags & (DTF_BOTTOM | DTF_VCENTER)) {
+    if (flags & (DrawTextFlag::Bottom | DrawTextFlag::VCenter)) {
         int height = currentFont->GetFontHeight() * currentTextScale.y * numLines + DRAWTEXT_LINE_SPACING * (numLines - 1);
 
-        if (flags & DTF_BOTTOM) {
+        if (flags & DrawTextFlag::Bottom) {
             y = rect.y + rect.h - height - marginY;
-        } else if (flags & DTF_VCENTER) {
+        } else if (flags & DrawTextFlag::VCenter) {
             y = rect.y + (rect.h - height) / 2 + marginY;
         }
     } else {
@@ -406,12 +406,12 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
 
         // Calculate the x-coordinate
         int x;
-        if (flags & (DTF_RIGHT | DTF_CENTER)) {
+        if (flags & (DrawTextFlag::Right | DrawTextFlag::Center)) {
             int width = currentFont->StringWidth(&text[offset], lineLen[lineIndex], false, true, currentTextScale.x);
 
-            if (flags & DTF_RIGHT) {
+            if (flags & DrawTextFlag::Right) {
                 x = rect.x + rect.w - width - marginX;
-            } else if (flags & DTF_CENTER) {
+            } else if (flags & DrawTextFlag::Center) {
                 x = rect.x + (rect.w - width) / 2 + marginX;
             }
         } else {
@@ -421,7 +421,7 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
         for (int lineTextIndex = 0; lineTextIndex < lineLen[lineIndex]; lineTextIndex++) {
             char32_t unicodeChar = text.UTF8CharAdvance(offset);
 
-            if (flags & DTF_OUTLINE) {
+            if (flags & DrawTextFlag::Outline) {
                 // Draw outline of text with black color
                 guiMesh.SetColor(Color4(0, 0, 0, textColor[3]));
 
@@ -435,7 +435,7 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
                 guiMesh.DrawChar(x - 1, y + 1, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
 
                 guiMesh.SetColor(textColor);
-            } else if (flags & DTF_DROPSHADOW) {
+            } else if (flags & DrawTextFlag::DropShadow) {
                 // Draw text shadow with black color
                 guiMesh.SetColor(Color4(0, 0, 0, textColor[3]));
 
@@ -488,7 +488,7 @@ void GameClient::DrawConsole() {
 
     if (cl_showFps.GetBool()) {
         SetTextColor(Color4::white);
-        DrawString(0, 0, va("%ifps", fps), -1, DTF_RIGHT | DTF_DROPSHADOW);
+        DrawString(0, 0, va("%ifps", fps), -1, DrawTextFlag::Right | DrawTextFlag::DropShadow);
     }
 
     if (cl_showTimer.GetBool()) {
@@ -499,7 +499,7 @@ void GameClient::DrawConsole() {
         int minutes = (ts / 60) % 60;
         int seconds = ts % 60;
         
-        DrawString(0, CONSOLE_FONT_HEIGHT, va("%02i:%02i:%02i", hours, minutes, seconds), -1, DTF_RIGHT | DTF_DROPSHADOW);
+        DrawString(0, CONSOLE_FONT_HEIGHT, va("%02i:%02i:%02i", hours, minutes, seconds), -1, DrawTextFlag::Right | DrawTextFlag::DropShadow);
     }
 
     if (consoleHeight > 0.0f) {
@@ -528,7 +528,7 @@ void GameClient::DrawConsoleScreen() {
     // Draw version string.
     Str::snPrintf(versionString, COUNT_OF(versionString), "%s-%s %s", BE_NAME, PlatformProcess::PlatformName(), BE_VERSION);
     SetTextColor(Color4(1.0f, 0.5f, 0.0f, 1.0f));
-    DrawString(CONSOLE_TEXT_BORDER, consoleHeight - (CONSOLE_FONT_HEIGHT * 1.5f), versionString, -1, DTF_RIGHT | DTF_DROPSHADOW);
+    DrawString(CONSOLE_TEXT_BORDER, consoleHeight - (CONSOLE_FONT_HEIGHT * 1.5f), versionString, -1, DrawTextFlag::Right | DrawTextFlag::DropShadow);
 
     int y = consoleHeight - (CONSOLE_FONT_HEIGHT + CONSOLE_FONT_Y_SPACING) * 3;
 
@@ -563,7 +563,7 @@ void GameClient::DrawConsoleScreen() {
 }
 
 void GameClient::DrawConsoleCmdLine() {
-    if (keyFocus != KEYFOCUS_CONSOLE) {
+    if (keyFocus != KeyFocus::Console) {
         return;
     }
 
@@ -641,14 +641,14 @@ void GameClient::DrawConsoleNotify() {
         }
 
         wchar_t *text = console.text + (i % console.textLines.Count()) * console.sizeOfLine;
-        DrawString(0, y, text, console.sizeOfLine, DTF_DROPSHADOW);
+        DrawString(0, y, text, console.sizeOfLine, DrawTextFlag::DropShadow);
 
         y += CONSOLE_FONT_HEIGHT + CONSOLE_FONT_Y_SPACING;
     }*/
 }
 
 void GameClient::ConsoleKeyEvent(KeyCode::Enum key) {
-    char buffer[CMDLINE_SIZE];
+    char buffer[CommandLineSize];
     const char *cmd;
 
     char *lineText = cmdLines[editLine];
@@ -784,9 +784,9 @@ void GameClient::ConsoleCharEvent(char32_t unicodeChar) {
     temp[charSize] = '\0';
 
     char *lineText = cmdLines[editLine];
-    char buffer[CMDLINE_SIZE];
+    char buffer[CommandLineSize];
 
-    if (!replaceMode && strlen(lineText) + charSize >= CMDLINE_SIZE) {
+    if (!replaceMode && strlen(lineText) + charSize >= CommandLineSize) {
         return;
     }
 
@@ -796,7 +796,7 @@ void GameClient::ConsoleCharEvent(char32_t unicodeChar) {
         UTF8::Advance(lineText, nextCharOffset);
 
         int appendedBytes = charSize - (nextCharOffset - lineOffset);
-        if (strlen(lineText) + appendedBytes >= CMDLINE_SIZE) {
+        if (strlen(lineText) + appendedBytes >= CommandLineSize) {
             return;
         }
 
@@ -829,7 +829,7 @@ void GameClient::ConsoleCompositionEvent(char32_t unicodeChar) {
     temp[charSize] = '\0';
 
     char *lineText = cmdLines[editLine];
-    char buffer[CMDLINE_SIZE];
+    char buffer[CommandLineSize];
 
     if (unicodeChar == U'\b' && lineOffset > 1) {
         int nextCharOffset = lineOffset;
@@ -846,7 +846,7 @@ void GameClient::ConsoleCompositionEvent(char32_t unicodeChar) {
         return;
     }
 
-    if (!replaceMode && strlen(lineText) + charSize >= CMDLINE_SIZE) {
+    if (!replaceMode && strlen(lineText) + charSize >= CommandLineSize) {
         return;
     }
 
@@ -856,7 +856,7 @@ void GameClient::ConsoleCompositionEvent(char32_t unicodeChar) {
         UTF8::Advance(lineText, nextCharOffset);
 
         int appendedBytes = charSize - (nextCharOffset - lineOffset);
-        if (strlen(lineText) + appendedBytes >= CMDLINE_SIZE) {
+        if (strlen(lineText) + appendedBytes >= CommandLineSize) {
             return;
         }
 
@@ -885,14 +885,14 @@ void GameClient::KeyEvent(KeyCode::Enum key, bool down) {
     // Toggle console without key binding
     if (key == KeyCode::Grave) {
         if (down) {
-            cursorLocked = inputSystem.LockCursor(keyFocus == KEYFOCUS_CONSOLE ? cursorLocked : false);
+            cursorLocked = inputSystem.LockCursor(keyFocus == KeyFocus::Console ? cursorLocked : false);
 
             cmdSystem.BufferCommandText(CmdSystem::Execution::Append, "toggleConsole\n");
             return;
         }
     } 
 
-    if (keyFocus == KEYFOCUS_CONSOLE) {
+    if (keyFocus == KeyFocus::Console) {
         if (down) {
             if (key == KeyCode::Escape) {
                 inputSystem.LockCursor(cursorLocked);
@@ -917,14 +917,14 @@ void GameClient::KeyEvent(KeyCode::Enum key, bool down) {
 }
 
 void GameClient::CharEvent(char32_t unicodeChar) {
-    if (keyFocus == KEYFOCUS_CONSOLE) {
+    if (keyFocus == KeyFocus::Console) {
         ConsoleCharEvent(unicodeChar);
         return;
     }
 }
 
 void GameClient::CompositionEvent(char32_t unicodeChar) {
-    if (keyFocus == KEYFOCUS_CONSOLE) {
+    if (keyFocus == KeyFocus::Console) {
         ConsoleCompositionEvent(unicodeChar);
         return;
     }
@@ -935,7 +935,7 @@ void GameClient::MouseMoveEvent(int x, int y, int time) {
 }
 
 void GameClient::MouseDeltaEvent(int dx, int dy, int time) {
-    if (keyFocus == KEYFOCUS_CONSOLE) {
+    if (keyFocus == KeyFocus::Console) {
         return;
     }
  
@@ -943,7 +943,7 @@ void GameClient::MouseDeltaEvent(int dx, int dy, int time) {
 }
 
 void GameClient::JoyAxisEvent(int dx, int dy, int time) {
-    if (keyFocus == KEYFOCUS_CONSOLE) {
+    if (keyFocus == KeyFocus::Console) {
         return;
     }
 
@@ -970,7 +970,7 @@ void GameClient::Cmd_ToggleConsole(const CmdArgs &args) {
 
     keyCmdSystem.ClearStates();
 
-    gameClient.SetKeyFocus(gameClient.GetKeyFocus() == KEYFOCUS_CONSOLE ? KEYFOCUS_GAME : KEYFOCUS_CONSOLE);
+    gameClient.SetKeyFocus(gameClient.GetKeyFocus() == KeyFocus::Console ? KeyFocus::Game : KeyFocus::Console);
 }
 
 BE_NAMESPACE_END
