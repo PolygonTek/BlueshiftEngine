@@ -175,25 +175,18 @@ private:
 
     Str                         hashName;
     Str                         name;
-    mutable int                 refCount;               // reference count
-    bool                        permanence;             // is permanent material ?
-    int                         index;                  // index for sorting materials when rendering
+    mutable int                 refCount = 0;           // reference count
+    bool                        permanence = false;     // is permanent material ?
+    int                         index = -1;             // index for sorting materials when rendering
 
-    int                         flags;
-    Type::Enum                  type;
-    Sort::Enum                  sort;
+    int                         flags = 0;
+    Type::Enum                  type = Type::Surface;
+    Sort::Enum                  sort = Sort::Bad;
 
-    ShaderPass *                pass;
+    ShaderPass *                pass = nullptr;
 };
 
 BE_INLINE Material::Material() {
-    refCount    = 0;
-    permanence  = false;
-    index       = -1;
-    flags       = 0;
-    type        = Type::Surface;
-    sort        = Sort::Bad;
-    pass        = nullptr;
 }
 
 BE_INLINE Material::~Material() {

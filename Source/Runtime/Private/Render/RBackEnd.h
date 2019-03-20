@@ -41,7 +41,7 @@ public:
             Unlit,
             Velocity,
             Final,
-            Tri,
+            Wire,
             Gui,
             Count
         };
@@ -71,7 +71,7 @@ private:
     void                    Flush_UnlitPass();
 
     void                    Flush_FinalPass();
-    void                    Flush_TrisPass();
+    void                    Flush_WirePass();
     void                    Flush_VelocityMapPass();
     void                    Flush_GuiPass();
 
@@ -154,16 +154,18 @@ struct LightQuery {
 };
 
 struct RenderBackEnd {
-    enum PreDefinedStencilState {
-        VolumeIntersectionZPass,
-        VolumeIntersectionZFail,
-        VolumeIntersectionInsideZFail,
-        VolumeIntersectionTest,
-        MaxPredefinedStencilStates
+    struct PreDefinedStencilState {
+        enum Enum {
+            VolumeIntersectionZPass,
+            VolumeIntersectionZFail,
+            VolumeIntersectionInsideZFail,
+            VolumeIntersectionTest,
+            Count
+        };
     };
 
     bool                    initialized;
-    RHI::Handle             stencilStates[MaxPredefinedStencilStates];
+    RHI::Handle             stencilStates[PreDefinedStencilState::Count];
     //LightQuery            lightQueries[MAX_LIGHTS];
 
     float                   time;

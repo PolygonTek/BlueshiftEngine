@@ -83,20 +83,20 @@ void R_EnvCubeMapFaceToEngineAxis(RHI::CubeMapFace::Enum face, Mat3 &axis) {
 ----------------------------------------------------------------------------------------------------
 */
 void R_SetViewMatrix(const Mat3 &viewAxis, const Vec3 &viewOrigin, float *viewMatrix) {
-    viewMatrix[0] = -viewAxis[LeftAxis].x;
-    viewMatrix[1] = -viewAxis[LeftAxis].y;
-    viewMatrix[2] = -viewAxis[LeftAxis].z;
-    viewMatrix[3] = -viewAxis[LeftAxis].Dot(-viewOrigin);
+    viewMatrix[0] = -viewAxis[AxisIndex::Left].x;
+    viewMatrix[1] = -viewAxis[AxisIndex::Left].y;
+    viewMatrix[2] = -viewAxis[AxisIndex::Left].z;
+    viewMatrix[3] = -viewAxis[AxisIndex::Left].Dot(-viewOrigin);
 
-    viewMatrix[4] = viewAxis[UpAxis].x;
-    viewMatrix[5] = viewAxis[UpAxis].y;
-    viewMatrix[6] = viewAxis[UpAxis].z;
-    viewMatrix[7] = viewAxis[UpAxis].Dot(-viewOrigin);
+    viewMatrix[4] = viewAxis[AxisIndex::Up].x;
+    viewMatrix[5] = viewAxis[AxisIndex::Up].y;
+    viewMatrix[6] = viewAxis[AxisIndex::Up].z;
+    viewMatrix[7] = viewAxis[AxisIndex::Up].Dot(-viewOrigin);
 
-    viewMatrix[8] = -viewAxis[ForwardAxis].x;
-    viewMatrix[9] = -viewAxis[ForwardAxis].y;
-    viewMatrix[10] = -viewAxis[ForwardAxis].z;
-    viewMatrix[11] = -viewAxis[ForwardAxis].Dot(-viewOrigin);
+    viewMatrix[8] = -viewAxis[AxisIndex::Forward].x;
+    viewMatrix[9] = -viewAxis[AxisIndex::Forward].y;
+    viewMatrix[10] = -viewAxis[AxisIndex::Forward].z;
+    viewMatrix[11] = -viewAxis[AxisIndex::Forward].Dot(-viewOrigin);
 
     viewMatrix[12] = 0.0f;
     viewMatrix[13] = 0.0f;

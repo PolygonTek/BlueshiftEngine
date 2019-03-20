@@ -30,9 +30,7 @@ class RenderTarget {
     friend struct RenderBackEnd;
 
 public:
-    enum {
-        MaxMultipleColorTextures = 8
-    };
+    static constexpr int MaxMultipleColorTextures = 8;
 
     int                     GetWidth() const;
     int                     GetHeight() const;

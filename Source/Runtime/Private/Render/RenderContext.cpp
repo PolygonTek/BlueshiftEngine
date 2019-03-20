@@ -516,7 +516,7 @@ void RenderContext::EndFrame() {
 
     // Adds swap buffer command
     SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)renderSystem.GetCommandBuffer(sizeof(SwapBuffersRenderCommand));
-    cmd->commandId = SwapBuffersCommand;
+    cmd->commandId = RenderCommand::SwapBuffers;
 
     renderSystem.EndCommands();
 

@@ -557,7 +557,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
 
-        if (!forceToDraw && !(surf->flags & DrawSurf::ShowWires)) {
+        if (!forceToDraw && !(surf->flags & DrawSurf::Flag::ShowWires)) {
             continue;
         }
         
@@ -568,7 +568,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
         bool isDifferentObject = surf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
         bool isDifferentMaterial = surf->material != prevMaterial;
-        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+        bool isDifferentInstance = !(surf->flags & DrawSurf::Flag::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace ||
             prevSpace->def->GetState().flags != surf->space->def->GetState().flags || prevSpace->def->GetState().layer != surf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
@@ -576,7 +576,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::Flush::Tri, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::Flush::Wire, surf->material, surf->materialRegisters, surf->space);
 
             prevSubMesh = surf->subMesh;
             prevMaterial = surf->material;
@@ -585,7 +585,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
                 bool depthHack = !!(surf->space->def->GetState().flags & RenderObject::Flag::DepthHack);
 
                 if (prevDepthHack != depthHack) {
-                    if (surf->flags & DrawSurf::UseInstancing) {
+                    if (surf->flags & DrawSurf::Flag::UseInstancing) {
                         backEnd.batch.Flush();
                     }
 
@@ -605,7 +605,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
             }
         }
 
-        if (surf->flags & DrawSurf::UseInstancing) {
+        if (surf->flags & DrawSurf::Flag::UseInstancing) {
             backEnd.batch.AddInstance(surf);
         }
 

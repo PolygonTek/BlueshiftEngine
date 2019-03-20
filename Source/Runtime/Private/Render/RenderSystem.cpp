@@ -192,7 +192,7 @@ void RenderSystem::BeginCommands(RenderContext *renderContext) {
     bufferCacheManager.BeginWrite();
 
     BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)renderSystem.GetCommandBuffer(sizeof(BeginContextRenderCommand));
-    cmd->commandId = BeginContextCommand;
+    cmd->commandId = RenderCommand::BeginContext;
     cmd->renderContext = renderContext;
 }
 
@@ -245,7 +245,7 @@ void RenderSystem::CmdDrawCamera(const VisCamera *camera) {
         return;
     }
 
-    cmd->commandId      = DrawCameraCommand;
+    cmd->commandId      = RenderCommand::DrawCamera;
     cmd->camera         = *camera;
 }
 
@@ -255,7 +255,7 @@ void RenderSystem::CmdScreenshot(int x, int y, int width, int height, const char
         return;
     }
 
-    cmd->commandId      = ScreenShotCommand;
+    cmd->commandId      = RenderCommand::ScreenShot;
     cmd->x              = x;
     cmd->y              = y;
     cmd->width          = width;
@@ -266,7 +266,7 @@ void RenderSystem::CmdScreenshot(int x, int y, int width, int height, const char
 void RenderSystem::IssueCommands() {
     RenderCommandBuffer *cmds = frameData.GetCommands();
     // add an end-of-list command
-    *(int *)(cmds->data + cmds->used) = EndOfCommand;
+    *(int *)(cmds->data + cmds->used) = RenderCommand::End;
 
     // clear it out, in case this is a sync and not a buffer flip
     cmds->used = 0;

@@ -17,6 +17,8 @@
 
 BE_NAMESPACE_BEGIN
 
+// NOTE: Math::Infinity is big number not real float INFINITY.
+const AABB AABB::empty(Vec3(Math::Infinity, Math::Infinity, Math::Infinity), -Vec3(Math::Infinity, Math::Infinity, Math::Infinity));
 const AABB AABB::zero(Vec3::zero, Vec3::zero);
 
 float AABB::OuterRadius() const {

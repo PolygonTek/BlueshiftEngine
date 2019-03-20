@@ -72,7 +72,7 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *drawSurf = drawSurfs[i];
 
-        if ((drawSurf->flags & DrawSurf::SkipSelection) || !(drawSurf->flags & DrawSurf::Visible)) {
+        if ((drawSurf->flags & DrawSurf::Flag::SkipSelection) || !(drawSurf->flags & DrawSurf::Flag::Visible)) {
             continue;
         }
 
@@ -240,7 +240,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         bool isDifferentObject = drawSurf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
         bool isDifferentMaterial = drawSurf->material != prevMaterial;
-        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::Flag::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace ||
             prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
@@ -257,7 +257,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::Flag::DepthHack);
 
                 if (prevDepthHack != depthHack) {
-                    if (drawSurf->flags & DrawSurf::UseInstancing) {
+                    if (drawSurf->flags & DrawSurf::Flag::UseInstancing) {
                         backEnd.batch.Flush();
                     }
 
@@ -270,7 +270,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
                     prevDepthHack = depthHack;
                 }
 
-                if (!(drawSurf->flags & DrawSurf::UseInstancing)) {
+                if (!(drawSurf->flags & DrawSurf::Flag::UseInstancing)) {
                     backEnd.modelViewMatrix = drawSurf->space->modelViewMatrix;
                     backEnd.modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
                 }
@@ -279,7 +279,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
             }
         }
 
-        if (drawSurf->flags & DrawSurf::UseInstancing) {
+        if (drawSurf->flags & DrawSurf::Flag::UseInstancing) {
             backEnd.batch.AddInstance(drawSurf);
         }
 
@@ -328,7 +328,7 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         bool isDifferentObject = drawSurf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
         bool isDifferentMaterial = drawSurf->material != prevMaterial;
-        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::Flag::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace ||
             prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
@@ -345,7 +345,7 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::Flag::DepthHack);
 
                 if (prevDepthHack != depthHack) {
-                    if (drawSurf->flags & DrawSurf::UseInstancing) {
+                    if (drawSurf->flags & DrawSurf::Flag::UseInstancing) {
                         backEnd.batch.Flush();
                     }
 
@@ -358,7 +358,7 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                     prevDepthHack = depthHack;
                 }
 
-                if (!(drawSurf->flags & DrawSurf::UseInstancing)) {
+                if (!(drawSurf->flags & DrawSurf::Flag::UseInstancing)) {
                     backEnd.modelViewMatrix = drawSurf->space->modelViewMatrix;
                     backEnd.modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
                 }
@@ -367,7 +367,7 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             }
         }
 
-        if (drawSurf->flags & DrawSurf::UseInstancing) {
+        if (drawSurf->flags & DrawSurf::Flag::UseInstancing) {
             backEnd.batch.AddInstance(drawSurf);
         }
 
@@ -514,7 +514,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         bool isDifferentObject = drawSurf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
         bool isDifferentMaterial = drawSurf->material != prevMaterial;
-        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::Flag::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace ||
             prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
@@ -531,7 +531,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::Flag::DepthHack);
 
                 if (prevDepthHack != depthHack) {
-                    if (drawSurf->flags & DrawSurf::UseInstancing) {
+                    if (drawSurf->flags & DrawSurf::Flag::UseInstancing) {
                         backEnd.batch.Flush();
                     }
 
@@ -544,7 +544,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                     prevDepthHack = depthHack;
                 }
 
-                if (!(drawSurf->flags & DrawSurf::UseInstancing)) {
+                if (!(drawSurf->flags & DrawSurf::Flag::UseInstancing)) {
                     backEnd.modelViewMatrix = drawSurf->space->modelViewMatrix;
                     backEnd.modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
                 }
@@ -553,7 +553,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             }
         }
 
-        if (drawSurf->flags & DrawSurf::UseInstancing) {
+        if (drawSurf->flags & DrawSurf::Flag::UseInstancing) {
             backEnd.batch.AddInstance(drawSurf);
         }
 

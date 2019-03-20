@@ -262,8 +262,8 @@ void Batch::Flush() {
     case Flush::Final:
         Flush_FinalPass(); 
         break;
-    case Flush::Tri:
-        Flush_TrisPass();
+    case Flush::Wire:
+        Flush_WirePass();
         break;
     case Flush::Gui:
         Flush_GuiPass();
@@ -566,7 +566,7 @@ void Batch::Flush_FinalPass() {
     RenderGeneric(mtrlPass);
 }
 
-void Batch::Flush_TrisPass() {
+void Batch::Flush_WirePass() {
     int wireframeMode;
     if (r_showWireframe.GetInteger() > 0) {
         wireframeMode = r_showWireframe.GetInteger();
@@ -840,12 +840,12 @@ void RenderBackEnd::RenderFogSurface(const volumeFog_t *fog) {
 
         // 월드 버텍스가 포그안이라면
         if (dist2 <= 0) {
-            if (dist < 0) { // 시점자가 포그 안이라면	
+            if (dist < 0) { // 시점자가 포그 안이라면
                 diff = v - m_view.m_vieworg;
-                c = cVec3_Dot(diff, m_view.m_viewaxis[ForwardAxis]) / fogMaterial->fogDistance;
+                c = cVec3_Dot(diff, m_view.m_viewaxis[AxisIndex::Forward]) / fogMaterial->fogDistance;
             } else { // 시점자가 포그 밖이라면
                 diff = v - m_view.m_vieworg;
-                c = cVec3_Dot(diff, m_view.m_viewaxis[ForwardAxis]) / fogMaterial->fogDistance;
+                c = cVec3_Dot(diff, m_view.m_viewaxis[AxisIndex::Forward]) / fogMaterial->fogDistance;
                 c *= (dist2 / (dist2 - dist));
             }
 
@@ -910,7 +910,7 @@ void RenderBackEnd::ModifyColorsForFog(const stage_t *pass) {
 
         if (dist < 0) { // 시점자가 포그 안
             Vec3_Subtract(v, m_view.m_vieworg, diff);
-            c = cVec3_Dot(diff, m_view.m_viewaxis[ForwardAxis]) / fogShader->fogDistance;
+            c = cVec3_Dot(diff, m_view.m_viewaxis[AxisIndex::Forward]) / fogShader->fogDistance;
             c = 1.f - max(0.f, min(c, 1.f));
         } else { // 시점자가 포그 밖
             // 포그 평면과 월드버텍스와의 거리
@@ -918,7 +918,7 @@ void RenderBackEnd::ModifyColorsForFog(const stage_t *pass) {
 
             if (dist2 < 0) {
                 cVec3_Subtract(v, m_view.m_vieworg, diff);
-                c = cVec3_Dot(diff, m_view.m_viewaxis[ForwardAxis]) / fogShader->fogDistance;
+                c = cVec3_Dot(diff, m_view.m_viewaxis[AxisIndex::Forward]) / fogShader->fogDistance;
                 c *= (dist2 / (dist2 - dist));
                 c = 1.f - max(0.f, min(c, 1.f));
             } else {

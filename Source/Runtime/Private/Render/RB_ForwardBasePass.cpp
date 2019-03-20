@@ -42,7 +42,7 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
         bool isDifferentObject = drawSurf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
         bool isDifferentMaterial = drawSurf->material != prevMaterial;
-        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::Flag::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace ||
             prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
@@ -59,7 +59,7 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
                 bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::Flag::DepthHack);
 
                 if (prevDepthHack != depthHack) {
-                    if (drawSurf->flags & DrawSurf::UseInstancing) {
+                    if (drawSurf->flags & DrawSurf::Flag::UseInstancing) {
                         backEnd.batch.Flush();
                     }
 
@@ -72,7 +72,7 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
                     prevDepthHack = depthHack;
                 }
 
-                if (!(drawSurf->flags & DrawSurf::UseInstancing)) {
+                if (!(drawSurf->flags & DrawSurf::Flag::UseInstancing)) {
                     backEnd.modelViewMatrix = drawSurf->space->modelViewMatrix;
                     backEnd.modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
                 }
@@ -81,7 +81,7 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
             }
         }
 
-        if (drawSurf->flags & DrawSurf::UseInstancing) {
+        if (drawSurf->flags & DrawSurf::Flag::UseInstancing) {
             backEnd.batch.AddInstance(drawSurf);
         }
 

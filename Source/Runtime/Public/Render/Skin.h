@@ -60,17 +60,15 @@ public:
 private:
     Str                     hashName;
     int                     hashKey;
-    mutable int             refCount;
+    mutable int             refCount = 0;
     int                     index;
-    bool                    permanence;
+    bool                    permanence = false;
 
     Array<SkinMapping>      mappingList;
     StrArray                associatedMeshes;
 };
 
 BE_INLINE Skin::Skin() {
-    refCount                = 0;
-    permanence              = false;
 }
 
 BE_INLINE Skin::~Skin() {

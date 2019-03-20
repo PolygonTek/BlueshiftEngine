@@ -131,47 +131,32 @@ public:
 private:
     Str                     hashName;                   // texture filename including path
     Str                     name;
-    mutable int             refCount;                   // reference count
-    bool                    permanence;                 //
+    mutable int             refCount = 0;               // reference count
+    bool                    permanence = false;         //
     int                     frameCount;
-    int                     flags;                      // texture load flags
+    int                     flags = 0;                  // texture load flags
 
-    RHI::Handle             textureHandle;              // texture handle
-    RHI::TextureType::Enum  type;
-    RHI::AddressMode::Enum  addressMode;
+    RHI::Handle             textureHandle = RHI::Handle::NullTexture; // texture handle
+    RHI::TextureType::Enum  type = RHI::TextureType::Texture2D;
+    RHI::AddressMode::Enum  addressMode = RHI::AddressMode::Repeat;
 
-    Image::Format::Enum     format;                     // internal image format
+    Image::Format::Enum     format = Image::Format::Unknown;    // internal image format
 
-    int                     srcWidth;                   // original width
-    int                     srcHeight;                  // original height
-    int                     srcDepth;                   // original depth
-    int                     numSlices;
+    int                     srcWidth = 0;               // original width
+    int                     srcHeight = 0;              // original height
+    int                     srcDepth = 0;               // original depth
+    int                     numSlices = 0;
 
-    int                     width;                      // scaled width
-    int                     height;                     // scaled height
-    int                     depth;                      // scaled depth
+    int                     width = 0;                  // scaled width
+    int                     height = 0;                 // scaled height
+    int                     depth = 0;                  // scaled depth
 
-    bool                    hasMipmaps;
+    bool                    hasMipmaps = false;
 
     mutable RenderTarget *  renderTarget = nullptr;
 };
 
 BE_INLINE Texture::Texture() {
-    refCount                = 0;
-    permanence              = false;
-    flags                   = 0;
-    textureHandle           = RHI::Handle::NullTexture;
-    type                    = RHI::TextureType::Texture2D;
-    addressMode             = RHI::AddressMode::Repeat;
-    format                  = Image::Format::UnknownFormat;
-    srcWidth                = 0;
-    srcHeight               = 0;
-    srcDepth                = 0;
-    numSlices               = 0;
-    width                   = 0;
-    height                  = 0;
-    depth                   = 0;
-    hasMipmaps              = false;
 }
 
 BE_INLINE Texture::~Texture() {

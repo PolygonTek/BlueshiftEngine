@@ -70,13 +70,16 @@ public:
 private:
     Str                     hashName;
     Str                     name;
-    mutable int             refCount;
-    bool                    permanence;
+    mutable int             refCount = 0;
+    bool                    permanence = false;
 
-    FontType::Enum          fontType;
-    int                     fontSize;
-    FontFace *              fontFace;
+    FontType::Enum          fontType = FontType::None;
+    int                     fontSize = 0;
+    FontFace *              fontFace = nullptr;
 };
+
+BE_INLINE Font::Font() {
+}
 
 BE_INLINE Font::~Font() {
     Purge();

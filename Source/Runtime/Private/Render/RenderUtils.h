@@ -24,10 +24,12 @@
 
 BE_NAMESPACE_BEGIN
 
-enum {
-    ForwardAxis,
-    LeftAxis,
-    UpAxis
+struct AxisIndex {
+    enum Enum {
+        Forward,
+        Left,
+        Up
+    };
 };
 
 // Converts environment cubemap face to OpenGL axis for rendering.

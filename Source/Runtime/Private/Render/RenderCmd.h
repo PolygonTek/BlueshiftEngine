@@ -24,14 +24,16 @@
 
 BE_NAMESPACE_BEGIN
 
-const int RenderCommandBufferSize = 0x80000;
+static constexpr int RenderCommandBufferSize = 0x80000;
 
-enum RenderCommand {
-    EndOfCommand,
-    BeginContextCommand,
-    DrawCameraCommand,
-    ScreenShotCommand,
-    SwapBuffersCommand
+struct RenderCommand {
+    enum Enum {
+        End,
+        BeginContext,
+        DrawCamera,
+        ScreenShot,
+        SwapBuffers
+    };
 };
 
 struct RenderCommandBuffer {

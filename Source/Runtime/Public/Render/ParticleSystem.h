@@ -308,15 +308,13 @@ private:
 
     Str                         hashName;
     Str                         name;
-    mutable int                 refCount;
-    bool                        permanence;
+    mutable int                 refCount = 0;
+    bool                        permanence = false;
 
     Array<Stage>                stages;
 };
 
 BE_INLINE ParticleSystem::ParticleSystem() {
-    refCount = 0;
-    permanence = false;
 }
 
 BE_INLINE ParticleSystem::~ParticleSystem() {

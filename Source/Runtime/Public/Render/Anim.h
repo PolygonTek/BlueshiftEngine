@@ -167,7 +167,7 @@ private:
 
     Str                     hashName;
     Str                     name;
-    mutable int             refCount;
+    mutable int             refCount = 0;
 
     bool                    rootRotation;
     bool                    rootTranslationXY;
@@ -176,26 +176,20 @@ private:
     bool                    isDefaultAnim;
     bool                    isAdditiveAnim;
 
-    int                     numJoints;              ///< Number of joints.
-    int                     numFrames;              ///< Number of frames.
-    int                     numComponentsPerFrame;  ///< Number of animated components of all joints.
-    uint32_t                length;                 ///< Animation length in milliseconds.
-    int                     maxCycleCount;          ///< 0 means infinite cycle loop.
+    int                     numJoints = 0;              ///< Number of joints.
+    int                     numFrames = 0;              ///< Number of frames.
+    int                     numComponentsPerFrame = 0;  ///< Number of animated components of all joints.
+    uint32_t                length = 0;                 ///< Animation length in milliseconds.
+    int                     maxCycleCount;              ///< 0 means infinite cycle loop.
 
-    Array<JointInfo>        joints;                 ///< Joints informations.
-    Array<JointPose>        baseFrame;              ///< Local transform of all joints in the 0'th frame.
-    Array<float>            components;             ///< Components for each animated joints of all frames.
-    Array<int>              frameTimes;             ///< Times for each frames.
-    Vec3                    totalDelta;             ///< Root translation offset in total animation evaluation.
+    Array<JointInfo>        joints;                     ///< Joints informations.
+    Array<JointPose>        baseFrame;                  ///< Local transform of all joints in the 0'th frame.
+    Array<float>            components;                 ///< Components for each animated joints of all frames.
+    Array<int>              frameTimes;                 ///< Times for each frames.
+    Vec3                    totalDelta = Vec3::zero;    ///< Root translation offset in total animation evaluation.
 };
 
 BE_INLINE Anim::Anim() {
-    refCount                = 0;
-    numJoints               = 0;
-    numFrames               = 0;
-    numComponentsPerFrame   = 0;
-    length                  = 0;
-    totalDelta.SetFromScalar(0);
 }
 
 BE_INLINE Anim::~Anim() {

@@ -705,15 +705,15 @@ void RenderWorld::DebugJoints(const RenderObject *renderObject, bool showJointsN
         }
 
         SetDebugColor(Color4::red, Color4::zero);
-        DebugLine(pos, pos + renderObject->state.worldMatrix.ToMat3() * mat[0] * CentiToUnit(1.0f), 1);
+        DebugLine(pos, pos + renderObject->state.worldMatrix.ToMat3() * mat[0] * MeterToUnit(0.04f), 1);
         SetDebugColor(Color4::green, Color4::zero);
-        DebugLine(pos, pos + renderObject->state.worldMatrix.ToMat3() * mat[1] * CentiToUnit(1.0f), 1);
+        DebugLine(pos, pos + renderObject->state.worldMatrix.ToMat3() * mat[1] * MeterToUnit(0.04f), 1);
         SetDebugColor(Color4::blue, Color4::zero);
-        DebugLine(pos, pos + renderObject->state.worldMatrix.ToMat3() * mat[2] * CentiToUnit(1.0f), 1);
+        DebugLine(pos, pos + renderObject->state.worldMatrix.ToMat3() * mat[2] * MeterToUnit(0.04f), 1);
 
         if (showJointsNames) {
             SetDebugColor(Color4::white, Color4::zero);
-            DebugText(joint->name.c_str(), pos, viewAxis, CentiToUnit(4.0f), 1, 0);
+            DebugText(joint->name.c_str(), pos, viewAxis, MeterToUnit(0.04f), 1, 0);
         }
     }
 }

@@ -27,29 +27,29 @@ static const int HOM_CULL_TEXTURE_HEIGHT = 1;
 RenderBackEnd   backEnd;
 
 static void RB_InitStencilStates() {
-    backEnd.stencilStates[RenderBackEnd::VolumeIntersectionZPass] = 
+    backEnd.stencilStates[RenderBackEnd::PreDefinedStencilState::VolumeIntersectionZPass] =
         rhi.CreateStencilState(~0, ~0,
         RHI::StencilFunc::Always, RHI::StencilOp::Keep, RHI::StencilOp::Keep, RHI::StencilOp::DecrWrap,
         RHI::StencilFunc::Always, RHI::StencilOp::Keep, RHI::StencilOp::Keep, RHI::StencilOp::IncrWrap);
 
-    backEnd.stencilStates[RenderBackEnd::VolumeIntersectionZFail] = 
+    backEnd.stencilStates[RenderBackEnd::PreDefinedStencilState::VolumeIntersectionZFail] =
         rhi.CreateStencilState(~0, ~0, 
         RHI::StencilFunc::Always, RHI::StencilOp::Keep, RHI::StencilOp::IncrWrap, RHI::StencilOp::Keep,
         RHI::StencilFunc::Always, RHI::StencilOp::Keep, RHI::StencilOp::DecrWrap, RHI::StencilOp::Keep);
 
-    backEnd.stencilStates[RenderBackEnd::VolumeIntersectionInsideZFail] = 
+    backEnd.stencilStates[RenderBackEnd::PreDefinedStencilState::VolumeIntersectionInsideZFail] =
         rhi.CreateStencilState(~0, ~0, 
         RHI::StencilFunc::Always, RHI::StencilOp::Keep, RHI::StencilOp::IncrWrap, RHI::StencilOp::Keep,
         RHI::StencilFunc::Never, RHI::StencilOp::Keep, RHI::StencilOp::Keep, RHI::StencilOp::Keep);
 
-    backEnd.stencilStates[RenderBackEnd::VolumeIntersectionTest] = 
+    backEnd.stencilStates[RenderBackEnd::PreDefinedStencilState::VolumeIntersectionTest] =
         rhi.CreateStencilState(~0, 0, 
         RHI::StencilFunc::Equal, RHI::StencilOp::Keep, RHI::StencilOp::Keep, RHI::StencilOp::Keep,
         RHI::StencilFunc::Never, RHI::StencilOp::Keep, RHI::StencilOp::Keep, RHI::StencilOp::Keep);
 }
 
 static void RB_FreeStencilStates() {
-    for (int i = 0; i < RenderBackEnd::MaxPredefinedStencilStates; i++) {
+    for (int i = 0; i < RenderBackEnd::PreDefinedStencilState::Count; i++) {
         rhi.DestroyStencilState(backEnd.stencilStates[i]);
     }
 }
@@ -202,10 +202,10 @@ static void RB_DrawStencilLightVolume(const VisLight *light, bool insideLightVol
 
     if (insideLightVolume) {
         rhi.SetCullFace(RHI::CullType::None);
-        rhi.SetStencilState(backEnd.stencilStates[RenderBackEnd::VolumeIntersectionInsideZFail], 0);
+        rhi.SetStencilState(backEnd.stencilStates[RenderBackEnd::PreDefinedStencilState::VolumeIntersectionInsideZFail], 0);
     } else {
         rhi.SetCullFace(RHI::CullType::None);
-        rhi.SetStencilState(backEnd.stencilStates[RenderBackEnd::VolumeIntersectionZPass], 0);
+        rhi.SetStencilState(backEnd.stencilStates[RenderBackEnd::PreDefinedStencilState::VolumeIntersectionZPass], 0);
     }
 
     RB_DrawLightVolume(light->def);
@@ -452,7 +452,7 @@ static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occlud
         if (visibilityPtr[2] == 0) {
             const VisObject *space = surf->space;
 
-            surf->flags &= ~DrawSurf::Visible;
+            surf->flags &= ~DrawSurf::Flag::Visible;
 
             if (space->def->GetState().joints) {
                 int sameEntityIndex = index + 1;
@@ -462,7 +462,7 @@ static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occlud
                         break;
                     }
 
-                    surf->flags &= ~DrawSurf::Visible;
+                    surf->flags &= ~DrawSurf::Flag::Visible;
                     sameEntityIndex++;
                 }
             }
@@ -1073,19 +1073,19 @@ void RB_Execute(const void *data) {
     while (1) {
         int cmd = *(const int *)data;
         switch (cmd) {
-        case BeginContextCommand:
+        case RenderCommand::BeginContext:
             data = RB_ExecuteBeginContext(data);
             continue;
-        case DrawCameraCommand:
+        case RenderCommand::DrawCamera:
             data = RB_ExecuteDrawCamera(data);
             continue;
-        case ScreenShotCommand:
+        case RenderCommand::ScreenShot:
             data = RB_ExecuteScreenshot(data);
             continue;
-        case SwapBuffersCommand:
+        case RenderCommand::SwapBuffers:
             data = RB_ExecuteSwapBuffers(data);
             continue;
-        case EndOfCommand:
+        case RenderCommand::End:
             t2 = PlatformTime::Milliseconds();
             backEnd.ctx->renderCounter.backEndMsec = t2 - t1;
             return;

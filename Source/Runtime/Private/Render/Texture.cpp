@@ -498,7 +498,7 @@ static RHI::AddressMode::Enum TextureFlagsToAddressMode(int flags) {
 
 void Texture::Upload(const Image *srcImage) {
     Image::Format::Enum srcFormat = srcImage->GetFormat();
-    Image::Format::Enum forceFormat = Image::Format::UnknownFormat;
+    Image::Format::Enum forceFormat = Image::Format::Unknown;
     Image tmpImage;
 
     if (type == RHI::TextureType::TextureRectangle) {
@@ -520,7 +520,7 @@ void Texture::Upload(const Image *srcImage) {
     bool isSRGB         = ((flags & Flag::SRGBColorSpace) && TextureManager::texture_sRGB.GetBool()) ? true : false;
 
     Image::Format::Enum dstFormat;
-    if (forceFormat != Image::Format::UnknownFormat) {
+    if (forceFormat != Image::Format::Unknown) {
         dstFormat = forceFormat;
     } else {
         rhi.AdjustTextureFormat(type, useCompression, useNormalMap, srcImage->GetFormat(), &dstFormat);

@@ -203,6 +203,7 @@ public:
                         /// Converts to surrounding sphere.
     Sphere              ToSphere() const;
 
+    static const AABB   empty;  ///< (Infinity, Infinity, Infinity) (-Infinity, -Infinity, -Infinity)
     static const AABB   zero;   ///< (0 0 0) (0 0 0)
 
     Vec3                b[2];   ///< minimum/maximum value for each axis

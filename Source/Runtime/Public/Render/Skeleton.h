@@ -79,22 +79,16 @@ public:
 private:
     Str                     hashName;
     Str                     name;
-    mutable int             refCount;
-    bool                    permanence;
+    mutable int             refCount = 0;
+    bool                    permanence = false;
 
-    int32_t                 numJoints;              ///< Number of joints
-    Joint *                 joints;                 ///< Joint information array
-    JointPose *             bindPoses;              ///< Local transforms of bindpose (quaternion based)
-    Mat3x4 *                invBindPoseMats;        ///< World inverse transform of bindpose (for use in HW skinning)
+    int32_t                 numJoints = 0;              ///< Number of joints
+    Joint *                 joints = nullptr;           ///< Joint information array
+    JointPose *             bindPoses = nullptr;        ///< Local transforms of bindpose (quaternion based)
+    Mat3x4 *                invBindPoseMats = nullptr;  ///< World inverse transform of bindpose (for use in HW skinning)
 };
 
 BE_INLINE Skeleton::Skeleton() {
-    refCount = 0;
-    permanence = false;
-    numJoints = 0;
-    joints = nullptr;
-    bindPoses = nullptr;
-    invBindPoseMats = nullptr;
 }
 
 BE_INLINE Skeleton::~Skeleton() {

@@ -108,20 +108,20 @@ static bool RB_ComputeShadowCropMatrix(const OBB &lightOBB, const OBB &shadowCas
 
     // Intersects crop bounds.
     AABB cropBounds;
-    cropBounds[0][LeftAxis] = (casterCropBounds[0][LeftAxis] > viewCropBounds[0][LeftAxis]) ? casterCropBounds[0][LeftAxis] : viewCropBounds[0][LeftAxis];
-    cropBounds[1][LeftAxis] = (casterCropBounds[1][LeftAxis] < viewCropBounds[1][LeftAxis]) ? casterCropBounds[1][LeftAxis] : viewCropBounds[1][LeftAxis];
-    cropBounds[0][UpAxis] = (casterCropBounds[0][UpAxis] > viewCropBounds[0][UpAxis]) ? casterCropBounds[0][UpAxis] : viewCropBounds[0][UpAxis];		
-    cropBounds[1][UpAxis] = (casterCropBounds[1][UpAxis] < viewCropBounds[1][UpAxis]) ? casterCropBounds[1][UpAxis] : viewCropBounds[1][UpAxis];
+    cropBounds[0][AxisIndex::Left] = (casterCropBounds[0][AxisIndex::Left] > viewCropBounds[0][AxisIndex::Left]) ? casterCropBounds[0][AxisIndex::Left] : viewCropBounds[0][AxisIndex::Left];
+    cropBounds[1][AxisIndex::Left] = (casterCropBounds[1][AxisIndex::Left] < viewCropBounds[1][AxisIndex::Left]) ? casterCropBounds[1][AxisIndex::Left] : viewCropBounds[1][AxisIndex::Left];
+    cropBounds[0][AxisIndex::Up] = (casterCropBounds[0][AxisIndex::Up] > viewCropBounds[0][AxisIndex::Up]) ? casterCropBounds[0][AxisIndex::Up] : viewCropBounds[0][AxisIndex::Up];
+    cropBounds[1][AxisIndex::Up] = (casterCropBounds[1][AxisIndex::Up] < viewCropBounds[1][AxisIndex::Up]) ? casterCropBounds[1][AxisIndex::Up] : viewCropBounds[1][AxisIndex::Up];
 
     // Returns false if there is no intersection.
-    if (cropBounds[0][LeftAxis] > cropBounds[1][LeftAxis] || cropBounds[0][UpAxis] > cropBounds[1][UpAxis]) {
+    if (cropBounds[0][AxisIndex::Left] > cropBounds[1][AxisIndex::Left] || cropBounds[0][AxisIndex::Up] > cropBounds[1][AxisIndex::Up]) {
         return false;
     }
 
-    float xmin = -cropBounds[1][LeftAxis];
-    float xmax = -cropBounds[0][LeftAxis];
-    float ymin =  cropBounds[0][UpAxis];
-    float ymax =  cropBounds[1][UpAxis];
+    float xmin = -cropBounds[1][AxisIndex::Left];
+    float xmax = -cropBounds[0][AxisIndex::Left];
+    float ymin =  cropBounds[0][AxisIndex::Up];
+    float ymax =  cropBounds[1][AxisIndex::Up];
 
     R_Set2DCropMatrix(xmin, xmax, ymin, ymax, shadowCropMatrix);
     return true;
@@ -134,10 +134,10 @@ static bool RB_ComputeShadowCropMatrix(const OBB &lightOBB, const Sphere &viewSp
         return false;
     }
 
-    float xmin = -cropBounds[1][LeftAxis];
-    float xmax = -cropBounds[0][LeftAxis];
-    float ymin =  cropBounds[0][UpAxis];
-    float ymax =  cropBounds[1][UpAxis];
+    float xmin = -cropBounds[1][AxisIndex::Left];
+    float xmax = -cropBounds[0][AxisIndex::Left];
+    float ymin =  cropBounds[0][AxisIndex::Up];
+    float ymax =  cropBounds[1][AxisIndex::Up];
 
     if (r_shadowMapCropAlign.GetBool()) {
         float lengthPerTexel = viewSphere.Radius() * 2.0f / r_shadowMapSize.GetFloat();
@@ -158,19 +158,19 @@ static bool RB_ComputeShadowCropMatrix(const Frustum &lightFrustum, const OBB &s
 
     // 두개의 crop bounds 의 교집합
     AABB cropBounds;
-    cropBounds[0][LeftAxis] = (casterCropBounds[0][LeftAxis] > viewCropBounds[0][LeftAxis]) ? casterCropBounds[0][LeftAxis] : viewCropBounds[0][LeftAxis];
-    cropBounds[1][LeftAxis] = (casterCropBounds[1][LeftAxis] < viewCropBounds[1][LeftAxis]) ? casterCropBounds[1][LeftAxis] : viewCropBounds[1][LeftAxis];
-    cropBounds[0][UpAxis] = (casterCropBounds[0][UpAxis] > viewCropBounds[0][UpAxis]) ? casterCropBounds[0][UpAxis] : viewCropBounds[0][UpAxis];		
-    cropBounds[1][UpAxis] = (casterCropBounds[1][UpAxis] < viewCropBounds[1][UpAxis]) ? casterCropBounds[1][UpAxis] : viewCropBounds[1][UpAxis];
+    cropBounds[0][AxisIndex::Left] = (casterCropBounds[0][AxisIndex::Left] > viewCropBounds[0][AxisIndex::Left]) ? casterCropBounds[0][AxisIndex::Left] : viewCropBounds[0][AxisIndex::Left];
+    cropBounds[1][AxisIndex::Left] = (casterCropBounds[1][AxisIndex::Left] < viewCropBounds[1][AxisIndex::Left]) ? casterCropBounds[1][AxisIndex::Left] : viewCropBounds[1][AxisIndex::Left];
+    cropBounds[0][AxisIndex::Up] = (casterCropBounds[0][AxisIndex::Up] > viewCropBounds[0][AxisIndex::Up]) ? casterCropBounds[0][AxisIndex::Up] : viewCropBounds[0][AxisIndex::Up];
+    cropBounds[1][AxisIndex::Up] = (casterCropBounds[1][AxisIndex::Up] < viewCropBounds[1][AxisIndex::Up]) ? casterCropBounds[1][AxisIndex::Up] : viewCropBounds[1][AxisIndex::Up];
 
     if (cropBounds[0][1] > cropBounds[1][1] || cropBounds[0][2] > cropBounds[1][2]) {
         return false;
     }
 
-    float xmin = -cropBounds[1][LeftAxis];
-    float xmax = -cropBounds[0][LeftAxis];
-    float ymin =  cropBounds[0][UpAxis];
-    float ymax =  cropBounds[1][UpAxis];
+    float xmin = -cropBounds[1][AxisIndex::Left];
+    float xmax = -cropBounds[0][AxisIndex::Left];
+    float ymin =  cropBounds[0][AxisIndex::Up];
+    float ymax =  cropBounds[1][AxisIndex::Up];
 
     R_Set2DCropMatrix(xmin, xmax, ymin, ymax, shadowCropMatrix);
     //BE_LOG("%f %f, %f %f\n", xmin, xmax, ymin, ymax);
@@ -182,10 +182,10 @@ static bool RB_ComputeShadowCropMatrix(const Frustum &lightFrustum, const Frustu
     AABB cropBounds;
     lightFrustum.ProjectionBounds(viewFrustum, cropBounds);
 
-    float xmin = -cropBounds[1][LeftAxis];
-    float xmax = -cropBounds[0][LeftAxis];
-    float ymin =  cropBounds[0][UpAxis];
-    float ymax =  cropBounds[1][UpAxis];
+    float xmin = -cropBounds[1][AxisIndex::Left];
+    float xmax = -cropBounds[0][AxisIndex::Left];
+    float ymin =  cropBounds[0][AxisIndex::Up];
+    float ymax =  cropBounds[1][AxisIndex::Up];
 
     R_Set2DCropMatrix(xmin, xmax, ymin, ymax, shadowCropMatrix);
     //BE_LOG("%f %f, %f %f\n", xmin, xmax, ymin, ymax);
@@ -206,7 +206,7 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
     for (int i = 0; i < visLight->numDrawSurfs; i++) {
         const DrawSurf *drawSurf = backEnd.drawSurfs[visLight->firstDrawSurf + i];
 
-        if (!(drawSurf->flags & DrawSurf::ShadowVisible)) {
+        if (!(drawSurf->flags & DrawSurf::Flag::ShadowVisible)) {
             continue;
         }
 
@@ -222,7 +222,7 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
         bool isDifferentObject = drawSurf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
         bool isDifferentMaterial = drawSurf->material != prevMaterial;
-        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
+        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::Flag::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
@@ -284,7 +284,7 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
         }
 
         if (drawSurf->space != entity2) {
-            if (!(drawSurf->flags & DrawSurf::UseInstancing)) {
+            if (!(drawSurf->flags & DrawSurf::Flag::UseInstancing)) {
                 backEnd.modelViewMatrix = lightViewMatrix * drawSurf->space->def->GetWorldMatrix();
                 backEnd.modelViewProjMatrix = backEnd.projMatrix * backEnd.modelViewMatrix;
             } else {
@@ -415,7 +415,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
     for (int i = 0; i < visLight->numDrawSurfs; i++) {
         const DrawSurf *drawSurf = backEnd.drawSurfs[visLight->firstDrawSurf + i];
 
-        if (!(drawSurf->flags & DrawSurf::ShadowVisible)) {
+        if (!(drawSurf->flags & DrawSurf::Flag::ShadowVisible)) {
             continue;
         }
         
@@ -440,7 +440,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
         bool isDifferentObject = drawSurf->space != prevSpace;
         bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
         bool isDifferentMaterial = drawSurf->material != prevMaterial;
-        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || 
+        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::Flag::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace ||
             prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
@@ -454,7 +454,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
             prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                if (!(drawSurf->flags & DrawSurf::UseInstancing)) {
+                if (!(drawSurf->flags & DrawSurf::Flag::UseInstancing)) {
                     backEnd.modelViewMatrix = visLight->def->GetViewMatrix() * drawSurf->space->def->GetWorldMatrix();
                     backEnd.modelViewProjMatrix = backEnd.shadowProjectionMatrix * backEnd.modelViewMatrix;
                 }
@@ -463,7 +463,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
             }
         }
 
-        if (drawSurf->flags & DrawSurf::UseInstancing) {
+        if (drawSurf->flags & DrawSurf::Flag::UseInstancing) {
             backEnd.batch.AddInstance(drawSurf);
         }
 

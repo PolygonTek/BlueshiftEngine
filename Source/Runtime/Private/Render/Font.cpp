@@ -19,11 +19,6 @@
 
 BE_NAMESPACE_BEGIN
 
-Font::Font() {
-    fontType = FontType::None;
-    fontFace = nullptr;
-}
-
 void Font::Purge() {
     SAFE_DELETE(fontFace);
 }

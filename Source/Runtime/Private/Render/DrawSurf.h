@@ -18,12 +18,14 @@ BE_NAMESPACE_BEGIN
 
 class DrawSurf {
 public:
-    enum Flag {
-        Visible             = BIT(0),           ///< Surface is visible by camera
-        ShadowVisible       = BIT(1),           ///< Shadow of surface is visible by camera
-        ShowWires           = BIT(2),
-        SkipSelection       = BIT(3),
-        UseInstancing       = BIT(4)
+    struct Flag {
+        enum Enum {
+            Visible         = BIT(0),           ///< Surface is visible by camera
+            ShadowVisible   = BIT(1),           ///< Shadow of surface is visible by camera
+            ShowWires       = BIT(2),
+            SkipSelection   = BIT(3),
+            UseInstancing   = BIT(4)
+        };
     };
 
     uint64_t                sortKey;

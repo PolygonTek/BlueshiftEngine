@@ -111,7 +111,7 @@ bool OpenGLBase::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isS
 
 Image::Format::Enum OpenGLBase::ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap) {
     assert(0);
-    return Image::Format::UnknownFormat;
+    return Image::Format::Unknown;
 }
 
 // NOTE: Do not call gglXXX function in CheckGLError

@@ -175,37 +175,26 @@ private:
 
     Str                     hashName;
     Str                     name;
-    mutable int             refCount;
-    bool                    permanence;
+    mutable int             refCount = 0;
+    bool                    permanence = false;
 
-    Mesh *                  originalMesh;
+    Mesh *                  originalMesh = nullptr;
     Array<Mesh *>           instantiatedMeshes;
 
-    bool                    isInstantiated;
-    bool                    isStaticMesh;
-    bool                    isSkinnedMesh;
-    AABB                    aabb;
+    bool                    isInstantiated = false;
+    bool                    isStaticMesh = false;
+    bool                    isSkinnedMesh = false;
+    AABB                    aabb = AABB::empty;
     Array<MeshSurf *>       surfaces;
 
-    bool                    useGpuSkinning;
-    SkinningJointCache *    skinningJointCache;     // joint cache for HW skinning
+    bool                    useGpuSkinning = false;
+    SkinningJointCache *    skinningJointCache = nullptr;   // joint cache for HW skinning
 
-    int32_t                 numJoints;
-    Joint *                 joints;                 // joint information array
+    int32_t                 numJoints = 0;
+    Joint *                 joints = nullptr;               // joint information array
 };
 
 BE_INLINE Mesh::Mesh() {
-    refCount                = 0;
-    permanence              = false;
-    isInstantiated          = false;
-    originalMesh            = nullptr;
-    isStaticMesh            = false;
-    isSkinnedMesh           = false;
-    useGpuSkinning          = false;
-    skinningJointCache      = nullptr;
-    numJoints               = 0;
-    joints                  = nullptr;
-    aabb.Clear();
     surfaces.SetGranularity(16);
 }
 

@@ -25,7 +25,7 @@ public:
     /// Channels (RGBALX) are described by little-endian format (opposed to D3D style)
     struct Format {
         enum Enum {
-            UnknownFormat,
+            Unknown,
             // plain bytes format
             L_8,
             A_8,
@@ -416,7 +416,7 @@ BE_INLINE Image::Image() {
     depth = 0;
     numSlices = 0;
     numMipmaps = 0;
-    format = Image::Format::UnknownFormat;
+    format = Image::Format::Unknown;
     flags = 0;
     alloced = false;
     pic = nullptr;
