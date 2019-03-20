@@ -18,7 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-VertexFormat vertexFormats[VertexFormat::MaxVertexFormats];
+VertexFormat vertexFormats[VertexFormat::Type::Count];
 
 void VertexFormat::Init() {
     // Xy

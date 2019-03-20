@@ -880,7 +880,7 @@ void PP_CameraMotionBlur(const Texture *srcTexture, const Texture *depthTexture,
     shader->SetConstant4x4f("prevViewProjectionMatrix", true, viewProjectionMatrix[1]);
     
     rhi.BindBuffer(RHI::BufferType::Vertex, sphereVB);
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::Xyz].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::Xyz].vertexFormatHandle);
     rhi.SetStreamSource(0, sphereVB, 0, sizeof(Vec3));
     rhi.DrawArrays(RHI::Topology::TriangleStrip, 0, 2 * sphereLats * sphereLongs);
 

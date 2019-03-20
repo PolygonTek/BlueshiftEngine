@@ -229,7 +229,7 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::ShadowFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
+            backEnd.batch.Begin(Batch::Flush::Shadow, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
             prevSubMesh = drawSurf->subMesh;
             prevMaterial = drawSurf->material;
@@ -448,7 +448,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::ShadowFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
+            backEnd.batch.Begin(Batch::Flush::Shadow, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
             prevSubMesh = drawSurf->subMesh;
             prevMaterial = drawSurf->material;

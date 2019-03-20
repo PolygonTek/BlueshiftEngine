@@ -33,7 +33,7 @@ void Batch::DrawPrimitives() const {
 
     int instanceCount = Max(numInstances, 1);
 
-    if (flushType == ShadowFlush) {
+    if (flushType == Flush::Shadow) {
         backEnd.ctx->renderCounter.shadowDrawCalls++;
         backEnd.ctx->renderCounter.shadowDrawIndexes += numIndexes * instanceCount;
         backEnd.ctx->renderCounter.shadowDrawVerts += numVerts * instanceCount;

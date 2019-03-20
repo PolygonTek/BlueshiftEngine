@@ -655,7 +655,8 @@ void RenderSystem::CaptureScreenRT(RenderWorld *renderWorld, int layerMask,
 Texture *RenderSystem::CaptureScreenTexture(RenderWorld *renderWorld, int layerMask, 
     bool colorClear, const Color4 &clearColor, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height) {
     Texture *screenTexture = new Texture;
-    screenTexture->CreateEmpty(RHI::TextureType::Texture2D, width, height, 1, 1, 1, useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
+    screenTexture->CreateEmpty(RHI::TextureType::Texture2D, width, height, 1, 1, 1, 
+        useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
         Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
     RenderTarget *screenRT = RenderTarget::Create(screenTexture, nullptr, RHI::RenderTargetFlag::HasDepthBuffer);
@@ -736,7 +737,8 @@ void RenderSystem::CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, int
 Texture *RenderSystem::CaptureEnvCubeTexture(RenderWorld *renderWorld, int layerMask, int staticMask, 
     bool colorClear, const Color4 &clearColor, const Vec3 &origin, float zNear, float zFar, bool useHDR, int size) {
     Texture *envCubeTexture = new Texture;
-    envCubeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, 1, useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
+    envCubeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, 1, 
+        useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
         Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
     RenderTarget *envCubeRT = RenderTarget::Create(envCubeTexture, nullptr, RHI::RenderTargetFlag::HasDepthBuffer);
@@ -797,7 +799,8 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
         }
 
         weightTextures[faceIndex] = new Texture;
-        weightTextures[faceIndex]->Create(RHI::TextureType::Texture2D, Image(envMapSize * 4, envMapSize * 4, 1, 1, 1, Image::Format::L_32F, (byte *)weightData, Image::Flag::LinearSpace),
+        weightTextures[faceIndex]->Create(RHI::TextureType::Texture2D,
+            Image(envMapSize * 4, envMapSize * 4, 1, 1, 1, Image::Format::L_32F, (byte *)weightData, Image::Flag::LinearSpace),
             Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
     }
 
@@ -1104,7 +1107,8 @@ void RenderSystem::TakeIrradianceEnvShot(const char *filename, RenderWorld *rend
     Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, layerMask, staticMask, false, Color4::black, origin, CentiToUnit(5), MeterToUnit(100), useHDR, envSize);
 
     Texture *irradianceEnvCubeTexture = new Texture;
-    irradianceEnvCubeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, 1, useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
+    irradianceEnvCubeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, 1, 
+        useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
         Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
     RenderTarget *irradianceEnvCubeRT = RenderTarget::Create(irradianceEnvCubeTexture, nullptr, 0);
 #if 1
@@ -1136,7 +1140,8 @@ void RenderSystem::TakePrefilteredEnvShot(const char *filename, RenderWorld *ren
     int numMipLevels = Math::Log(2, size) + 1;
 
     Texture *prefilteredCubeTexture = new Texture;
-    prefilteredCubeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels, useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
+    prefilteredCubeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels,
+        useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
         Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
     RenderTarget *prefilteredCubeRT = RenderTarget::Create(prefilteredCubeTexture, nullptr, 0);
 #if 1

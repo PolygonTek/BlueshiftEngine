@@ -63,7 +63,7 @@ static void RB_LitPass(const VisLight *visLight) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::LitFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
+            backEnd.batch.Begin(Batch::Flush::Lit, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
             prevSubMesh = drawSurf->subMesh;
             prevMaterial = drawSurf->material;

@@ -164,7 +164,7 @@ static void RB_DrawDebugPrimsElements(int numElements, const int *elements, int 
     rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::XyzColor].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::XyzColor].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(DebugVert));
 
     int stateBits = RHI::PM_Solid | RHI::ColorWrite;
@@ -468,7 +468,7 @@ static void RB_DrawDebugTextElements(int numElements, const int *elements, int n
     rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::XyzColor].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::XyzColor].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(DebugVert));
 
     int stateBits = RHI::PM_Solid | RHI::ColorWrite;
@@ -576,7 +576,7 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::TriFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(Batch::Flush::Tri, surf->material, surf->materialRegisters, surf->space);
 
             prevSubMesh = surf->subMesh;
             prevMaterial = surf->material;

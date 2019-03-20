@@ -41,7 +41,7 @@ void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::BackgroundFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
+            backEnd.batch.Begin(Batch::Flush::Background, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
             prevMaterial = drawSurf->material;
 
@@ -89,12 +89,12 @@ void RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             }
 
             if (!prevMaterial) {
-                backEnd.batch.Begin(Batch::SelectionFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
+                backEnd.batch.Begin(Batch::Flush::Selection, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
             } else {
                 if (isDifferentObject || prevMaterial->GetCullType() != drawSurf->material->GetCullType() ||
                     (prevMaterial->GetSort() == Material::Sort::AlphaTest) || (drawSurf->material->GetSort() == Material::Sort::AlphaTest)) {
                     backEnd.batch.Flush();
-                    backEnd.batch.Begin(Batch::SelectionFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
+                    backEnd.batch.Begin(Batch::Flush::Selection, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
                 }
             }
 
@@ -161,11 +161,11 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             }*/
 
             if (!prevMaterial) {
-                backEnd.batch.Begin(Batch::OccluderFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
+                backEnd.batch.Begin(Batch::Flush::Occluder, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
             } else {
                 if (isDifferentObject) {
                     backEnd.batch.Flush();
-                    backEnd.batch.Begin(Batch::OccluderFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
+                    backEnd.batch.Begin(Batch::Flush::Occluder, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
                 }
             }
 
@@ -214,7 +214,7 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
     const SubMesh *     prevSubMesh = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
-    Batch::FlushType    drawType;
+    Batch::Flush::Enum  drawType;
 
     backEnd.batch.SetCurrentLight(nullptr);
 
@@ -230,9 +230,9 @@ void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 continue;
             }
 
-            drawType = Batch::FlushType::DepthFlush;
+            drawType = Batch::Flush::Depth;
         } else if (drawSurf->material->GetRenderingMode() != Material::RenderingMode::AlphaBlend) {
-            drawType = Batch::FlushType::UnlitFlush;
+            drawType = Batch::Flush::Unlit;
         } else {
             continue;
         }
@@ -310,7 +310,7 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     const SubMesh *     prevSubMesh = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
-    Batch::FlushType    flushType = Batch::FlushType::UnlitFlush;
+    Batch::Flush::Enum  flushType = Batch::Flush::Unlit;
 
     backEnd.batch.SetCurrentLight(nullptr);
 
@@ -419,12 +419,12 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
             
         if (isDifferentMaterial || isDifferentObject) {
             if (!prevMaterial) {
-                backEnd.batch.Begin(Batch::VelocityFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
+                backEnd.batch.Begin(Batch::Flush::Velocity, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
             } else {
                 if (isDifferentObject || prevMaterial->GetCullType() != drawSurf->material->GetCullType() ||
                     (prevMaterial->GetSort() == Material::Sort::AlphaTest) || (drawSurf->material->GetSort() == Material::Sort::AlphaTest)) {
                     backEnd.batch.Flush();
-                    backEnd.batch.Begin(Batch::VelocityFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
+                    backEnd.batch.Begin(Batch::Flush::Velocity, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
                 }
             }
 
@@ -522,7 +522,7 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::FinalFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
+            backEnd.batch.Begin(Batch::Flush::Final, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
             prevSubMesh = drawSurf->subMesh;
             prevMaterial = drawSurf->material;
@@ -589,7 +589,7 @@ void RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(Batch::GuiFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
+            backEnd.batch.Begin(Batch::Flush::Gui, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
             prevMaterial = drawSurf->material;
 

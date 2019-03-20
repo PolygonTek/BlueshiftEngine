@@ -33,7 +33,7 @@ void RB_DrawRect(float x, float y, float x2, float y2, float s, float t, float s
     rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, 4 * sizeof(verts[0]), verts);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::XySt].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::XySt].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(verts[0]));
     rhi.DrawArrays(RHI::Topology::TriangleFan, 0, 4);
 }
@@ -56,7 +56,7 @@ void RB_DrawRectSlice(float x, float y, float x2, float y2, float s, float t, fl
     rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, 4 * sizeof(verts[0]), verts);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::XyStr].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::XyStr].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(verts[0]));
     rhi.DrawArrays(RHI::Topology::TriangleFan, 0, 4);
 }
@@ -105,7 +105,7 @@ void RB_DrawCircle(const Vec3 &origin, const Vec3 &left, const Vec3 &up, const f
     rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::Xyz].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::Xyz].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(Vec3));
     rhi.DrawArrays(RHI::Topology::LineStrip, 0, segments);
 }
@@ -123,7 +123,7 @@ void RB_DrawAABB(const AABB &aabb) {
     rhi.BindBuffer(RHI::BufferType::Index, bufferCacheManager.streamIndexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamIndexBuffer, sizeof(indices), indices);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::Xyz].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::Xyz].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(Vec3));
     rhi.DrawElements(RHI::Topology::TriangleStrip, 0, COUNT_OF(indices), sizeof(indices[0]), 0);
 }
@@ -141,7 +141,7 @@ void RB_DrawOBB(const OBB &obb) {
     rhi.BindBuffer(RHI::BufferType::Index, bufferCacheManager.streamIndexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamIndexBuffer, sizeof(indices), indices);
     
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::Xyz].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::Xyz].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(Vec3));
     rhi.DrawElements(RHI::Topology::TriangleStrip, 0, COUNT_OF(indices), sizeof(indices[0]), 0);
 }
@@ -159,7 +159,7 @@ void RB_DrawFrustum(const Frustum &frustum) {
     rhi.BindBuffer(RHI::BufferType::Index, bufferCacheManager.streamIndexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamIndexBuffer, sizeof(indices), indices);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::Xyz].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::Xyz].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(Vec3));
     rhi.DrawElements(RHI::Topology::TriangleStrip, 0, COUNT_OF(indices), sizeof(indices[0]), 0);
 }
@@ -173,7 +173,7 @@ void RB_DrawSphere(const Sphere &sphere, int lats, int longs) {
     rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::Xyz].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::Xyz].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(Vec3));
     rhi.DrawArrays(RHI::Topology::TriangleStrip, 0, 2 * lats * longs);
 }

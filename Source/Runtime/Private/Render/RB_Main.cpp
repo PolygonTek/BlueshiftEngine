@@ -423,7 +423,7 @@ static void RB_QueryOccludeeAABBs(int numAmbientOccludees, const AABB *occludeeA
     rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, numAmbientOccludees * sizeof(occludeeBuffer[0]), occludeeBuffer);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::Occludee].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::Occludee].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(occludeeBuffer[0]));
     rhi.DrawArrays(RHI::Topology::PointList, 0, numAmbientOccludees);
 
@@ -1068,7 +1068,7 @@ void RB_Execute(const void *data) {
     t1 = PlatformTime::Milliseconds();
 
     backEnd.batch.SetCurrentLight(nullptr);
-    backEnd.batch.Begin(Batch::FinalFlush, nullptr, nullptr, nullptr);
+    backEnd.batch.Begin(Batch::Flush::Final, nullptr, nullptr, nullptr);
     
     while (1) {
         int cmd = *(const int *)data;

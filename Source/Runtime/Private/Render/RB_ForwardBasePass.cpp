@@ -50,7 +50,7 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(drawSurf->material->IsSkySurface() ? Batch::BackgroundFlush : Batch::BaseFlush, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
+            backEnd.batch.Begin(drawSurf->material->IsSkySurface() ? Batch::Flush::Background : Batch::Flush::Base, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
             prevSubMesh = drawSurf->subMesh;
             prevMaterial = drawSurf->material;

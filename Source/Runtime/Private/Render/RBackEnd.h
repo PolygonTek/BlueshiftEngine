@@ -28,28 +28,30 @@ class VisObject;
 
 class Batch {
 public:
-    enum FlushType {
-        BadFlush,
-        SelectionFlush,
-        BackgroundFlush,
-        DepthFlush,
-        ShadowFlush,
-        OccluderFlush,
-        BaseFlush,
-        LitFlush,
-        UnlitFlush,
-        VelocityFlush,
-        FinalFlush,
-        TriFlush,
-        GuiFlush,
-        MaxFlushTypes
+    struct Flush {
+        enum Enum {
+            Bad,
+            Selection,
+            Background,
+            Depth,
+            Shadow,
+            Occluder,
+            Base,
+            Lit,
+            Unlit,
+            Velocity,
+            Final,
+            Tri,
+            Gui,
+            Count
+        };
     };
 
     void                    Init();
     void                    Shutdown();
 
     void                    SetCurrentLight(const VisLight *surfLight);
-    void                    Begin(int flushType, const Material *material, const float *materialRegisters, const VisObject *surfSpace);
+    void                    Begin(Flush::Enum flushType, const Material *material, const float *materialRegisters, const VisObject *surfSpace);
     void                    AddInstance(const DrawSurf *drawSurf);
     void                    DrawSubMesh(SubMesh *subMesh);
 
