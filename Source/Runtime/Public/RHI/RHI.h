@@ -28,11 +28,9 @@ BE_NAMESPACE_BEGIN
 
 class RHI {
 public:
-    enum {
-        MaxTMU                              = 16,       // maximum texture map units
-        MaxTCU                              = 8,        // maximum texture coordinates units
-        MaxVertexStream                     = 8
-    };
+    static constexpr int MaxTMU             = 16;       // maximum texture map units
+    static constexpr int MaxTCU             = 8;        // maximum texture coordinates units
+    static constexpr int MaxVertexStream    = 8;
     
     enum Handle {
         NullContext                         = 0,
@@ -123,183 +121,225 @@ public:
         MaskBF                              = 0x000FF000,   // blend func mask
     };
     
-    enum ClearBit {
-        ColorBit                            = BIT(0),
-        DepthBit                            = BIT(1),
-        StencilBit                          = BIT(2),
+    struct ClearBit {
+        enum Enum {
+            Color                           = BIT(0),
+            Depth                           = BIT(1),
+            Stencil                         = BIT(2)
+        };
     };
     
-    enum CullType {
-        BackCull,
-        FrontCull,
-        NoCull
+    struct CullType {
+        enum Enum {
+            Back,
+            Front,
+            None
+        };
     };
     
-    enum StencilFunc {
-        AlwaysFunc,
-        NeverFunc,
-        LessFunc,
-        LEqualFunc,
-        GreaterFunc,
-        GEqualFunc,
-        EqualFunc,
-        NotEqualFunc
+    struct StencilFunc {
+        enum Enum {
+            Always,
+            Never,
+            Less,
+            LEqual,
+            Greater,
+            GEqual,
+            Equal,
+            NotEqual
+        };
     };
     
-    enum StencilOp {
-        KeepOp,
-        ZeroOp,
-        ReplaceOp,
-        IncrOp,
-        IncrWrapOp,
-        DecrOp,
-        DecrWrapOp,
-        InvertOp
-    };
-    
-    enum BufferType {
-        VertexBuffer,
-        IndexBuffer,
-        PixelPackBuffer,
-        PixelUnpackBuffer,
-        TexelBuffer,
-        UniformBuffer,
-        TransformFeedbackBuffer,
-        CopyReadBuffer,
-        DrawIndirectBuffer,
-        MaxBufferTypes
-    };
-    
-    enum BufferUsage {
-        Static,
-        Dynamic,
-        Stream,
+    struct StencilOp {
+        enum Enum {
+            Keep,
+            Zero,
+            Replace,
+            Incr,
+            IncrWrap,
+            Decr,
+            DecrWrap,
+            Invert
+        };
     };
 
-    enum BufferLockMode {
-        WriteOnly,
-        WriteOnlyExplicitFlush,
-        WriteOnlyPersistent,
-    };
-    
-    enum TextureType {
-        Texture2D,
-        TextureRectangle,
-        Texture3D,
-        TextureCubeMap,
-        Texture2DArray,
-        TextureBuffer
-    };
-    
-    enum CubeMapFace {
-        PositiveX,
-        NegativeX,
-        PositiveY,
-        NegativeY,
-        PositiveZ,
-        NegativeZ
-    };
-    
-    enum TextureFilter {
-        Nearest,
-        Linear,
-        NearestMipmapNearest,
-        LinearMipmapNearest,
-        NearestMipmapLinear,
-        LinearMipmapLinear
-    };
-    
-    enum AddressMode {
-        Repeat,
-        MirroredRepeat,
-        Clamp,
-        ClampToBorder,
-    };
-    
-    enum RenderTargetType {
-        RenderTarget2D,
-        RenderTargetCubeMap,
-        RenderTarget2DArray
-    };
-    
-    enum RenderTargetFlag {
-        HasColorBuffer                      = BIT(0),
-        HasDepthBuffer                      = BIT(1),
-        HasStencilBuffer                    = BIT(2),
-        SRGBWrite                           = BIT(3)
-    };
-    
-    enum RenderTargetBlitMask {
-        ColorBlitMask                       = BIT(0),
-        DepthBlitMask                       = BIT(1)
-    };
-    
-    enum RenderTargetBlitFilter {
-        NearestBlitFilter,
-        LinearBlitFilter
+    struct BufferType {
+        enum Enum {
+            Vertex,
+            Index,
+            PixelPack,
+            PixelUnpack,
+            Texel,
+            Uniform,
+            TransformFeedback,
+            CopyRead,
+            DrawIndirect,
+            Count
+        };
     };
 
-    enum QueryType {
-        UndefinedQuery,
-        OcclusionQuery,     // Result is the number of samples that are not culled
-        TimestampQuery      // Result is time in micro seconds (1/1000000 sec)
+    struct BufferUsage {
+        enum Enum {
+            Static,
+            Dynamic,
+            Stream
+        };
+    };
+
+    struct BufferLockMode {
+        enum Enum {
+            WriteOnly,
+            WriteOnlyExplicitFlush,
+            WriteOnlyPersistent
+        };
     };
     
-    enum ShaderType {
-        VertexShader,
-        FragmentShader,
-        GeometryShader
+    struct TextureType {
+        enum Enum {
+            Texture2D,
+            TextureRectangle,
+            Texture3D,
+            TextureCubeMap,
+            Texture2DArray,
+            TextureBuffer
+        };
     };
     
-    enum Primitive {
-        TrianglesPrim                       = 0,
-        TriangleFanPrim                     = 1,
-        TriangleStripPrim                   = 2,
-        LinesPrim                           = 3,
-        LineStripPrim                       = 4,
-        LineLoopPrim                        = 5,
-        PointsPrim                          = 6,
+    struct CubeMapFace {
+        enum Enum {
+            PositiveX,
+            NegativeX,
+            PositiveY,
+            NegativeY,
+            PositiveZ,
+            NegativeZ
+        };
+    };
+    
+    struct TextureFilter {
+        enum Enum {
+            Nearest,
+            Linear,
+            NearestMipmapNearest,
+            LinearMipmapNearest,
+            NearestMipmapLinear,
+            LinearMipmapLinear
+        };
+    };
+    
+    struct AddressMode {
+        enum Enum {
+            Repeat,
+            MirroredRepeat,
+            Clamp,
+            ClampToBorder
+        };
+    };
+    
+    struct RenderTargetType {
+        enum Enum {
+            RT2D,
+            RTCubeMap,
+            RT2DArray
+        };
+    };
+    
+    struct RenderTargetFlag {
+        enum Enum {
+            HasColorBuffer                  = BIT(0),
+            HasDepthBuffer                  = BIT(1),
+            HasStencilBuffer                = BIT(2),
+            SRGBWrite                       = BIT(3)
+        };
+    };
+    
+    struct BlitMask {
+        enum Enum {
+            Color                           = BIT(0),
+            Depth                           = BIT(1)
+        };
+    };
+    
+    struct BlitFilter {
+        enum Enum {
+            Nearest,
+            Linear
+        };
+    };
+
+    struct QueryType {
+        enum Enum {
+            Undefined,
+            Occlusion,      // Result is the number of samples that are not culled
+            Timestamp       // Result is time in micro seconds (1/1000000 sec)
+        };
+    };
+    
+    // Shader type.
+    struct ShaderType {
+        enum Enum {
+            Vertex,
+            Fragment,
+            Geometry
+        };
+    };
+    
+    // Primitive topology.
+    struct Topology {
+        enum Enum {
+            TriangleList                    = 0,
+            TriangleFan                     = 1,
+            TriangleStrip                   = 2,
+            LineList                        = 3,
+            LineStrip                       = 4,
+            LineLoop                        = 5,
+            PointList                       = 6
+        };
     };
     
     struct VertexElement {
-        enum Type {
-            ByteType                        = 0,
-            UByteType                       = 1,
-            IntType                         = 2,
-            UIntType                        = 3,
-            FloatType                       = 4,
-            HalfType                        = 5,
+        struct Type {
+            enum Enum {
+                Byte                        = 0,
+                UByte                       = 1,
+                Int                         = 2,
+                UInt                        = 3,
+                Float                       = 4,
+                Half                        = 5,
+            };
         };
 
-        enum Usage {
-            Position                        = 0,
-            Normal                          = 1,
-            Color                           = 2,
-            SecondaryColor                  = 3,
-            Tangent                         = 3,
-            WeightIndex                     = 4,
-            WeightIndex0                    = 4,
-            WeightIndex1                    = 5,
-            WeightValue                     = 6,
-            WeightValue0                    = 6,
-            WeightValue1                    = 7,
-            TexCoord                        = 8,
-            TexCoord0                       = 8,
-            TexCoord1                       = 9,
-            TexCoord2                       = 10,
-            TexCoord3                       = 11,
-            TexCoord4                       = 12,
-            TexCoord5                       = 13,
-            TexCoord6                       = 14,
-            TexCoord7                       = 15,
-            MaxUsages
+        struct Usage {
+            enum Enum {
+                Position                    = 0,
+                Normal                      = 1,
+                Color                       = 2,
+                SecondaryColor              = 3,
+                Tangent                     = 3,
+                WeightIndex                 = 4,
+                WeightIndex0                = 4,
+                WeightIndex1                = 5,
+                WeightValue                 = 6,
+                WeightValue0                = 6,
+                WeightValue1                = 7,
+                TexCoord                    = 8,
+                TexCoord0                   = 8,
+                TexCoord1                   = 9,
+                TexCoord2                   = 10,
+                TexCoord3                   = 11,
+                TexCoord4                   = 12,
+                TexCoord5                   = 13,
+                TexCoord6                   = 14,
+                TexCoord7                   = 15,
+                Count
+            };
         };
         
         int                 stream;
         int                 offset;
-        Usage               usage;
+        Usage::Enum         usage;
         int                 components;
-        Type                type;
+        Type::Enum          type;
         bool                normalize;
         int                 divisor;
     };

@@ -101,7 +101,7 @@ private:
     static void             CreateSkinningVertexFormats(int stream, int originalIndex, int skinning1Index, int skinning4Index, int skinning8Index);
     static void             CreateInstancingVertexFormats(int stream, int originalIndex, int instancingIndex, bool useVtfSkinning);
 
-    void                    Append(int stream, int offset, RHI::VertexElement::Usage usage, int components, RHI::VertexElement::Type type, bool normalize, int divisor);
+    void                    Append(int stream, int offset, RHI::VertexElement::Usage::Enum usage, int components, RHI::VertexElement::Type::Enum type, bool normalize, int divisor);
     void                    CopyFrom(const VertexFormat &other);
 
     void                    Create();

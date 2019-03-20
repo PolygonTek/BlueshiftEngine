@@ -28,24 +28,24 @@ RenderBackEnd   backEnd;
 
 static void RB_InitStencilStates() {
     backEnd.stencilStates[RenderBackEnd::VolumeIntersectionZPass] = 
-        rhi.CreateStencilState(~0, ~0, 
-        RHI::AlwaysFunc, RHI::KeepOp, RHI::KeepOp, RHI::DecrWrapOp, 
-        RHI::AlwaysFunc, RHI::KeepOp, RHI::KeepOp, RHI::IncrWrapOp);
+        rhi.CreateStencilState(~0, ~0,
+        RHI::StencilFunc::Always, RHI::StencilOp::Keep, RHI::StencilOp::Keep, RHI::StencilOp::DecrWrap,
+        RHI::StencilFunc::Always, RHI::StencilOp::Keep, RHI::StencilOp::Keep, RHI::StencilOp::IncrWrap);
 
     backEnd.stencilStates[RenderBackEnd::VolumeIntersectionZFail] = 
         rhi.CreateStencilState(~0, ~0, 
-        RHI::AlwaysFunc, RHI::KeepOp, RHI::IncrWrapOp, RHI::KeepOp, 
-        RHI::AlwaysFunc, RHI::KeepOp, RHI::DecrWrapOp, RHI::KeepOp);
+        RHI::StencilFunc::Always, RHI::StencilOp::Keep, RHI::StencilOp::IncrWrap, RHI::StencilOp::Keep,
+        RHI::StencilFunc::Always, RHI::StencilOp::Keep, RHI::StencilOp::DecrWrap, RHI::StencilOp::Keep);
 
     backEnd.stencilStates[RenderBackEnd::VolumeIntersectionInsideZFail] = 
         rhi.CreateStencilState(~0, ~0, 
-        RHI::AlwaysFunc, RHI::KeepOp, RHI::IncrWrapOp, RHI::KeepOp, 
-        RHI::NeverFunc, RHI::KeepOp, RHI::KeepOp, RHI::KeepOp);
+        RHI::StencilFunc::Always, RHI::StencilOp::Keep, RHI::StencilOp::IncrWrap, RHI::StencilOp::Keep,
+        RHI::StencilFunc::Never, RHI::StencilOp::Keep, RHI::StencilOp::Keep, RHI::StencilOp::Keep);
 
     backEnd.stencilStates[RenderBackEnd::VolumeIntersectionTest] = 
         rhi.CreateStencilState(~0, 0, 
-        RHI::EqualFunc, RHI::KeepOp, RHI::KeepOp, RHI::KeepOp, 
-        RHI::NeverFunc, RHI::KeepOp, RHI::KeepOp, RHI::KeepOp);
+        RHI::StencilFunc::Equal, RHI::StencilOp::Keep, RHI::StencilOp::Keep, RHI::StencilOp::Keep,
+        RHI::StencilFunc::Never, RHI::StencilOp::Keep, RHI::StencilOp::Keep, RHI::StencilOp::Keep);
 }
 
 static void RB_FreeStencilStates() {
@@ -56,7 +56,7 @@ static void RB_FreeStencilStates() {
 
 static void RB_InitLightQueries() {
     /*for (int i = 0; i < MAX_LIGHTS; i++) {
-        backEnd.lightQueries[i].queryHandle = rhi.CreateQuery(RHI::OcclusionQuery);
+        backEnd.lightQueries[i].queryHandle = rhi.CreateQuery(RHI::QueryType::Occlusion);
         backEnd.lightQueries[i].light = nullptr;
         backEnd.lightQueries[i].frameCount = 0;
         backEnd.lightQueries[i].resultSamples = 0;
@@ -87,7 +87,7 @@ void RB_Init() {
     if (r_HOM.GetBool()) {
         // TODO: create one for each context
         backEnd.homCullingOutputTexture = textureManager.AllocTexture("_homCullingOutput");
-        backEnd.homCullingOutputTexture->CreateEmpty(RHI::Texture2D, HOM_CULL_TEXTURE_WIDTH, HOM_CULL_TEXTURE_HEIGHT, 1, 1, 1,
+        backEnd.homCullingOutputTexture->CreateEmpty(RHI::TextureType::Texture2D, HOM_CULL_TEXTURE_WIDTH, HOM_CULL_TEXTURE_HEIGHT, 1, 1, 1,
             Image::Format::RGBA_8_8_8_8, Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
         backEnd.homCullingOutputRT = RenderTarget::Create(backEnd.homCullingOutputTexture, nullptr, 0);
     }
@@ -201,10 +201,10 @@ static void RB_DrawStencilLightVolume(const VisLight *light, bool insideLightVol
     rhi.SetStateBits(RHI::DF_LEqual);
 
     if (insideLightVolume) {
-        rhi.SetCullFace(RHI::NoCull);
+        rhi.SetCullFace(RHI::CullType::None);
         rhi.SetStencilState(backEnd.stencilStates[RenderBackEnd::VolumeIntersectionInsideZFail], 0);
     } else {
-        rhi.SetCullFace(RHI::NoCull);
+        rhi.SetCullFace(RHI::CullType::None);
         rhi.SetStencilState(backEnd.stencilStates[RenderBackEnd::VolumeIntersectionZPass], 0);
     }
 
@@ -357,7 +357,7 @@ static void RB_GenerateOcclusionMapHierarchy() {
 
         rhi.SetViewport(Rect(0, 0, w, h));
         rhi.SetStateBits(RHI::DepthWrite | RHI::DF_Always);
-        rhi.SetCullFace(RHI::NoCull);
+        rhi.SetCullFace(RHI::CullType::None);
 
         shader->SetTexture("lastMip", backEnd.ctx->homTexture);
         shader->SetConstant2f("texelSize", texelSize);
@@ -418,14 +418,14 @@ static void RB_QueryOccludeeAABBs(int numAmbientOccludees, const AABB *occludeeA
 
     rhi.SetViewport(Rect(0, 0, backEnd.homCullingOutputRT->GetWidth(), backEnd.homCullingOutputRT->GetHeight()));
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
-    rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, numAmbientOccludees * sizeof(occludeeBuffer[0]), occludeeBuffer);
 
     rhi.SetVertexFormat(vertexFormats[VertexFormat::Occludee].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(occludeeBuffer[0]));
-    rhi.DrawArrays(RHI::PointsPrim, 0, numAmbientOccludees);
+    rhi.DrawArrays(RHI::Topology::PointList, 0, numAmbientOccludees);
 
     backEnd.homCullingOutputRT->Discard(true, true, 0);
     backEnd.homCullingOutputRT->End();
@@ -544,12 +544,12 @@ static void RB_ClearView() {
 
     if (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::DepthOnly || 
         backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Skybox) {
-        clearBits = RHI::DepthBit | RHI::StencilBit;
+        clearBits = RHI::ClearBit::Depth | RHI::ClearBit::Stencil;
 
         rhi.SetStateBits(rhi.GetStateBits() | RHI::DepthWrite);
         rhi.Clear(clearBits, Color4::black, 1.0f, 0);
     } else if (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Color) {
-        clearBits = RHI::DepthBit | RHI::StencilBit | RHI::ColorBit;
+        clearBits = RHI::ClearBit::Depth | RHI::ClearBit::Stencil | RHI::ClearBit::Color;
         Color4 clearColor = backEnd.camera->def->GetState().clearColor;
 
         rhi.SetStateBits(rhi.GetStateBits() | RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
@@ -813,7 +813,7 @@ void RB_DrawDebugTextures() {
             continue;
         }
         
-        if (texture->GetType() == RHI::Texture2D || texture->GetType() == RHI::TextureRectangle) {
+        if (texture->GetType() == RHI::TextureType::Texture2D || texture->GetType() == RHI::TextureType::TextureRectangle) {
             const Shader *shader = ShaderManager::postPassThruShader;
             
             shader->Bind();
@@ -824,7 +824,7 @@ void RB_DrawDebugTextures() {
                 rhi.SetTextureShadowFunc(false);
             }
             
-            if (texture->GetType() == RHI::TextureRectangle) {
+            if (texture->GetType() == RHI::TextureType::TextureRectangle) {
                 RB_DrawScreenRect(x, y, w, h, 0.0f, 0.0f, texture->GetWidth(), texture->GetHeight());
             } else {
                 RB_DrawScreenRect(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f);
@@ -870,7 +870,7 @@ static void RB_DrawCamera3D() {
         rhi.SetScissor(Rect::empty);
 
         rhi.SetStateBits(RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
-        rhi.Clear(RHI::ColorBit | RHI::DepthBit, Color4::white, 1.0f, 0);
+        rhi.Clear(RHI::ClearBit::Color | RHI::ClearBit::Depth, Color4::white, 1.0f, 0);
 
         RB_SelectionPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
@@ -1031,7 +1031,7 @@ static const void *RB_ExecuteSwapBuffers(const void *data) {
     rhi.SetDepthRange(0, 0);
 
     rhi.SetScissor(deviceRect);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     if (r_showTextures.GetInteger() > 0) {
         RB_DrawDebugTextures();

@@ -19,7 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const GLenum toGLPrim[] = {
+const GLenum toGLTopology[] = {
     GL_TRIANGLES,
     GL_TRIANGLE_FAN,
     GL_TRIANGLE_STRIP,
@@ -400,7 +400,7 @@ bool OpenGLRHI::SupportsDebugLabel() const {
 
 void OpenGLRHI::Clear(int clearBits, const Color4 &color, float depth, unsigned int stencil) {
 #if 1
-    if (clearBits & ColorBit) {
+    if (clearBits & ClearBit::Color) {
         if (gl_sRGB.GetBool() && OpenGL::SupportsFrameBufferSRGB()) {
             gglClearBufferfv(GL_COLOR, 0, Color4(color.ToColor3().SRGBToLinear(), color[3]));
         } else {
@@ -408,13 +408,13 @@ void OpenGLRHI::Clear(int clearBits, const Color4 &color, float depth, unsigned 
         }
     }
 
-    if ((clearBits & (DepthBit | StencilBit)) == (DepthBit | StencilBit)) {
+    if ((clearBits & (ClearBit::Depth | ClearBit::Stencil)) == (ClearBit::Depth | ClearBit::Stencil)) {
         gglStencilMask(~0);
         gglClearBufferfi(GL_DEPTH_STENCIL, 0, depth, stencil);
         gglStencilMask(0);
-    } else if (clearBits & DepthBit) {
+    } else if (clearBits & ClearBit::Depth) {
         gglClearBufferfv(GL_DEPTH, 0, &depth);
-    } else if (clearBits & StencilBit) {
+    } else if (clearBits & ClearBit::Stencil) {
         gglStencilMask(~0);
         gglClearBufferiv(GL_STENCIL, 0, (const GLint *)&stencil);
         gglStencilMask(0);
@@ -472,50 +472,50 @@ void OpenGLRHI::ReadPixels(int x, int y, int width, int height, Image::Format::E
     gglPixelStorei(GL_PACK_ALIGNMENT, oldPackAlignment);
 }
 
-void OpenGLRHI::DrawArrays(Primitive primitives, int startVertex, int numVerts) const {
-    gglDrawArrays(toGLPrim[primitives], startVertex, numVerts);
+void OpenGLRHI::DrawArrays(Topology::Enum topology, int startVertex, int numVerts) const {
+    gglDrawArrays(toGLTopology[topology], startVertex, numVerts);
 }
 
-void OpenGLRHI::DrawArraysInstanced(Primitive primitives, int startVertex, int numVerts, int instanceCount) const {
-    gglDrawArraysInstanced(toGLPrim[primitives], startVertex, numVerts, instanceCount);
+void OpenGLRHI::DrawArraysInstanced(Topology::Enum topology, int startVertex, int numVerts, int instanceCount) const {
+    gglDrawArraysInstanced(toGLTopology[topology], startVertex, numVerts, instanceCount);
 }
 
-void OpenGLRHI::DrawElements(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr) const {
+void OpenGLRHI::DrawElements(Topology::Enum topology, int startIndex, int numIndices, int indexSize, const void *ptr) const {
     GLenum indexType = indexSize == 1 ? GL_UNSIGNED_BYTE : (indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT);
-    int indexBufferHandle = currentContext->state->bufferHandles[IndexBuffer];
+    int indexBufferHandle = currentContext->state->bufferHandles[BufferType::Index];
     const GLvoid *indices = indexBufferHandle != 0 ? BUFFER_OFFSET(indexSize * startIndex) : (byte *)ptr + indexSize * startIndex;
-    gglDrawElements(toGLPrim[primitives], numIndices, indexType, indices);
+    gglDrawElements(toGLTopology[topology], numIndices, indexType, indices);
 }
 
-void OpenGLRHI::DrawElementsInstanced(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount) const {
+void OpenGLRHI::DrawElementsInstanced(Topology::Enum topology, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount) const {
     GLenum indexType = indexSize == 1 ? GL_UNSIGNED_BYTE : (indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT);
-    int indexBufferHandle = currentContext->state->bufferHandles[IndexBuffer];
+    int indexBufferHandle = currentContext->state->bufferHandles[BufferType::Index];
     const GLvoid *indices = indexBufferHandle != 0 ? BUFFER_OFFSET(indexSize * startIndex) : (byte *)ptr + indexSize * startIndex;
-    gglDrawElementsInstanced(toGLPrim[primitives], numIndices, indexType, indices, instanceCount);
+    gglDrawElementsInstanced(toGLTopology[topology], numIndices, indexType, indices, instanceCount);
 }
 
-void OpenGLRHI::DrawElementsBaseVertex(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int baseVertexIndex) const {
+void OpenGLRHI::DrawElementsBaseVertex(Topology::Enum topology, int startIndex, int numIndices, int indexSize, const void *ptr, int baseVertexIndex) const {
     GLenum indexType = indexSize == 1 ? GL_UNSIGNED_BYTE : (indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT);
-    int indexBufferHandle = currentContext->state->bufferHandles[IndexBuffer];
+    int indexBufferHandle = currentContext->state->bufferHandles[BufferType::Index];
     const GLvoid *indices = indexBufferHandle != 0 ? BUFFER_OFFSET(indexSize * startIndex) : (byte *)ptr + indexSize * startIndex;
-    OpenGL::DrawElementsBaseVertex(toGLPrim[primitives], numIndices, indexType, indices, baseVertexIndex);
+    OpenGL::DrawElementsBaseVertex(toGLTopology[topology], numIndices, indexType, indices, baseVertexIndex);
 }
 
-void OpenGLRHI::DrawElementsInstancedBaseVertex(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount, int baseVertexIndex) const {
+void OpenGLRHI::DrawElementsInstancedBaseVertex(Topology::Enum topology, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount, int baseVertexIndex) const {
     GLenum indexType = indexSize == 1 ? GL_UNSIGNED_BYTE : (indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT);
-    int indexBufferHandle = currentContext->state->bufferHandles[IndexBuffer];
+    int indexBufferHandle = currentContext->state->bufferHandles[BufferType::Index];
     const GLvoid *indices = indexBufferHandle != 0 ? BUFFER_OFFSET(indexSize * startIndex) : (byte *)ptr + indexSize * startIndex;
-    OpenGL::DrawElementsInstancedBaseVertex(toGLPrim[primitives], numIndices, indexType, indices, instanceCount, baseVertexIndex);
+    OpenGL::DrawElementsInstancedBaseVertex(toGLTopology[topology], numIndices, indexType, indices, instanceCount, baseVertexIndex);
 }
 
-void OpenGLRHI::DrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset) const {
+void OpenGLRHI::DrawElementsIndirect(Topology::Enum topology, int indexSize, int indirectBufferOffset) const {
     GLenum indexType = indexSize == 1 ? GL_UNSIGNED_BYTE : (indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT);
-    OpenGL::DrawElementsIndirect(toGLPrim[primitives], indexType, BUFFER_OFFSET(indirectBufferOffset));
+    OpenGL::DrawElementsIndirect(toGLTopology[topology], indexType, BUFFER_OFFSET(indirectBufferOffset));
 }
 
-void OpenGLRHI::MultiDrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset, int drawCount, int stride) const {
+void OpenGLRHI::MultiDrawElementsIndirect(Topology::Enum topology, int indexSize, int indirectBufferOffset, int drawCount, int stride) const {
     GLenum indexType = indexSize == 1 ? GL_UNSIGNED_BYTE : (indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT);
-    OpenGL::MultiDrawElementsIndirect(toGLPrim[primitives], indexType, BUFFER_OFFSET(indirectBufferOffset), drawCount, stride);
+    OpenGL::MultiDrawElementsIndirect(toGLTopology[topology], indexType, BUFFER_OFFSET(indirectBufferOffset), drawCount, stride);
 }
 
 extern "C" void CheckGLError(const char *msg);

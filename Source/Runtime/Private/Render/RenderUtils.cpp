@@ -18,34 +18,34 @@
 
 BE_NAMESPACE_BEGIN
 
-void R_EnvCubeMapFaceToOpenGLAxis(RHI::CubeMapFace face, Mat3 &axis) {
+void R_EnvCubeMapFaceToOpenGLAxis(RHI::CubeMapFace::Enum face, Mat3 &axis) {
     switch (face) {
-    case RHI::PositiveX:
+    case RHI::CubeMapFace::PositiveX:
         axis[0] = Vec3(1, 0, 0);
         axis[1] = Vec3(0, 0, 1);
         axis[2] = Vec3(0, -1, 0);
         break;
-    case RHI::NegativeX:
+    case RHI::CubeMapFace::NegativeX:
         axis[0] = Vec3(-1, 0, 0);
         axis[1] = Vec3(0, 0, -1);
         axis[2] = Vec3(0, -1, 0);
         break;
-    case RHI::PositiveY:
+    case RHI::CubeMapFace::PositiveY:
         axis[0] = Vec3(0, 1, 0);
         axis[1] = Vec3(-1, 0, 0);
         axis[2] = Vec3(0, 0, 1);
         break;
-    case RHI::NegativeY:
+    case RHI::CubeMapFace::NegativeY:
         axis[0] = Vec3(0, -1, 0);
         axis[1] = Vec3(-1, 0, 0);
         axis[2] = Vec3(0, 0, -1);
         break;
-    case RHI::PositiveZ:
+    case RHI::CubeMapFace::PositiveZ:
         axis[0] = Vec3(0, 0, 1);
         axis[1] = Vec3(-1, 0, 0);
         axis[2] = Vec3(0, -1, 0);
         break;
-    case RHI::NegativeZ:
+    case RHI::CubeMapFace::NegativeZ:
         axis[0] = Vec3(0, 0, -1);
         axis[1] = Vec3(1, 0, 0);
         axis[2] = Vec3(0, -1, 0);
@@ -53,7 +53,7 @@ void R_EnvCubeMapFaceToOpenGLAxis(RHI::CubeMapFace face, Mat3 &axis) {
     }
 }
 
-void R_EnvCubeMapFaceToEngineAxis(RHI::CubeMapFace face, Mat3 &axis) {
+void R_EnvCubeMapFaceToEngineAxis(RHI::CubeMapFace::Enum face, Mat3 &axis) {
     Mat3 glAxis;
 
     R_EnvCubeMapFaceToOpenGLAxis(face, glAxis);

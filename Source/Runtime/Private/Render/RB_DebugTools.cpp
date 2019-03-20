@@ -26,7 +26,7 @@ struct DebugVert {
 };
 
 struct DebugPrims {
-    int             prims;
+    int             topology;
     int             startVert;
     int             numVerts;
     int             lifeTime;
@@ -76,18 +76,18 @@ void RB_ClearDebugPrimitives(int time) {
     // copy any text that still needs to be drawn
     int numVerts = 0;
     int num = 0;
-    DebugPrims *prims = rb_debugPrims;
-    for (int i = 0; i < rb_numDebugPrims; i++, prims++) {
-        if (prims->lifeTime > time) {
-            if (prims->startVert != numVerts) {
+    DebugPrims *topology = rb_debugPrims;
+    for (int i = 0; i < rb_numDebugPrims; i++, topology++) {
+        if (topology->lifeTime > time) {
+            if (topology->startVert != numVerts) {
                 // NOTE: RB_DrawDebugPrims 에서 vertex array 를 sorting 한다면 임시 memory 에 copy 하는 식으로 바꿔야 함 
-                memmove(&rb_debugPrimsVerts[numVerts], &rb_debugPrimsVerts[prims->startVert], prims->numVerts * sizeof(rb_debugPrimsVerts[0]));				
+                memmove(&rb_debugPrimsVerts[numVerts], &rb_debugPrimsVerts[topology->startVert], topology->numVerts * sizeof(rb_debugPrimsVerts[0]));				
             }
 
-            rb_debugPrims[num] = *prims;
+            rb_debugPrims[num] = *topology;
             rb_debugPrims[num].startVert = numVerts;
             
-            numVerts += prims->numVerts;
+            numVerts += topology->numVerts;
             num++;
         }
     }
@@ -95,7 +95,7 @@ void RB_ClearDebugPrimitives(int time) {
     rb_numDebugPrimsVerts = numVerts;
 }
 
-Vec3 *RB_ReserveDebugPrimsVerts(int prims, int numVerts, const Color4 &color, const float lineWidth, const bool twoSided, const bool depthTest, const int lifeTime) {
+Vec3 *RB_ReserveDebugPrimsVerts(int topology, int numVerts, const Color4 &color, const float lineWidth, const bool twoSided, const bool depthTest, const int lifeTime) {
     DebugPrims *debugPrims;
     byte rgba[4];
 
@@ -111,7 +111,7 @@ Vec3 *RB_ReserveDebugPrimsVerts(int prims, int numVerts, const Color4 &color, co
 
         debugPrims = &rb_debugPrims[rb_numDebugPrims++];
         *reinterpret_cast<uint32_t *>(debugPrims->color) = *reinterpret_cast<uint32_t *>(rgba);
-        debugPrims->prims		= prims;
+        debugPrims->topology		= topology;
         debugPrims->startVert	= rb_numDebugPrimsVerts;
         debugPrims->numVerts	= numVerts;
         debugPrims->lineWidth	= lineWidth;
@@ -132,7 +132,7 @@ static void RB_DrawDebugPrimsElements(int numElements, const int *elements, int 
     DebugVert *verts = (DebugVert *)_alloca16(size);
     DebugVert *vptr = verts;
 
-    int prims = rb_debugPrims[elements[0]].prims;
+    int topology = rb_debugPrims[elements[0]].topology;
     bool needAlphaBlend = false;
     
     for (int i = 0; i < numElements; i++) {
@@ -149,7 +149,7 @@ static void RB_DrawDebugPrimsElements(int numElements, const int *elements, int 
         }
     }
 
-    if (prims >= RHI::LinesPrim && prims <= RHI::LineLoopPrim) {
+    if (topology >= RHI::Topology::LineList && topology <= RHI::Topology::LineLoop) {
         if (useSmoothLine) {
             rhi.EnableLineSmooth(true);
         }
@@ -161,7 +161,7 @@ static void RB_DrawDebugPrimsElements(int numElements, const int *elements, int 
     shader->Bind();
     shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->GetViewProjMatrix());
     
-    rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
 
     rhi.SetVertexFormat(vertexFormats[VertexFormat::XyzColor].vertexFormatHandle);
@@ -180,11 +180,11 @@ static void RB_DrawDebugPrimsElements(int numElements, const int *elements, int 
 
     rhi.SetStateBits(stateBits);
 
-    int cullMode = twoSided ? RHI::NoCull : RHI::BackCull;
+    int cullMode = twoSided ? RHI::CullType::None : RHI::CullType::Back;
     rhi.SetCullFace(cullMode);
-    rhi.DrawArrays((RHI::Primitive)prims, 0, numVerts);
+    rhi.DrawArrays((RHI::Topology::Enum)topology, 0, numVerts);
 
-    if (prims >= RHI::LinesPrim && prims <= RHI::LineLoopPrim) {
+    if (topology >= RHI::Topology::LineList && topology <= RHI::Topology::LineLoop) {
         if (useSmoothLine) {
             rhi.EnableLineSmooth(false);
         }
@@ -196,8 +196,8 @@ static int RB_CompareDebugPrims(const void *elem1, const void *elem2) {
     const DebugPrims *p1 = (DebugPrims *)elem1;
     const DebugPrims *p2 = (DebugPrims *)elem2;
 
-    int sortKey1 = (p1->depthTest << 5) | (((p1->color[3] + 1) & 0x100) >> 4) | (p1->prims);
-    int sortKey2 = (p2->depthTest << 5) | (((p2->color[3] + 1) & 0x100) >> 4) | (p2->prims);
+    int sortKey1 = (p1->depthTest << 5) | (((p1->color[3] + 1) & 0x100) >> 4) | (p1->topology);
+    int sortKey2 = (p2->depthTest << 5) | (((p2->color[3] + 1) & 0x100) >> 4) | (p2->topology);
     
     return sortKey1 - sortKey2;
 }
@@ -225,23 +225,23 @@ static void RB_DrawDebugPrims() {
         int num = debugPrims->numVerts;
 
         if (numVerts == 0) {
-            prev_prims = debugPrims->prims;
+            prev_prims = debugPrims->topology;
             prev_alpha = debugPrims->color[3];
             prev_lineWidth = debugPrims->lineWidth;
             prev_twoSided = debugPrims->twoSided;
             prev_depthTest = debugPrims->depthTest;
         } else {
-            bool mergeablePrims = (prev_prims == debugPrims->prims) && (prev_prims == RHI::LinesPrim || prev_prims == RHI::TrianglesPrim);
+            bool mergeablePrims = (prev_prims == debugPrims->topology) && (prev_prims == RHI::Topology::LineList || prev_prims == RHI::Topology::TriangleList);
 
             if (numVerts + num > maxVerts || !mergeablePrims || prev_alpha != debugPrims->color[3] || 
-                (prev_prims == RHI::LinesPrim && prev_lineWidth != debugPrims->lineWidth) ||
+                (prev_prims == RHI::Topology::LineList && prev_lineWidth != debugPrims->lineWidth) ||
                 prev_twoSided != debugPrims->twoSided || prev_depthTest != debugPrims->depthTest) {
                 RB_DrawDebugPrimsElements(numElements, elements, numVerts, prev_lineWidth, prev_twoSided, prev_depthTest);
 
                 numVerts = 0;
                 numElements = 0;
 
-                prev_prims = debugPrims->prims;
+                prev_prims = debugPrims->topology;
                 prev_alpha = debugPrims->color[3];
                 prev_lineWidth = debugPrims->lineWidth;
                 prev_twoSided = debugPrims->twoSided;
@@ -465,7 +465,7 @@ static void RB_DrawDebugTextElements(int numElements, const int *elements, int n
     shader->Bind();
     shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->GetViewProjMatrix());
     
-    rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
 
     rhi.SetVertexFormat(vertexFormats[VertexFormat::XyzColor].vertexFormatHandle);
@@ -483,7 +483,7 @@ static void RB_DrawDebugTextElements(int numElements, const int *elements, int n
     }
 
     rhi.SetStateBits(stateBits);
-    rhi.DrawArrays(RHI::LinesPrim, 0, numVerts);
+    rhi.DrawArrays(RHI::Topology::LineList, 0, numVerts);
 
     rhi.SetLineWidth(1);
     if (useSmoothLine) {
@@ -634,7 +634,7 @@ static void RB_DrawDebugLights(int mode) {
         }
         
         rhi.SetStateBits(RHI::ColorWrite | RHI::BS_SrcAlpha | RHI::BD_One | RHI::DF_LEqual);
-        rhi.SetCullFace(RHI::BackCull);
+        rhi.SetCullFace(RHI::CullType::Back);
 
         const Shader *shader = ShaderManager::constantColorShader;
 
@@ -645,7 +645,7 @@ static void RB_DrawDebugLights(int mode) {
         RB_DrawLightVolume(visLight->def);
 
         rhi.SetStateBits(RHI::ColorWrite | RHI::PM_Wireframe | RHI::DF_LEqual);
-        rhi.SetCullFace(RHI::NoCull);
+        rhi.SetCullFace(RHI::CullType::None);
 
         shader->SetConstant4f("color", &visLight->def->GetState().materialParms[RenderObject::MaterialParm::Red]);
     
@@ -666,7 +666,7 @@ static void RB_DrawDebugLightScissorRects() {
         }
 
         rhi.SetStateBits(RHI::ColorWrite | RHI::PM_Wireframe);
-        rhi.SetCullFace(RHI::NoCull);
+        rhi.SetCullFace(RHI::CullType::None);
         
         const Shader *shader = ShaderManager::postPassThruColorShader;
 

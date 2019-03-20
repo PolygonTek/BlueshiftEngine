@@ -22,14 +22,14 @@ BE_NAMESPACE_BEGIN
 
 static const struct {
     const char *name;
-    RHI::TextureFilter filter;
+    RHI::TextureFilter::Enum filter;
 } textureFilterNames[] = {
-    { "Nearest", RHI::Nearest },
-    { "Linear", RHI::Linear },
-    { "NearestMipmapNearest", RHI::NearestMipmapNearest },
-    { "LinearMipmapNearest", RHI::LinearMipmapNearest },
-    { "NearestMipmapLinear", RHI::NearestMipmapLinear },
-    { "LinearMipmapLinear", RHI::LinearMipmapLinear },
+    { "Nearest", RHI::TextureFilter::Nearest },
+    { "Linear", RHI::TextureFilter::Linear },
+    { "NearestMipmapNearest", RHI::TextureFilter::NearestMipmapNearest },
+    { "LinearMipmapNearest", RHI::TextureFilter::LinearMipmapNearest },
+    { "NearestMipmapLinear", RHI::TextureFilter::NearestMipmapLinear },
+    { "LinearMipmapLinear", RHI::TextureFilter::LinearMipmapLinear },
 };
 
 TextureManager textureManager;
@@ -92,21 +92,21 @@ void TextureManager::CreateEngineTextures() {
     data = image.GetPixels();
     memset(data, 0xFF, 8 * 8);
     whiteTexture = AllocTexture("_whiteTexture");
-    whiteTexture->Create(RHI::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
+    whiteTexture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
 
     // Create black texture
     image.Create2D(8, 8, 1, Image::Format::L_8, nullptr, 0);
     data = image.GetPixels();
     memset(data, 0, 8 * 8);
     blackTexture = AllocTexture("_blackTexture");
-    blackTexture->Create(RHI::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
+    blackTexture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
 
     // Create grey texture
     image.Create2D(8, 8, 1, Image::Format::L_8, nullptr, 0);
     data = image.GetPixels();
     memset(data, 0x80, 8 * 8);
     greyTexture = AllocTexture("_greyTexture");
-    greyTexture->Create(RHI::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
+    greyTexture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
 
     // Create flatNormal texture
     flatNormalTexture = AllocTexture("_flatNormalTexture");
@@ -406,21 +406,21 @@ void TextureManager::Cmd_ListTextures(const CmdArgs &args) {
         Texture *texture = entry->second;
 
         switch (texture->type) {
-        case RHI::Texture2D:           type = "2D  "; break;
-        case RHI::Texture3D:           type = "3D  "; break;
-        case RHI::TextureCubeMap:      type = "Cube"; break;
-        case RHI::TextureRectangle:    type = "Rect"; break;
-        case RHI::Texture2DArray:      type = "2DAr"; break;
-        case RHI::TextureBuffer:       type = "Buff"; break;
+        case RHI::TextureType::Texture2D:           type = "2D  "; break;
+        case RHI::TextureType::Texture3D:           type = "3D  "; break;
+        case RHI::TextureType::TextureCubeMap:      type = "Cube"; break;
+        case RHI::TextureType::TextureRectangle:    type = "Rect"; break;
+        case RHI::TextureType::Texture2DArray:      type = "2DAr"; break;
+        case RHI::TextureType::TextureBuffer:       type = "Buff"; break;
         }
 
         const char *internalFormatName = Image::FormatName(texture->format);
         
         switch (texture->addressMode) {
-        case RHI::Repeat:              addr = "R   "; break;
-        case RHI::Clamp:               addr = "C   "; break;
-        case RHI::ClampToBorder:       addr = "CB  "; break;
-        case RHI::MirroredRepeat:      addr = "MR  "; break;
+        case RHI::AddressMode::Repeat:              addr = "R   "; break;
+        case RHI::AddressMode::Clamp:               addr = "C   "; break;
+        case RHI::AddressMode::ClampToBorder:       addr = "CB  "; break;
+        case RHI::AddressMode::MirroredRepeat:      addr = "MR  "; break;
         }
 
         int numMipmaps = texture->hasMipmaps ? Image::MaxMipMapLevels(texture->width, texture->height, texture->depth) : 1;

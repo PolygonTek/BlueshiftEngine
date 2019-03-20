@@ -66,7 +66,7 @@ static bool CheckFBOStatus() {
     return false;
 }
 
-RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, int flags) {
+RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType::Enum type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, int flags) {
     GLuint fbo;
     GLuint colorRenderBuffer = 0;
     GLuint depthRenderBuffer = 0;
@@ -80,13 +80,13 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
 
     GLenum target = 0;
     switch (type) {
-    case RenderTarget2D:
+    case RenderTargetType::RT2D:
         target = GL_TEXTURE_2D;
         break;
-    case RenderTargetCubeMap:
+    case RenderTargetType::RTCubeMap:
         target = GL_TEXTURE_CUBE_MAP;
         break;
-    case RenderTarget2DArray:
+    case RenderTargetType::RT2DArray:
         target = GL_TEXTURE_2D_ARRAY;
         break;
     default:
@@ -119,7 +119,7 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
 
         OpenGL::DrawBuffer(GL_COLOR_ATTACHMENT0);
         OpenGL::ReadBuffer(GL_COLOR_ATTACHMENT0);
-    } else if (flags & HasColorBuffer) {
+    } else if (flags & RenderTargetFlag::HasColorBuffer) {
         gglGenRenderbuffers(1, &colorRenderBuffer);
         gglBindRenderbuffer(GL_RENDERBUFFER, colorRenderBuffer);
         gglRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, width, height);
@@ -151,8 +151,8 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
             OpenGL::DrawBuffer(GL_NONE);
             OpenGL::ReadBuffer(GL_NONE);
         }
-    } else if (flags & HasDepthBuffer) {
-        if (flags & HasStencilBuffer) {
+    } else if (flags & RenderTargetFlag::HasDepthBuffer) {
+        if (flags & RenderTargetFlag::HasStencilBuffer) {
             gglGenRenderbuffers(1, &depthRenderBuffer);
             gglBindRenderbuffer(GL_RENDERBUFFER, depthRenderBuffer);
             gglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
@@ -244,7 +244,7 @@ void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int slic
 
     gglBindFramebuffer(GL_FRAMEBUFFER, renderTarget->fbo);
 
-    if (renderTarget->type == RenderTarget2DArray) {
+    if (renderTarget->type == RenderTargetType::RT2DArray) {
         if (renderTarget->numColorTextures > 0) {
             for (int i = 0; i < renderTarget->numColorTextures; i++) {
                 GLuint textureObject = textureList[renderTarget->colorTextureHandles[i]]->object;
@@ -257,7 +257,7 @@ void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int slic
             gglFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureObject, level, sliceIndex);
         }
     } else {
-        GLenum target = renderTarget->type == RenderTargetCubeMap ? (GL_TEXTURE_CUBE_MAP_POSITIVE_X + sliceIndex) : GL_TEXTURE_2D;
+        GLenum target = renderTarget->type == RenderTargetType::RTCubeMap ? (GL_TEXTURE_CUBE_MAP_POSITIVE_X + sliceIndex) : GL_TEXTURE_2D;
 
         if (renderTarget->numColorTextures > 0) {
             for (int i = 0; i < renderTarget->numColorTextures; i++) {
@@ -273,7 +273,7 @@ void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int slic
     } 
 
     if (gl_sRGB.GetBool()) {
-        SetSRGBWrite(!!(renderTarget->flags & SRGBWrite));
+        SetSRGBWrite(!!(renderTarget->flags & RenderTargetFlag::SRGBWrite));
     }
 }
 
@@ -291,7 +291,7 @@ void OpenGLRHI::EndRenderTarget() {
     gglBindFramebuffer(GL_FRAMEBUFFER, oldRenderTarget->fbo);
 
     if (gl_sRGB.GetBool()) {
-        SetSRGBWrite(!!(oldRenderTarget->flags & SRGBWrite));
+        SetSRGBWrite(!!(oldRenderTarget->flags & RenderTargetFlag::SRGBWrite));
     }
 }
 
@@ -341,16 +341,16 @@ void OpenGLRHI::DiscardRenderTarget(bool depth, bool stencil, uint32_t colorBitM
     OpenGL::DiscardFramebuffer(GL_FRAMEBUFFER, numAttachments, attachments);
 }
 
-void OpenGLRHI::BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRect, Handle dstRenderTargetHandle, const Rect &dstRect, int mask, int filter) const {
+void OpenGLRHI::BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRect, Handle dstRenderTargetHandle, const Rect &dstRect, int mask, BlitFilter::Enum filter) const {
     const GLRenderTarget *srcRenderTarget = renderTargetList[srcRenderTargetHandle];
     const GLRenderTarget *dstRenderTarget = renderTargetList[dstRenderTargetHandle];
 
     GLbitfield glmask = 0;
-    if (mask & ColorBlitMask) {
+    if (mask & BlitMask::Color) {
         glmask |= GL_COLOR_BUFFER_BIT;
     }
 
-    if (mask & DepthBlitMask) {
+    if (mask & BlitMask::Depth) {
         glmask |= GL_DEPTH_BUFFER_BIT;
     }
 
@@ -366,7 +366,7 @@ void OpenGLRHI::BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRe
     gglBlitFramebuffer(
         srcRect.x, srcRect.y, srcRect.X2(), srcRect.Y2(),
         dstRect.x, dstRect.y, dstRect.X2(), dstRect.Y2(),
-        glmask, filter == NearestBlitFilter ? GL_NEAREST : GL_LINEAR);
+        glmask, filter == BlitFilter::Nearest ? GL_NEAREST : GL_LINEAR);
 
     gglBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     gglBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);

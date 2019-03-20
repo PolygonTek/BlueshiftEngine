@@ -70,7 +70,7 @@ void FontFaceFreeType::Init() {
         // 대략 8x8 조각의 glyph 들을 하나의 텍스쳐에 packing 했을 경우 개수 만큼 할당..
         atlas->chunks.Resize(GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE / 64);
         atlas->texture = textureManager.AllocTexture(va("_glyph_cache_%i", i));
-        atlas->texture->Create(RHI::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
+        atlas->texture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
     }
 }
 

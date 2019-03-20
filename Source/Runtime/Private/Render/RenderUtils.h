@@ -31,10 +31,10 @@ enum {
 };
 
 // Converts environment cubemap face to OpenGL axis for rendering.
-void    R_EnvCubeMapFaceToOpenGLAxis(RHI::CubeMapFace face, Mat3 &axis);
+void    R_EnvCubeMapFaceToOpenGLAxis(RHI::CubeMapFace::Enum face, Mat3 &axis);
 
 // Converts environment cubemap face to engine axis for rendering.
-void    R_EnvCubeMapFaceToEngineAxis(RHI::CubeMapFace face, Mat3 &axis);
+void    R_EnvCubeMapFaceToEngineAxis(RHI::CubeMapFace::Enum face, Mat3 &axis);
 
 // Sets view matrix with the given origin and axis.
 void    R_SetViewMatrix(const Mat3 &viewaxis, const Vec3 &vieworg, float *viewMatrix);

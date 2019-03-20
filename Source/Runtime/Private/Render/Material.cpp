@@ -109,7 +109,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
 
     pass->renderingMode     = RenderingMode::Opaque;
     pass->transparency      = Transparency::Default;
-    pass->cullType          = RHI::BackCull;
+    pass->cullType          = RHI::CullType::Back;
     pass->stateBits         = 0;
     pass->cutoffAlpha       = 0.004f;
     pass->vertexColorMode   = VertexColorMode::VertexColorMode::Ignore;
@@ -141,11 +141,11 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
         } else if (!token.Icmp("cull")) {
             if (lexer.ReadToken(&token, false)) {
                 if (!token.Icmp("none") || !token.Icmp("disable") || !token.Icmp("twoSided")) {
-                    pass->cullType = RHI::NoCull;
+                    pass->cullType = RHI::CullType::None;
                 } else if (!token.Icmp("back") || !token.Icmp("backSide") || !token.Icmp("backSided")) {
-                    pass->cullType = RHI::BackCull;
+                    pass->cullType = RHI::CullType::Back;
                 } else if (!token.Icmp("front") || !token.Icmp("frontSide") || !token.Icmp("frontSided")) {
-                    pass->cullType = RHI::FrontCull;
+                    pass->cullType = RHI::CullType::Front;
                 } else {
                     BE_WARNLOG("invalid cull parm '%s' in material '%s'\n", token.c_str(), hashName.c_str());
                 }
@@ -673,9 +673,9 @@ void Material::Write(const char *filename) {
 
     Str cullStr;
     switch (pass->cullType) {
-    case RHI::BackCull: cullStr = "back"; break;
-    case RHI::FrontCull: cullStr = "front"; break;
-    case RHI::NoCull: default: cullStr = "none"; break;
+    case RHI::CullType::Back: cullStr = "back"; break;
+    case RHI::CullType::Front: cullStr = "front"; break;
+    case RHI::CullType::None: default: cullStr = "none"; break;
     }
     fp->Printf("%scull %s\n", indentSpace.c_str(), cullStr.c_str());
 

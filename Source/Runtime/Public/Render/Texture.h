@@ -82,8 +82,8 @@ public:
 
     RenderTarget *          GetRenderTarget() const { return renderTarget; }
 
-    void                    Create(RHI::TextureType type, const Image &srcImage, int flags);
-    void                    CreateEmpty(RHI::TextureType type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, int flags);
+    void                    Create(RHI::TextureType::Enum type, const Image &srcImage, int flags);
+    void                    CreateEmpty(RHI::TextureType::Enum type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, int flags);
     void                    CreateFromBuffer(Image::Format::Enum format, RHI::Handle bufferHandle);
 
                             /// Create indirection cubemap
@@ -137,8 +137,8 @@ private:
     int                     flags;                      // texture load flags
 
     RHI::Handle             textureHandle;              // texture handle
-    RHI::TextureType        type;
-    RHI::AddressMode        addressMode;
+    RHI::TextureType::Enum  type;
+    RHI::AddressMode::Enum  addressMode;
 
     Image::Format::Enum     format;                     // internal image format
 
@@ -258,7 +258,7 @@ private:
 
     StrIHashMap<Texture *>  textureHashMap;
 
-    RHI::TextureFilter      textureFilter;
+    RHI::TextureFilter::Enum textureFilter;
     int                     textureAnisotropy;
 };
 

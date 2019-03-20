@@ -83,7 +83,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
         if (!diffuseProbeTexture) {
             // Create default diffuse probe cubemap.
             diffuseProbeTexture = textureManager.AllocTexture(va("DiffuseProbe-%s", state.guid.ToString()));
-            diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, 16, 16, 1, 1, 1,
+            diffuseProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, 16, 16, 1, 1, 1,
                 state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
                 Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
@@ -113,7 +113,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
             int numMipLevels = Math::Log(2, size) + 1;
 
             specularProbeTexture = textureManager.AllocTexture(va("SpecularProbe-%s", state.guid.ToString()));
-            specularProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels,
+            specularProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels,
                 state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
                 Texture::Flag::Clamp | Texture::Flag::HighQuality);
 
@@ -141,7 +141,7 @@ void EnvProbeJob::RevalidateDiffuseProbeRT(bool clearToBlack) {
         (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->diffuseProbeTexture->GetFormat()))) {
         Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8;
 
-        envProbe->diffuseProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, 1, format, 
+        envProbe->diffuseProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, 1, format, 
             Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
     }
 
@@ -181,7 +181,7 @@ void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
         (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->specularProbeTexture->GetFormat()))) {
         Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8;
 
-        envProbe->specularProbeTexture->CreateEmpty(RHI::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
+        envProbe->specularProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
             Texture::Flag::Clamp | Texture::Flag::HighQuality);
     }
 
@@ -209,7 +209,7 @@ void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
 
     // Create specular probe render target if it is not created yet.
     if (!envProbe->specularProbeRT) {
-        envProbe->specularProbeRT = RenderTarget::Create(envProbe->specularProbeTexture, nullptr, RHI::HasDepthBuffer);
+        envProbe->specularProbeRT = RenderTarget::Create(envProbe->specularProbeTexture, nullptr, RHI::RenderTargetFlag::HasDepthBuffer);
     }
 }
 

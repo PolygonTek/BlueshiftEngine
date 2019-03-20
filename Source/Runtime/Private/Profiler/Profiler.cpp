@@ -42,8 +42,8 @@ void Profiler::Init() {
     for (int i = 0; i < COUNT_OF(gpuThreadInfo.markers); i++) {
         auto &marker = gpuThreadInfo.markers[i];
 
-        marker.startQueryHandle = rhi.CreateQuery(RHI::TimestampQuery);
-        marker.endQueryHandle = rhi.CreateQuery(RHI::TimestampQuery);
+        marker.startQueryHandle = rhi.CreateQuery(RHI::QueryType::Timestamp);
+        marker.endQueryHandle = rhi.CreateQuery(RHI::QueryType::Timestamp);
     }
 
     mapAddMutex = (PlatformMutex *)PlatformMutex::Create();

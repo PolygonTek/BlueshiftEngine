@@ -277,7 +277,7 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
 
             if (!backEnd.ctx->vscmCleared[cubeMapFace]) {
                 rhi.SetStateBits(RHI::DepthWrite);
-                rhi.Clear(RHI::DepthBit, Color4::black, 1.0f, 0);
+                rhi.Clear(RHI::ClearBit::Depth, Color4::black, 1.0f, 0);
             } else {
                 backEnd.ctx->vscmCleared[cubeMapFace] = false;
             }
@@ -319,7 +319,7 @@ static bool RB_ShadowCubeMapFacePass(const VisLight *visLight, const Mat4 &light
         rhi.SetScissor(faceRect);
                 
         rhi.SetStateBits(RHI::DepthWrite);
-        rhi.Clear(RHI::DepthBit, Color4::black, 1.0f, 0);
+        rhi.Clear(RHI::ClearBit::Depth, Color4::black, 1.0f, 0);
 
         backEnd.ctx->vscmRT->End();
 
@@ -355,8 +355,8 @@ static void RB_ShadowCubeMapPass(const VisLight *visLight, const Frustum &viewFr
     Mat4 prevViewProjMatrix = backEnd.viewProjMatrix;
     backEnd.projMatrix = backEnd.shadowProjectionMatrix;
 
-    for (int faceIndex = RHI::PositiveX; faceIndex <= RHI::NegativeZ; faceIndex++) {
-        R_EnvCubeMapFaceToOpenGLAxis((RHI::CubeMapFace)faceIndex, axis);
+    for (int faceIndex = RHI::CubeMapFace::PositiveX; faceIndex <= RHI::CubeMapFace::NegativeZ; faceIndex++) {
+        R_EnvCubeMapFaceToOpenGLAxis((RHI::CubeMapFace::Enum)faceIndex, axis);
 
         lightFrustum.SetAxis(axis);
 
@@ -434,7 +434,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
             prevScissorRect = rhi.GetScissor();
             rhi.SetScissor(Rect::empty);
             rhi.SetStateBits(RHI::DepthWrite);
-            rhi.Clear(RHI::DepthBit, Color4::black, 1.0f, 0);
+            rhi.Clear(RHI::ClearBit::Depth, Color4::black, 1.0f, 0);
         }
 
         bool isDifferentObject = drawSurf->space != prevSpace;
@@ -487,7 +487,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
         rhi.SetScissor(Rect::empty);
         
         rhi.SetStateBits(RHI::DepthWrite);
-        rhi.Clear(RHI::DepthBit, Color4::black, 1.0f, 0);
+        rhi.Clear(RHI::ClearBit::Depth, Color4::black, 1.0f, 0);
 
         backEnd.ctx->shadowMapRT->End();
 

@@ -62,7 +62,7 @@ void PP_Init() {
     Vec3 *verts = (Vec3 *)Mem_Alloc16(size);
     R_GenerateSphereTriangleStripVerts(Sphere(Vec3::origin, 1.0f), sphereLats, sphereLongs, verts);
 
-    sphereVB = rhi.CreateBuffer(RHI::VertexBuffer, RHI::Static, size, 0, verts);
+    sphereVB = rhi.CreateBuffer(RHI::BufferType::Vertex, RHI::BufferUsage::Static, size, 0, verts);
 
     Mem_AlignedFree(verts);
 }
@@ -77,7 +77,7 @@ void PP_PassThruPass(const Texture *srcTexture, float s, float t, float s2, floa
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::postPassThruShader;
 
@@ -97,7 +97,7 @@ void PP_Downscale2x2(const Texture *srcTexture, RenderTarget *dstRT) {
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::downscale2x2Shader;
 
@@ -140,7 +140,7 @@ void PP_Downscale4x4(const Texture *srcTexture, RenderTarget *dstRT) {
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::downscale4x4Shader;
 
@@ -186,7 +186,7 @@ void PP_Downscale4x4LogLum(const Texture *srcTexture, float s, float t, float s2
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::downscale4x4LogLumShader;
 
@@ -232,7 +232,7 @@ void PP_Downscale4x4ExpLum(const Texture *srcTexture, RenderTarget *dstRT) {
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::downscale4x4ExpLumShader;
 
@@ -277,7 +277,7 @@ void PP_HBlur5x(const Texture *srcTexture, const float *weights, RenderTarget *d
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::blur5xShader;
 
@@ -298,7 +298,7 @@ void PP_VBlur5x(const Texture *srcTexture, const float *weights, RenderTarget *d
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::blur5xShader;
 
@@ -319,7 +319,7 @@ void PP_HBlur7x(const Texture *srcTexture, const float *weights, RenderTarget *d
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::blur7xShader;
 
@@ -340,7 +340,7 @@ void PP_VBlur7x(const Texture *srcTexture, const float *weights, RenderTarget *d
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::blur7xShader;
 
@@ -361,7 +361,7 @@ void PP_HBlur15x(const Texture *srcTexture, const float *weights, RenderTarget *
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::blur15xShader;
 
@@ -382,7 +382,7 @@ void PP_VBlur15x(const Texture *srcTexture, const float *weights, RenderTarget *
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::blur15xShader;
 
@@ -403,7 +403,7 @@ void PP_HBlurBilinear3x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::blurBilinear3xShader;
 
@@ -425,7 +425,7 @@ void PP_VBlurBilinear3x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::blurBilinear3xShader;
     
@@ -447,7 +447,7 @@ void PP_HBlurBilinear4x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::blurBilinear4xShader;
 
@@ -469,7 +469,7 @@ void PP_VBlurBilinear4x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::blurBilinear4xShader;
    
@@ -491,7 +491,7 @@ void PP_HBlurBilinear8x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::blurBilinear8xShader;
 
@@ -513,7 +513,7 @@ void PP_VBlurBilinear8x(const Texture *srcTexture, const Vec2 *sampleOffsets, co
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::blurBilinear8xShader;
 
@@ -535,7 +535,7 @@ void PP_HBlurAlphaMaskedBilinear8x(const Texture *srcTexture, const Texture *mas
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::blurAlphaMaskedBilinear8xShader;
 
@@ -558,7 +558,7 @@ void PP_VBlurAlphaMaskedBilinear8x(const Texture *srcTexture, const Texture *mas
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::blurAlphaMaskedBilinear8xShader;
 
@@ -611,7 +611,7 @@ void PP_KawaseBlur(const Texture *srcTexture, int iteration, RenderTarget *dstRT
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
     
     float offset_x = ((float)iteration + 0.5f) / srcTexture->GetWidth();
     float offset_y = ((float)iteration + 0.5f) / srcTexture->GetHeight();
@@ -647,7 +647,7 @@ void PP_AoBlur(const Texture *aoMap, const Texture *depthTexture, RenderTarget *
     rhi.SetViewport(Rect(0, 0, tempRT->GetWidth(), tempRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::aoBlurShader;
     
@@ -666,7 +666,7 @@ void PP_AoBlur(const Texture *aoMap, const Texture *depthTexture, RenderTarget *
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     shader->Bind();
     shader->SetTexture("colorMap", tempRT->ColorTexture());
@@ -686,7 +686,7 @@ void PP_LinearizeDepth(const Texture *depthTexture, float zNear, float zFar, Ren
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::linearizeDepthShader;
    
@@ -706,7 +706,7 @@ void PP_CopyCocToAlpha(const Texture *depthTexture, float zFar, RenderTarget *ds
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::copyDownscaledCocToAlphaShader;
    
@@ -730,7 +730,7 @@ void PP_CopyColorAndCoc(const Texture *colorTexture, const Texture *depthTexture
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::copyColorAndCocShader;
    
@@ -755,7 +755,7 @@ void PP_ApplyDOF(const Texture *tex0, const Texture *tex1, RenderTarget *dstRT) 
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::applyDofShader;
     
@@ -777,7 +777,7 @@ void PP_SunShaftsMaskGen(const Texture *colorTexture, const Texture *depthTextur
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::sunShaftsMaskGenShader;
     
@@ -798,7 +798,7 @@ void PP_SunShaftsGen(const Texture *srcTexture, const Mat4 &viewProjectionMatrix
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::sunShaftsGenShader;
     
@@ -820,7 +820,7 @@ void PP_SunShaftsDisplay(const Texture *screenTexture, const Texture *tex1, cons
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::sunShaftsDisplayShader;
     
@@ -841,7 +841,7 @@ void PP_ObjectMotionBlur(const Texture *srcTexture, const Texture *velocityTextu
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::postObjectMotionBlurShader;
     
@@ -864,7 +864,7 @@ void PP_CameraMotionBlur(const Texture *srcTexture, const Texture *depthTexture,
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::postCameraMotionBlurShader;
     
@@ -879,10 +879,10 @@ void PP_CameraMotionBlur(const Texture *srcTexture, const Texture *depthTexture,
     shader->SetConstant4x4f("currViewProjectionMatrix", true, viewProjectionMatrix[0]);
     shader->SetConstant4x4f("prevViewProjectionMatrix", true, viewProjectionMatrix[1]);
     
-    rhi.BindBuffer(RHI::VertexBuffer, sphereVB);
+    rhi.BindBuffer(RHI::BufferType::Vertex, sphereVB);
     rhi.SetVertexFormat(vertexFormats[VertexFormat::Xyz].vertexFormatHandle);
     rhi.SetStreamSource(0, sphereVB, 0, sizeof(Vec3));
-    rhi.DrawArrays(RHI::TriangleStripPrim, 0, 2 * sphereLats * sphereLongs);
+    rhi.DrawArrays(RHI::Topology::TriangleStrip, 0, 2 * sphereLats * sphereLongs);
 
     dstRT->End();
     rhi.SetViewport(prevViewportRect);
@@ -894,7 +894,7 @@ void PP_WriteDefaultLuminance(RenderTarget *dstRT) {
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::writeValueShader;
 
@@ -932,7 +932,7 @@ void PP_LuminanceAdaptation(const Texture *srcTexture0, const Texture *srcTextur
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::luminanceAdaptationShader;
     
@@ -953,7 +953,7 @@ void PP_BrightFilter(const Texture *srcTexture, const Texture *luminanceTexture,
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::brightFilterShader;
    
@@ -977,7 +977,7 @@ void PP_ChromaShift(const Texture *srcTexture, RenderTarget *dstRT) {
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
     const Shader *shader = ShaderManager::chromaShiftShader;
     
@@ -997,7 +997,7 @@ void PP_SSAO(const Texture *depthTexture, const Texture *downscaledDepthTexture,
     rhi.SetViewport(Rect(0, 0, dstRT->GetWidth(), dstRT->GetHeight()));
 
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
     
     const Shader *shader = ShaderManager::ssaoShader;
     

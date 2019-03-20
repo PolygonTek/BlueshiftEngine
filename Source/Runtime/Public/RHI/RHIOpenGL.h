@@ -134,7 +134,9 @@ public:
     // Depth Stencil
     //---------------------------------------------------------------------------------------------
 
-    Handle                  CreateStencilState(int readMask, int writeMask, StencilFunc funcBack, int failBack, int zfailBack, int zpassBack, StencilFunc funcFront, int failFront, int zfailFront, int zpassFront);
+    Handle                  CreateStencilState(int readMask, int writeMask, 
+                                StencilFunc::Enum funcBack, int failBack, int zfailBack, int zpassBack, 
+                                StencilFunc::Enum funcFront, int failFront, int zfailFront, int zpassFront);
     void                    DestroyStencilState(Handle stencilStateHandle);
     void                    SetStencilState(Handle stencilStateHandle, int ref);
 
@@ -142,16 +144,16 @@ public:
     // Texture
     //---------------------------------------------------------------------------------------------
 
-    Handle                  CreateTexture(TextureType type);
+    Handle                  CreateTexture(TextureType::Enum type);
     void                    DestroyTexture(Handle textureHandle);
     void                    SelectTextureUnit(unsigned int unit);
     void                    BindTexture(Handle textureHandle);
 
-    void                    AdjustTextureSize(TextureType type, bool useNPOT, int inWidth, int inHeight, int inDepth, int *outWidth, int *outHeight, int *outDepth);
-    void                    AdjustTextureFormat(TextureType type, bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat);
+    void                    AdjustTextureSize(TextureType::Enum type, bool useNPOT, int inWidth, int inHeight, int inDepth, int *outWidth, int *outHeight, int *outDepth);
+    void                    AdjustTextureFormat(TextureType::Enum type, bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat);
 
-    void                    SetTextureFilter(TextureFilter filter);
-    void                    SetTextureAddressMode(AddressMode addressMode);
+    void                    SetTextureFilter(TextureFilter::Enum filter);
+    void                    SetTextureAddressMode(AddressMode::Enum addressMode);
     void                    SetTextureAnisotropy(int aniso);
     void                    SetTextureBorderColor(const Color4 &rgba);
     void                    SetTextureShadowFunc(bool set);
@@ -159,32 +161,32 @@ public:
     void                    SetTextureLevel(int baseLevel, int maxLevel = 1000);
     void                    GenerateMipmap();
 
-    void                    SetTextureImage(TextureType textureType, const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps, bool isSRGB);
+    void                    SetTextureImage(TextureType::Enum textureType, const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps, bool isSRGB);
     void                    SetTextureImageBuffer(Image::Format::Enum dstFormat, bool sRGB, int bufferHandle);
 
     void                    SetTextureSubImage2D(int level, int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels);
     void                    SetTextureSubImage3D(int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format::Enum srcFormat, const void *pixels);
     void                    SetTextureSubImage2DArray(int level, int xoffset, int yoffset, int zoffset, int width, int height, int arrays, Image::Format::Enum srcFormat, const void *pixels);
-    void                    SetTextureSubImageCube(CubeMapFace face, int level, int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels);
+    void                    SetTextureSubImageCube(CubeMapFace::Enum face, int level, int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels);
     void                    SetTextureSubImageRect(int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels);
 
     void                    CopyTextureSubImage2D(int xoffset, int yoffset, int x, int y, int width, int height);
 
     void                    GetTextureImage2D(int level, Image::Format::Enum format, void *pixels);
     void                    GetTextureImage3D(int level, Image::Format::Enum format, void *pixels);
-    void                    GetTextureImageCube(CubeMapFace face, int level, Image::Format::Enum format, void *pixels);
+    void                    GetTextureImageCube(CubeMapFace::Enum face, int level, Image::Format::Enum format, void *pixels);
     void                    GetTextureImageRect(Image::Format::Enum format, void *pixels);
 
     //---------------------------------------------------------------------------------------------
     // Render Target
     //---------------------------------------------------------------------------------------------
 
-    Handle                  CreateRenderTarget(RenderTargetType type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, int flags);
+    Handle                  CreateRenderTarget(RenderTargetType::Enum type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, int flags);
     void                    DestroyRenderTarget(Handle renderTargetHandle);
     void                    BeginRenderTarget(Handle renderTargetHandle, int level = 0, int sliceIndex = 0);
     void                    EndRenderTarget();
     void                    DiscardRenderTarget(bool depth, bool stencil, uint32_t colorBitMask);
-    void                    BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRect, Handle dstRenderTargetHandle, const Rect &dstRect, int mask, int filter) const;
+    void                    BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRect, Handle dstRenderTargetHandle, const Rect &dstRect, int mask, BlitFilter::Enum filter) const;
     void                    SetDrawBuffersMask(unsigned int mrtBitMask);
 
     //---------------------------------------------------------------------------------------------
@@ -252,14 +254,14 @@ public:
     // Buffer
     //---------------------------------------------------------------------------------------------
 
-    Handle                  CreateBuffer(BufferType type, BufferUsage usage, int size, int pitch = 0, const void *data = nullptr);
+    Handle                  CreateBuffer(BufferType::Enum type, BufferUsage::Enum usage, int size, int pitch = 0, const void *data = nullptr);
     void                    DestroyBuffer(Handle bufferHandle);
-    void                    BindBuffer(BufferType type, Handle bufferHandle);
+    void                    BindBuffer(BufferType::Enum type, Handle bufferHandle);
 
-    void                    BindIndexedBuffer(BufferType type, int bindingIndex, Handle bufferHandle);
-    void                    BindIndexedBufferRange(BufferType type, int bindingIndex, Handle bufferHandle, int offset, int size);
+    void                    BindIndexedBuffer(BufferType::Enum type, int bindingIndex, Handle bufferHandle);
+    void                    BindIndexedBufferRange(BufferType::Enum type, int bindingIndex, Handle bufferHandle, int offset, int size);
 
-    void *                  MapBufferRange(Handle bufferHandle, BufferLockMode lockMode, int offset = 0, int size = -1);
+    void *                  MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMode, int offset = 0, int size = -1);
     bool                    UnmapBuffer(Handle bufferHandle);
     void                    FlushMappedBufferRange(Handle bufferHandle, int offset = 0, int size = -1);
 
@@ -304,20 +306,20 @@ public:
                             // Similar with SetStreamSource in D3D. Must be called after SetVertexFormat()
     void                    SetStreamSource(int stream, Handle vertexBufferHandle, int base, int stride);
 
-    void                    DrawArrays(Primitive primitives, int startVertex, int numVerts) const;
-    void                    DrawArraysInstanced(Primitive primitives, int startVertex, int numVerts, int instanceCount) const;
-    void                    DrawElements(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr) const;
-    void                    DrawElementsInstanced(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount) const;
-    void                    DrawElementsBaseVertex(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int baseVertexIndex) const;
-    void                    DrawElementsInstancedBaseVertex(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount, int baseVertexIndex) const;
-    void                    DrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset) const;
-    void                    MultiDrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset, int drawCount, int stride) const;
+    void                    DrawArrays(Topology::Enum topology, int startVertex, int numVerts) const;
+    void                    DrawArraysInstanced(Topology::Enum topology, int startVertex, int numVerts, int instanceCount) const;
+    void                    DrawElements(Topology::Enum topology, int startIndex, int numIndices, int indexSize, const void *ptr) const;
+    void                    DrawElementsInstanced(Topology::Enum topology, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount) const;
+    void                    DrawElementsBaseVertex(Topology::Enum topology, int startIndex, int numIndices, int indexSize, const void *ptr, int baseVertexIndex) const;
+    void                    DrawElementsInstancedBaseVertex(Topology::Enum topology, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount, int baseVertexIndex) const;
+    void                    DrawElementsIndirect(Topology::Enum topology, int indexSize, int indirectBufferOffset) const;
+    void                    MultiDrawElementsIndirect(Topology::Enum topology, int indexSize, int indirectBufferOffset, int drawCount, int stride) const;
 
     //---------------------------------------------------------------------------------------------
     // Query (Occlusion, Timestamp)
     //---------------------------------------------------------------------------------------------
 
-    Handle                  CreateQuery(QueryType queryType);
+    Handle                  CreateQuery(QueryType::Enum queryType);
     void                    DestroyQuery(Handle queryHandle);
     void                    BeginQuery(Handle queryHandle);
     void                    EndQuery(Handle queryHandle);
@@ -333,7 +335,7 @@ protected:
     void                    InitHandles();
     void                    FreeHandles();
 
-    int                     GetTypeSize(const VertexElement::Type type) const;
+    int                     GetTypeSize(const VertexElement::Type::Enum type) const;
     void                    SetShaderConstantGeneric(int index, bool rowMajor, int count, const void *data) const;
     void                    BeginUnpackAlignment(int pitch);
     void                    EndUnpackAlignment();

@@ -77,7 +77,7 @@ void OpenGLRHI::DestroyVertexFormat(Handle vertexFormatHandle) {
     vertexFormatList[vertexFormatHandle] = nullptr;
 }
 
-int OpenGLRHI::GetTypeSize(const VertexElement::Type type) const {
+int OpenGLRHI::GetTypeSize(const VertexElement::Type::Enum type) const {
     return GLTypeSize[type];
 }
 
@@ -112,7 +112,7 @@ void OpenGLRHI::SetVertexFormat(Handle vertexFormatHandle) {
     const GLVertexFormat *sel = vertexFormatList[vertexFormatHandle];
 
 #if 1
-    for (int i = 0; i < VertexElement::MaxUsages; i++) {
+    for (int i = 0; i < VertexElement::Usage::Count; i++) {
         if (sel->vertexElements[i].components ^ cur->vertexElements[i].components) {
             if (sel->vertexElements[i].components > 0) {
                 gglEnableVertexAttribArray(i);
@@ -188,10 +188,10 @@ void OpenGLRHI::SetStreamSource(int stream, Handle vertexBufferHandle, int base,
     const GLVertexElementInternal *ve;
     GLVertexAttrib *currentVertexAttrib;
 
-    BindBuffer(VertexBuffer, vertexBufferHandle);
+    BindBuffer(BufferType::Vertex, vertexBufferHandle);
 
 #if 1
-    for (int i = 0; i < VertexElement::MaxUsages; i++) {
+    for (int i = 0; i < VertexElement::Usage::Count; i++) {
         currentVertexAttrib = &currentContext->state->vertexAttribs[i];
         ve = &vertexFormat->vertexElements[i];
 

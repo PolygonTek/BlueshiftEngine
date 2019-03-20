@@ -21,14 +21,14 @@
 BE_NAMESPACE_BEGIN
 
 void Batch::DrawPrimitives() const {
-    rhi.BindBuffer(RHI::IndexBuffer, indexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Index, indexBuffer);
 
     if (numIndirectCommands > 0) {
-        rhi.MultiDrawElementsIndirect(RHI::TrianglesPrim, sizeof(TriIndex), 0, numIndirectCommands, sizeof(RHI::DrawElementsIndirectCommand));
+        rhi.MultiDrawElementsIndirect(RHI::Topology::TriangleList, sizeof(TriIndex), 0, numIndirectCommands, sizeof(RHI::DrawElementsIndirectCommand));
     } else if (numInstances > 0) {
-        rhi.DrawElementsInstanced(RHI::TrianglesPrim, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(TriIndex), 0, numInstances);
+        rhi.DrawElementsInstanced(RHI::Topology::TriangleList, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(TriIndex), 0, numInstances);
     } else {
-        rhi.DrawElements(RHI::TrianglesPrim, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(TriIndex), 0);
+        rhi.DrawElements(RHI::Topology::TriangleList, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(TriIndex), 0);
     }
 
     int instanceCount = Max(numInstances, 1);
@@ -225,14 +225,14 @@ void Batch::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shade
     }
 
     if (numIndirectCommands > 0) {
-        rhi.BindBuffer(RHI::DrawIndirectBuffer, indirectBuffer);
+        rhi.BindBuffer(RHI::BufferType::DrawIndirect, indirectBuffer);
         rhi.BufferDiscardWrite(indirectBuffer, numIndirectCommands * sizeof(indirectCommands[0]), indirectCommands);
     } else if (numInstances > 0) {
         int bufferOffset = backEnd.instanceBufferCache->offset + instanceStartIndex * rhi.HWLimit().uniformBufferOffsetAlignment;
         int bufferSize = (instanceEndIndex - instanceStartIndex + 1) * rhi.HWLimit().uniformBufferOffsetAlignment;
 
         // 0-indexed buffer for instance buffer
-        rhi.BindIndexedBufferRange(RHI::UniformBuffer, 0, backEnd.instanceBufferCache->buffer, bufferOffset, bufferSize);
+        rhi.BindIndexedBufferRange(RHI::BufferType::Uniform, 0, backEnd.instanceBufferCache->buffer, bufferOffset, bufferSize);
         shader->SetConstantBuffer("instanceDataBuffer", 0);
 
         shader->SetConstantArray1i(shader->builtInConstantIndices[Shader::BuiltInConstant::InstanceIndexes], numInstances, instanceLocalIndexes);

@@ -454,7 +454,7 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
             rhi.SetViewport(Rect(0, 0, backEnd.ctx->ppRTs[PP_RT_VEL]->GetWidth(), backEnd.ctx->ppRTs[PP_RT_VEL]->GetHeight()));
             rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite | RHI::DepthWrite);
-            rhi.Clear(RHI::ColorBit | RHI::DepthBit, Color4(0.0f, 0.0f, 0.0f, 1.0f), 1.0f, 0);
+            rhi.Clear(RHI::ClearBit::Color | RHI::ClearBit::Depth, Color4(0.0f, 0.0f, 0.0f, 1.0f), 1.0f, 0);
         }
 
         backEnd.batch.DrawSubMesh(drawSurf->subMesh);
@@ -474,7 +474,7 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 
         rhi.SetViewport(Rect(0, 0, backEnd.ctx->ppRTs[PP_RT_VEL]->GetWidth(), backEnd.ctx->ppRTs[PP_RT_VEL]->GetHeight()));
         rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite | RHI::DepthWrite);
-        rhi.Clear(RHI::ColorBit | RHI::DepthBit, Color4(0.0f, 0.0f, 0.0f, 1.0f), 1.0f, 0);
+        rhi.Clear(RHI::ClearBit::Color | RHI::ClearBit::Depth, Color4(0.0f, 0.0f, 0.0f, 1.0f), 1.0f, 0);
     
         backEnd.ctx->ppRTs[PP_RT_VEL]->End();
 
