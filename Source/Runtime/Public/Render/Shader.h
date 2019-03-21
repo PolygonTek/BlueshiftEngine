@@ -51,24 +51,24 @@ public:
 
     struct Lang {
         enum Enum {
-            GlslShader,
-            CgShader
+            Glsl,
+            Cg
         };
     };
 
     struct PropertyType {
         enum Enum {
-            BoolType,
-            IntType,
-            FloatType,
-            Vec2Type,
-            Vec3Type,
-            Vec4Type,
-            Color3Type,
-            Color4Type,
-            Texture2DType,
-            Texture3DType,
-            TextureCubeType
+            Bool,
+            Int,
+            Float,
+            Vec2,
+            Vec3,
+            Vec4,
+            Color3,
+            Color4,
+            Texture2D,
+            Texture3D,
+            TextureCube
         };
     };
 
@@ -139,7 +139,6 @@ public:
     struct Define {
         Define() {}
         Define(const char *name, int value) : name(name), value(value) {}
-        Define &operator=(const Define &rhs) { this->name = rhs.name; this->value = rhs.value; return *this;  }
 
         Str                 name;
         int                 value;
@@ -156,19 +155,23 @@ public:
     const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
 
+                            /// Tests if this shader has vertex shader.
     bool                    HasVertexShader() const { return !!(flags & Flag::HasVertexShader); }
+                            /// Tests if this shader has fragment shader.
     bool                    HasFragmentShader() const { return !!(flags & Flag::HasFragmentShader); }
+                            /// Tests if this shader has geometry shader.
     bool                    HasGeometryShader() const { return !!(flags & Flag::HasGeometryShader); }
 
     bool                    IsOriginalShader() const { return !originalShader; }
     bool                    IsInstantiatedShader() const { return !!originalShader; }
 
+                            /// Returns shader flags.
     int                     GetFlags() const;
 
-                            /// Create instantiated shader.
+                            /// Creates instantiated shader.
     Shader *                InstantiateShader(const Array<Define> &defineArray);
 
-                            /// Reinstantiate itself.
+                            /// Reinstantiates itself.
     void                    Reinstantiate();
 
                             /// Returns original shader. Instantiated shader has it's original shader

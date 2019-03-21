@@ -126,6 +126,9 @@ public:
                     /// Returns "a b c d" with the given precision.
     const char *    ToString(int precision) const;
 
+                    /// Creates from the string
+    static Plane    FromString(const char *str);
+
                     /// Returns dimension of this type
     int             GetDimension() const { return 4; }
 
