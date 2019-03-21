@@ -96,4 +96,10 @@ const char *Plane::ToString(int precision) const {
     return Str::FloatArrayToString((const float *)(*this), 4, precision);
 }
 
+Plane Plane::FromString(const char *str) {
+    Plane p;
+    sscanf(str, "%f %f %f %f", &p.normal.x, &p.normal.y, &p.normal.z, &p.offset);
+    return p;
+}
+
 BE_NAMESPACE_END

@@ -317,6 +317,7 @@ set(COMMON_ENGINE_FILES
     Private/Math/Angles.cpp
     Private/Math/Half.cpp
     Private/Math/OBB.cpp
+    Private/Math/Ray.cpp
     Private/Math/Rect.cpp
     Private/Math/CQuaternion.cpp
     Private/Math/SphericalHarmonics.cpp
