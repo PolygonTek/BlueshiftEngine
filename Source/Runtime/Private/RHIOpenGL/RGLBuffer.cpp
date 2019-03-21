@@ -126,7 +126,7 @@ void OpenGLRHI::BindBuffer(BufferType::Enum type, Handle bufferHandle) {
 
 void OpenGLRHI::BindIndexedBuffer(BufferType::Enum type, int bindingIndex, Handle bufferHandle) {
     // Allowed only target UniformBuffer or TransformFeedbackBuffer
-    assert(type == UniformBuffer || type == TransformFeedbackBuffer);
+    assert(type == BufferType::Uniform || type == BufferType::TransformFeedback);
     int targetIndex = type - BufferType::Uniform;
     Handle *bufferHandlePtr = &currentContext->state->indexedBufferHandles[targetIndex];
     GLBuffer *buffer = bufferList[bufferHandle];
@@ -141,7 +141,7 @@ void OpenGLRHI::BindIndexedBuffer(BufferType::Enum type, int bindingIndex, Handl
 
 void OpenGLRHI::BindIndexedBufferRange(BufferType::Enum type, int bindingIndex, Handle bufferHandle, int offset, int size) {
     // Allowed only target UniformBuffer or TransformFeedbackBuffer
-    assert(type == UniformBuffer || type == TransformFeedbackBuffer);
+    assert(type == BufferType::Uniform || type == BufferType::TransformFeedback);
     int targetIndex = type - BufferType::Uniform;
     Handle *bufferHandlePtr = &currentContext->state->indexedBufferHandles[targetIndex];
     GLBuffer *buffer = bufferList[bufferHandle];
