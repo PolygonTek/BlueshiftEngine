@@ -175,14 +175,14 @@ void Batch::SetVertexColorConstants(const Shader *shader, const Material::Vertex
     Vec4 vertexColorAdd;
 
     if (vertexColor == Material::VertexColorMode::Modulate) {
-        vertexColorScale.Set(1.0f, 1.0f, 1.0f, 1.0f);
-        vertexColorAdd.Set(0.0f, 0.0f, 0.0f, 0.0f);
+        vertexColorScale = Vec4::one;
+        vertexColorAdd = Vec4::zero;
     } else if (vertexColor == Material::VertexColorMode::InverseModulate) {
-        vertexColorScale.Set(-1.0f, -1.0f, -1.0f, 1.0f);
-        vertexColorAdd.Set(1.0f, 1.0f, 1.0f, 0.0f);
+        vertexColorScale = -Vec4::one;
+        vertexColorAdd = Vec4::one;
     } else {
-        vertexColorScale.Set(0.0f, 0.0f, 0.0f, 0.0f);
-        vertexColorAdd.Set(1.0f, 1.0f, 1.0f, 1.0f);
+        vertexColorScale = Vec4::zero;
+        vertexColorAdd = Vec4::one;
     }
     
     shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::VertexColorScale], vertexColorScale);
@@ -233,7 +233,7 @@ void Batch::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shade
 
         // 0-indexed buffer for instance buffer
         rhi.BindIndexedBufferRange(RHI::BufferType::Uniform, 0, backEnd.instanceBufferCache->buffer, bufferOffset, bufferSize);
-        shader->SetConstantBuffer("instanceDataBuffer", 0);
+        shader->SetConstantBuffer(shader->builtInConstantIndices[Shader::BuiltInConstant::InstanceDataBuffer], 0);
 
         shader->SetConstantArray1i(shader->builtInConstantIndices[Shader::BuiltInConstant::InstanceIndexes], numInstances, instanceLocalIndexes);
     } else {
@@ -272,7 +272,7 @@ void Batch::SetProbeConstants(const Shader *shader) const {
     }
 
     if (r_probeBlending.GetBool()) {
-        shader->SetConstant1f("probeLerp", surfSpace->envProbeInfo[0].weight);
+        shader->SetConstant1f(shader->builtInConstantIndices[Shader::BuiltInConstant::ProbeLerp], surfSpace->envProbeInfo[0].weight);
 
         if (surfSpace->envProbeInfo[1].envProbe) {
             const EnvProbe *probe1 = surfSpace->envProbeInfo[1].envProbe;

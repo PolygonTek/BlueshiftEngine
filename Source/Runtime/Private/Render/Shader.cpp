@@ -37,6 +37,7 @@ static const char *builtInConstantNames[] = {
     "modelViewProjectionMatrix",            // ModelViewProjectionMatrix
     "modelViewProjectionMatrixTranspose",   // ModelViewProjectionMatrixTranspose
     "prevModelViewProjectionMatrix",        // PrevModelViewProjectionMatrix
+    "instanceDataBuffer",                   // InstanceDataBuffer
     "instanceIndexes",                      // InstanceIndexes
     "localToWorldMatrix",                   // LocalToWorldMatrix
     "worldToLocalMatrix",                   // WorldToLocalMatrix
@@ -66,7 +67,8 @@ static const char *builtInConstantNames[] = {
     "probe1SpecularCubeMapMaxMipLevel",     // Probe1SpecularCubeMapMaxMipLevel
     "probe1Position",                       // Probe1Position
     "probe1Mins",                           // Probe1Mins
-    "probe1Maxs"                            // Probe1Maxs
+    "probe1Maxs",                           // Probe1Maxs
+    "probeLerp"                             // ProbeLerp
 };
 
 // NOTE: must be same order with Shader::BuiltInSampler enum.

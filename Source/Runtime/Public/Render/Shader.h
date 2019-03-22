@@ -85,6 +85,7 @@ public:
             ModelViewProjectionMatrix,
             ModelViewProjectionMatrixTranspose,
             PrevModelViewProjectionMatrix,
+            InstanceDataBuffer,
             InstanceIndexes,
             LocalToWorldMatrix,
             WorldToLocalMatrix,
@@ -115,6 +116,7 @@ public:
             Probe1Position,
             Probe1Mins,
             Probe1Maxs,
+            ProbeLerp,
             Count
         };
     };
