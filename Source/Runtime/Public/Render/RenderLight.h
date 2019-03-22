@@ -60,13 +60,13 @@ public:
         Type::Enum          type = Type::Point;
         float               maxVisDist = MeterToUnit(10);
 
-        Vec3                origin = Vec3::origin;      ///< Light position in world space
-        Vec3                size = Vec3::one;           ///< Light extents for each axis
-        Mat3                axis = Mat3::identity;      ///< Light orientation
+        Vec3                origin = Vec3::origin;          ///< Light position in world space
+        Vec3                size = Vec3::one;               ///< Light extents for each axis
+        Mat3                axis = Mat3::identity;          ///< Light orientation
 
-        float               zNear = 1.0f;               // near distance for Light::Spot
+        float               zNear = 1.0f;                   ///< Near distance for Light::Spot
 
-        float               intensity = 1.0f;
+        float               intensity = 1.0f;               ///< Light intensity
         float               fallOffExponent = 1.25f;
         float               shadowOffsetFactor = 3.0f;
         float               shadowOffsetUnits = 200.f;

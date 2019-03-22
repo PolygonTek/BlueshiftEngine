@@ -49,10 +49,6 @@ void GameWorld::RegisterProperties() {
 }
 
 GameWorld::GameWorld() {
-    memset(entities, 0, sizeof(entities));
-
-    firstFreeIndex = 0;
-
     // Create render world
     renderWorld = renderSystem.AllocRenderWorld();
 

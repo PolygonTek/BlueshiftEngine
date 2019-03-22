@@ -665,25 +665,45 @@ void Material::Write(const char *filename) {
 
     Str renderingModeStr;
     switch (pass->renderingMode) {
-    case RenderingMode::Opaque: renderingModeStr = "opaque"; break;
-    case RenderingMode::AlphaCutoff: renderingModeStr = "alphaCutoff"; break;
-    case RenderingMode::AlphaBlend: renderingModeStr = "alphaBlend"; break;
+    case RenderingMode::Opaque: 
+        renderingModeStr = "opaque"; 
+        break;
+    case RenderingMode::AlphaCutoff: 
+        renderingModeStr = "alphaCutoff"; 
+        break;
+    case RenderingMode::AlphaBlend: 
+        renderingModeStr = "alphaBlend"; 
+        break;
     }
     fp->Printf("%srenderingMode %s\n", indentSpace.c_str(), renderingModeStr.c_str());
 
     Str cullStr;
     switch (pass->cullType) {
-    case RHI::CullType::Back: cullStr = "back"; break;
-    case RHI::CullType::Front: cullStr = "front"; break;
-    case RHI::CullType::None: default: cullStr = "none"; break;
+    case RHI::CullType::Back: 
+        cullStr = "back"; 
+        break;
+    case RHI::CullType::Front: 
+        cullStr = "front"; 
+        break;
+    case RHI::CullType::None: 
+    default: 
+        cullStr = "none"; 
+        break;
     }
     fp->Printf("%scull %s\n", indentSpace.c_str(), cullStr.c_str());
 
     Str transparencyStr;
     switch (pass->transparency) {
-    case Transparency::Default: transparencyStr = "default"; break;
-    case Transparency::TwoPassesOneSide: transparencyStr = "twoPassesOneSide"; break;
-    case Transparency::TwoPassesTwoSides: default: transparencyStr = "twoPassesTwoSides"; break;
+    case Transparency::Default: 
+        transparencyStr = "default"; 
+        break;
+    case Transparency::TwoPassesOneSide: 
+        transparencyStr = "twoPassesOneSide"; 
+        break;
+    case Transparency::TwoPassesTwoSides: 
+    default: 
+        transparencyStr = "twoPassesTwoSides"; 
+        break;
     }
     fp->Printf("%stransparency %s\n", indentSpace.c_str(), transparencyStr.c_str());
 

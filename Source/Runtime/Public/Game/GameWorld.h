@@ -46,14 +46,12 @@ class GameWorld : public Object {
     friend class GameEdit;
 
 public:
-    enum {
-        MaxScenes               = 16,
-        DontDestroyOnLoadSceneNum = MaxScenes - 1,
-        EntityNumBits           = 16,
-        MaxEntities             = (1 << EntityNumBits),
-        BadEntityNum            = (MaxEntities - 1),
-        MaxEntityNum            = (MaxEntities - 2)
-    };
+    static constexpr int MaxScenes = 16;
+    static constexpr int DontDestroyOnLoadSceneNum = MaxScenes - 1;
+    static constexpr int EntityNumBits = 16;
+    static constexpr int MaxEntities = (1 << EntityNumBits);
+    static constexpr int BadEntityNum = (MaxEntities - 1);
+    static constexpr int MaxEntityNum = (MaxEntities - 2);
 
     struct LoadSceneMode {
         enum Enum {
@@ -185,10 +183,10 @@ private:
     void                        UpdateEntities();
     void                        LateUpdateEntities();
 
-    Entity *                    entities[MaxEntities];
+    Entity *                    entities[MaxEntities] = { nullptr, };
     HashIndex                   entityHash;
     HashIndex                   entityTagHash;
-    int                         firstFreeIndex;
+    int                         firstFreeIndex = 0;
 
     GameScene                   scenes[MaxScenes];
 

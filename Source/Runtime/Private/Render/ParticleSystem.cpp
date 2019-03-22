@@ -148,74 +148,74 @@ bool ParticleSystem::ParseStage(Lexer &lexer, Stage &stage) const {
         } else if (!token.Icmp("module")) {
             Str moduleName;
             if (lexer.ReadToken(&moduleName)) {
-                if (moduleName == moduleNames[StandardModuleBit]) {
-                    stage.moduleFlags |= BIT(StandardModuleBit);
+                if (moduleName == moduleNames[ModuleBit::Standard]) {
+                    stage.moduleFlags |= BIT(ModuleBit::Standard);
 
                     if (!ParseStandardModule(lexer, stage.standardModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[ShapeModuleBit]) {
-                    stage.moduleFlags |= BIT(ShapeModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::Shape]) {
+                    stage.moduleFlags |= BIT(ModuleBit::Shape);
 
                     if (!ParseShapeModule(lexer, stage.shapeModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[CustomPathModuleBit]) {
-                    stage.moduleFlags |= BIT(CustomPathModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::CustomPath]) {
+                    stage.moduleFlags |= BIT(ModuleBit::CustomPath);
 
                     if (!ParseCustomPathModule(lexer, stage.customPathModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[LTColorModuleBit]) {
-                    stage.moduleFlags |= BIT(LTColorModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::LTColor]) {
+                    stage.moduleFlags |= BIT(ModuleBit::LTColor);
 
                     if (!ParseLTColorModule(lexer, stage.colorOverLifetimeModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[LTSpeedModuleBit]) {
-                    stage.moduleFlags |= BIT(LTSpeedModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::LTSpeed]) {
+                    stage.moduleFlags |= BIT(ModuleBit::LTSpeed);
 
                     if (!ParseLTSpeedModule(lexer, stage.speedOverLifetimeModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[LTForceModuleBit]) {
-                    stage.moduleFlags |= BIT(LTForceModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::LTForce]) {
+                    stage.moduleFlags |= BIT(ModuleBit::LTForce);
 
                     if (!ParseLTForceModule(lexer, stage.forceOverLifetimeModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[LTRotationModuleBit]) {
-                    stage.moduleFlags |= BIT(LTRotationModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::LTRotation]) {
+                    stage.moduleFlags |= BIT(ModuleBit::LTRotation);
 
                     if (!ParseLTRotationModule(lexer, stage.rotationOverLifetimeModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[RotationBySpeedModuleBit]) {
-                    stage.moduleFlags |= BIT(RotationBySpeedModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::RotationBySpeed]) {
+                    stage.moduleFlags |= BIT(ModuleBit::RotationBySpeed);
 
                     if (!ParseRotationBySpeedModule(lexer, stage.rotationBySpeedModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[LTSizeModuleBit]) {
-                    stage.moduleFlags |= BIT(LTSizeModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::LTSize]) {
+                    stage.moduleFlags |= BIT(ModuleBit::LTSize);
 
                     if (!ParseLTSizeModule(lexer, stage.sizeOverLifetimeModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[SizeBySpeedModuleBit]) {
-                    stage.moduleFlags |= BIT(SizeBySpeedModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::SizeBySpeed]) {
+                    stage.moduleFlags |= BIT(ModuleBit::SizeBySpeed);
 
                     if (!ParseSizeBySpeedModule(lexer, stage.sizeBySpeedModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[LTAspectRatioModuleBit]) {
-                    stage.moduleFlags |= BIT(LTAspectRatioModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::LTAspectRatio]) {
+                    stage.moduleFlags |= BIT(ModuleBit::LTAspectRatio);
 
                     if (!ParseLTAspectRatioModule(lexer, stage.aspectRatioOverLifetimeModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[TrailsModuleBit]) {
-                    stage.moduleFlags |= BIT(TrailsModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::Trails]) {
+                    stage.moduleFlags |= BIT(ModuleBit::Trails);
 
                     if (!ParseTrailsModule(lexer, stage.trailsModule)) {
                         return false;
@@ -322,13 +322,13 @@ bool ParticleSystem::ParseStandardModule(Lexer &lexer, StandardModule &module) c
     return true;
 }
 
-bool ParticleSystem::ParseSimulationSpace(Lexer &lexer, StandardModule::SimulationSpace *simulationSpace) const {
+bool ParticleSystem::ParseSimulationSpace(Lexer &lexer, StandardModule::SimulationSpace::Enum *simulationSpace) const {
     Str token;
     
     if (lexer.ReadToken(&token, false)) {
         for (int i = 0; i < COUNT_OF(simulationSpaceNames); i++) {
             if (!token.Icmp(simulationSpaceNames[i])) {
-                *simulationSpace = (StandardModule::SimulationSpace)i;
+                *simulationSpace = (StandardModule::SimulationSpace::Enum)i;
                 return true;
             }
         }
@@ -341,13 +341,13 @@ bool ParticleSystem::ParseSimulationSpace(Lexer &lexer, StandardModule::Simulati
     return false;
 }
 
-bool ParticleSystem::ParseOrientation(Lexer &lexer, StandardModule::Orientation *orientation) const {
+bool ParticleSystem::ParseOrientation(Lexer &lexer, StandardModule::Orientation::Enum *orientation) const {
     Str token;
 
     if (lexer.ReadToken(&token, false)) {
         for (int i = 0; i < COUNT_OF(orientationNames); i++) {
             if (!token.Icmp(orientationNames[i])) {
-                *orientation = (StandardModule::Orientation)i;
+                *orientation = (StandardModule::Orientation::Enum)i;
                 return true;
             }
         }
@@ -489,13 +489,13 @@ bool ParticleSystem::ParseShapeModule(Lexer &lexer, ShapeModule &module) const {
     return true;
 }
 
-bool ParticleSystem::ParseShape(Lexer &lexer, ShapeModule::Shape *shape) const {
+bool ParticleSystem::ParseShape(Lexer &lexer, ShapeModule::Shape::Enum *shape) const {
     Str token;
 
     if (lexer.ReadToken(&token, false)) {
         for (int i = 0; i < COUNT_OF(shapeNames); i++) {
             if (!token.Icmp(shapeNames[i])) {
-                *shape = (ShapeModule::Shape)i;
+                *shape = (ShapeModule::Shape::Enum)i;
                 return true;
             }
         }
@@ -542,13 +542,13 @@ bool ParticleSystem::ParseCustomPathModule(Lexer &lexer, CustomPathModule &modul
     return true;
 }
 
-bool ParticleSystem::ParseCustomPath(Lexer &lexer, CustomPathModule::CustomPath *customPath) const {
+bool ParticleSystem::ParseCustomPath(Lexer &lexer, CustomPathModule::CustomPath::Enum *customPath) const {
     Str token;
 
     if (lexer.ReadToken(&token, false)) {
         for (int i = 0; i < COUNT_OF(customPathNames); i++) {
             if (!token.Icmp(customPathNames[i])) {
-                *customPath = (CustomPathModule::CustomPath)i;
+                *customPath = (CustomPathModule::CustomPath::Enum)i;
                 return true;
             }
         }
@@ -827,7 +827,7 @@ void ParticleSystem::AddStage() {
     stage.skipRender = false;
     stage.Reset();
 
-    stage.moduleFlags |= BIT(ShapeModuleBit);
+    stage.moduleFlags |= BIT(ModuleBit::Shape);
 }
 
 bool ParticleSystem::RemoveStage(int stageIndex) {
@@ -991,10 +991,10 @@ void ParticleSystem::Write(const char *filename) {
         fp->Printf("%s}\n", indentSpace.c_str());
 
         // ShapeModule
-        if (stage.moduleFlags & BIT(ShapeModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::Shape)) {
             const ShapeModule &shapeModule = stage.shapeModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ShapeModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::Shape]);
             indentSpace += "  ";
 
             fp->Printf("%sshape \"%s\"\n", indentSpace.c_str(), shapeNames[shapeModule.shape]);
@@ -1010,10 +1010,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // CustomPathModule
-        if (stage.moduleFlags & BIT(CustomPathModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::CustomPath)) {
             const CustomPathModule &customPathModule = stage.customPathModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[CustomPathModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::CustomPath]);
             indentSpace += "  ";
 
             fp->Printf("%scustomPath \"%s\"\n", indentSpace.c_str(), customPathNames[customPathModule.customPath]);
@@ -1028,10 +1028,10 @@ void ParticleSystem::Write(const char *filename) {
         }        
 
         // LTColorModule
-        if (stage.moduleFlags & BIT(LTColorModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::LTColor)) {
             const LTColorModule &colorOverLifetimeModule = stage.colorOverLifetimeModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[LTColorModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::LTColor]);
             indentSpace += "  ";
 
             fp->Printf("%stargetColor ( %s )\n", indentSpace.c_str(), colorOverLifetimeModule.targetColor.ToString());
@@ -1042,10 +1042,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // LTSpeedModule
-        if (stage.moduleFlags & BIT(LTSpeedModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::LTSpeed)) {
             const LTSpeedModule &speedOverLifetimeModule = stage.speedOverLifetimeModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[LTSpeedModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::LTSpeed]);
             indentSpace += "  ";
 
             WriteMinMaxCurve(fp, "speed", speedOverLifetimeModule.speed, indentSpace);
@@ -1055,10 +1055,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // LTForceModule
-        if (stage.moduleFlags & BIT(LTForceModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::LTForce)) {
             const LTForceModule &forceOverLifetimeModule = stage.forceOverLifetimeModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[LTForceModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::LTForce]);
             indentSpace += "  ";
 
             WriteMinMaxCurve(fp, "forceX", forceOverLifetimeModule.force[0], indentSpace);
@@ -1070,10 +1070,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // LTRotationModule
-        if (stage.moduleFlags & BIT(LTRotationModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::LTRotation)) {
             const LTRotationModule &rotationOverLifetimeModule = stage.rotationOverLifetimeModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[LTRotationModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::LTRotation]);
             indentSpace += "  ";
 
             WriteMinMaxCurve(fp, "rotation", rotationOverLifetimeModule.rotation, indentSpace);
@@ -1083,10 +1083,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // RotationBySpeedModule
-        if (stage.moduleFlags & BIT(RotationBySpeedModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::RotationBySpeed)) {
             const RotationBySpeedModule &rotationBySpeedModule = stage.rotationBySpeedModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[RotationBySpeedModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::RotationBySpeed]);
             indentSpace += "  ";
 
             WriteMinMaxCurve(fp, "rotation", rotationBySpeedModule.rotation, indentSpace);
@@ -1097,10 +1097,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // LTSizeModule
-        if (stage.moduleFlags & BIT(LTSizeModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::LTSize)) {
             const LTSizeModule &sizeOverLifetimeModule = stage.sizeOverLifetimeModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[LTSizeModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::LTSize]);
             indentSpace += "  ";
 
             WriteMinMaxCurve(fp, "size", sizeOverLifetimeModule.size, indentSpace);
@@ -1110,10 +1110,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // SizeBySpeedModule
-        if (stage.moduleFlags & BIT(SizeBySpeedModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::SizeBySpeed)) {
             const SizeBySpeedModule &sizeBySpeedModule = stage.sizeBySpeedModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[SizeBySpeedModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::SizeBySpeed]);
             indentSpace += "  ";
 
             WriteMinMaxCurve(fp, "size", sizeBySpeedModule.size, indentSpace);
@@ -1124,10 +1124,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // LTAspectRatioModule
-        if (stage.moduleFlags & BIT(LTAspectRatioModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::LTAspectRatio)) {
             const LTAspectRatioModule &aspectRatioOverLifetimeModule = stage.aspectRatioOverLifetimeModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[LTAspectRatioModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::LTAspectRatio]);
             indentSpace += "  ";
 
             WriteMinMaxCurve(fp, "aspectRatio", aspectRatioOverLifetimeModule.aspectRatio, indentSpace);
@@ -1137,10 +1137,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // TrailsModule
-        if (stage.moduleFlags & BIT(TrailsModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::Trails)) {
             const TrailsModule &trailsModule = stage.trailsModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[TrailsModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::Trails]);
             indentSpace += "  ";
 
             fp->Printf("%scount %i\n", indentSpace.c_str(), trailsModule.count);

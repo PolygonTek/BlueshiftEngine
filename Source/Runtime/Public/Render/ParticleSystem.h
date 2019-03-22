@@ -31,7 +31,7 @@ class ParticleMesh;
 
 class Particle {
 public:
-    enum { MaxTrails = 32 };
+    static constexpr int MaxTrails = 32;
 
     struct Trail {
         Vec3                    position;
@@ -69,41 +69,47 @@ class ParticleSystem {
     friend class ParticleSystemManager;
 
 public:
-    enum ModuleBit {
-        StandardModuleBit           = 0,
-        ShapeModuleBit              = 1,
-        CustomPathModuleBit         = 2,
-        LTColorModuleBit            = 3,
-        LTSpeedModuleBit            = 4,
-        LTForceModuleBit            = 5,
-        LTRotationModuleBit         = 6,
-        RotationBySpeedModuleBit    = 7,
-        LTSizeModuleBit             = 8,
-        SizeBySpeedModuleBit        = 9,
-        LTAspectRatioModuleBit      = 10,
-        TrailsModuleBit             = 11,
-        //CollisionModuleBit        = 12,
-        //NoiseModuleBit            = 13,
-        //SubEmittersModuleBit      = 14,
-        //LightModuleBit            = 15,
-        MaxModules
+    struct ModuleBit {
+        enum Enum {
+            Standard            = 0,
+            Shape               = 1,
+            CustomPath          = 2,
+            LTColor             = 3,
+            LTSpeed             = 4,
+            LTForce             = 5,
+            LTRotation          = 6,
+            RotationBySpeed     = 7,
+            LTSize              = 8,
+            SizeBySpeed         = 9,
+            LTAspectRatio       = 10,
+            Trails              = 11,
+            //Collision         = 12,
+            //Noise             = 13,
+            //SubEmitters       = 14,
+            //Light             = 15,
+            Count
+        };
     };    
 
     // standard module
     struct StandardModule {
-        enum Orientation {
-            View,                                       ///< Billboard
-            ViewZ,                                      ///< Billboard aligned Z axis
-            Aimed,
-            AimedZ,
-            X,                                          ///< Quad aligned X axis
-            Y,                                          ///< Quad aligned Y axis
-            Z                                           ///< Quad aligned Z axis
+        struct Orientation {
+            enum Enum {
+                View,                                   ///< Billboard
+                ViewZ,                                  ///< Billboard aligned Z axis
+                Aimed,
+                AimedZ,
+                X,                                      ///< Quad aligned X axis
+                Y,                                      ///< Quad aligned Y axis
+                Z                                       ///< Quad aligned Z axis
+            };
         };
 
-        enum SimulationSpace {
-            Local, 
-            Global
+        struct SimulationSpace {
+            enum Enum {
+                Local,
+                Global
+            };
         };
 
         void                    Reset();
@@ -117,13 +123,13 @@ public:
         int                     maxCycles;
         
         float                   simulationSpeed;
-        SimulationSpace         simulationSpace;
+        SimulationSpace::Enum   simulationSpace;
 
         Material *              material;
         bool                    animation;
         int                     animFrames[2];
         int                     animFps;
-        Orientation             orientation;
+        Orientation::Enum       orientation;
 
         MinMaxCurve             startDelay;             ///< Delay from start for the first particle to emit 
         Color4                  startColor;             ///< Start color (RGBA) of particles
@@ -137,34 +143,38 @@ public:
 
     // shape module
     struct ShapeModule {
-        enum Shape {
-            BoxShape,
-            SphereShape,
-            CircleShape,
-            ConeShape
+        struct Shape {
+            enum Enum {
+                Box,
+                Sphere,
+                Circle,
+                Cone
+            };
         };
 
         void                    Reset();
 
-        Shape                   shape;
-        Vec3                    extents;                // used in BoxShape
-        float                   radius;                 // used in SphereShape, CircleShape, ConeShape
-        float                   thickness;              // used in SphereShape, CircleShape, ConeShape
-        float                   angle;                  // used in ConeShape
+        Shape::Enum             shape;
+        Vec3                    extents;                // used in Box
+        float                   radius;                 // used in Sphere, Circle, Cone
+        float                   thickness;              // used in Sphere, Circle, Cone
+        float                   angle;                  // used in Cone
         float                   randomizeDir;           // [0, 1]
     };
 
     // custom path module
     struct CustomPathModule {
-        enum CustomPath {
-            ConePath,
-            HelixPath,
-            SphericalPath
+        struct CustomPath {
+            enum Enum {
+                Cone,
+                Helix,
+                Spherical
+            };
         };
 
         void                    Reset();
 
-        CustomPath              customPath;
+        CustomPath::Enum        customPath;
         float                   radialSpeed;            // used in Cone, Helix, Spherical 
         float                   axialSpeed;             // used in Spherical
         float                   innerRadius;            // inner radius in meter
@@ -235,7 +245,7 @@ public:
         void                    Reset() { count = 1; length = 0.1f; trailScale = 1.0f, trailCut = true; }
 
         int                     count;
-        float                   length;         // [0.0, 1.0]
+        float                   length;                 // [0.0, 1.0]
         float                   trailScale;
         bool                    trailCut;
     };
@@ -244,7 +254,7 @@ public:
         void                    Reset();
 
         Str                     name;
-        bool                    skipRender;     // used for Editor
+        bool                    skipRender;             // used for Editor
         int                     moduleFlags;
         StandardModule          standardModule;
         ShapeModule             shapeModule;
@@ -288,14 +298,14 @@ public:
 private:
     bool                        ParseStage(Lexer &lexer, Stage &stage) const;
     bool                        ParseStandardModule(Lexer &lexer, StandardModule &module) const;
-    bool                        ParseSimulationSpace(Lexer &lexer, StandardModule::SimulationSpace *simulationSpace) const;
-    bool                        ParseOrientation(Lexer &lexer, StandardModule::Orientation *orientation) const;
+    bool                        ParseSimulationSpace(Lexer &lexer, StandardModule::SimulationSpace::Enum *simulationSpace) const;
+    bool                        ParseOrientation(Lexer &lexer, StandardModule::Orientation::Enum *orientation) const;
     bool                        ParseMinMaxCurve(Lexer &lexer, MinMaxCurve *var) const;
     bool                        ParseTimeWrapMode(Lexer &lexer, Hermite<float>::TimeWrapMode *timeWrapMode) const;
     bool                        ParseShapeModule(Lexer &lexer, ShapeModule &module) const;
-    bool                        ParseShape(Lexer &lexer, ShapeModule::Shape *shape) const;
+    bool                        ParseShape(Lexer &lexer, ShapeModule::Shape::Enum *shape) const;
     bool                        ParseCustomPathModule(Lexer &lexer, CustomPathModule &module) const;
-    bool                        ParseCustomPath(Lexer &lexer, CustomPathModule::CustomPath *customPath) const;
+    bool                        ParseCustomPath(Lexer &lexer, CustomPathModule::CustomPath::Enum *customPath) const;
     bool                        ParseLTForceModule(Lexer &lexer, LTForceModule &module) const;
     bool                        ParseLTColorModule(Lexer &lexer, LTColorModule &module) const;
     bool                        ParseLTSpeedModule(Lexer &lexer, LTSpeedModule &module) const;
@@ -348,7 +358,7 @@ BE_INLINE void ParticleSystem::StandardModule::Reset() {
 }
 
 BE_INLINE void ParticleSystem::ShapeModule::Reset() {
-    shape = Shape::ConeShape;
+    shape = Shape::Cone;
     extents = Vec3::zero;
     radius = 0.1f;
     thickness = 1.0f;
@@ -357,7 +367,7 @@ BE_INLINE void ParticleSystem::ShapeModule::Reset() {
 }
 
 BE_INLINE void ParticleSystem::CustomPathModule::Reset() {
-    customPath = CustomPath::ConePath;
+    customPath = CustomPath::Cone;
     radialSpeed = 180;
     axialSpeed = 90;
     innerRadius = 0.1f;
@@ -371,7 +381,7 @@ BE_INLINE void ParticleSystem::LTForceModule::Reset() {
 }
 
 BE_INLINE void ParticleSystem::Stage::Reset() {
-    moduleFlags = BIT(StandardModuleBit);
+    moduleFlags = BIT(ModuleBit::Standard);
     standardModule.Reset();
     shapeModule.Reset();
     customPathModule.Reset();
