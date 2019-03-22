@@ -237,12 +237,12 @@ static CGDisplayModeRef desktopDisplayMode = nullptr;
 
 static NSOpenGLPixelFormat *mainContextPixelFormat;
 
-static CVar         gl_debug("gl_debug", "0", CVar::Bool, "");
-static CVar         gl_debugLevel("gl_debugLevel", "3", CVar::Integer, "");
-static CVar         gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Bool, "");
-static CVar         gl_finish("gl_finish", "0", CVar::Bool, "");
-static CVar         gl_screen("gl_screen", "-1", CVar::Integer, "");
-static CVar         gl_useMacMTEngine("gl_useMacMTEngine", "1", CVar::Bool, "");
+static CVar         gl_debug("gl_debug", "0", CVar::Flag::Bool, "");
+static CVar         gl_debugLevel("gl_debugLevel", "3", CVar::Flag::Integer, "");
+static CVar         gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Flag::Bool, "");
+static CVar         gl_finish("gl_finish", "0", CVar::Flag::Bool, "");
+static CVar         gl_screen("gl_screen", "-1", CVar::Flag::Integer, "");
+static CVar         gl_useMacMTEngine("gl_useMacMTEngine", "1", CVar::Flag::Bool, "");
 
 #define MAX_DISPLAYS 32
 

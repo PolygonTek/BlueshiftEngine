@@ -28,10 +28,10 @@ static Str          eglExtensions;
 static int          majorVersion = 0;
 static int          minorVersion = 0;
 
-static CVar         gl_debug("gl_debug", "0", CVar::Bool, "");
-static CVar         gl_debugLevel("gl_debugLevel", "3", CVar::Integer, "");
-static CVar         gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Bool, "");
-static CVar         gl_finish("gl_finish", "0", CVar::Bool, "");
+static CVar         gl_debug("gl_debug", "0", CVar::Flag::Bool, "");
+static CVar         gl_debugLevel("gl_debugLevel", "3", CVar::Flag::Integer, "");
+static CVar         gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Flag::Bool, "");
+static CVar         gl_finish("gl_finish", "0", CVar::Flag::Bool, "");
 
 static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int inAlphaBits, int inDepthBits, int inStencilBits, int inMultiSamples) {
     EGLint minAttribs[32];

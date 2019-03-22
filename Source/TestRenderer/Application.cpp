@@ -28,23 +28,23 @@ struct Vertex3D {
 
 Application         app;
 
-static CVAR(r_colorBits, "32", BE1::CVar::Integer | BE1::CVar::Archive, "number of color bits");
-static CVAR(r_depthBits, "24", BE1::CVar::Integer | BE1::CVar::Archive, "number of depth bits");
-static CVAR(r_stencilBits, "8", BE1::CVar::Integer | BE1::CVar::Archive, "number of stencil bits");
-static CVAR(r_multiSamples, "0", BE1::CVar::Integer | BE1::CVar::Archive, "number of antialiasing samples");
+static CVAR(r_colorBits, "32", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "number of color bits");
+static CVAR(r_depthBits, "24", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "number of depth bits");
+static CVAR(r_stencilBits, "8", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "number of stencil bits");
+static CVAR(r_multiSamples, "0", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "number of antialiasing samples");
 
 void Application::InitVertexFormats() {
     const BE1::RHI::VertexElement vertex2DElements[] = {
-        { 0, 0, BE1::RHI::VertexElement::Position, 2, BE1::RHI::VertexElement::FloatType, false },
-        { 0, 8, BE1::RHI::VertexElement::TexCoord, 2, BE1::RHI::VertexElement::FloatType, false },
+        { 0, 0, BE1::RHI::VertexElement::Usage::Position, 2, BE1::RHI::VertexElement::Type::Float, false },
+        { 0, 8, BE1::RHI::VertexElement::Usage::TexCoord, 2, BE1::RHI::VertexElement::Type::Float, false },
     };
 
     vertex2DFormat = BE1::rhi.CreateVertexFormat(COUNT_OF(vertex2DElements), vertex2DElements);
     
     const BE1::RHI::VertexElement vertex3DElements[] = {
-        { 0, 0,  BE1::RHI::VertexElement::Position, 3, BE1::RHI::VertexElement::FloatType, false },
-        { 0, 12, BE1::RHI::VertexElement::TexCoord, 2, BE1::RHI::VertexElement::FloatType, false },
-        { 0, 20, BE1::RHI::VertexElement::Color,    4, BE1::RHI::VertexElement::UByteType, true }
+        { 0, 0,  BE1::RHI::VertexElement::Usage::Position, 3, BE1::RHI::VertexElement::Type::Float, false },
+        { 0, 12, BE1::RHI::VertexElement::Usage::TexCoord, 2, BE1::RHI::VertexElement::Type::Float, false },
+        { 0, 20, BE1::RHI::VertexElement::Usage::Color,    4, BE1::RHI::VertexElement::Type::UByte, true }
     };
 
     vertex3DFormat = BE1::rhi.CreateVertexFormat(COUNT_OF(vertex3DElements), vertex3DElements);
@@ -115,7 +115,7 @@ void Application::Shutdown() {
 void Application::LoadResources() {
     InitVertexFormats();
 
-    streamBuffer = BE1::rhi.CreateBuffer(BE1::RHI::VertexBuffer, BE1::RHI::Stream, 0);
+    streamBuffer = BE1::rhi.CreateBuffer(BE1::RHI::BufferType::Vertex, BE1::RHI::BufferUsage::Stream, 0);
 
     const Vertex3D verts[] = {
         { BE1::Vec3(-200,  200, 0), BE1::Vec2(0, 0), 0xFFFFFFFF },
@@ -126,29 +126,29 @@ void Application::LoadResources() {
         { BE1::Vec3(-200,  200, 0), BE1::Vec2(0, 0), 0xFFFFFFFF }
     };
 
-    defaultVertexBuffer = BE1::rhi.CreateBuffer(BE1::RHI::VertexBuffer, BE1::RHI::Static, sizeof(Vertex3D) * COUNT_OF(verts), 0, verts);
+    defaultVertexBuffer = BE1::rhi.CreateBuffer(BE1::RHI::BufferType::Vertex, BE1::RHI::BufferUsage::Static, sizeof(Vertex3D) * COUNT_OF(verts), 0, verts);
 
-    BE1::Image *image = BE1::Image::NewImageFromFile("Data/EngineTextures/defaultUVs.png");
+    BE1::Image *image = BE1::Image::NewImageFromFile("Data/EngineTextures/checker.dds");
     if (!image->IsEmpty()) {
-        defaultTexture = BE1::rhi.CreateTexture(BE1::RHI::Texture2D);
+        defaultTexture = BE1::rhi.CreateTexture(BE1::RHI::TextureType::Texture2D);
         BE1::rhi.BindTexture(defaultTexture);
-        BE1::rhi.SetTextureImage(BE1::RHI::Texture2D, image, image->GetFormat(), true, true);
-        BE1::rhi.SetTextureAddressMode(BE1::RHI::Clamp);
-        BE1::rhi.SetTextureFilter(BE1::RHI::LinearMipmapLinear);
+        BE1::rhi.SetTextureImage(BE1::RHI::TextureType::Texture2D, image, image->GetFormat(), true, true);
+        BE1::rhi.SetTextureAddressMode(BE1::RHI::AddressMode::Clamp);
+        BE1::rhi.SetTextureFilter(BE1::RHI::TextureFilter::LinearMipmapLinear);
         BE1::rhi.BindTexture(BE1::RHI::NullTexture);
         delete image;
     }
 
     InitShaders();
 
-    renderTargetTexture = BE1::rhi.CreateTexture(BE1::RHI::Texture2D);
+    renderTargetTexture = BE1::rhi.CreateTexture(BE1::RHI::TextureType::Texture2D);
     BE1::Image rtImage;
-    rtImage.InitFromMemory(200, 200, 1, 1, 1, BE1::Image::RGBA_8_8_8_8, nullptr, 0);
+    rtImage.InitFromMemory(200, 200, 1, 1, 1, BE1::Image::Format::RGBA_8_8_8_8, nullptr, 0);
 
     BE1::rhi.BindTexture(renderTargetTexture);
-    BE1::rhi.SetTextureImage(BE1::RHI::Texture2D, &rtImage, BE1::Image::RGBA_8_8_8_8, false, true);
-    BE1::rhi.SetTextureAddressMode(BE1::RHI::Clamp);
-    BE1::rhi.SetTextureFilter(BE1::RHI::Linear);
+    BE1::rhi.SetTextureImage(BE1::RHI::TextureType::Texture2D, &rtImage, BE1::Image::Format::RGBA_8_8_8_8, false, true);
+    BE1::rhi.SetTextureAddressMode(BE1::RHI::AddressMode::Clamp);
+    BE1::rhi.SetTextureFilter(BE1::RHI::TextureFilter::Linear);
 }
     
 void Application::FreeResources() {
@@ -163,7 +163,7 @@ void Application::FreeResources() {
 BE1::RHI::Handle Application::CreateRenderTarget(const BE1::RHI::Handle contextHandle) {
     BE1::rhi.SetContext(contextHandle);
 
-    return BE1::rhi.CreateRenderTarget(BE1::RHI::RenderTarget2D, 400, 400, 1, &renderTargetTexture, BE1::RHI::NullTexture, BE1::RHI::HasDepthBuffer | BE1::RHI::SRGBWrite);
+    return BE1::rhi.CreateRenderTarget(BE1::RHI::RenderTargetType::RT2D, 400, 400, 1, &renderTargetTexture, BE1::RHI::NullTexture, BE1::RHI::RenderTargetFlag::HasDepthBuffer | BE1::RHI::RenderTargetFlag::SRGBWrite);
 }
 
 void Application::DrawClipRect(float s1, float t1, float s2, float t2) {
@@ -177,12 +177,12 @@ void Application::DrawClipRect(float s1, float t1, float s2, float t2) {
         { BE1::Vec2(-1, +1), BE1::Vec2(s1, t2) }
     };
         
-    BE1::rhi.BindBuffer(BE1::RHI::VertexBuffer, streamBuffer);
+    BE1::rhi.BindBuffer(BE1::RHI::BufferType::Vertex, streamBuffer);
     BE1::rhi.BufferDiscardWrite(streamBuffer, 4 * sizeof(verts[0]), verts);
 
     BE1::rhi.SetVertexFormat(vertex2DFormat);
     BE1::rhi.SetStreamSource(0, streamBuffer, 0, sizeof(verts[0]));
-    BE1::rhi.DrawArrays(BE1::RHI::TriangleFanPrim, 0, 4);
+    BE1::rhi.DrawArrays(BE1::RHI::Topology::TriangleFan, 0, 4);
 }
 
 void Application::DrawToRenderTarget(BE1::RHI::Handle renderTargetHandle, float t) {
@@ -200,17 +200,17 @@ void Application::DrawToRenderTarget(BE1::RHI::Handle renderTargetHandle, float 
     modelViewProjMatrix = projMatrix * modelMatrix;
     
     BE1::rhi.SetStateBits(BE1::RHI::ColorWrite | BE1::RHI::AlphaWrite);
-    BE1::rhi.Clear(BE1::RHI::ColorBit | BE1::RHI::DepthBit, BE1::Color4(0.0f, 0.0f, 0.5f, 0), 0, 0);
-    BE1::rhi.SetCullFace(BE1::RHI::NoCull);
+    BE1::rhi.Clear(BE1::RHI::ClearBit::Color | BE1::RHI::ClearBit::Depth, BE1::Color4(0.0f, 0.0f, 0.5f, 0), 0, 0);
+    BE1::rhi.SetCullFace(BE1::RHI::CullType::None);
     
     BE1::rhi.BindShader(defaultShader);
     BE1::rhi.SetShaderConstant4x4f(BE1::rhi.GetShaderConstantIndex(defaultShader, "modelViewProjMatrix"), true, modelViewProjMatrix);
     BE1::rhi.SetTexture(BE1::rhi.GetSamplerUnit(defaultShader, "baseMap"), defaultTexture);
     
-    BE1::rhi.BindBuffer(BE1::RHI::VertexBuffer, defaultVertexBuffer);
+    BE1::rhi.BindBuffer(BE1::RHI::BufferType::Vertex, defaultVertexBuffer);
     BE1::rhi.SetVertexFormat(vertex3DFormat);
     BE1::rhi.SetStreamSource(0, defaultVertexBuffer, 0, sizeof(Vertex3D));
-    BE1::rhi.DrawArrays(BE1::RHI::TrianglesPrim, 0, 6);
+    BE1::rhi.DrawArrays(BE1::RHI::Topology::TriangleList, 0, 6);
 
     BE1::rhi.EndRenderTarget();
 }
@@ -234,8 +234,8 @@ void Application::Draw(const BE1::RHI::Handle contextHandle, const BE1::RHI::Han
     modelViewProjMatrix = projMatrix * modelMatrix;
 
     BE1::rhi.SetStateBits(BE1::RHI::ColorWrite | BE1::RHI::AlphaWrite);
-    BE1::rhi.Clear(BE1::RHI::ColorBit | BE1::RHI::DepthBit, BE1::Color4(0.5f, 0.5f, 0.5f, 0), 0, 0);
-    BE1::rhi.SetCullFace(BE1::RHI::NoCull);
+    BE1::rhi.Clear(BE1::RHI::ClearBit::Color | BE1::RHI::ClearBit::Depth, BE1::Color4(0.5f, 0.5f, 0.5f, 0), 0, 0);
+    BE1::rhi.SetCullFace(BE1::RHI::CullType::None);
 
 #if 0
     BE1::rhi.BindShader(clipRectShader);
@@ -247,10 +247,10 @@ void Application::Draw(const BE1::RHI::Handle contextHandle, const BE1::RHI::Han
     BE1::rhi.SetShaderConstant4x4f(BE1::rhi.GetShaderConstantIndex(defaultShader, "modelViewProjMatrix"), true, modelViewProjMatrix);
     BE1::rhi.SetTexture(BE1::rhi.GetSamplerUnit(defaultShader, "baseMap"), renderTargetTexture);
 
-    BE1::rhi.BindBuffer(BE1::RHI::VertexBuffer, defaultVertexBuffer);
+    BE1::rhi.BindBuffer(BE1::RHI::BufferType::Vertex, defaultVertexBuffer);
     BE1::rhi.SetVertexFormat(vertex3DFormat);
     BE1::rhi.SetStreamSource(0, defaultVertexBuffer, 0, sizeof(Vertex3D));
-    BE1::rhi.DrawArrays(BE1::RHI::TrianglesPrim, 0, 6);
+    BE1::rhi.DrawArrays(BE1::RHI::Topology::TriangleList, 0, 6);
 #endif
 
     BE1::rhi.SwapBuffers();

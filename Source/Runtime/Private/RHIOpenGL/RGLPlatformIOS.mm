@@ -224,10 +224,10 @@ BE_NAMESPACE_BEGIN
 static int          majorVersion = 0;
 static int          minorVersion = 0;
 
-static CVar         gl_debug("gl_debug", "0", CVar::Bool, "");
-static CVar         gl_debugLevel("gl_debugLevel", "3", CVar::Integer, "");
-static CVar         gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Bool, "");
-static CVar         gl_finish("gl_finish", "0", CVar::Bool, "");
+static CVar         gl_debug("gl_debug", "0", CVar::Flag::Bool, "");
+static CVar         gl_debugLevel("gl_debugLevel", "3", CVar::Flag::Integer, "");
+static CVar         gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Flag::Bool, "");
+static CVar         gl_finish("gl_finish", "0", CVar::Flag::Bool, "");
 
 static void GetGLVersion(int *major, int *minor) {
     const char *verstr = (const char *)glGetString(GL_VERSION);
