@@ -84,6 +84,7 @@ public:
             ViewProjectionMatrixTranspose,
             ModelViewProjectionMatrix,
             ModelViewProjectionMatrixTranspose,
+            PrevModelViewProjectionMatrix,
             InstanceIndexes,
             LocalToWorldMatrix,
             WorldToLocalMatrix,
@@ -126,8 +127,10 @@ public:
             NormalMap,
             JointsMap,
             LightProjectionMap,
+            LightCubeMap,
             ShadowMap,
             ShadowArrayMap,
+            PrefilteredDfgMap,
             Probe0DiffuseCubeMap,
             Probe0SpecularCubeMap,
             Probe1DiffuseCubeMap,
@@ -310,22 +313,22 @@ private:
 
     Str                     hashName;
     Str                     name;
-    Str                     baseDir;                    ///< Base directory to include other shaders
+    Str                     baseDir; ///< Base directory to include other shaders
     int                     flags = 0;
     mutable int             refCount = 0;
     bool                    permanence = false;
     int                     frameCount = 0;
 
     RHI::Handle             shaderHandle = RHI::NullShader;
-    Str                     vsText;                     ///< Vertex shader souce code text
-    Str                     fsText;                     ///< Fragment shader source code text
+    Str                     vsText; ///< Vertex shader souce code text
+    Str                     fsText; ///< Fragment shader source code text
     int                     builtInConstantIndices[BuiltInConstant::Count];
     int                     builtInSamplerUnits[BuiltInSampler::Count];
 
-    Array<Define>           defineArray;                ///< Define list for instantiated shader
+    Array<Define>           defineArray; ///< Define list for instantiated shader
 
-    Shader *                originalShader = nullptr;   ///< Original shader pointer. Instantiated shader has a pointer to the original shader
-    Array<Shader *>         instantiatedShaders;
+    Shader *                originalShader = nullptr; ///< Instantiated shader has a pointer to the it's original shader
+    Array<Shader *>         instantiatedShaders; ///< Original shader has the pointer array of it's instantiated shaders
 
     Shader *                perforatedVersion = nullptr;
     Shader *                premulAlphaVersion = nullptr;

@@ -670,6 +670,16 @@ static void RB_CascadedShadowMapPass(const VisLight *visLight) {
 
     R_ComputeSplitDistances(dNear, dFar, r_CSM_splitLamda.GetFloat(), csmCount, backEnd.csmDistances);
 
+    if (r_CSM_selectionMethod.GetInteger() == 0) {
+        // z-based selection shader needs shadowSplitFar value
+        for (int cascadeIndex = 0; cascadeIndex < r_CSM_count.GetInteger(); cascadeIndex++) {
+            float dFar = backEnd.csmDistances[cascadeIndex + 1];
+
+            backEnd.csmFar[cascadeIndex] = (backEnd.projMatrix[2][2] * -dFar + backEnd.projMatrix[2][3]) / dFar;
+            backEnd.csmFar[cascadeIndex] = backEnd.csmFar[cascadeIndex] * 0.5f + 0.5f;
+        }
+    }
+
     // 각 split 뷰 프러스텀에 대하여 shadow map 생성
     for (int cascadeIndex = 0; cascadeIndex < csmCount; cascadeIndex++) {
         if (backEnd.csmDistances[cascadeIndex + 1] <= r_CSM_nonCachedDistance.GetFloat()) {

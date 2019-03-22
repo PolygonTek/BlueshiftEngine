@@ -206,6 +206,7 @@ struct RenderBackEnd {
     float                   csmDistances[9];
     float                   csmUpdateRatio[8];
     float                   csmUpdate[8];
+    float                   csmFar[8];
 
     Texture *               integrationLUTTexture;
 

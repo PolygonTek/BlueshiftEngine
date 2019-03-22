@@ -57,7 +57,6 @@ extern CVar     r_CSM_updateRatio;
 extern CVar     r_CSM_selectionMethod;
 extern CVar     r_CSM_splitLamda;
 extern CVar     r_CSM_blend;
-extern CVar     r_CSM_blendSize;
 extern CVar     r_CSM_offsetFactor0;
 extern CVar     r_CSM_offsetFactor1;
 extern CVar     r_CSM_offsetFactor2;

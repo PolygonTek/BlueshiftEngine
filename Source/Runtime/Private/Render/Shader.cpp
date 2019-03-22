@@ -26,46 +26,47 @@ static const char *directiveInclude = "$include";
 
 // NOTE: must be same order with Shader::BuiltInConstant enum.
 static const char *builtInConstantNames[] = {
-    "modelViewMatrix",                      // ModelViewMatrixConst
-    "modelViewMatrixTranspose",             // ModelViewMatrixTransposeConst
-    "viewMatrix",                           // ViewMatrixConst
-    "viewMatrixTranspose",                  // ViewMatrixTransposeConst
-    "projectionMatrix",                     // ProjectionMatrixConst
-    "projectionMatrixTranspose",            // ProjectionMatrixTransposeConst
-    "viewProjectionMatrix",                 // ViewProjectionMatrixConst
-    "viewProjectionMatrixTranspose",        // ViewProjectionMatrixTransposeConst
-    "modelViewProjectionMatrix",            // ModelViewProjectionMatrixConst
-    "modelViewProjectionMatrixTranspose",   // ModelViewProjectionMatrixTransposeConst
-    "instanceIndexes",                      // InstanceIndexesConst
-    "localToWorldMatrix",                   // LocalToWorldMatrixConst
-    "worldToLocalMatrix",                   // WorldToLocalMatrixConst
-    "textureMatrixS",                       // TextureMatrixSConst
-    "textureMatrixT",                       // TextureMatrixTConst
-    "constantColor",                        // ConstantColorConst
-    "vertexColorScale",                     // VertexColorScaleConst
-    "vertexColorAdd",                       // VertexColorAddConst
-    "perforatedAlpha",                      // PerforatedAlphaConst
-    "viewOrigin",                           // ViewOriginConst
-    "lightVec",                             // LightVecConst
-    "lightTextureMatrix",                   // LightTextureMatrixConst
-    "lightColor",                           // LightColorConst
-    "lightFallOffMatrix",                   // LightFallOffMatrixConst
-    "lightFallOffExponent",                 // LightFallOffExponentConst
-    "joints",                               // JointsConst
-    "invJointsMapSize",                     // InvJointsMapSizeConst
-    "skinningBaseTc",                       // SkinningBaseTcConst
-    "jointIndexOffset",                     // JointIndexOffsetConst
-    "shadowProjMatrix",                     // ShadowProjMatrixConst
-    "shadowCascadeProjMatrix",              // ShadowCascadeProjMatrixConst
-    "shadowSplitFar",                       // ShadowSplitFarConst
-    "probe0SpecularCubeMapMaxMipLevel",     // Probe0SpecularCubeMapMaxMipLevelConst
-    "probe0Position",                       // Probe0PositionConst
-    "probe0Mins",                           // Probe0MinsConst
-    "probe0Maxs",                           // Probe0MaxsConst
-    "probe1SpecularCubeMapMaxMipLevel",     // Probe1SpecularCubeMapMaxMipLevelConst
-    "probe1Position",                       // Probe1PositionConst
-    "probe1Mins",                           // Probe1MinsConst
-    "probe1Maxs"                            // Probe1MaxsConst
+    "modelViewMatrix",                      // ModelViewMatrix
+    "modelViewMatrixTranspose",             // ModelViewMatrixTranspose
+    "viewMatrix",                           // ViewMatrix
+    "viewMatrixTranspose",                  // ViewMatrixTranspose
+    "projectionMatrix",                     // ProjectionMatrix
+    "projectionMatrixTranspose",            // ProjectionMatrixTranspose
+    "viewProjectionMatrix",                 // ViewProjectionMatrix
+    "viewProjectionMatrixTranspose",        // ViewProjectionMatrixTranspose
+    "modelViewProjectionMatrix",            // ModelViewProjectionMatrix
+    "modelViewProjectionMatrixTranspose",   // ModelViewProjectionMatrixTranspose
+    "prevModelViewProjectionMatrix",        // PrevModelViewProjectionMatrix
+    "instanceIndexes",                      // InstanceIndexes
+    "localToWorldMatrix",                   // LocalToWorldMatrix
+    "worldToLocalMatrix",                   // WorldToLocalMatrix
+    "textureMatrixS",                       // TextureMatrixS
+    "textureMatrixT",                       // TextureMatrixT
+    "constantColor",                        // ConstantColor
+    "vertexColorScale",                     // VertexColorScale
+    "vertexColorAdd",                       // VertexColorAdd
+    "perforatedAlpha",                      // PerforatedAlpha
+    "viewOrigin",                           // ViewOrigin
+    "lightVec",                             // LightVec
+    "lightTextureMatrix",                   // LightTextureMatrix
+    "lightColor",                           // LightColor
+    "lightFallOffMatrix",                   // LightFallOffMatrix
+    "lightFallOffExponent",                 // LightFallOffExponent
+    "joints",                               // Joints
+    "invJointsMapSize",                     // InvJointsMapSize
+    "skinningBaseTc",                       // SkinningBaseTc
+    "jointIndexOffset",                     // JointIndexOffset
+    "shadowProjMatrix",                     // ShadowProjMatrix
+    "shadowCascadeProjMatrix",              // ShadowCascadeProjMatrix
+    "shadowSplitFar",                       // ShadowSplitFar
+    "probe0SpecularCubeMapMaxMipLevel",     // Probe0SpecularCubeMapMaxMipLevel
+    "probe0Position",                       // Probe0Position
+    "probe0Mins",                           // Probe0Mins
+    "probe0Maxs",                           // Probe0Maxs
+    "probe1SpecularCubeMapMaxMipLevel",     // Probe1SpecularCubeMapMaxMipLevel
+    "probe1Position",                       // Probe1Position
+    "probe1Mins",                           // Probe1Mins
+    "probe1Maxs"                            // Probe1Maxs
 };
 
 // NOTE: must be same order with Shader::BuiltInSampler enum.
@@ -76,8 +77,10 @@ static const char *builtInSamplerNames[] = {
     "normalMap",                            // NormalMap
     "jointsMap",                            // JointsMap
     "lightProjectionMap",                   // LightProjectionMap
+    "lightCubeMap",                         // LightCubeMap
     "shadowMap",                            // ShadowMap
     "shadowArrayMap",                       // ShadowArrayMap
+    "prefilteredDfgMap",                    // PrefilteredDfgMap
     "probe0DiffuseCubeMap",                 // Probe0DiffuseCubeMap
     "probe0SpecularCubeMap",                // Probe0SpecularCubeMap
     "probe1DiffuseCubeMap",                 // Probe1DiffuseCubeMap

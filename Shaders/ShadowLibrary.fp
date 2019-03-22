@@ -29,7 +29,6 @@ uniform sampler2DShadow shadowMap;
 
 uniform sampler2DArrayShadow shadowArrayMap;
 uniform float shadowMapFilterSize[8];
-uniform float cascadeBlendSize;
 
 uniform sampler2D randomRotMatMap;
 uniform vec4 shadowSplitFar;
@@ -37,7 +36,10 @@ uniform vec2 shadowMapTexelSize;
 
 //-------------------------------------------------------------------------------------------------
 
+#define CASCADE_BLEND_SIZE 0.09375 // 0.09375 = 96 / 1024
+
 uniform mat4 shadowCascadeProjMatrix[CSM_COUNT];
+
 const vec3 cascadeDebugColor[8] = vec3[](
     vec3(1.0, 0.0, 0.0),
     vec3(1.0, 1.0, 0.0),
@@ -146,10 +148,6 @@ vec3 SampleCascadedShadowMap() {
         shadowCascadedTC = shadowCascadedTC.xyzz / shadowCascadedTC.w;
 
         if (all(greaterThan(shadowCascadedTC.xy, borderTC.xy)) && all(lessThan(shadowCascadedTC.xy, borderTC.zw))) {
-        /*if (shadowCascadedTC.x > borderTC.x &&
-            shadowCascadedTC.y > borderTC.y &&
-            shadowCascadedTC.x < borderTC.z &&
-            shadowCascadedTC.y < borderTC.w) {*/
             cascadeIndex = i;
             break;
         }
@@ -165,8 +163,8 @@ vec3 SampleCascadedShadowMap() {
 #ifdef CASCADE_BLENDING
     float blendBand = min(min(shadowCascadedTC.x, shadowCascadedTC.y), min(1.0 - shadowCascadedTC.x, 1.0 - shadowCascadedTC.y));
 
-    if (blendBand < cascadeBlendSize) {
-        float t = 1.0 - min(blendBand / cascadeBlendSize, 1.0);
+    if (blendBand < CASCADE_BLEND_SIZE) {
+        float t = 1.0 - min(blendBand / CASCADE_BLEND_SIZE, 1.0);
 
         vec3 s2 = vec3(1.0);
         int cascadeIndex2 = cascadeIndex + 1;
@@ -335,7 +333,7 @@ vec3 SamplePointShadowMap() {
     return SampleShadowPCF_Q3(shadowTC, shadowMapTexelSize);
 #elif SHADOW_MAP_QUALITY == 2
     return SampleShadowPCF_Q2(shadowTC, shadowMapTexelSize);
-#elif SHADOW_MAP_QUALITY ==	1
+#elif SHADOW_MAP_QUALITY == 1
     return SampleShadowPCF_Q1(shadowTC, shadowMapTexelSize);
 #else
     return tex2D(shadowMap, shadowTC.xyz).rgb;

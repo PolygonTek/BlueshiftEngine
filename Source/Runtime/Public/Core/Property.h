@@ -33,24 +33,24 @@ class Lexer;
 class BE_API PropertyAccessor {
 public:
     virtual ~PropertyAccessor() = default;
-    
-    /// Get the property.
-    virtual void Get(const Serializable *ptr, Variant &dest) const = 0;
 
-    /// Get the element of the property array.
-    virtual void Get(const Serializable *ptr, int index, Variant &dest) const = 0;
+                            /// Get the property.
+    virtual void            Get(const Serializable *ptr, Variant &dest) const = 0;
 
-    /// Set the property.
-    virtual void Set(Serializable *ptr, const Variant &src) = 0;
+                            /// Get the element of the property array.
+    virtual void            Get(const Serializable *ptr, int index, Variant &dest) const = 0;
 
-    /// Set the element of the property array.
-    virtual void Set(Serializable *ptr, int index, const Variant &src) = 0;
+                            /// Set the property.
+    virtual void            Set(Serializable *ptr, const Variant &src) = 0;
 
-    /// Get the count of the property array.
-    virtual int GetCount(const Serializable *ptr) const = 0;
+                            /// Set the element of the property array.
+    virtual void            Set(Serializable *ptr, int index, const Variant &src) = 0;
 
-    /// Set the count of the property array.
-    virtual void SetCount(Serializable *ptr, int count) = 0;
+                            /// Get the count of the property array.
+    virtual int             GetCount(const Serializable *ptr) const = 0;
+
+                            /// Set the count of the property array.
+    virtual void            SetCount(Serializable *ptr, int count) = 0;
 };
 
 class BE_API PropertyInfo {
@@ -63,14 +63,14 @@ public:
     struct Flag {
         enum Enum {
             Empty               = 0,
-            ReadOnly            = BIT(1),   // Don't allow to set
-            SkipSerialization   = BIT(2),   // Don't serialize
-            Editor              = BIT(3),   // Show in editor
-            NonCopying          = BIT(4),   // Don't allow to copy
+            ReadOnly            = BIT(1),   ///< Don't allow to set
+            SkipSerialization   = BIT(2),   ///< Don't serialize
+            Editor              = BIT(3),   ///< Show in editor
+            NonCopying          = BIT(4),   ///< Don't allow to copy
             SystemUnits         = BIT(5),
-            MultiLines          = BIT(6),   // Str type in multilines
-            Array               = BIT(7),   // Is array property ?
-            Network             = BIT(8),   // Not used yet
+            MultiLines          = BIT(6),   ///< Str type in multilines
+            Array               = BIT(7),   ///< Is array property ?
+            Network             = BIT(8),   ///< Not used yet
             ShaderDefine        = BIT(9),
         };
     };
@@ -86,14 +86,21 @@ public:
     const char *            GetDescription() const { return desc; }
     int                     GetFlags() const { return flags; }
 
+                            /// Tests if this property is array.
     bool                    IsArray() const { return !!(flags & Flag::Array); }
+                            /// Tests if this property is read only.
     bool                    IsReadOnly() const { return !!(flags & Flag::ReadOnly); }
+                            /// Tests if this property has bounded range.
     bool                    IsRanged() const { return range.IsValid(); }
 
+                            /// Returns minimum value allowed.
     float                   GetMinValue() const { return range.minValue; }
+                            /// Returns maximum value allowed.
     float                   GetMaxValue() const { return range.maxValue; }
+                            /// Returns stepping value in editor.
     float                   GetStep() const { return range.step; }
 
+                            /// Returns enumerator string array.
     const Array<Str> &      GetEnum() const { return enumeration; }
 
     const MetaObject *      GetMetaObject() const { return metaObject; }

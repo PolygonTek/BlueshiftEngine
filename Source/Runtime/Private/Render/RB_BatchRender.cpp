@@ -474,7 +474,7 @@ void Batch::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
     //shader->SetConstantMatrix4fv("prevModelViewMatrix", 1, true, prevModelViewMatrix);
 
     Mat4 prevModelViewProjMatrix = backEnd.camera->def->GetProjMatrix() * prevModelViewMatrix;
-    shader->SetConstant4x4f("prevModelViewProjectionMatrix", true, prevModelViewProjMatrix);
+    shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::PrevModelViewProjectionMatrix], true, prevModelViewProjMatrix);
 
     shader->SetConstant1f("shutterSpeed", r_motionBlur_ShutterSpeed.GetFloat() / backEnd.ctx->frameTime);
     //shader->SetConstant1f("motionBlurID", (float)surfSpace->id);
@@ -649,7 +649,7 @@ void Batch::RenderIndirectLit(const Material::ShaderPass *mtrlPass) const {
         shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
     }
 
-    shader->SetTexture("prefilteredDfgMap", backEnd.integrationLUTTexture);
+    shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::PrefilteredDfgMap], backEnd.integrationLUTTexture);
 
     SetMatrixConstants(shader);
 
@@ -773,7 +773,7 @@ void Batch::RenderIndirectLit_DirectLit(const Material::ShaderPass *mtrlPass) co
 
     shader->Bind();
 
-    shader->SetTexture("prefilteredDfgMap", backEnd.integrationLUTTexture);
+    shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::PrefilteredDfgMap], backEnd.integrationLUTTexture);
 
     if (mtrlPass->shader) {
         if (mtrlPass->shader->GetIndirectLitDirectLitVersion()) {
@@ -846,16 +846,8 @@ void Batch::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shad
             shader->SetConstantArray4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ShadowCascadeProjMatrix], true, r_CSM_count.GetInteger(), backEnd.shadowViewProjectionScaleBiasMatrix);
 
             if (r_CSM_selectionMethod.GetInteger() == 0) {
-                // z-based selection shader needs shadowSplitFar value
-                float sFar[4];
-                for (int cascadeIndex = 0; cascadeIndex < r_CSM_count.GetInteger(); cascadeIndex++) {
-                    float dFar = backEnd.csmDistances[cascadeIndex + 1];
-                    sFar[cascadeIndex] = (backEnd.projMatrix[2][2] * -dFar + backEnd.projMatrix[2][3]) / dFar;
-                    sFar[cascadeIndex] = sFar[cascadeIndex] * 0.5f + 0.5f;
-                }
-                shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ShadowSplitFar], sFar);
+                shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ShadowSplitFar], backEnd.csmFar);
             }
-            shader->SetConstant1f("cascadeBlendSize", r_CSM_blendSize.GetFloat());
             shader->SetConstantArray1f("shadowMapFilterSize", r_CSM_count.GetInteger(), backEnd.shadowMapFilterSize);
             shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::ShadowArrayMap], backEnd.ctx->shadowMapRT->DepthStencilTexture());
         }
@@ -884,7 +876,7 @@ void Batch::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shad
 
         // WARNING: for the nvidia's stupid dynamic branching... 
         if (r_shadows.GetInteger() == 1) {
-            shader->SetTexture("shadowArrayMap", backEnd.ctx->shadowMapRT->DepthStencilTexture());
+            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::ShadowArrayMap], backEnd.ctx->shadowMapRT->DepthStencilTexture());
         }*/
     }
 
@@ -899,9 +891,9 @@ void Batch::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shad
     shader->SetConstant1i("useLightCube", useLightCube);
     
     if (useLightCube) {
-        shader->SetTexture("lightCubeMap", lightStage->textureStage.texture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::LightCubeMap], lightStage->textureStage.texture);
     } else {
-        shader->SetTexture("lightCubeMap", textureManager.m_defaultCubeMapTexture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::LightCubeMap], textureManager.m_defaultCubeMapTexture);
     }*/
 }
 
@@ -1031,7 +1023,7 @@ void Batch::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) co
     shader->SetConstant3f("blendColor", blendColor);
 
     const Material *lightMaterial = surfLight->def->GetState().material;
-    shader->SetTexture("blendProjectionMap", lightMaterial->GetPass()->texture);	
+    shader->SetTexture("blendProjectionMap", lightMaterial->GetPass()->texture);
 
     DrawPrimitives();
 }
@@ -1048,7 +1040,7 @@ void Batch::RenderGui(const Material::ShaderPass *mtrlPass) const {
         shader = ShaderManager::unlitShader;
         shader->Bind();
 
-        shader->SetTexture("albedoMap", mtrlPass->texture);
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
     }
 
     SetMatrixConstants(shader);

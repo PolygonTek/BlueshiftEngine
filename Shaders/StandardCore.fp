@@ -187,8 +187,9 @@ uniform float subSurfaceShadowDensity;// = 0.5;
     uniform vec3 probe1Mins;
     uniform vec3 probe1Maxs;
 
-    uniform sampler2D prefilteredDfgMap;
     uniform LOWP float probeLerp;
+
+    uniform sampler2D prefilteredDfgMap;
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)

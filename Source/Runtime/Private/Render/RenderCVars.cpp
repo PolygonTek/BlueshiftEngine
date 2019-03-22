@@ -48,7 +48,6 @@ CVAR(r_CSM_updateRatio, "1.0", CVar::Flag::Float, "");
 CVAR(r_CSM_selectionMethod, "1", CVar::Flag::Integer, "cascade selection method, 0 = z-based selection, 1 = map-based selection");
 CVAR(r_CSM_splitLamda, "0.9", CVar::Flag::Float, "");
 CVAR(r_CSM_blend, "1", CVar::Flag::Bool, "");
-CVAR(r_CSM_blendSize, "0.09375", CVar::Flag::Float, "");
 CVAR(r_CSM_offsetFactor0, "5.0", CVar::Flag::Float, "scale value for CSM0 drawing");
 CVAR(r_CSM_offsetFactor1, "4.0", CVar::Flag::Float, "scale value for CSM1 drawing");
 CVAR(r_CSM_offsetFactor2, "3.0", CVar::Flag::Float, "scale value for CSM2 drawing");
