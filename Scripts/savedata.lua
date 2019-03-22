@@ -28,7 +28,7 @@ end
 
 function savedata.load(path)
     -- load saved data
-    local file = FileSystem.open(path, File.Mode.ReadMode, false)
+    local file = FileSystem.open(path, File.Mode.Read, false)
     if not file then
         return nil
     end
@@ -42,7 +42,7 @@ end
 function savedata.save(path, data)
     local s = serializer.serialize(data)
 
-    local file = FileSystem.open(path, File.Mode.WriteMode, false)
+    local file = FileSystem.open(path, File.Mode.Write, false)
     file:write_string(s)
     FileSystem.close(file)
 end
