@@ -33,11 +33,11 @@ void LuaVM::RegisterCommon(LuaCpp::Module &module) {
 
     LuaCpp::Selector _Common_PlatformId = _Common["PlatformId"];
     _Common_PlatformId.SetClass<CommonPlatformId>();
-    _Common_PlatformId["Windows"] = Common::PlatformId::Windows;
-    _Common_PlatformId["Linux"] = Common::PlatformId::Linux;
-    _Common_PlatformId["MacOS"] = Common::PlatformId::MacOS;
-    _Common_PlatformId["IOS"] = Common::PlatformId::IOS;
-    _Common_PlatformId["Android"] = Common::PlatformId::Android;
+    _Common_PlatformId["Windows"] = Common::PlatformId::ID_Windows;
+    _Common_PlatformId["Linux"] = Common::PlatformId::ID_Linux;
+    _Common_PlatformId["MacOS"] = Common::PlatformId::ID_MacOS;
+    _Common_PlatformId["IOS"] = Common::PlatformId::ID_IOS;
+    _Common_PlatformId["Android"] = Common::PlatformId::ID_Android;
 }
 
 BE_NAMESPACE_END

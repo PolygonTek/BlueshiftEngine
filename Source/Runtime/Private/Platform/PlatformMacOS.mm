@@ -117,7 +117,7 @@ void PlatformMacOS::GenerateMouseDeltaEvent() {
     int32_t dx, dy;
     CGGetLastMouseDelta(&dx, &dy);
 
-    QueEvent(Platform::MouseDeltaEvent, dx, dy, 0, nullptr);
+    QueEvent(Platform::EventType::MouseDelta, dx, dy, 0, nullptr);
 }
 
 BE_NAMESPACE_END

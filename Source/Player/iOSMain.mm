@@ -142,7 +142,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         uint64_t touchId = [touch hash];
         uint64_t locationQword = BE1::MakeQWord((int)location.x, (int)location.y);
 
-        BE1::platform->QueEvent(BE1::Platform::TouchBegan, touchId, locationQword, 0, nullptr);        
+        BE1::platform->QueEvent(BE1::Platform::EventType::TouchBegan, touchId, locationQword, 0, nullptr);
         
         touch = [enumerator nextObject];
     }
@@ -158,7 +158,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         uint64_t touchId = [touch hash];
         uint64_t locationQword = BE1::MakeQWord((int)location.x, (int)location.y);
         
-        BE1::platform->QueEvent(BE1::Platform::TouchMoved, touchId, locationQword, 0, nullptr);    
+        BE1::platform->QueEvent(BE1::Platform::EventType::TouchMoved, touchId, locationQword, 0, nullptr);
         
         touch = [enumerator nextObject];
     }
@@ -174,7 +174,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         uint64_t touchId = [touch hash];
         uint64_t locationQword = BE1::MakeQWord((int)location.x, (int)location.y);
         
-        BE1::platform->QueEvent(BE1::Platform::TouchEnded, touchId, locationQword, 0, nullptr);
+        BE1::platform->QueEvent(BE1::Platform::EventType::TouchEnded, touchId, locationQword, 0, nullptr);
         
         touch = [enumerator nextObject];
     }
@@ -189,7 +189,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     while (touch) {
         uint64_t touchId = [touch hash];
 
-        BE1::platform->QueEvent(BE1::Platform::TouchCanceled, touchId, 0, 0, nullptr);
+        BE1::platform->QueEvent(BE1::Platform::EventType::TouchCanceled, touchId, 0, 0, nullptr);
         
         touch = [enumerator nextObject];
     }

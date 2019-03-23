@@ -252,26 +252,26 @@ int PlatformPosixFile::GetFileMode(const char *filename) {
     }
     int fileMode = 0;
     if (fileInfo.st_mode & S_IRUSR) {
-    	fileMode |= Readable;
+        fileMode |= Mode::Readable;
     }
     if (fileInfo.st_mode & S_IWUSR) {
-    	fileMode |= Writable;
+        fileMode |= Mode::Writable;
     }
     if (fileInfo.st_mode & S_IXUSR) {
-    	fileMode |= Executable;
+    	fileMode |= Mode::Executable;
     }
     return fileMode;
 }
 
 void PlatformPosixFile::SetFileMode(const char *filename, int fileMode) {
 	mode_t mode = 0;
-    if (fileMode & Readable) {
+    if (fileMode & Mode::Readable) {
         mode |= S_IRUSR;
     }
-    if (fileMode & Writable) {
+    if (fileMode & Mode::Writable) {
         mode |= S_IWUSR;
     }
-    if (fileMode & Executable) {
+    if (fileMode & Mode::Executable) {
         mode |= S_IXUSR;
     }
     chmod(NormalizeFilename(filename), mode);

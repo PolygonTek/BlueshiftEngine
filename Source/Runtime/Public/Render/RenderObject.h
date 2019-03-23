@@ -38,6 +38,7 @@ class Mesh;
 class Font;
 class ParticleSystem;
 class Particle;
+class RenderWorld;
 
 class RenderObject {
     friend class RenderWorld;
