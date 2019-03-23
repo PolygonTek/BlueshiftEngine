@@ -357,8 +357,8 @@ bool Dict::Parse(Lexer &parser) {
 
     parser.ReadToken(&token);
 
-    while ((parser.GetTokenType() != TokenType::TT_PUNCTUATION) || (token != "}")) {
-        if (parser.GetTokenType() != TokenType::TT_STRING) {
+    while ((parser.GetTokenType() != Lexer::TokenType::Punctuation) || (token != "}")) {
+        if (parser.GetTokenType() != Lexer::TokenType::String) {
             parser.Error("Expected quoted string, but found '%s'", token.c_str());
         }
 

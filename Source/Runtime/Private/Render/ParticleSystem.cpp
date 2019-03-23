@@ -102,7 +102,7 @@ bool ParticleSystem::Create(const char *text) {
     Purge();
 
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(text, Str::Length(text), hashName.c_str());
 
     lexer.ExpectTokenString("numStages");
@@ -126,7 +126,7 @@ bool ParticleSystem::ParseStage(Lexer &lexer, Stage &stage) const {
 
     lexer.ExpectTokenString("stage");
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -238,7 +238,7 @@ bool ParticleSystem::ParseStage(Lexer &lexer, Stage &stage) const {
 bool ParticleSystem::ParseStandardModule(Lexer &lexer, StandardModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -371,7 +371,7 @@ bool ParticleSystem::ParseMinMaxCurve(Lexer &lexer, MinMaxCurve *var) const {
             if (!token.Icmp(timedMinMaxVarTypeNames[i])) {
                 var->type = (MinMaxCurve::Type::Enum)i;
 
-                if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+                if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
                     return false;
                 }
 
@@ -420,7 +420,7 @@ bool ParticleSystem::ParseMinMaxCurve(Lexer &lexer, MinMaxCurve *var) const {
                     lexer.ExpectTokenString("}");
                 }
 
-                if (!lexer.ExpectPunctuation(P_BRACECLOSE)) {
+                if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceClose)) {
                     return false;
                 }
                 return true;
@@ -456,7 +456,7 @@ bool ParticleSystem::ParseTimeWrapMode(Lexer &lexer, Hermite<float>::TimeWrapMod
 bool ParticleSystem::ParseShapeModule(Lexer &lexer, ShapeModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -511,7 +511,7 @@ bool ParticleSystem::ParseShape(Lexer &lexer, ShapeModule::Shape::Enum *shape) c
 bool ParticleSystem::ParseCustomPathModule(Lexer &lexer, CustomPathModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -564,7 +564,7 @@ bool ParticleSystem::ParseCustomPath(Lexer &lexer, CustomPathModule::CustomPath:
 bool ParticleSystem::ParseLTForceModule(Lexer &lexer, LTForceModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -594,7 +594,7 @@ bool ParticleSystem::ParseLTForceModule(Lexer &lexer, LTForceModule &module) con
 bool ParticleSystem::ParseLTColorModule(Lexer &lexer, LTColorModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -622,7 +622,7 @@ bool ParticleSystem::ParseLTColorModule(Lexer &lexer, LTColorModule &module) con
 bool ParticleSystem::ParseLTSpeedModule(Lexer &lexer, LTSpeedModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -648,7 +648,7 @@ bool ParticleSystem::ParseLTSpeedModule(Lexer &lexer, LTSpeedModule &module) con
 bool ParticleSystem::ParseLTRotationModule(Lexer &lexer, LTRotationModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -674,7 +674,7 @@ bool ParticleSystem::ParseLTRotationModule(Lexer &lexer, LTRotationModule &modul
 bool ParticleSystem::ParseRotationBySpeedModule(Lexer &lexer, RotationBySpeedModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -702,7 +702,7 @@ bool ParticleSystem::ParseRotationBySpeedModule(Lexer &lexer, RotationBySpeedMod
 bool ParticleSystem::ParseLTSizeModule(Lexer &lexer, LTSizeModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -728,7 +728,7 @@ bool ParticleSystem::ParseLTSizeModule(Lexer &lexer, LTSizeModule &module) const
 bool ParticleSystem::ParseSizeBySpeedModule(Lexer &lexer, SizeBySpeedModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -756,7 +756,7 @@ bool ParticleSystem::ParseSizeBySpeedModule(Lexer &lexer, SizeBySpeedModule &mod
 bool ParticleSystem::ParseLTAspectRatioModule(Lexer &lexer, LTAspectRatioModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -782,7 +782,7 @@ bool ParticleSystem::ParseLTAspectRatioModule(Lexer &lexer, LTAspectRatioModule 
 bool ParticleSystem::ParseTrailsModule(Lexer &lexer, TrailsModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -868,7 +868,7 @@ bool ParticleSystem::Load(const char *filename) {
     }
 
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(data, size, hashName);
 
     if (!lexer.ExpectTokenString("particleSystem")) {

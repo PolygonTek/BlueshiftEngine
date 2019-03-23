@@ -57,10 +57,10 @@ bool Skin::Create(const char *text) {
     Purge();
 
     Lexer lexer; 
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(text, Str::Length(text), hashName.c_str());
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         BE_WARNLOG("expecting '{', found '%s' instead in skin '%s'\n", token.c_str(), hashName.c_str());
         return false;
     }

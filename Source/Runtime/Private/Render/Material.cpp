@@ -61,7 +61,7 @@ bool Material::Create(const char *text) {
     flags = 0;
 
     Lexer lexer; 
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(text, Str::Length(text), hashName.c_str());
 
     while (lexer.ReadToken(&token)) {
@@ -122,7 +122,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
     pass->tcTranslation     = Vec2(0.0f, 0.0f);
     pass->instancingEnabled = false;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -197,10 +197,11 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                         if (propInfo.GetType() == Variant::Type::Guid) {
                             // Texture GUID
                             if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
-                                // Get default texture GUID
                                 Str defaultGuidString = propInfo.GetDefaultValue().As<Guid>().ToString();
+                                Str value = propDict.GetString(propName, defaultGuidString);
+
                                 // Get texture GUID 
-                                property.data = Variant::FromString(Variant::Type::Guid, propDict.GetString(propName, defaultGuidString));
+                                property.data = Variant::FromString(Variant::Type::Guid, value);
                                 const Guid textureGuid = property.data.As<Guid>();
 
                                 // Get texture path from GUID
@@ -466,7 +467,7 @@ bool Material::ParseShaderProperties(Lexer &lexer, Dict &properties) {
     Str token;
     Str value;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -982,7 +983,7 @@ bool Material::Load(const char *hashName) {
     }
 
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(data, size, hashName);
 
     if (!lexer.ExpectTokenString("material")) {

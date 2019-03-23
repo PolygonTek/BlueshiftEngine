@@ -74,7 +74,7 @@ void CmdArgs::TokenizeString(const char *text, bool keepAsStrings) {
 
     Lexer lexer;
     Str token;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS | LexerFlag::LEXFL_NOWARNINGS);
+    lexer.Init(Lexer::Flag::NoErrors | Lexer::Flag::NoWarnings);
     lexer.Load(text, Str::Length(text), "CmdArgs::TokenizeString");
 
     int totalLen = 0;
@@ -90,7 +90,7 @@ void CmdArgs::TokenizeString(const char *text, bool keepAsStrings) {
 
         // check for negative numbers
         if (!keepAsStrings && (token == "-")) {
-            if (lexer.GetTokenType() & TokenType::TT_NUMBER) {
+            if (lexer.GetTokenType() & Lexer::TokenType::Number) {
                 token = "-" + token;
             }
         }

@@ -179,11 +179,11 @@ bool Shader::Create(const char *text, const char *baseDir) {
     Purge();
 
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(text, Str::Length(text), hashName);
 
     // '{'
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -341,19 +341,19 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
         return false;
     }
 
-    if (!lexer.ExpectPunctuation(P_PARENTHESESOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::ParenthesesOpen)) {
         return false;
     }
 
-    if (!lexer.ExpectTokenType(TokenType::TT_STRING, &propInfo.label)) {
+    if (!lexer.ExpectTokenType(Lexer::TokenType::String, &propInfo.label)) {
         return false;
     }
 
-    if (!lexer.ExpectPunctuation(P_PARENTHESESCLOSE)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::ParenthesesClose)) {
         return false;
     }
 
-    if (!lexer.ExpectPunctuation(P_COLON)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::Colon)) {
         return false;
     }
 
@@ -384,7 +384,7 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
         propInfo.type = Variant::Type::Color4;
     } else if (!Str::Cmp(typeStr, "enum")) {
         Str enumSequence;
-        if (!lexer.ExpectTokenType(TokenType::TT_STRING, &enumSequence)) {
+        if (!lexer.ExpectTokenType(Lexer::TokenType::String, &enumSequence)) {
             return false;
         }
         propInfo.type = Variant::Type::Int;
@@ -412,12 +412,12 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
         }
     }
 
-    if (!lexer.ExpectPunctuation(P_ASSIGN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::Assign)) {
         return false;
     }
 
     Str defaultValueString;
-    if (!lexer.ExpectTokenType(TokenType::TT_STRING, &defaultValueString)) {
+    if (!lexer.ExpectTokenType(Lexer::TokenType::String, &defaultValueString)) {
         return false;
     }
 
@@ -448,7 +448,7 @@ bool Shader::ParseProperties(Lexer &lexer) {
     PropertyInfo propInfo;
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -1189,7 +1189,7 @@ bool Shader::ProcessShaderText(const char *text, const char *baseDir, const Arra
 
 bool Shader::ProcessIncludeRecursive(const char *baseDir, Str &outText) const {
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
 
     int pos = 0;
 
@@ -1203,7 +1203,7 @@ bool Shader::ProcessIncludeRecursive(const char *baseDir, Str &outText) const {
         lexer.Load(data_p, Str::Length(data_p), hashName);
 
         Str relativeFileName;
-        lexer.ExpectTokenType(TT_STRING, &relativeFileName);
+        lexer.ExpectTokenType(Lexer::TokenType::String, &relativeFileName);
 
         Str path = baseDir;
         path.AppendPath(relativeFileName);  
@@ -1697,7 +1697,7 @@ bool Shader::Load(const char *hashName) {
     }
 
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(data, (int)size, filename);
 
     if (!lexer.ExpectTokenString("shader")) {

@@ -837,7 +837,7 @@ bool FileSystem::ReadDict(const char *filename, Dict &dict) {
     }
 
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(text, Str::Length(text), va("%s", filename));
     
     dict.Parse(lexer);

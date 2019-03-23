@@ -175,7 +175,7 @@ static void ParseInOutSemantic(Lexer &lexer, InOut &inOut) {
     lexer.ReadToken(&token);
     inOut.name = token;
 
-    if (lexer.ExpectPunctuation(P_COLON)) { // :
+    if (lexer.ExpectPunctuation(Lexer::PuncType::Colon)) { // :
         Str semanticName;
 
         if (lexer.ReadToken(&semanticName)) { // semantic name
@@ -396,7 +396,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
 
             Str blockName;
             lexer.ReadToken(&blockName);
-            lexer.ExpectPunctuation(P_BRACEOPEN);
+            lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen);
 
             processedText += "layout (std140) uniform " + blockName + " {\n";
 

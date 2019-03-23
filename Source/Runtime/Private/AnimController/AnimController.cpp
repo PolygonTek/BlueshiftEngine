@@ -210,7 +210,7 @@ bool AnimController::Load(const char *filename) {
     }
 
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(data, size, filename);
 
     if (!lexer.ExpectTokenString("animController")) {
@@ -515,7 +515,7 @@ bool AnimController::Create(const char *text) {
     Purge();
     
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(text, Str::Length(text), hashName);
 
     lexer.SkipUntilString("{");
