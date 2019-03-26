@@ -24,9 +24,8 @@ shader "GenIrradianceEnvCubeMap" {
 
             vec3 color = vec3(0.0);
 #if 1 // Quasi Monte Carlo integration
-            float numSamples = 0.0;
-
-            const float inc = 1.0 / (log2(radianceCubeMapSize) * 5.0);
+            const float sampleCount = 32.0 * 32.0;
+            const float inc = 1.0 / 32.0;
 
             mat3 tangentToWorld = GetLocalFrame(N);
 
@@ -41,12 +40,10 @@ shader "GenIrradianceEnvCubeMap" {
                     // F_N = 1/N * Sigma^N { Li * BRDF * NdotL / PDF }
                     //     = 1/N * Sigma^N { Li }
                     color += texCUBE(radianceCubeMap, L).rgb;
-
-                    numSamples += 1.0;
                 }
             }
 
-            o_fragColor = vec4(color / numSamples, 1.0);
+            o_fragColor = vec4(color / sampleCount, 1.0);
 #else // Brute force way integration
             for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
                 for (int y = 0; y < radianceCubeMapSize; y++) {
