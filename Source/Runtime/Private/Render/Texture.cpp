@@ -623,6 +623,10 @@ void Texture::GetTexelsRect(Image::Format::Enum format, void *pixels) const {
     rhi.GetTextureImageRect(format, pixels);
 }
 
+void Texture::CopyTo(int mipLevel, Texture *dstTexture) {
+    rhi.CopyImageSubData(textureHandle, mipLevel, 0, 0, 0, dstTexture->textureHandle, mipLevel, 0, 0, 0, width, height, type == RHI::TextureType::TextureCubeMap ? numSlices : depth);
+}
+
 void Texture::Purge() {
     if (textureHandle != RHI::NullTexture) {
         rhi.DestroyTexture(textureHandle);

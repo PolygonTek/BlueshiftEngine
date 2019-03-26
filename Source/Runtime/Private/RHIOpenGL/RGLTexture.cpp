@@ -683,6 +683,15 @@ void OpenGLRHI::CopyTextureSubImage2D(int xoffset, int yoffset, int x, int y, in
     gglCopyTexSubImage2D(texture->target, 0, xoffset, yoffset, x, y, width, height);
 }
 
+void OpenGLRHI::CopyImageSubData(Handle srcTextureHandle, int srcLevel, int srcX, int srcY, int srcZ, Handle dstTextureHandle, int dstLevel, int dstX, int dstY, int dstZ, int width, int height, int depth) {
+    GLTexture *srcTexture = textureList[srcTextureHandle];
+    GLTexture *dstTexture = textureList[dstTextureHandle];
+    assert(srcTexture);
+    assert(dstTexture);
+
+    gglCopyImageSubData(srcTexture->object, srcTexture->target, srcLevel, srcX, srcY, srcZ, dstTexture->object, dstTexture->target, dstLevel, dstX, dstY, dstZ, width, height, depth);
+}
+
 void OpenGLRHI::GetTextureImage2D(int level, Image::Format::Enum dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;

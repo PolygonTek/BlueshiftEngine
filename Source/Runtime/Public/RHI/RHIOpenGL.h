@@ -171,6 +171,7 @@ public:
     void                    SetTextureSubImageRect(int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels);
 
     void                    CopyTextureSubImage2D(int xoffset, int yoffset, int x, int y, int width, int height);
+    void                    CopyImageSubData(Handle srcTextureHandle, int srcLevel, int srcX, int srcY, int srcZ, Handle dstTextureHandle, int dstLevel, int dstX, int dstY, int dstZ, int width, int height, int depth);
 
     void                    GetTextureImage2D(int level, Image::Format::Enum format, void *pixels);
     void                    GetTextureImage3D(int level, Image::Format::Enum format, void *pixels);

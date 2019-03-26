@@ -116,6 +116,8 @@ public:
     void                    GetTexelsCubemap(int face, int mipLevel, Image::Format::Enum format, void *pixels) const;
     void                    GetTexelsRect(Image::Format::Enum format, void *pixels) const;
 
+    void                    CopyTo(int mipLevel, Texture *dstTexture);
+
     void                    Purge();
 
     bool                    Load(const char *filename, int flags);
