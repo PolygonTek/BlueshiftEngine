@@ -59,9 +59,6 @@ GameWorld::GameWorld() {
     mapRenderSettings = static_cast<MapRenderSettings *>(MapRenderSettings::metaObject.CreateInstance());
     mapRenderSettings->gameWorld = this;
 
-    //defaultSkyboxMaterial = materialManager.GetMaterial("Data/EngineMaterials/defaultSkybox.material");
-    //mapRenderSettings->SetProperty("skyboxMaterial", resourceGuidMapper.Get(defaultSkyboxMaterial->GetHashName()));
-
     luaVM.Init();
 
     Reset();
@@ -75,8 +72,6 @@ GameWorld::~GameWorld() {
     if (mapRenderSettings) {
         MapRenderSettings::DestroyInstanceImmediate(mapRenderSettings);
     }
-
-    //materialManager.ReleaseMaterial(defaultSkyboxMaterial);
 
     // Free render world
     renderSystem.FreeRenderWorld(renderWorld);

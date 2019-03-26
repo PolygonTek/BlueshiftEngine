@@ -214,6 +214,8 @@ RenderWorld *RenderSystem::AllocRenderWorld() {
 
     renderWorld->AddDistantEnvProbe();
 
+    renderWorld->SetSkyboxMaterial(materialManager.defaultSkyboxMaterial);
+
     primaryWorld = renderWorld;
 
     return renderWorld;
