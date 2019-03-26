@@ -1,0 +1,10 @@
+{
+	"version" : 4,
+	"normalMap" : "false",
+	"textureType" : "2D",
+	"wrapMode" : "Repeat",
+	"filterMode" : "Trilinear",
+   	"colorSpace" : "sRGB",
+   	"useMipmaps" : "true",
+   	"compressionLevel" : "Low"
+}

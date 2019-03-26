@@ -1,0 +1,10 @@
+{
+	"version" : 4,
+	"normalMap" : "false",
+	"textureType" : "Cube",
+	"wrapMode" : "Clamp",
+	"filterMode" : "Trilinear",
+   	"colorSpace" : "Linear",
+   	"useMipmaps" : "false",
+   	"compressionLevel" : "low"
+}
