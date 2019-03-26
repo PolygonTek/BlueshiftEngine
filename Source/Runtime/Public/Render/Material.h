@@ -39,6 +39,8 @@ class Material {
     friend class Batch;
 
 public:
+    static constexpr int Version = 2;
+
     struct Flag {
         enum Enum {
             PolygonOffset       = BIT(0),
@@ -179,6 +181,7 @@ private:
     bool                        permanence = false;     // is permanent material ?
     int                         index = -1;             // index for sorting materials when rendering
 
+    int                         version;
     int                         flags = 0;
     Type::Enum                  type = Type::Surface;
     Sort::Enum                  sort = Sort::Bad;

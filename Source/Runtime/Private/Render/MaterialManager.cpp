@@ -51,7 +51,7 @@ void MaterialManager::CreateEngineMaterials() {
         "       _ALBEDO \"1\"\n"
         "       albedoMap \"%s\"\n"
         "   }\n"
-        "}", GuidMapper::standardShaderGuid.ToString(), GuidMapper::defaultTextureGuid.ToString()));
+        "}", GuidMapper::standardShaderGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces), GuidMapper::defaultTextureGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces)));
     defaultMaterial->permanence = true;
 
     // Create white lit surface material
@@ -62,7 +62,7 @@ void MaterialManager::CreateEngineMaterials() {
         "   shader \"%s\" {\n"
         "       albedoColor \"1 1 1\"\n"
         "   }\n"
-        "}", GuidMapper::standardShaderGuid.ToString()));
+        "}", GuidMapper::standardShaderGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces)));
     whiteMaterial->permanence = true;
 
     // Create unlit surface material
@@ -73,7 +73,7 @@ void MaterialManager::CreateEngineMaterials() {
         "   shader \"%s\" {\n"
         "       albedoColor \"1 1 1\"\n"
         "   }\n"
-        "}", GuidMapper::unlitShaderGuid.ToString()));
+        "}", GuidMapper::unlitShaderGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces)));
     unlitMaterial->permanence = true;
 
     // Create blend unlit surface material
@@ -86,7 +86,7 @@ void MaterialManager::CreateEngineMaterials() {
         "   shader \"%s\" {\n"
         "       albedoColor \"1 1 1\"\n"
         "   }\n"
-        "}", GuidMapper::unlitShaderGuid.ToString()));
+        "}", GuidMapper::unlitShaderGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces)));
     blendMaterial->permanence = true;
 
     // Create white light material
@@ -96,7 +96,7 @@ void MaterialManager::CreateEngineMaterials() {
         "pass {\n"
         "   useOwnerColor\n"
         "   map \"%s\"\n"
-        "}", GuidMapper::whiteTextureGuid.ToString()));
+        "}", GuidMapper::whiteTextureGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces)));
     whiteLightMaterial->permanence = true;
 
     // Create white light (zero clamped) material
@@ -106,7 +106,7 @@ void MaterialManager::CreateEngineMaterials() {
         "pass {\n"
         "   useOwnerColor\n"
         "   map \"%s\"\n"
-        "}", GuidMapper::zeroClampTextureGuid.ToString()));
+        "}", GuidMapper::zeroClampTextureGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces)));
     zeroClampLightMaterial->permanence = true;
 
     // Create default skybox material
@@ -115,9 +115,9 @@ void MaterialManager::CreateEngineMaterials() {
         "pass {\n"
         "   cull twoSided\n"
         "   shader \"%s\" {\n"
-        "       skyCubeMap \"%s\"\n"
+        "       skyCubeMap \"Data/EngineTextures/default_sky.dds\"\n"
         "   }\n"
-        "}", GuidMapper::skyboxCubemapShaderGuid.ToString(), GuidMapper::defaultCubeTextureGuid.ToString()));
+        "}", GuidMapper::skyboxCubemapShaderGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces)));
     defaultSkyboxMaterial->permanence = true;
 }
 
@@ -165,6 +165,7 @@ Material *MaterialManager::AllocMaterial(const char *hashName) {
     material->name = hashName;
     material->name.StripPath();
     material->name.StripFileExtension();
+    material->version = Material::Version;
     material->refCount = 1;
     material->index = materialCounter++ % MaterialManager::MaxCount;
     materialHashMap.Set(material->hashName, material);
@@ -287,7 +288,7 @@ Material *MaterialManager::GetSingleTextureMaterial(const Texture *texture, Mate
             "       envCubeMap \"%s\"\n"
             "       mipLevel 0\n"
             "   }\n"
-            "}\n", GuidMapper::envCubemapShaderGuid.ToString(), resourceGuidMapper.Get(texture->GetHashName()).ToString());
+            "}\n", GuidMapper::envCubemapShaderGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces), resourceGuidMapper.Get(texture->GetHashName()).ToString(BE1::Guid::Format::DigitsWithHyphensInBraces));
         break;
     default:
         Str::snPrintf(buffer, sizeof(buffer),

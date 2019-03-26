@@ -21,8 +21,6 @@
 
 BE_NAMESPACE_BEGIN
 
-#define MATERIAL_VERSION 1
-
 void Material::Purge() {
     if (pass) {
         if (pass->shader) {
@@ -192,30 +190,40 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                         const auto &propName = entry->first;
                         const auto &propInfo = entry->second;
 
-                        Shader::Property property;
+                        Shader::Property shaderProperty;
 
-                        if (propInfo.GetType() == Variant::Type::Guid) {
-                            // Texture GUID
-                            if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
-                                Str defaultGuidString = propInfo.GetDefaultValue().As<Guid>().ToString();
-                                Str value = propDict.GetString(propName, defaultGuidString);
+                        if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject() == &TextureAsset::metaObject) {
+                            // Value string
+                            Str value = propDict.GetString(propName, propInfo.GetDefaultValue().As<Guid>().ToString(Guid::Format::DigitsWithHyphensInBraces));
 
-                                // Get texture GUID 
-                                property.data = Variant::FromString(Variant::Type::Guid, value);
-                                const Guid textureGuid = property.data.As<Guid>();
-
-                                // Get texture path from GUID
-                                const Str texturePath = resourceGuidMapper.Get(textureGuid);
-                                // Get texture from path
-                                property.texture = textureManager.GetTexture(texturePath);
+                            if (version >= 2) {
+                                if (value.Length() == 38 && value[0] == '{' && value[value.Length() - 1] == '}') {
+                                    shaderProperty.data = Variant::FromString(Variant::Type::Guid, value);
+                                } else {
+                                    shaderProperty.data = Guid::CreateGuid();
+                                    resourceGuidMapper.Set(shaderProperty.data.As<Guid>(), value);
+                                }
+                            } else {
+                                shaderProperty.data = Variant::FromString(Variant::Type::Guid, value);
                             }
+
+                            const Guid textureGuid = shaderProperty.data.As<Guid>();
+
+                            // Get texture path from GUID
+                            const Str texturePath = resourceGuidMapper.Get(textureGuid);
+
+                            // Get texture from path
+                            shaderProperty.texture = textureManager.GetTexture(texturePath);
                         } else {
-                            // Value
-                            property.data = Variant::FromString(propInfo.GetType(), propDict.GetString(propName, propInfo.GetDefaultValue().ToString()));
-                            property.texture = nullptr;
+                            // Value string
+                            Str value = propDict.GetString(propName, propInfo.GetDefaultValue().ToString());
+
+                            // Get value
+                            shaderProperty.data = Variant::FromString(propInfo.GetType(), value);
+                            shaderProperty.texture = nullptr;
                         }
 
-                        pass->shaderProperties.Set(propName, property);
+                        pass->shaderProperties.Set(propName, shaderProperty);
                     }
 
                     CommitShaderPropertiesChanged();
@@ -377,28 +385,27 @@ void Material::ChangeShader(Shader *shader) {
         const auto &propInfo = newEntry->second;
 
         const auto oldEntry = oldPropInfoHashMap.Get(key);
+
         if (oldEntry && oldEntry->second.GetType() == newEntry->second.GetType()) {
             const auto &oldProp = pass->shaderProperties.Get(key)->second;
 
             newShaderProperties.Set(key, oldProp);
         } else {
-            Shader::Property prop;
+            Shader::Property shaderProperty;
 
-            if (propInfo.GetType() == Variant::Type::Guid) {
-                if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
-                    Str defaultName = resourceGuidMapper.Get(propInfo.GetDefaultValue().As<Guid>());
-                    Texture *defaultTexture = textureManager.FindTexture(defaultName);
-                    const Guid defaultTextureGuid = resourceGuidMapper.Get(defaultTexture->GetHashName());
+            if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject() == &TextureAsset::metaObject) {
+                const Str defaultTextureName = resourceGuidMapper.Get(propInfo.GetDefaultValue().As<Guid>());
+                const Texture *defaultTexture = textureManager.FindTexture(defaultTextureName);
+                const Guid defaultTextureGuid = resourceGuidMapper.Get(defaultTexture->GetHashName());
 
-                    prop.data = defaultTextureGuid;
-                }
+                shaderProperty.data = defaultTextureGuid;
             } else {
-                prop.data = Variant::FromString(propInfo.GetType(), propInfo.GetDefaultValue().As<Str>());
+                shaderProperty.data = Variant::FromString(propInfo.GetType(), propInfo.GetDefaultValue().As<Str>());
             }
 
-            prop.texture = nullptr;
+            shaderProperty.texture = nullptr;
 
-            newShaderProperties.Set(key, prop);
+            newShaderProperties.Set(key, shaderProperty);
         }
     }
 
@@ -447,18 +454,17 @@ void Material::CommitShaderPropertiesChanged() {
         const auto &propName = entry->first;
         const auto &propInfo = entry->second;
 
-        if (propInfo.GetType() == Variant::Type::Guid) {
-            if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
-                auto *entry = pass->shaderProperties.Get(propName);
-                Shader::Property &shaderProp = entry->second;
+        if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject() == &TextureAsset::metaObject) {
+            auto *entry = pass->shaderProperties.Get(propName);
+            Shader::Property &shaderProperty = entry->second;
 
-                if (shaderProp.texture) {
-                    textureManager.ReleaseTexture(shaderProp.texture);
-                }
-                const Guid textureGuid = shaderProp.data.As<Guid>();
-                const Str texturePath = resourceGuidMapper.Get(textureGuid);
-                shaderProp.texture = textureManager.GetTexture(texturePath);
+            if (shaderProperty.texture) {
+                textureManager.ReleaseTexture(shaderProperty.texture);
             }
+
+            const Guid textureGuid = shaderProperty.data.As<Guid>();
+            const Str texturePath = resourceGuidMapper.Get(textureGuid);
+            shaderProperty.texture = textureManager.GetTexture(texturePath);
         }
     }
 }
@@ -631,7 +637,7 @@ void Material::Write(const char *filename) {
 
     Str indentSpace;
 
-    fp->Printf("material %i\n", MATERIAL_VERSION);
+    fp->Printf("material %i\n", Material::Version);
 
     Str lightMaterialTypeStr;
     if (type == Type::Surface) {
@@ -710,7 +716,7 @@ void Material::Write(const char *filename) {
 
     if (pass->shader) {
         const Guid shaderGuid = resourceGuidMapper.Get(pass->shader->GetOriginalShader()->GetHashName());
-        fp->Printf("%sshader \"%s\" {\n", indentSpace.c_str(), shaderGuid.ToString());
+        fp->Printf("%sshader \"%s\" {\n", indentSpace.c_str(), shaderGuid.ToString(Guid::Format::DigitsWithHyphensInBraces));
         indentSpace += "  ";
 
         const auto &propertyInfoHashMap = pass->shader->GetOriginalShader()->GetPropertyInfoHashMap();
@@ -730,7 +736,7 @@ void Material::Write(const char *filename) {
                 fp->Printf("%s%s \"%i\"\n", indentSpace.c_str(), name, value.As<int>());
                 break;
             case Variant::Type::Guid:
-                fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Guid>().ToString());
+                fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Guid>().ToString(Guid::Format::DigitsWithHyphensInBraces));
                 break;
             case Variant::Type::Bool:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<bool>() ? "true" : "false");
@@ -991,16 +997,17 @@ bool Material::Load(const char *hashName) {
         return false;
     }
 
-    int version = lexer.ParseInt();
-    if (version != MATERIAL_VERSION) {
+    this->version = lexer.ParseInt();
+
+    if (version < 1) {
         lexer.Error("Material::Load: Invalid version %d\n", version);
         fileSystem.FreeFile(data);
         return false;
     }
 
-    Str baseDir = hashName;
-    baseDir.StripFileName();
-    Create(data + lexer.GetCurrentOffset());
+    if (!Create(data + lexer.GetCurrentOffset())) {
+        return false;
+    }
 
     fileSystem.FreeFile(data);
 
