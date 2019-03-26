@@ -30,7 +30,7 @@ RenderWorld::RenderWorld() {
 
     textMesh.SetCoordFrame(GuiMesh::CoordFrame3D);
 
-    skyboxMaterial = materialManager.defaultSkyboxMaterial;
+    skyboxMaterial = nullptr;
 
     debugLineColor.Set(0, 0, 0, 0);
     debugFillColor.Set(0, 0, 0, 0);
@@ -40,6 +40,17 @@ RenderWorld::RenderWorld() {
 
 RenderWorld::~RenderWorld() {
     ClearScene();
+
+    // Cancel refreshing environment probes
+    for (int i = 0; i < renderSystem.envProbeJobs.Count(); ) {
+        EnvProbeJob *job = &renderSystem.envProbeJobs[i];
+
+        if (job->GetRenderWorld() == this) {
+            renderSystem.envProbeJobs.RemoveIndex(i);
+        } else {
+            i++;
+        }
+    }
 }
 
 void RenderWorld::ClearScene() {
