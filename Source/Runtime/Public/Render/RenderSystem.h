@@ -45,6 +45,7 @@ public:
 private:
     void                    RevalidateDiffuseProbeRT(bool clearToBlack);
     void                    RevalidateSpecularProbeRT(bool clearToBlack);
+    void                    RevalidateEnvProbeTexture();
 
     RenderWorld *           renderWorld;
     EnvProbe *              envProbe;

@@ -7,6 +7,8 @@ shader "GenLDSumGGX" {
         $include "FragmentCommon.glsl"
         $include "IBL.glsl"
 
+        #define USE_MIPMAP_FILTERED_SAMPLING
+
         in vec2 v2f_texCoord;
 
         out vec4 o_fragColor : FRAG_COLOR;
@@ -37,7 +39,15 @@ shader "GenLDSumGGX" {
 
             float totalWeights = 0.0;
 
-            const float inc = 1.0 / (log2(radianceCubeMapSize) * 5.0);
+            const float inc = 1.0 / 32.0;
+
+        #ifdef USE_MIPMAP_FILTERED_SAMPLING
+            const float maxMipLevel = log2(radianceCubeMapSize);
+            const float sampleCount = 32.0 * 32.0;
+
+            // Solid angle associated to a pixel of the cubemap.
+            float omegaP = (4.0 * PI) / (6.0 * radianceCubeMapSize * radianceCubeMapSize);
+        #endif
 
             for (float y = 0.0; y < 1.0; y += inc) {
                 for (float x = 0.0; x < 1.0; x += inc) {
@@ -48,7 +58,25 @@ shader "GenLDSumGGX" {
                     float NdotL = max(dot(N, L), 0.0);
 
                     if (NdotL > 0.0) {
-                        color += texCUBElod(radianceCubeMap, vec4(L, 0.0)).rgb * NdotL;
+        #ifdef USE_MIPMAP_FILTERED_SAMPLING
+                        // Use lower mipmap level for fetching sample with low probability in order to reduce the variance.
+                        float NdotH = saturate(dot(N, H));
+
+                        // N == V and then NdotH == VdotH.
+                        // PDF(H) = D * NdotH
+                        // PDF(L) = D * NdotH / (4 * VdotH) 
+                        //        = D / 4;
+                        float PDF = D_GGX(NdotH, linearRoughness) / 4.0;
+
+                        // Solid angle associated to a sample.
+                        float omegaS = 1.0 / (sampleCount * PDF);
+
+                        float mipLevel = clamp(log2(omegaS / omegaP) + 1.0, 1.0, maxMipLevel);
+        #else
+                        float mipLevel = 0.0;
+        #endif
+
+                        color += texCUBElod(radianceCubeMap, vec4(L, mipLevel)).rgb * NdotL;
 
                         // We have found weighting by cos(theta) achieves better results.
                         totalWeights += NdotL;

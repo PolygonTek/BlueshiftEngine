@@ -170,10 +170,12 @@ private:
     AABB                    influenceAABB;
 
     Texture *               diffuseProbeTexture = nullptr;
+    RenderTarget *          diffuseProbeRT = nullptr;
+
+    Texture *               envProbeTexture = nullptr;
+
     Texture *               specularProbeTexture = nullptr;
     int                     specularProbeTextureMaxMipLevel = 0;
-
-    RenderTarget *          diffuseProbeRT = nullptr;
     RenderTarget *          specularProbeRT = nullptr;
 
     int                     bounces = 0;

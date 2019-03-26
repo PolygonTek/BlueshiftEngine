@@ -102,6 +102,11 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
             specularProbeRT = nullptr;
         }
 
+        if (envProbeTexture) {
+            textureManager.ReleaseTexture(envProbeTexture, true);
+            envProbeTexture = nullptr;
+        }
+
         // Use baked specular probe cubemap.
         specularProbeTexture = state.bakedSpecularProbeTexture;
         specularProbeTexture->AddRefCount();
@@ -176,13 +181,13 @@ void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
     int numMipLevels = Math::Log(2, size) + 1;
 
     // Recreate specular probe texture if it need to.
-    if (size != envProbe->specularProbeTexture->GetWidth() || 
-        Image::IsCompressed(envProbe->specularProbeTexture->GetFormat()) ||
-        (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->specularProbeTexture->GetFormat()))) {
+    if (Image::IsCompressed(envProbe->specularProbeTexture->GetFormat()) ||
+        (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->specularProbeTexture->GetFormat())) ||
+        size != envProbe->specularProbeTexture->GetWidth()) {
         Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8;
 
         envProbe->specularProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
-            Texture::Flag::Clamp | Texture::Flag::HighQuality);
+            Texture::Flag::Clamp | Texture::Flag::Trilinear | Texture::Flag::HighQuality);
     }
 
     if (clearToBlack) {
@@ -200,7 +205,7 @@ void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
     }
 
     if (envProbe->specularProbeRT) {
-        // Specular probe texture is recreated so we must recreate render target too.
+        // Specular probe texture is re-created so we must re-create render target too.
         if (envProbe->specularProbeRT != envProbe->specularProbeTexture->GetRenderTarget()) {
             RenderTarget::Delete(envProbe->specularProbeRT);
             envProbe->specularProbeRT = nullptr;
@@ -210,6 +215,24 @@ void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
     // Create specular probe render target if it is not created yet.
     if (!envProbe->specularProbeRT) {
         envProbe->specularProbeRT = RenderTarget::Create(envProbe->specularProbeTexture, nullptr, RHI::RenderTargetFlag::HasDepthBuffer);
+    }
+}
+
+void EnvProbeJob::RevalidateEnvProbeTexture() {
+    int size = envProbe->GetSize();
+    int numMipLevels = Math::Log(2, size) + 1;
+
+    if (!envProbe->envProbeTexture) {
+        envProbe->envProbeTexture = textureManager.AllocTexture(va("EnvProbe-%s", envProbe->state.guid.ToString()));
+    }
+    
+    // Recreate env probe texture to use when refreshing specular probe texture
+    if (size != envProbe->envProbeTexture->GetWidth() ||
+        (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->envProbeTexture->GetFormat()))) {
+        Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8;
+
+        envProbe->envProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
+            Texture::Flag::Clamp | Texture::Flag::Trilinear | Texture::Flag::HighQuality);
     }
 }
 
@@ -224,6 +247,8 @@ bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing::Enum timeSlicing) {
     if (specularProbeCubemapComputedLevel == -1) {
         if (specularProbeCubemapComputedLevel0Face == -1) {
             RevalidateSpecularProbeRT(envProbe->bounces == 0);
+
+            RevalidateEnvProbeTexture();
         }
 
         // FIXME: use EnvProbeStatic instead of -1
@@ -254,9 +279,21 @@ bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing::Enum timeSlicing) {
         }
     }
 
+    if (specularProbeCubemapComputedLevel == 0) {
+        envProbe->specularProbeTexture->CopyTo(0, envProbe->envProbeTexture);
+
+        // Generate mipmaps of environment cubemap to generate specular convolution cube map using pre-filtered environment cubemap.
+        envProbe->envProbeTexture->Bind();
+        rhi.GenerateMipmap();
+
+        if (timeSlicing != EnvProbe::TimeSlicing::NoTimeSlicing) {
+            return false;
+        }
+    }
+
     while (specularProbeCubemapComputedLevel < specularProbeCubemapMaxLevel) {
         // Generate specular convolution cube map from mipLevel 1 to specularProbeCubemapMaxLevel using environment cubemap.
-        renderSystem.GenerateGGXLDSumRTLevel(envProbe->specularProbeTexture, envProbe->specularProbeRT, specularProbeCubemapMaxLevel, specularProbeCubemapComputedLevel + 1);
+        renderSystem.GenerateGGXLDSumRTLevel(envProbe->envProbeTexture, envProbe->specularProbeRT, specularProbeCubemapMaxLevel, specularProbeCubemapComputedLevel + 1);
 
         specularProbeCubemapComputedLevel++;
 
