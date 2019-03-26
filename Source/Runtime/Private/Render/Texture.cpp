@@ -691,7 +691,7 @@ bool Texture::Reload() {
 
     Str _hashName = this->hashName;
 
-    const Str textureInfoPath = _hashName + ".texinfo";
+    const Str textureInfoPath = _hashName + ".texture";
     int _flags = textureManager.LoadTextureInfo(textureInfoPath);
 
     bool ret = Load(_hashName, _flags);

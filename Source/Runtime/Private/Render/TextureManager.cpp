@@ -255,7 +255,7 @@ Texture *TextureManager::GetTexture(const char *hashName, int creationFlags) {
     }
 
     if (creationFlags == 0) {
-        const Str textureInfoPath = Str(hashName) + ".texinfo";
+        const Str textureInfoPath = Str(hashName) + ".texture";
         creationFlags = LoadTextureInfo(textureInfoPath);
     }
 
@@ -269,79 +269,79 @@ Texture *TextureManager::GetTexture(const char *hashName, int creationFlags) {
 }
 
 int TextureManager::LoadTextureInfo(const char *filename) const {
-    int flags = 0;
+    const int defaultFlags = Texture::Flag::Clamp | Texture::Flag::SRGBColorSpace;
 
     if (!filename || !filename[0]) {
-        return flags;
+        return defaultFlags;
     }
 
-    int32_t *data;
-    size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
-    if (!data) {
-        return 0;
+    char *text = nullptr;
+    size_t size = fileSystem.LoadFile(filename, true, (void **)&text);
+    if (!text) {
+        return defaultFlags;
     }
 
-    int32_t *dataPtr = data;
-    int version = *dataPtr++;
-    if (version >= 1) {
-        int textureType = *dataPtr++;
-        switch (textureType) {
-            case 1: // TextureType::TextureUI
+    Json::Value node;
+    Json::Reader jsonReader;
+    if (!jsonReader.parse(text, node)) {
+        BE_WARNLOG("Failed to parse JSON text\n");
+        return defaultFlags;
+    }
+
+    int flags = 0;
+
+    int version = node["version"].asInt();
+    if (version >= 4) {
+        const Json::Value textureTypeValue = node.get("textureType", "2D");
+        const char *textureTypeString = textureTypeValue.asCString();
+        if (!Str::Icmp(textureTypeString, "UI")) {
             flags |= Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo;
-            break;
         }
 
-        int wrapMode = *dataPtr++;
-        switch (wrapMode) {
-        case 0: // WrapMode::Repeat
-            flags |= Texture::Flag::Repeat;
-            break;
-        case 1: // WrapMode::Clamp
-            flags |= Texture::Flag::Clamp;
-            break;
-        }
-
-        int filterMode = *dataPtr++;
-        switch (filterMode) {
-        case 0: // FilterMode::Point
-            flags |= Texture::Flag::Nearest | Texture::Flag::NoMipmaps;
-            break;
-        case 1: // FilterMode::Bilinear
-            break;
-        case 2: // FilterMode::Trilinear
-            break;
-        }
-
-        int normalMap = *dataPtr++;
-        if (normalMap) {
+        const Json::Value normalMapValue = node.get("normalMap", "false");
+        const char *normalMapString = normalMapValue.asCString();
+        if (!Str::Icmp(normalMapString, "true")) {
             flags |= Texture::Flag::NormalMap;
         }
 
-        int sRGB = *dataPtr++;
-        if (sRGB) {
+        const Json::Value wrapModeValue = node.get("wrapMode", "Clamp");
+        const char *wrapModeString = wrapModeValue.asCString();
+        if (!Str::Icmp(wrapModeString, "Clamp")) {
+            flags |= Texture::Flag::Clamp;
+        } else if (!Str::Icmp(wrapModeString, "Repeat")) {
+            flags |= Texture::Flag::Repeat;
+        }
+
+        const Json::Value filterModeValue = node.get("filterMode", "Bilinear");
+        const char *filterModeString = filterModeValue.asCString();
+        if (!Str::Icmp(filterModeString, "Point")) {
+            flags |= Texture::Flag::Nearest | Texture::Flag::NoMipmaps;
+        } else if (!Str::Icmp(filterModeString, "Bilinear")) {
+        } else if (!Str::Icmp(filterModeString, "Trilinear")) {
+        }
+
+        const Json::Value sRGBValue = node.get("colorSpace", "sRGB");
+        const char *sRGBString = sRGBValue.asCString();
+        if (!Str::Icmp(sRGBString, "sRGB")) {
             flags |= Texture::Flag::SRGBColorSpace;
         }
 
-        if (version >= 2) {
-            int useMipmaps = *dataPtr++;
-            if (!useMipmaps) {
-                flags |= Texture::Flag::NoMipmaps;
-            }
+        const Json::Value useMipmapsValue = node.get("useMipmaps", "true");
+        const char *useMipmapsString = useMipmapsValue.asCString();
+        if (!Str::Icmp(useMipmapsString, "false")) {
+            flags |= Texture::Flag::NoMipmaps;
         }
 
-        if (version >= 3) {
-            int compressionLevel = *dataPtr++;
-            if (compressionLevel == 0) {
-                flags |= Texture::Flag::NoCompression;
-            }
-        }
-
-        if (flags & Texture::Flag::NormalMap) {
-            flags &= ~Texture::Flag::SRGBColorSpace;
+        const Json::Value compressionLevelValue = node.get("compressionLevel", "Normal");
+        const char *compressionLevelString = compressionLevelValue.asCString();
+        if (!Str::Icmp(compressionLevelString, "None")) {
+            flags |= Texture::Flag::NoCompression;
         }
     }
 
-    fileSystem.FreeFile(data);
+    if (flags & Texture::Flag::NormalMap) {
+        flags &= ~Texture::Flag::SRGBColorSpace;
+    }
 
     return flags;
 }
