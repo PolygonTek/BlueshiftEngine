@@ -119,8 +119,8 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
 
             specularProbeTexture = textureManager.AllocTexture(va("SpecularProbe-%s", state.guid.ToString()));
             specularProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels,
-                state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8,
-                Texture::Flag::Clamp | Texture::Flag::HighQuality);
+                state.useHDR ? Image::Format::RGBA_16F_16F_16F_16F : Image::Format::RGBA_8_8_8_8,
+                Texture::Flag::Clamp | Texture::Flag::Trilinear | Texture::Flag::HighQuality);
 
             specularProbeTextureMaxMipLevel = Math::Log(2.0f, specularProbeTexture->GetWidth());
 
@@ -184,7 +184,7 @@ void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
     if (Image::IsCompressed(envProbe->specularProbeTexture->GetFormat()) ||
         (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->specularProbeTexture->GetFormat())) ||
         size != envProbe->specularProbeTexture->GetWidth()) {
-        Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8;
+        Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGBA_16F_16F_16F_16F : Image::Format::RGBA_8_8_8_8;
 
         envProbe->specularProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
             Texture::Flag::Clamp | Texture::Flag::Trilinear | Texture::Flag::HighQuality);
@@ -229,7 +229,7 @@ void EnvProbeJob::RevalidateEnvProbeTexture() {
     // Recreate env probe texture to use when refreshing specular probe texture
     if (size != envProbe->envProbeTexture->GetWidth() ||
         (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->envProbeTexture->GetFormat()))) {
-        Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8;
+        Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGBA_16F_16F_16F_16F : Image::Format::RGBA_8_8_8_8;
 
         envProbe->envProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
             Texture::Flag::Clamp | Texture::Flag::Trilinear | Texture::Flag::HighQuality);
