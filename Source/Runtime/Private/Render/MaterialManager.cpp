@@ -116,6 +116,7 @@ void MaterialManager::CreateEngineMaterials() {
         "   cull twoSided\n"
         "   shader \"%s\" {\n"
         "       skyCubeMap \"Data/EngineTextures/default_sky.dds\"\n"
+        "       rotation 0\n"
         "   }\n"
         "}", GuidMapper::skyboxCubemapShaderGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces)));
     defaultSkyboxMaterial->permanence = true;
