@@ -140,25 +140,24 @@ int EnvProbe::ToActualResolution(Resolution::Enum resolution) {
 void EnvProbeJob::RevalidateDiffuseProbeRT(bool clearToBlack) {
     // fixed size (16) for irradiance cubemap
     int size = 16;
+    Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8;
 
     // Recreate diffuse probe texture if it need to.
-    if (Image::IsCompressed(envProbe->diffuseProbeTexture->GetFormat()) ||
-        (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->diffuseProbeTexture->GetFormat()))) {
-        Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8;
-
+    if (Image::IsCompressed(envProbe->diffuseProbeTexture->GetFormat()) || 
+        envProbe->diffuseProbeTexture->GetFormat() != format) {
         envProbe->diffuseProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, 1, format, 
             Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
     }
 
     if (clearToBlack) {
-        int dataSize = size * size * Image::BytesPerPixel(envProbe->diffuseProbeTexture->GetFormat());
+        int dataSize = size * size * Image::BytesPerPixel(format);
         byte *data = (byte *)_alloca16(dataSize);
         memset(data, 0, dataSize);
 
         envProbe->diffuseProbeTexture->Bind();
 
         for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-            envProbe->diffuseProbeTexture->UpdateCubemap(faceIndex, 0, 0, 0, size, size, envProbe->diffuseProbeTexture->GetFormat(), data);
+            envProbe->diffuseProbeTexture->UpdateCubemap(faceIndex, 0, 0, 0, size, size, format, data);
         }
     }
 
@@ -179,19 +178,18 @@ void EnvProbeJob::RevalidateDiffuseProbeRT(bool clearToBlack) {
 void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
     int size = envProbe->GetSize();
     int numMipLevels = Math::Log(2, size) + 1;
+    Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGBA_16F_16F_16F_16F : Image::Format::RGBA_8_8_8_8;
 
     // Recreate specular probe texture if it need to.
     if (Image::IsCompressed(envProbe->specularProbeTexture->GetFormat()) ||
-        (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->specularProbeTexture->GetFormat())) ||
+        envProbe->specularProbeTexture->GetFormat() != format ||
         size != envProbe->specularProbeTexture->GetWidth()) {
-        Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGBA_16F_16F_16F_16F : Image::Format::RGBA_8_8_8_8;
-
         envProbe->specularProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
             Texture::Flag::Clamp | Texture::Flag::Trilinear | Texture::Flag::HighQuality);
     }
 
     if (clearToBlack) {
-        int dataSize = size * size * Image::BytesPerPixel(envProbe->specularProbeTexture->GetFormat());
+        int dataSize = size * size * Image::BytesPerPixel(format);
         byte *data = (byte *)_alloca16(dataSize);
         memset(data, 0, dataSize);
 
@@ -199,7 +197,7 @@ void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
 
         for (int mipLevel = 0; size > 0; mipLevel++, size >>= 1) {
             for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-                envProbe->specularProbeTexture->UpdateCubemap(faceIndex, mipLevel, 0, 0, size, size, envProbe->specularProbeTexture->GetFormat(), data);
+                envProbe->specularProbeTexture->UpdateCubemap(faceIndex, mipLevel, 0, 0, size, size, format, data);
             }
         }
     }
@@ -221,6 +219,7 @@ void EnvProbeJob::RevalidateSpecularProbeRT(bool clearToBlack) {
 void EnvProbeJob::RevalidateEnvProbeTexture() {
     int size = envProbe->GetSize();
     int numMipLevels = Math::Log(2, size) + 1;
+    Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGBA_16F_16F_16F_16F : Image::Format::RGBA_8_8_8_8;
 
     if (!envProbe->envProbeTexture) {
         envProbe->envProbeTexture = textureManager.AllocTexture(va("EnvProbe-%s", envProbe->state.guid.ToString()));
@@ -228,9 +227,7 @@ void EnvProbeJob::RevalidateEnvProbeTexture() {
     
     // Recreate env probe texture to use when refreshing specular probe texture
     if (size != envProbe->envProbeTexture->GetWidth() ||
-        (envProbe->state.useHDR ^ Image::IsFloatFormat(envProbe->envProbeTexture->GetFormat()))) {
-        Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGBA_16F_16F_16F_16F : Image::Format::RGBA_8_8_8_8;
-
+        envProbe->envProbeTexture->GetFormat() != format) {
         envProbe->envProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, numMipLevels, format,
             Texture::Flag::Clamp | Texture::Flag::Trilinear | Texture::Flag::HighQuality);
     }

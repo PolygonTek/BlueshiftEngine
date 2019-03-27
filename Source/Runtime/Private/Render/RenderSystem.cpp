@@ -627,9 +627,9 @@ void RenderSystem::CaptureScreenRT(RenderWorld *renderWorld, int layerMask,
     cameraDef.clearMethod = colorClear ? RenderCamera::ClearMethod::Color : RenderCamera::ClearMethod::Skybox;
     cameraDef.clearColor = clearColor;
     cameraDef.layerMask = layerMask;
-    cameraDef.renderRect.Set(0, 0, width, height);
     cameraDef.origin = origin;
     cameraDef.axis = axis;
+    cameraDef.renderRect.Set(0, 0, width, height);
 
     Vec3 v;
     renderWorld->GetStaticAABB().GetFarthestVertexFromDir(axis[0], v);
@@ -696,13 +696,13 @@ void RenderSystem::CaptureEnvCubeFaceRT(RenderWorld *renderWorld, int layerMask,
     cameraDef.clearColor = clearColor;
     cameraDef.layerMask = layerMask;
     cameraDef.staticMask = staticMask;
-    cameraDef.renderRect.Set(0, 0, targetCubeRT->GetWidth(), targetCubeRT->GetHeight());
-    cameraDef.fovX = 90;
-    cameraDef.fovY = 90;
     cameraDef.zNear = zNear;
     cameraDef.zFar = zFar;
     cameraDef.origin = origin;
     cameraDef.orthogonal = false;
+    cameraDef.fovX = 90;
+    cameraDef.fovY = 90;
+    cameraDef.renderRect.Set(0, 0, targetCubeRT->GetWidth(), targetCubeRT->GetHeight());
 
     if (staticMask) {
         cameraDef.flags |= RenderCamera::Flag::StaticOnly;
