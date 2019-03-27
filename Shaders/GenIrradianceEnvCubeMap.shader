@@ -23,7 +23,7 @@ shader "GenIrradianceEnvCubeMap" {
             vec3 N = FaceToGLCubeMapCoords(targetCubeMapFace, targetFaceX, targetFaceY, targetCubeMapSize).xyz;
 
             vec3 color = vec3(0.0);
-#if 1 // Quasi Monte Carlo integration
+        #if 1 // Quasi Monte Carlo integration
             const float sampleCount = 32.0 * 32.0;
             const float inc = 1.0 / 32.0;
 
@@ -44,7 +44,7 @@ shader "GenIrradianceEnvCubeMap" {
             }
 
             o_fragColor = vec4(color / sampleCount, 1.0);
-#else // Brute force way integration
+        #else // Brute force way integration
             for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
                 for (int y = 0; y < radianceCubeMapSize; y++) {
                     for (int x = 0; x < radianceCubeMapSize; x++) {
@@ -64,7 +64,7 @@ shader "GenIrradianceEnvCubeMap" {
             float normFactor = 1.0 / PI;
 
             o_fragColor = vec4(normFactor * color, 1.0);
-#endif
+        #endif
         }
     }
 }

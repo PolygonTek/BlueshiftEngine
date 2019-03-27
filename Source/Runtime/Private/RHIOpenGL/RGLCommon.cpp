@@ -309,7 +309,7 @@ void OpenGLRHI::InitGL() {
 #endif
 
 #ifdef GL_SGIS_generate_mipmap // 1.4 - deprecated in OpenGL3
-    //gglHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+    //gglHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_NICEST);
 #endif
 
 #ifdef GL_NV_multisample_filter_hint
