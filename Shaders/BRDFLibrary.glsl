@@ -96,7 +96,7 @@ float D_Beckmann(float NdotH, float linearRoughness) {
 float D_GGX(float NdotH, float linearRoughness) {
     float a2 = linearRoughness * linearRoughness;
     float denom = NdotH * NdotH * (a2 - 1.0) + 1.0;
-    return a2 * INV_PI / (denom * denom);
+    return a2 * INV_PI / (denom * denom + 1e-7);
 }
 
 // Anisotropic GGX
