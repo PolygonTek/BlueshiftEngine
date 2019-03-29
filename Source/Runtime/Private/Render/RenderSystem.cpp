@@ -24,11 +24,12 @@
 
 BE_NAMESPACE_BEGIN
 
-renderGlobal_t      renderGlobal;
+RenderGlobal        renderGlobal;
 RenderSystem        renderSystem;
 
 void RenderSystem::Init(void *windowHandle, const RHI::Settings *settings) {
     cmdSystem.AddCommand("screenshot", Cmd_ScreenShot);
+    cmdSystem.AddCommand("genDFGSumGGX", Cmd_GenerateDFGSumGGX);
 
     // Initialize OpenGL renderer
     rhi.Init(windowHandle, settings);
@@ -105,6 +106,7 @@ void RenderSystem::Init(void *windowHandle, const RHI::Settings *settings) {
 
 void RenderSystem::Shutdown() {
     cmdSystem.RemoveCommand("screenshot");
+    cmdSystem.RemoveCommand("genDFGSumGGX");
 
     frameData.Shutdown();
 
@@ -1170,6 +1172,22 @@ void RenderSystem::TakePrefilteredEnvShot(const char *filename, RenderWorld *ren
 }
 
 //--------------------------------------------------------------------------------------------------
+
+void RenderSystem::Cmd_GenerateDFGSumGGX(const CmdArgs &args) {
+    Str path = PlatformFile::ExecutablePath();
+    path.AppendPath("../../../Data/EngineTextures");
+    path.CleanPath();
+
+    if (args.Argc() > 1) {
+        path.AppendPath(args.Argv(1));
+    } else {
+        path.AppendPath("IntegrationLUT_GGX");
+    }
+
+    const int size = 512;
+
+    renderSystem.WriteGGXDFGSum(path, size);
+}
 
 void RenderSystem::Cmd_ScreenShot(const CmdArgs &args) {
     char path[1024];

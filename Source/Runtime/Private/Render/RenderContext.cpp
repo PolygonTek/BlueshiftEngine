@@ -62,8 +62,6 @@ void RenderContext::Init(RHI::WindowHandle hwnd, int renderingWidth, int renderi
 
     InitShadowMapRT();
 
-    //WriteGGXDFGSum("IntegrationLUT_GGX", 512);
-    
     this->random.SetSeed(123123);
 
     this->elapsedTime = PlatformTime::Milliseconds() * 0.001f;

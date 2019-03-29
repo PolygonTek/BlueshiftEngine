@@ -174,6 +174,7 @@ private:
 
     Array<EnvProbeJob>      envProbeJobs;
 
+    static void             Cmd_GenerateDFGSumGGX(const CmdArgs &args);
     static void             Cmd_ScreenShot(const CmdArgs &args);
 };
 

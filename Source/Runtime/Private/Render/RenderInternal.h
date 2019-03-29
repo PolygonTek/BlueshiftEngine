@@ -91,7 +91,7 @@ public:
     VisLight *              primaryLight;
 };
 
-struct renderGlobal_t {
+struct RenderGlobal {
     int                     skinningMethod;
     int                     vertexTextureMethod;
     int                     instancingMethod;
@@ -99,7 +99,7 @@ struct renderGlobal_t {
     void *                  instanceBufferData;
 };
 
-extern renderGlobal_t       renderGlobal;
+extern RenderGlobal         renderGlobal;
 
 void    RB_DrawRect(float x, float y, float x2, float y2, float s, float t, float s2, float t2);
 void    RB_DrawClipRect(float s, float t, float s2, float t2);
