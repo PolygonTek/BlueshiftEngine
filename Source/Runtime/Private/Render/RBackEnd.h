@@ -208,7 +208,7 @@ struct RenderBackEnd {
     float                   csmUpdate[8];
     float                   csmFar[8];
 
-    Texture *               integrationLUTTexture;
+    Texture *               dfgSumGgxTexture;
 
     Texture *               homCullingOutputTexture;
     RenderTarget *          homCullingOutputRT;

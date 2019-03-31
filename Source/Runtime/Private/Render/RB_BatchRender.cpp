@@ -649,7 +649,7 @@ void Batch::RenderIndirectLit(const Material::ShaderPass *mtrlPass) const {
         shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
     }
 
-    shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::PrefilteredDfgMap], backEnd.integrationLUTTexture);
+    shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::PrefilteredDfgMap], backEnd.dfgSumGgxTexture);
 
     SetMatrixConstants(shader);
 
@@ -773,7 +773,7 @@ void Batch::RenderIndirectLit_DirectLit(const Material::ShaderPass *mtrlPass) co
 
     shader->Bind();
 
-    shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::PrefilteredDfgMap], backEnd.integrationLUTTexture);
+    shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::PrefilteredDfgMap], backEnd.dfgSumGgxTexture);
 
     if (mtrlPass->shader) {
         if (mtrlPass->shader->GetIndirectLitDirectLitVersion()) {

@@ -1181,7 +1181,7 @@ void RenderSystem::Cmd_GenerateDFGSumGGX(const CmdArgs &args) {
     if (args.Argc() > 1) {
         path.AppendPath(args.Argv(1));
     } else {
-        path.AppendPath("IntegrationLUT_GGX");
+        path.AppendPath("DFGSumGGX");
     }
 
     const int size = 512;

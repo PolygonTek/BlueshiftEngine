@@ -80,8 +80,8 @@ void RB_Init() {
 
     memset(backEnd.csmUpdate, 0, sizeof(backEnd.csmUpdate));
 
-    backEnd.integrationLUTTexture = textureManager.AllocTexture("integrationLUT");
-    backEnd.integrationLUTTexture->Load("Data/EngineTextures/IntegrationLUT_GGX.dds", 
+    backEnd.dfgSumGgxTexture = textureManager.AllocTexture("_dfgSumGgx");
+    backEnd.dfgSumGgxTexture->Load("Data/EngineTextures/DFGSumGGX.dds",
         Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
     if (r_HOM.GetBool()) {
