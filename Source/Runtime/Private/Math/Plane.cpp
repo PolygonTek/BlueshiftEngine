@@ -17,7 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
-int Plane::GetType() const {
+Plane::Type::Enum Plane::GetType() const {
     if (normal[0] == 0.0f) {
         if (normal[1] == 0.0f) {
             return normal[2] > 0.0f ? Type::Z : Type::NegZ;
