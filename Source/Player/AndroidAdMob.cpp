@@ -16,6 +16,7 @@
 #include "Application.h"
 #include "android_native_app_glue.h"
 #include "AndroidAdMob.h"
+#include <queue>
 
 AdMob::BannerAd AdMob::bannerAd;
 AdMob::InterstitialAd AdMob::interstitialAd;

@@ -84,7 +84,7 @@ private:
 
     int32_t                 numJoints = 0;              ///< Number of joints
     Joint *                 joints = nullptr;           ///< Joint information array
-    JointPose *             bindPoses = nullptr;        ///< Local transforms of bindpose (quaternion based)
+    JointPose *             bindPoses = nullptr;        ///< Local joint transforms of bindpose (quaternion based)
     Mat3x4 *                invBindPoseMats = nullptr;  ///< World inverse transform of bindpose (for use in HW skinning)
 };
 
