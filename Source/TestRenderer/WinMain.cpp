@@ -157,7 +157,7 @@ static void DisplayMainContext(BE1::RHI::Handle context, void *dataPtr) {
 
     float t = BE1::PlatformTime::Seconds() - t0;
 
-    ::app.Draw(context, mainRenderTarget, t * 0.2f);
+    ::app.Draw(context, mainRenderTarget, t);
 }
 
 static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
@@ -165,7 +165,7 @@ static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
 
     float t = BE1::PlatformTime::Seconds() - t0;
 
-    ::app.Draw(context, subRenderTarget, t * -0.2f);
+    ::app.Draw(context, subRenderTarget, t);
 }
 
 static HWND CreateMainWindow(const TCHAR *title, int width, int height) {
