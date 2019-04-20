@@ -1,3 +1,5 @@
+$include "StandardConfig.glsl"
+
 in HIGHP vec4 in_position   : POSITION;
 in LOWP vec3 in_normal      : NORMAL;
 in LOWP vec4 in_color       : COLOR;
