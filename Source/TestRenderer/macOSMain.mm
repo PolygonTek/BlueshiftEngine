@@ -110,14 +110,14 @@ static __strong MyWindow *  subWindow;
     return window;
 }
 
-static void SystemLog(int logLevel, const wchar_t *msg) {
-    NSString *nsmsg = (__bridge NSString *)WideStringToCFString(msg);
+static void SystemLog(int logLevel, const char *msg) {
+    NSString *nsmsg = (__bridge NSString *)StringToCFString(msg);
     NSLog(@"%@", nsmsg);
 }
 
-static void SystemError(int errLevel, const wchar_t *msg) {
-    NSString *nsmsg = (__bridge NSString *)WideStringToCFString(msg);
-    
+static void SystemError(int errLevel, const char *msg) {
+    NSString *nsmsg = (__bridge NSString *)StringToCFString(msg);
+
     NSAlert *alert = [[NSAlert alloc] init];
     [alert setMessageText:[NSString stringWithUTF8String:"Error"]];
     [alert setInformativeText:nsmsg];
@@ -181,7 +181,7 @@ static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
     ::app.FreeResources();
     
     if (mainWindow.context) {
-        BE1::rhi.DeleteRenderTarget(mainWindow.renderTarget);
+        BE1::rhi.DestroyRenderTarget(mainWindow.renderTarget);
         BE1::rhi.DestroyContext(mainWindow.context);
         mainWindow.context = BE1::RHI::NullContext;
     }
@@ -203,7 +203,7 @@ static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
     MyWindow *window = [notification object];
     
     if (window.context) {
-        BE1::rhi.DeleteRenderTarget(window.renderTarget);
+        BE1::rhi.DestroyRenderTarget(window.renderTarget);
         BE1::rhi.DestroyContext(window.context);
         window.context = BE1::RHI::NullContext;
     }
