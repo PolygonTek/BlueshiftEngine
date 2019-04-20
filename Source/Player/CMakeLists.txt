@@ -335,6 +335,7 @@ else ()
                 android
                 atomic
                 log
+                cpufeatures
                 GLESv3 
                 EGL 
                 OpenSLES)

@@ -1,6 +1,7 @@
 #ifndef PHONG_BRDF_INCLUDED
 #define PHONG_BRDF_INCLUDED
 
+$include "StandardConfig.glsl"
 $include "BRDFLibrary.glsl"
 
 #if defined(DIRECT_LIGHTING)

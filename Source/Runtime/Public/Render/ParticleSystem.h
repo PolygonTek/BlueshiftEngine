@@ -31,7 +31,9 @@ class ParticleMesh;
 
 class Particle {
 public:
-    static constexpr int MaxTrails = 32;
+    enum {
+        MaxTrails = 32
+    };
 
     struct Trail {
         Vec3                    position;
