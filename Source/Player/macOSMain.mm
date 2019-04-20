@@ -255,18 +255,18 @@ static const struct {
     uint16_t nativeVirtualKey = [event keyCode];
     uint16_t scancode = vkey_to_scancode_map[nativeVirtualKey].scan;
     scancode = (scancode & 0xFF) | (((scancode >> 8) & 1) << 7);
-    BE1::platform->QueEvent(BE1::Platform::KeyEvent, scancode, keyDown ? true : false, 0, nullptr);
+    BE1::platform->QueEvent(BE1::Platform::EventType::Key, scancode, keyDown ? true : false, 0, nullptr);
     
     if (keyDown) {
 #if 1
         NSString *str = [event characters];
         const char32_t *chars = (const char32_t *)[str cStringUsingEncoding:NSUTF32LittleEndianStringEncoding];
         char32_t ch = chars[0];
-        BE1::platform->QueEvent(BE1::Platform::CharEvent, ch, 0, 0, nullptr);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Char, ch, 0, 0, nullptr);
 #else
         char32_t ch;
         if ([self translateKeyCode:nativeVirtualKey modifiers:modifiers keyDown:keyDown character:&ch]) {
-            BE1::platform->QueEvent(BE1::Platform::CharEvent, ch, 0, 0, nullptr);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Char, ch, 0, 0, nullptr);
         }
 #endif
     }
@@ -276,7 +276,7 @@ static const struct {
     bool oldOn = (oldFlags & keyMask) != 0;
     bool newOn = (newFlags & keyMask) != 0;
     if (oldOn != newOn) {
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, engineKey, newOn, 0, nullptr);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, engineKey, newOn, 0, nullptr);
     }
 }
 
@@ -301,27 +301,27 @@ static const struct {
         
         if (buttonsDelta & 1) {
             isDown = buttons & 1 ? true : false;
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse1, isDown, 0, nullptr);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::Mouse1, isDown, 0, nullptr);
         }
         
         if (buttonsDelta & 2) {
             isDown = buttons & 2 ? true : false;
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse2, isDown, 0, nullptr);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::Mouse2, isDown, 0, nullptr);
         }
         
         if (buttonsDelta & 4) {
             isDown = buttons & 4 ? true : false;
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse3, isDown, 0, nullptr);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::Mouse3, isDown, 0, nullptr);
         }
         
         if (buttonsDelta & 8) {
             isDown = buttons & 8 ? true : false;
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse4, isDown, 0, nullptr);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::Mouse4, isDown, 0, nullptr);
         }
         
         if (buttonsDelta & 16) {
             isDown = buttons & 16 ? true : false;
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse5, isDown, 0, nullptr);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::Mouse5, isDown, 0, nullptr);
         }
         
         oldButtons = buttons;
@@ -333,16 +333,16 @@ static const struct {
     NSPoint mouseLocation =  [view convertPoint:[event locationInWindow] fromView:nil];
     mouseLocation.y = view.frame.size.height - mouseLocation.y;
     
-    BE1::platform->QueEvent(BE1::Platform::MouseMoveEvent, mouseLocation.x, mouseLocation.y, 0, nullptr);
+    BE1::platform->QueEvent(BE1::Platform::EventType::MouseMove, mouseLocation.x, mouseLocation.y, 0, nullptr);
 }
 
 - (void)processMouseWheelEvent:(NSEvent *)event {
     if ([event deltaY] > 0.0) {
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::MouseWheelUp, true, 0, nullptr);
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::MouseWheelUp, false, 0, nullptr);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::MouseWheelUp, true, 0, nullptr);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::MouseWheelUp, false, 0, nullptr);
     } else {
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::MouseWheelDown, true, 0, nullptr);
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::MouseWheelDown, false, 0, nullptr);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::MouseWheelDown, true, 0, nullptr);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::MouseWheelDown, false, 0, nullptr);
     }
 }
 
