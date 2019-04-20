@@ -79,6 +79,10 @@
 #define _CC_NORMAL 0
 #endif
 
+#ifndef _OCC
+#define _OCC 0
+#endif
+
 #ifndef _PARALLAX
 #define _PARALLAX 0
 #endif
