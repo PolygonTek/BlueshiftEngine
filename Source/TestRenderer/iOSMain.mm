@@ -126,17 +126,17 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 
 @implementation AppDelegate
 
-static void SystemLog(int logLevel, const wchar_t *msg) {
+static void SystemLog(int logLevel, const char *msg) {
     NSString *nsmsg = [[NSString alloc] initWithBytes:msg
-                                               length:wcslen(msg) * sizeof(*msg)
-                                             encoding:NSUTF32LittleEndianStringEncoding];
+                                               length:strlen(msg) * sizeof(*msg)
+                                             encoding:NSUTF8StringEncoding];
     NSLog(@"%@", nsmsg);
 }
 
-static void SystemError(int errLevel, const wchar_t *msg) {
+static void SystemError(int errLevel, const char *msg) {
     NSString *nsmsg = [[NSString alloc] initWithBytes:msg
-                                               length:wcslen(msg) * sizeof(*msg)
-                                             encoding:NSUTF32LittleEndianStringEncoding];
+                                               length:strlen(msg) * sizeof(*msg)
+                                             encoding:NSUTF8StringEncoding];
     
     UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error"
                                                     message:nsmsg
@@ -173,7 +173,7 @@ static void SystemError(int errLevel, const wchar_t *msg) {
 }
 
 - (void)shutdownInstance {
-    BE1::rhi.DeleteRenderTarget(mainRenderTarget);
+    BE1::rhi.DestroyRenderTarget(mainRenderTarget);
     
     ::app.FreeResources();
     
