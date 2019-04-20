@@ -34,6 +34,7 @@ bool OpenGLBase::supportsDebugLabel = false;
 bool OpenGLBase::supportsDebugMarker = false;
 bool OpenGLBase::supportsDebugOutput = false;
 bool OpenGLBase::supportsBufferStorage = false;
+bool OpenGLBase::supportsCopyImage = false;
 
 void OpenGLBase::Init() {
 #ifdef GL_EXT_packed_float // 3.0
@@ -102,6 +103,10 @@ void OpenGLBase::Init() {
 
 #ifdef GL_ARB_buffer_storage
     supportsBufferStorage = gglext._GL_ARB_buffer_storage ? true : false;
+#endif
+
+#ifdef GL_ARB_copy_image
+    supportsCopyImage = gglext._GL_ARB_copy_image ? true : false;
 #endif
 }
 

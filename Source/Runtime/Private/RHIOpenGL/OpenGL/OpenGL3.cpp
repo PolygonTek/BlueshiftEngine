@@ -57,6 +57,14 @@ void OpenGL3::MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *in
 #endif
 }
 
+void OpenGL3::CopyImageSubData(GLuint src, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, GLuint dst, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei srcWidth, GLsizei srcHeight, GLsizei srcDepth) {
+#ifdef GL_ARB_copy_image // 4.3
+    if (gglext._GL_ARB_copy_image) {
+        gglCopyImageSubData(src, srcTarget, srcLevel, srcX, srcY, srcZ, dst, dstTarget, dstLevel, dstX, dstY, dstZ, srcWidth, srcHeight, srcDepth);
+    }
+#endif
+}
+
  void OpenGL3::DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam) {
     int severityLevel;
     switch (severity) {

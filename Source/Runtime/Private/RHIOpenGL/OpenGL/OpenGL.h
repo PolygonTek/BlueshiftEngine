@@ -307,6 +307,7 @@ public:
     static bool             SupportsDebugOutput() { return supportsDebugOutput; }
     static bool             SupportsBufferStorage() { return supportsBufferStorage; }
     static bool             SupportsProgramBinary() { return false; }
+    static bool             SupportsCopyImage() { return supportsCopyImage; }
     static bool             SupportsTimestampQueries() { return false; }
 
     static void             PolygonMode(GLenum face, GLenum mode) {}
@@ -317,6 +318,7 @@ public:
     static void             DrawBuffers(GLsizei count, const GLenum *buffers) {}
     static void             BindDefaultFBO() { gglBindFramebuffer(GL_FRAMEBUFFER, 0); }
     static void             DiscardFramebuffer(GLenum target, GLsizei numAttachments, const GLenum *attachments) {}
+    static void             CopyImageSubData(GLuint src, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, GLuint dst, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei srcWidth, GLsizei srcHeight, GLsizei srcDepth) {}
 
     static void             VertexAttribDivisor(int index, int divisor) {}
     static void             DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex) {}
@@ -345,6 +347,7 @@ private:
     static bool             supportsDebugMarker;
     static bool             supportsDebugOutput;
     static bool             supportsBufferStorage;
+    static bool             supportsCopyImage;
 };
 
 BE_NAMESPACE_END

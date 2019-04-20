@@ -185,16 +185,16 @@ static long ZCALLBACK _ftell_file_func(voidpf opaque, voidpf stream) {
 }
 
 static long ZCALLBACK _fseek_file_func(voidpf  opaque, voidpf stream, uLong offset, int origin) {
-    enum PlatformFile::Origin fseek_origin;
+    enum PlatformFile::Origin::Enum fseek_origin;
     switch (origin) {
     case ZLIB_FILEFUNC_SEEK_CUR:
-        fseek_origin = PlatformFile::Current;
+        fseek_origin = PlatformFile::Origin::Current;
         break;
     case ZLIB_FILEFUNC_SEEK_END:
-        fseek_origin = PlatformFile::End;
+        fseek_origin = PlatformFile::Origin::End;
         break;
     case ZLIB_FILEFUNC_SEEK_SET:
-        fseek_origin = PlatformFile::Start;
+        fseek_origin = PlatformFile::Origin::Start;
         break;
     default:
         return -1;

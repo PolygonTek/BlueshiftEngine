@@ -37,6 +37,7 @@ public:
     static bool             SupportsDrawIndirect() { return true; }
     static bool             SupportsMultiDrawIndirect() { return true; }
     static bool             SupportsProgramBinary() { return true; }
+    static bool             SupportsCopyImage() { return true; }
 
     static void             DrawElementsIndirect(GLenum mode, GLenum type, const void *indirect) { gglDrawElementsIndirect(mode, type, indirect); }
     static void             MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride) { gglMultiDrawElementsIndirect(mode, type, indirect, drawcount, stride); }
