@@ -894,18 +894,17 @@ include_directories(
 enable_precompiled_header(Precompiled.h Precompiled.cpp ENGINE_FILES)
 
 if (PLATFORM_ANDROID)
-    include(AndroidNdkModules)
-    android_ndk_import_module_cpufeatures()
+    include_directories(${ANDROID_NDK}/sources/android/cpufeatures)
+    set(CPU_FEATURES_FILE ${ANDROID_NDK}/sources/android/cpufeatures/cpu-features.c)
 
-    add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
+    add_library(${PROJECT_NAME} STATIC ${ALL_FILES} ${CPU_FEATURES_FILE})
 
     target_link_libraries(${PROJECT_NAME}
         android
-        atomic 
+        atomic
         log
-        cpufeatures
-        EGL 
-        GLESv3 
+        EGL
+        GLESv3
         OpenSLES)
 else ()
     add_library(${PROJECT_NAME} STATIC ${ALL_FILES})

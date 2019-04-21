@@ -335,9 +335,8 @@ else ()
                 android
                 atomic
                 log
-                cpufeatures
-                GLESv3 
-                EGL 
+                EGL
+                GLESv3
                 OpenSLES)
 
             foreach (FILE ${IMPORTED_LIB_FILES})
