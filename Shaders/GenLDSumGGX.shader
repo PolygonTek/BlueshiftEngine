@@ -27,7 +27,7 @@ shader "GenLDSumGGX" {
 
             float linearRoughness = roughness * roughness;
 
-            vec3 integratedLD = IntegrateLD(N, linearRoughness, radianceCubeMap, radianceCubeMapSize);
+            vec3 integratedLD = IntegrateLD(N, linearRoughness, radianceCubeMap, float(radianceCubeMapSize));
 
             o_fragColor = vec4(integratedLD, 1.0);
         }
