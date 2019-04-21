@@ -38,7 +38,7 @@ vec3 ToneMapLogarithmic(vec3 color) {
 // Drago's Logarithmic mapping operator
 vec3 ToneMapDragoLogarithmic(vec3 color, float bias) {
     float pixelLuminance = max(GetLuma(color), 0.0001);
-    float toneMappedLuminance = log10(1 + pixelLuminance);
+    float toneMappedLuminance = log10(1.0 + pixelLuminance);
     toneMappedLuminance /= log10(1.0 + whiteLevel);
     toneMappedLuminance /= log10(2.0 + 8.0 * ((pixelLuminance / whiteLevel) * log10(bias) / log10(0.5)));
     return toneMappedLuminance * pow(color / pixelLuminance, vec3(luminanceSaturation));
