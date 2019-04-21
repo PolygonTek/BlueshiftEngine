@@ -9,39 +9,37 @@ in MEDIUMP vec2 in_st       : TEXCOORD0;
     #define NEED_BASE_TC
 #endif
 
-out VS_OUT {
-    LOWP vec4 color;
+out LOWP vec4 v2f_color;
 
 #ifdef NEED_BASE_TC
-    MEDIUMP vec2 tex;
+    out MEDIUMP vec2 v2f_tex;
 #endif
 
 #if _NORMAL == 0
-    LOWP vec3 normalWS;
+    out LOWP vec3 v2f_normalWS;
 #endif
 
 #if _PARALLAX
-    vec3 viewTS;
+    out vec3 v2f_viewTS;
 #endif
 
 #ifdef DIRECT_LIGHTING
-    vec3 lightVector;
-    vec3 lightFallOff;
-    vec4 lightProjection;
+    out vec3 v2f_lightVector;
+    out vec3 v2f_lightFallOff;
+    out vec4 v2f_lightProjection;
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
-    vec3 viewWS;
+    out vec3 v2f_viewWS;
 
     #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-        vec4 tangentToWorldAndPackedWorldPosS;
-        vec4 tangentToWorldAndPackedWorldPosT;
-        vec4 tangentToWorldAndPackedWorldPosR;
+        out vec4 v2f_tangentToWorldAndPackedWorldPosS;
+        out vec4 v2f_tangentToWorldAndPackedWorldPosT;
+        out vec4 v2f_tangentToWorldAndPackedWorldPosR;
     #else
-        vec3 positionWS;
+        out vec3 v2f_positionWS;
     #endif
 #endif
-} vs_out;
 
 #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
     in LOWP vec4 in_tangent : TANGENT;
@@ -126,31 +124,31 @@ void main() {
     vec4 positionWS = vec4(localToWorldMatrix * positionLS, 1.0);
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
-    vs_out.viewWS = viewOrigin.xyz - positionWS.xyz;
+    v2f_viewWS = viewOrigin.xyz - positionWS.xyz;
 
     #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
         #if _PARALLAX
-            vec3 viewLS = mat3(worldToLocalMatrix) * vs_out.viewWS;
+            vec3 viewLS = mat3(worldToLocalMatrix) * v2f_viewWS;
 
-            vs_out.viewTS.x = dot(tangentLS, viewLS);
-            vs_out.viewTS.y = dot(bitangentLS, viewLS);
-            vs_out.viewTS.z = dot(normalLS, viewLS);
+            v2f_viewTS.x = dot(tangentLS, viewLS);
+            v2f_viewTS.y = dot(bitangentLS, viewLS);
+            v2f_viewTS.z = dot(normalLS, viewLS);
         #endif
 
         // Build the matrix to transform tangent space into GL world space
-        vs_out.tangentToWorldAndPackedWorldPosS.xyz = mat3(localToWorldMatrix) * tangentLS;
-        vs_out.tangentToWorldAndPackedWorldPosT.xyz = mat3(localToWorldMatrix) * bitangentLS;
-        vs_out.tangentToWorldAndPackedWorldPosR.xyz = mat3(localToWorldMatrix) * normalLS;
+        v2f_tangentToWorldAndPackedWorldPosS.xyz = mat3(localToWorldMatrix) * tangentLS;
+        v2f_tangentToWorldAndPackedWorldPosT.xyz = mat3(localToWorldMatrix) * bitangentLS;
+        v2f_tangentToWorldAndPackedWorldPosR.xyz = mat3(localToWorldMatrix) * normalLS;
 
         #ifdef INDIRECT_LIGHTING
-            vs_out.tangentToWorldAndPackedWorldPosS.w = positionWS.x;
-            vs_out.tangentToWorldAndPackedWorldPosT.w = positionWS.y;
-            vs_out.tangentToWorldAndPackedWorldPosR.w = positionWS.z;
+            v2f_tangentToWorldAndPackedWorldPosS.w = positionWS.x;
+            v2f_tangentToWorldAndPackedWorldPosT.w = positionWS.y;
+            v2f_tangentToWorldAndPackedWorldPosR.w = positionWS.z;
         #endif 
     #else
-        vs_out.normalWS = mat3(localToWorldMatrix) * normalLS;
+        v2f_normalWS = mat3(localToWorldMatrix) * normalLS;
 
-        vs_out.positionWS = positionWS.xyz;
+        v2f_positionWS = positionWS.xyz;
     #endif
 #endif
 
@@ -166,21 +164,21 @@ void main() {
         #endif
     #endif
 
-    vs_out.lightVector = lightWS;
-    vs_out.lightProjection = lightTextureMatrix * positionWS;
-    vs_out.lightFallOff = lightFallOffMatrix * positionWS;
+    v2f_lightVector = lightWS;
+    v2f_lightProjection = lightTextureMatrix * positionWS;
+    v2f_lightFallOff = lightFallOffMatrix * positionWS;
 #endif
 
 #ifdef NEED_BASE_TC
-    vs_out.tex.s = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
-    vs_out.tex.t = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
+    v2f_tex.s = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
+    v2f_tex.t = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
 #endif
 
 #ifdef LIGHTMAP
-    vs_out.tex.rq = in_st2.st;
+    v2f_tex.rq = in_st2.st;
 #endif
 
-    vs_out.color = (in_color * vertexColorScale + vertexColorAdd) * constantColor;
+    v2f_color = (in_color * vertexColorScale + vertexColorAdd) * constantColor;
 
 #ifdef INSTANCING
     gl_Position = viewProjectionMatrix * positionWS;

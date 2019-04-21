@@ -11,39 +11,37 @@ out vec4 o_fragColor : FRAG_COLOR;
     vec2 baseTc;
 #endif
 
-in VS_OUT {
-    LOWP vec4 color;
+in LOWP vec4 v2f_color;
 
 #ifdef NEED_BASE_TC
-    MEDIUMP vec2 tex;
+    in MEDIUMP vec2 v2f_tex;
 #endif
 
 #if _NORMAL == 0
-    LOWP vec3 normalWS;
+    in LOWP vec3 v2f_normalWS;
 #endif
 
 #if _PARALLAX
-    vec3 viewTS;
+    in vec3 v2f_viewTS;
 #endif
 
 #ifdef DIRECT_LIGHTING
-    vec3 lightVector;
-    vec3 lightFallOff;
-    vec4 lightProjection;
+    in vec3 v2f_lightVector;
+    in vec3 v2f_lightFallOff;
+    in vec4 v2f_lightProjection;
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
-    vec3 viewWS;
+    in vec3 v2f_viewWS;
 
     #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-        vec4 tangentToWorldAndPackedWorldPosS;
-        vec4 tangentToWorldAndPackedWorldPosT;
-        vec4 tangentToWorldAndPackedWorldPosR;
+        in vec4 v2f_tangentToWorldAndPackedWorldPosS;
+        in vec4 v2f_tangentToWorldAndPackedWorldPosT;
+        in vec4 v2f_tangentToWorldAndPackedWorldPosR;
     #else
-        vec3 positionWS;
+        in vec3 v2f_positionWS;
     #endif
 #endif
-} fs_in;
 
 #ifdef USE_SHADOW_MAP
     $include "ShadowLibrary.fp"
@@ -213,9 +211,9 @@ uniform float subSurfaceShadowDensity;// = 0.5;
 void main() {
 #ifdef NEED_BASE_TC
     #if _PARALLAX != 0
-        baseTc = ParallaxMapping(heightMap, fs_in.tex, heightScale, normalize(fs_in.viewTS));
+        baseTc = ParallaxMapping(heightMap, v2f_tex, heightScale, normalize(v2f_viewTS));
     #else
-        baseTc = fs_in.tex;
+        baseTc = v2f_tex;
     #endif
 #endif
 
@@ -250,11 +248,11 @@ void main() {
         #ifdef SPECULAR_PROBE_BOX_PROJECTION
             #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
                 vec3 worldPos;
-                worldPos.x = fs_in.tangentToWorldAndPackedWorldPosS.w;
-                worldPos.y = fs_in.tangentToWorldAndPackedWorldPosT.w;
-                worldPos.z = fs_in.tangentToWorldAndPackedWorldPosR.w;
+                worldPos.x = v2f_tangentToWorldAndPackedWorldPosS.w;
+                worldPos.y = v2f_tangentToWorldAndPackedWorldPosT.w;
+                worldPos.z = v2f_tangentToWorldAndPackedWorldPosR.w;
             #else
-                vec3 worldPos = fs_in.positionWS.xyz;
+                vec3 worldPos = v2f_positionWS.xyz;
             #endif
 
             shading.s0 = BoxProjectedCubemapDirection(worldS, worldPos, probe0Position, probe0Mins, probe0Maxs);
@@ -290,10 +288,10 @@ void main() {
 #endif
 
 #ifdef DIRECT_LIGHTING
-    float attenuation = 1.0 - min(dot(fs_in.lightFallOff, fs_in.lightFallOff), 1.0);
+    float attenuation = 1.0 - min(dot(v2f_lightFallOff, v2f_lightFallOff), 1.0);
     attenuation = pow(attenuation, lightFallOffExponent);
 
-    vec3 Cl = tex2Dproj(lightProjectionMap, fs_in.lightProjection).rgb * lightColor.rgb * attenuation;
+    vec3 Cl = tex2Dproj(lightProjectionMap, v2f_lightProjection).rgb * lightColor.rgb * attenuation;
 
     #ifdef USE_SHADOW_MAP
         vec3 shadowLighting = ShadowFunc();
@@ -301,7 +299,7 @@ void main() {
         vec3 shadowLighting = vec3(1.0);
     #endif
 
-    shading.l = normalize(fs_in.lightVector.xyz);
+    shading.l = normalize(v2f_lightVector.xyz);
 
     #ifdef USE_LIGHT_CUBE_MAP
         if (useLightCube) {
@@ -324,7 +322,7 @@ void main() {
     shadingColor += Cl * lightingColor * shadowLighting;
 #endif
 
-    vec4 finalColor = fs_in.color * vec4(shadingColor, albedo.a);
+    vec4 finalColor = v2f_color * vec4(shadingColor, albedo.a);
 
 #ifdef LOGLUV_HDR
     o_fragColor = encodeLogLuv(finalColor.xyz);

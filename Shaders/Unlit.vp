@@ -6,13 +6,11 @@ in HIGHP vec4 in_position   : POSITION;
 in MEDIUMP vec2 in_st       : TEXCOORD0;
 in LOWP vec4 in_color       : COLOR;
 
-out VS_OUT {
-    LOWP vec4 color;
+out LOWP vec4 v2f_color;
 
 #ifdef NEED_BASE_TC
-    MEDIUMP vec2 texCoord;
+    out MEDIUMP vec2 v2f_texCoord;
 #endif
-} vs_out;
 
 #if defined(INSTANCING)
     $include "Instancing.vp"
@@ -50,11 +48,11 @@ void main() {
 #endif
 
 #ifdef NEED_BASE_TC
-    vs_out.texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
-    vs_out.texCoord.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
+    v2f_texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
+    v2f_texCoord.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
 #endif
 
-    vs_out.color = (in_color * vertexColorScale + vertexColorAdd) * constantColor;
+    v2f_color = (in_color * vertexColorScale + vertexColorAdd) * constantColor;
 
     gl_Position = modelViewProjectionMatrix * localPos;
 }

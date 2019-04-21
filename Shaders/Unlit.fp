@@ -6,13 +6,11 @@
     #define NEED_BASE_TC
 #endif
 
-in VS_OUT {
-    LOWP vec4 color;
+in LOWP vec4 v2f_color;
 
 #ifdef NEED_BASE_TC
-    MEDIUMP vec2 texCoord;
+    in MEDIUMP vec2 v2f_texCoord;
 #endif
-} fs_in;
 
 out vec4 o_fragColor : FRAG_COLOR;
 
@@ -27,7 +25,7 @@ void main() {
 #if _ALBEDO == 0
     vec4 albedo = vec4(albedoColor, albedoAlpha);
 #elif _ALBEDO == 1
-    vec4 albedo = tex2D(albedoMap, fs_in.texCoord);
+    vec4 albedo = tex2D(albedoMap, v2f_texCoord);
 #endif
 
 #ifdef PERFORATED
@@ -36,5 +34,5 @@ void main() {
     }
 #endif
 
-    o_fragColor = fs_in.color * albedo;
+    o_fragColor = v2f_color * albedo;
 }

@@ -11,23 +11,21 @@ uniform sampler2D albedoMap;
 uniform LOWP float perforatedAlpha;
 uniform LOWP vec4 constantColor;
 
-in VS_OUT {
 #ifdef NEED_BASE_TC
-    MEDIUMP vec2 tex;
+    in MEDIUMP vec2 v2f_tex;
 #endif
 
 #if _NORMAL != 0
-    LOWP vec3 tangentToWorldMatrixS;
-    LOWP vec3 tangentToWorldMatrixT;
-    LOWP vec3 tangentToWorldMatrixR;
+    in LOWP vec3 v2f_tangentToWorldMatrixS;
+    in LOWP vec3 v2f_tangentToWorldMatrixT;
+    in LOWP vec3 v2f_tangentToWorldMatrixR;
 #else
-    LOWP vec3 normalWS;
+    in LOWP vec3 v2f_normalWS;
 #endif
 
 #if _PARALLAX
-    vec3 viewTS;
+    in vec3 v2f_viewTS;
 #endif
-} fs_in;
 
 #if _NORMAL != 0
     uniform sampler2D normalMap;
@@ -45,9 +43,9 @@ in VS_OUT {
 void main() {
 #ifdef NEED_BASE_TC
     #if _PARALLAX != 0
-        vec2 baseTc = ParallaxMapping(heightMap, fs_in.tex, heightScale, normalize(fs_in.viewTS));
+        vec2 baseTc = ParallaxMapping(heightMap, v2f_tex, heightScale, normalize(v2f_viewTS));
     #else
-        vec2 baseTc = fs_in.tex;
+        vec2 baseTc = v2f_tex;
     #endif
 #endif
 
@@ -62,9 +60,9 @@ void main() {
 
 #if _NORMAL != 0
     vec3 normalTS = normalize(GetNormal(normalMap, baseTc));
-    vec3 normalWS = mat3(normalize(fs_in.tangentToWorldMatrixS), normalize(fs_in.tangentToWorldMatrixT), normalize(fs_in.tangentToWorldMatrixR)) * normalTS;
+    vec3 normalWS = mat3(normalize(v2f_tangentToWorldMatrixS), normalize(v2f_tangentToWorldMatrixT), normalize(v2f_tangentToWorldMatrixR)) * normalTS;
 #else
-    vec3 normalWS = normalize(fs_in.normalWS.xyz);
+    vec3 normalWS = normalize(v2f_normalWS.xyz);
 #endif
 
     o_fragNormal = vec4(normalWS, 1.0);

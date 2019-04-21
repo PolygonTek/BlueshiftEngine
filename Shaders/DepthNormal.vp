@@ -10,23 +10,21 @@ in MEDIUMP vec2 in_st       : TEXCOORD0;
     in LOWP vec4 in_tangent : TANGENT;
 #endif
 
-out VS_OUT {
 #ifdef NEED_BASE_TC
-    MEDIUMP vec2 tex;
+    out MEDIUMP vec2 v2f_tex;
 #endif
 
 #if _NORMAL != 0
-    LOWP vec3 tangentToWorldMatrixS;
-    LOWP vec3 tangentToWorldMatrixT;
-    LOWP vec3 tangentToWorldMatrixR;
+    out LOWP vec3 v2f_tangentToWorldMatrixS;
+    out LOWP vec3 v2f_tangentToWorldMatrixT;
+    out LOWP vec3 v2f_tangentToWorldMatrixR;
 #else
-    LOWP vec3 normalWS;
+    out LOWP vec3 v2f_normalWS;
 #endif
 
 #if _PARALLAX
-    vec3 viewTS;
+    out vec3 v2f_viewTS;
 #endif
-} vs_out;
 
 #if defined(INSTANCING)
     $include "Instancing.vp"
@@ -56,8 +54,8 @@ void main() {
     vec3 normalLS;
 
 #ifdef NEED_BASE_TC
-    vs_out.tex.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
-    vs_out.tex.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
+    v2f_tex.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
+    v2f_tex.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
 #endif
 
 #if _NORMAL != 0
@@ -102,16 +100,16 @@ void main() {
         vec3 viewWS = viewOrigin.xyz - positionWS.xyz;
         vec3 viewLS = mat3(worldToLocalMatrix) * viewWS;
 
-        vs_out.viewTS.x = dot(tangentLS, viewLS);
-        vs_out.viewTS.y = dot(bitangentLS, viewLS);
-        vs_out.viewTS.z = dot(normalLS, viewLS);
+        v2f_viewTS.x = dot(tangentLS, viewLS);
+        v2f_viewTS.y = dot(bitangentLS, viewLS);
+        v2f_viewTS.z = dot(normalLS, viewLS);
     #endif
 
-    vs_out.tangentToWorldMatrixS = mat3(localToWorldMatrix) * tangentLS;
-    vs_out.tangentToWorldMatrixT = mat3(localToWorldMatrix) * bitangentLS;
-    vs_out.tangentToWorldMatrixR = mat3(localToWorldMatrix) * normalLS;
+    v2f_tangentToWorldMatrixS = mat3(localToWorldMatrix) * tangentLS;
+    v2f_tangentToWorldMatrixT = mat3(localToWorldMatrix) * bitangentLS;
+    v2f_tangentToWorldMatrixR = mat3(localToWorldMatrix) * normalLS;
 #else
-    vs_out.normalWS = mat3(localToWorldMatrix) * normalLS;
+    v2f_normalWS = mat3(localToWorldMatrix) * normalLS;
 #endif
 
 #ifdef INSTANCING
