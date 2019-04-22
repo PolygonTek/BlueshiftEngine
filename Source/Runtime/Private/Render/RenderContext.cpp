@@ -408,7 +408,7 @@ void RenderContext::InitShadowMapRT() {
     // Virtual shadow cube map
     vscmTexture = textureManager.AllocTexture(va("_%i_vscmRender", (int)contextHandle));
     vscmTexture->CreateEmpty(RHI::TextureType::Texture2D, r_shadowCubeMapSize.GetInteger(), r_shadowCubeMapSize.GetInteger(), 1, 1, 1, shadowCubeImageFormat,
-        Texture::Flag::Shadow | Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::NonPowerOfTwo | Texture::Flag::HighQuality | Texture::Flag::HighPriority);
+        Texture::Flag::Shadow | Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality | Texture::Flag::HighPriority);
     vscmRT = RenderTarget::Create(nullptr, vscmTexture, 0);
     vscmRT->Clear(Color4(0, 0, 0, 0), 1.0f, 0);
 

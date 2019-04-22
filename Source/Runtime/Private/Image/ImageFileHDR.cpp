@@ -133,7 +133,8 @@ bool Image::LoadHDRFromMemory(const char *name, const byte *data, size_t size) {
         return false;
     }
 
-    if (Str::Cmp(headerInfo.signature, "#?RADIANCE") != 0) {
+    if (Str::Cmp(headerInfo.signature, "#?RADIANCE") != 0 &&
+        Str::Cmp(headerInfo.signature, "#?RGBE") != 0) {
         BE_WARNLOG("Image::LoadHDRFromMemory: bad RGBE signature '%s' %s\n", headerInfo.signature, name);
         return false;
     }
