@@ -136,9 +136,11 @@ uniform LOWP float wrappedDiffuse;
     #endif
 #endif
 
-uniform sampler2D subSurfaceColorMap;
-uniform float subSurfaceRollOff;
-uniform float subSurfaceShadowDensity;// = 0.5;
+#ifdef _SUB_SURFACE_SCATTERING
+    uniform sampler2D subSurfaceColorMap;
+    uniform float subSurfaceRollOff;
+    uniform float subSurfaceShadowDensity;// = 0.5;
+#endif
 
 //
 // Direct lighting parameters
@@ -156,20 +158,7 @@ uniform float subSurfaceShadowDensity;// = 0.5;
 // Indirect lighting parameters
 //
 #if defined(INDIRECT_LIGHTING)
-    /*
-    uniform samplerCube distantReflectionProbeCubeMap;
-    uniform float distantReflectionProbeCubeMapMaxMipLevel;
-
-    struct LocalReflectionProbe {
-        samplerCube cubeMap;
-        float cubeMapMaxMipLevel;
-        vec4 position;
-        vec3 mins;
-        vec3 maxs;
-    };
-
-    uniform LocalReflectionProbe localReflectionProbes[16];
-    uniform int numLocalReflectionProbes;*/
+    uniform sampler2D prefilteredDfgMap;
 
     uniform samplerCube probe0DiffuseCubeMap;
     uniform samplerCube probe0SpecularCubeMap;
@@ -186,8 +175,6 @@ uniform float subSurfaceShadowDensity;// = 0.5;
     uniform vec3 probe1Maxs;
 
     uniform LOWP float probeLerp;
-
-    uniform sampler2D prefilteredDfgMap;
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
