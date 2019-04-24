@@ -144,10 +144,12 @@ public:
 
     static void             QueryTimestampCounter(GLuint queryId);
 
-    static void             PolygonMode(GLenum face, GLenum mode) { }
+    static void             PolygonMode(GLenum face, GLenum mode) {}
     static void             ClearDepth(GLdouble depth) { gglClearDepthf(depth); }
     static void             DepthRange(GLdouble znear, GLdouble zfar) { gglDepthRangef(znear, zfar); }
     static void             DrawBuffer(GLenum buffer) { gglDrawBuffers(1, &buffer); }
+    static void             ReadBuffer(GLenum buffer) { gglReadBuffer(buffer); }
+    static void             DrawBuffers(GLsizei count, const GLenum *buffers) { gglDrawBuffers(count, buffers); }
     static void             TexBuffer(GLenum internalFormat, GLuint buffer);
     static void             DiscardFramebuffer(GLenum target, GLsizei numAttachments, const GLenum *attachments) { gglInvalidateFramebuffer(target, numAttachments, attachments); }
 
