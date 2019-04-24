@@ -196,20 +196,20 @@ void OpenGLRHI::SetTextureFilter(TextureFilter::Enum filter) {
 }
 
 void OpenGLRHI::SetTextureAnisotropy(int aniso) {
-    const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
-    assert(texture);
-
     if (OpenGL::SupportsTextureFilterAnisotropic()) {
+        const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
+        assert(texture);
+    
         BE1::Clamp(aniso, 1, hwLimit.maxTextureAnisotropy);
         gglTexParameterf(texture->target, GL_TEXTURE_MAX_ANISOTROPY_EXT, (float)aniso);
     }
 }
 
 void OpenGLRHI::SetTextureBorderColor(const Color4 &rgba) {
-    const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
-    assert(texture);
-
     if (OpenGL::SupportsTextureBorderColor()) {
+        const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
+        assert(texture);
+
         gglTexParameterfv(texture->target, GL_TEXTURE_BORDER_COLOR, rgba);
     }
 }
