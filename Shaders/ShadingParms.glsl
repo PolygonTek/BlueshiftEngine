@@ -7,27 +7,27 @@ struct ShadingParms {
     LOWP float roughness;
     LOWP float linearRoughness;
 
-    vec3 v; // view vector in world space
-    vec3 l; // light vector in world space
-    vec3 n; // normal vector in world space
-    vec3 s0;
-    vec3 s1;
+    HIGHP vec3 v; // view vector in world space
+    HIGHP vec3 l; // light vector in world space
+    HIGHP vec3 n; // normal vector in world space
+    HIGHP vec3 s0;
+    HIGHP vec3 s1;
     LOWP float ndotv;
-    vec2 preDFG;
-    vec3 energyCompensation;
+    MEDIUMP vec2 preDFG;
+    HIGHP vec3 energyCompensation;
 
 #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
     MEDIUMP mat3 tagentToWorldMatrix;
 #endif
 
 #ifdef LEGACY_PHONG_LIGHTING
-    float specularPower;
+    MEDIUMP float specularPower;
 #endif
 
 #if _ANISO != 0
-    vec3 anisotropicT;
-    vec3 anisotropicB;
-    float anisotropy;
+    HIGHP vec3 anisotropicT;
+    HIGHP vec3 anisotropicB;
+    MEDIUMP float anisotropy;
 #endif
 
 #if _CLEARCOAT != 0
@@ -42,7 +42,7 @@ struct ShadingParms {
 #endif
 
 #if _EMISSION != 0
-    vec3 emission;
+    MEDIUMP vec3 emission;
 #endif
 };
 

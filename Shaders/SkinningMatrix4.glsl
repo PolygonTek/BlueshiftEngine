@@ -1,21 +1,21 @@
-in vec4 in_weightIndex : WEIGHT_INDEX;
-in vec4 in_weightValue : WEIGHT_VALUE;
+in LOWP vec4 in_weightIndex : WEIGHT_INDEX;
+in MEDIUMP vec4 in_weightValue : WEIGHT_VALUE;
 
 #ifdef VTF_SKINNING
 	#ifdef USE_BUFFER_TEXTURE
 		uniform samplerBuffer jointsMap;
 	#else
 		uniform sampler2D jointsMap;
-        uniform vec2 invJointsMapSize;
+        uniform HIGHP vec2 invJointsMapSize;
 	#endif
 
 	#ifndef INSTANCING
 		uniform VTF_SKINNING_TC_TYPE skinningBaseTc;
 	#endif
 
-	uniform ivec2 jointIndexOffset;
+	uniform LOWP ivec2 jointIndexOffset;
 #else
-    uniform vec4 joints[MAX_SHADER_JOINTSX3];   // 4x3 matrix
+    uniform HIGHP vec4 joints[MAX_SHADER_JOINTSX3];   // 4x3 matrix
 #endif
 
 void accumulateJointMatrices(out vec4 R0, out vec4 R1, out vec4 R2, int jointIndexOffset) {
