@@ -10,7 +10,7 @@ in MEDIUMP vec2 in_st       : TEXCOORD0;
 #if defined(INSTANCING)
     $include "Instancing.vp"
 #else
-    uniform mat4x3 localToWorldMatrix;
+    uniform HIGHP mat4x3 localToWorldMatrix;
     uniform LOWP vec4 constantColor;
 #endif
 
@@ -29,8 +29,8 @@ uniform vec4 textureMatrixT;
 uniform LOWP vec4 vertexColorScale;
 uniform LOWP vec4 vertexColorAdd;
 
-uniform mat4 viewProjectionMatrix;
-uniform mat4 modelViewProjectionMatrix;
+uniform HIGHP mat4 viewProjectionMatrix;
+uniform HIGHP mat4 modelViewProjectionMatrix;
 
 void main() {
     vec4 localPos;

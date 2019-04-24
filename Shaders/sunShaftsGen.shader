@@ -6,8 +6,8 @@ shader "sunShaftsGen" {
 		out vec2 v2f_texCoord;
 		out vec4 v2f_sunPos;
 
-		uniform vec3 worldSunPos;
-		uniform mat4 viewProjectionMatrix;
+		uniform HIGHP vec3 worldSunPos;
+		uniform HIGHP mat4 viewProjectionMatrix;
 
 		void main() {
 			vec4 sunPosH = viewProjectionMatrix * vec4(worldSunPos, 1.0);

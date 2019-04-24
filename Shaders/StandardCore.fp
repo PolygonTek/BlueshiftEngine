@@ -8,7 +8,7 @@ out vec4 o_fragColor : FRAG_COLOR;
 #endif
 
 #ifdef NEED_BASE_TC
-    vec2 baseTc;
+    MEDIUMP vec2 baseTc;
 #endif
 
 in LOWP vec4 v2f_color;
@@ -22,24 +22,24 @@ in LOWP vec4 v2f_color;
 #endif
 
 #if _PARALLAX
-    in vec3 v2f_viewTS;
+    in HIGHP vec3 v2f_viewTS;
 #endif
 
 #ifdef DIRECT_LIGHTING
-    in vec3 v2f_lightVector;
-    in vec3 v2f_lightFallOff;
-    in vec4 v2f_lightProjection;
+    in HIGHP vec3 v2f_lightVector;
+    in HIGHP vec3 v2f_lightFallOff;
+    in HIGHP vec4 v2f_lightProjection;
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
-    in vec3 v2f_viewWS;
+    in HIGHP vec3 v2f_viewWS;
 
     #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-        in vec4 v2f_tangentToWorldAndPackedWorldPosS;
-        in vec4 v2f_tangentToWorldAndPackedWorldPosT;
-        in vec4 v2f_tangentToWorldAndPackedWorldPosR;
+        in HIGHP vec4 v2f_tangentToWorldAndPackedWorldPosS;
+        in HIGHP vec4 v2f_tangentToWorldAndPackedWorldPosT;
+        in HIGHP vec4 v2f_tangentToWorldAndPackedWorldPosR;
     #else
-        in vec3 v2f_positionWS;
+        in HIGHP vec3 v2f_positionWS;
     #endif
 #endif
 
@@ -162,17 +162,17 @@ uniform LOWP float wrappedDiffuse;
 
     uniform samplerCube probe0DiffuseCubeMap;
     uniform samplerCube probe0SpecularCubeMap;
-    uniform float probe0SpecularCubeMapMaxMipLevel;
-    uniform vec4 probe0Position;
-    uniform vec3 probe0Mins;
-    uniform vec3 probe0Maxs;
+    uniform LOWP float probe0SpecularCubeMapMaxMipLevel;
+    uniform HIGHP vec4 probe0Position;
+    uniform HIGHP vec3 probe0Mins;
+    uniform HIGHP vec3 probe0Maxs;
 
     uniform samplerCube probe1DiffuseCubeMap;
     uniform samplerCube probe1SpecularCubeMap;
-    uniform float probe1SpecularCubeMapMaxMipLevel;
-    uniform vec4 probe1Position;
-    uniform vec3 probe1Mins;
-    uniform vec3 probe1Maxs;
+    uniform LOWP float probe1SpecularCubeMapMaxMipLevel;
+    uniform HIGHP vec4 probe1Position;
+    uniform HIGHP vec3 probe1Mins;
+    uniform HIGHP vec3 probe1Maxs;
 
     uniform LOWP float probeLerp;
 #endif

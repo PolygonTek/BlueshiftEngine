@@ -1,11 +1,11 @@
-in vec4 v2f_shadowVec;
+in HIGHP vec4 v2f_shadowVec;
 
-const vec4 poissonDisk4[2] = vec4[](
+const HIGHP vec4 poissonDisk4[2] = vec4[](
     vec4(-0.94201624, -0.39906216, +0.94558609, -0.76890725),
     vec4(-0.09418410, -0.92938870, +0.34495938, +0.29387760)
 );
 
-const vec4 poissonDisk12[6] = vec4[](
+const HIGHP vec4 poissonDisk12[6] = vec4[](
     vec4(-0.326212, -0.405805, -0.840144, -0.073580),
     vec4(-0.695914, +0.457137, -0.203345, +0.620716),
     vec4(+0.962340, -0.194983, +0.473434, -0.480026),
@@ -14,7 +14,7 @@ const vec4 poissonDisk12[6] = vec4[](
     vec4(-0.321940, -0.932615, -0.791559, -0.597705)
 );
 
-const vec4 poissonDisk16[8] = vec4[](
+const HIGHP vec4 poissonDisk16[8] = vec4[](
     vec4(-0.94201624, -0.39906216, +0.94558609, -0.76890725),
     vec4(-0.09418410, -0.92938870, +0.34495938, +0.29387760),
     vec4(-0.91588581, +0.45771432, -0.81544232, -0.87912464),
@@ -28,11 +28,11 @@ const vec4 poissonDisk16[8] = vec4[](
 uniform sampler2DShadow shadowMap;
 
 uniform sampler2DArrayShadow shadowArrayMap;
-uniform float shadowMapFilterSize[8];
+uniform HIGHP float shadowMapFilterSize[8];
 
 uniform sampler2D randomRotMatMap;
-uniform vec4 shadowSplitFar;
-uniform vec2 shadowMapTexelSize;
+uniform HIGHP vec4 shadowSplitFar;
+uniform HIGHP vec2 shadowMapTexelSize;
 
 //-------------------------------------------------------------------------------------------------
 

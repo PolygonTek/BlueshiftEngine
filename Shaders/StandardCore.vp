@@ -24,20 +24,20 @@ out LOWP vec4 v2f_color;
 #endif
 
 #ifdef DIRECT_LIGHTING
-    out vec3 v2f_lightVector;
-    out vec3 v2f_lightFallOff;
-    out vec4 v2f_lightProjection;
+    out HIGHP vec3 v2f_lightVector;
+    out HIGHP vec3 v2f_lightFallOff;
+    out HIGHP vec4 v2f_lightProjection;
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
     out vec3 v2f_viewWS;
 
     #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-        out vec4 v2f_tangentToWorldAndPackedWorldPosS;
-        out vec4 v2f_tangentToWorldAndPackedWorldPosT;
-        out vec4 v2f_tangentToWorldAndPackedWorldPosR;
+        out HIGHP vec4 v2f_tangentToWorldAndPackedWorldPosS;
+        out HIGHP vec4 v2f_tangentToWorldAndPackedWorldPosT;
+        out HIGHP vec4 v2f_tangentToWorldAndPackedWorldPosR;
     #else
-        out vec3 v2f_positionWS;
+        out HIGHP vec3 v2f_positionWS;
     #endif
 #endif
 
@@ -52,8 +52,8 @@ out LOWP vec4 v2f_color;
 #if defined(INSTANCING)
     $include "Instancing.vp"
 #else
-    uniform mat4x3 localToWorldMatrix;
-    uniform mat4x3 worldToLocalMatrix;
+    uniform HIGHP mat4x3 localToWorldMatrix;
+    uniform HIGHP mat4x3 worldToLocalMatrix;
     uniform LOWP vec4 constantColor;
 #endif
 
@@ -72,14 +72,14 @@ uniform vec4 textureMatrixT;
 uniform LOWP vec4 vertexColorScale;
 uniform LOWP vec4 vertexColorAdd;
 
-uniform vec3 viewOrigin;                // eye position in world space
-uniform vec4 lightVec;                  // light position or light direction in world space
-uniform mat4 viewProjectionMatrix;
-uniform mat4 modelViewProjectionMatrix;
+uniform HIGHP vec3 viewOrigin;                // eye position in world space
+uniform HIGHP vec4 lightVec;                  // light position or light direction in world space
+uniform HIGHP mat4 viewProjectionMatrix;
+uniform HIGHP mat4 modelViewProjectionMatrix;
 
 uniform vec3 lightInvRadius;
-uniform mat4x3 lightFallOffMatrix;
-uniform mat4 lightTextureMatrix;
+uniform HIGHP mat4x3 lightFallOffMatrix;
+uniform HIGHP mat4 lightTextureMatrix;
 uniform bool useShadowMap;
 
 void main() {
