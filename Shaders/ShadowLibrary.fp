@@ -99,7 +99,7 @@ vec3 SampleShadowArrayPCF_Q1(vec4 shadowTC, vec2 filterOffset) {
 }
 
 vec3 SampleShadowArray(vec4 shadowTC, vec2 filterOffset) {
-    shadowTC.w -= 0.002;
+    //shadowTC.w -= 0.002;
 #if SHADOW_MAP_QUALITY == 3
     return SampleShadowArrayPCF_Q3(shadowTC, filterOffset);
 #elif SHADOW_MAP_QUALITY == 2

@@ -404,7 +404,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
         rhi.SetDepthClamp(true);
     }
 
-    //rhi.SetDepthBias(backEnd.shadowMapOffsetFactor, backEnd.shadowMapOffsetUnits);
+    rhi.SetDepthBias(backEnd.shadowMapOffsetFactor, backEnd.shadowMapOffsetUnits);
 
     Mat4 prevProjMatrix = backEnd.projMatrix;
     Mat4 prevViewProjMatrix = backEnd.viewProjMatrix;
@@ -498,7 +498,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
     backEnd.projMatrix = prevProjMatrix;
     backEnd.viewProjMatrix = prevViewProjMatrix;
 
-    //rhi.SetDepthBias(0.0f, 0.0f);
+    rhi.SetDepthBias(0.0f, 0.0f);
 
     if (r_CSM_pancaking.GetBool()) {
         rhi.SetDepthClamp(false);
