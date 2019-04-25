@@ -195,11 +195,13 @@ IOSDevice::Type::Enum IOSDevice::GetIOSDeviceType() {
             }
         } else if (major >= 12) {
             CGSize result = [[UIScreen mainScreen] bounds].size;
-            if (result.height == 1668) {
+            float aspectRatio = result.width / result.height;
+
+            if (aspectRatio == 2388.0f / 1668.0f) {
                 deviceType = Type::IPadAir3;
-            } else if (result.height == 1536) {
+            } else if (aspectRatio == 2048.0f / 1536.0f) {
                 deviceType = Type::IPadMini5;
-            } else if (result.height == 2048) {
+            } else if (aspectRatio == 2732.0f / 2048.0f) {
                 deviceType = Type::IPadPro3_12_9;
             }
         }
