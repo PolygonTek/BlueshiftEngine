@@ -173,7 +173,7 @@ IOSDevice::Type::Enum IOSDevice::GetIOSDeviceType() {
             } else {
                 deviceType = Type::IPadPro_9_7;
             }
-        } else if (major >= 7) { // Default to highest settings currently available for any future device
+        } else if (major == 7) {
             if (minor >= 5) {
                 deviceType = Type::IPad6;
             } else if (minor >= 3) {
@@ -181,17 +181,26 @@ IOSDevice::Type::Enum IOSDevice::GetIOSDeviceType() {
             } else {
                 deviceType = Type::IPadPro2_12_9;
             }
-        } else if (major >= 8) {
+        } else if (major == 8) {
             if (minor >= 5) {
                 deviceType = Type::IPadPro3_12_9;
             } else {
                 deviceType = Type::IPadPro3_11;
             }
-        } else if (major >= 11) {
+        } else if (major == 11) {
             if (minor >= 3) {
                 deviceType = Type::IPadAir3;
             } else {
                 deviceType = Type::IPadMini5;
+            }
+        } else if (major >= 12) {
+            CGSize result = [[UIScreen mainScreen] bounds].size;
+            if (result.height == 1668) {
+                deviceType = Type::IPadAir3;
+            } else if (result.height == 1536) {
+                deviceType = Type::IPadMini5;
+            } else if (result.height == 2048) {
+                deviceType = Type::IPadPro3_12_9;
             }
         }
     } else if (!deviceIDString.Cmpn("iPhone", 6)) {
@@ -243,9 +252,7 @@ IOSDevice::Type::Enum IOSDevice::GetIOSDeviceType() {
             } else if (minor == 8) {
                 deviceType = Type::IPhoneXR;
             }
-        } else if (major >= 11) {
-            // for going forward into unknown devices (like 8/8+?), we can't use minor,
-            // so treat devices with a scale > 2.5 to be 6SPlus type devices, < 2.5 to be 6S type devices
+        } else if (major >= 12) {
             if ([UIScreen mainScreen].scale > 2.5f) {
                 deviceType = Type::IPhoneXSMax;
             } else {
