@@ -390,21 +390,6 @@ static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum dev
 }
 
 - (void)initInstance {
-    BE1::IOSDevice::Type::Enum deviceType = BE1::IOSDevice::GetIOSDeviceType();
-
-    RenderQuality::Enum renderQuality = DetermineRenderQuality(deviceType);
-
-    const char *configName = "";
-    if (renderQuality == RenderQuality::High) {
-        configName = "highQuality";
-    } else if (renderQuality == RenderQuality::Medium) {
-        configName = "mediumQuality";
-    } else {
-        configName = "lowQuality";
-    }
-    BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, BE1::va("exec \"Config/%s.cfg\"\n", configName));
-    BE1::cvarSystem.ClearModified();
-    
     // ----- Core initialization -----
     BE1::Engine::InitParms initParms;
     
@@ -434,7 +419,22 @@ static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum dev
     [mainWindow makeKeyAndVisible];
 
     BE1::renderSystem.InitRHI((__bridge BE1::RHI::WindowHandle)mainWindow);
-    
+
+    BE1::IOSDevice::Type::Enum deviceType = BE1::IOSDevice::GetIOSDeviceType();
+
+    RenderQuality::Enum renderQuality = DetermineRenderQuality(deviceType);
+
+    const char *configName = "";
+    if (renderQuality == RenderQuality::High) {
+        configName = "highQuality";
+    } else if (renderQuality == RenderQuality::Medium) {
+        configName = "mediumQuality";
+    } else {
+        configName = "lowQuality";
+    }
+    BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, BE1::va("exec \"Config/%s.cfg\"\n", configName));
+    BE1::cvarSystem.ClearModified();
+
     BE1::gameClient.Init((__bridge BE1::RHI::WindowHandle)mainWindow, false);
     
     float retinaScale = [[UIScreen mainScreen] scale];
