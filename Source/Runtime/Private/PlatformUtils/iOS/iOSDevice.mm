@@ -176,7 +176,7 @@ IOSDevice::Type::Enum IOSDevice::GetIOSDeviceType() {
         } else if (major >= 7) { // Default to highest settings currently available for any future device
             if (minor >= 5) {
                 deviceType = Type::IPad6;
-            else if (minor >= 3) {
+            } else if (minor >= 3) {
                 deviceType = Type::IPadPro2_10_5;
             } else {
                 deviceType = Type::IPadPro2_12_9;

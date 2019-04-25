@@ -60,7 +60,7 @@ public:
             IPadPro3_12_9,     // iPad Pro 12.9 inch (2732 x 2048)
             IPadPro3_11,       // iPad Pro 11 inch (2388 x 1668)
             IPadMini5,
-            IPadAir3
+            IPadAir3,
             UnknownDevice = -1
         };
     };
