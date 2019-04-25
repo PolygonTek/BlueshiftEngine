@@ -19,7 +19,7 @@ BE_NAMESPACE_BEGIN
 class IOSDevice {
 public:
     struct Type {
-        enum {
+        enum Enum {
             IPodTouch4,        // (960 x 640)
             IPodTouch5,        // (1136 x 640)
             IPodTouch6,     
