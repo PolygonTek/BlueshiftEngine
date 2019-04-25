@@ -365,7 +365,7 @@ struct RenderQuality {
     };
 };
 
-static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type deviceType) {
+static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum deviceType) {
     if (BE1::IOSDevice::IsIPhone(deviceType)) {
         if (deviceType <= BE1::IOSDevice::Type::IPhone5S)
             return RenderQuality::Low;
@@ -396,6 +396,16 @@ static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type deviceTyp
     }
 
     RenderQuality::Enum renderQuality = DetermineRenderQuality(deviceType);
+
+    const char *configName = "";
+    if (renderQuality == RenderQuality::High) {
+        configName = "highQuality";
+    } else if (renderQuality == RenderQuality::Medium) {
+        configName = "mediumQuality";
+    } else {
+        configName = "lowQuality";
+    }
+    BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, BE1::va("exec \"Config/%s.cfg\"\n"), configName);
     
     // ----- Core initialization -----
     BE1::Engine::InitParms initParms;

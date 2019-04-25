@@ -137,8 +137,18 @@ static RenderQuality::Enum DetermineRenderQuality() {
 static void InitDisplay(ANativeWindow *window) {
     if (!appInitialized) {
         appInitialized = true;
-
+        
         RenderQuality::Enum renderQuality = DetermineRenderQuality();
+
+        const char *configName = "";
+        if (renderQuality == RenderQuality::High) {
+            configName = "highQuality";
+        } else if (renderQuality == RenderQuality::Medium) {
+            configName = "mediumQuality";
+        } else {
+            configName = "lowQuality";
+        }
+        BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, BE1::va("exec \"Config/%s.cfg\"\n"), configName);
 
         currentWindowWidth = ANativeWindow_getWidth(window);
         currentWindowHeight = ANativeWindow_getHeight(window);
