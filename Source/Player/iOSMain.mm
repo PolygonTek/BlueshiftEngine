@@ -360,14 +360,14 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 @implementation AppDelegate
 
 struct RenderQuality {
-    enum {
+    enum Enum {
         High, Medium, Low
     };
 };
 
 static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum deviceType) {
     if (BE1::IOSDevice::IsIPhone(deviceType)) {
-        if (deviceType <= BE1::IOSDevice::Type::IPhone5S)
+        if (deviceType <= BE1::IOSDevice::Type::IPhone5S) {
             return RenderQuality::Low;
         } else if (deviceType <= BE1::IOSDevice::Type::IPhone7Plus) {
             return RenderQuality::Medium;
@@ -377,7 +377,7 @@ static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum dev
     }
 
     if (BE1::IOSDevice::IsIPad(deviceType)) {
-        if (deviceType <= BE1::IOSDevice::Type::IPadMini3)
+        if (deviceType <= BE1::IOSDevice::Type::IPadMini3) {
             return RenderQuality::Low;
         } else if (deviceType <= BE1::IOSDevice::Type::IPad5) {
             return RenderQuality::Medium;
@@ -391,9 +391,6 @@ static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum dev
 
 - (void)initInstance {
     BE1::IOSDevice::Type::Enum deviceType = BE1::IOSDevice::GetIOSDeviceType();
-    if (deviceType == BE1::IOSDevice::IOS_UnknownDevice) {
-        assert(0);
-    }
 
     RenderQuality::Enum renderQuality = DetermineRenderQuality(deviceType);
 
