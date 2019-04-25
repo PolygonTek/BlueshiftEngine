@@ -18,55 +18,61 @@ BE_NAMESPACE_BEGIN
 
 class IOSDevice {
 public:
-    enum Type {
-        IOS_IPhone4,        // (960 x 640)
-        IOS_IPhone4S,
-        IOS_IPhone5,        // also the iPhone5c (1136 x 640)
-        IOS_IPhone5S,
-        IOS_IPhone6,        // (1334 x 750)
-        IOS_IPhone6Plus,    // (1920 x 1080)
-        IOS_IPhone6S,
-        IOS_IPhone6SPlus,
-        IOS_IPhoneSE,
-        IOS_IPhone7,
-        IOS_IPhone7Plus,
-        IOS_IPhone8,
-        IOS_IPhone8Plus,
-        IOS_IPhoneX,        // (2436 x 1125)
-        IOS_IPhoneXS,
-        IOS_IPhoneXSMax,    // (2688 x 1242)
-        IOS_IPhoneXR,       // (1792 x 828)
-        
-        IOS_IPodTouch4,     // (960 x 640)
-        IOS_IPodTouch5,     // (1136 x 640)
-        IOS_IPodTouch6,
-        
-        IOS_IPad2,          // (1024 x 768)
-        IOS_IPadMini,
-        IOS_IPad3,
-        IOS_IPad4,
-        IOS_IPadAir,        // also the IPad Mini Retina (2048 x 1536)
-        IOS_IPadMini2,
-        IOS_IPadMini3,
-        IOS_IPadAir2,
-        IOS_IPadMini4,
+    struct Type {
+        enum {
+            IPodTouch4,        // (960 x 640)
+            IPodTouch5,        // (1136 x 640)
+            IPodTouch6,     
 
-        IOS_IPadPro_9_7,    // iPad Pro 9.7 inch
-        IOS_IPadPro_12_9,   // iPad Pro 12.9 inch (2732 x 2048)
-        IOS_IPadPro2_12_9,
-        IOS_IPadPro2_10_5,  // iPad Pro 10.5 inch (2224 x 1668)
-        IOS_IPadPro3_11,    // iPad Pro 11 inch (2388 x 1668)
-        IOS_IPadPro3_12_9,  // iPad Pro 12.9 inch (2732 x 2048)
-        IOS_UnknownDevice,
+            IPhone4,           // (960 x 640)
+            IPhone4S,       
+            IPhone5,           // also the iPhone5c (1136 x 640)
+            IPhone5S,       
+            IPhone6,           // (1334 x 750)
+            IPhone6Plus,       // (1920 x 1080)
+            IPhone6S,       
+            IPhone6SPlus,   
+            IPhoneSE,       
+            IPhone7,        
+            IPhone7Plus,    
+            IPhone8,        
+            IPhone8Plus,    
+            IPhoneX,           // (2436 x 1125)
+            IPhoneXS,       
+            IPhoneXSMax,       // (2688 x 1242)
+            IPhoneXR,          // (1792 x 828)
+
+            IPad2,             // (1024 x 768)
+            IPadMini,       
+            IPad3,          
+            IPad4,          
+            IPadAir,           // also the IPad Mini Retina (2048 x 1536)
+            IPadMini2,      
+            IPadMini3,      
+            IPadAir2,      
+            IPadMini4,      
+            IPad5,          
+            IPad6,          
+            IPadMini5,      
+            IPadAir3,       
+            IPadPro_9_7,       // iPad Pro 9.7 inch
+            IPadPro_12_9,      // iPad Pro 12.9 inch (2732 x 2048)
+            IPadPro2_12_9,  
+            IPadPro2_10_5,     // iPad Pro 10.5 inch (2224 x 1668)
+            IPadPro3_11,       // iPad Pro 11 inch (2388 x 1668)
+            IPadPro3_12_9,     // iPad Pro 12.9 inch (2732 x 2048)
+
+            UnknownDevice = -1
+        };
     };
 
-    static bool IsIPhone(Type deviceType);
-    static bool IsIPod(Type deviceType);
-    static bool IsIPad(Type deviceType);
+    static bool IsIPhone(Type::Enum deviceType);
+    static bool IsIPod(Type::Enum deviceType);
+    static bool IsIPad(Type::Enum deviceType);
     
-    static void GetDeviceResolution(Type deviceType, int &width, int &height);
+    static void GetDeviceResolution(Type::Enum deviceType, int &width, int &height);
    
-    static Type GetIOSDeviceType();
+    static Type::Enum GetIOSDeviceType();
 };
 
 BE_NAMESPACE_END
