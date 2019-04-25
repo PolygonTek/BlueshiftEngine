@@ -59,16 +59,16 @@ static IOSDeviceModel iOSModels[] = {
     { "iPad Mini 3",                false, false, true, 2048, 1536 },
     { "iPad Air 2",                 false, false, true, 2048, 1536 },
     { "iPad Mini 4",                false, false, true, 2048, 1536 },
+    { "iPad Pro 12.9",              false, false, true, 2732, 2048 },
+    { "iPad Pro 9.7",               false, false, true, 2048, 1536 },
     { "iPad 5",                     false, false, true, 2048, 1536 },
+    { "iPad Pro 12.9 (2nd)",        false, false, true, 2732, 2048 },
+    { "iPad Pro 10.5 (2nd)",        false, false, true, 2224, 1668 },
     { "iPad 6",                     false, false, true, 2048, 1536 },
+    { "iPad Pro 12.9 (3rd)",        false, false, true, 2732, 2048 },
+    { "iPad Pro 11 (3rd)",          false, false, true, 2388, 1668 },
     { "iPad Mini 5",                false, false, true, 2048, 1536 },
     { "iPad Air 3",                 false, false, true, 2224, 1668 },
-    { "iPad Pro 9.7",               false, false, true, 2048, 1536 },
-    { "iPad Pro 12.9",              false, false, true, 2732, 2048 },
-    { "iPad Pro 12.9 (2nd)",        false, false, true, 2732, 2048 },
-    { "iPad Pro 10.5",              false, false, true, 2224, 1668 },
-    { "iPad Pro 11",                false, false, true, 2388, 1668 },
-    { "iPad Pro 12.9 (3rd)",        false, false, true, 2732, 2048 },
 };
 
 bool IOSDevice::IsIPhone(IOSDevice::Type::Enum deviceType) {

@@ -31,8 +31,8 @@ public:
             IPhone6,           // (1334 x 750)
             IPhone6Plus,       // (1920 x 1080)
             IPhone6S,       
-            IPhone6SPlus,   
-            IPhoneSE,       
+            IPhone6SPlus,
+            IPhoneSE,
             IPhone7,        
             IPhone7Plus,    
             IPhone8,        
@@ -47,21 +47,20 @@ public:
             IPad3,          
             IPad4,          
             IPadAir,           // also the IPad Mini Retina (2048 x 1536)
-            IPadMini2,      
-            IPadMini3,      
-            IPadAir2,      
-            IPadMini4,      
-            IPad5,          
-            IPad6,          
-            IPadMini5,      
-            IPadAir3,       
-            IPadPro_9_7,       // iPad Pro 9.7 inch
+            IPadMini2,
+            IPadMini3,
+            IPadAir2,
+            IPadMini4,
             IPadPro_12_9,      // iPad Pro 12.9 inch (2732 x 2048)
-            IPadPro2_12_9,  
+            IPadPro_9_7,       // iPad Pro 9.7 inch
+            IPad5,
+            IPadPro2_12_9,
             IPadPro2_10_5,     // iPad Pro 10.5 inch (2224 x 1668)
-            IPadPro3_11,       // iPad Pro 11 inch (2388 x 1668)
+            IPad6,
             IPadPro3_12_9,     // iPad Pro 12.9 inch (2732 x 2048)
-
+            IPadPro3_11,       // iPad Pro 11 inch (2388 x 1668)
+            IPadMini5,
+            IPadAir3
             UnknownDevice = -1
         };
     };
