@@ -22,74 +22,73 @@ BE_NAMESPACE_BEGIN
 
 struct IOSDeviceModel {
     const char *name;
-    bool iPod, iPhone, iPad;
     int resolutionWidth, resolutionHeight;
 };
 
 // Matched with IOSDevice::Type enums
 static IOSDeviceModel iOSModels[] = {
     // iPod
-    { "iPod Touch 4th generation",  true, false, false, 960, 640 },
-    { "iPod Touch 5th generation",  true, false, false, 1136, 640 },
-    { "iPod Touch 6th generation",  true, false, false, 1136, 640 },
+    { "iPod Touch 4th generation",  960, 640 },
+    { "iPod Touch 5th generation",  1136, 640 },
+    { "iPod Touch 6th generation",  1136, 640 },
     // iPhone
-    { "iPhone 4",                   false, true, false, 960, 640 },
-    { "iPhone 4s",                  false, true, false, 960, 640 },
-    { "iPhone 5",                   false, true, false, 1136, 640 },
-    { "iPhone 5s",                  false, true, false, 1136, 640 },
-    { "iPhone 6",                   false, true, false, 1334, 750 },
-    { "iPhone 6 Plus",              false, true, false, 1920, 1080 },
-    { "iPhone 6s",                  false, true, false, 1334, 750 },
-    { "iPhone SE",                  false, true, false, 1136, 640 },
-    { "iPhone 7",                   false, true, false, 1334, 750 },
-    { "iPhone 7 Plus",              false, true, false, 1920, 1080 },
-    { "iPhone 8",                   false, true, false, 1334, 750 },
-    { "iPhone 8 Plus",              false, true, false, 1920, 1080 },
-    { "iPhone X",                   false, true, false, 2436, 1125 },
-    { "iPhone Xs",                  false, true, false, 2436, 1125 },
-    { "iPhone Xs Max",              false, true, false, 2688, 1242 },
-    { "iPhone Xr",                  false, true, false, 1792, 828 },
+    { "iPhone 4",                   960, 640 },
+    { "iPhone 4s",                  960, 640 },
+    { "iPhone 5",                   1136, 640 },
+    { "iPhone 5s",                  1136, 640 },
+    { "iPhone 6",                   1334, 750 },
+    { "iPhone 6 Plus",              1920, 1080 },
+    { "iPhone 6s",                  1334, 750 },
+    { "iPhone SE",                  1136, 640 },
+    { "iPhone 7",                   1334, 750 },
+    { "iPhone 7 Plus",              1920, 1080 },
+    { "iPhone 8",                   1334, 750 },
+    { "iPhone 8 Plus",              1920, 1080 },
+    { "iPhone X",                   2436, 1125 },
+    { "iPhone Xs",                  2436, 1125 },
+    { "iPhone Xs Max",              2688, 1242 },
+    { "iPhone Xr",                  1792, 828 },
     // iPad
-    { "iPad 2",                     false, false, true, 1024, 768 },
-    { "iPad Mini",                  false, false, true, 1024, 768 },
-    { "iPad 3",                     false, false, true, 2048, 1536 },
-    { "iPad 4",                     false, false, true, 2048, 1536 },
-    { "iPad Air",                   false, false, true, 2048, 1536 },
-    { "iPad Mini 2",                false, false, true, 2048, 1536 },
-    { "iPad Mini 3",                false, false, true, 2048, 1536 },
-    { "iPad Air 2",                 false, false, true, 2048, 1536 },
-    { "iPad Mini 4",                false, false, true, 2048, 1536 },
-    { "iPad Pro 12.9",              false, false, true, 2732, 2048 },
-    { "iPad Pro 9.7",               false, false, true, 2048, 1536 },
-    { "iPad 5",                     false, false, true, 2048, 1536 },
-    { "iPad Pro 12.9 (2nd)",        false, false, true, 2732, 2048 },
-    { "iPad Pro 10.5 (2nd)",        false, false, true, 2224, 1668 },
-    { "iPad 6",                     false, false, true, 2048, 1536 },
-    { "iPad Pro 12.9 (3rd)",        false, false, true, 2732, 2048 },
-    { "iPad Pro 11 (3rd)",          false, false, true, 2388, 1668 },
-    { "iPad Mini 5",                false, false, true, 2048, 1536 },
-    { "iPad Air 3",                 false, false, true, 2224, 1668 },
+    { "iPad 2",                     1024, 768 },
+    { "iPad Mini",                  1024, 768 },
+    { "iPad 3",                     2048, 1536 },
+    { "iPad 4",                     2048, 1536 },
+    { "iPad Air",                   2048, 1536 },
+    { "iPad Mini 2",                2048, 1536 },
+    { "iPad Mini 3",                2048, 1536 },
+    { "iPad Air 2",                 2048, 1536 },
+    { "iPad Mini 4",                2048, 1536 },
+    { "iPad Pro 12.9",              2732, 2048 },
+    { "iPad Pro 9.7",               2048, 1536 },
+    { "iPad 5",                     2048, 1536 },
+    { "iPad Pro 12.9 (2nd)",        2732, 2048 },
+    { "iPad Pro 10.5 (2nd)",        2224, 1668 },
+    { "iPad 6",                     2048, 1536 },
+    { "iPad Pro 12.9 (3rd)",        2732, 2048 },
+    { "iPad Pro 11 (3rd)",          2388, 1668 },
+    { "iPad Mini 5",                2048, 1536 },
+    { "iPad Air 3",                 2224, 1668 },
 };
 
 bool IOSDevice::IsIPhone(IOSDevice::Type::Enum deviceType) {
-    int index = (int)deviceType;
-    assert(index >= 0 && index < Type::UnknownDevice);
-
-    return iOSModels[index].iPhone;
+    if (deviceType >= IPodTouch4 && deviceType <= IPodTouch6) { 
+        return true;
+    }
+    return false;
 }
 
 bool IOSDevice::IsIPod(IOSDevice::Type::Enum deviceType) {
-    int index = (int)deviceType;
-    assert(index >= 0 && index < Type::UnknownDevice);
-
-    return iOSModels[index].iPod;
+    if (deviceType >= IPhone4 && deviceType <= IPhoneXR) { 
+        return true;
+    }
+    return false;
 }
 
 bool IOSDevice::IsIPad(IOSDevice::Type::Enum deviceType) {
-    int index = (int)deviceType;
-    assert(index >= 0 && index < Type::UnknownDevice);
-
-    return iOSModels[index].iPad;
+    if (deviceType >= IPad2 && deviceType <= IPadAir3) { 
+        return true;
+    }
+    return false;
 }
 
 void IOSDevice::GetDeviceResolution(IOSDevice::Type::Enum deviceType, int &width, int &height) {
