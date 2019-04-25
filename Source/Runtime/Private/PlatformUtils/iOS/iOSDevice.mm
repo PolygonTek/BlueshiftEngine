@@ -70,14 +70,14 @@ static IOSDeviceModel iOSModels[] = {
     { "iPad Air 3",                 2224, 1668 },
 };
 
-bool IOSDevice::IsIPhone(IOSDevice::Type::Enum deviceType) {
+bool IOSDevice::IsIPod(IOSDevice::Type::Enum deviceType) {
     if (deviceType >= Type::IPodTouch4 && deviceType <= Type::IPodTouch6) { 
         return true;
     }
     return false;
 }
 
-bool IOSDevice::IsIPod(IOSDevice::Type::Enum deviceType) {
+bool IOSDevice::IsIPhone(IOSDevice::Type::Enum deviceType) {
     if (deviceType >= Type::IPhone4 && deviceType <= Type::IPhoneXR) { 
         return true;
     }
