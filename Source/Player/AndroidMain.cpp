@@ -152,6 +152,7 @@ static void InitDisplay(ANativeWindow *window) {
             configName = "lowQuality";
         }
         BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, BE1::va("exec \"Config/%s.cfg\"\n", configName));
+        BE1::cvarSystem.ClearModified();
 
         currentWindowWidth = ANativeWindow_getWidth(window);
         currentWindowHeight = ANativeWindow_getHeight(window);

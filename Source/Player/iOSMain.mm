@@ -403,6 +403,7 @@ static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum dev
         configName = "lowQuality";
     }
     BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, BE1::va("exec \"Config/%s.cfg\"\n", configName));
+    BE1::cvarSystem.ClearModified();
     
     // ----- Core initialization -----
     BE1::Engine::InitParms initParms;
