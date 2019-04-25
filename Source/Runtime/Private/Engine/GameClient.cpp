@@ -83,13 +83,6 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
         cmdLines[i][1] = 0;
     }
 
-    RHI::Settings settings;
-    settings.colorBits      = cvarSystem.GetCVarInteger("r_colorBits");
-    settings.alphaBits      = settings.colorBits == 32 ? 8 : 0;
-    settings.depthBits      = cvarSystem.GetCVarInteger("r_depthBits");
-    settings.stencilBits    = cvarSystem.GetCVarInteger("r_stencilBits");
-    settings.multiSamples   = cvarSystem.GetCVarInteger("r_multiSamples");
-
     // set default resource GUID mapper
     InitDefaultGuids();
 
@@ -98,7 +91,7 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
 
     inputSystem.Init();
 
-    renderSystem.Init(windowHandle, &settings);
+    renderSystem.Init();
 
     soundSystem.Init(windowHandle);
 

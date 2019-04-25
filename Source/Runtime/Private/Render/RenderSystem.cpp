@@ -27,12 +27,21 @@ BE_NAMESPACE_BEGIN
 RenderGlobal        renderGlobal;
 RenderSystem        renderSystem;
 
-void RenderSystem::Init(void *windowHandle, const RHI::Settings *settings) {
-    cmdSystem.AddCommand("screenshot", Cmd_ScreenShot);
-    cmdSystem.AddCommand("genDFGSumGGX", Cmd_GenerateDFGSumGGX);
+void RenderSystem::InitRHI(void *windowHandle) {
+    RHI::Settings settings;
+    settings.colorBits = cvarSystem.GetCVarInteger("r_colorBits");
+    settings.alphaBits = settings.colorBits == 32 ? 8 : 0;
+    settings.depthBits = cvarSystem.GetCVarInteger("r_depthBits");
+    settings.stencilBits = cvarSystem.GetCVarInteger("r_stencilBits");
+    settings.multiSamples = cvarSystem.GetCVarInteger("r_multiSamples");
 
     // Initialize OpenGL renderer
-    rhi.Init(windowHandle, settings);
+    rhi.Init(windowHandle, &settings);
+}
+
+void RenderSystem::Init() {
+    cmdSystem.AddCommand("screenshot", Cmd_ScreenShot);
+    cmdSystem.AddCommand("genDFGSumGGX", Cmd_GenerateDFGSumGGX);
 
     // Save current gamma ramp table
     rhi.GetGammaRamp(savedGammaRamp);

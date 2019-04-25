@@ -53,6 +53,7 @@ static RenderQuality::Enum DetermineRenderQuality() {
     const char *rendererString = (const char *)glGetString(GL_RENDERER);
 
     BE1::AndroidGPUInfo gpuInfo = BE1::AndroidGPUInfo::GetFromOpenGLRendererString(rendererString);
+
     RenderQuality::Enum renderQuality = RenderQuality::High;
 
     switch (gpuInfo.processor) {
@@ -137,6 +138,8 @@ static RenderQuality::Enum DetermineRenderQuality() {
 static void InitDisplay(ANativeWindow *window) {
     if (!appInitialized) {
         appInitialized = true;
+
+        BE1::renderSystem.InitRHI(window);
         
         RenderQuality::Enum renderQuality = DetermineRenderQuality();
 

@@ -65,7 +65,9 @@ class RenderSystem {
 public:
     RenderSystem();
 
-    void                    Init(void *windowHandle, const RHI::Settings *settings);
+    void                    InitRHI(void *windowHandle);
+
+    void                    Init();
     void                    Shutdown();
 
     bool                    IsInitialized() const { return initialized; }

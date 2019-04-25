@@ -447,6 +447,8 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
 
     mainWindow = [self createGLWindow:NSMakeSize(1280, 720) title:nsFullTitle];
 
+    BE1::renderSystem.InitRHI((__bridge BE1::RHI::WindowHandle)mainWindow);
+
     BE1::gameClient.Init((__bridge BE1::RHI::WindowHandle)mainWindow, true);
     
     app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);

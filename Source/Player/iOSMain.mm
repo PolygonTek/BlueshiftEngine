@@ -431,6 +431,8 @@ static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum dev
     mainWindow.rootViewController = rootViewController;
     
     [mainWindow makeKeyAndVisible];
+
+    BE1::renderSystem.InitRHI((__bridge BE1::RHI::WindowHandle)mainWindow);
     
     BE1::gameClient.Init((__bridge BE1::RHI::WindowHandle)mainWindow, false);
     

@@ -206,6 +206,8 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
 
     hmainWnd = CreateRenderWindow(szFullTitle, mainWindowClassName, disp_width.GetInteger(), disp_height.GetInteger(), disp_fullscreen.GetBool());
 
+    BE1::renderSystem.InitRHI(hmainWnd);
+
     BE1::gameClient.Init(hmainWnd, true);
 
     app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
