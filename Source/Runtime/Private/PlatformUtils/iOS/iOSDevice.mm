@@ -71,21 +71,21 @@ static IOSDeviceModel iOSModels[] = {
 };
 
 bool IOSDevice::IsIPhone(IOSDevice::Type::Enum deviceType) {
-    if (deviceType >= IPodTouch4 && deviceType <= IPodTouch6) { 
+    if (deviceType >= Type::IPodTouch4 && deviceType <= Type::IPodTouch6) { 
         return true;
     }
     return false;
 }
 
 bool IOSDevice::IsIPod(IOSDevice::Type::Enum deviceType) {
-    if (deviceType >= IPhone4 && deviceType <= IPhoneXR) { 
+    if (deviceType >= Type::IPhone4 && deviceType <= Type::IPhoneXR) { 
         return true;
     }
     return false;
 }
 
 bool IOSDevice::IsIPad(IOSDevice::Type::Enum deviceType) {
-    if (deviceType >= IPad2 && deviceType <= IPadAir3) { 
+    if (deviceType >= Type::IPad2 && deviceType <= Type::IPadAir3) { 
         return true;
     }
     return false;
