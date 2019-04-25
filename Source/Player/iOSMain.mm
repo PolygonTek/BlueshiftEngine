@@ -405,7 +405,7 @@ static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum dev
     } else {
         configName = "lowQuality";
     }
-    BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, BE1::va("exec \"Config/%s.cfg\"\n"), configName);
+    BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, BE1::va("exec \"Config/%s.cfg\"\n", configName));
     
     // ----- Core initialization -----
     BE1::Engine::InitParms initParms;
@@ -444,7 +444,7 @@ static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum dev
     BE1::Vec2 screenScaleFactor(1.0f, 1.0f);
 
     if (BE1::IOSDevice::IsIPad(deviceType)) {
-        if (deviceType < BE1::IOSDevice::IPadAir2) {
+        if (deviceType < BE1::IOSDevice::Type::IPadAir2) {
             screenScaleFactor.x = BE1::Min(1280.0f / renderWidth, 1.0f);
             screenScaleFactor.y = BE1::Min(720.0f / renderHeight, 1.0f);
         } else {
