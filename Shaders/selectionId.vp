@@ -22,8 +22,8 @@ out MEDIUMP vec2 v2f_texCoord;
 uniform vec4 textureMatrixS;
 uniform vec4 textureMatrixT;
 
-uniform mat4 viewProjectionMatrix;
-uniform mat4 modelViewProjectionMatrix;
+uniform HIGHP mat4 viewProjectionMatrix;
+uniform HIGHP mat4 modelViewProjectionMatrix;
 
 void main() {
 	vec4 localPos;

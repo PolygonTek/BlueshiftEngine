@@ -3,8 +3,8 @@ in vec4 in_position : POSITION;
 out vec4 v2f_color;
 out vec4 v2f_texCoord;
 
-uniform mat4 modelViewProjectionMatrix;
-uniform mat4 lightTextureMatrix;
+uniform HIGHP mat4 modelViewProjectionMatrix;
+uniform HIGHP mat4 lightTextureMatrix;
 uniform vec3 blendColor;
 
 void main() {

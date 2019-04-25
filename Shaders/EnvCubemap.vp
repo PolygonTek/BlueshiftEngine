@@ -3,10 +3,10 @@ in HIGHP vec4 in_position   : POSITION;
 out LOWP vec3 v2f_viewWS;
 out LOWP vec3 v2f_normal;
 
-uniform mat4 modelViewMatrix;
-uniform mat4 modelViewProjectionMatrix;
+uniform HIGHP mat4 modelViewMatrix;
+uniform HIGHP mat4 modelViewProjectionMatrix;
 
-uniform mat4x3 localToWorldMatrix;
+uniform HIGHP mat4x3 localToWorldMatrix;
 
 uniform vec3 viewOrigin;    // eye position in world space
 

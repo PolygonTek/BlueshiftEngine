@@ -4,10 +4,10 @@ in LOWP vec4 in_color       : COLOR;
 out LOWP vec4 v2f_color;
 out MEDIUMP vec3 v2f_texCoord;
 
-uniform mat4 modelViewMatrix;
-uniform mat4 modelViewProjectionMatrix;
+uniform HIGHP mat4 modelViewMatrix;
+uniform HIGHP mat4 modelViewProjectionMatrix;
 
-uniform mat4x3 localToWorldMatrix;
+uniform HIGHP mat4x3 localToWorldMatrix;
 uniform LOWP vec4 constantColor;
 
 uniform LOWP vec4 vertexColorScale;

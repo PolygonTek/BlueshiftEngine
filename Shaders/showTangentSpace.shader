@@ -7,7 +7,7 @@ shader "showTangentSpace" {
 		out LOWP vec4 v2f_color;
 
 		uniform int tangentIndex;
-		uniform mat4 modelViewProjectionMatrix;
+		uniform HIGHP mat4 modelViewProjectionMatrix;
 
 		void main() {
 			vec3 tangents[3];

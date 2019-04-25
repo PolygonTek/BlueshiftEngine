@@ -10,8 +10,8 @@ shader "blur15x" {
 
 		#define NUM_SAMPLES 15
 		uniform sampler2D tex0;
-		uniform float weights[NUM_SAMPLES];
-		uniform vec2 texelOffset;
+		uniform HIGHP float weights[NUM_SAMPLES];
+		uniform HIGHP vec2 texelOffset;
 
 		void main() {
 			vec4 c = vec4(0.0, 0.0, 0.0, 0.0);

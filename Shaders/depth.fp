@@ -1,4 +1,4 @@
-out vec4 o_fragDepth : FRAG_DEPTH;
+out HIGHP vec4 o_fragDepth : FRAG_DEPTH;
 
 #ifdef PERFORATED
     in MEDIUMP vec2 v2f_texCoord;

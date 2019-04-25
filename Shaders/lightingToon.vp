@@ -39,10 +39,10 @@ uniform vec4 textureMatrixT;
 uniform LOWP vec4 vertexColorScale;
 uniform LOWP vec4 vertexColorAdd;
 
-uniform vec3 viewOrigin;
-uniform vec4 lightVec;
-uniform mat4 viewProjectionMatrix;
-uniform mat4 modelViewProjectionMatrix;
+uniform HIGHP vec3 viewOrigin;
+uniform HIGHP vec4 lightVec;
+uniform HIGHP mat4 viewProjectionMatrix;
+uniform HIGHP mat4 modelViewProjectionMatrix;
 uniform vec3 lightInvRadius;
 uniform mat4 lightTextureMatrix;
 uniform bool useShadowMap;

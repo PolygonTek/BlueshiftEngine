@@ -20,7 +20,7 @@ out LOWP vec4 v2f_color;
 #endif
 
 #if _PARALLAX
-    out vec3 v2f_viewTS;
+    out HIGHP vec3 v2f_viewTS;
 #endif
 
 #ifdef DIRECT_LIGHTING

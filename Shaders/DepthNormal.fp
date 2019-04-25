@@ -24,7 +24,7 @@ uniform LOWP vec4 constantColor;
 #endif
 
 #if _PARALLAX
-    in vec3 v2f_viewTS;
+    in HIGHP vec3 v2f_viewTS;
 #endif
 
 #if _NORMAL != 0

@@ -1,14 +1,14 @@
 shader "kawaseBlur" {
 	glsl_vp {
 		in vec4 in_position : POSITION;
-		in vec2 in_st : TEXCOORD0;
+		in MEDIUMP vec2 in_st : TEXCOORD0;
 
 		out vec4 v2f_texCoord0;
 		out vec4 v2f_texCoord1;
 		out vec2 v2f_texCoord2;
 		out vec2 v2f_texCoord4;
 		
-		uniform vec2 sampleOffsets[4];
+		uniform HIGHP vec2 sampleOffsets[4];
 
 		void main() {
 			gl_Position = in_position;
@@ -21,9 +21,9 @@ shader "kawaseBlur" {
 	}
 
 	glsl_fp {
-		in vec4 v2f_texCoord0;
-		in vec4 v2f_texCoord1;
-		in vec2 v2f_texCoord2;
+		in HIGHP vec4 v2f_texCoord0;
+		in HIGHP vec4 v2f_texCoord1;
+		in HIGHP vec2 v2f_texCoord2;
 
 		out vec4 o_fragColor : FRAG_COLOR;
 

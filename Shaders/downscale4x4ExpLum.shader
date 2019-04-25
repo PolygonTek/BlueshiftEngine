@@ -15,7 +15,7 @@ shader "downscale4x4ExpLum" {
 		#endif
 
 		uniform sampler2D tex0;
-		uniform vec2 sampleOffsets[SAMPLES];
+		uniform HIGHP vec2 sampleOffsets[SAMPLES];
 
 		void main() {
 			float logLum = 0.0;
