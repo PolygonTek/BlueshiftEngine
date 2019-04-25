@@ -17,6 +17,7 @@
 #include "android_native_app_glue.h"
 #include <dlfcn.h>
 #include <android/sensor.h>
+#include <GLES/GL.h>
 
 #ifdef USE_ANALYTICS
 #include "AndroidAnalytics.h"
@@ -42,27 +43,34 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     app.Draw();
 }
 
-// 0: full, 1: medium, 2: low
-static int DetermineRenderQuality() {
-    BE1::AndroidGPUInfo gpuInfo = BE1::AndroidGPUInfo::GetFromOpenGLRendererString(BE1::rhi.GetGPUString());
-    int renderQuality = 0;
+struct RenderQuality {
+    enum Enum {
+        High, Medium, Low
+    };
+};
+
+static RenderQuality::Enum DetermineRenderQuality() {
+    const char *rendererString = (const char *)glGetString(GL_RENDERER);
+
+    BE1::AndroidGPUInfo gpuInfo = BE1::AndroidGPUInfo::GetFromOpenGLRendererString(rendererString);
+    RenderQuality::Enum renderQuality = RenderQuality::High;
 
     switch (gpuInfo.processor) {
     case BE1::AndroidGPUInfo::Processor::Qualcomm_Adreno:
         if (gpuInfo.model >= 500) {
             if (gpuInfo.model < 510) {
-                renderQuality = 2;
+                renderQuality = RenderQuality::Low;
             } else if (gpuInfo.model < 530) {
-                renderQuality = 1;
+                renderQuality = RenderQuality::Medium;
             }
         } else if (gpuInfo.model >= 400) {
             if (gpuInfo.model < 420) {
-                renderQuality = 2;
+                renderQuality = RenderQuality::Low;
             } else if (gpuInfo.model <= 430) {
-                renderQuality = 1;
+                renderQuality = RenderQuality::Medium;
             }
         } else {
-            renderQuality = 2;
+            renderQuality = RenderQuality::Low;
         }
         break;
     case BE1::AndroidGPUInfo::Processor::ARM_MaliG:
@@ -70,52 +78,52 @@ static int DetermineRenderQuality() {
     case BE1::AndroidGPUInfo::Processor::ARM_MaliT:
         if (gpuInfo.model >= 800) {
             if (gpuInfo.model < 880) {
-                renderQuality = 2;
+                renderQuality = RenderQuality::Low;
             } else {
-                renderQuality = 1;
+                renderQuality = RenderQuality::Medium;
             }
         } else if (gpuInfo.model >= 700) {
             if (gpuInfo.model < 760) {
-                renderQuality = 2;
+                renderQuality = RenderQuality::Low;
             } else {
-                renderQuality = 1;
+                renderQuality = RenderQuality::Medium;
             }
         } else {
-            renderQuality = 2;
+            renderQuality = RenderQuality::Low;
         }
         break;
     case BE1::AndroidGPUInfo::Processor::ARM_Mali:
-        renderQuality = 2;
+        renderQuality = RenderQuality::Low;
         break;
     case BE1::AndroidGPUInfo::Processor::PowerVR_RogueG:
         if (gpuInfo.model >= 6000) {
             if (gpuInfo.model <= 6430) {
-                renderQuality = 2;
+                renderQuality = RenderQuality::Low;
             } else {
-                renderQuality = 1;
+                renderQuality = RenderQuality::Medium;
             }
         }
         break;
     case BE1::AndroidGPUInfo::Processor::PowerVR_RogueGX:
         if (gpuInfo.model >= 6000) {
             if (gpuInfo.model < 6450) {
-                renderQuality = 2;
+                renderQuality = RenderQuality::Low;
             } else {
-                renderQuality = 1;
+                renderQuality = RenderQuality::Medium;
             }
         } else {
-            renderQuality = 2;
+            renderQuality = RenderQuality::Low;
         }
         break;
     case BE1::AndroidGPUInfo::Processor::PowerVR_RogueGT:
         if (gpuInfo.model >= 7000) {
             if (gpuInfo.model < 7400) {
-                renderQuality = 2;
+                renderQuality = RenderQuality::Low;
             } else if (gpuInfo.model < 7600) {
-                renderQuality = 1;
+                renderQuality = RenderQuality::Medium;
             }
         } else {
-            renderQuality = 2;
+            renderQuality = RenderQuality::Low;
         }
         break;
     case BE1::AndroidGPUInfo::Processor::PowerVR_RogueGE:
@@ -130,19 +138,21 @@ static void InitDisplay(ANativeWindow *window) {
     if (!appInitialized) {
         appInitialized = true;
 
+        RenderQuality::Enum renderQuality = DetermineRenderQuality();
+
         currentWindowWidth = ANativeWindow_getWidth(window);
         currentWindowHeight = ANativeWindow_getHeight(window);
 
-        BE1::gameClient.Init(window, false);
-
-        int renderQuality = DetermineRenderQuality();
         int renderWidth;
         int renderHeight;
 
-        if (renderQuality > 0) {
+        if (renderQuality == RenderQuality::High) {
+            renderWidth = currentWindowWidth;
+            renderHeight = currentWindowHeight;
+        } else {
             if (currentWindowWidth > currentWindowHeight) {
                 // landscape mode
-                if (renderQuality == 1) {
+                if (renderQuality == RenderQuality::Medium) {
                     renderWidth = BE1::Min(1280, currentWindowWidth);
                     renderHeight = BE1::Min(720, currentWindowHeight);
                 } else {
@@ -150,7 +160,7 @@ static void InitDisplay(ANativeWindow *window) {
                     renderHeight = BE1::Min(576, currentWindowHeight);
                 }
             } else {
-                if (renderQuality == 1) {
+                if (renderQuality == RenderQuality::Medium) {
                     renderWidth = BE1::Min(720, currentWindowWidth);
                     renderHeight = BE1::Min(1280, currentWindowHeight);
                 } else {
@@ -158,10 +168,9 @@ static void InitDisplay(ANativeWindow *window) {
                     renderHeight = BE1::Min(1024, currentWindowHeight);
                 }
             }
-        } else {
-            renderWidth = currentWindowWidth;
-            renderHeight = currentWindowHeight;
         }
+
+        BE1::gameClient.Init(window, false);
 
         app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
         app.mainRenderContext->Init(window, renderWidth, renderHeight, DisplayContext, nullptr);

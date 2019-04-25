@@ -359,11 +359,43 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 
 @implementation AppDelegate
 
+struct RenderQuality {
+    enum {
+        High, Medium, Low
+    };
+};
+
+static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type deviceType) {
+    if (BE1::IOSDevice::IsIPhone(deviceType)) {
+        if (deviceType <= BE1::IOSDevice::Type::IPhone5S)
+            return RenderQuality::Low;
+        } else if (deviceType <= BE1::IOSDevice::Type::IPhone7Plus) {
+            return RenderQuality::Medium;
+        } else {
+            return RenderQuality::High;
+        }
+    }
+
+    if (BE1::IOSDevice::IsIPad(deviceType)) {
+        if (deviceType <= BE1::IOSDevice::Type::IPadMini3)
+            return RenderQuality::Low;
+        } else if (deviceType <= BE1::IOSDevice::Type::IPad5) {
+            return RenderQuality::Medium;
+        } else {
+            return RenderQuality::High;
+        }
+    }
+
+    return RenderQuality::Low;
+}
+
 - (void)initInstance {
-    BE1::IOSDevice::Type deviceType = BE1::IOSDevice::GetIOSDeviceType();
+    BE1::IOSDevice::Type::Enum deviceType = BE1::IOSDevice::GetIOSDeviceType();
     if (deviceType == BE1::IOSDevice::IOS_UnknownDevice) {
         assert(0);
     }
+
+    RenderQuality::Enum renderQuality = DetermineRenderQuality(deviceType);
     
     // ----- Core initialization -----
     BE1::Engine::InitParms initParms;
@@ -402,7 +434,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     BE1::Vec2 screenScaleFactor(1.0f, 1.0f);
 
     if (BE1::IOSDevice::IsIPad(deviceType)) {
-        if (deviceType < BE1::IOSDevice::IOS_IPadAir2) {
+        if (deviceType < BE1::IOSDevice::IPadAir2) {
             screenScaleFactor.x = BE1::Min(1280.0f / renderWidth, 1.0f);
             screenScaleFactor.y = BE1::Min(720.0f / renderHeight, 1.0f);
         } else {
