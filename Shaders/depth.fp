@@ -1,4 +1,4 @@
-out HIGHP vec4 o_fragDepth : FRAG_DEPTH;
+out vec4 o_fragColor : FRAG_COLOR;
 
 #ifdef PERFORATED
     in MEDIUMP vec2 v2f_texCoord;
@@ -19,5 +19,6 @@ void main() {
     }
 #endif
 
-    o_fragDepth = gl_FragCoord.z;
+    // Set the color for debugging purposes
+    o_fragColor = vec4(gl_FragCoord.z, 1.0, 1.0, 1.0);
 }
