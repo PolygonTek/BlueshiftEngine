@@ -38,7 +38,7 @@ uniform HIGHP vec2 shadowMapTexelSize;
 
 #define CASCADE_BLEND_SIZE 0.09375 // 0.09375 = 96 / 1024
 
-uniform mat4 shadowCascadeProjMatrix[CSM_COUNT];
+uniform HIGHP mat4 shadowCascadeProjMatrix[CSM_COUNT];
 
 const vec3 cascadeDebugColor[8] = vec3[](
     vec3(1.0, 0.0, 0.0),

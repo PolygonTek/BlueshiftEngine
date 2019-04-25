@@ -30,7 +30,7 @@ out LOWP vec4 v2f_color;
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
-    out vec3 v2f_viewWS;
+    out HIGHP vec3 v2f_viewWS;
 
     #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
         out HIGHP vec4 v2f_tangentToWorldAndPackedWorldPosS;
@@ -83,19 +83,19 @@ uniform HIGHP mat4 lightTextureMatrix;
 uniform bool useShadowMap;
 
 void main() {
-    vec4 positionLS;
-    vec3 normalLS;
+    HIGHP vec4 positionLS;
+    HIGHP vec3 normalLS;
 
 #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-    vec3 tangentLS;
-    vec3 bitangentLS;
+    HIGHP vec3 tangentLS;
+    HIGHP vec3 bitangentLS;
 
     #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-        vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
-        vec4 vTangent = in_tangent * 2.0 - 1.0;
+        HIGHP vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
+        HIGHP vec4 vTangent = in_tangent * 2.0 - 1.0;
     #else
-        vec3 vNormal = in_normal.xyz;
-        vec4 vTangent = in_tangent;
+        HIGHP vec3 vNormal = in_normal.xyz;
+        HIGHP vec4 vTangent = in_tangent;
     #endif
 
     #ifdef GPU_SKINNING
@@ -121,7 +121,7 @@ void main() {
     #endif
 #endif
 
-    vec4 positionWS = vec4(localToWorldMatrix * positionLS, 1.0);
+    HIGHP vec4 positionWS = vec4(localToWorldMatrix * positionLS, 1.0);
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
     v2f_viewWS = viewOrigin.xyz - positionWS.xyz;
