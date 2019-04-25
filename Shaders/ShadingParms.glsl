@@ -2,22 +2,22 @@
 #define SHADING_PARMS_INCLUDED
 
 struct ShadingParms {
-    vec4 diffuse;
-    vec4 specular;
-    LOWP float roughness;
-    LOWP float linearRoughness;
+    MEDIUMP vec4 diffuse;
+    MEDIUMP vec4 specular;
+    MEDIUMP float roughness;
+    MEDIUMP float linearRoughness;
 
-    HIGHP vec3 v; // view vector in world space
-    HIGHP vec3 l; // light vector in world space
-    HIGHP vec3 n; // normal vector in world space
-    HIGHP vec3 s0;
-    HIGHP vec3 s1;
-    LOWP float ndotv;
+    MEDIUMP vec3 v; // view vector in world space
+    MEDIUMP vec3 l; // light vector in world space
+    MEDIUMP vec3 n; // normal vector in world space
+    MEDIUMP vec3 s0;
+    MEDIUMP vec3 s1;
+    MEDIUMP float ndotv;
     MEDIUMP vec2 preDFG;
     HIGHP vec3 energyCompensation;
 
 #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
-    MEDIUMP mat3 tagentToWorldMatrix;
+    HIGHP mat3 tagentToWorldMatrix;
 #endif
 
 #ifdef LEGACY_PHONG_LIGHTING
@@ -25,20 +25,20 @@ struct ShadingParms {
 #endif
 
 #if _ANISO != 0
-    HIGHP vec3 anisotropicT;
-    HIGHP vec3 anisotropicB;
+    MEDIUMP vec3 anisotropicT;
+    MEDIUMP vec3 anisotropicB;
     MEDIUMP float anisotropy;
 #endif
 
 #if _CLEARCOAT != 0
-    LOWP float clearCoat;
-    LOWP float clearCoatRoughness;
-    LOWP float clearCoatLinearRoughness;
+    MEDIUMP float clearCoat;
+    MEDIUMP float clearCoatRoughness;
+    MEDIUMP float clearCoatLinearRoughness;
     MEDIUMP vec3 clearCoatN;
 #endif
 
 #if _OCC != 0
-    LOWP float ambientOcclusion;
+    MEDIUMP float ambientOcclusion;
 #endif
 
 #if _EMISSION != 0
@@ -57,10 +57,10 @@ void PrepareShadingParms(vec4 albedo) {
     shading.tagentToWorldMatrix[2] = normalize(v2f_tangentToWorldAndPackedWorldPosR.xyz);
 
     #if _NORMAL != 0
-        vec3 normalTS = normalize(GetNormal(normalMap, baseTc));
+        MEDIUMP vec3 normalTS = normalize(GetNormal(normalMap, baseTc));
 
         #if _NORMAL == 2
-            vec3 detailNormalTS = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
+            MEDIUMP vec3 detailNormalTS = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
             normalTS = normalize(normalTS + detailNormalTS);
         #endif
 
@@ -81,21 +81,21 @@ void PrepareShadingParms(vec4 albedo) {
 
 #if defined(STANDARD_METALLIC_LIGHTING)
     #if _METALLIC == 0
-        vec4 metallic = vec4(1.0, 0.0, 0.0, 0.0);
+        MEDIUMP vec4 metallic = vec4(1.0, 0.0, 0.0, 0.0);
     #elif _METALLIC >= 1
-        vec4 metallic = tex2D(metallicMap, baseTc);
+        MEDIUMP vec4 metallic = tex2D(metallicMap, baseTc);
     #endif
 
     #if _METALLIC == 0
-        float metalness = metallicScale;
+        MEDIUMP float metalness = metallicScale;
     #elif _METALLIC == 1
-        float metalness = metallic.r * metallicScale;
+        MEDIUMP float metalness = metallic.r * metallicScale;
     #elif _METALLIC == 2
-        float metalness = metallic.g * metallicScale;
+        MEDIUMP float metalness = metallic.g * metallicScale;
     #elif _METALLIC == 3
-        float metalness = metallic.b * metallicScale;
+        MEDIUMP float metalness = metallic.b * metallicScale;
     #elif _METALLIC == 4
-        float metalness = metallic.a * metallicScale;
+        MEDIUMP float metalness = metallic.a * metallicScale;
     #endif
 
     #if _ROUGHNESS == 0
@@ -118,9 +118,9 @@ void PrepareShadingParms(vec4 albedo) {
         shading.anisotropy = anisotropy;
 
         #if _ANISO == 1
-            vec3 anisotropyDir = vec3(1.0, 0.0, 0.0);
+            MEDIUMP vec3 anisotropyDir = vec3(1.0, 0.0, 0.0);
         #elif _ANISO == 2
-            vec3 anisotropyDir = normalize(GetNormal(anisotropyMap, baseTc));
+            MEDIUMP vec3 anisotropyDir = normalize(GetNormal(anisotropyMap, baseTc));
         #endif
     #endif
 
@@ -181,22 +181,22 @@ void PrepareShadingParms(vec4 albedo) {
     #endif
 
     #if _GLOSS == 0
-        float glossiness = glossScale;
+        MEDIUMP float glossiness = glossScale;
     #elif _GLOSS == 1
-        float glossiness = albedo.a * glossScale;
+        MEDIUMP float glossiness = albedo.a * glossScale;
     #elif _GLOSS == 2
-        float glossiness = shading.specular.a * glossScale;
+        MEDIUMP float glossiness = shading.specular.a * glossScale;
     #elif _GLOSS == 3
-        float glossiness = tex2D(glossMap, baseTc).r * glossScale;
+        MEDIUMP float glossiness = tex2D(glossMap, baseTc).r * glossScale;
     #endif
 
     #if _ANISO != 0
         shading.anisotropy = anisotropy;
 
         #if _ANISO == 1
-            vec3 anisotropyDir = vec3(1.0, 0.0, 0.0);
+            MEDIUMP vec3 anisotropyDir = vec3(1.0, 0.0, 0.0);
         #elif _ANISO == 2
-            vec3 anisotropyDir = normalize(GetNormal(anisotropyMap, baseTc));
+            MEDIUMP vec3 anisotropyDir = normalize(GetNormal(anisotropyMap, baseTc));
         #endif
     #endif
 
@@ -241,13 +241,13 @@ void PrepareShadingParms(vec4 albedo) {
     #endif
 
     #if _GLOSS == 0
-        float glossiness = glossScale;
+        MEDIUMP float glossiness = glossScale;
     #elif _GLOSS == 1
-        float glossiness = albedo.a * glossScale;
+        MEDIUMP float glossiness = albedo.a * glossScale;
     #elif _GLOSS == 2
-        float glossiness = shading.specular.a * glossScale;
+        MEDIUMP float glossiness = shading.specular.a * glossScale;
     #elif _GLOSS == 3
-        float glossiness = tex2D(glossMap, baseTc).r * glossScale;
+        MEDIUMP float glossiness = tex2D(glossMap, baseTc).r * glossScale;
     #endif
 
     #if _OCC == 1
@@ -302,7 +302,7 @@ void PrepareShadingParms(vec4 albedo) {
         shading.clearCoatLinearRoughness = shading.clearCoatRoughness * shading.clearCoatRoughness;
 
         #if _CC_NORMAL == 1
-            vec3 tangentClearCoatN = normalize(GetNormal(clearCoatNormalMap, baseTc));
+            MEDIUMP vec3 tangentClearCoatN = normalize(GetNormal(clearCoatNormalMap, baseTc));
 
             // Convert coordinates from tangent space to GL world space
             shading.clearCoatN = shading.tagentToWorldMatrix * tangentClearCoatN;

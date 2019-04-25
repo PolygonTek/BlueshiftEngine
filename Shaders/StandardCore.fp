@@ -18,7 +18,7 @@ in LOWP vec4 v2f_color;
 #endif
 
 #if _NORMAL == 0
-    in LOWP vec3 v2f_normalWS;
+    in MEDIUMP vec3 v2f_normalWS;
 #endif
 
 #if _PARALLAX
@@ -70,7 +70,7 @@ uniform LOWP float wrappedDiffuse;
 #endif
 
 #if defined(STANDARD_METALLIC_LIGHTING)
-    uniform LOWP float metallicScale;
+    uniform MEDIUMP float metallicScale;
     #if _METALLIC >= 1
         uniform sampler2D metallicMap;
     #endif
@@ -86,26 +86,26 @@ uniform LOWP float wrappedDiffuse;
         uniform sampler2D specularMap;
     #endif
 
-    uniform LOWP float glossScale;
+    uniform MEDIUMP float glossScale;
     #if _GLOSS == 3
         uniform sampler2D glossMap;
     #endif
 #endif
 
 #if _ANISO != 0
-    uniform LOWP float anisotropy;
+    uniform MEDIUMP float anisotropy;
     #if _ANISO == 2
         uniform sampler2D anisotropyMap;
     #endif
 #endif
 
 #if _CLEARCOAT != 0
-    uniform LOWP float clearCoatScale;
+    uniform MEDIUMP float clearCoatScale;
     #if _CLEARCOAT == 2
         uniform sampler2D clearCoatMap;
     #endif
 
-    uniform LOWP float clearCoatRoughnessScale;
+    uniform MEDIUMP float clearCoatRoughnessScale;
     #if _CC_ROUGHNESS == 2
         uniform sampler2D clearCoatRoughnessMap;
     #endif
@@ -117,7 +117,7 @@ uniform LOWP float wrappedDiffuse;
 
 #if _PARALLAX != 0
     uniform sampler2D heightMap;
-    uniform LOWP float heightScale;
+    uniform MEDIUMP float heightScale;
 #endif
 
 #if _OCC != 0
@@ -158,23 +158,23 @@ uniform LOWP float wrappedDiffuse;
 // Indirect lighting parameters
 //
 #if defined(INDIRECT_LIGHTING)
-    uniform sampler2D prefilteredDfgMap;
+    uniform MEDIUMP sampler2D prefilteredDfgMap;
 
-    uniform samplerCube probe0DiffuseCubeMap;
-    uniform samplerCube probe0SpecularCubeMap;
+    uniform MEDIUMP samplerCube probe0DiffuseCubeMap;
+    uniform MEDIUMP samplerCube probe0SpecularCubeMap;
     uniform LOWP float probe0SpecularCubeMapMaxMipLevel;
     uniform HIGHP vec4 probe0Position;
     uniform HIGHP vec3 probe0Mins;
     uniform HIGHP vec3 probe0Maxs;
 
-    uniform samplerCube probe1DiffuseCubeMap;
-    uniform samplerCube probe1SpecularCubeMap;
+    uniform MEDIUMP samplerCube probe1DiffuseCubeMap;
+    uniform MEDIUMP samplerCube probe1SpecularCubeMap;
     uniform LOWP float probe1SpecularCubeMapMaxMipLevel;
     uniform HIGHP vec4 probe1Position;
     uniform HIGHP vec3 probe1Mins;
     uniform HIGHP vec3 probe1Maxs;
 
-    uniform LOWP float probeLerp;
+    uniform MEDIUMP float probeLerp;
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
