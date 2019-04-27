@@ -1,7 +1,8 @@
 Blueshift Game Engine
 =======================
 
-[![License](https://img.shields.io/badge/Licence-Apache2.0-blue.svg)]()
+[![License](https://img.shields.io/badge/Licence-Apache2.0-blue.svg)](LICENSE)
+[![LoC](https://tokei.rs/b1/github/PolygonTek/BlueshiftEngine)](https://github.com/egorodet/MethaneKit)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/9m56bx55uxe88rgs/branch/master?svg=true)](https://ci.appveyor.com/project/juhl48312/blueshiftengine/branch/master)
 
 Blueshift is a cross-platform 3D game engine implemented in C++. it's free, open-source, and works on Windows, macOS, iOS, and Android.
@@ -27,6 +28,7 @@ Features
   * HDR rendering and filmic tone mapping
   * Post-processing
   * PBR rendering
+  * Environment probes
   * Physics using [Bullet](http://www.bulletphysics.org/)
   * Vehicle physics
   * Scripting using [Lua](https://www.lua.org/) and [LuaJIT](https://luajit.org/)
