@@ -9,4 +9,4 @@ build:
   parallel: true
   verbosity: minimal
 artifacts:
-- path: Library/*
+- path: Library/Win64/Release/*.lib
