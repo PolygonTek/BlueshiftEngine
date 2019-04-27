@@ -19,6 +19,5 @@ void main() {
     }
 #endif
 
-    // Set the color for debugging purposes
-    o_fragColor = vec4(gl_FragCoord.z, 1.0, 1.0, 1.0);
+    o_fragColor = vec4(1.0, 1.0, 1.0, 1.0);
 }

@@ -500,8 +500,8 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
         headerText += "precision highp float;\n";
         headerText += "precision highp int;\n";
     } else {
-        headerText += "precision mediump float;\n";
-        headerText += "precision mediump int;\n";
+        headerText += "precision highp float;\n";
+        headerText += "precision highp int;\n";
         headerText += "precision lowp sampler2D;\n";
         headerText += "#ifdef TEXTURE_RECT\n";
         headerText += "precision lowp sampler2DRect;\n";

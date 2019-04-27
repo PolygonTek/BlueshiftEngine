@@ -33,7 +33,7 @@ uniform HIGHP mat4 viewProjectionMatrix;
 uniform HIGHP mat4 modelViewProjectionMatrix;
 
 void main() {
-    vec4 localPos;
+    HIGHP vec4 localPos;
 
 #ifdef PERFORATED
     v2f_texCoord.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
