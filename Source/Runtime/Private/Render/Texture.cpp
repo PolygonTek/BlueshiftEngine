@@ -130,7 +130,7 @@ void Texture::CreateDefaultTexture(int size, int flags) {
 
     for (int y = 0; y < size; y++) {
         for (int x = 0; x < size; x++) {
-            if (x == 0 || x == size-1 || y == 0 || y == size-1) {
+            if (x == 0 || x == size - 1 || y == 0 || y == size - 1) {
                 dst[3 * (y*size + x) + 0] = (byte)(0);
                 dst[3 * (y*size + x) + 1] = (byte)(0);
                 dst[3 * (y*size + x) + 2] = (byte)(0);
@@ -160,7 +160,7 @@ void Texture::CreateZeroClampTexture(int size, int flags) {
 
     for (int y = 0; y < size; y++) {
         for (int x = 0; x < size; x++) {
-            byte c = (byte)((x==0 || x==size-1 || y==0 || y==size-1) ? 0 : 255);
+            byte c = (byte)((x == 0 || x == size - 1 || y == 0 || y == size - 1) ? 0 : 255);
             dst[(y*size + x) * 2 + 0] = c;
             dst[(y*size + x) * 2 + 1] = c;
         }
@@ -181,12 +181,12 @@ void Texture::CreateFlatNormalTexture(int size, int flags) {
     Image image;
     image.Create2D(size, size, 1, Image::Format::RGB_8_8_8, nullptr, Image::Flag::LinearSpace);
     byte *dst = image.GetPixels();
-        
+
     for (int y = 0; y < size; y++) {
         for (int x = 0; x < size; x++) {
-            dst[(y*size + x)*3 + 0] = 127;
-            dst[(y*size + x)*3 + 1] = 127;
-            dst[(y*size + x)*3 + 2] = 255;
+            dst[(y*size + x) * 3 + 0] = 127;
+            dst[(y*size + x) * 3 + 1] = 127;
+            dst[(y*size + x) * 3 + 2] = 255;
         }
     }
 
@@ -211,7 +211,7 @@ void Texture::CreateDefaultCubeMapTexture(int size, int flags) {
     for (int i = 0; i < 6; i++) {
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
-                dst[y*size + x] = (byte)((x==0 || x==size-1 || y==0 || y==size-1) ? 255 : 0);
+                dst[y*size + x] = (byte)((x == 0 || x == size - 1 || y == 0 || y == size - 1) ? 255 : 0);
             }
         }
 
@@ -295,7 +295,7 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
 
 void Texture::CreateCubicNormalCubeMapTexture(int size, int flags) {
     char faceNormal[6][3];
-    
+
     faceNormal[0][0] = 127;
     faceNormal[0][1] = 0;
     faceNormal[0][2] = 0;
@@ -434,11 +434,11 @@ void Texture::CreateRandomRotMatTexture(int size, int flags) {
 
     Random random;
     random.SetSeed(23119);
-    
+
     for (int y = 0; y < size; y++) {
         for (int x = 0; x < size; x++) {
             Math::SinCos(random.RandomFloat() * Math::TwoPi, s, c);
-                
+
             dst[4 * (y * 64 + x) + 0] = ClampByte((+c + 1.0f) * 0.5f * 255 + 0.5f);
             dst[4 * (y * 64 + x) + 1] = ClampByte((-s + 1.0f) * 0.5f * 255 + 0.5f);
             dst[4 * (y * 64 + x) + 2] = ClampByte((+s + 1.0f) * 0.5f * 255 + 0.5f);
@@ -514,10 +514,10 @@ void Texture::Upload(const Image *srcImage) {
         forceFormat = srcImage->GetFormat();
     }
 
-    bool useNormalMap   = (flags & Flag::NormalMap) ? true : false;
+    bool useNormalMap = (flags & Flag::NormalMap) ? true : false;
     bool useCompression = !(flags & Flag::NoCompression) ? TextureManager::texture_useCompression.GetBool() : false;
-    bool useNPOT        = (flags & Flag::NonPowerOfTwo) ? true : false;
-    bool isSRGB         = ((flags & Flag::SRGBColorSpace) && TextureManager::texture_sRGB.GetBool()) ? true : false;
+    bool useNPOT = (flags & Flag::NonPowerOfTwo) ? true : false;
+    bool isSRGB = ((flags & Flag::SRGBColorSpace) && TextureManager::texture_sRGB.GetBool()) ? true : false;
 
     Image::Format::Enum dstFormat;
     if (forceFormat != Image::Format::Unknown) {
@@ -525,12 +525,12 @@ void Texture::Upload(const Image *srcImage) {
     } else {
         rhi.AdjustTextureFormat(type, useCompression, useNormalMap, srcImage->GetFormat(), &dstFormat);
     }
-    
-    this->srcWidth      = srcImage->GetWidth();
-    this->srcHeight     = srcImage->GetHeight();
-    this->srcDepth      = srcImage->GetDepth();
-    this->numSlices     = srcImage->NumSlices();
-    
+
+    this->srcWidth = srcImage->GetWidth();
+    this->srcHeight = srcImage->GetHeight();
+    this->srcDepth = srcImage->GetDepth();
+    this->numSlices = srcImage->NumSlices();
+
     int dstWidth, dstHeight, dstDepth;
     rhi.AdjustTextureSize(type, useNPOT, srcWidth, srcHeight, srcDepth, &dstWidth, &dstHeight, &dstDepth);
 
@@ -541,14 +541,14 @@ void Texture::Upload(const Image *srcImage) {
         dstHeight = Max(dstHeight >> mipLevel, 1);
         dstDepth = Max(dstDepth >> mipLevel, 1);
     }
-    
+
     // Can't upload texels for depth texture
     if (!srcImage->IsEmpty() && Image::IsDepthFormat(srcImage->GetFormat())) {
         BE_FATALERROR("Texture::Upload: Couldn't upload texel data of depth texture");
     }
-    
+
     Image scaledImage;
-    
+
     if (!srcImage->IsEmpty()) {
         if (srcWidth != dstWidth || srcHeight != dstHeight) {
             srcImage->Resize(dstWidth, dstHeight, Image::ResampleFilter::Bicubic, scaledImage);
@@ -556,14 +556,14 @@ void Texture::Upload(const Image *srcImage) {
         }
     }
 
-    this->format        = dstFormat;
-    this->width         = dstWidth;
-    this->height        = dstHeight;
-    this->depth         = dstDepth;
-    
-    this->hasMipmaps    = !(flags & Flag::NoMipmaps);
-    this->permanence    = !!(flags & Flag::Permanence);
-    this->addressMode   = TextureFlagsToAddressMode(flags);
+    this->format = dstFormat;
+    this->width = dstWidth;
+    this->height = dstHeight;
+    this->depth = dstDepth;
+
+    this->hasMipmaps = !(flags & Flag::NoMipmaps);
+    this->permanence = !!(flags & Flag::Permanence);
+    this->addressMode = TextureFlagsToAddressMode(flags);
 
     rhi.BindTexture(textureHandle);
 
@@ -651,7 +651,7 @@ bool Texture::Load(const char *filename, int flags) {
             BE_LOG("Loading texture '%s'...\n", filename2.c_str());
 
             images[i].Load(filename2.c_str());
-            
+
             if (images[i].IsEmpty()) {
                 BE_WARNLOG("Couldn't load texture \"%s\"\n", filename2.c_str());
                 return false;
@@ -666,7 +666,7 @@ bool Texture::Load(const char *filename, int flags) {
 
         Image image;
         image.Load(filename);
-        
+
         if (image.IsEmpty()) {
             BE_WARNLOG("Couldn't load texture \"%s\"\n", filename);
             return false;

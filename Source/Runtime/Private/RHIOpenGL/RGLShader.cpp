@@ -42,7 +42,7 @@ struct InOutSemantic {
 
 static const InOutSemantic inOutSemantics[] = {
     // vertex shader input semantics
-    { 0, RHI::VertexElement::Usage::Position, "POSITION" }, 
+    { 0, RHI::VertexElement::Usage::Position, "POSITION" },
     { 1, RHI::VertexElement::Usage::Normal, "NORMAL" },
     { 2, RHI::VertexElement::Usage::Color, "COLOR" },
     { 3, RHI::VertexElement::Usage::SecondaryColor, "SECONDARY_COLOR" },
@@ -340,7 +340,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
             processedText += ";";
             continue;
         }
-        
+
         if (token == "out" && parentheses == 0) {
             processedText += (lexer.LinesCrossed() > 0) ? newline : (lexer.WhiteSpaceBeforeToken() > 0 ? " " : "");
 
@@ -383,7 +383,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
             lexer.SkipUntilString(";");
 
             processedText += "uniform ";
-                
+
             if (!uniform.precision.IsEmpty()) {
                 processedText += uniform.precision + " ";
             }
@@ -436,7 +436,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
                 }
             }
         }
-    
+
         processedText += (lexer.LinesCrossed() > 0) ? newline : (lexer.WhiteSpaceBeforeToken() > 0 ? " " : "");
         processedText += token;
     }
@@ -447,7 +447,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
     static char versionString[32];
     static char versionDefineString[32];
     static bool first = true;
-    
+
     if (first) {
         Str::snPrintf(versionString, COUNT_OF(versionString), "#version %s\n", OpenGL::GLSL_VERSION_STRING);
         Str::snPrintf(versionDefineString, COUNT_OF(versionDefineString), "#define GLSL_VERSION %d\n", OpenGL::GLSL_VERSION);
@@ -455,7 +455,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
     }
     headerText += versionString;
     headerText += versionDefineString;
-    
+
 #if defined(GL_EXT_gpu_shader4) || defined(GL_ARB_gpu_shader5)
     if (gglext._GL_ARB_gpu_shader5) {
         headerText += "#define GPU_SHADER 5\n";
@@ -488,7 +488,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
         //headerText += "#extension GL_EXT_shader_texture_lod : enable\n";
     }
 #endif
-    
+
     headerText += "#ifdef GL_ES\n";
 
     headerText += "#define LOWP lowp\n";
@@ -519,7 +519,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
     headerText += "#define LOWP\n";
     headerText += "#define MEDIUMP\n";
     headerText += "#define HIGHP\n";
-    
+
     headerText += "#endif\n";
 
     Str outputText;
@@ -579,7 +579,7 @@ static bool IsValidSamplerType(GLenum type) {
     case GL_SAMPLER_2D_ARRAY_SHADOW:
         return true;
     }
-    
+
     return false;
 }
 
@@ -588,7 +588,7 @@ static bool VerifyCompiledShader(GLuint shaderObject, const char *shaderName, co
     GLint status;
 
     gglGetShaderiv(shaderObject, GL_COMPILE_STATUS, &status);
-    
+
     if (!status) {
         gglGetShaderiv(shaderObject, GL_INFO_LOG_LENGTH, &infoLogLength);
 
@@ -692,13 +692,13 @@ static bool CompileAndLinkProgram(const char *name, const char *vsText, const Ar
         }
 #endif
     }
-    
+
     if (OpenGL::SupportsProgramBinary()) {
         gglProgramParameteri(programObject, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
     }
-    
+
     gglLinkProgram(programObject);
-    
+
     // delete shader objects after linking GLSL program to save memory
     if (vsText && vsText[0]) {
         gglDeleteShader(vs);
@@ -721,9 +721,9 @@ static void CacheProgram(const char *name, const uint32_t hash, GLuint programOb
 
     if (binaryLength > 0) {
         byte *programBinary = (byte *)Mem_Alloc16(binaryLength + sizeof(uint32_t) + sizeof(GLenum));
-        
+
         *(uint32_t *)programBinary = hash;
-        gglGetProgramBinary(programObject, binaryLength, nullptr, (GLenum *)(programBinary + sizeof(uint32_t)), programBinary + sizeof(uint32_t) + sizeof(GLenum));        
+        gglGetProgramBinary(programObject, binaryLength, nullptr, (GLenum *)(programBinary + sizeof(uint32_t)), programBinary + sizeof(uint32_t) + sizeof(GLenum));
 
         Str filename = GLShader::programCacheDir;
         filename.AppendPath(name);
@@ -817,7 +817,7 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
         if (OpenGL::SupportsProgramBinary()) {
             CacheProgram(name, programHash, programObject);
         }
-    } 
+    }
 
     GLint uniformCount, uniformMaxNameLength;
     gglGetProgramiv(programObject, GL_ACTIVE_UNIFORMS, &uniformCount);
@@ -826,7 +826,7 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
     GLint uniformBlockCount, uniformBlockMaxNameLength;
     gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_BLOCKS, &uniformBlockCount);
     gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH, &uniformBlockMaxNameLength);
-    
+
     char *uniformName = (char *)_alloca(uniformMaxNameLength);
     char *uniformBlockName = (char *)_alloca(uniformBlockMaxNameLength);
 
@@ -841,7 +841,7 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
     int numSamplers = 0;
     int numUniforms = 0;
     int numUniformBlocks = 0;
-    
+
     gglUseProgram(programObject);
 
     for (int uniformIndex = 0; uniformIndex < uniformCount; uniformIndex++) {
@@ -925,7 +925,7 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
 
         numUniformBlocks++;
     }
-    
+
     gglUseProgram(0);
 
     GLSampler *samplers = nullptr;
@@ -958,13 +958,13 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
 
     GLShader *shader = new GLShader;
     Str::Copynz(shader->name, name, COUNT_OF(shader->name));
-    shader->programObject       = programObject;
-    shader->numSamplers         = numSamplers;
-    shader->samplers            = samplers;
-    shader->numUniforms         = numUniforms;
-    shader->uniforms            = uniforms;
-    shader->numUniformBlocks    = numUniformBlocks;
-    shader->uniformBlocks       = uniformBlocks;
+    shader->programObject = programObject;
+    shader->numSamplers = numSamplers;
+    shader->samplers = samplers;
+    shader->numUniforms = numUniforms;
+    shader->uniforms = uniforms;
+    shader->numUniformBlocks = numUniformBlocks;
+    shader->uniformBlocks = uniformBlocks;
 
     int handle = shaderList.FindNull();
     if (handle == -1) {

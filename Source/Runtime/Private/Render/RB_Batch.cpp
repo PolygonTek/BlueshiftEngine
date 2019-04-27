@@ -40,7 +40,7 @@ void Batch::Init() {
 
     if (renderGlobal.instancingMethod == Mesh::InstancingMethod::InstancedArrays) {
         indirectBuffer = rhi.CreateBuffer(RHI::BufferType::DrawIndirect, RHI::BufferUsage::Stream, 0);
-        
+
         maxInstancingCount = r_maxInstancingCount.GetInteger();
 
         if (maxInstancingCount > 0) {
@@ -48,7 +48,7 @@ void Batch::Init() {
         }
     } else if (renderGlobal.instancingMethod == Mesh::InstancingMethod::UniformBuffer) {
         indirectBuffer = rhi.CreateBuffer(RHI::BufferType::DrawIndirect, RHI::BufferUsage::Stream, 0);
-        
+
         maxInstancingCount = Min(r_maxInstancingCount.GetInteger(), rhi.HWLimit().maxUniformBlockSize / renderGlobal.instanceBufferOffsetAlignment);
 
         if (maxInstancingCount > 0) {
@@ -117,7 +117,7 @@ void Batch::AddInstance(const DrawSurf *drawSurf) {
         indirectCommands[numIndirectCommands].baseInstance = drawSurf->space->instanceIndex;
         numIndirectCommands++;
         numInstances++;
-    } else { 
+    } else {
         //assert(renderGlobal.instancingMethod == Mesh::InstancingMethod::UniformBuffer);
         if (instanceStartIndex < 0) {
             instanceStartIndex = drawSurf->space->instanceIndex;
@@ -136,8 +136,8 @@ void Batch::AddInstance(const DrawSurf *drawSurf) {
 }
 
 void Batch::DrawSubMesh(SubMesh *subMesh) {
-    if (subMesh->GetType() == Mesh::Type::Reference || 
-        subMesh->GetType() == Mesh::Type::Static || 
+    if (subMesh->GetType() == Mesh::Type::Reference ||
+        subMesh->GetType() == Mesh::Type::Static ||
         subMesh->GetType() == Mesh::Type::Skinned) {
         DrawStaticSubMesh(subMesh);
     } else {
@@ -245,7 +245,7 @@ void Batch::Flush() {
         Flush_DepthPass();
         break;
     case Flush::Shadow:
-        Flush_ShadowDepthPass(); 
+        Flush_ShadowDepthPass();
         break;
     case Flush::Base:
         Flush_BasePass();
@@ -254,13 +254,13 @@ void Batch::Flush() {
         Flush_LitPass();
         break;
     case Flush::Unlit:
-        Flush_UnlitPass(); 
+        Flush_UnlitPass();
         break;
     case Flush::Velocity:
-        Flush_VelocityMapPass(); 
+        Flush_VelocityMapPass();
         break;
     case Flush::Final:
-        Flush_FinalPass(); 
+        Flush_FinalPass();
         break;
     case Flush::Wire:
         Flush_WirePass();
@@ -299,7 +299,7 @@ static Vec3 MakeVec3Id(uint32_t id) {
     const uint32_t g = Max<uint32_t>(id >> 8, 0);
     id -= (g << 8);
     const uint32_t r = Max<uint32_t>(id, 0);
-    
+
     return Vec3((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f);
 }
 
@@ -325,10 +325,10 @@ void Batch::Flush_SelectionPass() {
 
     rhi.BindBuffer(RHI::BufferType::Vertex, vertexBuffer);
 
-    int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ? 
+    int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ?
         VertexFormat::Type::GenericXyzSt : VertexFormat::Type::GenericXyz;
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
-        
+
     int stateBits = mtrlPass->stateBits | RHI::DepthWrite | RHI::ColorWrite | RHI::DF_LEqual;
     stateBits &= ~RHI::MaskBF;
 
@@ -372,7 +372,7 @@ void Batch::Flush_DepthPass() {
 
     rhi.BindBuffer(RHI::BufferType::Vertex, vertexBuffer);
 
-    int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ? 
+    int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ?
         VertexFormat::Type::GenericXyzStColor : VertexFormat::Type::GenericXyz;
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
 
@@ -407,10 +407,10 @@ void Batch::Flush_ShadowDepthPass() {
     }
 
     rhi.SetCullFace(mtrlPass->cullType);
-    
+
     rhi.BindBuffer(RHI::BufferType::Vertex, vertexBuffer);
 
-    int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ? 
+    int vertexFormatIndex = (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) ?
         VertexFormat::Type::GenericXyzSt : VertexFormat::Type::GenericXyz;
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
 
@@ -507,7 +507,7 @@ void Batch::Flush_LitPass() {
     }
 
     rhi.SetCullFace(mtrlPass->cullType);
- 
+
     rhi.BindBuffer(RHI::BufferType::Vertex, vertexBuffer);
 
     int vertexFormatIndex = mtrlPass->vertexColorMode != Material::VertexColorMode::Ignore ?
@@ -626,7 +626,7 @@ void Batch::DrawDebugWireframe(int mode, const Color4 &rgba) const {
     if (mode == RenderObject::WireframeMode::ShowNone) {
         mode = RenderObject::WireframeMode::ShowVisibleFront;
     }
-    
+
     switch (mode) {
     case RenderObject::WireframeMode::ShowVisibleFront:
         rhi.SetStateBits(RHI::ColorWrite | RHI::DF_LEqual | RHI::PM_Wireframe | blendState);
@@ -640,7 +640,7 @@ void Batch::DrawDebugWireframe(int mode, const Color4 &rgba) const {
     case RenderObject::WireframeMode::ShowAllFrontAndBack:
         rhi.SetStateBits(RHI::ColorWrite | RHI::DF_Always | RHI::PM_Wireframe | blendState);
         rhi.SetCullFace(RHI::CullType::None);
-        break;  
+        break;
     }
 
     RenderColor(mtrlPass, rgba);
@@ -769,18 +769,18 @@ void RenderBackEnd::DrawDebugTangentSpace(int tangentIndex) const {
     rhi.SetStateBits(ColorWrite | DF_LEqual);
 
     rhi.SetCullFace((bglCullType_t)m_material->m_cullType);
-    
+
     g_rsd.showTangentSpaceProg->Bind();
     g_rsd.showTangentSpaceProg->SetParameter1i("tangentIndex", tangentIndex);
 
     GL_SelectTexture(0);
     GL_ArrayOffset(BGL_TEXTURE_COORD_ARRAY, 4, BGL_FLOAT, false, sizeof(cDrawVert), OFFSET_OF(cDrawVert, tangent));
-    
+
     bglEnableClientState(GL_NORMAL_ARRAY);
     GL_ArrayOffset(BGL_NORMAL_ARRAY, 3, BGL_FLOAT, false, sizeof(cDrawVert), OFFSET_OF(cDrawVert, normal));
 
     GL_ArrayOffset(BGL_VERTEX_ARRAY, 3, BGL_FLOAT, false, sizeof(cDrawVert), 0);
-    
+
     DrawPrimitives();
 }
 
@@ -855,7 +855,7 @@ void RenderBackEnd::RenderFogSurface(const volumeFog_t *fog) {
         }
 
         st[i][1] = 1.0f;//-dist2 / fogMaterial->m_fogDistance;
-    }	
+    }
 
     // NOTE: 이전 패스가 있다면 버텍스 배열을 지정할 필요는 없다
     //bglVertexPointer(3, GL_FLOAT, 0, m_drawBuffer.xyz);
@@ -927,7 +927,7 @@ void RenderBackEnd::ModifyColorsForFog(const stage_t *pass) {
         }
 
         // 알파 값을 이용한다면 버텍스 알파에 곱한다
-        if ((material->state & RM_STATE_BS_SRC_ALPHA) == RM_STATE_BS_SRC_ALPHA || 
+        if ((material->state & RM_STATE_BS_SRC_ALPHA) == RM_STATE_BS_SRC_ALPHA ||
             (material->state & RM_STATE_BS_ONE_MINUS_SRC_ALPHA) == RM_STATE_BS_ONE_MINUS_SRC_ALPHA) {
             m_drawBuffer.colors[i][3] *= c;
         } else {

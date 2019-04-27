@@ -52,7 +52,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
         bool clippingFarMatch = state.clippingFar == stateDef->clippingFar;
         bool originMatch = state.origin == stateDef->origin;
 
-        if (!resolutionMatch || !useHDRMatch || !clearMethodMatch || (stateDef->clearMethod == ClearMethod::Color && !clearColorMatch) || 
+        if (!resolutionMatch || !useHDRMatch || !clearMethodMatch || (stateDef->clearMethod == ClearMethod::Color && !clearColorMatch) ||
             !clippingNearMatch || !clippingFarMatch || !originMatch) {
             needToRefresh = true;
         }
@@ -146,9 +146,9 @@ void EnvProbeJob::RevalidateDiffuseProbeRT(bool clearToBlack) {
     Image::Format::Enum format = envProbe->state.useHDR ? Image::Format::RGB_11F_11F_10F : Image::Format::RGB_8_8_8;
 
     // Recreate diffuse probe texture if it need to.
-    if (Image::IsCompressed(envProbe->diffuseProbeTexture->GetFormat()) || 
+    if (Image::IsCompressed(envProbe->diffuseProbeTexture->GetFormat()) ||
         envProbe->diffuseProbeTexture->GetFormat() != format) {
-        envProbe->diffuseProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, 1, format, 
+        envProbe->diffuseProbeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, 1, format,
             Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
     }
 
@@ -227,7 +227,7 @@ void EnvProbeJob::RevalidateEnvProbeTexture() {
     if (!envProbe->envProbeTexture) {
         envProbe->envProbeTexture = textureManager.AllocTexture(va("EnvProbe-%s", envProbe->state.guid.ToString()));
     }
-    
+
     // Recreate env probe texture to use when refreshing specular probe texture
     if (size != envProbe->envProbeTexture->GetWidth() ||
         envProbe->envProbeTexture->GetFormat() != format) {

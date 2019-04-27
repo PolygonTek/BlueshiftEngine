@@ -44,7 +44,7 @@ static const engineShader_t originalShaderList[] = {
 
     { "Shaders/fogLight" },
     { "Shaders/blendLight" },
-    
+
     { "Shaders/postObjectMotionBlur" },
     { "Shaders/postCameraMotionBlur" },
     { "Shaders/PassThru" },
@@ -166,7 +166,7 @@ void ShaderManager::Shutdown() {
     for (int i = 0; i < shaderHashMap.Count(); i++) {
         const auto *entry = shaderManager.shaderHashMap.GetByIndex(i);
         Shader *shader = entry->second;
-        
+
         shader->Purge();
     }
 
@@ -234,7 +234,7 @@ void ShaderManager::InitGlobalDefines() {
     shaderManager.AddGlobalHeader(va("#define TONE_MAPPING_OPERATOR %i\n", r_HDR_toneMapOp.GetInteger()));
 
     shaderManager.AddGlobalHeader(va("#define SHADOW_MAP_QUALITY %i\n", r_shadowMapQuality.GetInteger()));
-    
+
     int maxShaderJoints = (rhi.HWLimit().maxVertexUniformComponents - 256) / (4 * 3);
     shaderManager.AddGlobalHeader(va("#define MAX_SHADER_JOINTSX3 %i\n", maxShaderJoints * 3));
 
