@@ -25,6 +25,9 @@ EnvProbe::EnvProbe(RenderWorld *renderWorld, int index) {
 }
 
 EnvProbe::~EnvProbe() {
+    if (envProbeTexture) {
+        textureManager.ReleaseTexture(envProbeTexture, true);
+    }
     if (diffuseProbeTexture) {
         textureManager.ReleaseTexture(diffuseProbeTexture, true);
     }
@@ -303,7 +306,7 @@ bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing::Enum timeSlicing) {
         RevalidateDiffuseProbeRT(envProbe->bounces == 0);
 
         // Generate diffuse convolution cube map using environment cubemap.
-        renderSystem.GenerateIrradianceEnvCubeRT(envProbe->specularProbeTexture, envProbe->diffuseProbeRT);
+        renderSystem.GenerateIrradianceEnvCubeRT(envProbe->envProbeTexture, envProbe->diffuseProbeRT);
 
         diffuseProbeCubemapComputed = true;
     }
