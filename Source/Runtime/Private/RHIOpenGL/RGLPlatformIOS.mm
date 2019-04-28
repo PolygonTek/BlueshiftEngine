@@ -30,9 +30,9 @@ static CVar         gl_finish("gl_finish", "0", CVar::Flag::Bool, "");
 
 extern CVar         r_sRGB;
 
-static const float  userContentScaleFactor = 2.0f;
-
 BE_NAMESPACE_END
+
+static const float userContentScaleFactor = 2.0f;
 
 @interface EAGLView : UIView
 @end
