@@ -32,7 +32,7 @@ void PhysicsSettings::RegisterProperties() {
         "", PropertyInfo::Flag::Editor).SetEnumString("Sequential Impulse;NNCG Solver;MLCP (PGS);MLCP (Dantzig)");
     REGISTER_ACCESSOR_PROPERTY("solverIterations", "solverIterations", int, GetSolverIterations, SetSolverIterations, 10, 
         "", PropertyInfo::Flag::Editor).SetRange(1, 100, 1);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("gravity", "Gravity", Vec3, GetGravity, SetGravity, Vec3(0, 0, -980), 
+    REGISTER_MIXED_ACCESSOR_PROPERTY("gravity", "Gravity", Vec3, GetGravity, SetGravity, Vec3(0, 0, -9.8),
         "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_ARRAY_PROPERTY("filterMasks", "Filter Mask", int, GetFilterMaskElement, SetFilterMaskElement, GetFilterMaskCount, SetFilterMaskCount, -1, 
         "", PropertyInfo::Flag::Editor);
