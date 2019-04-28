@@ -67,6 +67,7 @@ TagLayerSettings *TagLayerSettings::Load(const char *filename) {
     }
 
     if (failedToParse) {
+        jsonNode["guid"] = Guid::CreateGuid().ToString();
         jsonNode["classname"] = TagLayerSettings::metaObject.ClassName();
 
         // default tags
