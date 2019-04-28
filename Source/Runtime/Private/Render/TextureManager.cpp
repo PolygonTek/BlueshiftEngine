@@ -37,7 +37,6 @@ TextureManager textureManager;
 CVar TextureManager::texture_filter("texture_filter", "LinearMipmapLinear", CVar::Flag::Archive, "changes texture filtering on mipmapped texture");
 CVar TextureManager::texture_anisotropy("texture_anisotropy", "8", CVar::Flag::Archive | CVar::Flag::Integer, "set the maximum texture anisotropy if available");
 CVar TextureManager::texture_lodBias("texture_lodBias", "0", CVar::Flag::Archive | CVar::Flag::Integer, "change lod bias on mipmapped images");
-CVar TextureManager::texture_sRGB("texture_sRGB", "1", CVar::Flag::Archive | CVar::Flag::Bool, "");
 CVar TextureManager::texture_useCompression("texture_useCompression", "1", CVar::Flag::Archive | CVar::Flag::Bool, "");
 CVar TextureManager::texture_useNormalCompression("texture_useNormalCompression", "1", CVar::Flag::Bool | CVar::Flag::Archive, "normal map compression");
 CVar TextureManager::texture_mipLevel("texture_mipLevel", "0", CVar::Flag::Archive | CVar::Flag::Integer, "");

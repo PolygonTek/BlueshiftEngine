@@ -517,7 +517,7 @@ void Texture::Upload(const Image *srcImage) {
     bool useNormalMap = (flags & Flag::NormalMap) ? true : false;
     bool useCompression = !(flags & Flag::NoCompression) ? TextureManager::texture_useCompression.GetBool() : false;
     bool useNPOT = (flags & Flag::NonPowerOfTwo) ? true : false;
-    bool isSRGB = ((flags & Flag::SRGBColorSpace) && TextureManager::texture_sRGB.GetBool()) ? true : false;
+    bool isSRGB = ((flags & Flag::SRGBColorSpace) && r_sRGB.GetBool()) ? true : false;
 
     Image::Format::Enum dstFormat;
     if (forceFormat != Image::Format::Unknown) {

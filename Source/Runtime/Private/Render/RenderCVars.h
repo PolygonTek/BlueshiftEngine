@@ -31,6 +31,7 @@ extern CVar     r_depthBits;
 extern CVar     r_stencilBits;
 extern CVar     r_multiSamples;
 
+extern CVar     r_sRGB;
 extern CVar     r_gamma;
 extern CVar     r_swapInterval;
 

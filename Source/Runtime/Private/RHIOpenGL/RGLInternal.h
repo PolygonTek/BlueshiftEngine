@@ -246,6 +246,4 @@ struct GLQuery {
     GLuint                  id;
 };
 
-extern CVar                 gl_sRGB;
-
 BE_NAMESPACE_END

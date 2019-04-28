@@ -228,7 +228,6 @@ public:
     static CVar             texture_filter;
     static CVar             texture_anisotropy;
     static CVar             texture_lodBias;
-    static CVar             texture_sRGB;
     static CVar             texture_useCompression;
     static CVar             texture_useNormalCompression;
     static CVar             texture_mipLevel;

@@ -20,18 +20,20 @@
 
 BE_NAMESPACE_BEGIN
 
-static Str          eglVersion;
-static Str          eglVendor;
-static Str          eglClientAPIs;
-static Str          eglExtensions;
+static Str      eglVersion;
+static Str      eglVendor;
+static Str      eglClientAPIs;
+static Str      eglExtensions;
 
-static int          majorVersion = 0;
-static int          minorVersion = 0;
+static int      majorVersion = 0;
+static int      minorVersion = 0;
 
-static CVar         gl_debug("gl_debug", "0", CVar::Flag::Bool, "");
-static CVar         gl_debugLevel("gl_debugLevel", "3", CVar::Flag::Integer, "");
-static CVar         gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Flag::Bool, "");
-static CVar         gl_finish("gl_finish", "0", CVar::Flag::Bool, "");
+static CVar     gl_debug("gl_debug", "0", CVar::Flag::Bool, "");
+static CVar     gl_debugLevel("gl_debugLevel", "3", CVar::Flag::Integer, "");
+static CVar     gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Flag::Bool, "");
+static CVar     gl_finish("gl_finish", "0", CVar::Flag::Bool, "");
+
+extern CVar     r_sRGB;
 
 static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int inAlphaBits, int inDepthBits, int inStencilBits, int inMultiSamples) {
     EGLint minAttribs[32];
@@ -373,12 +375,14 @@ void OpenGLRHI::ActivateSurface(Handle ctxHandle, RHI::WindowHandle windowHandle
     surfaceAttribs[numSurfaceAttribs++] = EGL_RENDER_BUFFER;
     surfaceAttribs[numSurfaceAttribs++] = EGL_BACK_BUFFER;
 
-    if (gl_sRGB.GetBool()) {
+    if (r_sRGB.GetBool()) {
         if (geglext._EGL_KHR_gl_colorspace) {
             // NOTE: If the frame buffer color format does not contain alpha, sRGB capable buffer creation will fail !!
             // https://android.googlesource.com/platform/frameworks/native/+/63108c34ec181e923b68ee840bb7960f205466a7/opengl/libs/EGL/eglApi.cpp
             surfaceAttribs[numSurfaceAttribs++] = EGL_GL_COLORSPACE_KHR;
             surfaceAttribs[numSurfaceAttribs++] = EGL_GL_COLORSPACE_SRGB_KHR;
+        } else {
+            r_sRGB.SetBool(false);
         }
     }
     surfaceAttribs[numSurfaceAttribs++] = EGL_NONE;

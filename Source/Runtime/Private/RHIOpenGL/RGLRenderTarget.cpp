@@ -18,6 +18,8 @@
 
 BE_NAMESPACE_BEGIN
 
+extern CVar     r_sRGB;
+
 static bool CheckFBOStatus() {
     GLenum status = gglCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status == GL_FRAMEBUFFER_COMPLETE) {
@@ -272,7 +274,7 @@ void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int slic
         }
     } 
 
-    if (gl_sRGB.GetBool()) {
+    if (r_sRGB.GetBool()) {
         SetSRGBWrite(!!(renderTarget->flags & RenderTargetFlag::SRGBWrite));
     }
 }
@@ -290,7 +292,7 @@ void OpenGLRHI::EndRenderTarget() {
 
     gglBindFramebuffer(GL_FRAMEBUFFER, oldRenderTarget->fbo);
 
-    if (gl_sRGB.GetBool()) {
+    if (r_sRGB.GetBool()) {
         SetSRGBWrite(!!(oldRenderTarget->flags & RenderTargetFlag::SRGBWrite));
     }
 }

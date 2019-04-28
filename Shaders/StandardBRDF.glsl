@@ -6,6 +6,7 @@
 #define IBL_SPECULAR_OCCLUSION
 #endif
 
+$include "Colors.glsl"
 $include "StandardConfig.glsl"
 $include "BRDFLibrary.glsl"
 $include "ShadingParms.glsl"
@@ -176,7 +177,7 @@ vec3 DirectLit_Standard() {
 vec3 GetDiffuseEnv(samplerCube diffuseProbeCubeMap, vec3 N, vec3 albedo) {
     vec3 d = texCUBE(diffuseProbeCubeMap, N.yzx).rgb;
 
-#if USE_SRGB_TEXTURE == 0
+#if USE_GAMMA_SPACE == 1
     d = LinearToGamma(d);
 #endif
     return albedo * d;
@@ -190,7 +191,7 @@ vec3 GetSpecularEnvFirstSum(samplerCube specularProbeCubeMap, float specularProb
     vec4 sampleVec = vec4(S, LinearRoughnessToMipLevel(linearRoughness, specularProbeCubeMapMaxMipLevel));
     vec4 preLD = texCUBElod(specularProbeCubeMap, sampleVec.yzxw);
 
-#if USE_SRGB_TEXTURE == 0
+#if USE_GAMMA_SPACE == 1
     preLD.rgb = LinearToGamma(preLD.rgb);
 #endif
     return preLD.rgb;

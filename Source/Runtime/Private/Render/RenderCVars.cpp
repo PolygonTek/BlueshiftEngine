@@ -22,6 +22,7 @@ CVAR(r_depthBits, "24", CVar::Flag::Integer | CVar::Flag::Archive, "number of de
 CVAR(r_stencilBits, "8", CVar::Flag::Integer | CVar::Flag::Archive, "number of stencil bits");
 CVAR(r_multiSamples, "0", CVar::Flag::Integer | CVar::Flag::Archive, "number of antialiasing samples");
 
+CVAR(r_sRGB, "1", CVar::Flag::Bool, "enable sRGB color calibration");
 CVAR(r_gamma, "1.0", CVar::Flag::Float | CVar::Flag::Archive, "changes gamma tables");
 CVAR(r_swapInterval, "-1", CVar::Flag::Integer | CVar::Flag::Archive, "control vsync, 0 = no vsync, 1 = vsync, -1 = adaptive vsync");
 CVAR(r_dynamicVertexCacheSize, "0x800000", CVar::Flag::Integer, "size of dynamic vertex buffer");

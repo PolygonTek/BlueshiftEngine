@@ -217,7 +217,7 @@ void ShaderManager::InitGlobalDefines() {
         shaderManager.AddGlobalHeader("#define USE_BUFFER_TEXTURE\n");
     }
 
-    shaderManager.AddGlobalHeader(va("#define USE_SRGB_TEXTURE %i\n", TextureManager::texture_sRGB.GetBool() ? 1 : 0));
+    shaderManager.AddGlobalHeader(va("#define USE_GAMMA_SPACE %i\n", r_sRGB.GetBool() ? 0 : 1));
 
     if (r_probeBoxProjection.GetBool()) {
         shaderManager.AddGlobalHeader("#define SPECULAR_PROBE_BOX_PROJECTION\n");

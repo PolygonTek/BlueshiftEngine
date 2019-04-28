@@ -33,7 +33,7 @@ OpenGLRHI       rhi;
 
 Str             GLShader::programCacheDir;
 
-CVar            gl_sRGB("gl_sRGB", "1", CVar::Flag::Bool | CVar::Flag::Archive, "enable sRGB color calibration");
+extern CVar     r_sRGB;
 
 OpenGLRHI::OpenGLRHI() {
     initialized = false;
@@ -333,7 +333,7 @@ void OpenGLRHI::InitGL() {
     }
     BE_LOG("default frame buffer encoding : %s\n", linearFrameBuffer ? "Linear" : "sRGB");
 
-    if (gl_sRGB.GetBool()) {
+    if (r_sRGB.GetBool()) {
         SetSRGBWrite(true);
     }
 }
@@ -401,7 +401,7 @@ bool OpenGLRHI::SupportsDebugLabel() const {
 void OpenGLRHI::Clear(int clearBits, const Color4 &color, float depth, unsigned int stencil) {
 #if 1
     if (clearBits & ClearBit::Color) {
-        if (gl_sRGB.GetBool() && OpenGL::SupportsFrameBufferSRGB()) {
+        if (r_sRGB.GetBool() && OpenGL::SupportsFrameBufferSRGB()) {
             gglClearBufferfv(GL_COLOR, 0, Color4(color.ToColor3().SRGBToLinear(), color[3]));
         } else {
             gglClearBufferfv(GL_COLOR, 0, color);
@@ -424,7 +424,7 @@ void OpenGLRHI::Clear(int clearBits, const Color4 &color, float depth, unsigned 
 
     if (clearBits & ColorBit) {
         bits |= GL_COLOR_BUFFER_BIT;
-        if (gl_sRGB.GetBool()) {
+        if (r_sRGB.GetBool()) {
             Vec3 linearColor = color.ToColor3().SRGBToLinear();
             gglClearColor(linearColor[0], linearColor[1], linearColor[2], color[3]);
         } else {
