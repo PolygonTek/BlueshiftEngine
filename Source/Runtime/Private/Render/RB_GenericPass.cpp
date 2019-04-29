@@ -29,7 +29,7 @@ void RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs) {
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *drawSurf = drawSurfs[i];
 
-        if (drawSurf->material->GetSort() == Material::Sort::Sky) {
+        if (drawSurf->material->GetSort() != Material::Sort::Sky) {
             continue;
         }
 

@@ -356,7 +356,7 @@ void Batch::Flush_BackgroundPass() {
 
     SetSubMeshVertexFormat(subMesh, VertexFormat::Type::GenericXyzSt);
 
-    rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_Equal);
+    rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_LEqual);
 
     RenderGeneric(mtrlPass);
 }
