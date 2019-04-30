@@ -255,7 +255,10 @@ void VertexFormat::Create() {
 }
 
 void VertexFormat::Delete() {
-    rhi.DestroyVertexFormat(vertexFormatHandle);
+    if (vertexFormatHandle != RHI::NullVertexFormat) {
+        rhi.DestroyVertexFormat(vertexFormatHandle);
+        vertexFormatHandle = RHI::NullVertexFormat;
+    }
 }
 
 BE_NAMESPACE_END
