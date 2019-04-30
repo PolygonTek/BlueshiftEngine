@@ -21,6 +21,8 @@ out vec4 o_fragColor : FRAG_COLOR;
     uniform sampler2D albedoMap;
 #endif
 
+uniform MEDIUMP float intensity;
+
 void main() {
 #if _ALBEDO == 0
     vec4 albedo = vec4(albedoColor, albedoAlpha);
@@ -34,5 +36,5 @@ void main() {
     }
 #endif
 
-    o_fragColor = v2f_color * albedo;
+    o_fragColor = v2f_color * albedo * intensity;
 }

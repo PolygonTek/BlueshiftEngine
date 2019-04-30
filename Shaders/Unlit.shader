@@ -4,6 +4,7 @@ shader "Unlit" {
         albedoColor("Albedo Color") : color3 = "1 1 1"
         albedoAlpha("Albedo Alpha") : float range 0 1.0 0.001 = "1"
         albedoMap("Albedo Map") : texture = "_whiteTexture"
+        intensity("Intensity") : float range 0 16.0 0.001 = "1"
     }
 
     generatePerforatedVersion
