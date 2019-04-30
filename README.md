@@ -3,8 +3,8 @@ Blueshift Game Engine
 
 [![License](https://img.shields.io/badge/Licence-Apache2.0-blue.svg)](LICENSE)
 [![LoC](https://tokei.rs/b1/github/PolygonTek/BlueshiftEngine)](https://github.com/PolygonTek/BlueshiftEngine)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/586e8c52b0c847a9ac1bc7632c65e79c)](https://app.codacy.com/app/juhl/BlueshiftEngine?utm_source=github.com&utm_medium=referral&utm_content=PolygonTek/BlueshiftEngine&utm_campaign=Badge_Grade_Dashboard)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/9m56bx55uxe88rgs/branch/master?svg=true)](https://ci.appveyor.com/project/juhl48312/blueshiftengine/branch/master)
-[![HitCount](http://hits.dwyl.io/PolygonTek/BlueshiftEngine.svg)](http://hits.dwyl.io/PolygonTek/BlueshiftEngine)
 
 Blueshift is a cross-platform 3D game engine implemented in C++. it's free, open-source, and works on Windows, macOS, iOS, and Android.
 The project is currently in an early stage of development.
