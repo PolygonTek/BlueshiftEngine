@@ -145,21 +145,31 @@ ProcessHandle PlatformWinProcess::CreateProccess(const char *appPath, const char
     PROCESS_INFORMATION pi;
     memset(&pi, 0, sizeof(pi));
 
+    wchar_t wAppPath[256] = L"";
+    wchar_t wAppPathExpanded[256] = L"";
+
+    PlatformWinUtils::UTF8ToUCS2(appPath, wAppPath, COUNT_OF(wAppPath));
+    ExpandEnvironmentStringsW(wAppPath, wAppPathExpanded, COUNT_OF(wAppPathExpanded));
+
+    Str appPathExpanded = Str::UTF8StrFromWCharString(wAppPathExpanded);
+
     char commandLine[32768];
-    Str::snPrintf(commandLine, COUNT_OF(commandLine), "%s %s", appPath, args);
+    Str::snPrintf(commandLine, COUNT_OF(commandLine), "%s %s", appPathExpanded.c_str(), args);
 
     wchar_t wCommandLine[32768];
     PlatformWinUtils::UTF8ToUCS2(commandLine, wCommandLine, COUNT_OF(wCommandLine));
 
-    wchar_t wExpandedWorkingDirectory[256] = L"";
+    wchar_t wWorkingDirectoryExpanded[256] = L"";
 
     if (workingDirectory && workingDirectory[0]) {
         wchar_t wWorkingDirectory[256] = L"";
         PlatformWinUtils::UTF8ToUCS2(workingDirectory, wWorkingDirectory, COUNT_OF(wWorkingDirectory));
-        ExpandEnvironmentStringsW(wWorkingDirectory, wExpandedWorkingDirectory, COUNT_OF(wExpandedWorkingDirectory));
+        ExpandEnvironmentStringsW(wWorkingDirectory, wWorkingDirectoryExpanded, COUNT_OF(wWorkingDirectoryExpanded));
     }
 
-    if (!CreateProcessW(nullptr, wCommandLine, &secAttr, &secAttr, TRUE, creationFlags, nullptr, wExpandedWorkingDirectory[0] ? wExpandedWorkingDirectory : nullptr, &si, &pi)) {
+    // NOTE: The new process won't be started with lpCurrentDirectory as the current directory during the start.
+    // Instead, the current directory is set once the process has started.
+    if (!CreateProcessW(nullptr, wCommandLine, &secAttr, &secAttr, TRUE, creationFlags, nullptr, wWorkingDirectoryExpanded[0] ? wWorkingDirectoryExpanded : nullptr, &si, &pi)) {
         Str lastErrorText = PlatformWinProcess::GetLastErrorText();
         BE_WARNLOG("Failed to CreateProcess : %s", lastErrorText.c_str());
         return ProcessHandle();
