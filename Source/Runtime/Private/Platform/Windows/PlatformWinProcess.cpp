@@ -114,7 +114,7 @@ void PlatformWinProcess::CloseLibrary(SharedLib lib) {
     }
 }
 
-ProcessHandle PlatformWinProcess::CreateProccess(const char *appPath, const char *args, const char *workingPath) {
+ProcessHandle PlatformWinProcess::CreateProccess(const char *appPath, const char *args, const char *workingDirectory) {
     SECURITY_ATTRIBUTES secAttr;
     secAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
     secAttr.lpSecurityDescriptor = nullptr;
@@ -145,27 +145,21 @@ ProcessHandle PlatformWinProcess::CreateProccess(const char *appPath, const char
     PROCESS_INFORMATION pi;
     memset(&pi, 0, sizeof(pi));
 
-	char expandedAppPath[1024] = "";
-
-	if (appPath && appPath[0]) {
-		ExpandEnvironmentStringsA(appPath, expandedAppPath, COUNT_OF(expandedAppPath));
-	}
-	
-	char commandLine[32768];
-    Str::snPrintf(commandLine, COUNT_OF(commandLine), "%s %s", expandedAppPath, args);
+    char commandLine[32768];
+    Str::snPrintf(commandLine, COUNT_OF(commandLine), "%s %s", appPath, args);
 
     wchar_t wCommandLine[32768];
     PlatformWinUtils::UTF8ToUCS2(commandLine, wCommandLine, COUNT_OF(wCommandLine));
 
+    wchar_t wExpandedWorkingDirectory[256] = L"";
 
-	wchar_t wExpandedWorkingPath[1024] = L"";
-	if (workingPath && workingPath[0]) {
-		char expandedWorkingPath[1024];
-		ExpandEnvironmentStringsA(workingPath, expandedWorkingPath, COUNT_OF(expandedWorkingPath));
-		PlatformWinUtils::UTF8ToUCS2(expandedWorkingPath, wExpandedWorkingPath, COUNT_OF(wExpandedWorkingPath));
-	}
-	
-	if (!CreateProcessW(nullptr, wCommandLine, &secAttr, &secAttr, TRUE, creationFlags, nullptr, wExpandedWorkingPath[0] ? wExpandedWorkingPath : nullptr, &si, &pi)) {
+    if (workingDirectory && workingDirectory[0]) {
+        wchar_t wWorkingDirectory[256] = L"";
+        PlatformWinUtils::UTF8ToUCS2(workingDirectory, wWorkingDirectory, COUNT_OF(wWorkingDirectory));
+        ExpandEnvironmentStringsW(wWorkingDirectory, wExpandedWorkingDirectory, COUNT_OF(wExpandedWorkingDirectory));
+    }
+
+    if (!CreateProcessW(nullptr, wCommandLine, &secAttr, &secAttr, TRUE, creationFlags, nullptr, wExpandedWorkingDirectory[0] ? wExpandedWorkingDirectory : nullptr, &si, &pi)) {
         Str lastErrorText = PlatformWinProcess::GetLastErrorText();
         BE_WARNLOG("Failed to CreateProcess : %s", lastErrorText.c_str());
         return ProcessHandle();
