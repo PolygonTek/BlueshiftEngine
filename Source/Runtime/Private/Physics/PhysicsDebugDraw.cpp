@@ -104,7 +104,7 @@ void PhysDebugDraw::drawContactPoint(const btVector3 &pointOnB, const btVector3 
 }
 
 void PhysDebugDraw::reportErrorWarning(const char *warningString) {
-    BE_WARNLOG(L"PhysDebugDraw::reportErrorWarning: %hs\n", warningString);
+    BE_WARNLOG("PhysDebugDraw::reportErrorWarning: %s\n", warningString);
 }
 
 void PhysDebugDraw::draw3dText(const btVector3 &location, const char *textString) {

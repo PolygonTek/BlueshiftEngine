@@ -30,15 +30,15 @@ END_EVENTS
 
 void ComAnimation::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("skeleton", "Skeleton", Guid, GetSkeletonGuid, SetSkeletonGuid, Guid::zero,
-        "", PropertyInfo::EditorFlag).SetMetaObject(&SkeletonAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&SkeletonAsset::metaObject);
     REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("anims", "Animations", Guid, GetAnimGuid, SetAnimGuid, GetAnimCount, SetAnimCount, Guid::zero,
-        "", PropertyInfo::EditorFlag).SetMetaObject(&AnimAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&AnimAsset::metaObject);
     REGISTER_PROPERTY("animIndex", "Animation Index", int, currentAnimIndex, 0,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("timeOffset", "Time Offset", float, GetTimeOffset, SetTimeOffset, 0.f,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("timeScale", "Time Scale", float, GetTimeScale, SetTimeScale, 1.f,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
 }
 
 ComAnimation::ComAnimation() {
@@ -203,7 +203,7 @@ void ComAnimation::ChangeSkeleton(const Guid &skeletonGuid) {
     // Need to connect skeleton asset to be reloaded in Editor
     skeletonAsset = (SkeletonAsset *)SkeletonAsset::FindInstance(skeletonGuid);
     if (skeletonAsset) {
-        skeletonAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComAnimation::SkeletonReloaded, SignalObject::Queued);
+        skeletonAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComAnimation::SkeletonReloaded, SignalObject::ConnectionType::Queued);
     }
 #endif
 }
@@ -313,7 +313,7 @@ void ComAnimation::ChangeAnim(int index, const Guid &animGuid) {
     // Need to connect anim asset to be reloaded in Editor
     animAssets[index] = (AnimAsset *)AnimAsset::FindInstance(animGuid);
     if (animAssets[index]) {
-        animAssets[index]->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComAnimation::AnimReloaded, SignalObject::Queued);
+        animAssets[index]->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComAnimation::AnimReloaded, SignalObject::ConnectionType::Queued);
     }
 #endif
 }

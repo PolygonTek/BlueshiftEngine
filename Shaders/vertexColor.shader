@@ -5,7 +5,7 @@ shader "vertexColor" {
 
 		out LOWP vec4 v2f_color;
 
-		uniform mat4 modelViewProjectionMatrix;
+		uniform HIGHP mat4 modelViewProjectionMatrix;
 
 		void main() {
 			gl_Position = modelViewProjectionMatrix * in_position;

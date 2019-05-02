@@ -19,7 +19,7 @@
 BE_NAMESPACE_BEGIN
 
 PhysSensor::PhysSensor(btPairCachingGhostObject *pairCachingGhostObject, const Vec3 &centroid) : 
-    PhysCollidable(PhysCollidable::Sensor, pairCachingGhostObject, centroid) {
+    PhysCollidable(PhysCollidable::Type::Sensor, pairCachingGhostObject, centroid) {
 }
 
 PhysSensor::~PhysSensor() {

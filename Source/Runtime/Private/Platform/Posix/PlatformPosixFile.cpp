@@ -17,10 +17,12 @@
 #include "Platform/PlatformFile.h"
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <utime.h>
 #include <dirent.h>
 #include <pwd.h>
 #include <ftw.h>
+#include <fcntl.h>
 
 BE_NAMESPACE_BEGIN
 
@@ -46,18 +48,18 @@ int PlatformPosixFile::Size() const {
     return (int)fileInfo.st_size;
 }
 
-int PlatformPosixFile::Seek(long offset, Origin origin) {
+int PlatformPosixFile::Seek(long offset, Origin::Enum origin) {
     assert(offset >= 0);
 
     int whence;
     switch (origin) {
-    case Start:
+    case Origin::Start:
         whence = SEEK_SET;
         break;
-    case End:
+    case Origin::End:
         whence = SEEK_END;
         break;
-    case Current:
+    case Origin::Current:
         whence = SEEK_CUR;
         break;
     default:
@@ -71,7 +73,7 @@ int PlatformPosixFile::Seek(long offset, Origin origin) {
 size_t PlatformPosixFile::Read(void *buffer, size_t bytesToRead) const {
     size_t readBytes = fread(buffer, 1, bytesToRead, fp);
     if (readBytes == -1) {
-        BE_FATALERROR(L"PlatformPosixFile::Read: -1 bytes read");
+        BE_FATALERROR("PlatformPosixFile::Read: -1 bytes read");
         return 0;
     }
     
@@ -89,11 +91,11 @@ bool PlatformPosixFile::Write(const void *buffer, size_t bytesToWrite) {
             if (!failedOnce) {
                 failedOnce = true;
             } else {
-                BE_WARNLOG(L"PlatformPosixFile::Write: 0 bytes written");
+                BE_WARNLOG("PlatformPosixFile::Write: 0 bytes written");
                 return false;
             }
         } else if (written == -1) {
-            BE_WARNLOG(L"PlatformPosixFile::Write: -1 bytes written");
+            BE_WARNLOG("PlatformPosixFile::Write: -1 bytes written");
             return false;
         }
         
@@ -142,7 +144,7 @@ Str PlatformPosixFile::NormalizeDirectoryName(const char *dirname) {
     return normalizedDirname;
 }
 
-PlatformPosixFile *PlatformPosixFile::OpenFileRead(const char *filename) {
+PlatformBaseFile *PlatformPosixFile::OpenFileRead(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(normalizedFilename, "rb");
     if (!fp) {
@@ -151,7 +153,7 @@ PlatformPosixFile *PlatformPosixFile::OpenFileRead(const char *filename) {
     return new PlatformPosixFile(fp);
 }
 
-PlatformPosixFile *PlatformPosixFile::OpenFileWrite(const char *filename) {
+PlatformBaseFile *PlatformPosixFile::OpenFileWrite(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(normalizedFilename, "wb");
     if (!fp) {
@@ -160,7 +162,7 @@ PlatformPosixFile *PlatformPosixFile::OpenFileWrite(const char *filename) {
     return new PlatformPosixFile(fp);
 }
 
-PlatformPosixFile *PlatformPosixFile::OpenFileAppend(const char *filename) {
+PlatformBaseFile *PlatformPosixFile::OpenFileAppend(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(normalizedFilename, "ab");
     if (!fp) {
@@ -230,7 +232,7 @@ bool PlatformPosixFile::SetReadOnly(const char *filename, bool readOnly) {
 bool PlatformPosixFile::RemoveFile(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     if (remove(normalizedFilename)) {
-        BE_LOG(L"failed to remove file '%hs'\n", normalizedFilename.c_str());
+        BE_LOG("failed to remove file '%s'\n", normalizedFilename.c_str());
         return false;
     }
 
@@ -250,26 +252,26 @@ int PlatformPosixFile::GetFileMode(const char *filename) {
     }
     int fileMode = 0;
     if (fileInfo.st_mode & S_IRUSR) {
-    	fileMode |= Readable;
+        fileMode |= Mode::Readable;
     }
     if (fileInfo.st_mode & S_IWUSR) {
-    	fileMode |= Writable;
+        fileMode |= Mode::Writable;
     }
     if (fileInfo.st_mode & S_IXUSR) {
-    	fileMode |= Executable;
+    	fileMode |= Mode::Executable;
     }
     return fileMode;
 }
 
 void PlatformPosixFile::SetFileMode(const char *filename, int fileMode) {
 	mode_t mode = 0;
-    if (fileMode & Readable) {
+    if (fileMode & Mode::Readable) {
         mode |= S_IRUSR;
     }
-    if (fileMode & Writable) {
+    if (fileMode & Mode::Writable) {
         mode |= S_IWUSR;
     }
-    if (fileMode & Executable) {
+    if (fileMode & Mode::Executable) {
         mode |= S_IXUSR;
     }
     chmod(NormalizeFilename(filename), mode);
@@ -354,11 +356,11 @@ const char *PlatformPosixFile::ExecutablePath() {
     return Cwd();
 }
 
-void PlatformPosixFile::ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
+static void ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
     FileInfo    fileInfo;
-    char		path[MaxAbsolutePath];
-    char		subpath[MaxAbsolutePath];
-    char		filename[MaxAbsolutePath];
+    char        path[MaxAbsolutePath];
+    char        subpath[MaxAbsolutePath];
+    char        filename[MaxAbsolutePath];
     
     if (subdir[0]) {
         Str::snPrintf(path, sizeof(path), "%s/%s", directory, subdir);
@@ -385,12 +387,12 @@ void PlatformPosixFile::ListFilesRecursive(const char *directory, const char *su
             
             if (includeSubDir) {
                 fileInfo.isSubDir = true;
-                fileInfo.relativePath = subpath;
+                fileInfo.filename = subpath;
                 files.Append(fileInfo);
             }
             
             ListFilesRecursive(directory, subpath, nameFilter, includeSubDir, files);
-        } else if (Str::Filter(nameFilter, dent->d_name, false))	{
+        } else if (Str::Filter(nameFilter, dent->d_name, false)) {
             if (subdir[0]) {
                 Str::snPrintf(filename, sizeof(filename), "%s/%s", subdir, dent->d_name);
             } else {
@@ -398,7 +400,7 @@ void PlatformPosixFile::ListFilesRecursive(const char *directory, const char *su
             }
             
             fileInfo.isSubDir = false;
-            fileInfo.relativePath = filename;
+            fileInfo.filename = filename;
             files.Append(fileInfo);
         }
     }
@@ -437,7 +439,7 @@ int PlatformPosixFile::ListFiles(const char *directory, const char *nameFilter, 
                 }
             }
             
-            fileInfo.relativePath = dent->d_name;
+            fileInfo.filename = dent->d_name;
             
             files.Append(fileInfo);
         }
@@ -446,6 +448,74 @@ int PlatformPosixFile::ListFiles(const char *directory, const char *nameFilter, 
     }
     
     return files.Count();
+}
+
+PlatformPosixFileMapping::PlatformPosixFileMapping(int fileHandle, size_t size, const void *data) {
+    this->fileHandle = fileHandle;
+    this->size = size;
+    this->data = data;
+}
+
+PlatformPosixFileMapping::~PlatformPosixFileMapping() {
+    int retval = munmap((void *)data, size);
+    if (retval != 0) {
+        BE_ERRLOG("Unable to unmap memory\n");
+    }
+    msync((void *)data, size, MS_SYNC);
+    close(fileHandle);
+}
+
+void PlatformPosixFileMapping::Touch() {
+    size_t pageSize = (size_t)sysconf(_SC_PAGESIZE);
+
+    uint32_t checkSum = 0;
+    for (byte *ptr = (byte *)data; ptr < (byte *)data + size; ptr += pageSize) {
+        checkSum += *(uint32_t *)ptr;
+    }
+}
+
+PlatformPosixFileMapping *PlatformPosixFileMapping::OpenFileRead(const char *filename) {
+    Str normalizedFilename = PlatformPosixFile::NormalizeFilename(filename);
+    int fd = open(normalizedFilename, O_RDONLY);
+    if (fd == -1) {
+        return nullptr;
+    }
+
+    struct stat fs;
+    fstat(fd, &fs);
+    size_t size = fs.st_size;
+
+    void *data = mmap(nullptr, size, PROT_READ, MAP_SHARED, fd, 0);
+    if (!data) {
+        BE_ERRLOG("PlatformPosixFileMapping::OpenFileRead: Couldn't map %s to memory\n", filename);
+        return nullptr;
+    }
+
+    return new PlatformPosixFileMapping(fd, size, data);
+}
+
+PlatformPosixFileMapping *PlatformPosixFileMapping::OpenFileReadWrite(const char *filename, int newSize) {
+    Str normalizedFilename = PlatformPosixFile::NormalizeFilename(filename);
+    int fd = open(normalizedFilename, O_RDWR | O_CREAT);
+    if (fd == -1) {
+        BE_ERRLOG("PlatformPosixFileMapping::OpenFileReadWrite: Couldn't open %s\n", filename);
+        return nullptr;
+    }
+
+    size_t size = newSize;
+    if (size == 0) {
+        struct stat fs;
+        fstat(fd, &fs);
+        size = fs.st_size;
+    }
+
+    void *data = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (!data) {
+        BE_ERRLOG("PlatformPosixFileMapping::OpenFileReadWrite: Couldn't map %s to memory\n", filename);
+        return nullptr;
+    }
+
+    return new PlatformPosixFileMapping(fd, size, data);
 }
 
 BE_NAMESPACE_END

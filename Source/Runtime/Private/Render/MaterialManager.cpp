@@ -20,21 +20,22 @@
 
 BE_NAMESPACE_BEGIN
 
-Material *          MaterialManager::defaultMaterial;
-Material *          MaterialManager::whiteMaterial;
-Material *          MaterialManager::blendMaterial;
-Material *          MaterialManager::whiteLightMaterial;
-Material *          MaterialManager::zeroClampLightMaterial;
-Material *          MaterialManager::defaultSkyboxMaterial;
+Material *              MaterialManager::defaultMaterial;
+Material *              MaterialManager::whiteMaterial;
+Material *              MaterialManager::unlitMaterial;
+Material *              MaterialManager::blendMaterial;
+Material *              MaterialManager::whiteLightMaterial;
+Material *              MaterialManager::zeroClampLightMaterial;
+Material *              MaterialManager::defaultSkyboxMaterial;
 
-MaterialManager     materialManager;
+MaterialManager         materialManager;
 
-static int          materialCounter = 0;
-static const int    MaxMaterialCount = 65536;
+static int              materialCounter = 0;
+static constexpr int    MaxMaterialCount = 65536;
 
 void MaterialManager::Init() {
-    cmdSystem.AddCommand(L"listMaterials", Cmd_ListMaterials);
-    cmdSystem.AddCommand(L"reloadMaterial", Cmd_ReloadMaterial);
+    cmdSystem.AddCommand("listMaterials", Cmd_ListMaterials);
+    cmdSystem.AddCommand("reloadMaterial", Cmd_ReloadMaterial);
 
     materialHashMap.Init(1024, 65536, 1024);
 
@@ -50,7 +51,7 @@ void MaterialManager::CreateEngineMaterials() {
         "       _ALBEDO \"1\"\n"
         "       albedoMap \"%s\"\n"
         "   }\n"
-        "}", GuidMapper::standardShaderGuid.ToString(), GuidMapper::defaultTextureGuid.ToString()));
+        "}", GuidMapper::standardShaderGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces), GuidMapper::defaultTextureGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces)));
     defaultMaterial->permanence = true;
 
     // Create white lit surface material
@@ -59,11 +60,21 @@ void MaterialManager::CreateEngineMaterials() {
         "pass {\n"
         "   useOwnerColor\n"
         "   shader \"%s\" {\n"
-        "       _ALBEDO \"1\"\n"
-        "       albedoMap \"%s\"\n"
+        "       albedoColor \"1 1 1\"\n"
         "   }\n"
-        "}", GuidMapper::standardShaderGuid.ToString(), GuidMapper::whiteTextureGuid.ToString()));
+        "}", GuidMapper::standardShaderGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces)));
     whiteMaterial->permanence = true;
+
+    // Create unlit surface material
+    unlitMaterial = AllocMaterial("_unlitMaterial");
+    unlitMaterial->Create(va(
+        "pass {\n"
+        "   useOwnerColor\n"
+        "   shader \"%s\" {\n"
+        "       albedoColor \"1 1 1\"\n"
+        "   }\n"
+        "}", GuidMapper::unlitShaderGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces)));
+    unlitMaterial->permanence = true;
 
     // Create blend unlit surface material
     blendMaterial = AllocMaterial("_blendMaterial");
@@ -73,9 +84,9 @@ void MaterialManager::CreateEngineMaterials() {
         "   useOwnerColor\n"
         "   blendFunc SRC_ALPHA ONE_MINUS_SRC_ALPHA\n"
         "   shader \"%s\" {\n"
-        "       albedoMap \"%s\"\n"
+        "       albedoColor \"1 1 1\"\n"
         "   }\n"
-        "}", GuidMapper::simpleShaderGuid.ToString(), GuidMapper::whiteTextureGuid.ToString()));
+        "}", GuidMapper::unlitShaderGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces)));
     blendMaterial->permanence = true;
 
     // Create white light material
@@ -85,17 +96,17 @@ void MaterialManager::CreateEngineMaterials() {
         "pass {\n"
         "   useOwnerColor\n"
         "   map \"%s\"\n"
-        "}", GuidMapper::whiteTextureGuid.ToString()));
+        "}", GuidMapper::whiteTextureGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces)));
     whiteLightMaterial->permanence = true;
 
-    // Create zero clamped white light material
+    // Create white light (zero clamped) material
     zeroClampLightMaterial = AllocMaterial("_zeroClampLightMaterial");
     zeroClampLightMaterial->Create(va(
         "light\n"
         "pass {\n"
         "   useOwnerColor\n"
         "   map \"%s\"\n"
-        "}", GuidMapper::zeroClampTextureGuid.ToString()));
+        "}", GuidMapper::zeroClampTextureGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces)));
     zeroClampLightMaterial->permanence = true;
 
     // Create default skybox material
@@ -104,15 +115,16 @@ void MaterialManager::CreateEngineMaterials() {
         "pass {\n"
         "   cull twoSided\n"
         "   shader \"%s\" {\n"
-        "       skyCubeMap \"%s\"\n"
+        "       skyCubeMap \"Data/EngineTextures/default_sky.dds\"\n"
+        "       rotation 0\n"
         "   }\n"
-        "}", GuidMapper::skyboxCubemapShaderGuid.ToString(), GuidMapper::defaultCubeTextureGuid.ToString()));
+        "}", GuidMapper::skyboxCubemapShaderGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces)));
     defaultSkyboxMaterial->permanence = true;
 }
 
 void MaterialManager::Shutdown() {
-    cmdSystem.RemoveCommand(L"listMaterials");
-    cmdSystem.RemoveCommand(L"reloadMaterial");
+    cmdSystem.RemoveCommand("listMaterials");
+    cmdSystem.RemoveCommand("reloadMaterial");
     
     for (int i = 0; i < materialHashMap.Count(); i++) {
         const auto *entry = materialManager.materialHashMap.GetByIndex(i);
@@ -142,11 +154,11 @@ void MaterialManager::DestroyUnusedMaterials() {
 
 Material *MaterialManager::AllocMaterial(const char *hashName) {
     if (materialHashMap.Get(hashName)) {
-        BE_FATALERROR(L"%hs material already allocated", hashName);
+        BE_FATALERROR("%s material already allocated", hashName);
     }
 
     if (materialHashMap.Count() == MaterialManager::MaxCount) {
-        BE_FATALERROR(L"Material exceed maximum limits %i", MaterialManager::MaxCount);
+        BE_FATALERROR("Material exceed maximum limits %i", MaterialManager::MaxCount);
     }
     
     Material *material = new Material;
@@ -154,6 +166,7 @@ Material *MaterialManager::AllocMaterial(const char *hashName) {
     material->name = hashName;
     material->name.StripPath();
     material->name.StripFileExtension();
+    material->version = Material::Version;
     material->refCount = 1;
     material->index = materialCounter++ % MaterialManager::MaxCount;
     materialHashMap.Set(material->hashName, material);
@@ -163,7 +176,7 @@ Material *MaterialManager::AllocMaterial(const char *hashName) {
 
 void MaterialManager::DestroyMaterial(Material *material) {
     if (material->refCount > 1) {
-        BE_LOG(L"MaterialManager::DestroyMaterial: material '%hs' has %i reference count\n", material->hashName.c_str(), material->refCount);
+        BE_LOG("MaterialManager::DestroyMaterial: material '%s' has %i reference count\n", material->hashName.c_str(), material->refCount);
     }
 
     materialHashMap.Remove(material->hashName);
@@ -205,26 +218,26 @@ void MaterialManager::PrecacheMaterial(const char *filename) {
     ReleaseMaterial(material);
 }
 
-static const char *HintName(Material::TextureHint hint) {
+static const char *HintName(Material::TextureHint::Enum hint) {
     switch (hint) {
-    case Material::LightHint:
-        return "LightHint";
-    case Material::VertexColorHint:
-        return "VertexColorHint";
-    case Material::LightmappedHint:
-        return "LightmappedHint";
-    case Material::SpriteHint:
-        return "SpriteHint";
-    case Material::OverlayHint:
-        return "OverlayHint";
+    case Material::TextureHint::Light:
+        return "Light";
+    case Material::TextureHint::VertexColor:
+        return "VertexColor";
+    case Material::TextureHint::Lightmapped:
+        return "Lightmapped";
+    case Material::TextureHint::Sprite:
+        return "Sprite";
+    case Material::TextureHint::Overlay:
+        return "Overlay";
     default:
         break;
     }
 
-    return "NoHint";
+    return "None";
 }
 
-Material *MaterialManager::GetSingleTextureMaterial(const Texture *texture, Material::TextureHint hint) {
+Material *MaterialManager::GetSingleTextureMaterial(const Texture *texture, Material::TextureHint::Enum hint) {
     if (!texture) {
         return defaultMaterial;
     }
@@ -240,24 +253,24 @@ Material *MaterialManager::GetSingleTextureMaterial(const Texture *texture, Mate
 
     char buffer[1024];
     switch (hint) {
-    case Material::SpriteHint:
+    case Material::TextureHint::Sprite:
         Str::snPrintf(buffer, sizeof(buffer),
             "noShadow\n"
             "pass {\n"
             "   renderingMode alphaBlend\n"
             "   blendFunc blend\n"
-            "   mapPath \"%hs\"\n"
+            "   mapPath \"%s\"\n"
             "}\n", texture->GetHashName());
         break;
-    case Material::LightHint:
+    case Material::TextureHint::Light:
         Str::snPrintf(buffer, sizeof(buffer),
             "light\n"
             "pass {\n"
-            "   mapPath \"%hs\"\n"
+            "   mapPath \"%s\"\n"
             "   useOwnerColor\n"
             "}\n", texture->GetHashName());
         break;
-    case Material::OverlayHint:
+    case Material::TextureHint::Overlay:
         Str::snPrintf(buffer, sizeof(buffer),
             "noShadow\n"
             "pass {\n"
@@ -265,13 +278,23 @@ Material *MaterialManager::GetSingleTextureMaterial(const Texture *texture, Mate
             "   renderingMode alphaBlend\n"
             "   blendFunc blend\n"
             "   vertexColor\n"
-            "   mapPath \"%hs\"\n"
+            "   mapPath \"%s\"\n"
             "}\n", texture->GetHashName());
+        break;
+    case Material::TextureHint::EnvCubeMap:
+        Str::snPrintf(buffer, sizeof(buffer),
+            "noShadow\n"
+            "pass {\n"
+            "   shader \"%s\" {\n"
+            "       envCubeMap \"%s\"\n"
+            "       mipLevel 0\n"
+            "   }\n"
+            "}\n", GuidMapper::envCubemapShaderGuid.ToString(BE1::Guid::Format::DigitsWithHyphensInBraces), resourceGuidMapper.Get(texture->GetHashName()).ToString(BE1::Guid::Format::DigitsWithHyphensInBraces));
         break;
     default:
         Str::snPrintf(buffer, sizeof(buffer),
             "pass {\n"
-            "   mapPath \"%hs\"\n"
+            "   mapPath \"%s\"\n"
             "}\n", texture->GetHashName());
         break;
     }
@@ -318,13 +341,13 @@ void MaterialManager::ReleaseMaterial(Material *material, bool immediateDestroy)
 void MaterialManager::Cmd_ListMaterials(const CmdArgs &args) {
     int count = 0;
     
-    BE_LOG(L"NUM. REF. NAME\n");
+    BE_LOG("NUM. REF. NAME\n");
 
     for (int i = 0; i < materialManager.materialHashMap.Count(); i++) {
         const auto *entry = materialManager.materialHashMap.GetByIndex(i);
         Material *material = entry->second;
  
-        BE_LOG(L"%4d %4d %hs\n",
+        BE_LOG("%4d %4d %s\n",
             i,
             material->refCount,
             material->hashName.c_str());
@@ -332,16 +355,16 @@ void MaterialManager::Cmd_ListMaterials(const CmdArgs &args) {
         count++;
     }
 
-    BE_LOG(L"total %i materials\n", count);
+    BE_LOG("total %i materials\n", count);
 }
 
 void MaterialManager::Cmd_ReloadMaterial(const CmdArgs &args) {
     if (args.Argc() != 2) {
-        BE_LOG(L"reloadMaterial <filename>\n");
+        BE_LOG("reloadMaterial <filename>\n");
         return;
     }
 
-    if (!WStr::Icmp(args.Argv(1), L"all")) {
+    if (!Str::Icmp(args.Argv(1), "all")) {
         int count = materialManager.materialHashMap.Count();
 
         for (int i = 0; i < count; i++) {
@@ -354,9 +377,9 @@ void MaterialManager::Cmd_ReloadMaterial(const CmdArgs &args) {
             material->Reload();
         }
     } else {
-        Material *material = materialManager.FindMaterial(WStr::ToStr(args.Argv(1)));
+        Material *material = materialManager.FindMaterial(args.Argv(1));
         if (!material) {
-            BE_WARNLOG(L"Couldn't find material to reload \"%ls\"\n", args.Argv(1));
+            BE_WARNLOG("Couldn't find material to reload \"%s\"\n", args.Argv(1));
             return;
         }
 

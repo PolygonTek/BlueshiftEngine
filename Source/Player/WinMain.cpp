@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Platform/Windows/PlatformWinUtils.h"
 #include "Application.h"
 #include "WinResource.h"
 #include <windowsx.h>
@@ -20,18 +21,18 @@
 
 static const TCHAR *        mainWindowClassName  = _T("BLUESHIFT_PLAYER_MAIN_WINDOW");
 
-static HWND                 mainWnd;
-
-static HMENU                hMenu;
+static HWND                 hmainWnd;
+static HMENU                hmenu;
+static HACCEL               haccelTable;
 static TCHAR                szTitle[100];    // The title bar text
 
-LRESULT CALLBACK            WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK            WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-static BE1::CVar            disp_width(L"disp_width", L"1280", BE1::CVar::Integer | BE1::CVar::Archive, L"");
-static BE1::CVar            disp_height(L"disp_height", L"720", BE1::CVar::Integer | BE1::CVar::Archive, L"");
-static BE1::CVar            disp_fullscreen(L"disp_fullscreen", L"0", BE1::CVar::Bool | BE1::CVar::Archive, L"");
-static BE1::CVar            disp_bpp(L"disp_bpp", L"0", BE1::CVar::Integer | BE1::CVar::Archive, L"");
-static BE1::CVar            disp_frequency(L"disp_frequency", L"0", BE1::CVar::Integer | BE1::CVar::Archive, L"");
+static BE1::CVar            disp_width("disp_width", "1280", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "");
+static BE1::CVar            disp_height("disp_height", "720", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "");
+static BE1::CVar            disp_fullscreen("disp_fullscreen", "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "");
+static BE1::CVar            disp_bpp("disp_bpp", "0", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "");
+static BE1::CVar            disp_frequency("disp_frequency", "0", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "");
 
 static HWND CreateRenderWindow(const TCHAR *title, const TCHAR *classname, int width, int height, bool fullscreen) {
     int style = WS_VISIBLE;
@@ -70,8 +71,8 @@ static HWND CreateRenderWindow(const TCHAR *title, const TCHAR *classname, int w
         NULL, NULL, (HINSTANCE)GetModuleHandle(NULL), NULL);
 
     if (fullscreen) {
-        hMenu = GetMenu(hwnd);
-        if (hMenu) {
+        hmenu = GetMenu(hwnd);
+        if (hmenu) {
             SetMenu(hwnd, NULL);
         }
     }
@@ -91,8 +92,8 @@ static void ChangeRenderWindow(HWND hwnd, int width, int height, bool fullscreen
         SetWindowLong(hwnd, GWL_STYLE, style);
         SetWindowLong(hwnd, GWL_EXSTYLE, WS_EX_TOPMOST);
 
-        HMENU hMenu = GetMenu(hwnd);
-        if (hMenu) {
+        HMENU hmenu = GetMenu(hwnd);
+        if (hmenu) {
             SetMenu(hwnd, NULL);
         }
     } else {
@@ -102,8 +103,8 @@ static void ChangeRenderWindow(HWND hwnd, int width, int height, bool fullscreen
         SetWindowLong(hwnd, GWL_EXSTYLE, 0);
         ShowWindow(hwnd, SW_RESTORE);
 
-        if (hMenu) {
-            SetMenu(hwnd, hMenu);
+        if (hmenu) {
+            SetMenu(hwnd, hmenu);
         }
     }
 
@@ -151,7 +152,9 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 
 static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     BE1::Engine::InitParms initParms;
-//  initParms.args.TokenizeString(lpCmdLine, false);
+
+    //BE1::Str cmdLine = Str::UTF8StrFromWCharString(lpCmdLine);
+    //initParms.args.TokenizeString(cmdLine, false);
 
     BE1::Str playerDir;
 #if 0
@@ -178,7 +181,7 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     BE1::Engine::Init(&initParms);
 
     if (!BE1::resourceGuidMapper.Read("Data\\guidmap")) {
-        BE_FATALERROR(L"Couldn't open guidmap !");
+        BE_FATALERROR("Couldn't open guidmap !");
     }
 
     WNDCLASSEX wcex;
@@ -195,14 +198,20 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
     wcex.lpszClassName      = mainWindowClassName;
     RegisterClassEx(&wcex);
 
-    const wchar_t *title = BE1::wva(L"%s %hs %hs %hs", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
+    char temp[128];
+    BE1::Str::snPrintf(temp, sizeof(temp), "%ls %s %s %s", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
 
-    mainWnd = CreateRenderWindow(title, mainWindowClassName, disp_width.GetInteger(), disp_height.GetInteger(), disp_fullscreen.GetBool());
+    wchar_t szFullTitle[128];
+    BE1::PlatformWinUtils::UTF8ToUCS2(temp, szFullTitle, COUNT_OF(szFullTitle));
 
-    BE1::gameClient.Init(mainWnd, true);
+    hmainWnd = CreateRenderWindow(szFullTitle, mainWindowClassName, disp_width.GetInteger(), disp_height.GetInteger(), disp_fullscreen.GetBool());
+
+    BE1::renderSystem.InitRHI(hmainWnd);
+
+    BE1::gameClient.Init(hmainWnd, true);
 
     app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
-    app.mainRenderContext->Init(mainWnd, 1280, 720, DisplayContext, NULL);
+    app.mainRenderContext->Init(hmainWnd, 1280, 720, DisplayContext, NULL);
 
     app.mainRenderContext->OnResize(1280, 720);
 
@@ -220,30 +229,63 @@ static void InitInstance(HINSTANCE hInstance, LPCTSTR lpCmdLine, int nCmdShow) {
 }
 
 static void ShutdownInstance() {
+    app.OnApplicationTerminate();
+
     app.Shutdown();
 
     app.mainRenderContext->Shutdown();
     BE1::renderSystem.FreeRenderContext(app.mainRenderContext);
 
-    DestroyRenderWindow(mainWnd);
+    DestroyRenderWindow(hmainWnd);
 
     BE1::gameClient.Shutdown();
 
     BE1::Engine::Shutdown();
 }
 
-int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow) {
+static bool RunFrameInstance(int elapsedMsec) {
     MSG msg;
 
+    while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+        if (msg.message == WM_QUIT) {
+            return false;
+        }
+
+        if (!TranslateAccelerator(msg.hwnd, haccelTable, &msg)) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+    }
+
+    BE1::Engine::RunFrame(elapsedMsec);
+
+    BE1::gameClient.RunFrame();
+
+    app.Update();
+
+    app.mainRenderContext->Display();
+
+    BE1::gameClient.EndFrame();
+
+    return true;
+}
+
+int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow) {
+    const HCURSOR hcurSave = ::SetCursor(LoadCursor(0, IDC_WAIT));
+
     // Disable automatic DPI scaling.
-    //SetProcessDPIAware();
+    //::SetProcessDPIAware();
 
     // Initialize global strings
-    LoadString(hInstance, IDS_APP_TITLE, szTitle, COUNT_OF(szTitle));
+    ::LoadString(hInstance, IDS_APP_TITLE, szTitle, COUNT_OF(szTitle));
 
     InitInstance(hInstance, lpCmdLine, nCmdShow);
 
-    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_GAME));
+    haccelTable = ::LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_GAME));
+
+    ::SetCursor(hcurSave);
+
+    ::SetFocus(hmainWnd);
 
     int t0 = BE1::PlatformTime::Milliseconds();
 
@@ -256,31 +298,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
         t0 = t;
 
-        while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-            if (msg.message == WM_QUIT) {
-                goto QUIT;
-            }
-
-            if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) {
-                TranslateMessage(&msg);
-                DispatchMessage(&msg);
-            }
+        if (!RunFrameInstance(elapsedMsec)) {
+            break;
         }
-        
-        BE1::Engine::RunFrame(elapsedMsec);
-
-        BE1::gameClient.RunFrame();
-
-        app.Update();
-
-        app.mainRenderContext->Display();
-
-        BE1::gameClient.EndFrame();
     }
 
-QUIT:
-    app.OnApplicationTerminate();
-    
     ShutdownInstance();
 
     return 0;
@@ -301,7 +323,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
     return (INT_PTR)FALSE;
 }
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
     int wmId, wmEvent;
     HIMC hImmContext;
     WORD fActive;
@@ -347,16 +369,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         // Parse the menu selections:
         switch (wmId) {
         case IDM_TOGGLE_FULLSCREEN:
-            ToggleFullscreen(mainWnd);
+            ToggleFullscreen(hmainWnd);
             break;
         case IDM_ABOUT:
-            DialogBox((HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE), MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+            DialogBox((HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), MAKEINTRESOURCE(IDD_ABOUTBOX), hwnd, About);
             break;
         case IDM_EXIT:
-            DestroyWindow(hWnd);
+            DestroyWindow(hwnd);
             break;
         default:
-            return DefWindowProc(hWnd, message, wParam, lParam);
+            return DefWindowProc(hwnd, message, wParam, lParam);
         }
         break;
     case WM_KEYDOWN:
@@ -366,19 +388,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             // use lower 8 bit and set extended bit to it's MSB
             key = ((lParam >> 16) & 0xFF ) | (((lParam >> 24) & 1) << 7);
 
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, key, true, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, key, true, 0, NULL);
         }
         return 0;
     case WM_KEYUP:
     case WM_SYSKEYUP:
         key = ((lParam >> 16) & 0xFF ) | (((lParam >> 24) & 1) << 7);
 
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, key, false, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, key, false, 0, NULL);
         return 0;
     case WM_SYSCHAR:
-    case WM_CHAR: // WM_CHAR message uses Unicode Transformation Format (UTF)-16
+    case WM_CHAR: // WM_CHAR message uses Unicode Transformation Format UCS-2
     case WM_IME_CHAR:
-        BE1::platform->QueEvent(BE1::Platform::CharEvent, wParam, 0, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Char, (char32_t)wParam, 0, 0, NULL);
         return 0;
     case WM_IME_KEYDOWN:
     case WM_IME_KEYUP:
@@ -388,58 +410,58 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     case WM_IME_ENDCOMPOSITION:
         return 0;
     case WM_IME_COMPOSITION:
-        hImmContext = ImmGetContext(hWnd);
+        hImmContext = ImmGetContext(hwnd);
         if (lParam & GCS_COMPSTR) {
             int bytes = ImmGetCompositionString(hImmContext, GCS_COMPSTR, NULL, 0);
             if (bytes > 0) {
                 ImmGetCompositionString(hImmContext, GCS_COMPSTR, compStr, bytes);
-                BE1::platform->QueEvent(BE1::Platform::CompositionEvent, compStr[0], 0, 0, NULL);
+                BE1::platform->QueEvent(BE1::Platform::EventType::Composition, (char32_t)compStr[0], 0, 0, NULL);
             } else {
-                BE1::platform->QueEvent(BE1::Platform::CompositionEvent, L'\b', 0, 0, NULL);
+                BE1::platform->QueEvent(BE1::Platform::EventType::Composition, U'\b', 0, 0, NULL);
             }
         } else if (lParam & GCS_RESULTSTR) {
             int bytes = ImmGetCompositionString(hImmContext, GCS_RESULTSTR, NULL, 0);
             if (bytes > 0) {
                 ImmGetCompositionString(hImmContext, GCS_RESULTSTR, compStr, bytes);
-                BE1::platform->QueEvent(BE1::Platform::CharEvent, compStr[0], 0, 0, NULL);
+                BE1::platform->QueEvent(BE1::Platform::EventType::Char, (char32_t)compStr[0], 0, 0, NULL);
             }
         }
                 
-        ImmReleaseContext(hWnd, hImmContext);
+        ImmReleaseContext(hwnd, hImmContext);
         return 0;
     case WM_LBUTTONDOWN:
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse1, true, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse1, true, 0, NULL);
         return 0;
     case WM_RBUTTONDOWN:
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse2, true, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse2, true, 0, NULL);
         return 0;
     case WM_MBUTTONDOWN:
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse3, true, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse3, true, 0, NULL);
         return 0;
     case WM_XBUTTONDOWN: {
         int button = GET_XBUTTON_WPARAM(wParam);
         if (button == 1) {
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse4, true, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse4, true, 0, NULL);
         } else if (button == 2) {
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse5, true, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse5, true, 0, NULL);
         }
         return 0; 
     }
     case WM_LBUTTONUP:
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse1, false, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse1, false, 0, NULL);
         return 0;
     case WM_RBUTTONUP:
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse2, false, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse2, false, 0, NULL);
         return 0;
     case WM_MBUTTONUP:
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse3, false, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse3, false, 0, NULL);
         return 0;
     case WM_XBUTTONUP: {
         int button = GET_XBUTTON_WPARAM(wParam);
         if (button == 1) {
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse4, false, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse4, false, 0, NULL);
         } else if (button == 2) {
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::Mouse5, false, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::Mouse5, false, 0, NULL);
         }
         return 0; 
     }
@@ -447,19 +469,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         const int x = GET_X_LPARAM(lParam);
         const int y = GET_Y_LPARAM(lParam);
 
-        BE1::platform->QueEvent(BE1::Platform::MouseMoveEvent, x, y, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::MouseMove, x, y, 0, NULL);
         return 0; 
     }
     case WM_MOUSEWHEEL:
         if ((short)HIWORD(wParam) > 0) {
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::MouseWheelUp, true, 0, NULL);
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::MouseWheelUp, false, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::MouseWheelUp, true, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::MouseWheelUp, false, 0, NULL);
         } else {
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::MouseWheelDown, true, 0, NULL);
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, (int64_t)BE1::KeyCode::MouseWheelDown, false, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::MouseWheelDown, true, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, (int64_t)BE1::KeyCode::MouseWheelDown, false, 0, NULL);
         }
         return 0;
     }
     
-    return DefWindowProc(hWnd, message, wParam, lParam);
+    return DefWindowProc(hwnd, message, wParam, lParam);
 }

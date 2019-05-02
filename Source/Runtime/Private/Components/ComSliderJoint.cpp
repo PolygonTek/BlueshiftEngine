@@ -27,29 +27,29 @@ END_EVENTS
 
 void ComSliderJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, 
-        "Joint position in local space", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "Joint position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, 
-        "Joint angles in local space", PropertyInfo::EditorFlag);
+        "Joint angles in local space", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("useLinearLimits", "Linear Limits/Use Limits", bool, GetEnableLimitDistances, SetEnableLimitDistances, false, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("minDist", "Linear Limits/Minimum Distance", float, GetMinimumDistance, SetMinimumDistance, 0.f, 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("maxDist", "Linear Limits/Maximum Distance", float, GetMaximumDistance, SetMaximumDistance, 0.f, 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("useAngularLimits", "Angular Limits/Use Limits", bool, GetEnableLimitAngles, SetEnableLimitAngles, true, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("minAngle", "Angular Limits/Minimum Angle", float, GetMinimumAngle, SetMinimumAngle, 0.f, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("maxAngle", "Angular Limits/Maximum Angle", float, GetMaximumAngle, SetMaximumAngle, 0.f, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("linearMotorTargetVelocity", "Linear Motor/Target Velocity", float, GetLinearMotorTargetVelocity, SetLinearMotorTargetVelocity, 0.f, 
-        "Target linear velocity (m/s) of motor", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "Target linear velocity (m/s) of motor", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("maxLinearMotorImpulse", "Linear Motor/Maximum Impulse", float, GetMaxLinearMotorImpulse, SetMaxLinearMotorImpulse, 0.f, 
-        "Maximum linear motor impulse", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "Maximum linear motor impulse", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("angularMotorTargetVelocity", "Angular Motor/Target Velocity", float, GetAngularMotorTargetVelocity, SetAngularMotorTargetVelocity, 0.f, 
-        "Target angular velocity (degree/s) of motor", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "Target angular velocity (degree/s) of motor", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("maxAngularMotorImpulse", "Angular Motor/Maximum Impulse", float, GetMaxAngularMotorImpulse, SetMaxAngularMotorImpulse, 0.f, 
-        "Maximum angular motor impulse", PropertyInfo::EditorFlag);
+        "Maximum angular motor impulse", PropertyInfo::Flag::Editor);
 }
 
 ComSliderJoint::ComSliderJoint() {
@@ -72,7 +72,7 @@ void ComSliderJoint::CreateConstraint() {
 
     // Fill up a constraint description 
     PhysConstraintDesc desc;
-    desc.type = PhysConstraint::Slider;
+    desc.type = PhysConstraint::Type::Slider;
     desc.collision = collisionEnabled;
     desc.breakImpulse = breakImpulse;
 
@@ -245,7 +245,8 @@ void ComSliderJoint::SetMaxAngularMotorImpulse(float maxAngularMotorImpulse) {
     }
 }
 
-void ComSliderJoint::DrawGizmos(const RenderView::State &viewState, bool selected) {
+#if 1
+void ComSliderJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();
@@ -272,5 +273,6 @@ void ComSliderJoint::DrawGizmos(const RenderView::State &viewState, bool selecte
         renderWorld->DebugArrow(worldOrigin, worldOrigin - worldAxis[0] * CentiToUnit(5.0f), CentiToUnit(3.0f), CentiToUnit(0.5f));
     }
 }
+#endif
 
 BE_NAMESPACE_END

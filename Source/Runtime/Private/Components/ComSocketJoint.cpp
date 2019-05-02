@@ -27,9 +27,9 @@ END_EVENTS
 
 void ComSocketJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, 
-        "Joint position in local space", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "Joint position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("impulseClamp", "Impulse Clamp", float, GetImpulseClamp, SetImpulseClamp, 0, 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
 }
 
 ComSocketJoint::ComSocketJoint() {
@@ -53,7 +53,7 @@ void ComSocketJoint::CreateConstraint() {
 
     // Fill up a constraint description 
     PhysConstraintDesc desc;
-    desc.type = PhysConstraint::Point2Point;
+    desc.type = PhysConstraint::Type::Point2Point;
     desc.collision = collisionEnabled;
     desc.breakImpulse = breakImpulse;
 
@@ -113,7 +113,8 @@ void ComSocketJoint::SetImpulseClamp(float impulseClamp) {
     }
 }
 
-void ComSocketJoint::DrawGizmos(const RenderView::State &viewState, bool selected) {
+#if 1
+void ComSocketJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();
@@ -124,5 +125,6 @@ void ComSocketJoint::DrawGizmos(const RenderView::State &viewState, bool selecte
     renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(1.0f), worldOrigin + Mat3::identity[1] * CentiToUnit(1.0f), 1);
     renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * CentiToUnit(1.0f), worldOrigin + Mat3::identity[2] * CentiToUnit(1.0f), 1);
 }
+#endif
 
 BE_NAMESPACE_END

@@ -14,19 +14,54 @@
 
 #include "Precompiled.h"
 
-class RewardBasedVideoAd {
+class AdMob {
 public:
-	void Init(const char *appID);
+    class BannerAd;
+    class InterstitialAd;
+    class RewardBasedVideoAd;
 
-    void Request(const char *unitID, const char *testDevices = "");
-    
-    bool IsReady() const;
-    
-    void Present();
-
-    void ProcessQueue();
-    
     static void RegisterLuaModule(LuaCpp::State *state);
+
+    static void Init(const char *appID, const char *testDevices = "");
+
+    static void ProcessQueue();
+
+    static BannerAd bannerAd;
+    static InterstitialAd interstitialAd;
+    static RewardBasedVideoAd rewardBasedVideoAd;
+
+    static BE1::StrArray testDeviceList;
 };
 
-extern RewardBasedVideoAd rewardBasedVideoAd;
+class AdMob::BannerAd {
+public:
+    void Init();
+
+    void Request(const char *unitID, int adWidth, int adHeight);
+
+    void Show(bool showOnBottomOfScreen, float offsetX, float offsetY);
+
+    void Hide();
+};
+
+class AdMob::InterstitialAd {
+public:
+    void Init();
+
+    void Request(const char *unitID);
+
+    bool IsReady() const;
+
+    void Present();
+};
+
+class AdMob::RewardBasedVideoAd {
+public:
+    void Init();
+
+    void Request(const char *unitID);
+
+    bool IsReady() const;
+
+    void Present();
+};

@@ -29,9 +29,9 @@ END_EVENTS
 
 void ComMeshCollider::RegisterProperties() {
     REGISTER_PROPERTY("convex", "Convex", bool, convex, true, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("mesh", "Mesh", Guid, GetMeshGuid, SetMeshGuid, GuidMapper::defaultMeshGuid, 
-        "", PropertyInfo::EditorFlag).SetMetaObject(&MeshAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&MeshAsset::metaObject);
 }
 
 ComMeshCollider::ComMeshCollider() {
@@ -58,12 +58,10 @@ void ComMeshCollider::SetMeshGuid(const Guid &meshGuid) {
     }
 }
 
-bool ComMeshCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
-    return false;
-}
-
-void ComMeshCollider::DrawGizmos(const RenderView::State &viewState, bool selected) {
+#if 1
+void ComMeshCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     //collider;
 }
+#endif
 
 BE_NAMESPACE_END

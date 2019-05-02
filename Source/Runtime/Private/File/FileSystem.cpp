@@ -24,12 +24,12 @@
 
 BE_NAMESPACE_BEGIN
 
-#define FILEHASH_SIZE       1024
+#define FILEHASH_SIZE   1024
 
-static CVar                 fs_baseDir(L"fs_baseDir", L".", 0, L"");
-static CVar                 fs_debug(L"fs_debug", L"0", CVar::Bool, L"");
+static CVar             fs_baseDir("fs_baseDir", ".", 0, "");
+static CVar             fs_debug("fs_debug", "0", CVar::Flag::Bool, "");
 
-FileSystem                  fileSystem;
+FileSystem              fileSystem;
 
 //--------------------------------------------------------------------------------------------------
 //
@@ -38,20 +38,40 @@ FileSystem                  fileSystem;
 //--------------------------------------------------------------------------------------------------
 
 struct ZipEntry {
-    char                    name[MaxRelativePath];
-    size_t                  compressedSize;
-    size_t                  uncompressedSize;
-    uLong                   unzOffset;
+    char                name[MaxRelativePath];
+    size_t              compressedSize;
+    size_t              uncompressedSize;
+    uLong               unzOffset;
 };
 
 struct ZipArchive {
-    char                    name[MaxRelativePath];
-    char                    fullPath[MaxAbsolutePath];
-    unzFile                 unzArchive;
-    int                     numEntries;
-    Array<ZipEntry *>       entryList;
-    HashIndex               entryHash;
+    char                name[MaxRelativePath];
+    char                fullPath[MaxAbsolutePath];
+    unzFile             unzArchive;
+    int                 numEntries;
+    Array<ZipEntry *>   entryList;
+    HashIndex           entryHash;
 };
+
+//--------------------------------------------------------------------------------------------------
+//
+// FileArray
+//
+//--------------------------------------------------------------------------------------------------
+
+int FileArray::AddUnique(const FileInfo &file, HashIndex &hashIndex) {
+    int hashKey = hashIndex.GenerateHash(file.filename);
+    int i = hashIndex.First(hashKey);
+
+    for (; i != -1; i = hashIndex.Next(i)) {
+        if (!array[i].filename.Icmp(file.filename)) {
+            return i;
+        }
+    }
+    i = array.Append(file);
+    hashIndex.Add(hashKey, i);
+    return i;
+}
 
 //--------------------------------------------------------------------------------------------------
 //
@@ -119,7 +139,7 @@ void FileSystem::AddSearchPath(const char *path) {
     int num = PlatformFile::ListFiles(ToRelativePath(path), "*.zip", false, false, files);
 
     for (int i = 0; i < num; i++) {
-        AddSearchPath_ZIP(path, files[i].relativePath);
+        AddSearchPath_ZIP(path, files[i].filename);
     }
 }
 
@@ -127,7 +147,7 @@ void FileSystem::AddSearchPath(const char *path) {
 
 static voidpf ZCALLBACK _fopen_file_func(voidpf opaque, const char* filename, int mode) {
     PlatformFile *file = nullptr;
-    PlatformFile *(*mode_fopen)(const char *filename) = nullptr;
+    PlatformBaseFile *(*mode_fopen)(const char *filename) = nullptr;
     if ((mode & ZLIB_FILEFUNC_MODE_READWRITEFILTER) == ZLIB_FILEFUNC_MODE_READ) {
         mode_fopen = PlatformFile::OpenFileRead;
     } else {
@@ -141,7 +161,7 @@ static voidpf ZCALLBACK _fopen_file_func(voidpf opaque, const char* filename, in
     }
 
     if ((filename != nullptr) && (mode_fopen != nullptr)) {
-        file = (*mode_fopen)(filename);
+        file = (PlatformFile *)(*mode_fopen)(filename);
     }
     return (FILE *) file;
 }
@@ -165,16 +185,16 @@ static long ZCALLBACK _ftell_file_func(voidpf opaque, voidpf stream) {
 }
 
 static long ZCALLBACK _fseek_file_func(voidpf  opaque, voidpf stream, uLong offset, int origin) {
-    enum PlatformFile::Origin fseek_origin;
+    enum PlatformFile::Origin::Enum fseek_origin;
     switch (origin) {
     case ZLIB_FILEFUNC_SEEK_CUR:
-        fseek_origin = PlatformFile::Current;
+        fseek_origin = PlatformFile::Origin::Current;
         break;
     case ZLIB_FILEFUNC_SEEK_END:
-        fseek_origin = PlatformFile::End;
+        fseek_origin = PlatformFile::Origin::End;
         break;
     case ZLIB_FILEFUNC_SEEK_SET:
-        fseek_origin = PlatformFile::Start;
+        fseek_origin = PlatformFile::Origin::Start;
         break;
     default:
         return -1;
@@ -264,15 +284,15 @@ void FileSystem::AddSearchPath_ZIP(const char *path, const char *filename) {
 void FileSystem::Init(const char *baseDir) {
     SetBaseDir(baseDir);
 
-    cmdSystem.AddCommand(L"dir", Cmd_Dir);
-    cmdSystem.AddCommand(L"path", Cmd_Path);
+    cmdSystem.AddCommand("dir", Cmd_Dir);
+    cmdSystem.AddCommand("path", Cmd_Path);
 
-    BE_LOG(L"Current search path:\n");
+    BE_LOG("Current search path:\n");
     for (SearchPath *s = searchPath; s; s = s->next) {
         if (s->archive) {
-            BE_LOG(L"%hs (%i files)\n", s->archive->fullPath, s->archive->numEntries);
+            BE_LOG("%s (%i files)\n", s->archive->fullPath, s->archive->numEntries);
         } else {
-            BE_LOG(L"%hs\n", s->pathname);
+            BE_LOG("%s\n", s->pathname);
         }
     }
 }
@@ -280,13 +300,13 @@ void FileSystem::Init(const char *baseDir) {
 void FileSystem::Shutdown() {
     ClearSearchPath();
     
-    cmdSystem.RemoveCommand(L"dir");
-    cmdSystem.RemoveCommand(L"path");
+    cmdSystem.RemoveCommand("dir");
+    cmdSystem.RemoveCommand("path");
 }
 
 void FileSystem::Restart(const char *baseDir) {
     if (!baseDir) {
-        baseDir = WStr::ToStr(fs_baseDir.GetString());
+        baseDir = fs_baseDir.GetString();
     }
     
     Shutdown();
@@ -298,7 +318,7 @@ const char *FileSystem::GetBaseDir() const {
 }
 
 void FileSystem::SetBaseDir(const char *baseDir) {
-    fs_baseDir.SetString(Str::ToWStr(baseDir));
+    fs_baseDir.SetString(baseDir);
     
     PlatformFile::SetBasePath(baseDir);
 }
@@ -311,18 +331,18 @@ int FileSystem::MakeFullPath(char *fullpath, int size, const char *path, const c
     if (directory && directory[0]) {
         len = Str::snPrintf(fullpath, size, "%s/%s", fullpath, directory);
         if (len == size) {
-            BE_FATALERROR(L"FileSystem::MakeFullPath: not enough fullpath string data size");
+            BE_FATALERROR("FileSystem::MakeFullPath: not enough fullpath string data size");
         }
     }
 
     if (file && file[0]) {
         len = Str::snPrintf(fullpath, size, "%s/%s", fullpath, file);
         if (len == size) {
-            BE_FATALERROR(L"FileSystem::MakeFullPath: not enough fullpath string data size");
+            BE_FATALERROR("FileSystem::MakeFullPath: not enough fullpath string data size");
         }
     }
 
-    Str::ConvertPathSeperator(fullpath, PATHSEPERATOR_CHAR);	
+    Str::ConvertPathSeperator(fullpath, PATHSEPERATOR_CHAR);
 
     return len;
 }
@@ -369,7 +389,7 @@ const Str FileSystem::ToAbsolutePath(const char *relativePath) const {
 bool FileSystem::RemoveFile(const char *filename, bool evenReadOnly) {
     bool fileExists = PlatformFile::FileExists(filename);
     if (!fileExists) {
-        BE_LOG(L"Couldn't remove %hs because it doesn't exist\n", filename);
+        BE_LOG("Couldn't remove %s because it doesn't exist\n", filename);
         return false;
     }
     
@@ -378,7 +398,7 @@ bool FileSystem::RemoveFile(const char *filename, bool evenReadOnly) {
     }
     
     if (!PlatformFile::RemoveFile(filename)) {
-        BE_WARNLOG(L"Error occured removing file %hs\n", filename);
+        BE_WARNLOG("Error occured removing file %s\n", filename);
         return false;
     }
     
@@ -387,7 +407,7 @@ bool FileSystem::RemoveFile(const char *filename, bool evenReadOnly) {
 
 bool FileSystem::MoveFile(const char *srcFilename, const char *dstFilename) {
     if (fs_debug.GetBool()) {
-        BE_LOG(L"MoveFile: %hs --> %hs\n", srcFilename, dstFilename);
+        BE_LOG("MoveFile: %s --> %s\n", srcFilename, dstFilename);
     }
     
     Str path = dstFilename;
@@ -421,13 +441,13 @@ bool FileSystem::CopyFile(const char *srcFilename, const char *dstFilename, Prog
     }
 
     if (fs_debug.GetBool()) {
-        BE_LOG(L"CopyFile: %hs --> %hs\n", srcFilename, dstFilename);
+        BE_LOG("CopyFile: %s --> %s\n", srcFilename, dstFilename);
     }
 
     size_t srcFileSize;
     File *srcFile = OpenFileRead(srcFilename, false, &srcFileSize);
     if (!srcFile /*|| srcFileSize < 1 */) {
-        BE_WARNLOG(L"CopyFile: Failed to open src file '%hs'\n", srcFilename);
+        BE_WARNLOG("CopyFile: Failed to open src file '%s'\n", srcFilename);
         return false;
     }
     
@@ -438,7 +458,7 @@ bool FileSystem::CopyFile(const char *srcFilename, const char *dstFilename, Prog
 
     File *dstFile = OpenFileWrite(dstFilename);
     if (!dstFile) {
-        BE_WARNLOG(L"CopyFile: Failed to open dst file '%hs'\n", dstFilename);
+        BE_WARNLOG("CopyFile: Failed to open dst file '%s'\n", dstFilename);
         CloseFile(srcFile);
         return false;
     }
@@ -502,10 +522,10 @@ bool FileSystem::CopyDirectoryTree(const char *from, const char *to) {
         const auto &fileInfo = fileArray.GetArray()[i];
 
         Str srcFilename = from;
-        srcFilename.AppendPath(fileInfo.relativePath);
+        srcFilename.AppendPath(fileInfo.filename);
 
         Str dstFilename = to;
-        dstFilename.AppendPath(fileInfo.relativePath);
+        dstFilename.AppendPath(fileInfo.filename);
 
         if (!CopyFile(srcFilename, dstFilename)) {
             return false;
@@ -546,14 +566,14 @@ void FileSystem::SetTimeStamp(const char *filename, const DateTime &timeStamp) {
 
 File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t *fileSize) {
     if (!filename) {
-        BE_FATALERROR(L"FileSystem::OpenFileRead: nullptr 'filename' parameter passed");
+        BE_FATALERROR("FileSystem::OpenFileRead: nullptr 'filename' parameter passed");
         return nullptr;
     }
 
-    PlatformFile *pf = PlatformFile::OpenFileRead(filename);
+    PlatformFile *pf = (PlatformFile *)PlatformFile::OpenFileRead(filename);
     if (pf) {
         if (fs_debug.GetBool()) {
-            BE_LOG(L"FileSystem::OpenFileRead: %hs\n", filename);
+            BE_LOG("FileSystem::OpenFileRead: %s\n", filename);
         }
         
         FileReal *file = new FileReal(filename, pf);
@@ -589,7 +609,7 @@ File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t 
                         
             if (i != -1) {
                 if (fs_debug.GetBool()) {
-                    BE_LOG(L"FileSystem::OpenFileRead: %hs (found in '%hs')\n", filename, archive->name);
+                    BE_LOG("FileSystem::OpenFileRead: %s (found in '%s')\n", filename, archive->name);
                 }
 
                 unzSetOffset(archive->unzArchive, entry->unzOffset);
@@ -608,10 +628,10 @@ File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t 
             relativePath.AppendPath(filename);
             relativePath.CleanPath();
 
-            PlatformFile *pf = PlatformFile::OpenFileRead(relativePath);
+            PlatformFile *pf = (PlatformFile *)PlatformFile::OpenFileRead(relativePath);
             if (pf) {
                 if (fs_debug.GetBool()) {
-                    BE_LOG(L"FileSystem::OpenFileRead: %hs (found in '%hs')\n", relativePath.c_str(), s->pathname);
+                    BE_LOG("FileSystem::OpenFileRead: %s (found in '%s')\n", relativePath.c_str(), s->pathname);
                 }
 
                 FileReal *file = new FileReal(relativePath, pf);
@@ -631,7 +651,7 @@ File *FileSystem::OpenFileRead(const char *filename, bool useSearchPath, size_t 
 
 File *FileSystem::OpenFileWrite(const char *filename) {
     if (fs_debug.GetBool()) {
-        BE_LOG(L"FileSystem::OpenFileWrite: %hs\n", filename);
+        BE_LOG("FileSystem::OpenFileWrite: %s\n", filename);
     }
     
     Str writeDir = filename;
@@ -640,13 +660,13 @@ File *FileSystem::OpenFileWrite(const char *filename) {
         CreateDirectory(writeDir, true);
     }
     
-    PlatformFile *pf = PlatformFile::OpenFileWrite(filename);
+    PlatformFile *pf = (PlatformFile *)PlatformFile::OpenFileWrite(filename);
     if (!pf) {
         if (PlatformFile::FileExists(filename)) {
             int fileMode = PlatformFile::GetFileMode(filename);
-            if (!(fileMode & PlatformFile::Writable)) {
-                PlatformFile::SetFileMode(filename, fileMode | PlatformFile::Writable);
-                pf = PlatformFile::OpenFileWrite(filename);
+            if (!(fileMode & PlatformFile::Mode::Writable)) {
+                PlatformFile::SetFileMode(filename, fileMode | PlatformFile::Mode::Writable);
+                pf = (PlatformFile *)PlatformFile::OpenFileWrite(filename);
             }
         }
         
@@ -661,7 +681,7 @@ File *FileSystem::OpenFileWrite(const char *filename) {
 
 File *FileSystem::OpenFileAppend(const char *filename) {
     if (fs_debug.GetBool()) {
-        BE_LOG(L"FileSystem::OpenFileAppend: %hs\n", filename);
+        BE_LOG("FileSystem::OpenFileAppend: %s\n", filename);
     }
 
     Str writeDir = filename;
@@ -670,7 +690,7 @@ File *FileSystem::OpenFileAppend(const char *filename) {
         CreateDirectory(writeDir, true);
     }
 
-    PlatformFile *pf = PlatformFile::OpenFileAppend(filename);
+    PlatformFile *pf = (PlatformFile *)PlatformFile::OpenFileAppend(filename);
     if (!pf) {
         return nullptr;
     }
@@ -679,17 +699,17 @@ File *FileSystem::OpenFileAppend(const char *filename) {
     return file;
 }
 
-File *FileSystem::OpenFile(const char *filename, File::Mode mode, bool searchDirs) {
+File *FileSystem::OpenFile(const char *filename, File::Mode::Enum mode, bool searchDirs) {
     switch (mode) {
-    case File::ReadMode:
+    case File::Mode::Read:
         return OpenFileRead(filename, searchDirs);
-    case File::WriteMode:
+    case File::Mode::Write:
         return OpenFileWrite(filename);
-    case File::AppendMode:
+    case File::Mode::Append:
         return OpenFileAppend(filename);
     }
 
-    BE_FATALERROR(L"FileSystem::OpenFile: bad mode");
+    BE_FATALERROR("FileSystem::OpenFile: bad mode");
     return nullptr;
 }
 
@@ -728,7 +748,7 @@ bool FileSystem::CreateDirectory(const char *dirname, bool tree) const {
 bool FileSystem::RemoveDirectory(const char *dirname, bool tree) const {
     if (tree) {
         if (!PlatformFile::RemoveDirectoryTree(dirname)) {
-            BE_LOG(L"Failed to remove directory '%hs' recursively\n", dirname);
+            BE_LOG("Failed to remove directory '%s' recursively\n", dirname);
             return false;
         }
         
@@ -746,7 +766,7 @@ bool FileSystem::RemoveDirectory(const char *dirname, bool tree) const {
 
 size_t FileSystem::LoadFile(const char *path, bool searchDirs, void **buffer) {
     if (!path || !path[0]) {
-        BE_ERRLOG(L"FileSystem::LoadFile: empty filename\n");
+        BE_ERRLOG("FileSystem::LoadFile: empty filename\n");
         if (buffer) {
             *buffer = nullptr;
         }
@@ -779,7 +799,7 @@ size_t FileSystem::LoadFile(const char *path, bool searchDirs, void **buffer) {
 
 void FileSystem::FreeFile(void *buffer) const {
     if (!buffer) {
-        BE_FATALERROR(L"FileSystem::FreeFile: nullptr pointer");
+        BE_FATALERROR("FileSystem::FreeFile: nullptr pointer");
         return;
     }
     
@@ -788,7 +808,7 @@ void FileSystem::FreeFile(void *buffer) const {
 
 void FileSystem::WriteFile(const char *filename, const void *buffer, int size) {
     if (!filename || !buffer) {
-        BE_FATALERROR(L"FileSystem::WriteFile: nullptr parameter");
+        BE_FATALERROR("FileSystem::WriteFile: nullptr parameter");
         return;
     }
     
@@ -798,9 +818,9 @@ void FileSystem::WriteFile(const char *filename, const void *buffer, int size) {
         CreateDirectory(writeDir, true);
     }
 
-    File *fp = OpenFile(filename, File::WriteMode);
+    File *fp = OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_FATALERROR(L"FileSystem::WriteFile: failed to open %hs", filename);
+        BE_FATALERROR("FileSystem::WriteFile: failed to open %s", filename);
         return;
     }
 
@@ -817,7 +837,7 @@ bool FileSystem::ReadDict(const char *filename, Dict &dict) {
     }
 
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(text, Str::Length(text), va("%s", filename));
     
     dict.Parse(lexer);
@@ -828,9 +848,9 @@ bool FileSystem::ReadDict(const char *filename, Dict &dict) {
 }
 
 bool FileSystem::WriteDict(const char *filename, const Dict &dict) {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG(L"FileSystem::WriteDict: file open error\n");
+        BE_WARNLOG("FileSystem::WriteDict: file open error\n");
         return false;
     }
 
@@ -850,6 +870,7 @@ bool FileSystem::WriteDict(const char *filename, const Dict &dict) {
 
 int FileSystem::ListFiles(const char *findPath, const char *nameFilter, FileArray &fileArray, bool searchDirs, bool includeSubDir, bool sort, bool recursive) {
     Array<FileInfo> files;
+    HashIndex       fileHash(4096, 4096);
     FileInfo        fileInfo;
 
     if (!nameFilter) {
@@ -863,7 +884,7 @@ int FileSystem::ListFiles(const char *findPath, const char *nameFilter, FileArra
         int numEntries = PlatformFile::ListFiles(findPath, nameFilter, recursive, includeSubDir, files);
 
         for (int i = 0; i < numEntries; i++) {
-            fileArray.array.AddUnique(files[i]);
+            fileArray.AddUnique(files[i], fileHash);
         }
     } else {
         fileArray.array.Clear();
@@ -893,9 +914,9 @@ int FileSystem::ListFiles(const char *findPath, const char *nameFilter, FileArra
 
                     fileInfo.isSubDir = false;
                     //fileInfo.size = entry->size;
-                    fileInfo.relativePath = name;
+                    fileInfo.filename = name;
 
-                    fileArray.array.AddUnique(fileInfo);
+                    fileArray.AddUnique(fileInfo, fileHash);
                 }
             } else if (s->pathname) {
                 char path[MaxAbsolutePath];
@@ -904,7 +925,7 @@ int FileSystem::ListFiles(const char *findPath, const char *nameFilter, FileArra
                 int numEntries = PlatformFile::ListFiles(path, nameFilter, recursive, includeSubDir, files);
 
                 for (int i = 0; i < numEntries; i++) {
-                    fileArray.array.AddUnique(files[i]);
+                    fileArray.AddUnique(files[i], fileHash);
                 }
             }
         }
@@ -936,39 +957,39 @@ void FileSystem::Cmd_Dir(const CmdArgs &args) {
     int argc = args.Argc();
     
     if (argc < 2 || argc > 3) {
-        BE_LOG(L"usage: dir <directory> [namefilter]\n");
+        BE_LOG("usage: dir <directory> [namefilter]\n");
         return;
     }
 
-    char directory[1024];
-    Str::Copynz(directory, tombs(args.Argv(1)), COUNT_OF(directory));
+    char directory[1024] = "";
+    Str::Copynz(directory, args.Argv(1), COUNT_OF(directory));
 
     char nameFilter[256] = "";
     if (argc > 2) {
-        Str::Copynz(nameFilter, tombs(args.Argv(2)), COUNT_OF(nameFilter));
+        Str::Copynz(nameFilter, args.Argv(2), COUNT_OF(nameFilter));
     }
 
-    FileArray fileArray;
-    fileSystem.ListFiles(directory, nameFilter, fileArray, true);
+    FileArray files;
+    fileSystem.ListFiles(directory, nameFilter, files, true);
 
-    BE_LOG(L"Directory of %hs %hs\n", directory, nameFilter);
+    BE_LOG("Directory of %s %s\n", directory, nameFilter);
 
-    for (int i = 0; i < fileArray.NumFiles(); i++) {
-        BE_LOG(L"%hs\n", fileArray.GetFilename(i));
+    for (int i = 0; i < files.NumFiles(); i++) {
+        BE_LOG("%s\n", files.GetFileName(i));
     }
     
-    BE_LOG(L"%i files found\n", fileArray.NumFiles());
+    BE_LOG("%i files found\n", files.NumFiles());
 }
 
 void FileSystem::Cmd_Path(const CmdArgs &args) {
     SearchPath *s;
     
-    BE_LOG(L"Current search path:\n");
+    BE_LOG("Current search path:\n");
     for (s = fileSystem.searchPath; s; s = s->next) {
         if (s->archive) {
-            BE_LOG(L"%hs (%i files)\n", s->archive->fullPath, s->archive->numEntries);
+            BE_LOG("%s (%i files)\n", s->archive->fullPath, s->archive->numEntries);
         } else {
-            BE_LOG(L"%hs\n", s->pathname);
+            BE_LOG("%s\n", s->pathname);
         }
     }
 }

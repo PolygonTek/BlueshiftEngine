@@ -15,7 +15,7 @@ shader "downscale2x2" {
 		#endif
 
 		uniform sampler2D tex0;
-		uniform vec2 sampleOffsets[SAMPLES];
+		uniform HIGHP vec2 sampleOffsets[SAMPLES];
 
 		void main() {
 			vec4 color = vec4(0.0, 0.0, 0.0, 0.0);

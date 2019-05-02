@@ -68,7 +68,7 @@ Prefab *PrefabManager::FindPrefab(const char *hashName) const {
 
 Prefab *PrefabManager::AllocPrefab(const char *hashName, const Guid &guid) {
     if (prefabHashMap.Get(hashName)) {
-        BE_FATALERROR(L"%hs prefab already allocated", hashName);
+        BE_FATALERROR("%s prefab already allocated", hashName);
     }
 
     Prefab *prefab = (Prefab *)Prefab::CreateInstance(guid);

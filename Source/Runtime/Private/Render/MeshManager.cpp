@@ -30,8 +30,8 @@ Mesh *          MeshManager::defaultCapsuleMesh;
 MeshManager     meshManager;
 
 void MeshManager::Init() {
-    cmdSystem.AddCommand(L"listMeshes", Cmd_ListMeshes);
-    cmdSystem.AddCommand(L"reloadMesh", Cmd_ReloadMesh);
+    cmdSystem.AddCommand("listMeshes", Cmd_ListMeshes);
+    cmdSystem.AddCommand("reloadMesh", Cmd_ReloadMesh);
 
     meshHashMap.Init(1024, 64, 64);
     instantiatedMeshList.Resize(64, 64);
@@ -87,8 +87,8 @@ void MeshManager::CreateEngineMeshes() {
 }
 
 void MeshManager::Shutdown() {
-    cmdSystem.RemoveCommand(L"listMeshes");
-    cmdSystem.RemoveCommand(L"reloadMesh");
+    cmdSystem.RemoveCommand("listMeshes");
+    cmdSystem.RemoveCommand("reloadMesh");
 
     for (int i = 0; i < meshHashMap.Count(); i++) {
         const auto *entry = meshManager.meshHashMap.GetByIndex(i);
@@ -129,7 +129,7 @@ void MeshManager::DestroyUnusedMeshes() {
 
 Mesh *MeshManager::AllocMesh(const char *hashName) {
     if (meshHashMap.Get(hashName)) {
-        BE_FATALERROR(L"%hs mesh already allocated", hashName);
+        BE_FATALERROR("%s mesh already allocated", hashName);
     }
     
     Mesh *mesh = new Mesh;
@@ -167,7 +167,7 @@ void MeshManager::DestroyMesh(Mesh *mesh) {
     }
 
     if (mesh->refCount > 1) {
-        BE_WARNLOG(L"MeshManager::DestroyMesh: mesh '%hs' has %i reference count\n", mesh->name.c_str(), mesh->refCount);
+        BE_WARNLOG("MeshManager::DestroyMesh: mesh '%s' has %i reference count\n", mesh->name.c_str(), mesh->refCount);
     }
 
     meshHashMap.Remove(mesh->hashName);
@@ -236,7 +236,7 @@ Mesh *MeshManager::GetMesh(const char *hashName) {
 
     mesh = AllocMesh(hashName);
     if (!mesh->Load(hashName)) {
-        BE_WARNLOG(L"Couldn't load mesh '%hs'\n", hashName);
+        BE_WARNLOG("Couldn't load mesh '%s'\n", hashName);
         DestroyMesh(mesh);
         return defaultMesh;
     }
@@ -244,17 +244,19 @@ Mesh *MeshManager::GetMesh(const char *hashName) {
     return mesh;
 }
 
-Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const Array<SubMesh *> &subMeshes, const Array<Mat3x4> &subMeshMatrices) {
+Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const Array<BatchSubMesh> &batchSubMeshes) {
+    // Counts total verts/indices for combined mesh.
     int numTotalVerts = 0;
     int numTotalIndexes = 0;
 
-    for (int subMeshIndex = 0; subMeshIndex < subMeshes.Count(); subMeshIndex++) {
-        const SubMesh *subMesh = subMeshes[subMeshIndex];
+    for (int subMeshIndex = 0; subMeshIndex < batchSubMeshes.Count(); subMeshIndex++) {
+        const SubMesh *subMesh = batchSubMeshes[subMeshIndex].subMesh;
 
         numTotalVerts += subMesh->NumVerts();
         numTotalIndexes += subMesh->NumIndexes();
     }
 
+    // Allocates a combiend mesh.
     Mesh *mesh = AllocMesh(hashName);
     MeshSurf *surf = mesh->AllocSurface(numTotalVerts, numTotalIndexes);
     mesh->surfaces.Append(surf);
@@ -263,24 +265,25 @@ Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const Array<SubMesh 
     TriIndex *dstIndexPtr = surf->subMesh->indexes;
     int baseVertex = 0;
 
-    for (int subMeshIndex = 0; subMeshIndex < subMeshes.Count(); subMeshIndex++) {
-        const SubMesh *srcSubMesh = subMeshes[subMeshIndex];
+    for (int subMeshIndex = 0; subMeshIndex < batchSubMeshes.Count(); subMeshIndex++) {
+        const SubMesh *srcSubMesh = batchSubMeshes[subMeshIndex].subMesh;
 
-        for (int index = 0; index < srcSubMesh->numVerts; index++) {
-            *dstVertPtr = srcSubMesh->verts[index];
-            dstVertPtr->Transform(subMeshMatrices[subMeshIndex]);
+        for (int i = 0; i < srcSubMesh->numVerts; i++) {
+            *dstVertPtr = srcSubMesh->verts[i];
+
+            dstVertPtr->Transform(batchSubMeshes[subMeshIndex].localTransform);
             dstVertPtr++;
         }
 
-        for (int index = 0; index < srcSubMesh->numIndexes; index++) {
-            *dstIndexPtr = srcSubMesh->indexes[index] + baseVertex;
+        for (int i = 0; i < srcSubMesh->numIndexes; i++) {
+            *dstIndexPtr = srcSubMesh->indexes[i] + baseVertex;
             dstIndexPtr++;
         }
 
         baseVertex += srcSubMesh->numVerts;
     }
 
-    mesh->FinishSurfaces(Mesh::ComputeAABBFlag);
+    mesh->FinishSurfaces(Mesh::FinishFlag::ComputeAABB);
 
     return mesh;
 }
@@ -323,7 +326,7 @@ void MeshManager::Cmd_ListMeshes(const CmdArgs &args) {
             numTris += mesh->surfaces[j]->subMesh->numIndexes / 3;
         }
 
-        BE_LOG(L"%3d refs %3d surfs, %6d verts, %6d tris, %3d joints : %hs\n", 
+        BE_LOG("%3d refs %3d surfs, %6d verts, %6d tris, %3d joints : %s\n",
             mesh->refCount,
             mesh->surfaces.Count(),
             numVerts, numTris,
@@ -333,16 +336,16 @@ void MeshManager::Cmd_ListMeshes(const CmdArgs &args) {
         count++;
     }
 
-    BE_LOG(L"%i total meshes\n", count);
+    BE_LOG("%i total meshes\n", count);
 }
 
 void MeshManager::Cmd_ReloadMesh(const CmdArgs &args) {
     if (args.Argc() != 2) {
-        BE_LOG(L"reloadMesh <filename>\n");
+        BE_LOG("reloadMesh <filename>\n");
         return;
     }
 
-    if (!WStr::Icmp(args.Argv(1), L"all")) {
+    if (!Str::Icmp(args.Argv(1), "all")) {
         int count = meshManager.meshHashMap.Count();
 
         for (int i = 0; i < count; i++) {
@@ -351,9 +354,9 @@ void MeshManager::Cmd_ReloadMesh(const CmdArgs &args) {
             mesh->Reload();
         }
     } else {
-        Mesh *mesh = meshManager.FindMesh(WStr::ToStr(args.Argv(1)));
+        Mesh *mesh = meshManager.FindMesh(args.Argv(1));
         if (!mesh) {
-            BE_WARNLOG(L"Couldn't find mesh to reload \"%ls\"\n", args.Argv(1));
+            BE_WARNLOG("Couldn't find mesh to reload \"%s\"\n", args.Argv(1));
             return;
         }
 

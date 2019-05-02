@@ -14,12 +14,13 @@
 
 #pragma once
 
-#define B_ENGINE_NAME "Blueshift Engine"
+#define BE_NAME "Blueshift Engine"
 
 #include "Version.h"
 
-#define B_STRINGIZE(x) #x
-#define B_ENGINE_VERSION_STRING B_STRINGIZE(B_ENGINE_VERSION_MAJOR) B_STRINGIZE(B_ENGINE_VERSION_MINOR) B_STRINGIZE(B_ENGINE_VERSION_PATCH) 
+#define BE_STRINGIZE(x) #x
+#define BE_CONCAT_VERSION(a, b, c) BE_STRINGIZE(a) "." BE_STRINGIZE(b) "." BE_STRINGIZE(c)
+#define BE_VERSION BE_CONCAT_VERSION(BE_VERSION_MAJOR, BE_VERSION_MINOR, BE_VERSION_PATCH)
 
 //----------------------------------------------------------------------------------------------
 // Platform detection defines
@@ -130,7 +131,7 @@
 // Common platform
 //----------------------------------------------------------------------------------------------
 
-//#pragma setlocale ("kor")
+//#pragma setlocale ("kor") // We don't need this because we don't use character literal in other language.
 
 // C RunTime Header Files
 #include <stdio.h>
@@ -156,18 +157,10 @@
 #include <utility>
 #include <cmath>
 #include <memory>
-#include <tuple>
 #include <string>
-#include <vector>
-#include <list>
-#include <map>
-#include <unordered_map>
-#include <set>
-#include <unordered_set>
-#include <stack>
-#include <queue>
 #include <limits>
 #include <exception>
+#include <atomic>
 
 #define BE1                         BE1
 #define BE_NAMESPACE_BEGIN          namespace BE1 {
@@ -176,17 +169,17 @@
 #define BE_STATIC_LINK
 
 #if defined(BE_STATIC_LINK) || !defined(__WIN32__)
-#define BE_API
+    #define BE_API
 #elif defined(BE_EXPORTS)
-#define BE_API __declspec (dllexport)
+    #define BE_API __declspec (dllexport)
 #else 
-#define BE_API __declspec (dllimport)
+    #define BE_API __declspec (dllimport)
 #endif
 
 #if defined(__WIN32__) && !defined(__X86_64__)
-#define BE_FASTCALL                 __fastcall
+    #define BE_FASTCALL             __fastcall
 #else
-#define BE_FASTCALL
+    #define BE_FASTCALL
 #endif
 
 #define COUNT_OF(a)                 ((int)(sizeof(a) / sizeof((a)[0])))
@@ -194,7 +187,7 @@
 #define OFFSET_OF(type, member)     ((intptr_t)&((type *)0)->member)
 
 #ifndef BIT
-#define BIT(num)                    (1 << (num))
+    #define BIT(num)                (1 << (num))
 #endif
 #define ADD_BIT(x, num)             (x |= BIT(num))
 #define SUB_BIT(x, num)             (x &= ~BIT(num))
@@ -211,22 +204,22 @@
 #define SAFE_DELETE_ARRAY(p)        if (p) { delete[] p; p = nullptr; }
 
 #ifndef FLT_INFINITY
-#define FLT_INFINITY                std::numeric_limits<float>::infinity()
+    #define FLT_INFINITY            std::numeric_limits<float>::infinity()
 #endif
 
 #if defined(_MSC_VER) && !defined(__SSE4_2__)
-#define __SSE4_2__  // enable to activate SSE4.2 under Windows
+    #define __SSE4_2__  // enable to activate SSE4.2 under Windows
 #endif
 
 #if defined(_MSC_VER) && !defined(__AVX__)
-#define __AVX__  // enable to activate AVX under Windows
+    #define __AVX__  // enable to activate AVX under Windows
 #endif
 
 // useful macro for forward declaration of Objective-C class in C/C++
 #ifdef __OBJC__
-#define OBJC_CLASS(name) @class name
+    #define OBJC_CLASS(name) @class name
 #else
-#define OBJC_CLASS(name) typedef struct objc_object name
+    #define OBJC_CLASS(name) typedef struct objc_object name
 #endif
 
 typedef uint8_t         byte;       // 8 bits
@@ -249,6 +242,46 @@ typedef uint64_t        qword;      // 64 bits
 #define assert_64_byte_aligned(pointer)
 
 #endif
+
+#ifdef _MSC_VER
+    #if (_MSC_VER >= 1800)
+        #define __alignas_is_defined 1
+    #endif
+    #if (_MSC_VER >= 1900)
+        #define __alignof_is_defined 1
+    #endif
+#else
+    #include <stdalign.h>   // __alignas/of_is_defined directly from the implementation
+#endif
+
+#ifdef __alignas_is_defined
+    #define ALIGN_AS(x) alignas(x)
+#else
+    #pragma message("C++11 alignas unsupported :( Falling back to compiler attributes")
+    #ifdef __GNUG__
+        #define ALIGN_AS(x) __attribute__ ((aligned(x)))
+    #elif defined(_MSC_VER)
+        #define ALIGN_AS(x) __declspec(align(x))
+    #else
+        #error Unknown compiler, unknown alignment attribute!
+    #endif
+#endif
+
+#ifdef __alignof_is_defined
+    #define ALIGN_OF(x) alignof(x)
+#else
+    #pragma message("C++11 alignof unsupported :( Falling back to compiler attributes")
+    #ifdef __GNUG__
+        #define ALIGN_OF(x) __alignof__ (x)
+    #elif defined(_MSC_VER)
+        #define ALIGN_OF(x) __alignof(x)
+    #else
+        #error Unknown compiler, unknown alignment attribute!
+    #endif
+#endif
+
+#define ALIGN_AS16 ALIGN_AS(16)
+#define ALIGN_AS32 ALIGN_AS(32)
 
 template <typename T>
 inline T *address_of(T &&in) {
@@ -293,6 +326,16 @@ constexpr std::size_t count_of(T (&)[N]) {
 
 #ifdef __WIN32__
 
+#if defined(_MSC_VER)
+#pragma warning (disable: 4018)     // signed/unsigned mismatch
+#pragma warning (disable: 4221)     // ignore object file does not define any previously undefined public symbols
+#pragma warning (disable: 4244)     // disable conversion warnings (double -> float)
+#pragma warning (disable: 4267)     // conversion from 'size_t' to 'int', possible loss of data
+#pragma warning (disable: 4305)     // truncation from const double to float
+#pragma warning (disable: 4819)     // The file contains a character that cannot be represented in the current code page
+#pragma warning (disable: 4996)     // This function or variable may be unsafe
+#endif
+
 #define BE_WIN_X86_SSE_INTRIN       1
 
 #define BE_CDECL
@@ -308,12 +351,8 @@ constexpr std::size_t count_of(T (&)[N]) {
 #define PATHSEPERATOR_WSTR          L"\\"
 #define PATHSEPERATOR_WCHAR         L'\\'
 
-#define ALIGN(a, x)                 __declspec(align(a)) x
-#define ALIGN16(x)                  __declspec(align(16)) x
-#define ALIGN32(x)                  __declspec(align(32)) x
-
-#define _alloca16(x)                ((void *)((((intptr_t)_alloca((x)+15)) + 15) & ~15))
-#define _alloca32(x)                ((void *)((((intptr_t)_alloca((x)+31)) + 31) & ~31))
+#define _alloca16(x)                ((void *)((((intptr_t)_alloca((x) + 15)) + 15) & ~15))
+#define _alloca32(x)                ((void *)((((intptr_t)_alloca((x) + 31)) + 31) & ~31))
 
 #define strtoll                     _strtoi64
 #define strtoull                    _strtoui64
@@ -322,16 +361,6 @@ constexpr std::size_t count_of(T (&)[N]) {
 #define wcstoull                    _wcstoui64
 
 #define debugbreak()                __debugbreak()
-
-#if defined(_MSC_VER)
-#pragma warning (disable: 4018)     // signed/unsigned mismatch
-#pragma warning (disable: 4221)     // ignore object file does not define any previously undefined public symbols
-#pragma warning (disable: 4244)     // disable conversion warnings (double -> float)
-#pragma warning (disable: 4267)     // conversion from 'size_t' to 'int', possible loss of data
-#pragma warning (disable: 4305)     // truncation from const double to float
-#pragma warning (disable: 4819)     // The file contains a character that cannot be represented in the current code page
-#pragma warning (disable: 4996)     // This function or variable may be unsafe
-#endif
 
 // Including SDKDDKVer.h defines the highest available Windows platform.
 
@@ -362,7 +391,6 @@ constexpr std::size_t count_of(T (&)[N]) {
 
 // Windows specific headers
 #include <windows.h>
-//#include <malloc.h>
 #include <intrin.h>
 
 #endif
@@ -386,13 +414,9 @@ constexpr std::size_t count_of(T (&)[N]) {
 #define PATHSEPERATOR_WSTR          L"/"
 #define PATHSEPERATOR_WCHAR         L'/'
 
-#define ALIGN(a, x)                 __attribute__((aligned(a)) x
-#define ALIGN16(x)                  __attribute__((aligned(16))) x
-#define ALIGN32(x)                  __attribute__((aligned(32))) x
-
 #define _alloca                     alloca
-#define _alloca16(x)                ((void *)((((intptr_t)alloca((x)+15)) + 15) & ~15))
-#define _alloca32(x)                ((void *)((((intptr_t)alloca((x)+31)) + 31) & ~31))
+#define _alloca16(x)                ((void *)((((intptr_t)alloca((x) + 15)) + 15) & ~15))
+#define _alloca32(x)                ((void *)((((intptr_t)alloca((x) + 31)) + 31) & ~31))
 
 #define debugbreak()                asm("int $3")
 #define TCHAR   char
@@ -421,6 +445,19 @@ constexpr std::size_t count_of(T (&)[N]) {
 #endif // __OBJC__
 #endif // __MACOSX__
 
+BE_FORCE_INLINE void CFStringToString(CFStringRef cfstring, char *string) {
+    const size_t length = CFStringGetLength(cfstring);
+    CFRange range = CFRangeMake(0, length);
+    CFStringGetBytes(cfstring, range, kCFStringEncodingUTF8, '?', false, (UInt8 *)string, length * sizeof(string[0]) + 1, nullptr);
+    string[length] = 0;
+}
+
+BE_FORCE_INLINE CFStringRef StringToCFString(const char *string) {
+    const size_t length = strlen(string);
+    CFStringRef cfstring = CFStringCreateWithBytes(kCFAllocatorDefault, (UInt8 *)string, length * sizeof(string[0]), kCFStringEncodingUTF8, false);
+    return cfstring;
+}
+
 BE_FORCE_INLINE void CFStringToWideString(CFStringRef cfstring, wchar_t *string) {
     const size_t length = CFStringGetLength(cfstring);
     CFRange range = CFRangeMake(0, length);
@@ -448,7 +485,7 @@ BE_FORCE_INLINE CFStringRef WideStringToCFString(const wchar_t *string) {
 
 //----------------------------------------------------------------------------------------------
 
-typedef void (*streamOutFunc_t)(int level, const wchar_t *msg);
+typedef void (*streamOutFunc_t)(int level, const char *msg);
 
 BE_NAMESPACE_BEGIN
 
@@ -603,8 +640,8 @@ BE_FORCE_INLINE constexpr T UnitToKm(T x) { return UnitToMeter(x) * 0.001f; }
 template <typename T>
 BE_FORCE_INLINE constexpr T KmToUnit(T x) { return MeterToUnit(x * 1000.0f); }
 
-void BE_CDECL BE_API Log(int logLevel, const wchar_t *msg, ...);
-void BE_CDECL BE_API Error(int errLevel, const wchar_t *msg, ...);
+void BE_CDECL BE_API Log(int logLevel, const char *msg, ...);
+void BE_CDECL BE_API Error(int errLevel, const char *msg, ...);
 void BE_CDECL BE_API Assert(bool expr);
 
 #define BE_LOG(...) do { \

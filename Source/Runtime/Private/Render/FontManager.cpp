@@ -20,7 +20,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const char *    FontManager::defaultFontFilename = "Data/EngineFonts/consola.ttf";//"Data/EngineFonts/Lucida Console12.font"
+const char *    FontManager::defaultFontFilename = "Data/EngineFonts/D2Coding.ttf";//"Data/EngineFonts/Lucida Console12.font"
 Font *          FontManager::defaultFont;
 FontManager     fontManager;
 
@@ -31,7 +31,7 @@ void FontManager::Init() {
 
     defaultFont = AllocFont(defaultFontFilename, 14);
     if (!defaultFont->Load(defaultFontFilename)) {
-        BE_FATALERROR(L"Couldn't load default font!");
+        BE_FATALERROR("Couldn't load default font!");
     }
     defaultFont->permanence = true;
 }
@@ -44,7 +44,7 @@ void FontManager::Shutdown() {
 
 Font *FontManager::AllocFont(const char *hashName, int fontSize) {
     if (fontHashMap.Get(FontHashKey(hashName, fontSize))) {
-        BE_FATALERROR(L"%hs font already allocated", hashName);
+        BE_FATALERROR("%s font already allocated", hashName);
     }
 
     Font *font = new Font;
@@ -61,7 +61,7 @@ Font *FontManager::AllocFont(const char *hashName, int fontSize) {
 
 void FontManager::DestroyFont(Font *font) {
     if (font->refCount > 1) {
-        BE_WARNLOG(L"FontManager::DestroyFont: font '%hs' has %i reference count\n", font->name.c_str(), font->refCount);
+        BE_WARNLOG("FontManager::DestroyFont: font '%s' has %i reference count\n", font->name.c_str(), font->refCount);
     }
 
     fontHashMap.Remove(FontHashKey(font->hashName, font->fontSize));

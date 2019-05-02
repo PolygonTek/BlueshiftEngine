@@ -22,14 +22,14 @@
 -------------------------------------------------------------------------------
 */
 
-#include "Core/WStr.h"
+#include "Core/Str.h"
 #include "Math/Math.h"
 #include "Containers/Array.h"
 
 BE_NAMESPACE_BEGIN
 
 struct DbvtProxy;
-class VisibleObject;
+class VisObject;
 class Mat3x4;
 class Skeleton;
 class Material;
@@ -38,130 +38,173 @@ class Mesh;
 class Font;
 class ParticleSystem;
 class Particle;
+class RenderWorld;
 
 class RenderObject {
     friend class RenderWorld;
 
 public:
-    enum Flag {
-        StaticFlag          = BIT(0),
-        FirstPersonOnlyFlag = BIT(1),
-        ThirdPersonOnlyFlag = BIT(2),
-        BillboardFlag       = BIT(3),
-        DepthHackFlag       = BIT(4),
-        UseLightProbeFlag   = BIT(5),
-        CastShadowsFlag     = BIT(6),
-        ReceiveShadowsFlag  = BIT(7),
-        OccluderFlag        = BIT(8),   // for use in HOM
-        SkipSelectionFlag   = BIT(9),
-        RichTextFlag        = BIT(10),
+    struct Flag {
+        enum Enum {
+            Static              = BIT(0),
+            FirstPersonOnly     = BIT(1),
+            ThirdPersonOnly     = BIT(2),
+            Billboard           = BIT(3),
+            DepthHack           = BIT(4),
+            EnvProbeLit         = BIT(5),
+            CastShadows         = BIT(6),
+            ReceiveShadows      = BIT(7),
+            Occluder            = BIT(8),   // for use in HOM
+            SkipSelection       = BIT(9),
+            RichText            = BIT(10),
+        };
     };
 
-    enum MaterialParm {
-        RedParm,
-        GreenParm,
-        BlueParm,
-        AlphaParm,
-        TimeOffsetParm,
-        TimeScaleParm,
-        MaxMaterialParms    // should be less than MAX_EXPR_LOCALPARMS
+    struct MaterialParm {
+        enum Enum {
+            Red,
+            Green,
+            Blue,
+            Alpha,
+            TimeOffset,
+            TimeScale,
+            Count       // should be less than MAX_EXPR_LOCALPARMS
+        };
     };
 
-    enum TextAnchor {
-        UpperLeft,
-        UpperCenter,
-        UpperRight,
-        MiddleLeft,
-        MiddleCenter,
-        MiddleRight,
-        LowerLeft,
-        LowerCenter,
-        LowerRight
+    struct TextAnchor {
+        enum Enum {
+            UpperLeft,
+            UpperCenter,
+            UpperRight,
+            MiddleLeft,
+            MiddleCenter,
+            MiddleRight,
+            LowerLeft,
+            LowerCenter,
+            LowerRight
+        };
     };
 
-    enum TextAlignment {
-        Left,
-        Center,
-        Right
+    struct TextAlignment {
+        enum Enum {
+            Left,
+            Center,
+            Right
+        };
     };
 
-    enum WireframeMode {
-        ShowNone,
-        ShowVisibleFront,
-        ShowAllFront,
-        ShowAllFrontAndBack
+    struct WireframeMode {
+        enum Enum {
+            ShowNone,
+            ShowVisibleFront,
+            ShowAllFront,
+            ShowAllFrontAndBack
+        };
     };
 
     struct State {
-        int                 flags;
-        int                 layer;
-        int                 time;
-        float               maxVisDist;
+        int                 flags = 0;
+        int                 layer = 0;
+        int                 staticMask = 0;
+        int                 time = 0;
+        float               maxVisDist = MeterToUnit(100);
 
-        // transform info
-        Vec3                origin;             // object position in world space
-        Vec3                scale;              // object scaling
-        Mat3                axis;               // object orientation
-        AABB                localAABB;          // non-scaled local AABB (shouldn't be empty)
+        //
+        // Transform info
+        //
+        Mat3x4              worldMatrix = Mat3x4::identity;
+        AABB                aabb = AABB::zero;          ///< non-scaled AABB in local space
 
-        // wire frame info
-        WireframeMode       wireframeMode;
-        Color4              wireframeColor;
+        //
+        // Wireframe info
+        //
+        WireframeMode::Enum wireframeMode = WireframeMode::ShowNone;
+        Color4              wireframeColor = Color4::white;
 
+        //
         // static/skinned mesh
-        Mesh *              mesh;               // instantiated mesh
-        const Skeleton *    skeleton;           // skeleton information for skeletal mesh
-        int                 numJoints;          // number of joints
-        Mat3x4 *            joints;             // joint transform matrices to animate skeletal mesh
+        //
+        Mesh *              mesh = nullptr;             ///< Instantiated mesh
+        const Skeleton *    skeleton = nullptr;         ///< Skeleton information for skeletal mesh
+        int                 numJoints = 0;              ///< Number of joints
+        Mat3x4 *            joints = nullptr;           ///< Joint transform matrices to animate skeletal mesh
 
-        // text rendering
-        Font *              font;
-        WStr                text;
-        TextAnchor          textAnchor;
-        TextAlignment       textAlignment;
-        float               textScale;
-        float               lineSpacing;
+        //
+        // Text rendering
+        //
+        Font *              font = nullptr;
+        Str                 text;                       ///< UTF8 encoded string
+        TextAnchor::Enum    textAnchor = TextAnchor::UpperLeft;
+        TextAlignment::Enum textAlignment = TextAlignment::Left;
+        float               textScale = 1.0f;
+        float               lineSpacing = 1.0f;
 
-        // particle system
-        ParticleSystem *    particleSystem;
+        //
+        // Particle system
+        //
+        ParticleSystem *    particleSystem = nullptr;
         Array<Particle *>   stageParticles;
         Array<float>        stageStartDelay;
         
-        // materials
+        //
+        // Materials
+        //
         Array<Material *>   materials;
-        float               materialParms[MaxMaterialParms];
-        Skin *              customSkin;
+        float               materialParms[MaterialParm::Count] = { 1, 1, 1, 1, 0, 1 };
+        Skin *              customSkin = nullptr;
     };
 
-    RenderObject();
+    RenderObject(RenderWorld *renderWorld, int index);
     ~RenderObject();
 
-    void                    Update(const State *state);
+                            /// Returns object index in world.
+    int                     GetIndex() const { return index; }
 
-                            /// Returns non-scaled AABB in local space.
-    const AABB              GetLocalAABB() const;
+                            /// Returns view count.
+    int                     GetViewCount() const { return viewCount; }
+
+                            /// Returns state.
+    const State &           GetState() const { return state; }
+
+                            /// Returns AABB in world space.
+    const AABB &            GetWorldAABB() const { return worldAABB; }
 
                             /// Returns OBB in world space.
     const OBB &             GetWorldOBB() const { return worldOBB; }
 
                             /// Returns local to world matrix.
-    const Mat3x4 &          GetObjectToWorldMatrix() const { return worldMatrix; }
+    const Mat3x4 &          GetWorldMatrix() const { return worldMatrix; }
 
-    int                     index;
-    bool                    firstUpdate;
+                            /// Returns world to local matrix.
+    const Mat3x4 &          GetWorldMatrixInverse() const { return worldMatrixInverse; }
+
+                            /// Returns previous local to world matrix.
+    const Mat3x4 &          GetPrevWorldMatrix() const { return prevWorldMatrix; }
+
+private:
+                            /// Updates this render object with the given state.
+    void                    Update(const State *state);
 
     State                   state;
 
-    OBB                     worldOBB;
-    Mat3x4                  worldMatrix;
-    Mat3x4                  prevWorldMatrix;
+    AABB                    worldAABB = AABB::zero;
+    OBB                     worldOBB = OBB::zero;
+    Mat3x4                  worldMatrix = Mat3x4::identity;
+    Mat3x4                  worldMatrixInverse = Mat3x4::identity;
+    Mat3x4                  prevWorldMatrix = Mat3x4::identity;
 
-    VisibleObject *         visObject;
-    int                     viewCount;
+    float                   maxVisDistSquared;
 
-    DbvtProxy *             proxy;
-    int                     numMeshSurfProxies;
-    DbvtProxy *             meshSurfProxies;            // mesh surf proxy for static sub mesh
+    VisObject *             visObject = nullptr;
+    int                     viewCount = 0;
+
+    RenderWorld *           renderWorld;
+    int                     index;                      // index of object list in RenderWorld
+    DbvtProxy *             proxy = nullptr;            // proxy for render object
+
+    int                     numMeshSurfProxies = 0;     // number of proxies for static sub mesh
+    DbvtProxy *             meshSurfProxies = nullptr;  // proxies for static sub mesh
 };
 
 BE_NAMESPACE_END

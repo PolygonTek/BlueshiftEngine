@@ -21,7 +21,7 @@ public:
 #endif
         lua_getfield(_l, -1, searchers_table_name);     // Push package.searchers field (2)
         lua_pushlightuserdata(l, (void *)this);         // Push light user data (3)
-        lua_pushcclosure(l, &_dispatcher, 1);           // Push C-closure and pop associated value (3)
+        lua_pushcclosure(l, _dispatcher, 1);            // Push C-closure and pop associated value (3)
         // TODO: insert after first searcher
         lua_rawseti(_l, -2, 3);                         // package.searchers[3] = closure (2)
         lua_pop(_l, 2);                                 // Pop (0)
@@ -55,8 +55,8 @@ private:
 
         // Actually module loading will be happened here
         if (!searcher->_func(moduleName)) {
-            lua_pushfstring(l, "Couldn't find '%s'", moduleName);
-            return 1;
+            // If the loader returns no value and has not assigned any value to package.loaded[modname], require() assigns true to this entry
+            lua_pushnil(l);
         }
 
         return lua_gettop(l) - top;

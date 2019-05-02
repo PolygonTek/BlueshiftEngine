@@ -257,12 +257,12 @@ OpenGL 4.6 (2017)
 */
 
 #if defined(__IOS__)
-#include "GGL/ggles3.h"
+    #include "GGL/ggles3.h"
 #elif defined(__ANDROID__)
-#include "GGL/ggles3.h"
-#include "GGL/gegl.h"
+    #include "GGL/ggles3.h"
+    #include "GGL/gegl.h"
 #elif defined(__WIN32__) || defined(__MACOSX__) || defined(__LINUX__)
-#include "GGL/gglcore32.h"
+    #include "GGL/gglcore32.h"
     #if defined(__WIN32__)
         #include "GGL/gwgl.h"
     #elif defined(__LINUX__)
@@ -287,6 +287,7 @@ public:
     static bool             SupportsDepthBoundsTest() { return supportsDepthBoundsTest; }
     static bool             SupportsDepthBufferFloat() { return supportsDepthBufferFloat; }
     static bool             SupportsPixelBufferObject() { return supportsPixelBufferObject; }
+    static bool             SupportsDiscardFrameBuffer() { return false; }
     static bool             SupportsFrameBufferSRGB() { return false; }
     static bool             SupportsTextureRectangle() { return supportsTextureRectangle; }
     static bool             SupportsTextureArray() { return supportsTextureArray; }
@@ -306,20 +307,27 @@ public:
     static bool             SupportsDebugOutput() { return supportsDebugOutput; }
     static bool             SupportsBufferStorage() { return supportsBufferStorage; }
     static bool             SupportsProgramBinary() { return false; }
-    
+    static bool             SupportsCopyImage() { return supportsCopyImage; }
+    static bool             SupportsTimestampQueries() { return false; }
+
     static void             PolygonMode(GLenum face, GLenum mode) {}
     static void             ClearDepth(GLdouble depth) {}
     static void             DepthRange(GLdouble znear, GLdouble zfar) {}
     static void             DrawBuffer(GLenum buffer) {}
+    static void             ReadBuffer(GLenum buffer) {}
+    static void             DrawBuffers(GLsizei count, const GLenum *buffers) {}
     static void             BindDefaultFBO() { gglBindFramebuffer(GL_FRAMEBUFFER, 0); }
+    static void             DiscardFramebuffer(GLenum target, GLsizei numAttachments, const GLenum *attachments) {}
+    static void             CopyImageSubData(GLuint src, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, GLuint dst, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei srcWidth, GLsizei srcHeight, GLsizei srcDepth) {}
+
     static void             VertexAttribDivisor(int index, int divisor) {}
     static void             DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex) {}
     static void             DrawElementsInstancedBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount, GLint basevertex) {}
     static void             DrawElementsIndirect(GLenum mode, GLenum type, const void *indirect) {}
     static void             MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride) {}
 
-    static bool             ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
-    static Image::Format    ToCompressedImageFormat(Image::Format inFormat, bool useNormalMap);
+    static bool             ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
+    static Image::Format::Enum ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
     
 private:
     static bool             supportsPackedFloat;
@@ -339,6 +347,7 @@ private:
     static bool             supportsDebugMarker;
     static bool             supportsDebugOutput;
     static bool             supportsBufferStorage;
+    static bool             supportsCopyImage;
 };
 
 BE_NAMESPACE_END

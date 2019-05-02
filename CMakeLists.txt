@@ -39,6 +39,19 @@ project(${ROOT_PROJECT_NAME})
 
 cmake_dependent_option(USE_LUAJIT "Use LuaJIT" ON "NOT IOS AND NOT ANDROID" OFF)
 
+# Check platform
+if (ANDROID)
+    set(PLATFORM_ANDROID TRUE)
+elseif (WIN32)
+    set(PLATFORM_WINDOWS TRUE)
+elseif (APPLE AND IOS)
+    set(PLATFORM_IOS TRUE)
+elseif (APPLE AND ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(PLATFORM_MACOS TRUE)
+elseif (UNIX)
+    set(PLATFORM_LINUX TRUE)
+endif ()
+
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(ENGINE_64BIT TRUE)
 endif ()
@@ -60,9 +73,14 @@ else ()
 endif ()
 
 set(VERSION_MAJOR 0 CACHE INTERNAL "Project major version number.")
-set(VERSION_MINOR 5 CACHE INTERNAL "Project minor version number.")
+set(VERSION_MINOR 6 CACHE INTERNAL "Project minor version number.")
 set(VERSION_PATCH 0 CACHE INTERNAL "Project patch version number.")
-mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
+
+string(TIMESTAMP NOW "%Y-%m-%d %H:%M:%S")
+set(VERSION_DATE ${NOW} CACHE INTERNAL "Project version date")
+
+# Advanced variables will not be displayed in any of the cmake GUIs unless the show advanced option is on.
+mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH VERSION_DATE)
 
 message(STATUS "Running from ${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -72,7 +90,7 @@ message(STATUS "System: ${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_VERSION} ${CMAKE_SYS
 message(STATUS "C Compiler: ${CMAKE_C_COMPILER}")
 message(STATUS "CXX Compiler: ${CMAKE_CXX_COMPILER}")
 
-set(CMAKE_CONFIGURATION_TYPES Debug Release RelWithDebInfo)
+set(CMAKE_CONFIGURATION_TYPES Debug Release Development)
 
 # Set this variable to specify a common place where CMake should put all executable files
 set(RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Bin/${CMAKE_GENERATOR})
@@ -83,6 +101,12 @@ set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "")
 # Add DEBUG, _DEBUG definition to compiler in debug build
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
+
+# Add DEVELOPMENT, _DEVELOPMENT definition to compiler in development build
+set(CMAKE_C_FLAGS_DEVELOPMENT "${CMAKE_C_FLAGS_RELEASE} -DDEVELOPMENT -D_DEVELOPMENT")
+set(CMAKE_CXX_FLAGS_DEVELOPMENT "${CMAKE_CXX_FLAGS_RELEASE} -DDEVELOPMENT -D_DEVELOPMENT")
+
+set(CMAKE_EXE_LINKER_FLAGS_DEVELOPMENT ${CMAKE_EXE_LINKER_FLAGS_RELEASE})
 
 ################################################################################
 
@@ -162,7 +186,7 @@ elseif (ANDROID)
     add_compile_options("-Wparentheses-equality")
     add_compile_options("-Wlogical-not-parentheses")
     add_compile_options("-Wshift-overflow")
-    add_compile_options("-Wtautological-undefined-compare")
+    add_compile_options("-Wno-tautological-undefined-compare")
 endif ()
 
 ################################################################################
@@ -170,32 +194,10 @@ endif ()
 if (XAMARIN)
     if (MSVC)
         set(ENGINE_BUILD_PLATFORM_DIR "XamarinWin64")
-    elseif (APPLE)
-        if (IOS)
-            if (WITHDEBUG)
-	            set(WITHDEBUG_POSTFIX "_d")
-            endif ()
-            set(ENGINE_BUILD_PLATFORM_DIR "XamarinIOS$(EFFECTIVE_PLATFORM_NAME)${WITHDEBUG_POSTFIX}")
-        endif ()
     endif ()
 
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__XAMARIN__")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__XAMARIN__")
-    if (APPLE)
-		if (WITHDEBUG)
-			set(CMAKE_C_FLAGS_DEBUG "-g -D__XAMARIN__ -DBE_DEBUG -DDEBUG -D_DEBUG")
-			set(CMAKE_C_FLAGS_MINSIZEREL "-g -D__XAMARIN__ -DBE_DEBUG -DNDEBUG")
-			set(CMAKE_C_FLAGS_RELEASE "-g -D__XAMARIN__ -DBE_DEBUG -DNDEBUG")
-			set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g -D__XAMARIN__ -DBE_DEBUG -DNDEBUG")
-			set(CMAKE_CXX_FLAGS_DEBUG "-g -D__XAMARIN__ -DBE_DEBUG -DDEBUG -D_DEBUG")
-			set(CMAKE_CXX_FLAGS_MINSIZEREL "-g -D__XAMARIN__ -DBE_DEBUG -DNDEBUG")
-			set(CMAKE_CXX_FLAGS_RELEASE "-g -D__XAMARIN__ -DBE_DEBUG -DNDEBUG")
-			set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -D__XAMARIN__ -DBE_DEBUG -DNDEBUG")
-		endif ()
-
-		#set(CMAKE_OSX_ARCHITECTURES "armv7;arm64;i386")
-		set(CMAKE_OSX_ARCHITECTURES "armv7;arm64")
-    endif ()
 else ()
     if (MSVC)
         set(ENGINE_BUILD_PLATFORM_DIR "Win64")
@@ -281,7 +283,7 @@ if (BUILD_PLAYER)
 endif ()
 
 if (BUILD_EDITOR)
-	add_subdirectory(Source/ThirdParty/mikktspace)
+    add_subdirectory(Source/ThirdParty/mikktspace)
     add_subdirectory(Source/ThirdParty/ToolWindowManager)
     add_subdirectory(Source/Editor)
 endif ()
@@ -292,3 +294,12 @@ if (BUILD_TEST)
     endif ()
     add_subdirectory(Source/TestRenderer)
 endif ()
+
+if (MSVC)
+    if (BUILD_EDITOR)
+        set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT BlueshiftEditor)
+    elseif (BUILD_PLAYER)
+        set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT BlueshiftPlayer)
+    endif ()
+endif ()
+

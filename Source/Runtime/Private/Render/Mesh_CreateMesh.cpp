@@ -78,7 +78,7 @@ void Mesh::CreateDefaultBox() {
     idx[30] = 20;   idx[31] = 21;   idx[32] = 22;
     idx[33] = 22;   idx[34] = 23;   idx[35] = 20;
     
-    FinishSurfaces(ComputeAABBFlag | ComputeTangentsFlag | UseUnsmoothedTangentsFlag);
+    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents | FinishFlag::UseUnsmoothedTangents);
 }
 
 void Mesh::CreatePlane(const Vec3 &origin, const Mat3 &axis, float size, int numSegments) {
@@ -131,7 +131,7 @@ void Mesh::CreatePlane(const Vec3 &origin, const Mat3 &axis, float size, int num
         }
     }
     
-    FinishSurfaces(ComputeAABBFlag);
+    FinishSurfaces(FinishFlag::ComputeAABB);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         TransformVerts(axis, Vec3::one, origin);
@@ -196,7 +196,7 @@ void Mesh::CreateBox(const Vec3 &origin, const Mat3 &axis, const Vec3 &extents) 
     idx[30] = 20;   idx[31] = 21;   idx[32] = 22;
     idx[33] = 22;   idx[34] = 23;   idx[35] = 20;
     
-    FinishSurfaces(ComputeAABBFlag | ComputeTangentsFlag | UseUnsmoothedTangentsFlag);
+    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents | FinishFlag::UseUnsmoothedTangents);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         TransformVerts(axis, Vec3::one, origin);
@@ -210,14 +210,14 @@ void Mesh::CreateSphere(const Vec3 &origin, const Mat3 &axis, float radius, int 
 void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numTess) {
     assert(numTess > 0);
 
-    static const float x = 0.525731112119133606f;
-    static const float z = 0.850650808352039932f;
-    static const Vec3 icosa_verts[12] = {
+    static constexpr float x = 0.525731112119133606f;
+    static constexpr float z = 0.850650808352039932f;
+    static constexpr Vec3 icosa_verts[12] = {
         Vec3(-x, 0, z), Vec3(x, 0, z), Vec3(-x, 0, -z), Vec3(x, 0, -z),
         Vec3(0, z, x), Vec3(0, z, -x), Vec3(0, -z, x), Vec3(0, -z, -x),
         Vec3(z, x, 0), Vec3(-z, x, 0), Vec3(z, -x, 0), Vec3(-z, -x, 0)
     };
-    static const TriIndex icosa_tris[20][3] = { 
+    static constexpr TriIndex icosa_tris[20][3] = {
         { 0, 1, 4 }, { 0, 4, 9 }, { 9, 4, 5 }, { 4, 8, 5 }, { 4, 1, 8 },
         { 8, 1, 10 }, { 8, 10, 3 }, { 5, 8, 3 }, { 5, 3, 2 }, { 2, 3, 7 },
         { 7, 3, 10 }, { 7, 10, 6 }, { 7, 6, 11 }, { 11, 6, 0 }, { 0, 6, 1 },
@@ -255,7 +255,7 @@ void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numTess) {
         }
     }
 
-    FinishSurfaces(ComputeAABBFlag | ComputeTangentsFlag);
+    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
 
     if (!origin.IsZero()) {
         TransformVerts(Mat3::identity, Vec3::one, origin);
@@ -362,7 +362,7 @@ void Mesh::CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, fl
         *idx++ = offset + b + 1;
     }
 
-    FinishSurfaces(ComputeAABBFlag | ComputeTangentsFlag);
+    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         TransformVerts(axis, Vec3::one, origin);
@@ -465,7 +465,7 @@ void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, flo
         }
     }
 
-    FinishSurfaces(ComputeAABBFlag | ComputeTangentsFlag);
+    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
 
     if (!axis.IsIdentity() || !origin.IsZero()) {
         TransformVerts(axis, Vec3::one, origin);

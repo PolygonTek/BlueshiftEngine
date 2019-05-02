@@ -82,6 +82,7 @@ static void ResizeImageBilinear(const T *src, int srcWidth, int srcHeight, T *ds
                 int index0 = offsetX0 + i;
                 int index1 = offsetX1 + i;
 
+                // NOTE: Should we need to lerp in linear color space ?
                 float p0 = Lerp<float>(srcPtrY[0][index0], srcPtrY[0][index1], fracX);
                 float p1 = Lerp<float>(srcPtrY[1][index0], srcPtrY[1][index1], fracX);
                 float po = Lerp<float>(p0, p1, fracY);
@@ -139,6 +140,7 @@ static void ResizeImageBicubic(const T *src, int srcWidth, int srcHeight, T *dst
                 int index2 = offsetX2 + i;
                 int index3 = offsetX3 + i;
 
+                // NOTE: Should we need to lerp in linear color space ?
                 float p0 = Cerp<float>(srcPtrY[0][index0], srcPtrY[0][index1], srcPtrY[0][index2], srcPtrY[0][index3], fracX);
                 float p1 = Cerp<float>(srcPtrY[1][index0], srcPtrY[1][index1], srcPtrY[1][index2], srcPtrY[1][index3], fracX);
                 float p2 = Cerp<float>(srcPtrY[2][index0], srcPtrY[2][index1], srcPtrY[2][index2], srcPtrY[2][index3], fracX);
@@ -152,7 +154,7 @@ static void ResizeImageBicubic(const T *src, int srcWidth, int srcHeight, T *dst
 }
 
 template <typename T>
-static void ResizeImage(const T *src, int srcWidth, int srcHeight, T *dst, int dstWidth, int dstHeight, int numComponents, Image::ResampleFilter filter) {
+static void ResizeImage(const T *src, int srcWidth, int srcHeight, T *dst, int dstWidth, int dstHeight, int numComponents, Image::ResampleFilter::Enum filter) {
     switch (filter) {
     case Image::ResampleFilter::Nearest:
         ResizeImageNearest(src, srcWidth, srcHeight, dst, dstWidth, dstHeight, numComponents);
@@ -166,17 +168,17 @@ static void ResizeImage(const T *src, int srcWidth, int srcHeight, T *dst, int d
     }
 }
 
-bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter filter, Image &dstImage) const {
+bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter::Enum filter, Image &dstImage) const {
     assert(width && height);
     assert(dstWidth && dstHeight);
     
     if (IsPacked() || IsCompressed()) {
-        BE_WARNLOG(L"Couldn't resize from source image format %hs\n", FormatName());
+        BE_WARNLOG("Couldn't resize from source image format %s\n", FormatName());
         return false;
     }
 
     if (depth != 1) {
-        BE_WARNLOG(L"Couldn't resize from %ix%ix%i size source image\n", width, height, depth);
+        BE_WARNLOG("Couldn't resize from %ix%ix%i size source image\n", width, height, depth);
         return false;
     }
 
@@ -201,17 +203,17 @@ bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter filter, Im
     return true;
 }
 
-bool Image::ResizeSelf(int dstWidth, int dstHeight, Image::ResampleFilter filter) {
+bool Image::ResizeSelf(int dstWidth, int dstHeight, Image::ResampleFilter::Enum filter) {
     assert(width && height);
     assert(dstWidth && dstHeight);
 
     if (IsPacked() || IsCompressed()) {
-        BE_WARNLOG(L"Couldn't resize from source image format %hs\n", FormatName());
+        BE_WARNLOG("Couldn't resize from source image format %s\n", FormatName());
         return false;
     }
 
     if (depth != 1) {
-        BE_WARNLOG(L"Couldn't resize from %ix%ix%i size source image\n", width, height, depth);
+        BE_WARNLOG("Couldn't resize from %ix%ix%i size source image\n", width, height, depth);
         return false;
     }
 

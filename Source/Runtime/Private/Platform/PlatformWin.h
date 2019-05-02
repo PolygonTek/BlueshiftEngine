@@ -31,8 +31,8 @@ public:
     virtual void        SetMainWindowHandle(void *windowHandle) override;
 
     virtual void        Quit() override;
-    virtual void        Log(const wchar_t *msg) override;
-    virtual void        Error(const wchar_t *msg) override;
+    virtual void        Log(const char *msg) override;
+    virtual void        Error(const char *msg) override;
 
     virtual bool        IsCursorLocked() const override;
     virtual bool        LockCursor(bool lock) override;

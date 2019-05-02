@@ -22,76 +22,76 @@ BE_NAMESPACE_BEGIN
 // NOTE: longer punctuations first
 static const Lexer::Punctuation default_punctuations[] = {
     // binary operators
-    { ">>=", PuncType::P_RSHIFT_ASSIGN },
-    { "<<=", PuncType::P_LSHIFT_ASSIGN },
+    { ">>=", Lexer::PuncType::RShiftAssign },
+    { "<<=", Lexer::PuncType::LShiftAssign },
     //
-    { "...", PuncType::P_PARMS },
+    { "...", Lexer::PuncType::Parms },
     // define merge operator
-    { "##", PuncType::P_PRECOMPMERGE },           // pre-compiler
+    { "##", Lexer::PuncType::PrecompMerge },           // pre-compiler
     // logic operators
-    { "&&", PuncType::P_LOGIC_AND },              // pre-compiler
-    { "||", PuncType::P_LOGIC_OR },               // pre-compiler
-    { ">=", PuncType::P_LOGIC_GEQ },              // pre-compiler
-    { "<=", PuncType::P_LOGIC_LEQ },              // pre-compiler
-    { "==", PuncType::P_LOGIC_EQ },               // pre-compiler
-    { "!=", PuncType::P_LOGIC_UNEQ },             // pre-compiler
+    { "&&", Lexer::PuncType::LogicAnd },              // pre-compiler
+    { "||", Lexer::PuncType::LogicOr },               // pre-compiler
+    { ">=", Lexer::PuncType::LogicGreaterEq },              // pre-compiler
+    { "<=", Lexer::PuncType::LogicLessEqual },              // pre-compiler
+    { "==", Lexer::PuncType::LogicEqual },               // pre-compiler
+    { "!=", Lexer::PuncType::LogicUnequal },             // pre-compiler
     // arithmatic operators
-    { "*=", PuncType::P_MUL_ASSIGN },
-    { "/=", PuncType::P_DIV_ASSIGN },
-    { "%=", PuncType::P_MOD_ASSIGN },
-    { "+=", PuncType::P_ADD_ASSIGN },
-    { "-=", PuncType::P_SUB_ASSIGN },
-    { "++", PuncType::P_INC },
-    { "--", PuncType::P_DEC },
+    { "*=", Lexer::PuncType::MulAssign },
+    { "/=", Lexer::PuncType::DivAssign },
+    { "%=", Lexer::PuncType::ModAssign },
+    { "+=", Lexer::PuncType::AddAssign },
+    { "-=", Lexer::PuncType::SubAssign },
+    { "++", Lexer::PuncType::Inc },
+    { "--", Lexer::PuncType::Dec },
     // binary operators
-    { "&=", PuncType::P_BIN_AND_ASSIGN },
-    { "|=", PuncType::P_BIN_OR_ASSIGN },
-    { "^=", PuncType::P_BIN_XOR_ASSIGN },
-    { ">>", PuncType::P_RSHIFT },                 // pre-compiler
-    { "<<", PuncType::P_LSHIFT },                 // pre-compiler
+    { "&=", Lexer::PuncType::BinAndAssign },
+    { "|=", Lexer::PuncType::BinOrAssign },
+    { "^=", Lexer::PuncType::BinXorAssign },
+    { ">>", Lexer::PuncType::RShift },                 // pre-compiler
+    { "<<", Lexer::PuncType::LShift },                 // pre-compiler
     // reference operators
-    { "->", PuncType::P_POINTERREF },
+    { "->", Lexer::PuncType::PointerRef },
     // C++
-    { "::", PuncType::P_CPP1 },
-    { ".*", PuncType::P_CPP2 },
+    { "::", Lexer::PuncType::Cpp1 },
+    { ".*", Lexer::PuncType::Cpp2 },
     // arithmatic operators
-    { "*", PuncType::P_MUL },                     // pre-compiler
-    { "/", PuncType::P_DIV },                     // pre-compiler
-    { "%", PuncType::P_MOD },                     // pre-compiler
-    { "+", PuncType::P_ADD },                     // pre-compiler
-    { "-", PuncType::P_SUB },                     // pre-compiler
-    { "=", PuncType::P_ASSIGN },
+    { "*", Lexer::PuncType::Mul },                     // pre-compiler
+    { "/", Lexer::PuncType::Div },                     // pre-compiler
+    { "%", Lexer::PuncType::Mod },                     // pre-compiler
+    { "+", Lexer::PuncType::Add },                     // pre-compiler
+    { "-", Lexer::PuncType::Sub },                     // pre-compiler
+    { "=", Lexer::PuncType::Assign },
     // binary operators
-    { "&", PuncType::P_BIN_AND },                 // pre-compiler
-    { "|", PuncType::P_BIN_OR },                  // pre-compiler
-    { "^", PuncType::P_BIN_XOR },                 // pre-compiler
-    { "~", PuncType::P_BIN_NOT },                 // pre-compiler
+    { "&", Lexer::PuncType::BinAnd },                 // pre-compiler
+    { "|", Lexer::PuncType::BinOr },                  // pre-compiler
+    { "^", Lexer::PuncType::BinXor },                 // pre-compiler
+    { "~", Lexer::PuncType::BinNot },                 // pre-compiler
     // logic operators
-    { "!", PuncType::P_LOGIC_NOT },               // pre-compiler
-    { ">", PuncType::P_LOGIC_GREATER },           // pre-compiler
-    { "<", PuncType::P_LOGIC_LESS },              // pre-compiler
+    { "!", Lexer::PuncType::LogicNot },               // pre-compiler
+    { ">", Lexer::PuncType::LogicGreater },           // pre-compiler
+    { "<", Lexer::PuncType::LogicLess },              // pre-compiler
     // reference operator
-    { ".", PuncType::P_REF },
+    { ".", Lexer::PuncType::Ref },
     // seperators
-    { ",", PuncType::P_COMMA },                   // pre-compiler
-    { ";", PuncType::P_SEMICOLON },
+    { ",", Lexer::PuncType::Comma },                   // pre-compiler
+    { ";", Lexer::PuncType::SemiColon },
     // label indication
-    { ":", PuncType::P_COLON },                   // pre-compiler
+    { ":", Lexer::PuncType::Colon },                   // pre-compiler
     // if statement
-    { "?", PuncType::P_QUESTIONMARK },            // pre-compiler
+    { "?", Lexer::PuncType::QuestionMark },            // pre-compiler
     // embracements
-    { "(", PuncType::P_PARENTHESESOPEN },         // pre-compiler
-    { ")", PuncType::P_PARENTHESESCLOSE },        // pre-compiler
-    { "{", PuncType::P_BRACEOPEN },               // pre-compiler
-    { "}", PuncType::P_BRACECLOSE },              // pre-compiler
-    { "[", PuncType::P_SQBRACKETOPEN },
-    { "]", PuncType::P_SQBRACKETCLOSE },
+    { "(", Lexer::PuncType::ParenthesesOpen },         // pre-compiler
+    { ")", Lexer::PuncType::ParenthesesClose },        // pre-compiler
+    { "{", Lexer::PuncType::BraceOpen },               // pre-compiler
+    { "}", Lexer::PuncType::BraceClose },              // pre-compiler
+    { "[", Lexer::PuncType::SquareBracketOpen },
+    { "]", Lexer::PuncType::SquareBracketClose },
     //
-    { "\\", PuncType::P_BACKSLASH },
+    { "\\", Lexer::PuncType::BackSlash },
     // precompiler operator
-    { "#", PuncType::P_PRECOMP },                 // pre-compiler
-    { "$", PuncType::P_DOLLAR },
-    { nullptr, PuncType::P_NONE }
+    { "#", Lexer::PuncType::Precomp },                 // pre-compiler
+    { "$", Lexer::PuncType::Dollar },
+    { nullptr, Lexer::PuncType::None }
 };
 
 void Lexer::Init(int flags) {
@@ -140,7 +140,7 @@ void Lexer::Warning(const char *fmt, ...) {
     static char text[4096];
     va_list argptr;
 
-    if (flags & LexerFlag::LEXFL_NOWARNINGS) {
+    if (flags & Flag::NoWarnings) {
         return;
     }
 
@@ -148,14 +148,14 @@ void Lexer::Warning(const char *fmt, ...) {
     ::vsprintf(text, fmt, argptr);
     va_end(argptr);
 
-    BE_WARNLOG(L"%hs(%i) : %hs\n", filename, line, text);
+    BE_WARNLOG("%s(%i) : %s\n", filename, line, text);
 }
 
 void Lexer::Error(const char *fmt, ...) {
     static char text[4096];
     va_list argptr;
     
-    if (flags & LexerFlag::LEXFL_NOERRORS) {
+    if (flags & Flag::NoErrors) {
         return;
     }
 
@@ -163,7 +163,7 @@ void Lexer::Error(const char *fmt, ...) {
     ::vsprintf(text, fmt, argptr);
     va_end(argptr);
 
-    BE_ERRLOG(L"%hs(%i) : %hs\n", filename, line, text);
+    BE_ERRLOG("%s(%i) : %s\n", filename, line, text);
 }
 
 void Lexer::SetPunctuations(const Punctuation *punctuations) {
@@ -182,9 +182,9 @@ const char *Lexer::GetPunctuationString(int type) const {
 
 bool Lexer::ReadString(Str *token, int quote) {
     if (quote == '\"') {
-        tokenType = TokenType::TT_STRING;
+        tokenType = TokenType::String;
     } else {
-        tokenType = TokenType::TT_LITERAL;
+        tokenType = TokenType::Literal;
     }
 
     // leading quote
@@ -215,7 +215,7 @@ bool Lexer::ReadString(Str *token, int quote) {
 }
 
 bool Lexer::ReadNumber(Str *token) {
-    tokenType = TokenType::TT_NUMBER;
+    tokenType = TokenType::Number;
 
     int c = ptr[0];
     int c2 = ptr[1];
@@ -230,7 +230,7 @@ bool Lexer::ReadNumber(Str *token) {
                 c = *(++ptr);
             }
 
-            tokenType |= (TokenType::TT_INTEGER | TokenType::TT_HEXADECIMAL);
+            tokenType |= (TokenType::Integer | TokenType::HexaDecimal);
         } else if (c2 >= '0' && c2 <= '7') {
             // check for octal number
             token->Append(*ptr++);
@@ -239,11 +239,11 @@ bool Lexer::ReadNumber(Str *token) {
                 token->Append(c);
                 c = *(++ptr);
             }
-            tokenType |= (TokenType::TT_INTEGER | TokenType::TT_OCTAL);
+            tokenType |= (TokenType::Integer | TokenType::Octal);
         } else {
             // it's decimal zero case
             token->Append(*ptr++);
-            tokenType |= (TokenType::TT_INTEGER | TokenType::TT_DECIMAL);
+            tokenType |= (TokenType::Integer | TokenType::Decimal);
         }
     } else {
         // decimal integer or float point number
@@ -264,7 +264,7 @@ bool Lexer::ReadNumber(Str *token) {
 
         // if a floating point number
         if (dot) {
-            tokenType |= TokenType::TT_FLOAT;
+            tokenType |= TokenType::Float;
             
             if (c == 'e') {
                 // check for floating point exponent
@@ -284,15 +284,15 @@ bool Lexer::ReadNumber(Str *token) {
                 }
             } else if (c == '#') {
                 // check for floating point exception infinite 1.#INF or indefinite 1.#IND or NaN
-                tokenType |= TokenType::TT_NAN;
+                tokenType |= TokenType::Nan;
 
                 c2 = 0;
 
                 if (Str::Cmp(ptr+1, "INF")) {
-                    tokenType |= TokenType::TT_INFINITE;
+                    tokenType |= TokenType::Infinite;
                     c2 = 3;
                 } else if (Str::Cmp(ptr+1, "IND")) {
-                    tokenType |= TokenType::TT_INDEFINITE;
+                    tokenType |= TokenType::Indefinite;
                     c2 = 3;
                 } else if (Str::Cmp(ptr+1, "NAN")) {
                     c2 = 3;
@@ -311,44 +311,44 @@ bool Lexer::ReadNumber(Str *token) {
                         c = *(++ptr);
                     }
 
-                    if (!(flags & LexerFlag::LEXFL_ALLOW_FLOAT_NAN)) {
+                    if (!(flags & Flag::AllowFloatNan)) {
                         Error("parsed %s", token->c_str());
                         return false;
                     }
                 }
             }
         } else {
-            tokenType |= (TokenType::TT_INTEGER | TokenType::TT_DECIMAL);
+            tokenType |= (TokenType::Integer | TokenType::Decimal);
         }
     }
 
-    if (tokenType & TokenType::TT_FLOAT) {
+    if (tokenType & TokenType::Float) {
         if (c > ' ') {
             if (c == 'f' || c == 'F') {
                 // single-precision: float
-                tokenType |= TokenType::TT_SINGLE_PRECISION;
+                tokenType |= TokenType::SinglePrecision;
                 ptr++;
             } else if (c == 'l' || c == 'L') {
                 // extended-precision: long double
-                tokenType |= TokenType::TT_EXTENDED_PRECISION;
+                tokenType |= TokenType::ExtendedPrecision;
                 ptr++;
             } else {
                 // default is double-precision: double
-                tokenType |= TokenType::TT_DOUBLE_PRECISION;
+                tokenType |= TokenType::DoublePrecision;
             }
         } else {
-            tokenType |= TokenType::TT_DOUBLE_PRECISION;
+            tokenType |= TokenType::DoublePrecision;
         }
-    } else if (tokenType & TokenType::TT_INTEGER) {
+    } else if (tokenType & TokenType::Integer) {
         if (c > ' ') {
             // default: signed long
             for (int i = 0; i < 2; i++) {
                 if (c == 'l' || c == 'L') {
                     // long integer
-                    tokenType |= TokenType::TT_LONG;
+                    tokenType |= TokenType::Long;
                 } else if (c == 'u' || c == 'U') {
                     // unsigned integer
-                    tokenType |= TokenType::TT_UNSIGNED;
+                    tokenType |= TokenType::Unsigned;
                 } else {
                     break;
                 }
@@ -361,13 +361,13 @@ bool Lexer::ReadNumber(Str *token) {
 }
 
 bool Lexer::ReadIdentifier(Str *token) {
-    tokenType = TokenType::TT_IDENTIFIER;
+    tokenType = TokenType::Identifier;
 
     int c = *ptr;
     do {
         token->Append(c);
         c = (*++ptr);
-    } while ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '@');
+    } while ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '@' || (c & 0x80));
 
     return true;
 }
@@ -385,7 +385,7 @@ bool Lexer::ReadPunctuation(Str *token) {
         if (!punc->p[i]) {
             ptr += strlen(punc->p);
             token->Append(punc->p);
-            tokenType = TokenType::TT_PUNCTUATION;
+            tokenType = TokenType::Punctuation;
             punctuationType = punc->n;
             return true;
         }
@@ -395,11 +395,11 @@ bool Lexer::ReadPunctuation(Str *token) {
 }
 
 bool Lexer::ReadToken(Str *token, bool allowLineBreaks) {
-    int	c;
+    int c;
     int oldLine;
 
     if (!loaded) {
-        BE_ERRLOG(L"Lexer::ReadToken: no file loaded\n");
+        BE_ERRLOG("Lexer::ReadToken: no file loaded\n");
         return false;
     }
 
@@ -433,7 +433,7 @@ bool Lexer::ReadToken(Str *token, bool allowLineBreaks) {
         
         c = *ptr;
 
-        if (flags & LexerFlag::LEXFL_IGNORE_COMMENTS) {
+        if (flags & Flag::IgnoreComments) {
             break;
         }
 
@@ -469,7 +469,7 @@ bool Lexer::ReadToken(Str *token, bool allowLineBreaks) {
         if (!ReadNumber(token)) {
             return false;
         }
-    } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '@') {
+    } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '@' || (c & 0x80)) {
         // if there is a identifier
         if (!ReadIdentifier(token)) {
             return false;
@@ -487,7 +487,7 @@ bool Lexer::ReadToken(Str *token, bool allowLineBreaks) {
 
 void Lexer::UnreadToken(const Str *token) {
     if (tokenAvailable) {
-        BE_FATALERROR(L"Lexer::UnreadToken, unread token twice\n");
+        BE_FATALERROR("Lexer::UnreadToken, unread token twice\n");
     }
 
     this->token = *token;
@@ -520,10 +520,10 @@ float Lexer::ParseNumber() {
         return 0;
     }
 
-    if (tokenType == TokenType::TT_PUNCTUATION && token == "-") {
-        ExpectTokenType(TokenType::TT_NUMBER, &token);
+    if (tokenType == TokenType::Punctuation && token == "-") {
+        ExpectTokenType(TokenType::Number, &token);
         return -(float)atof(token.c_str());
-    } else if (!(tokenType & TokenType::TT_NUMBER)) {
+    } else if (!(tokenType & TokenType::Number)) {
         Error("expected number, found '%s'", token.c_str());
     }
     return (float)atof(token.c_str());
@@ -537,10 +537,10 @@ int Lexer::ParseInt() {
         return 0;
     }
 
-    if (tokenType == TokenType::TT_PUNCTUATION && token == "-") {
-        ExpectTokenType(TokenType::TT_NUMBER | TokenType::TT_INTEGER, &token);
+    if (tokenType == TokenType::Punctuation && token == "-") {
+        ExpectTokenType(TokenType::Number | TokenType::Integer, &token);
         return -((signed int)atoi(token.c_str()));
-    } else if ((tokenType & (TokenType::TT_NUMBER | TokenType::TT_INTEGER)) != (TokenType::TT_NUMBER | TokenType::TT_INTEGER)) {
+    } else if ((tokenType & (TokenType::Number | TokenType::Integer)) != (TokenType::Number | TokenType::Integer)) {
         Error("expected integer value, found '%s'", token.c_str());
     }
     return atoi(token.c_str());
@@ -554,10 +554,10 @@ float Lexer::ParseFloat() {
         return 0;
     }
 
-    if (tokenType == TokenType::TT_PUNCTUATION && token == "-") {
-        ExpectTokenType(TokenType::TT_NUMBER, &token);
+    if (tokenType == TokenType::Punctuation && token == "-") {
+        ExpectTokenType(TokenType::Number, &token);
         return -(float)atof(token.c_str());
-    } else if ((tokenType & (TokenType::TT_NUMBER | TokenType::TT_FLOAT)) != (TokenType::TT_NUMBER | TokenType::TT_FLOAT)) {
+    } else if ((tokenType & (TokenType::Number | TokenType::Float)) != (TokenType::Number | TokenType::Float)) {
         Error("expected float value, found '%s'", token.c_str());
     }
     return (float)atof(token.c_str());
@@ -684,7 +684,7 @@ const char *Lexer::ParseBracedSectionExact(Str &out, int tabs) {
             
             skipWhite = false;
             for (; i > 0; i--) {
-                out += '\t';	
+                out += '\t';
             }
         }
         out += c;
@@ -715,7 +715,7 @@ const char *Lexer::ParseBracedSection(Str &out) {
             out += "\r\n";
         }
         
-        if (Lexer::GetTokenType() == TokenType::TT_PUNCTUATION) {
+        if (Lexer::GetTokenType() == TokenType::Punctuation) {
             if (token[0] == '{') {
                 depth++;
             } else if (token[0] == '}') {
@@ -726,7 +726,7 @@ const char *Lexer::ParseBracedSection(Str &out) {
             }
         }
 
-        if (Lexer::GetTokenType() == TokenType::TT_STRING) {
+        if (Lexer::GetTokenType() == TokenType::String) {
             out += "\"" + token + "\"";
         } else {
             out += token;
@@ -746,22 +746,22 @@ bool Lexer::ExpectTokenType(int type, Str *token) {
     }
 
     if ((tokenType & type) != type) {
-        if ((tokenType & type) & TokenType::TT_NUMBER) {
+        if ((tokenType & type) & TokenType::Number) {
             str.Clear();
-            if (type & TokenType::TT_INTEGER) {
-                if (type & TokenType::TT_DECIMAL)
+            if (type & TokenType::Integer) {
+                if (type & TokenType::Decimal)
                     str = "decimal ";
-                if (type & TokenType::TT_HEXADECIMAL)
+                if (type & TokenType::HexaDecimal)
                     str = "hex ";
-                if (type & TokenType::TT_OCTAL)
+                if (type & TokenType::Octal)
                     str = "octal ";			
-                if (type & TokenType::TT_UNSIGNED)
+                if (type & TokenType::Unsigned)
                     str += "unsigned ";
-                if (type & TokenType::TT_LONG)
+                if (type & TokenType::Long)
                     str += "long ";
 
                 str += "integer";
-            } else if (type & TokenType::TT_FLOAT) {
+            } else if (type & TokenType::Float) {
                 str = "float";
             } else {
                 str = "unknown number type";
@@ -771,19 +771,19 @@ bool Lexer::ExpectTokenType(int type, Str *token) {
             return false;
         } else {
             switch (type) {
-            case TokenType::TT_STRING:
+            case TokenType::String:
                 str = "string";
                 break;
-            case TokenType::TT_LITERAL:
+            case TokenType::Literal:
                 str = "literal"; 
                 break;
-            case TokenType::TT_NUMBER:
+            case TokenType::Number:
                 str = "number"; 
                 break;
-            case TokenType::TT_IDENTIFIER: 
+            case TokenType::Identifier: 
                 str = "name"; 
                 break;
-            case TokenType::TT_PUNCTUATION:
+            case TokenType::Punctuation:
                 str = "punctuation"; 
                 break;
             default: 
@@ -817,7 +817,7 @@ bool Lexer::ExpectTokenString(const char *string, bool caseSensitive) {
 bool Lexer::ExpectPunctuation(int type) {
     Str token;
 
-    if (!ExpectTokenType(TokenType::TT_PUNCTUATION, &token)) {
+    if (!ExpectTokenType(TokenType::Punctuation, &token)) {
         return false;
     }
 
@@ -872,7 +872,7 @@ void Lexer::SkipBracedSection(bool parseFirstBrace) {
             return;
         }
 
-        if (tokenType == TokenType::TT_PUNCTUATION) {
+        if (tokenType == TokenType::Punctuation) {
             if (token == "{") {
                 depth++;
             } else if (token == "}") {

@@ -112,12 +112,12 @@ public:
     bool                GetInt64(const char *key, const char *defaultString, int64_t &out) const;
     bool                GetBool(const char *key, const char *defaultString, bool &out) const;
     bool                GetPoint(const char *key, const char *defaultString, Point &out) const;
-    bool                GetRect(const char *key, const char *defaultString, Rect &out) const;	
+    bool                GetRect(const char *key, const char *defaultString, Rect &out) const;
     bool                GetVec3(const char *key, const char *defaultString, Vec3 &out) const;
     bool                GetVec2(const char *key, const char *defaultString, Vec2 &out) const;
     bool                GetVec4(const char *key, const char *defaultString, Vec4 &out) const;
     bool                GetAngles(const char *key, const char *defaultString, Angles &out) const;
-    bool                GetMatrix(const char *key, const char *defaultString, Mat3 &out) const;	
+    bool                GetMatrix(const char *key, const char *defaultString, Mat3 &out) const;
 
     void                Set(const char *key, const char *value);
     void                SetFloat(const char *key, float val);

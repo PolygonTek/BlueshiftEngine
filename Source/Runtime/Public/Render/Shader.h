@@ -24,8 +24,8 @@
 
 #include "Containers/HashMap.h"
 #include "Math/Math.h"
-#include "Core/Property.h"
 #include "Core/CmdArgs.h"
+#include "Core/Property.h"
 #include "RHI/RHI.h"
 
 BE_NAMESPACE_BEGIN
@@ -37,77 +37,113 @@ class Shader {
     friend class Batch;
 
 public:
-    enum Flag {
-        LitSurface              = BIT(0),
-        SkySurface              = BIT(1),
-        LoadedFromFile          = BIT(8)
+    struct Flag {
+        enum Enum {
+            HasVertexShader     = BIT(0),
+            HasFragmentShader   = BIT(1),
+            HasGeometryShader   = BIT(2),
+            Shadowing           = BIT(5),
+            LitSurface          = BIT(6),
+            SkySurface          = BIT(7),
+            LoadedFromFile      = BIT(8)
+        };
     };
 
-    enum Lang {
-        GlslShader,
-        CgShader
+    struct Lang {
+        enum Enum {
+            Glsl,
+            Cg
+        };
     };
 
-    enum ShaderFlag {
-        VertexShader            = BIT(0),
-        FragmentShader          = BIT(1),
-        GeometryShader          = BIT(2)
+    struct PropertyType {
+        enum Enum {
+            Bool,
+            Int,
+            Float,
+            Vec2,
+            Vec3,
+            Vec4,
+            Color3,
+            Color4,
+            Texture2D,
+            Texture3D,
+            TextureCube
+        };
     };
 
-    enum BuiltInConstant {
-        ModelViewMatrixConst,
-        ModelViewMatrixTransposeConst,
-        ProjectionMatrixConst,
-        ProjectionMatrixTransposeConst,
-        ViewProjectionMatrixConst,
-        ViewProjectionMatrixTransposeConst,
-        ModelViewProjectionMatrixConst,
-        ModelViewProjectionMatrixTransposeConst,
-        InstanceIndexesConst,
-        LocalToWorldMatrixSConst,
-        LocalToWorldMatrixTConst,
-        LocalToWorldMatrixRConst,
-        WorldToLocalMatrixSConst,
-        WorldToLocalMatrixTConst,
-        WorldToLocalMatrixRConst,
-        TextureMatrixSConst,
-        TextureMatrixTConst,
-        ConstantColorConst,
-        VertexColorScaleConst,
-        VertexColorAddConst,
-        PerforatedAlphaConst,
-        ViewOriginConst,
-        LightVecConst,
-        LightTextureMatrixConst,
-        LightColorConst,
-        LightFallOffMatrixConst,
-        LightFallOffExponentConst,
-        JointsConst,
-        InvJointsMapSizeConst,
-        SkinningBaseTcConst,
-        JointIndexOffsetConst,
-        ShadowProjMatrixConst,
-        ShadowCascadeProjMatrixConst,
-        ShadowSplitFarConst,
-        MaxBuiltInConstants
+    struct BuiltInConstant {
+        enum Enum {
+            ModelViewMatrix,
+            ModelViewMatrixTranspose,
+            ViewMatrix,
+            ViewMatrixTranspose,
+            ProjectionMatrix,
+            ProjectionMatrixTranspose,
+            ViewProjectionMatrix,
+            ViewProjectionMatrixTranspose,
+            ModelViewProjectionMatrix,
+            ModelViewProjectionMatrixTranspose,
+            PrevModelViewProjectionMatrix,
+            InstanceDataBuffer,
+            InstanceIndexes,
+            LocalToWorldMatrix,
+            WorldToLocalMatrix,
+            TextureMatrixS,
+            TextureMatrixT,
+            ConstantColor,
+            VertexColorScale,
+            VertexColorAdd,
+            PerforatedAlpha,
+            ViewOrigin,
+            LightVec,
+            LightTextureMatrix,
+            LightColor,
+            LightFallOffMatrix,
+            LightFallOffExponent,
+            Joints,
+            InvJointsMapSize,
+            SkinningBaseTc,
+            JointIndexOffset,
+            ShadowProjMatrix,
+            ShadowCascadeProjMatrix,
+            ShadowSplitFar,
+            Probe0SpecularCubeMapMaxMipLevel,
+            Probe0Position,
+            Probe0Mins,
+            Probe0Maxs,
+            Probe1SpecularCubeMapMaxMipLevel,
+            Probe1Position,
+            Probe1Mins,
+            Probe1Maxs,
+            ProbeLerp,
+            Count
+        };
     };
 
-    enum BuiltInSampler {
-        CubicNormalCubeMapSampler,
-        IndirectionCubeMapSampler,
-        AlbedoMapSampler,
-        NormalMapSampler,
-        JointsMapSampler,
-        LightProjectionMapSampler,
-        ShadowMapSampler,
-        ShadowArrayMapSampler,
-        MaxBuiltInSamplers
+    struct BuiltInSampler {
+        enum Enum {
+            CubicNormalCubeMap,
+            IndirectionCubeMap,
+            AlbedoMap,
+            NormalMap,
+            JointsMap,
+            LightProjectionMap,
+            LightCubeMap,
+            ShadowMap,
+            ShadowArrayMap,
+            PrefilteredDfgMap,
+            Probe0DiffuseCubeMap,
+            Probe0SpecularCubeMap,
+            Probe1DiffuseCubeMap,
+            Probe1SpecularCubeMap,
+            Count
+        };
     };
 
     struct Define {
         Define() {}
         Define(const char *name, int value) : name(name), value(value) {}
-        Define &operator=(const Define &rhs) { this->name = rhs.name; this->value = rhs.value; return *this;  }
 
         Str                 name;
         int                 value;
@@ -124,26 +160,33 @@ public:
     const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
 
-    bool                    HasVertexShader() const { return !!(shaderFlags & VertexShader); }
-    bool                    HasFragmentShader() const { return !!(shaderFlags & FragmentShader); }
-    bool                    HasGeometryShader() const { return !!(shaderFlags & GeometryShader); }
+                            /// Tests if this shader has vertex shader.
+    bool                    HasVertexShader() const { return !!(flags & Flag::HasVertexShader); }
+                            /// Tests if this shader has fragment shader.
+    bool                    HasFragmentShader() const { return !!(flags & Flag::HasFragmentShader); }
+                            /// Tests if this shader has geometry shader.
+    bool                    HasGeometryShader() const { return !!(flags & Flag::HasGeometryShader); }
 
     bool                    IsOriginalShader() const { return !originalShader; }
     bool                    IsInstantiatedShader() const { return !!originalShader; }
 
+                            /// Returns shader flags.
     int                     GetFlags() const;
 
-                            /// Create instantiated shader
+                            /// Creates instantiated shader.
     Shader *                InstantiateShader(const Array<Define> &defineArray);
 
-                            /// Reinstantiate itself
+                            /// Reinstantiates itself.
     void                    Reinstantiate();
+
+                            /// Returns original shader. Instantiated shader has it's original shader
+    Shader *                GetOriginalShader() const { return originalShader; }
 
     Shader *                GetPerforatedVersion();
     Shader *                GetPremulAlphaVersion();
-    Shader *                GetAmbientLitVersion();
+    Shader *                GetIndirectLitVersion();
     Shader *                GetDirectLitVersion();
-    Shader *                GetAmbientLitDirectLitVersion();
+    Shader *                GetIndirectLitDirectLitVersion();
     Shader *                GetParallelShadowVersion();
     Shader *                GetSpotShadowVersion();
     Shader *                GetPointShadowVersion();
@@ -152,9 +195,13 @@ public:
 
     void                    Bind() const;
 
+                            /// Returns constant index with the given name.
     int                     GetConstantIndex(const char *name) const;
+
+                            /// Returns constant block index with the given name.
     int                     GetConstantBlockIndex(const char *name) const;
 
+                            /// Sets constant of integer type.
     void                    SetConstant1i(int index, const int constant) const;
     void                    SetConstant2i(int index, const int *constant) const;
     void                    SetConstant3i(int index, const int *constant) const;
@@ -164,9 +211,10 @@ public:
     void                    SetConstant3i(const char *name, const int *constant) const;
     void                    SetConstant4i(const char *name, const int *constant) const;
 
+                            /// Sets constant of float type.
     void                    SetConstant1f(int index, const float constant) const;
     void                    SetConstant2f(int index, const float *constant) const;
-    void                    SetConstant3f(int index, const float *constant) const;	
+    void                    SetConstant3f(int index, const float *constant) const;
     void                    SetConstant4f(int index, const float *constant) const;
     void                    SetConstant2f(int index, const Vec2 &constant) const;
     void                    SetConstant3f(int index, const Vec3 &constant) const;
@@ -179,6 +227,7 @@ public:
     void                    SetConstant3f(const char *name, const Vec3 &constant) const;
     void                    SetConstant4f(const char *name, const Vec4 &constant) const;
 
+                            /// Sets matrix constant.
     void                    SetConstant2x2f(int index, bool rowMajor, const Mat2 &constant) const;
     void                    SetConstant3x3f(int index, bool rowMajor, const Mat3 &constant) const;
     void                    SetConstant4x4f(int index, bool rowMajor, const Mat4 &constant) const;
@@ -188,6 +237,7 @@ public:
     void                    SetConstant4x4f(const char *name, bool rowMajor, const Mat4 &constant) const;
     void                    SetConstant4x3f(const char *name, bool rowMajor, const Mat3x4 &constant) const;
 
+                            /// Sets array constant of integer type.
     void                    SetConstantArray1i(int index, int num, const int *constant) const;
     void                    SetConstantArray2i(int index, int num, const int *constant) const;
     void                    SetConstantArray3i(int index, int num, const int *constant) const;
@@ -197,6 +247,7 @@ public:
     void                    SetConstantArray3i(const char *name, int num, const int *constant) const;
     void                    SetConstantArray4i(const char *name, int num, const int *constant) const;
 
+                            /// Sets array constant of float type.
     void                    SetConstantArray1f(int index, int num, const float *constant) const;
     void                    SetConstantArray2f(int index, int num, const float *constant) const;
     void                    SetConstantArray3f(int index, int num, const float *constant) const;
@@ -212,6 +263,7 @@ public:
     void                    SetConstantArray3f(const char *name, int num, const Vec3 *constant) const;
     void                    SetConstantArray4f(const char *name, int num, const Vec4 *constant) const;
 
+                            /// Sets matrix array constant.
     void                    SetConstantArray2x2f(int index, bool rowMajor, int num, const Mat2 *constant) const;
     void                    SetConstantArray3x3f(int index, bool rowMajor, int num, const Mat3 *constant) const;
     void                    SetConstantArray4x4f(int index, bool rowMajor, int num, const Mat4 *constant) const;
@@ -221,17 +273,24 @@ public:
     void                    SetConstantArray4x4f(const char *name, bool rowMajor, int num, const Mat4 *constant) const;
     void                    SetConstantArray4x3f(const char *name, bool rowMajor, int num, const Mat3x4 *constant) const;
 
+                            /// Sets constant buffer.
     void                    SetConstantBuffer(int index, int bindingIndex) const;
     void                    SetConstantBuffer(const char *name, int bindingIndex) const;
 
+                            /// Returns sampler unit index with the given name.
     int                     GetSamplerUnit(const char *name) const;
 
+                            /// Sets texture.
     void                    SetTexture(int unit, const Texture *texture) const;
     void                    SetTexture(const char *name, const Texture *texture) const;
+
+                            /// Sets texture array.
     void                    SetTextureArray(const char *name, int num, const Texture **textures) const;
 
     bool                    Create(const char *text, const char *baseDir);
+
     const Shader *          AddRefCount() const { refCount++; return this; }
+    int                     GetRefCount() const { return refCount; }
 
     void                    Purge();
 
@@ -242,14 +301,13 @@ public:
 
 private:
     bool                    ParseProperties(Lexer &lexer);
-    Shader *                GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, int skinningWeightCount, bool instancing);
-    bool                    GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool instancing);
-    bool                    GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool generateGpuSkinningVersion, bool generateGpuInstancingVersion);
-    bool                    GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool generateGpuSkinningVersion, bool generateGpuInstancingVersion);
-    bool                    Instantiate(const Array<Define> &defineArray);  // internal function of instantiate
+    Shader *                GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool shadowing, int skinningWeightCount, bool instancing);
+    bool                    GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool shadowing, bool instancing);
+    bool                    GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool shadowing, bool genGpuSkinningVersion, bool genGpuInstancingVersion);
+    bool                    GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool shadowing, bool genGpuSkinningVersion, bool genGpuInstancingVersion);
+    bool                    InstantiateShaderInternal(const Array<Define> &defineArray);
 
-    bool                    Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion,
-                                bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion);
+    bool                    Finish(bool genPerforatedVersion, bool genGpuSkinningVersion, bool genGpuInstancingVersion, bool genParallelShadowVersion, bool genSpotShadowVersion, bool genPointShadowVersion);
     bool                    ProcessShaderText(const char *text, const char *baseDir, const Array<Define> &defineArray, Str &outStr) const;
     bool                    ProcessIncludeRecursive(const char *baseDir, Str &text) const;
 
@@ -257,59 +315,38 @@ private:
 
     Str                     hashName;
     Str                     name;
-    Str                     baseDir;                ///< Base directory to include other shaders
-    int                     flags;
-    mutable int             refCount;
-    bool                    permanence;
-    int                     frameCount;
+    Str                     baseDir; ///< Base directory to include other shaders
+    int                     flags = 0;
+    mutable int             refCount = 0;
+    bool                    permanence = false;
+    int                     frameCount = 0;
 
-    RHI::Handle             shaderHandle;
-    int                     shaderFlags;
-    Str                     vsText;                 ///< Vertex shader souce code text
-    Str                     fsText;                 ///< Fragment shader source code text
-    //int                   interactionParms[MaxInteractionParms];
-    int                     builtInConstantIndices[MaxBuiltInConstants];
-    int                     builtInSamplerUnits[MaxBuiltInSamplers];
+    RHI::Handle             shaderHandle = RHI::NullShader;
+    Str                     vsText; ///< Vertex shader souce code text
+    Str                     fsText; ///< Fragment shader source code text
+    int                     builtInConstantIndices[BuiltInConstant::Count];
+    int                     builtInSamplerUnits[BuiltInSampler::Count];
 
-    Array<Define>           defineArray;            ///< Define list for instantiated shader
+    Array<Define>           defineArray; ///< Define list for instantiated shader
 
-    Shader *                originalShader;         ///< Original shader pointer. Instantiated shader has a pointer to the original shader
-    Array<Shader *>         instantiatedShaders;
+    Shader *                originalShader = nullptr; ///< Instantiated shader has a pointer to the it's original shader
+    Array<Shader *>         instantiatedShaders; ///< Original shader has the pointer array of it's instantiated shaders
 
-    Shader *                perforatedVersion;
-    Shader *                premulAlphaVersion;
-    Shader *                ambientLitVersion;
-    Shader *                directLitVersion;
-    Shader *                ambientLitDirectLitVersion;
-    Shader *                parallelShadowVersion;
-    Shader *                spotShadowVersion;
-    Shader *                pointShadowVersion;
-    Shader *                gpuSkinningVersion[3];
-    Shader *                gpuInstancingVersion;
+    Shader *                perforatedVersion = nullptr;
+    Shader *                premulAlphaVersion = nullptr;
+    Shader *                indirectLitVersion = nullptr;
+    Shader *                directLitVersion = nullptr;
+    Shader *                indirectLitDirectLitVersion = nullptr;
+    Shader *                parallelShadowVersion = nullptr;
+    Shader *                spotShadowVersion = nullptr;
+    Shader *                pointShadowVersion = nullptr;
+    Shader *                gpuSkinningVersion[3] = { nullptr, };
+    Shader *                gpuInstancingVersion = nullptr;
 
     StrHashMap<PropertyInfo> propertyInfoHashMap;
 };
 
 BE_INLINE Shader::Shader() {
-    flags                   = 0;
-    refCount                = 0;
-    permanence              = false;
-    frameCount              = 0; 
-    shaderHandle            = RHI::NullShader;
-    shaderFlags             = 0;
-    perforatedVersion       = nullptr;
-    premulAlphaVersion      = nullptr;
-    ambientLitVersion       = nullptr;
-    directLitVersion        = nullptr;
-    ambientLitDirectLitVersion = nullptr;
-    parallelShadowVersion   = nullptr;
-    spotShadowVersion       = nullptr;
-    pointShadowVersion      = nullptr;
-    gpuSkinningVersion[0]   = nullptr;
-    gpuSkinningVersion[1]   = nullptr;
-    gpuSkinningVersion[2]   = nullptr;
-    gpuInstancingVersion    = nullptr;
-    originalShader          = nullptr;
 }
 
 BE_INLINE Shader::~Shader() {
@@ -321,10 +358,12 @@ class ShaderManager {
 
 public:
     enum PredefinedOriginalShader {
+        WriteValueShader,
         DrawArrayTextureShader,
-        SimpleShader,
+        UnlitShader,
         SelectionIdShader,
         DepthShader,
+        DepthNormalShader,
         ConstantColorShader,
         VertexColorShader,
         ObjectMotionBlurShader,
@@ -333,12 +372,14 @@ public:
         PhongShader,
         SkyboxCubemapShader,
         SkyboxSixSidedShader,
+        EnvCubemapShader,
         FogLightShader,
         BlendLightShader,
         PostObjectMotionBlurShader,
         PostCameraMotionBlurShader,
         PostPassThruShader,
         PostPassThruColorShader,
+        PostPassThruCubeFaceShader,
         Downscale2x2Shader,
         Downscale4x4Shader,
         Downscale4x4LogLumShader,
@@ -364,6 +405,7 @@ public:
         SunShaftsDisplayShader,
         LuminanceAdaptationShader,
         BrightFilterShader,
+        LdrFinalShader,
         HdrFinalShader,
         ChromaShiftShader,
         SsaoShader,
@@ -396,25 +438,29 @@ public:
 
     static Shader *         originalShaders[MaxPredefinedOriginalShaders];
 
+    static Shader *         writeValueShader;
     static Shader *         drawArrayTextureShader;
-    static Shader *         simpleShader;
+    static Shader *         unlitShader;
     static Shader *         selectionIdShader;
     static Shader *         depthShader;
+    static Shader *         depthNormalShader;
     static Shader *         constantColorShader;
     static Shader *         vertexColorShader;
     static Shader *         objectMotionBlurShader;
     static Shader *         standardDefaultShader;
-    static Shader *         standardDefaultAmbientLitShader;
+    static Shader *         standardDefaultIndirectLitShader;
     static Shader *         standardDefaultDirectLitShader;
-    static Shader *         standardDefaultAmbientLitDirectLitShader;
+    static Shader *         standardDefaultIndirectLitDirectLitShader;
     static Shader *         skyboxCubemapShader;
     static Shader *         skyboxSixSidedShader;
+    static Shader *         envCubemapShader;
     static Shader *         fogLightShader;
     static Shader *         blendLightShader;
     static Shader *         postObjectMotionBlurShader;
     static Shader *         postCameraMotionBlurShader;
     static Shader *         postPassThruShader;
     static Shader *         postPassThruColorShader;
+    static Shader *         postPassThruCubeFaceShader;
     static Shader *         downscale2x2Shader;
     static Shader *         downscale4x4Shader;
     static Shader *         downscale4x4LogLumShader;
@@ -440,6 +486,7 @@ public:
     static Shader *         sunShaftsDisplayShader;
     static Shader *         brightFilterShader;
     static Shader *         luminanceAdaptationShader;
+    static Shader *         ldrFinalShader;
     static Shader *         hdrFinalShader;
     static Shader *         chromaShiftShader;
     static Shader *         ssaoShader;

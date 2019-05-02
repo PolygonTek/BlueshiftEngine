@@ -15,11 +15,11 @@
 #include "Precompiled.h"
 #include "Application.h"
 
-static BE1::CVar            disp_width(L"disp_width", L"1280", BE1::CVar::Integer | BE1::CVar::Archive, L"");
-static BE1::CVar            disp_height(L"disp_height", L"720", BE1::CVar::Integer | BE1::CVar::Archive, L"");
-static BE1::CVar            disp_fullscreen(L"disp_fullscreen", L"0", BE1::CVar::Bool | BE1::CVar::Archive, L"");
-static BE1::CVar            disp_bpp(L"disp_bpp", L"0", BE1::CVar::Integer | BE1::CVar::Archive, L"");
-static BE1::CVar            disp_frequency(L"disp_frequency", L"0", BE1::CVar::Integer | BE1::CVar::Archive, L"");
+static BE1::CVar    disp_width("disp_width", "1280", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "");
+static BE1::CVar    disp_height("disp_height", "720", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "");
+static BE1::CVar    disp_fullscreen("disp_fullscreen", "0", BE1::CVar::Flag::Bool | BE1::CVar::Flag::Archive, "");
+static BE1::CVar    disp_bpp("disp_bpp", "0", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Flag::Archive, "");
+static BE1::CVar    disp_frequency("disp_frequency", "0", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "");
 
 @interface MyWindow : NSWindow
 
@@ -62,7 +62,7 @@ static BE1::CVar            disp_frequency(L"disp_frequency", L"0", BE1::CVar::I
 
 @implementation AppDelegate
 
-- (BOOL)translateKeyCode:(unsigned short)keyCode modifiers:(UInt16)modifiers keyDown:(BOOL)keyDown character:(wchar_t *)outChar {
+- (BOOL)translateKeyCode:(unsigned short)keyCode modifiers:(UInt16)modifiers keyDown:(BOOL)keyDown character:(char32_t *)outChar {
     UInt32 deadKeyState = 0;
     UniChar unicodeChars[4];
     UniCharCount actualLength;
@@ -86,7 +86,8 @@ static BE1::CVar            disp_frequency(L"disp_frequency", L"0", BE1::CVar::I
                    unicodeChars);
     
     if (actualLength == 1) {
-        *outChar = (wchar_t)unicodeChars[0];
+        // FIXME: need to implement UTF16 to UTF32 conversion
+        *outChar = unicodeChars[0];
         return true;
     }
     
@@ -254,17 +255,18 @@ static const struct {
     uint16_t nativeVirtualKey = [event keyCode];
     uint16_t scancode = vkey_to_scancode_map[nativeVirtualKey].scan;
     scancode = (scancode & 0xFF) | (((scancode >> 8) & 1) << 7);
-    BE1::platform->QueEvent(BE1::Platform::KeyEvent, scancode, keyDown ? true : false, 0, NULL);
+    BE1::platform->QueEvent(BE1::Platform::EventType::Key, scancode, keyDown ? true : false, 0, nullptr);
     
     if (keyDown) {
-#if 0
+#if 1
         NSString *str = [event characters];
-        const wchar_t *wchars = (const wchar_t *)[str cStringUsingEncoding:NSUTF32LittleEndianStringEncoding];
-        wchar_t ch = wchars[0];
+        const char32_t *chars = (const char32_t *)[str cStringUsingEncoding:NSUTF32LittleEndianStringEncoding];
+        char32_t ch = chars[0];
+        BE1::platform->QueEvent(BE1::Platform::EventType::Char, ch, 0, 0, nullptr);
 #else
-        wchar_t ch;
-        if ([self translateKeyCode:[event keyCode] modifiers:modifiers keyDown:keyDown character:&ch]) {
-            BE1::platform->QueEvent(BE1::Platform::CharEvent, ch, 0, 0, NULL);
+        char32_t ch;
+        if ([self translateKeyCode:nativeVirtualKey modifiers:modifiers keyDown:keyDown character:&ch]) {
+            BE1::platform->QueEvent(BE1::Platform::EventType::Char, ch, 0, 0, nullptr);
         }
 #endif
     }
@@ -274,7 +276,7 @@ static const struct {
     bool oldOn = (oldFlags & keyMask) != 0;
     bool newOn = (newFlags & keyMask) != 0;
     if (oldOn != newOn) {
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, engineKey, newOn, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, engineKey, newOn, 0, nullptr);
     }
 }
 
@@ -299,27 +301,27 @@ static const struct {
         
         if (buttonsDelta & 1) {
             isDown = buttons & 1 ? true : false;
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse1, isDown, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::Mouse1, isDown, 0, nullptr);
         }
         
         if (buttonsDelta & 2) {
             isDown = buttons & 2 ? true : false;
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse2, isDown, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::Mouse2, isDown, 0, nullptr);
         }
         
         if (buttonsDelta & 4) {
             isDown = buttons & 4 ? true : false;
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse3, isDown, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::Mouse3, isDown, 0, nullptr);
         }
         
         if (buttonsDelta & 8) {
             isDown = buttons & 8 ? true : false;
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse4, isDown, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::Mouse4, isDown, 0, nullptr);
         }
         
         if (buttonsDelta & 16) {
             isDown = buttons & 16 ? true : false;
-            BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::Mouse5, isDown, 0, NULL);
+            BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::Mouse5, isDown, 0, nullptr);
         }
         
         oldButtons = buttons;
@@ -331,16 +333,16 @@ static const struct {
     NSPoint mouseLocation =  [view convertPoint:[event locationInWindow] fromView:nil];
     mouseLocation.y = view.frame.size.height - mouseLocation.y;
     
-    BE1::platform->QueEvent(BE1::Platform::MouseMoveEvent, mouseLocation.x, mouseLocation.y, 0, NULL);
+    BE1::platform->QueEvent(BE1::Platform::EventType::MouseMove, mouseLocation.x, mouseLocation.y, 0, nullptr);
 }
 
 - (void)processMouseWheelEvent:(NSEvent *)event {
     if ([event deltaY] > 0.0) {
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::MouseWheelUp, true, 0, NULL);
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::MouseWheelUp, false, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::MouseWheelUp, true, 0, nullptr);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::MouseWheelUp, false, 0, nullptr);
     } else {
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::MouseWheelDown, true, 0, NULL);
-        BE1::platform->QueEvent(BE1::Platform::KeyEvent, BE1::KeyCode::MouseWheelDown, false, 0, NULL);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::MouseWheelDown, true, 0, nullptr);
+        BE1::platform->QueEvent(BE1::Platform::EventType::Key, BE1::KeyCode::MouseWheelDown, false, 0, nullptr);
     }
 }
 
@@ -415,94 +417,109 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
 
 - (void)initInstance {
     BE1::Engine::InitParms initParms;
-    
+
     const NSArray *arguments = [[NSProcessInfo processInfo] arguments];
     for (int i = 1; i < arguments.count; i++) { // skip executable path
-        const wchar_t *wstr = (const wchar_t *)[arguments[i] cStringUsingEncoding:NSUTF32LittleEndianStringEncoding];
-        initParms.args.AppendArg(wstr);
+        const char *str = (const char *)[arguments[i] cStringUsingEncoding:NSUTF8StringEncoding];
+        initParms.args.AppendArg(str);
     }
-    
+
     BE1::Str playerDir = BE1::PlatformFile::ExecutablePath();
     playerDir.AppendPath("../../..");
     initParms.baseDir = playerDir;
-    
+
     BE1::Str dataDir = playerDir + "/Data";
 
-	BE1::Str assetDir = dataDir;
+    BE1::Str assetDir = dataDir;
     assetDir.AppendPath("Contents", '/');
 
     initParms.searchPath = assetDir + ";" + dataDir;
 
     BE1::Engine::Init(&initParms);
-    
+
     BE1::resourceGuidMapper.Read("Data/guidmap");
-        
+
     currentKeyboard = TISCopyCurrentKeyboardInputSource();
-    
-    const wchar_t *title = BE1::wva(L"%ls %hs %hs %hs", L"Blueshift Player", BE1::PlatformBaseProcess::PlatformName(), __DATE__, __TIME__);
-    NSString *nstitle = (__bridge NSString *)WideStringToCFString(title);
-    
-    mainWindow = [self createGLWindow:NSMakeSize(1280, 720) title:nstitle];
+
+    char fullTitle[128];
+    BE1::Str::snPrintf(fullTitle, sizeof(fullTitle), "%s %s %s %s", "Blueshift Player", BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
+    NSString *nsFullTitle = (__bridge NSString *)StringToCFString(fullTitle);
+
+    mainWindow = [self createGLWindow:NSMakeSize(1280, 720) title:nsFullTitle];
+
+    BE1::renderSystem.InitRHI((__bridge BE1::RHI::WindowHandle)mainWindow);
 
     BE1::gameClient.Init((__bridge BE1::RHI::WindowHandle)mainWindow, true);
     
     app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
-    app.mainRenderContext->Init((__bridge BE1::RHI::WindowHandle)[mainWindow contentView], 1280, 720, DisplayContext, NULL);
-    
-	app.mainRenderContext->OnResize(1280, 720);
+    app.mainRenderContext->Init((__bridge BE1::RHI::WindowHandle)[mainWindow contentView], 1280, 720, DisplayContext, nullptr);
 
-    app.OnApplicationResize(1280, 720);    
+    app.mainRenderContext->OnResize(1280, 720);
+
+    app.OnApplicationResize(1280, 720);
 
     [mainWindow makeKeyAndOrderFront:nil];
-    
+
     if (disp_fullscreen.GetBool()) {
         [mainWindow toggleFullScreen:nil];
         //app.mainRenderContext->SetFullscreen(disp_width.GetInteger(), disp_height.GetInteger());
     }
-        
+
     BE1::platform->AppActivate(true, false);
-    
+
     app.Init();
-    
+
     app.LoadAppScript("Application");
-    
+
     app.StartAppScript();
 }
 
 - (void)shutdownInstance {
     app.Shutdown();
-    
+
     app.mainRenderContext->Shutdown();
     BE1::renderSystem.FreeRenderContext(app.mainRenderContext);
-    
+
     [self destroyGLWindow:mainWindow];
-    
+
     BE1::gameClient.Shutdown();
-    
+
     BE1::Engine::Shutdown();
-    
+
     CFRelease(currentKeyboard);
+}
+
+- (void)runFrameInstance:(int)elapsedMsec {
+    BE1::Engine::RunFrame(elapsedMsec);
+        
+    BE1::gameClient.RunFrame();
+        
+    app.Update();
+        
+    BE1::gameClient.EndFrame();
+        
+    app.mainRenderContext->Display();
 }
 
 - (void)windowWillEnterFullScreen:(NSNotification *)notification {
     MyWindow *window = [notification object];
-    
+
     // set window is resizable to make fullscreen window
     NSInteger oldStyleMask = [window styleMask];
     [window setStyleMask:oldStyleMask | NSResizableWindowMask];
-    
+
     NSSize size = [[window contentView] frame].size;
-    
+
     BE1::rhi.SetFullscreen(app.mainRenderContext->GetContextHandle(), size.width, size.height);
 }
 
 - (void)windowWillExitFullScreen:(NSNotification *)notification {
     MyWindow *window = [notification object];
-    
+
     // set window is non-resizable not to allow resizable window
     NSInteger oldStyleMask = [window styleMask];
     [window setStyleMask:oldStyleMask & ~NSResizableWindowMask];
-    
+
     BE1::rhi.ResetFullscreen(app.mainRenderContext->GetContextHandle());
 }
 
@@ -533,15 +550,7 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
             }
         }
         
-        BE1::Engine::RunFrame(elapsedMsec);
-        
-        BE1::gameClient.RunFrame();
-        
-        app.Update();
-        
-        BE1::gameClient.EndFrame();
-        
-        app.mainRenderContext->Display();
+        [self runFrameInstance:elapsedMsec];
     }
 }
 

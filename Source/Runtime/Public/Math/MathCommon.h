@@ -101,26 +101,26 @@ floating point bit layouts according to the IEEE 754-1985 and 754-2008 standard
 
 BE_NAMESPACE_BEGIN
 
-template <typename T> BE_INLINE T   Sign(const T v) { return (v > 0) ? 1 : ((v < 0) ? -1 : 0 ); }
-template <typename T> BE_INLINE T   Square(const T &v) { return v * v; }
-template <typename T> BE_INLINE T   Cube(const T &v) { return v * v * v; }
+template <typename T> BE_INLINE T   Sign(const T x) { return (x > 0) ? 1 : ((x < 0) ? -1 : 0 ); }
+template <typename T> BE_INLINE T   Square(const T &x) { return x * x; }
+template <typename T> BE_INLINE T   Cube(const T &x) { return x * x * x; }
 
-template <typename T> BE_INLINE T   InchesToMetres(const T value) { return static_cast<T>(value * 0.0254f); }
-template <typename T> BE_INLINE T   MetresToInches(const T value) { return static_cast<T>(value * 39.37f); }
-template <typename T> BE_INLINE T   InchesToFeet(const T value) { return static_cast<T>(value / 12.f); }
-template <typename T> BE_INLINE T   FeetToMiles(const T value) { return static_cast<T>(value / 5280.f); }
-template <typename T> BE_INLINE T   FeetToInches(const T value) { return static_cast<T>(value * 12.f); }
-template <typename T> BE_INLINE T   MetresToFeet(const T value) { return InchesToFeet(MetresToInches(value)); }
-template <typename T> BE_INLINE T   FeetToMetres(const T value) { return FeetToInches(InchesToMetres(value)); }
+template <typename T> BE_INLINE T   InchesToMetres(const T x) { return static_cast<T>(x * 0.0254f); }
+template <typename T> BE_INLINE T   MetresToInches(const T x) { return static_cast<T>(x * 39.37f); }
+template <typename T> BE_INLINE T   InchesToFeet(const T x) { return static_cast<T>(x / 12.f); }
+template <typename T> BE_INLINE T   FeetToMiles(const T x) { return static_cast<T>(x / 5280.f); }
+template <typename T> BE_INLINE T   FeetToInches(const T x) { return static_cast<T>(x * 12.f); }
+template <typename T> BE_INLINE T   MetresToFeet(const T x) { return InchesToFeet(MetresToInches(x)); }
+template <typename T> BE_INLINE T   FeetToMetres(const T x) { return FeetToInches(InchesToMetres(x)); }
 
 template <unsigned int Value>
 struct Factorial {
-    enum { answer = Value * Factorial<Value - 1>::answer };
+    enum { Answer = Value * Factorial<Value - 1>::Answer };
 };
  
 template<>
 struct Factorial<0> {
-    enum { answer = 1 };
+    enum { Answer = 1 };
 };
 
 class BE_API Math {
@@ -152,10 +152,10 @@ public:
     static const __m128         SIMD_SP_max_char;
     static const __m128         SIMD_SP_min_short;
     static const __m128         SIMD_SP_max_short;
-    static const __m128         SIMD_SP_smallestNonDenorm;
-    static const __m128         SIMD_SP_tiny;
     static const __m128         SIMD_SP_rsqrt_c0;
     static const __m128         SIMD_SP_rsqrt_c1;
+    static const __m128         SIMD_SP_tiny;
+    static const __m128         SIMD_SP_smallestNonDenorm;
 #endif
 
     static void                 Init();

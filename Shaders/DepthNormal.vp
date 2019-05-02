@@ -1,0 +1,121 @@
+#if defined(PERFORATED) || _NORMAL != 0
+    #ifdef NEED_BASE_TC
+#endif
+
+in HIGHP vec4 in_position   : POSITION;
+in LOWP vec3 in_normal      : NORMAL;
+in MEDIUMP vec2 in_st       : TEXCOORD0;
+
+#if _NORMAL != 0
+    in LOWP vec4 in_tangent : TANGENT;
+#endif
+
+#ifdef NEED_BASE_TC
+    out MEDIUMP vec2 v2f_tex;
+#endif
+
+#if _NORMAL != 0
+    out LOWP vec3 v2f_tangentToWorldMatrixS;
+    out LOWP vec3 v2f_tangentToWorldMatrixT;
+    out LOWP vec3 v2f_tangentToWorldMatrixR;
+#else
+    out LOWP vec3 v2f_normalWS;
+#endif
+
+#if _PARALLAX
+    out HIGHP vec3 v2f_viewTS;
+#endif
+
+#if defined(INSTANCING)
+    $include "Instancing.vp"
+#else
+    uniform mat4x3 localToWorldMatrix;
+    uniform mat4x3 worldToLocalMatrix;
+#endif
+
+#ifdef GPU_SKINNING
+    #if defined(GPU_SKINNING_1_WEIGHTS)
+        $include "SkinningMatrix1.glsl"
+    #elif defined(GPU_SKINNING_4_WEIGHTS)
+        $include "SkinningMatrix4.glsl"
+    #elif defined(GPU_SKINNING_8_WEIGHTS)
+        $include "SkinningMatrix8.glsl"
+    #endif
+#endif
+
+uniform vec4 textureMatrixS;
+uniform vec4 textureMatrixT;
+
+uniform HIGHP mat4 viewProjectionMatrix;
+uniform HIGHP mat4 modelViewProjectionMatrix;
+
+void main() {
+    vec4 positionLS;
+    vec3 normalLS;
+
+#ifdef NEED_BASE_TC
+    v2f_tex.x = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
+    v2f_tex.y = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
+#endif
+
+#if _NORMAL != 0
+    vec3 tangentLS;
+    vec3 bitangentLS;
+
+    #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+        vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
+        vec4 vTangent = in_tangent * 2.0 - 1.0;
+    #else
+        vec3 vNormal = in_normal.xyz;
+        vec4 vTangent = in_tangent;
+    #endif
+
+    #ifdef GPU_SKINNING
+        skinningMatrix(in_position, positionLS, vNormal, normalLS, vTangent, tangentLS, bitangentLS);
+    #else
+        positionLS = in_position;
+        normalLS = vNormal;
+        tangentLS = vTangent.xyz;
+        bitangentLS = normalize(cross(vNormal, vTangent.xyz) * vTangent.w);
+    #endif
+#else
+    #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+        vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
+    #else
+        vec3 vNormal = in_normal.xyz;
+    #endif
+
+    #ifdef GPU_SKINNING
+        skinningMatrix(in_position, positionLS, vNormal, normalLS);
+    #else
+        positionLS = in_position;
+        normalLS = vNormal;
+    #endif
+#endif
+
+#if _NORMAL != 0
+    #if _PARALLAX
+        vec4 positionWS = vec4(localToWorldMatrix * positionLS, 1.0);
+
+        vec3 viewWS = viewOrigin.xyz - positionWS.xyz;
+        vec3 viewLS = mat3(worldToLocalMatrix) * viewWS;
+
+        v2f_viewTS.x = dot(tangentLS, viewLS);
+        v2f_viewTS.y = dot(bitangentLS, viewLS);
+        v2f_viewTS.z = dot(normalLS, viewLS);
+    #endif
+
+    v2f_tangentToWorldMatrixS = mat3(localToWorldMatrix) * tangentLS;
+    v2f_tangentToWorldMatrixT = mat3(localToWorldMatrix) * bitangentLS;
+    v2f_tangentToWorldMatrixR = mat3(localToWorldMatrix) * normalLS;
+#else
+    v2f_normalWS = mat3(localToWorldMatrix) * normalLS;
+#endif
+
+#ifdef INSTANCING
+    gl_Position = viewProjectionMatrix * vec4(localToWorldMatrix * positionLS, 1.0);
+#else
+
+    gl_Position = modelViewProjectionMatrix * positionLS;
+#endif
+}

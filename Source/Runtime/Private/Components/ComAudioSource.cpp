@@ -30,19 +30,19 @@ END_EVENTS
 
 void ComAudioSource::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("audioClip", "Audio Clip", Guid, GetAudioClipGuid, SetAudioClipGuid, GuidMapper::defaultSoundGuid, 
-        "", PropertyInfo::EditorFlag).SetMetaObject(&SoundAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&SoundAsset::metaObject);
     REGISTER_PROPERTY("playOnAwake", "Play On Awake", bool, playOnAwake, false, 
-        "Play the sound when the map loaded.", PropertyInfo::EditorFlag);
+        "Play the sound when the map loaded.", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("spatial", "Spatial", bool, spatial, true, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("looping", "Looping", bool, looping, false, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("volume", "Volume", float, volume, 1.f, 
-        "", PropertyInfo::EditorFlag).SetRange(0, 1, 0.1);
+        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.1);
     REGISTER_PROPERTY("minDistance", "Min Distance", float, minDistance, MeterToUnit(4.0f),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("maxDistance", "Max Distance", float, maxDistance, MeterToUnit(16.0f),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
 }
 
 ComAudioSource::ComAudioSource() {
@@ -85,7 +85,7 @@ void ComAudioSource::Awake() {
     }
 
     ComTransform *transform = GetEntity()->GetTransform();
-    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComAudioSource::TransformUpdated, SignalObject::Unique);
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComAudioSource::TransformUpdated, SignalObject::ConnectionType::Unique);
 }
 
 void ComAudioSource::Update() {

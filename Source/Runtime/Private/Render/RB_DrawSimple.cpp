@@ -30,12 +30,12 @@ void RB_DrawRect(float x, float y, float x2, float y2, float s, float t, float s
         { Vec2(x, y2), Vec2(s, t2) }
     };
 
-    rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, 4 * sizeof(verts[0]), verts);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::XySt].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::XySt].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(verts[0]));
-    rhi.DrawArrays(RHI::TriangleFanPrim, 0, 4);
+    rhi.DrawArrays(RHI::Topology::TriangleFan, 0, 4);
 }
 
 void RB_DrawClipRect(float s, float t, float s2, float t2) {
@@ -53,12 +53,12 @@ void RB_DrawRectSlice(float x, float y, float x2, float y2, float s, float t, fl
         { Vec2(x, y2), Vec3(s, t2, slice) }
     };
         
-    rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, 4 * sizeof(verts[0]), verts);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::XyStr].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::XyStr].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(verts[0]));
-    rhi.DrawArrays(RHI::TriangleFanPrim, 0, 4);
+    rhi.DrawArrays(RHI::Topology::TriangleFan, 0, 4);
 }
 
 static void ScreenToClipCoord(float x, float y, float *clip_x, float *clip_y) {
@@ -102,12 +102,12 @@ void RB_DrawCircle(const Vec3 &origin, const Vec3 &left, const Vec3 &up, const f
         verts[i] = origin + radius * (left * c + up * s);
     }
 
-    rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::Xyz].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::Xyz].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(Vec3));
-    rhi.DrawArrays(RHI::LineStripPrim, 0, segments);
+    rhi.DrawArrays(RHI::Topology::LineStrip, 0, segments);
 }
 
 void RB_DrawAABB(const AABB &aabb) {
@@ -117,15 +117,15 @@ void RB_DrawAABB(const AABB &aabb) {
     Vec3 verts[8];
     aabb.ToPoints(verts);
 
-    rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, sizeof(verts), verts);
 
-    rhi.BindBuffer(RHI::IndexBuffer, bufferCacheManager.streamIndexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Index, bufferCacheManager.streamIndexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamIndexBuffer, sizeof(indices), indices);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::Xyz].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::Xyz].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(Vec3));
-    rhi.DrawElements(RHI::TriangleStripPrim, 0, COUNT_OF(indices), sizeof(indices[0]), 0);
+    rhi.DrawElements(RHI::Topology::TriangleStrip, 0, COUNT_OF(indices), sizeof(indices[0]), 0);
 }
 
 void RB_DrawOBB(const OBB &obb) {	
@@ -135,15 +135,15 @@ void RB_DrawOBB(const OBB &obb) {
     Vec3 verts[8];
     obb.ToPoints(verts);
 
-    rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, sizeof(verts), verts);
 
-    rhi.BindBuffer(RHI::IndexBuffer, bufferCacheManager.streamIndexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Index, bufferCacheManager.streamIndexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamIndexBuffer, sizeof(indices), indices);
     
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::Xyz].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::Xyz].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(Vec3));
-    rhi.DrawElements(RHI::TriangleStripPrim, 0, COUNT_OF(indices), sizeof(indices[0]), 0);
+    rhi.DrawElements(RHI::Topology::TriangleStrip, 0, COUNT_OF(indices), sizeof(indices[0]), 0);
 }
 
 void RB_DrawFrustum(const Frustum &frustum) {
@@ -153,15 +153,15 @@ void RB_DrawFrustum(const Frustum &frustum) {
     Vec3 verts[8];
     frustum.ToPoints(verts);
 
-    rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, sizeof(verts), verts);
 
-    rhi.BindBuffer(RHI::IndexBuffer, bufferCacheManager.streamIndexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Index, bufferCacheManager.streamIndexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamIndexBuffer, sizeof(indices), indices);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::Xyz].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::Xyz].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(Vec3));
-    rhi.DrawElements(RHI::TriangleStripPrim, 0, COUNT_OF(indices), sizeof(indices[0]), 0);
+    rhi.DrawElements(RHI::Topology::TriangleStrip, 0, COUNT_OF(indices), sizeof(indices[0]), 0);
 }
 
 void RB_DrawSphere(const Sphere &sphere, int lats, int longs) {
@@ -170,12 +170,12 @@ void RB_DrawSphere(const Sphere &sphere, int lats, int longs) {
 
     R_GenerateSphereTriangleStripVerts(sphere, lats, longs, verts);
         
-    rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, size, verts);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::Xyz].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::Xyz].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(Vec3));
-    rhi.DrawArrays(RHI::TriangleStripPrim, 0, 2 * lats * longs);
+    rhi.DrawArrays(RHI::Topology::TriangleStrip, 0, 2 * lats * longs);
 }
 
 BE_NAMESPACE_END

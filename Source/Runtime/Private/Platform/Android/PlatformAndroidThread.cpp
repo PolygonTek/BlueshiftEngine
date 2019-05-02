@@ -39,15 +39,19 @@ struct ThreadStartupData {
 static void *ThreadStartup(ThreadStartupData *parg) {
     ThreadStartupData arg = *parg; 
     delete parg;
-    parg = NULL;
+    parg = nullptr;
 
     SetAffinity(arg.affinity);
     arg.startProc(arg.param);
 
-    return NULL;
+    return nullptr;
 }
 
-PlatformAndroidThread *PlatformAndroidThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
+uint64_t PlatformAndroidThread::GetCurrentThreadId() {
+    return static_cast<uint64_t>(gettid());
+}
+
+PlatformBaseThread *PlatformAndroidThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     if (stackSize > 0) {
@@ -60,8 +64,9 @@ PlatformAndroidThread *PlatformAndroidThread::Create(threadFunc_t startProc, voi
     startup->param = param;
     startup->affinity = affinity;
 
-    if (pthread_create(tid, &attr, (void *(*)(void *))ThreadStartup, startup) != 0) {
-        BE_FATALERROR(L"pthread_create");
+    int err = pthread_create(tid, &attr, (void *(*)(void *))ThreadStartup, startup);
+    if (err != 0) {
+        BE_FATALERROR("Failed to create pthread - %s", strerror(err));
     }
     
     PlatformAndroidThread *androidThread = new PlatformAndroidThread;
@@ -69,8 +74,9 @@ PlatformAndroidThread *PlatformAndroidThread::Create(threadFunc_t startProc, voi
     return androidThread;
 }
 
-void PlatformAndroidThread::Delete(PlatformAndroidThread *androidThread) {
-    assert(androidThread);
+void PlatformAndroidThread::Destroy(PlatformBaseThread *thread) {
+    assert(thread);
+    PlatformAndroidThread *androidThread = static_cast<PlatformAndroidThread *>(thread);
     //pthread_cancel(*androidThread->thread);
     delete androidThread->thread;
     delete androidThread;
@@ -80,26 +86,34 @@ void PlatformAndroidThread::SetAffinity(int affinity) {
     BE1::SetAffinity(affinity);
 }
 
-void PlatformAndroidThread::Wait(PlatformAndroidThread *androidThread) {
-    if (pthread_join(*androidThread->thread, NULL) != 0) {
-        BE_FATALERROR(L"pthread_join");
+void PlatformAndroidThread::SetName(const char *name) {
+    pthread_setname_np(pthread_self(), name);
+}
+
+void PlatformAndroidThread::Join(PlatformBaseThread *thread) {
+    PlatformAndroidThread *androidThread = static_cast<PlatformAndroidThread *>(thread);
+    int err = pthread_join(*androidThread->thread, nullptr);
+    if (err != 0) {
+        BE_FATALERROR("Failed to joint pthread - %s", strerror(err));
     }
     delete androidThread->thread;
     delete androidThread;
 }
 
-void PlatformAndroidThread::WaitAll(int numThreads, PlatformAndroidThread *androidThreads[]) {
+void PlatformAndroidThread::JoinAll(int numThreads, PlatformBaseThread *threads[]) {
     for (int i = 0; i < numThreads; i++) {
-        if (pthread_join(*androidThreads[i]->thread, NULL) != 0) {
-            BE_FATALERROR(L"pthread_join");
+        PlatformAndroidThread *androidThread = static_cast<PlatformAndroidThread *>(threads[i]);
+        int err = pthread_join(*androidThread->thread, nullptr);
+        if (err != 0) {
+            BE_FATALERROR("Failed to joint pthread - %s", strerror(err));
         }
 
-        delete androidThreads[i]->thread;
-        delete androidThreads[i];
+        delete androidThread->thread;
+        delete androidThread;
     } 
 }
 
-PlatformAndroidMutex *PlatformAndroidMutex::Create() {
+PlatformBaseMutex *PlatformAndroidMutex::Create() {
     PlatformAndroidMutex *androidMutex = new PlatformAndroidMutex;
     androidMutex->mutex = new pthread_mutex_t;
     pthread_mutexattr_t attr;
@@ -109,38 +123,49 @@ PlatformAndroidMutex *PlatformAndroidMutex::Create() {
     return androidMutex;
 }
 
-void PlatformAndroidMutex::Delete(PlatformAndroidMutex *androidMutex) {
-    assert(androidMutex);
+void PlatformAndroidMutex::Destroy(PlatformBaseMutex *mutex) {
+    assert(mutex);
+    PlatformAndroidMutex *androidMutex = static_cast<PlatformAndroidMutex *>(mutex);
     pthread_mutex_destroy(androidMutex->mutex);
     delete androidMutex->mutex;
     delete androidMutex;
 }
 
-void PlatformAndroidMutex::Lock(const PlatformAndroidMutex *androidMutex) {
+void PlatformAndroidMutex::Lock(const PlatformBaseMutex *mutex) {
+    const PlatformAndroidMutex *androidMutex = static_cast<const PlatformAndroidMutex *>(mutex);
+
     pthread_mutex_lock(androidMutex->mutex);
 }
 
-bool PlatformAndroidMutex::TryLock(const PlatformAndroidMutex *androidMutex) {
+bool PlatformAndroidMutex::TryLock(const PlatformBaseMutex *mutex) {
+    const PlatformAndroidMutex *androidMutex = static_cast<const PlatformAndroidMutex *>(mutex);
+
     return pthread_mutex_trylock(androidMutex->mutex) == 0;
 }
 
-void PlatformAndroidMutex::Unlock(const PlatformAndroidMutex *androidMutex) {
+void PlatformAndroidMutex::Unlock(const PlatformBaseMutex *mutex) {
+    const PlatformAndroidMutex *androidMutex = static_cast<const PlatformAndroidMutex *>(mutex);
+
     pthread_mutex_unlock(androidMutex->mutex);
 }
 
-PlatformAndroidCondition *PlatformAndroidCondition::Create() {
+PlatformBaseCondition *PlatformAndroidCondition::Create() {
     PlatformAndroidCondition *androidCondition = new PlatformAndroidCondition;
     androidCondition->cond = new pthread_cond_t;
-    pthread_cond_init(androidCondition->cond, NULL);
+    pthread_cond_init(androidCondition->cond, nullptr);
     return androidCondition;
 }
 
-void PlatformAndroidCondition::Delete(PlatformAndroidCondition *androidCondition) {
-    assert(androidCondition);
+void PlatformAndroidCondition::Destroy(PlatformBaseCondition *condition) {
+    assert(condition);
+    PlatformAndroidCondition *androidCondition = static_cast<PlatformAndroidCondition *>(condition);
     delete androidCondition->cond;
 }
 
-void PlatformAndroidCondition::Wait(const PlatformAndroidCondition *androidCondition, const PlatformAndroidMutex *androidMutex) {
+void PlatformAndroidCondition::Wait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex) {
+    const PlatformAndroidCondition *androidCondition = static_cast<const PlatformAndroidCondition *>(condition);
+    const PlatformAndroidMutex *androidMutex = static_cast<const PlatformAndroidMutex *>(mutex);
+
     pthread_cond_wait(androidCondition->cond, androidMutex->mutex);
 }
 
@@ -149,7 +174,7 @@ struct timespec *MillisecondsFromNow(struct timespec *time, int millisecs) {
     const int64_t NANOSEC_PER_SEC = 1000000000;
 
     struct timeval tvstruct;
-    gettimeofday(&tvstruct, NULL);
+    gettimeofday(&tvstruct, nullptr);
 
     int64_t secs = tvstruct.tv_sec;
     int64_t nanosecs = ((int64_t)(millisecs + tvstruct.tv_usec * 1000)) * NANOSEC_PER_MILLISEC;
@@ -164,10 +189,13 @@ struct timespec *MillisecondsFromNow(struct timespec *time, int millisecs) {
     return time;
 }
 
-bool PlatformAndroidCondition::TimedWait(const PlatformAndroidCondition *androidCondition, const PlatformAndroidMutex *androidMutex, int ms) {
+bool PlatformAndroidCondition::TimedWait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex, int ms) {
     timespec ts;
     MillisecondsFromNow(&ts, ms);
-    
+
+    const PlatformAndroidCondition *androidCondition = static_cast<const PlatformAndroidCondition *>(condition);
+    const PlatformAndroidMutex *androidMutex = static_cast<const PlatformAndroidMutex *>(mutex);
+
     int ret = pthread_cond_timedwait(androidCondition->cond, androidMutex->mutex, &ts);
     if (ret == ETIMEDOUT || ret == EINVAL) {
         return false;
@@ -175,7 +203,9 @@ bool PlatformAndroidCondition::TimedWait(const PlatformAndroidCondition *android
     return true;
 }
 
-void PlatformAndroidCondition::Broadcast(const PlatformAndroidCondition *androidCondition) {
+void PlatformAndroidCondition::Broadcast(const PlatformBaseCondition *condition) {
+    const PlatformAndroidCondition *androidCondition = static_cast<const PlatformAndroidCondition *>(condition);
+
     pthread_cond_broadcast(androidCondition->cond);
 }
 

@@ -50,14 +50,14 @@ class AnimLayer {
     friend class AnimController;
 
 public:
-    enum {
-        MaxBlendTreeChildren    = 17
-    };
+    static constexpr int MaxBlendTreeChildren = 17;
 
     /// Layer blending types
-    enum Blending {
-        Override,
-        Additive
+    struct Blending {
+        enum Enum {
+            Override,
+            Additive
+        };
     };
 
     struct AnimLeaf {
@@ -108,9 +108,9 @@ public:
     const Array<int> &          GetMaskJoints() const { return maskJoints; }
 
                                 /// Gets blending type for blending with other layer
-    Blending                    GetBlending() const { return blending; }
+    Blending::Enum              GetBlending() const { return blending; }
                                 /// Sets blending type 
-    void                        SetBlending(Blending blending) { this->blending = blending; }
+    void                        SetBlending(Blending::Enum blending) { this->blending = blending; }
                                 /// Gets blendingweights for blending with other layer
     float                       GetWeight() const { return weight; }
                                 /// Sets blending weight 
@@ -170,7 +170,7 @@ private:
 
     Str                         name;
     Array<int>                  maskJoints;             // joints mask for this layer
-    Blending                    blending;               // blending type for this layer
+    Blending::Enum              blending;               // blending type for this layer
     float                       weight;                 // constant weight for this layer
     int                         defaultStateNum;
 

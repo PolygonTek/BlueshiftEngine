@@ -31,7 +31,7 @@ public:
     /// The default constructor does not initialize any members of this class.
     Complex() {}
     /// Set complex number with the given real part and imagenary part.
-    Complex(const float re, const float im);
+    constexpr Complex(const float re, const float im);
     /// Assginment operator
     Complex &operator=(const Complex &rhs);
 
@@ -71,23 +71,23 @@ public:
     Complex                 operator-(const float rhs) const;
     friend Complex          operator-(const float lhs, const Complex &rhs);
 
-                            /// Exact compare, no epsilon
+                            /// Exact compare, no epsilon.
     bool                    Equals(const Complex &a) const;
-                            /// Compare with epsilon
+                            /// Compare with epsilon.
     bool                    Equals(const Complex &a, const float epsilon) const;
-                            /// Exact compare, no epsilon
+                            /// Exact compare, no epsilon.
     bool                    operator==(const Complex &a) const { return Equals(a); }
-                            /// Exact compare, no epsilon
+                            /// Exact compare, no epsilon.
     bool                    operator!=(const Complex &a) const { return !Equals(a); }
 
-                            /// Returns the complex conjugate
+                            /// Returns the complex conjugate.
     Complex                 Conjugate() const;
 
     Complex                 Reciprocal() const;
 
     Complex                 Sqrt() const;
     
-                            /// Returns the magnitude of a complex number
+                            /// Returns the magnitude of a complex number.
     float                   Abs() const;
 
                             /// Returns "re im".
@@ -95,7 +95,7 @@ public:
                             /// Returns "re im" with the given precision.
     const char *            ToString(int precision) const;
 
-                            /// Returns dimension of this type
+                            /// Returns dimension of this type.
     int                     GetDimension() const { return 2; }
 
     static const Complex    origin;
@@ -105,9 +105,8 @@ public:
     float                   im;     ///< imaginary part
 };
 
-BE_INLINE Complex::Complex(const float re, const float im) {
-    this->re = re;
-    this->im = im;
+BE_INLINE constexpr Complex::Complex(const float inRe, const float inIm) :
+    re(inRe), im(inIm) {
 }
 
 BE_INLINE Complex &Complex::operator=(const Complex &rhs) {

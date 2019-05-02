@@ -29,13 +29,13 @@ class CollisionMesh {
     friend class Collider;
 
 public:
-    int                         numVerts;
-    int                         numIndexes;
+    int                     numVerts;
+    int                     numIndexes;
 
-    Vec3 *                      verts;
-    int *                       indexes;
+    Vec3 *                  verts;
+    int *                   indexes;
 
-    int	*                       materialIndexes;
+    int	*                   materialIndexes;
 };
 
 class Collider {
@@ -44,81 +44,84 @@ class Collider {
     friend class PhysicsWorld;
 
 public:
-    enum Type {
-        Box,
-        Sphere,
-        Capsule,
-        Cylinder,
-        Cone,
-        MultiSphere,
-        ConvexHull,
-        Bvh
+    struct Type {
+        enum Enum {
+            Box,
+            Sphere,
+            Capsule,
+            Cylinder,
+            Cone,
+            MultiSphere,
+            ConvexHull,
+            Bvh
+        };
     };
 
     Collider();
     ~Collider();
 
-                                /// Returns center of mass position.
-    const Vec3 &                GetCentroid() const { return centroid; }
+                            /// Returns center of mass position.
+    const Vec3 &            GetCentroid() const { return centroid; }
 
-    void                        Purge();
+    void                    Purge();
 
-                                /// Create box shaped collider with the given parameters.
-    void                        CreateBox(const Vec3 &center, const Vec3 &extents, float margin = CentiToUnit(0.1f));
+                            /// Create box shaped collider with the given parameters.
+    void                    CreateBox(const Vec3 &center, const Vec3 &extents, float margin = CentiToUnit(0.1f));
 
-                                /// Create cylinder shaped collider with the given parameters.
-    void                        CreateCylinder(const Vec3 &center, float radius, float height, float margin = CentiToUnit(0.1f));
+                            /// Create cylinder shaped collider with the given parameters.
+    void                    CreateCylinder(const Vec3 &center, float radius, float height, float margin = CentiToUnit(0.1f));
 
-                                /// Create cone shaped collider with the given parameters.
-    void                        CreateCone(const Vec3 &center, float radius, float height, float margin = CentiToUnit(0.1f));
+                            /// Create cone shaped collider with the given parameters.
+    void                    CreateCone(const Vec3 &center, float radius, float height, float margin = CentiToUnit(0.1f));
 
-                                /// Create sphere shaped collider with the given parameters.
-    void                        CreateSphere(const Vec3 &center, float radius);
+                            /// Create sphere shaped collider with the given parameters.
+    void                    CreateSphere(const Vec3 &center, float radius);
 
-                                /// Create capsule shaped collider with the given parameters.
-    void                        CreateCapsule(const Vec3 &center, float radius, float height);
+                            /// Create capsule shaped collider with the given parameters.
+    void                    CreateCapsule(const Vec3 &center, float radius, float height);
 
-    void                        SetLocalScaling(float sx, float sy, float sz);
+    void                    SetLocalScaling(float sx, float sy, float sz);
 
-                                /// Returns axis-aligned bounding box in system units
-    const AABB                  GetAABB() const;
+                            /// Returns axis-aligned bounding box in system units
+    const AABB              GetAABB() const;
 
-                                /// Returns volume in system units
-    float                       GetVolume() const { return volume; }
+                            /// Returns volume in system units
+    float                   GetVolume() const { return volume; }
 
-    bool                        Load(const char *filename, bool convexHull, const Vec3 &scale);
-    bool                        Reload();
-    void                        Write(const char *filename);
+    bool                    Load(const char *filename, bool convexHull, const Vec3 &scale);
+    bool                    Reload();
+    void                    Write(const char *filename);
 
-    const Collider *            AddRefCount() const { refCount++; return this; }
+    const Collider *        AddRefCount() const { refCount++; return this; }
+    int                     GetRefCount() const { return refCount; }
 
 private:
-    int                         NumCollisionMeshes() const { return collisionMeshes.Count(); }
-    CollisionMesh *             GetCollisionMesh(int index) const { assert(index >= 0 && index < collisionMeshes.Count()); return collisionMeshes[index]; }
-    CollisionMesh *             AllocCollisionMesh(int numVerts, int numIndexes, bool materialIndexes = false) const;
-    void                        CreateConvexHull(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = CentiToUnit(0.1f));
-    void                        CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = CentiToUnit(0.1f));
-    void                        CreateBVH(const Mesh *mesh, bool multiMaterials = false, const Vec3 &scale = Vec3::one);
-    void                        CreateBVHCMSingleMaterial(const Mesh *mesh, const Vec3 &scale = Vec3::one);
-    void                        CreateBVHCMMultiMaterials(const Mesh *mesh, const Vec3 &scale = Vec3::one);
-    void                        FreeCollisionMesh(CollisionMesh *mesh) const;
-    
-    Str                         name;
-    mutable int                 refCount;
-    int                         unnamedIndex;
+    int                     NumCollisionMeshes() const { return collisionMeshes.Count(); }
+    CollisionMesh *         GetCollisionMesh(int index) const { assert(index >= 0 && index < collisionMeshes.Count()); return collisionMeshes[index]; }
+    CollisionMesh *         AllocCollisionMesh(int numVerts, int numIndexes, bool materialIndexes = false) const;
+    void                    CreateConvexHull(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = CentiToUnit(0.1f));
+    void                    CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = CentiToUnit(0.1f));
+    void                    CreateBVH(const Mesh *mesh, bool multiMaterials = false, const Vec3 &scale = Vec3::one);
+    void                    CreateBVHCMSingleMaterial(const Mesh *mesh, const Vec3 &scale = Vec3::one);
+    void                    CreateBVHCMMultiMaterials(const Mesh *mesh, const Vec3 &scale = Vec3::one);
+    void                    FreeCollisionMesh(CollisionMesh *mesh) const;
 
-    Type                        type;
-    Vec3                        centroid;           ///< Position of center of mass in system units
-    float                       volume;             ///< Volume in system units
-    Vec3                        modelScale;
-    btCollisionShape *          shape;
-    Array<CollisionMesh *>      collisionMeshes;
+    Str                     name;
+    mutable int             refCount;
+    int                     unnamedIndex;
+
+    Type::Enum              type;
+    Vec3                    centroid;           ///< Position of center of mass in system units
+    float                   volume;             ///< Volume in system units
+    Vec3                    modelScale;
+    btCollisionShape *      shape;
+    Array<CollisionMesh *>  collisionMeshes;
 };
 
 BE_INLINE Collider::Collider() {
-    refCount                    = 0;
-    unnamedIndex                = -1;
-    shape                       = nullptr;
+    refCount                = 0;
+    unnamedIndex            = -1;
+    shape                   = nullptr;
 }
 
 BE_INLINE Collider::~Collider() {
@@ -129,28 +132,28 @@ class ColliderManager {
     friend class Collider;
 
 public:
-    void                        Init();
-    void                        Shutdown();
-    
-    Collider *                  AllocCollider(const char *name);
-    Collider *                  AllocUnnamedCollider();
-    Collider *                  FindCollider(const char *name, const Vec3 &scale, bool convexHull) const;
-    Collider *                  GetCollider(const char *name, const Vec3 &scale, bool convexHull);
+    void                    Init();
+    void                    Shutdown();
 
-    void                        ReleaseCollider(Collider *collider, bool immediateDestroy = false);
-    void                        DestroyCollider(Collider *collider);
-    void                        DestroyUnusedColliders();
+    Collider *              AllocCollider(const char *name);
+    Collider *              AllocUnnamedCollider();
+    Collider *              FindCollider(const char *name, const Vec3 &scale, bool convexHull) const;
+    Collider *              GetCollider(const char *name, const Vec3 &scale, bool convexHull);
 
-    static Collider *           defaultCollider;
+    void                    ReleaseCollider(Collider *collider, bool immediateDestroy = false);
+    void                    DestroyCollider(Collider *collider);
+    void                    DestroyUnusedColliders();
+
+    static Collider *       defaultCollider;
 
 private:
 
-    Array<CollisionMaterial *>  materials;
+    Array<CollisionMaterial *> materials;
 
-    StrIHashMap<Collider *>     colliderHashMap;
-    Array<Collider *>           unnamedColliders;
+    StrIHashMap<Collider *> colliderHashMap;
+    Array<Collider *>       unnamedColliders;
 };
 
-extern ColliderManager          colliderManager;
+extern ColliderManager      colliderManager;
 
 BE_NAMESPACE_END

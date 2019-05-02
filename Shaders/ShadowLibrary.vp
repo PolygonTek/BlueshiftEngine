@@ -1,6 +1,6 @@
-out vec4 v2f_shadowVec;
+out HIGHP vec4 v2f_shadowVec;
 
-uniform mat4 shadowProjMatrix;
+uniform HIGHP mat4 shadowProjMatrix;
 
 void ShadowTransform(vec4 worldPos) {
 #ifdef USE_SHADOW_CASCADE

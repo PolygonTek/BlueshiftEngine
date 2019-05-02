@@ -35,9 +35,6 @@ private:
     void                InitVertexFormats();
     void                InitShaders();
 
-    int                 screenWidth;
-    int                 screenHeight;
-
     BE1::RHI::Handle    streamBuffer;
     BE1::RHI::Handle    defaultVertexBuffer;
     BE1::RHI::Handle    vertex2DFormat;

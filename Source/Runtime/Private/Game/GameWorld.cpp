@@ -20,6 +20,7 @@
 #include "Input/InputSystem.h"
 #include "Sound/SoundSystem.h"
 #include "AnimController/AnimController.h"
+#include "Asset/GuidMapper.h"
 #include "Components/ComTransform.h"
 #include "Components/ComCamera.h"
 #include "Components/ComScript.h"
@@ -30,6 +31,7 @@
 #include "Scripting/LuaVM.h"
 #include "StaticBatching/StaticBatch.h"
 #include "../StaticBatching/MeshCombiner.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -47,19 +49,15 @@ void GameWorld::RegisterProperties() {
 }
 
 GameWorld::GameWorld() {
-    memset(entities, 0, sizeof(entities));
-
-    firstFreeIndex = 0;
-
-    // Create render settings
-    mapRenderSettings = static_cast<MapRenderSettings *>(MapRenderSettings::metaObject.CreateInstance());
-    mapRenderSettings->gameWorld = this;
-
     // Create render world
     renderWorld = renderSystem.AllocRenderWorld();
 
     // Create physics world
     physicsWorld = physicsSystem.AllocPhysicsWorld();
+
+    // Create render settings
+    mapRenderSettings = static_cast<MapRenderSettings *>(MapRenderSettings::metaObject.CreateInstance());
+    mapRenderSettings->gameWorld = this;
 
     luaVM.Init();
 
@@ -303,7 +301,7 @@ void GameWorld::RegisterEntity(Entity *ent, int entityIndex) {
         }
     
         if (firstFreeIndex >= MaxEntityNum) {
-            BE_FATALERROR(L"no free entities");
+            BE_FATALERROR("no free entities");
         }
     
         entityIndex = firstFreeIndex++;
@@ -332,7 +330,7 @@ void GameWorld::RegisterEntity(Entity *ent, int entityIndex) {
 
 void GameWorld::UnregisterEntity(Entity *ent) {
     if (!IsRegisteredEntity(ent)) {
-        BE_WARNLOG(L"GameWorld::UnregisterEntity: Entity '%hs' is already unregistered\n", ent->GetName().c_str());
+        BE_WARNLOG("GameWorld::UnregisterEntity: Entity '%s' is already unregistered\n", ent->GetName().c_str());
         return;
     }
 
@@ -421,7 +419,7 @@ Entity *GameWorld::InstantiateEntityWithTransform(const Entity *originalEntity, 
     Entity *clonedEntity = CloneEntity(originalEntity);
     
     ComTransform *transform = clonedEntity->GetTransform();
-    transform->SetLocalOriginRotation(origin, rotation);
+    transform->SetOriginRotation(origin, rotation);
 
     RegisterEntity(clonedEntity);
 
@@ -438,7 +436,7 @@ Entity *GameWorld::InstantiateEntityWithTransform(const Entity *originalEntity, 
 Entity *GameWorld::SpawnEntityFromJson(Json::Value &entityValue, int sceneIndex) {
     const char *classname = entityValue["classname"].asCString();
     if (Str::Cmp(classname, Entity::metaObject.ClassName()) != 0) {
-        BE_WARNLOG(L"GameWorld::SpawnEntityFromJson: Bad classname '%hs' for entity\n", classname);
+        BE_WARNLOG("GameWorld::SpawnEntityFromJson: Bad classname '%s' for entity\n", classname);
         return nullptr;
     }
 
@@ -583,18 +581,22 @@ void GameWorld::Event_RestartGame(const char *mapName) {
 }
 
 void GameWorld::NewMap() {
+    ClearEntities();
+
+    Reset();
+
+    BeginMapLoading();
+
     Json::Value defaultMapRenderSettingsValue;
     defaultMapRenderSettingsValue["classname"] = MapRenderSettings::metaObject.ClassName();
 
     mapRenderSettings->Deserialize(defaultMapRenderSettingsValue);
 
-    ClearEntities();
-
-    Reset();
+    FinishMapLoading();
 }
 
-bool GameWorld::LoadMap(const char *filename, LoadSceneMode mode) {
-    BE_LOG(L"Loading map '%hs'...\n", filename);
+bool GameWorld::LoadMap(const char *filename, LoadSceneMode::Enum mode) {
+    BE_LOG("Loading map '%s'...\n", filename);
 
     if (mode != LoadSceneMode::Additive) {
         ClearEntities(mode == LoadSceneMode::Editor);
@@ -607,7 +609,7 @@ bool GameWorld::LoadMap(const char *filename, LoadSceneMode mode) {
     char *text = nullptr;
     fileSystem.LoadFile(filename, true, (void **)&text);
     if (!text) {
-        BE_WARNLOG(L"Couldn't load '%hs'\n", filename);
+        BE_WARNLOG("Couldn't load '%s'\n", filename);
         FinishMapLoading();
         return false;
     }
@@ -617,7 +619,7 @@ bool GameWorld::LoadMap(const char *filename, LoadSceneMode mode) {
     Json::Value map;
     Json::Reader jsonReader;
     if (!jsonReader.parse(text, map)) {
-        BE_WARNLOG(L"Failed to parse JSON text\n");
+        BE_WARNLOG("Failed to parse JSON text\n");
         return false;
     }
 
@@ -648,7 +650,7 @@ bool GameWorld::LoadMap(const char *filename, LoadSceneMode mode) {
 }
 
 void GameWorld::SaveMap(const char *filename) {
-    BE_LOG(L"Saving map '%hs'...\n", filename);
+    BE_LOG("Saving map '%s'...\n", filename);
 
     Json::Value map;
 
@@ -670,6 +672,8 @@ void GameWorld::SaveMap(const char *filename) {
 }
 
 void GameWorld::Update(int elapsedTime) {
+    BE_PROFILE_CPU_SCOPE("GameWorld::Update", Color3::white);
+
     if (isDebuggable) {
         luaVM.PollDebuggee();
     }
@@ -774,10 +778,9 @@ void GameWorld::ProcessPointerInput() {
     }
 }
 
-Entity *GameWorld::RayIntersection(const Vec3 &start, const Vec3 &dir, int layerMask) const {
+Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask) const {
     Entity *minEntity = nullptr;
-
-    float minScale = FLT_MAX;
+    float minDist = FLT_MAX;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
@@ -785,7 +788,7 @@ Entity *GameWorld::RayIntersection(const Vec3 &start, const Vec3 &dir, int layer
                 continue;
             }
 
-            if (ent->RayIntersection(start, dir, true, minScale)) {
+            if (ent->IntersectRay(ray, true, minDist)) {
                 minEntity = ent;
             }
         }
@@ -794,13 +797,13 @@ Entity *GameWorld::RayIntersection(const Vec3 &start, const Vec3 &dir, int layer
     return minEntity;
 }
 
-Entity *GameWorld::RayIntersection(const Vec3 &start, const Vec3 &dir, int layerMask, const Array<Entity *> &excludingArray, float *scale) const {
-    Entity *minEntity = nullptr;
-
-    float minScale = FLT_MAX;
-    if (scale) {
-        *scale = minScale;
+Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask, const Array<Entity *> &excludingEntities, float *hitDist) const {
+    float minDist = FLT_MAX;
+    if (hitDist) {
+        *hitDist = minDist;
     }
+
+    Entity *minEntity = nullptr;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
@@ -808,14 +811,14 @@ Entity *GameWorld::RayIntersection(const Vec3 &start, const Vec3 &dir, int layer
                 continue;
             }
 
-            if (excludingArray.Find(ent)) {
+            if (excludingEntities.Find(ent)) {
                 continue;
             }
 
-            if (ent->RayIntersection(start, dir, true, minScale)) {
+            if (ent->IntersectRay(ray, true, minDist)) {
                 minEntity = ent;
-                if (scale) {
-                    *scale = minScale;
+                if (hitDist) {
+                    *hitDist = minDist;
                 }
             }
         }

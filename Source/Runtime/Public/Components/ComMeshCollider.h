@@ -25,10 +25,10 @@ public:
     ComMeshCollider();
     virtual ~ComMeshCollider();
 
-    virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
-
+#if 1
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const RenderView::State &viewState, bool selected) override;
+    virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
+#endif
 
     Guid                    GetMeshGuid() const { return meshGuid; }
     void                    SetMeshGuid(const Guid &meshGuid);

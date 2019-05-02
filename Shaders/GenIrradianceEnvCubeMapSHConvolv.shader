@@ -1,19 +1,11 @@
 shader "GenIrradianceEnvCubeMapSHConvolv" {
     glsl_vp {
-        in vec4 in_position : POSITION;
-        in vec2 in_st : TEXCOORD0;
-
-        out vec2 v2f_texCoord;
-
-        void main() {
-            gl_Position = in_position;
-            v2f_texCoord = in_st;
-        }
+        $include "clipQuad.vp"
     }
 
     glsl_fp {
         $include "sh_common.glsl"
-        $include "fragment_common.glsl"
+        $include "FragmentCommon.glsl"
 
         in vec2 v2f_texCoord;
 
@@ -41,7 +33,7 @@ shader "GenIrradianceEnvCubeMapSHConvolv" {
             int y = int(min(floor(v2f_texCoord.y * float(targetCubeMapSize)), float(targetCubeMapSize) - 1.0));
 
             // z-up world normal direction
-            vec3 dir = faceToGLCubeMapCoords(targetCubeMapFace, x, y, targetCubeMapSize).zxy;
+            vec3 dir = FaceToGLCubeMapCoords(targetCubeMapFace, x, y, targetCubeMapSize).zxy;
             vec3 dirSq = dir * dir;
 
             vec3 p1 = lambertCoeff[1] * SH_CONST2 * dir.yzx;

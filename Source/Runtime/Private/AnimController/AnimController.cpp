@@ -49,7 +49,7 @@ void AnimControllerManager::Shutdown() {
 
 AnimController *AnimControllerManager::AllocAnimController(const char *hashName) {
     if (animControllerHashMap.Get(hashName)) {
-        BE_FATALERROR(L"%hs animController already allocated", hashName);
+        BE_FATALERROR("%s animController already allocated", hashName);
     }
 
     AnimController *animController = new AnimController;
@@ -66,7 +66,7 @@ AnimController *AnimControllerManager::AllocAnimController(const char *hashName)
 
 void AnimControllerManager::DestroyAnimController(AnimController *animController) {
     if (animController->refCount > 1) {
-        BE_WARNLOG(L"AnimControllerManager::DestroyAnimController: animController '%hs' has %i reference count\n", animController->hashName.c_str(), animController->refCount);
+        BE_WARNLOG("AnimControllerManager::DestroyAnimController: animController '%s' has %i reference count\n", animController->hashName.c_str(), animController->refCount);
     }
 
     animControllerHashMap.Remove(animController->hashName);
@@ -129,7 +129,6 @@ AnimController *AnimControllerManager::FindAnimController(const char *hashName) 
     if (entry) {
         return entry->second;
     }
-
     return nullptr;
 }
 
@@ -202,7 +201,7 @@ void AnimController::Copy(const AnimController *def) {
 }
 
 bool AnimController::Load(const char *filename) {
-    BE_LOG(L"Loading animcon '%hs'...\n", filename);
+    BE_LOG("Loading animcon '%s'...\n", filename);
 
     char *data;
     int size = (int)fileSystem.LoadFile(filename, true, (void **)&data);
@@ -211,7 +210,7 @@ bool AnimController::Load(const char *filename) {
     }
 
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(data, size, filename);
 
     if (!lexer.ExpectTokenString("animController")) {
@@ -248,15 +247,13 @@ const JointInfo *AnimController::GetJoint(const char *name) const {
             return &joints[i];
         }
     }
-
     return nullptr;
 }
 
 const JointInfo *AnimController::GetJoint(int jointIndex) const {
     if ((jointIndex < 0) || (jointIndex > joints.Count())) {
-        BE_FATALERROR(L"AnimController::GetJoint : joint index out of range");
+        BE_FATALERROR("AnimController::GetJoint : joint index out of range");
     }
-
     return &joints[jointIndex];
 }
 
@@ -266,7 +263,7 @@ const char *AnimController::GetJointName(int jointIndex) const {
     }
 
     if ((jointIndex < 0) || (jointIndex > joints.Count())) {
-        BE_FATALERROR(L"AnimController::GetJointName : joint index out of range");
+        BE_FATALERROR("AnimController::GetJointName : joint index out of range");
     }
 
     const Joint *joint = skeleton->GetJoints();
@@ -320,28 +317,28 @@ void AnimController::GetJointNumListByString(const char *jointNames, Array<int> 
 
         const JointInfo *joint = GetJoint(jointName);
         if (!joint) {
-            BE_WARNLOG(L"Unknown joint '%hs' in '%hs' for skeleton '%hs'\n", jointName.c_str(), jointNames, skeleton->GetHashName());
+            BE_WARNLOG("Unknown joint '%s' in '%s' for skeleton '%s'\n", jointName.c_str(), jointNames, skeleton->GetHashName());
             continue;
         }
 
         if (!subtract) {
-            jointNumArray.AddUnique(joint->num);
+            jointNumArray.AddUnique(joint->index);
         } else {
-            jointNumArray.Remove(joint->num);
+            jointNumArray.Remove(joint->index);
         }
 
         if (getChildren) {
             // include all joint's children
             const JointInfo *child = joint + 1;
-            for (int i = joint->num + 1; i < numJoints; i++, child++) {
-                if (child->parentNum < joint->num) {
+            for (int i = joint->index + 1; i < numJoints; i++, child++) {
+                if (child->parentIndex < joint->index) {
                     break;
                 }
 
                 if (!subtract) {
-                    jointNumArray.AddUnique(child->num);
+                    jointNumArray.AddUnique(child->index);
                 } else {
-                    jointNumArray.Remove(child->num);
+                    jointNumArray.Remove(child->index);
                 }
             }
         }
@@ -354,7 +351,6 @@ AnimClip *AnimController::GetAnimClip(int index) const {
     if ((index < 0) || (index >= animClips.Count())) {
         return nullptr;
     }
-
     return animClips[index];
 }
 
@@ -366,7 +362,7 @@ AnimClip *AnimController::LoadAnimClip(const Guid &animGuid) {
     }
 
     if (!anim->CheckHierarchy(GetSkeleton())) {
-        BE_ERRLOG(L"mismatch hierarchy '%hs' with skeleton '%hs'\n", anim->GetName(), GetSkeleton()->GetName());
+        BE_ERRLOG("mismatch hierarchy '%s' with skeleton '%s'\n", anim->GetName(), GetSkeleton()->GetName());
         animManager.ReleaseAnim(anim);
         return nullptr;
     }
@@ -411,7 +407,6 @@ AnimParm *AnimController::GetParameterByIndex(int index) {
     if (index < 0 || index >= animParameters.Count()) {
         return nullptr;
     }
-
     return animParameters[index];
 }
 
@@ -426,7 +421,6 @@ int AnimController::FindParameterIndex(const char *name) const {
             return i;
         }
     }
-
     return -1;
 }
 
@@ -450,7 +444,6 @@ AnimLayer *AnimController::GetAnimLayerByIndex(int index) const {
     if ((index < 0) || (index >= animLayers.Count())) {
         return nullptr;
     }
-
     return animLayers[index]; 
 }
 
@@ -465,7 +458,6 @@ int AnimController::FindAnimLayerIndex(const char *name) const {
             return i;
         }
     }
-
     return -1;
 }
 
@@ -495,7 +487,7 @@ void AnimController::BuildBindPoseMats(int *numJoints, Mat3x4 **jointMats) const
 
     int num = skeleton->NumJoints();
     if (!num) {
-        BE_FATALERROR(L"skeleton '%hs' has no joints", skeleton->GetHashName());
+        BE_FATALERROR("skeleton '%s' has no joints", skeleton->GetHashName());
     }
  
     // Set up initial pose for skeleton
@@ -523,7 +515,7 @@ bool AnimController::Create(const char *text) {
     Purge();
     
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(text, Str::Length(text), hashName);
 
     lexer.SkipUntilString("{");
@@ -546,7 +538,7 @@ bool AnimController::Create(const char *text) {
         } else if (token == "parameter") {
             if (!ParseParameter(lexer)) {
                 return false;
-            }	
+            }
         } else if (token == "baseLayer") {
             if (!ParseBaseAnimLayer(lexer)) {
                 return false;
@@ -561,7 +553,7 @@ bool AnimController::Create(const char *text) {
                 return false;
             }
         } else {
-            lexer.Warning("unknown token '%hs'", token.c_str());
+            lexer.Warning("unknown token '%s'", token.c_str());
             return false;
         }
     }
@@ -588,7 +580,7 @@ bool AnimController::ParseSkeleton(Lexer &lexer) {
     
     skeleton = skeletonManager.GetSkeleton(skeletonPath);
     if (skeleton->IsDefaultSkeleton()) {
-        lexer.Warning("Skeleton '%hs' defaulted", skeleton->GetHashName());
+        lexer.Warning("Skeleton '%s' defaulted", skeleton->GetHashName());
         return false;
     }
     
@@ -609,16 +601,18 @@ void AnimController::SetSkeleton(Skeleton *skeleton) {
 
     const Joint *skeletonJoint = skeleton->GetJoints();
 
-    for (int i = 0; i < skeleton->NumJoints(); i++, skeletonJoint++) {
-        joints[i].num = i;
+    for (int jointIndex = 0; jointIndex < skeleton->NumJoints(); jointIndex++, skeletonJoint++) {
+        JointInfo &joint = joints[jointIndex];
+
+        joint.index = jointIndex;
 
         if (skeletonJoint->parent) {
-            joints[i].parentNum = static_cast<int>(skeletonJoint->parent - skeleton->GetJoints());
+            joint.parentIndex = static_cast<int>(skeletonJoint->parent - skeleton->GetJoints());
         } else {
-            joints[i].parentNum = -1;
+            joint.parentIndex = -1;
         }
 
-        jointParents[i] = joints[i].parentNum;
+        jointParents[jointIndex] = joint.parentIndex;
     }
 }
 
@@ -626,17 +620,17 @@ bool AnimController::ParseBaseAnimLayer(Lexer &lexer) {
     Str token;
     
     if (!lexer.CheckTokenString("{")) {
-        lexer.Warning("Expected { after '%hs'\n", token.c_str());
+        lexer.Warning("Expected { after '%s'\n", token.c_str());
         return false;
     }
 
     AnimLayer *animLayer = new AnimLayer(this);
     animLayer->SetName("Base Layer");
-    animLayer->SetBlending(AnimLayer::Override);
+    animLayer->SetBlending(AnimLayer::Blending::Override);
     animLayer->SetWeight(1.0f);
     animLayer->maskJoints.SetCount(joints.Count());
     for (int i = 0; i < joints.Count(); i++) {
-        animLayer->maskJoints[i] = joints[i].num;
+        animLayer->maskJoints[i] = joints[i].index;
     }
     // first layer should be a base layer
     animLayers.Append(animLayer);
@@ -659,7 +653,7 @@ bool AnimController::ParseBaseAnimLayer(Lexer &lexer) {
                 return false;
             }
         } else {
-            lexer.Warning("unknown token '%hs'", token.c_str());
+            lexer.Warning("unknown token '%s'", token.c_str());
             return false;
         }
     }
@@ -677,7 +671,7 @@ bool AnimController::ParseAnimLayer(Lexer &lexer) {
     }
 
     if (!lexer.CheckTokenString("{")) {
-        lexer.Warning("Expected { after '%hs'\n", token.c_str());
+        lexer.Warning("Expected { after '%s'\n", token.c_str());
         return false;
     }
 
@@ -705,7 +699,7 @@ bool AnimController::ParseAnimLayer(Lexer &lexer) {
             } else if (token2 == "additive") {
                 animLayer->SetBlending(AnimLayer::Blending::Additive);
             } else {
-                lexer.Warning("Unknown blending type '%hs'", token2.c_str());
+                lexer.Warning("Unknown blending type '%s'", token2.c_str());
                 return false;
             }
         } else if (token == "weight") {
@@ -724,7 +718,7 @@ bool AnimController::ParseAnimLayer(Lexer &lexer) {
                 return false;
             }
         } else {
-            lexer.Warning("unknown token '%hs'", token.c_str());
+            lexer.Warning("unknown token '%s'", token.c_str());
             return false;
         }
     }
@@ -748,9 +742,9 @@ bool AnimController::ParseParameter(Lexer &lexer) {
 }
 
 void AnimController::Write(const char *filename) {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG(L"AnimController::Write: file open error\n");
+        BE_WARNLOG("AnimController::Write: file open error\n");
         return;
     }
 
@@ -837,7 +831,7 @@ void AnimController::Write(const char *filename) {
                 for (int eventIndex = 0; eventIndex < animState->NumTimeEvents(); eventIndex++) {
                     AnimTimeEvent &event = animState->GetTimeEvent(eventIndex);
 
-                    fp->Printf("%s\"%hs\" %f\n", indentSpace.c_str(), event.string.c_str(), event.time);
+                    fp->Printf("%s\"%s\" %f\n", indentSpace.c_str(), event.string.c_str(), event.time);
                 }
 
                 indentSpace.Truncate(indentSpace.Length() - 2);
@@ -904,10 +898,10 @@ void AnimController::Write(const char *filename) {
 
             Str blendingStr;
             switch (animLayer->GetBlending()) {
-            case AnimLayer::Override:
+            case AnimLayer::Blending::Override:
                 blendingStr = "override";
                 break;
-            case AnimLayer::Additive:
+            case AnimLayer::Blending::Additive:
                 blendingStr = "additive";
                 break;
             }
@@ -971,7 +965,7 @@ void AnimController::Write(const char *filename) {
                     for (int eventIndex = 0; eventIndex < animState->NumTimeEvents(); eventIndex++) {
                         AnimTimeEvent &event = animState->GetTimeEvent(eventIndex);
 
-                        fp->Printf("%s\"%hs\" %f\n", indentSpace.c_str(), event.string.c_str(), event.time);
+                        fp->Printf("%s\"%s\" %f\n", indentSpace.c_str(), event.string.c_str(), event.time);
                     }
 
                     indentSpace.Truncate(indentSpace.Length() - 2);

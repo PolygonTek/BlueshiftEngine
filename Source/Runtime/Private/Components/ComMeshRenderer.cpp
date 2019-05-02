@@ -28,17 +28,15 @@ END_EVENTS
 
 void ComMeshRenderer::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("mesh", "Mesh", Guid, GetMeshGuid, SetMeshGuid, GuidMapper::defaultMeshGuid, 
-        "", PropertyInfo::EditorFlag).SetMetaObject(&MeshAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&MeshAsset::metaObject);
     REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("materials", "Materials", Guid, GetMaterialGuid, SetMaterialGuid, GetMaterialCount, SetMaterialCount, GuidMapper::defaultMaterialGuid, 
-        "List of materials to use when rendering.", PropertyInfo::EditorFlag).SetMetaObject(&MaterialAsset::metaObject);
-    REGISTER_ACCESSOR_PROPERTY("useLightProve", "Use Light Probe", bool, IsUseLightProbe, SetUseLightProbe, true, 
-        "", PropertyInfo::EditorFlag);
-    //REGISTER_ACCESSOR_PROPERTY("useReflectionProbe", "Use Reflection Probe", bool, IsUseReflectionProbe, SetUseReflectionProbe, false,
-        //"", PropertyInfo::EditorFlag);
+        "List of materials to use when rendering.", PropertyInfo::Flag::Editor).SetMetaObject(&MaterialAsset::metaObject);
+    REGISTER_ACCESSOR_PROPERTY("useEnvironmentProveLighting", "Use Env Probe Lighting", bool, IsUseEnvProbeLighting, SetUseEnvProbeLighting, true, 
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("castShadows", "Cast Shadows", bool, IsCastShadows, SetCastShadows, true, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("receiveShadows", "Receive Shadows", bool, IsReceiveShadows, SetReceiveShadows, true, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
 }
 
 ComMeshRenderer::ComMeshRenderer() {
@@ -71,7 +69,7 @@ void ComMeshRenderer::Purge(bool chainPurge) {
 void ComMeshRenderer::Init() {
     ComRenderable::Init();
 
-    renderObjectDef.localAABB = referenceMesh->GetAABB();
+    renderObjectDef.aabb = referenceMesh->GetAABB();
 
     // Mark as initialized
     SetInitialized(true);
@@ -129,7 +127,7 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
     // Need mesh asset to be reloaded in editor
     meshAsset = (MeshAsset *)MeshAsset::FindInstance(meshGuid);
     if (meshAsset) {
-        meshAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComMeshRenderer::MeshReloaded, SignalObject::Queued);
+        meshAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComMeshRenderer::MeshReloaded, SignalObject::ConnectionType::Queued);
     }
 #endif
 }
@@ -210,49 +208,49 @@ void ComMeshRenderer::SetMaterial(int index, const Material *material) {
     SetMaterialGuid(index, materialGuid);
 }
 
-bool ComMeshRenderer::IsUseLightProbe() const {
-    return !!(renderObjectDef.flags & RenderObject::UseLightProbeFlag);
+bool ComMeshRenderer::IsUseEnvProbeLighting() const {
+    return !!(renderObjectDef.flags & RenderObject::Flag::EnvProbeLit);
 }
 
-void ComMeshRenderer::SetUseLightProbe(bool useLightProbe) {
-    if (useLightProbe) {
-        renderObjectDef.flags |= RenderObject::UseLightProbeFlag;
+void ComMeshRenderer::SetUseEnvProbeLighting(bool useEnvProbe) {
+    if (useEnvProbe) {
+        renderObjectDef.flags |= RenderObject::Flag::EnvProbeLit;
     } else {
-        renderObjectDef.flags &= ~RenderObject::UseLightProbeFlag;
+        renderObjectDef.flags &= ~RenderObject::Flag::EnvProbeLit;
     }
 
     UpdateVisuals();
 }
 
 bool ComMeshRenderer::IsCastShadows() const {
-    return !!(renderObjectDef.flags & RenderObject::CastShadowsFlag);
+    return !!(renderObjectDef.flags & RenderObject::Flag::CastShadows);
 }
 
 void ComMeshRenderer::SetCastShadows(bool castShadows) {
     if (castShadows) {
-        renderObjectDef.flags |= RenderObject::CastShadowsFlag;
+        renderObjectDef.flags |= RenderObject::Flag::CastShadows;
     } else {
-        renderObjectDef.flags &= ~RenderObject::CastShadowsFlag;
+        renderObjectDef.flags &= ~RenderObject::Flag::CastShadows;
     }
     
     UpdateVisuals();
 }
 
 bool ComMeshRenderer::IsReceiveShadows() const {
-    return !!(renderObjectDef.flags & RenderObject::ReceiveShadowsFlag);
+    return !!(renderObjectDef.flags & RenderObject::Flag::ReceiveShadows);
 }
 
 void ComMeshRenderer::SetReceiveShadows(bool receiveShadows) {
     if (receiveShadows) {
-        renderObjectDef.flags |= RenderObject::ReceiveShadowsFlag;
+        renderObjectDef.flags |= RenderObject::Flag::ReceiveShadows;
     } else {
-        renderObjectDef.flags &= ~RenderObject::ReceiveShadowsFlag;
+        renderObjectDef.flags &= ~RenderObject::Flag::ReceiveShadows;
     }
 
     UpdateVisuals();
 }
 
-bool ComMeshRenderer::GetClosestVertex(const RenderView *view, const Point &mousePixelLocation, Vec3 &closestVertex, float &closestDistance) const {
+bool ComMeshRenderer::GetClosestVertex(const RenderCamera *camera, const Point &mousePixelLocation, Vec3 &closestVertex, float &closestDistance) const {
     const float initialClosestDistance = closestDistance;
 
     const ComTransform *transform = GetEntity()->GetTransform();
@@ -265,12 +263,12 @@ bool ComMeshRenderer::GetClosestVertex(const RenderView *view, const Point &mous
             Vec3 localPosition = v->GetPosition();
             Vec3 localNormal = v->GetNormal();
 
-            Vec3 worldPosition = transform->GetMatrix() * localPosition;
+            Vec3 worldPosition = transform->GetMatrix().Transform(localPosition);
             Vec3 worldNormal = transform->GetMatrix().TransformNormal(localNormal);
 
             bool isBackface;
             // Ignore backface vertices 
-            if (!view->state.orthogonal && !worldNormal.IsZero() && worldNormal.Dot(view->state.origin - worldPosition) < 0) {
+            if (!camera->GetState().orthogonal && !worldNormal.IsZero() && worldNormal.Dot(camera->GetState().origin - worldPosition) < 0) {
                 isBackface = true;
             } else {
                 isBackface = false;
@@ -279,7 +277,7 @@ bool ComMeshRenderer::GetClosestVertex(const RenderView *view, const Point &mous
             if (!isBackface) {
                 Point pixelLocation;
 
-                if (view->WorldToPixel(worldPosition, pixelLocation)) {
+                if (camera->TransformWorldToPixel(worldPosition, pixelLocation)) {
                     float dist = pixelLocation.DistanceSqr(mousePixelLocation);
 
                     if (dist < closestDistance) {

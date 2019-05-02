@@ -108,15 +108,15 @@ Guid Guid::FromString(const char *s) {
     return guid;
 }
 
-const char *Guid::ToString(Format format) const {
+const char *Guid::ToString(Format::Enum format) const {
     switch (format) {
-    case DigitsWithHyphens:
+    case Format::DigitsWithHyphens:
         return va("%08X-%04X-%04X-%04X-%04X%08X", u1, u2 >> 16, u2 & 0xFFFF, u3 >> 16, u3 & 0xFFFF, u4);
-    case DigitsWithHyphensInBraces:
+    case Format::DigitsWithHyphensInBraces:
         return va("{%08X-%04X-%04X-%04X-%04X%08X}", u1, u2 >> 16, u2 & 0xFFFF, u3 >> 16, u3 & 0xFFFF, u4);
-    case DigitsWithHyphensInParentheses:
+    case Format::DigitsWithHyphensInParentheses:
         return va("(%08X-%04X-%04X-%04X-%04X%08X)", u1, u2 >> 16, u2 & 0xFFFF, u3 >> 16, u3 & 0xFFFF, u4);
-    case Digits:
+    case Format::Digits:
     default:
         return va("%08X%08X%08X%08X", u1, u2, u3, u4);
     }

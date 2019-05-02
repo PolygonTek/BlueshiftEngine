@@ -102,7 +102,7 @@ bool ParticleSystem::Create(const char *text) {
     Purge();
 
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(text, Str::Length(text), hashName.c_str());
 
     lexer.ExpectTokenString("numStages");
@@ -126,7 +126,7 @@ bool ParticleSystem::ParseStage(Lexer &lexer, Stage &stage) const {
 
     lexer.ExpectTokenString("stage");
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -134,7 +134,7 @@ bool ParticleSystem::ParseStage(Lexer &lexer, Stage &stage) const {
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
@@ -143,79 +143,79 @@ bool ParticleSystem::ParseStage(Lexer &lexer, Stage &stage) const {
             if (lexer.ReadToken(&stageName)) {
                 stage.name = stageName;
             } else {
-                BE_WARNLOG(L"missing stage name in particleSystem '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing stage name in particleSystem '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("module")) {
             Str moduleName;
             if (lexer.ReadToken(&moduleName)) {
-                if (moduleName == moduleNames[StandardModuleBit]) {
-                    stage.moduleFlags |= BIT(StandardModuleBit);
+                if (moduleName == moduleNames[ModuleBit::Standard]) {
+                    stage.moduleFlags |= BIT(ModuleBit::Standard);
 
                     if (!ParseStandardModule(lexer, stage.standardModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[ShapeModuleBit]) {
-                    stage.moduleFlags |= BIT(ShapeModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::Shape]) {
+                    stage.moduleFlags |= BIT(ModuleBit::Shape);
 
                     if (!ParseShapeModule(lexer, stage.shapeModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[CustomPathModuleBit]) {
-                    stage.moduleFlags |= BIT(CustomPathModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::CustomPath]) {
+                    stage.moduleFlags |= BIT(ModuleBit::CustomPath);
 
                     if (!ParseCustomPathModule(lexer, stage.customPathModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[LTColorModuleBit]) {
-                    stage.moduleFlags |= BIT(LTColorModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::LTColor]) {
+                    stage.moduleFlags |= BIT(ModuleBit::LTColor);
 
                     if (!ParseLTColorModule(lexer, stage.colorOverLifetimeModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[LTSpeedModuleBit]) {
-                    stage.moduleFlags |= BIT(LTSpeedModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::LTSpeed]) {
+                    stage.moduleFlags |= BIT(ModuleBit::LTSpeed);
 
                     if (!ParseLTSpeedModule(lexer, stage.speedOverLifetimeModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[LTForceModuleBit]) {
-                    stage.moduleFlags |= BIT(LTForceModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::LTForce]) {
+                    stage.moduleFlags |= BIT(ModuleBit::LTForce);
 
                     if (!ParseLTForceModule(lexer, stage.forceOverLifetimeModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[LTRotationModuleBit]) {
-                    stage.moduleFlags |= BIT(LTRotationModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::LTRotation]) {
+                    stage.moduleFlags |= BIT(ModuleBit::LTRotation);
 
                     if (!ParseLTRotationModule(lexer, stage.rotationOverLifetimeModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[RotationBySpeedModuleBit]) {
-                    stage.moduleFlags |= BIT(RotationBySpeedModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::RotationBySpeed]) {
+                    stage.moduleFlags |= BIT(ModuleBit::RotationBySpeed);
 
                     if (!ParseRotationBySpeedModule(lexer, stage.rotationBySpeedModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[LTSizeModuleBit]) {
-                    stage.moduleFlags |= BIT(LTSizeModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::LTSize]) {
+                    stage.moduleFlags |= BIT(ModuleBit::LTSize);
 
                     if (!ParseLTSizeModule(lexer, stage.sizeOverLifetimeModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[SizeBySpeedModuleBit]) {
-                    stage.moduleFlags |= BIT(SizeBySpeedModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::SizeBySpeed]) {
+                    stage.moduleFlags |= BIT(ModuleBit::SizeBySpeed);
 
                     if (!ParseSizeBySpeedModule(lexer, stage.sizeBySpeedModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[LTAspectRatioModuleBit]) {
-                    stage.moduleFlags |= BIT(LTAspectRatioModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::LTAspectRatio]) {
+                    stage.moduleFlags |= BIT(ModuleBit::LTAspectRatio);
 
                     if (!ParseLTAspectRatioModule(lexer, stage.aspectRatioOverLifetimeModule)) {
                         return false;
                     }
-                } else if (moduleName == moduleNames[TrailsModuleBit]) {
-                    stage.moduleFlags |= BIT(TrailsModuleBit);
+                } else if (moduleName == moduleNames[ModuleBit::Trails]) {
+                    stage.moduleFlags |= BIT(ModuleBit::Trails);
 
                     if (!ParseTrailsModule(lexer, stage.trailsModule)) {
                         return false;
@@ -224,10 +224,10 @@ bool ParticleSystem::ParseStage(Lexer &lexer, Stage &stage) const {
                     return false;
                 }
             } else {
-                BE_WARNLOG(L"missing module name in particleSystem '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing module name in particleSystem '%s'\n", hashName.c_str());
             }
         } else {
-            BE_WARNLOG(L"unknown particleSystem stage parameter '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown particleSystem stage parameter '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
@@ -238,7 +238,7 @@ bool ParticleSystem::ParseStage(Lexer &lexer, Stage &stage) const {
 bool ParticleSystem::ParseStandardModule(Lexer &lexer, StandardModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -246,7 +246,7 @@ bool ParticleSystem::ParseStandardModule(Lexer &lexer, StandardModule &module) c
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
@@ -262,13 +262,13 @@ bool ParticleSystem::ParseStandardModule(Lexer &lexer, StandardModule &module) c
             if (lexer.ReadToken(&token)) {
                 module.looping = (token == "false" ? false : true); 
             } else {
-                BE_WARNLOG(L"missing boolean value for the looping param in particleSystem '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing boolean value for the looping param in particleSystem '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("prewarm")) {
             if (lexer.ReadToken(&token, false)) {
                 module.prewarm = (token == "false" ? false : true);
             } else {
-                BE_WARNLOG(L"missing boolean value for the prewarm param in particleSystem '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing boolean value for the prewarm param in particleSystem '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("maxCycles")) {
             module.maxCycles = lexer.ParseInt();
@@ -284,13 +284,13 @@ bool ParticleSystem::ParseStandardModule(Lexer &lexer, StandardModule &module) c
                 const Str materialPath = resourceGuidMapper.Get(materialGuid);
                 module.material = materialManager.GetMaterial(materialPath);
             } else {
-                BE_WARNLOG(L"missing material name in particleSystem '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing material name in particleSystem '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("animation")) {
             if (lexer.ReadToken(&token)) {
                 module.animation = (token == "false" ? false : true);
             } else {
-                BE_WARNLOG(L"missing boolean value for the animation param in particleSystem '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing boolean value for the animation param in particleSystem '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("animFrames")) {
             module.animFrames[0] = lexer.ParseInt();
@@ -314,7 +314,7 @@ bool ParticleSystem::ParseStandardModule(Lexer &lexer, StandardModule &module) c
         } else if (!token.Icmp("gravity")) {
             module.gravity = lexer.ParseFloat();
         } else {
-            BE_WARNLOG(L"unknown standard module parameter '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown standard module parameter '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
@@ -322,41 +322,41 @@ bool ParticleSystem::ParseStandardModule(Lexer &lexer, StandardModule &module) c
     return true;
 }
 
-bool ParticleSystem::ParseSimulationSpace(Lexer &lexer, StandardModule::SimulationSpace *simulationSpace) const {
+bool ParticleSystem::ParseSimulationSpace(Lexer &lexer, StandardModule::SimulationSpace::Enum *simulationSpace) const {
     Str token;
     
     if (lexer.ReadToken(&token, false)) {
         for (int i = 0; i < COUNT_OF(simulationSpaceNames); i++) {
             if (!token.Icmp(simulationSpaceNames[i])) {
-                *simulationSpace = (StandardModule::SimulationSpace)i;
+                *simulationSpace = (StandardModule::SimulationSpace::Enum)i;
                 return true;
             }
         }
 
-        BE_WARNLOG(L"unknown orientation '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+        BE_WARNLOG("unknown orientation '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
         return false;
     }
 
-    BE_WARNLOG(L"missing orientation name in particleSystem '%hs'\n", hashName.c_str());
+    BE_WARNLOG("missing orientation name in particleSystem '%s'\n", hashName.c_str());
     return false;
 }
 
-bool ParticleSystem::ParseOrientation(Lexer &lexer, StandardModule::Orientation *orientation) const {
+bool ParticleSystem::ParseOrientation(Lexer &lexer, StandardModule::Orientation::Enum *orientation) const {
     Str token;
 
     if (lexer.ReadToken(&token, false)) {
         for (int i = 0; i < COUNT_OF(orientationNames); i++) {
             if (!token.Icmp(orientationNames[i])) {
-                *orientation = (StandardModule::Orientation)i;
+                *orientation = (StandardModule::Orientation::Enum)i;
                 return true;
             }
         }
 
-        BE_WARNLOG(L"unknown orientation '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+        BE_WARNLOG("unknown orientation '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
         return false;
     }
 
-    BE_WARNLOG(L"missing orientation name in particleSystem '%hs'\n", hashName.c_str());
+    BE_WARNLOG("missing orientation name in particleSystem '%s'\n", hashName.c_str());
     return false;
 }
 
@@ -369,9 +369,9 @@ bool ParticleSystem::ParseMinMaxCurve(Lexer &lexer, MinMaxCurve *var) const {
     if (lexer.ReadToken(&token, false)) {
         for (int i = 0; i < COUNT_OF(timedMinMaxVarTypeNames); i++) {
             if (!token.Icmp(timedMinMaxVarTypeNames[i])) {
-                var->type = (MinMaxCurve::Type)i;
+                var->type = (MinMaxCurve::Type::Enum)i;
 
-                if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+                if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
                     return false;
                 }
 
@@ -420,14 +420,14 @@ bool ParticleSystem::ParseMinMaxCurve(Lexer &lexer, MinMaxCurve *var) const {
                     lexer.ExpectTokenString("}");
                 }
 
-                if (!lexer.ExpectPunctuation(P_BRACECLOSE)) {
+                if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceClose)) {
                     return false;
                 }
                 return true;
             }
         }
 
-        BE_WARNLOG(L"unknown MinMaxCurve type '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+        BE_WARNLOG("unknown MinMaxCurve type '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
         return false;
     }
 
@@ -445,18 +445,18 @@ bool ParticleSystem::ParseTimeWrapMode(Lexer &lexer, Hermite<float>::TimeWrapMod
             }
         }
 
-        BE_WARNLOG(L"unknown time wrap mode '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+        BE_WARNLOG("unknown time wrap mode '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
         return false;
     }
 
-    BE_WARNLOG(L"missing time wrap mode name in particleSystem '%hs'\n", hashName.c_str());
+    BE_WARNLOG("missing time wrap mode name in particleSystem '%s'\n", hashName.c_str());
     return false;
 }
 
 bool ParticleSystem::ParseShapeModule(Lexer &lexer, ShapeModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -464,7 +464,7 @@ bool ParticleSystem::ParseShapeModule(Lexer &lexer, ShapeModule &module) const {
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
@@ -481,7 +481,7 @@ bool ParticleSystem::ParseShapeModule(Lexer &lexer, ShapeModule &module) const {
         } else if (!token.Icmp("randomizeDir")) {
             module.randomizeDir = lexer.ParseFloat();
         } else {
-            BE_WARNLOG(L"unknown Shape module parameter '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown Shape module parameter '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
@@ -489,29 +489,29 @@ bool ParticleSystem::ParseShapeModule(Lexer &lexer, ShapeModule &module) const {
     return true;
 }
 
-bool ParticleSystem::ParseShape(Lexer &lexer, ShapeModule::Shape *shape) const {
+bool ParticleSystem::ParseShape(Lexer &lexer, ShapeModule::Shape::Enum *shape) const {
     Str token;
 
     if (lexer.ReadToken(&token, false)) {
         for (int i = 0; i < COUNT_OF(shapeNames); i++) {
             if (!token.Icmp(shapeNames[i])) {
-                *shape = (ShapeModule::Shape)i;
+                *shape = (ShapeModule::Shape::Enum)i;
                 return true;
             }
         }
 
-        BE_WARNLOG(L"unknown shape '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+        BE_WARNLOG("unknown shape '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
         return false;
     }
 
-    BE_WARNLOG(L"missing shape name in particleSystem '%hs'\n", hashName.c_str());
+    BE_WARNLOG("missing shape name in particleSystem '%s'\n", hashName.c_str());
     return false;
 }
 
 bool ParticleSystem::ParseCustomPathModule(Lexer &lexer, CustomPathModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -519,7 +519,7 @@ bool ParticleSystem::ParseCustomPathModule(Lexer &lexer, CustomPathModule &modul
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
@@ -534,7 +534,7 @@ bool ParticleSystem::ParseCustomPathModule(Lexer &lexer, CustomPathModule &modul
         } else if (!token.Icmp("outerRadius")) {
             module.outerRadius = lexer.ParseFloat();
         } else {
-            BE_WARNLOG(L"unknown CustomPath module parameter '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown CustomPath module parameter '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
@@ -542,29 +542,29 @@ bool ParticleSystem::ParseCustomPathModule(Lexer &lexer, CustomPathModule &modul
     return true;
 }
 
-bool ParticleSystem::ParseCustomPath(Lexer &lexer, CustomPathModule::CustomPath *customPath) const {
+bool ParticleSystem::ParseCustomPath(Lexer &lexer, CustomPathModule::CustomPath::Enum *customPath) const {
     Str token;
 
     if (lexer.ReadToken(&token, false)) {
         for (int i = 0; i < COUNT_OF(customPathNames); i++) {
             if (!token.Icmp(customPathNames[i])) {
-                *customPath = (CustomPathModule::CustomPath)i;
+                *customPath = (CustomPathModule::CustomPath::Enum)i;
                 return true;
             }
         }
 
-        BE_WARNLOG(L"unknown customPath '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+        BE_WARNLOG("unknown customPath '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
         return false;
     }
 
-    BE_WARNLOG(L"missing customPath name in particleSystem '%hs'\n", hashName.c_str());
+    BE_WARNLOG("missing customPath name in particleSystem '%s'\n", hashName.c_str());
     return false;
 }
 
 bool ParticleSystem::ParseLTForceModule(Lexer &lexer, LTForceModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -572,7 +572,7 @@ bool ParticleSystem::ParseLTForceModule(Lexer &lexer, LTForceModule &module) con
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
@@ -583,7 +583,7 @@ bool ParticleSystem::ParseLTForceModule(Lexer &lexer, LTForceModule &module) con
         } else if (!token.Icmp("forceZ")) {
             ParseMinMaxCurve(lexer, &module.force[2]);
         } else {
-            BE_WARNLOG(L"unknown LTForce module parameter '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown LTForce module parameter '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
@@ -594,7 +594,7 @@ bool ParticleSystem::ParseLTForceModule(Lexer &lexer, LTForceModule &module) con
 bool ParticleSystem::ParseLTColorModule(Lexer &lexer, LTColorModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -602,7 +602,7 @@ bool ParticleSystem::ParseLTColorModule(Lexer &lexer, LTColorModule &module) con
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
@@ -611,7 +611,7 @@ bool ParticleSystem::ParseLTColorModule(Lexer &lexer, LTColorModule &module) con
         } else if (!token.Icmp("fadeLocation")) {
             module.fadeLocation = lexer.ParseFloat();
         } else {
-            BE_WARNLOG(L"unknown LTColor module parameter '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown LTColor module parameter '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
@@ -622,7 +622,7 @@ bool ParticleSystem::ParseLTColorModule(Lexer &lexer, LTColorModule &module) con
 bool ParticleSystem::ParseLTSpeedModule(Lexer &lexer, LTSpeedModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -630,14 +630,14 @@ bool ParticleSystem::ParseLTSpeedModule(Lexer &lexer, LTSpeedModule &module) con
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
         } else if (!token.Icmp("speed")) {
             ParseMinMaxCurve(lexer, &module.speed);
         } else {
-            BE_WARNLOG(L"unknown LTSpeed module parameter '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown LTSpeed module parameter '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
@@ -648,7 +648,7 @@ bool ParticleSystem::ParseLTSpeedModule(Lexer &lexer, LTSpeedModule &module) con
 bool ParticleSystem::ParseLTRotationModule(Lexer &lexer, LTRotationModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -656,14 +656,14 @@ bool ParticleSystem::ParseLTRotationModule(Lexer &lexer, LTRotationModule &modul
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
         } else if (!token.Icmp("rotation")) {
             ParseMinMaxCurve(lexer, &module.rotation);
         } else {
-            BE_WARNLOG(L"unknown LTRotation module parameter '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown LTRotation module parameter '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
@@ -674,7 +674,7 @@ bool ParticleSystem::ParseLTRotationModule(Lexer &lexer, LTRotationModule &modul
 bool ParticleSystem::ParseRotationBySpeedModule(Lexer &lexer, RotationBySpeedModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -682,7 +682,7 @@ bool ParticleSystem::ParseRotationBySpeedModule(Lexer &lexer, RotationBySpeedMod
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
@@ -691,7 +691,7 @@ bool ParticleSystem::ParseRotationBySpeedModule(Lexer &lexer, RotationBySpeedMod
         } else if (!token.Icmp("speedRange")) {
             lexer.ParseVec(2, module.speedRange);
         } else {
-            BE_WARNLOG(L"unknown RotationBySpeed module parameter '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown RotationBySpeed module parameter '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
@@ -702,7 +702,7 @@ bool ParticleSystem::ParseRotationBySpeedModule(Lexer &lexer, RotationBySpeedMod
 bool ParticleSystem::ParseLTSizeModule(Lexer &lexer, LTSizeModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -710,14 +710,14 @@ bool ParticleSystem::ParseLTSizeModule(Lexer &lexer, LTSizeModule &module) const
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
         } else if (!token.Icmp("size")) {
             ParseMinMaxCurve(lexer, &module.size);
         } else {
-            BE_WARNLOG(L"unknown LTSize module parameter '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown LTSize module parameter '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
@@ -728,7 +728,7 @@ bool ParticleSystem::ParseLTSizeModule(Lexer &lexer, LTSizeModule &module) const
 bool ParticleSystem::ParseSizeBySpeedModule(Lexer &lexer, SizeBySpeedModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -736,7 +736,7 @@ bool ParticleSystem::ParseSizeBySpeedModule(Lexer &lexer, SizeBySpeedModule &mod
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
@@ -745,7 +745,7 @@ bool ParticleSystem::ParseSizeBySpeedModule(Lexer &lexer, SizeBySpeedModule &mod
         } else if (!token.Icmp("speedRange")) {
             lexer.ParseVec(2, module.speedRange);
         } else {
-            BE_WARNLOG(L"unknown SizeBySpeed module parameter '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown SizeBySpeed module parameter '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
@@ -756,7 +756,7 @@ bool ParticleSystem::ParseSizeBySpeedModule(Lexer &lexer, SizeBySpeedModule &mod
 bool ParticleSystem::ParseLTAspectRatioModule(Lexer &lexer, LTAspectRatioModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -764,14 +764,14 @@ bool ParticleSystem::ParseLTAspectRatioModule(Lexer &lexer, LTAspectRatioModule 
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
         } else if (!token.Icmp("aspectRatio")) {
             ParseMinMaxCurve(lexer, &module.aspectRatio);
         } else {
-            BE_WARNLOG(L"unknown LTAspectRatio module parameter '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown LTAspectRatio module parameter '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
@@ -782,7 +782,7 @@ bool ParticleSystem::ParseLTAspectRatioModule(Lexer &lexer, LTAspectRatioModule 
 bool ParticleSystem::ParseTrailsModule(Lexer &lexer, TrailsModule &module) const {
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -790,7 +790,7 @@ bool ParticleSystem::ParseTrailsModule(Lexer &lexer, TrailsModule &module) const
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
@@ -804,10 +804,10 @@ bool ParticleSystem::ParseTrailsModule(Lexer &lexer, TrailsModule &module) const
             if (lexer.ReadToken(&token)) {
                 module.trailCut = (token == "false" ? false : true);
             } else {
-                BE_WARNLOG(L"missing boolean value for the trailCut param in particleSystem '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing boolean value for the trailCut param in particleSystem '%s'\n", hashName.c_str());
             }
         } else {
-            BE_WARNLOG(L"unknown Trails module parameter '%hs' in particleSystem '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown Trails module parameter '%s' in particleSystem '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
@@ -827,12 +827,12 @@ void ParticleSystem::AddStage() {
     stage.skipRender = false;
     stage.Reset();
 
-    stage.moduleFlags |= BIT(ShapeModuleBit);
+    stage.moduleFlags |= BIT(ModuleBit::Shape);
 }
 
 bool ParticleSystem::RemoveStage(int stageIndex) {
     if (stageIndex < 0 || stageIndex >= stages.Count() ) {
-        BE_WARNLOG(L"ParticleSystem::RemoveStage: out of index %i\n", stageIndex);
+        BE_WARNLOG("ParticleSystem::RemoveStage: out of index %i\n", stageIndex);
         return false;
     }
 
@@ -844,7 +844,7 @@ bool ParticleSystem::RemoveStage(int stageIndex) {
 void ParticleSystem::SwapStages(int stageIndex0, int stageIndex1) {
     if (stageIndex0 < 0 || stageIndex0 >= stages.Count() ||
         stageIndex1 < 0 || stageIndex1 >= stages.Count()) {
-        BE_WARNLOG(L"ParticleSystem::SwapStages: out of index %i, %i\n", stageIndex0, stageIndex1);
+        BE_WARNLOG("ParticleSystem::SwapStages: out of index %i, %i\n", stageIndex0, stageIndex1);
         return;
     }
 
@@ -859,7 +859,7 @@ bool ParticleSystem::Load(const char *filename) {
         prtSysFilename.SetFileExtension(".prts");
     }
 
-    BE_LOG(L"Loading particle system '%hs'...\n", filename);
+    BE_LOG("Loading particle system '%s'...\n", filename);
 
     char *data;
     int size = (int)fileSystem.LoadFile(filename, true, (void **)&data);
@@ -868,7 +868,7 @@ bool ParticleSystem::Load(const char *filename) {
     }
 
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(data, size, hashName);
 
     if (!lexer.ExpectTokenString("particleSystem")) {
@@ -931,9 +931,9 @@ static void WriteMinMaxCurve(File *fp, const Str &name, const MinMaxCurve &var, 
 }
 
 void ParticleSystem::Write(const char *filename) {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG(L"ParticleSystem::Write: file open error\n");
+        BE_WARNLOG("ParticleSystem::Write: file open error\n");
         return;
     }
 
@@ -991,10 +991,10 @@ void ParticleSystem::Write(const char *filename) {
         fp->Printf("%s}\n", indentSpace.c_str());
 
         // ShapeModule
-        if (stage.moduleFlags & BIT(ShapeModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::Shape)) {
             const ShapeModule &shapeModule = stage.shapeModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ShapeModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::Shape]);
             indentSpace += "  ";
 
             fp->Printf("%sshape \"%s\"\n", indentSpace.c_str(), shapeNames[shapeModule.shape]);
@@ -1010,10 +1010,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // CustomPathModule
-        if (stage.moduleFlags & BIT(CustomPathModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::CustomPath)) {
             const CustomPathModule &customPathModule = stage.customPathModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[CustomPathModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::CustomPath]);
             indentSpace += "  ";
 
             fp->Printf("%scustomPath \"%s\"\n", indentSpace.c_str(), customPathNames[customPathModule.customPath]);
@@ -1028,10 +1028,10 @@ void ParticleSystem::Write(const char *filename) {
         }        
 
         // LTColorModule
-        if (stage.moduleFlags & BIT(LTColorModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::LTColor)) {
             const LTColorModule &colorOverLifetimeModule = stage.colorOverLifetimeModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[LTColorModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::LTColor]);
             indentSpace += "  ";
 
             fp->Printf("%stargetColor ( %s )\n", indentSpace.c_str(), colorOverLifetimeModule.targetColor.ToString());
@@ -1042,10 +1042,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // LTSpeedModule
-        if (stage.moduleFlags & BIT(LTSpeedModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::LTSpeed)) {
             const LTSpeedModule &speedOverLifetimeModule = stage.speedOverLifetimeModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[LTSpeedModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::LTSpeed]);
             indentSpace += "  ";
 
             WriteMinMaxCurve(fp, "speed", speedOverLifetimeModule.speed, indentSpace);
@@ -1055,10 +1055,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // LTForceModule
-        if (stage.moduleFlags & BIT(LTForceModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::LTForce)) {
             const LTForceModule &forceOverLifetimeModule = stage.forceOverLifetimeModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[LTForceModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::LTForce]);
             indentSpace += "  ";
 
             WriteMinMaxCurve(fp, "forceX", forceOverLifetimeModule.force[0], indentSpace);
@@ -1070,10 +1070,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // LTRotationModule
-        if (stage.moduleFlags & BIT(LTRotationModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::LTRotation)) {
             const LTRotationModule &rotationOverLifetimeModule = stage.rotationOverLifetimeModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[LTRotationModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::LTRotation]);
             indentSpace += "  ";
 
             WriteMinMaxCurve(fp, "rotation", rotationOverLifetimeModule.rotation, indentSpace);
@@ -1083,10 +1083,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // RotationBySpeedModule
-        if (stage.moduleFlags & BIT(RotationBySpeedModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::RotationBySpeed)) {
             const RotationBySpeedModule &rotationBySpeedModule = stage.rotationBySpeedModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[RotationBySpeedModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::RotationBySpeed]);
             indentSpace += "  ";
 
             WriteMinMaxCurve(fp, "rotation", rotationBySpeedModule.rotation, indentSpace);
@@ -1097,10 +1097,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // LTSizeModule
-        if (stage.moduleFlags & BIT(LTSizeModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::LTSize)) {
             const LTSizeModule &sizeOverLifetimeModule = stage.sizeOverLifetimeModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[LTSizeModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::LTSize]);
             indentSpace += "  ";
 
             WriteMinMaxCurve(fp, "size", sizeOverLifetimeModule.size, indentSpace);
@@ -1110,10 +1110,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // SizeBySpeedModule
-        if (stage.moduleFlags & BIT(SizeBySpeedModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::SizeBySpeed)) {
             const SizeBySpeedModule &sizeBySpeedModule = stage.sizeBySpeedModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[SizeBySpeedModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::SizeBySpeed]);
             indentSpace += "  ";
 
             WriteMinMaxCurve(fp, "size", sizeBySpeedModule.size, indentSpace);
@@ -1124,10 +1124,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // LTAspectRatioModule
-        if (stage.moduleFlags & BIT(LTAspectRatioModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::LTAspectRatio)) {
             const LTAspectRatioModule &aspectRatioOverLifetimeModule = stage.aspectRatioOverLifetimeModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[LTAspectRatioModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::LTAspectRatio]);
             indentSpace += "  ";
 
             WriteMinMaxCurve(fp, "aspectRatio", aspectRatioOverLifetimeModule.aspectRatio, indentSpace);
@@ -1137,10 +1137,10 @@ void ParticleSystem::Write(const char *filename) {
         }
 
         // TrailsModule
-        if (stage.moduleFlags & BIT(TrailsModuleBit)) {
+        if (stage.moduleFlags & BIT(ModuleBit::Trails)) {
             const TrailsModule &trailsModule = stage.trailsModule;
 
-            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[TrailsModuleBit]);
+            fp->Printf("%smodule \"%s\" {\n", indentSpace.c_str(), moduleNames[ModuleBit::Trails]);
             indentSpace += "  ";
 
             fp->Printf("%scount %i\n", indentSpace.c_str(), trailsModule.count);

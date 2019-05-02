@@ -18,10 +18,12 @@
 #include "PlatformUtils/Android/AndroidJNI.h"
 #include <android/asset_manager.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <sys/types.h>
+#include <sys/mman.h>
+#include <unistd.h>
 #include <dirent.h>
 #include <ftw.h>
+#include <fcntl.h>
 
 BE_NAMESPACE_BEGIN
 
@@ -69,18 +71,18 @@ int PlatformAndroidFile::Size() const {
     return -1;
 }
 
-int PlatformAndroidFile::Seek(long offset, Origin origin) {
+int PlatformAndroidFile::Seek(long offset, Origin::Enum origin) {
     assert(offset >= 0);
 
     int whence;
     switch (origin) {
-    case Start:
+    case Origin::Start:
         whence = SEEK_SET;
         break;
-    case End:
+    case Origin::End:
         whence = SEEK_END;
         break;
-    case Current:
+    case Origin::Current:
         whence = SEEK_CUR;
         break;
     default:
@@ -102,7 +104,7 @@ size_t PlatformAndroidFile::Read(void *buffer, size_t bytesToRead) const {
     if (fp) {
         size_t readBytes = fread(buffer, 1, bytesToRead, fp);
         if (readBytes == -1) {
-            BE_FATALERROR(L"PlatformAndroidFile::Read: -1 bytes read");
+            BE_FATALERROR("PlatformAndroidFile::Read: -1 bytes read");
             return 0;
         }
         return readBytes;
@@ -138,12 +140,12 @@ bool PlatformAndroidFile::Write(const void *buffer, size_t bytesToWrite) {
                 failedOnce = true;
             }
             else {
-                BE_WARNLOG(L"PlatformAndroidFile::Write: 0 bytes written");
+                BE_WARNLOG("PlatformAndroidFile::Write: 0 bytes written");
                 return false;
             }
         }
         else if (written == -1) {
-            BE_WARNLOG(L"PlatformAndroidFile::Write: -1 bytes written");
+            BE_WARNLOG("PlatformAndroidFile::Write: -1 bytes written");
             return false;
         }
 
@@ -188,7 +190,7 @@ Str PlatformAndroidFile::NormalizeDirectoryName(const char *dirname) {
     return normalizedDirname;
 }
 
-PlatformAndroidFile *PlatformAndroidFile::OpenFileRead(const char *filename) {
+PlatformBaseFile *PlatformAndroidFile::OpenFileRead(const char *filename) {
     // FIXME: Read newest file
     // Read from external data directory
     Str normalizedFilename = NormalizeFilename(filename);
@@ -204,7 +206,7 @@ PlatformAndroidFile *PlatformAndroidFile::OpenFileRead(const char *filename) {
     return nullptr;
 }
 
-PlatformAndroidFile *PlatformAndroidFile::OpenFileWrite(const char *filename) {
+PlatformBaseFile *PlatformAndroidFile::OpenFileWrite(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(normalizedFilename, "wb");
     if (!fp) {
@@ -213,7 +215,7 @@ PlatformAndroidFile *PlatformAndroidFile::OpenFileWrite(const char *filename) {
     return new PlatformAndroidFile(fp);
 }
 
-PlatformAndroidFile *PlatformAndroidFile::OpenFileAppend(const char *filename) {
+PlatformBaseFile *PlatformAndroidFile::OpenFileAppend(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(normalizedFilename, "ab");
     if (!fp) {
@@ -290,7 +292,7 @@ bool PlatformAndroidFile::SetReadOnly(const char *filename, bool readOnly) {
 bool PlatformAndroidFile::RemoveFile(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     if (remove(normalizedFilename)) {
-        BE_LOG(L"failed to remove file '%hs'\n", normalizedFilename.c_str());
+        BE_LOG("failed to remove file '%s'\n", normalizedFilename.c_str());
         return false;
     }
 
@@ -310,26 +312,26 @@ int PlatformAndroidFile::GetFileMode(const char *filename) {
     }
     int fileMode = 0;
     if (fileInfo.st_mode & S_IRUSR) {
-        fileMode |= Readable;
+        fileMode |= Mode::Readable;
     }
     if (fileInfo.st_mode & S_IWUSR) {
-        fileMode |= Writable;
+        fileMode |= Mode::Writable;
     }
     if (fileInfo.st_mode & S_IXUSR) {
-        fileMode |= Executable;
+        fileMode |= Mode::Executable;
     }
     return fileMode;
 }
 
 void PlatformAndroidFile::SetFileMode(const char *filename, int fileMode) {
     mode_t mode = 0;
-    if (fileMode & Readable) {
+    if (fileMode & Mode::Readable) {
         mode |= S_IRUSR;
     }
-    if (fileMode & Writable) {
+    if (fileMode & Mode::Writable) {
         mode |= S_IWUSR;
     }
-    if (fileMode & Executable) {
+    if (fileMode & Mode::Executable) {
         mode |= S_IXUSR;
     }
     chmod(NormalizeFilename(filename), mode);
@@ -402,11 +404,11 @@ const char *PlatformAndroidFile::ExecutablePath() {
     return AndroidJNI::activity->externalDataPath;
 }
 
-void PlatformAndroidFile::ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
+static void ListFilesRecursive(const char *directory, const char *subdir, const char *nameFilter, bool includeSubDir, Array<FileInfo> &files) {
     FileInfo    fileInfo;
-    char		path[MaxAbsolutePath];
-    char		subpath[MaxAbsolutePath];
-    char		filename[MaxAbsolutePath];
+    char        path[MaxAbsolutePath];
+    char        subpath[MaxAbsolutePath];
+    char        filename[MaxAbsolutePath];
 
     if (subdir[0]) {
         Str::snPrintf(path, sizeof(path), "%s/%s", directory, subdir);
@@ -414,8 +416,7 @@ void PlatformAndroidFile::ListFilesRecursive(const char *directory, const char *
         Str::snPrintf(path, sizeof(path), "%s", directory);
     }
 
-    Str normalizedPath = NormalizeFilename(path);
-    DIR *dp = opendir(normalizedPath);
+    DIR *dp = opendir(path);
     if (dp) {
         while (dirent *dent = readdir(dp)) {
             if (!Str::Cmp(dent->d_name, ".") || !Str::Cmp(dent->d_name, "..")) {
@@ -431,7 +432,7 @@ void PlatformAndroidFile::ListFilesRecursive(const char *directory, const char *
 
                 if (includeSubDir) {
                     fileInfo.isSubDir = true;
-                    fileInfo.relativePath = subpath;
+                    fileInfo.filename = subpath;
                     files.Append(fileInfo);
                 }
 
@@ -444,7 +445,7 @@ void PlatformAndroidFile::ListFilesRecursive(const char *directory, const char *
                 }
 
                 fileInfo.isSubDir = false;
-                fileInfo.relativePath = filename;
+                fileInfo.filename = filename;
                 files.Append(fileInfo);
             }
         }
@@ -461,7 +462,7 @@ void PlatformAndroidFile::ListFilesRecursive(const char *directory, const char *
             }
 
             fileInfo.isSubDir = false;
-            fileInfo.relativePath = filename;
+            fileInfo.filename = filename;
             files.Append(fileInfo);
         }
 
@@ -474,12 +475,13 @@ int PlatformAndroidFile::ListFiles(const char *directory, const char *nameFilter
         nameFilter = "*";
     }
 
+    Str normalizedDirectory = NormalizeFilename(directory);
+
     files.Clear();
 
     if (recursive) {
-        ListFilesRecursive(directory, "", nameFilter, includeSubDir, files);
+        ListFilesRecursive(normalizedDirectory, "", nameFilter, includeSubDir, files);
     } else {
-        Str normalizedDirectory = NormalizeFilename(directory);
         DIR *dp = opendir(normalizedDirectory);
         if (dp) {
             FileInfo fileInfo;
@@ -496,7 +498,7 @@ int PlatformAndroidFile::ListFiles(const char *directory, const char *nameFilter
                     }
                 }
 
-                fileInfo.relativePath = dent->d_name;
+                fileInfo.filename = dent->d_name;
                 files.Append(fileInfo);
             }
             closedir(dp);
@@ -511,7 +513,7 @@ int PlatformAndroidFile::ListFiles(const char *directory, const char *nameFilter
                 }
 
                 fileInfo.isSubDir = false;
-                fileInfo.relativePath = filename;
+                fileInfo.filename = filename;
                 files.Append(fileInfo);
             }
 
@@ -520,6 +522,100 @@ int PlatformAndroidFile::ListFiles(const char *directory, const char *nameFilter
     }
 
     return files.Count();
+}
+
+off_t PlatformAndroidFileMapping::pageMask = 0;
+
+PlatformAndroidFileMapping::PlatformAndroidFileMapping(int fileHandle, size_t size, const void *data) {
+    this->fileHandle = fileHandle;
+    this->size = size;
+    this->data = data;
+}
+
+PlatformAndroidFileMapping::~PlatformAndroidFileMapping() {
+    int retval = munmap((byte *)data - alignBytes, size);
+    if (retval != 0) {
+        BE_ERRLOG("Unable to unmap memory\n");
+    }
+    close(fileHandle);
+}
+
+void PlatformAndroidFileMapping::Touch() {
+    size_t pageSize = (size_t)sysconf(_SC_PAGESIZE);
+
+    uint32_t checkSum = 0;
+    for (byte *ptr = (byte *)data; ptr < (byte *)data + size; ptr += pageSize) {
+        checkSum += *(uint32_t *)ptr;
+    }
+}
+
+PlatformAndroidFileMapping *PlatformAndroidFileMapping::OpenFileRead(const char *filename) {
+    off_t startOffset;
+    size_t size;
+
+    Str normalizedFilename = PlatformAndroidFile::NormalizeFilename(filename);
+    int fd = open(normalizedFilename, O_RDONLY);
+    if (fd < 0) {
+        AAsset *asset = AAssetManager_open(AndroidJNI::activity->assetManager, filename, AASSET_MODE_UNKNOWN);
+        if (!asset) {
+            return nullptr;
+        }
+
+        off_t fileLength;
+        // NOTE: AAsset_openFileDescriptor will work only with files that are not compressed.
+        fd = AAsset_openFileDescriptor(asset, &startOffset, &fileLength);
+        assert(fd > 0);
+        size = fileLength;
+        AAsset_close(asset);
+    } else {
+        struct stat fs;
+        fstat(fd, &fs);
+        size = fs.st_size;
+        startOffset = 0;
+    }
+
+    if (pageMask == 0) {
+        pageMask = getpagesize() - 1;
+    }
+    off_t alignBytes = (startOffset & pageMask);
+
+    void *data = mmap(nullptr, size + alignBytes, PROT_READ, MAP_SHARED, fd, startOffset - alignBytes);
+    if (!data) {
+        BE_ERRLOG("PlatformAndroidFileMapping::OpenFileRead: Couldn't map %s to memory\n", filename);
+        assert(0);
+        close(fd);
+        return nullptr;
+    }
+    assert(((size_t)data & pageMask) == 0);
+
+    auto newFileMapping = new PlatformAndroidFileMapping(fd, size, (byte *)data + alignBytes);
+    newFileMapping->alignBytes = alignBytes;
+
+    return newFileMapping;
+}
+
+PlatformAndroidFileMapping *PlatformAndroidFileMapping::OpenFileReadWrite(const char *filename, int newSize) {
+    Str normalizedFilename = PlatformAndroidFile::NormalizeFilename(filename);
+    int fd = open(normalizedFilename, O_RDWR | O_CREAT);
+    if (fd == -1) {
+        BE_ERRLOG("PlatformAndroidFileMapping::OpenFileReadWrite: Couldn't open %s\n", filename);
+        return nullptr;
+    }
+
+    size_t size = newSize;
+    if (size == 0) {
+        struct stat fs;
+        fstat(fd, &fs);
+        size = fs.st_size;
+    }
+
+    void *data = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (!data) {
+        BE_ERRLOG("PlatformAndroidFileMapping::OpenFileReadWrite: Couldn't map %s to memory\n", filename);
+        return nullptr;
+    }
+
+    return new PlatformAndroidFileMapping(fd, size, data);
 }
 
 BE_NAMESPACE_END

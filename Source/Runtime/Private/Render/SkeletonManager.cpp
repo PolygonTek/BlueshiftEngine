@@ -22,8 +22,8 @@ Skeleton *          SkeletonManager::defaultSkeleton;
 SkeletonManager     skeletonManager;
 
 void SkeletonManager::Init() {
-    cmdSystem.AddCommand(L"listSkeletons", Cmd_ListSkeletons);
-    cmdSystem.AddCommand(L"reloadSkeleton", Cmd_ReloadSkeleton);
+    cmdSystem.AddCommand("listSkeletons", Cmd_ListSkeletons);
+    cmdSystem.AddCommand("reloadSkeleton", Cmd_ReloadSkeleton);
 
     skeletonHashMap.Init(1024, 64, 64);
 
@@ -34,15 +34,15 @@ void SkeletonManager::Init() {
 }
 
 void SkeletonManager::Shutdown() {
-    cmdSystem.RemoveCommand(L"listSkeletons");
-    cmdSystem.RemoveCommand(L"reloadSkeleton");
+    cmdSystem.RemoveCommand("listSkeletons");
+    cmdSystem.RemoveCommand("reloadSkeleton");
 
     skeletonHashMap.DeleteContents(true);
 }
 
 Skeleton *SkeletonManager::AllocSkeleton(const char *hashName) {
     if (skeletonHashMap.Get(hashName)) {
-        BE_FATALERROR(L"%hs skeleton already allocated", hashName);
+        BE_FATALERROR("%s skeleton already allocated", hashName);
     }
 
     Skeleton *skeleton = new Skeleton;
@@ -72,7 +72,7 @@ void SkeletonManager::RenameSkeleton(Skeleton *skeleton, const Str &newName) {
 
 void SkeletonManager::DestroySkeleton(Skeleton *skeleton) {
     if (skeleton->refCount > 1) {
-        BE_WARNLOG(L"SkeletonManager::DestroySkeleton: skeleton '%hs' has %i reference count\n", skeleton->name.c_str(), skeleton->refCount);
+        BE_WARNLOG("SkeletonManager::DestroySkeleton: skeleton '%s' has %i reference count\n", skeleton->name.c_str(), skeleton->refCount);
     }
 
     skeletonHashMap.Remove(skeleton->hashName);
@@ -154,7 +154,7 @@ void SkeletonManager::Cmd_ListSkeletons(const CmdArgs &args) {
         const auto *entry = skeletonManager.skeletonHashMap.GetByIndex(i);
         Skeleton *skeleton = entry->second;
 
-        BE_LOG(L"%3d refs %3d joints : %hs\n",
+        BE_LOG("%3d refs %3d joints : %s\n",
             skeleton->refCount,
             skeleton->numJoints,
             skeleton->hashName.c_str());
@@ -162,16 +162,16 @@ void SkeletonManager::Cmd_ListSkeletons(const CmdArgs &args) {
         count++;
     }
 
-    BE_LOG(L"%i total skeletones\n", count);
+    BE_LOG("%i total skeletones\n", count);
 }
 
 void SkeletonManager::Cmd_ReloadSkeleton(const CmdArgs &args) {
     if (args.Argc() != 2) {
-        BE_LOG(L"reloadSkeleton <filename>\n");
+        BE_LOG("reloadSkeleton <filename>\n");
         return;
     }
 
-    if (!WStr::Icmp(args.Argv(1), L"all")) {
+    if (!Str::Icmp(args.Argv(1), "all")) {
         int count = skeletonManager.skeletonHashMap.Count();
 
         for (int i = 0; i < count; i++) {
@@ -180,9 +180,9 @@ void SkeletonManager::Cmd_ReloadSkeleton(const CmdArgs &args) {
             skeleton->Reload();
         }
     } else {
-        Skeleton *skeleton = skeletonManager.FindSkeleton(WStr::ToStr(args.Argv(1)));
+        Skeleton *skeleton = skeletonManager.FindSkeleton(args.Argv(1));
         if (!skeleton) {
-            BE_WARNLOG(L"Couldn't find skeleton to reload \"%ls\"\n", args.Argv(1));
+            BE_WARNLOG("Couldn't find skeleton to reload \"%s\"\n", args.Argv(1));
             return;
         }
 

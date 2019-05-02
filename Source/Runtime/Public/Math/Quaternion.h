@@ -49,9 +49,9 @@ public:
     /// The default constructor does not initialize any members of this class.
     Quat() = default;
     /// Constructs a Quat with the value (x, y, z, w).
-    Quat(float x, float y, float z, float w);
+    constexpr Quat(float x, float y, float z, float w);
     /// Constructs a Quat from a C array, to the value (data[0], data[1], data[2], data[3]).
-    explicit Quat(const float data[4]);
+    explicit constexpr Quat(const float data[4]);
     /// Assignment operator
     Quat &operator=(const Quat &rhs);
     
@@ -110,13 +110,13 @@ public:
                         /// Multiplies two quaternions, in-place.
     Quat &              operator*=(const Quat &rhs);
 
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const Quat &a) const;
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const Quat &a, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const Quat &rhs) const { return Equals(rhs); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const Quat &rhs) const { return !Equals(rhs); }
 
                         /// Sets all elements of this quaternion.
@@ -171,10 +171,10 @@ public:
                         /// Returns "x y z w" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Quat         FromString(const char *str);
 
-                        /// Returns dimension of this type
+                        /// Returns dimension of this type.
     int                 GetDimension() const { return 4; }
 
     static const Quat   identity;
@@ -185,18 +185,12 @@ public:
     float               w;          ///< The scalar part.
 };
 
-BE_INLINE Quat::Quat(float x, float y, float z, float w) {
-    this->x = x;
-    this->y = y;
-    this->z = z;
-    this->w = w;
+BE_INLINE constexpr Quat::Quat(float inX, float inY, float inZ, float inW) :
+    x(inX), y(inY), z(inZ), w(inW) {
 }
 
-BE_INLINE Quat::Quat(const float data[4]) {
-    this->x = data[0];
-    this->y = data[1];
-    this->z = data[2];
-    this->w = data[3];
+BE_INLINE constexpr Quat::Quat(const float data[4]) :
+    x(data[0]), y(data[1]), z(data[2]), w(data[3]) {
 }
 
 BE_INLINE void Quat::Set(float x, float y, float z, float w) {

@@ -1,13 +1,15 @@
 Blueshift Game Engine
 =======================
 
-[![License](https://img.shields.io/badge/Licence-Apache2.0-blue.svg)]()
+[![License](https://img.shields.io/badge/Licence-Apache2.0-blue.svg)](LICENSE)
+[![LoC](https://tokei.rs/b1/github/PolygonTek/BlueshiftEngine)](https://github.com/PolygonTek/BlueshiftEngine)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/586e8c52b0c847a9ac1bc7632c65e79c)](https://app.codacy.com/app/juhl/BlueshiftEngine?utm_source=github.com&utm_medium=referral&utm_content=PolygonTek/BlueshiftEngine&utm_campaign=Badge_Grade_Dashboard)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/9m56bx55uxe88rgs/branch/master?svg=true)](https://ci.appveyor.com/project/juhl48312/blueshiftengine/branch/master)
 
 Blueshift is a cross-platform 3D game engine implemented in C++. it's free, open-source, and works on Windows, macOS, iOS, and Android.
 The project is currently in an early stage of development.
 
-See the [change log](CHANGELOG.md) for changes.
+For more information about the changes, see the [change log](CHANGELOG.md).
 
 <a href='https://ko-fi.com/V7V66PEJ' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://az743702.vo.msecnd.net/cdn/kofi1.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
 
@@ -16,20 +18,26 @@ Features
 
   * Cross-platform (Windows, macOS, iOS and Android)
   * OpenGL 3.2+, OpenGL ES 3.0 rendering
+  * Component based scene objects
   * Skeletal (with hardware skinning) animation
   * GPU instancing with skinned mesh
   * Parametric animation blending
   * Directional, spot, point lights
+  * Environment probes
   * Shadow mapping (cascaded shadow map, omni directional shadow map, projected shadow map)
   * Particle system
+  * HDR rendering and filmic tone mapping
   * Post-processing
   * PBR rendering
+  * Environment probes
   * Physics using [Bullet](http://www.bulletphysics.org/)
   * Vehicle physics
   * Scripting using [Lua](https://www.lua.org/) and [LuaJIT](https://luajit.org/)
-  * Audio static/streaming playback using DirectSound, [OpenAL](https://www.openal.org/) and OpenSLES
+  * 2D and 3D audio playback using DirectSound, [OpenAL](https://www.openal.org/) and OpenSLES
   * TrueType font rendering using [FreeType](https://www.freetype.org/)
-  * Component based scene objects
+  * Unicode string support
+  * 3D mesh/animation import from FBX
+  * Supported IDEs: Visual Studio, Xcode, Android Studio
   * Playable WYSIWYG editor using [Qt](https://www.qt.io/) with undo & redo capabilities
 
 Downloads

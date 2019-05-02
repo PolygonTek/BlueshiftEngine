@@ -4,9 +4,9 @@ out vec4 v2f_color;
 out vec4 v2f_texCoord0;
 out vec2 v2f_texCoord1;
 
-uniform mat4 modelViewProjectionMatrix;
-uniform mat4 modelViewMatrixTranspose;
-uniform mat4 lightTextureMatrix;
+uniform HIGHP mat4 modelViewProjectionMatrix;
+uniform HIGHP mat4 modelViewMatrixTranspose;
+uniform HIGHP mat4 lightTextureMatrix;
 uniform vec3 fogColor;
 uniform float fogDistance;
 

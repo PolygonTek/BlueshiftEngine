@@ -18,6 +18,8 @@
 
 BE_NAMESPACE_BEGIN
 
+extern CVar     r_sRGB;
+
 static bool CheckFBOStatus() {
     GLenum status = gglCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status == GL_FRAMEBUFFER_COMPLETE) {
@@ -26,47 +28,47 @@ static bool CheckFBOStatus() {
     
     switch (status) {
     case GL_FRAMEBUFFER_UNSUPPORTED:
-        BE_WARNLOG(L"FBO format unsupported\n");
+        BE_WARNLOG("FBO format unsupported\n");
         return false;
     case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-        BE_WARNLOG(L"FBO missing an image attachment\n");
+        BE_WARNLOG("FBO missing an image attachment\n");
         return false;
     case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-        BE_WARNLOG(L"FBO has one or several incomplete image attachments\n");
+        BE_WARNLOG("FBO has one or several incomplete image attachments\n");
         return false;
 #ifdef GL_EXT_framebuffer_object
     case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
-        BE_WARNLOG(L"FBO has one or several image attachments with different dimensions\n");
+        BE_WARNLOG("FBO has one or several image attachments with different dimensions\n");
         return false;
     case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
-        BE_WARNLOG(L"FBO has one or several image attachments with different internal formats\n");
+        BE_WARNLOG("FBO has one or several image attachments with different internal formats\n");
         return false;
 #endif
 #ifdef GL_VERSION_3_0
     case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
-        BE_WARNLOG(L"FBO has invalid draw buffer\n");
+        BE_WARNLOG("FBO has invalid draw buffer\n");
         return false;
     case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
-        BE_WARNLOG(L"FBO has invalid read buffer\n");
+        BE_WARNLOG("FBO has invalid read buffer\n");
         return false;
 #endif
 #ifdef GL_VERSION_3_2
     case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
-        BE_WARNLOG(L"FBO missing layer target\n");
+        BE_WARNLOG("FBO missing layer target\n");
         return false;
 #endif
 #ifdef GL_EXT_geometry_shader4
     case GL_FRAMEBUFFER_INCOMPLETE_LAYER_COUNT_EXT:
-        BE_WARNLOG(L"FBO incomplete layer count\n");
+        BE_WARNLOG("FBO incomplete layer count\n");
         return false;
 #endif
     }
 
-    BE_WARNLOG(L"FBO unknown status %i\n", status);
+    BE_WARNLOG("FBO unknown status %i\n", status);
     return false;
 }
 
-RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, bool sRGB, int flags) {
+RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType::Enum type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, int flags) {
     GLuint fbo;
     GLuint colorRenderBuffer = 0;
     GLuint depthRenderBuffer = 0;
@@ -80,13 +82,13 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
 
     GLenum target = 0;
     switch (type) {
-    case RenderTarget2D:
+    case RenderTargetType::RT2D:
         target = GL_TEXTURE_2D;
         break;
-    case RenderTargetCubeMap:
+    case RenderTargetType::RTCubeMap:
         target = GL_TEXTURE_CUBE_MAP;
         break;
-    case RenderTarget2DArray:
+    case RenderTargetType::RT2DArray:
         target = GL_TEXTURE_2D_ARRAY;
         break;
     default:
@@ -94,6 +96,7 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
         break;
     }
 
+    // numColorTextures may be greater than 1 due to MRT.
     if (numColorTextures > 0) {
         for (int i = 0; i < numColorTextures; i++) {
             GLuint textureObject = textureList[colorTextureHandles[i]]->object;
@@ -107,23 +110,18 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
                 gglFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, textureObject, 0, 0);
                 break;
             case GL_TEXTURE_CUBE_MAP:
-            case GL_TEXTURE_CUBE_MAP_ARRAY:
-#ifdef GL_VERSION_3_2
-                gglFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, textureObject, 0);
-#else
-                gglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, target, textureObject, 0);
-#endif
+                gglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_CUBE_MAP_POSITIVE_X, textureObject, 0);
                 break;
+            case GL_TEXTURE_CUBE_MAP_ARRAY:
             default:
                 assert(0);
                 break;
             }
         }
 
-        GLenum color0 = GL_COLOR_ATTACHMENT0;
-        gglDrawBuffers(1, &color0);
-        gglReadBuffer(GL_COLOR_ATTACHMENT0);
-    } else if (flags & HasColorBuffer) {
+        OpenGL::DrawBuffer(GL_COLOR_ATTACHMENT0);
+        OpenGL::ReadBuffer(GL_COLOR_ATTACHMENT0);
+    } else if (flags & RenderTargetFlag::HasColorBuffer) {
         gglGenRenderbuffers(1, &colorRenderBuffer);
         gglBindRenderbuffer(GL_RENDERBUFFER, colorRenderBuffer);
         gglRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, width, height);
@@ -142,13 +140,9 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
             gglFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureObject, 0, 0);
             break;
         case GL_TEXTURE_CUBE_MAP:
-        case GL_TEXTURE_CUBE_MAP_ARRAY:
-#ifdef GL_VERSION_3_2
-            gglFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureObject, 0);
-#else
-            gglFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, target, textureObject, 0);
-#endif
+            gglFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_CUBE_MAP_POSITIVE_X, textureObject, 0);
             break;
+        case GL_TEXTURE_CUBE_MAP_ARRAY:
         default:
             assert(0);
             break;
@@ -157,10 +151,10 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
         if (numColorTextures == 0) {
             // NOTE: this is per-FBO state
             OpenGL::DrawBuffer(GL_NONE);
-            gglReadBuffer(GL_NONE);
+            OpenGL::ReadBuffer(GL_NONE);
         }
-    } else if (flags & HasDepthBuffer) {
-        if (flags & HasStencilBuffer) {
+    } else if (flags & RenderTargetFlag::HasDepthBuffer) {
+        if (flags & RenderTargetFlag::HasStencilBuffer) {
             gglGenRenderbuffers(1, &depthRenderBuffer);
             gglBindRenderbuffer(GL_RENDERBUFFER, depthRenderBuffer);
             gglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
@@ -189,8 +183,7 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
 
         return NullRenderTarget;
     }
-    
-//    OpenGL::BindDefaultFBO();
+
     gglBindFramebuffer(GL_FRAMEBUFFER, oldFBO);
 
     GLRenderTarget *renderTarget = new GLRenderTarget;
@@ -201,7 +194,6 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
         renderTarget->colorTextureHandles[i] = colorTextureHandles[i];
     }
     renderTarget->depthTextureHandle = depthTextureHandle;
-    renderTarget->sRGB = sRGB;
     renderTarget->fbo = fbo;
     renderTarget->depthRenderBuffer = depthRenderBuffer;
     renderTarget->stencilRenderBuffer = stencilRenderBuffer;
@@ -218,13 +210,13 @@ RHI::Handle OpenGLRHI::CreateRenderTarget(RenderTargetType type, int width, int 
 
 void OpenGLRHI::DestroyRenderTarget(Handle renderTargetHandle) {
     if (renderTargetHandle == NullRenderTarget) {
-        BE_WARNLOG(L"OpenGLRHI::DestroyRenderTarget: invalid render target\n");
+        BE_WARNLOG("OpenGLRHI::DestroyRenderTarget: invalid render target\n");
         return;
     }
     
     if (currentContext->state->renderTargetHandleStackDepth > 0 && 
         currentContext->state->renderTargetHandleStack[currentContext->state->renderTargetHandleStackDepth - 1] == renderTargetHandle) {
-        BE_WARNLOG(L"OpenGLRHI::DestroyRenderTarget: render target is using\n");
+        BE_WARNLOG("OpenGLRHI::DestroyRenderTarget: render target is using\n");
         return;
     }
 
@@ -243,9 +235,9 @@ void OpenGLRHI::DestroyRenderTarget(Handle renderTargetHandle) {
     renderTargetList[renderTargetHandle] = nullptr;
 }
 
-void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int sliceIndex, unsigned int mrtBitMask) {
+void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int sliceIndex) {
     if (currentContext->state->renderTargetHandleStackDepth > 0 && currentContext->state->renderTargetHandleStack[currentContext->state->renderTargetHandleStackDepth - 1] == renderTargetHandle) {
-        BE_WARNLOG(L"OpenGLRHI::BeginRenderTarget: same render target\n");
+        BE_WARNLOG("OpenGLRHI::BeginRenderTarget: same render target\n");
     }
 
     const GLRenderTarget *renderTarget = renderTargetList[renderTargetHandle];
@@ -254,7 +246,7 @@ void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int slic
 
     gglBindFramebuffer(GL_FRAMEBUFFER, renderTarget->fbo);
 
-    if (renderTarget->type == RenderTarget2DArray) {
+    if (renderTarget->type == RenderTargetType::RT2DArray) {
         if (renderTarget->numColorTextures > 0) {
             for (int i = 0; i < renderTarget->numColorTextures; i++) {
                 GLuint textureObject = textureList[renderTarget->colorTextureHandles[i]]->object;
@@ -267,7 +259,7 @@ void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int slic
             gglFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureObject, level, sliceIndex);
         }
     } else {
-        GLenum target = renderTarget->type == RenderTargetCubeMap ? (GL_TEXTURE_CUBE_MAP_POSITIVE_X + sliceIndex) : GL_TEXTURE_2D;
+        GLenum target = renderTarget->type == RenderTargetType::RTCubeMap ? (GL_TEXTURE_CUBE_MAP_POSITIVE_X + sliceIndex) : GL_TEXTURE_2D;
 
         if (renderTarget->numColorTextures > 0) {
             for (int i = 0; i < renderTarget->numColorTextures; i++) {
@@ -282,33 +274,14 @@ void OpenGLRHI::BeginRenderTarget(Handle renderTargetHandle, int level, int slic
         }
     } 
 
-    if (renderTarget->numColorTextures > 1 && mrtBitMask != 0) {
-        GLenum drawBuffers[16];
-        int numDrawBuffers = 0;
-
-        for (int i = 0; i < renderTarget->numColorTextures; i++) {
-            if (mrtBitMask & 1) {
-                drawBuffers[numDrawBuffers] = GL_COLOR_ATTACHMENT0 + numDrawBuffers;
-                numDrawBuffers++;
-            }
-            mrtBitMask >>= 1;
-        }
-
-        gglDrawBuffers(numDrawBuffers, drawBuffers);
-    }
-
-    if (gl_sRGB.GetBool()) {
-        if (renderTarget->sRGB) {
-            SetSRGBWrite(true);
-        } else {
-            SetSRGBWrite(false);
-        }
+    if (r_sRGB.GetBool()) {
+        SetSRGBWrite(!!(renderTarget->flags & RenderTargetFlag::SRGBWrite));
     }
 }
 
 void OpenGLRHI::EndRenderTarget() {
     if (currentContext->state->renderTargetHandleStackDepth == 0) {
-        BE_WARNLOG(L"unmatched BeginRenderTarget() / EndRenderTarget()\n");
+        BE_WARNLOG("unmatched BeginRenderTarget() / EndRenderTarget()\n");
         return;
     }
     
@@ -319,31 +292,73 @@ void OpenGLRHI::EndRenderTarget() {
 
     gglBindFramebuffer(GL_FRAMEBUFFER, oldRenderTarget->fbo);
 
-    if (gl_sRGB.GetBool()) {
-        if (oldRenderTarget->sRGB) {
-            SetSRGBWrite(true);
-        } else {
-            SetSRGBWrite(false);
-        }
+    if (r_sRGB.GetBool()) {
+        SetSRGBWrite(!!(oldRenderTarget->flags & RenderTargetFlag::SRGBWrite));
     }
 }
 
-void OpenGLRHI::BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRect, Handle dstRenderTargetHandle, const Rect &dstRect, int mask, int filter) const {
+void OpenGLRHI::SetDrawBuffersMask(unsigned int colorBufferBitMask) {
+    if (colorBufferBitMask > 0) {
+        GLenum drawBuffers[16];
+        int numDrawBuffers = 0;
+
+        while (colorBufferBitMask) {
+            if (colorBufferBitMask & 1) {
+                drawBuffers[numDrawBuffers] = GL_COLOR_ATTACHMENT0 + numDrawBuffers;
+                numDrawBuffers++;
+            }
+            colorBufferBitMask >>= 1;
+        }
+
+        OpenGL::DrawBuffers(numDrawBuffers, drawBuffers);
+    } else {
+        OpenGL::DrawBuffer(GL_NONE);
+    }
+}
+
+void OpenGLRHI::DiscardRenderTarget(bool depth, bool stencil, uint32_t colorBitMask) {
+    if (!OpenGL::SupportsDiscardFrameBuffer()) {
+        return;
+    }
+
+    GLenum attachments[10];
+    int numAttachments = 0;
+
+    int colorIndex = 0;
+    while (colorBitMask) {
+        if (colorBitMask & 1) {
+            attachments[numAttachments++] = GL_COLOR_ATTACHMENT0 + colorIndex;
+        }
+
+        colorBitMask >>= 1;
+        colorIndex++;
+    }
+    if (depth) {
+        attachments[numAttachments++] = GL_DEPTH_ATTACHMENT;
+    }
+    if (stencil) {
+        attachments[numAttachments++] = GL_STENCIL_ATTACHMENT;
+    }
+
+    OpenGL::DiscardFramebuffer(GL_FRAMEBUFFER, numAttachments, attachments);
+}
+
+void OpenGLRHI::BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRect, Handle dstRenderTargetHandle, const Rect &dstRect, int mask, BlitFilter::Enum filter) const {
     const GLRenderTarget *srcRenderTarget = renderTargetList[srcRenderTargetHandle];
     const GLRenderTarget *dstRenderTarget = renderTargetList[dstRenderTargetHandle];
 
     GLbitfield glmask = 0;
-    if (mask & ColorBlitMask) {
+    if (mask & BlitMask::Color) {
         glmask |= GL_COLOR_BUFFER_BIT;
     }
 
-    if (mask & DepthBlitMask) {
+    if (mask & BlitMask::Depth) {
         glmask |= GL_DEPTH_BUFFER_BIT;
     }
 
     assert(glmask);
     if (!glmask) {
-        BE_WARNLOG(L"OpenGLRHI::BlitRenderTarget: NULL mask\n");
+        BE_WARNLOG("OpenGLRHI::BlitRenderTarget: NULL mask\n");
         return;
     }
 
@@ -353,7 +368,7 @@ void OpenGLRHI::BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRe
     gglBlitFramebuffer(
         srcRect.x, srcRect.y, srcRect.X2(), srcRect.Y2(),
         dstRect.x, dstRect.y, dstRect.X2(), dstRect.Y2(),
-        glmask, filter == NearestBlitFilter ? GL_NEAREST : GL_LINEAR);
+        glmask, filter == BlitFilter::Nearest ? GL_NEAREST : GL_LINEAR);
 
     gglBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     gglBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);

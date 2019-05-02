@@ -9,9 +9,7 @@ shader "constantColor" {
         #if defined(INSTANCING)
             $include "Instancing.vp"
         #else
-            uniform vec4 localToWorldMatrixS;
-            uniform vec4 localToWorldMatrixT;
-            uniform vec4 localToWorldMatrixR;
+            uniform HIGHP mat4x3 localToWorldMatrix;
         #endif
 
         #ifdef GPU_SKINNING
@@ -24,8 +22,8 @@ shader "constantColor" {
             #endif
         #endif
 
-        uniform mat4 viewProjectionMatrix;
-		uniform mat4 modelViewProjectionMatrix;
+        uniform HIGHP mat4 viewProjectionMatrix;
+		uniform HIGHP mat4 modelViewProjectionMatrix;
 
 		void main() {
 			vec4 localPos;
@@ -37,12 +35,7 @@ shader "constantColor" {
 		#endif
 
         #ifdef INSTANCING
-            vec4 worldPos;
-            worldPos.x = dot(localToWorldMatrixS, localPos);
-            worldPos.y = dot(localToWorldMatrixT, localPos);
-            worldPos.z = dot(localToWorldMatrixR, localPos);
-            worldPos.w = 1.0;
-            gl_Position = viewProjectionMatrix * worldPos;
+            gl_Position = viewProjectionMatrix * vec4(localToWorldMatrix * localPos, 1.0);
         #else
             gl_Position = modelViewProjectionMatrix * localPos;
         #endif

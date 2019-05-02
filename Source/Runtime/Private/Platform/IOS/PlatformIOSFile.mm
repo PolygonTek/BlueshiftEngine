@@ -13,10 +13,10 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Core/WStr.h"
 #include "Platform/PlatformFile.h"
 #include "File/FileSystem.h"
 #include <sys/stat.h>
+#include <sys/mman.h>
 
 BE_NAMESPACE_BEGIN
 
@@ -58,34 +58,34 @@ Str PlatformIOSFile::NormalizeDirectoryName(const char *dirname) {
     return normalizedDirname;
 }
 
-PlatformIOSFile *PlatformIOSFile::OpenFileRead(const char *filename) {
+PlatformBaseFile *PlatformIOSFile::OpenFileRead(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(ConvertToIOSPath(normalizedFilename, false), "rb");
     if (!fp) {
         fp = fopen(ConvertToIOSPath(normalizedFilename, true), "rb");
         if (!fp) {
-            return NULL;
+            return nullptr;
         }
     }
     
     return new PlatformIOSFile(fp);
 }
 
-PlatformIOSFile *PlatformIOSFile::OpenFileWrite(const char *filename) {
+PlatformBaseFile *PlatformIOSFile::OpenFileWrite(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(ConvertToIOSPath(normalizedFilename, true), "wb");
     if (!fp) {
-        return NULL;
+        return nullptr;
     }
     
     return new PlatformIOSFile(fp);
 }
 
-PlatformIOSFile *PlatformIOSFile::OpenFileAppend(const char *filename) {
+PlatformBaseFile *PlatformIOSFile::OpenFileAppend(const char *filename) {
     Str normalizedFilename = NormalizeFilename(filename);
     FILE *fp = fopen(ConvertToIOSPath(normalizedFilename, true), "ab");
     if (!fp) {
-        return NULL;
+        return nullptr;
     }
     
     return new PlatformIOSFile(fp);
@@ -169,8 +169,8 @@ bool PlatformIOSFile::DirectoryExists(const char *dirname) {
 }
 
 bool PlatformIOSFile::CreateDirectory(const char *dirname) {
-    WStr normalizedDirname = WStr(ConvertToIOSPath(NormalizeFilename(dirname), true).c_str());
-    CFStringRef directory = WideStringToCFString(normalizedDirname.c_str());
+    Str normalizedDirname = ConvertToIOSPath(NormalizeFilename(dirname), true);
+    CFStringRef directory = StringToCFString(normalizedDirname.c_str());
     bool Result = [[NSFileManager defaultManager] createDirectoryAtPath:(__bridge NSString *)directory
                                             withIntermediateDirectories:true
                                                              attributes:nil
@@ -215,6 +215,80 @@ Str PlatformIOSFile::ConvertToIOSPath(const Str &filename, bool forWrite) {
     }
     
     return result;
+}
+
+PlatformIOSFileMapping::PlatformIOSFileMapping(int fileHandle, size_t size, const void *data) {
+    this->fileHandle = fileHandle;
+    this->size = size;
+    this->data = data;
+}
+
+PlatformIOSFileMapping::~PlatformIOSFileMapping() {
+    int retval = munmap((void *)data, size);
+    if (retval != 0) {
+        BE_ERRLOG("Unable to unmap memory\n");
+    }
+    msync((void *)data, size, MS_SYNC);
+    close(fileHandle);
+}
+
+void PlatformIOSFileMapping::Touch() {
+    size_t pageSize = (size_t)sysconf(_SC_PAGESIZE);
+
+    uint32_t checkSum = 0;
+    for (byte *ptr = (byte *)data; ptr < (byte *)data + size; ptr += pageSize) {
+        checkSum += *(uint32_t *)ptr;
+    }
+}
+
+PlatformIOSFileMapping *PlatformIOSFileMapping::OpenFileRead(const char *filename) {
+    Str normalizedFilename = PlatformIOSFile::NormalizeFilename(filename);
+    int fd = open(PlatformIOSFile::ConvertToIOSPath(normalizedFilename, false), O_RDONLY);
+    if (fd == -1) {
+        fd = open(PlatformIOSFile::ConvertToIOSPath(normalizedFilename, true), O_RDONLY);
+        if (fd == -1) {
+            return nullptr;
+        }
+    }
+
+    struct stat fs;
+    fstat(fd, &fs);
+    size_t size = fs.st_size;
+
+    void *data = mmap(nullptr, size, PROT_READ, MAP_SHARED, fd, 0);
+    if (!data) {
+        BE_ERRLOG("PlatformIOSFileMapping::OpenFileRead: Couldn't map %s to memory\n", filename);
+        return nullptr;
+    }
+
+    return new PlatformIOSFileMapping(fd, size, data);
+}
+
+PlatformIOSFileMapping *PlatformIOSFileMapping::OpenFileReadWrite(const char *filename, int newSize) {
+    Str normalizedFilename = PlatformIOSFile::NormalizeFilename(filename);
+    int fd = open(PlatformIOSFile::ConvertToIOSPath(normalizedFilename, false), O_RDWR | O_CREAT);
+    if (fd == -1) {
+        fd = open(PlatformIOSFile::ConvertToIOSPath(normalizedFilename, true), O_RDWR | O_CREAT);
+        if (fd == -1) {
+            BE_ERRLOG("PlatformIOSFileMapping::OpenFileReadWrite: Couldn't open %s\n", filename);
+            return nullptr;
+        }
+    }
+
+    size_t size = newSize;
+    if (size == 0) {
+        struct stat fs;
+        fstat(fd, &fs);
+        size = fs.st_size;
+    }
+
+    void *data = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (!data) {
+        BE_ERRLOG("PlatformIOSFileMapping::OpenFileReadWrite: Couldn't map %s to memory\n", filename);
+        return nullptr;
+    }
+
+    return new PlatformIOSFileMapping(fd, size, data);
 }
 
 BE_NAMESPACE_END

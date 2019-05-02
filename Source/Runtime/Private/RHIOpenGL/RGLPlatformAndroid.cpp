@@ -20,18 +20,20 @@
 
 BE_NAMESPACE_BEGIN
 
-static Str          eglVersion;
-static Str          eglVendor;
-static Str          eglClientAPIs;
-static Str          eglExtensions;
+static Str      eglVersion;
+static Str      eglVendor;
+static Str      eglClientAPIs;
+static Str      eglExtensions;
 
-static int          majorVersion = 0;
-static int          minorVersion = 0;
+static int      majorVersion = 0;
+static int      minorVersion = 0;
 
-static CVar         gl_debug(L"gl_debug", L"1", CVar::Bool, L"");
-static CVar         gl_debugLevel(L"gl_debugLevel", L"1", CVar::Integer, L"");
-static CVar         gl_ignoreGLError(L"gl_ignoreGLError", L"0", CVar::Bool, L"");
-static CVar         gl_finish(L"gl_finish", L"0", CVar::Bool, L"");
+static CVar     gl_debug("gl_debug", "0", CVar::Flag::Bool, "");
+static CVar     gl_debugLevel("gl_debugLevel", "3", CVar::Flag::Integer, "");
+static CVar     gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Flag::Bool, "");
+static CVar     gl_finish("gl_finish", "0", CVar::Flag::Bool, "");
+
+extern CVar     r_sRGB;
 
 static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int inAlphaBits, int inDepthBits, int inStencilBits, int inMultiSamples) {
     EGLint minAttribs[32];
@@ -47,13 +49,18 @@ static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int in
     minAttribs[numMinAttribs++] = EGL_RGB_BUFFER;
 
     minAttribs[numMinAttribs++] = EGL_RED_SIZE;
-    minAttribs[numMinAttribs++] = 5;
+    minAttribs[numMinAttribs++] = 8;
     minAttribs[numMinAttribs++] = EGL_GREEN_SIZE;
-    minAttribs[numMinAttribs++] = 6;
+    minAttribs[numMinAttribs++] = 8;
     minAttribs[numMinAttribs++] = EGL_BLUE_SIZE;
-    minAttribs[numMinAttribs++] = 5;
+    minAttribs[numMinAttribs++] = 8;
     minAttribs[numMinAttribs++] = EGL_ALPHA_SIZE;
-    minAttribs[numMinAttribs++] = 0;
+    minAttribs[numMinAttribs++] = 8;
+
+    //minAttribs[numMinAttribs++] = EGL_COLOR_COMPONENT_TYPE_EXT;
+    //minAttribs[numMinAttribs++] = EGL_COLOR_COMPONENT_TYPE_FIXED_EXT;
+    //minAttribs[numMinAttribs++] = EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT;
+
     minAttribs[numMinAttribs++] = EGL_DEPTH_SIZE;
     minAttribs[numMinAttribs++] = 16;
     minAttribs[numMinAttribs++] = EGL_STENCIL_SIZE;
@@ -70,13 +77,13 @@ static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int in
 
     EGLint maxConfigs;
     if (!eglChooseConfig(eglDisplay, minAttribs, nullptr, 0, &maxConfigs)) {
-        BE_FATALERROR(L"Cannot query count of minimum matched EGL configs");
+        BE_FATALERROR("Cannot query count of minimum matched EGL configs");
     }
 
     EGLConfig *configs = new EGLConfig[maxConfigs];
     //if (!eglGetConfigs(eglDisplay, configs, maxConfigs, &maxConfigs)) {
     if (!eglChooseConfig(eglDisplay, minAttribs, configs, maxConfigs, &maxConfigs)) {
-        BE_FATALERROR(L"Cannot query all minimum matched EGL configs");
+        BE_FATALERROR("Cannot query all minimum matched EGL configs");
     }
 
     EGLConfig bestConfig = nullptr;
@@ -159,7 +166,8 @@ static EGLConfig ChooseBestConfig(EGLDisplay eglDisplay, int inColorBits, int in
         score |= Min(Math::Abs(alphaSize - inAlphaBits), 31) << 0;
 
         if (score < bestScore || !bestConfig) {
-            BE_LOG(L"Best config: renderableType(%i), surfaceType(%i), r(%i), g(%i), b(%i), a(%i), d(%i), s(%i)\n", renderableType, surfaceType, redSize, greenSize, blueSize, alphaSize, depthSize, stencilSize);
+            BE_LOG("Best config: renderableType(%i), surfaceType(%i), r(%i), g(%i), b(%i), a(%i), d(%i), s(%i)\n", 
+                renderableType, surfaceType, redSize, greenSize, blueSize, alphaSize, depthSize, stencilSize);
 
             bestConfig = configs[i];
             bestScore = score;
@@ -194,7 +202,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     // Create EGL display connection
     mainContext->eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     if (mainContext->eglDisplay == EGL_NO_DISPLAY) {
-        BE_FATALERROR(L"Couldn't get EGL display");
+        BE_FATALERROR("Couldn't get EGL display");
     }
 
     // Initialize EGL for this display
@@ -205,10 +213,10 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     eglClientAPIs = eglQueryString(mainContext->eglDisplay, EGL_CLIENT_APIS);
     eglExtensions = eglQueryString(mainContext->eglDisplay, EGL_EXTENSIONS);
 
-    BE_LOG(L"EGL version: %hs\n", eglVersion.c_str());
-    BE_LOG(L"EGL vendor: %hs\n", eglVendor.c_str());
-    BE_LOG(L"EGL client APIs: %hs\n", eglClientAPIs.c_str());
-    BE_LOG(L"EGL extensions: %hs\n", eglExtensions.c_str());
+    BE_LOG("EGL version: %s\n", eglVersion.c_str());
+    BE_LOG("EGL vendor: %s\n", eglVendor.c_str());
+    BE_LOG("EGL client APIs: %s\n", eglClientAPIs.c_str());
+    BE_LOG("EGL extensions: %s\n", eglExtensions.c_str());
 
     // Set the current rendering API
     eglBindAPI(EGL_OPENGL_ES_API);
@@ -216,7 +224,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     gegl_init(mainContext->eglDisplay, false);
 
     if (!geglext._EGL_KHR_create_context) {
-        BE_FATALERROR(L"This device cannot support OpenGL 3.0 context");
+        BE_FATALERROR("This device cannot support OpenGL 3.0 context");
     }
 
     mainContext->eglConfig = ChooseBestConfig(mainContext->eglDisplay, settings->colorBits, settings->alphaBits, settings->depthBits, settings->stencilBits, settings->multiSamples);
@@ -225,7 +233,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
     mainContext->eglContext = eglCreateContext(mainContext->eglDisplay, mainContext->eglConfig, EGL_NO_CONTEXT, contextAttribs);
     if (mainContext->eglContext == EGL_NO_CONTEXT) {
-        BE_FATALERROR(L"Couldn't create EGL context");
+        BE_FATALERROR("Couldn't create EGL context");
     }
 
     ActivateSurface(NullContext, windowHandle);
@@ -248,15 +256,15 @@ void OpenGLRHI::FreeMainContext() {
     eglMakeCurrent(mainContext->eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
     if (!eglDestroySurface(mainContext->eglDisplay, mainContext->eglSurface)) {
-        BE_FATALERROR(L"destroying main context EGL surface: failed");
+        BE_FATALERROR("destroying main context EGL surface: failed");
     }
 
     if (!eglDestroyContext(mainContext->eglDisplay, mainContext->eglContext)) {
-        BE_FATALERROR(L"destroying main context EGL context: failed");
+        BE_FATALERROR("destroying main context EGL context: failed");
     }
 
     if (!eglTerminate(mainContext->eglDisplay)) {
-        BE_FATALERROR(L"terminating main context EGL display: failed");
+        BE_FATALERROR("terminating main context EGL display: failed");
     }
 
     SAFE_DELETE(mainContext->state);
@@ -284,7 +292,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         ctx->eglDisplay = mainContext->eglDisplay;
         ctx->eglContext = mainContext->eglContext;
         ctx->eglSurface = mainContext->eglSurface;
-        ctx->defaultVAO = mainContext->defaultVAO;        
+        ctx->defaultVAO = mainContext->defaultVAO;
     } else {
         ctx->state = new GLState;
 
@@ -294,7 +302,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
         ctx->eglContext = eglCreateContext(ctx->eglDisplay, ctx->eglConfig, mainContext->eglContext, contextAttribs);
         if (ctx->eglContext == EGL_NO_CONTEXT) {
-            BE_FATALERROR(L"Couldn't create EGL context");
+            BE_FATALERROR("Couldn't create EGL context");
         }
 
         ActivateSurface(ctx->handle, windowHandle);
@@ -322,14 +330,14 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
         gglDeleteVertexArrays(1, &ctx->defaultVAO);
 
         if (!eglDestroySurface(ctx->eglDisplay, ctx->eglSurface)) {
-            BE_FATALERROR(L"destroying context EGL surface: failed");
+            BE_FATALERROR("destroying context EGL surface: failed");
         }
-        BE_DLOG(L"destroying context EGL surface: ok\n");
+        BE_DLOG("destroying context EGL surface: ok\n");
 
         if (!eglDestroyContext(ctx->eglDisplay, ctx->eglContext)) {
-            BE_FATALERROR(L"destroying context EGL context: failed");
+            BE_FATALERROR("destroying context EGL context: failed");
         }
-        BE_DLOG(L"destroying context EGL context: ok\n");
+        BE_DLOG("destroying context EGL context: ok\n");
 
         delete ctx->state;
     }
@@ -367,20 +375,26 @@ void OpenGLRHI::ActivateSurface(Handle ctxHandle, RHI::WindowHandle windowHandle
     surfaceAttribs[numSurfaceAttribs++] = EGL_RENDER_BUFFER;
     surfaceAttribs[numSurfaceAttribs++] = EGL_BACK_BUFFER;
 
-    if (geglext._EGL_KHR_gl_colorspace) {
-        surfaceAttribs[numSurfaceAttribs++] = EGL_GL_COLORSPACE_KHR;
-        surfaceAttribs[numSurfaceAttribs++] = EGL_GL_COLORSPACE_SRGB_KHR;
+    if (r_sRGB.GetBool()) {
+        if (geglext._EGL_KHR_gl_colorspace) {
+            // NOTE: If the frame buffer color format does not contain alpha, sRGB capable buffer creation will fail !!
+            // https://android.googlesource.com/platform/frameworks/native/+/63108c34ec181e923b68ee840bb7960f205466a7/opengl/libs/EGL/eglApi.cpp
+            surfaceAttribs[numSurfaceAttribs++] = EGL_GL_COLORSPACE_KHR;
+            surfaceAttribs[numSurfaceAttribs++] = EGL_GL_COLORSPACE_SRGB_KHR;
+        } else {
+            r_sRGB.SetBool(false);
+        }
     }
     surfaceAttribs[numSurfaceAttribs++] = EGL_NONE;
 
     ctx->eglSurface = eglCreateWindowSurface(ctx->eglDisplay, ctx->eglConfig, ctx->nativeWindow, surfaceAttribs);
     if (ctx->eglSurface == EGL_NO_SURFACE) {
-        BE_FATALERROR(L"Couldn't create EGL window surface");
+        BE_FATALERROR("Couldn't create EGL window surface");
     }
 
     // Associate the EGL context with the EGL surface
     if (!eglMakeCurrent(ctx->eglDisplay, ctx->eglSurface, ctx->eglSurface, ctx->eglContext)) {
-        BE_FATALERROR(L"Couldn't make current context");
+        BE_FATALERROR("Couldn't make current context");
     }
 }
 
@@ -408,7 +422,7 @@ void OpenGLRHI::SetContext(Handle ctxHandle) {
     }
 
     if (!eglMakeCurrent(ctx->eglDisplay, ctx->eglSurface, ctx->eglSurface, ctx->eglContext)) {
-        BE_FATALERROR(L"OpenGLRHI::SetContext: Couldn't make current context");
+        BE_FATALERROR("OpenGLRHI::SetContext: Couldn't make current context");
     }
     
     this->currentContext = ctx;
@@ -453,11 +467,11 @@ bool OpenGLRHI::IsFullscreen() const {
     return true;
 }
 
-bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {    
+bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
     return true;
 }
 
-void OpenGLRHI::ResetFullscreen(Handle ctxHandle) {   
+void OpenGLRHI::ResetFullscreen(Handle ctxHandle) { 
 }
 
 void OpenGLRHI::GetGammaRamp(unsigned short ramp[768]) const {
@@ -474,8 +488,6 @@ bool OpenGLRHI::SwapBuffers() {
     if (gl_finish.GetBool()) {
         gglFinish();
     }
-
-    //gglFlush();
 
     EGLBoolean succeeded = eglSwapBuffers(currentContext->eglDisplay, currentContext->eglSurface);
     if (!succeeded) {

@@ -34,22 +34,22 @@ static ASensorEventQueue *  sensorEventQueue = nullptr;
 static BE1::RHI::Handle     mainContext = BE1::RHI::NullContext;
 static BE1::RHI::Handle     mainRenderTarget = BE1::RHI::NullRenderTarget;
 
-static void SystemLog(int logLevel, const wchar_t *msg) {
+static void SystemLog(int logLevel, const char *msg) {
     if (logLevel == BE1::DevLog) {
-        __android_log_print(ANDROID_LOG_VERBOSE, "TestRenderer", "%ls", msg);
+        __android_log_print(ANDROID_LOG_VERBOSE, "TestRenderer", "%s", msg);
     } else if (logLevel == BE1::WarningLog) {
-        __android_log_print(ANDROID_LOG_WARN, "TestRenderer", "%ls", msg);
+        __android_log_print(ANDROID_LOG_WARN, "TestRenderer", "%s", msg);
     } else if (logLevel == BE1::ErrorLog) {
-        __android_log_print(ANDROID_LOG_ERROR, "TestRenderer", "%ls", msg);
+        __android_log_print(ANDROID_LOG_ERROR, "TestRenderer", "%s", msg);
     } else {
-        __android_log_print(ANDROID_LOG_INFO, "TestRenderer", "%ls", msg);
+        __android_log_print(ANDROID_LOG_INFO, "TestRenderer", "%s", msg);
     }
 }
 
-static void SystemError(int errLevel, const wchar_t *msg) {
+static void SystemError(int errLevel, const char *msg) {
     JNIEnv *env = BE1::AndroidJNI::GetJavaEnv();
 
-    jstring javaMsg = BE1::WStr(msg).ToJavaString(env);
+    jstring javaMsg = BE1::Str(msg).ToJavaString(env);
     BE1::AndroidJNI::CallVoidMethod(env, BE1::AndroidJNI::activity->clazz, BE1::AndroidJNI::javaMethod_showAlert, javaMsg);
 
     env->DeleteLocalRef(javaMsg);
@@ -279,27 +279,27 @@ static int32_t HandleInput(android_app *appState, AInputEvent *event) {
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, 0);
                 x = (int)AMotionEvent_getX(event, 0);
                 y = (int)AMotionEvent_getY(event, 0);
-                BE_LOG(L"AMOTION_EVENT_ACTION_DOWN: %i %i", x, y);
+                BE_LOG("AMOTION_EVENT_ACTION_DOWN: %i %i", x, y);
                 break;
             case AMOTION_EVENT_ACTION_UP:
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, 0);
                 x = (int)AMotionEvent_getX(event, 0);
                 y = (int)AMotionEvent_getY(event, 0);
-                BE_LOG(L"AMOTION_EVENT_ACTION_UP: %i %i", x, y);
+                BE_LOG("AMOTION_EVENT_ACTION_UP: %i %i", x, y);
                 break;
             case AMOTION_EVENT_ACTION_POINTER_DOWN:
                 pointerIndex = (size_t)((action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, pointerIndex);
                 x = (int)AMotionEvent_getX(event, pointerIndex);
                 y = (int)AMotionEvent_getY(event, pointerIndex);
-                BE_LOG(L"AMOTION_EVENT_ACTION_POINTER_DOWN: %i %i", x, y);
+                BE_LOG("AMOTION_EVENT_ACTION_POINTER_DOWN: %i %i", x, y);
                 break;
             case AMOTION_EVENT_ACTION_POINTER_UP:
                 pointerIndex = (size_t)((action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, pointerIndex);
                 x = (int)AMotionEvent_getX(event, pointerIndex);
                 y = (int)AMotionEvent_getY(event, pointerIndex);
-                BE_LOG(L"AMOTION_EVENT_ACTION_POINTER_UP: %i %i", x, y);
+                BE_LOG("AMOTION_EVENT_ACTION_POINTER_UP: %i %i", x, y);
                 break;
             case AMOTION_EVENT_ACTION_MOVE:
                 // ACTION_MOVE events are batched, unlike the other events.
@@ -308,7 +308,7 @@ static int32_t HandleInput(android_app *appState, AInputEvent *event) {
                     pointerId = (uint64_t)AMotionEvent_getPointerId(event, i);
                     x = (int)AMotionEvent_getX(event, i);
                     y = (int)AMotionEvent_getY(event, i);
-                    BE_LOG(L"AMOTION_EVENT_ACTION_MOVE(%i/%i): %i %i", (int)i, (int)pointerCount, x, y);
+                    BE_LOG("AMOTION_EVENT_ACTION_MOVE(%i/%i): %i %i", (int)i, (int)pointerCount, x, y);
                 }
                 break;
             }

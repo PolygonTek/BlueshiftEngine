@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Core/WStr.h"
 #include "Platform/PlatformSystem.h"
 #include "Platform/PlatformFile.h"
 
@@ -39,6 +38,14 @@ const char *PlatformBaseSystem::UserAppDataDir() {
 
 const char *PlatformBaseSystem::UserTempDir() {
     return PlatformFile::ExecutablePath();
+}
+
+int32_t PlatformBaseSystem::NumCPUCores() {
+    return 1;
+}
+
+int32_t PlatformBaseSystem::NumCPUCoresIncludingHyperthreads() {
+    return PlatformSystem::NumCPUCores();
 }
 
 BE_NAMESPACE_END

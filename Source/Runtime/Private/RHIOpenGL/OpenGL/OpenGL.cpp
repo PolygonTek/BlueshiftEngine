@@ -34,6 +34,7 @@ bool OpenGLBase::supportsDebugLabel = false;
 bool OpenGLBase::supportsDebugMarker = false;
 bool OpenGLBase::supportsDebugOutput = false;
 bool OpenGLBase::supportsBufferStorage = false;
+bool OpenGLBase::supportsCopyImage = false;
 
 void OpenGLBase::Init() {
 #ifdef GL_EXT_packed_float // 3.0
@@ -103,15 +104,19 @@ void OpenGLBase::Init() {
 #ifdef GL_ARB_buffer_storage
     supportsBufferStorage = gglext._GL_ARB_buffer_storage ? true : false;
 #endif
+
+#ifdef GL_ARB_copy_image
+    supportsCopyImage = gglext._GL_ARB_copy_image ? true : false;
+#endif
 }
 
-bool OpenGLBase::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal) {
+bool OpenGLBase::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal) {
     return false;
 }
 
-Image::Format OpenGLBase::ToCompressedImageFormat(Image::Format inFormat, bool useNormalMap) {
+Image::Format::Enum OpenGLBase::ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap) {
     assert(0);
-    return Image::Format::UnknownFormat;
+    return Image::Format::Unknown;
 }
 
 // NOTE: Do not call gglXXX function in CheckGLError
@@ -146,7 +151,7 @@ extern "C" void CheckGLError(const char *msg) {
                 break;
         }
         
-        BE_WARNLOG(L"GL Error: %hs in %hs\n", errCode, msg);
+        BE_WARNLOG("GL Error: %s in %s\n", errCode, msg);
     }	
 }
 

@@ -31,7 +31,7 @@ public:
     virtual ~Prefab();
 
     const char *                GetName() const { return name; }
-    Str                         GetFilename() const { return hashName; }
+    Str                         GetFileName() const { return hashName; }
 
     Hierarchy<Entity> &         GetRootNode() { return entityHierarchy; }
     Entity *                    GetRootEntity() { return entityHierarchy.GetChild(); }

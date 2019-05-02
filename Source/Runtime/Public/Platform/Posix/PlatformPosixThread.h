@@ -20,13 +20,13 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformPosixThread : public PlatformBaseThread {
 public:
-    static PlatformPosixThread *Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
-    static void                 Delete(PlatformPosixThread *thread);
+    static PlatformBaseThread * Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
+    static void                 Destroy(PlatformBaseThread *thread);
     
     static void                 SetAffinity(int affinity);
     
-    static void                 Wait(PlatformPosixThread *thread);
-    static void                 WaitAll(int numThreads, PlatformPosixThread *threads[]);
+    static void                 Join(PlatformBaseThread *thread);
+    static void                 JoinAll(int numThreads, PlatformBaseThread *threads[]);
     
 private:
     pthread_t *                 thread;
@@ -36,12 +36,12 @@ class BE_API PlatformPosixMutex : public PlatformBaseMutex {
     friend class PlatformPosixCondition;
     
 public:
-    static PlatformPosixMutex * Create();
-    static void                 Delete(PlatformPosixMutex *mutex);
+    static PlatformBaseMutex *  Create();
+    static void                 Destroy(PlatformBaseMutex *mutex);
     
-    static void                 Lock(const PlatformPosixMutex *mutex);
-    static bool                 TryLock(const PlatformPosixMutex *mutex);
-    static void                 Unlock(const PlatformPosixMutex *mutex);
+    static void                 Lock(const PlatformBaseMutex *mutex);
+    static bool                 TryLock(const PlatformBaseMutex *mutex);
+    static void                 Unlock(const PlatformBaseMutex *mutex);
 
 private:
     pthread_mutex_t *           mutex;
@@ -49,18 +49,18 @@ private:
 
 class BE_API PlatformPosixCondition : public PlatformBaseCondition {
 public:
-    static PlatformPosixCondition *Create();
-    static void                 Delete(PlatformPosixCondition *condition);
+    static PlatformBaseCondition *Create();
+    static void                 Destroy(PlatformBaseCondition *condition);
     
     // release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
-    static void                 Wait(const PlatformPosixCondition *condition, const PlatformPosixMutex *mutex);
-    static bool                 TimedWait(const PlatformPosixCondition *condition, const PlatformPosixMutex *mutex, int ms);
+    static void                 Wait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex);
+    static bool                 TimedWait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex, int ms);
     
     // if any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
-    static void                 Signal(const PlatformPosixCondition *condition);
+    static void                 Signal(const PlatformBaseCondition *condition);
     
     // same as signal, except wake up all waiting threads
-    static void                 Broadcast(const PlatformPosixCondition *condition);
+    static void                 Broadcast(const PlatformBaseCondition *condition);
     
 private:
     pthread_cond_t *            cond;

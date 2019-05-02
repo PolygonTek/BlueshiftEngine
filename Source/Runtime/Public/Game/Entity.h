@@ -24,7 +24,7 @@
 
 #include "Containers/HashTable.h"
 #include "Core/Object.h"
-#include "Render/RenderView.h"
+#include "Render/RenderCamera.h"
 #include "Components/Component.h"
 
 BE_NAMESPACE_BEGIN
@@ -46,11 +46,13 @@ class Entity : public Object {
     friend class Component;
 
 public:
-    enum WorldPosTrait {
-        Pivot,
-        Center,
-        Minimum,
-        Maximum
+    struct WorldPosTrait {
+        enum Enum {
+            Pivot,
+            Center,
+            Minimum,
+            Maximum
+        };
     };
 
     OBJECT_PROTOTYPE(Entity);
@@ -75,10 +77,10 @@ public:
                                 /// Sets layer index.
     void                        SetLayer(int layer);
 
-                                /// Returns if this entity is static.
-    bool                        IsStatic() const { return isStatic; }
-                                /// Sets this entity static.
-    void                        SetStatic(bool isStatic);
+                                /// Returns entity static mask.
+    int                         GetStaticMask() const { return staticMask; }
+                                /// Sets entity static mask.
+    void                        SetStaticMask(int staticMask);
 
                                 /// Returns if this entity is frozen. Frozen entity will not be selectable in editor.
     bool                        IsFrozen() const { return frozen; }
@@ -188,11 +190,11 @@ public:
     void                        FixedLateUpdate(float timeStep);
 
                                 /// Serializes entity to JSON value.
-    virtual void                Serialize(Json::Value &data) const override;
+    virtual void                Serialize(Json::Value &data, bool forCopying = false) const override;
                                 /// Deserializes entity from JSON value.
     virtual void                Deserialize(const Json::Value &data) override;
                                 /// Serializes given entity hierarchy to JSON value.
-    static void                 SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue);
+    static void                 SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue, bool forCopying = false);
 
                                 /// Returns if this entity is active. 
                                 /// Note that an entity may be inactive because a parent is not active, even if this returns true.
@@ -209,13 +211,15 @@ public:
                                 /// Returns AABB in world space.
     const AABB                  GetWorldAABB(bool includingChildren = false) const;
                                 /// Returns position in world space with given trait.
-    const Vec3                  GetWorldPosition(WorldPosTrait posTrait, bool includingChildren = false) const;
+    const Vec3                  GetWorldPosition(WorldPosTrait::Enum posTrait, bool includingChildren = false) const;
 
+#if 1
                                 /// Visualizes the component in editor.
-    void                        DrawGizmos(const RenderView::State &viewState, bool selected);
+    void                        DrawGizmos(const RenderCamera::State &viewState, bool selected);
+#endif
 
                                 /// Ray cast to this entity.
-    bool                        RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const;
+    bool                        IntersectRay(const Ray &ray, bool backFaceCull, float &lastDist) const;
 
                                 /// Creates an entity by JSON text.
     static Entity *             CreateEntity(Json::Value &data, GameWorld *gameWorld = nullptr, int sceneIndex = 0);
@@ -235,6 +239,7 @@ public:
     static const SignalDef      SIG_ActiveInHierarchyChanged;
     static const SignalDef      SIG_NameChanged;
     static const SignalDef      SIG_LayerChanged;
+    static const SignalDef      SIG_StaticMaskChanged;
     static const SignalDef      SIG_FrozenChanged;
     static const SignalDef      SIG_ParentChanged;
     static const SignalDef      SIG_ComponentInserted;
@@ -259,11 +264,11 @@ protected:
     int                         tagHash;            ///< Hash key for GameWorld::entityTagHash
     int                         entityNum;          ///< Index for GameWorld::entities
     int                         layer;              ///< Layer number
+    int                         staticMask;
     Hierarchy<Entity>           node;
     Guid                        prefabSourceGuid;
 
     bool                        initialized;
-    bool                        isStatic;
     bool                        awaked;
     bool                        started;
     bool                        activeSelf;         ///< Local active state

@@ -21,8 +21,6 @@
 
 BE_NAMESPACE_BEGIN
 
-#define MATERIAL_VERSION 1
-
 void Material::Purge() {
     if (pass) {
         if (pass->shader) {
@@ -40,6 +38,14 @@ void Material::Purge() {
             pass->texture = nullptr;
         }
 
+        for (int i = 0; i < pass->shaderProperties.Count(); i++) {
+            const auto entry = pass->shaderProperties.GetByIndex(i);
+            if (entry->second.texture) {
+                textureManager.ReleaseTexture(entry->second.texture);
+                entry->second.texture = nullptr;
+            }
+        }
+
         delete pass;
         pass = nullptr;
     }
@@ -53,28 +59,28 @@ bool Material::Create(const char *text) {
     flags = 0;
 
     Lexer lexer; 
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(text, Str::Length(text), hashName.c_str());
 
     while (lexer.ReadToken(&token)) {
         if (token.IsEmpty()) {
             break;
         } else if (!token.Icmp("noShadow")) {
-            flags |= NoShadow;
+            flags |= Flag::NoShadow;
         } else if (!token.Icmp("forceShadow")) {
-            flags |= ForceShadow;
+            flags |= Flag::ForceShadow;
         } else if (!token.Icmp("unsmoothTangents")) {
-            flags |= UnsmoothTangents;
+            flags |= Flag::UnsmoothTangents;
         } else if (!token.Icmp("polygonOffset")) {
-            flags |= PolygonOffset;
+            flags |= Flag::PolygonOffset;
         } else if (!token.Icmp("decal")) {
-            type = DecalMaterialType;
+            type = Type::Decal;
         } else if (!token.Icmp("light")) {
-            type = LightMaterialType;
+            type = Type::Light;
         } else if (!token.Icmp("blendLight")) {
-            type = BlendLightMaterialType;
+            type = Type::BlendLight;
         } else if (!token.Icmp("fogLight")) {
-            type = FogLightMaterialType;
+            type = Type::FogLight;
         } else if (!token.Icmp("pass")) {
             pass = new ShaderPass;
             if (!ParsePass(lexer, pass)) {
@@ -83,7 +89,7 @@ bool Material::Create(const char *text) {
                 return false;
             }
         } else {
-            BE_WARNLOG(L"unknown general material parameter '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown general material parameter '%s' in material '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
@@ -100,10 +106,11 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
     int depthWrite = RHI::DepthWrite;
 
     pass->renderingMode     = RenderingMode::Opaque;
-    pass->cullType          = RHI::BackCull;
+    pass->transparency      = Transparency::Default;
+    pass->cullType          = RHI::CullType::Back;
     pass->stateBits         = 0;
     pass->cutoffAlpha       = 0.004f;
-    pass->vertexColorMode   = VertexColorMode::IgnoreVertexColor;
+    pass->vertexColorMode   = VertexColorMode::VertexColorMode::Ignore;
     pass->useOwnerColor     = false;
     pass->texture           = nullptr;
     pass->shader            = nullptr;
@@ -113,7 +120,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
     pass->tcTranslation     = Vec2(0.0f, 0.0f);
     pass->instancingEnabled = false;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -123,7 +130,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
@@ -132,23 +139,39 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
         } else if (!token.Icmp("cull")) {
             if (lexer.ReadToken(&token, false)) {
                 if (!token.Icmp("none") || !token.Icmp("disable") || !token.Icmp("twoSided")) {
-                    pass->cullType = RHI::NoCull;
+                    pass->cullType = RHI::CullType::None;
                 } else if (!token.Icmp("back") || !token.Icmp("backSide") || !token.Icmp("backSided")) {
-                    pass->cullType = RHI::BackCull;
+                    pass->cullType = RHI::CullType::Back;
                 } else if (!token.Icmp("front") || !token.Icmp("frontSide") || !token.Icmp("frontSided")) {
-                    pass->cullType = RHI::FrontCull;
+                    pass->cullType = RHI::CullType::Front;
                 } else {
-                    BE_WARNLOG(L"invalid cull parm '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
+                    BE_WARNLOG("invalid cull parm '%s' in material '%s'\n", token.c_str(), hashName.c_str());
                 }
             } else {
-                BE_WARNLOG(L"missing parameter cull keyword in material '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing parameter cull keyword in material '%s'\n", hashName.c_str());
+            }
+        } else if (!token.Icmp("transparency")) {
+            if (lexer.ReadToken(&token, false)) {
+                if (!token.Icmp("default")) {
+                    pass->transparency = Transparency::Default;
+                } else if (!token.Icmp("twoPassesOneSide")) {
+                    pass->transparency = Transparency::TwoPassesOneSide;
+                } else if (!token.Icmp("twoPassesTwoSides")) {
+                    pass->transparency = Transparency::TwoPassesTwoSides;
+                } else {
+                    BE_WARNLOG("invalid transparency parm '%s' in material '%s'\n", token.c_str(), hashName.c_str());
+                }
+            } else {
+                BE_WARNLOG("missing transparency cull keyword in material '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("shader")) {
             if (lexer.ReadToken(&token, false)) {
                 const Guid shaderGuid = Guid::FromString(token);
                 const Str shaderPath = resourceGuidMapper.Get(shaderGuid);
+
                 pass->referenceShader = shaderManager.GetShader(shaderPath);
 
+                // Parse shader property string values in dictionary
                 Dict propDict;
                 if (!ParseShaderProperties(lexer, propDict)) {
                     if (pass->referenceShader) {
@@ -158,35 +181,55 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                 }
 
                 if (pass->referenceShader) {
+                    // Shader has property info
                     const auto &shaderPropInfoHashMap = pass->referenceShader->GetPropertyInfoHashMap();
 
+                    // Set shader property values
                     for (int i = 0; i < shaderPropInfoHashMap.Count(); i++) {
                         const auto entry = shaderPropInfoHashMap.GetByIndex(i);
                         const auto &propName = entry->first;
                         const auto &propInfo = entry->second;
 
-                        Shader::Property shaderProp;
+                        Shader::Property shaderProperty;
 
-                        if (propInfo.GetType() == Variant::GuidType) {
-                            if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
-                                Str name = resourceGuidMapper.Get(propInfo.GetDefaultValue().As<Guid>());
-                                shaderProp.data = Variant::FromString(propInfo.GetType(), propDict.GetString(propName, name));
-                                const Guid textureGuid = shaderProp.data.As<Guid>();
-                                const Str texturePath = resourceGuidMapper.Get(textureGuid);
-                                shaderProp.texture = textureManager.GetTexture(texturePath);
+                        if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject() == &TextureAsset::metaObject) {
+                            // Value string
+                            Str value = propDict.GetString(propName, propInfo.GetDefaultValue().As<Guid>().ToString(Guid::Format::DigitsWithHyphensInBraces));
+
+                            if (version >= 2) {
+                                if (value.Length() == 38 && value[0] == '{' && value[value.Length() - 1] == '}') {
+                                    shaderProperty.data = Variant::FromString(Variant::Type::Guid, value);
+                                } else {
+                                    shaderProperty.data = Guid::CreateGuid();
+                                    resourceGuidMapper.Set(shaderProperty.data.As<Guid>(), value);
+                                }
+                            } else {
+                                shaderProperty.data = Variant::FromString(Variant::Type::Guid, value);
                             }
+
+                            const Guid textureGuid = shaderProperty.data.As<Guid>();
+
+                            // Get texture path from GUID
+                            const Str texturePath = resourceGuidMapper.Get(textureGuid);
+
+                            // Get texture from path
+                            shaderProperty.texture = textureManager.GetTexture(texturePath);
                         } else {
-                            shaderProp.data = Variant::FromString(propInfo.GetType(), propDict.GetString(propName, propInfo.GetDefaultValue().ToString()));
-                            shaderProp.texture = nullptr;
+                            // Value string
+                            Str value = propDict.GetString(propName, propInfo.GetDefaultValue().ToString());
+
+                            // Get value
+                            shaderProperty.data = Variant::FromString(propInfo.GetType(), value);
+                            shaderProperty.texture = nullptr;
                         }
 
-                        pass->shaderProperties.Set(propName, shaderProp);
+                        pass->shaderProperties.Set(propName, shaderProperty);
                     }
 
-                    EndShaderPropertiesChanged();
+                    CommitShaderPropertiesChanged();
                 }
             } else {
-                BE_WARNLOG(L"missing shader name in material '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing shader name in material '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("map")) {
             if (lexer.ReadToken(&token, false)) {
@@ -194,7 +237,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                 const Str texturePath = resourceGuidMapper.Get(textureGuid);
                 pass->texture = textureManager.GetTexture(texturePath);
             } else {
-                BE_WARNLOG(L"missing map GUID in material '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing map GUID in material '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("mapPath")) {
             if (lexer.ReadToken(&token, false)) {
@@ -204,7 +247,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                 }
                 pass->texture->AddRefCount();
             } else {
-                BE_WARNLOG(L"missing map name in material '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing map name in material '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("tc")) {
             lexer.ParseVec(2, pass->tcScale);
@@ -234,7 +277,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                     }
                 }
             } else {
-                BE_WARNLOG(L"missing color mask in material '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing color mask in material '%s'\n", hashName.c_str());
             }
         }/* else if (!token.Icmp("scale")) {
             exprChunk->ParseExpressions(lexer, 2, registers);
@@ -285,9 +328,9 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
 
             MultiplyTextureMatrix(pass, textureMatrixRegisters);
         }*/else if (!token.Icmp("vertexColor")) {
-            pass->vertexColorMode = ModulateVertexColor;
+            pass->vertexColorMode = VertexColorMode::Modulate;
         } else if (!token.Icmp("inverseVertexColor")) {
-            pass->vertexColorMode = InverseModulateVertexColor;
+            pass->vertexColorMode = VertexColorMode::InverseModulate;
         } else if (!token.Icmp("color")) {
             lexer.ParseVec(4, pass->constantColor);
         } else if (!token.Icmp("useOwnerColor")) {
@@ -295,12 +338,12 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
         } else if (!token.Icmp("instancingEnabled")) {
             pass->instancingEnabled = true;
         } else {
-            BE_WARNLOG(L"unknown material pass parameter '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown material pass parameter '%s' in material '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
         }
     }
 
-    // TEMP: DST_ALPHA 는 안쓴다
+    // We don't use DST_ALPHA
     if (blendSrc == RHI::BS_OneMinusDstAlpha) {
         blendSrc = RHI::BS_Zero;
     }
@@ -342,105 +385,95 @@ void Material::ChangeShader(Shader *shader) {
         const auto &propInfo = newEntry->second;
 
         const auto oldEntry = oldPropInfoHashMap.Get(key);
+
         if (oldEntry && oldEntry->second.GetType() == newEntry->second.GetType()) {
             const auto &oldProp = pass->shaderProperties.Get(key)->second;
 
             newShaderProperties.Set(key, oldProp);
         } else {
-            Shader::Property prop;
+            Shader::Property shaderProperty;
 
-            if (propInfo.GetType() == Variant::GuidType) {
-                if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
-                    Str name = resourceGuidMapper.Get(propInfo.GetDefaultValue().As<Guid>());
-                    Texture *defaultTexture = textureManager.FindTexture(name);
-                    assert(defaultTexture);
-                    const Guid defaultTextureGuid = resourceGuidMapper.Get(defaultTexture->GetHashName());
+            if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject() == &TextureAsset::metaObject) {
+                const Str defaultTextureName = resourceGuidMapper.Get(propInfo.GetDefaultValue().As<Guid>());
+                const Texture *defaultTexture = textureManager.FindTexture(defaultTextureName);
+                const Guid defaultTextureGuid = resourceGuidMapper.Get(defaultTexture->GetHashName());
 
-                    prop.data = defaultTextureGuid;
-                }
+                shaderProperty.data = defaultTextureGuid;
             } else {
-                prop.data = Variant::FromString(propInfo.GetType(), propInfo.GetDefaultValue().As<Str>());
+                shaderProperty.data = Variant::FromString(propInfo.GetType(), propInfo.GetDefaultValue().As<Str>());
             }
 
-            prop.texture = nullptr;
+            shaderProperty.texture = nullptr;
 
-            newShaderProperties.Set(key, prop);
+            newShaderProperties.Set(key, shaderProperty);
         }
     }
 
     pass->shaderProperties.Swap(newShaderProperties);
 
     // Instantiate shader with changed define properites 
-    EndShaderPropertiesChanged();
+    CommitShaderPropertiesChanged();
 
     Finish();
 }
 
-void Material::EndShaderPropertiesChanged() {
-    if (pass->shader) {
-        shaderManager.ReleaseShader(pass->shader);
-    }
+void Material::CommitShaderPropertiesChanged() {
+    Array<Shader::Define> defineArray;
 
     const auto &shaderPropInfoHashMap = pass->referenceShader->GetPropertyInfoHashMap();
 
-    Array<Shader::Define> defineArray;
-
-    // List up define list for re-instantiating shader
+    // List up define list for re-instantiating shader.
     for (int i = 0; i < shaderPropInfoHashMap.Count(); i++) {
         const auto entry = shaderPropInfoHashMap.GetByIndex(i);
         const auto &propName = entry->first;
         const auto &propInfo = entry->second;
 
-        // property propInfo with shaderDefine allows only bool/enum type
-        if (propInfo.GetFlags() & PropertyInfo::ShaderDefineFlag) {
+        // property propInfo with shaderDefine allows only bool/enum type.
+        if (propInfo.GetFlags() & PropertyInfo::Flag::ShaderDefine) {
             const auto *entry = pass->shaderProperties.Get(propName);
             const Shader::Property &shaderProp = entry->second;
 
-            if (propInfo.GetType() == Variant::BoolType) {
-                if (shaderProp.data.As<bool>()) {
-                    defineArray.Append(Shader::Define(propName, 1));
-                }
-            } else if (propInfo.GetType() == Variant::IntType && propInfo.GetEnum().Count() > 0) {
-                int enumIndex = shaderProp.data.As<int>();
-                defineArray.Append(Shader::Define(propName, enumIndex));
+            if (propInfo.GetType() == Variant::Type::Bool && shaderProp.data.As<bool>()) {
+                defineArray.Append(Shader::Define(propName, 1));
+            } else if (propInfo.GetType() == Variant::Type::Int && propInfo.GetEnum().Count() > 0) {
+                defineArray.Append(Shader::Define(propName, shaderProp.data.As<int>()));
             }
         }
-    }    
+    }
     
-    // 작성된 shader define list 로 instantiate
+    // Release previous one
+    if (pass->shader) {
+        shaderManager.ReleaseShader(pass->shader);
+    }
+    // Instantiate shader with the given define list.
     pass->shader = pass->referenceShader->InstantiateShader(defineArray);
 
-    // Reload shader's texture
+    // Reload shader's texture.
     for (int i = 0; i < shaderPropInfoHashMap.Count(); i++) {
         const auto entry = shaderPropInfoHashMap.GetByIndex(i);
         const auto &propName = entry->first;
         const auto &propInfo = entry->second;
 
-        if (propInfo.GetType() == Variant::GuidType) {
-            if (propInfo.GetMetaObject() == &TextureAsset::metaObject) {
-                auto *entry = pass->shaderProperties.Get(propName);
-                Shader::Property &shaderProp = entry->second;
+        if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject() == &TextureAsset::metaObject) {
+            auto *entry = pass->shaderProperties.Get(propName);
+            Shader::Property &shaderProperty = entry->second;
 
-                if (shaderProp.texture) {
-                    textureManager.ReleaseTexture(shaderProp.texture);
-                }
-                const Guid textureGuid = shaderProp.data.As<Guid>();
-                const Str texturePath = resourceGuidMapper.Get(textureGuid);
-                shaderProp.texture = textureManager.GetTexture(texturePath);
+            if (shaderProperty.texture) {
+                textureManager.ReleaseTexture(shaderProperty.texture);
             }
+
+            const Guid textureGuid = shaderProperty.data.As<Guid>();
+            const Str texturePath = resourceGuidMapper.Get(textureGuid);
+            shaderProperty.texture = textureManager.GetTexture(texturePath);
         }
     }
 }
 
 bool Material::ParseShaderProperties(Lexer &lexer, Dict &properties) {
     Str token;
-    Str propValue;
+    Str value;
 
-    if (!pass->referenceShader) {
-        BE_WARNLOG(L"shader must be specified before shader properties in material '%hs'\n", hashName.c_str());
-    }
-
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -448,15 +481,15 @@ bool Material::ParseShaderProperties(Lexer &lexer, Dict &properties) {
         lexer.ReadToken(&token);
 
         if (token.IsEmpty()) {
-            BE_WARNLOG(L"no matching '}' found\n");
+            BE_WARNLOG("no matching '}' found\n");
             return false;
         } else if (token[0] == '}') {
             break;
         } else {
-            if (lexer.ReadToken(&propValue, false)) {
-                properties.Set(token, propValue);
+            if (lexer.ReadToken(&value, false)) {
+                properties.Set(token, value);
             } else {
-                BE_WARNLOG(L"missing property value for property '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
+                BE_WARNLOG("missing property value for property '%s' in material '%s'\n", token.c_str(), hashName.c_str());
             }
         }
     }
@@ -464,7 +497,7 @@ bool Material::ParseShaderProperties(Lexer &lexer, Dict &properties) {
     return true;
 }
 
-bool Material::ParseRenderingMode(Lexer &lexer, RenderingMode *renderingMode) const {
+bool Material::ParseRenderingMode(Lexer &lexer, RenderingMode::Enum *renderingMode) const {
     Str	token;
 
     if (lexer.ReadToken(&token, false)) {
@@ -475,13 +508,13 @@ bool Material::ParseRenderingMode(Lexer &lexer, RenderingMode *renderingMode) co
         } else if (!token.Icmp("alphaBlend")) {
             *renderingMode = RenderingMode::AlphaBlend;
         } else {
-            BE_WARNLOG(L"unknown renderingMode '%hs' in material '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown renderingMode '%s' in material '%s'\n", token.c_str(), hashName.c_str());
         }
 
         return true;
     }
 
-    BE_WARNLOG(L"missing parameter for renderingMode keyword in material '%hs\n", hashName.c_str());
+    BE_WARNLOG("missing parameter for renderingMode keyword in material '%s\n", hashName.c_str());
     return false;
 }
 
@@ -525,7 +558,7 @@ bool Material::ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const 
                 *blendSrc = RHI::BS_SrcAlphaSaturate;
             } else {
                 *blendSrc = RHI::BS_One;
-                BE_WARNLOG(L"unknown blend mode '%hs' in material '%hs', \nsubstituting GL_ONE\n", token.c_str(), hashName.c_str());
+                BE_WARNLOG("unknown blend mode '%s' in material '%s', \nsubstituting GL_ONE\n", token.c_str(), hashName.c_str());
             }
 
             if (lexer.ReadToken(&token, false)) {
@@ -547,90 +580,90 @@ bool Material::ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const 
                     *blendDst = RHI::BD_OneMinusDstAlpha;
                 } else {
                     *blendDst = RHI::BD_One;
-                    BE_WARNLOG(L"unknown blend mode '%hs' in material '%hs', substituting GL_ONE\n", token.c_str(), hashName.c_str());
+                    BE_WARNLOG("unknown blend mode '%s' in material '%s', substituting GL_ONE\n", token.c_str(), hashName.c_str());
                 }
             } else {
-                BE_WARNLOG(L"missing parameter for blendFunc keyword in material '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing parameter for blendFunc keyword in material '%s'\n", hashName.c_str());
             }
         }
 
         return true;
     }
 
-    BE_WARNLOG(L"missing parameter for blendFunc keyword in material '%hs'\n", hashName.c_str());
+    BE_WARNLOG("missing parameter for blendFunc keyword in material '%s'\n", hashName.c_str());
     return false;
 }
 
 void Material::Finish() {
-    if (type == SurfaceMaterialType) {
+    if (type == Type::Surface) {
         if (!pass->shader) {
             if (pass->renderingMode == RenderingMode::AlphaBlend) {
-                sort = OverlaySort;
+                sort = Sort::Overlay;
             } else if (pass->renderingMode == RenderingMode::AlphaCutoff) {
-                sort = AlphaTestSort;
+                sort = Sort::AlphaTest;
             } else {
-                sort = OpaqueSort;
+                sort = Sort::Opaque;
             }
-        } else if (pass->shader->GetFlags() & Shader::SkySurface) {
-            sort = SkySort;
-        } else if (pass->shader->GetFlags() & Shader::LitSurface) {
+        } else if (pass->shader->GetFlags() & Shader::Flag::SkySurface) {
+            sort = Sort::Sky;
+        } else if (pass->shader->GetFlags() & Shader::Flag::LitSurface) {
             if (pass->renderingMode == RenderingMode::AlphaBlend) {
-                sort = TranslucentSort;
+                sort = Sort::Translucent;
             } else if (pass->renderingMode == RenderingMode::AlphaCutoff) {
-                sort = AlphaTestSort;
+                sort = Sort::AlphaTest;
             } else {
-                sort = OpaqueSort;
+                sort = Sort::Opaque;
             }
         } else {
             if (pass->renderingMode == RenderingMode::AlphaBlend) {
-                sort = OverlaySort;
+                sort = Sort::Overlay;
             } else if (pass->renderingMode == RenderingMode::AlphaCutoff) {
-                sort = AlphaTestSort;
+                sort = Sort::AlphaTest;
             } else {
-                sort = OpaqueSort;
+                sort = Sort::Opaque;
             }
         }
     } else {
-        sort = BadSort;
+        sort = Sort::Bad;
     }
 }
 
 void Material::Write(const char *filename) {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG(L"Material::Write: file open error\n");
+        BE_WARNLOG("Material::Write: file open error\n");
         return;
     }
 
     Str indentSpace;
 
-    fp->Printf("material %i\n", MATERIAL_VERSION);
+    fp->Printf("material %i\n", Material::Version);
 
     Str lightMaterialTypeStr;
-    if (type == SurfaceMaterialType) {
-    } else if (type == DecalMaterialType) {
+    if (type == Type::Surface) {
+    } else if (type == Type::Decal) {
         fp->Printf("%sdecal\n", indentSpace.c_str());
-    } else if (type == LightMaterialType) {
+    } else if (type == Type::Light) {
         fp->Printf("%slight\n", indentSpace.c_str());
-    } else if (type == BlendLightMaterialType) {
+    } else if (type == Type::BlendLight) {
         fp->Printf("%sblendLight\n", indentSpace.c_str());
-    } else if (type == FogLightMaterialType) {
+    } else if (type == Type::FogLight) {
         fp->Printf("%sfogLight\n", indentSpace.c_str());
     }
 
-    if (flags & NoShadow) {
+    if (flags & Flag::NoShadow) {
         fp->Printf("%snoShadow\n", indentSpace.c_str());
     }
 
-    if (flags & ForceShadow) {
+    if (flags & Flag::ForceShadow) {
         fp->Printf("%sforceShadow\n", indentSpace.c_str());
     }
 
-    if (flags & UnsmoothTangents) {
+    if (flags & Flag::UnsmoothTangents) {
         fp->Printf("%sunsmoothTangents\n", indentSpace.c_str());
     }
 
-    if (flags & PolygonOffset) {
+    if (flags & Flag::PolygonOffset) {
         fp->Printf("%spolygonOffset\n", indentSpace.c_str());
     }
 
@@ -639,26 +672,54 @@ void Material::Write(const char *filename) {
 
     Str renderingModeStr;
     switch (pass->renderingMode) {
-    case RenderingMode::Opaque: renderingModeStr = "opaque"; break;
-    case RenderingMode::AlphaCutoff: renderingModeStr = "alphaCutoff"; break;
-    case RenderingMode::AlphaBlend: renderingModeStr = "alphaBlend"; break;
+    case RenderingMode::Opaque: 
+        renderingModeStr = "opaque"; 
+        break;
+    case RenderingMode::AlphaCutoff: 
+        renderingModeStr = "alphaCutoff"; 
+        break;
+    case RenderingMode::AlphaBlend: 
+        renderingModeStr = "alphaBlend"; 
+        break;
     }
     fp->Printf("%srenderingMode %s\n", indentSpace.c_str(), renderingModeStr.c_str());
 
     Str cullStr;
     switch (pass->cullType) {
-    case RHI::BackCull: cullStr = "back"; break;
-    case RHI::FrontCull: cullStr = "front"; break;
-    case RHI::NoCull: default: cullStr = "none"; break;
+    case RHI::CullType::Back: 
+        cullStr = "back"; 
+        break;
+    case RHI::CullType::Front: 
+        cullStr = "front"; 
+        break;
+    case RHI::CullType::None: 
+    default: 
+        cullStr = "none"; 
+        break;
     }
     fp->Printf("%scull %s\n", indentSpace.c_str(), cullStr.c_str());
 
-    if (pass->referenceShader) {
-        const Guid shaderGuid = resourceGuidMapper.Get(pass->referenceShader->GetHashName());
-        fp->Printf("%sshader \"%s\" {\n", indentSpace.c_str(), shaderGuid.ToString());
+    Str transparencyStr;
+    switch (pass->transparency) {
+    case Transparency::Default: 
+        transparencyStr = "default"; 
+        break;
+    case Transparency::TwoPassesOneSide: 
+        transparencyStr = "twoPassesOneSide"; 
+        break;
+    case Transparency::TwoPassesTwoSides: 
+    default: 
+        transparencyStr = "twoPassesTwoSides"; 
+        break;
+    }
+    fp->Printf("%stransparency %s\n", indentSpace.c_str(), transparencyStr.c_str());
+
+    if (pass->shader) {
+        const Guid shaderGuid = resourceGuidMapper.Get(pass->shader->GetOriginalShader()->GetHashName());
+        fp->Printf("%sshader \"%s\" {\n", indentSpace.c_str(), shaderGuid.ToString(Guid::Format::DigitsWithHyphensInBraces));
         indentSpace += "  ";
 
-        const auto &propertyInfoHashMap = pass->referenceShader->GetPropertyInfoHashMap();
+        const auto &propertyInfoHashMap = pass->shader->GetOriginalShader()->GetPropertyInfoHashMap();
         
         for (int i = 0; i < propertyInfoHashMap.Count(); i++) {
             const auto *keyValue = propertyInfoHashMap.GetByIndex(i);
@@ -668,37 +729,37 @@ void Material::Write(const char *filename) {
             const auto &value = shaderPropEntry->second.data;
             
             switch (propInfo.GetType()) {
-            case Variant::FloatType:
+            case Variant::Type::Float:
                 fp->Printf("%s%s \"%.4f\"\n", indentSpace.c_str(), name, value.As<float>());
                 break;
-            case Variant::IntType:
+            case Variant::Type::Int:
                 fp->Printf("%s%s \"%i\"\n", indentSpace.c_str(), name, value.As<int>());
                 break;
-            case Variant::GuidType:
-                fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Guid>().ToString());
+            case Variant::Type::Guid:
+                fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Guid>().ToString(Guid::Format::DigitsWithHyphensInBraces));
                 break;
-            case Variant::BoolType:
+            case Variant::Type::Bool:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<bool>() ? "true" : "false");
                 break;
-            case Variant::PointType:
+            case Variant::Type::Point:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Point>().ToString());
                 break;
-            case Variant::RectType:
+            case Variant::Type::Rect:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Rect>().ToString());
                 break;
-            case Variant::Vec2Type:
+            case Variant::Type::Vec2:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Vec2>().ToString());
                 break;
-            case Variant::Vec3Type:
+            case Variant::Type::Vec3:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Vec3>().ToString());
                 break;
-            case Variant::Vec4Type:
+            case Variant::Type::Vec4:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Vec4>().ToString());
                 break;
-            case Variant::Color3Type:
+            case Variant::Type::Color3:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Color3>().ToString());
                 break;
-            case Variant::Color4Type:
+            case Variant::Type::Color4:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Color4>().ToString());
                 break;
             default:
@@ -771,11 +832,11 @@ void Material::Write(const char *filename) {
         fp->Printf("%sblendFunc %s %s\n", indentSpace.c_str(), blendSrcStr.c_str(), blendDstStr.c_str());
     }
 
-    if (pass->vertexColorMode != IgnoreVertexColor) {
+    if (pass->vertexColorMode != VertexColorMode::Ignore) {
         Str vertexColorModeStr;
         switch (pass->vertexColorMode) {
-        case ModulateVertexColor: vertexColorModeStr = "vertexColor"; break;
-        case InverseModulateVertexColor: vertexColorModeStr = "inverseVertexColor"; break;
+        case VertexColorMode::Modulate: vertexColorModeStr = "vertexColor"; break;
+        case VertexColorMode::InverseModulate: vertexColorModeStr = "inverseVertexColor"; break;
         default: assert(0); break;
         }
         fp->Printf("%s%s\n", indentSpace.c_str(), vertexColorModeStr.c_str());
@@ -797,14 +858,14 @@ void Material::Write(const char *filename) {
     fileSystem.CloseFile(fp);
 }
 
-void Material::SetRenderingMode(RenderingMode mode) {
+void Material::SetRenderingMode(RenderingMode::Enum mode) {
     pass->renderingMode = mode;
 
     Finish();
 }
 
 bool Material::IsLitSurface() const {
-    if (pass->shader && (pass->shader->GetFlags() & Shader::LitSurface)) {
+    if (pass->shader && (pass->shader->GetFlags() & Shader::Flag::LitSurface)) {
         return true;
     }
 
@@ -812,7 +873,7 @@ bool Material::IsLitSurface() const {
 }
 
 bool Material::IsSkySurface() const {
-    if (pass->shader && (pass->shader->GetFlags() & Shader::SkySurface)) {
+    if (pass->shader && (pass->shader->GetFlags() & Shader::Flag::SkySurface)) {
         return true;
     }
 
@@ -820,7 +881,7 @@ bool Material::IsSkySurface() const {
 }
 
 bool Material::IsShadowCaster() const {
-    if (flags & NoShadow) {
+    if (flags & Flag::NoShadow) {
         return false;
     }
 
@@ -828,7 +889,7 @@ bool Material::IsShadowCaster() const {
         return false;
     }
 
-    if (!(pass->shader->GetFlags() & Shader::LitSurface) || (pass->shader->GetFlags() & Shader::SkySurface)) {
+    if (!(pass->shader->GetFlags() & Shader::Flag::LitSurface) || (pass->shader->GetFlags() & Shader::Flag::SkySurface)) {
         return false;
     }
 
@@ -928,7 +989,7 @@ bool Material::Load(const char *hashName) {
     }
 
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(data, size, hashName);
 
     if (!lexer.ExpectTokenString("material")) {
@@ -936,20 +997,21 @@ bool Material::Load(const char *hashName) {
         return false;
     }
 
-    int version = lexer.ParseInt();
-    if (version != MATERIAL_VERSION) {
+    this->version = lexer.ParseInt();
+
+    if (version < 1) {
         lexer.Error("Material::Load: Invalid version %d\n", version);
         fileSystem.FreeFile(data);
         return false;
     }
 
-    Str baseDir = hashName;
-    baseDir.StripFileName();
-    Create(data + lexer.GetCurrentOffset());
+    if (!Create(data + lexer.GetCurrentOffset())) {
+        return false;
+    }
 
     fileSystem.FreeFile(data);
 
-    this->flags |= LoadedFromFile;
+    this->flags |= Flag::LoadedFromFile;
 
     return true;
 }

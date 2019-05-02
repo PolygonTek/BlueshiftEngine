@@ -55,7 +55,7 @@ bool SignalObject::IsConnected(const SignalDef *sigdef, SignalObject *receiver) 
 }
 
 bool SignalObject::Connect(const SignalDef *sigdef, SignalObject *receiver, SignalCallback function, int connectionType) {
-    if (connectionType == Unique) {
+    if (connectionType == ConnectionType::Unique) {
         for (int i = 0; i < publications.Count(); i++) {
             const Connection *con = publications[i];
 
@@ -173,7 +173,7 @@ bool SignalObject::EmitSignalArgs(const SignalDef *sigdef, int numArgs, ...) {
             continue;
         }
 
-        if (con->connectionType & Queued) {
+        if (con->connectionType & ConnectionType::Queued) {
             va_start(args, numArgs);
             Signal *signal = SignalSystem::AllocSignal(sigdef, con->function, numArgs, args);
             va_end(args);
@@ -720,7 +720,7 @@ bool SignalObject::ExecuteCallback(const SignalCallback &callback, const SignalD
         (this->*(EventCallback_ffffff)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3], *(float *)&data[4], *(float *)&data[5]);
         return true;
     default:
-        BE_WARNLOG(L"Invalid formatSpec on signal '%hs'\n", sigdef->GetName());
+        BE_WARNLOG("Invalid formatSpec on signal '%s'\n", sigdef->GetName());
         break;
     }
 

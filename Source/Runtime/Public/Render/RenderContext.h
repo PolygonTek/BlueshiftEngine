@@ -82,17 +82,20 @@ public:
     friend class RenderSystem;
 
     /// Flags for initialization
-    enum Flag {
-        OnDemandDrawing     = BIT(0),
-        UseSelectionBuffer  = BIT(1),
-        InstantToneMapping  = BIT(2),
-        UseSharedContext    = BIT(3),
+    struct Flag {
+        enum Enum {
+            OnDemandDrawing     = BIT(0),
+            UseSelectionBuffer  = BIT(1),
+            UseSharedContext    = BIT(4),
+        };
     };
 
     /// Inclusion type for query selection
-    enum Inclusion {
-        Crossing,           ///< Select all objects within the region, plus any objects crossing the boundaries of the region
-        Window              ///< Select only the objects within the selection
+    struct Inclusion {
+        enum Enum {
+            Crossing,           ///< Select all objects within the region, plus any objects crossing the boundaries of the region
+            Window              ///< Select only the objects within the selection
+        };
     };
 
     RenderContext();
@@ -149,34 +152,12 @@ public:
 
     void                    UpdateCurrentRenderTexture() const;
 
-                            // query in render coordinates
+                            // Query in render coordinates
     float                   QueryDepth(const Point &pt);
     int                     QuerySelection(const Point &pt);
-    bool                    QuerySelection(const Rect &rect, Inclusion inclusion, Array<int> &indexes);
+    bool                    QuerySelection(const Rect &rect, Inclusion::Enum inclusion, Array<int> &indexes);
 
     void                    TakeScreenShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height);
-    void                    TakeEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin, int size = 256);
-    void                    TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin);
-    void                    TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin);
-
-    void                    WriteBRDFIntegrationLUT(const char *filename, int size) const;
-
-    void                    CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, const Vec3 &origin, int size, Image &envCubeImage);
-
-                            // Generate irradiance environment cubemap using SH convolution method
-    void                    GenerateIrradianceEnvCubeImageSHConvolv(const Image &envCubeImage, int size, Image &irradianceEnvCubeImage) const;
-
-                            // Generate irradiance environment cubemap
-    void                    GenerateIrradianceEnvCubeImage(const Image &envCubeImage, int size, Image &irradianceEnvCubeImage) const;
-
-                            // Generate Phong specular prefiltered environment cubemap
-    void                    GeneratePhongSpecularPrefilteredEnvCubeImage(const Image &envCubeImage, int size, int maxSpecularPower, Image &prefilteredCubeImage) const;
-
-                            // Generate GGX specular prefiltered environment cubemap
-    void                    GenerateGGXPrefilteredEnvCubeImage(const Image &envCubeImage, int size, Image &prefilteredCubeImage) const;
-
-                            // Generate GGX BRDF integration 2D LUT
-    void                    GenerateGGXIntegrationLUTImage(int size, Image &integrationImage) const;
 
 //private:
     void                    InitScreenMapRT();
@@ -214,45 +195,45 @@ public:
     int                     currLumTarget;
 
     RenderCounter           renderCounter;
-    int                     startFrameMsec;
+    int                     startFrameSec;
 
-    Texture *               screenColorTexture;
-    Texture *               screenDepthTexture;
-    Texture *               screenNormalTexture;
-    Texture *               screenLitAccTexture;
-    Texture *               screenSelectionTexture;
+    Texture *               screenColorTexture = nullptr;
+    Texture *               screenDepthTexture = nullptr;
+    Texture *               screenNormalTexture = nullptr;
+    Texture *               screenLitAccTexture = nullptr;
+    Texture *               screenSelectionTexture = nullptr;
 
-    Texture *               homTexture;
-    Texture *               ppTextures[MAX_PP_TEXTURES];
+    Texture *               homTexture = nullptr;
+    Texture *               ppTextures[MAX_PP_TEXTURES] = { nullptr, };
 
-    Texture *               hdrBloomTexture[2];
-    Texture *               hdrLumAverageTexture[5];
-    Texture *               hdrLuminanceTexture[3];
+    Texture *               hdrBloomTexture[2] = { nullptr, };
+    Texture *               hdrLumAverageTexture[6] = { nullptr, };
+    Texture *               hdrLuminanceTexture[3] = { nullptr, };
 
-    Texture *               currentRenderTexture;
+    Texture *               currentRenderTexture = nullptr;
     bool                    updateCurrentRenderTexture;
 
-    RenderTarget *          screenRT;
-    RenderTarget *          screenLitAccRT;
-    RenderTarget *          screenSelectionRT;
-    RenderTarget *          homRT;
-    RenderTarget *          ppRTs[MAX_PP_RTS];
+    RenderTarget *          screenRT = nullptr;
+    RenderTarget *          screenLitAccRT = nullptr;
+    RenderTarget *          screenSelectionRT = nullptr;
+    RenderTarget *          homRT = nullptr;
+    RenderTarget *          ppRTs[MAX_PP_RTS] = { nullptr, };
 
-    RenderTarget *          hdrBloomRT[2];
-    RenderTarget *          hdrLumAverageRT[5];
-    RenderTarget *          hdrLuminanceRT[3];
+    RenderTarget *          hdrBloomRT[2] = { nullptr, };
+    RenderTarget *          hdrLumAverageRT[6] = { nullptr, };
+    RenderTarget *          hdrLuminanceRT[3] = { nullptr, };
 
-    Texture *               indirectionCubeMapTexture;
+    Texture *               indirectionCubeMapTexture = nullptr;;
     float                   vscmBiasedScale;
     float                   vscmBiasedFov;
 
-    bool                    vscmCleared[6];
+    bool                    vscmCleared[6] = { false, };
 
-    Texture *               shadowRenderTexture;
-    Texture *               vscmTexture;
+    Texture *               shadowRenderTexture = nullptr;;
+    Texture *               vscmTexture = nullptr;;
 
-    RenderTarget *          shadowMapRT;
-    RenderTarget *          vscmRT;         // VSCM (Virtual Shadow Cube Map)
+    RenderTarget *          shadowMapRT = nullptr;;
+    RenderTarget *          vscmRT = nullptr;;          // VSCM (Virtual Shadow Cube Map)
 };
 
 BE_INLINE Color4 RenderContext::GetColor() const {

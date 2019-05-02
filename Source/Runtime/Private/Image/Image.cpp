@@ -21,7 +21,7 @@
 
 BE_NAMESPACE_BEGIN
 
-Image &Image::InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, byte *data, int flags) {
+Image &Image::InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, byte *data, int flags) {
     Clear();
 
     this->width = width;
@@ -37,7 +37,7 @@ Image &Image::InitFromMemory(int width, int height, int depth, int numSlices, in
     return *this;
 }
 
-Image &Image::Create(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, const byte *data, int flags) {
+Image &Image::Create(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, const byte *data, int flags) {
     Clear();
 
     this->width = width;
@@ -68,7 +68,7 @@ Image &Image::CreateCubeFrom6Faces(const Image *images) {
     this->numSlices = 6;
     this->numMipmaps = images[0].numMipmaps;
     this->format = images[0].format;
-    this->flags = images[0].flags | Flag::CubeMapFlag;
+    this->flags = images[0].flags | Flag::CubeMap;
     
     int sliceSize = GetSliceSize(0, numMipmaps);
     this->pic = (byte *)Mem_Alloc16(sliceSize * 6);
@@ -98,13 +98,15 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
     this->numSlices = 6;
     this->numMipmaps = 1;
     this->format = equirectangularImage.format;
-    this->flags = equirectangularImage.flags | Flag::CubeMapFlag;
+    this->flags = equirectangularImage.flags | Flag::CubeMap;
 
     int sliceSize = GetSliceSize(0, numMipmaps);
     this->pic = (byte *)Mem_Alloc16(sliceSize * 6);
     this->alloced = true;
 
     const ImageFormatInfo *info = GetImageFormatInfo(format);
+
+    bool isGamma = !(flags & Flag::LinearSpace);
 
     float invSize = 1.0f / (faceSize - 1);
 
@@ -116,7 +118,7 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
                 float dstS = (dstX + 0.5f) * invSize;
                 float dstT = (dstY + 0.5f) * invSize;
 
-                Vec3 dir = FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, dstS, dstT);
+                Vec3 dir = FaceToCubeMapCoords((Image::CubeMapFace::Enum)faceIndex, dstS, dstT);
 
                 float theta, phi;
                 dir.ToSpherical(theta, phi);
@@ -129,8 +131,8 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
                 // Convert range [0, pi] to [0.0, 1.0]
                 float srcT = Math::Fract(theta * Math::InvPi);
 
-                Color4 color = equirectangularImage.Sample2D(Vec2(srcS, srcT), Image::SampleWrapMode::RepeatMode, Image::SampleWrapMode::ClampMode);
-                info->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1);
+                Color4 color = equirectangularImage.Sample2D(Vec2(srcS, srcT), Image::SampleWrapMode::Repeat, Image::SampleWrapMode::Clamp);
+                info->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1, isGamma);
             }
         }
     }
@@ -147,13 +149,15 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
     this->numSlices = 1;
     this->numMipmaps = 1;
     this->format = cubeImage.format;
-    this->flags = cubeImage.flags & ~CubeMapFlag;
+    this->flags = cubeImage.flags & ~Flag::CubeMap;
 
     int size = GetSize(0, numMipmaps);
     this->pic = (byte *)Mem_Alloc16(size);
     this->alloced = true;
 
     const ImageFormatInfo *info = GetImageFormatInfo(format);
+
+    bool isGamma = !(flags & Flag::LinearSpace);
 
     byte *dst = GetPixels(0);
 
@@ -171,7 +175,7 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
             dir.SetFromSpherical(1.0f, theta, phi);
 
             Color4 color = cubeImage.SampleCube(dir);
-            info->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1);
+            info->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1, isGamma);
         }
     }
 
@@ -227,7 +231,7 @@ void Image::Clear() {
     }
 }
 
-Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode wrapModeT, int level) const {
+Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWrapMode::Enum wrapModeT, int level) const {
     if (IsCompressed()) {
         assert(0);
         return Color4::zero;
@@ -237,6 +241,8 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode 
     int numComponents = NumComponents();
     int bpp = BytesPerPixel();
     int pitch = width * bpp;
+
+    bool isGamma = !(flags & Flag::LinearSpace);
 
     float x = WrapCoord(st[0] * width, (float)(width - 1), wrapModeS);
     int iX0 = (int)x;
@@ -254,15 +260,15 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode 
 
     Color4 color = Color4(0, 0, 0, 1);
 
-    if (info->type & Float) {
+    if (info->type & FormatType::Float) {
         // [0] [1]
         // [2] [3]
-        ALIGN16(float rgba32f[4][4]);
+        ALIGN_AS16 float rgba32f[4][4];
 
-        info->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)rgba32f[0], 1);
-        info->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)rgba32f[1], 1);
-        info->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)rgba32f[2], 1);
-        info->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3], 1);
+        info->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)rgba32f[0], 1, isGamma);
+        info->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)rgba32f[1], 1, isGamma);
+        info->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)rgba32f[2], 1, isGamma);
+        info->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3], 1, isGamma);
 
         for (int i = 0; i < numComponents; i++) {
             float a = Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
@@ -273,12 +279,12 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode wrapModeS, SampleWrapMode 
     } else {
         // [0] [1]
         // [2] [3]
-        ALIGN16(byte rgba8888[4][4]);
+        ALIGN_AS16 byte rgba8888[4][4];
 
-        info->unpackRGBA8888(&srcY0[iX0 * bpp], rgba8888[0], 1);
-        info->unpackRGBA8888(&srcY0[iX1 * bpp], rgba8888[1], 1);
-        info->unpackRGBA8888(&srcY1[iX0 * bpp], rgba8888[2], 1);
-        info->unpackRGBA8888(&srcY1[iX1 * bpp], rgba8888[3], 1);
+        info->unpackRGBA8888(&srcY0[iX0 * bpp], rgba8888[0], 1, isGamma);
+        info->unpackRGBA8888(&srcY0[iX1 * bpp], rgba8888[1], 1, isGamma);
+        info->unpackRGBA8888(&srcY1[iX0 * bpp], rgba8888[2], 1, isGamma);
+        info->unpackRGBA8888(&srcY1[iX1 * bpp], rgba8888[3], 1, isGamma);
 
         for (int i = 0; i < numComponents; i++) {
             byte a = Lerp(rgba8888[0][i], rgba8888[1][i], fracX);
@@ -302,8 +308,10 @@ Color4 Image::SampleCube(const Vec3 &str, int level) const {
     int bpp = BytesPerPixel();
     int pitch = width * bpp;
 
+    bool isGamma = !(flags & Flag::LinearSpace);
+
     float x, y;
-    CubeMapFace cubeMapFace = CubeMapToFaceCoords(str, x, y);
+    CubeMapFace::Enum cubeMapFace = CubeMapToFaceCoords(str, x, y);
     x *= width;
     y *= height;
 
@@ -321,15 +329,15 @@ Color4 Image::SampleCube(const Vec3 &str, int level) const {
 
     Color4 color = Color4(0, 0, 0, 1);
 
-    if (info->type & Float) {
+    if (info->type & FormatType::Float) {
         // [0] [1]
         // [2] [3]
-        ALIGN16(float rgba32f[4][4]);
+        ALIGN_AS16 float rgba32f[4][4];
 
-        info->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)rgba32f[0], 1);
-        info->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)rgba32f[1], 1);
-        info->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)rgba32f[2], 1);
-        info->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3], 1);
+        info->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)rgba32f[0], 1, isGamma);
+        info->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)rgba32f[1], 1, isGamma);
+        info->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)rgba32f[2], 1, isGamma);
+        info->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3], 1, isGamma);
 
         for (int i = 0; i < numComponents; i++) {
             float a = Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
@@ -340,12 +348,12 @@ Color4 Image::SampleCube(const Vec3 &str, int level) const {
     } else {
         // [0] [1]
         // [2] [3]
-        ALIGN16(byte rgba8888[4][4]);
+        ALIGN_AS16 byte rgba8888[4][4];
 
-        info->unpackRGBA8888(&srcY0[iX0 * bpp], rgba8888[0], 1);
-        info->unpackRGBA8888(&srcY0[iX1 * bpp], rgba8888[1], 1);
-        info->unpackRGBA8888(&srcY1[iX0 * bpp], rgba8888[2], 1);
-        info->unpackRGBA8888(&srcY1[iX1 * bpp], rgba8888[3], 1);
+        info->unpackRGBA8888(&srcY0[iX0 * bpp], rgba8888[0], 1, isGamma);
+        info->unpackRGBA8888(&srcY0[iX1 * bpp], rgba8888[1], 1, isGamma);
+        info->unpackRGBA8888(&srcY1[iX0 * bpp], rgba8888[2], 1, isGamma);
+        info->unpackRGBA8888(&srcY1[iX1 * bpp], rgba8888[3], 1, isGamma);
 
         for (int i = 0; i < numComponents; i++) {
             byte a = Lerp(rgba8888[0][i], rgba8888[1][i], fracX);
@@ -358,24 +366,24 @@ Color4 Image::SampleCube(const Vec3 &str, int level) const {
     return color;
 }
 
-Vec3 Image::FaceToCubeMapCoords(CubeMapFace cubeMapFace, float s, float t) {
+Vec3 Image::FaceToCubeMapCoords(CubeMapFace::Enum cubeMapFace, float s, float t) {
     float sc = s * 2.0f - 1.0f;
     float tc = t * 2.0f - 1.0f;
 
     Vec3 glCubeMapCoords;
     switch (cubeMapFace) {
-    case PositiveX: glCubeMapCoords = Vec3(+1.0f, -tc, -sc); break; // +Y direction in z-up axis
-    case NegativeX: glCubeMapCoords = Vec3(-1.0f, -tc, +sc); break; // -Y direction in z-up axis
-    case PositiveY: glCubeMapCoords = Vec3(+sc, +1.0f, +tc); break; // +Z direction in z-up axis
-    case NegativeY: glCubeMapCoords = Vec3(+sc, -1.0f, -tc); break; // -Z direction in z-up axis
-    case PositiveZ: glCubeMapCoords = Vec3(+sc, -tc, +1.0f); break; // +X direction in z-up axis
-    case NegativeZ: glCubeMapCoords = Vec3(-sc, -tc, -1.0f); break; // -X direction in z-up axis
+    case CubeMapFace::PositiveX: glCubeMapCoords = Vec3(+1.0f, -tc, -sc); break; // +Y direction in z-up axis
+    case CubeMapFace::NegativeX: glCubeMapCoords = Vec3(-1.0f, -tc, +sc); break; // -Y direction in z-up axis
+    case CubeMapFace::PositiveY: glCubeMapCoords = Vec3(+sc, +1.0f, +tc); break; // +Z direction in z-up axis
+    case CubeMapFace::NegativeY: glCubeMapCoords = Vec3(+sc, -1.0f, -tc); break; // -Z direction in z-up axis
+    case CubeMapFace::PositiveZ: glCubeMapCoords = Vec3(+sc, -tc, +1.0f); break; // +X direction in z-up axis
+    case CubeMapFace::NegativeZ: glCubeMapCoords = Vec3(-sc, -tc, -1.0f); break; // -X direction in z-up axis
     }
     // Convert cubemap coordinates from GL axis to z-up axis
     return Vec3(glCubeMapCoords.z, glCubeMapCoords.x, glCubeMapCoords.y);
 }
 
-Image::CubeMapFace Image::CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t) {
+Image::CubeMapFace::Enum Image::CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t) {
     // Convert cubemap coordinates from z-up axis to GL axis
     Vec3 glCubeMapCoords = Vec3(cubeMapCoords.y, cubeMapCoords.z, cubeMapCoords.x);
 
@@ -385,27 +393,27 @@ Image::CubeMapFace Image::CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &
     float sc, tc;
 
     switch (faceIndex) {
-    case PositiveX: 
+    case CubeMapFace::PositiveX:
         sc = -glCubeMapCoords.z;
         tc = -glCubeMapCoords.y;
         break;
-    case NegativeX:
+    case CubeMapFace::NegativeX:
         sc = +glCubeMapCoords.z;
         tc = -glCubeMapCoords.y;
         break;
-    case PositiveY:
+    case CubeMapFace::PositiveY:
         sc = +glCubeMapCoords.x;
         tc = +glCubeMapCoords.z;
         break;
-    case NegativeY:
+    case CubeMapFace::NegativeY:
         sc = +glCubeMapCoords.x;
         tc = -glCubeMapCoords.z;
         break;
-    case PositiveZ:
+    case CubeMapFace::PositiveZ:
         sc = +glCubeMapCoords.x;
         tc = -glCubeMapCoords.y;
         break;
-    case NegativeZ:
+    case CubeMapFace::NegativeZ:
         sc = -glCubeMapCoords.x;
         tc = -glCubeMapCoords.y;
         break;
@@ -415,7 +423,7 @@ Image::CubeMapFace Image::CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &
     s = (sc / ama + 1.0f) * 0.5f;
     t = (tc / ama + 1.0f) * 0.5f;
 
-    return (CubeMapFace)faceIndex;
+    return (CubeMapFace::Enum)faceIndex;
 }
 
 static float AreaElement(float x, float y) {
@@ -478,23 +486,23 @@ int Image::GetSliceSize(int firstLevel, int numLevels) const {
 //
 //--------------------------------------------------------------------------------------------------
 
-const char *Image::FormatName(Image::Format imageFormat) {
+const char *Image::FormatName(Image::Format::Enum imageFormat) {
     return GetImageFormatInfo(imageFormat)->name;
 }
 
-int Image::BytesPerPixel(Image::Format imageFormat) {
+int Image::BytesPerPixel(Image::Format::Enum imageFormat) {
     return !IsCompressed(imageFormat) ? GetImageFormatInfo(imageFormat)->size : 0;
 }
 
-int Image::BytesPerBlock(Image::Format imageFormat) {
+int Image::BytesPerBlock(Image::Format::Enum imageFormat) {
     return IsCompressed(imageFormat) ? GetImageFormatInfo(imageFormat)->size : 0;
 }
 
-int Image::NumComponents(Image::Format imageFormat) {
+int Image::NumComponents(Image::Format::Enum imageFormat) {
     return GetImageFormatInfo(imageFormat)->numComponents;
 }
 
-void Image::GetBits(Image::Format imageFormat, int *redBits, int *greenBits, int *blueBits, int *alphaBits) {
+void Image::GetBits(Image::Format::Enum imageFormat, int *redBits, int *greenBits, int *blueBits, int *alphaBits) {
     const ImageFormatInfo *info = GetImageFormatInfo(imageFormat);
     if (redBits)    *redBits    = info->redBits;
     if (greenBits)  *greenBits  = info->greenBits;
@@ -502,20 +510,20 @@ void Image::GetBits(Image::Format imageFormat, int *redBits, int *greenBits, int
     if (alphaBits)  *alphaBits  = info->alphaBits;
 }
 
-bool Image::HasAlpha(Image::Format imageFormat) {
+bool Image::HasAlpha(Image::Format::Enum imageFormat) {
     const ImageFormatInfo *info = GetImageFormatInfo(imageFormat);
-    if (info->type & Compressed) {
+    if (info->type & FormatType::Compressed) {
         switch (imageFormat) {
-        case RGBA_DXT3:
-        case RGBA_DXT5:
-        case RGBA_PVRTC_2BPPV1:
-        case RGBA_PVRTC_4BPPV1:
-        case RGBA_PVRTC_2BPPV2:
-        case RGBA_PVRTC_4BPPV2:
-        case RGBA_8_8_ETC2:
-        case RGBA_8_1_ETC2:
-        case RGBA_EA_ATC:
-        case RGBA_IA_ATC:
+        case Format::RGBA_DXT3:
+        case Format::RGBA_DXT5:
+        case Format::RGBA_PVRTC_2BPPV1:
+        case Format::RGBA_PVRTC_4BPPV1:
+        case Format::RGBA_PVRTC_2BPPV2:
+        case Format::RGBA_PVRTC_4BPPV2:
+        case Format::RGBA_8_1_ETC2:
+        case Format::RGBA_8_8_ETC2:
+        case Format::RGBA_EA_ATC:
+        case Format::RGBA_IA_ATC:
             return true;
         default:
             return false;
@@ -525,12 +533,12 @@ bool Image::HasAlpha(Image::Format imageFormat) {
     return info->alphaBits > 0 ? true : false;
 }
 
-bool Image::HasOneBitAlpha(Image::Format imageFormat) {
+bool Image::HasOneBitAlpha(Image::Format::Enum imageFormat) {
     const ImageFormatInfo *info = GetImageFormatInfo(imageFormat);
-    if (info->type & Compressed) {
+    if (info->type & FormatType::Compressed) {
         switch (imageFormat) {
-        case RGBA_DXT1: // TODO: check 1-bit-alpha is used
-        case RGBA_8_1_ETC2:
+        case Format::RGBA_DXT1: // TODO: check 1-bit-alpha is used
+        case Format::RGBA_8_1_ETC2:
             return true;
         default:
             return false;
@@ -539,31 +547,31 @@ bool Image::HasOneBitAlpha(Image::Format imageFormat) {
     return info->alphaBits == 1 ? true : false;
 }
 
-bool Image::IsPacked(Image::Format imageFormat) {
-    return !!(GetImageFormatInfo(imageFormat)->type & Packed);
+bool Image::IsPacked(Image::Format::Enum imageFormat) {
+    return !!(GetImageFormatInfo(imageFormat)->type & FormatType::Packed);
 }
 
-bool Image::IsCompressed(Image::Format imageFormat) {
-    return !!(GetImageFormatInfo(imageFormat)->type & Compressed);
+bool Image::IsCompressed(Image::Format::Enum imageFormat) {
+    return !!(GetImageFormatInfo(imageFormat)->type & FormatType::Compressed);
 }
 
-bool Image::IsFloatFormat(Image::Format imageFormat) {
-    return !!(GetImageFormatInfo(imageFormat)->type & Float);
+bool Image::IsFloatFormat(Image::Format::Enum imageFormat) {
+    return !!(GetImageFormatInfo(imageFormat)->type & FormatType::Float);
 }
 
-bool Image::IsHalfFormat(Image::Format imageFormat) {
-    return !!(GetImageFormatInfo(imageFormat)->type & Half);
+bool Image::IsHalfFormat(Image::Format::Enum imageFormat) {
+    return !!(GetImageFormatInfo(imageFormat)->type & FormatType::Half);
 }
 
-bool Image::IsDepthFormat(Image::Format imageFormat) {
-    return !!(GetImageFormatInfo(imageFormat)->type & Depth);
+bool Image::IsDepthFormat(Image::Format::Enum imageFormat) {
+    return !!(GetImageFormatInfo(imageFormat)->type & FormatType::Depth);
 }
 
-bool Image::IsDepthStencilFormat(Image::Format imageFormat) {
-    return (GetImageFormatInfo(imageFormat)->type & DepthStencil) == DepthStencil;
+bool Image::IsDepthStencilFormat(Image::Format::Enum imageFormat) {
+    return (GetImageFormatInfo(imageFormat)->type & FormatType::DepthStencil) == FormatType::DepthStencil;
 }
 
-int Image::MemRequired(int width, int height, int depth, int numMipmaps, Image::Format imageFormat) {
+int Image::MemRequired(int width, int height, int depth, int numMipmaps, Image::Format::Enum imageFormat) {
     int w = width;
     int h = height;
     int d = depth;

@@ -1,4 +1,4 @@
-$include "fragment_common.glsl"
+$include "FragmentCommon.glsl"
 
 in vec4 v2f_color;
 in vec2 v2f_texCoord;
@@ -30,13 +30,13 @@ uniform vec3 sunColor;
 
 void main() {
 #ifdef INTERPOLATE
-	vec3 b1 = getNormal(normalMap, v2f_texCoord);
-	vec3 b2 = getNormal(normalMapNext, v2f_texCoord);
+	vec3 b1 = GetNormal(normalMap, v2f_texCoord);
+	vec3 b2 = GetNormal(normalMapNext, v2f_texCoord);
 	vec3 N = mix(b1, b2, lerpFactor);
 	//N = smoothstep(b1, b2, N);
 	//N = N * b1 + (1.0 - N) * b2;
 #else
-	vec3 N = getNormal(normalMap, v2f_texCoord);
+	vec3 N = GetNormal(normalMap, v2f_texCoord);
 #endif
 
 	N.xy *= liquidDistortion.z;

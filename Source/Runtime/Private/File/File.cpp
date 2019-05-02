@@ -29,8 +29,8 @@ File::~File() {
 }
 
 bool File::Printf(const char *format, ...) {
-    char buffer[4096];
-    va_list	args;
+    char buffer[16384];
+    va_list args;
     
     va_start(args, format);
     ::vsprintf(buffer, format, args);
@@ -40,8 +40,8 @@ bool File::Printf(const char *format, ...) {
 }
 
 bool File::Printf(const wchar_t *format, ...) {
-    wchar_t buffer[4096];
-    va_list	args;
+    wchar_t buffer[16384];
+    va_list args;
     
     va_start(args, format);
     ::vswprintf(buffer, COUNT_OF(buffer), format, args);
@@ -136,7 +136,7 @@ size_t File::ReadObject(Object &object) {
     Json::Value jsonValue;
     Json::Reader jsonReader;
     if (!jsonReader.parse(strValue.c_str(), jsonValue)) {
-        BE_WARNLOG(L"File::ReadObject: Failed to parse JSON text\n");
+        BE_WARNLOG("File::ReadObject: Failed to parse JSON text\n");
         return 0;
     }
 
@@ -254,7 +254,7 @@ int FileReal::Seek(int64_t offset) {
         return 0;
     }
 
-    return pf->Seek(offset, PlatformFile::Start);
+    return pf->Seek(offset, PlatformFile::Origin::Start);
 }
 
 int FileReal::SeekFromEnd(int64_t offset) {
@@ -262,7 +262,7 @@ int FileReal::SeekFromEnd(int64_t offset) {
         return 0;
     }
     
-    return pf->Seek(offset, PlatformFile::End);
+    return pf->Seek(offset, PlatformFile::Origin::End);
 }
 
 size_t FileReal::Read(void *buffer, size_t bytesToRead) const {
@@ -303,12 +303,12 @@ int FileInZip::Tell() const {
 }
 
 int FileInZip::Seek(int64_t offset) {
-    BE_FATALERROR(L"ZIP FILE FSEEK NOT YET IMPLEMENTED");
+    BE_FATALERROR("ZIP FILE FSEEK NOT YET IMPLEMENTED");
     return 0;
 }
 
 int FileInZip::SeekFromEnd(int64_t offset) {
-    BE_FATALERROR(L"ZIP FILE FSEEK NOT YET IMPLEMENTED");
+    BE_FATALERROR("ZIP FILE FSEEK NOT YET IMPLEMENTED");
     return 0;
 }
 
@@ -317,7 +317,7 @@ size_t FileInZip::Read(void *buffer, size_t bytesToRead) const {
 }
 
 bool FileInZip::Write(const void *buffer, size_t len) {
-    BE_FATALERROR(L"ZIP FILE WRITE IS NOT ALLOWED");
+    BE_FATALERROR("ZIP FILE WRITE IS NOT ALLOWED");
     return false;
 }
 

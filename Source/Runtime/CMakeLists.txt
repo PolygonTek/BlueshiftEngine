@@ -6,22 +6,23 @@ configure_file(
     "${PROJECT_SOURCE_DIR}/Version.h.in"
     "${PROJECT_SOURCE_DIR}/Version.h")
 
-set(ENGINE_FILES
+set(COMMON_ENGINE_FILES
     Precompiled.h
     Precompiled.cpp
 
     Public/BlueshiftEngine.h
 
     Public/Core/Allocator.h
+    Public/Core/BinSearch.h
     Public/Core/Checksum_CRC32.h
     Public/Core/Checksum_MD5.h
     Public/Core/Heap.h
     Public/Core/Range.h
+    Public/Core/UTF.h
     Public/Core/Str.h
     Public/Core/Variant.h
     Public/Core/VariantArg.h
     Public/Core/Guid.h
-    Public/Core/WStr.h
     Public/Core/ByteOrder.h
     Public/Core/CmdArgs.h
     Public/Core/Cmds.h
@@ -32,11 +33,11 @@ set(ENGINE_FILES
     Public/Core/Dict.h
     Public/Core/Expr.h
     Public/Core/Lexer.h
-    Public/Core/WLexer.h
     Public/Core/Task.h
     Public/Core/Event.h
     Public/Core/Object.h
     Public/Core/Property.h
+    Public/Core/ScopeLock.h
     Public/Core/Serializable.h
     Public/Core/Signal.h
     Public/Core/SignalObject.h
@@ -47,7 +48,6 @@ set(ENGINE_FILES
     Public/Core/Vertex.h 
 
     Public/Containers/StaticArray.h
-    Public/Containers/BinSearch.h
     Public/Containers/HashIndex.h
     Public/Containers/HashMap.h
     Public/Containers/HashTable.h
@@ -125,12 +125,12 @@ set(ENGINE_FILES
     Public/Platform/PlatformProcess.h
     Public/Platform/PlatformFile.h
     Public/Platform/PlatformThread.h
+    Public/Platform/PlatformTLS.h
     Public/Platform/PlatformTime.h
     Public/Platform/PlatformSystem.h
 
     Public/File/File.h
     Public/File/FileSystem.h
-    Public/File/FileMapping.h
     Public/File/ZipArchiver.h
   
     Public/RHI/RHI.h
@@ -171,7 +171,7 @@ set(ENGINE_FILES
     Public/Components/ComHingeJoint.h
     Public/Components/ComJoint.h
     Public/Components/ComLight.h
-    Public/Components/ComReflectionProbe.h
+    Public/Components/ComEnvironmentProbe.h
     Public/Components/ComLogic.h
     Public/Components/ComScript.h
     Public/Components/ComMeshCollider.h
@@ -236,16 +236,16 @@ set(ENGINE_FILES
     Public/Render/RenderSystem.h
     Public/Render/RenderContext.h  
     Public/Render/ParticleSystem.h
-    Public/Render/ReflectionProbe.h
+    Public/Render/EnvProbe.h
     Public/Render/RenderObject.h
     Public/Render/RenderLight.h
-    Public/Render/RenderView.h
+    Public/Render/RenderCamera.h
     Public/Render/RenderWorld.h
     Public/Render/Shader.h
     Public/Render/Skeleton.h
     Public/Render/Skin.h
     Public/Render/SubMesh.h
-    Public/Render/Texture.h  
+    Public/Render/Texture.h
 
     Public/Platform/Platform.h
 
@@ -255,13 +255,32 @@ set(ENGINE_FILES
 
     Public/Scripting/LuaVM.h
 
+    Public/Profiler/Profiler.h
+
     Private/Core/Checksum_CRC32.cpp
     Private/Core/Checksum_MD5.cpp
     Private/Core/Heap.cpp
+    Private/Core/UTF8.cpp
+    Private/Core/UTF16.cpp
     Private/Core/Str.cpp
-    Private/Core/WStr.cpp
     Private/Core/Guid.cpp
+    Private/Core/ByteOrder.cpp
+    Private/Core/CmdArgs.cpp
+    Private/Core/Cmds.cpp
+    Private/Core/CVars.cpp
+    Private/Core/Timespan.cpp
+    Private/Core/DateTime.cpp
+    Private/Core/Dict.cpp
+    Private/Core/Expr.cpp
+    Private/Core/MinMaxCurve.cpp
+    Private/Core/Lexer.cpp
+    Private/Core/Task.cpp
+    Private/Core/Variant.cpp
+    Private/Core/DynamicAABBTree.cpp
+    Private/Core/Vec4Color.cpp
+
     Private/Containers/HashIndex.cpp
+
     Private/Image/ImageInternal.h
     Private/Image/Image.cpp
     Private/Image/ImageColorSpace.cpp
@@ -285,6 +304,7 @@ set(ENGINE_FILES
     Private/Image/ImageResize.cpp
     Private/Image/DXTDecoder.cpp
     Private/Image/DXTEncoder.cpp
+
     Private/Math/Vector3.cpp
     Private/Math/Vector4.cpp
     Private/Math/Color3.cpp
@@ -297,6 +317,7 @@ set(ENGINE_FILES
     Private/Math/Angles.cpp
     Private/Math/Half.cpp
     Private/Math/OBB.cpp
+    Private/Math/Ray.cpp
     Private/Math/Rect.cpp
     Private/Math/CQuaternion.cpp
     Private/Math/SphericalHarmonics.cpp
@@ -312,33 +333,23 @@ set(ENGINE_FILES
     Private/Math/Matrix3.cpp
     Private/Math/Point.cpp
     Private/Math/Vector2.cpp
+
     Private/SIMD/Simd.cpp
     Private/SIMD/Simd_AVX.cpp
     Private/SIMD/Simd_Generic.cpp
     Private/SIMD/Simd_SSE4.cpp
+
     Private/Platform/cpuid.cpp
     Private/Platform/PlatformBaseProcess.cpp
     Private/Platform/PlatformBaseFile.cpp
     Private/Platform/PlatformBaseThread.cpp
+    Private/Platform/PlatformBaseTLS.cpp
     Private/Platform/PlatformBaseTime.cpp
     Private/Platform/PlatformBaseSystem.cpp
+
     Private/File/File.cpp
     Private/File/FileSystem.cpp
-    Private/File/FileMapping.cpp
     Private/File/ZipArchiver.cpp
-    Private/Core/ByteOrder.cpp
-    Private/Core/CmdArgs.cpp
-    Private/Core/Cmds.cpp
-    Private/Core/CVars.cpp
-    Private/Core/Timespan.cpp
-    Private/Core/DateTime.cpp
-    Private/Core/Dict.cpp
-    Private/Core/Expr.cpp
-    Private/Core/MinMaxCurve.cpp
-    Private/Core/Lexer.cpp
-    Private/Core/WLexer.cpp
-    Private/Core/Task.cpp
-    Private/Core/Variant.cpp
 
     Private/RHIOpenGL/OpenGL/OpenGL.h
     Private/RHIOpenGL/OpenGL/OpenGL.cpp
@@ -404,7 +415,7 @@ set(ENGINE_FILES
     Private/Components/ComHingeJoint.cpp
     Private/Components/ComJoint.cpp
     Private/Components/ComLight.cpp
-    Private/Components/ComReflectionProbe.cpp
+    Private/Components/ComEnvironmentProbe.cpp
     Private/Components/ComLogic.cpp
     Private/Components/ComScript.cpp
     Private/Components/ComMeshCollider.cpp
@@ -494,12 +505,13 @@ set(ENGINE_FILES
     Private/Render/RenderContext.cpp
     Private/Render/ParticleSystem.cpp
     Private/Render/ParticleSystemManager.cpp
-    Private/Render/ReflectionProbe.cpp
+    Private/Render/EnvProbe.cpp
     Private/Render/RenderObject.cpp
     Private/Render/RenderLight.cpp
-    Private/Render/RenderView.cpp
+    Private/Render/RenderCamera.cpp
     Private/Render/RenderWorld.cpp
-    Private/Render/RenderWorldPrivate.cpp
+    Private/Render/RenderWorldDrawCamera.cpp
+    Private/Render/RenderWorldDebugTools.cpp
     Private/Render/Shader.cpp
     Private/Render/ShaderManager.cpp
     Private/Render/Skeleton.cpp
@@ -631,209 +643,245 @@ set(ENGINE_FILES
     Private/Scripting/Game/LuaModule_Entity.cpp
     Private/Scripting/Game/LuaModule_GameWorld.cpp
 
-    Private/Core/DynamicAABBTree.cpp
-    Private/Core/Vec4Color.cpp)
+    Private/Profiler/Profiler.cpp)
 
-if (ANDROID)
-    list(APPEND ENGINE_FILES
-        Public/Platform/Posix/PlatformPosixProcess.h
-        Public/Platform/Posix/PlatformPosixTime.h
-        Public/Platform/Linux/PlatformLinuxProcess.h
-        Public/Platform/Linux/PlatformLinuxTime.h
-        Public/Platform/Android/PlatformAndroidProcess.h
-        Public/Platform/Android/PlatformAndroidSystem.h
-        Public/Platform/Android/PlatformAndroidThread.h
-        Public/Platform/Android/PlatformAndroidFile.h
+set(WINDOWS_ENGINE_FILES
+    Public/Platform/Windows/PlatformWinProcess.h
+    Public/Platform/Windows/PlatformWinFile.h
+    Public/Platform/Windows/PlatformWinThread.h
+    Public/Platform/Windows/PlatformWinTLS.h
+    Public/Platform/Windows/PlatformWinTime.h
+    Public/Platform/Windows/PlatformWinSystem.h
+    Public/Platform/Windows/PlatformWinUtils.h
 
-        Private/Platform/Posix/PlatformPosixProcess.cpp
-        Private/Platform/Posix/PlatformPosixTime.cpp
-        Private/Platform/Linux/PlatformLinuxProcess.cpp
-        Private/Platform/Linux/PlatformLinuxTime.cpp
-        Private/Platform/Android/PlatformAndroidProcess.cpp 
-        Private/Platform/Android/PlatformAndroidSystem.cpp 
-        Private/Platform/Android/PlatformAndroidThread.cpp
-        Private/Platform/Android/PlatformAndroidFile.cpp
-        Private/Platform/PlatformAndroid.h
-        Private/Platform/PlatformAndroid.cpp
+    Private/Platform/Windows/PlatformWinProcess.cpp
+    Private/Platform/Windows/PlatformWinFile.cpp
+    Private/Platform/Windows/PlatformWinThread.cpp
+    Private/Platform/Windows/PlatformWinTLS.cpp
+    Private/Platform/Windows/PlatformWinTime.cpp
+    Private/Platform/Windows/PlatformWinSystem.cpp
+    Private/Platform/Windows/PlatformWinUtils.cpp
 
-        Public/PlatformUtils/Android/AndroidJNI.h
-        Public/PlatformUtils/Android/AndroidGPUInfo.h
+    Private/Platform/PlatformWin.h
+    Private/Platform/PlatformWin.cpp
 
-        Private/PlatformUtils/Android/AndroidJNI.cpp
-        Private/PlatformUtils/Android/AndroidGPUInfo.cpp
+    Public/Network/Socket.h
+    Public/Network/Packet.h
+    Private/Network/Socket.cpp
+    Private/Network/Packet.cpp
 
-        Private/Sound/SoundSystemSLES.cpp
-        Private/Sound/SoundBufferSLES.cpp
-        Private/Sound/SoundSourceSLES.cpp)
-elseif (WIN32)
-    list(APPEND ENGINE_FILES
-        Public/Platform/Windows/PlatformWinProcess.h
-        Public/Platform/Windows/PlatformWinFile.h
-        Public/Platform/Windows/PlatformWinThread.h
-        Public/Platform/Windows/PlatformWinTime.h
-        Public/Platform/Windows/PlatformWinSystem.h
+    Private/Sound/SoundSystemAL.cpp
+    Private/Sound/SoundBufferAL.cpp
+    Private/Sound/SoundSourceAL.cpp
+    
+    Private/Sound/SoundSystemDS.cpp
+    Private/Sound/SoundBufferDS.cpp
+    Private/Sound/SoundSourceDS.cpp)
 
-        Private/Platform/Windows/PlatformWinProcess.cpp
-        Private/Platform/Windows/PlatformWinFile.cpp
-        Private/Platform/Windows/PlatformWinThread.cpp
-        Private/Platform/Windows/PlatformWinTime.cpp
-        Private/Platform/Windows/PlatformWinSystem.cpp
-        Private/Platform/PlatformWin.h
-        Private/Platform/PlatformWin.cpp
+set(ANDROID_ENGINE_FILES
+    Public/Platform/Posix/PlatformPosixProcess.h
+    Public/Platform/Posix/PlatformPosixTLS.h
+    Public/Platform/Posix/PlatformPosixTime.h
+    Public/Platform/Linux/PlatformLinuxProcess.h
+    Public/Platform/Linux/PlatformLinuxTime.h
+    Public/Platform/Android/PlatformAndroidProcess.h
+    Public/Platform/Android/PlatformAndroidSystem.h
+    Public/Platform/Android/PlatformAndroidThread.h
+    Public/Platform/Android/PlatformAndroidFile.h
 
-        Public/Network/Socket.h
-        Public/Network/Packet.h
-        Private/Network/Socket.cpp
-        Private/Network/Packet.cpp)
-    if (USE_WINDOWS_OPENAL)
-        list(APPEND ENGINE_FILES
-            Private/Sound/SoundSystemAL.cpp
+    Private/Platform/Posix/PlatformPosixProcess.cpp
+    Private/Platform/Posix/PlatformPosixTLS.cpp
+    Private/Platform/Posix/PlatformPosixTime.cpp
+    Private/Platform/Linux/PlatformLinuxProcess.cpp
+    Private/Platform/Linux/PlatformLinuxTime.cpp
+    Private/Platform/Android/PlatformAndroidProcess.cpp 
+    Private/Platform/Android/PlatformAndroidSystem.cpp 
+    Private/Platform/Android/PlatformAndroidThread.cpp
+    Private/Platform/Android/PlatformAndroidFile.cpp
+    Private/Platform/PlatformAndroid.h
+    Private/Platform/PlatformAndroid.cpp
+
+    Public/PlatformUtils/Android/AndroidJNI.h
+    Public/PlatformUtils/Android/AndroidGPUInfo.h
+
+    Private/PlatformUtils/Android/AndroidJNI.cpp
+    Private/PlatformUtils/Android/AndroidGPUInfo.cpp
+
+    Private/Sound/SoundSystemSLES.cpp
+    Private/Sound/SoundBufferSLES.cpp
+    Private/Sound/SoundSourceSLES.cpp)
+
+set(UNIX_ENGINE_FILES
+    Public/Platform/Posix/PlatformPosixProcess.h
+    Public/Platform/Posix/PlatformPosixFile.h
+    Public/Platform/Posix/PlatformPosixThread.h
+    Public/Platform/Posix/PlatformPosixTLS.h
+    Public/Platform/Posix/PlatformPosixTime.h
+    Public/Platform/Posix/PlatformPosixSystem.h
+
+    Private/Platform/Posix/PlatformPosixProcess.cpp
+    Private/Platform/Posix/PlatformPosixFile.cpp
+    Private/Platform/Posix/PlatformPosixThread.cpp
+    Private/Platform/Posix/PlatformPosixTLS.cpp
+    Private/Platform/Posix/PlatformPosixTime.cpp
+    Private/Platform/Posix/PlatformPosixSystem.cpp
+
+    Private/Sound/SoundSystemAL.cpp
+    Private/Sound/SoundBufferAL.cpp
+    Private/Sound/SoundSourceAL.cpp)
+
+set(LINUX_ENGINE_FILES
+    ${UNIX_ENGINE_FILES}
+    Public/Platform/Linux/PlatformLinuxProcess.h
+    Public/Platform/Linux/PlatformLinuxThread.h
+    Private/Platform/Linux/PlatformLinuxProcess.cpp
+    Private/Platform/Linux/PlatformLinuxThread.cpp)
+
+set(APPLE_ENGINE_FILES
+    ${UNIX_ENGINE_FILES}
+    Public/Platform/Apple/PlatformAppleTime.h
+    Public/Platform/Apple/PlatformAppleProcess.h
+    Public/Platform/Apple/PlatformAppleSystem.h
+    Public/Platform/Apple/PlatformAppleThread.h
+
+    Private/Platform/Apple/PlatformAppleTime.cpp
+    Private/Platform/Apple/PlatformAppleProcess.mm
+    Private/Platform/Apple/PlatformAppleSystem.mm
+    Private/Platform/Apple/PlatformAppleThread.cpp)
+    
+set(IOS_ENGINE_FILES
+    ${APPLE_ENGINE_FILES}
+    Public/Platform/IOS/PlatformIOSFile.h
+    Public/Platform/IOS/PlatformIOSProcess.h
+    Public/Platform/IOS/PlatformIOSSystem.h
+
+    Private/Platform/IOS/PlatformIOSFile.mm
+    Private/Platform/IOS/PlatformIOSProcess.mm
+    Private/Platform/IOS/PlatformIOSSystem.mm
+    Private/Platform/PlatformIOS.h
+    Private/Platform/PlatformIOS.mm
+
+    Public/PlatformUtils/iOS/iOSDevice.h
+    Private/PlatformUtils/iOS/iOSDevice.mm)
+
+set(MACOS_ENGINE_FILES
+    ${APPLE_ENGINE_FILES}
+    Public/Platform/MacOS/PlatformMacOSProcess.h
+    Public/Platform/MacOS/PlatformMacOSSystem.h
+
+    Private/Platform/MacOS/PlatformMacOSProcess.mm
+    Private/Platform/MacOS/PlatformMacOSSystem.mm
+    Private/Platform/PlatformMacOS.h
+    Private/Platform/PlatformMacOS.mm
+
+    Public/Network/Socket.h
+    Public/Network/Packet.h
+    Private/Network/Socket.cpp
+    Private/Network/Packet.cpp)
+
+set(WINDOWS_RENDERER_FILES
+    Private/RHIOpenGL/OpenGL/GGL/gglcore32.c
+    Private/RHIOpenGL/OpenGL/GGL/gglcore32.h
+    Private/RHIOpenGL/OpenGL/GGL/gwgl.c
+    Private/RHIOpenGL/OpenGL/GGL/gwgl.h
+    Private/RHIOpenGL/OpenGL/OpenGL3.h
+    Private/RHIOpenGL/OpenGL/OpenGL3.cpp
+    Private/RHIOpenGL/OpenGL/OpenGL4.h
+    Private/RHIOpenGL/OpenGL/OpenGL4.cpp
+    Private/RHIOpenGL/OpenGL/WinOpenGL.h
+    Private/RHIOpenGL/RGLPlatformWin.cpp)
+
+set(ANDROID_RENDERER_FILES
+    Private/RHIOpenGL/OpenGL/GGL/ggles3.c
+    Private/RHIOpenGL/OpenGL/GGL/ggles3.h
+    Private/RHIOpenGL/OpenGL/GGL/gegl.c
+    Private/RHIOpenGL/OpenGL/GGL/gegl.h
+    Private/RHIOpenGL/OpenGL/OpenGLES3.h
+    Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
+    Private/RHIOpenGL/OpenGL/AndroidOpenGL.h
+    Private/RHIOpenGL/OpenGL/AndroidOpenGL.cpp
+    Private/RHIOpenGL/RGLPlatformAndroid.cpp)
+
+set(IOS_RENDERER_FILES
+    Private/RHIOpenGL/OpenGL/GGL/ggles3.c
+    Private/RHIOpenGL/OpenGL/GGL/ggles3.h
+    Private/RHIOpenGL/OpenGL/OpenGLES3.h
+    Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
+    Private/RHIOpenGL/OpenGL/IOSOpenGL.h
+    Private/RHIOpenGL/OpenGL/IOSOpenGL.mm
+    Private/RHIOpenGL/RGLPlatformIOS.mm)
+
+set(MACOS_RENDERER_FILES
+    Private/RHIOpenGL/OpenGL/GGL/gglcore32.c
+    Private/RHIOpenGL/OpenGL/GGL/gglcore32.h
+    Private/RHIOpenGL/OpenGL/OpenGL3.h
+    Private/RHIOpenGL/OpenGL/OpenGL3.cpp
+    Private/RHIOpenGL/OpenGL/MacOSOpenGL.h
+    Private/RHIOpenGL/RGLPlatformMacOS.mm)
+
+if (NOT PLATFORM_WINDOWS)
+    list(APPEND COMPILING_DISABLED_SOURCES ${WINDOWS_ENGINE_FILES} ${WINDOWS_RENDERER_FILES})
+endif ()
+
+if (NOT PLATFORM_MACOS)
+    list(APPEND COMPILING_DISABLED_SOURCES ${MACOS_ENGINE_FILES} ${MACOS_RENDERER_FILES})
+endif ()
+
+if (NOT PLATFORM_LINUX)
+    list(APPEND COMPILING_DISABLED_SOURCES ${LINUX_ENGINE_FILES})
+endif ()
+
+if (NOT PLATFORM_ANDROID)
+    list(APPEND COMPILING_DISABLED_SOURCES ${ANDROID_ENGINE_FILES} ${ANDROID_RENDERER_FILES})
+endif ()
+
+if (NOT PLATFORM_IOS)
+    list(APPEND COMPILING_DISABLED_SOURCES ${IOS_ENGINE_FILES} ${IOS_RENDERER_FILES})
+endif ()
+
+set_source_files_properties(${COMPILING_DISABLED_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+
+if (PLATFORM_WINDOWS)
+    set_source_files_properties(${WINDOWS_ENGINE_FILES} ${WINDOWS_RENDERER_FILES} PROPERTIES HEADER_FILE_ONLY FALSE)
+
+    if (NOT USE_WINDOWS_OPENAL)
+        set_source_files_properties(
+            Private/Sound/SoundSystemAL.cpp 
             Private/Sound/SoundBufferAL.cpp
-            Private/Sound/SoundSourceAL.cpp)
+            Private/Sound/SoundSourceAL.cpp PROPERTIES HEADER_FILE_ONLY TRUE)
     else ()
-        list(APPEND ENGINE_FILES
+        set_source_files_properties(
             Private/Sound/SoundSystemDS.cpp
             Private/Sound/SoundBufferDS.cpp
-            Private/Sound/SoundSourceDS.cpp)
+            Private/Sound/SoundSourceDS.cpp PROPERTIES HEADER_FILE_ONLY TRUE)
     endif ()
-elseif (UNIX)
-    list(APPEND ENGINE_FILES
-        Public/Platform/Posix/PlatformPosixProcess.h
-        Public/Platform/Posix/PlatformPosixFile.h
-        Public/Platform/Posix/PlatformPosixThread.h
-        Public/Platform/Posix/PlatformPosixTime.h
-        Public/Platform/Posix/PlatformPosixSystem.h
-
-        Private/Platform/Posix/PlatformPosixProcess.cpp
-        Private/Platform/Posix/PlatformPosixFile.cpp
-        Private/Platform/Posix/PlatformPosixThread.cpp
-        Private/Platform/Posix/PlatformPosixTime.cpp
-        Private/Platform/Posix/PlatformPosixSystem.cpp
-
-        Private/Sound/SoundSystemAL.cpp
-        Private/Sound/SoundBufferAL.cpp
-        Private/Sound/SoundSourceAL.cpp)
-
-    if (APPLE)
-        list(APPEND ENGINE_FILES
-            Public/Platform/Apple/PlatformAppleTime.h
-            Public/Platform/Apple/PlatformAppleProcess.h
-            Public/Platform/Apple/PlatformAppleSystem.h
-
-            Private/Platform/Apple/PlatformAppleTime.cpp
-            Private/Platform/Apple/PlatformAppleProcess.mm
-            Private/Platform/Apple/PlatformAppleSystem.mm)
-    
-        if (IOS)
-            list(APPEND ENGINE_FILES
-                Public/Platform/IOS/PlatformIOSFile.h
-                Public/Platform/IOS/PlatformIOSProcess.h
-                Public/Platform/IOS/PlatformIOSSystem.h
-
-                Private/Platform/IOS/PlatformIOSFile.mm
-                Private/Platform/IOS/PlatformIOSProcess.mm
-                Private/Platform/IOS/PlatformIOSSystem.mm
-                Private/Platform/PlatformIOS.h
-                Private/Platform/PlatformIOS.mm
-
-                Public/PlatformUtils/iOS/iOSDevice.h
-                Private/PlatformUtils/iOS/iOSDevice.mm)
-        else ()
-            list(APPEND ENGINE_FILES
-                Public/Platform/MacOS/PlatformMacOSProcess.h
-                Public/Platform/MacOS/PlatformMacOSSystem.h
-
-                Private/Platform/MacOS/PlatformMacOSProcess.mm
-                Private/Platform/MacOS/PlatformMacOSSystem.mm
-                Private/Platform/PlatformMacOS.h
-                Private/Platform/PlatformMacOS.mm
-
-                Public/Network/Socket.h
-                Public/Network/Packet.h
-                Private/Network/Socket.cpp
-                Private/Network/Packet.cpp)
-        endif ()
-    endif ()
-else ()
-    list(APPEND ENGINE_FILES
-        Public/Platform/Linux/PlatformLinuxProcess.h
-        Private/Platform/Linux/PlatformLinuxProcess.cpp)
+elseif (PLATFORM_MACOS)
+    set_source_files_properties(${MACOS_ENGINE_FILES} ${MACOS_RENDERER_FILES} PROPERTIES HEADER_FILE_ONLY FALSE)
+elseif (PLATFORM_LINUX)
+    set_source_files_properties(${LINUX_ENGINE_FILES} PROPERTIES HEADER_FILE_ONLY FALSE)
+elseif (PLATFORM_ANDROID)
+    set_source_files_properties(${ANDROID_ENGINE_FILES} ${ANDROID_RENDERER_FILES} PROPERTIES HEADER_FILE_ONLY FALSE)
+elseif (PLATFORM_IOS)
+    set_source_files_properties(${IOS_ENGINE_FILES} ${IOS_RENDERER_FILES} PROPERTIES HEADER_FILE_ONLY FALSE)
 endif ()
 
-if (XAMARIN AND NOT WIN32)
-    list(APPEND RENDERER_FILES
-        Private/RHIOpenGL/OpenGL/OpenGLES3.h
-        Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
-        Private/RHIOpenGL/OpenGL/XamarinOpenGL.h
-        Private/RHIOpenGL/OpenGL/XamarinOpenGL.cpp
-        Private/RHIOpenGL/RGLPlatformXamarin.cpp)
-elseif (ANDROID)
-    list(APPEND RENDERER_FILES
-        Private/RHIOpenGL/OpenGL/OpenGLES3.h
-        Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
-        Private/RHIOpenGL/OpenGL/AndroidOpenGL.h
-        Private/RHIOpenGL/OpenGL/AndroidOpenGL.cpp
-        Private/RHIOpenGL/RGLPlatformAndroid.cpp)
-elseif (WIN32)
-    if (USE_DESKTOP_EGL)
-        list(APPEND RENDERER_FILES
-            Private/RHIOpenGL/OpenGL/OpenGLES3.h
-            Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
-            Private/RHIOpenGL/OpenGL/WinOpenGL.h
-            Private/RHIOpenGL/RGLPlatformWin.cpp)
-    else ()
-        list(APPEND RENDERER_FILES
-            Private/RHIOpenGL/OpenGL/OpenGL3.h
-            Private/RHIOpenGL/OpenGL/OpenGL3.cpp
-            Private/RHIOpenGL/OpenGL/OpenGL4.h
-            Private/RHIOpenGL/OpenGL/OpenGL4.cpp
-            Private/RHIOpenGL/OpenGL/WinOpenGL.h
-            Private/RHIOpenGL/RGLPlatformWin.cpp)
-    endif ()
-elseif (APPLE)
-    if (IOS)
-        list(APPEND RENDERER_FILES
-            Private/RHIOpenGL/OpenGL/OpenGLES3.h
-            Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
-            Private/RHIOpenGL/OpenGL/IOSOpenGL.h
-            Private/RHIOpenGL/OpenGL/IOSOpenGL.mm
-            Private/RHIOpenGL/RGLPlatformIOS.mm)
-    else ()
-        list(APPEND RENDERER_FILES
-            Private/RHIOpenGL/OpenGL/OpenGL3.h
-            Private/RHIOpenGL/OpenGL/OpenGL3.cpp
-            Private/RHIOpenGL/OpenGL/MacOSOpenGL.h
-            Private/RHIOpenGL/RGLPlatformMacOS.mm)
-    endif ()
-endif ()
+set(ENGINE_FILES
+    ${COMMON_ENGINE_FILES}
+    ${WINDOWS_ENGINE_FILES}
+    ${ANDROID_ENGINE_FILES}
+    ${LINUX_ENGINE_FILES}
+    ${MACOS_ENGINE_FILES}
+    ${IOS_ENGINE_FILES})
 
-if (IOS)
-    set(GGL_FILES
-        Private/RHIOpenGL/OpenGL/GGL/ggles3.c
-        Private/RHIOpenGL/OpenGL/GGL/ggles3.h)
-elseif (ANDROID OR (WIN32 AND USE_DESKTOP_EGL))
-    set(GGL_FILES
-        Private/RHIOpenGL/OpenGL/GGL/ggles3.c
-        Private/RHIOpenGL/OpenGL/GGL/ggles3.h
-        Private/RHIOpenGL/OpenGL/GGL/gegl.c
-        Private/RHIOpenGL/OpenGL/GGL/gegl.h)
-else ()
-    set(GGL_FILES
-        Private/RHIOpenGL/OpenGL/GGL/gglcore32.c
-        Private/RHIOpenGL/OpenGL/GGL/gglcore32.h)
-
-    if (WIN32)
-        list(APPEND GGL_FILES
-            Private/RHIOpenGL/OpenGL/GGL/gwgl.c
-            Private/RHIOpenGL/OpenGL/GGL/gwgl.h)
-    endif ()
-endif ()
+set(RENDERER_FILES
+    ${WINDOWS_RENDERER_FILES}
+    ${ANDROID_RENDERER_FILES}
+    ${IOS_RENDERER_FILES}
+    ${MACOS_RENDERER_FILES})
 
 set(ALL_FILES
     ${ENGINE_FILES}
-    ${RENDERER_FILES}
-    ${GGL_FILES}
-)
+    ${RENDERER_FILES})
 
 auto_source_group(${ALL_FILES})
 
@@ -841,20 +889,22 @@ include_directories(
     ${PROJECT_SOURCE_DIR}
     ${ENGINE_INCLUDE_DIR}/Runtime/Public
     ${ENGINE_INCLUDE_DIR}/ThirdParty
-    ${ENGINE_INCLUDE_DIR}/ThirdParty/asio/include
-)
+    ${ENGINE_INCLUDE_DIR}/ThirdParty/asio/include)
 
-enable_precompiled_header(Precompiled.h Precompiled.cpp ENGINE_FILES RENDERER_FILES)
+enable_precompiled_header(Precompiled.h Precompiled.cpp ENGINE_FILES)
 
-if (ANDROID)
-    add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
+if (PLATFORM_ANDROID)
+    include_directories(${ANDROID_NDK}/sources/android/cpufeatures)
+    set(CPU_FEATURES_FILE ${ANDROID_NDK}/sources/android/cpufeatures/cpu-features.c)
+
+    add_library(${PROJECT_NAME} STATIC ${ALL_FILES} ${CPU_FEATURES_FILE})
 
     target_link_libraries(${PROJECT_NAME}
-        android 
-        atomic 
-        log 
-        EGL 
-        GLESv3 
+        android
+        atomic
+        log
+        EGL
+        GLESv3
         OpenSLES)
 else ()
     add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
@@ -955,7 +1005,7 @@ if (USE_LUAJIT)
 
     include(FindLuaJIT)
     target_link_libraries(${PROJECT_NAME} ${LUAJIT_LIBRARY})
-else ()    
+else ()
     target_include_directories(${PROJECT_NAME} PUBLIC ${ENGINE_INCLUDE_DIR}/ThirdParty/lua)
 
     target_link_libraries(${PROJECT_NAME} lua)

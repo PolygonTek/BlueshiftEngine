@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Platform/PlatformAtomic.h"
 #include "Core/Object.h"
 #include "Core/Heap.h"
 #include "Containers/HashTable.h"
@@ -220,11 +219,11 @@ bool                Object::initialized = false;
 Array<MetaObject *> Object::types;  // alphabetical order
 
 static HashTable<Guid, Object *> instanceHash;
-static PlatformAtomic instanceCounter(0);
+static std::atomic<int> instanceCounter(0);
 
 void Object::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("classname", "Classname", Str, ClassName, SetClassName, "", "", PropertyInfo::ReadOnlyFlag),
-    REGISTER_PROPERTY("guid", "GUID", Guid, guid, Guid::zero, "", PropertyInfo::ReadOnlyFlag);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("classname", "Classname", Str, ClassName, SetClassName, "", "", PropertyInfo::Flag::ReadOnly),
+    REGISTER_PROPERTY("guid", "GUID", Guid, guid, Guid::zero, "", PropertyInfo::Flag::ReadOnly);
 }
 
 bool Object::InitInstance(Guid guid) {
@@ -239,16 +238,16 @@ bool Object::InitInstance(Guid guid) {
 #if 1
     Object *sameGuidObject;
     if (instanceHash.Get(guid, &sameGuidObject)) {
-        BE_WARNLOG(L"Conflicts GUID (%hs) for object type '%hs'\n", guid.ToString(), sameGuidObject->ClassName().c_str());
+        BE_WARNLOG("Conflicts GUID (%s) for object type '%s'\n", guid.ToString(), sameGuidObject->ClassName().c_str());
         assert(0);
         return false;
     }
 #endif
 
     this->guid = guid;
-    this->instanceID = instanceCounter.GetValue();
+    this->instanceID = instanceCounter;
 
-    instanceCounter++;
+    instanceCounter += 1;
 
     Object *object = this;
     instanceHash.Set(guid, object);
@@ -260,12 +259,12 @@ Object::~Object() {
 }
 
 void Object::Init() {
-    cmdSystem.AddCommand(L"listClasses", Object::ListClasses);
+    cmdSystem.AddCommand("listClasses", Object::ListClasses);
 
-    BE_LOG(L"Initializing class hierarchy\n");
+    BE_LOG("Initializing class hierarchy\n");
 
     if (initialized) {
-        BE_LOG(L"...already initialized\n");
+        BE_LOG("...already initialized\n");
         return;
     }
 
@@ -293,11 +292,11 @@ void Object::Init() {
 
     initialized = true;
 
-    BE_LOG(L"...%i classes, %i bytes for event callbacks\n", types.Count(), eventCallbackMemory);
+    BE_LOG("...%i classes, %i bytes for event callbacks\n", types.Count(), eventCallbackMemory);
 }
 
 void Object::Shutdown() {
-    cmdSystem.RemoveCommand(L"listClasses");
+    cmdSystem.RemoveCommand("listClasses");
     
     for (int i = 0; i < types.Count(); i++) {
         types[i]->Shutdown();
@@ -316,7 +315,7 @@ Str Object::ClassName() const {
 }
 
 void Object::SetClassName(const Str &classname) {
-    BE_ERRLOG(L"not allowed to call SetClassName()");
+    BE_ERRLOG("not allowed to call SetClassName()");
 }
 
 Str Object::SuperClassName() const {
@@ -387,15 +386,15 @@ Object *Object::FindInstance(const Guid &guid) {
 }
 
 void Object::ListClasses(const CmdArgs &args) {
-    BE_LOG(L"%-24hs %-24hs %-6hs %-6hs\n", "ClassName", "SuperClass", "Type", "SubClasses");
-    BE_LOG(L"----------------------------------------------------------------------\n");
+    BE_LOG("%-24s %-24s %-6s %-6s\n", "ClassName", "SuperClass", "Type", "SubClasses");
+    BE_LOG("----------------------------------------------------------------------\n");
 
     for (int i = 0; i < types.Count(); i++) {
         MetaObject *type = types[i];
-        BE_LOG(L"%-24hs %-24hs %-6d %-6d\n", type->classname, type->superclassname, type->hierarchyIndex, type->lastChildIndex - type->hierarchyIndex);
+        BE_LOG("%-24s %-24s %-6d %-6d\n", type->classname, type->superclassname, type->hierarchyIndex, type->lastChildIndex - type->hierarchyIndex);
     }
 
-    BE_LOG(L"...%d classes\n", types.Count());
+    BE_LOG("...%d classes\n", types.Count());
 }
 
 void Object::CancelEvents(const EventDef *evdef) {
@@ -997,7 +996,7 @@ bool Object::ProcessEventArgPtr(const EventDef *evdef, intptr_t *data) {
         (this->*(EventCallback_ffffff)callback)(*(float *)&data[0], *(float *)&data[1], *(float *)&data[2], *(float *)&data[3], *(float *)&data[4], *(float *)&data[5]);
         return true;
     default:
-        BE_WARNLOG(L"Invalid formatSpec on event '%hs'\n", evdef->GetName());
+        BE_WARNLOG("Invalid formatSpec on event '%s'\n", evdef->GetName());
         break;
     }
 

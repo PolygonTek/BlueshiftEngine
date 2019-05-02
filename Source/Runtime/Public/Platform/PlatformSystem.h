@@ -25,6 +25,9 @@ public:
     static const char *     UserDocumentDir();
     static const char *     UserAppDataDir();
     static const char *     UserTempDir();
+
+    static int32_t          NumCPUCores();
+    static int32_t          NumCPUCoresIncludingHyperthreads();
 };
 
 BE_NAMESPACE_END

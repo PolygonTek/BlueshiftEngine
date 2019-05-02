@@ -20,6 +20,7 @@
 
 BE_NAMESPACE_BEGIN
 
+// Reference: http ://paulbourke.net/dataformats/pic/
 struct RgbeHeaderInfo {
     char        signature[11];      // #?RADIANCE
     float       gamma;
@@ -48,7 +49,7 @@ static void Float2RGBE(float red, float green, float blue, byte *rgbe) {
 // standard conversion from rgbe to float pixels 
 // note: Ward uses ldexp(col + 0.5, exp - (128 + 8)).  However we wanted pixels
 //       in the range [0,1] to map back into the range [0, 1].
-static void RGBE2Float(const byte *rgbe, float *red, float *green, float *blue) {	
+static void RGBE2Float(const byte *rgbe, float *red, float *green, float *blue) {
     float f;
 
     if (rgbe[3]) { // nonzero pixel
@@ -102,7 +103,7 @@ static int ParseRGBEHeaderInfo(char **ptr, RgbeHeaderInfo *info) {
         } else if (!Str::Cmpn(text, "FORMAT", 6)) {
             Str::Cmpn(text, "FORMAT=32-bit_rle_rgbe", 22);
         } else {
-            return false;
+            continue;
         }
     }
 
@@ -132,18 +133,19 @@ bool Image::LoadHDRFromMemory(const char *name, const byte *data, size_t size) {
         return false;
     }
 
-    if (Str::Cmp(headerInfo.signature, "#?RADIANCE") != 0) {
-        BE_WARNLOG(L"Image::LoadHDRFromMemory: bad RGBE signature '%hs' %hs\n", headerInfo.signature, name);
+    if (Str::Cmp(headerInfo.signature, "#?RADIANCE") != 0 &&
+        Str::Cmp(headerInfo.signature, "#?RGBE") != 0) {
+        BE_WARNLOG("Image::LoadHDRFromMemory: bad RGBE signature '%s' %s\n", headerInfo.signature, name);
         return false;
     }
 
-    Create2D(headerInfo.width, headerInfo.height, 1, RGB_16F_16F_16F, nullptr, LinearSpaceFlag);
+    Create2D(headerInfo.width, headerInfo.height, 1, Format::RGB_16F_16F_16F, nullptr, Flag::LinearSpace);
 
     float16_t *dest = (float16_t *)this->pic;
 
     float r, g, b;
 
-    if (headerInfo.width < 8 || headerInfo.height > 0x7fff)	{
+    if (headerInfo.width < 8 || headerInfo.width > 0x7fff) {
         for (int i = 0; i < headerInfo.width * headerInfo.height; i++) {
             RGBE2Float(ptr, &r, &g, &b);
             ptr += 4;
@@ -153,13 +155,13 @@ bool Image::LoadHDRFromMemory(const char *name, const byte *data, size_t size) {
             *dest++ = F16Converter::FromF32(b);
         }
     } else {
-        byte *line_buffer = (byte *)_alloca(sizeof(byte) * 4 * headerInfo.width);
+        byte *lineBuffer = (byte *)_alloca(sizeof(byte) * 4 * headerInfo.width);
 
         byte rgbe[4];
         byte packet[2];
         int count;
         
-        for (int j = 0; j < headerInfo.height; j++) {
+        for (int y = 0; y < headerInfo.height; y++) {
             rgbe[0] = *ptr++;
             rgbe[1] = *ptr++;
             rgbe[2] = *ptr++;
@@ -168,11 +170,12 @@ bool Image::LoadHDRFromMemory(const char *name, const byte *data, size_t size) {
             assert(rgbe[0] == 2 && rgbe[1] == 2 && !(rgbe[2] & 0x80));
             assert(((((int)rgbe[2]) << 8) | rgbe[3]) == headerInfo.width);
 
-            byte *line_ptr = line_buffer;
+            byte *linePtr = lineBuffer;
 
-            for (int i = 0; i < 4; i++)	{
-                byte *line_ptr_end = &line_buffer[(i + 1) * headerInfo.width];
-                while (line_ptr < line_ptr_end)	{
+            for (int i = 0; i < 4; i++) {
+                byte *lineEndPtr = &lineBuffer[(i + 1) * headerInfo.width];
+
+                while (linePtr < lineEndPtr) {
                     packet[0] = *ptr++;
 
                     if (packet[0] > 128) {
@@ -180,22 +183,22 @@ bool Image::LoadHDRFromMemory(const char *name, const byte *data, size_t size) {
                         packet[1] = *ptr++;
                         
                         while (count--) {
-                            *line_ptr++ = packet[1];
+                            *linePtr++ = packet[1];
                         }
                     } else {
                         count = packet[0];
                         while (count--) {
-                            *line_ptr++ = *ptr++;;
+                            *linePtr++ = *ptr++;;
                         }
                     }
                 }
             }
 
             for (int i = 0; i < headerInfo.width; i++) {
-                rgbe[0] = line_buffer[i];
-                rgbe[1] = line_buffer[i + headerInfo.width];
-                rgbe[2] = line_buffer[i + headerInfo.width * 2];
-                rgbe[3] = line_buffer[i + headerInfo.width * 3];
+                rgbe[0] = lineBuffer[i];
+                rgbe[1] = lineBuffer[i + headerInfo.width];
+                rgbe[2] = lineBuffer[i + headerInfo.width * 2];
+                rgbe[3] = lineBuffer[i + headerInfo.width * 3];
 
                 RGBE2Float(rgbe, &r, &g, &b);
 
@@ -215,9 +218,9 @@ bool Image::WriteHDR(const char *filename) const {
         return false;
     }
 
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG(L"Image::WriteHDR: file open error\n");
+        BE_WARNLOG("Image::WriteHDR: file open error\n");
         return false;
     }
 

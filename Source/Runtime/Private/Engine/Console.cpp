@@ -23,184 +23,93 @@ BE_NAMESPACE_BEGIN
 
 Console console;
 
-const SignalDef Console::SIG_TextAdded("Console::TextAdded", "w");
+const SignalDef Console::SIG_TextAdded("Console::TextAdded", "s");
 
 void Console::Init() {
-    cmdSystem.AddCommand(L"clear", Cmd_ConClear);
-    cmdSystem.AddCommand(L"condump", Cmd_ConDump);
+    cmdSystem.AddCommand("clear", Cmd_ConClear);
+    cmdSystem.AddCommand("condump", Cmd_ConDump);
 
-    CheckResize(0);
+    textLines.SetCount(4096);
 
-    ClearNotify();
-
-    cursorPos = 0;
+    currentLineIndex = 0;
 
     initialized = true;
 }
 
 void Console::Shutdown() {
-    cmdSystem.RemoveCommand(L"clear");
-    cmdSystem.RemoveCommand(L"condump");
+    cmdSystem.RemoveCommand("clear");
+    cmdSystem.RemoveCommand("condump");
 
     initialized = false;
 }
 
-// size of line 이 바뀌었다면 버퍼를 재구성한다
-void Console::CheckResize(int newSizeOfLine) {
-
-    int width = newSizeOfLine / 7/*SYSTEM_FONT_WIDTH*/ - 2;
-
-    if (width == sizeOfLine) {
-        return;
-    }
-    //	wchar_t tbuf[CONSOLE_TEXT_SIZE];
-    //wchar_t tbuf[CONSOLE_TEXT_SIZE];
-    wchar_t *tbuf = new  wchar_t[CONSOLE_TEXT_SIZE];
-
-    if (width < 1) { // initialize
-        width = 1024 / 7/*SYSTEM_FONT_WIDTH*/ - 2;
-        sizeOfLine = width;
-        totalLines = CONSOLE_TEXT_SIZE / sizeOfLine;
-        wmemset(text, L' ', CONSOLE_TEXT_SIZE);
-    } else {
-        int oldwidth = sizeOfLine;
-        int oldTotalLines = totalLines;
-
-        sizeOfLine = width;
-        totalLines = CONSOLE_TEXT_SIZE / sizeOfLine;
-
-        int numLines = Min(totalLines, oldTotalLines);
-        int numChars = Min(sizeOfLine, oldwidth);
-
-        wmemcpy(tbuf, text, CONSOLE_TEXT_SIZE);
-        wmemset(text, L' ', CONSOLE_TEXT_SIZE);
-
-        for (int i = 0; i < numLines; i++) {
-            for (int j = 0; j < numChars; j++) {
-                text[(totalLines - 1 - i) * sizeOfLine + j] = tbuf[((currentLine - i + oldTotalLines) % oldTotalLines) * oldwidth + j];
-            }
-        }
-    }
-    delete [] tbuf;
-
-    currentLine = totalLines - 1;
-}
-
 void Console::Clear() {
-    wmemset(text, L' ', COUNT_OF(text));
-    currentLine = 0;
-}
-
-void Console::ClearNotify() {
-    for (int i = 0; i < COUNT_OF(notifyTimes); i++) {
-        notifyTimes[i] = 0;
+    for (int i = 0; i < textLines.Count(); i++) {
+        textLines[i].Clear();
     }
+
+    currentLineIndex = 0;
 }
 
-void Console::LineFeed() {
-    cursorPos = 0;
-    currentLine++;
-    wmemset(&text[(currentLine % totalLines) * sizeOfLine], L' ', sizeOfLine); // 줄 청소
+int Console::GetFirstLineIndex() const {
+    int index = (currentLineIndex + 1) % textLines.Count();
+    while (index != currentLineIndex) {
+        if (!textLines[index].IsEmpty()) {
+            break;
+        }
+        index = (index + 1) % textLines.Count();
+    }
+
+    return index;
 }
 
-void Console::Print(const wchar_t *string) {
-    wchar_t c;
-    int len;
+int Console::NumLines() const {
+    int numLines = console.currentLineIndex - console.GetFirstLineIndex();
+    if (numLines < 0) {
+        numLines += console.textLines.Count();
+    }
+    return numLines + 1;
+}
 
+void Console::Print(const Str &inString) {
     if (!initialized) {
         return;
     }
 
-    EmitSignal(&SIG_TextAdded, string);
+    EmitSignal(&SIG_TextAdded, inString);
 
-    while ((c = *string)) {
-        // count words
-        for (len = 0; len < sizeOfLine; len++) {
-            if (string[len] <= L' ') {
-                if (string[len] != 0) {
-                    len++;
-                }
-                break;
-            }
+    int offset = 0;
+    char32_t unicodeChar;
+
+    while ((unicodeChar = inString.UTF8CharAdvance(offset))) {
+        switch (unicodeChar) {
+        case U'\t':
+            textLines[currentLineIndex].Append("    ");
+            break;
+        case U'\r': // ignore CR
+            break;
+        case U'\n':
+            currentLineIndex = (currentLineIndex + 1) % textLines.Count();
+            textLines[currentLineIndex].Clear();
+            break;
+        default:
+            textLines[currentLineIndex].AppendUTF8Char(unicodeChar);
+            break;
         }
-
-        // word wrap
-        if (len < sizeOfLine && cursorPos + len > sizeOfLine) {
-            cursorPos = 0;
-        }
-
-        do {
-            c = *string++;
-
-            if (!cursorPos) {
-                LineFeed();
-                if (currentLine >= 0) {
-                    notifyTimes[currentLine % CONSOLE_NOTIFY_TIMES] = common.realTime;
-                }
-            }
-
-            switch (c) {
-            case L'\r': // ignore CR
-                break;
-            case L'\n':
-                cursorPos = 0;
-                break;
-            case L'\t':
-                cursorPos += 4;
-                if (cursorPos >= sizeOfLine) {
-                    cursorPos = sizeOfLine - 1;
-                }
-                break;
-            default:
-                text[(currentLine % totalLines) * sizeOfLine + cursorPos] = c;
-                cursorPos++;
-                if (cursorPos >= sizeOfLine) {
-                    cursorPos = 0;
-                }
-                break;
-            }
-        } while (--len);
     }
 }
 
 void Console::DumpToFile(const char *filename) {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_LOG(L"Console::DumpToFile: Couldn't open %hs.\n", filename);
+        BE_LOG("Console::DumpToFile: Couldn't open %s.\n", filename);
         return;
     }
 
-    int l, x;
+    int firstLineIndex = GetFirstLineIndex();
 
-    // skip empty command lines
-    for (l = currentLine - totalLines + 1; l <= currentLine; l++) {
-        wchar_t *line = text + (l % totalLines) * sizeOfLine;
-        for (x = 0; x < sizeOfLine; x++) {
-            if (line[x] != L' ') {
-                break;
-            }
-        }
-
-        if (x != sizeOfLine) {
-            break;
-        }
-    }
-
-    // write the remaining command lines
-    wchar_t buffer[1024];
-    buffer[sizeOfLine] = 0;
-    for (; l <= currentLine; l++) {
-        wchar_t *line = text + (l % totalLines) * sizeOfLine;
-        WStr::Copynz(buffer, line, sizeOfLine);
-        for (x = sizeOfLine - 2; x >= 0; x--) {
-            if (buffer[x] == L' ') {
-                buffer[x] = 0;
-            } else {
-                break;
-            }
-        }
-        
-        fp->Printf(L"%ls\n", buffer);
+    for (int i = firstLineIndex; i != currentLineIndex; i = (i + 1) % textLines.Count()) {
+        fp->Printf("%s\n", textLines[i].c_str());
     }
 
     fileSystem.CloseFile(fp);
@@ -216,15 +125,15 @@ void Console::Cmd_ConDump(const CmdArgs &args) {
     char name[256];
 
     if (args.Argc() != 2) {
-        BE_LOG(L"usage: condump <filename>\n");
+        BE_LOG("usage: condump <filename>\n");
         return;
     }
 
-    Str::snPrintf(name, sizeof(name), "%ls.txt", args.Argv(1));
+    Str::snPrintf(name, sizeof(name), "%s.txt", args.Argv(1));
 
     console.DumpToFile(name);
 
-    BE_LOG(L"Dumped console text to %hs.\n", name);
+    BE_LOG("Dumped console text to %s.\n", name);
 }
 
 BE_NAMESPACE_END

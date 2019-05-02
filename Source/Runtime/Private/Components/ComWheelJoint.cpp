@@ -27,29 +27,29 @@ END_EVENTS
 
 void ComWheelJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, 
-        "Joint position in local space", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "Joint position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero,
-        "Joint angles in local space", PropertyInfo::EditorFlag);
+        "Joint angles in local space", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("useSusLimits", "Suspension/Use Limits", bool, GetEnableSuspensionLimit, SetEnableSuspensionLimit, false, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("minSusDist", "Suspension/Min Distance", float, GetMinimumSuspensionDistance, SetMinimumSuspensionDistance, 0.f, 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("maxSusDist", "Suspension/Max Distance", float, GetMaximumSuspensionDistance, SetMaximumSuspensionDistance, 0.f, 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("susStiffness", "Suspension/Stiffness", float, GetSuspensionStiffness, SetSuspensionStiffness, 30.f, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("susDamping", "Suspension/Damping", float, GetSuspensionDamping, SetSuspensionDamping, 0.2f,
-        "", PropertyInfo::EditorFlag);// .SetRange(0, 1, 0.01f);
+        "", PropertyInfo::Flag::Editor);// .SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("useSteeringLimits", "Steering/Use Limits", bool, GetEnableSteeringLimit, SetEnableSteeringLimit, false, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("minSteeringAngle", "Steering/Min Angle", float, GetMinimumSteeringAngle, SetMinimumSteeringAngle, 0.f, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("maxSteeringAngle", "Steering/Max Angle", float, GetMaximumSteeringAngle, SetMaximumSteeringAngle, 0.f, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("motorTargetVelocity", "Motor/Target Velocity", float, GetMotorTargetVelocity, SetMotorTargetVelocity, 0.f,
-        "Target angular velocity (degree/s) of motor", PropertyInfo::EditorFlag);
+        "Target angular velocity (degree/s) of motor", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Motor/Maximum Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f,
-        "Maximum motor impulse", PropertyInfo::EditorFlag);
+        "Maximum motor impulse", PropertyInfo::Flag::Editor);
 }
 
 ComWheelJoint::ComWheelJoint() {
@@ -71,7 +71,7 @@ void ComWheelJoint::CreateConstraint() {
 
     // Fill up a constraint description 
     PhysConstraintDesc desc;
-    desc.type = PhysConstraint::GenericSpring;
+    desc.type = PhysConstraint::Type::GenericSpring;
     desc.collision = collisionEnabled;
     desc.breakImpulse = breakImpulse;
 
@@ -242,7 +242,8 @@ void ComWheelJoint::SetMaxMotorImpulse(float maxMotorImpulse) {
     }
 }
 
-void ComWheelJoint::DrawGizmos(const RenderView::State &viewState, bool selected) {
+#if 1
+void ComWheelJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();
@@ -269,5 +270,6 @@ void ComWheelJoint::DrawGizmos(const RenderView::State &viewState, bool selected
         renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[2] * CentiToUnit(5.0f), 1);
     }
 }
+#endif
 
 BE_NAMESPACE_END

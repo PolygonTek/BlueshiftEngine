@@ -81,7 +81,7 @@ int PlatformBaseFile::GetFileMode(const char *filename) {
 void PlatformBaseFile::SetFileMode(const char *filename, int mode) {
 }
 
-DateTime GetTimeStamp(const char *filename) {
+DateTime PlatformBaseFile::GetTimeStamp(const char *filename) {
     return DateTime(0);
 }
 
@@ -153,6 +153,17 @@ const char *PlatformBaseFile::ExecutablePath() {
 int PlatformBaseFile::ListFiles(const char *directory, const char *nameFilter, bool recursive, bool includeSubDir, Array<FileInfo> &files) {
     files.Clear();
     return 0;
+}
+
+PlatformBaseFileMapping::~PlatformBaseFileMapping() {
+}
+
+PlatformBaseFileMapping *PlatformBaseFileMapping::OpenFileRead(const char *filename) {
+    return nullptr;
+}
+
+PlatformBaseFileMapping *PlatformBaseFileMapping::OpenFileReadWrite(const char *filename, int newSize) {
+    return nullptr;
 }
 
 BE_NAMESPACE_END

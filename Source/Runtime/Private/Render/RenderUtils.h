@@ -24,43 +24,48 @@
 
 BE_NAMESPACE_BEGIN
 
-enum {
-    ForwardAxis,
-    LeftAxis,
-    UpAxis
+struct AxisIndex {
+    enum Enum {
+        Forward,
+        Left,
+        Up
+    };
 };
 
-// cube map face to axis
-void    R_CubeMapFaceToAxis(RHI::CubeMapFace face, Mat3 &axis);
+// Converts environment cubemap face to OpenGL axis for rendering.
+void    R_EnvCubeMapFaceToOpenGLAxis(RHI::CubeMapFace::Enum face, Mat3 &axis);
 
-// axis 와 origin 으로 뷰 행렬 생성
+// Converts environment cubemap face to engine axis for rendering.
+void    R_EnvCubeMapFaceToEngineAxis(RHI::CubeMapFace::Enum face, Mat3 &axis);
+
+// Sets view matrix with the given origin and axis.
 void    R_SetViewMatrix(const Mat3 &viewaxis, const Vec3 &vieworg, float *viewMatrix);
 
-// perspective 프로젝션 행렬 생성
+// Sets perspective projection matrix.
 void    R_SetPerspectiveProjectionMatrix(float xFov, float yFov, float zNear, float zFar, bool infinite, float *projectionMatrix);
 
-// orthogonal 프로젝션 행렬 생성
+// Sets orthogonal projection matrix.
 void    R_SetOrthogonalProjectionMatrix(float xSize, float ySize, float zNear, float zFar, float *projectionMatrix);
 
-// 2d crop 행렬 생성
+// Sets 2d crop matrix.
 void    R_Set2DCropMatrix(float xmin, float xmax, float ymin, float ymax, float *cropMatrix);
 
-// 삼각형으로 tangent, bitangent 벡터와 손잡이(handedness) 값 생성
+// 삼각형으로 tangent, bitangent 벡터와 손잡이 (handedness) 값 생성.
 void    R_TangentsFromTriangle(const Vec3 &v0, const Vec3 &v1, const Vec3 &v2, const Vec2 &st0, const Vec2 &st1, const Vec2 &st2, Vec3 &tangent, Vec3 &binormal, float *handedness);
 
 //
 bool    R_CullShadowVolumeBackCap(const Mat4 &viewProjMatrix, const OBB &boundingBox, const Vec3 &lightProjectionOrigin);
 
-// PSSM 시 split distance 계산 - GPU Gems3 참고
+// Calculates CSM split distance (GPU Gems3 참고)
 void    R_ComputeSplitDistances(float dNear, float dFar, float lamda, int numSplits, float *splitDistances);
 
-// 1D 가우시안 weight 생성
+// Sets 1D gaussian weights.
 void    R_ComputeGaussianWeights(int kernelSize, float *weights);
 
-// 1D 리니어 샘플링 weight, offset 생성
+// 1D linear sampling weight, offset 생성.
 void    R_Compute1DLinearSamplingWeightsAndOffsets(int numSamples, const float *weights, float *lweights, Vec2 *hoffsets, Vec2 *voffsets);
 
-// sphere 의 triangle strip verts 를 생성한다
+// sphere 의 triangle strip verts 를 생성한다.
 void    R_GenerateSphereTriangleStripVerts(const Sphere &sphere, int lats, int longs, Vec3 *verts);
 
 //-------------------------------------------------------------------------------

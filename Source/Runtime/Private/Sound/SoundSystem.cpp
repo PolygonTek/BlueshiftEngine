@@ -18,24 +18,25 @@
 #include "Core/Cmds.h"
 #include "Platform/PlatformTime.h"
 #include "Sound/SoundSystem.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
 SoundSystem     soundSystem;
 
-CVar            SoundSystem::s_nosound(L"s_nosound", L"0", 0, L"");
-CVar            SoundSystem::s_volume(L"s_volume", L"0.8", CVar::Float | CVar::Archive, L"");
+CVar            SoundSystem::s_nosound("s_nosound", "0", 0, "");
+CVar            SoundSystem::s_volume("s_volume", "0.8", CVar::Flag::Float | CVar::Flag::Archive, "");
 
 void SoundSystem::Init(void *windowHandle) {
-    BE_LOG(L"Initializing SoundSystem...\n");
+    BE_LOG("Initializing SoundSystem...\n");
 
     if (s_nosound.GetBool()) {
-        BE_LOG(L"s_nosound is on, sound system cannot be initialized.\n");
+        BE_LOG("s_nosound is on, sound system cannot be initialized.\n");
         return; // FIXME
     }
 
-    cmdSystem.AddCommand(L"listSounds", Cmd_ListSounds);
-    cmdSystem.AddCommand(L"playSound", Cmd_PlaySound);
+    cmdSystem.AddCommand("listSounds", Cmd_ListSounds);
+    cmdSystem.AddCommand("playSound", Cmd_PlaySound);
  
     if (!InitDevice(windowHandle)) {
         return;
@@ -58,8 +59,8 @@ void SoundSystem::Shutdown() {
         return;
     }
      
-    cmdSystem.RemoveCommand(L"listSounds");
-    cmdSystem.RemoveCommand(L"playSound");
+    cmdSystem.RemoveCommand("listSounds");
+    cmdSystem.RemoveCommand("playSound");
  
     DestroyAllSounds();
 
@@ -184,7 +185,7 @@ void SoundSystem::SetMasterVolume(float volume) {
 
 Sound *SoundSystem::AllocSound(const char *hashName) {
     if (soundHashMap.Get(hashName)) {
-        BE_FATALERROR(L"'%hs' sound buffer already allocated", hashName);
+        BE_FATALERROR("'%s' sound buffer already allocated", hashName);
     }
 
     Sound *sound = new Sound;
@@ -221,7 +222,7 @@ void SoundSystem::DestroySound(Sound *sound) {
     }
 
     if (sound->refCount > 1) {
-        BE_WARNLOG(L"SoundSystem::DestroySound: sound '%hs' has %i reference count\n", sound->name.c_str(), sound->refCount);
+        BE_WARNLOG("SoundSystem::DestroySound: sound '%s' has %i reference count\n", sound->name.c_str(), sound->refCount);
     }
 
     soundHashMap.Remove(sound->hashName);
@@ -271,7 +272,7 @@ Sound *SoundSystem::GetSound(const char *hashName) {
 
     sound = AllocSound(hashName);
     if (!sound->Load(hashName)) {
-        BE_WARNLOG(L"Couldn't load sound '%hs'\n", hashName);
+        BE_WARNLOG("Couldn't load sound '%s'\n", hashName);
         DestroySound(sound);
         return defaultSound;
     }
@@ -281,14 +282,16 @@ Sound *SoundSystem::GetSound(const char *hashName) {
 
 // TODO: SoundSystem::Update 함수를 별도 쓰레드로 바꿀것
 void SoundSystem::Update() {
-    LinkList<Sound> *node;
-    LinkList<Sound> *nextNode;
+    BE_PROFILE_CPU_SCOPE("SoundSystem::Update", Color3::violet);
 
     if (!initialized) {
         return;
     }
 
-    static float lastTime = PlatformTime::Milliseconds();
+    LinkList<Sound> *node;
+    LinkList<Sound> *nextNode;
+
+    static int lastTime = PlatformTime::Milliseconds();
     int currentTime = PlatformTime::Milliseconds();
     int elapsedTime = currentTime - lastTime;
     lastTime = currentTime;
@@ -394,7 +397,9 @@ void SoundSystem::Update() {
     if (s_volume.IsModified()) {
         s_volume.ClearModified();
 
-        for (int soundIndex = 0; soundIndex < Min(sources.Count(), prioritySounds.Count()); soundIndex++) {
+        int playingSoundCount = Min(sources.Count(), prioritySounds.Count());
+
+        for (int soundIndex = 0; soundIndex < playingSoundCount; soundIndex++) {
             Sound *playSound = prioritySounds[soundIndex];
 
             playSound->SetVolume(playSound->volume);
@@ -421,22 +426,22 @@ void SoundSystem::Cmd_ListSounds(const CmdArgs &args) {
         int samples = sound->SampleRates();
         int bits = sound->BitsWidth();
 
-        BE_LOG(L"%3d refs %6hs %5i khz %2i bits %hs %hs\n",
+        BE_LOG("%3d refs %6s %5i khz %2i bits %s %s\n",
             sound->refCount, channels > 1 ? "stereo" : "mono", samples, bits,
             Str::FormatBytes(sound->Bytes()).c_str(), sound->hashName.c_str());
 
         count++;
     }
-    BE_LOG(L"%i sounds loaded\n", count);
+    BE_LOG("%i sounds loaded\n", count);
 }
 
 void SoundSystem::Cmd_PlaySound(const CmdArgs &args) {
     if (args.Argc() != 2) {
-        BE_LOG(L"usage: playsound <sound-file>\n");
+        BE_LOG("usage: playsound <sound-file>\n");
         return;
     }
 
-    Str filename = WStr::ToStr(args.Argv(1));
+    Str filename = args.Argv(1);
 
     Sound *sound = soundSystem.GetSound(filename);
     sound->Instantiate()->Play2D();

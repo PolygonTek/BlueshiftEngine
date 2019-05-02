@@ -27,11 +27,11 @@ END_EVENTS
 
 void ComConeCollider::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("center", "Center", Vec3, GetCenter, SetCenter, Vec3::zero, 
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, MeterToUnit(0.5f),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("height", "Height", float, GetHeight, SetHeight, MeterToUnit(1.0f),
-        "", PropertyInfo::SystemUnits | PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
 }
 
 ComConeCollider::ComConeCollider() {
@@ -79,11 +79,8 @@ void ComConeCollider::SetHeight(float height) {
     }
 }
 
-bool ComConeCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
-    return false;
-}
-
-void ComConeCollider::DrawGizmos(const RenderView::State &viewState, bool selected) {
+#if 1
+void ComConeCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     if (selected) {
@@ -100,5 +97,6 @@ void ComConeCollider::DrawGizmos(const RenderView::State &viewState, bool select
         }
     }
 }
+#endif
 
 BE_NAMESPACE_END

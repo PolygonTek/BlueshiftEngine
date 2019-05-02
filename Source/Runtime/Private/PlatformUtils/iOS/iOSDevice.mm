@@ -20,98 +20,103 @@
 
 BE_NAMESPACE_BEGIN
 
-bool IOSDevice::IsIPhone(IOSDevice::Type deviceType) {
-    return deviceType >= IOS_IPhone4 && deviceType <= IOS_IPhoneX;
-}
+struct IOSDeviceModel {
+    const char *name;
+    int resolutionWidth, resolutionHeight;
+};
 
-bool IOSDevice::IsIPod(IOSDevice::Type deviceType) {
-    return deviceType >= IOS_IPodTouch4 && deviceType <= IOS_IPodTouch6;
-}
+// Matched with IOSDevice::Type enums
+static IOSDeviceModel iOSModels[] = {
+    // iPod
+    { "iPod Touch 4th generation",  960, 640 },
+    { "iPod Touch 5th generation",  1136, 640 },
+    { "iPod Touch 6th generation",  1136, 640 },
+    // iPhone
+    { "iPhone 4",                   960, 640 },
+    { "iPhone 4s",                  960, 640 },
+    { "iPhone 5",                   1136, 640 },
+    { "iPhone 5s",                  1136, 640 },
+    { "iPhone 6",                   1334, 750 },
+    { "iPhone 6 Plus",              1920, 1080 },
+    { "iPhone 6s",                  1334, 750 },
+    { "iPhone SE",                  1136, 640 },
+    { "iPhone 7",                   1334, 750 },
+    { "iPhone 7 Plus",              1920, 1080 },
+    { "iPhone 8",                   1334, 750 },
+    { "iPhone 8 Plus",              1920, 1080 },
+    { "iPhone X",                   2436, 1125 },
+    { "iPhone Xs",                  2436, 1125 },
+    { "iPhone Xs Max",              2688, 1242 },
+    { "iPhone Xr",                  1792, 828 },
+    // iPad
+    { "iPad 2",                     1024, 768 },
+    { "iPad Mini",                  1024, 768 },
+    { "iPad 3",                     2048, 1536 },
+    { "iPad 4",                     2048, 1536 },
+    { "iPad Air",                   2048, 1536 },
+    { "iPad Mini 2",                2048, 1536 },
+    { "iPad Mini 3",                2048, 1536 },
+    { "iPad Air 2",                 2048, 1536 },
+    { "iPad Mini 4",                2048, 1536 },
+    { "iPad Pro 12.9",              2732, 2048 },
+    { "iPad Pro 9.7",               2048, 1536 },
+    { "iPad 5",                     2048, 1536 },
+    { "iPad Pro 12.9 (2nd)",        2732, 2048 },
+    { "iPad Pro 10.5 (2nd)",        2224, 1668 },
+    { "iPad 6",                     2048, 1536 },
+    { "iPad Pro 12.9 (3rd)",        2732, 2048 },
+    { "iPad Pro 11 (3rd)",          2388, 1668 },
+    { "iPad Mini 5",                2048, 1536 },
+    { "iPad Air 3",                 2224, 1668 },
+};
 
-bool IOSDevice::IsIPad(IOSDevice::Type deviceType) {
-    return deviceType >= IOS_IPad2 && deviceType <= IOS_IPadPro2_10_5;
-}
-
-void IOSDevice::GetDeviceResolution(IOSDevice::Type deviceType, int &width, int &height) {
-    switch (deviceType) {
-        case IOS_IPhone4:
-        case IOS_IPhone4S:
-        case IOS_IPodTouch4:
-            width = 960;
-            height = 640;
-            break;
-        case IOS_IPhone5:
-        case IOS_IPhone5S:
-        case IOS_IPhoneSE:
-        case IOS_IPodTouch5:
-        case IOS_IPodTouch6:
-            width = 1136;
-            height = 640;
-            break;
-        case IOS_IPhone6:
-        case IOS_IPhone6S:
-        case IOS_IPhone7:
-        case IOS_IPhone8:
-            width = 1334;
-            height = 750;
-            break;
-        case IOS_IPhone6Plus:
-        case IOS_IPhone6SPlus:
-        case IOS_IPhone7Plus:
-        case IOS_IPhone8Plus:
-            width = 1920;
-            height = 1080;
-            break;
-        case IOS_IPhoneX:
-            width = 2436;
-            height = 1125;
-            break;
-        case IOS_IPad2:
-        case IOS_IPadMini:
-            width = 1024;
-            height = 768;
-            break;
-        case IOS_IPad3:
-        case IOS_IPad4:
-        case IOS_IPadMini2:
-        case IOS_IPadMini3:
-        case IOS_IPadMini4:
-        case IOS_IPadAir:
-        case IOS_IPadAir2:
-        case IOS_IPadPro_9_7:
-            width = 2048;
-            height = 1536;
-            break;
-        case IOS_IPadPro_12_9:
-        case IOS_IPadPro2_12_9:
-            width = 2732;
-            height = 2048;
-            break;
-        case IOS_IPadPro2_10_5:
-            width = 2224;
-            height = 1668;
-            break;
-        default:
-            break;
+bool IOSDevice::IsIPod(IOSDevice::Type::Enum deviceType) {
+    if (deviceType >= Type::IPodTouch4 && deviceType <= Type::IPodTouch6) { 
+        return true;
     }
+    return false;
 }
 
-IOSDevice::Type IOSDevice::GetIOSDeviceType() {
+bool IOSDevice::IsIPhone(IOSDevice::Type::Enum deviceType) {
+    if (deviceType >= Type::IPhone4 && deviceType <= Type::IPhoneXR) { 
+        return true;
+    }
+    return false;
+}
+
+bool IOSDevice::IsIPad(IOSDevice::Type::Enum deviceType) {
+    if (deviceType >= Type::IPad2 && deviceType <= Type::IPadAir3) { 
+        return true;
+    }
+    return false;
+}
+
+void IOSDevice::GetDeviceResolution(IOSDevice::Type::Enum deviceType, int &width, int &height) {
+    int index = (int)deviceType;
+    assert(index >= 0 && index < Type::UnknownDevice);
+
+    const auto &model = iOSModels[index];
+    width = model.resolutionWidth;
+    height = model.resolutionHeight;
+}
+
+// Refernce: https://www.theiphonewiki.com/wiki/Models
+IOSDevice::Type::Enum IOSDevice::GetIOSDeviceType() {
     // default to unknown
-    static IOSDevice::Type deviceType = IOSDevice::Type::IOS_Unknown;
+    static IOSDevice::Type::Enum deviceType = IOSDevice::Type::UnknownDevice;
     
     // if we've already figured it out, return it
-    if (deviceType != IOSDevice::Type::IOS_Unknown) {
+    if (deviceType != IOSDevice::Type::UnknownDevice) {
         return deviceType;
     }
     
     // get the device hardware type string length
     size_t deviceIDLen;
-    sysctlbyname("hw.machine", NULL, &deviceIDLen, NULL, 0);
+    sysctlbyname("hw.machine", nullptr, &deviceIDLen, nullptr, 0);
     
     // get the device hardware type
     char *deviceID = (char *)malloc(deviceIDLen);
-    sysctlbyname("hw.machine", deviceID, &deviceIDLen, NULL, 0);
+    sysctlbyname("hw.machine", deviceID, &deviceIDLen, nullptr, 0);
     
     // convert to NSString
     BE1::Str deviceIDString([NSString stringWithCString:deviceID encoding:NSUTF8StringEncoding]);
@@ -122,11 +127,11 @@ IOSDevice::Type IOSDevice::GetIOSDeviceType() {
         int major = deviceIDString[4] - '0';
         
         if (major == 4) {
-            deviceType = IOS_IPodTouch4;
+            deviceType = Type::IPodTouch4;
         } else if (major == 5) {
-            deviceType = IOS_IPodTouch5;
+            deviceType = Type::IPodTouch5;
         } else if (major >= 7) {
-            deviceType = IOS_IPodTouch6;
+            deviceType = Type::IPodTouch6;
         }
     } else if (!deviceIDString.Cmpn("iPad", 4)) {
         // get major revision number
@@ -135,41 +140,68 @@ IOSDevice::Type IOSDevice::GetIOSDeviceType() {
         
         if (major == 2) {
             if (minor >= 5) {
-                deviceType = IOS_IPadMini;
+                deviceType = Type::IPadMini;
             } else {
-                deviceType = IOS_IPad2;
+                deviceType = Type::IPad2;
             }
         } else if (major == 3) {
             if (minor <= 3) {
-                deviceType = IOS_IPad3;
+                deviceType = Type::IPad3;
             } else if (minor >= 4) {
-                deviceType = IOS_IPad4;
+                deviceType = Type::IPad4;
             }
         } else if (major == 4) {
             if (minor >= 8) {
-                deviceType = IOS_IPadMini3;
+                deviceType = Type::IPadMini3;
             } else if (minor >= 4) {
-                deviceType = IOS_IPadMini2;
+                deviceType = Type::IPadMini2;
             } else {
-                deviceType = IOS_IPadAir;
+                deviceType = Type::IPadAir;
             }
         } else if (major == 5) {
             if (minor >= 3) {
-                deviceType = IOS_IPadAir2;
+                deviceType = Type::IPadAir2;
             } else {
-                deviceType = IOS_IPadMini4;
+                deviceType = Type::IPadMini4;
             }
         } else if (major == 6) {
-            if (minor >= 7) {
-                deviceType = IOS_IPadPro_12_9;
+            if (minor >= 11) {
+                deviceType = Type::IPad5;
+            } else if (minor >= 7) {
+                deviceType = Type::IPadPro_12_9;
             } else {
-                deviceType = IOS_IPadPro_9_7;
+                deviceType = Type::IPadPro_9_7;
             }
-        } else if (major >= 7) { // Default to highest settings currently available for any future device
-            if (minor >= 3) {
-                deviceType = IOS_IPadPro2_10_5;
+        } else if (major == 7) {
+            if (minor >= 5) {
+                deviceType = Type::IPad6;
+            } else if (minor >= 3) {
+                deviceType = Type::IPadPro2_10_5;
             } else {
-                deviceType = IOS_IPadPro2_12_9;
+                deviceType = Type::IPadPro2_12_9;
+            }
+        } else if (major == 8) {
+            if (minor >= 5) {
+                deviceType = Type::IPadPro3_12_9;
+            } else {
+                deviceType = Type::IPadPro3_11;
+            }
+        } else if (major == 11) {
+            if (minor >= 3) {
+                deviceType = Type::IPadAir3;
+            } else {
+                deviceType = Type::IPadMini5;
+            }
+        } else if (major >= 12) {
+            CGSize result = [[UIScreen mainScreen] bounds].size;
+            float aspectRatio = result.width / result.height;
+
+            if (aspectRatio == 2388.0f / 1668.0f) {
+                deviceType = Type::IPadAir3;
+            } else if (aspectRatio == 2048.0f / 1536.0f) {
+                deviceType = Type::IPadMini5;
+            } else if (aspectRatio == 2732.0f / 2048.0f) {
+                deviceType = Type::IPadPro3_12_9;
             }
         }
     } else if (!deviceIDString.Cmpn("iPhone", 6)) {
@@ -178,71 +210,69 @@ IOSDevice::Type IOSDevice::GetIOSDeviceType() {
         int minor = deviceIDString[commaIndex + 1] - '0';
         
         if (major == 3) {
-            deviceType = IOS_IPhone4;
+            deviceType = Type::IPhone4;
         } else if (major == 4) {
-            deviceType = IOS_IPhone4S;
+            deviceType = Type::IPhone4S;
         } else if (major == 5) {
-            deviceType = IOS_IPhone5;
+            deviceType = Type::IPhone5;
         } else if (major == 6) {
-            deviceType = IOS_IPhone5S;
+            deviceType = Type::IPhone5S;
         } else if (major == 7) {
             if (minor == 1) {
-                deviceType = IOS_IPhone6Plus;
+                deviceType = Type::IPhone6Plus;
             } else if (minor == 2) {
-                deviceType = IOS_IPhone6;
+                deviceType = Type::IPhone6;
             }
         } else if (major == 8) {
             if (minor == 1) {
-                deviceType = IOS_IPhone6S;
+                deviceType = Type::IPhone6S;
             } else if (minor == 2) {
-                deviceType = IOS_IPhone6SPlus;
+                deviceType = Type::IPhone6SPlus;
             } else if (minor == 4) {
-                deviceType = IOS_IPhoneSE;
+                deviceType = Type::IPhoneSE;
             }
         } else if (major == 9) {
             if (minor == 1 || minor == 3) {
-                deviceType = IOS_IPhone7;
+                deviceType = Type::IPhone7;
             } else if (minor == 2 || minor == 4) {
-                deviceType = IOS_IPhone7Plus;
+                deviceType = Type::IPhone7Plus;
             }
         } else if (major == 10) {
             if (minor == 1 || minor == 4) {
-                deviceType = IOS_IPhone8;
+                deviceType = Type::IPhone8;
             } else if (minor == 2 || minor == 5) {
-                deviceType = IOS_IPhone8Plus;
+                deviceType = Type::IPhone8Plus;
             } else if (minor == 3 || minor == 6) {
-                deviceType = IOS_IPhoneX;
+                deviceType = Type::IPhoneX;
             }
         } else if (major == 11) {
             if (minor == 2) {
-                deviceType = IOS_IPhoneXS;
+                deviceType = Type::IPhoneXS;
             } else if (minor == 4 || minor == 6) {
-                deviceType = IOS_IPhoneXSMax;
+                deviceType = Type::IPhoneXSMax;
             } else if (minor == 8) {
-                deviceType = IOS_IPhoneXR;
+                deviceType = Type::IPhoneXR;
             }
-        } else if (major >= 11) {
-            // for going forward into unknown devices (like 8/8+?), we can't use minor,
-            // so treat devices with a scale > 2.5 to be 6SPlus type devices, < 2.5 to be 6S type devices
+        } else if (major >= 12) {
             if ([UIScreen mainScreen].scale > 2.5f) {
-                deviceType = IOS_IPhoneXSMax;
+                deviceType = Type::IPhoneXSMax;
             } else {
-                deviceType = IOS_IPhoneXS;
+                deviceType = Type::IPhoneXS;
             }
         }
     } else if (!deviceIDString.Cmpn("x86", 3)) { // simulator
         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
             CGSize result = [[UIScreen mainScreen] bounds].size;
             if (result.height >= 586) {
-                deviceType = IOS_IPhone5;
+                deviceType = Type::IPhone5;
             } else {
-                deviceType = IOS_IPhone4S;
+                deviceType = Type::IPhone4S;
             }
         } else {
             if ([[UIScreen mainScreen] scale] > 1.0f) {
-                deviceType = IOS_IPad3;
+                deviceType = Type::IPad3;
             } else {
-                deviceType = IOS_IPad2;
+                deviceType = Type::IPad2;
             }
         }
     }

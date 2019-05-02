@@ -49,7 +49,7 @@ shader "sunShaftsMaskGen" {
 				tex2D(depthMap, v2f_texCoord2.st).x;
 			depth *= 0.2;
 		#else
-			vec3 color = tex2D(colorMap, v2f_texCoord0.st).xyz;
+			vec3 color = saturate(tex2D(colorMap, v2f_texCoord0.st).xyz);
 			float depth = tex2D(depthMap, v2f_texCoord0.st).x;
 		#endif
 

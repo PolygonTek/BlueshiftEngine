@@ -525,7 +525,7 @@ void DynamicAABBTree::ValidateStructure(int32_t index) const {
 
     if (index == root) {
         if (nodes[index].parent != -1) {
-            BE_WARNLOG(L"DynamicAABBTree::ValidateStructure: root has parent\n");
+            BE_WARNLOG("DynamicAABBTree::ValidateStructure: root has parent\n");
         }
     }
 
@@ -536,17 +536,17 @@ void DynamicAABBTree::ValidateStructure(int32_t index) const {
 
     if (node->IsLeaf()) {
         if (child1 != -1 || child2 != -1 || node->height != 0) {
-            BE_WARNLOG(L"DynamicAABBTree::ValidateStructure: invalid leaf\n");
+            BE_WARNLOG("DynamicAABBTree::ValidateStructure: invalid leaf\n");
         }
         return;
     }
 
     if (child1 < 0 || child1 >= nodeCapacity || nodes[child1].parent != index) {
-        BE_WARNLOG(L"DynamicAABBTree::ValidateStructure: invalid node child1\n");
+        BE_WARNLOG("DynamicAABBTree::ValidateStructure: invalid node child1\n");
     }
 
     if (child2 < 0 || child2 >= nodeCapacity || nodes[child2].parent != index) {
-        BE_WARNLOG(L"DynamicAABBTree::ValidateStructure: invalid node child2\n");
+        BE_WARNLOG("DynamicAABBTree::ValidateStructure: invalid node child2\n");
     }
 
     ValidateStructure(child1);
@@ -565,17 +565,17 @@ void DynamicAABBTree::ValidateMetrics(int32_t index) const {
 
     if (node->IsLeaf()) {
         if (child1 != -1 || child2 != -1 || node->height != 0) {
-            BE_WARNLOG(L"DynamicAABBTree::ValidateMetrics: invalid leaf\n");
+            BE_WARNLOG("DynamicAABBTree::ValidateMetrics: invalid leaf\n");
         }
         return;
     }
 
     if (child1 < 0 || child1 >= nodeCapacity) {
-        BE_WARNLOG(L"DynamicAABBTree::ValidateMetrics: invalid node child1\n");
+        BE_WARNLOG("DynamicAABBTree::ValidateMetrics: invalid node child1\n");
     }
 
     if (child2 < 0 || child2 >= nodeCapacity) {
-        BE_WARNLOG(L"DynamicAABBTree::ValidateMetrics: invalid node child2\n");
+        BE_WARNLOG("DynamicAABBTree::ValidateMetrics: invalid node child2\n");
     }
 
     int32_t height1 = nodes[child1].height;

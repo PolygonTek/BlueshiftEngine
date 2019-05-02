@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Platform/Windows/PlatformWinUtils.h"
 #include "WinResource.h"
 #include "Application.h"
 #include <tchar.h>
@@ -34,13 +35,21 @@ static BE1::RHI::Handle     subRenderTarget = BE1::RHI::NullRenderTarget;
 LRESULT CALLBACK            MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK            SubWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-static void SystemLog(int logLevel, const wchar_t *msg) {
-    OutputDebugString(msg);
+static void SystemLog(int logLevel, const char *text) {
+    int len = BE1::PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
+    wchar_t *wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
+    BE1::PlatformWinUtils::UTF8ToUCS2(text, wText, len);
+
+    OutputDebugString(wText);
 }
 
-static void SystemError(int errLevel, const wchar_t *msg) {
+static void SystemError(int errLevel, const char *text) {
+    int len = BE1::PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
+    wchar_t *wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
+    BE1::PlatformWinUtils::UTF8ToUCS2(text, wText, len);
+
     HWND hwnd = FindWindow(mainWindowClassName, nullptr);
-    MessageBox(hwnd, msg, L"Error", MB_OK);
+    MessageBox(hwnd, wText, L"Error", MB_OK);
     if (errLevel == BE1::FatalErr) {
         exit(0);
     }
@@ -144,17 +153,17 @@ static void ToggleFullscreen(BE1::RHI::Handle ctx) {
 }
 
 static void DisplayMainContext(BE1::RHI::Handle context, void *dataPtr) {
-    static float t0 = BE1::PlatformTime::Milliseconds() / 1000.0f;
-    float t = BE1::PlatformTime::Milliseconds() / 1000.0f - t0;
+    static float t0 = BE1::PlatformTime::Seconds();
+
+    float t = BE1::PlatformTime::Seconds() - t0;
 
     ::app.Draw(context, mainRenderTarget, t);
 }
 
 static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
-    static float t0 = BE1::PlatformTime::Milliseconds() / 1000.0f;
-    float t = BE1::PlatformTime::Milliseconds() / 1000.0f - t0;
+    static float t0 = BE1::PlatformTime::Seconds();
 
-    t *= -1.0f;
+    float t = BE1::PlatformTime::Seconds() - t0;
 
     ::app.Draw(context, subRenderTarget, t);
 }
@@ -206,7 +215,13 @@ BOOL InitInstance(int nCmdShow) {
     basePath.CleanPath();
     BE1::Engine::InitBase(basePath.c_str(), false, SystemLog, SystemError);
 
-    HWND hwndMain = CreateMainWindow(BE1::wva(L"%s %hs %hs %hs", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__), 1024, 768);
+    char temp[128];
+    BE1::Str::snPrintf(temp, sizeof(temp), "%ls %s %s %s", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
+
+    wchar_t szFullTitle[128];
+    BE1::PlatformWinUtils::UTF8ToUCS2(temp, szFullTitle, COUNT_OF(szFullTitle));
+
+    HWND hwndMain = CreateMainWindow(szFullTitle, 1024, 768);
 
     app.Init(hwndMain);
 

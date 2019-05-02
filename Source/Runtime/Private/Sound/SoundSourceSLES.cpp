@@ -74,37 +74,37 @@ bool SoundSource::CreateAudioPlayer(const Sound *sound) {
 
     SLresult result = (*soundSystem.slEngine)->CreateAudioPlayer(soundSystem.slEngine, &slPlayerObject, &audioSrc, &audioSink, COUNT_OF(ids), ids, req);
     if (result != SL_RESULT_SUCCESS) {
-        BE_WARNLOG(L"Failed OpenSL CreateAudioPlayer : 0x%x\n", result);
+        BE_WARNLOG("Failed OpenSL CreateAudioPlayer : 0x%x\n", result);
         return false;
     }
 
     // Realize the player
     result = (*slPlayerObject)->Realize(slPlayerObject, SL_BOOLEAN_FALSE);
     if (result != SL_RESULT_SUCCESS) {
-        BE_WARNLOG(L"Failed OpenSL Realize : 0x%x\n", result);
+        BE_WARNLOG("Failed OpenSL Realize : 0x%x\n", result);
         return false;
     }
 
     // Get the play interface
     result = (*slPlayerObject)->GetInterface(slPlayerObject, SL_IID_PLAY, &slPlay);
     if (result != SL_RESULT_SUCCESS) {
-        BE_WARNLOG(L"Failed OpenSL GetInterface SL_IID_PLAY : 0x%x\n", result);
+        BE_WARNLOG("Failed OpenSL GetInterface SL_IID_PLAY : 0x%x\n", result);
         return false;
     }
 
     // Get the volume interface
     result = (*slPlayerObject)->GetInterface(slPlayerObject, SL_IID_VOLUME, &slVolume);
     if (result != SL_RESULT_SUCCESS) {
-        BE_WARNLOG(L"Failed OpenSL GetInterface SL_IID_VOLUME : 0x%x\n", result);
+        BE_WARNLOG("Failed OpenSL GetInterface SL_IID_VOLUME : 0x%x\n", result);
         return false;
     }
 
     // Get the buffer queue interface
     result = (*slPlayerObject)->GetInterface(slPlayerObject, SL_IID_BUFFERQUEUE, &slBufferQueue);
     if (result != SL_RESULT_SUCCESS) {
-        BE_WARNLOG(L"Failed OpenSL GetInterface SL_IID_BUFFERQUEUE : 0x%x\n", result);
+        BE_WARNLOG("Failed OpenSL GetInterface SL_IID_BUFFERQUEUE : 0x%x\n", result);
         return false;
-    }    
+    }
 
 #if 0
     // Get the 3d location interface
@@ -132,7 +132,7 @@ void SoundSource::Init(Sound *sound) {
     SLresult result;
     
     if (!CreateAudioPlayer(sound)) {
-        BE_WARNLOG(L"Failed to create OpenSL audio player !\n");
+        BE_WARNLOG("Failed to create OpenSL audio player !\n");
         return;
     }
 
@@ -144,7 +144,7 @@ void SoundSource::Init(Sound *sound) {
             //result = (*slSeek)->SetLoop(slSeek, SL_BOOLEAN_TRUE, 0, SL_TIME_UNKNOWN);
             result = (*slBufferQueue)->RegisterCallback(slBufferQueue, OpenSLBufferQueueCallback, (void *)this);
             if (result != SL_RESULT_SUCCESS) {
-                BE_WARNLOG(L"Failed OpenSL RegisterCallback : 0x%x\n", result);
+                BE_WARNLOG("Failed OpenSL RegisterCallback : 0x%x\n", result);
                 DestroyAudioPlayer();
                 return;
             }
@@ -154,7 +154,7 @@ void SoundSource::Init(Sound *sound) {
 
         result = (*slBufferQueue)->Enqueue(slBufferQueue, sound->soundBuffer->buffers[0] + byteOffset, sound->soundBuffer->bufferSize - byteOffset);
         if (result != SL_RESULT_SUCCESS) {
-            BE_WARNLOG(L"Failed OpenSL Enqueue : 0x%x\n", result);
+            BE_WARNLOG("Failed OpenSL Enqueue : 0x%x\n", result);
             if (sound->looping) {
                 result = (*slBufferQueue)->RegisterCallback(slBufferQueue, nullptr, nullptr);
             }

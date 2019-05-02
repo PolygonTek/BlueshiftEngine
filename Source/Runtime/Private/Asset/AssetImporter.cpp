@@ -40,12 +40,12 @@ Str AssetImporter::ToString() const {
 }
 
 void AssetImporter::RevertChanged() {
-    Str metaFilename = Asset::GetMetaFilenameFromAssetPath(asset->GetAssetFilename());
+    Str metaFileName = Asset::GetMetaFileNameFromAssetPath(asset->GetAssetFilename());
 
     Json::Value metaDataValue;
     bool validRootNode = false;
     char *text;
-    if (fileSystem.LoadFile(metaFilename, false, (void **)&text) > 0) {
+    if (fileSystem.LoadFile(metaFileName, false, (void **)&text) > 0) {
         Json::Reader jsonReader;
         validRootNode = jsonReader.parse(text, metaDataValue);
     }

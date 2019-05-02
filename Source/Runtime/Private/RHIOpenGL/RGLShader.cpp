@@ -16,7 +16,7 @@
 #include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
 #include "Platform/PlatformFile.h"
-#include "Containers/BinSearch.h"
+#include "Core/BinSearch.h"
 #include "Simd/Simd.h"
 #include "Core/Checksum_MD5.h"
 #include "Core/Heap.h"
@@ -28,6 +28,8 @@ struct InOut {
     Str precision;
     Str type;
     Str name;
+    Str blockText;
+    Str blockName;
     int index;
     int location;
 };
@@ -40,26 +42,26 @@ struct InOutSemantic {
 
 static const InOutSemantic inOutSemantics[] = {
     // vertex shader input semantics
-    { 0, RHI::VertexElement::Position, "POSITION" }, 
-    { 1, RHI::VertexElement::Normal, "NORMAL" },
-    { 2, RHI::VertexElement::Color, "COLOR" },
-    { 3, RHI::VertexElement::SecondaryColor, "SECONDARY_COLOR" },
-    { 4, RHI::VertexElement::Tangent, "TANGENT" },
-    { 5, RHI::VertexElement::WeightIndex, "WEIGHT_INDEX" },
-    { 6, RHI::VertexElement::WeightIndex0, "WEIGHT_INDEX0" },
-    { 7, RHI::VertexElement::WeightIndex1, "WEIGHT_INDEX1" },
-    { 8, RHI::VertexElement::WeightValue, "WEIGHT_VALUE" },
-    { 9, RHI::VertexElement::WeightValue0, "WEIGHT_VALUE0" },
-    { 10, RHI::VertexElement::WeightValue1, "WEIGHT_VALUE1" },
-    { 11, RHI::VertexElement::TexCoord, "TEXCOORD" },
-    { 12, RHI::VertexElement::TexCoord0, "TEXCOORD0" },
-    { 13, RHI::VertexElement::TexCoord1, "TEXCOORD1" },
-    { 14, RHI::VertexElement::TexCoord2, "TEXCOORD2" },
-    { 15, RHI::VertexElement::TexCoord3, "TEXCOORD3" },
-    { 16, RHI::VertexElement::TexCoord4, "TEXCOORD4" },
-    { 17, RHI::VertexElement::TexCoord5, "TEXCOORD5" },
-    { 18, RHI::VertexElement::TexCoord6, "TEXCOORD6" },
-    { 19, RHI::VertexElement::TexCoord7, "TEXCOORD7" },
+    { 0, RHI::VertexElement::Usage::Position, "POSITION" },
+    { 1, RHI::VertexElement::Usage::Normal, "NORMAL" },
+    { 2, RHI::VertexElement::Usage::Color, "COLOR" },
+    { 3, RHI::VertexElement::Usage::SecondaryColor, "SECONDARY_COLOR" },
+    { 4, RHI::VertexElement::Usage::Tangent, "TANGENT" },
+    { 5, RHI::VertexElement::Usage::WeightIndex, "WEIGHT_INDEX" },
+    { 6, RHI::VertexElement::Usage::WeightIndex0, "WEIGHT_INDEX0" },
+    { 7, RHI::VertexElement::Usage::WeightIndex1, "WEIGHT_INDEX1" },
+    { 8, RHI::VertexElement::Usage::WeightValue, "WEIGHT_VALUE" },
+    { 9, RHI::VertexElement::Usage::WeightValue0, "WEIGHT_VALUE0" },
+    { 10, RHI::VertexElement::Usage::WeightValue1, "WEIGHT_VALUE1" },
+    { 11, RHI::VertexElement::Usage::TexCoord, "TEXCOORD" },
+    { 12, RHI::VertexElement::Usage::TexCoord0, "TEXCOORD0" },
+    { 13, RHI::VertexElement::Usage::TexCoord1, "TEXCOORD1" },
+    { 14, RHI::VertexElement::Usage::TexCoord2, "TEXCOORD2" },
+    { 15, RHI::VertexElement::Usage::TexCoord3, "TEXCOORD3" },
+    { 16, RHI::VertexElement::Usage::TexCoord4, "TEXCOORD4" },
+    { 17, RHI::VertexElement::Usage::TexCoord5, "TEXCOORD5" },
+    { 18, RHI::VertexElement::Usage::TexCoord6, "TEXCOORD6" },
+    { 19, RHI::VertexElement::Usage::TexCoord7, "TEXCOORD7" },
 
     // fragment shader output semantics
     { 0, 0, "FRAG_COLOR" },
@@ -151,38 +153,72 @@ static const InOutSemantic *FindInOutSemantic(const char *semanticName) {
     return nullptr;
 }
 
-static void ParseInOut(Lexer &lexer, bool hasSemantic, InOut &inOut) {
-    Str token;
-    Str semanticName;
+static void ParseInOutSemantic(Lexer &lexer, InOut &inOut) {
+    inOut.blockName = "";
+    inOut.blockText = "";
+    inOut.index = -1;
+    inOut.location = -1;
 
-    lexer.ReadToken(&token); // type or precision qualifier
+    Str token;
+    lexer.ReadToken(&token);
 
     if (token == "LOWP" || token == "MEDIUMP" || token == "HIGHP") {
         inOut.precision = token;
 
-        lexer.ReadToken(&token); // type
+        lexer.ReadToken(&token);
     } else {
         inOut.precision = "";
     }
 
     inOut.type = token;
 
-    lexer.ReadToken(&token); // name
+    lexer.ReadToken(&token);
     inOut.name = token;
 
+    if (lexer.ExpectPunctuation(Lexer::PuncType::Colon)) { // :
+        Str semanticName;
+
+        if (lexer.ReadToken(&semanticName)) { // semantic name
+            const InOutSemantic *inOutSemantic = FindInOutSemantic(semanticName);
+            inOut.index = inOutSemantic->index;
+            inOut.location = inOutSemantic->location;
+        } else {
+            lexer.Warning("ParseInOutSemantic: missing semantic for inOut %s", inOut.name.c_str());
+        }
+    }
+}
+
+static void ParseInOut(Lexer &lexer, InOut &inOut) {
     inOut.index = -1;
     inOut.location = -1;
+    inOut.name = "";
+    inOut.blockName = "";
+    inOut.blockText = "";
 
-    if (hasSemantic) {
-        if (lexer.ExpectPunctuation(P_COLON)) { // :
-            if (lexer.ReadToken(&semanticName)) { // semantic name
-                const InOutSemantic *inOutSemantic = FindInOutSemantic(semanticName);
-                inOut.index = inOutSemantic->index;
-                inOut.location = inOutSemantic->location;
-            } else {
-                lexer.Warning("ParseInOut: missing semantic for inOut %s", inOut.name.c_str());
-            }
-        }
+    Str token;
+    lexer.ReadToken(&token);
+
+    if (token == "LOWP" || token == "MEDIUMP" || token == "HIGHP") {
+        inOut.precision = token;
+
+        lexer.ReadToken(&token);
+    } else {
+        inOut.precision = "";
+    }
+
+    // type or block tag
+    inOut.type = token;
+
+    lexer.ReadToken(&token);
+
+    if (token == "{") {
+        lexer.UnreadToken(&token);
+        lexer.ParseBracedSection(inOut.blockText);
+
+        // block name
+        lexer.ReadToken(&inOut.blockName);
+    } else {
+        inOut.name = token;
     }
 }
 
@@ -270,10 +306,9 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
         if (token == "in" && parentheses == 0) {
             processedText += (lexer.LinesCrossed() > 0) ? newline : (lexer.WhiteSpaceBeforeToken() > 0 ? " " : "");
 
-            ParseInOut(lexer, isVertexShader, inOut);
-            lexer.SkipUntilString(";");
-
             if (isVertexShader) {
+                ParseInOutSemantic(lexer, inOut);
+
                 inOutList.Append(inOut);
 
                 if (OpenGL::GLSL_VERSION < 130) {
@@ -284,6 +319,8 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
                     processedText += va("layout (location = %i) in ", inOut.location);
                 }
             } else {
+                ParseInOut(lexer, inOut);
+
                 if (OpenGL::GLSL_VERSION < 130) {
                     processedText += "varying ";
                 } else {
@@ -291,38 +328,51 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
                 }
             }
 
+            lexer.SkipUntilString(";");
+
             if (!inOut.precision.IsEmpty()) {
                 processedText += inOut.precision + " ";
             }
-            processedText += inOut.type + " " + inOut.name + ";";
+            processedText += inOut.type + " " + inOut.name;
+            if (!inOut.blockName.IsEmpty()) {
+                processedText += "{" + inOut.blockText + "}" + inOut.blockName;
+            }
+            processedText += ";";
             continue;
         }
-        
+
         if (token == "out" && parentheses == 0) {
             processedText += (lexer.LinesCrossed() > 0) ? newline : (lexer.WhiteSpaceBeforeToken() > 0 ? " " : "");
 
-            ParseInOut(lexer, !isVertexShader, inOut);
-            lexer.SkipUntilString(";");
+            if (!isVertexShader) {
+                ParseInOutSemantic(lexer, inOut);
 
-            if (isVertexShader) {
-                if (OpenGL::GLSL_VERSION < 130) {
-                    processedText += "varying ";
-                } else {
-                    processedText += "out ";
-                }
-            } else {
                 inOutList.Append(inOut);
 
                 if (OpenGL::GLSL_VERSION < 130) {
                 } else {
                     processedText += va("layout (location = %i) out ", inOut.location);
                 }
+            } else {
+                ParseInOut(lexer, inOut);
+
+                if (OpenGL::GLSL_VERSION < 130) {
+                    processedText += "varying ";
+                } else {
+                    processedText += "out ";
+                }
             }
+
+            lexer.SkipUntilString(";");
 
             if (!inOut.precision.IsEmpty()) {
                 processedText += inOut.precision + " ";
             }
-            processedText += inOut.type + " " + inOut.name + ";";
+            processedText += inOut.type + " " + inOut.name;
+            if (!inOut.blockName.IsEmpty()) {
+                processedText += "{" + inOut.blockText + "}" + inOut.blockName;
+            }
+            processedText += ";";
             continue;
         }
 
@@ -333,7 +383,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
             lexer.SkipUntilString(";");
 
             processedText += "uniform ";
-                
+
             if (!uniform.precision.IsEmpty()) {
                 processedText += uniform.precision + " ";
             }
@@ -346,7 +396,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
 
             Str blockName;
             lexer.ReadToken(&blockName);
-            lexer.ExpectPunctuation(P_BRACEOPEN);
+            lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen);
 
             processedText += "layout (std140) uniform " + blockName + " {\n";
 
@@ -354,7 +404,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
                 lexer.ReadToken(&token);
 
                 if (token.IsEmpty()) {
-                    BE_WARNLOG(L"no matching '}' found\n");
+                    BE_WARNLOG("no matching '}' found\n");
                     break;
                 } else if (token[0] == '}') {
                     break;
@@ -386,7 +436,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
                 }
             }
         }
-    
+
         processedText += (lexer.LinesCrossed() > 0) ? newline : (lexer.WhiteSpaceBeforeToken() > 0 ? " " : "");
         processedText += token;
     }
@@ -397,7 +447,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
     static char versionString[32];
     static char versionDefineString[32];
     static bool first = true;
-    
+
     if (first) {
         Str::snPrintf(versionString, COUNT_OF(versionString), "#version %s\n", OpenGL::GLSL_VERSION_STRING);
         Str::snPrintf(versionDefineString, COUNT_OF(versionDefineString), "#define GLSL_VERSION %d\n", OpenGL::GLSL_VERSION);
@@ -405,7 +455,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
     }
     headerText += versionString;
     headerText += versionDefineString;
-    
+
 #if defined(GL_EXT_gpu_shader4) || defined(GL_ARB_gpu_shader5)
     if (gglext._GL_ARB_gpu_shader5) {
         headerText += "#define GPU_SHADER 5\n";
@@ -438,7 +488,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
         //headerText += "#extension GL_EXT_shader_texture_lod : enable\n";
     }
 #endif
-    
+
     headerText += "#ifdef GL_ES\n";
 
     headerText += "#define LOWP lowp\n";
@@ -469,7 +519,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
     headerText += "#define LOWP\n";
     headerText += "#define MEDIUMP\n";
     headerText += "#define HIGHP\n";
-    
+
     headerText += "#endif\n";
 
     Str outputText;
@@ -529,7 +579,7 @@ static bool IsValidSamplerType(GLenum type) {
     case GL_SAMPLER_2D_ARRAY_SHADOW:
         return true;
     }
-    
+
     return false;
 }
 
@@ -538,7 +588,7 @@ static bool VerifyCompiledShader(GLuint shaderObject, const char *shaderName, co
     GLint status;
 
     gglGetShaderiv(shaderObject, GL_COMPILE_STATUS, &status);
-    
+
     if (!status) {
         gglGetShaderiv(shaderObject, GL_INFO_LOG_LENGTH, &infoLogLength);
 
@@ -546,15 +596,15 @@ static bool VerifyCompiledShader(GLuint shaderObject, const char *shaderName, co
             char *infoLog = (char *)Mem_Alloc(infoLogLength);
             gglGetShaderInfoLog(shaderObject, infoLogLength, &infoLogLength, infoLog);
 
-            BE_WARNLOG(L"SHADER COMPILE ERROR : '%hs'\n%hs\n", shaderName, infoLog);
+            BE_WARNLOG("SHADER COMPILE ERROR : '%s'\n%s\n", shaderName, infoLog);
 
             Array<Str> lines;
             TextToLineList(shaderText, lines);
-            BE_LOG(L"-----------------\n");
+            BE_LOG("-----------------\n");
             for (int i = 0; i < lines.Count(); i++) {
-                BE_LOG(L"%3d: %hs\n", i + 1, lines[i].c_str());
+                BE_LOG("%3d: %s\n", i + 1, lines[i].c_str());
             }
-            BE_LOG(L"-----------------\n");
+            BE_LOG("-----------------\n");
 
             Mem_Free(infoLog);
         }
@@ -576,7 +626,7 @@ static bool VerifyLinkedProgram(GLuint programObject, const char *shaderName) {
             char *infoLog = (char *)Mem_Alloc(infoLogLength);
             gglGetProgramInfoLog(programObject, infoLogLength, nullptr, infoLog);
 
-            BE_WARNLOG(L"SHADER LINK ERROR : '%hs'\n%hs\n", shaderName, infoLog);
+            BE_WARNLOG("SHADER LINK ERROR : '%s'\n%s\n", shaderName, infoLog);
             Mem_Free(infoLog);
         }
         return false;
@@ -643,6 +693,10 @@ static bool CompileAndLinkProgram(const char *name, const char *vsText, const Ar
 #endif
     }
 
+    if (OpenGL::SupportsProgramBinary()) {
+        gglProgramParameteri(programObject, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
+    }
+
     gglLinkProgram(programObject);
 
     // delete shader objects after linking GLSL program to save memory
@@ -667,14 +721,14 @@ static void CacheProgram(const char *name, const uint32_t hash, GLuint programOb
 
     if (binaryLength > 0) {
         byte *programBinary = (byte *)Mem_Alloc16(binaryLength + sizeof(uint32_t) + sizeof(GLenum));
-        
+
         *(uint32_t *)programBinary = hash;
-        gglGetProgramBinary(programObject, binaryLength, nullptr, (GLenum *)(programBinary + sizeof(uint32_t)), programBinary + sizeof(uint32_t) + sizeof(GLenum));        
+        gglGetProgramBinary(programObject, binaryLength, nullptr, (GLenum *)(programBinary + sizeof(uint32_t)), programBinary + sizeof(uint32_t) + sizeof(GLenum));
 
         Str filename = GLShader::programCacheDir;
         filename.AppendPath(name);
-        filename.SetFileExtension(".programbin");
-        PlatformFile *file = PlatformFile::OpenFileWrite(filename);
+        filename.SetFileExtension(".bin");
+        PlatformFile *file = (PlatformFile *)PlatformFile::OpenFileWrite(filename);
         if (file) {
             file->Write(programBinary, binaryLength + sizeof(uint32_t) + sizeof(GLenum));
             delete file;
@@ -687,7 +741,8 @@ static void CacheProgram(const char *name, const uint32_t hash, GLuint programOb
 static bool UseCachedProgram(const char *name, const uint32_t hash, GLuint programObject) {
     Str filename = GLShader::programCacheDir;
     filename.AppendPath(name);
-    filename.SetFileExtension(".programbin");
+    filename.SetFileExtension(".bin");
+#if 0
     PlatformFile *file = PlatformFile::OpenFileRead(filename);
     if (!file) {
         return false;
@@ -704,8 +759,25 @@ static bool UseCachedProgram(const char *name, const uint32_t hash, GLuint progr
     }
 
     gglProgramBinary(programObject, *(GLenum *)(programBinary + sizeof(uint32_t)), programBinary + sizeof(uint32_t) + sizeof(GLenum), fileSize - (sizeof(uint32_t) + sizeof(GLenum)));
-    
+
     Mem_AlignedFree(programBinary);
+#else
+    PlatformFileMapping *fileMapping = PlatformFileMapping::OpenFileRead(filename);
+    if (!fileMapping) {
+        return false;
+    }
+
+    const byte *programBinary = (const byte *)fileMapping->GetData();
+
+    if (*(uint32_t *)programBinary != hash) {
+        delete fileMapping;
+        return false;
+    }
+
+    gglProgramBinary(programObject, *(GLenum *)(programBinary + sizeof(uint32_t)), programBinary + sizeof(uint32_t) + sizeof(GLenum), (GLsizei)fileMapping->GetSize() - (sizeof(uint32_t) + sizeof(GLenum)));
+
+    delete fileMapping;
+#endif
 
     GLint status;
     gglGetProgramiv(programObject, GL_LINK_STATUS, &status);
@@ -745,7 +817,7 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
         if (OpenGL::SupportsProgramBinary()) {
             CacheProgram(name, programHash, programObject);
         }
-    } 
+    }
 
     GLint uniformCount, uniformMaxNameLength;
     gglGetProgramiv(programObject, GL_ACTIVE_UNIFORMS, &uniformCount);
@@ -754,13 +826,13 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
     GLint uniformBlockCount, uniformBlockMaxNameLength;
     gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_BLOCKS, &uniformBlockCount);
     gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH, &uniformBlockMaxNameLength);
-    
+
     char *uniformName = (char *)_alloca(uniformMaxNameLength);
     char *uniformBlockName = (char *)_alloca(uniformBlockMaxNameLength);
 
-    static const int MAX_SAMPLERS = 64;
-    static const int MAX_UNIFORMS = 4096;
-    static const int MAX_UNIFORM_BLOCKS = 16;
+    static constexpr int MAX_SAMPLERS = 64;
+    static constexpr int MAX_UNIFORMS = 4096;
+    static constexpr int MAX_UNIFORM_BLOCKS = 16;
 
     GLSampler *tempSamplers = (GLSampler *)_alloca(sizeof(GLSampler) * MAX_SAMPLERS);
     GLUniform *tempUniforms = (GLUniform *)_alloca(sizeof(GLUniform) * MAX_UNIFORMS);
@@ -769,7 +841,7 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
     int numSamplers = 0;
     int numUniforms = 0;
     int numUniformBlocks = 0;
-    
+
     gglUseProgram(programObject);
 
     for (int uniformIndex = 0; uniformIndex < uniformCount; uniformIndex++) {
@@ -853,7 +925,7 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
 
         numUniformBlocks++;
     }
-    
+
     gglUseProgram(0);
 
     GLSampler *samplers = nullptr;
@@ -886,13 +958,13 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
 
     GLShader *shader = new GLShader;
     Str::Copynz(shader->name, name, COUNT_OF(shader->name));
-    shader->programObject       = programObject;
-    shader->numSamplers         = numSamplers;
-    shader->samplers            = samplers;
-    shader->numUniforms         = numUniforms;
-    shader->uniforms            = uniforms;
-    shader->numUniformBlocks    = numUniformBlocks;
-    shader->uniformBlocks       = uniformBlocks;
+    shader->programObject = programObject;
+    shader->numSamplers = numSamplers;
+    shader->samplers = samplers;
+    shader->numUniforms = numUniforms;
+    shader->uniforms = uniforms;
+    shader->numUniformBlocks = numUniformBlocks;
+    shader->uniformBlocks = uniformBlocks;
 
     int handle = shaderList.FindNull();
     if (handle == -1) {

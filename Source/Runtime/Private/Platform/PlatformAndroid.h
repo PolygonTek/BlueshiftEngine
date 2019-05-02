@@ -23,18 +23,18 @@ BE_NAMESPACE_BEGIN
 class PlatformAndroid : public PlatformGeneric {
 public:
     PlatformAndroid();
-    
-    virtual void			Init() override;
-    virtual void			Shutdown() override;
+
+    virtual void            Init() override;
+    virtual void            Shutdown() override;
 
     virtual void            SetMainWindowHandle(void *windowHandle) override;
 
-    virtual void			Quit() override;
-    virtual void			Log(const wchar_t *msg) override;
-    virtual void			Error(const wchar_t *msg) override;
+    virtual void            Quit() override;
+    virtual void            Log(const char *msg) override;
+    virtual void            Error(const char *msg) override;
 
 private:
-	ANativeWindow *			window;
+    ANativeWindow *         window;
 };
 
 BE_NAMESPACE_END

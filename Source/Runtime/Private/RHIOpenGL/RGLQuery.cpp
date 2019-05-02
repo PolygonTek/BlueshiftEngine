@@ -18,11 +18,12 @@
 
 BE_NAMESPACE_BEGIN
 
-RHI::Handle OpenGLRHI::CreateQuery() {
+RHI::Handle OpenGLRHI::CreateQuery(QueryType::Enum queryType) {
     GLuint id;
     gglGenQueries(1, &id);
 
     GLQuery *query = new GLQuery;
+    query->queryType = queryType;
     query->id = id;
 
     int handle = queryList.FindNull();
@@ -37,6 +38,7 @@ RHI::Handle OpenGLRHI::CreateQuery() {
 
 void OpenGLRHI::DestroyQuery(Handle queryHandle) {
     GLQuery *query = queryList[queryHandle];
+
     gglDeleteQueries(1, &query->id);
 
     delete query;
@@ -44,16 +46,32 @@ void OpenGLRHI::DestroyQuery(Handle queryHandle) {
 }
 
 void OpenGLRHI::BeginQuery(Handle queryHandle) {
-    GLQuery *query = queryList[queryHandle];
-    gglBeginQuery(GL_ANY_SAMPLES_PASSED, query->id);
+    const GLQuery *query = queryList[queryHandle];
+
+    if (query->queryType == RHI::QueryType::Occlusion) {
+        gglBeginQuery(GL_ANY_SAMPLES_PASSED, query->id);
+    }
 }
 
-void OpenGLRHI::EndQuery() {
-    gglEndQuery(GL_ANY_SAMPLES_PASSED);
+void OpenGLRHI::EndQuery(Handle queryHandle) {
+    const GLQuery *query = queryList[queryHandle];
+
+    if (query->queryType == RHI::QueryType::Occlusion) {
+        gglEndQuery(GL_ANY_SAMPLES_PASSED);
+    }
+}
+
+void OpenGLRHI::QueryTimestamp(Handle queryHandle) {
+    const GLQuery *query = queryList[queryHandle];
+
+    if (OpenGL::SupportsTimestampQueries() && query->queryType == RHI::QueryType::Timestamp) {
+        OpenGL::QueryTimestampCounter(query->id);
+    }
 }
 
 bool OpenGLRHI::QueryResultAvailable(Handle queryHandle) const {
     const GLQuery *query = queryList[queryHandle];
+
     GLuint available;
     gglGetQueryObjectuiv(query->id, GL_QUERY_RESULT_AVAILABLE, &available);
     return available ? true : false;
@@ -61,6 +79,7 @@ bool OpenGLRHI::QueryResultAvailable(Handle queryHandle) const {
 
 unsigned int OpenGLRHI::QueryResult(Handle queryHandle) const {
     const GLQuery *query = queryList[queryHandle];
+
     GLuint samples;
     gglGetQueryObjectuiv(query->id, GL_QUERY_RESULT, &samples);
     return samples;

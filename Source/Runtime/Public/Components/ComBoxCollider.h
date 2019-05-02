@@ -29,10 +29,10 @@ public:
     ComBoxCollider();
     virtual ~ComBoxCollider();
 
-    virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
-
+#if 1
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const RenderView::State &viewState, bool selected) override;
+    virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
+#endif
 
     Vec3                    GetCenter() const { return center; }
     void                    SetCenter(const Vec3 &center);

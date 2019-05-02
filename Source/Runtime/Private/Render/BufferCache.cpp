@@ -23,11 +23,11 @@ BE_NAMESPACE_BEGIN
 
 BufferCacheManager      bufferCacheManager;
 
-static const int        TB_WIDTH    = 4096;
-static const int        TB_HEIGHT   = 32;
-static const int        TB_BPP      = 4 * sizeof(float); // size of float RGBA
-static const int        TB_PITCH    = TB_BPP * TB_WIDTH;
-static const int        TB_BYTES    = TB_PITCH * TB_HEIGHT;
+static constexpr int    TB_WIDTH    = 4096;
+static constexpr int    TB_HEIGHT   = 32;
+static constexpr int    TB_BPP      = 4 * sizeof(float); // size of float RGBA
+static constexpr int    TB_PITCH    = TB_BPP * TB_WIDTH;
+static constexpr int    TB_BYTES    = TB_PITCH * TB_HEIGHT;
 
 void BufferCacheManager::Init() {
     int vcSize = r_dynamicVertexCacheSize.GetInteger();
@@ -40,26 +40,26 @@ void BufferCacheManager::Init() {
         
         memset(bufferSet, 0, sizeof(frameData[0]));
 
-        bufferSet->vertexBuffer = rhi.CreateBuffer(RHI::VertexBuffer, RHI::Dynamic, vcSize, 0, nullptr);
-        bufferSet->indexBuffer = rhi.CreateBuffer(RHI::IndexBuffer, RHI::Dynamic, icSize, 0, nullptr);
-        bufferSet->uniformBuffer = rhi.CreateBuffer(RHI::UniformBuffer, RHI::Dynamic, ucSize, 0, nullptr);
+        bufferSet->vertexBuffer = rhi.CreateBuffer(RHI::BufferType::Vertex, RHI::BufferUsage::Dynamic, vcSize, 0, nullptr);
+        bufferSet->indexBuffer = rhi.CreateBuffer(RHI::BufferType::Index, RHI::BufferUsage::Dynamic, icSize, 0, nullptr);
+        bufferSet->uniformBuffer = rhi.CreateBuffer(RHI::BufferType::Uniform, RHI::BufferUsage::Dynamic, ucSize, 0, nullptr);
 
-        if (renderGlobal.vtUpdateMethod == BufferCacheManager::TboUpdate) {
+        if (renderGlobal.vertexTextureMethod == BufferCacheManager::VertexTextureMethod::Tbo) {
             // Create texture buffer to write directly
-            bufferSet->texelBufferType = RHI::TexelBuffer;
-            bufferSet->texelBuffer = rhi.CreateBuffer(bufferSet->texelBufferType, RHI::Dynamic, TB_BYTES, 0, nullptr);
+            bufferSet->texelBufferType = RHI::BufferType::Texel;
+            bufferSet->texelBuffer = rhi.CreateBuffer(bufferSet->texelBufferType, RHI::BufferUsage::Dynamic, TB_BYTES, 0, nullptr);
             bufferSet->texture = textureManager.AllocTexture(va("_tbTexture%i", frameDataIndex));
-            bufferSet->texture->CreateFromBuffer(Image::RGBA_32F_32F_32F_32F, bufferSet->texelBuffer);
-        } else if (renderGlobal.vtUpdateMethod == BufferCacheManager::PboUpdate) {
+            bufferSet->texture->CreateFromBuffer(Image::Format::RGBA_32F_32F_32F_32F, bufferSet->texelBuffer);
+        } else if (renderGlobal.vertexTextureMethod == BufferCacheManager::VertexTextureMethod::Pbo) {
             // Create unpack buffer to translate data from PBO to VTF texture
             // See below link if you want to know what PBO is 
             // http://www.songho.ca/opengl/gl_pbo.html
-            bufferSet->texelBufferType = RHI::PixelUnpackBuffer;
-            bufferSet->texelBuffer = rhi.CreateBuffer(bufferSet->texelBufferType, RHI::Dynamic, TB_BYTES, TB_PITCH, nullptr);
+            bufferSet->texelBufferType = RHI::BufferType::PixelUnpack;
+            bufferSet->texelBuffer = rhi.CreateBuffer(bufferSet->texelBufferType, RHI::BufferUsage::Dynamic, TB_BYTES, TB_PITCH, nullptr);
             if (frameDataIndex == 0) {
                 bufferSet->texture = textureManager.AllocTexture("_tbTexture");
-                bufferSet->texture->CreateEmpty(RHI::Texture2D, TB_WIDTH, TB_HEIGHT, 1, 1, 1,
-                    Image::RGBA_32F_32F_32F_32F, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality | Texture::HighPriority);
+                bufferSet->texture->CreateEmpty(RHI::TextureType::Texture2D, TB_WIDTH, TB_HEIGHT, 1, 1, 1,
+                    Image::Format::RGBA_32F_32F_32F_32F, Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality | Texture::Flag::HighPriority);
             }
         }
 
@@ -68,18 +68,18 @@ void BufferCacheManager::Init() {
 #endif
     }
     
-    BE_LOG(L"dynamic vertex buffer created (%hs x %i)\n", Str::FormatBytes(vcSize).c_str(), COUNT_OF(frameData));
-    BE_LOG(L"dynamic index buffer created (%hs x %i)\n", Str::FormatBytes(icSize).c_str(), COUNT_OF(frameData));
-    BE_LOG(L"dynamic uniform buffer created (%hs x %i)\n", Str::FormatBytes(ucSize).c_str(), COUNT_OF(frameData));
+    BE_LOG("dynamic vertex buffer created (%s x %i)\n", Str::FormatBytes(vcSize).c_str(), COUNT_OF(frameData));
+    BE_LOG("dynamic index buffer created (%s x %i)\n", Str::FormatBytes(icSize).c_str(), COUNT_OF(frameData));
+    BE_LOG("dynamic uniform buffer created (%s x %i)\n", Str::FormatBytes(ucSize).c_str(), COUNT_OF(frameData));
 
     if (frameData[0].texelBuffer) {
-        BE_LOG(L"dynamic texel buffer created (%hs x %i)\n", Str::FormatBytes(TB_BYTES).c_str(), COUNT_OF(frameData));
+        BE_LOG("dynamic texel buffer created (%s x %i)\n", Str::FormatBytes(TB_BYTES).c_str(), COUNT_OF(frameData));
     }
     
     // Create stream buffer for use in debug drawing
-    streamVertexBuffer = rhi.CreateBuffer(RHI::VertexBuffer, RHI::Stream, 0);
-    streamIndexBuffer = rhi.CreateBuffer(RHI::IndexBuffer, RHI::Stream, 0);
-    streamUniformBuffer = rhi.CreateBuffer(RHI::UniformBuffer, RHI::Stream, 0);
+    streamVertexBuffer = rhi.CreateBuffer(RHI::BufferType::Vertex, RHI::BufferUsage::Stream, 0);
+    streamIndexBuffer = rhi.CreateBuffer(RHI::BufferType::Index, RHI::BufferUsage::Stream, 0);
+    streamUniformBuffer = rhi.CreateBuffer(RHI::BufferType::Uniform, RHI::BufferUsage::Stream, 0);
 
     pboWriteOffset = 0;
 
@@ -132,24 +132,24 @@ void BufferCacheManager::Shutdown() {
 }
 
 void BufferCacheManager::MapBufferSet(FrameDataBufferSet &bufferSet) {
-    RHI::BufferLockMode lockMode = usePersistentMappedBuffers ? RHI::WriteOnlyPersistent : RHI::WriteOnlyExplicitFlush;
+    RHI::BufferLockMode::Enum lockMode = usePersistentMappedBuffers ? RHI::BufferLockMode::WriteOnlyPersistent : RHI::BufferLockMode::WriteOnlyExplicitFlush;
     
     if (!bufferSet.mappedVertexBase) {
-        rhi.BindBuffer(RHI::VertexBuffer, bufferSet.vertexBuffer);
+        rhi.BindBuffer(RHI::BufferType::Vertex, bufferSet.vertexBuffer);
         bufferSet.mappedVertexBase = rhi.MapBufferRange(bufferSet.vertexBuffer, lockMode);
-        rhi.BindBuffer(RHI::VertexBuffer, RHI::NullBuffer);
+        rhi.BindBuffer(RHI::BufferType::Vertex, RHI::NullBuffer);
     }
 
     if (!bufferSet.mappedIndexBase) {
-        rhi.BindBuffer(RHI::IndexBuffer, bufferSet.indexBuffer);
+        rhi.BindBuffer(RHI::BufferType::Index, bufferSet.indexBuffer);
         bufferSet.mappedIndexBase = rhi.MapBufferRange(bufferSet.indexBuffer, lockMode);
-        rhi.BindBuffer(RHI::IndexBuffer, RHI::NullBuffer);
+        rhi.BindBuffer(RHI::BufferType::Index, RHI::NullBuffer);
     }
 
     if (!bufferSet.mappedUniformBase) {
-        rhi.BindBuffer(RHI::UniformBuffer, bufferSet.uniformBuffer);
+        rhi.BindBuffer(RHI::BufferType::Uniform, bufferSet.uniformBuffer);
         bufferSet.mappedUniformBase = rhi.MapBufferRange(bufferSet.uniformBuffer, lockMode);
-        rhi.BindBuffer(RHI::UniformBuffer, RHI::NullBuffer);
+        rhi.BindBuffer(RHI::BufferType::Uniform, RHI::NullBuffer);
     }
 
     if (!bufferSet.mappedTexelBase && bufferSet.texelBuffer) {
@@ -161,39 +161,39 @@ void BufferCacheManager::MapBufferSet(FrameDataBufferSet &bufferSet) {
 
 void BufferCacheManager::UnmapBufferSet(FrameDataBufferSet &bufferSet, bool flush) {
     if (bufferSet.mappedVertexBase) {
-        rhi.BindBuffer(RHI::VertexBuffer, bufferSet.vertexBuffer);
-        if (flush && bufferSet.vertexMemUsed.GetValue() > 0) {
-            rhi.FlushMappedBufferRange(bufferSet.vertexBuffer, 0, bufferSet.vertexMemUsed.GetValue());
+        rhi.BindBuffer(RHI::BufferType::Vertex, bufferSet.vertexBuffer);
+        if (flush && bufferSet.vertexMemUsed.load() > 0) {
+            rhi.FlushMappedBufferRange(bufferSet.vertexBuffer, 0, bufferSet.vertexMemUsed.load());
         }
         rhi.UnmapBuffer(bufferSet.vertexBuffer);
-        rhi.BindBuffer(RHI::VertexBuffer, RHI::NullBuffer);
+        rhi.BindBuffer(RHI::BufferType::Vertex, RHI::NullBuffer);
         bufferSet.mappedVertexBase = nullptr;
     }
 
     if (bufferSet.mappedIndexBase) {
-        rhi.BindBuffer(RHI::IndexBuffer, bufferSet.indexBuffer);
-        if (flush && bufferSet.indexMemUsed.GetValue() > 0) {
-            rhi.FlushMappedBufferRange(bufferSet.indexBuffer, 0, bufferSet.indexMemUsed.GetValue());
+        rhi.BindBuffer(RHI::BufferType::Index, bufferSet.indexBuffer);
+        if (flush && bufferSet.indexMemUsed.load() > 0) {
+            rhi.FlushMappedBufferRange(bufferSet.indexBuffer, 0, bufferSet.indexMemUsed.load());
         }
         rhi.UnmapBuffer(bufferSet.indexBuffer);
-        rhi.BindBuffer(RHI::IndexBuffer, RHI::NullBuffer);
+        rhi.BindBuffer(RHI::BufferType::Index, RHI::NullBuffer);
         bufferSet.mappedIndexBase = nullptr;
     }
 
     if (bufferSet.mappedUniformBase) {
-        rhi.BindBuffer(RHI::UniformBuffer, bufferSet.uniformBuffer);
-        if (flush && bufferSet.uniformMemUsed.GetValue() > 0) {
-            rhi.FlushMappedBufferRange(bufferSet.uniformBuffer, 0, bufferSet.uniformMemUsed.GetValue());
+        rhi.BindBuffer(RHI::BufferType::Uniform, bufferSet.uniformBuffer);
+        if (flush && bufferSet.uniformMemUsed.load() > 0) {
+            rhi.FlushMappedBufferRange(bufferSet.uniformBuffer, 0, bufferSet.uniformMemUsed.load());
         }
         rhi.UnmapBuffer(bufferSet.uniformBuffer);
-        rhi.BindBuffer(RHI::UniformBuffer, RHI::NullBuffer);
+        rhi.BindBuffer(RHI::BufferType::Uniform, RHI::NullBuffer);
         bufferSet.mappedUniformBase = nullptr;
     }
 
     if (bufferSet.mappedTexelBase && bufferSet.texelBuffer) {
         rhi.BindBuffer(bufferSet.texelBufferType, bufferSet.texelBuffer);
-        if (flush && bufferSet.texelMemUsed.GetValue() > 0) {
-            rhi.FlushMappedBufferRange(bufferSet.texelBuffer, 0, bufferSet.texelMemUsed.GetValue());
+        if (flush && bufferSet.texelMemUsed.load() > 0) {
+            rhi.FlushMappedBufferRange(bufferSet.texelBuffer, 0, bufferSet.texelMemUsed.load());
         }
         rhi.UnmapBuffer(bufferSet.texelBuffer);
         rhi.BindBuffer(bufferSet.texelBufferType, RHI::NullBuffer);
@@ -221,18 +221,18 @@ void BufferCacheManager::EndDrawCommand() {
 }
 
 void BufferCacheManager::BeginBackEnd() {
-    mostUsedVertexMem = Max(mostUsedVertexMem, (int)frameData[mappedNum].vertexMemUsed.GetValue());
-    mostUsedIndexMem = Max(mostUsedIndexMem, (int)frameData[mappedNum].indexMemUsed.GetValue());
-    mostUsedUniformMem = Max(mostUsedUniformMem, (int)frameData[mappedNum].uniformMemUsed.GetValue());
-    mostUsedTexelMem = Max(mostUsedTexelMem, (int)frameData[mappedNum].texelMemUsed.GetValue());
+    mostUsedVertexMem = Max(mostUsedVertexMem, (int)frameData[mappedNum].vertexMemUsed.load());
+    mostUsedIndexMem = Max(mostUsedIndexMem, (int)frameData[mappedNum].indexMemUsed.load());
+    mostUsedUniformMem = Max(mostUsedUniformMem, (int)frameData[mappedNum].uniformMemUsed.load());
+    mostUsedTexelMem = Max(mostUsedTexelMem, (int)frameData[mappedNum].texelMemUsed.load());
 
     if (r_showBufferCache.GetBool()) {
-        BE_LOG(L"%08d: %d alloc, vMem(%hs), iMem(%hs), uMem(%hs), tMem(%hs) : vMem(%hs), iMem(%hs), uMem(%hs), tMem(%hs)\n",
+        BE_LOG("%08d: %d alloc, vMem(%s), iMem(%s), uMem(%s), tMem(%s) : vMem(%s), iMem(%s), uMem(%s), tMem(%s)\n",
             frameCount, frameData[mappedNum].allocations,
-            Str::FormatBytes(frameData[mappedNum].vertexMemUsed.GetValue()).c_str(),
-            Str::FormatBytes(frameData[mappedNum].indexMemUsed.GetValue()).c_str(),
-            Str::FormatBytes(frameData[mappedNum].uniformMemUsed.GetValue()).c_str(),
-            Str::FormatBytes(frameData[mappedNum].texelMemUsed.GetValue()).c_str(),
+            Str::FormatBytes(frameData[mappedNum].vertexMemUsed.load()).c_str(),
+            Str::FormatBytes(frameData[mappedNum].indexMemUsed.load()).c_str(),
+            Str::FormatBytes(frameData[mappedNum].uniformMemUsed.load()).c_str(),
+            Str::FormatBytes(frameData[mappedNum].texelMemUsed.load()).c_str(),
             Str::FormatBytes(mostUsedVertexMem).c_str(),
             Str::FormatBytes(mostUsedIndexMem).c_str(),
             Str::FormatBytes(mostUsedUniformMem).c_str(),
@@ -242,11 +242,11 @@ void BufferCacheManager::BeginBackEnd() {
 #if PINNED_MEMORY
     if (!usePersistentMappedBuffers) {
         // Unmap the current frame so the GPU can read it
-        const uint32_t startUnmap = PlatformTime::Milliseconds();
+        const double startUnmap = PlatformTime::Seconds();
         UnmapBufferSet(frameData[mappedNum], true);
-        const uint32_t endUnmap = PlatformTime::Milliseconds();
-        if (r_showBufferCacheTiming.GetBool() && endUnmap - startUnmap > 1) {
-            BE_DLOG(L"BufferCacheManager::BeginBackEnd: unmap took %i msec\n", endUnmap - startUnmap);
+        const double endUnmap = PlatformTime::Seconds();
+        if (r_showBufferCacheTiming.GetBool() && endUnmap - startUnmap > 1.0) {
+            BE_DLOG("BufferCacheManager::BeginBackEnd: unmap took %.3f seconds\n", endUnmap - startUnmap);
         }
     }
 #endif
@@ -254,12 +254,12 @@ void BufferCacheManager::BeginBackEnd() {
     unmappedNum = mappedNum;
 
     // Update buffered texture
-    if (renderGlobal.skinningMethod == SkinningJointCache::VertexTextureFetchSkinning) {
-        if (renderGlobal.vtUpdateMethod == BufferCacheManager::TboUpdate) {
+    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetchSkinning) {
+        if (renderGlobal.vertexTextureMethod == BufferCacheManager::VertexTextureMethod::Tbo) {
             // The update to the data is not guaranteed to affect the texture until next time it is bound to a texture image unit
             rhi.SelectTextureUnit(0);
             frameData[unmappedNum].texture->Bind();
-        }  else if (renderGlobal.vtUpdateMethod == BufferCacheManager::PboUpdate) {
+        }  else if (renderGlobal.vertexTextureMethod == BufferCacheManager::VertexTextureMethod::Pbo) {
             // Unmapped PBO -> texture
             UpdatePBOTexture();
         }
@@ -271,56 +271,56 @@ void BufferCacheManager::BeginBackEnd() {
     
 #if PINNED_MEMORY
     if (!usePersistentMappedBuffers) {
-        const uint32_t startMap = PlatformTime::Milliseconds();
+        const double startMap = PlatformTime::Seconds();
         MapBufferSet(frameData[mappedNum]);
-        const uint32_t endMap = PlatformTime::Milliseconds();
-        if (r_showBufferCacheTiming.GetBool() && endMap - startMap > 1) {
-            BE_DLOG(L"BufferCacheManager::BeginBackEnd: map took %i msec\n", endMap - startMap);
+        const double endMap = PlatformTime::Seconds();
+        if (r_showBufferCacheTiming.GetBool() && endMap - startMap > 1.0) {
+            BE_DLOG("BufferCacheManager::BeginBackEnd: map took %.3f seconds\n", endMap - startMap);
         }
     }
 #endif
 
     // Clear current frame data
     rhi.BufferRewind(frameData[mappedNum].vertexBuffer);
-    frameData[mappedNum].vertexMemUsed.SetValue(0);
+    frameData[mappedNum].vertexMemUsed = 0;
 
     rhi.BufferRewind(frameData[mappedNum].indexBuffer);
-    frameData[mappedNum].indexMemUsed.SetValue(0);
+    frameData[mappedNum].indexMemUsed = 0;
 
     rhi.BufferRewind(frameData[mappedNum].uniformBuffer);
-    frameData[mappedNum].uniformMemUsed.SetValue(0);
+    frameData[mappedNum].uniformMemUsed = 0;
 
     if (frameData[mappedNum].texelBuffer) {
         rhi.BufferRewind(frameData[mappedNum].texelBuffer);
-        frameData[mappedNum].texelMemUsed.SetValue(0);
+        frameData[mappedNum].texelMemUsed = 0;
     }
 
     frameData[mappedNum].allocations = 0;
 }
 
 void BufferCacheManager::AllocStaticVertex(int bytes, const void *data, BufferCache *bc) {
-    bc->buffer = rhi.CreateBuffer(RHI::VertexBuffer, RHI::Static, bytes, 0, data);
+    bc->buffer = rhi.CreateBuffer(RHI::BufferType::Vertex, RHI::BufferUsage::Static, bytes, 0, data);
     bc->offset = 0;
     bc->bytes = bytes;
     bc->frameCount = 0xFFFFFFFF;
 }
 
 void BufferCacheManager::AllocStaticIndex(int bytes, const void *data, BufferCache *bc) {
-    bc->buffer = rhi.CreateBuffer(RHI::IndexBuffer, RHI::Static, bytes, 0, data);
+    bc->buffer = rhi.CreateBuffer(RHI::BufferType::Index, RHI::BufferUsage::Static, bytes, 0, data);
     bc->offset = 0;
     bc->bytes = bytes;
     bc->frameCount = 0xFFFFFFFF;
 }
 
 void BufferCacheManager::AllocStaticUniform(int bytes, const void *data, BufferCache *bc) {
-    bc->buffer = rhi.CreateBuffer(RHI::UniformBuffer, RHI::Static, bytes, 0, data);
+    bc->buffer = rhi.CreateBuffer(RHI::BufferType::Uniform, RHI::BufferUsage::Static, bytes, 0, data);
     bc->offset = 0;
     bc->bytes = bytes;
     bc->frameCount = 0xFFFFFFFF;
 }
 
 void BufferCacheManager::AllocStaticTexel(int bytes, const void *data, BufferCache *bc) {
-    bc->buffer = rhi.CreateBuffer(RHI::TexelBuffer, RHI::Static, bytes, 0, data);
+    bc->buffer = rhi.CreateBuffer(RHI::BufferType::Texel, RHI::BufferUsage::Static, bytes, 0, data);
     bc->offset = 0;
     bc->bytes = bytes;
     bc->frameCount = 0xFFFFFFFF;
@@ -340,7 +340,7 @@ bool BufferCacheManager::AllocVertex(int numVertexes, int vertexSize, const void
     // Check just write offset (don't write)
     int offset = rhi.BufferWrite(currentBufferSet->vertexBuffer, vertexSize, bytes, nullptr);
     if (offset == -1) {
-        BE_FATALERROR(L"Out of vertex cache");
+        BE_FATALERROR("Out of vertex cache");
         return false;
     }
 
@@ -352,13 +352,13 @@ bool BufferCacheManager::AllocVertex(int numVertexes, int vertexSize, const void
         assert(currentBufferSet->mappedVertexBase);
         WriteBuffer((byte *)currentBufferSet->mappedVertexBase + offset, data, bytes);
 #else
-        rhi.BindBuffer(RHI::VertexBuffer, currentBufferSet->vertexBuffer);
+        rhi.BindBuffer(RHI::BufferType::Vertex, currentBufferSet->vertexBuffer);
         void *base = rhi.MapBufferRange(currentBufferSet->vertexBuffer, RHI::WriteOnly, offset, bytes);
 
         WriteBuffer((byte *)base, data, bytes);
         
         rhi.UnmapBuffer(currentBufferSet->vertexBuffer);
-        rhi.BindBuffer(RHI::VertexBuffer, RHI::NullBuffer);
+        rhi.BindBuffer(RHI::BufferType::Vertex, RHI::NullBuffer);
 #endif
     }
 
@@ -377,7 +377,7 @@ bool BufferCacheManager::AllocIndex(int numIndexes, int indexSize, const void *d
     // Check just write offset (don't write)
     int offset = rhi.BufferWrite(currentBufferSet->indexBuffer, indexSize, bytes, nullptr);
     if (offset == -1) {
-        BE_FATALERROR(L"Out of index cache");
+        BE_FATALERROR("Out of index cache");
         return false;
     }
 
@@ -389,13 +389,13 @@ bool BufferCacheManager::AllocIndex(int numIndexes, int indexSize, const void *d
         assert(currentBufferSet->mappedIndexBase);
         WriteBuffer((byte *)currentBufferSet->mappedIndexBase + offset, data, bytes);
 #else
-        rhi.BindBuffer(RHI::IndexBuffer, currentBufferSet->indexBuffer);
+        rhi.BindBuffer(RHI::BufferType::Index, currentBufferSet->indexBuffer);
         void *base = rhi.MapBufferRange(currentBufferSet->indexBuffer, RHI::WriteOnly, offset, bytes);
 
         WriteBuffer((byte *)base, data, bytes);
 
         rhi.UnmapBuffer(currentBufferSet->indexBuffer);
-        rhi.BindBuffer(RHI::IndexBuffer, RHI::NullBuffer);
+        rhi.BindBuffer(RHI::BufferType::Index, RHI::NullBuffer);
 #endif
     }
 
@@ -412,7 +412,7 @@ bool BufferCacheManager::AllocUniform(int bytes, const void *data, BufferCache *
     // Check just write offset (don't write)
     int offset = rhi.BufferWrite(currentBufferSet->uniformBuffer, rhi.HWLimit().uniformBufferOffsetAlignment, bytes, nullptr);
     if (offset == -1) {
-        BE_FATALERROR(L"Out of uniform cache");
+        BE_FATALERROR("Out of uniform cache");
         return false;
     }
 
@@ -424,13 +424,13 @@ bool BufferCacheManager::AllocUniform(int bytes, const void *data, BufferCache *
         assert(currentBufferSet->mappedUniformBase);
         WriteBuffer((byte *)currentBufferSet->mappedUniformBase + offset, data, bytes);
 #else
-        rhi.BindBuffer(RHI::UniformBuffer, currentBufferSet->uniformBuffer);
+        rhi.BindBuffer(RHI::BufferType::Uniform, currentBufferSet->uniformBuffer);
         void *base = rhi.MapBufferRange(currentBufferSet->uniformBuffer, RHI::WriteOnly, offset, bytes);
 
         WriteBuffer((byte *)base, data, bytes);
 
         rhi.UnmapBuffer(currentBufferSet->uniformBuffer);
-        rhi.BindBuffer(RHI::UniformBuffer, RHI::NullBuffer);
+        rhi.BindBuffer(RHI::BufferType::Uniform, RHI::NullBuffer);
 #endif
     }
 
@@ -448,7 +448,7 @@ bool BufferCacheManager::AllocTexel(int bytes, const void *data, BufferCache *bc
     // Check just write offset (don't write)
     int offset = rhi.BufferWrite(currentBufferSet->texelBuffer, TB_BPP, bytes, nullptr);
     if (offset == -1) {
-        BE_FATALERROR(L"Out of texel cache");
+        BE_FATALERROR("Out of texel cache");
         return false;
     }
 
@@ -470,11 +470,11 @@ bool BufferCacheManager::AllocTexel(int bytes, const void *data, BufferCache *bc
 #endif
     }
 
-    if (renderGlobal.vtUpdateMethod == BufferCacheManager::TboUpdate) {
+    if (renderGlobal.vertexTextureMethod == BufferCacheManager::VertexTextureMethod::Tbo) {
         bc->tcBase[0] = offset / TB_BPP;
         bc->tcBase[1] = 0;
         bc->texture = currentBufferSet->texture;
-    } else if (renderGlobal.vtUpdateMethod == BufferCacheManager::PboUpdate) {
+    } else if (renderGlobal.vertexTextureMethod == BufferCacheManager::VertexTextureMethod::Pbo) {
         int texelOffset = offset / TB_BPP;
         bc->tcBase[0] = texelOffset % TB_WIDTH;
         bc->tcBase[1] = texelOffset / TB_WIDTH;
@@ -497,7 +497,7 @@ byte *BufferCacheManager::MapVertexBuffer(BufferCache *bc) const {
 #if PINNED_MEMORY
     return (byte *)currentBufferSet->mappedVertexBase + bc->offset;
 #else
-    rhi.BindBuffer(RHI::VertexBuffer, currentBufferSet->vertexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Vertex, currentBufferSet->vertexBuffer);
     return (byte *)rhi.MapBufferRange(currentBufferSet->vertexBuffer, RHI::WriteOnly, bc->offset, bc->bytes);
 #endif
 }
@@ -508,7 +508,7 @@ byte *BufferCacheManager::MapIndexBuffer(BufferCache *bc) const {
 #if PINNED_MEMORY
     return (byte *)currentBufferSet->mappedIndexBase + bc->offset;
 #else
-    rhi.BindBuffer(RHI::IndexBuffer, currentBufferSet->indexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Index, currentBufferSet->indexBuffer);
     return (byte *)rhi.MapBufferRange(currentBufferSet->indexBuffer, RHI::WriteOnly, bc->offset, bc->bytes);
 #endif
 }
@@ -519,7 +519,7 @@ byte *BufferCacheManager::MapUniformBuffer(BufferCache *bc) const {
 #if PINNED_MEMORY
     return (byte *)currentBufferSet->mappedUniformBase + bc->offset;
 #else
-    rhi.BindBuffer(RHI::UniformBuffer, currentBufferSet->uniformBuffer);
+    rhi.BindBuffer(RHI::BufferType::Uniform, currentBufferSet->uniformBuffer);
     return (byte *)rhi.MapBufferRange(currentBufferSet->uniformBuffer, RHI::WriteOnly, bc->offset, bc->bytes);
 #endif
 }
@@ -538,7 +538,7 @@ byte *BufferCacheManager::MapTexelBuffer(BufferCache *bc) const {
 void BufferCacheManager::UnmapVertexBuffer(BufferCache *bc) const {
     const FrameDataBufferSet *currentBufferSet = &frameData[mappedNum];
 #if PINNED_MEMORY
-    //rhi.BindBuffer(RHI::VertexBuffer, currentBufferSet->vertexBuffer);
+    //rhi.BindBuffer(RHI::BufferType::Vertex, currentBufferSet->vertexBuffer);
     //rhi.FlushMappedBufferRange(currentBufferSet->vertexBuffer, bc->offset, bc->bytes);
 #else
     rhi.UnmapBuffer(currentBufferSet->vertexBuffer);
@@ -548,7 +548,7 @@ void BufferCacheManager::UnmapVertexBuffer(BufferCache *bc) const {
 void BufferCacheManager::UnmapIndexBuffer(BufferCache *bc) const {
     const FrameDataBufferSet *currentBufferSet = &frameData[mappedNum];
 #if PINNED_MEMORY
-    //rhi.BindBuffer(RHI::IndexBuffer, currentBufferSet->indexBuffer);
+    //rhi.BindBuffer(RHI::BufferType::Index, currentBufferSet->indexBuffer);
     //rhi.FlushMappedBufferRange(currentBufferSet->indexBuffer, bc->offset, bc->bytes);
 #else
     rhi.UnmapBuffer(currentBufferSet->indexBuffer);
@@ -558,7 +558,7 @@ void BufferCacheManager::UnmapIndexBuffer(BufferCache *bc) const {
 void BufferCacheManager::UnmapUniformBuffer(BufferCache *bc) const {
     const FrameDataBufferSet *currentBufferSet = &frameData[mappedNum];
 #if PINNED_MEMORY
-    //rhi.BindBuffer(RHI::UniformBuffer, currentBufferSet->uniformBuffer);
+    //rhi.BindBuffer(RHI::BufferType::Uniform, currentBufferSet->uniformBuffer);
     //rhi.FlushMappedBufferRange(currentBufferSet->uniformBuffer, bc->offset, bc->bytes);
 #else
     rhi.UnmapBuffer(currentBufferSet->uniformBuffer);
@@ -609,13 +609,13 @@ void BufferCacheManager::UpdatePBOTexture() const {
         // If asynchronous DMA transfer is supported, glTexSubImage2D() should return immediately.
         rhi.BindBuffer(currentBufferSet->texelBufferType, currentBufferSet->texelBuffer);
 
-        const uint32_t startUpdatePBO = PlatformTime::Milliseconds();
+        const double startUpdatePBO = PlatformTime::Seconds();
 
-        frameData[0].texture->Update2D(0, 0, updateW, updateH, Image::RGBA_32F_32F_32F_32F, nullptr);
+        frameData[0].texture->Update2D(0, 0, 0, updateW, updateH, Image::Format::RGBA_32F_32F_32F_32F, nullptr);
 
-        const uint32_t endUpdatePBO = PlatformTime::Milliseconds();
+        const double endUpdatePBO = PlatformTime::Seconds();
         if (endUpdatePBO - startUpdatePBO > 1) {
-            BE_DLOG(L"BufferCacheManager::UpdatePBOTexture: update pbo took %i msec\n", endUpdatePBO - startUpdatePBO);
+            BE_DLOG("BufferCacheManager::UpdatePBOTexture: update pbo took %.3f msec\n", endUpdatePBO - startUpdatePBO);
         }
 
         rhi.BindBuffer(currentBufferSet->texelBufferType, RHI::NullBuffer);
@@ -623,7 +623,7 @@ void BufferCacheManager::UpdatePBOTexture() const {
 }
 
 const Texture *BufferCacheManager::GetFrameTexture() const {
-    if (renderGlobal.vtUpdateMethod == BufferCacheManager::PboUpdate) {
+    if (renderGlobal.vertexTextureMethod == BufferCacheManager::VertexTextureMethod::Pbo) {
         return frameData[0].texture;
     }
     return frameData[unmappedNum].texture;

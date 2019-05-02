@@ -14,14 +14,15 @@
 
 #include "Precompiled.h"
 #include "PlatformGeneric.h"
+
 #ifdef __WIN32__
-#include "PlatformWin.h"
+    #include "PlatformWin.h"
 #elif defined __MACOSX__
-#include "PlatformMacOS.h"
+    #include "PlatformMacOS.h"
 #elif defined __IOS__
-#include "PlatformIOS.h"
+    #include "PlatformIOS.h"
 #elif defined __ANDROID__
-#include "PlatformAndroid.h"
+    #include "PlatformAndroid.h"
 #endif
 
 BE_NAMESPACE_BEGIN

@@ -20,14 +20,17 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformAndroidThread : public PlatformBaseThread {
 public:
-    static PlatformAndroidThread *Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
-    static void                 Delete(PlatformAndroidThread *thread);
-    
+    static uint64_t             GetCurrentThreadId();
+
+    static PlatformBaseThread * Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
+    static void                 Destroy(PlatformBaseThread *thread);
+
     static void                 SetAffinity(int affinity);
+    static void                 SetName(const char *name);
     
-    static void                 Wait(PlatformAndroidThread *thread);
-    static void                 WaitAll(int numThreads, PlatformAndroidThread *threads[]);
-    
+    static void                 Join(PlatformBaseThread *thread);
+    static void                 JoinAll(int numThreads, PlatformBaseThread *threads[]);
+
 private:
     pthread_t *                 thread;
 };
@@ -36,12 +39,12 @@ class BE_API PlatformAndroidMutex : public PlatformBaseMutex {
     friend class PlatformAndroidCondition;
     
 public:
-    static PlatformAndroidMutex * Create();
-    static void                 Delete(PlatformAndroidMutex *mutex);
+    static PlatformBaseMutex *  Create();
+    static void                 Destroy(PlatformBaseMutex *mutex);
     
-    static void                 Lock(const PlatformAndroidMutex *mutex);
-    static bool                 TryLock(const PlatformAndroidMutex *mutex);
-    static void                 Unlock(const PlatformAndroidMutex *mutex);
+    static void                 Lock(const PlatformBaseMutex *mutex);
+    static bool                 TryLock(const PlatformBaseMutex *mutex);
+    static void                 Unlock(const PlatformBaseMutex *mutex);
 
 private:
     pthread_mutex_t *           mutex;
@@ -49,18 +52,18 @@ private:
 
 class BE_API PlatformAndroidCondition : public PlatformBaseCondition {
 public:
-    static PlatformAndroidCondition *Create();
-    static void                 Delete(PlatformAndroidCondition *condition);
+    static PlatformBaseCondition *Create();
+    static void                 Destroy(PlatformBaseCondition *condition);
     
     // release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
-    static void                 Wait(const PlatformAndroidCondition *condition, const PlatformAndroidMutex *mutex);
-    static bool                 TimedWait(const PlatformAndroidCondition *condition, const PlatformAndroidMutex *mutex, int ms);
+    static void                 Wait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex);
+    static bool                 TimedWait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex, int ms);
     
     // if any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
-    static void                 Signal(const PlatformAndroidCondition *condition);
+    static void                 Signal(const PlatformBaseCondition *condition);
     
     // same as signal, except wake up all waiting threads
-    static void                 Broadcast(const PlatformAndroidCondition *condition);
+    static void                 Broadcast(const PlatformBaseCondition *condition);
     
 private:
     pthread_cond_t *            cond;

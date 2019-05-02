@@ -22,20 +22,20 @@ BE_NAMESPACE_BEGIN
 #define WRITEBUFFERSIZE (16384)
 #define MAXFILENAME (256)
 
-static int ToZCompressLevel(ZipArchiver::CompressionLevel compressionLevel) {
+static int ToZCompressLevel(ZipArchiver::CompressionLevel::Enum compressionLevel) {
     int ret;
 
     switch (compressionLevel) {
-    case ZipArchiver::NoCompression:
+    case ZipArchiver::CompressionLevel::NoCompression:
         ret = Z_DEFAULT_COMPRESSION;
         break;
-    case ZipArchiver::BestCompression:
+    case ZipArchiver::CompressionLevel::BestCompression:
         ret = Z_BEST_COMPRESSION;
         break;
-    case ZipArchiver::BestSpeed:
+    case ZipArchiver::CompressionLevel::BestSpeed:
         ret = Z_BEST_SPEED;
         break;
-    case ZipArchiver::DefaultCompression:
+    case ZipArchiver::CompressionLevel::Default:
     default:
         ret = Z_DEFAULT_COMPRESSION;
     }
@@ -47,7 +47,7 @@ bool ZipArchiver::Open(const char *filename) {
     Str zipFilename = fileSystem.ToAbsolutePath(filename);
     zFile = (void *)zipOpen64((const char *)zipFilename, APPEND_STATUS_CREATE);
     if (!zFile) {
-        BE_WARNLOG(L"Unabled to open zip file to create '%hs'\n", zipFilename.c_str());
+        BE_WARNLOG("Unabled to open zip file to create '%s'\n", zipFilename.c_str());
         return false;
     }
 
@@ -61,7 +61,7 @@ void ZipArchiver::Close() {
     }
 }
 
-bool ZipArchiver::AddFile(const char *filename, CompressionLevel compressionLevel) {
+bool ZipArchiver::AddFile(const char *filename, CompressionLevel::Enum compressionLevel) {
     zip_fileinfo zi;
     memset(&zi, 0, sizeof(zi));
 
@@ -80,14 +80,14 @@ bool ZipArchiver::AddFile(const char *filename, CompressionLevel compressionLeve
         -MAX_WBITS, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY,
         nullptr, 0, largeFile ? 1 : 0);
     if (err != ZIP_OK) {
-        BE_WARNLOG(L"Failed to open '%hs' in zipfile\n", filename);
+        BE_WARNLOG("Failed to open '%s' in zipfile\n", filename);
         return false;
     }
 
     size_t srcFileSize;
     File *srcFile = fileSystem.OpenFileRead(filename, false, &srcFileSize);
     if (!srcFile) {
-        BE_WARNLOG(L"Failed to open '%hs'\n", filename);
+        BE_WARNLOG("Failed to open '%s'\n", filename);
         zipCloseFileInZip(zFile);
         return false;
     }
@@ -102,7 +102,7 @@ bool ZipArchiver::AddFile(const char *filename, CompressionLevel compressionLeve
 
         err = zipWriteInFileInZip(zFile, buffer, (unsigned int)s);
         if (err != ZIP_OK) {
-            BE_WARNLOG(L"Error in writing '%hs' in zipfile\n", filename);
+            BE_WARNLOG("Error in writing '%s' in zipfile\n", filename);
             zipCloseFileInZip(zFile);
             return false;
         }
@@ -114,7 +114,7 @@ bool ZipArchiver::AddFile(const char *filename, CompressionLevel compressionLeve
 
     err = zipCloseFileInZip(zFile);
     if (err != ZIP_OK) {
-        BE_WARNLOG(L"Error in closing '%hs' in zipfile\n", filename);
+        BE_WARNLOG("Error in closing '%s' in zipfile\n", filename);
         return false;
     }
 
@@ -149,7 +149,7 @@ bool ZipArchiver::Archive(const char *zipFilename, const char *archiveDirectory,
         }
 
         Str filename = archiveDirectory;
-        filename.AppendPath(fileInfo.relativePath);
+        filename.AppendPath(fileInfo.filename);
         zipFile.AddFile(filename);
 
         if (progress) {

@@ -37,15 +37,15 @@ public:
 
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
+#if 1
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const RenderView::State &viewState, bool selected) override;
+    virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
+#endif
 
     virtual const AABB      GetAABB() override;
 
-    virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
-
-    RenderLight::Type       GetLightType() const;
-    void                    SetLightType(RenderLight::Type type);
+    RenderLight::Type::Enum GetLightType() const;
+    void                    SetLightType(RenderLight::Type::Enum type);
 
     bool                    IsPrimaryLight() const;
     void                    SetPrimaryLight(bool isPrimaryLight);
@@ -96,6 +96,7 @@ protected:
     void                    UpdateVisuals();
 
     void                    LayerChanged(const Entity *entity);
+    void                    StaticMaskChanged(const Entity *entity);
     void                    TransformUpdated(const ComTransform *transform);
 
     RenderLight::State      renderLightDef;

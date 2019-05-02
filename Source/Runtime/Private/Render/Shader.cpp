@@ -24,54 +24,69 @@ BE_NAMESPACE_BEGIN
 
 static const char *directiveInclude = "$include";
 
-// NOTE: BuiltInConstant enum 과 반드시 순서가 같아야 함
+// NOTE: must be same order with Shader::BuiltInConstant enum.
 static const char *builtInConstantNames[] = {
-    "modelViewMatrix",                      // ModelViewMatrixConst
-    "modelViewMatrixTranspose",             // ModelViewMatrixTransposeConst
-    "projectionMatrix",                     // ProjectionMatrixConst
-    "projectionMatrixTranspose",            // ProjectionMatrixTransposeConst
-    "viewProjectionMatrix",                 // ViewProjectionMatrixConst
-    "viewProjectionMatrixTranspose",        // ViewProjectionMatrixTransposeConst
-    "modelViewProjectionMatrix",            // ModelViewProjectionMatrixConst
-    "modelViewProjectionMatrixTranspose",   // ModelViewProjectionMatrixTransposeConst
-    "instanceIndexes",                      // InstanceIndexesConst
-    "localToWorldMatrixS",                  // LocalToWorldMatrixSConst
-    "localToWorldMatrixT",                  // LocalToWorldMatrixTConst
-    "localToWorldMatrixR",                  // LocalToWorldMatrixRConst
-    "worldToLocalMatrixS",                  // WorldToLocalMatrixSConst
-    "worldToLocalMatrixT",                  // WorldToLocalMatrixTConst
-    "worldToLocalMatrixR",                  // WorldToLocalMatrixRConst
-    "textureMatrixS",                       // TextureMatrixSConst
-    "textureMatrixT",                       // TextureMatrixTConst
-    "constantColor",                        // ConstantColorConst
-    "vertexColorScale",                     // VertexColorScaleConst
-    "vertexColorAdd",                       // VertexColorAddConst
-    "perforatedAlpha",                      // PerforatedAlphaConst
-    "viewOrigin",                           // ViewOriginConst
-    "lightVec",                             // LightVecConst
-    "lightTextureMatrix",                   // LightTextureMatrixConst
-    "lightColor",                           // LightColorConst
-    "lightFallOffMatrix",                   // LightFallOffMatrixConst
-    "lightFallOffExponent",                 // LightFallOffExponentConst
-    "joints",                               // JointsConst
-    "invJointsMapSize",                     // InvJointsMapSizeConst
-    "skinningBaseTc",                       // SkinningBaseTcConst
-    "jointIndexOffset",                     // JointIndexOffsetConst
-    "shadowProjMatrix",                     // ShadowProjMatrixConst
-    "shadowCascadeProjMatrix",              // ShadowCascadeProjMatrixConst
-    "shadowSplitFar",                       // ShadowSplitFarConst
+    "modelViewMatrix",                      // ModelViewMatrix
+    "modelViewMatrixTranspose",             // ModelViewMatrixTranspose
+    "viewMatrix",                           // ViewMatrix
+    "viewMatrixTranspose",                  // ViewMatrixTranspose
+    "projectionMatrix",                     // ProjectionMatrix
+    "projectionMatrixTranspose",            // ProjectionMatrixTranspose
+    "viewProjectionMatrix",                 // ViewProjectionMatrix
+    "viewProjectionMatrixTranspose",        // ViewProjectionMatrixTranspose
+    "modelViewProjectionMatrix",            // ModelViewProjectionMatrix
+    "modelViewProjectionMatrixTranspose",   // ModelViewProjectionMatrixTranspose
+    "prevModelViewProjectionMatrix",        // PrevModelViewProjectionMatrix
+    "instanceDataBuffer",                   // InstanceDataBuffer
+    "instanceIndexes",                      // InstanceIndexes
+    "localToWorldMatrix",                   // LocalToWorldMatrix
+    "worldToLocalMatrix",                   // WorldToLocalMatrix
+    "textureMatrixS",                       // TextureMatrixS
+    "textureMatrixT",                       // TextureMatrixT
+    "constantColor",                        // ConstantColor
+    "vertexColorScale",                     // VertexColorScale
+    "vertexColorAdd",                       // VertexColorAdd
+    "perforatedAlpha",                      // PerforatedAlpha
+    "viewOrigin",                           // ViewOrigin
+    "lightVec",                             // LightVec
+    "lightTextureMatrix",                   // LightTextureMatrix
+    "lightColor",                           // LightColor
+    "lightFallOffMatrix",                   // LightFallOffMatrix
+    "lightFallOffExponent",                 // LightFallOffExponent
+    "joints",                               // Joints
+    "invJointsMapSize",                     // InvJointsMapSize
+    "skinningBaseTc",                       // SkinningBaseTc
+    "jointIndexOffset",                     // JointIndexOffset
+    "shadowProjMatrix",                     // ShadowProjMatrix
+    "shadowCascadeProjMatrix",              // ShadowCascadeProjMatrix
+    "shadowSplitFar",                       // ShadowSplitFar
+    "probe0SpecularCubeMapMaxMipLevel",     // Probe0SpecularCubeMapMaxMipLevel
+    "probe0Position",                       // Probe0Position
+    "probe0Mins",                           // Probe0Mins
+    "probe0Maxs",                           // Probe0Maxs
+    "probe1SpecularCubeMapMaxMipLevel",     // Probe1SpecularCubeMapMaxMipLevel
+    "probe1Position",                       // Probe1Position
+    "probe1Mins",                           // Probe1Mins
+    "probe1Maxs",                           // Probe1Maxs
+    "probeLerp"                             // ProbeLerp
 };
 
-// NOTE: BuiltInSampler enum 과 반드시 순서가 같아야 함
+// NOTE: must be same order with Shader::BuiltInSampler enum.
 static const char *builtInSamplerNames[] = {
-    "cubicNormalCubeMap",                   // CubicNormalCubeMapSampler
-    "indirectionCubeMap",                   // IndirectionCubeMapSampler
-    "albedoMap",                            // AlbedoMapSampler
-    "normalMap",                            // NormalMapSampler
-    "jointsMap",                            // JointsMapSampler
-    "lightProjectionMap",                   // LightProjectionMapSampler
-    "shadowMap",                            // ShadowMapSampler
-    "shadowArrayMap",                       // ShadowArrayMapSampler
+    "cubicNormalCubeMap",                   // CubicNormalCubeMap
+    "indirectionCubeMap",                   // IndirectionCubeMap
+    "albedoMap",                            // AlbedoMap
+    "normalMap",                            // NormalMap
+    "jointsMap",                            // JointsMap
+    "lightProjectionMap",                   // LightProjectionMap
+    "lightCubeMap",                         // LightCubeMap
+    "shadowMap",                            // ShadowMap
+    "shadowArrayMap",                       // ShadowArrayMap
+    "prefilteredDfgMap",                    // PrefilteredDfgMap
+    "probe0DiffuseCubeMap",                 // Probe0DiffuseCubeMap
+    "probe0SpecularCubeMap",                // Probe0SpecularCubeMap
+    "probe1DiffuseCubeMap",                 // Probe1DiffuseCubeMap
+    "probe1SpecularCubeMap",                // Probe1SpecularCubeMap
 };
 
 int Shader::GetFlags() const {
@@ -81,11 +96,11 @@ int Shader::GetFlags() const {
     return flags;
 }
 
-const StrHashMap<PropertyInfo> &Shader::GetPropertyInfoHashMap() const { 
+const StrHashMap<PropertyInfo> &Shader::GetPropertyInfoHashMap() const {
     if (originalShader) {
-        return originalShader->propertyInfoHashMap; 
+        return originalShader->propertyInfoHashMap;
     }
-    return propertyInfoHashMap; 
+    return propertyInfoHashMap;
 }
 
 void Shader::Purge() {
@@ -94,9 +109,9 @@ void Shader::Purge() {
         shaderHandle = RHI::NullShader;
     }
 
-    if (ambientLitVersion) {
-        shaderManager.ReleaseShader(ambientLitVersion);
-        ambientLitVersion = nullptr;
+    if (indirectLitVersion) {
+        shaderManager.ReleaseShader(indirectLitVersion);
+        indirectLitVersion = nullptr;
     }
 
     if (directLitVersion) {
@@ -104,9 +119,9 @@ void Shader::Purge() {
         directLitVersion = nullptr;
     }
 
-    if (ambientLitDirectLitVersion) {
-        shaderManager.ReleaseShader(ambientLitDirectLitVersion);
-        ambientLitDirectLitVersion = nullptr;
+    if (indirectLitDirectLitVersion) {
+        shaderManager.ReleaseShader(indirectLitDirectLitVersion);
+        indirectLitDirectLitVersion = nullptr;
     }
 
     if (perforatedVersion) {
@@ -164,11 +179,11 @@ bool Shader::Create(const char *text, const char *baseDir) {
     Purge();
 
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(text, Str::Length(text), hashName);
 
     // '{'
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
@@ -179,9 +194,9 @@ bool Shader::Create(const char *text, const char *baseDir) {
         } else if (token[0] == '}') {
             break;
         } else if (!token.Icmp("litSurface")) {
-            flags |= LitSurface;
+            flags |= Flag::LitSurface;
         } else if (!token.Icmp("skySurface")) {
-            flags |= SkySurface;
+            flags |= Flag::SkySurface;
         } else if (!token.Icmp("properties")) {
             ParseProperties(lexer);
         } else if (!token.Icmp("inheritProperties")) {
@@ -194,16 +209,16 @@ bool Shader::Create(const char *text, const char *baseDir) {
                     propertyInfoHashMap = shader->propertyInfoHashMap;
                 }
             } else {
-                BE_WARNLOG(L"missing inheritProperties name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing inheritProperties name in shader '%s'\n", hashName.c_str());
             }
-        } else if (!token.Icmp("ambientLitVersion")) {
+        } else if (!token.Icmp("indirectLitVersion")) {
             if (lexer.ReadToken(&token)) {
                 Str path = baseDir;
                 path.AppendPath(token, '/');
 
-                ambientLitVersion = shaderManager.GetShader(path);
+                indirectLitVersion = shaderManager.GetShader(path);
             } else {
-                BE_WARNLOG(L"missing ambientLitVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing indirectLitVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("directLitVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -212,16 +227,16 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
                 directLitVersion = shaderManager.GetShader(path);
             } else {
-                BE_WARNLOG(L"missing directLitVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing directLitVersion name in shader '%s'\n", hashName.c_str());
             }
-        } else if (!token.Icmp("ambientLitDirectLitVersion")) {
+        } else if (!token.Icmp("indirectLitDirectLitVersion")) {
             if (lexer.ReadToken(&token)) {
                 Str path = baseDir;
                 path.AppendPath(token, '/');
 
-                ambientLitDirectLitVersion = shaderManager.GetShader(path);
+                indirectLitDirectLitVersion = shaderManager.GetShader(path);
             } else {
-                BE_WARNLOG(L"missing ambientLitDirectLitVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing indirectLitDirectLitVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("perforatedVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -230,7 +245,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
                 perforatedVersion = shaderManager.GetShader(path);
             } else {
-                BE_WARNLOG(L"missing perforatedVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing perforatedVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("parallelShadowVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -239,7 +254,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
                 parallelShadowVersion = shaderManager.GetShader(path);
             } else {
-                BE_WARNLOG(L"missing parallelShadowVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing parallelShadowVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("spotShadowVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -248,16 +263,16 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
                 spotShadowVersion = shaderManager.GetShader(path);
             } else {
-                BE_WARNLOG(L"missing spotShadowVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing spotShadowVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("pointShadowVersion")) {
             if (lexer.ReadToken(&token)) {
                 Str path = baseDir;
                 path.AppendPath(token, '/');
 
-                pointShadowVersion = shaderManager.GetShader(path); 
+                pointShadowVersion = shaderManager.GetShader(path);
             } else {
-                BE_WARNLOG(L"missing pointShadowVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing pointShadowVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("gpuSkinningVersion")) {
             if (lexer.ReadToken(&token)) {
@@ -278,13 +293,13 @@ bool Shader::Create(const char *text, const char *baseDir) {
 
                         gpuSkinningVersion[2] = shaderManager.FindShader(path);
                     } else {
-                        BE_WARNLOG(L"missing gpuSkinningVersion name in shader '%hs'\n", hashName.c_str());
+                        BE_WARNLOG("missing gpuSkinningVersion name in shader '%s'\n", hashName.c_str());
                     }
                 } else {
-                    BE_WARNLOG(L"missing gpuSkinningVersion name in shader '%hs'\n", hashName.c_str());
+                    BE_WARNLOG("missing gpuSkinningVersion name in shader '%s'\n", hashName.c_str());
                 }
             } else {
-                BE_WARNLOG(L"missing gpuSkinningVersion name in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("missing gpuSkinningVersion name in shader '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("generatePerforatedVersion")) {
             generatePerforatedVersion = true;
@@ -299,22 +314,26 @@ bool Shader::Create(const char *text, const char *baseDir) {
         } else if (!token.Icmp("generatePointShadowVersion")) {
             generatePointShadowVersion = true;
         } else if (!token.Icmp("generateSpotShadowVersion")) {
-            generateSpotShadowVersion = true;        
+            generateSpotShadowVersion = true;
         } else if (!token.Icmp("glsl_vp")) {
             lexer.ParseBracedSectionExact(vsText);
         } else if (!token.Icmp("glsl_fp")) {
             lexer.ParseBracedSectionExact(fsText);
         } else {
-            BE_WARNLOG(L"unknown parameter %hs in shader '%hs'\n", token.c_str(), hashName.c_str());
+            BE_WARNLOG("unknown parameter %s in shader '%s'\n", token.c_str(), hashName.c_str());
         }
+    }
+
+    if (renderGlobal.instancingMethod == Mesh::InstancingMethod::NoInstancing) {
+        generateGpuInstancingVersion = false;
     }
 
     return Finish(generatePerforatedVersion, generateGpuSkinningVersion, generateGpuInstancingVersion, generateParallelShadowVersion, generateSpotShadowVersion, generatePointShadowVersion);
 }
 
 bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
-    propInfo.type = Variant::None;
-    propInfo.flags = PropertyInfo::EditorFlag;
+    propInfo.type = Variant::Type::None;
+    propInfo.flags = PropertyInfo::Flag::Editor;
     propInfo.range = Rangef(0, 0, 1);
     propInfo.metaObject = nullptr;
 
@@ -322,19 +341,19 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
         return false;
     }
 
-    if (!lexer.ExpectPunctuation(P_PARENTHESESOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::ParenthesesOpen)) {
         return false;
     }
 
-    if (!lexer.ExpectTokenType(TokenType::TT_STRING, &propInfo.label)) {
+    if (!lexer.ExpectTokenType(Lexer::TokenType::String, &propInfo.label)) {
         return false;
     }
 
-    if (!lexer.ExpectPunctuation(P_PARENTHESESCLOSE)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::ParenthesesClose)) {
         return false;
     }
 
-    if (!lexer.ExpectPunctuation(P_COLON)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::Colon)) {
         return false;
     }
 
@@ -344,43 +363,43 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
     }
 
     if (!Str::Cmp(typeStr, "bool")) {
-        propInfo.type = Variant::BoolType;
+        propInfo.type = Variant::Type::Bool;
     } else if (!Str::Cmp(typeStr, "int")) {
-        propInfo.type = Variant::IntType;
+        propInfo.type = Variant::Type::Int;
     } else if (!Str::Cmp(typeStr, "point")) {
-        propInfo.type = Variant::PointType;
+        propInfo.type = Variant::Type::Point;
     } else if (!Str::Cmp(typeStr, "rect")) {
-        propInfo.type = Variant::RectType;
+        propInfo.type = Variant::Type::Rect;
     } else if (!Str::Cmp(typeStr, "float")) {
-        propInfo.type = Variant::FloatType;
+        propInfo.type = Variant::Type::Float;
     } else if (!Str::Cmp(typeStr, "vec2")) {
-        propInfo.type = Variant::Vec2Type;
+        propInfo.type = Variant::Type::Vec2;
     } else if (!Str::Cmp(typeStr, "vec3")) {
-        propInfo.type = Variant::Vec3Type;
+        propInfo.type = Variant::Type::Vec3;
     } else if (!Str::Cmp(typeStr, "vec4")) {
-        propInfo.type = Variant::Vec4Type;
+        propInfo.type = Variant::Type::Vec4;
     } else if (!Str::Cmp(typeStr, "color3")) {
-        propInfo.type = Variant::Color3Type;
+        propInfo.type = Variant::Type::Color3;
     } else if (!Str::Cmp(typeStr, "color4")) {
-        propInfo.type = Variant::Color4Type;
+        propInfo.type = Variant::Type::Color4;
     } else if (!Str::Cmp(typeStr, "enum")) {
         Str enumSequence;
-        if (!lexer.ExpectTokenType(TokenType::TT_STRING, &enumSequence)) {
+        if (!lexer.ExpectTokenType(Lexer::TokenType::String, &enumSequence)) {
             return false;
         }
-        propInfo.type = Variant::IntType;
+        propInfo.type = Variant::Type::Int;
         propInfo.enumeration.Clear();
         SplitStringIntoList(propInfo.enumeration, enumSequence, ";");
     } else if (!Str::Cmp(typeStr, "texture")) {
-        propInfo.type = Variant::GuidType;
+        propInfo.type = Variant::Type::Guid;
         propInfo.metaObject = &TextureAsset::metaObject;
     }
 
-    if (propInfo.type == Variant::IntType ||
-        propInfo.type == Variant::FloatType ||
-        propInfo.type == Variant::Vec2Type ||
-        propInfo.type == Variant::Vec3Type ||
-        propInfo.type == Variant::Vec4Type) {
+    if (propInfo.type == Variant::Type::Int ||
+        propInfo.type == Variant::Type::Float ||
+        propInfo.type == Variant::Type::Vec2 ||
+        propInfo.type == Variant::Type::Vec3 ||
+        propInfo.type == Variant::Type::Vec4) {
         Str token;
         lexer.ReadToken(&token, false);
 
@@ -393,12 +412,12 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
         }
     }
 
-    if (!lexer.ExpectPunctuation(P_ASSIGN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::Assign)) {
         return false;
     }
 
     Str defaultValueString;
-    if (!lexer.ExpectTokenType(TokenType::TT_STRING, &defaultValueString)) {
+    if (!lexer.ExpectTokenType(Lexer::TokenType::String, &defaultValueString)) {
         return false;
     }
 
@@ -415,7 +434,7 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
             if (token == ")") {
                 break;
             } else if (token == "shaderDefine") {
-                propInfo.flags |= PropertyInfo::ShaderDefineFlag;
+                propInfo.flags |= PropertyInfo::Flag::ShaderDefine;
             } else {
                 return false;
             }
@@ -429,17 +448,16 @@ bool Shader::ParseProperties(Lexer &lexer) {
     PropertyInfo propInfo;
     Str token;
 
-    if (!lexer.ExpectPunctuation(P_BRACEOPEN)) {
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
         return false;
     }
 
     while (lexer.ReadToken(&token)) {
         if (token[0] == '}') {
             break;
-        }
-        else {
+        } else {
             if (propertyInfoHashMap.Get(token)) {
-                BE_WARNLOG(L"same property name '%hs' ignored in shader '%hs'\n", token.c_str(), hashName.c_str());
+                BE_WARNLOG("same property name '%s' ignored in shader '%s'\n", token.c_str(), hashName.c_str());
                 lexer.SkipRestOfLine();
                 continue;
             }
@@ -447,7 +465,7 @@ bool Shader::ParseProperties(Lexer &lexer) {
             lexer.UnreadToken(&token);
 
             if (!ParseShaderPropertyInfo(lexer, propInfo)) {
-                BE_WARNLOG(L"error occured in parsing property propInfo in shader '%hs'\n", hashName.c_str());
+                BE_WARNLOG("error occured in parsing property propInfo in shader '%s'\n", hashName.c_str());
                 lexer.SkipRestOfLine();
                 continue;
             }
@@ -459,12 +477,12 @@ bool Shader::ParseProperties(Lexer &lexer) {
     return true;
 }
 
-Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, int skinningWeightCount, bool instancing) {
+Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool shadowing, int skinningWeightCount, bool instancing) {
     Str skinningPostfix;
     Str skinningVsHeaderText;
     Str skinningVsHeaderTextCommon;
 
-    skinningVsHeaderTextCommon = "#ifdef VTF_SKINNING\n" 
+    skinningVsHeaderTextCommon = "#ifdef VTF_SKINNING\n"
         "#ifdef USE_BUFFER_TEXTURE\n"
         "#define VTF_SKINNING_TC_TYPE int\n"
         "#else\n"
@@ -518,28 +536,33 @@ Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHea
         return nullptr;
     }
 
+    if (shadowing) {
+        shader->flags |= Flag::Shadowing;
+    }
+
     shader->propertyInfoHashMap = propertyInfoHashMap;
 
     return shader;
 }
 
-bool Shader::GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool generateGpuInstancingVersion) {
+bool Shader::GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText,
+    bool shadowing, bool generateGpuInstancingVersion) {
     if (!shader->gpuSkinningVersion[0]) {
-        shader->gpuSkinningVersion[0] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 1, false);
+        shader->gpuSkinningVersion[0] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, shadowing, 1, false);
         if (!shader->gpuSkinningVersion[0]) {
             return false;
         }
     }
 
     if (!shader->gpuSkinningVersion[1]) {
-        shader->gpuSkinningVersion[1] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 4, false);
+        shader->gpuSkinningVersion[1] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, shadowing, 4, false);
         if (!shader->gpuSkinningVersion[1]) {
             return false;
         }
     }
 
     if (!shader->gpuSkinningVersion[2]) {
-        shader->gpuSkinningVersion[2] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 8, false);
+        shader->gpuSkinningVersion[2] = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, shadowing, 8, false);
         if (!shader->gpuSkinningVersion[2]) {
             return false;
         }
@@ -547,21 +570,21 @@ bool Shader::GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePos
 
     if (generateGpuInstancingVersion) {
         if (!shader->gpuSkinningVersion[0]->gpuInstancingVersion) {
-            shader->gpuSkinningVersion[0]->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 1, true);
+            shader->gpuSkinningVersion[0]->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, shadowing, 1, true);
             if (!shader->gpuSkinningVersion[0]->gpuInstancingVersion) {
                 return false;
             }
         }
 
         if (!shader->gpuSkinningVersion[1]->gpuInstancingVersion) {
-            shader->gpuSkinningVersion[1]->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 4, true);
+            shader->gpuSkinningVersion[1]->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, shadowing, 4, true);
             if (!shader->gpuSkinningVersion[1]->gpuInstancingVersion) {
                 return false;
             }
         }
 
         if (!shader->gpuSkinningVersion[2]->gpuInstancingVersion) {
-            shader->gpuSkinningVersion[2]->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 8, true);
+            shader->gpuSkinningVersion[2]->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, shadowing, 8, true);
             if (!shader->gpuSkinningVersion[2]->gpuInstancingVersion) {
                 return false;
             }
@@ -571,10 +594,11 @@ bool Shader::GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePos
     return true;
 }
 
-bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion) {
+bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText,
+    bool shadowing, bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion) {
     if (!shader->perforatedVersion) {
         shader->perforatedVersion = GenerateSubShader(shaderNamePostfix + "-perforated",
-            vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", 0, false);
+            vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", shadowing, 0, false);
         if (!shader->perforatedVersion) {
             return false;
         }
@@ -582,7 +606,7 @@ bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePost
 
     if (genereateGpuSkinningVersion) {
         if (!GenerateGpuSkinningVersion(shader->perforatedVersion,
-            shaderNamePostfix + "-perforated", vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", false)) {
+            shaderNamePostfix + "-perforated", vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", shadowing, false)) {
             return false;
         }
     }
@@ -590,7 +614,7 @@ bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePost
     if (generateGpuInstancingVersion) {
         if (!shader->perforatedVersion->gpuInstancingVersion) {
             shader->perforatedVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix + "-perforated",
-                vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", 0, true);
+                vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", shadowing, 0, true);
             if (!shader->perforatedVersion->gpuInstancingVersion) {
                 return false;
             }
@@ -598,7 +622,7 @@ bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePost
 
         if (genereateGpuSkinningVersion) {
             if (!GenerateGpuSkinningVersion(shader->perforatedVersion->gpuInstancingVersion,
-                shaderNamePostfix + "-perforated", vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", true)) {
+                shaderNamePostfix + "-perforated", vsHeaderText + "#define PERFORATED\n", fsHeaderText + "#define PERFORATED\n", shadowing, true)) {
                 return false;
             }
         }
@@ -607,10 +631,11 @@ bool Shader::GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePost
     return true;
 }
 
-bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion) {
+bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText,
+    bool shadowing, bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion) {
     if (!shader->premulAlphaVersion) {
         shader->premulAlphaVersion = GenerateSubShader(shaderNamePostfix + "-premulAlpha",
-            vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", 0, false);
+            vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", shadowing, 0, false);
         if (!shader->premulAlphaVersion) {
             return false;
         }
@@ -618,7 +643,7 @@ bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePos
 
     if (genereateGpuSkinningVersion) {
         if (!GenerateGpuSkinningVersion(shader->premulAlphaVersion,
-            shaderNamePostfix + "-premulAlpha", vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", false)) {
+            shaderNamePostfix + "-premulAlpha", vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", shadowing, false)) {
             return false;
         }
     }
@@ -626,7 +651,7 @@ bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePos
     if (generateGpuInstancingVersion) {
         if (!shader->premulAlphaVersion->gpuInstancingVersion) {
             shader->premulAlphaVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix + "-premulAlpha",
-                vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", 0, true);
+                vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", shadowing, 0, true);
             if (!shader->premulAlphaVersion->gpuInstancingVersion) {
                 return false;
             }
@@ -634,7 +659,7 @@ bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePos
 
         if (genereateGpuSkinningVersion) {
             if (!GenerateGpuSkinningVersion(shader->premulAlphaVersion->gpuInstancingVersion,
-                shaderNamePostfix + "-premulAlpha", vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", true)) {
+                shaderNamePostfix + "-premulAlpha", vsHeaderText + "#define PREMULTIPLIED_ALPHA\n", fsHeaderText + "#define PREMULTIPLIED_ALPHA\n", shadowing, true)) {
                 return false;
             }
         }
@@ -643,11 +668,12 @@ bool Shader::GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePos
     return true;
 }
 
-bool Shader::Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion,
+bool Shader::Finish(bool generatePerforatedVersion,
+    bool genereateGpuSkinningVersion, bool generateGpuInstancingVersion,
     bool generateParallelShadowVersion, bool generateSpotShadowVersion, bool generatePointShadowVersion) {
     if (generateGpuInstancingVersion) {
         if (!gpuInstancingVersion) {
-            gpuInstancingVersion = GenerateSubShader("", "", "", 0, true);
+            gpuInstancingVersion = GenerateSubShader("", "", "", false, 0, true);
             if (!gpuInstancingVersion) {
                 return false;
             }
@@ -655,30 +681,30 @@ bool Shader::Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVer
     }
 
     if (genereateGpuSkinningVersion) {
-        if (!GenerateGpuSkinningVersion(this, "", "", "", generateGpuInstancingVersion)) {
+        if (!GenerateGpuSkinningVersion(this, "", "", "", false, generateGpuInstancingVersion)) {
             return false;
         }
     }
 
     if (generatePerforatedVersion) {
-        if (!GeneratePerforatedVersion(this, "", "", "", genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
+        if (!GeneratePerforatedVersion(this, "", "", "", false, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
             return false;
         }
     }
 
     if (generateParallelShadowVersion) {
-        const Str shaderNamePostfix = "-parallelShadowed";
+        const Str shaderNamePostfix = "-dirShadowed";
         const Str vsHeaderText = "#define USE_SHADOW_CASCADE\n";
         const Str fsHeaderText = "#define USE_SHADOW_CASCADE\n";
 
         if (!parallelShadowVersion) {
-            parallelShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, false);
+            parallelShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, true, 0, false);
             if (!parallelShadowVersion) {
                 return false;
             }
 
-            if (!parallelShadowVersion->gpuInstancingVersion) {
-                parallelShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, true);
+            if (generateGpuInstancingVersion && !parallelShadowVersion->gpuInstancingVersion) {
+                parallelShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, true, 0, false);
                 if (!parallelShadowVersion->gpuInstancingVersion) {
                     return false;
                 }
@@ -686,13 +712,13 @@ bool Shader::Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVer
         }
 
         if (genereateGpuSkinningVersion) {
-            if (!GenerateGpuSkinningVersion(parallelShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, generateGpuInstancingVersion)) {
+            if (!GenerateGpuSkinningVersion(parallelShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, true, generateGpuInstancingVersion)) {
                 return false;
             }
         }
 
         if (generatePerforatedVersion) {
-            if (!GeneratePerforatedVersion(parallelShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
+            if (!GeneratePerforatedVersion(parallelShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, true, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
                 return false;
             }
         }
@@ -704,13 +730,13 @@ bool Shader::Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVer
         const Str fsHeaderText = "#define USE_SHADOW_SPOT\n";
 
         if (!spotShadowVersion) {
-            spotShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, false);
+            spotShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, true, 0, false);
             if (!spotShadowVersion) {
                 return false;
             }
 
-            if (!spotShadowVersion->gpuInstancingVersion) {
-                spotShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, true);
+            if (generateGpuInstancingVersion && !spotShadowVersion->gpuInstancingVersion) {
+                spotShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, true, 0, false);
                 if (!spotShadowVersion->gpuInstancingVersion) {
                     return false;
                 }
@@ -718,13 +744,13 @@ bool Shader::Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVer
         }
 
         if (genereateGpuSkinningVersion) {
-            if (!GenerateGpuSkinningVersion(spotShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, generateGpuInstancingVersion)) {
+            if (!GenerateGpuSkinningVersion(spotShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, true, generateGpuInstancingVersion)) {
                 return false;
             }
         }
 
         if (generatePerforatedVersion) {
-            if (!GeneratePerforatedVersion(spotShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
+            if (!GeneratePerforatedVersion(spotShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, true, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
                 return false;
             }
         }
@@ -736,13 +762,13 @@ bool Shader::Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVer
         const Str fsHeaderText = "#define USE_SHADOW_POINT\n";
 
         if (!pointShadowVersion) {
-            pointShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, false);
+            pointShadowVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, true, 0, false);
             if (!pointShadowVersion) {
                 return false;
             }
 
-            if (!pointShadowVersion->gpuInstancingVersion) {
-                pointShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, 0, true);
+            if (generateGpuInstancingVersion && !pointShadowVersion->gpuInstancingVersion) {
+                pointShadowVersion->gpuInstancingVersion = GenerateSubShader(shaderNamePostfix, vsHeaderText, fsHeaderText, true, 0, false);
                 if (!pointShadowVersion->gpuInstancingVersion) {
                     return false;
                 }
@@ -750,13 +776,13 @@ bool Shader::Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVer
         }
 
         if (genereateGpuSkinningVersion) {
-            if (!GenerateGpuSkinningVersion(pointShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, generateGpuInstancingVersion)) {
+            if (!GenerateGpuSkinningVersion(pointShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, true, generateGpuInstancingVersion)) {
                 return false;
             }
         }
 
         if (generatePerforatedVersion) {
-            if (!GeneratePerforatedVersion(pointShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
+            if (!GeneratePerforatedVersion(pointShadowVersion, shaderNamePostfix, vsHeaderText, fsHeaderText, true, genereateGpuSkinningVersion, generateGpuInstancingVersion)) {
                 return false;
             }
         }
@@ -767,14 +793,18 @@ bool Shader::Finish(bool generatePerforatedVersion, bool genereateGpuSkinningVer
 
 const char *Shader::MangleNameWithDefineList(const Str &basename, const Array<Shader::Define> &defineArray, Str &mangledName) {
     mangledName = basename;
-    
+
     if (defineArray.Count() > 0) {
         Array<Shader::Define> sortedDefineArray = defineArray;
         sortedDefineArray.StableSort([](const Shader::Define &a, const Shader::Define &b) -> bool {
             return (a.name).Icmp(b.name) < 0;
         });
-    
+
         for (int i = 0; i < defineArray.Count(); i++) {
+            // Skip define value is 0
+            if (defineArray[i].value == 0) {
+                continue;
+            }
             mangledName += "+" + defineArray[i].name + "=" + defineArray[i].value;
         }
     }
@@ -804,8 +834,8 @@ Shader *Shader::InstantiateShader(const Array<Define> &defineArray) {
     shader->baseDir = baseDir;
 
     instantiatedShaders.Append(shader);
-    
-    shader->Instantiate(defineArray);
+
+    shader->InstantiateShaderInternal(defineArray);
 
     return shader;
 }
@@ -840,15 +870,15 @@ Shader *Shader::GetPremulAlphaVersion() {
     return nullptr;
 }
 
-Shader *Shader::GetAmbientLitVersion() {
-    if (ambientLitVersion) {
-        return ambientLitVersion;
+Shader *Shader::GetIndirectLitVersion() {
+    if (indirectLitVersion) {
+        return indirectLitVersion;
     }
 
     if (originalShader) {
-        if (originalShader->ambientLitVersion) {
-            ambientLitVersion = originalShader->ambientLitVersion->InstantiateShader(defineArray);
-            return ambientLitVersion;
+        if (originalShader->indirectLitVersion) {
+            indirectLitVersion = originalShader->indirectLitVersion->InstantiateShader(defineArray);
+            return indirectLitVersion;
         }
     }
 
@@ -870,15 +900,15 @@ Shader *Shader::GetDirectLitVersion() {
     return nullptr;
 }
 
-Shader *Shader::GetAmbientLitDirectLitVersion() {
-    if (ambientLitDirectLitVersion) {
-        return ambientLitDirectLitVersion;
+Shader *Shader::GetIndirectLitDirectLitVersion() {
+    if (indirectLitDirectLitVersion) {
+        return indirectLitDirectLitVersion;
     }
 
     if (originalShader) {
-        if (originalShader->ambientLitDirectLitVersion) {
-            ambientLitDirectLitVersion = originalShader->ambientLitDirectLitVersion->InstantiateShader(defineArray);
-            return ambientLitDirectLitVersion;
+        if (originalShader->indirectLitDirectLitVersion) {
+            indirectLitDirectLitVersion = originalShader->indirectLitDirectLitVersion->InstantiateShader(defineArray);
+            return indirectLitDirectLitVersion;
         }
     }
 
@@ -962,19 +992,19 @@ Shader *Shader::GetGPUInstancingVersion() {
 
 void Shader::Reinstantiate() {
     assert(originalShader);
-    Instantiate(defineArray);
+    InstantiateShaderInternal(defineArray);
 
-    if (originalShader->ambientLitVersion) {
-        if (ambientLitVersion) {
-            ambientLitVersion->originalShader = originalShader->ambientLitVersion;
-            ambientLitVersion->Reinstantiate();
+    if (originalShader->indirectLitVersion) {
+        if (indirectLitVersion) {
+            indirectLitVersion->originalShader = originalShader->indirectLitVersion;
+            indirectLitVersion->Reinstantiate();
         } else {
-            ambientLitVersion = originalShader->ambientLitVersion->InstantiateShader(defineArray);
+            indirectLitVersion = originalShader->indirectLitVersion->InstantiateShader(defineArray);
         }
     } else {
-        if (ambientLitVersion) {
-            shaderManager.ReleaseShader(ambientLitVersion);
-            ambientLitVersion = nullptr;
+        if (indirectLitVersion) {
+            shaderManager.ReleaseShader(indirectLitVersion);
+            indirectLitVersion = nullptr;
         }
     }
 
@@ -992,17 +1022,17 @@ void Shader::Reinstantiate() {
         }
     }
 
-    if (originalShader->ambientLitDirectLitVersion) {
-        if (ambientLitDirectLitVersion) {
-            ambientLitDirectLitVersion->originalShader = originalShader->ambientLitDirectLitVersion;
-            ambientLitDirectLitVersion->Reinstantiate();
+    if (originalShader->indirectLitDirectLitVersion) {
+        if (indirectLitDirectLitVersion) {
+            indirectLitDirectLitVersion->originalShader = originalShader->indirectLitDirectLitVersion;
+            indirectLitDirectLitVersion->Reinstantiate();
         } else {
-            ambientLitDirectLitVersion = originalShader->ambientLitDirectLitVersion->InstantiateShader(defineArray);
+            indirectLitDirectLitVersion = originalShader->indirectLitDirectLitVersion->InstantiateShader(defineArray);
         }
     } else {
-        if (ambientLitDirectLitVersion) {
-            shaderManager.ReleaseShader(ambientLitDirectLitVersion);
-            ambientLitDirectLitVersion = nullptr;
+        if (indirectLitDirectLitVersion) {
+            shaderManager.ReleaseShader(indirectLitDirectLitVersion);
+            indirectLitDirectLitVersion = nullptr;
         }
     }
 
@@ -1107,14 +1137,14 @@ void Shader::Reinstantiate() {
     }
 }
 
-bool Shader::Instantiate(const Array<Define> &defineArray) {
+bool Shader::InstantiateShaderInternal(const Array<Define> &defineArray) {
     Str processedVsText;
     Str processedFsText;
 
-    shaderFlags |= ProcessShaderText(originalShader->vsText, originalShader->baseDir, defineArray, processedVsText) ? VertexShader : 0;
-    shaderFlags |= ProcessShaderText(originalShader->fsText, originalShader->baseDir, defineArray, processedFsText) ? FragmentShader : 0;
+    flags |= ProcessShaderText(originalShader->vsText, originalShader->baseDir, defineArray, processedVsText) ? Flag::HasVertexShader : 0;
+    flags |= ProcessShaderText(originalShader->fsText, originalShader->baseDir, defineArray, processedFsText) ? Flag::HasFragmentShader : 0;
 
-    if (!(shaderFlags & VertexShader) || !(shaderFlags & FragmentShader)) {
+    if (!(flags & Flag::HasVertexShader) || !(flags & Flag::HasFragmentShader)) {
         return false;
     }
 
@@ -1124,14 +1154,14 @@ bool Shader::Instantiate(const Array<Define> &defineArray) {
 
     shaderHandle = rhi.CreateShader(hashName, processedVsText, processedFsText);
 
-    assert(MaxBuiltInConstants == COUNT_OF(builtInConstantNames));
-    assert(MaxBuiltInSamplers == COUNT_OF(builtInSamplerNames));
+    assert(BuiltInConstant::Count == COUNT_OF(builtInConstantNames));
+    assert(BuiltInSampler::Count == COUNT_OF(builtInSamplerNames));
 
-    for (int i = 0; i < MaxBuiltInConstants; i++) {
+    for (int i = 0; i < BuiltInConstant::Count; i++) {
         builtInConstantIndices[i] = rhi.GetShaderConstantIndex(shaderHandle, builtInConstantNames[i]);
     }
 
-    for (int i = 0; i < MaxBuiltInSamplers; i++) {
+    for (int i = 0; i < BuiltInSampler::Count; i++) {
         builtInSamplerUnits[i] = rhi.GetSamplerUnit(shaderHandle, builtInSamplerNames[i]);
     }
 
@@ -1158,7 +1188,7 @@ bool Shader::ProcessShaderText(const char *text, const char *baseDir, const Arra
 
 bool Shader::ProcessIncludeRecursive(const char *baseDir, Str &outText) const {
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
 
     int pos = 0;
 
@@ -1172,15 +1202,15 @@ bool Shader::ProcessIncludeRecursive(const char *baseDir, Str &outText) const {
         lexer.Load(data_p, Str::Length(data_p), hashName);
 
         Str relativeFileName;
-        lexer.ExpectTokenType(TT_STRING, &relativeFileName);
+        lexer.ExpectTokenType(Lexer::TokenType::String, &relativeFileName);
 
         Str path = baseDir;
-        path.AppendPath(relativeFileName);  
+        path.AppendPath(relativeFileName);
 
         char *includingText;
         size_t fileLen = fileSystem.LoadFile(path.c_str(), true, (void **)&includingText);
         if (!fileLen) {
-            BE_FATALERROR(L"Shader::ProcessIncludeRecursive: Cannot open include file '%hs'", path.c_str());
+            BE_FATALERROR("Shader::ProcessIncludeRecursive: Cannot open include file '%s'", path.c_str());
             return false;
         }
 
@@ -1198,71 +1228,71 @@ bool Shader::ProcessIncludeRecursive(const char *baseDir, Str &outText) const {
     return true;
 }
 
-void Shader::Bind() const { 
+void Shader::Bind() const {
     rhi.BindShader(shaderHandle);
 }
 
 int Shader::GetConstantIndex(const char *name) const {
-    return rhi.GetShaderConstantIndex(shaderHandle, name); 
+    return rhi.GetShaderConstantIndex(shaderHandle, name);
 }
 
 int Shader::GetConstantBlockIndex(const char *name) const {
     return rhi.GetShaderConstantBlockIndex(shaderHandle, name);
 }
 
-void Shader::SetConstant1i(int index, const int constant) const { 
+void Shader::SetConstant1i(int index, const int constant) const {
     rhi.SetShaderConstant1i(index, constant);
 }
 
-void Shader::SetConstant2i(int index, const int *constant) const { 
+void Shader::SetConstant2i(int index, const int *constant) const {
     rhi.SetShaderConstant2i(index, constant);
 }
 
-void Shader::SetConstant3i(int index, const int *constant) const { 
+void Shader::SetConstant3i(int index, const int *constant) const {
     rhi.SetShaderConstant3i(index, constant);
 }
 
-void Shader::SetConstant4i(int index, const int *constant) const { 
+void Shader::SetConstant4i(int index, const int *constant) const {
     rhi.SetShaderConstant4i(index, constant);
 }
 
-void Shader::SetConstant1f(int index, float x) const { 
+void Shader::SetConstant1f(int index, float x) const {
     rhi.SetShaderConstant1f(index, x);
 }
 
-void Shader::SetConstant2f(int index, const float *constant) const { 
+void Shader::SetConstant2f(int index, const float *constant) const {
     rhi.SetShaderConstant2f(index, constant);
 }
 
-void Shader::SetConstant3f(int index, const float *constant) const { 
+void Shader::SetConstant3f(int index, const float *constant) const {
     rhi.SetShaderConstant3f(index, constant);
 }
 
-void Shader::SetConstant4f(int index, const float *constant) const { 
+void Shader::SetConstant4f(int index, const float *constant) const {
     rhi.SetShaderConstant4f(index, constant);
 }
 
-void Shader::SetConstant2f(int index, const Vec2 &constant) const { 
+void Shader::SetConstant2f(int index, const Vec2 &constant) const {
     rhi.SetShaderConstant2f(index, constant);
 }
 
-void Shader::SetConstant3f(int index, const Vec3 &constant) const { 
+void Shader::SetConstant3f(int index, const Vec3 &constant) const {
     rhi.SetShaderConstant3f(index, constant);
 }
 
-void Shader::SetConstant4f(int index, const Vec4 &constant) const { 
+void Shader::SetConstant4f(int index, const Vec4 &constant) const {
     rhi.SetShaderConstant4f(index, constant);
 }
 
-void Shader::SetConstant2x2f(int index, bool rowMajor, const Mat2 &constant) const { 
+void Shader::SetConstant2x2f(int index, bool rowMajor, const Mat2 &constant) const {
     rhi.SetShaderConstant2x2f(index, rowMajor, constant);
 }
 
-void Shader::SetConstant3x3f(int index, bool rowMajor, const Mat3 &constant) const { 
+void Shader::SetConstant3x3f(int index, bool rowMajor, const Mat3 &constant) const {
     rhi.SetShaderConstant3x3f(index, rowMajor, constant);
 }
 
-void Shader::SetConstant4x4f(int index, bool rowMajor, const Mat4 &constant) const { 
+void Shader::SetConstant4x4f(int index, bool rowMajor, const Mat4 &constant) const {
     rhi.SetShaderConstant4x4f(index, rowMajor, constant);
 }
 
@@ -1314,15 +1344,15 @@ void Shader::SetConstantArray4f(int index, int num, const Vec4 *constant) const 
     rhi.SetShaderConstantArray4f(index, num, constant);
 }
 
-void Shader::SetConstantArray2x2f(int index, bool rowMajor, int num, const Mat2 *constant) const { 
+void Shader::SetConstantArray2x2f(int index, bool rowMajor, int num, const Mat2 *constant) const {
     rhi.SetShaderConstantArray2x2f(index, rowMajor, num, constant);
 }
 
-void Shader::SetConstantArray3x3f(int index, bool rowMajor, int num, const Mat3 *constant) const { 
+void Shader::SetConstantArray3x3f(int index, bool rowMajor, int num, const Mat3 *constant) const {
     rhi.SetShaderConstantArray3x3f(index, rowMajor, num, constant);
 }
 
-void Shader::SetConstantArray4x4f(int index, bool rowMajor, int num, const Mat4 *constant) const { 
+void Shader::SetConstantArray4x4f(int index, bool rowMajor, int num, const Mat4 *constant) const {
     rhi.SetShaderConstantArray4x4f(index, rowMajor, num, constant);
 }
 
@@ -1334,127 +1364,127 @@ void Shader::SetConstantBuffer(int index, int bindingIndex) const {
     rhi.SetShaderConstantBlock(index, bindingIndex);
 }
 
-void Shader::SetConstant1i(const char *name, int x) const { 
+void Shader::SetConstant1i(const char *name, int x) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant1i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant1i: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant1i(index, x);
 }
 
-void Shader::SetConstant2i(const char *name, const int *constant) const { 
+void Shader::SetConstant2i(const char *name, const int *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant2i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant2i: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant2i(index, constant);
 }
 
-void Shader::SetConstant3i(const char *name, const int *constant) const { 
+void Shader::SetConstant3i(const char *name, const int *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant3i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant3i: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant3i(index, constant);
 }
 
-void Shader::SetConstant4i(const char *name, const int *constant) const { 
+void Shader::SetConstant4i(const char *name, const int *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant4i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant4i: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant4i(index, constant);
 }
 
-void Shader::SetConstant1f(const char *name, float x) const { 
+void Shader::SetConstant1f(const char *name, float x) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant1f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant1f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant1f(index, x);
 }
 
-void Shader::SetConstant2f(const char *name, const float *constant) const { 
+void Shader::SetConstant2f(const char *name, const float *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant2f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant2f(index, constant);
 }
 
-void Shader::SetConstant3f(const char *name, const float *constant) const { 
+void Shader::SetConstant3f(const char *name, const float *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant3f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant3f(index, constant);
 }
 
-void Shader::SetConstant4f(const char *name, const float *constant) const { 
+void Shader::SetConstant4f(const char *name, const float *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant4f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant4f(index, constant);
 }
 
-void Shader::SetConstant2f(const char *name, const Vec2 &constant) const { 
+void Shader::SetConstant2f(const char *name, const Vec2 &constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant2f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant2f(index, constant);
 }
 
-void Shader::SetConstant3f(const char *name, const Vec3 &constant) const { 
+void Shader::SetConstant3f(const char *name, const Vec3 &constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant3f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant3f(index, constant);
 }
 
-void Shader::SetConstant4f(const char *name, const Vec4 &constant) const { 
+void Shader::SetConstant4f(const char *name, const Vec4 &constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant4f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant4f(index, constant);
 }
 
-void Shader::SetConstant2x2f(const char *name, bool rowMajor, const Mat2 &constant) const { 
+void Shader::SetConstant2x2f(const char *name, bool rowMajor, const Mat2 &constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant2x2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant2x2f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant2x2f(index, rowMajor, constant);
 }
 
-void Shader::SetConstant3x3f(const char *name, bool rowMajor, const Mat3 &constant) const { 
+void Shader::SetConstant3x3f(const char *name, bool rowMajor, const Mat3 &constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant3x3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant3x3f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant3x3f(index, rowMajor, constant);
 }
 
-void Shader::SetConstant4x4f(const char *name, bool rowMajor, const Mat4 &constant) const { 
+void Shader::SetConstant4x4f(const char *name, bool rowMajor, const Mat4 &constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant4x4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant4x4f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant4x4f(index, rowMajor, constant);
@@ -1463,7 +1493,7 @@ void Shader::SetConstant4x4f(const char *name, bool rowMajor, const Mat4 &consta
 void Shader::SetConstant4x3f(const char *name, bool rowMajor, const Mat3x4 &constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstant4x3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstant4x3f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstant4x3f(index, rowMajor, constant);
@@ -1472,7 +1502,7 @@ void Shader::SetConstant4x3f(const char *name, bool rowMajor, const Mat3x4 &cons
 void Shader::SetConstantArray1i(const char *name, int num, const int *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray1i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray1i: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray1i(index, num, constant);
@@ -1481,7 +1511,7 @@ void Shader::SetConstantArray1i(const char *name, int num, const int *constant) 
 void Shader::SetConstantArray2i(const char *name, int num, const int *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray2i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray2i: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray2i(index, num, constant);
@@ -1490,7 +1520,7 @@ void Shader::SetConstantArray2i(const char *name, int num, const int *constant) 
 void Shader::SetConstantArray3i(const char *name, int num, const int *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray3i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray3i: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray3i(index, num, constant);
@@ -1499,7 +1529,7 @@ void Shader::SetConstantArray3i(const char *name, int num, const int *constant) 
 void Shader::SetConstantArray4i(const char *name, int num, const int *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray4i: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray4i: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray4i(index, num, constant);
@@ -1508,7 +1538,7 @@ void Shader::SetConstantArray4i(const char *name, int num, const int *constant) 
 void Shader::SetConstantArray1f(const char *name, int num, const float *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray1f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray1f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray1f(index, num, constant);
@@ -1517,7 +1547,7 @@ void Shader::SetConstantArray1f(const char *name, int num, const float *constant
 void Shader::SetConstantArray2f(const char *name, int num, const float *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray2f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray2f(index, num, constant);
@@ -1526,7 +1556,7 @@ void Shader::SetConstantArray2f(const char *name, int num, const float *constant
 void Shader::SetConstantArray3f(const char *name, int num, const float *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray3f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray3f(index, num, constant);
@@ -1535,7 +1565,7 @@ void Shader::SetConstantArray3f(const char *name, int num, const float *constant
 void Shader::SetConstantArray4f(const char *name, int num, const float *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray4f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray4f(index, num, constant);
@@ -1544,7 +1574,7 @@ void Shader::SetConstantArray4f(const char *name, int num, const float *constant
 void Shader::SetConstantArray2f(const char *name, int num, const Vec2 *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray2f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray2f(index, num, constant);
@@ -1553,7 +1583,7 @@ void Shader::SetConstantArray2f(const char *name, int num, const Vec2 *constant)
 void Shader::SetConstantArray3f(const char *name, int num, const Vec3 *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray3f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray3f(index, num, constant);
@@ -1562,34 +1592,34 @@ void Shader::SetConstantArray3f(const char *name, int num, const Vec3 *constant)
 void Shader::SetConstantArray4f(const char *name, int num, const Vec4 *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray4f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray4f(index, num, constant);
 }
 
-void Shader::SetConstantArray2x2f(const char *name, bool rowMajor, int num, const Mat2 *constant) const { 
+void Shader::SetConstantArray2x2f(const char *name, bool rowMajor, int num, const Mat2 *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray2x2f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray2x2f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray2x2f(index, rowMajor, num, constant);
 }
 
-void Shader::SetConstantArray3x3f(const char *name, bool rowMajor, int num, const Mat3 *constant) const { 
+void Shader::SetConstantArray3x3f(const char *name, bool rowMajor, int num, const Mat3 *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray3x3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray3x3f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray3x3f(index, rowMajor, num, constant);
 }
 
-void Shader::SetConstantArray4x4f(const char *name, bool rowMajor, int num, const Mat4 *constant) const { 
+void Shader::SetConstantArray4x4f(const char *name, bool rowMajor, int num, const Mat4 *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray4x4f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray4x4f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray4x4f(index, rowMajor, num, constant);
@@ -1598,7 +1628,7 @@ void Shader::SetConstantArray4x4f(const char *name, bool rowMajor, int num, cons
 void Shader::SetConstantArray4x3f(const char *name, bool rowMajor, int num, const Mat3x4 *constant) const {
     int index = rhi.GetShaderConstantIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantArray4x3f: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantArray4x3f: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantArray4x3f(index, rowMajor, num, constant);
@@ -1607,7 +1637,7 @@ void Shader::SetConstantArray4x3f(const char *name, bool rowMajor, int num, cons
 void Shader::SetConstantBuffer(const char *name, int bindingIndex) const {
     int index = rhi.GetShaderConstantBlockIndex(shaderHandle, name);
     if (index < 0) {
-        //BE_WARNLOG(L"Shader::SetConstantBuffer: invalid constant name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetConstantBuffer: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
     rhi.SetShaderConstantBlock(index, bindingIndex);
@@ -1628,7 +1658,7 @@ void Shader::SetTexture(int unit, const Texture *texture) const {
 void Shader::SetTexture(const char *name, const Texture *texture) const {
     int unit = rhi.GetSamplerUnit(shaderHandle, name);
     if (unit < 0) {
-        //BE_WARNLOG(L"Shader::SetTexture: invalid texture name '%hs' in shader '%hs'\n", name, this->hashName.c_str());
+        //BE_WARNLOG("Shader::SetTexture: invalid texture name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
 
@@ -1647,7 +1677,7 @@ void Shader::SetTextureArray(const char *name, int num, const Texture **textures
 
         int unit = rhi.GetSamplerUnit(shaderHandle, temp);
         if (unit < 0) {
-            //BE_WARNLOG(L"Shader::SetTextureArray: invalid texture name '%hs' in shader '%hs'\n", temp, this->hashName.c_str());
+            //BE_WARNLOG("Shader::SetTextureArray: invalid texture name '%s' in shader '%s'\n", temp, this->hashName.c_str());
             return;
         }
 
@@ -1666,7 +1696,7 @@ bool Shader::Load(const char *hashName) {
     }
 
     Lexer lexer;
-    lexer.Init(LexerFlag::LEXFL_NOERRORS);
+    lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(data, (int)size, filename);
 
     if (!lexer.ExpectTokenString("shader")) {
@@ -1686,7 +1716,7 @@ bool Shader::Load(const char *hashName) {
 
     fileSystem.FreeFile(data);
 
-    this->flags |= LoadedFromFile;
+    this->flags |= Flag::LoadedFromFile;
 
     return true;
 }
@@ -1697,7 +1727,7 @@ bool Shader::Reload() {
         shader = originalShader;
     }
 
-    if (!(shader->flags & LoadedFromFile)) {
+    if (!(shader->flags & Flag::LoadedFromFile)) {
         return false;
     }
 

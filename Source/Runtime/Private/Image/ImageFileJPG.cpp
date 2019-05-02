@@ -134,7 +134,7 @@ bool Image::LoadJPGFromMemory(const char *name, const byte *data, size_t size) {
    */
 
   if (cinfo.output_components != 1 && cinfo.output_components != 2 && cinfo.output_components != 3 && cinfo.output_components != 4) {
-      BE_WARNLOG(L"Image::LoadJPGFromMemory: bad JPG format %hs (channels %i)\n", name, cinfo.out_color_components);
+      BE_WARNLOG("Image::LoadJPGFromMemory: bad JPG format %s (channels %i)\n", name, cinfo.out_color_components);
       jpeg_destroy_decompress(&cinfo);
       return false;
   }
@@ -152,19 +152,19 @@ bool Image::LoadJPGFromMemory(const char *name, const byte *data, size_t size) {
   /* Make a one-row-high sample array that will go away when done with image */
   buffer = (*cinfo.mem->alloc_sarray)((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1); 
 
-  Image::Format imageFormat;
+  Image::Format::Enum imageFormat;
   switch (cinfo.output_components) {
   case 1:
-    imageFormat = L_8;
+    imageFormat = Format::L_8;
     break;
   case 2:
-    imageFormat = RG_8_8;
+    imageFormat = Format::RG_8_8;
     break;
   case 3:
-    imageFormat = RGB_8_8_8;
+    imageFormat = Format::RGB_8_8_8;
     break;
   case 4:
-    imageFormat = RGBX_8_8_8_8;
+    imageFormat = Format::RGBX_8_8_8_8;
     break;
   }
 
@@ -285,15 +285,15 @@ bool Image::WriteJPG(const char *filename, int quality) const {
   }
     
   if ((outfile = fopen(absFilename, "wb")) == nullptr) {
-    BE_WARNLOG(L"can't open %hs\n", absFilename.c_str());
+    BE_WARNLOG("can't open %s\n", absFilename.c_str());
     return false;
   }
   jpeg_stdio_dest(&cinfo, outfile);
 
   Image convertedImage;
   byte *src = pic;
-  if (format != RGB_8_8_8) {
-    if (!ConvertFormat(RGB_8_8_8, convertedImage)) {
+  if (format != Format::RGB_8_8_8) {
+    if (!ConvertFormat(Format::RGB_8_8_8, convertedImage)) {
       fclose(outfile);
       return false;
     }

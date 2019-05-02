@@ -1,4 +1,4 @@
-﻿#include "Precompiled.h"
+#include "Precompiled.h"
 #include "Math/Math.h"
 #include "Simd/Simd.h"
 #include "Core/CVars.h"
@@ -8,17 +8,17 @@ BE_NAMESPACE_BEGIN
 
 static const int MaxSources = 32;
 
-static CVar s_khz(L"s_khz", L"44", CVar::Integer | CVar::Archive, L"");
-static CVar s_doppler(L"s_doppler", L"1.0", CVar::Float | CVar::Archive, L"");
-static CVar s_rolloff(L"s_rolloff", L"2.0", CVar::Float | CVar::Archive, L"");
+static CVar s_khz("s_khz", "44", CVar::Flag::Integer | CVar::Flag::Archive, "");
+static CVar s_doppler("s_doppler", "1.0", CVar::Flag::Float | CVar::Flag::Archive, "");
+static CVar s_rolloff("s_rolloff", "2.0", CVar::Flag::Float | CVar::Flag::Archive, "");
 
 bool SoundSystem::InitDevice(void *windowHandle) {
-    BE_LOG(L"Initializing OpenAL...\n");
+    BE_LOG("Initializing OpenAL...\n");
     
     // Verify that a given extension is available for the current context
     ALboolean enumeration = alcIsExtensionPresent(nullptr, "ALC_ENUMERATION_EXT");
     if (enumeration == AL_FALSE) {
-        BE_WARNLOG(L"OpenAL enumeration extension not available\n");
+        BE_WARNLOG("OpenAL enumeration extension not available\n");
     }
 
     // Retrieve a list of available devices
@@ -26,9 +26,9 @@ bool SoundSystem::InitDevice(void *windowHandle) {
     // and the list is terminated with 2 nullptr characters
     const ALCchar *deviceNameList = alcGetString(nullptr, ALC_DEVICE_SPECIFIER);
     const ALCchar *deviceNamePtr = deviceNameList;
-    BE_LOG(L"OpenAL devices: \n");
+    BE_LOG("OpenAL devices: \n");
     while (1) {
-        BE_LOG(L"...%hs\n", deviceNamePtr);
+        BE_LOG("...%s\n", deviceNamePtr);
         
         size_t nextOffset = strlen(deviceNamePtr);
         if (!deviceNamePtr[nextOffset]) {
@@ -45,13 +45,13 @@ bool SoundSystem::InitDevice(void *windowHandle) {
     alGetError();
 
     // Open the default device
-    BE_LOG(L"...opening OpenAL device: ");
+    BE_LOG("...opening OpenAL device: ");
     alDevice = alcOpenDevice(defaultDeviceName);
     if (!alDevice) {
-        BE_LOG(L"failed\n");
+        BE_LOG("failed\n");
         return false;
     }
-    BE_LOG(L"ok\n");
+    BE_LOG("ok\n");
     
     // Get the OpenAL version
     ALCint majorVersion, minorVersion;
@@ -59,7 +59,7 @@ bool SoundSystem::InitDevice(void *windowHandle) {
     alcGetIntegerv(alDevice, ALC_MINOR_VERSION, 1, &minorVersion);
 
     // Create context
-    BE_LOG(L"...creating OpenAL context: ");
+    BE_LOG("...creating OpenAL context: ");
 #if defined(__WIN32__)
     int attrs[] = {
         ALC_FREQUENCY, 44100,
@@ -72,25 +72,25 @@ bool SoundSystem::InitDevice(void *windowHandle) {
 #endif
     if (!alContext) {
         alcCloseDevice(alDevice);
-        BE_LOG(L"failed\n");
+        BE_LOG("failed\n");
         return false;
     }
-    BE_LOG(L"ok\n");
+    BE_LOG("ok\n");
 
     // Set active context
-    BE_LOG(L"...make current context: ");
+    BE_LOG("...make current context: ");
     if (!alcMakeContextCurrent(alContext)) {
         alcDestroyContext(alContext);
         alcCloseDevice(alDevice);
-        BE_LOG(L"failed\n");
+        BE_LOG("failed\n");
         return false;
     }
-    BE_LOG(L"ok\n");
+    BE_LOG("ok\n");
     
-    BE_LOG(L"OpenAL vendor: %hs\n", alGetString(AL_VENDOR));
-    BE_LOG(L"OpenAL renderer: %hs\n", alGetString(AL_RENDERER));
-    BE_LOG(L"OpenAL version: %hs\n", alGetString(AL_VERSION));
-    BE_LOG(L"OpenAL extensions: %hs\n", alGetString(AL_EXTENSIONS));
+    BE_LOG("OpenAL vendor: %s\n", alGetString(AL_VENDOR));
+    BE_LOG("OpenAL renderer: %s\n", alGetString(AL_RENDERER));
+    BE_LOG("OpenAL version: %s\n", alGetString(AL_VERSION));
+    BE_LOG("OpenAL extensions: %s\n", alGetString(AL_EXTENSIONS));
 
     ALCint freq, monoSources, stereoSources, refresh, sync;
     alcGetIntegerv(alDevice, ALC_FREQUENCY, 1, &freq);
@@ -124,7 +124,7 @@ bool SoundSystem::InitDevice(void *windowHandle) {
 }
 
 void SoundSystem::ShutdownDevice() {
-    BE_LOG(L"Shutting down OpenAL...\n");
+    BE_LOG("Shutting down OpenAL...\n");
 
     for (int sourceIndex = 0; sourceIndex < sources.Count(); sourceIndex++) {
         SoundSource *source = sources[sourceIndex];

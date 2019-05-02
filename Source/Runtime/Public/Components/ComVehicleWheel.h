@@ -39,8 +39,10 @@ public:
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
+#if 1
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const RenderView::State &viewState, bool selected) override;
+    virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
+#endif
 
     void                    ClearCache();
 

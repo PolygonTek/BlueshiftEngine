@@ -18,7 +18,12 @@
 #include <sys/sysctl.h>
 #include <AudioToolbox/AudioToolbox.h>
 #include <AVFoundation/AVAudioSession.h>
-#ifdef USE_ADMOB_REWARD_BASED_VIDEO
+
+#ifdef USE_ANALYTICS
+#include "iOSAnalytics.h"
+#endif
+
+#ifdef USE_ADMOB
 #include "iOSAdMob.h"
 #endif
 
@@ -30,8 +35,9 @@
         _Pragma("clang diagnostic pop") \
     } while (0)
 
-#ifdef USE_ADMOB_REWARD_BASED_VIDEO
-@interface RootViewController : UIViewController<GADRewardBasedVideoAdDelegate> {
+// GADBannerViewDelegate
+#ifdef USE_ADMOB
+@interface RootViewController : UIViewController<GADBannerViewDelegate, GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> {
 #else
 @interface RootViewController : UIViewController {
 #endif
@@ -57,7 +63,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     }
 
     t0 = t;
-    
+
     BE1::Engine::RunFrame(elapsedMsec);
     
     BE1::gameClient.RunFrame();
@@ -72,6 +78,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 - (void)loadView {
     CGRect frame = [[UIScreen mainScreen] bounds];
     
+    // Allocate the view that the controller manages.
     self.view = [[UIView alloc] initWithFrame:frame];
     self.view.opaque = YES;
     self.view.clearsContextBeforeDrawing = NO;
@@ -97,7 +104,6 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 
     // This is basically an animation block
     [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext> context) {
-
         // Get the new orientation if you want
         UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
 
@@ -136,7 +142,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         uint64_t touchId = [touch hash];
         uint64_t locationQword = BE1::MakeQWord((int)location.x, (int)location.y);
 
-        BE1::platform->QueEvent(BE1::Platform::TouchBeganEvent, touchId, locationQword, 0, nullptr);        
+        BE1::platform->QueEvent(BE1::Platform::EventType::TouchBegan, touchId, locationQword, 0, nullptr);
         
         touch = [enumerator nextObject];
     }
@@ -152,7 +158,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         uint64_t touchId = [touch hash];
         uint64_t locationQword = BE1::MakeQWord((int)location.x, (int)location.y);
         
-        BE1::platform->QueEvent(BE1::Platform::TouchMovedEvent, touchId, locationQword, 0, nullptr);    
+        BE1::platform->QueEvent(BE1::Platform::EventType::TouchMoved, touchId, locationQword, 0, nullptr);
         
         touch = [enumerator nextObject];
     }
@@ -168,7 +174,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
         uint64_t touchId = [touch hash];
         uint64_t locationQword = BE1::MakeQWord((int)location.x, (int)location.y);
         
-        BE1::platform->QueEvent(BE1::Platform::TouchEndedEvent, touchId, locationQword, 0, nullptr);
+        BE1::platform->QueEvent(BE1::Platform::EventType::TouchEnded, touchId, locationQword, 0, nullptr);
         
         touch = [enumerator nextObject];
     }
@@ -183,63 +189,121 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     while (touch) {
         uint64_t touchId = [touch hash];
 
-        BE1::platform->QueEvent(BE1::Platform::TouchCanceledEvent, touchId, 0, 0, nullptr);        
+        BE1::platform->QueEvent(BE1::Platform::EventType::TouchCanceled, touchId, 0, 0, nullptr);
         
         touch = [enumerator nextObject];
     }
 }
 
-#ifdef USE_ADMOB_BANNER
+#ifdef USE_ADMOB
 
-/// Tells the delegate an ad request loaded an ad.
+// Tells the delegate an ad request loaded an ad.
 - (void)adViewDidReceiveAd:(GADBannerView *)adView {
-}
-
-/// Tells the delegate an ad request failed.
-- (void)adView:(GADBannerView *)adView didFailToReceiveAdWithError:(GADRequestError *)error {
-    const char *errorDescription = (const char *)[error.localizedDescription cStringUsingEncoding:NSUTF8StringEncoding];    
-}
-
-/// Tells the delegate that a full-screen view will be presented in response
-/// to the user clicking on an ad.
-- (void)adViewWillPresentScreen:(GADBannerView *)adView {
-}
-
-/// Tells the delegate that the full-screen view will be dismissed.
-- (void)adViewWillDismissScreen:(GADBannerView *)adView {
-}
-
-/// Tells the delegate that the full-screen view has been dismissed.
-- (void)adViewDidDismissScreen:(GADBannerView *)adView {
-}
-
-/// Tells the delegate that a user click will open another app (such as
-/// the App Store), backgrounding the current app.
-- (void)adViewWillLeaveApplication:(GADBannerView *)adView {
-}
-
-#endif
-
-#ifdef USE_ADMOB_REWARD_BASED_VIDEO
-
-- (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd didRewardUserWithReward:(GADAdReward *)reward {
-    const char *rewardType = (const char *)[reward.type cStringUsingEncoding:NSUTF8StringEncoding];
-    int rewardAmount = [reward.amount intValue];
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_reward_user"];
-    if (function.IsFunction()) {
-       function(rewardType, rewardAmount);
-    }
-}
-
-- (void)rewardBasedVideoAdDidReceiveAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_receive_ad"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["BannerAd"]["on_loaded"];
     if (function.IsFunction()) {
         function();
     }
 }
 
+// Tells the delegate an ad request failed.
+- (void)adView:(GADBannerView *)adView didFailToReceiveAdWithError:(GADRequestError *)error {
+    const char *errorDescription = (const char *)[error.localizedDescription cStringUsingEncoding:NSUTF8StringEncoding];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["BannerAd"]["on_failed_to_load"];
+    if (function.IsFunction()) {
+        function(errorDescription);
+    }
+}
+
+// Tells the delegate that a full-screen view will be presented in response to the user clicking on an ad.
+- (void)adViewWillPresentScreen:(GADBannerView *)adView {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["BannerAd"]["on_opening"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Tells the delegate that the full-screen view will be dismissed.
+- (void)adViewWillDismissScreen:(GADBannerView *)adView {
+}
+
+// Tells the delegate that the full-screen view has been dismissed.
+- (void)adViewDidDismissScreen:(GADBannerView *)adView {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["BannerAd"]["on_closed"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Tells the delegate that a user click will open another app (such as the App Store), backgrounding the current app.
+- (void)adViewWillLeaveApplication:(GADBannerView *)adView {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["BannerAd"]["on_leaving_application"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Tells the delegate an ad request succeeded.
+- (void)interstitialDidReceiveAd:(GADInterstitial *)ad {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["on_loaded"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Tells the delegate an ad request failed.
+- (void)interstitial:(GADInterstitial *)ad didFailToReceiveAdWithError:(GADRequestError *)error {
+    const char *errorDescription = (const char *)[error.localizedDescription cStringUsingEncoding:NSUTF8StringEncoding];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["on_failed_to_load"];
+    if (function.IsFunction()) {
+        function(errorDescription);
+    }
+}
+
+// Tells the delegate that an interstitial will be presented.
+- (void)interstitialWillPresentScreen:(GADInterstitial *)ad {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["on_opening"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Tells the delegate the interstitial is to be animated off the screen.
+- (void)interstitialWillDismissScreen:(GADInterstitial *)ad {
+}
+
+// Tells the delegate the interstitial had been animated off the screen.
+- (void)interstitialDidDismissScreen:(GADInterstitial *)ad {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["on_closed"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+// Tells the delegate that a user click will open another app (such as the App Store), backgrounding the current app.
+- (void)interstitialWillLeaveApplication:(GADInterstitial *)ad {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["InterstitialAd"]["on_leaving_application"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+- (void)rewardBasedVideoAdDidReceiveAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["on_loaded"];
+    if (function.IsFunction()) {
+        function();
+    }
+}
+
+- (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd didFailToLoadWithError:(NSError *)error {
+    const char *errorDescription = (const char *)[error.localizedDescription cStringUsingEncoding:NSUTF8StringEncoding];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["on_failed_to_load"];
+    if (function.IsFunction()) {
+        function(errorDescription);
+    }
+}
+
 - (void)rewardBasedVideoAdDidOpen:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_open"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["on_opening"];
     if (function.IsFunction()) {
         function();
     }
@@ -248,14 +312,23 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 }
 
 - (void)rewardBasedVideoAdDidStartPlaying:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_start_playing"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["on_started"];
     if (function.IsFunction()) {
         function();
     }
 }
 
+- (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd didRewardUserWithReward:(GADAdReward *)reward {
+    const char *rewardType = (const char *)[reward.type cStringUsingEncoding:NSUTF8StringEncoding];
+    int rewardAmount = [reward.amount intValue];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["on_rewarded"];
+    if (function.IsFunction()) {
+        function(rewardType, rewardAmount);
+    }
+}
+
 - (void)rewardBasedVideoAdDidClose:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_close"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["on_closed"];
     if (function.IsFunction()) {
         function();
     }
@@ -264,21 +337,13 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 }
 
 - (void)rewardBasedVideoAdWillLeaveApplication:(GADRewardBasedVideoAd *)rewardBasedVideoAd {
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["will_leave_application"];
+    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["on_leaving_application"];
     if (function.IsFunction()) {
         function();
     }
 }
 
-- (void)rewardBasedVideoAd:(GADRewardBasedVideoAd *)rewardBasedVideoAd didFailToLoadWithError:(NSError *)error {
-    const char *errorDescription = (const char *)[error.description cStringUsingEncoding:NSUTF8StringEncoding];
-    LuaCpp::Selector function = (*app.state)["package"]["loaded"]["admob"]["RewardBasedVideoAd"]["did_fail_to_load"];
-    if (function.IsFunction()) {
-        function(errorDescription);
-    }
-}
-
-#endif
+#endif // USE_ADMOB
 
 @end // @implementation RootViewController
 
@@ -294,12 +359,37 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
 
 @implementation AppDelegate
 
-- (void)initInstance {
-    BE1::IOSDevice::Type deviceType = BE1::IOSDevice::GetIOSDeviceType();
-    if (deviceType == BE1::IOSDevice::IOS_Unknown) {
-        assert(0);
+struct RenderQuality {
+    enum Enum {
+        High, Medium, Low
+    };
+};
+
+static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum deviceType) {
+    if (BE1::IOSDevice::IsIPhone(deviceType)) {
+        if (deviceType <= BE1::IOSDevice::Type::IPhone5S) {
+            return RenderQuality::Low;
+        } else if (deviceType <= BE1::IOSDevice::Type::IPhone7Plus) {
+            return RenderQuality::Medium;
+        } else {
+            return RenderQuality::High;
+        }
     }
-    
+
+    if (BE1::IOSDevice::IsIPad(deviceType)) {
+        if (deviceType <= BE1::IOSDevice::Type::IPadMini3) {
+            return RenderQuality::Low;
+        } else if (deviceType <= BE1::IOSDevice::Type::IPad5) {
+            return RenderQuality::Medium;
+        } else {
+            return RenderQuality::High;
+        }
+    }
+
+    return RenderQuality::Low;
+}
+
+- (void)initInstance {
     // ----- Core initialization -----
     BE1::Engine::InitParms initParms;
     
@@ -327,7 +417,24 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     mainWindow.rootViewController = rootViewController;
     
     [mainWindow makeKeyAndVisible];
-    
+
+    BE1::renderSystem.InitRHI((__bridge BE1::RHI::WindowHandle)mainWindow);
+
+    BE1::IOSDevice::Type::Enum deviceType = BE1::IOSDevice::GetIOSDeviceType();
+
+    RenderQuality::Enum renderQuality = DetermineRenderQuality(deviceType);
+
+    const char *configName = "";
+    if (renderQuality == RenderQuality::High) {
+        configName = "highQuality";
+    } else if (renderQuality == RenderQuality::Medium) {
+        configName = "mediumQuality";
+    } else {
+        configName = "lowQuality";
+    }
+    BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, BE1::va("exec \"Config/%s.cfg\"\n", configName));
+    BE1::cvarSystem.ClearModified();
+
     BE1::gameClient.Init((__bridge BE1::RHI::WindowHandle)mainWindow, false);
     
     float retinaScale = [[UIScreen mainScreen] scale];
@@ -335,10 +442,9 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     int renderHeight = screenBounds.size.height * retinaScale;
     
     BE1::Vec2 screenScaleFactor(1.0f, 1.0f);
-    int deviceWidth;
-    int deviceHeight;
+
     if (BE1::IOSDevice::IsIPad(deviceType)) {
-        if (deviceType < BE1::IOSDevice::IOS_IPadAir2) {
+        if (deviceType < BE1::IOSDevice::Type::IPadAir2) {
             screenScaleFactor.x = BE1::Min(1280.0f / renderWidth, 1.0f);
             screenScaleFactor.y = BE1::Min(720.0f / renderHeight, 1.0f);
         } else {
@@ -348,7 +454,7 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     }
     renderWidth = renderWidth * screenScaleFactor.x;
     renderHeight = renderHeight * screenScaleFactor.y;
-    
+
     app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
     app.mainRenderContext->Init((__bridge BE1::RHI::WindowHandle)[rootViewController view],
                                 renderWidth, renderHeight, DisplayContext, nullptr);
@@ -356,15 +462,19 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     app.mainRenderContext->OnResize(renderWidth, renderHeight);
 
     app.OnApplicationResize(renderWidth, renderHeight);
-    
+
     app.Init();
-    
-#ifdef USE_ADMOB_REWARD_BASED_VIDEO
-    RewardBasedVideoAd::RegisterLuaModule(&app.gameWorld->GetLuaVM().State(), rootViewController);
+
+#ifdef USE_ANALYTICS
+    Analytics::RegisterLuaModule(&app.gameWorld->GetLuaVM().State());
 #endif
-    
+
+#ifdef USE_ADMOB
+    AdMob::RegisterLuaModule(&app.gameWorld->GetLuaVM().State(), rootViewController);
+#endif
+
     app.LoadAppScript("Application");
-    
+
     app.StartAppScript();
 }
 
@@ -431,4 +541,3 @@ int main(int argc, char *argv[]) {
         return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
     }
 }
-

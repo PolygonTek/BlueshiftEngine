@@ -18,6 +18,7 @@
 #include "Physics/Collider.h"
 #include "ColliderInternal.h"
 #include "PhysicsInternal.h"
+#include "Profiler/Profiler.h"
 
 //#define DETERMINISTIC
 
@@ -141,7 +142,7 @@ PhysicsWorld::~PhysicsWorld() {
 }
 
 void PhysicsWorld::ClearScene() {
-    // Cleanup in the reverse order of creation/initialization
+    // Clean up in the reverse order of creation/initialization
     for (int i = dynamicsWorld->getNumConstraints() - 1; i >= 0; i--) {
         btTypedConstraint *constraint = dynamicsWorld->getConstraint(i);
         PhysConstraint *userConstraint = (PhysConstraint *)constraint->getUserConstraintPtr();
@@ -221,7 +222,7 @@ void PhysicsWorld::SetFrameRate(int frameRate) {
 }
 
 void PhysicsWorld::StepSimulation(int frameTime) {
-    //startFrameMsec = PlatformTime::Milliseconds();
+    BE_PROFILE_CPU_SCOPE("PhysicsWorld::StepSimulation", Color3::cyan);
 
     if (!physics_enable.GetBool()) {
         return;
@@ -252,8 +253,6 @@ void PhysicsWorld::StepSimulation(int frameTime) {
     
     accumulatedTimeDelta = 0.0f;
 #endif
-
-    //fc.frameTime = PlatformTime::Milliseconds() - startFrameMsec;
 }
 
 const Vec3 PhysicsWorld::GetGravity() const {
@@ -312,7 +311,7 @@ bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider
     if (shape->isCompound()) {
         btCompoundShape *compoundShape = static_cast<btCompoundShape *>(shape);
         if (compoundShape->getNumChildShapes() != 1) {
-            BE_WARNLOG(L"PhysicsWorld::ConvexCast: multiple compound shape is not allowed\n");
+            BE_WARNLOG("PhysicsWorld::ConvexCast: multiple compound shape is not allowed\n");
             return false;
         }
 
@@ -326,7 +325,7 @@ bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider
     }
 
     if (!shape->isConvex()) {
-        BE_WARNLOG(L"PhysicsWorld::ConvexCast: non convex collision shape is not allowed\n");
+        BE_WARNLOG("PhysicsWorld::ConvexCast: non convex collision shape is not allowed\n");
         return false;
     }
 
@@ -525,16 +524,12 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
         return false;
     }
 
-    Quat q = axis.ToQuat();
-
     btTransform fromTrans;
-    fromTrans.setRotation(ToBtQuaternion(q));
-    fromTrans.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(origin)));
+    fromTrans = ToBtTransform(axis, SystemUnitToPhysicsUnit(origin));
     fromTrans.mult(shapeTransform, fromTrans);
 
     btTransform toTrans;
-    toTrans.setRotation(ToBtQuaternion(q));
-    toTrans.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(dest)));
+    toTrans = ToBtTransform(axis, SystemUnitToPhysicsUnit(dest));
     toTrans.mult(shapeTransform, toTrans);
 
     MyClosestConvexResultCallback cb(me, fromTrans.getOrigin(), toTrans.getOrigin());

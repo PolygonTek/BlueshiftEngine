@@ -29,9 +29,9 @@ BE_NAMESPACE_BEGIN
 // 나중에 RGBA 텍스쳐로 통합해서, 되는 폰트만 LCD 로 하는 편이 나을 수도 있겠다
 //#define LCD_MODE_RENDERING
 #ifdef LCD_MODE_RENDERING
-#define GLYPH_CACHE_TEXTURE_FORMAT  Image::RGBA_8_8_8_8
+#define GLYPH_CACHE_TEXTURE_FORMAT  Image::Format::RGBA_8_8_8_8
 #else
-#define GLYPH_CACHE_TEXTURE_FORMAT  Image::LA_8_8
+#define GLYPH_CACHE_TEXTURE_FORMAT  Image::Format::LA_8_8
 #endif
 
 #define GLYPH_CACHE_TEXTURE_SIZE    1024
@@ -55,7 +55,7 @@ static FT_Library           ftLibrary;
 void FontFaceFreeType::Init() {
     // initialize FreeType library
     if (FT_Init_FreeType(&ftLibrary) != 0) {
-        BE_FATALERROR(L"FT_Init_FreeType() failed");
+        BE_FATALERROR("FT_Init_FreeType() failed");
     }
 
     atlasArray.Resize(GLYPH_CACHE_TEXTURE_COUNT);
@@ -70,7 +70,7 @@ void FontFaceFreeType::Init() {
         // 대략 8x8 조각의 glyph 들을 하나의 텍스쳐에 packing 했을 경우 개수 만큼 할당..
         atlas->chunks.Resize(GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE / 64);
         atlas->texture = textureManager.AllocTexture(va("_glyph_cache_%i", i));
-        atlas->texture->Create(RHI::Texture2D, image, Texture::Clamp | Texture::HighQuality | Texture::NoMipmaps);
+        atlas->texture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
     }
 }
 
@@ -114,7 +114,7 @@ bool FontFaceFreeType::Load(const char *filename, int fontSize) {
     byte *data;
     size_t dataSize = fileSystem.LoadFile(filename, true, (void **)&data);
     if (!data) {
-        BE_WARNLOG(L"Couldn't open FreeType font %hs\n", filename);
+        BE_WARNLOG("Couldn't open FreeType font %s\n", filename);
         return false;
     }
     
@@ -122,26 +122,26 @@ bool FontFaceFreeType::Load(const char *filename, int fontSize) {
     // faceIndex tells which face you want to load.
     int faceIndex = 0; // FIXME
     if (FT_New_Memory_Face(ftLibrary, (FT_Byte *)data, dataSize, faceIndex, &ftFace) != 0) {
-        BE_ERRLOG(L"FontFaceFreeType::Create: FT_New_Memory_Face failed\n");
+        BE_ERRLOG("FontFaceFreeType::Create: FT_New_Memory_Face failed\n");
         return false;
     }
 
     // face 개수 몇개인지 출력
-    BE_DLOG(L"%i faces embedded in font file '%hs'\n", ftFace->num_faces, filename);
+    BE_DLOG("%i faces embedded in font file '%s'\n", ftFace->num_faces, filename);
 
     // unicode charmap 만 사용한다
     if (FT_Select_Charmap(ftFace, FT_ENCODING_UNICODE) != 0) {
-        BE_ERRLOG(L"FontFaceFreeType::Create: %hs font file doesn't contain unicode charmap\n", filename);
+        BE_ERRLOG("FontFaceFreeType::Create: %s font file doesn't contain unicode charmap\n", filename);
         return false;
     }
 
     this->faceIndex = faceIndex;
     this->ftFontFileData = data;
-    this->ftLastLoadedCharCode = 0;
+    this->ftLastLoadedChar = 0;
 
     // NOTE: fontSize 는 EM 을 의미한다. 실제 font 의 bitmap size 가 아님
     if (FT_Set_Pixel_Sizes(ftFace, fontSize, fontSize) != 0) {
-        BE_ERRLOG(L"FontFaceFreeType::Create: FT_Set_Pixel_Sizes failed\n");
+        BE_ERRLOG("FontFaceFreeType::Create: FT_Set_Pixel_Sizes failed\n");
         return false;
     }
 
@@ -159,9 +159,9 @@ int FontFaceFreeType::GetFontHeight() const {
 }
 
 // glyph bitmap 을 얻기 위해 glyph slot 에 glyph 을 로드
-bool FontFaceFreeType::LoadFTGlyph(unsigned short charCode) const {
-    if (ftLastLoadedCharCode != charCode) {
-        unsigned int glyph_index = FT_Get_Char_Index(ftFace, charCode);
+bool FontFaceFreeType::LoadFTGlyph(char32_t unicodeChar) const {
+    if (ftLastLoadedChar != unicodeChar) {
+        unsigned int glyph_index = FT_Get_Char_Index(ftFace, unicodeChar);
         if (glyph_index == 0) {
             // charCode 에 맞는 glyph image 가 존재하지 않는다.
             return false;
@@ -172,7 +172,7 @@ bool FontFaceFreeType::LoadFTGlyph(unsigned short charCode) const {
             return false;
         }
 
-        ftLastLoadedCharCode = charCode;
+        ftLastLoadedChar = unicodeChar;
     }
 
     return true;
@@ -315,18 +315,18 @@ static Texture *AllocGlyphTexture(int width, int height, int *x, int *y) {
         }
     }
 
-    BE_WARNLOG(L"not enough texture chunk for cache-able glyph\n");
+    BE_WARNLOG("not enough texture chunk for cache-able glyph\n");
     return nullptr;
 }
 
 // 문자코드에 따른 glyph 을 texture 에 캐싱
-FontGlyph *FontFaceFreeType::GetGlyph(int charCode) {
-    const auto *entry = glyphHashMap.Get(charCode);
+FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar) {
+    const auto *entry = glyphHashMap.Get(unicodeChar);
     if (entry) {
         return entry->second;
     }
 
-    if (!LoadFTGlyph(charCode)) {
+    if (!LoadFTGlyph(unicodeChar)) {
         return nullptr;
     }
 
@@ -361,7 +361,7 @@ FontGlyph *FontFaceFreeType::GetGlyph(int charCode) {
     rhi.SelectTextureUnit(0);
 
     texture->Bind();
-    texture->Update2D(x, y, width + GLYPH_BORDER_PIXELS * 2, bitmap->rows + GLYPH_BORDER_PIXELS * 2, GLYPH_CACHE_TEXTURE_FORMAT, glyphBuffer);
+    texture->Update2D(0, x, y, width + GLYPH_BORDER_PIXELS * 2, bitmap->rows + GLYPH_BORDER_PIXELS * 2, GLYPH_CACHE_TEXTURE_FORMAT, glyphBuffer);
 
     // NOTE: ascender 의 의미가 폰트 포맷마다 해석이 좀 다양하다
     // (base line 에서부터 위쪽으로 top bearing 을 포함해서 그 위쪽까지의 거리가 필요함)
@@ -380,7 +380,7 @@ FontGlyph *FontFaceFreeType::GetGlyph(int charCode) {
     }
 
     FontGlyph *glyph = new FontGlyph;
-    glyph->charCode     = charCode;
+    glyph->charCode     = unicodeChar;
     glyph->width        = width;
     glyph->height       = bitmap->rows;
     glyph->bearingX     = glyphSlot->bitmap_left;
@@ -391,22 +391,22 @@ FontGlyph *FontFaceFreeType::GetGlyph(int charCode) {
     glyph->s2           = (float)(x + GLYPH_BORDER_PIXELS + width) / texture->GetWidth();
     glyph->t2           = (float)(y + GLYPH_BORDER_PIXELS + bitmap->rows) / texture->GetHeight();
 
-    glyph->material = materialManager.GetSingleTextureMaterial(texture, Material::OverlayHint);
+    glyph->material = materialManager.GetSingleTextureMaterial(texture, Material::TextureHint::Overlay);
                 
-    glyphHashMap.Set(charCode, glyph);
+    glyphHashMap.Set(unicodeChar, glyph);
                 
     return glyph;
 }
 
-int FontFaceFreeType::GetGlyphAdvance(int charCode) const {
+int FontFaceFreeType::GetGlyphAdvance(char32_t unicodeChar) const {
     // glyph 캐시에 있다면 미리 구한 advance 를 리턴
-    const auto *entry = glyphHashMap.Get(charCode);
+    const auto *entry = glyphHashMap.Get(unicodeChar);
     if (entry) {
         return entry->second->advance;
     }
 
     // glyph 캐시에 없다면 advance 를 계산하기 위해 glyph 을 로드
-    if (LoadFTGlyph(charCode)) {
+    if (LoadFTGlyph(unicodeChar)) {
         return (int)ftFace->glyph->advance.x >> 6;
     }
 

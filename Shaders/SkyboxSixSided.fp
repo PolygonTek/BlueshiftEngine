@@ -50,6 +50,6 @@ void main() {
     }
 
     color *= tint.rgb * exposure;
-    o_fragColor = v2f_color * vec4(color, 1.0);
+    o_fragColor = v2f_color * vec4(color, 0.0);
     o_fragDepth = 1.0;
 }

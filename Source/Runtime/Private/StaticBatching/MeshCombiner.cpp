@@ -37,7 +37,7 @@ static int CompareMesh(const RenderObject::State *renderObjectDef1, const Render
 
         compare = materialIndex1 - materialIndex2;
         if (compare == 0) {
-            for (int i = 0; i < RenderObject::MaxMaterialParms; i++) {
+            for (int i = 0; i < RenderObject::MaterialParm::Count; i++) {
                 compare = *reinterpret_cast<const int32_t *>(&renderObjectDef1->materialParms[i]) - *reinterpret_cast<const int32_t *>(&renderObjectDef2->materialParms[i]);
                 if (compare != 0) {
                     break;
@@ -48,7 +48,7 @@ static int CompareMesh(const RenderObject::State *renderObjectDef1, const Render
     return compare;
 }
 
-void MeshCombiner::CombineRoot(const Hierarchy<Entity> &staticRoot) {
+void MeshCombiner::CombineHierarchy(const Hierarchy<Entity> &staticRoot) {
     Entity *staticRootEntity = staticRoot.Owner();
     if (staticRootEntity) {
         // Skip if this entity has mesh component that is already combined with others
@@ -78,16 +78,21 @@ void MeshCombiner::CombineRoot(const Hierarchy<Entity> &staticRoot) {
         if (renderable1 && renderable2) {
             compare = CompareMesh(&renderable1->renderObjectDef, &renderable2->renderObjectDef);
         }
-        
+
         return compare < 0;
     });
 
+    MakeCombiendMeshes(combinableEntities);
+}
+
+void MeshCombiner::MakeCombiendMeshes(const Array<Entity *> combinableEntities) {
     Entity *combineRoot = nullptr;
-    Array<ComStaticMeshRenderer *> meshRenderers;
     const RenderObject::State *prevRenderObjectDef = nullptr;
     const int maxCombinedVerts = 65535;
     int numCombinedVerts = 0;
     int batchIndex = 0;
+
+    Array<ComStaticMeshRenderer *> meshRenderers;
 
     for (int entityIndex = 0; entityIndex < combinableEntities.Count(); entityIndex++) {
         Entity *entity = combinableEntities[entityIndex];
@@ -116,8 +121,9 @@ void MeshCombiner::CombineRoot(const Hierarchy<Entity> &staticRoot) {
 
         meshRenderers.Append(meshRenderer);
 
-        prevRenderObjectDef = renderObjectDef;
         numCombinedVerts += numVerts;
+
+        prevRenderObjectDef = renderObjectDef;
     }
 
     if (meshRenderers.Count() > 1) {
@@ -128,19 +134,21 @@ void MeshCombiner::CombineRoot(const Hierarchy<Entity> &staticRoot) {
 void MeshCombiner::MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMeshRenderer *> &meshRenderers, int batchIndex) {
     assert(meshRenderers.Count() > 1);
 
-    Mat3x4 worldToLocalMatrix = staticBatchRoot->GetTransform()->GetMatrix().Inverse();
-    Array<Mat3x4> localMatrices;
-    Array<SubMesh *> subMeshes;
-
     StaticBatch *staticBatch = StaticBatch::AllocStaticBatch(staticBatchRoot);
 
+    Mat3x4 worldToLocalMatrix = staticBatchRoot->GetTransform()->GetMatrix().Inverse();
+
+    Array<BatchSubMesh> batchSubMeshes;
+
     for (int i = 0; i < meshRenderers.Count(); i++) {
-        meshRenderers[i]->staticBatchIndex = staticBatch->GetIndex();
+        ComStaticMeshRenderer *batchMesh = meshRenderers[i];
+        batchMesh->staticBatchIndex = staticBatch->GetIndex();
 
-        Mat3x4 localMatrix = worldToLocalMatrix * meshRenderers[i]->GetEntity()->GetTransform()->GetMatrix();
-        localMatrices.Append(localMatrix);
+        BatchSubMesh batchSubMesh;
+        batchSubMesh.subMesh = batchMesh->referenceMesh->GetSurface(0)->subMesh;
+        batchSubMesh.localTransform = worldToLocalMatrix * batchMesh->GetEntity()->GetTransform()->GetMatrix();
 
-        subMeshes.Append(meshRenderers[i]->referenceMesh->GetSurface(0)->subMesh);
+        batchSubMeshes.Append(batchSubMesh);
     }
 
     Str combinedMeshName = "Combined Mesh (" + staticBatchRoot->GetName() + ")";
@@ -148,13 +156,13 @@ void MeshCombiner::MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMesh
         combinedMeshName += " " + Str(batchIndex + 1);
     }
 
-    Mesh *combinedMesh = meshManager.CreateCombinedMesh(combinedMeshName, subMeshes, localMatrices);
+    Mesh *combinedMesh = meshManager.CreateCombinedMesh(combinedMeshName, batchSubMeshes);
     staticBatch->SetMesh(combinedMesh);
 }
 
 void MeshCombiner::EnumerateCombinableEntities(const Hierarchy<Entity> &rootNode, Array<Entity *> &staticChildren) {
     for (Entity *entity = rootNode.GetChild(); entity; entity = entity->GetNode().GetNext()) {
-        if (!entity->IsStatic()) {
+        if (!entity->GetStaticMask()) { // TODO: Check BatchingStatic
             continue;
         }
 

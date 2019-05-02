@@ -108,7 +108,6 @@ public:
 
                     /// Generate hash value
     int             GenerateHash(const char *string, bool caseSensitive = true) const;
-    int             GenerateHash(const wchar_t *string, bool caseSensitive = true) const;
     int             GenerateHash(const Vec3 &v) const;
     int             GenerateHash(const int n1, const int n2) const;
     int             GenerateHash(const int64_t i64) const;

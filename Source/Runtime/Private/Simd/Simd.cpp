@@ -60,17 +60,17 @@ void SIMD::Init(bool forceGeneric) {
 #endif
     }
 
-    BE_LOG(L"using %hs for SIMD processing\n", simdProcessor->GetName());
+    BE_LOG("using %s for SIMD processing\n", simdProcessor->GetName());
 
 #if defined(__X86__)
     if (cpuid & CPUID_FTZ) {
         _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-        BE_LOG(L"enabled Flush-To-Zero mode\n");
+        BE_LOG("enabled Flush-To-Zero mode\n");
     }
 
     if (cpuid & CPUID_DAZ) {
         _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);	
-        BE_LOG(L"enabled Denormals-Are-Zero mode\n");
+        BE_LOG("enabled Denormals-Are-Zero mode\n");
     }
 #endif
 }

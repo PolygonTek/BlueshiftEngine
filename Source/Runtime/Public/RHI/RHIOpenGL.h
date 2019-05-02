@@ -56,6 +56,10 @@ public:
 
     bool                    IsInitialized() const { return initialized; }
 
+    Str                     GetGPUString() const;
+
+    const HWLimit &         HWLimit() const { return hwLimit; }
+
     bool                    SupportsPolygonMode() const;
     bool                    SupportsPackedFloat() const;
     bool                    SupportsDepthBufferFloat() const;
@@ -71,16 +75,6 @@ public:
     bool                    SupportsMultiDrawIndirect() const;
     bool                    SupportsDebugLabel() const;
 
-    Handle                  CreateContext(WindowHandle windowHandle, bool useSharedContext);
-    void                    DestroyContext(Handle ctxHandle);
-    void                    ActivateSurface(Handle ctxHandle, WindowHandle windowHandle);
-    void                    DeactivateSurface(Handle ctxHandle);
-    void                    SetContext(Handle ctxHandle);
-    void                    SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing);
-    void                    DisplayContext(Handle ctxHandle);
-    WindowHandle            GetWindowHandleFromContext(Handle ctxHandle);
-    void                    GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetrics) const;
-
     bool                    IsFullscreen() const;
     bool                    SetFullscreen(Handle windowHandle, int width, int height);
     void                    ResetFullscreen(Handle windowHandle);
@@ -92,7 +86,28 @@ public:
     void                    SwapInterval(int interval) const;
 
     void                    Clear(int clearBits, const Color4 &color, float depth, unsigned int stencil);
-    void                    ReadPixels(int x, int y, int width, int height, Image::Format imageFormat, byte *data);
+
+    void                    ReadPixels(int x, int y, int width, int height, Image::Format::Enum imageFormat, byte *data);
+
+    void                    CheckError(const char *fmt, ...) const;
+
+    //---------------------------------------------------------------------------------------------
+    // Context
+    //---------------------------------------------------------------------------------------------
+
+    Handle                  CreateContext(WindowHandle windowHandle, bool useSharedContext);
+    void                    DestroyContext(Handle ctxHandle);
+    void                    ActivateSurface(Handle ctxHandle, WindowHandle windowHandle);
+    void                    DeactivateSurface(Handle ctxHandle);
+    void                    SetContext(Handle ctxHandle);
+    void                    SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing);
+    void                    DisplayContext(Handle ctxHandle);
+    WindowHandle            GetWindowHandleFromContext(Handle ctxHandle);
+    void                    GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetrics) const;
+
+    //---------------------------------------------------------------------------------------------
+    // Render State
+    //---------------------------------------------------------------------------------------------
 
     unsigned int            GetStateBits() const;
     const Rect &            GetViewport() const;
@@ -109,25 +124,36 @@ public:
     void                    SetViewport(const Rect &viewportRect);
     void                    SetScissor(const Rect &scissorRect);
     void                    SetSRGBWrite(bool enable);
+    bool                    IsSRGBWriteEnabled() const;
 
     void                    EnableLineSmooth(bool enable);
     float                   GetLineWidth() const;
     void                    SetLineWidth(float width);
 
-    Handle                  CreateStencilState(int readMask, int writeMask, StencilFunc funcBack, int failBack, int zfailBack, int zpassBack, StencilFunc funcFront, int failFront, int zfailFront, int zpassFront);
+    //---------------------------------------------------------------------------------------------
+    // Depth Stencil
+    //---------------------------------------------------------------------------------------------
+
+    Handle                  CreateStencilState(int readMask, int writeMask, 
+                                StencilFunc::Enum funcBack, int failBack, int zfailBack, int zpassBack, 
+                                StencilFunc::Enum funcFront, int failFront, int zfailFront, int zpassFront);
     void                    DestroyStencilState(Handle stencilStateHandle);
     void                    SetStencilState(Handle stencilStateHandle, int ref);
 
-    Handle                  CreateTexture(TextureType type);
+    //---------------------------------------------------------------------------------------------
+    // Texture
+    //---------------------------------------------------------------------------------------------
+
+    Handle                  CreateTexture(TextureType::Enum type);
     void                    DestroyTexture(Handle textureHandle);
     void                    SelectTextureUnit(unsigned int unit);
     void                    BindTexture(Handle textureHandle);
 
-    void                    AdjustTextureSize(TextureType type, bool useNPOT, int inWidth, int inHeight, int inDepth, int *outWidth, int *outHeight, int *outDepth);
-    void                    AdjustTextureFormat(TextureType type, bool useCompression, bool useNormalMap, Image::Format inFormat, Image::Format *outFormat);
+    void                    AdjustTextureSize(TextureType::Enum type, bool useNPOT, int inWidth, int inHeight, int inDepth, int *outWidth, int *outHeight, int *outDepth);
+    void                    AdjustTextureFormat(TextureType::Enum type, bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat);
 
-    void                    SetTextureFilter(TextureFilter filter);
-    void                    SetTextureAddressMode(AddressMode addressMode);
+    void                    SetTextureFilter(TextureFilter::Enum filter);
+    void                    SetTextureAddressMode(AddressMode::Enum addressMode);
     void                    SetTextureAnisotropy(int aniso);
     void                    SetTextureBorderColor(const Color4 &rgba);
     void                    SetTextureShadowFunc(bool set);
@@ -135,27 +161,38 @@ public:
     void                    SetTextureLevel(int baseLevel, int maxLevel = 1000);
     void                    GenerateMipmap();
 
-    void                    SetTextureImage(TextureType textureType, const Image *srcImage, Image::Format dstFormat, bool useMipmaps, bool useSRGB);
-    void                    SetTextureImageBuffer(Image::Format dstFormat, bool sRGB, int bufferHandle);
+    void                    SetTextureImage(TextureType::Enum textureType, const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps, bool isSRGB);
+    void                    SetTextureImageBuffer(Image::Format::Enum dstFormat, bool sRGB, int bufferHandle);
 
-    void                    SetTextureSubImage2D(int level, int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels);
-    void                    SetTextureSubImage3D(int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format srcFormat, const void *pixels);
-    void                    SetTextureSubImage2DArray(int level, int xoffset, int yoffset, int zoffset, int width, int height, int arrays, Image::Format srcFormat, const void *pixels);
-    void                    SetTextureSubImageCube(CubeMapFace face, int level, int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels);
-    void                    SetTextureSubImageRect(int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels);
+    void                    SetTextureSubImage2D(int level, int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels);
+    void                    SetTextureSubImage3D(int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format::Enum srcFormat, const void *pixels);
+    void                    SetTextureSubImage2DArray(int level, int xoffset, int yoffset, int zoffset, int width, int height, int arrays, Image::Format::Enum srcFormat, const void *pixels);
+    void                    SetTextureSubImageCube(CubeMapFace::Enum face, int level, int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels);
+    void                    SetTextureSubImageRect(int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels);
 
     void                    CopyTextureSubImage2D(int xoffset, int yoffset, int x, int y, int width, int height);
+    void                    CopyImageSubData(Handle srcTextureHandle, int srcLevel, int srcX, int srcY, int srcZ, Handle dstTextureHandle, int dstLevel, int dstX, int dstY, int dstZ, int width, int height, int depth);
 
-    void                    GetTextureImage2D(int level, Image::Format format, void *pixels);
-    void                    GetTextureImage3D(int level, Image::Format format, void *pixels);
-    void                    GetTextureImageCube(CubeMapFace face, int level, Image::Format format, void *pixels);
-    void                    GetTextureImageRect(Image::Format format, void *pixels);
+    void                    GetTextureImage2D(int level, Image::Format::Enum format, void *pixels);
+    void                    GetTextureImage3D(int level, Image::Format::Enum format, void *pixels);
+    void                    GetTextureImageCube(CubeMapFace::Enum face, int level, Image::Format::Enum format, void *pixels);
+    void                    GetTextureImageRect(Image::Format::Enum format, void *pixels);
 
-    Handle                  CreateRenderTarget(RenderTargetType type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, bool sRGB, int flags);
+    //---------------------------------------------------------------------------------------------
+    // Render Target
+    //---------------------------------------------------------------------------------------------
+
+    Handle                  CreateRenderTarget(RenderTargetType::Enum type, int width, int height, int numColorTextures, Handle *colorTextureHandles, Handle depthTextureHandle, int flags);
     void                    DestroyRenderTarget(Handle renderTargetHandle);
-    void                    BeginRenderTarget(Handle renderTargetHandle, int level = 0, int sliceIndex = 0, unsigned int mrtBitMask = 0);
+    void                    BeginRenderTarget(Handle renderTargetHandle, int level = 0, int sliceIndex = 0);
     void                    EndRenderTarget();
-    void                    BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRect, Handle dstRenderTargetHandle, const Rect &dstRect, int mask, int filter) const;
+    void                    DiscardRenderTarget(bool depth, bool stencil, uint32_t colorBitMask);
+    void                    BlitRenderTarget(Handle srcRenderTargetHandle, const Rect &srcRect, Handle dstRenderTargetHandle, const Rect &dstRect, int mask, BlitFilter::Enum filter) const;
+    void                    SetDrawBuffersMask(unsigned int mrtBitMask);
+
+    //---------------------------------------------------------------------------------------------
+    // Shader
+    //---------------------------------------------------------------------------------------------
 
     Handle                  CreateShader(const char *name, const char *vsText, const char *fsText);
     void                    DestroyShader(Handle shaderHandle);
@@ -214,26 +251,39 @@ public:
 
     void                    SetShaderConstantBlock(int index, int bindingIndex);
 
-    Handle                  CreateBuffer(BufferType type, BufferUsage usage, int size, int pitch = 0, const void *data = nullptr);
+    //---------------------------------------------------------------------------------------------
+    // Buffer
+    //---------------------------------------------------------------------------------------------
+
+    Handle                  CreateBuffer(BufferType::Enum type, BufferUsage::Enum usage, int size, int pitch = 0, const void *data = nullptr);
     void                    DestroyBuffer(Handle bufferHandle);
-    void                    BindBuffer(BufferType type, Handle bufferHandle);
+    void                    BindBuffer(BufferType::Enum type, Handle bufferHandle);
 
-    void                    BindIndexedBuffer(BufferType type, int bindingIndex, Handle bufferHandle);
-    void                    BindIndexedBufferRange(BufferType type, int bindingIndex, Handle bufferHandle, int offset, int size);
+    void                    BindIndexedBuffer(BufferType::Enum type, int bindingIndex, Handle bufferHandle);
+    void                    BindIndexedBufferRange(BufferType::Enum type, int bindingIndex, Handle bufferHandle, int offset, int size);
 
-    void *                  MapBufferRange(Handle bufferHandle, BufferLockMode lockMode, int offset = 0, int size = -1);
+    void *                  MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMode, int offset = 0, int size = -1);
     bool                    UnmapBuffer(Handle bufferHandle);
     void                    FlushMappedBufferRange(Handle bufferHandle, int offset = 0, int size = -1);
 
-                            // 기존에 쓰던 buffer 를 버리고 새 버퍼에 data 를 write 한다. written start offset 을 리턴한다. (항상 0)
+                            /// Discards current buffer and write data to new buffer. 
+                            /// Returns written start offset. (Always 0)
     int                     BufferDiscardWrite(Handle bufferHandle, int size, const void *data);
-                            // 기존에 쓰던 buffer 를 유지하면서 data 를 asyncronous 하게 write 한다. written start offset 을 리턴한다.
-                            // overflow 되면 -1 을 리턴, data == nullptr 이면 write 를 안하기 때문에 overflow 여부만 체크할 수 있다.
+
+                            /// 기존에 쓰던 buffer 를 유지하면서 data 를 asyncronous 하게 write 한다. 
+                            /// Returns written start offset.
+                            /// overflow 되면 -1 을 리턴, data == nullptr 이면 write 를 안하기 때문에 overflow 여부만 체크할 수 있다.
     int                     BufferWrite(Handle bufferHandle, int alignSize, int size, const void *data);
-                            // CopyReadBuffer 로 생성한 버퍼를 CPU 메모리 카피 부담없이 GPU 상에서 빠르게 카피
+
+                            /// CopyReadBuffer 로 생성한 버퍼를 CPU 메모리 카피 부담없이 GPU 상에서 빠르게 카피
     int                     BufferCopy(Handle readBufferHandle, Handle writeBufferHandle, int alignSize, int size);
-                            // write offset 을 0 으로 만든다.
+
+                            /// Sets write offset to 0.
     void                    BufferRewind(Handle bufferHandle);
+
+    //---------------------------------------------------------------------------------------------
+    // GPU Synchronization
+    //---------------------------------------------------------------------------------------------
 
     Handle                  CreateSync();
     void                    DestroySync(Handle syncHandle);
@@ -242,33 +292,41 @@ public:
     void                    DeleteSync(Handle syncHandle);
     void                    WaitSync(Handle syncHandle);
 
+    //---------------------------------------------------------------------------------------------
+    // Vertex Format
+    //---------------------------------------------------------------------------------------------
+
     Handle                  CreateVertexFormat(int numElements, const VertexElement *elements);
     void                    DestroyVertexFormat(Handle vertexFormatHandle);
     void                    SetVertexFormat(Handle vertexFormatHandle);
-                            // D3D 의 SetStreamSource 와 유사. (SetVertexFormat 호출 후에 실행되어야 한다)
+
+    //---------------------------------------------------------------------------------------------
+    // Drawing
+    //---------------------------------------------------------------------------------------------
+    
+                            // Similar with SetStreamSource in D3D. Must be called after SetVertexFormat()
     void                    SetStreamSource(int stream, Handle vertexBufferHandle, int base, int stride);
 
-    void                    DrawArrays(Primitive primitives, int startVertex, int numVerts) const;
-    void                    DrawArraysInstanced(Primitive primitives, int startVertex, int numVerts, int instanceCount) const;
-    void                    DrawElements(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr) const;
-    void                    DrawElementsInstanced(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount) const;
-    void                    DrawElementsBaseVertex(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int baseVertexIndex) const;
-    void                    DrawElementsInstancedBaseVertex(Primitive primitives, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount, int baseVertexIndex) const;
-    void                    DrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset) const;
-    void                    MultiDrawElementsIndirect(Primitive primitives, int indexSize, int indirectBufferOffset, int drawCount, int stride) const;
+    void                    DrawArrays(Topology::Enum topology, int startVertex, int numVerts) const;
+    void                    DrawArraysInstanced(Topology::Enum topology, int startVertex, int numVerts, int instanceCount) const;
+    void                    DrawElements(Topology::Enum topology, int startIndex, int numIndices, int indexSize, const void *ptr) const;
+    void                    DrawElementsInstanced(Topology::Enum topology, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount) const;
+    void                    DrawElementsBaseVertex(Topology::Enum topology, int startIndex, int numIndices, int indexSize, const void *ptr, int baseVertexIndex) const;
+    void                    DrawElementsInstancedBaseVertex(Topology::Enum topology, int startIndex, int numIndices, int indexSize, const void *ptr, int instanceCount, int baseVertexIndex) const;
+    void                    DrawElementsIndirect(Topology::Enum topology, int indexSize, int indirectBufferOffset) const;
+    void                    MultiDrawElementsIndirect(Topology::Enum topology, int indexSize, int indirectBufferOffset, int drawCount, int stride) const;
 
-    Handle                  CreateQuery();
+    //---------------------------------------------------------------------------------------------
+    // Query (Occlusion, Timestamp)
+    //---------------------------------------------------------------------------------------------
+
+    Handle                  CreateQuery(QueryType::Enum queryType);
     void                    DestroyQuery(Handle queryHandle);
     void                    BeginQuery(Handle queryHandle);
-    void                    EndQuery();
+    void                    EndQuery(Handle queryHandle);
+    void                    QueryTimestamp(Handle queryHandle);
     bool                    QueryResultAvailable(Handle queryHandle) const;
     unsigned int            QueryResult(Handle queryHandle) const;
-
-    void                    CheckError(const char *fmt, ...) const;
-
-    Str                     GetGPUString() const;
-
-    const HWLimit &         HWLimit() const { return hwLimit; }
 
 protected:
     void                    InitMainContext(WindowHandle windowHandle, const Settings *settings);
@@ -278,7 +336,7 @@ protected:
     void                    InitHandles();
     void                    FreeHandles();
 
-    int                     GetTypeSize(const VertexElement::Type type) const;
+    int                     GetTypeSize(const VertexElement::Type::Enum type) const;
     void                    SetShaderConstantGeneric(int index, bool rowMajor, int count, const void *data) const;
     void                    BeginUnpackAlignment(int pitch);
     void                    EndUnpackAlignment();

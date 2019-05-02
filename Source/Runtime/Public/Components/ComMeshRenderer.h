@@ -38,7 +38,7 @@ public:
 
     const Mesh *            GetReferenceMesh() const { return referenceMesh; }
 
-    bool                    GetClosestVertex(const RenderView *view, const Point &mousePixelLocation, Vec3 &closestVertex, float &closestDistance) const;
+    bool                    GetClosestVertex(const RenderCamera *view, const Point &mousePixelLocation, Vec3 &closestVertex, float &closestDistance) const;
 
     Guid                    GetMeshGuid() const;
     void                    SetMeshGuid(const Guid &guid);
@@ -51,8 +51,8 @@ public:
     Material *              GetMaterial(int index) const;
     void                    SetMaterial(int index, const Material *material);
 
-    bool                    IsUseLightProbe() const;
-    void                    SetUseLightProbe(bool useLightProbe);
+    bool                    IsUseEnvProbeLighting() const;
+    void                    SetUseEnvProbeLighting(bool useEnvProbeLighting);
 
     bool                    IsCastShadows() const;
     void                    SetCastShadows(bool castShadows);

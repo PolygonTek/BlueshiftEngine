@@ -169,7 +169,7 @@ void AnimStateBlender::CallEvents(Entity *entity, int fromTime, int toTime) {
         for (int scriptIndex = 0; scriptIndex < scriptComponents.Count(); scriptIndex++) {
             ComScript *scriptComponent = scriptComponents[scriptIndex]->Cast<ComScript>();
             scriptComponent->CallFunc(event->string.c_str());
-            //BE_LOG(L"%hs %f %i %i %f %f\n", event->string.c_str(), event->time, fromTime, toTime, t1, t2);
+            //BE_LOG("%s %f %i %i %f %f\n", event->string.c_str(), event->time, fromTime, toTime, t1, t2);
         }
     }
 }

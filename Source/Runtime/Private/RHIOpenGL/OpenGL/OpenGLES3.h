@@ -114,7 +114,7 @@ BE_NAMESPACE_BEGIN
 
 class OpenGLES3 : public OpenGLBase {
 public:
-    static const int        GLSL_VERSION = 300;
+    static constexpr int    GLSL_VERSION = 300;
     static const char *     GLSL_VERSION_STRING;
     
     static void             Init();
@@ -127,6 +127,7 @@ public:
     static bool             SupportsDepthClamp() { return false; }
     static bool             SupportsDepthBufferFloat() { return true; }
     static bool             SupportsPixelBufferObject() { return true; }
+    static bool             SupportsDiscardFrameBuffer() { return true; }
     static bool             SupportsFrameBufferSRGB() { return supportsFrameBufferSRGB; }
     static bool             SupportsTextureRectangle() { return true; }
     static bool             SupportsTextureArray() { return true; }
@@ -139,12 +140,18 @@ public:
     static bool             SupportsDrawIndirect() { return false; }
     static bool             SupportsMultiDrawIndirect() { return false; }
     static bool             SupportsProgramBinary() { return gglProgramBinary != nullptr; }
+    static bool             SupportsTimestampQueries() { return supportsTimestampQueries; }
 
-    static void             PolygonMode(GLenum face, GLenum mode) { }
+    static void             QueryTimestampCounter(GLuint queryId);
+
+    static void             PolygonMode(GLenum face, GLenum mode) {}
     static void             ClearDepth(GLdouble depth) { gglClearDepthf(depth); }
     static void             DepthRange(GLdouble znear, GLdouble zfar) { gglDepthRangef(znear, zfar); }
     static void             DrawBuffer(GLenum buffer) { gglDrawBuffers(1, &buffer); }
+    static void             ReadBuffer(GLenum buffer) { gglReadBuffer(buffer); }
+    static void             DrawBuffers(GLsizei count, const GLenum *buffers) { gglDrawBuffers(count, buffers); }
     static void             TexBuffer(GLenum internalFormat, GLuint buffer);
+    static void             DiscardFramebuffer(GLenum target, GLsizei numAttachments, const GLenum *attachments) { gglInvalidateFramebuffer(target, numAttachments, attachments); }
 
     static void             VertexAttribDivisor(int index, int divisor) { gglVertexAttribDivisor(index, divisor); }
     static void             DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex);
@@ -152,15 +159,16 @@ public:
     static void             DrawElementsIndirect(GLenum mode, GLenum type, const void *indirect);
     static void             MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride);
 
-    static void             SetTextureSwizzling(GLenum target, Image::Format format);
-    static bool             ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
-    static bool             SupportedImageFormat(Image::Format imageFormat) { return ImageFormatToGLFormat(imageFormat, false, nullptr, nullptr, nullptr); }
-    static Image::Format    ToCompressedImageFormat(Image::Format inFormat, bool useNormalMap);
-    static Image::Format    ToUncompressedImageFormat(Image::Format inFormat);
+    static void             SetTextureSwizzling(GLenum target, Image::Format::Enum format);
+    static bool             ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
+    static bool             SupportedImageFormat(Image::Format::Enum imageFormat) { return ImageFormatToGLFormat(imageFormat, false, nullptr, nullptr, nullptr); }
+    static Image::Format::Enum ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
+    static Image::Format::Enum ToUncompressedImageFormat(Image::Format::Enum inFormat);
 
 private:
     static bool             supportsFrameBufferSRGB;
     static bool             supportsTextureBuffer;
+    static bool             supportsTimestampQueries;
 
     static int              shaderFloatPrecisionLow;
     static int              shaderFloatPrecisionMedium;

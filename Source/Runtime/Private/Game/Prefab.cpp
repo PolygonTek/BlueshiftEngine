@@ -60,7 +60,7 @@ bool Prefab::Create(const Json::Value &entitiesValue) {
 
             entities.Append(entity);
         } else {
-            BE_WARNLOG(L"Unknown classname '%hs'\n", classname);
+            BE_WARNLOG("Unknown classname '%s'\n", classname);
         }
     }
 
@@ -72,7 +72,7 @@ bool Prefab::Load(const char *filename) {
 
     fileSystem.LoadFile(filename, true, (void **)&text);
     if (!text) {
-        BE_WARNLOG(L"Couldn't load '%hs'\n", filename);
+        BE_WARNLOG("Couldn't load '%s'\n", filename);
         return false;
     }
 
@@ -80,7 +80,7 @@ bool Prefab::Load(const char *filename) {
     Json::Reader jsonReader;
 
     if (!jsonReader.parse(text, entitiesValue)) {
-        BE_WARNLOG(L"Failed to parse JSON text\n");
+        BE_WARNLOG("Failed to parse JSON text\n");
         fileSystem.FreeFile(text);
         return false;
     }

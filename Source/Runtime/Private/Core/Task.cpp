@@ -13,146 +13,177 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Platform/PlatformProcess.h"
+#include "Platform/PlatformSystem.h"
+#include "Platform/cpuid.h"
 #include "Core/Task.h"
 
 BE_NAMESPACE_BEGIN
 
-void TaskScheduler_ThreadProc(void *param);
+void TaskThreadProc(void *param);
 
-TaskScheduler::TaskScheduler(int numThreads) {
-    numActiveTasks = 0;
-    terminate = false;
-    
-    taskMutex = PlatformMutex::Create();
-    taskCondition = PlatformCondition::Create();
+TaskManager::TaskManager(int maxTasks, int numThreads) {
+    this->maxTasks = maxTasks;
+    this->taskBuffer = new Task[maxTasks];
 
-    finishMutex = PlatformMutex::Create();
-    finishCondition = PlatformCondition::Create();
+    this->headTaskIndex = 0;
+    this->tailTaskIndex = 0;
 
-#ifdef __WIN32__
+    this->numActiveTasks = 0;
+    this->stopping = 0;
+
+    // Create synchronization objects.
+    this->taskMutex = (PlatformMutex *)PlatformMutex::Create();
+    this->taskCondition = (PlatformCondition *)PlatformCondition::Create();
+
+    this->finishMutex = (PlatformMutex *)PlatformMutex::Create();
+    this->finishCondition = (PlatformCondition *)PlatformCondition::Create();
+
     if (numThreads < 0) {
         // Get thread count as number of logical processors
-        numThreads = PlatformProcess::NumberOfLogicalProcessors();
+        numThreads = PlatformSystem::NumCPUCoresIncludingHyperthreads();
     }
-#endif
 
+    // Create task threads.
     for (int i = 0; i < numThreads; i++) {
-        PlatformThread *thread = PlatformThread::Create(TaskScheduler_ThreadProc, (void *)this, 0);
-        threads.Append(thread);
+        PlatformThread *thread = (PlatformThread *)PlatformThread::Create(TaskThreadProc, (void *)this, 0);
+        this->taskThreads.Append(thread);
     }
 }
 
-TaskScheduler::~TaskScheduler() {
-    if (threads.Count() == 0) {
-        return;
+TaskManager::~TaskManager() {
+    Stop();
+
+    // Destroy all the synchronization objects.
+    PlatformCondition::Destroy(taskCondition);
+    PlatformMutex::Destroy(taskMutex);
+
+    PlatformCondition::Destroy(finishCondition);
+    PlatformMutex::Destroy(finishMutex);
+
+    // Destroy all the task threads.
+    for (int i = 0; i < taskThreads.Count(); i++) {
+        PlatformThread::Destroy(taskThreads[i]);
     }
+    taskThreads.Clear();
 
-    // task 중단 flag 를 켜고 모든 task thread 들을 깨운다.
-    PlatformMutex::Lock(taskMutex);
-    terminate = true;
-    PlatformCondition::Broadcast(taskCondition);
-    PlatformMutex::Unlock(taskMutex);
-
-    // thread 가 모두 종료될 때까지 대기
-    for (int i = 0; i < threads.Count(); i++) {
-        PlatformThread::Wait(threads[i]);
-    }
-
-    PlatformCondition::Delete(taskCondition);
-    PlatformMutex::Delete(taskMutex);
-
-    PlatformCondition::Delete(finishCondition);
-    PlatformMutex::Delete(finishMutex);
+    delete [] taskBuffer;
 }
 
-void TaskScheduler::LockTask() {
-    PlatformMutex::Lock(taskMutex);
-}
-
-void TaskScheduler::UnlockTask() {
-    PlatformMutex::Unlock(taskMutex);
-}
-
-void TaskScheduler::AddTask(taskFunction_t function, void *data) {
-    // task 추가를 위해 lock
-    PlatformMutex::Lock(taskMutex);
-
+bool TaskManager::AddTask(TaskFunc function, void *data) {
     Task task;
     task.function = function;
     task.data = data;
-    if (taskList.size() >= MaxTasks) {
-        BE_FATALERROR(L"too many tasks generated");
-    }
-    taskList.push_back(task);
-    numActiveTasks++;
 
-    // task 추가를 기다리는 thread 들에게 모두 신호한 후 unlock (?모두?)
-    PlatformCondition::Broadcast(taskCondition);
+    // Lock for task addition
+    PlatformMutex::Lock(taskMutex);
+
+    int nextTaskIndex = (tailTaskIndex + 1) % maxTasks;
+
+    if (nextTaskIndex == headTaskIndex) {
+        PlatformMutex::Unlock(taskMutex);
+        BE_ERRLOG("Too many tasks");
+        return false;
+    }
+
+    taskBuffer[tailTaskIndex] = task;
+
+    tailTaskIndex = nextTaskIndex;
+
+    // Unlock for task addition
     PlatformMutex::Unlock(taskMutex);
+
+    numActiveTasks += 1;
+
+    return true;
 }
 
-void TaskScheduler::WaitFinish() {
-    // finish 신호를 기다린다.
+void TaskManager::Start() {
+    PlatformCondition::Broadcast(taskCondition);
+}
+
+void TaskManager::Stop() {
+    // Set the stopping and wake all the task threads.
+    stopping = 1;
+
+    PlatformMutex::Lock(taskMutex);
+    PlatformCondition::Broadcast(taskCondition);
+    PlatformMutex::Unlock(taskMutex);
+
+    // Wait until finishing all the task threads.
+    PlatformThread::JoinAll(taskThreads.Count(), (PlatformBaseThread **)taskThreads.Ptr());
+}
+
+void TaskManager::WaitFinish() {
     PlatformMutex::Lock(finishMutex);
-    // 신호를 받자마자 다시 task 가 추가될 수도 있으므로 loop 를 돈다.
+
     while (numActiveTasks > 0) {
         PlatformCondition::Wait(finishCondition, finishMutex);
     }
+
     PlatformMutex::Unlock(finishMutex);
 }
 
-bool TaskScheduler::TimedWaitFinish(int ms) {
+bool TaskManager::TimedWaitFinish(int ms) {
     bool ret = true;
-    // finish 신호를 일정 시간동안 기다린다.
+
     PlatformMutex::Lock(finishMutex);
-    // 신호를 받자마자 다시 task 가 추가될 수도 있으므로 loop 를 돈다.
+
     while (numActiveTasks > 0 && ret == true) {
         ret = PlatformCondition::TimedWait(finishCondition, finishMutex, ms);
     }
+
     PlatformMutex::Unlock(finishMutex);
     return ret;
 }
 
-void TaskScheduler_ThreadProc(void *param) {
-    /*int cpuid = GetCpuInfo()->cpuid;
+static void InitCPU() {
+#ifdef __WIN32__
+    int cpuid = GetCpuInfo()->cpuid;
     if (cpuid & CPUID_FTZ) {
         _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     }
-
     if (cpuid & CPUID_DAZ) {
         _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-    }*/
+    }
+#endif
+}
 
-    TaskScheduler *ts = (TaskScheduler *)param;
+void TaskThreadProc(void *param) {
+    InitCPU();
+
+    TaskManager *tm = (TaskManager *)param;
 
     while (1) {
-        PlatformMutex::Lock(ts->taskMutex);
-        // 처리할 task 가 생길 때까지 wait
-        while (ts->taskList.empty() && !ts->terminate) { // ?if?
-            PlatformCondition::Wait(ts->taskCondition, ts->taskMutex);
+        PlatformMutex::Lock(tm->taskMutex);
+
+        // Wait for task condition variable.
+        while (tm->IsEmpty() && !tm->stopping) {
+            PlatformCondition::Wait(tm->taskCondition, tm->taskMutex);
         }
 
-        // 종료 중이라면 exit
-        if (ts->terminate) {
-            PlatformMutex::Unlock(ts->taskMutex);
+        if (tm->stopping) {
+            PlatformMutex::Unlock(tm->taskMutex);
             break;
         }
 
-        // task 를 앞에서부터 받아온다
-        Task task = ts->taskList.front();
-        ts->taskList.pop_front();
-        PlatformMutex::Unlock(ts->taskMutex);
+        // Get the task from the ring buffer.
+        Task task = tm->taskBuffer[tm->headTaskIndex];
 
+        tm->headTaskIndex = (tm->headTaskIndex + 1) % tm->maxTasks;
+
+        PlatformMutex::Unlock(tm->taskMutex);
+
+        // Do the task.
         task.function(task.data);
 
-        // task function 이 끝나면 numActiveTask 를 줄인다. (다른 쓰레드와 공유된 변수이므로 atomic 연산)
-        atomic_add(&ts->numActiveTasks, -1);
-        // 실행 중인 task 가 한개도 없으면 finish 신호를 보낸다.
-        if (ts->numActiveTasks == 0) {
-            PlatformMutex::Lock(ts->finishMutex);
-            PlatformCondition::Broadcast(ts->finishCondition);
-            PlatformMutex::Unlock(ts->finishMutex);
+        // Decrease active task count after finishing a task function.
+        tm->numActiveTasks -= 1;
+
+        // Wake finish condition variable when there is no active tasks.
+        if (tm->numActiveTasks == 0) {
+            PlatformMutex::Lock(tm->finishMutex);
+            PlatformCondition::Signal(tm->finishCondition);
+            PlatformMutex::Unlock(tm->finishMutex);
         }
     }
 }

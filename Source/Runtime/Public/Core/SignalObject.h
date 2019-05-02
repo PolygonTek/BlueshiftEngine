@@ -31,10 +31,12 @@ class BE_API SignalObject {
 
 public:
     /// Signal connection type
-    enum ConnectionType {
-        Direct                  = 0,        /// The callback is invoked immediately, when the signal is emitted.
-        Queued                  = BIT(0),   /// The callback is queued
-        Unique                  = BIT(1),   /// Connect() will fail if the same signal is already connected to the same slot for the same pair of SignalObject
+    struct ConnectionType {
+        enum Enum {
+            Direct              = 0,        /// The callback is invoked immediately, when the signal is emitted.
+            Queued              = BIT(0),   /// The callback is queued
+            Unique              = BIT(1),   /// Connect() will fail if the same signal is already connected to the same slot for the same pair of SignalObject
+        };
     };
 
     SignalObject();
@@ -51,7 +53,7 @@ public:
     bool                        IsConnected(const SignalDef *sigdef, SignalObject *receiver) const;
 
                                 /// Connects a signal to receiver's callback function with given connection type
-    bool                        Connect(const SignalDef *sigdef, SignalObject *receiver, SignalCallback function, int connectionType = Direct);
+    bool                        Connect(const SignalDef *sigdef, SignalObject *receiver, SignalCallback function, int connectionType = ConnectionType::Direct);
                                 /// Disconnects a signal to receiver's callback function
     bool                        Disconnect(const SignalDef *sigdef, SignalObject *receiver, SignalCallback function);
                                 /// Disconnects a signal to receiver

@@ -7,4 +7,3 @@
 #define SH_CONST7 2.890611f
 #define SH_CONST8 -0.457046
 #define SH_CONST9 0.373176
-

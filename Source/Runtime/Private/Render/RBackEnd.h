@@ -24,32 +24,34 @@
 
 BE_NAMESPACE_BEGIN
 
-class VisibleObject;
+class VisObject;
 
 class Batch {
 public:
-    enum FlushType {
-        BadFlush,
-        SelectionFlush,
-        BackgroundFlush,
-        DepthFlush,
-        ShadowFlush,
-        OccluderFlush,
-        AmbientFlush,
-        LitFlush,
-        UnlitFlush,
-        VelocityFlush,
-        FinalFlush,
-        TriFlush,
-        GuiFlush,
-        MaxFlushTypes
+    struct Flush {
+        enum Enum {
+            Bad,
+            Selection,
+            Background,
+            Depth,
+            Shadow,
+            Occluder,
+            Base,
+            Lit,
+            Unlit,
+            Velocity,
+            Final,
+            Wire,
+            Gui,
+            Count
+        };
     };
 
     void                    Init();
     void                    Shutdown();
 
-    void                    SetCurrentLight(const VisibleLight *surfLight);
-    void                    Begin(int flushType, const Material *material, const float *materialRegisters, const VisibleObject *surfSpace);
+    void                    SetCurrentLight(const VisLight *surfLight);
+    void                    Begin(Flush::Enum flushType, const Material *material, const float *materialRegisters, const VisObject *surfSpace);
     void                    AddInstance(const DrawSurf *drawSurf);
     void                    DrawSubMesh(SubMesh *subMesh);
 
@@ -62,13 +64,14 @@ private:
     void                    Flush_SelectionPass();
     void                    Flush_BackgroundPass();
     void                    Flush_DepthPass();
-    void                    Flush_AmbientPass();
+    void                    Flush_DepthNormalPass();
+    void                    Flush_BasePass();
     void                    Flush_ShadowDepthPass();
     void                    Flush_LitPass();
     void                    Flush_UnlitPass();
 
     void                    Flush_FinalPass();
-    void                    Flush_TrisPass();
+    void                    Flush_WirePass();
     void                    Flush_VelocityMapPass();
     void                    Flush_GuiPass();
 
@@ -79,9 +82,10 @@ private:
     void                    SetShaderProperties(const Shader *shader, const StrHashMap<Shader::Property> &shaderProperties) const;
     const Texture *         TextureFromShaderProperties(const Material::ShaderPass *mtrlPass, const Str &textureName) const;
     void                    SetMatrixConstants(const Shader *shader) const;
-    void                    SetVertexColorConstants(const Shader *shader, const Material::VertexColorMode &vertexColor) const;
+    void                    SetVertexColorConstants(const Shader *shader, const Material::VertexColorMode::Enum &vertexColor) const;
     void                    SetSkinningConstants(const Shader *shader, const SkinningJointCache *cache) const;
     void                    SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const;
+    void                    SetProbeConstants(const Shader *shader) const;
     void                    SetMaterialConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const;
 
     void                    SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shader *shader, bool useShadowMap) const;
@@ -89,12 +93,13 @@ private:
     void                    RenderColor(const Material::ShaderPass *mtrlPass, const Color4 &color) const;
     void                    RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &idInVec3) const;
     void                    RenderDepth(const Material::ShaderPass *mtrlPass) const;
+    void                    RenderDepthNormal(const Material::ShaderPass *mtrlPass) const;
     void                    RenderVelocity(const Material::ShaderPass *mtrlPass) const;
     void                    RenderBase(const Material::ShaderPass *mtrlPass, float ambientScale) const;
     void                    RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientScale) const;
-    void                    RenderAmbientLit(const Material::ShaderPass *mtrlPass, float ambientScale) const;
     void                    RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float ambientScale) const;
-    void                    RenderAmbientLit_DirectLit(const Material::ShaderPass *mtrlPass, float ambientScale) const;
+    void                    RenderIndirectLit(const Material::ShaderPass *mtrlPass) const;
+    void                    RenderIndirectLit_DirectLit(const Material::ShaderPass *mtrlPass) const;
     void                    RenderGeneric(const Material::ShaderPass *mtrlPass) const;
 
     void                    RenderLightInteraction(const Material::ShaderPass *mtrlPass) const;
@@ -109,8 +114,8 @@ private:
     const float *           materialRegisters;
     SubMesh *               subMesh;
 
-    const VisibleObject *   surfSpace;
-    const VisibleLight *    surfLight;
+    const VisObject *       surfSpace;
+    const VisLight *        surfLight;
 
     RHI::Handle             vertexBuffer;
     RHI::Handle             indexBuffer;
@@ -136,29 +141,31 @@ private:
 /*
 -------------------------------------------------------------------------------
 
-    BackEnd
+    RenderBackEnd
 
 -------------------------------------------------------------------------------
 */
 
 struct LightQuery {
-    const VisibleLight *    light;
+    const VisLight *        light;
     RHI::Handle             queryHandle;
     unsigned int            resultSamples;
     int                     frameCount;
 };
 
-struct BackEnd {
-    enum PreDefinedStencilState {
-        VolumeIntersectionZPass,
-        VolumeIntersectionZFail,
-        VolumeIntersectionInsideZFail,
-        VolumeIntersectionTest,
-        MaxPredefinedStencilStates
+struct RenderBackEnd {
+    struct PreDefinedStencilState {
+        enum Enum {
+            VolumeIntersectionZPass,
+            VolumeIntersectionZFail,
+            VolumeIntersectionInsideZFail,
+            VolumeIntersectionTest,
+            Count
+        };
     };
 
     bool                    initialized;
-    RHI::Handle             stencilStates[MaxPredefinedStencilStates];
+    RHI::Handle             stencilStates[PreDefinedStencilState::Count];
     //LightQuery            lightQueries[MAX_LIGHTS];
 
     float                   time;
@@ -170,18 +177,19 @@ struct BackEnd {
     int                     numAmbientSurfs;
     DrawSurf **             drawSurfs;
     BufferCache *           instanceBufferCache;
-    LinkList<VisibleObject> *visObjects;
-    LinkList<VisibleLight> *visLights;
-    VisibleLight *          primaryLight;
-    VisibleView *           view;
+    LinkList<VisObject> *   visObjects;
+    LinkList<VisLight> *    visLights;
+    VisLight *              primaryLight;
+    VisCamera *             camera;
 
     Rect                    renderRect;
-    Rect                    screenRect;
     Vec2                    upscaleFactor;
     double                  depthMin;
     double                  depthMax; 
+    bool                    useDepthPrePass;
 
     Mat4                    projMatrix;
+    Mat4                    viewMatrix;
     Mat4                    viewProjMatrix;
     Mat4                    viewMatrixPrev;
 
@@ -198,11 +206,9 @@ struct BackEnd {
     float                   csmDistances[9];
     float                   csmUpdateRatio[8];
     float                   csmUpdate[8];
+    float                   csmFar[8];
 
-    Texture *               envCubeTexture;
-    Texture *               integrationLUTTexture;
-    Texture *               irradianceEnvCubeTexture;
-    Texture *               prefilteredEnvCubeTexture;
+    Texture *               dfgSumGgxTexture;
 
     Texture *               homCullingOutputTexture;
     RenderTarget *          homCullingOutputRT;
@@ -213,22 +219,22 @@ void    RB_Shutdown();
 
 void    RB_Execute(const void *data);
 
-void    RB_SetupLight(VisibleLight *visLight);
+void    RB_SetupLight(VisLight *visLight);
 
 void    RB_BackgroundPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_SelectionPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs);
-void    RB_UnlitPass(int numDrawSurfs, DrawSurf **drawSurfs);
+void    RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw);
-void    RB_DebugPass(int numDrawSurfs, DrawSurf **drawSurfs);
+void    RB_DebugToolsPass(int numDrawSurfs, DrawSurf **drawSurfs);
 void    RB_GuiPass(int numDrawSurfs, DrawSurf **drawSurfs);
 
-void    RB_ShadowPass(const VisibleLight *visLight);
+void    RB_ShadowPass(const VisLight *visLight);
 void    RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs);
-void    RB_ForwardAdditivePass(const LinkList<VisibleLight> *visLights);
+void    RB_ForwardAdditivePass(const LinkList<VisLight> *visLights);
 
 void    RB_PostProcessDepth();
 void    RB_PostProcess();
@@ -241,6 +247,6 @@ Vec3 *  RB_ReserveDebugPrimsVerts(int prims, int numVerts, const Color4 &color, 
 void    RB_ClearDebugText(int time);
 void    RB_AddDebugText(const char *text, const Vec3 &origin, const Mat3 &viewAxis, float scale, float lineWidth, const Color4 &color, const int align, const int lifeTime, const bool depthTest);
 
-extern BackEnd backEnd;
+extern RenderBackEnd backEnd;
 
 BE_NAMESPACE_END

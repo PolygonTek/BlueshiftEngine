@@ -19,13 +19,13 @@
 
 BE_NAMESPACE_BEGIN
 
-const GLenum ToGLBufferUsage(RHI::BufferUsage usage) {
+const GLenum ToGLBufferUsage(RHI::BufferUsage::Enum usage) {
     switch (usage) {
-    case RHI::Static:
+    case RHI::BufferUsage::Static:
         return GL_STATIC_DRAW;
-    case RHI::Dynamic:
+    case RHI::BufferUsage::Dynamic:
         return GL_DYNAMIC_DRAW;
-    case RHI::Stream:
+    case RHI::BufferUsage::Stream:
         return GL_STREAM_DRAW;
     default:
         assert(0);
@@ -33,26 +33,26 @@ const GLenum ToGLBufferUsage(RHI::BufferUsage usage) {
     }
 }
 
-const GLenum ToGLBufferTarget(RHI::BufferType type) {
+const GLenum ToGLBufferTarget(RHI::BufferType::Enum type) {
     switch (type) {
-    case RHI::VertexBuffer:
+    case RHI::BufferType::Vertex:
         return GL_ARRAY_BUFFER;
-    case RHI::IndexBuffer:
+    case RHI::BufferType::Index:
         return GL_ELEMENT_ARRAY_BUFFER;
-    case RHI::PixelPackBuffer:
+    case RHI::BufferType::PixelPack:
         return GL_PIXEL_PACK_BUFFER;
-    case RHI::PixelUnpackBuffer:
+    case RHI::BufferType::PixelUnpack:
         return GL_PIXEL_UNPACK_BUFFER;
-    case RHI::TexelBuffer:
+    case RHI::BufferType::Texel:
         return GL_TEXTURE_BUFFER;
-    case RHI::UniformBuffer:
+    case RHI::BufferType::Uniform:
         return GL_UNIFORM_BUFFER;
-    case RHI::TransformFeedbackBuffer:
+    case RHI::BufferType::TransformFeedback:
         return GL_TRANSFORM_FEEDBACK_BUFFER;
-    case RHI::CopyReadBuffer:
+    case RHI::BufferType::CopyRead:
         return GL_COPY_READ_BUFFER;
 #ifdef GL_ARB_draw_indirect
-    case RHI::DrawIndirectBuffer:
+    case RHI::BufferType::DrawIndirect:
         return GL_DRAW_INDIRECT_BUFFER;
 #endif
     default:
@@ -61,7 +61,7 @@ const GLenum ToGLBufferTarget(RHI::BufferType type) {
     }
 }
 
-RHI::Handle OpenGLRHI::CreateBuffer(BufferType type, BufferUsage usage, int size, int pitch, const void *data) {
+RHI::Handle OpenGLRHI::CreateBuffer(BufferType::Enum type, BufferUsage::Enum usage, int size, int pitch, const void *data) {
     GLenum target = ToGLBufferTarget(type);
 
     GLBuffer *buffer = new GLBuffer;
@@ -115,7 +115,7 @@ void OpenGLRHI::DestroyBuffer(Handle bufferHandle) {
     bufferList[bufferHandle] = nullptr;
 }
 
-void OpenGLRHI::BindBuffer(BufferType type, Handle bufferHandle) {
+void OpenGLRHI::BindBuffer(BufferType::Enum type, Handle bufferHandle) {
     Handle *bufferHandlePtr = &currentContext->state->bufferHandles[type];
     if (*bufferHandlePtr != bufferHandle) {
         *bufferHandlePtr = bufferHandle;
@@ -124,10 +124,10 @@ void OpenGLRHI::BindBuffer(BufferType type, Handle bufferHandle) {
     }
 }
 
-void OpenGLRHI::BindIndexedBuffer(BufferType type, int bindingIndex, Handle bufferHandle) {
+void OpenGLRHI::BindIndexedBuffer(BufferType::Enum type, int bindingIndex, Handle bufferHandle) {
     // Allowed only target UniformBuffer or TransformFeedbackBuffer
-    assert(type == UniformBuffer || type == TransformFeedbackBuffer);
-    int targetIndex = type - UniformBuffer;
+    assert(type == BufferType::Uniform || type == BufferType::TransformFeedback);
+    int targetIndex = type - BufferType::Uniform;
     Handle *bufferHandlePtr = &currentContext->state->indexedBufferHandles[targetIndex];
     GLBuffer *buffer = bufferList[bufferHandle];
     if (*bufferHandlePtr != bufferHandle || buffer->bindingIndex != bindingIndex || buffer->bindingOffset != 0 || buffer->bindingSize != buffer->size) {
@@ -139,10 +139,10 @@ void OpenGLRHI::BindIndexedBuffer(BufferType type, int bindingIndex, Handle buff
     }
 }
 
-void OpenGLRHI::BindIndexedBufferRange(BufferType type, int bindingIndex, Handle bufferHandle, int offset, int size) {
+void OpenGLRHI::BindIndexedBufferRange(BufferType::Enum type, int bindingIndex, Handle bufferHandle, int offset, int size) {
     // Allowed only target UniformBuffer or TransformFeedbackBuffer
-    assert(type == UniformBuffer || type == TransformFeedbackBuffer);
-    int targetIndex = type - UniformBuffer;
+    assert(type == BufferType::Uniform || type == BufferType::TransformFeedback);
+    int targetIndex = type - BufferType::Uniform;
     Handle *bufferHandlePtr = &currentContext->state->indexedBufferHandles[targetIndex];
     GLBuffer *buffer = bufferList[bufferHandle];
     if (*bufferHandlePtr != bufferHandle || buffer->bindingIndex != bindingIndex || buffer->bindingOffset != offset || buffer->bindingSize != size) {
@@ -160,7 +160,7 @@ void OpenGLRHI::BindIndexedBufferRange(BufferType type, int bindingIndex, Handle
 // GL_MAP_FLUSH_EXPLICIT_BIT -- modifications to each subrange must be explicitly flushed (DMA) by calling glFlushMappedBufferRange()
 // GL_MAP_PERSISTENT_BIT -- keep mapping and that the client intends to hold and use the returned pointer during subsequent GL operation
 // GL_MAP_COHERENT_BIT -- persistent mapping is also to be coherent (automatically visible to GPU)
-void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode lockMode, int offset, int size) {
+void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMode, int offset, int size) {
     GLBuffer *buffer = bufferList[bufferHandle];
     
     if (size < 0) {
@@ -172,13 +172,13 @@ void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode lockMode, in
     GLbitfield access = 0;
 
     switch (lockMode) {
-    case WriteOnly:
+    case BufferLockMode::WriteOnly:
         access |= GL_MAP_WRITE_BIT;
         break;
-    case WriteOnlyExplicitFlush:
+    case BufferLockMode::WriteOnlyExplicitFlush:
         access |= (GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
         break;
-    case WriteOnlyPersistent:
+    case BufferLockMode::WriteOnlyPersistent:
         access |= GL_MAP_WRITE_BIT;
 #ifdef GL_ARB_buffer_storage
         if (OpenGL::SupportsBufferStorage()) {

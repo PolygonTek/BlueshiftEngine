@@ -20,19 +20,22 @@ typedef void (*threadFunc_t)(void *);
 
 class BE_API PlatformBaseThread {
 public:
-    static PlatformBaseThread * Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
-    static void                 Delete(PlatformBaseThread *thread);
+    static uint64_t             GetCurrentThreadId();
 
+    static PlatformBaseThread * Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
+    static void                 Destroy(PlatformBaseThread *thread);
+
+    static void                 SetName(const char *name);
     static void                 SetAffinity(int affinity);
 
-    static void                 Wait(PlatformBaseThread *thread);
-    static void                 WaitAll(int numThreads, PlatformBaseThread *threads[]);
+    static void                 Join(PlatformBaseThread *thread);
+    static void                 JoinAll(int numThreads, PlatformBaseThread *threads[]);
 };
 
 class BE_API PlatformBaseMutex {
 public:
     static PlatformBaseMutex *  Create();
-    static void                 Delete(PlatformBaseMutex *mutex);
+    static void                 Destroy(PlatformBaseMutex *mutex);
     
     static void                 Lock(const PlatformBaseMutex *mutex);
     static bool                 TryLock(const PlatformBaseMutex *mutex);
@@ -42,7 +45,7 @@ public:
 class BE_API PlatformBaseCondition {
 public:
     static PlatformBaseCondition *Create();
-    static void                 Delete(PlatformBaseCondition *condition);
+    static void                 Destroy(PlatformBaseCondition *condition);
     
                                 /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
     static void                 Wait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex);
@@ -57,7 +60,9 @@ public:
 
 BE_NAMESPACE_END
 
-#if defined(__ANDROID__)
+#if defined(__APPLE__)
+#include "Apple/PlatformAppleThread.h"
+#elif defined(__ANDROID__)
 #include "Android/PlatformAndroidThread.h"
 #elif defined(__UNIX__) 
 #include "Posix/PlatformPosixThread.h"

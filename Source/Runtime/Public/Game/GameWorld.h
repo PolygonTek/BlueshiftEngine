@@ -46,19 +46,19 @@ class GameWorld : public Object {
     friend class GameEdit;
 
 public:
-    enum {
-        MaxScenes               = 16,
-        DontDestroyOnLoadSceneNum = MaxScenes - 1,
-        EntityNumBits           = 16,
-        MaxEntities             = (1 << EntityNumBits),
-        BadEntityNum            = (MaxEntities - 1),
-        MaxEntityNum            = (MaxEntities - 2)
-    };
+    static constexpr int MaxScenes = 16;
+    static constexpr int DontDestroyOnLoadSceneNum = MaxScenes - 1;
+    static constexpr int EntityNumBits = 16;
+    static constexpr int MaxEntities = (1 << EntityNumBits);
+    static constexpr int BadEntityNum = (MaxEntities - 1);
+    static constexpr int MaxEntityNum = (MaxEntities - 2);
 
-    enum LoadSceneMode {
-        Single,
-        Additive,
-        Editor
+    struct LoadSceneMode {
+        enum Enum {
+            Single,
+            Additive,
+            Editor
+        };
     };
 
     OBJECT_PROTOTYPE(GameWorld);
@@ -97,9 +97,9 @@ public:
     void                        ProcessPointerInput();
 
                                 /// Ray intersection test for all entities.
-    Entity *                    RayIntersection(const Vec3 &start, const Vec3 &dir, int layerMask) const;
+    Entity *                    IntersectRay(const Ray &ray, int layerMask) const;
                                 /// Ray intersection test for all entities.
-    Entity *                    RayIntersection(const Vec3 &start, const Vec3 &dir, int layerMask, const Array<Entity *> &excludingList, float *scale) const;
+    Entity *                    IntersectRay(const Ray &ray, int layerMask, const Array<Entity *> &excludingEntities, float *scale) const;
 
                                 /// Render camera component from all registered entities.
     void                        Render();
@@ -164,7 +164,7 @@ public:
     const char *                MapName() const { return mapName.c_str(); }
 
     void                        NewMap();
-    bool                        LoadMap(const char *filename, LoadSceneMode mode);
+    bool                        LoadMap(const char *filename, LoadSceneMode::Enum mode);
     void                        SaveMap(const char *filename);
 
     static const SignalDef      SIG_EntityRegistered;
@@ -183,10 +183,10 @@ private:
     void                        UpdateEntities();
     void                        LateUpdateEntities();
 
-    Entity *                    entities[MaxEntities];
+    Entity *                    entities[MaxEntities] = { nullptr, };
     HashIndex                   entityHash;
     HashIndex                   entityTagHash;
-    int                         firstFreeIndex;
+    int                         firstFreeIndex = 0;
 
     GameScene                   scenes[MaxScenes];
 

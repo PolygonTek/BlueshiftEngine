@@ -1,11 +1,11 @@
-shader "selectionId" {
+shader "SelectionId" {
 	generatePerforatedVersion
 	generateGpuSkinningVersion
 
 	glsl_vp {
-		$include "selectionId.vp"
+		$include "SelectionId.vp"
 	}
 	glsl_fp {
-		$include "selectionId.fp"
+		$include "SelectionId.fp"
 	}
 }

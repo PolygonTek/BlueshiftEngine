@@ -17,45 +17,46 @@
 #include "RenderInternal.h"
 #include "Platform/PlatformTime.h"
 #include "RBackEnd.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
 static const int HOM_CULL_TEXTURE_WIDTH = 4096;
 static const int HOM_CULL_TEXTURE_HEIGHT = 1;
 
-BackEnd	backEnd;
+RenderBackEnd   backEnd;
 
 static void RB_InitStencilStates() {
-    backEnd.stencilStates[BackEnd::VolumeIntersectionZPass] = 
-        rhi.CreateStencilState(~0, ~0, 
-        RHI::AlwaysFunc, RHI::KeepOp, RHI::KeepOp, RHI::DecrWrapOp, 
-        RHI::AlwaysFunc, RHI::KeepOp, RHI::KeepOp, RHI::IncrWrapOp);
+    backEnd.stencilStates[RenderBackEnd::PreDefinedStencilState::VolumeIntersectionZPass] =
+        rhi.CreateStencilState(~0, ~0,
+        RHI::StencilFunc::Always, RHI::StencilOp::Keep, RHI::StencilOp::Keep, RHI::StencilOp::DecrWrap,
+        RHI::StencilFunc::Always, RHI::StencilOp::Keep, RHI::StencilOp::Keep, RHI::StencilOp::IncrWrap);
 
-    backEnd.stencilStates[BackEnd::VolumeIntersectionZFail] = 
+    backEnd.stencilStates[RenderBackEnd::PreDefinedStencilState::VolumeIntersectionZFail] =
         rhi.CreateStencilState(~0, ~0, 
-        RHI::AlwaysFunc, RHI::KeepOp, RHI::IncrWrapOp, RHI::KeepOp, 
-        RHI::AlwaysFunc, RHI::KeepOp, RHI::DecrWrapOp, RHI::KeepOp);
+        RHI::StencilFunc::Always, RHI::StencilOp::Keep, RHI::StencilOp::IncrWrap, RHI::StencilOp::Keep,
+        RHI::StencilFunc::Always, RHI::StencilOp::Keep, RHI::StencilOp::DecrWrap, RHI::StencilOp::Keep);
 
-    backEnd.stencilStates[BackEnd::VolumeIntersectionInsideZFail] = 
+    backEnd.stencilStates[RenderBackEnd::PreDefinedStencilState::VolumeIntersectionInsideZFail] =
         rhi.CreateStencilState(~0, ~0, 
-        RHI::AlwaysFunc, RHI::KeepOp, RHI::IncrWrapOp, RHI::KeepOp, 
-        RHI::NeverFunc, RHI::KeepOp, RHI::KeepOp, RHI::KeepOp);
+        RHI::StencilFunc::Always, RHI::StencilOp::Keep, RHI::StencilOp::IncrWrap, RHI::StencilOp::Keep,
+        RHI::StencilFunc::Never, RHI::StencilOp::Keep, RHI::StencilOp::Keep, RHI::StencilOp::Keep);
 
-    backEnd.stencilStates[BackEnd::VolumeIntersectionTest] = 
+    backEnd.stencilStates[RenderBackEnd::PreDefinedStencilState::VolumeIntersectionTest] =
         rhi.CreateStencilState(~0, 0, 
-        RHI::EqualFunc, RHI::KeepOp, RHI::KeepOp, RHI::KeepOp, 
-        RHI::NeverFunc, RHI::KeepOp, RHI::KeepOp, RHI::KeepOp);
+        RHI::StencilFunc::Equal, RHI::StencilOp::Keep, RHI::StencilOp::Keep, RHI::StencilOp::Keep,
+        RHI::StencilFunc::Never, RHI::StencilOp::Keep, RHI::StencilOp::Keep, RHI::StencilOp::Keep);
 }
 
 static void RB_FreeStencilStates() {
-    for (int i = 0; i < BackEnd::MaxPredefinedStencilStates; i++) {
+    for (int i = 0; i < RenderBackEnd::PreDefinedStencilState::Count; i++) {
         rhi.DestroyStencilState(backEnd.stencilStates[i]);
     }
 }
 
 static void RB_InitLightQueries() {
     /*for (int i = 0; i < MAX_LIGHTS; i++) {
-        backEnd.lightQueries[i].queryHandle = rhi.CreateQuery();
+        backEnd.lightQueries[i].queryHandle = rhi.CreateQuery(RHI::QueryType::Occlusion);
         backEnd.lightQueries[i].light = nullptr;
         backEnd.lightQueries[i].frameCount = 0;
         backEnd.lightQueries[i].resultSamples = 0;
@@ -79,24 +80,15 @@ void RB_Init() {
 
     memset(backEnd.csmUpdate, 0, sizeof(backEnd.csmUpdate));
 
-    backEnd.integrationLUTTexture = textureManager.AllocTexture("integrationLUT");
-    backEnd.integrationLUTTexture->Load("Data/EngineTextures/IntegrationLUT_GGX.dds", Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
-
-    // FIXME: TEMPORARY CODE
-    backEnd.envCubeTexture = textureManager.AllocTexture("envCubeMap");
-    backEnd.envCubeTexture->Load("EnvProbes/env.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
-
-    backEnd.irradianceEnvCubeTexture = textureManager.AllocTexture("irradianceEnvCubeMap");
-    backEnd.irradianceEnvCubeTexture->Load("EnvProbes/iem.dds", Texture::Clamp | Texture::NoMipmaps | Texture::HighQuality);
-
-    backEnd.prefilteredEnvCubeTexture = textureManager.AllocTexture("prefilteredEnvCubeMap");
-    backEnd.prefilteredEnvCubeTexture->Load("EnvProbes/pem.dds", Texture::Clamp | Texture::Trilinear | Texture::HighQuality);
+    backEnd.dfgSumGgxTexture = textureManager.AllocTexture("_dfgSumGgx");
+    backEnd.dfgSumGgxTexture->Load("Data/EngineTextures/DFGSumGGX.dds",
+        Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
     if (r_HOM.GetBool()) {
         // TODO: create one for each context
         backEnd.homCullingOutputTexture = textureManager.AllocTexture("_homCullingOutput");
-        backEnd.homCullingOutputTexture->CreateEmpty(RHI::Texture2D, HOM_CULL_TEXTURE_WIDTH, HOM_CULL_TEXTURE_HEIGHT, 1, 1, 1,
-            Image::RGBA_8_8_8_8, Texture::Clamp | Texture::Nearest | Texture::NoMipmaps | Texture::HighQuality);
+        backEnd.homCullingOutputTexture->CreateEmpty(RHI::TextureType::Texture2D, HOM_CULL_TEXTURE_WIDTH, HOM_CULL_TEXTURE_HEIGHT, 1, 1, 1,
+            Image::Format::RGBA_8_8_8_8, Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
         backEnd.homCullingOutputRT = RenderTarget::Create(backEnd.homCullingOutputTexture, nullptr, 0);
     }
 
@@ -105,8 +97,6 @@ void RB_Init() {
 
 void RB_Shutdown() {
     backEnd.initialized = false;
-
-    //Texture::DestroyInstanceImmediate(backEnd.irradianceEnvCubeTexture);
 
     PP_Free();
 
@@ -125,10 +115,10 @@ static const void *RB_ExecuteBeginContext(const void *data) {
     return (const void *)(cmd + 1);
 }
 
-void RB_SetupLight(VisibleLight *visLight) {
+void RB_SetupLight(VisLight *visLight) {
     const RenderLight *renderLight = visLight->def;
 
-    const Material *lightMaterial = renderLight->state.material;
+    const Material *lightMaterial = renderLight->GetState().material;
 
     /*float *outputValues = (float *)frameData.Alloc(lightMaterial->GetExprChunk()->NumRegisters() * sizeof(float));
     float localParms[MAX_EXPR_LOCALPARMS];
@@ -141,39 +131,39 @@ void RB_SetupLight(VisibleLight *visLight) {
     const Material::ShaderPass *lightPass = lightMaterial->GetPass();
 
     if (lightPass->useOwnerColor) {
-        visLight->lightColor = Color4(&renderLight->state.materialParms[RenderObject::RedParm]);
+        visLight->lightColor = Color4(&renderLight->GetState().materialParms[RenderObject::MaterialParm::Red]);
     } else {
         visLight->lightColor = Color4(lightPass->constantColor);
     }
 
-    if (cvarSystem.GetCVarBool(L"gl_sRGB")) {
-        // Linearize visLight color
-        visLight->lightColor.ToColor3() = visLight->lightColor.ToColor3().SRGBtoLinear();
+    if (rhi.IsSRGBWriteEnabled()) {
+        // Linearize light color
+        visLight->lightColor.ToColor3() = visLight->lightColor.ToColor3().SRGBToLinear();
     }
 
-    // visLight texture transform matrix
+    // Build light texture transform matrix
+    float lightTexMatrix[2][4];
+    lightTexMatrix[0][0] = lightPass->tcScale[0];
+    lightTexMatrix[0][1] = 0.0f;
+    lightTexMatrix[0][2] = 0.0f;
+    lightTexMatrix[0][3] = lightPass->tcTranslation[0];
+
+    lightTexMatrix[1][0] = 0.0f;
+    lightTexMatrix[1][1] = lightPass->tcScale[1];
+    lightTexMatrix[1][2] = 0.0f;
+    lightTexMatrix[1][3] = lightPass->tcTranslation[1];
+
     const Mat4 &viewProjScaleBiasMat = visLight->def->GetViewProjScaleBiasMatrix();
 
-    float lightTexMat[2][4];
-    lightTexMat[0][0] = lightPass->tcScale[0];
-    lightTexMat[0][1] = 0.0f;
-    lightTexMat[0][2] = 0.0f;
-    lightTexMat[0][3] = lightPass->tcTranslation[0];
+    visLight->viewProjTexMatrix[0][0] = lightTexMatrix[0][0] * viewProjScaleBiasMat[0][0] + lightTexMatrix[0][1] * viewProjScaleBiasMat[1][0] + lightTexMatrix[0][3] * viewProjScaleBiasMat[3][0];
+    visLight->viewProjTexMatrix[0][1] = lightTexMatrix[0][0] * viewProjScaleBiasMat[0][1] + lightTexMatrix[0][1] * viewProjScaleBiasMat[1][1] + lightTexMatrix[0][3] * viewProjScaleBiasMat[3][1];
+    visLight->viewProjTexMatrix[0][2] = lightTexMatrix[0][0] * viewProjScaleBiasMat[0][2] + lightTexMatrix[0][1] * viewProjScaleBiasMat[1][2] + lightTexMatrix[0][3] * viewProjScaleBiasMat[3][2];
+    visLight->viewProjTexMatrix[0][3] = lightTexMatrix[0][0] * viewProjScaleBiasMat[0][3] + lightTexMatrix[0][1] * viewProjScaleBiasMat[1][3] + lightTexMatrix[0][3] * viewProjScaleBiasMat[3][3];
 
-    lightTexMat[1][0] = 0.0f;
-    lightTexMat[1][1] = lightPass->tcScale[1];
-    lightTexMat[1][2] = 0.0f;
-    lightTexMat[1][3] = lightPass->tcTranslation[1];
-
-    visLight->viewProjTexMatrix[0][0] = lightTexMat[0][0] * viewProjScaleBiasMat[0][0] + lightTexMat[0][1] * viewProjScaleBiasMat[1][0] + lightTexMat[0][3] * viewProjScaleBiasMat[3][0];
-    visLight->viewProjTexMatrix[0][1] = lightTexMat[0][0] * viewProjScaleBiasMat[0][1] + lightTexMat[0][1] * viewProjScaleBiasMat[1][1] + lightTexMat[0][3] * viewProjScaleBiasMat[3][1];
-    visLight->viewProjTexMatrix[0][2] = lightTexMat[0][0] * viewProjScaleBiasMat[0][2] + lightTexMat[0][1] * viewProjScaleBiasMat[1][2] + lightTexMat[0][3] * viewProjScaleBiasMat[3][2];
-    visLight->viewProjTexMatrix[0][3] = lightTexMat[0][0] * viewProjScaleBiasMat[0][3] + lightTexMat[0][1] * viewProjScaleBiasMat[1][3] + lightTexMat[0][3] * viewProjScaleBiasMat[3][3];
-
-    visLight->viewProjTexMatrix[1][0] = lightTexMat[1][0] * viewProjScaleBiasMat[0][0] + lightTexMat[1][1] * viewProjScaleBiasMat[1][0] + lightTexMat[1][3] * viewProjScaleBiasMat[3][0];
-    visLight->viewProjTexMatrix[1][1] = lightTexMat[1][0] * viewProjScaleBiasMat[0][1] + lightTexMat[1][1] * viewProjScaleBiasMat[1][1] + lightTexMat[1][3] * viewProjScaleBiasMat[3][1];
-    visLight->viewProjTexMatrix[1][2] = lightTexMat[1][0] * viewProjScaleBiasMat[0][2] + lightTexMat[1][1] * viewProjScaleBiasMat[1][2] + lightTexMat[1][3] * viewProjScaleBiasMat[3][2];
-    visLight->viewProjTexMatrix[1][3] = lightTexMat[1][0] * viewProjScaleBiasMat[0][3] + lightTexMat[1][1] * viewProjScaleBiasMat[1][3] + lightTexMat[1][3] * viewProjScaleBiasMat[3][3];
+    visLight->viewProjTexMatrix[1][0] = lightTexMatrix[1][0] * viewProjScaleBiasMat[0][0] + lightTexMatrix[1][1] * viewProjScaleBiasMat[1][0] + lightTexMatrix[1][3] * viewProjScaleBiasMat[3][0];
+    visLight->viewProjTexMatrix[1][1] = lightTexMatrix[1][0] * viewProjScaleBiasMat[0][1] + lightTexMatrix[1][1] * viewProjScaleBiasMat[1][1] + lightTexMatrix[1][3] * viewProjScaleBiasMat[3][1];
+    visLight->viewProjTexMatrix[1][2] = lightTexMatrix[1][0] * viewProjScaleBiasMat[0][2] + lightTexMatrix[1][1] * viewProjScaleBiasMat[1][2] + lightTexMatrix[1][3] * viewProjScaleBiasMat[3][2];
+    visLight->viewProjTexMatrix[1][3] = lightTexMatrix[1][0] * viewProjScaleBiasMat[0][3] + lightTexMatrix[1][1] * viewProjScaleBiasMat[1][3] + lightTexMatrix[1][3] * viewProjScaleBiasMat[3][3];
 
     visLight->viewProjTexMatrix[2][0] = viewProjScaleBiasMat[2][0];
     visLight->viewProjTexMatrix[2][1] = viewProjScaleBiasMat[2][1];
@@ -187,11 +177,11 @@ void RB_SetupLight(VisibleLight *visLight) {
 }
 
 void RB_DrawLightVolume(const RenderLight *light) {
-    switch (light->state.type) {
-    case RenderLight::DirectionalLight:
+    switch (light->GetType()) {
+    case RenderLight::Type::Directional:
         RB_DrawOBB(light->GetWorldOBB());
         break;
-    case RenderLight::PointLight:
+    case RenderLight::Type::Point:
         if (light->IsRadiusUniform()) {
             RB_DrawSphere(Sphere(light->GetOrigin(), light->GetRadius()[0]), 16, 16);
         } else {
@@ -199,7 +189,7 @@ void RB_DrawLightVolume(const RenderLight *light) {
             RB_DrawOBB(light->GetWorldOBB());
         }
         break;
-    case RenderLight::SpotLight:
+    case RenderLight::Type::Spot:
         RB_DrawFrustum(light->GetWorldFrustum());
         break;
     default:
@@ -207,15 +197,15 @@ void RB_DrawLightVolume(const RenderLight *light) {
     }
 }
 
-static void RB_DrawStencilLightVolume(const VisibleLight *light, bool insideLightVolume) {
+static void RB_DrawStencilLightVolume(const VisLight *light, bool insideLightVolume) {
     rhi.SetStateBits(RHI::DF_LEqual);
 
     if (insideLightVolume) {
-        rhi.SetCullFace(RHI::NoCull);
-        rhi.SetStencilState(backEnd.stencilStates[BackEnd::VolumeIntersectionInsideZFail], 0);
+        rhi.SetCullFace(RHI::CullType::None);
+        rhi.SetStencilState(backEnd.stencilStates[RenderBackEnd::PreDefinedStencilState::VolumeIntersectionInsideZFail], 0);
     } else {
-        rhi.SetCullFace(RHI::NoCull);
-        rhi.SetStencilState(backEnd.stencilStates[BackEnd::VolumeIntersectionZPass], 0);
+        rhi.SetCullFace(RHI::CullType::None);
+        rhi.SetStencilState(backEnd.stencilStates[RenderBackEnd::PreDefinedStencilState::VolumeIntersectionZPass], 0);
     }
 
     RB_DrawLightVolume(light->def);
@@ -224,7 +214,7 @@ static void RB_DrawStencilLightVolume(const VisibleLight *light, bool insideLigh
 }
 
 // NOTE: ambient pass 이후에 실행되므로 화면에 깊이값은 채워져있다
-static void RB_MarkOcclusionVisibleLights(int numLights, VisibleLight **lights) {
+static void RB_MarkOcclusionVisibleLights(int numLights, VisLight **lights) {
 /*	bool    insideLightVolume;
     Rect    prevScissorRect;
     int     numQueryWait = 0;
@@ -236,8 +226,8 @@ static void RB_MarkOcclusionVisibleLights(int numLights, VisibleLight **lights) 
     }
 
     for (int i = 0; i < numLights; i++) {
-        VisibleLight *light = lights[i];
-        if (light->def->state.flags & RenderLight::PrimaryLightFlag) {
+        VisLight *light = lights[i];
+        if (light->def->GetState().flags & RenderLight::PrimaryLight) {
             continue;
         }
 
@@ -252,7 +242,7 @@ static void RB_MarkOcclusionVisibleLights(int numLights, VisibleLight **lights) 
                     light->occlusionVisible = true;
                     numVisLights++;
                 } else {
-                    //BE_LOG(L"%i\n", lightQuery->resultSamples);
+                    //BE_LOG("%i\n", lightQuery->resultSamples);
                 }
 
                 numQueryWait++;
@@ -281,19 +271,19 @@ static void RB_MarkOcclusionVisibleLights(int numLights, VisibleLight **lights) 
         }
 
         // 카메라가 light volume 안에 있는지 체크
-        if (light->def->state.type == LT_OMNI) {
+        if (light->def->GetState().type == LT_OMNI) {
             if (light->def->IsRadiusUniform()) {
                 float radius = light->def->GetRadius().x;
-                insideLightVolume = light->def->state.origin.DistanceSqr(backEnd.view->origin) < radius * radius ? true : false;
+                insideLightVolume = light->def->GetState().origin.DistanceSqr(backEnd.camera->origin) < radius * radius ? true : false;
             } else {
-                Vec3 p = (backEnd.view->origin - light->def->state.origin) * light->def->state.axis;
-                p /= light->def->state.value;
+                Vec3 p = (backEnd.camera->origin - light->def->GetState().origin) * light->def->GetState().axis;
+                p /= light->def->GetState().value;
                 insideLightVolume = p.LengthSqr() <= 1.0f ? true : false;
             }
-        } else if (light->def->state.type == LT_PROJECTED) {
-            insideLightVolume = !light->def->frustum.CullPoint(backEnd.view->origin);
-        } else if (light->def->state.type == LT_DIRECTIONAL) {
-            insideLightVolume = light->def->obb.IsContainPoint(backEnd.view->origin);
+        } else if (light->def->GetState().type == LT_PROJECTED) {
+            insideLightVolume = !light->def->frustum.CullPoint(backEnd.camera->origin);
+        } else if (light->def->GetState().type == LT_DIRECTIONAL) {
+            insideLightVolume = light->def->obb.IsContainPoint(backEnd.camera->origin);
         } else {
             assert(0);
         }
@@ -306,7 +296,7 @@ static void RB_MarkOcclusionVisibleLights(int numLights, VisibleLight **lights) 
                 
         rhi.BeginQuery(lightQuery->queryHandle);
         RB_DrawLightVolume(light->def);
-        rhi.EndQuery();
+        rhi.EndQuery(lightQuery->queryHandle);
     }
 
     rhi.SetStencilState(NullStencilState, 0);
@@ -316,7 +306,7 @@ static void RB_MarkOcclusionVisibleLights(int numLights, VisibleLight **lights) 
     }
 
     if (r_showLights.GetInteger() > 0) {
-        BE_LOG(L"lights: %i/%i (visible/total), queries: %i/%i (result/wait)\n", numVisLights, numLights, numQueryResult, numQueryWait);
+        BE_LOG("lights: %i/%i (visible/total), queries: %i/%i (result/wait)\n", numVisLights, numLights, numQueryResult, numQueryWait);
     }*/
 }
 
@@ -367,7 +357,7 @@ static void RB_GenerateOcclusionMapHierarchy() {
 
         rhi.SetViewport(Rect(0, 0, w, h));
         rhi.SetStateBits(RHI::DepthWrite | RHI::DF_Always);
-        rhi.SetCullFace(RHI::NoCull);
+        rhi.SetCullFace(RHI::CullType::None);
 
         shader->SetTexture("lastMip", backEnd.ctx->homTexture);
         shader->SetConstant2f("texelSize", texelSize);
@@ -420,7 +410,7 @@ static void RB_QueryOccludeeAABBs(int numAmbientOccludees, const AABB *occludeeA
 
     shader->Bind();
     shader->SetTexture("homap", backEnd.ctx->homTexture);
-    shader->SetConstant4x4f("viewProjectionMatrix", true, backEnd.view->def->viewProjMatrix);	
+    shader->SetConstant4x4f("viewProjectionMatrix", true, backEnd.camera->def->GetViewProjMatrix());
     shader->SetConstant2f("viewportSize", Vec2(backEnd.ctx->homRT->GetWidth(), backEnd.ctx->homRT->GetHeight()));
     int size = Max(backEnd.ctx->homRT->GetWidth(), backEnd.ctx->homRT->GetHeight());
     int maxLevel = Math::Log(2, size) - 1;
@@ -428,15 +418,16 @@ static void RB_QueryOccludeeAABBs(int numAmbientOccludees, const AABB *occludeeA
 
     rhi.SetViewport(Rect(0, 0, backEnd.homCullingOutputRT->GetWidth(), backEnd.homCullingOutputRT->GetHeight()));
     rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-    rhi.SetCullFace(RHI::NoCull);
+    rhi.SetCullFace(RHI::CullType::None);
 
-    rhi.BindBuffer(RHI::VertexBuffer, bufferCacheManager.streamVertexBuffer);
+    rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
     rhi.BufferDiscardWrite(bufferCacheManager.streamVertexBuffer, numAmbientOccludees * sizeof(occludeeBuffer[0]), occludeeBuffer);
 
-    rhi.SetVertexFormat(vertexFormats[VertexFormat::Occludee].vertexFormatHandle);
+    rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::Occludee].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(occludeeBuffer[0]));
-    rhi.DrawArrays(RHI::PointsPrim, 0, numAmbientOccludees);
+    rhi.DrawArrays(RHI::Topology::PointList, 0, numAmbientOccludees);
 
+    backEnd.homCullingOutputRT->Discard(true, true, 0);
     backEnd.homCullingOutputRT->End();
 
     rhi.SetViewport(prevViewportRect);
@@ -444,14 +435,14 @@ static void RB_QueryOccludeeAABBs(int numAmbientOccludees, const AABB *occludeeA
     backEnd.ctx->renderCounter.homQueryMsec = PlatformTime::Milliseconds() - startTime;
 }
 
-static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occludeeSurfIndexes, int numDrawSurfs, DrawSurf **drawSurfs) {	
+static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occludeeSurfIndexes, int numDrawSurfs, DrawSurf **drawSurfs) {
     int startTime = PlatformTime::Milliseconds();
 
     // write back for visibility information to each surf
     int size = backEnd.homCullingOutputTexture->MemRequired(false);
     byte *visibilityBuffer = (byte *)_alloca(size);
     backEnd.homCullingOutputTexture->Bind();
-    backEnd.homCullingOutputTexture->GetTexels2D(Image::RGBA_8_8_8_8, visibilityBuffer);
+    backEnd.homCullingOutputTexture->GetTexels2D(0, Image::Format::RGBA_8_8_8_8, visibilityBuffer);
     byte *visibilityPtr = visibilityBuffer;
 
     for (int i = 0; i < numAmbientOccludees; i++) {
@@ -459,11 +450,11 @@ static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occlud
         DrawSurf *surf = drawSurfs[index];
 
         if (visibilityPtr[2] == 0) {
-            const VisibleObject *space = surf->space;
+            const VisObject *space = surf->space;
 
-            surf->flags &= ~DrawSurf::AmbientVisible;
+            surf->flags &= ~DrawSurf::Flag::Visible;
 
-            if (space->def->state.joints) {
+            if (space->def->GetState().joints) {
                 int sameEntityIndex = index + 1;
                 while (sameEntityIndex < numDrawSurfs) {
                     surf = drawSurfs[sameEntityIndex];
@@ -471,7 +462,7 @@ static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occlud
                         break;
                     }
 
-                    surf->flags &= ~DrawSurf::AmbientVisible;
+                    surf->flags &= ~DrawSurf::Flag::Visible;
                     sameEntityIndex++;
                 }
             }
@@ -483,35 +474,32 @@ static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occlud
 }
 
 static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
-    const VisibleObject *prevSpace = nullptr;
+    const VisObject *prevSpace = nullptr;
 
     // count ambient occludees for culling
     AABB *occludeeAABB = (AABB *)_alloca(numDrawSurfs * sizeof(AABB));
     int *occludeeSurfIndexes = (int *)_alloca(numDrawSurfs * sizeof(int));
     int numAmbientOccludees = 0;
 
-    Plane nearPlane = backEnd.view->def->frustumPlanes[0];
+    Plane nearPlane = backEnd.camera->def->GetFrustumPlane(0);
     nearPlane.Normalize();
-    nearPlane.TranslateSelf(backEnd.view->def->state.origin);
+    nearPlane.TranslateSelf(backEnd.camera->def->GetState().origin);
     
     for (int i = 0; i < numDrawSurfs; i++) {
         const DrawSurf *surf = drawSurfs[i];
-        if (!(surf->flags & DrawSurf::AmbientVisible)) {
-            continue;
-        }
 
-        const VisibleObject *space = surf->space;
+        const VisObject *space = surf->space;
 
-        if (space->def->state.joints) {
+        if (space->def->GetState().joints) {
             if (space == prevSpace) {
                 continue;
             }
-            occludeeAABB[numAmbientOccludees].SetFromTransformedAABB(space->def->GetLocalAABB(), space->def->state.origin, space->def->state.axis);
-        } else {	
-            occludeeAABB[numAmbientOccludees].SetFromTransformedAABB(surf->subMesh->GetAABB() * space->def->state.scale, space->def->state.origin, space->def->state.axis);
+            occludeeAABB[numAmbientOccludees] = space->def->GetWorldAABB();
+        } else {
+            occludeeAABB[numAmbientOccludees].SetFromTransformedAABBFast(surf->subMesh->GetAABB(), space->def->GetWorldMatrix());
         }
         
-        //BE_LOG(L"%.2f %.2f %.2f %.2f\n", nearPlane.a, nearPlane.b, nearPlane.c, nearPlane.d);
+        //BE_LOG("%.2f %.2f %.2f %.2f\n", nearPlane.a, nearPlane.b, nearPlane.c, nearPlane.d);
         if (occludeeAABB[numAmbientOccludees].PlaneSide(nearPlane) != Plane::Side::Back) {
             continue;
         }
@@ -531,321 +519,83 @@ static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
     RB_MarkOccludeeVisibility(numAmbientOccludees, occludeeSurfIndexes, numDrawSurfs, drawSurfs);
 }
 
+static void RB_HiOcclusionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
+    if (!r_HOM.GetBool()) {
+        return;
+    }
+
+    if (backEnd.camera->def->GetState().clearMethod != RenderCamera::ClearMethod::Color || 
+        backEnd.camera->def->GetState().clearMethod != RenderCamera::ClearMethod::Skybox) {
+        return;
+    }
+
+    // Render occluder to HiZ occlusion buffer
+    RB_RenderOcclusionMap(backEnd.numAmbientSurfs, backEnd.drawSurfs);
+
+    // Generate depth hierarchy
+    RB_GenerateOcclusionMapHierarchy();
+
+    // Test all the ambient occludee's AABB using HiZ occlusion buffer
+    RB_TestOccludeeBounds(backEnd.numAmbientSurfs, backEnd.drawSurfs);
+}
+
 static void RB_ClearView() {
     int clearBits = 0;
-    
-    if (backEnd.view->def->state.clearMethod == RenderView::DepthOnlyClear || 
-        backEnd.view->def->state.clearMethod == RenderView::SkyboxClear) {
-        clearBits = RHI::DepthBit | RHI::StencilBit;
+
+    if (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::DepthOnly || 
+        backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Skybox) {
+        clearBits = RHI::ClearBit::Depth | RHI::ClearBit::Stencil;
 
         rhi.SetStateBits(rhi.GetStateBits() | RHI::DepthWrite);
         rhi.Clear(clearBits, Color4::black, 1.0f, 0);
-    } else if (backEnd.view->def->state.clearMethod == RenderView::ColorClear) {
-        clearBits = RHI::DepthBit | RHI::StencilBit | RHI::ColorBit;
-        Color4 clearColor = backEnd.view->def->state.clearColor;
+    } else if (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Color) {
+        clearBits = RHI::ClearBit::Depth | RHI::ClearBit::Stencil | RHI::ClearBit::Color;
+        Color4 clearColor = backEnd.camera->def->GetState().clearColor;
 
         rhi.SetStateBits(rhi.GetStateBits() | RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
         rhi.Clear(clearBits, clearColor, 1.0f, 0);
     }
 }
 
-// FIXME: subview 일 경우를 생각
-static void RB_DrawView() {
-    if (backEnd.ctx->flags & RenderContext::UseSelectionBuffer) {
-        backEnd.ctx->screenSelectionRT->Begin();
+static void RB_RenderView() {
+    if (backEnd.camera->def->GetState().flags & RenderCamera::Flag::TexturedMode) {
+        // Render pass for HiZ occlusion culling.
+        RB_HiOcclusionPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
-        float scaleX = (float)backEnd.ctx->screenSelectionRT->GetWidth() / backEnd.ctx->screenRT->GetWidth();
-        float scaleY = (float)backEnd.ctx->screenSelectionRT->GetHeight() / backEnd.ctx->screenRT->GetHeight();
+        // Render opaque/perforated surface to depth buffer fast for early-z culling ([depth] + unlit + [normal])
+        RB_DepthPrePass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
-        Rect renderRect;
-        renderRect.x = backEnd.renderRect.x * scaleX;
-        renderRect.y = backEnd.renderRect.y * scaleY;
-        renderRect.w = backEnd.renderRect.w * scaleX;
-        renderRect.h = backEnd.renderRect.h * scaleY;
+        // Render all solid (non-translucent) geometry ([depth] + base + [primary lit])
+        RB_ForwardBasePass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
-        rhi.SetViewport(renderRect);
-        rhi.SetScissor(renderRect);
-        rhi.SetDepthRange(0, 1);
-        rhi.SetStateBits(RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
-        rhi.Clear(RHI::ColorBit | RHI::DepthBit, Color4::white, 1.0f, 0);
+        // Render all shadow and light interaction.
+        RB_ForwardAdditivePass(backEnd.visLights);
 
-        RB_SelectionPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
+        // Render any stage with blend surfaces.
+        RB_BlendPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
-        backEnd.ctx->screenSelectionRT->End();
-    }
+        // Render to velocity map.
+        RB_VelocityMapPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
-    backEnd.ctx->screenRT->Begin();
+        // Render no lighting interaction surfaces.
+        RB_FinalPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
-    rhi.SetViewport(backEnd.renderRect);
-    rhi.SetScissor(backEnd.renderRect);
-    rhi.SetDepthRange(0, 1);
-
-    RB_ClearView();
-
-    if (backEnd.view->def->state.flags & RenderView::TexturedMode) {
-        if (r_HOM.GetBool()) {
-            // Render occluder to HiZ occlusion buffer
-            RB_RenderOcclusionMap(backEnd.numAmbientSurfs, backEnd.drawSurfs);
-
-            // Generate depth hierarchy
-            RB_GenerateOcclusionMapHierarchy();
-
-            // Test all the ambient occludee's AABB using HiZ occlusion buffer
-            RB_TestOccludeeBounds(backEnd.numAmbientSurfs, backEnd.drawSurfs);
-        }
-
-        // Render depth only first for early-z culling
-        if (r_useDepthPrePass.GetBool()) {
-            RB_DepthPrePass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
-        }
-
-        // Render all solid (non-translucent) geometry (depth + ambient + [primary lit])
-        if (!r_skipAmbientPass.GetBool()) {
-            RB_ForwardBasePass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
-        }
-
-        // depth buffer 와 관련된 post processing 을 먼저 한다
-        if (!(backEnd.view->def->state.flags & RenderView::SkipPostProcess) && r_usePostProcessing.GetBool()) {
-            RB_PostProcessDepth();
-        }
-
-        // Render all shadow and light interaction
-        if (!r_skipShadowAndLitPass.GetBool()) {
-            RB_ForwardAdditivePass(backEnd.visLights);
-        }
-
-        // Render wireframe for option
+        // Render wireframe for option.
         RB_DrawTris(backEnd.numAmbientSurfs, backEnd.drawSurfs, false);
-
-        // Render any stage with unlit surfaces
-        if (!r_skipBlendPass.GetBool()) {
-            RB_UnlitPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
-        }
-
-        // Render to velocity map
-        if (!(backEnd.view->def->state.flags & RenderView::SkipPostProcess) && r_usePostProcessing.GetBool() && (r_motionBlur.GetInteger() & 2)) {
-            RB_VelocityMapPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
-        }
-
-        // Render no lighting interaction surfaces
-        if (!r_skipFinalPass.GetBool()) {
-            RB_FinalPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
-        }
     }
 
-    if (backEnd.view->def->state.flags & RenderView::WireFrameMode) {
-        if (!(backEnd.view->def->state.flags & RenderView::TexturedMode)) {
+    if (backEnd.camera->def->GetState().flags & RenderCamera::Flag::WireFrameMode) {
+        if (!(backEnd.camera->def->GetState().flags & RenderCamera::Flag::TexturedMode)) {
             RB_BackgroundPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
         }
 
-        // Render wireframes
+        // Render wireframes.
         RB_DrawTris(backEnd.numAmbientSurfs, backEnd.drawSurfs, true);
     }
 
-    // Render debug tools
-    if (!(backEnd.view->def->state.flags & RenderView::SkipDebugDraw)) {
-        RB_DebugPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
-    }
-
-    backEnd.ctx->screenRT->End();
-
-    // Post process & upscale
-    Rect upscaleRect = backEnd.renderRect;
-    upscaleRect.x = Math::Rint(upscaleRect.x * backEnd.upscaleFactor.x);
-    upscaleRect.y = Math::Rint(upscaleRect.y * backEnd.upscaleFactor.y);
-    upscaleRect.w = Math::Rint(upscaleRect.w * backEnd.upscaleFactor.x);
-    upscaleRect.h = Math::Rint(upscaleRect.h * backEnd.upscaleFactor.y);
-
-    rhi.SetViewport(upscaleRect);
-    rhi.SetScissor(upscaleRect);
-
-    if (!(backEnd.view->def->state.flags & RenderView::SkipPostProcess) && r_usePostProcessing.GetBool()) {
-        RB_PostProcess();
-    } else {
-        rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
-        rhi.SetCullFace(RHI::NoCull);
-
-        const Shader *shader = ShaderManager::postPassThruShader;
-
-        shader->Bind();
-        shader->SetTexture("tex0", backEnd.ctx->screenRT->ColorTexture());
-
-        float screenTc[4];
-        screenTc[0] = (float)backEnd.renderRect.x / backEnd.ctx->screenRT->GetWidth();
-        screenTc[1] = (float)backEnd.renderRect.y / backEnd.ctx->screenRT->GetHeight();
-        screenTc[2] = screenTc[0] + (float)backEnd.renderRect.w / backEnd.ctx->screenRT->GetWidth();
-        screenTc[3] = screenTc[1] + (float)backEnd.renderRect.h / backEnd.ctx->screenRT->GetHeight();
-
-        RB_DrawClipRect(screenTc[0], screenTc[1], screenTc[2], screenTc[3]);
-    }
-
-    backEnd.viewMatrixPrev = backEnd.view->def->viewMatrix;
-
-    rhi.SetScissor(Rect::empty);
-}
-
-static void RB_Draw2DView() {
-    if (!backEnd.numDrawSurfs) {
-        return;
-    }
-    
-    rhi.SetViewport(backEnd.screenRect);
-    rhi.SetScissor(backEnd.screenRect);
-    rhi.SetDepthRange(0, 0);
-    
-    RB_GuiPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
-
-    rhi.SetScissor(Rect::empty);
-}
-
-static const void *RB_ExecuteDrawView(const void *data) {
-    DrawViewRenderCommand *cmd = (DrawViewRenderCommand *)data;
-
-    backEnd.view            = &cmd->view;
-    backEnd.time            = MS2SEC(cmd->view.def->state.time);
-    backEnd.visObjects      = &cmd->view.visObjects;
-    backEnd.visLights       = &cmd->view.visLights;
-    backEnd.primaryLight    = cmd->view.primaryLight;
-    backEnd.numDrawSurfs    = cmd->view.numDrawSurfs;
-    backEnd.numAmbientSurfs = cmd->view.numAmbientSurfs;
-    backEnd.drawSurfs       = cmd->view.drawSurfs;
-    backEnd.instanceBufferCache = cmd->view.instanceBufferCache;
-    backEnd.projMatrix      = cmd->view.def->projMatrix;
-    backEnd.viewProjMatrix  = cmd->view.def->viewProjMatrix;
-    backEnd.renderRect      = cmd->view.def->state.renderRect;
-    backEnd.upscaleFactor   = Vec2(backEnd.ctx->GetUpscaleFactorX(), backEnd.ctx->GetUpscaleFactorY());
-
-    backEnd.screenRect.Set(0, 0, backEnd.ctx->GetDeviceWidth(), backEnd.ctx->GetDeviceHeight());
-
-    // NOTE: glViewport() 의 y 는 밑에서부터 증가되므로 여기서 뒤집어 준다
-    backEnd.renderRect.y    = backEnd.ctx->GetRenderingHeight() - backEnd.renderRect.Y2();
-    backEnd.screenRect.y    = backEnd.ctx->GetDeviceHeight() - backEnd.screenRect.Y2();
-    
-    if (backEnd.view->is2D) {
-        RB_Draw2DView();
-    } else {
-        RB_DrawView();
-    }
-
-    return (const void *)(cmd + 1);
-}
-
-static const void *RB_ExecuteScreenshot(const void *data) {
-    ScreenShotRenderCommand *cmd = (ScreenShotRenderCommand *)data;
-
-    Rect captureRect(cmd->x, cmd->y, cmd->width, cmd->height);
-    captureRect.y = backEnd.ctx->GetDeviceHeight() - captureRect.Y2();
-
-    if (captureRect.X2() > backEnd.ctx->GetDeviceWidth() || captureRect.Y2() > backEnd.ctx->GetDeviceHeight()) {
-        BE_WARNLOG(L"larger than screen size: %i, %i, %i, %i\n", cmd->x, cmd->y, cmd->width, cmd->height);
-    }
-    
-    Image screenImage;
-    screenImage.Create2D(captureRect.w, captureRect.h, 1, Image::BGR_8_8_8, nullptr, 0);
-    rhi.ReadPixels(captureRect.x, captureRect.y, captureRect.w, captureRect.h, Image::BGR_8_8_8, screenImage.GetPixels());
-    screenImage.FlipY();
-
-    // apply gamma ramp table
-    if (r_gamma.GetFloat() != 1.0) {
-        unsigned short ramp[768];
-        rhi.GetGammaRamp(ramp);
-        screenImage.GammaCorrectRGB888(ramp);
-    }
-
-    Str filename = cmd->filename;
-    filename.DefaultFileExtension(".png");
-
-    screenImage.Write(filename);
-/*
-    int sw = (cmd->width + 15) & ~15;
-    int sh = (cmd->height + 15) & ~15;
-
-    byte *temp = (byte *)Mem_Alloc16(sw * sh * 3);
-    byte *temp2 = (byte *)Mem_Alloc16(sw * sh * 3);
-
-    simdProcessor->Memset(temp2, 0, sw * sh * 3);
-
-    Image_Scale(src, cmd->width, cmd->height, temp, sw, sh, Image::BGRA_8_8_8_8, Image::BicubicFilter);
-    Image_Write("ycocgtest0.tga", temp, sw, sh, Image::BGRA_8_8_8_8);
-
-    int YCoCgSize = 3 * sw * sh;
-    short *YCoCg = (short *)Mem_Alloc16(YCoCgSize);
-
-    int wblocks = sw >> 4;
-    int hblocks = sh >> 4;
-    
-    for (int j = 0; j < hblocks; j++) {
-        for (int i = 0; i < wblocks; i++) {
-            simdProcessor->RGBToYCoCg(temp + 16 * 3 * (j * sw + i), sw * 3, YCoCg + 384 * (j * wblocks + i));
-            simdProcessor->YCoCgToRGB(YCoCg + 384 * (j * wblocks + i), temp2 + 16 * 3 * (j * sw + i), sw * 3);
-        }
-    }
-    
-    Image_Write("ycocgtest1.tga", temp2, sw, sh, Image::BGRA_8_8_8_8);
-
-    Mem_Free16(YCoCg);
-    Mem_Free16(temp);
-    Mem_Free16(temp2);*/
-
-    return (const void *)(cmd + 1);
-}
-
-void RB_DrawDebugTextures() {
-    int start = 0;
-    int end = textureManager.textureHashMap.Count();
-    
-    float w = 40.0f;
-    float h = 40.0f;
-
-    backEnd.ctx->AdjustFrom640x480(nullptr, nullptr, &w, &h);
-
-    int x = 0;
-    int y = 0;
-
-    rhi.SetStateBits(RHI::ColorWrite | RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha);	
-    
-    for (int i = start; i < end; i++) {
-        const auto *entry = textureManager.textureHashMap.GetByIndex(i);
-        Texture *texture = entry->second;
-
-        if (!texture) {
-            continue;
-        }
-
-        if (texture->GetType() == RHI::TextureBuffer || texture->GetType() == RHI::Texture2DArray) {
-            // do nothing
-        } else {
-            const Shader *shader = ShaderManager::postPassThruShader;
-
-            shader->Bind();
-            shader->SetTexture("tex0", texture);
-
-            if (texture->GetFlags() & Texture::Shadow) {
-                texture->Bind();
-                rhi.SetTextureShadowFunc(false);
-            }
-
-            if (texture->GetType() == RHI::TextureRectangle) {
-                RB_DrawScreenRect(x, y, w, h, 0.0f, 0.0f, texture->GetWidth(), texture->GetHeight());
-            } else {
-                RB_DrawScreenRect(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f);
-            }
-
-            if (texture->GetFlags() & Texture::Shadow) {
-                rhi.SetTextureShadowFunc(true);
-            }
-        }
-
-        x += w;
-
-        if ((int)(x + w) > backEnd.ctx->GetDeviceWidth()) {
-            x = 0.0f;
-            y += h;
-        }
-
-        if (y > backEnd.ctx->GetDeviceHeight()) {
-            break;
-        }
+    // Render debug surfaces.
+    if (!(backEnd.camera->def->GetState().flags & RenderCamera::Flag::SkipDebugDraw)) {
+        RB_DebugToolsPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
     }
 }
 
@@ -897,7 +647,7 @@ static void RB_DrawDebugShadowMap() {
         rhi.SetTextureShadowFunc(false);
 
         const Shader *shader = ShaderManager::postPassThruShader;
-        
+
         shader->Bind();
         shader->SetTexture("tex0", shadowTexture);
 
@@ -932,29 +682,29 @@ void RB_DrawRenderTargetTexture() {
     }
 
     rhi.SetStateBits(RHI::ColorWrite);
-    
+
     int index = r_showRenderTarget.GetInteger() - 1;
     if (index < RenderTarget::rts.Count()) {
         const RenderTarget *rt = RenderTarget::rts[index];
         if (rt && rt->ColorTexture()) {
             const Shader *shader = ShaderManager::postPassThruShader;
-            
+
             shader->Bind();
             shader->SetTexture("tex0", rt->ColorTexture());
-            
+
             RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
         }
     }
 }
 
 void RB_DrawDebugHdrMap() {
-    int space = 10;
+    int space = 16;
 
     float x = space;
-    float y = 100.0f + space;
+    float y = space;
 
-    float w = 100.0f;
-    float h = 100.0f;
+    float w = 128.0f;
+    float h = 128.0f;
 
     rhi.SetStateBits(RHI::ColorWrite);
 
@@ -962,15 +712,15 @@ void RB_DrawDebugHdrMap() {
 
     shader->Bind();
     shader->SetTexture("tex0", backEnd.ctx->screenColorTexture);
-            
+
     RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
-    
+
     x += w + space;
 
     for (int i = 0; i < COUNT_OF(backEnd.ctx->hdrBloomTexture); i++) {
         shader->Bind();
         shader->SetTexture("tex0", backEnd.ctx->hdrBloomTexture[i]);
-            
+
         RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
 
         x += w + space;
@@ -986,16 +736,22 @@ void RB_DrawDebugHdrMap() {
 
         shader->Bind();
         shader->SetTexture("tex0", backEnd.ctx->hdrLumAverageTexture[i]);
-            
+
         RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
 
         x += w + space;
     }
 
+    y += h + space;
+    x = space;
+
+    w = 32;
+    h = 32;
+
     for (int i = 0; i < COUNT_OF(backEnd.ctx->hdrLuminanceTexture); i++) {
         shader->Bind();
         shader->SetTexture("tex0", backEnd.ctx->hdrLuminanceTexture[i]);
-            
+
         RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
 
         x += w + space;
@@ -1021,10 +777,10 @@ static void RB_DrawDebugHOMap() {
         rhi.SetTextureLevel(i, i);
 
         const Shader *shader = ShaderManager::postPassThruShader;
-        
+
         shader->Bind();
         shader->SetTexture("tex0", backEnd.ctx->homRT->DepthStencilTexture());
-        //shader->SetConstant2f("depthRange", Vec2(backEnd.view->zNear, backEnd.view->zFar));
+        //shader->SetConstant2f("depthRange", Vec2(backEnd.camera->zNear, backEnd.camera->zFar));
 
         RB_DrawScreenRect(x, y, w, h, 0.0f, 1.0f, 1.0f, 0.0f);
 
@@ -1035,16 +791,247 @@ static void RB_DrawDebugHOMap() {
     rhi.SetTextureLevel(0, numLevels);
 }
 
+void RB_DrawDebugTextures() {
+    int start = 0;
+    int end = textureManager.textureHashMap.Count();
+    
+    float w = 40.0f;
+    float h = 40.0f;
+    
+    backEnd.ctx->AdjustFrom640x480(nullptr, nullptr, &w, &h);
+    
+    int x = 0;
+    int y = 0;
+    
+    rhi.SetStateBits(RHI::ColorWrite | RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha);
+    
+    for (int i = start; i < end; i++) {
+        const auto *entry = textureManager.textureHashMap.GetByIndex(i);
+        Texture *texture = entry->second;
+        
+        if (!texture) {
+            continue;
+        }
+        
+        if (texture->GetType() == RHI::TextureType::Texture2D || texture->GetType() == RHI::TextureType::TextureRectangle) {
+            const Shader *shader = ShaderManager::postPassThruShader;
+            
+            shader->Bind();
+            shader->SetTexture("tex0", texture);
+            
+            if (texture->GetFlags() & Texture::Flag::Shadow) {
+                texture->Bind();
+                rhi.SetTextureShadowFunc(false);
+            }
+            
+            if (texture->GetType() == RHI::TextureType::TextureRectangle) {
+                RB_DrawScreenRect(x, y, w, h, 0.0f, 0.0f, texture->GetWidth(), texture->GetHeight());
+            } else {
+                RB_DrawScreenRect(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f);
+            }
+            
+            if (texture->GetFlags() & Texture::Flag::Shadow) {
+                rhi.SetTextureShadowFunc(true);
+            }
+        }
+        
+        x += w;
+        
+        if ((int)(x + w) > backEnd.ctx->GetDeviceWidth()) {
+            x = 0.0f;
+            y += h;
+        }
+        
+        if (y > backEnd.ctx->GetDeviceHeight()) {
+            break;
+        }
+    }
+}
+
+// FIXME: Consider this view is sub camera
+static void RB_DrawCamera3D() {
+    BE_PROFILE_CPU_SCOPE("RB_DrawCamera3D", Color3::red);
+
+    if (backEnd.ctx->flags & RenderContext::Flag::UseSelectionBuffer) {
+        backEnd.ctx->screenSelectionRT->Begin();
+
+        float scaleX = (float)backEnd.ctx->screenSelectionRT->GetWidth() / backEnd.ctx->screenRT->GetWidth();
+        float scaleY = (float)backEnd.ctx->screenSelectionRT->GetHeight() / backEnd.ctx->screenRT->GetHeight();
+
+        Rect renderRect;
+        renderRect.x = backEnd.renderRect.x * scaleX;
+        renderRect.y = backEnd.renderRect.y * scaleY;
+        renderRect.w = backEnd.renderRect.w * scaleX;
+        renderRect.h = backEnd.renderRect.h * scaleY;
+
+        rhi.SetViewport(renderRect);
+        rhi.SetDepthRange(0, 1);
+
+        rhi.SetScissor(Rect::empty);
+
+        rhi.SetStateBits(RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
+        rhi.Clear(RHI::ClearBit::Color | RHI::ClearBit::Depth, Color4::white, 1.0f, 0);
+
+        RB_SelectionPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
+
+        backEnd.ctx->screenSelectionRT->Discard(true, true, 0);
+        backEnd.ctx->screenSelectionRT->End();
+    }
+
+    Rect upscaledRenderRect;
+    upscaledRenderRect.x = Math::Rint(backEnd.renderRect.x * backEnd.upscaleFactor.x);
+    upscaledRenderRect.y = Math::Rint(backEnd.renderRect.y * backEnd.upscaleFactor.y);
+    upscaledRenderRect.w = Math::Rint(backEnd.renderRect.w * backEnd.upscaleFactor.x);
+    upscaledRenderRect.h = Math::Rint(backEnd.renderRect.h * backEnd.upscaleFactor.y);
+
+    if (!(backEnd.camera->def->GetState().flags & RenderCamera::Flag::SkipPostProcess) && r_usePostProcessing.GetBool()) {
+        backEnd.ctx->screenRT->Begin();
+
+        rhi.SetViewport(backEnd.renderRect);
+        rhi.SetDepthRange(0, 1);
+
+        rhi.SetScissor(Rect::empty);
+
+        RB_ClearView();
+
+        RB_RenderView();
+
+        backEnd.ctx->screenRT->Discard(true, true, 0);
+        backEnd.ctx->screenRT->End();
+
+        rhi.SetViewport(upscaledRenderRect);
+        rhi.SetScissor(upscaledRenderRect);
+
+        RB_PostProcess();
+    } else {
+        rhi.SetViewport(upscaledRenderRect);
+        rhi.SetDepthRange(0, 1);
+
+        rhi.SetScissor(Rect::empty);
+
+        RB_ClearView();
+
+        RB_RenderView();
+    }
+}
+
+static void RB_DrawCamera2D() {
+    BE_PROFILE_CPU_SCOPE("RB_DrawCamera2D", Color3::blue);
+
+    if (!backEnd.numDrawSurfs) {
+        return;
+    }
+    
+    rhi.SetViewport(backEnd.renderRect);
+    rhi.SetDepthRange(0, 0);
+    rhi.SetScissor(backEnd.renderRect);
+    
+    RB_GuiPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
+
+    rhi.SetScissor(Rect::empty);
+}
+
+static const void *RB_ExecuteDrawCamera(const void *data) {
+    DrawCameraRenderCommand *cmd = (DrawCameraRenderCommand *)data;
+
+    backEnd.camera              = &cmd->camera;
+    backEnd.time                = MS2SEC(cmd->camera.def->GetState().time);
+    backEnd.visObjects          = &cmd->camera.visObjects;
+    backEnd.visLights           = &cmd->camera.visLights;
+    backEnd.primaryLight        = cmd->camera.primaryLight;
+    backEnd.numDrawSurfs        = cmd->camera.numDrawSurfs;
+    backEnd.numAmbientSurfs     = cmd->camera.numAmbientSurfs;
+    backEnd.drawSurfs           = cmd->camera.drawSurfs;
+    backEnd.instanceBufferCache = cmd->camera.instanceBufferCache;
+    backEnd.projMatrix          = cmd->camera.def->GetProjMatrix();
+    backEnd.viewMatrix          = cmd->camera.def->GetViewMatrix();
+    backEnd.viewProjMatrix      = cmd->camera.def->GetViewProjMatrix();
+    backEnd.renderRect          = cmd->camera.def->GetState().renderRect;
+    backEnd.upscaleFactor       = Vec2(backEnd.ctx->GetUpscaleFactorX(), backEnd.ctx->GetUpscaleFactorY());
+    backEnd.useDepthPrePass     = r_useDepthPrePass.GetBool() &&
+        (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Color || backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Skybox);
+
+    if (backEnd.camera->is2D) {
+        RB_DrawCamera2D();
+    } else {
+        RB_DrawCamera3D();
+    }
+
+    backEnd.viewMatrixPrev = backEnd.camera->def->GetViewMatrix();
+
+    return (const void *)(cmd + 1);
+}
+
+static const void *RB_ExecuteScreenshot(const void *data) {
+    ScreenShotRenderCommand *cmd = (ScreenShotRenderCommand *)data;
+
+    Rect captureRect(cmd->x, cmd->y, cmd->width, cmd->height);
+    captureRect.y = backEnd.ctx->GetDeviceHeight() - captureRect.Y2();
+
+    if (captureRect.X2() > backEnd.ctx->GetDeviceWidth() || captureRect.Y2() > backEnd.ctx->GetDeviceHeight()) {
+        BE_WARNLOG("larger than screen size: %i, %i, %i, %i\n", cmd->x, cmd->y, cmd->width, cmd->height);
+    }
+    
+    Image screenImage;
+    screenImage.Create2D(captureRect.w, captureRect.h, 1, Image::Format::BGR_8_8_8, nullptr, 0);
+    rhi.ReadPixels(captureRect.x, captureRect.y, captureRect.w, captureRect.h, Image::Format::BGR_8_8_8, screenImage.GetPixels());
+    screenImage.FlipY();
+
+    // Apply gamma ramp table
+    if (r_gamma.GetFloat() != 1.0) {
+        uint16_t ramp[768];
+        rhi.GetGammaRamp(ramp);
+        screenImage.ApplyGammaRampRGB888(ramp);
+    }
+
+    Str filename = cmd->filename;
+    filename.DefaultFileExtension(".png");
+
+    screenImage.Write(filename);
+/*
+    int sw = (cmd->width + 15) & ~15;
+    int sh = (cmd->height + 15) & ~15;
+
+    byte *temp = (byte *)Mem_Alloc16(sw * sh * 3);
+    byte *temp2 = (byte *)Mem_Alloc16(sw * sh * 3);
+
+    simdProcessor->Memset(temp2, 0, sw * sh * 3);
+
+    Image_Scale(src, cmd->width, cmd->height, temp, sw, sh, Image::BGRA_8_8_8_8, Image::BicubicFilter);
+    Image_Write("ycocgtest0.tga", temp, sw, sh, Image::BGRA_8_8_8_8);
+
+    int YCoCgSize = 3 * sw * sh;
+    short *YCoCg = (short *)Mem_Alloc16(YCoCgSize);
+
+    int wblocks = sw >> 4;
+    int hblocks = sh >> 4;
+    
+    for (int j = 0; j < hblocks; j++) {
+        for (int i = 0; i < wblocks; i++) {
+            simdProcessor->RGBToYCoCg(temp + 16 * 3 * (j * sw + i), sw * 3, YCoCg + 384 * (j * wblocks + i));
+            simdProcessor->YCoCgToRGB(YCoCg + 384 * (j * wblocks + i), temp2 + 16 * 3 * (j * sw + i), sw * 3);
+        }
+    }
+    
+    Image_Write("ycocgtest1.tga", temp2, sw, sh, Image::BGRA_8_8_8_8);
+
+    Mem_Free16(YCoCg);
+    Mem_Free16(temp);
+    Mem_Free16(temp2);*/
+
+    return (const void *)(cmd + 1);
+}
+
 static const void *RB_ExecuteSwapBuffers(const void *data) {
     SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)data;
 
-    // Draw redundant surfaces
-    backEnd.batch.Flush();
+    Rect deviceRect(0, 0, backEnd.ctx->GetDeviceWidth(), backEnd.ctx->GetDeviceHeight());
 
-    rhi.SetViewport(backEnd.screenRect);
-    rhi.SetScissor(backEnd.screenRect);
+    rhi.SetViewport(deviceRect);
     rhi.SetDepthRange(0, 0);
-    rhi.SetCullFace(RHI::NoCull);
+
+    rhi.SetScissor(deviceRect);
+    rhi.SetCullFace(RHI::CullType::None);
 
     if (r_showTextures.GetInteger() > 0) {
         RB_DrawDebugTextures();
@@ -1066,35 +1053,39 @@ static const void *RB_ExecuteSwapBuffers(const void *data) {
         RB_DrawDebugHOMap();
     }
 
+    rhi.SetScissor(Rect::empty);
+
     rhi.SwapBuffers();
     
     return (const void *)(cmd + 1);
 }
 
 void RB_Execute(const void *data) {
+    BE_PROFILE_CPU_SCOPE("RB_Execute", Color3::green);
+
     int t1, t2;
 
     t1 = PlatformTime::Milliseconds();
 
     backEnd.batch.SetCurrentLight(nullptr);
-    backEnd.batch.Begin(Batch::FinalFlush, nullptr, nullptr, nullptr);
+    backEnd.batch.Begin(Batch::Flush::Final, nullptr, nullptr, nullptr);
     
     while (1) {
         int cmd = *(const int *)data;
         switch (cmd) {
-        case BeginContextCommand:
+        case RenderCommand::BeginContext:
             data = RB_ExecuteBeginContext(data);
             continue;
-        case DrawViewCommand:
-            data = RB_ExecuteDrawView(data);
+        case RenderCommand::DrawCamera:
+            data = RB_ExecuteDrawCamera(data);
             continue;
-        case ScreenShotCommand:
+        case RenderCommand::ScreenShot:
             data = RB_ExecuteScreenshot(data);
             continue;
-        case SwapBuffersCommand:
+        case RenderCommand::SwapBuffers:
             data = RB_ExecuteSwapBuffers(data);
             continue;
-        case EndOfCommand:
+        case RenderCommand::End:
             t2 = PlatformTime::Milliseconds();
             backEnd.ctx->renderCounter.backEndMsec = t2 - t1;
             return;

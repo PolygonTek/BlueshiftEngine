@@ -23,7 +23,7 @@ class BE_API PlatformAppleTime : public PlatformPosixTime {
 public:
     static void             Init();
 
-    static float            Seconds();
+    static double           Seconds();
 
     static uint64_t         Cycles();
 };

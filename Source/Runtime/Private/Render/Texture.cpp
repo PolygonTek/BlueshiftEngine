@@ -18,8 +18,12 @@
 
 BE_NAMESPACE_BEGIN
 
-static const char   cubemap_postfix[6][3] = { "px", "nx", "py", "ny", "pz", "nz" };
-static const char   camera_cubemap_postfix[6][8] = { "rt", "lf", "up", "dn", "ft", "bk" };
+static constexpr char   cubemap_postfix[6][3] = { "px", "nx", "py", "ny", "pz", "nz" };
+static constexpr char   camera_cubemap_postfix[6][8] = { "rt", "lf", "up", "dn", "ft", "bk" };
+
+bool Texture::IsDefaultTexture() const {
+    return this == textureManager.defaultTexture;
+}
 
 int Texture::MemRequired(bool includingMipmaps) const {
     int numMipmaps = includingMipmaps ? Image::MaxMipMapLevels(width, height, depth) : 1;
@@ -27,7 +31,7 @@ int Texture::MemRequired(bool includingMipmaps) const {
     return size;
 }
 
-void Texture::Create(RHI::TextureType type, const Image &srcImage, int flags) {
+void Texture::Create(RHI::TextureType::Enum type, const Image &srcImage, int flags) {
     Purge();
 
     this->type = type;
@@ -43,7 +47,7 @@ void Texture::Create(RHI::TextureType type, const Image &srcImage, int flags) {
     Upload(&srcImage);
 }
 
-void Texture::CreateEmpty(RHI::TextureType type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format format, int flags) {
+void Texture::CreateEmpty(RHI::TextureType::Enum type, int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, int flags) {
     Purge();
 
     this->type = type;
@@ -51,31 +55,31 @@ void Texture::CreateEmpty(RHI::TextureType type, int width, int height, int dept
     this->flags = flags;
 
     Image image;
-    image.InitFromMemory(width, height, depth, type == RHI::TextureCubeMap ? 6 : numSlices, numMipmaps, format, nullptr, 0);
+    image.InitFromMemory(width, height, depth, type == RHI::TextureType::TextureCubeMap ? 6 : numSlices, numMipmaps, format, nullptr, 0);
     Upload(&image);
 }
 
-void Texture::CreateFromBuffer(Image::Format format, RHI::Handle bufferHandle) {
+void Texture::CreateFromBuffer(Image::Format::Enum format, RHI::Handle bufferHandle) {
     Purge();
 
-    this->type = RHI::TextureBuffer;
-    this->textureHandle = rhi.CreateTexture(RHI::TextureBuffer);
+    this->type = RHI::TextureType::TextureBuffer;
+    this->textureHandle = rhi.CreateTexture(RHI::TextureType::TextureBuffer);
     this->flags = 0;
     this->format = format;
 
-    rhi.BindBuffer(RHI::TexelBuffer, bufferHandle);
+    rhi.BindBuffer(RHI::BufferType::Texel, bufferHandle);
 
     rhi.SelectTextureUnit(0);
     rhi.BindTexture(textureHandle);
     rhi.SetTextureImageBuffer(format, false, bufferHandle);
 
-    rhi.BindBuffer(RHI::TexelBuffer, RHI::NullBuffer);
+    rhi.BindBuffer(RHI::BufferType::Texel, RHI::NullBuffer);
 }
 
-// Indirection Cube map : cubic coord -> VCM coord
+// Indirection cubemap : Converts cubic coords to VCM coords
 void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, int flags) {
     Image cubeImage;
-    cubeImage.CreateCube(size, 1, Image::LA_16_16, nullptr, Image::LinearSpaceFlag);
+    cubeImage.CreateCube(size, 1, Image::Format::LA_16_16, nullptr, Image::Flag::LinearSpace);
 
     word *dstPtr = (word *)cubeImage.GetPixels();
 
@@ -90,7 +94,7 @@ void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, in
     // ----------------
     //     vcmWidth
 
-    for (int i = RHI::PositiveX; i <= RHI::NegativeZ; i++) {
+    for (int i = RHI::CubeMapFace::PositiveX; i <= RHI::CubeMapFace::NegativeZ; i++) {
         for (int y = 0; y < size; y++) {
             Vec2 vcmSt;
             vcmSt.y = ((float)y / (float)(size - 1)) * vcmFaceHeight;
@@ -108,7 +112,7 @@ void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, in
         }
     }
 
-    Create(RHI::TextureCubeMap, cubeImage, Clamp | NoMipmaps | HighQuality | flags);
+    Create(RHI::TextureType::TextureCubeMap, cubeImage, Flag::Clamp | Flag::NoMipmaps | Flag::HighQuality | flags);
 }
 
 /*
@@ -121,12 +125,12 @@ void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, in
 
 void Texture::CreateDefaultTexture(int size, int flags) {
     Image image;
-    image.Create2D(size, size, 1, Image::RGB_8_8_8, nullptr, 0);
+    image.Create2D(size, size, 1, Image::Format::RGB_8_8_8, nullptr, 0);
     byte *dst = image.GetPixels();
 
     for (int y = 0; y < size; y++) {
         for (int x = 0; x < size; x++) {
-            if (x == 0 || x == size-1 || y == 0 || y == size-1) {
+            if (x == 0 || x == size - 1 || y == 0 || y == size - 1) {
                 dst[3 * (y*size + x) + 0] = (byte)(0);
                 dst[3 * (y*size + x) + 1] = (byte)(0);
                 dst[3 * (y*size + x) + 2] = (byte)(0);
@@ -138,7 +142,7 @@ void Texture::CreateDefaultTexture(int size, int flags) {
         }
     }
 
-    Create(RHI::Texture2D, image, Texture::HighQuality | flags);
+    Create(RHI::TextureType::Texture2D, image, Texture::Flag::HighQuality | flags);
 }
 
 /*
@@ -151,18 +155,18 @@ void Texture::CreateDefaultTexture(int size, int flags) {
 
 void Texture::CreateZeroClampTexture(int size, int flags) {
     Image image;
-    image.Create2D(size, size, 1, Image::LA_8_8, nullptr, Image::LinearSpaceFlag);
+    image.Create2D(size, size, 1, Image::Format::LA_8_8, nullptr, Image::Flag::LinearSpace);
     byte *dst = image.GetPixels();
 
     for (int y = 0; y < size; y++) {
         for (int x = 0; x < size; x++) {
-            byte c = (byte)((x==0 || x==size-1 || y==0 || y==size-1) ? 0 : 255);
+            byte c = (byte)((x == 0 || x == size - 1 || y == 0 || y == size - 1) ? 0 : 255);
             dst[(y*size + x) * 2 + 0] = c;
             dst[(y*size + x) * 2 + 1] = c;
         }
     }
 
-    Create(RHI::Texture2D, image, Texture::ZeroClamp | Texture::HighQuality | flags);
+    Create(RHI::TextureType::Texture2D, image, Texture::Flag::ZeroClamp | Texture::Flag::HighQuality | flags);
 }
 
 /*
@@ -175,18 +179,18 @@ void Texture::CreateZeroClampTexture(int size, int flags) {
 
 void Texture::CreateFlatNormalTexture(int size, int flags) {
     Image image;
-    image.Create2D(size, size, 1, Image::RGB_8_8_8, nullptr, Image::LinearSpaceFlag);
+    image.Create2D(size, size, 1, Image::Format::RGB_8_8_8, nullptr, Image::Flag::LinearSpace);
     byte *dst = image.GetPixels();
-        
+
     for (int y = 0; y < size; y++) {
         for (int x = 0; x < size; x++) {
-            dst[(y*size + x)*3 + 0] = 127;
-            dst[(y*size + x)*3 + 1] = 127;
-            dst[(y*size + x)*3 + 2] = 255;
+            dst[(y*size + x) * 3 + 0] = 127;
+            dst[(y*size + x) * 3 + 1] = 127;
+            dst[(y*size + x) * 3 + 2] = 255;
         }
     }
 
-    Create(RHI::Texture2D, image, Texture::NormalMap | Texture::NoScaleDown | flags);
+    Create(RHI::TextureType::Texture2D, image, Texture::Flag::NormalMap | Texture::Flag::NoScaleDown | flags);
 }
 
 /*
@@ -199,7 +203,7 @@ void Texture::CreateFlatNormalTexture(int size, int flags) {
 
 void Texture::CreateDefaultCubeMapTexture(int size, int flags) {
     Image image;
-    image.CreateCube(size, 1, Image::L_8, nullptr, 0);
+    image.CreateCube(size, 1, Image::Format::L_8, nullptr, 0);
     byte *dst = image.GetPixels();
 
     int faceSize = image.GetSliceSize();
@@ -207,14 +211,14 @@ void Texture::CreateDefaultCubeMapTexture(int size, int flags) {
     for (int i = 0; i < 6; i++) {
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
-                dst[y*size + x] = (byte)((x==0 || x==size-1 || y==0 || y==size-1) ? 255 : 0);
+                dst[y*size + x] = (byte)((x == 0 || x == size - 1 || y == 0 || y == size - 1) ? 255 : 0);
             }
         }
 
         dst += faceSize;
     }
 
-    Create(RHI::TextureCubeMap, image, Texture::Clamp | Texture::NoCompression | Texture::NoScaleDown | flags);
+    Create(RHI::TextureType::TextureCubeMap, image, Texture::Flag::Clamp | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
 }
 
 /*
@@ -227,7 +231,7 @@ void Texture::CreateDefaultCubeMapTexture(int size, int flags) {
 
 void Texture::CreateBlackCubeMapTexture(int size, int flags) {
     Image image;
-    image.CreateCube(size, 1, Image::L_8, nullptr, 0);
+    image.CreateCube(size, 1, Image::Format::L_8, nullptr, 0);
     byte *dst = image.GetPixels();
 
     int facesize = image.GetSliceSize();
@@ -237,7 +241,7 @@ void Texture::CreateBlackCubeMapTexture(int size, int flags) {
         dst += facesize;
     }
 
-    Create(RHI::TextureCubeMap, image, Texture::Clamp | Texture::NoCompression | Texture::NoScaleDown | flags);
+    Create(RHI::TextureType::TextureCubeMap, image, Texture::Flag::Clamp | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
 }
 
 /*
@@ -250,7 +254,7 @@ void Texture::CreateBlackCubeMapTexture(int size, int flags) {
 
 void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
     Image image;
-    image.CreateCube(size, 1, Image::RGB_8_8_8, nullptr, Image::LinearSpaceFlag);
+    image.CreateCube(size, 1, Image::Format::RGB_8_8_8, nullptr, Image::Flag::LinearSpace);
     byte *dst = image.GetPixels();
 
     int sliceSize = image.GetSliceSize();
@@ -263,7 +267,7 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
                 float s = (x + 0.5f) * invSize;
                 float t = (y + 0.5f) * invSize;
 
-                dir = Image::FaceToCubeMapCoords((Image::CubeMapFace)faceIndex, s, t);
+                dir = Image::FaceToCubeMapCoords((Image::CubeMapFace::Enum)faceIndex, s, t);
                 dir.Normalize();
 
                 // Convert cubemap coordinates from z-up to GL axis
@@ -278,7 +282,7 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
         dst += sliceSize;
     }
 
-    Create(RHI::TextureCubeMap, image, Texture::Clamp | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown | flags);
+    Create(RHI::TextureType::TextureCubeMap, image, Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
 }
 
 /*
@@ -291,7 +295,7 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
 
 void Texture::CreateCubicNormalCubeMapTexture(int size, int flags) {
     char faceNormal[6][3];
-    
+
     faceNormal[0][0] = 127;
     faceNormal[0][1] = 0;
     faceNormal[0][2] = 0;
@@ -317,7 +321,7 @@ void Texture::CreateCubicNormalCubeMapTexture(int size, int flags) {
     faceNormal[5][2] = -128;
 
     Image image;
-    image.CreateCube(size, 1, Image::RGB_SNORM_8_8_8, nullptr, Image::LinearSpaceFlag);
+    image.CreateCube(size, 1, Image::Format::RGB_SNORM_8_8_8, nullptr, Image::Flag::LinearSpace);
     char *dst = (char *)image.GetPixels();
 
     int facesize = image.GetSliceSize();
@@ -334,7 +338,7 @@ void Texture::CreateCubicNormalCubeMapTexture(int size, int flags) {
         dst += facesize;
     }
 
-    Create(RHI::TextureCubeMap, image, Texture::Nearest | Texture::Clamp | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown | flags);
+    Create(RHI::TextureType::TextureCubeMap, image, Texture::Flag::Nearest | Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
 }
 
 /*
@@ -347,7 +351,7 @@ void Texture::CreateCubicNormalCubeMapTexture(int size, int flags) {
 
 void Texture::CreateAttenuationTexture(int size, int flags) {
     Image image;
-    image.Create2D(size, size, 1, Image::LA_8_8, nullptr, Image::LinearSpaceFlag);
+    image.Create2D(size, size, 1, Image::Format::LA_8_8, nullptr, Image::Flag::LinearSpace);
     byte *dst = image.GetPixels();
 
     float centerx = size / 2.0;
@@ -369,7 +373,7 @@ void Texture::CreateAttenuationTexture(int size, int flags) {
         }
     }
 
-    Create(RHI::Texture2D, image, Texture::Clamp | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown | flags);
+    Create(RHI::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
 }
 
 /*
@@ -382,7 +386,7 @@ void Texture::CreateAttenuationTexture(int size, int flags) {
 
 void Texture::CreateFogTexture(int flags) {
     Image image;
-    image.Create2D(256, 1, 1, Image::A_8, nullptr, Image::LinearSpaceFlag);
+    image.Create2D(256, 1, 1, Image::Format::A_8, nullptr, Image::Flag::LinearSpace);
     byte *dst = image.GetPixels();
 
     for (int s = 0; s < 256; s++) {
@@ -390,7 +394,7 @@ void Texture::CreateFogTexture(int flags) {
         dst[s] = Min(c, 255);
     }
 
-    Create(RHI::Texture2D, image, Texture::NoMipmaps | Texture::Clamp | Texture::HighQuality | flags);
+    Create(RHI::TextureType::Texture2D, image, Texture::Flag::NoMipmaps | Texture::Flag::Clamp | Texture::Flag::HighQuality | flags);
 }
 
 /*
@@ -403,7 +407,7 @@ void Texture::CreateFogTexture(int flags) {
 
 void Texture::CreateFogEnterTexture(int flags) {
     Image image;
-    image.Create2D(256, 1, 1, Image::A_8, nullptr, Image::LinearSpaceFlag);
+    image.Create2D(256, 1, 1, Image::Format::A_8, nullptr, Image::Flag::LinearSpace);
     byte *dst = image.GetPixels();
 
     for (int s = 0; s < 256; s++) {
@@ -411,7 +415,7 @@ void Texture::CreateFogEnterTexture(int flags) {
         dst[s] = Min(c, 255);
     }
 
-    Create(RHI::Texture2D, image, Texture::NoMipmaps | Texture::Clamp | Texture::HighQuality | flags);
+    Create(RHI::TextureType::Texture2D, image, Texture::Flag::NoMipmaps | Texture::Flag::Clamp | Texture::Flag::HighQuality | flags);
 }
 
 /*
@@ -424,17 +428,17 @@ void Texture::CreateFogEnterTexture(int flags) {
 
 void Texture::CreateRandomRotMatTexture(int size, int flags) {
     Image image;
-    image.Create2D(size, size, 1, Image::RGBA_8_8_8_8, nullptr, Image::LinearSpaceFlag);
+    image.Create2D(size, size, 1, Image::Format::RGBA_8_8_8_8, nullptr, Image::Flag::LinearSpace);
     byte *dst = image.GetPixels();
     float s, c;
 
     Random random;
     random.SetSeed(23119);
-    
+
     for (int y = 0; y < size; y++) {
         for (int x = 0; x < size; x++) {
             Math::SinCos(random.RandomFloat() * Math::TwoPi, s, c);
-                
+
             dst[4 * (y * 64 + x) + 0] = ClampByte((+c + 1.0f) * 0.5f * 255 + 0.5f);
             dst[4 * (y * 64 + x) + 1] = ClampByte((-s + 1.0f) * 0.5f * 255 + 0.5f);
             dst[4 * (y * 64 + x) + 2] = ClampByte((+s + 1.0f) * 0.5f * 255 + 0.5f);
@@ -442,7 +446,7 @@ void Texture::CreateRandomRotMatTexture(int size, int flags) {
         }
     }
 
-    Create(RHI::Texture2D, image, Texture::Nearest | Texture::Repeat | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown | flags);
+    Create(RHI::TextureType::Texture2D, image, Texture::Flag::Nearest | Texture::Flag::Repeat | Texture::Flag::NoMipmaps | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
 }
 
 /*
@@ -455,7 +459,7 @@ void Texture::CreateRandomRotMatTexture(int size, int flags) {
 
 void Texture::CreateRandomDir4x4Texture(int flags) {
     Image image;
-    image.Create2D(4, 4, 1, Image::RGB_8_8_8, nullptr, Image::LinearSpaceFlag);
+    image.Create2D(4, 4, 1, Image::Format::RGB_8_8_8, nullptr, Image::Flag::LinearSpace);
     byte *dst = image.GetPixels();
     Vec3 dir;
 
@@ -477,27 +481,27 @@ void Texture::CreateRandomDir4x4Texture(int flags) {
         }
     }
 
-    Create(RHI::Texture2D, image, Texture::Nearest | Texture::Repeat | Texture::NoMipmaps | Texture::NoCompression | Texture::NoScaleDown | flags);
+    Create(RHI::TextureType::Texture2D, image, Texture::Flag::Nearest | Texture::Flag::Repeat | Texture::Flag::NoMipmaps | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
 }
 
-static RHI::AddressMode TextureFlagsToAddressMode(int flags) {
-    if (flags & (Texture::ClampToBorder | Texture::ZeroClamp)) {
-        return RHI::ClampToBorder;
-    } else if (flags & Texture::Clamp) {
-        return RHI::Clamp;
-    } else if (flags & Texture::MirroredRepeat) {
-        return RHI::MirroredRepeat;
+static RHI::AddressMode::Enum TextureFlagsToAddressMode(int flags) {
+    if (flags & (Texture::Flag::ClampToBorder | Texture::Flag::ZeroClamp)) {
+        return RHI::AddressMode::ClampToBorder;
+    } else if (flags & Texture::Flag::Clamp) {
+        return RHI::AddressMode::Clamp;
+    } else if (flags & Texture::Flag::MirroredRepeat) {
+        return RHI::AddressMode::MirroredRepeat;
     } else {
-        return RHI::Repeat;
+        return RHI::AddressMode::Repeat;
     }
 }
 
 void Texture::Upload(const Image *srcImage) {
-    Image::Format srcFormat = srcImage->GetFormat();
-    Image::Format forceFormat = Image::Format::UnknownFormat;
+    Image::Format::Enum srcFormat = srcImage->GetFormat();
+    Image::Format::Enum forceFormat = Image::Format::Unknown;
     Image tmpImage;
 
-    if (type == RHI::TextureRectangle) {
+    if (type == RHI::TextureType::TextureRectangle) {
         flags |= (Flag::NoMipmaps | Flag::Clamp | Flag::NoScaleDown);
     }
 
@@ -510,23 +514,23 @@ void Texture::Upload(const Image *srcImage) {
         forceFormat = srcImage->GetFormat();
     }
 
-    bool useNormalMap   = (flags & Flag::NormalMap) ? true : false;
+    bool useNormalMap = (flags & Flag::NormalMap) ? true : false;
     bool useCompression = !(flags & Flag::NoCompression) ? TextureManager::texture_useCompression.GetBool() : false;
-    bool useNPOT        = (flags & Flag::NonPowerOfTwo) ? true : false;
-    bool useSRGB        = ((flags & Flag::SRGBColorSpace) && TextureManager::texture_sRGB.GetBool()) ? true : false;
+    bool useNPOT = (flags & Flag::NonPowerOfTwo) ? true : false;
+    bool isSRGB = ((flags & Flag::SRGBColorSpace) && r_sRGB.GetBool()) ? true : false;
 
-    Image::Format dstFormat;
-    if (forceFormat != Image::Format::UnknownFormat) {
+    Image::Format::Enum dstFormat;
+    if (forceFormat != Image::Format::Unknown) {
         dstFormat = forceFormat;
     } else {
         rhi.AdjustTextureFormat(type, useCompression, useNormalMap, srcImage->GetFormat(), &dstFormat);
     }
-    
-    this->srcWidth      = srcImage->GetWidth();
-    this->srcHeight     = srcImage->GetHeight();
-    this->srcDepth      = srcImage->GetDepth();
-    this->numSlices     = srcImage->NumSlices();
-    
+
+    this->srcWidth = srcImage->GetWidth();
+    this->srcHeight = srcImage->GetHeight();
+    this->srcDepth = srcImage->GetDepth();
+    this->numSlices = srcImage->NumSlices();
+
     int dstWidth, dstHeight, dstDepth;
     rhi.AdjustTextureSize(type, useNPOT, srcWidth, srcHeight, srcDepth, &dstWidth, &dstHeight, &dstDepth);
 
@@ -537,49 +541,49 @@ void Texture::Upload(const Image *srcImage) {
         dstHeight = Max(dstHeight >> mipLevel, 1);
         dstDepth = Max(dstDepth >> mipLevel, 1);
     }
-    
+
     // Can't upload texels for depth texture
     if (!srcImage->IsEmpty() && Image::IsDepthFormat(srcImage->GetFormat())) {
-        BE_FATALERROR(L"Texture::Upload: Couldn't upload texel data of depth texture");
+        BE_FATALERROR("Texture::Upload: Couldn't upload texel data of depth texture");
     }
-    
+
     Image scaledImage;
-    
+
     if (!srcImage->IsEmpty()) {
         if (srcWidth != dstWidth || srcHeight != dstHeight) {
-            srcImage->Resize(dstWidth, dstHeight, Image::Bicubic, scaledImage);
+            srcImage->Resize(dstWidth, dstHeight, Image::ResampleFilter::Bicubic, scaledImage);
             srcImage = &scaledImage;
         }
     }
 
-    this->format        = dstFormat;
-    this->width         = dstWidth;
-    this->height        = dstHeight;
-    this->depth         = dstDepth;
-    
-    this->hasMipmaps    = !(flags & Flag::NoMipmaps);
-    this->permanence    = !!(flags & Flag::Permanence);
-    this->addressMode   = TextureFlagsToAddressMode(flags);
+    this->format = dstFormat;
+    this->width = dstWidth;
+    this->height = dstHeight;
+    this->depth = dstDepth;
+
+    this->hasMipmaps = !(flags & Flag::NoMipmaps);
+    this->permanence = !!(flags & Flag::Permanence);
+    this->addressMode = TextureFlagsToAddressMode(flags);
 
     rhi.BindTexture(textureHandle);
 
-    if (flags & ZeroClamp) {
+    if (flags & Flag::ZeroClamp) {
         rhi.SetTextureBorderColor(Color4(0.0f, 0.0f, 0.0f, 0.0f));
     }
 
-    if (flags & Shadow) {
+    if (flags & Flag::Shadow) {
         rhi.SetTextureBorderColor(Color4(1.0f, 1.0f, 1.0f, 1.0f));
         rhi.SetTextureShadowFunc(true);
     }
 
-    rhi.SetTextureImage(type, srcImage, dstFormat, hasMipmaps, useSRGB);
+    rhi.SetTextureImage(type, srcImage, dstFormat, hasMipmaps, isSRGB);
 
     rhi.SetTextureAddressMode(addressMode);
 
     if (hasMipmaps) {
-        rhi.SetTextureFilter((flags & Flag::Nearest) ? RHI::NearestMipmapNearest : ((flags & Flag::Trilinear) ? RHI::LinearMipmapLinear : textureManager.textureFilter));
+        rhi.SetTextureFilter((flags & Flag::Nearest) ? RHI::TextureFilter::NearestMipmapNearest : ((flags & Flag::Trilinear) ? RHI::TextureFilter::LinearMipmapLinear : textureManager.textureFilter));
     } else {
-        rhi.SetTextureFilter((flags & Flag::Nearest) ? RHI::Nearest : RHI::Linear);
+        rhi.SetTextureFilter((flags & Flag::Nearest) ? RHI::TextureFilter::Nearest : RHI::TextureFilter::Linear);
     }
 
     if (hasMipmaps && !(flags & Flag::Nearest)) {
@@ -587,88 +591,95 @@ void Texture::Upload(const Image *srcImage) {
     }
 }
 
-void Texture::Update2D(int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data) {
-    rhi.SetTextureSubImage2D(0, xoffset, yoffset, width, height, format, data);	
+void Texture::Update2D(int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format::Enum format, const byte *data) {
+    rhi.SetTextureSubImage2D(mipLevel, xoffset, yoffset, width, height, format, data);
 }
 
-void Texture::Update3D(int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format format, const byte *data) {
+void Texture::Update3D(int mipLevel, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format::Enum format, const byte *data) {
     rhi.SetTextureSubImage3D(0, xoffset, yoffset, zoffset, width, height, depth, format, data);
 }
 
-void Texture::UpdateCubemap(int face, int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data) {
-    rhi.SetTextureSubImageCube((RHI::CubeMapFace)face, 0, xoffset, yoffset, width, height, format, data);
+void Texture::UpdateCubemap(int face, int mipLevel, int xoffset, int yoffset, int width, int height, Image::Format::Enum format, const byte *data) {
+    rhi.SetTextureSubImageCube((RHI::CubeMapFace::Enum)face, mipLevel, xoffset, yoffset, width, height, format, data);
 }
 
-void Texture::UpdateRect(int xoffset, int yoffset, int width, int height, Image::Format format, const byte *data) {
+void Texture::UpdateRect(int xoffset, int yoffset, int width, int height, Image::Format::Enum format, const byte *data) {
     rhi.SetTextureSubImageRect(xoffset, yoffset, width, height, format, data);
 }
 
-void Texture::GetTexels2D(Image::Format format, void *pixels) const {
-    rhi.GetTextureImage2D(0, format, pixels);
+void Texture::GetTexels2D(int mipLevel, Image::Format::Enum format, void *pixels) const {
+    rhi.GetTextureImage2D(mipLevel, format, pixels);
 }
 
-void Texture::GetTexels3D(Image::Format format, void *pixels) const {
-    rhi.GetTextureImage3D(0, format, pixels);
+void Texture::GetTexels3D(int mipLevel, Image::Format::Enum format, void *pixels) const {
+    rhi.GetTextureImage3D(mipLevel, format, pixels);
 }
 
-void Texture::GetTexelsCubemap(int face, Image::Format format, void *pixels) const {
-    rhi.GetTextureImageCube((RHI::CubeMapFace)face, 0, format, pixels);
+void Texture::GetTexelsCubemap(int face, int mipLevel, Image::Format::Enum format, void *pixels) const {
+    rhi.GetTextureImageCube((RHI::CubeMapFace::Enum)face, mipLevel, format, pixels);
 }
 
-void Texture::GetTexelsRect(Image::Format format, void *pixels) const {
+void Texture::GetTexelsRect(Image::Format::Enum format, void *pixels) const {
     rhi.GetTextureImageRect(format, pixels);
+}
+
+void Texture::CopyTo(int mipLevel, Texture *dstTexture) {
+    rhi.CopyImageSubData(textureHandle, mipLevel, 0, 0, 0, dstTexture->textureHandle, mipLevel, 0, 0, 0, width, height, type == RHI::TextureType::TextureCubeMap ? numSlices : depth);
 }
 
 void Texture::Purge() {
     if (textureHandle != RHI::NullTexture) {
         rhi.DestroyTexture(textureHandle);
+
+        // Invalidates render target which is linked with this texture.
+        renderTarget = nullptr;
     }
 
     textureHandle = RHI::NullTexture;
 }
 
 bool Texture::Load(const char *filename, int flags) {
-    flags |= LoadedFromFile;
+    flags |= Flag::LoadedFromFile;
 
-    if (flags & (CubeMap | CameraCubeMap)) {
+    if (flags & (Flag::CubeMap | Flag::CameraCubeMap)) {
         Str name = filename;
         name.StripFileExtension();
         Image images[6];
 
         for (int i = 0; i < 6; i++) {
-            Str filename2 = name + "_" + ((flags & CameraCubeMap) ? camera_cubemap_postfix[i] : cubemap_postfix[i]);
-            BE_LOG(L"Loading texture '%hs'...\n", filename2.c_str());
+            Str filename2 = name + "_" + ((flags & Flag::CameraCubeMap) ? camera_cubemap_postfix[i] : cubemap_postfix[i]);
+            BE_LOG("Loading texture '%s'...\n", filename2.c_str());
 
             images[i].Load(filename2.c_str());
-            
+
             if (images[i].IsEmpty()) {
-                BE_WARNLOG(L"Couldn't load texture \"%hs\"\n", filename2.c_str());
+                BE_WARNLOG("Couldn't load texture \"%s\"\n", filename2.c_str());
                 return false;
             }
         }
 
         Image cubeImage;
         cubeImage.CreateCubeFrom6Faces(images);
-        Create(RHI::TextureCubeMap, cubeImage, flags);
+        Create(RHI::TextureType::TextureCubeMap, cubeImage, flags);
     } else {
-        BE_LOG(L"Loading texture '%hs'...\n", filename);
+        BE_LOG("Loading texture '%s'...\n", filename);
 
         Image image;
         image.Load(filename);
-        
+
         if (image.IsEmpty()) {
-            BE_WARNLOG(L"Couldn't load texture \"%hs\"\n", filename);
+            BE_WARNLOG("Couldn't load texture \"%s\"\n", filename);
             return false;
         }
 
-        RHI::TextureType textureType;
+        RHI::TextureType::Enum textureType;
 
         if (image.GetDepth() > 1) {
-            textureType = RHI::Texture3D;
+            textureType = RHI::TextureType::Texture3D;
         } else if (image.IsCubeMap()) {
-            textureType = RHI::TextureCubeMap;
+            textureType = RHI::TextureType::TextureCubeMap;
         } else {
-            textureType = RHI::Texture2D;
+            textureType = RHI::TextureType::Texture2D;
         }
 
         Create(textureType, image, flags);
@@ -678,13 +689,13 @@ bool Texture::Load(const char *filename, int flags) {
 }
 
 bool Texture::Reload() {
-    if (!(flags & LoadedFromFile)) {
+    if (!(flags & Flag::LoadedFromFile)) {
         return false;
     }
 
     Str _hashName = this->hashName;
 
-    const Str textureInfoPath = _hashName + ".texinfo";
+    const Str textureInfoPath = _hashName + ".texture";
     int _flags = textureManager.LoadTextureInfo(textureInfoPath);
 
     bool ret = Load(_hashName, _flags);
@@ -695,18 +706,36 @@ void Texture::Bind() const {
     rhi.BindTexture(textureHandle);
 }
 
+void Texture::GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, Image &cubeImage) {
+    Image faceImages[6];
+
+    int imageFlags = Image::IsFloatFormat(cubeTexture->GetFormat()) ? Image::Flag::LinearSpace : 0;
+
+    for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
+        faceImages[faceIndex].Create2D(cubeTexture->GetWidth(), cubeTexture->GetWidth(), numMipLevels, cubeTexture->GetFormat(), nullptr, imageFlags);
+
+        cubeTexture->Bind();
+
+        for (int mipLevel = 0; mipLevel < numMipLevels; mipLevel++) {
+            cubeTexture->GetTexelsCubemap(faceIndex, mipLevel, cubeTexture->GetFormat(), faceImages[faceIndex].GetPixels(mipLevel));
+        }
+    }
+
+    cubeImage.CreateCubeFrom6Faces(faceImages);
+}
+
 //--------------------------------------------------------------------------------------------------
 
 void TextureGenerator_CubicDiffuseIrradianceMap::Generate(Texture *texture) const {
-    if (texture->GetType() != RHI::TextureCubeMap) {
-        BE_ERRLOG(L"TextureGenerator_CubicDiffuseIrradianceMap::Generate: src texture must be cube map\n");
+    if (texture->GetType() != RHI::TextureType::TextureCubeMap) {
+        BE_ERRLOG("TextureGenerator_CubicDiffuseIrradianceMap::Generate: src texture must be cube map\n");
         return;
     }
 }
 
 void TextureGenerator_CubicSpecularIrradianceMap::Generate(Texture *texture) const {
-    if (texture->GetType() != RHI::TextureCubeMap) {
-        BE_ERRLOG(L"TextureGenerator_CubicSpecularIrradianceMap::Generate: src texture must be cube map\n");
+    if (texture->GetType() != RHI::TextureType::TextureCubeMap) {
+        BE_ERRLOG("TextureGenerator_CubicSpecularIrradianceMap::Generate: src texture must be cube map\n");
         return;
     }
 }

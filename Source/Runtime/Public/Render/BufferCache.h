@@ -22,106 +22,106 @@ BE_NAMESPACE_BEGIN
 class Texture;
 
 struct BufferCache {
-    RHI::Handle             buffer;             // buffer handle (dynamic or static)
-    const Texture *         texture;
-    uint32_t                tcBase[2];
-    uint32_t                offset;             // offset for dynamic buffer. always 0 for static buffer.
-    uint32_t                bytes;              // 
-    uint32_t                frameCount;         // always 0xFFFFFFFF for static buffer
+    RHI::Handle                 buffer;             // buffer handle (dynamic or static)
+    const Texture *             texture;
+    uint32_t                    tcBase[2];
+    uint32_t                    offset;             // offset for dynamic buffer. always 0 for static buffer.
+    uint32_t                    bytes;              // 
+    uint32_t                    frameCount;         // always 0xFFFFFFFF for static buffer
 };
 
 class BufferCacheManager {
 public:
-    enum VertexTextureUpdate {
-        DirectCopyUpdate,   // obsolete !
-        PboUpdate,
-        TboUpdate
+    enum VertexTextureMethod {
+        DirectCopy,   // obsolete !
+        Pbo,
+        Tbo
     };
 
-    void                    Init();
-    void                    Shutdown();
+    void                        Init();
+    void                        Shutdown();
 
-    void                    BeginWrite();
-    void                    EndDrawCommand();
+    void                        BeginWrite();
+    void                        EndDrawCommand();
 
-    void                    BeginBackEnd();
+    void                        BeginBackEnd();
 
-                            /// Allocates vertex buffer in the local device memory
-    void                    AllocStaticVertex(int bytes, const void *data, BufferCache *bufferCache);
-                            /// Allocates index buffer in the local device memory
-    void                    AllocStaticIndex(int bytes, const void *data, BufferCache *bufferCache);
-                            /// Allocates uniform buffer in the local device memory
-    void                    AllocStaticUniform(int bytes, const void *data, BufferCache *bufferCache);
-                            /// Allocates texel buffer in the local device memory
-    void                    AllocStaticTexel(int bytes, const void *data, BufferCache *bufferCache);
+                                /// Allocates vertex buffer in the local device memory
+    void                        AllocStaticVertex(int bytes, const void *data, BufferCache *bufferCache);
+                                /// Allocates index buffer in the local device memory
+    void                        AllocStaticIndex(int bytes, const void *data, BufferCache *bufferCache);
+                                /// Allocates uniform buffer in the local device memory
+    void                        AllocStaticUniform(int bytes, const void *data, BufferCache *bufferCache);
+                                /// Allocates texel buffer in the local device memory
+    void                        AllocStaticTexel(int bytes, const void *data, BufferCache *bufferCache);
 
-    bool                    AllocVertex(int numVertexes, int vertexSize, const void *data, BufferCache *bufferCache);
-    bool                    AllocIndex(int numIndexes, int indexSize, const void *data, BufferCache *bufferCache);
-    bool                    AllocUniform(int bytes, const void *data, BufferCache *bufferCache);
-    bool                    AllocTexel(int bytes, const void *data, BufferCache *bufferCache);
+    bool                        AllocVertex(int numVertexes, int vertexSize, const void *data, BufferCache *bufferCache);
+    bool                        AllocIndex(int numIndexes, int indexSize, const void *data, BufferCache *bufferCache);
+    bool                        AllocUniform(int bytes, const void *data, BufferCache *bufferCache);
+    bool                        AllocTexel(int bytes, const void *data, BufferCache *bufferCache);
 
-    byte *                  MapVertexBuffer(BufferCache *bufferCache) const;
-    byte *                  MapIndexBuffer(BufferCache *bufferCache) const;
-    byte *                  MapUniformBuffer(BufferCache *bufferCache) const;
-    byte *                  MapTexelBuffer(BufferCache *bufferCache) const;
+    byte *                      MapVertexBuffer(BufferCache *bufferCache) const;
+    byte *                      MapIndexBuffer(BufferCache *bufferCache) const;
+    byte *                      MapUniformBuffer(BufferCache *bufferCache) const;
+    byte *                      MapTexelBuffer(BufferCache *bufferCache) const;
 
-    void                    UnmapVertexBuffer(BufferCache *bufferCache) const;
-    void                    UnmapIndexBuffer(BufferCache *bufferCache) const;
-    void                    UnmapUniformBuffer(BufferCache *bufferCache) const;
-    void                    UnmapTexelBuffer(BufferCache *bufferCache) const;
+    void                        UnmapVertexBuffer(BufferCache *bufferCache) const;
+    void                        UnmapIndexBuffer(BufferCache *bufferCache) const;
+    void                        UnmapUniformBuffer(BufferCache *bufferCache) const;
+    void                        UnmapTexelBuffer(BufferCache *bufferCache) const;
 
-    bool                    IsCached(const BufferCache *bufferCache) const;
-    bool                    IsCacheStatic(const BufferCache *bufferCache) const;
+    bool                        IsCached(const BufferCache *bufferCache) const;
+    bool                        IsCacheStatic(const BufferCache *bufferCache) const;
 
-                            // Update PBO to Texture
-    void                    UpdatePBOTexture() const;
+                                // Update PBO to Texture
+    void                        UpdatePBOTexture() const;
 
-    const Texture *         GetFrameTexture() const;
+    const Texture *             GetFrameTexture() const;
 
-    RHI::Handle             streamVertexBuffer;
-    RHI::Handle             streamIndexBuffer;
-    RHI::Handle             streamUniformBuffer;
+    RHI::Handle                 streamVertexBuffer;
+    RHI::Handle                 streamIndexBuffer;
+    RHI::Handle                 streamUniformBuffer;
 
 private:
-    static const int        NumFrames = 3;
+    static const int            NumFrames = 3;
 
     struct FrameDataBufferSet {
-        RHI::Handle         vertexBuffer;
-        RHI::Handle         indexBuffer;
-        RHI::Handle         uniformBuffer;
-        RHI::Handle         texelBuffer;
-        RHI::BufferType     texelBufferType;
-        Texture *           texture;
-        RHI::Handle         sync;
-        void *              mappedVertexBase;
-        void *              mappedIndexBase;
-        void *              mappedUniformBase;
-        void *              mappedTexelBase;
-        PlatformAtomic      vertexMemUsed;
-        PlatformAtomic      indexMemUsed;
-        PlatformAtomic      uniformMemUsed;
-        PlatformAtomic      texelMemUsed;
-        int                 allocations;
+        RHI::Handle             vertexBuffer;
+        RHI::Handle             indexBuffer;
+        RHI::Handle             uniformBuffer;
+        RHI::Handle             texelBuffer;
+        RHI::BufferType::Enum   texelBufferType;
+        Texture *               texture;
+        RHI::Handle             sync;
+        void *                  mappedVertexBase;
+        void *                  mappedIndexBase;
+        void *                  mappedUniformBase;
+        void *                  mappedTexelBase;
+        std::atomic<int>        vertexMemUsed;
+        std::atomic<int>        indexMemUsed;
+        std::atomic<int>        uniformMemUsed;
+        std::atomic<int>        texelMemUsed;
+        int                     allocations;
     };
 
-    void                    MapBufferSet(FrameDataBufferSet &bufferSet);
-    void                    UnmapBufferSet(FrameDataBufferSet &bufferSet, bool flush);
+    void                        MapBufferSet(FrameDataBufferSet &bufferSet);
+    void                        UnmapBufferSet(FrameDataBufferSet &bufferSet, bool flush);
 
-    FrameDataBufferSet      frameData[NumFrames];
-    uint32_t                frameCount;
-    int                     mappedNum;
-    int                     unmappedNum;
+    FrameDataBufferSet          frameData[NumFrames];
+    uint32_t                    frameCount;
+    int                         mappedNum;
+    int                         unmappedNum;
 
-    int                     mostUsedVertexMem;
-    int                     mostUsedIndexMem;
-    int                     mostUsedUniformMem;
-    int                     mostUsedTexelMem;
+    int                         mostUsedVertexMem;
+    int                         mostUsedIndexMem;
+    int                         mostUsedUniformMem;
+    int                         mostUsedTexelMem;
 
-    bool                    usePersistentMappedBuffers;
+    bool                        usePersistentMappedBuffers;
 
-    int                     pboWriteOffset;
+    int                         pboWriteOffset;
 };
 
-extern BufferCacheManager   bufferCacheManager;
+extern BufferCacheManager       bufferCacheManager;
 
 BE_NAMESPACE_END

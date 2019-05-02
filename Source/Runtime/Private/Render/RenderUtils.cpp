@@ -18,35 +18,34 @@
 
 BE_NAMESPACE_BEGIN
 
-void R_CubeMapFaceToAxis(RHI::CubeMapFace face, Mat3 &axis) {
-    // FIXME
+void R_EnvCubeMapFaceToOpenGLAxis(RHI::CubeMapFace::Enum face, Mat3 &axis) {
     switch (face) {
-    case RHI::PositiveX:
+    case RHI::CubeMapFace::PositiveX:
         axis[0] = Vec3(1, 0, 0);
         axis[1] = Vec3(0, 0, 1);
         axis[2] = Vec3(0, -1, 0);
         break;
-    case RHI::NegativeX:
+    case RHI::CubeMapFace::NegativeX:
         axis[0] = Vec3(-1, 0, 0);
         axis[1] = Vec3(0, 0, -1);
         axis[2] = Vec3(0, -1, 0);
         break;
-    case RHI::PositiveY:
+    case RHI::CubeMapFace::PositiveY:
         axis[0] = Vec3(0, 1, 0);
         axis[1] = Vec3(-1, 0, 0);
         axis[2] = Vec3(0, 0, 1);
         break;
-    case RHI::NegativeY:
+    case RHI::CubeMapFace::NegativeY:
         axis[0] = Vec3(0, -1, 0);
         axis[1] = Vec3(-1, 0, 0);
         axis[2] = Vec3(0, 0, -1);
         break;
-    case RHI::PositiveZ:
+    case RHI::CubeMapFace::PositiveZ:
         axis[0] = Vec3(0, 0, 1);
         axis[1] = Vec3(-1, 0, 0);
         axis[2] = Vec3(0, -1, 0);
         break;
-    case RHI::NegativeZ:
+    case RHI::CubeMapFace::NegativeZ:
         axis[0] = Vec3(0, 0, -1);
         axis[1] = Vec3(1, 0, 0);
         axis[2] = Vec3(0, -1, 0);
@@ -54,38 +53,50 @@ void R_CubeMapFaceToAxis(RHI::CubeMapFace face, Mat3 &axis) {
     }
 }
 
+void R_EnvCubeMapFaceToEngineAxis(RHI::CubeMapFace::Enum face, Mat3 &axis) {
+    Mat3 glAxis;
+
+    R_EnvCubeMapFaceToOpenGLAxis(face, glAxis);
+
+    for (int i = 0; i < 3; i++) {
+        axis[i].x = glAxis[i].z;
+        axis[i].y = glAxis[i].x;
+        axis[i].z = glAxis[i].y;
+    }
+}
+
 /*
 ----------------------------------------------------------------------------------------------------
- * 뷰 행렬 설정
+ * View matrix
 
-  R (Rx, Ry, Rz) : 시점자의 오른쪽 방향 벡터, right
-  U (Ux, Uy, Uz) : 시점자의 윗쪽 방향 벡터, up
-  B (Bx, By, Bz) : 시점자의 뒷쪽 방향 벡터, back
+  R (Rx, Ry, Rz) : right direction vector
+  U (Ux, Uy, Uz) : up direction vector
+  B (Bx, By, Bz) : back direction vector
 
-  시점의 위치 : P (Px, Py, Pz)
+  camera position : P (Px, Py, Pz)
   
-      | Rx,  Ry,  Rz,  -(R과 P의 내적) |
-  M = | Ux,  Uy,  Uz,  -(U와 P의 내적) |
-      | Bx,  By,  Bz,  -(B와 P의 내적) |
-      | 0,   0,   0,    1             |
+      | Rx,  Ry,  Rz,  -dot(R, P) |
+  M = | Ux,  Uy,  Uz,  -dot(U, P) |
+      | Bx,  By,  Bz,  -dot(B, P) |
+      | 0,   0,   0,    1         |
 
 ----------------------------------------------------------------------------------------------------
 */
 void R_SetViewMatrix(const Mat3 &viewAxis, const Vec3 &viewOrigin, float *viewMatrix) {
-    viewMatrix[0] = -viewAxis[LeftAxis].x;
-    viewMatrix[1] = -viewAxis[LeftAxis].y;
-    viewMatrix[2] = -viewAxis[LeftAxis].z;
-    viewMatrix[3] = -viewAxis[LeftAxis].Dot(-viewOrigin);
+    viewMatrix[0] = -viewAxis[AxisIndex::Left].x;
+    viewMatrix[1] = -viewAxis[AxisIndex::Left].y;
+    viewMatrix[2] = -viewAxis[AxisIndex::Left].z;
+    viewMatrix[3] = -viewAxis[AxisIndex::Left].Dot(-viewOrigin);
 
-    viewMatrix[4] = viewAxis[UpAxis].x;
-    viewMatrix[5] = viewAxis[UpAxis].y;
-    viewMatrix[6] = viewAxis[UpAxis].z;
-    viewMatrix[7] = viewAxis[UpAxis].Dot(-viewOrigin);
+    viewMatrix[4] = viewAxis[AxisIndex::Up].x;
+    viewMatrix[5] = viewAxis[AxisIndex::Up].y;
+    viewMatrix[6] = viewAxis[AxisIndex::Up].z;
+    viewMatrix[7] = viewAxis[AxisIndex::Up].Dot(-viewOrigin);
 
-    viewMatrix[8] = -viewAxis[ForwardAxis].x;
-    viewMatrix[9] = -viewAxis[ForwardAxis].y;
-    viewMatrix[10] = -viewAxis[ForwardAxis].z;
-    viewMatrix[11] = -viewAxis[ForwardAxis].Dot(-viewOrigin);
+    viewMatrix[8] = -viewAxis[AxisIndex::Forward].x;
+    viewMatrix[9] = -viewAxis[AxisIndex::Forward].y;
+    viewMatrix[10] = -viewAxis[AxisIndex::Forward].z;
+    viewMatrix[11] = -viewAxis[AxisIndex::Forward].Dot(-viewOrigin);
 
     viewMatrix[12] = 0.0f;
     viewMatrix[13] = 0.0f;
@@ -95,7 +106,7 @@ void R_SetViewMatrix(const Mat3 &viewAxis, const Vec3 &viewOrigin, float *viewMa
 
 /*
 ----------------------------------------------------------------------------------------------------
- * OpenGL 원근 투영 행렬 설정
+ * OpenGL perspective projection matrix
 
   N : near
   F : far
@@ -180,7 +191,7 @@ void R_SetPerspectiveProjectionMatrix(float xFov, float yFov, float zNear, float
 
 /*
 ----------------------------------------------------------------------------------------------------
- * OpenGL 직교 투영 행렬 설정
+ * OpenGL orthogonal projection matrix
 
   N : near
   F : far
@@ -230,7 +241,7 @@ void R_SetOrthogonalProjectionMatrix(float xSize, float ySize, float zNear, floa
 
 /*
 ----------------------------------------------------------------------------------------------------
- * Orthogonal 2d crop 행렬 설정
+ * Orthogonal 2d crop matrix
 
       | 2 / (R-L),  0,          0,          -(R+L) / (R-L) |
   M = | 0,          2 / (T-B),  0,          -(T+B) / (T-B) |
@@ -268,8 +279,8 @@ void R_TangentsFromTriangle(const Vec3 &v0, const Vec3 &v1, const Vec3 &v2, cons
     Vec3 side0 = v1 - v0;
     Vec3 side1 = v2 - v0;
 
-//	assert(side0.LengthSqr() > VECTOR_EPSILON);
-//	assert(side1.LengthSqr() > VECTOR_EPSILON);	
+//  assert(side0.LengthSqr() > VECTOR_EPSILON);
+//  assert(side1.LengthSqr() > VECTOR_EPSILON);
 
     float ds1 = st1[0] - st0[0];
     float dt1 = st1[1] - st0[1];
@@ -306,24 +317,24 @@ void R_TangentsFromTriangle(const Vec3 &v0, const Vec3 &v1, const Vec3 &v2, cons
 }
 
 bool R_CullShadowVolumeBackCap(const Mat4 &viewProjMatrix, const OBB &boundingBox, const Vec3 &lightProjectionOrigin) {
-    Vec3	silVerts[6];
-    Vec4	projectedSilVerts[6];
-    byte	bits;
-
+    Vec3 silVerts[6];
     int numSilVerts = boundingBox.GetProjectionSilhouetteVerts(lightProjectionOrigin, silVerts);
     if (!numSilVerts) {
         return false;
     }
 
     byte cullBits = 0x0F;
+    byte bits;
 
+    Vec4 projectedSilVerts[6];
     Vec4 *pv = projectedSilVerts;
 
     for (int i = 0; i < numSilVerts; i++) {
         silVerts[i] -= lightProjectionOrigin;
+
         *pv = viewProjMatrix * Vec4(silVerts[i], 0.0f);
 
-        // NOTE: Normalized Device Coordinates 에서 z 값이 -1 로 클리핑(near plane clip)
+        // NOTE: Normalized device coordinates 에서 z 값이 -1 로 클리핑(near plane clip)
         // 하기 위해서는 xy 를 -w 로 나눈다.
         if (pv->z < 0.0f) {
             pv->w = -pv->w;
@@ -421,8 +432,8 @@ void R_GenerateSphereTriangleStripVerts(const Sphere &sphere, int lats, int long
             float x = Math::Cos(lng);
             float y = Math::Sin(lng);
 
-            *vptr++ = sphere.origin + Vec3(x * r0, y * r0, z0);
-            *vptr++ = sphere.origin + Vec3(x * r1, y * r1, z1);
+            *vptr++ = sphere.center + Vec3(x * r0, y * r0, z0);
+            *vptr++ = sphere.center + Vec3(x * r1, y * r1, z1);
         }
     }
 }

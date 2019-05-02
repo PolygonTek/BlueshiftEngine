@@ -24,7 +24,7 @@ void LuaVM::RegisterSphere(LuaCpp::Module &module) {
     _Sphere.SetClass<Sphere>();
     _Sphere.AddClassCtor<Sphere, const Vec3 &, float>();
     _Sphere.AddClassMembers<Sphere>(
-        "origin", &Sphere::origin,
+        "center", &Sphere::center,
         "radius", &Sphere::radius,
         "clear", &Sphere::Clear,
         "set_zero", &Sphere::SetZero,
@@ -33,10 +33,10 @@ void LuaVM::RegisterSphere(LuaCpp::Module &module) {
         "is_contain_point", &Sphere::IsContainPoint,
         "is_intersect_sphere", &Sphere::IsIntersectSphere,
         "is_intersect_aabb", &Sphere::IsIntersectAABB,
-        "to_aabb", &Sphere::ToAABB,
-        "line_intersection", &Sphere::LineIntersection,
-        "ray_intersection", &Sphere::RayIntersection,
-        "axis_projection", &Sphere::AxisProjection
+        "is_intersect_line", &Sphere::IsIntersectLine,
+        "intersect_ray", static_cast<float(Sphere::*)(const Ray&)const>(&Sphere::IntersectRay),
+        "project_on_axis", &Sphere::ProjectOnAxis,
+        "to_aabb", &Sphere::ToAABB
     );
     _Sphere.AddClassMembers<Sphere>(
         "__eq", static_cast<bool(Sphere::*)(const Sphere&)const>(&Sphere::operator==)

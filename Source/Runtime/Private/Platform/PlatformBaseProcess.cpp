@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Core/WStr.h"
 #include "Platform/PlatformProcess.h"
 
 BE_NAMESPACE_BEGIN
@@ -59,23 +58,23 @@ void *PlatformBaseProcess::GetSymbol(SharedLib lib, const char *sym) {
 void PlatformBaseProcess::CloseLibrary(SharedLib lib) {
 }
 
-const wchar_t *PlatformBaseProcess::ExecutableFileName() {
-    return L"";
+const char *PlatformBaseProcess::ExecutableFileName() {
+    return "";
 }
 
-const wchar_t *PlatformBaseProcess::ComputerName() {
-    return L"";
+const char *PlatformBaseProcess::ComputerName() {
+    return "";
 }
 
-const wchar_t *PlatformBaseProcess::UserName() {
-    return L"";
+const char *PlatformBaseProcess::UserName() {
+    return "";
 }
 
-ProcessHandle PlatformBaseProcess::CreateProccess(const wchar_t *appPath, const wchar_t *args, const wchar_t *workingPath) {
+ProcessHandle PlatformBaseProcess::CreateProccess(const char *appPath, const char *args, const char *workingPath) {
     return ProcessHandle();
 }
 
-bool PlatformBaseProcess::ExecuteProcess(const wchar_t *appPath, const wchar_t *args, const wchar_t *workingPath) {
+bool PlatformBaseProcess::ExecuteProcess(const char *appPath, const char *args, const char *workingPath) {
     ProcessHandle processHandle = PlatformProcess::CreateProccess(appPath, args, workingPath);
     if (!processHandle.IsValid()) {
         return false;
@@ -92,10 +91,10 @@ bool PlatformBaseProcess::ExecuteProcess(const wchar_t *appPath, const wchar_t *
 
         if (PlatformProcess::ReadProcessOutput(processHandle, bufferSize, buffer)) {
             if (firstOutput) {
-                BE_LOG(L"Executing %ls:\n", appPath);
+                BE_LOG("Executing %s:\n", appPath);
                 firstOutput = false;
             }
-            BE_LOG(L"%hs", buffer);
+            BE_LOG("%s", buffer);
         }
 
         if (exit) {
@@ -103,7 +102,7 @@ bool PlatformBaseProcess::ExecuteProcess(const wchar_t *appPath, const wchar_t *
         }
     }
 
-    BE_LOG(L"\n");
+    BE_LOG("\n");
 
     delete[] buffer;
 

@@ -43,10 +43,10 @@ public:
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
-    virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
-
+#if 1
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const RenderView::State &viewState, bool selected) override;
+    virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
+#endif
 
     virtual const AABB      GetAABB() override;
 
@@ -70,8 +70,8 @@ public:
     float                   GetFar() const;
     void                    SetFar(const float zFar);
 
-    RenderView::ClearMethod GetClearMethod() const;
-    void                    SetClearMethod(RenderView::ClearMethod clearMethod);
+    RenderCamera::ClearMethod::Enum GetClearMethod() const;
+    void                    SetClearMethod(RenderCamera::ClearMethod::Enum clearMethod);
 
     const Color3 &          GetClearColor() const;
     void                    SetClearColor(const Color3 &clearColor);
@@ -95,12 +95,13 @@ protected:
 
     void                    TransformUpdated(const ComTransform *transform);
 
-    RenderView *            renderView;
-    RenderView::State       renderViewDef;
+    RenderCamera *          renderCamera;
+    RenderCamera::State     renderCameraDef;
     float                   fov;
     float                   size;
     float                   nx, ny, nw, nh;     ///< normalized screen coordinates
     int                     order;              ///< rendering order
+    bool                    applyPostProcessing;
 
     RenderWorld *           renderWorld;
 

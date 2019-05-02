@@ -121,7 +121,7 @@ public:
     const KV *              GetByIndex(int index) const;
 
                             // key/value 추가. 이미 존재하는 key 라면 value 값만 바꾼다.
-    ValueT &                Set(const KeyT &key, const ValueT &value);
+    KV *                    Set(const KeyT &key, const ValueT &value);
 
                             // key 값으로 search 해서 value 참조 리턴. 없다면 새로 bucket 추가 후 참조 리턴
     ValueT &                operator[](const KeyT &key);
@@ -216,18 +216,18 @@ BE_INLINE const typename HASH_MAP_TEMPLATE::KV *HASH_MAP_TEMPLATE::Get(const Key
 }
 
 template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
-BE_INLINE ValueT &HASH_MAP_TEMPLATE::Set(const KeyT &key, const ValueT &value) {
+BE_INLINE typename HASH_MAP_TEMPLATE::KV *HASH_MAP_TEMPLATE::Set(const KeyT &key, const ValueT &value) {
     KV *existingEntry = Get(key);
     if (existingEntry) {
         existingEntry->second = value;
-        return existingEntry->second;
+        return existingEntry;
     }
 
     Pair<KeyT, ValueT> &pair = pairs.Alloc();
     pair.first = key;
     pair.second = value;
     hashIndex.Add(HashGeneratorT::Hash(hashIndex, key), pairs.Count() - 1);
-    return pair.second;
+    return &pair;
 }
 
 template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>

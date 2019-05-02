@@ -7,63 +7,96 @@ set(BS_APP_VERSION "1.0" CACHE STRING "BS_APP_VERSION variable defaulting")
 set(BS_PRODUCT_NAME "BlueshiftPlayer" CACHE STRING "BS_PRODUCT_NAME variable defaulting")
 set(BS_TARGET_DEVICE "1,2" CACHE STRING "BS_TARGET_DEVICE variable defaulting")
 set(BS_ORIENTATION "<string>UIInterfaceOrientationPortrait</string>" CACHE STRING "BS_ORIENTATION variable defaulting")
-set(BS_USE_ADMOB_REWARD_BASED_VIDEO FALSE CACHE BOOL "BS_USE_ADMOB_REWARD_BASED_VIDEO variable defaulting")
+set(BS_USE_ANALYTICS FALSE CACHE BOOL "BS_USE_ANALYTICS variable defaulting")
+set(BS_USE_ADMOB FALSE CACHE BOOL "BS_USE_ADMOB variable defaulting")
 
 project(BlueshiftPlayer)
 
-set(ALL_FILES
+set(COMMON_SOURCE_FILES
     Precompiled.h
     Precompiled.cpp
     Application.h
     Application.cpp)
 
-if (XAMARIN AND IOS)
-    list(APPEND ALL_FILES
-        XamarinIOSMain.cpp
-        Binding/XMCustomView.h 
-        Binding/XMCustomView.m 
-        Binding/XMCustomViewDelegate.h 
-        Binding/XMUtilities.h
-        Binding/XMUtilities.m
-        Binding/XMBindingLibrarySample/XMBindingLibrarySample-Prefix.pch
-        Binding/XMBindingLibrarySample/XMBindingLibrarySample.h
-        Binding/XMBindingLibrarySample/XMBindingLibrarySample.m)
-elseif (ANDROID)
-    list(APPEND ALL_FILES
-        android_native_app_glue.h
-        android_native_app_glue.c
-        AndroidMain.cpp)
+set(WINDOWS_SOURCE_FILES
+    WinMain.cpp
+    WinResource.h
+    Manifest.xml
+    WinRes/player.rc
+    WinRes/player.ico)
 
-    if (BS_USE_ADMOB_REWARD_BASED_VIDEO)
-        list(APPEND ALL_FILES 
-            AndroidAdMob.h
-            AndroidAdMob.cpp)
-    endif ()
-elseif (APPLE)
-    if (IOS)
-        list(APPEND ALL_FILES
-            iOSMain.mm
-            iOSLaunchScreen.xib
-            Assets.xcassets)
+set(MACOS_SOURCE_FILES
+    macOSMain.mm
+    macOSMainMenu.xib)
 
-        if (BS_USE_ADMOB_REWARD_BASED_VIDEO)
-            list(APPEND ALL_FILES 
-                iOSAdMob.h
-                iOSAdMob.mm)
-        endif ()
-    else ()
-        list(APPEND ALL_FILES
-            macOSMain.mm
-            macOSMainMenu.xib)
-    endif ()
-elseif (WIN32)
-    list(APPEND ALL_FILES
-        WinMain.cpp
-        WinResource.h
-        Manifest.xml
-        WinRes/player.rc
-        WinRes/player.ico)
+set(ANDROID_SOURCE_FILES
+    android_native_app_glue.h
+    android_native_app_glue.c
+    AndroidMain.cpp
+    AndroidAnalytics.h
+    AndroidAnalytics.cpp
+    AndroidAdMob.h
+    AndroidAdMob.cpp)
+
+set(IOS_SOURCE_FILES
+    iOSMain.mm
+    iOSLaunchScreen.xib
+    Assets.xcassets
+    iOSAnalytics.h
+    iOSAnalytics.mm
+    iOSAdMob.h
+    iOSAdMob.mm)
+
+if (NOT PLATFORM_WINDOWS)
+    list(APPEND COMPILING_DISABLED_SOURCES ${WINDOWS_SOURCE_FILES})
 endif ()
+
+if (NOT PLATFORM_MACOS)
+    list(APPEND COMPILING_DISABLED_SOURCES ${MACOS_SOURCE_FILES})
+endif ()
+
+if (NOT PLATFORM_ANDROID)
+    list(APPEND COMPILING_DISABLED_SOURCES ${ANDROID_SOURCE_FILES})
+endif ()
+
+if (NOT PLATFORM_IOS)
+    list(APPEND COMPILING_DISABLED_SOURCES ${IOS_SOURCE_FILES})
+endif ()
+
+set_source_files_properties(${COMPILING_DISABLED_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+
+if (PLATFORM_WINDOWS)
+    set_source_files_properties(${WINDOWS_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY FALSE)
+elseif (PLATFORM_MACOS)
+    set_source_files_properties(${MACOS_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY FALSE)
+elseif (PLATFORM_ANDROID)
+    set_source_files_properties(${ANDROID_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY FALSE)
+
+    if (NOT BS_USE_ANALYTICS)
+        set_source_files_properties(AndroidAnalytics.h AndroidAnalytics.cpp PROPERTIES HEADER_FILE_ONLY TRUE)
+    endif ()
+
+    if (NOT BS_USE_ADMOB)
+        set_source_files_properties(AndroidAdMob.h AndroidAdMob.cpp PROPERTIES HEADER_FILE_ONLY TRUE)
+    endif ()
+elseif (PLATFORM_IOS)
+    set_source_files_properties(${IOS_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY FALSE)
+
+    if (NOT BS_USE_ANALYTICS)
+        set_source_files_properties(iOSAnalytics.h iOSAnalytics.mm PROPERTIES HEADER_FILE_ONLY TRUE)
+    endif ()
+
+    if (NOT BS_USE_ADMOB)
+        set_source_files_properties(iOSAdMob.h iOSAdMob.mm PROPERTIES HEADER_FILE_ONLY TRUE)
+    endif ()
+endif ()
+
+set(ALL_FILES
+    ${COMMON_SOURCE_FILES}
+    ${WINDOWS_SOURCE_FILES}
+    ${MACOS_SOURCE_FILES}
+    ${ANDROID_SOURCE_FILES}
+    ${IOS_SOURCE_FILES})
 
 auto_source_group(${ALL_FILES})
 
@@ -84,31 +117,6 @@ if (XAMARIN)
     set_target_properties(${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR})
     set_target_properties(${PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Library/${ENGINE_BUILD_PLATFORM_DIR})
 
-    #APPLE
-    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "gnu++0x")
-    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
-    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_MODULES_AUTOLINK "NO")
-    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES")
-    set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_GCC_C_LANGUAGE_STANDARD "gnu99")
-    #set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS NO)
-    #set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Debug] YES)
-    if (WITHDEBUG)
-        set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP NO)
-    else ()
-        set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP YES)
-        set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] NO)
-    endif ()
-
-    if (IOS)
-		add_framework(${PROJECT_NAME} Foundation)
-		add_framework(${PROJECT_NAME} UIKit)
-		add_framework(${PROJECT_NAME} OpenGLES)
-		add_framework(${PROJECT_NAME} CoreGraphics)
-		add_framework(${PROJECT_NAME} QuartzCore)
-		add_framework(${PROJECT_NAME} OpenAL)
-		add_framework(${PROJECT_NAME} AudioToolbox)
-		add_framework(${PROJECT_NAME} AVFoundation)
-	endif ()
     target_link_libraries(${PROJECT_NAME} 
         zlib
         minizip
@@ -148,7 +156,15 @@ else ()
         add_executable(${PROJECT_NAME} WIN32 ${ALL_FILES})
     endif ()
 
-    if (NOT ANDROID AND NOT IOS)
+    if (ANDROID OR IOS)
+        if (BS_USE_ANALYTICS)
+            add_definitions(-DUSE_ANALYTICS=1)
+        endif ()
+
+        if (BS_USE_ADMOB)
+            add_definitions(-DUSE_ADMOB=1)
+        endif ()
+    else ()
         set_target_properties(${PROJECT_NAME} PROPERTIES
             PREFIX ""
             #DEBUG_POSTFIX "_d"
@@ -156,11 +172,7 @@ else ()
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Bin/${ENGINE_BUILD_PLATFORM_DIR})
     endif ()
 
-    if (ANDROID)
-        if (BS_USE_ADMOB_REWARD_BASED_VIDEO)
-            add_definitions(-DUSE_ADMOB_REWARD_BASED_VIDEO=1)
-        endif ()
-    elseif (APPLE)
+    if (APPLE)
         # App name
         set(CMAKEVAR_APP_NAME ${BS_APP_NAME})
         # App version
@@ -207,18 +219,36 @@ else ()
             add_framework(${PROJECT_NAME} AudioToolbox)
             add_framework(${PROJECT_NAME} AVFoundation)
 
-            if (BS_USE_ADMOB_REWARD_BASED_VIDEO)
-                add_definitions(-DUSE_ADMOB_REWARD_BASED_VIDEO=1)
+            if (BS_USE_ANALYTICS)
+                set(GoogleAnalyticsServices ${ENGINE_INCLUDE_DIR}/ThirdParty/GoogleAnalyticsServices)
 
+                if (${GoogleAnalyticsServices} STREQUAL GoogleAnalyticsServices-NOTFOUND)
+                    message(ERROR ": GoogleAnalyticsServices folder not found")
+                else ()
+                    target_link_libraries(${PROJECT_NAME} ${GoogleAnalyticsServices}/libGoogleAnalyticsServices.a)
+
+                    target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${GoogleAnalyticsServices}/GoogleAnalytics/Library>)
+                endif ()
+
+                find_package(ZLIB REQUIRED)
+                target_link_libraries(${PROJECT_NAME} ${ZLIB_LIBRARIES})
+
+                find_library(SQLITE3_LIBRARY NAMES sqlite3)
+                target_link_libraries(${PROJECT_NAME} ${SQLITE3_LIBRARY})
+
+                add_framework(${PROJECT_NAME} CoreData)
+                add_framework(${PROJECT_NAME} SystemConfiguration)
+            endif ()
+            
+            if (BS_USE_ADMOB)
                 set(GoogleMobileAds ${ENGINE_INCLUDE_DIR}/ThirdParty/GoogleMobileAds/GoogleMobileAds)
 
                 if (${GoogleMobileAds} STREQUAL GoogleMobileAds-NOTFOUND)
                     message(ERROR ": Framework GoogleMobileAds not found")
                 else ()
                     target_link_libraries(${PROJECT_NAME} ${GoogleMobileAds}.framework)
-                    target_include_directories(${PROJECT_NAME} PUBLIC
-                        $<BUILD_INTERFACE:${GoogleMobileAds}.framework/Headers>
-                        $<INSTALL_INTERFACE:GoogleMobileAds>)
+
+                    target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${GoogleMobileAds}.framework/Headers>)
                 endif ()
 
                 add_framework(${PROJECT_NAME} AdSupport)
@@ -305,8 +335,8 @@ else ()
                 android
                 atomic
                 log
-                GLESv3 
-                EGL 
+                EGL
+                GLESv3
                 OpenSLES)
 
             foreach (FILE ${IMPORTED_LIB_FILES})

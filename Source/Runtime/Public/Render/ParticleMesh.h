@@ -23,7 +23,7 @@ BE_NAMESPACE_BEGIN
 
 class Material;
 class RenderObject;
-class RenderView;
+class RenderCamera;
 
 struct PrtMeshSurf {
     const Material *        material;
@@ -46,7 +46,7 @@ public:
 
     void                    Clear();
 
-    void                    Draw(const ParticleSystem *particleSystem, const Array<Particle *> &stageParticles, const RenderObject *renderObject, const RenderView *renderView);
+    void                    Draw(const ParticleSystem *particleSystem, const Array<Particle *> &stageParticles, const RenderObject *renderObject, const RenderCamera *renderCamera);
 
     void                    CacheIndexes();
 

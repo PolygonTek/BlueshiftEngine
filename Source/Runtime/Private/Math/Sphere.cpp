@@ -21,41 +21,55 @@ bool Sphere::IsIntersectAABB(const AABB &aabb) const {
     return aabb.IsIntersectSphere(*this);
 }
     
-float Sphere::RayIntersection(const Vec3 &start, const Vec3 &dir) const {
-    Vec3 m = start - origin;
-    float b = m.Dot(dir); // * 2 생략
+bool Sphere::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const {
+    Vec3 m = center - ray.origin;
+    float b = m.Dot(ray.dir); // * 2 생략
     float c = m.Dot(m) - radius * radius;
-
-    if (c > 0 && b > 0) {
-        return FLT_MAX;
-    }
-
-    float discr = b * b - c; // determinant = (b^2 - 4ac) / 4
-    // no intersection occured if determinant is less than 0
-    if (discr < 0.0f) { 
-        return FLT_MAX;
-    }
-
-    float scale = -b - Math::Sqrt(discr);
-    if (scale < 0) {
-        scale = 0;
-        //scale = -b + Math::Sqrt(discr);
-    }
     
-    return scale;
+    if (b < 0 && c > 0) {
+        return false;
+    }
+
+    // determinant = (b^2 - 4ac) / 4
+    float discr = b * b - c; 
+    // No intersection occured if determinant is less than 0.
+    if (discr < 0.0f) {
+        return false;
+    }
+
+    if (hitDistMin || hitDistMax) {
+        float q = Math::Sqrt(discr);
+
+        if (hitDistMin) {
+            *hitDistMin = b - q;
+        }
+        if (hitDistMax) {
+            *hitDistMax = b + q;
+        }
+    }
+    return true;
 }
 
-bool Sphere::LineIntersection(const Vec3 &start, const Vec3 &end) const {
-    Vec3 m = start - origin;
+float Sphere::IntersectRay(const Ray &ray) const {
+    float hitDistMin;
+
+    if (IntersectRay(ray, &hitDistMin)) {
+        return hitDistMin;
+    }
+    return FLT_MAX;
+}
+
+bool Sphere::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
+    Vec3 m = start - center;
     float c = m.Dot(m) - radius * radius;
     // If there is definitely at least one real root, there must be an intersection	
     if (c <= 0) {
         return true;
     }
 
-    Vec3 d = end - start;	
-    float l = d.Length();	
-    float b = m.Dot(d) / l;	
+    Vec3 d = end - start;
+    float l = d.Length();
+    float b = m.Dot(d) / l;
     // Exit if line's origin outside sphere (c > 0) and line pointing away from sphere (b > 0)	
     if (b > 0) {
         return false;
@@ -76,7 +90,7 @@ bool Sphere::LineIntersection(const Vec3 &start, const Vec3 &end) const {
 }
 
 AABB Sphere::ToAABB() const {
-    AABB aabb(origin, origin);
+    AABB aabb(center, center);
     aabb.ExpandSelf(radius);
     return aabb;
 }

@@ -161,34 +161,32 @@ static Vec3 GetMultiplicity2Evector(const float matrix[6], float evalue) {
     }
 }
 
-// symmetric 3x3 matrix
+// Symmetric 3x3 matrix
 // m[0] m[1] m[2]
 //      m[3] m[4]
 //           m[5]
 static Vec3 ComputePrincipalComponent(const float matrix[6]) {
-    // compute the cubic coefficients
+    // Compute the cubic coefficients
     // x^3 - c2 * x^2 + c1 * x + c0 = 0
-    float c0 = matrix[0] * matrix[4] * matrix[4] + matrix[3] * matrix[2] * matrix[2] + matrix[5] * matrix[1] * matrix[1] - 
-        matrix[0] * matrix[3] * matrix[5] - 2.0f * matrix[1] * matrix[2] * matrix[4];
-    float c1 = matrix[0] * matrix[3] + matrix[0] * matrix[5] + matrix[3] * matrix[5] - 
-        matrix[1] * matrix[1] - matrix[2] * matrix[2] - matrix[4] * matrix[4];
+    float c0 = matrix[0] * matrix[4] * matrix[4] + matrix[3] * matrix[2] * matrix[2] + matrix[5] * matrix[1] * matrix[1] - matrix[0] * matrix[3] * matrix[5] - 2.0f * matrix[1] * matrix[2] * matrix[4];
+    float c1 = matrix[0] * matrix[3] + matrix[0] * matrix[5] + matrix[3] * matrix[5] - matrix[1] * matrix[1] - matrix[2] * matrix[2] - matrix[4] * matrix[4];
     float c2 = matrix[0] + matrix[3] + matrix[5];
     
-    // compute the quadratic coefficients
+    // Compute the quadratic coefficients
     // x = t + c2 / 3
     // t^3 + p * t + q = 0
     float p = c1 - (1.0f / 3.0f) * c2 * c2;
     float q = (-2.0f / 27.0f) * c2 * c2 * c2 + (1.0f / 3.0f) * c1 * c2 + c0;
 
-    // compute the root count check
+    // Compute the root count check
     float d = 0.25f * q * q + (1.0f / 27.0f) * p * p * p;
 
-    // test the multiplicity
+    // Test the multiplicity
     if (d > FLT_EPSILON) {
-        // only one root, which implies we have a multiple of the identity
+        // Only one root, which implies we have a multiple of the identity
         return Vec3(1.0f);
     } else if (d < -FLT_EPSILON) {
-        // three distinct roots
+        // Three distinct roots
         float theta = std::atan2(std::sqrt(-d), -0.5f * q);
         float rho = std::sqrt(0.25f * q * q - d);
 
@@ -200,7 +198,7 @@ static Vec3 ComputePrincipalComponent(const float matrix[6]) {
         float l2 = (1.0f / 3.0f) * c2 - rt * (ct + (float)sqrt(3.0f) * st);
         float l3 = (1.0f / 3.0f) * c2 - rt * (ct - (float)sqrt(3.0f) * st);
 
-        // pick the larger
+        // Pick the larger
         if (std::fabs(l2) > std::fabs(l1)) {
             l1 = l2;
         }
@@ -208,10 +206,10 @@ static Vec3 ComputePrincipalComponent(const float matrix[6]) {
             l1 = l3;
         }
 
-        // get the eigenvector
+        // Get the eigenvector
         return GetMultiplicity1Evector(matrix, l1);
     } else { // if (d >= -FLT_EPSILON && d <= FLT_EPSILON) {
-        // two roots
+        // Two roots
         float rt;
         if (q < 0.0f) {
             rt = -std::pow(-0.5f * q, 1.0f / 3.0f);
@@ -219,10 +217,10 @@ static Vec3 ComputePrincipalComponent(const float matrix[6]) {
             rt = std::pow(0.5f * q, 1.0f / 3.0f);
         }
 
-        float l1 = (1.0f / 3.0f) * c2 + rt;		// repeated
+        float l1 = (1.0f / 3.0f) * c2 + rt; // repeated
         float l2 = (1.0f / 3.0f) * c2 - 2.0f * rt;
 
-        // get the eigenvector
+        // Get the eigenvector
         if (std::fabs(l1) > std::fabs(l2)) {
             return GetMultiplicity2Evector(matrix, l1);
         } else {
@@ -383,7 +381,7 @@ void DXTEncoder::ComputeAlphaIndicesFast(const byte *colorBlock, const int alpha
     const int ALPHA_RANGE = 7;
 
     byte ab1, ab2, ab3, ab4, ab5, ab6, ab7;
-    ALIGN16(byte indexes[16]);
+    ALIGN_AS16 byte indexes[16];
 
     ab1 = (13 * maxAlpha +  1 * minAlpha + ALPHA_RANGE) / (ALPHA_RANGE * 2);
     ab2 = (11 * maxAlpha +  3 * minAlpha + ALPHA_RANGE) / (ALPHA_RANGE * 2);
@@ -475,7 +473,7 @@ void DXTEncoder::Compute4BitsAlpha(const byte *colorBlock, const int alphaOffset
 }
 
 void DXTEncoder::ComputeColorIndicesFast(const byte *colorBlock, const byte *maxColor, const byte *minColor, uint32_t *out) {
-    ALIGN16(uint16_t colors[4][4]);
+    ALIGN_AS16 uint16_t colors[4][4];
     uint32_t result = 0;
 
     colors[0][0] = (maxColor[0] & C565_5_MASK) | (maxColor[0] >> 5);
@@ -604,9 +602,9 @@ int DXTEncoder::ComputeColorIndices(const byte *colorBlock, const uint16_t color
 }
 
 void DXTEncoder::EncodeDXT1BlockFast(const byte *colorBlock, byte **dstPtr) {
-    ALIGN16(byte minColor[4]);
-    ALIGN16(byte maxColor[4]);
-    ALIGN16(DXTBlock::ColorBlock dxtColorBlock);
+    ALIGN_AS16 byte minColor[4];
+    ALIGN_AS16 byte maxColor[4];
+    ALIGN_AS16 DXTBlock::ColorBlock dxtColorBlock;
 
     GetMinMaxBBox(colorBlock, minColor, maxColor);
     InsetColorsBBox(minColor, maxColor);
@@ -621,10 +619,10 @@ void DXTEncoder::EncodeDXT1BlockFast(const byte *colorBlock, byte **dstPtr) {
 }
 
 void DXTEncoder::EncodeDXT3BlockFast(const byte *colorBlock, byte **dstPtr) {
-    ALIGN16(byte minColor[4]);
-    ALIGN16(byte maxColor[4]);
-    ALIGN16(DXTBlock::ColorBlock dxtColorBlock);
-    ALIGN16(DXTBlock::AlphaExplicitBlock dxtAlphaBlock);
+    ALIGN_AS16 byte minColor[4];
+    ALIGN_AS16 byte maxColor[4];
+    ALIGN_AS16 DXTBlock::ColorBlock dxtColorBlock;
+    ALIGN_AS16 DXTBlock::AlphaExplicitBlock dxtAlphaBlock;
 
     GetMinMaxBBox(colorBlock, minColor, maxColor);
     InsetColorsBBox(minColor, maxColor);
@@ -644,10 +642,10 @@ void DXTEncoder::EncodeDXT3BlockFast(const byte *colorBlock, byte **dstPtr) {
 }
 
 void DXTEncoder::EncodeDXT5BlockFast(const byte *colorBlock, byte **dstPtr) {
-    ALIGN16(byte minColor[4]);
-    ALIGN16(byte maxColor[4]);
-    ALIGN16(DXTBlock::ColorBlock dxtColorBlock);
-    ALIGN16(DXTBlock::AlphaBlock dxtAlphaBlock);
+    ALIGN_AS16 byte minColor[4];
+    ALIGN_AS16 byte maxColor[4];
+    ALIGN_AS16 DXTBlock::ColorBlock dxtColorBlock;
+    ALIGN_AS16 DXTBlock::AlphaBlock dxtAlphaBlock;
 
     GetMinMaxBBox(colorBlock, minColor, maxColor);
     InsetColorsBBox(minColor, maxColor);
@@ -670,9 +668,9 @@ void DXTEncoder::EncodeDXT5BlockFast(const byte *colorBlock, byte **dstPtr) {
 }
 
 void DXTEncoder::EncodeDXN2BlockFast(const byte *colorBlock, byte **dstPtr) {
-    ALIGN16(byte minNormal[4]);
-    ALIGN16(byte maxNormal[4]);
-    ALIGN16(DXTBlock::AlphaBlock dxtAlphaBlock);
+    ALIGN_AS16 byte minNormal[4];
+    ALIGN_AS16 byte maxNormal[4];
+    ALIGN_AS16 DXTBlock::AlphaBlock dxtAlphaBlock;
 
     GetMinMaxBBox(colorBlock, minNormal, maxNormal);
     InsetNormalsBBox3Dc(minNormal, maxNormal);
@@ -689,9 +687,9 @@ void DXTEncoder::EncodeDXN2BlockFast(const byte *colorBlock, byte **dstPtr) {
 }
 
 void DXTEncoder::EncodeDXT1BlockHQ(const byte *colorBlock, byte **dstPtr) {
-    ALIGN16(byte minColor[4]);
-    ALIGN16(byte maxColor[4]);
-    ALIGN16(DXTBlock::ColorBlock dxtColorBlock);
+    ALIGN_AS16 byte minColor[4];
+    ALIGN_AS16 byte maxColor[4];
+    ALIGN_AS16 DXTBlock::ColorBlock dxtColorBlock;
 
     bool transparent = false;
     for (int i = 0; i < 16; i++) {
@@ -721,10 +719,10 @@ void DXTEncoder::EncodeDXT1BlockHQ(const byte *colorBlock, byte **dstPtr) {
 }
 
 void DXTEncoder::EncodeDXT3BlockHQ(const byte *colorBlock, byte **dstPtr) {
-    ALIGN16(byte minColor[4]);
-    ALIGN16(byte maxColor[4]);
-    ALIGN16(DXTBlock::ColorBlock dxtColorBlock);
-    ALIGN16(DXTBlock::AlphaExplicitBlock dxtAlphaBlock);
+    ALIGN_AS16 byte minColor[4];
+    ALIGN_AS16 byte maxColor[4];
+    ALIGN_AS16 DXTBlock::ColorBlock dxtColorBlock;
+    ALIGN_AS16 DXTBlock::AlphaExplicitBlock dxtAlphaBlock;
 
     Compute4BitsAlpha(colorBlock, 3, dxtAlphaBlock.row);
 
@@ -743,11 +741,11 @@ void DXTEncoder::EncodeDXT3BlockHQ(const byte *colorBlock, byte **dstPtr) {
 }
 
 void DXTEncoder::EncodeDXT5BlockHQ(const byte *colorBlock, byte **dstPtr) {
-    ALIGN16(byte minColor[4]);
-    ALIGN16(byte maxColor[4]);
-    ALIGN16(DXTBlock::ColorBlock dxtColorBlock);
-    ALIGN16(DXTBlock::AlphaBlock dxtAlphaBlock1);
-    ALIGN16(DXTBlock::AlphaBlock dxtAlphaBlock2);
+    ALIGN_AS16 byte minColor[4];
+    ALIGN_AS16 byte maxColor[4];
+    ALIGN_AS16 DXTBlock::ColorBlock dxtColorBlock;
+    ALIGN_AS16 DXTBlock::AlphaBlock dxtAlphaBlock1;
+    ALIGN_AS16 DXTBlock::AlphaBlock dxtAlphaBlock2;
 
     GetMinMaxAlpha(colorBlock, 3, minColor, maxColor);
     GetMinMaxColorHQ(colorBlock, minColor, maxColor);
@@ -779,10 +777,10 @@ void DXTEncoder::EncodeDXT5BlockHQ(const byte *colorBlock, byte **dstPtr) {
 }
 
 void DXTEncoder::EncodeDXN2BlockHQ(const byte *colorBlock, byte **dstPtr) {
-    ALIGN16(byte minNormal[4]);
-    ALIGN16(byte maxNormal[4]);
-    ALIGN16(DXTBlock::AlphaBlock dxtAlphaBlock1);
-    ALIGN16(DXTBlock::AlphaBlock dxtAlphaBlock2);
+    ALIGN_AS16 byte minNormal[4];
+    ALIGN_AS16 byte maxNormal[4];
+    ALIGN_AS16 DXTBlock::AlphaBlock dxtAlphaBlock1;
+    ALIGN_AS16 DXTBlock::AlphaBlock dxtAlphaBlock2;
 
     for (int i = 0; i < 2; i++) {
         GetMinMaxAlpha(colorBlock, i, minNormal, maxNormal);
@@ -806,7 +804,6 @@ void DXTEncoder::EncodeDXN2BlockHQ(const byte *colorBlock, byte **dstPtr) {
     }
 }
 
-
 BE_INLINE void DXTEncoder::ExtractBlock(const byte *src, int srcPitch, int blockWidth, int blockHeight, byte *colorBlock) {
     for (int by = 0; by < 4; by++) {
         const byte *srcPtrY = src + srcPitch * (by % blockHeight);
@@ -822,7 +819,7 @@ BE_INLINE void DXTEncoder::ExtractBlock(const byte *src, int srcPitch, int block
 }
 
 void DXTEncoder::CompressImageDXT1Fast(const byte *src, const int width, const int height, const int depth, byte *dst) {
-    ALIGN16(byte colorBlock[4 * 16]);
+    ALIGN_AS16 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
     
     for (int z = 0; z < depth; z++) {
@@ -840,7 +837,7 @@ void DXTEncoder::CompressImageDXT1Fast(const byte *src, const int width, const i
 }
 
 void DXTEncoder::CompressImageDXT1HQ(const byte *src, const int width, const int height, const int depth, byte *dst) {
-    ALIGN16(byte colorBlock[4 * 16]);
+    ALIGN_AS16 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
 
     for (int z = 0; z < depth; z++) {
@@ -858,7 +855,7 @@ void DXTEncoder::CompressImageDXT1HQ(const byte *src, const int width, const int
 }
 
 void DXTEncoder::CompressImageDXT3Fast(const byte *src, const int width, const int height, const int depth, byte *dst) {
-    ALIGN16(byte colorBlock[4 * 16]);
+    ALIGN_AS16 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
 
     for (int z = 0; z < depth; z++) {
@@ -876,7 +873,7 @@ void DXTEncoder::CompressImageDXT3Fast(const byte *src, const int width, const i
 }
 
 void DXTEncoder::CompressImageDXT3HQ(const byte *src, const int width, const int height, const int depth, byte *dst) {
-    ALIGN16(byte colorBlock[4 * 16]);
+    ALIGN_AS16 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
 
     for (int z = 0; z < depth; z++) {
@@ -894,7 +891,7 @@ void DXTEncoder::CompressImageDXT3HQ(const byte *src, const int width, const int
 }
 
 void DXTEncoder::CompressImageDXT5Fast(const byte *src, const int width, const int height, const int depth, byte *dst) {
-    ALIGN16(byte colorBlock[4 * 16]);
+    ALIGN_AS16 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
 
     for (int z = 0; z < depth; z++) {
@@ -912,7 +909,7 @@ void DXTEncoder::CompressImageDXT5Fast(const byte *src, const int width, const i
 }
 
 void DXTEncoder::CompressImageDXT5HQ(const byte *src, const int width, const int height, const int depth, byte *dst) {
-    ALIGN16(byte colorBlock[4 * 16]);
+    ALIGN_AS16 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
 
     for (int z = 0; z < depth; z++) {
@@ -930,7 +927,7 @@ void DXTEncoder::CompressImageDXT5HQ(const byte *src, const int width, const int
 }
 
 void DXTEncoder::CompressImageDXN2Fast(const byte *src, const int width, const int height, const int depth, byte *dst) {
-    ALIGN16(byte colorBlock[4 * 16]);
+    ALIGN_AS16 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
 
     for (int z = 0; z < depth; z++) {
@@ -948,7 +945,7 @@ void DXTEncoder::CompressImageDXN2Fast(const byte *src, const int width, const i
 }
 
 void DXTEncoder::CompressImageDXN2HQ(const byte *src, const int width, const int height, const int depth, byte *dst) {
-    ALIGN16(byte colorBlock[4 * 16]);
+    ALIGN_AS16 byte colorBlock[4 * 16];
     byte *dstPtr = dst;
 
     for (int z = 0; z < depth; z++) {

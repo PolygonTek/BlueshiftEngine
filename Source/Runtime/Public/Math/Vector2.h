@@ -35,11 +35,11 @@ public:
     /// The default constructor does not initialize any members of this class.
     Vec2() = default;
     /// Constructs a Vec2 with the value (x, y).
-    Vec2(float x, float y);
+    constexpr Vec2(float x, float y);
     /// Constructs a Vec2 from a C array, to the value (data[0], data[1]).
-    explicit Vec2(const float data[2]);
+    explicit constexpr Vec2(const float data[2]);
     /// Constructs a Vec2 from a single value (s, s)
-    explicit Vec2(float s);
+    explicit constexpr Vec2(float s);
     
                         /// Casts this Vec2 to a C array.
                         /// This function simply returns a C pointer view to this data structure.
@@ -286,19 +286,16 @@ public:
     float               y;          ///< The y components.
 };
 
-BE_INLINE Vec2::Vec2(float x, float y) {
-    this->x = x;
-    this->y = y;
+BE_INLINE constexpr Vec2::Vec2(float inX, float inY) :
+    x(inX), y(inY) {
 }
 
-BE_INLINE Vec2::Vec2(const float data[2]) {
-    this->x = data[0];
-    this->y = data[1];
+BE_INLINE constexpr Vec2::Vec2(const float data[2]) :
+    x(data[0]), y(data[1]) {
 }
 
-BE_INLINE Vec2::Vec2(float c) {
-    this->x = c;
-    this->y = c;
+BE_INLINE constexpr Vec2::Vec2(float c) :
+    x(c), y(c) {
 }
 
 BE_INLINE void Vec2::Set(float x, float y) {

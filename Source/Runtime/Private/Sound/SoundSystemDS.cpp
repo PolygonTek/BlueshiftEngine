@@ -20,20 +20,20 @@
 
 BE_NAMESPACE_BEGIN
 
-static const int MaxSources = 32;
+static constexpr int MaxSources = 32;
 
-static CVar     s_khz(L"s_khz", L"44", CVar::Integer | CVar::Archive, L"");
-static CVar     s_doppler(L"s_doppler", L"1.0", CVar::Float | CVar::Archive, L"");
-static CVar     s_rolloff(L"s_rolloff", L"2.0", CVar::Float | CVar::Archive, L"");
+static CVar     s_khz("s_khz", "44", CVar::Flag::Integer | CVar::Flag::Archive, "");
+static CVar     s_doppler("s_doppler", "1.0", CVar::Flag::Float | CVar::Flag::Archive, "");
+static CVar     s_rolloff("s_rolloff", "2.0", CVar::Flag::Float | CVar::Flag::Archive, "");
 
 bool SoundSystem::InitDevice(void *windowHandle) {
     HRESULT hr;
 
-    BE_LOG(L"Initializing DirectSound...\n");
+    BE_LOG("Initializing DirectSound...\n");
 
     this->hwnd = (HWND)windowHandle;
 
-    BE_LOG(L"...creating DirectSound object: ");
+    BE_LOG("...creating DirectSound object: ");
     while ((hr = DirectSoundCreate8(nullptr, &dsDevice, nullptr)) != DS_OK) {
         if (hr == DSERR_ALLOCATED) {
             if (MessageBox(hwnd,
@@ -41,15 +41,15 @@ bool SoundSystem::InitDevice(void *windowHandle) {
                 L"Select Retry to try to start sound again or Cancel to run with no sound.",
                 L"Sound system not available",
                 MB_RETRYCANCEL | MB_SETFOREGROUND | MB_ICONEXCLAMATION) != IDRETRY) {
-                BE_LOG(L"failed, hardware already in use\n");
+                BE_LOG("failed, hardware already in use\n");
                 return false;
             }
         }
 
-        BE_LOG(L"failed\n");
+        BE_LOG("failed\n");
         return false;
     }
-    BE_LOG(L"ok\n");
+    BE_LOG("ok\n");
 
     DSCAPS dscaps;
     dscaps.dwSize = sizeof(dscaps);
@@ -57,22 +57,22 @@ bool SoundSystem::InitDevice(void *windowHandle) {
     if (hr == DS_OK) {
         // No HW driver
         if (dscaps.dwFlags & DSCAPS_EMULDRIVER) {
-            BE_LOG(L"no DirectSound driver found\n");
+            BE_LOG("no DirectSound driver found\n");
             Shutdown();
             return false;
         }
     } else {
-        BE_LOG(L"Couldn't get DirectSound caps\n");
+        BE_LOG("Couldn't get DirectSound caps\n");
     }
 
-    BE_LOG(L"...setting DDSSCL_PRIORITY coop level: ");
+    BE_LOG("...setting DDSSCL_PRIORITY coop level: ");
     hr = dsDevice->SetCooperativeLevel(hwnd, DSSCL_PRIORITY);
     if (FAILED(hr)) {
-        BE_LOG(L"failed\n");
+        BE_LOG("failed\n");
         Shutdown();
         return false;
     }
-    BE_LOG(L"ok\n");
+    BE_LOG("ok\n");
 
     // Create primary sound
     DSBUFFERDESC dsbd;
@@ -83,13 +83,13 @@ bool SoundSystem::InitDevice(void *windowHandle) {
     //dsbd.lpwfxFormat = nullptr;
     //memset(&dsbd.guid3DAlgorithm, 0, sizeof(dsbd.guid3DAlgorithm));
 
-    BE_LOG(L"...creating primary sound: ");
+    BE_LOG("...creating primary sound: ");
     if (dsDevice->CreateSoundBuffer(&dsbd, &dsPrimaryBuffer, nullptr) != DS_OK) {
-        BE_LOG(L"failed\n");
+        BE_LOG("failed\n");
         Shutdown();
         return false;
     }
-    BE_LOG(L"ok\n");
+    BE_LOG("ok\n");
 
     // Set the primary sound format
     const int khz = s_khz.GetInteger();
@@ -104,7 +104,7 @@ bool SoundSystem::InitDevice(void *windowHandle) {
     fmt.nAvgBytesPerSec = fmt.nSamplesPerSec * fmt.nBlockAlign;
 
     if (dsPrimaryBuffer->SetFormat(&fmt) != DS_OK) {
-        BE_LOG(L"Couldn't set DirectSound primary sound format. Using default\n");
+        BE_LOG("Couldn't set DirectSound primary sound format. Using default\n");
     }
 
     // Get actual format of the primary sound
@@ -119,7 +119,7 @@ bool SoundSystem::InitDevice(void *windowHandle) {
 
     // Get the listener interface
     if (dsPrimaryBuffer->QueryInterface(IID_IDirectSound3DListener8, (void **)&dsListener3D) != DS_OK) {
-        BE_LOG(L"failed to QueryInterface to get listener interface\n");
+        BE_LOG("failed to QueryInterface to get listener interface\n");
         Shutdown();
         return false;
     }
@@ -145,7 +145,7 @@ bool SoundSystem::InitDevice(void *windowHandle) {
     listenerProps.flDopplerFactor = s_doppler.GetFloat();
 
     if (dsListener3D->SetAllParameters(&listenerProps, DS3D_IMMEDIATE) != DS_OK) {
-        BE_LOG(L"failed to set listener all parameters\n");
+        BE_LOG("failed to set listener all parameters\n");
         Shutdown();
         return false;
     }
@@ -161,7 +161,7 @@ bool SoundSystem::InitDevice(void *windowHandle) {
 }
 
 void SoundSystem::ShutdownDevice() {
-    BE_LOG(L"Shutting down DirectSound...\n");
+    BE_LOG("Shutting down DirectSound...\n");
 
     for (int sourceIndex = 0; sourceIndex < sources.Count(); sourceIndex++) {
         SoundSource *source = sources[sourceIndex];
@@ -172,7 +172,7 @@ void SoundSystem::ShutdownDevice() {
     freeSources.Clear();
 
     if (dsDevice) {
-        BE_LOG(L"...setting DDSCL_NORMAL coop level\n");
+        BE_LOG("...setting DDSCL_NORMAL coop level\n");
         dsDevice->SetCooperativeLevel(hwnd, DSSCL_NORMAL);
     }
 
@@ -182,14 +182,14 @@ void SoundSystem::ShutdownDevice() {
     }
 
     if (dsPrimaryBuffer) {
-        BE_LOG(L"...stopping and releasing primary sound buffer\n");
+        BE_LOG("...stopping and releasing primary sound buffer\n");
         dsPrimaryBuffer->Stop();
         dsPrimaryBuffer->Release();
         dsPrimaryBuffer = nullptr;
     }
 
     if (dsDevice) {
-        BE_LOG(L"...releasing DirectSound object\n");
+        BE_LOG("...releasing DirectSound object\n");
         dsDevice->Release();
         dsDevice = nullptr;
     }

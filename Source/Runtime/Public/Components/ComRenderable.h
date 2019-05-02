@@ -43,12 +43,12 @@ public:
 
     virtual const AABB      GetAABB() override;
 
-    virtual bool            RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const override;
+    virtual bool            IntersectRay(const Ray &ray, bool backFaceCull, float *hitDist) const override;
 
     void                    SetWireframeColor(const Color4 &color);
 
-    RenderObject::WireframeMode GetWireframeMode() const { return renderObjectDef.wireframeMode; }
-    void                    SetWireframeMode(RenderObject::WireframeMode wireframeMode);
+    RenderObject::WireframeMode::Enum GetWireframeMode() const { return renderObjectDef.wireframeMode; }
+    void                    SetWireframeMode(RenderObject::WireframeMode::Enum wireframeMode);
 
     float                   GetMaxVisDist() const;
     void                    SetMaxVisDist(float maxVisDist);
@@ -80,6 +80,7 @@ protected:
     virtual void            UpdateVisuals();
 
     void                    LayerChanged(const Entity *entity);
+    void                    StaticMaskChanged(const Entity *entity);
     void                    TransformUpdated(const ComTransform *transform);
 
     RenderObject::State     renderObjectDef;

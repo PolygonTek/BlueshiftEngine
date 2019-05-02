@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 #include "Platform/PlatformProcess.h"
 #include "Core/Str.h"
-#include "Core/WStr.h"
 #include "Containers/StrArray.h"
 
 BE_NAMESPACE_BEGIN
@@ -30,14 +29,14 @@ void ProcessHandle::Close() {
     }
 }
 
-static void ArgumentsToStrArray(const wchar_t *args, WStrArray &argsArray) {
-    wchar_t buffer[2048];
-    wchar_t *ptr = buffer;
+static void ArgumentsToStrArray(const char *args, StrArray &argsArray) {
+    char buffer[2048];
+    char *ptr = buffer;
     bool inQuote = false;
-    int length = WStr::Length(args);
+    int length = Str::Length(args);
     
     for (int i = 0; i < length; i++) {
-        const wchar_t c = args[i];
+        const char c = args[i];
         
         if (c == '"') {
             inQuote = !inQuote;
@@ -84,8 +83,8 @@ static NSString *GetAppPath(const NSString *appPath) {
     return path;
 }
 
-ProcessHandle PlatformMacOSProcess::CreateProccess(const wchar_t *appPath, const wchar_t *args, const wchar_t *workingPath) {
-    NSString *nsAppPath = (__bridge NSString *)WideStringToCFString(appPath);
+ProcessHandle PlatformMacOSProcess::CreateProccess(const char *appPath, const char *args, const char *workingPath) {
+    NSString *nsAppPath = (__bridge NSString *)StringToCFString(appPath);
 
     if (![[NSFileManager defaultManager] isExecutableFileAtPath:nsAppPath]) {
         nsAppPath = GetAppPath(nsAppPath);
@@ -98,21 +97,21 @@ ProcessHandle PlatformMacOSProcess::CreateProccess(const wchar_t *appPath, const
     NSTask *task = [[NSTask alloc] init];
     [task setLaunchPath:nsAppPath];
 
-    WStrArray argsArray;
+    StrArray argsArray;
     ArgumentsToStrArray(args, argsArray);
     
     NSMutableArray *argumentsArray = [[NSMutableArray alloc] init];
     
     for (int i = 0; i < argsArray.Count(); i++) {
-        WStr arg = argsArray[i];
+        Str arg = argsArray[i];
         
-        [argumentsArray addObject:(__bridge NSString *)WideStringToCFString(arg.c_str())];
+        [argumentsArray addObject:(__bridge NSString *)StringToCFString(arg.c_str())];
     }
     
     [task setArguments:argumentsArray];
     
     if (workingPath) {
-        [task setCurrentDirectoryPath:(__bridge NSString *)WideStringToCFString(workingPath)];
+        [task setCurrentDirectoryPath:(__bridge NSString *)StringToCFString(workingPath)];
     }
     
     NSPipe *stdOutPipe = [[NSPipe alloc] init];

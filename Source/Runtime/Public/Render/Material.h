@@ -39,138 +39,157 @@ class Material {
     friend class Batch;
 
 public:
-    enum Flag {
-        PolygonOffset           = BIT(0),
-        NoShadow                = BIT(1),
-        ForceShadow             = BIT(2),
-        UnsmoothTangents        = BIT(4),
-        LoadedFromFile          = BIT(9)
+    static constexpr int Version = 2;
+
+    struct Flag {
+        enum Enum {
+            PolygonOffset       = BIT(0),
+            NoShadow            = BIT(1),
+            ForceShadow         = BIT(2),
+            UnsmoothTangents    = BIT(4),
+            LoadedFromFile      = BIT(9)
+        };
     };
 
-    enum Type {
-        SurfaceMaterialType     = 0,
-        DecalMaterialType       = 1,
-        LightMaterialType       = 2,
-        BlendLightMaterialType  = 3,
-        FogLightMaterialType    = 4
+    struct Type {
+        enum Enum {
+            Surface             = 0,
+            Decal               = 1,
+            Light               = 2,
+            BlendLight          = 3,
+            FogLight            = 4
+        };
     };
 
-    enum Sort {
-        BadSort                 = 0,
-        SubViewSort             = 1,
-        OpaqueSort              = 2,
-        SkySort                 = 3,
-        AlphaTestSort           = 4,
-        TranslucentSort         = 10,
-        OverlaySort             = 11,
-        NearestSort             = 15
+    struct Sort {
+        enum Enum {
+            Bad                 = 0,
+            SubView             = 1,
+            Opaque              = 2,
+            AlphaTest           = 3,
+            Sky                 = 4,
+            Translucent         = 10,
+            Overlay             = 11,
+            Nearest             = 15
+        };
     };
 
-    enum VertexColorMode {
-        IgnoreVertexColor,
-        ModulateVertexColor,
-        InverseModulateVertexColor
+    struct VertexColorMode {
+        enum Enum {
+            Ignore,
+            Modulate,
+            InverseModulate
+        };
     };
 
-    //--------------------------------------------------------------------------------------------------
-    // hints for material by one texture
-    //--------------------------------------------------------------------------------------------------
-    enum TextureHint {
-        NoHint,
-        LightHint,
-        VertexColorHint,
-        LightmappedHint,
-        SpriteHint,
-        OverlayHint
+    // Hints for material by one texture
+    struct TextureHint {
+        enum Enum {
+            None,
+            Light,
+            VertexColor,
+            Lightmapped,
+            Sprite,
+            Overlay,
+            EnvCubeMap
+        };
     };
 
-    enum RenderingMode {
-        Opaque,
-        AlphaCutoff,
-        AlphaBlend
+    struct RenderingMode {
+        enum Enum {
+            Opaque,
+            AlphaCutoff,
+            AlphaBlend
+        };
+    };
+
+    // Controls how transparent objects are rendered.
+    // This is only valid when the rendering mode is alpha blend.
+    struct Transparency {
+        enum Enum {
+            Default,            ///< Render normally.
+            TwoPassesOneSide,   ///< Render in the depth buffer, then again in color buffer.
+            TwoPassesTwoSides   ///< Render twice in the color buffer first with its back faces, then with its front faces.
+        };
     };
 
     struct ShaderPass {
-        RenderingMode       renderingMode;
-        int                 cullType;
-        int                 stateBits;
-        float               cutoffAlpha;
-        VertexColorMode     vertexColorMode;
-        bool                useOwnerColor;
-        Color4              constantColor;
-        Texture *           texture;
-        Vec2                tcScale;
-        Vec2                tcTranslation;
-        bool                instancingEnabled;
-        Shader *            shader;
-        Shader *            referenceShader;
-        StrHashMap<Shader::Property> shaderProperties;          // define prop 이 바뀌면 reinstantiate 해야 할듯
+        RenderingMode::Enum     renderingMode;
+        Transparency::Enum      transparency;
+        int                     cullType;
+        int                     stateBits;
+        float                   cutoffAlpha;
+        VertexColorMode::Enum   vertexColorMode;
+        bool                    useOwnerColor;
+        Color4                  constantColor;
+        Texture *               texture;
+        Vec2                    tcScale;
+        Vec2                    tcTranslation;
+        bool                    instancingEnabled;
+        Shader *                referenceShader;
+        Shader *                shader;
+        StrHashMap<Shader::Property> shaderProperties;
     };
 
     Material();
     ~Material();
 
-    const char *            GetName() const { return name; }
-    const char *            GetHashName() const { return hashName; }
-    int                     GetFlags() const { return flags; }
-    int                     GetType() const { return type; }
-    RenderingMode           GetRenderingMode() const { return pass->renderingMode; }
-    void                    SetRenderingMode(RenderingMode mode);
-    int                     GetCullType() const { return pass->cullType; }
-    int                     GetSort() const { return sort; }
+    const char *                GetName() const { return name; }
+    const char *                GetHashName() const { return hashName; }
+    int                         GetFlags() const { return flags; }
+    int                         GetType() const { return type; }
+    RenderingMode::Enum         GetRenderingMode() const { return pass->renderingMode; }
+    void                        SetRenderingMode(RenderingMode::Enum mode);
+    int                         GetCullType() const { return pass->cullType; }
+    int                         GetSort() const { return sort; }
 
-    bool                    IsLitSurface() const;
-    bool                    IsSkySurface() const;
-    bool                    IsShadowCaster() const;
+    bool                        IsLitSurface() const;
+    bool                        IsSkySurface() const;
+    bool                        IsShadowCaster() const;
 
-    const ShaderPass *      GetPass() const { return pass; }
-    ShaderPass *            GetPass() { return pass; }
+    const ShaderPass *          GetPass() const { return pass; }
+    ShaderPass *                GetPass() { return pass; }
 
-    void                    SetName(const char *name) { this->name = name; }
+    void                        SetName(const char *name) { this->name = name; }
 
-    bool                    Create(const char *text);
+    bool                        Create(const char *text);
 
-    void                    Purge();
+    void                        Purge();
 
-    bool                    Load(const char *filename);
-    bool                    Reload();
+    bool                        Load(const char *filename);
+    bool                        Reload();
 
-    void                    Write(const char *filename);
+    void                        Write(const char *filename);
 
-    const Material *        AddRefCount() const { refCount++; return this; }
+    const Material *            AddRefCount() const { refCount++; return this; }
+    int                         GetRefCount() const { return refCount; }
 
-    void                    ChangeShader(Shader *shader);
-    void                    EndShaderPropertiesChanged();
+    void                        ChangeShader(Shader *shader);
+    void                        CommitShaderPropertiesChanged();
 
 private:
-    void                    Finish();
-    bool                    ParsePass(Lexer &lexer, ShaderPass *pass);
-    bool                    ParseRenderingMode(Lexer &lexer, RenderingMode *renderingMode) const;
-    bool                    ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const;
-    //void                  MultiplyTextureMatrix(Pass *pass, int inMatrix[2][3]);
-    bool                    ParseShaderProperties(Lexer &lexer, Dict &properties);
+    void                        Finish();
+    bool                        ParsePass(Lexer &lexer, ShaderPass *pass);
+    bool                        ParseRenderingMode(Lexer &lexer, RenderingMode::Enum *renderingMode) const;
+    bool                        ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const;
+    //void                      MultiplyTextureMatrix(Pass *pass, int inMatrix[2][3]);
+    bool                        ParseShaderProperties(Lexer &lexer, Dict &properties);
 
-    Str                     hashName;
-    Str                     name;
-    mutable int             refCount;               // reference count
-    bool                    permanence;             // is permanent material ?
-    int                     index;                  // index for sorting materials when rendering
+    Str                         hashName;
+    Str                         name;
+    mutable int                 refCount = 0;           // reference count
+    bool                        permanence = false;     // is permanent material ?
+    int                         index = -1;             // index for sorting materials when rendering
 
-    int                     flags;
-    Type                    type;
-    Sort                    sort;
+    int                         version;
+    int                         flags = 0;
+    Type::Enum                  type = Type::Surface;
+    Sort::Enum                  sort = Sort::Bad;
 
-    ShaderPass *            pass;
+    ShaderPass *                pass = nullptr;
 };
 
 BE_INLINE Material::Material() {
-    refCount                = 0;
-    permanence              = false;
-    index                   = -1;
-    flags                   = 0;
-    type                    = SurfaceMaterialType;
-    sort                    = BadSort;
-    pass                    = nullptr;
 }
 
 BE_INLINE Material::~Material() {
@@ -181,43 +200,44 @@ class MaterialManager {
     friend class Material;
 
 public:
-    void                    Init();
-    void                    Shutdown();
+    void                        Init();
+    void                        Shutdown();
 
-    Material *              AllocMaterial(const char *name);
-    Material *              FindMaterial(const char *name) const;
-    Material *              GetMaterial(const char *name);
-    Material *              GetSingleTextureMaterial(const Texture *texture, Material::TextureHint hint = Material::NoHint);
+    Material *                  AllocMaterial(const char *name);
+    Material *                  FindMaterial(const char *name) const;
+    Material *                  GetMaterial(const char *name);
+    Material *                  GetSingleTextureMaterial(const Texture *texture, Material::TextureHint::Enum hint = Material::TextureHint::None);
 
-    void                    ReleaseMaterial(Material *material, bool immediateDestroy = false);
-    void                    DestroyMaterial(Material *material);
-    void                    DestroyUnusedMaterials();
+    void                        ReleaseMaterial(Material *material, bool immediateDestroy = false);
+    void                        DestroyMaterial(Material *material);
+    void                        DestroyUnusedMaterials();
 
-    void                    PrecacheMaterial(const char *filename);
+    void                        PrecacheMaterial(const char *filename);
 
-    void                    RenameMaterial(Material *material, const Str &newName);
+    void                        RenameMaterial(Material *material, const Str &newName);
 
-    int                     GetIndexByMaterial(const Material *material) const { return material->index; }
+    int                         GetIndexByMaterial(const Material *material) const { return material->index; }
 
-                            // pre-defined materials
-    static Material *       defaultMaterial;
-    static Material *       whiteMaterial;
-    static Material *       blendMaterial;
-    static Material *       whiteLightMaterial;
-    static Material *       zeroClampLightMaterial;
-    static Material *       defaultSkyboxMaterial;
+                                // pre-defined materials
+    static Material *           defaultMaterial;
+    static Material *           whiteMaterial;
+    static Material *           unlitMaterial;
+    static Material *           blendMaterial;
+    static Material *           whiteLightMaterial;
+    static Material *           zeroClampLightMaterial;
+    static Material *           defaultSkyboxMaterial;
 
-    static const int        MaxCount = 65536;
+    static const int            MaxCount = 65536;
 
 private:
-    static void             Cmd_ListMaterials(const CmdArgs &args);
-    static void             Cmd_ReloadMaterial(const CmdArgs &args);
+    static void                 Cmd_ListMaterials(const CmdArgs &args);
+    static void                 Cmd_ReloadMaterial(const CmdArgs &args);
 
-    void                    CreateEngineMaterials();
+    void                        CreateEngineMaterials();
 
-    StrIHashMap<Material *> materialHashMap;
+    StrIHashMap<Material *>     materialHashMap;
 };
 
-extern MaterialManager      materialManager;
+extern MaterialManager          materialManager;
 
 BE_NAMESPACE_END

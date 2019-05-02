@@ -44,11 +44,11 @@ void OpenGLRHI::SetDefaultState() {
     *currentContext->state = GLState();
 
     renderTargetList[0]->fbo = currentContext->defaultFramebuffer;
-    renderTargetList[0]->sRGB = true;// !linearFrameBuffer;
+    renderTargetList[0]->flags = RenderTargetFlag::SRGBWrite;// !linearFrameBuffer;
     
     gglBindVertexArray(currentContext->defaultVAO);
     
-    for (int i = 0; i < VertexElement::MaxUsages; i++) {
+    for (int i = 0; i < VertexElement::Usage::Count; i++) {
         gglDisableVertexAttribArray(i);
     }
     
@@ -65,7 +65,7 @@ void OpenGLRHI::SetDefaultState() {
     SetStateBits(ColorWrite | AlphaWrite | DepthWrite | DF_LEqual);
     
     gglFrontFace(GL_CCW);
-    SetCullFace(BackCull);
+    SetCullFace(CullType::Back);
     
     //gglDisable(GL_MULTISAMPLE);
     
@@ -83,7 +83,7 @@ void OpenGLRHI::SetDefaultState() {
     gglStencilMask(0);
     OpenGL::DepthRange(0, 1);
     
-    // deprecated at OpenGL 3.0
+    // Deprecated at OpenGL 3.0
     //gglShadeModel(GL_SMOOTH);
     //gglHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
     //gglColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -122,7 +122,7 @@ void OpenGLRHI::SetStateBits(unsigned int stateBits) {
                     OpenGL::PolygonMode(GL_FRONT_AND_BACK, GL_FILL);
                     break;
                 default:
-                    BE_FATALERROR(L"OpenGLRHI::SetStateBits: invalid polygon mode state bits");
+                    BE_FATALERROR("OpenGLRHI::SetStateBits: invalid polygon mode state bits");
                     break;
             }
         }
@@ -157,7 +157,7 @@ void OpenGLRHI::SetStateBits(unsigned int stateBits) {
                         gglDepthFunc(GL_NEVER);
                         break;
                     default:
-                        BE_FATALERROR(L"OpenGLRHI::SetStateBits: invalid depth func state bits");
+                        BE_FATALERROR("OpenGLRHI::SetStateBits: invalid depth func state bits");
                         break;
                 }
                 
@@ -201,7 +201,7 @@ void OpenGLRHI::SetStateBits(unsigned int stateBits) {
                         break;
                     default:
                         blend_src = GL_ONE;
-                        BE_FATALERROR(L"OpenGLRHI::SetStateBits: invalid src blend state bits");
+                        BE_FATALERROR("OpenGLRHI::SetStateBits: invalid src blend state bits");
                         break;
                 }
                 
@@ -233,7 +233,7 @@ void OpenGLRHI::SetStateBits(unsigned int stateBits) {
                         break;
                     default:
                         blend_dst = GL_ONE;
-                        BE_FATALERROR(L"OpenGLRHI::SetStateBits: invalid dst blend state bits");
+                        BE_FATALERROR("OpenGLRHI::SetStateBits: invalid dst blend state bits");
                         break;
                 }
                 
@@ -266,11 +266,11 @@ void OpenGLRHI::SetStateBits(unsigned int stateBits) {
 void OpenGLRHI::SetCullFace(int cull) {
     if (cull != currentContext->state->cull) {
         currentContext->state->cull = cull;
-        if (cull == NoCull) {
+        if (cull == CullType::None) {
             gglDisable(GL_CULL_FACE);
         } else {
             gglEnable(GL_CULL_FACE);
-            if (cull == BackCull) {
+            if (cull == CullType::Back) {
                 gglCullFace(GL_BACK);
             } else {
                 gglCullFace(GL_FRONT);
@@ -355,8 +355,14 @@ void OpenGLRHI::SetSRGBWrite(bool enable) {
         } else {
             gglDisable(GL_FRAMEBUFFER_SRGB);
         }
+
+        currentContext->state->sRGBWriteEnabled = enable;
     }
 };
+
+bool OpenGLRHI::IsSRGBWriteEnabled() const {
+    return currentContext->state->sRGBWriteEnabled;
+}
 
 void OpenGLRHI::EnableLineSmooth(bool enable) {
     if (OpenGL::SupportsLineSmooth()) {
@@ -378,7 +384,7 @@ void OpenGLRHI::SetLineWidth(float width) {
     //gglLineWidth(Max(width, 0.0f));
 }
 
-RHI::Handle OpenGLRHI::CreateStencilState(int readMask, int writeMask, StencilFunc funcBack, int failBack, int zfailBack, int zpassBack, StencilFunc funcFront, int failFront, int zfailFront, int zpassFront) {
+RHI::Handle OpenGLRHI::CreateStencilState(int readMask, int writeMask, StencilFunc::Enum funcBack, int failBack, int zfailBack, int zpassBack, StencilFunc::Enum funcFront, int failFront, int zfailFront, int zpassFront) {
     GLStencilState *stencilState = new GLStencilState;
     stencilState->readMask  = readMask;
     stencilState->writeMask = writeMask;

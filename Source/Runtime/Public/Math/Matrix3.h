@@ -123,28 +123,28 @@ public:
                         /// This function is identical to the member function SubSelf().
     Mat3 &              operator-=(const Mat3 &rhs);
     
-                        /// Multiplies this matrix with the given matrix, in-place
+                        /// Multiplies this matrix with the given matrix, in-place.
     Mat3 &              MulSelf(const Mat3 &m) { *this *= m; return *this; }
-                        /// Multiplies this matrix with the given matrix, in-place
+                        /// Multiplies this matrix with the given matrix, in-place.
                         /// This function is identical to the member function MulSelf().
     Mat3 &              operator*=(const Mat3 &rhs);
     
-                        /// Multiplies this matrix with the given scalar, in-place
+                        /// Multiplies this matrix with the given scalar, in-place.
     Mat3 &              MulScalarSelf(float s) { *this *= s; return *this; }
-                        /// Multiplies this matrix with the given scalar, in-place
+                        /// Multiplies this matrix with the given scalar, in-place.
                         /// This function is identical to the member function MulScalarSelf().
     Mat3 &              operator*=(float rhs);
                         
                         /// Multiplies the vector lhs with the given matrix rhs, in-place on vector. i.e. lhs *= rhs
     friend Vec3 &       operator*=(Vec3 &lhs, const Mat3 &rhs) { lhs = rhs * lhs; return lhs; }
 
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const Mat3 &m) const;
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const Mat3 &m, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const Mat3 &rhs) const { return Equals(rhs); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const Mat3 &rhs) const { return !Equals(rhs); }
 
                         /// Tests if this is the identity matrix, up to the given epsilon.

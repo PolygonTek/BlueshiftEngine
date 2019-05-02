@@ -209,9 +209,9 @@ BE_INLINE bool Pluecker::Equals(const Pluecker &a, const float epsilon) const {
     if (Math::Fabs(p[0] - a[0]) > epsilon) return false;
     if (Math::Fabs(p[1] - a[1]) > epsilon) return false;
     if (Math::Fabs(p[2] - a[2]) > epsilon) return false;
-    if (Math::Fabs(p[3] - a[3]) > epsilon) return false;	
-    if (Math::Fabs(p[4] - a[4]) > epsilon) return false;	
-    if (Math::Fabs(p[5] - a[5]) > epsilon) return false;	
+    if (Math::Fabs(p[3] - a[3]) > epsilon) return false;
+    if (Math::Fabs(p[4] - a[4]) > epsilon) return false;
+    if (Math::Fabs(p[5] - a[5]) > epsilon) return false;
     return true;
 }
 

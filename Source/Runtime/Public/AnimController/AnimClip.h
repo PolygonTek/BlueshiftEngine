@@ -60,7 +60,7 @@ public:
     void                GetSingleFrame(int frameNum, int numJointIndexes, const int *jointIndexes, JointPose *joints) const;
 
                         /// Gets the frame interpolated joints
-    void                GetInterpolatedFrame(Anim::FrameInterpolation &frame, int numJointIndexes, const int *jointIndexes, JointPose *joints) const;
+    void                GetInterpolatedFrame(Anim::FrameInterpolation &frameInterpolation, int numJointIndexes, const int *jointIndexes, JointPose *joints) const;
 
                         /// Gets the translation with the given animation time
     void                GetTranslation(int time, Vec3 &outTranslation) const;
@@ -77,6 +77,7 @@ public:
     void                Write(const char *filename);
 
     const AnimClip *    AddRefCount() const { refCount++; return this; }
+    int                 GetRefCount() const { return refCount; }
     
 private:
     Anim *              anim;

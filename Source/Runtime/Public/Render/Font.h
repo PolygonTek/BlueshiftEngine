@@ -28,7 +28,7 @@ class FontFace;
 
 // Freetype / bitmap font 에 공통으로 쓰이는 glyph 정보 구조체
 struct FontGlyph {
-    int                     charCode;
+    uint32_t                charCode;
     int                     width, height;
     int                     bearingX, bearingY;
     int                     advance;
@@ -40,10 +40,12 @@ class Font {
     friend class FontManager;
 
 public:
-    enum FontType {
-        None,
-        BitmapFont,
-        FreeTypeFont
+    struct FontType {
+        enum Enum {
+            None,
+            Bitmap,
+            FreeType
+        };
     };
 
     Font();
@@ -55,12 +57,12 @@ public:
     int                     GetFontHeight() const;
 
                             /// Returns pointer to the glyph structure corresponding to a character. Return null if glyph not found.
-    FontGlyph *             GetGlyph(int charCode);
+    FontGlyph *             GetGlyph(char32_t unicodeChar);
 
                             /// Returns a offset for a next character 
-    int                     GetGlyphAdvance(int charCode) const;
+    int                     GetGlyphAdvance(char32_t unicodeChar) const;
 
-    float                   StringWidth(const wchar_t *text, int maxLen, bool allowLineBreak = false, bool allowColoredText = false, float xScale = 1.0f) const;
+    float                   StringWidth(const Str &text, int maxLen, bool allowLineBreak = false, bool allowColoredText = false, float xScale = 1.0f) const;
 
     void                    Purge();
     bool                    Load(const char *filename);
@@ -68,13 +70,16 @@ public:
 private:
     Str                     hashName;
     Str                     name;
-    mutable int             refCount;
-    bool                    permanence;
+    mutable int             refCount = 0;
+    bool                    permanence = false;
 
-    FontType                fontType;
-    int                     fontSize;
-    FontFace *              fontFace;
+    FontType::Enum          fontType = FontType::None;
+    int                     fontSize = 0;
+    FontFace *              fontFace = nullptr;
 };
+
+BE_INLINE Font::Font() {
+}
 
 BE_INLINE Font::~Font() {
     Purge();

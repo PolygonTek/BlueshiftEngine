@@ -18,7 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-class VisibleObject {
+class VisObject {
 public:
     int                     index;
 
@@ -29,13 +29,15 @@ public:
 
     int                     instanceIndex;
 
+    EnvProbeBlendInfo       envProbeInfo[2];
+
     bool                    ambientVisible;
     bool                    shadowVisible;
 
-    LinkList<VisibleObject> node;
+    LinkList<VisObject>     node;
 };
 
-class VisibleLight {
+class VisLight {
 public:
     int                     index;
 
@@ -56,17 +58,17 @@ public:
                             // light bounding volume 에 포함되고, view frustum 에 보이는 surfaces
     AABB                    litSurfsAABB;
 
-                            // light bounding volume 에 포함되고, shadow caster 가 view frustum 에 보이는 surfaces (litSurfs 를 포함한다)
-    AABB                    shadowCasterAABB;
+                            // light bounding volume 에 포함되고, shadow caster 가 view frustum 에 보이는 surfaces (litSurfsAABB 를 포함한다)
+    AABB                    shadowCastersAABB;
 
-    LinkList<VisibleLight>  node;
+    LinkList<VisLight>      node;
 };
 
-class VisibleView {
+class VisCamera {
 public:
-    const RenderView *      def;
+    const RenderCamera *    def;
 
-    bool                    isSubview;
+    bool                    isSubCamera;
     bool                    isMirror;
     bool                    is2D;
 
@@ -84,20 +86,20 @@ public:
 
     BufferCache *           instanceBufferCache;
 
-    LinkList<VisibleObject> visObjects;
-    LinkList<VisibleLight>  visLights;
-    VisibleLight *          primaryLight;
+    LinkList<VisObject>     visObjects;
+    LinkList<VisLight>      visLights;
+    VisLight *              primaryLight;
 };
 
-struct renderGlobal_t {
+struct RenderGlobal {
     int                     skinningMethod;
-    int                     vtUpdateMethod;          // vertex texture update method
+    int                     vertexTextureMethod;
     int                     instancingMethod;
     int                     instanceBufferOffsetAlignment;
     void *                  instanceBufferData;
 };
 
-extern renderGlobal_t       renderGlobal;
+extern RenderGlobal         renderGlobal;
 
 void    RB_DrawRect(float x, float y, float x2, float y2, float s, float t, float s2, float t2);
 void    RB_DrawClipRect(float s, float t, float s2, float t2);

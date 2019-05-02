@@ -20,29 +20,29 @@ class Point;
 
 class Platform {
 public:
-    enum {
-        MaxPlatformEvents = 256
-    };
+    static constexpr int MaxPlatformEvents = 256;
 
-    enum EventType {
-        NoEvent,                // time is still valid
-        KeyEvent,               // value is a key code, value2 is the down flag
-        CharEvent,              // value is an ascii char
-        CompositionEvent,       // value is composition wide character code
-        MouseDeltaEvent,        // value and value2 are reletive signed x / y moves
-        MouseMoveEvent,         // value and value2 are absolute coordinates in the window's client area.
-        JoyAxisEvent,           // value is an axis number and value2 is the current state (-127 to 127)
-        TouchBeganEvent,
-        TouchMovedEvent,
-        TouchEndedEvent,
-        TouchCanceledEvent,
-        ConsoleEvent,           // ptr is a wchar_t *
-        PacketEvent             // ptr is a netadr_t followed by data bytes to ptrLength
+    struct EventType {
+        enum Enum {
+            NoEvent,                        // time is still valid
+            Key,                            // value is a key code, value2 is the down flag
+            Char,                           // value is an unicode char (char32_t)
+            Composition,                    // value is composition wide character code
+            MouseDelta,                     // value and value2 are reletive signed x / y moves
+            MouseMove,                      // value and value2 are absolute coordinates in the window's client area.
+            JoyAxis,                        // value is an axis number and value2 is the current state (-127 to 127)
+            TouchBegan,
+            TouchMoved,
+            TouchEnded,
+            TouchCanceled,
+            Console,                        // ptr is a wchar_t *
+            Packet                          // ptr is a netadr_t followed by data bytes to ptrLength
+        };
     };
 
     struct Event {
         int                 time;
-        EventType           type;
+        EventType::Enum     type;
         int64_t             value, value2;
         int                 ptrLength;      // bytes of data pointed to by ptr, for journaling
         void *              ptr;            // this must be manually freed if not nullptr
@@ -64,11 +64,11 @@ public:
     virtual void            SetMainWindowHandle(void *windowHandle) = 0;
 
     virtual void            Quit() = 0;
-    virtual void            Log(const wchar_t *msg) = 0;
-    virtual void            Error(const wchar_t *msg) = 0;
+    virtual void            Log(const char *msg) = 0;
+    virtual void            Error(const char *msg) = 0;
 
     virtual void            GetEvent(Platform::Event *ev) = 0;
-    virtual void            QueEvent(Platform::EventType type, int64_t value, int64_t value2, int ptrLength, void *ptr) = 0;
+    virtual void            QueEvent(Platform::EventType::Enum type, int64_t value, int64_t value2, int ptrLength, void *ptr) = 0;
 
     virtual bool            IsActive() const = 0;
     virtual void            AppActivate(bool active, bool minimized) = 0;

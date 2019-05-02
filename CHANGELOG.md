@@ -1,6 +1,17 @@
 Version History
 ---------------
 
+### 0.6.0
+- Refined PBR shaders
+- Added support for environment probes for indirect lighting
+- Added support for various HDR tonemapping operators
+- Added support for integration [Google Analytics](https://analytics.google.com/) into the player
+- Added support for integration three ad formats of [Google AdMob](https://www.google.com/admob/) into the player
+- Added support for Unicode (UTF-8) almost everywhere
+- Updated Bullet physics library to 2.88
+- Fixed an issue where sRGB rendering on Android was incorrect
+- Improved speed of project loading in editor
+
 ### 0.5.0
 - Added support for GPU instancing for static/skinned meshes
 - Added support for static batching

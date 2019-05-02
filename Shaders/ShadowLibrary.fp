@@ -1,11 +1,11 @@
-in vec4 v2f_shadowVec;
+in HIGHP vec4 v2f_shadowVec;
 
-const vec4 poissonDisk4[2] = vec4[](
+const HIGHP vec4 poissonDisk4[2] = vec4[](
     vec4(-0.94201624, -0.39906216, +0.94558609, -0.76890725),
     vec4(-0.09418410, -0.92938870, +0.34495938, +0.29387760)
 );
 
-const vec4 poissonDisk12[6] = vec4[](
+const HIGHP vec4 poissonDisk12[6] = vec4[](
     vec4(-0.326212, -0.405805, -0.840144, -0.073580),
     vec4(-0.695914, +0.457137, -0.203345, +0.620716),
     vec4(+0.962340, -0.194983, +0.473434, -0.480026),
@@ -14,7 +14,7 @@ const vec4 poissonDisk12[6] = vec4[](
     vec4(-0.321940, -0.932615, -0.791559, -0.597705)
 );
 
-const vec4 poissonDisk16[8] = vec4[](
+const HIGHP vec4 poissonDisk16[8] = vec4[](
     vec4(-0.94201624, -0.39906216, +0.94558609, -0.76890725),
     vec4(-0.09418410, -0.92938870, +0.34495938, +0.29387760),
     vec4(-0.91588581, +0.45771432, -0.81544232, -0.87912464),
@@ -28,16 +28,18 @@ const vec4 poissonDisk16[8] = vec4[](
 uniform sampler2DShadow shadowMap;
 
 uniform sampler2DArrayShadow shadowArrayMap;
-uniform float shadowMapFilterSize[8];
-uniform float cascadeBlendSize;
+uniform HIGHP float shadowMapFilterSize[8];
 
 uniform sampler2D randomRotMatMap;
-uniform vec4 shadowSplitFar;
-uniform vec2 shadowMapTexelSize;
+uniform HIGHP vec4 shadowSplitFar;
+uniform HIGHP vec2 shadowMapTexelSize;
 
 //-------------------------------------------------------------------------------------------------
 
-uniform mat4 shadowCascadeProjMatrix[CSM_COUNT];
+#define CASCADE_BLEND_SIZE 0.09375 // 0.09375 = 96 / 1024
+
+uniform HIGHP mat4 shadowCascadeProjMatrix[CSM_COUNT];
+
 const vec3 cascadeDebugColor[8] = vec3[](
     vec3(1.0, 0.0, 0.0),
     vec3(1.0, 1.0, 0.0),
@@ -146,10 +148,6 @@ vec3 SampleCascadedShadowMap() {
         shadowCascadedTC = shadowCascadedTC.xyzz / shadowCascadedTC.w;
 
         if (all(greaterThan(shadowCascadedTC.xy, borderTC.xy)) && all(lessThan(shadowCascadedTC.xy, borderTC.zw))) {
-        /*if (shadowCascadedTC.x > borderTC.x &&
-            shadowCascadedTC.y > borderTC.y &&
-            shadowCascadedTC.x < borderTC.z &&
-            shadowCascadedTC.y < borderTC.w) {*/
             cascadeIndex = i;
             break;
         }
@@ -162,11 +160,11 @@ vec3 SampleCascadedShadowMap() {
     s1 *= cascadeDebugColor[cascadeIndex];
 #endif
 
-#ifdef BLEND_CASCADE
+#ifdef CASCADE_BLENDING
     float blendBand = min(min(shadowCascadedTC.x, shadowCascadedTC.y), min(1.0 - shadowCascadedTC.x, 1.0 - shadowCascadedTC.y));
 
-    if (blendBand < cascadeBlendSize) {
-        float t = 1.0 - min(blendBand / cascadeBlendSize, 1.0);
+    if (blendBand < CASCADE_BLEND_SIZE) {
+        float t = 1.0 - min(blendBand / CASCADE_BLEND_SIZE, 1.0);
 
         vec3 s2 = vec3(1.0);
         int cascadeIndex2 = cascadeIndex + 1;
@@ -183,7 +181,7 @@ vec3 SampleCascadedShadowMap() {
 
         s1 = mix(s1, s2, t);
     }
-#endif // BLEND_CASCADE
+#endif // CASCADE_BLENDING
 
     return s1;
 }
@@ -335,7 +333,7 @@ vec3 SamplePointShadowMap() {
     return SampleShadowPCF_Q3(shadowTC, shadowMapTexelSize);
 #elif SHADOW_MAP_QUALITY == 2
     return SampleShadowPCF_Q2(shadowTC, shadowMapTexelSize);
-#elif SHADOW_MAP_QUALITY ==	1
+#elif SHADOW_MAP_QUALITY == 1
     return SampleShadowPCF_Q1(shadowTC, shadowMapTexelSize);
 #else
     return tex2D(shadowMap, shadowTC.xyz).rgb;

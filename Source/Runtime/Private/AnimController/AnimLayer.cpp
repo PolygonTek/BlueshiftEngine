@@ -226,7 +226,7 @@ void AnimLayer::DeleteState(AnimState *state) {
 
 const AnimState *AnimLayer::GetDefaultState() const {
     if (defaultStateNum < 0 || defaultStateNum >= stateHashMap.Count()) {
-        BE_WARNLOG(L"AnimLayer::GetDefaultState: stateNum out of range\n");
+        BE_WARNLOG("AnimLayer::GetDefaultState: stateNum out of range\n");
         return nullptr;
     }
     
@@ -267,7 +267,7 @@ bool AnimLayer::ListTransitionsFrom(const char *srcStateName, Array<const AnimTr
 
 AnimLayer::AnimTransition *AnimLayer::CreateTransition(const char *srcStateName, const char *dstStateName) {
     if (FindTransition(srcStateName, dstStateName)) {
-        BE_LOG(L"AnimLayer::CreateTransition: same transition exist\n");
+        BE_LOG("AnimLayer::CreateTransition: same transition exist\n");
         return nullptr;
     }
 
@@ -341,7 +341,7 @@ bool AnimLayer::ParseState(Lexer &lexer) {
     }
 
     if (!lexer.CheckTokenString("{")) {
-        lexer.Warning("Expected { after '%hs'\n", token.c_str());
+        lexer.Warning("Expected { after '%s'\n", token.c_str());
         return false;
     }
 
@@ -413,7 +413,7 @@ bool AnimLayer::ParseState(Lexer &lexer) {
                 return false;
             }
         } else {
-            lexer.Warning("unknown token '%hs'", token.c_str());
+            lexer.Warning("unknown token '%s'", token.c_str());
             return false;
         }
     }
@@ -427,7 +427,7 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
     Str type;
 
     if (!lexer.CheckTokenString("{")) {
-        lexer.Warning("Expected { after '%hs'\n", token.c_str());
+        lexer.Warning("Expected { after '%s'\n", token.c_str());
         return false;
     }
 
@@ -442,8 +442,8 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
 
         if (token == "parameter") { // blendTree 가 참조하는 parameter
             switch (blendTree->GetBlendType()) {
-            case AnimBlendTree::BlendAngle:
-            case AnimBlendTree::Blend1D:
+            case AnimBlendTree::BlendType::BlendAngle:
+            case AnimBlendTree::BlendType::Blend1D:
                 if (!lexer.ReadToken(&token2)) {
                     lexer.Warning("Unexpected end of file");
                     return false;
@@ -451,8 +451,8 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
 
                 blendTree->SetParameterIndex(0, animController->FindParameterIndex(token2.c_str()));
                 break;
-            case AnimBlendTree::Blend2DDirectional:
-            case AnimBlendTree::Blend2DBarycentric:
+            case AnimBlendTree::BlendType::Blend2DDirectional:
+            case AnimBlendTree::BlendType::Blend2DBarycentric:
                 for (int i = 0; i < 2; i++) {
                     if (!lexer.ReadToken(&token2)) {
                         lexer.Warning("Unexpected end of file");
@@ -462,7 +462,7 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
                     blendTree->SetParameterIndex(i, animController->FindParameterIndex(token2.c_str()));
                 }
                 break;
-            case AnimBlendTree::Blend3DBarycentric:
+            case AnimBlendTree::BlendType::Blend3DBarycentric:
                 for (int i = 0; i < 3; i++) {
                     if (!lexer.ReadToken(&token2)) {
                         lexer.Warning("Unexpected end of file");
@@ -504,17 +504,17 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
             // blendTree 내부의 blendTree 역시 blend space point 를 갖는다.
             Vec3 blendSpacePoint = Vec3::zero;
             switch (blendTree->GetBlendType()) {
-            case AnimBlendTree::BlendAngle:
-            case AnimBlendTree::Blend1D:
+            case AnimBlendTree::BlendType::BlendAngle:
+            case AnimBlendTree::BlendType::Blend1D:
                 lexer.Parse1DMatrix(1, (float *)blendSpacePoint);
                 break;
-            case AnimBlendTree::Blend2DDirectional:
+            case AnimBlendTree::BlendType::Blend2DDirectional:
                 lexer.Parse1DMatrix(2, (float *)blendSpacePoint);
                 break;
-            case AnimBlendTree::Blend2DBarycentric:
+            case AnimBlendTree::BlendType::Blend2DBarycentric:
                 lexer.Parse1DMatrix(2, (float *)blendSpacePoint);
                 break;            
-            case AnimBlendTree::Blend3DBarycentric:
+            case AnimBlendTree::BlendType::Blend3DBarycentric:
                 lexer.Parse1DMatrix(3, (float *)blendSpacePoint);
                 break;
             }
@@ -528,7 +528,7 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
             AnimBlendTree *subBlendTree = CreateBlendTree(token2.c_str());
             int32_t subNodeNum = blendTree->AddChildBlendTree(subBlendTree, blendSpacePoint);
             if (subNodeNum == INVALID_ANIM_NODE) {
-                lexer.Warning("Failed to add child blend tree '%hs'\n", token2.c_str());
+                lexer.Warning("Failed to add child blend tree '%s'\n", token2.c_str());
                 return false;
             }
 
@@ -556,7 +556,7 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
                 return false;
             }
         } else {
-            lexer.Warning("Unknown token '%hs'", token.c_str());
+            lexer.Warning("Unknown token '%s'", token.c_str());
             return false;
         }
     }
@@ -568,7 +568,7 @@ bool AnimLayer::ParseEvents(Lexer &lexer, AnimState *state) {
     Str token;
 
     if (!lexer.CheckTokenString("{")) {
-        lexer.Warning("Expected { after '%hs'\n", token.c_str());
+        lexer.Warning("Expected { after '%s'\n", token.c_str());
         return false;
     }
 
@@ -602,7 +602,7 @@ bool AnimLayer::ParseTransition(Lexer &lexer) {
     }
 
     if (!lexer.CheckTokenString("{")) {
-        lexer.Warning("Expected { after '%hs'\n", token.c_str());
+        lexer.Warning("Expected { after '%s'\n", token.c_str());
         return false;
     }
 

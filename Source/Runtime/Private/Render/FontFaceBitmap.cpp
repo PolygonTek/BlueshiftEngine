@@ -56,7 +56,7 @@ bool FontFaceBitmap::Load(const char *filename, int fontSize) {
     byte *data;
     fileSystem.LoadFile(filename, true, (void **)&data);
     if (!data) {
-        BE_WARNLOG(L"Couldn't open font %hs\n", filename);
+        BE_WARNLOG("Couldn't open font %s\n", filename);
         return false;
     }
 
@@ -90,8 +90,8 @@ bool FontFaceBitmap::Load(const char *filename, int fontSize) {
         glyph->s2           = gl->s2;
         glyph->t2           = gl->t2;
 
-        Texture *texture = textureManager.GetTexture(bitmapNames[gl->bitmapIndex], Texture::Clamp | Texture::HighQuality | Texture::NoMipmaps);
-        glyph->material = materialManager.GetSingleTextureMaterial(texture, Material::OverlayHint);
+        Texture *texture = textureManager.GetTexture(bitmapNames[gl->bitmapIndex], Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
+        glyph->material = materialManager.GetSingleTextureMaterial(texture, Material::TextureHint::Overlay);
         textureManager.ReleaseTexture(texture);
 
         if (gl->height > maxHeight) {
@@ -114,8 +114,8 @@ int FontFaceBitmap::GetFontHeight() const {
     return fontHeight;
 }
 
-FontGlyph *FontFaceBitmap::GetGlyph(int charCode) {
-    const auto *entry = glyphHashMap.Get(charCode);
+FontGlyph *FontFaceBitmap::GetGlyph(char32_t unicodeChar) {
+    const auto *entry = glyphHashMap.Get(unicodeChar);
     if (entry) {
         return entry->second;
     }
@@ -123,8 +123,8 @@ FontGlyph *FontFaceBitmap::GetGlyph(int charCode) {
     return nullptr;
 }
 
-int FontFaceBitmap::GetGlyphAdvance(int charCode) const {
-    const auto *entry = glyphHashMap.Get(charCode);
+int FontFaceBitmap::GetGlyphAdvance(char32_t unicodeChar) const {
+    const auto *entry = glyphHashMap.Get(unicodeChar);
     if (entry) {
         return entry->second->advance;
     }

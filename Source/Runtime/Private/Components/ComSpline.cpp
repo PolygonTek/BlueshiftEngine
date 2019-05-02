@@ -26,9 +26,9 @@ END_EVENTS
 
 void ComSpline::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("loop", "Loop", bool, IsLoop, SetLoop, false, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("points", "Points", Guid, GetPointGuid, SetPointGuid, GetPointCount, SetPointCount, Guid::zero, 
-        "", PropertyInfo::EditorFlag).SetMetaObject(&ComTransform::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&ComTransform::metaObject);
 }
 
 ComSpline::ComSpline() {
@@ -152,7 +152,7 @@ void ComSpline::UpdateCurve() {
                 continue;
             }
 
-            pointTransform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSpline::PointTransformUpdated, SignalObject::Unique);
+            pointTransform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSpline::PointTransformUpdated, SignalObject::ConnectionType::Unique);
 
             const Vec3 origin = pointTransform->GetLocalOrigin();
             originCurve->AddValue(t, origin);
@@ -206,7 +206,8 @@ float ComSpline::Length() {
     return originCurve->GetLengthForTime(1.0f);
 }
 
-void ComSpline::DrawGizmos(const RenderView::State &viewState, bool selected) {
+#if 1
+void ComSpline::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     if (!curveUpdated) {
         UpdateCurve();
     }
@@ -272,6 +273,7 @@ void ComSpline::DrawGizmos(const RenderView::State &viewState, bool selected) {
         renderWorld->DebugOBB(OBB(pos, Vec3(MeterToUnit(0.04)), pointTransform->GetAxis()), 1.0f, false, true);
     }
 }
+#endif
 
 bool ComSpline::IsLoop() const {
     return loop;

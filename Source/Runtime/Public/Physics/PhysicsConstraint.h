@@ -26,12 +26,14 @@ class PhysConstraint {
     friend class PhysicsSystem;
 
 public:
-    enum Type {
-        Generic,
-        GenericSpring,
-        Point2Point,
-        Hinge,
-        Slider
+    struct Type {
+        enum Enum {
+            Generic,
+            GenericSpring,
+            Point2Point,
+            Hinge,
+            Slider
+        };
     };
 
     PhysConstraint() {}

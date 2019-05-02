@@ -37,6 +37,7 @@ class Mat3x4;
 class SkinningJointCache;
 class DrawSurf;
 class SubMesh;
+class Ray;
 
 class MeshSurf {
 public:
@@ -46,33 +47,44 @@ public:
     int32_t                 viewCount;
 };
 
+struct BatchSubMesh {
+    SubMesh *               subMesh;
+    Mat3x4                  localTransform;
+};
+
 class Mesh {
     friend class MeshManager;
     friend class RenderWorld;
     friend class Batch;
     friend class ::MeshImporter;
 
-public:    
-    enum Type {
-        ReferenceMesh,      // 직접적으로 사용하지 않고, 다른 type 의 mesh 가 참조하는 용도로 사용한다.
-        StaticMesh,         // vertex 데이터는 static buffer 에 들어간다.
-        DynamicMesh,        // vertex 데이터를 CPU 에서 deform 하는 용도의 mesh (GUI, text, particle)
-        SkinnedMesh         // skinning 용 mesh
-    };    
-
-    enum InstancingMethod {
-        NoInstancing,
-        UniformBufferInstancing,
-        InstancedArraysInstancing
+public:
+    struct Type {
+        enum Enum {
+            Reference,      // 직접적으로 사용하지 않고, 다른 type 의 mesh 가 참조하는 용도로 사용한다.
+            Static,         // vertex 데이터는 static buffer 에 들어간다.
+            Dynamic,        // vertex 데이터를 CPU 에서 deform 하는 용도의 mesh (GUI, text, particle)
+            Skinned         // skinning 용 mesh
+        };
     };
 
-    enum FinishFlag {
-        ComputeAABBFlag     = BIT(0),
-        ComputeNormalsFlag  = BIT(1),
-        ComputeTangentsFlag = BIT(2),
-        UseUnsmoothedTangentsFlag = BIT(3),
-        SortAndMergeFlag    = BIT(4),
-        OptimizeIndicesFlag = BIT(5)
+    struct InstancingMethod {
+        enum Enum {
+            NoInstancing,
+            UniformBuffer,
+            InstancedArrays
+        };
+    };
+
+    struct FinishFlag {
+        enum Enum {
+            ComputeAABB             = BIT(0),
+            ComputeNormals          = BIT(1),
+            ComputeTangents         = BIT(2),
+            UseUnsmoothedTangents   = BIT(3),
+            SortAndMerge            = BIT(4),
+            OptimizeIndices         = BIT(5)
+        };
     };
 
     Mesh();
@@ -112,10 +124,18 @@ public:
 
     void                    UpdateSkinningJointCache(const Skeleton *skeleton, const Mat3x4 *joints);
 
-    bool                    LineIntersection(const Vec3 &start, const Vec3 &end, bool backFaceCull) const;
-    bool                    RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &scale) const;
+    bool                    IsIntersectLine(const Vec3 &p1, const Vec3 &p2, bool backFaceCull) const;
 
+                            /// Intersects a ray with this mesh.
+                            /// Returns false if there is no intersection.
+    bool                    IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist = nullptr) const;
+    float                   IntersectRay(const Ray &ray, bool ignoreBackFace) const;
+
+                            /// Returns volume of solid mesh.
+                            /// Should be a closed polytope to calculate exactly or AABB approximation.
     float                   ComputeVolume() const;
+                            /// Returns centroid of solid mesh. 
+                            /// Should be a closed polytope to calculate exactly or AABB approximation.
     const Vec3              ComputeCentroid() const;
 
     void                    Purge();
@@ -134,6 +154,7 @@ public:
     void                    Write(const char *filename);
 
     const Mesh *            AddRefCount() const { refCount++; return this; }
+    int                     GetRefCount() const { return refCount; }
 
 private:
     void                    FreeSurface(MeshSurf *surf) const;
@@ -154,37 +175,26 @@ private:
 
     Str                     hashName;
     Str                     name;
-    mutable int             refCount;
-    bool                    permanence;
+    mutable int             refCount = 0;
+    bool                    permanence = false;
 
-    Mesh *                  originalMesh;
+    Mesh *                  originalMesh = nullptr;
     Array<Mesh *>           instantiatedMeshes;
 
-    bool                    isInstantiated;
-    bool                    isStaticMesh;
-    bool                    isSkinnedMesh;
-    AABB                    aabb;
+    bool                    isInstantiated = false;
+    bool                    isStaticMesh = false;
+    bool                    isSkinnedMesh = false;
+    AABB                    aabb = AABB::empty;
     Array<MeshSurf *>       surfaces;
 
-    bool                    useGpuSkinning;
-    SkinningJointCache *    skinningJointCache;     // joint cache for HW skinning
+    bool                    useGpuSkinning = false;
+    SkinningJointCache *    skinningJointCache = nullptr;   // joint cache for HW skinning
 
-    int32_t                 numJoints;
-    Joint *                 joints;                 // joint information array
+    int32_t                 numJoints = 0;
+    Joint *                 joints = nullptr;               // joint information array
 };
 
 BE_INLINE Mesh::Mesh() {
-    refCount                = 0;
-    permanence              = false;
-    isInstantiated          = false;
-    originalMesh            = nullptr;
-    isStaticMesh            = false;
-    isSkinnedMesh           = false;
-    useGpuSkinning          = false;
-    skinningJointCache      = nullptr;
-    numJoints               = 0;
-    joints                  = nullptr;
-    aabb.Clear();
     surfaces.SetGranularity(16);
 }
 
@@ -204,7 +214,7 @@ public:
     Mesh *                  FindMesh(const char *name) const;
     Mesh *                  GetMesh(const char *name);
 
-    Mesh *                  CreateCombinedMesh(const char *name, const Array<SubMesh *> &subMeshes, const Array<Mat3x4> &subMeshMatrices);
+    Mesh *                  CreateCombinedMesh(const char *name, const Array<BatchSubMesh> &batchSubMeshes);
 
     void                    ReleaseMesh(Mesh *mesh, bool immediateDestroy = false);
     void                    DestroyMesh(Mesh *mesh);

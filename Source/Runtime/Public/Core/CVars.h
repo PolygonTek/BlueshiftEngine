@@ -23,10 +23,10 @@
 */
 
 #define CVAR(name, value, flags, description) \
-    BE1::CVar name(L ## #name, value, flags, description)
+    BE1::CVar name(#name, value, flags, description)
 
 #define CVAR_MINMAX(name, value, flags, description, minimum, maximum) \
-    BE1::CVar name(L ## #name, value, flags, description, minimum, maximum)
+    BE1::CVar name(#name, value, flags, description, minimum, maximum)
 
 #include "Containers/Array.h"
 #include "Containers/HashIndex.h"
@@ -40,60 +40,62 @@ class BE_API CVar {
     friend class CVarSystem;
 
 public:
-    enum Flag {
-        All                 = -1,
-        Modified            = BIT(0),
-        Static              = BIT(1),
-        ReadOnly            = BIT(2),
-        Integer             = BIT(3),
-        Float               = BIT(4),
-        Bool                = BIT(5),
-        Archive             = BIT(6),
+    struct Flag {
+        enum Enum {
+            All             = -1,
+            Modified        = BIT(0),
+            Static          = BIT(1),
+            ReadOnly        = BIT(2),
+            Integer         = BIT(3),
+            Float           = BIT(4),
+            Bool            = BIT(5),
+            Archive         = BIT(6),
+        };
     };
-
+    
     // do not use default ctor
     CVar() = delete;
-    CVar(const wchar_t *name, const wchar_t *value, int flags, const wchar_t *description);
-    CVar(const wchar_t *name, const wchar_t *value, int flags, const wchar_t *description, float valueMin, float valueMax);
+    CVar(const char *name, const char *value, int flags, const char *description);
+    CVar(const char *name, const char *value, int flags, const char *description, float valueMin, float valueMax);
     ~CVar() {}
 
-    const wchar_t *         GetName() const { return name; }
-    const wchar_t *         GetDescription() const { return desc; }
+    const char *            GetName() const { return name; }
+    const char *            GetDescription() const { return desc; }
     int                     GetFlags() const { return flags; }
     float                   GetMinValue() const { return valueMin; }
     float                   GetMaxValue() const { return valueMax; }
     
-    bool                    IsModified() const { return flags & Modified; }
-    void                    SetModified() { flags |= Modified; }
-    void                    ClearModified() { flags &= ~Modified; }
+    bool                    IsModified() const { return flags & Flag::Modified; }
+    void                    SetModified() { flags |= Flag::Modified; }
+    void                    ClearModified() { flags &= ~Flag::Modified; }
 
-    const wchar_t *         GetString() const { return valueString; }
+    const char *            GetString() const { return valueString; }
     float                   GetFloat() const { return valueFloat; }
     int                     GetInteger() const { return valueInteger; }
     bool                    GetBool() const { return (valueInteger != 0); }
 
-    void                    SetString(const wchar_t *value);
-    void                    SetFloat(const float value) { SetString(wva(L"%f", value)); }
-    void                    SetInteger(const int value) { SetString(wva(L"%i", value)); }
-    void                    SetBool(const bool value) { SetString(value ? L"1" : L"0"); }
+    void                    SetString(const char *value);
+    void                    SetFloat(const float value) { SetString(va("%f", value)); }
+    void                    SetInteger(const int value) { SetString(va("%i", value)); }
+    void                    SetBool(const bool value) { SetString(value ? "1" : "0"); }
 
     static void             RegisterStaticCVars();
     
 protected:
-    const wchar_t *         name;           ///< name
-    const wchar_t *         defaultValue;   ///< default value
-    const wchar_t *         desc;           ///< description
+    const char *            name;           ///< name
+    const char *            defaultValue;   ///< default value
+    const char *            desc;           ///< description
     int                     flags;          ///< CVAR_? flags
     float                   valueMin;       ///< minimum value
     float                   valueMax;       ///< maximum value
-    wchar_t *               valueString;    ///< valid string value
+    char *                  valueString;    ///< valid string value
     float                   valueFloat;     ///< atof(value)
     int                     valueInteger;   ///< atoi(value)
     CVar *                  nextStatic;
 
     static CVar *           staticVars;
     
-    void                    Init(const wchar_t *name, const wchar_t *value, int flags, const wchar_t *description, float valueMin, float valueMax);
+    void                    Init(const char *name, const char *value, int flags, const char *description, float valueMin, float valueMax);
 };
 
 class CVarSystem {
@@ -108,23 +110,23 @@ public:
 
     bool                    IsInitialized() const { return initialized; }
 
-    const wchar_t *         CompleteVariable(const wchar_t *partial);
+    const char *            CompleteVariable(const char *partial);
 
     void                    Register(CVar *cvar);
 
     const Array<CVar *> &   GetArray() const { return cvars; }
 
-    CVar *                  Find(const wchar_t *name) const;
+    CVar *                  Find(const char *name) const;
 
-    CVar *                  SetCVarString(const wchar_t *name, const wchar_t *value);
-    CVar *                  SetCVarBool(const wchar_t *name, const bool value);
-    CVar *                  SetCVarFloat(const wchar_t *name, const float value);
-    CVar *                  SetCVarInteger(const wchar_t *name, const int value);
+    CVar *                  SetCVarString(const char *name, const char *value);
+    CVar *                  SetCVarBool(const char *name, const bool value);
+    CVar *                  SetCVarFloat(const char *name, const float value);
+    CVar *                  SetCVarInteger(const char *name, const int value);
 
-    const wchar_t *         GetCVarString(const wchar_t *name) const;
-    bool                    GetCVarBool(const wchar_t *name) const;
-    float                   GetCVarFloat(const wchar_t *name) const;
-    int                     GetCVarInteger(const wchar_t *name) const;
+    const char *            GetCVarString(const char *name) const;
+    bool                    GetCVarBool(const char *name) const;
+    float                   GetCVarFloat(const char *name) const;
+    int                     GetCVarInteger(const char *name) const;
 
     void                    ClearModified();
 
@@ -137,7 +139,7 @@ private:
     
     bool                    Command(const CmdArgs &args);
 
-    CVar *                  Set(const wchar_t *name, const wchar_t *value);
+    CVar *                  Set(const char *name, const char *value);
 
     void                    ValidateMinMax(CVar *cvar);
     
@@ -150,11 +152,11 @@ private:
 
 extern CVarSystem           cvarSystem;
 
-BE_INLINE CVar::CVar(const wchar_t *name, const wchar_t *value, int flags, const wchar_t *description) {
+BE_INLINE CVar::CVar(const char *name, const char *value, int flags, const char *description) {
     Init(name, value, flags, description, INT_MAX, INT_MIN);
 }
 
-BE_INLINE CVar::CVar(const wchar_t *name, const wchar_t *value, int flags, const wchar_t *description, float valueMin, float valueMax) {
+BE_INLINE CVar::CVar(const char *name, const char *value, int flags, const char *description, float valueMin, float valueMax) {
     Init(name, value, flags, description, valueMin, valueMax);
 }
 

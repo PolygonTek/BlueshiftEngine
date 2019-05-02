@@ -51,9 +51,9 @@ void StaticBatch::DestroyStaticBatch(StaticBatch *staticBatch) {
 }
 
 void StaticBatch::CombineAll(Hierarchy<Entity> &entityHierarchy) {
-    MeshCombiner::CombineRoot(entityHierarchy);
+    MeshCombiner::CombineHierarchy(entityHierarchy);
 
-    for (Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->GetNode().GetNext()) {
+    for (const Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->GetNode().GetNext()) {
         ComStaticMeshRenderer *staticMeshRenderer = ent->GetComponent<ComStaticMeshRenderer>();
         
         if (staticMeshRenderer && staticMeshRenderer->staticBatchIndex >= 0) {
@@ -65,8 +65,8 @@ void StaticBatch::CombineAll(Hierarchy<Entity> &entityHierarchy) {
                 if (staticMeshRenderer->renderObjectDef.mesh) {
                     meshManager.ReleaseMesh(staticMeshRenderer->renderObjectDef.mesh);
 
-                    staticMeshRenderer->renderObjectDef.mesh = staticBatch->GetMesh()->InstantiateMesh(Mesh::StaticMesh);
-                    staticMeshRenderer->renderObjectDef.localAABB = staticBatch->GetMesh()->GetAABB();
+                    staticMeshRenderer->renderObjectDef.mesh = staticBatch->GetMesh()->InstantiateMesh(Mesh::Type::Static);
+                    staticMeshRenderer->renderObjectDef.aabb = staticBatch->GetMesh()->GetAABB();
 
                     staticMeshRenderer->UpdateVisuals();
                 }

@@ -38,11 +38,11 @@ BE_NAMESPACE_END
 
 #else
 
-#include "OpenGL3.h"
+#include "OpenGL4.h"
 
 BE_NAMESPACE_BEGIN
 
-class WinOpenGL : public OpenGL3 {
+class WinOpenGL : public OpenGL4 {
 public:
 };
 

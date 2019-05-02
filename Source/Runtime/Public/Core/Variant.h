@@ -31,30 +31,32 @@ using VariantArray = Array<Variant>;
 /// Variable that supports a fixed set of types.
 class BE_API Variant {
 public:
-    enum Type {
-        None = -1,
-        IntType,
-        Int64Type,
-        BoolType,
-        FloatType,
-        DoubleType,
-        VoidPtrType,
-        Vec2Type,
-        Vec3Type,
-        Vec4Type,
-        Color3Type,
-        Color4Type,
-        Mat2Type,
-        Mat3Type,
-        Mat3x4Type,
-        Mat4Type,
-        AnglesType,
-        QuatType,
-        PointType,
-        RectType,
-        GuidType,
-        StrType,
-        MinMaxCurveType,
+    struct Type {
+        enum Enum {
+            None = -1,
+            Int,
+            Int64,
+            Bool,
+            Float,
+            Double,
+            VoidPtr,
+            Vec2,
+            Vec3,
+            Vec4,
+            Color3,
+            Color4,
+            Mat2,
+            Mat3,
+            Mat3x4,
+            Mat4,
+            Angles,
+            Quat,
+            Point,
+            Rect,
+            Guid,
+            Str,
+            MinMaxCurve,
+        };
     };
 
     struct Value {
@@ -231,10 +233,10 @@ public:
 
     void                    Clear();
 
-    Type                    GetType() const { return type; }
-    void                    SetType(Type type);
+    Type::Enum              GetType() const { return type; }
+    void                    SetType(Type::Enum type);
 
-    bool                    SetFromString(Type type, const char *str);
+    bool                    SetFromString(Type::Enum type, const char *str);
 
     Variant &               operator=(const Variant &rhs);
 
@@ -272,12 +274,12 @@ public:
 
     Str                     ToString() const;
 
-    static Variant          FromString(Type type, const char *str);
+    static Variant          FromString(Type::Enum type, const char *str);
 
     static Variant          empty;
 
 private:
-    Type                    type;       ///< Variant type
+    Type::Enum              type;       ///< Variant type
     Value                   value;      ///< Variant value
 };
 
@@ -286,139 +288,139 @@ BE_INLINE void Variant::Clear() {
 }
 
 BE_INLINE Variant &Variant::operator=(int rhs) {
-    SetType(Type::IntType);
+    SetType(Type::Int);
     value.i1 = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(int64_t rhs) {
-    SetType(Type::Int64Type);
+    SetType(Type::Int64);
     *(reinterpret_cast<int64_t *>(&value)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(bool rhs) {
-    SetType(Type::BoolType);
+    SetType(Type::Bool);
     value.b1 = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(float rhs) {
-    SetType(Type::FloatType);
+    SetType(Type::Float);
     value.f1 = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(double rhs) {
-    SetType(Type::DoubleType);
+    SetType(Type::Double);
     value.f1 = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(void *rhs) {
-    SetType(Type::VoidPtrType);
+    SetType(Type::VoidPtr);
     value.ptr1 = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const char *rhs) {
-    SetType(Type::StrType);
+    SetType(Type::Str);
     *(reinterpret_cast<Str *>(value.ptr1)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const Vec2 &rhs) {
-    SetType(Type::Vec2Type);
+    SetType(Type::Vec2);
     *(reinterpret_cast<Vec2 *>(&value)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const Vec3 &rhs) {
-    SetType(Type::Vec3Type);
+    SetType(Type::Vec3);
     *(reinterpret_cast<Vec3 *>(&value)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const Vec4 &rhs) {
-    SetType(Type::Vec4Type);
+    SetType(Type::Vec4);
     *(reinterpret_cast<Vec4 *>(&value)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const Color3 &rhs) {
-    SetType(Type::Color3Type);
+    SetType(Type::Color3);
     *(reinterpret_cast<Color3 *>(&value)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const Color4 &rhs) {
-    SetType(Type::Color4Type);
+    SetType(Type::Color4);
     *(reinterpret_cast<Color4 *>(&value)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const Mat2 &rhs) {
-    SetType(Type::Mat2Type);
+    SetType(Type::Mat2);
     *(reinterpret_cast<Mat2 *>(&value)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const Mat3 &rhs) {
-    SetType(Type::Mat3Type);
+    SetType(Type::Mat3);
     *(reinterpret_cast<Mat3 *>(value.ptr1)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const Mat4 &rhs) {
-    SetType(Type::Mat4Type);
+    SetType(Type::Mat4);
     *(reinterpret_cast<Mat4 *>(value.ptr1)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const Mat3x4 &rhs) {
-    SetType(Type::Mat3x4Type);
+    SetType(Type::Mat3x4);
     *(reinterpret_cast<Mat3x4 *>(value.ptr1)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const Angles &rhs) {
-    SetType(Type::AnglesType);
+    SetType(Type::Angles);
     *(reinterpret_cast<Angles *>(&value)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const Quat &rhs) {
-    SetType(Type::QuatType);
+    SetType(Type::Quat);
     *(reinterpret_cast<Quat *>(&value)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const Point &rhs) {
-    SetType(Type::PointType);
+    SetType(Type::Point);
     *(reinterpret_cast<Point *>(&value)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const Rect &rhs) {
-    SetType(Type::RectType);
+    SetType(Type::Rect);
     *(reinterpret_cast<Rect *>(&value)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const Guid &rhs) {
-    SetType(Type::GuidType);
+    SetType(Type::Guid);
     *(reinterpret_cast<Guid *>(&value)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const Str &rhs) {
-    SetType(Type::StrType);
+    SetType(Type::Str);
     *(reinterpret_cast<Str *>(value.ptr1)) = rhs;
     return *this;
 }
 
 BE_INLINE Variant &Variant::operator=(const MinMaxCurve &rhs) {
-    SetType(Type::MinMaxCurveType);
+    SetType(Type::MinMaxCurve);
     *(reinterpret_cast<MinMaxCurve *>(value.ptr1)) = rhs;
     return *this;
 }
@@ -430,82 +432,82 @@ BE_INLINE const T &Variant::As() const {
 
 template <>
 BE_INLINE const Vec2 &Variant::As() const {
-    return type == Vec2Type ? *reinterpret_cast<const Vec2 *>(&value) : Vec2::zero;
+    return type == Type::Vec2 ? *reinterpret_cast<const Vec2 *>(&value) : Vec2::zero;
 }
 
 template <>
 BE_INLINE const Vec3 &Variant::As() const {
-    return type == Vec3Type ? *reinterpret_cast<const Vec3 *>(&value) : Vec3::zero;
+    return type == Type::Vec3 ? *reinterpret_cast<const Vec3 *>(&value) : Vec3::zero;
 }
 
 template <>
 BE_INLINE const Vec4 &Variant::As() const {
-    return type == Vec4Type ? *reinterpret_cast<const Vec4 *>(&value) : Vec4::zero;
+    return type == Type::Vec4 ? *reinterpret_cast<const Vec4 *>(&value) : Vec4::zero;
 }
 
 template <>
 BE_INLINE const Color3 &Variant::As() const {
-    return type == Color3Type ? *reinterpret_cast<const Color3 *>(&value) : Color3::zero;
+    return type == Type::Color3 ? *reinterpret_cast<const Color3 *>(&value) : Color3::zero;
 }
 
 template <>
 BE_INLINE const Color4 &Variant::As() const {
-    return type == Color4Type ? *reinterpret_cast<const Color4 *>(&value) : Color4::zero;
+    return type == Type::Color4 ? *reinterpret_cast<const Color4 *>(&value) : Color4::zero;
 }
 
 template <>
 BE_INLINE const Mat2 &Variant::As() const {
-    return type == Mat2Type ? *reinterpret_cast<const Mat2 *>(&value) : Mat2::identity;
+    return type == Type::Mat2 ? *reinterpret_cast<const Mat2 *>(&value) : Mat2::identity;
 }
 
 template <>
 BE_INLINE const Mat3 &Variant::As() const {
-    return type == Mat3Type ? *reinterpret_cast<const Mat3 *>(value.ptr1) : Mat3::identity;
+    return type == Type::Mat3 ? *reinterpret_cast<const Mat3 *>(value.ptr1) : Mat3::identity;
 }
 
 template <>
 BE_INLINE const Mat4 &Variant::As() const {
-    return type == Mat4Type ? *reinterpret_cast<const Mat4 *>(value.ptr1) : Mat4::identity;
+    return type == Type::Mat4 ? *reinterpret_cast<const Mat4 *>(value.ptr1) : Mat4::identity;
 }
 
 template <>
 BE_INLINE const Mat3x4 &Variant::As() const {
-    return type == Mat3x4Type ? *reinterpret_cast<const Mat3x4 *>(value.ptr1) : Mat3x4::identity;
+    return type == Type::Mat3x4 ? *reinterpret_cast<const Mat3x4 *>(value.ptr1) : Mat3x4::identity;
 }
 
 template <>
 BE_INLINE const Angles &Variant::As() const {
-    return type == AnglesType ? *reinterpret_cast<const Angles *>(&value) : Angles::zero;
+    return type == Type::Angles ? *reinterpret_cast<const Angles *>(&value) : Angles::zero;
 }
 
 template <>
 BE_INLINE const Quat &Variant::As() const {
-    return type == QuatType ? *reinterpret_cast<const Quat *>(&value) : Quat::identity;
+    return type == Type::Quat ? *reinterpret_cast<const Quat *>(&value) : Quat::identity;
 }
 
 template <>
 BE_INLINE const Point &Variant::As() const {
-    return type == PointType ? *reinterpret_cast<const Point *>(&value) : Point::zero;
+    return type == Type::Point ? *reinterpret_cast<const Point *>(&value) : Point::zero;
 }
 
 template <>
 BE_INLINE const Rect &Variant::As() const {
-    return type == RectType ? *reinterpret_cast<const Rect *>(&value) : Rect::empty;
+    return type == Type::Rect ? *reinterpret_cast<const Rect *>(&value) : Rect::empty;
 }
 
 template <>
 BE_INLINE const Guid &Variant::As() const {
-    return type == GuidType ? *reinterpret_cast<const Guid *>(&value) : Guid::zero;
+    return type == Type::Guid ? *reinterpret_cast<const Guid *>(&value) : Guid::zero;
 }
 
 template <>
 BE_INLINE const Str &Variant::As() const {
-    return type == StrType ? *reinterpret_cast<const Str *>(value.ptr1) : Str::empty;
+    return type == Type::Str ? *reinterpret_cast<const Str *>(value.ptr1) : Str::empty;
 }
 
 template <>
 BE_INLINE const MinMaxCurve &Variant::As() const {
-    return type == MinMaxCurveType ? *reinterpret_cast<const MinMaxCurve *>(value.ptr1) : MinMaxCurve::empty;
+    return type == Type::MinMaxCurve ? *reinterpret_cast<const MinMaxCurve *>(value.ptr1) : MinMaxCurve::empty;
 }
 
 template <typename T, typename = void>
@@ -513,107 +515,107 @@ struct VariantType {};
 
 template <typename T>
 struct VariantType<T, typename std::enable_if_t<std::is_enum<T>::value>> {
-    static Variant::Type GetType() { return VariantType<std::underlying_type_t<T>>::GetType(); }
+    static Variant::Type::Enum GetType() { return VariantType<std::underlying_type_t<T>>::GetType(); }
 };
 
 template <>
 struct VariantType<int> {
-    static Variant::Type GetType() { return Variant::IntType; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Int; }
 };
 
 template <>
 struct VariantType<unsigned> {
-    static Variant::Type GetType() { return Variant::IntType; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Int; }
 };
 
 template <>
 struct VariantType<bool> {
-    static Variant::Type GetType() { return Variant::BoolType; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Bool; }
 };
 
 template <>
 struct VariantType<float> {
-    static Variant::Type GetType() { return Variant::FloatType; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Float; }
 };
 
 template <>
 struct VariantType<double> {
-    static Variant::Type GetType() { return Variant::DoubleType; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Double; }
 };
 
 template <>
 struct VariantType<Vec2> {
-    static Variant::Type GetType() { return Variant::Vec2Type; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Vec2; }
 };
 
 template <>
 struct VariantType<Vec3> {
-    static Variant::Type GetType() { return Variant::Vec3Type; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Vec3; }
 };
 
 template <>
 struct VariantType<Vec4> {
-    static Variant::Type GetType() { return Variant::Vec4Type; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Vec4; }
 };
 
 template <>
 struct VariantType<Color3> {
-    static Variant::Type GetType() { return Variant::Color3Type; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Color3; }
 };
 
 template <>
 struct VariantType<Color4> {
-    static Variant::Type GetType() { return Variant::Color4Type; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Color4; }
 };
 
 template <>
 struct VariantType<Mat2> {
-    static Variant::Type GetType() { return Variant::Mat2Type; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Mat2; }
 };
 
 template <>
 struct VariantType<Mat3> {
-    static Variant::Type GetType() { return Variant::Mat3Type; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Mat3; }
 };
 
 template <>
 struct VariantType<Mat3x4> {
-    static Variant::Type GetType() { return Variant::Mat3x4Type; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Mat3x4; }
 };
 
 template <>
 struct VariantType<Mat4> {
-    static Variant::Type GetType() { return Variant::Mat4Type; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Mat4; }
 };
 
 template <>
 struct VariantType<Angles> {
-    static Variant::Type GetType() { return Variant::AnglesType; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Angles; }
 };
 
 template <>
 struct VariantType<Quat> {
-    static Variant::Type GetType() { return Variant::QuatType; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Quat; }
 };
 
 template <>
 struct VariantType<Point> {
-    static Variant::Type GetType() { return Variant::PointType; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Point; }
 };
 
 template <>
 struct VariantType<Rect> {
-    static Variant::Type GetType() { return Variant::RectType; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Rect; }
 };
 
 template <>
 struct VariantType<Str> {
-    static Variant::Type GetType() { return Variant::StrType; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Str; }
 };
 
 template <>
 struct VariantType<Guid> {
-    static Variant::Type GetType() { return Variant::GuidType; }
+    static Variant::Type::Enum GetType() { return Variant::Type::Guid; }
 };
 
 BE_NAMESPACE_END

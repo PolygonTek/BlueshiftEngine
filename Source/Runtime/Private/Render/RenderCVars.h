@@ -31,6 +31,7 @@ extern CVar     r_depthBits;
 extern CVar     r_stencilBits;
 extern CVar     r_multiSamples;
 
+extern CVar     r_sRGB;
 extern CVar     r_gamma;
 extern CVar     r_swapInterval;
 
@@ -57,7 +58,6 @@ extern CVar     r_CSM_updateRatio;
 extern CVar     r_CSM_selectionMethod;
 extern CVar     r_CSM_splitLamda;
 extern CVar     r_CSM_blend;
-extern CVar     r_CSM_blendSize;
 extern CVar     r_CSM_offsetFactor0;
 extern CVar     r_CSM_offsetFactor1;
 extern CVar     r_CSM_offsetFactor2;
@@ -71,9 +71,13 @@ extern CVar     r_optimizedShadowProjection;
 extern CVar     r_HOM;
 extern CVar     r_HOM_debug;
 
-extern CVar     r_ambientLit;
 extern CVar     r_ambientScale;
 extern CVar     r_lightScale;
+extern CVar     r_indirectLit;
+extern CVar     r_probeBlending;
+extern CVar     r_probeBoxProjection;
+extern CVar     r_probeBakeBounces;
+
 extern CVar     r_offsetFactor;
 extern CVar     r_offsetUnits;
 extern CVar     r_queryWaitFrames;
@@ -82,10 +86,12 @@ extern CVar     r_maxInstancingCount;
 
 extern CVar     r_HDR;
 extern CVar     r_HDR_debug;
+extern CVar     r_HDR_toneMapping;
+extern CVar     r_HDR_toneMapOp;
 extern CVar     r_HDR_middleGray;
 extern CVar     r_HDR_brightLevel;
 extern CVar     r_HDR_brightMax;
-extern CVar     r_HDR_brightThrehold;
+extern CVar     r_HDR_brightThreshold;
 extern CVar     r_HDR_brightOffset;
 extern CVar     r_HDR_bloomScale;
 
@@ -112,7 +118,7 @@ extern CVar     r_motionBlur;
 extern CVar     r_motionBlur_ShutterSpeed;
 extern CVar     r_motionBlur_Scale;
 extern CVar     r_motionBlur_MaxBlur;
-extern CVar     r_motionBlur_CameraAngleThrehold;
+extern CVar     r_motionBlur_CameraAngleThreshold;
 
 extern CVar     r_useDepthClamp;
 extern CVar     r_useDepthBoundTest;
@@ -124,7 +130,7 @@ extern CVar     r_useLightOcclusionQuery;
 extern CVar     r_usePostProcessing;
 
 extern CVar     r_skipBackEnd;
-extern CVar     r_skipAmbientPass;
+extern CVar     r_skipBasePass;
 extern CVar     r_skipShadowAndLitPass;
 extern CVar     r_skipFogLights;
 extern CVar     r_skipBlendPass;

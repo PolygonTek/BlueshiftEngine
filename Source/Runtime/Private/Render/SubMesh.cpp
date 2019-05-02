@@ -54,7 +54,7 @@ void SubMesh::AllocSubMesh(int numVerts, int numIndexes) {
     this->tangentsCalculated        = false;
     this->edgesCalculated           = false;
 
-    this->type                      = Mesh::ReferenceMesh;
+    this->type                      = Mesh::Type::Reference;
     this->refSubMesh                = nullptr;
     this->subMeshIndex              = subMeshCounter++;
 
@@ -84,7 +84,7 @@ void SubMesh::AllocSubMesh(int numVerts, int numIndexes) {
 }
 
 void SubMesh::AllocInstantiatedSubMesh(const SubMesh *ref, int meshType) {
-    assert(ref->type == Mesh::ReferenceMesh);
+    assert(ref->type == Mesh::Type::Reference);
 
     this->alloced                   = true;
     this->normalsCalculated         = ref->normalsCalculated;
@@ -112,12 +112,12 @@ void SubMesh::AllocInstantiatedSubMesh(const SubMesh *ref, int meshType) {
     this->jointWeightVerts          = ref->jointWeightVerts;
 
     this->vertWeights               = ref->vertWeights;
-    this->useGpuSkinning            = (ref->vertWeights && meshType == Mesh::SkinnedMesh) ? true : false;
+    this->useGpuSkinning            = (ref->vertWeights && meshType == Mesh::Type::Skinned) ? true : false;
     this->gpuSkinningVersionIndex   = ref->gpuSkinningVersionIndex;
 
     this->aabb                      = ref->aabb;
 
-    if (this->type == Mesh::StaticMesh || this->useGpuSkinning) {
+    if (this->type == Mesh::Type::Static || this->useGpuSkinning) {
         this->verts                 = ref->verts;
 
         this->vertexCache           = ref->vertexCache;
@@ -139,7 +139,7 @@ void SubMesh::FreeSubMesh() {
 
     alloced = false;
 
-    if (type == Mesh::ReferenceMesh) {
+    if (type == Mesh::Type::Reference) {
         if (vertexCache->buffer != RHI::NullBuffer) {
             rhi.DestroyBuffer(vertexCache->buffer);
         }
@@ -163,7 +163,7 @@ void SubMesh::FreeSubMesh() {
         return;
     }
 
-    if (type == Mesh::DynamicMesh || (type == Mesh::SkinnedMesh && !useGpuSkinning)) {
+    if (type == Mesh::Type::Dynamic || (type == Mesh::Type::Skinned && !useGpuSkinning)) {
         Mem_AlignedFree(verts);
         Mem_Free(vertexCache);
     }
@@ -179,8 +179,8 @@ void SubMesh::CacheStaticDataToGpu() {
             
             bufferCacheManager.AllocStaticVertex(size, nullptr, vertexCache);
 
-            rhi.BindBuffer(RHI::VertexBuffer, vertexCache->buffer);
-            byte *ptr = (byte *)rhi.MapBufferRange(vertexCache->buffer, RHI::WriteOnly, 0, size);
+            rhi.BindBuffer(RHI::BufferType::Vertex, vertexCache->buffer);
+            byte *ptr = (byte *)rhi.MapBufferRange(vertexCache->buffer, RHI::BufferLockMode::WriteOnly, 0, size);
 
             simdProcessor->Memcpy(ptr, verts, sizeof(VertexGenericLit) * numVerts);
             simdProcessor->Memcpy(ptr + sizeof(VertexGenericLit) * numVerts, vertWeights, sizeofVertWeight * numVerts);
@@ -206,10 +206,7 @@ void SubMesh::CacheDynamicDataToGpu(const Mat3x4 *joints, const Material *materi
         simdProcessor->TransformVerts(verts, numVerts, joints, jointWeightVerts, reinterpret_cast<int *>(jointWeights), numJointWeights);
     }
 
-    bool unsmoothedTangents = false;
-    if (material->GetFlags() & Material::UnsmoothTangents) {
-        unsmoothedTangents = true;
-    }
+    bool unsmoothedTangents = (material->GetFlags() & Material::Flag::UnsmoothTangents) ? true : false;
 
     ComputeTangents(true, unsmoothedTangents);
 
@@ -790,7 +787,7 @@ void SubMesh::ComputeDominantTris() {
 
         // Now dominantTri is [i, dominantTriVertex2, dominantTriVertex3]
         if (dominantTriVertex2 == -1 || dominantTriVertex3 == -1) {
-            BE_FATALERROR(L"SubMesh::ComputeDominantTris: dominant triangle is not exist");
+            BE_FATALERROR("SubMesh::ComputeDominantTris: dominant triangle is not exist");
         }
 
         dominantTris[i].v2 = dominantTriVertex2;
@@ -956,7 +953,7 @@ void SubMesh::ComputeEdges() {
 
     // 2개 이상 공유된 edge 개수를 경고 출력.
     if (numDisjunctiveEdges > 0) {
-        BE_WARNLOG(L"%i disjunctive edges found\n", numDisjunctiveEdges);
+        BE_WARNLOG("%i disjunctive edges found\n", numDisjunctiveEdges);
     }
 
     numEdges = numTempEdges;
@@ -1011,26 +1008,29 @@ bool SubMesh::IsClosed() const {
     return true;
 }
 
-bool SubMesh::LineIntersection(const Vec3 &start, const Vec3 &end, bool backFaceCull) const {
+bool SubMesh::IsIntersectLine(const Vec3 &start, const Vec3 &end, bool ignoreBackFace) const {
     if (!edgesCalculated) {
         return false;
     }
 
-    float scale;
-    RayIntersection(start, end - start, scale, false);
-    return (scale >= 0.0f && scale <= 1.0f);
+    Ray ray;
+    ray.origin = start;
+    ray.dir = end - start;
+    ray.dir.Normalize();
+
+    return IntersectRay(ray, ignoreBackFace);
 }
 
-bool SubMesh::RayIntersection(const Vec3 &start, const Vec3 &dir, float &scale, bool backFaceCull) const {
+bool SubMesh::IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist) const {
     if (!edgesCalculated) {
         return false;
     }
 
     byte *sidedness = (byte *)_alloca(numEdges * sizeof(byte));
-    scale = Math::Infinity;
+    float dist = Math::Infinity;
 
     Pluecker rayPl, pl;
-    rayPl.SetFromRay(start, dir);
+    rayPl.SetFromRay(ray.origin, ray.dir);
 
     // ray sidedness for edges
     for (int i = 0; i < numEdges; i++) {
@@ -1051,20 +1051,28 @@ bool SubMesh::RayIntersection(const Vec3 &start, const Vec3 &dir, float &scale, 
         const int32_t s1 = sidedness[Math::Abs(i1)] ^ INT32_SIGNBITSET(i1);
         const int32_t s2 = sidedness[Math::Abs(i2)] ^ INT32_SIGNBITSET(i2);
 
-        if ((s0 & s1 & s2) || (!backFaceCull && !(s0 | s1 | s2))) {
+        if ((s0 & s1 & s2) || (!ignoreBackFace && !(s0 | s1 | s2))) {
             plane.SetFromPoints(verts[indexes[i + 0]].xyz, verts[indexes[i + 1]].xyz, verts[indexes[i + 2]].xyz);
-            const float s = plane.RayIntersection(start, dir);
-            if (Math::Fabs(s) < Math::Fabs(scale)) {
-                scale = s;
+
+            float d;
+            if (plane.IntersectRay(ray, false, &d)) {
+                if (!hitDist) {
+                    return true;
+                }
+
+                if (d < dist) {
+                    dist = d;
+                }
             }
         }
     }
 
-    if (Math::Fabs(scale) < Math::Infinity) {
-        return true;
+    if (dist == Math::Infinity) {
+        return false;
     }
 
-    return false;
+    *hitDist = dist;
+    return true;
 }
 
 float SubMesh::ComputeVolume() const {

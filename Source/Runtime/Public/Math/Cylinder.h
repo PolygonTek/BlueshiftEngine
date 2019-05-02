@@ -25,6 +25,7 @@
 BE_NAMESPACE_BEGIN
 
 class OBB;
+class Ray;
 
 /// A cylinder
 class BE_API Cylinder {
@@ -41,17 +42,22 @@ public:
     const Vec3 &        P2() const { return p[1]; }
     float               Radius() const { return radius; }
 
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const Cylinder &other) const;
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const Cylinder &other, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const Cylinder &rhs) const { return Equals(rhs); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const Cylinder &rhs) const { return !Equals(rhs); }
 
-    bool                LineIntersection(const Vec3 &start, const Vec3 &end) const;
-    float               RayIntersection(const Vec3 &start, const Vec3 &dir) const;
+                        /// Tests if this cylinder intersect with the given line segment.
+    bool                IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
+
+                        /// Intersects a ray with this cylinder.
+                        /// Returns false if there is no intersection.
+    bool                IntersectRay(const Ray &ray, float *hitDist) const;
+    float               IntersectRay(const Ray &ray) const;
 
     Sphere              ToSphere() const;
     OBB                 ToOBB() const;

@@ -30,30 +30,30 @@
 
 BE_NAMESPACE_BEGIN
 
-static CVAR(developer, L"0", CVar::Bool, L"");
-static CVAR(logFile, L"0", CVar::Bool, L"");
-static CVAR(forceGenericSIMD, L"0", CVar::Bool, L"");
+static CVAR(developer, "0", CVar::Flag::Bool, "");
+static CVAR(logFile, "0", CVar::Flag::Bool, "");
+static CVAR(forceGenericSIMD, "0", CVar::Flag::Bool, "");
 
 static File *   consoleLogFile;
 
 Common          common;
 
-static void Common_Log(const int logLevel, const wchar_t *msg) {
-    wchar_t buffer[16384];
-    const wchar_t *bufptr;
+static void Common_Log(const int logLevel, const char *msg) {
+    char buffer[16384];
+    const char *bufptr;
 
     if (logLevel == DevLog && !developer.GetBool()) {
         return;
     }
     
     if (logLevel == DevLog) {
-        WStr::snPrintf(buffer, COUNT_OF(buffer), WS_COLOR_CYAN L"%ls", msg);
+        Str::snPrintf(buffer, COUNT_OF(buffer), S_COLOR_CYAN "%s", msg);
         bufptr = buffer;
     } else if (logLevel == WarningLog) {
-        WStr::snPrintf(buffer, COUNT_OF(buffer), WS_COLOR_YELLOW L"WARNING: %ls", msg);
+        Str::snPrintf(buffer, COUNT_OF(buffer), S_COLOR_YELLOW "WARNING: %s", msg);
         bufptr = buffer;
     } else if (logLevel == ErrorLog) {
-        WStr::snPrintf(buffer, COUNT_OF(buffer), WS_COLOR_RED L"ERROR: %ls", msg);
+        Str::snPrintf(buffer, COUNT_OF(buffer), S_COLOR_RED "ERROR: %s", msg);
         bufptr = buffer;
     } else {
         bufptr = msg;
@@ -61,18 +61,18 @@ static void Common_Log(const int logLevel, const wchar_t *msg) {
 
     if (logFile.GetBool()) {
         if (!consoleLogFile) {
-            consoleLogFile = fileSystem.OpenFile("console.log", File::WriteMode);
+            consoleLogFile = fileSystem.OpenFile("console.log", File::Mode::Write);
             if (consoleLogFile) {
                 time_t t;
                 time(&t);
                 tm *local_time = localtime(&t);
-                BE_LOG(L"logFile opened on %hs\n", asctime(local_time));
+                BE_LOG("logFile opened on %s\n", asctime(local_time));
             } else {
                 logFile.SetBool(false);
-                BE_WARNLOG(L"can't open the log file\n");
+                BE_WARNLOG("Can't open the log file\n");
             }
         } else {
-            consoleLogFile->Write(bufptr, WStr::Length(bufptr));
+            consoleLogFile->Write(bufptr, strlen(bufptr));
         }
     }
 
@@ -81,12 +81,12 @@ static void Common_Log(const int logLevel, const wchar_t *msg) {
     console.Print(bufptr);
 }
 
-static void Common_Error(const int errLevel, const wchar_t *msg) {
+static void Common_Error(const int errLevel, const char *msg) {
     static bool errorEntered = false;
 
     if (errLevel == FatalErr) {
         if (errorEntered) {
-            platform->Error(wva(L"Recursive error after: %ls", msg));
+            platform->Error(va("Recursive error after: %s", msg));
         }
 
         errorEntered = true;
@@ -95,7 +95,7 @@ static void Common_Error(const int errLevel, const wchar_t *msg) {
             fileSystem.CloseFile(consoleLogFile);
         }
 
-        cmdSystem.BufferCommandText(CmdSystem::ExecuteNow, L"condump \"Log/log\"\n");
+        cmdSystem.BufferCommandText(CmdSystem::Execution::Now, "condump \"Log/log\"\n");
 
         //common.Shutdown();
 
@@ -116,11 +116,11 @@ void Common::Init(const char *baseDir) {
 
     keyCmdSystem.Init();
 
-    cmdSystem.AddCommand(L"version", Cmd_Version);
-    cmdSystem.AddCommand(L"error", Cmd_Error);
-    cmdSystem.AddCommand(L"quit", Cmd_Quit);
+    cmdSystem.AddCommand("version", Cmd_Version);
+    cmdSystem.AddCommand("error", Cmd_Error);
+    cmdSystem.AddCommand("quit", Cmd_Quit);
 
-    cmdSystem.BufferCommandText(CmdSystem::ExecuteNow, L"exec \"Config/config.cfg\"\n");
+    cmdSystem.BufferCommandText(CmdSystem::Execution::Now, "exec \"Config/config.cfg\"\n");
     cvarSystem.ClearModified();
 
     random.SetSeed(0);
@@ -133,13 +133,13 @@ void Common::Init(const char *baseDir) {
 }
 
 void Common::Shutdown() {
-    cmdSystem.BufferCommandText(CmdSystem::ExecuteNow, L"condump \"Log/log\"\n");
+    cmdSystem.BufferCommandText(CmdSystem::Execution::Now, "condump \"Log/log\"\n");
 
     SaveConfig("Config/config.cfg");
 
-    cmdSystem.RemoveCommand(L"version");
-    cmdSystem.RemoveCommand(L"quit");
-    cmdSystem.RemoveCommand(L"error");
+    cmdSystem.RemoveCommand("version");
+    cmdSystem.RemoveCommand("quit");
+    cmdSystem.RemoveCommand("error");
 
     keyCmdSystem.Shutdown();
 
@@ -158,7 +158,7 @@ void Common::SaveConfig(const char *filename) {
     Str configFilename = filename;
     configFilename.DefaultFileExtension("cfg");
 
-    File *file = fileSystem.OpenFile(configFilename, File::WriteMode);
+    File *file = fileSystem.OpenFile(configFilename, File::Mode::Write);
     if (file) {
         file->Printf("unbindall\n");
         keyCmdSystem.WriteBindings(file);
@@ -177,17 +177,17 @@ void Common::RunFrame(int frameMsec) {
     cmdSystem.ExecuteCommandBuffer();
 }
 
-Common::PlatformId Common::GetPlatformId() const {
+Common::PlatformId::Enum Common::GetPlatformId() const {
 #if defined(__IOS__)
-return PlatformId::IOSPlatform;
+    return PlatformId::ID_IOS;
 #elif defined(__ANDROID__)
-return PlatformId::AndroidPlatform;
+    return PlatformId::ID_Android;
 #elif defined(__WIN32__)
-    return PlatformId::WindowsPlatform;
+    return PlatformId::ID_Windows;
 #elif defined(__MACOSX__)
-    return PlatformId::MacOSPlatform;
+    return PlatformId::ID_MacOS;
 #elif defined(__LINUX__)
-    return PlatformId::LinuxPlatform;
+    return PlatformId::ID_Linux;
 #endif
 }
 
@@ -205,49 +205,49 @@ int Common::ProcessPlatformEvent() {
     while (1) {
         GetPlatformEvent(&ev);
 
-        if (ev.type == Platform::NoEvent) {
+        if (ev.type == Platform::EventType::NoEvent) {
             break;
         }
 
         switch (ev.type) {
-        case Platform::KeyEvent:
+        case Platform::EventType::Key:
             gameClient.KeyEvent((KeyCode::Enum)ev.value, ev.value2 ? true : false);
             break;
-        case Platform::CharEvent:
-            gameClient.CharEvent((wchar_t)ev.value);
+        case Platform::EventType::Char:
+            gameClient.CharEvent((char32_t)ev.value);
             break;
-        case Platform::CompositionEvent:
-            gameClient.CompositionEvent((int)ev.value);
+        case Platform::EventType::Composition:
+            gameClient.CompositionEvent((char32_t)ev.value);
             break;
-        case Platform::MouseDeltaEvent:
+        case Platform::EventType::MouseDelta:
             gameClient.MouseDeltaEvent((int)ev.value, (int)ev.value2, ev.time);
             break;
-        case Platform::MouseMoveEvent:
+        case Platform::EventType::MouseMove:
             gameClient.MouseMoveEvent((int)ev.value, (int)ev.value2, ev.time);
             break;
-        case Platform::JoyAxisEvent:
+        case Platform::EventType::JoyAxis:
             gameClient.JoyAxisEvent((int)ev.value, (int)ev.value2, ev.time);
             break;
-        case Platform::TouchBeganEvent:
+        case Platform::EventType::TouchBegan:
             gameClient.TouchEvent(InputSystem::Touch::Started, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);
             break;
-        case Platform::TouchMovedEvent:
+        case Platform::EventType::TouchMoved:
             gameClient.TouchEvent(InputSystem::Touch::Moved, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);
             break;
-        case Platform::TouchEndedEvent:
+        case Platform::EventType::TouchEnded:
             gameClient.TouchEvent(InputSystem::Touch::Ended, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);
             break;
-        case Platform::TouchCanceledEvent:
+        case Platform::EventType::TouchCanceled:
             gameClient.TouchEvent(InputSystem::Touch::Canceled, ev.value, 0, 0, ev.time);
             break;
-        case Platform::ConsoleEvent:
-            cmdSystem.BufferCommandText(CmdSystem::Append, (const wchar_t *)ev.ptr);
-            cmdSystem.BufferCommandText(CmdSystem::Append, L"\n");
+        case Platform::EventType::Console:
+            cmdSystem.BufferCommandText(CmdSystem::Execution::Append, (const char *)ev.ptr);
+            cmdSystem.BufferCommandText(CmdSystem::Execution::Append, "\n");
             break;
-        case Platform::PacketEvent:
+        case Platform::EventType::Packet:
             break;
         default:
-            BE_FATALERROR(L"Common::ProcessPlatformEvent: bad event type %i", ev.type);
+            BE_FATALERROR("Common::ProcessPlatformEvent: bad event type %i", ev.type);
         }
 
         if (ev.ptr) {
@@ -263,13 +263,13 @@ void Common::GetPlatformEvent(Platform::Event *ev) {
 }
 
 void Common::Cmd_Version(const CmdArgs &args) {
-    BE_LOG(L"%hs-%hs %i.%i.%i %hs %hs\n", B_ENGINE_NAME, PlatformProcess::PlatformName(),
-        B_ENGINE_VERSION_MAJOR, B_ENGINE_VERSION_MINOR, B_ENGINE_VERSION_PATCH, __DATE__, __TIME__);
+    BE_LOG("%s-%s %s %s %s\n", BE_NAME, PlatformProcess::PlatformName(),
+        BE_VERSION, __DATE__, __TIME__);
 }
 
 void Common::Cmd_Error(const CmdArgs &args) {
     if (args.Argv(1)) {
-        BE_FATALERROR(L"%ls", args.Argv(1));
+        BE_FATALERROR("%s", args.Argv(1));
     }
 }
 

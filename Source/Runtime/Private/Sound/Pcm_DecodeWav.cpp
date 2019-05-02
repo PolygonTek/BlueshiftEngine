@@ -280,24 +280,24 @@ bool Pcm::BeginDecodeFile_Wav() {
     fp->ReadUInt32(length);
     
     if (id != WAVE_FOURCC_RIFF) {
-        BE_WARNLOG(L"Missing RIFF chunk\n");
+        BE_WARNLOG("Missing RIFF chunk\n");
         return false;
     }
 
     fp->ReadUInt32(id);
 
     if (id != WAVE_FOURCC_WAVE) {
-        BE_WARNLOG(L"Missing WAVE form type\n");
+        BE_WARNLOG("Missing WAVE form type\n");
         return false;
     }
 
     if (!FindChunkInFile(fp, WAVE_FOURCC_fmt, &length)) {
-        BE_WARNLOG(L"Missing fmt chunk\n");
+        BE_WARNLOG("Missing fmt chunk\n");
         return false;
     }
 
     if (length < sizeof(WavePcmFormat)) {
-        BE_WARNLOG(L"Invalid fmt chunk\n");
+        BE_WARNLOG("Invalid fmt chunk\n");
         return false;
     }
 
@@ -305,7 +305,7 @@ bool Pcm::BeginDecodeFile_Wav() {
     fp->Read(this->waveFormat, length);
 
     if (waveFormat->format != Format::MS_PCM && waveFormat->format != Format::IMA_ADPCM) {
-        BE_WARNLOG(L"Unsupported wave format\n");
+        BE_WARNLOG("Unsupported wave format\n");
         return false;
     }
 
@@ -314,7 +314,7 @@ bool Pcm::BeginDecodeFile_Wav() {
     this->bitsWidth     = waveFormat->format == Format::IMA_ADPCM ? 16 : waveFormat->bitsWidth;
 
     if (!FindChunkInFile(fp, WAVE_FOURCC_data, &length)) {
-        BE_WARNLOG(L"Missing data chunk\n");
+        BE_WARNLOG("Missing data chunk\n");
         return false;
     }
 
@@ -386,7 +386,7 @@ bool Pcm::DecodeMemory_Wav(byte *base, size_t fileSize) {
     ptr += 4;
 
     if (*(uint32_t *)ptr != WAVE_FOURCC_WAVE) {
-        BE_WARNLOG(L"Missing WAVE form type\n");
+        BE_WARNLOG("Missing WAVE form type\n");
         return false;
     }
 
@@ -394,18 +394,18 @@ bool Pcm::DecodeMemory_Wav(byte *base, size_t fileSize) {
     ptr += 4;
 
     if (!FindChunkInMemory(&ptr, base + fileSize, WAVE_FOURCC_fmt, &length)) {
-        BE_WARNLOG(L"Missing fmt chunk\n");
+        BE_WARNLOG("Missing fmt chunk\n");
         return false;
     }    
 
     if (length < sizeof(WavePcmFormat)) {
-        BE_WARNLOG(L"Invalid wave format header\n");
+        BE_WARNLOG("Invalid wave format header\n");
         return false;
     }
 
     WaveFormatEx *fmt = (WaveFormatEx *)ptr;
     if (fmt->format != Format::MS_PCM && fmt->format != Format::IMA_ADPCM) {
-        BE_WARNLOG(L"Unsupported wave format\n");
+        BE_WARNLOG("Unsupported wave format\n");
         return false;
     }
 
@@ -416,7 +416,7 @@ bool Pcm::DecodeMemory_Wav(byte *base, size_t fileSize) {
     ptr += length;
 
     if (!FindChunkInMemory(&ptr, base + fileSize, WAVE_FOURCC_data, &length)) {
-        BE_WARNLOG(L"Missing data chunk\n");
+        BE_WARNLOG("Missing data chunk\n");
         return false;
     }
 

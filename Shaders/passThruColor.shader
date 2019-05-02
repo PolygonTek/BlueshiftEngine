@@ -1,4 +1,4 @@
-shader "passThruColor" {
+shader "PassThruColor" {
 	glsl_vp {
 		$include "clipQuad.vp"
 	}

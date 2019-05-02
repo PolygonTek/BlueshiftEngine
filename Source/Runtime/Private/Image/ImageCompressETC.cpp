@@ -22,19 +22,19 @@ BE_NAMESPACE_BEGIN
 
 #define MAX_JOBS 1024
 
-static float QualityToEffort(Image::CompressionQuality compressoinQuality) {   
+static float QualityToEffort(Image::CompressionQuality::Enum compressoinQuality) {
     switch (compressoinQuality) {
-    case Image::HighQuality:
+    case Image::CompressionQuality::HighQuality:
         return 70;
-    case Image::Normal:
+    case Image::CompressionQuality::Normal:
         return 40;
-    case Image::Fast:
+    case Image::CompressionQuality::Fast:
         return 0;
     }
     return 0;
 }
 
-void CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality) {
+static void CompressETC(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality, Etc::Image::Format format, Etc::ErrorMetric errorMetric) {
     Etc::ColorFloatRGBA *fsrc = (Etc::ColorFloatRGBA *)Mem_Alloc16(srcImage.GetWidth() * srcImage.GetHeight() * sizeof(Etc::ColorFloatRGBA));
 
     float effort = QualityToEffort(compressoinQuality);
@@ -54,10 +54,10 @@ void CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQual
             *fsrc_ptr++ = Etc::ColorFloatRGBA::ConvertFromRGBA8(src[0], src[1], src[2], src[3]);
         }
 
-        // Encode ETC1 RGB
-        Etc::Image image((float *)fsrc, w, h, Etc::ErrorMetric::REC709);
+        // Encode 
+        Etc::Image image((float *)fsrc, w, h, errorMetric);
         image.m_bVerboseOutput = false;
-        Etc::Image::EncodingStatus status = image.Encode(Etc::Image::Format::ETC1, Etc::ErrorMetric::REC709, effort, 8, MAX_JOBS);
+        Etc::Image::EncodingStatus status = image.Encode(format, errorMetric, effort, 8, MAX_JOBS);
         if (status >= Etc::Image::EncodingStatus::ERROR_THRESHOLD) {
             assert(0);
             return;
@@ -72,118 +72,28 @@ void CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQual
     Mem_AlignedFree(fsrc);
 }
 
-void CompressETC2_RGB8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality) {
-    Etc::ColorFloatRGBA *fsrc = (Etc::ColorFloatRGBA *)Mem_Alloc16(srcImage.GetWidth() * srcImage.GetHeight() * sizeof(Etc::ColorFloatRGBA));
-    
-    float effort = QualityToEffort(compressoinQuality);
-
-    int numMipmaps = srcImage.NumMipmaps();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-
-        byte *src = srcImage.GetPixels(mipLevel);
-        byte *dst = dstImage.GetPixels(mipLevel);
-
-        // Convert byte RGBA_8_8_8_8 to float RGBA
-        Etc::ColorFloatRGBA *fsrc_ptr = fsrc;
-        for (byte *src_end = &src[w * h * 4]; src < src_end; src += 4) {
-            *fsrc_ptr++ = Etc::ColorFloatRGBA::ConvertFromRGBA8(src[0], src[1], src[2], src[3]);
-        }
-
-        // Encode ETC2 RGB8
-        Etc::Image image((float *)fsrc, w, h, Etc::ErrorMetric::REC709);
-        image.m_bVerboseOutput = false;
-        Etc::Image::EncodingStatus status = image.Encode(Etc::Image::Format::RGB8, Etc::ErrorMetric::REC709, effort, 8, MAX_JOBS);
-        if (status >= Etc::Image::EncodingStatus::ERROR_THRESHOLD) {
-            assert(0);
-            return;
-        }
-
-        // Write to destination memory
-        size_t encodedBytes = image.GetEncodingBitsBytes();
-        assert(encodedBytes == dstImage.GetSize(mipLevel));
-        memcpy(dst, image.GetEncodingBits(), encodedBytes);
-    }
-
-    Mem_AlignedFree(fsrc);
+void CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
+    CompressETC(srcImage, dstImage, compressoinQuality, Etc::Image::Format::ETC1, Etc::ErrorMetric::RGBX);
 }
 
-void CompressETC2_RGBA8(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality) {
-    Etc::ColorFloatRGBA *fsrc = (Etc::ColorFloatRGBA *)Mem_Alloc16(srcImage.GetWidth() * srcImage.GetHeight() * sizeof(Etc::ColorFloatRGBA));
-
-    float effort = QualityToEffort(compressoinQuality);
-
-    int numMipmaps = srcImage.NumMipmaps();
-
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-
-        byte *src = srcImage.GetPixels(mipLevel);
-        byte *dst = dstImage.GetPixels(mipLevel);
-
-        // Convert byte RGBA_8_8_8_8 to float RGBA
-        Etc::ColorFloatRGBA *fsrc_ptr = fsrc;
-        for (byte *src_end = &src[w * h * 4]; src < src_end; src += 4) {
-            *fsrc_ptr++ = Etc::ColorFloatRGBA::ConvertFromRGBA8(src[0], src[1], src[2], src[3]);
-        }
-
-        // Encode ETC2 RGBA8
-        Etc::Image image((float *)fsrc, w, h, Etc::ErrorMetric::REC709);
-        image.m_bVerboseOutput = false;
-        Etc::Image::EncodingStatus status = image.Encode(Etc::Image::Format::RGBA8, Etc::ErrorMetric::REC709, effort, 8, MAX_JOBS);
-        if (status >= Etc::Image::EncodingStatus::ERROR_THRESHOLD) {
-            assert(0);
-            return;
-        }
-
-        // Write to destination memory
-        size_t encodedBytes = image.GetEncodingBitsBytes();
-        assert(encodedBytes == dstImage.GetSize(mipLevel));
-        memcpy(dst, image.GetEncodingBits(), encodedBytes);
-    }
-
-    Mem_AlignedFree(fsrc);
+void CompressETC2_RGB8(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
+    CompressETC(srcImage, dstImage, compressoinQuality, Etc::Image::Format::RGB8, Etc::ErrorMetric::RGBX);
 }
 
-void CompressETC2_RGBA1(const Image &srcImage, Image &dstImage, Image::CompressionQuality compressoinQuality) {
-    Etc::ColorFloatRGBA *fsrc = (Etc::ColorFloatRGBA *)Mem_Alloc16(srcImage.GetWidth() * srcImage.GetHeight() * sizeof(Etc::ColorFloatRGBA));
+void CompressETC2_RGBA1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
+    CompressETC(srcImage, dstImage, compressoinQuality, Etc::Image::Format::RGB8A1, Etc::ErrorMetric::RGBA);
+}
 
-    float effort = QualityToEffort(compressoinQuality);
+void CompressETC2_RGBA8(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
+    CompressETC(srcImage, dstImage, compressoinQuality, Etc::Image::Format::RGBA8, Etc::ErrorMetric::REC709);
+}
 
-    int numMipmaps = srcImage.NumMipmaps();
+void CompressETC2_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
+    CompressETC(srcImage, dstImage, compressoinQuality, Etc::Image::Format::RG11, Etc::ErrorMetric::NORMALXYZ);
+}
 
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-
-        byte *src = srcImage.GetPixels(mipLevel);
-        byte *dst = dstImage.GetPixels(mipLevel);
-
-        // Convert byte RGBA_8_8_8_8 to float RGBA
-        Etc::ColorFloatRGBA *fsrc_ptr = fsrc;
-        for (byte *src_end = &src[w * h * 4]; src < src_end; src += 4) {
-            *fsrc_ptr++ = Etc::ColorFloatRGBA::ConvertFromRGBA8(src[0], src[1], src[2], src[3]);
-        }
-
-        // Encode ETC2 RGB8A1
-        Etc::Image image((float *)fsrc, w, h, Etc::ErrorMetric::REC709);
-        image.m_bVerboseOutput = false;
-        Etc::Image::EncodingStatus status = image.Encode(Etc::Image::Format::RGB8A1, Etc::ErrorMetric::REC709, effort, 8, MAX_JOBS);
-        if (status >= Etc::Image::EncodingStatus::ERROR_THRESHOLD) {
-            assert(0);
-            return;
-        }
-
-        // Write to destination memory
-        size_t encodedBytes = image.GetEncodingBitsBytes();
-        assert(encodedBytes == dstImage.GetSize(mipLevel));
-        memcpy(dst, image.GetEncodingBits(), encodedBytes);
-    }
-
-    Mem_AlignedFree(fsrc);
+void CompressETC2_Signed_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
+    CompressETC(srcImage, dstImage, compressoinQuality, Etc::Image::Format::SIGNED_RG11, Etc::ErrorMetric::NORMALXYZ);
 }
 
 BE_NAMESPACE_END

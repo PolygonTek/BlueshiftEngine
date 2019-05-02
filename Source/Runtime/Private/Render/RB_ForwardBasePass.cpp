@@ -19,8 +19,8 @@
 
 BE_NAMESPACE_BEGIN
 
-static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisibleLight *light) {
-    const VisibleObject *prevSpace = nullptr;
+static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisLight *light) {
+    const VisObject *   prevSpace = nullptr;
     const SubMesh *     prevSubMesh = nullptr;
     const Material *    prevMaterial = nullptr;
     bool                prevDepthHack = false;
@@ -28,13 +28,9 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisibleLig
     backEnd.batch.SetCurrentLight(light);
 
     for (int i = 0; i < numDrawSurfs; i++) {
-        const DrawSurf *surf = drawSurfs[i];
+        const DrawSurf *drawSurf = drawSurfs[i];
 
-        if (!(surf->flags & DrawSurf::AmbientVisible)) {
-            continue;
-        }
-
-        if (!surf->material->IsLitSurface() && !surf->material->IsSkySurface()) {
+        if (!drawSurf->material->IsLitSurface() && !drawSurf->material->IsSkySurface()) {
             continue;
         }
 
@@ -43,26 +39,27 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisibleLig
             continue;
         }
 
-        bool isDifferentObject = surf->space != prevSpace;
-        bool isDifferentSubMesh = prevSubMesh ? !surf->subMesh->IsShared(prevSubMesh) : true;
-        bool isDifferentMaterial = surf->material != prevMaterial;
-        bool isDifferentInstance = !(surf->flags & DrawSurf::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace || prevSpace->def->state.flags != surf->space->def->state.flags || prevSpace->def->state.layer != surf->space->def->state.layer ? true : false;
+        bool isDifferentObject = drawSurf->space != prevSpace;
+        bool isDifferentSubMesh = prevSubMesh ? !drawSurf->subMesh->IsShared(prevSubMesh) : true;
+        bool isDifferentMaterial = drawSurf->material != prevMaterial;
+        bool isDifferentInstance = !(drawSurf->flags & DrawSurf::Flag::UseInstancing) || isDifferentMaterial || isDifferentSubMesh || !prevSpace ||
+            prevSpace->def->GetState().flags != drawSurf->space->def->GetState().flags || prevSpace->def->GetState().layer != drawSurf->space->def->GetState().layer ? true : false;
 
         if (isDifferentObject || isDifferentSubMesh || isDifferentMaterial) {
             if (prevMaterial && isDifferentInstance) {
                 backEnd.batch.Flush();
             }
 
-            backEnd.batch.Begin(surf->material->IsSkySurface() ? Batch::BackgroundFlush : Batch::AmbientFlush, surf->material, surf->materialRegisters, surf->space);
+            backEnd.batch.Begin(drawSurf->material->IsSkySurface() ? Batch::Flush::Background : Batch::Flush::Base, drawSurf->material, drawSurf->materialRegisters, drawSurf->space);
 
-            prevSubMesh = surf->subMesh;
-            prevMaterial = surf->material;
+            prevSubMesh = drawSurf->subMesh;
+            prevMaterial = drawSurf->material;
 
             if (isDifferentObject) {
-                bool depthHack = !!(surf->space->def->state.flags & RenderObject::DepthHackFlag);
+                bool depthHack = !!(drawSurf->space->def->GetState().flags & RenderObject::Flag::DepthHack);
 
                 if (prevDepthHack != depthHack) {
-                    if (surf->flags & DrawSurf::UseInstancing) {
+                    if (drawSurf->flags & DrawSurf::Flag::UseInstancing) {
                         backEnd.batch.Flush();
                     }
 
@@ -75,44 +72,49 @@ static void RB_BasePass(int numDrawSurfs, DrawSurf **drawSurfs, const VisibleLig
                     prevDepthHack = depthHack;
                 }
 
-                if (!(surf->flags & DrawSurf::UseInstancing)) {
-                    backEnd.modelViewMatrix = surf->space->modelViewMatrix;
-                    backEnd.modelViewProjMatrix = surf->space->modelViewProjMatrix;
+                if (!(drawSurf->flags & DrawSurf::Flag::UseInstancing)) {
+                    backEnd.modelViewMatrix = drawSurf->space->modelViewMatrix;
+                    backEnd.modelViewProjMatrix = drawSurf->space->modelViewProjMatrix;
                 }
 
-                prevSpace = surf->space;
+                prevSpace = drawSurf->space;
             }
         }
 
-        if (surf->flags & DrawSurf::UseInstancing) {
-            backEnd.batch.AddInstance(surf);
+        if (drawSurf->flags & DrawSurf::Flag::UseInstancing) {
+            backEnd.batch.AddInstance(drawSurf);
         }
 
-        backEnd.batch.DrawSubMesh(surf->subMesh);
+        backEnd.batch.DrawSubMesh(drawSurf->subMesh);
     }
 
+    // Flush previous batch
     if (prevMaterial) {
         backEnd.batch.Flush();
     }
 
-    // restore depthHack
+    // Restore depth hack
     if (prevDepthHack) {
         rhi.SetDepthRange(0.0f, 1.0f);
     }
 }
 
 void RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
+    if (r_skipBasePass.GetBool()) {
+        return;
+    }
+
     if (backEnd.primaryLight) {
         RB_SetupLight(backEnd.primaryLight);
 
         if (r_shadows.GetInteger() != 0) {
-            if ((backEnd.primaryLight->def->state.flags & RenderLight::CastShadowsFlag) && !(backEnd.view->def->state.flags & RenderView::NoShadows)) {
+            if ((backEnd.primaryLight->def->GetState().flags & RenderLight::Flag::CastShadows) &&
+                !(backEnd.camera->def->GetState().flags & RenderCamera::Flag::NoShadows)) {
                 RB_ShadowPass(backEnd.primaryLight);
             }
         }
     }
 
-    // BaseLit or BaseAmbient or Sky
     RB_BasePass(numDrawSurfs, drawSurfs, backEnd.primaryLight);
 }
 

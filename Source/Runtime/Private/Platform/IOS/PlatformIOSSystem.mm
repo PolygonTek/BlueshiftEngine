@@ -14,7 +14,9 @@
 
 #include "Precompiled.h"
 #include "Platform/PlatformSystem.h"
+#include <SystemConfiguration/SCNetworkReachability.h>
 #include <sys/sysctl.h>
+#include <netinet/in.h>
 
 BE_NAMESPACE_BEGIN
 
@@ -75,6 +77,30 @@ int32_t PlatformIOSSystem::NumCPUCores() {
         }
     }
     return numCores;
+}
+
+bool PlatformIOSSystem::HasActiveWiFiConnection() {
+    struct sockaddr_in zeroAddress;
+    memset(&zeroAddress, 0, sizeof(zeroAddress));
+    zeroAddress.sin_len = sizeof(zeroAddress);
+    zeroAddress.sin_family = AF_INET;
+
+    SCNetworkReachabilityRef reachabilityRef = SCNetworkReachabilityCreateWithAddress(kCFAllocatorDefault, (const struct sockaddr *)&zeroAddress);
+    SCNetworkReachabilityFlags reachabilityFlags;
+    bool isFlagsAvailable = SCNetworkReachabilityGetFlags(reachabilityRef, &reachabilityFlags);
+    CFRelease(reachabilityRef);
+    
+    bool hasActiveWiFiConnection = false;
+    if (isFlagsAvailable) {
+        bool isReachable = (reachabilityFlags & kSCNetworkReachabilityFlagsReachable) != 0 &&
+                           (reachabilityFlags & kSCNetworkReachabilityFlagsConnectionRequired) == 0 &&
+                           // in case kSCNetworkReachabilityFlagsConnectionOnDemand || kSCNetworkReachabilityFlagsConnectionOnTraffic
+                           (reachabilityFlags & kSCNetworkReachabilityFlagsInterventionRequired) == 0; 
+                    
+        hasActiveWiFiConnection = isReachable && (reachabilityFlags & kSCNetworkReachabilityFlagsIsWWAN) == 0;
+    }
+    
+    return hasActiveWiFiConnection; 
 }
 
 BE_NAMESPACE_END

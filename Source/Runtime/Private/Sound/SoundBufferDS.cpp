@@ -67,7 +67,7 @@ bool SoundBuffer::CreateStaticBuffer(int numChannels, int bitsWidth, int sampleR
 
     HRESULT hr = soundSystem.dsDevice->CreateSoundBuffer(&dsbd, &dsBuffer, nullptr);
     if (hr != DS_OK) {
-        BE_WARNLOG(L"Couldn't create DirectSound buffer\n");
+        BE_WARNLOG("Couldn't create DirectSound buffer\n");
         return false;
     }
 
@@ -119,7 +119,7 @@ bool SoundBuffer::CreateStreamBuffer(int numChannels, int bitsWidth, int sampleR
 
     HRESULT hr = soundSystem.dsDevice->CreateSoundBuffer(&dsbd, &dsBuffer, nullptr);
     if (hr != DS_OK) {
-        BE_WARNLOG(L"Couldn't create DirectSound buffer\n");
+        BE_WARNLOG("Couldn't create DirectSound buffer\n");
         return false;
     }
 
@@ -133,7 +133,7 @@ bool SoundBuffer::CreateStreamBuffer(int numChannels, int bitsWidth, int sampleR
 bool SoundBuffer::DuplicateBuffer(SoundBuffer *originalSoundBuffer) {
     HRESULT hr = soundSystem.dsDevice->DuplicateSoundBuffer(originalSoundBuffer->dsBuffer, &dsBuffer);
     if (hr != DS_OK) {
-        BE_WARNLOG(L"Couldn't duplicate DirectSound buffer\n");
+        BE_WARNLOG("Couldn't duplicate DirectSound buffer\n");
         return false;
     }
 

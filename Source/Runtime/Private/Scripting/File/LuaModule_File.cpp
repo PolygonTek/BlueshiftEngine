@@ -57,9 +57,9 @@ void LuaVM::RegisterFile(LuaCpp::Module &module) {
 
     LuaCpp::Selector _File_Mode = _File["Mode"];
     _File_Mode.SetClass<FileMode>();
-    _File_Mode["ReadMode"] = File::ReadMode;
-    _File_Mode["WriteMode"] = File::WriteMode;
-    _File_Mode["AppendMode"] = File::AppendMode;
+    _File_Mode["Read"] = File::Mode::Read;
+    _File_Mode["Write"] = File::Mode::Write;
+    _File_Mode["Append"] = File::Mode::Append;
 }
 
 BE_NAMESPACE_END

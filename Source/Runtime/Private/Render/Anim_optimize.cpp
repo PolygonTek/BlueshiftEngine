@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "Core/JointPose.h"
+#include "Core/Heap.h"
 #include "Simd/Simd.h"
 
 BE_NAMESPACE_BEGIN
@@ -62,264 +63,21 @@ static float CompareJointsS(const JointPose *joints1, const JointPose *joints2, 
     return maxDeltaS;
 }
 
-void Anim::LerpFrame(int framenum1, int framenum2, float backlerp, JointPose *joints) {
-    assert(0 <= framenum1 && framenum1 < numFrames);
-    assert(0 <= framenum2 && framenum2 < numFrames);
-
-    // copy the baseframe
-    simdProcessor->Memcpy(joints, baseFrame.Ptr(), baseFrame.Count() * sizeof(baseFrame[0]));
-
-    if (framenum1 == framenum2) {
-        return;
-    }
-
-    int *lerpIndex = (int *)_alloca16(numJoints * sizeof(lerpIndex[0]));
-    int numLerpJoints = 0;
-
-    JointPose *jointFrame = (JointPose *)_alloca16(numJoints * sizeof(JointPose));
-    JointPose *blendJoints = (JointPose *)_alloca16(numJoints * sizeof(JointPose));
-
-    const float *frame1 = &frameComponents[framenum1 * numAnimatedComponents];
-    const float *frame2 = &frameComponents[framenum2 * numAnimatedComponents];
-
-    for (int i = 0; i < numJoints; i++) {
-        const Anim::JointInfo *infoPtr = &jointInfo[i];
-
-        int animBits = infoPtr->animBits;
-        if (animBits == 0) {
-            continue;
-        }
-
-        lerpIndex[numLerpJoints++] = i;
-
-        JointPose *jointPtr = &joints[i];
-        JointPose *blendPtr = &blendJoints[i];
-
-        const float *jointframe1 = frame1 + infoPtr->firstComponent;
-        const float *jointframe2 = frame2 + infoPtr->firstComponent;
-
-        switch (animBits & (Tx | Ty | Tz)) {
-        case 0:
-            blendPtr->t = jointPtr->t;
-            break;
-        case Tx:
-            jointPtr->t.x = jointframe1[0];
-            blendPtr->t.x = jointframe2[0];
-            blendPtr->t.y = jointPtr->t.y;
-            blendPtr->t.z = jointPtr->t.z;
-            jointframe1++;
-            jointframe2++;
-            break;
-        case Ty:
-            jointPtr->t.y = jointframe1[0];
-            blendPtr->t.y = jointframe2[0];
-            blendPtr->t.x = jointPtr->t.x;
-            blendPtr->t.z = jointPtr->t.z;
-            jointframe1++;
-            jointframe2++;
-            break;
-        case Tz:
-            jointPtr->t.z = jointframe1[0];
-            blendPtr->t.z = jointframe2[0];
-            blendPtr->t.x = jointPtr->t.x;
-            blendPtr->t.y = jointPtr->t.y;
-            jointframe1++;
-            jointframe2++;
-            break;
-        case Tx | Ty:
-            jointPtr->t.x = jointframe1[0];
-            jointPtr->t.y = jointframe1[1];
-            blendPtr->t.x = jointframe2[0];
-            blendPtr->t.y = jointframe2[1];
-            blendPtr->t.z = jointPtr->t.z;
-            jointframe1 += 2;
-            jointframe2 += 2;
-            break;
-        case Tx | Tz:
-            jointPtr->t.x = jointframe1[0];
-            jointPtr->t.z = jointframe1[1];
-            blendPtr->t.x = jointframe2[0];
-            blendPtr->t.z = jointframe2[1];
-            blendPtr->t.y = jointPtr->t.y;
-            jointframe1 += 2;
-            jointframe2 += 2;
-            break;
-        case Ty | Tz:
-            jointPtr->t.y = jointframe1[0];
-            jointPtr->t.z = jointframe1[1];
-            blendPtr->t.y = jointframe2[0];
-            blendPtr->t.z = jointframe2[1];
-            blendPtr->t.x = jointPtr->t.x;
-            jointframe1 += 2;
-            jointframe2 += 2;
-            break;
-        case Tx | Ty | Tz:
-            jointPtr->t.x = jointframe1[0];
-            jointPtr->t.y = jointframe1[1];
-            jointPtr->t.z = jointframe1[2];
-            blendPtr->t.x = jointframe2[0];
-            blendPtr->t.y = jointframe2[1];
-            blendPtr->t.z = jointframe2[2];
-            jointframe1 += 3;
-            jointframe2 += 3;
-            break;
-        }
-
-        switch (animBits & (Qx | Qy | Qz)) {
-        case 0:
-            blendPtr->q = jointPtr->q;
-            break;
-        case Qx:
-            jointPtr->q.x = jointframe1[0];
-            blendPtr->q.x = jointframe2[0];
-            blendPtr->q.y = jointPtr->q.y;
-            blendPtr->q.z = jointPtr->q.z;
-            jointPtr->q.w = jointPtr->q.CalcW();
-            blendPtr->q.w = blendPtr->q.CalcW();
-            break;
-        case Qy:
-            jointPtr->q.y = jointframe1[0];
-            blendPtr->q.y = jointframe2[0];
-            blendPtr->q.x = jointPtr->q.x;
-            blendPtr->q.z = jointPtr->q.z;
-            jointPtr->q.w = jointPtr->q.CalcW();
-            blendPtr->q.w = blendPtr->q.CalcW();
-            break;
-        case Qz:
-            jointPtr->q.z = jointframe1[0];
-            blendPtr->q.z = jointframe2[0];
-            blendPtr->q.x = jointPtr->q.x;
-            blendPtr->q.y = jointPtr->q.y;
-            jointPtr->q.w = jointPtr->q.CalcW();
-            blendPtr->q.w = blendPtr->q.CalcW();
-            break;
-        case Qx | Qy:
-            jointPtr->q.x = jointframe1[0];
-            jointPtr->q.y = jointframe1[1];
-            blendPtr->q.x = jointframe2[0];
-            blendPtr->q.y = jointframe2[1];
-            blendPtr->q.z = jointPtr->q.z;
-            jointPtr->q.w = jointPtr->q.CalcW();
-            blendPtr->q.w = blendPtr->q.CalcW();
-            break;
-        case Qx | Qz:
-            jointPtr->q.x = jointframe1[0];
-            jointPtr->q.z = jointframe1[1];
-            blendPtr->q.x = jointframe2[0];
-            blendPtr->q.z = jointframe2[1];
-            blendPtr->q.y = jointPtr->q.y;
-            jointPtr->q.w = jointPtr->q.CalcW();
-            blendPtr->q.w = blendPtr->q.CalcW();
-            break;
-        case Qy | Qz:
-            jointPtr->q.y = jointframe1[0];
-            jointPtr->q.z = jointframe1[1];
-            blendPtr->q.y = jointframe2[0];
-            blendPtr->q.z = jointframe2[1];
-            blendPtr->q.x = jointPtr->q.x;
-            jointPtr->q.w = jointPtr->q.CalcW();
-            blendPtr->q.w = blendPtr->q.CalcW();
-            break;
-        case Qx | Qy | Qz:
-            jointPtr->q.x = jointframe1[0];
-            jointPtr->q.y = jointframe1[1];
-            jointPtr->q.z = jointframe1[2];
-            blendPtr->q.x = jointframe2[0];
-            blendPtr->q.y = jointframe2[1];
-            blendPtr->q.z = jointframe2[2];
-            jointPtr->q.w = jointPtr->q.CalcW();
-            blendPtr->q.w = blendPtr->q.CalcW();
-            break;
-        }
-
-        switch (animBits & (Sx | Sy | Sz)) {
-        case 0:
-            blendPtr->s = jointPtr->s;
-            break;
-        case Sx:
-            jointPtr->s.x = jointframe1[0];
-            blendPtr->s.x = jointframe2[0];
-            blendPtr->s.y = jointPtr->s.y;
-            blendPtr->s.z = jointPtr->s.z;
-            jointframe1++;
-            jointframe2++;
-            break;
-        case Sy:
-            jointPtr->s.y = jointframe1[0];
-            blendPtr->s.y = jointframe2[0];
-            blendPtr->s.x = jointPtr->s.x;
-            blendPtr->s.z = jointPtr->s.z;
-            jointframe1++;
-            jointframe2++;
-            break;
-        case Sz:
-            jointPtr->s.z = jointframe1[0];
-            blendPtr->s.z = jointframe2[0];
-            blendPtr->s.x = jointPtr->s.x;
-            blendPtr->s.y = jointPtr->s.y;
-            jointframe1++;
-            jointframe2++;
-            break;
-        case Sx | Sy:
-            jointPtr->s.x = jointframe1[0];
-            jointPtr->s.y = jointframe1[1];
-            blendPtr->s.x = jointframe2[0];
-            blendPtr->s.y = jointframe2[1];
-            blendPtr->s.z = jointPtr->s.z;
-            jointframe1 += 2;
-            jointframe2 += 2;
-            break;
-        case Sx | Sz:
-            jointPtr->s.x = jointframe1[0];
-            jointPtr->s.z = jointframe1[1];
-            blendPtr->s.x = jointframe2[0];
-            blendPtr->s.z = jointframe2[1];
-            blendPtr->s.y = jointPtr->s.y;
-            jointframe1 += 2;
-            jointframe2 += 2;
-            break;
-        case Sy | Sz:
-            jointPtr->s.y = jointframe1[0];
-            jointPtr->s.z = jointframe1[1];
-            blendPtr->s.y = jointframe2[0];
-            blendPtr->s.z = jointframe2[1];
-            blendPtr->s.x = jointPtr->s.x;
-            jointframe1 += 2;
-            jointframe2 += 2;
-            break;
-        case Sx | Sy | Sz:
-            jointPtr->s.x = jointframe1[0];
-            jointPtr->s.y = jointframe1[1];
-            jointPtr->s.z = jointframe1[2];
-            blendPtr->s.x = jointframe2[0];
-            blendPtr->s.y = jointframe2[1];
-            blendPtr->s.z = jointframe2[2];
-            jointframe1 += 3;
-            jointframe2 += 3;
-            break;
-        }
-    }
-
-    simdProcessor->BlendJoints(joints, blendJoints, backlerp, lerpIndex, numLerpJoints);
-}
-
-void Anim::RemoveFrames(int numRemoveFrames, const int *removeFramenums) {
-    Array<float>	newFrameComponents;
-    Array<int>	newFrameTimes;
-    Array<AABB>	newAABBs;
-
+void Anim::RemoveFrames(const Array<int> &removableFrameNums) {
+    Array<float> newFrameComponents;
     newFrameComponents.SetGranularity(1);
-    newFrameComponents.SetCount(frameComponents.Count() - numRemoveFrames * numAnimatedComponents);
+    newFrameComponents.SetCount(components.Count() - removableFrameNums.Count() * numComponentsPerFrame);
+
+    Array<int> newFrameTimes;
     newFrameTimes.SetGranularity(1);
-    newFrameTimes.SetCount(frameToTimeMap.Count() - numRemoveFrames);
-    newAABBs.SetGranularity(1);
+    newFrameTimes.SetCount(frameTimes.Count() - removableFrameNums.Count());
 
     int numNewFrames = 0;
 
     for (int frameNum = 0; frameNum < numFrames; frameNum++) {
         bool remove = false;
-        for (int i = 0; i < numRemoveFrames; i++) {
-            if (frameNum == removeFramenums[i]) {
+        for (int i = 0; i < removableFrameNums.Count(); i++) {
+            if (frameNum == removableFrameNums[i]) {
                 remove = true;
                 break;
             }
@@ -329,97 +87,112 @@ void Anim::RemoveFrames(int numRemoveFrames, const int *removeFramenums) {
             continue;
         }
 
-        for (int i = 0; i < numAnimatedComponents; i++) {
-            newFrameComponents[numNewFrames * numAnimatedComponents + i] = frameComponents[frameNum * numAnimatedComponents + i];
+        for (int i = 0; i < numComponentsPerFrame; i++) {
+            newFrameComponents[numNewFrames * numComponentsPerFrame + i] = components[frameNum * numComponentsPerFrame + i];
         }
-        newFrameTimes[numNewFrames] = frameToTimeMap[frameNum];
+        newFrameTimes[numNewFrames] = frameTimes[frameNum];
 
         numNewFrames++;
     }
 
-    frameComponents = newFrameComponents;
-    frameToTimeMap = newFrameTimes;
+    components = newFrameComponents;
+    frameTimes = newFrameTimes;
 
     numFrames = numNewFrames;
 }
 
-void Anim::OptimizeFrames(float epsilonT, float epsilonQ, float epsilonS) {
-    if (!numAnimatedComponents) {
+void Anim::ComputeRemovableFrames(const JointPose *frameJoints, const int *jointIndexes, JointPose *lerpedJoints,
+    float epsilonT, float epsilonQ, float epsilonS, int frameNum1, int frameNum2, Array<int> &removableFrameNums) {
+    if (frameNum1 + 1 == frameNum2) {
         return;
     }
 
-    Array<int> removeFrameNums;
-    removeFrameNums.Resize(numFrames);
+    float blockTime = frameTimes[frameNum2] - frameTimes[frameNum1];
 
-    JointPose *joints = (JointPose *)_alloca16(numJoints * sizeof(JointPose));
-    JointPose *lerpedJoints = (JointPose *)_alloca16(numJoints * sizeof(JointPose));
+    float maxDt = 0.0f;
+    float maxDq = 0.0f;
+    float maxDs = 0.0f;
+
+    int frameNumMaxDt = frameNum1;
+    int frameNumMaxDq = frameNum1;
+    int frameNumMaxDs = frameNum1;
+
+    for (int frameNum = frameNum1 + 1; frameNum < frameNum2; frameNum++) {
+        FrameInterpolation frameInterpolation;
+        frameInterpolation.frame1 = frameNum1;
+        frameInterpolation.frame2 = frameNum2;
+        frameInterpolation.cycleCount = 0;
+        frameInterpolation.backlerp = (frameTimes[frameNum] - frameTimes[frameNum1]) / blockTime;
+        frameInterpolation.frontlerp = 1.0f - frameInterpolation.backlerp;
+        GetInterpolatedFrame(frameInterpolation, numJoints, jointIndexes, lerpedJoints);
+
+        float dt = CompareJointsT(&frameJoints[frameNum * numJoints], lerpedJoints, numJoints);
+        if (dt > maxDt) {
+            maxDt = dt;
+            frameNumMaxDt = frameNum;
+        }
+
+        float dq = CompareJointsQ(&frameJoints[frameNum * numJoints], lerpedJoints, numJoints);
+        if (dq > maxDq) {
+            maxDq = dq;
+            frameNumMaxDq = frameNum;
+        }
+
+        float ds = CompareJointsS(&frameJoints[frameNum * numJoints], lerpedJoints, numJoints);
+        if (ds > maxDs) {
+            maxDs = ds;
+            frameNumMaxDs = frameNum;
+        }
+    }
+
+    if (maxDt > epsilonT || maxDq > epsilonQ || maxDs > epsilonS) {
+        int frameNum = Max3(frameNumMaxDt, frameNumMaxDq, frameNumMaxDs);
+
+        ComputeRemovableFrames(frameJoints, jointIndexes, lerpedJoints, epsilonT, epsilonQ, epsilonS, frameNum1, frameNum, removableFrameNums);
+        ComputeRemovableFrames(frameJoints, jointIndexes, lerpedJoints, epsilonT, epsilonQ, epsilonS, frameNum, frameNum2, removableFrameNums);
+        return;
+    }
+
+    for (int i = frameNum1 + 1; i < frameNum2; i++) {
+        removableFrameNums.Append(i);
+    }
+}
+
+void Anim::OptimizeFrames(float epsilonT, float epsilonQ, float epsilonS) {
+    if (numFrames <= 2 || !numComponentsPerFrame) {
+        return;
+    }
     
+    // Set up whole joint indexes
     int *jointIndexes = (int *)_alloca16(numJoints * sizeof(int));
     for (int i = 0; i < numJoints; i++) {
         jointIndexes[i] = i;
     }
 
-    int framenum1 = 0;
-    int framenum2 = numFrames - 1;
+    // Set up the reference joints of all frames.
+    JointPose *frameJoints = (JointPose *)Mem_Alloc16(numFrames * numJoints * sizeof(JointPose));
 
-    while (framenum1 != framenum2) {
-        if (framenum2 - framenum1 <= 1) {
-            framenum1 = framenum2;
-            framenum2 = numFrames - 1;
-            continue;
-        }
-
-        float blockTime = frameToTimeMap[framenum2] - frameToTimeMap[framenum1];
-        float maxdt = 0.0f;
-        float maxdq = 0.0f;
-        float maxds = 0.0f;
-        int framenum3 = framenum1;
-        int framenum4 = framenum1;
-        int framenum5 = framenum1;
-
-        for (int i = framenum1 + 1; i < framenum2; i++) {
-            GetSingleFrame(i, numJoints, jointIndexes, joints);
-
-            float backlerp = (frameToTimeMap[i] - frameToTimeMap[framenum1]) / blockTime;
-            LerpFrame(framenum1, framenum2, backlerp, lerpedJoints);
-
-            float dt = CompareJointsT(joints, lerpedJoints, numJoints);
-            if (dt > maxdt) {
-                maxdt = dt;
-                framenum3 = i;
-            }
-
-            float dq = CompareJointsQ(joints, lerpedJoints, numJoints);
-            if (dq > maxdq) {
-                maxdq = dq;
-                framenum4 = i;
-            }
-
-            float ds = CompareJointsS(joints, lerpedJoints, numJoints);
-            if (ds > maxds) {
-                maxds = ds;
-                framenum5 = i;
-            }
-        }
-    
-        if (maxdt > epsilonT || maxdq > epsilonQ || maxds > epsilonS) {	
-            framenum2 = Max3(framenum3, framenum4, framenum5);
-            continue;
-        }
-
-        for (int i = framenum1 + 1; i < framenum2; i++) {
-            removeFrameNums.Append(i);
-        }
-
-        framenum1 = framenum2;
-        framenum2 = numFrames - 1;
+    for (int frameNum = 0; frameNum < numFrames; frameNum++) {
+        GetSingleFrame(frameNum, numJoints, jointIndexes, &frameJoints[frameNum * numJoints]);
     }
 
-    if (removeFrameNums.Count() > 0) {
-        BE_LOG(L"%.1f%% of frames removed\n", 100.0f * removeFrameNums.Count() / numFrames);
+    JointPose *lerpedJoints = (JointPose *)_alloca16(numJoints * sizeof(JointPose));
+
+    int frameNum1 = 0;
+    int frameNum2 = numFrames - 1;
+
+    Array<int> removableFrameNums;
+    removableFrameNums.Reserve(numFrames);
+
+    ComputeRemovableFrames(frameJoints, jointIndexes, lerpedJoints, epsilonT, epsilonQ, epsilonS, frameNum1, frameNum2, removableFrameNums);
+
+    if (removableFrameNums.Count() > 0) {
+        BE_LOG("%.1f%% of frames removed\n", 100.0f * removableFrameNums.Count() / numFrames);
+
+        RemoveFrames(removableFrameNums);
     }
 
-    RemoveFrames(removeFrameNums.Count(), removeFrameNums.Ptr());
+    Mem_AlignedFree(frameJoints);
 }
 
 BE_NAMESPACE_END

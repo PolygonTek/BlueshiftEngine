@@ -73,7 +73,7 @@ void Pcm::Free() {
 bool Pcm::Open(const char *filename) {
     Purge();
     
-    File *fp = fileSystem.OpenFile(filename, File::Mode::ReadMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Read);
     if (!fp) {
         return false;
     }
@@ -81,20 +81,20 @@ bool Pcm::Open(const char *filename) {
     this->fp = fp;
 
     if (Str::CheckExtension(filename, ".wav")) {
-        fileType = FileType::WavFile;
+        fileType = FileType::Wav;
 
         if (BeginDecodeFile_Wav()) {
             return true;
         }
     } else if (Str::CheckExtension(filename, ".ogg")) {
-        fileType = FileType::OggFile;
+        fileType = FileType::Ogg;
 
         if (BeginDecodeFile_OggVorbis()) {
             return true;
         }
     } 
 
-    BE_WARNLOG(L"Unsupported sound file '%hs'\n", filename);
+    BE_WARNLOG("Unsupported sound file '%s'\n", filename);
     fileSystem.CloseFile(fp);
 
     return false;
@@ -106,9 +106,9 @@ void Pcm::Close() {
         return;
     }
 
-    if (fileType == FileType::OggFile) {
+    if (fileType == FileType::Ogg) {
         EndDecodeFile_OggVorbis();
-    } else if (fileType == FileType::WavFile) {
+    } else if (fileType == FileType::Wav) {
         EndDecodeFile_Wav();
     }
 
@@ -119,9 +119,9 @@ void Pcm::Close() {
 int Pcm::Read(int size, byte *buffer) {
     int read = 0;
 
-    if (fileType == FileType::WavFile) {
+    if (fileType == FileType::Wav) {
         read = DecodeFile_Wav(buffer, size);
-    } else if (fileType == FileType::OggFile) {
+    } else if (fileType == FileType::Ogg) {
         read = DecodeFile_OggVorbis(buffer, size);
     }
 
@@ -131,9 +131,9 @@ int Pcm::Read(int size, byte *buffer) {
 }
 
 void Pcm::Seek(int offset) {
-    if (fileType == FileType::WavFile) {
+    if (fileType == FileType::Wav) {
         SeekFile_Wav(offset);
-    } else if (fileType == FileType::OggFile) {
+    } else if (fileType == FileType::Ogg) {
         SeekFile_OggVorbis(offset);
     }
 
@@ -152,14 +152,14 @@ bool Pcm::Load(const char *filename) {
     const uint32_t id = *(uint32_t *)base;
 
     if (id == MAKE_FOURCC('R', 'I', 'F', 'F')) { // RIFF WAVE
-        fileType = FileType::WavFile;
+        fileType = FileType::Wav;
 
         if (DecodeMemory_Wav(base, fileSize)) {
             fileSystem.FreeFile(base);
             return true;
         }
     } else if (id == MAKE_FOURCC('O', 'g', 'g', 'S')) { // Ogg Vorbis
-        fileType = FileType::OggFile;
+        fileType = FileType::Ogg;
 
         if (DecodeMemory_OggVorbis(base, fileSize)) {
             fileSystem.FreeFile(base);

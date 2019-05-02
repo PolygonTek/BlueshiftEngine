@@ -15,7 +15,7 @@
 #pragma once
 
 struct sseb {
-    union { 
+    union {
         __m128      m128;
         int32_t     pi32[4];
     };

@@ -83,7 +83,7 @@ extern const EventDef EV_ImmediateDestroy;
 #define ABSTRACT_DECLARATION(visualname, classname, superclassname) \
     BE1::MetaObject *classname::GetMetaObject() const { return &classname::metaObject; } \
     BE1::Object *classname::CreateInstance(const BE1::Guid &guid) { \
-        BE_LOG(L"Cannot instanciate abstract class %hs.", #classname); \
+        BE_LOG("Cannot instanciate abstract class %s.", #classname); \
         return nullptr; \
     } \
     BE1::MetaObject classname::metaObject(visualname, #classname, #superclassname, \

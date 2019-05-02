@@ -32,51 +32,49 @@ bool Anim::LoadBinaryAnim(const char *filename) {
     byte *ptr = data + sizeof(BAnimHeader);
     
     if (bAnimHeader->ident != BANIM_IDENT) {
-        BE_WARNLOG(L"Anim::LoadBinaryAnim: bad format %hs\n", filename);
+        BE_WARNLOG("Anim::LoadBinaryAnim: bad format %s\n", filename);
         fileSystem.FreeFile(data);
         return false;
     }
 
     numFrames = bAnimHeader->numFrames;
     numJoints = bAnimHeader->numJoints;
-    numAnimatedComponents = bAnimHeader->numAnimatedComponents;
-    animLength = bAnimHeader->animLength;
+    numComponentsPerFrame = bAnimHeader->numComponentsPerFrame;
+    length = bAnimHeader->length;
     maxCycleCount = bAnimHeader->maxCycleCount;
     rootRotation = (bAnimHeader->flags & BAnimFlag::RootRotation) ? true : false;
     rootTranslationXY = (bAnimHeader->flags & BAnimFlag::RootTranslationXY) ? true : false;
     rootTranslationZ = (bAnimHeader->flags & BAnimFlag::RootTranslationZ) ? true : false;
 
-    // --- frameToTimeMap & timeToFrameMap ---
-    int frameToTimeMapCount = *(const int *)ptr;
-    ptr += sizeof(frameToTimeMapCount);
+    // --- frame times ---
+    int frameTimesCount = *(const int *)ptr;
+    ptr += sizeof(frameTimesCount);
 
-    frameToTimeMap.SetGranularity(1);
-    frameToTimeMap.SetCount(frameToTimeMapCount);
-    simdProcessor->Memcpy(frameToTimeMap.Ptr(), ptr, (int)frameToTimeMap.MemoryUsed());
-    ptr += frameToTimeMap.MemoryUsed();
+    frameTimes.SetGranularity(1);
+    frameTimes.SetCount(frameTimesCount);
+    simdProcessor->Memcpy(frameTimes.Ptr(), ptr, (int)frameTimes.MemoryUsed());
+    ptr += frameTimes.MemoryUsed();
 
-    int timeToFrameMapCount = *(const int *)ptr;
-    ptr += sizeof(timeToFrameMapCount);
-
-    timeToFrameMap.SetGranularity(1);
-    timeToFrameMap.SetCount(timeToFrameMapCount);
-    simdProcessor->Memcpy(timeToFrameMap.Ptr(), ptr, (int)timeToFrameMap.MemoryUsed());
-    ptr += timeToFrameMap.MemoryUsed();
+    if (bAnimHeader->version == 1) {
+        int timeToFramesCount = *(const int *)ptr;
+        ptr += sizeof(timeToFramesCount);
+        ptr += sizeof(int) * timeToFramesCount;
+    }
 
     // --- joint info ---
-    jointInfo.SetGranularity(1);
-    jointInfo.SetCount(numJoints);
+    joints.SetGranularity(1);
+    joints.SetCount(numJoints);
 
     for (int jointIndex = 0; jointIndex < numJoints; jointIndex++) {
         const BAnimJoint *bAnimJoint = (const BAnimJoint *)ptr;
         ptr += sizeof(BAnimJoint);
 
-        JointInfo *jointInfo = &this->jointInfo[jointIndex];
+        JointInfo *jointInfo = &this->joints[jointIndex];
 
         jointInfo->nameIndex = animManager.JointIndexByName(bAnimJoint->name);
-        jointInfo->parentNum = bAnimJoint->parentIndex;
-        jointInfo->animBits = bAnimJoint->animBits;
-        jointInfo->firstComponent = bAnimJoint->firstComponent;
+        jointInfo->parentIndex = bAnimJoint->parentIndex;
+        jointInfo->componentBits = bAnimJoint->componentBits;
+        jointInfo->componentOffset = bAnimJoint->componentOffset;
     }
 
     // --- base frame ---
@@ -95,10 +93,10 @@ bool Anim::LoadBinaryAnim(const char *filename) {
     }
 
     // --- frames ---
-    frameComponents.SetGranularity(1);
-    frameComponents.SetCount(numAnimatedComponents * numFrames);
-    memcpy(frameComponents.Ptr(), ptr, frameComponents.MemoryUsed());
-    ptr += frameComponents.MemoryUsed();
+    components.SetGranularity(1);
+    components.SetCount(numComponentsPerFrame * numFrames);
+    memcpy(components.Ptr(), ptr, components.MemoryUsed());
+    ptr += components.MemoryUsed();
 
     // --- total delta ---
     memcpy(&totalDelta, ptr, sizeof(totalDelta));
@@ -110,9 +108,9 @@ bool Anim::LoadBinaryAnim(const char *filename) {
 }
 
 void Anim::WriteBinaryAnim(const char *filename) {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG(L"Anim::WriteBinaryAnim: file open error\n");
+        BE_WARNLOG("Anim::WriteBinaryAnim: file open error\n");
         return;
     }
 
@@ -127,29 +125,25 @@ void Anim::WriteBinaryAnim(const char *filename) {
     bAnimHeader.flags = flags;
     bAnimHeader.numJoints = numJoints;
     bAnimHeader.numFrames = numFrames;
-    bAnimHeader.numAnimatedComponents = numAnimatedComponents;
-    bAnimHeader.animLength = animLength;
+    bAnimHeader.numComponentsPerFrame = numComponentsPerFrame;
+    bAnimHeader.length = length;
     bAnimHeader.maxCycleCount = maxCycleCount;
     fp->Write(&bAnimHeader, sizeof(bAnimHeader));
     
-    // --- frameToTimeMap & timeToFrameMap ---
-    int frameToTimeMapCount = frameToTimeMap.Count();
-    fp->Write(&frameToTimeMapCount, sizeof(frameToTimeMapCount)); 
-    fp->Write(frameToTimeMap.Ptr(), frameToTimeMap.MemoryUsed());
-
-    int timeToFrameMapCount = timeToFrameMap.Count();
-    fp->Write(&timeToFrameMapCount, sizeof(timeToFrameMapCount));
-    fp->Write(timeToFrameMap.Ptr(), timeToFrameMap.MemoryUsed());
+    // --- frame times ---
+    int frameTimesCount = frameTimes.Count();
+    fp->Write(&frameTimesCount, sizeof(frameTimesCount));
+    fp->Write(frameTimes.Ptr(), frameTimes.MemoryUsed());
 
     // --- joint info ---
     for (int jointIndex = 0; jointIndex < numJoints; jointIndex++) {
-        const JointInfo *jointInfo = &this->jointInfo[jointIndex];
+        const JointInfo *jointInfo = &this->joints[jointIndex];
 
         BAnimJoint bAnimJoint;
         Str::Copynz(bAnimJoint.name, animManager.JointNameByIndex(jointInfo->nameIndex), sizeof(bAnimJoint.name));
-        bAnimJoint.parentIndex = jointInfo->parentNum;
-        bAnimJoint.animBits = jointInfo->animBits;
-        bAnimJoint.firstComponent = jointInfo->firstComponent;
+        bAnimJoint.parentIndex = jointInfo->parentIndex;
+        bAnimJoint.componentBits = jointInfo->componentBits;
+        bAnimJoint.componentOffset = jointInfo->componentOffset;
         fp->Write(&bAnimJoint, sizeof(bAnimJoint));
     }
 
@@ -161,12 +155,12 @@ void Anim::WriteBinaryAnim(const char *filename) {
     }
 
     // --- frames ---
-    fp->Write(frameComponents.Ptr(), frameComponents.MemoryUsed());
+    fp->Write(components.Ptr(), components.MemoryUsed());
     
     // --- total delta ---
     fp->Write(&totalDelta, sizeof(totalDelta));
 
-    fileSystem.CloseFile(fp);    
+    fileSystem.CloseFile(fp);
 }
 
 BE_NAMESPACE_END

@@ -9,11 +9,11 @@ out vec4 v2f_motionVecPrev;
 
 uniform vec4 textureMatrixS;
 uniform vec4 textureMatrixT;
-uniform mat4 modelViewMatrix;
-uniform mat4 modelViewProjectionMatrix;
+uniform HIGHP mat4 modelViewMatrix;
+uniform HIGHP mat4 modelViewProjectionMatrix;
 
-uniform mat4 prevModelViewProjectionMatrix;	// currProjM * currViewM * prevModelM
-uniform mat4 prevModelViewMatrix;			// currViewM * prevModelM
+uniform HIGHP mat4 prevModelViewProjectionMatrix;	// currProjM * currViewM * prevModelM
+uniform HIGHP mat4 prevModelViewMatrix;			// currViewM * prevModelM
 
 //#define STRETCH_VERTEX
 

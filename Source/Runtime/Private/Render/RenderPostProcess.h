@@ -53,9 +53,9 @@ void    PP_VBlurBilinear8x(const Texture *srcTexture, const Vec2 *sampleOffsets,
 void    PP_HBlurAlphaMaskedBilinear8x(const Texture *srcTexture, const Texture *masktex, const Vec2 *sampleOffsets, const float *weights, RenderTarget *dstRT);
 void    PP_VBlurAlphaMaskedBilinear8x(const Texture *srcTexture, const Texture *masktex, const Vec2 *sampleOffsets, const float *weights, RenderTarget *dstRT);
 
-void    PP_GaussBlur5x5(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT);
-void    PP_GaussBlur7x7(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT);
-void    PP_GaussBlur15x15(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT);
+void    PP_GaussianBlur5x5(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT);
+void    PP_GaussianBlur7x7(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT);
+void    PP_GaussianBlur15x15(const Texture *srcTexture, RenderTarget *tempRT, RenderTarget *dstRT);
 void    PP_KawaseBlur(const Texture *srcTexture, int iteration, RenderTarget *dstRT);
 
 void    PP_AoBlur(const Texture *aoTexture, const Texture *depthTexture, RenderTarget *tempRT, const Mat4 &projectionMatrix, RenderTarget *dstRT);
@@ -73,6 +73,7 @@ void    PP_SunShaftsDisplay(const Texture *screenTexture, const Texture *shaftTe
 void    PP_ObjectMotionBlur(const Texture *srcTexture, const Texture *velocityTexture, float s, float t, float s2, float t2, RenderTarget *dstRT);
 void    PP_CameraMotionBlur(const Texture *srcTexture, const Texture *depthTexture, const Mat4 viewProjectionMatrix[2], const Vec3 &cameraPos, float blurScale, float frameTime, RenderTarget *dstRT);
 
+void    PP_WriteDefaultLuminance(RenderTarget *dstRT);
 void    PP_MeasureLuminance(const Texture *srcTexture, const float *screenTc, RenderTarget *dstRT);
 void    PP_LuminanceAdaptation(const Texture *srcTexture0, const Texture *srcTexture1, float frameTime, RenderTarget *dstRT);
 
@@ -80,6 +81,6 @@ void    PP_BrightFilter(const Texture *srcTexture, const Texture *luminanceTextu
 
 void    PP_ChromaShift(const Texture *srcTexture, RenderTarget *dstRT);
 
-void    PP_SSAO(const Texture *depthTexture, const Texture *downscaledDepthTexture, const VisibleView *visView, RenderTarget *dstRT);
+void    PP_SSAO(const Texture *depthTexture, const Texture *downscaledDepthTexture, const VisCamera *camera, RenderTarget *dstRT);
 
 BE_NAMESPACE_END

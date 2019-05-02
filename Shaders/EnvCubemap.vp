@@ -1,0 +1,20 @@
+in HIGHP vec4 in_position   : POSITION;
+
+out LOWP vec3 v2f_viewWS;
+out LOWP vec3 v2f_normal;
+
+uniform HIGHP mat4 modelViewMatrix;
+uniform HIGHP mat4 modelViewProjectionMatrix;
+
+uniform HIGHP mat4x3 localToWorldMatrix;
+
+uniform vec3 viewOrigin;    // eye position in world space
+
+void main() {
+    vec4 positionWS = vec4(localToWorldMatrix * in_position, 1.0);
+    v2f_viewWS = viewOrigin.xyz - positionWS.xyz;
+
+    v2f_normal = in_position.xyz;
+
+    gl_Position = modelViewProjectionMatrix * in_position;
+}

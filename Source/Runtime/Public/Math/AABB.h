@@ -29,6 +29,7 @@ class Mat3;
 class Plane;
 class Sphere;
 class OBB;
+class Ray;
 
 /// A 3D axis-aligned bounding box.
 class BE_API AABB {
@@ -37,28 +38,33 @@ public:
     AABB() {}
     /// Constructs this AABB by specifying the minimum and maximum extending corners of the box.
     AABB(const Vec3 &mins, const Vec3 &maxs);
+    /// Constructs this AABB by single point.
     explicit AABB(const Vec3 &point);
+
+                        /// Returns true if this AABB is inside out.
+    bool                IsCleared() const;
 
                         /// Resets mins and maxs values. If you invoke this method, IsCleared() shall returns true.
     void                Clear();
-                        /// Sets to zero sized AABB
+
+                        /// Sets to zero sized AABB.
     void                SetZero();
 
-                        /// Returns true if this AABB is cleared
-    bool                IsCleared() const;
-                        /// Returns center point of this AABB
+                        /// Returns center point of this AABB.
     Vec3                Center() const { return Vec3((b[1][0] + b[0][0]) * 0.5f, (b[1][1] + b[0][1]) * 0.5f, (b[1][2] + b[0][2]) * 0.5f); }
-                        /// Returns extents
+                        /// Returns extents.
     Vec3                Extents() const { return (b[1] - b[0]) * 0.5f; }
-                        /// Radius of circumscribed sphere that center in origin about the AABB
+
+                        /// Radius of circumscribed sphere that center in origin about the AABB.
     float               OuterRadius() const;
-                        /// Radius of circumscribed sphere that given center about the AABB
+                        /// Radius of circumscribed sphere that given center about the AABB.
     float               OuterRadius(const Vec3 &center) const;
-                        /// Radius of inscribed sphere inside the AABB
+                        /// Radius of inscribed sphere inside the AABB.
     float               InnerRadius() const;
-                        /// Returns area of six sides
+
+                        /// Returns area of six sides.
     float               Area() const;
-                        /// Returns volume of the AABB
+                        /// Returns volume of the AABB.
     float               Volume() const;
 
                         /// Accesses an element of this AABB using array notation.
@@ -66,120 +72,138 @@ public:
     const Vec3 &        operator[](const int index) const;
     Vec3 &              operator[](const int index);
 
-                        /// Returns translated AABB
-    AABB                operator+(const Vec3 &rhs) const { return AABB(b[0] + rhs, b[1] + rhs); }
-                        /// Returns translated AABB
-    AABB                operator-(const Vec3 &rhs) const { return AABB(b[0] - rhs, b[1] - rhs); }
-                        /// Translates AABB
-    AABB &              operator+=(const Vec3 &rhs);
-                        /// Translates AABB
-    AABB &              operator-=(const Vec3 &rhs);
-                        /// Returns scaled AABB
-    AABB                operator*(const float &rhs) const;
-                        /// Scales AABB
-    AABB &              operator*=(const float &rhs);
-                        /// Returns scaled AABB
-    AABB                operator*(const Vec3 &rhs) const;
-                        /// Scales AABB
-    AABB &              operator*=(const Vec3 &rhs);
-                        /// Returns rotated AABB
-    AABB                operator*(const Mat3 &rhs) const;
-                        /// Rotates AABB
-    AABB &              operator*=(const Mat3 &rhs);
-                        /// Returns added AABB
-    AABB                operator+(const AABB &rhs) const;
-                        /// Adds AABB
-    AABB &              operator+=(const AABB &rhs);
-
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const AABB &a) const { return (b[0].Equals(a.b[0]) && b[1].Equals(a.b[1])); }
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const AABB &a, const float epsilon) const { return (b[0].Equals(a.b[0], epsilon) && b[1].Equals(a.b[1], epsilon)); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const AABB &rhs) const { return Equals(rhs); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const AABB &rhs) const { return !Equals(rhs); }
 
-                        // 점을 추가, AABB 가 확장됐다면 true 를 리턴
+                        /// Returns translated AABB.
+    AABB                operator+(const Vec3 &rhs) const { return AABB(b[0] + rhs, b[1] + rhs); }
+                        /// Returns translated AABB.
+    AABB                operator-(const Vec3 &rhs) const { return AABB(b[0] - rhs, b[1] - rhs); }
+                        /// Translates AABB.
+    AABB &              operator+=(const Vec3 &rhs);
+                        /// Translates AABB.
+    AABB &              operator-=(const Vec3 &rhs);
+
+                        /// Returns scaled AABB.
+    AABB                operator*(const float &rhs) const;
+                        /// Scales AABB.
+    AABB &              operator*=(const float &rhs);
+                        /// Returns scaled AABB.
+    AABB                operator*(const Vec3 &rhs) const;
+                        /// Scales AABB.
+    AABB &              operator*=(const Vec3 &rhs);
+
+                        /// Returns rotated AABB
+    AABB                operator*(const Mat3 &rhs) const;
+                        /// Rotates AABB.
+    AABB &              operator*=(const Mat3 &rhs);
+
+                        /// Returns added AABB.
+    AABB                operator+(const AABB &rhs) const;
+                        /// Adds AABB.
+    AABB &              operator+=(const AABB &rhs);
+
+                        /// Adds a point. Returns true if this AABB is expanded.
     bool                AddPoint(const Vec3 &v);
-                        // AABB 를 추가, AABB 가 확장됐다면 true 를 리턴
+                        /// Adds a AABB. Returns true if this AABB is expanded.
     bool                AddAABB(const AABB &a);
 
-                        // 교차된 AABB 리턴
+                        /// Returns intersecting AABB with given AABB.
     AABB                Intersect(const AABB &a) const;
-                        // AABB 를 교차
+                        /// Intersects this AABB with the given AABB.
     AABB &              IntersectSelf(const AABB &a);
-                        // d 만큼 확장된 AABB 리턴
+                        /// Returns expanded AABB.
     AABB                Expand(const float d) const { return AABB(Vec3(b[0][0] - d, b[0][1] - d, b[0][2] - d), Vec3(b[1][0] + d, b[1][1] + d, b[1][2] + d)); }
-                        // d 만큼 AABB 확장
+                        /// Expands this AABB.
     AABB &              ExpandSelf(const float d);
-                        // 이동된 AABB 리턴
+                        /// Returns translated AABB.
     AABB                Translate(const Vec3 &translation) const { return AABB(b[0] + translation, b[1] + translation); }
-                        // AABB 이동
+                        /// Translates this AABB.
     AABB &              TranslateSelf(const Vec3 &translation);
-                        // 회전된 AABB 리턴
+                        /// Returns rotated AABB.
     AABB                Rotate(const Mat3 &rotation) const;
-                        // AABB 회전
+                        /// Rotates this AABB.
     AABB &              RotateSelf(const Mat3 &rotation);
 
-                        // AABB 가 평면의 어느쪽에 존재하는지 판단
-                        // Plane::Side::Front or Plane::Side::Back or Plane::Side::Cross
+                        /// Returns this AABB is in which side of the plane.
     int                 PlaneSide(const Plane &plane, const float epsilon = ON_EPSILON) const;
-                        // AABB 와 평면 사이의 거리
+                        /// Returns distance between AABB and plane.
     float               PlaneDistance(const Plane &plane) const;
     
-                        // 8 개의 꼭지점중에서 from 과 가장 가까운 점 구하기
-    void                GetNearestVertex(const Vec3 &from, Vec3 &point) const;	
-                        // 8 개의 꼭지점중에서 dir 방향으로 가장 가까운 점 구하기
+                        /// Calculates nearest point among 8 vertices of AABB with the given point.
+    void                GetNearestVertex(const Vec3 &from, Vec3 &point) const;
+                        /// Calculates nearest point among 8 vertices of AABB with the given direction.
     void                GetNearestVertexFromDir(const Vec3 &dir, Vec3 &point) const;
-                        // 8 개의 꼭지점중에서 from 과 가장 먼 점 구하기
+                        /// Calculates farthest point among 8 vertices of AABB with the given point.
     void                GetFarthestVertex(const Vec3 &from, Vec3 &point) const;
-                        // 8 개의 꼭지점중에서 dir 방향으로 가장 먼 점 구하기
-    void                GetFarthestVertexFromDir(const Vec3 &dir, Vec3 &point) const;	
+                        /// Calculates farthest point among 8 vertices of AABB with the given direction.
+    void                GetFarthestVertexFromDir(const Vec3 &dir, Vec3 &point) const;
 
-                        // AABB 점들의 집합 중에서 from 과 가장 가까운 점 구하기
+                        /// Calculates closest point with the given point.
     void                GetClosestPoint(const Vec3 &from, Vec3 &point) const;
     
-                        // point 와 AABB 사이 거리의 제곱
+                        /// Returns squared distance between this AABB and the given point.
     float               DistanceSqr(const Vec3 &p) const;
-                        // point 와 AABB 사이 거리
+                        /// Returns distance between this AABB and the given point.
     float               Distance(const Vec3 &p) const;
 
-                        // point 포함 여부 리턴
+                        /// Tests if this AABB contain the given point.
     bool                IsContainPoint(const Vec3 &p) const;
-                        // AABB 포함 여부 리턴
+                        /// Tests if this AABB contain the given AABB.
     bool                IsContainAABB(const AABB &a) const;
-                        // AABB 교차 여부 리턴
-    bool                IsIntersectAABB(const AABB &a, bool ignoreBorders = false) const;
-                        // sphere 교차 여부 리턴
-    bool                IsIntersectSphere(const Sphere &s) const;
-                        // 삼각형 교차 여부 리턴
-    bool                IsIntersectTriangle(const Vec3 &v0, const Vec3 &v1, const Vec3 &v2) const;
 
-                        // Line segment vs AABB intersection
-    bool                LineIntersection(const Vec3 &start, const Vec3 &end) const;
-                        // Ray vs AABB intersection
-                        // intersection point is start + dir * scale
-    float               RayIntersection(const Vec3 &start, const Vec3 &dir) const;
+                        /// Tests if this AABB intersect with the given AABB.
+    bool                IsIntersectAABB(const AABB &a, bool ignoreBorders = false) const;
+                        /// Tests if this AABB intersect with the given sphere.
+    bool                IsIntersectSphere(const Sphere &s) const;
+                        /// Tests if this AABB intersect with the given triangle.
+    bool                IsIntersectTriangle(const Vec3 &v0, const Vec3 &v1, const Vec3 &v2) const;
+                        /// Tests if this AABB intersect with the given line segment.
+    bool                IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
+
+                        /// Intersects a ray with this AABB.
+                        /// Returns false if there is no intersection.
+    bool                IntersectRay(const Ray &ray, float *hitDistMin = nullptr, float *hitDistMax = nullptr) const;
+    float               IntersectRay(const Ray &ray) const;
     
-                        // point 집합을 포함하는 AABB
+                        /// Sets AABB enclosing all points.
     void                SetFromPoints(const Vec3 *points, const int numPoints);
-                        // 이동하는 point 를 감싸는 AABB
+
+                        /// Sets AABB to enclose the moving point.
     void                SetFromPointTranslation(const Vec3 &point, const Vec3 &translation);
-                        // 이동하는 AABB 를 감싸는 AABB
-    void                SetFromAABBTranslation(const AABB &aabb, const Vec3 &origin, const Mat3 &axis, const Vec3 &translation);
-                        // transformed AABB (OBB) 를 포함하는 AABB
+
+                        /// Sets AABB to enclose the moving AABB.
+    void                SetFromAABBTranslation(const AABB &aabb, const Vec3 &translation);
+
+                        /// Sets AABB to enclose transformed AABB.
     void                SetFromTransformedAABB(const AABB &aabb, const Vec3 &origin, const Mat3 &axis);
 
-                        // AABB 를 dir 축으로 투영했을 때 min, max 값
-    void                AxisProjection(const Vec3 &dir, float &min, float &max) const;
-                        // transformed AABB (OBB) 를 dir 축으로 투영했을 때 min, max 값
-    void                AxisProjection(const Vec3 &origin, const Mat3 &axis, const Vec3 &dir, float &min, float &max) const;
+                        /// Sets AABB to enclose transformed AABB.
+    void                SetFromTransformedAABB(const AABB &aabb, const Mat3x4 &transform);
 
+                        /// Sets AABB to enclose transformed AABB fast.
+                        /// This is not mathematically correct for non-uniform scaled transform matrix.
+    void                SetFromTransformedAABBFast(const AABB &aabb, const Mat3x4 &transform);
+
+                        /// Calculates minimum / maximum value by projecting AABB onto the given axis.
+    void                ProjectOnAxis(const Vec3 &axis, float &min, float &max) const;
+
+                        /// Calculates minimum / maximum value by projecting transformed AABB onto the given axis.
+    void                ProjectOnAxis(const Vec3 &transformOrigin, const Mat3 &transformAxis, const Vec3 &axis, float &min, float &max) const;
+
+                        /// Calcuates 8 vertices of AABB.
     void                ToPoints(Vec3 points[8]) const;
-    Sphere              ToSphere() const;
-    OBB                 ToOBB() const;
 
+                        /// Converts to surrounding sphere.
+    Sphere              ToSphere() const;
+
+    static const AABB   empty;  ///< (Infinity, Infinity, Infinity) (-Infinity, -Infinity, -Infinity)
     static const AABB   zero;   ///< (0 0 0) (0 0 0)
 
     Vec3                b[2];   ///< minimum/maximum value for each axis
@@ -443,7 +467,7 @@ BE_INLINE bool AABB::IsIntersectAABB(const AABB &a, bool ignoreBorders) const {
 }
 
 BE_INLINE bool AABB::IsIntersectSphere(const Sphere &s) const {
-    if (DistanceSqr(s.origin) > s.radius * s.radius) {
+    if (DistanceSqr(s.center) > s.radius * s.radius) {
         return false;
     }
     return true;
@@ -451,8 +475,8 @@ BE_INLINE bool AABB::IsIntersectSphere(const Sphere &s) const {
 
 BE_INLINE Sphere AABB::ToSphere() const {
     Sphere sphere;
-    sphere.origin = (b[0] + b[1]) * 0.5f;
-    sphere.radius = (b[1] - sphere.origin).Length();
+    sphere.center = (b[0] + b[1]) * 0.5f;
+    sphere.radius = (b[1] - sphere.center).Length();
     return sphere;
 }
 

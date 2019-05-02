@@ -1,54 +1,59 @@
+$include "StandardConfig.glsl"
+
 in HIGHP vec4 in_position   : POSITION;
 in LOWP vec3 in_normal      : NORMAL;
 in LOWP vec4 in_color       : COLOR;
 in MEDIUMP vec2 in_st       : TEXCOORD0;
 
-#if _NORMAL != 0
-    in LOWP vec4 in_tangent : TANGENT;
+#if _ALBEDO != 0 || _NORMAL != 0 || _SPECULAR != 0 || _GLOSS == 3 || _METALLIC >= 1 || (_ROUGHNESS == 1 || _ROUGHNESS == 2) || _PARALLAX != 0 || _EMISSION == 2 || _CLEARCOAT == 2 || (_CLEARCOAT != 0 && _CC_NORMAL == 1) || _ANISO == 2 || _OCC == 1
+    #define NEED_BASE_TC
 #endif
 
 out LOWP vec4 v2f_color;
-out MEDIUMP vec2 v2f_tex;
+
+#ifdef NEED_BASE_TC
+    out MEDIUMP vec2 v2f_tex;
+#endif
 
 #if _NORMAL == 0
-    out LOWP vec3 v2f_normal;
+    out LOWP vec3 v2f_normalWS;
 #endif
 
 #if _PARALLAX
-    out vec3 v2f_tangentViewDir;
+    out HIGHP vec3 v2f_viewTS;
 #endif
 
 #ifdef DIRECT_LIGHTING
-    out vec3 v2f_lightVector;
-    out vec3 v2f_lightFallOff;
-    out vec4 v2f_lightProjection;
+    out HIGHP vec3 v2f_lightVector;
+    out HIGHP vec3 v2f_lightFallOff;
+    out HIGHP vec4 v2f_lightProjection;
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
-    out vec3 v2f_viewVector;
+    out HIGHP vec3 v2f_viewWS;
 
-    #if _NORMAL == 0
-        out vec3 v2f_worldPos;
+    #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
+        out HIGHP vec4 v2f_tangentToWorldAndPackedWorldPosS;
+        out HIGHP vec4 v2f_tangentToWorldAndPackedWorldPosT;
+        out HIGHP vec4 v2f_tangentToWorldAndPackedWorldPosR;
     #else
-        out vec4 v2f_toWorldAndPackedWorldPosS;
-        out vec4 v2f_toWorldAndPackedWorldPosT;
-        out vec4 v2f_toWorldAndPackedWorldPosR;
+        out HIGHP vec3 v2f_positionWS;
     #endif
 #endif
 
+#if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
+    in LOWP vec4 in_tangent : TANGENT;
+#endif
+
 #ifdef USE_SHADOW_MAP
-$include "ShadowLibrary.vp"
+    $include "ShadowLibrary.vp"
 #endif
 
 #if defined(INSTANCING)
-$include "Instancing.vp"
+    $include "Instancing.vp"
 #else
-    uniform vec4 localToWorldMatrixS;
-    uniform vec4 localToWorldMatrixT;
-    uniform vec4 localToWorldMatrixR;
-    uniform vec4 worldToLocalMatrixS;
-    uniform vec4 worldToLocalMatrixT;
-    uniform vec4 worldToLocalMatrixR;
+    uniform HIGHP mat4x3 localToWorldMatrix;
+    uniform HIGHP mat4x3 worldToLocalMatrix;
     uniform LOWP vec4 constantColor;
 #endif
 
@@ -67,20 +72,41 @@ uniform vec4 textureMatrixT;
 uniform LOWP vec4 vertexColorScale;
 uniform LOWP vec4 vertexColorAdd;
 
-uniform vec3 viewOrigin;                // eye position in world space
-uniform vec4 lightVec;                  // light position or light direction in world space
-uniform mat4 viewProjectionMatrix;
-uniform mat4 modelViewProjectionMatrix;
+uniform HIGHP vec3 viewOrigin;                // eye position in world space
+uniform HIGHP vec4 lightVec;                  // light position or light direction in world space
+uniform HIGHP mat4 viewProjectionMatrix;
+uniform HIGHP mat4 modelViewProjectionMatrix;
+
 uniform vec3 lightInvRadius;
-uniform mat4x3 lightFallOffMatrix;
-uniform mat4 lightTextureMatrix;
+uniform HIGHP mat4x3 lightFallOffMatrix;
+uniform HIGHP mat4 lightTextureMatrix;
 uniform bool useShadowMap;
 
 void main() {
-#if _NORMAL == 0
-    vec4 localPos;
-    vec3 localNormal;
+    HIGHP vec4 positionLS;
+    HIGHP vec3 normalLS;
 
+#if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
+    HIGHP vec3 tangentLS;
+    HIGHP vec3 bitangentLS;
+
+    #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
+        HIGHP vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
+        HIGHP vec4 vTangent = in_tangent * 2.0 - 1.0;
+    #else
+        HIGHP vec3 vNormal = in_normal.xyz;
+        HIGHP vec4 vTangent = in_tangent;
+    #endif
+
+    #ifdef GPU_SKINNING
+        skinningMatrix(in_position, positionLS, vNormal, normalLS, vTangent, tangentLS, bitangentLS);
+    #else
+        positionLS = in_position;
+        normalLS = vNormal;
+        tangentLS = vTangent.xyz;
+        bitangentLS = normalize(cross(vNormal, vTangent.xyz) * vTangent.w);
+    #endif
+#else
     #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
         vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
     #else
@@ -88,96 +114,65 @@ void main() {
     #endif
     
     #ifdef GPU_SKINNING
-        skinningMatrix(in_position, localPos, vNormal, localNormal);
+        skinningMatrix(in_position, positionLS, vNormal, normalLS);
     #else
-        localPos = in_position;
-        localNormal = vNormal;
-    #endif
-#else
-    vec4 localPos;
-    vec3 localNormal;
-    vec3 localTangent;
-    vec3 localBiTangent;
-
-    #ifdef COMPRESSED_VERTEX_NORMAL_TANGENTS
-        vec3 vNormal = in_normal.xyz * 2.0 - 1.0;
-        vec4 vTangent = in_tangent * 2.0 - 1.0;
-    #else
-        vec3 vNormal = in_normal.xyz;
-        vec4 vTangent = in_tangent;
-    #endif
-
-    #ifdef GPU_SKINNING
-        skinningMatrix(in_position, localPos, vNormal, localNormal, vTangent, localTangent, localBiTangent);
-    #else
-        localPos = in_position;
-        localNormal = vNormal;
-        localTangent = vTangent.xyz;
-        localBiTangent = normalize(cross(vNormal, vTangent.xyz) * vTangent.w);
+        positionLS = in_position;
+        normalLS = vNormal;
     #endif
 #endif
 
-    vec4 worldPos;
-    worldPos.x = dot(localToWorldMatrixS, localPos);
-    worldPos.y = dot(localToWorldMatrixT, localPos);
-    worldPos.z = dot(localToWorldMatrixR, localPos);
-    worldPos.w = 1.0;
+    HIGHP vec4 positionWS = vec4(localToWorldMatrix * positionLS, 1.0);
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
-    vec3 worldV = viewOrigin.xyz - worldPos.xyz;
-    v2f_viewVector = worldV;
+    v2f_viewWS = viewOrigin.xyz - positionWS.xyz;
 
-    #if _NORMAL == 0
-        v2f_normal.x = dot(localToWorldMatrixS.xyz, localNormal);
-        v2f_normal.y = dot(localToWorldMatrixT.xyz, localNormal);
-        v2f_normal.z = dot(localToWorldMatrixR.xyz, localNormal);
-
-        v2f_worldPos = worldPos.xyz;
-    #else
-        mat3 TBN = mat3(localTangent, localBiTangent, localNormal);
-
+    #if _NORMAL != 0 || _ANISO != 0 || (_CLEARCOAT != 0 && _CC_NORMAL == 1)
         #if _PARALLAX
-            vec3 localV;
-            localV.x = dot(worldToLocalMatrixS.xyz, worldV);
-            localV.y = dot(worldToLocalMatrixT.xyz, worldV);
-            localV.z = dot(worldToLocalMatrixR.xyz, worldV);
+            vec3 viewLS = mat3(worldToLocalMatrix) * v2f_viewWS;
 
-            v2f_tangentViewDir = localV * TBN;
+            v2f_viewTS.x = dot(tangentLS, viewLS);
+            v2f_viewTS.y = dot(bitangentLS, viewLS);
+            v2f_viewTS.z = dot(normalLS, viewLS);
         #endif
 
         // Build the matrix to transform tangent space into GL world space
-        v2f_toWorldAndPackedWorldPosS.xyz = localToWorldMatrixS.xyz * TBN;
-        v2f_toWorldAndPackedWorldPosT.xyz = localToWorldMatrixT.xyz * TBN;
-        v2f_toWorldAndPackedWorldPosR.xyz = localToWorldMatrixR.xyz * TBN;
-        //v2f_toWorldAndPackedWorldPosT.w = in_tangent.w;
+        v2f_tangentToWorldAndPackedWorldPosS.xyz = mat3(localToWorldMatrix) * tangentLS;
+        v2f_tangentToWorldAndPackedWorldPosT.xyz = mat3(localToWorldMatrix) * bitangentLS;
+        v2f_tangentToWorldAndPackedWorldPosR.xyz = mat3(localToWorldMatrix) * normalLS;
 
         #ifdef INDIRECT_LIGHTING
-            v2f_toWorldAndPackedWorldPosS.w = worldPos.x;
-            v2f_toWorldAndPackedWorldPosT.w = worldPos.y;
-            v2f_toWorldAndPackedWorldPosR.w = worldPos.z;
+            v2f_tangentToWorldAndPackedWorldPosS.w = positionWS.x;
+            v2f_tangentToWorldAndPackedWorldPosT.w = positionWS.y;
+            v2f_tangentToWorldAndPackedWorldPosR.w = positionWS.z;
         #endif 
+    #else
+        v2f_normalWS = mat3(localToWorldMatrix) * normalLS;
+
+        v2f_positionWS = positionWS.xyz;
     #endif
 #endif
 
 #ifdef DIRECT_LIGHTING
     // Light direction in world space
-    vec3 worldL = lightVec.xyz - lightVec.w * worldPos.xyz;
+    vec3 lightWS = lightVec.xyz - lightVec.w * positionWS.xyz;
 
     #ifdef USE_SHADOW_MAP
         #ifdef USE_SHADOW_POINT
-            ShadowCubeTransform(worldL);
+            ShadowCubeTransform(lightWS);
         #elif defined(USE_SHADOW_SPOT) || defined(USE_SHADOW_CASCADE)
-            ShadowTransform(worldPos);
+            ShadowTransform(positionWS);
         #endif
     #endif
 
-    v2f_lightVector = worldL;
-    v2f_lightProjection = lightTextureMatrix * worldPos;
-    v2f_lightFallOff = lightFallOffMatrix * worldPos;
+    v2f_lightVector = lightWS;
+    v2f_lightProjection = lightTextureMatrix * positionWS;
+    v2f_lightFallOff = lightFallOffMatrix * positionWS;
 #endif
 
+#ifdef NEED_BASE_TC
     v2f_tex.s = dot(textureMatrixS, vec4(in_st, 0.0, 1.0));
     v2f_tex.t = dot(textureMatrixT, vec4(in_st, 0.0, 1.0));
+#endif
 
 #ifdef LIGHTMAP
     v2f_tex.rq = in_st2.st;
@@ -186,8 +181,8 @@ void main() {
     v2f_color = (in_color * vertexColorScale + vertexColorAdd) * constantColor;
 
 #ifdef INSTANCING
-    gl_Position = viewProjectionMatrix * worldPos;
+    gl_Position = viewProjectionMatrix * positionWS;
 #else
-    gl_Position = modelViewProjectionMatrix * localPos;
+    gl_Position = modelViewProjectionMatrix * positionLS;
 #endif
 }

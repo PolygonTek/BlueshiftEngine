@@ -23,8 +23,8 @@ BEGIN_EVENTS(TagLayerSettings)
 END_EVENTS
 
 void TagLayerSettings::RegisterProperties() {
-    REGISTER_ARRAY_PROPERTY("tag", "Tag", Str, tags, "Untagged", "", PropertyInfo::EditorFlag);
-    REGISTER_ARRAY_PROPERTY("layer", "Layer", Str, layers, "Default", "", PropertyInfo::EditorFlag);
+    REGISTER_ARRAY_PROPERTY("tag", "Tag", Str, tags, "Untagged", "", PropertyInfo::Flag::Editor);
+    REGISTER_ARRAY_PROPERTY("layer", "Layer", Str, layers, "Default", "", PropertyInfo::Flag::Editor);
 }
 
 TagLayerSettings::TagLayerSettings() {
@@ -57,7 +57,7 @@ TagLayerSettings *TagLayerSettings::Load(const char *filename) {
     fileSystem.LoadFile(filename, true, (void **)&text);
     if (text) {
         if (!jsonReader.parse(text, jsonNode)) {
-            BE_WARNLOG(L"Failed to parse JSON text '%hs'\n", filename);
+            BE_WARNLOG("Failed to parse JSON text '%s'\n", filename);
             failedToParse = true;
         }
 
@@ -67,6 +67,7 @@ TagLayerSettings *TagLayerSettings::Load(const char *filename) {
     }
 
     if (failedToParse) {
+        jsonNode["guid"] = Guid::CreateGuid().ToString();
         jsonNode["classname"] = TagLayerSettings::metaObject.ClassName();
 
         // default tags
@@ -83,7 +84,7 @@ TagLayerSettings *TagLayerSettings::Load(const char *filename) {
     const char *classname = jsonNode["classname"].asCString();
 
     if (Str::Cmp(classname, TagLayerSettings::metaObject.ClassName())) {
-        BE_WARNLOG(L"Unknown classname '%hs'\n", classname);
+        BE_WARNLOG("Unknown classname '%s'\n", classname);
         return nullptr;
     }
 

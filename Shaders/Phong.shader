@@ -17,8 +17,8 @@ shader "Lit/Phong" {
         detailRepeat("Detail Repeat") : float = "8"
         _PARALLAX("Parallax") : enum "None;Texture (R)" = "0" (shaderDefine)
         heightMap("Height Map") : texture = "_whiteTexture"
-        heightScale("Height Scale") : float range 0.01 1.0 0.001 = "0.008"
-        _OCCLUSION("Occlusion") : enum "None;Texture (R);From Albedo Map (A);From Specular Map (A)" = "0" (shaderDefine)
+        heightScale("Height Scale") : float range 0.01 0.1 0.001 = "1.0"
+        _OCC("Occlusion") : enum "None;Texture (R);From Albedo Map (A);From Specular Map (A)" = "0" (shaderDefine)
         occlusionMap("Occlusion Map") : texture = "_whiteTexture"
         occlusionStrength("Occlusion Strength") : float range 0 1 0.001 = "1"
         _EMISSION("Emission") : enum "None;Color;Texture" = "0" (shaderDefine)
@@ -32,9 +32,9 @@ shader "Lit/Phong" {
     generateGpuSkinningVersion
     generateGpuInstancingVersion
 
-    ambientLitVersion "PhongAmbientLit"
+    indirectLitVersion "PhongIndirectLit"
     directLitVersion "PhongDirectLit"
-    ambientLitDirectLitVersion "PhongAmbientLitDirectLit"
+    indirectLitDirectLitVersion "PhongIndirectLitDirectLit"
 
     glsl_vp {
         $include "StandardCore.vp"

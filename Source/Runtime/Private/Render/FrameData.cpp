@@ -20,7 +20,7 @@
 
 BE_NAMESPACE_BEGIN
 
-static const int MEMORY_BLOCK_SIZE = 0x100000;
+static constexpr int MEMORY_BLOCK_SIZE = 0x100000;
 
 FrameData   frameData;
 
@@ -30,7 +30,7 @@ void FrameData::Init() {
     int size = MEMORY_BLOCK_SIZE;
     MemBlock *block = (MemBlock *)Mem_Alloc(sizeof(*block) + 15 + size);
     if (!block) {
-        BE_FATALERROR(L"FrameData::Init: failed to allocate memory");
+        BE_FATALERROR("FrameData::Init: failed to allocate memory");
     }
     block->base = (byte *)AlignUp((intptr_t)block + sizeof(*block), 16);
     block->size = size;
@@ -79,7 +79,7 @@ void *FrameData::Alloc(int bytes) {
         int size = MEMORY_BLOCK_SIZE;
         block = (MemBlock *)Mem_Alloc(sizeof(*block) + 15 + size);
         if (!block) {
-            BE_FATALERROR(L"FrameData::Alloc: Mem_Alloc() failed");
+            BE_FATALERROR("FrameData::Alloc: Mem_Alloc() failed");
         }
         block->base = (byte *)AlignUp((intptr_t)block + sizeof(*block), 16);
         block->size = size;
@@ -89,7 +89,7 @@ void *FrameData::Alloc(int bytes) {
     }
 
     if (bytes > block->size) {
-        BE_FATALERROR(L"FrameData::Alloc of %i exceeded MEMORY_BLOCK_SIZE", bytes);
+        BE_FATALERROR("FrameData::Alloc of %i exceeded MEMORY_BLOCK_SIZE", bytes);
     }
 
     this->alloc = block;

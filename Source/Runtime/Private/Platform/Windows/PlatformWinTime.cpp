@@ -22,108 +22,41 @@ BE_NAMESPACE_BEGIN
 
 double PlatformWinTime::secondsPerCycle;
 
-// 'HRT' - High resolution timer
-static LARGE_INTEGER    hrt_frequency;
-static double           hrt_secs;
-static int              hrt_hz;
-static int              hrt_shift;
-static double           hrt_curtime = 0.0;
-static int              hrt_sametimecount = 0;
-
 void PlatformWinTime::Init() {
-    unsigned int lpart;
-    unsigned int hpart;
+    LARGE_INTEGER frequency;
 
-    if (!QueryPerformanceFrequency(&hrt_frequency)) {
-        BE_FATALERROR(L"No hardware timer available");
+    if (!QueryPerformanceFrequency(&frequency)) {
+        BE_FATALERROR("No hardware timer available");
         return;
     }
 
-    lpart = (unsigned int)hrt_frequency.LowPart;
-    hpart = (unsigned int)hrt_frequency.HighPart;
-
-    hrt_shift = 0;
-
-    // 1/2000000(=0.0000005) frequency 이하의 정밀도를 맞추기 위한 frequency shift 값을 산출한다
-    while (hpart || lpart > 2000000) {
-        hrt_shift++;
-
-        lpart >>= 1;
-        lpart |= (hpart & 1) << 31;
-        hpart >>= 1;
-    }
-
-    hrt_hz = lpart;
-    hrt_secs = 1.0 / (double)lpart;
+    secondsPerCycle = 1.0 / frequency.QuadPart;
 
     PlatformTime::Seconds();
-
-    timeBeginPeriod(1);
-
-    secondsPerCycle = 1.0 / hrt_frequency.QuadPart;
 }
 
 void PlatformWinTime::Shutdown() {
     timeEndPeriod(1);
 }
 
-float PlatformWinTime::Seconds() {
-    static int first = 1;
-    static int sametimecount;
-    static unsigned int oldcount;
-    unsigned int count, d;
-    LARGE_INTEGER performanceCount;
-    double time;
-    double lasttime;
+double PlatformWinTime::Seconds() {
+    LARGE_INTEGER cycles;
 
-    QueryPerformanceCounter(&performanceCount);
+    QueryPerformanceCounter(&cycles);
 
-    count = ((unsigned int)performanceCount.LowPart >> hrt_shift) | ((unsigned int)performanceCount.HighPart << (32 - hrt_shift));
-
-    if (first) {
-        oldcount = count;
-        first = 0;
-    } else {
-        if (oldcount >= count && (oldcount - count) < 0x10000000) {
-            oldcount = count;
-        } else {
-            d = count - oldcount;
-            oldcount = count;
-
-            time = (double)d * hrt_secs;
-            lasttime = hrt_curtime;
-            hrt_curtime += time;
-
-            if (hrt_curtime == lasttime) {
-                hrt_sametimecount++;
-
-                if (hrt_sametimecount >= hrt_hz) {
-                    hrt_curtime += 1.0;
-                    sametimecount = 0;
-                }
-            } else {
-                hrt_sametimecount = 0;
-            }
-        }
-    }
-
-    return (float)hrt_curtime;
+    return cycles.QuadPart * secondsPerCycle;
 }
 
 uint32_t PlatformWinTime::Milliseconds() {
-    static uint32_t starttime = 0;
-    uint32_t now = timeGetTime();
-
-    if (!starttime) {
-        starttime = now;
-        return 0;
-    }
-
-    return now - starttime;
+    return (uint32_t)(PlatformTime::Seconds() * 1e3);
 }
 
 uint64_t PlatformWinTime::Microseconds() {
-    return (uint64_t)(PlatformTime::Seconds() * 1000000.0f);
+    return (uint64_t)(PlatformTime::Seconds() * 1e6);
+}
+
+uint64_t PlatformWinTime::Nanoseconds() {
+    return (uint64_t)(PlatformTime::Seconds() * 1e9);
 }
 
 uint64_t PlatformWinTime::Cycles() {
@@ -133,7 +66,7 @@ uint64_t PlatformWinTime::Cycles() {
 }
 
 int PlatformWinTime::GetTimeOfDay(struct timeval *tv) {
-    static const uint64_t delta_epoch_in_microsecs = 116444736000000000Ui64;
+    static constexpr uint64_t delta_epoch_in_microsecs = 116444736000000000Ui64;
     uint64_t tmpres = 0;
     FILETIME ft;
     

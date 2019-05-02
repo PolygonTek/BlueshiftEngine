@@ -31,7 +31,7 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
     byte *ptr = data + sizeof(BMeshHeader);
     
     if (bMeshHeader->ident != BMESH_IDENT) {
-        BE_WARNLOG(L"Mesh::LoadBinaryMesh: bad format %hs\n", filename);
+        BE_WARNLOG("Mesh::LoadBinaryMesh: bad format %s\n", filename);
         fileSystem.FreeFile(data);
         return false;
     }
@@ -167,9 +167,9 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
 }
 
 void Mesh::WriteBinaryMesh(const char *filename) {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG(L"Mesh::WriteBinaryMesh: file open error\n");
+        BE_WARNLOG("Mesh::WriteBinaryMesh: file open error\n");
         return;
     }
 

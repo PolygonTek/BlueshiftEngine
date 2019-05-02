@@ -52,14 +52,14 @@ static void TestHashLinkMap() {
         const auto *entry = testHashMap.GetByIndex(i);
         const BE1::LinkList<Bucket> *node = &entry->second;
         for (Bucket *bucket = node->Owner(); bucket; bucket = bucket->node.Next()) {
-            BE_LOG(L"%d %d %d\n", bucket->a, bucket->b, bucket->c);
+            BE_LOG("%d %d %d\n", bucket->a, bucket->b, bucket->c);
         }
     }
 
     kv = testHashMap.Get("cc");
     for (Bucket *bucket = kv->second.Owner(); bucket; bucket = bucket->node.Next()) {
         if (bucket->a == 2) {
-            BE_LOG(L"Found %d %d %d\n", bucket->a, bucket->b, bucket->c);
+            BE_LOG("Found %d %d %d\n", bucket->a, bucket->b, bucket->c);
         }
     }
 }

@@ -23,6 +23,7 @@ const char *OpenGL3::GLSL_VERSION_STRING = "150";
 bool OpenGL3::supportsInstancedArrays = false;
 bool OpenGL3::supportsDrawIndirect = false;
 bool OpenGL3::supportsMultiDrawIndirect = false;
+bool OpenGL3::supportsTimestampQueries = false;
 
 void OpenGL3::Init() {
     OpenGLBase::Init();
@@ -33,6 +34,10 @@ void OpenGL3::Init() {
 
 #ifdef GL_ARB_multi_draw_indirect // 4.3
     supportsMultiDrawIndirect = gglext._GL_ARB_multi_draw_indirect ? true : false;
+#endif
+
+#ifdef GL_ARB_timer_query // 3.3
+    supportsTimestampQueries = gglext._GL_ARB_timer_query ? true : false;
 #endif
 }
 
@@ -48,6 +53,14 @@ void OpenGL3::MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *in
 #ifdef GL_ARB_multi_draw_indirect // 4.3
     if (gglext._GL_ARB_multi_draw_indirect) {
         gglMultiDrawElementsIndirect(mode, type, indirect, drawcount, stride);
+    }
+#endif
+}
+
+void OpenGL3::CopyImageSubData(GLuint src, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, GLuint dst, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei srcWidth, GLsizei srcHeight, GLsizei srcDepth) {
+#ifdef GL_ARB_copy_image // 4.3
+    if (gglext._GL_ARB_copy_image) {
+        gglCopyImageSubData(src, srcTarget, srcLevel, srcX, srcY, srcZ, dst, dstTarget, dstLevel, dstX, dstY, dstZ, srcWidth, srcHeight, srcDepth);
     }
 #endif
 }
@@ -75,7 +88,7 @@ void OpenGL3::MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *in
             break;
     }
     
-    if (severityLevel > cvarSystem.GetCVarInteger(L"gl_debugLevel")) {
+    if (severityLevel > cvarSystem.GetCVarInteger("gl_debugLevel")) {
         return;
     }
     
@@ -135,31 +148,35 @@ void OpenGL3::MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *in
             break;
     }
     
-    BE_WARNLOG(L"GL Debug: %hs %hs - %hs\n", sourceStr, typeStr, message);
+    BE_WARNLOG("GL Debug: %s %s - %s\n", sourceStr, typeStr, message);
 }
 
-void OpenGL3::SetTextureSwizzling(GLenum target, Image::Format format) {
-    static const GLint swiz_l[4] = { GL_RED, GL_RED, GL_RED, GL_ONE };
-    static const GLint swiz_a[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
-    static const GLint swiz_la[4] = { GL_RED, GL_RED, GL_RED, GL_GREEN };
+void OpenGL3::QueryTimestampCounter(GLuint queryId) {
+    gglQueryCounter(queryId, GL_TIMESTAMP);
+}
+
+void OpenGL3::SetTextureSwizzling(GLenum target, Image::Format::Enum format) {
+    static constexpr GLint swiz_l[4] = { GL_RED, GL_RED, GL_RED, GL_ONE };
+    static constexpr GLint swiz_a[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
+    static constexpr GLint swiz_la[4] = { GL_RED, GL_RED, GL_RED, GL_GREEN };
 
     switch (format) {
-    case Image::L_8:
-    case Image::L_16F:
-    case Image::L_32F:
+    case Image::Format::L_8:
+    case Image::Format::L_16F:
+    case Image::Format::L_32F:
         gglTexParameteriv(target, GL_TEXTURE_SWIZZLE_RGBA, swiz_l);
         break;
-    case Image::A_8:
-    case Image::A_16F:
-    case Image::A_32F:
+    case Image::Format::A_8:
+    case Image::Format::A_16F:
+    case Image::Format::A_32F:
         gglTexParameteriv(target, GL_TEXTURE_SWIZZLE_RGBA, swiz_a);
         break;
-    case Image::LA_8_8:
-    case Image::LA_16_16:
-    case Image::LA_16F_16F:
-    case Image::LA_32F_32F:
-    case Image::DXN1:
-    case Image::DXN2:
+    case Image::Format::LA_8_8:
+    case Image::Format::LA_16_16:
+    case Image::Format::LA_16F_16F:
+    case Image::Format::LA_32F_32F:
+    case Image::Format::DXN1:
+    case Image::Format::DXN2:
         gglTexParameteriv(target, GL_TEXTURE_SWIZZLE_RGBA, swiz_la);
         break;
     default:
@@ -167,259 +184,259 @@ void OpenGL3::SetTextureSwizzling(GLenum target, Image::Format format) {
     }
 }
 
-bool OpenGL3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal) {
+bool OpenGL3::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal) {
     switch (imageFormat) {
-    case Image::L_8:
-    case Image::A_8:
-    case Image::R_8:
+    case Image::Format::L_8:
+    case Image::Format::A_8:
+    case Image::Format::R_8:
         if (glFormat)   *glFormat = GL_RED;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
         if (glInternal) *glInternal = GL_R8;
         return true;
-    case Image::R_SNORM_8:
+    case Image::Format::R_SNORM_8:
         if (glFormat)   *glFormat = GL_RED;
         if (glType)     *glType = GL_BYTE;
         if (glInternal) *glInternal = GL_R8_SNORM;
         return true;
-    case Image::LA_8_8:
-    case Image::RG_8_8:
+    case Image::Format::LA_8_8:
+    case Image::Format::RG_8_8:
         if (glFormat)   *glFormat = GL_RG;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
         if (glInternal) *glInternal = GL_RG8;
         return true;
-    case Image::RG_SNORM_8_8:
+    case Image::Format::RG_SNORM_8_8:
         if (glFormat)   *glFormat = GL_RG;
         if (glType)     *glType = GL_BYTE;
         if (glInternal) *glInternal = GL_RG8_SNORM;
         return true;
-    case Image::LA_16_16:
+    case Image::Format::LA_16_16:
         if (glFormat)   *glFormat = GL_RG;
         if (glType)     *glType = GL_UNSIGNED_SHORT;
         if (glInternal) *glInternal = GL_RG16;
         return true;
-    case Image::RGB_8_8_8:
+    case Image::Format::RGB_8_8_8:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8 : GL_RGB8;
         return true;
-    case Image::RGB_SNORM_8_8_8:
+    case Image::Format::RGB_SNORM_8_8_8:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_BYTE;
         if (glInternal) *glInternal = GL_RGB8_SNORM;
         return true;
-    case Image::BGR_8_8_8:
+    case Image::Format::BGR_8_8_8:
         if (glFormat)   *glFormat = GL_BGR;
         if (glType)     *glType = GL_UNSIGNED_BYTE;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8 : GL_RGB8;
         return true;
-    case Image::RGBX_8_8_8_8:
+    case Image::Format::RGBX_8_8_8_8:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_INT_8_8_8_8_REV;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8 : GL_RGB8;
         return true;
-    case Image::BGRX_8_8_8_8:
+    case Image::Format::BGRX_8_8_8_8:
         if (glFormat)   *glFormat = GL_BGRA;
         if (glType)     *glType = GL_UNSIGNED_INT_8_8_8_8_REV;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8 : GL_RGB8;
         return true;
-    case Image::RGBA_8_8_8_8:
+    case Image::Format::RGBA_8_8_8_8:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_INT_8_8_8_8_REV;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8;
         return true;
-    case Image::RGBA_SNORM_8_8_8_8:
+    case Image::Format::RGBA_SNORM_8_8_8_8:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_BYTE;
         if (glInternal) *glInternal = GL_RGBA8_SNORM;
         return true;
-    case Image::BGRA_8_8_8_8:
+    case Image::Format::BGRA_8_8_8_8:
         if (glFormat)   *glFormat = GL_BGRA;
         if (glType)     *glType = GL_UNSIGNED_INT_8_8_8_8_REV;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8;
         return true;
-    case Image::ABGR_8_8_8_8:
+    case Image::Format::ABGR_8_8_8_8:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_INT_8_8_8_8;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8;
         return true;
-    case Image::ARGB_8_8_8_8:
+    case Image::Format::ARGB_8_8_8_8:
         if (glFormat)   *glFormat = GL_BGRA;
         if (glType)     *glType = GL_UNSIGNED_INT_8_8_8_8;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8;
         return true;
-    case Image::RGBX_4_4_4_4:
+    case Image::Format::RGBX_4_4_4_4:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_4_4_4_4_REV;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8 : GL_RGB4;
         return true;
-    case Image::BGRX_4_4_4_4:
+    case Image::Format::BGRX_4_4_4_4:
         if (glFormat)   *glFormat = GL_BGRA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_4_4_4_4_REV;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8 : GL_RGB4;
         return true;
-    case Image::RGBA_4_4_4_4:
+    case Image::Format::RGBA_4_4_4_4:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_4_4_4_4_REV;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA4;
         return true;
-    case Image::BGRA_4_4_4_4:
+    case Image::Format::BGRA_4_4_4_4:
         if (glFormat)   *glFormat = GL_BGRA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_4_4_4_4_REV;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA4;
         return true;
-    case Image::ABGR_4_4_4_4:
+    case Image::Format::ABGR_4_4_4_4:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_4_4_4_4;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA4;
         return true;
-    case Image::ARGB_4_4_4_4:
+    case Image::Format::ARGB_4_4_4_4:
         if (glFormat)   *glFormat = GL_BGRA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_4_4_4_4;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA4;
         return true;
-    case Image::RGBX_5_5_5_1:
+    case Image::Format::RGBX_5_5_5_1:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_1_5_5_5_REV;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8 : GL_RGB5;
         return true;
-    case Image::BGRX_5_5_5_1:
+    case Image::Format::BGRX_5_5_5_1:
         if (glFormat)   *glFormat = GL_BGRA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_1_5_5_5_REV;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8 : GL_RGB5;
         return true;
-    case Image::RGBA_5_5_5_1:
+    case Image::Format::RGBA_5_5_5_1:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_1_5_5_5_REV;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGB5_A1;
         return true;
-    case Image::BGRA_5_5_5_1:
+    case Image::Format::BGRA_5_5_5_1:
         if (glFormat)   *glFormat = GL_BGRA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_1_5_5_5_REV;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGB5_A1;
         return true;
-    case Image::ABGR_1_5_5_5:
+    case Image::Format::ABGR_1_5_5_5:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_5_5_5_1;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGB5_A1;
         return true;
-    case Image::ARGB_1_5_5_5:
+    case Image::Format::ARGB_1_5_5_5:
         if (glFormat)   *glFormat = GL_BGRA;
         if (glType)     *glType = GL_UNSIGNED_SHORT_5_5_5_1;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGB5_A1;
         return true;
-    case Image::RGB_5_6_5:
+    case Image::Format::RGB_5_6_5:
         if (glFormat)   *glFormat = GL_BGR;
         if (glType)     *glType = GL_UNSIGNED_SHORT_5_6_5;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8 : GL_RGB5;
         return true;
-    case Image::BGR_5_6_5:
+    case Image::Format::BGR_5_6_5:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_UNSIGNED_SHORT_5_6_5;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8 : GL_RGB5;
         return true;
-    case Image::RGBE_9_9_9_5:
+    case Image::Format::RGBE_9_9_9_5:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_UNSIGNED_INT_5_9_9_9_REV;
         if (glInternal) *glInternal = GL_RGB9_E5;
         return true;
-    case Image::L_16F:
-    case Image::A_16F:
-    case Image::R_16F:
+    case Image::Format::L_16F:
+    case Image::Format::A_16F:
+    case Image::Format::R_16F:
         if (glFormat)   *glFormat = GL_RED;
         if (glType)     *glType = GL_HALF_FLOAT;
         if (glInternal) *glInternal = GL_R16F;
         return true;
-    case Image::L_32F:
-    case Image::A_32F:
-    case Image::R_32F:
+    case Image::Format::L_32F:
+    case Image::Format::A_32F:
+    case Image::Format::R_32F:
         if (glFormat)   *glFormat = GL_RED;
         if (glType)     *glType = GL_FLOAT;
         if (glInternal) *glInternal = GL_R32F;
         return true;
-    case Image::LA_16F_16F:
-    case Image::RG_16F_16F:
+    case Image::Format::LA_16F_16F:
+    case Image::Format::RG_16F_16F:
         if (glFormat)   *glFormat = GL_RG;
         if (glType)     *glType = GL_HALF_FLOAT;
         if (glInternal) *glInternal = GL_RG16F;
         return true;
-    case Image::LA_32F_32F:
-    case Image::RG_32F_32F:
+    case Image::Format::LA_32F_32F:
+    case Image::Format::RG_32F_32F:
         if (glFormat)   *glFormat = GL_RG;
         if (glType)     *glType = GL_FLOAT;
         if (glInternal) *glInternal = GL_RG32F;
         return true;
-    case Image::RGB_11F_11F_10F:
+    case Image::Format::RGB_11F_11F_10F:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_UNSIGNED_INT_10F_11F_11F_REV;
         if (glInternal) *glInternal = GL_R11F_G11F_B10F;
         return true;
-    case Image::RGB_16F_16F_16F:
+    case Image::Format::RGB_16F_16F_16F:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_HALF_FLOAT;
         if (glInternal) *glInternal = GL_RGB16F;
         return true;
-    case Image::RGB_32F_32F_32F:
+    case Image::Format::RGB_32F_32F_32F:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_FLOAT;
         if (glInternal) *glInternal = GL_RGB32F;
         return true;
-    case Image::RGBA_16F_16F_16F_16F:
+    case Image::Format::RGBA_16F_16F_16F_16F:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_HALF_FLOAT;
         if (glInternal) *glInternal = GL_RGBA16F;
         return true;
-    case Image::RGBA_32F_32F_32F_32F:
+    case Image::Format::RGBA_32F_32F_32F_32F:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_FLOAT;
         if (glInternal) *glInternal = GL_RGBA32F;
         return true;
-    case Image::RGBA_DXT1:
+    case Image::Format::RGBA_DXT1:
         if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT : GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT : GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
         return true;
-    case Image::RGBA_DXT3:
+    case Image::Format::RGBA_DXT3:
         if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT : GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT : GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
         return true;
-    case Image::RGBA_DXT5:
-    case Image::XGBR_DXT5:
+    case Image::Format::RGBA_DXT5:
+    case Image::Format::XGBR_DXT5:
         if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
         return true;
-    case Image::DXN1:
+    case Image::Format::DXN1:
         if (glFormat)   *glFormat = GL_COMPRESSED_RED_RGTC1;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_COMPRESSED_RED_RGTC1;//GL_COMPRESSED_SIGNED_RED_RGTC1 GL_COMPRESSED_LUMINANCE_LATC1_EXT;
         return true;
-    case Image::DXN2:
+    case Image::Format::DXN2:
         if (glFormat)   *glFormat = GL_COMPRESSED_RG_RGTC2;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = GL_COMPRESSED_RG_RGTC2;//GL_COMPRESSED_SIGNED_RG_RGTC2 GL_COMPRESSED_LUMINANCE_ALPHA_LATC2_EXT;
         return true;
-    case Image::Depth_16:
+    case Image::Format::Depth_16:
         if (glFormat)   *glFormat = GL_DEPTH_COMPONENT;
         if (glType)     *glType = GL_UNSIGNED_SHORT;
         if (glInternal) *glInternal = GL_DEPTH_COMPONENT16;
         return true;
-    case Image::Depth_24:
+    case Image::Format::Depth_24:
         if (glFormat)   *glFormat = GL_DEPTH_COMPONENT;
         if (glType)     *glType = GL_UNSIGNED_INT;
         if (glInternal) *glInternal = GL_DEPTH_COMPONENT24;
         return true;
-    case Image::Depth_32F:
+    case Image::Format::Depth_32F:
         if (glFormat)   *glFormat = GL_DEPTH_COMPONENT;
         if (glType)     *glType = GL_FLOAT;
         if (glInternal) *glInternal = GL_DEPTH_COMPONENT32F;
         return true;
-    case Image::DepthStencil_24_8:
+    case Image::Format::DepthStencil_24_8:
         if (glFormat)   *glFormat = GL_DEPTH_STENCIL;
         if (glType)     *glType = GL_UNSIGNED_INT_24_8;
         if (glInternal) *glInternal = GL_DEPTH24_STENCIL8;
         return true;
-    case Image::DepthStencil_32F_8:
+    case Image::Format::DepthStencil_32F_8:
         if (glFormat)   *glFormat = GL_DEPTH_STENCIL;
         if (glType)     *glType = GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
         if (glInternal) *glInternal = GL_DEPTH32F_STENCIL8;
@@ -431,7 +448,7 @@ bool OpenGL3::ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLen
     return false;
 }
 
-Image::Format OpenGL3::ToCompressedImageFormat(Image::Format inFormat, bool useNormalMap) {
+Image::Format::Enum OpenGL3::ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap) {
     if (Image::IsCompressed(inFormat)) {
         assert(0);
         return inFormat;
@@ -440,22 +457,22 @@ Image::Format OpenGL3::ToCompressedImageFormat(Image::Format inFormat, bool useN
     int redBits, greenBits, blueBits, alphaBits;
     Image::GetBits(inFormat, &redBits, &greenBits, &blueBits, &alphaBits);
 
-    Image::Format outFormat = inFormat;
+    Image::Format::Enum outFormat = inFormat;
 
     if (redBits > 0 && greenBits > 0 && blueBits > 0) {
         if (Image::IsFloatFormat(inFormat)) {
             if (alphaBits == 0) {
-                outFormat = Image::RGBE_9_9_9_5;
+                outFormat = Image::Format::RGBE_9_9_9_5;
             }
         } else if (useNormalMap) {
-            outFormat = Image::DXN2;
+            outFormat = Image::Format::DXN2;
         } else {
             if (alphaBits <= 1) {
-                outFormat = Image::RGBA_DXT1;
+                outFormat = Image::Format::RGBA_DXT1;
             } else if (alphaBits <= 4) {
-                outFormat = Image::RGBA_DXT3;
+                outFormat = Image::Format::RGBA_DXT3;
             } else {
-                outFormat = Image::RGBA_DXT5;
+                outFormat = Image::Format::RGBA_DXT5;
             }
         }
     }
@@ -463,41 +480,35 @@ Image::Format OpenGL3::ToCompressedImageFormat(Image::Format inFormat, bool useN
     return outFormat;
 }
 
-Image::Format OpenGL3::ToUncompressedImageFormat(Image::Format inFormat) {
+Image::Format::Enum OpenGL3::ToUncompressedImageFormat(Image::Format::Enum inFormat) {
     if (!Image::IsCompressed(inFormat)) {
         assert(0);
         return inFormat;
     }
 
-    Image::Format outFormat;
+    Image::Format::Enum outFormat;
 
     switch (inFormat) {
-    case Image::RGBA_DXT1:
-        outFormat = Image::RGBA_5_5_5_1;
+    case Image::Format::RGBA_DXT1:
+        outFormat = Image::Format::RGBA_5_5_5_1;
         break;
-    case Image::RGBA_DXT3:
-        outFormat = Image::RGBA_4_4_4_4;
+    case Image::Format::RGB_PVRTC_2BPPV1:
+    case Image::Format::RGB_PVRTC_4BPPV1:
+    case Image::Format::RGB_8_ETC1:
+    case Image::Format::RGB_8_ETC2:
+    case Image::Format::RG_11_11_EAC:
+    case Image::Format::SignedRG_11_11_EAC:
+        outFormat = Image::Format::RGB_8_8_8;
         break;
-    case Image::RGBA_DXT5:
-        outFormat = Image::RGBA_8_8_8_8;
-        break;
-    case Image::RGB_PVRTC_2BPPV1:
-    case Image::RGB_PVRTC_4BPPV1:
-        outFormat = Image::RGB_8_8_8;
-        break;
-    case Image::RGBA_PVRTC_2BPPV1:
-    case Image::RGBA_PVRTC_2BPPV2:
-    case Image::RGBA_PVRTC_4BPPV1:
-    case Image::RGBA_PVRTC_4BPPV2:
-        outFormat = Image::RGBA_8_8_8_8;
-        break;
-    case Image::RGB_8_ETC1:
-    case Image::RGB_8_ETC2:
-        outFormat = Image::RGB_8_8_8;
-        break;
-    case Image::RGBA_8_8_ETC2:
-    case Image::RGBA_8_1_ETC2:
-        outFormat = Image::RGBA_8_8_8_8;
+    case Image::Format::RGBA_DXT3:
+    case Image::Format::RGBA_DXT5:
+    case Image::Format::RGBA_PVRTC_2BPPV1:
+    case Image::Format::RGBA_PVRTC_2BPPV2:
+    case Image::Format::RGBA_PVRTC_4BPPV1:
+    case Image::Format::RGBA_PVRTC_4BPPV2:
+    case Image::Format::RGBA_8_1_ETC2:
+    case Image::Format::RGBA_8_8_ETC2:
+        outFormat = Image::Format::RGBA_8_8_8_8;
         break;
     default:
         assert(0);

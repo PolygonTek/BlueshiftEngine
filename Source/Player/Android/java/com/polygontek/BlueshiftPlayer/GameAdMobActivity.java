@@ -15,63 +15,163 @@
 package com.polygontek.BlueshiftPlayer;
 
 import java.util.concurrent.Semaphore;
+
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.annotation.Keep;
+import android.util.DisplayMetrics;
+import android.view.Gravity;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
+
+import com.google.android.gms.analytics.GoogleAnalytics;
+import com.google.android.gms.analytics.HitBuilders;
+import com.google.android.gms.analytics.Tracker;
+
+import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdSize;
+import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.InterstitialAd;
 import com.google.android.gms.ads.reward.RewardItem;
 import com.google.android.gms.ads.reward.RewardedVideoAd;
 import com.google.android.gms.ads.reward.RewardedVideoAdListener;
+
+// References
+// Banner Ads: https://developers.google.com/admob/android/banner?hl=ko
+// Interstitial Ads: https://developers.google.com/admob/android/interstitial?hl=ko
+// Rewarded Video Ads: https://developers.google.com/admob/android/rewarded-video?hl=ko
 
 @Keep
 public class GameAdMobActivity extends GameActivity implements RewardedVideoAdListener {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        activity = this;
     }
 
     @Override
     protected void onDestroy() {
-        if (rewardedVideoAd != null) {
-            rewardedVideoAd.destroy(this);
-            rewardedVideoAd = null;
+        if (mBannerAdView != null) {
+            mBannerAdView.destroy();
+            mBannerAdView = null;
+        }
+        if (mRewardedVideoAd != null) {
+            mRewardedVideoAd.destroy(this);
+            mRewardedVideoAd = null;
         }
         super.onDestroy();
     }
 
     @Override
     protected void onPause() {
-        if (rewardedVideoAd != null) {
-            rewardedVideoAd.pause(this);
+        if (mBannerAdView != null) {
+            mBannerAdView.pause();
+        }
+        if (mRewardedVideoAd != null) {
+            mRewardedVideoAd.pause(this);
         }
         super.onPause();
     }
 
     @Override
     protected void onResume() {
-        if (rewardedVideoAd != null) {
-            rewardedVideoAd.resume(this);
+        if (mBannerAdView != null) {
+            mBannerAdView.resume();
+        }
+        if (mRewardedVideoAd != null) {
+            mRewardedVideoAd.resume(this);
         }
         super.onResume();
+    }
+
+    public void initializeAnalytics(final String trackingID) {
+        mAnalytics = GoogleAnalytics.getInstance(this);
+        mTracker = mAnalytics.newTracker(trackingID);
+        mTracker.setScreenName("BlueshiftGame");
+        mTracker.send(new HitBuilders.ScreenViewBuilder().build());
+    }
+
+    public void logAnalyticsEvent(final String categoryName, final String actionName, final String labelName, long value) {
+        mTracker.send(new HitBuilders.EventBuilder()
+                .setCategory(categoryName)
+                .setAction(actionName)
+                .setLabel(labelName)
+                .setValue(value)
+                .build());
     }
 
     public void initializeAds(final String appID) {
         this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                MobileAds.initialize(activity, appID);
-
-                // Use an activity context to get the rewarded video instance.
-                rewardedVideoAd = MobileAds.getRewardedVideoAdInstance(activity);
-                rewardedVideoAd.setRewardedVideoAdListener(activity);
-                rewardedVideoAd.setImmersiveMode(true);
+                MobileAds.initialize(mActivity, appID);
             }
         });
     }
 
-    public void requestRewardedVideoAd(final String unitID, final String testDevices[]) {
+    public void initializeBannerAd() {
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                // Set up event notifications for banner ads
+                mBannerAdListener = new AdListener() {
+                    @Override
+                    public void onAdLoaded() {
+                        // Code to be executed when an ad finishes loading.
+                        bannerAdLoaded();
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(int errorCode) {
+                        // Code to be executed when an ad request fails.
+                        String errorMessage;
+                        switch (errorCode) {
+                            case AdRequest.ERROR_CODE_INTERNAL_ERROR:
+                                errorMessage = "Internal error";
+                                break;
+                            case AdRequest.ERROR_CODE_INVALID_REQUEST:
+                                errorMessage = "Invalid request";
+                                break;
+                            case AdRequest.ERROR_CODE_NETWORK_ERROR:
+                                errorMessage = "Network Error";
+                                break;
+                            case AdRequest.ERROR_CODE_NO_FILL:
+                                errorMessage = "No fill";
+                                break;
+                            default:
+                                errorMessage = String.format("Unexpected error code: %s", errorCode);
+                                break;
+                        }
+                        bannerAdFailedToLoad(errorMessage);
+                    }
+
+                    @Override
+                    public void onAdOpened() {
+                        // Code to be executed when an ad opens an overlay that
+                        // covers the screen.
+                        bannerAdOpened();
+                    }
+
+                    @Override
+                    public void onAdClosed() {
+                        // Code to be executed when when the user is about to return
+                        // to the app after tapping on an ad.
+                        bannerAdClosed();
+                    }
+
+                    @Override
+                    public void onAdLeftApplication() {
+                        // Code to be executed when the user has left the app.
+                        bannerAdLeftApplication();
+                    }
+                };
+            }
+        });
+    }
+
+    public void requestBannerAd(final String unitID, final String testDevices[], final int adWidth, final int adHeight) {
         this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -81,17 +181,162 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
                     requestBuilder.addTestDevice(testDevices[i]);
                 }
                 AdRequest request = requestBuilder.build();
-                rewardedVideoAd.loadAd(unitID, request);
+
+                if (mBannerAdView != null) {
+                    mBannerAdView.destroy();
+                }
+
+                final DisplayMetrics dm = getResources().getDisplayMetrics();
+
+                // NOTE: adWidth <= 0 means full screen width
+                mBannerAdView = new AdView(mActivity);
+                mBannerAdView.setAdSize(new AdSize(adWidth, adHeight));
+                mBannerAdView.setAdListener(mBannerAdListener);
+                mBannerAdView.setAdUnitId(unitID);
+
+                mAdPopupWindow = new PopupWindow(mActivity);
+                mAdPopupWindow.setWidth(adWidth > 0 ? (int)(adWidth * dm.density) : dm.widthPixels);
+                mAdPopupWindow.setHeight((int)(adHeight * dm.density));
+                //mAdPopupWindow.setWindowLayoutMode(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                mAdPopupWindow.setClippingEnabled(false);
+                mAdPopupWindow.setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
+
+                LinearLayout popupLayout = new LinearLayout(mActivity);
+                popupLayout.setDividerPadding(0);
+                popupLayout.setPadding(0, 0, 0, 0);
+                popupLayout.setOrientation(LinearLayout.VERTICAL);
+
+                ViewGroup.MarginLayoutParams params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                params.setMargins(0,0,0,0);
+                popupLayout.addView(mBannerAdView, params);
+
+                mAdPopupWindow.setContentView(popupLayout);
+
+                mBannerAdView.loadAd(request);
             }
         });
     }
 
-    public boolean isRewardedVideoAdLoaded() {
+    public void showBannerAd(final boolean showOnBottomOfScreen, final float offsetX, final float offsetY) {
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (mAdPopupWindow.isShowing()) {
+                    return;
+                }
+
+                final DisplayMetrics dm = getResources().getDisplayMetrics();
+
+                int x = (int)(offsetX * dm.widthPixels + 0.5f);
+                int y = (int)(offsetY * dm.heightPixels + 0.5f);
+
+                mAdPopupWindow.showAtLocation(mActivityLayout, showOnBottomOfScreen ? Gravity.BOTTOM : Gravity.TOP, x, y);
+                mAdPopupWindow.update();
+
+                mBannerAdView.resume();
+            }
+        });
+    }
+
+    public void hideBannerAd() {
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (!mAdPopupWindow.isShowing()) {
+                    return;
+                }
+
+                mAdPopupWindow.dismiss();
+                mAdPopupWindow.update();
+
+                mBannerAdView.pause();
+            }
+        });
+    }
+
+    public void initializeInterstitialAd() {
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                // Set up event notifications for interstitial ads
+                mInterstitialAdListener = new AdListener() {
+                    @Override
+                    public void onAdLoaded() {
+                        // Code to be executed when an ad finishes loading.
+                        interstitialAdLoaded();
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(int errorCode) {
+                        // Code to be executed when an ad request fails.
+                        String errorMessage;
+                        switch (errorCode) {
+                            case AdRequest.ERROR_CODE_INTERNAL_ERROR:
+                                errorMessage = "Internal error";
+                                break;
+                            case AdRequest.ERROR_CODE_INVALID_REQUEST:
+                                errorMessage = "Invalid request";
+                                break;
+                            case AdRequest.ERROR_CODE_NETWORK_ERROR:
+                                errorMessage = "Network Error";
+                                break;
+                            case AdRequest.ERROR_CODE_NO_FILL:
+                                errorMessage = "No fill";
+                                break;
+                            default:
+                                errorMessage = String.format("Unexpected error code: %s", errorCode);
+                                break;
+                        }
+                        interstitialAdFailedToLoad(errorMessage);
+                    }
+
+                    @Override
+                    public void onAdOpened() {
+                        // Code to be executed when the ad is displayed.
+                        interstitialAdOpened();
+                    }
+
+                    @Override
+                    public void onAdClosed() {
+                        // Code to be executed when when the interstitial ad is closed.
+                        interstitialAdClosed();
+                    }
+
+                    @Override
+                    public void onAdLeftApplication() {
+                        // Code to be executed when the user has left the app.
+                        interstitialAdLeftApplication();
+                    }
+                };
+            }
+        });
+    }
+
+    public void requestInterstitialAd(final String unitID, final String testDevices[]) {
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                AdRequest.Builder requestBuilder = new AdRequest.Builder();
+                requestBuilder.addTestDevice(AdRequest.DEVICE_ID_EMULATOR);
+                for (int i = 0; i < testDevices.length; i++) {
+                    requestBuilder.addTestDevice(testDevices[i]);
+                }
+                AdRequest request = requestBuilder.build();
+
+                mInterstitialAd = new InterstitialAd(mActivity);
+                mInterstitialAd.setAdListener(mInterstitialAdListener);
+                mInterstitialAd.setAdUnitId(unitID);
+                mInterstitialAd.loadAd(request);
+            }
+        });
+    }
+
+    public boolean isInterstitialAdLoaded() {
         final Semaphore mutex = new Semaphore(0);
         this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                adLoaded = rewardedVideoAd.isLoaded();
+                mInterstitialAdLoaded = mInterstitialAd.isLoaded();
                 mutex.release();
             }
         });
@@ -101,14 +346,14 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        return adLoaded;
+        return mInterstitialAdLoaded;
     }
 
-    public void showRewardedVideoAd() {
+    public void showInterstitialAd() {
         final Runnable showRunnable = new Runnable() {
             @Override
             public void run() {
-                rewardedVideoAd.show();
+                mInterstitialAd.show();
                 synchronized (this) {
                     this.notify();
                 }
@@ -125,34 +370,79 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
         }
     }
 
-    @Override
-    public void onRewarded(RewardItem reward) {
-        rewardBasedVideoAdDidRewardUser(reward.getType(), reward.getAmount());
+    public void initializeRewardedVideoAd() {
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                // Use an activity context to get the rewarded video instance.
+                mRewardedVideoAd = MobileAds.getRewardedVideoAdInstance(mActivity);
+                mRewardedVideoAd.setRewardedVideoAdListener((GameAdMobActivity)mActivity);
+                mRewardedVideoAd.setImmersiveMode(true);
+            }
+        });
     }
 
+    public void requestRewardedVideoAd(final String unitID, final String testDevices[]) {
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                AdRequest.Builder requestBuilder = new AdRequest.Builder();
+                requestBuilder.addTestDevice(AdRequest.DEVICE_ID_EMULATOR);
+                for (int i = 0; i < testDevices.length; i++) {
+                    requestBuilder.addTestDevice(testDevices[i]);
+                }
+                AdRequest request = requestBuilder.build();
+
+                mRewardedVideoAd.loadAd(unitID, request);
+            }
+        });
+    }
+
+    public boolean isRewardedVideoAdLoaded() {
+        final Semaphore mutex = new Semaphore(0);
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mRewardedVideoAdLoaded = mRewardedVideoAd.isLoaded();
+                mutex.release();
+            }
+        });
+
+        try {
+            mutex.acquire();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return mRewardedVideoAdLoaded;
+    }
+
+    public void showRewardedVideoAd() {
+        final Runnable showRunnable = new Runnable() {
+            @Override
+            public void run() {
+                mRewardedVideoAd.show();
+                synchronized (this) {
+                    this.notify();
+                }
+            }
+        };
+
+        synchronized (showRunnable) {
+            this.runOnUiThread(showRunnable);
+            try {
+                showRunnable.wait();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    //
+    // Set up event notifications for rewarded video ads
+    //
     @Override
     public void onRewardedVideoAdLoaded() {
-        rewardBasedVideoAdDidReceiveAd();
-    }
-
-    @Override
-    public void onRewardedVideoAdOpened() {
-        rewardBasedVideoAdDidOpen();
-    }
-
-    @Override
-    public void onRewardedVideoStarted() {
-        rewardBasedVideoAdDidStartPlaying();
-    }
-
-    @Override
-    public void onRewardedVideoAdClosed() {
-        rewardBasedVideoAdDidClose();
-    }
-
-    @Override
-    public void onRewardedVideoAdLeftApplication() {
-        rewardBasedVideoAdWillLeaveApplication();
+        rewardBasedVideoAdLoaded();
     }
 
     @Override
@@ -175,21 +465,70 @@ public class GameAdMobActivity extends GameActivity implements RewardedVideoAdLi
                 errorMessage = String.format("Unexpected error code: %s", errorCode);
                 break;
         }
-        rewardBasedVideoAdDidFailToLoad(errorMessage);
-    }  
+        rewardBasedVideoAdFailedToLoad(errorMessage);
+    }
 
-    private native void rewardBasedVideoAdDidRewardUser(String type, int amount);
-    private native void rewardBasedVideoAdDidReceiveAd();
-    private native void rewardBasedVideoAdDidOpen();
-    private native void rewardBasedVideoAdDidStartPlaying();
-    private native void rewardBasedVideoAdDidClose();
-    private native void rewardBasedVideoAdWillLeaveApplication();
-    private native void rewardBasedVideoAdDidFailToLoad(String errorMessage);
+    @Override
+    public void onRewardedVideoAdOpened() {
+        rewardBasedVideoAdOpened();
+    }
 
-    private RewardedVideoAd rewardedVideoAd = null;
-    private boolean adLoaded = false;
+    @Override
+    public void onRewardedVideoStarted() {
+        rewardBasedVideoAdStarted();
+    }
 
-    private GameAdMobActivity activity;
+    @Override
+    public void onRewardedVideoCompleted() {
+    }
+
+    @Override
+    public void onRewarded(RewardItem reward) {
+        rewardBasedVideoAdRewarded(reward.getType(), reward.getAmount());
+    }
+
+    @Override
+    public void onRewardedVideoAdClosed() {
+        rewardBasedVideoAdClosed();
+    }
+
+    @Override
+    public void onRewardedVideoAdLeftApplication() {
+        rewardBasedVideoAdLeftApplication();
+    }
+
+    //
+    // JNI functions for passing events to script functions.
+    //
+    private native void bannerAdLoaded();
+    private native void bannerAdFailedToLoad(String errorMessage);
+    private native void bannerAdOpened();
+    private native void bannerAdClosed();
+    private native void bannerAdLeftApplication();
+
+    private native void interstitialAdLoaded();
+    private native void interstitialAdFailedToLoad(String errorMessage);
+    private native void interstitialAdOpened();
+    private native void interstitialAdClosed();
+    private native void interstitialAdLeftApplication();
+
+    private native void rewardBasedVideoAdLoaded();
+    private native void rewardBasedVideoAdFailedToLoad(String errorMessage);
+    private native void rewardBasedVideoAdOpened();
+    private native void rewardBasedVideoAdStarted();
+    private native void rewardBasedVideoAdRewarded(String type, int amount);
+    private native void rewardBasedVideoAdClosed();
+    private native void rewardBasedVideoAdLeftApplication();
+
+    private GoogleAnalytics mAnalytics;
+    private Tracker mTracker;
+
+    private PopupWindow mAdPopupWindow = null;
+    private AdView mBannerAdView = null;
+    private AdListener mBannerAdListener = null;
+    private InterstitialAd mInterstitialAd = null;
+    private AdListener mInterstitialAdListener = null;
+    private boolean mInterstitialAdLoaded = false;
+    private RewardedVideoAd mRewardedVideoAd = null;
+    private boolean mRewardedVideoAdLoaded = false;
 }
-
-

@@ -50,7 +50,7 @@ void ComAudioListener::Init() {
 
 void ComAudioListener::Awake() {
     ComTransform *transform = GetEntity()->GetTransform();
-    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComAudioListener::TransformUpdated, SignalObject::Unique);
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComAudioListener::TransformUpdated, SignalObject::ConnectionType::Unique);
 
     soundSystem.PlaceListener(transform->GetOrigin(), transform->GetAxis());
 }

@@ -28,55 +28,61 @@ BE_NAMESPACE_BEGIN
 
 struct DbvtProxy;
 
-class VisibleLight;
 class Material;
-class RenderView;
+class VisLight;
+class RenderCamera;
 
 class RenderLight {
-    friend class RenderView;
+    friend class RenderCamera;
     friend class RenderWorld;
 
 public:
-    enum Type {
-        PointLight,
-        SpotLight,
-        DirectionalLight
+    struct Type {
+        enum Enum {
+            Point,
+            Spot,
+            Directional
+        };
     };
 
-    enum Flag {
-        StaticFlag          = BIT(0),
-        CastShadowsFlag     = BIT(1),
-        PrimaryLightFlag    = BIT(2)
+    struct Flag {
+        enum Enum {
+            Static          = BIT(0),
+            CastShadows     = BIT(1),
+            PrimaryLight    = BIT(2)
+        };
     };
 
     struct State {
-        int                 flags;
-        int                 layer;
-        Type                type;
-        float               maxVisDist;
+        int                 flags = 0;
+        int                 layer = 0;
+        int                 staticMask = 0;
+        Type::Enum          type = Type::Point;
+        float               maxVisDist = MeterToUnit(10);
 
-        Vec3                origin;
-        Vec3                size;       // extent for each axis
-        Mat3                axis;
+        Vec3                origin = Vec3::origin;          ///< Light position in world space
+        Vec3                size = Vec3::one;               ///< Light extents for each axis
+        Mat3                axis = Mat3::identity;          ///< Light orientation
 
-        float               zNear;      // near distance for SpotLight
+        float               zNear = 1.0f;                   ///< Near distance for Light::Spot
 
-        float               intensity;
-        float               fallOffExponent;
-        float               shadowOffsetFactor;
-        float               shadowOffsetUnits;
+        float               intensity = 1.0f;               ///< Light intensity
+        float               fallOffExponent = 1.25f;
+        float               shadowOffsetFactor = 3.0f;
+        float               shadowOffsetUnits = 200.f;
 
-        Material *          material;
-        float               materialParms[RenderObject::MaxMaterialParms];
+        Material *          material = nullptr;
+        float               materialParms[RenderObject::MaterialParm::Count] = { 1, 1, 1, 1, 0, 1 };
     };
 
-    RenderLight();
+    RenderLight(RenderWorld *renderWorld, int index);
     ~RenderLight();
 
-    void                    Update(const State *state);
+                            /// Returns state.
+    const State &           GetState() const { return state; }
 
-                            /// Returns light type (Point, Spot, Directional).
-    Type                    GetType() const { return state.type; }
+                            /// Returns light type which is one of the [Point, Spot, Directional].
+    Type::Enum              GetType() const { return state.type; }
 
                             /// Returns light material.
     const Material *        GetMaterial() const { return state.material; }
@@ -87,63 +93,80 @@ public:
                             /// Returns extent for each axis.
     const Vec3 &            GetExtents() const { return state.size; }
 
-                            // 라이트 타원체의 각 axis 당 반지름 - Point 라이트인 경우에만
+                            /// Returns radius for each axis. Valid only for point light.
     const Vec3 &            GetRadius() const { return state.size; }
 
-                            // axis 별 가장 큰 반지름 - Point 라이트인 경우에만
+                            /// Returns maximum radius of each axis. Valid only for point light.
     const float             GetMajorRadius() const { return BE1::Max3(state.size.x, state.size.y, state.size.z); }
 
-                            // axis 별 반지름의 크기가 동일한가 - Point 라이트인 경우에만
+                            /// Is the radius the same for each axis? Valid only for point light.
     bool                    IsRadiusUniform() const { return (state.size.x == state.size.y && state.size.x == state.size.z) ? true : false; }
 
-                            // AABB - 개략적인 bounding volume
-    const AABB              GetWorldAABB() const;
+                            /// Returns world AABB.
+    const AABB &            GetWorldAABB() const { return worldAABB; }
 
-                            // frustum - Projected 라이트인 경우에만
+                            /// Returns world bounding frustum. Valid only for projected light.
     const Frustum &         GetWorldFrustum() const { return worldFrustum; }
 
-                            // OBB - Directional/Point 라이트인 경우에만
+                            /// Returns world object-oriendted bounding box. Valid only for directional/point light.
     const OBB &             GetWorldOBB() const { return worldOBB; }
 
                             /// Returns view matrix.
     const Mat4 &            GetViewMatrix() const { return viewMatrix; }
 
-                            // 라이트 bias * scale * proj * view matrix (곱셈은 OpenGL 순서)
+                            /// Returns matrix = bias * scale * proj * view (multiplication in OpenGL way)
     const Mat4 &            GetViewProjScaleBiasMatrix() const { return viewProjScaleBiasMatrix; }
 
-                            // aabb 가 light bounding volume 과 교차하는지 테스트
+                            /// Returns fall off matrix.
+    const Mat3x4 &          GetFallOffMatrix() const { return fallOffMatrix; }
+
+                            /// Check intersection of AABB and light bounding volume.
     bool                    IsIntersectAABB(const AABB &aabb) const;
 
-                            // obb 가 light bounding volume 과 교차하는지 테스트
+                            /// Check intersection of OBB and light bounding volume.
     bool                    IsIntersectOBB(const OBB &obb) const;
 
-                            // light type 별로 bounding volume culling
-    bool                    Cull(const Frustum &viewFrustum) const;
+                            /// Camera culling of lighting bounding volume.
+    bool                    Cull(const RenderCamera &camera) const;
 
-                            // light type 별로 bounding volume culling
-    bool                    Cull(const OBB &viewBox) const;
-
-                            // shadow caster OBB culling
-    bool                    CullShadowCasterOBB(const OBB &casterOBB, const Frustum &viewFrustum, const AABB &visAABB) const;
+                            /// Frustum culling of shadow caster OBB.
+    bool                    CullShadowCaster(const OBB &casterOBB, const Frustum &viewFrustum, const AABB &visAABB) const;
 
                             //
-    bool                    ComputeScreenClipRect(const RenderView *viewDef, Rect &clipRect) const;
+    bool                    ComputeScreenClipRect(const RenderCamera *viewDef, Rect &clipRect) const;
 
-    int                     index;
-    bool                    firstUpdate;
+private:
+                            /// Updates this render light with the given state.
+    void                    Update(const State *state);
+
+                            /// Frustum culling of light bounding volume.
+    bool                    Cull(const Frustum &viewFrustum) const;
+
+                            /// Box culling of light bounding volume.
+    bool                    Cull(const OBB &viewBox) const;
+
+    bool                    DirLight_ShadowBVFromCaster(const OBB &casterOBB, OBB &shadowOBB) const;
+    bool                    PointLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &shadowFrustum) const;
+    bool                    SpotLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &shadowFrustum) const;
 
     State                   state;
 
-    OBB                     worldOBB;           // used for PointLight / DirectionalLight
-    Frustum                 worldFrustum;       // used for SpotLight
+    bool                    firstUpdate;
+
+    AABB                    worldAABB;
+    OBB                     worldOBB;           // used for Light::Point, Light::Directional
+    Frustum                 worldFrustum;       // used for Light::Spot
     Mat4                    viewMatrix;
     Mat4                    projMatrix;
     Mat4                    viewProjScaleBiasMatrix;
     Mat3x4                  fallOffMatrix;
+    float                   maxVisDistSquared;
 
-    VisibleLight *          visLight;
+    VisLight *              visLight;
     int                     viewCount;
 
+    RenderWorld *           renderWorld;
+    int                     index;              // index of light list in RenderWorld
     DbvtProxy *             proxy;
 };
 

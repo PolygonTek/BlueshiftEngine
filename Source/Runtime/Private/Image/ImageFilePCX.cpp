@@ -46,11 +46,11 @@ bool Image::LoadPCXFromMemory(const char *name, const byte *data, size_t size) {
     ptr += sizeof(PcxHeader);
     
     if (header->bpp != 8 || (header->planes != 1 && header->planes != 3)) {
-        BE_WARNLOG(L"Image::LoadPCXFromMemory: bad PCX format %hs\n", name);
+        BE_WARNLOG("Image::LoadPCXFromMemory: bad PCX format %s\n", name);
         return false;
     }
     
-    Create2D(header->xmax - header->xmin + 1, header->ymax - header->ymin + 1, 1, RGB_8_8_8, nullptr, 0);
+    Create2D(header->xmax - header->xmin + 1, header->ymax - header->ymin + 1, 1, Format::RGB_8_8_8, nullptr, 0);
 
     if (header->planes == 1) { // 8 bits paletted color
         const byte *palette = data + size - 768;
@@ -103,17 +103,17 @@ bool Image::LoadPCXFromMemory(const char *name, const byte *data, size_t size) {
     return true;
 }
 
-bool Image::WritePCX(const char *filename) const {	
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+bool Image::WritePCX(const char *filename) const {
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG(L"Image::WritePCX: file open error\n");
+        BE_WARNLOG("Image::WritePCX: file open error\n");
         return false;
     }
 
     Image convertedImage;
     byte *src = pic;
-    if (format != BGR_8_8_8) {
-        if (!ConvertFormat(BGR_8_8_8, convertedImage)) {
+    if (format != Format::BGR_8_8_8) {
+        if (!ConvertFormat(Format::BGR_8_8_8, convertedImage)) {
             fileSystem.CloseFile(fp);
             return false;
         }

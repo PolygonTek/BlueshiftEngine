@@ -17,6 +17,8 @@
 
 BE_NAMESPACE_BEGIN
 
+// NOTE: Math::Infinity is big number not real float INFINITY.
+const AABB AABB::empty(Vec3(Math::Infinity, Math::Infinity, Math::Infinity), -Vec3(Math::Infinity, Math::Infinity, Math::Infinity));
 const AABB AABB::zero(Vec3::zero, Vec3::zero);
 
 float AABB::OuterRadius() const {
@@ -56,9 +58,9 @@ int AABB::PlaneSide(const Plane &plane, const float epsilon) const {
     Vec3 center = (b[0] + b[1]) * 0.5f;
 
     float d1 = plane.Distance(center);
-    float d2 = Math::Fabs((b[1][0] - center[0]) * plane.Normal()[0]) + 
-        Math::Fabs((b[1][1] - center[1]) * plane.Normal()[1]) + 
-        Math::Fabs((b[1][2] - center[2]) * plane.Normal()[2]);
+    float d2 = Math::Fabs((b[1][0] - center[0]) * plane.normal[0]) + 
+        Math::Fabs((b[1][1] - center[1]) * plane.normal[1]) +
+        Math::Fabs((b[1][2] - center[2]) * plane.normal[2]);
 
     if (d1 - d2 > epsilon) {
         return Plane::Side::Front;
@@ -77,9 +79,9 @@ float AABB::PlaneDistance(const Plane &plane) const {
     // d1 = center 와 평면의 거리
     float d1 = plane.Distance(center);
     // d2 = extent 벡터를 분리축(평면의 normal) 에 투영한 거리
-    float d2 = Math::Fabs((b[1][0] - center[0]) * plane.Normal()[0]) + 
-        Math::Fabs((b[1][1] - center[1]) * plane.Normal()[1]) +
-        Math::Fabs((b[1][2] - center[2]) * plane.Normal()[2]);
+    float d2 = Math::Fabs((b[1][0] - center[0]) * plane.normal[0]) +
+        Math::Fabs((b[1][1] - center[1]) * plane.normal[1]) +
+        Math::Fabs((b[1][2] - center[2]) * plane.normal[2]);
 
     if (d1 - d2 > 0.0f) {
         return d1 - d2;
@@ -153,7 +155,7 @@ float AABB::Distance(const Vec3 &p) const {
     return Math::Sqrt(dsq);
 }
 
-bool AABB::LineIntersection(const Vec3 &start, const Vec3 &end) const {
+bool AABB::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     Vec3 center = (b[0] + b[1]) * 0.5f;
     Vec3 extents = b[1] - center;
     Vec3 lineDir = 0.5f * (end - start);
@@ -197,34 +199,52 @@ bool AABB::LineIntersection(const Vec3 &start, const Vec3 &end) const {
     return true;
 }
 
-float AABB::RayIntersection(const Vec3 &start, const Vec3 &dir) const {
-    float tmin = 0.0f;
+bool AABB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const {
+    float tmin = -FLT_MAX;
     float tmax = FLT_MAX;
 
     for (int i = 0; i < 3; i++) {
-        if (Math::Fabs(dir[i]) < FLT_EPSILON) {
-            if (start[i] < b[0][i] || start[i] > b[1][i]) {
-                return FLT_MAX;
+        if (Math::Fabs(ray.dir[i]) < 0.000001f) {
+            if (ray.origin[i] < b[0][i] || ray.origin[i] > b[1][i]) {
+                return false;
             }
         } else {
-            float ood = 1.0f / dir[i];
-            float t1 = (b[0][i] - start[i]) * ood;
-            float t2 = (b[1][i] - start[i]) * ood;
+            float ood = 1.0f / ray.dir[i];
+            float t1 = (b[0][i] - ray.origin[i]) * ood;
+            float t2 = (b[1][i] - ray.origin[i]) * ood;
+            
             if (t1 > t2) {
                 Swap(t1, t2);
             }
+            
             tmin = Max(tmin, t1);
             tmax = Min(tmax, t2);
+
             if (tmin > tmax) {
-                return FLT_MAX;
+                return false;
             }
         }
     }
 
-    return tmin;
+    if (hitDistMin) {
+        *hitDistMin = tmin;
+    }
+    if (hitDistMax) {
+        *hitDistMax = tmax;
+    }
+    return true;
 }
 
-void AABB::SetFromPoints(const Vec3 *points, const int numPoints) {
+float AABB::IntersectRay(const Ray &ray) const {
+    float hitDistMin;
+
+    if (IntersectRay(ray, &hitDistMin)) {
+        return hitDistMin;
+    }
+    return FLT_MAX;
+}
+
+void AABB::SetFromPoints(const Vec3 *points, int numPoints) {
     b[0][0] = Math::Infinity;
     b[0][1] = Math::Infinity;
     b[0][2] = Math::Infinity;
@@ -259,20 +279,14 @@ void AABB::SetFromPointTranslation(const Vec3 &point, const Vec3 &translation) {
     }
 }
 
-void AABB::SetFromAABBTranslation(const AABB &aabb, const Vec3 &origin, const Mat3 &axis, const Vec3 &translation) {
-    if (!axis.IsIdentity()) {
-        SetFromTransformedAABB(aabb, origin, axis);
-    } else {
-        b[0] = aabb[0] + origin;
-        b[1] = aabb[1] + origin;
-    }
-
-    // 이동 성분만큼 확장
+void AABB::SetFromAABBTranslation(const AABB &aabb, const Vec3 &translation) {
     for (int i = 0; i < 3; i++) {
         if (translation[i] < 0.0f) {
-            b[0][i] += translation[i];
+            b[0][i] = aabb[0][i] + translation[i];
+            b[1][i] = aabb[1][i];
         } else {
-            b[1][i] += translation[i];
+            b[0][i] = aabb[0][i];
+            b[1][i] = aabb[1][i] + translation[i];
         }
     }
 }
@@ -283,39 +297,68 @@ void AABB::SetFromTransformedAABB(const AABB &aabb, const Vec3 &origin, const Ma
 
     Vec3 rotatedExtents;
     for (int i = 0; i < 3; i++) {
-        rotatedExtents[i] = Math::Fabs(extents[0] * axis[0][i]) + 
+        rotatedExtents[i] = 
+            Math::Fabs(extents[0] * axis[0][i]) + 
             Math::Fabs(extents[1] * axis[1][i]) + 
             Math::Fabs(extents[2] * axis[2][i]);
     }
-    
+
     center = axis * center + origin;
     b[0] = center - rotatedExtents;
     b[1] = center + rotatedExtents;
 }
 
-void AABB::AxisProjection(const Vec3 &dir, float &min, float &max) const {
+void AABB::SetFromTransformedAABBFast(const AABB &aabb, const Mat3x4 &transform) {
+    Vec3 center = (aabb[0] + aabb[1]) * 0.5f;
+    Vec3 extents = aabb[1] - center;
+
+    Vec3 rotatedExtents;
+    for (int i = 0; i < 3; i++) {
+        rotatedExtents[i] =
+            Math::Fabs(extents[0] * transform[i][0]) +
+            Math::Fabs(extents[1] * transform[i][1]) +
+            Math::Fabs(extents[2] * transform[i][2]);
+    }
+
+    center = transform * center;
+    b[0] = center - rotatedExtents;
+    b[1] = center + rotatedExtents;
+}
+
+void AABB::SetFromTransformedAABB(const AABB &aabb, const Mat3x4 &transform) {
+    Vec3 points[8];
+    aabb.ToPoints(points);
+
+    Clear();
+
+    for (int i = 0; i < 8; i++) {
+        AddPoint(transform * points[i]);
+    }
+}
+
+void AABB::ProjectOnAxis(const Vec3 &axis, float &min, float &max) const {
     Vec3 center = (b[0] + b[1]) * 0.5f;
     Vec3 extents = b[1] - center;
 
-    float d1 = dir.Dot(center);
-    float d2 = Math::Fabs(extents[0] * dir[0]) + 
-        Math::Fabs(extents[1] * dir[1]) + 
-        Math::Fabs(extents[2] * dir[2]);
+    float d1 = axis.Dot(center);
+    float d2 = Math::Fabs(extents[0] * axis[0]) +
+               Math::Fabs(extents[1] * axis[1]) +
+               Math::Fabs(extents[2] * axis[2]);
 
     min = d1 - d2;
     max = d1 + d2;
 }
 
-void AABB::AxisProjection(const Vec3 &origin, const Mat3 &axis, const Vec3 &dir, float &min, float &max) const {	
+void AABB::ProjectOnAxis(const Vec3 &transformOrigin, const Mat3 &transformAxis, const Vec3 &axis, float &min, float &max) const {
     Vec3 center = (b[0] + b[1]) * 0.5f;
     Vec3 extents = b[1] - center;
 
-    center = axis * center + origin;
+    center = transformAxis * center + transformOrigin;
 
-    float d1 = dir.Dot(center);
-    float d2 = Math::Fabs(extents[0] * axis[0].Dot(dir)) + 
-               Math::Fabs(extents[1] * axis[1].Dot(dir)) + 
-               Math::Fabs(extents[2] * axis[2].Dot(dir));
+    float d1 = axis.Dot(center);
+    float d2 = Math::Fabs(extents[0] * transformAxis[0].Dot(axis)) +
+               Math::Fabs(extents[1] * transformAxis[1].Dot(axis)) +
+               Math::Fabs(extents[2] * transformAxis[2].Dot(axis));
 
     min = d1 - d2;
     max = d1 + d2;
@@ -336,9 +379,9 @@ void AABB::AxisProjection(const Vec3 &origin, const Mat3 &axis, const Vec3 &dir,
 //
 void AABB::ToPoints(Vec3 points[8]) const {
     for (int i = 0; i < 8; i++) {
-        points[i][0] = b[(i^(i>>1))&1][0];
-        points[i][1] = b[(i>>1)&1][1];
-        points[i][2] = b[(i>>2)&1][2];
+        points[i][0] = b[(i ^ (i >> 1)) & 1][0];
+        points[i][1] = b[     (i >> 1)  & 1][1];
+        points[i][2] = b[     (i >> 2)  & 1][2];
     }
 }
 
@@ -366,7 +409,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // dot(a00, v0) = dot(a00, v1)
     p0 = -v0.y * v1.z + v0.z * v1.y;
     // dot(a00, v2)
-    p2 = -v2.y * (v1.z - v0.z) + v2.z * (v1.y - v0.y); 	
+    p2 = -v2.y * (v1.z - v0.z) + v2.z * (v1.y - v0.y);
     // projection intervals are disjoint if Min(p0, p1, p2) > r or -Max(p0, p1, p2) > r
     if (Max(-Max(p0, p2), Min(p0, p2)) > r) {
         return false;
@@ -418,7 +461,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // dot(a11, v0)
     p0 = v0.x * (v2.z - v1.z) - v0.z * (v2.x - v1.x);
     // dot(a11, v1) = dot(a11, v2)
-    p1 = v1.x * v2.z - v1.z * v2.x;	
+    p1 = v1.x * v2.z - v1.z * v2.x;
     // projection intervals are disjoint if Min(p0, p1, p2) > r or -Max(p0, p1, p2) > r
     if (Max(-Max(p0, p1), Min(p0, p1)) > r) {
         return false;
@@ -431,7 +474,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // dot(a12, v0) = dot(a12, v2)
     p0 = -v0.x * v2.z + v0.z * v2.x;
     // dot(a12, v1)
-    p1 = v1.x * (v0.z - v2.z) - v1.z * (v0.x - v2.x);	
+    p1 = v1.x * (v0.z - v2.z) - v1.z * (v0.x - v2.x);
     // projection intervals are disjoint if Min(p0, p1, p2) > r or -Max(p0, p1, p2) > r
     if (Max(-Max(p0, p1), Min(p0, p1)) > r) {
         return false;
@@ -444,7 +487,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     // dot(a20, v0) = dot(v20, v1)
     p0 = -v0.x * v1.y + v0.y * v1.x;
     // dot(a20, v2)
-    p2 = -v2.x * (v1.y - v0.y) + v2.y * (v1.x - v0.x);	
+    p2 = -v2.x * (v1.y - v0.y) + v2.y * (v1.x - v0.x);
     // projection intervals are disjoint if Min(p0, p1, p2) > r or -Max(p0, p1, p2) > r
     if (Max(-Max(p0, p2), Min(p0, p2)) > r) {
         return false;

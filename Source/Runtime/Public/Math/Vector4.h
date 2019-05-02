@@ -26,8 +26,8 @@
 
 BE_NAMESPACE_BEGIN
 
-/// A vector of form (x, y, z, w).
-class BE_API Vec4 {
+/// A vector of form (x, y, z, w). 16 bytes aligned.
+class BE_API ALIGN_AS16 Vec4 {
 public:
     /// Specifies the number of elements in this vector.
     enum { Size = 4 };
@@ -35,13 +35,13 @@ public:
     /// The default constructor does not initialize any members of this class.
     Vec4() = default;
     /// Constructs a Vec4 with the value (x, y, z, w).
-    Vec4(float x, float y, float z, float w);
+    constexpr Vec4(float x, float y, float z, float w);
     /// Constructs a Vec4 with the value (xyz.x, xyz.y, xyz.z, w).
-    Vec4(const Vec3 &xyz, float w);
+    constexpr Vec4(const Vec3 &xyz, float w);
     /// Constructs a Vec4 from a C array, to the value (data[0], data[1], data[2], data[3]).
-    explicit Vec4(const float data[4]);
+    explicit constexpr Vec4(const float data[4]);
     /// Constructs a Vec4 from a single value (s, s, s, s)
-    explicit Vec4(float s);
+    explicit constexpr Vec4(float s);
 
                         /// Casts this Vec4 to a C array.
                         /// This function simply returns a C pointer view to this data structure.
@@ -233,11 +233,11 @@ public:
     const Vec3 &        ToVec3() const;
     Vec3 &              ToVec3();
 
-    /// Casts this Vec3 to a Color3.
+                        /// Casts this Vec3 to a Color3.
     const Color3 &      ToColor3() const;
     Color3 &            ToColor3();
 
-    /// Casts this Vec3 to a Color4.
+                        /// Casts this Vec3 to a Color4.
     const Color4 &      ToColor4() const;
     Color4 &            ToColor4();
 
@@ -261,32 +261,20 @@ public:
     float               w;          ///< The w components.
 };
 
-BE_INLINE Vec4::Vec4(float x, float y, float z, float w) {
-    this->x = x;
-    this->y = y;
-    this->z = z;
-    this->w = w;
+BE_INLINE constexpr Vec4::Vec4(float inX, float inY, float inZ, float inW) :
+    x(inX), y(inY), z(inZ), w(inW) {
 }
 
-BE_INLINE Vec4::Vec4(const Vec3 &xyz, float w) {
-    this->x = xyz.x;
-    this->y = xyz.y;
-    this->z = xyz.z;
-    this->w = w;
+BE_INLINE constexpr Vec4::Vec4(const Vec3 &inXyz, float inW) :
+    x(inXyz.x), y(inXyz.y), z(inXyz.z), w(inW) {
 }
 
-BE_INLINE Vec4::Vec4(const float data[4]) {
-    this->x = data[0];
-    this->y = data[1];
-    this->z = data[2];
-    this->w = data[3];
+BE_INLINE constexpr Vec4::Vec4(const float data[4]) :
+    x(data[0]), y(data[1]), z(data[2]), w(data[3]) {
 }
 
-BE_INLINE Vec4::Vec4(float c) {
-    this->x = c;
-    this->y = c;
-    this->z = c;
-    this->w = c;
+BE_INLINE constexpr Vec4::Vec4(float c) :
+    x(c), y(c), z(c), w(c) {
 }
 
 BE_INLINE void Vec4::Set(float x, float y, float z, float w) {

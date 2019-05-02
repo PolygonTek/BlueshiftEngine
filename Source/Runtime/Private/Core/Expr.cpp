@@ -108,46 +108,46 @@ static float *      g_outputValues;
 // punctuation type -> op code
 static ExprChunk::OpCode PunctuationTypeToOpCode(int puncType, bool unary) {
     switch (puncType) {
-    case P_LOGIC_NOT:       // !
+    case Lexer::PuncType::LogicNot:       // !
         if (!unary) return ExprChunk::OpCode_Invalid;
         return ExprChunk::OpCode_Not;
-    case P_ADD:             // +
+    case Lexer::PuncType::Add:             // +
         if (unary) return ExprChunk::OpCode_Plus;
         return ExprChunk::OpCode_Add;
-    case P_SUB:             // -
+    case Lexer::PuncType::Sub:             // -
         if (unary) return ExprChunk::OpCode_Minus;
         return ExprChunk::OpCode_Subtract;
-    case P_MUL:             // *
+    case Lexer::PuncType::Mul:             // *
         if (unary) return ExprChunk::OpCode_Invalid;
         return ExprChunk::OpCode_Multiply;
-    case P_DIV:             // /
+    case Lexer::PuncType::Div:             // /
         if (unary) return ExprChunk::OpCode_Invalid;
         return ExprChunk::OpCode_Divide;
-    case P_MOD:             // %
+    case Lexer::PuncType::Mod:             // %
         if (unary) return ExprChunk::OpCode_Invalid;
         return ExprChunk::OpCode_Mod;
-    case P_LOGIC_GREATER:   // >
+    case Lexer::PuncType::LogicGreater:   // >
         if (unary) return ExprChunk::OpCode_Invalid;
         return ExprChunk::OpCode_GreaterThan;
-    case P_LOGIC_GEQ:       // >=
+    case Lexer::PuncType::LogicGreaterEq:       // >=
         if (unary) return ExprChunk::OpCode_Invalid;
         return ExprChunk::OpCode_GreaterEqual;
-    case P_LOGIC_LESS:      // <
+    case Lexer::PuncType::LogicLess:      // <
         if (unary) return ExprChunk::OpCode_Invalid;
         return ExprChunk::OpCode_LessThan;
-    case P_LOGIC_LEQ:       // <=
+    case Lexer::PuncType::LogicLessEqual:       // <=
         if (unary) return ExprChunk::OpCode_Invalid;
         return ExprChunk::OpCode_LessEqual;
-    case P_LOGIC_EQ:        // ==
+    case Lexer::PuncType::LogicEqual:        // ==
         if (unary) return ExprChunk::OpCode_Invalid;
         return ExprChunk::OpCode_Equal;
-    case P_LOGIC_UNEQ:      // !=
+    case Lexer::PuncType::LogicUnequal:      // !=
         if (unary) return ExprChunk::OpCode_Invalid;
         return ExprChunk::OpCode_NotEqual;
-    case P_LOGIC_AND:       // &&
+    case Lexer::PuncType::LogicAnd:       // &&
         if (unary) return ExprChunk::OpCode_Invalid;
         return ExprChunk::OpCode_And;
-    case P_LOGIC_OR:        // ||
+    case Lexer::PuncType::LogicOr:        // ||
         if (unary) return ExprChunk::OpCode_Invalid;
         return ExprChunk::OpCode_Or;
     }
@@ -376,7 +376,7 @@ void ExprChunk::Finish() {
 }
 
 bool ExprChunk::ParseExpressions(const char *text, int numExpressions, int *outputRegisters) {
-    Lexer lexer(text, Str::Length(text), "ExprChunk::ParseExpressions", LexerFlag::LEXFL_NOERRORS);
+    Lexer lexer(text, Str::Length(text), "ExprChunk::ParseExpressions", Lexer::Flag::NoErrors);
     return ParseExpressions(lexer, numExpressions, outputRegisters);
 }
 
@@ -405,10 +405,10 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
 
         while (lexer.ReadToken(&token, false)) {
             tokenType = lexer.GetTokenType();
-            if (tokenType & TT_PUNCTUATION) {
+            if (tokenType & Lexer::TokenType::Punctuation) {
                 puncType = lexer.GetPunctuationType();
                 switch (puncType) {
-                case PuncType::P_PARENTHESESOPEN: // '(' 는 무조건 push
+                case Lexer::PuncType::ParenthesesOpen: // '(' 는 무조건 push
                     if (!(lastParseState & (EmptyState | OpState | BuiltInOpState | LParenState))) {
                         goto SYNTAX_ERROR;
                     }
@@ -420,7 +420,7 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
                     g_opCodeStack[++g_opCodeStackPointer] = parenType;
                     parenInfo[parenthese++] = parenType;
                     break;
-                case PuncType::P_SQBRACKETOPEN: // '[' 도 무조건 push
+                case Lexer::PuncType::SquareBracketOpen: // '[' 도 무조건 push
                     if (!(lastParseState & (OperandState))) {
                         goto SYNTAX_ERROR;
                     }
@@ -431,7 +431,7 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
                     g_opCodeStack[++g_opCodeStackPointer] = OpCode_Table;
                     sqbracket++;
                     break;
-                case PuncType::P_PARENTHESESCLOSE:  // ')'
+                case Lexer::PuncType::ParenthesesClose:  // ')'
                     if (--parenthese < 0) {
                         goto SYNTAX_ERROR;
                     }
@@ -441,7 +441,7 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
                     }
                     g_opCodeStackPointer--; // '('
                     break;
-                case PuncType::P_SQBRACKETCLOSE:    // ']'
+                case Lexer::PuncType::SquareBracketClose:    // ']'
                     if (--sqbracket < 0) {
                         goto SYNTAX_ERROR;
                     }
@@ -451,24 +451,24 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
                     }
                     EvaluateStack();    // table 연산 evaluate
                     break;
-                case PuncType::P_ADD:
-                case PuncType::P_SUB:
-                case PuncType::P_MUL:
-                case PuncType::P_DIV:
-                case PuncType::P_MOD:
-                case PuncType::P_LOGIC_NOT:
-                case PuncType::P_LOGIC_GREATER:
-                case PuncType::P_LOGIC_GEQ:
-                case PuncType::P_LOGIC_LESS:
-                case PuncType::P_LOGIC_LEQ:
-                case PuncType::P_LOGIC_EQ:
-                case PuncType::P_LOGIC_UNEQ:
-                case PuncType::P_LOGIC_AND:
-                case PuncType::P_LOGIC_OR:
+                case Lexer::PuncType::Add:
+                case Lexer::PuncType::Sub:
+                case Lexer::PuncType::Mul:
+                case Lexer::PuncType::Div:
+                case Lexer::PuncType::Mod:
+                case Lexer::PuncType::LogicNot:
+                case Lexer::PuncType::LogicGreater:
+                case Lexer::PuncType::LogicGreaterEq:
+                case Lexer::PuncType::LogicLess:
+                case Lexer::PuncType::LogicLessEqual:
+                case Lexer::PuncType::LogicEqual:
+                case Lexer::PuncType::LogicUnequal:
+                case Lexer::PuncType::LogicAnd:
+                case Lexer::PuncType::LogicOr:
                     if (lastParseState & OperandState) {
                         unary = false;
                     } else {
-                        if (!(puncType == P_LOGIC_NOT || puncType == P_ADD || puncType == P_SUB))
+                        if (!(puncType == Lexer::PuncType::LogicNot || puncType == Lexer::PuncType::Add || puncType == Lexer::PuncType::Sub))
                             goto SYNTAX_ERROR;
                         unary = true;
                     }
@@ -477,7 +477,7 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
                     if (opCode == OpCode_Invalid) {
                         goto SYNTAX_ERROR;
                     }
-                                                
+
                     lastParseState = OpState;
                     
                     if (g_opCodeStackPointer > -1 && !unary) {
@@ -490,7 +490,7 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
                     assert(g_opCodeStackPointer + 1 < COUNT_OF(g_opCodeStack));
                     g_opCodeStack[++g_opCodeStackPointer] = opCode;
                     break;
-                case PuncType::P_COMMA:
+                case Lexer::PuncType::Comma:
                     if (parenInfo[parenthese-1] == OpCode_BuiltInLParen) {
                         while (g_opCodeStack[g_opCodeStackPointer] != OpCode_BuiltInLParen) {
                             EvaluateStack();
@@ -501,13 +501,13 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
                     }
                     next = true;
                     goto END_OF_EXPRESSION;
-                case PuncType::P_SEMICOLON:
+                case Lexer::PuncType::SemiColon:
                     next = false;
                     goto END_OF_EXPRESSION;
                 default:
                     goto SYNTAX_ERROR;
                 }
-            } else if (tokenType & TokenType::TT_IDENTIFIER) {
+            } else if (tokenType & Lexer::TokenType::Identifier) {
                 if (!(lastParseState & (EmptyState | OpState | BuiltInOpState | LParenState))) {
                     goto SYNTAX_ERROR;
                 }
@@ -536,7 +536,7 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
                     if (!p[i]) {
                         i = atoi(p);
                         if (i >= numRegisters) {
-                            BE_ERRLOG(L"register 'r%i' used without having been initialized\n", i);
+                            BE_ERRLOG("register 'r%i' used without having been initialized\n", i);
                         }
                         g_operandStack[++g_operandStackPointer] = MAKE_REG_OUTPUT(i);
                         continue;
@@ -576,9 +576,9 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
                     }
                 }
                 
-                BE_ERRLOG(L"undefined identifier '%hs'\n", token.c_str());
+                BE_ERRLOG("undefined identifier '%s'\n", token.c_str());
                 return false;
-            } else if (tokenType & TokenType::TT_NUMBER) {
+            } else if (tokenType & Lexer::TokenType::Number) {
                 if (!(lastParseState & (EmptyState | OpState | BuiltInOpState | LParenState))) {
                     goto SYNTAX_ERROR;
                 }
@@ -587,7 +587,7 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
                 
                 reg = GetConstantRegister((float)atof(token));
                 g_operandStack[++g_operandStackPointer] = reg;
-            } else if (tokenType & TokenType::TT_STRING) {
+            } else if (tokenType & Lexer::TokenType::String) {
                 goto SYNTAX_ERROR;
             } else {
                 goto SYNTAX_ERROR;
@@ -595,25 +595,25 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
         }
 
         next = false;
-        goto END_OF_EXPRESSION;               
+        goto END_OF_EXPRESSION; 
 
 SYNTAX_ERROR:
-        BE_ERRLOG(L"syntax error: '%hs'\n", token.c_str());
+        BE_ERRLOG("syntax error: '%s'\n", token.c_str());
         return false;
 
 END_OF_EXPRESSION:
         if (lastParseState == OpState) {
-            BE_ERRLOG(L"missing operand before '%hs'\n", token.c_str());
+            BE_ERRLOG("missing operand before '%s'\n", token.c_str());
             return false;
         }
 
         if (parenthese) {
-            BE_ERRLOG(L"missing ')' before '%hs'\n", token.c_str());
+            BE_ERRLOG("missing ')' before '%s'\n", token.c_str());
             return false;
         }
 
         if (sqbracket) {
-            BE_ERRLOG(L"missing ']' before '%hs'\n", token.c_str());
+            BE_ERRLOG("missing ']' before '%s'\n", token.c_str());
             return false;
         }
 
@@ -625,7 +625,7 @@ END_OF_EXPRESSION:
         outputRegisters[index++] = MAKE_REG_OUTPUT(numRegisters++);
 
         if ((!next && index < numExpressions) || (next && index == numExpressions)) {
-            BE_ERRLOG(L"expression does not take %i arguments\n", index);
+            BE_ERRLOG("expression does not take %i arguments\n", index);
             return false;
         }
 
@@ -662,7 +662,7 @@ float ExprChunk::GetValue(int reg) const {
     case OutputRegister:
         return g_outputValues[GET_REG_INDEX(reg)];
     case TempRegister:
-        return g_tempRegisters[GET_REG_INDEX(reg)];		
+        return g_tempRegisters[GET_REG_INDEX(reg)];
     case ConstantRegister:
         return constantRegisters[GET_REG_INDEX(reg)];
     case LocalParmRegister:
@@ -670,7 +670,7 @@ float ExprChunk::GetValue(int reg) const {
     case GlobalParmRegister:
         return data->GetParmValue(GET_REG_INDEX(reg));
     case TableRegister:
-        BE_FATALERROR(L"ExprChunk::GetValue: Could not read from table register %i\n", reg);
+        BE_FATALERROR("ExprChunk::GetValue: Could not read from table register %i\n", reg);
     }
 
     return 0.0f;
@@ -688,7 +688,7 @@ void ExprChunk::SetValue(int reg, float value) {
     case LocalParmRegister:
     case GlobalParmRegister:
     case TableRegister:
-        BE_FATALERROR(L"ExprChunk::SetValue: Could not write to register %i\n", reg);
+        BE_FATALERROR("ExprChunk::SetValue: Could not write to register %i\n", reg);
         break;
     }
 }
@@ -861,7 +861,7 @@ void ExprData::SetTable(const char *name, int numElements, const float *elements
     for (int i = 0; i < numTables; i++) {
         if (!Str::Cmp(tables[i].name, name)) {
             if (tables[i].numElements != numElements) {
-                BE_FATALERROR(L"ExprData::SetTable: table elements(%i) != numElements(%i)", tables[i].numElements, numElements);
+                BE_FATALERROR("ExprData::SetTable: table elements(%i) != numElements(%i)", tables[i].numElements, numElements);
                 return;
             }
 
@@ -884,7 +884,7 @@ void ExprData::SetTable(const char *name, int numElements, const float *elements
 float ExprData::GetParmValue(int reg) const {
     int i = GET_REG_INDEX(reg);
     if (i >= numParms) {
-        BE_FATALERROR(L"ExprData::GetParmValue: %i > numParms - 1 (%i)", i, numParms);
+        BE_FATALERROR("ExprData::GetParmValue: %i > numParms - 1 (%i)", i, numParms);
     }
 
     return parms[i].value;
@@ -896,7 +896,7 @@ float ExprData::GetTableValue(int reg, float findex) const {
 
     int i = GET_REG_INDEX(reg);
     if (i >= numTables) {
-        BE_FATALERROR(L"ExprData::GetTableValue: %i > numTables - 1 (%i)", i, numTables);
+        BE_FATALERROR("ExprData::GetTableValue: %i > numTables - 1 (%i)", i, numTables);
     }
 
     const Table *table = &tables[i];

@@ -20,16 +20,16 @@
 BE_NAMESPACE_BEGIN
 
 struct ProcessHandle {
-    ProcessHandle(void *task = NULL) { }
+    ProcessHandle(void *task = nullptr) { }
     bool IsValid() const { return false; }
     void Close();
 };
 
 class BE_API PlatformIOSProcess : public PlatformAppleProcess {
 public:
-    static const wchar_t *      ExecutableFileName();
-    static const wchar_t *		ComputerName();
-    static const wchar_t *		UserName();
+    static const char *         ExecutableFileName();
+    static const char *         ComputerName();
+    static const char *         UserName();
 };
 
 typedef PlatformIOSProcess      PlatformProcess;

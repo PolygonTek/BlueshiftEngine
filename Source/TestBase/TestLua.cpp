@@ -347,7 +347,7 @@ void TestLua() {
             statusStr = "LUA_ERRERR";
             break;
         }
-        BE_ERRLOG(L"%hs - %hs\n", statusStr, msg.c_str());
+        BE_ERRLOG("%s - %s\n", statusStr, msg.c_str());
     });
     
     TestLuaFunction(lua);

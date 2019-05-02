@@ -18,20 +18,22 @@ BE_NAMESPACE_BEGIN
 
 class DrawSurf {
 public:
-    enum Flag {
-        AmbientVisible      = BIT(0),           ///< means visible surface (can be invisible for shadow caster surface)
-        ShadowCaster        = BIT(1),
-        ShowWires           = BIT(2),           ///< means to draw wireframes
-        SkipSelection       = BIT(3),
-        UseInstancing       = BIT(4)
+    struct Flag {
+        enum Enum {
+            Visible         = BIT(0),           ///< Surface is visible by camera
+            ShadowVisible   = BIT(1),           ///< Shadow of surface is visible by camera
+            ShowWires       = BIT(2),
+            SkipSelection   = BIT(3),
+            UseInstancing   = BIT(4)
+        };
     };
 
     uint64_t                sortKey;
     uint32_t                flags;
-    const VisibleObject *   space;              ///< Visible object pointer of this surface
-    const Material *        material;           ///< Material pointer of this surface
-    const float *           materialRegisters;
     SubMesh *               subMesh;
+    const VisObject *       space;              ///< Parent of this surface
+    const Material *        material;           ///< Material of this surface
+    const float *           materialRegisters;
     int                     instanceIndex;
 };
 

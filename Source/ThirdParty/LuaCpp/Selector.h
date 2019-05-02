@@ -503,7 +503,7 @@ private:
         // NOTE: Assume that table is already pushed
         // Push table[key]
         key.Push(_l);
-        lua_gettable(_l, -2);        
+        lua_gettable(_l, -2);
     }
 
     // Pushes traversed element

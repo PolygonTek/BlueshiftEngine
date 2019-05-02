@@ -2,8 +2,8 @@ shader "shadowVolumeParallel" {
 	glsl_vp {
 		in vec4 in_position : POSITION;
 
-		uniform mat4 modelViewProjectionMatrix;
-		uniform vec3 localLightDir;
+		uniform HIGHP mat4 modelViewProjectionMatrix;
+		uniform HIGHP vec3 localLightDir;
 
 		void main() {
 			vec3 v = (1.0 - in_position.w) * -localLightDir.xyz;

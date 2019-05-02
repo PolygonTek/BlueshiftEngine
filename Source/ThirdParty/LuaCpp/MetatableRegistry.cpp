@@ -17,7 +17,7 @@ void MetatableRegistry::PushNewMetatable(lua_State *l, TypeID type, const std::s
     // push the new metatable which is exist in the registry
     luaL_newmetatable(l, name.c_str()); // Actual result.
 
-                                        // push the metatable_table
+    // push the metatable_table
     _push_metatable_table(l);
     // push the key
     _push_typeinfo(l, type);

@@ -19,11 +19,11 @@
 // Common
 #include "Core/Checksum_CRC32.h"
 #include "Core/Checksum_MD5.h"
+#include "Core/BinSearch.h"
 #include "Core/Range.h"
 #include "Core/Heap.h"
 #include "Core/Allocator.h"
 #include "Core/Str.h"
-#include "Core/WStr.h"
 #include "Core/Variant.h"
 #include "Core/Guid.h"
 #include "Core/StrColor.h"
@@ -46,7 +46,6 @@
 #include "Containers/StrPool.h"
 #include "Containers/HashMap.h"
 #include "Containers/Hierarchy.h"
-#include "Containers/BinSearch.h"
 
 #include "Core/Timespan.h"
 #include "Core/DateTime.h"
@@ -69,16 +68,20 @@
 #include "PlatformUtils/Android/AndroidGPUInfo.h"
 #endif
 
+// Utils
+#include "Core/ScopeLock.h"
+
+// Profiler
+#include "Profiler/Profiler.h"
+
 // File
 #include "File/File.h"
-#include "File/FileMapping.h"
 #include "File/FileSystem.h"
 #include "File/ZipArchiver.h"
 
 // Utils
 #include "Core/ByteOrder.h"
 #include "Core/Lexer.h"
-#include "Core/WLexer.h"
 #include "Core/Dict.h"
 #include "Core/Expr.h"
 #include "Core/CmdArgs.h"
@@ -162,7 +165,7 @@
 #include "Components/ComCharacterController.h"
 #include "Components/ComCamera.h"
 #include "Components/ComLight.h"
-#include "Components/ComReflectionProbe.h"
+#include "Components/ComEnvironmentProbe.h"
 #include "Components/ComRenderable.h"
 #include "Components/ComMeshRenderer.h"
 #include "Components/ComStaticMeshRenderer.h"

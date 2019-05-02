@@ -52,7 +52,7 @@ void ComSensor::Purge(bool chainPurge) {
 void ComSensor::Init() {
     Component::Init();
 
-    physicsDesc.type = PhysCollidable::Sensor;
+    physicsDesc.type = PhysCollidable::Type::Sensor;
     physicsDesc.shapes.Clear();
 
     // Mark as initialized
@@ -96,7 +96,7 @@ void ComSensor::Awake() {
             }
 
             ComTransform *transform = GetEntity()->GetTransform();
-            transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSensor::TransformUpdated, SignalObject::Unique);
+            transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSensor::TransformUpdated, SignalObject::ConnectionType::Unique);
         }
     }
 
@@ -131,7 +131,7 @@ void ComSensor::CreateSensor() {
     }
 
     if (physicsDesc.shapes.Count() == 0) {
-        BE_WARNLOG(L"Entity %hs has sensor but no associated colliders in its hierarchy\n", GetEntity()->GetName().c_str());
+        BE_WARNLOG("Entity %s has sensor but no associated colliders in its hierarchy\n", GetEntity()->GetName().c_str());
     }
 
     sensor = static_cast<PhysSensor *>(physicsSystem.CreateCollidable(physicsDesc));
@@ -225,7 +225,8 @@ void ComSensor::OnInactive() {
     }
 }
 
-void ComSensor::DrawGizmos(const RenderView::State &viewState, bool selected) {
+#if 1
+void ComSensor::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     // TODO: draw blend mesh
     /*ComponentPtrArray colliderComponents = GetEntity()->GetComponents(ComCollider::metaObject);
 
@@ -233,6 +234,7 @@ void ComSensor::DrawGizmos(const RenderView::State &viewState, bool selected) {
         colliderComponents[i]->DrawGizmos(sceneView, true);
     }*/
 }
+#endif
 
 void ComSensor::TransformUpdated(const ComTransform *transform) {
     if (sensor) {

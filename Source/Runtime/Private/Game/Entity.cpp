@@ -26,6 +26,7 @@ const SignalDef Entity::SIG_ActiveChanged("Entity::ActiveChanged", "ai");
 const SignalDef Entity::SIG_ActiveInHierarchyChanged("Entity::ActiveInHierachyChanged", "ai");
 const SignalDef Entity::SIG_NameChanged("Entity::NameChanged", "as");
 const SignalDef Entity::SIG_LayerChanged("Entity::LayerChanged", "a");
+const SignalDef Entity::SIG_StaticMaskChanged("Entity::StaticMaskChanged", "ai");
 const SignalDef Entity::SIG_FrozenChanged("Entity::FrozenChanged", "ai");
 const SignalDef Entity::SIG_ParentChanged("Entity::ParentChanged", "aa");
 const SignalDef Entity::SIG_ComponentInserted("Entity::ComponentInserted", "ai");
@@ -38,25 +39,25 @@ END_EVENTS
 
 void Entity::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("parent", "Parent", Guid, GetParentGuid, SetParentGuid, Guid::zero,
-        "Parent Entity", PropertyInfo::EditorFlag).SetMetaObject(&Entity::metaObject);
+        "Parent Entity", PropertyInfo::Flag::Editor).SetMetaObject(&Entity::metaObject);
     REGISTER_PROPERTY("prefab", "Prefab", bool, prefab, false,
-        "Is prefab ?", PropertyInfo::EditorFlag);
+        "Is prefab ?", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("prefabSource", "Prefab Source", Guid, GetPrefabSourceGuid, SetPrefabSourceGuid, Guid::zero,
-        "", PropertyInfo::EditorFlag).SetMetaObject(&Entity::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&Entity::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("name", "Name", Str, GetName, SetName, "Entity",
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("tag", "Tag", Str, GetTag, SetTag, "Untagged",
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("layer", "Layer", int, GetLayer, SetLayer, 0,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("staticMask", "Static Mask", int, GetStaticMask, SetStaticMask, 0,
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("active", "Active", bool, IsActiveSelf, SetActive, true,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("activeInHierarchy", "Active In Hierarchy", bool, activeInHierarchy, true,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("frozen", "Frozen", bool, IsFrozen, SetFrozen, false,
-        "", PropertyInfo::EditorFlag);
-    REGISTER_PROPERTY("static", "Static", bool, isStatic, false,
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
 }
 
 Entity::Entity() {
@@ -65,7 +66,7 @@ Entity::Entity() {
     node.SetOwner(this);
     layer = 0;
     frozen = false;
-    isStatic = false;
+    staticMask = 0;
     prefab = false;
     prefabSourceGuid = Guid::zero;
     activeSelf = true;
@@ -207,7 +208,7 @@ ComTransform *Entity::GetTransform() const {
 
 Component *Entity::AddNewComponent(const MetaObject *type) {
     if (!type->IsTypeOf(Component::metaObject)) {
-        BE_ERRLOG(L"Entity::AddNewComponent: %hs is not component type\n", type->ClassName());
+        BE_ERRLOG("Entity::AddNewComponent: %s is not component type\n", type->ClassName());
         return nullptr;
     }
     Component *component = (Component *)type->CreateInstance();
@@ -362,17 +363,17 @@ void Entity::OnApplicationPause(bool pause) {
     }
 }
 
-void Entity::Serialize(Json::Value &value) const {
+void Entity::Serialize(Json::Value &value, bool forCopying) const {
     Json::Value componentsValue;
 
-    Serializable::Serialize(value);
+    Serializable::Serialize(value, forCopying);
 
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component) {
             Json::Value componentValue;
-            component->Serialize(componentValue);
+            component->Serialize(componentValue, forCopying);
 
             componentsValue.append(componentValue);
         }
@@ -405,23 +406,23 @@ void Entity::Deserialize(const Json::Value &entityValue) {
 
                 AddComponent(component);
             } else {
-                BE_WARNLOG(L"'%hs' is not a component class\n", classname);
+                BE_WARNLOG("'%s' is not a component class\n", classname);
             }
         } else {
-            BE_WARNLOG(L"Unknown component class '%hs'\n", classname);
+            BE_WARNLOG("Unknown component class '%s'\n", classname);
         }
     }
 }
 
-void Entity::SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue) {
+void Entity::SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue, bool forCopying) {
     Json::Value entityValue;
 
-    entity->Serialize(entityValue);
+    entity->Serialize(entityValue, forCopying);
 
     entitiesValue.append(entityValue);
 
     for (Entity *child = entity->GetNode().GetChild(); child; child = child->GetNode().GetNextSibling()) {
-        Entity::SerializeHierarchy(child, entitiesValue);
+        Entity::SerializeHierarchy(child, entitiesValue, forCopying);
     }
 }
 
@@ -480,7 +481,7 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
     }
 
     if (includingChildren) {
-        Mat3x4 rootMatrixInverse = GetTransform()->GetMatrixNoScale().Inverse();
+        Mat3x4 rootMatrixInverse = GetTransform()->GetMatrix().Inverse();
 
         Array<Entity *> children;
         GetChildren(children);
@@ -488,15 +489,12 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
         for (int childIndex = 0; childIndex < children.Count(); childIndex++) {
             const Entity *child = children[childIndex];
 
-            Mat3x4 localMatrix = rootMatrixInverse * child->GetTransform()->GetMatrixNoScale();
-            Vec3 translation, scale;
-            Mat3 rotation;
-            localMatrix.GetTRS(translation, rotation, scale);
+            Mat3x4 localMatrix = rootMatrixInverse * child->GetTransform()->GetMatrix();
 
             AABB childLocalAabb;
             childLocalAabb = child->GetLocalAABB();
             if (childLocalAabb != AABB::zero) {
-                childLocalAabb.SetFromTransformedAABB(childLocalAabb, translation, rotation);
+                childLocalAabb.SetFromTransformedAABB(childLocalAabb, localMatrix);
 
                 outAabb += childLocalAabb;
             }
@@ -508,24 +506,24 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
 const AABB Entity::GetWorldAABB(bool includingChildren) const {
     const ComTransform *transform = GetTransform();
 
-    AABB worldAabb;
-    worldAabb.SetFromTransformedAABB(GetLocalAABB(includingChildren), transform->GetOrigin(), transform->GetAxis());
-    return worldAabb;
+    AABB worldAABB;
+    worldAABB.SetFromTransformedAABBFast(GetLocalAABB(includingChildren), transform->GetMatrix());
+    return worldAABB;
 }
 
-const Vec3 Entity::GetWorldPosition(WorldPosTrait posTrait, bool includingChildren) const {
+const Vec3 Entity::GetWorldPosition(WorldPosTrait::Enum posTrait, bool includingChildren) const {
     Vec3 vec;
 
-    if (posTrait == Pivot) {
+    if (posTrait == WorldPosTrait::Pivot) {
         vec = GetTransform()->GetOrigin();
     } else {
         AABB aabb = GetWorldAABB(includingChildren);
 
-        if (posTrait == Minimum) {
+        if (posTrait == WorldPosTrait::Minimum) {
             vec = aabb.b[0];
-        } else if (posTrait == Maximum) {
+        } else if (posTrait == WorldPosTrait::Maximum) {
             vec = aabb.b[1];
-        } else if (posTrait == Center) {
+        } else if (posTrait == WorldPosTrait::Center) {
             vec = aabb.Center();
         } else {
             assert(0);
@@ -535,7 +533,8 @@ const Vec3 Entity::GetWorldPosition(WorldPosTrait posTrait, bool includingChildr
     return vec;
 }
 
-void Entity::DrawGizmos(const RenderView::State &viewState, bool selected) {
+#if 1
+void Entity::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
@@ -544,20 +543,26 @@ void Entity::DrawGizmos(const RenderView::State &viewState, bool selected) {
         }
     }
 }
+#endif
 
-bool Entity::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
-    float s = lastScale;
+bool Entity::IntersectRay(const Ray &ray, bool backFaceCull, float &lastDist) const {
+    float minDist = lastDist;
+    float dist;
 
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
-        Component *component = components[componentIndex];
+        const Component *component = components[componentIndex];
 
         if (component && component->IsActiveInHierarchy()) {
-            component->RayIntersection(start, dir, backFaceCull, s);
+            if (component->IntersectRay(ray, backFaceCull, &dist)) {
+                if (dist < minDist) {
+                    minDist = dist;
+                }
+            }
         }
     }
 
-    if (s < lastScale) {
-        lastScale = s;
+    if (minDist < lastDist) {
+        lastDist = minDist;
         return true;
     }
 
@@ -600,6 +605,12 @@ void Entity::SetLayer(int layer) {
     }
 }
 
+void Entity::SetStaticMask(int staticMask) {
+    this->staticMask = staticMask;
+
+    EmitSignal(&SIG_StaticMaskChanged, this, staticMask);
+}
+
 void Entity::SetParent(Entity *parentEntity) {
     SetParentGuid(parentEntity->GetGuid());
 }
@@ -636,10 +647,6 @@ Guid Entity::GetPrefabSourceGuid() const {
 
 void Entity::SetPrefabSourceGuid(const Guid &prefabSourceGuid) {
     this->prefabSourceGuid = prefabSourceGuid;
-}
-
-void Entity::SetStatic(bool isStatic) {
-    this->isStatic = isStatic;
 }
 
 void Entity::SetFrozen(bool frozen) {
@@ -718,8 +725,8 @@ void Entity::RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMa
     for (int propIndex = 0; propIndex < propertyInfoList.Count(); propIndex++) {
         const auto &propInfo = propertyInfoList[propIndex];
             
-        if (propInfo.GetType() == Variant::GuidType) {
-            if (propInfo.GetFlags() & PropertyInfo::ArrayFlag) {
+        if (propInfo.GetType() == Variant::Type::Guid) {
+            if (propInfo.GetFlags() & PropertyInfo::Flag::Array) {
                 for (int arrayIndex = 0; arrayIndex < entity->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
                     const Guid fromGuid = entity->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
 
@@ -746,8 +753,8 @@ void Entity::RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMa
         for (int propIndex = 0; propIndex < propertyInfoList.Count(); propIndex++) {
             const auto &propInfo = propertyInfoList[propIndex];
 
-            if (propInfo.GetType() == Variant::GuidType) {
-                if (propInfo.GetFlags() & PropertyInfo::ArrayFlag) {
+            if (propInfo.GetType() == Variant::Type::Guid) {
+                if (propInfo.GetFlags() & PropertyInfo::Flag::Array) {
                     for (int arrayIndex = 0; arrayIndex < component->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
                         const Guid fromGuid = component->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
 

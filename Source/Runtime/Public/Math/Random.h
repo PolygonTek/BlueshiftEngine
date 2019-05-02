@@ -28,22 +28,22 @@ class BE_API Random {
 public:
     Random(int seed = 0);
 
-    void                SetSeed(int seed);
-    int                 GetSeed() const;
+    void                    SetSeed(int seed);
+    int                     GetSeed() const;
 
-                        /// random integer in the range [0, MaxRand]
-    int                 RandomInt();
-                        /// random integer in the range [0, max]
-    int                 RandomInt(int max);
-                        /// random number in the range [0.0f, 1.0f]
-    float               RandomFloat();
-                        /// random number in the range [-1.0f, 1.0f]
-    float               CRandomFloat();
+                            /// random integer in the range [0, MaxRand]
+    int                     RandomInt();
+                            /// random integer in the range [0, max]
+    int                     RandomInt(int max);
+                            /// random number in the range [0.0f, 1.0f]
+    float                   RandomFloat();
+                            /// random number in the range [-1.0f, 1.0f]
+    float                   CRandomFloat();
 
-    static const int    MaxRand = 0x7fff;
+    static constexpr int    MaxRand = 0x7fff;
 
 private:
-    int                 seed;
+    int                     seed;
 };
 
 BE_INLINE Random::Random(int seed) {

@@ -82,15 +82,15 @@ void ParticleMesh::DrawQuad(const VertexGeneric *verts, const Material *material
 int ParticleMesh::CountDrawingVerts(const ParticleSystem::Stage &stage, const Particle *stageParticles) const {
     int numVerts = 0;
     
-    int trailCount = (stage.moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? stage.trailsModule.count : 0;
+    int trailCount = (stage.moduleFlags & BIT(ParticleSystem::ModuleBit::Trails)) ? stage.trailsModule.count : 0;
 
     for (int particleIndex = 0; particleIndex < stage.standardModule.count; particleIndex++) {
         int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * trailCount;
         Particle *particle = (Particle *)((byte *)stageParticles + particleIndex * particleSize);
         
         if (particle->alive) {
-            if (stage.standardModule.orientation == ParticleSystem::StandardModule::Aimed ||
-                stage.standardModule.orientation == ParticleSystem::StandardModule::AimedZ) {
+            if (stage.standardModule.orientation == ParticleSystem::StandardModule::Orientation::Aimed ||
+                stage.standardModule.orientation == ParticleSystem::StandardModule::Orientation::AimedZ) {
                 numVerts += 4 * (trailCount);
             } else {
                 numVerts += 4 * (1 + trailCount);
@@ -101,31 +101,31 @@ int ParticleMesh::CountDrawingVerts(const ParticleSystem::Stage &stage, const Pa
     return numVerts;
 }
 
-static Mat3 ComputeParticleAxis(ParticleSystem::StandardModule::Orientation orientation, const Mat3 &modelAxis, const Mat3 &viewAxis) {
+static Mat3 ComputeParticleAxis(ParticleSystem::StandardModule::Orientation::Enum orientation, const Mat3 &modelAxis, const Mat3 &viewAxis) {
     Mat3 worldAxis; // forward, left, up
 
     switch (orientation) {
-    case ParticleSystem::StandardModule::View:
+    case ParticleSystem::StandardModule::Orientation::View:
         worldAxis[0] = -viewAxis[0];
         worldAxis[1] = -viewAxis[1];
         worldAxis[2] = viewAxis[2];
         break;
-    case ParticleSystem::StandardModule::ViewZ:
+    case ParticleSystem::StandardModule::Orientation::ViewZ:
         worldAxis[0] = Vec3(-viewAxis[1].y, viewAxis[1].x, 0); // = FromCross(-viewAxis[1], unitZ)
         worldAxis[1] = -viewAxis[1];
         worldAxis[2] = Vec3::unitZ;
         break;
-    case ParticleSystem::StandardModule::X:
+    case ParticleSystem::StandardModule::Orientation::X:
         worldAxis[0] = Vec3::unitX;
         worldAxis[1] = Vec3::unitY;
         worldAxis[2] = Vec3::unitZ;
         break;
-    case ParticleSystem::StandardModule::Y:
+    case ParticleSystem::StandardModule::Orientation::Y:
         worldAxis[0] = Vec3::unitY;
         worldAxis[1] = -Vec3::unitX;
         worldAxis[2] = Vec3::unitZ;
         break;
-    case ParticleSystem::StandardModule::Z:
+    case ParticleSystem::StandardModule::Orientation::Z:
         worldAxis[0] = Vec3::unitZ;
         worldAxis[1] = Vec3::unitY;
         worldAxis[2] = -Vec3::unitX;
@@ -160,7 +160,7 @@ void ParticleMesh::ComputeTextureCoordinates(const ParticleSystem::StandardModul
     }
 }
 
-void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Particle *> &stageParticles, const RenderObject *renderObject, const RenderView *renderView) {
+void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Particle *> &stageParticles, const RenderObject *renderObject, const RenderCamera *renderCamera) {
     Vec3 worldPos[Particle::MaxTrails + 1];
     Vec3 cameraDir[Particle::MaxTrails + 1];
     Vec3 tangentDir[Particle::MaxTrails + 1];
@@ -195,16 +195,16 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
             currentSurf->numVerts += numVerts;
             currentSurf->numIndexes += numIndexes;
 
-            ComputeTextureCoordinates(stage.standardModule, MS2SEC(renderObject->state.time) - renderObject->state.stageStartDelay[stageIndex], s1, t1, s2, t2);
+            ComputeTextureCoordinates(stage.standardModule, MS2SEC(renderObject->GetState().time) - renderObject->GetState().stageStartDelay[stageIndex], s1, t1, s2, t2);
 
             float16_t hs1 = F16Converter::FromF32(s1);
             float16_t ht1 = F16Converter::FromF32(t1);
             float16_t hs2 = F16Converter::FromF32(s2);
             float16_t ht2 = F16Converter::FromF32(t2);
 
-            if (stage.standardModule.orientation != ParticleSystem::StandardModule::Aimed &&
-                stage.standardModule.orientation != ParticleSystem::StandardModule::AimedZ) {
-                localAxis = ComputeParticleAxis(stage.standardModule.orientation, renderObject->state.axis, renderView->state.axis);
+            if (stage.standardModule.orientation != ParticleSystem::StandardModule::Orientation::Aimed &&
+                stage.standardModule.orientation != ParticleSystem::StandardModule::Orientation::AimedZ) {
+                localAxis = ComputeParticleAxis(stage.standardModule.orientation, renderObject->GetWorldMatrix().ToMat3(), renderCamera->GetState().axis);
             }
 
             // Cache vertices
@@ -212,7 +212,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
             bufferCacheManager.AllocVertex(numVerts, sizeof(VertexGeneric), nullptr, &vertexCache);
             VertexGeneric *vertexPointer = (VertexGeneric *)bufferCacheManager.MapVertexBuffer(&vertexCache);
            
-            int trailCount = (stage.moduleFlags & BIT(ParticleSystem::TrailsModuleBit)) ? stage.trailsModule.count : 0;
+            int trailCount = (stage.moduleFlags & BIT(ParticleSystem::ModuleBit::Trails)) ? stage.trailsModule.count : 0;
 
             for (int particleIndex = 0; particleIndex < stage.standardModule.count; particleIndex++) {
                 int pivotCount = trailCount + 1;
@@ -226,13 +226,13 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
 
                 uint32_t color = particle->trails[0].color.ToUInt32();
 
-                if (stage.standardModule.orientation == ParticleSystem::StandardModule::Aimed ||
-                    stage.standardModule.orientation == ParticleSystem::StandardModule::AimedZ) {
+                if (stage.standardModule.orientation == ParticleSystem::StandardModule::Orientation::Aimed ||
+                    stage.standardModule.orientation == ParticleSystem::StandardModule::Orientation::AimedZ) {
                     // Compute world position of all particle pivots including trails
                     for (int pivotIndex = 0; pivotIndex < pivotCount; pivotIndex++) {
                         const Particle::Trail *trail = &particle->trails[pivotIndex];
 
-                        worldPos[pivotIndex] = renderObject->worldMatrix * trail->position;
+                        worldPos[pivotIndex] = renderObject->GetWorldMatrix() * trail->position;
                     }
 
                     // Compute cameraDir/tangentDir of all particle pivots including trails
@@ -240,17 +240,17 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
                         const Particle::Trail *trail = &particle->trails[pivotIndex];
 
                         if (pivotIndex == 0) {
-                            cameraDir[pivotIndex] = renderView->state.origin - (worldPos[pivotIndex + 1] + worldPos[pivotIndex]) * 0.5f;
+                            cameraDir[pivotIndex] = renderCamera->GetState().origin - (worldPos[pivotIndex + 1] + worldPos[pivotIndex]) * 0.5f;
                             tangentDir[pivotIndex] = worldPos[pivotIndex + 1] - worldPos[pivotIndex];
                         } else if (pivotIndex == trailCount) {
-                            cameraDir[pivotIndex] = renderView->state.origin - (worldPos[pivotIndex] + worldPos[pivotIndex - 1]) * 0.5f;
+                            cameraDir[pivotIndex] = renderCamera->GetState().origin - (worldPos[pivotIndex] + worldPos[pivotIndex - 1]) * 0.5f;
                             tangentDir[pivotIndex] = worldPos[pivotIndex] - worldPos[pivotIndex - 1];
                         } else {
-                            cameraDir[pivotIndex] = renderView->state.origin - worldPos[pivotIndex];
+                            cameraDir[pivotIndex] = renderCamera->GetState().origin - worldPos[pivotIndex];
                             tangentDir[pivotIndex] = worldPos[pivotIndex + 1] - worldPos[pivotIndex - 1];
                         }
 
-                        if (stage.standardModule.orientation == ParticleSystem::StandardModule::AimedZ) {
+                        if (stage.standardModule.orientation == ParticleSystem::StandardModule::Orientation::AimedZ) {
                             cameraDir[pivotIndex].x = 0;
                             cameraDir[pivotIndex].y = 0;
                         }
@@ -267,7 +267,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
 
                         rtv.SetFromCross(cameraDir[quadIndex], tangentDir[quadIndex]);
                         rtv.Normalize();
-                        rtv = renderObject->state.axis.TransposedMulVec(rtv);
+                        rtv = renderObject->GetWorldMatrix().ToMat3().TransposedMulVec(rtv);
                         rtv *= particle->trails[0].size * 0.5f;
 
                         vertexPointer->xyz = trail[0].position - rtv;
@@ -284,7 +284,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
 
                         rtv.SetFromCross(cameraDir[quadIndex + 1], tangentDir[quadIndex + 1]);
                         rtv.Normalize();
-                        rtv = renderObject->state.axis.TransposedMulVec(rtv);
+                        rtv = renderObject->GetWorldMatrix().ToMat3().TransposedMulVec(rtv);
                         rtv *= particle->trails[0].size * 0.5f;
 
                         vertexPointer->xyz = trail[1].position - rtv;
@@ -357,7 +357,7 @@ void ParticleMesh::CacheIndexes() {
     }
 
     assert(totalIndexes % 6 == 0);
-    static const TriIndex quadTrisIndexes[6] = { 0, 2, 1, 1, 2, 3 };
+    static constexpr TriIndex quadTrisIndexes[6] = { 0, 2, 1, 1, 2, 3 };
 
     // Cache all indices in the dynamic index buffer
     BufferCache indexCache;

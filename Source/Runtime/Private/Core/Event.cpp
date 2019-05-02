@@ -91,9 +91,6 @@ EventDef::EventDef(const char *name, bool guiEvent, const char *formatSpec, char
         case VariantArg::StringType:
             this->argSize += MaxEventStringLen * sizeof(char);
             break;
-        case VariantArg::WStringType:
-            this->argSize += MaxEventStringLen * sizeof(wchar_t);
-            break;
         default:
             eventErrorOccured = true;
             ::sprintf(eventErrorMsg, "EventDef::EventDef: Invalid arg format '%s' string for '%s' event.", formatSpec, name);
@@ -173,29 +170,29 @@ void EventSystem::Clear() {
 }
 
 void EventSystem::Init() {
-    BE_LOG(L"Initializing event system\n");
+    BE_LOG("Initializing event system\n");
 
     if (eventErrorOccured) {
-        BE_ERRLOG(L"%hs", eventErrorMsg);
+        BE_ERRLOG("%s", eventErrorMsg);
     }
 
     Clear();
 
     if (initialized) {
-        BE_LOG(L"...already initialized\n");
+        BE_LOG("...already initialized\n");
         return;
     }
 
-    BE_LOG(L"...%i event definitions\n", EventDef::NumEvents());
+    BE_LOG("...%i event definitions\n", EventDef::NumEvents());
 
     initialized = true;
 }
 
 void EventSystem::Shutdown() {
-    BE_LOG(L"Shutdown event system\n");
+    BE_LOG("Shutdown event system\n");
 
     if (!initialized) {
-        BE_LOG(L"...not started\n");
+        BE_LOG("...not started\n");
         return;
     }
 
@@ -220,7 +217,7 @@ void EventSystem::FreeEvent(Event *event) {
 
 Event *EventSystem::AllocEvent(const EventDef *evdef, int numArgs, va_list args) {
     if (freeEvents.IsListEmpty()) {
-        BE_ERRLOG(L"Event::Alloc: No more free events\n");
+        BE_ERRLOG("Event::Alloc: No more free events\n");
     }
 
     Event *newEvent = freeEvents.Next();
@@ -228,7 +225,7 @@ Event *EventSystem::AllocEvent(const EventDef *evdef, int numArgs, va_list args)
     newEvent->eventDef = evdef;
 
     if (numArgs != evdef->GetNumArgs()) {
-        BE_ERRLOG(L"Event::AllocEvent: Wrong number of args for '%hs' event.\n", evdef->GetName());
+        BE_ERRLOG("Event::AllocEvent: Wrong number of args for '%s' event.\n", evdef->GetName());
     }
 
     size_t size = evdef->GetArgSize();
@@ -245,7 +242,7 @@ Event *EventSystem::AllocEvent(const EventDef *evdef, int numArgs, va_list args)
         const VariantArg *arg = va_arg(args, VariantArg *);
 
         if (arg->type != format[argIndex]) {
-            BE_ERRLOG(L"EventSystem::AllocEvent: Wrong type passed in for arg #%d on '%hs' event.\n", argIndex, evdef->GetName());
+            BE_ERRLOG("EventSystem::AllocEvent: Wrong type passed in for arg #%d on '%s' event.\n", argIndex, evdef->GetName());
         }
 
         byte *dataPtr = &newEvent->data[evdef->GetArgOffset(argIndex)];
@@ -295,13 +292,8 @@ Event *EventSystem::AllocEvent(const EventDef *evdef, int numArgs, va_list args)
                 Str::Copynz(reinterpret_cast<char *>(dataPtr), reinterpret_cast<const char *>(arg->pointer), MaxEventStringLen);
             }
             break;
-        case VariantArg::WStringType:
-            if (arg->pointer) {
-                WStr::Copynz(reinterpret_cast<wchar_t *>(dataPtr), reinterpret_cast<const wchar_t *>(arg->pointer), MaxEventStringLen);
-            }
-            break;
         default:
-            BE_ERRLOG(L"EventSystem::AllocEvent: Invalid arg format '%hs' string for '%hs' event.\n", format, evdef->GetName());
+            BE_ERRLOG("EventSystem::AllocEvent: Invalid arg format '%s' string for '%s' event.\n", format, evdef->GetName());
             break;
         }
     }
@@ -311,7 +303,7 @@ Event *EventSystem::AllocEvent(const EventDef *evdef, int numArgs, va_list args)
 
 void EventSystem::CopyArgPtrs(const EventDef *evdef, int numArgs, va_list args, intptr_t argPtrs[EventDef::MaxArgs]) {
     if (numArgs != evdef->GetNumArgs()) {
-        BE_ERRLOG(L"EventSystem::CopyArgPtrs: Wrong number of args for '%hs' event.\n", evdef->GetName());
+        BE_ERRLOG("EventSystem::CopyArgPtrs: Wrong number of args for '%s' event.\n", evdef->GetName());
     }
 
     const char *format = evdef->GetArgFormat();
@@ -319,7 +311,7 @@ void EventSystem::CopyArgPtrs(const EventDef *evdef, int numArgs, va_list args, 
     for (int argIndex = 0; argIndex < numArgs; argIndex++) {
         VariantArg *arg = va_arg(args, VariantArg *);
         if (format[argIndex] != arg->type) {
-            BE_ERRLOG(L"EventSystem::CopyArgPtrs: Wrong type passed in for arg #%d on '%hs' event.\n", argIndex, evdef->GetName());
+            BE_ERRLOG("EventSystem::CopyArgPtrs: Wrong type passed in for arg #%d on '%s' event.\n", argIndex, evdef->GetName());
         }
 
         argPtrs[argIndex] = arg->pointer;
@@ -412,11 +404,8 @@ void EventSystem::ServiceEvent(Event *event) {
         case VariantArg::StringType:
             *reinterpret_cast<const char **>(&argPtrs[argIndex]) = reinterpret_cast<const char *>(&data[offset]);
             break;
-        case VariantArg::WStringType:
-            *reinterpret_cast<const wchar_t **>(&argPtrs[argIndex]) = reinterpret_cast<const wchar_t *>(&data[offset]);
-            break;
         default:
-            BE_ERRLOG(L"EventSystem::ServiceEvent : Invalid arg format '%hs' string for '%hs' event.\n", formatSpec, evdef->GetName());
+            BE_ERRLOG("EventSystem::ServiceEvent : Invalid arg format '%s' string for '%s' event.\n", formatSpec, evdef->GetName());
         }
     }
 
@@ -448,7 +437,7 @@ void EventSystem::ServiceEvents() {
         // of events being processed is evidence of an infinite loop of events.
         processedCount++;
         if (processedCount > MaxEventsPerFrame) {
-            BE_ERRLOG(L"Event overflow.  Possible infinite loop in script.\n");
+            BE_ERRLOG("Event overflow.  Possible infinite loop in script.\n");
         }
     }
 }
@@ -470,7 +459,7 @@ void EventSystem::ServiceGuiEvents() {
         // of events being processed is evidence of an infinite loop of events.
         processedCount++;
         if (processedCount > MaxEventsPerFrame) {
-            BE_ERRLOG(L"Event overflow.  Possible infinite loop in script.\n");
+            BE_ERRLOG("Event overflow.  Possible infinite loop in script.\n");
         }
     }
 }

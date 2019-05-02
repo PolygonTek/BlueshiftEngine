@@ -32,7 +32,7 @@ END_EVENTS
 
 void ComSkinnedMeshRenderer::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("root", "Root", Guid, GetRootGuid, SetRootGuid, Guid::zero,
-        "Root Entity", PropertyInfo::EditorFlag).SetMetaObject(&Entity::metaObject);
+        "Root Entity", PropertyInfo::Flag::Editor).SetMetaObject(&Entity::metaObject);
 }
 
 ComSkinnedMeshRenderer::ComSkinnedMeshRenderer() {
@@ -94,7 +94,7 @@ void ComSkinnedMeshRenderer::UpdateSkeleton() {
         meshManager.ReleaseMesh(renderObjectDef.mesh);
     }
 
-    renderObjectDef.mesh = referenceMesh->InstantiateMesh(isCompatibleSkeleton ? Mesh::SkinnedMesh : Mesh::StaticMesh);
+    renderObjectDef.mesh = referenceMesh->InstantiateMesh(isCompatibleSkeleton ? Mesh::Type::Skinned : Mesh::Type::Static);
     renderObjectDef.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
     renderObjectDef.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
     renderObjectDef.joints = joints;
@@ -114,7 +114,7 @@ void ComSkinnedMeshRenderer::UpdateVisuals() {
     }
 
     // FIXME
-    renderObjectDef.localAABB = referenceMesh->GetAABB();
+    renderObjectDef.aabb = referenceMesh->GetAABB();
 
     ComRenderable::UpdateVisuals();
 }
@@ -132,10 +132,10 @@ void ComSkinnedMeshRenderer::SetRootGuid(const Guid &guid) {
 
         if (rootEntity->HasComponent(&ComAnimation::metaObject)) {
             ComAnimation *animationComponent = rootEntity->GetComponent<ComAnimation>();
-            animationComponent->Connect(&SIG_SkeletonUpdated, this, (SignalCallback)&ComSkinnedMeshRenderer::UpdateSkeleton, SignalObject::Unique);
+            animationComponent->Connect(&SIG_SkeletonUpdated, this, (SignalCallback)&ComSkinnedMeshRenderer::UpdateSkeleton, SignalObject::ConnectionType::Unique);
         } else if (rootEntity->HasComponent(&ComAnimator::metaObject)) {
             ComAnimator *animatorComponent = rootEntity->GetComponent<ComAnimator>();
-            animatorComponent->Connect(&SIG_SkeletonUpdated, this, (SignalCallback)&ComSkinnedMeshRenderer::UpdateSkeleton, SignalObject::Unique);
+            animatorComponent->Connect(&SIG_SkeletonUpdated, this, (SignalCallback)&ComSkinnedMeshRenderer::UpdateSkeleton, SignalObject::ConnectionType::Unique);
         }
     }
 }

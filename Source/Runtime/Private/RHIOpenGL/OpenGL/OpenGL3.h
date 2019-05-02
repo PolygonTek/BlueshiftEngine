@@ -28,7 +28,7 @@ BE_NAMESPACE_BEGIN
 
 class OpenGL3 : public OpenGLBase {
 public:
-    static const int        GLSL_VERSION = 150;
+    static constexpr int    GLSL_VERSION = 150;
     static const char *     GLSL_VERSION_STRING;
 
     static void             Init();
@@ -38,6 +38,7 @@ public:
     static bool             SupportsDepthClamp() { return true; }
     static bool             SupportsDepthBufferFloat() { return true; }
     static bool             SupportsPixelBufferObject() { return true; }
+    static bool             SupportsDiscardFrameBuffer() { return true; }
     static bool             SupportsFrameBufferSRGB() { return true; }
     static bool             SupportsTextureRectangle() { return true; }
     static bool             SupportsTextureArray() { return true; }
@@ -50,30 +51,37 @@ public:
     static bool             SupportsDrawIndirect() { return supportsDrawIndirect; }
     static bool             SupportsMultiDrawIndirect() { return supportsMultiDrawIndirect; }
     static bool             SupportsProgramBinary() { return gglProgramBinary != nullptr; }
-    
+    static bool             SupportsTimestampQueries() { return supportsTimestampQueries; }
+
     static void APIENTRY    DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
+
+    static void             QueryTimestampCounter(GLuint queryId);
 
     static void             PolygonMode(GLenum face, GLenum mode) { gglPolygonMode(face, mode); }
     static void             ClearDepth(GLdouble depth) { gglClearDepth(depth); }
     static void             DepthRange(GLdouble znear, GLdouble zfar) { gglDepthRange(znear, zfar); }
     static void             DrawBuffer(GLenum buffer) { gglDrawBuffer(buffer); }
+    static void             ReadBuffer(GLenum buffer) { gglReadBuffer(buffer); }
+    static void             DrawBuffers(GLsizei count, const GLenum *buffers) { gglDrawBuffers(count, buffers); }
     static void             TexBuffer(GLenum internalFormat, GLuint buffer) { gglTexBuffer(GL_TEXTURE_BUFFER, internalFormat, buffer); }
     static void             VertexAttribDivisor(int index, int divisor) { gglVertexAttribDivisorARB(index, divisor); }
     static void             DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex) { gglDrawElementsBaseVertex(mode, count, type, indices, basevertex); }
     static void             DrawElementsInstancedBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount, GLint basevertex) { gglDrawElementsInstancedBaseVertex(mode, count, type, indices, instancecount, basevertex); }
     static void             DrawElementsIndirect(GLenum mode, GLenum type, const void *indirect);
     static void             MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride);
+    static void             CopyImageSubData(GLuint src, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, GLuint dst, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei srcWidth, GLsizei srcHeight, GLsizei srcDepth);
 
-    static void             SetTextureSwizzling(GLenum target, Image::Format format);
-    static bool             ImageFormatToGLFormat(Image::Format imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
-    static bool             SupportedImageFormat(Image::Format imageFormat) { return ImageFormatToGLFormat(imageFormat, false, nullptr, nullptr, nullptr); }
-    static Image::Format    ToCompressedImageFormat(Image::Format inFormat, bool useNormalMap);
-    static Image::Format    ToUncompressedImageFormat(Image::Format inFormat);
+    static void             SetTextureSwizzling(GLenum target, Image::Format::Enum format);
+    static bool             ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
+    static bool             SupportedImageFormat(Image::Format::Enum imageFormat) { return ImageFormatToGLFormat(imageFormat, false, nullptr, nullptr, nullptr); }
+    static Image::Format::Enum ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
+    static Image::Format::Enum ToUncompressedImageFormat(Image::Format::Enum inFormat);
 
 private:
     static bool             supportsInstancedArrays;
     static bool             supportsDrawIndirect;
     static bool             supportsMultiDrawIndirect;
+    static bool             supportsTimestampQueries;
 };
 
 BE_NAMESPACE_END

@@ -32,7 +32,7 @@ public:
     /// The default constructor does not initialize any members of this class.
     Point() = default;
     /// Constructs a Point with the value (x, y).
-    Point(int x, int y);
+    constexpr Point(int x, int y);
     /// Assignment operator
     Point &operator=(const Point &rhs);
 
@@ -45,7 +45,7 @@ public:
 #endif
 
     /// Constructs a Point from a C array, to the value (data[0], data[1]).
-    explicit Point(int data[2]);
+    explicit constexpr Point(int data[2]);
     /// Copy constructor
     explicit Point(const Vec2 &v);
 
@@ -103,14 +103,12 @@ public:
     int                 y;
 };
 
-BE_INLINE Point::Point(int x, int y) {
-    this->x = x;
-    this->y = y;
+BE_INLINE constexpr Point::Point(int inX, int inY) :
+    x(inX), y(inY) {
 }
 
-BE_INLINE Point::Point(int data[2]) {
-    x = data[0];
-    y = data[1];
+BE_INLINE constexpr Point::Point(int data[2]) :
+    x(data[0]), y(data[1]) {
 }
 
 BE_INLINE Point::Point(const Vec2 &v) {

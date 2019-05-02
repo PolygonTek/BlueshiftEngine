@@ -30,46 +30,43 @@ class Rotation;
 class Plane;
 class AABB;
 class Frustum;
+class Ray;
 
 /// A 3D oriented bounding box.
 class BE_API OBB {
 public:
     /// The default constructor does not initialize any members of this class.
     OBB() {}
-    OBB(const Vec3 &center, const Vec3 &extents, const Mat3 &axis);
+    constexpr OBB(const Vec3 &center, const Vec3 &extents, const Mat3 &axis);
     OBB(const AABB &aabb, const Vec3 &origin, const Mat3 &axis);
+    OBB(const AABB &aabb, const Mat3x4 &transform);
     explicit OBB(const Vec3 &point);
     explicit OBB(const AABB &aabb);
 
-    void                Clear();
-    void                SetZero();
-    void                SetCenter(const Vec3 &c);
-    void                SetExtents(const Vec3 &e);
-    void                SetAxis(const Mat3 &a);
-
-                        // returns true if box are inside out
+                        /// Returns true if this OBB is inside out.
     bool                IsCleared() const;
-                        // returns center of the box
-    const Vec3 &        Center() const;
-                        // returns extents of the box
-    const Vec3 &        Extents() const;
-                        // returns the axis of the box
-    const Mat3 &        Axis() const;
-                        // returns the volume of the box
-    float               Volume() const;
+                        /// Resets this OBB. If you invoke this method, IsCleared() shall returns true.
+    void                Clear();
 
-                        // 이동된 OBB 리턴
-    OBB                 operator+(const Vec3 &t) const;
-                        // OBB 이동
-    OBB &               operator+=(const Vec3 &t);
-                        // 회전된 OBB 리턴
-    OBB                 operator*(const Mat3 &r) const;
-                        // OBB 회전
-    OBB &               operator*=(const Mat3 &r);
-                        // 더해진 OBB 리턴
-    OBB                 operator+(const OBB &a) const;
-                        // OBB 더하기
-    OBB &               operator+=(const OBB &a);
+                        /// Sets center of this OBB.
+    void                SetCenter(const Vec3 &center) { this->center = center; }
+                        /// Sets extents of this OBB.
+    void                SetExtents(const Vec3 &extents) { this->extents = extents; }
+                        /// Sets axis of this OBB.
+    void                SetAxis(const Mat3 &axis) { this->axis = axis; }
+
+                        /// Returns center of the OBB.
+    const Vec3 &        Center() const { return center; }
+                        /// Returns extents of the OBB.
+    const Vec3 &        Extents() const { return extents; }
+                        /// Returns the axis of the OBB.
+    const Mat3 &        Axis() const { return axis; }
+
+                        /// Sets to zero sized OBB.
+    void                SetZero();
+
+                        /// Returns the volume of the OBB.
+    float               Volume() const;
 
                         /// Exact compare, no epsilon
     bool                Equals(const OBB &a) const;
@@ -80,74 +77,103 @@ public:
                         /// Exact compare, no epsilon
     bool                operator!=(const OBB &a) const { return !Equals(a); }
 
-                        // point 더하기, OBB 가 확장됐으면 true 를 리턴
+                        /// Returns translated OBB.
+    OBB                 operator+(const Vec3 &t) const;
+                        /// Translates OBB.
+    OBB &               operator+=(const Vec3 &t);
+
+                        /// Returns rotated OBB.
+    OBB                 operator*(const Mat3 &r) const;
+                        /// Rotates OBB.
+    OBB &               operator*=(const Mat3 &r);
+
+                        /// Returns added OBB.
+    OBB                 operator+(const OBB &a) const;
+                        /// Adds OBB.
+    OBB &               operator+=(const OBB &a);
+
+                        /// Adds a point. Returns true if this OBB is expanded.
     bool                AddPoint(const Vec3 &v);
-                        // OBB 더하기, OBB 가 확장됐으면 true 를 리턴
+                        /// Adds a OBB. Returns true if this OBB is expanded.
     bool                AddOBB(const OBB &a);
-                        // d 만큼 확장된 OBB 리턴
+
+                        /// Returns expanded OBB.
     OBB                 Expand(const float d) const;
-                        // d 만큼 OBB 확장
+                        /// Expands this OBB.
     OBB &               ExpandSelf(const float d);
-                        // 이동된 OBB 리턴
+                        /// Returns translated OBB.
     OBB                 Translate(const Vec3 &translation) const;
-                        // OBB 이동
+                        /// Translates this OBB.
     OBB &               TranslateSelf(const Vec3 &translation);
-                        // 회전된 OBB 리턴
+                        /// Returns rotated OBB.
     OBB                 Rotate(const Mat3 &rotation) const;
-                        // OBB 회전
+                        /// Rotates this OBB.
     OBB &               RotateSelf(const Mat3 &rotation);
 
-                        // OBB 가 평면의 어느쪽에 존재하는지 판단
-                        // Plane::Side::Front or Plane::Side::Back or Plane::Side::Cross
+                        /// Returns this OBB is in which side of the plane.
     int                 PlaneSide(const Plane &plane, const float epsilon = ON_EPSILON) const;
-                        // OBB 와 평면 사이의 거리
+                        /// Returns distance between OBB and plane.
     float               PlaneDistance(const Plane &plane) const;
 
-                        // 8 개의 꼭지점중에서 from 과 가장 가까운 점 구하기
-    void                GetNearestVertex(const Vec3 &from, Vec3 &point) const;	
-                        // 8 개의 꼭지점중에서 from 과 가장 먼 점 구하기
-    void                GetFarthestVertex(const Vec3 &from, Vec3 &point) const;	
+                        /// Calculates nearest point among 8 vertices of OBB with the given point.
+    void                GetNearestVertex(const Vec3 &from, Vec3 &point) const;
+                        /// Calculates farthest point among 8 vertices of OBBB with the given point.
+    void                GetFarthestVertex(const Vec3 &from, Vec3 &point) const;
 
-                        // OBB 점들의 집합 중에서 from 과 가장 가까운 점 구하기
+                        /// Calculates closest point with the given point.
     void                GetClosestPoint(const Vec3 &from, Vec3 &point) const;
 
-                        // point 와 OBB 사이 거리의 제곱
-    float               DistanceSqr(const Vec3 &p) const;
-                        // point 와 OBB 사이 거리
-    float               Distance(const Vec3 &p) const;
-
-                        // point 포함 여부 리턴
-    bool                IsContainPoint(const Vec3 &p) const;
-                        // OBB 교차 여부 리턴
-    bool                IsIntersectOBB(const OBB &b, float epsilon = 1e-3f) const;
-                        // 구 교차 여부 리턴
-    bool                IsIntersectSphere(const Sphere &sphere) const;
-
-                        // Line segment vs AABB intersection
-    bool                LineIntersection(const Vec3 &start, const Vec3 &end) const;
-                        // Ray vs OBB intersection 
-                        // intersection points is start + dir * scale
-    float               RayIntersection(const Vec3 &start, const Vec3 &dir) const;
-                        
-                        // OBB 를 dir 축으로 투영했을 때 min, max 값
-    void                AxisProjection(const Vec3 &dir, float &min, float &max) const;
-                        // OBB 를 각각의 ax[3] 축으로 투영했을 때 mins, maxs 값
-    void                AxisProjection(const Mat3 &ax, AABB &bounds) const;
-
-                        // calculates the silhouette of the box
+                        /// Calculates the silhouette of the OBB
     int                 GetProjectionSilhouetteVerts(const Vec3 &projectionOrigin, Vec3 silVerts[6]) const;
     int                 GetParallelProjectionSilhouetteVerts(const Vec3 &projectionDir, Vec3 silVerts[6]) const;
 
-                        // PCA 를 이용해서 point 들의 OBB 를 계산한다
-    void                SetFromPoints(const Vec3 *points, const int numPoints);
+                        /// Returns squared distance between this OBB and the given point.
+    float               DistanceSqr(const Vec3 &p) const;
+                        /// Returns distance between this OBB and the given point.
+    float               Distance(const Vec3 &p) const;
 
-                        // bounding volume 을 axis 별로 projection 했을 때 bounds 값 [-1 ~ +1]
-    bool                ProjectionBounds(const Sphere &sphere, AABB &projectionBounds) const;
-    bool                ProjectionBounds(const OBB &box, AABB &projectionBounds) const;
-    bool                ProjectionBounds(const Frustum &frustum, AABB &projectionBounds) const;
+                        /// Tests if this OBB contain the given point.
+    bool                IsContainPoint(const Vec3 &p) const;
+                        /// Tests if this OBB intersect with the given OBB.
+    bool                IsIntersectOBB(const OBB &b, float epsilon = 1e-3f) const;
+                        /// Tests if this OBB intersect with the given sphere.
+    bool                IsIntersectSphere(const Sphere &sphere) const;
+                        /// Tests if this OBB intersect with the given line segment.
+    bool                IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
 
+                        /// Intersects a ray with this OBB.
+                        /// Returns false if there is no intersection.
+    bool                IntersectRay(const Ray &ray, float *hitDistMin = nullptr, float *hitDistMax = nullptr) const;
+    float               IntersectRay(const Ray &ray) const;
+
+                        /// Sets OBB with the given points using PCA (Principal Component Analysis).
+    void                SetFromPoints(const Vec3 *points, int numPoints);
+
+                        /// Calculates minimum / maximum value by projecting OBB onto the given axis.
+    void                ProjectOnAxis(const Vec3 &axis, float &min, float &max) const;
+
+                        /// Calculates minimum / maximum values by projecting OBB onto the given axis.
+    void                ProjectOnAxis(const Mat3 &axis, AABB &minmaxs) const;
+
+                        /// Calculates local bounds [-1, 1] by projecting sphere in this OBB volume.
+                        /// Returns false if the sphere is completely outside this OBB.
+    bool                ProjectionBounds(const Sphere &sphere, AABB &localBounds) const;
+
+                        /// Calculates local bounds [-1, 1] by projecting OBB in this OBB volume.
+                        /// Returns false if the OBB is completely outside this OBB.
+    bool                ProjectionBounds(const OBB &obb, AABB &localBounds) const;
+
+                        /// Calculates local bounds [-1, 1] by projecting frustum in this OBB volume.
+                        /// Returns false if the frustum is completely outside this OBB.
+    bool                ProjectionBounds(const Frustum &frustum, AABB &localBounds) const;
+
+                        /// Calcuates 8 vertices of OBB.
     void                ToPoints(Vec3 points[8]) const;
+
+                        /// Converts to AABB.
     AABB                ToAABB() const;
+
+                        /// Converts to surrounding sphere.
     Sphere              ToSphere() const;
 
     static const OBB    zero;
@@ -158,10 +184,8 @@ private:
     Mat3                axis;
 };
 
-BE_INLINE OBB::OBB(const Vec3 &center, const Vec3 &extents, const Mat3 &axis) {
-    this->center = center;
-    this->extents = extents;
-    this->axis = axis;
+BE_INLINE constexpr OBB::OBB(const Vec3 &inCenter, const Vec3 &inExtents, const Mat3 &inAxis) :
+    center(inCenter), extents(inExtents), axis(inAxis) {
 }
 
 BE_INLINE OBB::OBB(const Vec3 &point) {
@@ -181,6 +205,13 @@ BE_INLINE OBB::OBB(const AABB &aabb, const Vec3 &origin, const Mat3 &axis) {
     this->extents = aabb[1] - this->center;
     this->center = origin + axis * this->center;
     this->axis = axis;
+}
+
+BE_INLINE OBB::OBB(const AABB &aabb, const Mat3x4 &transform) {
+    this->center = (aabb[0] + aabb[1]) * 0.5f;
+    this->extents = aabb[1] - this->center;
+    this->center = transform * this->center;
+    this->axis = transform.ToMat3().OrthoNormalize();
 }
 
 BE_INLINE OBB OBB::operator+(const Vec3 &t) const {
@@ -234,30 +265,6 @@ BE_INLINE void OBB::SetZero() {
     axis.SetIdentity();
 }
 
-BE_INLINE void OBB::SetCenter(const Vec3 &c) {
-    center = c;
-}
-
-BE_INLINE void OBB::SetExtents(const Vec3 &e) {
-    extents = e;
-}
-
-BE_INLINE void OBB::SetAxis(const Mat3 &a) {
-    axis = a;
-}
-
-BE_INLINE const Vec3 &OBB::Center() const {
-    return center;
-}
-
-BE_INLINE const Vec3 &OBB::Extents() const {
-    return extents;
-}
-
-BE_INLINE const Mat3 &OBB::Axis() const {
-    return axis;
-}
-
 BE_INLINE float OBB::Volume() const {
     return (extents * 2.0f).LengthSqr();
 }
@@ -306,23 +313,23 @@ BE_INLINE bool OBB::IsContainPoint(const Vec3 &p) const {
     return true;
 }
 
-BE_INLINE void OBB::AxisProjection(const Vec3 &dir, float &min, float &max) const {
-    float d1 = dir.Dot(center);
-    float d2 = Math::Fabs(extents[0] * axis[0].Dot(dir)) + 
-               Math::Fabs(extents[1] * axis[1].Dot(dir)) + 
-               Math::Fabs(extents[2] * axis[2].Dot(dir));
+BE_INLINE void OBB::ProjectOnAxis(const Vec3 &axis, float &min, float &max) const {
+    float d1 = axis.Dot(center);
+    float d2 = Math::Fabs(extents[0] * this->axis[0].Dot(axis)) +
+               Math::Fabs(extents[1] * this->axis[1].Dot(axis)) +
+               Math::Fabs(extents[2] * this->axis[2].Dot(axis));
     min = d1 - d2;
     max = d1 + d2;
 }
 
-BE_INLINE void OBB::AxisProjection(const Mat3 &ax, AABB &aabb) const {
+BE_INLINE void OBB::ProjectOnAxis(const Mat3 &axis, AABB &minmaxs) const {
     for (int i = 0; i < 3; i++) {
-        float d1 = ax[i].Dot(center);
-        float d2 = Math::Fabs(extents[0] * axis[0].Dot(ax[i])) +
-                   Math::Fabs(extents[1] * axis[1].Dot(ax[i])) +
-                   Math::Fabs(extents[2] * axis[2].Dot(ax[i]));
-        aabb[0][i] = d1 - d2;
-        aabb[1][i] = d1 + d2;
+        float d1 = axis[i].Dot(center);
+        float d2 = Math::Fabs(extents[0] * this->axis[0].Dot(axis[i])) +
+                   Math::Fabs(extents[1] * this->axis[1].Dot(axis[i])) +
+                   Math::Fabs(extents[2] * this->axis[2].Dot(axis[i]));
+        minmaxs[0][i] = d1 - d2;
+        minmaxs[1][i] = d1 + d2;
     }
 }
 

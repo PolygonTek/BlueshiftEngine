@@ -51,17 +51,17 @@ const Str Asset::NormalizeAssetPath(const Str &assetPath) {
     return normalizedAssetPath;
 }
 
-const Str Asset::GetMetaFilenameFromAssetPath(const char *assetPath) {
-    Str metaFilename = Asset::NormalizeAssetPath(assetPath);
-    metaFilename += ".meta";
+const Str Asset::GetMetaFileNameFromAssetPath(const char *assetPath) {
+    Str metaFileName = Asset::NormalizeAssetPath(assetPath);
+    metaFileName += ".meta";
 
-    return metaFilename;
+    return metaFileName;
 }
 
 const Str Asset::GetCacheDirectory(const char *baseLibraryDir) const {
     Str cacheDir = baseLibraryDir;
     cacheDir.AppendPath("metadata");
-    cacheDir.AppendPath(va("%s", GetGuid().ToString(Guid::DigitsWithHyphens)));
+    cacheDir.AppendPath(va("%s", GetGuid().ToString(Guid::Format::DigitsWithHyphens)));
 
     Str::ConvertPathSeperator(cacheDir, PATHSEPERATOR_CHAR);
     
@@ -108,7 +108,7 @@ void Asset::GetChildren(Array<Asset *> &children) const {
 }
 
 void Asset::WriteMetaDataFile() const {
-    Str metaFilename = Asset::GetMetaFilenameFromAssetPath(GetAssetFilename());
+    Str metaFileName = Asset::GetMetaFileNameFromAssetPath(GetAssetFilename());
 
     Json::Value metaDataValue;
     Serialize(metaDataValue);
@@ -123,7 +123,7 @@ void Asset::WriteMetaDataFile() const {
     Json::StyledWriter jsonWriter;
     Str jsonText = jsonWriter.write(metaDataValue).c_str();
 
-    fileSystem.WriteFile(metaFilename, jsonText.c_str(), jsonText.Length());
+    fileSystem.WriteFile(metaFileName, jsonText.c_str(), jsonText.Length());
 }
 
 void Asset::SetModified(bool modified) {

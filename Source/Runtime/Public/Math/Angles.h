@@ -40,7 +40,7 @@ public:
     /// The default constructor does not initialize any members of this class.
     Angles() = default;
     /// Constructs a Angles with the value (roll, pitch, yaw).
-    Angles(float roll, float pitch, float yaw);
+    constexpr Angles(float roll, float pitch, float yaw);
     /// Copy constructor
     explicit Angles(const Vec3 &v);
     /// Assignment operator
@@ -62,38 +62,57 @@ public:
     float               operator[](int index) const;
     float &             operator[](int index);
 
+                        /// Adds a angles to this angles, in-place.
     Angles &            operator+=(const Angles &rhs);
+
+                        /// Subtracts a angles to this angles, in-place.
     Angles &            operator-=(const Angles &rhs);
+
+                        /// Multiplies this angles by a scalar, in-place.
     Angles &            operator*=(const float rhs);
+
+                        /// Divides this angles by a scalar, in-place.
     Angles &            operator/=(const float rhs);
 
-                        /// Negate angles, in general not the inverse rotation
+                        /// Negate angles, in general not the inverse rotation.
     Angles              operator-() const { return Angles(-roll , -pitch, -yaw); }
 
+                        /// Adds a angles from this angles.
     Angles              operator+(const Angles &rhs) const { return Angles(roll + rhs.roll, pitch + rhs.pitch, yaw + rhs.yaw); }
+
+                        /// Subtracts a angles from this angles.
     Angles              operator-(const Angles &rhs) const { return Angles(roll - rhs.roll, pitch - rhs.pitch, yaw - rhs.yaw); }
+
+                        /// Multiplies this angles by a scalar.
     Angles              operator*(const float rhs) const { return Angles(roll * rhs, pitch * rhs, yaw * rhs); }
     
+                        /// Multiplies angles by a scalar.
     friend Angles       operator*(const float lhs, const Angles &rhs) { return Angles(lhs * rhs.roll, lhs * rhs.pitch, lhs * rhs.yaw); }
+
+                        /// Divides angles by a scalar.
     Angles              operator/(const float rhs) const;
     
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const Angles &a) const { return ((a.roll == roll) && (a.pitch == pitch) && (a.yaw == yaw)); }
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const Angles &a, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const Angles &rhs) const { return Equals(rhs); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const Angles &rhs) const { return !Equals(rhs); }
 
+                        /// Returns roll.
     float               GetRoll() const { return roll; }
+                        /// Returns pitch.
     float               GetPitch() const { return pitch; }
+                        /// Returns yaw.
     float               GetYaw() const { return yaw; }
 
     void                Set(float roll, float pitch, float yaw);
     void                SetRoll(float roll) { this->roll = roll; }
     void                SetPitch(float pitch) { this->pitch = pitch; }
     void                SetYaw(float yaw) { this->yaw = yaw; }
+
     Angles &            SetZero();
 
                         /// Normalize to the range [0 <= angle < 360]
@@ -109,6 +128,7 @@ public:
     static Angles       FromLerp(const Angles &a1, const Angles &a2, const float t);
 
     void                ToVectors(Vec3 *forward, Vec3 *right = nullptr, Vec3 *up = nullptr) const;
+
     Vec3                ToForward() const;
     Vec3                ToRight() const;
     Vec3                ToUp() const;
@@ -136,16 +156,12 @@ public:
     float               yaw;        ///< Angle of rotation around up axis in degrees
 };
 
-BE_INLINE Angles::Angles(float roll, float pitch, float yaw) {
-    this->roll = roll;
-    this->pitch = pitch;
-    this->yaw = yaw;
+BE_INLINE constexpr Angles::Angles(float inRoll, float inPitch, float inYaw) :
+    roll(inRoll), pitch(inPitch), yaw(inYaw) {
 }
 
-BE_INLINE Angles::Angles(const Vec3 &v) {
-    this->roll = v[0];
-    this->pitch = v[1];
-    this->yaw = v[2];
+BE_INLINE Angles::Angles(const Vec3 &v) :
+    roll(v[0]), pitch(v[1]), yaw(v[2]) {
 }
 
 BE_INLINE Angles &Angles::operator=(const Angles &a) {

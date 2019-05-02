@@ -233,16 +233,16 @@ static int          minorVersion = 0;
 
 static uint32_t     availVRAM = 0;
 
-static CGDisplayModeRef desktopDisplayMode = NULL;
+static CGDisplayModeRef desktopDisplayMode = nullptr;
 
 static NSOpenGLPixelFormat *mainContextPixelFormat;
 
-static CVar         gl_debug(L"gl_debug", L"1", CVar::Bool, L"");
-static CVar         gl_debugLevel(L"gl_debugLevel", L"3", CVar::Integer, L"");
-static CVar         gl_ignoreGLError(L"gl_ignoreGLError", L"0", CVar::Bool, L"");
-static CVar         gl_finish(L"gl_finish", L"0", CVar::Bool, L"");
-static CVar         gl_screen(L"gl_screen", L"-1", CVar::Integer, L"");
-static CVar         gl_useMacMTEngine(L"gl_useMacMTEngine", L"1", CVar::Bool, L"");
+static CVar         gl_debug("gl_debug", "0", CVar::Flag::Bool, "");
+static CVar         gl_debugLevel("gl_debugLevel", "3", CVar::Flag::Integer, "");
+static CVar         gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Flag::Bool, "");
+static CVar         gl_finish("gl_finish", "0", CVar::Flag::Bool, "");
+static CVar         gl_screen("gl_screen", "-1", CVar::Flag::Integer, "");
+static CVar         gl_useMacMTEngine("gl_useMacMTEngine", "1", CVar::Flag::Bool, "");
 
 #define MAX_DISPLAYS 32
 
@@ -262,7 +262,7 @@ static CGDirectDisplayID MacOS_DisplayToUse() {
     // the display with the greatest pixel depth.
     CGDisplayErr err = CGGetActiveDisplayList(MAX_DISPLAYS, displays, &displayCount);
     if (err != CGDisplayNoErr) {
-        BE_FATALERROR(L"Cannot get display list -- CGGetActiveDisplayList returned %d.", err);
+        BE_FATALERROR("Cannot get display list -- CGGetActiveDisplayList returned %d.", err);
     }
 
     // -1, the default, means to use the main screen
@@ -292,7 +292,7 @@ static uint32_t MacOS_QueryVideoMemory() {
 
     CGLError err = CGLQueryRendererInfo(CGDisplayIDToOpenGLDisplayMask(MacOS_DisplayToUse()), rendererInfos, &rendererInfoCount);
     if (err) {
-        BE_LOG(L"CGLQueryRendererInfo -> %d\n", err);
+        BE_LOG("CGLQueryRendererInfo -> %d\n", err);
         return vram;
     }
 
@@ -303,7 +303,7 @@ static uint32_t MacOS_QueryVideoMemory() {
         int rendererCount;
         err = CGLDescribeRenderer(rendererInfo, 0, kCGLRPRendererCount, &rendererCount);
         if (err) {
-            BE_LOG(L"CGLDescribeRenderer(kCGLRPRendererID) -> %d\n", err);
+            BE_LOG("CGLDescribeRenderer(kCGLRPRendererID) -> %d\n", err);
             continue;
         }
 
@@ -313,14 +313,14 @@ static uint32_t MacOS_QueryVideoMemory() {
             int rendererID = 0xffffffff;
             err = CGLDescribeRenderer(rendererInfo, rendererIndex, kCGLRPRendererID, &rendererID);
             if (err) {
-                BE_LOG(L"CGLDescribeRenderer(kCGLRPRendererID) -> %d\n", err);
+                BE_LOG("CGLDescribeRenderer(kCGLRPRendererID) -> %d\n", err);
                 continue;
             }
 
             int accelerated = 0;
             err = CGLDescribeRenderer(rendererInfo, rendererIndex, kCGLRPAccelerated, &accelerated);
             if (err) {
-                BE_LOG(L"CGLDescribeRenderer(kCGLRPAccelerated) -> %d\n", err);
+                BE_LOG("CGLDescribeRenderer(kCGLRPAccelerated) -> %d\n", err);
                 continue;
             }
 
@@ -331,7 +331,7 @@ static uint32_t MacOS_QueryVideoMemory() {
             vram = 0;
             err = CGLDescribeRenderer(rendererInfo, rendererIndex, kCGLRPVideoMemoryMegabytes, &vram);
             if (err) {
-                BE_LOG(L"CGLDescribeRenderer -> %d\n", err);
+                BE_LOG("CGLDescribeRenderer -> %d\n", err);
                 continue;
             }
 
@@ -357,10 +357,10 @@ static void MacOS_ResetFullscreen() {
         return;
     }
     
-    CGDisplaySetDisplayMode(kCGDirectMainDisplay, desktopDisplayMode, NULL);
+    CGDisplaySetDisplayMode(kCGDirectMainDisplay, desktopDisplayMode, nullptr);
     CGDisplayModeRelease(desktopDisplayMode);
     CGDisplayShowCursor(kCGDirectMainDisplay);
-    desktopDisplayMode = NULL;
+    desktopDisplayMode = nullptr;
 }
 
 static bool MacOS_SetFullscreen(int displayWidth, int displayHeight, bool stretched) {
@@ -374,7 +374,7 @@ static bool MacOS_SetFullscreen(int displayWidth, int displayHeight, bool stretc
     
     // An array of display modes that the display supports, or NULL if the display is invalid.
     // The caller is responsible for releasing the array.
-    CFArrayRef modeList = (CFArrayRef)CGDisplayCopyAllDisplayModes(kCGDirectMainDisplay, NULL);
+    CFArrayRef modeList = (CFArrayRef)CGDisplayCopyAllDisplayModes(kCGDirectMainDisplay, nullptr);
     if (!modeList) {
         NSLog(@"CGDisplayAvailableModes returned NULL -- 0x%0x is an invalid display", kCGDirectMainDisplay);
         return false;
@@ -435,7 +435,7 @@ static bool MacOS_SetFullscreen(int displayWidth, int displayHeight, bool stretc
     
     desktopDisplayMode = CGDisplayCopyDisplayMode(kCGDirectMainDisplay);
     CGDisplayHideCursor(kCGDirectMainDisplay);
-    CGDisplaySetDisplayMode(kCGDirectMainDisplay, fullscreenMode, NULL);
+    CGDisplaySetDisplayMode(kCGDirectMainDisplay, fullscreenMode, nullptr);
     CGDisplayCapture(kCGDirectMainDisplay);
     
     CFRelease(modeList);
@@ -530,13 +530,13 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
         settings->colorBits, settings->alphaBits, settings->depthBits, settings->stencilBits, settings->multiSamples);
     mainContextPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes: attribs];
     if (!mainContextPixelFormat) {
-        BE_FATALERROR(L"no pixel format found");
+        BE_FATALERROR("no pixel format found");
     }
 
     // Create NSOpenGLContext object
     mainContext->nsglContext = [[NSOpenGLContext alloc] initWithFormat:mainContextPixelFormat shareContext: nil];
     if (!mainContext->nsglContext) {
-        BE_FATALERROR(L"Couldn't create main NSOpenGLContext");
+        BE_FATALERROR("Couldn't create main NSOpenGLContext");
     }
 
     // Get CGLContextObj from NSOpenGLContext object
@@ -564,7 +564,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
 
     int decimalVersion = majorVersion * 10 + minorVersion;
     if (decimalVersion < 33) {
-        BE_FATALERROR(L"Minimum OpenGL extensions missing !!\nRequired OpenGL 3.3 or higher graphic card");
+        BE_FATALERROR("Minimum OpenGL extensions missing !!\nRequired OpenGL 3.3 or higher graphic card");
     }
 
     // gglXXX 함수 바인딩 및 확장 flag 초기화
@@ -572,7 +572,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     
     // Enable debug callback
     if (gl_debug.GetBool() && gglext._GL_ARB_debug_output) {
-        gglDebugMessageCallbackARB(OpenGL::DebugCallback, NULL);
+        gglDebugMessageCallbackARB(OpenGL::DebugCallback, nullptr);
         gglEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
     }
     
@@ -590,7 +590,7 @@ void OpenGLRHI::FreeMainContext() {
     [NSOpenGLContext clearCurrentContext];
 
     if (CGLClearDrawable(mainContext->cglContext) != kCGLNoError) {
-        BE_FATALERROR(L"CGLClearDrawable: failed");
+        BE_FATALERROR("CGLClearDrawable: failed");
     }
 
     // This method disassociates the receiver from any associated NSView object.If the receiver is in full - screen or offscreen mode, it exits that mode.
@@ -629,7 +629,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
 
         ctx->nsglContext = [[NSOpenGLContext alloc] initWithFormat:mainContextPixelFormat shareContext:mainContext->nsglContext];
         if (!ctx->nsglContext) {
-            BE_FATALERROR(L"Couldn't create NSOpenGLContext");
+            BE_FATALERROR("Couldn't create NSOpenGLContext");
         }
 
         // Get CGLContextObj from NSOpenGLContext object
@@ -678,8 +678,8 @@ ctx->cglContext = (CGLContextObj)[ctx->nsglContext CGLContextObj];
     CGLGetParameter(ctx->cglContext, kCGLCPGPUVertexProcessing, &vertexGPUProcessing);
     CGLGetParameter(ctx->cglContext, kCGLCPGPUFragmentProcessing, &fragmentGPUProcessing);
     
-    BE_LOG(L"GPU vertex processing: %hs\n", vertexGPUProcessing ? "YES" : "NO");
-    BE_LOG(L"GPU fragment processing: %hs\n", fragmentGPUProcessing ? "YES" : "NO");
+    BE_LOG("GPU vertex processing: %s\n", vertexGPUProcessing ? "YES" : "NO");
+    BE_LOG("GPU fragment processing: %s\n", fragmentGPUProcessing ? "YES" : "NO");
 
     SetContext((Handle)handle);
 
@@ -718,7 +718,7 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     }
 
     delete ctx;
-    contextList[ctxHandle] = NULL;
+    contextList[ctxHandle] = nullptr;
 }
 
 void OpenGLRHI::ActivateSurface(Handle ctxHandle, RHI::WindowHandle windowHandle) {
@@ -784,7 +784,7 @@ void OpenGLRHI::GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetri
 }
 
 bool OpenGLRHI::IsFullscreen() const {
-    return desktopDisplayMode != NULL ? true : false;
+    return desktopDisplayMode != nullptr ? true : false;
 }
 
 bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
@@ -875,10 +875,10 @@ bool OpenGLRHI::SwapBuffers() {
     if (gl_debug.IsModified()) {
         if (gglext._GL_ARB_debug_output) {
             if (gl_debug.GetBool()) {
-                gglDebugMessageCallbackARB(OpenGL::DebugCallback, NULL);
+                gglDebugMessageCallbackARB(OpenGL::DebugCallback, nullptr);
                 gglEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
             } else {
-                gglDebugMessageCallbackARB(NULL, NULL);
+                gglDebugMessageCallbackARB(nullptr, nullptr);
                 gglDisable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
             }
         } else {

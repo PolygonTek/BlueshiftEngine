@@ -86,18 +86,18 @@ Mesh *Mesh::InstantiateMesh(int meshType) {
 }
 
 void Mesh::Instantiate(int meshType) {
-    if (meshType == SkinnedMesh && numJoints > 0) {
+    if (meshType == Type::Skinned && numJoints > 0) {
         isSkinnedMesh = true;
     } else {
         isStaticMesh = true;
-        meshType = StaticMesh; // override to static mesh
+        meshType = Type::Static; // override to static mesh
     }
 
     // Free previously allocated skinning joint cache
     SAFE_DELETE(skinningJointCache);
 
     if (isSkinnedMesh) {
-        useGpuSkinning = SkinningJointCache::CapableGPUJointSkinning((SkinningJointCache::SkinningMethod)renderGlobal.skinningMethod, numJoints);
+        useGpuSkinning = SkinningJointCache::CapableGPUJointSkinning((SkinningJointCache::SkinningMethod::Enum)renderGlobal.skinningMethod, numJoints);
 
         if (useGpuSkinning) {
             skinningJointCache = new SkinningJointCache(numJoints);
@@ -121,31 +121,31 @@ void Mesh::Instantiate(int meshType) {
 void Mesh::Reinstantiate() {
     int meshType;
     if (isSkinnedMesh) {
-        meshType = SkinnedMesh;
+        meshType = Type::Skinned;
     } else {
-        meshType = StaticMesh;
+        meshType = Type::Static;
     }
 
     Instantiate(meshType);
 }
 
 void Mesh::FinishSurfaces(int flags) {
-    if (flags & SortAndMergeFlag) {
+    if (flags & FinishFlag::SortAndMerge) {
         SortAndMerge();
         ComputeAABB();
     }
 
-    if (flags & ComputeAABBFlag) {
+    if (flags & FinishFlag::ComputeAABB) {
         ComputeAABB();
     }
 
     //SplitMirroredVerts();
 
-    if (flags & OptimizeIndicesFlag) {
+    if (flags & FinishFlag::OptimizeIndices) {
         OptimizeIndexedTriangles();
     }
 
-    if ((flags & ComputeNormalsFlag) && !(flags & ComputeTangentsFlag)) {
+    if ((flags & FinishFlag::ComputeNormals) && !(flags & FinishFlag::ComputeTangents)) {
         ComputeNormals();
     }
 
@@ -154,8 +154,8 @@ void Mesh::FinishSurfaces(int flags) {
         subMesh->FixMirroredVerts();
     }*/
 
-    if (flags & ComputeTangentsFlag) {
-        ComputeTangents((flags & ComputeNormalsFlag) ? true : false, (flags & UseUnsmoothedTangentsFlag) ? true : false);
+    if (flags & FinishFlag::ComputeTangents) {
+        ComputeTangents((flags & FinishFlag::ComputeNormals) ? true : false, (flags & FinishFlag::UseUnsmoothedTangents) ? true : false);
     }
 
     // TODO: consider to remove this
@@ -184,10 +184,10 @@ void Mesh::OptimizeIndexedTriangles() {
 void Mesh::Voxelize() {
 }
 
-bool Mesh::LineIntersection(const Vec3 &start, const Vec3 &end, bool backFaceCull) const {
+bool Mesh::IsIntersectLine(const Vec3 &start, const Vec3 &end, bool backFaceCull) const {
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
         MeshSurf *surf = surfaces[surfaceIndex];
-        if (surf->subMesh->LineIntersection(start, end, backFaceCull)) {
+        if (surf->subMesh->IsIntersectLine(start, end, backFaceCull)) {
             return true;
         }
     }
@@ -195,24 +195,39 @@ bool Mesh::LineIntersection(const Vec3 &start, const Vec3 &end, bool backFaceCul
     return false;
 }
 
-bool Mesh::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &scale) const {
-    float smin = Math::Infinity;
+bool Mesh::IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist) const {
+    float minDist = Math::Infinity;
 
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
         MeshSurf *surf = surfaces[surfaceIndex];
-        if (surf->subMesh->RayIntersection(start, dir, scale, backFaceCull)) {
-            if (scale > 0.0f && scale < smin) {
-                smin = scale;
+
+        float dist;
+        if (surf->subMesh->IntersectRay(ray, ignoreBackFace, &dist)) {
+            if (!hitDist) {
+                return true;
+            }
+
+            if (dist > 0.0f && dist < minDist) {
+                minDist = dist;
             }
         }
     }
 
-    if (smin < Math::Infinity) {
-        scale = smin;
-        return true;
+    if (minDist == Math::Infinity) {
+        return false;
     }
 
-    return false;
+    *hitDist = minDist;
+    return true;
+}
+
+float Mesh::IntersectRay(const Ray &ray, bool ignoreBackFace) const {
+    float hitDist;
+
+    if (IntersectRay(ray, ignoreBackFace, &hitDist)) {
+        return hitDist;
+    }
+    return FLT_MAX;
 }
 
 void Mesh::SplitMirroredVerts() {
@@ -232,7 +247,7 @@ void Mesh::ComputeAABB() {
     }
 
     // add small epsilon
-    aabb.Expand(CentiToUnit(0.01f));
+    aabb.ExpandSelf(CentiToUnit(0.01f));
 }
 
 void Mesh::ComputeNormals() {
@@ -309,11 +324,10 @@ float Mesh::ComputeVolume() const {
         const MeshSurf *surf = GetSurface(i);
         const SubMesh *subMesh = surf->subMesh;
 
-        // NOTE: should be a solid polytope to calculate volume exactly
         if (subMesh->IsClosed()) {
             totalVolume += subMesh->ComputeVolume();
         } else {
-            // compute volume using AABB
+            // Compute volume using AABB
             totalVolume = subMesh->GetAABB().Volume();
         }
     }
@@ -331,12 +345,11 @@ const Vec3 Mesh::ComputeCentroid() const {
         const MeshSurf *surf = GetSurface(i);
         const SubMesh *subMesh = surf->subMesh;
 
-        // NOTE: should be a solid polytope to calculate volume & centroid exactly
         if (subMesh->IsClosed()) {
             volume = subMesh->ComputeVolume();
             centroid = subMesh->ComputeCentroid();
         } else {
-            // compute volume & centroid using AABB
+            // Compute volume and centroid using AABB
             volume = subMesh->GetAABB().Volume();
             centroid = subMesh->GetAABB().Center();
         }
@@ -360,7 +373,7 @@ bool Mesh::Load(const char *filename) {
         bMeshFilename.SetFileExtension(".bmesh");
     }
 
-    BE_LOG(L"Loading mesh '%hs'...\n", bMeshFilename.c_str());
+    BE_LOG("Loading mesh '%s'...\n", bMeshFilename.c_str());
     
     bool ret = LoadBinaryMesh(bMeshFilename);
     if (!ret) {

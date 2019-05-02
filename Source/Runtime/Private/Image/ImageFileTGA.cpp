@@ -76,7 +76,7 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
     case TGA_RLEMONO:
         break;
     default:
-        BE_LOG(L"Image::LoadTGAFromMemory: %hs has bad image_type %i\n", name, header->image_type);
+        BE_LOG("Image::LoadTGAFromMemory: %s has bad image_type %i\n", name, header->image_type);
         return false;
     }
 
@@ -87,7 +87,7 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
     case 32:
         break;
     default:
-        BE_WARNLOG(L"Image::LoadTGAFromMemory: %hs has bad bpp %i\n", name, header->bpp);
+        BE_WARNLOG("Image::LoadTGAFromMemory: %s has bad bpp %i\n", name, header->bpp);
         return false;
     }
 
@@ -106,7 +106,7 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
         case 32:
             break;
         default:
-            BE_WARNLOG(L"Image::LoadTGAFromMemory: %hs has bad %i bpp colormaps\n", name, header->bpp);
+            BE_WARNLOG("Image::LoadTGAFromMemory: %s has bad %i bpp colormaps\n", name, header->bpp);
             return false;
         }
 
@@ -152,7 +152,7 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
         }
     }
 
-    Create2D(header->width, header->height, 1, header->bpp == 32 ? BGRA_8_8_8_8 : BGR_8_8_8, nullptr, 0);
+    Create2D(header->width, header->height, 1, header->bpp == 32 ? Format::BGRA_8_8_8_8 : Format::BGR_8_8_8, nullptr, 0);
 
     int byte_per_pixel = BytesPerPixel();
         
@@ -258,9 +258,9 @@ PixEncode:
 }
 
 bool Image::WriteTGA(const char *filename) const {
-    File *fp = fileSystem.OpenFile(filename, File::WriteMode);
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
     if (!fp) {
-        BE_WARNLOG(L"Image::WriteTGA: file open error\n");
+        BE_WARNLOG("Image::WriteTGA: file open error\n");
         return false;
     }
 
@@ -268,13 +268,13 @@ bool Image::WriteTGA(const char *filename) const {
     Image convertedImage;
     byte *src = this->pic;
     
-    if (format == BGR_8_8_8) {
+    if (format == Format::BGR_8_8_8) {
         bpp = 24;
-    } else if (format == BGRA_8_8_8_8) {
+    } else if (format == Format::BGRA_8_8_8_8) {
         bpp = 32;
     } else {
         bpp = 24;
-        if (!ConvertFormat(BGR_8_8_8, convertedImage)) {
+        if (!ConvertFormat(Format::BGR_8_8_8, convertedImage)) {
             fileSystem.CloseFile(fp);
             return false;
         }

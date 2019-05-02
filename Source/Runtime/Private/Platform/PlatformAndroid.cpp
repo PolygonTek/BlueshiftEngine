@@ -13,10 +13,10 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Core/Str.h"
 #include "PlatformGeneric.h"
 #include "PlatformAndroid.h"
 #include "PlatformUtils/Android/AndroidJNI.h"
-#include "Core/WStr.h"
 #include <android/log.h>
 
 BE_NAMESPACE_BEGIN
@@ -41,14 +41,14 @@ void PlatformAndroid::Quit() {
     exit(EXIT_SUCCESS);
 }
 
-void PlatformAndroid::Log(const wchar_t *msg) {
-    __android_log_print(ANDROID_LOG_INFO, "Blueshift", "%ls", msg);
+void PlatformAndroid::Log(const char *msg) {
+    __android_log_print(ANDROID_LOG_INFO, "Blueshift", "%s", msg);
 }
 
-void PlatformAndroid::Error(const wchar_t *msg) {
+void PlatformAndroid::Error(const char *msg) {
     JNIEnv *env = AndroidJNI::GetJavaEnv();
 
-    jstring javaMsg = WStr(msg).ToJavaString(env);
+    jstring javaMsg = Str(msg).ToJavaString(env);
     AndroidJNI::CallVoidMethod(env, AndroidJNI::activity->clazz, AndroidJNI::javaMethod_showAlert, javaMsg);
 
     env->DeleteLocalRef(javaMsg);

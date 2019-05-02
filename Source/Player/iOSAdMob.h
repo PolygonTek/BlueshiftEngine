@@ -15,20 +15,60 @@
 #include "Precompiled.h"
 #include "GoogleMobileAds/GoogleMobileAds.h"
 
-class RewardBasedVideoAd {
+class AdMob {
 public:
-	void Init(const char *appID);
+    class BannerAd;
+    class InterstitialAd;
+    class RewardBasedVideoAd;
 
-    void Request(const char *unitID, const char *testDevices = "");
-    
-    bool IsReady() const;
-    
-    void Present();
-    
-    static void RegisterLuaModule(LuaCpp::State *state, UIViewController<GADRewardBasedVideoAdDelegate> *viewController);
-    
-private:
-    UIViewController<GADRewardBasedVideoAdDelegate> *viewController;
+    static void RegisterLuaModule(LuaCpp::State *state, UIViewController<GADBannerViewDelegate, GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> *viewController);
+
+    static void Init(const char *appID, const char *testDevices = "");
+
+    static UIViewController<GADBannerViewDelegate, GADInterstitialDelegate, GADRewardBasedVideoAdDelegate> *viewController;
+
+    static BannerAd bannerAd;
+    static InterstitialAd interstitialAd;
+    static RewardBasedVideoAd rewardBasedVideoAd;
+
+    static BE1::StrArray testDeviceList;
 };
 
-extern RewardBasedVideoAd rewardBasedVideoAd;
+class AdMob::BannerAd {
+public:
+    void Init();
+
+    void Request(const char *unitID, int adWidth, int adHeight);
+
+    void Show(bool showOnBottomOfScreen, float offsetX, float offsetY);
+
+    void Hide();
+
+private:
+    GADBannerView *bannerView;
+};
+
+class AdMob::InterstitialAd {
+public:
+    void Init();
+
+    void Request(const char *unitID);
+
+    bool IsReady() const;
+
+    void Present();
+
+private:
+    GADInterstitial *interstitial;
+};
+
+class AdMob::RewardBasedVideoAd {
+public:
+    void Init();
+
+    void Request(const char *unitID);
+    
+    bool IsReady() const;
+
+    void Present();
+};

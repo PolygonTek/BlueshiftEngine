@@ -59,8 +59,4 @@ const AABB ComCollider::GetAABB() {
     return AABB::zero;
 }
 
-bool ComCollider::RayIntersection(const Vec3 &start, const Vec3 &dir, bool backFaceCull, float &lastScale) const {
-    return false;
-}
-
 BE_NAMESPACE_END

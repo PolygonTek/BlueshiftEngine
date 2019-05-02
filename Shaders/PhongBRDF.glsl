@@ -3,105 +3,118 @@
 
 $include "BRDFLibrary.glsl"
 
+#if defined(DIRECT_LIGHTING)
+
 // Phong/Blinn-Phong lighting
-vec3 DirectLit_Phong(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specularPower) {
-    float NdotL = dot(N, L);
+vec3 DirectLit_Phong() {
+    float NdotL = dot(shading.n, shading.l);
 
 #if defined(_WRAPPED_DIFFUSE)
     float oneMinusW = 1.0 + wrappedDiffuse;
-    vec3 Cd = albedo.rgb * (NdotL + wrappedDiffuse) / (oneMinusW * oneMinusW);
+    vec3 Cd = shading.diffuse.rgb * (NdotL + wrappedDiffuse) / (oneMinusW * oneMinusW);
+    NdotL = max(NdotL, 0.0);
 #else // Lambertian
-    vec3 Cd = albedo.rgb * max(NdotL, 0.0);
+    NdotL = max(NdotL, 0.0);
+    vec3 Cd = shading.diffuse.rgb * NdotL;
 #endif
 
-#if _SPECULAR != 0
-    #ifdef USE_BLINN_PHONG
-        vec3 H = normalize(L + V);
+#ifdef USE_BLINN_PHONG
+    vec3 H = normalize(shading.l + shading.v);
 
-        float NdotH = max(dot(N, H), 0.0);
+    float NdotH = max(dot(shading.n, H), 0.0);
 
-        float normFactor = specularPower * 0.125 + 1.0;
+    float normFactor = shading.specularPower * 0.125 + 0.25;
 
-        vec3 Cs = specular.rgb * normFactor * pow(NdotH, specularPower);
-    #else
-        vec3 R = reflect(-L, N);
-
-        float RdotV = max(dot(R, V), 0.0);
-
-        float normFactor = specularPower * 0.5 + 1.0;
-
-        vec3 Cs = specular.rgb * normFactor * pow(RdotV, specularPower);
-    #endif
-    
-    return Cd * (vec3(1.0) - specular.rgb) + Cs;
+    vec3 Cs = shading.specular.rgb * normFactor * pow(NdotH, shading.specularPower) * NdotL;
 #else
-    return Cd;
+    vec3 R = reflect(-shading.l, shading.n);
+
+    float RdotV = max(dot(R, shading.v), 0.0);
+
+    float normFactor = shading.specularPower * 0.5 + 1.0;
+
+    vec3 Cs = shading.specular.rgb * normFactor * pow(RdotV, shading.specularPower);
 #endif
+
+    return Cd * (vec3(1.0) - shading.specular.rgb) + Cs;
 }
 
 // Phong/Blinn-Phong lighting with Fresnel
-vec3 DirectLit_PhongFresnel(vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 specular, float specularPower) {
-    float NdotL = dot(N, L);
+vec3 DirectLit_PhongFresnel() {
+    float NdotL = dot(shading.n, shading.l);
 
 #if defined(_WRAPPED_DIFFUSE)
     float oneMinusW = 1.0 + wrappedDiffuse;
-    vec3 Cd = albedo.rgb * (NdotL + wrappedDiffuse) / (oneMinusW * oneMinusW);
+    vec3 Cd = shading.diffuse.rgb * (NdotL + wrappedDiffuse) / (oneMinusW * oneMinusW);
+    NdotL = max(NdotL, 0.0);
 #else // Lambertian
-    vec3 Cd = albedo.rgb * max(NdotL, 0.0);
+    NdotL = max(NdotL, 0.0);
+    vec3 Cd = shading.diffuse.rgb * NdotL;
 #endif
 
-#if _SPECULAR != 0
-    #ifdef USE_BLINN_PHONG
-        vec3 H = normalize(L + V);
+#ifdef USE_BLINN_PHONG // Microfacet Blinn-Phong
+    vec3 H = normalize(shading.l + shading.v);
+
+    float NdotH = max(dot(shading.n, H), 0.0);
+    float VdotH = max(dot(shading.v, H), 0.0);
     
-        float NdotH = max(dot(N, H), 0.0);
-        float VdotH = max(dot(V, H), 0.0);
-    
-        vec3 F = F_SchlickSG(specular.rgb, VdotH);
+    // Fresnel reflection term
+    vec3 F = F_SchlickSG(shading.specular.rgb, VdotH);
 
-        float normFactor = specularPower * 0.125 + 1.0;
+    float normFactor = shading.specularPower * 0.125 + 0.25;
 
-        vec3 Cs = F * normFactor * pow(NdotH, specularPower);
-    #else
-        vec3 R = reflect(-L, N);
-
-        float RdotV = max(dot(R, V), 0.0);
-        float NdotV = max(dot(N, V), 0.0);
-
-        vec3 F = F_SchlickSG(specular.rgb, NdotV);
-
-        float normFactor = specularPower * 0.5 + 1.0;
-
-        vec3 Cs = F * normFactor * pow(RdotV, specularPower);
-    #endif
-
-    return Cd * (vec3(1.0) - F) + Cs;
+    // Final specular lighting
+    vec3 Cs = F * normFactor * pow(NdotH, shading.specularPower) * NdotL;
 #else
-    return Cd;
+    vec3 R = reflect(-shading.l, shading.n);
+
+    float RdotV = max(dot(R, shading.v), 0.0);
+
+    // Fresnel reflection term
+    vec3 F = F_SchlickSG(shading.specular.rgb, shading.ndotv);
+
+    float normFactor = shading.specularPower * 0.5 + 1.0;
+
+    // Final specular lighting
+    vec3 Cs = F * normFactor * pow(RdotV, shading.specularPower);
 #endif
+
+    // Final diffuse lighting
+    // From reflection term F, we can directly calculate the ratio of refraction
+    return Cd * (vec3(1.0) - F) + Cs;
 }
 
-vec3 IndirectLit_PhongFresnel(vec3 worldN, vec3 worldS, float NdotV, vec3 albedo, vec3 specular, float specularPower, float roughness) {
-    vec3 d1 = texCUBE(irradianceEnvCubeMap0, worldN).rgb;
-    //vec3 d2 = texCUBE(irradianceEnvCubeMap1, worldN).rgb;
+#endif
 
-    vec3 Cd = albedo * d1;//mix(d1, d2, ambientLerp);
+#if defined(INDIRECT_LIGHTING)
 
-    // (log2(specularPower) - log2(maxSpecularPower)) / log2(pow(maxSpecularPower, -1/numMipmaps))
-    // (log2(specularPower) - 11) / (-11/8)
-    float specularMipLevel = -(8.0 / 11.0) * log2(specularPower) + 8.0;
+vec3 IndirectLit_PhongFresnel() {
+    vec3 d = texCUBE(probe0DiffuseCubeMap, shading.n.yzx).rgb;
+#ifdef PROBE_BLENDING
+    d *= probeLerp;
+    d += texCUBE(probe1DiffuseCubeMap, shading.n.yzx).rgb * (1.0 - probeLerp);
+#endif
 
-    vec4 sampleVec;
-    sampleVec.xyz = worldS;
-    sampleVec.w = specularMipLevel;
+    vec3 Cd = shading.diffuse.rgb * d;
 
-    vec3 s1 = texCUBElod(prefilteredEnvCubeMap0, sampleVec).rgb;
-    //vec3 s2 = texCUBElod(prefilteredEnvCubeMap1, sampleVec).rgb;
+    // (log2(shading.specularPower) - log2(maxSpecularPower)) / log2(pow(maxSpecularPower, -1/numMipmaps))
+    // (log2(shading.specularPower) - 11) / (-11/8)
+    float specularMipLevel = -(8.0 / 11.0) * log2(shading.specularPower) + 8.0;
+    
+    // This is single cubemap texture lookup with Phong not Blinn-Phong
+    vec3 s = texCUBElod(probe0SpecularCubeMap, vec4(shading.s0.yzx, specularMipLevel)).rgb;
+#ifdef PROBE_BLENDING
+    s *= probeLerp;
+    s += texCUBElod(probe1SpecularCubeMap, vec4(shading.s1.yzx, specularMipLevel)).rgb * (1.0 - probeLerp);
+#endif
 
-    vec3 F = F_SchlickRoughness(specular, roughness, NdotV);
-    vec3 Cs = F * s1;
+    vec3 F = F_SchlickRoughness(shading.specular.rgb, shading.roughness, shading.ndotv);
+
+    vec3 Cs = F * s;
 
     return Cd * (vec3(1.0) - F) + Cs;
 }
+
+#endif
 
 #endif

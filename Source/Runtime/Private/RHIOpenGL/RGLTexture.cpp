@@ -18,22 +18,22 @@
 
 BE_NAMESPACE_BEGIN
 
-const GLenum ToGLTextureTarget(RHI::TextureType type) {
+const GLenum ToGLTextureTarget(RHI::TextureType::Enum type) {
     switch (type) {
-    case RHI::Texture2D:
+    case RHI::TextureType::Texture2D:
         return GL_TEXTURE_2D;
-    case RHI::TextureRectangle:
+    case RHI::TextureType::TextureRectangle:
         if (OpenGL::SupportsTextureRectangle()) {
             return GL_TEXTURE_RECTANGLE;
         }
         return GL_TEXTURE_2D;
-    case RHI::Texture3D:
+    case RHI::TextureType::Texture3D:
         return GL_TEXTURE_3D;
-    case RHI::TextureCubeMap:
+    case RHI::TextureType::TextureCubeMap:
         return GL_TEXTURE_CUBE_MAP;
-    case RHI::Texture2DArray:
+    case RHI::TextureType::Texture2DArray:
         return GL_TEXTURE_2D_ARRAY;
-    case RHI::TextureBuffer:
+    case RHI::TextureType::TextureBuffer:
         return GL_TEXTURE_BUFFER;
     default:
         assert(0);
@@ -41,19 +41,19 @@ const GLenum ToGLTextureTarget(RHI::TextureType type) {
     }
 }
 
-const GLenum ToGLTextureMinFilter(RHI::TextureFilter filter) {
+const GLenum ToGLTextureMinFilter(RHI::TextureFilter::Enum filter) {
     switch (filter) {
-    case RHI::Nearest:
+    case RHI::TextureFilter::Nearest:
         return GL_NEAREST;
-    case RHI::Linear:
+    case RHI::TextureFilter::Linear:
         return GL_LINEAR;
-    case RHI::NearestMipmapNearest:
+    case RHI::TextureFilter::NearestMipmapNearest:
         return GL_NEAREST_MIPMAP_NEAREST;
-    case RHI::LinearMipmapNearest:
+    case RHI::TextureFilter::LinearMipmapNearest:
         return GL_LINEAR_MIPMAP_NEAREST;
-    case RHI::NearestMipmapLinear:
+    case RHI::TextureFilter::NearestMipmapLinear:
         return GL_NEAREST_MIPMAP_LINEAR;
-    case RHI::LinearMipmapLinear:
+    case RHI::TextureFilter::LinearMipmapLinear:
         return GL_LINEAR_MIPMAP_LINEAR;
     default:
         assert(0);
@@ -61,19 +61,19 @@ const GLenum ToGLTextureMinFilter(RHI::TextureFilter filter) {
     }
 }
 
-const GLenum ToGLTextureMagFilter(RHI::TextureFilter filter) {
+const GLenum ToGLTextureMagFilter(RHI::TextureFilter::Enum filter) {
     switch (filter) {
-    case RHI::Nearest:
+    case RHI::TextureFilter::Nearest:
         return GL_NEAREST;
-    case RHI::Linear:
+    case RHI::TextureFilter::Linear:
         return GL_LINEAR;
-    case RHI::NearestMipmapNearest:
+    case RHI::TextureFilter::NearestMipmapNearest:
         return GL_NEAREST;
-    case RHI::LinearMipmapNearest:
+    case RHI::TextureFilter::LinearMipmapNearest:
         return GL_LINEAR;
-    case RHI::NearestMipmapLinear:
+    case RHI::TextureFilter::NearestMipmapLinear:
         return GL_NEAREST;
-    case RHI::LinearMipmapLinear:
+    case RHI::TextureFilter::LinearMipmapLinear:
         return GL_LINEAR;
     default:
         assert(0);
@@ -81,15 +81,15 @@ const GLenum ToGLTextureMagFilter(RHI::TextureFilter filter) {
     }
 }
 
-const GLint ToGLAddressMode(RHI::AddressMode mode) {
+const GLint ToGLAddressMode(RHI::AddressMode::Enum mode) {
     switch (mode) {
-    case RHI::Repeat:
+    case RHI::AddressMode::Repeat:
         return GL_REPEAT;
-    case RHI::MirroredRepeat:
+    case RHI::AddressMode::MirroredRepeat:
         return GL_MIRRORED_REPEAT;
-    case RHI::Clamp:
+    case RHI::AddressMode::Clamp:
         return GL_CLAMP_TO_EDGE;
-    case RHI::ClampToBorder:
+    case RHI::AddressMode::ClampToBorder:
         if (OpenGL::SupportsTextureBorderColor()) {
             return GL_CLAMP_TO_BORDER;
         }
@@ -100,7 +100,7 @@ const GLint ToGLAddressMode(RHI::AddressMode mode) {
     }
 }
 
-RHI::Handle OpenGLRHI::CreateTexture(TextureType type) {
+RHI::Handle OpenGLRHI::CreateTexture(TextureType::Enum type) {
     GLuint object;
     gglGenTextures(1, &object);
 
@@ -161,22 +161,22 @@ void OpenGLRHI::BindTexture(Handle textureHandle) {
     }
 }
 
-void OpenGLRHI::SetTextureAddressMode(AddressMode addressMode) {
+void OpenGLRHI::SetTextureAddressMode(AddressMode::Enum addressMode) {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
     GLint mode = ToGLAddressMode(addressMode);
     
     switch (texture->type) {
-    case Texture2D:
-    case TextureRectangle:
-    case TextureBuffer:
+    case TextureType::Texture2D:
+    case TextureType::TextureRectangle:
+    case TextureType::TextureBuffer:
         gglTexParameterf(texture->target, GL_TEXTURE_WRAP_S, mode);
         gglTexParameterf(texture->target, GL_TEXTURE_WRAP_T, mode);
         break;
-    case Texture3D:
-    case Texture2DArray:
-    case TextureCubeMap:
+    case TextureType::Texture3D:
+    case TextureType::Texture2DArray:
+    case TextureType::TextureCubeMap:
         gglTexParameterf(texture->target, GL_TEXTURE_WRAP_S, mode);
         gglTexParameterf(texture->target, GL_TEXTURE_WRAP_T, mode);
         gglTexParameterf(texture->target, GL_TEXTURE_WRAP_R, mode);
@@ -184,7 +184,7 @@ void OpenGLRHI::SetTextureAddressMode(AddressMode addressMode) {
     }
 }
 
-void OpenGLRHI::SetTextureFilter(TextureFilter filter) {
+void OpenGLRHI::SetTextureFilter(TextureFilter::Enum filter) {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
@@ -192,24 +192,24 @@ void OpenGLRHI::SetTextureFilter(TextureFilter filter) {
     GLenum magFilter = ToGLTextureMagFilter(filter);
 
     gglTexParameterf(texture->target, GL_TEXTURE_MIN_FILTER, minFilter);
-    gglTexParameterf(texture->target, GL_TEXTURE_MAG_FILTER, magFilter);	 
+    gglTexParameterf(texture->target, GL_TEXTURE_MAG_FILTER, magFilter);
 }
 
 void OpenGLRHI::SetTextureAnisotropy(int aniso) {
-    const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
-    assert(texture);
-
     if (OpenGL::SupportsTextureFilterAnisotropic()) {
+        const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
+        assert(texture);
+    
         BE1::Clamp(aniso, 1, hwLimit.maxTextureAnisotropy);
         gglTexParameterf(texture->target, GL_TEXTURE_MAX_ANISOTROPY_EXT, (float)aniso);
     }
 }
 
 void OpenGLRHI::SetTextureBorderColor(const Color4 &rgba) {
-    const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
-    assert(texture);
-
     if (OpenGL::SupportsTextureBorderColor()) {
+        const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
+        assert(texture);
+
         gglTexParameterfv(texture->target, GL_TEXTURE_BORDER_COLOR, rgba);
     }
 }
@@ -254,12 +254,12 @@ void OpenGLRHI::GenerateMipmap() {
     gglGenerateMipmap(texture->target);
 }
 
-void OpenGLRHI::AdjustTextureSize(TextureType type, bool useNPOT, int inWidth, int inHeight, int inDepth, int *outWidth, int *outHeight, int *outDepth) {
+void OpenGLRHI::AdjustTextureSize(TextureType::Enum type, bool useNPOT, int inWidth, int inHeight, int inDepth, int *outWidth, int *outHeight, int *outDepth) {
     int w, h, d;
 
     // NOTE: GL_ARB_texture_non_power_of_two 익스텐션 스트링이 없다면,
     // NPOT 텍스쳐는 밉맵이나 wrapmode 에 따라서 hw-accelerate 되지 않을수도 있다.
-    if (useNPOT || type == TextureRectangle) {
+    if (useNPOT || type == TextureType::TextureRectangle) {
         w = inWidth;
         h = inHeight;
         d = inDepth;
@@ -268,20 +268,20 @@ void OpenGLRHI::AdjustTextureSize(TextureType type, bool useNPOT, int inWidth, i
         w = Math::CeilPowerOfTwo(inWidth);
         h = Math::CeilPowerOfTwo(inHeight);
         d = Math::CeilPowerOfTwo(inDepth);
-    }	
+    }
 
     switch (type) {
-    case Texture2D:
-    case Texture2DArray:
+    case TextureType::Texture2D:
+    case TextureType::Texture2DArray:
         if (w > hwLimit.maxTextureSize) w = hwLimit.maxTextureSize;
         if (h > hwLimit.maxTextureSize) h = hwLimit.maxTextureSize;
         break;
-    case Texture3D:
+    case TextureType::Texture3D:
         if (w > hwLimit.max3dTextureSize) w = hwLimit.max3dTextureSize;
         if (h > hwLimit.max3dTextureSize) h = hwLimit.max3dTextureSize;
         if (d > hwLimit.max3dTextureSize) d = hwLimit.max3dTextureSize;
         break;
-    case TextureCubeMap:
+    case TextureType::TextureCubeMap:
         if (w > hwLimit.maxCubeMapTextureSize) w = hwLimit.maxCubeMapTextureSize;
         if (h > hwLimit.maxCubeMapTextureSize) h = hwLimit.maxCubeMapTextureSize;
 
@@ -292,7 +292,7 @@ void OpenGLRHI::AdjustTextureSize(TextureType type, bool useNPOT, int inWidth, i
             w = h;
         }
         break;
-    case TextureRectangle:
+    case TextureType::TextureRectangle:
         if (w > hwLimit.maxRectangleTextureSize) w = hwLimit.maxRectangleTextureSize;
         if (h > hwLimit.maxRectangleTextureSize) h = hwLimit.maxRectangleTextureSize;
         break;
@@ -306,7 +306,7 @@ void OpenGLRHI::AdjustTextureSize(TextureType type, bool useNPOT, int inWidth, i
     if (outDepth) *outDepth = d;
 }
 
-void OpenGLRHI::AdjustTextureFormat(TextureType type, bool useCompression, bool useNormalMap, Image::Format inFormat, Image::Format *outFormat) {
+void OpenGLRHI::AdjustTextureFormat(TextureType::Enum type, bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat) {
     if (Image::IsDepthFormat(inFormat) || Image::IsDepthStencilFormat(inFormat)) {
         *outFormat = inFormat;
         return;
@@ -340,14 +340,14 @@ void OpenGLRHI::EndUnpackAlignment() {
     }
 }
 
-void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, Image::Format dstFormat, bool useMipmaps, bool useSRGB) {
+void OpenGLRHI::SetTextureImage(TextureType::Enum textureType, const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps, bool isSRGB) {
     GLenum format;
     GLenum type;
     GLenum internalFormat;
     Image uncompressedImage;
     Image tmpImage;
 
-    Image::Format srcFormat = srcImage->GetFormat();
+    Image::Format::Enum srcFormat = srcImage->GetFormat();
     
     bool srcCompressed = Image::IsCompressed(srcFormat);
     bool dstCompressed = Image::IsCompressed(dstFormat);
@@ -356,7 +356,7 @@ void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, 
     bool dstFormatSupported = OpenGL::SupportedImageFormat(dstFormat);
     
     if (srcCompressed && !srcFormatSupported) {
-        Image::Format uncompressedFormat = OpenGL::ToUncompressedImageFormat(srcFormat);
+        Image::Format::Enum uncompressedFormat = OpenGL::ToUncompressedImageFormat(srcFormat);
         
         srcImage->ConvertFormat(uncompressedFormat, uncompressedImage);
         srcImage = &uncompressedImage;
@@ -370,37 +370,37 @@ void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, 
             dstFormat = OpenGL::ToUncompressedImageFormat(dstFormat);
             dstCompressed = false;
         } else {
-            if (dstFormat == Image::DXN2 && srcFormat != Image::DXN2) {
-                srcImage->ConvertFormat(Image::DXN2, tmpImage);
+            if (dstFormat == Image::Format::DXN2 && srcFormat != Image::Format::DXN2) {
+                srcImage->ConvertFormat(Image::Format::DXN2, tmpImage);
                 srcImage = &tmpImage;
 
-                srcFormat = Image::DXN2;
+                srcFormat = Image::Format::DXN2;
                 srcCompressed = true;
-            } else if (dstFormat == Image::XGBR_DXT5 && srcFormat != Image::XGBR_DXT5) {
-                srcImage->ConvertFormat(Image::RGBA_8_8_8_8, tmpImage);
+            } else if (dstFormat == Image::Format::XGBR_DXT5 && srcFormat != Image::Format::XGBR_DXT5) {
+                srcImage->ConvertFormat(Image::Format::RGBA_8_8_8_8, tmpImage);
                 tmpImage.SwapRedAlphaRGBA8888();
                 srcImage = &tmpImage;
 
-                srcFormat = Image::RGBA_8_8_8_8;
+                srcFormat = Image::Format::RGBA_8_8_8_8;
                 srcCompressed = false;
             }
         }
     }
     
     if (srcCompressed && srcFormat != dstFormat) {
-        BE_WARNLOG(L"Wrong requested image format %hs -> %hs\n", Image::FormatName(srcFormat), Image::FormatName(dstFormat));
+        BE_WARNLOG("Wrong requested image format %s -> %s\n", Image::FormatName(srcFormat), Image::FormatName(dstFormat));
         return;
     }
 
-    srcFormatSupported = OpenGL::ImageFormatToGLFormat(srcFormat, useSRGB, &format, &type, nullptr);
+    srcFormatSupported = OpenGL::ImageFormatToGLFormat(srcFormat, isSRGB, &format, &type, nullptr);
     if (!srcFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(srcFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(srcFormat));
         return;
     }
 
-    dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, useSRGB, nullptr, nullptr, &internalFormat);
+    dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, isSRGB, nullptr, nullptr, &internalFormat);
     if (!dstFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(dstFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(dstFormat));
         return;
     }
 
@@ -435,7 +435,7 @@ void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, 
     BeginUnpackAlignment(Image::BytesPerPixel(srcFormat) * srcImage->GetWidth());
 
     switch (textureType) {
-    case Texture2D:
+    case TextureType::Texture2D:
         gglTexStorage2D(GL_TEXTURE_2D, maxLevelAlloc, internalFormat, srcImage->GetWidth(), srcImage->GetHeight());
         if (pic) {
             for (int level = 0; level < maxLevel; level++) {
@@ -455,7 +455,7 @@ void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, 
         }
         OpenGL::SetTextureSwizzling(GL_TEXTURE_2D, srcFormat);
         break;
-    case Texture3D:
+    case TextureType::Texture3D:
         gglTexStorage3D(GL_TEXTURE_3D, maxLevelAlloc, internalFormat, srcImage->GetWidth(), srcImage->GetHeight(), srcImage->GetDepth());
         if (pic) {
             for (int level = 0; level < maxLevel; level++) {
@@ -476,7 +476,7 @@ void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, 
         }
         OpenGL::SetTextureSwizzling(GL_TEXTURE_3D, srcFormat);
         break;
-    case Texture2DArray:
+    case TextureType::Texture2DArray:
         gglTexStorage3D(GL_TEXTURE_2D_ARRAY, maxLevelAlloc, internalFormat, srcImage->GetWidth(), srcImage->GetHeight(), srcImage->NumSlices());
         if (pic) {
             for (int level = 0; level < maxLevel; level++) {
@@ -496,7 +496,7 @@ void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, 
         }
         OpenGL::SetTextureSwizzling(GL_TEXTURE_2D_ARRAY, srcFormat);
         break;
-    case TextureCubeMap:
+    case TextureType::TextureCubeMap:
         gglTexStorage2D(GL_TEXTURE_CUBE_MAP, maxLevelAlloc, internalFormat, srcImage->GetWidth(), srcImage->GetWidth());
         if (pic) {
             for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
@@ -517,7 +517,7 @@ void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, 
         }
         OpenGL::SetTextureSwizzling(GL_TEXTURE_CUBE_MAP, srcFormat);
         break;
-    case TextureRectangle:
+    case TextureType::TextureRectangle:
         gglTexStorage2D(GL_TEXTURE_RECTANGLE, maxLevelAlloc, internalFormat, srcImage->GetWidth(), srcImage->GetWidth());
         if (pic) {
             int w = srcImage->GetWidth(0);
@@ -539,12 +539,12 @@ void OpenGLRHI::SetTextureImage(TextureType textureType, const Image *srcImage, 
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::SetTextureImageBuffer(Image::Format dstFormat, bool useSRGB, int bufferHandle) {
+void OpenGLRHI::SetTextureImageBuffer(Image::Format::Enum dstFormat, bool isSRGB, int bufferHandle) {
     GLenum internalFormat;
 
-    bool dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, useSRGB, nullptr, nullptr, &internalFormat);
+    bool dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, isSRGB, nullptr, nullptr, &internalFormat);
     if (!dstFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(dstFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(dstFormat));
         return;
     }
 
@@ -555,17 +555,17 @@ void OpenGLRHI::SetTextureImageBuffer(Image::Format dstFormat, bool useSRGB, int
     OpenGL::SetTextureSwizzling(GL_TEXTURE_BUFFER, dstFormat);
 }
 
-void OpenGLRHI::SetTextureSubImage2D(int level, int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels) {
+void OpenGLRHI::SetTextureSubImage2D(int level, int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
     bool srcFormatSupported = OpenGL::ImageFormatToGLFormat(srcFormat, false, &format, &type, nullptr);
     if (!srcFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(srcFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(srcFormat));
         return;
     }
 
-    bool srcCompressed = Image::IsCompressed(srcFormat);	
+    bool srcCompressed = Image::IsCompressed(srcFormat);
 
     BeginUnpackAlignment(Image::BytesPerPixel(srcFormat) * width);
 
@@ -579,17 +579,17 @@ void OpenGLRHI::SetTextureSubImage2D(int level, int xoffset, int yoffset, int wi
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::SetTextureSubImage3D(int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format srcFormat, const void *pixels) {
+void OpenGLRHI::SetTextureSubImage3D(int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, Image::Format::Enum srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
     bool srcFormatSupported = OpenGL::ImageFormatToGLFormat(srcFormat, false, &format, &type, nullptr);
     if (!srcFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(srcFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(srcFormat));
         return;
     }
     
-    bool srcCompressed = Image::IsCompressed(srcFormat);	
+    bool srcCompressed = Image::IsCompressed(srcFormat);
 
     BeginUnpackAlignment(Image::BytesPerPixel(srcFormat) * width);
 
@@ -603,17 +603,17 @@ void OpenGLRHI::SetTextureSubImage3D(int level, int xoffset, int yoffset, int zo
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::SetTextureSubImage2DArray(int level, int xoffset, int yoffset, int zoffset, int width, int height, int arrays, Image::Format srcFormat, const void *pixels) {
+void OpenGLRHI::SetTextureSubImage2DArray(int level, int xoffset, int yoffset, int zoffset, int width, int height, int arrays, Image::Format::Enum srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
     bool srcFormatSupported = OpenGL::ImageFormatToGLFormat(srcFormat, false, &format, &type, nullptr);
     if (!srcFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(srcFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(srcFormat));
         return;
     }
     
-    bool srcCompressed = Image::IsCompressed(srcFormat);	
+    bool srcCompressed = Image::IsCompressed(srcFormat);
 
     BeginUnpackAlignment(Image::BytesPerPixel(srcFormat) * width);
 
@@ -627,13 +627,13 @@ void OpenGLRHI::SetTextureSubImage2DArray(int level, int xoffset, int yoffset, i
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::SetTextureSubImageCube(CubeMapFace face, int level, int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels) {
+void OpenGLRHI::SetTextureSubImageCube(CubeMapFace::Enum face, int level, int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
     bool srcFormatSupported = OpenGL::ImageFormatToGLFormat(srcFormat, false, &format, &type, nullptr);
     if (!srcFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(srcFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(srcFormat));
         return;
     }
     
@@ -645,19 +645,19 @@ void OpenGLRHI::SetTextureSubImageCube(CubeMapFace face, int level, int xoffset,
         int size = Image::MemRequired(width, height, 1, 1, srcFormat);
         gglCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, level, xoffset, yoffset, width, height, format, size, pixels);
     } else {
-        gglTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, level, xoffset, yoffset, width, height, format, type, pixels);		
+        gglTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, level, xoffset, yoffset, width, height, format, type, pixels);
     }
 
     EndUnpackAlignment();
 }
 
-void OpenGLRHI::SetTextureSubImageRect(int xoffset, int yoffset, int width, int height, Image::Format srcFormat, const void *pixels) {
+void OpenGLRHI::SetTextureSubImageRect(int xoffset, int yoffset, int width, int height, Image::Format::Enum srcFormat, const void *pixels) {
     GLenum format;
     GLenum type;
 
     bool srcFormatSupported = OpenGL::ImageFormatToGLFormat(srcFormat, false, &format, &type, nullptr);
     if (!srcFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(srcFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(srcFormat));
         return;
     }
     
@@ -683,14 +683,23 @@ void OpenGLRHI::CopyTextureSubImage2D(int xoffset, int yoffset, int x, int y, in
     gglCopyTexSubImage2D(texture->target, 0, xoffset, yoffset, x, y, width, height);
 }
 
-void OpenGLRHI::GetTextureImage2D(int level, Image::Format dstFormat, void *pixels) {
+void OpenGLRHI::CopyImageSubData(Handle srcTextureHandle, int srcLevel, int srcX, int srcY, int srcZ, Handle dstTextureHandle, int dstLevel, int dstX, int dstY, int dstZ, int width, int height, int depth) {
+    GLTexture *srcTexture = textureList[srcTextureHandle];
+    GLTexture *dstTexture = textureList[dstTextureHandle];
+    assert(srcTexture);
+    assert(dstTexture);
+
+    OpenGL::CopyImageSubData(srcTexture->object, srcTexture->target, srcLevel, srcX, srcY, srcZ, dstTexture->object, dstTexture->target, dstLevel, dstX, dstY, dstZ, width, height, depth);
+}
+
+void OpenGLRHI::GetTextureImage2D(int level, Image::Format::Enum dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;
     GLenum type;
     
     bool dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, false, &format, &type, nullptr);
     if (!dstFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(dstFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(dstFormat));
         return;
     }
     
@@ -699,14 +708,14 @@ void OpenGLRHI::GetTextureImage2D(int level, Image::Format dstFormat, void *pixe
 #endif
 }
 
-void OpenGLRHI::GetTextureImage3D(int level, Image::Format dstFormat, void *pixels) {
+void OpenGLRHI::GetTextureImage3D(int level, Image::Format::Enum dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;
     GLenum type;
 
     bool dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, false, &format, &type, nullptr);
     if (!dstFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(dstFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(dstFormat));
         return;
     }
     
@@ -715,14 +724,14 @@ void OpenGLRHI::GetTextureImage3D(int level, Image::Format dstFormat, void *pixe
 #endif
 }
 
-void OpenGLRHI::GetTextureImageCube(CubeMapFace face, int level, Image::Format dstFormat, void *pixels) {
+void OpenGLRHI::GetTextureImageCube(CubeMapFace::Enum face, int level, Image::Format::Enum dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;
     GLenum type;
 
     bool dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, false, &format, &type, nullptr);
     if (!dstFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(dstFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(dstFormat));
         return;
     }
     
@@ -731,14 +740,14 @@ void OpenGLRHI::GetTextureImageCube(CubeMapFace face, int level, Image::Format d
 #endif
 }
 
-void OpenGLRHI::GetTextureImageRect(Image::Format dstFormat, void *pixels) {
+void OpenGLRHI::GetTextureImageRect(Image::Format::Enum dstFormat, void *pixels) {
 #ifdef GL_VERSION_1_0
     GLenum format;
     GLenum type;
 
     bool dstFormatSupported = OpenGL::ImageFormatToGLFormat(dstFormat, false, &format, &type, nullptr);
     if (!dstFormatSupported) {
-        BE_WARNLOG(L"Unsupported image format %hs\n", Image::FormatName(dstFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(dstFormat));
         return;
     }
     

@@ -63,30 +63,30 @@ void ComRigidBody::CollisionListener::Collide(const PhysCollidable *objectA, con
             body->collisions.Append(collision);
         } else if (impulse > existingCollision->impulse) {
             existingCollision->impulse = impulse;
-            //BE_LOG(L"Collide with %hs, n = (%.2f %.2f %.2f), impulse = %.2f\n", collision.entity->GetName(), normal.x, normal.y, normal.z, impulse);
+            //BE_LOG("Collide with %s, n = (%.2f %.2f %.2f), impulse = %.2f\n", collision.entity->GetName(), normal.x, normal.y, normal.z, impulse);
         }
     }
 }
 
 void ComRigidBody::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("mass", "Mass", float, GetMass, SetMass, 1.f, 
-        "Mass (kg)", PropertyInfo::EditorFlag).SetRange(0, 200, 0.01f);
+        "Mass (kg)", PropertyInfo::Flag::Editor).SetRange(0, 200, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("restitution", "Restitution", float, GetRestitution, SetRestitution, 0.f, 
-        "Parameter for make objects bounce", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
+        "Parameter for make objects bounce", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("friction", "Friction", float, GetFriction, SetFriction, 1.f, 
-        "Parameter for make objects slide along each other realistically", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
+        "Parameter for make objects slide along each other realistically", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("rollingFriction", "Rolling Friction", float, GetRollingFriction, SetRollingFriction, 1.f, 
-        "", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
+        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("spinningFriction", "Spinning Friction", float, GetSpinningFriction, SetSpinningFriction, 1.f, 
-        "", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
+        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("linearDamping", "Linear Damping", float, GetLinearDamping, SetLinearDamping, 0.05f, 
-        "Reduced amount of linear velocity", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
+        "Reduced amount of linear velocity", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("angularDamping", "Angular Damping", float, GetAngularDamping, SetAngularDamping, 0.01f, 
-        "Reduced amount of angular velocity", PropertyInfo::EditorFlag).SetRange(0, 1, 0.01f);
+        "Reduced amount of angular velocity", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("kinematic", "Kinematic", bool, IsKinematic, SetKinematic, false, 
-        "", PropertyInfo::EditorFlag);
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("ccd", "CCD", bool, IsCCD, SetCCD, false, 
-        "Continuous collision detection", PropertyInfo::EditorFlag);
+        "Continuous collision detection", PropertyInfo::Flag::Editor);
 }
 
 ComRigidBody::ComRigidBody() {
@@ -243,7 +243,7 @@ void ComRigidBody::CreateBody() {
 
 #if 0
     if (physicsDesc.shapes.Count() == 0) {
-        BE_WARNLOG(L"Entity %hs has rigid body but no associated colliders in its hierarchy\n", GetEntity()->GetName().c_str());
+        BE_WARNLOG("Entity %s has rigid body but no associated colliders in its hierarchy\n", GetEntity()->GetName().c_str());
     }
 #endif
 
@@ -294,7 +294,7 @@ void ComRigidBody::CreateBody() {
         }
     }
 
-    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRigidBody::TransformUpdated, SignalObject::Unique);
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRigidBody::TransformUpdated, SignalObject::ConnectionType::Unique);
 }
 
 void ComRigidBody::Update() {

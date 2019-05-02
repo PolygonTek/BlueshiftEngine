@@ -23,12 +23,12 @@
         best = end - start; \
     }
 
-static void PrintClocksGeneric(const wchar_t *string, uint64_t clocks) {
-    BE_LOG(L"generic->%ls: %" PRIu64 " clocks\n", string, clocks);
+static void PrintClocksGeneric(const char *string, uint64_t clocks) {
+    BE_LOG("generic->%s: %" PRIu64 " clocks\n", string, clocks);
 }
 
-static void PrintClocksSIMD(const wchar_t *string, uint64_t clocksGeneric, uint64_t clocksSIMD) {
-    BE_LOG(L"   simd->%ls: %" PRIu64 " clocks (%.2fx fast)\n", string, clocksSIMD, (float)clocksGeneric / (float)clocksSIMD);
+static void PrintClocksSIMD(const char *string, uint64_t clocksGeneric, uint64_t clocksSIMD) {
+    BE_LOG("   simd->%s: %" PRIu64 " clocks (%.2fx fast)\n", string, clocksSIMD, (float)clocksGeneric / (float)clocksSIMD);
 }
 
 static void RandomFloatArrayInit(float *dst, int count, float minimum, float maximum) {
@@ -40,9 +40,9 @@ static void RandomFloatArrayInit(float *dst, int count, float minimum, float max
 static void TestAdd() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN32(float src0[1024]);
-    ALIGN32(float src1[1024]);
-    ALIGN32(float dst[1024]);
+    ALIGN_AS32 float src0[1024];
+    ALIGN_AS32 float src1[1024];
+    ALIGN_AS32 float dst[1024];
     float c = 65535;
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
@@ -55,7 +55,7 @@ static void TestAdd() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric(L"Add( float, float[] )", bestClocksGeneric);
+    PrintClocksGeneric("Add( float, float[] )", bestClocksGeneric);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
 
@@ -67,7 +67,7 @@ static void TestAdd() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD(L"Add( float, float[] )", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD("Add( float, float[] )", bestClocksGeneric, bestClocksSIMD);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
@@ -80,7 +80,7 @@ static void TestAdd() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric(L"Add( float[], float[] )", bestClocksGeneric);
+    PrintClocksGeneric("Add( float[], float[] )", bestClocksGeneric);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
@@ -93,15 +93,15 @@ static void TestAdd() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD(L"Add( float[], float[] )", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD("Add( float[], float[] )", bestClocksGeneric, bestClocksSIMD);
 }
 
 static void TestSub() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN32(float src0[1024]);
-    ALIGN32(float src1[1024]);
-    ALIGN32(float dst[1024]);
+    ALIGN_AS32 float src0[1024];
+    ALIGN_AS32 float src1[1024];
+    ALIGN_AS32 float dst[1024];
     float c = 65535;
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
@@ -114,7 +114,7 @@ static void TestSub() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric(L"Sub( float, float[] )", bestClocksGeneric);
+    PrintClocksGeneric("Sub( float, float[] )", bestClocksGeneric);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
 
@@ -126,7 +126,7 @@ static void TestSub() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD(L"Sub( float, float[] )", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD("Sub( float, float[] )", bestClocksGeneric, bestClocksSIMD);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
@@ -139,7 +139,7 @@ static void TestSub() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric(L"Sub( float[], float[] )", bestClocksGeneric);
+    PrintClocksGeneric("Sub( float[], float[] )", bestClocksGeneric);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
@@ -152,15 +152,15 @@ static void TestSub() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD(L"Sub( float[], float[] )", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD("Sub( float[], float[] )", bestClocksGeneric, bestClocksSIMD);
 }
 
 static void TestMul() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN32(float src0[1024]);
-    ALIGN32(float src1[1024]);
-    ALIGN32(float dst[1024]);
+    ALIGN_AS32 float src0[1024];
+    ALIGN_AS32 float src1[1024];
+    ALIGN_AS32 float dst[1024];
     float c = 65535;
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
@@ -173,7 +173,7 @@ static void TestMul() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric(L"Mul( float, float[] )", bestClocksGeneric);
+    PrintClocksGeneric("Mul( float, float[] )", bestClocksGeneric);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
 
@@ -185,7 +185,7 @@ static void TestMul() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD(L"Mul( float, float[] )", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD("Mul( float, float[] )", bestClocksGeneric, bestClocksSIMD);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
@@ -198,7 +198,7 @@ static void TestMul() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric(L"Mul( float[], float[] )", bestClocksGeneric);
+    PrintClocksGeneric("Mul( float[], float[] )", bestClocksGeneric);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
@@ -211,15 +211,15 @@ static void TestMul() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD(L"Mul( float[], float[] )", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD("Mul( float[], float[] )", bestClocksGeneric, bestClocksSIMD);
 }
 
 static void TestDiv() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN32(float src0[1024]);
-    ALIGN32(float src1[1024]);
-    ALIGN32(float dst[1024]);
+    ALIGN_AS32 float src0[1024];
+    ALIGN_AS32 float src1[1024];
+    ALIGN_AS32 float dst[1024];
     float c = 65535;
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
@@ -232,7 +232,7 @@ static void TestDiv() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric(L"Div( float, float[] )", bestClocksGeneric);
+    PrintClocksGeneric("Div( float, float[] )", bestClocksGeneric);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
 
@@ -244,7 +244,7 @@ static void TestDiv() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD(L"Div( float, float[] )", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD("Div( float, float[] )", bestClocksGeneric, bestClocksSIMD);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
@@ -257,7 +257,7 @@ static void TestDiv() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric(L"Div( float[], float[] )", bestClocksGeneric);
+    PrintClocksGeneric("Div( float[], float[] )", bestClocksGeneric);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
@@ -270,13 +270,13 @@ static void TestDiv() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD(L"Div( float[], float[] )", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD("Div( float[], float[] )", bestClocksGeneric, bestClocksSIMD);
 }
 
 static void TestSum() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN32(float src[1024]);
+    ALIGN_AS32 float src[1024];
     float sum;
 
     RandomFloatArrayInit(src, COUNT_OF(src), -100.0f, 100.0f);
@@ -289,7 +289,7 @@ static void TestSum() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric(L"Sum 1024", bestClocksGeneric);
+    PrintClocksGeneric("Sum 1024", bestClocksGeneric);
 
     RandomFloatArrayInit(src, COUNT_OF(src), -100.0f, 100.0f);
 
@@ -301,7 +301,7 @@ static void TestSum() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD(L"Sum 1024", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD("Sum 1024", bestClocksGeneric, bestClocksSIMD);
 }
 
 static void TestMemcpy() {
@@ -323,7 +323,7 @@ static void TestMemcpy() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric(L"Memcpy 64k Bytes", bestClocksGeneric);
+    PrintClocksGeneric("Memcpy 64k Bytes", bestClocksGeneric);
 
     bestClocksSIMD = 0;
     for (int i = 0; i < 64; i++) {
@@ -337,7 +337,7 @@ static void TestMemcpy() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD(L"Memcpy 64k Bytes", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD("Memcpy 64k Bytes", bestClocksGeneric, bestClocksSIMD);
 
     BE1::Mem_AlignedFree(bufferSrc);
     BE1::Mem_AlignedFree(bufferDst);
@@ -361,7 +361,7 @@ static void TestMemset() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric(L"Memset 8192 Bytes", bestClocksGeneric);
+    PrintClocksGeneric("Memset 8192 Bytes", bestClocksGeneric);
 
     bestClocksSIMD = 0;
     for (int i = 0; i < 64; i++) {
@@ -375,7 +375,7 @@ static void TestMemset() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD(L"Memset 8192 Bytes", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD("Memset 8192 Bytes", bestClocksGeneric, bestClocksSIMD);
 
     BE1::Mem_AlignedFree(buffer);
 }
@@ -383,9 +383,9 @@ static void TestMemset() {
 static void TestMatrixMultiply() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN32(float matrixA[16]);
-    ALIGN32(float matrixB[16]);
-    ALIGN32(float matrixC[16]);
+    ALIGN_AS32 float matrixA[16];
+    ALIGN_AS32 float matrixB[16];
+    ALIGN_AS32 float matrixC[16];
 
     RandomFloatArrayInit(matrixA, COUNT_OF(matrixA), -100.0f, 100.0f);
     RandomFloatArrayInit(matrixB, COUNT_OF(matrixB), -100.0f, 100.0f);
@@ -398,8 +398,8 @@ static void TestMatrixMultiply() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric(L"MatrixMultiply", bestClocksGeneric);
-    //BE_LOG(L"  Result: %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", 
+    PrintClocksGeneric("MatrixMultiply", bestClocksGeneric);
+    //BE_LOG("  Result: %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n",
     //  matrixC[0], matrixC[1], matrixC[2], matrixC[3], matrixC[4], matrixC[5], matrixC[6], matrixC[7], matrixC[8], matrixC[9], matrixC[10], matrixC[11], matrixC[12], matrixC[13], matrixC[14], matrixC[15]);
 
     bestClocksSIMD = 0;
@@ -410,16 +410,16 @@ static void TestMatrixMultiply() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD(L"MatrixMultiply", bestClocksGeneric, bestClocksSIMD);
-    //BE_LOG(L"  Result: %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n",
+    PrintClocksSIMD("MatrixMultiply", bestClocksGeneric, bestClocksSIMD);
+    //BE_LOG("  Result: %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n",
     //  matrixC[0], matrixC[1], matrixC[2], matrixC[3], matrixC[4], matrixC[5], matrixC[6], matrixC[7], matrixC[8], matrixC[9], matrixC[10], matrixC[11], matrixC[12], matrixC[13], matrixC[14], matrixC[15]);	
 }
 
 static void TestMatrixTranspose() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN32(float matrixA[16]);
-    ALIGN32(float matrixB[16]);
+    ALIGN_AS32 float matrixA[16];
+    ALIGN_AS32 float matrixB[16];
 
     RandomFloatArrayInit(matrixA, COUNT_OF(matrixA), -100.0f, 100.0f);
 
@@ -431,7 +431,7 @@ static void TestMatrixTranspose() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric(L"MatrixTranspose", bestClocksGeneric);
+    PrintClocksGeneric("MatrixTranspose", bestClocksGeneric);
 
     RandomFloatArrayInit(matrixA, COUNT_OF(matrixA), -100.0f, 100.0f);
 
@@ -443,11 +443,11 @@ static void TestMatrixTranspose() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD(L"MatrixTranspose", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD("MatrixTranspose", bestClocksGeneric, bestClocksSIMD);
 }
 
 void TestSIMD() {
-    BE_LOG(L"Testing SIMD processors..\n");
+    BE_LOG("Testing SIMD processors..\n");
 
     TestAdd();
     TestSub();

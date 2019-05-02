@@ -34,8 +34,8 @@ public:
     uint32_t            value;
 };
 
-BE_INLINE RGBE9995::RGBE9995(uint32_t value) {
-    this->value = value;
+BE_INLINE RGBE9995::RGBE9995(uint32_t inValue) :
+    value(inValue) {
 }
 
 BE_INLINE RGBE9995::RGBE9995(float r, float g, float b) {

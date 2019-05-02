@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "EnvProbe.h"
+
 BE_NAMESPACE_BEGIN
 
 /*
@@ -25,17 +27,47 @@ BE_NAMESPACE_BEGIN
 */
 
 class CmdArgs;
-class VisibleView;
+class VisCamera;
+class RenderSystem;
+
+class EnvProbeJob {
+    friend class RenderSystem;
+
+public:
+    RenderWorld *           GetRenderWorld() const { return renderWorld; }
+
+    EnvProbe *              GetEnvProbe() const { return envProbe; }
+
+    bool                    IsFinished() const;
+
+    bool                    Refresh(EnvProbe::TimeSlicing::Enum timeSlicing);
+
+private:
+    void                    RevalidateDiffuseProbeRT(bool clearToBlack);
+    void                    RevalidateSpecularProbeRT(bool clearToBlack);
+    void                    RevalidateEnvProbeTexture();
+
+    RenderWorld *           renderWorld;
+    EnvProbe *              envProbe;
+
+    bool                    diffuseProbeCubemapComputed = false;
+    int                     specularProbeCubemapComputedLevel = -1;
+    int                     specularProbeCubemapComputedLevel0Face = -1;
+    int                     specularProbeCubemapMaxLevel = 0;
+};
 
 class RenderSystem {
     friend class RenderContext;
     friend class RenderWorld;
+    friend class EnvProbeJob;
     friend class PhysDebugDraw;
 
 public:
     RenderSystem();
 
-    void                    Init(void *windowHandle, const RHI::Settings *settings);
+    void                    InitRHI(void *windowHandle);
+
+    void                    Init();
     void                    Shutdown();
 
     bool                    IsInitialized() const { return initialized; }
@@ -48,10 +80,13 @@ public:
     RenderContext *         AllocRenderContext(bool isMainContext = false);
     void                    FreeRenderContext(RenderContext *renderContext);
 
-                            // valid only between BeginFrame()/EndFrame()
+                            /// This function is valid only between BeginFrame()/EndFrame()
     RenderContext *         GetCurrentRenderContext() { return currentContext; }
 
     RenderContext *         GetMainRenderContext() { return mainContext; }
+
+    void                    BeginCommands(RenderContext *renderContext);
+    void                    EndCommands();
 
     RenderWorld *           AllocRenderWorld();
     void                    FreeRenderWorld(RenderWorld *renderWorld);
@@ -60,6 +95,59 @@ public:
 
     void                    CheckModifiedCVars();
 
+                            /// Schedules to refresh environment probe in the next frame.
+    void                    ScheduleToRefreshEnvProbe(RenderWorld *renderWorld, int probeHandle);
+
+                            /// Forces to refresh environment probe immediately.
+    void                    ForceToRefreshEnvProbe(RenderWorld *renderWorld, int probeHandle);
+
+                            /// Captures screen.
+    void                    CaptureScreenRT(RenderWorld *renderWorld, int layerMask, bool colorClear, const Color4 &clearColor, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height, RenderTarget *targetRT);
+
+                            /// Captures screen texture.
+    Texture *               CaptureScreenTexture(RenderWorld *renderWorld, int layerMask, bool colorClear, const Color4 &clearColor, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height);
+
+                            /// Capture screen image.
+    void                    CaptureScreenImage(RenderWorld *renderWorld, int layerMask, bool colorClear, const Color4 &clearColor, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height, Image &screenImage);
+
+                            /// Captures environment cubemap for specific face.
+    void                    CaptureEnvCubeFaceRT(RenderWorld *renderWorld, int layerMask, int staticMask, bool colorClear, const Color4 &clearColor, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT, int faceIndex);
+
+                            /// Captures environment cubemap.
+    void                    CaptureEnvCubeRT(RenderWorld *renderWorld, int layerMask, int staticMask, bool colorClear, const Color4 &clearColor, const Vec3 &origin, float zNear, float zFar, RenderTarget *targetCubeRT);
+
+                            /// Captures environment cubemap texture.
+    Texture *               CaptureEnvCubeTexture(RenderWorld *renderWorld, int layerMask, int staticMask, bool colorClear, const Color4 &clearColor, const Vec3 &origin, float zNear, float zFar, bool useHDR, int size);
+
+                            /// Captures environment cubemap image.
+    void                    CaptureEnvCubeImage(RenderWorld *renderWorld, int layerMask, int staticMask, bool colorClear, const Color4 &clearColor, const Vec3 &origin, float zNear, float zFar, bool useHDR, int size, Image &envCubeImage);
+
+                            /// Generates irradiance environment cubemap using SH convolution method.
+    void                    GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const;
+
+                            /// Generates irradiance environment cubemap.
+    void                    GenerateIrradianceEnvCubeRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const;
+
+                            /// Generates Phong specular prefiltered environment cubemap.
+    void                    GeneratePhongSpecularLDSumRT(const Texture *envCubeTexture, int maxSpecularPower, RenderTarget *targetCubeRT) const;
+
+                            /// Generates GGX specular prefiltered environment cubemap for specific mip level.
+    void                    GenerateGGXLDSumRTLevel(const Texture *envCubeTexture, RenderTarget *targetCubeRT, int numMipLevels, int mipLevel) const;
+
+                            /// Generates GGX specular prefiltered environment cubemap.
+    void                    GenerateGGXLDSumRT(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const;
+
+                            /// Generates GGX DFG integration 2D LUT.
+    void                    GenerateGGXDFGSumImage(int size, Image &integrationImage) const;
+
+                            /// Writes GGX DFG integration 2D LUT.
+    void                    WriteGGXDFGSum(const char *filename, int size) const;
+
+    void                    TakeScreenShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height);
+    void                    TakeEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size = 256);
+    void                    TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size = 16, int envSize = 256);
+    void                    TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size = 256, int envSize = 256);
+
 private:
     void                    RecreateScreenMapRT();
     void                    RecreateHDRMapRT();
@@ -67,11 +155,18 @@ private:
     void *                  GetCommandBuffer(int bytes);
     void                    IssueCommands();
 
-    void                    CmdDrawView(const VisibleView *visView);
+    void                    UpdateEnvProbes();
+
+    void                    GenerateGGXLDSumRTFirstLevel(const Texture *envCubeTexture, RenderTarget *targetCubeRT) const;
+    void                    GenerateGGXLDSumRTRestLevel(const Texture *envCubeTexture, RenderTarget *targetCubeRT, int numMipLevels, int mipLevel) const;
+
+    void                    CmdDrawCamera(const VisCamera *camera);
     void                    CmdScreenshot(int x, int y, int width, int height, const char *filename);
 
     bool                    initialized;
     unsigned short          savedGammaRamp[768];
+
+    int                     renderWorldCount = 0;
 
     RenderWorld *           primaryWorld;
     
@@ -79,6 +174,9 @@ private:
     RenderContext *         currentContext;
     RenderContext *         mainContext;
 
+    Array<EnvProbeJob>      envProbeJobs;
+
+    static void             Cmd_GenerateDFGSumGGX(const CmdArgs &args);
     static void             Cmd_ScreenShot(const CmdArgs &args);
 };
 

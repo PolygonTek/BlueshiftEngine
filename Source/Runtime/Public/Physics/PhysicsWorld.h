@@ -44,7 +44,7 @@ struct PhysShapeDesc {
 };
 
 struct PhysCollidableDesc {
-    PhysCollidable::Type    type;
+    PhysCollidable::Type::Enum type;
     Array<PhysShapeDesc>    shapes;
     Vec3                    origin;         // position in system units
     Mat3                    axis;
@@ -61,7 +61,7 @@ struct PhysCollidableDesc {
 };
 
 struct PhysConstraintDesc {
-    PhysConstraint::Type    type;
+    PhysConstraint::Type::Enum type;
     PhysRigidBody *         bodyA;
     Vec3                    anchorInA;      // local position in A in system units
     Mat3                    axisInA;        // local axis in A
