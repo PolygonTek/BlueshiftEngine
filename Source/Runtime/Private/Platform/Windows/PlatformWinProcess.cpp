@@ -153,6 +153,10 @@ ProcessHandle PlatformWinProcess::CreateProccess(const char *appPath, const char
 
     Str appPathExpanded = Str::UTF8StrFromWCharString(wAppPathExpanded);
 
+    // Quote module filename string
+    appPathExpanded.Insert('"', 0);
+    appPathExpanded.Append('"');
+
     char commandLine[32768];
     Str::snPrintf(commandLine, COUNT_OF(commandLine), "%s %s", appPathExpanded.c_str(), args);
 
