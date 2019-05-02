@@ -1,7 +1,7 @@
 Version History
 ---------------
 
-### 0.6.0 (Work In Progress)
+### 0.6.0
 - Refined PBR shaders
 - Added support for environment probes for indirect lighting
 - Added support for various HDR tonemapping operators
