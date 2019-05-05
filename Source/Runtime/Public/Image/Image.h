@@ -179,7 +179,7 @@ public:
 
     /// Constructs image with the given data.
     /// If data is not nullptr, the image data is initialized with given data
-    Image(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, byte *data, int flags);
+    Image(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, byte *data, int flags);
     
     /// Copy constructor
     Image(const Image &other);
@@ -249,7 +249,7 @@ public:
                         /// Returns image flags.
     int                 GetFlags() const { return flags; }
                         /// Returns image format.
-    Image::Format::Enum GetFormat() const { return format; }
+    Format::Enum        GetFormat() const { return format; }
 
                         /// Returns pixel data pointer.
     byte *              GetPixels() const { return pic; }
@@ -276,16 +276,16 @@ public:
     void                Clear();
 
                         /// Creates an image with the given memory.
-    Image &             InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, byte *data, int flags);
+    Image &             InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, byte *data, int flags);
 
                         /// Creates an image.
                         /// If data is nullptr, just allocate the memory.
-    Image &             Create(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, const byte *data, int flags);
+    Image &             Create(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, const byte *data, int flags);
 
-    Image &             Create2D(int width, int height, int numMipmaps, Image::Format::Enum format, const byte *data, int flags);
-    Image &             Create3D(int width, int height, int depth, int numMipmaps, Image::Format::Enum format, const byte *data, int flags);
-    Image &             CreateCube(int size, int numMipmaps, Image::Format::Enum format, const byte *data, int flags);
-    Image &             Create2DArray(int width, int height, int numSlices, int numMipmaps, Image::Format::Enum format, const byte *data, int flags);
+    Image &             Create2D(int width, int height, int numMipmaps, Format::Enum format, const byte *data, int flags);
+    Image &             Create3D(int width, int height, int depth, int numMipmaps, Format::Enum format, const byte *data, int flags);
+    Image &             CreateCube(int size, int numMipmaps, Format::Enum format, const byte *data, int flags);
+    Image &             Create2DArray(int width, int height, int numSlices, int numMipmaps, Format::Enum format, const byte *data, int flags);
 
                         /// Creates an cubic image from six square images.
     Image &             CreateCubeFrom6Faces(const Image *faceImages);
@@ -302,14 +302,14 @@ public:
     Image &             GenerateMipmaps();
 
                         /// Converts this image to the given targetimage.
-    bool                ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool regenerateMipmaps = false, CompressionQuality::Enum compressionQuality = CompressionQuality::Normal) const;
+    bool                ConvertFormat(Format::Enum dstFormat, Image &dstImage, bool regenerateMipmaps = false, CompressionQuality::Enum compressionQuality = CompressionQuality::Normal) const;
                         /// Converts this image in-place.
-    bool                ConvertFormatSelf(Image::Format::Enum dstFormat, bool regenerateMipmaps = false, CompressionQuality::Enum compressionQuality = CompressionQuality::Normal);
+    bool                ConvertFormatSelf(Format::Enum dstFormat, bool regenerateMipmaps = false, CompressionQuality::Enum compressionQuality = CompressionQuality::Normal);
 
                         /// Resizes this image to the given target image.
-    bool                Resize(int width, int height, Image::ResampleFilter::Enum resampleFilter, Image &dstImage) const;
+    bool                Resize(int width, int height, ResampleFilter::Enum resampleFilter, Image &dstImage) const;
                         /// Resizes this image in-places.
-    bool                ResizeSelf(int width, int height, Image::ResampleFilter::Enum resampleFilter);
+    bool                ResizeSelf(int width, int height, ResampleFilter::Enum resampleFilter);
 
                         /// Flips vertically.
     Image &             FlipX();
@@ -345,20 +345,20 @@ public:
     bool                WriteHDR(const char *filename) const;
     
                         // static helper functions to get image information
-    static const char * FormatName(Image::Format::Enum imageFormat);
-    static int          BytesPerPixel(Image::Format::Enum imageFormat);
-    static int          BytesPerBlock(Image::Format::Enum imageFormat);
-    static int          NumComponents(Image::Format::Enum imageFormat);
-    static void         GetBits(Image::Format::Enum imageFormat, int *redBits, int *greenBits, int *blueBits, int *alphaBits);
-    static bool         HasAlpha(Image::Format::Enum imageFormat);
-    static bool         HasOneBitAlpha(Image::Format::Enum imageFormat);
-    static bool         IsPacked(Image::Format::Enum imageFormat);
-    static bool         IsCompressed(Image::Format::Enum imageFormat);
-    static bool         IsFloatFormat(Image::Format::Enum imageFormat);
-    static bool         IsHalfFormat(Image::Format::Enum imageFormat);
-    static bool         IsDepthFormat(Image::Format::Enum imageFormat);
-    static bool         IsDepthStencilFormat(Image::Format::Enum imageFormat);
-    static int          MemRequired(int width, int height, int depth, int numMipmaps, Image::Format::Enum imageFormat);
+    static const char * FormatName(Format::Enum imageFormat);
+    static int          BytesPerPixel(Format::Enum imageFormat);
+    static int          BytesPerBlock(Format::Enum imageFormat);
+    static int          NumComponents(Format::Enum imageFormat);
+    static void         GetBits(Format::Enum imageFormat, int *redBits, int *greenBits, int *blueBits, int *alphaBits);
+    static bool         HasAlpha(Format::Enum imageFormat);
+    static bool         HasOneBitAlpha(Format::Enum imageFormat);
+    static bool         IsPacked(Format::Enum imageFormat);
+    static bool         IsCompressed(Format::Enum imageFormat);
+    static bool         IsFloatFormat(Format::Enum imageFormat);
+    static bool         IsHalfFormat(Format::Enum imageFormat);
+    static bool         IsDepthFormat(Format::Enum imageFormat);
+    static bool         IsDepthStencilFormat(Format::Enum imageFormat);
+    static int          MemRequired(int width, int height, int depth, int numMipmaps, Format::Enum imageFormat);
     static int          MaxMipMapLevels(int width, int height, int depth);
 
                         /// Converts an sRGB value in the range [0, 1] to a linear value in the range [0, 1].
@@ -404,7 +404,7 @@ private:
     int                 depth;          ///< Depth
     int                 numSlices;      ///< Number of array images or 6 for cubic image
     int                 numMipmaps;     ///< Number of mipmaps
-    Image::Format::Enum format;         ///< Image format
+    Format::Enum        format;         ///< Image format
     int                 flags;          ///< Image flags
     bool                alloced;        ///< Is memory allocated ?
     byte *              pic;            ///< Actual pixel data
@@ -416,13 +416,13 @@ BE_INLINE Image::Image() {
     depth = 0;
     numSlices = 0;
     numMipmaps = 0;
-    format = Image::Format::Unknown;
+    format = Format::Unknown;
     flags = 0;
     alloced = false;
     pic = nullptr;
 }
 
-BE_INLINE Image::Image(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, byte *data, int flags) {
+BE_INLINE Image::Image(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, byte *data, int flags) {
     alloced = false;
     InitFromMemory(width, height, depth, numSlices, numMipmaps, format, data, flags);
     //Create(width, height, depth, numSlices, numMipmaps, format, data, flags);
@@ -473,19 +473,19 @@ BE_INLINE byte *Image::GetPixels(int level, int sliceIndex) const {
     return pic + GetSliceSize(0, numMipmaps) * sliceIndex + GetSliceSize(0, level);
 }
 
-BE_INLINE Image &Image::Create2D(int width, int height, int numMipmaps, Image::Format::Enum format, const byte *data, int flags) {
+BE_INLINE Image &Image::Create2D(int width, int height, int numMipmaps, Format::Enum format, const byte *data, int flags) {
     return Create(width, height, 1, 1, numMipmaps, format, data, flags);
 }
 
-BE_INLINE Image &Image::Create3D(int width, int height, int depth, int numMipmaps, Image::Format::Enum format, const byte *data, int flags) {
+BE_INLINE Image &Image::Create3D(int width, int height, int depth, int numMipmaps, Format::Enum format, const byte *data, int flags) {
     return Create(width, height, depth, 1, numMipmaps, format, data, flags);
 }
 
-BE_INLINE Image &Image::CreateCube(int size, int numMipmaps, Image::Format::Enum format, const byte *data, int flags) {
+BE_INLINE Image &Image::CreateCube(int size, int numMipmaps, Format::Enum format, const byte *data, int flags) {
     return Create(size, size, 1, 6, numMipmaps, format, data, flags | Flag::CubeMap);
 }
 
-BE_INLINE Image &Image::Create2DArray(int width, int height, int numSlices, int numMipmaps, Image::Format::Enum format, const byte *data, int flags) {
+BE_INLINE Image &Image::Create2DArray(int width, int height, int numSlices, int numMipmaps, Format::Enum format, const byte *data, int flags) {
     return Create(width, height, 1, numSlices, numMipmaps, format, data, flags);
 }
 
