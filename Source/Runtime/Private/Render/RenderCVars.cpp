@@ -65,6 +65,8 @@ CVAR(r_HOM_debug, "0", CVar::Flag::Bool, "");
 CVAR(r_ambientScale, "0.5", CVar::Flag::Float | CVar::Flag::Archive, "ambient intensities are mutipled by this");
 CVAR(r_lightScale, "1.0", CVar::Flag::Float | CVar::Flag::Archive, "all light intensities are multiplied by this");
 CVAR(r_indirectLit, "1", CVar::Flag::Bool | CVar::Flag::Archive, "use indirect lighting");
+CVAR(r_specularEnergyCompensation, "0", CVar::Flag::Bool | CVar::Flag::Archive, "use energy compensation for multiple scattering in a microfacet model");
+
 CVAR(r_probeBlending, "1", CVar::Flag::Bool | CVar::Flag::Archive, "use blending probe lighting");
 CVAR(r_probeBoxProjection, "1", CVar::Flag::Bool | CVar::Flag::Archive, "use box projected cubemap");
 CVAR_MINMAX(r_probeBakeBounces, "2", CVar::Flag::Integer | CVar::Flag::Archive, "", 1, 5);

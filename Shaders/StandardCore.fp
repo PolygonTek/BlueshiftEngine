@@ -158,8 +158,6 @@ uniform LOWP float wrappedDiffuse;
 // Indirect lighting parameters
 //
 #if defined(INDIRECT_LIGHTING)
-    uniform MEDIUMP sampler2D prefilteredDfgMap;
-
     uniform MEDIUMP samplerCube probe0DiffuseCubeMap;
     uniform MEDIUMP samplerCube probe0SpecularCubeMap;
     uniform LOWP float probe0SpecularCubeMapMaxMipLevel;
@@ -178,6 +176,8 @@ uniform LOWP float wrappedDiffuse;
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
+    uniform MEDIUMP sampler2D prefilteredDfgMap;
+
     $include "StandardBRDF.glsl"
 
     #ifdef LEGACY_PHONG_LIGHTING

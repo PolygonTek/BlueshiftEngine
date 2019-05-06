@@ -50,6 +50,7 @@ extern CVar     r_shadowCubeMapZNear;
 extern CVar     r_shadowCubeMapFloat;
 extern CVar     r_shadowMapQuality;
 extern CVar     r_shadowMapCropAlign;
+
 extern CVar     r_CSM_count;
 extern CVar     r_CSM_maxDistance;
 extern CVar     r_CSM_pancaking;
@@ -74,6 +75,8 @@ extern CVar     r_HOM_debug;
 extern CVar     r_ambientScale;
 extern CVar     r_lightScale;
 extern CVar     r_indirectLit;
+extern CVar     r_specularEnergyCompensation;
+
 extern CVar     r_probeBlending;
 extern CVar     r_probeBoxProjection;
 extern CVar     r_probeBakeBounces;

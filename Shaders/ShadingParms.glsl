@@ -274,10 +274,10 @@ void PrepareShadingParms(vec4 albedo) {
     shading.linearRoughness = shading.roughness * shading.roughness;
 
 #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
-    #if defined(INDIRECT_LIGHTING)
+    #if defined(INDIRECT_LIGHTING) || defined(USE_MULTIPLE_SCATTERING_COMPENSATION)
         shading.preDFG = tex2D(prefilteredDfgMap, vec2(shading.ndotv, shading.roughness)).xy;
     #else
-        shading.preDFG = GetPrefilteredDFG(shading.ndotv, shading.roughness);
+        shading.preDFG = vec2(1.0, 1.0);
     #endif
 
     #ifdef USE_MULTIPLE_SCATTERING_COMPENSATION

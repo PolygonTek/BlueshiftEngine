@@ -233,6 +233,10 @@ void ShaderManager::InitGlobalDefines() {
 
     shaderManager.AddGlobalHeader(va("#define TONE_MAPPING_OPERATOR %i\n", r_HDR_toneMapOp.GetInteger()));
 
+    if (r_specularEnergyCompensation.GetBool()) {
+        shaderManager.AddGlobalHeader("#define USE_MULTIPLE_SCATTERING_COMPENSATION\n");
+    }
+
     shaderManager.AddGlobalHeader(va("#define SHADOW_MAP_QUALITY %i\n", r_shadowMapQuality.GetInteger()));
 
     int maxShaderJoints = (rhi.HWLimit().maxVertexUniformComponents - 256) / (4 * 3);

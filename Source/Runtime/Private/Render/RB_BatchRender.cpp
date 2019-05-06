@@ -724,6 +724,11 @@ void Batch::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float 
         shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
     }
 
+    // Requires pre-filtered DFG LUT for energy compensation even in direct lighting pass.
+    if (r_specularEnergyCompensation.GetBool()) {
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::PrefilteredDfgMap], backEnd.dfgSumGgxTexture);
+    }
+
     SetMatrixConstants(shader);
 
     SetEntityConstants(mtrlPass, shader);
@@ -940,6 +945,11 @@ void Batch::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const {
         }
     } else {
         shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
+    }
+
+    // Requires pre-filtered DFG LUT for energy compensation even in direct lighting pass.
+    if (r_specularEnergyCompensation.GetBool()) {
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::PrefilteredDfgMap], backEnd.dfgSumGgxTexture);
     }
 
     SetMatrixConstants(shader);
