@@ -440,7 +440,7 @@ void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
     // Skybox object parameters
     RenderObject::State roDef;
     roDef.flags = RenderObject::Flag::Static | RenderObject::Flag::SkipSelection;
-    roDef.worldMatrix.SetTRS(camera->def->GetState().origin, Mat3::identity, Vec3(camera->def->zNear * 4));
+    roDef.worldMatrix.SetTRS(camera->def->GetState().origin, Mat3::identity, Vec3(10, 10, 10));
     roDef.materialParms[RenderObject::MaterialParm::Red] = 1.0f;
     roDef.materialParms[RenderObject::MaterialParm::Green] = 1.0f;
     roDef.materialParms[RenderObject::MaterialParm::Blue] = 1.0f;
@@ -457,6 +457,7 @@ void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
     if (camera->def->GetState().orthogonal) {
         Mat4 projMatrix;
         R_SetPerspectiveProjectionMatrix(45, 45, 0.01, 1000, false, projMatrix);
+
         visObject->modelViewMatrix = camera->def->viewMatrix * renderObject.GetWorldMatrix();
         visObject->modelViewProjMatrix = projMatrix * visObject->modelViewMatrix;
     } else {
