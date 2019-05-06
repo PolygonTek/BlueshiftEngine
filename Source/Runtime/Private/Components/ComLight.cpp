@@ -55,7 +55,7 @@ void ComLight::RegisterProperties() {
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("timeScale", "Time Scale", float, GetTimeScale, SetTimeScale, 1.f, 
         "", PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("maxVisDist", "Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 16384.f, 
+    REGISTER_ACCESSOR_PROPERTY("maxVisDist", "Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 1000.f, 
         "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
 }
 
