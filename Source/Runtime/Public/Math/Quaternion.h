@@ -125,6 +125,8 @@ public:
                         /// Sets identity quaternion (0, 0, 0, 1)
     void                SetIdentity();
 
+                        /// Calculate w component by based on x, y, z components.
+                        /// x, y, z components must be normalized.
     float               CalcW() const;
 
                         /// Computes the dot product of this and the given quaternion.
@@ -147,10 +149,11 @@ public:
                         /// Inverts this quaternion, in-place.
     Quat &              InverseSelf();
 
-                        /// Sets this quaternion by specifying the axis about which the rotation is performed, and the angle of rotation.
+                        /// Sets this quaternion by specifying the axis about which the rotation is performed, and the angle in radians.
     Quat &              SetFromAngleAxis(float angle, const Vec3 &axis);
-                        /// Returns the quaternion with the given angle and axis.
+                        /// Returns the quaternion with the given angle in radians and axis.
     static Quat         FromAngleAxis(float angle, const Vec3 &axis);
+
                         /// Sets this quaternion by specifying the Euler angles.
     Quat &              SetFromAngles(const Angles &angles);
                         /// Returns the quaternion with the given Euler angles.
@@ -161,18 +164,24 @@ public:
                         /// Returns the quaternion that rotates unit-length vector "from" to unit-length vector "to".
     static Quat         FromTwoVectors(const Vec3 &from, const Vec3 &to);
 
+                        /// Sets this quaternion to rotate the given 'from' vector towards the 'to' vector by the normalized t parameter.
     Quat &              SetFromSlerp(const Quat &from, const Quat &to, float t);
     Quat &              SetFromSlerpFast(const Quat &from, const Quat &to, float t);
 
+                        /// Returns the quaternion to rotate the given 'from' vector towards the 'to' vector by the normalized t parameter.
     static Quat         FromSlerp(const Quat &from, const Quat &to, float t);
     static Quat         FromSlerpFast(const Quat &from, const Quat &to, float t);
 
+    CQuat               ToCQuat() const;
+
     Angles              ToAngles() const;
     Rotation            ToRotation() const;
+
     Mat3                ToMat3() const;
     Mat4                ToMat4() const;
-    CQuat               ToCQuat() const;
+
     Vec3                ToAngularVelocity() const;
+
                         /// Returns "x y z w".
     const char *        ToString() const { return ToString(4); }
                         /// Returns "x y z w" with the given precision.
