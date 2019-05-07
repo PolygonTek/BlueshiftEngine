@@ -194,13 +194,29 @@ public:
                         /// Orthonormalizes the basis formed by the column vectors of this matrix, in-place.
     Mat3 &              OrthoNormalizeSelf();
 
-                        /// Rotates about the given axis by the given angle, in-place
+                        /// Rotates about the given axis by the given angle, in-place.
     Mat3 &              Rotate(const Vec3 &axis, const float degree);
-                        /// Rotates about one of the principal axes by the given angle, in-place
+
+                        /// Rotates about one of the principal axes by the given angle, in-place.
                         /// Calling RotateX, RotateY or RotateZ is slightly faster than calling the more generic Rotate() function.
-    Mat3 &              RotateX(const float degree);
-    Mat3 &              RotateY(const float degree);
-    Mat3 &              RotateZ(const float degree);
+    Mat3 &              RotateX(float degree);
+    Mat3 &              RotateY(float degree);
+    Mat3 &              RotateZ(float degree);
+
+                        /// Sets rotation matrix about one of the principal axes by the given angle.
+    void                SetRotationX(float degree);
+    void                SetRotationY(float degree);
+    void                SetRotationZ(float degree);
+
+                        /// Returns 3x3 matrix from the given sequence of Euler rotation angles.
+                        /// The FromRotationABC function returns a matrix M = A(ea) * B(eb) * C(ec).
+                        /// Rotation C is applied first, followed by B and then A.
+    static Mat3         FromRotationXYZ(float ex, float ey, float ez);
+    static Mat3         FromRotationXZY(float ex, float ez, float ey);
+    static Mat3         FromRotationYXZ(float ey, float ex, float ez);
+    static Mat3         FromRotationYZX(float ey, float ez, float ex);
+    static Mat3         FromRotationZXY(float ez, float ex, float ey);
+    static Mat3         FromRotationZYX(float ez, float ey, float ex);
 
                         /// Scales by the given factors, in-place
     Mat3 &              Scale(const Vec3 &scale);
