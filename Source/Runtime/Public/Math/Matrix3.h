@@ -218,6 +218,15 @@ public:
     static Mat3         FromRotationZXY(float ez, float ex, float ey);
     static Mat3         FromRotationZYX(float ez, float ey, float ex);
 
+                        /// Decomposes the matrix and outputs the angles of rotation in parameters ex, ey and ez, in radians.
+                        /// The matrix must be orthonormal.
+    void                ToRotationXYZ(float &ex, float &ey, float &ez);
+    void                ToRotationXZY(float &ex, float &ez, float &ey);
+    void                ToRotationYXZ(float &ey, float &ex, float &ez);
+    void                ToRotationYZX(float &ey, float &ez, float &ex);
+    void                ToRotationZXY(float &ez, float &ex, float &ey);
+    void                ToRotationZYX(float &ez, float &ey, float &ex);
+
                         /// Scales by the given factors, in-place.
     Mat3 &              Scale(const Vec3 &scale);
 

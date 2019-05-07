@@ -434,6 +434,127 @@ Mat3 Mat3::FromRotationZYX(float ez, float ey, float ex) {
     return m;
 }
 
+// This function was adapted from http://www.geometrictools.com/Documentation/EulerAngles.pdf
+void Mat3::ToRotationXYZ(float &ex, float &ey, float &ez) {
+    if (mat[2][0] < 1.f) {
+        if (mat[2][0] > -1.f) {
+            ey = asin(mat[2][0]);
+            ex = atan2(-mat[2][1], mat[2][2]);
+            ez = atan2(-mat[1][0], mat[0][0]);
+        } else {
+            // Not a unique solution: z - x = atan2(mat[0][1], mat[1][1]);
+            ey = -Math::Pi / 2.f;
+            ex = -atan2(mat[0][1], mat[1][1]);
+            ez = 0.f;
+        }
+    } else {
+        // Not a unique solution: z + x = atan2(mat[0][1], mat[1][1]);
+        ey = Math::Pi / 2.f;
+        ex = atan2(mat[0][1], mat[1][1]);
+        ez = 0.f;
+    }
+}
+
+void Mat3::ToRotationXZY(float &ex, float &ez, float &ey) {
+    if (mat[1][0] < 1.f) {
+        if (mat[1][0] > -1.f) {
+            ez = asin(-mat[1][0]);
+            ex = atan2(mat[1][2], mat[1][1]);
+            ey = atan2(mat[2][0], mat[0][0]);
+        } else {
+            // Not a unique solution: y - x = atan2(-mat[0][2], mat[2][2]);
+            ez = Math::Pi / 2.f;
+            ex = atan2(-mat[0][2], mat[2][2]);
+            ey = 0;
+        }
+    } else {
+        // Not a unique solution: y + x = atan2(-mat[0][2], mat[2][2]);
+        ez = -Math::Pi / 2.f;
+        ex = atan2(-mat[0][2], mat[2][2]);
+        ey = 0;
+    }
+}
+
+void Mat3::ToRotationYXZ(float &ey, float &ex, float &ez) {
+    if (mat[2][1] < 1.f) {
+        if (mat[2][1] > -1.f) {
+            ex = asin(-mat[2][1]);
+            ey = atan2(mat[2][0], mat[2][2]);
+            ez = atan2(mat[0][1], mat[1][1]);
+        } else {
+            // Not a unique solution.
+            ex = Math::Pi / 2.f;
+            ey = -atan2(-mat[1][0], mat[0][0]);
+            ez = 0;
+        }
+    } else {
+        // Not a unique solution.
+        ex = -Math::Pi / 2.f;
+        ey = atan2(-mat[1][0], mat[0][0]);
+        ez = 0;
+    }
+}
+
+void Mat3::ToRotationYZX(float &ey, float &ez, float &ex) {
+    if (mat[0][1] < 1.f) {
+        if (mat[0][1] > -1.f) {
+            ez = asin(mat[0][1]);
+            ey = atan2(mat[0][2], mat[0][0]);
+            ex = atan2(mat[2][1], mat[1][1]);
+        } else {
+            // Not a unique solution.
+            ez = -Math::Pi / 2.f;
+            ey = -atan2(mat[1][2], mat[2][2]);
+            ex = 0;
+        }
+    } else {
+        // Not a unique solution.
+        ez = Math::Pi / 2.f;
+        ey = atan2(-mat[1][2], mat[2][2]);
+        ex = 0;
+    }
+}
+
+void Mat3::ToRotationZXY(float &ez, float &ex, float &ey) {
+    if (mat[1][2] < 1.f) {
+        if (mat[1][2] > -1.f) {
+            ex = asin(mat[1][2]);
+            ez = atan2(-mat[1][0], mat[1][1]);
+            ey = atan2(-mat[0][2], mat[2][2]);
+        } else {
+            // Not a unique solution.
+            ex = -Math::Pi / 2.f;
+            ez = -atan2(-mat[2][0], mat[0][0]);
+            ey = 0;
+        }
+    } else {
+        // Not a unique solution.
+        ex = Math::Pi / 2.f;
+        ez = atan2(mat[2][0], mat[0][0]);
+        ey = 0;
+    }
+}
+    
+void Mat3::ToRotationZYX(float &ez, float &ey, float &ex) {
+    if (mat[0][2] < 1.f) {
+        if (mat[0][2] > -1.f) {
+            ey = asin(-mat[0][2]);
+            ez = atan2(mat[0][1], mat[0][0]);
+            ex = atan2(mat[1][2], mat[2][2]);
+        } else {
+            // Not a unique solution.
+            ey = Math::Pi / 2.f;
+            ez = -atan2(-mat[2][1], mat[1][1]);
+            ex = 0;
+        }
+    } else {
+        // Not a unique solution.
+        ey = -Math::Pi / 2.f;
+        ez = atan2(-mat[2][1], mat[1][1]);
+        ex = 0;
+    }
+}
+
 //------------------------------------------------
 //  
 //        | 1     0      0 | | m00  m10  m20 |
