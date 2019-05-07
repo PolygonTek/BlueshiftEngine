@@ -149,6 +149,43 @@ public:
                         /// Inverts this quaternion, in-place.
     Quat &              InverseSelf();
 
+                        /// Returns the quaternion that rotates about the positive X axis by the given angle in radians.
+    static Quat         FromRotationX(float angle) { FromAngleAxis(angle, Vec3::unitX); }
+                        /// Returns the quaternion that rotates about the positive Y axis by the given angle in radians.
+    static Quat         FromRotationY(float angle) { FromAngleAxis(angle, Vec3::unitY); }
+                        /// Returns the quaternion that rotates about the positive Z axis by the given angle in radians.
+    static Quat         FromRotationZ(float angle) { FromAngleAxis(angle, Vec3::unitZ); }
+
+                        /// Creates the quaternion from the given sequence of Euler rotation angles in radians.
+                        /// The FromRotationABC function returns a matrix M = A(a) * B(b) * C(c). 
+                        /// Rotation C is applied first, followed by B and then A.
+    static Quat         FromRotationXYZ(float ex, float ey, float ez) { return (FromRotationX(ex) * FromRotationY(ey) * FromRotationZ(ez)).Normalize(); }
+    static Quat         FromRotationXZY(float ex, float ez, float ey) { return (FromRotationX(ex) * FromRotationZ(ez) * FromRotationY(ey)).Normalize(); }
+    static Quat         FromRotationYXZ(float ey, float ex, float ez) { return (FromRotationY(ey) * FromRotationX(ex) * FromRotationZ(ez)).Normalize(); }
+    static Quat         FromRotationYZX(float ey, float ez, float ex) { return (FromRotationY(ey) * FromRotationZ(ez) * FromRotationX(ex)).Normalize(); }
+    static Quat         FromRotationZXY(float ez, float ex, float ey) { return (FromRotationZ(ez) * FromRotationX(ex) * FromRotationY(ey)).Normalize(); }
+    static Quat         FromRotationZYX(float ez, float ey, float ex) { return (FromRotationZ(ez) * FromRotationY(ey) * FromRotationX(ex)).Normalize(); }
+    static Quat         FromRotationXYX(float ex2, float ey, float ex1) { return (FromRotationX(ex2) * FromRotationY(ey) * FromRotationX(ex1)).Normalize(); }
+    static Quat         FromRotationXZX(float ex2, float ez, float ex1) { return (FromRotationX(ex2) * FromRotationZ(ez) * FromRotationZ(ex1)).Normalize(); }
+    static Quat         FromRotationYXY(float ey2, float ex, float ey1) { return (FromRotationY(ey2) * FromRotationX(ex) * FromRotationY(ey1)).Normalize(); }
+    static Quat         FromRotationYZY(float ey2, float ez, float ey1) { return (FromRotationY(ey2) * FromRotationZ(ez) * FromRotationY(ey1)).Normalize(); }
+    static Quat         FromRotationZXZ(float ez2, float ex, float ez1) { return (FromRotationZ(ez2) * FromRotationX(ex) * FromRotationZ(ez1)).Normalize(); }
+    static Quat         FromRotationZYZ(float ez2, float ey, float ez1) { return (FromRotationZ(ez2) * FromRotationY(ey) * FromRotationZ(ez1)).Normalize(); }
+
+                        /// Extracts the rotation part of this quaternion into Euler rotation angles in radians.
+    void                ToRotationXYZ(float &ex, float &ey, float &ez) { return ToMat3().ToRotationXYZ(ex, ey, ez); }
+    void                ToRotationXZY(float &ex, float &ez, float &ey) { return ToMat3().ToRotationXZY(ex, ez, ey); }
+    void                ToRotationYXZ(float &ey, float &ex, float &ez) { return ToMat3().ToRotationYXZ(ey, ex, ez); }
+    void                ToRotationYZX(float &ey, float &ez, float &ex) { return ToMat3().ToRotationYZX(ey, ez, ex); }
+    void                ToRotationZXY(float &ez, float &ex, float &ey) { return ToMat3().ToRotationZXY(ez, ex, ey); }
+    void                ToRotationZYX(float &ez, float &ey, float &ex) { return ToMat3().ToRotationZYX(ez, ey, ex); }
+    void                ToRotationXYX(float &ex2, float &ey, float &ex1) { return ToMat3().ToRotationXYX(ex2, ey, ex1); }
+    void                ToRotationXZX(float &ex2, float &ez, float &ex1) { return ToMat3().ToRotationXZX(ex2, ez, ex1); }
+    void                ToRotationYXY(float &ey2, float &ex, float &ey1) { return ToMat3().ToRotationYXY(ey2, ex, ey1); }
+    void                ToRotationYZY(float &ey2, float &ez, float &ey1) { return ToMat3().ToRotationYZY(ey2, ez, ey1); }
+    void                ToRotationZXZ(float &ez2, float &ex, float &ez1) { return ToMat3().ToRotationZXZ(ez2, ex, ez1); }
+    void                ToRotationZYZ(float &ez2, float &ey, float &ez1) { return ToMat3().ToRotationZYZ(ez2, ey, ez1); }
+
                         /// Sets this quaternion by specifying the axis about which the rotation is performed, and the angle in radians.
     Quat &              SetFromAngleAxis(float angle, const Vec3 &axis);
                         /// Returns the quaternion with the given angle in radians and axis.
