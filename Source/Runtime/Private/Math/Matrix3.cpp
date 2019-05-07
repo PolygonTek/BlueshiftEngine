@@ -189,9 +189,9 @@ bool Mat3::InverseSelf() {
 //      | 0  sinx   cosx |
 //
 //------------------------------------------------
-void Mat3::SetRotationX(float degree) {
+void Mat3::SetRotationX(float ex) {
     float s, c;
-    Math::SinCos(DEG2RAD(degree), s, c);
+    Math::SinCos(ex, s, c);
 
     mat[0][0] = 1.0f;
     mat[0][1] = 0.0f;
@@ -213,9 +213,9 @@ void Mat3::SetRotationX(float degree) {
 //      | -siny  0  cosy |
 //
 //------------------------------------------------
-void Mat3::SetRotationY(float degree) {
+void Mat3::SetRotationY(float ey) {
     float s, c;
-    Math::SinCos(DEG2RAD(degree), s, c);
+    Math::SinCos(ey, s, c);
 
     mat[0][0] = c;
     mat[0][1] = 0.0f;
@@ -237,9 +237,9 @@ void Mat3::SetRotationY(float degree) {
 //      |    0      0  1 |
 //
 //------------------------------------------------
-void Mat3::SetRotationZ(float degree) {
+void Mat3::SetRotationZ(float ez) {
     float s, c;
-    Math::SinCos(DEG2RAD(degree), s, c);
+    Math::SinCos(ez, s, c);
 
     mat[0][0] = c;
     mat[0][1] = s;
@@ -270,15 +270,15 @@ Mat3 Mat3::FromRotationXYZ(float ex, float ey, float ez) {
 
     Mat3 m;
     m[0][0] = cy * cz;
-    m[0][1] = -cy * sz;
-    m[0][2] = sy;
+    m[0][1] = cz * sx*sy + cx * sz;
+    m[0][2] = -cx * cz*sy + sx * sz;
 
-    m[1][0] = cz * sx*sy + cx * sz;
+    m[1][0] = -cy * sz;
     m[1][1] = cx * cz - sx * sy*sz;
-    m[1][2] = -cy * sx;
+    m[1][2] = cz * sx + cx * sy*sz;
 
-    m[2][0] = -cx * cz*sy + sx * sz;
-    m[2][1] = cz * sx + cx * sy*sz;
+    m[2][0] = sy;
+    m[2][1] = -cy * sx;
     m[2][2] = cx * cy;
 
     return m;
@@ -300,15 +300,15 @@ Mat3 Mat3::FromRotationXZY(float ex, float ez, float ey) {
 
     Mat3 m;
     m[0][0] = cy * cz;
-    m[0][1] = -sz;
-    m[0][2] = cz * sy;
+    m[0][1] = sx * sy + cx * cy*sz;
+    m[0][2] = -cx * sy + cy * sx*sz;
 
-    m[1][0] = sx * sy + cx * cy*sz;
+    m[1][0] = -sz;
     m[1][1] = cx * cz;
-    m[1][2] = -cy * sx + cx * sy*sz;
+    m[1][2] = cz * sx;
 
-    m[2][0] = -cx * sy + cy * sx*sz;
-    m[2][1] = cz * sx;
+    m[2][0] = cz * sy;
+    m[2][1] = -cy * sx + cx * sy*sz;
     m[2][2] = cx * cy + sx * sy*sz;
 
     return m;
@@ -330,15 +330,15 @@ Mat3 Mat3::FromRotationYXZ(float ey, float ex, float ez) {
 
     Mat3 m;
     m[0][0] = cy * cz + sx * sy*sz;
-    m[0][1] = cx * sx*sy - cy * sz;
-    m[0][2] = cx * sy;
+    m[0][1] = cx * sz;
+    m[0][2] = -cz * sy + cy * sx*sz;
 
-    m[1][0] = cx * sz;
+    m[1][0] = cx * sx*sy - cy * sz;
     m[1][1] = cx * cz;
-    m[1][2] = -sx;
+    m[1][2] = cy * cz*sx + sy * sz;
 
-    m[2][0] = -cz * sy + cy * sx*sz;
-    m[2][1] = cy * cz*sx + sy * sz;
+    m[2][0] = cx * sy;
+    m[2][1] = -sx;
     m[2][2] = cx * cy;
 
     return m;
@@ -360,15 +360,15 @@ Mat3 Mat3::FromRotationYZX(float ey, float ez, float ex) {
 
     Mat3 m;
     m[0][0] = cy * cz;
-    m[0][1] = sx * sy - cx * cy*sz;
-    m[0][2] = cx * sy + cy * sx*sz;
+    m[0][1] = sz;
+    m[0][2] = -cx * sy;
 
-    m[1][0] = sz; 
+    m[1][0] = sx * sy - cx * cy*sz;
     m[1][1] = cx * cz;
-    m[1][2] = -cz * sx;
+    m[1][2] = cy * sx + cx * sy*sz;
 
-    m[2][0] = -cx * sy;
-    m[2][1] = cy * sx + cx * sy*sz;
+    m[2][0] = cx * sy + cy * sx*sz;
+    m[2][1] = -cz * sx;
     m[2][2] = cx * cy - sx * sy*sz;
 
     return m;
@@ -390,15 +390,15 @@ Mat3 Mat3::FromRotationZXY(float ez, float ex, float ey) {
 
     Mat3 m;
     m[0][0] = cy * cz - sx * sy*sz;
-    m[0][1] = -cx * sz;
-    m[0][2] = cz * sy + cy * sx*sz;
+    m[0][1] = cz * sx*sy + cy * sz;
+    m[0][2] = -cx * sy;
 
-    m[1][0] = cz * sx*sy + cy * sz;
-    m[1][1] = cx * cz; 
-    m[1][2] = -cy * cz*sx + sy * sz;
+    m[1][0] = -cx * sz;
+    m[1][1] = cx * cz;
+    m[1][2] = sx;
 
-    m[2][0] = -cx * sy;
-    m[2][1] = sx;
+    m[2][0] = cz * sy + cy * sx*sz;
+    m[2][1] = -cy * cz*sx + sy * sz;
     m[2][2] = cx * cy;
 
     return m;
@@ -420,15 +420,15 @@ Mat3 Mat3::FromRotationZYX(float ez, float ey, float ex) {
 
     Mat3 m;
     m[0][0] = cy * cz;
-    m[0][1] = cz * sx*sy - cx * sz;
-    m[0][2] = cx * cz*sy + sx * sz;
+    m[0][1] = cy * sz;
+    m[0][2] = -sy;
 
-    m[1][0] = cy * sz; 
+    m[1][0] = cz * sx*sy - cx * sz;
     m[1][1] = cx * cz + sx * sy*sz;
-    m[1][2] = -cz * sx + cx * sy*sz;
+    m[1][2] = cy * sx;
 
-    m[2][0] = -sy;
-    m[2][1] = cy * sx;
+    m[2][0] = cx * cz*sy + sx * sz;
+    m[2][1] = -cz * sx + cx * sy*sz;
     m[2][2] = cx * cy;
 
     return m;
@@ -441,9 +441,9 @@ Mat3 Mat3::FromRotationZYX(float ez, float ey, float ex) {
 //        | 0  sinx   cosx | | m02  m12  m22 |
 //
 //------------------------------------------------
-Mat3 &Mat3::RotateX(float degree) {
+Mat3 &Mat3::RotateX(float ex) {
     float s, c;
-    Math::SinCos(DEG2RAD(degree), s, c);
+    Math::SinCos(ex, s, c);
 
     float tmp[6];
     tmp[0] = c * mat[0][1] - s * mat[0][2];
@@ -470,9 +470,9 @@ Mat3 &Mat3::RotateX(float degree) {
 //        | -siny  0  cosy | | m02  m12  m22 |
 //
 //------------------------------------------------
-Mat3 &Mat3::RotateY(float degree) {
+Mat3 &Mat3::RotateY(float ey) {
     float s, c;
-    Math::SinCos(DEG2RAD(degree), s, c);
+    Math::SinCos(ey, s, c);
     
     float tmp[6];
     tmp[0] = c * mat[0][0] + s * mat[0][2];
@@ -499,9 +499,9 @@ Mat3 &Mat3::RotateY(float degree) {
 //        |    0      0  1 | | m02  m12  m22 |
 //
 //------------------------------------------------
-Mat3 &Mat3::RotateZ(float degree) {
+Mat3 &Mat3::RotateZ(float ez) {
     float s, c;
-    Math::SinCos(DEG2RAD(degree), s, c);
+    Math::SinCos(ez, s, c);
     
     float tmp[6];
     tmp[0] = c * mat[0][0] - s * mat[0][1];
@@ -521,9 +521,8 @@ Mat3 &Mat3::RotateZ(float degree) {
     return *this;
 }
 
-Mat3 &Mat3::Rotate(const Vec3 &axis, const float degree) {
-    Rotation rot(Vec3::origin, axis, degree);
-    *this = rot.ToMat3() * *this;
+Mat3 &Mat3::Rotate(const Vec3 &axis, float angle) {
+    *this = Rotation(Vec3::origin, axis, RAD2DEG(angle)).ToMat3() * *this;
 
     return *this;
 }

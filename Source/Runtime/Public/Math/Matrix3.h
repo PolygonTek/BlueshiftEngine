@@ -194,21 +194,21 @@ public:
                         /// Orthonormalizes the basis formed by the column vectors of this matrix, in-place.
     Mat3 &              OrthoNormalizeSelf();
 
-                        /// Rotates about the given axis by the given angle, in-place.
-    Mat3 &              Rotate(const Vec3 &axis, const float degree);
+                        /// Rotates about the given axis by the given angle in radians, in-place.
+    Mat3 &              Rotate(const Vec3 &axis, float angle);
 
-                        /// Rotates about one of the principal axes by the given angle, in-place.
+                        /// Rotates about one of the principal axes by the given angle in radians, in-place.
                         /// Calling RotateX, RotateY or RotateZ is slightly faster than calling the more generic Rotate() function.
-    Mat3 &              RotateX(float degree);
-    Mat3 &              RotateY(float degree);
-    Mat3 &              RotateZ(float degree);
+    Mat3 &              RotateX(float ex);
+    Mat3 &              RotateY(float ey);
+    Mat3 &              RotateZ(float ez);
 
-                        /// Sets rotation matrix about one of the principal axes by the given angle.
-    void                SetRotationX(float degree);
-    void                SetRotationY(float degree);
-    void                SetRotationZ(float degree);
+                        /// Sets rotation matrix about one of the principal axes by the given angle in radians.
+    void                SetRotationX(float ex);
+    void                SetRotationY(float ey);
+    void                SetRotationZ(float ez);
 
-                        /// Returns 3x3 matrix from the given sequence of Euler rotation angles.
+                        /// Returns 3x3 matrix from the given sequence of Euler rotation angles in radians.
                         /// The FromRotationABC function returns a matrix M = A(ea) * B(eb) * C(ec).
                         /// Rotation C is applied first, followed by B and then A.
     static Mat3         FromRotationXYZ(float ex, float ey, float ez);
