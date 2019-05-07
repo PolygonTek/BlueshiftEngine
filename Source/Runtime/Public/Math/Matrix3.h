@@ -218,27 +218,33 @@ public:
     static Mat3         FromRotationZXY(float ez, float ex, float ey);
     static Mat3         FromRotationZYX(float ez, float ey, float ex);
 
-                        /// Scales by the given factors, in-place
+                        /// Scales by the given factors, in-place.
     Mat3 &              Scale(const Vec3 &scale);
 
-                        /// Returns scaling matrix
+                        /// Returns scaling matrix.
     static Mat3         FromScale(float sx, float sy, float sz);
     static Mat3         FromScale(const Vec3 &s) { return FromScale(s.x, s.y, s.z); }
 
+                        /// Converts this 3x3 matrix to 4x4 matrix.
     Mat4                ToMat4() const;
-    Angles              ToAngles() const;
+
+                        /// Converts this 3x3 matrix to to axis-angle rotation representation.
     Rotation            ToRotation() const;
+
+                        /// Converts this 3x3 matrix to quaternion.
     Quat                ToQuat() const;
+
+    Angles              ToAngles() const;
 
                         /// Returns "_00 _01 _02 _10 _11 _12 _20 _21 _22".
     const char *        ToString() const { return ToString(4); }
                         /// Returns "_00 _01 _02 _10 _11 _12 _20 _21 _22" with the given precisions.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Mat3         FromString(const char *str);
 
-                        /// Returns dimension of this type
+                        /// Returns dimension of this type.
     int                 GetDimension() const { return Rows * Cols; }
 
     static const Mat3   zero;

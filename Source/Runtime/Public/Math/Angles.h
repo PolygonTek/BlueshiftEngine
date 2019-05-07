@@ -138,9 +138,9 @@ public:
     Mat3                ToMat3() const;
     Mat4                ToMat4() const;
 
-                        /// Returns "yaw pitch roll".
+                        /// Returns "roll pitch yaw".
     const char *        ToString() const { return ToString(2); }
-                        /// Returns "yaw pitch roll" with the given precision.
+                        /// Returns "roll pitch yaw" with the given precision.
     const char *        ToString(int precision) const;
 
                         /// Creates from the string
@@ -151,9 +151,9 @@ public:
 
     static const Angles zero;
 
-    float               roll;       ///< Angle of rotation around forward axis in degrees
-    float               pitch;      ///< Angle of rotation around left axis in degrees
-    float               yaw;        ///< Angle of rotation around up axis in degrees
+    float               roll;       ///< Angle of rotation around x(forward) axis in degrees
+    float               pitch;      ///< Angle of rotation around y(left) axis in degrees
+    float               yaw;        ///< Angle of rotation around z(up) axis in degrees
 };
 
 BE_INLINE constexpr Angles::Angles(float inRoll, float inPitch, float inYaw) :
