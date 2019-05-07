@@ -217,9 +217,16 @@ public:
     static Mat3         FromRotationYZX(float ey, float ez, float ex);
     static Mat3         FromRotationZXY(float ez, float ex, float ey);
     static Mat3         FromRotationZYX(float ez, float ey, float ex);
+    static Mat3         FromRotationXYX(float ex2, float ey, float ex1);
+    static Mat3         FromRotationXZX(float ex2, float ez, float ex1);
+    static Mat3         FromRotationYXY(float ey2, float ex, float ey1);
+    static Mat3         FromRotationYZY(float ey2, float ez, float ey1);
+    static Mat3         FromRotationZXZ(float ez2, float ex, float ez1);
+    static Mat3         FromRotationZYZ(float ez2, float ey, float ez1);
 
                         /// Decomposes the matrix and outputs the angles of rotation in parameters ex, ey and ez, in radians.
                         /// The matrix must be orthonormal.
+                        /// This functions were adapted from http://www.geometrictools.com/Documentation/EulerAngles.pdf
     void                ToRotationXYZ(float &ex, float &ey, float &ez);
     void                ToRotationXZY(float &ex, float &ez, float &ey);
     void                ToRotationYXZ(float &ey, float &ex, float &ez);
