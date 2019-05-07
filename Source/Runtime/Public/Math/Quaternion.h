@@ -127,13 +127,20 @@ public:
 
     float               CalcW() const;
 
-                        // Compute square root of norm
-    float               Length();
+                        /// Computes the dot product of this and the given quaternion.
+                        /// Dot product is commutative.
+    float               Dot(const Quat &rhs) const;
 
-    float               LengthSqr();
+                        /// Returns length of quaternion.
+    float               Length() const;
+                        /// Returns squred length of quaternion.
+    float               LengthSqr() const;
 
                         /// Normalizes this quaternion in-place.
     Quat &              Normalize();
+
+                        /// Returns true if the length of this quaternion is one.
+    bool                IsNormalized(float epsilonSq = 1e-5f) const;
 
                         /// Inverts this quaternion.
     Quat                Inverse() const;
@@ -316,11 +323,15 @@ BE_INLINE float Quat::CalcW() const {
     return sqrt(fabs(1.0f - (x * x + y * y + z * z)));
 }
 
-BE_INLINE float Quat::Length() {
+BE_INLINE float Quat::Dot(const Quat &rhs) const {
+    return x * rhs.x + y * rhs.y + z * rhs.z + w * rhs.w;
+}
+
+BE_INLINE float Quat::Length() const {
     return Math::Sqrt(x * x + y * y + z * z + w * w);
 }
 
-BE_INLINE float Quat::LengthSqr() {
+BE_INLINE float Quat::LengthSqr() const {
     return x * x + y * y + z * z + w * w;
 }
 
@@ -334,6 +345,10 @@ BE_INLINE Quat &Quat::Normalize() {
         w *= invlength;
     }
     return *this;
+}
+
+BE_INLINE bool Quat::IsNormalized(float epsilonSqr) const {
+    return Math::Fabs(LengthSqr() - 1.0f) < epsilonSqr;
 }
 
 BE_INLINE void Quat::SetIdentity() {

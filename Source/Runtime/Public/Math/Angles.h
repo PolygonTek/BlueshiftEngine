@@ -24,7 +24,7 @@ class Mat4;
 class Quat;
 class Rotation;
 
-/// Euler angles - roll, pitch, yaw
+/// Euler angles
 class BE_API Angles {
 public:
     /// Specifies the number of elements in this class.

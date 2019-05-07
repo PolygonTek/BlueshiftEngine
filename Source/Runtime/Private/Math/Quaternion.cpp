@@ -91,7 +91,7 @@ Quat &Quat::SetFromSlerp(const Quat &from, const Quat &to, float t) {
     }
 
     // calc cosine
-    float cosom = from.x * to.x + from.y * to.y + from.z * to.z + from.w * to.w;
+    float cosom = from.Dot(to);
 
     // adjust signs (if necessary)
     Quat temp;
@@ -105,7 +105,7 @@ Quat &Quat::SetFromSlerp(const Quat &from, const Quat &to, float t) {
     // calculate coefficients
     float omega, sinom, scale0, scale1;
     if ((1.0f - cosom) > 1e-6f) { //Math::FLT_EPSILON
-#if 0	// standard case (slerp)
+#if 0   // standard case (slerp)
         omega = Math::ACos(cosom);
         sinom = Math::Sin(omega);
         scale0 = Math::Sin((1.0f - t) * omega) * sinom;
