@@ -26,7 +26,7 @@ Quat Quat::FromString(const char *str) {
 }
 
 Quat &Quat::SetFromAngleAxis(float angle, const Vec3 &axis) {
-    Rotation rot(Vec3::origin, axis, angle);
+    Rotation rot(Vec3::origin, axis, RAD2DEG(angle));
     *this = rot.ToQuat();
     return *this;
 }
