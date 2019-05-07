@@ -273,8 +273,8 @@ bool Dict::GetAngles(const char *key, const char *defaultString, Angles &out) co
 
     const char *s;
     bool found = GetString(key, defaultString, &s);
-    out.SetZero();	
-    sscanf(s, "%f %f %f", &out.yaw, &out.pitch, &out.roll);
+    out.SetZero();
+    sscanf(s, "%f %f %f", &out[0], &out[1], &out[2]);
     return found;
 }
 

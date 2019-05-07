@@ -443,13 +443,13 @@ void Mat3::ToRotationXYZ(float &ex, float &ey, float &ez) {
             ez = atan2(-mat[1][0], mat[0][0]);
         } else {
             // Not a unique solution: z - x = atan2(mat[0][1], mat[1][1]);
-            ey = -Math::Pi / 2.f;
+            ey = -Math::HalfPi;
             ex = -atan2(mat[0][1], mat[1][1]);
             ez = 0.f;
         }
     } else {
         // Not a unique solution: z + x = atan2(mat[0][1], mat[1][1]);
-        ey = Math::Pi / 2.f;
+        ey = Math::HalfPi;
         ex = atan2(mat[0][1], mat[1][1]);
         ez = 0.f;
     }
@@ -463,7 +463,7 @@ void Mat3::ToRotationXZY(float &ex, float &ez, float &ey) {
             ey = atan2(mat[2][0], mat[0][0]);
         } else {
             // Not a unique solution: y - x = atan2(-mat[0][2], mat[2][2]);
-            ez = Math::Pi / 2.f;
+            ez = Math::HalfPi;
             ex = atan2(-mat[0][2], mat[2][2]);
             ey = 0;
         }
@@ -483,13 +483,13 @@ void Mat3::ToRotationYXZ(float &ey, float &ex, float &ez) {
             ez = atan2(mat[0][1], mat[1][1]);
         } else {
             // Not a unique solution.
-            ex = Math::Pi / 2.f;
+            ex = Math::HalfPi;
             ey = -atan2(-mat[1][0], mat[0][0]);
             ez = 0;
         }
     } else {
         // Not a unique solution.
-        ex = -Math::Pi / 2.f;
+        ex = -Math::HalfPi;
         ey = atan2(-mat[1][0], mat[0][0]);
         ez = 0;
     }
@@ -503,13 +503,13 @@ void Mat3::ToRotationYZX(float &ey, float &ez, float &ex) {
             ex = atan2(mat[2][1], mat[1][1]);
         } else {
             // Not a unique solution.
-            ez = -Math::Pi / 2.f;
+            ez = -Math::HalfPi;
             ey = -atan2(mat[1][2], mat[2][2]);
             ex = 0;
         }
     } else {
         // Not a unique solution.
-        ez = Math::Pi / 2.f;
+        ez = Math::HalfPi;
         ey = atan2(-mat[1][2], mat[2][2]);
         ex = 0;
     }
@@ -523,13 +523,13 @@ void Mat3::ToRotationZXY(float &ez, float &ex, float &ey) {
             ey = atan2(-mat[0][2], mat[2][2]);
         } else {
             // Not a unique solution.
-            ex = -Math::Pi / 2.f;
+            ex = -Math::HalfPi;
             ez = -atan2(-mat[2][0], mat[0][0]);
             ey = 0;
         }
     } else {
         // Not a unique solution.
-        ex = Math::Pi / 2.f;
+        ex = Math::HalfPi;
         ez = atan2(mat[2][0], mat[0][0]);
         ey = 0;
     }
@@ -543,13 +543,13 @@ void Mat3::ToRotationZYX(float &ez, float &ey, float &ex) {
             ex = atan2(mat[1][2], mat[2][2]);
         } else {
             // Not a unique solution.
-            ey = Math::Pi / 2.f;
+            ey = Math::HalfPi;
             ez = -atan2(-mat[2][1], mat[1][1]);
             ex = 0;
         }
     } else {
         // Not a unique solution.
-        ey = -Math::Pi / 2.f;
+        ey = -Math::HalfPi;
         ez = atan2(-mat[2][1], mat[1][1]);
         ex = 0;
     }
@@ -687,7 +687,7 @@ Mat3 &Mat3::Scale(const Vec3 &scale) {
 //
 // f02       = -sinp
 // f01 / f00 = siny*cosp / cosy*cosp = siny / cosy = tany
-// f12 / f22 = sinr*cosp / cosr*cosp = sinr / cosr = tanr	
+// f12 / f22 = sinr*cosp / cosr*cosp = sinr / cosr = tanr
 //
 // pitch = -asin( f02 )
 // yaw   = atan( f01 / f00 )
@@ -725,7 +725,7 @@ Mat3 &Mat3::Scale(const Vec3 &scale) {
 // yaw+roll = -atan( f10 / f11 )
 // pitch    = -asin( f02 )
 //
-// yaw 와 pitch 가 같은 자유도를 갖는다. roll 을 0 으로 고정시키면 i), ii) 모두의 경우에,..
+// yaw 와 pitch 가 같은 자유도를 갖는다. roll 을 0 으로 고정시키면 i), ii) 모두의 경우에..
 //
 // pitch    = -asin( f02 )
 // yaw      = -atan( f10 / f11 )
@@ -757,13 +757,13 @@ Angles Mat3::ToAngles() const {
     Angles angles;
     float s = Math::Sqrt(mat[0][0] * mat[0][0] + mat[0][1] * mat[0][1]);
     if (s > Math::FloatEpsilon) {
-        angles.pitch = RAD2DEG(-Math::ATan(mat[0][2], s));
-        angles.yaw = RAD2DEG(Math::ATan(mat[0][1], mat[0][0]));
-        angles.roll = RAD2DEG(Math::ATan(mat[1][2], mat[2][2]));
+        angles.x = RAD2DEG(Math::ATan(mat[1][2], mat[2][2]));
+        angles.y = RAD2DEG(-Math::ATan(mat[0][2], s));
+        angles.z = RAD2DEG(Math::ATan(mat[0][1], mat[0][0]));
     } else {
-        angles.pitch = mat[0][2] < 0.0f ? 90.0f : -90.0f;
-        angles.yaw = RAD2DEG(-Math::ATan(mat[1][0], mat[1][1]));
-        angles.roll = 0.0f;
+        angles.x = 0.0f;
+        angles.y = mat[0][2] < 0.0f ? 90.0f : -90.0f;
+        angles.z = RAD2DEG(-Math::ATan(mat[1][0], mat[1][1]));
     }
     return angles;
 #endif
@@ -785,9 +785,9 @@ Angles Mat3::ToAngles() const {
 //
 //     |     c + (1-c)*Nx^2  (1-c)*Nx*Ny - s*Nz  (1-c)*Nx*Nz + s*Ny |
 // R = | (1-c)*Nx*Ny + s*Nz      c + (1-c)*Ny^2  (1-c)*Ny*Nz - s*Nx |
-//     | (1-c)*Nx*Nz - s*Ny  (1-c)*Ny*Nz + s*Nx      c + (1-c)*Nz^2 | 
+//     | (1-c)*Nx*Nz - s*Ny  (1-c)*Ny*Nz + s*Nx      c + (1-c)*Nz^2 |
 //
-// trace(R) = R00 + R11 + R22 = 3*c + (1-c) * (Nx^2 + Ny^2 + Nz^2) = 3*c + (1-c) 
+// trace(R) = R00 + R11 + R22 = 3*c + (1-c) * (Nx^2 + Ny^2 + Nz^2) = 3*c + (1-c)
 //          = 2*c + 1
 //
 // 1) theta == 0 (trace(R) == 3)
@@ -816,7 +816,7 @@ Angles Mat3::ToAngles() const {
 //
 // 이때 3가지 방법이 있는데..
 //     ___________________
-// i) √R00 - R11 - R22 + 1 / 2 = Nx 
+// i) √R00 - R11 - R22 + 1 / 2 = Nx
 //     ___________________
 // j) √R11 - R00 - R22 + 1 / 2 = Ny
 //     ___________________
@@ -990,7 +990,7 @@ bool Mat3::SetFromLookAt(const Vec3 &viewDir, const Vec3 &up) {
 
 Mat3 Mat3::FromString(const char *str) {
     Mat3 m;
-    sscanf(str, "%f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[1].x, &m[1].y, &m[1].z, &m[2].x, &m[2].y, &m[2].z);    
+    sscanf(str, "%f %f %f %f %f %f %f %f %f", &m[0].x, &m[0].y, &m[0].z, &m[1].x, &m[1].y, &m[1].z, &m[2].x, &m[2].y, &m[2].z);
     return m;
 }
 
