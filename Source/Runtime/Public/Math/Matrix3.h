@@ -226,13 +226,19 @@ public:
 
                         /// Decomposes the matrix and outputs the angles of rotation in parameters ex, ey and ez, in radians.
                         /// The matrix must be orthonormal.
-                        /// This functions were adapted from http://www.geometrictools.com/Documentation/EulerAngles.pdf
+                        /// These functions are adapted from http://www.geometrictools.com/Documentation/EulerAngles.pdf
     void                ToRotationXYZ(float &ex, float &ey, float &ez);
     void                ToRotationXZY(float &ex, float &ez, float &ey);
     void                ToRotationYXZ(float &ey, float &ex, float &ez);
     void                ToRotationYZX(float &ey, float &ez, float &ex);
     void                ToRotationZXY(float &ez, float &ex, float &ey);
     void                ToRotationZYX(float &ez, float &ey, float &ex);
+    void                ToRotationXYX(float &ex2, float &ey, float &ex1);
+    void                ToRotationXZX(float &ex2, float &ez, float &ex1);
+    void                ToRotationYXY(float &ey2, float &ex, float &ey1);
+    void                ToRotationYZY(float &ey2, float &ez, float &ey1);
+    void                ToRotationZXZ(float &ez2, float &ex, float &ez1);
+    void                ToRotationZYZ(float &ez2, float &ey, float &ez1);
 
                         /// Scales by the given factors, in-place.
     Mat3 &              Scale(const Vec3 &scale);

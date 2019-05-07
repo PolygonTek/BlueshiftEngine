@@ -734,6 +734,126 @@ void Mat3::ToRotationZYX(float &ez, float &ey, float &ex) {
     }
 }
 
+void Mat3::ToRotationXYX(float &ex2, float &ey, float &ex1) {
+    if (mat[0][0] < 1.f) {
+        if (mat[0][0] > -1.f) {
+            ey = acos(mat[0][0]);
+            ex2 = atan2(mat[0][1], -mat[0][2]);
+            ex1 = atan2(mat[1][0], mat[2][0]);
+        } else {
+            // Not a unique solution.
+            ey = Math::Pi;
+            ex2 = -atan2(-mat[2][1], mat[1][1]);
+            ex1 = 0;
+        }
+    } else {
+        // Not a unique solution.
+        ey = 0;
+        ex2 = atan2(-mat[2][1], mat[1][1]);
+        ex1 = 0;
+    }
+}
+
+void Mat3::ToRotationXZX(float &ex2, float &ez, float &ex1) {
+    if (mat[0][0] < 1.f) {
+        if (mat[0][0] > -1.f) {
+            ez = acos(mat[0][0]);
+            ex2 = atan2(mat[0][2], mat[0][1]);
+            ex1 = atan2(mat[2][0], -mat[1][0]);
+        } else {
+            // Not a unique solution.
+            ez = Math::Pi;
+            ex2 = -atan2(-mat[1][2], mat[2][2]);
+            ex1 = 0;
+        }
+    } else {
+        // Not a unique solution.
+        ez = 0;
+        ex2 = atan2(mat[1][2], mat[2][2]);
+        ex1 = 0;
+    }
+}
+
+void Mat3::ToRotationYXY(float &ey2, float &ex, float &ey1) {
+    if (mat[1][1] < 1.f) {
+        if (mat[1][1] > -1.f) {
+            ex = acos(mat[1][1]);
+            ey2 = atan2(mat[1][0], mat[1][2]);
+            ey1 = atan2(mat[0][1], -mat[2][1]);
+        } else {
+            // Not a unique solution.
+            ex = Math::Pi;
+            ey2 = -atan2(mat[2][0], mat[0][0]);
+            ey1 = 0;
+        }
+    } else {
+        // Not a unique solution.
+        ex = 0;
+        ey2 = atan2(mat[0][2], mat[0][0]);
+        ey1 = 0;
+    }
+}
+
+void Mat3::ToRotationYZY(float &ey2, float &ez, float &ey1) {
+    if (mat[1][1] < 1.f) {
+        if (mat[1][1] > -1.f) {
+            ez = acos(mat[1][1]);
+            ey2 = atan2(mat[1][2], -mat[1][0]);
+            ey1 = atan2(mat[2][1], mat[0][1]);
+        } else {
+            // Not a unique solution.
+            ez = Math::Pi;
+            ey2 = -atan2(-mat[0][2], mat[2][2]);
+            ey1 = 0;
+        }
+    } else {
+        // Not a unique solution.
+        ez = 0;
+        ey2 = atan2(-mat[0][2], mat[2][2]);
+        ey1 = 0;
+    }
+}
+
+void Mat3::ToRotationZXZ(float &ez2, float &ex, float &ez1) {
+    if (mat[2][2] < 1.f) {
+        if (mat[2][2] > -1.f) {
+            ex = acos(mat[2][2]);
+            ez2 = atan2(mat[2][0], -mat[2][1]);
+            ez1 = atan2(mat[0][2], mat[1][2]);
+        } else {
+            // Not a unique solution.
+            ex = Math::Pi;
+            ez2 = -atan2(-mat[1][0], mat[0][0]);
+            ez1 = 0;
+        }
+    } else {
+        // Not a unique solution.
+        ex = 0;
+        ez2 = atan2(-mat[1][0], mat[0][0]);
+        ez1 = 0;
+    }
+}
+
+void Mat3::ToRotationZYZ(float &ez2, float &ey, float &ez1) {
+    if (mat[2][2] < 1.f) {
+        if (mat[2][2] > -1.f) {
+            ey = acos(mat[2][2]);
+            ez2 = atan2(mat[2][1], mat[2][0]);
+            ez1 = atan2(mat[1][2], -mat[0][2]);
+        } else {
+            // Not a unique solution.
+            ey = Math::Pi;
+            ez2 = -atan2(-mat[0][1], mat[1][1]);
+            ez1 = 0;
+        }
+    } else {
+        // Not a unique solution.
+        ey = 0;
+        ez2 = atan2(mat[0][1], mat[1][1]);
+        ez1 = 0;
+    }
+}
+
 //------------------------------------------------
 //  
 //        | 1     0      0 | | m00  m10  m20 |
