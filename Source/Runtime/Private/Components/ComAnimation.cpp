@@ -150,7 +150,7 @@ void ComAnimation::SkeletonReloaded() {
 }
 
 void ComAnimation::ChangeSkeleton(const Guid &skeletonGuid) {
-#if 1
+#if WITH_EDITOR
     // Disconnect with previously connected skeleton asset
     if (skeletonAsset) {
         skeletonAsset->Disconnect(&Asset::SIG_Reloaded, this);
@@ -199,7 +199,7 @@ void ComAnimation::ChangeSkeleton(const Guid &skeletonGuid) {
 
     //anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
 
-#if 1
+#if WITH_EDITOR
     // Need to connect skeleton asset to be reloaded in Editor
     skeletonAsset = (SkeletonAsset *)SkeletonAsset::FindInstance(skeletonGuid);
     if (skeletonAsset) {
@@ -240,7 +240,7 @@ void ComAnimation::SetAnimCount(int count) {
                 anims[index] = nullptr;
             }
 
-#if 1
+#if WITH_EDITOR
             if (animAssets[index]) {
                 animAssets[index]->Disconnect(&Asset::SIG_Reloaded, this);
                 animAssets[index] = nullptr;
@@ -256,7 +256,7 @@ void ComAnimation::SetAnimCount(int count) {
         for (int index = oldCount; index < count; index++) {
             anims[index] = nullptr;
 
-#if 1
+#if WITH_EDITOR
             animAssets[index] = nullptr;
 #endif
         }
@@ -270,7 +270,7 @@ void ComAnimation::AnimReloaded() {
 }
 
 void ComAnimation::ChangeAnim(int index, const Guid &animGuid) {
-#if 1
+#if WITH_EDITOR
     // Disconnect with previously connected anim asset
     if (animAssets[index]) {
         animAssets[index]->Disconnect(&Asset::SIG_Reloaded, this);
@@ -309,7 +309,7 @@ void ComAnimation::ChangeAnim(int index, const Guid &animGuid) {
         }
     }
 
-#if 1
+#if WITH_EDITOR
     // Need to connect anim asset to be reloaded in Editor
     animAssets[index] = (AnimAsset *)AnimAsset::FindInstance(animGuid);
     if (animAssets[index]) {

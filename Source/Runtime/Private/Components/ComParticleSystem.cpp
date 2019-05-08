@@ -37,7 +37,7 @@ void ComParticleSystem::RegisterProperties() {
 ComParticleSystem::ComParticleSystem() {
     particleSystemAsset = nullptr;
 
-#if 1
+#if WITH_EDITOR
     spriteHandle = -1;
     spriteReferenceMesh = nullptr;
 #endif
@@ -48,7 +48,7 @@ ComParticleSystem::~ComParticleSystem() {
 }
 
 void ComParticleSystem::Purge(bool chainPurge) {
-#if 1
+#if WITH_EDITOR
     if (spriteDef.mesh) {
         meshManager.ReleaseMesh(spriteDef.mesh);
         spriteDef.mesh = nullptr;
@@ -96,7 +96,7 @@ void ComParticleSystem::Init() {
 
     ComTransform *transform = GetEntity()->GetTransform();
 
-#if 1
+#if WITH_EDITOR
     spriteDef.flags = RenderObject::Flag::Billboard;
     spriteDef.layer = TagLayerSettings::BuiltInLayer::Editor;
     spriteDef.maxVisDist = MeterToUnit(50.0f);
@@ -126,7 +126,7 @@ void ComParticleSystem::Init() {
 }
 
 void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
-#if 1
+#if WITH_EDITOR
     // Disconnect with previously connected particleSystem asset
     if (particleSystemAsset) {
         particleSystemAsset->Disconnect(&Asset::SIG_Reloaded, this);
@@ -146,7 +146,7 @@ void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
 
     ResetParticles();
 
-#if 1
+#if WITH_EDITOR
     // Need to particleSystem asset to be reloaded in editor
     particleSystemAsset = (ParticleSystemAsset *)ParticleSystemAsset::FindInstance(particleSystemGuid);
     if (particleSystemAsset) {
@@ -196,7 +196,7 @@ void ComParticleSystem::OnActive() {
 }
 
 void ComParticleSystem::OnInactive() {
-#if 1
+#if WITH_EDITOR
     if (spriteHandle != -1) {
         renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
@@ -207,7 +207,7 @@ void ComParticleSystem::OnInactive() {
 }
 
 bool ComParticleSystem::HasRenderEntity(int renderEntityHandle) const {
-#if 1
+#if WITH_EDITOR
     if (this->spriteHandle == renderEntityHandle) {
         return true;
     }
@@ -675,7 +675,7 @@ void ComParticleSystem::ComputeTrailPositionFromCustomPath(const ParticleSystem:
     assert(0);
 }
 
-#if 1
+#if WITH_EDITOR
 void ComParticleSystem::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     // Fade icon alpha in near distance
     float alpha = BE1::Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(viewState.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
@@ -713,7 +713,7 @@ void ComParticleSystem::UpdateVisuals() {
         return;
     }
 
-#if 1
+#if WITH_EDITOR
     if (spriteHandle == -1) {
         spriteHandle = renderWorld->AddRenderObject(&spriteDef);
     } else {
@@ -725,7 +725,7 @@ void ComParticleSystem::UpdateVisuals() {
 }
 
 void ComParticleSystem::TransformUpdated(const ComTransform *transform) {
-#if 1
+#if WITH_EDITOR
     spriteDef.worldMatrix.SetTranslation(transform->GetOrigin());
 #endif
 

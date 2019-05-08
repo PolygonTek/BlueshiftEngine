@@ -213,7 +213,7 @@ public:
                                 /// Returns position in world space with given trait.
     const Vec3                  GetWorldPosition(WorldPosTrait::Enum posTrait, bool includingChildren = false) const;
 
-#if 1
+#if WITH_EDITOR
                                 /// Visualizes the component in editor.
     void                        DrawGizmos(const RenderCamera::State &viewState, bool selected);
 #endif

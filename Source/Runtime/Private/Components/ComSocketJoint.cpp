@@ -113,7 +113,7 @@ void ComSocketJoint::SetImpulseClamp(float impulseClamp) {
     }
 }
 
-#if 1
+#if WITH_EDITOR
 void ComSocketJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 

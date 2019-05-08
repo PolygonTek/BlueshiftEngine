@@ -68,7 +68,7 @@ void ComEnvironmentProbe::RegisterProperties() {
 ComEnvironmentProbe::ComEnvironmentProbe() {
     probeHandle = -1;
 
-#if 1
+#if WITH_EDITOR
     sphereHandle = -1;
     sphereMesh = nullptr;
 #endif
@@ -79,7 +79,7 @@ ComEnvironmentProbe::~ComEnvironmentProbe() {
 }
 
 void ComEnvironmentProbe::Purge(bool chainPurge) {
-#if 1
+#if WITH_EDITOR
     if (sphereDef.mesh) {
         meshManager.ReleaseMesh(sphereDef.mesh);
         sphereDef.mesh = nullptr;
@@ -134,7 +134,7 @@ void ComEnvironmentProbe::Init() {
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComEnvironmentProbe::TransformUpdated, SignalObject::ConnectionType::Unique);
 
-#if 1
+#if WITH_EDITOR
     sphereDef.layer = TagLayerSettings::BuiltInLayer::Editor;
     sphereDef.maxVisDist = MeterToUnit(50.0f);
 
@@ -167,7 +167,7 @@ void ComEnvironmentProbe::OnInactive() {
         probeHandle = -1;
     }
 
-#if 1
+#if WITH_EDITOR
     if (sphereHandle != -1) {
         renderWorld->RemoveRenderObject(sphereHandle);
         sphereHandle = -1;
@@ -176,7 +176,7 @@ void ComEnvironmentProbe::OnInactive() {
 }
 
 bool ComEnvironmentProbe::HasRenderEntity(int renderEntityHandle) const {
-#if 1
+#if WITH_EDITOR
     if (this->sphereHandle == renderEntityHandle) {
         return true;
     }
@@ -208,7 +208,7 @@ void ComEnvironmentProbe::Update() {
     }
 }
 
-#if 1
+#if WITH_EDITOR
 void ComEnvironmentProbe::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
@@ -247,7 +247,7 @@ void ComEnvironmentProbe::UpdateVisuals() {
         return;
     }
 
-#if 1
+#if WITH_EDITOR
     if (sphereDef.materials.Count() > 0) {
         materialManager.ReleaseMaterial(sphereDef.materials[0], true);
     }
@@ -262,7 +262,7 @@ void ComEnvironmentProbe::UpdateVisuals() {
     const EnvProbe *envProbe = renderWorld->GetEnvProbe(probeHandle);
     const Texture *specularProbeTexture = envProbe->GetSpecularProbeTexture();
 
-#if 1
+#if WITH_EDITOR
     sphereDef.materials.SetCount(1);
     sphereDef.materials[0] = materialManager.GetSingleTextureMaterial(specularProbeTexture, Material::TextureHint::EnvCubeMap);
 
@@ -277,7 +277,7 @@ void ComEnvironmentProbe::UpdateVisuals() {
 void ComEnvironmentProbe::TransformUpdated(const ComTransform *transform) {
     probeDef.origin = transform->GetOrigin();
 
-#if 1
+#if WITH_EDITOR
     sphereDef.worldMatrix.SetTranslation(transform->GetOrigin());
 #endif
 

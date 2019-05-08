@@ -62,7 +62,7 @@ void ComLight::RegisterProperties() {
 ComLight::ComLight() {
     renderLightHandle = -1;
 
-#if 1
+#if WITH_EDITOR
     spriteHandle = -1;
     spriteMesh = nullptr;
 #endif
@@ -73,7 +73,7 @@ ComLight::~ComLight() {
 }
 
 void ComLight::Purge(bool chainPurge) {
-#if 1
+#if WITH_EDITOR
     for (int i = 0; i < spriteDef.materials.Count(); i++) {
         materialManager.ReleaseMaterial(spriteDef.materials[i]);
     }
@@ -138,7 +138,7 @@ void ComLight::Init() {
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComLight::TransformUpdated, SignalObject::ConnectionType::Unique);
 
-#if 1
+#if WITH_EDITOR
     // 3d sprite for editor
     spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
 
@@ -181,7 +181,7 @@ void ComLight::OnInactive() {
         renderLightHandle = -1;
     }
 
-#if 1
+#if WITH_EDITOR
     if (spriteHandle != -1) {
         renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
@@ -190,7 +190,7 @@ void ComLight::OnInactive() {
 }
 
 bool ComLight::HasRenderEntity(int renderEntityHandle) const { 
-#if 1
+#if WITH_EDITOR
     if (spriteHandle == renderEntityHandle) {
         return true;
     }
@@ -199,7 +199,7 @@ bool ComLight::HasRenderEntity(int renderEntityHandle) const {
     return false;
 }
 
-#if 1
+#if WITH_EDITOR
 void ComLight::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     const Color4 lightColor = Color4(GetColor(), 1.0f);
 
@@ -274,7 +274,7 @@ void ComLight::UpdateVisuals() {
         renderWorld->UpdateRenderLight(renderLightHandle, &renderLightDef);
     }
 
-#if 1
+#if WITH_EDITOR
     if (spriteHandle == -1) {
         spriteHandle = renderWorld->AddRenderObject(&spriteDef);
     } else {
@@ -299,7 +299,7 @@ void ComLight::TransformUpdated(const ComTransform *transform) {
     renderLightDef.origin = transform->GetOrigin();
     renderLightDef.axis = transform->GetAxis();
 
-#if 1
+#if WITH_EDITOR
     spriteDef.worldMatrix.SetTranslation(renderLightDef.origin);
 #endif
 
@@ -314,7 +314,7 @@ void ComLight::SetLightType(RenderLight::Type::Enum type) {
     renderLightDef.type = type;
 
     if (IsInitialized()) {
-#if 1
+#if WITH_EDITOR
         materialManager.ReleaseMaterial(spriteDef.materials[0]);
 
         Texture *spriteTexture = textureManager.GetTexture(LightSpriteTexturePath(renderLightDef.type), Texture::Flag::Clamp | Texture::Flag::HighQuality);
@@ -402,7 +402,7 @@ void ComLight::SetColor(const Color3 &color) {
     renderLightDef.materialParms[RenderObject::MaterialParm::Green] = color.g;
     renderLightDef.materialParms[RenderObject::MaterialParm::Blue] = color.b;
 
-#if 1
+#if WITH_EDITOR
     spriteDef.materialParms[RenderObject::MaterialParm::Red] = color.r;
     spriteDef.materialParms[RenderObject::MaterialParm::Green] = color.g;
     spriteDef.materialParms[RenderObject::MaterialParm::Blue] = color.b;

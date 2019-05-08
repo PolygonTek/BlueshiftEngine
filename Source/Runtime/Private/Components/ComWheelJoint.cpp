@@ -242,7 +242,7 @@ void ComWheelJoint::SetMaxMotorImpulse(float maxMotorImpulse) {
     }
 }
 
-#if 1
+#if WITH_EDITOR
 void ComWheelJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 

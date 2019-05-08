@@ -79,7 +79,7 @@ void ComConeCollider::SetHeight(float height) {
     }
 }
 
-#if 1
+#if WITH_EDITOR
 void ComConeCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 

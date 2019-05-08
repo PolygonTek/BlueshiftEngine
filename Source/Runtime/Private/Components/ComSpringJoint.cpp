@@ -186,7 +186,7 @@ void ComSpringJoint::SetDamping(float damping) {
     }
 }
 
-#if 1
+#if WITH_EDITOR
 void ComSpringJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 

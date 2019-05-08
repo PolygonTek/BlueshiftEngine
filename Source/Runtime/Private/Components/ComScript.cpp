@@ -127,7 +127,7 @@ void ComScript::Deserialize(const Json::Value &in) {
 }
 
 void ComScript::ChangeScript(const Guid &scriptGuid) {
-#if 1
+#if WITH_EDITOR
     // Disconnect with previously connected script asset
     if (scriptAsset) {
         scriptAsset->Disconnect(&Asset::SIG_Reloaded, this);
@@ -201,7 +201,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
         }
     }
 
-#if 1
+#if WITH_EDITOR
     // Need to script asset to be reloaded in editor
     Object *scriptObject = ScriptAsset::FindInstance(scriptGuid);
     if (scriptObject) {
@@ -266,7 +266,7 @@ void ComScript::InitScriptFields() {
                         },
                         [propValue, this](int value) {
                             propValue = value;
-#if 1
+#if WITH_EDITOR
                             if (executeInEditMode) {
                                 if (!deserializing) {
                                     OnValidate();
@@ -287,7 +287,7 @@ void ComScript::InitScriptFields() {
                         },
                         [propValue, this](int value) {
                             propValue = value;
-#if 1
+#if WITH_EDITOR
                             if (executeInEditMode) {
                                 if (!deserializing) {
                                     OnValidate();
@@ -309,7 +309,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](int value) {
                         propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -330,7 +330,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](bool value) {
                         propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -359,7 +359,7 @@ void ComScript::InitScriptFields() {
                         },
                         [propValue, this](float value) {
                             propValue = value;
-#if 1
+#if WITH_EDITOR
                             if (executeInEditMode) {
                                 if (!deserializing) {
                                     OnValidate();
@@ -380,7 +380,7 @@ void ComScript::InitScriptFields() {
                         },
                         [propValue, this](float value) {
                             propValue = value;
-#if 1
+#if WITH_EDITOR
                             if (executeInEditMode) {
                                 if (!deserializing) {
                                     OnValidate();
@@ -400,7 +400,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Vec2 &value) { 
                         (Vec2 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -419,7 +419,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Vec3 &value) {
                         (Vec3 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -438,7 +438,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Vec4 &value) {
                         (Vec4 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -457,7 +457,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Color3 &value) {
                         (Color3 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -476,7 +476,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Color4 &value) {
                         (Color4 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -495,7 +495,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Angles &value) {
                         (Angles &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -514,7 +514,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Quat &value) {
                         (Quat &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -533,7 +533,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Mat2 &value) {
                         (Mat2 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -552,7 +552,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Mat3 &value) {
                         (Mat3 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -571,7 +571,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Mat3x4 &value) {
                         (Mat3x4 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -590,7 +590,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Mat4 &value) {
                         (Mat4 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -609,7 +609,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Point &value) {
                         (Point &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -628,7 +628,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Rect &value) {
                         (Rect &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -647,7 +647,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Str &value) {
                         propValue = value.c_str();
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -671,7 +671,7 @@ void ComScript::InitScriptFields() {
                     },
                     [pairPtr, this](const Guid &value) {
                         pairPtr->second = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -1005,7 +1005,7 @@ void ComScript::ScriptReloaded() {
 
     Deserialize(value);
 
-#if 1
+#if WITH_EDITOR
     // Update editor UI
     EmitSignal(&Serializable::SIG_PropertyInfoUpdated, 1);
 #endif
@@ -1020,7 +1020,7 @@ void ComScript::SetScriptGuid(const Guid &guid) {
         ChangeScript(guid);
     }
 
-#if 1
+#if WITH_EDITOR
     if (IsInitialized()) {
         // Update editor UI
         EmitSignal(&Serializable::SIG_PropertyInfoUpdated, 1);

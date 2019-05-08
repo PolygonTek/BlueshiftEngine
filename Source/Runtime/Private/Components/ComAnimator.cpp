@@ -130,7 +130,7 @@ void ComAnimator::AnimControllerReloaded() {
 }
 
 void ComAnimator::ChangeAnimController(const Guid &animControllerGuid) {
-#if 1
+#if WITH_EDITOR
     // Disconnect with previously connected animation controller asset
     if (animControllerAsset) {
         animControllerAsset->Disconnect(&Asset::SIG_Reloaded, this);
@@ -145,7 +145,7 @@ void ComAnimator::ChangeAnimController(const Guid &animControllerGuid) {
     // Reset animator state
     animator.ResetState(GetGameWorld() ? GetGameWorld()->GetTime() : 0);
 
-#if 1
+#if WITH_EDITOR
     // Need to connect animation controller asset to be reloaded in Editor
     animControllerAsset = (AnimControllerAsset *)AnimControllerAsset::FindInstance(animControllerGuid);
     if (animControllerAsset) {

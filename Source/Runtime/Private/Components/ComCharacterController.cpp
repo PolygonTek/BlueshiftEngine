@@ -455,7 +455,7 @@ void ComCharacterController::SetSlopeLimit(const float slopeLimit) {
     this->slopeDotZ = Math::Cos(DEG2RAD(slopeLimit));
 }
 
-#if 1
+#if WITH_EDITOR
 void ComCharacterController::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 

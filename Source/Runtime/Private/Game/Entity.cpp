@@ -533,7 +533,7 @@ const Vec3 Entity::GetWorldPosition(WorldPosTrait::Enum posTrait, bool including
     return vec;
 }
 
-#if 1
+#if WITH_EDITOR
 void Entity::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];

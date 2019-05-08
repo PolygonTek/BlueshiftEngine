@@ -76,7 +76,7 @@ void ComMeshRenderer::Init() {
 }
 
 void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
-#if 1
+#if WITH_EDITOR
     // Disconnect with previously connected mesh asset
     if (meshAsset) {
         meshAsset->Disconnect(&Asset::SIG_Reloaded, this);
@@ -123,7 +123,7 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
         renderObjectDef.materials[i] = materialManager.GetMaterial("_defaultMaterial");
     }
 
-#if 1
+#if WITH_EDITOR
     // Need mesh asset to be reloaded in editor
     meshAsset = (MeshAsset *)MeshAsset::FindInstance(meshGuid);
     if (meshAsset) {

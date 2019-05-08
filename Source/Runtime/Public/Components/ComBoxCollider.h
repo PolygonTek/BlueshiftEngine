@@ -29,7 +29,7 @@ public:
     ComBoxCollider();
     virtual ~ComBoxCollider();
 
-#if 1
+#if WITH_EDITOR
                             /// Visualize the component in editor
     virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
 #endif

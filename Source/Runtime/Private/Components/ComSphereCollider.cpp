@@ -68,7 +68,7 @@ void ComSphereCollider::SetRadius(float radius) {
     }
 }
 
-#if 1
+#if WITH_EDITOR
 void ComSphereCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 

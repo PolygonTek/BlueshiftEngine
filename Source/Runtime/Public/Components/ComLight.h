@@ -37,7 +37,7 @@ public:
 
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
-#if 1
+#if WITH_EDITOR
                             /// Visualize the component in editor
     virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
 #endif

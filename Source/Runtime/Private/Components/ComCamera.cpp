@@ -69,7 +69,7 @@ ComCamera::ComCamera() {
     mousePointerState.oldHitEntityGuid = Guid::zero;
     mousePointerState.captureEntityGuid = Guid::zero;
 
-#if 1
+#if WITH_EDITOR
     spriteHandle = -1;
     spriteMesh = nullptr;
 #endif
@@ -80,7 +80,7 @@ ComCamera::~ComCamera() {
 }
 
 void ComCamera::Purge(bool chainPurge) {
-#if 1
+#if WITH_EDITOR
     for (int i = 0; i < spriteDef.materials.Count(); i++) {
         materialManager.ReleaseMaterial(spriteDef.materials[i]);
     }
@@ -136,7 +136,7 @@ void ComCamera::Init() {
     renderCameraDef.origin = transform->GetOrigin();
     renderCameraDef.axis = transform->GetAxis();
 
-#if 1
+#if WITH_EDITOR
     // 3d sprite for editor
     spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
 
@@ -175,7 +175,7 @@ void ComCamera::OnActive() {
 void ComCamera::OnInactive() {
     touchPointerStateTable.Clear();
 
-#if 1
+#if WITH_EDITOR
     if (spriteHandle != -1) {
         renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
@@ -184,7 +184,7 @@ void ComCamera::OnInactive() {
 }
 
 bool ComCamera::HasRenderEntity(int renderEntityHandle) const { 
-#if 1
+#if WITH_EDITOR
     if (this->spriteHandle == renderEntityHandle) {
         return true;
     }
@@ -197,7 +197,7 @@ void ComCamera::Update() {
     renderCameraDef.time = GetGameWorld()->GetTime();
 }
 
-#if 1
+#if WITH_EDITOR
 void ComCamera::DrawGizmos(const RenderCamera::State &renderCameraDef, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
     
@@ -580,7 +580,7 @@ void ComCamera::UpdateVisuals() {
         return;
     }
 
-#if 1
+#if WITH_EDITOR
     if (spriteHandle == -1) {
         spriteHandle = renderWorld->AddRenderObject(&spriteDef);
     } else {
@@ -593,7 +593,7 @@ void ComCamera::TransformUpdated(const ComTransform *transform) {
     renderCameraDef.origin = transform->GetOrigin();
     renderCameraDef.axis = transform->GetAxis();
 
-#if 1
+#if WITH_EDITOR
     spriteDef.worldMatrix.SetTranslation(renderCameraDef.origin);
 #endif
 

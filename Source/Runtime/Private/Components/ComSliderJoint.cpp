@@ -245,7 +245,7 @@ void ComSliderJoint::SetMaxAngularMotorImpulse(float maxAngularMotorImpulse) {
     }
 }
 
-#if 1
+#if WITH_EDITOR
 void ComSliderJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
