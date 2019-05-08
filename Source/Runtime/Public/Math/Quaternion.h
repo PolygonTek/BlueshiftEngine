@@ -191,14 +191,9 @@ public:
                         /// Returns the quaternion with the given angle in radians and axis.
     static Quat         FromAngleAxis(float angle, const Vec3 &axis);
 
-                        /// Sets this quaternion by specifying the Euler angles.
-    Quat &              SetFromAngles(const Angles &angles);
-                        /// Returns the quaternion with the given Euler angles.
-    static Quat         FromAngles(const Angles &angles);
-
-                        /// Compute a quaternion that rotates unit-length vector "from" to unit-length vector "to".
+                        /// Compute a quaternion that rotates unit-length vector 'from' to unit-length vector 'to'.
     Quat &              SetFromTwoVectors(const Vec3 &from, const Vec3 &to);
-                        /// Returns the quaternion that rotates unit-length vector "from" to unit-length vector "to".
+                        /// Returns the quaternion that rotates unit-length vector 'from' to unit-length vector 'to'.
     static Quat         FromTwoVectors(const Vec3 &from, const Vec3 &to);
 
                         /// Sets this quaternion to rotate the given 'from' vector towards the 'to' vector by the normalized t parameter.
@@ -214,7 +209,9 @@ public:
     Angles              ToAngles() const;
     Rotation            ToRotation() const;
 
+                        /// Converts this quaternion to 3x3 matrix.
     Mat3                ToMat3() const;
+                        /// Converts this quaternion to 4x4 matrix.
     Mat4                ToMat4() const;
 
     Vec3                ToAngularVelocity() const;
@@ -407,12 +404,6 @@ BE_INLINE void Quat::SetIdentity() {
 BE_INLINE Quat Quat::FromAngleAxis(float angle, const Vec3 &axis) {
     Quat q;
     q.SetFromAngleAxis(angle, axis);
-    return q;
-}
-
-BE_INLINE Quat Quat::FromAngles(const Angles &angles) {
-    Quat q;
-    q.SetFromAngles(angles);
     return q;
 }
 

@@ -31,11 +31,6 @@ Quat &Quat::SetFromAngleAxis(float angle, const Vec3 &axis) {
     return *this;
 }
 
-Quat &Quat::SetFromAngles(const Angles &angles) {
-    *this = angles.ToQuat();
-    return *this;
-}
-
 Quat &Quat::SetFromTwoVectors(const Vec3 &from, const Vec3 &to) {
     float c = from.Dot(to);
 

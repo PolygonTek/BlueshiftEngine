@@ -192,9 +192,9 @@ Quat Angles::ToQuat() const {
 // V = Rz * Ry * Rx
 //   = R(yaw) * R(pitch) * R(roll)
 //
-//     | 1     0      0 |   |  cosp  0  sinp |   | cosy  -siny  0 |
-//   = | 0  cosr  -sinr | * |     0  1     0 | * | siny   cosy  0 |
-//     | 0  sinr   cosr |   | -sinp  0  cosp |   |    0      0  1 |
+//     | cosy  -siny  0 |   |  cosp  0  sinp |   | 1     0      0 |
+//   = | siny   cosy  0 | * |     0  1     0 | * | 0  cosr  -sinr |
+//     |    0      0  1 |   | -sinp  0  cosp |   | 0  sinr   cosr |
 //
 //     | cosy*cosp  -siny*cosr + sinr*sinp*cosy   sinr*siny + sinp*cosy*cosr |
 //   = | siny*cosp   cosr*cosy + sinr*sinp*siny  -cosy*sinr + cosr*sinp*siny |
@@ -202,15 +202,14 @@ Quat Angles::ToQuat() const {
 //
 //---------------------------------------------------------------------------------
 Mat3 Angles::ToMat3() const {
-    // This is an "unrolled" contatenation of rotation matrices Rx Ry and Rz
-    float sy, cy;
-    Math::SinCos(DEG2RAD(z), sy, cy);
-    
-    float sp, cp;
-    Math::SinCos(DEG2RAD(y), sp, cp);
-    
     float sr, cr;
     Math::SinCos(DEG2RAD(x), sr, cr);
+
+    float sp, cp;
+    Math::SinCos(DEG2RAD(y), sp, cp);
+
+    float sy, cy;
+    Math::SinCos(DEG2RAD(z), sy, cy);
 
     float srsp = sr * sp;
     float crsp = cr * sp;
