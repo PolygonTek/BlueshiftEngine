@@ -288,7 +288,7 @@ void ComTransform::Translate(const Vec3 &translation, TransformSpace space) {
 }
 
 void ComTransform::Rotate(const Vec3 &rotVec, float angle, TransformSpace space) {
-    Quat rotation = Quat::FromAngleAxis(angle, rotVec);
+    Quat rotation = Quat::FromAngleAxis(DEG2RAD(angle), rotVec);
 
     if (space == LocalSpace) {
         SetLocalRotation(GetLocalRotation() * rotation);

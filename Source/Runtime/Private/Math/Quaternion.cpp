@@ -98,17 +98,17 @@ Quat &Quat::SetFromSlerp(const Quat &from, const Quat &to, float t) {
     }
 
     // calculate coefficients
-    float omega, sinom, scale0, scale1;
+    float scale0, scale1;
     if ((1.0f - cosom) > 1e-6f) { //Math::FLT_EPSILON
 #if 0   // standard case (slerp)
-        omega = Math::ACos(cosom);
-        sinom = Math::Sin(omega);
+        float omega = Math::ACos(cosom);
+        float sinom = Math::Sin(omega);
         scale0 = Math::Sin((1.0f - t) * omega) * sinom;
         scale1 = Math::Sin(t * omega) * sinom;
 #else
         scale0 = 1.0f - cosom * cosom;
-        sinom = Math::InvSqrt(scale0);
-        omega = Math::ATan16(scale0 * sinom, cosom);
+        float sinom = Math::InvSqrt(scale0);
+        float omega = Math::ATan16(scale0 * sinom, cosom);
         scale0 = Math::Sin16((1.0f - t) * omega) * sinom;
         scale1 = Math::Sin16(t * omega) * sinom;
 #endif
