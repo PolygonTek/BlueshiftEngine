@@ -52,6 +52,7 @@ elseif (UNIX)
     set(PLATFORM_LINUX TRUE)
 endif ()
 
+# Check 64 bit platform
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(ENGINE_64BIT TRUE)
 endif ()
@@ -220,6 +221,12 @@ else ()
     add_definitions(-DUSE_LUAJIT=0)
 endif ()
 
+if (BUILD_EDITOR)
+    add_definitions(-DWITH_EDITOR=1)
+else ()
+    add_definitions(-DWITH_EDITOR=0)
+endif ()
+
 ################################################################################
 # Print C/CXX FLAGS
 ################################################################################
@@ -302,4 +309,3 @@ if (MSVC)
         set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT BlueshiftPlayer)
     endif ()
 endif ()
-
