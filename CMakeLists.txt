@@ -221,7 +221,7 @@ else ()
     add_definitions(-DUSE_LUAJIT=0)
 endif ()
 
-if (BUILD_EDITOR)
+if (BUILD_RUNTIME AND BUILD_EDITOR)
     add_definitions(-DWITH_EDITOR=1)
 else ()
     add_definitions(-DWITH_EDITOR=0)
