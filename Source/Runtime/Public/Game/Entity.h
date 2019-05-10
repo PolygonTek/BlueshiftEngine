@@ -234,17 +234,19 @@ public:
 
     static void                 DestroyInstance(Entity *entity);
 
-                                // FIXME: Don't emit these signals in player mode
+    static const SignalDef      SIG_LayerChanged;
+    static const SignalDef      SIG_StaticMaskChanged;
+
+#if WITH_EDITOR
     static const SignalDef      SIG_ActiveChanged;
     static const SignalDef      SIG_ActiveInHierarchyChanged;
     static const SignalDef      SIG_NameChanged;
-    static const SignalDef      SIG_LayerChanged;
-    static const SignalDef      SIG_StaticMaskChanged;
     static const SignalDef      SIG_FrozenChanged;
     static const SignalDef      SIG_ParentChanged;
     static const SignalDef      SIG_ComponentInserted;
     static const SignalDef      SIG_ComponentRemoved;
     static const SignalDef      SIG_ComponentSwapped;
+#endif
 
 protected:
     void                        SetActiveInHierarchy(bool active);

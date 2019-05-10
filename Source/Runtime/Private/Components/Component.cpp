@@ -86,7 +86,9 @@ void Component::Event_ImmediateDestroy() {
             return;
         }
 
+#if WITH_EDITOR
         entity->EmitSignal(&Entity::SIG_ComponentRemoved, this);
+#endif
     }
 
     Object::Event_ImmediateDestroy();

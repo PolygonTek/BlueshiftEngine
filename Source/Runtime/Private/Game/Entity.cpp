@@ -22,16 +22,21 @@
 
 BE_NAMESPACE_BEGIN
 
+const SignalDef Entity::SIG_LayerChanged("Entity::LayerChanged", "a");
+const SignalDef Entity::SIG_StaticMaskChanged("Entity::StaticMaskChanged", "ai");
+
+#if WITH_EDITOR
+
 const SignalDef Entity::SIG_ActiveChanged("Entity::ActiveChanged", "ai");
 const SignalDef Entity::SIG_ActiveInHierarchyChanged("Entity::ActiveInHierachyChanged", "ai");
 const SignalDef Entity::SIG_NameChanged("Entity::NameChanged", "as");
-const SignalDef Entity::SIG_LayerChanged("Entity::LayerChanged", "a");
-const SignalDef Entity::SIG_StaticMaskChanged("Entity::StaticMaskChanged", "ai");
 const SignalDef Entity::SIG_FrozenChanged("Entity::FrozenChanged", "ai");
 const SignalDef Entity::SIG_ParentChanged("Entity::ParentChanged", "aa");
 const SignalDef Entity::SIG_ComponentInserted("Entity::ComponentInserted", "ai");
 const SignalDef Entity::SIG_ComponentRemoved("Entity::ComponentRemoved", "a");
 const SignalDef Entity::SIG_ComponentSwapped("Entity::ComponentSwapped", "ii");
+
+#endif
 
 OBJECT_DECLARATION("Entity", Entity, Object)
 BEGIN_EVENTS(Entity)
@@ -130,10 +135,12 @@ void Entity::InitComponents() {
         }
     }
 
+#if WITH_EDITOR
     ComRenderable *renderable = GetComponent<ComRenderable>();
     if (renderable) {
         renderable->SetProperty("skipSelection", frozen);
     }
+#endif
 }
 
 void Entity::Awake() {
@@ -233,7 +240,9 @@ void Entity::InsertComponent(Component *component, int index) {
         component->Awake();
     }
 
+#if WITH_EDITOR
     EmitSignal(&SIG_ComponentInserted, component, index);
+#endif
 }
 
 bool Entity::RemoveComponent(Component *component) {
@@ -244,13 +253,16 @@ bool Entity::SwapComponent(int fromIndex, int toIndex) {
     Clamp(fromIndex, 1, components.Count());
     Clamp(toIndex, 1, components.Count());
 
-    if (fromIndex != toIndex) {
-        Swap(components[fromIndex], components[toIndex]);
-
-        EmitSignal(&SIG_ComponentSwapped, fromIndex, toIndex);
-        return true;
+    if (fromIndex == toIndex) {
+        return false;
     }
-    return false;
+
+    Swap(components[fromIndex], components[toIndex]);
+
+#if WITH_EDITOR
+    EmitSignal(&SIG_ComponentSwapped, fromIndex, toIndex);
+#endif
+    return true;
 }
 
 bool Entity::HasChildren() const {
@@ -433,7 +445,9 @@ void Entity::SetActive(bool active) {
 
     activeSelf = active;
 
+#if WITH_EDITOR
     EmitSignal(&SIG_ActiveChanged, this, active);
+#endif
 
     const Entity *parentEntity = node.GetParent();
 
@@ -449,7 +463,9 @@ void Entity::SetActiveInHierarchy(bool active) {
 
     activeInHierarchy = active;
 
+#if WITH_EDITOR
     EmitSignal(&SIG_ActiveInHierarchyChanged, this, active ? 1 : 0);
+#endif
 
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
@@ -585,7 +601,9 @@ void Entity::SetName(const Str &name) {
     if (initialized) {
         GetGameWorld()->OnEntityNameChanged(this);
 
+#if WITH_EDITOR
         EmitSignal(&SIG_NameChanged, this, name);
+#endif
     }
 }
 
@@ -636,9 +654,11 @@ void Entity::SetParentGuid(const Guid &parentGuid) {
         }
     }
 
+#if WITH_EDITOR
     if (initialized) {
         EmitSignal(&SIG_ParentChanged, this, parentEntity);
     }
+#endif
 }
 
 Guid Entity::GetPrefabSourceGuid() const {
@@ -652,6 +672,7 @@ void Entity::SetPrefabSourceGuid(const Guid &prefabSourceGuid) {
 void Entity::SetFrozen(bool frozen) {
     this->frozen = frozen;
 
+#if WITH_EDITOR
     if (initialized) {
         ComRenderable *renderable = GetComponent<ComRenderable>();
         if (renderable) {
@@ -660,6 +681,7 @@ void Entity::SetFrozen(bool frozen) {
 
         EmitSignal(&SIG_FrozenChanged, this, frozen ? 1 : 0);
     }
+#endif
 }
 
 Entity *Entity::CreateEntity(Json::Value &entityValue, GameWorld *gameWorld, int sceneIndex) {
