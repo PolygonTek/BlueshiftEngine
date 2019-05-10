@@ -631,6 +631,7 @@ BE_INLINE Mat4 &Mat4::operator*=(float a) {
 BE_INLINE bool Mat4::Equals(const Mat4 &a) const {
     const float *ptr1 = reinterpret_cast<const float *>(mat);
     const float *ptr2 = reinterpret_cast<const float *>(a.mat);
+
     for (int i = 0; i < Rows * Cols; i++) {
         if (ptr1[i] != ptr2[i]) {
             return false;
@@ -642,6 +643,7 @@ BE_INLINE bool Mat4::Equals(const Mat4 &a) const {
 BE_INLINE bool Mat4::Equals(const Mat4 &a, const float epsilon) const {
     const float *ptr1 = reinterpret_cast<const float *>(mat);
     const float *ptr2 = reinterpret_cast<const float *>(a.mat);
+
     for (int i = 0; i < Rows * Cols; i++) {
         if (Math::Fabs(ptr1[i] - ptr2[i]) > epsilon) {
             return false;

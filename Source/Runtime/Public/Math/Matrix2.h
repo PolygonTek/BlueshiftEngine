@@ -374,8 +374,9 @@ BE_INLINE bool Mat2::IsSymmetric(const float epsilon) const {
 }
 
 BE_INLINE bool Mat2::IsDiagonal(const float epsilon) const {
-    if (Math::Fabs(mat[0][1]) > epsilon || Math::Fabs(mat[1][0]) > epsilon)
+    if (Math::Fabs(mat[0][1]) > epsilon || Math::Fabs(mat[1][0]) > epsilon) {
         return false;
+    }
     return true;
 }
 
