@@ -166,6 +166,10 @@ public:
 
                         /// Tests if this is the identity matrix, up to the given epsilon.
     bool                IsIdentity(const float epsilon = MATRIX_EPSILON) const;
+                        /// Tests if this is the upper triangular matrix, up to the given epsilon.
+    bool                IsUpperTriangular(const float epsilon = MATRIX_EPSILON) const;
+                        /// Tests if this is the lower triangular matrix, up to the given epsilon.
+    bool                IsLowerTriangular(const float epsilon = MATRIX_EPSILON) const;
                         /// Tests if this is the symmetric matrix, up to the given epsilon.
     bool                IsSymmetric(const float epsilon = MATRIX_EPSILON) const;
                         /// Tests if this is the diagonal matrix, up to the given epsilon.
@@ -662,6 +666,24 @@ BE_INLINE void Mat4::SetTranslation(float tx, float ty, float tz) {
 
 BE_INLINE bool Mat4::IsIdentity(const float epsilon) const {
     return Equals(Mat4::identity, epsilon);
+}
+
+BE_INLINE bool Mat4::IsUpperTriangular(const float epsilon) const {
+    return (Math::Fabs(mat[1][0]) <= epsilon) &&
+           (Math::Fabs(mat[2][0]) <= epsilon) &&
+           (Math::Fabs(mat[2][1]) <= epsilon) &&
+           (Math::Fabs(mat[3][0]) <= epsilon) &&
+           (Math::Fabs(mat[3][1]) <= epsilon) &&
+           (Math::Fabs(mat[3][2]) <= epsilon);
+}
+
+BE_INLINE bool Mat4::IsLowerTriangular(const float epsilon) const {
+    return (Math::Fabs(mat[0][1]) <= epsilon) &&
+           (Math::Fabs(mat[0][2]) <= epsilon) &&
+           (Math::Fabs(mat[0][3]) <= epsilon) &&
+           (Math::Fabs(mat[1][2]) <= epsilon) &&
+           (Math::Fabs(mat[1][3]) <= epsilon) &&
+           (Math::Fabs(mat[2][3]) <= epsilon);
 }
 
 BE_INLINE bool Mat4::IsSymmetric(const float epsilon) const {
