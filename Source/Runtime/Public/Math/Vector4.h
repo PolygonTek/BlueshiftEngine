@@ -26,8 +26,8 @@
 
 BE_NAMESPACE_BEGIN
 
-/// A vector of form (x, y, z, w). 16 bytes aligned.
-class BE_API ALIGN_AS16 Vec4 {
+/// A vector of form (x, y, z, w).
+class BE_API Vec4 {
 public:
     /// Specifies the number of elements in this vector.
     enum { Size = 4 };
