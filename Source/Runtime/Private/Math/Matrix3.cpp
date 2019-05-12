@@ -713,7 +713,7 @@ void Mat3::ToRotationZXY(float &ez, float &ex, float &ey) {
         ey = 0;
     }
 }
-    
+
 void Mat3::ToRotationZYX(float &ez, float &ey, float &ex) {
     if (mat[0][2] < 1.f) {
         if (mat[0][2] > -1.f) {

@@ -66,8 +66,10 @@ public:
 
     /// The default constructor does not initialize any members of this class.
     Plane() = default;
-    constexpr Plane(float a, float b, float c, float d);
-    constexpr Plane(const Vec3 &n, float d);
+    /// Constructs a plane by directly specifying the normal and offset parameters.
+    constexpr Plane(const Vec3 &normal, float offset);
+    /// Constructs a plane by specifying the surface normal and a single point on the plane.
+    Plane(const Vec3 &normal, const Vec3 &point);
 
     Type::Enum          GetType() const;
     
@@ -87,6 +89,8 @@ public:
     float               operator[](int index) const;
     float &             operator[](int index);
 
+    bool                FixDegenerateNormal() { return normal.FixDegenerateNormal(); }
+
                         /// Sets this plane by specifying three points on the plane.
                         /// The normal of the plane will be oriented in counter-clockwise order.
     bool                SetFromPoints(const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, bool fixDegenerate = true);
@@ -100,8 +104,6 @@ public:
                         /// Normalize plane. 
                         /// Only normalizes the plane normal, does not adjust d
     float               Normalize(bool fixDegenerate = true);
-
-    bool                FixDegenerateNormal() { return normal.FixDegenerateNormal(); }
 
                         /// Translates this Plane
     Plane               Translate(const Vec3 &translation) const;
@@ -140,12 +142,13 @@ public:
     float               offset;     ///< The offset of this plane from the origin.
 };
 
-BE_INLINE constexpr Plane::Plane(float a, float b, float c, float d) :
-    normal(a, b, c), offset(d) {
+BE_INLINE constexpr Plane::Plane(const Vec3 &n, float o) :
+    normal(n), offset(o) {
 }
 
-BE_INLINE constexpr Plane::Plane(const Vec3 &n, float d) :
-    normal(n), offset(d) {
+BE_INLINE Plane::Plane(const Vec3 &n, const Vec3 &p) :
+    normal(n) {
+    offset = normal.Dot(p);
 }
 
 BE_INLINE float Plane::operator[](int index) const {

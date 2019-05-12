@@ -20,12 +20,8 @@ BE_NAMESPACE_BEGIN
 
 class VisObject {
 public:
-    int                     index;
-
-    const RenderObject *    def;
-
-    Mat3x4                  modelViewMatrix;
-    Mat4                    modelViewProjMatrix;
+    ALIGN_AS16 Mat3x4       modelViewMatrix;
+    ALIGN_AS16 Mat4         modelViewProjMatrix;
 
     int                     instanceIndex;
 
@@ -34,23 +30,21 @@ public:
     bool                    ambientVisible;
     bool                    shadowVisible;
 
+    const RenderObject *    def;
     LinkList<VisObject>     node;
+    int                     index;
 };
 
 class VisLight {
 public:
-    int                     index;
+    ALIGN_AS16 Mat4         viewProjTexMatrix;
 
-    const RenderLight *     def;
+    ALIGN_AS16 Color4       lightColor;
 
     float *                 materialRegisters;
 
     Rect                    scissorRect;        // y 좌표는 밑에서 부터 증가
     bool                    occlusionVisible;
-
-    Mat4                    viewProjTexMatrix;
-
-    Color4                  lightColor;
 
     int                     firstDrawSurf;
     int                     numDrawSurfs;
@@ -61,7 +55,9 @@ public:
                             // light bounding volume 에 포함되고, shadow caster 가 view frustum 에 보이는 surfaces (litSurfsAABB 를 포함한다)
     AABB                    shadowCastersAABB;
 
+    const RenderLight *     def;
     LinkList<VisLight>      node;
+    int                     index;
 };
 
 class VisCamera {

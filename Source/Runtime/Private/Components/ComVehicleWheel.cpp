@@ -84,7 +84,7 @@ void ComVehicleWheel::Update() {
 
     vehicle->UpdateWheelTransform(vehicleWheelIndex);
 
-    const Mat3x4 wheelMatrix = vehicle->GetWheelTransform(vehicleWheelIndex);
+    ALIGN_AS16 const Mat3x4 wheelMatrix = vehicle->GetWheelTransform(vehicleWheelIndex);
 
     ComTransform *transform = GetEntity()->GetTransform();
 

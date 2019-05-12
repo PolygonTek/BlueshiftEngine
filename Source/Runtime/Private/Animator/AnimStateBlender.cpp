@@ -285,7 +285,9 @@ bool AnimStateBlender::BlendRotationDelta(int fromTime, int toTime, Quat &blende
     float time1 = NormalizedTime(fromTime);
     float time2 = NormalizedTime(toTime);
 
-    Quat q1, q2;
+    ALIGN_AS16 Quat q1;
+    ALIGN_AS16 Quat q2;
+
     q1.SetIdentity();
     q2.SetIdentity();
 

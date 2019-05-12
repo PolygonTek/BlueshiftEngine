@@ -174,8 +174,8 @@ const Mat3x4 &ComTransform::GetMatrix() const {
 }
 
 Mat3x4 ComTransform::GetMatrixNoScale() const {
-    Mat3x4 worldMatrixNoScale;
-    Mat3x4 localTransform = GetLocalMatrixNoScale();
+    ALIGN_AS16 Mat3x4 worldMatrixNoScale;
+    ALIGN_AS16 Mat3x4 localTransform = GetLocalMatrixNoScale();
     
     const ComTransform *parent = GetParent();
     if (parent) {
@@ -326,7 +326,7 @@ void ComTransform::InvalidateWorldMatrix() {
 }
 
 void ComTransform::UpdateWorldMatrix() const {
-    Mat3x4 localTransform = GetLocalMatrix();
+    ALIGN_AS16 Mat3x4 localTransform = GetLocalMatrix();
 
     const ComTransform *parent = GetParent();
     if (parent) {
