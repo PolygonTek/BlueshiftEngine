@@ -98,6 +98,10 @@ public:
     Vec3                operator*(const Vec3 &rhs) const;
     friend Vec3         operator*(const Vec3 &lhs, const Quat &rhs);
 
+                        /// Divides a quaternion by another. Division "q1 / q2" results in a quaternion that rotates the orientation q2
+                        /// to coincide with the orientation q1.
+    Quat                operator/(const Quat &rhs) const;
+
                         /// Adds a quaternion to this quaternion, in-place.
     Quat &              operator+=(const Quat &rhs);
 
@@ -109,6 +113,9 @@ public:
 
                         /// Multiplies two quaternions, in-place.
     Quat &              operator*=(const Quat &rhs);
+
+                        /// Divides two quaternions, in-place.
+    Quat &              operator/=(const Quat &rhs);
 
                         /// Exact compare, no epsilon.
     bool                Equals(const Quat &a) const;
@@ -128,6 +135,12 @@ public:
                         /// Calculate w component by based on x, y, z components.
                         /// x, y, z components must be normalized.
     float               CalcW() const;
+
+                        /// Returns the axis of rotation for this quaternion.
+    Vec3                Axis() const;
+
+                        /// Returns the angle of rotation for this quaternion, in radians.
+    float               Angle() const;
 
                         /// Computes the dot product of this and the given quaternion.
                         /// Dot product is commutative.
@@ -195,6 +208,11 @@ public:
     Quat &              SetFromTwoVectors(const Vec3 &from, const Vec3 &to);
                         /// Returns the quaternion that rotates unit-length vector 'from' to unit-length vector 'to'.
     static Quat         FromTwoVectors(const Vec3 &from, const Vec3 &to);
+
+                        /// Returns the angle between this and the target orientation (the shortest route) in radians.
+    float               AngleBetween(const Quat &target);
+                        /// Returns the axis of rotation to get from this orientation to target orientation (the shortest route).
+    Vec3                AxisBetween(const Quat &target);
 
                         /// Sets this quaternion to rotate the given 'from' vector towards the 'to' vector by the normalized t parameter.
     Quat &              SetFromSlerp(const Quat &from, const Quat &to, float t);
@@ -306,10 +324,18 @@ BE_INLINE Quat& Quat::operator-=(const Quat &a) {
 
 BE_INLINE Quat Quat::operator*(const Quat &a) const {
     return Quat(
-        w * a.x + x * a.w + y * a.z - z * a.y,
-        w * a.y + y * a.w + z * a.x - x * a.z,
-        w * a.z + z * a.w + x * a.y - y * a.x,
-        w * a.w - x * a.x - y * a.y - z * a.z);
+        x * a.w + y * a.z - z * a.y + w * a.x,
+       -x * a.z + y * a.w + z * a.x + w * a.y,
+        x * a.y - y * a.x + z * a.w + w * a.z,
+       -x * a.x - y * a.y - z * a.z + w * a.w);
+}
+
+BE_INLINE Quat Quat::operator/(const Quat &a) const {
+    return Quat(
+        x * a.w - y * a.z + z * a.y - w * a.x,
+        x * a.z + y * a.w - z * a.x - w * a.y,
+       -x * a.y + y * a.x + z * a.w - w * a.z,
+        x * a.x + y * a.y + z * a.z + w * a.w);
 }
 
 BE_INLINE Vec3 Quat::operator*(const Vec3 &a) const {
@@ -330,6 +356,11 @@ BE_INLINE Vec3 operator*(const Vec3 &a, const Quat &b) {
 
 BE_INLINE Quat& Quat::operator*=(const Quat &a) {
     *this = *this * a;
+    return *this;
+}
+
+BE_INLINE Quat& Quat::operator/=(const Quat &a) {
+    *this = *this / a;
     return *this;
 }
 
@@ -364,6 +395,17 @@ BE_INLINE bool Quat::Equals(const Quat &a, const float epsilon) const {
 BE_INLINE float Quat::CalcW() const {
     // take the absolute value because floating point rounding may cause the dot of x, y, z to be larger than 1
     return sqrt(fabs(1.0f - (x * x + y * y + z * z)));
+}
+
+BE_INLINE Vec3 Quat::Axis() const {
+    // Convert cos to sin via the identity sin^2 + cos^2 = 1, and fuse reciprocal and square root to the same instruction,
+    // since we are about to divide by it.
+    float rcpSinAngle = Math::RSqrt(1.0f - w * w);
+    return Vec3(x, y, z) * rcpSinAngle;
+}
+
+BE_INLINE float Quat::Angle() const {
+    return Math::ACos(w) * 2.0f;
 }
 
 BE_INLINE float Quat::Dot(const Quat &rhs) const {

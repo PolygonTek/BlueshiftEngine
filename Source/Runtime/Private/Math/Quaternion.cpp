@@ -68,6 +68,18 @@ Quat &Quat::SetFromTwoVectors(const Vec3 &from, const Vec3 &to) {
     return *this;
 }
 
+float Quat::AngleBetween(const Quat &target) {
+    Quat delta = target / *this;
+    delta.Normalize();
+    return delta.Angle();
+}
+
+Vec3 Quat::AxisBetween(const Quat &target) {
+    Quat delta = target / *this;
+    delta.Normalize();
+    return delta.Axis();
+}
+
 // Spherical linear interpolation between two quaternions.
 Quat &Quat::SetFromSlerp(const Quat &from, const Quat &to, float t) {
     if (t <= 0.0f) {
