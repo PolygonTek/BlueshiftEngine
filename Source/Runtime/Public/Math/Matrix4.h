@@ -136,17 +136,17 @@ public:
                         /// This function is identical to the member function SubSelf().
     Mat4 &              operator-=(const Mat4 &rhs);
     
-                        /// Multiplies this matrix with the given matrix, in-place
+                        /// Multiplies this matrix with the given matrix, in-place.
     Mat4 &              MulSelf(const Mat4 &m) { *this *= m; return *this; }
     Mat4 &              MulSelf(const Mat3x4 &m) { *this *= m; return *this; }
-                        /// Multiplies this matrix with the given matrix, in-place
+                        /// Multiplies this matrix with the given matrix, in-place.
                         /// This function is identical to the member function MulSelf().
     Mat4 &              operator*=(const Mat4 &rhs);
     Mat4 &              operator*=(const Mat3x4 &rhs);
     
-                        /// Multiplies this matrix with the given scalar, in-place
+                        /// Multiplies this matrix with the given scalar, in-place.
     Mat4 &              MulScalarSelf(float s) { *this *= s; return *this; }
-                        /// Multiplies this matrix with the given scalar, in-place
+                        /// Multiplies this matrix with the given scalar, in-place.
                         /// This function is identical to the member function MulScalarSelf().
     Mat4 &              operator*=(float rhs);
                         
@@ -155,13 +155,13 @@ public:
                         /// Multiplies the vector lhs with the given matrix rhs, in-place on vector. i.e. lhs *= rhs
     friend Vec3 &       operator*=(Vec3 &lhs, const Mat4 &rhs) { lhs = rhs * lhs; return lhs; }
 
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const Mat4 &m) const;
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const Mat4 &m, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const Mat4 &rhs) const { return Equals(rhs); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const Mat4 &rhs) const { return !Equals(rhs); }
 
                         /// Tests if this is the identity matrix, up to the given epsilon.
@@ -205,7 +205,7 @@ public:
     void                GetTQS(Vec3 &translation, Quat &rotation, Vec3 &scale) const;
 
                         /// Returns the sum of the diagonal elements of this matrix.
-                        /// Mathematically, this means sum of all eigenvalues
+                        /// Mathematically, this means sum of all eigenvalues.
     float               Trace() const;
                         /// Returns the determinant of this matrix
                         /// Mathematically, this means multiplication of all eigenvalues
@@ -230,7 +230,7 @@ public:
                         /// Inverts a affine matrix, in-place.
     bool                AffineInverseSelf();
     
-                        /// Inverts a euclidean matrix
+                        /// Inverts a euclidean matrix.
                         /// If a matrix is made up of only translation, rotation, and reflection,
                         /// then M is euclidean matrix and this function can be used to compute the inverse
     Mat4                EuclideanInverse() const;
@@ -252,11 +252,11 @@ public:
                         /// Performs uniform scaling by the given amount, in-place.
     Mat4 &              UniformScale(const float s) { return Scale(s, s, s); }
 
-                        /// Returns translation matrix
+                        /// Returns translation matrix.
     static Mat4         FromTranslation(float tx, float ty, float tz);
     static Mat4         FromTranslation(const Vec3 &t) { return FromTranslation(t.x, t.y, t.z); }
 
-                        /// Returns scaling matrix
+                        /// Returns scaling matrix.
     static Mat4         FromScale(float sx, float sy, float sz);
     static Mat4         FromScale(const Vec3 &s) { return FromTranslation(s.x, s.y, s.z); }
 
@@ -281,10 +281,10 @@ public:
                         /// Returns "_00 _01 _02 _03 _10 _11 _12 _13 _20 _21 _22 _23 _30 _31 _32 _33" with the given precisions.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Mat4         FromString(const char *str);
 
-                        /// Returns dimension of this type
+                        /// Returns dimension of this type.
     int                 GetDimension() const { return Rows * Cols; }
 
     static const Mat4   zero;

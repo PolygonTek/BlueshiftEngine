@@ -125,6 +125,7 @@ public:
                         /// Intersects a ray with this plane.
                         /// Returns false if there is no intersection.
     bool                IntersectRay(const Ray &ray, bool ignoreBackside, float *hitDist = nullptr) const;
+                        /// Returns hit distance, but returns FLT_MAX if no intersection occurs.
     float               IntersectRay(const Ray &ray, bool ignoreBackside) const;
 
                         /// Returns "a b c d".

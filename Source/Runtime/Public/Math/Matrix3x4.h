@@ -126,25 +126,25 @@ public:
                         /// This function is identical to the member function SubSelf().
     Mat3x4 &            operator-=(const Mat3x4 &rhs);
 
-                        /// Multiplies this matrix with the given matrix, in-place
+                        /// Multiplies this matrix with the given matrix, in-place.
     Mat3x4 &            MulSelf(const Mat3x4 &m) { *this *= m; return *this; }
-                        /// Multiplies this matrix with the given matrix, in-place
+                        /// Multiplies this matrix with the given matrix, in-place.
                         /// This function is identical to the member function MulSelf().
     Mat3x4 &            operator*=(const Mat3x4 &rhs);
     
-                        /// Multiplies this matrix with the given scalar, in-place
+                        /// Multiplies this matrix with the given scalar, in-place.
     Mat3x4 &            MulScalarSelf(float s) { *this *= s; return *this; }
-                        /// Multiplies this matrix with the given scalar, in-place
+                        /// Multiplies this matrix with the given scalar, in-place.
                         /// This function is identical to the member function MulScalarSelf().
     Mat3x4 &            operator*=(float rhs);
 
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const Mat3x4 &a) const;
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const Mat3x4 &a, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const Mat3x4 &rhs) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const Mat3x4 &rhs) const;
 
                         /// Tests if this is the identity matrix, up to the given epsilon.
@@ -155,9 +155,9 @@ public:
                         /// Sets this matrix to equal the identity.
     void                SetIdentity();
 
-                        /// Fix degenerate axial cases
+                        /// Fix degenerate axial cases.
     bool                FixDegeneracies();
-                        /// Change tiny numbers to zero
+                        /// Change tiny numbers to zero.
     bool                FixDenormals();
 
     void                SetRotationScale(const Mat3 &rotation, const Vec3 &scale);
@@ -193,11 +193,11 @@ public:
                         /// Performs uniform scaling by the given amount, in-place.
     Mat3x4 &            UniformScale(const float s) { return Scale(s, s, s); }
 
-                        /// Returns translation matrix
+                        /// Returns translation matrix.
     static Mat3x4       FromTranslation(float tx, float ty, float tz);
     static Mat3x4       FromTranslation(const Vec3 &t) { return FromTranslation(t.x, t.y, t.z); }
 
-                        /// Returns scaling matrix
+                        /// Returns scaling matrix.
     static Mat3x4       FromScale(float sx, float sy, float sz);
     static Mat3x4       FromScale(const Vec3 &s) { return FromScale(s.x, s.y, s.z); }
 
@@ -222,10 +222,10 @@ public:
                         /// Returns "_00 _01 _02 _03 _10 _11 _12 _13 _20 _21 _22 _23" with the given precisions.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Mat3x4       FromString(const char *str);
 
-                        /// Returns dimension of this type
+                        /// Returns dimension of this type.
     int                 GetDimension() const { return Rows * Cols; }
     
     static const Mat3x4 zero;

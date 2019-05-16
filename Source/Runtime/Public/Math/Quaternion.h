@@ -126,6 +126,9 @@ public:
                         /// Exact compare, no epsilon.
     bool                operator!=(const Quat &rhs) const { return !Equals(rhs); }
 
+                        /// Tests if this is the identity quaternion, up to the given epsilon.
+    bool                IsIdentity(const float epsilon = 1e-5f) const;
+
                         /// Sets all elements of this quaternion.
     void                Set(float x, float y, float z, float w);
 
@@ -156,6 +159,11 @@ public:
 
                         /// Returns true if the length of this quaternion is one.
     bool                IsNormalized(float epsilonSq = 1e-5f) const;
+
+                        /// Compute conjugate of this quaternion.
+    Quat                Conjugate() const;
+                        /// Compute conjugate of this quaternion, in-place.
+    Quat &              ConjugateSelf();
 
                         /// Inverts this quaternion.
     Quat                Inverse() const;
@@ -436,6 +444,10 @@ BE_INLINE bool Quat::IsNormalized(float epsilonSqr) const {
     return Math::Fabs(LengthSqr() - 1.0f) < epsilonSqr;
 }
 
+BE_INLINE bool Quat::IsIdentity(const float epsilon) const {
+    return Equals(Quat::identity, epsilon);
+}
+
 BE_INLINE void Quat::SetIdentity() {
     x = 0.0f;
     y = 0.0f;
@@ -467,14 +479,24 @@ BE_INLINE Quat Quat::FromSlerpFast(const Quat &from, const Quat &to, float t) {
     return q;
 }
 
+BE_INLINE Quat Quat::Conjugate() const {
+    return Quat(-x, -y, -z, w);
+}
+
+BE_INLINE Quat &Quat::ConjugateSelf() {
+    x = -x;
+    y = -y;
+    z = -z;
+    return *this;
+}
+
 BE_INLINE Quat Quat::Inverse() const {
-    // 켤레 사원수 (conjugate quaternion)
-    // q  = w + xi + yj + zk
-    // q' = w - xi - yj - zk
+    assert(IsNormalized());
     return Quat(-x, -y, -z, w);
 }
 
 BE_INLINE Quat &Quat::InverseSelf() {
+    assert(IsNormalized());
     x = -x;
     y = -y;
     z = -z;

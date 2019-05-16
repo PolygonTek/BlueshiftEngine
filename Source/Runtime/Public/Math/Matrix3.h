@@ -98,7 +98,7 @@ public:
                         /// Multiplies the given matrix by a scalar.
     friend Mat3         operator*(float lhs, const Mat3 &rhs) { return rhs * lhs; }
 
-                        /// Transforms the given vector by this matrix
+                        /// Transforms the given vector by this matrix.
     Vec3                MulVec(const Vec3 &v) const { return *this * v; }
                         /// Returns this->Transpose() * v
     Vec3                TransposedMulVec(const Vec3 &v) const;
@@ -169,9 +169,9 @@ public:
                         /// No need to normalize viewDir direction vector.
     bool                SetFromLookAt(const Vec3 &viewDir, const Vec3 &up = Vec3::unitZ);
 
-                        /// Fix degenerate axial cases
+                        /// Fix degenerate axial cases.
     bool                FixDegeneracies();
-                        /// Change tiny numbers to zero
+                        /// Change tiny numbers to zero.
     bool                FixDenormals();
 
                         /// Returns the sum of the diagonal elements of this matrix.
