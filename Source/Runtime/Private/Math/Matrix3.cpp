@@ -615,8 +615,8 @@ Mat3 Mat3::FromRotationZYZ(float ez2, float ey, float ez1) {
 }
 
 void Mat3::ToRotationXYZ(float &ex, float &ey, float &ez) {
-    if (mat[2][0] < 1.f) {
-        if (mat[2][0] > -1.f) {
+    if (mat[2][0] < 1.f - 1e-6f) {
+        if (mat[2][0] > -1.f + 1e-6f) {
             ey = asin(mat[2][0]);
             ex = atan2(-mat[2][1], mat[2][2]);
             ez = atan2(-mat[1][0], mat[0][0]);
@@ -635,8 +635,8 @@ void Mat3::ToRotationXYZ(float &ex, float &ey, float &ez) {
 }
 
 void Mat3::ToRotationXZY(float &ex, float &ez, float &ey) {
-    if (mat[1][0] < 1.f) {
-        if (mat[1][0] > -1.f) {
+    if (mat[1][0] < 1.f - 1e-6f) {
+        if (mat[1][0] > -1.f + 1e-6f) {
             ez = asin(-mat[1][0]);
             ex = atan2(mat[1][2], mat[1][1]);
             ey = atan2(mat[2][0], mat[0][0]);
@@ -655,8 +655,8 @@ void Mat3::ToRotationXZY(float &ex, float &ez, float &ey) {
 }
 
 void Mat3::ToRotationYXZ(float &ey, float &ex, float &ez) {
-    if (mat[2][1] < 1.f) {
-        if (mat[2][1] > -1.f) {
+    if (mat[2][1] < 1.f - 1e-6f) {
+        if (mat[2][1] > -1.f + 1e-6f) {
             ex = asin(-mat[2][1]);
             ey = atan2(mat[2][0], mat[2][2]);
             ez = atan2(mat[0][1], mat[1][1]);
@@ -675,8 +675,8 @@ void Mat3::ToRotationYXZ(float &ey, float &ex, float &ez) {
 }
 
 void Mat3::ToRotationYZX(float &ey, float &ez, float &ex) {
-    if (mat[0][1] < 1.f) {
-        if (mat[0][1] > -1.f) {
+    if (mat[0][1] < 1.f - 1e-6f) {
+        if (mat[0][1] > -1.f + 1e-6f) {
             ez = asin(mat[0][1]);
             ey = atan2(mat[0][2], mat[0][0]);
             ex = atan2(mat[2][1], mat[1][1]);
@@ -695,8 +695,8 @@ void Mat3::ToRotationYZX(float &ey, float &ez, float &ex) {
 }
 
 void Mat3::ToRotationZXY(float &ez, float &ex, float &ey) {
-    if (mat[1][2] < 1.f) {
-        if (mat[1][2] > -1.f) {
+    if (mat[1][2] < 1.f - 1e-6f) {
+        if (mat[1][2] > -1.f + 1e-6f) {
             ex = asin(mat[1][2]);
             ez = atan2(-mat[1][0], mat[1][1]);
             ey = atan2(-mat[0][2], mat[2][2]);
@@ -715,8 +715,8 @@ void Mat3::ToRotationZXY(float &ez, float &ex, float &ey) {
 }
 
 void Mat3::ToRotationZYX(float &ez, float &ey, float &ex) {
-    if (mat[0][2] < 1.f) {
-        if (mat[0][2] > -1.f) {
+    if (mat[0][2] < 1.f - 1e-6f) {
+        if (mat[0][2] > -1.f + 1e-6f) {
             ey = asin(-mat[0][2]);
             ez = atan2(mat[0][1], mat[0][0]);
             ex = atan2(mat[1][2], mat[2][2]);
@@ -735,8 +735,8 @@ void Mat3::ToRotationZYX(float &ez, float &ey, float &ex) {
 }
 
 void Mat3::ToRotationXYX(float &ex2, float &ey, float &ex1) {
-    if (mat[0][0] < 1.f) {
-        if (mat[0][0] > -1.f) {
+    if (mat[0][0] < 1.f - 1e-6f) {
+        if (mat[0][0] > -1.f + 1e-6f) {
             ey = acos(mat[0][0]);
             ex2 = atan2(mat[0][1], -mat[0][2]);
             ex1 = atan2(mat[1][0], mat[2][0]);
@@ -755,8 +755,8 @@ void Mat3::ToRotationXYX(float &ex2, float &ey, float &ex1) {
 }
 
 void Mat3::ToRotationXZX(float &ex2, float &ez, float &ex1) {
-    if (mat[0][0] < 1.f) {
-        if (mat[0][0] > -1.f) {
+    if (mat[0][0] < 1.f - 1e-6f) {
+        if (mat[0][0] > -1.f + 1e-6f) {
             ez = acos(mat[0][0]);
             ex2 = atan2(mat[0][2], mat[0][1]);
             ex1 = atan2(mat[2][0], -mat[1][0]);
@@ -775,8 +775,8 @@ void Mat3::ToRotationXZX(float &ex2, float &ez, float &ex1) {
 }
 
 void Mat3::ToRotationYXY(float &ey2, float &ex, float &ey1) {
-    if (mat[1][1] < 1.f) {
-        if (mat[1][1] > -1.f) {
+    if (mat[1][1] < 1.f - 1e-6f) {
+        if (mat[1][1] > -1.f + 1e-6f) {
             ex = acos(mat[1][1]);
             ey2 = atan2(mat[1][0], mat[1][2]);
             ey1 = atan2(mat[0][1], -mat[2][1]);
@@ -795,8 +795,8 @@ void Mat3::ToRotationYXY(float &ey2, float &ex, float &ey1) {
 }
 
 void Mat3::ToRotationYZY(float &ey2, float &ez, float &ey1) {
-    if (mat[1][1] < 1.f) {
-        if (mat[1][1] > -1.f) {
+    if (mat[1][1] < 1.f - 1e-6f) {
+        if (mat[1][1] > -1.f + 1e-6f) {
             ez = acos(mat[1][1]);
             ey2 = atan2(mat[1][2], -mat[1][0]);
             ey1 = atan2(mat[2][1], mat[0][1]);
@@ -815,8 +815,8 @@ void Mat3::ToRotationYZY(float &ey2, float &ez, float &ey1) {
 }
 
 void Mat3::ToRotationZXZ(float &ez2, float &ex, float &ez1) {
-    if (mat[2][2] < 1.f) {
-        if (mat[2][2] > -1.f) {
+    if (mat[2][2] < 1.f - 1e-6f) {
+        if (mat[2][2] > -1.f + 1e-6f) {
             ex = acos(mat[2][2]);
             ez2 = atan2(mat[2][0], -mat[2][1]);
             ez1 = atan2(mat[0][2], mat[1][2]);
@@ -835,8 +835,8 @@ void Mat3::ToRotationZXZ(float &ez2, float &ex, float &ez1) {
 }
 
 void Mat3::ToRotationZYZ(float &ez2, float &ey, float &ez1) {
-    if (mat[2][2] < 1.f) {
-        if (mat[2][2] > -1.f) {
+    if (mat[2][2] < 1.f - 1e-6f) {
+        if (mat[2][2] > -1.f + 1e-6f) {
             ey = acos(mat[2][2]);
             ez2 = atan2(mat[2][1], mat[2][0]);
             ez1 = atan2(mat[1][2], -mat[0][2]);
