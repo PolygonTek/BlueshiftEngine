@@ -399,7 +399,7 @@ Angles ComTransform::CalculateLocalEulerAnglesHint(const Quat &newRotation, cons
         return currentEulerHint;
     }
 
-    float e1[3];
+    Angles e1;
     newRotation.ToRotationZYX(e1[2], e1[1], e1[0]);
 
     // Round off in degrees
@@ -407,10 +407,8 @@ Angles ComTransform::CalculateLocalEulerAnglesHint(const Quat &newRotation, cons
     e1[1] = Math::Rint(RAD2DEG(e1[1]) / 1e-3f) * 1e-3f;
     e1[2] = Math::Rint(RAD2DEG(e1[2]) / 1e-3f) * 1e-3f;
 
-    float e2[3];
-    e2[0] = e1[0] + 180;
-    e2[1] = -(e1[1] + 180);
-    e2[2] = e1[2] + 180;
+    Angles e2 = e1 + Angles(180, 180, 180);
+    e2.y = -e2.y;
 
     // Synchronize euler angles to hint
     Angles eulerAnglesSynced1 = SyncEulerAngles(e1, currentEulerHint);
