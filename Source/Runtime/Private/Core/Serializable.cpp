@@ -704,6 +704,10 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
         newValue = angles;
         break;
     }
+    case Variant::Type::Quat: {
+        newValue = value.As<Quat>();
+        break;
+    }
     case Variant::Type::Point: {
         Point pt = value.As<Point>();
         if (ranged) {
