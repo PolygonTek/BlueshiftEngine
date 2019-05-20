@@ -194,18 +194,18 @@ public:
     static Quat         FromRotationZYZ(float ez2, float ey, float ez1) { return (FromRotationZ(ez2) * FromRotationY(ey) * FromRotationZ(ez1)).Normalize(); }
 
                         /// Extracts the rotation part of this quaternion into Euler rotation angles in radians.
-    void                ToRotationXYZ(float &ex, float &ey, float &ez) { return ToMat3().ToRotationXYZ(ex, ey, ez); }
-    void                ToRotationXZY(float &ex, float &ez, float &ey) { return ToMat3().ToRotationXZY(ex, ez, ey); }
-    void                ToRotationYXZ(float &ey, float &ex, float &ez) { return ToMat3().ToRotationYXZ(ey, ex, ez); }
-    void                ToRotationYZX(float &ey, float &ez, float &ex) { return ToMat3().ToRotationYZX(ey, ez, ex); }
-    void                ToRotationZXY(float &ez, float &ex, float &ey) { return ToMat3().ToRotationZXY(ez, ex, ey); }
-    void                ToRotationZYX(float &ez, float &ey, float &ex) { return ToMat3().ToRotationZYX(ez, ey, ex); }
-    void                ToRotationXYX(float &ex2, float &ey, float &ex1) { return ToMat3().ToRotationXYX(ex2, ey, ex1); }
-    void                ToRotationXZX(float &ex2, float &ez, float &ex1) { return ToMat3().ToRotationXZX(ex2, ez, ex1); }
-    void                ToRotationYXY(float &ey2, float &ex, float &ey1) { return ToMat3().ToRotationYXY(ey2, ex, ey1); }
-    void                ToRotationYZY(float &ey2, float &ez, float &ey1) { return ToMat3().ToRotationYZY(ey2, ez, ey1); }
-    void                ToRotationZXZ(float &ez2, float &ex, float &ez1) { return ToMat3().ToRotationZXZ(ez2, ex, ez1); }
-    void                ToRotationZYZ(float &ez2, float &ey, float &ez1) { return ToMat3().ToRotationZYZ(ez2, ey, ez1); }
+    void                ToRotationXYZ(float &ex, float &ey, float &ez) const { return ToMat3().ToRotationXYZ(ex, ey, ez); }
+    void                ToRotationXZY(float &ex, float &ez, float &ey) const { return ToMat3().ToRotationXZY(ex, ez, ey); }
+    void                ToRotationYXZ(float &ey, float &ex, float &ez) const { return ToMat3().ToRotationYXZ(ey, ex, ez); }
+    void                ToRotationYZX(float &ey, float &ez, float &ex) const { return ToMat3().ToRotationYZX(ey, ez, ex); }
+    void                ToRotationZXY(float &ez, float &ex, float &ey) const { return ToMat3().ToRotationZXY(ez, ex, ey); }
+    void                ToRotationZYX(float &ez, float &ey, float &ex) const { return ToMat3().ToRotationZYX(ez, ey, ex); }
+    void                ToRotationXYX(float &ex2, float &ey, float &ex1) const { return ToMat3().ToRotationXYX(ex2, ey, ex1); }
+    void                ToRotationXZX(float &ex2, float &ez, float &ex1) const { return ToMat3().ToRotationXZX(ex2, ez, ex1); }
+    void                ToRotationYXY(float &ey2, float &ex, float &ey1) const { return ToMat3().ToRotationYXY(ey2, ex, ey1); }
+    void                ToRotationYZY(float &ey2, float &ez, float &ey1) const { return ToMat3().ToRotationYZY(ey2, ez, ey1); }
+    void                ToRotationZXZ(float &ez2, float &ex, float &ez1) const { return ToMat3().ToRotationZXZ(ez2, ex, ez1); }
+    void                ToRotationZYZ(float &ez2, float &ey, float &ez1) const { return ToMat3().ToRotationZYZ(ez2, ey, ez1); }
 
                         /// Sets this quaternion by specifying the axis about which the rotation is performed, and the angle in radians.
     Quat &              SetFromAngleAxis(float angle, const Vec3 &axis);
@@ -218,9 +218,9 @@ public:
     static Quat         FromTwoVectors(const Vec3 &from, const Vec3 &to);
 
                         /// Returns the angle between this and the target orientation (the shortest route) in radians.
-    float               AngleBetween(const Quat &target);
+    float               AngleBetween(const Quat &target) const;
                         /// Returns the axis of rotation to get from this orientation to target orientation (the shortest route).
-    Vec3                AxisBetween(const Quat &target);
+    Vec3                AxisBetween(const Quat &target) const;
 
                         /// Sets this quaternion to rotate the given 'from' vector towards the 'to' vector by the normalized t parameter.
     Quat &              SetFromSlerp(const Quat &from, const Quat &to, float t);

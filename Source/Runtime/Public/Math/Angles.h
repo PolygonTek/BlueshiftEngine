@@ -257,9 +257,9 @@ BE_INLINE void Angles::SetFromLerp(const Angles &a1, const Angles &a2, const flo
     } else if (t >= 1.0f) {
         (*this) = a2;
     } else {
-        x = a1.x + Math::AngleDelta(a2.x, a1.x) * t;
-        y = a1.y + Math::AngleDelta(a2.y, a1.y) * t;
-        z = a1.z + Math::AngleDelta(a2.z, a1.z) * t;
+        x = a1.x + Math::AngleNormalize180(a2.x - a1.x) * t;
+        y = a1.y + Math::AngleNormalize180(a2.y - a1.y) * t;
+        z = a1.z + Math::AngleNormalize180(a2.z - a1.z) * t;
     }
 }
 

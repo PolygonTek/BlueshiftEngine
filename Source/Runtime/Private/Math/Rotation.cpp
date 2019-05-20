@@ -23,17 +23,11 @@ Angles Rotation::ToAngles() const {
 
 Quat Rotation::ToQuat() const {
     // take half-angle
-    float a = DEG2RAD(angle) * 0.5f;
+    float ha = DEG2RAD(angle) * 0.5f;
     float s, c;
-    Math::SinCos(a, s, c);
+    Math::SinCos(ha, s, c);
 
-    Quat q;
-    q.x = vec.x * s;
-    q.y = vec.y * s;
-    q.z = vec.z * s;
-    q.w = c;
-
-    return q;
+    return Quat(vec.x * s, vec.y * s, vec.z * s, c);
 }
 
 //------------------------------------------------------------------------------

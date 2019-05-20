@@ -68,13 +68,13 @@ Quat &Quat::SetFromTwoVectors(const Vec3 &from, const Vec3 &to) {
     return *this;
 }
 
-float Quat::AngleBetween(const Quat &target) {
+float Quat::AngleBetween(const Quat &target) const {
     Quat delta = target / *this;
     delta.Normalize();
     return delta.Angle();
 }
 
-Vec3 Quat::AxisBetween(const Quat &target) {
+Vec3 Quat::AxisBetween(const Quat &target) const {
     Quat delta = target / *this;
     delta.Normalize();
     return delta.Axis();

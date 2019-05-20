@@ -32,13 +32,14 @@ Angles &Angles::Normalize360() {
             }
         }
     }
-
     return *this;
 }
 
 Angles &Angles::Normalize180() {
+    // Angle in the range [0, 360)
     Normalize360();
     
+    // Shift to (-180, 180]
     if (x > 180.0f) {
         x -= 360.0f;
     }
@@ -164,15 +165,14 @@ Rotation Angles::ToRotation() const {
 }
 
 Quat Angles::ToQuat() const {
-    // get sines and cosines of half angles
+    const float DegreeToRadianHalf = Math::MulDegreeToRadian * 0.5f;
     float sz, cz;
-    Math::SinCos(DEG2RAD(z) * 0.5f, sz, cz);
-
     float sy, cy;
-    Math::SinCos(DEG2RAD(y) * 0.5f, sy, cy);
-    
     float sx, cx;
-    Math::SinCos(DEG2RAD(x) * 0.5f, sx, cx);
+
+    Math::SinCos(DegreeToRadianHalf * z, sz, cz);
+    Math::SinCos(DegreeToRadianHalf * y, sy, cy);
+    Math::SinCos(DegreeToRadianHalf * x, sx, cx);
 
     float sxcy = sx * cy;
     float cxcy = cx * cy;
