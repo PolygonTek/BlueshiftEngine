@@ -407,16 +407,19 @@ Angles ComTransform::CalculateLocalEulerAnglesHint(const Quat &newRotation, cons
     e1[1] = Math::Rint(RAD2DEG(e1[1]) / 1e-3f) * 1e-3f;
     e1[2] = Math::Rint(RAD2DEG(e1[2]) / 1e-3f) * 1e-3f;
 
+    // Make another Euler angles
     Angles e2 = e1 + Angles(180, 180, 180);
     e2.y = -e2.y;
 
-    // Synchronize euler angles to hint
+    // Synchronize Euler angles to hint
     Angles eulerAnglesSynced1 = SyncEulerAngles(e1, currentEulerHint);
     Angles eulerAnglesSynced2 = SyncEulerAngles(e2, currentEulerHint);
 
+    // Calculate difference with current Euler angles hint
     Vec3 diff1 = Vec3(eulerAnglesSynced1 - currentEulerHint);
     Vec3 diff2 = Vec3(eulerAnglesSynced2 - currentEulerHint);
 
+    // Returns synchronized Euler angles which have smaller angle difference
     return diff1.Dot(diff1) < diff2.Dot(diff2) ? eulerAnglesSynced1 : eulerAnglesSynced2;
 }
 
