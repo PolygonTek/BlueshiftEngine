@@ -232,7 +232,10 @@ public:
 
     CQuat               ToCQuat() const;
 
+                        /// Converts this quaternion to Euler angles.
     Angles              ToAngles() const;
+
+                        /// Converts this quaternion to axis-angle rotation representation.
     Rotation            ToRotation() const;
 
                         /// Converts this quaternion to 3x3 matrix.

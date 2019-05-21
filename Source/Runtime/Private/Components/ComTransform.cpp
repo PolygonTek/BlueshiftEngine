@@ -384,11 +384,13 @@ void ComTransform::UpdateWorldMatrix() const {
     worldMatrixInvalidated = false;
 }
 
-static Angles SyncEulerAngles(const float eulerAngles[3], const float eulerAnglesHint[3]) {
+static Angles SyncEulerAngles(const Angles &eulerAngles, const Angles &eulerAnglesHint) {
     Angles syncEulerAngles;
+
     syncEulerAngles[0] = eulerAngles[0] + Math::Rint((eulerAnglesHint[0] - eulerAngles[0]) / 360.0f) * 360.0f;
     syncEulerAngles[1] = eulerAngles[1] + Math::Rint((eulerAnglesHint[1] - eulerAngles[1]) / 360.0f) * 360.0f;
     syncEulerAngles[2] = eulerAngles[2] + Math::Rint((eulerAnglesHint[2] - eulerAngles[2]) / 360.0f) * 360.0f;
+
     return syncEulerAngles;
 }
 

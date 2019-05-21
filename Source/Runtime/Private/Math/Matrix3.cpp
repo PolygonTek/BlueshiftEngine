@@ -614,7 +614,7 @@ Mat3 Mat3::FromRotationZYZ(float ez2, float ey, float ez1) {
     return m;
 }
 
-void Mat3::ToRotationXYZ(float &ex, float &ey, float &ez) {
+void Mat3::ToRotationXYZ(float &ex, float &ey, float &ez) const {
     if (mat[2][0] < 1.f - 1e-6f) {
         if (mat[2][0] > -1.f + 1e-6f) {
             ey = asin(mat[2][0]);
@@ -634,7 +634,7 @@ void Mat3::ToRotationXYZ(float &ex, float &ey, float &ez) {
     }
 }
 
-void Mat3::ToRotationXZY(float &ex, float &ez, float &ey) {
+void Mat3::ToRotationXZY(float &ex, float &ez, float &ey) const {
     if (mat[1][0] < 1.f - 1e-6f) {
         if (mat[1][0] > -1.f + 1e-6f) {
             ez = asin(-mat[1][0]);
@@ -654,7 +654,7 @@ void Mat3::ToRotationXZY(float &ex, float &ez, float &ey) {
     }
 }
 
-void Mat3::ToRotationYXZ(float &ey, float &ex, float &ez) {
+void Mat3::ToRotationYXZ(float &ey, float &ex, float &ez) const {
     if (mat[2][1] < 1.f - 1e-6f) {
         if (mat[2][1] > -1.f + 1e-6f) {
             ex = asin(-mat[2][1]);
@@ -674,7 +674,7 @@ void Mat3::ToRotationYXZ(float &ey, float &ex, float &ez) {
     }
 }
 
-void Mat3::ToRotationYZX(float &ey, float &ez, float &ex) {
+void Mat3::ToRotationYZX(float &ey, float &ez, float &ex) const {
     if (mat[0][1] < 1.f - 1e-6f) {
         if (mat[0][1] > -1.f + 1e-6f) {
             ez = asin(mat[0][1]);
@@ -694,7 +694,7 @@ void Mat3::ToRotationYZX(float &ey, float &ez, float &ex) {
     }
 }
 
-void Mat3::ToRotationZXY(float &ez, float &ex, float &ey) {
+void Mat3::ToRotationZXY(float &ez, float &ex, float &ey) const {
     if (mat[1][2] < 1.f - 1e-6f) {
         if (mat[1][2] > -1.f + 1e-6f) {
             ex = asin(mat[1][2]);
@@ -714,7 +714,7 @@ void Mat3::ToRotationZXY(float &ez, float &ex, float &ey) {
     }
 }
 
-void Mat3::ToRotationZYX(float &ez, float &ey, float &ex) {
+void Mat3::ToRotationZYX(float &ez, float &ey, float &ex) const {
     if (mat[0][2] < 1.f - 1e-6f) {
         if (mat[0][2] > -1.f + 1e-6f) {
             ey = asin(-mat[0][2]);
@@ -734,7 +734,7 @@ void Mat3::ToRotationZYX(float &ez, float &ey, float &ex) {
     }
 }
 
-void Mat3::ToRotationXYX(float &ex2, float &ey, float &ex1) {
+void Mat3::ToRotationXYX(float &ex2, float &ey, float &ex1) const {
     if (mat[0][0] < 1.f - 1e-6f) {
         if (mat[0][0] > -1.f + 1e-6f) {
             ey = acos(mat[0][0]);
@@ -754,7 +754,7 @@ void Mat3::ToRotationXYX(float &ex2, float &ey, float &ex1) {
     }
 }
 
-void Mat3::ToRotationXZX(float &ex2, float &ez, float &ex1) {
+void Mat3::ToRotationXZX(float &ex2, float &ez, float &ex1) const {
     if (mat[0][0] < 1.f - 1e-6f) {
         if (mat[0][0] > -1.f + 1e-6f) {
             ez = acos(mat[0][0]);
@@ -774,7 +774,7 @@ void Mat3::ToRotationXZX(float &ex2, float &ez, float &ex1) {
     }
 }
 
-void Mat3::ToRotationYXY(float &ey2, float &ex, float &ey1) {
+void Mat3::ToRotationYXY(float &ey2, float &ex, float &ey1) const {
     if (mat[1][1] < 1.f - 1e-6f) {
         if (mat[1][1] > -1.f + 1e-6f) {
             ex = acos(mat[1][1]);
@@ -794,7 +794,7 @@ void Mat3::ToRotationYXY(float &ey2, float &ex, float &ey1) {
     }
 }
 
-void Mat3::ToRotationYZY(float &ey2, float &ez, float &ey1) {
+void Mat3::ToRotationYZY(float &ey2, float &ez, float &ey1) const {
     if (mat[1][1] < 1.f - 1e-6f) {
         if (mat[1][1] > -1.f + 1e-6f) {
             ez = acos(mat[1][1]);
@@ -814,7 +814,7 @@ void Mat3::ToRotationYZY(float &ey2, float &ez, float &ey1) {
     }
 }
 
-void Mat3::ToRotationZXZ(float &ez2, float &ex, float &ez1) {
+void Mat3::ToRotationZXZ(float &ez2, float &ex, float &ez1) const {
     if (mat[2][2] < 1.f - 1e-6f) {
         if (mat[2][2] > -1.f + 1e-6f) {
             ex = acos(mat[2][2]);
@@ -834,7 +834,7 @@ void Mat3::ToRotationZXZ(float &ez2, float &ex, float &ez1) {
     }
 }
 
-void Mat3::ToRotationZYZ(float &ez2, float &ey, float &ez1) {
+void Mat3::ToRotationZYZ(float &ez2, float &ey, float &ez1) const {
     if (mat[2][2] < 1.f - 1e-6f) {
         if (mat[2][2] > -1.f + 1e-6f) {
             ey = acos(mat[2][2]);
@@ -1032,40 +1032,14 @@ Mat3 &Mat3::Scale(const Vec3 &scale) {
 //
 //--------------------------------------------------------------------------------------------
 Angles Mat3::ToAngles() const {
-#if 0
-    float sp = mat[0][2];
-    // asin 의 NAN 값을 피하기위해 clamp
-    Clamp(sp, -1.0f, 1.0f);
-
-    double theta = -asin(sp);
-    double cp = cos(theta);
-
     Angles angles;
-    if (cp > 8192.0f * Math::FloatEpsilon) { //
-        angles.pitch    = (float)RAD2DEG(theta);
-        angles.yaw      = (float)RAD2DEG(atan2(mat[0][1], mat[0][0]));
-        angles.roll     = (float)RAD2DEG(atan2(mat[1][2], mat[2][2]));
-    } else { // not a unique solution
-        angles.pitch    = (float)RAD2DEG(theta);
-        angles.yaw      = (float)RAD2DEG(-atan2(mat[1][0], mat[1][1]));
-        angles.roll     = (float)0.0f;
-    } 
+    ToRotationZYX(angles[2], angles[1], angles[0]);
+
+    angles[0] = RAD2DEG(angles[0]);
+    angles[1] = RAD2DEG(angles[1]);
+    angles[2] = RAD2DEG(angles[2]);
 
     return angles;
-#else
-    Angles angles;
-    float s = Math::Sqrt(mat[0][0] * mat[0][0] + mat[0][1] * mat[0][1]);
-    if (s > Math::FloatEpsilon) {
-        angles.x = RAD2DEG(Math::ATan(mat[1][2], mat[2][2]));
-        angles.y = RAD2DEG(-Math::ATan(mat[0][2], s));
-        angles.z = RAD2DEG(Math::ATan(mat[0][1], mat[0][0]));
-    } else {
-        angles.x = 0.0f;
-        angles.y = mat[0][2] < 0.0f ? 90.0f : -90.0f;
-        angles.z = RAD2DEG(-Math::ATan(mat[1][0], mat[1][1]));
-    }
-    return angles;
-#endif
 }
 
 //-------------------------------------------------------------------------------------------
