@@ -401,13 +401,12 @@ Angles ComTransform::CalculateLocalEulerAnglesHint(const Quat &newRotation, cons
         return currentEulerHint;
     }
 
-    Angles e1;
-    newRotation.ToRotationZYX(e1[2], e1[1], e1[0]);
+    Angles e1 = newRotation.ToAngles();
 
-    // Round off in degrees
-    e1[0] = Math::Rint(RAD2DEG(e1[0]) / 1e-3f) * 1e-3f;
-    e1[1] = Math::Rint(RAD2DEG(e1[1]) / 1e-3f) * 1e-3f;
-    e1[2] = Math::Rint(RAD2DEG(e1[2]) / 1e-3f) * 1e-3f;
+    // Round off degrees to the fourth decimal place
+    e1[0] = Math::Rint(e1[0] / 1e-3f) * 1e-3f;
+    e1[1] = Math::Rint(e1[1] / 1e-3f) * 1e-3f;
+    e1[2] = Math::Rint(e1[2] / 1e-3f) * 1e-3f;
 
     // Make another Euler angles
     Angles e2 = e1 + Angles(180, 180, 180);
@@ -417,7 +416,7 @@ Angles ComTransform::CalculateLocalEulerAnglesHint(const Quat &newRotation, cons
     Angles eulerAnglesSynced1 = SyncEulerAngles(e1, currentEulerHint);
     Angles eulerAnglesSynced2 = SyncEulerAngles(e2, currentEulerHint);
 
-    // Calculate difference with current Euler angles hint
+    // Calculate differences between current Euler angles hint
     Vec3 diff1 = Vec3(eulerAnglesSynced1 - currentEulerHint);
     Vec3 diff2 = Vec3(eulerAnglesSynced2 - currentEulerHint);
 
