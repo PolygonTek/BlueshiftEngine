@@ -633,7 +633,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         }
 
         // Get CGLContextObj from NSOpenGLContext object
-ctx->cglContext = (CGLContextObj)[ctx->nsglContext CGLContextObj];
+        ctx->cglContext = (CGLContextObj)[ctx->nsglContext CGLContextObj];
         
 #if 0 //SUPPORT_GL3
         // When we're using a CoreProfile context, crash if we call a legacy OpenGL function
