@@ -17,7 +17,7 @@
 #include "RenderInternal.h"
 #include "Core/Lexer.h"
 #include "File/FileSystem.h"
-#include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
@@ -392,7 +392,22 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
         SplitStringIntoList(propInfo.enumeration, enumSequence, ";");
     } else if (!Str::Cmp(typeStr, "texture")) {
         propInfo.type = Variant::Type::Guid;
-        propInfo.metaObject = &TextureAsset::metaObject;
+
+        Str textureTypeStr;
+        if (!lexer.ReadToken(&textureTypeStr, false)) {
+            return false;
+        }
+
+        if (!Str::Icmp(textureTypeStr, "2D")) {
+            propInfo.metaObject = &Texture2DResource::metaObject;
+        } else if (!Str::Icmp(textureTypeStr, "CUBE")) {
+            propInfo.metaObject = &TextureCubeMapResource::metaObject;
+        } else if (!Str::Icmp(textureTypeStr, "UI")) {
+            propInfo.metaObject = &TextureUIImageResource::metaObject;
+        } else {
+            BE_WARNLOG("unknown texture type %s in shader '%s'\n", textureTypeStr.c_str(), lexer.GetFilename());
+            propInfo.metaObject = &Texture2DResource::metaObject;
+        }
     }
 
     if (propInfo.type == Variant::Type::Int ||
