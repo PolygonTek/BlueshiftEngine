@@ -64,7 +64,7 @@ public:
     const Str                   GetResourceFilename() const;
 
                                 /// Creates resource object when importing is completed.
-    void                        CreateResource(const BE1::MetaObject &metaObject);
+    void                        CreateResource(const MetaObject &metaObject, const Guid &guid = Guid::zero);
     template <typename T>
     void                        CreateResource() { CreateResource(T::metaObject); }
 

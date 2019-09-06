@@ -51,16 +51,16 @@ bool Asset::IsRedundantAsset() const {
     return resource->IsRedundant(); 
 }
 
-void Asset::CreateResource(const BE1::MetaObject &metaObject) {
+void Asset::CreateResource(const MetaObject &metaObject, const Guid &guid) {
     if (resource) {
         if (&resource->metaObject == &metaObject) {
             // No need to recreate resource object if it's type is the same.
             return;
         }
-        BE1::Resource::DestroyInstanceImmediate(resource);
+        DestroyInstanceImmediate(resource);
     }
 
-    resource = static_cast<BE1::Resource *>(metaObject.CreateInstance());
+    resource = static_cast<Resource *>(metaObject.CreateInstance(guid));
     resource->asset = this;
 }
 
