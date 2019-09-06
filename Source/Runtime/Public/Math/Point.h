@@ -76,9 +76,9 @@ public:
     Point               operator-(const Point &rhs) const { return Point(x - rhs.x, y - rhs.y); }
 
                         /// Compare with another one
-    bool                operator==(const Point &rhs) { return (x != rhs.x || y != rhs.y) ? false : true; }
+    bool                operator==(const Point &rhs) const { return (x != rhs.x || y != rhs.y) ? false : true; }
                         /// Compare with another one
-    bool                operator!=(const Point &rhs) { return (x != rhs.x || y != rhs.y) ? true : false; }
+    bool                operator!=(const Point &rhs) const { return (x != rhs.x || y != rhs.y) ? true : false; }
 
     void                Set(int x, int y);
 

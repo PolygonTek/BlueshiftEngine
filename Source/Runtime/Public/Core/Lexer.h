@@ -128,7 +128,7 @@ public:
     };
 
     Lexer(int flags = 0);
-    Lexer(const char *text, int size, const char *name, int flags = 0);
+    Lexer(const char *text, int size, const char *filename, int flags = 0);
     ~Lexer();
 
     void                    Init(int flags);
@@ -140,6 +140,8 @@ public:
 
     bool                    EndOfFile() const { return ((ptr >= endPtr) ? true : false); }
     int                     GetCurrentOffset() const { return (int)(ptr - buffer); }
+
+    const char *            GetFilename() const { return filename; }
 
     void                    Warning(const char *fmt, ...);
     void                    Error(const char *fmt, ...);
