@@ -13,22 +13,31 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Scripting/LuaVM.h"
-#include "Render/Shader.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 
 BE_NAMESPACE_BEGIN
 
-void LuaVM::RegisterShaderAsset(LuaCpp::Module &module) {
-    LuaCpp::Selector _Shader = module["Shader"];
+OBJECT_DECLARATION("Font", FontResource, Resource)
+BEGIN_EVENTS(FontResource)
+END_EVENTS
 
-    _Shader.SetClass<Shader>();
+void FontResource::RegisterProperties() {
+}
 
-    LuaCpp::Selector _ShaderAsset = module["ShaderAsset"];
+FontResource::FontResource() {}
 
-    _ShaderAsset.SetClass<ShaderAsset>(module["Asset"]);
-    _ShaderAsset.AddClassMembers<ShaderAsset>(
-        "shader", &ShaderAsset::GetShader);
+FontResource::~FontResource() {}
+
+void FontResource::Rename(const Str &newName) {
+}
+
+bool FontResource::Reload() {
+    return false;
+}
+
+bool FontResource::Save() {
+    return false;
 }
 
 BE_NAMESPACE_END

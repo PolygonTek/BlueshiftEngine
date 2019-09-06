@@ -15,58 +15,63 @@
 #include "Precompiled.h"
 #include "Render/Anim.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
-#include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Anim", AnimAsset, Asset)
-BEGIN_EVENTS(AnimAsset)
+OBJECT_DECLARATION("Anim", AnimResource, Resource)
+BEGIN_EVENTS(AnimResource)
 END_EVENTS
 
-void AnimAsset::RegisterProperties() {
+void AnimResource::RegisterProperties() {
 }
 
-AnimAsset::AnimAsset() {
+AnimResource::AnimResource() {
     anim = nullptr;
 }
 
-AnimAsset::~AnimAsset() {
-    if (!anim) {
-        const Str animPath = resourceGuidMapper.Get(GetGuid());
-        anim = animManager.FindAnim(animPath);
-    }
-
+AnimResource::~AnimResource() {
     if (anim) {
-        animManager.ReleaseAnim(anim, true);
+        animManager.ReleaseAnim(anim);
     }
 }
 
-Anim *AnimAsset::GetAnim() {
+Anim *AnimResource::GetAnim() {
     if (anim) {
         return anim;
     }
-    const Str animPath = resourceGuidMapper.Get(GetGuid());
+    const Str animPath = resourceGuidMapper.Get(asset->GetGuid());
     anim = animManager.GetAnim(animPath);
     return anim;
 }
 
-void AnimAsset::Rename(const Str &newName) {
-    Anim *existingAnim = animManager.FindAnim(GetResourceFilename());
+void AnimResource::Rename(const Str &newName) {
+    const Str animPath = resourceGuidMapper.Get(asset->GetGuid());
+    Anim *existingAnim = animManager.FindAnim(animPath);
     if (existingAnim) {
         animManager.RenameAnim(existingAnim, newName);
     }
-
-    Asset::Rename(newName);
 }
 
-void AnimAsset::Reload() {
-    Anim *existingAnim = animManager.FindAnim(GetResourceFilename());
+bool AnimResource::Reload() {
+    const Str animPath = resourceGuidMapper.Get(asset->GetGuid());
+    Anim *existingAnim = animManager.FindAnim(animPath);
     if (existingAnim) {
         existingAnim->Reload();
-        EmitSignal(&SIG_Reloaded);
+        return true;
     }
+    return false;
 }
+
+bool AnimResource::Save() {
+    Anim *existingAnim = animManager.FindAnim(asset->GetResourceFilename());
+    if (existingAnim) {
+        existingAnim->Write(existingAnim->GetHashName());
+        return true;
+    }
+    return false;
+}
+
 
 BE_NAMESPACE_END

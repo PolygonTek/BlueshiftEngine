@@ -13,24 +13,16 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Asset/Asset.h"
-#include "Asset/GuidMapper.h"
-#include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
+#include "Scripting/LuaVM.h"
+#include "Render/Mesh.h"
+#include "Asset/Resource.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("FBX", FbxAsset, Asset)
-BEGIN_EVENTS(FbxAsset)
-END_EVENTS
+void LuaVM::RegisterMesh(LuaCpp::Module &module) {
+    LuaCpp::Selector _Mesh = module["Mesh"];
 
-void FbxAsset::RegisterProperties() {
+    _Mesh.SetClass<Mesh>();
 }
-
-FbxAsset::FbxAsset() {
-    isRedundantAsset = true;
-}
-
-FbxAsset::~FbxAsset() {}
 
 BE_NAMESPACE_END

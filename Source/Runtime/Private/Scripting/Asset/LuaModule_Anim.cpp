@@ -13,22 +13,16 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Asset/Asset.h"
-#include "Asset/GuidMapper.h"
-#include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
+#include "Scripting/LuaVM.h"
+#include "Render/Anim.h"
+#include "Asset/Resource.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Font", FontAsset, Asset)
-BEGIN_EVENTS(FontAsset)
-END_EVENTS
+void LuaVM::RegisterAnim(LuaCpp::Module &module) {
+    LuaCpp::Selector _Anim = module["Anim"];
 
-void FontAsset::RegisterProperties() {
+    _Anim.SetClass<Anim>();
 }
-
-FontAsset::FontAsset() {}
-
-FontAsset::~FontAsset() {}
 
 BE_NAMESPACE_END

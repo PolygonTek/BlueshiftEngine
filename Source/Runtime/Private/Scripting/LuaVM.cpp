@@ -211,16 +211,15 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterObject(module);
         // Asset
         RegisterAsset(module);
-        RegisterTextureAsset(module);
-        RegisterShaderAsset(module);
-        RegisterMaterialAsset(module);
-        RegisterSkeletonAsset(module);
-        RegisterMeshAsset(module);
-        RegisterAnimAsset(module);
-        RegisterAnimControllerAsset(module);
-        RegisterSoundAsset(module);
-        RegisterMapAsset(module);
-        RegisterPrefabAsset(module);
+        RegisterTexture(module);
+        RegisterShader(module);
+        RegisterMaterial(module);
+        RegisterSkeleton(module);
+        RegisterMesh(module);
+        RegisterAnim(module);
+        RegisterAnimController(module);
+        RegisterSound(module);
+        RegisterPrefab(module);
         // Component
         RegisterComponent(module);
         RegisterTransformComponent(module);

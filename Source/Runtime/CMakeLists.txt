@@ -143,6 +143,7 @@ set(COMMON_ENGINE_FILES
 
     Public/Asset/Asset.h
     Public/Asset/AssetImporter.h
+    Public/Asset/Resource.h
     Public/Asset/GuidMapper.h
 
     Public/AnimController/AnimBlendTree.h
@@ -370,22 +371,26 @@ set(COMMON_ENGINE_FILES
     Private/Engine/Engine.cpp
 
     Private/Asset/Asset.cpp
-    Private/Asset/FolderAsset.cpp
-    Private/Asset/FbxAsset.cpp
-    Private/Asset/TextureAsset.cpp
-    Private/Asset/ShaderAsset.cpp
-    Private/Asset/MaterialAsset.cpp
-    Private/Asset/FontAsset.cpp
-    Private/Asset/MeshAsset.cpp
-    Private/Asset/ParticleSystemAsset.cpp
-    Private/Asset/SkeletonAsset.cpp
-    Private/Asset/AnimAsset.cpp
-    Private/Asset/JointMaskAsset.cpp
-    Private/Asset/AnimControllerAsset.cpp
-    Private/Asset/ScriptAsset.cpp
-    Private/Asset/PrefabAsset.cpp
-    Private/Asset/SoundAsset.cpp
-    Private/Asset/MapAsset.cpp
+    Private/Asset/Resource.cpp
+    Private/Asset/FolderResource.cpp
+    Private/Asset/FbxResource.cpp
+    Private/Asset/TextureResource.cpp
+    Private/Asset/Texture2DResource.cpp
+    Private/Asset/TextureCubeMapResource.cpp
+    Private/Asset/TextureUIImageResource.cpp
+    Private/Asset/ShaderResource.cpp
+    Private/Asset/MaterialResource.cpp
+    Private/Asset/FontResource.cpp
+    Private/Asset/MeshResource.cpp
+    Private/Asset/ParticleSystemResource.cpp
+    Private/Asset/SkeletonResource.cpp
+    Private/Asset/AnimResource.cpp
+    Private/Asset/JointMaskResource.cpp
+    Private/Asset/AnimControllerResource.cpp
+    Private/Asset/ScriptResource.cpp
+    Private/Asset/PrefabResource.cpp
+    Private/Asset/SoundResource.cpp
+    Private/Asset/MapResource.cpp
     Private/Asset/AssetImporter.cpp
     Private/Asset/GuidMapper.cpp
   
@@ -595,16 +600,15 @@ set(COMMON_ENGINE_FILES
     Private/Scripting/File/LuaModule_FileSystem.cpp
     Private/Scripting/File/LuaModule_File.cpp
     Private/Scripting/Asset/LuaModule_Asset.cpp
-    Private/Scripting/Asset/LuaModule_TextureAsset.cpp
-    Private/Scripting/Asset/LuaModule_ShaderAsset.cpp
-    Private/Scripting/Asset/LuaModule_MaterialAsset.cpp
-    Private/Scripting/Asset/LuaModule_SkeletonAsset.cpp
-    Private/Scripting/Asset/LuaModule_MeshAsset.cpp
-    Private/Scripting/Asset/LuaModule_AnimAsset.cpp
-    Private/Scripting/Asset/LuaModule_AnimControllerAsset.cpp
-    Private/Scripting/Asset/LuaModule_SoundAsset.cpp
-    Private/Scripting/Asset/LuaModule_MapAsset.cpp
-    Private/Scripting/Asset/LuaModule_PrefabAsset.cpp
+    Private/Scripting/Asset/LuaModule_Texture.cpp
+    Private/Scripting/Asset/LuaModule_Shader.cpp
+    Private/Scripting/Asset/LuaModule_Material.cpp
+    Private/Scripting/Asset/LuaModule_Skeleton.cpp
+    Private/Scripting/Asset/LuaModule_Mesh.cpp
+    Private/Scripting/Asset/LuaModule_Anim.cpp
+    Private/Scripting/Asset/LuaModule_AnimController.cpp
+    Private/Scripting/Asset/LuaModule_Sound.cpp
+    Private/Scripting/Asset/LuaModule_Prefab.cpp
     Private/Scripting/Components/LuaModule_Component.cpp
     Private/Scripting/Components/LuaModule_ComTransform.cpp
     Private/Scripting/Components/LuaModule_ComCollider.cpp

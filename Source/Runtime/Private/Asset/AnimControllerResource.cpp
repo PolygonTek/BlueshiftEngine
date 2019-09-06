@@ -15,66 +15,63 @@
 #include "Precompiled.h"
 #include "AnimController/AnimController.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
-#include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("AnimController", AnimControllerAsset, Asset)
-BEGIN_EVENTS(AnimControllerAsset)
+OBJECT_DECLARATION("Animation Controller", AnimControllerResource, Resource)
+BEGIN_EVENTS(AnimControllerResource)
 END_EVENTS
 
-void AnimControllerAsset::RegisterProperties() {
+void AnimControllerResource::RegisterProperties() {
 }
 
-AnimControllerAsset::AnimControllerAsset() {
+AnimControllerResource::AnimControllerResource() {
     animController = nullptr;
 }
 
-AnimControllerAsset::~AnimControllerAsset() {
-    if (!animController) {
-        const Str animControllerPath = resourceGuidMapper.Get(GetGuid());
-        animController = animControllerManager.FindAnimController(animControllerPath);
-    }
-
+AnimControllerResource::~AnimControllerResource() {
     if (animController) {
         animControllerManager.ReleaseAnimController(animController, true);
     }
 }
 
-AnimController *AnimControllerAsset::GetAnimController() {
+AnimController *AnimControllerResource::GetAnimController() {
     if (animController) {
         return animController;
     }
-    const Str animControllerPath = resourceGuidMapper.Get(GetGuid());
+    const Str animControllerPath = resourceGuidMapper.Get(asset->GetGuid());
     animController = animControllerManager.GetAnimController(animControllerPath);
     return animController;
 }
 
-void AnimControllerAsset::Rename(const Str &newName) {
-    AnimController *existingAnimController = animControllerManager.FindAnimController(GetResourceFilename());
+void AnimControllerResource::Rename(const Str &newName) {
+    const Str animControllerPath = resourceGuidMapper.Get(asset->GetGuid());
+    AnimController *existingAnimController = animControllerManager.FindAnimController(animControllerPath);
     if (existingAnimController) {
         animControllerManager.RenameAnimController(existingAnimController, newName);
     }
-
-    Asset::Rename(newName);
 }
 
-void AnimControllerAsset::Reload() {
-    AnimController *existingAnimController = animControllerManager.FindAnimController(GetResourceFilename());
+bool AnimControllerResource::Reload() {
+    const Str animControllerPath = resourceGuidMapper.Get(asset->GetGuid());
+    AnimController *existingAnimController = animControllerManager.FindAnimController(animControllerPath);
     if (existingAnimController) {
         existingAnimController->Reload();
-        EmitSignal(&SIG_Reloaded);
+        return true;
     }
+    return false;
 }
 
-void AnimControllerAsset::Save() {
-    AnimController *existingAnimController = animControllerManager.FindAnimController(GetResourceFilename());
+bool AnimControllerResource::Save() {
+    const Str animControllerPath = resourceGuidMapper.Get(asset->GetGuid());
+    AnimController *existingAnimController = animControllerManager.FindAnimController(animControllerPath);
     if (existingAnimController) {
         existingAnimController->Write(existingAnimController->GetHashName());
-        EmitSignal(&SIG_Modified, 0);
+        return true;
     }
+    return false;
 }
 
 BE_NAMESPACE_END

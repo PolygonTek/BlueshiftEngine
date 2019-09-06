@@ -13,22 +13,16 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Asset/Asset.h"
-#include "Asset/GuidMapper.h"
-#include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
+#include "Scripting/LuaVM.h"
+#include "Render/Shader.h"
+#include "Asset/Resource.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Folder", FolderAsset, Asset)
-BEGIN_EVENTS(FolderAsset)
-END_EVENTS
+void LuaVM::RegisterShader(LuaCpp::Module &module) {
+    LuaCpp::Selector _Shader = module["Shader"];
 
-void FolderAsset::RegisterProperties() {
+    _Shader.SetClass<Shader>();
 }
-
-FolderAsset::FolderAsset() {}
-
-FolderAsset::~FolderAsset() {}
 
 BE_NAMESPACE_END

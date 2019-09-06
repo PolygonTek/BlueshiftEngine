@@ -17,7 +17,7 @@
 #include "Components/ComTransform.h"
 #include "Components/ComTextRenderer.h"
 #include "Game/GameWorld.h"
-#include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
@@ -38,7 +38,7 @@ void ComTextRenderer::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("fontSize", "Font Size", int, GetFontSize, SetFontSize, 14, 
         "The size of the font.", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("font", "Font", Guid, GetFontGuid, SetFontGuid, GuidMapper::defaultFontGuid, 
-        "The TrueType Font to use when rendering the text.", PropertyInfo::Flag::Editor).SetMetaObject(&FontAsset::metaObject);
+        "The TrueType Font to use when rendering the text.", PropertyInfo::Flag::Editor).SetMetaObject(&FontResource::metaObject);
 }
 
 ComTextRenderer::ComTextRenderer() {

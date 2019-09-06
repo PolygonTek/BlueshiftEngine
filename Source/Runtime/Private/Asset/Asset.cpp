@@ -14,13 +14,14 @@
 
 #include "Precompiled.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 #include "Asset/AssetImporter.h"
 #include "File/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
-ABSTRACT_DECLARATION("Asset", Asset, Object)
+OBJECT_DECLARATION("Asset", Asset, Object)
 BEGIN_EVENTS(Asset)
 END_EVENTS
 
@@ -33,14 +34,106 @@ void Asset::RegisterProperties() {
 Asset::Asset() {
     node.SetOwner(this);
     assetImporter = nullptr;
+    resource = nullptr;
     isStoredInDisk = false;
-    isRedundantAsset = false;
 }
 
 Asset::~Asset() {
     if (assetImporter) {
         AssetImporter::DestroyInstanceImmediate(assetImporter);
     }
+    if (resource) {
+        Resource::DestroyInstanceImmediate(resource);
+    }
+}
+
+bool Asset::IsRedundantAsset() const { 
+    return resource->IsRedundant(); 
+}
+
+void Asset::CreateResource(const BE1::MetaObject &metaObject) {
+    if (resource) {
+        if (&resource->metaObject == &metaObject) {
+            // No need to recreate resource object if it's type is the same.
+            return;
+        }
+        BE1::Resource::DestroyInstanceImmediate(resource);
+    }
+
+    resource = static_cast<BE1::Resource *>(metaObject.CreateInstance());
+    resource->asset = this;
+}
+
+Anim *Asset::GetAnim() const {
+    AnimResource *animResource = resource->Cast<AnimResource>();
+    if (animResource) {
+        return animResource->GetAnim();
+    }
+    return nullptr;
+}
+
+AnimController *Asset::GetAnimController() const {
+    AnimControllerResource *animControllerResource = resource->Cast<AnimControllerResource>();
+    if (animControllerResource) {
+        return animControllerResource->GetAnimController();
+    }
+    return nullptr;
+}
+
+Material *Asset::GetMaterial() const {
+    MaterialResource *materialResource = resource->Cast<MaterialResource>();
+    if (materialResource) {
+        return materialResource->GetMaterial();
+    }
+    return nullptr;
+}
+
+Mesh *Asset::GetMesh() const {
+    MeshResource *meshResource = resource->Cast<MeshResource>();
+    if (meshResource) {
+        return meshResource->GetMesh();
+    }
+    return nullptr;
+}
+
+Prefab *Asset::GetPrefab() const {
+    PrefabResource *prefabResource = resource->Cast<PrefabResource>();
+    if (prefabResource) {
+        return prefabResource->GetPrefab();
+    }
+    return nullptr;
+}
+
+Shader *Asset::GetShader() const {
+    ShaderResource *shaderResource = resource->Cast<ShaderResource>();
+    if (shaderResource) {
+        return shaderResource->GetShader();
+    }
+    return nullptr;
+}
+
+Skeleton *Asset::GetSkeleton() const {
+    SkeletonResource *skeletonResource = resource->Cast<SkeletonResource>();
+    if (skeletonResource) {
+        return skeletonResource->GetSkeleton();
+    }
+    return nullptr;
+}
+
+Sound *Asset::GetSound() const {
+    SoundResource *soundResource = resource->Cast<SoundResource>();
+    if (soundResource) {
+        return soundResource->GetSound();
+    }
+    return nullptr;
+}
+
+Texture *Asset::GetTexture() const {
+    TextureResource *textureResource = resource->Cast<TextureResource>();
+    if (textureResource) {
+        return textureResource->GetTexture();
+    }
+    return nullptr;
 }
 
 const Str Asset::NormalizeAssetPath(const Str &assetPath) {
@@ -58,8 +151,8 @@ const Str Asset::GetMetaFileNameFromAssetPath(const char *assetPath) {
     return metaFileName;
 }
 
-const Str Asset::GetCacheDirectory(const char *baseLibraryDir) const {
-    Str cacheDir = baseLibraryDir;
+const Str Asset::GetCacheDirectory(const char *baseDir) const {
+    Str cacheDir = baseDir;
     cacheDir.AppendPath("metadata");
     cacheDir.AppendPath(va("%s", GetGuid().ToString(Guid::Format::DigitsWithHyphens)));
 
@@ -87,7 +180,7 @@ const Str Asset::GetResourceFilename() const {
     Str name;
 
     if (assetImporter) {
-        name = Asset::NormalizeAssetPath(assetImporter->GetCacheFilename());
+        name = Asset::NormalizeAssetPath(assetImporter->GetResourceFilename());
     } else {
         name = Asset::NormalizeAssetPath(GetAssetFilename());
     }
@@ -96,8 +189,22 @@ const Str Asset::GetResourceFilename() const {
 }
 
 void Asset::Rename(const Str &newName) {
+    resource->Rename(newName);
+
     name = newName;
     name.StripPath();
+}
+
+void Asset::Reload() {
+    if (resource->Reload()) {
+        EmitSignal(&SIG_Reloaded);
+    }
+}
+
+void Asset::Save() {
+    if (resource->Save()) {
+        EmitSignal(&SIG_Modified, 0);
+    }
 }
 
 void Asset::GetChildren(Array<Asset *> &children) const {
@@ -118,6 +225,13 @@ void Asset::WriteMetaDataFile() const {
         assetImporter->Serialize(importerValue);
 
         metaDataValue["importer"] = importerValue;
+    }
+
+    if (resource) {
+        Json::Value resourceValue;
+        resource->Serialize(resourceValue);
+
+        metaDataValue["resource"] = resourceValue;
     }
  
     Json::StyledWriter jsonWriter;

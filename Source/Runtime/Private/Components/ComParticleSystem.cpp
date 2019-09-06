@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 #include "Components/ComTransform.h"
 #include "Components/ComParticleSystem.h"
@@ -29,7 +30,7 @@ END_EVENTS
 
 void ComParticleSystem::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("particleSystem", "Particle System", Guid, GetParticleSystemGuid, SetParticleSystemGuid, GuidMapper::defaultParticleSystemGuid, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&ParticleSystemAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&ParticleSystemResource::metaObject);
     REGISTER_PROPERTY("playOnAwake", "Play On Awake", bool, playOnAwake, true, 
         "", PropertyInfo::Flag::Editor);
 }
@@ -148,7 +149,7 @@ void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
 
 #if WITH_EDITOR
     // Need to particleSystem asset to be reloaded in editor
-    particleSystemAsset = (ParticleSystemAsset *)ParticleSystemAsset::FindInstance(particleSystemGuid);
+    particleSystemAsset = (Asset *)Asset::FindInstance(particleSystemGuid);
     if (particleSystemAsset) {
         particleSystemAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComParticleSystem::ParticleSystemReloaded, SignalObject::ConnectionType::Queued);
     }

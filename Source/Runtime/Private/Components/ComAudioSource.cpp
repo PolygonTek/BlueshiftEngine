@@ -17,7 +17,7 @@
 #include "Components/ComTransform.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComAudioSource.h"
-#include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 #include "File/FileSystem.h"
 #include "Game/Entity.h"
@@ -30,7 +30,7 @@ END_EVENTS
 
 void ComAudioSource::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("audioClip", "Audio Clip", Guid, GetAudioClipGuid, SetAudioClipGuid, GuidMapper::defaultSoundGuid, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&SoundAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&SoundResource::metaObject);
     REGISTER_PROPERTY("playOnAwake", "Play On Awake", bool, playOnAwake, false, 
         "Play the sound when the map loaded.", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("spatial", "Spatial", bool, spatial, true, 

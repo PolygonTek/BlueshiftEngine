@@ -15,66 +15,63 @@
 #include "Precompiled.h"
 #include "Render/ParticleSystem.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
-#include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("ParticleSystem", ParticleSystemAsset, Asset)
-BEGIN_EVENTS(ParticleSystemAsset)
+OBJECT_DECLARATION("Particle System", ParticleSystemResource, Resource)
+BEGIN_EVENTS(ParticleSystemResource)
 END_EVENTS
 
-void ParticleSystemAsset::RegisterProperties() {
+void ParticleSystemResource::RegisterProperties() {
 }
 
-ParticleSystemAsset::ParticleSystemAsset() {
+ParticleSystemResource::ParticleSystemResource() {
     particleSystem = nullptr;
 }
 
-ParticleSystemAsset::~ParticleSystemAsset() {
-    if (!particleSystem) {
-        const Str particleSystemPath = resourceGuidMapper.Get(GetGuid());
-        particleSystem = particleSystemManager.FindParticleSystem(particleSystemPath);
-    }
-
+ParticleSystemResource::~ParticleSystemResource() {
     if (particleSystem) {
-        particleSystemManager.ReleaseParticleSystem(particleSystem, true);
+        particleSystemManager.ReleaseParticleSystem(particleSystem);
     }
 }
 
-ParticleSystem *ParticleSystemAsset::GetParticleSystem() {
+ParticleSystem *ParticleSystemResource::GetParticleSystem() {
     if (particleSystem) {
         return particleSystem;
     }
-    const Str particleSystemPath = resourceGuidMapper.Get(GetGuid());
+    const Str particleSystemPath = resourceGuidMapper.Get(asset->GetGuid());
     particleSystem = particleSystemManager.GetParticleSystem(particleSystemPath);
     return particleSystem;
 }
 
-void ParticleSystemAsset::Rename(const Str &newName) {
-    ParticleSystem *existingParticleSystem = particleSystemManager.FindParticleSystem(GetResourceFilename());
+void ParticleSystemResource::Rename(const Str &newName) {
+    const Str particleSystemPath = resourceGuidMapper.Get(asset->GetGuid());
+    ParticleSystem *existingParticleSystem = particleSystemManager.FindParticleSystem(particleSystemPath);
     if (existingParticleSystem) {
         particleSystemManager.RenameParticleSystem(existingParticleSystem, newName);
     }
-
-    Asset::Rename(newName);
 }
 
-void ParticleSystemAsset::Reload() {
-    ParticleSystem *existingParticleSystem = particleSystemManager.FindParticleSystem(GetResourceFilename());
+bool ParticleSystemResource::Reload() {
+    const Str particleSystemPath = resourceGuidMapper.Get(asset->GetGuid());
+    ParticleSystem *existingParticleSystem = particleSystemManager.FindParticleSystem(particleSystemPath);
     if (existingParticleSystem) {
         existingParticleSystem->Reload();
-        EmitSignal(&SIG_Reloaded);
+        return true;
     }
+    return false;
 }
 
-void ParticleSystemAsset::Save() {
-    ParticleSystem *existingParticleSystem = particleSystemManager.FindParticleSystem(GetResourceFilename());
+bool ParticleSystemResource::Save() {
+    const Str particleSystemPath = resourceGuidMapper.Get(asset->GetGuid());
+    ParticleSystem *existingParticleSystem = particleSystemManager.FindParticleSystem(particleSystemPath);
     if (existingParticleSystem) {
         existingParticleSystem->Write(existingParticleSystem->GetHashName());
-        EmitSignal(&SIG_Modified, 0);
+        return true;
     }
+    return false;
 }
 
 BE_NAMESPACE_END

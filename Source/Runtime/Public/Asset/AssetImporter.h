@@ -33,7 +33,7 @@ public:
 
     virtual Str             ToString() const override;
 
-    virtual Str             GetCacheFilename() const = 0;
+    virtual Str             GetResourceFilename() const = 0;
 
     virtual void            Import() = 0;
     

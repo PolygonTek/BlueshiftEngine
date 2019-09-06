@@ -19,6 +19,7 @@
 #include "Components/ComSkinnedMeshRenderer.h"
 #include "Game/GameWorld.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
@@ -29,7 +30,7 @@ END_EVENTS
 
 void ComAnimator::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("animController", "Anim Controller", Guid, GetAnimControllerGuid, SetAnimControllerGuid, GuidMapper::defaultAnimControllerGuid, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&AnimControllerAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&AnimControllerResource::metaObject);
 }
 
 ComAnimator::ComAnimator() {
@@ -147,7 +148,7 @@ void ComAnimator::ChangeAnimController(const Guid &animControllerGuid) {
 
 #if WITH_EDITOR
     // Need to connect animation controller asset to be reloaded in Editor
-    animControllerAsset = (AnimControllerAsset *)AnimControllerAsset::FindInstance(animControllerGuid);
+    animControllerAsset = (Asset *)Asset::FindInstance(animControllerGuid);
     if (animControllerAsset) {
         animControllerAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComAnimator::AnimControllerReloaded, SignalObject::ConnectionType::Queued);
     }

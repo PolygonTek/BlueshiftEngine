@@ -15,66 +15,63 @@
 #include "Precompiled.h"
 #include "Render/Material.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
-#include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Material", MaterialAsset, Asset)
-BEGIN_EVENTS(MaterialAsset)
+OBJECT_DECLARATION("Material", MaterialResource, Resource)
+BEGIN_EVENTS(MaterialResource)
 END_EVENTS
 
-void MaterialAsset::RegisterProperties() {
+void MaterialResource::RegisterProperties() {
 }
 
-MaterialAsset::MaterialAsset() {
+MaterialResource::MaterialResource() {
     material = nullptr;
 }
 
-MaterialAsset::~MaterialAsset() {
-    if (!material) {
-        const Str materialPath = resourceGuidMapper.Get(GetGuid());
-        material = materialManager.FindMaterial(materialPath);
-    }
-
+MaterialResource::~MaterialResource() {
     if (material) {
-        materialManager.ReleaseMaterial(material, true);
+        materialManager.ReleaseMaterial(material);
     }
 }
 
-Material *MaterialAsset::GetMaterial() {
+Material *MaterialResource::GetMaterial() {
     if (material) {
         return material;
     }
-    const Str materialPath = resourceGuidMapper.Get(GetGuid());
+    const Str materialPath = resourceGuidMapper.Get(asset->GetGuid());
     material = materialManager.GetMaterial(materialPath);
     return material;
 }
 
-void MaterialAsset::Rename(const Str &newName) {
-    Material *existingMaterial = materialManager.FindMaterial(GetResourceFilename());
+void MaterialResource::Rename(const Str &newName) {
+    const Str materialPath = resourceGuidMapper.Get(asset->GetGuid());
+    Material *existingMaterial = materialManager.FindMaterial(materialPath);
     if (existingMaterial) {
         materialManager.RenameMaterial(existingMaterial, newName);
     }
-
-    Asset::Rename(newName);
 }
 
-void MaterialAsset::Reload() {
-    Material *existingMaterial = materialManager.FindMaterial(GetResourceFilename());
+bool MaterialResource::Reload() {
+    const Str materialPath = resourceGuidMapper.Get(asset->GetGuid());
+    Material *existingMaterial = materialManager.FindMaterial(materialPath);
     if (existingMaterial) {
         existingMaterial->Reload();
-        EmitSignal(&SIG_Reloaded);
+        return true;
     }
+    return false;
 }
 
-void MaterialAsset::Save() {
-    Material *existingMaterial = materialManager.FindMaterial(GetResourceFilename());
+bool MaterialResource::Save() {
+    const Str materialPath = resourceGuidMapper.Get(asset->GetGuid());
+    Material *existingMaterial = materialManager.FindMaterial(materialPath);
     if (existingMaterial) {
         existingMaterial->Write(existingMaterial->GetHashName());
-        EmitSignal(&SIG_Modified, 0);
+        return true;
     }
+    return false;
 }
 
 BE_NAMESPACE_END

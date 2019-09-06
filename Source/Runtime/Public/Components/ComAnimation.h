@@ -18,10 +18,9 @@
 
 BE_NAMESPACE_BEGIN
 
+class Asset;
 class Skeleton;
 class Anim;
-class SkeletonAsset;
-class AnimAsset;
 
 class ComAnimation : public Component {
 public:
@@ -75,8 +74,8 @@ protected:
     Skeleton *              skeleton;
     Array<Anim *>           anims;
 
-    SkeletonAsset *         skeletonAsset;
-    Array<AnimAsset *>      animAssets;
+    Asset *                 skeletonAsset;
+    Array<Asset *>          animAssets;
 
     Array<int>              jointIndexes;
     Array<int>              jointParents;

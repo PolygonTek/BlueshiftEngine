@@ -19,7 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
-class AnimControllerAsset;
+class Asset;
 
 class ComAnimator : public Component {
 public:
@@ -63,7 +63,7 @@ protected:
     void                    AnimControllerReloaded();
 
     Animator                animator;
-    AnimControllerAsset *   animControllerAsset;
+    Asset *                 animControllerAsset;
 };
 
 BE_INLINE Vec3 ComAnimator::GetTranslation(int currentTime) const {

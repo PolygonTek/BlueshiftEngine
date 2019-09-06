@@ -18,7 +18,7 @@
 #include "Components/ComEnvironmentProbe.h"
 #include "Game/GameWorld.h"
 #include "Game/TagLayerSettings.h"
-#include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 #include "Platform/PlatformTime.h"
 
@@ -60,9 +60,9 @@ void ComEnvironmentProbe::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("blendDistance", "Blend Distance", float, GetBlendDistance, SetBlendDistance, 1.0f,
         "", PropertyInfo::Flag::Editor).SetRange(0.0f, 100.0f, 0.01f);
     REGISTER_MIXED_ACCESSOR_PROPERTY("bakedDiffuseProbeTexture", "Baked Diffuse Probe", Guid, GetBakedDiffuseProbeTextureGuid, SetBakedDiffuseProbeTextureGuid, Guid::zero,
-        "", PropertyInfo::Flag::NonCopying).SetMetaObject(&TextureAsset::metaObject);
+        "", PropertyInfo::Flag::NonCopying).SetMetaObject(&TextureCubeMapResource::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("bakedSpecularProbeTexture", "Baked Specular Probe", Guid, GetBakedSpecularProbeTextureGuid, SetBakedSpecularProbeTextureGuid, Guid::zero,
-        "", PropertyInfo::Flag::NonCopying).SetMetaObject(&TextureAsset::metaObject);
+        "", PropertyInfo::Flag::NonCopying).SetMetaObject(&TextureCubeMapResource::metaObject);
 }
 
 ComEnvironmentProbe::ComEnvironmentProbe() {

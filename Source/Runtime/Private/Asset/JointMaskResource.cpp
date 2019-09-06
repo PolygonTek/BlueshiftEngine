@@ -13,22 +13,37 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Scripting/LuaVM.h"
-#include "Render/Mesh.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 
 BE_NAMESPACE_BEGIN
 
-void LuaVM::RegisterMeshAsset(LuaCpp::Module &module) {
-    LuaCpp::Selector _Mesh = module["Mesh"];
+OBJECT_DECLARATION("Joint Mask", JointMaskResource, Resource)
+BEGIN_EVENTS(JointMaskResource)
+END_EVENTS
 
-    _Mesh.SetClass<Mesh>();
+void JointMaskResource::RegisterProperties() {
+}
 
-    LuaCpp::Selector _MeshAsset = module["MeshAsset"];
+JointMaskResource::JointMaskResource() {}
 
-    _MeshAsset.SetClass<MeshAsset>(module["Asset"]);
-    _MeshAsset.AddClassMembers<MeshAsset>(
-        "mesh", &MeshAsset::GetMesh);
+JointMaskResource::~JointMaskResource() {}
+
+void JointMaskResource::Rename(const Str &newName) {
+}
+
+bool JointMaskResource::Reload() {
+    /*const Str jointMaskPath = resourceGuidMapper.Get(asset->GetGuid());
+    JointMask *existingJointMask = jointMaskManager.FindJointMask(jointMaskPath);
+    if (existingJointMask) {
+        existingJointMask->Reload();
+        return true;
+    }*/
+    return false;
+}
+
+bool JointMaskResource::Save() {
+    return false;
 }
 
 BE_NAMESPACE_END

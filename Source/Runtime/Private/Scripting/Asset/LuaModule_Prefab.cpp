@@ -14,22 +14,18 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
+#include "Game/Prefab.h"
 #include "Asset/Resource.h"
-#include "Components/ComMeshRenderer.h"
-#include "Render/Material.h"
 
 BE_NAMESPACE_BEGIN
 
-void LuaVM::RegisterMeshRendererComponent(LuaCpp::Module &module) {
-    LuaCpp::Selector _ComMeshRenderer = module["ComMeshRenderer"];
+void LuaVM::RegisterPrefab(LuaCpp::Module &module) {
+    LuaCpp::Selector _Prefab = module["Prefab"];
 
-    _ComMeshRenderer.SetClass<ComMeshRenderer>(module["ComRenderable"]);
-    _ComMeshRenderer.AddClassMembers<ComMeshRenderer>(
-        "num_materials", &ComMeshRenderer::GetMaterialCount,
-        "material", &ComMeshRenderer::GetMaterial,
-        "set_material", &ComMeshRenderer::SetMaterial);
-
-    _ComMeshRenderer["meta_object"] = ComMeshRenderer::metaObject;
+    _Prefab.SetClass<Prefab>();
+    _Prefab.AddClassMembers<Prefab>(
+        "name", &Prefab::GetName,
+        "root_entity", &Prefab::GetRootEntity);
 }
 
 BE_NAMESPACE_END

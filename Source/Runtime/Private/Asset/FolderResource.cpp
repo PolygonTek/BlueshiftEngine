@@ -13,25 +13,32 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Scripting/LuaVM.h"
-#include "Game/Prefab.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
+#include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
 
-void LuaVM::RegisterPrefabAsset(LuaCpp::Module &module) {
-    LuaCpp::Selector _Prefab = module["Prefab"];
+OBJECT_DECLARATION("Folder", FolderResource, Resource)
+BEGIN_EVENTS(FolderResource)
+END_EVENTS
 
-    _Prefab.SetClass<Prefab>();
-    _Prefab.AddClassMembers<Prefab>(
-        "name", &Prefab::GetName,
-        "root_entity", &Prefab::GetRootEntity);
+void FolderResource::RegisterProperties() {
+}
 
-    LuaCpp::Selector _PrefabAsset = module["PrefabAsset"];
+FolderResource::FolderResource() {}
 
-    _PrefabAsset.SetClass<PrefabAsset>(module["Asset"]);
-    _PrefabAsset.AddClassMembers<PrefabAsset>(
-        "prefab", &PrefabAsset::GetPrefab);
+FolderResource::~FolderResource() {}
+
+void FolderResource::Rename(const Str &newName) {
+}
+
+bool FolderResource::Reload() {
+    return false;
+}
+
+bool FolderResource::Save() {
+    return false;
 }
 
 BE_NAMESPACE_END

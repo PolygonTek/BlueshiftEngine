@@ -18,7 +18,7 @@
 #include "Components/ComTransform.h"
 #include "Components/ComMeshCollider.h"
 #include "Game/Entity.h"
-#include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
@@ -31,7 +31,7 @@ void ComMeshCollider::RegisterProperties() {
     REGISTER_PROPERTY("convex", "Convex", bool, convex, false, 
         "", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("mesh", "Mesh", Guid, GetMeshGuid, SetMeshGuid, GuidMapper::defaultMeshGuid, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&MeshAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&MeshResource::metaObject);
 }
 
 ComMeshCollider::ComMeshCollider() {

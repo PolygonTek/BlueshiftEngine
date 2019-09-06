@@ -18,6 +18,7 @@
 #include "Components/ComMeshRenderer.h"
 #include "Game/Entity.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
@@ -28,9 +29,9 @@ END_EVENTS
 
 void ComMeshRenderer::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("mesh", "Mesh", Guid, GetMeshGuid, SetMeshGuid, GuidMapper::defaultMeshGuid, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&MeshAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&MeshResource::metaObject);
     REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("materials", "Materials", Guid, GetMaterialGuid, SetMaterialGuid, GetMaterialCount, SetMaterialCount, GuidMapper::defaultMaterialGuid, 
-        "List of materials to use when rendering.", PropertyInfo::Flag::Editor).SetMetaObject(&MaterialAsset::metaObject);
+        "List of materials to use when rendering.", PropertyInfo::Flag::Editor).SetMetaObject(&MaterialResource::metaObject);
     REGISTER_ACCESSOR_PROPERTY("useEnvironmentProveLighting", "Use Env Probe Lighting", bool, IsUseEnvProbeLighting, SetUseEnvProbeLighting, true, 
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("castShadows", "Cast Shadows", bool, IsCastShadows, SetCastShadows, true, 
@@ -125,7 +126,7 @@ void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {
 
 #if WITH_EDITOR
     // Need mesh asset to be reloaded in editor
-    meshAsset = (MeshAsset *)MeshAsset::FindInstance(meshGuid);
+    meshAsset = (Asset *)Asset::FindInstance(meshGuid);
     if (meshAsset) {
         meshAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComMeshRenderer::MeshReloaded, SignalObject::ConnectionType::Queued);
     }

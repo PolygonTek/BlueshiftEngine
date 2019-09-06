@@ -112,14 +112,7 @@ void LuaVM::RegisterObject(LuaCpp::Module &module) {
         "cast_audio_listener", static_cast<ComAudioListener*(Object::*)()>(&Object::Cast<ComAudioListener>),
         "cast_spline", static_cast<ComSpline*(Object::*)()>(&Object::Cast<ComSpline>),
         "cast_script", static_cast<ComScript*(Object::*)()>(&Object::Cast<ComScript>),
-        "cast_texture_asset", static_cast<TextureAsset*(Object::*)()>(&Object::Cast<TextureAsset>), 
-        "cast_shader_asset", static_cast<ShaderAsset*(Object::*)()>(&Object::Cast<ShaderAsset>),
-        "cast_material_asset", static_cast<MaterialAsset*(Object::*)()>(&Object::Cast<MaterialAsset>),
-        "cast_skeleton_asset", static_cast<SkeletonAsset*(Object::*)()>(&Object::Cast<SkeletonAsset>),
-        "cast_mesh_asset", static_cast<MeshAsset*(Object::*)()>(&Object::Cast<MeshAsset>),
-        "cast_anim_asset", static_cast<AnimAsset*(Object::*)()>(&Object::Cast<AnimAsset>),
-        "cast_sound_asset", static_cast<SoundAsset*(Object::*)()>(&Object::Cast<SoundAsset>),
-        "cast_prefab_asset", static_cast<PrefabAsset*(Object::*)()>(&Object::Cast<PrefabAsset>));
+        "cast_asset", static_cast<Asset*(Object::*)()>(&Object::Cast<Asset>));
 
     _Object["meta_object"] = Object::metaObject;
     _Object["destroy"].SetFunc(&Object::DestroyInstance);

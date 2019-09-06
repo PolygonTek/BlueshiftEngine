@@ -14,25 +14,30 @@
 
 #include "Precompiled.h"
 #include "Asset/Asset.h"
-#include "Asset/GuidMapper.h"
-#include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
+#include "Asset/Resource.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Script", ScriptAsset, Asset)
-BEGIN_EVENTS(ScriptAsset)
+OBJECT_DECLARATION("Map", MapResource, Resource)
+BEGIN_EVENTS(MapResource)
 END_EVENTS
 
-void ScriptAsset::RegisterProperties() {
+void MapResource::RegisterProperties() {
 }
 
-ScriptAsset::ScriptAsset() {}
+MapResource::MapResource() {}
 
-ScriptAsset::~ScriptAsset() {}
+MapResource::~MapResource() {}
 
-void ScriptAsset::Reload() {
-    EmitSignal(&SIG_Reloaded);
+void MapResource::Rename(const Str &newName) {
+}
+
+bool MapResource::Reload() {
+    return false;
+}
+
+bool MapResource::Save() {
+    return false;
 }
 
 BE_NAMESPACE_END

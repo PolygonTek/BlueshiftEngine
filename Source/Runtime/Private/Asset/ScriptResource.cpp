@@ -13,23 +13,32 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Scripting/LuaVM.h"
+#include "Asset/Asset.h"
 #include "Asset/Resource.h"
-#include "Components/ComMeshRenderer.h"
-#include "Render/Material.h"
+#include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
 
-void LuaVM::RegisterMeshRendererComponent(LuaCpp::Module &module) {
-    LuaCpp::Selector _ComMeshRenderer = module["ComMeshRenderer"];
+OBJECT_DECLARATION("Script", ScriptResource, Resource)
+BEGIN_EVENTS(ScriptResource)
+END_EVENTS
 
-    _ComMeshRenderer.SetClass<ComMeshRenderer>(module["ComRenderable"]);
-    _ComMeshRenderer.AddClassMembers<ComMeshRenderer>(
-        "num_materials", &ComMeshRenderer::GetMaterialCount,
-        "material", &ComMeshRenderer::GetMaterial,
-        "set_material", &ComMeshRenderer::SetMaterial);
+void ScriptResource::RegisterProperties() {
+}
 
-    _ComMeshRenderer["meta_object"] = ComMeshRenderer::metaObject;
+ScriptResource::ScriptResource() {}
+
+ScriptResource::~ScriptResource() {}
+
+void ScriptResource::Rename(const Str &newName) {
+}
+
+bool ScriptResource::Reload() {
+    return true;
+}
+
+bool ScriptResource::Save() {
+    return false;
 }
 
 BE_NAMESPACE_END

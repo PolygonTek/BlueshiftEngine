@@ -19,7 +19,7 @@
 #include "Components/ComLight.h"
 #include "Game/GameWorld.h"
 #include "Game/TagLayerSettings.h"
-#include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
@@ -34,7 +34,7 @@ void ComLight::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("primaryLight", "Is Main Light", bool, IsPrimaryLight, SetPrimaryLight, false,
         "", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("material", "Material", Guid, GetMaterialGuid, SetMaterialGuid, GuidMapper::zeroClampLightMaterialGuid, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&MaterialAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&MaterialResource::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("color", "Color", Color3, GetColor, SetColor, Color3::white, 
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("intensity", "Intensity", float, GetIntensity, SetIntensity, 2.f,

@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "File/FileSystem.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 #include "Components/ComScript.h"
 #include "Components/ComTransform.h"
@@ -29,7 +30,7 @@ END_EVENTS
 
 void ComScript::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("script", "Script", Guid, GetScriptGuid, SetScriptGuid, Guid::zero, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&ScriptAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&ScriptResource::metaObject);
 }
 
 ComScript::ComScript() {
@@ -203,9 +204,9 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
 
 #if WITH_EDITOR
     // Need to script asset to be reloaded in editor
-    Object *scriptObject = ScriptAsset::FindInstance(scriptGuid);
+    Object *scriptObject = Asset::FindInstance(scriptGuid);
     if (scriptObject) {
-        scriptAsset = scriptObject->Cast<ScriptAsset>();
+        scriptAsset = scriptObject->Cast<Asset>();
 
         if (scriptAsset) {
             scriptAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComScript::ScriptReloaded, SignalObject::ConnectionType::Queued);

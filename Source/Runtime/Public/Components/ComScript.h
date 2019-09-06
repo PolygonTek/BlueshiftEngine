@@ -20,8 +20,8 @@
 
 BE_NAMESPACE_BEGIN
 
+class Asset;
 class Collision;
-class ScriptAsset;
 
 class ComScript : public ComLogic {
 public:
@@ -112,7 +112,7 @@ protected:
     void                    SetOwnerValues();
 
     Guid                    scriptGuid;
-    ScriptAsset *           scriptAsset;
+    Asset *                 scriptAsset;
     LuaCpp::State *         state;
     Str                     sandboxName;
     LuaCpp::Selector        sandbox;

@@ -18,6 +18,7 @@
 #include "Components/ComSkinnedMeshRenderer.h"
 #include "Game/GameWorld.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 #include "Core/JointPose.h"
 #include "Simd/Simd.h"
@@ -30,9 +31,9 @@ END_EVENTS
 
 void ComAnimation::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("skeleton", "Skeleton", Guid, GetSkeletonGuid, SetSkeletonGuid, Guid::zero,
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&SkeletonAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&SkeletonResource::metaObject);
     REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("anims", "Animations", Guid, GetAnimGuid, SetAnimGuid, GetAnimCount, SetAnimCount, Guid::zero,
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&AnimAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&AnimResource::metaObject);
     REGISTER_PROPERTY("animIndex", "Animation Index", int, currentAnimIndex, 0,
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("timeOffset", "Time Offset", float, GetTimeOffset, SetTimeOffset, 0.f,
@@ -201,7 +202,7 @@ void ComAnimation::ChangeSkeleton(const Guid &skeletonGuid) {
 
 #if WITH_EDITOR
     // Need to connect skeleton asset to be reloaded in Editor
-    skeletonAsset = (SkeletonAsset *)SkeletonAsset::FindInstance(skeletonGuid);
+    skeletonAsset = (Asset *)Asset::FindInstance(skeletonGuid);
     if (skeletonAsset) {
         skeletonAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComAnimation::SkeletonReloaded, SignalObject::ConnectionType::Queued);
     }
@@ -311,7 +312,7 @@ void ComAnimation::ChangeAnim(int index, const Guid &animGuid) {
 
 #if WITH_EDITOR
     // Need to connect anim asset to be reloaded in Editor
-    animAssets[index] = (AnimAsset *)AnimAsset::FindInstance(animGuid);
+    animAssets[index] = (Asset *)Asset::FindInstance(animGuid);
     if (animAssets[index]) {
         animAssets[index]->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComAnimation::AnimReloaded, SignalObject::ConnectionType::Queued);
     }

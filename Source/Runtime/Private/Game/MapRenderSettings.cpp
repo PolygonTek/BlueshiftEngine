@@ -17,7 +17,7 @@
 #include "Render/Render.h"
 #include "Game/GameWorld.h"
 #include "Game/MapRenderSettings.h"
-#include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
@@ -28,7 +28,7 @@ END_EVENTS
 
 void MapRenderSettings::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("skyboxMaterial", "Skybox Material", Guid, GetSkyboxMaterialGuid, SetSkyboxMaterialGuid, GuidMapper::defaultSkyboxMaterialGuid, "", PropertyInfo::Flag::Editor)
-        .SetMetaObject(&MaterialAsset::metaObject);
+        .SetMetaObject(&MaterialResource::metaObject);
 }
 
 MapRenderSettings::MapRenderSettings() {

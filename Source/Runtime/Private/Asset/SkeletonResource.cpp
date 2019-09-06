@@ -15,58 +15,57 @@
 #include "Precompiled.h"
 #include "Render/Skeleton.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
-#include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Skeleton", SkeletonAsset, Asset)
-BEGIN_EVENTS(SkeletonAsset)
+OBJECT_DECLARATION("Skeleton", SkeletonResource, Resource)
+BEGIN_EVENTS(SkeletonResource)
 END_EVENTS
 
-void SkeletonAsset::RegisterProperties() {
+void SkeletonResource::RegisterProperties() {
 }
 
-SkeletonAsset::SkeletonAsset() {
+SkeletonResource::SkeletonResource() {
     skeleton = nullptr;
 }
 
-SkeletonAsset::~SkeletonAsset() {
-    if (!skeleton) {
-        const Str skeletonPath = resourceGuidMapper.Get(GetGuid());
-        skeleton = skeletonManager.FindSkeleton(skeletonPath);
-    }
-
+SkeletonResource::~SkeletonResource() {
     if (skeleton) {
-        skeletonManager.ReleaseSkeleton(skeleton, true);
+        skeletonManager.ReleaseSkeleton(skeleton);
     }
 }
 
-Skeleton *SkeletonAsset::GetSkeleton() {
+Skeleton *SkeletonResource::GetSkeleton() {
     if (skeleton) {
         return skeleton;
     }
-    const Str skeletonPath = resourceGuidMapper.Get(GetGuid());
+    const Str skeletonPath = resourceGuidMapper.Get(asset->GetGuid());
     skeleton = skeletonManager.GetSkeleton(skeletonPath);
     return skeleton;
 }
 
-void SkeletonAsset::Rename(const Str &newName) {
-    Skeleton *existingSkeleton = skeletonManager.FindSkeleton(GetResourceFilename());
+void SkeletonResource::Rename(const Str &newName) {
+    const Str skeletonPath = resourceGuidMapper.Get(asset->GetGuid());
+    Skeleton *existingSkeleton = skeletonManager.FindSkeleton(skeletonPath);
     if (existingSkeleton) {
         skeletonManager.RenameSkeleton(existingSkeleton, newName);
     }
-
-    Asset::Rename(newName);
 }
 
-void SkeletonAsset::Reload() {
-    Skeleton *existingSkeleton = skeletonManager.FindSkeleton(GetResourceFilename());
+bool SkeletonResource::Reload() {
+    const Str skeletonPath = resourceGuidMapper.Get(asset->GetGuid());
+    Skeleton *existingSkeleton = skeletonManager.FindSkeleton(skeletonPath);
     if (existingSkeleton) {
         existingSkeleton->Reload();
-        EmitSignal(&SIG_Reloaded);
+        return true;
     }
+    return false;
+}
+
+bool SkeletonResource::Save() {
+    return false;
 }
 
 BE_NAMESPACE_END

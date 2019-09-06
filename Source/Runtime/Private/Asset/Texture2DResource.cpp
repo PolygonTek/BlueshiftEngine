@@ -13,30 +13,24 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Render/Texture.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
-#include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("JointMask", JointMaskAsset, Asset)
-BEGIN_EVENTS(JointMaskAsset)
+OBJECT_DECLARATION("2D", Texture2DResource, TextureResource)
+BEGIN_EVENTS(Texture2DResource)
 END_EVENTS
 
-void JointMaskAsset::RegisterProperties() {
+void Texture2DResource::RegisterProperties() {
 }
 
-JointMaskAsset::JointMaskAsset() {}
+Texture2DResource::Texture2DResource() {
+}
 
-JointMaskAsset::~JointMaskAsset() {}
-
-void JointMaskAsset::Reload() {
-    /*JointMask *existingJointMask = jointMaskManager.FindJointMask(GetResourceFilename());
-    if (existingJointMask) {
-        existingJointMask->Reload();
-        EmitSignal(&SIG_Reloaded);
-    }*/
+Texture2DResource::~Texture2DResource() {
 }
 
 BE_NAMESPACE_END

@@ -15,58 +15,57 @@
 #include "Precompiled.h"
 #include "Render/Shader.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
-#include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Shader", ShaderAsset, Asset)
-BEGIN_EVENTS(ShaderAsset)
+OBJECT_DECLARATION("Shader", ShaderResource, Resource)
+BEGIN_EVENTS(ShaderResource)
 END_EVENTS
 
-void ShaderAsset::RegisterProperties() {
+void ShaderResource::RegisterProperties() {
 }
 
-ShaderAsset::ShaderAsset() {
+ShaderResource::ShaderResource() {
     shader = nullptr;
 }
 
-ShaderAsset::~ShaderAsset() {
-    if (!shader) {
-        const Str shaderPath = resourceGuidMapper.Get(GetGuid());
-        shader = shaderManager.FindShader(shaderPath);
-    }
-
+ShaderResource::~ShaderResource() {
     if (shader) {
-        shaderManager.ReleaseShader(shader, true);
+        shaderManager.ReleaseShader(shader);
     }
 }
 
-Shader *ShaderAsset::GetShader() {
+Shader *ShaderResource::GetShader() {
     if (shader) {
         return shader;
     }
-    const Str shaderPath = resourceGuidMapper.Get(GetGuid());
+    const Str shaderPath = resourceGuidMapper.Get(asset->GetGuid());
     shader = shaderManager.GetShader(shaderPath);
     return shader;
 }
 
-void ShaderAsset::Rename(const Str &newName) {
-    Shader *existingShader = shaderManager.FindShader(GetResourceFilename());
+void ShaderResource::Rename(const Str &newName) {
+    const Str shaderPath = resourceGuidMapper.Get(asset->GetGuid());
+    Shader *existingShader = shaderManager.FindShader(shaderPath);
     if (existingShader) {
         shaderManager.RenameShader(existingShader, newName);
     }
-
-    Asset::Rename(newName);
 }
 
-void ShaderAsset::Reload() {
-    Shader *existingShader = shaderManager.FindShader(GetResourceFilename());
+bool ShaderResource::Reload() {
+    const Str shaderPath = resourceGuidMapper.Get(asset->GetGuid());
+    Shader *existingShader = shaderManager.FindShader(shaderPath);
     if (existingShader) {
         existingShader->Reload();
-        EmitSignal(&SIG_Reloaded);
+        return true;
     }
+    return false;
+}
+
+bool ShaderResource::Save() {
+    return false;
 }
 
 BE_NAMESPACE_END

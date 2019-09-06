@@ -14,21 +14,15 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Render/Anim.h"
-#include "Asset/Asset.h"
+#include "Render/Texture.h"
+#include "Asset/Resource.h"
 
 BE_NAMESPACE_BEGIN
 
-void LuaVM::RegisterAnimAsset(LuaCpp::Module &module) {
-    LuaCpp::Selector _Anim = module["Anim"];
+void LuaVM::RegisterTexture(LuaCpp::Module &module) {
+    LuaCpp::Selector _Texture = module["Texture"];
 
-    _Anim.SetClass<Anim>();
-
-    LuaCpp::Selector _AnimAsset = module["AnimAsset"];
-
-    _AnimAsset.SetClass<AnimAsset>(module["Asset"]);
-    _AnimAsset.AddClassMembers<AnimAsset>(
-        "anim", &AnimAsset::GetAnim);
+    _Texture.SetClass<Texture>();
 }
 
 BE_NAMESPACE_END

@@ -18,7 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-class MeshAsset;
+class Asset;
 class Material;
 class MeshCombiner;
 
@@ -67,7 +67,7 @@ protected:
 
     void                    MeshReloaded();
 
-    MeshAsset *             meshAsset;
+    Asset *                 meshAsset;
     Mesh *                  referenceMesh;      // shared mesh to retain shared information for instantiated mesh
 };
 

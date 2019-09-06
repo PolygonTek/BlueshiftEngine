@@ -13,22 +13,24 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Scripting/LuaVM.h"
-#include "Render/Material.h"
+#include "Render/Texture.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
+#include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
 
-void LuaVM::RegisterMaterialAsset(LuaCpp::Module &module) {
-    LuaCpp::Selector _Material = module["Material"];
+OBJECT_DECLARATION("CubeMap", TextureCubeMapResource, TextureResource)
+BEGIN_EVENTS(TextureCubeMapResource)
+END_EVENTS
 
-    _Material.SetClass<Material>();
+void TextureCubeMapResource::RegisterProperties() {
+}
 
-    LuaCpp::Selector _MaterialAsset = module["MaterialAsset"];
+TextureCubeMapResource::TextureCubeMapResource() {
+}
 
-    _MaterialAsset.SetClass<MaterialAsset>(module["Asset"]);
-    _MaterialAsset.AddClassMembers<MaterialAsset>(
-        "material", &MaterialAsset::GetMaterial);
+TextureCubeMapResource::~TextureCubeMapResource() {
 }
 
 BE_NAMESPACE_END

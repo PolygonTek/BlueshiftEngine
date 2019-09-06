@@ -15,58 +15,57 @@
 #include "Precompiled.h"
 #include "Render/Mesh.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
-#include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Mesh", MeshAsset, Asset)
-BEGIN_EVENTS(MeshAsset)
+OBJECT_DECLARATION("Mesh", MeshResource, Resource)
+BEGIN_EVENTS(MeshResource)
 END_EVENTS
 
-void MeshAsset::RegisterProperties() {
+void MeshResource::RegisterProperties() {
 }
 
-MeshAsset::MeshAsset() {
+MeshResource::MeshResource() {
     mesh = nullptr;
 }
 
-MeshAsset::~MeshAsset() {
-    if (!mesh) {
-        const Str meshPath = resourceGuidMapper.Get(GetGuid());
-        mesh = meshManager.FindMesh(meshPath);
-    }
-
+MeshResource::~MeshResource() {
     if (mesh) {
-        meshManager.ReleaseMesh(mesh, true);
+        meshManager.ReleaseMesh(mesh);
     }
 }
 
-Mesh *MeshAsset::GetMesh() {
+Mesh *MeshResource::GetMesh() {
     if (mesh) {
         return mesh;
     }
-    const Str meshPath = resourceGuidMapper.Get(GetGuid());
+    const Str meshPath = resourceGuidMapper.Get(asset->GetGuid());
     mesh = meshManager.GetMesh(meshPath);
     return mesh;
 }
 
-void MeshAsset::Rename(const Str &newName) {
-    Mesh *existingMesh = meshManager.FindMesh(GetResourceFilename());
+void MeshResource::Rename(const Str &newName) {
+    const Str meshPath = resourceGuidMapper.Get(asset->GetGuid());
+    Mesh *existingMesh = meshManager.FindMesh(meshPath);
     if (existingMesh) {
         meshManager.RenameMesh(existingMesh, newName);
     }
-
-    Asset::Rename(newName);
 }
 
-void MeshAsset::Reload() {
-    Mesh *existingMesh = meshManager.FindMesh(GetResourceFilename());
+bool MeshResource::Reload() {
+    const Str meshPath = resourceGuidMapper.Get(asset->GetGuid());
+    Mesh *existingMesh = meshManager.FindMesh(meshPath);
     if (existingMesh) {
         existingMesh->Reload();
-        EmitSignal(&SIG_Reloaded);
+        return true;
     }
+    return false;
+}
+
+bool MeshResource::Save() {
+    return false;
 }
 
 BE_NAMESPACE_END

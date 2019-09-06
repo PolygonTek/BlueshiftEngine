@@ -15,61 +15,63 @@
 #include "Precompiled.h"
 #include "Game/Prefab.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
-#include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Prefab", PrefabAsset, Asset)
-BEGIN_EVENTS(PrefabAsset)
+OBJECT_DECLARATION("Prefab", PrefabResource, Resource)
+BEGIN_EVENTS(PrefabResource)
 END_EVENTS
 
-void PrefabAsset::RegisterProperties() {
+void PrefabResource::RegisterProperties() {
 }
 
-PrefabAsset::PrefabAsset() {
+PrefabResource::PrefabResource() {
     prefab = nullptr;
 }
 
-PrefabAsset::~PrefabAsset() {
+PrefabResource::~PrefabResource() {
     if (prefab) {
         //prefabManager.ReleasePrefab(prefab);
     }
 }
 
-Prefab *PrefabAsset::GetPrefab() {
+Prefab *PrefabResource::GetPrefab() {
     if (prefab) {
         return prefab;
     }
-    const Str prefabPath = resourceGuidMapper.Get(GetGuid());
+    const Str prefabPath = resourceGuidMapper.Get(asset->GetGuid());
     prefab = prefabManager.GetPrefab(prefabPath);
     return prefab;
 }
 
-void PrefabAsset::Rename(const Str &newName) {
-    Prefab *existingPrefab = prefabManager.FindPrefab(GetResourceFilename());
+void PrefabResource::Rename(const Str &newName) {
+    const Str prefabPath = resourceGuidMapper.Get(asset->GetGuid());
+    Prefab *existingPrefab = prefabManager.FindPrefab(prefabPath);
     if (existingPrefab) {
         prefabManager.RenamePrefab(existingPrefab, newName);
     }
-
-    Asset::Rename(newName);
 }
 
-void PrefabAsset::Reload() {
-    Prefab *existingPrefab = prefabManager.FindPrefab(GetResourceFilename());
+bool PrefabResource::Reload() {
+    const Str prefabPath = resourceGuidMapper.Get(asset->GetGuid());
+    Prefab *existingPrefab = prefabManager.FindPrefab(prefabPath);
     if (existingPrefab) {
         existingPrefab->Reload();
-        EmitSignal(&SIG_Reloaded);
+        return true;
     }
+    return false;
 }
 
-void PrefabAsset::Save() {
-    Prefab *existingPrefab = prefabManager.FindPrefab(GetResourceFilename());
+bool PrefabResource::Save() {
+    const Str prefabPath = resourceGuidMapper.Get(asset->GetGuid());
+    Prefab *existingPrefab = prefabManager.FindPrefab(prefabPath);
     if (existingPrefab) {
         existingPrefab->Write(existingPrefab->GetFileName());
-        EmitSignal(&SIG_Modified, 0);
+        return true;
     }
+    return false;
 }
 
 BE_NAMESPACE_END

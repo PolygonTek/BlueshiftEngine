@@ -138,6 +138,7 @@
 // Asset
 #include "Asset/Asset.h"
 #include "Asset/AssetImporter.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 
 // Components

@@ -13,22 +13,20 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Scripting/LuaVM.h"
-#include "Render/Skeleton.h"
-#include "Asset/Asset.h"
+#include "Asset/Resource.h"
+#include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
 
-void LuaVM::RegisterSkeletonAsset(LuaCpp::Module &module) {
-    LuaCpp::Selector _Skeleton = module["Skeleton"];
+ABSTRACT_DECLARATION("Resource", Resource, Object)
+BEGIN_EVENTS(Resource)
+END_EVENTS
 
-    _Skeleton.SetClass<Skeleton>();
-
-    LuaCpp::Selector _SkeletonAsset = module["SkeletonAsset"];
-
-    _SkeletonAsset.SetClass<SkeletonAsset>(module["Asset"]);
-    _SkeletonAsset.AddClassMembers<SkeletonAsset>(
-        "skeleton", &SkeletonAsset::GetSkeleton);
+void Resource::RegisterProperties() {
 }
+
+Resource::Resource() {}
+
+Resource::~Resource() {}
 
 BE_NAMESPACE_END

@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
-#include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 #include "File/FileSystem.h"
 
@@ -192,7 +192,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
 
                         Shader::Property shaderProperty;
 
-                        if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject() == &TextureAsset::metaObject) {
+                        if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject()->IsTypeOf(TextureResource::metaObject)) {
                             // Value string
                             Str value = propDict.GetString(propName, propInfo.GetDefaultValue().As<Guid>().ToString(Guid::Format::DigitsWithHyphensInBraces));
 
@@ -393,7 +393,7 @@ void Material::ChangeShader(Shader *shader) {
         } else {
             Shader::Property shaderProperty;
 
-            if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject() == &TextureAsset::metaObject) {
+            if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject()->IsTypeOf(TextureResource::metaObject)) {
                 const Str defaultTextureName = resourceGuidMapper.Get(propInfo.GetDefaultValue().As<Guid>());
                 const Texture *defaultTexture = textureManager.FindTexture(defaultTextureName);
                 const Guid defaultTextureGuid = resourceGuidMapper.Get(defaultTexture->GetHashName());
@@ -454,7 +454,7 @@ void Material::CommitShaderPropertiesChanged() {
         const auto &propName = entry->first;
         const auto &propInfo = entry->second;
 
-        if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject() == &TextureAsset::metaObject) {
+        if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject()->IsTypeOf(TextureResource::metaObject)) {
             auto *entry = pass->shaderProperties.Get(propName);
             Shader::Property &shaderProperty = entry->second;
 

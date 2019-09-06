@@ -15,58 +15,57 @@
 #include "Precompiled.h"
 #include "Render/Texture.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
-#include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Texture", TextureAsset, Asset)
-BEGIN_EVENTS(TextureAsset)
+OBJECT_DECLARATION("Texture", TextureResource, Resource)
+BEGIN_EVENTS(TextureResource)
 END_EVENTS
 
-void TextureAsset::RegisterProperties() {
+void TextureResource::RegisterProperties() {
 }
 
-TextureAsset::TextureAsset() {
+TextureResource::TextureResource() {
     texture = nullptr;
 }
 
-TextureAsset::~TextureAsset() {
-    if (!texture) {
-        const Str texturePath = resourceGuidMapper.Get(GetGuid());
-        texture = textureManager.FindTexture(texturePath);
-    }
-
+TextureResource::~TextureResource() {
     if (texture) {
-        textureManager.ReleaseTexture(texture, true);
+        textureManager.ReleaseTexture(texture);
     }
 }
 
-Texture *TextureAsset::GetTexture() {
+Texture *TextureResource::GetTexture() {
     if (texture) {
         return texture;
     }
-    const Str texturePath = resourceGuidMapper.Get(GetGuid());
+    const Str texturePath = resourceGuidMapper.Get(asset->GetGuid());
     texture = textureManager.GetTexture(texturePath);
     return texture;
 }
 
-void TextureAsset::Rename(const Str &newName) {
-    Texture *existingTexture = textureManager.FindTexture(GetResourceFilename());
+void TextureResource::Rename(const Str &newName) {
+    const Str texturePath = resourceGuidMapper.Get(asset->GetGuid());
+    Texture *existingTexture = textureManager.FindTexture(texturePath);
     if (existingTexture) {
         textureManager.RenameTexture(existingTexture, newName);
     }
-
-    Asset::Rename(newName);
 }
 
-void TextureAsset::Reload() {
-    Texture *existingTexture = textureManager.FindTexture(GetResourceFilename());
+bool TextureResource::Reload() {
+    const Str texturePath = resourceGuidMapper.Get(asset->GetGuid());
+    Texture *existingTexture = textureManager.FindTexture(texturePath);
     if (existingTexture) {
         existingTexture->Reload();
-        EmitSignal(&SIG_Reloaded);
+        return true;
     }
+    return false;
+}
+
+bool TextureResource::Save() {
+    return false;
 }
 
 BE_NAMESPACE_END

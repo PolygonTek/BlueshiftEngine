@@ -98,16 +98,15 @@ private:
     void                    RegisterObject(LuaCpp::Module &module);
 
     void                    RegisterAsset(LuaCpp::Module &module);
-    void                    RegisterTextureAsset(LuaCpp::Module &module);
-    void                    RegisterShaderAsset(LuaCpp::Module &module);
-    void                    RegisterMaterialAsset(LuaCpp::Module &module);
-    void                    RegisterSkeletonAsset(LuaCpp::Module &module);
-    void                    RegisterMeshAsset(LuaCpp::Module &module);
-    void                    RegisterAnimAsset(LuaCpp::Module &module);
-    void                    RegisterAnimControllerAsset(LuaCpp::Module &module);
-    void                    RegisterSoundAsset(LuaCpp::Module &module);
-    void                    RegisterMapAsset(LuaCpp::Module &module);
-    void                    RegisterPrefabAsset(LuaCpp::Module &module);
+    void                    RegisterTexture(LuaCpp::Module &module);
+    void                    RegisterShader(LuaCpp::Module &module);
+    void                    RegisterMaterial(LuaCpp::Module &module);
+    void                    RegisterSkeleton(LuaCpp::Module &module);
+    void                    RegisterMesh(LuaCpp::Module &module);
+    void                    RegisterAnim(LuaCpp::Module &module);
+    void                    RegisterAnimController(LuaCpp::Module &module);
+    void                    RegisterSound(LuaCpp::Module &module);
+    void                    RegisterPrefab(LuaCpp::Module &module);
 
     void                    RegisterComponent(LuaCpp::Module &module);
     void                    RegisterTransformComponent(LuaCpp::Module &module);

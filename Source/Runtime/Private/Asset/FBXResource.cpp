@@ -13,15 +13,32 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Scripting/LuaVM.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 
 BE_NAMESPACE_BEGIN
 
-void LuaVM::RegisterMapAsset(LuaCpp::Module &module) {
-    LuaCpp::Selector _MapAsset = module["MapAsset"];
+OBJECT_DECLARATION("FBX", FbxResource, Resource)
+BEGIN_EVENTS(FbxResource)
+END_EVENTS
 
-    _MapAsset.SetClass<MapAsset>(module["Asset"]);
+void FbxResource::RegisterProperties() {
+}
+
+FbxResource::FbxResource() {
+}
+
+FbxResource::~FbxResource() {}
+
+void FbxResource::Rename(const Str &newName) {
+}
+
+bool FbxResource::Reload() {
+    return false;
+}
+
+bool FbxResource::Save() {
+    return false;
 }
 
 BE_NAMESPACE_END

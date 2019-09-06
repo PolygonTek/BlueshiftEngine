@@ -19,7 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
-class ParticleSystemAsset;
+class Asset;
 
 class ComParticleSystem : public ComRenderable {
 public:
@@ -76,7 +76,7 @@ protected:
     void                    TransformUpdated(const ComTransform *transform);
 
     bool                    playOnAwake;
-    ParticleSystemAsset *   particleSystemAsset;
+    Asset *                 particleSystemAsset;
     bool                    simulationStarted;
     int                     currentTime;
     int                     stopTime;

@@ -13,22 +13,24 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Render/Texture.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
-#include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Map", MapAsset, Asset)
-BEGIN_EVENTS(MapAsset)
+OBJECT_DECLARATION("UI Image", TextureUIImageResource, TextureResource)
+BEGIN_EVENTS(TextureUIImageResource)
 END_EVENTS
 
-void MapAsset::RegisterProperties() {
+void TextureUIImageResource::RegisterProperties() {
 }
 
-MapAsset::MapAsset() {}
+TextureUIImageResource::TextureUIImageResource() {
+}
 
-MapAsset::~MapAsset() {}
+TextureUIImageResource::~TextureUIImageResource() {
+}
 
 BE_NAMESPACE_END

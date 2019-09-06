@@ -15,59 +15,63 @@
 #include "Precompiled.h"
 #include "Sound/SoundSystem.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
-#include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("Sound", SoundAsset, Asset)
-BEGIN_EVENTS(SoundAsset)
+OBJECT_DECLARATION("Sound", SoundResource, Resource)
+BEGIN_EVENTS(SoundResource)
 END_EVENTS
 
-void SoundAsset::RegisterProperties() {
+void SoundResource::RegisterProperties() {
 }
 
-SoundAsset::SoundAsset() {
+SoundResource::SoundResource() {
     sound = nullptr;
 }
 
-SoundAsset::~SoundAsset() {
+SoundResource::~SoundResource() {
     if (!sound) {
-        const Str soundPath = resourceGuidMapper.Get(GetGuid());
+        const Str soundPath = resourceGuidMapper.Get(asset->GetGuid());
         sound = soundSystem.FindSound(soundPath);
     }
 
     if (sound) {
-        soundSystem.ReleaseSound(sound, true);
+        soundSystem.ReleaseSound(sound);
     }
 }
 
-Sound *SoundAsset::GetSound() {
+Sound *SoundResource::GetSound() {
     if (sound) {
         return sound;
     }
 
-    const Str soundPath = resourceGuidMapper.Get(GetGuid());
+    const Str soundPath = resourceGuidMapper.Get(asset->GetGuid());
     sound = soundSystem.GetSound(soundPath);
     return sound;
 }
 
-void SoundAsset::Rename(const Str &newName) {
-    Sound *existingSound = soundSystem.FindSound(GetResourceFilename());
+void SoundResource::Rename(const Str &newName) {
+    const Str soundPath = resourceGuidMapper.Get(asset->GetGuid());
+    Sound *existingSound = soundSystem.FindSound(soundPath);
     if (existingSound) {
         soundSystem.RenameSound(existingSound, newName);
     }
-
-    Asset::Rename(newName);
 }
 
-void SoundAsset::Reload() {
-    Sound *sound = soundSystem.FindSound(GetResourceFilename());
+bool SoundResource::Reload() {
+    const Str soundPath = resourceGuidMapper.Get(asset->GetGuid());
+    Sound *sound = soundSystem.FindSound(soundPath);
     if (sound) {
         sound->Reload();
-        EmitSignal(&SIG_Reloaded);
+        return true;
     }
+    return false;
+}
+
+bool SoundResource::Save() {
+    return false;
 }
 
 BE_NAMESPACE_END
