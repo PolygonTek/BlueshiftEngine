@@ -53,7 +53,7 @@ bool Asset::IsRedundantAsset() const {
 
 void Asset::CreateResource(const MetaObject &metaObject, const Guid &guid) {
     if (resource) {
-        if (&resource->metaObject == &metaObject) {
+        if (resource->GetMetaObject() == &metaObject) {
             // No need to recreate resource object if it's type is the same.
             return;
         }

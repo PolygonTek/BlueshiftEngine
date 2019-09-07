@@ -66,7 +66,7 @@ public:
                                 /// Creates resource object when importing is completed.
     void                        CreateResource(const MetaObject &metaObject, const Guid &guid = Guid::zero);
     template <typename T>
-    void                        CreateResource() { CreateResource(T::metaObject); }
+    void                        CreateResource(const Guid &guid = Guid::zero) { CreateResource(T::metaObject, guid); }
 
     Anim *                      GetAnim() const;
     AnimController *            GetAnimController() const;
