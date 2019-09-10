@@ -31,7 +31,7 @@ public:
                             /// Converts path to GUID
     const Guid              Get(const Str &filePath) const;
 
-                            /// Sets hash
+                            /// Sets map GUID to path
     void                    Set(const Guid &guid, const Str &filePath);
 
                             /// Removes hash using GUID
