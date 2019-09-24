@@ -77,7 +77,7 @@ static void RegisterEngineObjects() {
     TextureResource::RegisterProperties();
     Texture2DResource::RegisterProperties();
     TextureCubeMapResource::RegisterProperties();
-    TextureUIImageResource::RegisterProperties();
+    TextureSpriteResource::RegisterProperties();
     ShaderResource::RegisterProperties();
     MaterialResource::RegisterProperties();
     FontResource::RegisterProperties();

@@ -20,17 +20,17 @@
 
 BE_NAMESPACE_BEGIN
 
-OBJECT_DECLARATION("UI Image", TextureUIImageResource, TextureResource)
-BEGIN_EVENTS(TextureUIImageResource)
+OBJECT_DECLARATION("Sprite", TextureSpriteResource, TextureResource)
+BEGIN_EVENTS(TextureSpriteResource)
 END_EVENTS
 
-void TextureUIImageResource::RegisterProperties() {
+void TextureSpriteResource::RegisterProperties() {
 }
 
-TextureUIImageResource::TextureUIImageResource() {
+TextureSpriteResource::TextureSpriteResource() {
 }
 
-TextureUIImageResource::~TextureUIImageResource() {
+TextureSpriteResource::~TextureSpriteResource() {
 }
 
 BE_NAMESPACE_END

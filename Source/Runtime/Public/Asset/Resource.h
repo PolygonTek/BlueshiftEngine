@@ -100,12 +100,12 @@ public:
     ~TextureCubeMapResource();
 };
 
-class TextureUIImageResource : public TextureResource {
+class TextureSpriteResource : public TextureResource {
 public:
-    OBJECT_PROTOTYPE(TextureUIImageResource);
+    OBJECT_PROTOTYPE(TextureSpriteResource);
 
-    TextureUIImageResource();
-    ~TextureUIImageResource();
+    TextureSpriteResource();
+    ~TextureSpriteResource();
 };
 
 class ShaderResource : public Resource {

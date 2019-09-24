@@ -402,8 +402,8 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
             propInfo.metaObject = &Texture2DResource::metaObject;
         } else if (!Str::Icmp(textureTypeStr, "CUBE")) {
             propInfo.metaObject = &TextureCubeMapResource::metaObject;
-        } else if (!Str::Icmp(textureTypeStr, "UI")) {
-            propInfo.metaObject = &TextureUIImageResource::metaObject;
+        } else if (!Str::Icmp(textureTypeStr, "SPRITE")) {
+            propInfo.metaObject = &TextureSpriteResource::metaObject;
         } else {
             BE_WARNLOG("unknown texture type %s in shader '%s'\n", textureTypeStr.c_str(), lexer.GetFilename());
             propInfo.metaObject = &Texture2DResource::metaObject;

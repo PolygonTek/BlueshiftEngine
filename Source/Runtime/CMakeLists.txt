@@ -377,7 +377,7 @@ set(COMMON_ENGINE_FILES
     Private/Asset/TextureResource.cpp
     Private/Asset/Texture2DResource.cpp
     Private/Asset/TextureCubeMapResource.cpp
-    Private/Asset/TextureUIImageResource.cpp
+    Private/Asset/TextureSpriteResource.cpp
     Private/Asset/ShaderResource.cpp
     Private/Asset/MaterialResource.cpp
     Private/Asset/FontResource.cpp
