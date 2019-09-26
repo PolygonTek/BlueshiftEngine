@@ -208,7 +208,7 @@ void Asset::Save() {
 }
 
 void Asset::GetChildren(Array<Asset *> &children) const {
-    for (Asset *child = node.GetChild(); child; child = child->node.GetNextSibling()) {
+    for (Asset *child = node.GetFirstChild(); child; child = child->node.GetNextSibling()) {
         children.Append(child);
         child->GetChildren(children);
     }

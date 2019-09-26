@@ -81,7 +81,7 @@ void ComSensor::AddChildShapeRecursive(const Mat3x4 &parentWorldMatrixInverse, c
     shapeDesc.localOrigin = localTransform.ToTranslationVec3();
     shapeDesc.localAxis = localTransform.ToMat3();
 
-    for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+    for (Entity *childEntity = entity->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
         AddChildShapeRecursive(parentWorldMatrixInverse, childEntity, shapes);
     }
 }
@@ -126,7 +126,7 @@ void ComSensor::CreateSensor() {
     }
 
     // Collect collider shadpes in children recursively
-    for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+    for (Entity *childEntity = entity->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
         AddChildShapeRecursive(transform->GetMatrixNoScale().Inverse(), childEntity, physicsDesc.shapes);
     }
 

@@ -112,7 +112,7 @@ void GameWorld::ClearEntities(bool clearAll) {
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         if (clearAll || sceneIndex != DontDestroyOnLoadSceneNum) {
-            for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+            for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
                 entitiesToRemove.Append(ent);
             }
         }
@@ -152,7 +152,7 @@ Entity *GameWorld::FindEntityByName(const char *name) const {
 
 Entity *GameWorld::FindRootEntityByName(const char *name) const {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNextSibling()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNextSibling()) {
             if (ent->name == name) {
                 return ent;
             }
@@ -190,7 +190,7 @@ Entity *GameWorld::FindEntityRelativePath(const Entity *entity, const char *path
         name[slashIndex] = '\0';
     }
 
-    for (Entity *ent = entity->node.GetChild(); ent; ent = ent->node.GetNextSibling()) {
+    for (Entity *ent = entity->node.GetFirstChild(); ent; ent = ent->node.GetNextSibling()) {
         if (ent->name == name) {
             if (slashIndex >= 0) {
                 return FindEntityRelativePath(ent, &name[slashIndex + 1]);
@@ -236,7 +236,7 @@ const EntityPtrArray GameWorld::FindEntitiesByTag(const char *tagName) const {
 
 Entity *GameWorld::FindEntityByRenderEntity(int renderEntityHandle) const {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             if (ent->HasRenderEntity(renderEntityHandle)) {
                 return ent;
             }
@@ -248,7 +248,7 @@ Entity *GameWorld::FindEntityByRenderEntity(int renderEntityHandle) const {
 
 void GameWorld::OnApplicationResize(int width, int height) {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->OnApplicationResize(width, height);
         }
     }
@@ -256,7 +256,7 @@ void GameWorld::OnApplicationResize(int width, int height) {
 
 void GameWorld::OnApplicationTerminate() {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->OnApplicationTerminate();
         }
     }
@@ -264,7 +264,7 @@ void GameWorld::OnApplicationTerminate() {
 
 void GameWorld::OnApplicationPause(bool pause) {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->OnApplicationPause(pause);
         }
     }
@@ -487,7 +487,7 @@ void GameWorld::FinishMapLoading() {
 
 bool GameWorld::CheckScriptError() const {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ComponentPtrArray scriptComponents = ent->GetComponents(&ComScript::metaObject);
 
             for (int i = 0; i < scriptComponents.Count(); i++) {
@@ -522,7 +522,7 @@ void GameWorld::StartGame() {
     gameAwaking = true;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             if (!ent->awaked) {
                 ent->Awake();
             }
@@ -532,7 +532,7 @@ void GameWorld::StartGame() {
     gameAwaking = false;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             if (!ent->started) {
                 ent->Start();
             }
@@ -634,7 +634,7 @@ bool GameWorld::LoadMap(const char *filename, LoadSceneMode::Enum mode) {
 
     int sceneIndex = 0;
     for (; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        if (!scenes[sceneIndex].root.GetChild()) {
+        if (!scenes[sceneIndex].root.GetFirstChild()) {
             break;
         }
     }
@@ -661,7 +661,7 @@ void GameWorld::SaveMap(const char *filename) {
     mapRenderSettings->Serialize(map["renderSettings"]);
 
     // Write entities
-    for (Entity *ent = scenes[0].root.GetChild(); ent; ent = ent->node.GetNextSibling()) {
+    for (Entity *ent = scenes[0].root.GetFirstChild(); ent; ent = ent->node.GetNextSibling()) {
         Entity::SerializeHierarchy(ent, map["entities"]);
     }
 
@@ -705,7 +705,7 @@ void GameWorld::Update(int elapsedTime) {
 void GameWorld::FixedUpdateEntities(float timeStep) {
     // Call fixed update function for each entities in depth-first order
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->FixedUpdate(timeStep * timeScale);
         }
     }
@@ -714,7 +714,7 @@ void GameWorld::FixedUpdateEntities(float timeStep) {
 void GameWorld::FixedLateUpdateEntities(float timeStep) {
     // Call fixed post-update function for each entities in depth-first order
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->FixedLateUpdate(timeStep * timeScale);
         }
     }
@@ -723,7 +723,7 @@ void GameWorld::FixedLateUpdateEntities(float timeStep) {
 void GameWorld::UpdateEntities() {
     // Call update function for each entities in depth-first order
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->Update();
         }
     }
@@ -732,7 +732,7 @@ void GameWorld::UpdateEntities() {
 void GameWorld::LateUpdateEntities() {
     // Call post-update function for each entities in depth-first order
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->LateUpdate();
         }
     }
@@ -750,7 +750,7 @@ void GameWorld::ProcessPointerInput() {
     StaticArray<ComCamera *, 16> cameraComponents;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ComCamera *camera = ent->GetComponent<ComCamera>();
             if (!camera || !camera->IsActiveInHierarchy()) {
                 continue;
@@ -783,7 +783,7 @@ Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask) const {
     float minDist = FLT_MAX;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             if (!(BIT(ent->GetLayer()) & layerMask)) {
                 continue;
             }
@@ -806,7 +806,7 @@ Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask, const Array<Entit
     Entity *minEntity = nullptr;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             if (!(BIT(ent->GetLayer()) & layerMask)) {
                 continue;
             }
@@ -831,7 +831,7 @@ void GameWorld::Render() {
     StaticArray<ComCamera *, 16> cameraComponents;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ComCamera *camera = ent->GetComponent<ComCamera>();
             if (!camera || !camera->IsActiveInHierarchy()) {
                 continue;
@@ -859,7 +859,7 @@ void GameWorld::SaveSnapshot() {
     mapRenderSettings->Serialize(snapshotValues["renderSettings"]);
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNextSibling()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNextSibling()) {
             Entity::SerializeHierarchy(ent, snapshotValues["entities"][sceneIndex]);
         }
     }

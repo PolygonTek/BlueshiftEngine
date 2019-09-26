@@ -356,7 +356,7 @@ void ComTransform::InvalidateWorldMatrix() {
     EmitSignal(&SIG_TransformUpdated, this);
 
     if (physicsUpdating) {
-        for (Entity *childEntity = GetEntity()->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+        for (Entity *childEntity = GetEntity()->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
             // Don't update children that has rigid body. they will be updated by own.
             if (childEntity->GetComponent(&ComRigidBody::metaObject) || childEntity->GetComponent(&ComVehicleWheel::metaObject)) {
                 continue;
@@ -365,7 +365,7 @@ void ComTransform::InvalidateWorldMatrix() {
             childEntity->GetTransform()->InvalidateWorldMatrix();
         }
     } else {
-        for (Entity *childEntity = GetEntity()->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+        for (Entity *childEntity = GetEntity()->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
             childEntity->GetTransform()->InvalidateWorldMatrix();
         }
     }
