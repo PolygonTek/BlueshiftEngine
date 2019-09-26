@@ -32,6 +32,7 @@ const SignalDef Entity::SIG_ActiveInHierarchyChanged("Entity::ActiveInHierachyCh
 const SignalDef Entity::SIG_NameChanged("Entity::NameChanged", "as");
 const SignalDef Entity::SIG_FrozenChanged("Entity::FrozenChanged", "ai");
 const SignalDef Entity::SIG_ParentChanged("Entity::ParentChanged", "aa");
+const SignalDef Entity::SIG_SiblingIndexChanged("Entity::SiblingIndexChanged", "ai");
 const SignalDef Entity::SIG_ComponentInserted("Entity::ComponentInserted", "ai");
 const SignalDef Entity::SIG_ComponentRemoved("Entity::ComponentRemoved", "a");
 const SignalDef Entity::SIG_ComponentSwapped("Entity::ComponentSwapped", "ii");
@@ -45,6 +46,8 @@ END_EVENTS
 void Entity::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("parent", "Parent", Guid, GetParentGuid, SetParentGuid, Guid::zero,
         "Parent Entity", PropertyInfo::Flag::Editor).SetMetaObject(&Entity::metaObject);
+    REGISTER_ACCESSOR_PROPERTY("siblingIndex", "Sibling Index", int, GetSiblingIndex, SetSiblingIndex, -1,
+        "", PropertyInfo::Flag::SkipSerialization);
     REGISTER_PROPERTY("prefab", "Prefab", bool, prefab, false,
         "Is prefab ?", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("prefabSource", "Prefab Source", Guid, GetPrefabSourceGuid, SetPrefabSourceGuid, Guid::zero,
@@ -266,11 +269,11 @@ bool Entity::SwapComponent(int fromIndex, int toIndex) {
 }
 
 bool Entity::HasChildren() const {
-    return node.GetChild() ? true : false;
+    return node.GetFirstChild() ? true : false;
 }
 
 void Entity::GetChildren(EntityPtrArray &children) const {
-    for (Entity *child = node.GetChild(); child; child = child->node.GetNextSibling()) {
+    for (Entity *child = node.GetFirstChild(); child; child = child->node.GetNextSibling()) {
         children.Append(child);
 
         child->GetChildren(children);
@@ -278,7 +281,7 @@ void Entity::GetChildren(EntityPtrArray &children) const {
 }
 
 Entity *Entity::FindChild(const char *name) const {
-    for (Entity *child = node.GetChild(); child; child = child->node.GetNextSibling()) {
+    for (Entity *child = node.GetFirstChild(); child; child = child->node.GetNextSibling()) {
         if (!Str::Cmp(child->GetName(), name)) {
             return child;
         }
@@ -327,7 +330,7 @@ ComponentPtrArray Entity::GetComponentsInChildren(const MetaObject *type) const 
         }
     }
 
-    for (Entity *child = node.GetChild(); child; child = child->node.GetNextSibling()) {
+    for (Entity *child = node.GetFirstChild(); child; child = child->node.GetNextSibling()) {
         subComponents.AppendArray(child->GetComponentsInChildren(type));
     }
 
@@ -433,7 +436,7 @@ void Entity::SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue
 
     entitiesValue.append(entityValue);
 
-    for (Entity *child = entity->GetNode().GetChild(); child; child = child->GetNode().GetNextSibling()) {
+    for (Entity *child = entity->GetNode().GetFirstChild(); child; child = child->GetNode().GetNextSibling()) {
         Entity::SerializeHierarchy(child, entitiesValue, forCopying);
     }
 }
@@ -479,7 +482,7 @@ void Entity::SetActiveInHierarchy(bool active) {
         }
     }
 
-    for (Entity *childEnt = node.GetChild(); childEnt; childEnt = childEnt->node.GetNextSibling()) {
+    for (Entity *childEnt = node.GetFirstChild(); childEnt; childEnt = childEnt->node.GetNextSibling()) {
         childEnt->SetActiveInHierarchy(active && childEnt->activeSelf);
     }
 }
@@ -659,6 +662,22 @@ void Entity::SetParentGuid(const Guid &parentGuid) {
         EmitSignal(&SIG_ParentChanged, this, parentEntity);
     }
 #endif
+}
+
+int Entity::GetSiblingIndex() const {
+    return node.GetSiblingIndex();
+}
+
+void Entity::SetSiblingIndex(int index) {
+    if (index >= 0) {
+        node.SetSiblingIndex(index);
+
+#if WITH_EDITOR
+        if (initialized) {
+            EmitSignal(&SIG_SiblingIndexChanged, this, index);
+        }
+#endif
+    }
 }
 
 Guid Entity::GetPrefabSourceGuid() const {

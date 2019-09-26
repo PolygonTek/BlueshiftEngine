@@ -115,6 +115,12 @@ public:
                                 /// Sets parent entity by GUID.
     void                        SetParentGuid(const Guid &parentGuid);
 
+                                /// Returns sibling index.
+    int                         GetSiblingIndex() const;
+
+                                /// Sets sibling index.
+    void                        SetSiblingIndex(int index);
+
                                 /// Returns true if this entity have any children.
     bool                        HasChildren() const;
                                 /// Gets the children by depth first order.
@@ -243,6 +249,7 @@ public:
     static const SignalDef      SIG_NameChanged;
     static const SignalDef      SIG_FrozenChanged;
     static const SignalDef      SIG_ParentChanged;
+    static const SignalDef      SIG_SiblingIndexChanged;
     static const SignalDef      SIG_ComponentInserted;
     static const SignalDef      SIG_ComponentRemoved;
     static const SignalDef      SIG_ComponentSwapped;
