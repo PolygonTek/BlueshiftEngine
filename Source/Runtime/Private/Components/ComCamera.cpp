@@ -35,6 +35,8 @@ void ComCamera::RegisterProperties() {
         "", PropertyInfo::Flag::Editor).SetEnumString("Perspective;Orthographic");
     REGISTER_PROPERTY("fov", "FOV", float, fov, 60.f, 
         "", PropertyInfo::Flag::Editor).SetRange(1, 179, 1);
+    REGISTER_PROPERTY("useScreenSize", "Use Screen Size", bool, useScreenSize, false,
+        "", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("size", "Size", float, size, 5.f,
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, 0.3,
@@ -202,22 +204,27 @@ void ComCamera::DrawGizmos(const RenderCamera::State &renderCameraDef, bool sele
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
     
     if (selected) {
-        int renderingWidth = 100;
-        int renderingHeight = 100;
+        int screenWidth = 100;
+        int screenHeight = 100;
 
         const RenderContext *ctx = renderSystem.GetMainRenderContext();
         if (ctx) {
-            renderingWidth = ctx->GetRenderingWidth();
-            renderingHeight = ctx->GetRenderingHeight();
+            screenWidth = ctx->GetScreenWidth();
+            screenHeight = ctx->GetScreenHeight();
         }
 
-        float w = renderingWidth * nw;
-        float h = renderingHeight * nh;
+        float w = screenWidth * nw;
+        float h = screenHeight * nh;
         float aspectRatio = w / h;
 
         if (this->renderCameraDef.orthogonal) {
-            this->renderCameraDef.sizeX = size;
-            this->renderCameraDef.sizeY = size / aspectRatio;
+            if (useScreenSize) {
+                this->renderCameraDef.sizeX = screenWidth;
+                this->renderCameraDef.sizeY = screenHeight;
+            } else {
+                this->renderCameraDef.sizeX = size;
+                this->renderCameraDef.sizeY = size / aspectRatio;
+            }
             float sizeZ = (this->renderCameraDef.zNear + this->renderCameraDef.zFar) * 0.5f;
 
             OBB cameraBox;
@@ -344,8 +351,13 @@ const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
     float aspectRatio = (float)screenWidth / screenHeight;
 
     if (renderCameraDef.orthogonal) {
-        renderCameraDef.sizeX = size;
-        renderCameraDef.sizeY = size / aspectRatio;
+        if (useScreenSize) {
+            renderCameraDef.sizeX = screenWidth;
+            renderCameraDef.sizeX = screenHeight;
+        } else {
+            renderCameraDef.sizeX = size;
+            renderCameraDef.sizeY = size / aspectRatio;
+        }
     } else {
          RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &renderCameraDef.fovX, &renderCameraDef.fovY);
     }
@@ -564,9 +576,14 @@ void ComCamera::RenderScene() {
     float aspectRatio = screenWidth / screenHeight;
 
     if (renderCameraDef.orthogonal) {
-        // Compute viewport rectangle size in orthogonal projection.
-        renderCameraDef.sizeX = size;
-        renderCameraDef.sizeY = size / aspectRatio;
+        if (useScreenSize) {
+            renderCameraDef.sizeX = screenWidth;
+            renderCameraDef.sizeX = screenHeight;
+        } else {
+            // Compute viewport rectangle size in orthogonal projection.
+            renderCameraDef.sizeX = size;
+            renderCameraDef.sizeY = size / aspectRatio;
+        }
     } else {
         // Compute fovX, fovY with the given fov and aspect ratio.
         RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &renderCameraDef.fovX, &renderCameraDef.fovY);

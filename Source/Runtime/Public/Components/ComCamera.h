@@ -99,6 +99,7 @@ protected:
     RenderCamera::State     renderCameraDef;
     float                   fov;
     float                   size;
+    bool                    useScreenSize;
     float                   nx, ny, nw, nh;     ///< normalized screen coordinates
     int                     order;              ///< rendering order
     bool                    applyPostProcessing;
