@@ -33,14 +33,14 @@ END_EVENTS
 void ComCamera::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("projection", "Projection", int, GetProjectionMethod, SetProjectionMethod, 0, 
         "", PropertyInfo::Flag::Editor).SetEnumString("Perspective;Orthographic");
-    REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, 0.3,
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0.01, 9999.99, 0.01);
-    REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetFar, SetFar, 1000,
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0.02, 10000.0, 0.01);
     REGISTER_PROPERTY("fov", "FOV", float, fov, 60.f, 
         "", PropertyInfo::Flag::Editor).SetRange(1, 179, 1);
     REGISTER_PROPERTY("size", "Size", float, size, 5.f,
         "", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, 0.3,
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0.01, 9999.99, 0.01);
+    REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetFar, SetFar, 1000,
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0.02, 10000.0, 0.01);
     REGISTER_PROPERTY("x", "Viewport Rect/X", float, nx, 0.f, 
         "", PropertyInfo::Flag::Editor).SetRange(0, 1.0f, 0.01f);
     REGISTER_PROPERTY("y", "Viewport Rect/Y", float, ny, 0.f, 
@@ -556,8 +556,12 @@ void ComCamera::RenderScene() {
     renderCameraDef.renderRect.w = renderingWidth * nw;
     renderCameraDef.renderRect.h = renderingHeight * nh;
 
-    // Get the aspect ratio from device screen size.
-    float aspectRatio = (float)ctx->GetScreenWidth() / ctx->GetScreenHeight();
+    // Get the logical screen resolution.
+    float screenWidth = ctx->GetScreenWidth();
+    float screenHeight = ctx->GetScreenHeight();
+
+    // Get the aspect ratio from the screen resolution.
+    float aspectRatio = screenWidth / screenHeight;
 
     if (renderCameraDef.orthogonal) {
         // Compute viewport rectangle size in orthogonal projection.
