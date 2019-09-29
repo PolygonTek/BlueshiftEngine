@@ -52,6 +52,8 @@ public:
 
     float                   GetSize() const { return size; }
 
+    Size                    GetOrthoSize() const;
+
     float                   GetAspectRatio() const;
 
     const Point             WorldToScreen(const Vec3 &position) const;
