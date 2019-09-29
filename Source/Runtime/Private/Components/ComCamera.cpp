@@ -293,8 +293,8 @@ Size ComCamera::GetOrthoSize() const {
     } else {
         float aspectRatio = (float)screenWidth / screenHeight;
 
-        screenSize.w = screenWidth;
-        screenSize.h = screenWidth / aspectRatio;
+        screenSize.w = size;
+        screenSize.h = size / aspectRatio;
     }
 
     return screenSize;
