@@ -97,6 +97,7 @@ set(COMMON_ENGINE_FILES
     Public/Math/Rect.h
     Public/Math/RGBE9995.h
     Public/Math/Rotation.h
+    Public/Math/Size.h
     Public/Math/Sphere.h
     Public/Math/SphericalHarmonics.h
     Public/Math/Vector.h

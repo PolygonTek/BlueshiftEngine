@@ -35,6 +35,7 @@
 #include "Math/Frustum.h"
 #include "Math/Ray.h"
 #include "Math/Point.h"
+#include "Math/Size.h"
 #include "Math/Rect.h"
 #include "Math/Curve.h"
 #include "Math/Hermite.h"

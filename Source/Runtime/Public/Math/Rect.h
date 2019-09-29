@@ -54,8 +54,11 @@ public:
     int                 X2() const { return x + w; }
     int                 Y2() const { return y + h; }
 
-                        /// Returns a center point of this rect
-    Point               Center() const { return Point(x + (w >> 1), y + (h >> 1)); }
+                        /// Returns a center point of this rect.
+    Point               GetCenter() const { return Point(x + (w >> 1), y + (h >> 1)); }
+
+                        /// Returns size of this rect.
+    Size                GetSize() const { return Size(w, h); }
 
                         /// Casts this Rect to a C array.
                         /// This function simply returns a C pointer view to this data structure.
