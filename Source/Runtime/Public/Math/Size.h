@@ -64,21 +64,23 @@ public:
     int &               operator[](int index);
 
                         /// Performs an unary negation of this Size.
-    Size               operator-() const { return Size(-w, -h); }
+    Size                operator-() const { return Size(-w, -h); }
 
                         /// Unary operator + allows this structure to be used in an expression '+p'.
-    Size               operator+() const { return *this; }
+    Size                operator+() const { return *this; }
 
-    Size &             operator+=(const Size &rhs);
-    Size &             operator-=(const Size &rhs);
+    Size &              operator+=(const Size &rhs);
+    Size &              operator-=(const Size &rhs);
 
-    Size               operator+(const Size &rhs) const { return Size(w + rhs.w, h + rhs.h); }
-    Size               operator-(const Size &rhs) const { return Size(w - rhs.w, h - rhs.h); }
+    Size                operator+(const Size &rhs) const { return Size(w + rhs.w, h + rhs.h); }
+    Size                operator-(const Size &rhs) const { return Size(w - rhs.w, h - rhs.h); }
 
                         /// Compare with another one
     bool                operator==(const Size &rhs) const { return (w != rhs.w || h != rhs.h) ? false : true; }
                         /// Compare with another one
     bool                operator!=(const Size &rhs) const { return (w != rhs.w || h != rhs.h) ? true : false; }
+
+    bool                IsEmpty() const { return (w <= 0 || h <= 0) ? true : false; }
 
     void                Set(int x, int y);
 

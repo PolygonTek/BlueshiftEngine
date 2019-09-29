@@ -191,6 +191,7 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterFrustum(module);
         RegisterRay(module);
         RegisterPoint(module);
+        RegisterSize(module);
         RegisterRect(module);
         // Common
         RegisterCommon(module);

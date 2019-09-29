@@ -79,6 +79,7 @@ private:
     void                    RegisterFrustum(LuaCpp::Module &module);
     void                    RegisterRay(LuaCpp::Module &module);
     void                    RegisterPoint(LuaCpp::Module &module);
+    void                    RegisterSize(LuaCpp::Module &module);
     void                    RegisterRect(LuaCpp::Module &module);
 
     void                    RegisterCommon(LuaCpp::Module &module);
