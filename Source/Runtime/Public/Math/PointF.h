@@ -88,7 +88,7 @@ public:
     Vec2                ToVec2() const { return Vec2(x, y); }
 
 #ifdef QPOINT_H
-    QPointF             ToQPoint() const { return QPointF(x, y); }
+    QPointF             ToQPointF() const { return QPointF(x, y); }
 #endif
 
                         /// Returns "x y".
