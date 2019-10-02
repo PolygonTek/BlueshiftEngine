@@ -26,7 +26,7 @@
 
 BE_NAMESPACE_BEGIN
 
-/// A 2D integral (x,y) - size.
+/// A 2D integral (w, h) - size.
 class BE_API Size {
 public:
     /// The default constructor does not initialize any members of this class.
@@ -86,7 +86,7 @@ public:
 
     Vec2                ToVec2() const { return Vec2(w, h); }
 
-#ifdef QPOINT_H
+#ifdef QSIZE_H
     QSize               ToQSize() const { return QSize(w, h); }
 #endif
 
@@ -94,9 +94,9 @@ public:
     const char *        ToString() const;
 
                         /// Creates from the string
-    static Size        FromString(const char *str);
+    static Size         FromString(const char *str);
 
-    static const Size  zero;
+    static const Size   zero;
 
     int                 w;
     int                 h;
