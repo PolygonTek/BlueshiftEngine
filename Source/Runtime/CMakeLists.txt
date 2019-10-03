@@ -91,13 +91,16 @@ set(COMMON_ENGINE_FILES
     Public/Math/Plane.h
     Public/Math/Pluecker.h
     Public/Math/Point.h
+    Public/Math/PointF.h
     Public/Math/Quaternion.h
     Public/Math/Random.h
     Public/Math/Ray.h
     Public/Math/Rect.h
+    Public/Math/RectF.h
     Public/Math/RGBE9995.h
     Public/Math/Rotation.h
     Public/Math/Size.h
+    Public/Math/SizeF.h
     Public/Math/Sphere.h
     Public/Math/SphericalHarmonics.h
     Public/Math/Vector.h
@@ -181,6 +184,7 @@ set(COMMON_ENGINE_FILES
     Public/Components/ComTextRenderer.h
     Public/Components/Component.h
     Public/Components/ComParticleSystem.h
+    Public/Components/ComRectTransform.h
     Public/Components/ComRenderable.h
     Public/Components/ComRigidBody.h
     Public/Components/ComSensor.h
@@ -194,6 +198,7 @@ set(COMMON_ENGINE_FILES
     Public/Components/ComTransform.h
     Public/Components/ComWheelJoint.h
     Public/Components/ComVehicleWheel.h
+    Public/Components/ComImage.h
 
     Public/Game/Entity.h
     Public/Game/Prefab.h
@@ -321,6 +326,7 @@ set(COMMON_ENGINE_FILES
     Private/Math/OBB.cpp
     Private/Math/Ray.cpp
     Private/Math/Rect.cpp
+    Private/Math/RectF.cpp
     Private/Math/CQuaternion.cpp
     Private/Math/SphericalHarmonics.cpp
     Private/Math/Math.cpp
@@ -334,6 +340,7 @@ set(COMMON_ENGINE_FILES
     Private/Math/Cylinder.cpp
     Private/Math/Matrix3.cpp
     Private/Math/Point.cpp
+    Private/Math/PointF.cpp
     Private/Math/Vector2.cpp
 
     Private/SIMD/Simd.cpp
@@ -429,6 +436,7 @@ set(COMMON_ENGINE_FILES
     Private/Components/ComTextRenderer.cpp
     Private/Components/Component.cpp
     Private/Components/ComParticleSystem.cpp
+    Private/Components/ComRectTransform.cpp
     Private/Components/ComRenderable.cpp
     Private/Components/ComRigidBody.cpp
     Private/Components/ComSensor.cpp
@@ -442,6 +450,7 @@ set(COMMON_ENGINE_FILES
     Private/Components/ComTransform.cpp
     Private/Components/ComWheelJoint.cpp
     Private/Components/ComVehicleWheel.cpp
+    Private/Components/ComImage.cpp
 
     Private/Game/Entity.cpp
     Private/Game/Prefab.cpp
