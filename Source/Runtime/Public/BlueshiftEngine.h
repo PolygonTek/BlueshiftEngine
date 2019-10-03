@@ -144,6 +144,7 @@
 // Components
 #include "Components/Component.h"
 #include "Components/ComTransform.h"
+#include "Components/ComRectTransform.h"
 #include "Components/ComCollider.h"
 #include "Components/ComBoxCollider.h"
 #include "Components/ComSphereCollider.h"
@@ -181,6 +182,7 @@
 #include "Components/ComScript.h"
 #include "Components/ComAudioListener.h"
 #include "Components/ComAudioSource.h"
+#include "Components/ComImage.h"
 
 // GameSettings
 #include "Game/GameSettings.h"

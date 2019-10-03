@@ -95,6 +95,7 @@ static void RegisterEngineObjects() {
 
     Component::RegisterProperties();
     ComTransform::RegisterProperties();
+    ComRectTransform::RegisterProperties();
     ComCollider::RegisterProperties();
     ComBoxCollider::RegisterProperties();
     ComSphereCollider::RegisterProperties();
