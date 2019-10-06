@@ -491,7 +491,7 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
     AABB outAabb;
     outAabb.SetZero();
 
-    for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
+    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component) {
@@ -554,7 +554,7 @@ const Vec3 Entity::GetWorldPosition(WorldPosTrait::Enum posTrait, bool including
 
 #if WITH_EDITOR
 void Entity::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
-    for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
+    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component && component->IsActiveInHierarchy()) {
