@@ -553,12 +553,12 @@ const Vec3 Entity::GetWorldPosition(WorldPosTrait::Enum posTrait, bool including
 }
 
 #if WITH_EDITOR
-void Entity::DrawGizmos(const RenderCamera *camera, bool selected) {
+void Entity::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component && component->IsActiveInHierarchy()) {
-            component->DrawGizmos(camera, selected);
+            component->DrawGizmos(camera, selected, selectedByParent);
         }
     }
 }

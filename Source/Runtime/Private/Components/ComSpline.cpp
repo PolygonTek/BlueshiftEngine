@@ -207,7 +207,7 @@ float ComSpline::Length() {
 }
 
 #if WITH_EDITOR
-void ComSpline::DrawGizmos(const RenderCamera *camera, bool selected) {
+void ComSpline::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     if (!curveUpdated) {
         UpdateCurve();
     }

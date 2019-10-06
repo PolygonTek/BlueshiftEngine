@@ -200,17 +200,17 @@ bool ComLight::HasRenderEntity(int renderEntityHandle) const {
 }
 
 #if WITH_EDITOR
-void ComLight::DrawGizmos(const RenderCamera *camera, bool selected) {
+void ComLight::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     const Color4 lightColor = Color4(GetColor(), 1.0f);
 
     if (renderLightDef.type == RenderLight::Type::Directional || renderLightDef.type == RenderLight::Type::Spot) {
-        if (selected) {
+        if (selectedByParent) {
             renderWorld->SetDebugColor(Color4::white, Color4::zero);
         } else {
             renderWorld->SetDebugColor(lightColor, Color4::zero);
         }
 
-        if (selected) {
+        if (selectedByParent) {
             renderWorld->SetDebugColor(lightColor, Color4::zero);
 
             if (renderLightDef.type == RenderLight::Type::Directional) {
@@ -228,13 +228,13 @@ void ComLight::DrawGizmos(const RenderCamera *camera, bool selected) {
             }
         }
     } else if (renderLightDef.type == RenderLight::Type::Point) {
-        if (selected) {
+        if (selectedByParent) {
             renderWorld->SetDebugColor(Color4::white, Color4::zero);
         } else {
             renderWorld->SetDebugColor(lightColor, Color4::zero);
         }
 
-        if (selected) {
+        if (selectedByParent) {
             renderWorld->SetDebugColor(lightColor, Color4::zero);
             renderWorld->DebugEllipse(renderLightDef.origin, renderLightDef.axis[0], renderLightDef.axis[1], renderLightDef.size[0], renderLightDef.size[1], 1, true, true);
             renderWorld->DebugEllipse(renderLightDef.origin, renderLightDef.axis[1], renderLightDef.axis[2], renderLightDef.size[1], renderLightDef.size[2], 1, true, true);

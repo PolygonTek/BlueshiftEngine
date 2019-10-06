@@ -221,7 +221,7 @@ public:
 
 #if WITH_EDITOR
                                 /// Visualizes the component in editor.
-    void                        DrawGizmos(const RenderCamera *camera, bool selected);
+    void                        DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent);
 #endif
 
                                 /// Ray cast to this entity.

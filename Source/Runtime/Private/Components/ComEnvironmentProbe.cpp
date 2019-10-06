@@ -209,7 +209,7 @@ void ComEnvironmentProbe::Update() {
 }
 
 #if WITH_EDITOR
-void ComEnvironmentProbe::DrawGizmos(const RenderCamera *camera, bool selected) {
+void ComEnvironmentProbe::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     if (selected) {

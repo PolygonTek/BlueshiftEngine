@@ -80,10 +80,10 @@ void ComCapsuleCollider::SetHeight(float height) {
 }
 
 #if WITH_EDITOR
-void ComCapsuleCollider::DrawGizmos(const RenderCamera *camera, bool selected) {
+void ComCapsuleCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
-    if (selected) {
+    if (selectedByParent) {
         const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(500.0f * 500.0f)) {

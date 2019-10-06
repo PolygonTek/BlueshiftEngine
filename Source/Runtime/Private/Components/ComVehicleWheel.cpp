@@ -197,7 +197,7 @@ float ComVehicleWheel::GetSuspensionRelativeVelocity() const {
 }
 
 #if WITH_EDITOR
-void ComVehicleWheel::DrawGizmos(const RenderCamera *camera, bool selected) {
+void ComVehicleWheel::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();
@@ -210,7 +210,7 @@ void ComVehicleWheel::DrawGizmos(const RenderCamera *camera, bool selected) {
         renderWorld->SetDebugColor(Color4::green, Color4::zero);
         renderWorld->DebugCircle(worldOrigin, worldAxis[1], radius, 1, true, true);
 
-        if (selected) {
+        if (selectedByParent) {
             // Draw forward direction
             renderWorld->SetDebugColor(Color4::red, Color4::zero);
             renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * radius, 1);

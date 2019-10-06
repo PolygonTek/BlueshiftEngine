@@ -200,7 +200,7 @@ void ComCamera::Update() {
 }
 
 #if WITH_EDITOR
-void ComCamera::DrawGizmos(const RenderCamera *camera, bool selected) {
+void ComCamera::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
     
     int screenWidth = 100;
@@ -229,7 +229,7 @@ void ComCamera::DrawGizmos(const RenderCamera *camera, bool selected) {
         cameraBox.SetCenter(this->renderCameraDef.origin + this->renderCameraDef.axis[0] * sizeZ);
         cameraBox.SetExtents(Vec3(sizeZ, this->renderCameraDef.sizeX, this->renderCameraDef.sizeY));
 
-        renderWorld->SetDebugColor(selected ? Color4::white : Color4(1.0, 1.0, 1.0, 0.5), Color4::zero);
+        renderWorld->SetDebugColor(selectedByParent ? Color4::white : Color4(1.0, 1.0, 1.0, 0.5), Color4::zero);
         renderWorld->DebugOBB(cameraBox, 1.0f, false, false, true);
     } else {
         RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &this->renderCameraDef.fovX, &this->renderCameraDef.fovY);
@@ -240,7 +240,7 @@ void ComCamera::DrawGizmos(const RenderCamera *camera, bool selected) {
         cameraFrustum.SetSize(this->renderCameraDef.zNear, this->renderCameraDef.zFar,
             this->renderCameraDef.zFar * Math::Tan(DEG2RAD(this->renderCameraDef.fovX * 0.5f)), this->renderCameraDef.zFar * Math::Tan(DEG2RAD(this->renderCameraDef.fovY * 0.5f)));
 
-        renderWorld->SetDebugColor(selected ? Color4::white : Color4(1.0, 1.0, 1.0, 0.5), Color4::zero);
+        renderWorld->SetDebugColor(selectedByParent ? Color4::white : Color4(1.0, 1.0, 1.0, 0.5), Color4::zero);
         renderWorld->DebugFrustum(cameraFrustum, false, 1.0f, false, true);
     }
 
