@@ -672,7 +672,7 @@ void RenderWorld::DebugArrow(const Vec3 &start, const Vec3 &end, float coneSize,
     DebugCone(end, coneBottom, 0, coneRadius, false, 0, true, depthTest, lifeTime);
 
     SetDebugColor(Color4::zero, Color4(0, 0, 0, 0.75f));
-    DebugCircle(coneBottom - dir * 0.01f, -dir, coneRadius, 0, false, depthTest, lifeTime);
+    DebugCircle(coneBottom - dir * 0.0001f, -dir, coneRadius, 0, false, depthTest, lifeTime);
 
     if (lineWidth > 0 && _debugLineColor[3] > 0) {
         SetDebugColor(_debugLineColor, Color4::zero);
