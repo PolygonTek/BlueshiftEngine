@@ -202,7 +202,6 @@ void ComRectTransform::InvalidateCachedRect() {
 RectF ComRectTransform::ComputeRectInParentSpace() const {
     RectF parentRect = RectF(0, 0, 0, 0);
 
-    // Canvas don't have parent transform.
     ComTransform *parentTransform = GetParent();
     if (parentTransform) {
         ComRectTransform *parentRectTransform = parentTransform->Cast<ComRectTransform>();
@@ -270,7 +269,7 @@ void ComRectTransform::DrawGizmos(const RenderCamera *camera, bool selected, boo
     Vec3 worldCorners[4];
     GetWorldCorners(worldCorners);
 
-    renderWorld->SetDebugColor(Color4(1.0f, 1.0f, 1.0f, 0.25f), Color4::zero);
+    renderWorld->SetDebugColor(Color4(1.0f, 1.0f, 1.0f, 0.4f), Color4::zero);
 
     renderWorld->DebugLine(worldCorners[0], worldCorners[1]);
     renderWorld->DebugLine(worldCorners[1], worldCorners[2]);
