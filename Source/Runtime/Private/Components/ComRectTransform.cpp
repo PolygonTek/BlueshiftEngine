@@ -15,6 +15,8 @@
 #include "Precompiled.h"
 #include "Components/ComRectTransform.h"
 #include "Game/Entity.h"
+#include "Game/GameWorld.h"
+#include "Render/Render.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -36,6 +38,8 @@ void ComRectTransform::RegisterProperties() {
 }
 
 ComRectTransform::ComRectTransform() {
+    cachedRect = RectF::empty;
+    cachedRectInvalidated = false;
 }
 
 ComRectTransform::~ComRectTransform() {
@@ -115,6 +119,57 @@ RectF ComRectTransform::GetRectInLocalSpace() {
         UpdateOriginAndRect();
     }
     return cachedRect;
+}
+
+void ComRectTransform::GetLocalCorners(Vec3(&localCorners)[4]) {
+    RectF rect = GetRectInLocalSpace();
+    
+    float x1 = rect.x;
+    float y1 = rect.y;
+    float x2 = rect.X2();
+    float y2 = rect.Y2();
+
+    localCorners[0] = Vec3(x1, y1, 0);
+    localCorners[1] = Vec3(x2, y1, 0);
+    localCorners[2] = Vec3(x2, y2, 0);
+    localCorners[3] = Vec3(x1, y2, 0);
+}
+
+void ComRectTransform::GetWorldCorners(Vec3(&worldCorners)[4]) {
+    Vec3 localCorners[4];
+    GetLocalCorners(localCorners);
+
+    Mat3x4 worldMatrix = GetMatrix();
+
+    for (int i = 0; i < 4; i++) {
+        worldCorners[i] = worldMatrix.Transform(localCorners[i]);
+    }
+}
+
+void ComRectTransform::GetWorldAnchorCorners(Vec3(&worldAnchorCorners)[4]) {
+    for (int i = 0; i < COUNT_OF(worldAnchorCorners); i++) {
+        worldAnchorCorners[i] = Vec3::zero;
+    }
+
+    ComTransform *parentTransform = GetParent();
+    if (parentTransform) {
+        ComRectTransform *parentRectTransform = parentTransform->Cast<ComRectTransform>();
+        if (parentRectTransform) {
+            Vec3 parentWorldCorners[4];
+            parentRectTransform->GetWorldCorners(parentWorldCorners);
+
+            Vec2 worldAnchorMin, worldAnchorMax;
+            worldAnchorMin.x = parentWorldCorners[0].x + (parentWorldCorners[2].x - parentWorldCorners[0].x) * anchorMin.x;
+            worldAnchorMin.y = parentWorldCorners[0].y + (parentWorldCorners[2].y - parentWorldCorners[0].y) * anchorMin.y;
+            worldAnchorMax.x = parentWorldCorners[0].x + (parentWorldCorners[2].x - parentWorldCorners[0].x) * anchorMax.x;
+            worldAnchorMax.y = parentWorldCorners[0].y + (parentWorldCorners[2].y - parentWorldCorners[0].y) * anchorMax.y;
+
+            worldAnchorCorners[0] = Vec3(worldAnchorMin.x, worldAnchorMin.y, 0);
+            worldAnchorCorners[1] = Vec3(worldAnchorMax.x, worldAnchorMin.y, 0);
+            worldAnchorCorners[2] = Vec3(worldAnchorMax.x, worldAnchorMax.y, 0);
+            worldAnchorCorners[3] = Vec3(worldAnchorMin.x, worldAnchorMax.y, 0);
+        }
+    }
 }
 
 void ComRectTransform::UpdateOriginAndRect() {
@@ -201,6 +256,74 @@ Vec3 ComRectTransform::ComputeLocalOrigin3D() const {
         rect.x + rect.w * pivot.x,
         rect.y + rect.h * pivot.y,
         localOrigin.z);
+}
+
+#if WITH_EDITOR
+void ComRectTransform::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
+    if (!selected) {
+        return;
+    }
+
+    RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
+
+    // Draw rectangle
+    Vec3 worldCorners[4];
+    GetWorldCorners(worldCorners);
+
+    renderWorld->SetDebugColor(Color4(1.0f, 1.0f, 1.0f, 0.25f), Color4::zero);
+
+    renderWorld->DebugLine(worldCorners[0], worldCorners[1]);
+    renderWorld->DebugLine(worldCorners[1], worldCorners[2]);
+    renderWorld->DebugLine(worldCorners[2], worldCorners[3]);
+    renderWorld->DebugLine(worldCorners[3], worldCorners[0]);
+
+    ComTransform *parentTransform = GetParent();
+    if (parentTransform) {
+        ComRectTransform *parentRectTransform = parentTransform->Cast<ComRectTransform>();
+        if (parentRectTransform) {
+            // Draw parent rectangle
+            Vec3 parentWorldCorners[4];
+            parentRectTransform->GetWorldCorners(parentWorldCorners);
+
+            renderWorld->SetDebugColor(Color4(1.0f, 1.0f, 1.0f, 1.0f), Color4::zero);
+
+            renderWorld->DebugLine(parentWorldCorners[0], parentWorldCorners[1]);
+            renderWorld->DebugLine(parentWorldCorners[1], parentWorldCorners[2]);
+            renderWorld->DebugLine(parentWorldCorners[2], parentWorldCorners[3]);
+            renderWorld->DebugLine(parentWorldCorners[3], parentWorldCorners[0]);
+
+            // Draw anchors
+            Vec3 worldAnchorCorners[4];
+            GetWorldAnchorCorners(worldAnchorCorners);
+
+            float viewScale = camera->CalcViewScale(worldAnchorCorners[0]);
+            renderWorld->DebugTriangle(worldAnchorCorners[0], worldAnchorCorners[0] + Vec3(-10, -5, 0) * viewScale, worldAnchorCorners[0] + Vec3(-5, -10, 0) * viewScale);
+
+            viewScale = camera->CalcViewScale(worldAnchorCorners[1]);
+            renderWorld->DebugTriangle(worldAnchorCorners[1], worldAnchorCorners[1] + Vec3(+10, -5, 0) * viewScale, worldAnchorCorners[1] + Vec3(+5, -10, 0) * viewScale);
+
+            viewScale = camera->CalcViewScale(worldAnchorCorners[2]);
+            renderWorld->DebugTriangle(worldAnchorCorners[2], worldAnchorCorners[2] + Vec3(+10, +5, 0) * viewScale, worldAnchorCorners[2] + Vec3(+5, +10, 0) * viewScale);
+
+            viewScale = camera->CalcViewScale(worldAnchorCorners[3]);
+            renderWorld->DebugTriangle(worldAnchorCorners[3], worldAnchorCorners[3] + Vec3(-10, +5, 0) * viewScale, worldAnchorCorners[3] + Vec3(-5, +10, 0) * viewScale);
+        }
+    }
+    }
+#endif
+
+const AABB ComRectTransform::GetAABB() {
+    Vec3 localCorners[4];
+    GetLocalCorners(localCorners);
+
+    AABB aabb;
+    aabb.Clear();
+    aabb.AddPoint(localCorners[0]);
+    aabb.AddPoint(localCorners[1]);
+    aabb.AddPoint(localCorners[2]);
+    aabb.AddPoint(localCorners[3]);
+
+    return aabb;
 }
 
 BE_NAMESPACE_END

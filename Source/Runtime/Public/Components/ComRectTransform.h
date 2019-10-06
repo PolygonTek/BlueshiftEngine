@@ -31,6 +31,13 @@ public:
                             /// RectTransform component cannot be disabled.
     virtual bool            CanDisable() const override { return false; }
 
+#if WITH_EDITOR
+                            /// Visualize the component in editor
+    virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
+#endif
+
+    virtual const AABB      GetAABB() override;
+
     Vec2                    GetAnchorMin() const;
     void                    SetAnchorMin(const Vec2 &anchorMin);
 
@@ -47,6 +54,11 @@ public:
     void                    SetPivot(const Vec2 &pivot);
 
     RectF                   GetRectInLocalSpace();
+
+    void                    GetLocalCorners(Vec3(&corners)[4]);
+    void                    GetWorldCorners(Vec3(&corners)[4]);
+
+    void                    GetWorldAnchorCorners(Vec3(&worldAnchorCorners)[4]);
 
 protected:
     void                    UpdateOriginAndRect();
