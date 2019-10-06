@@ -98,10 +98,10 @@ public:
     bool                    TransformClipToNDC(const Vec4 &clipCoords, Vec3 &normalizedDeviceCoords) const;
 
                             /// Transform normlized device coordinates to pixel coordinates.
-    void                    TransformNDCToPixel(const Vec3 normalizedDeviceCoords, Point &pixelCoords) const;
+    void                    TransformNDCToPixel(const Vec3 normalizedDeviceCoords, PointF &pixelCoords) const;
 
                             /// Transforms world coordinates to pixel coordinates.
-    bool                    TransformWorldToPixel(const Vec3 &worldCoords, Point &pixelCoords) const;
+    bool                    TransformWorldToPixel(const Vec3 &worldCoords, PointF &pixelCoords) const;
 
                             /// Calculates clipping rectangle from bounding sphere (Different camera axis with Eric Lengyel's method)
     bool                    CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) const;

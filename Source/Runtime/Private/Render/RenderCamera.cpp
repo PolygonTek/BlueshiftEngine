@@ -102,7 +102,7 @@ bool RenderCamera::TransformClipToNDC(const Vec4 &clipCoords, Vec3 &normalizedDe
     }
 }
 
-void RenderCamera::TransformNDCToPixel(const Vec3 normalizedDeviceCoords, Point &pixelCoords) const {
+void RenderCamera::TransformNDCToPixel(const Vec3 normalizedDeviceCoords, PointF &pixelCoords) const {
     float fx = (normalizedDeviceCoords.x + 1.0f) * 0.5f; // [0, 1]
     float fy = (normalizedDeviceCoords.y + 1.0f) * 0.5f; // [0, 1]
 
@@ -113,7 +113,7 @@ void RenderCamera::TransformNDCToPixel(const Vec3 normalizedDeviceCoords, Point 
     pixelCoords.y = fy * (state.renderRect.y + state.renderRect.h);
 }
 
-bool RenderCamera::TransformWorldToPixel(const Vec3 &worldPosition, Point &pixelCoords) const {
+bool RenderCamera::TransformWorldToPixel(const Vec3 &worldPosition, PointF &pixelCoords) const {
     Vec4 clipCoords = TransformWorldToClip(worldPosition);
 
     Vec3 normalizedDeviceCoords;
