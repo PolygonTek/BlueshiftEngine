@@ -26,6 +26,8 @@
 
 BE_NAMESPACE_BEGIN
 
+class Size;
+
 /// A 2D floating point precision (w, h) - size.
 class BE_API SizeF {
 public:

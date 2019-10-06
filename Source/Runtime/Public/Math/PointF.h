@@ -26,6 +26,8 @@
 
 BE_NAMESPACE_BEGIN
 
+class Point;
+
 /// A 2D floating point precision (x, y) - point.
 class BE_API PointF {
 public:
@@ -84,6 +86,8 @@ public:
 
     float               Distance(const PointF &other) const;
     float               DistanceSqr(const PointF &other) const;
+
+    Point               ToPoint() const { return Point(x, y); }
 
     Vec2                ToVec2() const { return Vec2(x, y); }
 

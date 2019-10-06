@@ -26,6 +26,8 @@
 
 BE_NAMESPACE_BEGIN
 
+class SizeF;
+
 /// A 2D integral (w, h) - size.
 class BE_API Size {
 public:

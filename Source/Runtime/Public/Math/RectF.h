@@ -26,6 +26,7 @@
 
 BE_NAMESPACE_BEGIN
 
+class Rect;
 class PointF;
 
 /// A 2D floating point precision (x, y), (w, h) - rectangle.
@@ -116,6 +117,8 @@ public:
     RectF &             ShrinkSelf(float ax, float ay);
     RectF               Expand(float ax, float ay) const;
     RectF &             ExpandSelf(float ax, float ay);
+
+    Rect                ToRect() const { return Rect(x, y, w, h); }
 
                         /// Returns "x y w h".
     const char *        ToString() const { return ToString(4); }

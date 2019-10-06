@@ -26,6 +26,8 @@
 
 BE_NAMESPACE_BEGIN
 
+class PointF;
+
 /// A 2D integral (x,y) - point.
 class BE_API Point {
 public:
@@ -84,6 +86,8 @@ public:
 
     float               Distance(const Point &other) const;
     float               DistanceSqr(const Point &other) const;
+
+    PointF              ToPointF() const;
 
     Vec2                ToVec2() const { return Vec2(x, y); }
 

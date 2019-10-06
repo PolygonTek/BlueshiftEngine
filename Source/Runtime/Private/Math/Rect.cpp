@@ -147,6 +147,10 @@ Rect &Rect::ExpandSelf(int ax, int ay) {
     return *this;
 }
 
+RectF Rect::ToRectF() const { 
+    return RectF(x, y, w, h); 
+}
+
 Rect Rect::FromString(const char *str) {
     Rect r;
     sscanf(str, "%i %i %i %i", &r.x, &r.y, &r.w, &r.h);

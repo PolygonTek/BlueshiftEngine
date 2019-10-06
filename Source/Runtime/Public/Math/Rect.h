@@ -27,6 +27,7 @@
 BE_NAMESPACE_BEGIN
 
 class Point;
+class RectF;
 
 /// A 2D integral (x,y), (w,h) - rectangle.
 class BE_API Rect {
@@ -116,6 +117,8 @@ public:
     Rect &              ShrinkSelf(int ax, int ay);
     Rect                Expand(int ax, int ay) const;
     Rect &              ExpandSelf(int ax, int ay);
+
+    RectF               ToRectF() const;
 
                         /// Returns "x y w h"
     const char *        ToString() const;
