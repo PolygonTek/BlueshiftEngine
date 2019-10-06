@@ -86,7 +86,7 @@ public:
     virtual bool            IntersectRay(const Ray &ray, bool backFaceCull, float *hitDist) const { return false; }
 
                             /// Visualize the component in editor.
-    virtual void            DrawGizmos(const RenderCamera::State &sceneView, bool selected) {}
+    virtual void            DrawGizmos(const RenderCamera *camera, bool selected) {}
 
 protected:
     virtual void            OnActive() {}

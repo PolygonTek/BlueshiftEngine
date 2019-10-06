@@ -38,9 +38,6 @@ void ComTransform::RegisterProperties() {
 }
 
 ComTransform::ComTransform() {
-    localOrigin = Vec3::zero;
-    localScale = Vec3::one;
-    localRotation = Quat::identity;
     worldMatrix = Mat3x4::identity;
     worldMatrixInvalidated = false;
     physicsUpdating = false;

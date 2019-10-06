@@ -456,13 +456,13 @@ void ComCharacterController::SetSlopeLimit(const float slopeLimit) {
 }
 
 #if WITH_EDITOR
-void ComCharacterController::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+void ComCharacterController::DrawGizmos(const RenderCamera *camera, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     if (selected) {
         const ComTransform *transform = GetEntity()->GetTransform();
 
-        if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
+        if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(500.0f * 500.0f)) {
             float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();
             float scaledHeight = transform->GetScale().z * capsuleHeight;
 

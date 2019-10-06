@@ -200,7 +200,7 @@ void ComCamera::Update() {
 }
 
 #if WITH_EDITOR
-void ComCamera::DrawGizmos(const RenderCamera::State &renderCameraDef, bool selected) {
+void ComCamera::DrawGizmos(const RenderCamera *camera, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
     
     int screenWidth = 100;

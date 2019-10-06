@@ -80,13 +80,13 @@ void ComCapsuleCollider::SetHeight(float height) {
 }
 
 #if WITH_EDITOR
-void ComCapsuleCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+void ComCapsuleCollider::DrawGizmos(const RenderCamera *camera, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     if (selected) {
         const ComTransform *transform = GetEntity()->GetTransform();
 
-        if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
+        if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(500.0f * 500.0f)) {
             float scaledRadius = (transform->GetScale() * radius).MaxComponent();
             float scaledHeight = transform->GetScale().z * height;
 

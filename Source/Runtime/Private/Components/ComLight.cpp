@@ -200,7 +200,7 @@ bool ComLight::HasRenderEntity(int renderEntityHandle) const {
 }
 
 #if WITH_EDITOR
-void ComLight::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+void ComLight::DrawGizmos(const RenderCamera *camera, bool selected) {
     const Color4 lightColor = Color4(GetColor(), 1.0f);
 
     if (renderLightDef.type == RenderLight::Type::Directional || renderLightDef.type == RenderLight::Type::Spot) {
@@ -253,7 +253,7 @@ void ComLight::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     }
 
     // Fade icon alpha in near distance
-    float alpha = BE1::Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(viewState.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
+    float alpha = BE1::Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(camera->GetState().origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
 
     spriteDef.materials[0]->GetPass()->constantColor[3] = alpha;
 }

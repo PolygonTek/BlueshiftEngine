@@ -122,6 +122,8 @@ public:
     bool                    CalcDepthBoundsFromFrustum(const Frustum &frustum, const Mat4 &mvp, float *depthMin, float *depthMax) const;
     bool                    CalcDepthBoundsFromLight(const RenderLight *light, const Mat4 &mvp, float *depthMin, float *depthMax) const;
 
+    float                   CalcViewScale(const Vec3 &position) const;
+
     const OBB               GetBox() const { return box; }
 
     const Frustum &         GetFrustum() const { return frustum; }

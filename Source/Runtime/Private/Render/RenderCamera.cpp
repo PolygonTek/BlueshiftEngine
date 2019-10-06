@@ -425,6 +425,19 @@ bool RenderCamera::CalcDepthBoundsFromLight(const RenderLight *light, const Mat4
     return true;
 }
 
+float RenderCamera::CalcViewScale(const Vec3 &position) const {
+    if (state.renderRect.w == 0.0f) {
+        return 0.0f;
+    }
+
+    float zDist = state.axis[0].Dot(position - state.origin);
+    PointF screenPos1, screenPos2;
+    TransformWorldToPixel(state.origin + state.axis[0] * zDist, screenPos1);
+    TransformWorldToPixel(state.origin + state.axis[0] * zDist + state.axis[1], screenPos2);
+
+    return (2.0f / BE1::Max(screenPos1.Distance(screenPos2), 0.0001f));
+}
+
 void RenderCamera::ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY) {
     float tanFovX = Math::Tan(DEG2RAD(fromFovX * 0.5f));
     float tanFovY = tanFovX / fromAspectRatio;

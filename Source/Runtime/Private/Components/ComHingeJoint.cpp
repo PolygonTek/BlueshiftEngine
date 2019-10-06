@@ -189,12 +189,12 @@ void ComHingeJoint::SetMaxMotorImpulse(float maxMotorImpulse) {
 }
 
 #if WITH_EDITOR
-void ComHingeJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+void ComHingeJoint::DrawGizmos(const RenderCamera *camera, bool selected) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
+    if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(500.0f * 500.0f)) {
         Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 

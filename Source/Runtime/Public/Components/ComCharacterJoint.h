@@ -34,7 +34,7 @@ public:
 
 #if WITH_EDITOR
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
+    virtual void            DrawGizmos(const RenderCamera *camera, bool selected) override;
 #endif
 
     const Vec3 &            GetLocalAnchor() const;

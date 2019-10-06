@@ -59,7 +59,7 @@ void ComMeshCollider::SetMeshGuid(const Guid &meshGuid) {
 }
 
 #if WITH_EDITOR
-void ComMeshCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+void ComMeshCollider::DrawGizmos(const RenderCamera *camera, bool selected) {
     //collider;
 }
 #endif
