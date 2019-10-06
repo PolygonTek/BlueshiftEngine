@@ -569,7 +569,7 @@ bool ComCamera::ProcessTouchPointerInput() {
     return processed;
 }
 
-void ComCamera::RenderScene() {
+void ComCamera::Render() {
     // Get current render context which is unique for each OS-level window in general.
     const RenderContext *ctx = renderSystem.GetCurrentRenderContext();
     if (!ctx) {

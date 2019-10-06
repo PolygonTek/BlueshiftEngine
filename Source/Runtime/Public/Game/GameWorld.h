@@ -37,6 +37,7 @@ class PhysicsSettings;
 class MapRenderSettings;
 class PlayerSettings;
 class GameWorld;
+class ComCamera;
 
 struct GameScene {
     Hierarchy<Entity>           root;
@@ -182,6 +183,8 @@ private:
     void                        FixedLateUpdateEntities(float timeStep);
     void                        UpdateEntities();
     void                        LateUpdateEntities();
+
+    void                        ListUpActiveCameraComponents(StaticArray<ComCamera *, 16> &cameraComponents) const;
 
     Entity *                    entities[MaxEntities] = { nullptr, };
     HashIndex                   entityHash;

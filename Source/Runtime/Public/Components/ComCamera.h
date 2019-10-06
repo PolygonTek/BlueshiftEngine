@@ -87,7 +87,7 @@ private:
     bool                    ProcessMousePointerInput(const Point &screenPoint);
     bool                    ProcessTouchPointerInput();
 
-    void                    RenderScene();
+    void                    Render();
 
 protected:
     virtual void            OnActive() override;

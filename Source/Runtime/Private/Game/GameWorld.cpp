@@ -738,6 +738,37 @@ void GameWorld::LateUpdateEntities() {
     }
 }
 
+void GameWorld::ListUpActiveCameraComponents(StaticArray<ComCamera *, 16> &cameraComponents) const {
+    for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
+            ComCamera *camera = ent->GetComponent<ComCamera>();
+            if (!camera || !camera->IsActiveInHierarchy()) {
+                continue;
+            }
+
+            // NOTE: Support only 16 camera components. Need to fix this ?
+            if (cameraComponents.Append(camera) == -1) {
+                break;
+            }
+        }
+    }
+
+    auto compareFunc = [](const ComCamera *arg1, const ComCamera *arg2) -> bool {
+        return arg1->GetOrder() < arg2->GetOrder() ? true : false;
+    };
+    cameraComponents.Sort(compareFunc);
+}
+
+void GameWorld::Render() {
+    StaticArray<ComCamera *, 16> cameraComponents;
+    ListUpActiveCameraComponents(cameraComponents);
+
+    // Render camera in order.
+    for (int i = 0; i < cameraComponents.Count(); i++) {
+        cameraComponents[i]->Render();
+    }
+}
+
 void GameWorld::ProcessPointerInput() {
     if (!gameStarted) {
         return;
@@ -748,27 +779,10 @@ void GameWorld::ProcessPointerInput() {
     }
 
     StaticArray<ComCamera *, 16> cameraComponents;
-
-    for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
-            ComCamera *camera = ent->GetComponent<ComCamera>();
-            if (!camera || !camera->IsActiveInHierarchy()) {
-                continue;
-            }
-
-            if (cameraComponents.Append(camera) == -1) {
-                break;
-            }
-        }
-    }
+    ListUpActiveCameraComponents(cameraComponents);
 
     // Process pointer input in reverse order
-    auto compareFunc = [](const ComCamera *arg1, const ComCamera *arg2) -> bool {
-        return arg1->GetOrder() > arg2->GetOrder() ? true : false;
-    };
-    cameraComponents.Sort(compareFunc);
-
-    for (int i = 0; i < cameraComponents.Count(); i++) {
+    for (int i = cameraComponents.Count() - 1; i >= 0; i--) {
         ComCamera *cameraComponent = cameraComponents[i];
 
         if (cameraComponent->ProcessMousePointerInput(inputSystem.GetMousePos()) ||
@@ -825,32 +839,6 @@ Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask, const Array<Entit
     }
 
     return minEntity;
-}
-
-void GameWorld::Render() {
-    StaticArray<ComCamera *, 16> cameraComponents;
-
-    for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
-            ComCamera *camera = ent->GetComponent<ComCamera>();
-            if (!camera || !camera->IsActiveInHierarchy()) {
-                continue;
-            }
-
-            if (cameraComponents.Append(camera) == -1) {
-                break;
-            }
-        }
-    }
-
-    auto compareFunc = [](const ComCamera *arg1, const ComCamera *arg2) -> bool {
-        return arg1->GetOrder() < arg2->GetOrder() ? true : false;
-    };
-    cameraComponents.Sort(compareFunc);
-
-    for (int i = 0; i < cameraComponents.Count(); i++) {
-        cameraComponents[i]->RenderScene();
-    }
 }
 
 void GameWorld::SaveSnapshot() {
