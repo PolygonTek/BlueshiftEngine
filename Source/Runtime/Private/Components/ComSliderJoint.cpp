@@ -265,7 +265,7 @@ void ComSliderJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool 
             renderWorld->DebugArc(worldOrigin, constraintAxis[0], constraintAxis[1], CentiToUnit(2.5f), minAngle, maxAngle, true);
 
             renderWorld->SetDebugColor(Color4::red, Color4::zero);
-            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(2.5f), 1);
+            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(2.5f));
         }
 
         renderWorld->SetDebugColor(Color4::red, Color4::red);

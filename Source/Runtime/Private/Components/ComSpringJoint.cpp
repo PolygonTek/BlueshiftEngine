@@ -197,8 +197,8 @@ void ComSpringJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool 
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 
         renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(2.5f), worldOrigin + worldAxis[0] * CentiToUnit(2.5f), 1);
-        renderWorld->DebugLine(worldOrigin - worldAxis[1] * CentiToUnit(2.5f), worldOrigin + worldAxis[1] * CentiToUnit(2.5f), 1);
+        renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(2.5f), worldOrigin + worldAxis[0] * CentiToUnit(2.5f));
+        renderWorld->DebugLine(worldOrigin - worldAxis[1] * CentiToUnit(2.5f), worldOrigin + worldAxis[1] * CentiToUnit(2.5f));
 
         renderWorld->DebugCircle(worldOrigin - worldAxis[2] * CentiToUnit(2.0f), worldAxis[2], CentiToUnit(2.5f));
         renderWorld->DebugCircle(worldOrigin, worldAxis[2], CentiToUnit(2.5f));

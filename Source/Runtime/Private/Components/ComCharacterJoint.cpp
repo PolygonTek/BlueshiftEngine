@@ -269,8 +269,8 @@ void ComCharacterJoint::DrawGizmos(const RenderCamera *camera, bool selected, bo
         renderWorld->DebugArc(worldOrigin, +constraintAxis[0], -constraintAxis[1], CentiToUnit(5.0f), lowerLimit.z, upperLimit.z, true);
 
         renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(5.0f), 1);
-        renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[2] * CentiToUnit(5.0f), 1);
+        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(5.0f));
+        renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[2] * CentiToUnit(5.0f));
     }
 }
 #endif

@@ -127,7 +127,7 @@ public:
 
     void                    ClearDebugPrimitives(int time);
 
-    void                    DebugLine(const Vec3 &start, const Vec3 &end, float lineWidth, bool depthTest = false, int lifeTime = 0);
+    void                    DebugLine(const Vec3 &start, const Vec3 &end, float lineWidth = 1, bool depthTest = false, int lifeTime = 0);
     void                    DebugTriangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, float lineWidth = 1, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
     void                    DebugQuad(const Vec3 &origin, const Vec3 &right, const Vec3 &up, float size, float lineWidth = 1, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
     void                    DebugCircle(const Vec3 &origin, const Vec3 &dir, const float radius, float lineWidth = 1, bool twoSided = true, bool depthTest = false, int lifeTime = 0);

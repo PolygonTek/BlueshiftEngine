@@ -259,15 +259,15 @@ void ComWheelJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool s
 
         // Draw axle axis
         renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(5.0f), worldOrigin + worldAxis[0] * CentiToUnit(5.0f), 1);
+        renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(5.0f), worldOrigin + worldAxis[0] * CentiToUnit(5.0f));
 
         // Draw forward direction
         renderWorld->SetDebugColor(Color4::green, Color4::zero);
-        renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[1] * CentiToUnit(5.0f), 1);
+        renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[1] * CentiToUnit(5.0f));
 
         // Draw suspension direction
         renderWorld->SetDebugColor(Color4::blue, Color4::zero);
-        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[2] * CentiToUnit(5.0f), 1);
+        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[2] * CentiToUnit(5.0f));
     }
 }
 #endif
