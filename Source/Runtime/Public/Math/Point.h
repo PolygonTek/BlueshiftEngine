@@ -73,9 +73,11 @@ public:
 
     Point &             operator+=(const Point &rhs);
     Point &             operator-=(const Point &rhs);
+    Point &             operator*=(float rhs);
 
     Point               operator+(const Point &rhs) const { return Point(x + rhs.x, y + rhs.y); }
     Point               operator-(const Point &rhs) const { return Point(x - rhs.x, y - rhs.y); }
+    Point               operator*(float rhs) const { return Point(x * rhs, y * rhs); }
 
                         /// Compare with another one
     bool                operator==(const Point &rhs) const { return (x != rhs.x || y != rhs.y) ? false : true; }
@@ -145,6 +147,12 @@ BE_INLINE Point &Point::operator+=(const Point &rhs) {
 BE_INLINE Point &Point::operator-=(const Point &rhs) {
     x -= rhs.x;
     y -= rhs.y;
+    return *this;
+}
+
+BE_INLINE Point &Point::operator*=(float rhs) {
+    x *= rhs;
+    y *= rhs;
     return *this;
 }
 
