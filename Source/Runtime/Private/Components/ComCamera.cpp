@@ -35,8 +35,6 @@ void ComCamera::RegisterProperties() {
         "", PropertyInfo::Flag::Editor).SetEnumString("Perspective;Orthographic");
     REGISTER_PROPERTY("fov", "FOV", float, fov, 60.f, 
         "Field of view for perspective projection mode", PropertyInfo::Flag::Editor).SetRange(1, 179, 1);
-    REGISTER_PROPERTY("useScreenSize", "Use Screen Size", bool, useScreenSize, false,
-        "Use screen size for orthographic projection mode", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("size", "Size", float, size, 5.f,
         "Horizontal size of orthographic projection mode", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, 0.3,
@@ -287,15 +285,10 @@ Size ComCamera::GetOrthoSize() const {
 
     Size screenSize;
 
-    if (useScreenSize) {
-        screenSize.w = screenWidth;
-        screenSize.h = screenHeight;
-    } else {
-        float aspectRatio = (float)screenWidth / screenHeight;
+    float aspectRatio = (float)screenWidth / screenHeight;
 
-        screenSize.w = size;
-        screenSize.h = size / aspectRatio;
-    }
+    screenSize.w = size;
+    screenSize.h = size / aspectRatio;
 
     return screenSize;
 }

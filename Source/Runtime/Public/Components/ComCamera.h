@@ -81,14 +81,6 @@ public:
     float                   GetClearAlpha() const;
     void                    SetClearAlpha(float clearAlpha);
 
-private:
-    int                     GetOrder() const { return order; }
-
-    bool                    ProcessMousePointerInput(const Point &screenPoint);
-    bool                    ProcessTouchPointerInput();
-
-    void                    Render();
-
 protected:
     virtual void            OnActive() override;
     virtual void            OnInactive() override;
@@ -101,7 +93,6 @@ protected:
     RenderCamera::State     renderCameraDef;
     float                   fov;
     float                   size;
-    bool                    useScreenSize;
     float                   nx, ny, nw, nh;     ///< normalized screen coordinates
     int                     order;              ///< rendering order
     bool                    applyPostProcessing;
@@ -119,6 +110,14 @@ protected:
 
     PointerState            mousePointerState;
     HashTable<int32_t, PointerState> touchPointerStateTable;
+
+private:
+    int                     GetOrder() const { return order; }
+
+    bool                    ProcessMousePointerInput(const Point &screenPoint);
+    bool                    ProcessTouchPointerInput();
+
+    void                    Render();
 };
 
 BE_NAMESPACE_END
