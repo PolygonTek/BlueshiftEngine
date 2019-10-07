@@ -182,6 +182,7 @@
 #include "Components/ComScript.h"
 #include "Components/ComAudioListener.h"
 #include "Components/ComAudioSource.h"
+#include "Components/ComCanvas.h"
 #include "Components/ComImage.h"
 
 // GameSettings

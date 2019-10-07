@@ -198,6 +198,7 @@ set(COMMON_ENGINE_FILES
     Public/Components/ComTransform.h
     Public/Components/ComWheelJoint.h
     Public/Components/ComVehicleWheel.h
+    Public/Components/ComCanvas.h
     Public/Components/ComImage.h
 
     Public/Game/Entity.h
@@ -450,6 +451,7 @@ set(COMMON_ENGINE_FILES
     Private/Components/ComTransform.cpp
     Private/Components/ComWheelJoint.cpp
     Private/Components/ComVehicleWheel.cpp
+    Private/Components/ComCanvas.cpp
     Private/Components/ComImage.cpp
 
     Private/Game/Entity.cpp
