@@ -136,7 +136,7 @@ public:
 
     static void             ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY);
 
-    static const Ray        RayFromScreenND(const RenderCamera::State &sceneView, float ndx, float ndy);
+    static const Ray        RayFromScreenPoint(const RenderCamera::State &sceneView, const Rect &screenRect, const Point &screenPoint);
 
 private:
     State                   state;

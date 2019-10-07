@@ -446,8 +446,12 @@ void RenderCamera::ComputeFov(float fromFovX, float fromAspectRatio, float toAsp
     *toFovY = RAD2DEG(Math::ATan(tanFovY) * 2.0f);
 }
 
-const Ray RenderCamera::RayFromScreenND(const RenderCamera::State &renderCamera, float ndx, float ndy) {
+const Ray RenderCamera::RayFromScreenPoint(const RenderCamera::State &renderCamera, const Rect &screenRect, const Point &screenPoint) {
     Ray ray;
+
+    // right/down normalized screen coordinates [-1.0, +1.0]
+    float ndx = ((float)(screenPoint.x - screenRect.x) / screenRect.w) * 2.0f - 1.0f;
+    float ndy = ((float)(screenPoint.y - screenRect.y) / screenRect.h) * 2.0f - 1.0f;
 
     if (renderCamera.orthogonal) {
         ray.origin = renderCamera.origin + renderCamera.axis[0] * renderCamera.zNear; // zNear can be negative number in orthogonal view

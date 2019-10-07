@@ -359,16 +359,6 @@ const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
         screenHeight = ctx->GetScreenHeight();
     }
 
-    Rect screenRect;
-    screenRect.x = screenWidth * nx;
-    screenRect.y = screenHeight * ny;
-    screenRect.w = screenWidth * nw;
-    screenRect.h = screenHeight * nh;
-
-    // right/down normalized screen coordinates [-1.0, +1.0]
-    float ndx = ((float)(screenPoint.x - screenRect.x) / screenRect.w) * 2.0f - 1.0f;
-    float ndy = ((float)(screenPoint.y - screenRect.y) / screenRect.h) * 2.0f - 1.0f;
-
     if (renderCameraDef.orthogonal) {
         Size orthoSize = GetOrthoSize();
 
@@ -380,7 +370,13 @@ const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
          RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &renderCameraDef.fovX, &renderCameraDef.fovY);
     }
 
-    return RenderCamera::RayFromScreenND(renderCameraDef, ndx, ndy);
+    Rect screenRect;
+    screenRect.x = screenWidth * nx;
+    screenRect.y = screenHeight * ny;
+    screenRect.w = screenWidth * nw;
+    screenRect.h = screenHeight * nh;
+
+    return RenderCamera::RayFromScreenPoint(renderCameraDef, screenRect, screenPoint);
 }
 
 bool ComCamera::ProcessMousePointerInput(const Point &screenPoint) {
