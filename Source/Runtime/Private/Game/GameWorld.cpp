@@ -24,10 +24,12 @@
 #include "Components/ComTransform.h"
 #include "Components/ComCamera.h"
 #include "Components/ComScript.h"
+#include "Components/ComRigidBody.h"
 #include "Game/Entity.h"
 #include "Game/MapRenderSettings.h"
 #include "Game/GameWorld.h"
 #include "Game/GameSettings.h"
+#include "Game/CastResult.h"
 #include "Scripting/LuaVM.h"
 #include "StaticBatching/StaticBatch.h"
 #include "../StaticBatching/MeshCombiner.h"
@@ -839,6 +841,21 @@ Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask, const Array<Entit
     }
 
     return minEntity;
+}
+
+Entity *GameWorld::RayCast(const Ray &ray, int layerMask) const {
+    CastResultEx castResult;
+
+    if (!GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetPoint(MeterToUnit(10000.0f)), layerMask, castResult)) {
+        return nullptr;
+    }
+
+    ComRigidBody *hitTestRigidBody = castResult.GetRigidBody();
+    if (hitTestRigidBody) {
+        return hitTestRigidBody->GetEntity();
+    }
+
+    return nullptr;
 }
 
 void GameWorld::SaveSnapshot() {

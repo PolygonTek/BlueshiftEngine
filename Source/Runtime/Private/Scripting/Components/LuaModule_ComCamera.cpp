@@ -28,7 +28,7 @@ void LuaVM::RegisterCameraComponent(LuaCpp::Module &module) {
         "ortho_size", &ComCamera::GetOrthoSize,
         "aspect_ratio", &ComCamera::GetAspectRatio,
         "world_to_screen", &ComCamera::WorldToScreen,
-        "screen_to_ray", &ComCamera::ScreenToRay);
+        "screen_to_ray", &ComCamera::ScreenPointToRay);
 
     _ComCamera["meta_object"] = ComCamera::metaObject;
 }

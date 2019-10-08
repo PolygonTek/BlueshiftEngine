@@ -102,6 +102,8 @@ public:
                                 /// Ray intersection test for all entities.
     Entity *                    IntersectRay(const Ray &ray, int layerMask, const Array<Entity *> &excludingEntities, float *scale) const;
 
+    Entity *                    RayCast(const Ray &ray, int layerMask) const;
+
                                 /// Render camera component from all registered entities.
     void                        Render();
 

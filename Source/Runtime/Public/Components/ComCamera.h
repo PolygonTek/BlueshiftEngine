@@ -56,9 +56,11 @@ public:
 
     float                   GetAspectRatio() const;
 
+                            /// Converts position in world space to screen space.
     const Point             WorldToScreen(const Vec3 &position) const;
 
-    const Ray               ScreenToRay(const Point &screenPoint);
+                            /// Makes world space ray from screen space point.
+    const Ray               ScreenPointToRay(const Point &screenPoint);
 
     int                     GetLayerMask() const;
     void                    SetLayerMask(int layerMask);

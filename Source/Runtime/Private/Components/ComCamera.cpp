@@ -16,12 +16,10 @@
 #include "Input/InputSystem.h"
 #include "Render/Render.h"
 #include "Components/ComTransform.h"
-#include "Components/ComRigidBody.h"
 #include "Components/ComLogic.h"
 #include "Components/ComScript.h"
 #include "Components/ComCamera.h"
 #include "Game/GameWorld.h"
-#include "Game/CastResult.h"
 #include "Game/TagLayerSettings.h"
 
 BE_NAMESPACE_BEGIN
@@ -342,7 +340,7 @@ const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
     return screenPoint;
 }
 
-const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
+const Ray ComCamera::ScreenPointToRay(const Point &screenPoint) {
     int screenWidth = 100;
     int screenHeight = 100;
 
@@ -377,21 +375,11 @@ bool ComCamera::ProcessMousePointerInput(const Point &screenPoint) {
         return false;
     }
 
-    Ray ray = ScreenToRay(screenPoint);
-
-    Entity *hitTestEntity = nullptr;
-    CastResultEx castResult;
-
-    if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetPoint(MeterToUnit(1000.0f)), GetLayerMask(), castResult)) {
-        ComRigidBody *hitTestRigidBody = castResult.GetRigidBody();
-        if (hitTestRigidBody) {
-            hitTestEntity = hitTestRigidBody->GetEntity();
-        }
-    }
-
-    Entity *captureEntity = (Entity *)Entity::FindInstance(mousePointerState.captureEntityGuid);
+    Ray ray = ScreenPointToRay(screenPoint);
+    Entity *hitTestEntity = GetGameWorld()->RayCast(ray, GetLayerMask());
 
     if (inputSystem.IsKeyUp(KeyCode::Mouse1)) {
+        Entity *captureEntity = (Entity *)Entity::FindInstance(mousePointerState.captureEntityGuid);
         if (captureEntity) {
             ComponentPtrArray scriptComponents = captureEntity->GetComponents(&ComScript::metaObject);
 
@@ -465,16 +453,8 @@ bool ComCamera::ProcessTouchPointerInput() {
         if (touch.phase == InputSystem::Touch::Started ||
             touch.phase == InputSystem::Touch::Ended ||
             touch.phase == InputSystem::Touch::Moved) {
-            Ray ray = ScreenToRay(touch.position);
-
-            CastResultEx castResult;
-
-            if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetPoint(MeterToUnit(1000.0f)), GetLayerMask(), castResult)) {
-                ComRigidBody *hitTestRigidBody = castResult.GetRigidBody();
-                if (hitTestRigidBody) {
-                    hitTestEntity = hitTestRigidBody->GetEntity();
-                }
-            }
+            Ray ray = ScreenPointToRay(touch.position);
+            Entity *hitTestEntity = GetGameWorld()->RayCast(ray, GetLayerMask());
         }
 
         if (touch.phase == InputSystem::Touch::Started) {
