@@ -73,9 +73,11 @@ public:
 
     Size &              operator+=(const Size &rhs);
     Size &              operator-=(const Size &rhs);
+    Size &              operator*=(int rhs);
 
     Size                operator+(const Size &rhs) const { return Size(w + rhs.w, h + rhs.h); }
     Size                operator-(const Size &rhs) const { return Size(w - rhs.w, h - rhs.h); }
+    Size                operator*(int rhs) const { return Size(w * rhs, h * rhs); }
 
                         /// Compare with another one
     bool                operator==(const Size &rhs) const { return (w != rhs.w || h != rhs.h) ? false : true; }
@@ -142,6 +144,12 @@ BE_INLINE Size &Size::operator+=(const Size &rhs) {
 BE_INLINE Size &Size::operator-=(const Size &rhs) {
     w -= rhs.w;
     h -= rhs.h;
+    return *this;
+}
+
+BE_INLINE Size &Size::operator*=(int rhs) {
+    w *= rhs;
+    h *= rhs;
     return *this;
 }
 

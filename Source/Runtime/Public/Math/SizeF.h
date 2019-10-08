@@ -73,9 +73,11 @@ public:
 
     SizeF &             operator+=(const SizeF &rhs);
     SizeF &             operator-=(const SizeF &rhs);
+    SizeF &             operator*=(float rhs);
 
     SizeF               operator+(const SizeF &rhs) const { return SizeF(w + rhs.w, h + rhs.h); }
     SizeF               operator-(const SizeF &rhs) const { return SizeF(w - rhs.w, h - rhs.h); }
+    SizeF               operator*(float rhs) const { return SizeF(w * rhs, h * rhs); }
 
                         /// Compare with another one
     bool                operator==(const SizeF &rhs) const { return (w != rhs.w || h != rhs.h) ? false : true; }
@@ -144,6 +146,12 @@ BE_INLINE SizeF &SizeF::operator+=(const SizeF &rhs) {
 BE_INLINE SizeF &SizeF::operator-=(const SizeF &rhs) {
     w -= rhs.w;
     h -= rhs.h;
+    return *this;
+}
+
+BE_INLINE SizeF &SizeF::operator*=(float rhs) {
+    w *= rhs;
+    h *= rhs;
     return *this;
 }
 
