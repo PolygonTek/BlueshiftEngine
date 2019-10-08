@@ -192,17 +192,19 @@ void ComSpringJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool 
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(500.0f * 500.0f)) {
+    if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
         Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 
-        renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin - worldAxis[0] * CentiToUnit(2.5f), worldOrigin + worldAxis[0] * CentiToUnit(2.5f));
-        renderWorld->DebugLine(worldOrigin - worldAxis[1] * CentiToUnit(2.5f), worldOrigin + worldAxis[1] * CentiToUnit(2.5f));
+        float viewScale = camera->CalcViewScale(worldOrigin);
 
-        renderWorld->DebugCircle(worldOrigin - worldAxis[2] * CentiToUnit(2.0f), worldAxis[2], CentiToUnit(2.5f));
-        renderWorld->DebugCircle(worldOrigin, worldAxis[2], CentiToUnit(2.5f));
-        renderWorld->DebugCircle(worldOrigin + worldAxis[2] * CentiToUnit(2.0f), worldAxis[2], CentiToUnit(2.5f));
+        renderWorld->SetDebugColor(Color4::red, Color4::zero);
+        renderWorld->DebugLine(worldOrigin - worldAxis[0] * MeterToUnit(5) * viewScale, worldOrigin + worldAxis[0] * MeterToUnit(5) * viewScale);
+        renderWorld->DebugLine(worldOrigin - worldAxis[1] * MeterToUnit(5) * viewScale, worldOrigin + worldAxis[1] * MeterToUnit(5) * viewScale);
+
+        renderWorld->DebugCircle(worldOrigin - worldAxis[2] * MeterToUnit(3) * viewScale, worldAxis[2], MeterToUnit(5) * viewScale);
+        renderWorld->DebugCircle(worldOrigin, worldAxis[2], MeterToUnit(5) * viewScale);
+        renderWorld->DebugCircle(worldOrigin + worldAxis[2] * MeterToUnit(3) * viewScale, worldAxis[2], MeterToUnit(5) * viewScale);
     }
 }
 #endif

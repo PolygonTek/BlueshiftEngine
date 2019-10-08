@@ -202,7 +202,7 @@ void ComVehicleWheel::DrawGizmos(const RenderCamera *camera, bool selected, bool
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(500.0f * 500.0f)) {
+    if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
         Vec3 worldOrigin = transform->GetMatrix() * localOrigin;
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 

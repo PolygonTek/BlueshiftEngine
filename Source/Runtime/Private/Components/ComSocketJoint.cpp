@@ -118,12 +118,17 @@ void ComSocketJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool 
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();
-    Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
     
-    renderWorld->SetDebugColor(Color4::red, Color4::zero);
-    renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(1.0f), worldOrigin + Mat3::identity[0] * CentiToUnit(1.0f));
-    renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(1.0f), worldOrigin + Mat3::identity[1] * CentiToUnit(1.0f));
-    renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * CentiToUnit(1.0f), worldOrigin + Mat3::identity[2] * CentiToUnit(1.0f));
+    if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
+        Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
+
+        float viewScale = camera->CalcViewScale(worldOrigin);
+
+        renderWorld->SetDebugColor(Color4::red, Color4::zero);
+        renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * MeterToUnit(3) * viewScale, worldOrigin + Mat3::identity[0] * MeterToUnit(3) * viewScale);
+        renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * MeterToUnit(3) * viewScale, worldOrigin + Mat3::identity[1] * MeterToUnit(3) * viewScale);
+        renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * MeterToUnit(3) * viewScale, worldOrigin + Mat3::identity[2] * MeterToUnit(3) * viewScale);
+    }
 }
 #endif
 
