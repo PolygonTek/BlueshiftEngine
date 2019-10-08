@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Components/ComRectTransform.h"
+#include "Components/ComCanvas.h"
 #include "Game/Entity.h"
 #include "Game/GameWorld.h"
 #include "Render/Render.h"
@@ -259,56 +260,58 @@ Vec3 ComRectTransform::ComputeLocalOrigin3D() const {
 
 #if WITH_EDITOR
 void ComRectTransform::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
-    if (!selected) {
-        return;
-    }
+    bool hasCanvas = GetEntity()->GetComponent<ComCanvas>() ? true : false;
 
-    RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
+    if (selected || hasCanvas) {
+        RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
-    // Draw rectangle
-    Vec3 worldCorners[4];
-    GetWorldCorners(worldCorners);
+        // Draw rectangle
+        Vec3 worldCorners[4];
+        GetWorldCorners(worldCorners);
 
-    renderWorld->SetDebugColor(Color4(1.0f, 1.0f, 1.0f, 0.4f), Color4::zero);
+        renderWorld->SetDebugColor(Color4(1.0f, 1.0f, 1.0f, 0.5f), Color4::zero);
 
-    renderWorld->DebugLine(worldCorners[0], worldCorners[1]);
-    renderWorld->DebugLine(worldCorners[1], worldCorners[2]);
-    renderWorld->DebugLine(worldCorners[2], worldCorners[3]);
-    renderWorld->DebugLine(worldCorners[3], worldCorners[0]);
+        renderWorld->DebugLine(worldCorners[0], worldCorners[1]);
+        renderWorld->DebugLine(worldCorners[1], worldCorners[2]);
+        renderWorld->DebugLine(worldCorners[2], worldCorners[3]);
+        renderWorld->DebugLine(worldCorners[3], worldCorners[0]);
 
-    ComTransform *parentTransform = GetParent();
-    if (parentTransform) {
-        ComRectTransform *parentRectTransform = parentTransform->Cast<ComRectTransform>();
-        if (parentRectTransform) {
-            // Draw parent rectangle
-            Vec3 parentWorldCorners[4];
-            parentRectTransform->GetWorldCorners(parentWorldCorners);
+        if (!hasCanvas) {
+            ComTransform *parentTransform = GetParent();
+            if (parentTransform) {
+                ComRectTransform *parentRectTransform = parentTransform->Cast<ComRectTransform>();
+                if (parentRectTransform) {
+                    // Draw parent rectangle
+                    Vec3 parentWorldCorners[4];
+                    parentRectTransform->GetWorldCorners(parentWorldCorners);
 
-            renderWorld->SetDebugColor(Color4(1.0f, 1.0f, 1.0f, 1.0f), Color4::zero);
+                    renderWorld->SetDebugColor(Color4(1.0f, 1.0f, 1.0f, 1.0f), Color4::zero);
 
-            renderWorld->DebugLine(parentWorldCorners[0], parentWorldCorners[1]);
-            renderWorld->DebugLine(parentWorldCorners[1], parentWorldCorners[2]);
-            renderWorld->DebugLine(parentWorldCorners[2], parentWorldCorners[3]);
-            renderWorld->DebugLine(parentWorldCorners[3], parentWorldCorners[0]);
+                    renderWorld->DebugLine(parentWorldCorners[0], parentWorldCorners[1]);
+                    renderWorld->DebugLine(parentWorldCorners[1], parentWorldCorners[2]);
+                    renderWorld->DebugLine(parentWorldCorners[2], parentWorldCorners[3]);
+                    renderWorld->DebugLine(parentWorldCorners[3], parentWorldCorners[0]);
 
-            // Draw anchors
-            Vec3 worldAnchorCorners[4];
-            GetWorldAnchorCorners(worldAnchorCorners);
+                    // Draw anchors
+                    Vec3 worldAnchorCorners[4];
+                    GetWorldAnchorCorners(worldAnchorCorners);
 
-            float viewScale = camera->CalcViewScale(worldAnchorCorners[0]);
-            renderWorld->DebugTriangle(worldAnchorCorners[0], worldAnchorCorners[0] + Vec3(-10, -5, 0) * viewScale, worldAnchorCorners[0] + Vec3(-5, -10, 0) * viewScale);
+                    float viewScale = camera->CalcViewScale(worldAnchorCorners[0]);
+                    renderWorld->DebugTriangle(worldAnchorCorners[0], worldAnchorCorners[0] + Vec3(-10, -5, 0) * viewScale, worldAnchorCorners[0] + Vec3(-5, -10, 0) * viewScale);
 
-            viewScale = camera->CalcViewScale(worldAnchorCorners[1]);
-            renderWorld->DebugTriangle(worldAnchorCorners[1], worldAnchorCorners[1] + Vec3(+10, -5, 0) * viewScale, worldAnchorCorners[1] + Vec3(+5, -10, 0) * viewScale);
+                    viewScale = camera->CalcViewScale(worldAnchorCorners[1]);
+                    renderWorld->DebugTriangle(worldAnchorCorners[1], worldAnchorCorners[1] + Vec3(+10, -5, 0) * viewScale, worldAnchorCorners[1] + Vec3(+5, -10, 0) * viewScale);
 
-            viewScale = camera->CalcViewScale(worldAnchorCorners[2]);
-            renderWorld->DebugTriangle(worldAnchorCorners[2], worldAnchorCorners[2] + Vec3(+10, +5, 0) * viewScale, worldAnchorCorners[2] + Vec3(+5, +10, 0) * viewScale);
+                    viewScale = camera->CalcViewScale(worldAnchorCorners[2]);
+                    renderWorld->DebugTriangle(worldAnchorCorners[2], worldAnchorCorners[2] + Vec3(+10, +5, 0) * viewScale, worldAnchorCorners[2] + Vec3(+5, +10, 0) * viewScale);
 
-            viewScale = camera->CalcViewScale(worldAnchorCorners[3]);
-            renderWorld->DebugTriangle(worldAnchorCorners[3], worldAnchorCorners[3] + Vec3(-10, +5, 0) * viewScale, worldAnchorCorners[3] + Vec3(-5, +10, 0) * viewScale);
+                    viewScale = camera->CalcViewScale(worldAnchorCorners[3]);
+                    renderWorld->DebugTriangle(worldAnchorCorners[3], worldAnchorCorners[3] + Vec3(-10, +5, 0) * viewScale, worldAnchorCorners[3] + Vec3(-5, +10, 0) * viewScale);
+                }
+            }
         }
     }
-    }
+}
 #endif
 
 const AABB ComRectTransform::GetAABB() {
