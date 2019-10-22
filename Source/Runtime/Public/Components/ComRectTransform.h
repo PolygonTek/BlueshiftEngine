@@ -53,19 +53,32 @@ public:
     Vec2                    GetPivot() const;
     void                    SetPivot(const Vec2 &pivot);
 
-    RectF                   GetRectInLocalSpace();
+                            /// Computes rectangle in pivot space.
+    RectF                   GetPivotRect();
 
-    void                    GetLocalCorners(Vec3(&corners)[4]);
-    void                    GetWorldCorners(Vec3(&corners)[4]);
+                            /// Computes rectangle vertices in pivot space.
+    void                    GetLocalCorners(Vec3 (&corners)[4]);
 
-    void                    GetWorldAnchorCorners(Vec3(&worldAnchorCorners)[4]);
+                            /// Computes rectangle vertices in world space.
+    void                    GetWorldCorners(Vec3 (&corners)[4]);
+
+                            /// Computes anchor coordinates of rectangle in world space.
+    void                    GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]);
 
 protected:
     void                    UpdateOriginAndRect();
     void                    InvalidateCachedRect();
-    RectF                   ComputeRectInParentSpace() const;
-    RectF                   ComputeRectInLocalSpace() const;
+
+                            // Computes rectangle in local space.
+    RectF                   ComputeLocalRect() const;
+
+                            // Computes rectangle in pivot space.
+    RectF                   ComputePivotRect() const;
+
+                            // Computes local origin in parent space in 2D.
     Vec2                    ComputeLocalOrigin2D() const;
+
+                            // Computes local origin in parent space in 3D.
     Vec3                    ComputeLocalOrigin3D() const;
 
     Vec2                    anchorMin;
