@@ -210,6 +210,7 @@ set(COMMON_ENGINE_FILES
     Public/Game/TagLayerSettings.h
     Public/Game/PhysicsSettings.h
     Public/Game/PlayerSettings.h
+    Public/Game/InputUtils.h
 
     Public/StaticBatching/StaticBatch.h
     
@@ -464,6 +465,7 @@ set(COMMON_ENGINE_FILES
     Private/Game/TagLayerSettings.cpp
     Private/Game/PhysicsSettings.cpp
     Private/Game/PlayerSettings.cpp
+    Private/Game/InputUtils.cpp
 
     Private/StaticBatching/MeshCombiner.h
     Private/StaticBatching/MeshCombiner.cpp

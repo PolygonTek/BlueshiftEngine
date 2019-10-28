@@ -787,8 +787,7 @@ void GameWorld::ProcessPointerInput() {
     for (int i = cameraComponents.Count() - 1; i >= 0; i--) {
         ComCamera *cameraComponent = cameraComponents[i];
 
-        if (cameraComponent->ProcessMousePointerInput(inputSystem.GetMousePos()) ||
-            cameraComponent->ProcessTouchPointerInput()) {
+        if (cameraComponent->ProcessMousePointerInput() || cameraComponent->ProcessTouchPointerInput()) {
             break;
         }
     }

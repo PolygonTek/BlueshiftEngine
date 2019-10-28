@@ -17,6 +17,7 @@
 #include "Containers/HashTable.h"
 #include "Render/RenderObject.h"
 #include "Component.h"
+#include "Game/InputUtils.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -105,18 +106,13 @@ protected:
     RenderObject::State     spriteDef;
     int                     spriteHandle;
 
-    struct PointerState {
-        Guid                oldHitEntityGuid;
-        Guid                captureEntityGuid;
-    };
-
-    PointerState            mousePointerState;
-    HashTable<int32_t, PointerState> touchPointerStateTable;
+    InputUtils::PointerState mousePointerState;
+    HashTable<int32_t, InputUtils::PointerState> touchPointerStateTable;
 
 private:
     int                     GetOrder() const { return order; }
 
-    bool                    ProcessMousePointerInput(const Point &screenPoint);
+    bool                    ProcessMousePointerInput();
     bool                    ProcessTouchPointerInput();
 
     void                    Render();
