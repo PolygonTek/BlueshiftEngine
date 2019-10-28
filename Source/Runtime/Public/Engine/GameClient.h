@@ -91,7 +91,7 @@ public:
     void                    MouseMoveEvent(int x, int y, int time);
     void                    MouseDeltaEvent(int dx, int dy, int time);
     void                    JoyAxisEvent(int dx, int dy, int time);
-    void                    TouchEvent(InputSystem::Touch::Phase phase, uint64_t touchId, int x, int y, int time);
+    void                    TouchEvent(InputSystem::Touch::Phase::Enum phase, uint64_t touchId, int x, int y, int time);
     void                    PacketEvent();
 
     void                    DrawConsole();

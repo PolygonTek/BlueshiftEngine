@@ -77,7 +77,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "has_component", &Entity::HasComponent,
         "component_index", &Entity::GetComponentIndex,
         "component_by_index", static_cast<Component*(Entity::*)(int)const>(&Entity::GetComponent),
-        "components_in_children", static_cast<ComponentPtrArray(Entity::*)(const MetaObject *)const>(&Entity::GetComponentsInChildren),
+        "components_in_children", static_cast<ComponentPtrArray(Entity::*)(const MetaObject *, bool)const>(&Entity::GetComponentsInChildren),
         "components", static_cast<ComponentPtrArray(Entity::*)(const MetaObject *)const>(&Entity::GetComponents),
         "transform", static_cast<ComTransform*(Entity::*)()const>(&Entity::GetComponent<ComTransform>),
         "collider", static_cast<ComCollider*(Entity::*)()const>(&Entity::GetComponent<ComCollider>),

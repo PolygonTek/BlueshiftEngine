@@ -229,16 +229,16 @@ int Common::ProcessPlatformEvent() {
             gameClient.JoyAxisEvent((int)ev.value, (int)ev.value2, ev.time);
             break;
         case Platform::EventType::TouchBegan:
-            gameClient.TouchEvent(InputSystem::Touch::Started, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);
+            gameClient.TouchEvent(InputSystem::Touch::Phase::Started, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);
             break;
         case Platform::EventType::TouchMoved:
-            gameClient.TouchEvent(InputSystem::Touch::Moved, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);
+            gameClient.TouchEvent(InputSystem::Touch::Phase::Moved, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);
             break;
         case Platform::EventType::TouchEnded:
-            gameClient.TouchEvent(InputSystem::Touch::Ended, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);
+            gameClient.TouchEvent(InputSystem::Touch::Phase::Ended, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);
             break;
         case Platform::EventType::TouchCanceled:
-            gameClient.TouchEvent(InputSystem::Touch::Canceled, ev.value, 0, 0, ev.time);
+            gameClient.TouchEvent(InputSystem::Touch::Phase::Canceled, ev.value, 0, 0, ev.time);
             break;
         case Platform::EventType::Console:
             cmdSystem.BufferCommandText(CmdSystem::Execution::Append, (const char *)ev.ptr);

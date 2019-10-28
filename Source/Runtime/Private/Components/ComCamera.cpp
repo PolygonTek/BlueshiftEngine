@@ -375,7 +375,9 @@ bool ComCamera::ProcessMousePointerInput(const Point &screenPoint) {
         return false;
     }
 
+    // Convert screen point to ray.
     Ray ray = ScreenPointToRay(screenPoint);
+    // Cast ray to detect entity.
     Entity *hitTestEntity = GetGameWorld()->RayCast(ray, GetLayerMask());
 
     if (inputSystem.IsKeyUp(KeyCode::Mouse1)) {
@@ -450,14 +452,16 @@ bool ComCamera::ProcessTouchPointerInput() {
 
         Entity *hitTestEntity = nullptr;
 
-        if (touch.phase == InputSystem::Touch::Started ||
-            touch.phase == InputSystem::Touch::Ended ||
-            touch.phase == InputSystem::Touch::Moved) {
+        if (touch.phase == InputSystem::Touch::Phase::Started ||
+            touch.phase == InputSystem::Touch::Phase::Ended ||
+            touch.phase == InputSystem::Touch::Phase::Moved) {
+            // Convert screen point to ray.
             Ray ray = ScreenPointToRay(touch.position);
-            Entity *hitTestEntity = GetGameWorld()->RayCast(ray, GetLayerMask());
+            // Cast ray to detect entity.
+            hitTestEntity = GetGameWorld()->RayCast(ray, GetLayerMask());
         }
 
-        if (touch.phase == InputSystem::Touch::Started) {
+        if (touch.phase == InputSystem::Touch::Phase::Started) {
             if (hitTestEntity) {
                 processed = true;
 
@@ -476,7 +480,7 @@ bool ComCamera::ProcessTouchPointerInput() {
                     scriptComponent->OnPointerDown();
                 }
             }
-        } else if (touch.phase == InputSystem::Touch::Ended || touch.phase == InputSystem::Touch::Canceled) {
+        } else if (touch.phase == InputSystem::Touch::Phase::Ended || touch.phase == InputSystem::Touch::Phase::Canceled) {
             PointerState touchPointerState;
 
             if (touchPointerStateTable.Get(touch.id, &touchPointerState)) {
@@ -492,7 +496,7 @@ bool ComCamera::ProcessTouchPointerInput() {
 
                         scriptComponent->OnPointerUp();
 
-                        if (touch.phase == InputSystem::Touch::Ended && hitTestEntity == capturedEntity) {
+                        if (touch.phase == InputSystem::Touch::Phase::Ended && hitTestEntity == capturedEntity) {
                             scriptComponent->OnPointerClick();
                         }
 
@@ -502,7 +506,7 @@ bool ComCamera::ProcessTouchPointerInput() {
 
                 touchPointerStateTable.Remove(touch.id);
             }
-        } else if (touch.phase == InputSystem::Touch::Moved) {
+        } else if (touch.phase == InputSystem::Touch::Phase::Moved) {
             PointerState touchPointerState;
 
             if (touchPointerStateTable.Get(touch.id, &touchPointerState)) {

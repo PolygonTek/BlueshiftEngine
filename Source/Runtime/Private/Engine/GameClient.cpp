@@ -943,7 +943,7 @@ void GameClient::JoyAxisEvent(int dx, int dy, int time) {
     inputSystem.JoyAxisEvent(dx, dy, time);
 }
 
-void GameClient::TouchEvent(InputSystem::Touch::Phase phase, uint64_t touchId, int x, int y, int time) {
+void GameClient::TouchEvent(InputSystem::Touch::Phase::Enum phase, uint64_t touchId, int x, int y, int time) {
     inputSystem.TouchEvent(phase, touchId, x, y);
 }
 

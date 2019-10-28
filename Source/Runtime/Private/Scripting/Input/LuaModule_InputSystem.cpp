@@ -41,11 +41,11 @@ void LuaVM::RegisterInput(LuaCpp::Module &module) {
 
     LuaCpp::Selector _Input_Touch = _Input["Touch"];
     _Input_Touch.SetClass<InputSystem::Touch>();
-    _Input_Touch["NullPhase"] = InputSystem::Touch::NullPhase;
-    _Input_Touch["Started"] = InputSystem::Touch::Started;
-    _Input_Touch["Moved"] = InputSystem::Touch::Moved;
-    _Input_Touch["Ended"] = InputSystem::Touch::Ended;
-    _Input_Touch["Canceled"] = InputSystem::Touch::Canceled;
+    _Input_Touch["NullPhase"] = InputSystem::Touch::Phase::NullPhase;
+    _Input_Touch["Started"] = InputSystem::Touch::Phase::Started;
+    _Input_Touch["Moved"] = InputSystem::Touch::Phase::Moved;
+    _Input_Touch["Ended"] = InputSystem::Touch::Phase::Ended;
+    _Input_Touch["Canceled"] = InputSystem::Touch::Phase::Canceled;
     _Input_Touch.AddClassMembers<InputSystem::Touch>(
         "id", &InputSystem::Touch::id,
         "phase", &InputSystem::Touch::phase,

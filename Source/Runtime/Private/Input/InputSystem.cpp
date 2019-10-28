@@ -92,7 +92,7 @@ void InputSystem::JoyAxisEvent(int dx, int dy, int time) {
     axisDelta.y += dy;
 }
 
-void InputSystem::TouchEvent(InputSystem::Touch::Phase phase, uint64_t id, int x, int y) {
+void InputSystem::TouchEvent(InputSystem::Touch::Phase::Enum phase, uint64_t id, int x, int y) {
     TouchEv *newEvent = touchEventAllocator.Alloc();
     newEvent->touch.id = (int32_t)id;
     newEvent->touch.phase = phase;

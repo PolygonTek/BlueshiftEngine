@@ -38,11 +38,13 @@ public:
     };
     
     struct Touch {
-        enum Phase {
-            NullPhase, Started, Moved, Ended, Canceled
+        struct Phase {
+            enum Enum {
+                NullPhase, Started, Moved, Ended, Canceled
+            };
         };
         int32_t             id;
-        Phase               phase;
+        Phase::Enum         phase;
         Point               position;
     };
     
@@ -80,7 +82,7 @@ public:
     void                    MouseMoveEvent(int x, int y, int time);
     void                    MouseDeltaEvent(int dx, int dy, int time);
     void                    JoyAxisEvent(int dx, int dy, int time);
-    void                    TouchEvent(Touch::Phase phase, uint64_t touchId, int x, int y);
+    void                    TouchEvent(Touch::Phase::Enum phase, uint64_t touchId, int x, int y);
 
 private:
     BlockAllocator<KeyEv, 32> keyEventAllocator;
