@@ -146,7 +146,7 @@ void ComLight::Init() {
     spriteDef.layer = TagLayerSettings::BuiltInLayer::Editor;
     spriteDef.maxVisDist = MeterToUnit(50.0f);
 
-    Texture *spriteTexture = textureManager.GetTexture(LightSpriteTexturePath(renderLightDef.type), Texture::Flag::Clamp | Texture::Flag::HighQuality);
+    Texture *spriteTexture = textureManager.GetTextureWithoutTextureInfo(LightSpriteTexturePath(renderLightDef.type), Texture::Flag::Clamp | Texture::Flag::HighQuality);
     spriteDef.materials.SetCount(1);
     spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::TextureHint::Sprite);
     textureManager.ReleaseTexture(spriteTexture);
@@ -317,7 +317,7 @@ void ComLight::SetLightType(RenderLight::Type::Enum type) {
 #if WITH_EDITOR
         materialManager.ReleaseMaterial(spriteDef.materials[0]);
 
-        Texture *spriteTexture = textureManager.GetTexture(LightSpriteTexturePath(renderLightDef.type), Texture::Flag::Clamp | Texture::Flag::HighQuality);
+        Texture *spriteTexture = textureManager.GetTextureWithoutTextureInfo(LightSpriteTexturePath(renderLightDef.type), Texture::Flag::Clamp | Texture::Flag::HighQuality);
         spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::TextureHint::Sprite);
         textureManager.ReleaseTexture(spriteTexture);
 #endif

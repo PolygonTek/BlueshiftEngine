@@ -32,6 +32,12 @@ BE_NAMESPACE_BEGIN
 
 class RenderTarget;
 
+struct TextureInfo {
+    int                     flags;
+    Point                   spriteBorderLT;
+    Point                   spriteBorderRB;
+};
+
 class Texture {
     friend class TextureManager;
     friend class RenderTarget;
@@ -75,6 +81,9 @@ public:
     int                     NumSlices() const { return numSlices; }
     Image::Format::Enum     GetFormat() const { return format; }
     int                     GetFlags() const { return flags; }
+
+    const Point &           GetSpriteBorderLT() const { return spriteBorderLT; }
+    const Point &           GetSpriteBorderRB() const { return spriteBorderRB; }
 
     int                     MemRequired(bool includingMipmaps) const;
 
@@ -155,6 +164,9 @@ private:
 
     bool                    hasMipmaps = false;
 
+    Point                   spriteBorderLT = Point(0, 0);
+    Point                   spriteBorderRB = Point(0, 0);
+
     mutable RenderTarget *  renderTarget = nullptr;
 };
 
@@ -190,7 +202,8 @@ public:
 
     Texture *               AllocTexture(const char *name);
     Texture *               FindTexture(const char *name) const;
-    Texture *               GetTexture(const char *name, int creationFlags = 0);
+    Texture *               GetTexture(const char *name);
+    Texture *               GetTextureWithoutTextureInfo(const char *name, int creationFlags);
 
     Texture *               TextureFromGenerator(const char *name, const TextureGeneratorBase &generator);
 
@@ -234,7 +247,7 @@ public:
 
 private:
     void                    CreateEngineTextures();
-    int                     LoadTextureInfo(const char *filename) const;
+    TextureInfo             LoadTextureInfo(const char *filename) const;
 
     static void             Cmd_ListTextures(const CmdArgs &args);
     static void             Cmd_ReloadTexture(const CmdArgs &args);

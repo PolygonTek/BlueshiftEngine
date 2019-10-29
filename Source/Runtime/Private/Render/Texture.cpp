@@ -696,9 +696,13 @@ bool Texture::Reload() {
     Str _hashName = this->hashName;
 
     const Str textureInfoPath = _hashName + ".texture";
-    int _flags = textureManager.LoadTextureInfo(textureInfoPath);
+    TextureInfo textureInfo = textureManager.LoadTextureInfo(textureInfoPath);
 
-    bool ret = Load(_hashName, _flags);
+    bool ret = Load(_hashName, textureInfo.flags);
+
+    this->spriteBorderLT = textureInfo.spriteBorderLT;
+    this->spriteBorderRB = textureInfo.spriteBorderRB;
+
     return ret;
 }
 

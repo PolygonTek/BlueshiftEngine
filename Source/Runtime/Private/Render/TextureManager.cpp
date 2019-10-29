@@ -242,7 +242,7 @@ Texture *TextureManager::FindTexture(const char *hashName) const {
     return nullptr;
 }
 
-Texture *TextureManager::GetTexture(const char *hashName, int creationFlags) {
+Texture *TextureManager::GetTextureWithoutTextureInfo(const char *hashName, int creationFlags) {
     if (!hashName || !hashName[0]) {
         return defaultTexture;
     }
@@ -251,11 +251,6 @@ Texture *TextureManager::GetTexture(const char *hashName, int creationFlags) {
     if (texture) {
         texture->refCount++;
         return texture;
-    }
-
-    if (creationFlags == 0) {
-        const Str textureInfoPath = Str(hashName) + ".texture";
-        creationFlags = LoadTextureInfo(textureInfoPath);
     }
 
     texture = AllocTexture(hashName);
@@ -267,54 +262,84 @@ Texture *TextureManager::GetTexture(const char *hashName, int creationFlags) {
     return texture;
 }
 
-int TextureManager::LoadTextureInfo(const char *filename) const {
-    const int defaultFlags = Texture::Flag::Clamp | Texture::Flag::SRGBColorSpace;
+Texture *TextureManager::GetTexture(const char *hashName) {
+    if (!hashName || !hashName[0]) {
+        return defaultTexture;
+    }
+
+    Texture *texture = FindTexture(hashName);
+    if (texture) {
+        texture->refCount++;
+        return texture;
+    }
+
+    const Str textureInfoPath = Str(hashName) + ".texture";
+    TextureInfo textureInfo = LoadTextureInfo(textureInfoPath);
+
+    texture = AllocTexture(hashName);
+    if (!texture->Load(hashName, textureInfo.flags)) {
+        DestroyTexture(texture);
+        return defaultTexture;
+    }
+
+    texture->spriteBorderLT = textureInfo.spriteBorderLT;
+    texture->spriteBorderRB = textureInfo.spriteBorderRB;
+
+    return texture;
+}
+
+TextureInfo TextureManager::LoadTextureInfo(const char *filename) const {
+    TextureInfo textureInfo;
+
+    textureInfo.flags = Texture::Flag::Clamp | Texture::Flag::SRGBColorSpace;
+    textureInfo.spriteBorderLT.Set(0, 0);
+    textureInfo.spriteBorderRB.Set(0, 0);
 
     if (!filename || !filename[0]) {
-        return defaultFlags;
+        return textureInfo;
     }
 
     char *text = nullptr;
     size_t size = fileSystem.LoadFile(filename, true, (void **)&text);
     if (!text) {
-        return defaultFlags;
+        return textureInfo;
     }
 
     Json::Value node;
     Json::Reader jsonReader;
     if (!jsonReader.parse(text, node)) {
         BE_WARNLOG("Failed to parse JSON text\n");
-        return defaultFlags;
+        return textureInfo;
     }
 
-    int flags = 0;
+    textureInfo.flags = 0;
 
     int version = node["version"].asInt();
     if (version >= 4) {
         const Json::Value textureTypeValue = node.get("textureType", "2D");
         const char *textureTypeString = textureTypeValue.asCString();
         if (!Str::Icmp(textureTypeString, "UI")) {
-            flags |= Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo;
+            textureInfo.flags |= Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo;
         }
 
         const Json::Value normalMapValue = node.get("normalMap", "false");
         const char *normalMapString = normalMapValue.asCString();
         if (!Str::Icmp(normalMapString, "true")) {
-            flags |= Texture::Flag::NormalMap;
+            textureInfo.flags |= Texture::Flag::NormalMap;
         }
 
         const Json::Value wrapModeValue = node.get("wrapMode", "Clamp");
         const char *wrapModeString = wrapModeValue.asCString();
         if (!Str::Icmp(wrapModeString, "Clamp")) {
-            flags |= Texture::Flag::Clamp;
+            textureInfo.flags |= Texture::Flag::Clamp;
         } else if (!Str::Icmp(wrapModeString, "Repeat")) {
-            flags |= Texture::Flag::Repeat;
+            textureInfo.flags |= Texture::Flag::Repeat;
         }
 
         const Json::Value filterModeValue = node.get("filterMode", "Bilinear");
         const char *filterModeString = filterModeValue.asCString();
         if (!Str::Icmp(filterModeString, "Point")) {
-            flags |= Texture::Flag::Nearest | Texture::Flag::NoMipmaps;
+            textureInfo.flags |= Texture::Flag::Nearest | Texture::Flag::NoMipmaps;
         } else if (!Str::Icmp(filterModeString, "Bilinear")) {
         } else if (!Str::Icmp(filterModeString, "Trilinear")) {
         }
@@ -322,27 +347,33 @@ int TextureManager::LoadTextureInfo(const char *filename) const {
         const Json::Value sRGBValue = node.get("colorSpace", "sRGB");
         const char *sRGBString = sRGBValue.asCString();
         if (!Str::Icmp(sRGBString, "sRGB")) {
-            flags |= Texture::Flag::SRGBColorSpace;
+            textureInfo.flags |= Texture::Flag::SRGBColorSpace;
         }
 
         const Json::Value useMipmapsValue = node.get("useMipmaps", "true");
         const char *useMipmapsString = useMipmapsValue.asCString();
         if (!Str::Icmp(useMipmapsString, "false")) {
-            flags |= Texture::Flag::NoMipmaps;
+            textureInfo.flags |= Texture::Flag::NoMipmaps;
         }
 
         const Json::Value compressionLevelValue = node.get("compressionLevel", "Normal");
         const char *compressionLevelString = compressionLevelValue.asCString();
         if (!Str::Icmp(compressionLevelString, "None")) {
-            flags |= Texture::Flag::NoCompression;
+            textureInfo.flags |= Texture::Flag::NoCompression;
         }
+
+        const Json::Value spriteBorderLTValue = node.get("spriteBorderLT", "0 0");
+        textureInfo.spriteBorderLT = Point::FromString(spriteBorderLTValue.asCString());
+
+        const Json::Value spriteBorderRBValue = node.get("spriteBorderRB", "0 0");
+        textureInfo.spriteBorderRB = Point::FromString(spriteBorderRBValue.asCString());
     }
 
-    if (flags & Texture::Flag::NormalMap) {
-        flags &= ~Texture::Flag::SRGBColorSpace;
+    if (textureInfo.flags & Texture::Flag::NormalMap) {
+        textureInfo.flags &= ~Texture::Flag::SRGBColorSpace;
     }
 
-    return flags;
+    return textureInfo;
 }
 
 Texture *TextureManager::TextureFromGenerator(const char *hashName, const TextureGeneratorBase &generator) {

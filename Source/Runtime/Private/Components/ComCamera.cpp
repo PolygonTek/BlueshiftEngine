@@ -141,7 +141,7 @@ void ComCamera::Init() {
     spriteDef.layer = TagLayerSettings::BuiltInLayer::Editor;
     spriteDef.maxVisDist = MeterToUnit(50.0f);
 
-    Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/Camera2.png", Texture::Flag::Clamp | Texture::Flag::HighQuality);
+    Texture *spriteTexture = textureManager.GetTextureWithoutTextureInfo("Data/EditorUI/Camera2.png", Texture::Flag::Clamp | Texture::Flag::HighQuality);
     spriteDef.materials.SetCount(1);
     spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::TextureHint::Sprite);
     textureManager.ReleaseTexture(spriteTexture);
