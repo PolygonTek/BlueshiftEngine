@@ -204,6 +204,19 @@ PropertyInfo &MetaObject::RegisterProperty(const PropertyInfo &propInfo) {
     return propertyInfoList[index];
 }
 
+bool MetaObject::UnregisterProperty(const char *name) {
+    int hash = propertyInfoHash.GenerateHash(name, false);
+
+    for (int index = propertyInfoHash.First(hash); index != HashIndex::EmptyTable[0]; index = propertyInfoHash.Next(index)) {
+        if (!Str::Cmp(propertyInfoList[index].GetName(), name)) {
+            propertyInfoList.RemoveIndex(index);
+            propertyInfoHash.Remove(hash, index);
+            return true;
+        }
+    }
+    return false;
+}
+
 //-----------------------------------------------------------------------------------------------
 
 const EventDef EV_ImmediateDestroy("<immediatedestroy>");

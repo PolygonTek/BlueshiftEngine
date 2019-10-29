@@ -385,6 +385,8 @@ public:
     SetCountFunctionPtr setCountFunction;
 };
 
+#define UNREGISTER_PROPERTY(name) Class::metaObject.UnregisterProperty(name)
+
 #define REGISTER_PROPERTY(name, label, type, var, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \
         ::offset_of(&Class::var), defaultValue, desc, flags))

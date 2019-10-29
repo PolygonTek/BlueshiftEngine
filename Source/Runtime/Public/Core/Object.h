@@ -144,8 +144,12 @@ public:
                                 /// Returns property info list including parent meta object.
     void                        GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const;
 
-                                /// 
+                                /// Register property.
     PropertyInfo &              RegisterProperty(const PropertyInfo &propertyInfo);
+
+                                /// Unregister property with the given name.
+    bool                        UnregisterProperty(const char *name);
+
 
 private:
     const char *                visualname;
