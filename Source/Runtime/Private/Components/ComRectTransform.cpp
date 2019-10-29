@@ -115,15 +115,29 @@ void ComRectTransform::SetPivot(const Vec2 &pivot) {
     }
 }
 
-RectF ComRectTransform::GetPivotRect() {
+Vec3 ComRectTransform::GetLocalOrigin() const {
     if (cachedRectInvalidated) {
-        UpdateOriginAndRect();
+        UpdateLocalOriginAndRect();
+    }
+    return ComTransform::GetLocalOrigin();
+}
+
+Vec3 ComRectTransform::GetOrigin() const {
+    if (cachedRectInvalidated) {
+        UpdateLocalOriginAndRect();
+    }
+    return ComTransform::GetOrigin();
+}
+
+RectF ComRectTransform::GetLocalRect() {
+    if (cachedRectInvalidated) {
+        UpdateLocalOriginAndRect();
     }
     return cachedRect;
 }
 
 void ComRectTransform::GetLocalCorners(Vec3 (&localCorners)[4]) {
-    RectF rect = GetPivotRect();
+    RectF rect = GetLocalRect();
     
     float x1 = rect.x;
     float y1 = rect.y;
@@ -173,18 +187,50 @@ void ComRectTransform::GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) {
     }
 }
 
-void ComRectTransform::UpdateOriginAndRect() {
-    Vec3 oldLocalOrigin = GetLocalOrigin();
+bool ComRectTransform::RayToWorldPointInRectangle(const Ray &ray, Vec3 &worldPoint) const {
+    Plane plane(GetRotation() * Vec3::unitZ, GetOrigin());
+
+    float hitDist;
+    if (!plane.IntersectRay(ray, false, &hitDist)) {
+        return false;
+    }
+
+    worldPoint = ray.GetPoint(hitDist);
+    return true;
+}
+
+bool ComRectTransform::RayToLocalPointInRectangle(const Ray &ray, Vec2 &localPoint) const {
+    localPoint = Vec2::zero;
+
+    Vec3 worldPoint;
+    if (!RayToWorldPointInRectangle(ray, worldPoint)) {
+        return false;
+    }
+
+    // CHECK!!!
+    localPoint = GetMatrixNoScale().ToMat3().TransposedMulVec(worldPoint - GetOrigin()).ToVec2();
+    return true;
+}
+
+bool ComRectTransform::IsLocalPointInRect(const Vec2 &localPoint) {
+    RectF localRect = GetLocalRect();
+
+    return localRect.IsContainPoint(localPoint.x, localPoint.y);
+}
+
+void ComRectTransform::UpdateLocalOriginAndRect() const {
+    Vec3 oldLocalOrigin = ComTransform::GetLocalOrigin();
     Vec3 newLocalOrigin = ComputeLocalOrigin3D();
 
     if (oldLocalOrigin != newLocalOrigin) {
 #if WITH_EDITOR
-        SetProperty("origin", newLocalOrigin);
+        const_cast<ComRectTransform *>(this)->SetProperty("origin", newLocalOrigin);
 #else
-        SetLocalOrigin(newLocalOrigin);
+        const_cast<ComRectTransform *>(this)->SetLocalOrigin(newLocalOrigin);
 #endif
     }
 
+    // Since the local origin has been recalculated, the pivot rect means local rect.
     cachedRect = ComputePivotRect();
 
     cachedRectInvalidated = false;
@@ -211,21 +257,21 @@ RectF ComRectTransform::ComputeLocalRect() const {
     if (parentTransform) {
         ComRectTransform *parentRectTransform = parentTransform->Cast<ComRectTransform>();
         if (parentRectTransform) {
-            parentRect = parentRectTransform->GetPivotRect();
+            parentRect = parentRectTransform->GetLocalRect();
         }
     }
 
-    // Anchored minimum position in parent space.
+    // Calculate anchored minimum position in parent space.
     PointF localMins = PointF(
         parentRect.x + (parentRect.w * anchorMin.x), 
         parentRect.y + (parentRect.h * anchorMin.y));
 
-    // Anchored maximum position in parent space.
+    // Calculate anchored maximum position in parent space.
     PointF localMaxs = PointF(
         parentRect.x + (parentRect.w * anchorMax.x), 
         parentRect.y + (parentRect.h * anchorMax.y));
 
-    // Rectangle in parent space.
+    // Calculate rectangle in parent space.
     RectF localRect;
     localRect.x = localMins.x + anchoredPosition.x - (sizeDelta.x * pivot.x);
     localRect.y = localMins.y + anchoredPosition.y - (sizeDelta.y * pivot.y);
@@ -245,7 +291,6 @@ RectF ComRectTransform::ComputePivotRect() const {
     return rect;
 }
 
-// Returns local origin in parent space in 2D.
 Vec2 ComRectTransform::ComputeLocalOrigin2D() const {
     RectF rect = ComputeLocalRect();
 
@@ -254,10 +299,9 @@ Vec2 ComRectTransform::ComputeLocalOrigin2D() const {
         rect.y + rect.h * pivot.y);
 }
 
-// Returns local origin in parent space in 3D.
 Vec3 ComRectTransform::ComputeLocalOrigin3D() const {
     RectF rect = ComputeLocalRect();
-    Vec3 localOrigin = GetLocalOrigin();
+    Vec3 localOrigin = ComTransform::GetLocalOrigin();
 
     return Vec3(
         rect.x + rect.w * pivot.x,

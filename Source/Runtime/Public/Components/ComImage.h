@@ -18,6 +18,8 @@
 
 BE_NAMESPACE_BEGIN
 
+class Texture;
+
 class ComImage : public Component {
 public:
     OBJECT_PROTOTYPE(ComImage);
@@ -25,10 +27,16 @@ public:
     ComImage();
     virtual ~ComImage();
 
+    virtual void            Purge(bool chainPurge) override;
+
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+    Guid                    GetSpriteGuid() const;
+    void                    SetSpriteGuid(const Guid &guid);
+
 protected:
+    Texture *               sprite;
 };
 
 BE_NAMESPACE_END

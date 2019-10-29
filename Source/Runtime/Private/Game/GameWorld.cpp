@@ -23,6 +23,7 @@
 #include "Asset/GuidMapper.h"
 #include "Components/ComTransform.h"
 #include "Components/ComCamera.h"
+#include "Components/ComCanvas.h"
 #include "Components/ComScript.h"
 #include "Components/ComRigidBody.h"
 #include "Game/Entity.h"
@@ -761,6 +762,21 @@ void GameWorld::ListUpActiveCameraComponents(StaticArray<ComCamera *, 16> &camer
     cameraComponents.Sort(compareFunc);
 }
 
+void GameWorld::ListUpActiveCanvasComponents(StaticArray<ComCanvas *, 16> &canvasComponents) const {
+    for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
+            ComCanvas *canvas = ent->GetComponent<ComCanvas>();
+            if (!canvas || !canvas->IsActiveInHierarchy()) {
+                continue;
+            }
+
+            if (canvasComponents.Append(canvas) == -1) {
+                break;
+            }
+        }
+    }
+}
+
 void GameWorld::Render() {
     StaticArray<ComCamera *, 16> cameraComponents;
     ListUpActiveCameraComponents(cameraComponents);
@@ -768,6 +784,14 @@ void GameWorld::Render() {
     // Render camera in order.
     for (int i = 0; i < cameraComponents.Count(); i++) {
         cameraComponents[i]->Render();
+    }
+
+    StaticArray<ComCanvas *, 16> canvasComponents;
+    ListUpActiveCanvasComponents(canvasComponents);
+
+    // Render canvas in order.
+    for (int i = 0; i < canvasComponents.Count(); i++) {
+        canvasComponents[i]->Render();
     }
 }
 
@@ -788,6 +812,18 @@ void GameWorld::ProcessPointerInput() {
         ComCamera *cameraComponent = cameraComponents[i];
 
         if (cameraComponent->ProcessMousePointerInput() || cameraComponent->ProcessTouchPointerInput()) {
+            break;
+        }
+    }
+
+    StaticArray<ComCanvas *, 16> canvasComponents;
+    ListUpActiveCanvasComponents(canvasComponents);
+
+    // Process pointer input in reverse order
+    for (int i = canvasComponents.Count() - 1; i >= 0; i--) {
+        ComCanvas *canvasComponent = canvasComponents[i];
+
+        if (canvasComponent->ProcessMousePointerInput() || canvasComponent->ProcessTouchPointerInput()) {
             break;
         }
     }

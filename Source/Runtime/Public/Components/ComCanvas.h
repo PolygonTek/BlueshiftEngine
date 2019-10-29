@@ -14,16 +14,24 @@
 
 #pragma once
 
+#include "Containers/HashTable.h"
 #include "Component.h"
+#include "Game/InputUtils.h"
 
 BE_NAMESPACE_BEGIN
 
+class ComRectTransform;
+
 class ComCanvas : public Component {
+    friend class GameWorld;
+
 public:
     OBJECT_PROTOTYPE(ComCanvas);
 
     ComCanvas();
     virtual ~ComCanvas();
+
+    virtual void            Purge(bool chainPurge = true) override;
 
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
@@ -35,12 +43,26 @@ public:
 
     virtual const AABB      GetAABB() override;
 
+                            /// Converts position in world space to screen space.
+    const Point             WorldToScreen(const Vec3 &worldPos) const;
+
+                            /// Makes world space ray from screen space point.
+    const Ray               ScreenPointToRay(const Point &screenPoint);
+
 protected:
+    virtual void            OnInactive() override;
+
     RenderCamera *          renderCamera;
     RenderCamera::State     renderCameraDef;
 
 private:
+    bool                    ProcessMousePointerInput();
+    bool                    ProcessTouchPointerInput();
+
     void                    Render();
+
+    InputUtils::PointerState mousePointerState;
+    HashTable<int32_t, InputUtils::PointerState> touchPointerStateTable;
 };
 
 BE_NAMESPACE_END

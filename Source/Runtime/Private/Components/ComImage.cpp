@@ -14,6 +14,9 @@
 
 #include "Precompiled.h"
 #include "Components/ComImage.h"
+#include "Render/Render.h"
+#include "Asset/Resource.h"
+#include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -22,12 +25,23 @@ BEGIN_EVENTS(ComImage)
 END_EVENTS
 
 void ComImage::RegisterProperties() {
+    REGISTER_MIXED_ACCESSOR_PROPERTY("sprite", "Sprite", Guid, GetSpriteGuid, SetSpriteGuid, GuidMapper::defaultTextureGuid,
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&TextureSpriteResource::metaObject);
 }
 
 ComImage::ComImage() {
+    sprite = nullptr;
 }
 
 ComImage::~ComImage() {
+    Purge(false);
+}
+
+void ComImage::Purge(bool chainPurge) {
+    if (sprite) {
+        textureManager.ReleaseTexture(sprite);
+        sprite = nullptr;
+    }
 }
 
 void ComImage::Init() {
@@ -35,6 +49,23 @@ void ComImage::Init() {
 
     // Mark as initialized
     SetInitialized(true);
+}
+
+Guid ComImage::GetSpriteGuid() const {
+    if (sprite) {
+        const Str spritePath = sprite->GetHashName();
+        return resourceGuidMapper.Get(spritePath);
+    }
+    return Guid();
+}
+
+void ComImage::SetSpriteGuid(const Guid &guid) {
+    if (sprite) {
+        textureManager.ReleaseTexture(sprite);
+    }
+
+    const Str spritePath = resourceGuidMapper.Get(guid);
+    sprite = textureManager.GetTexture(spritePath);
 }
 
 BE_NAMESPACE_END

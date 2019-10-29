@@ -53,32 +53,50 @@ public:
     Vec2                    GetPivot() const;
     void                    SetPivot(const Vec2 &pivot);
 
-                            /// Computes rectangle in pivot space.
-    RectF                   GetPivotRect();
+                            /// Returns position in world space (overrided).
+    Vec3                    GetOrigin() const;
 
-                            /// Computes rectangle vertices in pivot space.
+                            /// Returns position in local space (overrided).
+    Vec3                    GetLocalOrigin() const;
+
+                            /// Computes rectangle in local space.
+    RectF                   GetLocalRect();
+
+                            /// Computes rectangular vertices in local space.
     void                    GetLocalCorners(Vec3 (&corners)[4]);
 
-                            /// Computes rectangle vertices in world space.
+                            /// Computes rectangular vertices in world space.
     void                    GetWorldCorners(Vec3 (&corners)[4]);
 
                             /// Computes anchor coordinates of rectangle in world space.
     void                    GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]);
 
+                            /// Computes ray intersection point in world space of the rectangle.
+    bool                    RayToWorldPointInRectangle(const Ray &ray, Vec3 &worldPoint) const;
+
+                            /// Computes ray intersection point in local space of the rectangle.
+    bool                    RayToLocalPointInRectangle(const Ray &ray, Vec2 &localPoint) const;
+
+                            /// Is the point in local space inside the rectangle ?
+    bool                    IsLocalPointInRect(const Vec2 &localPoint);
+
 protected:
-    void                    UpdateOriginAndRect();
+                            /// Updates local origin and (cached) rect.
+    void                    UpdateLocalOriginAndRect() const;
+
+                            /// Marks this RectTransform and children to need cached rect recalculation.
     void                    InvalidateCachedRect();
 
-                            // Computes rectangle in local space.
+                            /// Computes rectangle in local space.
     RectF                   ComputeLocalRect() const;
 
-                            // Computes rectangle in pivot space.
+                            /// Computes rectangle in pivot space.
     RectF                   ComputePivotRect() const;
 
-                            // Computes local origin in parent space in 2D.
+                            /// Computes local origin in parent space in 2D.
     Vec2                    ComputeLocalOrigin2D() const;
 
-                            // Computes local origin in parent space in 3D.
+                            /// Computes local origin in parent space in 3D.
     Vec3                    ComputeLocalOrigin3D() const;
 
     Vec2                    anchorMin;
@@ -88,7 +106,7 @@ protected:
     Vec2                    pivot;
 
     mutable bool            cachedRectInvalidated;
-    mutable RectF           cachedRect;
+    mutable RectF           cachedRect;                 ///< Cached rectangle in local space.
 };
 
 BE_NAMESPACE_END

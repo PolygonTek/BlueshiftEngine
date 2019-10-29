@@ -38,6 +38,7 @@ class MapRenderSettings;
 class PlayerSettings;
 class GameWorld;
 class ComCamera;
+class ComCanvas;
 
 struct GameScene {
     Hierarchy<Entity>           root;
@@ -187,6 +188,7 @@ private:
     void                        LateUpdateEntities();
 
     void                        ListUpActiveCameraComponents(StaticArray<ComCamera *, 16> &cameraComponents) const;
+    void                        ListUpActiveCanvasComponents(StaticArray<ComCanvas *, 16> &canvasComponents) const;
 
     Entity *                    entities[MaxEntities] = { nullptr, };
     HashIndex                   entityHash;

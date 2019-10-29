@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Components/Component.h"
 #include "Components/ComTransform.h"
+#include "Components/ComRectTransform.h"
 #include "Components/ComRenderable.h"
 #include "Components/ComScript.h"
 #include "Game/Entity.h"
@@ -216,6 +217,35 @@ ComTransform *Entity::GetTransform() const {
     return transform;
 }
 
+Entity *Entity::RayCastRect(const Ray &ray) {
+    ComRectTransform *rectTransform = GetComponent(0)->Cast<ComRectTransform>();
+    if (!rectTransform) {
+        return nullptr;
+    }
+
+    Vec2 localPoint;
+    if (!rectTransform->RayToLocalPointInRectangle(ray, localPoint)) {
+        return nullptr;
+    }
+
+    if (!rectTransform->IsLocalPointInRect(localPoint)) {
+        return nullptr;
+    }
+
+    Entity *hitEntity = this;
+
+    for (Entity *child = node.GetFirstChild(); child; child = child->node.GetNextSibling()) {
+        Entity *hitChild = child->RayCastRect(ray);
+        if (hitChild) {
+            hitEntity = hitChild;
+
+            BE_LOG("%s\n", hitEntity->GetName().c_str());
+        }
+    }
+
+    return hitEntity;
+}
+
 Component *Entity::AddNewComponent(const MetaObject *type) {
     if (!type->IsTypeOf(Component::metaObject)) {
         BE_ERRLOG("Entity::AddNewComponent: %s is not component type\n", type->ClassName());
@@ -319,7 +349,7 @@ ComponentPtrArray Entity::GetComponents(const MetaObject *type) const {
     return subComponents;
 }
 
-ComponentPtrArray Entity::GetComponentsInChildren(const MetaObject *type) const {
+ComponentPtrArray Entity::GetComponentsInChildren(const MetaObject *type, bool skipIfParentDontHave) const {
     ComponentPtrArray subComponents;
 
     for (int i = 0; i < components.Count(); i++) {
@@ -330,8 +360,10 @@ ComponentPtrArray Entity::GetComponentsInChildren(const MetaObject *type) const 
         }
     }
 
-    for (Entity *child = node.GetFirstChild(); child; child = child->node.GetNextSibling()) {
-        subComponents.AppendArray(child->GetComponentsInChildren(type));
+    if (!skipIfParentDontHave || !subComponents.IsEmpty()) {
+        for (Entity *child = node.GetFirstChild(); child; child = child->node.GetNextSibling()) {
+            subComponents.AppendArray(child->GetComponentsInChildren(type, skipIfParentDontHave));
+        }
     }
 
     return subComponents;

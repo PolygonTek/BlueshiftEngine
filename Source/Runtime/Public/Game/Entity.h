@@ -149,13 +149,16 @@ public:
                                 /// Returns all component pointers by the given meta object.
     ComponentPtrArray           GetComponents(const MetaObject *type) const;
                                 /// Returns all component pointers by the given meta object in this entity or any children.
-    ComponentPtrArray           GetComponentsInChildren(const MetaObject *type) const;
+    ComponentPtrArray           GetComponentsInChildren(const MetaObject *type, bool skipIfParentDontHave = false) const;
                                 /// Returns all component pointers by the given type T in this entity or any children.
     template <typename T> 
-    ComponentPtrArray           GetComponentsInChildren() const;
+    ComponentPtrArray           GetComponentsInChildren(bool skipIfParentDontHave = false) const;
 
                                 /// Returns a transform component.
     ComTransform *              GetTransform() const;
+
+                                /// Returns an entity has rect transform which is hit by ray. 
+    Entity *                    RayCastRect(const Ray &ray);
 
                                 /// Adds a component to the entity.
     void                        AddComponent(Component *component) { InsertComponent(component, components.Count()); }
@@ -324,8 +327,8 @@ BE_INLINE int Entity::GetComponentIndex(const Component *component) const {
 }
 
 template <typename T>
-BE_INLINE ComponentPtrArray Entity::GetComponentsInChildren() const {
-    ComponentPtrArray subComponents = GetComponentsInChildren(&T::metaObject);
+BE_INLINE ComponentPtrArray Entity::GetComponentsInChildren(bool skipIfParentDontHave) const {
+    ComponentPtrArray subComponents = GetComponentsInChildren(&T::metaObject, skipIfParentDontHave);
 
     return subComponents;
 }

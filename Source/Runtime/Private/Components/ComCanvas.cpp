@@ -16,8 +16,11 @@
 #include "Render/Render.h"
 #include "Components/ComCanvas.h"
 #include "Components/ComRectTransform.h"
+#include "Components/ComLogic.h"
+#include "Components/ComScript.h"
 #include "Game/Entity.h"
 #include "Game/GameWorld.h"
+#include "Game/TagLayerSettings.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -30,9 +33,29 @@ void ComCanvas::RegisterProperties() {
 
 ComCanvas::ComCanvas() {
     renderCamera = nullptr;
+
+    mousePointerState.oldHitEntityGuid = Guid::zero;
+    mousePointerState.captureEntityGuid = Guid::zero;
 }
 
 ComCanvas::~ComCanvas() {
+    Purge(false);
+}
+
+void ComCanvas::Purge(bool chainPurge) {
+    if (renderCamera) {
+        delete renderCamera;
+        renderCamera = nullptr;
+    }
+
+    mousePointerState.oldHitEntityGuid = Guid::zero;
+    mousePointerState.captureEntityGuid = Guid::zero;
+
+    touchPointerStateTable.Clear();
+
+    if (chainPurge) {
+        Component::Purge();
+    }
 }
 
 void ComCanvas::Init() {
@@ -44,11 +67,25 @@ void ComCanvas::Init() {
 
     renderCameraDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews;
 
+    renderCameraDef.clearMethod = RenderCamera::ClearMethod::DepthOnly;
+
     renderCameraDef.origin = Vec3::origin;
-    renderCameraDef.axis = Mat3::identity;
+    renderCameraDef.axis = BE1::Angles(0, 90, 90).ToMat3();
+    renderCameraDef.axis.FixDegeneracies();
+
+    renderCameraDef.zNear = 0.0f;
+    renderCameraDef.zFar = 1000.0f;
+
+    renderCameraDef.orthogonal = true;
+
+    renderCameraDef.layerMask = TagLayerSettings::BuiltInLayer::UI;
 
     // Mark as initialized
     SetInitialized(true);
+}
+
+void ComCanvas::OnInactive() {
+    touchPointerStateTable.Clear();
 }
 
 #if WITH_EDITOR
@@ -62,8 +99,8 @@ void ComCanvas::DrawGizmos(const RenderCamera *camera, bool selected, bool selec
         screenHeight = ctx->GetScreenHeight();
     }
 
-    renderCameraDef.sizeX = screenWidth;
-    renderCameraDef.sizeY = screenHeight;
+    renderCameraDef.sizeX = screenWidth * 0.5f;
+    renderCameraDef.sizeY = screenHeight * 0.5f;
 
     ComRectTransform *rectTransform = GetEntity()->GetComponent<ComRectTransform>();
     if (rectTransform) {
@@ -88,6 +125,66 @@ const AABB ComCanvas::GetAABB() {
     return AABB(mins, maxs);
 }
 
+const Point ComCanvas::WorldToScreen(const Vec3 &worldPos) const {
+    int screenWidth = 100;
+    int screenHeight = 100;
+
+    const RenderContext *ctx = renderSystem.GetMainRenderContext();
+    if (ctx) {
+        screenWidth = ctx->GetScreenWidth();
+        screenHeight = ctx->GetScreenHeight();
+    }
+
+    Vec3 localPos = renderCameraDef.axis.TransposedMulVec(worldPos - renderCameraDef.origin);
+
+    // Compute right/down normalized screen coordinates [-1.0, +1.0]
+    float ndx = -localPos.x / screenWidth;
+    float ndy = -localPos.y / screenHeight;
+
+    // Compute screen coordinates
+    Point screenPoint;
+    screenPoint.x = screenWidth * (ndx + 1.0f) * 0.5f;
+    screenPoint.y = screenHeight * (ndy + 1.0f) * 0.5f;
+
+    return screenPoint;
+}
+
+const Ray ComCanvas::ScreenPointToRay(const Point &screenPoint) {
+    int screenWidth = 100;
+    int screenHeight = 100;
+
+    const RenderContext *ctx = renderSystem.GetMainRenderContext();
+    if (ctx) {
+        screenWidth = ctx->GetScreenWidth();
+        screenHeight = ctx->GetScreenHeight();
+    }
+
+    renderCameraDef.sizeX = screenWidth * 0.5f;
+    renderCameraDef.sizeY = screenHeight * 0.5f;
+
+    Rect screenRect(0, 0, screenWidth, screenHeight);
+    
+    return RenderCamera::RayFromScreenPoint(renderCameraDef, screenRect, screenPoint);
+}
+
+bool ComCanvas::ProcessMousePointerInput() {
+    return InputUtils::ProcessMousePointerInput(mousePointerState, [this](const Point &screenPoint) {
+        // Convert screen point to ray.
+        Ray ray = ScreenPointToRay(screenPoint);
+        // Cast ray to detect entity.
+        return GetEntity()->RayCastRect(ray);
+    });
+}
+
+bool ComCanvas::ProcessTouchPointerInput() {
+    return InputUtils::ProcessTouchPointerInput(touchPointerStateTable, [this](const Point &screenPoint) {
+        // Convert screen point to ray.
+        Ray ray = ScreenPointToRay(screenPoint);
+        // Cast ray to detect entity.
+        return GetEntity()->RayCastRect(ray);
+    });
+}
+
 void ComCanvas::Render() {
     // Get current render context which is unique for each OS-level window in general.
     const RenderContext *ctx = renderSystem.GetCurrentRenderContext();
@@ -99,8 +196,13 @@ void ComCanvas::Render() {
     float renderingWidth = ctx->GetRenderingWidth();
     float renderingHeight = ctx->GetRenderingHeight();
 
-    renderCameraDef.sizeX = renderingWidth;
-    renderCameraDef.sizeY = renderingHeight;
+    renderCameraDef.renderRect.x = 0;
+    renderCameraDef.renderRect.y = 0;
+    renderCameraDef.renderRect.w = renderingWidth;
+    renderCameraDef.renderRect.h = renderingHeight;
+
+    renderCameraDef.sizeX = renderingWidth * 0.5f;
+    renderCameraDef.sizeY = renderingHeight * 0.5f;
 
     // Update render camera with the given parameters.
     renderCamera->Update(&renderCameraDef);
