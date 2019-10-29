@@ -102,12 +102,14 @@ protected:
 
     RenderWorld *           renderWorld;
 
+    InputUtils::PointerState mousePointerState;
+    HashTable<int32_t, InputUtils::PointerState> touchPointerStateTable;
+
+#if WITH_EDITOR
     Mesh *                  spriteMesh;
     RenderObject::State     spriteDef;
     int                     spriteHandle;
-
-    InputUtils::PointerState mousePointerState;
-    HashTable<int32_t, InputUtils::PointerState> touchPointerStateTable;
+#endif
 
 private:
     int                     GetOrder() const { return order; }

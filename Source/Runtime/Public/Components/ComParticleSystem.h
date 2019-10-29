@@ -81,9 +81,11 @@ protected:
     int                     currentTime;
     int                     stopTime;
 
+#if WITH_EDITOR
     RenderObject::State     spriteDef;
     int                     spriteHandle;
     Mesh *                  spriteReferenceMesh;
+#endif
 };
 
 BE_NAMESPACE_END

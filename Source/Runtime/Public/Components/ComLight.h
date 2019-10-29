@@ -102,11 +102,13 @@ protected:
     RenderLight::State      renderLightDef;
     int                     renderLightHandle;
 
+    RenderWorld *           renderWorld;
+
+#if WITH_EDITOR
     Mesh *                  spriteMesh;
     RenderObject::State     spriteDef;
     int                     spriteHandle;
-
-    RenderWorld *           renderWorld;
+#endif
 };
 
 BE_NAMESPACE_END
