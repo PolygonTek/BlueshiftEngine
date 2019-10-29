@@ -171,7 +171,7 @@ BE_INLINE bool RectF::IsContainPoint(const PointF &pt) const {
 }
 
 BE_INLINE bool RectF::IsContainPoint(const float x, const float y) const {
-    return (x < this->x || y < this->y || x >= x + this->w || y >= y + this->h) ? false : true;
+    return (x < this->x || y < this->y || x >= this->x + this->w || y >= this->y + this->h) ? false : true;
 }
 
 BE_INLINE bool RectF::IsContainRect(const RectF &a) const {
