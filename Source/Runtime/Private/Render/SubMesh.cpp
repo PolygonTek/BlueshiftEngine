@@ -206,11 +206,14 @@ void SubMesh::CacheDynamicDataToGpu(const Mat3x4 *joints, const Material *materi
         simdProcessor->TransformVerts(verts, numVerts, joints, jointWeightVerts, reinterpret_cast<int *>(jointWeights), numJointWeights);
     }
 
+    // NOTE: No need normals and tangents for VertexGeneric
+#if 0
     bool unsmoothedTangents = (material->GetFlags() & Material::Flag::UnsmoothTangents) ? true : false;
 
     ComputeTangents(true, unsmoothedTangents);
 
     FixMirroredVerts();
+#endif
 
     // Fill in dynamic vertex buffer
     bufferCacheManager.AllocVertex(numVerts, sizeof(VertexGenericLit), verts, vertexCache);
