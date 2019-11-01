@@ -124,6 +124,7 @@ void GameClient::InitDefaultGuids() {
     resourceGuidMapper.Set(GuidMapper::flatNormalTextureGuid, "_flatNormalTexture");
     resourceGuidMapper.Set(GuidMapper::normalCubeTextureGuid, "_normalCubeTexture");
     resourceGuidMapper.Set(GuidMapper::cubicNormalCubeTextureGuid, "_cubicNormalCubeTexture");
+    resourceGuidMapper.Set(GuidMapper::imageShaderGuid, "Shaders/Image");
     resourceGuidMapper.Set(GuidMapper::unlitShaderGuid, "Shaders/Unlit");
     resourceGuidMapper.Set(GuidMapper::standardSpecularShaderGuid, "Shaders/StandardSpec");
     resourceGuidMapper.Set(GuidMapper::standardShaderGuid, "Shaders/Standard");

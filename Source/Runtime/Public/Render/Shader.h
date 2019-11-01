@@ -360,6 +360,7 @@ public:
     enum PredefinedOriginalShader {
         WriteValueShader,
         DrawArrayTextureShader,
+        ImageShader,
         UnlitShader,
         SelectionIdShader,
         DepthShader,

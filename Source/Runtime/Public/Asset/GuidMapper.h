@@ -60,6 +60,7 @@ public:
     static Guid             cubicNormalCubeTextureGuid;
     static Guid             currentRenderTextureGuid;
 
+    static Guid             imageShaderGuid;
     static Guid             unlitShaderGuid;
     static Guid             standardSpecularShaderGuid;
     static Guid             standardShaderGuid;
