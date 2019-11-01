@@ -274,72 +274,67 @@ Texture *TextureManager::GetTexture(const char *hashName) {
     }
 
     const Str textureInfoPath = Str(hashName) + ".texture";
-    TextureInfo textureInfo = LoadTextureInfo(textureInfoPath);
+    int flags = LoadTextureInfo(textureInfoPath);
 
     texture = AllocTexture(hashName);
-    if (!texture->Load(hashName, textureInfo.flags)) {
+    if (!texture->Load(hashName, flags)) {
         DestroyTexture(texture);
         return defaultTexture;
     }
 
-    texture->spriteBorderLT = textureInfo.spriteBorderLT;
-    texture->spriteBorderRB = textureInfo.spriteBorderRB;
-
     return texture;
 }
 
-TextureInfo TextureManager::LoadTextureInfo(const char *filename) const {
-    TextureInfo textureInfo;
+int TextureManager::LoadTextureInfo(const char *filename) const {
+    int flags;
 
-    textureInfo.flags = Texture::Flag::Clamp | Texture::Flag::SRGBColorSpace;
-    textureInfo.spriteBorderLT.Set(0, 0);
-    textureInfo.spriteBorderRB.Set(0, 0);
+    flags = Texture::Flag::Clamp | Texture::Flag::SRGBColorSpace;
 
     if (!filename || !filename[0]) {
-        return textureInfo;
+        return flags;
     }
 
     char *text = nullptr;
     size_t size = fileSystem.LoadFile(filename, true, (void **)&text);
     if (!text) {
-        return textureInfo;
+        return flags;
     }
 
     Json::Value node;
     Json::Reader jsonReader;
     if (!jsonReader.parse(text, node)) {
         BE_WARNLOG("Failed to parse JSON text\n");
-        return textureInfo;
+        return flags;
     }
 
-    textureInfo.flags = 0;
+    flags = 0;
 
     int version = node["version"].asInt();
     if (version >= 4) {
         const Json::Value textureTypeValue = node.get("textureType", "2D");
         const char *textureTypeString = textureTypeValue.asCString();
         if (!Str::Icmp(textureTypeString, "UI")) {
-            textureInfo.flags |= Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo;
+            flags |= Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo;
         }
 
         const Json::Value normalMapValue = node.get("normalMap", "false");
         const char *normalMapString = normalMapValue.asCString();
         if (!Str::Icmp(normalMapString, "true")) {
-            textureInfo.flags |= Texture::Flag::NormalMap;
+            flags |= Texture::Flag::NormalMap;
         }
 
         const Json::Value wrapModeValue = node.get("wrapMode", "Clamp");
         const char *wrapModeString = wrapModeValue.asCString();
         if (!Str::Icmp(wrapModeString, "Clamp")) {
-            textureInfo.flags |= Texture::Flag::Clamp;
+            flags |= Texture::Flag::Clamp;
         } else if (!Str::Icmp(wrapModeString, "Repeat")) {
-            textureInfo.flags |= Texture::Flag::Repeat;
+            flags |= Texture::Flag::Repeat;
         }
 
         const Json::Value filterModeValue = node.get("filterMode", "Bilinear");
         const char *filterModeString = filterModeValue.asCString();
         if (!Str::Icmp(filterModeString, "Point")) {
-            textureInfo.flags |= Texture::Flag::Nearest | Texture::Flag::NoMipmaps;
+            flags |= Texture::Flag::Nearest | Texture::Flag::NoMipmaps;
         } else if (!Str::Icmp(filterModeString, "Bilinear")) {
         } else if (!Str::Icmp(filterModeString, "Trilinear")) {
         }
@@ -347,33 +342,27 @@ TextureInfo TextureManager::LoadTextureInfo(const char *filename) const {
         const Json::Value sRGBValue = node.get("colorSpace", "sRGB");
         const char *sRGBString = sRGBValue.asCString();
         if (!Str::Icmp(sRGBString, "sRGB")) {
-            textureInfo.flags |= Texture::Flag::SRGBColorSpace;
+            flags |= Texture::Flag::SRGBColorSpace;
         }
 
         const Json::Value useMipmapsValue = node.get("useMipmaps", "true");
         const char *useMipmapsString = useMipmapsValue.asCString();
         if (!Str::Icmp(useMipmapsString, "false")) {
-            textureInfo.flags |= Texture::Flag::NoMipmaps;
+            flags |= Texture::Flag::NoMipmaps;
         }
 
         const Json::Value compressionLevelValue = node.get("compressionLevel", "Normal");
         const char *compressionLevelString = compressionLevelValue.asCString();
         if (!Str::Icmp(compressionLevelString, "None")) {
-            textureInfo.flags |= Texture::Flag::NoCompression;
+            flags |= Texture::Flag::NoCompression;
         }
-
-        const Json::Value spriteBorderLTValue = node.get("spriteBorderLT", "0 0");
-        textureInfo.spriteBorderLT = Point::FromString(spriteBorderLTValue.asCString());
-
-        const Json::Value spriteBorderRBValue = node.get("spriteBorderRB", "0 0");
-        textureInfo.spriteBorderRB = Point::FromString(spriteBorderRBValue.asCString());
     }
 
-    if (textureInfo.flags & Texture::Flag::NormalMap) {
-        textureInfo.flags &= ~Texture::Flag::SRGBColorSpace;
+    if (flags & Texture::Flag::NormalMap) {
+        flags &= ~Texture::Flag::SRGBColorSpace;
     }
 
-    return textureInfo;
+    return flags;
 }
 
 Texture *TextureManager::TextureFromGenerator(const char *hashName, const TextureGeneratorBase &generator) {
