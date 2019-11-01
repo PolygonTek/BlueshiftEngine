@@ -52,7 +52,7 @@ void ComCollider::Init() {
     SetInitialized(true);
 }
 
-const AABB ComCollider::GetAABB() {
+const AABB ComCollider::GetAABB() const {
     if (collider) {
         return collider->GetAABB();
     }

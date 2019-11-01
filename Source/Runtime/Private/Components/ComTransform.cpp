@@ -349,7 +349,7 @@ void ComTransform::InvalidateWorldMatrix() {
     }
     worldMatrixInvalidated = true;
 
-    // World matrix should be updated so we emit this signal
+    // World matrix will be updated so it's safe to emit  can safely emit this signal.
     EmitSignal(&SIG_TransformUpdated, this);
 
     if (physicsUpdating) {

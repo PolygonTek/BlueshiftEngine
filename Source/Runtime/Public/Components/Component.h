@@ -80,7 +80,7 @@ public:
     virtual void            Update() {}
 
                             /// Returns non-scaled local AABB.
-    virtual const AABB      GetAABB() { return AABB::zero; }
+    virtual const AABB      GetAABB() const { return AABB::zero; }
 
                             ///
     virtual bool            IntersectRay(const Ray &ray, bool backFaceCull, float *hitDist) const { return false; }

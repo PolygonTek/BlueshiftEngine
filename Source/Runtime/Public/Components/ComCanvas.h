@@ -41,7 +41,7 @@ public:
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
-    virtual const AABB      GetAABB() override;
+    virtual const AABB      GetAABB() const override;
 
                             /// Converts position in world space to screen space.
     const Point             WorldToScreen(const Vec3 &worldPos) const;

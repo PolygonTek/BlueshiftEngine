@@ -137,7 +137,7 @@ bool ComRenderable::IsVisibleInPreviousFrame() const {
     return renderWorld->GetViewCount() - renderObject->GetViewCount() <= 1;
 }
 
-const AABB ComRenderable::GetAABB() {
+const AABB ComRenderable::GetAABB() const {
     return renderObjectDef.aabb;
 }
 

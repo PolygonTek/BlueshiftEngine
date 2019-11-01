@@ -238,7 +238,7 @@ void ComEnvironmentProbe::DrawGizmos(const RenderCamera *camera, bool selected, 
 }
 #endif
 
-const AABB ComEnvironmentProbe::GetAABB() {
+const AABB ComEnvironmentProbe::GetAABB() const {
     return Sphere(Vec3::origin, MeterToUnit(0.5f)).ToAABB();
 }
 

@@ -41,7 +41,7 @@ public:
 
     virtual bool            HasRenderEntity(int renderEntityHandle) const override;
 
-    virtual const AABB      GetAABB() override;
+    virtual const AABB      GetAABB() const override;
 
     virtual bool            IntersectRay(const Ray &ray, bool backFaceCull, float *hitDist) const override;
 

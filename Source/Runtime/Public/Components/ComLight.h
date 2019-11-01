@@ -42,7 +42,7 @@ public:
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
-    virtual const AABB      GetAABB() override;
+    virtual const AABB      GetAABB() const override;
 
     RenderLight::Type::Enum GetLightType() const;
     void                    SetLightType(RenderLight::Type::Enum type);

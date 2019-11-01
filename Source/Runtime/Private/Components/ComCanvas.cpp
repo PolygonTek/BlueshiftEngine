@@ -109,7 +109,7 @@ void ComCanvas::DrawGizmos(const RenderCamera *camera, bool selected, bool selec
 }
 #endif
 
-const AABB ComCanvas::GetAABB() {
+const AABB ComCanvas::GetAABB() const {
     int screenWidth = 100;
     int screenHeight = 100;
 

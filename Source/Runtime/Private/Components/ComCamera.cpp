@@ -266,7 +266,7 @@ void ComCamera::DrawGizmos(const RenderCamera *camera, bool selected, bool selec
 }
 #endif 
 
-const AABB ComCamera::GetAABB() {
+const AABB ComCamera::GetAABB() const {
     return Sphere(Vec3::origin, MeterToUnit(0.5f)).ToAABB();
 }
 

@@ -29,7 +29,7 @@ BEGIN_EVENTS(ComLight)
 END_EVENTS
 
 void ComLight::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("lightType", "Light Type", RenderLight::Type::Enum, GetLightType, SetLightType, 0, 
+    REGISTER_ACCESSOR_PROPERTY("lightType", "Light Type", RenderLight::Type::Enum, GetLightType, SetLightType, RenderLight::Type::Point,
         "", PropertyInfo::Flag::Editor).SetEnumString("Point;Spot;Directional");
     REGISTER_ACCESSOR_PROPERTY("primaryLight", "Is Main Light", bool, IsPrimaryLight, SetPrimaryLight, false,
         "", PropertyInfo::Flag::Editor);
@@ -259,7 +259,7 @@ void ComLight::DrawGizmos(const RenderCamera *camera, bool selected, bool select
 }
 #endif
 
-const AABB ComLight::GetAABB() {
+const AABB ComLight::GetAABB() const {
     return Sphere(Vec3::origin, MeterToUnit(0.5f)).ToAABB();
 }
 
@@ -383,10 +383,12 @@ Guid ComLight::GetMaterialGuid() const {
 }
 
 void ComLight::SetMaterialGuid(const Guid &materialGuid) {
+    // Release the previously used material
     if (renderLightDef.material) {
         materialManager.ReleaseMaterial(renderLightDef.material);
     }
 
+    // Get the new material
     const Str materialPath = resourceGuidMapper.Get(materialGuid);
     renderLightDef.material = materialManager.GetMaterial(materialPath);
 
