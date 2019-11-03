@@ -41,6 +41,12 @@ ComMeshCollider::ComMeshCollider() {
 ComMeshCollider::~ComMeshCollider() {
 }
 
+void ComMeshCollider::Init() {
+    ComCollider::Init();
+
+    CreateCollider();
+}
+
 void ComMeshCollider::CreateCollider() {
     if (collider) {
         colliderManager.ReleaseCollider(collider);

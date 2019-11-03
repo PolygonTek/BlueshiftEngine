@@ -38,6 +38,12 @@ ComSphereCollider::ComSphereCollider() {
 ComSphereCollider::~ComSphereCollider() {
 }
 
+void ComSphereCollider::Init() {
+    ComCollider::Init();
+
+    CreateCollider();
+}
+
 void ComSphereCollider::CreateCollider() {
     if (collider) {
         colliderManager.ReleaseCollider(collider);

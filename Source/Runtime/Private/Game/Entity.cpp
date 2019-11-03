@@ -46,7 +46,7 @@ END_EVENTS
 
 void Entity::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("parent", "Parent", Guid, GetParentGuid, SetParentGuid, Guid::zero,
-        "Parent Entity", PropertyInfo::Flag::Editor).SetMetaObject(&Entity::metaObject);
+        "Parent Entity", PropertyInfo::Flag::ForceToSet | PropertyInfo::Flag::Editor).SetMetaObject(&Entity::metaObject);
     REGISTER_ACCESSOR_PROPERTY("siblingIndex", "Sibling Index", int, GetSiblingIndex, SetSiblingIndex, -1,
         "", PropertyInfo::Flag::SkipSerialization);
     REGISTER_PROPERTY("prefab", "Prefab", bool, prefab, false,
@@ -673,7 +673,7 @@ Guid Entity::GetParentGuid() const {
     if (parentEntity) {
         return parentEntity->GetGuid();
     }
-    return Guid();
+    return Guid::zero;
 }
 
 void Entity::SetParentGuid(const Guid &parentGuid) {

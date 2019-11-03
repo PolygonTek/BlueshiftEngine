@@ -40,6 +40,12 @@ ComCapsuleCollider::ComCapsuleCollider() {
 ComCapsuleCollider::~ComCapsuleCollider() {
 }
 
+void ComCapsuleCollider::Init() {
+    ComCollider::Init();
+
+    CreateCollider();
+}
+
 void ComCapsuleCollider::CreateCollider() {
     if (collider) {
         colliderManager.ReleaseCollider(collider);

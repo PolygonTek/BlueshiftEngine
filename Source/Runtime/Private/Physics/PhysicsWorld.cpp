@@ -122,7 +122,7 @@ PhysicsWorld::PhysicsWorld() {
     accumulatedTimeDelta = 0;
     time = 0;
 
-    frameRate = 50;
+    SetFrameRate(50);
     maximumAllowedTimeStep = 0.2f;
 
     SetGravity(Vec3(0, 0, 0));

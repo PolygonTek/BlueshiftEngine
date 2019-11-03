@@ -29,6 +29,9 @@ public:
     ComCylinderCollider();
     virtual ~ComCylinderCollider();
 
+                            /// Initializes this component. Called after deserialization.
+    virtual void            Init() override;
+
 #if WITH_EDITOR
                             /// Visualize the component in editor
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;

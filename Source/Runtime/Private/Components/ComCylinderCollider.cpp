@@ -40,6 +40,12 @@ ComCylinderCollider::ComCylinderCollider() {
 ComCylinderCollider::~ComCylinderCollider() {
 }
 
+void ComCylinderCollider::Init() {
+    ComCollider::Init();
+
+    CreateCollider();
+}
+
 void ComCylinderCollider::CreateCollider() {
     if (collider) {
         colliderManager.ReleaseCollider(collider);

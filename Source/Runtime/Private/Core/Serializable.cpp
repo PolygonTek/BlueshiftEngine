@@ -745,6 +745,12 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     Variant oldValue;
     GetProperty(propertyInfo, oldValue);
 
+    if (!(propertyInfo.GetFlags() & PropertyInfo::Flag::ForceToSet)) {
+        if (newValue == oldValue) {
+            return true;
+        }
+    }
+    
     if (propertyInfo.accessor) {
         propertyInfo.accessor->Set(this, newValue);
     } else {
@@ -820,10 +826,7 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
         }
     }
 
-    if (newValue != oldValue) {
-        EmitSignal(&Serializable::SIG_PropertyChanged, propertyInfo.name.c_str(), -1);
-    }
-    
+    EmitSignal(&Serializable::SIG_PropertyChanged, propertyInfo.name.c_str(), -1);
     return true;
 }
 
@@ -1009,6 +1012,12 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
     Variant oldValue;
     GetArrayProperty(propertyInfo, elementIndex, oldValue);
 
+    if (!(propertyInfo.GetFlags() & PropertyInfo::Flag::ForceToSet)) {
+        if (newValue == oldValue) {
+            return true;
+        }
+    }
+
     if (propertyInfo.accessor) {
         propertyInfo.accessor->Set(this, elementIndex, newValue);
     } else {
@@ -1084,10 +1093,7 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
         }
     }
 
-    if (newValue != oldValue) {
-        EmitSignal(&Serializable::SIG_PropertyChanged, propertyInfo.name.c_str(), elementIndex);
-    }
-
+    EmitSignal(&Serializable::SIG_PropertyChanged, propertyInfo.name.c_str(), elementIndex);
     return true;
 }
 

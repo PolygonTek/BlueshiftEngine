@@ -38,6 +38,12 @@ ComBoxCollider::ComBoxCollider() {
 ComBoxCollider::~ComBoxCollider() {
 }
 
+void ComBoxCollider::Init() {
+    ComCollider::Init();
+
+    CreateCollider();
+}
+
 void ComBoxCollider::CreateCollider() {
     if (collider) {
         colliderManager.ReleaseCollider(collider);

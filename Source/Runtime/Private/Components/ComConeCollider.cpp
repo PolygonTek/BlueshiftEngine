@@ -40,6 +40,12 @@ ComConeCollider::ComConeCollider() {
 ComConeCollider::~ComConeCollider() {
 }
 
+void ComConeCollider::Init() {
+    ComCollider::Init();
+
+    CreateCollider();
+}
+
 void ComConeCollider::CreateCollider() {
     if (collider) {
         colliderManager.ReleaseCollider(collider);

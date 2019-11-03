@@ -291,7 +291,9 @@ EnvProbe::Type::Enum ComEnvironmentProbe::GetType() const {
 void ComEnvironmentProbe::SetType(EnvProbe::Type::Enum type) {
     probeDef.type = type;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 EnvProbe::RefreshMode::Enum ComEnvironmentProbe::GetRefreshMode() const {
@@ -301,7 +303,9 @@ EnvProbe::RefreshMode::Enum ComEnvironmentProbe::GetRefreshMode() const {
 void ComEnvironmentProbe::SetRefreshMode(EnvProbe::RefreshMode::Enum refreshMode) {
     probeDef.refreshMode = refreshMode;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 EnvProbe::TimeSlicing::Enum ComEnvironmentProbe::GetTimeSlicing() const {
@@ -311,7 +315,9 @@ EnvProbe::TimeSlicing::Enum ComEnvironmentProbe::GetTimeSlicing() const {
 void ComEnvironmentProbe::SetTimeSlicing(EnvProbe::TimeSlicing::Enum timeSlicing) {
     probeDef.timeSlicing = timeSlicing;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 int ComEnvironmentProbe::GetImportance() const {
@@ -321,7 +327,9 @@ int ComEnvironmentProbe::GetImportance() const {
 void ComEnvironmentProbe::SetImportance(int importance) {
     probeDef.importance = Max(importance, 0);
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 EnvProbe::Resolution::Enum ComEnvironmentProbe::GetResolution() const {
@@ -331,7 +339,9 @@ EnvProbe::Resolution::Enum ComEnvironmentProbe::GetResolution() const {
 void ComEnvironmentProbe::SetResolution(EnvProbe::Resolution::Enum resolution) {
     probeDef.resolution = resolution;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 bool ComEnvironmentProbe::IsHDR() const {
@@ -341,7 +351,9 @@ bool ComEnvironmentProbe::IsHDR() const {
 void ComEnvironmentProbe::SetHDR(bool useHDR) {
     probeDef.useHDR = useHDR;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 int ComEnvironmentProbe::GetLayerMask() const {
@@ -351,7 +363,9 @@ int ComEnvironmentProbe::GetLayerMask() const {
 void ComEnvironmentProbe::SetLayerMask(int layerMask) {
     probeDef.layerMask = layerMask;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 EnvProbe::ClearMethod::Enum ComEnvironmentProbe::GetClearMethod() const {
@@ -361,7 +375,9 @@ EnvProbe::ClearMethod::Enum ComEnvironmentProbe::GetClearMethod() const {
 void ComEnvironmentProbe::SetClearMethod(EnvProbe::ClearMethod::Enum clearMethod) {
     probeDef.clearMethod = clearMethod;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 Color3 ComEnvironmentProbe::GetClearColor() const {
@@ -371,7 +387,9 @@ Color3 ComEnvironmentProbe::GetClearColor() const {
 void ComEnvironmentProbe::SetClearColor(const Color3 &clearColor) {
     probeDef.clearColor = clearColor;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 float ComEnvironmentProbe::GetClippingNear() const {
@@ -385,7 +403,9 @@ void ComEnvironmentProbe::SetClippingNear(float clippingNear) {
         SetProperty("far", probeDef.clippingNear);
     }
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 float ComEnvironmentProbe::GetClippingFar() const {
@@ -397,7 +417,9 @@ void ComEnvironmentProbe::SetClippingFar(float clippingFar) {
         probeDef.clippingFar = clippingFar;
     }
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 bool ComEnvironmentProbe::IsBoxProjection() const {
@@ -407,7 +429,9 @@ bool ComEnvironmentProbe::IsBoxProjection() const {
 void ComEnvironmentProbe::SetBoxProjection(bool useBoxProjection) {
     probeDef.useBoxProjection = useBoxProjection;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 Vec3 ComEnvironmentProbe::GetBoxExtent() const {
@@ -432,7 +456,9 @@ void ComEnvironmentProbe::SetBoxExtent(const Vec3 &boxExtent) {
         SetProperty("boxOffset", adjustedBoxOffset);
     }
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 Vec3 ComEnvironmentProbe::GetBoxOffset() const {
@@ -457,7 +483,9 @@ void ComEnvironmentProbe::SetBoxOffset(const Vec3 &boxOffset) {
         SetProperty("boxExtent", adjustedBoxExtent);
     }
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 float ComEnvironmentProbe::GetBlendDistance() const {
@@ -467,7 +495,9 @@ float ComEnvironmentProbe::GetBlendDistance() const {
 void ComEnvironmentProbe::SetBlendDistance(float blendDistance) {
     probeDef.blendDistance = blendDistance;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 Guid ComEnvironmentProbe::GetBakedDiffuseProbeTextureGuid() const {
@@ -494,7 +524,9 @@ void ComEnvironmentProbe::SetBakedDiffuseProbeTextureGuid(const Guid &textureGui
         }
     }
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 Guid ComEnvironmentProbe::GetBakedSpecularProbeTextureGuid() const {
@@ -521,7 +553,9 @@ void ComEnvironmentProbe::SetBakedSpecularProbeTextureGuid(const Guid &textureGu
         }
     }
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 Texture *ComEnvironmentProbe::GetDiffuseProbeTexture() const {
