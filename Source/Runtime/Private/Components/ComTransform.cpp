@@ -39,7 +39,7 @@ void ComTransform::RegisterProperties() {
 
 ComTransform::ComTransform() {
     worldMatrix = Mat3x4::identity;
-    worldMatrixInvalidated = false;
+    worldMatrixInvalidated = true;
     physicsUpdating = false;
 }
 

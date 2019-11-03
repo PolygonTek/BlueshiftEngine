@@ -42,7 +42,7 @@ void ComRectTransform::RegisterProperties() {
 
 ComRectTransform::ComRectTransform() {
     cachedRect = RectF::empty;
-    cachedRectInvalidated = false;
+    cachedRectInvalidated = true;
 }
 
 ComRectTransform::~ComRectTransform() {
