@@ -104,13 +104,14 @@ int GameWorld::GetDeltaTime() const {
 }
 
 void GameWorld::DontDestroyOnLoad(Entity *entity) {
+    // Change current parent to reserved scene root.
     if (!entity->node.IsParentedBy(scenes[DontDestroyOnLoadSceneNum].root)) {
         entity->GetRoot()->node.SetParent(scenes[DontDestroyOnLoadSceneNum].root);
     }
 }
 
 void GameWorld::ClearEntities(bool clearAll) {
-    // List up all of the entities to remove in depth first order
+    // List up all of the entities to remove in depth first order.
     EntityPtrArray entitiesToRemove;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
@@ -628,13 +629,14 @@ bool GameWorld::LoadMap(const char *filename, LoadSceneMode::Enum mode) {
 
     fileSystem.FreeFile(text);
 
-    // Read map version
+    // Read map version.
     int mapVersion = map["version"].asInt();
 
-    // Read map render settings
+    // Read map render settings.
     mapRenderSettings->Deserialize(map["renderSettings"]);
     mapRenderSettings->Init();
 
+    // Find empty scene index.
     int sceneIndex = 0;
     for (; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         if (!scenes[sceneIndex].root.GetFirstChild()) {
@@ -644,7 +646,7 @@ bool GameWorld::LoadMap(const char *filename, LoadSceneMode::Enum mode) {
 
     assert(sceneIndex < COUNT_OF(scenes));
 
-    // Read and spawn entities
+    // Read and spawn all entities.
     SpawnEntitiesFromJson(map["entities"], sceneIndex);
 
     FinishMapLoading();
@@ -657,13 +659,13 @@ void GameWorld::SaveMap(const char *filename) {
 
     Json::Value map;
 
-    // Write map version
+    // Serialize map version.
     map["version"] = 1;
 
-    // Write map render settings
+    // Serialize map render settings.
     mapRenderSettings->Serialize(map["renderSettings"]);
 
-    // Write entities
+    // Serialize all entities in the main scene.
     for (Entity *ent = scenes[0].root.GetFirstChild(); ent; ent = ent->node.GetNextSibling()) {
         Entity::SerializeHierarchy(ent, map["entities"]);
     }

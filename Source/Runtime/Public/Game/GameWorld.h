@@ -40,7 +40,8 @@ class GameWorld;
 class ComCamera;
 class ComCanvas;
 
-struct GameScene {
+class GameScene {
+public:
     Hierarchy<Entity>           root;
 };
 

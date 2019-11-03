@@ -140,9 +140,11 @@ void Entity::InitComponents() {
     }
 
 #if WITH_EDITOR
-    ComRenderable *renderable = GetComponent<ComRenderable>();
-    if (renderable) {
-        renderable->SetProperty("skipSelection", frozen);
+    if (frozen) {
+        ComRenderable *renderable = GetComponent<ComRenderable>();
+        if (renderable) {
+            renderable->SetProperty("skipSelection", frozen);
+        }
     }
 #endif
 }
