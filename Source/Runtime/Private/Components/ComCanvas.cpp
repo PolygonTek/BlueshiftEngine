@@ -73,12 +73,12 @@ void ComCanvas::Init() {
     renderCameraDef.axis = BE1::Angles(0, 90, 90).ToMat3();
     renderCameraDef.axis.FixDegeneracies();
 
-    renderCameraDef.zNear = 0.0f;
+    renderCameraDef.zNear = -1000.0f;
     renderCameraDef.zFar = 1000.0f;
 
     renderCameraDef.orthogonal = true;
 
-    renderCameraDef.layerMask = TagLayerSettings::BuiltInLayer::UI;
+    renderCameraDef.layerMask = BIT(TagLayerSettings::BuiltInLayer::UI);
 
     // Mark as initialized
     SetInitialized(true);
