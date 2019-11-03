@@ -124,6 +124,7 @@ static void RegisterEngineObjects() {
     ComAnimator::RegisterProperties();
     ComParticleSystem::RegisterProperties();
     ComTextRenderer::RegisterProperties();
+    ComImage::RegisterProperties();
     ComLight::RegisterProperties();
     ComEnvironmentProbe::RegisterProperties();
     ComCamera::RegisterProperties();

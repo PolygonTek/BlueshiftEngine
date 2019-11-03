@@ -313,7 +313,7 @@ int TextureManager::LoadTextureInfo(const char *filename) const {
     if (version >= 4) {
         const Json::Value textureTypeValue = node.get("textureType", "2D");
         const char *textureTypeString = textureTypeValue.asCString();
-        if (!Str::Icmp(textureTypeString, "UI")) {
+        if (!Str::Icmp(textureTypeString, "Sprite")) {
             flags |= Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo;
         }
 

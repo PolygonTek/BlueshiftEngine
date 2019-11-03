@@ -36,7 +36,7 @@ public:
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
-    virtual const AABB      GetAABB() override;
+    virtual const AABB      GetAABB() const override;
 
     Vec2                    GetAnchorMin() const;
     void                    SetAnchorMin(const Vec2 &anchorMin);
@@ -60,16 +60,16 @@ public:
     Vec3                    GetLocalOrigin() const;
 
                             /// Computes rectangle in local space.
-    RectF                   GetLocalRect();
+    RectF                   GetLocalRect() const;
 
                             /// Computes rectangular vertices in local space.
-    void                    GetLocalCorners(Vec3 (&corners)[4]);
+    void                    GetLocalCorners(Vec3 (&corners)[4]) const;
 
                             /// Computes rectangular vertices in world space.
-    void                    GetWorldCorners(Vec3 (&corners)[4]);
+    void                    GetWorldCorners(Vec3 (&corners)[4]) const;
 
                             /// Computes anchor coordinates of rectangle in world space.
-    void                    GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]);
+    void                    GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) const;
 
                             /// Computes ray intersection point in world space of the rectangle.
     bool                    RayToWorldPointInRectangle(const Ray &ray, Vec3 &worldPoint) const;
@@ -78,7 +78,9 @@ public:
     bool                    RayToLocalPointInRectangle(const Ray &ray, Vec2 &localPoint) const;
 
                             /// Is the point in local space inside the rectangle ?
-    bool                    IsLocalPointInRect(const Vec2 &localPoint);
+    bool                    IsLocalPointInRect(const Vec2 &localPoint) const;
+
+    static const SignalDef  SIG_RectTransformUpdated;
 
 protected:
                             /// Updates local origin and (cached) rect.

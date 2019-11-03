@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
+#include "Simd/Simd.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -159,8 +160,10 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
         }
 
         // Skip if a object is farther than maximum visible distance
-        if (renderObject->state.worldMatrix.ToTranslationVec3().DistanceSqr(camera->def->GetState().origin) > renderObject->maxVisDistSquared) {
-            return true;
+        if (!(renderObject->state.flags & RenderObject::Flag::NoVisDist)) {
+            if (renderObject->state.worldMatrix.ToTranslationVec3().DistanceSqr(camera->def->GetState().origin) > renderObject->maxVisDistSquared) {
+                return true;
+            }
         }
 
         // Register visible object form the render object
@@ -332,6 +335,61 @@ void RenderWorld::AddSkinnedMeshes(VisCamera *camera) {
     }
 }
 
+void RenderWorld::AddRawMeshes(VisCamera *camera) {
+    for (VisObject *visObject = camera->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
+        if (!visObject->ambientVisible) {
+            continue;
+        }
+
+        const RenderObject::State &renderObjectDef = visObject->def->state;
+
+        if (!renderObjectDef.numVerts || !renderObjectDef.numIndexes) {
+            continue;
+        }
+
+        int flags = DrawSurf::Flag::Visible;
+        if (renderObjectDef.wireframeMode != RenderObject::WireframeMode::ShowNone || r_showWireframe.GetInteger() > 0) {
+            flags |= DrawSurf::Flag::ShowWires;
+        }
+
+        // Cache vertices.
+        BufferCache vertexCache;
+        bufferCacheManager.AllocVertex(renderObjectDef.numVerts, sizeof(VertexGeneric), nullptr, &vertexCache);
+        VertexGeneric *vertexPointer = (VertexGeneric *)bufferCacheManager.MapVertexBuffer(&vertexCache);
+        
+        simdProcessor->Memcpy(vertexPointer, renderObjectDef.verts, sizeof(renderObjectDef.verts[0]) * renderObjectDef.numVerts);
+        
+        bufferCacheManager.UnmapVertexBuffer(&vertexCache);
+
+        // Cache indexes.
+        BufferCache indexCache;
+        bufferCacheManager.AllocIndex(renderObjectDef.numIndexes, sizeof(TriIndex), nullptr, &indexCache);
+        TriIndex *indexPointer = (TriIndex *)bufferCacheManager.MapIndexBuffer(&indexCache);
+
+        simdProcessor->Memcpy(indexPointer, renderObjectDef.indexes, sizeof(renderObjectDef.indexes[0]) * renderObjectDef.numIndexes);
+
+        bufferCacheManager.UnmapIndexBuffer(&indexCache);
+
+        // Copy this SubMesh to the temporary frame data to use in backend.
+        SubMesh *subMesh = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
+        new (subMesh) SubMesh();
+
+        subMesh->type = Mesh::Type::Dynamic;
+        subMesh->numIndexes = renderObjectDef.numIndexes;
+        subMesh->numVerts = renderObjectDef.numVerts;
+
+        subMesh->vertexCache = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
+        *(subMesh->vertexCache) = vertexCache;
+
+        subMesh->indexCache = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
+        *(subMesh->indexCache) = indexCache;
+
+        AddDrawSurf(camera, nullptr, visObject, renderObjectDef.materials[0], subMesh, flags);
+
+        camera->numAmbientSurfs++;
+    }
+}
+
 // Add drawing surfaces of visible particle meshes.
 void RenderWorld::AddParticleMeshes(VisCamera *camera) {
     for (VisObject *visObject = camera->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
@@ -360,7 +418,7 @@ void RenderWorld::AddParticleMeshes(VisCamera *camera) {
                 break;
             }
 
-            // Copy this SubMesh to the temporary frame data for use in backend
+            // Copy this SubMesh to the temporary frame data to use in backend
             SubMesh *subMesh = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
             new (subMesh) SubMesh();
 
@@ -410,7 +468,7 @@ void RenderWorld::AddTextMeshes(VisCamera *camera) {
                 break;
             }
 
-            // Copy this SubMesh to the temporary frame data for use in back end
+            // Copy this SubMesh to the temporary frame data to use in back end
             SubMesh *subMesh = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
             new (subMesh) SubMesh();
 
@@ -510,8 +568,10 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
         }
 
         // Skip if the object is farther than maximum visible distance.
-        if (renderObject->state.worldMatrix.ToTranslationVec3().DistanceSqr(camera->def->state.origin) > renderObject->maxVisDistSquared) {
-            return true;
+        if (!(renderObject->state.flags & RenderObject::Flag::NoVisDist)) {
+            if (renderObject->state.worldMatrix.ToTranslationVec3().DistanceSqr(camera->def->state.origin) > renderObject->maxVisDistSquared) {
+                return true;
+            }
         }
 
         const Material *material = renderObject->state.materials[surf->materialIndex];
@@ -847,11 +907,14 @@ void RenderWorld::DrawCamera(VisCamera *camera) {
 
     //AddSubCamera(camera);
 
-    // Add drawing surfaces of particle meshes by searching in visObjects.
-    AddParticleMeshes(camera);
+    // Add drawing surfaces of raw meshes by searching in visObjects.
+    AddRawMeshes(camera);
 
     // Add drawing surfaces of text meshes by searching in visObjects.
     AddTextMeshes(camera);
+
+    // Add drawing surfaces of particle meshes by searching in visObjects.
+    AddParticleMeshes(camera);
 
     // Add drawing surface of skybox.
     AddSkyBoxMeshes(camera);

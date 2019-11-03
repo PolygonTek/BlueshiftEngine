@@ -1,7 +1,7 @@
 shader "Image" {
     properties {
-        albedoMap("Albedo Map") : texture "2D" = "_whiteTexture"
-        intensity("Intensity") : float range 0 16.0 0.001 = "1"
+        albedoMap("Albedo Map") : texture "SPRITE" = "_whiteTexture"
+        intensity("Intensity") : float range 0.0 16.0 0.001 = "1.0"
     }
 
     generatePerforatedVersion

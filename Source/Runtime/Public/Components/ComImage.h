@@ -14,15 +14,22 @@
 
 #pragma once
 
-#include "Component.h"
+#include "ComRenderable.h"
 
 BE_NAMESPACE_BEGIN
 
-class Texture;
+class ComRectTransform;
 
-class ComImage : public Component {
+class ComImage : public ComRenderable {
 public:
     OBJECT_PROTOTYPE(ComImage);
+
+    struct ImageType {
+        enum Enum {
+            Simple,
+            Sliced
+        };
+    };
     
     ComImage();
     virtual ~ComImage();
@@ -32,11 +39,19 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-    Guid                    GetSpriteGuid() const;
-    void                    SetSpriteGuid(const Guid &guid);
+    Guid                    GetImageMaterialGuid() const;
+    void                    SetImageMaterialGuid(const Guid &guid);
+
+    ImageType::Enum         GetImageType() const;
+    void                    SetImageType(ImageType::Enum imageType);
 
 protected:
-    Texture *               sprite;
+    virtual void            UpdateVisuals() override;
+
+    void                    RectTransformUpdated(const ComRectTransform *rectTransform);
+    void                    UpdateRawVertexes();
+
+    ImageType::Enum         imageType;
 };
 
 BE_NAMESPACE_END

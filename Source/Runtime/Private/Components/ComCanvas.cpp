@@ -90,8 +90,8 @@ void ComCanvas::OnInactive() {
 
 #if WITH_EDITOR
 void ComCanvas::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
-    int screenWidth = 100;
-    int screenHeight = 100;
+    int screenWidth = 320;
+    int screenHeight = 200;
 
     const RenderContext *ctx = renderSystem.GetMainRenderContext();
     if (ctx) {
@@ -104,14 +104,16 @@ void ComCanvas::DrawGizmos(const RenderCamera *camera, bool selected, bool selec
 
     ComRectTransform *rectTransform = GetEntity()->GetComponent<ComRectTransform>();
     if (rectTransform) {
-        rectTransform->SetProperty("sizeDelta", Vec2(screenWidth, screenHeight));
+        if (rectTransform->GetSizeDelta() != Vec2(screenWidth, screenHeight)) {
+            rectTransform->SetProperty("sizeDelta", Vec2(screenWidth, screenHeight));
+        }
     }
 }
 #endif
 
 const AABB ComCanvas::GetAABB() const {
-    int screenWidth = 100;
-    int screenHeight = 100;
+    int screenWidth = 320;
+    int screenHeight = 200;
 
     const RenderContext *ctx = renderSystem.GetMainRenderContext();
     if (ctx) {
@@ -126,8 +128,8 @@ const AABB ComCanvas::GetAABB() const {
 }
 
 const Point ComCanvas::WorldToScreen(const Vec3 &worldPos) const {
-    int screenWidth = 100;
-    int screenHeight = 100;
+    int screenWidth = 320;
+    int screenHeight = 200;
 
     const RenderContext *ctx = renderSystem.GetMainRenderContext();
     if (ctx) {
@@ -150,8 +152,8 @@ const Point ComCanvas::WorldToScreen(const Vec3 &worldPos) const {
 }
 
 const Ray ComCanvas::ScreenPointToRay(const Point &screenPoint) {
-    int screenWidth = 100;
-    int screenHeight = 100;
+    int screenWidth = 320;
+    int screenHeight = 200;
 
     const RenderContext *ctx = renderSystem.GetMainRenderContext();
     if (ctx) {

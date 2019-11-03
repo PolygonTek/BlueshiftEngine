@@ -162,6 +162,7 @@ private:
     void                    FindVisLightsAndObjects(VisCamera *camera);
     void                    AddStaticMeshes(VisCamera *camera);
     void                    AddSkinnedMeshes(VisCamera *camera);
+    void                    AddRawMeshes(VisCamera *camera);
     void                    AddParticleMeshes(VisCamera *camera);
     void                    AddTextMeshes(VisCamera *camera);
     void                    AddSkyBoxMeshes(VisCamera *camera);

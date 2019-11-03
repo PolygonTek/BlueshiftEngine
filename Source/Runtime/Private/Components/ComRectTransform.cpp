@@ -21,6 +21,8 @@
 
 BE_NAMESPACE_BEGIN
 
+const SignalDef ComRectTransform::SIG_RectTransformUpdated("ComRectTransform::RectTransformUpdated", "a");
+
 OBJECT_DECLARATION("Rect Transform", ComRectTransform, ComTransform)
 BEGIN_EVENTS(ComRectTransform)
 END_EVENTS
@@ -129,14 +131,14 @@ Vec3 ComRectTransform::GetOrigin() const {
     return ComTransform::GetOrigin();
 }
 
-RectF ComRectTransform::GetLocalRect() {
+RectF ComRectTransform::GetLocalRect() const {
     if (cachedRectInvalidated) {
         UpdateLocalOriginAndRect();
     }
     return cachedRect;
 }
 
-void ComRectTransform::GetLocalCorners(Vec3 (&localCorners)[4]) {
+void ComRectTransform::GetLocalCorners(Vec3 (&localCorners)[4]) const {
     RectF rect = GetLocalRect();
     
     float x1 = rect.x;
@@ -150,7 +152,7 @@ void ComRectTransform::GetLocalCorners(Vec3 (&localCorners)[4]) {
     localCorners[3] = Vec3(x1, y2, 0);
 }
 
-void ComRectTransform::GetWorldCorners(Vec3 (&worldCorners)[4]) {
+void ComRectTransform::GetWorldCorners(Vec3 (&worldCorners)[4]) const {
     Vec3 localCorners[4];
     GetLocalCorners(localCorners);
 
@@ -161,7 +163,7 @@ void ComRectTransform::GetWorldCorners(Vec3 (&worldCorners)[4]) {
     }
 }
 
-void ComRectTransform::GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) {
+void ComRectTransform::GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) const {
     for (int i = 0; i < COUNT_OF(worldAnchorCorners); i++) {
         worldAnchorCorners[i] = Vec3::zero;
     }
@@ -212,7 +214,7 @@ bool ComRectTransform::RayToLocalPointInRectangle(const Ray &ray, Vec2 &localPoi
     return true;
 }
 
-bool ComRectTransform::IsLocalPointInRect(const Vec2 &localPoint) {
+bool ComRectTransform::IsLocalPointInRect(const Vec2 &localPoint) const {
     RectF localRect = GetLocalRect();
 
     return localRect.IsContainPoint(localPoint.x, localPoint.y);
@@ -241,6 +243,9 @@ void ComRectTransform::InvalidateCachedRect() {
         return;
     }
     cachedRectInvalidated = true;
+
+    // World matrix will be updated so it's safe to emit this signal.
+    EmitSignal(&SIG_RectTransformUpdated, this);
 
     for (Entity *childEntity = GetEntity()->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
         ComRectTransform *rectTransform = childEntity->GetComponent(0)->Cast<ComRectTransform>();
@@ -365,7 +370,7 @@ void ComRectTransform::DrawGizmos(const RenderCamera *camera, bool selected, boo
 }
 #endif
 
-const AABB ComRectTransform::GetAABB() {
+const AABB ComRectTransform::GetAABB() const {
     Vec3 localCorners[4];
     GetLocalCorners(localCorners);
 

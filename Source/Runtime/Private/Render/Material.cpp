@@ -252,6 +252,11 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
         } else if (!token.Icmp("tc")) {
             lexer.ParseVec(2, pass->tcScale);
             lexer.ParseVec(2, pass->tcTranslation);
+        } else if (!token.Icmp("imageBorders")) {
+            pass->imageBorderLT.x = lexer.ParseInt();
+            pass->imageBorderLT.y = lexer.ParseInt();
+            pass->imageBorderRB.x = lexer.ParseInt();
+            pass->imageBorderRB.y = lexer.ParseInt();
         } else if (!token.Icmp("cutoffAlpha")) {
             pass->cutoffAlpha = lexer.ParseFloat(); 
         } else if (!token.Icmp("blendFunc")) {
@@ -336,7 +341,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
         } else if (!token.Icmp("useOwnerColor")) {
             pass->useOwnerColor = true;
         } else if (!token.Icmp("instancingEnabled")) {
-            pass->instancingEnabled = true;
+            pass->instancingEnabled = true;        
         } else {
             BE_WARNLOG("unknown material pass parameter '%s' in material '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
@@ -776,6 +781,8 @@ void Material::Write(const char *filename) {
     }
 
     fp->Printf("%stc (%.3f %.3f) (%.3f %.3f)\n", indentSpace.c_str(), pass->tcScale[0], pass->tcScale[1], pass->tcTranslation[0], pass->tcTranslation[1]);     
+
+    fp->Printf("%simageBorders %i %i %i %i\n", indentSpace.c_str(), pass->imageBorderLT.x, pass->imageBorderLT.y, pass->imageBorderRB.x, pass->imageBorderRB.y);
 
     int colorMask = pass->stateBits & RHI::MaskColor;
     if (colorMask) {

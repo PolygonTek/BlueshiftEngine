@@ -125,6 +125,8 @@ public:
         Texture *               texture;
         Vec2                    tcScale;
         Vec2                    tcTranslation;
+        Point                   imageBorderLT = Point(0, 0);
+        Point                   imageBorderRB = Point(0, 0);
         bool                    instancingEnabled;
         Shader *                referenceShader;
         Shader *                shader;
@@ -142,6 +144,9 @@ public:
     void                        SetRenderingMode(RenderingMode::Enum mode);
     int                         GetCullType() const { return pass->cullType; }
     int                         GetSort() const { return sort; }
+
+    const Point &               GetImageBorderLT() const { return pass->imageBorderLT; }
+    const Point &               GetImageBorderRB() const { return pass->imageBorderRB; }
 
     bool                        IsLitSurface() const;
     bool                        IsSkySurface() const;

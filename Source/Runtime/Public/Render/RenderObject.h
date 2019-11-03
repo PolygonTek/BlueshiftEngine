@@ -23,6 +23,7 @@
 */
 
 #include "Core/Str.h"
+#include "Core/Vertex.h"
 #include "Math/Math.h"
 #include "Containers/Array.h"
 
@@ -49,14 +50,15 @@ public:
             Static              = BIT(0),
             FirstPersonOnly     = BIT(1),
             ThirdPersonOnly     = BIT(2),
-            Billboard           = BIT(3),
-            DepthHack           = BIT(4),
-            EnvProbeLit         = BIT(5),
-            CastShadows         = BIT(6),
-            ReceiveShadows      = BIT(7),
-            Occluder            = BIT(8),   // for use in HOM
-            SkipSelection       = BIT(9),
-            RichText            = BIT(10),
+            NoVisDist           = BIT(3),
+            Billboard           = BIT(4),
+            DepthHack           = BIT(5),
+            EnvProbeLit         = BIT(6),
+            CastShadows         = BIT(7),
+            ReceiveShadows      = BIT(8),
+            Occluder            = BIT(9),   // for use in HOM
+            SkipSelection       = BIT(10),
+            RichText            = BIT(11),
         };
     };
 
@@ -129,6 +131,14 @@ public:
         const Skeleton *    skeleton = nullptr;         ///< Skeleton information for skeletal mesh
         int                 numJoints = 0;              ///< Number of joints
         Mat3x4 *            joints = nullptr;           ///< Joint transform matrices to animate skeletal mesh
+
+        //
+        // Raw indexed triangles rendering (typically for GUI rendering)
+        //
+        int                 numVerts = 0;
+        VertexGeneric *     verts = nullptr;
+        int                 numIndexes = 0;
+        TriIndex *          indexes = nullptr;
 
         //
         // Text rendering
