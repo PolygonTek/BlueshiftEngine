@@ -603,8 +603,11 @@ set(COMMON_ENGINE_FILES
     Private/Scripting/Math/LuaModule_Frustum.cpp
     Private/Scripting/Math/LuaModule_Ray.cpp
     Private/Scripting/Math/LuaModule_Point.cpp
+    Private/Scripting/Math/LuaModule_PointF.cpp
     Private/Scripting/Math/LuaModule_Size.cpp
+    Private/Scripting/Math/LuaModule_SizeF.cpp
     Private/Scripting/Math/LuaModule_Rect.cpp
+    Private/Scripting/Math/LuaModule_RectF.cpp
     Private/Scripting/Engine/LuaModule_Common.cpp
     Private/Scripting/Input/LuaModule_InputSystem.cpp
     Private/Scripting/Screen/LuaModule_Screen.cpp
@@ -626,6 +629,7 @@ set(COMMON_ENGINE_FILES
     Private/Scripting/Asset/LuaModule_Prefab.cpp
     Private/Scripting/Components/LuaModule_Component.cpp
     Private/Scripting/Components/LuaModule_ComTransform.cpp
+    Private/Scripting/Components/LuaModule_ComRectTransform.cpp
     Private/Scripting/Components/LuaModule_ComCollider.cpp
     Private/Scripting/Components/LuaModule_ComBoxCollider.cpp
     Private/Scripting/Components/LuaModule_ComSphereCollider.cpp
@@ -654,6 +658,7 @@ set(COMMON_ENGINE_FILES
     Private/Scripting/Components/LuaModule_ComParticleSystem.cpp
     Private/Scripting/Components/LuaModule_ComLight.cpp
     Private/Scripting/Components/LuaModule_ComCamera.cpp
+    Private/Scripting/Components/LuaModule_ComCanvas.cpp
     Private/Scripting/Components/LuaModule_ComAudioListener.cpp
     Private/Scripting/Components/LuaModule_ComAudioSource.cpp
     Private/Scripting/Components/LuaModule_ComSpline.cpp

@@ -79,8 +79,11 @@ private:
     void                    RegisterFrustum(LuaCpp::Module &module);
     void                    RegisterRay(LuaCpp::Module &module);
     void                    RegisterPoint(LuaCpp::Module &module);
+    void                    RegisterPointF(LuaCpp::Module &module);
     void                    RegisterSize(LuaCpp::Module &module);
+    void                    RegisterSizeF(LuaCpp::Module &module);
     void                    RegisterRect(LuaCpp::Module &module);
+    void                    RegisterRectF(LuaCpp::Module &module);
 
     void                    RegisterCommon(LuaCpp::Module &module);
 
@@ -111,6 +114,7 @@ private:
 
     void                    RegisterComponent(LuaCpp::Module &module);
     void                    RegisterTransformComponent(LuaCpp::Module &module);
+    void                    RegisterRectTransformComponent(LuaCpp::Module &module);
     void                    RegisterColliderComponent(LuaCpp::Module &module);
     void                    RegisterBoxColliderComponent(LuaCpp::Module &module);
     void                    RegisterSphereColliderComponent(LuaCpp::Module &module);
@@ -139,6 +143,7 @@ private:
     void                    RegisterTextRendererComponent(LuaCpp::Module &module);
     void                    RegisterParticleSystemComponent(LuaCpp::Module &module);
     void                    RegisterCameraComponent(LuaCpp::Module &module);
+    void                    RegisterCanvasComponent(LuaCpp::Module &module);
     void                    RegisterLightComponent(LuaCpp::Module &module);
     void                    RegisterAudioListenerComponent(LuaCpp::Module &module);
     void                    RegisterAudioSourceComponent(LuaCpp::Module &module);

@@ -191,8 +191,11 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterFrustum(module);
         RegisterRay(module);
         RegisterPoint(module);
+        RegisterPointF(module);
         RegisterSize(module);
+        RegisterSizeF(module);
         RegisterRect(module);
+        RegisterRectF(module);
         // Common
         RegisterCommon(module);
         // Input
@@ -224,6 +227,7 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         // Component
         RegisterComponent(module);
         RegisterTransformComponent(module);
+        RegisterRectTransformComponent(module);
         RegisterColliderComponent(module);
         RegisterBoxColliderComponent(module);
         RegisterSphereColliderComponent(module);
@@ -252,6 +256,7 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterTextRendererComponent(module);
         RegisterParticleSystemComponent(module);
         RegisterCameraComponent(module);
+        RegisterCanvasComponent(module);
         RegisterLightComponent(module);
         RegisterAudioListenerComponent(module);
         RegisterAudioSourceComponent(module);
