@@ -378,10 +378,10 @@ void RenderWorld::AddRawMeshes(VisCamera *camera) {
         subMesh->numIndexes = renderObjectDef.numIndexes;
         subMesh->numVerts = renderObjectDef.numVerts;
 
-        subMesh->vertexCache = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
-        *(subMesh->vertexCache) = vertexCache;
+        subMesh->vertexCache = (BufferCache *)frameData.Alloc(sizeof(BufferCache));
+        subMesh->indexCache = (BufferCache *)frameData.Alloc(sizeof(BufferCache));
 
-        subMesh->indexCache = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
+        *(subMesh->vertexCache) = vertexCache;
         *(subMesh->indexCache) = indexCache;
 
         AddDrawSurf(camera, nullptr, visObject, renderObjectDef.materials[0], subMesh, flags);
@@ -422,15 +422,15 @@ void RenderWorld::AddParticleMeshes(VisCamera *camera) {
             SubMesh *subMesh = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
             new (subMesh) SubMesh();
 
-            subMesh->type           = Mesh::Type::Dynamic;
-            subMesh->numIndexes     = prtMeshSurf->numIndexes;
-            subMesh->numVerts       = prtMeshSurf->numVerts;
+            subMesh->type = Mesh::Type::Dynamic;
+            subMesh->numIndexes = prtMeshSurf->numIndexes;
+            subMesh->numVerts = prtMeshSurf->numVerts;
 
-            subMesh->vertexCache    = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
+            subMesh->vertexCache = (BufferCache *)frameData.Alloc(sizeof(BufferCache));
+            subMesh->indexCache = (BufferCache *)frameData.Alloc(sizeof(BufferCache));
+
             *(subMesh->vertexCache) = prtMeshSurf->vertexCache;
-
-            subMesh->indexCache     = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
-            *(subMesh->indexCache)  = prtMeshSurf->indexCache;
+            *(subMesh->indexCache) = prtMeshSurf->indexCache;
 
             AddDrawSurf(camera, nullptr, visObject, prtMeshSurf->material, subMesh, flags);
 
@@ -472,15 +472,15 @@ void RenderWorld::AddTextMeshes(VisCamera *camera) {
             SubMesh *subMesh = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
             new (subMesh) SubMesh();
 
-            subMesh->type           = Mesh::Type::Dynamic;
-            subMesh->numIndexes     = guiMeshSurf->numIndexes;
-            subMesh->numVerts       = guiMeshSurf->numVerts;
+            subMesh->type = Mesh::Type::Dynamic;
+            subMesh->numIndexes = guiMeshSurf->numIndexes;
+            subMesh->numVerts = guiMeshSurf->numVerts;
 
-            subMesh->vertexCache    = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
+            subMesh->vertexCache = (BufferCache *)frameData.Alloc(sizeof(BufferCache));
+            subMesh->indexCache = (BufferCache *)frameData.Alloc(sizeof(BufferCache));
+
             *(subMesh->vertexCache) = guiMeshSurf->vertexCache;
-
-            subMesh->indexCache     = (BufferCache *)frameData.ClearedAlloc(sizeof(BufferCache));
-            *(subMesh->indexCache)  = guiMeshSurf->indexCache;
+            *(subMesh->indexCache) = guiMeshSurf->indexCache;
 
             AddDrawSurf(camera, nullptr, visObject, guiMeshSurf->material, subMesh, flags);
 
