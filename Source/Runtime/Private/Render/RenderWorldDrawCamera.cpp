@@ -366,7 +366,11 @@ void RenderWorld::AddRawMeshes(VisCamera *camera) {
         bufferCacheManager.AllocIndex(renderObjectDef.numIndexes, sizeof(TriIndex), nullptr, &indexCache);
         TriIndex *indexPointer = (TriIndex *)bufferCacheManager.MapIndexBuffer(&indexCache);
 
-        simdProcessor->Memcpy(indexPointer, renderObjectDef.indexes, sizeof(renderObjectDef.indexes[0]) * renderObjectDef.numIndexes);
+        int baseVertexIndex = vertexCache.offset / sizeof(VertexGeneric);
+
+        for (int i = 0; i < renderObjectDef.numIndexes; i++) {
+            *indexPointer++ = baseVertexIndex + renderObjectDef.indexes[i];
+        }
 
         bufferCacheManager.UnmapIndexBuffer(&indexCache);
 
