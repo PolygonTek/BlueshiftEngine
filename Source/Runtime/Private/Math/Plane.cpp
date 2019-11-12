@@ -67,7 +67,7 @@ bool Plane::IntersectRay(const Ray &ray, bool ignoreBackside, float *hitDist) co
         return false;
     }
 
-    if (Math::Abs(d1) == 0.000001f) {
+    if (Math::Fabs(d1) == 0.000001f) {
         return false;
     }
 
