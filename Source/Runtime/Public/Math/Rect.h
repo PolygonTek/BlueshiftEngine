@@ -55,6 +55,9 @@ public:
     int                 X2() const { return x + w; }
     int                 Y2() const { return y + h; }
 
+                        /// Returns a point of this rect with the given index.
+    Point               GetPoint(int index) const;
+
                         /// Returns a center point of this rect.
     Point               GetCenter() const { return Point(x + (w >> 1), y + (h >> 1)); }
 
@@ -144,6 +147,16 @@ BE_INLINE constexpr Rect::Rect(int inX, int inY, int inW, int inH) :
 
 BE_INLINE constexpr Rect::Rect(const Point &p) :
     x(p.x), y(p.y), w(1), h(1) {
+}
+
+BE_INLINE Point Rect::GetPoint(int index) const {
+    switch (index) {
+    case 0: return Point(x, y);
+    case 1: return Point(x + w, y);
+    case 2: return Point(x + w, y + h);
+    case 3: return Point(x, y + h);
+    }
+    return Point::zero;
 }
 
 BE_INLINE Rect &Rect::operator=(const Rect &rhs) {

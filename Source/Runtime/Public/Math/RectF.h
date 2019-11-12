@@ -55,6 +55,9 @@ public:
     float               X2() const { return x + w; }
     float               Y2() const { return y + h; }
 
+                        /// Returns a point of this rect with the given index.
+    PointF              GetPoint(int index) const;
+
                         /// Returns a center point of this rect.
     PointF              GetCenter() const { return PointF(x + (w * 0.5f), y + (h * 0.5f)); }
 
@@ -146,6 +149,16 @@ BE_INLINE constexpr RectF::RectF(float inX, float inY, float inW, float inH) :
 
 BE_INLINE constexpr RectF::RectF(const PointF &p) :
     x(p.x), y(p.y), w(1), h(1) {
+}
+
+BE_INLINE PointF RectF::GetPoint(int index) const {
+    switch (index) {
+    case 0: return PointF(x, y);
+    case 1: return PointF(x + w, y);
+    case 2: return PointF(x + w, y + h);
+    case 3: return PointF(x, y + h);
+    }
+    return PointF::zero;
 }
 
 BE_INLINE RectF &RectF::operator=(const RectF &rhs) {
