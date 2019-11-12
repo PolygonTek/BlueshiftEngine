@@ -54,6 +54,8 @@ public:
     Vec3                Center() const { return Vec3((b[1][0] + b[0][0]) * 0.5f, (b[1][1] + b[0][1]) * 0.5f, (b[1][2] + b[0][2]) * 0.5f); }
                         /// Returns extents.
     Vec3                Extents() const { return (b[1] - b[0]) * 0.5f; }
+                        /// Returns sizes.
+    Vec3                Sizes() const { return b[1] - b[0]; }
 
                         /// Radius of circumscribed sphere that center in origin about the AABB.
     float               OuterRadius() const;
