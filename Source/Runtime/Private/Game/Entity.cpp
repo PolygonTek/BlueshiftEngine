@@ -329,7 +329,7 @@ Entity *Entity::FindChild(const char *name) const {
 Component *Entity::GetComponent(const MetaObject *type) const {
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
-        if (component->GetMetaObject()->IsTypeOf(*type)) {
+        if (component->GetMetaObject() == type) {
             return component;
         }
     }
