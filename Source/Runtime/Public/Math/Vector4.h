@@ -36,8 +36,10 @@ public:
     Vec4() = default;
     /// Constructs a Vec4 with the value (x, y, z, w).
     constexpr Vec4(float x, float y, float z, float w);
-    /// Constructs a Vec4 with the value (xyz.x, xyz.y, xyz.z, w).
+    /// Constructs a Vec4 with the value (xyz[0], xyz[1], xyz[2], w).
     constexpr Vec4(const Vec3 &xyz, float w);
+    /// Constructs a Vec4 with the value (xy[0], xy[1], zw[2], zw[3]).
+    constexpr Vec4(const Vec2 &xy, const Vec2 &zw);
     /// Constructs a Vec4 from a C array, to the value (data[0], data[1], data[2], data[3]).
     explicit constexpr Vec4(const float data[4]);
     /// Constructs a Vec4 from a single value (s, s, s, s)
@@ -267,6 +269,10 @@ BE_INLINE constexpr Vec4::Vec4(float inX, float inY, float inZ, float inW) :
 
 BE_INLINE constexpr Vec4::Vec4(const Vec3 &inXyz, float inW) :
     x(inXyz.x), y(inXyz.y), z(inXyz.z), w(inW) {
+}
+
+BE_INLINE constexpr Vec4::Vec4(const Vec2 &inXy, const Vec2 &inZw) :
+    x(inXy.x), y(inXy.y), z(inZw.x), w(inZw.y) {
 }
 
 BE_INLINE constexpr Vec4::Vec4(const float data[4]) :
