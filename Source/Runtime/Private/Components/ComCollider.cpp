@@ -53,9 +53,9 @@ void ComCollider::Init() {
 }
 
 const AABB ComCollider::GetAABB() const {
-    if (collider) {
+    /*if (collider) {
         return collider->GetAABB();
-    }
+    }*/
     return AABB::zero;
 }
 
