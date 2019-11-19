@@ -125,7 +125,6 @@ public:
                         /// Divides vector (s, s, s, s) by a vector, element-wise.
     friend Vec2         operator/(float lhs, const Vec2 &rhs) { return Vec2(lhs / rhs.x, lhs / rhs.y); }
 
-
                         /// Assign from another vector.
     Vec2 &              operator=(const Vec2 &rhs);
 
@@ -226,6 +225,13 @@ public:
 
                         /// Computes z-component of 3D vector cross product of this (x, y, 0) and the given vector (a.x, a.y, 0).
     float               Cross(const Vec2 &a) const;
+
+                        /// Returns this vector onto the given unnormalized direction vector.
+    Vec2                ProjectTo(const Vec2 &direction) const;
+                        /// Returns this vector onto the given normalized direction vector.
+    Vec2                ProjectToNorm(const Vec2 &direction) const;
+                        /// Projects this vector onto the given plane normal vector.
+    Vec2                ProjectOnPlane(const Vec2 &planeNormal) const;
 
                         /// Returns the angle between this vector and the specified vector, in radians.
     float               AngleBetween(const Vec2 &other) const;
@@ -449,6 +455,18 @@ BE_INLINE float Vec2::AbsDot(const Vec2 &a) const {
 
 BE_INLINE float Vec2::Cross(const Vec2 &a) const {
     return x * a.y - y * a.x;
+}
+
+BE_INLINE Vec2 Vec2::ProjectTo(const Vec2 &direction) const {
+    return direction * Dot(direction) / direction.LengthSqr();
+}
+
+BE_INLINE Vec2 Vec2::ProjectToNorm(const Vec2 &direction) const {
+    return direction * Dot(direction);
+}
+
+BE_INLINE Vec2 Vec2::ProjectOnPlane(const Vec2 &planeNormal) const {
+    return *this - ProjectToNorm(planeNormal);
 }
 
 BE_INLINE float Vec2::AngleBetween(const Vec2 &other) const {

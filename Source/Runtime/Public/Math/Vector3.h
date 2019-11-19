@@ -247,6 +247,13 @@ public:
                         /// Refracts this vector about a plane with the given normal, in-place.
     Vec3 &              RefractSelf(const Vec3 &normal, float eta);
 
+                        /// Returns this vector onto the given unnormalized direction vector.
+    Vec3                ProjectTo(const Vec3 &direction) const;
+                        /// Returns this vector onto the given normalized direction vector.
+    Vec3                ProjectToNorm(const Vec3 &direction) const;
+                        /// Projects this vector onto the given plane normal vector.
+    Vec3                ProjectOnPlane(const Vec3 &planeNormal) const;
+
                         /// Returns the angle between this vector and the specified vector, in radians.
     float               AngleBetween(const Vec3 &other) const;
                         /// Returns the angle between this vector and the specified normalized vector, in radians.
@@ -582,6 +589,18 @@ BE_INLINE Vec3 &Vec3::RefractSelf(const Vec3 &normal, float eta) {
         *this = (eta * cos_in - Math::Sqrt(cos_tn2)) * normal - eta * (*this);
     }
     return *this;
+}
+
+BE_INLINE Vec3 Vec3::ProjectTo(const Vec3 &direction) const {
+    return direction * Dot(direction) / direction.LengthSqr();
+}
+
+BE_INLINE Vec3 Vec3::ProjectToNorm(const Vec3 &direction) const {
+    return direction * Dot(direction);
+}
+
+BE_INLINE Vec3 Vec3::ProjectOnPlane(const Vec3 &planeNormal) const {
+    return *this - ProjectToNorm(planeNormal);
 }
 
 BE_INLINE float Vec3::AngleBetween(const Vec3 &other) const {
