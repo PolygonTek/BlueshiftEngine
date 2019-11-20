@@ -314,6 +314,9 @@ public:
     static float                AngleNormalize180(float angle);
     static float                AngleDelta(float angle1, float angle2);
 
+    static float                FlipAngleX(float angle);
+    static float                FlipAngleY(float angle);
+
     static int                  FloatToBits(float f, int exponentBits, int mantissaBits);
     static float                BitsToFloat(int i, int exponentBits, int mantissaBits);
 
@@ -1026,6 +1029,18 @@ BE_INLINE float Math::AngleNormalize180(float angle) {
 
 BE_INLINE float Math::AngleDelta(float angle1, float angle2) {
     return AngleNormalize180(angle1 - angle2);
+}
+
+BE_INLINE float Math::FlipAngleX(float angle) {
+    float s, c;
+    SinCos(angle, s, c);
+    return ATan(s, -c);
+}
+
+BE_INLINE float Math::FlipAngleY(float angle) {
+    float s, c;
+    SinCos(angle, s, c);
+    return ATan(-s, c);
 }
 
 BE_INLINE int Math::FloatHash(const float *arr, const int numFloats) {
