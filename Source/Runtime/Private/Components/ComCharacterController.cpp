@@ -360,8 +360,7 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
                 
                 // 두번째 slide vector 가 첫번째 부딛힌 normal 과 또 부딛힌다면, cross 방향으로 slide
                 Vec3 slideDir = bumpNormals[i].Cross(bumpNormals[j]);
-                slideDir.Normalize();
-                slideVec = slideDir * slideDir.Dot(moveVec);
+                slideVec = moveVec.ProjectTo(slideDir);
 
                 slideVec += (bumpNormals[i] + bumpNormals[j]) * 0.01f;
                 

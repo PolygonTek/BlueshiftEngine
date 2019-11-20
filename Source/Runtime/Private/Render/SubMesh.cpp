@@ -539,10 +539,10 @@ static void R_DeriveTangentsWithoutNormals(VertexGenericLit *verts, const int nu
         Vec3 normal = verts[i].GetNormal();
         normal.Normalize();
 
-        vertexTangents[i] -= (vertexTangents[i].Dot(normal)) * normal;
+        vertexTangents[i].ProjectOnPlane(normal);
         vertexTangents[i].Normalize();
 
-        vertexBitangents[i] -= (vertexBitangents[i].Dot(normal)) * normal;
+        vertexBitangents[i].ProjectOnPlane(normal);
         vertexBitangents[i].Normalize();
     }
 
@@ -661,8 +661,8 @@ static void R_DeriveNormalsAndTangents(VertexGenericLit *verts, const int numVer
         vertexNormals[i].y *= normalScale;
         vertexNormals[i].z *= normalScale;
 
-        vertexTangents[i] -= (vertexTangents[i].Dot(vertexNormals[i])) * vertexNormals[i];
-        vertexBitangents[i] -= (vertexBitangents[i].Dot(vertexNormals[i])) * vertexNormals[i];
+        vertexTangents[i].ProjectOnPlane(vertexNormals[i]);
+        vertexBitangents[i].ProjectOnPlane(vertexNormals[i]);
 
         const float tangentScale = Math::InvSqrt(vertexTangents[i].LengthSqr());
         vertexTangents[i].x *= tangentScale;
