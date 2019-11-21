@@ -189,6 +189,36 @@ void ComRectTransform::GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) cons
     }
 }
 
+Vec3 ComRectTransform::GetWorldPivot() const {
+    Vec3 worldCorners[4];
+    GetWorldCorners(worldCorners);
+
+    Vec3 b = Lerp(worldCorners[0], worldCorners[1], pivot.x);
+    Vec3 t = Lerp(worldCorners[3], worldCorners[2], pivot.x);
+    
+    return Lerp(b, t, pivot.y);
+}
+
+Vec2 ComRectTransform::WorldPivotToLocal(const Vec3 &worldPivot) const {
+    Vec3 worldCorners[4];
+    GetWorldCorners(worldCorners);
+
+    // TODO: Should be checked world pivot is on the plane of rectangle.
+    Vec3 pivotDir = worldPivot - worldCorners[0];
+
+    Vec3 xAxis = worldCorners[1] - worldCorners[0];
+    Vec3 yAxis = worldCorners[3] - worldCorners[0];
+
+    float xLength = xAxis.Normalize();
+    float yLength = yAxis.Normalize();
+
+    Vec2 localPivot;
+    localPivot.x = pivotDir.ProjectToNorm(xAxis).Length() / xLength;
+    localPivot.y = pivotDir.ProjectToNorm(yAxis).Length() / yLength;
+
+    return localPivot;
+}
+
 bool ComRectTransform::RayToWorldPointInRectangle(const Ray &ray, Vec3 &worldPoint) const {
     Plane plane(GetRotation() * Vec3::unitZ, GetOrigin());
 

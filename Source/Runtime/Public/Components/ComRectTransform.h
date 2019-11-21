@@ -71,6 +71,12 @@ public:
                             /// Computes anchor coordinates of rectangle in world space.
     void                    GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) const;
 
+                            /// Returns pivot position in world space.
+    Vec3                    GetWorldPivot() const;
+
+                            /// Converts pivot in world space to local.
+    Vec2                    WorldPivotToLocal(const Vec3 &worldPivot) const;
+
                             /// Computes ray intersection point in world space of the rectangle.
     bool                    RayToWorldPointInRectangle(const Ray &ray, Vec3 &worldPoint) const;
 
