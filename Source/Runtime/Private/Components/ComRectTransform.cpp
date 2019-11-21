@@ -213,8 +213,8 @@ Vec2 ComRectTransform::WorldPivotToLocal(const Vec3 &worldPivot) const {
     float yLength = yAxis.Normalize();
 
     Vec2 localPivot;
-    localPivot.x = pivotDir.ProjectToNorm(xAxis).Length() / xLength;
-    localPivot.y = pivotDir.ProjectToNorm(yAxis).Length() / yLength;
+    localPivot.x = pivotDir.Dot(xAxis) / xLength;
+    localPivot.y = pivotDir.Dot(yAxis) / yLength;
 
     return localPivot;
 }
