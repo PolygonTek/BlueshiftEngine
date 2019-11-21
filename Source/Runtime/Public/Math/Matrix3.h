@@ -253,6 +253,8 @@ public:
 
                         /// Converts this 3x3 matrix to 4x4 matrix.
     Mat4                ToMat4() const;
+                        /// Returns scale part.
+    Vec3                ToScaleVec3() const;
 
                         /// Converts this 3x3 matrix to to axis-angle rotation representation.
     Rotation            ToRotation() const;
@@ -619,6 +621,13 @@ BE_INLINE Mat3 Mat3::FromScale(float sx, float sy, float sz) {
     m.mat[2][1] = 0;
     m.mat[2][2] = sz;
     return m;
+}
+
+BE_INLINE Vec3 Mat3::ToScaleVec3() const {
+    return Vec3(
+        Math::Sqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]),
+        Math::Sqrt(mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]),
+        Math::Sqrt(mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]));
 }
 
 BE_INLINE const char *Mat3::ToString(int precision) const {

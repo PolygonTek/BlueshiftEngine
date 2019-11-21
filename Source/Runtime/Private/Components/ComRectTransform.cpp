@@ -203,7 +203,7 @@ Vec2 ComRectTransform::WorldPivotToLocal(const Vec3 &worldPivot) const {
     Vec3 worldCorners[4];
     GetWorldCorners(worldCorners);
 
-    // TODO: Should be checked world pivot is on the plane of rectangle.
+    // TODO: Check world pivot should be on the plane of rectangle.
     Vec3 pivotDir = worldPivot - worldCorners[0];
 
     Vec3 xAxis = worldCorners[1] - worldCorners[0];
