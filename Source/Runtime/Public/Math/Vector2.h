@@ -193,6 +193,12 @@ public:
                         /// Get the maximum component index of a vector.
     int                 MaxComponentIndex() const { return MaxIndex(x, y); }
 
+                        /// Performs a 2D swizzled access to this vector.
+    Vec2                xx() const { return Vec2(x, x); }
+    Vec2                xy() const { return Vec2(x, y); }
+    Vec2                yx() const { return Vec2(y, x); }
+    Vec2                yy() const { return Vec2(y, y); }
+
                         /// Computes the length of this vector.
     float               Length() const;
 

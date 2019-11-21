@@ -195,6 +195,48 @@ public:
                         /// Get the maximum component index of a vector
     int                 MaxComponentIndex() const { return Max3Index(x, y, z); }
 
+                        /// Performs a 2D swizzled access to this vector.
+    Vec2                xx() const { return Vec2(x, x); }
+    Vec2                xy() const { return Vec2(x, y); }
+    Vec2                xz() const { return Vec2(x, z); }
+    Vec2                yx() const { return Vec2(y, x); }
+    Vec2                yy() const { return Vec2(y, y); }
+    Vec2                yz() const { return Vec2(y, z); }
+    Vec2                zx() const { return Vec2(z, x); }
+    Vec2                zy() const { return Vec2(z, y); }
+    Vec2                zz() const { return Vec2(z, z); }
+
+                        /// Performs a 3D swizzled access to this vector.
+    Vec3                xxx() const { return Vec3(x, x, x); }
+    Vec3                xxy() const { return Vec3(x, x, y); }
+    Vec3                xxz() const { return Vec3(x, x, z); }
+    Vec3                xyx() const { return Vec3(x, y, x); }
+    Vec3                xyy() const { return Vec3(x, y, y); }
+    Vec3                xyz() const { return Vec3(x, y, z); }
+    Vec3                xzx() const { return Vec3(x, z, x); }
+    Vec3                xzy() const { return Vec3(x, z, y); }
+    Vec3                xzz() const { return Vec3(x, z, z); }
+
+    Vec3                yxx() const { return Vec3(y, x, x); }
+    Vec3                yxy() const { return Vec3(y, x, y); }
+    Vec3                yxz() const { return Vec3(y, x, z); }
+    Vec3                yyx() const { return Vec3(y, y, x); }
+    Vec3                yyy() const { return Vec3(y, y, y); }
+    Vec3                yyz() const { return Vec3(y, y, z); }
+    Vec3                yzx() const { return Vec3(y, z, x); }
+    Vec3                yzy() const { return Vec3(y, z, y); }
+    Vec3                yzz() const { return Vec3(y, z, z); }
+
+    Vec3                zxx() const { return Vec3(z, x, x); }
+    Vec3                zxy() const { return Vec3(z, x, y); }
+    Vec3                zxz() const { return Vec3(z, x, z); }
+    Vec3                zyx() const { return Vec3(z, y, x); }
+    Vec3                zyy() const { return Vec3(z, y, y); }
+    Vec3                zyz() const { return Vec3(z, y, z); }
+    Vec3                zzx() const { return Vec3(z, z, x); }
+    Vec3                zzy() const { return Vec3(z, z, y); }
+    Vec3                zzz() const { return Vec3(z, z, z); }
+
                         /// Computes the length of this vector.
     float               Length() const;
 
