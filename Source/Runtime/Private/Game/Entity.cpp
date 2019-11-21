@@ -523,7 +523,7 @@ void Entity::SetActiveInHierarchy(bool active) {
 
 const AABB Entity::GetLocalAABB(bool includingChildren) const {
     AABB outAabb;
-    outAabb.SetZero();
+    outAabb.Clear();
 
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
@@ -553,6 +553,11 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
             }
         }
     }
+
+    if (outAabb.IsCleared()) {
+        outAabb.SetZero();
+    }
+
     return outAabb;
 }
 
