@@ -74,6 +74,9 @@ public:
                             /// Returns pivot position in world space.
     Vec3                    GetWorldPivot() const;
 
+                            /// Compute pivot of rectangle in world space with the given pivot position in world space.
+    static Vec2             PivotInWorldRect(const Vec3(&worldCorners)[4], const Vec3 &worldPivot);
+
                             /// Converts pivot in world space to local.
     Vec2                    WorldPivotToLocal(const Vec3 &worldPivot) const;
 

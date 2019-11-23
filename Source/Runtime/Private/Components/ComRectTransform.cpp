@@ -203,6 +203,10 @@ Vec2 ComRectTransform::WorldPivotToLocal(const Vec3 &worldPivot) const {
     Vec3 worldCorners[4];
     GetWorldCorners(worldCorners);
 
+    return PivotInWorldRect(worldCorners, worldPivot);
+}
+
+Vec2 ComRectTransform::PivotInWorldRect(const Vec3 (&worldCorners)[4], const Vec3 &worldPivot) {
     // TODO: Check world pivot should be on the plane of rectangle.
     Vec3 pivotDir = worldPivot - worldCorners[0];
 
