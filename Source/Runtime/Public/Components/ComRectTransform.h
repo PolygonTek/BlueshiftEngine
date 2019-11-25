@@ -80,8 +80,11 @@ public:
                             /// Converts pivot in world space to local.
     Vec2                    WorldPivotToLocal(const Vec3 &worldPivot) const;
 
-                            /// Compute pivot of rectangle in world space with the given pivot position in world space.
-    static Vec2             PivotInWorldRect(const Vec3(&worldCorners)[4], const Vec3 &worldPivot);
+                            /// Compute pivot of rectangle in world space with the given pivot position in local space.
+    static Vec3             GetWorldPivotInWorldRect(const Vec3(&worldCorners)[4], const Vec2 &localPivot);
+
+                            /// Compute pivot of rectangle in local space with the given pivot position in world space.
+    static Vec2             GetLocalPivotInWorldRect(const Vec3(&worldCorners)[4], const Vec3 &worldPivot);
 
                             /// Computes ray intersection point in world space of the rectangle.
     bool                    RayToWorldPointInRectangle(const Ray &ray, Vec3 &worldPoint) const;

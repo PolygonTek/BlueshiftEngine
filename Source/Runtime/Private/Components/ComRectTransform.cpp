@@ -197,20 +197,24 @@ Vec3 ComRectTransform::LocalPivotToWorld(const Vec2 &localPivot) const {
     Vec3 worldCorners[4];
     GetWorldCorners(worldCorners);
 
-    Vec3 b = Lerp(worldCorners[0], worldCorners[1], localPivot.x);
-    Vec3 t = Lerp(worldCorners[3], worldCorners[2], localPivot.x);
-
-    return Lerp(b, t, localPivot.y);
+    return GetWorldPivotInWorldRect(worldCorners, localPivot);
 }
 
 Vec2 ComRectTransform::WorldPivotToLocal(const Vec3 &worldPivot) const {
     Vec3 worldCorners[4];
     GetWorldCorners(worldCorners);
 
-    return PivotInWorldRect(worldCorners, worldPivot);
+    return GetLocalPivotInWorldRect(worldCorners, worldPivot);
 }
 
-Vec2 ComRectTransform::PivotInWorldRect(const Vec3 (&worldCorners)[4], const Vec3 &worldPivot) {
+Vec3 ComRectTransform::GetWorldPivotInWorldRect(const Vec3(&worldCorners)[4], const Vec2 &localPivot) {
+    Vec3 b = Lerp(worldCorners[0], worldCorners[1], localPivot.x);
+    Vec3 t = Lerp(worldCorners[3], worldCorners[2], localPivot.x);
+
+    return Lerp(b, t, localPivot.y);
+}
+
+Vec2 ComRectTransform::GetLocalPivotInWorldRect(const Vec3 (&worldCorners)[4], const Vec3 &worldPivot) {
     // TODO: Check world pivot should be on the plane of rectangle.
     Vec3 pivotDir = worldPivot - worldCorners[0];
 
