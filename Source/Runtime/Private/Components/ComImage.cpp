@@ -62,10 +62,12 @@ void ComImage::Purge(bool chainPurge) {
 void ComImage::Init() {
     ComRenderable::Init();
 
-    // Don't account maxVisDist when rendering for this render object.
+    // Don't account maxVisDist when rendering this render object.
     renderObjectDef.flags |= RenderObject::Flag::NoVisDist;
 
     ComRectTransform *rectTransform = GetEntity()->GetTransform()->Cast<ComRectTransform>();
+
+    renderObjectDef.aabb = rectTransform->GetAABB();
 
     rectTransform->Connect(&ComRectTransform::SIG_RectTransformUpdated, this, (SignalCallback)&ComImage::RectTransformUpdated, SignalObject::ConnectionType::Unique);
 
