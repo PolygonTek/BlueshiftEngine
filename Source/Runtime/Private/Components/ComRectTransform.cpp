@@ -190,13 +190,17 @@ void ComRectTransform::GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) cons
 }
 
 Vec3 ComRectTransform::GetWorldPivot() const {
+    return LocalPivotToWorld(pivot);
+}
+
+Vec3 ComRectTransform::LocalPivotToWorld(const Vec2 &localPivot) const {
     Vec3 worldCorners[4];
     GetWorldCorners(worldCorners);
 
-    Vec3 b = Lerp(worldCorners[0], worldCorners[1], pivot.x);
-    Vec3 t = Lerp(worldCorners[3], worldCorners[2], pivot.x);
-    
-    return Lerp(b, t, pivot.y);
+    Vec3 b = Lerp(worldCorners[0], worldCorners[1], localPivot.x);
+    Vec3 t = Lerp(worldCorners[3], worldCorners[2], localPivot.x);
+
+    return Lerp(b, t, localPivot.y);
 }
 
 Vec2 ComRectTransform::WorldPivotToLocal(const Vec3 &worldPivot) const {
