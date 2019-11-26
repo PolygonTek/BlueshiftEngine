@@ -392,17 +392,17 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     Vec3 c = (b[0] + b[1]) * 0.5f; // AABB center
     Vec3 e = (b[1] - b[0]) * 0.5f; // AABB extent
 
-    // AABB center 를 원점으로 설정
+    // Get the relative coordinates of a triangle with respect to the center of AABB.
     Vec3 v0 = _v0 - c;
     Vec3 v1 = _v1 - c;
     Vec3 v2 = _v2 - c;
 
-    // triangle edge vectors
+    // Get the triangle edge vectors.
     Vec3 f0 = v1 - v0;
     Vec3 f1 = v2 - v1;
     Vec3 f2 = v0 - v2;
 
-    // a00 축 비교 
+    // Compare in axis a00.
     // a00 = cross(x, f0) = (0, -f0.z, f0.y)
     // r = e.x * abs(dot(x, a00)) + e.y * abs(dot(y, a00)) + e.z * abs(dot(z, a00))
     r = e.y * Math::Fabs(f0.z) + e.z * Math::Fabs(f0.y);
@@ -415,7 +415,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
         return false;
     }
 
-    // a01 축 비교
+    // Compare in axis a01.
     // a01 = cross(x, f1) = (0, -f1.z, f1.y)
     // r = e.x * abs(dot(x, a01)) + e.y * abs(dot(y, a01)) + e.z * abs(dot(z, a01))
     r = e.y * Math::Fabs(f1.z) + e.z * Math::Fabs(f1.y);
@@ -428,7 +428,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
         return false;
     }
 
-    // a02 축 비교
+    // Compare in axis a02.
     // a02 = cross(x, f2) = (0, -f2.z, f2.y)
     // r = e.x * abs(dot(x, a02)) + e.y * abs(dot(y, a02)) + e.z * abs(dot(z, a02))
     r = e.y * Math::Fabs(f2.z) + e.z * Math::Fabs(f2.y);
@@ -441,7 +441,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
         return false;
     }
 
-    // a10 축 비교
+    // Compare in axis a10.
     // a10 = cross(y, f0) = (f0.z, 0, -f0.x)
     // r = e.x * abs(dot(x, a10)) + e.y * abs(dot(y, a10)) + e.z * abs(dot(z, a10))
     r = e.x * Math::Fabs(f0.z) + e.z * Math::Fabs(f0.x);
@@ -454,7 +454,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
         return false;
     }
 
-    // a11 축 비교
+    // Compare in axis a11.
     // a11 = cross(y, f1) = (f1.z, 0, -f1.x)
     // r = e.x * abs(dot(x, a11)) + e.y * abs(dot(y, a11)) + e.z * abs(dot(z, a11))
     r = e.x * Math::Fabs(f1.z) + e.z * Math::Fabs(f1.x);
@@ -467,7 +467,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
         return false;
     }
 
-    // a12 축 비교
+    // Compare in axis a12.
     // a12 = cross(y, f2) = (f2.z, 0, -f2.x)
     // r = e.x * abs(dot(x, a12)) + e.y * abs(dot(y, a12)) + e.z * abs(dot(z, a12))
     r = e.x * Math::Fabs(f2.z) + e.z * Math::Fabs(f2.x);
@@ -480,7 +480,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
         return false;
     }
 
-    // a20 축 비교
+    // Compare in axis a20.
     // a20 = cross(z, f0) = (-f0.y, f0.x, 0)
     // r = e.x * abs(dot(x, a20)) + e.y * abs(dot(y, a20)) + e.z * abs(dot(z, a20))
     r = e.x * Math::Fabs(f0.y) + e.y * Math::Fabs(f0.x);
@@ -493,7 +493,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
         return false;
     }
 
-    // a21 축 비교
+    // Compare in axis a21.
     // a21 = cross(z, f1) = (-f1.y, f1.x, 0)
     // r = e.x * abs(dot(x, a21)) + e.y * abs(dot(y, a21)) + e.z * abs(dot(z, a21))
     r = e.x * Math::Fabs(f1.y) + e.y * Math::Fabs(f1.x);
@@ -506,7 +506,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
         return false;
     }
 
-    // a22 축 비교
+    // Compare in axis a22.
     // a22 = cross(z, f2) = (-f2.y, f2.x, 0)
     // r = e.x * abs(dot(x, a22)) + e.y * abs(dot(y, a22)) + e.z * abs(dot(z, a22))
     r = e.x * Math::Fabs(f2.y) + e.y * Math::Fabs(f2.x);
@@ -519,22 +519,22 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
         return false;
     }
 
-    // AABB.x 축 비교
+    // Compare in x axis of AABB.
     if (Max3(v0.x, v1.x, v2.x) < -e.x || Min3(v0.x, v1.x, v2.x) > e.x) {
         return false;
     }
 
-    // AABB.y 축 비교
+    // Compare in y axis of AABB.
     if (Max3(v0.y, v1.y, v2.y) < -e.y || Min3(v0.y, v1.y, v2.y) > e.y) {
         return false;
     }
 
-    // AABB.z 축 비교
+    // Compare in z axis of AABB.
     if (Max3(v0.z, v1.z, v2.z) < -e.z || Min3(v0.z, v1.z, v2.z) > e.z) {
         return false;
     }
 
-    // Triangle.normal 축 비교
+    // Compare in the normal axis of the triangle.
     Vec3 n = f0.Cross(f1);
     n.Normalize();
     Plane p = Plane(n, -n.Dot(_v0));
