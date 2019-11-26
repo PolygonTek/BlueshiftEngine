@@ -36,5 +36,5 @@ void main() {
     }
 #endif
 
-    o_fragColor = v2f_color * albedo * intensity;
+    o_fragColor = v2f_color * albedo * vec4(vec3(intensity), 1.0);
 }
