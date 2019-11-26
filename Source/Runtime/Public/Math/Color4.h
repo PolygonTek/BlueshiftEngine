@@ -32,6 +32,11 @@ public:
     explicit constexpr Color4(const float data[4]);
     /// Constructs a Color4 from a single value (s, s, s, s)
     explicit constexpr Color4(float s);
+
+#ifdef QCOLOR_H
+    /// Constructs from a QColor.
+    Color4(const QColor &qc) { r = qc.red(); g = qc.green(); b = qc.blue(); a = qc.alpha(); }
+#endif
     
                         /// Casts this Color4 to a C array.
                         /// This function simply returns a C pointer view to this data structure.
@@ -190,6 +195,11 @@ public:
 
                         /// Convert color packed to a 32-bit integer, with R component in the lowest 8 bits. Components are clamped to [0, 1] range.
     uint32_t            ToUInt32() const;
+
+#ifdef QCOLOR_H
+                        /// Convert Color4 to QColor
+    QColor              ToQColor() const { return QColor::fromRgbF(r, g, b, a); }
+#endif
 
                         /// Convert RGB to HSL.
     Color4              ToHSL() const { return Color4(ToColor3().ToHSL(), a); }

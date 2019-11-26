@@ -31,6 +31,11 @@ public:
     /// Constructs a Color3 from a single value (s, s, s)
     explicit constexpr Color3(float s);
 
+#ifdef QCOLOR_H
+    /// Constructs from a QColor.
+    Color3(const QColor &qc) { r = qc.red(); g = qc.green(); b = qc.blue(); }
+#endif
+
                         /// Casts this Color3 to a C array.
                         /// This function simply returns a C pointer view to this data structure.
     const float *       Ptr() const { return (const float *)&r; }
@@ -169,6 +174,11 @@ public:
 
                         /// Converts color to a 32-bit integer, with R component in the lowest 8 bits. Components are clamped to [0, 1] range.
     uint32_t            ToUInt32() const;
+
+#ifdef QCOLOR_H
+                        /// Convert Color3 to QColor
+    QColor              ToQColor() const { return QColor::fromRgbF(r, g, b); }
+#endif
 
                         /// Converts RGB to HSL
     Color3              ToHSL() const;
