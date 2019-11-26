@@ -65,7 +65,7 @@ void ComImage::Init() {
     // Don't account maxVisDist when rendering this render object.
     renderObjectDef.flags |= RenderObject::Flag::NoVisDist;
 
-    ComRectTransform *rectTransform = GetEntity()->GetTransform()->Cast<ComRectTransform>();
+    ComRectTransform *rectTransform = GetEntity()->GetRectTransform();
 
     renderObjectDef.aabb = rectTransform->GetAABB();
 
@@ -127,7 +127,7 @@ void ComImage::UpdateVisuals() {
 }
 
 void ComImage::UpdateRawVertexes() {
-    const ComRectTransform *rectTransform = GetEntity()->GetTransform()->Cast<ComRectTransform>();
+    const ComRectTransform *rectTransform = GetEntity()->GetRectTransform();
     const RectF rect = rectTransform->GetLocalRect();
 
     float x1 = rect.x;

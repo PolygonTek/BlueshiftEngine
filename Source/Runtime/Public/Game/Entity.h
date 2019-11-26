@@ -31,6 +31,7 @@ BE_NAMESPACE_BEGIN
 
 class Component;
 class ComTransform;
+class ComRectTransform;
 class GameWorld;
 class Prefab;
 class Entity;
@@ -156,6 +157,8 @@ public:
 
                                 /// Returns a transform component.
     ComTransform *              GetTransform() const;
+                                /// Returns a rect transform component.
+    ComRectTransform *          GetRectTransform() const;
 
                                 /// Returns an entity has rect transform which is hit by ray. 
     Entity *                    RayCastRect(const Ray &ray);

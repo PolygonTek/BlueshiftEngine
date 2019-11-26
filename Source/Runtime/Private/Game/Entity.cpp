@@ -219,8 +219,13 @@ ComTransform *Entity::GetTransform() const {
     return transform;
 }
 
+ComRectTransform *Entity::GetRectTransform() const {
+    ComRectTransform *transform = static_cast<ComTransform *>(GetComponent(0))->Cast<ComRectTransform>();
+    return transform;
+}
+
 Entity *Entity::RayCastRect(const Ray &ray) {
-    ComRectTransform *rectTransform = GetComponent(0)->Cast<ComRectTransform>();
+    const ComRectTransform *rectTransform = GetRectTransform();
     if (!rectTransform) {
         return nullptr;
     }
@@ -329,7 +334,8 @@ Entity *Entity::FindChild(const char *name) const {
 Component *Entity::GetComponent(const MetaObject *type) const {
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
-        if (component->GetMetaObject() == type) {
+
+        if (component->GetMetaObject()->IsTypeOf(*type)) {
             return component;
         }
     }
