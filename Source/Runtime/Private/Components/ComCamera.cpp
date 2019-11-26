@@ -198,66 +198,68 @@ void ComCamera::Update() {
 void ComCamera::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
     
-    int screenWidth = 100;
-    int screenHeight = 100;
+    if (selected) {
+        int screenWidth = 100;
+        int screenHeight = 100;
 
-    const RenderContext *ctx = renderSystem.GetMainRenderContext();
-    if (ctx) {
-        screenWidth = ctx->GetScreenWidth();
-        screenHeight = ctx->GetScreenHeight();
+        const RenderContext *ctx = renderSystem.GetMainRenderContext();
+        if (ctx) {
+            screenWidth = ctx->GetScreenWidth();
+            screenHeight = ctx->GetScreenHeight();
+        }
+
+        if (this->renderCameraDef.orthogonal) {
+            Size orthoSize = GetOrthoSize();
+
+            this->renderCameraDef.sizeX = orthoSize.w;
+            this->renderCameraDef.sizeY = orthoSize.h;
+
+            float sizeZ = (this->renderCameraDef.zNear + this->renderCameraDef.zFar) * 0.5f;
+
+            OBB cameraBox;
+            cameraBox.SetAxis(this->renderCameraDef.axis);
+            cameraBox.SetCenter(this->renderCameraDef.origin + this->renderCameraDef.axis[0] * sizeZ);
+            cameraBox.SetExtents(Vec3(sizeZ, this->renderCameraDef.sizeX, this->renderCameraDef.sizeY));
+
+            renderWorld->SetDebugColor(selectedByParent ? Color4::white : Color4(1.0, 1.0, 1.0, 0.5), Color4::zero);
+            renderWorld->DebugOBB(cameraBox, 1.0f, false, false, true);
+        } else {
+            float w = screenWidth * nw;
+            float h = screenHeight * nh;
+            float aspectRatio = w / h;
+
+            RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &this->renderCameraDef.fovX, &this->renderCameraDef.fovY);
+
+            Frustum cameraFrustum;
+            cameraFrustum.SetOrigin(this->renderCameraDef.origin);
+            cameraFrustum.SetAxis(this->renderCameraDef.axis);
+            cameraFrustum.SetSize(this->renderCameraDef.zNear, this->renderCameraDef.zFar,
+                this->renderCameraDef.zFar * Math::Tan(DEG2RAD(this->renderCameraDef.fovX * 0.5f)), this->renderCameraDef.zFar * Math::Tan(DEG2RAD(this->renderCameraDef.fovY * 0.5f)));
+
+            renderWorld->SetDebugColor(selectedByParent ? Color4::white : Color4(1.0, 1.0, 1.0, 0.5), Color4::zero);
+            renderWorld->DebugFrustum(cameraFrustum, false, 1.0f, false, true);
+        }
+
+        /*if (ctx) {
+            float upscaleFactorX = ctx->GetUpscaleFactorX();
+            float upscaleFactorY = ctx->GetUpscaleFactorY();
+
+            int w = renderingWidth * 0.25f;
+            int h = renderingHeight * 0.25f;
+            int x = renderingWidth - (w + 10 / upscaleFactorX);
+            int y = renderingHeight - (h + 10 / upscaleFactorY);
+
+            RenderCamera::State previewViewState = this->renderCameraDef;
+
+            previewViewState.renderRect.Set(x, y, w, h);
+            previewViewState.flags |= RenderCamera::SkipDebugDraw;
+
+            static RenderCamera previewView;
+            previewView.Update(&previewViewState);
+
+            GetGameWorld()->GetRenderWorld()->RenderScene(&previewView);
+        }*/
     }
-
-    float w = screenWidth * nw;
-    float h = screenHeight * nh;
-    float aspectRatio = w / h;
-
-    if (this->renderCameraDef.orthogonal) {
-        Size orthoSize = GetOrthoSize();
-
-        this->renderCameraDef.sizeX = orthoSize.w;
-        this->renderCameraDef.sizeY = orthoSize.h;
-        
-        float sizeZ = (this->renderCameraDef.zNear + this->renderCameraDef.zFar) * 0.5f;
-
-        OBB cameraBox;
-        cameraBox.SetAxis(this->renderCameraDef.axis);
-        cameraBox.SetCenter(this->renderCameraDef.origin + this->renderCameraDef.axis[0] * sizeZ);
-        cameraBox.SetExtents(Vec3(sizeZ, this->renderCameraDef.sizeX, this->renderCameraDef.sizeY));
-
-        renderWorld->SetDebugColor(selectedByParent ? Color4::white : Color4(1.0, 1.0, 1.0, 0.5), Color4::zero);
-        renderWorld->DebugOBB(cameraBox, 1.0f, false, false, true);
-    } else {
-        RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &this->renderCameraDef.fovX, &this->renderCameraDef.fovY);
-
-        Frustum cameraFrustum;
-        cameraFrustum.SetOrigin(this->renderCameraDef.origin);
-        cameraFrustum.SetAxis(this->renderCameraDef.axis);
-        cameraFrustum.SetSize(this->renderCameraDef.zNear, this->renderCameraDef.zFar,
-            this->renderCameraDef.zFar * Math::Tan(DEG2RAD(this->renderCameraDef.fovX * 0.5f)), this->renderCameraDef.zFar * Math::Tan(DEG2RAD(this->renderCameraDef.fovY * 0.5f)));
-
-        renderWorld->SetDebugColor(selectedByParent ? Color4::white : Color4(1.0, 1.0, 1.0, 0.5), Color4::zero);
-        renderWorld->DebugFrustum(cameraFrustum, false, 1.0f, false, true);
-    }
-
-    /*if (ctx) {
-        float upscaleFactorX = ctx->GetUpscaleFactorX();
-        float upscaleFactorY = ctx->GetUpscaleFactorY();
-            
-        int w = renderingWidth * 0.25f;
-        int h = renderingHeight * 0.25f;
-        int x = renderingWidth - (w + 10 / upscaleFactorX);
-        int y = renderingHeight - (h + 10 / upscaleFactorY);
-
-        RenderCamera::State previewViewState = this->renderCameraDef;
-
-        previewViewState.renderRect.Set(x, y, w, h);
-        previewViewState.flags |= RenderCamera::SkipDebugDraw;
-
-        static RenderCamera previewView;
-        previewView.Update(&previewViewState);
-
-        GetGameWorld()->GetRenderWorld()->RenderScene(&previewView);
-    }*/
 
     // Fade icon alpha in near distance
     float alpha = BE1::Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(renderCameraDef.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
