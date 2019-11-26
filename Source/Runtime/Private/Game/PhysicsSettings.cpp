@@ -47,7 +47,7 @@ int PhysicsSettings::GetSolver() const {
 }
 
 void PhysicsSettings::SetSolver(int solver) {
-    return physicsWorld->SetConstraintSolver((PhysicsWorld::ConstraintSolver)solver);
+    return physicsWorld->SetConstraintSolver((PhysicsWorld::ConstraintSolver::Enum)solver);
 }
 
 int PhysicsSettings::GetSolverIterations() const {

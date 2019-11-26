@@ -80,7 +80,7 @@ PhysicsWorld::PhysicsWorld() {
 #endif
 
     // the default constraint solver. For parallel processing you can use a different solver (see Extras/BulletMultiThreaded)
-    solverType = SequentialImpulseSolver;
+    solverType = ConstraintSolver::SequentialImpulseSolver;
     constraintSolver = new btSequentialImpulseConstraintSolver;
     dynamicsWorld = new btDiscreteDynamicsWorld(collisionDispatcher, broadphase, constraintSolver, collisionConfiguration);
 
@@ -174,25 +174,25 @@ void PhysicsWorld::Reset() {
     accumulatedTimeDelta = 0;
 }
 
-PhysicsWorld::ConstraintSolver PhysicsWorld::GetConstraintSolver() const {
+PhysicsWorld::ConstraintSolver::Enum PhysicsWorld::GetConstraintSolver() const {
     return solverType;
 }
 
-void PhysicsWorld::SetConstraintSolver(ConstraintSolver solverType) {
+void PhysicsWorld::SetConstraintSolver(ConstraintSolver::Enum solverType) {
     // Direct MLCP solvers are useful when higher quality simulation is needed, for example in robotics. 
     // The performance is less than the SI solver,
     // NOTE: rolling friction is not working with MLCP solver ! (bullet bug)
     switch (solverType) {
-    case SequentialImpulseSolver:
+    case ConstraintSolver::SequentialImpulseSolver:
         constraintSolver = new btSequentialImpulseConstraintSolver;
         break;
-    case NNCGSolver:
+    case ConstraintSolver::NNCGSolver:
         constraintSolver = new btNNCGConstraintSolver;
         break;
-    case ProjectedGaussSeidelSolver:
+    case ConstraintSolver::ProjectedGaussSeidelSolver:
         constraintSolver = new btMLCPSolver(new btSolveProjectedGaussSeidel);
         break;
-    case DantzigSolver:
+    case ConstraintSolver::DantzigSolver:
         constraintSolver = new btMLCPSolver(new btDantzigSolver());
         break;
     default:
