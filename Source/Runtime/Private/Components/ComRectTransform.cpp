@@ -389,22 +389,6 @@ void ComRectTransform::DrawGizmos(const RenderCamera *camera, bool selected, boo
                     renderWorld->DebugLine(parentWorldCorners[1], parentWorldCorners[2]);
                     renderWorld->DebugLine(parentWorldCorners[2], parentWorldCorners[3]);
                     renderWorld->DebugLine(parentWorldCorners[3], parentWorldCorners[0]);
-
-                    // Draw anchors
-                    Vec3 worldAnchorCorners[4];
-                    GetWorldAnchorCorners(worldAnchorCorners);
-
-                    float viewScale = camera->CalcViewScale(worldAnchorCorners[0]);
-                    renderWorld->DebugTriangle(worldAnchorCorners[0], worldAnchorCorners[0] + Vec3(-10, -5, 0) * viewScale, worldAnchorCorners[0] + Vec3(-5, -10, 0) * viewScale);
-
-                    viewScale = camera->CalcViewScale(worldAnchorCorners[1]);
-                    renderWorld->DebugTriangle(worldAnchorCorners[1], worldAnchorCorners[1] + Vec3(+10, -5, 0) * viewScale, worldAnchorCorners[1] + Vec3(+5, -10, 0) * viewScale);
-
-                    viewScale = camera->CalcViewScale(worldAnchorCorners[2]);
-                    renderWorld->DebugTriangle(worldAnchorCorners[2], worldAnchorCorners[2] + Vec3(+10, +5, 0) * viewScale, worldAnchorCorners[2] + Vec3(+5, +10, 0) * viewScale);
-
-                    viewScale = camera->CalcViewScale(worldAnchorCorners[3]);
-                    renderWorld->DebugTriangle(worldAnchorCorners[3], worldAnchorCorners[3] + Vec3(-10, +5, 0) * viewScale, worldAnchorCorners[3] + Vec3(-5, +10, 0) * viewScale);
                 }
             }
         }
