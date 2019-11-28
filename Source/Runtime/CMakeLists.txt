@@ -95,6 +95,7 @@ set(COMMON_ENGINE_FILES
     Public/Math/Quaternion.h
     Public/Math/Random.h
     Public/Math/Ray.h
+    Public/Math/Triangle.h
     Public/Math/Rect.h
     Public/Math/RectF.h
     Public/Math/RGBE9995.h
@@ -327,6 +328,7 @@ set(COMMON_ENGINE_FILES
     Private/Math/Half.cpp
     Private/Math/OBB.cpp
     Private/Math/Ray.cpp
+    Private/Math/Triangle.cpp
     Private/Math/Rect.cpp
     Private/Math/RectF.cpp
     Private/Math/CQuaternion.cpp

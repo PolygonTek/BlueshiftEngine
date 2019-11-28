@@ -33,6 +33,7 @@
 #include "Math/AABB.h"
 #include "Math/OBB.h"
 #include "Math/Frustum.h"
+#include "Math/Triangle.h"
 #include "Math/Ray.h"
 #include "Math/Point.h"
 #include "Math/PointF.h"
