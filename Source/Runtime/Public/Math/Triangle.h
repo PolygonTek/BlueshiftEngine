@@ -107,7 +107,7 @@ public:
 
                         /// Intersects a ray with this triangle.
                         /// Returns false if there is no intersection.
-    bool                IntersectRay(const Ray &ray, float *hitDist = nullptr) const;
+    bool                IntersectRay(const Ray &ray, float *hitDist) const;
                         /// Returns hit distance, but returns FLT_MAX if no intersection occurs.
     float               IntersectRay(const Ray &ray) const;
 
