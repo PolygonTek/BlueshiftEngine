@@ -71,20 +71,25 @@ public:
                             /// Computes anchor coordinates of rectangle in world space.
     void                    GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) const;
 
+                            /// Computes minimum anchor coordinates of rectangle in world space.
+    Vec3                    GetWorldAnchorMin() const;
+                            /// Computes maximum anchor coordinates of rectangle in world space.
+    Vec3                    GetWorldAnchorMax() const;
+
                             /// Returns pivot position in world space.
     Vec3                    GetWorldPivot() const;
 
-                            /// Converts pivot in local space to world.
-    Vec3                    LocalPivotToWorld(const Vec2 &localPivot) const;
+                            /// Converts normalized position of rectangle to world space position.
+    Vec3                    NormalizedPosToWorld(const Vec2 &normalizedPosition) const;
 
-                            /// Converts pivot in world space to local.
-    Vec2                    WorldPivotToLocal(const Vec3 &worldPivot) const;
+                            /// Converts world space position to normalized position of rectangle.
+    Vec2                    WorldPosToNormalized(const Vec3 &worldPosition) const;
 
-                            /// Compute pivot of rectangle in world space with the given pivot position in local space.
-    static Vec3             GetWorldPivotInWorldRect(const Vec3(&worldCorners)[4], const Vec2 &localPivot);
+                            /// Compute world space position from normalized position of rectangle.
+    static Vec3             ComputeWorldPositionFromNormalized(const Vec3(&worldCorners)[4], const Vec2 &localPosition);
 
-                            /// Compute pivot of rectangle in local space with the given pivot position in world space.
-    static Vec2             GetLocalPivotInWorldRect(const Vec3(&worldCorners)[4], const Vec3 &worldPivot);
+                            /// Compute normalized position of rectangle from world space position.
+    static Vec2             ComputeNormalizedPositionFromWorld(const Vec3(&worldCorners)[4], const Vec3 &worldPosition);
 
                             /// Computes ray intersection point in world space of the rectangle.
     bool                    RayToWorldPointInRectangle(const Ray &ray, Vec3 &worldPoint) const;

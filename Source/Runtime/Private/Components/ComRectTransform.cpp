@@ -189,32 +189,40 @@ void ComRectTransform::GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) cons
     }
 }
 
+Vec3 ComRectTransform::GetWorldAnchorMin() const {
+    return NormalizedPosToWorld(anchorMin);
+}
+
+Vec3 ComRectTransform::GetWorldAnchorMax() const {
+    return NormalizedPosToWorld(anchorMax);
+}
+
 Vec3 ComRectTransform::GetWorldPivot() const {
-    return LocalPivotToWorld(pivot);
+    return NormalizedPosToWorld(pivot);
 }
 
-Vec3 ComRectTransform::LocalPivotToWorld(const Vec2 &localPivot) const {
+Vec3 ComRectTransform::NormalizedPosToWorld(const Vec2 &normalizedPosition) const {
     Vec3 worldCorners[4];
     GetWorldCorners(worldCorners);
 
-    return GetWorldPivotInWorldRect(worldCorners, localPivot);
+    return ComputeWorldPositionFromNormalized(worldCorners, normalizedPosition);
 }
 
-Vec2 ComRectTransform::WorldPivotToLocal(const Vec3 &worldPivot) const {
+Vec2 ComRectTransform::WorldPosToNormalized(const Vec3 &worldPosition) const {
     Vec3 worldCorners[4];
     GetWorldCorners(worldCorners);
 
-    return GetLocalPivotInWorldRect(worldCorners, worldPivot);
+    return ComputeNormalizedPositionFromWorld(worldCorners, worldPosition);
 }
 
-Vec3 ComRectTransform::GetWorldPivotInWorldRect(const Vec3(&worldCorners)[4], const Vec2 &localPivot) {
+Vec3 ComRectTransform::ComputeWorldPositionFromNormalized(const Vec3(&worldCorners)[4], const Vec2 &localPivot) {
     Vec3 b = Lerp(worldCorners[0], worldCorners[1], localPivot.x);
     Vec3 t = Lerp(worldCorners[3], worldCorners[2], localPivot.x);
 
     return Lerp(b, t, localPivot.y);
 }
 
-Vec2 ComRectTransform::GetLocalPivotInWorldRect(const Vec3 (&worldCorners)[4], const Vec3 &worldPivot) {
+Vec2 ComRectTransform::ComputeNormalizedPositionFromWorld(const Vec3 (&worldCorners)[4], const Vec3 &worldPivot) {
     // TODO: Check world pivot should be on the plane of rectangle.
     Vec3 pivotDir = worldPivot - worldCorners[0];
 
