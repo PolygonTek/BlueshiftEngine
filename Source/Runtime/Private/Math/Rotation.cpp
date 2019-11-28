@@ -31,7 +31,7 @@ Quat Rotation::ToQuat() const {
 }
 
 //------------------------------------------------------------------------------
-// ref. Essential Mathematics for Games & Interactive Applications 2nd Edition p.148
+// Essential Mathematics for Games & Interactive Applications 2nd Edition, pp. 148
 //
 // N(x, y, z) = 단위 축벡터
 //

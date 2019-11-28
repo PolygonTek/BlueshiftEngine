@@ -385,7 +385,7 @@ void AABB::ToPoints(Vec3 points[8]) const {
     }
 }
 
-// REF: RTCD p.179 - Testing AABB Against Triangle
+// Christer Ericson's Real-Time Collision Detection, pp. 179
 bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2) const {
     float p0, p1, p2, r;
 
