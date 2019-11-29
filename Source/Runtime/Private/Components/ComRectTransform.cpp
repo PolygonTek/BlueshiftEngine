@@ -164,37 +164,53 @@ void ComRectTransform::GetWorldCorners(Vec3 (&worldCorners)[4]) const {
 }
 
 void ComRectTransform::GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) const {
-    for (int i = 0; i < COUNT_OF(worldAnchorCorners); i++) {
-        worldAnchorCorners[i] = Vec3::zero;
-    }
+    const Entity *parentEnt = GetEntity()->GetParent();
+    if (parentEnt) {
+        const ComRectTransform *parentRectTransform = parentEnt->GetRectTransform();
 
-    ComTransform *parentTransform = GetParent();
-    if (parentTransform) {
-        ComRectTransform *parentRectTransform = parentTransform->Cast<ComRectTransform>();
         if (parentRectTransform) {
-            Vec3 parentWorldCorners[4];
-            parentRectTransform->GetWorldCorners(parentWorldCorners);
-
-            Vec2 worldAnchorMin, worldAnchorMax;
-            worldAnchorMin.x = parentWorldCorners[0].x + (parentWorldCorners[2].x - parentWorldCorners[0].x) * anchorMin.x;
-            worldAnchorMin.y = parentWorldCorners[0].y + (parentWorldCorners[2].y - parentWorldCorners[0].y) * anchorMin.y;
-            worldAnchorMax.x = parentWorldCorners[0].x + (parentWorldCorners[2].x - parentWorldCorners[0].x) * anchorMax.x;
-            worldAnchorMax.y = parentWorldCorners[0].y + (parentWorldCorners[2].y - parentWorldCorners[0].y) * anchorMax.y;
-
-            worldAnchorCorners[0] = Vec3(worldAnchorMin.x, worldAnchorMin.y, 0);
-            worldAnchorCorners[1] = Vec3(worldAnchorMax.x, worldAnchorMin.y, 0);
-            worldAnchorCorners[2] = Vec3(worldAnchorMax.x, worldAnchorMax.y, 0);
-            worldAnchorCorners[3] = Vec3(worldAnchorMin.x, worldAnchorMax.y, 0);
+            worldAnchorCorners[0] = parentRectTransform->NormalizedPosToWorld(Vec2(anchorMin.x, anchorMin.y));
+            worldAnchorCorners[1] = parentRectTransform->NormalizedPosToWorld(Vec2(anchorMax.x, anchorMin.y));
+            worldAnchorCorners[2] = parentRectTransform->NormalizedPosToWorld(Vec2(anchorMax.x, anchorMax.y));
+            worldAnchorCorners[3] = parentRectTransform->NormalizedPosToWorld(Vec2(anchorMin.x, anchorMax.y));
+            return;
+        } else {
+            worldAnchorCorners[0] = parentEnt->GetTransform()->GetOrigin();
+            worldAnchorCorners[1] = parentEnt->GetTransform()->GetOrigin();
+            worldAnchorCorners[2] = parentEnt->GetTransform()->GetOrigin();
+            worldAnchorCorners[3] = parentEnt->GetTransform()->GetOrigin();
+            return;
         }
     }
+
+    worldAnchorCorners[0] = Vec3::zero;
+    worldAnchorCorners[1] = Vec3::zero;
+    worldAnchorCorners[2] = Vec3::zero;
+    worldAnchorCorners[3] = Vec3::zero;
 }
 
 Vec3 ComRectTransform::GetWorldAnchorMin() const {
-    return NormalizedPosToWorld(anchorMin);
+    const Entity *parentEnt = GetEntity()->GetParent();
+    if (parentEnt) {
+        const ComRectTransform *parentRectTransform = parentEnt->GetRectTransform();
+
+        if (parentRectTransform) {
+            return parentRectTransform->NormalizedPosToWorld(anchorMin);
+        }
+    }
+    return Vec3::zero;
 }
 
 Vec3 ComRectTransform::GetWorldAnchorMax() const {
-    return NormalizedPosToWorld(anchorMax);
+    const Entity *parentEnt = GetEntity()->GetParent();
+    if (parentEnt) {
+        const ComRectTransform *parentRectTransform = parentEnt->GetRectTransform();
+
+        if (parentRectTransform) {
+            return parentRectTransform->NormalizedPosToWorld(anchorMax);
+        }
+    }
+    return Vec3::zero;
 }
 
 Vec3 ComRectTransform::GetWorldPivot() const {
@@ -215,16 +231,16 @@ Vec2 ComRectTransform::WorldPosToNormalized(const Vec3 &worldPosition) const {
     return ComputeNormalizedPositionFromWorld(worldCorners, worldPosition);
 }
 
-Vec3 ComRectTransform::ComputeWorldPositionFromNormalized(const Vec3(&worldCorners)[4], const Vec2 &localPivot) {
-    Vec3 b = Lerp(worldCorners[0], worldCorners[1], localPivot.x);
-    Vec3 t = Lerp(worldCorners[3], worldCorners[2], localPivot.x);
+Vec3 ComRectTransform::ComputeWorldPositionFromNormalized(const Vec3(&worldCorners)[4], const Vec2 &normalizedPos) {
+    Vec3 b = Lerp(worldCorners[0], worldCorners[1], normalizedPos.x);
+    Vec3 t = Lerp(worldCorners[3], worldCorners[2], normalizedPos.x);
 
-    return Lerp(b, t, localPivot.y);
+    return Lerp(b, t, normalizedPos.y);
 }
 
-Vec2 ComRectTransform::ComputeNormalizedPositionFromWorld(const Vec3 (&worldCorners)[4], const Vec3 &worldPivot) {
-    // TODO: Check world pivot should be on the plane of rectangle.
-    Vec3 pivotDir = worldPivot - worldCorners[0];
+Vec2 ComRectTransform::ComputeNormalizedPositionFromWorld(const Vec3 (&worldCorners)[4], const Vec3 &worldPos) {
+    // TODO: Check worldPos should be on the plane of rectangle.
+    Vec3 dir = worldPos - worldCorners[0];
 
     Vec3 xAxis = worldCorners[1] - worldCorners[0];
     Vec3 yAxis = worldCorners[3] - worldCorners[0];
@@ -232,11 +248,11 @@ Vec2 ComRectTransform::ComputeNormalizedPositionFromWorld(const Vec3 (&worldCorn
     float xLength = xAxis.Normalize();
     float yLength = yAxis.Normalize();
 
-    Vec2 localPivot;
-    localPivot.x = pivotDir.Dot(xAxis) / xLength;
-    localPivot.y = pivotDir.Dot(yAxis) / yLength;
+    Vec2 normalizedPos;
+    normalizedPos.x = dir.Dot(xAxis) / xLength;
+    normalizedPos.y = dir.Dot(yAxis) / yLength;
 
-    return localPivot;
+    return normalizedPos;
 }
 
 bool ComRectTransform::RayToWorldPointInRectangle(const Ray &ray, Vec3 &worldPoint) const {
