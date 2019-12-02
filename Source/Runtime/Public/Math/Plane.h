@@ -119,6 +119,17 @@ public:
                         /// Examines which side of the plane to the given point.
     Side::Enum          GetSide(const Vec3 &p, const float epsilon) const;
 
+                        /// Projects the given position vector onto this plane.
+    Vec3                Project(const Vec3 &p) const;
+
+                        /// Projects the given point to the negative half-space of this plane.
+                        /// This means that if the point lies on the plane, or in the negative half-space, the same point is
+                        /// returned unchanged. If the point lies on the positive half-space, it is projected orthographically onto the plane.
+    Vec3                ProjectToNegativeHalf(const Vec3 &p) const;
+
+                        /// Projects the given point to the positivehalf-space of this plane.
+    Vec3                ProjectToPositiveHalf(const Vec3 &p) const;
+
                         /// Tests if this plane intersect with the given line segment.
     bool                IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
 
@@ -218,6 +229,18 @@ BE_INLINE Plane::Side::Enum Plane::GetSide(const Vec3 &v, const float epsilon) c
     } else {
         return Side::On;
     }
+}
+
+BE_INLINE Vec3 Plane::Project(const Vec3 &p) const {
+    return p - (normal.Dot(p) - offset) * normal;
+}
+
+BE_INLINE Vec3 Plane::ProjectToNegativeHalf(const Vec3 &p) const {
+    return p - Max(0.f, (normal.Dot(p) - offset)) * normal;
+}
+
+BE_INLINE Vec3 Plane::ProjectToPositiveHalf(const Vec3 &p) const {
+    return p - Min(0.f, (normal.Dot(p) - offset)) * normal;
 }
 
 BE_NAMESPACE_END
