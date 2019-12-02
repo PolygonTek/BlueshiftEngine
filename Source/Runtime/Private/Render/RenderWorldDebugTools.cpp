@@ -24,7 +24,7 @@ void RenderWorld::ClearDebugPrimitives(int time) {
 }
 
 void RenderWorld::DebugLine(const Vec3 &start, const Vec3 &end, float lineWidth, bool depthTest, int lifeTime) {
-    if (lineWidth > 0 && debugLineColor[3] > 0) {
+    if (lineWidth > 0 && debugLineColor.a > 0) {
         Vec3 *v = RB_ReserveDebugPrimsVerts(RHI::Topology::LineList, 2, debugLineColor, lineWidth, false, depthTest, lifeTime);
         if (v) {
             v[0] = start;
@@ -34,7 +34,7 @@ void RenderWorld::DebugLine(const Vec3 &start, const Vec3 &end, float lineWidth,
 }
 
 void RenderWorld::DebugTriangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, float lineWidth, bool twoSided, bool depthTest, int lifeTime) {
-    if (debugFillColor[3] > 0) {
+    if (debugFillColor.a > 0) {
         Vec3 *v = RB_ReserveDebugPrimsVerts(RHI::Topology::TriangleList, 3, debugFillColor, 0, twoSided, depthTest, lifeTime);
         if (v) {
             v[0] = a;
@@ -43,7 +43,7 @@ void RenderWorld::DebugTriangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, flo
         }
     }
 
-    if (lineWidth > 0 && debugLineColor[3] > 0) {
+    if (lineWidth > 0 && debugLineColor.a > 0) {
         DebugLine(a, b, lineWidth, depthTest, lifeTime);
         DebugLine(b, c, lineWidth, depthTest, lifeTime);
         DebugLine(c, a, lineWidth, depthTest, lifeTime);
@@ -60,7 +60,7 @@ void RenderWorld::DebugQuad(const Vec3 &origin, const Vec3 &right, const Vec3 &u
     v[2] = origin - sr + su;
     v[3] = origin + sr + su;
 
-    if (debugFillColor[3] > 0) {
+    if (debugFillColor.a > 0) {
         Vec3 *fv = RB_ReserveDebugPrimsVerts(RHI::Topology::TriangleFan, 4, debugFillColor, 0, twoSided, depthTest, lifeTime);
         if (fv) {
             fv[0] = v[0];
@@ -70,7 +70,7 @@ void RenderWorld::DebugQuad(const Vec3 &origin, const Vec3 &right, const Vec3 &u
         }
     }
 
-    if (lineWidth > 0 && debugLineColor[3] > 0) {
+    if (lineWidth > 0 && debugLineColor.a > 0) {
         DebugLine(v[0], v[1], lineWidth, depthTest, lifeTime);
         DebugLine(v[1], v[2], lineWidth, depthTest, lifeTime);
         DebugLine(v[2], v[3], lineWidth, depthTest, lifeTime);
@@ -86,27 +86,71 @@ void RenderWorld::DebugCircle(const Vec3 &origin, const Vec3 &dir, const float r
     left *= radius;
     up *= radius;
 
-    if (debugFillColor[3] > 0) {
+    if (debugFillColor.a > 0) {
         Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::Topology::TriangleFan, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
         if (fvptr) {
             *fvptr++ = origin;
 
             for (int i = 0; i <= numSteps; i++) {
                 float a = Math::TwoPi * i / numSteps;
-                *fvptr++ = origin + Math::Cos16(a) * left + Math::Sin16(a) * up;
+                float s, c;
+                Math::SinCos16(a, s, c);
+                *fvptr++ = origin + c * left + s * up;
             }
         }
     }
 
-    if (lineWidth > 0 && debugLineColor[3] > 0) {
+    if (lineWidth > 0 && debugLineColor.a > 0) {
         Vec3 lastPoint = origin + left;
         Vec3 point;
 
         for (int i = 1; i <= numSteps; i++) {
             float a = Math::TwoPi * i / numSteps;
-            point = origin + Math::Cos16(a) * left + Math::Sin16(a) * up;
+            float s, c;
+            Math::SinCos16(a, s, c);
+            point = origin + c * left + s * up;
             DebugLine(lastPoint, point, lineWidth, depthTest, lifeTime);
             lastPoint = point;
+        }
+    }
+}
+
+void RenderWorld::DebugHollowCircle(const Vec3 &origin, const Vec3 &dir, const float radius1, const float radius2, float lineWidth, bool twoSided, bool depthTest, int lifeTime) {
+    const int numSteps = 48;
+
+    Vec3 left[2], up[2];
+    dir.OrthogonalBasis(left[0], up[0]);
+    left[1] = left[0] * radius2;
+    up[1] = up[0] * radius2;
+    left[0] *= radius1;
+    up[0] *= radius1;
+
+    if (debugFillColor.a > 0) {
+        Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::Topology::TriangleStrip, (numSteps + 1) * 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
+        if (fvptr) {
+            for (int i = 0; i <= numSteps; i++) {
+                float a = Math::TwoPi * i / numSteps;
+                float s, c;
+                Math::SinCos16(a, s, c);
+                *fvptr++ = origin + c * left[0] + s * up[0];
+                *fvptr++ = origin + c * left[1] + s * up[1];
+            }
+        }
+    }
+
+    if (lineWidth > 0 && debugLineColor.a > 0) {
+        for (int i = 0; i < 2; i++) {
+            Vec3 lastPoint = origin + left[i];
+            Vec3 point;
+
+            for (int j = 1; j <= numSteps; j++) {
+                float a = Math::TwoPi * j / numSteps;
+                float s, c;
+                Math::SinCos16(a, s, c);
+                point = origin + c * left[i] + s * up[i];
+                DebugLine(lastPoint, point, lineWidth, depthTest, lifeTime);
+                lastPoint = point;
+            }
         }
     }
 }
@@ -125,7 +169,7 @@ void RenderWorld::DebugArc(const Vec3 &origin, const Vec3 &right, const Vec3 &up
     Vec3 rx = radius * right;
     Vec3 ry = radius * up;
 
-    if (drawSector && debugFillColor[3] > 0) {
+    if (drawSector && debugFillColor.a > 0) {
         Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::Topology::TriangleFan, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
         if (fvptr) {
             *fvptr++ = origin;
@@ -137,7 +181,7 @@ void RenderWorld::DebugArc(const Vec3 &origin, const Vec3 &right, const Vec3 &up
         }
     }
 
-    if (lineWidth > 0 && debugLineColor[3] > 0) {
+    if (lineWidth > 0 && debugLineColor.a > 0) {
         Vec3 lastPoint = origin + Math::Cos16(theta1) * rx + Math::Sin16(theta1) * ry;
         Vec3 point;
 
@@ -164,7 +208,7 @@ void RenderWorld::DebugEllipse(const Vec3 &origin, const Vec3 &right, const Vec3
     Vec3 rx = right * radius1;
     Vec3 ry = up * radius2;
 
-    if (debugFillColor[3] > 0) {
+    if (debugFillColor.a > 0) {
         Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::Topology::TriangleFan, numSteps + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
         if (fvptr) {
             *fvptr++ = origin;
@@ -176,7 +220,7 @@ void RenderWorld::DebugEllipse(const Vec3 &origin, const Vec3 &right, const Vec3
         }
     }
 
-    if (lineWidth > 0 && debugLineColor[3] > 0) {
+    if (lineWidth > 0 && debugLineColor.a > 0) {
         Vec3 lastPoint = origin + rx;
         Vec3 point;
 
@@ -195,7 +239,7 @@ void RenderWorld::DebugHemisphere(const Vec3 &origin, const Mat3 &axis, float ra
 
     Vec3 *lastArray = (Vec3 *)_alloca16(num * sizeof(Vec3));
 
-    if (debugFillColor[3] > 0) {
+    if (debugFillColor.a > 0) {
         Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::Topology::TriangleStrip, (num + 1) * 2 * (num / 4), debugFillColor, 0, twoSided, depthTest, lifeTime);
         if (fvptr) {
             lastArray[0] = origin + axis[2] * radius;
@@ -226,7 +270,7 @@ void RenderWorld::DebugHemisphere(const Vec3 &origin, const Mat3 &axis, float ra
         }
     }
 
-    if (lineWidth > 0 && debugLineColor[3] > 0) {
+    if (lineWidth > 0 && debugLineColor.a > 0) {
         lastArray[0] = origin + axis[2] * radius;
         for (int n = 1; n < num; n++) {
             lastArray[n] = lastArray[0];
@@ -265,7 +309,7 @@ void RenderWorld::DebugSphere(const Vec3 &origin, const Mat3 &axis, float radius
 
     Vec3 *lastArray = (Vec3 *)_alloca16(num * sizeof(Vec3));
 
-    if (debugFillColor[3] > 0) {
+    if (debugFillColor.a > 0) {
         Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::Topology::TriangleStrip, (num + 1) * 2 * (num / 2), debugFillColor, 0, twoSided, depthTest, lifeTime);
         if (fvptr) {
             lastArray[0] = origin + axis[2] * radius;
@@ -296,7 +340,7 @@ void RenderWorld::DebugSphere(const Vec3 &origin, const Mat3 &axis, float radius
         }
     }
 
-    if (lineWidth > 0 && debugLineColor[3] > 0) {
+    if (lineWidth > 0 && debugLineColor.a > 0) {
         lastArray[0] = origin + axis[2] * radius;
         for (int n = 1; n < num; n++) {
             lastArray[n] = lastArray[0];
@@ -337,7 +381,7 @@ void RenderWorld::DebugAABB(const AABB &aabb, float lineWidth, bool twoSided, bo
     Vec3 v[8];
     aabb.ToPoints(v);
 
-    if (debugFillColor[3] > 0) {
+    if (debugFillColor.a > 0) {
         Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::Topology::TriangleStrip, 14, debugFillColor, 0, twoSided, depthTest, lifeTime);
         if (fvptr) {
             *fvptr++ = v[7];
@@ -360,7 +404,7 @@ void RenderWorld::DebugAABB(const AABB &aabb, float lineWidth, bool twoSided, bo
         }
     }
 
-    if (lineWidth > 0 && debugLineColor[3] > 0) {
+    if (lineWidth > 0 && debugLineColor.a > 0) {
         for (int i = 0; i < 4; i++) {
             DebugLine(v[i], v[(i + 1) & 3], lineWidth, depthTest, lifeTime);
             DebugLine(v[4 + i], v[4 + ((i + 1) & 3)], lineWidth, depthTest, lifeTime);
@@ -374,7 +418,7 @@ void RenderWorld::DebugOBB(const OBB &obb, float lineWidth, bool depthTest, bool
 
     obb.ToPoints(v);
 
-    if (debugFillColor[3] > 0) {
+    if (debugFillColor.a > 0) {
         Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::Topology::TriangleStrip, 14, debugFillColor, 0, twoSided, depthTest, lifeTime);
         if (fvptr) {
             *fvptr++ = v[7];
@@ -397,7 +441,7 @@ void RenderWorld::DebugOBB(const OBB &obb, float lineWidth, bool depthTest, bool
         }
     }
 
-    if (lineWidth > 0 && debugLineColor[3] > 0) {
+    if (lineWidth > 0 && debugLineColor.a > 0) {
         for (int i = 0; i < 4; i++) {
             DebugLine(v[i], v[(i + 1) & 3], lineWidth, depthTest, lifeTime);
             DebugLine(v[4 + i], v[4 + ((i + 1) & 3)], lineWidth, depthTest, lifeTime);
@@ -411,7 +455,7 @@ void RenderWorld::DebugFrustum(const Frustum &frustum, const bool showFromOrigin
 
     frustum.ToPoints(v);
 
-    if (debugFillColor[3] > 0) {
+    if (debugFillColor.a > 0) {
         Vec3 *fvptr = RB_ReserveDebugPrimsVerts(RHI::Topology::TriangleStrip, 24, debugFillColor, 0, twoSided, depthTest, lifeTime);
         if (fvptr) {
             *fvptr++ = v[7];
@@ -434,7 +478,7 @@ void RenderWorld::DebugFrustum(const Frustum &frustum, const bool showFromOrigin
         }
     }
 
-    if (lineWidth > 0 && debugLineColor[3] > 0) {
+    if (lineWidth > 0 && debugLineColor.a > 0) {
         if (frustum.GetNearDistance() > 0.0f ) {
             for (int i = 0; i < 4; i++) {
                 DebugLine(v[i], v[(i + 1) & 3], lineWidth, depthTest, lifeTime);
@@ -464,7 +508,7 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
     Vec3 *fvptr = nullptr;
 
     if (radius1 == 0.0f) {
-        if (debugFillColor[3] > 0) {
+        if (debugFillColor.a > 0) {
             fvptr = RB_ReserveDebugPrimsVerts(RHI::Topology::TriangleFan, (360 / 15) + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
             if (fvptr) {
                 *fvptr++ = apex;
@@ -486,7 +530,7 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
             }
         }
 
-        if (debugLineColor[3] > 0) {
+        if (debugLineColor.a > 0) {
             for (int i = 15; i <= 360; i += 15) {
                 d = Math::Cos16(DEG2RAD(i)) * axis[0] + Math::Sin16(DEG2RAD(i)) * axis[1];
                 p2 = origin + d * radius2;
@@ -500,7 +544,7 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
     } else {
         Vec3 lastp1 = apex + radius1 * axis[0];
 
-        if (debugFillColor[3] > 0) {
+        if (debugFillColor.a > 0) {
             fvptr = RB_ReserveDebugPrimsVerts(RHI::Topology::TriangleStrip, (360 / 15) * 2 + 2, debugFillColor, 0, twoSided, depthTest, lifeTime);
             if (fvptr) {
                 *fvptr++ = lastp1;
@@ -532,7 +576,7 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
             }
         }
 
-        if (lineWidth > 0 && debugLineColor[3] > 0) {
+        if (lineWidth > 0 && debugLineColor.a > 0) {
             for (int i = 15; i <= 360; i += 15) {
                 d = Math::Cos16(DEG2RAD(i)) * axis[0] + Math::Sin16(DEG2RAD(i)) * axis[1];
                 p1 = apex + d * radius1;
