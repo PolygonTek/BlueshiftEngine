@@ -38,11 +38,11 @@ public:
 
     virtual const AABB      GetAABB() const override;
 
-    Vec2                    GetAnchorMin() const;
-    void                    SetAnchorMin(const Vec2 &anchorMin);
+    Vec2                    GetAnchorMins() const;
+    void                    SetAnchorMins(const Vec2 &anchorMins);
 
-    Vec2                    GetAnchorMax() const;
-    void                    SetAnchorMax(const Vec2 &anchorMax);
+    Vec2                    GetAnchorMaxs() const;
+    void                    SetAnchorMaxs(const Vec2 &anchorMaxs);
 
     Vec2                    GetAnchoredPosition() const;
     void                    SetAnchoredPosition(const Vec2 &anchoredPosition);
@@ -72,9 +72,9 @@ public:
     void                    GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) const;
 
                             /// Computes minimum anchor coordinates of rectangle in world space.
-    Vec3                    GetWorldAnchorMin() const;
+    Vec3                    GetWorldAnchorMins() const;
                             /// Computes maximum anchor coordinates of rectangle in world space.
-    Vec3                    GetWorldAnchorMax() const;
+    Vec3                    GetWorldAnchorMaxs() const;
 
                             /// Returns pivot position in world space.
     Vec3                    GetWorldPivot() const;
@@ -121,8 +121,8 @@ protected:
                             /// Computes local origin in parent space in 3D.
     Vec3                    ComputeLocalOrigin3D() const;
 
-    Vec2                    anchorMin;
-    Vec2                    anchorMax;
+    Vec2                    anchorMins;
+    Vec2                    anchorMaxs;
     Vec2                    anchoredPosition;
     Vec2                    sizeDelta;
     Vec2                    pivot;

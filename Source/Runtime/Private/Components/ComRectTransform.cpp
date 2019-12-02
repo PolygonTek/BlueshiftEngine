@@ -28,9 +28,9 @@ BEGIN_EVENTS(ComRectTransform)
 END_EVENTS
 
 void ComRectTransform::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("anchorMin", "Anchor Min", Vec2, GetAnchorMin, SetAnchorMin, Vec2(0.5, 0.5),
+    REGISTER_MIXED_ACCESSOR_PROPERTY("anchorMins", "Anchor Mins", Vec2, GetAnchorMins, SetAnchorMins, Vec2(0.5, 0.5),
         "", PropertyInfo::Flag::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("anchorMax", "Anchor Max", Vec2, GetAnchorMax, SetAnchorMax, Vec2(0.5, 0.5),
+    REGISTER_MIXED_ACCESSOR_PROPERTY("anchorMaxs", "Anchor Maxs", Vec2, GetAnchorMaxs, SetAnchorMaxs, Vec2(0.5, 0.5),
         "", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("anchoredPosition", "Anchored Position", Vec2, GetAnchoredPosition, SetAnchoredPosition, Vec2(0, 0),
         "", PropertyInfo::Flag::Editor);
@@ -57,24 +57,24 @@ void ComRectTransform::Init() {
     SetInitialized(true);
 }
 
-Vec2 ComRectTransform::GetAnchorMin() const {
-    return anchorMin;
+Vec2 ComRectTransform::GetAnchorMins() const {
+    return anchorMins;
 }
 
-void ComRectTransform::SetAnchorMin(const Vec2 &anchorMin) {
-    this->anchorMin = anchorMin;
+void ComRectTransform::SetAnchorMins(const Vec2 &anchorMins) {
+    this->anchorMins = anchorMins;
 
     if (IsInitialized()) {
         InvalidateCachedRect();
     }
 }
 
-Vec2 ComRectTransform::GetAnchorMax() const {
-    return anchorMax;
+Vec2 ComRectTransform::GetAnchorMaxs() const {
+    return anchorMaxs;
 }
 
-void ComRectTransform::SetAnchorMax(const Vec2 &anchorMax) {
-    this->anchorMax = anchorMax;
+void ComRectTransform::SetAnchorMaxs(const Vec2 &anchorMaxs) {
+    this->anchorMaxs = anchorMaxs;
 
     if (IsInitialized()) {
         InvalidateCachedRect();
@@ -169,10 +169,10 @@ void ComRectTransform::GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) cons
         const ComRectTransform *parentRectTransform = parentEnt->GetRectTransform();
 
         if (parentRectTransform) {
-            worldAnchorCorners[0] = parentRectTransform->NormalizedPosToWorld(Vec2(anchorMin.x, anchorMin.y));
-            worldAnchorCorners[1] = parentRectTransform->NormalizedPosToWorld(Vec2(anchorMax.x, anchorMin.y));
-            worldAnchorCorners[2] = parentRectTransform->NormalizedPosToWorld(Vec2(anchorMax.x, anchorMax.y));
-            worldAnchorCorners[3] = parentRectTransform->NormalizedPosToWorld(Vec2(anchorMin.x, anchorMax.y));
+            worldAnchorCorners[0] = parentRectTransform->NormalizedPosToWorld(Vec2(anchorMins.x, anchorMins.y));
+            worldAnchorCorners[1] = parentRectTransform->NormalizedPosToWorld(Vec2(anchorMaxs.x, anchorMins.y));
+            worldAnchorCorners[2] = parentRectTransform->NormalizedPosToWorld(Vec2(anchorMaxs.x, anchorMaxs.y));
+            worldAnchorCorners[3] = parentRectTransform->NormalizedPosToWorld(Vec2(anchorMins.x, anchorMaxs.y));
             return;
         } else {
             worldAnchorCorners[0] = parentEnt->GetTransform()->GetOrigin();
@@ -189,25 +189,25 @@ void ComRectTransform::GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) cons
     worldAnchorCorners[3] = Vec3::zero;
 }
 
-Vec3 ComRectTransform::GetWorldAnchorMin() const {
+Vec3 ComRectTransform::GetWorldAnchorMins() const {
     const Entity *parentEnt = GetEntity()->GetParent();
     if (parentEnt) {
         const ComRectTransform *parentRectTransform = parentEnt->GetRectTransform();
 
         if (parentRectTransform) {
-            return parentRectTransform->NormalizedPosToWorld(anchorMin);
+            return parentRectTransform->NormalizedPosToWorld(anchorMins);
         }
     }
     return Vec3::zero;
 }
 
-Vec3 ComRectTransform::GetWorldAnchorMax() const {
+Vec3 ComRectTransform::GetWorldAnchorMaxs() const {
     const Entity *parentEnt = GetEntity()->GetParent();
     if (parentEnt) {
         const ComRectTransform *parentRectTransform = parentEnt->GetRectTransform();
 
         if (parentRectTransform) {
-            return parentRectTransform->NormalizedPosToWorld(anchorMax);
+            return parentRectTransform->NormalizedPosToWorld(anchorMaxs);
         }
     }
     return Vec3::zero;
@@ -334,13 +334,13 @@ RectF ComRectTransform::ComputeLocalRect() const {
 
     // Calculate anchored minimum position in parent space.
     PointF localMins = PointF(
-        parentRect.x + (parentRect.w * anchorMin.x), 
-        parentRect.y + (parentRect.h * anchorMin.y));
+        parentRect.x + (parentRect.w * anchorMins.x), 
+        parentRect.y + (parentRect.h * anchorMins.y));
 
     // Calculate anchored maximum position in parent space.
     PointF localMaxs = PointF(
-        parentRect.x + (parentRect.w * anchorMax.x), 
-        parentRect.y + (parentRect.h * anchorMax.y));
+        parentRect.x + (parentRect.w * anchorMaxs.x), 
+        parentRect.y + (parentRect.h * anchorMaxs.y));
 
     // Calculate rectangle in parent space.
     RectF localRect;

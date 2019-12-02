@@ -23,14 +23,14 @@ void LuaVM::RegisterRectTransformComponent(LuaCpp::Module &module) {
 
     _ComRectTransform.SetClass<ComRectTransform>(module["ComRenderable"]);
     _ComRectTransform.AddClassMembers<ComRectTransform>(
-        "anchor_min", &ComRectTransform::GetAnchorMin,
-        "anchor_max", &ComRectTransform::GetAnchorMax,
+        "anchor_mins", &ComRectTransform::GetAnchorMins,
+        "anchor_maxs", &ComRectTransform::GetAnchorMaxs,
         "anchored_position", &ComRectTransform::GetAnchoredPosition,
         "size_delta", &ComRectTransform::GetSizeDelta,
         "pivot", &ComRectTransform::GetPivot,
         "local_rect", &ComRectTransform::GetLocalRect,
-        "set_anchor_min", &ComRectTransform::SetAnchorMin,
-        "set_anchor_man", &ComRectTransform::SetAnchorMax,
+        "set_anchor_min", &ComRectTransform::SetAnchorMins,
+        "set_anchor_man", &ComRectTransform::SetAnchorMaxs,
         "set_anchored_position", &ComRectTransform::SetAnchoredPosition,
         "set_size_delta", &ComRectTransform::SetSizeDelta,
         "set_pivot", &ComRectTransform::SetPivot);
