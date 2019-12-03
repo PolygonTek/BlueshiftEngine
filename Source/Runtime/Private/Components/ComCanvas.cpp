@@ -70,7 +70,7 @@ void ComCanvas::Init() {
     renderCameraDef.clearMethod = RenderCamera::ClearMethod::DepthOnly;
 
     renderCameraDef.origin = Vec3::origin;
-    renderCameraDef.axis = BE1::Angles(0, 90, 90).ToMat3();
+    renderCameraDef.axis = Angles(0, 90, 90).ToMat3();
     renderCameraDef.axis.FixDegeneracies();
 
     renderCameraDef.zNear = -1000.0f;
@@ -101,13 +101,6 @@ void ComCanvas::DrawGizmos(const RenderCamera *camera, bool selected, bool selec
 
     renderCameraDef.sizeX = screenWidth * 0.5f;
     renderCameraDef.sizeY = screenHeight * 0.5f;
-
-    ComRectTransform *rectTransform = GetEntity()->GetComponent<ComRectTransform>();
-    if (rectTransform) {
-        if (rectTransform->GetSizeDelta() != Vec2(screenWidth, screenHeight)) {
-            rectTransform->SetProperty("sizeDelta", Vec2(screenWidth, screenHeight));
-        }
-    }
 }
 #endif
 
@@ -192,6 +185,16 @@ void ComCanvas::Render() {
     const RenderContext *ctx = renderSystem.GetCurrentRenderContext();
     if (!ctx) {
         return;
+    }
+
+    int screenWidth = ctx->GetScreenWidth();
+    int screenHeight = ctx->GetScreenHeight();
+
+    ComRectTransform *rectTransform = GetEntity()->GetComponent<ComRectTransform>();
+    if (rectTransform) {
+        if (rectTransform->GetSizeDelta() != Vec2(screenWidth, screenHeight)) {
+            rectTransform->SetProperty("sizeDelta", Vec2(screenWidth, screenHeight));
+        }
     }
 
     // Get the actual screen rendering resolution.
