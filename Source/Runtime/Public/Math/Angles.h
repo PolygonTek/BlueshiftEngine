@@ -43,9 +43,9 @@ public:
     Angles() = default;
     /// Constructs a Angles with the value (roll, pitch, yaw).
     constexpr Angles(float roll, float pitch, float yaw);
-    /// Copy constructor
+    /// Copy constructor.
     explicit Angles(const Vec3 &v);
-    /// Assignment operator
+    /// Assignment operator.
     Angles &operator=(const Angles &rhs);
 
                         /// Casts this Angles to a C array.
@@ -145,10 +145,10 @@ public:
                         /// Returns "roll pitch yaw" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Angles       FromString(const char *str);
 
-                        /// Returns dimension of this type
+                        /// Returns dimension of this type.
     int                 GetDimension() const { return Size; }
 
     static const Angles zero;

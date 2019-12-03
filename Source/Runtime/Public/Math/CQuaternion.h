@@ -75,15 +75,15 @@ public:
                         /// Returns "x y z" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Change tiny numbers to zero
+                        /// Change tiny numbers to zero.
     bool                FixDenormals();
 
-                        /// Returns dimension of this type
+                        /// Returns dimension of this type.
     int                 GetDimension() const { return 3; }
 
-    float               x;      ///< The factor of i.
-    float               y;      ///< The factor of j.
-    float               z;      ///< The factor of k.
+    float               x;      ///< The factor of i
+    float               y;      ///< The factor of j
+    float               z;      ///< The factor of k
 };
 
 BE_INLINE constexpr CQuat::CQuat(float inX, float inY, float inZ) :

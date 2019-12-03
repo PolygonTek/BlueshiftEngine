@@ -102,27 +102,37 @@ public:
     /// Destructs.
     ~Str();
 
-                        /// Return the const C string.
+                        /// Returns the const C string.
     const char *        c_str() const { return data; }
-                        /// Return the const C string.
+                        /// Returns the const C string.
                         operator const char *() const { return data; }
-                        /// Return the C string.
+                        /// Returns the C string.
                         operator char *() const { return data; }
 
-                        /// Return const char at index.
+                        /// Returns a const reference to the character at index.
     const char &        operator[](int index) const;
-                        /// Return char at index.
+                        /// Returns a reference to the character at index.
     char &              operator[](int index);
-                        /// Return char at index.
+                        /// Returns a const refernece to the character at index.
+    const char &        At(int index) const { return (*this)[index]; }
+                        /// Returns a reference to the character at index.
     char &              At(int index) { return (*this)[index]; }
+                        /// Returns the first character in the string.
+    const char          FirstChar() const { return (*this)[0]; }
+                        /// Returns a reference to the first character in the string.
+    char &              FirstChar() { return (*this)[0]; }
+                        /// Returns the last character in the string.
+    const char          LastChar() const { return (*this)[len - 1]; }
+                        /// Returns a reference to the last character in the string.
+    char &              LastChar() { return (*this)[len - 1]; }
 
-                        /// Returns length
+                        /// Returns the number of characters in this string.
     int                 Length() const { return len; }
                         /// Returns total size of allocated memory.
     size_t              Allocated() const;
                         /// Returns total size of allocated memory including size of this type.
     size_t              Size() const;
-                        /// Clear the string.
+                        /// Clears the contents of the string and makes it null.
     void                Clear();
                         /// Return whether the string is empty.
     bool                IsEmpty() const;

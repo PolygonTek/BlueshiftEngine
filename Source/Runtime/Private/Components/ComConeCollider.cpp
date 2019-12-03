@@ -99,7 +99,7 @@ void ComConeCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool
             Vec3 worldOrigin = transform->GetMatrix() * center - transform->GetAxis()[2] * scaledHeight * 0.5f;
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-            renderWorld->DebugCone(worldOrigin, transform->GetAxis(), scaledHeight, 0, scaledRadius + BE1::CentiToUnit(0.15f), false, 1.25f);
+            renderWorld->DebugCone(worldOrigin, transform->GetAxis(), scaledHeight, 0, scaledRadius + CentiToUnit(0.15f), false, 1.25f);
         }
     }
 }

@@ -435,7 +435,7 @@ float RenderCamera::CalcViewScale(const Vec3 &position) const {
     TransformWorldToPixel(state.origin + state.axis[0] * zDist, screenPos1);
     TransformWorldToPixel(state.origin + state.axis[0] * zDist + state.axis[1], screenPos2);
 
-    return (2.0f / BE1::Max(screenPos1.Distance(screenPos2), 0.0001f));
+    return (2.0f / Max(screenPos1.Distance(screenPos2), 0.0001f));
 }
 
 void RenderCamera::ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY) {

@@ -200,7 +200,7 @@ void OpenGLRHI::SetTextureAnisotropy(int aniso) {
         const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
         assert(texture);
     
-        BE1::Clamp(aniso, 1, hwLimit.maxTextureAnisotropy);
+        Clamp(aniso, 1, hwLimit.maxTextureAnisotropy);
         gglTexParameterf(texture->target, GL_TEXTURE_MAX_ANISOTROPY_EXT, (float)aniso);
     }
 }

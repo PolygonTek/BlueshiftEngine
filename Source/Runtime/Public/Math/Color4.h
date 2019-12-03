@@ -156,16 +156,16 @@ public:
                         /// This function is identical to the member function DivCompSelf().
     Color4 &            operator/=(const Color4 &rhs);
 
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const Color4 &c) const;
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const Color4 &c, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const Color4 &rhs) const { return Equals(rhs); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const Color4 &rhs) const { return !Equals(rhs); }
 
-                        /// Sets all element of this color
+                        /// Sets all element of this color.
     void                Set(float r, float g, float b, float a);
 
                         /// Clip to [0, 1] range.
@@ -197,7 +197,7 @@ public:
     uint32_t            ToUInt32() const;
 
 #ifdef QCOLOR_H
-                        /// Convert Color4 to QColor
+                        /// Convert Color4 to QColor.
     QColor              ToQColor() const { return QColor::fromRgbF(r, g, b, a); }
 #endif
 

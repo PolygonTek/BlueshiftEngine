@@ -644,8 +644,8 @@ void RenderSystem::CaptureScreenRT(RenderWorld *renderWorld, int layerMask,
 
     Vec3 v;
     renderWorld->GetStaticAABB().GetFarthestVertexFromDir(axis[0], v);
-    cameraDef.zFar = Max(BE1::MeterToUnit(100.0f), origin.Distance(v));
-    cameraDef.zNear = BE1::CentiToUnit(5.0f);
+    cameraDef.zFar = Max(MeterToUnit(100.0f), origin.Distance(v));
+    cameraDef.zNear = CentiToUnit(5.0f);
 
     RenderCamera::ComputeFov(fov, 1.25f, (float)width / height, &cameraDef.fovX, &cameraDef.fovY);
 

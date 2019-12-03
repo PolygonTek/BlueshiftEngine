@@ -99,7 +99,7 @@ void ComCylinderCollider::DrawGizmos(const RenderCamera *camera, bool selected, 
             Vec3 worldCenter = transform->GetMatrix() * center;
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-            renderWorld->DebugCylinderSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius + BE1::CentiToUnit(0.15f), 1.25f, true);
+            renderWorld->DebugCylinderSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius + CentiToUnit(0.15f), 1.25f, true);
         }
     }
 }

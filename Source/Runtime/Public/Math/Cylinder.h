@@ -62,7 +62,7 @@ public:
     Sphere              ToSphere() const;
     OBB                 ToOBB() const;
 
-                        /// Returns dimension of this type
+                        /// Returns dimension of this type.
     int                 GetDimension() const { return 7; }
 
     Vec3                p[2];

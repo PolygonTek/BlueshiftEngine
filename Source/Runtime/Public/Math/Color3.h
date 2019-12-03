@@ -143,16 +143,16 @@ public:
                         /// This function is identical to the member function DivCompSelf().
     Color3 &            operator/=(const Color3 &rhs);
 
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const Color3 &c) const;
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const Color3 &c, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const Color3 &rhs) const { return Equals(rhs); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const Color3 &rhs) const { return !Equals(rhs); }
 
-                        /// Sets all element of this color
+                        /// Sets all element of this color.
     void                Set(float r, float g, float b);
 
                         /// Clip to [0, 1] range.
@@ -162,10 +162,10 @@ public:
 
                         /// Returns "r g b".
     const char *        ToString() const { return ToString(4); }
-                        /// Returns "r g b" with the given precision
+                        /// Returns "r g b" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Color3       FromString(const char *str);
 
                         /// Casts this Color3 to a Vec3.
@@ -176,24 +176,24 @@ public:
     uint32_t            ToUInt32() const;
 
 #ifdef QCOLOR_H
-                        /// Convert Color3 to QColor
+                        /// Convert Color3 to QColor.
     QColor              ToQColor() const { return QColor::fromRgbF(r, g, b); }
 #endif
 
-                        /// Converts RGB to HSL
+                        /// Converts RGB to HSL.
     Color3              ToHSL() const;
-                        /// Converts HSL to RGB
+                        /// Converts HSL to RGB.
     Color3              FromHSL() const;
 
-                        /// Converts sRGB to Linear
+                        /// Converts sRGB to Linear.
     Color3              SRGBToLinear() const;
-                        /// Converts Linear to sRGB
+                        /// Converts Linear to sRGB.
     Color3              LinearToSRGB() const;
 
                         /// Converts temperature in Kelvins [1000, 15000] of a black body radiator to RGB chromaticity (linear).
     static Color3       FromColorTemperature(float temp);
 
-                        /// Returns dimension of this type
+                        /// Returns dimension of this type.
     int                 GetDimension() const { return Size; }
 
     static const Color3 zero;       ///< (0.0, 0.0, 0.0)

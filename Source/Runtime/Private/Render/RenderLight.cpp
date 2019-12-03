@@ -47,10 +47,10 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
     state = *stateDef;
 
     // Saturate light color RGBA in range [0, 1]
-    BE1::Clamp(state.materialParms[RenderObject::MaterialParm::Red], 0.0f, 1.0f);
-    BE1::Clamp(state.materialParms[RenderObject::MaterialParm::Green], 0.0f, 1.0f);
-    BE1::Clamp(state.materialParms[RenderObject::MaterialParm::Blue], 0.0f, 1.0f);
-    BE1::Clamp(state.materialParms[RenderObject::MaterialParm::Alpha], 0.0f, 1.0f);
+    Clamp(state.materialParms[RenderObject::MaterialParm::Red], 0.0f, 1.0f);
+    Clamp(state.materialParms[RenderObject::MaterialParm::Green], 0.0f, 1.0f);
+    Clamp(state.materialParms[RenderObject::MaterialParm::Blue], 0.0f, 1.0f);
+    Clamp(state.materialParms[RenderObject::MaterialParm::Alpha], 0.0f, 1.0f);
 
     // NOTE: shader 에서 이미 한번 square 처리가 되므로 여기서 sqrt 해준다
     state.fallOffExponent = Math::Sqrt(state.fallOffExponent);
@@ -80,7 +80,7 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
         // Set bounding frustum for spot light
         worldFrustum.SetOrigin(state.origin);
         worldFrustum.SetAxis(state.axis);
-        worldFrustum.SetSize(BE1::Max(state.zNear, 0.01f), state.size[0], state.size[1], state.size[2]);
+        worldFrustum.SetSize(Max(state.zNear, 0.01f), state.size[0], state.size[1], state.size[2]);
 
         float xFov = RAD2DEG(Math::ATan(worldFrustum.GetLeft(), worldFrustum.GetFarDistance())) * 2.0f;
         float yFov = RAD2DEG(Math::ATan(worldFrustum.GetUp(), worldFrustum.GetFarDistance())) * 2.0f;
@@ -162,12 +162,12 @@ bool RenderLight::DirLight_ShadowBVFromCaster(const OBB &casterOBB, OBB &shadowO
         return false;
     }
 
-    b1[0].x = BE1::Max(b1[0].x, b2[0].x);
-    b1[0].y = BE1::Max(b1[0].y, b2[0].y);
-    b1[0].z = BE1::Max(b1[0].z, b2[0].z);
+    b1[0].x = Max(b1[0].x, b2[0].x);
+    b1[0].y = Max(b1[0].y, b2[0].y);
+    b1[0].z = Max(b1[0].z, b2[0].z);
     b1[1].x = b2[1].x; // light maximum x
-    b1[1].y = BE1::Min(b1[1].y, b2[1].y);
-    b1[1].z = BE1::Min(b1[1].z, b2[1].z);
+    b1[1].y = Min(b1[1].y, b2[1].y);
+    b1[1].z = Min(b1[1].z, b2[1].z);
 
     shadowOBB = OBB(b1, Vec3::origin, state.axis);
     return true;

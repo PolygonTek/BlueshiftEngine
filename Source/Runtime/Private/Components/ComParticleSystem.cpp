@@ -679,7 +679,7 @@ void ComParticleSystem::ComputeTrailPositionFromCustomPath(const ParticleSystem:
 #if WITH_EDITOR
 void ComParticleSystem::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     // Fade icon alpha in near distance
-    float alpha = BE1::Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(camera->GetState().origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
+    float alpha = Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(camera->GetState().origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
 
     spriteDef.materials[0]->GetPass()->constantColor[3] = alpha;
 }

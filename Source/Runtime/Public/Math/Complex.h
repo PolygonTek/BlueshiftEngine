@@ -32,7 +32,7 @@ public:
     Complex() {}
     /// Set complex number with the given real part and imagenary part.
     constexpr Complex(const float re, const float im);
-    /// Assginment operator
+    /// Assginment operator.
     Complex &operator=(const Complex &rhs);
 
     void                    Set(const float re, const float im);

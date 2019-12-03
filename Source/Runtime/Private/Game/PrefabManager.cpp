@@ -121,7 +121,7 @@ Json::Value PrefabManager::CreatePrefabValue(const Entity *originalEntity) {
 
     // Serialize source entity and it's children
     Json::Value originalEntitiesValue;
-    BE1::Entity::SerializeHierarchy(originalEntity, originalEntitiesValue);
+    Entity::SerializeHierarchy(originalEntity, originalEntitiesValue);
 
     // Clone entities value which is replaced by new GUIDs
     HashTable<Guid, Guid> guidMap;
