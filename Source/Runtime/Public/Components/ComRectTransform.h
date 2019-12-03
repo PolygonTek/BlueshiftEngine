@@ -53,6 +53,8 @@ public:
     Vec2                    GetPivot() const;
     void                    SetPivot(const Vec2 &pivot);
 
+    bool                    IsRayCastTarget() const { return rayCastTarget; }
+
                             /// Returns position in world space (overrided).
     Vec3                    GetOrigin() const;
 
@@ -73,6 +75,7 @@ public:
 
                             /// Computes minimum anchor coordinates of rectangle in world space.
     Vec3                    GetWorldAnchorMins() const;
+
                             /// Computes maximum anchor coordinates of rectangle in world space.
     Vec3                    GetWorldAnchorMaxs() const;
 
@@ -126,6 +129,7 @@ protected:
     Vec2                    anchoredPosition;
     Vec2                    sizeDelta;
     Vec2                    pivot;
+    bool                    rayCastTarget;
 
     mutable bool            cachedRectInvalidated;
     mutable RectF           cachedRect;                 ///< Cached rectangle in local space.

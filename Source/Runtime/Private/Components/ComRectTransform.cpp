@@ -38,6 +38,8 @@ void ComRectTransform::RegisterProperties() {
         "", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("pivot", "Pivot", Vec2, GetPivot, SetPivot, Vec2(0.5, 0.5),
         "", PropertyInfo::Flag::Editor);
+    REGISTER_PROPERTY("rayCastTarget", "Ray Cast Target", bool, rayCastTarget, true,
+        "", PropertyInfo::Flag::Editor);
 }
 
 ComRectTransform::ComRectTransform() {

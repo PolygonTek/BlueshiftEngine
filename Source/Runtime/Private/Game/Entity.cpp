@@ -225,8 +225,12 @@ ComRectTransform *Entity::GetRectTransform() const {
 }
 
 Entity *Entity::RayCastRect(const Ray &ray) {
+    if (!IsActiveInHierarchy()) {
+        return nullptr;
+    }
+
     const ComRectTransform *rectTransform = GetRectTransform();
-    if (!rectTransform) {
+    if (!rectTransform || !rectTransform->IsRayCastTarget()) {
         return nullptr;
     }
 
@@ -245,8 +249,6 @@ Entity *Entity::RayCastRect(const Ray &ray) {
         Entity *hitChild = child->RayCastRect(ray);
         if (hitChild) {
             hitEntity = hitChild;
-
-            BE_LOG("%s\n", hitEntity->GetName().c_str());
         }
     }
 
