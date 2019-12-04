@@ -332,7 +332,7 @@ static void RB_GenerateOcclusionMapHierarchy() {
     int h = backEnd.ctx->homRT->GetHeight();
 
     float size = Max(w, h);
-    int numLevels = (Math::Log(size) / Math::Log(2.0f));
+    int numLevels = Math::Log(2.0f, size);
     
     const Shader *shader = ShaderManager::generateHomShader;
 
@@ -879,10 +879,10 @@ static void RB_DrawCamera3D() {
     }
 
     Rect upscaledRenderRect;
-    upscaledRenderRect.x = Math::Rint(backEnd.renderRect.x * backEnd.upscaleFactor.x);
-    upscaledRenderRect.y = Math::Rint(backEnd.renderRect.y * backEnd.upscaleFactor.y);
-    upscaledRenderRect.w = Math::Rint(backEnd.renderRect.w * backEnd.upscaleFactor.x);
-    upscaledRenderRect.h = Math::Rint(backEnd.renderRect.h * backEnd.upscaleFactor.y);
+    upscaledRenderRect.x = Math::Round(backEnd.renderRect.x * backEnd.upscaleFactor.x);
+    upscaledRenderRect.y = Math::Round(backEnd.renderRect.y * backEnd.upscaleFactor.y);
+    upscaledRenderRect.w = Math::Round(backEnd.renderRect.w * backEnd.upscaleFactor.x);
+    upscaledRenderRect.h = Math::Round(backEnd.renderRect.h * backEnd.upscaleFactor.y);
 
     if (!(backEnd.camera->def->GetState().flags & RenderCamera::Flag::SkipPostProcess) && r_usePostProcessing.GetBool()) {
         backEnd.ctx->screenRT->Begin();

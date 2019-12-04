@@ -265,9 +265,9 @@ void OpenGLRHI::AdjustTextureSize(TextureType::Enum type, bool useNPOT, int inWi
         d = inDepth;
     } else {
         // 2의 승수 사이즈 맞추기
-        w = Math::CeilPowerOfTwo(inWidth);
-        h = Math::CeilPowerOfTwo(inHeight);
-        d = Math::CeilPowerOfTwo(inDepth);
+        w = Math::RoundUpPowerOfTwo(inWidth);
+        h = Math::RoundUpPowerOfTwo(inHeight);
+        d = Math::RoundUpPowerOfTwo(inDepth);
     }
 
     switch (type) {

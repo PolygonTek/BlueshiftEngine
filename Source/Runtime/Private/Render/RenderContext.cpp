@@ -144,8 +144,8 @@ void RenderContext::InitScreenMapRT() {
     }
 
     if (r_HOM.GetBool()) {
-        int w = Math::FloorPowerOfTwo(renderingWidth >> 1);
-        int h = Math::FloorPowerOfTwo(renderingHeight >> 1);
+        int w = Math::RoundDownPowerOfTwo(renderingWidth >> 1);
+        int h = Math::RoundDownPowerOfTwo(renderingHeight >> 1);
 
         homTexture = textureManager.AllocTexture(va("_%i_hom", (int)contextHandle));
         homTexture->CreateEmpty(RHI::TextureType::Texture2D, w, h, 1, 1, 1, Image::Format::Depth_32F, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::HighPriority | Texture::Flag::Nearest);
@@ -326,7 +326,7 @@ void RenderContext::InitHdrMapRT() {
         lumImageFormat = Image::Format::L_32F;
     }
 
-    int size = Min(Math::CeilPowerOfTwo(Max(quarterWidth, quarterHeight)) >> 2, 1024);
+    int size = Min(Math::RoundUpPowerOfTwo(Max(quarterWidth, quarterHeight)) >> 2, 1024);
 
     for (int i = 0; i < COUNT_OF(hdrLumAverageRT); i++) {
         hdrLumAverageTexture[i] = textureManager.AllocTexture(va("_%i_hdrLumAverage%i", (int)contextHandle, i));

@@ -184,7 +184,7 @@ void GameClient::RunFrame() {
     fpsFrametime += common.frameTime;
     
     if (fpsFrametime >= cl_updateFps.GetInteger()) {
-        fps = Math::Rint(fpsFrames / MS2SEC(fpsFrametime));
+        fps = Math::Round(fpsFrames / MS2SEC(fpsFrametime));
         fpsFrames = 0;
         fpsFrametime -= cl_updateFps.GetInteger();
     }

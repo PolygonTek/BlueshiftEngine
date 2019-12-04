@@ -160,148 +160,149 @@ public:
 
     static void                 Init();
 
-                                /// Reciprocal square root, returns huge number when x == 0.0
+                                /// Reciprocal square root, returns huge number when x == 0.0.
     static float                RSqrt(float x);
 
-                                /// Inverse square root with 32 bits precision, returns huge number when x == 0.0
+                                /// Inverse square root with 32 bits precision, returns huge number when x == 0.0.
     static float                InvSqrt(float x);
-                                /// Inverse square root with 16 bits precision, returns huge number when x == 0.0
+                                /// Inverse square root with 16 bits precision, returns huge number when x == 0.0.
     static float                InvSqrt16(float x);
-                                /// Inverse square root with 64 bits precision, returns huge number when x == 0.0
+                                /// Inverse square root with 64 bits precision, returns huge number when x == 0.0.
     static double               InvSqrt64(float x);
 
-                                /// Square root with 32 bits precision
+                                /// Square root with 32 bits precision.
     static float                Sqrt(float x);
-                                /// Square root with 16 bits precision
+                                /// Square root with 16 bits precision.
     static float                Sqrt16(float x);
-                                /// Square root with 64 bits precision
+                                /// Square root with 64 bits precision.
     static double               Sqrt64(float x);
 
-                                /// Sine with 32 bits precision
+                                /// Sine with 32 bits precision.
     static float                Sin(float a);
-                                /// Sine with 16 bits precision, maximum absolute error is 2.3082e-09
+                                /// Sine with 16 bits precision, maximum absolute error is 2.3082e-09.
     static float                Sin16(float a);
-                                /// Sine with 64 bits precision
+                                /// Sine with 64 bits precision.
     static double               Sin64(float a);
 
-                                /// Cosine with 32 bits precision
+                                /// Cosine with 32 bits precision.
     static float                Cos(float a);
-                                /// Cosine with 16 bits precision, maximum absolute error is 2.3082e-09
+                                /// Cosine with 16 bits precision, maximum absolute error is 2.3082e-09.
     static float                Cos16(float a);
-                                /// Cosine with 64 bits precision
+                                /// Cosine with 64 bits precision.
     static double               Cos64(float a);
 
-                                /// Sine and cosine with 32 bits precision
+                                /// Sine and cosine with 32 bits precision.
     static void                 SinCos(float a, float &s, float &c);
-                                /// Sine and cosine with 16 bits precision
+                                /// Sine and cosine with 16 bits precision.
     static void                 SinCos16(float a, float &s, float &c);
-                                /// Sine and cosine with 64 bits precision
+                                /// Sine and cosine with 64 bits precision.
     static void                 SinCos64(float a, double &s, double &c);
 
-                                /// Tangent with 32 bits precision
+                                /// Tangent with 32 bits precision.
     static float                Tan(float a);
-                                /// Tangent with 16 bits precision, maximum absolute error is 1.8897e-08
+                                /// Tangent with 16 bits precision, maximum absolute error is 1.8897e-08.
     static float                Tan16(float a);
-                                /// Tangent with 64 bits precision
+                                /// Tangent with 64 bits precision.
     static double               Tan64(float a);
 
-                                /// Arc sine with 32 bits precision, input is clamped to [-1, 1] to avoid a silent NaN
+                                /// Arc sine with 32 bits precision, input is clamped to [-1, 1] to avoid a silent NaN.
     static float                ASin(float a);
-                                /// Arc sine with 16 bits precision, maximum absolute error is 6.7626e-05
+                                /// Arc sine with 16 bits precision, maximum absolute error is 6.7626e-05.
     static float                ASin16(float a);
-                                /// Arc sine with 64 bits precision
+                                /// Arc sine with 64 bits precision.
     static double               ASin64(float a);
 
-                                /// Arc cosine with 32 bits precision, input is clamped to [-1, 1] to avoid a silent NaN
+                                /// Arc cosine with 32 bits precision, input is clamped to [-1, 1] to avoid a silent NaN.
     static float                ACos(float a);
-                                /// Arc cosine with 16 bits precision, maximum absolute error is 6.7626e-05
+                                /// Arc cosine with 16 bits precision, maximum absolute error is 6.7626e-05.
     static float                ACos16(float a);
-                                /// Arc cosine with 64 bits precision
+                                /// Arc cosine with 64 bits precision.
     static double               ACos64(float a);
 
-                                /// Arc tangent with 32 bits precision
+                                /// Arc tangent with 32 bits precision.
     static float                ATan(float a);
-                                /// Arc tangent with 16 bits precision, maximum absolute error is 1.3593e-08
+                                /// Arc tangent with 16 bits precision, maximum absolute error is 1.3593e-08.
     static float                ATan16(float a);
-                                /// Arc tangent with 64 bits precision
+                                /// Arc tangent with 64 bits precision.
     static double               ATan64(float a);
 
-                                /// Arc tangent with 32 bits precision
+                                /// Arc tangent with 32 bits precision.
     static float                ATan(float y, float x);
-                                /// Arc tangent with 16 bits precision, maximum absolute error is 1.3593e-08
+                                /// Arc tangent with 16 bits precision, maximum absolute error is 1.3593e-08.
     static float                ATan16(float y, float x);
-                                /// Arc tangent with 64 bits precision
+                                /// Arc tangent with 64 bits precision.
     static double               ATan64(float y, float x);
 
-                                /// x raised to the power y with 32 bits precision
+                                /// x raised to the power y with 32 bits precision.
     static float                Pow(float x, float y);
-                                /// x raised to the power y with 16 bits precision
+                                /// x raised to the power y with 16 bits precision.
     static float                Pow16(float x, float y);
-                                /// x raised to the power y with 64 bits precision
+                                /// x raised to the power y with 64 bits precision.
     static double               Pow64(float x, float y);
 
-                                /// e raised to the power f with 32 bits precision
+                                /// e raised to the power f with 32 bits precision.
     static float                Exp(float f);
-                                /// e raised to the power f with 16 bits precision
+                                /// e raised to the power f with 16 bits precision.
     static float                Exp16(float f);
-                                /// e raised to the power f with 64 bits precision
+                                /// e raised to the power f with 64 bits precision.
     static double               Exp64(float f);
 
-                                /// Natural logarithm with 32 bits precision
-    static float                Log(float f);
-                                /// Natural logarithm with 16 bits precision
-    static float                Log16(float f);
-                                /// Natural logarithm with 64 bits precision
-    static double               Log64(float f);
+                                /// Natural logarithm with 32 bits precision.
+    static float                Ln(float f);
+                                /// Natural logarithm with 16 bits precision.
+    static float                Ln16(float f);
+                                /// Natural logarithm with 64 bits precision.
+    static double               Ln64(float f);
 
-                                /// Base b logarithm with 32 bits precision
+                                /// Base b logarithm with 32 bits precision.
     static float                Log(float b, float f);
-                                /// Base b logarithm with 16 bits precision
+                                /// Base b logarithm with 16 bits precision.
     static float                Log16(float b, float f);
-                                /// Base b logarithm with 64 bits precision
+                                /// Base b logarithm with 64 bits precision.
     static double               Log64(float b, float f);
 
-                                /// Integral x raised to the power y
+                                /// Integral x raised to the power y.
     static int                  IPow(int x, int y);
-                                /// Integral base-2 logarithm of the floating point value
+                                /// Integral base-2 logarithm of the floating point value.
     static int                  ILog2(float f);
-                                /// Integral base-2 logarithm of the integer value
+                                /// Integral base-2 logarithm of the integer value.
     static int                  ILog2(int i);
 
-                                /// Minumum number of bits required to represent ceil(f)
+                                /// Minumum number of bits required to represent ceil(f).
     static int                  BitsForFloat(float f);
-                                /// Minumum number of bits required to represent i
+                                /// Minumum number of bits required to represent i.
     static int                  BitsForInteger(int i);
-                                /// Round x down to the nearest power of 2
-    static int                  FloorPowerOfTwo(int x);
-                                /// Round x up to the nearest power of 2
-    static int                  CeilPowerOfTwo(int x);
-                                /// Returns true if x is a power of 2
-    static bool                 IsPowerOfTwo(int x);
 
-                                /// Returns the absolute value of the integer value (for reference only)
+                                /// Returns true if x is a power of 2.
+    static bool                 IsPowerOfTwo(int x);
+                                /// Round x down to the nearest power of 2.
+    static int                  RoundDownPowerOfTwo(int x);
+                                /// Round x up to the nearest power of 2.
+    static int                  RoundUpPowerOfTwo(int x);
+
+                                /// Returns the absolute value of the integer value (for reference only).
     static int                  Abs(int x);
-                                /// Returns the absolute value of the floating point value
+                                /// Returns the absolute value of the floating point value.
     static float                Fabs(float f);
-                                /// Returns the largest integer that is less than or equal to the given value
+                                /// Returns the largest integer that is less than or equal to the given value.
     static float                Floor(float f);
-                                /// Returns the smallest integer that is greater than or equal to the given value
+                                /// Returns the smallest integer that is greater than or equal to the given value.
     static float                Ceil(float f);
-                                /// Returns the fraction component (part after the decimal)
+                                /// Returns the nearest integer.
+    static float                Round(float f);
+                                /// Returns the fraction component (part after the decimal).
     static float                Fract(float f);
-                                /// Returns the nearest integer
-    static float                Rint(float f);
-                                /// Float to int conversion
+                                /// Float to int conversion.
     static int                  Ftoi(float f);
-                                /// Fast float to int conversion but uses current FPU round mode (default round nearest)
+                                /// Fast float to int conversion but uses current FPU round mode (default round nearest).
     static int                  FtoiFast(float f);
-                                /// Float to char conversion
+                                /// Float to char conversion.
     static int8_t               Ftoi8(float f);
-                                /// Float to short conversion
+                                /// Float to short conversion.
     static int16_t              Ftoi16(float f);
-                                /// Float to unsigned short conversion
+                                /// Float to unsigned short conversion.
     static uint16_t             Ftoui16(float f);
-                                /// Float to byte conversion, the result is clamped to the range [0-255]
+                                /// Float to byte conversion, the result is clamped to the range [0-255].
     static byte                 Ftob(float f);
 
     static double               Factorial(unsigned int n);
@@ -741,7 +742,7 @@ BE_INLINE float Math::Pow(float x, float y) {
 }
 
 BE_INLINE float Math::Pow16(float x, float y) {
-    return Exp16(y * Log16(x));
+    return Exp16(y * Ln16(x));
 }
 
 BE_INLINE double Math::Pow64(float x, float y) {
@@ -753,7 +754,7 @@ BE_INLINE float Math::Exp(float f) {
 }
 
 BE_INLINE float Math::Exp16(float f) {
-    float x = f * 1.44269504088896340f;		// multiply with ( 1 / log( 2 ) )
+    float x = f * 1.44269504088896340f; // multiply with ( 1 / log( 2 ) )
 #if 1
     int i = *reinterpret_cast<int *>(&x);
     int s = (i >> IEEE_FLT_SIGN_BIT);
@@ -770,7 +771,7 @@ BE_INLINE float Math::Exp16(float f) {
     x -= (float)i;
     if (x >= 0.5f) {
         x -= 0.5f;
-        y *= 1.4142135623730950488f;	// multiply with sqrt( 2 )
+        y *= 1.4142135623730950488f;    // multiply with sqrt( 2 )
     }
     float x2 = x * x;
     float p = x * (7.2152891511493f + x2 * 0.0576900723731f);
@@ -783,16 +784,16 @@ BE_INLINE double Math::Exp64(float f) {
     return exp(f);
 }
 
-BE_INLINE float Math::Log(float f) {
+BE_INLINE float Math::Ln(float f) {
     return logf(f);
 }
 
-BE_INLINE float Math::Log16(float f) {
+BE_INLINE float Math::Ln16(float f) {
     int i = *reinterpret_cast<int *>(&f);
     int exponent = ((i >> IEEE_FLT_MANTISSA_BITS) & ((1 << IEEE_FLT_EXPONENT_BITS) - 1)) - IEEE_FLT_EXPONENT_BIAS;
-    i -= (exponent + 1 ) << IEEE_FLT_MANTISSA_BITS;	// get value in the range [.5, 1>
+    i -= (exponent + 1 ) << IEEE_FLT_MANTISSA_BITS; // get value in the range [.5, 1>
     float y = *reinterpret_cast<float *>(&i);
-    y *= 1.4142135623730950488f;					// multiply with sqrt( 2 )
+    y *= 1.4142135623730950488f;                    // multiply with sqrt( 2 )
     y = (y - 1.0f) / (y + 1.0f);
     float y2 = y * y;
     y = y * (2.000000000046727f + y2 * (0.666666635059382f + y2 * (0.4000059794795f + y2 * (0.28525381498f + y2 * 0.2376245609f))));
@@ -800,20 +801,20 @@ BE_INLINE float Math::Log16(float f) {
     return y;
 }
 
-BE_INLINE double Math::Log64(float f) {
+BE_INLINE double Math::Ln64(float f) {
     return log(f);
 }
 
 BE_INLINE float Math::Log(float b, float f) {
-    return Log(f) / Log(b);
+    return Ln(f) / Ln(b);
 }
 
 BE_INLINE float Math::Log16(float b, float f) {
-    return Log16(f) / Log16(b);
+    return Ln16(f) / Ln16(b);
 }
 
 BE_INLINE double Math::Log64(float b, float f) {
-    return Log64(f) / Log64(b);
+    return Ln64(f) / Ln64(b);
 }
 
 BE_INLINE int Math::IPow(int x, int y) {
@@ -840,7 +841,11 @@ BE_INLINE int Math::BitsForInteger(int i) {
     return ILog2((float)i) + 1;
 }
 
-BE_INLINE int Math::FloorPowerOfTwo(int x) {
+BE_INLINE bool Math::IsPowerOfTwo(int x) {
+    return (x & (x - 1)) == 0 && x > 0;
+}
+
+BE_INLINE int Math::RoundDownPowerOfTwo(int x) {
     x |= x >> 1;
     x |= x >> 2;
     x |= x >> 4;
@@ -851,7 +856,7 @@ BE_INLINE int Math::FloorPowerOfTwo(int x) {
     return x;
 }
 
-BE_INLINE int Math::CeilPowerOfTwo(int x) {
+BE_INLINE int Math::RoundUpPowerOfTwo(int x) {
     x--;
     x |= x >> 1;
     x |= x >> 2;
@@ -860,10 +865,6 @@ BE_INLINE int Math::CeilPowerOfTwo(int x) {
     x |= x >> 16;
     x++;
     return x;
-}
-
-BE_INLINE bool Math::IsPowerOfTwo(int x) {
-    return (x & (x - 1)) == 0 && x > 0;
 }
 
 BE_INLINE int Math::Abs(int x) {
@@ -896,7 +897,7 @@ BE_INLINE float Math::Fract(float f) {
     return f - floorf(f);
 }
 
-BE_INLINE float Math::Rint(float f) {
+BE_INLINE float Math::Round(float f) {
     return floorf(f + 0.5f);
 }
 
@@ -1067,7 +1068,7 @@ BE_INLINE T	Lerp(const T p0, const T p1, float t) {
 
 template<> 
 BE_INLINE int Lerp(const int p0, const int p1, float t) { 
-    return Math::Ftoi((float)p0 + (((float)p1 - (float)p0) * t)); 
+    return (int)((float)p0 + (((float)p1 - (float)p0) * t)); 
 }
 
 template <typename T>

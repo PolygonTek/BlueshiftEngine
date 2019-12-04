@@ -566,10 +566,16 @@ BE_FORCE_INLINE void Swap(T &a, T &b) noexcept { T c = std::move(a); a = std::mo
 /// Clamps a number to a range.
 template <typename T>
 BE_FORCE_INLINE void Clamp(T &v, const T &min, const T &max) { v = (v > max) ? max : (v < min ? min : v); }
+/// Clamps a number to the range [0, 1].
+template <typename T>
+BE_FORCE_INLINE void Clamp01(T &v) { Clamp(v, T(0), T(1)); }
 
 /// Returns the clamped number to a range.
 template <typename T>
 BE_FORCE_INLINE constexpr T Clamp(const T &v, const T &min, const T&max) { return (v > max) ? max : (v < min ? min : v); }
+/// Returns the clamped number to the range [0, 1].
+template <typename T>
+BE_FORCE_INLINE constexpr T Clamp01(const T &v) { return Clamp(v, T(0), T(1)); }
 
 /// Returns remainder of the division operation x / y.
 template <typename T>

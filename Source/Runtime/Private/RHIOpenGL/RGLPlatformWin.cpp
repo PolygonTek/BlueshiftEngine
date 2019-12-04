@@ -717,7 +717,7 @@ void OpenGLRHI::GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetri
     // In a system with multiple display monitors, this value is the same for all monitors.
     //int dpi = GetDpiForWindow(ctx->hwnd);
     int dpi = GetDeviceCaps(ctx->hdc, LOGPIXELSX);
-    float dpiScale = Math::Rint(dpi / 96.0f);
+    float dpiScale = Math::Round(dpi / 96.0f);
 #else
     float dpiScale = 1.0f;
 #endif

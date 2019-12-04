@@ -63,7 +63,7 @@ RGBE9995 RGBE9995::FromColor3(float r, float g, float b) {
     /* This pow function could be replaced by a table. */
     double denom = pow(2, sharedExp - RGB9E5_EXP_BIAS - RGB9E5_MANTISSA_BITS);
 
-    int maxm = Math::Rint(maxRgb / denom);
+    int maxm = Math::Round(maxRgb / denom);
     if (maxm == MAX_RGB9E5_MANTISSA + 1) {
         denom *= 2;
         sharedExp += 1;
@@ -72,9 +72,9 @@ RGBE9995 RGBE9995::FromColor3(float r, float g, float b) {
         assert(maxm <= MAX_RGB9E5_MANTISSA);
     }
 
-    int rm = Math::Rint(clampedR / denom);
-    int gm = Math::Rint(clampedG / denom);
-    int bm = Math::Rint(clampedB / denom);
+    int rm = Math::Round(clampedR / denom);
+    int gm = Math::Round(clampedG / denom);
+    int bm = Math::Round(clampedB / denom);
 
     assert(rm <= MAX_RGB9E5_MANTISSA);
     assert(gm <= MAX_RGB9E5_MANTISSA);

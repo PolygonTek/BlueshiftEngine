@@ -47,10 +47,10 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
     state = *stateDef;
 
     // Saturate light color RGBA in range [0, 1]
-    Clamp(state.materialParms[RenderObject::MaterialParm::Red], 0.0f, 1.0f);
-    Clamp(state.materialParms[RenderObject::MaterialParm::Green], 0.0f, 1.0f);
-    Clamp(state.materialParms[RenderObject::MaterialParm::Blue], 0.0f, 1.0f);
-    Clamp(state.materialParms[RenderObject::MaterialParm::Alpha], 0.0f, 1.0f);
+    Clamp01(state.materialParms[RenderObject::MaterialParm::Red]);
+    Clamp01(state.materialParms[RenderObject::MaterialParm::Green]);
+    Clamp01(state.materialParms[RenderObject::MaterialParm::Blue]);
+    Clamp01(state.materialParms[RenderObject::MaterialParm::Alpha]);
 
     // NOTE: shader 에서 이미 한번 square 처리가 되므로 여기서 sqrt 해준다
     state.fallOffExponent = Math::Sqrt(state.fallOffExponent);

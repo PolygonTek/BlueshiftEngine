@@ -248,7 +248,7 @@ void ExprChunk::EvaluateStack() {
                 g_constantRegisters[a] = Math::Exp(g_constantRegisters[a]);
                 break;
             case OpCode_Log:
-                g_constantRegisters[a] = Math::Log(g_constantRegisters[a]);
+                g_constantRegisters[a] = Math::Ln(g_constantRegisters[a]);
                 break;
             case OpCode_Sin:
                 g_constantRegisters[a] = Math::Sin(DEG2RAD(Math::AngleNormalize360(g_constantRegisters[a])));
@@ -759,7 +759,7 @@ void ExprChunk::Evaluate(const float localParms[MAX_EXPR_LOCALPARMS], float *out
             SetValue(instruction.dest, Math::Exp(GetValue(instruction.src0)));
             break;
         case OpCode_Log:
-            SetValue(instruction.dest, Math::Log(GetValue(instruction.src0)));
+            SetValue(instruction.dest, Math::Ln(GetValue(instruction.src0)));
             break;
         case OpCode_Sin:
             SetValue(instruction.dest, Math::Sin(DEG2RAD(Math::AngleNormalize360(GetValue(instruction.src0)))));

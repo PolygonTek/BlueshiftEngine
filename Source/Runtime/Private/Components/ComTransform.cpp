@@ -384,9 +384,9 @@ void ComTransform::UpdateWorldMatrix() const {
 static Angles SyncEulerAngles(const Angles &eulerAngles, const Angles &eulerAnglesHint) {
     Angles syncEulerAngles;
 
-    syncEulerAngles[0] = eulerAngles[0] + Math::Rint((eulerAnglesHint[0] - eulerAngles[0]) / 360.0f) * 360.0f;
-    syncEulerAngles[1] = eulerAngles[1] + Math::Rint((eulerAnglesHint[1] - eulerAngles[1]) / 360.0f) * 360.0f;
-    syncEulerAngles[2] = eulerAngles[2] + Math::Rint((eulerAnglesHint[2] - eulerAngles[2]) / 360.0f) * 360.0f;
+    syncEulerAngles[0] = eulerAngles[0] + Math::Round((eulerAnglesHint[0] - eulerAngles[0]) / 360.0f) * 360.0f;
+    syncEulerAngles[1] = eulerAngles[1] + Math::Round((eulerAnglesHint[1] - eulerAngles[1]) / 360.0f) * 360.0f;
+    syncEulerAngles[2] = eulerAngles[2] + Math::Round((eulerAnglesHint[2] - eulerAngles[2]) / 360.0f) * 360.0f;
 
     return syncEulerAngles;
 }
@@ -401,9 +401,9 @@ Angles ComTransform::CalculateLocalEulerAnglesHint(const Quat &newRotation, cons
     Angles e1 = newRotation.ToAngles();
 
     // Round off degrees to the fourth decimal place
-    e1[0] = Math::Rint(e1[0] / 1e-3f) * 1e-3f;
-    e1[1] = Math::Rint(e1[1] / 1e-3f) * 1e-3f;
-    e1[2] = Math::Rint(e1[2] / 1e-3f) * 1e-3f;
+    e1[0] = Math::Round(e1[0] / 1e-3f) * 1e-3f;
+    e1[1] = Math::Round(e1[1] / 1e-3f) * 1e-3f;
+    e1[2] = Math::Round(e1[2] / 1e-3f) * 1e-3f;
 
     // Make another Euler angles
     Angles e2 = e1 + Angles(180, 180, 180);
