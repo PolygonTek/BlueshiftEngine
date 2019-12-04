@@ -124,8 +124,14 @@ bool Variant::SetFromString(Type::Enum type, const char *str) {
     case Type::Point:
         *this = Point::FromString(str);
         return true;
+    case Type::PointF:
+        *this = PointF::FromString(str);
+        return true;
     case Type::Rect:
         *this = Rect::FromString(str);
+        return true;
+    case Type::RectF:
+        *this = RectF::FromString(str);
         return true;
     case Type::Guid:
         *this = Guid::FromString(str);
@@ -211,8 +217,12 @@ bool Variant::operator==(const Variant &rhs) const {
         return *(reinterpret_cast<const Quat *>(&value)) == *(reinterpret_cast<const Quat *>(&rhs.value));
     case Type::Point:
         return *(reinterpret_cast<const Point *>(&value)) == *(reinterpret_cast<const Point *>(&rhs.value));
+    case Type::PointF:
+        return *(reinterpret_cast<const PointF *>(&value)) == *(reinterpret_cast<const PointF *>(&rhs.value));
     case Type::Rect:
         return *(reinterpret_cast<const Rect *>(&value)) == *(reinterpret_cast<const Rect *>(&rhs.value));
+    case Type::RectF:
+        return *(reinterpret_cast<const RectF *>(&value)) == *(reinterpret_cast<const RectF *>(&rhs.value));
     case Type::Guid:
         return *(reinterpret_cast<const Guid *>(&value)) == *(reinterpret_cast<const Guid *>(&rhs.value));
     case Type::Str:
@@ -288,8 +298,14 @@ Json::Value Variant::ToJsonValue() const {
     case Type::Point:
         value = As<Point>().ToString();
         break;
+    case Type::PointF:
+        value = As<PointF>().ToString();
+        break;
     case Type::Rect:
         value = As<Rect>().ToString();
+        break;
+    case Type::RectF:
+        value = As<RectF>().ToString();
         break;
     case Type::Guid:
         value = As<Guid>().ToString();
@@ -355,8 +371,12 @@ Str Variant::ToString() const {
         return (reinterpret_cast<const Quat *>(&value))->ToString(7);
     case Type::Point:
         return (reinterpret_cast<const Point *>(&value))->ToString();
+    case Type::PointF:
+        return (reinterpret_cast<const PointF *>(&value))->ToString();
     case Type::Rect:
         return (reinterpret_cast<const Rect *>(&value))->ToString();
+    case Type::RectF:
+        return (reinterpret_cast<const RectF *>(&value))->ToString();
     case Type::Guid:
         return (reinterpret_cast<const Guid *>(&value))->ToString();
     case Type::Str:

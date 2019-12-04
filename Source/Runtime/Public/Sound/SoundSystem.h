@@ -171,18 +171,18 @@ public:
                             /// Is currently playing ?
     bool                    IsPlaying() const;
 
-                            /// Returns volume in [0, 1]
+                            /// Returns volume in [0, 1].
     float                   GetVolume() const { return volume; }
-                            /// Sets volume in [0, 1]
+                            /// Sets volume in [0, 1].
     void                    SetVolume(float volume);
 
-                            /// Gets current playing time in milliseconds
+                            /// Gets current playing time in milliseconds.
     uint32_t                GetPlayingTime() const;
-                            /// Sets current playing time in milliseconds
+                            /// Sets current playing time in milliseconds.
     void                    SetPlayingTime(uint32_t time);
 
-                            /// Sets 3D position of this sound
-    void                    UpdatePosition(const Vec3 &origin); 
+                            /// Sets 3D position of this sound.
+    void                    UpdatePosition(const Vec3 &origin);
 
     bool                    Load(const char *filename);
 
@@ -250,7 +250,7 @@ public:
 
     void                    RenameSound(Sound *sound, const Str &newName);
 
-                            /// Sets where the camera is
+                            /// Sets where the camera is.
     void                    PlaceListener(const Vec3 &pos, const Mat3 &axis);
 
     void                    StopAllSounds();
@@ -269,7 +269,6 @@ private:
     void                    PlaceListenerInternal(const Vec3 &origin, const Vec3 &forward, const Vec3 &up);
     void                    CreateDefaultSound();
 
-    static void             Cmd_SoundInfo(const CmdArgs &args);
     static void             Cmd_ListSounds(const CmdArgs &args);
     static void             Cmd_PlaySound(const CmdArgs &args);
 

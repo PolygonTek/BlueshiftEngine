@@ -52,7 +52,9 @@ public:
             Angles,
             Quat,
             Point,
+            PointF,
             Rect,
+            RectF,
             Guid,
             Str,
             MinMaxCurve,
@@ -207,7 +209,17 @@ public:
         *this = value;
     }
 
+    Variant(const PointF &value)
+        : type(Type::None) {
+        *this = value;
+    }
+
     Variant(const Rect &value)
+        : type(Type::None) {
+        *this = value;
+    }
+
+    Variant(const RectF &value)
         : type(Type::None) {
         *this = value;
     }
@@ -259,7 +271,9 @@ public:
     Variant &               operator=(const Angles &rhs);
     Variant &               operator=(const Quat &rhs);
     Variant &               operator=(const Point &rhs);
+    Variant &               operator=(const PointF &rhs);
     Variant &               operator=(const Rect &rhs);
+    Variant &               operator=(const RectF &rhs);
     Variant &               operator=(const Guid &rhs);
     Variant &               operator=(const Str &rhs);
     Variant &               operator=(const MinMaxCurve &rhs);
@@ -401,9 +415,21 @@ BE_INLINE Variant &Variant::operator=(const Point &rhs) {
     return *this;
 }
 
+BE_INLINE Variant &Variant::operator=(const PointF &rhs) {
+    SetType(Type::PointF);
+    *(reinterpret_cast<PointF *>(&value)) = rhs;
+    return *this;
+}
+
 BE_INLINE Variant &Variant::operator=(const Rect &rhs) {
     SetType(Type::Rect);
     *(reinterpret_cast<Rect *>(&value)) = rhs;
+    return *this;
+}
+
+BE_INLINE Variant &Variant::operator=(const RectF &rhs) {
+    SetType(Type::RectF);
+    *(reinterpret_cast<RectF *>(&value)) = rhs;
     return *this;
 }
 
@@ -491,8 +517,18 @@ BE_INLINE const Point &Variant::As() const {
 }
 
 template <>
+BE_INLINE const PointF &Variant::As() const {
+    return type == Type::PointF ? *reinterpret_cast<const PointF *>(&value) : PointF::zero;
+}
+
+template <>
 BE_INLINE const Rect &Variant::As() const {
     return type == Type::Rect ? *reinterpret_cast<const Rect *>(&value) : Rect::empty;
+}
+
+template <>
+BE_INLINE const RectF &Variant::As() const {
+    return type == Type::RectF ? *reinterpret_cast<const RectF *>(&value) : RectF::empty;
 }
 
 template <>
@@ -604,8 +640,18 @@ struct VariantType<Point> {
 };
 
 template <>
+struct VariantType<PointF> {
+    static Variant::Type::Enum GetType() { return Variant::Type::PointF; }
+};
+
+template <>
 struct VariantType<Rect> {
     static Variant::Type::Enum GetType() { return Variant::Type::Rect; }
+};
+
+template <>
+struct VariantType<RectF> {
+    static Variant::Type::Enum GetType() { return Variant::Type::RectF; }
 };
 
 template <>

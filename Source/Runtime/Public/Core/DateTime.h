@@ -21,7 +21,7 @@ BE_NAMESPACE_BEGIN
 
 class BE_API DateTime {
 public:
-    // Days of the week in 7-day calendars
+    /// Days of the week in 7-day calendars.
     struct DayOfWeek {
         enum Enum {
             Monday = 0,
@@ -34,7 +34,7 @@ public:
         };
     };
 
-    // Months of the year in 12-month calendars.
+    /// Months of the year in 12-month calendars.
     struct MonthOfYear {
         enum Enum {
             January = 1,
@@ -109,9 +109,9 @@ public:
     static DateTime     UtcNow();
     static DateTime     Today() { return Now().DatePart(); }
     
-                        // The minimum date value is January 1, 0001, 00:00:00.0.
+                        /// The minimum date value is January 1, 0001, 00:00:00.0.
     static DateTime     MinValue() { return DateTime(0); }
-                        // The maximum date value is December 31, 9999, 23:59:59.9999999.
+                        /// The maximum date value is December 31, 9999, 23:59:59.9999999.
     static DateTime     MaxValue() { return DateTime(3652059 * Timespan::TicksPerDay - 1); }
     
     static int32_t      DaysInMonth(int32_t year, int32_t month);

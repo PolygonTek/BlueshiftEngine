@@ -280,7 +280,7 @@ public:
                         /// [abc...]   match any of the enclosed characters; a hyphen can
                         ///            be used to specify a range (e.g. a-z, A-Z, 0-9)
     bool                Filter(const char *filter, bool caseSensitive = true) const;
-                        /// Strip whole quoted string to unquoted string
+                        /// Strip whole quoted string to unquoted string.
     Str &               StripQuotes();
 
                         /// Replaces 'n' characters beginning at index position with the string after and returns a reference to this string.
@@ -304,7 +304,7 @@ public:
                         /// Returns a string that contains 'n' characters of this string, starting at the specified 'position' index.
     Str                 Mid(int start, int n) const;
 
-                        /// Returns comma added string. ex) 10000 -> 10,000
+                        /// Returns comma added string. ex) 10000 -> 10,000.
     Str                 Commafy() const;
 
     Str                 NumberedName(int *number) const;
@@ -312,11 +312,11 @@ public:
                         /// Set formatted string.
     int BE_CDECL        sPrintf(const char *formatString, ...);
     
-                        /// Hash key for the filename (skips extension)
+                        /// Hash key for the filename (skips extension).
     int                 FileNameHash() const;
-                        /// Converts '\' to '/'
+                        /// Converts '\' to '/'.
     Str &               BackSlashesToSlashes();
-                        /// Converts '/' to '\'
+                        /// Converts '/' to '\'.
     Str &               SlashesToBackSlashes();
                         /// Converts absolute path to relative path.
     const Str           ToRelativePath(const char *basePath) const;
@@ -407,21 +407,21 @@ public:
     static int          ColorIndex(int c);
 
 #if __OBJC__
-                        /// Convert Str to Objective-C NSString
+                        /// Convert Str to Objective-C NSString.
     NSString *          ToNSString() const {
         return [[NSString alloc] initWithBytes:data length:Length() encoding:NSUTF8StringEncoding];
     }
 #endif
 
 #ifdef QSTRING_H
-                        /// Convert Str to QString
+                        /// Convert Str to QString.
     QString             ToQString() const {
         return QString::fromUtf8(data, len);
     }
 #endif
 
 #ifdef __ANDROID__
-                        /// Convert Str to jstring
+                        /// Convert Str to jstring.
     jstring             ToJavaString(JNIEnv *env) const {
         jstring javaString = env->NewStringUTF(data);
         return javaString;
