@@ -23,7 +23,7 @@ bool Sphere::IsIntersectAABB(const AABB &aabb) const {
     
 bool Sphere::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const {
     Vec3 m = center - ray.origin;
-    float b = m.Dot(ray.dir); // * 2 생략
+    float b = m.Dot(ray.dir); // omit multiplying by 2.
     float c = m.Dot(m) - radius * radius;
     
     if (b < 0 && c > 0) {
@@ -62,7 +62,7 @@ float Sphere::IntersectRay(const Ray &ray) const {
 bool Sphere::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     Vec3 m = start - center;
     float c = m.Dot(m) - radius * radius;
-    // If there is definitely at least one real root, there must be an intersection	
+    // If there is definitely at least one real root, there must be an intersection.
     if (c <= 0) {
         return true;
     }
@@ -70,13 +70,13 @@ bool Sphere::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     Vec3 d = end - start;
     float l = d.Length();
     float b = m.Dot(d) / l;
-    // Exit if line's origin outside sphere (c > 0) and line pointing away from sphere (b > 0)	
+    // Exit if line's origin outside sphere (c > 0) and line pointing away from sphere (b > 0).
     if (b > 0) {
         return false;
     }
     
     float discr = b * b - c;
-    // A negative discriminant corresponds to ray missing sphere
+    // A negative discriminant corresponds to ray missing sphere.
     if (discr < 0) {
         return false;
     }

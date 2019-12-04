@@ -36,9 +36,9 @@ const Color3  Color3::grey      = Color3(0.7f, 0.7f, 0.7f);
 const Color3  Color3::darkGrey  = Color3(0.3f, 0.3f, 0.3f);
 
 void Color3::Clip() {
-    r = (r > 1.0f) ? 1.0f : ((r < 0.0f) ? 0.0f : r);
-    g = (g > 1.0f) ? 1.0f : ((g < 0.0f) ? 0.0f : g);
-    b = (b > 1.0f) ? 1.0f : ((b < 0.0f) ? 0.0f : b);
+    Clamp01(r);
+    Clamp01(g);
+    Clamp01(b);
 }
 
 void Color3::Invert() {
@@ -48,10 +48,10 @@ void Color3::Invert() {
 }
 
 uint32_t Color3::ToUInt32() const {
-    uint32_t r = (uint32_t)Clamp(((int)(this->r * 255.0f)), 0, 255);
-    uint32_t g = (uint32_t)Clamp(((int)(this->g * 255.0f)), 0, 255);
-    uint32_t b = (uint32_t)Clamp(((int)(this->b * 255.0f)), 0, 255);
-    return (255 << 24) | (b << 16) | (g << 8) | r;
+    uint32_t ur = (uint32_t)Clamp(((int)(r * 255.0f)), 0, 255);
+    uint32_t ug = (uint32_t)Clamp(((int)(g * 255.0f)), 0, 255);
+    uint32_t ub = (uint32_t)Clamp(((int)(b * 255.0f)), 0, 255);
+    return (255 << 24) | (ub << 16) | (ug << 8) | ur;
 }
 
 Color3 Color3::FromString(const char *str) {
@@ -60,7 +60,6 @@ Color3 Color3::FromString(const char *str) {
     return v;
 }
 
-// RGB 를 HSL 로 변환
 Color3 Color3::ToHSL() const {
     float h, s, l;
     float v = Max3(r, g, b);
@@ -94,7 +93,6 @@ Color3 Color3::ToHSL() const {
     return Color3(h, s, l);
 }
 
-// HSL 을 RGB 로 변환
 Color3 Color3::FromHSL() const {
     float h = r;
     float s = g;

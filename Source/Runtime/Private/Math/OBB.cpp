@@ -358,13 +358,13 @@ float OBB::Distance(const Vec3 &p) const {
 bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
     float c[3][3];
     float ac[3][3];
-    float tproj[3];		// axis[i] * t
-    float d, e0, e1;	// distance between centers and projected extents
+    float tproj[3];     // axis[i] * t
+    float d, e0, e1;    // distance between centers and projected extents
 
-    // vector between centers
+    // Delta vector between centers.
     Vec3 t = b.center - center;
     
-    // Ax 축으로 비교 (axis[0])
+    // Compare on axis Ax (axis[0]).
     c[0][0] = axis[0].Dot(b.axis[0]);
     c[0][1] = axis[0].Dot(b.axis[1]);
     c[0][2] = axis[0].Dot(b.axis[2]);
@@ -380,7 +380,7 @@ bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
         return false;
     }
 
-    // Ay 축으로 비교 (axis[1])
+    // Compare on axis Ay (axis[1]).
     c[1][0] = axis[1].Dot(b.axis[0]);
     c[1][1] = axis[1].Dot(b.axis[1]);
     c[1][2] = axis[1].Dot(b.axis[2]);
@@ -396,7 +396,7 @@ bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
         return false;
     }
 
-    // Az 축으로 비교 (axis[2])
+    // Compare on axis Az (axis[2]).
     c[2][0] = axis[2].Dot(b.axis[0]);
     c[2][1] = axis[2].Dot(b.axis[1]);
     c[2][2] = axis[2].Dot(b.axis[2]);
@@ -412,7 +412,7 @@ bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
         return false;
     }
 
-    // Bx 축으로 비교 (b.axis[0])
+    // Compare on axis Bx (b.axis[0]).
     d = Math::Fabs(b.axis[0].Dot(t));
     e0 = extents[0] * ac[0][0] + extents[1] * ac[1][0] + extents[2] * ac[2][0];
     e1 = b.extents[0];
@@ -420,7 +420,7 @@ bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
         return false;
     }
 
-    // By 축으로 비교 (b.axis[1])
+    // Compare on axis By (b.axis[1]).
     d = Math::Fabs(b.axis[1].Dot(t));
     e0 = extents[0] * ac[0][1] + extents[1] * ac[1][1] + extents[2] * ac[2][1];
     e1 = b.extents[1];
@@ -428,7 +428,7 @@ bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
         return false;
     }
     
-    // Bz 축으로 비교 (b.axis[2])
+    // Compare on axis Bz (b.axis[2]).
     d = Math::Fabs(b.axis[2].Dot(t));
     e0 = extents[0] * ac[0][2] + extents[1] * ac[1][2] + extents[2] * ac[2][2];
     e1 = b.extents[2];
@@ -436,7 +436,7 @@ bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
         return false;
     }
 
-    // cross(Ax, Bx) 축으로 비교
+    // Compare on axis that is cross product of (Ax, Bx).
     d = Math::Fabs(tproj[2] * c[1][0] - tproj[1] * c[2][0]);
     e0 = extents[1] * ac[2][0] + extents[2] * ac[1][0];
     e1 = b.extents[1] * ac[0][2] + b.extents[2] * ac[0][1];
@@ -444,7 +444,7 @@ bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
         return false;
     }
 
-    // cross(Ax, By) 축으로 비교
+    // Compare on axis that is cross product of (Ax, By).
     d = Math::Fabs(tproj[2] * c[1][1] - tproj[1] * c[2][1]);
     e0 = extents[1] * ac[2][1] + extents[2] * ac[1][1];
     e1 = b.extents[0] * ac[0][2] + b.extents[2] * ac[0][0];
@@ -452,7 +452,7 @@ bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
         return false;
     }
 
-    // cross(Ax, Bz) 축으로 비교
+    // Compare on axis that is cross product of (Ax, Bz).
     d = Math::Fabs(tproj[2] * c[1][2] - tproj[1] * c[2][2]);
     e0 = extents[1] * ac[2][2] + extents[2] * ac[1][2];
     e1 = b.extents[0] * ac[0][1] + b.extents[1] * ac[0][0];
@@ -460,7 +460,7 @@ bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
         return false;
     }
 
-    // cross(Ay, Bx) 축으로 비교
+    // Compare on axis that is cross product of (Ay, Bx).
     d = Math::Fabs(tproj[0] * c[2][0] - tproj[2] * c[0][0]);
     e0 = extents[0] * ac[2][0] + extents[2] * ac[0][0];
     e1 = b.extents[1] * ac[1][2] + b.extents[2] * ac[1][1];
@@ -468,7 +468,7 @@ bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
         return false;
     }
 
-    // cross(Ay, By) 축으로 비교
+    // Compare on axis that is cross product of (Ay, By).
     d = Math::Fabs(tproj[0] * c[2][1] - tproj[2] * c[0][1]);
     e0 = extents[0] * ac[2][1] + extents[2] * ac[0][1];
     e1 = b.extents[0] * ac[1][2] + b.extents[2] * ac[1][0];
@@ -476,7 +476,7 @@ bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
         return false;
     }
 
-    // cross(Ay, Bz) 축으로 비교
+    // Compare on axis that is cross product of (Ay, Bz).
     d = Math::Fabs(tproj[0] * c[2][2] - tproj[2] * c[0][2]);
     e0 = extents[0] * ac[2][2] + extents[2] * ac[0][2];
     e1 = b.extents[0] * ac[1][1] + b.extents[1] * ac[1][0];
@@ -484,7 +484,7 @@ bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
         return false;
     }
 
-    // cross(Az, Bx) 축으로 비교
+    // Compare on axis that is cross product of (Az, Bx).
     d = Math::Fabs(tproj[1] * c[0][0] - tproj[0] * c[1][0]);
     e0 = extents[0] * ac[1][0] + extents[1] * ac[0][0];
     e1 = b.extents[1] * ac[2][2] + b.extents[2] * ac[2][1];
@@ -492,7 +492,7 @@ bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
         return false;
     }
 
-    // cross(Az, By) 축으로 비교
+    // Compare on axis that is cross product of (Az, By).
     d = Math::Fabs(tproj[1] * c[0][1] - tproj[0] * c[1][1]);
     e0 = extents[0] * ac[1][1] + extents[1] * ac[0][1];
     e1 = b.extents[0] * ac[2][2] + b.extents[2] * ac[2][0];
@@ -500,7 +500,7 @@ bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
         return false;
     }
 
-    // cross(Az, Bz) 축으로 비교
+    // Compare on axis that is cross product of (Az, Bz).
     d = Math::Fabs(tproj[1] * c[0][2] - tproj[0] * c[1][2]);
     e0 = extents[0] * ac[1][2] + extents[1] * ac[0][2];
     e1 = b.extents[0] * ac[2][1] + b.extents[1] * ac[2][0];

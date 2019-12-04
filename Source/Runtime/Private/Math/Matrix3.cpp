@@ -31,7 +31,7 @@ float Mat3::Determinant() const {
 bool Mat3::InverseSelf() {
 #if 1
     // 18+3+9 = 30 multiplications
-    //			 1 division
+    //          1 division
     Mat3 inverse;
     double det, invDet;
 
@@ -69,7 +69,7 @@ bool Mat3::InverseSelf() {
     return true;
 #elif 0
     // 3*10 = 30 multiplications
-    //		   3 divisions
+    //        3 divisions
     float *mat = reinterpret_cast<float *>(this);
     float s;
     double d, di;
@@ -119,14 +119,14 @@ bool Mat3::InverseSelf() {
 
     return (s != 0.0f && !FLOAT_IS_NAN(s));
 #else
-    //	4*2+4*4 = 24 multiplications
-    //		2*1 =  2 divisions
+    // 4*2+4*4 = 24 multiplications
+    //     2*1 =  2 divisions
     Mat2 r0;
     float r1[2], r2[2], r3;
     float det, invDet;
     float *mat = reinterpret_cast<float *>(this);
 
-    // r0 = m0.Inverse();	// 2x2
+    // r0 = m0.Inverse();   // 2x2
     det = mat[0*3+0] * mat[1*3+1] - mat[0*3+1] * mat[1*3+0];
 
     if (Math::Fabs(det) < MATRIX_INVERSE_EPSILON) {
@@ -140,14 +140,14 @@ bool Mat3::InverseSelf() {
     r0[1][0] = - mat[1*3+0] * invDet;
     r0[1][1] =   mat[0*3+0] * invDet;
 
-    // r1 = r0 * m1;		// 2x1 = 2x2 * 2x1
+    // r1 = r0 * m1;        // 2x1 = 2x2 * 2x1
     r1[0] = r0[0][0] * mat[0*3+2] + r0[0][1] * mat[1*3+2];
     r1[1] = r0[1][0] * mat[0*3+2] + r0[1][1] * mat[1*3+2];
 
-    // r2 = m2 * r1;		// 1x1 = 1x2 * 2x1
+    // r2 = m2 * r1;        // 1x1 = 1x2 * 2x1
     r2[0] = mat[2*3+0] * r1[0] + mat[2*3+1] * r1[1];
 
-    // r3 = r2 - m3;		// 1x1 = 1x1 - 1x1
+    // r3 = r2 - m3;        // 1x1 = 1x1 - 1x1
     r3 = r2[0] - mat[2*3+2];
 
     // r3.InverseSelf();
@@ -157,21 +157,21 @@ bool Mat3::InverseSelf() {
 
     r3 = 1.0f / r3;
 
-    // r2 = m2 * r0;		// 1x2 = 1x2 * 2x2
+    // r2 = m2 * r0;        // 1x2 = 1x2 * 2x2
     r2[0] = mat[2*3+0] * r0[0][0] + mat[2*3+1] * r0[1][0];
     r2[1] = mat[2*3+0] * r0[0][1] + mat[2*3+1] * r0[1][1];
 
-    // m2 = r3 * r2;		// 1x2 = 1x1 * 1x2
+    // m2 = r3 * r2;        // 1x2 = 1x1 * 1x2
     mat[2*3+0] = r3 * r2[0];
     mat[2*3+1] = r3 * r2[1];
 
-    // m0 = r0 - r1 * m2;	// 2x2 - 2x1 * 1x2
+    // m0 = r0 - r1 * m2;   // 2x2 - 2x1 * 1x2
     mat[0*3+0] = r0[0][0] - r1[0] * mat[2*3+0];
     mat[0*3+1] = r0[0][1] - r1[0] * mat[2*3+1];
     mat[1*3+0] = r0[1][0] - r1[1] * mat[2*3+0];
     mat[1*3+1] = r0[1][1] - r1[1] * mat[2*3+1];
 
-    // m1 = r1 * r3;		// 2x1 = 2x1 * 1x1
+    // m1 = r1 * r3;        // 2x1 = 2x1 * 1x1
     mat[0*3+2] = r1[0] * r3;
     mat[1*3+2] = r1[1] * r3;
 
