@@ -49,7 +49,7 @@ public:
 
 private:
     struct Key {
-        bool                is_down;
+        bool                isDown;
         int                 count;
         char *              binding;
     };

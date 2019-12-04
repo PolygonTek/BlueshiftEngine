@@ -27,7 +27,7 @@ BE_NAMESPACE_BEGIN
 template <typename T>
 class Queue {
 public:
-    /// Constructs emtpy queue
+    /// Constructs empty queue.
     Queue();
 
     void            Clear();

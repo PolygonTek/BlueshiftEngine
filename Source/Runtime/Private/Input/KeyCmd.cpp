@@ -259,7 +259,7 @@ const char *KeyCmdSystem::KeynumToString(KeyCode::Enum keynum) {
 void KeyCmdSystem::Init() {
     for (int i = 0; i < 256; i++) {
         keyList[i].binding = nullptr;
-        keyList[i].is_down = false;
+        keyList[i].isDown = false;
         keyList[i].count = 0;
     }
 
@@ -285,11 +285,11 @@ void KeyCmdSystem::Shutdown() {
 
 void KeyCmdSystem::ClearStates() {
     for (int i = 0; i < COUNT_OF(keyList); i++) {
-        if (keyList[i].is_down || keyList[i].count) {
+        if (keyList[i].isDown || keyList[i].count) {
             KeyEvent((KeyCode::Enum)i, false);
         }
 
-        keyList[i].is_down = false;
+        keyList[i].isDown = false;
         keyList[i].count = 0;
     }
 }
@@ -342,7 +342,7 @@ bool KeyCmdSystem::IsPressed(KeyCode::Enum keynum) const {
 
 bool KeyCmdSystem::IsPressedAnyKey() const {
     for (int i = 0; i < COUNT_OF(keyList); i++) {
-        if (keyList[i].is_down) {
+        if (keyList[i].isDown) {
             return true;
         }
     }
@@ -359,7 +359,7 @@ void KeyCmdSystem::KeyEvent(KeyCode::Enum keynum, bool down) {
     }
 
     Key *key = &keyList[(int)keynum];
-    key->is_down = down;
+    key->isDown = down;
 
     if (down) {
         key->count++;
