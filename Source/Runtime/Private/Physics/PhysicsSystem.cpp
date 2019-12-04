@@ -90,10 +90,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
         // Construct initial world transform 
         Vec3 worldCentroid = desc.origin + desc.axis * totalCentroid;
         Mat3 worldAxis = desc.axis * shapeDesc->localAxis;
-        initialTransform.setBasis(btMatrix3x3(
-            worldAxis[0][0], worldAxis[1][0], worldAxis[2][0],
-            worldAxis[0][1], worldAxis[1][1], worldAxis[2][1],
-            worldAxis[0][2], worldAxis[1][2], worldAxis[2][2]));
+        initialTransform.setBasis(ToBtMatrix3x3(worldAxis));
         initialTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(worldCentroid)));
     } else {
         btCompoundShape *compoundShape = new btCompoundShape;
@@ -124,10 +121,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
 
             // Construct local transform for each child shapes
             btTransform localTransform;
-            localTransform.setBasis(btMatrix3x3(
-                shapeDesc->localAxis[0][0], shapeDesc->localAxis[1][0], shapeDesc->localAxis[2][0],
-                shapeDesc->localAxis[0][1], shapeDesc->localAxis[1][1], shapeDesc->localAxis[2][1],
-                shapeDesc->localAxis[0][2], shapeDesc->localAxis[1][2], shapeDesc->localAxis[2][2]));
+            localTransform.setBasis(ToBtMatrix3x3(shapeDesc->localAxis));
             localTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(localCentroid)));
 
             compoundShape->addChildShape(localTransform, shapeDesc->collider->shape);
@@ -135,10 +129,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
 
         // Construct initial world transform 
         Vec3 worldCentroid = desc.origin + desc.axis * totalCentroid;
-        initialTransform.setBasis(btMatrix3x3(
-            desc.axis[0][0], desc.axis[1][0], desc.axis[2][0],
-            desc.axis[0][1], desc.axis[1][1], desc.axis[2][1],
-            desc.axis[0][2], desc.axis[1][2], desc.axis[2][2]));
+        initialTransform.setBasis(ToBtMatrix3x3(desc.axis));
         initialTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(worldCentroid)));
     }
 

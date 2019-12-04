@@ -57,10 +57,7 @@ const Mat3 PhysCollidable::GetAxis() const {
 }
 
 void PhysCollidable::SetAxis(const Mat3 &axis) {
-    collisionObject->getWorldTransform().setBasis(btMatrix3x3(
-        axis[0][0], axis[1][0], axis[2][0],
-        axis[0][1], axis[1][1], axis[2][1],
-        axis[0][2], axis[1][2], axis[2][2]));
+    collisionObject->getWorldTransform().setBasis(ToBtMatrix3x3(axis));
 }
 
 void PhysCollidable::SetTransform(const Mat3x4 &transform) {
