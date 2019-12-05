@@ -28,7 +28,7 @@ BEGIN_EVENTS(ComImage)
 END_EVENTS
 
 void ComImage::RegisterProperties() {
-    REGISTER_MIXED_ACCESSOR_PROPERTY("imageMaterial", "Image Material", Guid, GetImageMaterialGuid, SetImageMaterialGuid, GuidMapper::defaultMaterialGuid,
+    REGISTER_MIXED_ACCESSOR_PROPERTY("imageMaterial", "Image Material", Guid, GetMaterialGuid, SetMaterialGuid, GuidMapper::defaultMaterialGuid,
         "", PropertyInfo::Flag::Editor).SetMetaObject(&MaterialResource::metaObject);
     REGISTER_ACCESSOR_PROPERTY("imageType", "Image Type", ImageType::Enum, GetImageType, SetImageType, ImageType::Simple,
         "", PropertyInfo::Flag::Editor).SetEnumString("Simple;Sliced");
@@ -77,7 +77,7 @@ void ComImage::Init() {
     UpdateVisuals();
 }
 
-Guid ComImage::GetImageMaterialGuid() const {
+Guid ComImage::GetMaterialGuid() const {
     if (renderObjectDef.materials[0]) {
         const Str materialPath = renderObjectDef.materials[0]->GetHashName();
         return resourceGuidMapper.Get(materialPath);
@@ -85,7 +85,7 @@ Guid ComImage::GetImageMaterialGuid() const {
     return Guid();
 }
 
-void ComImage::SetImageMaterialGuid(const Guid &materialGuid) {
+void ComImage::SetMaterialGuid(const Guid &materialGuid) {
     // Release the previously used material
     if (renderObjectDef.materials[0]) {
         materialManager.ReleaseMaterial(renderObjectDef.materials[0]);
@@ -98,6 +98,22 @@ void ComImage::SetImageMaterialGuid(const Guid &materialGuid) {
     if (IsInitialized()) {
         UpdateVisuals();
     }
+}
+
+Material *ComImage::GetMaterial() const {
+    Guid materialGuid = GetMaterialGuid();
+    if (materialGuid.IsZero()) {
+        return nullptr;
+    }
+
+    const Str materialPath = resourceGuidMapper.Get(materialGuid);
+    return materialManager.GetMaterial(materialPath); // FIXME: release ?
+}
+
+void ComImage::SetMaterial(const Material *material) {
+    const Guid materialGuid = resourceGuidMapper.Get(material->GetHashName());
+
+    SetMaterialGuid(materialGuid);
 }
 
 ComImage::ImageType::Enum ComImage::GetImageType() const {

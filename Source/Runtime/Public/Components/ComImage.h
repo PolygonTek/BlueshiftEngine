@@ -39,8 +39,11 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-    Guid                    GetImageMaterialGuid() const;
-    void                    SetImageMaterialGuid(const Guid &guid);
+    Guid                    GetMaterialGuid() const;
+    void                    SetMaterialGuid(const Guid &guid);
+
+    Material *              GetMaterial() const;
+    void                    SetMaterial(const Material *material);
 
     ImageType::Enum         GetImageType() const;
     void                    SetImageType(ImageType::Enum imageType);

@@ -17,6 +17,7 @@
 #include "Game/Entity.h"
 #include "Game/GameWorld.h"
 #include "Components/ComTransform.h"
+#include "Components/ComRectTransform.h"
 #include "Components/ComCollider.h"
 #include "Components/ComBoxCollider.h"
 #include "Components/ComSphereCollider.h"
@@ -46,6 +47,7 @@
 #include "Components/ComAnimation.h"
 #include "Components/ComAnimator.h"
 #include "Components/ComTextRenderer.h"
+#include "Components/ComImage.h"
 #include "Components/ComParticleSystem.h"
 #include "Components/ComLogic.h"
 #include "Components/ComScript.h"
@@ -80,6 +82,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "components_in_children", static_cast<ComponentPtrArray(Entity::*)(const MetaObject *, bool)const>(&Entity::GetComponentsInChildren),
         "components", static_cast<ComponentPtrArray(Entity::*)(const MetaObject *)const>(&Entity::GetComponents),
         "transform", static_cast<ComTransform*(Entity::*)()const>(&Entity::GetComponent<ComTransform>),
+        "rect_transform", static_cast<ComRectTransform*(Entity::*)()const>(&Entity::GetComponent<ComRectTransform>),
         "collider", static_cast<ComCollider*(Entity::*)()const>(&Entity::GetComponent<ComCollider>),
         "box_collider", static_cast<ComBoxCollider*(Entity::*)()const>(&Entity::GetComponent<ComBoxCollider>),
         "sphere_collider", static_cast<ComSphereCollider*(Entity::*)()const>(&Entity::GetComponent<ComSphereCollider>),
@@ -110,6 +113,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "animator", static_cast<ComAnimator*(Entity::*)()const>(&Entity::GetComponent<ComAnimator>),
         "text_renderer", static_cast<ComTextRenderer*(Entity::*)()const>(&Entity::GetComponent<ComTextRenderer>),
         "particle_system", static_cast<ComParticleSystem*(Entity::*)()const>(&Entity::GetComponent<ComParticleSystem>),
+        "image", static_cast<ComImage*(Entity::*)()const>(&Entity::GetComponent<ComImage>),
         "audio_source", static_cast<ComAudioSource*(Entity::*)()const>(&Entity::GetComponent<ComAudioSource>),
         "audio_listener", static_cast<ComAudioListener*(Entity::*)()const>(&Entity::GetComponent<ComAudioListener>),
         "spline", static_cast<ComSpline*(Entity::*)()const>(&Entity::GetComponent<ComSpline>),
