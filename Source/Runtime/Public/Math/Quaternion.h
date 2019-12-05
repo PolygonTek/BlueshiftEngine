@@ -254,7 +254,7 @@ public:
     static Quat         FromString(const char *str);
 
                         /// Returns dimension of this type.
-    int                 GetDimension() const { return 4; }
+    constexpr int       GetDimension() const { return 4; }
 
     static const Quat   identity;
     
@@ -507,7 +507,7 @@ BE_INLINE Quat &Quat::InverseSelf() {
 }
 
 BE_INLINE const char *Quat::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), 4, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_NAMESPACE_END

@@ -205,10 +205,13 @@ public:
                         /// Converts to surrounding sphere.
     Sphere              ToSphere() const;
 
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return 6; }
+
     static const AABB   empty;  ///< (Infinity, Infinity, Infinity) (-Infinity, -Infinity, -Infinity)
     static const AABB   zero;   ///< (0 0 0) (0 0 0)
 
-    Vec3                b[2];   ///< minimum/maximum value for each axis
+    Vec3                b[2];   ///< Minimum/Maximum values for each axis.
 };
 
 BE_INLINE AABB::AABB(const Vec3 &mins, const Vec3 &maxs) {

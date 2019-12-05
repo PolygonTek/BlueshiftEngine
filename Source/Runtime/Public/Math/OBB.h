@@ -37,10 +37,15 @@ class BE_API OBB {
 public:
     /// The default constructor does not initialize any members of this class.
     OBB() {}
+    /// Constructs an OBB by explicitly specifying all its member values.
     constexpr OBB(const Vec3 &center, const Vec3 &extents, const Mat3 &axis);
+    /// Constructs an OBB from an AABB and it's transformation.
     OBB(const AABB &aabb, const Vec3 &origin, const Mat3 &axis);
+    /// Constructs an OBB from an AABB and it's transformation.
     OBB(const AABB &aabb, const Mat3x4 &transform);
+    /// Constructs an OBB from single point.
     explicit OBB(const Vec3 &point);
+    /// Constructs an OBB from an AABB.
     explicit OBB(const AABB &aabb);
 
                         /// Returns true if this OBB is inside out.
@@ -146,7 +151,10 @@ public:
     bool                IntersectRay(const Ray &ray, float *hitDistMin = nullptr, float *hitDistMax = nullptr) const;
     float               IntersectRay(const Ray &ray) const;
 
-                        /// Sets OBB with the given points using PCA (Principal Component Analysis).
+                        /// Sets this OBB to enclose the given point cloud.
+                        /// This functions uses PCA (Principal Component Analysis) to generate an approximation of
+                        /// the smallest OBB that encloses the given point set.The resulting OBB will always contain
+                        /// all the specified points, but might not be the optimally smallest OBB in terms of volume.
     void                SetFromPoints(const Vec3 *points, int numPoints);
 
                         /// Calculates minimum / maximum value by projecting OBB onto the given axis.
@@ -179,9 +187,9 @@ public:
     static const OBB    zero;
 
 private:
-    Vec3                center;
-    Vec3                extents;
-    Mat3                axis;
+    Vec3                center;     ///< The center position of this OBB.
+    Vec3                extents;    ///< Stores half-sizes to x, y and z directions in the local space of this OBB.
+    Mat3                axis;       ///< Specifies normalized direction vectors for the local axes.
 };
 
 BE_INLINE constexpr OBB::OBB(const Vec3 &inCenter, const Vec3 &inExtents, const Mat3 &inAxis) :

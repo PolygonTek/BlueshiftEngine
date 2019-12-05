@@ -79,7 +79,7 @@ public:
     bool                FixDenormals();
 
                         /// Returns dimension of this type.
-    int                 GetDimension() const { return 3; }
+    constexpr int       GetDimension() const { return 3; }
 
     float               x;      ///< The factor of i
     float               y;      ///< The factor of j
@@ -137,7 +137,7 @@ BE_INLINE Quat CQuat::ToQuat() const {
 }
 
 BE_INLINE const char *CQuat::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), 3, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_INLINE bool CQuat::FixDenormals() {

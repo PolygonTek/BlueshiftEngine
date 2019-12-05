@@ -122,6 +122,9 @@ public:
                         /// Creates from the string
     static Triangle     FromString(const char *str);
 
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return 9; }
+
     Vec3                a;
     Vec3                b;
     Vec3                c;
@@ -150,7 +153,7 @@ BE_INLINE bool Triangle::Equals(const Triangle &t, const float epsilon) const {
 }
 
 BE_INLINE const char *Triangle::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), 9, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_NAMESPACE_END

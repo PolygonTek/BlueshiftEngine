@@ -102,6 +102,9 @@ public:
                         /// Creates from the string
     static SizeF        FromString(const char *str);
 
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return 2; }
+
     static const SizeF  zero;
 
     float               w;
@@ -161,7 +164,7 @@ BE_INLINE void SizeF::Set(float w, float h) {
 }
 
 BE_INLINE const char *SizeF::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), 2, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_NAMESPACE_END

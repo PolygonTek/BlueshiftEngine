@@ -212,7 +212,7 @@ public:
     Color4              LinearToSRGB() const { return Color4(ToColor3().LinearToSRGB(), a); }
 
                         /// Returns dimension of this type.
-    int                 GetDimension() const { return Size; }
+    constexpr int       GetDimension() const { return Size; }
 
     static const Color4 zero;       ///< (0.0, 0.0, 0.0, 0.0)
     static const Color4 black;      ///< (0.0, 0.0, 0.0, 1.0)
@@ -349,7 +349,7 @@ BE_INLINE bool Color4::Equals(const Color4 &c, const float epsilon) const {
 }
 
 BE_INLINE const char *Color4::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), Size, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_INLINE const Color3 &Color4::ToColor3() const {

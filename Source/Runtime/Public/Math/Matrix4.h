@@ -285,7 +285,7 @@ public:
     static Mat4         FromString(const char *str);
 
                         /// Returns dimension of this type.
-    int                 GetDimension() const { return Rows * Cols; }
+    constexpr int       GetDimension() const { return Rows * Cols; }
 
     static const Mat4   zero;
     static const Mat4   identity;
@@ -828,7 +828,7 @@ BE_INLINE Mat4 Mat4::FromScale(float sx, float sy, float sz) {
 }
 
 BE_INLINE const char *Mat4::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), Rows * Cols, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_NAMESPACE_END

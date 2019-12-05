@@ -36,7 +36,7 @@ public:
     Rect() = default;
     /// Constructs from coordinates.
     constexpr Rect(int x, int y, int w, int h);
-    /// Assignment operator
+    /// Assignment operator.
     Rect &operator=(const Rect &rhs);
 
 #ifdef QRECT_H
@@ -78,9 +78,9 @@ public:
     int                 operator[](int index) const;
     int &               operator[](int index);
 
-                        /// Compare with another one
+                        /// Compare with another one.
     bool                operator==(const Rect &rhs) const { return (x != rhs.x || y != rhs.y || w != rhs.w || h != rhs.h) ? false : true; }
-                        /// Compare with another one
+                        /// Compare with another one.
     bool                operator!=(const Rect &rhs) const { return (x != rhs.x || y != rhs.y || w != rhs.w || h != rhs.h) ? true : false; }
 
     bool                IsEmpty() const { return (w <= 0 || h <= 0) ? true : false; }
@@ -128,6 +128,9 @@ public:
 
                         /// Creates from the string
     static Rect         FromString(const char *str);
+
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return 4; }
 
 #ifdef QRECT_H
     QRect               ToQRect() const { return QRect(x, y, w, h); }
@@ -216,7 +219,7 @@ BE_INLINE void Rect::SetFrom4Coords(int x, int y, int x2, int y2) {
 }
 
 BE_INLINE const char *Rect::ToString() const {
-    return Str::IntegerArrayToString((const int *)(*this), 4);
+    return Str::IntegerArrayToString((const int *)(*this), GetDimension());
 }
 
 BE_NAMESPACE_END

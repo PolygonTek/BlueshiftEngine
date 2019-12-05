@@ -149,7 +149,7 @@ public:
     static Angles       FromString(const char *str);
 
                         /// Returns dimension of this type.
-    int                 GetDimension() const { return Size; }
+    constexpr int       GetDimension() const { return Size; }
 
     static const Angles zero;
 
@@ -185,7 +185,7 @@ BE_INLINE Angles &Angles::SetZero() {
 }
 
 BE_INLINE const char *Angles::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), Size, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_INLINE float Angles::operator[](int index) const {

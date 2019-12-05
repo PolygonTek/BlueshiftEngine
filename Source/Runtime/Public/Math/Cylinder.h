@@ -63,7 +63,7 @@ public:
     OBB                 ToOBB() const;
 
                         /// Returns dimension of this type.
-    int                 GetDimension() const { return 7; }
+    constexpr int       GetDimension() const { return 7; }
 
     Vec3                p[2];
     float               radius;

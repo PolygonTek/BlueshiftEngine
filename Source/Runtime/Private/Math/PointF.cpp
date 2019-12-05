@@ -17,7 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const PointF PointF::zero = PointF(0, 0);
+const PointF PointF::zero = PointF(0.0f, 0.0f);
 
 PointF PointF::FromString(const char *str) {
     PointF p;

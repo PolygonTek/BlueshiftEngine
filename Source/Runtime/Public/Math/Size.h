@@ -100,6 +100,9 @@ public:
                         /// Creates from the string
     static Size         FromString(const char *str);
 
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return 2; }
+
     static const Size   zero;
 
     int                 w;
@@ -159,7 +162,7 @@ BE_INLINE void Size::Set(int w, int h) {
 }
 
 BE_INLINE const char *Size::ToString() const {
-    return Str::IntegerArrayToString((const int *)(*this), 2);
+    return Str::IntegerArrayToString((const int *)(*this), GetDimension());
 }
 
 BE_NAMESPACE_END

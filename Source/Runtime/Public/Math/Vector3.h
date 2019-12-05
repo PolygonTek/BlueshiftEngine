@@ -366,7 +366,7 @@ public:
     void                OrthogonalBasis(Vec3 &left, Vec3 &up) const;
 
                         /// Returns dimension of this type.
-    int                 GetDimension() const { return Size; }
+    constexpr int       GetDimension() const { return Size; }
 
                         /// Compute 3D barycentric coordinates from the point based on 3 simplex vector.
     static const Vec3   Compute3DBarycentricCoords(const Vec2 &s1, const Vec2 &s2, const Vec2 &s3, const Vec2 &p);
@@ -711,7 +711,7 @@ BE_INLINE Color3 &Vec3::ToColor3() {
 }
 
 BE_INLINE const char *Vec3::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), Size, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_INLINE void Vec3::SetFromSpherical(float radius, float theta, float phi) {

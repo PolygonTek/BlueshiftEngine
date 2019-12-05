@@ -35,7 +35,7 @@ public:
     Point() = default;
     /// Constructs a Point with the value (x, y).
     constexpr Point(int x, int y);
-    /// Assignment operator
+    /// Assignment operator.
     Point &operator=(const Point &rhs);
 
 #ifdef QPOINT_H
@@ -48,7 +48,7 @@ public:
 
     /// Constructs a Point from a C array, to the value (data[0], data[1]).
     explicit constexpr Point(int data[2]);
-    /// Copy constructor
+    /// Copy constructor.
     explicit Point(const Vec2 &v);
 
                         /// Casts this Point to a C array.
@@ -79,9 +79,9 @@ public:
     Point               operator-(const Point &rhs) const { return Point(x - rhs.x, y - rhs.y); }
     Point               operator*(float rhs) const { return Point(x * rhs, y * rhs); }
 
-                        /// Compare with another one
+                        /// Compare with another one.
     bool                operator==(const Point &rhs) const { return (x != rhs.x || y != rhs.y) ? false : true; }
-                        /// Compare with another one
+                        /// Compare with another one.
     bool                operator!=(const Point &rhs) const { return (x != rhs.x || y != rhs.y) ? true : false; }
 
     void                Set(int x, int y);
@@ -100,8 +100,11 @@ public:
                         /// Returns "x y".
     const char *        ToString() const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Point        FromString(const char *str);
+
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return 2; }
 
     static const Point  zero;
 
@@ -174,7 +177,7 @@ BE_INLINE float Point::DistanceSqr(const Point &other) const {
 }
 
 BE_INLINE const char *Point::ToString() const {
-    return Str::IntegerArrayToString((const int *)(*this), 2);
+    return Str::IntegerArrayToString((const int *)(*this), GetDimension());
 }
 
 BE_NAMESPACE_END

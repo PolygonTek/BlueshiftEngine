@@ -96,7 +96,7 @@ public:
     const char *            ToString(int precision) const;
 
                             /// Returns dimension of this type.
-    int                     GetDimension() const { return 2; }
+    constexpr int           GetDimension() const { return 2; }
 
     static const Complex    origin;
     static const Complex    zero;
@@ -349,7 +349,7 @@ BE_INLINE bool Complex::Equals(const Complex &a, const float epsilon) const {
 }
 
 BE_INLINE const char *Complex::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), 2, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_NAMESPACE_END

@@ -41,6 +41,9 @@ public:
                     /// Returns radius of this sphere.
     float           Radius() const { return radius; }
 
+                    /// Returns diameter of this sphere.
+    float           Diameter() const { return radius * 2; }
+
                     /// Exact compare, no epsilon
     bool            Equals(const Sphere &a) const;
                     /// Compare with epsilon
@@ -88,8 +91,8 @@ public:
                     /// Converts to surrounding AABB.
     AABB            ToAABB() const;
 
-                    /// Returns dimension of this type
-    int             GetDimension() const { return 4; }
+                    /// Returns dimension of this type.
+    constexpr int   GetDimension() const { return 4; }
 
     Vec3            center;     ///< The center position of this sphere.
     float           radius;     ///< The radius of this sphere.

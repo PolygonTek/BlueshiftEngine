@@ -24,7 +24,7 @@
 #define INT32_SIGN_MASK             (1UL << INT32_SIGN_BIT)
 #define INT64_SIGN_MASK             (1ULL << INT64_SIGN_BIT)
 
-// int 비트 검출
+// integer bit detection
 #define INT64_SIGNBITSET(i)         (((const uint64_t)(i)) >> INT64_SIGN_BIT)
 #define INT64_SIGNBITNOTSET(i)      ((~((const uint64_t)(i))) >> INT64_SIGN_BIT)
 #define INT32_SIGNBITSET(i)         (((const uint32_t)(i)) >> INT32_SIGN_BIT)
@@ -70,12 +70,12 @@ floating point bit layouts according to the IEEE 754-1985 and 754-2008 standard
 #define IEEE_QDBL_EXPONENT_BIAS     16383
 #define IEEE_QDBL_SIGN_BIT          127
 
-// float 비트 검출
+// float bit detection
 #define IEEE_FLT_SIGNBITSET(f)      ((*(const uint32_t *)&(f)) >> 31)
 #define IEEE_FLT_SIGNBITNOTSET(f)   ((~(*(const uint32_t *)&(f))) >> 31)
 #define IEEE_FLT_NOTZERO(f)         ((*(const uint32_t *)&(f)) & ~(1 << 31))
 
-// float NaN, INF, IND, DENORMAL 검출 (INF, IND 는 NaN 에 포함)
+// float NaN, INF, IND, DENORMAL detection (INF, IND is included in NaN)
 #define IEEE_FLT_IS_NAN(x)          (((*(const uint32_t *)&x) & 0x7f800000) == 0x7f800000)
 #define IEEE_FLT_IS_INF(x)          (((*(const uint32_t *)&x) & 0x7fffffff) == 0x7f800000)
 #define IEEE_FLT_IS_IND(x)          ((*(const uint32_t *)&x) == 0xffc00000)

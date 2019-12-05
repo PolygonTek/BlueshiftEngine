@@ -36,7 +36,7 @@ public:
     RectF() = default;
     /// Constructs from coordinates.
     constexpr RectF(float x, float y, float w, float h);
-    /// Assignment operator
+    /// Assignment operator.
     RectF &operator=(const RectF &rhs);
 
 #ifdef QRECT_H
@@ -78,9 +78,9 @@ public:
     float               operator[](int index) const;
     float &             operator[](int index);
 
-                        /// Compare with another one
+                        /// Compare with another one.
     bool                operator==(const RectF &rhs) const { return (x != rhs.x || y != rhs.y || w != rhs.w || h != rhs.h) ? false : true; }
-                        /// Compare with another one
+                        /// Compare with another one.
     bool                operator!=(const RectF &rhs) const { return (x != rhs.x || y != rhs.y || w != rhs.w || h != rhs.h) ? true : false; }
 
     bool                IsEmpty() const { return (w <= 0 || h <= 0) ? true : false; }
@@ -130,6 +130,9 @@ public:
 
                         /// Creates from the string.
     static RectF        FromString(const char *str);
+
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return 4; }
 
 #ifdef QRECT_H
     QRectF              ToQRectF() const { return QRectF(x, y, w, h); }
@@ -218,7 +221,7 @@ BE_INLINE void RectF::SetFrom4Coords(float x, float y, float x2, float y2) {
 }
 
 BE_INLINE const char *RectF::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), 4, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_NAMESPACE_END

@@ -283,7 +283,7 @@ public:
     static Vec2         FromAngle(float theta);
 
                         /// Returns dimension of this type.
-    int                 GetDimension() const { return Size; }
+    constexpr int       GetDimension() const { return Size; }
 
                         /// Compute 2D barycentric coordinates from the point based on 2 simplex vector.
     static const Vec2   Compute2DBarycentricCoords(const float s1, const float s2, const float p);
@@ -526,7 +526,7 @@ BE_INLINE Vec2 Vec2::FromAngle(float theta) {
 }
 
 BE_INLINE const char *Vec2::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), Size, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_INLINE void Vec2::SetFromPolar(float radius, float theta) {

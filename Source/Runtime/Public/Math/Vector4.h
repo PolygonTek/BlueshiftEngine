@@ -244,7 +244,7 @@ public:
     Color4 &            ToColor4();
 
                         /// Returns dimension of this type
-    int                 GetDimension() const { return Size; }
+    constexpr int       GetDimension() const { return Size; }
 
                         /// Compute 4D barycentric coordinates from the point based on 4 simplex vector
     static const Vec4   Compute4DBarycentricCoords(const Vec3 &s1, const Vec3 &s2, const Vec3 &s3, const Vec3 &s4, const Vec3 &p);
@@ -490,7 +490,7 @@ BE_INLINE Color4 &Vec4::ToColor4() {
 }
 
 BE_INLINE const char *Vec4::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), Size, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_NAMESPACE_END

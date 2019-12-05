@@ -48,7 +48,7 @@ public:
 
     /// Constructs a PointF from a C array, to the value (data[0], data[1]).
     explicit constexpr PointF(float data[2]);
-    /// Copy constructor
+    /// Copy constructor.
     explicit PointF(const Vec2 &v);
 
                         /// Casts this PointF to a C array.
@@ -79,9 +79,9 @@ public:
     PointF              operator-(const PointF &rhs) const { return PointF(x - rhs.x, y - rhs.y); }
     PointF              operator*(float rhs) const { return PointF(x * rhs, y * rhs); }
 
-                        /// Compare with another one
+                        /// Compare with another one.
     bool                operator==(const PointF &rhs) const { return (x != rhs.x || y != rhs.y) ? false : true; }
-                        /// Compare with another one
+                        /// Compare with another one.
     bool                operator!=(const PointF &rhs) const { return (x != rhs.x || y != rhs.y) ? true : false; }
 
     void                Set(float x, float y);
@@ -102,8 +102,11 @@ public:
                         /// Returns "x y" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static PointF       FromString(const char *str);
+
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return 2; }
 
     static const PointF zero;
 
@@ -176,7 +179,7 @@ BE_INLINE float PointF::DistanceSqr(const PointF &other) const {
 }
 
 BE_INLINE const char *PointF::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), 2, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_NAMESPACE_END

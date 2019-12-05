@@ -191,7 +191,7 @@ public:
     static Mat2         FromString(const char *str);
 
                         /// Returns dimension of this type.
-    int                 GetDimension() const { return Rows * Cols; }
+    constexpr int       GetDimension() const { return Rows * Cols; }
 
     static const Mat2   zero;
     static const Mat2   identity;
@@ -413,7 +413,7 @@ BE_INLINE Mat2 Mat2::Inverse() const {
 }
 
 BE_INLINE const char *Mat2::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), Rows * Cols, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_NAMESPACE_END

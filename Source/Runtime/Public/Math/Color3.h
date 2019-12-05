@@ -194,7 +194,7 @@ public:
     static Color3       FromColorTemperature(float temp);
 
                         /// Returns dimension of this type.
-    int                 GetDimension() const { return Size; }
+    constexpr int       GetDimension() const { return Size; }
 
     static const Color3 zero;       ///< (0.0, 0.0, 0.0)
     static const Color3 black;      ///< (0.0, 0.0, 0.0)
@@ -315,7 +315,7 @@ BE_INLINE bool Color3::Equals(const Color3 &rhs, const float epsilon) const {
 }
 
 BE_INLINE const char *Color3::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), Size, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_INLINE const Vec3 &Color3::ToVec3() const {

@@ -144,11 +144,11 @@ public:
                         /// Returns "a b c d" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Plane        FromString(const char *str);
 
-                        /// Returns dimension of this type
-    int                 GetDimension() const { return 4; }
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return 4; }
 
     Vec3                normal;     ///< The direction this plane is facing at.
     float               offset;     ///< The offset of this plane from the origin.
