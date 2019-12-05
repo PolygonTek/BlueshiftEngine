@@ -32,10 +32,12 @@ struct BufferCache {
 
 class BufferCacheManager {
 public:
-    enum VertexTextureMethod {
-        DirectCopy,   // obsolete !
-        Pbo,
-        Tbo
+    struct VertexTextureMethod {
+        enum Enum {
+            DirectCopy,   // obsolete !
+            Pbo,
+            Tbo
+        };
     };
 
     void                        Init();

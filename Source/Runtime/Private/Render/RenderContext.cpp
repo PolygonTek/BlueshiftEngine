@@ -51,7 +51,7 @@ void RenderContext::Init(RHI::WindowHandle hwnd, int renderingWidth, int renderi
     this->renderingHeight = renderingHeight;
     
     this->guiMesh.Clear();
-    this->guiMesh.SetCoordFrame(GuiMesh::CoordFrame2D);
+    this->guiMesh.SetCoordFrame(GuiMesh::CoordFrame::CoordFrame2D);
     this->guiMesh.SetClipRect(Rect(0, 0, renderingWidth, renderingHeight));
     
     rhi.SetContextDisplayFunc(contextHandle, displayFunc, displayFuncDataPtr, (flags & Flag::OnDemandDrawing) ? true : false);

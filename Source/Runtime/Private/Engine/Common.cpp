@@ -42,17 +42,17 @@ static void Common_Log(const int logLevel, const char *msg) {
     char buffer[16384];
     const char *bufptr;
 
-    if (logLevel == DevLog && !developer.GetBool()) {
+    if (logLevel == LogLevel::Dev && !developer.GetBool()) {
         return;
     }
     
-    if (logLevel == DevLog) {
+    if (logLevel == LogLevel::Dev) {
         Str::snPrintf(buffer, COUNT_OF(buffer), S_COLOR_CYAN "%s", msg);
         bufptr = buffer;
-    } else if (logLevel == WarningLog) {
+    } else if (logLevel == LogLevel::Warning) {
         Str::snPrintf(buffer, COUNT_OF(buffer), S_COLOR_YELLOW "WARNING: %s", msg);
         bufptr = buffer;
-    } else if (logLevel == ErrorLog) {
+    } else if (logLevel == LogLevel::Error) {
         Str::snPrintf(buffer, COUNT_OF(buffer), S_COLOR_RED "ERROR: %s", msg);
         bufptr = buffer;
     } else {
@@ -84,7 +84,7 @@ static void Common_Log(const int logLevel, const char *msg) {
 static void Common_Error(const int errLevel, const char *msg) {
     static bool errorEntered = false;
 
-    if (errLevel == FatalErr) {
+    if (errLevel == ErrorLevel::Fatal) {
         if (errorEntered) {
             platform->Error(va("Recursive error after: %s", msg));
         }

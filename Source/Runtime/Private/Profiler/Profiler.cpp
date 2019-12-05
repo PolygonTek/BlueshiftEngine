@@ -25,7 +25,7 @@ Profiler profiler;
 static PlatformMutex *mapAddMutex;
 
 void Profiler::Init() {
-    freezeState = Unfrozen;
+    freezeState = FreezeState::Unfrozen;
 
     frameCount = 0;
     currentFrameDataIndex = 0;
@@ -61,10 +61,10 @@ void Profiler::Shutdown() {
 }
 
 void Profiler::SyncFrame() {
-    if (freezeState == WatingForFreeze) {
-        freezeState = Frozen;
-    } else if (freezeState == WatingForUnfreeze) {
-        freezeState = Unfrozen;
+    if (freezeState == FreezeState::WatingForFreeze) {
+        freezeState = FreezeState::Frozen;
+    } else if (freezeState == FreezeState::WatingForUnfreeze) {
+        freezeState = FreezeState::Unfrozen;
     }
 
     if (IsFrozen()) {
@@ -97,12 +97,12 @@ void Profiler::SyncFrame() {
 }
 
 bool Profiler::ToggleFreeze() {
-    if (freezeState == Unfrozen) {
-        freezeState = WatingForFreeze;
+    if (freezeState == FreezeState::Unfrozen) {
+        freezeState = FreezeState::WatingForFreeze;
         return true;
     }
-    if (freezeState == Frozen) {
-        freezeState = WatingForUnfreeze;
+    if (freezeState == FreezeState::Frozen) {
+        freezeState = FreezeState::WatingForUnfreeze;
         return true;
     }
     return false;

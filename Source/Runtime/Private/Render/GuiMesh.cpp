@@ -23,7 +23,7 @@ GuiMesh::GuiMesh() {
     totalVerts = 0;
     totalIndexes = 0;
 
-    coordFrame = CoordFrame2D;
+    coordFrame = CoordFrame::CoordFrame2D;
 
     clipRect.Set(0, 0, 0, 0);
 }
@@ -143,7 +143,7 @@ void GuiMesh::CacheIndexes() {
 }
 
 void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Material *material) {
-    if (coordFrame == CoordFrame2D && !clipRect.IsEmpty()) {
+    if (coordFrame == CoordFrame::CoordFrame2D && !clipRect.IsEmpty()) {
         const float cx = clipRect.x - x;
         if (cx > 0) {
             s1 += (s2 - s1) * cx / w;
@@ -177,7 +177,7 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
 
     ALIGN_AS16 VertexGeneric localVerts[4];
 
-    if (coordFrame == CoordFrame2D) {
+    if (coordFrame == CoordFrame::CoordFrame2D) {
         // 2D frame
         //  +-----> +X
         //  |   

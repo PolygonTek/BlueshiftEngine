@@ -258,7 +258,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
 
     int decimalVersion = majorVersion * 10 + minorVersion;
     if (decimalVersion < 30) {
-        //BLib::Error(FatalErr, L"Minimum OpenGL extensions missing !!\nRequired OpenGL 3.3 or higher graphic card");
+        //BE_ERR("Minimum OpenGL extensions missing !!\nRequired OpenGL 3.3 or higher graphic card");
     }
 
     // gglXXX 함수 바인딩 및 확장 flag 초기화

@@ -36,15 +36,17 @@ struct GuiMeshSurf {
 
 class GuiMesh {
 public:
-    enum CoordFrame {
-        CoordFrame2D,
-        CoordFrame3D
+    struct CoordFrame {
+        enum Enum {
+            CoordFrame2D,
+            CoordFrame3D
+        };
     };
 
     GuiMesh();
 
-    CoordFrame              GetCoordFrame() const { return coordFrame; }
-    void                    SetCoordFrame(CoordFrame frame) { coordFrame = frame; }
+    CoordFrame::Enum        GetCoordFrame() const { return coordFrame; }
+    void                    SetCoordFrame(CoordFrame::Enum frame) { coordFrame = frame; }
 
     int                     NumSurfaces() const { return surfaces.Count(); }
     const GuiMeshSurf *     Surface(int surfaceIndex) const { return &surfaces[surfaceIndex]; }
@@ -77,7 +79,7 @@ private:
     int                     totalVerts;         ///< Total number of the vertices
     int                     totalIndexes;       ///< Total number of the indices
 
-    CoordFrame              coordFrame;
+    CoordFrame::Enum        coordFrame;
     Rect                    clipRect;
 };
 

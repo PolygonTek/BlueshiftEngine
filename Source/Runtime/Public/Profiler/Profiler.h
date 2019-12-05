@@ -61,11 +61,13 @@ public:
 
     static const int            MaxTagNameLength = 64;
 
-    enum FreezeState {
-        Unfrozen,
-        Frozen,
-        WatingForFreeze,
-        WatingForUnfreeze
+    struct FreezeState {
+        enum Enum {
+            Unfrozen,
+            Frozen,
+            WatingForFreeze,
+            WatingForUnfreeze
+        };
     };
 
     struct Tag {
@@ -118,7 +120,7 @@ public:
 
     void                        SyncFrame();
 
-    bool                        IsFrozen() const { return (freezeState == Frozen || freezeState == WatingForUnfreeze); }
+    bool                        IsFrozen() const { return (freezeState == FreezeState::Frozen || freezeState == FreezeState::WatingForUnfreeze); }
     bool                        ToggleFreeze();
 
     int                         CreateTag(const char *name, const Color3 &color);
@@ -132,7 +134,7 @@ public:
 private:
     CpuThreadInfo &             GetCpuThreadInfo();
 
-    FreezeState                 freezeState;
+    FreezeState::Enum           freezeState;
 
     int                         frameCount;
     int                         currentFrameDataIndex;

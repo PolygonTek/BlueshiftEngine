@@ -344,7 +344,7 @@ static uint32_t MacOS_QueryVideoMemory() {
 #if 0
         err = CGLDestroyRendererInfo(rendererInfo);
         if (err) {
-            BLib::Log(NormalLog, "CGLDestroyRendererInfo -> %d\n", err);
+            BLib::Log(LogLevel::Normal, "CGLDestroyRendererInfo -> %d\n", err);
         }
 #endif
 	}

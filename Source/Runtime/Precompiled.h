@@ -494,16 +494,20 @@ enum {
     MaxRelativePath = 128
 };
 
-enum LogLevel {
-    NormalLog,
-    DevLog,
-    WarningLog,
-    ErrorLog
+struct LogLevel {
+    enum Enum {
+        Normal,
+        Dev,
+        Warning,
+        Error
+    };
 };
 
-enum ErrLevel {
-    RestartErr,
-    FatalErr
+struct ErrorLevel {
+    enum Enum {
+        Restart,
+        Fatal
+    };
 };
 
 BE_FORCE_INLINE constexpr int64_t BE_API    MakeQWord(dword l, dword h) { return (qword)(l & 0xffffffff) | (((qword)(h & 0xffffffff)) << 32); }
@@ -651,23 +655,23 @@ void BE_CDECL BE_API Error(int errLevel, const char *msg, ...);
 void BE_CDECL BE_API Assert(bool expr);
 
 #define BE_LOG(...) do { \
-    BE1::Log(BE1::NormalLog, __VA_ARGS__); \
+    BE1::Log(BE1::LogLevel::Normal, __VA_ARGS__); \
 } while (0)
 
 #define BE_DLOG(...) do { \
-    BE1::Log(BE1::DevLog, __VA_ARGS__); \
+    BE1::Log(BE1::LogLevel::Dev, __VA_ARGS__); \
 } while (0)
 
 #define BE_WARNLOG(...) do { \
-    BE1::Log(BE1::WarningLog, __VA_ARGS__); \
+    BE1::Log(BE1::LogLevel::Warning, __VA_ARGS__); \
 } while (0)
 
 #define BE_ERRLOG(...) do { \
-    BE1::Log(BE1::ErrorLog, __VA_ARGS__); \
+    BE1::Log(BE1::LogLevel::Error, __VA_ARGS__); \
 } while (0)
 
 #define BE_FATALERROR(...) do { \
-    BE1::Error(BE1::FatalErr, __VA_ARGS__); \
+    BE1::Error(BE1::ErrorLevel::Fatal, __VA_ARGS__); \
 } while (0)
 
 #define BE_ASSERT BE1::Assert

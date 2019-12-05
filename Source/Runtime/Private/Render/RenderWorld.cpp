@@ -28,7 +28,7 @@ static constexpr int MaxViewDrawSurfs = 0x4000;
 RenderWorld::RenderWorld() {
     viewCount = 0;
 
-    textMesh.SetCoordFrame(GuiMesh::CoordFrame3D);
+    textMesh.SetCoordFrame(GuiMesh::CoordFrame::CoordFrame3D);
 
     skyboxMaterial = nullptr;
 

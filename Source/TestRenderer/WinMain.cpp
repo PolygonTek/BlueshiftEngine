@@ -50,7 +50,7 @@ static void SystemError(int errLevel, const char *text) {
 
     HWND hwnd = FindWindow(mainWindowClassName, nullptr);
     MessageBox(hwnd, wText, L"Error", MB_OK);
-    if (errLevel == BE1::FatalErr) {
+    if (errLevel == BE1::ErrorLevel::Fatal) {
         exit(0);
     }
 }
