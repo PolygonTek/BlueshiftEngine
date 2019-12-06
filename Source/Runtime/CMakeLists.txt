@@ -183,6 +183,7 @@ set(COMMON_ENGINE_FILES
     Public/Components/ComMeshCollider.h
     Public/Components/ComMeshRenderer.h
     Public/Components/ComTextRenderer.h
+    Public/Components/ComText.h
     Public/Components/Component.h
     Public/Components/ComParticleSystem.h
     Public/Components/ComRectTransform.h
@@ -438,6 +439,7 @@ set(COMMON_ENGINE_FILES
     Private/Components/ComMeshCollider.cpp
     Private/Components/ComMeshRenderer.cpp
     Private/Components/ComTextRenderer.cpp
+    Private/Components/ComText.cpp
     Private/Components/Component.cpp
     Private/Components/ComParticleSystem.cpp
     Private/Components/ComRectTransform.cpp

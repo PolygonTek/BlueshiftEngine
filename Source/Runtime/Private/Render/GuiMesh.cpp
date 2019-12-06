@@ -242,15 +242,14 @@ float GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, char32
         return 0;
     }
 
+    float charX = x + glyph->bearingX * sx;
+    float charY = y + glyph->bearingY * sy;
+    float charW = glyph->width * sx;
+    float charH = glyph->height * sy;
+
+    DrawPic(charX, charY, charW, charH, glyph->s, glyph->t, glyph->s2, glyph->t2, glyph->material);
+
     float pitch = glyph->advance * sx;
-
-    float _x = x + glyph->bearingX * sx;
-    float _y = y + glyph->bearingY * sy;
-    float _w = glyph->width * sx;
-    float _h = glyph->height * sy;
-
-    DrawPic(_x, _y, _w, _h, glyph->s, glyph->t, glyph->s2, glyph->t2, glyph->material);
-
     return pitch;
 }
 
@@ -342,6 +341,51 @@ void GuiMesh::DrawText(Font *font, RenderObject::TextAnchor::Enum anchor, Render
 
         y += (font->GetFontHeight() + lineSpacing) * textScale;
     }
+}
+
+void GuiMesh::DrawTextRect(Font *font, const RectF &rect, RenderObject::TextHorzAlignment::Enum horzAlignment, RenderObject::TextVertAlignment::Enum vertAlignment, float lineSpacing, float textScale, const Str &text) {
+    static constexpr int MaxTextLines = 256;
+    int lineCharOffsets[MaxTextLines];
+    int lineLengths[MaxTextLines];
+    int numLines = 0;
+    float maxWidth = 0;
+    float currentLineWidth = 0;
+    int currentLineLength = 0;
+    int charOffset = 0;
+    char32_t unicodeChar;
+
+    while ((unicodeChar = text.UTF8CharAdvance(charOffset))) {
+        if (unicodeChar == U'\n') {
+            // Save current line length.
+            lineLengths[numLines++] = currentLineLength;
+
+            if (currentLineWidth > maxWidth) {
+                maxWidth = currentLineWidth;
+            }
+
+            currentLineLength = 0;
+            currentLineWidth = 0;
+
+            // Save next line offset.
+            lineCharOffsets[numLines] = charOffset;
+        } else {
+            float charWidth = font->GetGlyphAdvance(unicodeChar) * textScale;
+            currentLineWidth += charWidth;
+
+            currentLineLength++;
+        }
+    }
+
+    if (currentLineLength > 0) {
+        lineLengths[numLines++] = currentLineLength;
+
+        if (currentLineWidth > maxWidth) {
+            maxWidth = currentLineWidth;
+        }
+    }
+
+    float maxHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
+
 }
 
 AABB GuiMesh::Compute3DTextAABB(Font *font, RenderObject::TextAnchor::Enum anchor, float lineSpacing, float textScale, const Str &text) const {

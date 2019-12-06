@@ -47,6 +47,7 @@
 #include "Components/ComAnimation.h"
 #include "Components/ComAnimator.h"
 #include "Components/ComTextRenderer.h"
+#include "Components/ComText.h"
 #include "Components/ComImage.h"
 #include "Components/ComParticleSystem.h"
 #include "Components/ComLogic.h"
@@ -112,8 +113,9 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "animation", static_cast<ComAnimation*(Entity::*)()const>(&Entity::GetComponent<ComAnimation>),
         "animator", static_cast<ComAnimator*(Entity::*)()const>(&Entity::GetComponent<ComAnimator>),
         "text_renderer", static_cast<ComTextRenderer*(Entity::*)()const>(&Entity::GetComponent<ComTextRenderer>),
-        "particle_system", static_cast<ComParticleSystem*(Entity::*)()const>(&Entity::GetComponent<ComParticleSystem>),
+        "text", static_cast<ComText*(Entity::*)()const>(&Entity::GetComponent<ComText>),
         "image", static_cast<ComImage*(Entity::*)()const>(&Entity::GetComponent<ComImage>),
+        "particle_system", static_cast<ComParticleSystem*(Entity::*)()const>(&Entity::GetComponent<ComParticleSystem>),        
         "audio_source", static_cast<ComAudioSource*(Entity::*)()const>(&Entity::GetComponent<ComAudioSource>),
         "audio_listener", static_cast<ComAudioListener*(Entity::*)()const>(&Entity::GetComponent<ComAudioListener>),
         "spline", static_cast<ComSpline*(Entity::*)()const>(&Entity::GetComponent<ComSpline>),

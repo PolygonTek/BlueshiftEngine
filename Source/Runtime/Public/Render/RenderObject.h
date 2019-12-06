@@ -156,6 +156,7 @@ public:
         TextAnchor::Enum    textAnchor = TextAnchor::UpperLeft;
         TextHorzAlignment::Enum textHorzAlignment = TextHorzAlignment::Center;
         TextVertAlignment::Enum textVertAlignment = TextVertAlignment::HCenter;
+        RectF               textRect = RectF::empty;
         float               textScale = 1.0f;
         float               lineSpacing = 1.0f;
 

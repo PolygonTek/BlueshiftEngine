@@ -62,6 +62,7 @@ public:
     float                   DrawChar(float x, float y, float sx, float sy, Font *font, char32_t unicodeChar);
 
     void                    DrawText(Font *font, RenderObject::TextAnchor::Enum anchor, RenderObject::TextHorzAlignment::Enum horzAlignment, float lineSpacing, float textScale, const Str &text);
+    void                    DrawTextRect(Font *font, const RectF &rect, RenderObject::TextHorzAlignment::Enum horzAlignment, RenderObject::TextVertAlignment::Enum vertAlignment, float lineSpacing, float textScale, const Str &text);
 
                             // Call this function when drawing ends
     void                    CacheIndexes();

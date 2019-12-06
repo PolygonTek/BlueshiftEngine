@@ -46,6 +46,8 @@
 #include "Components/ComAnimation.h"
 #include "Components/ComAnimator.h"
 #include "Components/ComTextRenderer.h"
+#include "Components/ComText.h"
+#include "Components/ComImage.h"
 #include "Components/ComParticleSystem.h"
 #include "Components/ComLogic.h"
 #include "Components/ComSpline.h"
@@ -107,6 +109,8 @@ void LuaVM::RegisterObject(LuaCpp::Module &module) {
         "cast_animation", static_cast<ComAnimation*(Object::*)()>(&Object::Cast<ComAnimation>),
         "cast_animator", static_cast<ComAnimator*(Object::*)()>(&Object::Cast<ComAnimator>),
         "cast_text_renderer", static_cast<ComTextRenderer*(Object::*)()>(&Object::Cast<ComTextRenderer>),
+        "cast_text", static_cast<ComText*(Object::*)()>(&Object::Cast<ComText>),
+        "cast_image", static_cast<ComImage*(Object::*)()>(&Object::Cast<ComImage>),
         "cast_particle_system", static_cast<ComParticleSystem*(Object::*)()>(&Object::Cast<ComParticleSystem>),
         "cast_audio_source", static_cast<ComAudioSource*(Object::*)()>(&Object::Cast<ComAudioSource>),
         "cast_audio_listener", static_cast<ComAudioListener*(Object::*)()>(&Object::Cast<ComAudioListener>),
