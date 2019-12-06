@@ -31,7 +31,7 @@ void ComTextRenderer::RegisterProperties() {
         "The text that will be rendered.", PropertyInfo::Flag::Editor | PropertyInfo::Flag::MultiLines);
     REGISTER_ACCESSOR_PROPERTY("textAnchor", "Anchor", RenderObject::TextAnchor::Enum, GetAnchor, SetAnchor, 0, 
         "Which point of the text shares the position of the Transform.", PropertyInfo::Flag::Editor).SetEnumString("Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right");
-    REGISTER_ACCESSOR_PROPERTY("textAlignment", "Alignment", RenderObject::TextAlignment::Enum, GetAlignment, SetAlignment, 0, 
+    REGISTER_ACCESSOR_PROPERTY("textAlignment", "Alignment", RenderObject::TextHorzAlignment::Enum, GetAlignment, SetAlignment, 0,
         "How lines of text are aligned (Left, Right, Center).", PropertyInfo::Flag::Editor).SetEnumString("Left;Center;Right");
     REGISTER_ACCESSOR_PROPERTY("lineSpacing", "Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f, 
         "How much space will be in-between lines of text.", PropertyInfo::Flag::Editor);
@@ -108,12 +108,12 @@ void ComTextRenderer::SetAnchor(RenderObject::TextAnchor::Enum anchor) {
     }
 }
 
-RenderObject::TextAlignment::Enum ComTextRenderer::GetAlignment() const {
-    return renderObjectDef.textAlignment;
+RenderObject::TextHorzAlignment::Enum ComTextRenderer::GetAlignment() const {
+    return renderObjectDef.textHorzAlignment;
 }
 
-void ComTextRenderer::SetAlignment(RenderObject::TextAlignment::Enum alignment) {
-    renderObjectDef.textAlignment = alignment;
+void ComTextRenderer::SetAlignment(RenderObject::TextHorzAlignment::Enum alignment) {
+    renderObjectDef.textHorzAlignment = alignment;
     
     if (IsInitialized()) {
         UpdateAABB();

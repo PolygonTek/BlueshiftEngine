@@ -88,11 +88,19 @@ public:
         };
     };
 
-    struct TextAlignment {
+    struct TextHorzAlignment {
         enum Enum {
             Left,
             Center,
             Right
+        };
+    };
+
+    struct TextVertAlignment {
+        enum Enum {
+            Top,
+            HCenter,
+            Bottom
         };
     };
 
@@ -146,7 +154,8 @@ public:
         Font *              font = nullptr;
         Str                 text;                       ///< UTF8 encoded string
         TextAnchor::Enum    textAnchor = TextAnchor::UpperLeft;
-        TextAlignment::Enum textAlignment = TextAlignment::Left;
+        TextHorzAlignment::Enum textHorzAlignment = TextHorzAlignment::Center;
+        TextVertAlignment::Enum textVertAlignment = TextVertAlignment::HCenter;
         float               textScale = 1.0f;
         float               lineSpacing = 1.0f;
 

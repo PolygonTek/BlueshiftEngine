@@ -20,12 +20,12 @@
 BE_NAMESPACE_BEGIN
 
 GuiMesh::GuiMesh() {
+    coordFrame = CoordFrame::CoordFrame2D;
+
     totalVerts = 0;
     totalIndexes = 0;
 
-    coordFrame = CoordFrame::CoordFrame2D;
-
-    clipRect.Set(0, 0, 0, 0);
+    clipRect = Rect::empty;
 }
 
 void GuiMesh::Clear() {
@@ -34,7 +34,7 @@ void GuiMesh::Clear() {
 
     surfaces.SetCount(0, false);
 
-    currentColor = 0xFFFFFFFF;
+    currentColor = Color4::white.ToUInt32();
     currentSurf = nullptr;
 }
 
@@ -84,11 +84,11 @@ void GuiMesh::DrawQuad(const VertexGeneric *verts, const Material *material) {
     currentSurf->numVerts += 4;
     currentSurf->numIndexes += 6;
 
-    // Cache 4 vertices in the dynamic vertex buffer
+    // Cache 4 vertices in the dynamic vertex buffer.
     BufferCache vertexCache;
     bufferCacheManager.AllocVertex(4, sizeof(VertexGeneric), verts, &vertexCache);
 
-    // Set/Modify vertex cache info for the current surface
+    // Set/Modify vertex cache info for the current surface.
     if (!bufferCacheManager.IsCached(&currentSurf->vertexCache)) {
         currentSurf->vertexCache = vertexCache;
     } else {
@@ -104,7 +104,7 @@ void GuiMesh::CacheIndexes() {
     assert(totalIndexes % 6 == 0);
     static constexpr TriIndex quadTrisIndexes[6] = { 0, 1, 2, 0, 2, 3 };
 
-    // Cache all indices in the dynamic index buffer
+    // Cache all indices in the dynamic index buffer.
     BufferCache indexCache;
     bufferCacheManager.AllocIndex(totalIndexes, sizeof(TriIndex), nullptr, &indexCache);
     TriIndex *indexPointer = (TriIndex *)bufferCacheManager.MapIndexBuffer(&indexCache);
@@ -127,7 +127,7 @@ void GuiMesh::CacheIndexes() {
     }
     bufferCacheManager.UnmapIndexBuffer(&indexCache);
 
-    // Set index cache info for each surfaces
+    // Set index cache info for each surfaces.
     int offset = indexCache.offset;
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
         GuiMeshSurf *surf = &surfaces[surfaceIndex];
@@ -172,7 +172,8 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
     }
 
     if (w <= 0 || h <= 0) {
-        return; // completely clipped away
+        // Completely clipped away.
+        return;
     }
 
     ALIGN_AS16 VertexGeneric localVerts[4];
@@ -183,21 +184,10 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
         //  |   
         //  |
         // +Y
-        localVerts[0].xyz[0] = x;
-        localVerts[0].xyz[1] = y;
-        localVerts[0].xyz[2] = 0;
-
-        localVerts[1].xyz[0] = x;
-        localVerts[1].xyz[1] = y + h;
-        localVerts[1].xyz[2] = 0;
-
-        localVerts[2].xyz[0] = x + w;
-        localVerts[2].xyz[1] = y + h;
-        localVerts[2].xyz[2] = 0;
-        
-        localVerts[3].xyz[0] = x + w;
-        localVerts[3].xyz[1] = y;
-        localVerts[3].xyz[2] = 0;
+        localVerts[0].xyz.Set(x, y, 0);
+        localVerts[1].xyz.Set(x, y + h, 0);
+        localVerts[2].xyz.Set(x + w, y + h, 0);
+        localVerts[3].xyz.Set(x + w, y, 0);
         
     } else {
         // 3D frame
@@ -205,21 +195,10 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
         //  |
         //  |
         // -Z
-        localVerts[0].xyz[0] = 0;
-        localVerts[0].xyz[1] = x;
-        localVerts[0].xyz[2] = -y;
-
-        localVerts[1].xyz[0] = 0;
-        localVerts[1].xyz[1] = x;
-        localVerts[1].xyz[2] = -(y + h);
-
-        localVerts[2].xyz[0] = 0;
-        localVerts[2].xyz[1] = x + w;
-        localVerts[2].xyz[2] = -(y + h);
-
-        localVerts[3].xyz[0] = 0;
-        localVerts[3].xyz[1] = x + w;
-        localVerts[3].xyz[2] = -y;
+        localVerts[0].xyz.Set(0, x, -y);
+        localVerts[1].xyz.Set(0, x, -(y + h));
+        localVerts[2].xyz.Set(0, x + w, -(y + h));
+        localVerts[3].xyz.Set(0, x + w, -y);
     }
 
     const float16_t hs1 = F16Converter::FromF32(s1);
@@ -251,7 +230,7 @@ float GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, char32
         return font->GetGlyphAdvance(unicodeChar) * sx;
     }
 
-    // Clip away before accessing to the font glyph
+    // Clip away before accessing to the font glyph.
     if (!clipRect.IsEmpty()) {
         if (x >= clipRect.X2() || y >= clipRect.Y2()) {
             return 0;
@@ -275,33 +254,33 @@ float GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, char32
     return pitch;
 }
 
-void GuiMesh::Draw(Font *font, RenderObject::TextAnchor::Enum anchor, RenderObject::TextAlignment::Enum alignment, float lineSpacing, float textScale, const Str &text) {
+void GuiMesh::DrawText(Font *font, RenderObject::TextAnchor::Enum anchor, RenderObject::TextHorzAlignment::Enum horzAlignment, float lineSpacing, float textScale, const Str &text) {
     static constexpr int MaxTextLines = 256;
-    int lineOffsets[MaxTextLines];
-    int lineLen[MaxTextLines];
+    int lineCharOffsets[MaxTextLines];
+    int lineLengths[MaxTextLines];
     int numLines = 0;
     float maxWidth = 0;
     float currentLineWidth = 0;
     int currentLineLength = 0;
-    int offset = 0;
+    int charOffset = 0;
     char32_t unicodeChar;
 
-    lineOffsets[0] = 0;
+    lineCharOffsets[0] = 0;
     
-    while ((unicodeChar = text.UTF8CharAdvance(offset))) {
+    while ((unicodeChar = text.UTF8CharAdvance(charOffset))) {
         if (unicodeChar == U'\n') {
+            // Save current line length.
+            lineLengths[numLines++] = currentLineLength;
+
             if (currentLineWidth > maxWidth) {
                 maxWidth = currentLineWidth;
             }
 
-            // Save current line length
-            lineLen[numLines++] = currentLineLength;
-
             currentLineLength = 0;
             currentLineWidth = 0;
 
-            // Save next line offset
-            lineOffsets[numLines] = offset;
+            // Save next line offset.
+            lineCharOffsets[numLines] = charOffset;
         } else {
             float charWidth = font->GetGlyphAdvance(unicodeChar) * textScale;
             currentLineWidth += charWidth;
@@ -311,46 +290,54 @@ void GuiMesh::Draw(Font *font, RenderObject::TextAnchor::Enum anchor, RenderObje
     }
 
     if (currentLineLength > 0) {
+        lineLengths[numLines++] = currentLineLength;
+
         if (currentLineWidth > maxWidth) {
             maxWidth = currentLineWidth;
         }
-
-        lineLen[numLines++] = currentLineLength;
     }
 
-    // Calculate the coordinate y
+    float maxHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
+
+    // Calculate the y coordinate.
     float y = 0;
-    if (anchor == RenderObject::TextAnchor::LowerLeft || anchor == RenderObject::TextAnchor::LowerCenter || anchor == RenderObject::TextAnchor::LowerRight) {
-        float totalHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
-
-        y = -totalHeight;
-    } else if (anchor == RenderObject::TextAnchor::MiddleLeft || anchor == RenderObject::TextAnchor::MiddleCenter || anchor == RenderObject::TextAnchor::MiddleRight) {
-        float totalHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
-
-        y = -totalHeight / 2;
+    if (anchor == RenderObject::TextAnchor::LowerLeft || 
+        anchor == RenderObject::TextAnchor::LowerCenter || 
+        anchor == RenderObject::TextAnchor::LowerRight) {
+        y = -maxHeight;
+    } else if (
+        anchor == RenderObject::TextAnchor::MiddleLeft || 
+        anchor == RenderObject::TextAnchor::MiddleCenter || 
+        anchor == RenderObject::TextAnchor::MiddleRight) {
+        y = -maxHeight * 0.5f;
     }
 
     GuiMesh &guiMesh = renderSystem.GetCurrentRenderContext()->GetGuiMesh();
 
     for (int lineIndex = 0; lineIndex < numLines; lineIndex++) {
-        int lineOffset = lineOffsets[lineIndex];
+        int offset = lineCharOffsets[lineIndex];
 
-        // Calculate the coordinate x
+        // Calculate the x coordinate.
         float x = 0;
-        if (anchor == RenderObject::TextAnchor::UpperRight || anchor == RenderObject::TextAnchor::MiddleRight || anchor == RenderObject::TextAnchor::LowerRight) {
+        if (anchor == RenderObject::TextAnchor::UpperRight || 
+            anchor == RenderObject::TextAnchor::MiddleRight || 
+            anchor == RenderObject::TextAnchor::LowerRight) {
             x = -maxWidth;
-        } else if (anchor == RenderObject::TextAnchor::UpperCenter || anchor == RenderObject::TextAnchor::MiddleCenter || anchor == RenderObject::TextAnchor::LowerCenter) {
-            x = -maxWidth / 2;
+        } else if (
+            anchor == RenderObject::TextAnchor::UpperCenter || 
+            anchor == RenderObject::TextAnchor::MiddleCenter || 
+            anchor == RenderObject::TextAnchor::LowerCenter) {
+            x = -maxWidth * 0.5f;
         }
 
-        if (alignment == RenderObject::TextAlignment::Right) {
-            x += maxWidth - font->StringWidth(&text[lineOffset], lineLen[lineIndex], false, false, textScale);
-        } else if (alignment == RenderObject::TextAlignment::Center) {
-            x += (maxWidth - font->StringWidth(&text[lineOffset], lineLen[lineIndex], false, false, textScale)) / 2;
+        if (horzAlignment == RenderObject::TextHorzAlignment::Right) {
+            x += maxWidth - font->StringWidth(&text[offset], lineLengths[lineIndex], false, false, textScale);
+        } else if (horzAlignment == RenderObject::TextHorzAlignment::Center) {
+            x += (maxWidth - font->StringWidth(&text[offset], lineLengths[lineIndex], false, false, textScale)) / 2;
         }
 
-        for (int lineTextIndex = 0; lineTextIndex < lineLen[lineIndex]; lineTextIndex++) {
-            x += DrawChar(x, y, textScale, textScale, font, text.UTF8CharAdvance(lineOffset));
+        for (int lineTextIndex = 0; lineTextIndex < lineLengths[lineIndex]; lineTextIndex++) {
+            x += DrawChar(x, y, textScale, textScale, font, text.UTF8CharAdvance(offset));
         }
 
         y += (font->GetFontHeight() + lineSpacing) * textScale;
@@ -358,60 +345,70 @@ void GuiMesh::Draw(Font *font, RenderObject::TextAnchor::Enum anchor, RenderObje
 }
 
 AABB GuiMesh::Compute3DTextAABB(Font *font, RenderObject::TextAnchor::Enum anchor, float lineSpacing, float textScale, const Str &text) const {
-    float lineWidth = 0;
+    float currentLineWidth = 0;
     float maxWidth = 0;
     int numLines = 0;
-    int offset = 0;
+    int charOffset = 0;
     char32_t unicodeChar;
 
-    while ((unicodeChar = text.UTF8CharAdvance(offset))) {
+    while ((unicodeChar = text.UTF8CharAdvance(charOffset))) {
         if (unicodeChar == U'\n') {
             numLines++;
 
-            if (lineWidth > maxWidth) {
-                maxWidth = lineWidth;
+            if (currentLineWidth > maxWidth) {
+                maxWidth = currentLineWidth;
             }
-            lineWidth = 0;
+            currentLineWidth = 0;
         } else {
             float charWidth = font->GetGlyphAdvance(unicodeChar) * textScale;
-            lineWidth += charWidth;
+            currentLineWidth += charWidth;
         }
     }
 
     if (unicodeChar != U'\n') {
         numLines++;
 
-        if (lineWidth > maxWidth) {
-            maxWidth = lineWidth;
+        if (currentLineWidth > maxWidth) {
+            maxWidth = currentLineWidth;
         }
     }
 
-    float totalHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
+    float maxHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
 
     AABB bounds;
     bounds[0][0] = -CentiToUnit(0.1f);
     bounds[1][0] = +CentiToUnit(0.1f);
 
-    if (anchor == RenderObject::TextAnchor::UpperLeft || anchor == RenderObject::TextAnchor::MiddleLeft || anchor == RenderObject::TextAnchor::LowerLeft) {
+    if (anchor == RenderObject::TextAnchor::UpperLeft || 
+        anchor == RenderObject::TextAnchor::MiddleLeft || 
+        anchor == RenderObject::TextAnchor::LowerLeft) {
         bounds[0][1] = 0;
         bounds[1][1] = +maxWidth;
-    } else if (anchor == RenderObject::TextAnchor::UpperRight || anchor == RenderObject::TextAnchor::MiddleRight || anchor == RenderObject::TextAnchor::LowerRight) {
+    } else if (
+        anchor == RenderObject::TextAnchor::UpperRight || 
+        anchor == RenderObject::TextAnchor::MiddleRight || 
+        anchor == RenderObject::TextAnchor::LowerRight) {
         bounds[0][1] = -maxWidth;
         bounds[1][1] = 0;
     } else {
-        float h = maxWidth / 2;
+        float h = maxWidth * 0.5f;
         bounds[0][1] = -h;
         bounds[1][1] = +h;
     }
 
-    if (anchor == RenderObject::TextAnchor::UpperLeft || anchor == RenderObject::TextAnchor::UpperCenter || anchor == RenderObject::TextAnchor::UpperRight) {
-        bounds[0][2] = -totalHeight;
+    if (anchor == RenderObject::TextAnchor::UpperLeft || 
+        anchor == RenderObject::TextAnchor::UpperCenter || 
+        anchor == RenderObject::TextAnchor::UpperRight) {
+        bounds[0][2] = -maxHeight;
         bounds[1][2] = 0;
-    } else if (anchor == RenderObject::TextAnchor::LowerLeft || anchor == RenderObject::TextAnchor::LowerCenter || anchor == RenderObject::TextAnchor::LowerRight) {
+    } else if (
+        anchor == RenderObject::TextAnchor::LowerLeft || 
+        anchor == RenderObject::TextAnchor::LowerCenter || 
+        anchor == RenderObject::TextAnchor::LowerRight) {
         bounds[0][2] = 0;
-        bounds[1][2] = +totalHeight;
+        bounds[1][2] = +maxHeight;
     } else {
-        float h = totalHeight / 2;
+        float h = maxHeight * 0.5f;
         bounds[0][2] = -h;
         bounds[1][2] = +h;
     }

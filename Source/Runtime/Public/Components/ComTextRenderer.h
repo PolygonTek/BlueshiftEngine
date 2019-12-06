@@ -39,8 +39,8 @@ public:
     RenderObject::TextAnchor::Enum GetAnchor() const;
     void                    SetAnchor(RenderObject::TextAnchor::Enum anchor);
 
-    RenderObject::TextAlignment::Enum GetAlignment() const;
-    void                    SetAlignment(RenderObject::TextAlignment::Enum alignment);
+    RenderObject::TextHorzAlignment::Enum GetAlignment() const;
+    void                    SetAlignment(RenderObject::TextHorzAlignment::Enum alignment);
 
     float                   GetLineSpacing() const;
     void                    SetLineSpacing(float lineSpacing);
