@@ -26,7 +26,7 @@
 // Platform detection defines
 //----------------------------------------------------------------------------------------------
 
-/* detect x86 32 bit platform */
+// Detect x86 32 bit platform.
 #if defined(__i386__) || defined(_M_IX86)
     #if !defined(__X86__)
         #define __X86__
@@ -36,7 +36,7 @@
     #endif
 #endif
 
-/* detect x86 64 bit platform */
+// Detect x86 64 bit platform.
 #if defined(__x86_64__) || defined(__ia64__) || defined(_M_X64)
     #if !defined(__X86__)
         #define __X86__
@@ -46,7 +46,7 @@
     #endif
 #endif
 
-/* detect ARM platform */
+// Detect ARM platform.
 #if defined(__arm__) || defined(__arm64__) || defined(_M_ARM)
     #if !defined(__LINUX__)
         #define __ARM__
@@ -56,7 +56,7 @@
     #endif
 #endif
 
-/* detect Linux platform */
+// Detect Linux platform.
 #if defined(linux) || defined(__linux__) || defined(__LINUX__)
     #if !defined(__LINUX__)
         #define __LINUX__
@@ -66,7 +66,7 @@
     #endif
 #endif
 
-/* detect FreeBSD platform */
+// Detect FreeBSD platform.
 #if defined(__FreeBSD__) || defined(__FREEBSD__)
     #if !defined(__FREEBSD__)
         #define __FREEBSD__
@@ -76,21 +76,21 @@
     #endif
 #endif
 
-/* detect Windows 95/98/NT/2000/XP/Vista/7 platform */
+// Detect Windows 95/98/NT/2000/XP/Vista/7 platform.
 #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)) && !defined(__CYGWIN__)
     #if !defined(__WIN32__)
         #define __WIN32__
     #endif
 #endif
 
-/* detect Cygwin platform */
+// Detect Cygwin platform.
 #if defined(__CYGWIN__)
     #if !defined(__UNIX__)
         #define __UNIX__
     #endif
 #endif
 
-/* detect MacOS X & iOS/iOS simulator platform */
+// Detect MacOS X & iOS/iOS simulator platform.
 #if defined(__APPLE__)
     #define __ASSERT_MACROS_DEFINE_VERSIONS_WITHOUT_UNDERSCORES 0 // conflict with boost_1_58_0
     #include <TargetConditionals.h>
@@ -113,14 +113,14 @@
     #endif
 #endif
 
-/* detect Android platform */
+// Detect Android platform.
 #if defined(ANDROID) || defined(__ANDROID__)
     #if !defined(__ANDROID__)
         #define __ANDROID__
     #endif
 #endif
 
-/* try to detect other Unix systems */
+// Try to detect other Unix systems.
 #if defined(__unix__) || defined (unix) || defined(__unix) || defined(_unix)
     #if !defined(__UNIX__)
         #define __UNIX__
@@ -131,9 +131,10 @@
 // Common platform
 //----------------------------------------------------------------------------------------------
 
-//#pragma setlocale ("kor") // We don't need this because we don't use character literal in other language.
+// We don't need this because we don't use character literal in other language.
+//#pragma setlocale ("kor") 
 
-// C RunTime Header Files
+// C runtime header files.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -146,7 +147,7 @@
 #include <inttypes.h>
 #include <locale.h>
 
-// C++ RunTime Header Files
+// C++ runtime header files.
 #include <cstddef>
 #include <typeinfo>
 #include <type_traits>
@@ -215,7 +216,7 @@
     #define __AVX__  // enable to activate AVX under Windows
 #endif
 
-// useful macro for forward declaration of Objective-C class in C/C++
+// Useful macro for forward declaration of Objective-C class in C/C++.
 #ifdef __OBJC__
     #define OBJC_CLASS(name) @class name
 #else
@@ -291,15 +292,15 @@ inline T *address_of(T &&in) {
 template <bool... B>
 struct static_all_of;
 
-// do recursion if the first argument is true
+// Do recursion if the first argument is true.
 template <bool... Tail>
 struct static_all_of<true, Tail...> : static_all_of<Tail...> {};
 
-// end recursion if first argument is false
+// End recursion if first argument is false.
 template <bool... Tail>
 struct static_all_of<false, Tail...> : std::false_type {};
 
-// end recursion if no more arguments need to be processed
+// End recursion if no more arguments need to be processed.
 template <> struct static_all_of<> : std::true_type {};
 
 template <typename T, typename... Ts>
@@ -362,6 +363,10 @@ constexpr std::size_t count_of(T (&)[N]) {
 
 #define debugbreak()                __debugbreak()
 
+#ifdef _DEBUG
+//#define _CRTDBG_MAP_ALLOC
+#endif
+
 // Including SDKDDKVer.h defines the highest available Windows platform.
 
 // If you wish to build your application for a previous Windows platform, include WinSDKVer.h and
@@ -377,17 +382,53 @@ constexpr std::size_t count_of(T (&)[N]) {
 #define _CRT_NON_CONFORMING_SWPRINTFS
 #endif
 
-// Exclude rarely-used stuff from Windows headers
+// Exclude rarely-used stuff from Windows headers.
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-// NOMINMAX makes sure that windef.h doesn't add macros min and max
+//----------------------------------------------------------------------------------------------
+// Definition for stripping unused code from Windows headers.
+//----------------------------------------------------------------------------------------------
+#define NOGDICAPMASKS
+//#define NOVIRTUALKEYCODES
+//#define NOWINMESSAGES
+//#define NOWINSTYLES
+//#define NOSYSMETRICS
+//#define NOMENUS
+//#define NOICONS
+#define NOKEYSTATES
+//#define NOSYSCOMMANDS
+#define NORASTEROPS
+//#define NOSHOWWINDOW
+#define OEMRESOURCE
+#define NOATOM
+#define NOCLIPBOARD
+//#define NOCOLOR
+//#define NOCTLMGR
+#define NODRAWTEXT
+//#define NOGDI
+#define NOKERNEL
+//#define NOUSER
+//#define NONLS
+//#define NOMB
+#define NOMEMMGR
+#define NOMETAFILE
 #define NOMINMAX
-
-#ifdef _DEBUG
-//#define _CRTDBG_MAP_ALLOC
-#endif
+//#define NOMSG
+#define NOOPENFILE
+#define NOSCROLL
+#define NOSERVICE
+#define NOSOUND
+#define NOTEXTMETRIC
+//#define NOWH
+//#define NOWINOFFSETS
+#define NOCOMM
+#define NOKANJI
+#define NOHELP
+#define NOPROFILER
+#define NODEFERWINDOWPOS
+#define NOMCX
 
 // Windows specific headers
 #include <windows.h>

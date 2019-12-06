@@ -19,8 +19,6 @@
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "Platform/PlatformProcess.h"
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 #include <errno.h>
 #include <float.h>
 #include <fcntl.h>
