@@ -17,7 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const Rect Rect::empty = Rect(0, 0, 0, 0);
+const Rect Rect::zero = Rect(0, 0, 0, 0);
 
 Rect Rect::Add(const Rect &a) const {
     Rect rc;

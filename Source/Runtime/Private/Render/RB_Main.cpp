@@ -867,7 +867,7 @@ static void RB_DrawCamera3D() {
         rhi.SetViewport(renderRect);
         rhi.SetDepthRange(0, 1);
 
-        rhi.SetScissor(Rect::empty);
+        rhi.SetScissor(Rect::zero);
 
         rhi.SetStateBits(RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
         rhi.Clear(RHI::ClearBit::Color | RHI::ClearBit::Depth, Color4::white, 1.0f, 0);
@@ -890,7 +890,7 @@ static void RB_DrawCamera3D() {
         rhi.SetViewport(backEnd.renderRect);
         rhi.SetDepthRange(0, 1);
 
-        rhi.SetScissor(Rect::empty);
+        rhi.SetScissor(Rect::zero);
 
         RB_ClearView();
 
@@ -907,7 +907,7 @@ static void RB_DrawCamera3D() {
         rhi.SetViewport(upscaledRenderRect);
         rhi.SetDepthRange(0, 1);
 
-        rhi.SetScissor(Rect::empty);
+        rhi.SetScissor(Rect::zero);
 
         RB_ClearView();
 
@@ -928,7 +928,7 @@ static void RB_DrawCamera2D() {
     
     RB_GuiPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
 
-    rhi.SetScissor(Rect::empty);
+    rhi.SetScissor(Rect::zero);
 }
 
 static const void *RB_ExecuteDrawCamera(const void *data) {
@@ -1053,7 +1053,7 @@ static const void *RB_ExecuteSwapBuffers(const void *data) {
         RB_DrawDebugHOMap();
     }
 
-    rhi.SetScissor(Rect::empty);
+    rhi.SetScissor(Rect::zero);
 
     rhi.SwapBuffers();
     

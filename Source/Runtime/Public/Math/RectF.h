@@ -138,7 +138,7 @@ public:
     QRectF              ToQRectF() const { return QRectF(x, y, w, h); }
 #endif
 
-    static const RectF  empty;
+    static const RectF  zero;
 
     float               x;
     float               y;

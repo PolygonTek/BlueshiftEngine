@@ -136,7 +136,7 @@ public:
     QRect               ToQRect() const { return QRect(x, y, w, h); }
 #endif
 
-    static const Rect   empty;
+    static const Rect   zero;
 
     int                 x;
     int                 y;

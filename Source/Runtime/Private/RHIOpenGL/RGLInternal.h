@@ -89,7 +89,7 @@ struct GLState {
 
     GLState() : tmu(0), 
         shaderHandle(RHI::NullShader), vertexFormatHandle(RHI::NullVertexFormat), renderTargetHandle(RHI::NullRenderTarget), renderTargetHandleStackDepth(0), stencilStateHandle(RHI::NullStencilState), 
-        renderState(0), cull(RHI::CullType::Back), viewportRect(Rect::empty), scissorRect(Rect::empty), oldUnpackAlignment(0), newUnpackAlignment(0), sRGBWriteEnabled(true) {
+        renderState(0), cull(RHI::CullType::Back), viewportRect(Rect::zero), scissorRect(Rect::zero), oldUnpackAlignment(0), newUnpackAlignment(0), sRGBWriteEnabled(true) {
         memset(textureHandles, 0, sizeof(textureHandles));
         memset(bufferHandles, 0, sizeof(textureHandles));
         memset(indexedBufferHandles, 0, sizeof(indexedBufferHandles));

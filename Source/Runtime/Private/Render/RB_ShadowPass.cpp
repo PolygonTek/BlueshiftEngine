@@ -432,7 +432,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
             rhi.SetViewport(Rect(0, 0, backEnd.ctx->shadowMapRT->GetWidth(), backEnd.ctx->shadowMapRT->GetHeight()));
 
             prevScissorRect = rhi.GetScissor();
-            rhi.SetScissor(Rect::empty);
+            rhi.SetScissor(Rect::zero);
             rhi.SetStateBits(RHI::DepthWrite);
             rhi.Clear(RHI::ClearBit::Depth, Color4::black, 1.0f, 0);
         }
@@ -484,7 +484,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
 
         rhi.SetViewport(Rect(0, 0, backEnd.ctx->shadowMapRT->GetWidth(), backEnd.ctx->shadowMapRT->GetHeight()));
         prevScissorRect = rhi.GetScissor();
-        rhi.SetScissor(Rect::empty);
+        rhi.SetScissor(Rect::zero);
         
         rhi.SetStateBits(RHI::DepthWrite);
         rhi.Clear(RHI::ClearBit::Depth, Color4::black, 1.0f, 0);

@@ -17,7 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const RectF RectF::empty = RectF(0.0f, 0.0f, 0.0f, 0.0f);
+const RectF RectF::zero = RectF(0.0f, 0.0f, 0.0f, 0.0f);
 
 RectF RectF::Add(const RectF &a) const {
     RectF rc;

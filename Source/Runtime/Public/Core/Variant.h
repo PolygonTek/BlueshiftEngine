@@ -523,12 +523,12 @@ BE_INLINE const PointF &Variant::As() const {
 
 template <>
 BE_INLINE const Rect &Variant::As() const {
-    return type == Type::Rect ? *reinterpret_cast<const Rect *>(&value) : Rect::empty;
+    return type == Type::Rect ? *reinterpret_cast<const Rect *>(&value) : Rect::zero;
 }
 
 template <>
 BE_INLINE const RectF &Variant::As() const {
-    return type == Type::RectF ? *reinterpret_cast<const RectF *>(&value) : RectF::empty;
+    return type == Type::RectF ? *reinterpret_cast<const RectF *>(&value) : RectF::zero;
 }
 
 template <>
