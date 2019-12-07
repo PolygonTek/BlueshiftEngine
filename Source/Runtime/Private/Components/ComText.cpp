@@ -75,6 +75,7 @@ void ComText::Init() {
 
     ComRectTransform *rectTransform = GetEntity()->GetRectTransform();
 
+    renderObjectDef.textRect = rectTransform->GetLocalRect();
     renderObjectDef.aabb = rectTransform->GetAABB();
 
     rectTransform->Connect(&ComRectTransform::SIG_RectTransformUpdated, this, (SignalCallback)&ComText::RectTransformUpdated, SignalObject::ConnectionType::Unique);

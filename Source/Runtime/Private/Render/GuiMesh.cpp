@@ -25,7 +25,7 @@ GuiMesh::GuiMesh() {
     totalVerts = 0;
     totalIndexes = 0;
 
-    clipRect = Rect::empty;
+    clipRect = Rect::zero;
 }
 
 void GuiMesh::Clear() {
@@ -181,7 +181,7 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
     if (coordFrame == CoordFrame::CoordFrame2D) {
         // 2D frame
         //  +-----> +X
-        //  |   
+        //  |
         //  |
         // +Y
         localVerts[0].xyz.Set(x, y, 0);
@@ -191,14 +191,14 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
         
     } else {
         // 3D frame
-        //  +-----> +Y
+        // +Y
         //  |
         //  |
-        // -Z
-        localVerts[0].xyz.Set(0, x, -y);
-        localVerts[1].xyz.Set(0, x, -(y + h));
-        localVerts[2].xyz.Set(0, x + w, -(y + h));
-        localVerts[3].xyz.Set(0, x + w, -y);
+        //  +-----> +X
+        localVerts[0].xyz.Set(x, -y, 0);
+        localVerts[1].xyz.Set(x, -(y + h), 0);
+        localVerts[2].xyz.Set(x + w, -(y + h), 0);
+        localVerts[3].xyz.Set(x + w, -y, 0);
     }
 
     const float16_t hs1 = F16Converter::FromF32(s1);
@@ -356,41 +356,53 @@ void GuiMesh::DrawTextRect(Font *font, const RectF &rect, RenderObject::TextHorz
     int currentLineLength = 0;
     int charOffset = 0;
     char32_t unicodeChar;
-    bool nextLine;
 
     lineCharOffsets[0] = 0;
 
+    auto PrepareNextLine = [&]() -> bool {
+        // Save current line length.
+        lineLengths[numLines++] = currentLineLength;
+
+        currentLineWidth = 0;
+        currentLineLength = 0;
+
+        if (vertOverflow == RenderObject::TextVertOverflow::Truncate) {
+            int currentTextHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
+
+            if (currentTextHeight > rect.h) {
+                numLines--;
+                return false;
+            }
+        }
+
+        // Save next line offset.
+        lineCharOffsets[numLines] = charOffset;
+        return true;
+    };
+
+    int charPrevOffset = 0;
+
     while ((unicodeChar = text.UTF8CharAdvance(charOffset))) {
         if (unicodeChar == U'\n') {
-            nextLine = true;
+            if (!PrepareNextLine()) {
+                break;
+            }
         } else {
             float charWidth = font->GetGlyphAdvance(unicodeChar) * textScale;
-            if (horzOverflow == RenderObject::TextHorzOverflow::Wrap && currentLineWidth + charWidth > rect.w) {
-                nextLine = true;
-            } else {
-                nextLine = false;
 
+            if (horzOverflow == RenderObject::TextHorzOverflow::Wrap && currentLineWidth + charWidth > rect.w) {
+                charOffset = charPrevOffset;
+
+                if (!PrepareNextLine()) {
+                    break;
+                }
+            } else {
                 currentLineWidth += charWidth;
                 currentLineLength++;
             }
         }
 
-        if (nextLine) {
-            // Save current line length.
-            lineLengths[numLines++] = currentLineLength;
-
-            currentLineWidth = 0;
-            currentLineLength = 0;
-
-            int currentTextHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
-            if (vertOverflow == RenderObject::TextVertOverflow::Truncate && currentTextHeight > rect.h) {
-                numLines--;
-                break;
-            }
-
-            // Save next line offset.
-            lineCharOffsets[numLines] = charOffset;
-        }
+        charPrevOffset = charOffset;
     }
 
     if (currentLineLength > 0) {
@@ -401,7 +413,7 @@ void GuiMesh::DrawTextRect(Font *font, const RectF &rect, RenderObject::TextHorz
 
     // Calculate the y coordinate.
     float y = rect.y;
-    if (vertAlignment == RenderObject::TextVertAlignment::Top) {
+    if (vertAlignment == RenderObject::TextVertAlignment::Bottom) {
         y += rect.h - totalHeight;
     } else if (vertAlignment == RenderObject::TextVertAlignment::Middle) {
         y += (rect.h - totalHeight) * 0.5f;

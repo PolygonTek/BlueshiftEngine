@@ -170,7 +170,7 @@ public:
         TextAnchor::Enum    textAnchor = TextAnchor::UpperLeft;
         TextHorzAlignment::Enum textHorzAlignment = TextHorzAlignment::Center;
         TextVertAlignment::Enum textVertAlignment = TextVertAlignment::Middle;
-        RectF               textRect = RectF::empty;
+        RectF               textRect = RectF::zero;
         TextHorzOverflow::Enum textHorzOverflow = TextHorzOverflow::Wrap;
         TextVertOverflow::Enum textVertOverflow = TextVertOverflow::Truncate;
         float               textScale = 1.0f;
