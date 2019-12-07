@@ -275,15 +275,14 @@ void GuiMesh::DrawText(Font *font, RenderObject::TextAnchor::Enum anchor, Render
                 maxWidth = currentLineWidth;
             }
 
-            currentLineLength = 0;
             currentLineWidth = 0;
+            currentLineLength = 0;
 
             // Save next line offset.
             lineCharOffsets[numLines] = charOffset;
         } else {
             float charWidth = font->GetGlyphAdvance(unicodeChar) * textScale;
             currentLineWidth += charWidth;
-
             currentLineLength++;
         }
     }
@@ -296,19 +295,19 @@ void GuiMesh::DrawText(Font *font, RenderObject::TextAnchor::Enum anchor, Render
         }
     }
 
-    float maxHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
+    float totalHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
 
     // Calculate the y coordinate.
     float y = 0;
     if (anchor == RenderObject::TextAnchor::LowerLeft || 
         anchor == RenderObject::TextAnchor::LowerCenter || 
         anchor == RenderObject::TextAnchor::LowerRight) {
-        y = -maxHeight;
+        y = -totalHeight;
     } else if (
         anchor == RenderObject::TextAnchor::MiddleLeft || 
         anchor == RenderObject::TextAnchor::MiddleCenter || 
         anchor == RenderObject::TextAnchor::MiddleRight) {
-        y = -maxHeight * 0.5f;
+        y = -totalHeight * 0.5f;
     }
 
     GuiMesh &guiMesh = renderSystem.GetCurrentRenderContext()->GetGuiMesh();
@@ -329,10 +328,14 @@ void GuiMesh::DrawText(Font *font, RenderObject::TextAnchor::Enum anchor, Render
             x = -maxWidth * 0.5f;
         }
 
-        if (horzAlignment == RenderObject::TextHorzAlignment::Right) {
-            x += maxWidth - font->StringWidth(&text[offset], lineLengths[lineIndex], false, false, textScale);
-        } else if (horzAlignment == RenderObject::TextHorzAlignment::Center) {
-            x += (maxWidth - font->StringWidth(&text[offset], lineLengths[lineIndex], false, false, textScale)) / 2;
+        if (horzAlignment != RenderObject::TextHorzAlignment::Left) {
+            float lineWidth = font->StringWidth(&text[offset], lineLengths[lineIndex], false, false, textScale);
+
+            if (horzAlignment == RenderObject::TextHorzAlignment::Right) {
+                x += maxWidth - lineWidth;
+            } else if (horzAlignment == RenderObject::TextHorzAlignment::Center) {
+                x += (maxWidth - lineWidth) * 0.5f;
+            }
         }
 
         for (int lineTextIndex = 0; lineTextIndex < lineLengths[lineIndex]; lineTextIndex++) {
@@ -343,49 +346,90 @@ void GuiMesh::DrawText(Font *font, RenderObject::TextAnchor::Enum anchor, Render
     }
 }
 
-void GuiMesh::DrawTextRect(Font *font, const RectF &rect, RenderObject::TextHorzAlignment::Enum horzAlignment, RenderObject::TextVertAlignment::Enum vertAlignment, float lineSpacing, float textScale, const Str &text) {
+void GuiMesh::DrawTextRect(Font *font, const RectF &rect, RenderObject::TextHorzAlignment::Enum horzAlignment, RenderObject::TextVertAlignment::Enum vertAlignment, 
+    RenderObject::TextHorzOverflow::Enum horzOverflow, RenderObject::TextVertOverflow::Enum vertOverflow, float lineSpacing, float textScale, const Str &text) {
     static constexpr int MaxTextLines = 256;
     int lineCharOffsets[MaxTextLines];
     int lineLengths[MaxTextLines];
     int numLines = 0;
-    float maxWidth = 0;
     float currentLineWidth = 0;
     int currentLineLength = 0;
     int charOffset = 0;
     char32_t unicodeChar;
+    bool nextLine;
+
+    lineCharOffsets[0] = 0;
 
     while ((unicodeChar = text.UTF8CharAdvance(charOffset))) {
         if (unicodeChar == U'\n') {
+            nextLine = true;
+        } else {
+            float charWidth = font->GetGlyphAdvance(unicodeChar) * textScale;
+            if (horzOverflow == RenderObject::TextHorzOverflow::Wrap && currentLineWidth + charWidth > rect.w) {
+                nextLine = true;
+            } else {
+                nextLine = false;
+
+                currentLineWidth += charWidth;
+                currentLineLength++;
+            }
+        }
+
+        if (nextLine) {
             // Save current line length.
             lineLengths[numLines++] = currentLineLength;
 
-            if (currentLineWidth > maxWidth) {
-                maxWidth = currentLineWidth;
-            }
-
-            currentLineLength = 0;
             currentLineWidth = 0;
+            currentLineLength = 0;
+
+            int currentTextHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
+            if (vertOverflow == RenderObject::TextVertOverflow::Truncate && currentTextHeight > rect.h) {
+                numLines--;
+                break;
+            }
 
             // Save next line offset.
             lineCharOffsets[numLines] = charOffset;
-        } else {
-            float charWidth = font->GetGlyphAdvance(unicodeChar) * textScale;
-            currentLineWidth += charWidth;
-
-            currentLineLength++;
         }
     }
 
     if (currentLineLength > 0) {
         lineLengths[numLines++] = currentLineLength;
-
-        if (currentLineWidth > maxWidth) {
-            maxWidth = currentLineWidth;
-        }
     }
 
-    float maxHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
+    float totalHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
 
+    // Calculate the y coordinate.
+    float y = rect.y;
+    if (vertAlignment == RenderObject::TextVertAlignment::Top) {
+        y += rect.h - totalHeight;
+    } else if (vertAlignment == RenderObject::TextVertAlignment::Middle) {
+        y += (rect.h - totalHeight) * 0.5f;
+    }
+
+    GuiMesh &guiMesh = renderSystem.GetCurrentRenderContext()->GetGuiMesh();
+
+    for (int lineIndex = 0; lineIndex < numLines; lineIndex++) {
+        int offset = lineCharOffsets[lineIndex];
+
+        // Calculate the x coordinate.
+        float x = rect.x;
+        if (horzAlignment != RenderObject::TextHorzAlignment::Left) {
+            float lineWidth = font->StringWidth(&text[offset], lineLengths[lineIndex], false, false, textScale);
+
+            if (horzAlignment == RenderObject::TextHorzAlignment::Right) {
+                x += rect.w - lineWidth;
+            } else if (horzAlignment == RenderObject::TextHorzAlignment::Center) {
+                x += (rect.w - lineWidth) * 0.5f;
+            }
+        }
+
+        for (int lineTextIndex = 0; lineTextIndex < lineLengths[lineIndex]; lineTextIndex++) {
+            x += DrawChar(x, y, textScale, textScale, font, text.UTF8CharAdvance(offset));
+        }
+
+        y += (font->GetFontHeight() + lineSpacing) * textScale;
+    }
 }
 
 AABB GuiMesh::Compute3DTextAABB(Font *font, RenderObject::TextAnchor::Enum anchor, float lineSpacing, float textScale, const Str &text) const {

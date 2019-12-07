@@ -99,8 +99,22 @@ public:
     struct TextVertAlignment {
         enum Enum {
             Top,
-            HCenter,
+            Middle,
             Bottom
+        };
+    };
+
+    struct TextHorzOverflow {
+        enum Enum {
+            Wrap,
+            Overflow
+        };
+    };
+
+    struct TextVertOverflow {
+        enum Enum {
+            Truncate,
+            Overflow
         };
     };
 
@@ -155,8 +169,10 @@ public:
         Str                 text;                       ///< UTF8 encoded string
         TextAnchor::Enum    textAnchor = TextAnchor::UpperLeft;
         TextHorzAlignment::Enum textHorzAlignment = TextHorzAlignment::Center;
-        TextVertAlignment::Enum textVertAlignment = TextVertAlignment::HCenter;
+        TextVertAlignment::Enum textVertAlignment = TextVertAlignment::Middle;
         RectF               textRect = RectF::empty;
+        TextHorzOverflow::Enum textHorzOverflow = TextHorzOverflow::Wrap;
+        TextVertOverflow::Enum textVertOverflow = TextVertOverflow::Truncate;
         float               textScale = 1.0f;
         float               lineSpacing = 1.0f;
 

@@ -29,19 +29,25 @@ END_EVENTS
 void ComText::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("text", "Text", Str, GetText, SetText, "Hello World", 
         "The text that will be rendered.", PropertyInfo::Flag::Editor | PropertyInfo::Flag::MultiLines);
-    REGISTER_ACCESSOR_PROPERTY("vertAlignment", "Vertical Alignment", RenderObject::TextVertAlignment::Enum, GetVertAlignment, SetVertAlignment, 0, 
-        "(Top, Middle, Bottom)", PropertyInfo::Flag::Editor).SetEnumString("Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right");
-    REGISTER_ACCESSOR_PROPERTY("horzAlignment", "Horizontal Alignment", RenderObject::TextHorzAlignment::Enum, GetHorzAlignment, SetHorzAlignment, 0, 
-        "How lines of text are aligned (Left, Center, Right).", PropertyInfo::Flag::Editor).SetEnumString("Left;Center;Right");
-    REGISTER_ACCESSOR_PROPERTY("lineSpacing", "Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f, 
-        "How much space will be in-between lines of text.", PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("fontSize", "Font Size", int, GetFontSize, SetFontSize, 14, 
-        "The size of the font.", PropertyInfo::Flag::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("font", "Font", Guid, GetFontGuid, SetFontGuid, GuidMapper::defaultFontGuid, 
+    REGISTER_MIXED_ACCESSOR_PROPERTY("font", "Font", Guid, GetFontGuid, SetFontGuid, GuidMapper::defaultFontGuid,
         "The TrueType Font to use when rendering the text.", PropertyInfo::Flag::Editor).SetMetaObject(&FontResource::metaObject);
+    REGISTER_ACCESSOR_PROPERTY("fontSize", "Font Size", int, GetFontSize, SetFontSize, 14,
+        "The size of the font.", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("lineSpacing", "Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f,
+        "How much space will be in-between lines of text.", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("horzAlignment", "Horizontal Alignment", RenderObject::TextHorzAlignment::Enum, GetHorzAlignment, SetHorzAlignment, RenderObject::TextHorzAlignment::Center,
+        "How lines of text are aligned (Left, Center, Right).", PropertyInfo::Flag::Editor).SetEnumString("Left;Center;Right");
+    REGISTER_ACCESSOR_PROPERTY("vertAlignment", "Vertical Alignment", RenderObject::TextVertAlignment::Enum, GetVertAlignment, SetVertAlignment, RenderObject::TextVertAlignment::Middle,
+        "(Top, Middle, Bottom)", PropertyInfo::Flag::Editor).SetEnumString("Top;Middle;Bottom");
+    REGISTER_ACCESSOR_PROPERTY("horzOverflow", "Horizontal Overflow", RenderObject::TextHorzOverflow::Enum, GetHorzOverflow, SetHorzOverflow, RenderObject::TextHorzOverflow::Wrap,
+        "How lines of text are aligned (Left, Center, Right).", PropertyInfo::Flag::Editor).SetEnumString("Wrap;Overflow");
+    REGISTER_ACCESSOR_PROPERTY("vertOverflow", "Vertical Overflow", RenderObject::TextVertOverflow::Enum, GetVertOverflow, SetVertOverflow, RenderObject::TextVertOverflow::Truncate,
+        "(Top, Middle, Bottom)", PropertyInfo::Flag::Editor).SetEnumString("Truncate;Overflow");
 }
 
 ComText::ComText() {
+    fontGuid = Guid();
+    fontSize = 0;
 }
 
 ComText::~ComText() {
@@ -76,6 +82,8 @@ void ComText::Init() {
     // Mark as initialized
     SetInitialized(true);
 
+    ChangeFont(fontGuid, fontSize);
+
     UpdateVisuals();
 }
 
@@ -101,6 +109,18 @@ void ComText::SetTextCString(const char *text) {
     SetText(Str(text));
 }
 
+RenderObject::TextHorzAlignment::Enum ComText::GetHorzAlignment() const {
+    return renderObjectDef.textHorzAlignment;
+}
+
+void ComText::SetHorzAlignment(RenderObject::TextHorzAlignment::Enum horzAlignment) {
+    renderObjectDef.textHorzAlignment = horzAlignment;
+
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
+}
+
 RenderObject::TextVertAlignment::Enum ComText::GetVertAlignment() const {
     return renderObjectDef.textVertAlignment;
 }
@@ -113,13 +133,25 @@ void ComText::SetVertAlignment(RenderObject::TextVertAlignment::Enum vertAlignme
     }
 }
 
-RenderObject::TextHorzAlignment::Enum ComText::GetHorzAlignment() const {
-    return renderObjectDef.textHorzAlignment;
+RenderObject::TextHorzOverflow::Enum ComText::GetHorzOverflow() const {
+    return renderObjectDef.textHorzOverflow;
 }
 
-void ComText::SetHorzAlignment(RenderObject::TextHorzAlignment::Enum horzAlignment) {
-    renderObjectDef.textHorzAlignment = horzAlignment;
-    
+void ComText::SetHorzOverflow(RenderObject::TextHorzOverflow::Enum horzOverflow) {
+    renderObjectDef.textHorzOverflow = horzOverflow;
+
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
+}
+
+RenderObject::TextVertOverflow::Enum ComText::GetVertOverflow() const {
+    return renderObjectDef.textVertOverflow;
+}
+
+void ComText::SetVertOverflow(RenderObject::TextVertOverflow::Enum vertOverflow) {
+    renderObjectDef.textVertOverflow = vertOverflow;
+
     if (IsInitialized()) {
         UpdateVisuals();
     }
@@ -138,17 +170,15 @@ void ComText::SetLineSpacing(float lineSpacing) {
 }
 
 Guid ComText::GetFontGuid() const {
-    if (renderObjectDef.font) {
-        const Str fontPath = renderObjectDef.font->GetHashName();
-        return resourceGuidMapper.Get(fontPath);
-    }
-    return Guid();
+    return fontGuid;
 }
 
 void ComText::SetFontGuid(const Guid &fontGuid) {
-    ChangeFont(fontGuid, fontSize);
-    
+    this->fontGuid = fontGuid;
+
     if (IsInitialized()) {
+        ChangeFont(fontGuid, fontSize);
+
         UpdateVisuals();
     }
 }

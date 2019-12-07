@@ -38,11 +38,17 @@ public:
     Str                     GetText() const;
     void                    SetText(const Str &text);
 
+    RenderObject::TextHorzAlignment::Enum GetHorzAlignment() const;
+    void                    SetHorzAlignment(RenderObject::TextHorzAlignment::Enum horzAlignment);
+
     RenderObject::TextVertAlignment::Enum GetVertAlignment() const;
     void                    SetVertAlignment(RenderObject::TextVertAlignment::Enum vertAlignment);
 
-    RenderObject::TextHorzAlignment::Enum GetHorzAlignment() const;
-    void                    SetHorzAlignment(RenderObject::TextHorzAlignment::Enum horzAlignment);
+    RenderObject::TextHorzOverflow::Enum GetHorzOverflow() const;
+    void                    SetHorzOverflow(RenderObject::TextHorzOverflow::Enum horzOverflow);
+
+    RenderObject::TextVertOverflow::Enum GetVertOverflow() const;
+    void                    SetVertOverflow(RenderObject::TextVertOverflow::Enum vertOverflow);
 
     float                   GetLineSpacing() const;
     void                    SetLineSpacing(float lineSpacing);
@@ -58,6 +64,7 @@ protected:
 
     void                    RectTransformUpdated(const ComRectTransform *rectTransform);
 
+    Guid                    fontGuid;
     int                     fontSize;
 };
 
