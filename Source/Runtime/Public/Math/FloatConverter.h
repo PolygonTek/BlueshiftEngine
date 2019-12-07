@@ -107,7 +107,7 @@ public:
     }
 };
 
-typedef unsigned short float16_t;
+using float16_t = unsigned short;
 
 using F16Converter = FloatConverter<float16_t, IEEE_FLT16_MANTISSA_BITS, IEEE_FLT16_EXPONENT_BITS, IEEE_FLT16_EXPONENT_BIAS, IEEE_FLT16_SIGN_BIT>;
 using F11Converter = FloatConverter<uint32_t, 6, 5, 15, 0>;

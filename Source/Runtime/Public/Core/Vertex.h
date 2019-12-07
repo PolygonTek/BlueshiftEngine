@@ -25,9 +25,9 @@ BE_NAMESPACE_BEGIN
 #define SIGNED_FLOAT_TO_BYTE(x)         Math::Ftob(((x) + 1.0f) * (255.0f / 2.0f) + 0.5f)
 
 #if 1
-typedef uint32_t TriIndex;
+using TriIndex = uint32_t;
 #else
-typedef uint16_t TriIndex;
+using TriIndex = uint16_t;
 #endif
 
 // this is used for calculating unsmoothed normals and tangents for deformed models
@@ -401,9 +401,9 @@ BE_INLINE void VertexGenericLit::Transform(const Mat3 &rotation, const Vec3 &sca
 */
 
 #if 1
-typedef byte JointWeightType;
+using JointWeightType = byte;
 #else
-typedef float JointWeightType;
+using JointWeightType = float;
 #endif
 
 struct VertexWeight1 {

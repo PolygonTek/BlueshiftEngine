@@ -376,7 +376,7 @@ FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar) {
         ascender = (int)FT_MulFix(ftFace->ascender, ftFace->size->metrics.y_scale);
         ascender = ((ascender + 63) & ~63) >> 6;
     } else {
-        ascender = int(ftFace->size->metrics.ascender * 1.0f / 64.0f);
+        ascender = int(ftFace->size->metrics.ascender / 64.0f);
     }
 
     FontGlyph *glyph = new FontGlyph;
