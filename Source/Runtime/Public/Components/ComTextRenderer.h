@@ -56,6 +56,7 @@ protected:
 
     void                    UpdateAABB();
 
+    Guid                    fontGuid;
     int                     fontSize;
 };
 

@@ -29,19 +29,21 @@ END_EVENTS
 void ComTextRenderer::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("text", "Text", Str, GetText, SetText, "Hello World", 
         "The text that will be rendered.", PropertyInfo::Flag::Editor | PropertyInfo::Flag::MultiLines);
-    REGISTER_ACCESSOR_PROPERTY("textAnchor", "Anchor", RenderObject::TextAnchor::Enum, GetAnchor, SetAnchor, 0, 
-        "Which point of the text shares the position of the Transform.", PropertyInfo::Flag::Editor).SetEnumString("Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right");
-    REGISTER_ACCESSOR_PROPERTY("textAlignment", "Alignment", RenderObject::TextHorzAlignment::Enum, GetAlignment, SetAlignment, 0,
-        "How lines of text are aligned (Left, Right, Center).", PropertyInfo::Flag::Editor).SetEnumString("Left;Center;Right");
-    REGISTER_ACCESSOR_PROPERTY("lineSpacing", "Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f, 
-        "How much space will be in-between lines of text.", PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("fontSize", "Font Size", int, GetFontSize, SetFontSize, 14, 
-        "The size of the font.", PropertyInfo::Flag::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("font", "Font", Guid, GetFontGuid, SetFontGuid, GuidMapper::defaultFontGuid, 
+    REGISTER_MIXED_ACCESSOR_PROPERTY("font", "Font", Guid, GetFontGuid, SetFontGuid, GuidMapper::defaultFontGuid,
         "The TrueType Font to use when rendering the text.", PropertyInfo::Flag::Editor).SetMetaObject(&FontResource::metaObject);
+    REGISTER_ACCESSOR_PROPERTY("fontSize", "Font Size", int, GetFontSize, SetFontSize, 14,
+        "The size of the font.", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("lineSpacing", "Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f,
+        "How much space will be in-between lines of text.", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("textAnchor", "Anchor", RenderObject::TextAnchor::Enum, GetAnchor, SetAnchor, RenderObject::TextAnchor::UpperLeft,
+        "Which point of the text shares the position of the Transform.", PropertyInfo::Flag::Editor).SetEnumString("Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right");
+    REGISTER_ACCESSOR_PROPERTY("textAlignment", "Alignment", RenderObject::TextHorzAlignment::Enum, GetAlignment, SetAlignment, RenderObject::TextHorzAlignment::Center,
+        "How lines of text are aligned (Left, Right, Center).", PropertyInfo::Flag::Editor).SetEnumString("Left;Center;Right");
 }
 
 ComTextRenderer::ComTextRenderer() {
+    fontGuid = Guid();
+    fontSize = 0;
 }
 
 ComTextRenderer::~ComTextRenderer() {
@@ -64,10 +66,12 @@ void ComTextRenderer::Init() {
 
     renderObjectDef.textScale = CentiToUnit(1.0f);
 
-    UpdateAABB();
-
     // Mark as initialized
     SetInitialized(true);
+
+    ChangeFont(fontGuid, fontSize);
+
+    UpdateAABB();
 
     UpdateVisuals();
 }
@@ -135,17 +139,15 @@ void ComTextRenderer::SetLineSpacing(float lineSpacing) {
 }
 
 Guid ComTextRenderer::GetFontGuid() const {
-    if (renderObjectDef.font) {
-        const Str fontPath = renderObjectDef.font->GetHashName();
-        return resourceGuidMapper.Get(fontPath);
-    }
-    return Guid();
+    return fontGuid;
 }
 
 void ComTextRenderer::SetFontGuid(const Guid &fontGuid) {
-    ChangeFont(fontGuid, fontSize);
-    
+    this->fontGuid = fontGuid;
+
     if (IsInitialized()) {
+        ChangeFont(fontGuid, fontSize);
+
         UpdateAABB();
         UpdateVisuals();
     }
