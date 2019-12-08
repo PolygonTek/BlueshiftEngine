@@ -47,3 +47,4 @@
 #include "Math/Frustum.h"
 #include "Math/Triangle.h"
 #include "Math/Ray.h"
+#include "Math/LineSegment.h"
