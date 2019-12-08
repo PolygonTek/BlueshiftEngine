@@ -83,11 +83,12 @@ public:
                                 /// Sets entity static mask.
     void                        SetStaticMask(int staticMask);
 
-                                /// Returns if this entity is frozen. Frozen entity will not be selectable in editor.
+                                /// Returns true if this entity is frozen. Frozen entity will not be selectable in the editor.
     bool                        IsFrozen() const { return frozen; }
-                                /// Sets this entity frozen.
+                                /// Sets this entity to frozen.
     void                        SetFrozen(bool frozen);
 
+                                /// Returns true if this entity is a prefab source.
     bool                        IsPrefabSource() const { return prefab; }
 
     Guid                        GetPrefabSourceGuid() const;
@@ -103,7 +104,7 @@ public:
 
                                 /// Returns root entity.
     Entity *                    GetRoot() const;
-                                /// Is root entity ?
+                                /// Returns true if this entity is a root entity.
     bool                        IsRoot() const { return GetRoot() == this; }
 
                                 /// Returns parent entity.
@@ -118,7 +119,6 @@ public:
 
                                 /// Returns sibling index.
     int                         GetSiblingIndex() const;
-
                                 /// Sets sibling index.
     void                        SetSiblingIndex(int index);
 
@@ -243,7 +243,8 @@ public:
 
                                 /// Replaces GUIDs of an entity (including components) using GUID map.
     static void                 RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMap);
-
+        
+                                /// Destroys given entity and it's children.
     static void                 DestroyInstance(Entity *entity);
 
     static const SignalDef      SIG_LayerChanged;

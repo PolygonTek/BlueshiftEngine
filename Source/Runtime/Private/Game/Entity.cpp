@@ -700,7 +700,7 @@ void Entity::SetParentGuid(const Guid &parentGuid) {
     } else {
         if (gameWorld) {
             assert(sceneIndex >= 0);
-            node.SetParent(gameWorld->GetScenes()[sceneIndex].root);
+            node.SetParent(gameWorld->GetScene(sceneIndex).root);
         }
     }
 

@@ -96,7 +96,7 @@ public:
                                 /// Simulates physics system and update all registered entities.
     void                        Update(int elapsedTime);
 
-                                /// Process mouse (touch) input feedback for all responsive entities.
+                                /// Processes mouse (touch) input feedback for all responsive entities.
     void                        ProcessPointerInput();
 
                                 /// Ray intersection test for all entities.
@@ -113,7 +113,8 @@ public:
     template <typename Func>
     void                        IterateEntities(Func func) const;
 
-    auto                        GetScenes() { return scenes; }
+                                /// Returns the game scene with the given scene index.
+    GameScene &                 GetScene(int sceneIndex) { return scenes[sceneIndex]; }
 
                                 /// Returns the entity with the given entity index.
     Entity *                    GetEntity(int index) const { return entities[index]; }
@@ -135,10 +136,11 @@ public:
                                 /// Called when entity tag changed.
     void                        OnEntityTagChanged(Entity *ent);
 
+                                /// Returns if given entity is registered in this world.
     bool                        IsRegisteredEntity(const Entity *ent) const;
-
+                                /// Registers given entity to this world.
     void                        RegisterEntity(Entity *ent, int entityIndex = -1);
-
+                                /// Unregisters given entity from this world.
     void                        UnregisterEntity(Entity *ent);
 
                                 /// Creates an entity that has no components but transform component.
