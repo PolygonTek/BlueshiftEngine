@@ -87,6 +87,14 @@ public:
     void                Transform(const Mat4 &transform);
     void                Transform(const Quat &transform);
 
+                        /// Computes the closest point on this line to the given point.
+    Vec3                ClosestPoint(const Vec3 &point) const;
+
+                        /// Computes the distance between this line and the given point.
+    float               Distance(const Vec3 &point) const;
+                        /// Computes the squared distance between this line and the given point.
+    float               DistanceSqr(const Vec3 &point) const;
+
                         /// Converts this LineSegment to a Ray.
     Ray                 ToRay() const;
 

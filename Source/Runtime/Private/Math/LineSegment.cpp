@@ -52,6 +52,22 @@ void LineSegment::Transform(const Quat &transform) {
     b = transform * b;
 }
 
+Vec3 LineSegment::ClosestPoint(const Vec3 &point) const {
+    Vec3 dir = b - a;
+    float s = Clamp01(dir.Dot(point - a) / dir.LengthSqr());
+    return a + s * dir;
+}
+
+float LineSegment::Distance(const Vec3 &point) const {
+    Vec3 closestPoint = ClosestPoint(point);
+    return closestPoint.Distance(point);
+}
+
+float LineSegment::DistanceSqr(const Vec3 &point) const {
+    Vec3 closestPoint = ClosestPoint(point);
+    return closestPoint.DistanceSqr(point);
+}
+
 Ray LineSegment::ToRay() const {
     return Ray(a, Dir());
 }
