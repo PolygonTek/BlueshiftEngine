@@ -79,9 +79,9 @@ public:
     SizeF               operator-(const SizeF &rhs) const { return SizeF(w - rhs.w, h - rhs.h); }
     SizeF               operator*(float rhs) const { return SizeF(w * rhs, h * rhs); }
 
-                        /// Compare with another one
+                        /// Compare with another one.
     bool                operator==(const SizeF &rhs) const { return (w != rhs.w || h != rhs.h) ? false : true; }
-                        /// Compare with another one
+                        /// Compare with another one.
     bool                operator!=(const SizeF &rhs) const { return (w != rhs.w || h != rhs.h) ? true : false; }
 
     bool                IsEmpty() const { return (w <= 0 || h <= 0) ? true : false; }
@@ -99,7 +99,7 @@ public:
                         /// Returns "w h" with given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static SizeF        FromString(const char *str);
 
                         /// Returns dimension of this type.

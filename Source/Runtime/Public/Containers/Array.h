@@ -333,7 +333,7 @@ BE_INLINE void Array<T>::SetGranularity(int newGranularity) {
     granularity = newGranularity;
 
     if (elements) {
-        // granularity 에 맞게 resize
+        // Resize according to granularity.
         int newCapacity = count + granularity - 1;
         newCapacity -= newCapacity % granularity;
         if (newCapacity != capacity) {

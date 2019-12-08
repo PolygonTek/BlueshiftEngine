@@ -115,7 +115,7 @@ void Dict::TransferKeyValues(Dict &other) {
     }
     kvHash = other.kvHash;
 
-    // other 는 clear
+    // Clear other.
     other.kvArray.Clear();
     other.kvHash.Free();
 }

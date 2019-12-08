@@ -285,7 +285,7 @@ void OpenGLRHI::AdjustTextureSize(TextureType::Enum type, bool useNPOT, int inWi
         if (w > hwLimit.maxCubeMapTextureSize) w = hwLimit.maxCubeMapTextureSize;
         if (h > hwLimit.maxCubeMapTextureSize) h = hwLimit.maxCubeMapTextureSize;
 
-        // 큐브맵일 경우에는 가로 세로 길이를 동일하게 맞춘다
+        // For cubemaps, set the width and height equally.
         if (w < h) {
             h = w;
         } else {

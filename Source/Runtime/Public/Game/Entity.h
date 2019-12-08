@@ -78,9 +78,9 @@ public:
                                 /// Sets layer index.
     void                        SetLayer(int layer);
 
-                                /// Returns entity static mask.
+                                /// Returns static mask.
     int                         GetStaticMask() const { return staticMask; }
-                                /// Sets entity static mask.
+                                /// Sets static mask.
     void                        SetStaticMask(int staticMask);
 
                                 /// Returns true if this entity is frozen. Frozen entity will not be selectable in the editor.
@@ -124,11 +124,17 @@ public:
 
                                 /// Returns true if this entity have any children.
     bool                        HasChildren() const;
-                                /// Gets the children by depth first order.
-    void                        GetChildren(EntityPtrArray &children) const;
+                                /// Returns the number of children the parent entity has.
+    int                         GetChildCount() const;
+                                /// Returns a child entity by index.
+    Entity *                    GetChild(int childIndex) const;
                                 /// Finds a child entity with the given name.
     Entity *                    FindChild(const char *name) const;
-    
+                                /// Gets the children entities.
+    void                        GetChildren(EntityPtrArray &children) const;
+                                /// Gets all of the children by depth first order.
+    void                        GetChildrenRecursive(EntityPtrArray &children) const;
+
                                 /// Returns number of components.
     int                         NumComponents() const { return components.Count(); }
                                 /// Checks if component exist by the given meta object.
@@ -242,7 +248,7 @@ public:
     static Json::Value          CloneEntitiesValue(const Json::Value &entitiesValue, HashTable<Guid, Guid> &oldToNewGuidMap);
 
                                 /// Replaces GUIDs of an entity (including components) using GUID map.
-    static void                 RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMap);
+    static void                 RemapGuids(Entity *entity, const HashTable<Guid, Guid> &guidMap);
         
                                 /// Destroys given entity and it's children.
     static void                 DestroyInstance(Entity *entity);

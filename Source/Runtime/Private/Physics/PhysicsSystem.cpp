@@ -136,8 +136,8 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
     btVector3 inertia(0, 0, 0);
     if (shape != emptyShape) {
         if (desc.mass != 0.0f) {
-            // NOTE: bullet 에서는 shape 이 center of mass 에 정렬되어 있다고 가정하고,
-            // 대부분의 경우에 AABB approximation 으로 inertia tensor 를 계산한다.
+            // NOTE: The bullet assumes that the shape is aligned to the center of mass, 
+            // and in most cases computes the inertia tensor by AABB approximation.
             shape->calculateLocalInertia(desc.mass, inertia);
         }
     }

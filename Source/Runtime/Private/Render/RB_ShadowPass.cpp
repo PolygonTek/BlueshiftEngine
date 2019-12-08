@@ -151,12 +151,12 @@ static bool RB_ComputeShadowCropMatrix(const OBB &lightOBB, const Sphere &viewSp
 }
 
 static bool RB_ComputeShadowCropMatrix(const Frustum &lightFrustum, const OBB &shadowCasterOBB, const Frustum &viewFrustum, Mat4 &shadowCropMatrix) {
-    // crop bounds 를 만든다
+    // Make crop bounds.
     AABB casterCropBounds, viewCropBounds;
     lightFrustum.ProjectionBounds(viewFrustum, viewCropBounds);
     lightFrustum.ProjectionBounds(shadowCasterOBB, casterCropBounds);
 
-    // 두개의 crop bounds 의 교집합
+    // Intersection of two crop bounds
     AABB cropBounds;
     cropBounds[0][AxisIndex::Left] = (casterCropBounds[0][AxisIndex::Left] > viewCropBounds[0][AxisIndex::Left]) ? casterCropBounds[0][AxisIndex::Left] : viewCropBounds[0][AxisIndex::Left];
     cropBounds[1][AxisIndex::Left] = (casterCropBounds[1][AxisIndex::Left] < viewCropBounds[1][AxisIndex::Left]) ? casterCropBounds[1][AxisIndex::Left] : viewCropBounds[1][AxisIndex::Left];

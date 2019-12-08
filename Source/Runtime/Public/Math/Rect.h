@@ -52,7 +52,9 @@ public:
     /// Constructs from a point.
     explicit constexpr Rect(const Point &p);
 
+                        /// Returns the x-coordinate of edge of the rectangle.
     int                 X2() const { return x + w; }
+                        /// Returns the y-coordinate of edge of the rectangle.
     int                 Y2() const { return y + h; }
 
                         /// Returns a point of this rect with the given index.
@@ -83,6 +85,7 @@ public:
                         /// Compare with another one.
     bool                operator!=(const Rect &rhs) const { return (x != rhs.x || y != rhs.y || w != rhs.w || h != rhs.h) ? true : false; }
 
+                        /// Returns if this rectangle is empty.
     bool                IsEmpty() const { return (w <= 0 || h <= 0) ? true : false; }
 
                         /// Tests whether a point is inside.
@@ -118,15 +121,16 @@ public:
 
     Rect                Shrink(int ax, int ay) const;
     Rect &              ShrinkSelf(int ax, int ay);
+
     Rect                Expand(int ax, int ay) const;
     Rect &              ExpandSelf(int ax, int ay);
 
     RectF               ToRectF() const;
 
-                        /// Returns "x y w h"
+                        /// Returns "x y w h".
     const char *        ToString() const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Rect         FromString(const char *str);
 
                         /// Returns dimension of this type.

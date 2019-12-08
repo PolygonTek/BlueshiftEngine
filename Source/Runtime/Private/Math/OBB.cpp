@@ -112,7 +112,7 @@ static int obbPlaneBitsSilVerts[64][7] = {
 };
 
 bool OBB::AddPoint(const Vec3 &p) {
-    // 비어 있을 경우
+    // empty case
     if (extents[0] < 0.0f) {
         extents.SetFromScalar(0);
         center = p;

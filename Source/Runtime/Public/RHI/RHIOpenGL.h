@@ -270,12 +270,12 @@ public:
                             /// Returns written start offset. (Always 0)
     int                     BufferDiscardWrite(Handle bufferHandle, int size, const void *data);
 
-                            /// 기존에 쓰던 buffer 를 유지하면서 data 를 asyncronous 하게 write 한다. 
+                            /// Write data asyncronous while maintaining the existing buffer.
                             /// Returns written start offset.
-                            /// overflow 되면 -1 을 리턴, data == nullptr 이면 write 를 안하기 때문에 overflow 여부만 체크할 수 있다.
+                            /// If overflow occurs, -1 is returned. If data == nullptr, write is not performed, so only overflow can be checked.
     int                     BufferWrite(Handle bufferHandle, int alignSize, int size, const void *data);
 
-                            /// CopyReadBuffer 로 생성한 버퍼를 CPU 메모리 카피 부담없이 GPU 상에서 빠르게 카피
+                            /// Quickly copy buffers created with CopyReadBuffer on GPU without burdening CPU memory copy.
     int                     BufferCopy(Handle readBufferHandle, Handle writeBufferHandle, int alignSize, int size);
 
                             /// Sets write offset to 0.

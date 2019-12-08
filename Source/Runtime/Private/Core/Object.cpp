@@ -78,18 +78,18 @@ bool MetaObject::IsRespondsTo(const EventDef &ev) const {
     return true;
 }
 
-// MetaObject 초기화 함수. Object::Init 에서 불린다.
+// MetaObject initialization function. Called from Object::Init().
 void MetaObject::Init() {
     if (eventCallbacks) {
         return;
     }
 
-    // 부모 클래스 먼저 Init
+    // Init the parent class first.
     if (super && !super->node.Owner()) {
         super->Init();
     }
 
-    // hierarchy node 세팅
+    // Set hierarchy node.
     if (super) {
         node.SetParent(super->node);
     } else {

@@ -52,7 +52,9 @@ public:
     /// Constructs from a point.
     explicit constexpr RectF(const PointF &p);
 
+                        /// Returns the x-coordinate of edge of the rectangle.
     float               X2() const { return x + w; }
+                        /// Returns the y-coordinate of edge of the rectangle.
     float               Y2() const { return y + h; }
 
                         /// Returns a point of this rect with the given index.
@@ -83,6 +85,7 @@ public:
                         /// Compare with another one.
     bool                operator!=(const RectF &rhs) const { return (x != rhs.x || y != rhs.y || w != rhs.w || h != rhs.h) ? true : false; }
 
+                        /// Returns if this rectangle is empty.
     bool                IsEmpty() const { return (w <= 0 || h <= 0) ? true : false; }
 
                         /// Tests whether a point is inside.
@@ -118,6 +121,7 @@ public:
 
     RectF               Shrink(float ax, float ay) const;
     RectF &             ShrinkSelf(float ax, float ay);
+
     RectF               Expand(float ax, float ay) const;
     RectF &             ExpandSelf(float ax, float ay);
 

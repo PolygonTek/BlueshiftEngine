@@ -219,12 +219,12 @@ public:
                         /// Returns linear interpolation between the vector v1 and the vector v2.
     static Vec4         FromLerp(const Vec4 &v1, const Vec4 &v2, const float t);
 
-                        /// Returns "x y z"
+                        /// Returns "x y z".
     const char *        ToString() const { return ToString(4); }
-                        /// Returns "x y z" with the given precision
+                        /// Returns "x y z" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Vec4         FromString(const char *str);
 
                         /// Casts this Vec4 to a Vec2.
@@ -243,10 +243,10 @@ public:
     const Color4 &      ToColor4() const;
     Color4 &            ToColor4();
 
-                        /// Returns dimension of this type
+                        /// Returns dimension of this type.
     constexpr int       GetDimension() const { return Size; }
 
-                        /// Compute 4D barycentric coordinates from the point based on 4 simplex vector
+                        /// Compute 4D barycentric coordinates from the point based on 4 simplex vector.
     static const Vec4   Compute4DBarycentricCoords(const Vec3 &s1, const Vec3 &s2, const Vec3 &s3, const Vec3 &s4, const Vec3 &p);
 
     static const Vec4   origin;     ///< (0, 0, 0, 0)

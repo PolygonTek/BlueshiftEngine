@@ -363,7 +363,7 @@ void Collider::CreateBVHCMSingleMaterial(const Mesh *mesh, const Vec3 &scale) {
             cmesh->verts[j] = SystemUnitToPhysicsUnit(scale * subMesh->Verts()[j].xyz);
         }
 
-        // TODO: vertex hash 로 중복 vertex position 제거할 것
+        // TODO: Remove duplicated vertex position using vertex hash.
         for (int j = 0; j < subMesh->NumIndexes(); j++) {
             cmesh->indexes[j] = subMesh->Indexes()[j];
         }
@@ -407,7 +407,7 @@ void Collider::CreateBVHCMMultiMaterials(const Mesh *mesh, const Vec3 &scale) {
             cmesh->verts[j] = SystemUnitToPhysicsUnit(scale * subMesh->Verts()[j].xyz);
         }
 
-        // TODO: vertex hash 로 중복 vertex position 제거할 것
+        // TODO: Remove duplicated vertex position using vertex hash.
         for (int j = 0; j < subMesh->NumIndexes(); j++) {
             cmesh->indexes[j] = subMesh->Indexes()[j];
         }

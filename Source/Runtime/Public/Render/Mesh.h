@@ -61,10 +61,10 @@ class Mesh {
 public:
     struct Type {
         enum Enum {
-            Reference,      // 직접적으로 사용하지 않고, 다른 type 의 mesh 가 참조하는 용도로 사용한다.
-            Static,         // vertex 데이터는 static buffer 에 들어간다.
-            Dynamic,        // vertex 데이터를 CPU 에서 deform 하는 용도의 mesh (GUI, text, particle)
-            Skinned         // skinning 용 mesh
+            Reference,      // referenced by other type, not used directly.
+            Static,         // vertex data in the static buffer.
+            Dynamic,        // vertex data in the CPU memory (used for GUI, text, particle, ...).
+            Skinned         // meshes for skinning.
         };
     };
 
@@ -107,10 +107,10 @@ public:
     int                     NumJoints() const { return numJoints; }
     const Joint *           GetJoints() const { return joints; }
 
-                            // Create instantiated mesh
+                            // Create instantiated mesh.
     Mesh *                  InstantiateMesh(int meshType);
 
-                            // Reinstantiate itself
+                            // Reinstantiate itself.
     void                    Reinstantiate();
 
     MeshSurf *              AllocSurface(int numVerts, int numIndexes) const;
@@ -132,10 +132,10 @@ public:
     float                   IntersectRay(const Ray &ray, bool ignoreBackFace) const;
 
                             /// Returns volume of solid mesh.
-                            /// Should be a closed polytope to calculate exactly or AABB approximation.
+                            /// Should be a closed polytope to calculate exactly. If not AABB approximation will be used.
     float                   ComputeVolume() const;
                             /// Returns centroid of solid mesh. 
-                            /// Should be a closed polytope to calculate exactly or AABB approximation.
+                            /// Should be a closed polytope to calculate exactly. If not AABB approximation will be used.
     const Vec3              ComputeCentroid() const;
 
     void                    Purge();

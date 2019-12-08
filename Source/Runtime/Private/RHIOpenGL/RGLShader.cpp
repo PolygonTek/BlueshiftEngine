@@ -936,7 +936,7 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
         samplers = (GLSampler *)Mem_Alloc(sizeof(GLSampler) * numSamplers);
         simdProcessor->Memcpy(samplers, tempSamplers, sizeof(GLSampler) * numSamplers);
 
-        // binary search 를 위해 정렬
+        // Sort for binary search.
         qsort(samplers, numSamplers, sizeof(samplers[0]), CompareSampler);
     }
 
@@ -944,7 +944,7 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
         uniforms = (GLUniform *)Mem_Alloc(sizeof(GLUniform) * numUniforms);
         simdProcessor->Memcpy(uniforms, tempUniforms, sizeof(GLUniform) * numUniforms);
 
-        // binary search 를 위해 정렬
+        // Sort for binary search.
         qsort(uniforms, numUniforms, sizeof(uniforms[0]), CompareUniform);
     }
 
@@ -952,7 +952,7 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
         uniformBlocks = (GLUniformBlock *)Mem_Alloc(sizeof(GLUniformBlock) * numUniformBlocks);
         simdProcessor->Memcpy(uniformBlocks, tempUniformBlocks, sizeof(GLUniform) * numUniformBlocks);
 
-        // binary search 를 위해 정렬
+        // Sort for binary search.
         qsort(uniformBlocks, numUniformBlocks, sizeof(uniformBlocks[0]), CompareUniformBlock);
     }
 

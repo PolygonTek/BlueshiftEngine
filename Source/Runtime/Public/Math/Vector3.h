@@ -335,7 +335,7 @@ public:
                         /// Returns "x y z" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Vec3         FromString(const char *str);
         
                         /// Casts this Vec3 to a Vec2.

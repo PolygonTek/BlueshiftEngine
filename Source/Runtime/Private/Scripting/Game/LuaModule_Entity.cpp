@@ -73,6 +73,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "parent", &Entity::GetParent,
         "set_parent", &Entity::SetParent,
         "children", &Entity::GetChildren,
+        "children_recursive", &Entity::GetChildrenRecursive,
         "find_child", &Entity::FindChild,
         "local_aabb", &Entity::GetLocalAABB,
         "world_aabb", &Entity::GetWorldAABB,

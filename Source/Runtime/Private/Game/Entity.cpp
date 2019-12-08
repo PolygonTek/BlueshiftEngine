@@ -311,12 +311,12 @@ bool Entity::HasChildren() const {
     return node.GetFirstChild() ? true : false;
 }
 
-void Entity::GetChildren(EntityPtrArray &children) const {
-    for (Entity *child = node.GetFirstChild(); child; child = child->node.GetNextSibling()) {
-        children.Append(child);
+int Entity::GetChildCount() const {
+    return node.GetChildCount();
+}
 
-        child->GetChildren(children);
-    }
+Entity *Entity::GetChild(int childIndex) const {
+    return node.GetChild(childIndex);
 }
 
 Entity *Entity::FindChild(const char *name) const {
@@ -324,13 +324,22 @@ Entity *Entity::FindChild(const char *name) const {
         if (!Str::Cmp(child->GetName(), name)) {
             return child;
         }
-
-        Entity *foundEntity = child->FindChild(name);
-        if (foundEntity) {
-            return foundEntity;
-        }
     }
     return nullptr;
+}
+
+void Entity::GetChildren(EntityPtrArray &children) const {
+    for (Entity *child = node.GetFirstChild(); child; child = child->node.GetNextSibling()) {
+        children.Append(child);
+    }
+}
+
+void Entity::GetChildrenRecursive(EntityPtrArray &children) const {
+    for (Entity *child = node.GetFirstChild(); child; child = child->node.GetNextSibling()) {
+        children.Append(child);
+
+        child->GetChildrenRecursive(children);
+    }
 }
 
 Component *Entity::GetComponent(const MetaObject *type) const {
@@ -545,7 +554,7 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
         Mat3x4 rootMatrixInverse = GetTransform()->GetMatrix().Inverse();
 
         Array<Entity *> children;
-        GetChildren(children);
+        GetChildrenRecursive(children);
 
         for (int childIndex = 0; childIndex < children.Count(); childIndex++) {
             const Entity *child = children[childIndex];
@@ -637,7 +646,7 @@ bool Entity::IntersectRay(const Ray &ray, bool backFaceCull, float &lastDist) co
 
 void Entity::DestroyInstance(Entity *entity) {
     EntityPtrArray children;
-    entity->GetChildren(children);
+    entity->GetChildrenRecursive(children);
 
     for (int i = children.Count() - 1; i >= 0; i--) {
         Object::DestroyInstance(children[i]);
@@ -803,7 +812,7 @@ Json::Value Entity::CloneEntitiesValue(const Json::Value &entitiesValue, HashTab
     return clonedEntitiesValue;
 }
 
-void Entity::RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMap) {
+void Entity::RemapGuids(Entity *entity, const HashTable<Guid, Guid> &guidMap) {
     PropertyInfo propInfo;
     Guid toGuid;
 
@@ -818,14 +827,14 @@ void Entity::RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMa
                 for (int arrayIndex = 0; arrayIndex < entity->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
                     const Guid fromGuid = entity->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
 
-                    if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                    if (guidMap.Get(fromGuid, &toGuid)) {
                         entity->SetArrayProperty(propIndex, arrayIndex, toGuid);
                     }
                 }
             } else {
                 const Guid fromGuid = entity->GetProperty(propIndex).As<Guid>();
 
-                if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                if (guidMap.Get(fromGuid, &toGuid)) {
                     entity->SetProperty(propIndex, toGuid);
                 }
             }
@@ -846,14 +855,14 @@ void Entity::RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMa
                     for (int arrayIndex = 0; arrayIndex < component->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
                         const Guid fromGuid = component->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
 
-                        if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                        if (guidMap.Get(fromGuid, &toGuid)) {
                             component->SetArrayProperty(propIndex, arrayIndex, toGuid);
                         }
                     }
                 } else {
                     const Guid fromGuid = component->GetProperty(propIndex).As<Guid>();
 
-                    if (remapGuidMap.Get(fromGuid, &toGuid)) {
+                    if (guidMap.Get(fromGuid, &toGuid)) {
                         component->SetProperty(propIndex, toGuid);
                     }
                 }

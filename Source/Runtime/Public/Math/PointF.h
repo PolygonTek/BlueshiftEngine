@@ -71,13 +71,19 @@ public:
                         /// Unary operator + allows this structure to be used in an expression '+p'.
     PointF              operator+() const { return *this; }
 
-    PointF &            operator+=(const PointF &rhs);
-    PointF &            operator-=(const PointF &rhs);
-    PointF &            operator*=(float rhs);
-
+                        /// Adds a point to this point.
     PointF              operator+(const PointF &rhs) const { return PointF(x + rhs.x, y + rhs.y); }
+                        /// Subtracts a point from this point.
     PointF              operator-(const PointF &rhs) const { return PointF(x - rhs.x, y - rhs.y); }
+                        /// Multiplies this point by a scalar.
     PointF              operator*(float rhs) const { return PointF(x * rhs, y * rhs); }
+
+                        /// Adds a point to this point, in-place.
+    PointF &            operator+=(const PointF &rhs);
+                        /// Subtracts a point from this point, in-place.
+    PointF &            operator-=(const PointF &rhs);
+                        /// Multiplies this point by a scalar, in-place.
+    PointF &            operator*=(float rhs);
 
                         /// Compare with another one.
     bool                operator==(const PointF &rhs) const { return (x != rhs.x || y != rhs.y) ? false : true; }
@@ -86,11 +92,14 @@ public:
 
     void                Set(float x, float y);
 
+                        /// Computes the distance between this point and the given point.
     float               Distance(const PointF &other) const;
+                        /// Computes the squared distance between this point and the given point.
     float               DistanceSqr(const PointF &other) const;
 
     Point               ToPoint() const { return Point(x, y); }
 
+                        /// Converts this point to Vec2.
     Vec2                ToVec2() const { return Vec2(x, y); }
 
 #ifdef QPOINT_H

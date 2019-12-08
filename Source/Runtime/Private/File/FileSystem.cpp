@@ -134,7 +134,7 @@ void FileSystem::AddSearchPath(const char *path) {
     search->next = searchPath;
     searchPath = search;
 
-    // path 의 zip 파일들을 searchpath 에 추가
+    // Add zip files from path to searchpath.
     Array<FileInfo> files;
     int num = PlatformFile::ListFiles(ToRelativePath(path), "*.zip", false, false, files);
 

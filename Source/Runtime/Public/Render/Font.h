@@ -26,7 +26,7 @@ BE_NAMESPACE_BEGIN
 
 class FontFace;
 
-// Freetype / bitmap font 에 공통으로 쓰이는 glyph 정보 구조체
+// Font glyph information.
 struct FontGlyph {
     uint32_t                charCode;
     int                     width, height;

@@ -410,7 +410,7 @@ Entity *GameWorld::InstantiateEntity(const Entity *originalEntity) {
     RegisterEntity(clonedEntity);
 
     EntityPtrArray children;
-    clonedEntity->GetChildren(children);
+    clonedEntity->GetChildrenRecursive(children);
 
     for (int i = 0; i < children.Count(); i++) {
         RegisterEntity(children[i]);
@@ -428,7 +428,7 @@ Entity *GameWorld::InstantiateEntityWithTransform(const Entity *originalEntity, 
     RegisterEntity(clonedEntity);
 
     EntityPtrArray children;
-    clonedEntity->GetChildren(children);
+    clonedEntity->GetChildrenRecursive(children);
 
     for (int i = 0; i < children.Count(); i++) {
         RegisterEntity(children[i]);

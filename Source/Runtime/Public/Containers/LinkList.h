@@ -123,12 +123,12 @@ int LinkList<T>::Count() const {
 template <typename T>
 void LinkList<T>::Clear() {
     if (head == this) {
-        // head node 라면 연결된 모든 node 를 제거
+        // If head node, remove all connected nodes.
         while (next != this) {
             next->Remove();
         }
     } else {
-        // list 에서 this node 제거
+        // Remove this node in the list.
         Remove();
     }
 }

@@ -318,7 +318,7 @@ void Mesh::UpdateSkinningJointCache(const Skeleton *skeleton, const Mat3x4 *join
 }
 
 float Mesh::ComputeVolume() const {
-    float   totalVolume = 0;
+    float totalVolume = 0;
 
     for (int i = 0; i < NumSurfaces(); i++) {
         const MeshSurf *surf = GetSurface(i);

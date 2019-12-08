@@ -264,15 +264,15 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
     Vec3 moveVec = moveVector;
     Vec3 slideVec;
 
-    // bump normal 리스트를 작성한다. 
+    // Create a bump normal list.
     Vec3 bumpNormals[5];
     int numBumpNormals = 0;
     
     if (isValidGroundTrace) {
-        // 땅 바닥과 슬라이드
+        // Slide along the ground floor.
         moveVec = moveVec.Slide(groundTrace.normal, backoffScale);
 
-        // 땅 바닥 normal 을 bump normal 리스트에 추가
+        // Add ground floor normal to the bump normal list.
         bumpNormals[numBumpNormals++] = groundTrace.normal;
     }
 
@@ -280,7 +280,7 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
         return false;
     }
 
-    // 시작 move 방향을 bump normal 리스트에 추가
+    // Add starting move direction to the bump normal list.
     bumpNormals[numBumpNormals] = moveVec;
     bumpNormals[numBumpNormals].Normalize();
     numBumpNormals++;
@@ -290,34 +290,34 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
         Vec3 targetPos = origin + moveVec * f;
 
         int filterMask = GetGameWorld()->GetPhysicsWorld()->GetCollisionFilterMask(body->GetCollisionFilterBit());
-        // origin 에서 targetPos 로 capsule cast 
+        // capsule cast from origin to targetPos.
         GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, origin, targetPos, filterMask, trace);
 
-        // 이동 가능한 fraction 만큼 origin 이동
+        // Move origin by a moveable fraction.
         if (trace.fraction > 0.0f) {
             origin = trace.endPos;
             numBumpNormals = 0;
         }
         
-        // cast 결과 충돌이 없다면 종료
+        // Exit if no collision occured after cast.
         if (trace.fraction == 1.0f) {
             break;
         }
 
-        // 이동한 만큼 이동거리를 빼준다.
+        // Subtract the distance traveled by.
         f -= f * trace.fraction;
 
         //BE_LOG("%i %f\n", bumpCount, trace.normal.z);
         //GetGameWorld()->GetRenderWorld()->SetDebugColor(Vec4Color::cyan, Vec4(0, 0, 0, 0));
         //GetGameWorld()->GetRenderWorld()->DebugLine(trace.point, trace.point + trace.normal * 10, 1, false, 10000);
 
-        // 누적된 bump normals 의 최대 개수를 초과했다면..
+        // If the maximum number of accumulated bump normals is exceeded..
         if (numBumpNormals >= COUNT_OF(bumpNormals)) {
-            // 여기로 오면 안된다. 혹시나 만약 오게되면 여기서 종료.
+            // You should not come here. If you come, quit here.
             return true;
         }
 
-        // 같은 평면에 부딛혔다면 moveVec 을 normal 방향으로 약간 nudge 시킨다.
+        // If it hits the same plane, nudge moveVec slightly in the normal direction.
         int i = 0;
         for (; i < numBumpNormals; i++) {
             if (trace.normal.Dot(bumpNormals[i]) > 0.99f) {
@@ -330,16 +330,16 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
             continue;
         }
 
-        // 부딪힌 normal 을 추가
+        // Add bumpped normal.
         bumpNormals[numBumpNormals++] = trace.normal;
 
         for (int i = 0; i < numBumpNormals; i++) {
-            // moveVec 방향으로 부딪힐 수 없는 normal 은 제외
+            // Except normal, which cannot be hit in the direction of moveVec.
             if (moveVec.Dot(bumpNormals[i]) >= 0.0f) {
                 continue;
             }
 
-            // 부딪힌 normal 로 slide
+            // Slide using bumpped normal.
             slideVec = moveVec.Slide(bumpNormals[i], backoffScale);
 
             for (int j = 0; j < numBumpNormals; j++) {
@@ -351,14 +351,14 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
                     continue;
                 }
 
-                // 또 다시 다른 평면으로 slide 
+                // Slide using another bumpped normal.
                 slideVec = slideVec.Slide(bumpNormals[j], backoffScale);
 
                 if (slideVec.Dot(bumpNormals[i]) >= 0.0f) {
                     continue;
                 }
                 
-                // 두번째 slide vector 가 첫번째 부딛힌 normal 과 또 부딛힌다면, cross 방향으로 slide
+                // If the second slide vector collides with the first normal, it should be slided in the direction of the cross of the two normals.
                 Vec3 slideDir = bumpNormals[i].Cross(bumpNormals[j]);
                 slideVec = moveVec.ProjectTo(slideDir);
 
@@ -373,7 +373,7 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
                         continue;
                     }
 
-                    // 다른 normal 과 또 부딛힌다면 slide 를 멈춘다.
+                    // Collided another normal again, stop the slide.
                     return true;
                 }
             }

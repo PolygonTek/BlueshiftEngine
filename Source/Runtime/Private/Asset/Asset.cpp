@@ -207,10 +207,11 @@ void Asset::Save() {
     }
 }
 
-void Asset::GetChildren(Array<Asset *> &children) const {
+void Asset::GetChildrenRecursive(Array<Asset *> &children) const {
     for (Asset *child = node.GetFirstChild(); child; child = child->node.GetNextSibling()) {
         children.Append(child);
-        child->GetChildren(children);
+
+        child->GetChildrenRecursive(children);
     }
 }
 

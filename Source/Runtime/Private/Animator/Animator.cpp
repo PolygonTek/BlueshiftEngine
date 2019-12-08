@@ -336,7 +336,7 @@ void Animator::TransitState(int layerNum, const char *stateName, int currentTime
 void Animator::PushStateBlenders(int layerNum, int currentTime, int blendDuration) {
     AnimStateBlender *stateBlenders = layerAnimStateBlenders[layerNum];
 
-    // 새로운 animation state 를 0 번째 element 에 넣기 위해 이전 state blenders 들을 뒤쪽 element 로 이동시킨다.
+    // Move the previous state blenders to the back element to put the new animation state into the 0th element.
     for (int i = MaxBlendersPerLayer - 1; i > 0; i--) {
         stateBlenders[i] = stateBlenders[i - 1];
     }

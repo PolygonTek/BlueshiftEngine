@@ -871,8 +871,8 @@ void SubMesh::ComputeEdges() {
         return;
     }
 
-    // Temporary edge buffer to compute real 'edges'
-    // Maximum edge count is same as index count. but we need one more space for 0'th edge for dummy
+    // Temporary edge buffer to compute real 'edges'.
+    // Maximum edge count is same as index count. but we need one more space for 0'th edge for dummy.
     Edge *tempEdges = (Edge *)Mem_Alloc16((numIndexes + 1) * sizeof(Edge));
 
     Edge triEdges[3];
@@ -880,13 +880,13 @@ void SubMesh::ComputeEdges() {
     memset(&triEdges[0], 0, sizeof(triEdges[0]));
     tempEdges[0] = triEdges[0];
 
-    // edge's vertex index v0 to the edge table
+    // edge's vertex index v0 to the edge table.
     int *vertexEdges = (int *)Mem_Alloc16(numVerts * sizeof(int));
     memset(vertexEdges, -1, numVerts * sizeof(int));
     // vertices might have many edges.
     int *edgeChain = (int *)Mem_Alloc16((numIndexes + 1) * sizeof(int));
 
-    // edge indexes
+    // edge indexes.
     edgeIndexes = (int *)Mem_Alloc16(numIndexes * sizeof(int));
 
     int numTempEdges = 1;
@@ -900,7 +900,7 @@ void SubMesh::ComputeEdges() {
         const int32_t i1 = triIndexes[1];
         const int32_t i2 = triIndexes[2];
 
-        // 작은 인덱스가 먼저오도록 ordering
+        // Ordering to small index comes first.
         int32_t s = INT32_SIGNBITSET(i1 - i0);
         triEdges[0].v[0] = triIndexes[s];
         triEdges[0].v[1] = triIndexes[s^1];
@@ -921,7 +921,7 @@ void SubMesh::ComputeEdges() {
             // edge vertex winding 이 triangle winding (CCW) 과 다르다면 1
             const unsigned int order = (v0 == triIndexes[j] ? 0 : 1);
 
-            // 공유하는 edge 를 찾는다
+            // Find the shared edge.
             int edgeNum;
             for (edgeNum = vertexEdges[v0]; edgeNum >= 0; edgeNum = edgeChain[edgeNum]) {
                 if (tempEdges[edgeNum].v[1] == v1) {
@@ -929,32 +929,32 @@ void SubMesh::ComputeEdges() {
                 }
             }
 
-            // 공유하는 edge 를 못 찾았거나 이미 두개의 edge 가 공유되어 있다면 새로운 edge 를 추가
+            // Add new edge if no shared edge is found or two edges are already shared.
             if (edgeNum < 0 || tempEdges[edgeNum].t[order] != -1) {
                 if (edgeNum >= 0) {
                     numDisjunctiveEdges++;
                 }
 
-                // Add an edge to the temporary edge buffer 
+                // Add an edge to the temporary edge buffer.
                 edge.t[0] = edge.t[1] = -1;
                 edgeNum = numTempEdges;
                 tempEdges[numTempEdges++] = edge;
 
-                // Update edge chain for later use
+                // Update edge chain for later use.
                 edgeChain[edgeNum] = vertexEdges[v0];
                 vertexEdges[v0] = edgeNum;
             }
 
-            // Update a triangle index of an edge
+            // Update a triangle index of an edge.
             //assert(tempEdges[edgeNum].t[order] == -1);
             tempEdges[edgeNum].t[order] = i / 3;
 
-            // Update an edge index
+            // Update an edge index.
             edgeIndexes[i + j] = order ? -edgeNum : edgeNum;
         }
     }
 
-    // 2개 이상 공유된 edge 개수를 경고 출력.
+    // Warning output for two or more shared edges.
     if (numDisjunctiveEdges > 0) {
         BE_WARNLOG("%i disjunctive edges found\n", numDisjunctiveEdges);
     }

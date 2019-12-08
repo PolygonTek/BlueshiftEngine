@@ -48,7 +48,7 @@ public:
 
     /// Constructs a Size from a C array, to the value (data[0], data[1]).
     explicit constexpr Size(int data[2]);
-    /// Copy constructor
+    /// Copy constructor.
     explicit Size(const Vec2 &v);
 
                         /// Casts this Size to a C array.
@@ -79,9 +79,9 @@ public:
     Size                operator-(const Size &rhs) const { return Size(w - rhs.w, h - rhs.h); }
     Size                operator*(int rhs) const { return Size(w * rhs, h * rhs); }
 
-                        /// Compare with another one
+                        /// Compare with another one.
     bool                operator==(const Size &rhs) const { return (w != rhs.w || h != rhs.h) ? false : true; }
-                        /// Compare with another one
+                        /// Compare with another one.
     bool                operator!=(const Size &rhs) const { return (w != rhs.w || h != rhs.h) ? true : false; }
 
     bool                IsEmpty() const { return (w <= 0 || h <= 0) ? true : false; }
@@ -97,7 +97,7 @@ public:
                         /// Returns "w h".
     const char *        ToString() const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Size         FromString(const char *str);
 
                         /// Returns dimension of this type.

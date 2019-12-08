@@ -82,7 +82,7 @@ public:
     const Hierarchy<Asset> &    GetNode() const { return node; }
 
                                 /// Gets the children of this node.
-    void                        GetChildren(Array<Asset *> &children) const;
+    void                        GetChildrenRecursive(Array<Asset *> &children) const;
 
     void                        WriteMetaDataFile() const;
 

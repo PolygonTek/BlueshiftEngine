@@ -165,10 +165,10 @@ void Batch::DrawStaticSubMesh(SubMesh *subMesh) {
 
 void Batch::DrawDynamicSubMesh(SubMesh *subMesh) {
     if (startIndex < 0) {
-        // startIndex 는 Flush 후에 -1 로 세팅된다
+        // startIndex is set to -1 after Flush()
         startIndex = subMesh->indexCache->offset / sizeof(TriIndex);
     } else {
-        // indexCache 가 순차적으로 연결되지 않는다면 한꺼번에 그릴 수 없으므로 Flush
+        // Flush because indexCache cannot be drawn all at once unless they are connected in sequence.
         if (startIndex + numIndexes != subMesh->indexCache->offset / sizeof(TriIndex) ||
             vertexBuffer != subMesh->vertexCache->buffer ||
             indexBuffer != subMesh->indexCache->buffer) {

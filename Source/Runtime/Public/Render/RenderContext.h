@@ -105,19 +105,19 @@ public:
 
     RHI::Handle             GetContextHandle() const { return contextHandle; }
     
-                            // logical screen resolution
+                            // Returns logical screen resolution.
     int                     GetScreenWidth() const { return windowWidth; }
     int                     GetScreenHeight() const { return windowHeight; }
 
-                            // device resolution
+                            // Returns device resolution.
     int                     GetDeviceWidth() const { return deviceWidth; }
     int                     GetDeviceHeight() const { return deviceHeight; }
 
-                            // actual screen render target resolution
+                            // Returns actual screen render target resolution.
     int                     GetRenderingWidth() const { return renderingWidth; }
     int                     GetRenderingHeight() const { return renderingHeight; }
 
-                            // upscale factor for render to device mapping
+                            // Returns upscale factor for render to device mapping.
     float                   GetUpscaleFactorX() const { return (float)deviceWidth / renderingWidth; }
     float                   GetUpscaleFactorY() const { return (float)deviceHeight / renderingHeight; }
 
@@ -138,7 +138,7 @@ public:
     void                    SetClearColor(const Color4 &clearColor);
     void                    SetClearDepth(float clearDepth);
                             
-                            // set clipping rect for DrawPic/DrawStretchPic
+                            // Set clipping rect for DrawPic/DrawStretchPic
     void                    SetClipRect(const Rect &clipRect);
 
     GuiMesh &               GetGuiMesh() { return guiMesh; }
