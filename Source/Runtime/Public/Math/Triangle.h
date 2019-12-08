@@ -119,11 +119,11 @@ public:
                         /// Returns "a.x a.y a.z b.x b.y b.z c.x c.y c.z" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Triangle     FromString(const char *str);
 
                         /// Returns dimension of this type.
-    constexpr int       GetDimension() const { return 9; }
+    constexpr int       GetDimension() const { return 3*3; }
 
     Vec3                a;
     Vec3                b;
