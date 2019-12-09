@@ -157,8 +157,8 @@ private:
     LuaCpp::State *         state;
     LuaCpp::Selector        clearTweeners;
     LuaCpp::Selector        updateTweeners;
-    LuaCpp::Selector        clearWatingThreads;
-    LuaCpp::Selector        wakeUpWatingThreads;
+    LuaCpp::Selector        clearWaitingThreads;
+    LuaCpp::Selector        wakeUpWaitingThreads;
     LuaCpp::Selector        startDebuggee;
     LuaCpp::Selector        stopDebuggee;
     LuaCpp::Selector        pollDebuggee;

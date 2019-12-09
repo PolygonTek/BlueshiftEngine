@@ -121,14 +121,14 @@ void LuaVM::LoadWaitSupport() {
         if (state->RunBuffer(filename, data, size)) {
             LuaCpp::Selector waitSupport = (*state)["wait_support"];
 
-            clearWatingThreads = waitSupport["clear_waiting_threads"];
-            if (!clearWatingThreads.IsFunction()) {
-                clearWatingThreads = LuaCpp::Selector();
+            clearWaitingThreads = waitSupport["clear_waiting_threads"];
+            if (!clearWaitingThreads.IsFunction()) {
+                clearWaitingThreads = LuaCpp::Selector();
             }
 
-            wakeUpWatingThreads = waitSupport["wake_up_waiting_threads"];
-            if (!wakeUpWatingThreads.IsFunction()) {
-                wakeUpWatingThreads = LuaCpp::Selector();
+            wakeUpWaitingThreads = waitSupport["wake_up_waiting_threads"];
+            if (!wakeUpWaitingThreads.IsFunction()) {
+                wakeUpWaitingThreads = LuaCpp::Selector();
             }
         }
     }
@@ -281,8 +281,8 @@ void LuaVM::Shutdown() {
     clearTweeners = LuaCpp::Selector();
     updateTweeners = LuaCpp::Selector();
 
-    clearWatingThreads = LuaCpp::Selector();
-    wakeUpWatingThreads = LuaCpp::Selector();
+    clearWaitingThreads = LuaCpp::Selector();
+    wakeUpWaitingThreads = LuaCpp::Selector();
 
     startDebuggee = LuaCpp::Selector();
     stopDebuggee = LuaCpp::Selector();
@@ -328,14 +328,14 @@ void LuaVM::UpdateTweeners(float unscaledDeltaTime, float timeScale) {
 }
 
 void LuaVM::ClearWatingThreads() {
-    if (clearWatingThreads.IsFunction()) {
-        clearWatingThreads();
+    if (clearWaitingThreads.IsFunction()) {
+        clearWaitingThreads();
     }
 }
 
 void LuaVM::WakeUpWatingThreads(float currentTime) {
-    if (wakeUpWatingThreads.IsFunction()) {
-        wakeUpWatingThreads(currentTime);
+    if (wakeUpWaitingThreads.IsFunction()) {
+        wakeUpWaitingThreads(currentTime);
     }
 }
 
