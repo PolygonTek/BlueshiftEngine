@@ -239,7 +239,7 @@ T *Hierarchy<T>::GetChild(int index) const {
     Hierarchy<T> *node = child;
     while (node) {
         if (currentIndex == index) {
-            return child->owner;
+            return node->owner;
         }
         node = node->nextSibling;
         currentIndex++;
