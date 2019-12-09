@@ -80,6 +80,7 @@ set(COMMON_ENGINE_FILES
     Public/Math/Frustum.h
     Public/Math/Half.h
     Public/Math/Hammersley.h
+    Public/Math/Line.h
     Public/Math/LineSegment.h
     Public/Math/Math.h
     Public/Math/MathCommon.h
@@ -339,6 +340,7 @@ set(COMMON_ENGINE_FILES
     Private/Math/Plane.cpp
     Private/Math/Rotation.cpp
     Private/Math/Complex.cpp
+    Private/Math/Line.cpp
     Private/Math/LineSegment.cpp
     Private/Math/Matrix2.cpp
     Private/Math/Matrix3x4.cpp
