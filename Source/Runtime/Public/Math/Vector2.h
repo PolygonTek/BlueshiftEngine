@@ -218,6 +218,11 @@ public:
                         /// @return Length of this vector.
     float               NormalizeFast();
 
+                        /// Returns a normalized copy of this vector.
+    Vec2                Normalized() const;
+                        /// Returns a fast but approximately normalized copy of this vector.
+    Vec2                NormalizedFast() const;
+
                         /// Scales this vector so that its new length is as given.
     Vec2 &              ScaleToLength(float length);
 
@@ -422,6 +427,18 @@ BE_INLINE float Vec2::NormalizeFast() {
     y *= invLength;
 
     return invLength * sqrLength;
+}
+
+BE_INLINE Vec2 Vec2::Normalized() const {
+    Vec2 n = *this;
+    n.Normalize();
+    return n;
+}
+
+BE_INLINE Vec2 Vec2::NormalizedFast() const {
+    Vec2 n = *this;
+    n.NormalizeFast();
+    return n;
 }
 
 BE_INLINE Vec2 &Vec2::ScaleToLength(float length) {

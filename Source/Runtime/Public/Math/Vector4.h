@@ -206,6 +206,11 @@ public:
                         /// @return Length of this vector
     float               NormalizeFast();
 
+                        /// Returns a normalized copy of this vector.
+    Vec4                Normalized() const;
+                        /// Returns a fast but approximately normalized copy of this vector.
+    Vec4                NormalizedFast() const;
+
                         /// Clamp min <= this[i] <= max for each element.
     void                Clamp(const Vec4 &min, const Vec4 &max);
 
@@ -407,6 +412,18 @@ BE_INLINE float Vec4::NormalizeFast() {
     w *= invLength;
 
     return invLength * sqrLength;
+}
+
+BE_INLINE Vec4 Vec4::Normalized() const {
+    Vec4 n = *this;
+    n.Normalize();
+    return n;
+}
+
+BE_INLINE Vec4 Vec4::NormalizedFast() const {
+    Vec4 n = *this;
+    n.NormalizeFast();
+    return n;
 }
 
 BE_INLINE void Vec4::Clamp(const Vec4 &min, const Vec4 &max) {
