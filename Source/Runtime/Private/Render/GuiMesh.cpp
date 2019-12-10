@@ -406,7 +406,7 @@ void GuiMesh::DrawTextRect(Font *font, const RectF &rect, RenderObject::TextHorz
     }
 
     if (currentLineLength > 0) {
-        lineLengths[numLines++] = currentLineLength;
+        PrepareNextLine();
     }
 
     float totalHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
