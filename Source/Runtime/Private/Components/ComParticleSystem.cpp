@@ -92,12 +92,12 @@ void ComParticleSystem::Init() {
 
     simulationStarted = false;
 
-    // 3d spriteDef
-    spriteReferenceMesh = meshManager.GetMesh("_defaultQuadMesh");
-
     ComTransform *transform = GetEntity()->GetTransform();
 
 #if WITH_EDITOR
+    // 3d spriteDef
+    spriteReferenceMesh = meshManager.GetMesh("_defaultQuadMesh");
+
     spriteDef.flags = RenderObject::Flag::Billboard;
     spriteDef.layer = TagLayerSettings::BuiltInLayer::Editor;
     spriteDef.maxVisDist = MeterToUnit(50.0f);
