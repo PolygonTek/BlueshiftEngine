@@ -982,7 +982,7 @@ Mat3 &Mat3::Scale(const Vec3 &scale) {
 // V = | siny*cosp   cosr*cosy + sinr*sinp*siny  -cosy*sinr + cosr*sinp*siny |
 //     |     -sinp                    sinr*cosp                    cosr*cosp |
 // 
-// 1) cosp != 0 인 경우
+// Case 1: cosp != 0
 //
 // f02       = -sinp
 // f01 / f00 = siny*cosp / cosy*cosp = siny / cosy = tany
@@ -992,9 +992,9 @@ Mat3 &Mat3::Scale(const Vec3 &scale) {
 // yaw   = atan( f01 / f00 )
 // roll  = atan( f12 / f22 )
 //
-// 2) cosp == 0 인 경우
+// Case 2: cosp == 0
 //
-// i) sinp == 1 인 경우
+// Case 2.a: sinp == 1
 //
 //     |  0  -siny*cosr + sinr*cosy   sinr*siny + cosy*cosr |
 // V = |  0   cosr*cosy + sinr*siny  -cosy*sinr + cosr*siny |
@@ -1009,7 +1009,7 @@ Mat3 &Mat3::Scale(const Vec3 &scale) {
 // yaw-roll = -atan( f10 / f11 )
 // pitch    = -asin( f02 )
 //  
-// ii) sinp == -1 인경우
+// Case 2.b: sinp == -1
 //
 //     |  0  -siny*cosr - sinr*cosy   sinr*siny - cosy*cosr |
 // V = |  0   cosr*cosy - sinr*siny  -cosy*sinr - cosr*siny |
@@ -1024,7 +1024,8 @@ Mat3 &Mat3::Scale(const Vec3 &scale) {
 // yaw+roll = -atan( f10 / f11 )
 // pitch    = -asin( f02 )
 //
-// yaw 와 pitch 가 같은 자유도를 갖는다. roll 을 0 으로 고정시키면 i), ii) 모두의 경우에..
+// The DOF of the yaw and pitch is the same.
+// Locking the roll to zero will in all cases ..
 //
 // pitch    = -asin( f02 )
 // yaw      = -atan( f10 / f11 )
