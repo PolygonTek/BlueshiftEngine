@@ -48,7 +48,7 @@ void Entity::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("parent", "Parent", Guid, GetParentGuid, SetParentGuid, Guid::zero,
         "Parent Entity", PropertyInfo::Flag::ForceToSet | PropertyInfo::Flag::Editor).SetMetaObject(&Entity::metaObject);
     REGISTER_ACCESSOR_PROPERTY("siblingIndex", "Sibling Index", int, GetSiblingIndex, SetSiblingIndex, -1,
-        "", PropertyInfo::Flag::SkipSerialization);
+        "", PropertyInfo::Flag::ForceToSet | PropertyInfo::Flag::SkipSerialization);
     REGISTER_PROPERTY("prefab", "Prefab", bool, prefab, false,
         "Is prefab ?", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("prefabSource", "Prefab Source", Guid, GetPrefabSourceGuid, SetPrefabSourceGuid, Guid::zero,
@@ -724,13 +724,13 @@ int Entity::GetSiblingIndex() const {
     return node.GetSiblingIndex();
 }
 
-void Entity::SetSiblingIndex(int index) {
-    if (index >= 0) {
-        node.SetSiblingIndex(index);
+void Entity::SetSiblingIndex(int siblingIndex) {
+    if (siblingIndex >= 0) {
+        node.SetSiblingIndex(siblingIndex);
 
 #if WITH_EDITOR
         if (initialized) {
-            EmitSignal(&SIG_SiblingIndexChanged, this, index);
+            EmitSignal(&SIG_SiblingIndexChanged, this, siblingIndex);
         }
 #endif
     }
