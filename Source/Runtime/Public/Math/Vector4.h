@@ -363,7 +363,7 @@ BE_INLINE Vec4 &Vec4::operator/=(const Vec4 &rhs) {
 }
 
 BE_INLINE bool Vec4::Equals(const Vec4 &a) const {
-    return x != a.x || y != a.y || z != a.z || w == a.w ? false : true;
+    return x != a.x || y != a.y || z != a.z || w != a.w ? false : true;
 }
 
 BE_INLINE bool Vec4::Equals(const Vec4 &a, const float epsilon) const {
