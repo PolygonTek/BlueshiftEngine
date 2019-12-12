@@ -46,8 +46,6 @@ public:
 };
 
 class GameWorld : public Object {
-    friend class GameEdit;
-
 public:
     static constexpr int MaxScenes = 16;
     static constexpr int DontDestroyOnLoadSceneNum = MaxScenes - 1;
@@ -167,6 +165,8 @@ public:
     void                        RestartGame(const char *mapName);
 
     void                        StopAllSounds();
+
+    void                        UpdateCanvas();
         
     const char *                MapName() const { return mapName.c_str(); }
 

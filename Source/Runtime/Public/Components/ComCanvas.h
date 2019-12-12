@@ -36,6 +36,10 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+                            /// Called once when game started before Start()
+                            /// When game already started, called immediately after spawned
+    virtual void            Awake() override;
+
 #if WITH_EDITOR
                             /// Visualize the component in editor
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
@@ -49,6 +53,8 @@ public:
                             /// Makes world space ray from screen space point.
     const Ray               ScreenPointToRay(const Point &screenPoint);
 
+    void                    UpdateRenderingOrderForCanvasElements() const;
+
 protected:
     virtual void            OnInactive() override;
 
@@ -56,6 +62,7 @@ protected:
     RenderCamera::State     renderCameraDef;
 
 private:
+    void                    UpdateRenderingOrderRecursive(Entity *entity, int sceneNum, int &order) const;
     bool                    ProcessMousePointerInput();
     bool                    ProcessTouchPointerInput();
 

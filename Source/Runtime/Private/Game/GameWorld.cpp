@@ -367,7 +367,7 @@ Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
 
     for (int i = 0; i < clonedEntitiesValue.size(); i++) {
         // Create cloned entity
-        Entity *clonedEntity = Entity::CreateEntity(clonedEntitiesValue[i], this, originalEntity->sceneIndex);
+        Entity *clonedEntity = Entity::CreateEntity(clonedEntitiesValue[i], this, originalEntity->sceneNum);
         clonedEntities.Append(clonedEntity);
 
         // Remap all GUID references to newly created
@@ -739,6 +739,24 @@ void GameWorld::LateUpdateEntities() {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->LateUpdate();
+        }
+    }
+}
+
+void GameWorld::UpdateCanvas() {
+    for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
+        Entity *ent = scenes[sceneIndex].root.GetFirstChild();
+
+        while (ent) {
+            ComCanvas *canvasComponent = ent->GetComponent<ComCanvas>();
+
+            if (canvasComponent) {
+                canvasComponent->UpdateRenderingOrderForCanvasElements();
+
+                ent = ent->node.GetNextSibling();
+            } else {
+                ent = ent->node.GetNext();
+            }
         }
     }
 }

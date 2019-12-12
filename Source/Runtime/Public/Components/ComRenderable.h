@@ -73,6 +73,8 @@ public:
 
     bool                    IsVisibleInPreviousFrame() const;
 
+    void                    SetRenderingOrder(int order);
+
 protected:
     virtual void            OnActive() override;
     virtual void            OnInactive() override;

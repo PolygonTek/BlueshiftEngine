@@ -1034,40 +1034,53 @@ void RenderWorld::AddDrawSurf(VisCamera *camera, VisLight *visLight, VisObject *
 
     uint64_t visLightIndex = visLight ? visLight->index + 1 : 0;
     uint64_t visObjectIndex = visObject->index;
-    uint64_t materialSort = actualMaterial->GetSort();
     uint64_t materialIndex = materialManager.GetIndexByMaterial(actualMaterial);
 
-    // Rough sorting back-to-front order for translucent surfaces.
-    if (materialSort == Material::Sort::Translucent || materialSort == Material::Sort::Overlay) {
-        float depthMin = 0.0f;
-        float depthMax = 1.0f;
-
-        camera->def->CalcDepthBoundsFromAABB(subMesh->GetAABB(), visObject->modelViewProjMatrix, &depthMin, &depthMax);
-
-        uint64_t depthDist = Math::Ftoui16(depthMin * 0xFFFF);
-        depthDist = 0xFFFF - depthDist;
-
+    if (visObject->def->state.flags & RenderObject::Flag::UseRenderingOrder) {
         //---------------------------------------------------
-        // SortKey for translucent materials:
         // 0xFFF0000000000000 (0~4095)  : visLight index
-        // 0x000F000000000000 (0~15)    : material sort
-        // 0x0000FFFF00000000 (0~65535) : depth distance
+        // 0x000F000000000000 (0~15)    : material sort (Material::Sort::Overlay)
+        // 0x0000FFFF00000000 (0~65535) : rendering order
         // 0x00000000FFFF0000 (0~65535) : material index
         // 0x000000000000FFFF (0~65535) : visObject index
         //---------------------------------------------------
-        drawSurf->sortKey = ((visLightIndex << 52) | (materialSort << 48) | (depthDist << 32) | (materialIndex << 16) | visObjectIndex);
+        uint64_t materialSort = Material::Sort::Overlay;
+        uint64_t renderingOrder = visObject->def->state.renderingOrder & 0xFFFF;
+
+        drawSurf->sortKey = ((visLightIndex << 52) | (materialSort << 48) | (renderingOrder << 32) | (materialIndex << 16) | visObjectIndex);
     } else {
-        uint64_t subMeshIndex = ((uint64_t)subMesh->subMeshIndex & 0xFFFF);
+        uint64_t materialSort = actualMaterial->GetSort();
 
-        //---------------------------------------------------
-        // SortKey for opaque materials:
-        // 0xFFF0000000000000 (0~4095)  : visLight index
-        // 0x000F000000000000 (0~15)    : material sort
-        // 0x0000FFFF00000000 (0~65535) : sub mesh index
-        // 0x00000000FFFF0000 (0~65535) : material index
-        // 0x000000000000FFFF (0~65535) : visObject index
-        //---------------------------------------------------
-        drawSurf->sortKey = ((visLightIndex << 52) | (materialSort << 48) | (subMeshIndex << 32) | (materialIndex << 16) | visObjectIndex);
+        if (materialSort == Material::Sort::Translucent || materialSort == Material::Sort::Overlay) {
+            // Rough sorting back-to-front order for translucent surfaces.
+            float depthMin = 0.0f;
+            float depthMax = 1.0f;
+
+            camera->def->CalcDepthBoundsFromAABB(subMesh->GetAABB(), visObject->modelViewProjMatrix, &depthMin, &depthMax);
+
+            uint64_t depthDist = Math::Ftoui16(depthMin * 0xFFFF);
+            depthDist = 0xFFFF - depthDist;
+
+            //---------------------------------------------------
+            // 0xFFF0000000000000 (0~4095)  : visLight index
+            // 0x000F000000000000 (0~15)    : material sort
+            // 0x0000FFFF00000000 (0~65535) : depth distance
+            // 0x00000000FFFF0000 (0~65535) : material index
+            // 0x000000000000FFFF (0~65535) : visObject index
+            //---------------------------------------------------
+            drawSurf->sortKey = ((visLightIndex << 52) | (materialSort << 48) | (depthDist << 32) | (materialIndex << 16) | visObjectIndex);
+        } else {
+            uint64_t subMeshIndex = ((uint64_t)subMesh->subMeshIndex & 0xFFFF);
+
+            //---------------------------------------------------
+            // 0xFFF0000000000000 (0~4095)  : visLight index
+            // 0x000F000000000000 (0~15)    : material sort
+            // 0x0000FFFF00000000 (0~65535) : sub mesh index
+            // 0x00000000FFFF0000 (0~65535) : material index
+            // 0x000000000000FFFF (0~65535) : visObject index
+            //---------------------------------------------------
+            drawSurf->sortKey = ((visLightIndex << 52) | (materialSort << 48) | (subMeshIndex << 32) | (materialIndex << 16) | visObjectIndex);
+        }
     }
 
     camera->drawSurfs[camera->numDrawSurfs++] = drawSurf;

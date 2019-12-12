@@ -74,7 +74,7 @@ public:
                             /// Removes render object.
     void                    RemoveRenderObject(int handle);
 
-                            /// Gets RenderObject pointer by given render object handle.
+                            /// Returns RenderObject pointer by given render object handle.
     RenderObject *          GetRenderObject(int handle) const;
 
                             /// Adds render light to this world.
@@ -86,7 +86,7 @@ public:
                             /// Removes render light.
     void                    RemoveRenderLight(int handle);
 
-                            /// Gets RenderLight pointer by given render light handle.
+                            /// Returns RenderLight pointer by given render light handle.
     RenderLight *           GetRenderLight(int handle) const;
 
                             /// Adds environment probe to this world.
@@ -98,7 +98,7 @@ public:
                             /// Removes environment probe.
     void                    RemoveEnvProbe(int handle);
 
-                            /// Gets EnvProbe pointer by given environment probe handle.
+                            /// Returns EnvProbe pointer by given environment probe handle.
     EnvProbe *              GetEnvProbe(int handle) const;
 
                             /// Adds global environment probe to this world.
@@ -122,7 +122,7 @@ public:
 
     void                    FinishMapLoading();
 
-                            /// Set color for the debug primitives.
+                            /// Sets color for the debug primitives.
     void                    SetDebugColor(const Color4 &lineColor, const Color4 &fillColor) { debugLineColor = lineColor; debugFillColor = fillColor; }
 
     void                    ClearDebugPrimitives(int time);

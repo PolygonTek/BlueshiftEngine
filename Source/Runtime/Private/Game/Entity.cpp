@@ -708,8 +708,8 @@ void Entity::SetParentGuid(const Guid &parentGuid) {
         node.SetParent(parentEntity->node);
     } else {
         if (gameWorld) {
-            assert(sceneIndex >= 0);
-            node.SetParent(gameWorld->GetScene(sceneIndex).root);
+            assert(sceneNum >= 0);
+            node.SetParent(gameWorld->GetScene(sceneNum).root);
         }
     }
 
@@ -768,7 +768,7 @@ Entity *Entity::CreateEntity(Json::Value &entityValue, GameWorld *gameWorld, int
     Entity *entity = static_cast<Entity *>(Entity::metaObject.CreateInstance(entityGuid));
 
     entity->gameWorld = gameWorld;
-    entity->sceneIndex = sceneIndex;
+    entity->sceneNum = sceneIndex;
     entity->Deserialize(entityValue);
 
     return entity;

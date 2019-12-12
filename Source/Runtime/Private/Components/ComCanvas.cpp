@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "Components/ComCanvas.h"
+#include "Components/ComRenderable.h"
 #include "Components/ComRectTransform.h"
 #include "Components/ComLogic.h"
 #include "Components/ComScript.h"
@@ -82,6 +83,10 @@ void ComCanvas::Init() {
 
     // Mark as initialized
     SetInitialized(true);
+}
+
+void ComCanvas::Awake() {
+    UpdateRenderingOrderForCanvasElements();
 }
 
 void ComCanvas::OnInactive() {
@@ -178,6 +183,26 @@ bool ComCanvas::ProcessTouchPointerInput() {
         // Cast ray to detect entity.
         return GetEntity()->RayCastRect(ray);
     });
+}
+
+void ComCanvas::UpdateRenderingOrderForCanvasElements() const {
+    int sceneNum = GetEntity()->GetSceneNum();
+    int order = 0;
+
+    UpdateRenderingOrderRecursive(GetEntity(), sceneNum, order);
+}
+
+void ComCanvas::UpdateRenderingOrderRecursive(Entity *entity, int sceneNum, int &order) const {
+    for (Entity *ent = entity->GetNode().GetFirstChild(); ent; ent = ent->GetNode().GetNextSibling()) {
+        ComRenderable *renderableComponent = ent->GetComponent<ComRenderable>();
+
+        if (renderableComponent) {
+            renderableComponent->SetRenderingOrder((sceneNum << 12) | order);
+            order++;
+
+            UpdateRenderingOrderRecursive(ent, sceneNum, order);
+        }
+    }
 }
 
 void ComCanvas::Render() {

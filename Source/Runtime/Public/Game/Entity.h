@@ -42,7 +42,6 @@ using EntityPtrArray = Array<EntityPtr>;
 /// An Entity is any object that can be placed into a scene.
 class Entity : public Object {
     friend class GameWorld;
-    friend class GameEdit;
     friend class Prefab;
     friend class Component;
 
@@ -98,6 +97,8 @@ public:
     GameWorld *                 GetGameWorld() const { return gameWorld; }
 
     int                         GetEntityNum() const { return entityNum; }
+
+    int                         GetSceneNum() const { return sceneNum; }
 
                                 /// Returns hierarchy node.
     const Hierarchy<Entity> &   GetNode() const { return node; }
@@ -299,7 +300,7 @@ protected:
     bool                        frozen;
 
     GameWorld *                 gameWorld;
-    int                         sceneIndex = -1;
+    int                         sceneNum = -1;
 
     ComponentPtrArray           components;         ///< 0'th component is always transform component
 };

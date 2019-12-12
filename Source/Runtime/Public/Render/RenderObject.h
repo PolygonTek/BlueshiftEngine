@@ -48,17 +48,18 @@ public:
     struct Flag {
         enum Enum {
             Static              = BIT(0),
-            FirstPersonOnly     = BIT(1),
-            ThirdPersonOnly     = BIT(2),
-            NoVisDist           = BIT(3),
-            Billboard           = BIT(4),
-            DepthHack           = BIT(5),
-            EnvProbeLit         = BIT(6),
-            CastShadows         = BIT(7),
-            ReceiveShadows      = BIT(8),
-            Occluder            = BIT(9),   // for use in HOM
-            SkipSelection       = BIT(10),
-            RichText            = BIT(11),
+            UseRenderingOrder   = BIT(1),
+            FirstPersonOnly     = BIT(2),
+            ThirdPersonOnly     = BIT(3),
+            NoVisDist           = BIT(4),
+            Billboard           = BIT(5),
+            DepthHack           = BIT(6),
+            EnvProbeLit         = BIT(7),
+            CastShadows         = BIT(8),
+            ReceiveShadows      = BIT(9),
+            Occluder            = BIT(10),   // for use in HOM
+            SkipSelection       = BIT(11),
+            RichText            = BIT(12),
         };
     };
 
@@ -133,7 +134,7 @@ public:
         int                 staticMask = 0;
         int                 time = 0;
         float               maxVisDist = MeterToUnit(100);
-
+        int                 renderingOrder = 0;
         //
         // Transform info
         //

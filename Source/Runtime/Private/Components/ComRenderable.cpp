@@ -274,4 +274,11 @@ void ComRenderable::SetSkipSelection(bool skip) {
     UpdateVisuals();
 }
 
+void ComRenderable::SetRenderingOrder(int order) {
+    renderObjectDef.flags |= RenderObject::Flag::UseRenderingOrder;
+    renderObjectDef.renderingOrder = order;
+
+    UpdateVisuals();
+}
+
 BE_NAMESPACE_END
