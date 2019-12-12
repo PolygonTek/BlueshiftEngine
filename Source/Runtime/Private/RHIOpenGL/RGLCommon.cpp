@@ -402,7 +402,7 @@ void OpenGLRHI::Clear(int clearBits, const Color4 &color, float depth, unsigned 
 #if 1
     if (clearBits & ClearBit::Color) {
         if (r_sRGB.GetBool() && OpenGL::SupportsFrameBufferSRGB()) {
-            gglClearBufferfv(GL_COLOR, 0, Color4(color.ToColor3().SRGBToLinear(), color[3]));
+            gglClearBufferfv(GL_COLOR, 0, color.SRGBToLinear());
         } else {
             gglClearBufferfv(GL_COLOR, 0, color);
         }
