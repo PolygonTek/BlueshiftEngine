@@ -154,7 +154,7 @@ public:
 
                             // Query in render coordinates
     float                   QueryDepth(const Point &pt);
-    int                     QuerySelection(const Point &pt);
+    bool                    QuerySelection(const Point &pt, int &index);
     bool                    QuerySelection(const Rect &rect, Inclusion::Enum inclusion, Array<int> &indexes);
 
     void                    TakeScreenShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height);

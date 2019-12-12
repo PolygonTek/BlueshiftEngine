@@ -630,7 +630,7 @@ float RenderContext::QueryDepth(const Point &point) {
     return depth;
 }
 
-int RenderContext::QuerySelection(const Point &point) {
+bool RenderContext::QuerySelection(const Point &point, int &index) {
     Image::Format::Enum format = screenSelectionRT->ColorTexture()->GetFormat();
     byte *data = (byte *)_alloca(Image::BytesPerPixel(format));
 
@@ -646,12 +646,26 @@ int RenderContext::QuerySelection(const Point &point) {
     screenSelectionRT->End();
 
     int id = ((int)data[2] << 16) | ((int)data[1] << 8) | ((int)data[0]);
+    if (id != 0x00FFFFFF) {
+        index = id;
+        return true;
+    }
 
-    return id;
+    return false;
 }
 
 bool RenderContext::QuerySelection(const Rect &rect, Inclusion::Enum inclusion, Array<int> &indexes) {
     if (rect.IsEmpty()) {
+        return false;
+    }
+
+    if (rect.w == 1 && rect.h == 1) {
+        int index;
+
+        if (QuerySelection(rect.GetPoint(0), index)) {
+            indexes.Append(index);
+            return true;
+        }
         return false;
     }
 
@@ -681,7 +695,9 @@ bool RenderContext::QuerySelection(const Rect &rect, Inclusion::Enum inclusion, 
 
         for (int i = 0; i < pixelCount; i++) {
             int id = (((int)data_ptr[2]) << 16) | (((int)data_ptr[1]) << 8) | ((int)data_ptr[0]);
-            indexes.AddUnique(id);
+            if (id != 0x00FFFFFF) {
+                indexes.AddUnique(id);
+            }
 
             data_ptr += bpp;
         }
@@ -703,7 +719,9 @@ bool RenderContext::QuerySelection(const Rect &rect, Inclusion::Enum inclusion, 
                 byte *data_ptr = &data[pitch + x * bpp];
 
                 int id = (((int)data_ptr[2]) << 16) | (((int)data_ptr[1]) << 8) | ((int)data_ptr[0]);
-                indexes.AddUnique(id);
+                if (id != 0x00FFFFFF) {
+                    indexes.AddUnique(id);
+                }
             }
         }
         
@@ -715,7 +733,9 @@ bool RenderContext::QuerySelection(const Rect &rect, Inclusion::Enum inclusion, 
                     byte *data_ptr = &data[pitch + x * bpp];
 
                     int id = (((int)data_ptr[2]) << 16) | (((int)data_ptr[1]) << 8) | ((int)data_ptr[0]);
-                    indexes.RemoveFast(id);
+                    if (id != 0x00FFFFFF) {
+                        indexes.RemoveFast(id);
+                    }
                 }
             }
         }
