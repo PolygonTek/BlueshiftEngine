@@ -98,9 +98,7 @@ void GameWorld::Reset() {
 }
 
 int GameWorld::GetDeltaTime() const {
-    int dt = time - prevTime;
-
-    return dt;
+    return (time - prevTime);
 }
 
 void GameWorld::DontDestroyOnLoad(Entity *entity) {
@@ -297,7 +295,7 @@ void GameWorld::RegisterEntity(Entity *ent, int entityIndex) {
     int nameHash = entityHash.GenerateHash(ent->GetName());
     int tagHash = entityTagHash.GenerateHash(ent->GetTag());
 
-    // If entityIndex is not given, find a blank space in entities[]
+    // If entityIndex is not given, find a blank space in entities[].
     if (entityIndex < 0) {
         while (entities[firstFreeIndex] && firstFreeIndex < MaxEntityNum) {
             firstFreeIndex++;
@@ -354,25 +352,25 @@ void GameWorld::UnregisterEntity(Entity *ent) {
 }
 
 Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
-    // Serialize source entity and it's children
+    // Serialize source entity and it's children.
     Json::Value originalEntitiesValue;
     Entity::SerializeHierarchy(originalEntity, originalEntitiesValue);
 
-    // Clone entities value which is replaced by new GUIDs
+    // Clone entities value which is replaced by new GUIDs.
     HashTable<Guid, Guid> guidMap;
     Json::Value clonedEntitiesValue = Entity::CloneEntitiesValue(originalEntitiesValue, guidMap);
 
     EntityPtrArray clonedEntities;
 
     for (int i = 0; i < clonedEntitiesValue.size(); i++) {
-        // Create cloned entity
+        // Create cloned entity.
         Entity *clonedEntity = Entity::CreateEntity(clonedEntitiesValue[i], this, originalEntity->sceneNum);
         clonedEntities.Append(clonedEntity);
 
-        // Remap all GUID references to newly created
+        // Remap all GUID references to newly created.
         Entity::RemapGuids(clonedEntity, guidMap);
 
-        // If source entity is prefab source, mark cloned entity originated from prefab entity
+        // If source entity is prefab source, mark cloned entity originated from prefab entity.
         if (originalEntitiesValue[i]["prefab"].asBool()) {
             clonedEntity->SetProperty("prefabSource", Guid::FromString(originalEntitiesValue[i]["guid"].asCString()));
             clonedEntity->SetProperty("prefab", false);
@@ -488,7 +486,7 @@ void GameWorld::FinishMapLoading() {
     StaticBatch::ClearAllStaticBatches();
 }
 
-bool GameWorld::CheckScriptError() const {
+bool GameWorld::HasScriptError() const {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ComponentPtrArray scriptComponents = ent->GetComponents(&ComScript::metaObject);

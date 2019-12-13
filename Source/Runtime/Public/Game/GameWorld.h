@@ -69,26 +69,40 @@ public:
 
     virtual Str                 ToString() const override { return "Game World"; }
 
-    RenderWorld *               GetRenderWorld() const { return renderWorld; }
-    PhysicsWorld *              GetPhysicsWorld() const { return physicsWorld; }
-
-    LuaVM &                     GetLuaVM() { return luaVM; }
-
     Random &                    GetRandom() { return random; }
 
+                                /// Returns internal render world interface pointer.
+    RenderWorld *               GetRenderWorld() const { return renderWorld; }
+
+                                /// Returns internal physics world interface pointer.
+    PhysicsWorld *              GetPhysicsWorld() const { return physicsWorld; }
+
+                                /// Returns Lua VM object.
+    LuaVM &                     GetLuaVM() { return luaVM; }
+
+                                /// Enables script debugging when the game started.
     void                        SetDebuggable(bool isDebuggable) { this->isDebuggable = isDebuggable; }
 
+                                /// Returns the elapsed time up to the current frame.
     int                         GetTime() const { return time; }
+                                /// Returns the elapsed time up to the previous frame.
     int                         GetPrevTime() const { return prevTime; }
+                                /// Returns the delta time between the current frame and the previous frame.
     int                         GetDeltaTime() const;
 
+                                /// Returns update time scale.
     float                       GetTimeScale() const { return timeScale; }
+                                /// Sets update time scale.
     void                        SetTimeScale(float timeScale) { this->timeScale = timeScale; }
 
+                                /// Resets game time and clear debug primitives.
     void                        Reset();
 
+                                /// Destroys all entities in all scenes except those called by DontDestroyOnLoad().
+                                /// If clearAll is set, you can force destroy all entities.
     void                        ClearEntities(bool clearAll = true);
 
+                                /// Marks the entity not to be destroyed.
     void                        DontDestroyOnLoad(Entity *entity);
 
                                 /// Simulates physics system and update all registered entities.
@@ -152,27 +166,28 @@ public:
 
     void                        SaveSnapshot();
     void                        RestoreSnapshot();
-    
-    void                        OnApplicationResize(int width, int height);
-    void                        OnApplicationPause(bool pause);
-    void                        OnApplicationTerminate();
 
-    bool                        CheckScriptError() const;
-
-    bool                        IsGameStarted() const { return gameStarted; }
-    void                        StartGame();
-    void                        StopGame(bool stopAllSounds = true);
-    void                        RestartGame(const char *mapName);
-
-    void                        StopAllSounds();
-
-    void                        UpdateCanvas();
-        
     const char *                MapName() const { return mapName.c_str(); }
 
     void                        NewMap();
     bool                        LoadMap(const char *filename, LoadSceneMode::Enum mode);
     void                        SaveMap(const char *filename);
+    
+    bool                        IsGameStarted() const { return gameStarted; }
+
+    void                        StartGame();
+    void                        StopGame(bool stopAllSounds = true);
+    void                        RestartGame(const char *mapName);
+
+    bool                        HasScriptError() const;
+
+    void                        StopAllSounds();
+
+    void                        UpdateCanvas();
+
+    void                        OnApplicationResize(int width, int height);
+    void                        OnApplicationPause(bool pause);
+    void                        OnApplicationTerminate();
 
     static const SignalDef      SIG_EntityRegistered;
     static const SignalDef      SIG_EntityUnregistered;

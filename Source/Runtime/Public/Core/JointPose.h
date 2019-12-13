@@ -40,7 +40,7 @@ public:
     void                ClearTranslation() { t[0] = t[1] = t[2] = 0; }
     void                ClearScale() { s[0] = s[1] = s[2] = 1.0f; }
 
-    bool                Compare(const JointPose &jointPose, float q_epsilon, float t_epsilon, float s_epsilon) const;
+    bool                Equals(const JointPose &jointPose, float epsilonQ, float epsilonT, float epsilonS) const;
 
     void                SetFromMat3x4(const Mat3x4 &mat);
 
@@ -49,8 +49,8 @@ public:
     Vec3                s;  ///< Scaling vector for each axis
 };
 
-BE_INLINE bool JointPose::Compare(const JointPose &jointPose, float q_epsilon, float t_epsilon, float s_epsilon) const {
-    return (q.Equals(jointPose.q, q_epsilon) && t.Equals(jointPose.t, t_epsilon) && s.Equals(jointPose.s, s_epsilon)) ? true : false;
+BE_INLINE bool JointPose::Equals(const JointPose &jointPose, float epsilonQ, float epsilonT, float epsilonS) const {
+    return (q.Equals(jointPose.q, epsilonQ) && t.Equals(jointPose.t, epsilonT) && s.Equals(jointPose.s, epsilonS)) ? true : false;
 } 
 
 BE_INLINE JointPose &JointPose::operator-=(const JointPose &baseJointPose) {

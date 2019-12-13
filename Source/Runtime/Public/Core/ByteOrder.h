@@ -50,28 +50,28 @@ public:
         }
     }
 
-    /// Converts system to little endian
+    /// Converts system to little endian.
     template <typename T> static void SystemToLittleEndian(T &v) {
         if (systemEndianness == Endianness::BigEndian) {
             SwapByteOrder(v);
         }
     }
 
-    /// Converts little endian to system
+    /// Converts little endian to system.
     template <typename T> static void LittleEndianToSystem(T &v) {
         if (systemEndianness == Endianness::BigEndian) {
             SwapByteOrder(v);
         }
     }
 
-    /// Converts system to big endian
+    /// Converts system to big endian.
     template <typename T> static void SystemToBigEndian(T &v) {
         if (systemEndianness == Endianness::LittleEndian) {
             SwapByteOrder(v);
         }
     }
 
-    /// Converts big endian to system
+    /// Converts big endian to system.
     template <typename T> static void BigEndianToSystem(T &v) {
         if (systemEndianness == Endianness::LittleEndian) {
             SwapByteOrder(v);

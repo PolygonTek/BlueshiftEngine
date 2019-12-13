@@ -90,7 +90,7 @@ public:
 
     static void             Clear();
 
-                            /// Create a new event with the given event def and arguments
+                            /// Create a new event with the given event def and arguments.
     static Event *          AllocEvent(const EventDef *eventDef, int numArgs, va_list args);
     static void             FreeEvent(Event *event);
 
@@ -98,7 +98,7 @@ public:
 
     static void             ScheduleEvent(Event *event, Object *sender, int time);
 
-                            /// Cancels a event which is posted by sender in event queue
+                            /// Cancels a event which is posted by sender in event queue.
     static void             CancelEvents(const Object *sender, const EventDef *eventDef = nullptr);
 
     static void             ServiceEvents();

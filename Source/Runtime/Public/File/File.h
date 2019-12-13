@@ -37,22 +37,22 @@ public:
 
     virtual const char *    GetFilePath() const = 0;
 
-                            /// Returns size of a file
+                            /// Returns size of a file.
     virtual size_t          Size() const = 0;
                             /// Returns offset in file.
     virtual int             Tell() const = 0;
                             /// Seeks from the start on a file.
     virtual int             Seek(int64_t offset) = 0;
-                            /// Seeks from the end on a file
+                            /// Seeks from the end on a file.
     virtual int             SeekFromEnd(int64_t offset) = 0;
     
                             /// Reads data from the file to the buffer.
     virtual size_t          Read(void *buffer, size_t bytesToRead) const = 0;
                             /// Writes data from the buffer to the file.
     virtual bool            Write(const void *buffer, size_t bytesToWrite) = 0;
-                            /// Works like fprintf.
+                            /// Formatted output to file.
     virtual bool            Printf(const char *format, ...);
-                            /// Works like fprintf with wchar_t.
+                            /// Formatted output to file in wide characters.
     virtual bool            Printf(const wchar_t *format, ...);
 
     size_t                  ReadChar(char &value);
@@ -93,13 +93,13 @@ public:
     
     virtual const char *    GetFilePath() const override { return filename; }
     
-                            /// Returns size of a file 
+                            /// Returns size of a file.
     virtual size_t          Size() const override;
                             /// Returns offset in file.
     virtual int             Tell() const override;
                             /// Seeks from the start on a file.
     virtual int             Seek(int64_t offset) override;
-                            /// Seeks from the end on a file
+                            /// Seeks from the end on a file.
     virtual int             SeekFromEnd(int64_t offset) override;
     
                             /// Reads data from the file to the buffer.
@@ -127,7 +127,7 @@ public:
     virtual int             Tell() const override;
                             /// Seeks from the start on a file.
     virtual int             Seek(int64_t offset) override;
-                            /// Seeks from the end on a file
+                            /// Seeks from the end on a file.
     virtual int             SeekFromEnd(int64_t offset) override;
     
                             /// Reads data from the file to the buffer.

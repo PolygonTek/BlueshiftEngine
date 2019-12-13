@@ -39,7 +39,7 @@ class BE_API FileArray {
     friend class FileSystem;
 
 public:
-                        /// Gets the absolute path.
+                        /// Returns the absolute path.
     const char *        GetPath() const { return path; }
 
     const char *        GetFileName(int index) const { return array[index].filename; }
@@ -76,11 +76,13 @@ public:
 
     bool                FileExists(const char *filename) const;
     size_t              FileSize(const char *filename) const;
+
     bool                RemoveFile(const char *filename, bool evenReadOnly);
     bool                MoveFile(const char *oldname, const char *newname);
     bool                CopyFile(const char *from, const char *to, ProgressCallback *progress = nullptr);
     bool                CopyDirectoryTree(const char *from, const char *to);
     bool                CopyFileOrDirectoryTree(const char *from, const char *to);
+
     bool                IsReadOnly(const char *filename);
     bool                SetReadOnly(const char *filename, bool readOnly);
 
