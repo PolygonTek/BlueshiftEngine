@@ -189,9 +189,9 @@ void ComLight::OnInactive() {
 #endif
 }
 
-bool ComLight::HasRenderEntity(int renderEntityHandle) const { 
+bool ComLight::HasRenderObject(int renderObjectHandle) const { 
 #if WITH_EDITOR
-    if (spriteHandle == renderEntityHandle) {
+    if (spriteHandle == renderObjectHandle) {
         return true;
     }
 #endif

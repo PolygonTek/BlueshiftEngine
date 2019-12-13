@@ -51,8 +51,8 @@ public:
                             /// Returns true if this component conflicts with the given component.
     virtual bool            IsConflictComponent(const MetaObject &componentClass) const { return false; }
 
-                            /// Returns true if this component have render entity by checking renderEntityHandle.
-    virtual bool            HasRenderEntity(int renderEntityHandle) const { return false; }
+                            /// Returns true if this component have render object by checking given renderObjectHandle.
+    virtual bool            HasRenderObject(int renderObjectHandle) const { return false; }
 
                             /// Is initialized ? (initialized should be set to true after calling Init function)
     bool                    IsInitialized() const { return initialized; }

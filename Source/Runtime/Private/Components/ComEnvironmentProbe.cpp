@@ -175,9 +175,9 @@ void ComEnvironmentProbe::OnInactive() {
 #endif
 }
 
-bool ComEnvironmentProbe::HasRenderEntity(int renderEntityHandle) const {
+bool ComEnvironmentProbe::HasRenderObject(int renderObjectHandle) const {
 #if WITH_EDITOR
-    if (this->sphereHandle == renderEntityHandle) {
+    if (this->sphereHandle == renderObjectHandle) {
         return true;
     }
 #endif

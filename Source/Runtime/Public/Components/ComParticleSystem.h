@@ -37,7 +37,7 @@ public:
                             /// When game already started, called immediately after spawned
     virtual void            Awake() override;
 
-    virtual bool            HasRenderEntity(int renderEntityHandle) const override;
+    virtual bool            HasRenderObject(int renderObjectHandle) const override;
 
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;

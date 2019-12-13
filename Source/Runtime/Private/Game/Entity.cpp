@@ -388,12 +388,12 @@ ComponentPtrArray Entity::GetComponentsInChildren(const MetaObject *type, bool s
     return subComponents;
 }
 
-bool Entity::HasRenderEntity(int renderEntityHandle) const {
+bool Entity::HasRenderObject(int renderObjectHandle) const {
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component) {
-            if (component->HasRenderEntity(renderEntityHandle)) {
+            if (component->HasRenderObject(renderObjectHandle)) {
                 return true;
             }
         }

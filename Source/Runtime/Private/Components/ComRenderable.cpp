@@ -101,7 +101,7 @@ void ComRenderable::OnInactive() {
     }
 }
 
-bool ComRenderable::HasRenderEntity(int renderObjectHandle) const { 
+bool ComRenderable::HasRenderObject(int renderObjectHandle) const { 
     if (this->renderObjectHandle == renderObjectHandle) {
         return true;
     }

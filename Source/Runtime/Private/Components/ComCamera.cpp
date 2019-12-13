@@ -180,9 +180,9 @@ void ComCamera::OnInactive() {
 #endif
 }
 
-bool ComCamera::HasRenderEntity(int renderEntityHandle) const { 
+bool ComCamera::HasRenderObject(int renderObjectHandle) const { 
 #if WITH_EDITOR
-    if (this->spriteHandle == renderEntityHandle) {
+    if (this->spriteHandle == renderObjectHandle) {
         return true;
     }
 #endif

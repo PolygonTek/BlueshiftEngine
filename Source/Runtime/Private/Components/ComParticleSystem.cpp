@@ -207,14 +207,14 @@ void ComParticleSystem::OnInactive() {
     ComRenderable::OnInactive();
 }
 
-bool ComParticleSystem::HasRenderEntity(int renderEntityHandle) const {
+bool ComParticleSystem::HasRenderObject(int renderObjectHandle) const {
 #if WITH_EDITOR
-    if (this->spriteHandle == renderEntityHandle) {
+    if (this->spriteHandle == renderObjectHandle) {
         return true;
     }
 #endif
 
-    return ComRenderable::HasRenderEntity(renderEntityHandle);
+    return ComRenderable::HasRenderObject(renderObjectHandle);
 }
 
 int ComParticleSystem::GetAliveParticleCount() const {

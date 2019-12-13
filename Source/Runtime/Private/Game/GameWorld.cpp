@@ -238,15 +238,14 @@ const EntityPtrArray GameWorld::FindEntitiesByTag(const char *tagName) const {
     return resultEntities;
 }
 
-Entity *GameWorld::FindEntityByRenderEntity(int renderEntityHandle) const {
+Entity *GameWorld::FindEntityByRenderObject(int renderObjectHandle) const {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
-            if (ent->HasRenderEntity(renderEntityHandle)) {
+            if (ent->HasRenderObject(renderObjectHandle)) {
                 return ent;
             }
         }
     }
-
     return nullptr;
 }
 

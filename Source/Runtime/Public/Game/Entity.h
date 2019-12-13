@@ -182,7 +182,8 @@ public:
                                 /// Adds new component to the entity in real-time.
     Component *                 AddNewComponent(const MetaObject *type);
 
-    bool                        HasRenderEntity(int renderEntityHandle) const;
+                                /// Returns if any components of this entity have render object by checking given render object handle.
+    bool                        HasRenderObject(int renderObjectHandle) const;
 
                                 /// Purges all of the data.
     void                        Purge();

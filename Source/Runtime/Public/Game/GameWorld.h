@@ -125,8 +125,8 @@ public:
     Entity *                    FindEntityByTag(const char *tag) const;
                                 /// Returns all of the entities that match given tag.
     const EntityPtrArray        FindEntitiesByTag(const char *tag) const;
-                                /// Returns an entity by render entity handle.
-    Entity *                    FindEntityByRenderEntity(int renderEntityHandle) const;
+                                /// Returns an entity by render object handle.
+    Entity *                    FindEntityByRenderObject(int renderObjectHandle) const;
 
                                 /// Called when entity name changed.
     void                        OnEntityNameChanged(Entity *ent);
