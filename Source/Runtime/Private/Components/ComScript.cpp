@@ -831,7 +831,7 @@ void ComScript::SetScriptProperties() {
             if (object) {
                 property["value"] = object;
             } else {
-                if (propInfo->GetMetaObject()->IsTypeOf(Asset::metaObject)) {
+                if (propInfo->GetMetaObject()->IsTypeOf(Resource::metaObject)) {
                     if (!objectGuid.IsZero()) {
                         object = propInfo->GetMetaObject()->CreateInstance(objectGuid); // FIXME: when to delete ?
                         property["value"] = object;
