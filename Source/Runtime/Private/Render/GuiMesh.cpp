@@ -188,7 +188,6 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
         localVerts[1].xyz.Set(x, y + h, 0);
         localVerts[2].xyz.Set(x + w, y + h, 0);
         localVerts[3].xyz.Set(x + w, y, 0);
-        
     } else {
         // 3D frame
         // +Y
