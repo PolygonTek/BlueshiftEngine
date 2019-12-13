@@ -228,8 +228,12 @@ public:
 
                                 /// Returns AABB in local space.
     const AABB                  GetLocalAABB(bool includingChildren = false) const;
-                                /// Returns AABB in world space.
+                                /// Returns AABB in world space exactly. This is slow than GetWorldAABB().
     const AABB                  GetWorldAABB(bool includingChildren = false) const;
+                                /// Returns AABB in world space.
+    const AABB                  GetWorldAABBFast(bool includingChildren = false) const;
+                                /// Returns AABB in the given space.
+    const AABB                  GetAABBInSpace(const Vec3 &origin, const Mat3 &axis, bool includingChildren = false) const;
                                 /// Returns position in world space with given trait.
     const Vec3                  GetWorldPosition(WorldPosTrait::Enum posTrait, bool includingChildren = false) const;
 

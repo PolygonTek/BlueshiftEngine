@@ -578,12 +578,49 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
     return outAabb;
 }
 
-const AABB Entity::GetWorldAABB(bool includingChildren) const {
+const AABB Entity::GetWorldAABBFast(bool includingChildren) const {
     const ComTransform *transform = GetTransform();
 
     AABB worldAABB;
     worldAABB.SetFromTransformedAABBFast(GetLocalAABB(includingChildren), transform->GetMatrix());
     return worldAABB;
+}
+
+const AABB Entity::GetWorldAABB(bool includingChildren) const { 
+    return GetAABBInSpace(Vec3::origin, Mat3::identity, includingChildren); 
+}
+
+const AABB Entity::GetAABBInSpace(const Vec3 &origin, const Mat3 &axis, bool includingChildren) const {
+    BE1::AABB spaceAABB;
+    spaceAABB.Clear();
+
+    BE1::AABB aabb = GetLocalAABB();
+    BE1::Vec3 points[8];
+    aabb.ToPoints(points);
+
+    for (int pointIndex = 0; pointIndex < COUNT_OF(points); pointIndex++) {
+        BE1::Vec3 worldPoint = GetTransform()->GetMatrix() * points[pointIndex];
+
+        BE1::Vec3 spacePoint = axis.TransposedMulVec(worldPoint - origin);
+
+        spaceAABB.AddPoint(spacePoint);
+    }
+
+    if (includingChildren) {
+        int childCount = GetChildCount();
+
+        for (int childIndex = 0; childIndex < childCount; childIndex++) {
+            const Entity *child = GetChild(childIndex);
+
+            spaceAABB.AddAABB(child->GetAABBInSpace(origin, axis, true));
+        }
+    }
+
+    if (spaceAABB.IsCleared()) {
+        spaceAABB.SetZero();
+    }
+
+    return spaceAABB;
 }
 
 const Vec3 Entity::GetWorldPosition(WorldPosTrait::Enum posTrait, bool includingChildren) const {
