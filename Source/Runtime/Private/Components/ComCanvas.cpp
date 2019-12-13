@@ -106,6 +106,21 @@ void ComCanvas::DrawGizmos(const RenderCamera *camera, bool selected, bool selec
 
     renderCameraDef.sizeX = screenWidth * 0.5f;
     renderCameraDef.sizeY = screenHeight * 0.5f;
+
+    RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
+
+    ComRectTransform *rectTransform = GetEntity()->GetRectTransform();
+    if (rectTransform) {
+        Vec3 worldCorners[4];
+        rectTransform->GetWorldCorners(worldCorners);
+
+        renderWorld->SetDebugColor(Color4(0.75f, 0.75f, 0.75f, 0.75f), Color4::zero);
+
+        renderWorld->DebugLine(worldCorners[0], worldCorners[1]);
+        renderWorld->DebugLine(worldCorners[1], worldCorners[2]);
+        renderWorld->DebugLine(worldCorners[2], worldCorners[3]);
+        renderWorld->DebugLine(worldCorners[3], worldCorners[0]);
+    }
 }
 #endif
 

@@ -386,36 +386,34 @@ Vec3 ComRectTransform::ComputeLocalOrigin3D() const {
 void ComRectTransform::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     bool hasCanvas = GetEntity()->GetComponent<ComCanvas>() ? true : false;
 
-    if (selected || hasCanvas) {
+    if (selected) {
         RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
-        // Draw rectangle
+        // Draw selected rectangle.
         Vec3 worldCorners[4];
         GetWorldCorners(worldCorners);
 
-        renderWorld->SetDebugColor(Color4(1.0f, 1.0f, 1.0f, 0.5f), Color4::zero);
+        renderWorld->SetDebugColor(Color4(1.0f, 1.0f, 1.0f, 1.0f), Color4::zero);
 
         renderWorld->DebugLine(worldCorners[0], worldCorners[1]);
         renderWorld->DebugLine(worldCorners[1], worldCorners[2]);
         renderWorld->DebugLine(worldCorners[2], worldCorners[3]);
         renderWorld->DebugLine(worldCorners[3], worldCorners[0]);
 
-        if (!hasCanvas) {
-            ComTransform *parentTransform = GetParent();
-            if (parentTransform) {
-                ComRectTransform *parentRectTransform = parentTransform->Cast<ComRectTransform>();
-                if (parentRectTransform) {
-                    // Draw parent rectangle
-                    Vec3 parentWorldCorners[4];
-                    parentRectTransform->GetWorldCorners(parentWorldCorners);
+        ComTransform *parentTransform = GetParent();
+        if (parentTransform) {
+            ComRectTransform *parentRectTransform = parentTransform->Cast<ComRectTransform>();
+            if (parentRectTransform) {
+                // Draw parent rectangle.
+                Vec3 parentWorldCorners[4];
+                parentRectTransform->GetWorldCorners(parentWorldCorners);
 
-                    renderWorld->SetDebugColor(Color4(1.0f, 1.0f, 1.0f, 1.0f), Color4::zero);
+                renderWorld->SetDebugColor(Color4(0.0f, 1.0f, 0.75f, 1.0f), Color4::zero);
 
-                    renderWorld->DebugLine(parentWorldCorners[0], parentWorldCorners[1]);
-                    renderWorld->DebugLine(parentWorldCorners[1], parentWorldCorners[2]);
-                    renderWorld->DebugLine(parentWorldCorners[2], parentWorldCorners[3]);
-                    renderWorld->DebugLine(parentWorldCorners[3], parentWorldCorners[0]);
-                }
+                renderWorld->DebugLine(parentWorldCorners[0], parentWorldCorners[1]);
+                renderWorld->DebugLine(parentWorldCorners[1], parentWorldCorners[2]);
+                renderWorld->DebugLine(parentWorldCorners[2], parentWorldCorners[3]);
+                renderWorld->DebugLine(parentWorldCorners[3], parentWorldCorners[0]);
             }
         }
     }
