@@ -216,13 +216,13 @@ void CmdSystem::ExecuteCommandBuffer() {
         int quotes = 0;
         int i;
 
-        // '\n' or ';' 인 라인 구분자를 찾는다 
+        // Find the line separator '\n' or ';'.
         for (i = 0; i < commandBufferSize; i++) {
             if (text[i] == '"') {
                 quotes++;
             }
 
-            // don't break if inside a quoted string
+            // Don't break if inside a quoted string.
             if (!(quotes & 1) && text[i] == ';') {
                 i++;
                 break;

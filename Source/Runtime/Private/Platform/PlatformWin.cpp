@@ -134,7 +134,7 @@ bool PlatformWin::LockCursor(bool lock) {
 
             SetCapture(hwnd);
 
-            // 커서를 화면에 가둔다
+            // Lock the cursor in the screen.
             ClipCursor(&windowRect);
             while (ShowCursor(FALSE) >= 0);
         } else {

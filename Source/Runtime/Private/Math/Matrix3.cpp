@@ -1066,7 +1066,7 @@ Angles Mat3::ToAngles() const {
 //
 // 1) theta == 0 (trace(R) == 3)
 //
-// 회전행렬은 단위행렬이므로, 회전축은 아무거나 할수 있다
+// Since the rotation matrix is ​​a unit matrix, the axis of rotation can be anything.
 //
 // 2) 0 < theta < pi (3 > trace(R) > -1)
 //  
@@ -1080,7 +1080,7 @@ Angles Mat3::ToAngles() const {
 // Ny = Vy / (2*s)
 // Nz = Vz / (2*s)
 //
-// (단순히 V 를 normalize 해도 된다)
+// (You can simply normalize V)
 //
 // 3) theta == pi (trace(R) == -1)
 //
@@ -1088,7 +1088,7 @@ Angles Mat3::ToAngles() const {
 // R = |    2*Nx*Ny  2*Ny^2 - 1     2*Ny*Nz |
 //     |    2*Nx*Nz     2*Ny*Nz  2*Nz^2 - 1 |
 //
-// 이때 3가지 방법이 있는데..
+// There are three ways to do this..
 //     ___________________
 // i) √R00 - R11 - R22 + 1 / 2 = Nx
 //     ___________________
@@ -1096,9 +1096,9 @@ Angles Mat3::ToAngles() const {
 //     ___________________
 // k) √R22 - R00 - R11 + 1 / 2 = Nz
 //
-// 제곱근 안의 값이 양수가 나오게 하려면 R 의 대각성분중에 가장 큰성분을 찾아야 한다
+// In order for the value in the square root to be positive, we need to find the largest of the diagonal components of R.
 //
-// i, j, k 중 한가지 방법으로 Nx, Ny, Nz 중 하나를 구했으면, 나머지 값들은 쉽게 구할수 있다
+// If you have obtained one of Nx, Ny, or Nz by one of i, j, and k, you can easily find the rest of the values.
 //  
 //-------------------------------------------------------------------------------------------
 Rotation Mat3::ToRotation() const {

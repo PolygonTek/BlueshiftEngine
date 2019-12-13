@@ -161,7 +161,7 @@ bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) 
     } else {
         d = Math::Sqrt(d);
 
-        // sphere 가 카메라 뒤에 있다면..
+        // If the sphere is behind the camera..
         if (localOrigin.x < 0) {
             d = -d;
         }
@@ -225,7 +225,7 @@ bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) 
     } else {
         d = Math::Sqrt(d);
 
-        // sphere 가 카메라 뒤에 있다면..
+        // If the sphere is behind the camera..
         if (localOrigin.x < 0) {
             d = -d;
         }

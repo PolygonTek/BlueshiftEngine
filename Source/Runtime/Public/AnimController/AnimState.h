@@ -19,9 +19,9 @@
 
     Anim State
 
-    AnimState 는 하나의 애니메이션 트리를 이룬다.
+    AnimState forms an animation tree.
 
-    node 의 데이터는 AnimClip 이거나 AnimBlendTree 일 수 있다.
+    The data of node can be AnimClip or AnimBlendTree.
 
     nodeNum  < 0 ? AnimLeaf -> AnimClip      access from layer->GetAnimClip(nodeNum)
     nodeNum >= 0 ? AnimNode -> AnimBlendTree access from layer->GetAnimBlendTree(nodeNum)

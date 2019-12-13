@@ -101,7 +101,7 @@ extern const EventDef EV_ImmediateDestroy;
     BE1::MetaObject classname::metaObject(visualname, #classname, #superclassname, \
         classname::CreateInstance, (BE1::EventInfo<BE1::Object> *)classname::eventMap);
 
-// event definition
+// Event definition macros.
 #define BEGIN_EVENTS(classname) BE1::EventInfo<classname> classname::eventMap[] = {
 #define EVENT(event, function) { &(event), (void (Object::*)())(&function) }
 #define END_EVENTS { nullptr, nullptr } };

@@ -86,7 +86,7 @@ void ComCharacterController::Init() {
     ComTransform *transform = GetEntity()->GetTransform();
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCharacterController::TransformUpdated, SignalObject::ConnectionType::Unique);
 
-    // Mark as initialized
+    // Mark as initialized.
     SetInitialized(true);
 }
 
@@ -177,7 +177,7 @@ void ComCharacterController::GroundTrace() {
     Vec3 p1 = origin;
     Vec3 p2 = p1;
 
-    // 땅에 닿아있는지 체크하기위해 z 축으로 6cm 만큼 내려서 이동시켜 본다
+    // Move down 6 cm on the z axis to check if it is touching the ground.
     p2.z -= CentiToUnit(6.0f);
 
     int filterMask = GetGameWorld()->GetPhysicsWorld()->GetCollisionFilterMask(body->GetCollisionFilterBit());
@@ -190,7 +190,7 @@ void ComCharacterController::GroundTrace() {
 
     isValidGroundTrace = true;
 
-    // FIXME: speration normal 이 아닌 표면의 normal 과 비교해야 한다
+    // FIXME: Should be compared with the surface normal, not the speration normal.
     if (groundTrace.normal.z < slopeDotZ) {
         onGround = false;
         return;

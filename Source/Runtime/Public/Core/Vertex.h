@@ -30,10 +30,10 @@ using TriIndex = uint32_t;
 using TriIndex = uint16_t;
 #endif
 
-// this is used for calculating unsmoothed normals and tangents for deformed models
+/// This is used for calculating unsmoothed normals and tangents for deformed models.
 struct DominantTri {
-    TriIndex        v2, v3;                 // dominant triangle index [i, v2, v3]
-    float           normalizationScale[3];  // tangent, bitangent, normal 의 normalization scale
+    TriIndex        v2, v3;                 ///< Dominant triangle index [i, v2, v3]
+    float           normalizationScale[3];  ///< Normalization scales for tangent, bitangent and normal
 };
 
 /*

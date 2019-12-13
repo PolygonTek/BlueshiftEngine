@@ -420,7 +420,7 @@ BE_INLINE void Array<T>::Resize(int newCapacity) {
     }
 
     if (newCapacity == capacity) {
-        // capacity 가 바뀌지 않았다면 그냥 return
+        // Stop here if the capacity is not changed.
         return;
     }
 

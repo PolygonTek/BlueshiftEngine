@@ -381,7 +381,8 @@ void KeyCmdSystem::KeyEvent(KeyCode::Enum keynum, bool down) {
     }
     
     if (key->count > 1) {
-        return; // 키를 누르는 동안 오는 자동 반복 신호 무시
+        // Ignore auto repeat signal coming from key press.
+        return; 
     }
         
     if (keynum >= KeyCode::Joy1 && !key->binding) { // K_JOY1 이상은 키보드외 입력장치의 키 이벤트 신호

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "jsoncpp/include/json/json.h"
 #include "Core/Serializable.h"
 #include "Core/Object.h"
 #include "Math/Math.h"

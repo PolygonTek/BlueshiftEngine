@@ -43,7 +43,7 @@ public:
                         /// Returns total size of allocated memory including size of this type.
     size_t              Size() const { return sizeof(*this) + Allocated(); }
 
-                        /// Returns a pointer to the pool this string was allocated from
+                        /// Returns a pointer to the pool this string was allocated from.
     const StrPool *     GetPool() const { return pool; }
 
 private:
@@ -57,27 +57,27 @@ public:
 
     void                SetCaseSensitive(bool caseSensitive) { this->caseSensitive = caseSensitive; }
 
-                        /// Returns number of strings
+                        /// Returns number of strings.
     int                 Count() const { return pool.Count(); }
 
-                        /// Returns total size of allocated memory
+                        /// Returns total size of allocated memory.
     size_t              Allocated() const;
 
-                        /// Returns total size of allocated memory including size of this type
+                        /// Returns total size of allocated memory including size of this type.
     size_t              Size() const;
 
     const PoolStr *     operator[](int index) const { return pool[index]; }
 
-                        // pool 에서 찾아서 reference count 를 증가시킨다. 없으면 string 을 새로 할당한다.
+                        /// Finds in the pool and increase the reference count. If not, this allocates a new string.
     const PoolStr *     AllocString(const char *string);
 
-                        // reference count 를 감소 시킨다. reference count <= 0 이면 pool 에서 삭제한다.
+                        /// Decreases the reference count. If reference count <= 0, delete from pool.
     void                ReleaseString(const PoolStr *poolStr);
 
-                        // 같은 pool 에 존재하는 string 이면 reference count 만 증가시킨다, 없으면 새로 할당한다.
+                        /// If the string exists in the same pool, only the reference count is incremented.
     const PoolStr *     CopyString(const PoolStr *poolStr);
 
-                        // pool 에 있는 모든 string 삭제, pool 초기화
+                        /// Deletes all strings in pool, initialize pool.
     void                Clear();
 
 private:

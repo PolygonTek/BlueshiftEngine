@@ -85,7 +85,7 @@ BE_INLINE void JointPose::SetFromMat3x4(const Mat3x4 &mat) {
     this->t[1] = mat[1][3];
     this->t[2] = mat[2][3];
 
-    // column major order 3x3 matrix that has rotation only
+    // Column major order 3x3 matrix that has rotation only.
     Vec3 invS = 1.0f / this->s;
     Mat3 r;
     r[0][0] = mat[0][0] * invS.x;
@@ -116,8 +116,10 @@ public:
 
     static short            QuatToShort(const float x);
     static float            ShortToQuat(const short x);
+
     static short            TranslationToShort(const float x);
     static float            ShortToTranslation(const short x);
+
     static short            ScaleToShort(const float x);
     static float            ShortToScale(const short x);
 
@@ -164,7 +166,7 @@ BE_INLINE Quat CompressedJointPose::ToQuat() const {
     quat.x = ShortToQuat(q[0]);
     quat.y = ShortToQuat(q[1]);
     quat.z = ShortToQuat(q[2]);
-    // Take the absolute value because floating point rounding may cause the dot of x, y, z to be larger than 1
+    // Take the absolute value because floating point rounding may cause the dot of x, y, z to be larger than 1.
     quat.w = Math::Sqrt(Math::Fabs(1.0f - (quat.x * quat.x + quat.y * quat.y + quat.z * quat.z)));
     return quat;
 }

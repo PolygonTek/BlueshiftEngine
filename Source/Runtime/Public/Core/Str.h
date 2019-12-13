@@ -67,7 +67,7 @@ public:
 #endif
 
 #ifdef __ANDROID__
-    /// Constructs from a jstring
+    /// Constructs from a jstring.
     Str(JNIEnv *env, jstring javaString) : Str() {
         const char *raw = env->GetStringUTFChars(javaString, 0);
         jsize l = env->GetStringLength(javaString);

@@ -135,7 +135,7 @@ void AnimStateBlender::BlendOut(int currentTime, int blendDuration) {
     if (blendDuration == 0) {
         Clear();
     } else {
-        // blendEndWeight 를 0 으로 설정하고, blendDuration 동안 서서히 value 를 줄여간다
+        // Set blendEndWeight to 0 and gradually decrease the value during blendDuration.
         SetBlendWeight(currentTime, 0.0f, blendDuration);
     }
 }

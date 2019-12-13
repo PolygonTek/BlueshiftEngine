@@ -20,10 +20,11 @@
     HashMap
 
     NOTE:
-    - key/value pair 가 Array 로 되어있다.
-    - 추가된 순서대로 순차적으로 iteration 할 수 있다.
-    - 삭제할 경우 메모리 copy 가 일어나서 느릴 수 있다.
-    - HashTable 에 비해 추가가 빠르다. bucket list 는 가장 단순한 형태.
+    - The key-value pair is an Array.
+    - You can iterate sequentially in the order in which they were added.
+    - Deletion can be slow due to memory copy.
+    - Faster to add key-value pair than HashTable. 
+    - The bucket list is the simplest form.
 
 -------------------------------------------------------------------------------
 */
@@ -95,47 +96,47 @@ public:
     /// Destructs
     ~HashMap();
 
-                            /// Initializes with the given parameters
+                            /// Initializes with the given parameters.
     void                    Init(int hashSize, int indexSize, int granularity);
 
-                            /// Returns number of hash buckets
+                            /// Returns number of hash buckets.
     int                     Count() const { return pairs.Count(); }
 
-                            /// Returns total size of allocated memory
+                            /// Returns total size of allocated memory.
     size_t                  Allocated() const { return pairs.Allocated() + hashIndex.Allocated(); }
 
-                            /// Returns total size of allocated memory including size of this type
+                            /// Returns total size of allocated memory including size of this type.
     size_t                  Size() const { return pairs.Size() + hashIndex.Size() + sizeof(*this); }
 
-                            /// Direct access of pair array
+                            /// Direct access of pair array.
     const KVArray &         GetPairs() const { return pairs; }
     KVArray &               GetPairs() { return pairs; }
 
-                            // key 값으로 search 해서 value pointer 를 얻는다.
+                            /// Searches by key to get a value pointer.
     KV *                    Get(const KeyT &key);
     const KV *              Get(const KeyT &key) const;
 
-                            // index 에 해당하는 value pointer 를 리턴한다.
-                            // index 로 전체 bucket 들을 iteration 할 수 있지만 bucket 이 추가 or 삭제되면 기존 index 는 더 이상 유효하지 않을 수 있다.
+                            /// Returns a value pointer corresponding to index.
+                            /// You can iterate entire buckets with an index, but when a bucket is added or removed, the existing index may no longer be valid.
     KV *                    GetByIndex(int index);
     const KV *              GetByIndex(int index) const;
 
-                            // key/value 추가. 이미 존재하는 key 라면 value 값만 바꾼다.
+                            /// Adds key / value. If the key already exists, only the value will be changed.
     KV *                    Set(const KeyT &key, const ValueT &value);
 
-                            // key 값으로 search 해서 value 참조 리턴. 없다면 새로 bucket 추가 후 참조 리턴
+                            /// Searches by key and return value reference. If not, add a new bucket and return a reference
     ValueT &                operator[](const KeyT &key);
 
-                            // index 로 전체 bucket 들을 iteration 할 수 있지만 bucket 이 추가 or 삭제되면 기존 index 는 더 이상 유효하지 않을 수 있다.
+                            /// You can iterate entire buckets with an index, but when a bucket is added or removed, the existing index may no longer be valid.
     const KeyT &            GetKey(int index) const;
 
-                            // key 값에 해당하는 hash bucket 을 삭제한다. 삭제된 array element 에 대한 메모리 정리가 일어난다.
+                            /// Removes the hash bucket corresponding to the key value. Memory cleanup occurs for the deleted array element.
     bool                    Remove(const KeyT &key);
 
                             /// Clears all hash buckets.
     void                    Clear();
 
-                            // 모든 hash bucket 을 삭제하고, 해당하는 value 도 삭제한다.
+                            /// Deletes all hash buckets and their corresponding values.
     void                    DeleteContents(bool clear = true);
 
                             // hash table 에 분산된 index 개수에 대한 표준 편차를 구한다.
@@ -145,8 +146,8 @@ public:
     void                    Swap(HashMap &other);
 
 private:
-    KVArray                 pairs;      ///< bucket list (key/value pair)
-    HashIndex               hashIndex;  ///< pairs 에 대한 hash index
+    KVArray                 pairs;      ///< bucket list (key-value pairs)
+    HashIndex               hashIndex;  ///< hash index for pairs
 };
 
 template <typename ValueT>
