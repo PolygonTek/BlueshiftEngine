@@ -475,7 +475,7 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
             }
             
         } else if (token == "animClip") {
-            // blendTree 내부의 animClip 은 blend space point 를 갖는다
+            // animClip inside a blendTree has a blend space point.
             Vec3 blendSpacePoint = Vec3::zero;
             switch (blendTree->GetBlendType()) {
             case AnimBlendTree::BlendType::BlendAngle:
@@ -501,7 +501,7 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
 
             blendTree->AddChildClip(animClip, blendSpacePoint);
         } else if (token == "blendTree") {
-            // blendTree 내부의 blendTree 역시 blend space point 를 갖는다.
+            // blendTree inside the blendTree also has a blend space point.
             Vec3 blendSpacePoint = Vec3::zero;
             switch (blendTree->GetBlendType()) {
             case AnimBlendTree::BlendType::BlendAngle:

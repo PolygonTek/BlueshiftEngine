@@ -261,6 +261,7 @@ public:
     static const Vec4   unitY;      ///< (0, 1, 0, 0)
     static const Vec4   unitZ;      ///< (0, 0, 1, 0)
     static const Vec4   unitW;      ///< (0, 0, 0, 1)
+    static const Vec4   infinity;   ///< (1e30f, 1e30f, 1e30f, 1e30f)
 
     float               x;          ///< The x components.
     float               y;          ///< The y components.

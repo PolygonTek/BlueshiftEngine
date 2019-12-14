@@ -298,6 +298,7 @@ public:
     static const Vec2   one;        ///< (1, 1)
     static const Vec2   unitX;      ///< (1, 0)
     static const Vec2   unitY;      ///< (0, 1)
+    static const Vec2   infinity;   ///< (1e30f, 1e30f)
 
     float               x;          ///< The x components.
     float               y;          ///< The y components.

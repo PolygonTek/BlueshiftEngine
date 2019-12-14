@@ -384,6 +384,7 @@ public:
     static const Vec3   unitX;      ///< (1, 0, 0)
     static const Vec3   unitY;      ///< (0, 1, 0)
     static const Vec3   unitZ;      ///< (0, 0, 1)
+    static const Vec3   infinity;   ///< (1e30f, 1e30f, 1e30f)
 
     float               x;          ///< The x component.
     float               y;          ///< The y component.

@@ -23,6 +23,7 @@ const Vec3 Vec3::one(1.0f, 1.0f, 1.0f);
 const Vec3 Vec3::unitX(1.0f, 0.0f, 0.0f);
 const Vec3 Vec3::unitY(0.0f, 1.0f, 0.0f);
 const Vec3 Vec3::unitZ(0.0f, 0.0f, 1.0f);
+const Vec3 Vec3::infinity(Math::Infinity, Math::Infinity, Math::Infinity);
 
 bool Vec3::FixDegenerateNormal() {
     if (x == 0.0f) {

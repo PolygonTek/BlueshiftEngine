@@ -24,6 +24,7 @@ const Vec4 Vec4::unitX(1.0f, 0.0f, 0.0f, 0.0f);
 const Vec4 Vec4::unitY(0.0f, 1.0f, 0.0f, 0.0f);
 const Vec4 Vec4::unitZ(0.0f, 0.0f, 1.0f, 0.0f);
 const Vec4 Vec4::unitW(0.0f, 0.0f, 0.0f, 1.0f);
+const Vec4 Vec4::infinity(Math::Infinity, Math::Infinity, Math::Infinity, Math::Infinity);
 
 Vec4 Vec4::FromString(const char *str) {
     Vec4 v;
