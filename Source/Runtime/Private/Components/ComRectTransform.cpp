@@ -178,9 +178,9 @@ void ComRectTransform::GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) cons
             return;
         } else {
             worldAnchorCorners[0] = parentEnt->GetTransform()->GetOrigin();
-            worldAnchorCorners[1] = parentEnt->GetTransform()->GetOrigin();
-            worldAnchorCorners[2] = parentEnt->GetTransform()->GetOrigin();
-            worldAnchorCorners[3] = parentEnt->GetTransform()->GetOrigin();
+            worldAnchorCorners[1] = worldAnchorCorners[0];
+            worldAnchorCorners[2] = worldAnchorCorners[0];
+            worldAnchorCorners[3] = worldAnchorCorners[0];
             return;
         }
     }
@@ -217,6 +217,14 @@ Vec3 ComRectTransform::GetWorldAnchorMaxs() const {
 
 Vec3 ComRectTransform::GetWorldPivot() const {
     return NormalizedPosToWorld(pivot);
+}
+
+Vec3 ComRectTransform::GetWorldAnchoredPosition() const {
+    Vec3 worldAnchorMins = GetWorldAnchorMins();
+    Vec3 worldAnchorMaxs = GetWorldAnchorMaxs();
+    Vec3 worldAnchorCenter = (worldAnchorMins + worldAnchorMaxs) * 0.5f;
+
+    return worldAnchorCenter + GetAxis() * Vec3(anchoredPosition, 0.0f);
 }
 
 Vec3 ComRectTransform::NormalizedPosToWorld(const Vec2 &normalizedPosition) const {
@@ -430,7 +438,6 @@ const AABB ComRectTransform::GetAABB() const {
     aabb.AddPoint(localCorners[1]);
     aabb.AddPoint(localCorners[2]);
     aabb.AddPoint(localCorners[3]);
-
     return aabb;
 }
 

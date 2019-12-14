@@ -82,6 +82,9 @@ public:
                             /// Returns pivot position in world space.
     Vec3                    GetWorldPivot() const;
 
+                            /// Returns anchored position in world space.
+    Vec3                    GetWorldAnchoredPosition() const;
+
                             /// Converts normalized position of rectangle to world space position.
     Vec3                    NormalizedPosToWorld(const Vec2 &normalizedPosition) const;
 
