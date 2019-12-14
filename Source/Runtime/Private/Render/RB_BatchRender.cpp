@@ -1051,6 +1051,7 @@ void Batch::RenderGui(const Material::ShaderPass *mtrlPass) const {
         shader->Bind();
 
         shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
+        shader->SetConstant1f(shader->builtInConstantIndices[Shader::BuiltInConstant::Intensity], 1.0f);
     }
 
     SetMatrixConstants(shader);

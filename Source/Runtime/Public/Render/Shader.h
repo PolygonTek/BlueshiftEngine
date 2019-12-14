@@ -92,6 +92,7 @@ public:
             TextureMatrixS,
             TextureMatrixT,
             ConstantColor,
+            Intensity,
             VertexColorScale,
             VertexColorAdd,
             PerforatedAlpha,

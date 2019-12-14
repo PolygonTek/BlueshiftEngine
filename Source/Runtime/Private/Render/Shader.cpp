@@ -44,6 +44,7 @@ static const char *builtInConstantNames[] = {
     "textureMatrixS",                       // TextureMatrixS
     "textureMatrixT",                       // TextureMatrixT
     "constantColor",                        // ConstantColor
+    "intensity",                            // Intensity
     "vertexColorScale",                     // VertexColorScale
     "vertexColorAdd",                       // VertexColorAdd
     "perforatedAlpha",                      // PerforatedAlpha
