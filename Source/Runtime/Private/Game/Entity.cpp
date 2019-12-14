@@ -622,25 +622,29 @@ const AABB Entity::GetAABBInSpace(const Vec3 &origin, const Mat3 &axis, bool inc
 }
 
 const Vec3 Entity::GetWorldPosition(WorldPosTrait::Enum posTrait, bool includingChildren) const {
-    Vec3 vec;
+    Vec3 position;
 
     if (posTrait == WorldPosTrait::Pivot) {
-        vec = GetTransform()->GetOrigin();
+        position = GetTransform()->GetOrigin();
     } else {
         AABB aabb = GetWorldAABB(includingChildren);
 
-        if (posTrait == WorldPosTrait::Minimum) {
-            vec = aabb.b[0];
-        } else if (posTrait == WorldPosTrait::Maximum) {
-            vec = aabb.b[1];
-        } else if (posTrait == WorldPosTrait::Center) {
-            vec = aabb.Center();
+        if (!aabb.IsCleared()) {
+            if (posTrait == WorldPosTrait::Minimum) {
+                position = aabb.b[0];
+            } else if (posTrait == WorldPosTrait::Maximum) {
+                position = aabb.b[1];
+            } else if (posTrait == WorldPosTrait::Center) {
+                position = aabb.Center();
+            } else {
+                assert(0);
+            }
         } else {
-            assert(0);
+            position = GetTransform()->GetOrigin();
         }
     }
 
-    return vec;
+    return position;
 }
 
 #if WITH_EDITOR
