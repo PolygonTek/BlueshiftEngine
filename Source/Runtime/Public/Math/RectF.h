@@ -102,6 +102,8 @@ public:
     bool                IsIntersectRect(const float x, const float y, const float w, const float h) const;
 
     void                Set(float x, float y, float w, float h);
+    void                SetPosition(const PointF &position);
+    void                SetSize(const SizeF &size);
     void                SetFrom4Coords(float x, float y, float x2, float y2);
 
     RectF               Add(const RectF &a) const;
@@ -215,6 +217,16 @@ BE_INLINE void RectF::Set(float x, float y, float w, float h) {
     this->y = y;
     this->w = w;
     this->h = h;
+}
+
+BE_INLINE void RectF::SetPosition(const PointF &position) {
+    this->x = position.x;
+    this->y = position.y;
+}
+
+BE_INLINE void RectF::SetSize(const SizeF &size) {
+    this->w = size.w;
+    this->h = size.h;
 }
 
 BE_INLINE void RectF::SetFrom4Coords(float x, float y, float x2, float y2) {
