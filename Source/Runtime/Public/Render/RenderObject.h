@@ -139,7 +139,7 @@ public:
         // Transform info
         //
         Mat3x4              worldMatrix = Mat3x4::identity;
-        AABB                aabb = AABB::zero;          ///< non-scaled AABB in local space
+        AABB                aabb = AABB::empty;          ///< non-scaled AABB in local space
 
         //
         // Wireframe info
@@ -225,8 +225,8 @@ private:
 
     State                   state;
 
-    AABB                    worldAABB = AABB::zero;
-    OBB                     worldOBB = OBB::zero;
+    AABB                    worldAABB = AABB::empty;
+    OBB                     worldOBB;
     Mat3x4                  worldMatrix = Mat3x4::identity;
     Mat3x4                  worldMatrixInverse = Mat3x4::identity;
     Mat3x4                  prevWorldMatrix = Mat3x4::identity;

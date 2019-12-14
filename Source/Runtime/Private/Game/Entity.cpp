@@ -559,30 +559,29 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
         for (int childIndex = 0; childIndex < children.Count(); childIndex++) {
             const Entity *child = children[childIndex];
 
-            Mat3x4 localMatrix = rootMatrixInverse * child->GetTransform()->GetMatrix();
+            AABB childLocalAabb = child->GetLocalAABB();
+            if (!childLocalAabb.IsCleared()) {
+                Mat3x4 localMatrix = rootMatrixInverse * child->GetTransform()->GetMatrix();
 
-            AABB childLocalAabb;
-            childLocalAabb = child->GetLocalAABB();
-            if (childLocalAabb != AABB::zero) {
                 childLocalAabb.SetFromTransformedAABB(childLocalAabb, localMatrix);
 
                 outAabb += childLocalAabb;
             }
         }
     }
-
-    if (outAabb.IsCleared()) {
-        outAabb.SetZero();
-    }
-
     return outAabb;
 }
 
 const AABB Entity::GetWorldAABBFast(bool includingChildren) const {
     const ComTransform *transform = GetTransform();
 
+    AABB localAABB = GetLocalAABB(includingChildren);
+    if (localAABB.IsCleared()) {
+        return AABB::empty;
+    }
+
     AABB worldAABB;
-    worldAABB.SetFromTransformedAABBFast(GetLocalAABB(includingChildren), transform->GetMatrix());
+    worldAABB.SetFromTransformedAABBFast(localAABB, transform->GetMatrix());
     return worldAABB;
 }
 
@@ -591,19 +590,22 @@ const AABB Entity::GetWorldAABB(bool includingChildren) const {
 }
 
 const AABB Entity::GetAABBInSpace(const Vec3 &origin, const Mat3 &axis, bool includingChildren) const {
-    BE1::AABB spaceAABB;
+    AABB spaceAABB;
     spaceAABB.Clear();
 
-    BE1::AABB aabb = GetLocalAABB();
-    BE1::Vec3 points[8];
-    aabb.ToPoints(points);
+    AABB localAABB = GetLocalAABB();
 
-    for (int pointIndex = 0; pointIndex < COUNT_OF(points); pointIndex++) {
-        BE1::Vec3 worldPoint = GetTransform()->GetMatrix() * points[pointIndex];
+    if (!localAABB.IsCleared()) {
+        Vec3 points[8];
+        localAABB.ToPoints(points);
 
-        BE1::Vec3 spacePoint = axis.TransposedMulVec(worldPoint - origin);
+        for (int pointIndex = 0; pointIndex < COUNT_OF(points); pointIndex++) {
+            Vec3 worldPoint = GetTransform()->GetMatrix() * points[pointIndex];
 
-        spaceAABB.AddPoint(spacePoint);
+            Vec3 spacePoint = axis.TransposedMulVec(worldPoint - origin);
+
+            spaceAABB.AddPoint(spacePoint);
+        }
     }
 
     if (includingChildren) {
@@ -614,10 +616,6 @@ const AABB Entity::GetAABBInSpace(const Vec3 &origin, const Mat3 &axis, bool inc
 
             spaceAABB.AddAABB(child->GetAABBInSpace(origin, axis, true));
         }
-    }
-
-    if (spaceAABB.IsCleared()) {
-        spaceAABB.SetZero();
     }
 
     return spaceAABB;
