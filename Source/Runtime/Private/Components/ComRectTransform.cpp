@@ -160,7 +160,7 @@ void ComRectTransform::GetWorldCorners(Vec3 (&worldCorners)[4]) const {
 
     Mat3x4 worldMatrix = GetMatrix();
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < COUNT_OF(localCorners); i++) {
         worldCorners[i] = worldMatrix.Transform(localCorners[i]);
     }
 }
@@ -217,14 +217,6 @@ Vec3 ComRectTransform::GetWorldAnchorMaxs() const {
 
 Vec3 ComRectTransform::GetWorldPivot() const {
     return NormalizedPosToWorld(pivot);
-}
-
-Vec3 ComRectTransform::GetWorldAnchoredPosition() const {
-    Vec3 worldAnchorMins = GetWorldAnchorMins();
-    Vec3 worldAnchorMaxs = GetWorldAnchorMaxs();
-    Vec3 worldAnchorCenter = (worldAnchorMins + worldAnchorMaxs) * 0.5f;
-
-    return worldAnchorCenter + GetAxis() * Vec3(anchoredPosition, 0.0f);
 }
 
 Vec3 ComRectTransform::NormalizedPosToWorld(const Vec2 &normalizedPosition) const {

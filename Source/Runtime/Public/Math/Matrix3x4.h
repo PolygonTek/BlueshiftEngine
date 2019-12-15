@@ -208,6 +208,8 @@ public:
 
     Mat3x4 &            UntransformSelf(const Mat3x4 &a);
 
+                        /// Returns upper left 2x2 part.
+    Mat2                ToMat2() const;
                         /// Returns upper left 3x3 part.
     Mat3                ToMat3() const;
                         /// Returns 4x4 square matrix.
@@ -596,6 +598,12 @@ BE_INLINE Vec3 Mat3x4::TransformNormal(const Vec3 &v) const {
         mat[0][0] * v[0] + mat[0][1] * v[1] + mat[0][2] * v[2],
         mat[1][0] * v[0] + mat[1][1] * v[1] + mat[1][2] * v[2],
         mat[2][0] * v[0] + mat[2][1] * v[1] + mat[2][2] * v[2]);
+}
+
+BE_INLINE Mat2 Mat3x4::ToMat2() const {
+    return Mat2(
+        mat[0][0], mat[0][1],
+        mat[1][0], mat[1][1]);
 }
 
 BE_INLINE Mat3 Mat3x4::ToMat3() const {
