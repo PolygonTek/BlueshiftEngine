@@ -435,11 +435,11 @@ float RenderCamera::CalcViewScale(const Vec3 &position) const {
     Vec3 forwardProjPos = state.origin + forwardProj;
 
     PointF screenPos1, screenPos2;
-    bool screenPos1Clipped = TransformWorldToPixel(forwardProjPos, screenPos1);
-    bool screenPos2Clipped = TransformWorldToPixel(forwardProjPos + state.axis[1], screenPos2);
+    bool screenPos1Valid = TransformWorldToPixel(forwardProjPos, screenPos1);
+    bool screenPos2Valid = TransformWorldToPixel(forwardProjPos + state.axis[1], screenPos2);
 
     float pixelDist;
-    if (!screenPos1Clipped || !screenPos2Clipped) {
+    if (screenPos1Valid || screenPos2Valid) {
         pixelDist = state.renderRect.GetSize().ToVec2().Length();
     } else {
         pixelDist = screenPos1.Distance(screenPos2);
