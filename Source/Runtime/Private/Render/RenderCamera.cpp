@@ -93,9 +93,9 @@ bool RenderCamera::TransformClipToNDC(const Vec4 &clipCoords, Vec3 &normalizedDe
     if (clipCoords.w > 0) {
         const float invW = 1.0f / clipCoords.w;
 
-        normalizedDeviceCoords.x = clipCoords.x * invW; // [-1, 1]
-        normalizedDeviceCoords.y = clipCoords.y * invW; // [-1, 1]
-        normalizedDeviceCoords.z = clipCoords.z * invW; // [-1, 1] or [0, 1] in D3D
+        normalizedDeviceCoords.x = clipCoords.x * invW; // Clipping range is [-1, 1]
+        normalizedDeviceCoords.y = clipCoords.y * invW; // Clipping range is [-1, 1]
+        normalizedDeviceCoords.z = clipCoords.z * invW; // Clipping range is [-1, 1] or [0, 1] in D3D
         return true;
     } else {
         return false;
@@ -103,10 +103,10 @@ bool RenderCamera::TransformClipToNDC(const Vec4 &clipCoords, Vec3 &normalizedDe
 }
 
 void RenderCamera::TransformNDCToPixel(const Vec3 normalizedDeviceCoords, PointF &pixelCoords) const {
-    float fx = (normalizedDeviceCoords.x + 1.0f) * 0.5f; // [0, 1]
-    float fy = (normalizedDeviceCoords.y + 1.0f) * 0.5f; // [0, 1]
+    float fx = (normalizedDeviceCoords.x + 1.0f) * 0.5f; // Valid range is [0, 1]
+    float fy = (normalizedDeviceCoords.y + 1.0f) * 0.5f; // Valid range is [0, 1]
 
-    // Invert Y axis
+    // Invert y coordinate.
     fy = 1.0f - fy;
 
     pixelCoords.x = fx * (state.renderRect.x + state.renderRect.w);
@@ -132,7 +132,7 @@ bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) 
 
     float r2 = sphere.radius * sphere.radius;
 
-    // in case camera in in sphere
+    // in case camera in in sphere.
     if (state.origin.DistanceSqr(sphere.center) < r2) {
         clipRect = state.renderRect;
         return true;
