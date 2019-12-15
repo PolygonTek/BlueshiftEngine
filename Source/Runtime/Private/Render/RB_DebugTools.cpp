@@ -77,6 +77,7 @@ void RB_ClearDebugPrimitives(int time) {
     int numVerts = 0;
     int num = 0;
     DebugPrims *topology = rb_debugPrims;
+
     for (int i = 0; i < rb_numDebugPrims; i++, topology++) {
         if (topology->lifeTime > time) {
             if (topology->startVert != numVerts) {
@@ -258,7 +259,7 @@ void RB_ClearDebugText(int time) {
     rb_debugTextTime = time;
 
     if (!time) {
-        // free up our strings
+        // Free up our strings.
         DebugText *text = rb_debugText;
         for (int i = 0; i < MaxDebugText; i++, text++) {
             text->text.Clear();
@@ -267,7 +268,7 @@ void RB_ClearDebugText(int time) {
         return;
     }
 
-    // copy any text that still needs to be drawn
+    // Copy any text that still needs to be drawn.
     int num	= 0;
     DebugText *text = rb_debugText;
     for (int i = 0; i < rb_numDebugText; i++, text++) {
@@ -299,7 +300,7 @@ void RB_AddDebugText(const char *text, const Vec3 &origin, const Mat3 &viewAxis,
     }
 }
 
-// returns the length of the given text
+// Returns the length of the given text.
 static float RB_DrawTextLength(const char *text, float scale, int len) {
     float textLen = 0.0f;
 

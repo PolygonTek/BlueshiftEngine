@@ -80,6 +80,7 @@ void RenderWorld::DebugQuad(const Vec3 &origin, const Vec3 &right, const Vec3 &u
 
 void RenderWorld::DebugCircle(const Vec3 &origin, const Vec3 &dir, const float radius, float lineWidth, bool twoSided, bool depthTest, int lifeTime) {
     const int numSteps = 48;
+    float s, c;
 
     Vec3 left, up;
     dir.OrthogonalBasis(left, up);
@@ -93,7 +94,6 @@ void RenderWorld::DebugCircle(const Vec3 &origin, const Vec3 &dir, const float r
 
             for (int i = 0; i <= numSteps; i++) {
                 float a = Math::TwoPi * i / numSteps;
-                float s, c;
                 Math::SinCos16(a, s, c);
                 *fvptr++ = origin + c * left + s * up;
             }
@@ -106,7 +106,6 @@ void RenderWorld::DebugCircle(const Vec3 &origin, const Vec3 &dir, const float r
 
         for (int i = 1; i <= numSteps; i++) {
             float a = Math::TwoPi * i / numSteps;
-            float s, c;
             Math::SinCos16(a, s, c);
             point = origin + c * left + s * up;
             DebugLine(lastPoint, point, lineWidth, depthTest, lifeTime);
@@ -117,6 +116,7 @@ void RenderWorld::DebugCircle(const Vec3 &origin, const Vec3 &dir, const float r
 
 void RenderWorld::DebugHollowCircle(const Vec3 &origin, const Vec3 &dir, const float radius1, const float radius2, float lineWidth, bool twoSided, bool depthTest, int lifeTime) {
     const int numSteps = 48;
+    float s, c;
 
     Vec3 left[2], up[2];
     dir.OrthogonalBasis(left[0], up[0]);
@@ -130,7 +130,6 @@ void RenderWorld::DebugHollowCircle(const Vec3 &origin, const Vec3 &dir, const f
         if (fvptr) {
             for (int i = 0; i <= numSteps; i++) {
                 float a = Math::TwoPi * i / numSteps;
-                float s, c;
                 Math::SinCos16(a, s, c);
                 *fvptr++ = origin + c * left[0] + s * up[0];
                 *fvptr++ = origin + c * left[1] + s * up[1];
@@ -145,7 +144,6 @@ void RenderWorld::DebugHollowCircle(const Vec3 &origin, const Vec3 &dir, const f
 
             for (int j = 1; j <= numSteps; j++) {
                 float a = Math::TwoPi * j / numSteps;
-                float s, c;
                 Math::SinCos16(a, s, c);
                 point = origin + c * left[i] + s * up[i];
                 DebugLine(lastPoint, point, lineWidth, depthTest, lifeTime);
@@ -165,6 +163,7 @@ void RenderWorld::DebugArc(const Vec3 &origin, const Vec3 &right, const Vec3 &up
     float theta1 = DEG2RAD(angle1);
     float theta2 = DEG2RAD(angle2);
     float delta = theta2 - theta1;
+    float s, c;
 
     Vec3 rx = radius * right;
     Vec3 ry = radius * up;
@@ -176,13 +175,15 @@ void RenderWorld::DebugArc(const Vec3 &origin, const Vec3 &right, const Vec3 &up
 
             for (int i = 0; i <= numSteps; i++) {
                 float a = theta1 + delta * i / numSteps;
-                *fvptr++ = origin + Math::Cos16(a) * rx + Math::Sin16(a) * ry;
+                Math::SinCos16(a, s, c);
+                *fvptr++ = origin + c * rx + s * ry;
             }
         }
     }
 
     if (lineWidth > 0 && debugLineColor.a > 0) {
-        Vec3 lastPoint = origin + Math::Cos16(theta1) * rx + Math::Sin16(theta1) * ry;
+        Math::SinCos(theta1, s, c);
+        Vec3 lastPoint = origin + c * rx + s * ry;
         Vec3 point;
 
         if (drawSector) {
@@ -191,7 +192,8 @@ void RenderWorld::DebugArc(const Vec3 &origin, const Vec3 &right, const Vec3 &up
 
         for (int i = 1; i <= numSteps; i++) {
             float a = theta1 + delta * i / numSteps;
-            point = origin + Math::Cos16(a) * rx + Math::Sin16(a) * ry;
+            Math::SinCos16(a, s, c);
+            point = origin + c * rx + s * ry;
             DebugLine(lastPoint, point, lineWidth, depthTest, lifeTime);
             lastPoint = point;
         }
@@ -204,6 +206,7 @@ void RenderWorld::DebugArc(const Vec3 &origin, const Vec3 &right, const Vec3 &up
 
 void RenderWorld::DebugEllipse(const Vec3 &origin, const Vec3 &right, const Vec3 &up, const float radius1, const float radius2, float lineWidth, bool twoSided, bool depthTest, int lifeTime) {
     const int numSteps = 64;
+    float s, c;
 
     Vec3 rx = right * radius1;
     Vec3 ry = up * radius2;
@@ -215,7 +218,8 @@ void RenderWorld::DebugEllipse(const Vec3 &origin, const Vec3 &right, const Vec3
 
             for (int i = 0; i <= numSteps; i++) {
                 float a = Math::TwoPi * i / numSteps;
-                *fvptr++ = origin + Math::Cos16(a) * rx + Math::Sin16(a) * ry;
+                Math::SinCos16(a, s, c);
+                *fvptr++ = origin + c * rx + s * ry;
             }
         }
     }
@@ -226,7 +230,8 @@ void RenderWorld::DebugEllipse(const Vec3 &origin, const Vec3 &right, const Vec3
 
         for (int i = 1; i <= numSteps; i++) {
             float a = Math::TwoPi * i / numSteps;
-            point = origin + Math::Cos16(a) * rx + Math::Sin16(a) * ry;
+            Math::SinCos16(a, s, c);
+            point = origin + c * rx + s * ry;
             DebugLine(lastPoint, point, lineWidth, depthTest, lifeTime);
             lastPoint = point;
         }
@@ -235,6 +240,7 @@ void RenderWorld::DebugEllipse(const Vec3 &origin, const Vec3 &right, const Vec3
 
 void RenderWorld::DebugHemisphere(const Vec3 &origin, const Mat3 &axis, float radius, float lineWidth, bool twoSided, bool depthTest, int lifeTime) {
     Vec3 raxis, p, lastp, last0;
+    float s, c;
     int num = 360 / 15;
 
     Vec3 *lastArray = (Vec3 *)_alloca16(num * sizeof(Vec3));
@@ -248,14 +254,16 @@ void RenderWorld::DebugHemisphere(const Vec3 &origin, const Mat3 &axis, float ra
             }
 
             for (int i = 15; i <= 90; i += 15) {
-                float cr = Math::Cos16(DEG2RAD(i)) * radius;
-                float sr = Math::Sin16(DEG2RAD(i)) * radius;
+                Math::SinCos16(DEG2RAD(i), s, c);
+                float cr = c * radius;
+                float sr = s * radius;
 
                 last0 = lastArray[0];
 
                 int j = 15;
                 for (int n = 0; j <= 360; j += 15, n++) {
-                    raxis = axis[0] * Math::Cos16(DEG2RAD(j)) + axis[1] * Math::Sin16(DEG2RAD(j));
+                    Math::SinCos16(DEG2RAD(j), s, c);
+                    raxis = axis[0] * c + axis[1] * s;
                     p = origin + cr * axis[2] + sr * raxis;
 
                     *fvptr++ = lastArray[n];
@@ -277,14 +285,16 @@ void RenderWorld::DebugHemisphere(const Vec3 &origin, const Mat3 &axis, float ra
         }
 
         for (int i = 15; i <= 90; i += 15) {
-            float cr = Math::Cos16(DEG2RAD(i)) * radius;
-            float sr = Math::Sin16(DEG2RAD(i)) * radius;
+            Math::SinCos16(DEG2RAD(i), s, c);
+            float cr = c * radius;
+            float sr = s * radius;
 
             lastp = origin + cr * axis[2] + sr * axis[0];
 
             int j = 15;
             for (int n = 0; j <= 360; j += 15, n++) {
-                raxis = axis[0] * Math::Cos16(DEG2RAD(j)) + axis[1] * Math::Sin16(DEG2RAD(j));
+                Math::SinCos16(DEG2RAD(j), s, c);
+                raxis = axis[0] * c + axis[1] * s;
                 p = origin + cr * axis[2] + sr * raxis;
 
                 DebugLine(lastp, p, lineWidth, depthTest, lifeTime);
@@ -305,6 +315,7 @@ void RenderWorld::DebugHemisphereSimple(const Vec3 &origin, const Mat3 &axis, fl
 
 void RenderWorld::DebugSphere(const Vec3 &origin, const Mat3 &axis, float radius, float lineWidth, bool twoSided, bool depthTest, int lifeTime) {
     Vec3 raxis, p, lastp, last0;
+    float s, c;
     int num = 360 / 15;
 
     Vec3 *lastArray = (Vec3 *)_alloca16(num * sizeof(Vec3));
@@ -318,14 +329,16 @@ void RenderWorld::DebugSphere(const Vec3 &origin, const Mat3 &axis, float radius
             }
 
             for (int i = 15; i <= 180; i += 15) {
-                float cr = Math::Cos16(DEG2RAD(i)) * radius;
-                float sr = Math::Sin16(DEG2RAD(i)) * radius;
+                Math::SinCos16(DEG2RAD(i), s, c);
+                float cr = c * radius;
+                float sr = s * radius;
 
                 last0 = lastArray[0];
 
                 int j = 15;
                 for (int n = 0; j <= 360; j += 15, n++) {
-                    raxis = axis[0] * Math::Cos16(DEG2RAD(j)) + axis[1] * Math::Sin16(DEG2RAD(j));
+                    Math::SinCos16(DEG2RAD(j), s, c);
+                    raxis = axis[0] * c + axis[1] * s;
                     p = origin + cr * axis[2] + sr * raxis;
 
                     *fvptr++ = lastArray[n];
@@ -347,14 +360,16 @@ void RenderWorld::DebugSphere(const Vec3 &origin, const Mat3 &axis, float radius
         }
 
         for (int i = 15; i <= 180; i += 15) {
-            float cr = Math::Cos16(DEG2RAD(i)) * radius;
-            float sr = Math::Sin16(DEG2RAD(i)) * radius;
+            Math::SinCos16(DEG2RAD(i), s, c);
+            float cr = c * radius;
+            float sr = s * radius;
 
             lastp = origin + cr * axis[2] + sr * axis[0];
 
             int j = 15;
             for (int n = 0; j <= 360; j += 15, n++) {
-                raxis = axis[0] * Math::Cos16(DEG2RAD(j)) + axis[1] * Math::Sin16(DEG2RAD(j));
+                Math::SinCos16(DEG2RAD(j), s, c);
+                raxis = axis[0] * c + axis[1] * s;
                 p = origin + cr * axis[2] + sr * raxis;
 
                 DebugLine(lastp, p, lineWidth, depthTest, lifeTime);
@@ -504,6 +519,7 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
     Vec3 apex = origin + axis[2] * height;
     Vec3 lastp2 = origin + radius2 * axis[0];
     Vec3 p1, p2, d;
+    float s, c;
 
     Vec3 *fvptr = nullptr;
 
@@ -514,7 +530,8 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
                 *fvptr++ = apex;
 
                 for (int i = 0; i <= 360; i += 15) {
-                    d = Math::Cos16(DEG2RAD(i)) * axis[0] + Math::Sin16(DEG2RAD(i)) * axis[1];
+                    Math::SinCos16(DEG2RAD(i), s, c);
+                    d = c * axis[0] + s * axis[1];
                     *fvptr++ = origin + d * radius2;
                 }
 
@@ -523,7 +540,8 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
                     *fvptr++ = origin;
 
                     for (int i = 0; i <= 360; i += 15) {
-                        d = Math::Cos16(DEG2RAD(i)) * axis[0] - Math::Sin16(DEG2RAD(i)) * axis[1];
+                        Math::SinCos16(DEG2RAD(i), s, c);
+                        d = c * axis[0] - s * axis[1];
                         *fvptr++ = origin + d * radius2;
                     }
                 }
@@ -532,7 +550,8 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
 
         if (debugLineColor.a > 0) {
             for (int i = 15; i <= 360; i += 15) {
-                d = Math::Cos16(DEG2RAD(i)) * axis[0] + Math::Sin16(DEG2RAD(i)) * axis[1];
+                Math::SinCos16(DEG2RAD(i), s, c);
+                d = c * axis[0] + s * axis[1];
                 p2 = origin + d * radius2;
 
                 DebugLine(lastp2, p2, lineWidth, depthTest, lifeTime);
@@ -551,7 +570,8 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
                 *fvptr++ = lastp2;
 
                 for (int i = 15; i <= 360; i += 15) {
-                    d = Math::Cos16(DEG2RAD(i)) * axis[0] + Math::Sin16(DEG2RAD(i)) * axis[1];
+                    Math::SinCos16(DEG2RAD(i), s, c);
+                    d = c * axis[0] + s * axis[1];
                     *fvptr++ = apex + d * radius1;
                     *fvptr++ = origin + d * radius2;
                 }
@@ -561,7 +581,8 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
                     *fvptr++ = apex;
 
                     for (int i = 0; i <= 360; i += 15) {
-                        d = Math::Cos16(DEG2RAD(i)) * axis[0] - Math::Sin16(DEG2RAD(i)) * axis[1];
+                        Math::SinCos16(DEG2RAD(i), s, c);
+                        d = c * axis[0] - s * axis[1];
                         *fvptr++ = apex + d * radius1;
                     }
 
@@ -569,7 +590,8 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
                     *fvptr++ = origin;
 
                     for (int i = 0; i <= 360; i += 15) {
-                        d = Math::Cos16(DEG2RAD(i)) * axis[0] - Math::Sin16(DEG2RAD(i)) * axis[1];
+                        Math::SinCos16(DEG2RAD(i), s, c);
+                        d = c * axis[0] - s * axis[1];
                         *fvptr++ = origin + d * radius2;
                     }
                 }
@@ -578,7 +600,8 @@ void RenderWorld::DebugCone(const Vec3 &origin, const Mat3 &axis, float height, 
 
         if (lineWidth > 0 && debugLineColor.a > 0) {
             for (int i = 15; i <= 360; i += 15) {
-                d = Math::Cos16(DEG2RAD(i)) * axis[0] + Math::Sin16(DEG2RAD(i)) * axis[1];
+                Math::SinCos16(DEG2RAD(i), s, c);
+                d = c * axis[0] + s * axis[1];
                 p1 = apex + d * radius1;
                 p2 = origin + d * radius2;
 
