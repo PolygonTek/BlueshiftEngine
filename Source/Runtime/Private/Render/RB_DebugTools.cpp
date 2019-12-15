@@ -81,7 +81,7 @@ void RB_ClearDebugPrimitives(int time) {
         if (topology->lifeTime > time) {
             if (topology->startVert != numVerts) {
                 // NOTE: RB_DrawDebugPrims 에서 vertex array 를 sorting 한다면 임시 memory 에 copy 하는 식으로 바꿔야 함 
-                memmove(&rb_debugPrimsVerts[numVerts], &rb_debugPrimsVerts[topology->startVert], topology->numVerts * sizeof(rb_debugPrimsVerts[0]));				
+                memmove(&rb_debugPrimsVerts[numVerts], &rb_debugPrimsVerts[topology->startVert], topology->numVerts * sizeof(rb_debugPrimsVerts[0]));
             }
 
             rb_debugPrims[num] = *topology;
@@ -97,27 +97,22 @@ void RB_ClearDebugPrimitives(int time) {
 
 Vec3 *RB_ReserveDebugPrimsVerts(int topology, int numVerts, const Color4 &color, const float lineWidth, const bool twoSided, const bool depthTest, const int lifeTime) {
     DebugPrims *debugPrims;
-    byte rgba[4];
 
     if (rb_numDebugPrimsVerts + numVerts > MaxDebugPrimsVerts) {
         return nullptr;
     }
 
     if (rb_numDebugPrims < MaxDebugPrims) {
-        rgba[0] = color[0] * 255;
-        rgba[1] = color[1] * 255;
-        rgba[2] = color[2] * 255;
-        rgba[3] = color[3] * 255;
-
         debugPrims = &rb_debugPrims[rb_numDebugPrims++];
-        *reinterpret_cast<uint32_t *>(debugPrims->color) = *reinterpret_cast<uint32_t *>(rgba);
-        debugPrims->topology		= topology;
-        debugPrims->startVert	= rb_numDebugPrimsVerts;
-        debugPrims->numVerts	= numVerts;
-        debugPrims->lineWidth	= lineWidth;
-        debugPrims->depthTest	= depthTest;
-        debugPrims->twoSided	= twoSided;
-        debugPrims->lifeTime	= rb_debugPrimsTime + lifeTime;
+
+        *reinterpret_cast<uint32_t *>(debugPrims->color) = color.ToUInt32();
+        debugPrims->topology    = topology;
+        debugPrims->startVert   = rb_numDebugPrimsVerts;
+        debugPrims->numVerts    = numVerts;
+        debugPrims->lineWidth   = lineWidth;
+        debugPrims->depthTest   = depthTest;
+        debugPrims->twoSided    = twoSided;
+        debugPrims->lifeTime    = rb_debugPrimsTime + lifeTime;
 
         rb_numDebugPrimsVerts += numVerts;
 
@@ -288,24 +283,19 @@ void RB_ClearDebugText(int time) {
 
 void RB_AddDebugText(const char *text, const Vec3 &origin, const Mat3 &viewAxis, float scale, float lineWidth, const Color4 &color, const int align, const int lifeTime, const bool depthTest) {
     DebugText *debugText;
-    byte rgba[4];
 
     if (rb_numDebugText < MaxDebugText) {
-        rgba[0] = color[0] * 255;
-        rgba[1] = color[1] * 255;
-        rgba[2] = color[2] * 255;
-        rgba[3] = color[3] * 255;
-
         debugText = &rb_debugText[rb_numDebugText++];
-        *reinterpret_cast<uint32_t *>(debugText->color) = *reinterpret_cast<uint32_t *>(rgba);	
-        debugText->text			= text;
-        debugText->origin		= origin;
-        debugText->viewAxis		= viewAxis;	
-        debugText->scale		= scale;
-        debugText->lineWidth	= lineWidth;
-        debugText->align		= align;
-        debugText->lifeTime		= rb_debugTextTime + lifeTime;
-        debugText->depthTest	= depthTest;
+
+        *reinterpret_cast<uint32_t *>(debugText->color) = color.ToUInt32();
+        debugText->text         = text;
+        debugText->origin       = origin;
+        debugText->viewAxis     = viewAxis;
+        debugText->scale        = scale;
+        debugText->lineWidth    = lineWidth;
+        debugText->align        = align;
+        debugText->lifeTime     = rb_debugTextTime + lifeTime;
+        debugText->depthTest    = depthTest;
     }
 }
 
@@ -428,11 +418,11 @@ static void RB_AddDebugTextVerts(DebugVert **dstPtr, const char *text, const Vec
                 Vec3 p2 = org + scale * simplex[charIndex][index] * -viewAxis[1] + scale * simplex[charIndex][index + 1] * viewAxis[2];
 
                 (*dstPtr)->xyz = p1;
-                *reinterpret_cast<uint32_t *>((*dstPtr)->color) = *reinterpret_cast<const uint32_t *>(color);	
+                *reinterpret_cast<uint32_t *>((*dstPtr)->color) = *reinterpret_cast<const uint32_t *>(color);
                 (*dstPtr)++;
                 
                 (*dstPtr)->xyz = p2;
-                *reinterpret_cast<uint32_t *>((*dstPtr)->color) = *reinterpret_cast<const uint32_t *>(color);	
+                *reinterpret_cast<uint32_t *>((*dstPtr)->color) = *reinterpret_cast<const uint32_t *>(color);
                 (*dstPtr)++;
             }
             org -= viewAxis[1] * (spacing * scale);
@@ -440,7 +430,7 @@ static void RB_AddDebugTextVerts(DebugVert **dstPtr, const char *text, const Vec
     }
 }
 
-static void RB_DrawDebugTextElements(int numElements, const int *elements, int numVerts, float lineWidth, bool depthTest) {	
+static void RB_DrawDebugTextElements(int numElements, const int *elements, int numVerts, float lineWidth, bool depthTest) {
     int size = numVerts * sizeof(DebugVert);
     DebugVert *verts = (DebugVert *)_alloca16(size);
     DebugVert *vptr = verts;
@@ -612,12 +602,12 @@ void RB_DrawTris(int numDrawSurfs, DrawSurf **drawSurfs, bool forceToDraw) {
         backEnd.batch.DrawSubMesh(surf->subMesh);
     }
 
-    // Flush previous batch
+    // Flush previous batch.
     if (prevMaterial) {
         backEnd.batch.Flush();
     }
 
-    // Restore depthHack
+    // Restore depthHack.
     if (prevDepthHack) {
         rhi.SetDepthRange(0.0f, 1.0f);
     }
