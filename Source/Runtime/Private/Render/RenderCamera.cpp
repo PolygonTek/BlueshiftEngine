@@ -430,12 +430,22 @@ float RenderCamera::CalcViewScale(const Vec3 &position) const {
         return 0.0f;
     }
 
-    float zDist = state.axis[0].Dot(position - state.origin);
-    PointF screenPos1, screenPos2;
-    TransformWorldToPixel(state.origin + state.axis[0] * zDist, screenPos1);
-    TransformWorldToPixel(state.origin + state.axis[0] * zDist + state.axis[1], screenPos2);
+    Vec3 vec = position - state.origin;
+    Vec3 forwardProj = vec.ProjectToNorm(state.axis[0]);
+    Vec3 forwardProjPos = state.origin + forwardProj;
 
-    return (2.0f / Max(screenPos1.Distance(screenPos2), 0.0001f));
+    PointF screenPos1, screenPos2;
+    bool screenPos1Clipped = TransformWorldToPixel(forwardProjPos, screenPos1);
+    bool screenPos2Clipped = TransformWorldToPixel(forwardProjPos + state.axis[1], screenPos2);
+
+    float pixelDist;
+    if (!screenPos1Clipped || !screenPos2Clipped) {
+        pixelDist = state.renderRect.GetSize().ToVec2().Length();
+    } else {
+        pixelDist = screenPos1.Distance(screenPos2);
+    }
+
+    return 2.0f / Max(pixelDist, 0.0001f);
 }
 
 void RenderCamera::ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY) {
