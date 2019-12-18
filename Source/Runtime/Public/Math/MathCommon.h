@@ -307,9 +307,7 @@ public:
 
     static double               Factorial(unsigned int n);
 
-    static float                FloorSnap(float value, float snapSize);
-
-    static float                CeilSnap(float value, float snapSize);
+    static float                Snap(float value, float snapSize);
 
     static float                AngleNormalize360(float angle);
     static float                AngleNormalize180(float angle);
@@ -1004,12 +1002,8 @@ BE_INLINE double Math::Factorial(unsigned int n) {
     return result;
 }
 
-BE_INLINE float Math::FloorSnap(float value, float snap) {
-    return Math::Floor(value / snap) * snap;
-}
-
-BE_INLINE float Math::CeilSnap(float value, float snap) {
-    return Math::Ceil(value / snap) * snap;
+BE_INLINE float Math::Snap(float value, float snapSize) {
+    return Math::Round(value / snapSize) * snapSize;
 }
 
 BE_INLINE float Math::AngleNormalize360(float angle) {
