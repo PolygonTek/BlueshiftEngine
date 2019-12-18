@@ -294,22 +294,24 @@ void GuiMesh::DrawText(Font *font, RenderObject::TextAnchor::Enum anchor, Render
         }
     }
 
-    float totalHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
-
     // Calculate the y coordinate.
     float y = 0;
-    if (anchor == RenderObject::TextAnchor::LowerLeft || 
-        anchor == RenderObject::TextAnchor::LowerCenter || 
-        anchor == RenderObject::TextAnchor::LowerRight) {
-        y = -totalHeight;
-    } else if (
-        anchor == RenderObject::TextAnchor::MiddleLeft || 
-        anchor == RenderObject::TextAnchor::MiddleCenter || 
-        anchor == RenderObject::TextAnchor::MiddleRight) {
-        y = -totalHeight * 0.5f;
-    }
+    if (anchor != RenderObject::TextAnchor::UpperLeft &&
+        anchor != RenderObject::TextAnchor::UpperCenter &&
+        anchor != RenderObject::TextAnchor::UpperRight) {
+        float totalHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
 
-    GuiMesh &guiMesh = renderSystem.GetCurrentRenderContext()->GetGuiMesh();
+        if (anchor == RenderObject::TextAnchor::LowerLeft ||
+            anchor == RenderObject::TextAnchor::LowerCenter ||
+            anchor == RenderObject::TextAnchor::LowerRight) {
+            y = -totalHeight;
+        } else if (
+            anchor == RenderObject::TextAnchor::MiddleLeft ||
+            anchor == RenderObject::TextAnchor::MiddleCenter ||
+            anchor == RenderObject::TextAnchor::MiddleRight) {
+            y = -totalHeight * 0.5f;
+        }
+    }
 
     for (int lineIndex = 0; lineIndex < numLines; lineIndex++) {
         int offset = lineCharOffsets[lineIndex];
@@ -406,19 +408,19 @@ void GuiMesh::DrawTextRect(Font *font, const RectF &rect, RenderObject::TextHorz
 
     if (currentLineLength > 0) {
         PrepareNextLine();
-    }
-
-    float totalHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
+    }    
 
     // Calculate the y coordinate.
     float y = rect.y;
-    if (vertAlignment == RenderObject::TextVertAlignment::Bottom) {
-        y += rect.h - totalHeight;
-    } else if (vertAlignment == RenderObject::TextVertAlignment::Middle) {
-        y += (rect.h - totalHeight) * 0.5f;
-    }
+    if (vertAlignment != RenderObject::TextVertAlignment::Top) {
+        float totalHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
 
-    GuiMesh &guiMesh = renderSystem.GetCurrentRenderContext()->GetGuiMesh();
+        if (vertAlignment == RenderObject::TextVertAlignment::Bottom) {
+            y += rect.h - totalHeight;
+        } else if (vertAlignment == RenderObject::TextVertAlignment::Middle) {
+            y += (rect.h - totalHeight) * 0.5f;
+        }
+    }
 
     for (int lineIndex = 0; lineIndex < numLines; lineIndex++) {
         int offset = lineCharOffsets[lineIndex];

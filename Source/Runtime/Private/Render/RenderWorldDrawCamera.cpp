@@ -374,7 +374,7 @@ void RenderWorld::AddRawMeshes(VisCamera *camera) {
 
         bufferCacheManager.UnmapIndexBuffer(&indexCache);
 
-        // Copy this SubMesh to the temporary frame data to use in backend.
+        // Copy this SubMesh to the temporary frame data to use in the backend.
         SubMesh *subMesh = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
         new (subMesh) SubMesh();
 
@@ -480,7 +480,7 @@ void RenderWorld::AddTextMeshes(VisCamera *camera) {
                 break;
             }
 
-            // Copy this SubMesh to the temporary frame data to use in back end
+            // Copy this SubMesh to the temporary frame data to use in backend.
             SubMesh *subMesh = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
             new (subMesh) SubMesh();
 

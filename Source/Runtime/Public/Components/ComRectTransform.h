@@ -109,7 +109,7 @@ protected:
                             /// Updates local origin and (cached) rect.
     void                    UpdateLocalOriginAndRect() const;
 
-                            /// Marks this RectTransform and children to need cached rect recalculation.
+                            /// Marks this RectTransform and it's children need cached rect recalculation.
     void                    InvalidateCachedRect();
 
                             /// Computes rectangle in local space.

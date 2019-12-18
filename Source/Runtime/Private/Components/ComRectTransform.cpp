@@ -316,7 +316,8 @@ void ComRectTransform::InvalidateCachedRect() {
     EmitSignal(&SIG_RectTransformUpdated, this);
 
     for (Entity *childEntity = GetEntity()->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
-        ComRectTransform *rectTransform = childEntity->GetComponent(0)->Cast<ComRectTransform>();
+        ComRectTransform *rectTransform = childEntity->GetRectTransform();
+
         if (rectTransform) {
             rectTransform->InvalidateCachedRect();
         }
