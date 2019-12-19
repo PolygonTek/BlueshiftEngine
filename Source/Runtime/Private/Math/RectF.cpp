@@ -104,6 +104,8 @@ RectF RectF::Move(float ax, float ay) const {
     RectF rect;
     rect.x = x + ax;
     rect.y = y + ay;
+    rect.w = w;
+    rect.h = h;
     return rect;
 }
 

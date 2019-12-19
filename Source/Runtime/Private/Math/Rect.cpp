@@ -104,6 +104,8 @@ Rect Rect::Move(int ax, int ay) const {
     Rect rect;
     rect.x = x + ax;
     rect.y = y + ay;
+    rect.w = w;
+    rect.h = h;
     return rect;
 }
 
