@@ -1,6 +1,14 @@
 Version History
 ---------------
 
+### 0.7.0
+- Added support for 2D mode for editing GUI
+- Added support for rect tool gizmo
+- Added support for some GUI components (Rect, Image, Text, and WIP for others)
+- Added support for drawing 9-sliced image rendering for GUI
+- Added support for SDF (Signed Distance Field) text rendering
+- Fixed an issue where editing euler angles rotation in editor
+
 ### 0.6.0
 - Refined PBR shaders
 - Added support for environment probes for indirect lighting
