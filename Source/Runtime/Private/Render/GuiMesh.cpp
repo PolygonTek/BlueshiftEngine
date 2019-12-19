@@ -241,8 +241,8 @@ float GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, char32
         return 0;
     }
 
-    float charX = x + glyph->bearingX * sx;
-    float charY = y + glyph->bearingY * sy;
+    float charX = x + glyph->offsetX * sx;
+    float charY = y + glyph->offsetY * sy;
     float charW = glyph->width * sx;
     float charH = glyph->height * sy;
 
@@ -411,12 +411,12 @@ void GuiMesh::DrawTextRect(Font *font, const RectF &rect, RenderObject::TextHorz
     }    
 
     // Calculate the y coordinate.
-    float y = rect.y;
+    float y = -rect.Y2();
     if (vertAlignment != RenderObject::TextVertAlignment::Top) {
         float totalHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
 
         if (vertAlignment == RenderObject::TextVertAlignment::Bottom) {
-            y += rect.h - totalHeight;
+            y += (rect.h - totalHeight);
         } else if (vertAlignment == RenderObject::TextVertAlignment::Middle) {
             y += (rect.h - totalHeight) * 0.5f;
         }

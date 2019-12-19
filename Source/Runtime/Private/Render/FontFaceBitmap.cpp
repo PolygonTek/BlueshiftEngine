@@ -82,8 +82,8 @@ bool FontFaceBitmap::Load(const char *filename, int fontSize) {
         glyph->charCode     = gl->charCode;
         glyph->width        = gl->width;
         glyph->height       = gl->height;
-        glyph->bearingX     = 0;
-        glyph->bearingY     = 0;
+        glyph->offsetX      = 0;
+        glyph->offsetY      = 0;
         glyph->advance      = gl->width;
         glyph->s            = gl->s;
         glyph->t            = gl->t;

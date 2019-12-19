@@ -30,7 +30,7 @@ class FontFace;
 struct FontGlyph {
     uint32_t                charCode;
     int                     width, height;
-    int                     bearingX, bearingY;
+    int                     offsetX, offsetY;
     int                     advance;
     float                   s, t, s2, t2;
     Material *              material;

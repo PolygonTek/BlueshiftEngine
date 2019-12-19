@@ -382,8 +382,8 @@ FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar) {
     glyph->charCode     = unicodeChar;
     glyph->width        = width;
     glyph->height       = bitmap->rows;
-    glyph->bearingX     = glyphSlot->bitmap_left;
-    glyph->bearingY     = ascender - glyphSlot->bitmap_top;
+    glyph->offsetX      = glyphSlot->bitmap_left;
+    glyph->offsetY      = ascender - glyphSlot->bitmap_top;
     glyph->advance      = (int)glyphSlot->advance.x >> 6;
     glyph->s            = (float)(x + GLYPH_BORDER_PIXELS) / texture->GetWidth();
     glyph->t            = (float)(y + GLYPH_BORDER_PIXELS) / texture->GetHeight();
