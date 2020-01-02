@@ -48,7 +48,7 @@ public:
         };
     };
 
-    Font();
+    Font() = default;
     ~Font();
 
     const char *            GetName() const { return name; }
@@ -59,7 +59,7 @@ public:
                             /// Returns pointer to the glyph structure corresponding to a character. Return null if glyph not found.
     FontGlyph *             GetGlyph(char32_t unicodeChar);
 
-                            /// Returns a offset for a next character 
+                            /// Returns a offset for a next character.
     int                     GetGlyphAdvance(char32_t unicodeChar) const;
 
     float                   StringWidth(const Str &text, int maxLen, bool allowLineBreak = false, bool allowColoredText = false, float xScale = 1.0f) const;
@@ -77,9 +77,6 @@ private:
     int                     fontSize = 0;
     FontFace *              fontFace = nullptr;
 };
-
-BE_INLINE Font::Font() {
-}
 
 BE_INLINE Font::~Font() {
     Purge();
@@ -120,7 +117,7 @@ private:
     struct FontHashGenerator {
         template <typename Type>
         static int Hash(const HashIndex &hasher, const Type &value) {
-            return hasher.GenerateHash(value.name, false) & value.fontSize;
+            return hasher.GenerateHash(value.name, false) * value.fontSize;
         }
     };
 

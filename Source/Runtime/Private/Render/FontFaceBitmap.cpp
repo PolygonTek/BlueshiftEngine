@@ -38,6 +38,14 @@ struct FontFileGlyph {
     int         bitmapIndex;
 };
 
+FontFaceBitmap::FontFaceBitmap() {
+    glyphHashMap.Init(1024, 1024, 1024);
+}
+
+FontFaceBitmap::~FontFaceBitmap() {
+    Purge();
+}
+
 void FontFaceBitmap::Purge() {
     for (int i = 0; i < glyphHashMap.Count(); i++) {
         const auto *entry = glyphHashMap.GetByIndex(i);

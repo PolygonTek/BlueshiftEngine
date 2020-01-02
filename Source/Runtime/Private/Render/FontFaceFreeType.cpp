@@ -52,8 +52,12 @@ struct GlyphAtlas {
 static Array<GlyphAtlas *>  atlasArray;
 static FT_Library           ftLibrary;
 
+FontFaceFreeType::~FontFaceFreeType() {
+    Purge();
+}
+
 void FontFaceFreeType::Init() {
-    // initialize FreeType library
+    // Initialize FreeType library.
     if (FT_Init_FreeType(&ftLibrary) != 0) {
         BE_FATALERROR("FT_Init_FreeType() failed");
     }
@@ -67,6 +71,7 @@ void FontFaceFreeType::Init() {
     for (int i = 0; i < GLYPH_CACHE_TEXTURE_COUNT; i++) {
         GlyphAtlas *atlas = new GlyphAtlas;
         atlasArray.Append(atlas);
+
         // 대략 8x8 조각의 glyph 들을 하나의 텍스쳐에 packing 했을 경우 개수 만큼 할당..
         atlas->chunks.Resize(GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE / 64);
         atlas->texture = textureManager.AllocTexture(va("_glyph_cache_%i", i));
@@ -146,7 +151,7 @@ bool FontFaceFreeType::Load(const char *filename, int fontSize) {
 
     fontHeight = ((ftFace->size->metrics.height + 63) & ~63) >> 6;
 
-    // Temporary buffer for drawing glyphs.
+    // Allocate temporary buffer for drawing glyphs.
     // FT_Set_Pixel_Sizes 와는 다르게 fontHeight * fontHeight 를 넘어가는 비트맵이 나올수도 있어서 넉넉하게 가로 세로 두배씩 더 할당
     glyphBuffer = (byte *)Mem_Alloc16(Image::BytesPerPixel(GLYPH_CACHE_TEXTURE_FORMAT) * fontSize * fontSize * 4);
 

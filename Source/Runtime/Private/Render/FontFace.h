@@ -21,6 +21,14 @@ BE_NAMESPACE_BEGIN
 
 class Material;
 
+/*
+-------------------------------------------------------------------------------
+
+    Abstract class for Font Face
+
+-------------------------------------------------------------------------------
+*/
+
 class FontFace {
 public:
     virtual ~FontFace() {}
@@ -29,23 +37,23 @@ public:
 
     virtual FontGlyph *     GetGlyph(char32_t unicodeChar) = 0;
 
-                            // Returns width of charCode character for the next character in string.
+                            /// Returns width of charCode character for the next character in string.
     virtual int             GetGlyphAdvance(char32_t unicodeChar) const = 0;
 
     virtual bool            Load(const char *filename, int fontSize) = 0;
 
 protected:
-    // Hash generator for the wide character
-    struct HashGeneratorCharCode {
-        template <typename Type>
-        static int Hash(const HashIndex &hasher, const Type &value) {
-            return (((value >> 8) & 0xFF) * 119 + (value & 0xFF)) & (hasher.GetHashSize() - 1);
-        }
-    };
-
-    using GlyphHashMap      = HashMap<char32_t, FontGlyph *, HashCompareDefault, HashGeneratorCharCode>;
+    using GlyphHashMap      = HashMap<char32_t, FontGlyph *>;
     GlyphHashMap            glyphHashMap;
 };
+
+/*
+-------------------------------------------------------------------------------
+
+    Bitmap Font Face
+
+-------------------------------------------------------------------------------
+*/
 
 class FontFaceBitmap : public FontFace {
 public:
@@ -55,6 +63,8 @@ public:
     virtual int             GetFontHeight() const override;
 
     virtual FontGlyph *     GetGlyph(char32_t unicodeChar) override;
+
+                            /// Returns width of charCode character for the next character in string.
     virtual int             GetGlyphAdvance(char32_t unicodeChar) const override;
 
     virtual bool            Load(const char *filename, int fontSize) override;
@@ -65,27 +75,28 @@ private:
     int                     fontHeight;
 };
 
-BE_INLINE FontFaceBitmap::FontFaceBitmap() {
-    glyphHashMap.Init(1024, 1024, 1024);
-}
+/*
+-------------------------------------------------------------------------------
 
-BE_INLINE FontFaceBitmap::~FontFaceBitmap() {
-    Purge();
-}
+    FreeType Font Face
+
+-------------------------------------------------------------------------------
+*/
 
 class FontFaceFreeType : public FontFace {
 public:
-    FontFaceFreeType();
+    FontFaceFreeType() = default;
     virtual ~FontFaceFreeType();
 
     virtual int             GetFontHeight() const override;
 
     virtual FontGlyph *     GetGlyph(char32_t unicodeChar) override;
+
+                            /// Returns width of charCode character for the next character in string.
     virtual int             GetGlyphAdvance(char32_t unicodeChar) const override;
 
     virtual bool            Load(const char *filename, int fontSize) override;
 
-                            // Init/Shutdown function for FreeType libary.
     static void             Init();
     static void             Shutdown();
     
@@ -98,20 +109,10 @@ private:
     int                     faceIndex;
     int                     fontHeight;
 
-    byte *                  ftFontFileData;             // FreeType font flie data
-    FT_Face                 ftFace;
+    byte *                  ftFontFileData = nullptr;       // FreeType font flie data
+    FT_Face                 ftFace = nullptr;
     mutable char32_t        ftLastLoadedChar;
-    byte *                  glyphBuffer;
+    byte *                  glyphBuffer = nullptr;
 };
-
-BE_INLINE FontFaceFreeType::FontFaceFreeType() {
-    ftFontFileData = nullptr;
-    ftFace = nullptr;
-    glyphBuffer = nullptr;
-}
-
-BE_INLINE FontFaceFreeType::~FontFaceFreeType() {
-    Purge();
-}
 
 BE_NAMESPACE_END
