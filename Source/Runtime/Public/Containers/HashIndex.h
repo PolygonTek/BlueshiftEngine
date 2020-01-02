@@ -32,10 +32,12 @@
 
 BE_NAMESPACE_BEGIN
 
+class Vec2;
 class Vec3;
+class Vec4;
 class Guid;
 
-/// Hash index table
+/// Hash index table.
 class BE_API HashIndex {
 public:
     static constexpr int DefaultHashSize = 1 << 10;
@@ -71,47 +73,52 @@ public:
                     /// Returns total size of allocated memory including size of this type.
     size_t          Size() const { return Allocated() + sizeof(*this); }
 
-                    /// Clears hash table (no memory free)
+                    /// Clears hash table (no memory free).
     void            Clear();
 
-                    /// Clears hash table and free memory in use
+                    /// Clears hash table and free memory in use.
     void            Clear(const int newHashSize, const int newIndexSize);
 
-                    /// Frees all allocated memory
+                    /// Frees all allocated memory.
     void            Free();
 
                     /// Finds index with the given hash key.
                     /// Returns -1 if not found.
     int             First(const int hash) const;
 
-                    /// Finds next index
+                    /// Finds next index.
                     /// Returns -1 if not found.
     int             Next(const int index) const;
 
-                    /// Resizes index size
+                    /// Resizes index size.
     void            ResizeIndex(const int newIndexSize);
 
-                    /// Adds hash/index pair
+                    /// Adds hash/index pair.
     void            Add(const int hash, const int index);
 
-                    /// Removes hash/index pair
+                    /// Removes hash/index pair.
     void            Remove(const int hash, const int index);
 
-                    /// Adds hash/index pair for a inserted element
+                    /// Adds hash/index pair for a inserted element.
     void            InsertIndex(const int hash, const int index);
 
-                    /// Removes hash/index pair for a removed element
+                    /// Removes hash/index pair for a removed element.
     void            RemoveIndex(const int hash, const int index);
 
-                    // hash table 에 분산된 index 개수에 대한 표준 편차를 구한다.
-    float           GetStandardDeviation() const;
+                    /// Get the variance of the number of indexes distributed in the hash table.
+    float           GetVariance() const;
+        
+                    /// Generate hash value for class type.
+    template <typename T, typename std::enable_if_t<std::is_class<T>::value>* = nullptr>
+    int             GenerateHash(const T &value) const { return value.ToHash() & hashMask; }
 
-                    /// Generate hash value
+                    /// Generate hash value for integral type.
+    template <typename T, typename std::enable_if_t<std::is_integral<T>::value>* = nullptr>
+    int             GenerateHash(const T &value) const { return ((int)value) & hashMask; }
+
+                    /// Generate hash value.
     int             GenerateHash(const char *string, bool caseSensitive = true) const;
-    int             GenerateHash(const Vec3 &v) const;
     int             GenerateHash(const int n1, const int n2) const;
-    int             GenerateHash(const int64_t i64) const;
-    int             GenerateHash(const Guid &guid) const;
 
                     /// Swaps hash index 'other' with this hash index.
     void            Swap(HashIndex &other);
@@ -119,7 +126,7 @@ public:
     static int      EmptyTable[1];
 
 private:
-                    /// Clears and allocates memory for use
+                    /// Clears and allocates memory for use.
     void            Allocate(const int newHashSize, const int newIndexSize);
 
     int *           hashTable;          ///< hash to index table
@@ -141,7 +148,7 @@ BE_INLINE void HashIndex::SetGranularity(const int newGranularity) {
 }
 
 BE_INLINE void HashIndex::Clear() {
-    // only clear the hash table because clearing the indexChain is not really needed
+    // Only clear the hash table because clearing the indexChain is not really needed.
     if (hashTable != EmptyTable) {
         memset(hashTable, 0xFF, hashSize * sizeof(hashTable[0]));
     }
@@ -263,16 +270,18 @@ BE_INLINE void HashIndex::RemoveIndex(const int hash, const int index) {
     }
 }
 
-BE_INLINE int HashIndex::GenerateHash(const int n1, const int n2) const {
-    return ((n1 + n2) & hashMask);
+template <>
+BE_INLINE int HashIndex::GenerateHash(const int64_t &value) const {
+    return ((((value >> 32) & 0xffffffff) ^ (value & 0xffffffff)) & hashMask);
 }
 
-BE_INLINE int HashIndex::GenerateHash(const int64_t i64) const {
-    if (sizeof(i64) == sizeof(int)) {
-        return (i64 & hashMask);
-    } else {
-        return ((((i64 >> 32) & 0xffffffff) ^ (i64 & 0xffffffff)) & hashMask);
-    }
+template <>
+BE_INLINE int HashIndex::GenerateHash(const uint64_t &value) const {
+    return ((((value >> 32) & 0xffffffff) ^ (value & 0xffffffff)) & hashMask);
+}
+
+BE_INLINE int HashIndex::GenerateHash(const int n1, const int n2) const {
+    return ((n1 + n2) & hashMask);
 }
 
 BE_INLINE void HashIndex::Swap(HashIndex &other) {

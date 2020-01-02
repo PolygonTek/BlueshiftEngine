@@ -335,6 +335,9 @@ public:
                         /// Compute pitch angle in degree looking from the viewpoint of 2D view in x-y plane.
     float               ComputePitch() const;
 
+                        /// Return hash value for HashIndex.
+    int                 ToHash() const { return ((int)x) * 31 * 31 + ((int)y) * 31 + ((int)z); }
+
                         /// Returns "x y z".
     const char *        ToString() const { return ToString(4); }
                         /// Returns "x y z" with the given precision.

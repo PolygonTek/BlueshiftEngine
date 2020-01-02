@@ -49,7 +49,8 @@ public:
 
     static Guid         FromString(const char *str);
 
-    static int          Hash(const Guid &guid) { return guid[0] + guid[1] + guid[2] + guid[3]; }
+                        /// Return hash value for HashIndex.
+    int                 ToHash() const { return u1 + u2 + u3 + u4; }
 
     static Guid         CreateGuid();
 

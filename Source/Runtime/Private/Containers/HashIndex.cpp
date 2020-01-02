@@ -137,7 +137,7 @@ void HashIndex::ResizeIndex(const int newIndexSize) {
     indexSize = newSize;
 }
 
-float HashIndex::GetStandardDeviation() const {
+float HashIndex::GetVariance() const {
     if (hashTable == EmptyTable) {
         return 0;
     }
@@ -169,8 +169,7 @@ float HashIndex::GetStandardDeviation() const {
 
     delete [] numHashItems;
 
-    float v = (float)s / totalItems;
-    return sqrtf(v);
+    return (float)s / totalItems;
 }
 
 int HashIndex::GenerateHash(const char *string, bool caseSensitive) const {
@@ -179,14 +178,6 @@ int HashIndex::GenerateHash(const char *string, bool caseSensitive) const {
     } else {
         return (Str::IHash(string) & hashMask);
     }
-}
-
-int HashIndex::GenerateHash(const Vec3 &v) const {
-    return ((((int)v[0]) + ((int)v[1]) + ((int)v[2])) & hashMask);
-}
-
-int HashIndex::GenerateHash(const Guid &guid) const {
-    return (Guid::Hash(guid) & hashMask);
 }
 
 BE_NAMESPACE_END

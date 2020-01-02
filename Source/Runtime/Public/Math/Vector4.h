@@ -224,6 +224,9 @@ public:
                         /// Returns linear interpolation between the vector v1 and the vector v2.
     static Vec4         FromLerp(const Vec4 &v1, const Vec4 &v2, const float t);
 
+                        /// Return hash value for HashIndex.
+    int                 ToHash() const { return ((int)x) * 31 * 31 * 31 + ((int)y) * 31 * 31 + ((int)z) * 31 + ((int)w); }
+
                         /// Returns "x y z".
     const char *        ToString() const { return ToString(4); }
                         /// Returns "x y z" with the given precision.

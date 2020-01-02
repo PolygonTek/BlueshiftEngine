@@ -74,7 +74,7 @@ public:
         : key(key), value(value), next(next) {}
 
     static int GenerateHash(const Guid &key, const int tableMask) {
-        return Guid::Hash(key) & tableMask;
+        return key.ToHash() & tableMask;
     }
 
     static int Compare(const Guid &key1, const Guid &key2) {
@@ -186,8 +186,8 @@ public:
                         /// Clears all hash buckets and delete each values.
     void                DeleteContents();
 
-                        // 분산된 hash bucket 의 표준편차를 구한다.
-    float               GetStandardDeviation() const;
+                        /// Get the variance of the distributed hash buckets.
+    float               GetVariance() const;
 
 private:
     void                Copy(const HashTable<KeyT, ValueT> &other);
@@ -440,7 +440,7 @@ BE_INLINE void HashTable<KeyT, ValueT, BucketGranularity>::Copy(const HashTable<
 }
 
 template <typename KeyT, typename ValueT, int BucketGranularity>
-float HashTable<KeyT, ValueT, BucketGranularity>::GetStandardDeviation() const {
+float HashTable<KeyT, ValueT, BucketGranularity>::GetVariance() const {
     // if no items in hash
     if (!numEntries) {
         return 0;
@@ -458,8 +458,7 @@ float HashTable<KeyT, ValueT, BucketGranularity>::GetStandardDeviation() const {
         s += e * e;
     }
 
-    float v = (float)s / numEntries;
-    return sqrtf(v);
+    return (float)s / numEntries;
 }
 
 BE_NAMESPACE_END

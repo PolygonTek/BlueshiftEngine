@@ -390,6 +390,8 @@ public:
     
     friend int BE_CDECL sprintf(Str &dest, const char *fmt, ...);
     friend int BE_CDECL vsprintf(Str &dest, const char *fmt, va_list ap);
+
+    int                 ToHash() const { return Hash(data); }
  
     static int          Hash(const char *string);
     static int          Hash(const char *string, int length);

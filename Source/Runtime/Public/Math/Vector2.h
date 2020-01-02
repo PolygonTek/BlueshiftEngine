@@ -264,6 +264,9 @@ public:
                         /// Less distorted mapping than FromUniformSampleDisk()
     static Vec2         FromConcentricSampleDisk(float u1, float u2);
 
+                        /// Return hash value for HashIndex.
+    int                 ToHash() const { return ((int)x) * 31 + ((int)y); }
+
                         /// Returns "x y z".
     const char *        ToString() const { return ToString(4); }
                         /// Returns "x y z" with the given precision.

@@ -43,13 +43,6 @@ struct HashGeneratorDefault {
     }
 };
 
-struct HashGeneratorNumeric {
-    template <typename ValueT>
-    static int Hash(const HashIndex &hasher, const ValueT &value) {
-        return hasher.GenerateHash(value, 0);
-    }
-};
-
 struct HashGeneratorIHash {
     template <typename ValueT>
     static int Hash(const HashIndex &hasher, const ValueT &value) {
@@ -139,8 +132,8 @@ public:
                             /// Deletes all hash buckets and their corresponding values.
     void                    DeleteContents(bool clear = true);
 
-                            // hash table 에 분산된 index 개수에 대한 표준 편차를 구한다.
-    float                   GetStandardDeviation() const;
+                            /// Get the variance of the number of indexes distributed in the hash table.
+    float                   GetVariance() const;
 
                             /// Swaps hash map 'other' with this hash map.
     void                    Swap(HashMap &other);
@@ -287,8 +280,8 @@ BE_INLINE void HASH_MAP_TEMPLATE::DeleteContents(bool clear) {
 }
 
 template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
-BE_INLINE float HASH_MAP_TEMPLATE::GetStandardDeviation() const {
-    return hashIndex.GetStandardDeviation();
+BE_INLINE float HASH_MAP_TEMPLATE::GetVariance() const {
+    return hashIndex.GetVariance();
 }
 
 template <typename KeyT, typename ValueT, typename HashCompareT, typename HashGeneratorT>
