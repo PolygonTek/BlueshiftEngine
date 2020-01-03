@@ -707,6 +707,10 @@ void Texture::Bind() const {
     rhi.BindTexture(textureHandle);
 }
 
+void Texture::GenerateMipmap() const {
+    rhi.GenerateMipmap();
+}
+
 void Texture::GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, Image &cubeImage) {
     Image faceImages[6];
 

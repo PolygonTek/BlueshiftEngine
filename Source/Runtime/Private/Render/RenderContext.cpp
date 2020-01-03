@@ -150,7 +150,7 @@ void RenderContext::InitScreenMapRT() {
         homTexture = textureManager.AllocTexture(va("_%i_hom", (int)contextHandle));
         homTexture->CreateEmpty(RHI::TextureType::Texture2D, w, h, 1, 1, 1, Image::Format::Depth_32F, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::HighPriority | Texture::Flag::Nearest);
         homTexture->Bind();
-        rhi.GenerateMipmap();
+        homTexture->GenerateMipmap();
         homRT = RenderTarget::Create(nullptr, (const Texture *)homTexture, 0);
     }
 
@@ -604,7 +604,7 @@ void RenderContext::UpdateCurrentRenderTexture() const {
 
     currentRenderTexture->Bind();
     rhi.CopyTextureSubImage2D(0, 0, 0, 0, currentRenderTexture->GetWidth(), currentRenderTexture->GetHeight());
-    //rhi.GenerateMipmap();
+    //currentRenderTexture->GenerateMipmap();
     
     //BE_LOG("%lf\n", PlatformTime::Seconds() - starttime);
 }

@@ -128,6 +128,8 @@ public:
 
     void                    Bind() const;
 
+    void                    GenerateMipmap() const;
+
     static void             GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, Image &cubeImage);
 
 private:

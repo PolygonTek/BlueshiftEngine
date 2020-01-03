@@ -298,10 +298,10 @@ public:
                         /// Nothing happen if source image dimensions are not match with this image.
     Image &             CopyFrom(const Image &srcImage, int firstLevel = 0, int numLevels = 1);
     
-                        /// Generates full mipmaps if this image has
+                        /// Generates all mipmaps this image has.
     Image &             GenerateMipmaps();
 
-                        /// Converts this image to the given targetimage.
+                        /// Converts this image to the given target image.
     bool                ConvertFormat(Format::Enum dstFormat, Image &dstImage, bool regenerateMipmaps = false, CompressionQuality::Enum compressionQuality = CompressionQuality::Normal) const;
                         /// Converts this image in-place.
     bool                ConvertFormatSelf(Format::Enum dstFormat, bool regenerateMipmaps = false, CompressionQuality::Enum compressionQuality = CompressionQuality::Normal);

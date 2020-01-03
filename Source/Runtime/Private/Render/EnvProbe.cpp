@@ -284,7 +284,7 @@ bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing::Enum timeSlicing) {
 
         // Generate mipmaps of environment cubemap to generate specular convolution cube map using pre-filtered environment cubemap.
         envProbe->envProbeTexture->Bind();
-        rhi.GenerateMipmap();
+        envProbe->envProbeTexture->GenerateMipmap();
 
         if (timeSlicing != EnvProbe::TimeSlicing::NoTimeSlicing) {
             return false;
