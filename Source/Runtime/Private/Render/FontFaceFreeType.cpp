@@ -165,15 +165,15 @@ bool FontFaceFreeType::Load(const char *filename, int fontSize) {
 // Load glyph into glyph slot to get the bitmap.
 bool FontFaceFreeType::LoadFTGlyph(char32_t unicodeChar) const {
     if (lastLoadedChar != unicodeChar) {
-        unsigned int glyph_index = FT_Get_Char_Index(ftFace, unicodeChar);
+        unsigned int glyphIndex = FT_Get_Char_Index(ftFace, unicodeChar);
 
-        if (glyph_index == 0) {
+        if (glyphIndex == 0) {
             // There is no glyph image for this character.
             return false;
         }
 
         // Load glyph into glyph slot.
-        if (FT_Load_Glyph(ftFace, glyph_index, FT_LOAD_TARGET_NORMAL | FT_LOAD_NO_BITMAP) != 0) {
+        if (FT_Load_Glyph(ftFace, glyphIndex, FT_LOAD_TARGET_NORMAL | FT_LOAD_NO_BITMAP) != 0) {
             return false;
         }
 
@@ -342,8 +342,8 @@ FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar) {
         return nullptr;
     }
 
-    FT_GlyphSlot glyphSlot = ftFace->glyph;
-    FT_Bitmap *bitmap = &glyphSlot->bitmap;
+    const FT_GlyphSlot glyphSlot = ftFace->glyph;
+    const FT_Bitmap *bitmap = &glyphSlot->bitmap;
 
 #ifdef LCD_MODE_RENDERING
     int width = bitmap->width / 3;
