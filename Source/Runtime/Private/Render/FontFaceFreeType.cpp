@@ -36,7 +36,8 @@ BE_NAMESPACE_BEGIN
 
 #define GLYPH_CACHE_TEXTURE_SIZE    2048
 #define GLYPH_CACHE_TEXTURE_COUNT   1
-#define GLYPH_BORDER_PIXELS         2
+#define GLYPH_PADDING               2
+#define GLYPH_COORD_OFFSET          1
 
 // glyph atlas texture 의 사용중인 공간을 덩어리 단위로 표현
 struct Chunk {
@@ -190,11 +191,11 @@ void FontFaceFreeType::DrawGlyphBufferFromFTBitmap(const FT_Bitmap *bitmap) cons
     int     b;
         
 #ifdef LCD_MODE_RENDERING
-    int w = bitmap->width / 3 + GLYPH_BORDER_PIXELS * 2;
-    int h = bitmap->rows + GLYPH_BORDER_PIXELS * 2;
+    int w = bitmap->width / 3 + GLYPH_PADDING * 2;
+    int h = bitmap->rows + GLYPH_PADDING * 2;
 #else
-    int w = bitmap->width + GLYPH_BORDER_PIXELS * 2;
-    int h = bitmap->rows + GLYPH_BORDER_PIXELS * 2;
+    int w = bitmap->width + GLYPH_PADDING * 2;
+    int h = bitmap->rows + GLYPH_PADDING * 2;
 #endif
 
     // Pad with zeros.
@@ -207,7 +208,7 @@ void FontFaceFreeType::DrawGlyphBufferFromFTBitmap(const FT_Bitmap *bitmap) cons
     case FT_PIXEL_MODE_MONO:
         for (y = 0; y < bitmap->rows; y++) {
             for (x = 0, b = 0; x < bitmap->width; x++, b++) {
-                offset = w * (GLYPH_BORDER_PIXELS + y) + GLYPH_BORDER_PIXELS + x;
+                offset = w * (GLYPH_PADDING + y) + GLYPH_PADDING + x;
 
                 glyphBuffer[(offset << 1)] = 255;
 
@@ -224,7 +225,7 @@ void FontFaceFreeType::DrawGlyphBufferFromFTBitmap(const FT_Bitmap *bitmap) cons
     case FT_PIXEL_MODE_GRAY:
         for (y = 0; y < bitmap->rows; y++) {
             for (x = 0; x < bitmap->width; x++) {
-                offset = w * (GLYPH_BORDER_PIXELS + y) + GLYPH_BORDER_PIXELS + x;
+                offset = w * (GLYPH_PADDING + y) + GLYPH_PADDING + x;
                 glyphBuffer[(offset << 1)] = 255;
                 glyphBuffer[(offset << 1) + 1] = buffer_ptr[x];
             }
@@ -235,7 +236,7 @@ void FontFaceFreeType::DrawGlyphBufferFromFTBitmap(const FT_Bitmap *bitmap) cons
     case FT_PIXEL_MODE_LCD:
         for (y = 0; y < bitmap->rows; y++) {
             for (x = 0; x < bitmap->width / 3; x++) {
-                offset  = (w * (GLYPH_BORDER_PIXELS + y) + GLYPH_BORDER_PIXELS + x) * 4;
+                offset  = (w * (GLYPH_PADDING + y) + GLYPH_PADDING + x) * 4;
                 red     = buffer_ptr[x * 3 + 0];
                 green   = buffer_ptr[x * 3 + 1];
                 blue    = buffer_ptr[x * 3 + 2];
@@ -351,8 +352,11 @@ FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar) {
 #endif
     int height = bitmap->rows;
 
+    int allocWidth = width + (GLYPH_PADDING << 1);
+    int allocHeight = height + (GLYPH_PADDING << 1);
+
     int x, y;
-    Texture *texture = AllocGlyphTexture(width + GLYPH_BORDER_PIXELS * 2, height + GLYPH_BORDER_PIXELS * 2, &x, &y);
+    Texture *texture = AllocGlyphTexture(allocWidth, allocHeight, &x, &y);
     if (!texture) {
         return nullptr;
     }
@@ -362,7 +366,7 @@ FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar) {
     rhi.SelectTextureUnit(0);
 
     texture->Bind();
-    texture->Update2D(0, x, y, width + GLYPH_BORDER_PIXELS * 2, bitmap->rows + GLYPH_BORDER_PIXELS * 2, GLYPH_CACHE_TEXTURE_FORMAT, glyphBuffer);
+    texture->Update2D(0, x, y, allocWidth, allocHeight, GLYPH_CACHE_TEXTURE_FORMAT, glyphBuffer);
 
     // NOTE: ascender 의 의미가 폰트 포맷마다 해석이 좀 다양하다
     // (base line 에서부터 위쪽으로 top bearing 을 포함해서 그 위쪽까지의 거리가 필요함)
@@ -383,14 +387,14 @@ FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar) {
     FontGlyph *glyph = new FontGlyph;
     glyph->charCode     = unicodeChar;
     glyph->width        = width;
-    glyph->height       = bitmap->rows;
+    glyph->height       = height;
     glyph->offsetX      = glyphSlot->bitmap_left;
     glyph->offsetY      = ascender - glyphSlot->bitmap_top;
-    glyph->advance      = ((int)glyphSlot->advance.x) >> 6;
-    glyph->s            = (float)(x + GLYPH_BORDER_PIXELS) / texture->GetWidth();
-    glyph->t            = (float)(y + GLYPH_BORDER_PIXELS) / texture->GetHeight();
-    glyph->s2           = (float)(x + GLYPH_BORDER_PIXELS + width) / texture->GetWidth();
-    glyph->t2           = (float)(y + GLYPH_BORDER_PIXELS + bitmap->rows) / texture->GetHeight();
+    glyph->advance      = (((int)glyphSlot->advance.x) >> 6) - (GLYPH_COORD_OFFSET << 1);
+    glyph->s            = (float)(x + (GLYPH_PADDING - GLYPH_COORD_OFFSET)) / texture->GetWidth();
+    glyph->t            = (float)(y + (GLYPH_PADDING - GLYPH_COORD_OFFSET)) / texture->GetHeight();
+    glyph->s2           = (float)(x + allocWidth - (GLYPH_PADDING - GLYPH_COORD_OFFSET)) / texture->GetWidth();
+    glyph->t2           = (float)(y + allocHeight - (GLYPH_PADDING - GLYPH_COORD_OFFSET)) / texture->GetHeight();
 
     glyph->material = materialManager.GetSingleTextureMaterial(texture, Material::TextureHint::Overlay);
 
@@ -408,7 +412,7 @@ int FontFaceFreeType::GetGlyphAdvance(char32_t unicodeChar) const {
 
     // If glyph is not in cache, load glyph to compute advance.
     if (LoadFTGlyph(unicodeChar)) {
-        return ((int)ftFace->glyph->advance.x) >> 6;
+        return (((int)ftFace->glyph->advance.x) >> 6) - (GLYPH_COORD_OFFSET << 1);
     }
 
     return 0;
