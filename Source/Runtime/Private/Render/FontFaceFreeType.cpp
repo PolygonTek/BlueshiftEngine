@@ -159,6 +159,9 @@ bool FontFaceFreeType::Load(const char *filename, int fontSize) {
     // FT_Set_Pixel_Sizes 와는 다르게 fontHeight * fontHeight 를 넘어가는 비트맵이 나올수도 있어서 넉넉하게 가로 세로 두배씩 더 할당
     glyphBuffer = (byte *)Mem_Alloc16(Image::BytesPerPixel(GLYPH_CACHE_TEXTURE_FORMAT) * fontSize * fontSize * 4);
 
+    // Pad with zeros.
+    simdProcessor->Memset(glyphBuffer, 0, fontSize * fontSize * Image::BytesPerPixel(GLYPH_CACHE_TEXTURE_FORMAT));
+
     return true;
 }
 
@@ -191,63 +194,59 @@ void FontFaceFreeType::DrawGlyphBufferFromFTBitmap(const FT_Bitmap *bitmap) cons
     int     b;
         
 #ifdef LCD_MODE_RENDERING
-    int w = bitmap->width / 3 + GLYPH_PADDING * 2;
-    int h = bitmap->rows + GLYPH_PADDING * 2;
+    int w = bitmap->width / 3;
+    int h = bitmap->rows;
 #else
-    int w = bitmap->width + GLYPH_PADDING * 2;
-    int h = bitmap->rows + GLYPH_PADDING * 2;
+    int w = bitmap->width;
+    int h = bitmap->rows;
 #endif
 
-    // Pad with zeros.
-    simdProcessor->Memset(glyphBuffer, 0, w * h * Image::BytesPerPixel(GLYPH_CACHE_TEXTURE_FORMAT));
 
     // Draw FreeType bitmap from here.
-    const byte *buffer_ptr = bitmap->buffer;
+    const byte *bufferPtr = bitmap->buffer;
 
     switch (bitmap->pixel_mode) {
     case FT_PIXEL_MODE_MONO:
         for (y = 0; y < bitmap->rows; y++) {
             for (x = 0, b = 0; x < bitmap->width; x++, b++) {
-                offset = w * (GLYPH_PADDING + y) + GLYPH_PADDING + x;
+                offset = (w * y + x) << 1;
 
-                glyphBuffer[(offset << 1)] = 255;
+                glyphBuffer[offset] = 255;
 
-                if (buffer_ptr[b >> 3] & (0x80 >> (b & 7))) {
-                    glyphBuffer[(offset << 1) + 1] = 255;
+                if (bufferPtr[b >> 3] & (0x80 >> (b & 7))) {
+                    glyphBuffer[offset + 1] = 255;
                 } else {
-                    glyphBuffer[(offset << 1) + 1] = 0;
+                    glyphBuffer[offset + 1] = 0;
                 }
             }
-
-            buffer_ptr += bitmap->pitch;
+            bufferPtr += bitmap->pitch;
         }
         break;
     case FT_PIXEL_MODE_GRAY:
         for (y = 0; y < bitmap->rows; y++) {
             for (x = 0; x < bitmap->width; x++) {
-                offset = w * (GLYPH_PADDING + y) + GLYPH_PADDING + x;
-                glyphBuffer[(offset << 1)] = 255;
-                glyphBuffer[(offset << 1) + 1] = buffer_ptr[x];
-            }
+                offset = (w * y + x) << 1;
 
-            buffer_ptr += bitmap->pitch;
+                glyphBuffer[offset] = 255;
+                glyphBuffer[offset + 1] = bufferPtr[x];
+            }
+            bufferPtr += bitmap->pitch;
         }
         break;
     case FT_PIXEL_MODE_LCD:
         for (y = 0; y < bitmap->rows; y++) {
             for (x = 0; x < bitmap->width / 3; x++) {
-                offset  = (w * (GLYPH_PADDING + y) + GLYPH_PADDING + x) * 4;
-                red     = buffer_ptr[x * 3 + 0];
-                green   = buffer_ptr[x * 3 + 1];
-                blue    = buffer_ptr[x * 3 + 2];
+                offset  = (w * y + x) << 2;
+                red     = bufferPtr[x * 3 + 0];
+                green   = bufferPtr[x * 3 + 1];
+                blue    = bufferPtr[x * 3 + 2];
 
                 glyphBuffer[offset + 0] = red;
                 glyphBuffer[offset + 1] = green;
                 glyphBuffer[offset + 2] = blue;
                 glyphBuffer[offset + 3] = (red + green + blue) / 3;
             }
-
-            buffer_ptr += bitmap->pitch;
+            bufferPtr += bitmap->pitch;
         }
         break;
     default:
@@ -366,7 +365,7 @@ FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar) {
     rhi.SelectTextureUnit(0);
 
     texture->Bind();
-    texture->Update2D(0, x, y, allocWidth, allocHeight, GLYPH_CACHE_TEXTURE_FORMAT, glyphBuffer);
+    texture->Update2D(0, x + GLYPH_PADDING, y + GLYPH_PADDING, width, height, GLYPH_CACHE_TEXTURE_FORMAT, glyphBuffer);
 
     // NOTE: ascender 의 의미가 폰트 포맷마다 해석이 좀 다양하다
     // (base line 에서부터 위쪽으로 top bearing 을 포함해서 그 위쪽까지의 거리가 필요함)
