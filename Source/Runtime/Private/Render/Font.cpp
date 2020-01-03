@@ -66,7 +66,7 @@ int Font::GetGlyphAdvance(char32_t unicodeChar) const {
     return 0;
 }
 
-float Font::StringWidth(const Str &text, int maxLength, bool allowLineBreak, bool allowColoredText, float xScale) const {
+float Font::TextWidth(const Str &text, int maxLength, bool allowLineBreak, bool allowColoredText, float xScale) const {
     float maxWidth = 0;
     float width = 0;
     int offset = 0;

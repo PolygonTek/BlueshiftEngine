@@ -33,12 +33,12 @@ class FontFace {
 public:
     virtual ~FontFace() {}
 
-    virtual int             GetFontHeight() const = 0;
-
     virtual FontGlyph *     GetGlyph(char32_t unicodeChar) = 0;
 
-                            /// Returns width of charCode character for the next character in string.
+                            /// Returns width of given character code for the next character in string.
     virtual int             GetGlyphAdvance(char32_t unicodeChar) const = 0;
+
+    virtual int             GetFontHeight() const = 0;
 
     virtual bool            Load(const char *filename, int fontSize) = 0;
 
@@ -60,12 +60,12 @@ public:
     FontFaceBitmap();
     virtual ~FontFaceBitmap();
 
-    virtual int             GetFontHeight() const override;
-
     virtual FontGlyph *     GetGlyph(char32_t unicodeChar) override;
 
-                            /// Returns width of charCode character for the next character in string.
+                            /// Returns width of given character code for the next character in string.
     virtual int             GetGlyphAdvance(char32_t unicodeChar) const override;
+
+    virtual int             GetFontHeight() const override;
 
     virtual bool            Load(const char *filename, int fontSize) override;
 
@@ -88,12 +88,12 @@ public:
     FontFaceFreeType() = default;
     virtual ~FontFaceFreeType();
 
-    virtual int             GetFontHeight() const override;
-
     virtual FontGlyph *     GetGlyph(char32_t unicodeChar) override;
 
-                            /// Returns width of charCode character for the next character in string.
+                            /// Returns width of given character code for the next character in string.
     virtual int             GetGlyphAdvance(char32_t unicodeChar) const override;
+
+    virtual int             GetFontHeight() const override { return fontHeight; }
 
     virtual bool            Load(const char *filename, int fontSize) override;
 
@@ -106,13 +106,14 @@ private:
     bool                    LoadFTGlyph(char32_t unicodeChar) const;
     void                    DrawGlyphBufferFromFTBitmap(const FT_Bitmap *bitmap) const;
 
-    int                     faceIndex;
     int                     fontHeight;
 
-    byte *                  ftFontFileData = nullptr;       // FreeType font flie data
-    FT_Face                 ftFace = nullptr;
-    mutable char32_t        ftLastLoadedChar;
-    byte *                  glyphBuffer = nullptr;
+    byte *                  ftFontFileData = nullptr;       ///< FreeType font flie data
+    FT_Face                 ftFace = nullptr;               ///< FreeType font face object
+    FT_Long                 ftFaceIndex = 0;
+
+    mutable char32_t        lastLoadedChar;                 ///< Last loaded character code
+    byte *                  glyphBuffer = nullptr;          ///< Intermediate glyph buffer to upload texture
 };
 
 BE_NAMESPACE_END

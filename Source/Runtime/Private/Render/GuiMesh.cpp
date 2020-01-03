@@ -330,7 +330,7 @@ void GuiMesh::DrawText(Font *font, RenderObject::TextAnchor::Enum anchor, Render
         }
 
         if (horzAlignment != RenderObject::TextHorzAlignment::Left) {
-            float lineWidth = font->StringWidth(&text[offset], lineLengths[lineIndex], false, false, textScale);
+            float lineWidth = font->TextWidth(&text[offset], lineLengths[lineIndex], false, false, textScale);
 
             if (horzAlignment == RenderObject::TextHorzAlignment::Right) {
                 x += maxWidth - lineWidth;
@@ -428,7 +428,7 @@ void GuiMesh::DrawTextRect(Font *font, const RectF &rect, RenderObject::TextHorz
         // Calculate the x coordinate.
         float x = rect.x;
         if (horzAlignment != RenderObject::TextHorzAlignment::Left) {
-            float lineWidth = font->StringWidth(&text[offset], lineLengths[lineIndex], false, false, textScale);
+            float lineWidth = font->TextWidth(&text[offset], lineLengths[lineIndex], false, false, textScale);
 
             if (horzAlignment == RenderObject::TextHorzAlignment::Right) {
                 x += rect.w - lineWidth;

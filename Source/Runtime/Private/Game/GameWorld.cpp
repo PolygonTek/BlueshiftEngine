@@ -471,6 +471,7 @@ void GameWorld::FinishMapLoading() {
     renderWorld->FinishMapLoading();
 
     animControllerManager.DestroyUnusedAnimControllers();
+    fontManager.DestroyUnusedFonts();
     textureManager.DestroyUnusedTextures();
     shaderManager.DestroyUnusedShaders();
     materialManager.DestroyUnusedMaterials();

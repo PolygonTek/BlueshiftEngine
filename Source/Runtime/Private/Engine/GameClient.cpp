@@ -401,7 +401,7 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
         // Calculate the x-coordinate
         int x;
         if (flags & (DrawTextFlag::Right | DrawTextFlag::Center)) {
-            int width = currentFont->StringWidth(&text[offset], lineLen[lineIndex], false, true, currentTextScale.x);
+            int width = currentFont->TextWidth(&text[offset], lineLen[lineIndex], false, true, currentTextScale.x);
 
             if (flags & DrawTextFlag::Right) {
                 x = rect.x + rect.w - width - marginX;

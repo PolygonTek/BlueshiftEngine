@@ -20,22 +20,22 @@
 BE_NAMESPACE_BEGIN
 
 struct FontFileHeader {
-    int         ofsBitmaps;     // byte offset of bitmaps
-    int         numBitmaps;     // a number of bitmaps
-    int         ofsGlyphs;      // byte offset of glyphs
-    int         numGlyphs;      // a number of glyphs
+    uint32_t        ofsBitmaps;     // byte offset of bitmaps
+    uint32_t        numBitmaps;     // a number of bitmaps
+    uint32_t        ofsGlyphs;      // byte offset of glyphs
+    uint32_t        numGlyphs;      // a number of glyphs
 };
 
 struct FontFileBitmap {
-    char        name[MaxRelativePath];
+    char            name[MaxRelativePath];
 };
 
 struct FontFileGlyph {
-    int         charCode;
-    int         x, y;
-    int         width, height;
-    float       s, t, s2, t2;
-    int         bitmapIndex;
+    uint32_t        charCode;
+    uint32_t        x, y;
+    uint32_t        width, height;
+    float           s, t, s2, t2;
+    uint32_t        bitmapIndex;
 };
 
 FontFaceBitmap::FontFaceBitmap() {
@@ -102,11 +102,11 @@ bool FontFaceBitmap::Load(const char *filename, int fontSize) {
         glyph->material = materialManager.GetSingleTextureMaterial(texture, Material::TextureHint::Overlay);
         textureManager.ReleaseTexture(texture);
 
-        if (gl->height > maxHeight) {
-            maxHeight = gl->height;
+        if (glyph->height > maxHeight) {
+            maxHeight = glyph->height;
         }
 
-        glyphHashMap.Set(gl->charCode, glyph);
+        glyphHashMap.Set(glyph->charCode, glyph);
     }
 
     delete [] bitmapNames;

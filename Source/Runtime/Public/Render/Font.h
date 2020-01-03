@@ -28,10 +28,10 @@ class FontFace;
 
 // Font glyph information.
 struct FontGlyph {
-    uint32_t                charCode;
     int                     width, height;
     int                     offsetX, offsetY;
     int                     advance;
+    char32_t                charCode;
     float                   s, t, s2, t2;
     Material *              material;
 };
@@ -54,15 +54,17 @@ public:
     const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
 
-    int                     GetFontHeight() const;
-
-                            /// Returns pointer to the glyph structure corresponding to a character. Return null if glyph not found.
+                            /// Returns pointer to the glyph structure corresponding to a character. Return null if no glyphs are found.
     FontGlyph *             GetGlyph(char32_t unicodeChar);
 
-                            /// Returns a offset for a next character.
+                            /// Returns a offset for the next character.
     int                     GetGlyphAdvance(char32_t unicodeChar) const;
 
-    float                   StringWidth(const Str &text, int maxLen, bool allowLineBreak = false, bool allowColoredText = false, float xScale = 1.0f) const;
+                            /// Returns font height in pixels.
+    int                     GetFontHeight() const;
+
+                            /// Computes text width.
+    float                   TextWidth(const Str &text, int maxLen, bool allowLineBreak = false, bool allowColoredText = false, float xScale = 1.0f) const;
 
     void                    Purge();
     bool                    Load(const char *filename);
