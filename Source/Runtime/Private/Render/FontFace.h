@@ -104,7 +104,7 @@ private:
     void                    Purge();
 
     bool                    LoadFTGlyph(char32_t unicodeChar) const;
-    void                    DrawGlyphBufferFromFTBitmap(const FT_Bitmap *bitmap) const;
+    void                    CopyFTBitmapToGlyphBuffer(const FT_Bitmap *bitmap) const;
 
     int                     fontHeight;
 

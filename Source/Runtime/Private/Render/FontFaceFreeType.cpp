@@ -152,7 +152,7 @@ bool FontFaceFreeType::Load(const char *filename, int fontSize) {
         return false;
     }
     
-    // Calcualte font height in pixel units.
+    // Calcualte font height in pixels.
     fontHeight = ((ftFace->size->metrics.height + 63) & ~63) >> 6;
 
     // Allocate temporary buffer for drawing glyphs.
@@ -187,7 +187,7 @@ bool FontFaceFreeType::LoadFTGlyph(char32_t unicodeChar) const {
 }
 
 // FT_Bitmap 으로 부터 glyphBuffer 에 비트맵 데이터를 그린다.
-void FontFaceFreeType::DrawGlyphBufferFromFTBitmap(const FT_Bitmap *bitmap) const {
+void FontFaceFreeType::CopyFTBitmapToGlyphBuffer(const FT_Bitmap *bitmap) const {
     int     offset;
     int     x, y;
     int     red, green, blue;
@@ -200,7 +200,6 @@ void FontFaceFreeType::DrawGlyphBufferFromFTBitmap(const FT_Bitmap *bitmap) cons
     int w = bitmap->width;
     int h = bitmap->rows;
 #endif
-
 
     // Draw FreeType bitmap from here.
     const byte *bufferPtr = bitmap->buffer;
@@ -360,7 +359,7 @@ FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar) {
         return nullptr;
     }
 
-    DrawGlyphBufferFromFTBitmap(bitmap);
+    CopyFTBitmapToGlyphBuffer(&ftFace->glyph->bitmap);
 
     rhi.SelectTextureUnit(0);
 

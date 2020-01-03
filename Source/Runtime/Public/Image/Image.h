@@ -129,10 +129,9 @@ public:
     /// Image flags
     struct Flag {
         enum Enum {
-            Clamp           = BIT(0),
+            LinearSpace     = BIT(0),
             CubeMap         = BIT(1),
-            NormalMap       = BIT(5),
-            LinearSpace     = BIT(7)
+            NormalMap       = BIT(2)
         };
     };
 
