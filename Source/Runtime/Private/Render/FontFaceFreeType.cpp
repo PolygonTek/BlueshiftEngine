@@ -31,7 +31,7 @@ BE_NAMESPACE_BEGIN
 #ifdef LCD_MODE_RENDERING
 #define GLYPH_CACHE_TEXTURE_FORMAT  Image::Format::RGBA_8_8_8_8
 #else
-#define GLYPH_CACHE_TEXTURE_FORMAT  Image::Format::LA_8_8
+#define GLYPH_CACHE_TEXTURE_FORMAT  Image::Format::A_8
 #endif
 
 #define GLYPH_CACHE_TEXTURE_SIZE    2048
@@ -208,14 +208,12 @@ void FontFaceFreeType::CopyFTBitmapToGlyphBuffer(const FT_Bitmap *bitmap) const 
     case FT_PIXEL_MODE_MONO:
         for (y = 0; y < bitmap->rows; y++) {
             for (x = 0, b = 0; x < bitmap->width; x++, b++) {
-                offset = (w * y + x) << 1;
-
-                glyphBuffer[offset] = 255;
+                offset = w * y + x;
 
                 if (bufferPtr[b >> 3] & (0x80 >> (b & 7))) {
-                    glyphBuffer[offset + 1] = 255;
+                    glyphBuffer[offset] = 255;
                 } else {
-                    glyphBuffer[offset + 1] = 0;
+                    glyphBuffer[offset] = 0;
                 }
             }
             bufferPtr += bitmap->pitch;
@@ -224,10 +222,9 @@ void FontFaceFreeType::CopyFTBitmapToGlyphBuffer(const FT_Bitmap *bitmap) const 
     case FT_PIXEL_MODE_GRAY:
         for (y = 0; y < bitmap->rows; y++) {
             for (x = 0; x < bitmap->width; x++) {
-                offset = (w * y + x) << 1;
+                offset = w * y + x;
 
-                glyphBuffer[offset] = 255;
-                glyphBuffer[offset + 1] = bufferPtr[x];
+                glyphBuffer[offset] = bufferPtr[x];
             }
             bufferPtr += bitmap->pitch;
         }
@@ -235,7 +232,8 @@ void FontFaceFreeType::CopyFTBitmapToGlyphBuffer(const FT_Bitmap *bitmap) const 
     case FT_PIXEL_MODE_LCD:
         for (y = 0; y < bitmap->rows; y++) {
             for (x = 0; x < bitmap->width / 3; x++) {
-                offset  = (w * y + x) << 2;
+                offset = (w * y + x) << 2;
+
                 red     = bufferPtr[x * 3 + 0];
                 green   = bufferPtr[x * 3 + 1];
                 blue    = bufferPtr[x * 3 + 2];
