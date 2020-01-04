@@ -428,7 +428,7 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
             } else {
                 Vec3 randomDir = Vec3::FromUniformSampleSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
 
-                particle->direction = Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
+                particle->direction = Math::Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
             }
         } else if (shapeModule.shape == ParticleSystem::ShapeModule::Shape::Sphere) {
             float r = MeterToUnit(shapeModule.radius);
@@ -444,7 +444,7 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
             } else {
                 Vec3 randomDir = Vec3::FromUniformSampleSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
 
-                particle->direction = Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
+                particle->direction = Math::Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
             }
         } else if (shapeModule.shape == ParticleSystem::ShapeModule::Shape::Circle) {
             float r = MeterToUnit(shapeModule.radius);
@@ -461,7 +461,7 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
             } else {
                 Vec3 randomDir = Vec3::FromUniformSampleSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
 
-                particle->direction = Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
+                particle->direction = Math::Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
             }
         } else if (shapeModule.shape == ParticleSystem::ShapeModule::Shape::Cone) {
             float r = MeterToUnit(shapeModule.radius);
@@ -482,7 +482,7 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
                 if (l2 > FLT_EPSILON) {
                     float angleScale = l2 / (r * r);
                     if (shapeModule.randomizeDir > 0) {
-                        angleScale = Lerp(angleScale, RANDOM_FLOAT(-1.f, 1.f), shapeModule.randomizeDir);
+                        angleScale = Math::Lerp(angleScale, RANDOM_FLOAT(-1.f, 1.f), shapeModule.randomizeDir);
                     }
 
                     float rotAngle = shapeModule.angle * angleScale;
@@ -549,7 +549,7 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
         }
 
         if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::Trails)) {
-            trail->size *= Lerp(1.0f, stage->trailsModule.trailScale, (float)pivotIndex / trailCount);
+            trail->size *= Math::Lerp(1.0f, stage->trailsModule.trailScale, (float)pivotIndex / trailCount);
         }
 
         // Compute aspect ratio
@@ -577,11 +577,11 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
             if (trailFrac < stage->colorOverLifetimeModule.fadeLocation) {
                 // fade in
                 float f = trailFrac / stage->colorOverLifetimeModule.fadeLocation;
-                trail->color = Lerp(stage->colorOverLifetimeModule.targetColor, particle->initialColor, f);
+                trail->color = Math::Lerp(stage->colorOverLifetimeModule.targetColor, particle->initialColor, f);
             } else { 
                 // fade out
                 float f = (trailFrac - stage->colorOverLifetimeModule.fadeLocation) / (1.f - stage->colorOverLifetimeModule.fadeLocation);
-                trail->color = Lerp(particle->initialColor, stage->colorOverLifetimeModule.targetColor, f);
+                trail->color = Math::Lerp(particle->initialColor, stage->colorOverLifetimeModule.targetColor, f);
             }
         } else {
             trail->color = particle->initialColor;

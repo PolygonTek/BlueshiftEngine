@@ -284,6 +284,7 @@ public:
     static int                  Abs(int x);
                                 /// Returns the absolute value of the floating point value.
     static float                Fabs(float f);
+
                                 /// Returns the largest integer that is less than or equal to the given value.
     static float                Floor(float f);
                                 /// Returns the smallest integer that is greater than or equal to the given value.
@@ -292,6 +293,7 @@ public:
     static float                Round(float f);
                                 /// Returns the fraction component (part after the decimal).
     static float                Fract(float f);
+
                                 /// Float to int conversion.
     static int                  Ftoi(float f);
                                 /// Fast float to int conversion but uses current FPU round mode (default round nearest).
@@ -305,15 +307,21 @@ public:
                                 /// Float to byte conversion, the result is clamped to the range [0-255].
     static byte                 Ftob(float f);
 
+                                /// Returns factorial number without recursive manner.
     static double               Factorial(unsigned int n);
 
     static float                Snap(float value, float snapSize);
 
+                                /// Returns normalized angle in range [0, 360).
     static float                AngleNormalize360(float angle);
+                                /// Returns normalized angle in range (-180, 180].
     static float                AngleNormalize180(float angle);
+                                /// Returns smallest difference (-180, 180] between two angles.
     static float                AngleDelta(float angle1, float angle2);
 
+                                /// Flip angle in x-axis.
     static float                FlipAngleX(float angle);
+                                /// Flip angle in y-axis.
     static float                FlipAngleY(float angle);
 
     static int                  FloatToBits(float f, int exponentBits, int mantissaBits);
@@ -322,6 +330,18 @@ public:
     static int                  FloatHash(const float *arr, const int numFloats);
 
     static float                Random(float minimum, float maximum);
+
+                                /// Returns linearly interpolated value between p0 and p1 with the given floating point parameter t in range [0, 1].
+    template <typename T> 
+    static T                    Lerp(const T p0, const T p1, float t);
+                                /// Returns linearly interpolated value between p0 and p1 with the given fixed point parameter t in range [0, 255].
+    static int                  FixedLerp(int p0, int p1, int t);
+
+                                /// Returns cubic interpolated value between p0, p1, p2 and p3 with the given floating point parameter t in range [0, 1].
+    template <typename T> 
+    static T                    Cerp(const T p0, const T p1, const T p2, const T p3, float t);
+                                /// Returns cubic interpolated value between p0, p1, p2 and p3 with the given fixed point parameter t in range [0, 255].
+    static int                  FixedCerp(int p0, int p1, int p2, int p3, int t);
 
 private:
     enum {
@@ -1055,23 +1075,9 @@ BE_INLINE float Math::Random(float minimum, float maximum) {
     return minimum + (maximum - minimum) * ((float)::rand() / (float)RAND_MAX);
 }
 
-template <typename T> 
-BE_INLINE T	Lerp(const T p0, const T p1, float t) { 
-    return p0 + ((p1 - p0) * t); 
-}
-
-template<> 
-BE_INLINE int Lerp(const int p0, const int p1, float t) { 
-    return (int)((float)p0 + (((float)p1 - (float)p0) * t)); 
-}
-
 template <typename T>
-BE_INLINE T	Cerp(const T p0, const T p1, const T p2, const T p3, float t) {
-    T a = p3 - 3 * p2 + 3 * p1 - p0;
-    T b = p2 - 2 * p1 + p0 - a; // simplified version of (-p3 + 4 * p2 - 5 * p1 + 2 * p0)
-    T c = p2 - p0;
-    T d = 2 * p1;
-    return (t * (t * (t * a + b) + c) + d) * 0.5f;
+BE_INLINE T Math::Lerp(const T p0, const T p1, float t) {
+    return p0 + ((p1 - p0) * t); 
 }
 
 // Fixed point linear interpolation
@@ -1079,13 +1085,22 @@ BE_INLINE T	Cerp(const T p0, const T p1, const T p2, const T p3, float t) {
 // p0: f(0)
 // p1: f(1)
 // t: interpolater in range [0, 255]
-BE_INLINE int FixedLerp(int p0, int p1, int t) {
+BE_INLINE int Math::FixedLerp(int p0, int p1, int t) {
     // p0 : f(0) = b
     // p1 : f(1) = a + b
     //
     // a = p1 - p0
     // b = p0
     return ((p0 << 8) + (p1 - p0) * t) >> 8;
+}
+
+template <typename T>
+BE_INLINE T Math::Cerp(const T p0, const T p1, const T p2, const T p3, float t) {
+    T a = p3 - 3 * p2 + 3 * p1 - p0;
+    T b = p2 - 2 * p1 + p0 - a; // simplified version of (-p3 + 4 * p2 - 5 * p1 + 2 * p0)
+    T c = p2 - p0;
+    T d = 2 * p1;
+    return (t * (t * (t * a + b) + c) + d) * 0.5f;
 }
 
 // Fixed point cubic interpolation
@@ -1095,7 +1110,7 @@ BE_INLINE int FixedLerp(int p0, int p1, int t) {
 // p2: f(1)
 // p3: f(2)
 // t: interpolater in range [0, 127]
-BE_INLINE int FixedCerp(int p0, int p1, int p2, int p3, int t) {
+BE_INLINE int Math::FixedCerp(int p0, int p1, int p2, int p3, int t) {
 #if 0
     // Hermite cubic spline with 4 points
     // f'(x) = 3ax^2 + 2bx + c

@@ -234,10 +234,10 @@ Vec2 ComRectTransform::WorldPosToNormalized(const Vec3 &worldPosition) const {
 }
 
 Vec3 ComRectTransform::ComputeWorldPositionFromNormalized(const Vec3(&worldCorners)[4], const Vec2 &normalizedPos) {
-    Vec3 b = Lerp(worldCorners[0], worldCorners[1], normalizedPos.x);
-    Vec3 t = Lerp(worldCorners[3], worldCorners[2], normalizedPos.x);
+    Vec3 b = Math::Lerp(worldCorners[0], worldCorners[1], normalizedPos.x);
+    Vec3 t = Math::Lerp(worldCorners[3], worldCorners[2], normalizedPos.x);
 
-    return Lerp(b, t, normalizedPos.y);
+    return Math::Lerp(b, t, normalizedPos.y);
 }
 
 Vec2 ComRectTransform::ComputeNormalizedPositionFromWorld(const Vec3 (&worldCorners)[4], const Vec3 &worldPos) {

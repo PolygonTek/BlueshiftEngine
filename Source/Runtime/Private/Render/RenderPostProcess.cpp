@@ -52,7 +52,7 @@ void PP_Init() {
 
     for (int i = 0; i < COUNT_OF(ssaoRandomKernel); i++) {
         float scale = (float)i / COUNT_OF(ssaoRandomKernel);
-        scale = Lerp(0.1f, 1.0f, scale * scale);
+        scale = Math::Lerp(0.1f, 1.0f, scale * scale);
 
         ssaoRandomKernel[i].Normalize();
         ssaoRandomKernel[i] *= scale;

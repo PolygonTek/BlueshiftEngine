@@ -583,12 +583,12 @@ BE_FORCE_INLINE constexpr T Min(const T &x, const T &y) { return (x < y) ? x : y
 template <typename T>
 BE_FORCE_INLINE constexpr T Max(const T &x, const T &y) { return (x > y) ? x : y; }
 
-/// Returns the smaller index of two values. 
-template <typename T>
-BE_FORCE_INLINE constexpr int MaxIndex(const T &x, const T &y) { return (x > y) ? 0 : 1; }
-/// Returns the larger index of two values.
+/// Returns the smaller index of two values.
 template <typename T>
 BE_FORCE_INLINE constexpr int MinIndex(const T &x, const T &y) { return (x < y) ? 0 : 1; }
+/// Returns the larger index of two values.
+template <typename T>
+BE_FORCE_INLINE constexpr int MaxIndex(const T &x, const T &y) { return (x > y) ? 0 : 1; }
 
 /// Returns the smaller of three values.
 template <typename T>

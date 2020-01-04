@@ -221,12 +221,12 @@ void ComImage::UpdateRawVertexes() {
         float y2b = y2 - borderRB.y;
 
         if (bx > x2 - x1) {
-            x1b = Lerp(x1, x2, borderLT.x / bx);
+            x1b = Math::Lerp(x1, x2, borderLT.x / bx);
             x2b = x1b;
         }
 
         if (by > y2 - y1) {
-            y1b = Lerp(y1, y2, borderLT.y / by);
+            y1b = Math::Lerp(y1, y2, borderLT.y / by);
             y2b = y1b;
         }
 

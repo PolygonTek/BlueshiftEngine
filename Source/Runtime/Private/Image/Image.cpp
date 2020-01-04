@@ -271,10 +271,10 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWra
         info->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3], 1, isGamma);
 
         for (int i = 0; i < numComponents; i++) {
-            float a = Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
-            float b = Lerp(rgba32f[2][i], rgba32f[3][i], fracX);
+            float a = Math::Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
+            float b = Math::Lerp(rgba32f[2][i], rgba32f[3][i], fracX);
 
-            color[i] = Lerp(a, b, fracY);
+            color[i] = Math::Lerp(a, b, fracY);
         }
     } else {
         // [0] [1]
@@ -287,10 +287,10 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWra
         info->unpackRGBA8888(&srcY1[iX1 * bpp], rgba8888[3], 1, isGamma);
 
         for (int i = 0; i < numComponents; i++) {
-            byte a = Lerp(rgba8888[0][i], rgba8888[1][i], fracX);
-            byte b = Lerp(rgba8888[2][i], rgba8888[3][i], fracX);
+            byte a = Math::Lerp(rgba8888[0][i], rgba8888[1][i], fracX);
+            byte b = Math::Lerp(rgba8888[2][i], rgba8888[3][i], fracX);
 
-            color[i] = Lerp(a, b, fracY) / 255.0f;
+            color[i] = Math::Lerp(a, b, fracY) / 255.0f;
         }
     }
 
@@ -340,10 +340,10 @@ Color4 Image::SampleCube(const Vec3 &str, int level) const {
         info->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3], 1, isGamma);
 
         for (int i = 0; i < numComponents; i++) {
-            float a = Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
-            float b = Lerp(rgba32f[2][i], rgba32f[3][i], fracX);
+            float a = Math::Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
+            float b = Math::Lerp(rgba32f[2][i], rgba32f[3][i], fracX);
 
-            color[i] = Lerp(a, b, fracY);
+            color[i] = Math::Lerp(a, b, fracY);
         }
     } else {
         // [0] [1]
@@ -356,10 +356,10 @@ Color4 Image::SampleCube(const Vec3 &str, int level) const {
         info->unpackRGBA8888(&srcY1[iX1 * bpp], rgba8888[3], 1, isGamma);
 
         for (int i = 0; i < numComponents; i++) {
-            byte a = Lerp(rgba8888[0][i], rgba8888[1][i], fracX);
-            byte b = Lerp(rgba8888[2][i], rgba8888[3][i], fracX);
+            byte a = Math::Lerp(rgba8888[0][i], rgba8888[1][i], fracX);
+            byte b = Math::Lerp(rgba8888[2][i], rgba8888[3][i], fracX);
 
-            color[i] = Lerp(a, b, fracY) / 255.0f;
+            color[i] = Math::Lerp(a, b, fracY) / 255.0f;
         }
     }
 

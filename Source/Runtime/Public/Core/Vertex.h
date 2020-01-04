@@ -111,8 +111,8 @@ BE_INLINE uint32_t VertexGeneric::GetColor() const {
 }
 
 BE_INLINE void VertexGeneric::Lerp(const VertexGeneric &a, const VertexGeneric &b, const float f) {
-    xyz = BE1::Lerp(a.xyz, b.xyz, f);
-    SetTexCoord(BE1::Lerp(a.GetTexCoord(), b.GetTexCoord(), f));
+    xyz = Math::Lerp(a.xyz, b.xyz, f);
+    SetTexCoord(Math::Lerp(a.GetTexCoord(), b.GetTexCoord(), f));
 
     color[0] = (byte)(a.color[0] + f * (b.color[0] - a.color[0]));
     color[1] = (byte)(a.color[1] + f * (b.color[1] - a.color[1]));
@@ -365,9 +365,9 @@ BE_INLINE void VertexGenericLit::SetBiTangentSign(float sign) {
 BE_INLINE void VertexGenericLit::Lerp(const VertexGenericLit &a, const VertexGenericLit &b, const float f) {
     VertexGeneric::Lerp(a, b, f);
 
-    Vec3 normal = BE1::Lerp(a.GetNormal(), b.GetNormal(), f);
-    Vec3 tangent = BE1::Lerp(a.GetTangent(), b.GetTangent(), f);
-    Vec3 bitangent = BE1::Lerp(a.GetBiTangent(), b.GetBiTangent(), f);
+    Vec3 normal = Math::Lerp(a.GetNormal(), b.GetNormal(), f);
+    Vec3 tangent = Math::Lerp(a.GetTangent(), b.GetTangent(), f);
+    Vec3 bitangent = Math::Lerp(a.GetBiTangent(), b.GetBiTangent(), f);
     
     normal.Normalize();
     tangent.Normalize();

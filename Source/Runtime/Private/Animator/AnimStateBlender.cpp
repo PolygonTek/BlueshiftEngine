@@ -71,7 +71,7 @@ float AnimStateBlender::GetBlendWeight(int currentTime) const {
         w = blendEndWeight;
     } else {
         float frac = Clamp((float)timeDelta / (float)blendDuration, 0.0f, 1.0f);
-        w = Lerp(blendStartWeight, blendEndWeight, frac);
+        w = Math::Lerp(blendStartWeight, blendEndWeight, frac);
     }
 
     return w;
@@ -233,7 +233,7 @@ bool AnimStateBlender::BlendTranslation(int currentTime, Vec3 &blendedTranslatio
     } else {
         blendedWeight += currentWeight;
         float fraction = currentWeight / blendedWeight;
-        blendedTranslation = Lerp(blendedTranslation, translation, fraction);
+        blendedTranslation = Math::Lerp(blendedTranslation, translation, fraction);
     }
 
     return true;
@@ -266,7 +266,7 @@ bool AnimStateBlender::BlendTranslationDelta(int fromTime, int toTime, Vec3 &ble
     } else {
         blendedWeight += currentWeight;
         float fraction = currentWeight / blendedWeight;
-        blendedDelta = Lerp(blendedDelta, delta, fraction);
+        blendedDelta = Math::Lerp(blendedDelta, delta, fraction);
     }
 
     return true;
