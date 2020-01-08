@@ -47,6 +47,14 @@ void Color3::Invert() {
     b = 1.0f - b;
 }
 
+Color3 &Color3::Grayscale() {
+    r = r * 0.299f;
+    g = g * 0.587f;
+    b = b * 0.114f;
+
+    return *this;
+}
+
 uint32_t Color3::ToUInt32() const {
     uint32_t ur = (uint32_t)Clamp(((int)(r * 255.0f)), 0, 255);
     uint32_t ug = (uint32_t)Clamp(((int)(g * 255.0f)), 0, 255);

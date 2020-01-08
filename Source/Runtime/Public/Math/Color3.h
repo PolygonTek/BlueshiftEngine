@@ -159,6 +159,8 @@ public:
     void                Clip();
                         /// Inverts the RGB channels.
     void                Invert();
+                        /// Grayscale this color, in-place.
+    Color3 &            Grayscale();
 
                         /// Returns "r g b".
     const char *        ToString() const { return ToString(4); }

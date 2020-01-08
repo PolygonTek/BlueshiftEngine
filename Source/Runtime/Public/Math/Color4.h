@@ -172,6 +172,8 @@ public:
     void                Clip(bool clipAlpha = false);
                         /// Inverts the RGB channels and optionally the alpha channel as well.
     void                Invert(bool invertAlpha = false);
+                        /// Grayscale this color, in-place.
+    Color4 &            Grayscale();
 
                         /// Returns "r g b a".
     const char *        ToString() const { return ToString(4); }

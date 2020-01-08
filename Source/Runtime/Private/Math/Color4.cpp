@@ -55,6 +55,14 @@ void Color4::Invert(bool invertAlpha) {
     }
 }
 
+Color4 &Color4::Grayscale() {
+    r = r * 0.299f;
+    g = g * 0.587f;
+    b = b * 0.114f;
+
+    return *this;
+}
+
 uint32_t Color4::ToUInt32() const {
     uint32_t ur = (uint32_t)Clamp(((int)(r * 255.0f)), 0, 255);
     uint32_t ug = (uint32_t)Clamp(((int)(g * 255.0f)), 0, 255);
