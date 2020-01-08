@@ -348,9 +348,9 @@ private:
         LOOKUP_BITS             = 8,
         EXP_POS                 = 23,
         EXP_BIAS                = 127,
-        LOOKUP_POS              = (EXP_POS-LOOKUP_BITS), 
+        LOOKUP_POS              = (EXP_POS - LOOKUP_BITS), 
         SEED_POS                = (EXP_POS-8), 
-        SQRT_TABLE_SIZE         = (2<<LOOKUP_BITS), 
+        SQRT_TABLE_SIZE         = (2 << LOOKUP_BITS), 
         LOOKUP_MASK             = (SQRT_TABLE_SIZE-1)
     };
 
@@ -376,26 +376,26 @@ BE_INLINE float Math::RSqrt(float x) {
 }
 
 BE_INLINE float Math::InvSqrt16(float x) {
-    uint32_t a = ((union _flint*)(&x))->i;
+    uint32_t a = ((union _flint *)(&x))->i;
     union _flint seed;
 
     assert(initialized);
 
     double y = x * 0.5f;
-    seed.i = ((((3*EXP_BIAS-1) - ((a >> EXP_POS) & 0xFF)) >> 1)<<EXP_POS) | iSqrt[(a >> (EXP_POS-LOOKUP_BITS)) & LOOKUP_MASK];
+    seed.i = ((((3 * EXP_BIAS - 1) - ((a >> EXP_POS) & 0xFF)) >> 1) << EXP_POS) | iSqrt[(a >> (EXP_POS-LOOKUP_BITS)) & LOOKUP_MASK];
     double r = seed.f;
     r = r * (1.5f - r * r * y);
     return (float)r;
 }
 
 BE_INLINE float Math::InvSqrt(float x) {
-    uint32_t a = ((union _flint*)(&x))->i;
+    uint32_t a = ((union _flint *)(&x))->i;
     union _flint seed;
 
     assert(initialized);
 
     double y = x * 0.5f;
-    seed.i = ((((3*EXP_BIAS-1) - ((a >> EXP_POS) & 0xFF)) >> 1)<<EXP_POS) | iSqrt[(a >> (EXP_POS-LOOKUP_BITS)) & LOOKUP_MASK];
+    seed.i = ((((3 * EXP_BIAS - 1) - ((a >> EXP_POS) & 0xFF)) >> 1) << EXP_POS) | iSqrt[(a >> (EXP_POS-LOOKUP_BITS)) & LOOKUP_MASK];
     double r = seed.f;
     r = r * (1.5f - r * r * y);
     r = r * (1.5f - r * r * y);
@@ -403,13 +403,13 @@ BE_INLINE float Math::InvSqrt(float x) {
 }
 
 BE_INLINE double Math::InvSqrt64(float x) {
-    uint32_t a = ((union _flint*)(&x))->i;
+    uint32_t a = ((union _flint *)(&x))->i;
     union _flint seed;
 
     assert(initialized);
 
     double y = x * 0.5f;
-    seed.i = ((((3*EXP_BIAS-1) - ((a >> EXP_POS) & 0xFF)) >> 1)<<EXP_POS) | iSqrt[(a >> (EXP_POS-LOOKUP_BITS)) & LOOKUP_MASK];
+    seed.i = ((((3 * EXP_BIAS - 1) - ((a >> EXP_POS) & 0xFF)) >> 1) << EXP_POS) | iSqrt[(a >> (EXP_POS-LOOKUP_BITS)) & LOOKUP_MASK];
     double r = seed.f;
     r = r * (1.5f - r * r * y);
     r = r * (1.5f - r * r * y);
