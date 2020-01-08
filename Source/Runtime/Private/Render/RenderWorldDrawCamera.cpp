@@ -209,7 +209,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
         }
 
         if (r_showAABB.GetInteger() > 0) {
-            SetDebugColor(Color4::blue, Color4::zero);
+            SetDebugColor(Color4(0.0f, 0.0f, 1.0f, 1.0f), Color4::zero);
             DebugAABB(proxy->worldAABB, 1, true, r_showAABB.GetInteger() == 1 ? true : false);
         }
 
@@ -277,7 +277,7 @@ void RenderWorld::AddStaticMeshes(VisCamera *camera) {
         surf->drawSurf = camera->drawSurfs[camera->numDrawSurfs - 1];
 
         if (r_showAABB.GetInteger() > 0) {
-            SetDebugColor(Color4(1, 1, 1, 0.5), Color4::zero);
+            SetDebugColor(Color4(1.0f, 1.0f, 1.0f, 0.5f), Color4::zero);
             DebugAABB(proxy->worldAABB, 1, true, r_showAABB.GetInteger() == 1 ? true : false);
         }
 
@@ -509,7 +509,8 @@ void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
 
     // Skybox object parameters
     RenderObject::State roDef;
-    roDef.flags = RenderObject::Flag::Static | RenderObject::Flag::SkipSelection;
+    roDef.staticMask = -1;
+    roDef.flags = RenderObject::Flag::SkipSelection;
     roDef.worldMatrix.SetTRS(camera->def->GetState().origin, Mat3::identity, Vec3(10, 10, 10));
     roDef.materialParms[RenderObject::MaterialParm::Red] = 1.0f;
     roDef.materialParms[RenderObject::MaterialParm::Green] = 1.0f;

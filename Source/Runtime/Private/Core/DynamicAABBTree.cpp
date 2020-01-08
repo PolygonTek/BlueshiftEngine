@@ -18,30 +18,29 @@
 
 BE_NAMESPACE_BEGIN
 
-const int32_t   DEFAULT_CAPACITY            = 16;
-const float     DISPLACEMENT_MULTIPLIER     = 2.0f;
+constexpr int32_t   DefaultNodeCapacity         = 256;
+constexpr float     DisplacementMultiplier      = 2.0f;
 
 DynamicAABBTree::DynamicAABBTree() {
-    nodeCapacity = DEFAULT_CAPACITY;
-    nodes = (Node *)Mem_Alloc(nodeCapacity * sizeof(nodes[0]));
-    Purge();
+    Clear();
 }
 
 DynamicAABBTree::~DynamicAABBTree() {
     Mem_Free(nodes);
 }
 
-void DynamicAABBTree::Purge(bool clearNodes) {
-    if (clearNodes) {
+void DynamicAABBTree::Clear() {
+    if (nodes) {
         Mem_Free(nodes);
-        nodeCapacity = DEFAULT_CAPACITY;
-        nodes = (Node *)Mem_Alloc(nodeCapacity * sizeof(nodes[0]));
     }
+
+    nodeCapacity = DefaultNodeCapacity;
+    nodes = (Node *)Mem_Alloc(nodeCapacity * sizeof(nodes[0]));
 
     memset(nodes, 0, nodeCapacity * sizeof(nodes[0]));
     nodeCount = 0;
     
-    // Build a linked list for the free list
+    // Build a linked list for the free list.
     Node *node = nodes;
     for (int32_t i = 0; i < nodeCapacity - 1; i++, node++) {
         node->next = i + 1;
@@ -67,8 +66,8 @@ int32_t DynamicAABBTree::AllocNode() {
         memcpy(nodes, oldNodes, nodeCount * sizeof(nodes[0]));
         Mem_Free(oldNodes);
 
-        // Build a linked list for the free list. The parent
-        // pointer becomes the "next" pointer.
+        // Build a linked list for the free list. 
+        // The parent pointer becomes the "next" pointer.
         Node *node = &nodes[nodeCount];
         for (int32_t i = nodeCount; i < nodeCapacity - 1; i++, node++) {
             node->next = i + 1;
@@ -79,7 +78,7 @@ int32_t DynamicAABBTree::AllocNode() {
         freeList = nodeCount;
     }
 
-    // Peel a node off the free list
+    // Peel a node off the free list.
     int32_t nodeId = freeList;
     Node *node = &nodes[freeList];
     freeList = node->next;
@@ -92,7 +91,7 @@ int32_t DynamicAABBTree::AllocNode() {
     return nodeId;
 }
 
-// Return a node to the pool
+// Return a node to the pool.
 void DynamicAABBTree::FreeNode(int32_t nodeId) {
     assert(0 <= nodeId && nodeId < nodeCapacity);
     assert(0 < nodeCount);
@@ -142,7 +141,7 @@ bool DynamicAABBTree::MoveProxy(int32_t proxyId, const AABB &aabb, float expansi
     b.ExpandSelf(expansion);
 
     // Predict AABB displacement.
-    Vec3 d = DISPLACEMENT_MULTIPLIER * displacement;
+    Vec3 d = DisplacementMultiplier * displacement;
 
     if (d.x < 0.0f) {
         b[0].x += d.x;
@@ -177,9 +176,10 @@ void DynamicAABBTree::InsertLeaf(int32_t leaf) {
         return;
     }
 
-    // Find the best sibling for this node
+    // Find the best sibling for this node.
     AABB leafAABB = nodes[leaf].aabb;
     int32_t index = root;
+
     while (nodes[index].IsLeaf() == false) {
         int32_t child1 = nodes[index].child1;
         int32_t child2 = nodes[index].child2;
@@ -189,13 +189,13 @@ void DynamicAABBTree::InsertLeaf(int32_t leaf) {
         AABB combinedAABB = nodes[index].aabb + leafAABB;
         float combinedArea = combinedAABB.Area();
 
-        // Cost of creating a new parent for this node and the new leaf
+        // Cost of creating a new parent for this node and the new leaf.
         float cost = 2.0f * combinedArea;
 
-        // Minimum cost of pushing the leaf further down the tree
+        // Minimum cost of pushing the leaf further down the tree.
         float inheritanceCost = 2.0f * (combinedArea - area);
 
-        // Cost of descending into child1
+        // Cost of descending into child1.
         float cost1;
         if (nodes[child1].IsLeaf()) {
             AABB aabb = leafAABB + nodes[child1].aabb;
@@ -207,7 +207,7 @@ void DynamicAABBTree::InsertLeaf(int32_t leaf) {
             cost1 = (newArea - oldArea) + inheritanceCost;
         }
 
-        // Cost of descending into child2
+        // Cost of descending into child2.
         float cost2;
         if (nodes[child2].IsLeaf()) {
             AABB aabb = leafAABB + nodes[child2].aabb;
@@ -224,7 +224,7 @@ void DynamicAABBTree::InsertLeaf(int32_t leaf) {
             break;
         }
 
-        // Descend
+        // Descend.
         if (cost1 < cost2) {
             index = child1;
         } else {
@@ -248,7 +248,7 @@ void DynamicAABBTree::InsertLeaf(int32_t leaf) {
             nodes[oldParent].child1 = newParent;
         } else {
             nodes[oldParent].child2 = newParent;
-        }	
+        }
     } else {
         // The sibling was the root.
         root = newParent;
@@ -258,7 +258,7 @@ void DynamicAABBTree::InsertLeaf(int32_t leaf) {
     nodes[sibling].parent = newParent;
     nodes[leaf].parent = newParent;
 
-    // Walk back up the tree fixing heights and AABBs
+    // Walk back up the tree fixing heights and AABBs.
     index = nodes[leaf].parent;
     while (index != -1) {
         index = Balance(index);
@@ -287,6 +287,7 @@ void DynamicAABBTree::RemoveLeaf(int32_t leaf) {
     int32_t parent = nodes[leaf].parent;
     int32_t grandParent = nodes[parent].parent;
     int32_t sibling;
+
     if (nodes[parent].child1 == leaf) {
         sibling = nodes[parent].child2;
     } else {
@@ -345,7 +346,7 @@ int32_t DynamicAABBTree::Balance(int32_t iA) {
 
     int32_t balance = C->height - B->height;
 
-    // Rotate C up
+    // Rotate C up.
     if (balance > 1) {
         int32_t iF = C->child1;
         int32_t iG = C->child2;
@@ -354,12 +355,12 @@ int32_t DynamicAABBTree::Balance(int32_t iA) {
         assert(0 <= iF && iF < nodeCapacity);
         assert(0 <= iG && iG < nodeCapacity);
 
-        // Swap A and C
+        // Swap A and C.
         C->child1 = iA;
         C->parent = A->parent;
         A->parent = iC;
 
-        // A's old parent should point to C
+        // A's old parent should point to C.
         if (C->parent != -1) {
             if (nodes[C->parent].child1 == iA) {
                 nodes[C->parent].child1 = iC;
@@ -371,7 +372,7 @@ int32_t DynamicAABBTree::Balance(int32_t iA) {
             root = iC;
         }
 
-        // Rotate
+        // Rotate.
         if (F->height > G->height) {
             C->child2 = iF;
             A->child2 = iG;
@@ -395,7 +396,7 @@ int32_t DynamicAABBTree::Balance(int32_t iA) {
         return iC;
     }
 
-    // Rotate B up
+    // Rotate B up.
     if (balance < -1) {
         int32_t iD = B->child1;
         int32_t iE = B->child2;
@@ -404,12 +405,12 @@ int32_t DynamicAABBTree::Balance(int32_t iA) {
         assert(0 <= iD && iD < nodeCapacity);
         assert(0 <= iE && iE < nodeCapacity);
 
-        // Swap A and B
+        // Swap A and B.
         B->child1 = iA;
         B->parent = A->parent;
         A->parent = iB;
 
-        // A's old parent should point to B
+        // A's old parent should point to B.
         if (B->parent != -1) {
             if (nodes[B->parent].child1 == iA) {
                 nodes[B->parent].child1 = iB;
@@ -421,7 +422,7 @@ int32_t DynamicAABBTree::Balance(int32_t iA) {
             root = iB;
         }
 
-        // Rotate
+        // Rotate.
         if (D->height > E->height) {
             B->child2 = iD;
             A->child1 = iE;
@@ -465,10 +466,12 @@ float DynamicAABBTree::GetAreaRatio() const {
     float rootArea = rootNode->aabb.Area();
 
     float totalArea = 0.0f;
+
     for (int32_t i = 0; i < nodeCapacity; ++i) {
         const Node *node = nodes + i;
+
         if (node->height < 0) {
-            // Free node in pool
+            // Free node in pool.
             continue;
         }
 
@@ -489,6 +492,7 @@ int32_t DynamicAABBTree::ComputeHeight(int32_t nodeId) const {
 
     int32_t height1 = ComputeHeight(node->child1);
     int32_t height2 = ComputeHeight(node->child2);
+
     return 1 + Max(height1, height2);
 }
 
@@ -499,8 +503,10 @@ int32_t DynamicAABBTree::ComputeHeight() const {
 
 int32_t DynamicAABBTree::GetMaxBalance() const {
     int32_t maxBalance = 0;
+
     for (int32_t i = 0; i < nodeCapacity; ++i) {
         const Node *node = nodes + i;
+
         if (node->height <= 1) {
             continue;
         }
@@ -510,13 +516,12 @@ int32_t DynamicAABBTree::GetMaxBalance() const {
         int32_t child1 = node->child1;
         int32_t child2 = node->child2;
         int32_t balance = Math::Abs(nodes[child2].height - nodes[child1].height);
+
         maxBalance = Max(maxBalance, balance);
     }
 
     return maxBalance;
 }
-
-#pragma optimize("", on)
 
 void DynamicAABBTree::ValidateStructure(int32_t index) const {
     if (index == -1) {
@@ -580,8 +585,8 @@ void DynamicAABBTree::ValidateMetrics(int32_t index) const {
 
     int32_t height1 = nodes[child1].height;
     int32_t height2 = nodes[child2].height;
-    int32_t height;
-    height = 1 + Max(height1, height2);
+    int32_t height = 1 + Max(height1, height2);
+
     assert(node->height == height);
 
     AABB aabb = nodes[child1].aabb + nodes[child2].aabb;
@@ -599,6 +604,7 @@ void DynamicAABBTree::Validate() const {
 
     int32_t freeCount = 0;
     int32_t freeIndex = freeList;
+
     while (freeIndex != -1) {
         assert(0 <= freeIndex && freeIndex < nodeCapacity);
         freeIndex = nodes[freeIndex].next;
@@ -608,6 +614,8 @@ void DynamicAABBTree::Validate() const {
     assert(GetHeight() == ComputeHeight());
     assert(nodeCount + freeCount == nodeCapacity);
 }
+
+#pragma optimize("", on)
 
 void DynamicAABBTree::RebuildBottomUp() {
     if (nodeCount == 0) {
@@ -620,7 +628,7 @@ void DynamicAABBTree::RebuildBottomUp() {
     // Build array of leaves. Free the rest.
     for (int32_t i = 0; i < nodeCapacity; ++i) {
         if (nodes[i].height < 0) {
-            // free node in pool
+            // Free node in pool.
             continue;
         }
 
@@ -636,6 +644,7 @@ void DynamicAABBTree::RebuildBottomUp() {
     while (count > 1) {
         float minCost = FLT_MAX;
         int32_t iMin = -1, jMin = -1;
+
         for (int32_t i = 0; i < count; ++i) {
             AABB aabbi = nodes[nodeIndexes[i]].aabb;
 

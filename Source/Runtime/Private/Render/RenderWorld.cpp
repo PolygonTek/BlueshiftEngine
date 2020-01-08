@@ -54,10 +54,10 @@ RenderWorld::~RenderWorld() {
 }
 
 void RenderWorld::ClearScene() {
-    objectDbvt.Purge();
-    lightDbvt.Purge();
-    staticMeshDbvt.Purge();
-    probeDbvt.Purge();
+    objectDbvt.Clear();
+    lightDbvt.Clear();
+    staticMeshDbvt.Clear();
+    probeDbvt.Clear();
 
     for (int i = 0; i < renderObjects.Count(); i++) {
         SAFE_DELETE(renderObjects[i]);
@@ -114,7 +114,7 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
         renderObject->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
         renderObject->proxy->renderObject = renderObject;
         renderObject->proxy->worldAABB = renderObject->GetWorldAABB();
-        renderObject->proxy->id = objectDbvt.CreateProxy(renderObject->proxy->worldAABB, MeterToUnit(0.5f), renderObject->proxy);
+        renderObject->proxy->id = objectDbvt.CreateProxy(renderObject->proxy->worldAABB, MeterToUnit(0.0f), renderObject->proxy);
 
         // If this object is a static mesh, add proxy for each sub meshes in the DBVT for the static meshes
         if (def->mesh && !def->joints) {
@@ -141,14 +141,12 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
         Vec3 displacement;
         if (proxyMoved) {
             displacement = def->worldMatrix.ToTranslationVec3() - renderObject->state.worldMatrix.ToTranslationVec3();
+
+            renderObject->proxy->worldAABB.SetFromTransformedAABBFast(def->aabb, def->worldMatrix);
+            objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->worldAABB, MeterToUnit(0.1f), displacement);
         }
 
         if (proxyMoved || !meshMatch) {
-            if (proxyMoved) {
-                renderObject->proxy->worldAABB.SetFromTransformedAABBFast(def->aabb, def->worldMatrix);
-                objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->worldAABB, MeterToUnit(0.5f), displacement);
-            }
-
             // If this object is a static mesh
             if (renderObject->state.mesh && !renderObject->state.joints) {
                 // mesh surface count changed so we recreate static proxies
@@ -174,7 +172,7 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
                     if (proxyMoved) {
                         for (int surfaceIndex = 0; surfaceIndex < def->mesh->NumSurfaces(); surfaceIndex++) {
                             renderObject->meshSurfProxies[surfaceIndex].worldAABB.SetFromTransformedAABBFast(def->mesh->GetSurface(surfaceIndex)->subMesh->GetAABB(), def->worldMatrix);
-                            staticMeshDbvt.MoveProxy(renderObject->meshSurfProxies[surfaceIndex].id, renderObject->meshSurfProxies[surfaceIndex].worldAABB, MeterToUnit(0.5f), displacement);
+                            staticMeshDbvt.MoveProxy(renderObject->meshSurfProxies[surfaceIndex].id, renderObject->meshSurfProxies[surfaceIndex].worldAABB, MeterToUnit(0.1f), displacement);
                         }
                     }
                 }
@@ -260,7 +258,7 @@ void RenderWorld::UpdateRenderLight(int handle, const RenderLight::State *def) {
             renderLight->Update(def);
             renderLight->proxy->worldAABB = renderLight->GetWorldAABB();
 
-            lightDbvt.MoveProxy(renderLight->proxy->id, renderLight->proxy->worldAABB, MeterToUnit(0.5f), displacement);
+            lightDbvt.MoveProxy(renderLight->proxy->id, renderLight->proxy->worldAABB, MeterToUnit(0.1f), displacement);
         } else {
             renderLight->Update(def);
         }
@@ -326,7 +324,7 @@ void RenderWorld::UpdateEnvProbe(int handle, const EnvProbe::State *def) {
         envProbe->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
         envProbe->proxy->envProbe = envProbe;
         envProbe->proxy->worldAABB = envProbe->GetInfluenceAABB();
-        envProbe->proxy->id = probeDbvt.CreateProxy(envProbe->proxy->worldAABB, MeterToUnit(0.0f), envProbe->proxy);
+        envProbe->proxy->id = probeDbvt.CreateProxy(envProbe->proxy->worldAABB, 0.0f, envProbe->proxy);
     } else {
         const bool originMatch = (def->origin == envProbe->state.origin);
         const bool boxOffsetMatch = (def->boxOffset == envProbe->state.boxOffset);
@@ -339,7 +337,7 @@ void RenderWorld::UpdateEnvProbe(int handle, const EnvProbe::State *def) {
             envProbe->Update(def);
             envProbe->proxy->worldAABB = envProbe->proxy->envProbe->GetInfluenceAABB();
 
-            probeDbvt.MoveProxy(envProbe->proxy->id, envProbe->proxy->worldAABB, MeterToUnit(0.5f), displacement);
+            probeDbvt.MoveProxy(envProbe->proxy->id, envProbe->proxy->worldAABB, MeterToUnit(0.1f), displacement);
         } else {
             envProbe->Update(def);
         }
@@ -515,17 +513,14 @@ void RenderWorld::SetSkyboxMaterial(Material *skyboxMaterial) {
 }
 
 void RenderWorld::FinishMapLoading() {
-//#ifndef _DEBUG
-//    int startTime = PlatformTime::Milliseconds();
-//
-//    objectDbvt.RebuildBottomUp();
-//    staticMeshDbvt.RebuildBottomUp();
-//    lightDbvt.RebuildBottomUp();
-//    probeDbvt.RebuildBottomUp();
-//
-//    int elapsedTime = PlatformTime::Milliseconds() - startTime;
-//    BE_LOG("%i msec to build dynamic AABB tree\n", elapsedTime);
-//#endif
+/*#ifndef _DEBUG
+      int startTime = PlatformTime::Milliseconds();
+
+      staticMeshDbvt.RebuildBottomUp();
+
+      int elapsedTime = PlatformTime::Milliseconds() - startTime;
+      BE_LOG("%i msec to build dynamic AABB tree\n", elapsedTime);
+#endif*/
 }
 
 void RenderWorld::RenderScene(const RenderCamera *renderCamera) {

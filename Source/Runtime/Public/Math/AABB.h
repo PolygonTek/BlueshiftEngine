@@ -64,7 +64,7 @@ public:
                         /// Radius of inscribed sphere inside the AABB.
     float               InnerRadius() const;
 
-                        /// Returns area of six sides.
+                        /// Returns surface area of six sides.
     float               Area() const;
                         /// Returns volume of the AABB.
     float               Volume() const;
@@ -305,10 +305,8 @@ BE_INLINE void AABB::SetZero() {
 }
 
 BE_INLINE float AABB::Area() const {
-    float w = b[1][0] - b[0][0];
-    float h = b[1][1] - b[0][1];
-    float d = b[1][2] - b[0][2];
-    return (w * h + w * d + h * d) * 2.0f;
+    Vec3 d = b[1] - b[0];
+    return (d.x * d.y + d.y * d.z + d.z * d.x) * 2.0f;
 }
 
 BE_INLINE float AABB::Volume() const {
