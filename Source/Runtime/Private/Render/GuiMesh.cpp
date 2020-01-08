@@ -477,41 +477,41 @@ AABB GuiMesh::Compute3DTextAABB(Font *font, RenderObject::TextAnchor::Enum ancho
     float maxHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
 
     AABB bounds;
-    bounds[0][0] = -CentiToUnit(0.1f);
-    bounds[1][0] = +CentiToUnit(0.1f);
+    bounds[0].z = -CentiToUnit(0.1f);
+    bounds[1].z = +CentiToUnit(0.1f);
 
     if (anchor == RenderObject::TextAnchor::UpperLeft || 
         anchor == RenderObject::TextAnchor::MiddleLeft || 
         anchor == RenderObject::TextAnchor::LowerLeft) {
-        bounds[0][1] = 0;
-        bounds[1][1] = +maxWidth;
+        bounds[0].x = 0;
+        bounds[1].x = +maxWidth;
     } else if (
         anchor == RenderObject::TextAnchor::UpperRight || 
         anchor == RenderObject::TextAnchor::MiddleRight || 
         anchor == RenderObject::TextAnchor::LowerRight) {
-        bounds[0][1] = -maxWidth;
-        bounds[1][1] = 0;
+        bounds[0].x = -maxWidth;
+        bounds[1].x = 0;
     } else {
         float h = maxWidth * 0.5f;
-        bounds[0][1] = -h;
-        bounds[1][1] = +h;
+        bounds[0].x = -h;
+        bounds[1].x = +h;
     }
 
     if (anchor == RenderObject::TextAnchor::UpperLeft || 
         anchor == RenderObject::TextAnchor::UpperCenter || 
         anchor == RenderObject::TextAnchor::UpperRight) {
-        bounds[0][2] = -maxHeight;
-        bounds[1][2] = 0;
+        bounds[0].y = -maxHeight;
+        bounds[1].y = 0;
     } else if (
         anchor == RenderObject::TextAnchor::LowerLeft || 
         anchor == RenderObject::TextAnchor::LowerCenter || 
         anchor == RenderObject::TextAnchor::LowerRight) {
-        bounds[0][2] = 0;
-        bounds[1][2] = +maxHeight;
+        bounds[0].y = 0;
+        bounds[1].y = +maxHeight;
     } else {
         float h = maxHeight * 0.5f;
-        bounds[0][2] = -h;
-        bounds[1][2] = +h;
+        bounds[0].y = -h;
+        bounds[1].y = +h;
     }
 
     return bounds;
