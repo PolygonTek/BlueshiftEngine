@@ -143,7 +143,7 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
             displacement = def->worldMatrix.ToTranslationVec3() - renderObject->state.worldMatrix.ToTranslationVec3();
 
             renderObject->proxy->worldAABB.SetFromTransformedAABBFast(def->aabb, def->worldMatrix);
-            objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->worldAABB, MeterToUnit(0.1f), displacement);
+            objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->worldAABB, MeterToUnit(0.5f), displacement);
         }
 
         if (proxyMoved || !meshMatch) {
@@ -172,7 +172,7 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
                     if (proxyMoved) {
                         for (int surfaceIndex = 0; surfaceIndex < def->mesh->NumSurfaces(); surfaceIndex++) {
                             renderObject->meshSurfProxies[surfaceIndex].worldAABB.SetFromTransformedAABBFast(def->mesh->GetSurface(surfaceIndex)->subMesh->GetAABB(), def->worldMatrix);
-                            staticMeshDbvt.MoveProxy(renderObject->meshSurfProxies[surfaceIndex].id, renderObject->meshSurfProxies[surfaceIndex].worldAABB, MeterToUnit(0.1f), displacement);
+                            staticMeshDbvt.MoveProxy(renderObject->meshSurfProxies[surfaceIndex].id, renderObject->meshSurfProxies[surfaceIndex].worldAABB, MeterToUnit(0.5f), displacement);
                         }
                     }
                 }
@@ -258,7 +258,7 @@ void RenderWorld::UpdateRenderLight(int handle, const RenderLight::State *def) {
             renderLight->Update(def);
             renderLight->proxy->worldAABB = renderLight->GetWorldAABB();
 
-            lightDbvt.MoveProxy(renderLight->proxy->id, renderLight->proxy->worldAABB, MeterToUnit(0.1f), displacement);
+            lightDbvt.MoveProxy(renderLight->proxy->id, renderLight->proxy->worldAABB, MeterToUnit(0.5f), displacement);
         } else {
             renderLight->Update(def);
         }
@@ -337,7 +337,7 @@ void RenderWorld::UpdateEnvProbe(int handle, const EnvProbe::State *def) {
             envProbe->Update(def);
             envProbe->proxy->worldAABB = envProbe->proxy->envProbe->GetInfluenceAABB();
 
-            probeDbvt.MoveProxy(envProbe->proxy->id, envProbe->proxy->worldAABB, MeterToUnit(0.1f), displacement);
+            probeDbvt.MoveProxy(envProbe->proxy->id, envProbe->proxy->worldAABB, MeterToUnit(0.5f), displacement);
         } else {
             envProbe->Update(def);
         }
@@ -541,6 +541,21 @@ void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
     new (&currentVisCamera->visLights) LinkList<VisLight>();
 
     DrawCamera(currentVisCamera);
+
+    if (r_showDynamicAABBTree.GetInteger() > 0) {
+        int totalDepth = objectDbvt.GetHeight();
+        int minDepth = Min(r_showDynamicAABBTreeMinDepth.GetInteger(), totalDepth);
+        int maxDepth = Min(r_showDynamicAABBTreeMaxDepth.GetInteger(), totalDepth);
+
+        objectDbvt.QueryDepthRange(minDepth, maxDepth, [minDepth, maxDepth, this](int32_t proxyId, int depth) {
+            const AABB &proxyAABB = objectDbvt.GetFatAABB(proxyId);
+
+            float alpha = (float)(depth - minDepth + 1) / (maxDepth - minDepth + 1);
+
+            SetDebugColor(Color4(1.0f, 0.1f, 0.0f, alpha), Color4::zero);
+            DebugAABB(proxyAABB, 1, true, r_showDynamicAABBTree.GetInteger() <= 1);
+        });
+    }
 }
 
 void RenderWorld::DrawGUICamera(GuiMesh &guiMesh) {

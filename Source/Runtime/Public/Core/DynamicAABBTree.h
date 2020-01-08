@@ -282,7 +282,7 @@ BE_INLINE void DynamicAABBTree::QueryDepthRangeRecursive(int nodeId, int depthMi
     }
 
     if (depth >= depthMin) {
-        callback(nodeId);
+        callback(nodeId, depth);
     }
 
     const Node *node = &nodes[nodeId];
