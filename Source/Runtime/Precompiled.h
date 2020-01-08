@@ -596,13 +596,19 @@ BE_FORCE_INLINE constexpr T Min3(const T &x, const T &y, const T &z) { return (x
 /// Returns the larger of three values.
 template <typename T>
 BE_FORCE_INLINE constexpr T Max3(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? x : z) : ((y > z) ? y : z); }
+/// Returns the median of three values.
+template <typename T>
+BE_FORCE_INLINE constexpr T Median(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? Max(y, z) : x) : ((y > z) ? Max(x, z) : y); }
 
 /// Returns the smaller index of three values.
 template <typename T>
-BE_FORCE_INLINE constexpr int Max3Index(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? 0 : 2) : ((y > z) ? 1 : 2); }
+BE_FORCE_INLINE constexpr int Min3Index(const T &x, const T &y, const T &z) { return (x < y) ? ((x < z) ? 0 : 2) : ((y < z) ? 1 : 2); }
 /// Returns the larger index of three values.
 template <typename T>
-BE_FORCE_INLINE constexpr int Min3Index(const T &x, const T &y, const T &z) { return (x < y) ? ((x < z) ? 0 : 2) : ((y < z) ? 1 : 2); }
+BE_FORCE_INLINE constexpr int Max3Index(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? 0 : 2) : ((y > z) ? 1 : 2); }
+/// Returns the median index of three values.
+template <typename T>
+BE_FORCE_INLINE constexpr int MedianIndex(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? MaxIndex(y, z) : 0) : ((y > z) ? MaxIndex(x, z) : 1); }
 
 /// Swaps two values.
 template <typename T> 
