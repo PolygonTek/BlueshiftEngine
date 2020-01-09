@@ -27,19 +27,19 @@ struct FontFileHeader {
 };
 
 struct FontFileBitmap {
-    char            name[MaxRelativePath];
+    char            name[256];
 };
 
 struct FontFileGlyph {
-    uint32_t        charCode;
-    uint32_t        x, y;
-    uint32_t        width, height;
+    char32_t        charCode;
+    int32_t         width, height;
+    int32_t         offsetX, offsetY;
+    int32_t         advance;
     float           s, t, s2, t2;
     uint32_t        bitmapIndex;
 };
 
 FontFaceBitmap::FontFaceBitmap() {
-    glyphHashMap.Init(1024, 1024, 1024);
 }
 
 FontFaceBitmap::~FontFaceBitmap() {
@@ -57,7 +57,6 @@ void FontFaceBitmap::Purge() {
     glyphHashMap.DeleteContents(true);
 }
 
-// .font 파일 로딩
 bool FontFaceBitmap::Load(const char *filename, int fontSize) {
     Purge();
 
@@ -68,37 +67,42 @@ bool FontFaceBitmap::Load(const char *filename, int fontSize) {
         return false;
     }
 
-    FontFileHeader *header = (FontFileHeader *)data;
+    const FontFileHeader *header = (FontFileHeader *)data;
 
-    Str *bitmapNames = new Str[header->numBitmaps];
+    StrArray bitmapFilenames;
+    bitmapFilenames.SetCount(header->numBitmaps);
 
-    FontFileBitmap *bitmap = (FontFileBitmap *)(data + header->ofsBitmaps);
+    const FontFileBitmap *bitmap = (FontFileBitmap *)(data + header->ofsBitmaps);
+
     for (int i = 0; i < header->numBitmaps; i++, bitmap++) {
         Str basePath = filename;
         basePath.StripFileName();
-        basePath += "/";
-        basePath += bitmap->name;
-        bitmapNames[i] = basePath;
-        bitmapNames[i].SetFileExtension(".tga");
+        basePath.AppendPath(bitmap->name);
+
+        bitmapFilenames[i] = basePath;
+        bitmapFilenames[i].SetFileExtension(".tga");
     }
 
     int maxHeight = 0;
 
-    FontFileGlyph *gl = (FontFileGlyph *)(data + header->ofsGlyphs);
-    for (int i = 0; i < header->numGlyphs; i++, gl++) {
-        FontGlyph *glyph = new FontGlyph;
-        glyph->charCode     = gl->charCode;
-        glyph->width        = gl->width;
-        glyph->height       = gl->height;
-        glyph->offsetX      = 0;
-        glyph->offsetY      = 0;
-        glyph->advance      = gl->width;
-        glyph->s            = gl->s;
-        glyph->t            = gl->t;
-        glyph->s2           = gl->s2;
-        glyph->t2           = gl->t2;
+    glyphHashMap.Init(header->numGlyphs, header->numGlyphs, 0);
 
-        Texture *texture = textureManager.GetTextureWithoutTextureInfo(bitmapNames[gl->bitmapIndex], Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
+    const FontFileGlyph *gl = (FontFileGlyph *)(data + header->ofsGlyphs);
+
+    for (int glyphIndex = 0; glyphIndex < header->numGlyphs; glyphIndex++, gl++) {
+        FontGlyph *glyph = new FontGlyph;
+        glyph->charCode = gl->charCode;
+        glyph->width    = gl->width;
+        glyph->height   = gl->height;
+        glyph->offsetX  = gl->offsetX;
+        glyph->offsetY  = gl->offsetY;
+        glyph->advance  = gl->advance;
+        glyph->s        = gl->s;
+        glyph->t        = gl->t;
+        glyph->s2       = gl->s2;
+        glyph->t2       = gl->t2;
+
+        Texture *texture = textureManager.GetTextureWithoutTextureInfo(bitmapFilenames[gl->bitmapIndex], Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
         glyph->material = materialManager.GetSingleTextureMaterial(texture, Material::TextureHint::Overlay);
         textureManager.ReleaseTexture(texture);
 
@@ -108,8 +112,6 @@ bool FontFaceBitmap::Load(const char *filename, int fontSize) {
 
         glyphHashMap.Set(glyph->charCode, glyph);
     }
-
-    delete [] bitmapNames;
 
     fileSystem.FreeFile(data);
 

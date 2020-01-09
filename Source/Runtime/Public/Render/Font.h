@@ -28,10 +28,10 @@ class FontFace;
 
 // Font glyph information.
 struct FontGlyph {
+    char32_t                charCode;
     int                     width, height;
     int                     offsetX, offsetY;
     int                     advance;
-    char32_t                charCode;
     float                   s, t, s2, t2;
     Material *              material;
 };
