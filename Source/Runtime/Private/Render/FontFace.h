@@ -1,4 +1,4 @@
-// Copyright(c) 2017 POLYGONTEK
+﻿// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -104,6 +104,17 @@ public:
     static void             Shutdown();
     
 private:
+    // glyph atlas texture 의 사용중인 공간을 덩어리 단위로 표현
+    struct Chunk {
+        int                 width;
+        int                 height;
+    };
+
+    struct GlyphAtlas {
+        Texture *           texture;
+        Array<Chunk>        chunks;
+    };
+
     void                    Purge();
 
     bool                    LoadFTGlyph(char32_t unicodeChar) const;
@@ -111,14 +122,19 @@ private:
 
     void                    WriteBitmapFiles(const char *fontFilename);
 
+    static int              AllocGlyphAtlas(int width, int height, int *x, int *y);
+
     int                     fontHeight;
 
-    byte *                  ftFontFileData = nullptr;       ///< FreeType font flie data
+    FT_Byte *               ftFontFileData = nullptr;       ///< FreeType font flie data
     FT_Face                 ftFace = nullptr;               ///< FreeType font face object
     FT_Long                 ftFaceIndex = 0;
 
     mutable char32_t        lastLoadedChar;                 ///< Last loaded character code
     byte *                  glyphBuffer = nullptr;          ///< Intermediate glyph buffer to upload texture
+
+    static Array<GlyphAtlas *> atlasArray;
+    static FT_Library       ftLibrary;
 };
 
 BE_NAMESPACE_END

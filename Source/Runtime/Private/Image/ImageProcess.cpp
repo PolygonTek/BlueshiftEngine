@@ -333,26 +333,34 @@ void BuildMipMap(T *dst, const T *src, const int width, const int height, const 
     }
 }
 
-void BuildMipMap1DWithGamma(byte *dst, const byte *src, const int width, const int components) {
+static void BuildMipMap1DWithGamma(byte *dst, const byte *src, const int width, const int components) {
     int xOff = (width < 2) ? 0 : components;
 
     for (int x = 0; x < width; x += 2) {
         for (int i = 0; i < components; i++) {
-            *dst++ = Math::Ftob(255.0f * Math::Pow(0.5f * (gammaToLinearTable[src[0]] + gammaToLinearTable[src[xOff]]), 1.0f / 2.2f));
+            float p0 = gammaToLinearTable[src[0]];
+            float p1 = gammaToLinearTable[src[xOff]];
+
+            *dst++ = Math::Ftob(255.0f * Math::Pow(0.5f * (p0 + p1), 1.0f / 2.2f));
             src++;
         }
         src += xOff;
     }
 }
 
-void BuildMipMap2DWithGamma(byte *dst, const byte *src, const int width, const int height, const int components) {
+static void BuildMipMap2DWithGamma(byte *dst, const byte *src, const int width, const int height, const int components) {
     int xOff = (width < 2) ? 0 : components;
     int yOff = (height < 2) ? 0 : components * width;
 
     for (int y = 0; y < height; y += 2) {
         for (int x = 0; x < width; x += 2) {
             for (int i = 0; i < components; i++) {
-                *dst++ = Math::Ftob(255.0f * Math::Pow(0.25f * (gammaToLinearTable[src[0]] + gammaToLinearTable[src[xOff]] + gammaToLinearTable[src[yOff]] + gammaToLinearTable[src[yOff + xOff]]), 1.0f / 2.2f));
+                float p0 = gammaToLinearTable[src[0]];
+                float p1 = gammaToLinearTable[src[xOff]];
+                float p2 = gammaToLinearTable[src[yOff]];
+                float p3 = gammaToLinearTable[src[yOff + xOff]];
+
+                *dst++ = Math::Ftob(255.0f * Math::Pow(0.25f * (p0 + p1 + p2 + p3), 1.0f / 2.2f));
                 src++;
             }
             src += xOff;
@@ -361,7 +369,7 @@ void BuildMipMap2DWithGamma(byte *dst, const byte *src, const int width, const i
     }
 }
 
-void BuildMipMap3DWithGamma(byte *dst, const byte *src, const int width, const int height, const int depth, const int components) {
+static void BuildMipMap3DWithGamma(byte *dst, const byte *src, const int width, const int height, const int depth, const int components) {
     int xOff = (width < 2) ? 0 : components;
     int yOff = (height < 2) ? 0 : components * width;
     int zOff = (depth < 2) ? 0 : components * width * height;
@@ -370,8 +378,16 @@ void BuildMipMap3DWithGamma(byte *dst, const byte *src, const int width, const i
         for (int y = 0; y < height; y += 2) {
             for (int x = 0; x < width; x += 2) {
                 for (int i = 0; i < components; i++) {
-                    *dst++ = Math::Ftob(255.0f * Math::Pow(0.125f * (gammaToLinearTable[src[0]] + gammaToLinearTable[src[xOff]] + gammaToLinearTable[src[yOff]] + gammaToLinearTable[src[yOff + xOff]] +
-                        gammaToLinearTable[src[zOff]] + gammaToLinearTable[src[zOff + xOff]] + gammaToLinearTable[src[zOff + yOff]] + gammaToLinearTable[src[zOff + yOff + xOff]]), 1.0f / 2.2f));
+                    float p0 = gammaToLinearTable[src[0]];
+                    float p1 = gammaToLinearTable[src[xOff]];
+                    float p2 = gammaToLinearTable[src[yOff]];
+                    float p3 = gammaToLinearTable[src[yOff + xOff]];
+                    float p4 = gammaToLinearTable[src[zOff]];
+                    float p5 = gammaToLinearTable[src[zOff + xOff]];
+                    float p6 = gammaToLinearTable[src[zOff + yOff]];
+                    float p7 = gammaToLinearTable[src[zOff + yOff + xOff]];
+
+                    *dst++ = Math::Ftob(255.0f * Math::Pow(0.125f * (p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7), 1.0f / 2.2f));
                     src++;
                 }
                 src += xOff;
@@ -382,7 +398,7 @@ void BuildMipMap3DWithGamma(byte *dst, const byte *src, const int width, const i
     }
 }
 
-void BuildMipMapWithGamma(byte *dst, const byte *src, const int width, const int height, const int depth, const int components) {
+static void BuildMipMapWithGamma(byte *dst, const byte *src, const int width, const int height, const int depth, const int components) {
     if (depth > 1) {
         BuildMipMap3DWithGamma(dst, src, width, height, depth, components);
     } else if (height > 1) {
