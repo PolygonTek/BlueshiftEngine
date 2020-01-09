@@ -549,6 +549,7 @@ set(COMMON_ENGINE_FILES
     Private/Render/Texture.cpp
     Private/Render/TextureManager.cpp
     Private/Render/FontFace.h
+    Private/Render/FontFile.h
     Private/Render/Font.cpp
     Private/Render/FontManager.cpp
     Private/Render/FontFaceBitmap.cpp

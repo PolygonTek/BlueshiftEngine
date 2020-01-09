@@ -97,6 +97,9 @@ public:
 
     virtual bool            Load(const char *filename, int fontSize) override;
 
+                            /// Writes font file with bitmaps.
+    bool                    Write(const char *filename);
+
     static void             Init();
     static void             Shutdown();
     
@@ -105,6 +108,8 @@ private:
 
     bool                    LoadFTGlyph(char32_t unicodeChar) const;
     void                    CopyFTBitmapToGlyphBuffer(const FT_Bitmap *bitmap) const;
+
+    void                    WriteBitmapFiles(const char *fontFilename);
 
     int                     fontHeight;
 

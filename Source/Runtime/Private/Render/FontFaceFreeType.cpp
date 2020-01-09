@@ -18,6 +18,7 @@
 #include "Core/Heap.h"
 #include "File/FileSystem.h"
 #include "FontFace.h"
+#include "FontFile.h"
 #include "Simd/Simd.h"
 
 // FreeType2 reference:
@@ -151,7 +152,7 @@ bool FontFaceFreeType::Load(const char *filename, int fontSize) {
         BE_ERRLOG("FontFaceFreeType::Create: FT_Set_Pixel_Sizes failed\n");
         return false;
     }
-    
+
     // Calcualte font height in pixels.
     fontHeight = ((ftFace->size->metrics.height + 63) & ~63) >> 6;
 
@@ -412,6 +413,77 @@ int FontFaceFreeType::GetGlyphAdvance(char32_t unicodeChar) const {
     }
 
     return 0;
+}
+
+bool FontFaceFreeType::Write(const char *filename) {
+    File *fp = fileSystem.OpenFile(filename, File::Mode::Write);
+    if (!fp) {
+        BE_WARNLOG("FontFaceFreeType::Save: file open error\n");
+        return false;
+    }
+
+    FontFileHeader header;
+    header.ofsBitmaps = sizeof(FontFileHeader);
+    header.numBitmaps = 1;
+    header.ofsGlyphs = sizeof(FontFileHeader) + sizeof(FontFileBitmap) * header.numBitmaps;
+    header.numGlyphs = glyphHashMap.Count();
+
+    fp->Write(&header, sizeof(header));
+
+    FontFileBitmap bitmap;
+
+    Str bitmapName = filename;
+    bitmapName.StripFileExtension();
+
+    assert(bitmapName.Length() < sizeof(bitmap.name));
+
+    memset(bitmap.name, 0, sizeof(bitmap.name));
+    strcpy(bitmap.name, bitmapName.c_str());
+
+    fp->Write(&bitmap, sizeof(bitmap));
+
+    for (int glyphIndex = 0; glyphIndex < glyphHashMap.Count(); glyphIndex++) {
+        const auto *entry = glyphHashMap.GetByIndex(glyphIndex);
+        const FontGlyph *glyph = entry->second;
+
+        fp->WriteInt32(glyph->charCode);
+        fp->WriteInt32(glyph->width);
+        fp->WriteInt32(glyph->height);
+        fp->WriteInt32(glyph->offsetX);
+        fp->WriteInt32(glyph->offsetY);
+        fp->WriteInt32(glyph->advance);
+        fp->WriteFloat(glyph->s);
+        fp->WriteFloat(glyph->t);
+        fp->WriteFloat(glyph->s2);
+        fp->WriteFloat(glyph->t2);
+        fp->WriteInt32(0);
+    }
+
+    fileSystem.CloseFile(fp);
+
+    WriteBitmapFiles(filename);
+
+    return true;
+}
+
+void FontFaceFreeType::WriteBitmapFiles(const char *fontFilename) {
+    Str bitmapBasename = fontFilename;
+    bitmapBasename.StripFileExtension();
+
+    for (int i = 0; i < atlasArray.Count(); i++) {
+        const Texture *texture = atlasArray[i]->texture;
+
+        Image bitmapImage;
+        bitmapImage.Create2D(texture->GetWidth(), texture->GetHeight(), 1, texture->GetFormat(), nullptr, 0);
+
+        texture->Bind();
+        texture->GetTexels2D(0, texture->GetFormat(), bitmapImage.GetPixels(0));
+
+        Str filename = bitmapBasename;
+        filename += i;
+        filename.Append(".png");
+        bitmapImage.WritePNG(filename);
+    }
 }
 
 BE_NAMESPACE_END

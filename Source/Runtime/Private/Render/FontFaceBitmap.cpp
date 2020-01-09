@@ -16,28 +16,9 @@
 #include "Render/Render.h"
 #include "File/FileSystem.h"
 #include "FontFace.h"
+#include "FontFile.h"
 
 BE_NAMESPACE_BEGIN
-
-struct FontFileHeader {
-    uint32_t        ofsBitmaps;     // byte offset of bitmaps
-    uint32_t        numBitmaps;     // a number of bitmaps
-    uint32_t        ofsGlyphs;      // byte offset of glyphs
-    uint32_t        numGlyphs;      // a number of glyphs
-};
-
-struct FontFileBitmap {
-    char            name[256];
-};
-
-struct FontFileGlyph {
-    char32_t        charCode;
-    int32_t         width, height;
-    int32_t         offsetX, offsetY;
-    int32_t         advance;
-    float           s, t, s2, t2;
-    uint32_t        bitmapIndex;
-};
 
 FontFaceBitmap::FontFaceBitmap() {
 }
