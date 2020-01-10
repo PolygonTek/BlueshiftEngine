@@ -173,26 +173,26 @@ public:
         };
     };
 
-    /// Default constructor
+    /// Default constructor.
     Image();
 
     /// Constructs image with the given data.
-    /// If data is not nullptr, the image data is initialized with given data
+    /// If data is not nullptr, the image data is initialized with given data.
     Image(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, byte *data, int flags);
     
-    /// Copy constructor
+    /// Copy constructor.
     Image(const Image &other);
     
-    /// Assignment operator
+    /// Assignment operator.
     Image &operator=(const Image &other);
     
-    /// Move constructor
+    /// Move constructor.
     Image(Image &&other);
     
-    /// Move operator
+    /// Move operator.
     Image &operator=(Image &&other);
     
-    /// Destructor
+    /// Destructor.
     ~Image();
 
                         /// Returns true if image has no pixel data.
@@ -315,8 +315,16 @@ public:
                         /// Flips horizontally.
     Image &             FlipY();
 
+                        /// Adjusts brightness of this image, in-place.
     Image &             AdjustBrightness(float factor);
-    Image &             ApplyGammaRampRGB888(uint16_t ramp[768]);
+
+    Image &             ApplyGammaRampTableRGB888(const uint16_t table[768]);
+
+                        /// Makes dilated image.
+    Image               MakeDilation() const;
+
+                        /// Makes eroded image.
+    Image               MakeErosion() const;
 
                         /// Swaps the component red with alpha.
     Image &             SwapRedAlphaRGBA8888();

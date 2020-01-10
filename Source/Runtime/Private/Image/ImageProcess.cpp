@@ -114,58 +114,73 @@ Image &Image::AdjustBrightness(float factor) {
         return *this;
     }
 
-    if (factor > 0) {
-        int bpp = Image::BytesPerPixel(format);
-        byte *src = pic;
+    int bpp = Image::BytesPerPixel(format);
+    int numPixels = NumPixels(0, numMipmaps);
 
-        for (int i = 0; i < width * height; i++) {
-            float r = (float)src[0];
-            float g = (float)src[1];
-            float b = (float)src[2];
+    byte *ptr = pic;
 
-            r = r * (1.0 + factor) / 255.f;
-            g = g * (1.0 + factor) / 255.f;
-            b = b * (1.0 + factor) / 255.f;
+    for (int i = 0; i < numPixels; i++) {
+        float r = (float)ptr[0];
+        float g = (float)ptr[1];
+        float b = (float)ptr[2];
 
-            float scale = 1.f;
-            float tmp;
-            if (r > 1.f && (tmp = (1.f / r)) < scale) {
+        r = r * factor / 255.0f;
+        g = g * factor / 255.0f;
+        b = b * factor / 255.0f;
+
+        float scale = 1.0f;
+
+        if (r > 1.0f) {
+            float tmp = 1.0f / r;
+            if (tmp < scale) {
                 scale = tmp;
             }
-            if (g > 1.f && (tmp = (1.f / g)) < scale) {
-                scale = tmp;
-            }
-            if (b > 1.f && (tmp = (1.f / b)) < scale) {
-                scale = tmp;
-            }
-            scale *= 255.f;
-
-            r *= scale;
-            g *= scale;
-            b *= scale;
-
-            src[0] = (byte)r;
-            src[1] = (byte)g;
-            src[2] = (byte)b;
-
-            src += bpp;
         }
+        if (g > 1.0f) {
+            float tmp = 1.0f / g;
+            if (tmp < scale) {
+                scale = tmp;
+            }
+        }
+        if (b > 1.0f) {
+            float tmp = 1.0f / b;
+            if (tmp < scale) {
+                scale = tmp;
+            }
+        }
+
+        scale *= 255.0f;
+
+        r *= scale;
+        g *= scale;
+        b *= scale;
+
+        ptr[0] = (byte)r;
+        ptr[1] = (byte)g;
+        ptr[2] = (byte)b;
+
+        ptr += bpp;
     }
 
     return *this;
 }
 
-Image &Image::ApplyGammaRampRGB888(uint16_t ramp[768]) {
+Image &Image::ApplyGammaRampTableRGB888(const uint16_t table[768]) {
+    if (IsPacked() || IsCompressed() || IsFloatFormat()) {
+        assert(0);
+        return *this;
+    }
+
     int numPixels = NumPixels(0, numMipmaps);
 
     for (int i = 0; i < numPixels; i++) {
-        uint16_t r = ramp[*(pic)];
-        uint16_t g = ramp[*(pic+1) + 256];
-        uint16_t b = ramp[*(pic+2) + 512];
+        uint16_t r = table[pic[0] + 0];
+        uint16_t g = table[pic[1] + 256];
+        uint16_t b = table[pic[2] + 512];
     
-        *(pic) = (r * 255) / 65535;
-        *(pic+1) = (g * 255) / 65535;
-        *(pic+2) = (b * 255) / 65535;
+        pic[0] = (r * 255) / 65535;
+        pic[1] = (g * 255) / 65535;
+        pic[2] = (b * 255) / 65535;
 
         pic += 3;
     }
@@ -173,10 +188,106 @@ Image &Image::ApplyGammaRampRGB888(uint16_t ramp[768]) {
     return *this;
 }
 
+Image Image::MakeDilation() const {
+    if (IsPacked() || IsCompressed() || IsFloatFormat() || GetDepth() > 1) {
+        assert(0);
+        return *this;
+    }
+
+    Image image;
+    image.Create2D(width, height, 1, format, nullptr, 0);
+
+    int bpp = BytesPerPixel();
+
+    const int dx[] = { -1, 0, 1, 0 };
+    const int dy[] = { 0, 1, 0, -1 };
+    
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int offset = (y * width + x) * bpp;
+            float maxColor[4];
+            for (int ch = 0; ch < bpp; ch++) {
+                maxColor[ch] = pic[offset + ch];
+            }
+
+            for (int d = 0; d < 4; d++) {
+                int cx = x + dx[d];
+                int cy = y + dy[d];
+
+                if (cx < 0 || cx >= width || cy < 0 || cy >= height) {
+                    continue;
+                }
+
+                int doffset = (cy * width + cx) * bpp;
+                for (int ch = 0; ch < bpp; ch++) {
+                    float c = pic[doffset + ch];
+                    if (maxColor[ch] < c) {
+                        maxColor[ch] = c;
+                    }
+                }
+            }
+
+            for (int ch = 0; ch < bpp; ch++) {
+                image.pic[offset + ch] = (byte)Math::Round(maxColor[ch]);
+            }
+        }
+    }
+
+    return image;
+}
+
+Image Image::MakeErosion() const {
+    if (IsPacked() || IsCompressed() || IsFloatFormat() || GetDepth() > 1) {
+        assert(0);
+        return *this;
+    }
+
+    Image image;
+    image.Create2D(width, height, 1, format, nullptr, 0);
+
+    int bpp = BytesPerPixel();
+
+    const int dx[] = { -1, 0, 1, 0 };
+    const int dy[] = { 0, 1, 0, -1 };
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int offset = (y * width + x) * bpp;
+            float minColor[4];
+            for (int ch = 0; ch < bpp; ch++) {
+                minColor[ch] = pic[offset + ch];
+            }
+
+            for (int d = 0; d < 4; d++) {
+                int cx = x + dx[d];
+                int cy = y + dy[d];
+
+                if (cx < 0 || cx >= width || cy < 0 || cy >= height) {
+                    continue;
+                }
+
+                int doffset = (cy * width + cx) * bpp;
+                for (int ch = 0; ch < bpp; ch++) {
+                    float c = pic[doffset + ch];
+                    if (minColor[ch] > c) {
+                        minColor[ch] = c;
+                    }
+                }
+            }
+
+            for (int ch = 0; ch < bpp; ch++) {
+                image.pic[offset + ch] = (byte)Math::Round(minColor[ch]);
+            }
+        }
+    }
+
+    return image;
+}
+
 Image &Image::SwapRedAlphaRGBA8888() {
     int numPixels = NumPixels(0, numMipmaps);
 
-    for (int i = 0; i < numPixels; i++)	{
+    for (int i = 0; i < numPixels; i++) {
         pic[3] = pic[0];
         //pic[3] = 0;
         pic += 4;
@@ -189,7 +300,7 @@ Image Image::MakeNormalMapRGBA8888(float bumpiness) const {
     Image image;
     image.Create2D(width, height, 1, Image::Format::RGBA_8_8_8_8, nullptr, Flag::LinearSpace);
 
-    byte *dst_ptr = image.pic;
+    byte *dstPtr = image.pic;
 
     float inv255 = 1.0f / 255.0f;
     
@@ -223,10 +334,10 @@ Image Image::MakeNormalMapRGBA8888(float bumpiness) const {
             g = (dcy * invLen + 1.0f) * 0.5f * 255;
             b = (dcz * invLen + 1.0f) * 0.5f * 255;
             
-            *dst_ptr++ = r;
-            *dst_ptr++ = g;
-            *dst_ptr++ = b;
-            *dst_ptr++ = a;
+            *dstPtr++ = r;
+            *dstPtr++ = g;
+            *dstPtr++ = b;
+            *dstPtr++ = a;
         }
     }
 
@@ -236,21 +347,21 @@ Image Image::MakeNormalMapRGBA8888(float bumpiness) const {
 Image &Image::AddNormalMapRGBA8888(const Image &normalMap) {
     byte *src1_ptr = this->pic;
     byte *src2_ptr = normalMap.pic;
-    byte *dst_ptr = this->pic;
+    byte *dstPtr = this->pic;
 
     float inv255 = 1.0f / 255.0f;
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            float src1Red	= (*src1_ptr++ * inv255) * 2.0f - 1.0f;
-            float src1Green	= (*src1_ptr++ * inv255) * 2.0f - 1.0f;
-            float src1Blue	= (*src1_ptr++ * inv255) * 2.0f - 1.0f;
-            byte src1Alpha	= *src1_ptr++;
+            float src1Red   = (*src1_ptr++ * inv255) * 2.0f - 1.0f;
+            float src1Green = (*src1_ptr++ * inv255) * 2.0f - 1.0f;
+            float src1Blue  = (*src1_ptr++ * inv255) * 2.0f - 1.0f;
+            byte src1Alpha  = *src1_ptr++;
 
-            float src2Red	= (*src2_ptr++ * inv255) * 2.0f - 1.0f;
-            float src2Green	= (*src2_ptr++ * inv255) * 2.0f - 1.0f;
-            float src2Blue	= (*src2_ptr++ * inv255) * 2.0f - 1.0f;
-            byte src2Alpha	= *src2_ptr++;
+            float src2Red   = (*src2_ptr++ * inv255) * 2.0f - 1.0f;
+            float src2Green = (*src2_ptr++ * inv255) * 2.0f - 1.0f;
+            float src2Blue  = (*src2_ptr++ * inv255) * 2.0f - 1.0f;
+            byte src2Alpha  = *src2_ptr++;
 
             float sumR = src1Red + src2Red;
             float sumG = src1Green + src2Green;
@@ -261,10 +372,10 @@ Image &Image::AddNormalMapRGBA8888(const Image &normalMap) {
             byte g = (byte)((sumG * invLen + 1.0f) * 127.5f);
             byte b = (byte)((sumB * invLen + 1.0f) * 127.5f);
 
-            *dst_ptr++ = r;
-            *dst_ptr++ = g;
-            *dst_ptr++ = b;
-            *dst_ptr++ = Min(src1Alpha + src2Alpha, 255);
+            *dstPtr++ = r;
+            *dstPtr++ = g;
+            *dstPtr++ = b;
+            *dstPtr++ = Min(src1Alpha + src2Alpha, 255);
         }
     }
 
