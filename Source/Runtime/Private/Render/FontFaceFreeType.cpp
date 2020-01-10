@@ -188,12 +188,7 @@ bool FontFaceFreeType::LoadFTGlyph(char32_t unicodeChar) const {
 }
 
 // FT_Bitmap 으로 부터 glyphBuffer 에 비트맵 데이터를 그린다.
-void FontFaceFreeType::CopyFTBitmapToGlyphBuffer(const FT_Bitmap *bitmap) const {
-    int     offset;
-    int     x, y;
-    int     red, green, blue;
-    int     b;
-        
+void FontFaceFreeType::CopyFTBitmapToGlyphBuffer(const FT_Bitmap *bitmap) const {        
 #ifdef LCD_MODE_RENDERING
     int w = bitmap->width / 3;
     int h = bitmap->rows;
@@ -207,11 +202,11 @@ void FontFaceFreeType::CopyFTBitmapToGlyphBuffer(const FT_Bitmap *bitmap) const 
 
     switch (bitmap->pixel_mode) {
     case FT_PIXEL_MODE_MONO:
-        for (y = 0; y < bitmap->rows; y++) {
-            for (x = 0, b = 0; x < bitmap->width; x++, b++) {
-                offset = w * y + x;
+        for (int y = 0; y < bitmap->rows; y++) {
+            for (int x = 0, b = 0; x < bitmap->width; x++, b++) {
+                int offset = w * y + x;
 
-                if (bufferPtr[b >> 3] & (0x80 >> (b & 7))) {
+                if (bufferPtr[b >> 3] & (0b1000 >> (b & 0b0111))) {
                     glyphBuffer[offset] = 255;
                 } else {
                     glyphBuffer[offset] = 0;
@@ -221,9 +216,9 @@ void FontFaceFreeType::CopyFTBitmapToGlyphBuffer(const FT_Bitmap *bitmap) const 
         }
         break;
     case FT_PIXEL_MODE_GRAY:
-        for (y = 0; y < bitmap->rows; y++) {
-            for (x = 0; x < bitmap->width; x++) {
-                offset = w * y + x;
+        for (int y = 0; y < bitmap->rows; y++) {
+            for (int x = 0; x < bitmap->width; x++) {
+                int offset = w * y + x;
 
                 glyphBuffer[offset] = bufferPtr[x];
             }
@@ -231,18 +226,18 @@ void FontFaceFreeType::CopyFTBitmapToGlyphBuffer(const FT_Bitmap *bitmap) const 
         }
         break;
     case FT_PIXEL_MODE_LCD:
-        for (y = 0; y < bitmap->rows; y++) {
-            for (x = 0; x < bitmap->width / 3; x++) {
-                offset = (w * y + x) << 2;
+        for (int y = 0; y < bitmap->rows; y++) {
+            for (int x = 0; x < bitmap->width / 3; x++) {
+                int offset = (w * y + x) << 2;
 
-                red     = bufferPtr[x * 3 + 0];
-                green   = bufferPtr[x * 3 + 1];
-                blue    = bufferPtr[x * 3 + 2];
+                int r = bufferPtr[x * 3 + 0];
+                int g = bufferPtr[x * 3 + 1];
+                int b = bufferPtr[x * 3 + 2];
 
-                glyphBuffer[offset + 0] = red;
-                glyphBuffer[offset + 1] = green;
-                glyphBuffer[offset + 2] = blue;
-                glyphBuffer[offset + 3] = (red + green + blue) / 3;
+                glyphBuffer[offset + 0] = r;
+                glyphBuffer[offset + 1] = g;
+                glyphBuffer[offset + 2] = b;
+                glyphBuffer[offset + 3] = (r + g + b) / 3;
             }
             bufferPtr += bitmap->pitch;
         }

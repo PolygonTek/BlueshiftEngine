@@ -981,7 +981,7 @@ static const void *RB_ExecuteScreenshot(const void *data) {
     if (r_gamma.GetFloat() != 1.0) {
         uint16_t ramp[768];
         rhi.GetGammaRamp(ramp);
-        screenImage.ApplyGammaRampRGB888(ramp);
+        screenImage.ApplyGammaRampTableRGB888(ramp);
     }
 
     Str filename = cmd->filename;

@@ -455,6 +455,7 @@ int Image::NumPixels(int firstLevel, int numLevels) const {
     int size = 0;
     while (numLevels){
         size += w * h * d;
+
         w >>= 1;
         h >>= 1;
         d >>= 1;
