@@ -284,6 +284,44 @@ Image Image::MakeErosion() const {
     return image;
 }
 
+Image Image::MakeSDF(int spread) const {
+    Image image;
+    image.Create2D(width, height, 1, Format::A_8, nullptr, 0);
+
+    for (int centerY = 0; centerY < height; centerY++) {
+        for (int centerX = 0; centerX < width; centerX++) {
+            bool base = !!pic[centerY * width + centerX];
+
+            int startX = Max(0, centerX - spread);
+            int endX = Min(width - 1, centerX + spread);
+            int startY = Max(0, centerY - spread);
+            int endY = Min(height - 1, centerY + spread);
+
+            int nearestSquaredDist = spread * spread;
+
+            for (int y = startY; y <= endY; y++) {
+                for (int x = startX; x <= endX; x++) {
+                    if (base != !!pic[y * width + x]) {
+                        int dx = x - centerX;
+                        int dy = y - centerY;
+
+                        int squaredDist = dx * dx + dy * dy;
+                        if (squaredDist < nearestSquaredDist) {
+                            nearestSquaredDist = squaredDist;
+                        }
+                    }
+                }
+            }
+
+            int value = base ? 255 : 255 * (1.0f - Math::Sqrt(nearestSquaredDist) / spread);
+
+            image.pic[centerY * width + centerX] = value;
+        }
+    }
+
+    return image;
+}
+
 Image &Image::SwapRedAlphaRGBA8888() {
     int numPixels = NumPixels(0, numMipmaps);
 

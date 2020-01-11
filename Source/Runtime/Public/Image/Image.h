@@ -320,11 +320,14 @@ public:
 
     Image &             ApplyGammaRampTableRGB888(const uint16_t table[768]);
 
-                        /// Makes dilated image.
+                        /// Returns dilated image.
     Image               MakeDilation() const;
 
-                        /// Makes eroded image.
+                        /// Returns eroded image.
     Image               MakeErosion() const;
+
+                        /// Returns SDK image.
+    Image               MakeSDF(int spread) const;
 
                         /// Swaps the component red with alpha.
     Image &             SwapRedAlphaRGBA8888();
