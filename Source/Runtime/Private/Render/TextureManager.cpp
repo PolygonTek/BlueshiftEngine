@@ -44,6 +44,7 @@ CVar TextureManager::texture_mipLevel("texture_mipLevel", "0", CVar::Flag::Archi
 void TextureManager::Init() {
     cmdSystem.AddCommand("listTextures", Cmd_ListTextures);
     cmdSystem.AddCommand("reloadTexture", Cmd_ReloadTexture);
+    cmdSystem.AddCommand("dumpTexture", Cmd_DumpTexture);
     cmdSystem.AddCommand("convertNormalAR2RGB", Cmd_ConvertNormalAR2RGB);
 
     textureHashMap.Init(1024, 1024, 1024);
@@ -61,6 +62,7 @@ void TextureManager::Init() {
 void TextureManager::Shutdown() {
     cmdSystem.RemoveCommand("listTextures");
     cmdSystem.RemoveCommand("reloadTexture");
+    cmdSystem.RemoveCommand("dumpTexture");
     cmdSystem.RemoveCommand("convertNormalAR2RGB");
 
     textureHashMap.DeleteContents(true);
@@ -491,6 +493,66 @@ void TextureManager::Cmd_ReloadTexture(const CmdArgs &args) {
     }
 }
 
+void TextureManager::Cmd_DumpTexture(const CmdArgs &args) {
+    if (args.Argc() < 2) {
+        BE_LOG("dumpTexture <index>\n");
+        return;
+    }
+
+    int index = atoi(args.Argv(1));
+
+    if (index < 0 || index >= textureManager.textureHashMap.Count()) {
+        BE_WARNLOG("Invalid index\n");
+        return;
+    }
+
+    const auto *entry = textureManager.textureHashMap.GetByIndex(index);
+    Texture *texture = entry->second;
+
+    if (texture->type != RHI::TextureType::Texture2D &&
+        texture->type != RHI::TextureType::Texture3D &&
+        texture->type != RHI::TextureType::TextureCubeMap &&
+        texture->type != RHI::TextureType::TextureRectangle) {
+        BE_WARNLOG("Not supported type\n");
+        return;
+    }
+
+    Image bitmapImage;
+    bitmapImage.Create(texture->GetWidth(), texture->GetHeight(), texture->GetDepth(), texture->NumSlices(), 1, texture->GetFormat(), nullptr, 0);
+
+    texture->Bind();
+
+    switch (texture->type) {
+    case RHI::TextureType::Texture2D:
+        texture->GetTexels2D(0, texture->GetFormat(), bitmapImage.GetPixels(0));
+        break;
+    case RHI::TextureType::Texture3D:
+        texture->GetTexels3D(0, texture->GetFormat(), bitmapImage.GetPixels(0));
+        break;
+    case RHI::TextureType::TextureCubeMap:
+        for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
+            texture->GetTexelsCubemap(faceIndex, 0, texture->GetFormat(), bitmapImage.GetPixels(0, faceIndex));
+        }
+        break;
+    case RHI::TextureType::TextureRectangle:
+        texture->GetTexelsRect(texture->GetFormat(), bitmapImage.GetPixels(0));
+        break;
+    }
+
+    Str filename = "DumpTextures";
+    filename.AppendPath(texture->GetName());
+
+    if (texture->type == RHI::TextureType::Texture2D || texture->type == RHI::TextureType::TextureRectangle) {
+        filename.Append(".png");
+        bitmapImage.WritePNG(filename);
+    } else {
+        filename.Append(".dds");
+        bitmapImage.WriteDDS(filename);
+    }
+
+    BE_LOG("Dumped texture to %s\n", filename.c_str());
+}
+
 void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
     char path[MaxAbsolutePath];
     
@@ -502,7 +564,7 @@ void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
     FileArray fileArray;
     int numFiles = fileSystem.ListFiles(args.Argv(1), args.Argv(2), fileArray);
     if (!numFiles) {
-        BE_WARNLOG("no files found\n");
+        BE_WARNLOG("Files not founded\n");
         return;
     }
 
@@ -515,7 +577,7 @@ void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
         if (image1.IsEmpty())
             continue;
 
-        BE_LOG("converting '%s'\n", path);
+        BE_LOG("Converting '%s'\n", path);
 
         if (image1.GetFormat() != Image::Format::RGBA_8_8_8_8) {
             image1.ConvertFormatSelf(Image::Format::RGBA_8_8_8_8);

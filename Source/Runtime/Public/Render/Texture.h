@@ -67,7 +67,9 @@ public:
     Texture();
     ~Texture();
 
+    const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
+
     int                     GetType() const { return type; }
     int                     GetWidth() const { return width; }
     int                     GetHeight() const { return height; }
@@ -241,6 +243,7 @@ private:
 
     static void             Cmd_ListTextures(const CmdArgs &args);
     static void             Cmd_ReloadTexture(const CmdArgs &args);
+    static void             Cmd_DumpTexture(const CmdArgs &args);
     static void             Cmd_ConvertNormalAR2RGB(const CmdArgs &args);
 
     friend void             RB_DrawDebugTextures();
