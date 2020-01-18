@@ -133,6 +133,10 @@ Font::RenderMode::Enum ComTextRenderer::GetRenderMode() const {
 
 void ComTextRenderer::SetRenderMode(Font::RenderMode::Enum renderMode) {
     renderObjectDef.fontRenderMode = renderMode;
+
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 float ComTextRenderer::GetLineSpacing() const {

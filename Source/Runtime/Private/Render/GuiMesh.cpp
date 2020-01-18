@@ -245,8 +245,8 @@ float GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, char32
         float charH = glyph->height * sy;
 
         if (renderMode == Font::RenderMode::DropShadows) {
-            charX += 1;
-            charY += 1;
+            charX += 1.0f * sx;
+            charY += 1.0f * sy;
         }
 
         uint32_t oldColor = currentColor;
