@@ -463,6 +463,8 @@ void GameWorld::SpawnEntitiesFromJson(Json::Value &entitiesValue, int sceneIndex
 
 void GameWorld::BeginMapLoading() {
     isMapLoading = true;
+
+    fontManager.ClearAtlasTextures();
 }
 
 void GameWorld::FinishMapLoading() {
@@ -472,7 +474,6 @@ void GameWorld::FinishMapLoading() {
 
     animControllerManager.DestroyUnusedAnimControllers();
     fontManager.DestroyUnusedFonts();
-    fontManager.ClearAtlasTextures();
     textureManager.DestroyUnusedTextures();
     shaderManager.DestroyUnusedShaders();
     materialManager.DestroyUnusedMaterials();

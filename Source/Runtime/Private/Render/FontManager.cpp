@@ -48,7 +48,7 @@ void FontManager::Shutdown() {
 }
 
 void FontManager::ClearAtlasTextures() {
-    FontFaceFreeType::FreeAtlas();
+    //FontFaceFreeType::FreeAtlas();
 }
 
 Font *FontManager::AllocFont(const char *hashName, int fontSize) {
