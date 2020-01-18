@@ -17,11 +17,11 @@
 #include "Core/Vertex.h"
 #include "BufferCache.h"
 #include "RenderObject.h"
+#include "Font.h"
 
 BE_NAMESPACE_BEGIN
 
 class Material;
-class Font;
 
 struct GuiMeshSurf {
     const Material *        material;
@@ -59,10 +59,12 @@ public:
 
     void                    DrawPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Material *material);
     
-    float                   DrawChar(float x, float y, float sx, float sy, Font *font, char32_t unicodeChar);
+    float                   DrawChar(float x, float y, float sx, float sy, Font *font, char32_t unicodeChar, Font::RenderMode::Enum renderMode = Font::RenderMode::Normal);
 
-    void                    DrawText(Font *font, RenderObject::TextAnchor::Enum anchor, RenderObject::TextHorzAlignment::Enum horzAlignment, float lineSpacing, float textScale, const Str &text);
-    void                    DrawTextRect(Font *font, const RectF &rect, RenderObject::TextHorzAlignment::Enum horzAlignment, RenderObject::TextVertAlignment::Enum vertAlignment, 
+    void                    DrawText(Font *font, Font::RenderMode::Enum renderMode, RenderObject::TextAnchor::Enum anchor, 
+                                RenderObject::TextHorzAlignment::Enum horzAlignment, float lineSpacing, float textScale, const Str &text);
+    void                    DrawTextRect(Font *font, Font::RenderMode::Enum renderMode, const RectF &rect, 
+                                RenderObject::TextHorzAlignment::Enum horzAlignment, RenderObject::TextVertAlignment::Enum vertAlignment,
                                 RenderObject::TextHorzOverflow::Enum horzOverflow, RenderObject::TextVertOverflow::Enum vertOverflow, float lineSpacing, float textScale, const Str &text);
 
                             // Call this function when drawing ends

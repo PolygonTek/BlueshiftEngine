@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "Containers/HashMap.h"
+
 /*
 -------------------------------------------------------------------------------
 
@@ -25,6 +27,7 @@
 BE_NAMESPACE_BEGIN
 
 class FontFace;
+class Material;
 
 // Font glyph information.
 struct FontGlyph {
@@ -48,6 +51,14 @@ public:
         };
     };
 
+    struct RenderMode {
+        enum Enum {
+            Normal          = 0,
+            DropShadows     = 1,
+            AddOutlines     = 2
+        };
+    };
+
     Font() = default;
     ~Font();
 
@@ -58,7 +69,7 @@ public:
     FontType::Enum          GetFontType() const { return fontType; }
 
                             /// Returns pointer to the glyph structure corresponding to a character. Return null if no glyphs are found.
-    FontGlyph *             GetGlyph(char32_t unicodeChar);
+    FontGlyph *             GetGlyph(char32_t unicodeChar, RenderMode::Enum renderMode = RenderMode::Normal);
 
                             /// Returns a offset for the next character.
     int                     GetGlyphAdvanceX(char32_t unicodeChar) const;
@@ -100,6 +111,8 @@ public:
     void                    ReleaseFont(Font *font, bool immediateDestroy = false);
     void                    DestroyFont(Font *font);
     void                    DestroyUnusedFonts();
+
+    void                    ClearAtlasTextures();
 
     static const char *     defaultFontFilename;
     static Font *           defaultFont;

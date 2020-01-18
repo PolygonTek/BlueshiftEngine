@@ -33,6 +33,8 @@ void ComTextRenderer::RegisterProperties() {
         "The TrueType Font to use when rendering the text.", PropertyInfo::Flag::Editor).SetMetaObject(&FontResource::metaObject);
     REGISTER_ACCESSOR_PROPERTY("fontSize", "Font Size", int, GetFontSize, SetFontSize, 14,
         "The size of the font.", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("renderMode", "Render Mode", Font::RenderMode::Enum, GetRenderMode, SetRenderMode, Font::RenderMode::Normal,
+        "The font rendering mode.", PropertyInfo::Flag::Editor).SetEnumString("Normal;Drop Shadows;Add Outlines");
     REGISTER_ACCESSOR_PROPERTY("lineSpacing", "Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f,
         "How much space will be in-between lines of text.", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("textAnchor", "Anchor", RenderObject::TextAnchor::Enum, GetAnchor, SetAnchor, RenderObject::TextAnchor::UpperLeft,
@@ -123,6 +125,14 @@ void ComTextRenderer::SetAlignment(RenderObject::TextHorzAlignment::Enum alignme
         UpdateAABB();
         UpdateVisuals();
     }
+}
+
+Font::RenderMode::Enum ComTextRenderer::GetRenderMode() const {
+    return renderObjectDef.fontRenderMode;
+}
+
+void ComTextRenderer::SetRenderMode(Font::RenderMode::Enum renderMode) {
+    renderObjectDef.fontRenderMode = renderMode;
 }
 
 float ComTextRenderer::GetLineSpacing() const {

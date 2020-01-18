@@ -54,9 +54,9 @@ int Font::GetFontHeight() const {
     return 0;
 }
 
-FontGlyph *Font::GetGlyph(char32_t unicodeChar) {
+FontGlyph *Font::GetGlyph(char32_t unicodeChar, RenderMode::Enum renderMode) {
     if (fontFace) {
-        return fontFace->GetGlyph(unicodeChar);
+        return fontFace->GetGlyph(unicodeChar, renderMode);
     }
     return nullptr;
 }

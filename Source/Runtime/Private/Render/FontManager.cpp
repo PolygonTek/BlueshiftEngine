@@ -47,6 +47,10 @@ void FontManager::Shutdown() {
     FreeTypeFont::Shutdown();
 }
 
+void FontManager::ClearAtlasTextures() {
+    FontFaceFreeType::FreeAtlas();
+}
+
 Font *FontManager::AllocFont(const char *hashName, int fontSize) {
     if (fontHashMap.Get(FontHashKey(hashName, fontSize))) {
         BE_FATALERROR("%s font already allocated", hashName);

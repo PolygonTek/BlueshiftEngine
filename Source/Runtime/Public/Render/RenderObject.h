@@ -26,6 +26,7 @@
 #include "Core/Vertex.h"
 #include "Math/Math.h"
 #include "Containers/Array.h"
+#include "Font.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -134,6 +135,7 @@ public:
         int                 time = 0;
         float               maxVisDist = MeterToUnit(100);
         int                 renderingOrder = 0;
+
         //
         // Transform info
         //
@@ -166,6 +168,7 @@ public:
         // Text rendering
         //
         Font *              font = nullptr;
+        Font::RenderMode::Enum fontRenderMode = Font::RenderMode::Normal;
         Str                 text;                       ///< UTF8 encoded string
         TextAnchor::Enum    textAnchor = TextAnchor::UpperLeft;
         TextHorzAlignment::Enum textHorzAlignment = TextHorzAlignment::Center;

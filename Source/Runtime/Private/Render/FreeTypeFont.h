@@ -42,7 +42,7 @@ public:
     FT_Face                 GetFace() const { return ftFace; }
 
     FT_GlyphSlot            RenderGlyph(FT_Render_Mode ftRenderMode);
-    FT_Glyph                RenderGlyphWithBorder(FT_Render_Mode ftRenderMode, int borderRadius);
+    FT_Glyph                RenderGlyphWithBorder(FT_Render_Mode ftRenderMode, float borderThickness);
 
     void                    BakeGlyphBitmap(const FT_Bitmap *bitmap, int paddingX, int paddingY, byte *pixels);
 

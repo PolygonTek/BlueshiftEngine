@@ -106,7 +106,7 @@ int FontFaceBitmap::GetFontHeight() const {
     return fontHeight;
 }
 
-FontGlyph *FontFaceBitmap::GetGlyph(char32_t unicodeChar) {
+FontGlyph *FontFaceBitmap::GetGlyph(char32_t unicodeChar, Font::RenderMode::Enum renderMode) {
     const auto *entry = glyphHashMap.Get(unicodeChar);
     if (entry) {
         return entry->second;

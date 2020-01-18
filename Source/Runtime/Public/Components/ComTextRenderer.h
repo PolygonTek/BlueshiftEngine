@@ -42,6 +42,9 @@ public:
     RenderObject::TextHorzAlignment::Enum GetAlignment() const;
     void                    SetAlignment(RenderObject::TextHorzAlignment::Enum alignment);
 
+    Font::RenderMode::Enum  GetRenderMode() const;
+    void                    SetRenderMode(Font::RenderMode::Enum renderMode);
+
     float                   GetLineSpacing() const;
     void                    SetLineSpacing(float lineSpacing);
 

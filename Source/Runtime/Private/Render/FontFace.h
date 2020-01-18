@@ -31,7 +31,7 @@ class FontFace {
 public:
     virtual ~FontFace() {}
 
-    virtual FontGlyph *     GetGlyph(char32_t unicodeChar) = 0;
+    virtual FontGlyph *     GetGlyph(char32_t unicodeChar, Font::RenderMode::Enum renderMode) = 0;
 
                             /// Returns a offset for the next character.
     virtual int             GetGlyphAdvanceX(char32_t unicodeChar) const = 0;
@@ -55,7 +55,7 @@ public:
     FontFaceBitmap();
     virtual ~FontFaceBitmap();
 
-    virtual FontGlyph *     GetGlyph(char32_t unicodeChar) override;
+    virtual FontGlyph *     GetGlyph(char32_t unicodeChar, Font::RenderMode::Enum renderMode) override;
 
     virtual int             GetGlyphAdvanceX(char32_t unicodeChar) const override;
     virtual int             GetGlyphAdvanceY(char32_t unicodeChar) const override;
@@ -87,7 +87,7 @@ public:
     virtual ~FontFaceFreeType();
 
                             /// Caches a glyph in the texture with the given character code.
-    virtual FontGlyph *     GetGlyph(char32_t unicodeChar) override;
+    virtual FontGlyph *     GetGlyph(char32_t unicodeChar, Font::RenderMode::Enum renderMode) override;
 
     virtual int             GetGlyphAdvanceX(char32_t unicodeChar) const override;
     virtual int             GetGlyphAdvanceY(char32_t unicodeChar) const override;
@@ -95,6 +95,8 @@ public:
     virtual int             GetFontHeight() const override { return fontHeight; }
 
     virtual bool            Load(const char *filename, int fontSize) override;
+
+    void                    ClearGlyphCaches();
 
                             /// Writes font file with bitmaps.
     bool                    Write(const char *filename);
@@ -105,8 +107,8 @@ public:
 private:
     void                    Purge();
 
-    FontGlyph *             CacheGlyph(char32_t unicodeChar, int32_t renderMode, int atlasPadding);
-    Texture *               RenderGlyphToAtlasTexture(char32_t unicodeChar, int32_t renderMode, int atlasPadding, int &bitmapLeft, int &bitmapTop, int &glyphX, int &glyphY, int &glyphWidth, int &glyphHeight);
+    FontGlyph *             CacheGlyph(char32_t unicodeChar, Font::RenderMode::Enum renderMode, int atlasPadding);
+    Texture *               RenderGlyphToAtlasTexture(char32_t unicodeChar, Font::RenderMode::Enum renderMode, int atlasPadding, int &bitmapLeft, int &bitmapTop, int &glyphX, int &glyphY, int &glyphWidth, int &glyphHeight);
 
     void                    WriteBitmapFiles(const char *fontFilename);
 

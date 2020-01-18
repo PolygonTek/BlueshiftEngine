@@ -465,12 +465,14 @@ void RenderWorld::AddTextMeshes(VisCamera *camera) {
         textMesh.SetColor(Color4(&renderObjectDef.materialParms[RenderObject::MaterialParm::Red]));
 
         if (renderObjectDef.textRect != RectF::zero) {
-            textMesh.DrawTextRect(renderObjectDef.font, renderObjectDef.textRect, 
+            textMesh.DrawTextRect(renderObjectDef.font, renderObjectDef.fontRenderMode, renderObjectDef.textRect, 
                 renderObjectDef.textHorzAlignment, renderObjectDef.textVertAlignment,
                 renderObjectDef.textHorzOverflow, renderObjectDef.textVertOverflow,
                 renderObjectDef.lineSpacing, renderObjectDef.textScale, renderObjectDef.text);
         } else {
-            textMesh.DrawText(renderObjectDef.font, renderObjectDef.textAnchor, renderObjectDef.textHorzAlignment, renderObjectDef.lineSpacing, renderObjectDef.textScale, renderObjectDef.text);
+            textMesh.DrawText(renderObjectDef.font, renderObjectDef.fontRenderMode,
+                renderObjectDef.textAnchor, renderObjectDef.textHorzAlignment,
+                renderObjectDef.lineSpacing, renderObjectDef.textScale, renderObjectDef.text);
         }
         textMesh.CacheIndexes();
 

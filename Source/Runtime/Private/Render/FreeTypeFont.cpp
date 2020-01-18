@@ -116,21 +116,20 @@ FT_GlyphSlot FreeTypeFont::RenderGlyph(FT_Render_Mode renderMode) {
     return ftFace->glyph;
 }
 
-FT_Glyph FreeTypeFont::RenderGlyphWithBorder(FT_Render_Mode renderMode, int borderRadius) {
+FT_Glyph FreeTypeFont::RenderGlyphWithBorder(FT_Render_Mode renderMode, float borderThickness) {
     FT_Stroker stroker;
     if (FT_Stroker_New(ftLibrary, &stroker) != 0) {
         return nullptr;
     }
 
-    FT_Stroker_Set(stroker, (int)(borderRadius << 6), FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_ROUND, 0);
+    FT_Stroker_Set(stroker, (int)(borderThickness * 64), FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_ROUND, 0);
 
     FT_Glyph glyph;
     if (FT_Get_Glyph(ftFace->glyph, &glyph) != 0) {
         return nullptr;
     }
 
-    //FT_Glyph_Stroke(&ftGlyph, ftStroker, 1);
-    if (FT_Glyph_StrokeBorder(&glyph, stroker, 0, 1) != 0) {
+    if (FT_Glyph_Stroke(&glyph, stroker, 1) != 0) {
         return nullptr;
     }
 

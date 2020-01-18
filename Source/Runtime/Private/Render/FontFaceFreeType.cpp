@@ -106,6 +106,10 @@ void FontFaceFreeType::Purge() {
         glyphBuffer = nullptr;
     }
 
+    ClearGlyphCaches();
+}
+
+void FontFaceFreeType::ClearGlyphCaches() {
     for (int i = 0; i < glyphHashMap.Count(); i++) {
         const auto *entry = glyphHashMap.GetByIndex(i);
         FontGlyph *glyph = entry->second;
@@ -137,39 +141,39 @@ bool FontFaceFreeType::Load(const char *filename, int fontSize) {
     return true;
 }
 
-Texture *FontFaceFreeType::RenderGlyphToAtlasTexture(char32_t unicodeChar, int32_t renderMode, int atlasPadding, int &bitmapLeft, int &bitmapTop, int &glyphX, int &glyphY, int &glyphWidth, int &glyphHeight) {
-    FT_Glyph ftGlyph = nullptr;
-    const FT_Bitmap *ftBitmap;
+Texture *FontFaceFreeType::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font::RenderMode::Enum renderMode, int atlasPadding, int &bitmapLeft, int &bitmapTop, int &glyphX, int &glyphY, int &glyphWidth, int &glyphHeight) {
+    FT_Glyph glyph = nullptr;
+    const FT_Bitmap *bitmap;
 
     if (!freeTypeFont->LoadGlyph(unicodeChar)) {
         return nullptr;
     }
 
-    if (renderMode == 1) {
-        ftGlyph = freeTypeFont->RenderGlyphWithBorder(FT_RENDER_MODE_NORMAL, 1);
+    if (renderMode == Font::RenderMode::Enum::AddOutlines || renderMode == Font::RenderMode::Enum::DropShadows) {
+        glyph = freeTypeFont->RenderGlyphWithBorder(FT_RENDER_MODE_NORMAL, 1.5f);
 
-        const FT_BitmapGlyph ftBitmapGlyph = (FT_BitmapGlyph)ftGlyph;
+        const FT_BitmapGlyph bitmapGlyph = (FT_BitmapGlyph)glyph;
 
-        ftBitmap = &ftBitmapGlyph->bitmap;
+        bitmap = &bitmapGlyph->bitmap;
 
-        bitmapLeft = ftBitmapGlyph->left;
-        bitmapTop = ftBitmapGlyph->top;
+        bitmapLeft = bitmapGlyph->left;
+        bitmapTop = bitmapGlyph->top;
     } else {
-        const FT_GlyphSlot ftGlyphSlot = freeTypeFont->RenderGlyph(FT_RENDER_MODE_NORMAL);
+        const FT_GlyphSlot slot = freeTypeFont->RenderGlyph(FT_RENDER_MODE_NORMAL);
 
-        ftBitmap = &ftGlyphSlot->bitmap;
+        bitmap = &slot->bitmap;
 
-        bitmapLeft = ftGlyphSlot->bitmap_left;
-        bitmapTop = ftGlyphSlot->bitmap_top;
+        bitmapLeft = slot->bitmap_left;
+        bitmapTop = slot->bitmap_top;
     }
 
     int fxPaddingX = 0;
     int fxPaddingY = 0;
 
-    glyphWidth = ftBitmap->width + (fxPaddingX << 1);
-    glyphHeight = ftBitmap->rows + (fxPaddingY << 1);
+    glyphWidth = bitmap->width + (fxPaddingX << 1);
+    glyphHeight = bitmap->rows + (fxPaddingY << 1);
 
-    freeTypeFont->BakeGlyphBitmap(ftBitmap, fxPaddingX, fxPaddingY, glyphBuffer);
+    freeTypeFont->BakeGlyphBitmap(bitmap, fxPaddingX, fxPaddingY, glyphBuffer);
 
     //Image image = Image(glyphWidth, glyphHeight, 1, 1, 1, Image::Format::A_8, glyphBuffer, 0).MakeSDF(8);
     //memcpy(glyphBuffer, image.GetPixels(), image.GetSize());
@@ -183,15 +187,17 @@ Texture *FontFaceFreeType::RenderGlyphToAtlasTexture(char32_t unicodeChar, int32
     glyphX = x + atlasPadding;
     glyphY = y + atlasPadding;
 
-    if (ftGlyph) {
-        FT_Done_Glyph(ftGlyph);
+    if (glyph) {
+        FT_Done_Glyph(glyph);
     }
 
     return texture;
 }
 
-FontGlyph *FontFaceFreeType::CacheGlyph(char32_t unicodeChar, int32_t renderMode, int atlasPadding) {
-    const auto *entry = glyphHashMap.Get(((int64_t)renderMode << 32) | unicodeChar);
+FontGlyph *FontFaceFreeType::CacheGlyph(char32_t unicodeChar, Font::RenderMode::Enum renderMode, int atlasPadding) {
+    int64_t high = (renderMode == Font::RenderMode::AddOutlines || renderMode == Font::RenderMode::DropShadows) ? 1 : 0;
+    int64_t hashKey = (high << 32) | unicodeChar;
+    const auto *entry = glyphHashMap.Get(hashKey);
     if (entry) {
         return entry->second;
     }
@@ -246,17 +252,17 @@ FontGlyph *FontFaceFreeType::CacheGlyph(char32_t unicodeChar, int32_t renderMode
 
     gl->material = materialManager.GetSingleTextureMaterial(texture, Material::TextureHint::Overlay);
 
-    glyphHashMap.Set(unicodeChar, gl);
+    glyphHashMap.Set(hashKey, gl);
 
     return gl;
 }
 
-FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar) {
-    return CacheGlyph(unicodeChar, 0, 2);
+FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar, Font::RenderMode::Enum renderMode) {
+    return CacheGlyph(unicodeChar, renderMode, 2);
 }
 
 int FontFaceFreeType::GetGlyphAdvanceX(char32_t unicodeChar) const {
-    // Return previously obtained advanceY if it is in the glyph cache.
+    // Return previously obtained advanceX if it is in the glyph cache.
     const auto *entry = glyphHashMap.Get((int64_t)unicodeChar);
     if (entry) {
         return entry->second->advanceX;
@@ -270,7 +276,7 @@ int FontFaceFreeType::GetGlyphAdvanceX(char32_t unicodeChar) const {
 }
 
 int FontFaceFreeType::GetGlyphAdvanceY(char32_t unicodeChar) const {
-    // Return previously obtained advanceX if it is in the glyph cache.
+    // Return previously obtained advanceY if it is in the glyph cache.
     const auto *entry = glyphHashMap.Get((int64_t)unicodeChar);
     if (entry) {
         return entry->second->advanceY;

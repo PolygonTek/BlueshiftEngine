@@ -50,6 +50,9 @@ public:
     RenderObject::TextVertOverflow::Enum GetVertOverflow() const;
     void                    SetVertOverflow(RenderObject::TextVertOverflow::Enum vertOverflow);
 
+    Font::RenderMode::Enum  GetRenderMode() const;
+    void                    SetRenderMode(Font::RenderMode::Enum renderMode);
+
     float                   GetLineSpacing() const;
     void                    SetLineSpacing(float lineSpacing);
 
