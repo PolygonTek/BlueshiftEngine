@@ -226,7 +226,7 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
 
 float GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, char32_t unicodeChar) {
     if (unicodeChar == U' ') {
-        return font->GetGlyphAdvance(unicodeChar) * sx;
+        return font->GetGlyphAdvanceX(unicodeChar) * sx;
     }
 
     // Clip away before accessing to the font glyph.
@@ -248,7 +248,7 @@ float GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, char32
 
     DrawPic(charX, charY, charW, charH, glyph->s, glyph->t, glyph->s2, glyph->t2, glyph->material);
 
-    float pitch = glyph->advance * sx;
+    float pitch = glyph->advanceX * sx;
     return pitch;
 }
 
@@ -280,7 +280,7 @@ void GuiMesh::DrawText(Font *font, RenderObject::TextAnchor::Enum anchor, Render
             // Save next line offset.
             lineCharOffsets[numLines] = charOffset;
         } else {
-            float charWidth = font->GetGlyphAdvance(unicodeChar) * textScale;
+            float charWidth = font->GetGlyphAdvanceX(unicodeChar) * textScale;
             currentLineWidth += charWidth;
             currentLineLength++;
         }
@@ -389,7 +389,7 @@ void GuiMesh::DrawTextRect(Font *font, const RectF &rect, RenderObject::TextHorz
                 break;
             }
         } else {
-            float charWidth = font->GetGlyphAdvance(unicodeChar) * textScale;
+            float charWidth = font->GetGlyphAdvanceX(unicodeChar) * textScale;
 
             if (horzOverflow == RenderObject::TextHorzOverflow::Wrap && currentLineWidth + charWidth > rect.w) {
                 charOffset = charPrevOffset;
@@ -461,7 +461,7 @@ AABB GuiMesh::Compute3DTextAABB(Font *font, RenderObject::TextAnchor::Enum ancho
             }
             currentLineWidth = 0;
         } else {
-            float charWidth = font->GetGlyphAdvance(unicodeChar) * textScale;
+            float charWidth = font->GetGlyphAdvanceX(unicodeChar) * textScale;
             currentLineWidth += charWidth;
         }
     }

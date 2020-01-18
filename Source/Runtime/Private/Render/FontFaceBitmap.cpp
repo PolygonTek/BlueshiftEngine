@@ -77,7 +77,8 @@ bool FontFaceBitmap::Load(const char *filename, int fontSize) {
         glyph->height   = gl->height;
         glyph->offsetX  = gl->offsetX;
         glyph->offsetY  = gl->offsetY;
-        glyph->advance  = gl->advance;
+        glyph->advanceX = gl->advanceX;
+        glyph->advanceY = gl->advanceY;
         glyph->s        = gl->s;
         glyph->t        = gl->t;
         glyph->s2       = gl->s2;
@@ -110,16 +111,22 @@ FontGlyph *FontFaceBitmap::GetGlyph(char32_t unicodeChar) {
     if (entry) {
         return entry->second;
     }
-
     return nullptr;
 }
 
-int FontFaceBitmap::GetGlyphAdvance(char32_t unicodeChar) const {
+int FontFaceBitmap::GetGlyphAdvanceX(char32_t unicodeChar) const {
     const auto *entry = glyphHashMap.Get(unicodeChar);
     if (entry) {
-        return entry->second->advance;
+        return entry->second->advanceX;
     }
+    return 0;
+}
 
+int FontFaceBitmap::GetGlyphAdvanceY(char32_t unicodeChar) const {
+    const auto *entry = glyphHashMap.Get(unicodeChar);
+    if (entry) {
+        return entry->second->advanceY;
+    }
     return 0;
 }
 

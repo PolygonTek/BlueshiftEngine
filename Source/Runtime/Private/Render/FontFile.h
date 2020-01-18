@@ -31,7 +31,7 @@ struct FontFileGlyph {
     char32_t        charCode;
     int32_t         width, height;
     int32_t         offsetX, offsetY;
-    int32_t         advance;
+    int32_t         advanceX, advanceY;
     float           s, t, s2, t2;
     uint32_t        bitmapIndex;
 };

@@ -14,17 +14,15 @@
 
 #pragma once
 
-#include "freetype/include/ft2build.h"
-#include "freetype/include/freetype.h"
-
 BE_NAMESPACE_BEGIN
 
 class Material;
+class FreeTypeFont;
 
 /*
 -------------------------------------------------------------------------------
 
-    Abstract class for Font Face
+    Abstract class for Font
 
 -------------------------------------------------------------------------------
 */
@@ -35,16 +33,13 @@ public:
 
     virtual FontGlyph *     GetGlyph(char32_t unicodeChar) = 0;
 
-                            /// Returns width of given character code for the next character in string.
-    virtual int             GetGlyphAdvance(char32_t unicodeChar) const = 0;
+                            /// Returns a offset for the next character.
+    virtual int             GetGlyphAdvanceX(char32_t unicodeChar) const = 0;
+    virtual int             GetGlyphAdvanceY(char32_t unicodeChar) const = 0;
 
     virtual int             GetFontHeight() const = 0;
 
     virtual bool            Load(const char *filename, int fontSize) = 0;
-
-protected:
-    using GlyphHashMap      = HashMap<char32_t, FontGlyph *>;
-    GlyphHashMap            glyphHashMap;
 };
 
 /*
@@ -62,8 +57,8 @@ public:
 
     virtual FontGlyph *     GetGlyph(char32_t unicodeChar) override;
 
-                            /// Returns width of given character code for the next character in string.
-    virtual int             GetGlyphAdvance(char32_t unicodeChar) const override;
+    virtual int             GetGlyphAdvanceX(char32_t unicodeChar) const override;
+    virtual int             GetGlyphAdvanceY(char32_t unicodeChar) const override;
 
     virtual int             GetFontHeight() const override;
 
@@ -71,6 +66,9 @@ public:
 
 private:
     void                    Purge();
+
+    using GlyphHashMap = HashMap<char32_t, FontGlyph *>;
+    GlyphHashMap            glyphHashMap;
 
     int                     fontHeight;
 };
@@ -88,10 +86,11 @@ public:
     FontFaceFreeType() = default;
     virtual ~FontFaceFreeType();
 
+                            /// Caches a glyph in the texture with the given character code.
     virtual FontGlyph *     GetGlyph(char32_t unicodeChar) override;
 
-                            /// Returns width of given character code for the next character in string.
-    virtual int             GetGlyphAdvance(char32_t unicodeChar) const override;
+    virtual int             GetGlyphAdvanceX(char32_t unicodeChar) const override;
+    virtual int             GetGlyphAdvanceY(char32_t unicodeChar) const override;
 
     virtual int             GetFontHeight() const override { return fontHeight; }
 
@@ -100,41 +99,29 @@ public:
                             /// Writes font file with bitmaps.
     bool                    Write(const char *filename);
 
-    static void             Init();
-    static void             Shutdown();
-    
+    static void             InitAtlas();
+    static void             FreeAtlas();
+
 private:
-    // glyph atlas texture 의 사용중인 공간을 덩어리 단위로 표현
-    struct Chunk {
-        int                 width;
-        int                 height;
-    };
-
-    struct GlyphAtlas {
-        Texture *           texture;
-        Array<Chunk>        chunks;
-    };
-
     void                    Purge();
 
-    bool                    LoadFTGlyph(char32_t unicodeChar) const;
-    void                    CopyFTBitmapToGlyphBuffer(const FT_Bitmap *bitmap) const;
+    FontGlyph *             CacheGlyph(char32_t unicodeChar, int32_t renderMode, int atlasPadding);
+    Texture *               RenderGlyphToAtlasTexture(char32_t unicodeChar, int32_t renderMode, int atlasPadding, int &bitmapLeft, int &bitmapTop, int &glyphX, int &glyphY, int &glyphWidth, int &glyphHeight);
 
     void                    WriteBitmapFiles(const char *fontFilename);
 
-    static int              AllocGlyphAtlas(int width, int height, int *x, int *y);
+    using GlyphHashMap = HashMap<int64_t, FontGlyph *>;
+    GlyphHashMap            glyphHashMap;
+
+    FreeTypeFont *          freeTypeFont = nullptr;
 
     int                     fontHeight;
 
-    FT_Byte *               ftFontFileData = nullptr;       ///< FreeType font flie data
-    FT_Face                 ftFace = nullptr;               ///< FreeType font face object
-    FT_Long                 ftFaceIndex = 0;
-
-    mutable char32_t        lastLoadedChar;                 ///< Last loaded character code
     byte *                  glyphBuffer = nullptr;          ///< Intermediate glyph buffer to upload texture
-
-    static Array<GlyphAtlas *> atlasArray;
-    static FT_Library       ftLibrary;
 };
+
+BE_INLINE FontFaceFreeType::~FontFaceFreeType() {
+    Purge();
+}
 
 BE_NAMESPACE_END

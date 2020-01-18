@@ -15,14 +15,16 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
+#include "Simd/Simd.h"
 #include "Core/Heap.h"
 #include "File/FileSystem.h"
+#include "FreeTypeFont.h"
 #include "FontFace.h"
 #include "FontFile.h"
-#include "Simd/Simd.h"
 
-// FreeType2 reference:
-// http://freetype.sourceforge.net/freetype2/docs/reference/ft2-base_interface.html
+#define STBRP_STATIC
+#define STB_RECT_PACK_IMPLEMENTATION
+#include "stb_rect_pack.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -36,65 +38,69 @@ BE_NAMESPACE_BEGIN
 #endif
 
 #define GLYPH_CACHE_TEXTURE_SIZE    2048
-#define GLYPH_CACHE_TEXTURE_COUNT   1
-#define GLYPH_PADDING               2
 #define GLYPH_COORD_OFFSET          1
 
-Array<FontFaceFreeType::GlyphAtlas *> FontFaceFreeType::atlasArray;
-FT_Library                          FontFaceFreeType::ftLibrary;
+struct GlyphAtlas {
+    stbrp_context                   context;
+    Array<stbrp_node>               nodes;
+    Texture *                       texture;
+};
 
-FontFaceFreeType::~FontFaceFreeType() {
-    Purge();
-}
+static Array<GlyphAtlas *>          atlasArray;
 
-void FontFaceFreeType::Init() {
-    // Initialize FreeType library.
-    if (FT_Init_FreeType(&ftLibrary) != 0) {
-        BE_FATALERROR("FT_Init_FreeType() failed");
-    }
+static void Atlas_Add() {
+    GlyphAtlas *atlas = new GlyphAtlas;
+    atlasArray.Append(atlas);
 
-    atlasArray.Resize(GLYPH_CACHE_TEXTURE_COUNT);
+    // 대략 16x16 조각의 glyph 들을 하나의 텍스쳐에 packing 했을 경우 개수 만큼 할당..
+    // 2048*2048 / 16*16 = 16384
+    atlas->nodes.SetCount(GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE / (16 * 16));
+    stbrp_init_target(&atlas->context, GLYPH_CACHE_TEXTURE_SIZE, GLYPH_CACHE_TEXTURE_SIZE, atlas->nodes.Ptr(), atlas->nodes.Count());
 
     Image image;
     image.Create2D(GLYPH_CACHE_TEXTURE_SIZE, GLYPH_CACHE_TEXTURE_SIZE, 1, GLYPH_CACHE_TEXTURE_FORMAT, nullptr, 0);
     memset(image.GetPixels(), 0, image.GetSize());
 
-    for (int atlasIndex = 0; atlasIndex < GLYPH_CACHE_TEXTURE_COUNT; atlasIndex++) {
-        GlyphAtlas *atlas = new GlyphAtlas;
-        atlasArray.Append(atlas);
-
-        atlas->texture = textureManager.AllocTexture(va("_glyph_cache_%i", atlasIndex));
-        atlas->texture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
-
-        // 대략 16x16 조각의 glyph 들을 하나의 텍스쳐에 packing 했을 경우 개수 만큼 할당..
-        // 2048*2048 / 16*16 = 16384
-        atlas->chunks.Resize(GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE / (16*16));
-    }
+    atlas->texture = textureManager.AllocTexture(va("_glyph_cache_%i", atlasArray.Count() - 1));
+    atlas->texture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
 }
 
-void FontFaceFreeType::Shutdown() {
-    for (int atlasIndex = 0; atlasIndex < atlasArray.Count(); atlasIndex++) {
-        atlasArray[atlasIndex]->chunks.Clear();
+static Texture *Atlas_AddRect(int inWidth, int inHeight, int &outX, int &outY) {
+    stbrp_rect rect;
+    rect.w = (uint16_t)inWidth;
+    rect.h = (uint16_t)inHeight;
 
+    int atlasIndex = 0;
+    do {
+        if (atlasIndex == atlasArray.Count()) {
+            Atlas_Add();
+        }
+        if (stbrp_pack_rects(&atlasArray[atlasIndex]->context, &rect, 1) != 0) {
+            break;
+        }
+    } while (atlasIndex++);
+
+    outX = rect.x;
+    outY = rect.w;
+
+    return atlasArray[atlasIndex]->texture;
+}
+
+void FontFaceFreeType::InitAtlas() {
+    Atlas_Add();
+}
+
+void FontFaceFreeType::FreeAtlas() {
+    for (int atlasIndex = 0; atlasIndex < atlasArray.Count(); atlasIndex++) {
         textureManager.DestroyTexture(atlasArray[atlasIndex]->texture);
     }
 
     atlasArray.DeleteContents(true);
-
-    // Destroy FreeType library object.
-    FT_Done_FreeType(ftLibrary);
 }
 
 void FontFaceFreeType::Purge() {
-    if (ftFace) {
-        // Font file data should be released after calling FT_Done_Face().
-        FT_Done_Face(ftFace);
-        ftFace = nullptr;
+    SAFE_DELETE(freeTypeFont);
 
-        fileSystem.FreeFile(ftFontFileData);
-        ftFontFileData = nullptr;
-    }
-    
     if (glyphBuffer) {
         Mem_AlignedFree(glyphBuffer);
         glyphBuffer = nullptr;
@@ -113,46 +119,13 @@ void FontFaceFreeType::Purge() {
 bool FontFaceFreeType::Load(const char *filename, int fontSize) {
     Purge();
 
-    size_t dataSize = fileSystem.LoadFile(filename, true, (void **)&ftFontFileData);
-    if (!ftFontFileData) {
-        BE_WARNLOG("Couldn't open FreeType font %s\n", filename);
-        return false;
-    }
-    
-    // Certain font formats allow several font faces to be embedded in a single file.
-    // faceIndex tells which face you want to load.
-    if (FT_New_Memory_Face(ftLibrary, ftFontFileData, dataSize, ftFaceIndex, &ftFace) != 0) {
-        BE_ERRLOG("FontFaceFreeType::Create: FT_New_Memory_Face failed\n");
-        fileSystem.FreeFile(ftFontFileData);
-        ftFontFileData = nullptr;
-        return false;
-    }
-
-    // Print how many faces are exist.
-    BE_DLOG("%i faces embedded in font file '%s'\n", ftFace->num_faces, filename);
-
-    // We use only unicode charmap.
-    if (FT_Select_Charmap(ftFace, FT_ENCODING_UNICODE) != 0) {
-        BE_ERRLOG("FontFaceFreeType::Create: %s font file doesn't contain unicode charmap\n", filename);
-        FT_Done_Face(ftFace);
-        ftFace = nullptr;
-        fileSystem.FreeFile(ftFontFileData);
-        ftFontFileData = nullptr;
-        return false;
-    }
-
-    // NOTE: fontSize means EM. Not the bitmap size of the actual font.
-    if (FT_Set_Pixel_Sizes(ftFace, fontSize, fontSize) != 0) {
-        BE_ERRLOG("FontFaceFreeType::Create: FT_Set_Pixel_Sizes failed\n");
-        FT_Done_Face(ftFace);
-        ftFace = nullptr;
-        fileSystem.FreeFile(ftFontFileData);
-        ftFontFileData = nullptr;
+    freeTypeFont = new FreeTypeFont;
+    if (!freeTypeFont->Create(filename, fontSize)) {
         return false;
     }
 
     // Calcualte font height in pixels.
-    fontHeight = ((ftFace->size->metrics.height + 63) & ~63) >> 6;
+    fontHeight = ((freeTypeFont->GetFace()->size->metrics.height + 63) & ~63) >> 6;
 
     // Allocate temporary buffer for drawing glyphs.
     // FT_Set_Pixel_Sizes 와는 다르게 fontHeight * fontHeight 를 넘어가는 비트맵이 나올수도 있어서 넉넉하게 가로 세로 두배씩 더 할당
@@ -161,205 +134,84 @@ bool FontFaceFreeType::Load(const char *filename, int fontSize) {
     // Pad with zeros.
     simdProcessor->Memset(glyphBuffer, 0, fontSize * fontSize * Image::BytesPerPixel(GLYPH_CACHE_TEXTURE_FORMAT));
 
-    lastLoadedChar = 0;
-
     return true;
 }
 
-// Load glyph into glyph slot to get the bitmap.
-bool FontFaceFreeType::LoadFTGlyph(char32_t unicodeChar) const {
-    if (lastLoadedChar != unicodeChar) {
-        unsigned int glyphIndex = FT_Get_Char_Index(ftFace, unicodeChar);
+Texture *FontFaceFreeType::RenderGlyphToAtlasTexture(char32_t unicodeChar, int32_t renderMode, int atlasPadding, int &bitmapLeft, int &bitmapTop, int &glyphX, int &glyphY, int &glyphWidth, int &glyphHeight) {
+    FT_Glyph ftGlyph = nullptr;
+    const FT_Bitmap *ftBitmap;
 
-        if (glyphIndex == 0) {
-            // There is no glyph image for this character.
-            return false;
-        }
-
-        // Load glyph into glyph slot.
-        if (FT_Load_Glyph(ftFace, glyphIndex, FT_LOAD_TARGET_NORMAL | FT_LOAD_NO_BITMAP) != 0) {
-            return false;
-        }
-
-        lastLoadedChar = unicodeChar;
+    if (!freeTypeFont->LoadGlyph(unicodeChar)) {
+        return nullptr;
     }
 
-    return true;
+    if (renderMode == 1) {
+        ftGlyph = freeTypeFont->RenderGlyphWithBorder(FT_RENDER_MODE_NORMAL, 1);
+
+        const FT_BitmapGlyph ftBitmapGlyph = (FT_BitmapGlyph)ftGlyph;
+
+        ftBitmap = &ftBitmapGlyph->bitmap;
+
+        bitmapLeft = ftBitmapGlyph->left;
+        bitmapTop = ftBitmapGlyph->top;
+    } else {
+        const FT_GlyphSlot ftGlyphSlot = freeTypeFont->RenderGlyph(FT_RENDER_MODE_NORMAL);
+
+        ftBitmap = &ftGlyphSlot->bitmap;
+
+        bitmapLeft = ftGlyphSlot->bitmap_left;
+        bitmapTop = ftGlyphSlot->bitmap_top;
+    }
+
+    int fxPaddingX = 0;
+    int fxPaddingY = 0;
+
+    glyphWidth = ftBitmap->width + (fxPaddingX << 1);
+    glyphHeight = ftBitmap->rows + (fxPaddingY << 1);
+
+    freeTypeFont->BakeGlyphBitmap(ftBitmap, fxPaddingX, fxPaddingY, glyphBuffer);
+
+    //Image image = Image(glyphWidth, glyphHeight, 1, 1, 1, Image::Format::A_8, glyphBuffer, 0).MakeSDF(8);
+    //memcpy(glyphBuffer, image.GetPixels(), image.GetSize());
+
+    int actualWidth = glyphWidth + (atlasPadding << 1);
+    int actualHeight = glyphHeight + (atlasPadding << 1);
+    int x, y;
+
+    Texture *texture = Atlas_AddRect(actualWidth, actualHeight, x, y);
+
+    glyphX = x + atlasPadding;
+    glyphY = y + atlasPadding;
+
+    if (ftGlyph) {
+        FT_Done_Glyph(ftGlyph);
+    }
+
+    return texture;
 }
 
-// FT_Bitmap 으로 부터 glyphBuffer 에 비트맵 데이터를 그린다.
-void FontFaceFreeType::CopyFTBitmapToGlyphBuffer(const FT_Bitmap *bitmap) const {        
-#ifdef LCD_MODE_RENDERING
-    int w = bitmap->width / 3;
-    int h = bitmap->rows;
-#else
-    int w = bitmap->width;
-    int h = bitmap->rows;
-#endif
-
-    // Draw FreeType bitmap from here.
-    const byte *bufferPtr = bitmap->buffer;
-
-    switch (bitmap->pixel_mode) {
-    case FT_PIXEL_MODE_MONO:
-        for (int y = 0; y < bitmap->rows; y++) {
-            for (int x = 0, b = 0; x < bitmap->width; x++, b++) {
-                int offset = w * y + x;
-
-                if (bufferPtr[b >> 3] & (0b1000 >> (b & 0b0111))) {
-                    glyphBuffer[offset] = 255;
-                } else {
-                    glyphBuffer[offset] = 0;
-                }
-            }
-            bufferPtr += bitmap->pitch;
-        }
-        break;
-    case FT_PIXEL_MODE_GRAY:
-        for (int y = 0; y < bitmap->rows; y++) {
-            for (int x = 0; x < bitmap->width; x++) {
-                int offset = w * y + x;
-
-                glyphBuffer[offset] = bufferPtr[x];
-            }
-            bufferPtr += bitmap->pitch;
-        }
-        break;
-    case FT_PIXEL_MODE_LCD:
-        for (int y = 0; y < bitmap->rows; y++) {
-            for (int x = 0; x < bitmap->width / 3; x++) {
-                int offset = (w * y + x) << 2;
-
-                int r = bufferPtr[x * 3 + 0];
-                int g = bufferPtr[x * 3 + 1];
-                int b = bufferPtr[x * 3 + 2];
-
-                glyphBuffer[offset + 0] = r;
-                glyphBuffer[offset + 1] = g;
-                glyphBuffer[offset + 2] = b;
-                glyphBuffer[offset + 3] = (r + g + b) / 3;
-            }
-            bufferPtr += bitmap->pitch;
-        }
-        break;
-    default:
-        assert(0);
-        break;
-    }
-}
-
-int FontFaceFreeType::AllocGlyphAtlas(int width, int height, int *x, int *y) {
-    int fitChunkYOffset;
-
-    if (width == 0 || height == 0) {
-        return -1;
-    }
-    
-    for (int atlasIndex = 0; atlasIndex < GLYPH_CACHE_TEXTURE_COUNT; atlasIndex++) {
-        GlyphAtlas *atlas = atlasArray[atlasIndex];
-
-        Chunk *fitChunk = nullptr;
-        int fitSpaceHeight = GLYPH_CACHE_TEXTURE_SIZE;
-        int yoffset = 0;
-
-        for (int j = 0; j < atlas->chunks.Count(); j++) {
-            Chunk *chunk = &atlas->chunks[j];
-            
-            // 가로로 남는 덩어리가 있는지..
-            if (chunk->width + width <= atlas->texture->GetWidth()) {
-                // 세로 크기가 같은 덩어리를 발견하면 바로 거기다 끼워놓고 리턴
-                if (chunk->height == height) {
-                    *x = chunk->width;
-                    *y = yoffset;
-
-                    chunk->width += width;
-
-                    return atlasIndex;
-                } else if (chunk->height > height) {
-                    if (chunk->height < fitSpaceHeight) {
-                        fitChunk = chunk;
-                        fitChunkYOffset = yoffset;
-                    }
-                }
-            }
-
-            yoffset += chunk->height;
-        }
-
-        // Create a new chunk if there is space left.
-        if (GLYPH_CACHE_TEXTURE_SIZE - yoffset >= height) {
-            *x = 0;
-            *y = yoffset;
-
-            Chunk chunk;
-            chunk.width = width;
-            chunk.height = height;
-            atlas->chunks.Append(chunk);
-        
-            return atlasIndex;
-        } else {
-            if (fitChunk) {
-                *x = fitChunk->width;
-                *y = fitChunkYOffset;
-
-                fitChunk->width += width;
-
-                return atlasIndex;
-            }
-        }
-    }
-
-    BE_WARNLOG("not enough atlas chunk for cache-able glyph\n");
-    return -1;
-}
-
-// Caching glyphs in the texture with the given character code.
-FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar) {
-    const auto *entry = glyphHashMap.Get(unicodeChar);
+FontGlyph *FontFaceFreeType::CacheGlyph(char32_t unicodeChar, int32_t renderMode, int atlasPadding) {
+    const auto *entry = glyphHashMap.Get(((int64_t)renderMode << 32) | unicodeChar);
     if (entry) {
         return entry->second;
     }
 
-    if (!LoadFTGlyph(unicodeChar)) {
-        return nullptr;
-    }
+    int bitmapLeft;
+    int bitmapTop;
+    int glyphX;
+    int glyphY;
+    int glyphWidth;
+    int glyphHeight;
 
-#ifdef LCD_MODE_RENDERING
-    // FT_RENDER_MODE_NORMAL: LCD sub-pixel RGB anti-aliasing mode.
-    if (FT_Render_Glyph(ftFace->glyph, FT_RENDER_MODE_LCD) != 0) {
-#else
-    // FT_RENDER_MODE_NORMAL: normal 8bit anti-aliasing mode.
-    if (FT_Render_Glyph(ftFace->glyph, FT_RENDER_MODE_NORMAL) != 0) {
-#endif
-        return nullptr;
-    }
-
-    const FT_GlyphSlot glyphSlot = ftFace->glyph;
-    const FT_Bitmap *bitmap = &glyphSlot->bitmap;
-
-#ifdef LCD_MODE_RENDERING
-    int width = bitmap->width / 3;
-#else
-    int width = bitmap->width;
-#endif
-    int height = bitmap->rows;
-
-    int allocWidth = width + (GLYPH_PADDING << 1);
-    int allocHeight = height + (GLYPH_PADDING << 1);
-
-    int x, y;
-    int atlasIndex = AllocGlyphAtlas(allocWidth, allocHeight, &x, &y);
-    Texture *texture = atlasArray[atlasIndex]->texture;
+    Texture *texture = RenderGlyphToAtlasTexture(unicodeChar, renderMode, atlasPadding, bitmapLeft, bitmapTop, glyphX, glyphY, glyphWidth, glyphHeight);
     if (!texture) {
         return nullptr;
     }
 
-    CopyFTBitmapToGlyphBuffer(&ftFace->glyph->bitmap);
-
     rhi.SelectTextureUnit(0);
 
     texture->Bind();
-    texture->Update2D(0, x + GLYPH_PADDING, y + GLYPH_PADDING, width, height, GLYPH_CACHE_TEXTURE_FORMAT, glyphBuffer);
+    texture->Update2D(0, glyphX, glyphY, glyphWidth, glyphHeight, GLYPH_CACHE_TEXTURE_FORMAT, glyphBuffer);
 
     // NOTE: ascender 의 의미가 폰트 포맷마다 해석이 좀 다양하다
     // (base line 에서부터 위쪽으로 top bearing 을 포함해서 그 위쪽까지의 거리가 필요함)
@@ -370,6 +222,8 @@ FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar) {
     // for others it is the ascent of the highest accented character, and finally, 
     // other formats define it as being equal to global_bbox.yMax.
     int ascender;
+    FT_Face ftFace = freeTypeFont->GetFace();
+
     if (FT_IS_SCALABLE(ftFace)) {
         ascender = (int)FT_MulFix(ftFace->ascender, ftFace->size->metrics.y_scale);
         ascender = ((ascender + 63) & ~63) >> 6;
@@ -377,37 +231,55 @@ FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar) {
         ascender = int(ftFace->size->metrics.ascender / 64.0f);
     }
 
-    FontGlyph *glyph = new FontGlyph;
-    glyph->charCode     = unicodeChar;
-    glyph->width        = width;
-    glyph->height       = height;
-    glyph->offsetX      = glyphSlot->bitmap_left - GLYPH_COORD_OFFSET;
-    glyph->offsetY      = ascender - glyphSlot->bitmap_top - GLYPH_COORD_OFFSET;
-    glyph->advance      = (((int)glyphSlot->advance.x) >> 6) - (GLYPH_COORD_OFFSET << 1);
-    glyph->s            = (float)(x + (GLYPH_PADDING - GLYPH_COORD_OFFSET)) / texture->GetWidth();
-    glyph->t            = (float)(y + (GLYPH_PADDING - GLYPH_COORD_OFFSET)) / texture->GetHeight();
-    glyph->s2           = (float)(x + allocWidth - (GLYPH_PADDING - GLYPH_COORD_OFFSET)) / texture->GetWidth();
-    glyph->t2           = (float)(y + allocHeight - (GLYPH_PADDING - GLYPH_COORD_OFFSET)) / texture->GetHeight();
+    FontGlyph *gl = new FontGlyph;
+    gl->charCode    = unicodeChar;
+    gl->width       = glyphWidth;
+    gl->height      = glyphHeight;
+    gl->offsetX     = bitmapLeft - GLYPH_COORD_OFFSET;
+    gl->offsetY     = ascender - bitmapTop - GLYPH_COORD_OFFSET;
+    gl->advanceX    = (((int)ftFace->glyph->advance.x) >> 6) - (GLYPH_COORD_OFFSET << 1);
+    gl->advanceY    = (((int)ftFace->glyph->advance.y) >> 6) - (GLYPH_COORD_OFFSET << 1);
+    gl->s           = (float)(glyphX - GLYPH_COORD_OFFSET) / texture->GetWidth();
+    gl->t           = (float)(glyphY - GLYPH_COORD_OFFSET) / texture->GetHeight();
+    gl->s2          = (float)(glyphX + glyphWidth + GLYPH_COORD_OFFSET) / texture->GetWidth();
+    gl->t2          = (float)(glyphY + glyphHeight + GLYPH_COORD_OFFSET) / texture->GetHeight();
 
-    glyph->material = materialManager.GetSingleTextureMaterial(texture, Material::TextureHint::Overlay);
+    gl->material = materialManager.GetSingleTextureMaterial(texture, Material::TextureHint::Overlay);
 
-    glyphHashMap.Set(unicodeChar, glyph);
+    glyphHashMap.Set(unicodeChar, gl);
 
-    return glyph;
+    return gl;
 }
 
-int FontFaceFreeType::GetGlyphAdvance(char32_t unicodeChar) const {
-    // Return previously obtained advance if it is in the glyph cache.
-    const auto *entry = glyphHashMap.Get(unicodeChar);
+FontGlyph *FontFaceFreeType::GetGlyph(char32_t unicodeChar) {
+    return CacheGlyph(unicodeChar, 0, 2);
+}
+
+int FontFaceFreeType::GetGlyphAdvanceX(char32_t unicodeChar) const {
+    // Return previously obtained advanceY if it is in the glyph cache.
+    const auto *entry = glyphHashMap.Get((int64_t)unicodeChar);
     if (entry) {
-        return entry->second->advance;
+        return entry->second->advanceX;
     }
 
     // If glyph is not in cache, load glyph to compute advance.
-    if (LoadFTGlyph(unicodeChar)) {
-        return (((int)ftFace->glyph->advance.x) >> 6) - (GLYPH_COORD_OFFSET << 1);
+    if (freeTypeFont->LoadGlyph(unicodeChar)) {
+        return (((int)freeTypeFont->GetFace()->glyph->advance.x) >> 6) - (GLYPH_COORD_OFFSET << 1);
+    }
+    return 0;
+}
+
+int FontFaceFreeType::GetGlyphAdvanceY(char32_t unicodeChar) const {
+    // Return previously obtained advanceX if it is in the glyph cache.
+    const auto *entry = glyphHashMap.Get((int64_t)unicodeChar);
+    if (entry) {
+        return entry->second->advanceY;
     }
 
+    // If glyph is not in cache, load glyph to compute advance.
+    if (freeTypeFont->LoadGlyph(unicodeChar)) {
+        return (((int)freeTypeFont->GetFace()->glyph->advance.y) >> 6) - (GLYPH_COORD_OFFSET << 1);
+    }
     return 0;
 }
 
@@ -447,7 +319,8 @@ bool FontFaceFreeType::Write(const char *filename) {
         fp->WriteInt32(glyph->height);
         fp->WriteInt32(glyph->offsetX);
         fp->WriteInt32(glyph->offsetY);
-        fp->WriteInt32(glyph->advance);
+        fp->WriteInt32(glyph->advanceX);
+        fp->WriteInt32(glyph->advanceY);
         fp->WriteFloat(glyph->s);
         fp->WriteFloat(glyph->t);
         fp->WriteFloat(glyph->s2);

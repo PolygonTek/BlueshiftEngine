@@ -28,6 +28,7 @@ bool Font::Load(const char *filename) {
 
     if (Str::CheckExtension(filename, ".font")) {
         fontFace = new FontFaceBitmap;
+
         if (!fontFace->Load(filename, 0/*fontSize*/)) {
             delete fontFace;
             return false;
@@ -35,6 +36,7 @@ bool Font::Load(const char *filename) {
         fontType = FontType::Bitmap;
     } else {
         fontFace = new FontFaceFreeType;
+
         if (!fontFace->Load(filename, fontSize)) {
             delete fontFace;
             return false;
@@ -59,9 +61,16 @@ FontGlyph *Font::GetGlyph(char32_t unicodeChar) {
     return nullptr;
 }
 
-int Font::GetGlyphAdvance(char32_t unicodeChar) const {
+int Font::GetGlyphAdvanceX(char32_t unicodeChar) const {
     if (fontFace) {
-        return fontFace->GetGlyphAdvance(unicodeChar);
+        return fontFace->GetGlyphAdvanceX(unicodeChar);
+    }
+    return 0;
+}
+
+int Font::GetGlyphAdvanceY(char32_t unicodeChar) const {
+    if (fontFace) {
+        return fontFace->GetGlyphAdvanceY(unicodeChar);
     }
     return 0;
 }
@@ -96,7 +105,7 @@ float Font::TextWidth(const Str &text, int maxLength, bool allowLineBreak, bool 
             }
         }
 
-        width += GetGlyphAdvance(unicodeChar) * xScale;
+        width += GetGlyphAdvanceX(unicodeChar) * xScale;
         maxLength--;
     }
 

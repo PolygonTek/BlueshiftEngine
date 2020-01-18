@@ -31,7 +31,7 @@ struct FontGlyph {
     char32_t                charCode;
     int                     width, height;
     int                     offsetX, offsetY;
-    int                     advance;
+    int                     advanceX, advanceY;
     float                   s, t, s2, t2;
     Material *              material;
 };
@@ -54,11 +54,15 @@ public:
     const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
 
+                            /// Returns font type.
+    FontType::Enum          GetFontType() const { return fontType; }
+
                             /// Returns pointer to the glyph structure corresponding to a character. Return null if no glyphs are found.
     FontGlyph *             GetGlyph(char32_t unicodeChar);
 
                             /// Returns a offset for the next character.
-    int                     GetGlyphAdvance(char32_t unicodeChar) const;
+    int                     GetGlyphAdvanceX(char32_t unicodeChar) const;
+    int                     GetGlyphAdvanceY(char32_t unicodeChar) const;
 
                             /// Returns font height in pixels.
     int                     GetFontHeight() const;

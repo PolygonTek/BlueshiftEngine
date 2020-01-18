@@ -336,7 +336,7 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
             // Save next line offset
             lineOffsets[numLines] = offset;
         } else {
-            int charWidth = currentFont->GetGlyphAdvance(unicodeChar) * currentTextScale.x;
+            int charWidth = currentFont->GetGlyphAdvanceX(unicodeChar) * currentTextScale.x;
 
             if (flags & DrawTextFlag::WordWrap) {
                 if (currentLineWidth + charWidth > rect.w - marginX) {
@@ -353,10 +353,10 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
             } else if (currentLineWidth + charWidth > rect.w - marginX) {
                 if (flags & DrawTextFlag::Truncate) {
                     if (currentLineWidth > 0) {
-                        int dotdotdotWidth = currentFont->GetGlyphAdvance(U'.') * currentTextScale.x * 3;
+                        int dotdotdotWidth = currentFont->GetGlyphAdvanceX(U'.') * currentTextScale.x * 3;
                 
                         do {
-                            dotdotdotWidth -= currentFont->GetGlyphAdvance(unicodeChar) * currentTextScale.x;
+                            dotdotdotWidth -= currentFont->GetGlyphAdvanceX(unicodeChar) * currentTextScale.x;
                             unicodeChar = text.UTF8CharPrevious(offset);
                         } while (dotdotdotWidth > 0 && unicodeChar);
                     
@@ -580,7 +580,7 @@ void GameClient::DrawConsoleCmdLine() {
 
         char32_t unicodeChar = UTF8::CharAdvance(text, offset);
 
-        int charWidth = currentFont->GetGlyphAdvance(unicodeChar);
+        int charWidth = currentFont->GetGlyphAdvanceX(unicodeChar);
         if (textWidth + charWidth < screenWidth) {
             textWidth += charWidth;
         } else {
@@ -600,7 +600,7 @@ void GameClient::DrawConsoleCmdLine() {
     Color4 caretColor = Color4(1, 1, 1, 0.5f);
 
     if (replaceMode || compositionMode) {
-        caretW = currentFont->GetGlyphAdvance(UTF8::Char(text, offset));
+        caretW = currentFont->GetGlyphAdvanceX(UTF8::Char(text, offset));
     } else {
         caretW = 2;
     }
