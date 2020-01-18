@@ -63,6 +63,10 @@ void GuiMesh::SetColor(const Color4 &rgba) {
     currentColor = rgba.ToUInt32();
 }
 
+void GuiMesh::SetTextBorderColor(const Color4 &rgba) {
+    currentTextBorderColor = rgba.ToUInt32();
+}
+
 void GuiMesh::SetClipRect(const Rect &clipRect) {
     this->clipRect = clipRect;
 }
@@ -224,7 +228,7 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
     DrawQuad(localVerts, material);
 }
 
-float GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, char32_t unicodeChar, Font::RenderMode::Enum renderMode) {
+float GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, char32_t unicodeChar, RenderObject::TextDrawMode::Enum drawMode) {
     if (unicodeChar == U' ') {
         return font->GetGlyphAdvanceX(unicodeChar) * sx;
     }
@@ -236,22 +240,23 @@ float GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, char32
         }
     }
 
-    if (renderMode == Font::RenderMode::DropShadows || renderMode == Font::RenderMode::AddOutlines) {
-        FontGlyph *glyph = font->GetGlyph(unicodeChar, renderMode);
+    if (drawMode == RenderObject::TextDrawMode::DropShadows || drawMode == RenderObject::TextDrawMode::AddOutlines) {
+        FontGlyph *glyph = font->GetGlyph(unicodeChar, Font::RenderMode::Border);
 
         float charX = x + glyph->offsetX * sx;
         float charY = y + glyph->offsetY * sy;
         float charW = glyph->width * sx;
         float charH = glyph->height * sy;
 
-        if (renderMode == Font::RenderMode::DropShadows) {
+        if (drawMode == RenderObject::TextDrawMode::DropShadows) {
             charX += 1.0f * sx;
             charY += 1.0f * sy;
         }
 
         uint32_t oldColor = currentColor;
 
-        SetColor(Color4::black);
+        currentColor = currentTextBorderColor;
+
         DrawPic(charX, charY, charW, charH, glyph->s, glyph->t, glyph->s2, glyph->t2, glyph->material);
 
         currentColor = oldColor;
@@ -273,7 +278,7 @@ float GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, char32
     return pitch;
 }
 
-void GuiMesh::DrawText(Font *font, Font::RenderMode::Enum renderMode, RenderObject::TextAnchor::Enum anchor, 
+void GuiMesh::DrawText(Font *font, RenderObject::TextDrawMode::Enum drawMode, RenderObject::TextAnchor::Enum anchor,
     RenderObject::TextHorzAlignment::Enum horzAlignment, float lineSpacing, float textScale, const Str &text) {
     static constexpr int MaxTextLines = 256;
     int lineCharOffsets[MaxTextLines];
@@ -362,14 +367,14 @@ void GuiMesh::DrawText(Font *font, Font::RenderMode::Enum renderMode, RenderObje
         }
 
         for (int lineTextIndex = 0; lineTextIndex < lineLengths[lineIndex]; lineTextIndex++) {
-            x += DrawChar(x, y, textScale, textScale, font, text.UTF8CharAdvance(offset), renderMode);
+            x += DrawChar(x, y, textScale, textScale, font, text.UTF8CharAdvance(offset), drawMode);
         }
 
         y += (font->GetFontHeight() + lineSpacing) * textScale;
     }
 }
 
-void GuiMesh::DrawTextRect(Font *font, Font::RenderMode::Enum renderMode, const RectF &rect, 
+void GuiMesh::DrawTextRect(Font *font, RenderObject::TextDrawMode::Enum drawMode, const RectF &rect,
     RenderObject::TextHorzAlignment::Enum horzAlignment, RenderObject::TextVertAlignment::Enum vertAlignment,
     RenderObject::TextHorzOverflow::Enum horzOverflow, RenderObject::TextVertOverflow::Enum vertOverflow, float lineSpacing, float textScale, const Str &text) {
     static constexpr int MaxTextLines = 256;
@@ -461,7 +466,7 @@ void GuiMesh::DrawTextRect(Font *font, Font::RenderMode::Enum renderMode, const 
         }
 
         for (int lineTextIndex = 0; lineTextIndex < lineLengths[lineIndex]; lineTextIndex++) {
-            x += DrawChar(x, y, textScale, textScale, font, text.UTF8CharAdvance(offset), renderMode);
+            x += DrawChar(x, y, textScale, textScale, font, text.UTF8CharAdvance(offset), drawMode);
         }
 
         y += (font->GetFontHeight() + lineSpacing) * textScale;

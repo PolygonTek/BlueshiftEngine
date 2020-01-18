@@ -75,6 +75,14 @@ public:
         };
     };
 
+    struct TextDrawMode {
+        enum Enum {
+            Normal,
+            DropShadows,
+            AddOutlines
+        };
+    };
+
     struct TextAnchor {
         enum Enum {
             UpperLeft,
@@ -168,8 +176,9 @@ public:
         // Text rendering
         //
         Font *              font = nullptr;
-        Font::RenderMode::Enum fontRenderMode = Font::RenderMode::Normal;
         Str                 text;                       ///< UTF8 encoded string
+        TextDrawMode::Enum  textDrawMode = TextDrawMode::Normal;
+        Color4              textSecondaryColor = Color4::black;
         TextAnchor::Enum    textAnchor = TextAnchor::UpperLeft;
         TextHorzAlignment::Enum textHorzAlignment = TextHorzAlignment::Center;
         TextVertAlignment::Enum textVertAlignment = TextVertAlignment::Middle;

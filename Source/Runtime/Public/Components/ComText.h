@@ -50,8 +50,14 @@ public:
     RenderObject::TextVertOverflow::Enum GetVertOverflow() const;
     void                    SetVertOverflow(RenderObject::TextVertOverflow::Enum vertOverflow);
 
-    Font::RenderMode::Enum  GetRenderMode() const;
-    void                    SetRenderMode(Font::RenderMode::Enum renderMode);
+    RenderObject::TextDrawMode::Enum GetDrawMode() const;
+    void                    SetDrawMode(RenderObject::TextDrawMode::Enum drawMode);
+
+    Color3                  GetSecondaryColor() const;
+    void                    SetSecondaryColor(const Color3 &color);
+
+    float                   GetSecondaryAlpha() const;
+    void                    SetSecondaryAlpha(float alpha);
 
     float                   GetLineSpacing() const;
     void                    SetLineSpacing(float lineSpacing);

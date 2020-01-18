@@ -54,8 +54,7 @@ public:
     struct RenderMode {
         enum Enum {
             Normal          = 0,
-            DropShadows     = 1,
-            AddOutlines     = 2
+            Border          = 1
         };
     };
 

@@ -149,8 +149,8 @@ Texture *FontFaceFreeType::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font:
         return nullptr;
     }
 
-    if (renderMode == Font::RenderMode::Enum::AddOutlines || renderMode == Font::RenderMode::Enum::DropShadows) {
-        glyph = freeTypeFont->RenderGlyphWithBorder(FT_RENDER_MODE_NORMAL, 1.5f);
+    if (renderMode == Font::RenderMode::Enum::Border) {
+        glyph = freeTypeFont->RenderGlyphWithBorder(FT_RENDER_MODE_NORMAL, 1.5f); // Fixed ?
 
         const FT_BitmapGlyph bitmapGlyph = (FT_BitmapGlyph)glyph;
 
@@ -195,8 +195,7 @@ Texture *FontFaceFreeType::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font:
 }
 
 FontGlyph *FontFaceFreeType::CacheGlyph(char32_t unicodeChar, Font::RenderMode::Enum renderMode, int atlasPadding) {
-    int64_t high = (renderMode == Font::RenderMode::AddOutlines || renderMode == Font::RenderMode::DropShadows) ? 1 : 0;
-    int64_t hashKey = (high << 32) | unicodeChar;
+    int64_t hashKey = (((int64_t)renderMode) << 32) | unicodeChar;
     const auto *entry = glyphHashMap.Get(hashKey);
     if (entry) {
         return entry->second;

@@ -33,8 +33,12 @@ void ComText::RegisterProperties() {
         "The TrueType Font to use when rendering the text.", PropertyInfo::Flag::Editor).SetMetaObject(&FontResource::metaObject);
     REGISTER_ACCESSOR_PROPERTY("fontSize", "Font Size", int, GetFontSize, SetFontSize, 14,
         "The size of the font.", PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("renderMode", "Render Mode", Font::RenderMode::Enum, GetRenderMode, SetRenderMode, Font::RenderMode::Normal,
-        "The font rendering mode.", PropertyInfo::Flag::Editor).SetEnumString("Normal;Drop Shadows;Add Outlines");
+    REGISTER_ACCESSOR_PROPERTY("drawMode", "Draw Mode", RenderObject::TextDrawMode::Enum, GetDrawMode, SetDrawMode, RenderObject::TextDrawMode::Normal,
+        "The font drawing mode.", PropertyInfo::Flag::Editor).SetEnumString("Normal;Drop Shadows;Add Outlines");
+    REGISTER_MIXED_ACCESSOR_PROPERTY("textSecondaryColor", "Secondary Color", Color3, GetSecondaryColor, SetSecondaryColor, Color3::black,
+        "The color for drawing shadows or outlines.", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("textSecondaryAlpha", "Secondary Alpha", float, GetSecondaryAlpha, SetSecondaryAlpha, 1.f,
+        "The alpha for drawing shadows or outlines.", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("lineSpacing", "Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f,
         "How much space will be in-between lines of text.", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("horzAlignment", "Horizontal Alignment", RenderObject::TextHorzAlignment::Enum, GetHorzAlignment, SetHorzAlignment, RenderObject::TextHorzAlignment::Center,
@@ -160,16 +164,38 @@ void ComText::SetVertOverflow(RenderObject::TextVertOverflow::Enum vertOverflow)
     }
 }
 
-Font::RenderMode::Enum ComText::GetRenderMode() const {
-    return renderObjectDef.fontRenderMode;
+RenderObject::TextDrawMode::Enum ComText::GetDrawMode() const {
+    return renderObjectDef.textDrawMode;
 }
 
-void ComText::SetRenderMode(Font::RenderMode::Enum renderMode) {
-    renderObjectDef.fontRenderMode = renderMode;
+void ComText::SetDrawMode(RenderObject::TextDrawMode::Enum drawMode) {
+    renderObjectDef.textDrawMode = drawMode;
 
     if (IsInitialized()) {
         UpdateVisuals();
     }
+}
+
+Color3 ComText::GetSecondaryColor() const {
+    return renderObjectDef.textSecondaryColor.ToColor3();
+}
+
+void ComText::SetSecondaryColor(const Color3 &color) {
+    renderObjectDef.textSecondaryColor.r = color.r;
+    renderObjectDef.textSecondaryColor.g = color.g;
+    renderObjectDef.textSecondaryColor.b = color.b;
+
+    UpdateVisuals();
+}
+
+float ComText::GetSecondaryAlpha() const {
+    return renderObjectDef.textSecondaryColor.a;
+}
+
+void ComText::SetSecondaryAlpha(float alpha) {
+    renderObjectDef.textSecondaryColor.a = alpha;
+
+    UpdateVisuals();
 }
 
 float ComText::GetLineSpacing() const {

@@ -56,16 +56,19 @@ public:
     void                    SetClipRect(const Rect &clipRect);
 
     void                    SetColor(const Color4 &rgba);
+    void                    SetTextBorderColor(const Color4 &rgba);
 
     void                    DrawPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Material *material);
     
-    float                   DrawChar(float x, float y, float sx, float sy, Font *font, char32_t unicodeChar, Font::RenderMode::Enum renderMode = Font::RenderMode::Normal);
+    float                   DrawChar(float x, float y, float sx, float sy, Font *font, char32_t unicodeChar, RenderObject::TextDrawMode::Enum drawMode = RenderObject::TextDrawMode::Normal);
 
-    void                    DrawText(Font *font, Font::RenderMode::Enum renderMode, RenderObject::TextAnchor::Enum anchor, 
+    void                    DrawText(Font *font, RenderObject::TextDrawMode::Enum drawMode, RenderObject::TextAnchor::Enum anchor,
                                 RenderObject::TextHorzAlignment::Enum horzAlignment, float lineSpacing, float textScale, const Str &text);
-    void                    DrawTextRect(Font *font, Font::RenderMode::Enum renderMode, const RectF &rect, 
+
+    void                    DrawTextRect(Font *font, RenderObject::TextDrawMode::Enum drawMode, const RectF &rect,
                                 RenderObject::TextHorzAlignment::Enum horzAlignment, RenderObject::TextVertAlignment::Enum vertAlignment,
-                                RenderObject::TextHorzOverflow::Enum horzOverflow, RenderObject::TextVertOverflow::Enum vertOverflow, float lineSpacing, float textScale, const Str &text);
+                                RenderObject::TextHorzOverflow::Enum horzOverflow, RenderObject::TextVertOverflow::Enum vertOverflow, 
+                                float lineSpacing, float textScale, const Str &text);
 
                             // Call this function when drawing ends
     void                    CacheIndexes();
@@ -79,6 +82,7 @@ private:
     Array<GuiMeshSurf>      surfaces;
     GuiMeshSurf *           currentSurf;
     uint32_t                currentColor;
+    uint32_t                currentTextBorderColor;
 
     int                     totalVerts;         ///< Total number of the vertices
     int                     totalIndexes;       ///< Total number of the indices
