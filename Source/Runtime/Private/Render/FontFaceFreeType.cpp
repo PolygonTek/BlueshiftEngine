@@ -81,7 +81,7 @@ static Texture *Atlas_AddRect(int inWidth, int inHeight, int &outX, int &outY) {
     } while (atlasIndex++);
 
     outX = rect.x;
-    outY = rect.w;
+    outY = rect.y;
 
     return atlasArray[atlasIndex]->texture;
 }
