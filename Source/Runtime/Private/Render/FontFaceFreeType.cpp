@@ -117,10 +117,11 @@ bool FontFaceFreeType::Load(const char *filename, int fontSize) {
     }
 
     // Calcualte font height in pixels.
-    fontHeight = ((freeTypeFont->GetFtFace()->size->metrics.height + 63) & ~63) >> 6;
+    const FT_Size_Metrics &metrics = freeTypeFont->GetFtFace()->size->metrics;
+    fontHeight = ((metrics.ascender - metrics.descender) >> 6);
 
     // Allocate temporary buffer for drawing glyphs.
-    // FT_Set_Pixel_Sizes 와는 다르게 fontHeight * fontHeight 를 넘어가는 비트맵이 나올수도 있어서 넉넉하게 가로 세로 두배씩 더 할당
+    // FT_Set_Pixel_Sizes 와는 다르게 fontSize * fontSize 를 넘어가는 비트맵이 나올수도 있어서 넉넉하게 가로 세로 두배씩 더 할당
     glyphBuffer = (byte *)Mem_Alloc16(Image::BytesPerPixel(GLYPH_CACHE_TEXTURE_FORMAT) * fontSize * fontSize * 4);
 
     // Pad with zeros.
@@ -224,7 +225,7 @@ FontGlyph *FontFaceFreeType::CacheGlyph(char32_t unicodeChar, Font::RenderMode::
         ascender = (int)FT_MulFix(ftFace->ascender, ftFace->size->metrics.y_scale);
         ascender = ((ascender + 63) & ~63) >> 6;
     } else {
-        ascender = int(ftFace->size->metrics.ascender / 64.0f);
+        ascender = ftFace->size->metrics.ascender >> 6;
     }
 
     FontGlyph *gl = new FontGlyph;
