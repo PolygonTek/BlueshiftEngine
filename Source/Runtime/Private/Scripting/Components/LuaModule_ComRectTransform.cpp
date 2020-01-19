@@ -21,7 +21,7 @@ BE_NAMESPACE_BEGIN
 void LuaVM::RegisterRectTransformComponent(LuaCpp::Module &module) {
     LuaCpp::Selector _ComRectTransform = module["ComRectTransform"];
 
-    _ComRectTransform.SetClass<ComRectTransform>(module["ComRenderable"]);
+    _ComRectTransform.SetClass<ComRectTransform>(module["ComTransform"]);
     _ComRectTransform.AddClassMembers<ComRectTransform>(
         "anchor_mins", &ComRectTransform::GetAnchorMins,
         "anchor_maxs", &ComRectTransform::GetAnchorMaxs,

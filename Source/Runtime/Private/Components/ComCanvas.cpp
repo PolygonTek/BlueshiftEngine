@@ -153,8 +153,8 @@ const Point ComCanvas::WorldToScreen(const Vec3 &worldPos) const {
     Vec3 localPos = renderCameraDef.axis.TransposedMulVec(worldPos - renderCameraDef.origin);
 
     // Compute right/down normalized screen coordinates [-1.0, +1.0]
-    float ndx = -localPos.x / screenWidth;
-    float ndy = -localPos.y / screenHeight;
+    float ndx = -localPos.y / renderCameraDef.sizeX;
+    float ndy = -localPos.z / renderCameraDef.sizeY;
 
     // Compute screen coordinates
     Point screenPoint;
