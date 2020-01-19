@@ -39,6 +39,7 @@
 #include "Components/ComCharacterJoint.h"
 #include "Components/ComCharacterController.h"
 #include "Components/ComCamera.h"
+#include "Components/ComCanvas.h"
 #include "Components/ComLight.h"
 #include "Components/ComRenderable.h"
 #include "Components/ComMeshRenderer.h"
@@ -106,6 +107,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "character_joint", static_cast<ComCharacterJoint*(Entity::*)()const>(&Entity::GetComponent<ComCharacterJoint>),
         "character_controller", static_cast<ComCharacterController*(Entity::*)()const>(&Entity::GetComponent<ComCharacterController>),
         "camera", static_cast<ComCamera*(Entity::*)()const>(&Entity::GetComponent<ComCamera>),
+        "canvas", static_cast<ComCanvas*(Entity::*)()const>(&Entity::GetComponent<ComCanvas>),
         "light", static_cast<ComLight*(Entity::*)()const>(&Entity::GetComponent<ComLight>),
         "renderable", static_cast<ComRenderable*(Entity::*)()const>(&Entity::GetComponent<ComRenderable>),
         "mesh_renderer", static_cast<ComMeshRenderer*(Entity::*)()const>(&Entity::GetComponent<ComMeshRenderer>),
