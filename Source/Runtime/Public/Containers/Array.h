@@ -123,7 +123,7 @@ public:
 
                     /// Deletes each elements. 
                     /// This is valid operation only for pointer typed array.
-                    /// param @clear call clear function.
+                    /// param @clear call Clear() function.
     void            DeleteContents(bool clear);
 
                     /// Releases any memory not required to store the items.

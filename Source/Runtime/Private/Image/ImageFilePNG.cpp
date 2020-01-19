@@ -212,7 +212,7 @@ bool Image::WritePNG(const char *filename) const {
 
     fileSystem.WriteFile(filename, buffer, (int)png_compressed_size);
 
-    Mem_AlignedFree(buffer);	
+    Mem_AlignedFree(buffer);
 
     return true;
 }

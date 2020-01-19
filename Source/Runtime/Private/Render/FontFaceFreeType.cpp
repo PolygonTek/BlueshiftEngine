@@ -16,50 +16,41 @@
 #include "Render/Render.h"
 #include "RenderInternal.h"
 #include "Render/FreeTypeFont.h"
+#include "Render/FontFile.h"
 #include "Simd/Simd.h"
 #include "Core/Heap.h"
 #include "File/FileSystem.h"
 #include "FontFace.h"
-#include "FontFile.h"
 #include "STB/stb_rect_pack.h"
 
 BE_NAMESPACE_BEGIN
 
-// NOTE: LCD 모드로 렌더링이 안되는 font 도 존재하기 때문에,
-// 나중에 RGBA 텍스쳐로 통합해서, 되는 폰트만 LCD 로 하는 편이 나을 수도 있겠다
-//#define LCD_MODE_RENDERING
-#ifdef LCD_MODE_RENDERING
-#define GLYPH_CACHE_TEXTURE_FORMAT  Image::Format::RGBA_8_8_8_8
-#else
 #define GLYPH_CACHE_TEXTURE_FORMAT  Image::Format::A_8
-#endif
-
 #define GLYPH_CACHE_TEXTURE_SIZE    2048
 #define GLYPH_COORD_OFFSET          1
 
 struct GlyphAtlas {
+    Texture *                       texture;
     stbrp_context                   context;
     Array<stbrp_node>               nodes;
-    Texture *                       texture;
 };
 
-static Array<GlyphAtlas *>          atlasArray;
+static Array<GlyphAtlas>            atlasArray;
 
-static void Atlas_Add() {
-    GlyphAtlas *atlas = new GlyphAtlas;
-    atlasArray.Append(atlas);
+static void Atlas_Add(int textureSize) {
+    GlyphAtlas &atlas = atlasArray.Alloc();
+
+    Image image;
+    image.Create2D(textureSize, textureSize, 1, GLYPH_CACHE_TEXTURE_FORMAT, nullptr, 0);
+    memset(image.GetPixels(), 0, image.GetSize());
+
+    atlas.texture = textureManager.AllocTexture(va("_glyph_cache_%i", atlasArray.Count() - 1));
+    atlas.texture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
 
     // 대략 16x16 조각의 glyph 들을 하나의 텍스쳐에 packing 했을 경우 개수 만큼 할당..
     // 2048*2048 / 16*16 = 16384
-    atlas->nodes.SetCount(GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE / (16 * 16));
-    stbrp_init_target(&atlas->context, GLYPH_CACHE_TEXTURE_SIZE, GLYPH_CACHE_TEXTURE_SIZE, atlas->nodes.Ptr(), atlas->nodes.Count());
-
-    Image image;
-    image.Create2D(GLYPH_CACHE_TEXTURE_SIZE, GLYPH_CACHE_TEXTURE_SIZE, 1, GLYPH_CACHE_TEXTURE_FORMAT, nullptr, 0);
-    memset(image.GetPixels(), 0, image.GetSize());
-
-    atlas->texture = textureManager.AllocTexture(va("_glyph_cache_%i", atlasArray.Count() - 1));
-    atlas->texture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);
+    atlas.nodes.SetCount(textureSize * textureSize / (16 * 16));
+    stbrp_init_target(&atlas.context, textureSize, textureSize, atlas.nodes.Ptr(), atlas.nodes.Count());
 }
 
 static Texture *Atlas_AddRect(int inWidth, int inHeight, int &outX, int &outY) {
@@ -70,9 +61,9 @@ static Texture *Atlas_AddRect(int inWidth, int inHeight, int &outX, int &outY) {
     int atlasIndex = 0;
     do {
         if (atlasIndex == atlasArray.Count()) {
-            Atlas_Add();
+            Atlas_Add(GLYPH_CACHE_TEXTURE_SIZE);
         }
-        if (stbrp_pack_rects(&atlasArray[atlasIndex]->context, &rect, 1) != 0) {
+        if (stbrp_pack_rects(&atlasArray[atlasIndex].context, &rect, 1) != 0) {
             break;
         }
     } while (atlasIndex++);
@@ -80,19 +71,19 @@ static Texture *Atlas_AddRect(int inWidth, int inHeight, int &outX, int &outY) {
     outX = rect.x;
     outY = rect.y;
 
-    return atlasArray[atlasIndex]->texture;
+    return atlasArray[atlasIndex].texture;
 }
 
 void FontFaceFreeType::InitAtlas() {
-    Atlas_Add();
+    Atlas_Add(GLYPH_CACHE_TEXTURE_SIZE);
 }
 
 void FontFaceFreeType::FreeAtlas() {
     for (int atlasIndex = 0; atlasIndex < atlasArray.Count(); atlasIndex++) {
-        textureManager.DestroyTexture(atlasArray[atlasIndex]->texture);
+        textureManager.DestroyTexture(atlasArray[atlasIndex].texture);
     }
 
-    atlasArray.DeleteContents(true);
+    atlasArray.Clear();
 }
 
 void FontFaceFreeType::Purge() {
@@ -138,7 +129,7 @@ bool FontFaceFreeType::Load(const char *filename, int fontSize) {
     return true;
 }
 
-Texture *FontFaceFreeType::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font::RenderMode::Enum renderMode, int atlasPadding, int &bitmapLeft, int &bitmapTop, int &glyphX, int &glyphY, int &glyphWidth, int &glyphHeight) {
+Texture *FontFaceFreeType::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font::RenderMode::Enum renderMode, int glyphPadding, int &bitmapLeft, int &bitmapTop, int &glyphX, int &glyphY, int &glyphWidth, int &glyphHeight) {
     FT_Glyph glyph = nullptr;
     const FT_Bitmap *bitmap;
 
@@ -164,29 +155,28 @@ Texture *FontFaceFreeType::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font:
         bitmapTop = slot->bitmap_top;
     }
 
-    int fxPaddingX = 0;
-    int fxPaddingY = 0;
+    int fxPadding = 0;
 
-    glyphWidth = bitmap->width + (fxPaddingX << 1);
-    glyphHeight = bitmap->rows + (fxPaddingY << 1);
+    glyphWidth = bitmap->width + (fxPadding << 1);
+    glyphHeight = bitmap->rows + (fxPadding << 1);
 
-    if (fxPaddingX > 0 || fxPaddingY > 0) {
+    if (fxPadding > 0) {
         memset(glyphBuffer, 0, glyphWidth * glyphHeight);
     }
 
-    freeTypeFont->BakeGlyphBitmap(bitmap, glyphWidth, glyphBuffer + glyphWidth * fxPaddingY + fxPaddingX);
+    freeTypeFont->BakeGlyphBitmap(bitmap, glyphWidth, glyphBuffer + glyphWidth * fxPadding + fxPadding);
 
     //Image image = Image(glyphWidth, glyphHeight, 1, 1, 1, Image::Format::A_8, glyphBuffer, 0).MakeSDF(8);
     //memcpy(glyphBuffer, image.GetPixels(), image.GetSize());
 
-    int actualWidth = glyphWidth + (atlasPadding << 1);
-    int actualHeight = glyphHeight + (atlasPadding << 1);
+    int actualWidth = glyphWidth + (glyphPadding << 1);
+    int actualHeight = glyphHeight + (glyphPadding << 1);
     int x, y;
 
     Texture *texture = Atlas_AddRect(actualWidth, actualHeight, x, y);
 
-    glyphX = x + atlasPadding;
-    glyphY = y + atlasPadding;
+    glyphX = x + glyphPadding;
+    glyphY = y + glyphPadding;
 
     if (glyph) {
         FT_Done_Glyph(glyph);
@@ -249,8 +239,7 @@ FontGlyph *FontFaceFreeType::CacheGlyph(char32_t unicodeChar, Font::RenderMode::
     gl->t           = (float)(glyphY - GLYPH_COORD_OFFSET) / texture->GetHeight();
     gl->s2          = (float)(glyphX + glyphWidth + GLYPH_COORD_OFFSET) / texture->GetWidth();
     gl->t2          = (float)(glyphY + glyphHeight + GLYPH_COORD_OFFSET) / texture->GetHeight();
-
-    gl->material = materialManager.GetSingleTextureMaterial(texture, Material::TextureHint::Overlay);
+    gl->material    = materialManager.GetSingleTextureMaterial(texture, Material::TextureHint::Overlay);
 
     glyphHashMap.Set(hashKey, gl);
 
@@ -346,7 +335,7 @@ void FontFaceFreeType::WriteBitmapFiles(const char *fontFilename) {
     bitmapBasename.StripFileExtension();
 
     for (int i = 0; i < atlasArray.Count(); i++) {
-        const Texture *texture = atlasArray[i]->texture;
+        const Texture *texture = atlasArray[i].texture;
 
         Image bitmapImage;
         bitmapImage.Create2D(texture->GetWidth(), texture->GetHeight(), 1, texture->GetFormat(), nullptr, 0);

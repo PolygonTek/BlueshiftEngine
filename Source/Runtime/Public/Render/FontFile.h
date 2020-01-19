@@ -14,6 +14,8 @@
 
 #pragma once
 
+BE_NAMESPACE_BEGIN
+
 #pragma pack(1)
 
 struct FontFileHeader {
@@ -37,3 +39,5 @@ struct FontFileGlyph {
 };
 
 #pragma pack()
+
+BE_NAMESPACE_END

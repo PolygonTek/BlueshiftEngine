@@ -64,11 +64,18 @@ public:
 
     virtual bool            Load(const char *filename, int fontSize) override;
 
+    void                    Write(const char *filename);
+
 private:
     void                    Purge();
+    Texture *               AddBitmap(const char *filename);
+    FontGlyph *             AddGlyph(char32_t charCode, int width, int height, int offsetX, int offsetY, int advanceX, int advanceY, float s, float t, float s2, float t2, int textureIndex);
 
     using GlyphHashMap = HashMap<char32_t, FontGlyph *>;
     GlyphHashMap            glyphHashMap;
+
+    Array<Str>              bitmapNames;
+    Array<Material *>       materialArray;
 
     int                     fontHeight;
 };
