@@ -14,7 +14,8 @@
 
 #include "Precompiled.h"
 #include "File/FileSystem.h"
-#include "FreeTypeFont.h"
+#include "Render/FreeTypeFont.h"
+#include "freetype/include/ftstroke.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -34,16 +35,18 @@ void FreeTypeFont::Shutdown() {
 
 void FreeTypeFont::Purge() {
     if (ftFace) {
-        // Font file data should be released after calling FT_Done_Face().
         FT_Done_Face(ftFace);
         ftFace = nullptr;
+    }
 
+    // Font file data should be released after calling FT_Done_Face().
+    if (ftFontFileData) {
         fileSystem.FreeFile(ftFontFileData);
         ftFontFileData = nullptr;
     }
 }
 
-bool FreeTypeFont::Create(const char *filename, int fontSize) {
+bool FreeTypeFont::Load(const char *filename, int fontSize) {
     Purge();
 
     size_t dataSize = fileSystem.LoadFile(filename, true, (void **)&ftFontFileData);
@@ -143,39 +146,30 @@ FT_Glyph FreeTypeFont::RenderGlyphWithBorder(FT_Render_Mode renderMode, float bo
 }
 
 // Draw pixels using the Freetype bitmap information.
-void FreeTypeFont::BakeGlyphBitmap(const FT_Bitmap *bitmap, int paddingX, int paddingY, byte *pixels) {
+void FreeTypeFont::BakeGlyphBitmap(const FT_Bitmap *bitmap, int dstPitch, byte *dstPtr) {
     const byte *srcPtr = bitmap->buffer;
-
-    int w = bitmap->width + (paddingX << 1);
-    int h = bitmap->rows + (paddingY << 1);
-
-    if (paddingX > 0 || paddingY > 0) {
-        memset(pixels, 0, w * h);
-    }
 
     switch (bitmap->pixel_mode) {
     case FT_PIXEL_MODE_MONO:
         for (int y = 0; y < bitmap->rows; y++) {
             for (int x = 0; x < bitmap->width; x++) {
-                int offset = w * (y + paddingY) + x + paddingX;
-
                 if (srcPtr[x >> 3] & (0x80 >> (x & 7))) {
-                    pixels[offset] = 255;
+                    dstPtr[x] = 255;
                 } else {
-                    pixels[offset] = 0;
+                    dstPtr[x] = 0;
                 }
             }
             srcPtr += bitmap->pitch;
+            dstPtr += dstPitch;
         }
         break;
     case FT_PIXEL_MODE_GRAY:
         for (int y = 0; y < bitmap->rows; y++) {
             for (int x = 0; x < bitmap->width; x++) {
-                int offset = w * (y + paddingY) + x + paddingX;
-
-                pixels[offset] = srcPtr[x];
+                dstPtr[x] = srcPtr[x];
             }
             srcPtr += bitmap->pitch;
+            dstPtr += dstPitch;
         }
         break;
     default:

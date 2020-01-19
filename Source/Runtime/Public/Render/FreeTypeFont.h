@@ -14,16 +14,9 @@
 
 #pragma once
 
-#include "Core/Str.h"
-#include "Containers/HashIndex.h"
-#include "Containers/HashMap.h"
-
-// FreeType headers
 #include "freetype/include/ft2build.h"
 #include "freetype/include/freetype.h"
 #include "freetype/include/ftglyph.h"
-#include "freetype/include/ftbitmap.h"
-#include "freetype/include/ftstroke.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -34,17 +27,18 @@ public:
     static void             Init();
     static void             Shutdown();
 
-    bool                    Create(const char *filename, int fontSize);
     void                    Purge();
 
-    bool                    LoadGlyph(char32_t unicodeChar) const;
+    bool                    Load(const char *filename, int fontSize);
 
-    FT_Face                 GetFace() const { return ftFace; }
+    bool                    LoadGlyph(char32_t unicodeChar) const;
 
     FT_GlyphSlot            RenderGlyph(FT_Render_Mode ftRenderMode);
     FT_Glyph                RenderGlyphWithBorder(FT_Render_Mode ftRenderMode, float borderThickness);
 
-    void                    BakeGlyphBitmap(const FT_Bitmap *bitmap, int paddingX, int paddingY, byte *pixels);
+    void                    BakeGlyphBitmap(const FT_Bitmap *bitmap, int dstPitch, byte *dstPtr);
+
+    FT_Face                 GetFtFace() const { return ftFace; }
 
 private:
     FT_Byte *               ftFontFileData = nullptr;       ///< FreeType font flie data.

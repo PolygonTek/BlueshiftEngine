@@ -16,7 +16,7 @@
 #include "Render/Render.h"
 #include "Core/StrColor.h"
 #include "Render/Font.h"
-#include "FreeTypeFont.h"
+#include "Render/FreeTypeFont.h"
 #include "FontFace.h"
 
 BE_NAMESPACE_BEGIN

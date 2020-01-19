@@ -15,10 +15,10 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
+#include "Render/FreeTypeFont.h"
 #include "Simd/Simd.h"
 #include "Core/Heap.h"
 #include "File/FileSystem.h"
-#include "FreeTypeFont.h"
 #include "FontFace.h"
 #include "FontFile.h"
 
@@ -124,12 +124,12 @@ bool FontFaceFreeType::Load(const char *filename, int fontSize) {
     Purge();
 
     freeTypeFont = new FreeTypeFont;
-    if (!freeTypeFont->Create(filename, fontSize)) {
+    if (!freeTypeFont->Load(filename, fontSize)) {
         return false;
     }
 
     // Calcualte font height in pixels.
-    fontHeight = ((freeTypeFont->GetFace()->size->metrics.height + 63) & ~63) >> 6;
+    fontHeight = ((freeTypeFont->GetFtFace()->size->metrics.height + 63) & ~63) >> 6;
 
     // Allocate temporary buffer for drawing glyphs.
     // FT_Set_Pixel_Sizes 와는 다르게 fontHeight * fontHeight 를 넘어가는 비트맵이 나올수도 있어서 넉넉하게 가로 세로 두배씩 더 할당
@@ -173,7 +173,11 @@ Texture *FontFaceFreeType::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font:
     glyphWidth = bitmap->width + (fxPaddingX << 1);
     glyphHeight = bitmap->rows + (fxPaddingY << 1);
 
-    freeTypeFont->BakeGlyphBitmap(bitmap, fxPaddingX, fxPaddingY, glyphBuffer);
+    if (fxPaddingX > 0 || fxPaddingY > 0) {
+        memset(glyphBuffer, 0, glyphWidth * glyphHeight);
+    }
+
+    freeTypeFont->BakeGlyphBitmap(bitmap, glyphWidth, glyphBuffer + glyphWidth * fxPaddingY + fxPaddingX);
 
     //Image image = Image(glyphWidth, glyphHeight, 1, 1, 1, Image::Format::A_8, glyphBuffer, 0).MakeSDF(8);
     //memcpy(glyphBuffer, image.GetPixels(), image.GetSize());
@@ -227,7 +231,7 @@ FontGlyph *FontFaceFreeType::CacheGlyph(char32_t unicodeChar, Font::RenderMode::
     // for others it is the ascent of the highest accented character, and finally, 
     // other formats define it as being equal to global_bbox.yMax.
     int ascender;
-    FT_Face ftFace = freeTypeFont->GetFace();
+    FT_Face ftFace = freeTypeFont->GetFtFace();
 
     if (FT_IS_SCALABLE(ftFace)) {
         ascender = (int)FT_MulFix(ftFace->ascender, ftFace->size->metrics.y_scale);
@@ -269,7 +273,7 @@ int FontFaceFreeType::GetGlyphAdvanceX(char32_t unicodeChar) const {
 
     // If glyph is not in cache, load glyph to compute advance.
     if (freeTypeFont->LoadGlyph(unicodeChar)) {
-        return (((int)freeTypeFont->GetFace()->glyph->advance.x) >> 6) - (GLYPH_COORD_OFFSET << 1);
+        return (((int)freeTypeFont->GetFtFace()->glyph->advance.x) >> 6) - (GLYPH_COORD_OFFSET << 1);
     }
     return 0;
 }
@@ -283,7 +287,7 @@ int FontFaceFreeType::GetGlyphAdvanceY(char32_t unicodeChar) const {
 
     // If glyph is not in cache, load glyph to compute advance.
     if (freeTypeFont->LoadGlyph(unicodeChar)) {
-        return (((int)freeTypeFont->GetFace()->glyph->advance.y) >> 6) - (GLYPH_COORD_OFFSET << 1);
+        return (((int)freeTypeFont->GetFtFace()->glyph->advance.y) >> 6) - (GLYPH_COORD_OFFSET << 1);
     }
     return 0;
 }
