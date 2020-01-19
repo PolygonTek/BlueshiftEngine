@@ -314,6 +314,7 @@ else ()
             jsoncpp
             Bullet
             HACD
+            STB
             LuaCpp
             luasocket)
 

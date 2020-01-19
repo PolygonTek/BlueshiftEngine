@@ -556,7 +556,6 @@ set(COMMON_ENGINE_FILES
     Private/Render/FontManager.cpp
     Private/Render/FontFaceBitmap.cpp
     Private/Render/FontFaceFreeType.cpp
-    Private/Render/stb_rect_pack.h
     Private/Render/DrawSurf.h
     Private/Render/FrameData.h
     Private/Render/RBackEnd.h
@@ -1027,6 +1026,7 @@ target_link_libraries(${PROJECT_NAME}
     freetype
     Bullet
     HACD
+    STB
     luasocket
     LuaCpp
     NvTriStrip)
