@@ -131,6 +131,10 @@ public:
                                 /// Returns the entity with the given entity index.
     Entity *                    GetEntity(int index) const { return entities[index]; }
 
+                                /// Returns the entity that func returns true.
+    template <typename Func>
+    Entity *                    FindEntity(Func func) const;
+
                                 /// Returns the entity that have given path.
     Entity *                    FindEntity(const char *path) const;
                                 /// Returns the entity that have given name.
@@ -243,10 +247,23 @@ BE_INLINE void GameWorld::IterateEntities(Func func) const {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetNext(); ent; ent = ent->GetNode().GetNext()) {
             if (!func(ent)) {
-                break;
+                // Abandon iteration if func returns false.
+                return;
             }
         }
     }
+}
+
+template <typename Func>
+BE_INLINE Entity *GameWorld::FindEntity(Func func) const {
+    for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
+        for (Entity *ent = scenes[sceneIndex].root.GetNext(); ent; ent = ent->GetNode().GetNext()) {
+            if (func(ent)) {
+                return ent;
+            }
+        }
+    }
+    return nullptr;
 }
 
 BE_NAMESPACE_END
