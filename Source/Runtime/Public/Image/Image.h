@@ -293,9 +293,12 @@ public:
                         /// Creates an equirectangular spherical image from cubic image.
     Image &             CreateEquirectangularFromCube(const Image &cubeImage);
 
-                        /// Copy image data from another.
+                        /// Copies image data from another.
                         /// Nothing happen if source image dimensions are not match with this image.
     Image &             CopyFrom(const Image &srcImage, int firstLevel = 0, int numLevels = 1);
+
+                        /// Updates sub region.
+    void                Update2D(int level, int x, int y, int width, int height, const byte *data);
     
                         /// Generates all mipmaps this image has.
     Image &             GenerateMipmaps();

@@ -198,6 +198,28 @@ Image &Image::CopyFrom(const Image &srcImage, int firstLevel, int numLevels) {
     return *this;
 }
 
+void Image::Update2D(int level, int x, int y, int width, int height, const byte *data) {
+    int bpp = BytesPerPixel();
+    int srcPitch = width * bpp;
+    int dstPitch = GetWidth(level) * bpp;
+    int dstStartOffset = y * dstPitch + x * bpp;
+    int dstSize = GetSize(level);
+
+    if (dstStartOffset + height * dstPitch > dstSize) {
+        assert(0);
+        return;
+    }
+
+    byte *dstPtr = GetPixels(level) + dstStartOffset;
+    const byte *srcPtr = data;
+
+    while (height--) {
+        memcpy(dstPtr, srcPtr, srcPitch);
+        dstPtr += dstPitch;
+        srcPtr += srcPitch;
+    }
+}
+
 Image &Image::operator=(const Image &rhs) {
     Clear();
     Create(rhs.width, rhs.height, rhs.depth, rhs.numSlices, rhs.numMipmaps, rhs.format, rhs.pic, rhs.flags);
