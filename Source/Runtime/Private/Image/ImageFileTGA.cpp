@@ -152,7 +152,7 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
         }
     }
 
-    Create2D(header->width, header->height, 1, header->bpp == 32 ? Format::BGRA_8_8_8_8 : Format::BGR_8_8_8, nullptr, 0);
+    Create2D(header->width, header->height, 1, header->bpp == 32 ? Format::BGRA_8_8_8_8 : Format::BGR_8_8_8, GammaSpace::sRGB, nullptr, 0);
 
     int byte_per_pixel = BytesPerPixel();
         

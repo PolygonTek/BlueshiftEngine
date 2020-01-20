@@ -565,7 +565,9 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     this->flags = isCube ? Flag::CubeMap : 0;
 
     if (IsFloatFormat() || format == Format::DXN1 || format == Format::DXN2) {
-        this->flags |= Flag::LinearSpace;
+        this->gammaSpace = Image::GammaSpace::Linear;
+    } else {
+        this->gammaSpace = Image::GammaSpace::sRGB;
     }
 
     int bufSize = GetSize(0, numMipmaps);

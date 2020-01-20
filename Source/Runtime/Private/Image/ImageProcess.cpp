@@ -195,7 +195,7 @@ Image Image::MakeDilation() const {
     }
 
     Image image;
-    image.Create2D(width, height, 1, format, nullptr, 0);
+    image.Create2D(width, height, 1, format, gammaSpace, nullptr, 0);
 
     int bpp = BytesPerPixel();
 
@@ -243,7 +243,7 @@ Image Image::MakeErosion() const {
     }
 
     Image image;
-    image.Create2D(width, height, 1, format, nullptr, 0);
+    image.Create2D(width, height, 1, format, gammaSpace, nullptr, 0);
 
     int bpp = BytesPerPixel();
 
@@ -286,7 +286,7 @@ Image Image::MakeErosion() const {
 
 Image Image::MakeSDF(int spread) const {
     Image image;
-    image.Create2D(width, height, 1, Format::A_8, nullptr, 0);
+    image.Create2D(width, height, 1, Format::A_8, GammaSpace::Linear, nullptr, 0);
 
     for (int centerY = 0; centerY < height; centerY++) {
         for (int centerX = 0; centerX < width; centerX++) {
@@ -336,7 +336,7 @@ Image &Image::SwapRedAlphaRGBA8888() {
 
 Image Image::MakeNormalMapRGBA8888(float bumpiness) const {
     Image image;
-    image.Create2D(width, height, 1, Image::Format::RGBA_8_8_8_8, nullptr, Flag::LinearSpace);
+    image.Create2D(width, height, 1, Image::Format::RGBA_8_8_8_8, GammaSpace::Linear, nullptr, 0);
 
     byte *dstPtr = image.pic;
 
@@ -589,7 +589,7 @@ Image &Image::GenerateMipmaps() {
                     BuildMipMap<float>((float *)dst, (float *)src, w, h, d, numComponents);
                 }
             } else {
-                if (!(flags & Flag::LinearSpace)) {
+                if (gammaSpace != GammaSpace::Linear) {
                     BuildMipMapWithGamma(dst, src, w, h, d, numComponents);
                 } else {
                     BuildMipMap(dst, src, w, h, d, numComponents);

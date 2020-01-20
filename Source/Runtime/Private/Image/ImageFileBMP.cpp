@@ -76,7 +76,7 @@ bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
         h = -h;
     }
 
-    Create2D(w, h, 1, Image::Format::BGR_8_8_8, nullptr, 0);
+    Create2D(w, h, 1, Image::Format::BGR_8_8_8, Image::GammaSpace::sRGB, nullptr, 0);
 
     int padbytes = (((bmih->bpp * w + 31) & ~31) - (bmih->bpp * w)) >> 3;
     const byte *palette;

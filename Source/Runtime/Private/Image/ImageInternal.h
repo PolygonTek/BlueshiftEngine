@@ -16,9 +16,6 @@
 
 BE_NAMESPACE_BEGIN
 
-//--------------------------------------------------------------------------------------------------
-// various pack/unpack function type for each color format
-//--------------------------------------------------------------------------------------------------
 using ImageUnpackFunc = void(*)(const byte *src, byte *dst, int numPixels, bool isGamma);
 using ImagePackFunc = void(*)(const byte *src, byte *dst, int numPixels, bool isGamma);
 
@@ -31,10 +28,10 @@ struct ImageFormatInfo {
     int blueBits;
     int alphaBits;
     int type;
-    ImageUnpackFunc unpackRGBA8888;
-    ImagePackFunc packRGBA8888;
-    ImageUnpackFunc unpackRGBA32F;
-    ImagePackFunc packRGBA32F;
+    ImageUnpackFunc unpackRGBA8888; // Unpack to RGBA_8_8_8_8
+    ImagePackFunc packRGBA8888;     // Pack from RGBA_8_8_8_8`
+    ImageUnpackFunc unpackRGBA32F;  // Unpack to RGBA_32F_32F_32F_32F
+    ImagePackFunc packRGBA32F;      // Pack from RGBA_32F_32F_32F_32F
 };
 
 extern float gammaToLinearTable[256];

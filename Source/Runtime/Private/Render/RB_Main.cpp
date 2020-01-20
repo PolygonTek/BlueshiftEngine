@@ -973,7 +973,7 @@ static const void *RB_ExecuteScreenshot(const void *data) {
     }
     
     Image screenImage;
-    screenImage.Create2D(captureRect.w, captureRect.h, 1, Image::Format::BGR_8_8_8, nullptr, 0);
+    screenImage.Create2D(captureRect.w, captureRect.h, 1, Image::Format::BGR_8_8_8, Image::GammaSpace::sRGB, nullptr, 0);
     rhi.ReadPixels(captureRect.x, captureRect.y, captureRect.w, captureRect.h, Image::Format::BGR_8_8_8, screenImage.GetPixels());
     screenImage.FlipY();
 

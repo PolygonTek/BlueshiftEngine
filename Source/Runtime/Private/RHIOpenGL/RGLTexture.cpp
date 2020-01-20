@@ -419,7 +419,7 @@ void OpenGLRHI::SetTextureImage(TextureType::Enum textureType, const Image *srcI
             if (srcImage->IsCompressed() && OpenGL::SupportsCompressedGenMipmaps()) {
                 generateMipmaps = true;
             } else {
-                mipmapedImage.Create(w, h, d, srcImage->NumSlices(), maxGenLevels, srcImage->GetFormat(), nullptr, srcImage->GetFlags());
+                mipmapedImage.Create(w, h, d, srcImage->NumSlices(), maxGenLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
                 mipmapedImage.CopyFrom(*srcImage, 0, 1);
                 mipmapedImage.GenerateMipmaps();
                 srcImage = &mipmapedImage;

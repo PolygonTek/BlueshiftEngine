@@ -690,9 +690,9 @@ void RenderSystem::CaptureScreenImage(RenderWorld *renderWorld, int layerMask,
     bool colorClear, const Color4 &clearColor, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height, Image &screenImage) {
     Texture *screenTexture = CaptureScreenTexture(renderWorld, layerMask, colorClear, clearColor, origin, axis, fov, useHDR, width, height);
 
-    int imageFlags = Image::IsFloatFormat(screenTexture->GetFormat()) ? Image::Flag::LinearSpace : 0;
+    Image::GammaSpace::Enum gammaSpace = Image::IsFloatFormat(screenTexture->GetFormat()) ? Image::GammaSpace::Linear : Image::GammaSpace::sRGB;
 
-    screenImage.Create2D(screenTexture->GetWidth(), screenTexture->GetHeight(), 1, screenTexture->GetFormat(), nullptr, imageFlags);
+    screenImage.Create2D(screenTexture->GetWidth(), screenTexture->GetHeight(), 1, screenTexture->GetFormat(), gammaSpace, nullptr, 0);
 
     screenTexture->Bind();
     screenTexture->GetTexels2D(0, screenTexture->GetFormat(), screenImage.GetPixels(0));
@@ -818,7 +818,7 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
 
         weightTextures[faceIndex] = new Texture;
         weightTextures[faceIndex]->Create(RHI::TextureType::Texture2D,
-            Image(envMapSize * 4, envMapSize * 4, 1, 1, 1, Image::Format::L_32F, (byte *)weightData, Image::Flag::LinearSpace),
+            Image(envMapSize * 4, envMapSize * 4, 1, 1, 1, Image::Format::L_32F, Image::GammaSpace::Linear, (byte *)weightData, 0),
             Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
     }
 
@@ -830,7 +830,7 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
     Shader *weightedSHProjShader = shaderManager.GetShader("Shaders/WeightedSHProj")->InstantiateShader(Array<Shader::Define>());
 
     Image image;
-    image.Create2D(4, 4, 1, Image::Format::RGB_32F_32F_32F, nullptr, Image::Flag::LinearSpace);
+    image.Create2D(4, 4, 1, Image::Format::RGB_32F_32F_32F, Image::GammaSpace::Linear, nullptr, 0);
     Texture *incidentCoeffTexture = new Texture;
     incidentCoeffTexture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
@@ -1073,7 +1073,7 @@ void RenderSystem::GenerateGGXDFGSumImage(int size, Image &integrationImage) con
 
     RB_DrawClipRect(0, 0, 1.0f, 1.0f);
 
-    integrationImage.Create2D(size, size, 1, Image::Format::RG_16F_16F, nullptr, Image::Flag::LinearSpace);
+    integrationImage.Create2D(size, size, 1, Image::Format::RG_16F_16F, Image::GammaSpace::Linear, nullptr, 0);
 
     rhi.ReadPixels(0, 0, size, size, Image::Format::RG_16F_16F, integrationImage.GetPixels());
 

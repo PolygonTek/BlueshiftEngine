@@ -186,7 +186,7 @@ bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter::Enum filt
         return true;
     }
 
-    dstImage.Create2D(dstWidth, dstHeight, 1, format, nullptr, flags);
+    dstImage.Create2D(dstWidth, dstHeight, 1, format, gammaSpace, nullptr, flags);
 
     int numComponents = NumComponents();
 

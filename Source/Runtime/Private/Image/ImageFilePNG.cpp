@@ -86,7 +86,7 @@ bool Image::LoadPNGFromMemory(const char *name, const byte *data, size_t size) {
     png_read_update_info(png, info);
 
     // allocate the memory to hold the image
-    Create2D(w, h, 1, color_type & PNG_COLOR_MASK_ALPHA ? Format::RGBA_8_8_8_8 : Format::RGB_8_8_8, nullptr, 0);
+    Create2D(w, h, 1, color_type & PNG_COLOR_MASK_ALPHA ? Format::RGBA_8_8_8_8 : Format::RGB_8_8_8, GammaSpace::sRGB, nullptr, 0);
     
     png_bytep *row_pointers = (png_bytep *)Mem_Alloc16(sizeof(png_bytep) * h);
 

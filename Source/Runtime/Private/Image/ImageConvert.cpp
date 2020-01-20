@@ -135,13 +135,13 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
 
     int numDstMipmaps = !regenerateMipmaps ? srcImage->numMipmaps : MaxMipMapLevels(srcImage->width, srcImage->height, srcImage->depth);
     
-    // Create output image based on src (this) image
-    dstImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, dstFormat, nullptr, srcImage->flags);
+    // Create an output image based on source (this) image.
+    dstImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, dstFormat, srcImage->gammaSpace, nullptr, srcImage->flags);
 
-    // If source format is compressed, then decompress to RGBA_8_8_8_8
+    // If the source format is compressed, decompress it to RGBA_8_8_8_8.
     Image decompressedImage;
     if (srcFormatInfo->type & FormatType::Compressed) {
-        decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, Format::RGBA_8_8_8_8, nullptr, srcImage->flags);
+        decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, Format::RGBA_8_8_8_8, srcImage->gammaSpace, nullptr, srcImage->flags);
 
         DecompressImage(*this, decompressedImage);
 
@@ -153,7 +153,7 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
         srcFormatInfo = GetImageFormatInfo(Format::RGBA_8_8_8_8);
     } else {
         if (regenerateMipmaps) {
-            decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, srcImage->format, nullptr, srcImage->flags);
+            decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, srcImage->format, srcImage->gammaSpace, nullptr, srcImage->flags);
             decompressedImage.CopyFrom(*srcImage, 0, 1);
             decompressedImage.GenerateMipmaps();
 
@@ -161,6 +161,7 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
         }
     }
 
+    // If the target format is compressed, source image should be decompressed to RGBA_8_8_8_8.
     Image rgba8888Image;
     if (dstFormatInfo->type & FormatType::Compressed) {
         if (srcImage->GetFormat() != Format::RGBA_8_8_8_8) {
@@ -180,9 +181,9 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
     ImageUnpackFunc unpackFunc;
     ImagePackFunc packFunc;
 
-    bool unpackFloat = (srcFormatInfo->type & FormatType::Float) || (dstFormatInfo->type & FormatType::Float);
+    bool useUnpackFloat = (srcFormatInfo->type & FormatType::Float) || (dstFormatInfo->type & FormatType::Float);
 
-    if (unpackFloat) {
+    if (useUnpackFloat) {
         unpackFunc = srcFormatInfo->unpackRGBA32F;
         packFunc = dstFormatInfo->packRGBA32F;
     } else {
@@ -196,9 +197,9 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
         return false;
     }
 
-    bool isGamma = !(flags & Flag::LinearSpace);
+    bool isGamma = gammaSpace != GammaSpace::Linear;
 
-    byte *unpackedBuffer = (byte *)Mem_Alloc16(width * 4 * (unpackFloat ? sizeof(float) : 1));
+    byte *unpackedBuffer = (byte *)Mem_Alloc16(width * 4 * (useUnpackFloat ? sizeof(float) : 1));
 
     byte *srcPtr = srcImage->GetPixels();
     byte *dstPtr = dstImage.GetPixels();
@@ -212,12 +213,14 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
         int dstPitch = dstImage.BytesPerPixel() * w;
 
         for (int sliceIndex = 0; sliceIndex < srcImage->numSlices; sliceIndex++) {
-            for (int y = 0; y < h * d; y++) {
-                unpackFunc(srcPtr, unpackedBuffer, w, isGamma);
-                packFunc(unpackedBuffer, dstPtr, w, isGamma);
+            for (int z = 0; z < d; z++) {
+                for (int y = 0; y < h; y++) {
+                    unpackFunc(srcPtr, unpackedBuffer, w, isGamma);
+                    packFunc(unpackedBuffer, dstPtr, w, isGamma);
 
-                srcPtr += srcPitch;
-                dstPtr += dstPitch;
+                    srcPtr += srcPitch;
+                    dstPtr += dstPitch;
+                }
             }
         }
     }

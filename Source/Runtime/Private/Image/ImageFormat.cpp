@@ -631,7 +631,7 @@ static void RGBA32FToRGBA8888(const byte *src, byte *dst, int numPixels, bool is
             dstPtr[0] = Math::Ftob(255.0f * Image::LinearToGammaFast(srcPtr[0]));
             dstPtr[1] = Math::Ftob(255.0f * Image::LinearToGammaFast(srcPtr[1]));
             dstPtr[2] = Math::Ftob(255.0f * Image::LinearToGammaFast(srcPtr[2]));
-            dstPtr[3] = Math::Ftob(255.0f * Image::LinearToGammaFast(srcPtr[3]));
+            dstPtr[3] = Math::Ftob(255.0f * srcPtr[3]);
         }
     } else {
         for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {

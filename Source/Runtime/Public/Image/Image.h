@@ -114,6 +114,7 @@ public:
         };
     };
 
+    /// Format type
     struct FormatType {
         enum Enum {
             Packed          = BIT(0),
@@ -126,12 +127,20 @@ public:
         };
     };
 
+    /// Enum for the different kinds of gamma spaces we expect to need to convert from/to.
+    struct GammaSpace {
+        enum Enum {
+            Linear,
+            Pow22,
+            sRGB
+        };
+    };
+
     /// Image flags
     struct Flag {
         enum Enum {
-            LinearSpace     = BIT(0),
-            CubeMap         = BIT(1),
-            NormalMap       = BIT(2)
+            CubeMap         = BIT(0),
+            NormalMap       = BIT(1)
         };
     };
 
@@ -178,7 +187,7 @@ public:
 
     /// Constructs image with the given data.
     /// If data is not nullptr, the image data is initialized with given data.
-    Image(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, byte *data, int flags);
+    Image(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, byte *data, int flags);
     
     /// Copy constructor.
     Image(const Image &other);
@@ -212,8 +221,6 @@ public:
     bool                HasAlpha() const { return Image::HasAlpha(format); }
                         /// Returns true if image format has 1 bit alpha channel.
     bool                HasOneBitAlpha() const { return Image::HasOneBitAlpha(format); }
-                        /// Returns true if image is in the linear space.
-    bool                IsLinearSpace() const { return (flags & Flag::LinearSpace) ? true : false; }
                         /// Returns true if image format is packed.
     bool                IsPacked() const { return Image::IsPacked(format); }
                         /// Returns true if image format is compressed.
@@ -249,6 +256,8 @@ public:
     int                 GetFlags() const { return flags; }
                         /// Returns image format.
     Format::Enum        GetFormat() const { return format; }
+                        /// Returns gamma space of this image.
+    GammaSpace::Enum    GetGammaSpace() const { return gammaSpace; }
 
                         /// Returns pixel data pointer.
     byte *              GetPixels() const { return pic; }
@@ -275,16 +284,16 @@ public:
     void                Clear();
 
                         /// Creates an image with the given memory.
-    Image &             InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, byte *data, int flags);
+    Image &             InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, byte *data, int flags);
 
                         /// Creates an image.
                         /// If data is nullptr, just allocate the memory.
-    Image &             Create(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, const byte *data, int flags);
+    Image &             Create(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
 
-    Image &             Create2D(int width, int height, int numMipmaps, Format::Enum format, const byte *data, int flags);
-    Image &             Create3D(int width, int height, int depth, int numMipmaps, Format::Enum format, const byte *data, int flags);
-    Image &             CreateCube(int size, int numMipmaps, Format::Enum format, const byte *data, int flags);
-    Image &             Create2DArray(int width, int height, int numSlices, int numMipmaps, Format::Enum format, const byte *data, int flags);
+    Image &             Create2D(int width, int height, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
+    Image &             Create3D(int width, int height, int depth, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
+    Image &             CreateCube(int size, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
+    Image &             Create2DArray(int width, int height, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
 
                         /// Creates an cubic image from six square images.
     Image &             CreateCubeFrom6Faces(const Image *faceImages);
@@ -418,6 +427,7 @@ private:
     int                 numSlices;      ///< Number of array images or 6 for cubic image
     int                 numMipmaps;     ///< Number of mipmaps
     Format::Enum        format;         ///< Image format
+    GammaSpace::Enum    gammaSpace;     ///< Gamma space enum
     int                 flags;          ///< Image flags
     bool                alloced;        ///< Is memory allocated ?
     byte *              pic;            ///< Actual pixel data
@@ -430,20 +440,21 @@ BE_INLINE Image::Image() {
     numSlices = 0;
     numMipmaps = 0;
     format = Format::Unknown;
+    gammaSpace = GammaSpace::sRGB;
     flags = 0;
     alloced = false;
     pic = nullptr;
 }
 
-BE_INLINE Image::Image(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, byte *data, int flags) {
+BE_INLINE Image::Image(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, byte *data, int flags) {
     alloced = false;
-    InitFromMemory(width, height, depth, numSlices, numMipmaps, format, data, flags);
-    //Create(width, height, depth, numSlices, numMipmaps, format, data, flags);
+    InitFromMemory(width, height, depth, numSlices, numMipmaps, format, gammaSpace, data, flags);
+    //Create(width, height, depth, numSlices, numMipmaps, format, gammaSpace, data, flags);
 }
 
 BE_INLINE Image::Image(const Image &rhs) {
     alloced = false;
-    Create(rhs.width, rhs.height, rhs.depth, rhs.numSlices, rhs.numMipmaps, rhs.format, rhs.pic, rhs.flags);
+    Create(rhs.width, rhs.height, rhs.depth, rhs.numSlices, rhs.numMipmaps, rhs.format, rhs.gammaSpace, rhs.pic, rhs.flags);
 }
 
 BE_INLINE Image::Image(Image &&rhs) : Image() {
@@ -453,6 +464,7 @@ BE_INLINE Image::Image(Image &&rhs) : Image() {
     BE1::Swap(numSlices, rhs.numSlices);
     BE1::Swap(numMipmaps, rhs.numMipmaps);
     BE1::Swap(format, rhs.format);
+    BE1::Swap(gammaSpace, rhs.gammaSpace);
     BE1::Swap(flags, rhs.flags);
     BE1::Swap(alloced, rhs.alloced);
     BE1::Swap(pic, rhs.pic);
@@ -486,20 +498,20 @@ BE_INLINE byte *Image::GetPixels(int level, int sliceIndex) const {
     return pic + GetSliceSize(0, numMipmaps) * sliceIndex + GetSliceSize(0, level);
 }
 
-BE_INLINE Image &Image::Create2D(int width, int height, int numMipmaps, Format::Enum format, const byte *data, int flags) {
-    return Create(width, height, 1, 1, numMipmaps, format, data, flags);
+BE_INLINE Image &Image::Create2D(int width, int height, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags) {
+    return Create(width, height, 1, 1, numMipmaps, format, gammaSpace, data, flags);
 }
 
-BE_INLINE Image &Image::Create3D(int width, int height, int depth, int numMipmaps, Format::Enum format, const byte *data, int flags) {
-    return Create(width, height, depth, 1, numMipmaps, format, data, flags);
+BE_INLINE Image &Image::Create3D(int width, int height, int depth, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags) {
+    return Create(width, height, depth, 1, numMipmaps, format, gammaSpace, data, flags);
 }
 
-BE_INLINE Image &Image::CreateCube(int size, int numMipmaps, Format::Enum format, const byte *data, int flags) {
-    return Create(size, size, 1, 6, numMipmaps, format, data, flags | Flag::CubeMap);
+BE_INLINE Image &Image::CreateCube(int size, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags) {
+    return Create(size, size, 1, 6, numMipmaps, format, gammaSpace, data, flags | Flag::CubeMap);
 }
 
-BE_INLINE Image &Image::Create2DArray(int width, int height, int numSlices, int numMipmaps, Format::Enum format, const byte *data, int flags) {
-    return Create(width, height, 1, numSlices, numMipmaps, format, data, flags);
+BE_INLINE Image &Image::Create2DArray(int width, int height, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags) {
+    return Create(width, height, 1, numSlices, numMipmaps, format, gammaSpace, data, flags);
 }
 
 BE_INLINE float Image::GammaToLinear(float f) {

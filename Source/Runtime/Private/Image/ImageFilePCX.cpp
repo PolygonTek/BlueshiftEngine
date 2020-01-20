@@ -50,7 +50,7 @@ bool Image::LoadPCXFromMemory(const char *name, const byte *data, size_t size) {
         return false;
     }
     
-    Create2D(header->xmax - header->xmin + 1, header->ymax - header->ymin + 1, 1, Format::RGB_8_8_8, nullptr, 0);
+    Create2D(header->xmax - header->xmin + 1, header->ymax - header->ymin + 1, 1, Format::RGB_8_8_8, GammaSpace::sRGB, nullptr, 0);
 
     if (header->planes == 1) { // 8 bits paletted color
         const byte *palette = data + size - 768;

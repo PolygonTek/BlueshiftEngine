@@ -21,7 +21,7 @@
 
 BE_NAMESPACE_BEGIN
 
-Image &Image::InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, byte *data, int flags) {
+Image &Image::InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, GammaSpace::Enum gammaSpace, byte *data, int flags) {
     Clear();
 
     this->width = width;
@@ -30,6 +30,7 @@ Image &Image::InitFromMemory(int width, int height, int depth, int numSlices, in
     this->numSlices = Max(numSlices, 1);
     this->numMipmaps = Max(numMipmaps, 1);
     this->format = format;
+    this->gammaSpace = gammaSpace;
     this->flags = flags;
     this->alloced = false;
     this->pic = data;
@@ -37,7 +38,7 @@ Image &Image::InitFromMemory(int width, int height, int depth, int numSlices, in
     return *this;
 }
 
-Image &Image::Create(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, const byte *data, int flags) {
+Image &Image::Create(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags) {
     Clear();
 
     this->width = width;
@@ -46,6 +47,7 @@ Image &Image::Create(int width, int height, int depth, int numSlices, int numMip
     this->numSlices = Max(numSlices, 1);
     this->numMipmaps = Max(numMipmaps, 1);
     this->format = format;
+    this->gammaSpace = gammaSpace;
     this->flags = flags;
     
     int size = GetSize(0, numMipmaps);
@@ -68,6 +70,7 @@ Image &Image::CreateCubeFrom6Faces(const Image *images) {
     this->numSlices = 6;
     this->numMipmaps = images[0].numMipmaps;
     this->format = images[0].format;
+    this->gammaSpace = images[0].gammaSpace;
     this->flags = images[0].flags | Flag::CubeMap;
     
     int sliceSize = GetSliceSize(0, numMipmaps);
@@ -98,6 +101,7 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
     this->numSlices = 6;
     this->numMipmaps = 1;
     this->format = equirectangularImage.format;
+    this->gammaSpace = equirectangularImage.gammaSpace;
     this->flags = equirectangularImage.flags | Flag::CubeMap;
 
     int sliceSize = GetSliceSize(0, numMipmaps);
@@ -106,7 +110,7 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
 
     const ImageFormatInfo *info = GetImageFormatInfo(format);
 
-    bool isGamma = !(flags & Flag::LinearSpace);
+    bool isGamma = gammaSpace != GammaSpace::Linear;
 
     float invSize = 1.0f / (faceSize - 1);
 
@@ -123,15 +127,17 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
                 float theta, phi;
                 dir.ToSpherical(theta, phi);
 
-                // Environment equirectangluar image has reversed phi
+                // Environment equirectangluar image has reversed phi.
                 phi = Math::TwoPi - phi;
 
-                // Convert range [-1/4 pi, 7/4 pi] to [0.0, 1.0]
+                // Convert range [-1/4 pi, 7/4 pi] to [0.0, 1.0].
                 float srcS = Math::Fract((phi + Math::OneFourthPi) * Math::InvTwoPi);
-                // Convert range [0, pi] to [0.0, 1.0]
+                // Convert range [0, pi] to [0.0, 1.0].
                 float srcT = Math::Fract(theta * Math::InvPi);
 
                 Color4 color = equirectangularImage.Sample2D(Vec2(srcS, srcT), Image::SampleWrapMode::Repeat, Image::SampleWrapMode::Clamp);
+
+                // Convert color from float format to destination format.
                 info->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1, isGamma);
             }
         }
@@ -149,6 +155,7 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
     this->numSlices = 1;
     this->numMipmaps = 1;
     this->format = cubeImage.format;
+    this->gammaSpace = cubeImage.gammaSpace;
     this->flags = cubeImage.flags & ~Flag::CubeMap;
 
     int size = GetSize(0, numMipmaps);
@@ -157,7 +164,7 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
 
     const ImageFormatInfo *info = GetImageFormatInfo(format);
 
-    bool isGamma = !(flags & Flag::LinearSpace);
+    bool isGamma = gammaSpace != GammaSpace::Linear;
 
     byte *dst = GetPixels(0);
 
@@ -166,15 +173,17 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
             float dstS = (float)dstX / (width - 1);
             float dstT = (float)dstY / (height - 1);
 
-            // Convert range [0.0, 1.0] to [0, pi]
+            // Convert range [0.0, 1.0] to [0, pi].
             float theta = dstT * Math::Pi;
-            // Convert range [0.0, 1.0] to [-1/4 pi, 7/4 pi]
+            // Convert range [0.0, 1.0] to [-1/4 pi, 7/4 pi].
             float phi = dstS * Math::TwoPi - Math::OneFourthPi;
 
             Vec3 dir;
             dir.SetFromSpherical(1.0f, theta, phi);
 
             Color4 color = cubeImage.SampleCube(dir);
+
+            // Convert color from float format to destination format.
             info->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1, isGamma);
         }
     }
@@ -222,7 +231,7 @@ void Image::Update2D(int level, int x, int y, int width, int height, const byte 
 
 Image &Image::operator=(const Image &rhs) {
     Clear();
-    Create(rhs.width, rhs.height, rhs.depth, rhs.numSlices, rhs.numMipmaps, rhs.format, rhs.pic, rhs.flags);
+    Create(rhs.width, rhs.height, rhs.depth, rhs.numSlices, rhs.numMipmaps, rhs.format, rhs.gammaSpace, rhs.pic, rhs.flags);
     return (*this);
 }
 
@@ -235,6 +244,7 @@ Image &Image::operator=(Image &&rhs) {
     numSlices = rhs.numSlices;
     numMipmaps = rhs.numMipmaps;
     format = rhs.format;
+    gammaSpace = rhs.gammaSpace;
     flags = rhs.flags;
     alloced = rhs.alloced;
     pic = rhs.pic;
@@ -264,7 +274,7 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWra
     int bpp = BytesPerPixel();
     int pitch = width * bpp;
 
-    bool isGamma = !(flags & Flag::LinearSpace);
+    bool isGamma = gammaSpace != GammaSpace::Linear;
 
     float x = WrapCoord(st[0] * width, (float)(width - 1), wrapModeS);
     int iX0 = (int)x;
@@ -330,7 +340,7 @@ Color4 Image::SampleCube(const Vec3 &str, int level) const {
     int bpp = BytesPerPixel();
     int pitch = width * bpp;
 
-    bool isGamma = !(flags & Flag::LinearSpace);
+    bool isGamma = gammaSpace != GammaSpace::Linear;
 
     float x, y;
     CubeMapFace::Enum cubeMapFace = CubeMapToFaceCoords(str, x, y);
