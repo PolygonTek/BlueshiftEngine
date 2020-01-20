@@ -406,6 +406,9 @@ public:
 
     static Image *      NewImageFromFile(const char *filename);
 
+    static float        pow22ToLinearTable[256];
+    static float        sRGBToLinearTable[256];
+
 private:
     template <typename T>
     T                   WrapCoord(T coord, T maxCoord, SampleWrapMode::Enum wrapMode) const;

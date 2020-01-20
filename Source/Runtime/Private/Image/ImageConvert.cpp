@@ -197,8 +197,6 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
         return false;
     }
 
-    bool isGamma = gammaSpace != GammaSpace::Linear;
-
     byte *unpackedBuffer = (byte *)Mem_Alloc16(width * 4 * (useUnpackFloat ? sizeof(float) : 1));
 
     byte *srcPtr = srcImage->GetPixels();
@@ -215,8 +213,8 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
         for (int sliceIndex = 0; sliceIndex < srcImage->numSlices; sliceIndex++) {
             for (int z = 0; z < d; z++) {
                 for (int y = 0; y < h; y++) {
-                    unpackFunc(srcPtr, unpackedBuffer, w, isGamma);
-                    packFunc(unpackedBuffer, dstPtr, w, isGamma);
+                    unpackFunc(srcPtr, unpackedBuffer, w);
+                    packFunc(unpackedBuffer, dstPtr, w);
 
                     srcPtr += srcPitch;
                     dstPtr += dstPitch;
