@@ -26,26 +26,27 @@ public:
     struct Format {
         enum Enum {
             Unknown,
-            // plain bytes format
+            // Plain bytes formats
             L_8,
             A_8,
             LA_8_8,
             LA_16_16,
             R_8,
-            R_SNORM_8,
             RG_8_8,
-            RG_SNORM_8_8,
             RGB_8_8_8,
-            RGB_SNORM_8_8_8,
             BGR_8_8_8,
             RGBX_8_8_8_8,
             BGRX_8_8_8_8,
             RGBA_8_8_8_8,
-            RGBA_SNORM_8_8_8_8,
             BGRA_8_8_8_8,
             ABGR_8_8_8_8,
             ARGB_8_8_8_8,
-            // packed format
+            // Signed norm formats
+            R_SNORM_8,
+            RG_SNORM_8_8,
+            RGB_SNORM_8_8_8,
+            RGBA_SNORM_8_8_8_8,
+            // Packed formats
             RGBX_4_4_4_4,
             BGRX_4_4_4_4,
             RGBA_4_4_4_4,
@@ -60,7 +61,7 @@ public:
             ARGB_1_5_5_5,
             RGB_5_6_5,
             BGR_5_6_5,
-            // float format
+            // Float formats
             L_16F,
             A_16F,
             LA_16F_16F,
@@ -77,21 +78,21 @@ public:
             RGBA_32F_32F_32F_32F,
             RGB_11F_11F_10F,
             RGBE_9_9_9_5,
-            // DXT (BTC)
+            // Compressed (DXT) formats
             RGBA_DXT1,
             RGBA_DXT3,
             RGBA_DXT5,
             XGBR_DXT5,
             DXN1,
             DXN2,
-            // PVRTC
+            // Compressed (PVRTC) formats
             RGB_PVRTC_2BPPV1,
             RGB_PVRTC_4BPPV1,
             RGBA_PVRTC_2BPPV1,
             RGBA_PVRTC_4BPPV1,
             RGBA_PVRTC_2BPPV2,
             RGBA_PVRTC_4BPPV2,
-            // ETC
+            // Compressed (ETC) formats
             RGB_8_ETC1,
             RGB_8_ETC2,
             RGBA_8_1_ETC2,
@@ -100,11 +101,11 @@ public:
             SignedR_11_EAC,
             RG_11_11_EAC,
             SignedRG_11_11_EAC,
-            // ATC
+            // Compressed (ATC) formats
             RGB_ATC,
             RGBA_EA_ATC, // Explicit alpha
             RGBA_IA_ATC, // Interpolated alpha
-            // depth format
+            // Depth formats
             Depth_16,
             Depth_24,
             Depth_32F,
@@ -118,12 +119,13 @@ public:
     struct FormatType {
         enum Enum {
             Packed          = BIT(0),
-            Float           = BIT(1),
-            Half            = Float | BIT(2),
-            Depth           = BIT(3),
-            Stencil         = BIT(4),
+            SNorm           = BIT(1),
+            Float           = BIT(2),
+            Half            = Float | BIT(3),
+            Depth           = BIT(4),
+            Stencil         = BIT(5),
             DepthStencil    = Depth | Stencil,
-            Compressed      = BIT(5)
+            Compressed      = BIT(6)
         };
     };
 

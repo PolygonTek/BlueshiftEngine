@@ -181,7 +181,9 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
     ImageUnpackFunc unpackFunc;
     ImagePackFunc packFunc;
 
-    bool useUnpackFloat = (srcFormatInfo->type & FormatType::Float) || (dstFormatInfo->type & FormatType::Float);
+    bool useUnpackFloat = 
+        (srcFormatInfo->type & (FormatType::Float | FormatType::SNorm)) || 
+        (dstFormatInfo->type & (FormatType::Float | FormatType::SNorm));
 
     if (useUnpackFloat) {
         unpackFunc = srcFormatInfo->unpackRGBA32F;
