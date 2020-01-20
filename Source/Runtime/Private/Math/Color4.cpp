@@ -17,23 +17,24 @@
 
 BE_NAMESPACE_BEGIN
 
-const Color4  Color4::zero      = Color4(0.0f, 0.0f, 0.0f, 0.0f);
-const Color4  Color4::black     = Color4(0.0f, 0.0f, 0.0f, 1.0f);
-const Color4  Color4::white     = Color4(1.0f, 1.0f, 1.0f, 1.0f);
-const Color4  Color4::red       = Color4(1.0f, 0.0f, 0.0f, 1.0f);
-const Color4  Color4::green     = Color4(0.0f, 1.0f, 0.0f, 1.0f);
-const Color4  Color4::blue      = Color4(0.0f, 0.0f, 1.0f, 1.0f);
-const Color4  Color4::yellow    = Color4(1.0f, 1.0f, 0.0f, 1.0f);
-const Color4  Color4::cyan      = Color4(0.0f, 1.0f, 1.0f, 1.0f);
-const Color4  Color4::magenta   = Color4(1.0f, 0.0f, 1.0f, 1.0f);
-const Color4  Color4::orange    = Color4(1.0f, 0.5f, 0.0f, 1.0f);
-const Color4  Color4::pink      = Color4(1.0f, 0.0f, 0.5f, 1.0f);
-const Color4  Color4::lawn      = Color4(0.5f, 1.0f, 0.0f, 1.0f);
-const Color4  Color4::mint      = Color4(0.0f, 1.0f, 0.5f, 1.0f);
-const Color4  Color4::violet    = Color4(0.5f, 0.5f, 1.0f, 1.0f);
-const Color4  Color4::teal      = Color4(0.3f, 0.5f, 0.6f, 1.0f);
-const Color4  Color4::grey      = Color4(0.7f, 0.7f, 0.7f, 1.0f);
-const Color4  Color4::darkGrey  = Color4(0.3f, 0.3f, 0.3f, 1.0f);
+const Color4 Color4::zero       = Color4::FromRGBA8888(  0,   0,   0,   0);
+const Color4 Color4::black      = Color4::FromRGBA8888(  0,   0,   0, 255);
+const Color4 Color4::white      = Color4::FromRGBA8888(255, 255, 255, 255);
+const Color4 Color4::red        = Color4::FromRGBA8888(255,   0,   0, 255);
+const Color4 Color4::green      = Color4::FromRGBA8888(  0, 255,   0, 255);
+const Color4 Color4::blue       = Color4::FromRGBA8888(  0,   0, 255, 255);
+const Color4 Color4::yellow     = Color4::FromRGBA8888(255, 255,   0, 255);
+const Color4 Color4::cyan       = Color4::FromRGBA8888(  0, 255, 255, 255);
+const Color4 Color4::magenta    = Color4::FromRGBA8888(255,   0, 255, 255);
+const Color4 Color4::orange     = Color4::FromRGBA8888(255, 127,   0, 255);
+const Color4 Color4::pink       = Color4::FromRGBA8888(255,   0, 127, 255);
+const Color4 Color4::lawn       = Color4::FromRGBA8888(127, 255,   0, 255);
+const Color4 Color4::mint       = Color4::FromRGBA8888(  0, 255, 127, 255);
+const Color4 Color4::violet     = Color4::FromRGBA8888(127, 127, 255, 255);
+const Color4 Color4::aquamarine = Color4::FromRGBA8888(112, 219, 147, 255);
+const Color4 Color4::grey       = Color4::FromRGBA8888(192, 192, 129, 255);
+const Color4 Color4::darkGrey   = Color4::FromRGBA8888( 84,  84,  84, 255);
+const Color4 Color4::darkBrown  = Color4::FromRGBA8888( 92,  64,  51, 255);
 
 void Color4::Clip(bool clipAlpha) {
     Clamp01(r);
@@ -61,6 +62,11 @@ Color4 &Color4::Grayscale() {
     b = b * 0.114f;
 
     return *this;
+}
+
+Color4 Color4::FromRGBA8888(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    float invNorm = 1.0f / 255.0f;
+    return Color4(r * invNorm, g * invNorm, b * invNorm, a * invNorm);
 }
 
 uint32_t Color4::ToUInt32() const {

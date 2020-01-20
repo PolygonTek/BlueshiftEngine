@@ -195,6 +195,9 @@ public:
     const Vec4 &        ToVec4() const;
     Vec4 &              ToVec4();
 
+                        /// Creates from RGBA8888.
+    static Color4       FromRGBA8888(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+
                         /// Convert color packed to a 32-bit integer, with R component in the lowest 8 bits. Components are clamped to [0, 1] range.
     uint32_t            ToUInt32() const;
 
@@ -216,23 +219,24 @@ public:
                         /// Returns dimension of this type.
     constexpr int       GetDimension() const { return Size; }
 
-    static const Color4 zero;       ///< (0.0, 0.0, 0.0, 0.0)
-    static const Color4 black;      ///< (0.0, 0.0, 0.0, 1.0)
-    static const Color4 white;      ///< (1.0, 1.0, 1.0, 1.0)
-    static const Color4 red;        ///< (1.0, 0.0, 0.0, 1.0)
-    static const Color4 green;      ///< (0.0, 1.0, 0.0, 1.0)
-    static const Color4 blue;       ///< (0.0, 0.0, 1.0, 1.0)
-    static const Color4 yellow;     ///< (1.0, 1.0, 0.0, 1.0)
-    static const Color4 cyan;       ///< (0.0, 1.0, 1.0, 1.0)
-    static const Color4 magenta;    ///< (1.0, 0.0, 1.0, 1.0)
-    static const Color4 orange;     ///< (1.0, 0.5, 0.0, 1.0)
-    static const Color4 pink;       ///< (1.0, 0.0, 0.5, 1.0)
-    static const Color4 lawn;       ///< (0.5, 1.0, 0.0, 1.0)
-    static const Color4 mint;       ///< (0.0, 1.0, 0.5, 1.0)
-    static const Color4 violet;     ///< (0.5, 0.5, 1.0, 1.0)
-    static const Color4 teal;       ///< (0.3, 0.5, 0.6, 1.0)
-    static const Color4 grey;       ///< (0.7, 0.7, 0.7, 1.0)
-    static const Color4 darkGrey;   ///< (0.3, 0.3, 0.3, 1.0)
+    static const Color4 zero;
+    static const Color4 black;
+    static const Color4 white;
+    static const Color4 red;
+    static const Color4 green;
+    static const Color4 blue;
+    static const Color4 yellow;
+    static const Color4 cyan;
+    static const Color4 magenta;
+    static const Color4 orange;
+    static const Color4 pink;
+    static const Color4 lawn;
+    static const Color4 mint;
+    static const Color4 violet;
+    static const Color4 aquamarine;
+    static const Color4 grey;
+    static const Color4 darkGrey;
+    static const Color4 darkBrown;
 
     float               r;          ///< The red component.
     float               g;          ///< The green component.

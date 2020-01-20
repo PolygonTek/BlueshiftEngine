@@ -17,23 +17,24 @@
 
 BE_NAMESPACE_BEGIN
 
-const Color3  Color3::zero      = Color3(0.0f, 0.0f, 0.0f);
-const Color3  Color3::black     = Color3(0.0f, 0.0f, 0.0f);
-const Color3  Color3::white     = Color3(1.0f, 1.0f, 1.0f);
-const Color3  Color3::red       = Color3(1.0f, 0.0f, 0.0f);
-const Color3  Color3::green     = Color3(0.0f, 1.0f, 0.0f);
-const Color3  Color3::blue      = Color3(0.0f, 0.0f, 1.0f);
-const Color3  Color3::yellow    = Color3(1.0f, 1.0f, 0.0f);
-const Color3  Color3::cyan      = Color3(0.0f, 1.0f, 1.0f);
-const Color3  Color3::magenta   = Color3(1.0f, 0.0f, 1.0f);
-const Color3  Color3::orange    = Color3(1.0f, 0.5f, 0.0f);
-const Color3  Color3::pink      = Color3(1.0f, 0.0f, 0.5f);
-const Color3  Color3::lawn      = Color3(0.5f, 1.0f, 0.0f);
-const Color3  Color3::mint      = Color3(0.0f, 1.0f, 0.5f);
-const Color3  Color3::violet    = Color3(0.5f, 0.5f, 1.0f);
-const Color3  Color3::teal      = Color3(0.3f, 0.5f, 0.6f);
-const Color3  Color3::grey      = Color3(0.7f, 0.7f, 0.7f);
-const Color3  Color3::darkGrey  = Color3(0.3f, 0.3f, 0.3f);
+const Color3 Color3::zero       = Color3::FromRGB888(  0,   0,   0);
+const Color3 Color3::black      = Color3::FromRGB888(  0,   0,   0);
+const Color3 Color3::white      = Color3::FromRGB888(255, 255, 255);
+const Color3 Color3::red        = Color3::FromRGB888(255,   0,   0);
+const Color3 Color3::green      = Color3::FromRGB888(  0, 255,   0);
+const Color3 Color3::blue       = Color3::FromRGB888(  0,   0, 255);
+const Color3 Color3::yellow     = Color3::FromRGB888(255, 255,   0);
+const Color3 Color3::cyan       = Color3::FromRGB888(  0, 255, 255);
+const Color3 Color3::magenta    = Color3::FromRGB888(255,   0, 255);
+const Color3 Color3::orange     = Color3::FromRGB888(255, 127,   0);
+const Color3 Color3::pink       = Color3::FromRGB888(255,   0, 127);
+const Color3 Color3::lawn       = Color3::FromRGB888(127, 255,   0);
+const Color3 Color3::mint       = Color3::FromRGB888(  0, 255, 127);
+const Color3 Color3::violet     = Color3::FromRGB888(127, 127, 255);
+const Color3 Color3::aquamarine = Color3::FromRGB888(112, 219, 147);
+const Color3 Color3::grey       = Color3::FromRGB888(192, 192, 129);
+const Color3 Color3::darkGrey   = Color3::FromRGB888( 84,  84,  84);
+const Color3 Color3::darkBrown  = Color3::FromRGB888( 92,  64,  51);
 
 void Color3::Clip() {
     Clamp01(r);
@@ -53,6 +54,11 @@ Color3 &Color3::Grayscale() {
     b = b * 0.114f;
 
     return *this;
+}
+
+Color3 Color3::FromRGB888(uint8_t r, uint8_t g, uint8_t b) {
+    float invNorm = 1.0f / 255.0f;
+    return Color3(r * invNorm, g * invNorm, b * invNorm);
 }
 
 uint32_t Color3::ToUInt32() const {

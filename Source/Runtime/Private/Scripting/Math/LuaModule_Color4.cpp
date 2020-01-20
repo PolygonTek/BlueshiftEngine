@@ -73,7 +73,7 @@ void LuaVM::RegisterColor4(LuaCpp::Module &module) {
     _Color4["lawn"] = Color4::lawn;
     _Color4["mint"] = Color4::mint;
     _Color4["violet"] = Color4::violet;
-    _Color4["teal"] = Color4::teal;
+    _Color4["aquamarine"] = Color4::aquamarine;
     _Color4["grey"] = Color4::grey;
     _Color4["darkGrey"] = Color4::darkGrey;
 }

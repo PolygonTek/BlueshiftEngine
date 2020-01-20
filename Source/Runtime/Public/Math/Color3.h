@@ -174,6 +174,9 @@ public:
     const Vec3 &        ToVec3() const;
     Vec3 &              ToVec3();
 
+                        /// Creates from RGB888.
+    static Color3       FromRGB888(uint8_t r, uint8_t g, uint8_t b);
+
                         /// Converts color to a 32-bit integer, with R component in the lowest 8 bits. Components are clamped to [0, 1] range.
     uint32_t            ToUInt32() const;
 
@@ -198,23 +201,24 @@ public:
                         /// Returns dimension of this type.
     constexpr int       GetDimension() const { return Size; }
 
-    static const Color3 zero;       ///< (0.0, 0.0, 0.0)
-    static const Color3 black;      ///< (0.0, 0.0, 0.0)
-    static const Color3 white;      ///< (1.0, 1.0, 1.0)
-    static const Color3 red;        ///< (1.0, 0.0, 0.0)
-    static const Color3 green;      ///< (0.0, 1.0, 0.0)
-    static const Color3 blue;       ///< (0.0, 0.0, 1.0)
-    static const Color3 yellow;     ///< (1.0, 1.0, 0.0)
-    static const Color3 cyan;       ///< (0.0, 1.0, 1.0)
-    static const Color3 magenta;    ///< (1.0, 0.0, 1.0)
-    static const Color3 orange;     ///< (1.0, 0.5, 0.0)
-    static const Color3 pink;       ///< (1.0, 0.0, 0.5)
-    static const Color3 lawn;       ///< (0.5, 1.0, 0.0)
-    static const Color3 mint;       ///< (0.0, 1.0, 0.5)
-    static const Color3 violet;     ///< (0.5, 0.5, 1.0)
-    static const Color3 teal;       ///< (0.3, 0.5, 0.6)
-    static const Color3 grey;       ///< (0.7, 0.7, 0.7)
-    static const Color3 darkGrey;   ///< (0.3, 0.3, 0.3)
+    static const Color3 zero;
+    static const Color3 black;
+    static const Color3 white;
+    static const Color3 red;
+    static const Color3 green;
+    static const Color3 blue;
+    static const Color3 yellow;
+    static const Color3 cyan;
+    static const Color3 magenta;
+    static const Color3 orange;
+    static const Color3 pink;
+    static const Color3 lawn;
+    static const Color3 mint;
+    static const Color3 violet;
+    static const Color3 aquamarine;
+    static const Color3 grey;
+    static const Color3 darkGrey;
+    static const Color3 darkBrown;
 
     float               r;          ///< The red component.
     float               g;          ///< The green component.
