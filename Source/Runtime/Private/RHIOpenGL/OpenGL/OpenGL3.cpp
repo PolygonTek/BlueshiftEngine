@@ -193,7 +193,7 @@ bool OpenGL3::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB
         if (glType)     *glType = GL_UNSIGNED_BYTE;
         if (glInternal) *glInternal = GL_R8;
         return true;
-    case Image::Format::R_SNORM_8:
+    case Image::Format::R_8_SNORM:
         if (glFormat)   *glFormat = GL_RED;
         if (glType)     *glType = GL_BYTE;
         if (glInternal) *glInternal = GL_R8_SNORM;
@@ -204,7 +204,7 @@ bool OpenGL3::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB
         if (glType)     *glType = GL_UNSIGNED_BYTE;
         if (glInternal) *glInternal = GL_RG8;
         return true;
-    case Image::Format::RG_SNORM_8_8:
+    case Image::Format::RG_8_8_SNORM:
         if (glFormat)   *glFormat = GL_RG;
         if (glType)     *glType = GL_BYTE;
         if (glInternal) *glInternal = GL_RG8_SNORM;
@@ -219,7 +219,7 @@ bool OpenGL3::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB
         if (glType)     *glType = GL_UNSIGNED_BYTE;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8 : GL_RGB8;
         return true;
-    case Image::Format::RGB_SNORM_8_8_8:
+    case Image::Format::RGB_8_8_8_SNORM:
         if (glFormat)   *glFormat = GL_RGB;
         if (glType)     *glType = GL_BYTE;
         if (glInternal) *glInternal = GL_RGB8_SNORM;
@@ -244,7 +244,7 @@ bool OpenGL3::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB
         if (glType)     *glType = GL_UNSIGNED_INT_8_8_8_8_REV;
         if (glInternal) *glInternal = isSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8;
         return true;
-    case Image::Format::RGBA_SNORM_8_8_8_8:
+    case Image::Format::RGBA_8_8_8_8_SNORM:
         if (glFormat)   *glFormat = GL_RGBA;
         if (glType)     *glType = GL_BYTE;
         if (glInternal) *glInternal = GL_RGBA8_SNORM;

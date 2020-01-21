@@ -1248,7 +1248,7 @@ static void ARGB8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
     }
 }
 
-static void RS8ToRGBA32F(const byte *src, byte *dst, int numPixels) {
+static void R8SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
     const float invNorm = 1.0f / 127.0f;
     const int8_t *srcPtr = (const int8_t *)src;
     const int8_t *srcEnd = srcPtr + numPixels;
@@ -1262,7 +1262,7 @@ static void RS8ToRGBA32F(const byte *src, byte *dst, int numPixels) {
     }
 }
 
-static void RGS88ToRGBA32F(const byte *src, byte *dst, int numPixels) {
+static void RG88SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
     const float invNorm = 1.0f / 127.0f;
     const int8_t *srcPtr = (const int8_t *)src;
     const int8_t *srcEnd = srcPtr + numPixels * 2;
@@ -1276,7 +1276,7 @@ static void RGS88ToRGBA32F(const byte *src, byte *dst, int numPixels) {
     }
 }
 
-static void RGBS888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
+static void RGB888SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
     const float invNorm = 1.0f / 127.0f;
     const int8_t *srcPtr = (const int8_t *)src;
     const int8_t *srcEnd = srcPtr + numPixels * 3;
@@ -1290,7 +1290,7 @@ static void RGBS888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
     }
 }
 
-static void RGBAS8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
+static void RGBA8888SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
     const float invNorm = 1.0f / 127.0f;
     const int8_t *srcPtr = (const int8_t *)src;
     const int8_t *srcEnd = srcPtr + numPixels * 4;
@@ -1669,7 +1669,7 @@ static void RGBA32FToARGB8888(const byte *src, byte *dst, int numPixels) {
     }
 }
 
-static void RGBA32FToRS8(const byte *src, byte *dst, int numPixels) {
+static void RGBA32FToR8SNorm(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = (const float *)src;
     const float *srcEnd = srcPtr + numPixels * 4;
     int8_t *dstPtr = (int8_t *)dst;
@@ -1679,7 +1679,7 @@ static void RGBA32FToRS8(const byte *src, byte *dst, int numPixels) {
     }
 }
 
-static void RGBA32FToRGS88(const byte *src, byte *dst, int numPixels) {
+static void RGBA32FToRG88SNorm(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = (const float *)src;
     const float *srcEnd = srcPtr + numPixels * 4;
     int8_t *dstPtr = (int8_t *)dst;
@@ -1690,7 +1690,7 @@ static void RGBA32FToRGS88(const byte *src, byte *dst, int numPixels) {
     }
 }
 
-static void RGBA32FToRGBS888(const byte *src, byte *dst, int numPixels) {
+static void RGBA32FToRGB888SNorm(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = (const float *)src;
     const float *srcEnd = srcPtr + numPixels * 4;
     int8_t *dstPtr = (int8_t *)dst;
@@ -1702,7 +1702,7 @@ static void RGBA32FToRGBS888(const byte *src, byte *dst, int numPixels) {
     }
 }
 
-static void RGBA32FToRGBAS8888(const byte *src, byte *dst, int numPixels) {
+static void RGBA32FToRGBA8888SNorm(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = (const float *)src;
     const float *srcEnd = srcPtr + numPixels * 4;
     int8_t *dstPtr = (int8_t *)dst;
@@ -1910,10 +1910,10 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "ABGR_8_8_8_8",           4,  4,  8,  8,  8,  8,  0, ABGR8888ToRGBA8888, RGBA8888ToABGR8888, ABGR8888ToRGBA32F, RGBA32FToABGR8888 },
     { "ARGB_8_8_8_8",           4,  4,  8,  8,  8,  8,  0, ARGB8888ToRGBA8888, RGBA8888ToARGB8888, ARGB8888ToRGBA32F, RGBA32FToARGB8888 },
     // signed norm format -------------------------------------------------------------------------
-    { "R_SNORM_8",              1,  1,  8,  0,  0,  0,  Image::FormatType::SNorm, nullptr, nullptr, RS8ToRGBA32F, RGBA32FToRS8 },
-    { "RG_SNORM_8_8",           2,  2,  8,  8,  0,  0,  Image::FormatType::SNorm, nullptr, nullptr, RGS88ToRGBA32F, RGBA32FToRGS88 },
-    { "RGB_SNORM_8_8_8",        3,  3,  8,  8,  8,  0,  Image::FormatType::SNorm, nullptr, nullptr, RGBS888ToRGBA32F, RGBA32FToRGBS888 },
-    { "RGBA_SNORM_8_8_8_8",     3,  4,  8,  8,  8,  8,  Image::FormatType::SNorm, nullptr, nullptr, RGBAS8888ToRGBA32F, RGBA32FToRGBAS8888 },
+    { "R_8_SNORM",              1,  1,  8,  0,  0,  0,  Image::FormatType::SNorm, nullptr, nullptr, R8SNormToRGBA32F, RGBA32FToR8SNorm },
+    { "RG_8_8_SNORM",           2,  2,  8,  8,  0,  0,  Image::FormatType::SNorm, nullptr, nullptr, RG88SNormToRGBA32F, RGBA32FToRG88SNorm },
+    { "RGB_8_8_8_SNORM",        3,  3,  8,  8,  8,  0,  Image::FormatType::SNorm, nullptr, nullptr, RGB888SNormToRGBA32F, RGBA32FToRGB888SNorm },
+    { "RGBA_8_8_8_8_SNORM",     3,  4,  8,  8,  8,  8,  Image::FormatType::SNorm, nullptr, nullptr, RGBA8888SNormToRGBA32F, RGBA32FToRGBA8888SNorm },
     // packed format ------------------------------------------------------------------------------
     { "RGBX_4_4_4_4",           2,  4,  4,  4,  4,  0,  Image::FormatType::Packed, RGBX4444ToRGBA8888, RGBA8888ToRGBX4444, nullptr, nullptr },
     { "BGRX_4_4_4_4",           2,  4,  4,  4,  4,  0,  Image::FormatType::Packed, BGRX4444ToRGBA8888, RGBA8888ToBGRX4444, nullptr, nullptr },
@@ -1931,21 +1931,21 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "BGR_5_6_5",              2,  3,  5,  6,  5,  0,  Image::FormatType::Packed, BGR565ToRGBA8888, RGBA8888ToBGR565, nullptr, nullptr },
     // float format -------------------------------------------------------------------------------
     { "L_16F",                  2,  1,  0,  0,  0,  0,  Image::FormatType::Half, L16FToRGBA8888, RGBA8888ToL16F, L16FToRGBA32F, RGBA32FToL16F },
-    { "A_16F",                  2,  1,  0,  0,  0,  16, Image::FormatType::Half, A16FToRGBA8888, RGBA8888ToA16F, A16FToRGBA32F, RGBA32FToA16F },
-    { "LA_16F_16F",             4,  2,  0,  0,  0,  16, Image::FormatType::Half, LA16FToRGBA8888, RGBA8888ToLA16F, LA16FToRGBA32F, RGBA32FToLA16F },
-    { "R_16F",                  2,  1,  16, 0,  0,  0,  Image::FormatType::Half, R16FToRGBA8888, RGBA8888ToR16F, R16FToRGBA32F, RGBA32FToR16F },
-    { "RG_16F_16F",             4,  2,  16, 16, 0,  0,  Image::FormatType::Half, RG16FToRGBA8888, RGBA8888ToRG16F, RG16FToRGBA32F, RGBA32FToRG16F },
-    { "RGB_16F_16F_16F",        6,  3,  16, 16, 16, 0,  Image::FormatType::Half, RGB16FToRGBA8888, RGBA8888ToRGB16F, RGB16FToRGBA32F, RGBA32FToRGB16F },
-    { "RGBA_16F_16F_16F_16F",   8,  4,  16, 16, 16, 16, Image::FormatType::Half, RGBA16FToRGBA8888, RGBA8888ToRGBA16F, RGBA16FToRGBA32F, RGBA32FToRGBA16F },
     { "L_32F",                  4,  1,  0,  0,  0,  0,  Image::FormatType::Float, L32FToRGBA8888, RGBA8888ToL32F, L32FToRGBA32F, RGBA32FToL32F },
+    { "A_16F",                  2,  1,  0,  0,  0,  16, Image::FormatType::Half, A16FToRGBA8888, RGBA8888ToA16F, A16FToRGBA32F, RGBA32FToA16F },
     { "A_32F",                  4,  1,  0,  0,  0,  32, Image::FormatType::Float, A32FToRGBA8888, RGBA8888ToA32F, A32FToRGBA32F, RGBA32FToA32F },
+    { "LA_16F_16F",             4,  2,  0,  0,  0,  16, Image::FormatType::Half, LA16FToRGBA8888, RGBA8888ToLA16F, LA16FToRGBA32F, RGBA32FToLA16F },
     { "LA_32F_32F",             8,  2,  0,  0,  0,  32, Image::FormatType::Float, LA32FToRGBA8888, RGBA8888ToLA32F, LA32FToRGBA32F, RGBA32FToLA32F },
+    { "R_16F",                  2,  1,  16, 0,  0,  0,  Image::FormatType::Half, R16FToRGBA8888, RGBA8888ToR16F, R16FToRGBA32F, RGBA32FToR16F },
     { "R_32F",                  4,  1,  32, 0,  0,  0,  Image::FormatType::Float, R32FToRGBA8888, RGBA8888ToR32F, R32FToRGBA32F, RGBA32FToR32F },
+    { "RG_16F_16F",             4,  2,  16, 16, 0,  0,  Image::FormatType::Half, RG16FToRGBA8888, RGBA8888ToRG16F, RG16FToRGBA32F, RGBA32FToRG16F },
     { "RG_32F_32F",             8,  2,  32, 32, 0,  0,  Image::FormatType::Float, RG32FToRGBA8888, RGBA8888ToRG32F, RG32FToRGBA32F, RGBA32FToRG32F },
-    { "RGB_32F_32F_32F",        12, 3,  32, 32, 32, 0,  Image::FormatType::Float, RGB32FToRGBA8888, RGBA8888ToRGB32F, RGB32FToRGBA32F, RGBA32FToRGB32F },
-    { "RGBA_32F_32F_32F_32F",   16, 4,  32, 32, 32, 32, Image::FormatType::Float, RGBA32FToRGBA8888, RGBA8888ToRGBA32F, RGBA32FToRGBA32F, RGBA32FToRGBA32F },
-    { "RGB_11F_11F_10F",        4,  3,  11, 11, 10, 0,  Image::FormatType::Float | Image::FormatType::Packed, RGB11F11F10FToRGBA8888, RGBA8888ToRGB11F11F10F, RGB11F11F10FToRGBA32F, RGBA32FToRGB11F11F10F },
     { "RGBE_9_9_9_5",           4,  3,  9,  9,  9,  0,  Image::FormatType::Float | Image::FormatType::Packed, RGBE9995ToRGBA8888, RGBA8888ToRGBE9995, RGBE9995ToRGBA32F, RGBA32FToRGBE9995 },
+    { "RGB_11F_11F_10F",        4,  3,  11, 11, 10, 0,  Image::FormatType::Float | Image::FormatType::Packed, RGB11F11F10FToRGBA8888, RGBA8888ToRGB11F11F10F, RGB11F11F10FToRGBA32F, RGBA32FToRGB11F11F10F },
+    { "RGB_16F_16F_16F",        6,  3,  16, 16, 16, 0,  Image::FormatType::Half, RGB16FToRGBA8888, RGBA8888ToRGB16F, RGB16FToRGBA32F, RGBA32FToRGB16F },
+    { "RGB_32F_32F_32F",        12, 3,  32, 32, 32, 0,  Image::FormatType::Float, RGB32FToRGBA8888, RGBA8888ToRGB32F, RGB32FToRGBA32F, RGBA32FToRGB32F },
+    { "RGBA_16F_16F_16F_16F",   8,  4,  16, 16, 16, 16, Image::FormatType::Half, RGBA16FToRGBA8888, RGBA8888ToRGBA16F, RGBA16FToRGBA32F, RGBA32FToRGBA16F },
+    { "RGBA_32F_32F_32F_32F",   16, 4,  32, 32, 32, 32, Image::FormatType::Float, RGBA32FToRGBA8888, RGBA8888ToRGBA32F, RGBA32FToRGBA32F, RGBA32FToRGBA32F },
     // DXT (BTC) ----------------------------------------------------------------------------------
     { "DXT1",                   8,  4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "DXT3",                   16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
