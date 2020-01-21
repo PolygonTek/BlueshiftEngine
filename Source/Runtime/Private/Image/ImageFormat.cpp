@@ -1248,6 +1248,20 @@ static void ARGB8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
     }
 }
 
+static void RGBA1010102ToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const float invNorm = 1.0f / 1023.0f;
+    const uint32_t *srcPtr = (const uint32_t *)src;
+    const uint32_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = (float *)dst;
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
+        dstPtr[0] = (*srcPtr & 0x3FF) * invNorm;
+        dstPtr[1] = ((*srcPtr >> 10) & 0x3FF) * invNorm;
+        dstPtr[2] = ((*srcPtr >> 20) & 0x3FF) * invNorm;
+        dstPtr[3] = ((*srcPtr >> 30) & 0x3) / 3.0f;
+    }
+}
+
 static void R8SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
     const float invNorm = 1.0f / 127.0f;
     const int8_t *srcPtr = (const int8_t *)src;
@@ -1669,6 +1683,16 @@ static void RGBA32FToARGB8888(const byte *src, byte *dst, int numPixels) {
     }
 }
 
+static void RGBA32FToRGBA1010102(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    uint32_t *dstPtr = (uint32_t *)dst;
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
+        *dstPtr = Math::Ftoi(1023.0f * srcPtr[0]) | (Math::Ftoi(1023.0f * srcPtr[1]) << 10) | (Math::Ftoi(1023.0f * srcPtr[2]) << 20) | (Math::Ftoi(3.0f * srcPtr[3]) << 30);
+    }
+}
+
 static void RGBA32FToR8SNorm(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = (const float *)src;
     const float *srcEnd = srcPtr + numPixels * 4;
@@ -1929,6 +1953,7 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "ARGB_1_5_5_5",           2,  4,  5,  5,  5,  1,  Image::FormatType::Packed, ARGB1555ToRGBA8888, RGBA8888ToARGB1555, nullptr, nullptr },
     { "RGB_5_6_5",              2,  3,  5,  6,  5,  0,  Image::FormatType::Packed, RGB565ToRGBA8888, RGBA8888ToRGB565, nullptr, nullptr },
     { "BGR_5_6_5",              2,  3,  5,  6,  5,  0,  Image::FormatType::Packed, BGR565ToRGBA8888, RGBA8888ToBGR565, nullptr, nullptr },
+    { "RGBA_10_10_10_2",        4,  4, 10, 10, 10,  2,  Image::FormatType::Packed, nullptr, nullptr, RGBA1010102ToRGBA32F, RGBA32FToRGBA1010102 },
     // float format -------------------------------------------------------------------------------
     { "L_16F",                  2,  1,  0,  0,  0,  0,  Image::FormatType::Half, L16FToRGBA8888, RGBA8888ToL16F, L16FToRGBA32F, RGBA32FToL16F },
     { "L_32F",                  4,  1,  0,  0,  0,  0,  Image::FormatType::Float, L32FToRGBA8888, RGBA8888ToL32F, L32FToRGBA32F, RGBA32FToL32F },

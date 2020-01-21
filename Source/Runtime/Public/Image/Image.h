@@ -61,6 +61,7 @@ public:
             ARGB_1_5_5_5,
             RGB_5_6_5,
             BGR_5_6_5,
+            RGBA_10_10_10_2,
             // Float formats
             L_16F,
             L_32F,

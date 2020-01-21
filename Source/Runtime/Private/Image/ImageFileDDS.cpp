@@ -350,8 +350,11 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
 
         switch (dx10Header->dxgiFormat) {
         case DX10_FORMAT_R8_UNORM: format = Format::R_8; break;
+        case DX10_FORMAT_R8_SNORM: format = Format::R_8_SNORM; break;
         case DX10_FORMAT_R8G8_UNORM: format = Format::RG_8_8; break;
+        case DX10_FORMAT_R8G8_SNORM: format = Format::RG_8_8_SNORM; break;
         case DX10_FORMAT_R8G8B8A8_UNORM: format = Format::RGBA_8_8_8_8; break;
+        case DX10_FORMAT_R8G8B8A8_SNORM: format = Format::RGBA_8_8_8_8_SNORM; break;
         //case DX10_FORMAT_R16_UNORM: format = Format::R_16; break;
         //case DX10_FORMAT_R16G16_UNORM: format = Format::RG_16_16; break;
         //case DX10_FORMAT_R16G16B16A16_UNORM: format = Format::RGBA_16_16_16_16; break;
@@ -364,7 +367,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
         case DX10_FORMAT_R32G32B32A32_FLOAT: format = Format::RGBA_32F_32F_32F_32F; break;
         case DX10_FORMAT_R9G9B9E5_SHAREDEXP: format = Format::RGBE_9_9_9_5; break;
         case DX10_FORMAT_R11G11B10_FLOAT: format = Format::RGB_11F_11F_10F; break;
-        //case DX10_FORMAT_R10G10B10A2_UNORM: format = Format::RGBA_10_10_10_2; break;
+        case DX10_FORMAT_R10G10B10A2_UNORM: format = Format::RGBA_10_10_10_2; break;
         case DX10_FORMAT_BC1_UNORM: format = Format::RGBA_DXT1; break;
         case DX10_FORMAT_BC2_UNORM: format = Format::RGBA_DXT3; break;
         case DX10_FORMAT_BC3_UNORM: format = Format::RGBA_DXT5; break;
@@ -475,6 +478,9 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
             break;
         case DDS_FORMAT_A8R8G8B8:
             this->format = Format::BGRA_8_8_8_8;
+            break;
+        case DDS_FORMAT_A2B10G10R10:
+            this->format = Format::RGBA_10_10_10_2;
             break;
         case DDS_FORMAT_X8R8G8B8:
             this->format = Format::BGRX_8_8_8_8;
