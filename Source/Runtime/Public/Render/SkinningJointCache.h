@@ -27,9 +27,9 @@ class SkinningJointCache {
 public:
     struct SkinningMethod {
         enum Enum {
-            CpuSkinning,
-            VertexShaderSkinning,
-            VertexTextureFetchSkinning
+            Cpu,
+            VertexShader,
+            VertexTextureFetch
         };
     };
 

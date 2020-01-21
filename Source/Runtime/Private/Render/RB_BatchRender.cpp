@@ -190,13 +190,13 @@ void Batch::SetVertexColorConstants(const Shader *shader, const Material::Vertex
 }
 
 void Batch::SetSkinningConstants(const Shader *shader, const SkinningJointCache *cache) const {
-    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::CpuSkinning) {
+    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::Cpu) {
         return;
     }
 
-    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexShaderSkinning) {
+    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexShader) {
         shader->SetConstantArray4f(shader->builtInConstantIndices[Shader::BuiltInConstant::Joints], cache->numJoints * 3, cache->skinningJoints[0].Ptr());
-    } else if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetchSkinning) {
+    } else if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetch) {
         const Texture *jointsMapTexture = cache->bufferCache.texture;
 
         shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::JointsMap], jointsMapTexture);

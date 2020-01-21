@@ -47,11 +47,11 @@ void RenderSystem::Init() {
     rhi.GetGammaRamp(savedGammaRamp);
 
     if (r_fastSkinning.GetInteger() == 2 && rhi.HWLimit().maxVertexTextureImageUnits > 0) {
-        renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::VertexTextureFetchSkinning;
+        renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::VertexTextureFetch;
     } else if (r_fastSkinning.GetInteger() == 1) {
-        renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::VertexShaderSkinning;
+        renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::VertexShader;
     } else {
-        renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::CpuSkinning;
+        renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::Cpu;
     }
 
     if (r_vertexTextureUpdate.GetInteger() == 2 && rhi.SupportsTextureBufferObject()) {
@@ -1206,7 +1206,7 @@ void RenderSystem::Cmd_GenerateDFGSumGGX(const CmdArgs &args) {
 void RenderSystem::Cmd_ScreenShot(const CmdArgs &args) {
     char path[1024];
 
-    Str documentDir = fileSystem.GetDocumentDir();
+    Str documentDir = fileSystem.GetUserDocumentDir();
     
     if (args.Argc() > 1) {
         Str::snPrintf(path, sizeof(path), "%s/Screenshots/%s", documentDir.c_str(), args.Argv(1));

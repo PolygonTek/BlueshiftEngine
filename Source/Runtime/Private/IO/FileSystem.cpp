@@ -938,12 +938,12 @@ int FileSystem::ListFiles(const char *findPath, const char *nameFilter, FileArra
     return fileArray.NumFiles();
 }
 
-Str FileSystem::GetDocumentDir() const {
+Str FileSystem::GetUserDocumentDir() const {
     Str dir = PlatformSystem::UserDocumentDir();
     return dir;
 }
 
-Str FileSystem::GetAppDataDir(const char *org, const char *app) const {
+Str FileSystem::GetUserAppDataDir(const char *org, const char *app) const {
     Str dir = PlatformSystem::UserAppDataDir();
     dir.AppendPath(org);
     dir.AppendPath(app);

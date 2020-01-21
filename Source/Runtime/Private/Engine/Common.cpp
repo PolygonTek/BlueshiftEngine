@@ -194,7 +194,7 @@ Common::PlatformId::Enum Common::GetPlatformId() const {
 Str Common::GetAppPreferenceDir() const {
     Str companyName = GameSettings::playerSettings->GetProperty("companyName").As<Str>();
     Str productName = GameSettings::playerSettings->GetProperty("productName").As<Str>();
-    return fileSystem.GetAppDataDir(companyName, productName);
+    return fileSystem.GetUserAppDataDir(companyName, productName);
 }
 
 int Common::ProcessPlatformEvent() {

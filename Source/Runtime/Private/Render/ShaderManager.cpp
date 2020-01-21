@@ -210,7 +210,7 @@ void ShaderManager::InitGlobalDefines() {
         shaderManager.AddGlobalHeader(va("#define MAX_INSTANCE_COUNT %i\n", Min(r_maxInstancingCount.GetInteger(), rhi.HWLimit().maxUniformBlockSize / renderGlobal.instanceBufferOffsetAlignment)));
     }
 
-    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetchSkinning) {
+    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetch) {
         shaderManager.AddGlobalHeader("#define VTF_SKINNING\n");
     }
 
