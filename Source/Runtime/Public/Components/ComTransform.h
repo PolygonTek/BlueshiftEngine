@@ -18,8 +18,11 @@
 
 BE_NAMESPACE_BEGIN
 
+class ComRectTransform;
+
 class ComTransform : public Component {
     friend class Entity;
+    friend class ComRectTransform;
 
 public:
     OBJECT_PROTOTYPE(ComTransform);
@@ -135,6 +138,8 @@ protected:
     void                    InvalidateWorldMatrix();
                             /// Recalculate world matrix.
     void                    UpdateWorldMatrix() const;
+                            /// Marks this component and children to need cached rect recalculation.
+    virtual void            InvalidateCachedRect();
 
     Quat                    localRotation;          ///< Rotation in local space.
     Vec3                    localOrigin;            ///< Position in local space.

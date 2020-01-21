@@ -109,8 +109,8 @@ protected:
                             /// Updates local origin and (cached) rect.
     void                    UpdateLocalOriginAndRect() const;
 
-                            /// Marks this RectTransform and it's children need cached rect recalculation.
-    void                    InvalidateCachedRect();
+                            /// Marks this component and children to need cached rect recalculation.
+    virtual void            InvalidateCachedRect() override;
 
                             /// Computes rectangle in local space.
     RectF                   ComputeLocalRect() const;

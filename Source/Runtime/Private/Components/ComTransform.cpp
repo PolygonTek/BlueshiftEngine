@@ -381,6 +381,16 @@ void ComTransform::UpdateWorldMatrix() const {
     worldMatrixInvalidated = false;
 }
 
+void ComTransform::InvalidateCachedRect() {
+    for (Entity *childEntity = GetEntity()->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+        ComTransform *transform = childEntity->GetTransform();
+
+        if (transform) {
+            transform->InvalidateCachedRect();
+        }
+    }
+}
+
 static Angles SyncEulerAngles(const Angles &eulerAngles, const Angles &eulerAnglesHint) {
     Angles syncEulerAngles;
 

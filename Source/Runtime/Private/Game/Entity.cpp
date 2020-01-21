@@ -229,18 +229,22 @@ Entity *Entity::RayCastRect(const Ray &ray) {
         return nullptr;
     }
 
-    const ComRectTransform *rectTransform = GetRectTransform();
-    if (!rectTransform || !rectTransform->IsRayCastTarget()) {
-        return nullptr;
-    }
+    const ComTransform *transform = GetTransform();
+    const ComRectTransform *rectTransform = transform->Cast<ComRectTransform>();
 
-    Vec2 localPoint;
-    if (!rectTransform->RayToLocalPointInRectangle(ray, localPoint)) {
-        return nullptr;
-    }
+    if (rectTransform) {
+        if (!rectTransform->IsRayCastTarget()) {
+            return nullptr;
+        }
 
-    if (!rectTransform->IsLocalPointInRect(localPoint)) {
-        return nullptr;
+        Vec2 localPoint;
+        if (!rectTransform->RayToLocalPointInRectangle(ray, localPoint)) {
+            return nullptr;
+        }
+
+        if (!rectTransform->IsLocalPointInRect(localPoint)) {
+            return nullptr;
+        }
     }
 
     Entity *hitEntity = this;
@@ -542,7 +546,7 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
     AABB outAabb;
     outAabb.Clear();
 
-    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
+    for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component) {
@@ -569,6 +573,7 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
             }
         }
     }
+
     return outAabb;
 }
 

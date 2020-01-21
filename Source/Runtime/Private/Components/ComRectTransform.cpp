@@ -166,9 +166,9 @@ void ComRectTransform::GetWorldCorners(Vec3 (&worldCorners)[4]) const {
 }
 
 void ComRectTransform::GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) const {
-    const Entity *parentEnt = GetEntity()->GetParent();
-    if (parentEnt) {
-        const ComRectTransform *parentRectTransform = parentEnt->GetRectTransform();
+    const ComTransform *parentTransform = GetParent();
+    while (parentTransform) {
+        const ComRectTransform *parentRectTransform = parentTransform->Cast<ComRectTransform>();
 
         if (parentRectTransform) {
             worldAnchorCorners[0] = parentRectTransform->NormalizedPosToWorld(Vec2(anchorMins.x, anchorMins.y));
@@ -176,13 +176,9 @@ void ComRectTransform::GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) cons
             worldAnchorCorners[2] = parentRectTransform->NormalizedPosToWorld(Vec2(anchorMaxs.x, anchorMaxs.y));
             worldAnchorCorners[3] = parentRectTransform->NormalizedPosToWorld(Vec2(anchorMins.x, anchorMaxs.y));
             return;
-        } else {
-            worldAnchorCorners[0] = parentEnt->GetTransform()->GetOrigin();
-            worldAnchorCorners[1] = worldAnchorCorners[0];
-            worldAnchorCorners[2] = worldAnchorCorners[0];
-            worldAnchorCorners[3] = worldAnchorCorners[0];
-            return;
         }
+
+        parentTransform = parentTransform->GetParent();
     }
 
     worldAnchorCorners[0] = Vec3::zero;
@@ -192,25 +188,29 @@ void ComRectTransform::GetWorldAnchorCorners(Vec3 (&worldAnchorCorners)[4]) cons
 }
 
 Vec3 ComRectTransform::GetWorldAnchorMins() const {
-    const Entity *parentEnt = GetEntity()->GetParent();
-    if (parentEnt) {
-        const ComRectTransform *parentRectTransform = parentEnt->GetRectTransform();
+    const ComTransform *parentTransform = GetParent();
+    while (parentTransform) {
+        const ComRectTransform *parentRectTransform = parentTransform->Cast<ComRectTransform>();
 
         if (parentRectTransform) {
             return parentRectTransform->NormalizedPosToWorld(anchorMins);
         }
+
+        parentTransform = parentTransform->GetParent();
     }
     return Vec3::zero;
 }
 
 Vec3 ComRectTransform::GetWorldAnchorMaxs() const {
-    const Entity *parentEnt = GetEntity()->GetParent();
-    if (parentEnt) {
-        const ComRectTransform *parentRectTransform = parentEnt->GetRectTransform();
+    const ComTransform *parentTransform = GetParent();
+    while (parentTransform) {
+        const ComRectTransform *parentRectTransform = parentTransform->Cast<ComRectTransform>();
 
         if (parentRectTransform) {
             return parentRectTransform->NormalizedPosToWorld(anchorMaxs);
         }
+
+        parentTransform = parentTransform->GetParent();
     }
     return Vec3::zero;
 }
@@ -316,10 +316,10 @@ void ComRectTransform::InvalidateCachedRect() {
     EmitSignal(&SIG_RectTransformUpdated, this);
 
     for (Entity *childEntity = GetEntity()->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
-        ComRectTransform *rectTransform = childEntity->GetRectTransform();
+        ComTransform *transform = childEntity->GetTransform();
 
-        if (rectTransform) {
-            rectTransform->InvalidateCachedRect();
+        if (transform) {
+            transform->InvalidateCachedRect();
         }
     }
 }
@@ -328,11 +328,15 @@ RectF ComRectTransform::ComputeLocalRect() const {
     RectF parentRect = RectF(0, 0, 0, 0);
 
     ComTransform *parentTransform = GetParent();
-    if (parentTransform) {
+    while (parentTransform) {
         ComRectTransform *parentRectTransform = parentTransform->Cast<ComRectTransform>();
+
         if (parentRectTransform) {
             parentRect = parentRectTransform->GetLocalRect();
+            break;
         }
+
+        parentTransform = parentTransform->GetParent();
     }
 
     // Calculate anchored minimum position in parent space.
@@ -402,7 +406,7 @@ void ComRectTransform::DrawGizmos(const RenderCamera *camera, bool selected, boo
         renderWorld->DebugLine(worldCorners[3], worldCorners[0]);
 
         ComTransform *parentTransform = GetParent();
-        if (parentTransform) {
+        while (parentTransform) {
             ComRectTransform *parentRectTransform = parentTransform->Cast<ComRectTransform>();
             if (parentRectTransform) {
                 // Draw parent rectangle.
@@ -415,7 +419,10 @@ void ComRectTransform::DrawGizmos(const RenderCamera *camera, bool selected, boo
                 renderWorld->DebugLine(parentWorldCorners[1], parentWorldCorners[2]);
                 renderWorld->DebugLine(parentWorldCorners[2], parentWorldCorners[3]);
                 renderWorld->DebugLine(parentWorldCorners[3], parentWorldCorners[0]);
+                break;
             }
+
+            parentTransform = parentTransform->GetParent();
         }
     }
 }
