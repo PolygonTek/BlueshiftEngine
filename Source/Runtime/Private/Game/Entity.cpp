@@ -229,6 +229,8 @@ Entity *Entity::RayCastRect(const Ray &ray) {
         return nullptr;
     }
 
+    Entity *hitEntity = nullptr;
+
     const ComTransform *transform = GetTransform();
     const ComRectTransform *rectTransform = transform->Cast<ComRectTransform>();
 
@@ -245,9 +247,9 @@ Entity *Entity::RayCastRect(const Ray &ray) {
         if (!rectTransform->IsLocalPointInRect(localPoint)) {
             return nullptr;
         }
-    }
 
-    Entity *hitEntity = this;
+        hitEntity = this;
+    }
 
     for (Entity *child = node.GetFirstChild(); child; child = child->node.GetNextSibling()) {
         Entity *hitChild = child->RayCastRect(ray);
