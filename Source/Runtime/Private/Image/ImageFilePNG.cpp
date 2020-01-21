@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Core/Heap.h"
 #include "Math/Math.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Image/Image.h"
 #include "ImageInternal.h"
 #define Z_SOLO

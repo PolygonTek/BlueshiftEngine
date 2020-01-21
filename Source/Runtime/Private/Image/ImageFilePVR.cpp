@@ -16,7 +16,7 @@
 #include "Core/Heap.h"
 #include "Simd/Simd.h"
 #include "Math/Math.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Image/Image.h"
 #include "ImageInternal.h"
 #include "libpvrt/PVRTTexture.h"

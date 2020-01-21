@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Core/Heap.h"
 #include "Simd/Simd.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Sound/Pcm.h"
 
 BE_NAMESPACE_BEGIN

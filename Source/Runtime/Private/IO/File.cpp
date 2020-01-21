@@ -16,7 +16,7 @@
 #include "Core/ByteOrder.h"
 #include "Core/Guid.h"
 #include "Core/Object.h"
-#include "File/File.h"
+#include "IO/File.h"
 #include "minizip/unzip.h"
 
 BE_NAMESPACE_BEGIN

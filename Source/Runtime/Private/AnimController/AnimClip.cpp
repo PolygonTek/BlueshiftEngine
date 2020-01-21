@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "AnimController/AnimController.h"
 #include "Animator/Animator.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 

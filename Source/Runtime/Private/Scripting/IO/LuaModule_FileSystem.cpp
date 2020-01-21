@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 

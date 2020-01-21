@@ -136,9 +136,9 @@ set(COMMON_ENGINE_FILES
     Public/Platform/PlatformTime.h
     Public/Platform/PlatformSystem.h
 
-    Public/File/File.h
-    Public/File/FileSystem.h
-    Public/File/ZipArchiver.h
+    Public/IO/File.h
+    Public/IO/FileSystem.h
+    Public/IO/ZipArchiver.h
   
     Public/RHI/RHI.h
     Public/RHI/RHIOpenGL.h
@@ -367,9 +367,9 @@ set(COMMON_ENGINE_FILES
     Private/Platform/PlatformBaseTime.cpp
     Private/Platform/PlatformBaseSystem.cpp
 
-    Private/File/File.cpp
-    Private/File/FileSystem.cpp
-    Private/File/ZipArchiver.cpp
+    Private/IO/File.cpp
+    Private/IO/FileSystem.cpp
+    Private/IO/ZipArchiver.cpp
 
     Private/RHIOpenGL/OpenGL/OpenGL.h
     Private/RHIOpenGL/OpenGL/OpenGL.cpp
@@ -626,8 +626,8 @@ set(COMMON_ENGINE_FILES
     Private/Scripting/Core/LuaModule_Str.cpp
     Private/Scripting/Core/LuaModule_Guid.cpp
     Private/Scripting/Core/LuaModule_Object.cpp
-    Private/Scripting/File/LuaModule_FileSystem.cpp
-    Private/Scripting/File/LuaModule_File.cpp
+    Private/Scripting/IO/LuaModule_FileSystem.cpp
+    Private/Scripting/IO/LuaModule_File.cpp
     Private/Scripting/Asset/LuaModule_Asset.cpp
     Private/Scripting/Asset/LuaModule_Texture.cpp
     Private/Scripting/Asset/LuaModule_Shader.cpp

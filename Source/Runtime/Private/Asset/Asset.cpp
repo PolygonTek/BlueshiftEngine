@@ -17,7 +17,7 @@
 #include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 #include "Asset/AssetImporter.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 

@@ -74,10 +74,10 @@
 // Profiler
 #include "Profiler/Profiler.h"
 
-// File
-#include "File/File.h"
-#include "File/FileSystem.h"
-#include "File/ZipArchiver.h"
+// IO
+#include "IO/File.h"
+#include "IO/FileSystem.h"
+#include "IO/ZipArchiver.h"
 
 // Utils
 #include "Core/ByteOrder.h"

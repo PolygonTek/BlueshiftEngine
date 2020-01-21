@@ -20,7 +20,7 @@
 #include "Core/Heap.h"
 #include "Core/JointPose.h"
 #include "Simd/Simd.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 

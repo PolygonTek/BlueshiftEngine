@@ -18,7 +18,7 @@
 #include "Asset/GuidMapper.h"
 #include "Core/JointPose.h"
 #include "Simd/Simd.h"
-#include "File/File.h"
+#include "IO/File.h"
 
 BE_NAMESPACE_BEGIN
 

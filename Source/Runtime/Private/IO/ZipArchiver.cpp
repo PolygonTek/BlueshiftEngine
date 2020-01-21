@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "File/FileSystem.h"
-#include "File/ZipArchiver.h"
+#include "IO/FileSystem.h"
+#include "IO/ZipArchiver.h"
 #include "minizip/zip.h"
 
 BE_NAMESPACE_BEGIN

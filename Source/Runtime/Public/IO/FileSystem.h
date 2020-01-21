@@ -23,7 +23,7 @@
 */
 
 #include "Core/Dict.h"
-#include "File/File.h"
+#include "IO/File.h"
 
 BE_NAMESPACE_BEGIN
 

@@ -18,7 +18,7 @@
 #include "Core/Cmds.h"
 #include "Platform/PlatformSystem.h"
 #include "Platform/PlatformProcess.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "minizip/zip.h"
 #include "minizip/unzip.h"
 

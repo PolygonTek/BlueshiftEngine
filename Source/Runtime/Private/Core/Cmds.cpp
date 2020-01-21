@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Core/Str.h"
 #include "Core/Heap.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Core/CVars.h"
 #include "Core/Cmds.h"
 

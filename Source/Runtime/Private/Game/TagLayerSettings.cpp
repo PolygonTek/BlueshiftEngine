@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Game/TagLayerSettings.h"
 
 BE_NAMESPACE_BEGIN

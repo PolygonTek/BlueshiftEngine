@@ -25,7 +25,7 @@
 #include "Core/StrColor.h"
 #include "Core/CVars.h"
 #include "Core/Cmds.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Game/GameSettings.h"
 
 BE_NAMESPACE_BEGIN

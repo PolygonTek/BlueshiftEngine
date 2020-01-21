@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Platform/PlatformFile.h"
 #include "PlatformUtils/Android/AndroidJNI.h"
 #include <android/asset_manager.h>

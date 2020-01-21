@@ -15,8 +15,8 @@
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
 #include "Game/GameWorld.h"
-#include "File/FileSystem.h"
-#include "File/File.h"
+#include "IO/FileSystem.h"
+#include "IO/File.h"
 #include "Core/CVars.h"
 #include "Core/Cmds.h"
 

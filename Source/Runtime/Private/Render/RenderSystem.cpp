@@ -19,7 +19,7 @@
 #include "RBackEnd.h"
 #include "Render/Font.h"
 #include "Core/Cmds.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Platform/PlatformTime.h"
 
 BE_NAMESPACE_BEGIN

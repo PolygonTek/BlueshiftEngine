@@ -16,7 +16,7 @@
 #include "Game/Entity.h"
 #include "Game/Prefab.h"
 #include "Game/GameWorld.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 

@@ -17,7 +17,7 @@
 #include "Core/Str.h"
 #include "Core/Heap.h"
 #include "Core/Cmds.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 

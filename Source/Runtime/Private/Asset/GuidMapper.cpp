@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Asset/GuidMapper.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 

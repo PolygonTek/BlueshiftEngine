@@ -19,7 +19,7 @@
 #include "Components/ComAudioSource.h"
 #include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Game/Entity.h"
 
 BE_NAMESPACE_BEGIN

@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Math/Math.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Image/Image.h"
 #include "ImageInternal.h"
 
