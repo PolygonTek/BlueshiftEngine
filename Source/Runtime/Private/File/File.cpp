@@ -50,6 +50,13 @@ bool File::Printf(const wchar_t *format, ...) {
     return Write(buffer, (int)wcslen(buffer) * sizeof(wchar_t));
 }
 
+size_t File::ReadBool(bool &value) {
+    unsigned char c;
+    size_t ret = ReadUChar(c);
+    value = c ? true : false;
+    return ret;
+}
+
 size_t File::ReadChar(char &value) {
     return Read(&value, sizeof(value));
 }
@@ -143,6 +150,10 @@ size_t File::ReadObject(Object &object) {
     object.Deserialize(jsonValue);
 
     return size;
+}
+
+size_t File::WriteBool(const bool value) {
+    return WriteUChar((unsigned char)(value ? 1 : 0));
 }
 
 size_t File::WriteChar(const char value) { 

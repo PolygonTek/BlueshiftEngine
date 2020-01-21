@@ -39,6 +39,7 @@ public:
 
                             /// Returns size of a file.
     virtual size_t          Size() const = 0;
+
                             /// Returns offset in file.
     virtual int             Tell() const = 0;
                             /// Seeks from the start on a file.
@@ -48,13 +49,16 @@ public:
     
                             /// Reads data from the file to the buffer.
     virtual size_t          Read(void *buffer, size_t bytesToRead) const = 0;
+
                             /// Writes data from the buffer to the file.
     virtual bool            Write(const void *buffer, size_t bytesToWrite) = 0;
+
                             /// Formatted output to file.
     virtual bool            Printf(const char *format, ...);
                             /// Formatted output to file in wide characters.
     virtual bool            Printf(const wchar_t *format, ...);
 
+    size_t                  ReadBool(bool &value);
     size_t                  ReadChar(char &value);
     size_t                  ReadUChar(unsigned char &value);
     size_t                  ReadInt16(int16_t &value);
@@ -69,6 +73,7 @@ public:
     size_t                  ReadGuid(Guid &guid);
     size_t                  ReadObject(Object &object);
 
+    size_t                  WriteBool(const bool value);
     size_t                  WriteChar(const char value);
     size_t                  WriteUChar(const unsigned char value);
     size_t                  WriteInt16(const int16_t value);
@@ -95,6 +100,7 @@ public:
     
                             /// Returns size of a file.
     virtual size_t          Size() const override;
+
                             /// Returns offset in file.
     virtual int             Tell() const override;
                             /// Seeks from the start on a file.
@@ -104,6 +110,7 @@ public:
     
                             /// Reads data from the file to the buffer.
     virtual size_t          Read(void *buffer, size_t bytesToRead) const override;
+
                             /// Writes data from the buffer to the file.
     virtual bool            Write(const void *buffer, size_t bytesToWrite) override;
     
@@ -122,7 +129,9 @@ public:
     
     virtual const char *    GetFilePath() const override { return filename; }
     
+                            /// Returns size of a file.
     virtual size_t          Size() const override;
+
                             /// Returns offset in file.
     virtual int             Tell() const override;
                             /// Seeks from the start on a file.
@@ -132,6 +141,7 @@ public:
     
                             /// Reads data from the file to the buffer.
     virtual size_t          Read(void *buffer, size_t bytesToRead) const override;
+
                             /// Writes data from the buffer to the file.
     virtual bool            Write(const void *buffer, size_t bytesToWrite) override;
     
