@@ -254,7 +254,7 @@ public:
     static Json::Value          CloneEntitiesValue(const Json::Value &entitiesValue, HashTable<Guid, Guid> &oldToNewGuidMap);
 
                                 /// Replaces GUIDs of an entity (including components) using GUID map.
-    static void                 RemapGuids(Entity *entity, const HashTable<Guid, Guid> &guidMap);
+    void                        RemapGuids(const HashTable<Guid, Guid> &guidMap);
         
                                 /// Destroys given entity and it's children.
     static void                 DestroyInstance(Entity *entity);

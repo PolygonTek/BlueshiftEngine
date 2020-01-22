@@ -104,6 +104,11 @@ int GameWorld::GetDeltaTime() const {
 }
 
 void GameWorld::DontDestroyOnLoad(Entity *entity) {
+    if (entity->GetParent()) {
+        BE_WARNLOG("DontDestroyOnLoad only works on root entity\n");
+        return;
+    }
+
     PostEvent(&EV_DontDestroyOnLoad, entity);
 }
 
@@ -367,7 +372,7 @@ Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
         clonedEntities.Append(clonedEntity);
 
         // Remap all GUID references to newly created.
-        Entity::RemapGuids(clonedEntity, guidMap);
+        clonedEntity->RemapGuids(guidMap);
 
         // If source entity is prefab source, mark cloned entity originated from prefab entity.
         if (originalEntitiesValue[i]["prefab"].asBool()) {

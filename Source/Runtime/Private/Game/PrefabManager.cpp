@@ -142,7 +142,7 @@ Json::Value PrefabManager::CreatePrefabValue(const Entity *originalEntity) {
         prefabEntities.Append(prefabEntity);
 
         // Remap all GUID references to newly created
-        Entity::RemapGuids(prefabEntity, guidMap);
+        prefabEntity->RemapGuids(guidMap);
 
         prefabEntity->Init();
         //prefabEntity->InitComponents();

@@ -860,37 +860,37 @@ Json::Value Entity::CloneEntitiesValue(const Json::Value &entitiesValue, HashTab
     return clonedEntitiesValue;
 }
 
-void Entity::RemapGuids(Entity *entity, const HashTable<Guid, Guid> &guidMap) {
+void Entity::RemapGuids(const HashTable<Guid, Guid> &guidMap) {
     PropertyInfo propInfo;
     Guid toGuid;
 
     Array<PropertyInfo> propertyInfoList;
-    entity->GetPropertyInfoList(propertyInfoList);
+    GetPropertyInfoList(propertyInfoList);
 
     for (int propIndex = 0; propIndex < propertyInfoList.Count(); propIndex++) {
         const auto &propInfo = propertyInfoList[propIndex];
             
         if (propInfo.GetType() == Variant::Type::Guid) {
             if (propInfo.GetFlags() & PropertyInfo::Flag::Array) {
-                for (int arrayIndex = 0; arrayIndex < entity->GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
-                    const Guid fromGuid = entity->GetArrayProperty(propIndex, arrayIndex).As<Guid>();
+                for (int arrayIndex = 0; arrayIndex < GetPropertyArrayCount(propInfo.GetName()); arrayIndex++) {
+                    const Guid fromGuid = GetArrayProperty(propIndex, arrayIndex).As<Guid>();
 
                     if (guidMap.Get(fromGuid, &toGuid)) {
-                        entity->SetArrayProperty(propIndex, arrayIndex, toGuid);
+                        SetArrayProperty(propIndex, arrayIndex, toGuid);
                     }
                 }
             } else {
-                const Guid fromGuid = entity->GetProperty(propIndex).As<Guid>();
+                const Guid fromGuid = GetProperty(propIndex).As<Guid>();
 
                 if (guidMap.Get(fromGuid, &toGuid)) {
-                    entity->SetProperty(propIndex, toGuid);
+                    SetProperty(propIndex, toGuid);
                 }
             }
         }
     }
 
-    for (int componentIndex = 0; componentIndex < entity->NumComponents(); componentIndex++) {
-        Component *component = entity->GetComponent(componentIndex);
+    for (int componentIndex = 0; componentIndex < NumComponents(); componentIndex++) {
+        Component *component = GetComponent(componentIndex);
 
         Array<PropertyInfo> propertyInfoList;
         component->GetPropertyInfoList(propertyInfoList);
