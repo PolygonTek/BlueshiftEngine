@@ -182,6 +182,18 @@ const Ray ComCanvas::ScreenPointToRay(const Point &screenPoint) {
     return RenderCamera::RayFromScreenPoint(renderCameraDef, screenRect, screenPoint);
 }
 
+bool ComCanvas::IsPointOverChildRect(const Point &screenPoint) {
+    Ray ray = ScreenPointToRay(screenPoint);
+
+    Entity *hitEntity = GetEntity()->RayCastRect(ray);
+
+    if (!hitEntity || hitEntity == GetEntity()) {
+        return false;
+    }
+
+    return true;
+}
+
 bool ComCanvas::ProcessMousePointerInput() {
     return InputUtils::ProcessMousePointerInput(mousePointerState, [this](const Point &screenPoint) {
         // Convert screen point to ray.

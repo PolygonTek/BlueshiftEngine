@@ -53,6 +53,9 @@ public:
                             /// Makes world space ray from screen space point.
     const Ray               ScreenPointToRay(const Point &screenPoint);
 
+                            /// Returns true if the given screen point is in child rect transform.
+    bool                    IsPointOverChildRect(const Point &screenPoint);
+
     void                    UpdateRenderingOrderForCanvasElements() const;
 
 protected:

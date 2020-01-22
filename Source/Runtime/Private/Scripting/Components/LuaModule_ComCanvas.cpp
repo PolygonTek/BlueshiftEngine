@@ -25,7 +25,8 @@ void LuaVM::RegisterCanvasComponent(LuaCpp::Module &module) {
     _ComCanvas.SetClass<ComCanvas>(module["Component"]);
     _ComCanvas.AddClassMembers<ComCanvas>(
         "world_to_screen", &ComCanvas::WorldToScreen,
-        "screen_to_ray", &ComCanvas::ScreenPointToRay);
+        "screen_to_ray", &ComCanvas::ScreenPointToRay, 
+        "is_point_over_child_rect", &ComCanvas::IsPointOverChildRect);
 
     _ComCanvas["meta_object"] = ComCanvas::metaObject;
 }
