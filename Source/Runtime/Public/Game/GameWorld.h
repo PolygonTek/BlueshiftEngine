@@ -198,6 +198,7 @@ public:
     
 private:
     void                        Event_RestartGame(const char *mapName);
+    void                        Event_DontDestroyOnLoad(Entity *entity);
 
     Entity *                    FindRootEntityByName(const char *name) const;
     Entity *                    FindEntityRelativePath(const Entity *entity, const char *path) const;

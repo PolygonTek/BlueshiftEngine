@@ -39,6 +39,7 @@
 BE_NAMESPACE_BEGIN
 
 const EventDef EV_RestartGame("restartGame", false, "s");
+const EventDef EV_DontDestroyOnLoad("dontDestroyOnLoad", false, "a");
 
 const SignalDef GameWorld::SIG_EntityRegistered("GameWorld::EntityRegistered", "a");
 const SignalDef GameWorld::SIG_EntityUnregistered("GameWorld::EntityUnregistered", "a");
@@ -46,6 +47,7 @@ const SignalDef GameWorld::SIG_EntityUnregistered("GameWorld::EntityUnregistered
 OBJECT_DECLARATION("Game World", GameWorld, Object)
 BEGIN_EVENTS(GameWorld)
     EVENT(EV_RestartGame, GameWorld::Event_RestartGame),
+    EVENT(EV_DontDestroyOnLoad, GameWorld::Event_DontDestroyOnLoad),
 END_EVENTS
 
 void GameWorld::RegisterProperties() {
@@ -102,10 +104,7 @@ int GameWorld::GetDeltaTime() const {
 }
 
 void GameWorld::DontDestroyOnLoad(Entity *entity) {
-    // Change current parent to reserved scene root.
-    if (!entity->node.IsParentedBy(scenes[DontDestroyOnLoadSceneNum].root)) {
-        entity->GetRoot()->node.SetParent(scenes[DontDestroyOnLoadSceneNum].root);
-    }
+    PostEvent(&EV_DontDestroyOnLoad, entity);
 }
 
 void GameWorld::ClearEntities(bool clearAll) {
@@ -582,6 +581,20 @@ void GameWorld::Event_RestartGame(const char *mapName) {
     LoadMap(mapName, LoadSceneMode::Single);
     
     StartGame();
+}
+
+void GameWorld::Event_DontDestroyOnLoad(Entity *entity) {
+    if (entity->node.IsParentedBy(scenes[DontDestroyOnLoadSceneNum].root)) {
+        return;
+    }
+    EntityPtrArray children;
+    entity->GetChildrenRecursive(children);
+
+    for (int i = 0; i < children.Count(); i++) {
+        children[i]->sceneNum = DontDestroyOnLoadSceneNum;
+    }
+    // Change parent of root entity to reserved scene root.
+    entity->GetRoot()->node.SetParent(scenes[DontDestroyOnLoadSceneNum].root);
 }
 
 void GameWorld::NewMap() {

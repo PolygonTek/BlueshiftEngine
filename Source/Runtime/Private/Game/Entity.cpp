@@ -735,7 +735,9 @@ void Entity::SetStaticMask(int staticMask) {
 }
 
 void Entity::SetParent(Entity *parentEntity) {
-    SetParentGuid(parentEntity->GetGuid());
+    Guid parentGuid = parentEntity ? parentEntity->GetGuid() : Guid::zero;
+
+    SetParentGuid(parentGuid);
 }
 
 Guid Entity::GetParentGuid() const {
@@ -805,7 +807,7 @@ void Entity::SetFrozen(bool frozen) {
 #endif
 }
 
-Entity *Entity::CreateEntity(Json::Value &entityValue, GameWorld *gameWorld, int sceneIndex) {
+Entity *Entity::CreateEntity(Json::Value &entityValue, GameWorld *gameWorld, int sceneNum) {
     Guid entityGuid = Guid::FromString(entityValue.get("guid", Guid::zero.ToString()).asCString());
     if (entityGuid.IsZero()) {
         entityGuid = Guid::CreateGuid();
@@ -814,7 +816,7 @@ Entity *Entity::CreateEntity(Json::Value &entityValue, GameWorld *gameWorld, int
     Entity *entity = static_cast<Entity *>(Entity::metaObject.CreateInstance(entityGuid));
 
     entity->gameWorld = gameWorld;
-    entity->sceneNum = sceneIndex;
+    entity->sceneNum = sceneNum;
     entity->Deserialize(entityValue);
 
     return entity;
