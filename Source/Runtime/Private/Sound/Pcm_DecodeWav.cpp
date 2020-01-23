@@ -277,13 +277,14 @@ bool Pcm::BeginDecodeFile_Wav() {
     uint32_t id, length;
 
     fp->ReadUInt32(id);
-    fp->ReadUInt32(length);
     
     if (id != WAVE_FOURCC_RIFF) {
         BE_WARNLOG("Missing RIFF chunk\n");
         return false;
     }
 
+    fp->ReadUInt32(length);
+    
     fp->ReadUInt32(id);
 
     if (id != WAVE_FOURCC_WAVE) {
@@ -302,25 +303,26 @@ bool Pcm::BeginDecodeFile_Wav() {
     }
 
     this->waveFormat = (WaveFormatEx *)Mem_Alloc(length);
+
     fp->Read(this->waveFormat, length);
 
-    if (waveFormat->format != Format::MS_PCM && waveFormat->format != Format::IMA_ADPCM) {
+    if (waveFormat->format != Format::PCM && waveFormat->format != Format::DVI_ADPCM) {
         BE_WARNLOG("Unsupported wave format\n");
         return false;
     }
 
-    this->channels      = waveFormat->channels;
-    this->sampleRates   = waveFormat->sampleRates;
-    this->bitsWidth     = waveFormat->format == Format::IMA_ADPCM ? 16 : waveFormat->bitsWidth;
+    this->channels = waveFormat->channels;
+    this->sampleRates = waveFormat->sampleRates;
+    this->bitsWidth = waveFormat->format == Format::DVI_ADPCM ? 16 : waveFormat->bitsWidth;
 
     if (!FindChunkInFile(fp, WAVE_FOURCC_data, &length)) {
         BE_WARNLOG("Missing data chunk\n");
         return false;
     }
 
-    if (waveFormat->format == Format::MS_PCM) {
+    if (waveFormat->format == Format::PCM) {
         size = length;
-    } else if (waveFormat->format == Format::IMA_ADPCM) {
+    } else if (waveFormat->format == Format::DVI_ADPCM) {
         int numBlocks = (length + waveFormat->blockAlign - 1) / waveFormat->blockAlign;
         size = ((length - 4 * channels * numBlocks) * 2 + channels * numBlocks) * 2;
     }
@@ -338,9 +340,9 @@ void Pcm::EndDecodeFile_Wav() {
 }
 
 int Pcm::DecodeFile_Wav(byte *buffer, int len) {
-    if (waveFormat->format == Format::MS_PCM) {
+    if (waveFormat->format == Format::PCM) {
         return DecodeFile_PcmWave(buffer, len);
-    } else if (waveFormat->format == Format::IMA_ADPCM) {
+    } else if (waveFormat->format == Format::DVI_ADPCM) {
         return DecodeFile_ImaAdpcmWave(buffer, len);
     }
 
@@ -348,9 +350,9 @@ int Pcm::DecodeFile_Wav(byte *buffer, int len) {
 }
 
 bool Pcm::SeekFile_Wav(int byteOffset) {
-    if (waveFormat->format == Format::MS_PCM) {
+    if (waveFormat->format == Format::PCM) {
         fp->Seek(dataPos + AlignUp(byteOffset, bitsWidth));
-    } else if (waveFormat->format == Format::IMA_ADPCM) {
+    } else if (waveFormat->format == Format::DVI_ADPCM) {
         // TODO: IMPLEMENT THIS !
     }
     return true;
@@ -378,10 +380,10 @@ static bool FindChunkInMemory(byte **ptr, const byte *endPtr, uint32_t chunkId, 
 bool Pcm::DecodeMemory_Wav(byte *base, size_t fileSize) {
     byte *ptr = base;
 
-    // skip 'RIFF'
+    // Skip 'RIFF'.
     ptr += 4;
 
-    // read wave length (파일 크기에서 8 을 뺀값)
+    // Read wave length = fileSize - 8.
     uint32_t length = *((uint32_t *)ptr);
     ptr += 4;
 
@@ -390,7 +392,7 @@ bool Pcm::DecodeMemory_Wav(byte *base, size_t fileSize) {
         return false;
     }
 
-    // skip 'WAVE' signature
+    // Skip 'WAVE' signature.
     ptr += 4;
 
     if (!FindChunkInMemory(&ptr, base + fileSize, WAVE_FOURCC_fmt, &length)) {
@@ -404,14 +406,14 @@ bool Pcm::DecodeMemory_Wav(byte *base, size_t fileSize) {
     }
 
     WaveFormatEx *fmt = (WaveFormatEx *)ptr;
-    if (fmt->format != Format::MS_PCM && fmt->format != Format::IMA_ADPCM) {
+    if (fmt->format != Format::PCM && fmt->format != Format::DVI_ADPCM) {
         BE_WARNLOG("Unsupported wave format\n");
         return false;
     }
 
-    this->channels      = fmt->channels;
-    this->sampleRates   = fmt->sampleRates;
-    this->bitsWidth     = fmt->format == Format::IMA_ADPCM ? 16 : fmt->bitsWidth;
+    this->channels = fmt->channels;
+    this->sampleRates = fmt->sampleRates;
+    this->bitsWidth = fmt->format == Format::DVI_ADPCM ? 16 : fmt->bitsWidth;
 
     ptr += length;
 
@@ -420,12 +422,12 @@ bool Pcm::DecodeMemory_Wav(byte *base, size_t fileSize) {
         return false;
     }
 
-    if (fmt->format == Format::MS_PCM) {
+    if (fmt->format == Format::PCM) {
         size = length;
         data = (byte *)Mem_Alloc16(size);
 
         simdProcessor->Memcpy(data, ptr, size);
-    } else if (fmt->format == Format::IMA_ADPCM) {
+    } else if (fmt->format == Format::DVI_ADPCM) {
         int numBlocks = (length + fmt->blockAlign - 1) / fmt->blockAlign;
 
         size = ((length - 4 * channels * numBlocks) * 2 + channels * numBlocks) * 2;
