@@ -596,7 +596,7 @@ PlatformAndroidFileMapping *PlatformAndroidFileMapping::OpenFileRead(const char 
 
 PlatformAndroidFileMapping *PlatformAndroidFileMapping::OpenFileReadWrite(const char *filename, int newSize) {
     Str normalizedFilename = PlatformAndroidFile::NormalizeFilename(filename);
-    int fd = open(normalizedFilename, O_RDWR | O_CREAT);
+    int fd = open(normalizedFilename, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (fd == -1) {
         BE_ERRLOG("PlatformAndroidFileMapping::OpenFileReadWrite: Couldn't open %s\n", filename);
         return nullptr;
