@@ -245,7 +245,11 @@ void ComCanvas::Render() {
     ComRectTransform *rectTransform = GetEntity()->GetComponent<ComRectTransform>();
     if (rectTransform) {
         if (rectTransform->GetSizeDelta() != Vec2(screenWidth, screenHeight)) {
+#if WITH_EDITOR
             rectTransform->SetProperty("sizeDelta", Vec2(screenWidth, screenHeight));
+#else
+            rectTransform->SetSizeDelta(Vec2(screenWidth, screenHeight));
+#endif
         }
     }
 

@@ -20,16 +20,17 @@
 
 BE_NAMESPACE_BEGIN
 
+#define MIN_JOBS 8
 #define MAX_JOBS 1024
 
 static float QualityToEffort(Image::CompressionQuality::Enum compressoinQuality) {
     switch (compressoinQuality) {
     case Image::CompressionQuality::HighQuality:
-        return 70;
+        return 80;
     case Image::CompressionQuality::Normal:
         return 40;
     case Image::CompressionQuality::Fast:
-        return 0;
+        return 20;
     }
     return 0;
 }
@@ -48,22 +49,22 @@ static void CompressETC(const Image &srcImage, Image &dstImage, Image::Compressi
         byte *src = srcImage.GetPixels(mipLevel);
         byte *dst = dstImage.GetPixels(mipLevel);
 
-        // Convert byte RGBA_8_8_8_8 to float RGBA
-        Etc::ColorFloatRGBA *fsrc_ptr = fsrc;
+        // Convert byte RGBA_8_8_8_8 to float RGBA.
+        Etc::ColorFloatRGBA *fsrcPtr = fsrc;
         for (byte *src_end = &src[w * h * 4]; src < src_end; src += 4) {
-            *fsrc_ptr++ = Etc::ColorFloatRGBA::ConvertFromRGBA8(src[0], src[1], src[2], src[3]);
+            *fsrcPtr++ = Etc::ColorFloatRGBA::ConvertFromRGBA8(src[0], src[1], src[2], src[3]);
         }
 
-        // Encode 
+        // Encode.
         Etc::Image image((float *)fsrc, w, h, errorMetric);
         image.m_bVerboseOutput = false;
-        Etc::Image::EncodingStatus status = image.Encode(format, errorMetric, effort, 8, MAX_JOBS);
+        Etc::Image::EncodingStatus status = image.Encode(format, errorMetric, effort, MIN_JOBS, MAX_JOBS);
         if (status >= Etc::Image::EncodingStatus::ERROR_THRESHOLD) {
             assert(0);
             return;
         }
 
-        // Write to destination memory
+        // Write to destination memory.
         size_t encodedBytes = image.GetEncodingBitsBytes();
         assert(encodedBytes == dstImage.GetSize(mipLevel));
         memcpy(dst, image.GetEncodingBits(), encodedBytes);
@@ -85,7 +86,7 @@ void CompressETC2_RGBA1(const Image &srcImage, Image &dstImage, Image::Compressi
 }
 
 void CompressETC2_RGBA8(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
-    CompressETC(srcImage, dstImage, compressoinQuality, Etc::Image::Format::RGBA8, Etc::ErrorMetric::REC709);
+    CompressETC(srcImage, dstImage, compressoinQuality, Etc::Image::Format::RGBA8, Etc::ErrorMetric::RGBA);
 }
 
 void CompressETC2_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
