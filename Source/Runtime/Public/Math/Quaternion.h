@@ -171,11 +171,11 @@ public:
     Quat &              InverseSelf();
 
                         /// Returns the quaternion that rotates about the positive X axis by the given angle in radians.
-    static Quat         FromRotationX(float angle) { FromAngleAxis(angle, Vec3::unitX); }
+    static Quat         FromRotationX(float angle) { return FromAngleAxis(angle, Vec3::unitX); }
                         /// Returns the quaternion that rotates about the positive Y axis by the given angle in radians.
-    static Quat         FromRotationY(float angle) { FromAngleAxis(angle, Vec3::unitY); }
+    static Quat         FromRotationY(float angle) { return FromAngleAxis(angle, Vec3::unitY); }
                         /// Returns the quaternion that rotates about the positive Z axis by the given angle in radians.
-    static Quat         FromRotationZ(float angle) { FromAngleAxis(angle, Vec3::unitZ); }
+    static Quat         FromRotationZ(float angle) { return FromAngleAxis(angle, Vec3::unitZ); }
 
                         /// Creates the quaternion from the given sequence of Euler rotation angles in radians.
                         /// The FromRotationABC function returns a matrix M = A(a) * B(b) * C(c). 

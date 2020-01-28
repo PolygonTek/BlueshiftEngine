@@ -30,7 +30,7 @@ void LuaVM::RegisterGameWorld(LuaCpp::Module &module) {
         "time_scale", &GameWorld::GetTimeScale,
         "set_time_scale", &GameWorld::SetTimeScale,
         "create_empty_entity", &GameWorld::CreateEmptyEntity,
-        "find_entity", &GameWorld::FindEntity,
+        "find_entity", static_cast<Entity*(GameWorld::*)(const char *)const>(&GameWorld::FindEntity),
         "find_entity_by_name", &GameWorld::FindEntityByName,
         "find_entity_by_tag", &GameWorld::FindEntityByTag,
         "find_entities_by_tag", &GameWorld::FindEntitiesByTag,

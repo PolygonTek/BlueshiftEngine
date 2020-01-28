@@ -547,13 +547,15 @@ void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
         int minDepth = Min(r_showDynamicAABBTreeMinDepth.GetInteger(), totalDepth);
         int maxDepth = Min(r_showDynamicAABBTreeMaxDepth.GetInteger(), totalDepth);
 
-        objectDbvt.QueryDepthRange(minDepth, maxDepth, [minDepth, maxDepth, this](int32_t proxyId, int depth) {
+        objectDbvt.QueryDepthRange(minDepth, maxDepth, [minDepth, maxDepth, this](int32_t proxyId, int depth) -> bool {
             const AABB &proxyAABB = objectDbvt.GetFatAABB(proxyId);
 
             float alpha = (float)(depth - minDepth + 1) / (maxDepth - minDepth + 1);
 
             SetDebugColor(Color4(1.0f, 0.1f, 0.0f, alpha), Color4::zero);
             DebugAABB(proxyAABB, 1, true, r_showDynamicAABBTree.GetInteger() <= 1);
+
+            return true;
         });
     }
 }

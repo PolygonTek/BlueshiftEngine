@@ -76,16 +76,16 @@ public:
                         /// Query an bounding volume for overlapping proxies.
                         /// The callback functor is called for each proxy that overlaps the supplied bounding volume.
     template <typename F>
-    void                Query(const Sphere &boundingVolume, F &callback) const;
+    void                Query(const Sphere &boundingVolume, const F &callback) const;
     template <typename F>
-    void                Query(const AABB &boundingVolume, F &callback) const;
+    void                Query(const AABB &boundingVolume, const F &callback) const;
     template <typename F>
-    void                Query(const OBB &boundingVolume, F &callback) const;
+    void                Query(const OBB &boundingVolume, const F &callback) const;
     template <typename F>
-    void                Query(const Frustum &boundingVolume, F &callback) const;
+    void                Query(const Frustum &boundingVolume, const F &callback) const;
 
     template <typename F>
-    void                QueryDepthRange(int depthMin, int depthMax, F &callback) const;
+    void                QueryDepthRange(int depthMin, int depthMax, const F &callback) const;
 
                         /// Compute the height of the binary tree in O(N) time.
                         /// Should not be called often.
@@ -121,7 +121,7 @@ private:
     void                ValidateMetrics(int32_t index) const;
 
     template <typename F>
-    void                QueryDepthRangeRecursive(int nodeId, int depthMin, int depthMax, int depth, F &callback) const;
+    void                QueryDepthRangeRecursive(int32_t nodeId, int depthMin, int depthMax, int depth, const F &callback) const;
 
     struct Node {
         bool            IsLeaf() const { return child1 == -1; }
@@ -164,7 +164,7 @@ BE_INLINE const AABB &DynamicAABBTree::GetRootFatAABB() const {
 }
 
 template <typename F>
-BE_INLINE void DynamicAABBTree::Query(const Sphere &sphere, F &callback) const {
+BE_INLINE void DynamicAABBTree::Query(const Sphere &sphere, const F &callback) const {
     Stack<int32_t> stack(256);
     stack.Push(root);
 
@@ -191,7 +191,7 @@ BE_INLINE void DynamicAABBTree::Query(const Sphere &sphere, F &callback) const {
 }
 
 template <typename F>
-BE_INLINE void DynamicAABBTree::Query(const AABB &aabb, F &callback) const {
+BE_INLINE void DynamicAABBTree::Query(const AABB &aabb, const F &callback) const {
     Stack<int32_t> stack(256);
     stack.Push(root);
 
@@ -218,7 +218,7 @@ BE_INLINE void DynamicAABBTree::Query(const AABB &aabb, F &callback) const {
 }
 
 template <typename F>
-BE_INLINE void DynamicAABBTree::Query(const OBB &obb, F &callback) const {
+BE_INLINE void DynamicAABBTree::Query(const OBB &obb, const F &callback) const {
     Stack<int32_t> stack(256);
     stack.Push(root);
 
@@ -245,7 +245,7 @@ BE_INLINE void DynamicAABBTree::Query(const OBB &obb, F &callback) const {
 }
 
 template <typename F>
-BE_INLINE void DynamicAABBTree::Query(const Frustum &frustum, F &callback) const {
+BE_INLINE void DynamicAABBTree::Query(const Frustum &frustum, const F &callback) const {
     Stack<int32_t> stack(256);
     stack.Push(root);
 
@@ -272,7 +272,7 @@ BE_INLINE void DynamicAABBTree::Query(const Frustum &frustum, F &callback) const
 }
 
 template <typename F>
-BE_INLINE void DynamicAABBTree::QueryDepthRangeRecursive(int nodeId, int depthMin, int depthMax, int depth, F &callback) const {
+BE_INLINE void DynamicAABBTree::QueryDepthRangeRecursive(int32_t nodeId, int depthMin, int depthMax, int depth, const F &callback) const {
     if (nodeId == -1) {
         return;
     }
@@ -300,7 +300,7 @@ BE_INLINE void DynamicAABBTree::QueryDepthRangeRecursive(int nodeId, int depthMi
 }
 
 template <typename F>
-BE_INLINE void DynamicAABBTree::QueryDepthRange(int depthMin, int depthMax, F &callback) const {
+BE_INLINE void DynamicAABBTree::QueryDepthRange(int depthMin, int depthMax, const F &callback) const {
     QueryDepthRangeRecursive(root, depthMin, depthMax, 0, callback);
 }
 

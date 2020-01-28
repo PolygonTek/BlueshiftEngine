@@ -538,6 +538,9 @@ void TextureManager::Cmd_DumpTexture(const CmdArgs &args) {
     case RHI::TextureType::TextureRectangle:
         texture->GetTexelsRect(texture->GetFormat(), bitmapImage.GetPixels(0));
         break;
+    default:
+        assert(0);
+        return;
     }
 
     Str filename = "DumpTextures";
