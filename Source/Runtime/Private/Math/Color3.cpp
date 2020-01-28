@@ -18,21 +18,33 @@
 BE_NAMESPACE_BEGIN
 
 const Color3 Color3::zero       = Color3::FromRGB888(  0,   0,   0);
+
 const Color3 Color3::black      = Color3::FromRGB888(  0,   0,   0);
 const Color3 Color3::white      = Color3::FromRGB888(255, 255, 255);
+const Color3 Color3::grey       = Color3::FromRGB888(128, 128, 128);
 const Color3 Color3::red        = Color3::FromRGB888(255,   0,   0);
-const Color3 Color3::green      = Color3::FromRGB888(  0, 255,   0);
+const Color3 Color3::maroon     = Color3::FromRGB888(128,   0,   0);
+const Color3 Color3::lime       = Color3::FromRGB888(  0, 255,   0);
+const Color3 Color3::green      = Color3::FromRGB888(  0, 128,   0);
 const Color3 Color3::blue       = Color3::FromRGB888(  0,   0, 255);
+const Color3 Color3::navy       = Color3::FromRGB888(  0,   0, 128);
 const Color3 Color3::yellow     = Color3::FromRGB888(255, 255,   0);
+const Color3 Color3::olive      = Color3::FromRGB888(128, 128,   0);
 const Color3 Color3::cyan       = Color3::FromRGB888(  0, 255, 255);
+const Color3 Color3::teal       = Color3::FromRGB888(  0, 128, 128);
 const Color3 Color3::magenta    = Color3::FromRGB888(255,   0, 255);
+const Color3 Color3::purple     = Color3::FromRGB888(128,   0, 128);
+
+const Color3 Color3::indianRed  = Color3::FromRGB888(205,  92,  92);
+const Color3 Color3::lightCoral = Color3::FromRGB888(240, 128, 128);
+const Color3 Color3::salmon     = Color3::FromRGB888(250, 128, 114);
 const Color3 Color3::orange     = Color3::FromRGB888(255, 127,   0);
 const Color3 Color3::pink       = Color3::FromRGB888(255,   0, 127);
 const Color3 Color3::lawn       = Color3::FromRGB888(127, 255,   0);
 const Color3 Color3::mint       = Color3::FromRGB888(  0, 255, 127);
 const Color3 Color3::violet     = Color3::FromRGB888(127, 127, 255);
 const Color3 Color3::aquamarine = Color3::FromRGB888(112, 219, 147);
-const Color3 Color3::grey       = Color3::FromRGB888(192, 192, 129);
+const Color3 Color3::lightGrey  = Color3::FromRGB888(211, 211, 211);
 const Color3 Color3::darkGrey   = Color3::FromRGB888( 84,  84,  84);
 const Color3 Color3::darkBrown  = Color3::FromRGB888( 92,  64,  51);
 

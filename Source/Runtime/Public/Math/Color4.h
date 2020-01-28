@@ -220,21 +220,33 @@ public:
     constexpr int       GetDimension() const { return Size; }
 
     static const Color4 zero;
+
     static const Color4 black;
     static const Color4 white;
+    static const Color4 grey;
     static const Color4 red;
+    static const Color4 maroon;
+    static const Color4 lime;
     static const Color4 green;
     static const Color4 blue;
+    static const Color4 navy;
     static const Color4 yellow;
+    static const Color4 olive;
     static const Color4 cyan;
+    static const Color4 teal;
     static const Color4 magenta;
+    static const Color4 purple;
+
+    static const Color4 indianRed;
+    static const Color4 lightCoral;
+    static const Color4 salmon;
     static const Color4 orange;
     static const Color4 pink;
     static const Color4 lawn;
     static const Color4 mint;
     static const Color4 violet;
     static const Color4 aquamarine;
-    static const Color4 grey;
+    static const Color4 lightGrey;
     static const Color4 darkGrey;
     static const Color4 darkBrown;
 

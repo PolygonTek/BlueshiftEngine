@@ -18,21 +18,33 @@
 BE_NAMESPACE_BEGIN
 
 const Color4 Color4::zero       = Color4::FromRGBA8888(  0,   0,   0,   0);
+
 const Color4 Color4::black      = Color4::FromRGBA8888(  0,   0,   0, 255);
 const Color4 Color4::white      = Color4::FromRGBA8888(255, 255, 255, 255);
+const Color4 Color4::grey       = Color4::FromRGBA8888(128, 128, 128, 255);
 const Color4 Color4::red        = Color4::FromRGBA8888(255,   0,   0, 255);
-const Color4 Color4::green      = Color4::FromRGBA8888(  0, 255,   0, 255);
+const Color4 Color4::maroon     = Color4::FromRGBA8888(128,   0,   0, 255);
+const Color4 Color4::lime       = Color4::FromRGBA8888(  0, 255,   0, 255);
+const Color4 Color4::green      = Color4::FromRGBA8888(  0, 128,   0, 255);
 const Color4 Color4::blue       = Color4::FromRGBA8888(  0,   0, 255, 255);
+const Color4 Color4::navy       = Color4::FromRGBA8888(  0,   0, 128, 255);
 const Color4 Color4::yellow     = Color4::FromRGBA8888(255, 255,   0, 255);
+const Color4 Color4::olive      = Color4::FromRGBA8888(128, 128,   0, 255);
 const Color4 Color4::cyan       = Color4::FromRGBA8888(  0, 255, 255, 255);
+const Color4 Color4::teal       = Color4::FromRGBA8888(  0, 128, 128, 255);
 const Color4 Color4::magenta    = Color4::FromRGBA8888(255,   0, 255, 255);
+const Color4 Color4::purple     = Color4::FromRGBA8888(128,   0, 128, 255);
+
+const Color4 Color4::indianRed  = Color4::FromRGBA8888(205,  92,  92, 255);
+const Color4 Color4::lightCoral = Color4::FromRGBA8888(240, 128, 128, 255);
+const Color4 Color4::salmon     = Color4::FromRGBA8888(250, 128, 114, 255);
 const Color4 Color4::orange     = Color4::FromRGBA8888(255, 127,   0, 255);
 const Color4 Color4::pink       = Color4::FromRGBA8888(255,   0, 127, 255);
 const Color4 Color4::lawn       = Color4::FromRGBA8888(127, 255,   0, 255);
 const Color4 Color4::mint       = Color4::FromRGBA8888(  0, 255, 127, 255);
 const Color4 Color4::violet     = Color4::FromRGBA8888(127, 127, 255, 255);
 const Color4 Color4::aquamarine = Color4::FromRGBA8888(112, 219, 147, 255);
-const Color4 Color4::grey       = Color4::FromRGBA8888(192, 192, 129, 255);
+const Color4 Color4::lightGrey  = Color4::FromRGBA8888(211, 211, 211, 255);
 const Color4 Color4::darkGrey   = Color4::FromRGBA8888( 84,  84,  84, 255);
 const Color4 Color4::darkBrown  = Color4::FromRGBA8888( 92,  64,  51, 255);
 
