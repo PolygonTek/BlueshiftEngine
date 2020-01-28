@@ -137,6 +137,10 @@ void ComImage::RectTransformUpdated(const ComRectTransform *rectTransform) {
 }
 
 void ComImage::UpdateVisuals() {
+    if (!IsInitialized() || !IsActiveInHierarchy()) {
+        return;
+    }
+
     UpdateRawVertexes();
 
     ComRenderable::UpdateVisuals();
