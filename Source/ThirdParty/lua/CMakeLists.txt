@@ -59,6 +59,10 @@ set(SRC_FILES
     lzio.c
 )
 
+if (NOT MSVC)
+    add_definitions(-U_FORTIFY_SOURCE)
+endif ()
+
 add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES 
