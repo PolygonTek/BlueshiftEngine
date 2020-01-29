@@ -749,6 +749,9 @@ void Material::Write(const char *filename) {
             case Variant::Type::Point:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Point>().ToString());
                 break;
+            case Variant::Type::Size:
+                fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Size>().ToString());
+                break;
             case Variant::Type::Rect:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Rect>().ToString());
                 break;

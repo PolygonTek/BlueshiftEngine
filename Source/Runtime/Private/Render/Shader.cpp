@@ -369,6 +369,8 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
         propInfo.type = Variant::Type::Int;
     } else if (!Str::Cmp(typeStr, "point")) {
         propInfo.type = Variant::Type::Point;
+    } else if (!Str::Cmp(typeStr, "size")) {
+        propInfo.type = Variant::Type::Size;
     } else if (!Str::Cmp(typeStr, "rect")) {
         propInfo.type = Variant::Type::Rect;
     } else if (!Str::Cmp(typeStr, "float")) {

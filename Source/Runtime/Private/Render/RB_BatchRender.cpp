@@ -73,6 +73,9 @@ void Batch::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::P
         case Variant::Type::Point:
             shader->SetConstant2i(key, prop.data.As<Point>());
             break;
+        case Variant::Type::Size:
+            shader->SetConstant2i(key, prop.data.As<Size>());
+            break;
         case Variant::Type::Rect:
             shader->SetConstant4i(key, prop.data.As<Rect>());
             break;

@@ -201,6 +201,12 @@ void Serializable::Deserialize(const Json::Value &node) {
                     SetArrayProperty(propertyIndex, elementIndex, v);
                     break;
                 }
+                case Variant::Type::Size: {
+                    const Json::Value value = subNode.get(elementIndex, defaultValue.As<Size>().ToString());
+                    Size v = value.type() == Json::stringValue ? Size::FromString(value.asCString()) : defaultValue.As<Size>();
+                    SetArrayProperty(propertyIndex, elementIndex, v);
+                    break;
+                }
                 case Variant::Type::Rect: {
                     const Json::Value value = subNode.get(elementIndex, defaultValue.As<Rect>().ToString());
                     Rect v = value.type() == Json::stringValue ? Rect::FromString(value.asCString()) : defaultValue.As<Rect>();
@@ -297,6 +303,11 @@ void Serializable::Deserialize(const Json::Value &node) {
             }
             case Variant::Type::Point: {
                 Point v = value.type() == Json::stringValue ? Point::FromString(value.asCString()) : defaultValue.As<Point>();
+                SetProperty(propertyIndex, v);
+                break;
+            }
+            case Variant::Type::Size: {
+                Size v = value.type() == Json::stringValue ? Size::FromString(value.asCString()) : defaultValue.As<Size>();
                 SetProperty(propertyIndex, v);
                 break;
             }
@@ -435,6 +446,9 @@ void Serializable::GetProperty(const PropertyInfo &propertyInfo, Variant &out) c
     case Variant::Type::Point:
         out = *(reinterpret_cast<const Point *>(src));
         break;
+    case Variant::Type::Size:
+        out = *(reinterpret_cast<const Size *>(src));
+        break;
     case Variant::Type::Rect:
         out = *(reinterpret_cast<const Rect *>(src));
         break;
@@ -545,6 +559,9 @@ void Serializable::GetArrayProperty(const PropertyInfo &propertyInfo, int elemen
         break;
     case Variant::Type::Point:
         out = (*reinterpret_cast<const Array<Point> *>(src))[elementIndex];
+        break;
+    case Variant::Type::Size:
+        out = (*reinterpret_cast<const Array<Size> *>(src))[elementIndex];
         break;
     case Variant::Type::Rect:
         out = (*reinterpret_cast<const Array<Rect> *>(src))[elementIndex];
@@ -718,6 +735,15 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
         newValue = pt;
         break;
     }
+    case Variant::Type::Size: {
+        Size size = value.As<Size>();
+        if (ranged) {
+            Clamp(size.w, (int)minValue, (int)maxValue);
+            Clamp(size.h, (int)minValue, (int)maxValue);
+        }
+        newValue = size;
+        break;
+    }
     case Variant::Type::Rect: {
         Rect rect = value.As<Rect>();
         if (ranged) {
@@ -808,6 +834,9 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
             break;
         case Variant::Type::Point:
             *(reinterpret_cast<Point *>(dest)) = newValue.As<Point>();
+            break;
+        case Variant::Type::Size:
+            *(reinterpret_cast<Size *>(dest)) = newValue.As<Size>();
             break;
         case Variant::Type::Rect:
             *(reinterpret_cast<Rect *>(dest)) = newValue.As<Rect>();
@@ -985,6 +1014,15 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
         newValue = pt;
         break;
     }
+    case Variant::Type::Size: {
+        Size size = value.As<Size>();
+        if (ranged) {
+            Clamp(size.w, (int)minValue, (int)maxValue);
+            Clamp(size.h, (int)minValue, (int)maxValue);
+        }
+        newValue = size;
+        break;
+    }
     case Variant::Type::Rect: {
         Rect rect = value.As<Rect>();
         if (ranged) {
@@ -1075,6 +1113,9 @@ bool Serializable::SetArrayProperty(const PropertyInfo &propertyInfo, int elemen
             break;
         case Variant::Type::Point:
             (*reinterpret_cast<Array<Point> *>(dest))[elementIndex] = newValue.As<Point>();
+            break;
+        case Variant::Type::Size:
+            (*reinterpret_cast<Array<Size> *>(dest))[elementIndex] = newValue.As<Size>();
             break;
         case Variant::Type::Rect:
             (*reinterpret_cast<Array<Rect> *>(dest))[elementIndex] = newValue.As<Rect>();
@@ -1298,6 +1339,13 @@ void Serializable::SetPropertyArrayCount(const PropertyInfo &propertyInfo, int c
                 return;
             }
             reinterpret_cast<Array<Point> *>(src)->SetCount(count);
+            break;
+        case Variant::Type::Size:
+            oldCount = reinterpret_cast<Array<Size> *>(src)->Count();
+            if (oldCount == count) {
+                return;
+            }
+            reinterpret_cast<Array<Size> *>(src)->SetCount(count);
             break;
         case Variant::Type::Rect:
             oldCount = reinterpret_cast<Array<Rect> *>(src)->Count();

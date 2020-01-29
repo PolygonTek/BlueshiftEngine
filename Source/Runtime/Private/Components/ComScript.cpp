@@ -819,6 +819,9 @@ void ComScript::SetScriptProperties() {
         case Variant::Type::Point:
             (Point &)property["value"] = value.As<Point>();
             break;
+        case Variant::Type::Size:
+            (Size &)property["value"] = value.As<Size>();
+            break;
         case Variant::Type::Rect:
             (Rect &)property["value"] = value.As<Rect>();
             break;
