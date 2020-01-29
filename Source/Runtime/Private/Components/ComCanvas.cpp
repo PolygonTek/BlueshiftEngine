@@ -30,6 +30,14 @@ BEGIN_EVENTS(ComCanvas)
 END_EVENTS
 
 void ComCanvas::RegisterProperties() {
+    REGISTER_ACCESSOR_PROPERTY("scaleMode", "Scale Mode", ScaleMode::Enum, GetScaleMode, SetScaleMode, ScaleMode::ConstantPixelSize,
+        "", PropertyInfo::Flag::Editor).SetEnumString("Constant Pixel Size;Scale With Screen Size");
+    REGISTER_PROPERTY("referenceResolution", "Reference Resolution", Size, referenceResolution, Size(1280, 720),
+        "", PropertyInfo::Flag::Editor);
+    REGISTER_PROPERTY("matchMode", "Match Mode", MatchMode::Enum, matchMode, MatchMode::MatchWidthOrHeight,
+        "", PropertyInfo::Flag::Editor).SetEnumString("Match Width Or Height;Expand;Shrink");
+    REGISTER_PROPERTY("match", "Match", float, match, 0.0f,
+        "", PropertyInfo::Flag::Editor).SetRange(0.0f, 1.0f, 0.01f);
 }
 
 ComCanvas::ComCanvas() {
@@ -94,18 +102,11 @@ void ComCanvas::OnInactive() {
 }
 
 #if WITH_EDITOR
-void ComCanvas::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
-    int screenWidth = 320;
-    int screenHeight = 200;
+void ComCanvas::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {    
+    Size orthoSize = GetOrthoSize();
 
-    const RenderContext *ctx = renderSystem.GetMainRenderContext();
-    if (ctx) {
-        screenWidth = ctx->GetScreenWidth();
-        screenHeight = ctx->GetScreenHeight();
-    }
-
-    renderCameraDef.sizeX = screenWidth * 0.5f;
-    renderCameraDef.sizeY = screenHeight * 0.5f;
+    renderCameraDef.sizeX = orthoSize.w;
+    renderCameraDef.sizeY = orthoSize.h;
 
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
@@ -125,6 +126,15 @@ void ComCanvas::DrawGizmos(const RenderCamera *camera, bool selected, bool selec
 #endif
 
 const AABB ComCanvas::GetAABB() const {
+    Size orthoSize = GetOrthoSize();
+
+    Vec3 mins(-orthoSize.w, -orthoSize.h, 0);
+    Vec3 maxs(+orthoSize.w, +orthoSize.h, 0);
+
+    return AABB(mins, maxs);
+}
+
+Size ComCanvas::GetOrthoSize() const {
     int screenWidth = 320;
     int screenHeight = 200;
 
@@ -134,10 +144,45 @@ const AABB ComCanvas::GetAABB() const {
         screenHeight = ctx->GetScreenHeight();
     }
 
-    Vec3 mins(-screenWidth * 0.5f, -screenHeight * 0.5f, 0);
-    Vec3 maxs(+screenWidth * 0.5f, +screenHeight * 0.5f, 0);
+    Size orthoSize;
 
-    return AABB(mins, maxs);
+    if (scaleMode == ScaleMode::ConstantPixelSize) {
+        orthoSize.w = screenWidth * 0.5f;
+        orthoSize.h = screenHeight * 0.5f;
+    } else if (scaleMode == ScaleMode::ScaleWithScreenSize) {
+        float aspectRatio = (float)screenWidth / (float)screenHeight;
+
+        float w1 = referenceResolution.w;
+        float w2 = referenceResolution.h * aspectRatio;
+
+        float h1 = referenceResolution.w / aspectRatio;
+        float h2 = referenceResolution.h;
+
+        switch (matchMode) {
+        case MatchMode::MatchWidthOrHeight:
+            orthoSize.w = Math::Lerp(w1, w2, match) * 0.5f;
+            orthoSize.h = Math::Lerp(h1, h2, match) * 0.5f;
+            break;
+        case MatchMode::Expand:
+            orthoSize.w = Min(w1, w2) * 0.5f;
+            orthoSize.h = Min(h1, h2) * 0.5f;
+            break;
+        case MatchMode::Shrink:
+            orthoSize.w = Max(w1, w2) * 0.5f;
+            orthoSize.h = Max(h1, h2) * 0.5f;
+            break;
+        }
+    }
+
+    return orthoSize;
+}
+
+ComCanvas::ScaleMode::Enum ComCanvas::GetScaleMode() const {
+    return scaleMode;
+}
+
+void ComCanvas::SetScaleMode(ScaleMode::Enum scaleMode) {
+    this->scaleMode = scaleMode;
 }
 
 const Point ComCanvas::WorldToScreen(const Vec3 &worldPos) const {
@@ -174,8 +219,10 @@ const Ray ComCanvas::ScreenPointToRay(const Point &screenPoint) {
         screenHeight = ctx->GetScreenHeight();
     }
 
-    renderCameraDef.sizeX = screenWidth * 0.5f;
-    renderCameraDef.sizeY = screenHeight * 0.5f;
+    Size orthoSize = GetOrthoSize();
+
+    renderCameraDef.sizeX = orthoSize.w;
+    renderCameraDef.sizeY = orthoSize.h;
 
     Rect screenRect(0, 0, screenWidth, screenHeight);
     
@@ -239,16 +286,20 @@ void ComCanvas::Render() {
         return;
     }
 
-    int screenWidth = ctx->GetScreenWidth();
-    int screenHeight = ctx->GetScreenHeight();
+    Size orthoSize = GetOrthoSize();
+
+    renderCameraDef.sizeX = orthoSize.w;
+    renderCameraDef.sizeY = orthoSize.h;
 
     ComRectTransform *rectTransform = GetEntity()->GetComponent<ComRectTransform>();
     if (rectTransform) {
-        if (rectTransform->GetSizeDelta() != Vec2(screenWidth, screenHeight)) {
+        Vec2 sizeDelta = orthoSize.ToVec2() * 2.0f;
+
+        if (rectTransform->GetSizeDelta() != sizeDelta) {
 #if WITH_EDITOR
-            rectTransform->SetProperty("sizeDelta", Vec2(screenWidth, screenHeight));
+            rectTransform->SetProperty("sizeDelta", sizeDelta);
 #else
-            rectTransform->SetSizeDelta(Vec2(screenWidth, screenHeight));
+            rectTransform->SetSizeDelta(sizeDelta);
 #endif
         }
     }
@@ -261,9 +312,6 @@ void ComCanvas::Render() {
     renderCameraDef.renderRect.y = 0;
     renderCameraDef.renderRect.w = renderingWidth;
     renderCameraDef.renderRect.h = renderingHeight;
-
-    renderCameraDef.sizeX = renderingWidth * 0.5f;
-    renderCameraDef.sizeY = renderingHeight * 0.5f;
 
     // Update render camera with the given parameters.
     renderCamera->Update(&renderCameraDef);

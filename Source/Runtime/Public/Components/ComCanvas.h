@@ -28,6 +28,21 @@ class ComCanvas : public Component {
 public:
     OBJECT_PROTOTYPE(ComCanvas);
 
+    struct ScaleMode {
+        enum Enum {
+            ConstantPixelSize,
+            ScaleWithScreenSize
+        };
+    };
+
+    struct MatchMode {
+        enum Enum {
+            MatchWidthOrHeight,
+            Expand,
+            Shrink
+        };
+    };
+
     ComCanvas();
     virtual ~ComCanvas();
 
@@ -47,6 +62,9 @@ public:
 
     virtual const AABB      GetAABB() const override;
 
+    ScaleMode::Enum         GetScaleMode() const;
+    void                    SetScaleMode(ScaleMode::Enum scaleMode);
+
                             /// Converts position in world space to screen space.
     const Point             WorldToScreen(const Vec3 &worldPos) const;
 
@@ -65,11 +83,17 @@ protected:
     RenderCamera::State     renderCameraDef;
 
 private:
+    Size                    GetOrthoSize() const;
     void                    UpdateRenderingOrderRecursive(Entity *entity, int sceneNum, int &order) const;
     bool                    ProcessMousePointerInput();
     bool                    ProcessTouchPointerInput();
 
     void                    Render();
+
+    Size                    referenceResolution;
+    ScaleMode::Enum         scaleMode;
+    MatchMode::Enum         matchMode;
+    float                   match;
 
     InputUtils::PointerState mousePointerState;
     HashTable<int32_t, InputUtils::PointerState> touchPointerStateTable;
