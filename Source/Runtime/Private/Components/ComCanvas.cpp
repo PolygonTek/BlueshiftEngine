@@ -30,7 +30,7 @@ BEGIN_EVENTS(ComCanvas)
 END_EVENTS
 
 void ComCanvas::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("scaleMode", "Scale Mode", ScaleMode::Enum, GetScaleMode, SetScaleMode, ScaleMode::ConstantPixelSize,
+    REGISTER_ACCESSOR_PROPERTY("scaleMode", "Scale Mode", ScaleMode::Enum, GetScaleMode, SetScaleMode, ScaleMode::ScaleWithScreenSize,
         "", PropertyInfo::Flag::Editor).SetEnumString("Constant Pixel Size;Scale With Screen Size");
     REGISTER_PROPERTY("referenceResolution", "Reference Resolution", Size, referenceResolution, Size(1280, 720),
         "", PropertyInfo::Flag::Editor);
