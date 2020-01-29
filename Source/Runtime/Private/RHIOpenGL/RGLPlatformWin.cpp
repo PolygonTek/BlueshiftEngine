@@ -452,7 +452,7 @@ static void InitGLFunctions() {
     gwgl_init(hdcFake, false);
 
     // gglXXX function bindings & check GL extensions
-    ggl_init(false);
+    ggl_init(gl_debug.GetBool());
 
     wglMakeCurrent(nullptr, nullptr);
 
