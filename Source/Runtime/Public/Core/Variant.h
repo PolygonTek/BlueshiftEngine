@@ -53,6 +53,8 @@ public:
             Quat,
             Point,
             PointF,
+            Size,
+            SizeF,
             Rect,
             RectF,
             Guid,
@@ -214,6 +216,16 @@ public:
         *this = value;
     }
 
+    Variant(const Size &value)
+        : type(Type::None) {
+        *this = value;
+    }
+
+    Variant(const SizeF &value)
+        : type(Type::None) {
+        *this = value;
+    }
+
     Variant(const Rect &value)
         : type(Type::None) {
         *this = value;
@@ -272,6 +284,8 @@ public:
     Variant &               operator=(const Quat &rhs);
     Variant &               operator=(const Point &rhs);
     Variant &               operator=(const PointF &rhs);
+    Variant &               operator=(const Size &rhs);
+    Variant &               operator=(const SizeF &rhs);
     Variant &               operator=(const Rect &rhs);
     Variant &               operator=(const RectF &rhs);
     Variant &               operator=(const Guid &rhs);
@@ -421,6 +435,18 @@ BE_INLINE Variant &Variant::operator=(const PointF &rhs) {
     return *this;
 }
 
+BE_INLINE Variant &Variant::operator=(const Size &rhs) {
+    SetType(Type::Size);
+    *(reinterpret_cast<Size *>(&value)) = rhs;
+    return *this;
+}
+
+BE_INLINE Variant &Variant::operator=(const SizeF &rhs) {
+    SetType(Type::SizeF);
+    *(reinterpret_cast<SizeF *>(&value)) = rhs;
+    return *this;
+}
+
 BE_INLINE Variant &Variant::operator=(const Rect &rhs) {
     SetType(Type::Rect);
     *(reinterpret_cast<Rect *>(&value)) = rhs;
@@ -519,6 +545,16 @@ BE_INLINE const Point &Variant::As() const {
 template <>
 BE_INLINE const PointF &Variant::As() const {
     return type == Type::PointF ? *reinterpret_cast<const PointF *>(&value) : PointF::zero;
+}
+
+template <>
+BE_INLINE const Size &Variant::As() const {
+    return type == Type::Size ? *reinterpret_cast<const Size *>(&value) : Size::zero;
+}
+
+template <>
+BE_INLINE const SizeF &Variant::As() const {
+    return type == Type::SizeF ? *reinterpret_cast<const SizeF *>(&value) : SizeF::zero;
 }
 
 template <>
@@ -642,6 +678,16 @@ struct VariantType<Point> {
 template <>
 struct VariantType<PointF> {
     static Variant::Type::Enum GetType() { return Variant::Type::PointF; }
+};
+
+template <>
+struct VariantType<Size> {
+    static Variant::Type::Enum GetType() { return Variant::Type::Size; }
+};
+
+template <>
+struct VariantType<SizeF> {
+    static Variant::Type::Enum GetType() { return Variant::Type::SizeF; }
 };
 
 template <>

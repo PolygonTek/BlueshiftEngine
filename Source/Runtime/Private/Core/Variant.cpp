@@ -127,6 +127,12 @@ bool Variant::SetFromString(Type::Enum type, const char *str) {
     case Type::PointF:
         *this = PointF::FromString(str);
         return true;
+    case Type::Size:
+        *this = Size::FromString(str);
+        return true;
+    case Type::SizeF:
+        *this = SizeF::FromString(str);
+        return true;
     case Type::Rect:
         *this = Rect::FromString(str);
         return true;
@@ -219,6 +225,10 @@ bool Variant::operator==(const Variant &rhs) const {
         return *(reinterpret_cast<const Point *>(&value)) == *(reinterpret_cast<const Point *>(&rhs.value));
     case Type::PointF:
         return *(reinterpret_cast<const PointF *>(&value)) == *(reinterpret_cast<const PointF *>(&rhs.value));
+    case Type::Size:
+        return *(reinterpret_cast<const Size *>(&value)) == *(reinterpret_cast<const Size *>(&rhs.value));
+    case Type::SizeF:
+        return *(reinterpret_cast<const SizeF *>(&value)) == *(reinterpret_cast<const SizeF *>(&rhs.value));
     case Type::Rect:
         return *(reinterpret_cast<const Rect *>(&value)) == *(reinterpret_cast<const Rect *>(&rhs.value));
     case Type::RectF:
@@ -301,6 +311,12 @@ Json::Value Variant::ToJsonValue() const {
     case Type::PointF:
         value = As<PointF>().ToString();
         break;
+    case Type::Size:
+        value = As<Size>().ToString();
+        break;
+    case Type::SizeF:
+        value = As<SizeF>().ToString();
+        break;
     case Type::Rect:
         value = As<Rect>().ToString();
         break;
@@ -373,6 +389,10 @@ Str Variant::ToString() const {
         return (reinterpret_cast<const Point *>(&value))->ToString();
     case Type::PointF:
         return (reinterpret_cast<const PointF *>(&value))->ToString();
+    case Type::Size:
+        return (reinterpret_cast<const Size *>(&value))->ToString();
+    case Type::SizeF:
+        return (reinterpret_cast<const SizeF *>(&value))->ToString();
     case Type::Rect:
         return (reinterpret_cast<const Rect *>(&value))->ToString();
     case Type::RectF:
