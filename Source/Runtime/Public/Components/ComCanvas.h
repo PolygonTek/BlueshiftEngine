@@ -66,10 +66,22 @@ public:
     void                    SetScaleMode(ScaleMode::Enum scaleMode);
 
                             /// Converts position in world space to screen space.
-    const Point             WorldToScreen(const Vec3 &worldPos) const;
+    const Point             WorldToScreenPoint(const Vec3 &worldPos) const;
+
+                            /// Converts position in world space to canvas space.
+    const Point             WorldToCanvasPoint(const Vec3 &worldPos) const;
+
+                            /// Converts point in screen space to canvas space.
+    const Point             ScreenToCanvasPoint(const Point screenPoint) const;
+
+                            /// Converts point in canvas space to screen space.
+    const Point             CanvasToScreenPoint(const Point canvasPoint) const;
 
                             /// Makes world space ray from screen space point.
     const Ray               ScreenPointToRay(const Point &screenPoint);
+
+                            /// Makes world space ray from canvas space point.
+    const Ray               CanvasPointToRay(const Point &canvasPoint);
 
                             /// Returns true if the given screen point is in child rect transform.
     bool                    IsPointOverChildRect(const Point &screenPoint);

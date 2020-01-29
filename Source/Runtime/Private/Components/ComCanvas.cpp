@@ -185,7 +185,7 @@ void ComCanvas::SetScaleMode(ScaleMode::Enum scaleMode) {
     this->scaleMode = scaleMode;
 }
 
-const Point ComCanvas::WorldToScreen(const Vec3 &worldPos) const {
+const Point ComCanvas::WorldToScreenPoint(const Vec3 &worldPos) const {
     int screenWidth = 320;
     int screenHeight = 200;
 
@@ -209,6 +209,56 @@ const Point ComCanvas::WorldToScreen(const Vec3 &worldPos) const {
     return screenPoint;
 }
 
+const Point ComCanvas::WorldToCanvasPoint(const Vec3 &worldPos) const {
+    Point screenPoint = WorldToScreenPoint(worldPos);
+
+    return ScreenToCanvasPoint(screenPoint);
+}
+
+const Point ComCanvas::ScreenToCanvasPoint(const Point screenPoint) const {
+    int screenWidth = 320;
+    int screenHeight = 200;
+
+    const RenderContext *ctx = renderSystem.GetMainRenderContext();
+    if (ctx) {
+        screenWidth = ctx->GetScreenWidth();
+        screenHeight = ctx->GetScreenHeight();
+    }
+
+    float ndx = ((float)screenPoint.x / screenWidth) * 2.0f - 1.0f;
+    float ndy = ((float)screenPoint.y / screenHeight) * 2.0f - 1.0f;
+
+    Size orthoSize = GetOrthoSize();
+
+    Point canvasPoint;
+    canvasPoint.x = ndx * orthoSize.w;
+    canvasPoint.y = ndy * orthoSize.h;
+
+    return canvasPoint;
+}
+
+const Point ComCanvas::CanvasToScreenPoint(const Point canvasPoint) const {
+    int screenWidth = 320;
+    int screenHeight = 200;
+
+    const RenderContext *ctx = renderSystem.GetMainRenderContext();
+    if (ctx) {
+        screenWidth = ctx->GetScreenWidth();
+        screenHeight = ctx->GetScreenHeight();
+    }
+
+    Size orthoSize = GetOrthoSize();
+
+    float fractX = (((float)canvasPoint.x / orthoSize.w) + 1.0f) * 0.5f;
+    float fractY = (((float)canvasPoint.y / orthoSize.h) + 1.0f) * 0.5f;
+
+    Point screenPoint;
+    screenPoint.x = fractX * screenWidth;
+    screenPoint.y = fractY * screenHeight;
+
+    return screenPoint;
+}
+
 const Ray ComCanvas::ScreenPointToRay(const Point &screenPoint) {
     int screenWidth = 320;
     int screenHeight = 200;
@@ -227,6 +277,12 @@ const Ray ComCanvas::ScreenPointToRay(const Point &screenPoint) {
     Rect screenRect(0, 0, screenWidth, screenHeight);
     
     return RenderCamera::RayFromScreenPoint(renderCameraDef, screenRect, screenPoint);
+}
+
+const Ray ComCanvas::CanvasPointToRay(const Point &canvasPoint) {
+    Point screenPoint = CanvasToScreenPoint(canvasPoint);
+
+    return ScreenPointToRay(screenPoint);
 }
 
 bool ComCanvas::IsPointOverChildRect(const Point &screenPoint) {
