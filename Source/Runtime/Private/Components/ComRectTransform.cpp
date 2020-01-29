@@ -277,12 +277,11 @@ bool ComRectTransform::RayToLocalPointInRectangle(const Ray &ray, Vec2 &localPoi
         return false;
     }
 
-    // CHECK!!!
     localPoint = GetMatrixNoScale().ToMat3().TransposedMulVec(worldPoint - GetOrigin()).ToVec2();
     return true;
 }
 
-bool ComRectTransform::IsLocalPointInRect(const Vec2 &localPoint) const {
+bool ComRectTransform::IsLocalPointInRectangle(const Vec2 &localPoint) const {
     RectF localRect = GetLocalRect();
 
     return localRect.IsContainPoint(localPoint.x, localPoint.y);

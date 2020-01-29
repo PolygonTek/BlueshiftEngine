@@ -244,7 +244,7 @@ Entity *Entity::RayCastRect(const Ray &ray) {
             return nullptr;
         }
 
-        if (!rectTransform->IsLocalPointInRect(localPoint)) {
+        if (!rectTransform->IsLocalPointInRectangle(localPoint)) {
             return nullptr;
         }
 

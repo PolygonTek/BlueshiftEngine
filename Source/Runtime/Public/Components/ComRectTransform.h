@@ -101,7 +101,7 @@ public:
     bool                    RayToLocalPointInRectangle(const Ray &ray, Vec2 &localPoint) const;
 
                             /// Is the point in local space inside the rectangle ?
-    bool                    IsLocalPointInRect(const Vec2 &localPoint) const;
+    bool                    IsLocalPointInRectangle(const Vec2 &localPoint) const;
 
     static const SignalDef  SIG_RectTransformUpdated;
 
