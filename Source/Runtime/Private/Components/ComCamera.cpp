@@ -282,14 +282,13 @@ Size ComCamera::GetOrthoSize() const {
         screenHeight = ctx->GetScreenHeight();
     }
 
-    Size screenSize;
+    float invAspectRatio = (float)screenHeight / (float)screenWidth;
 
-    float aspectRatio = (float)screenWidth / screenHeight;
+    Size orthoSize;
+    orthoSize.w = size;
+    orthoSize.h = size * invAspectRatio;
 
-    screenSize.w = size;
-    screenSize.h = size / aspectRatio;
-
-    return screenSize;
+    return orthoSize;
 }
 
 float ComCamera::GetAspectRatio() const {
