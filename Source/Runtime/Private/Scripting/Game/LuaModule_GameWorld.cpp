@@ -38,7 +38,7 @@ void LuaVM::RegisterGameWorld(LuaCpp::Module &module) {
         "instantiate_entity", &GameWorld::InstantiateEntity,
         "instantiate_entity_with_transform", &GameWorld::InstantiateEntityWithTransform,
         "dont_destroy_on_load", &GameWorld::DontDestroyOnLoad,
-        "map_name", &GameWorld::MapName,
+        "map_filename", &GameWorld::MapFilename,
         "restart_game", &GameWorld::RestartGame,
         "stop_all_sounds", &GameWorld::StopAllSounds);
 

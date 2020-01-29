@@ -171,7 +171,7 @@ public:
     void                        SaveSnapshot();
     void                        RestoreSnapshot();
 
-    const char *                MapName() const { return mapName.c_str(); }
+    const char *                MapFilename() const { return mapFilename.c_str(); }
 
     void                        NewMap();
     bool                        LoadMap(const char *filename, LoadSceneMode::Enum mode);
@@ -181,7 +181,7 @@ public:
 
     void                        StartGame();
     void                        StopGame(bool stopAllSounds = true);
-    void                        RestartGame(const char *mapName);
+    void                        RestartGame(const char *mapFilename);
 
     bool                        HasScriptError() const;
 
@@ -197,7 +197,7 @@ public:
     static const SignalDef      SIG_EntityUnregistered;
     
 private:
-    void                        Event_RestartGame(const char *mapName);
+    void                        Event_RestartGame(const char *mapFilename);
     void                        Event_DontDestroyOnLoad(Entity *entity);
 
     Entity *                    FindRootEntityByName(const char *name) const;
@@ -226,7 +226,7 @@ private:
 
     LuaVM                       luaVM;
 
-    Str                         mapName;
+    Str                         mapFilename;
 
     MapRenderSettings *         mapRenderSettings;
 

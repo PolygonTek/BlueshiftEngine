@@ -572,18 +572,18 @@ void GameWorld::StopGame(bool stopAllSounds) {
     physicsWorld->Disconnect(&PhysicsWorld::SIG_PostStep, this);
 }
 
-void GameWorld::RestartGame(const char *mapName) {
-    PostEvent(&EV_RestartGame, mapName);
+void GameWorld::RestartGame(const char *mapFilename) {
+    PostEvent(&EV_RestartGame, mapFilename);
 }
 
 void GameWorld::StopAllSounds() {
     soundSystem.StopAllSounds();
 }
 
-void GameWorld::Event_RestartGame(const char *mapName) {
+void GameWorld::Event_RestartGame(const char *mapFilename) {
     StopGame(false);
     
-    LoadMap(mapName, LoadSceneMode::Single);
+    LoadMap(mapFilename, LoadSceneMode::Single);
     
     StartGame();
 }
@@ -636,7 +636,7 @@ bool GameWorld::LoadMap(const char *filename, LoadSceneMode::Enum mode) {
         return false;
     }
 
-    mapName = filename;
+    mapFilename = filename;
 
     Json::Value map;
     Json::Reader jsonReader;
