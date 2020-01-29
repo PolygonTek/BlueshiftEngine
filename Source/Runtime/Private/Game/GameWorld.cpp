@@ -573,7 +573,8 @@ void GameWorld::StopGame(bool stopAllSounds) {
 }
 
 void GameWorld::RestartGame(const char *mapFilename) {
-    PostEvent(&EV_RestartGame, mapFilename);
+    // HACK: Delay game restart for 200 ms to update the tweener.
+    PostEventMS(&EV_RestartGame, 200, mapFilename);
 }
 
 void GameWorld::StopAllSounds() {
