@@ -199,8 +199,8 @@ void ComCamera::DrawGizmos(const RenderCamera *camera, bool selected, bool selec
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
     
     if (selected) {
-        int screenWidth = 100;
-        int screenHeight = 100;
+        int screenWidth = 320;
+        int screenHeight = 200;
 
         const RenderContext *ctx = renderSystem.GetMainRenderContext();
         if (ctx) {
@@ -273,8 +273,8 @@ const AABB ComCamera::GetAABB() const {
 }
 
 Size ComCamera::GetOrthoSize() const {
-    int screenWidth = 100;
-    int screenHeight = 100;
+    int screenWidth = 320;
+    int screenHeight = 200;
 
     const RenderContext *ctx = renderSystem.GetMainRenderContext();
     if (ctx) {
@@ -304,8 +304,8 @@ float ComCamera::GetAspectRatio() const {
 }
 
 const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
-    int screenWidth = 100;
-    int screenHeight = 100;
+    int screenWidth = 320;
+    int screenHeight = 200;
 
     const RenderContext *ctx = renderSystem.GetMainRenderContext();
     if (ctx) {
@@ -341,8 +341,8 @@ const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
 }
 
 const Ray ComCamera::ScreenPointToRay(const Point &screenPoint) {
-    int screenWidth = 100;
-    int screenHeight = 100;
+    int screenWidth = 320;
+    int screenHeight = 200;
 
     const RenderContext *ctx = renderSystem.GetMainRenderContext();
     if (ctx) {
