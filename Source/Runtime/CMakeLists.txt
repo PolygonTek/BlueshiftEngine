@@ -352,6 +352,8 @@ set(COMMON_ENGINE_FILES
     Private/Math/Matrix3.cpp
     Private/Math/Point.cpp
     Private/Math/PointF.cpp
+    Private/Math/Size.cpp
+    Private/Math/SizeF.cpp
     Private/Math/Vector2.cpp
 
     Private/SIMD/Simd.cpp

@@ -88,6 +88,8 @@ public:
 
     void                Set(int x, int y);
 
+    SizeF               ToSizeF() const;
+
     Vec2                ToVec2() const { return Vec2(w, h); }
 
 #ifdef QSIZE_H

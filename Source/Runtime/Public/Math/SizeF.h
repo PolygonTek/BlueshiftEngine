@@ -88,6 +88,8 @@ public:
 
     void                Set(float x, float y);
 
+    Size                ToSize() const { return Size(w, h); }
+
     Vec2                ToVec2() const { return Vec2(w, h); }
 
 #ifdef QSIZE_H
