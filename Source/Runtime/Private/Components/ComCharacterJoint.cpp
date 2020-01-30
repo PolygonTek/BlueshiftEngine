@@ -28,7 +28,7 @@ END_EVENTS
 void ComCharacterJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, 
         "Joint position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, 
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero, 
         "Joint angles in local space", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("swing1LowerLimit", "X Swing/Lower Limit", float, GetSwing1LowerLimit, SetSwing1LowerLimit, -45.f, 
         "", PropertyInfo::Flag::Editor).SetRange(-180, 0, 1);

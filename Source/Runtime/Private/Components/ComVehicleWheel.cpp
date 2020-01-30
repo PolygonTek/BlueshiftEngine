@@ -28,7 +28,7 @@ END_EVENTS
 void ComVehicleWheel::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("center", "Center", Vec3, GetLocalOrigin, SetLocalOrigin, Vec3::origin,
         "Wheel position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero,
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero,
         "Wheel angles in local space", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, MeterToUnit(0.5f),
         "Wheel radius", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
