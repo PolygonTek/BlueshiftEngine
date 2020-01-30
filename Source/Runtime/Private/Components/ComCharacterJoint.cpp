@@ -57,6 +57,7 @@ void ComCharacterJoint::RegisterProperties() {
 }
 
 ComCharacterJoint::ComCharacterJoint() {
+    localAxis = Mat3::identity;
 }
 
 ComCharacterJoint::~ComCharacterJoint() {

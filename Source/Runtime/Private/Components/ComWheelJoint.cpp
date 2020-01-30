@@ -53,6 +53,7 @@ void ComWheelJoint::RegisterProperties() {
 }
 
 ComWheelJoint::ComWheelJoint() {
+    localAxis = Mat3::identity;
 }
 
 ComWheelJoint::~ComWheelJoint() {

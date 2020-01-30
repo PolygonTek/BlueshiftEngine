@@ -53,6 +53,7 @@ void ComSliderJoint::RegisterProperties() {
 }
 
 ComSliderJoint::ComSliderJoint() {
+    localAxis = Mat3::identity;
 }
 
 ComSliderJoint::~ComSliderJoint() {

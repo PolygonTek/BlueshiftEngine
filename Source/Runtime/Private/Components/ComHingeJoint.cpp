@@ -43,6 +43,7 @@ void ComHingeJoint::RegisterProperties() {
 }
 
 ComHingeJoint::ComHingeJoint() {
+    localAxis = Mat3::identity;
 }
 
 ComHingeJoint::~ComHingeJoint() {

@@ -43,6 +43,7 @@ void ComSpringJoint::RegisterProperties() {
 }
 
 ComSpringJoint::ComSpringJoint() {
+    localAxis = Mat3::identity;
 }
 
 ComSpringJoint::~ComSpringJoint() {
