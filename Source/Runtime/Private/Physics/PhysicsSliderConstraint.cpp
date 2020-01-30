@@ -18,6 +18,8 @@
 
 BE_NAMESPACE_BEGIN
 
+#define CONTROL_CFM_ERP
+
 PhysSliderConstraint::PhysSliderConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, const Mat3 &axisInA) : 
     PhysConstraint(bodyA, nullptr) {
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
@@ -27,7 +29,7 @@ PhysSliderConstraint::PhysSliderConstraint(PhysRigidBody *bodyA, const Vec3 &anc
     btSliderConstraint *sliderConstraint = new btSliderConstraint(*bodyA->GetRigidBody(), frameA, true);
     sliderConstraint->setUserConstraintPtr(this);
 
-#if 1
+#ifdef CONTROL_CFM_ERP
     sliderConstraint->setParam(BT_CONSTRAINT_CFM, 0, 3);
     sliderConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0, 3);
     sliderConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0, 4);
@@ -54,7 +56,7 @@ PhysSliderConstraint::PhysSliderConstraint(PhysRigidBody *bodyA, const Vec3 &anc
     btSliderConstraint *sliderConstraint = new btSliderConstraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(), frameA, frameB, true);
     sliderConstraint->setUserConstraintPtr(this);
 
-#if 1
+#ifdef CONTROL_CFM_ERP
     sliderConstraint->setParam(BT_CONSTRAINT_CFM, 0, 3);
     sliderConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0, 3);
     sliderConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0, 4);
@@ -99,8 +101,8 @@ void PhysSliderConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB)
 void PhysSliderConstraint::SetLinearLimits(float lowerLimit, float upperLimit) {
     btSliderConstraint *sliderConstraint = static_cast<btSliderConstraint *>(constraint);
 
-    this->angularLowerLimit = lowerLimit;
-    this->angularUpperLimit = upperLimit;
+    this->linearLowerLimit = lowerLimit;
+    this->linearUpperLimit = upperLimit;
 
     if (sliderConstraint->getLowerLinLimit() <= sliderConstraint->getUpperLinLimit()) {
         sliderConstraint->setLowerLinLimit(SystemUnitToPhysicsUnit(lowerLimit));
@@ -112,8 +114,8 @@ void PhysSliderConstraint::EnableLinearLimits(bool enable) {
     btSliderConstraint *sliderConstraint = static_cast<btSliderConstraint *>(constraint);
 
     if (enable) {
-        sliderConstraint->setLowerLinLimit(SystemUnitToPhysicsUnit(angularLowerLimit));
-        sliderConstraint->setUpperLinLimit(SystemUnitToPhysicsUnit(angularUpperLimit));
+        sliderConstraint->setLowerLinLimit(SystemUnitToPhysicsUnit(linearLowerLimit));
+        sliderConstraint->setUpperLinLimit(SystemUnitToPhysicsUnit(linearUpperLimit));
     } else {
         sliderConstraint->setLowerLinLimit(1);
         sliderConstraint->setUpperLinLimit(-1);

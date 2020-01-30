@@ -18,6 +18,8 @@
 
 BE_NAMESPACE_BEGIN
 
+#define CONTROL_CFM_ERP
+
 PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, const Mat3 &axisInA) : 
     PhysConstraint(bodyA, nullptr) {
     Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
@@ -27,7 +29,7 @@ PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &ancho
     btHingeConstraint *hingeConstraint = new btHingeConstraint(*bodyA->GetRigidBody(), frameA);
     hingeConstraint->setUserConstraintPtr(this);
 
-#if 1
+#ifdef CONTROL_CFM_ERP
     hingeConstraint->setParam(BT_CONSTRAINT_CFM, 0);
     hingeConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0);
     hingeConstraint->setParam(BT_CONSTRAINT_ERP, 1);
@@ -51,7 +53,7 @@ PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &ancho
     btHingeConstraint *hingeConstraint = new btHingeConstraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(), frameA, frameB);
     hingeConstraint->setUserConstraintPtr(this);
 
-#if 1
+#ifdef CONTROL_CFM_ERP
     hingeConstraint->setParam(BT_CONSTRAINT_CFM, 0);
     hingeConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0);
     hingeConstraint->setParam(BT_CONSTRAINT_ERP, 1);
