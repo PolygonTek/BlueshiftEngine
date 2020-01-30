@@ -361,9 +361,10 @@ AnimClip *AnimController::LoadAnimClip(const Guid &animGuid) {
         anim = animManager.GetDefaultAnim(va("_defaultAnim_%s", GetSkeleton()->GetHashName()), GetSkeleton());
     }
 
+    animManager.ReleaseAnim(anim);
+
     if (!anim->CheckHierarchy(GetSkeleton())) {
         BE_ERRLOG("mismatch hierarchy '%s' with skeleton '%s'\n", anim->GetName(), GetSkeleton()->GetName());
-        animManager.ReleaseAnim(anim);
         return nullptr;
     }
 

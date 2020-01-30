@@ -41,7 +41,7 @@ void AnimClip::Purge() {
 void AnimClip::SetAnim(const Anim *anim) {
     Purge();
 
-    this->anim = const_cast<Anim *>(anim);//const_cast<Anim *>(anim->AddRefCount());
+    this->anim = const_cast<Anim *>(anim->AddRefCount());
 
     // TODO: 구간 (startTime, endTime) 을 정해서 구할 것
     if (this->anim->Length() > 0) {
