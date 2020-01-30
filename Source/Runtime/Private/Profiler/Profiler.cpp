@@ -61,9 +61,9 @@ void Profiler::Shutdown() {
 }
 
 void Profiler::SyncFrame() {
-    if (freezeState == FreezeState::WatingForFreeze) {
+    if (freezeState == FreezeState::WaitingForFreeze) {
         freezeState = FreezeState::Frozen;
-    } else if (freezeState == FreezeState::WatingForUnfreeze) {
+    } else if (freezeState == FreezeState::WaitingForUnfreeze) {
         freezeState = FreezeState::Unfrozen;
     }
 
@@ -98,11 +98,11 @@ void Profiler::SyncFrame() {
 
 bool Profiler::ToggleFreeze() {
     if (freezeState == FreezeState::Unfrozen) {
-        freezeState = FreezeState::WatingForFreeze;
+        freezeState = FreezeState::WaitingForFreeze;
         return true;
     }
     if (freezeState == FreezeState::Frozen) {
-        freezeState = FreezeState::WatingForUnfreeze;
+        freezeState = FreezeState::WaitingForUnfreeze;
         return true;
     }
     return false;

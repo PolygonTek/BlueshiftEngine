@@ -65,8 +65,8 @@ public:
         enum Enum {
             Unfrozen,
             Frozen,
-            WatingForFreeze,
-            WatingForUnfreeze
+            WaitingForFreeze,
+            WaitingForUnfreeze
         };
     };
 
@@ -120,7 +120,7 @@ public:
 
     void                        SyncFrame();
 
-    bool                        IsFrozen() const { return (freezeState == FreezeState::Frozen || freezeState == FreezeState::WatingForUnfreeze); }
+    bool                        IsFrozen() const { return (freezeState == FreezeState::Frozen || freezeState == FreezeState::WaitingForUnfreeze); }
     bool                        ToggleFreeze();
 
     int                         CreateTag(const char *name, const Color3 &color);

@@ -327,13 +327,13 @@ void LuaVM::UpdateTweeners(float unscaledDeltaTime, float timeScale) {
     }
 }
 
-void LuaVM::ClearWatingThreads() {
+void LuaVM::ClearWaitingThreads() {
     if (clearWaitingThreads.IsFunction()) {
         clearWaitingThreads();
     }
 }
 
-void LuaVM::WakeUpWatingThreads(float currentTime) {
+void LuaVM::WakeUpWaitingThreads(float currentTime) {
     if (wakeUpWaitingThreads.IsFunction()) {
         wakeUpWaitingThreads(currentTime);
     }

@@ -521,7 +521,7 @@ void GameWorld::StartGame() {
 
     luaVM.ClearTweeners();
 
-    luaVM.ClearWatingThreads();
+    luaVM.ClearWaitingThreads();
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         StaticBatch::CombineAll(scenes[sceneIndex].root);
@@ -562,7 +562,7 @@ void GameWorld::StopGame(bool stopAllSounds) {
 
     luaVM.ClearTweeners();
 
-    luaVM.ClearWatingThreads();
+    luaVM.ClearWaitingThreads();
 
     if (stopAllSounds) {
         soundSystem.StopAllSounds();
@@ -717,7 +717,7 @@ void GameWorld::Update(int elapsedTime) {
         LateUpdateEntities();
 
         // Wake up waiting coroutine in Lua scripts
-        luaVM.WakeUpWatingThreads(MS2SEC(time));
+        luaVM.WakeUpWaitingThreads(MS2SEC(time));
 
         // Update tweeners in Lua scripts
         luaVM.UpdateTweeners(MS2SEC(elapsedTime), timeScale);

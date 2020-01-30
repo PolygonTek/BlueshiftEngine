@@ -42,8 +42,8 @@ public:
     void                    ClearTweeners();
     void                    UpdateTweeners(float unscaledDeltaTime, float timeScale);
 
-    void                    ClearWatingThreads();
-    void                    WakeUpWatingThreads(float currentTime);
+    void                    ClearWaitingThreads();
+    void                    WakeUpWaitingThreads(float currentTime);
 
     void                    StartDebuggee();
     void                    StopDebuggee();
