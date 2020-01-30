@@ -288,7 +288,7 @@ PhysConstraint *PhysicsSystem::CreateConstraint(const PhysConstraintDesc &desc) 
 
     constraint->EnableCollision(desc.collision);
     constraint->SetBreakImpulse(desc.breakImpulse);
-    constraint->constraint->setDbgDrawSize(0.1f);
+    constraint->constraint->setDbgDrawSize(2.0f);
 
     return constraint;
 }

@@ -91,7 +91,7 @@ void PhysHingeConstraint::SetAngularLimits(float lowerLimit, float upperLimit) {
     this->upperLimit = upperLimit;
 
     if (hingeConstraint->hasLimit()) {
-        hingeConstraint->setLimit(lowerLimit, upperLimit, 0.9f, 0.3f);
+        hingeConstraint->setLimit(lowerLimit, upperLimit);
     }
 }
 
@@ -99,7 +99,7 @@ void PhysHingeConstraint::EnableAngularLimits(bool enable) {
     btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
 
     if (enable) {
-        hingeConstraint->setLimit(lowerLimit, upperLimit, 0.9f, 0.3f);
+        hingeConstraint->setLimit(lowerLimit, upperLimit);
     } else {
         hingeConstraint->setLimit(1.0f, -1.0f);
     }
