@@ -595,7 +595,7 @@ void RenderSystem::UpdateEnvProbes() {
 
 void RenderSystem::ScheduleToRefreshEnvProbe(RenderWorld *renderWorld, int probeHandle) {
     for (int i = 0; i < envProbeJobs.Count(); i++) {
-        EnvProbeJob *job = &envProbeJobs[i];
+        const EnvProbeJob *job = &envProbeJobs[i];
 
         if (job->GetRenderWorld() == renderWorld && job->GetEnvProbe() == renderWorld->GetEnvProbe(probeHandle)) {
             return;

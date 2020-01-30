@@ -12,6 +12,20 @@ set(COMMON_ENGINE_FILES
 
     Public/BlueshiftEngine.h
 
+    Public/Containers/StaticArray.h
+    Public/Containers/HashIndex.h
+    Public/Containers/HashMap.h
+    Public/Containers/HashTable.h
+    Public/Containers/Hierarchy.h
+    Public/Containers/LinkList.h
+    Public/Containers/Array.h
+    Public/Containers/Pair.h
+    Public/Containers/Stack.h
+    Public/Containers/Queue.h 
+    Public/Containers/StrArray.h
+    Public/Containers/StrPool.h
+    Public/Containers/LinkedList.h
+
     Public/Core/Allocator.h
     Public/Core/BinSearch.h
     Public/Core/Checksum_CRC32.h
@@ -46,20 +60,6 @@ set(COMMON_ENGINE_FILES
     Public/Core/StrColor.h
     Public/Core/Vec4Color.h
     Public/Core/Vertex.h 
-
-    Public/Containers/StaticArray.h
-    Public/Containers/HashIndex.h
-    Public/Containers/HashMap.h
-    Public/Containers/HashTable.h
-    Public/Containers/Hierarchy.h
-    Public/Containers/LinkList.h
-    Public/Containers/Array.h
-    Public/Containers/Pair.h
-    Public/Containers/Stack.h
-    Public/Containers/Queue.h 
-    Public/Containers/StrArray.h
-    Public/Containers/StrPool.h
-    Public/Containers/LinkedList.h
 
     Public/Image/Image.h 
     Public/Image/DxtCodec.h
@@ -136,6 +136,8 @@ set(COMMON_ENGINE_FILES
     Public/Platform/PlatformTime.h
     Public/Platform/PlatformSystem.h
 
+    Public/Platform/Platform.h
+
     Public/IO/File.h
     Public/IO/FileSystem.h
     Public/IO/ZipArchiver.h
@@ -161,6 +163,54 @@ set(COMMON_ENGINE_FILES
 
     Public/Animator/Animator.h
     Public/Animator/AnimStateBlender.h
+
+    Public/Render/Anim.h
+    Public/Render/BufferCache.h
+    Public/Render/SkinningJointCache.h
+    Public/Render/Font.h
+    Public/Render/FontFile.h
+    Public/Render/FreeTypeFont.h
+    Public/Render/ParticleMesh.h
+    Public/Render/GuiMesh.h
+    Public/Render/Material.h
+    Public/Render/Mesh.h
+    Public/Render/Render.h
+    Public/Render/RenderSystem.h
+    Public/Render/RenderContext.h  
+    Public/Render/ParticleSystem.h
+    Public/Render/EnvProbe.h
+    Public/Render/RenderObject.h
+    Public/Render/RenderLight.h
+    Public/Render/RenderCamera.h
+    Public/Render/RenderWorld.h
+    Public/Render/Shader.h
+    Public/Render/Skeleton.h
+    Public/Render/Skin.h
+    Public/Render/SubMesh.h
+    Public/Render/Texture.h
+    
+    Public/Physics/Collider.h
+    Public/Physics/Physics.h
+    Public/Physics/PhysicsCollidable.h
+    Public/Physics/PhysicsCollisionListener.h
+    Public/Physics/PhysicsConstraint.h
+    Public/Physics/PhysicsGenericConstraint.h
+    Public/Physics/PhysicsGenericSpringConstraint.h
+    Public/Physics/PhysicsHingeConstraint.h
+    Public/Physics/PhysicsP2PConstraint.h
+    Public/Physics/PhysicsSliderConstraint.h
+    Public/Physics/PhysicsRigidBody.h
+    Public/Physics/PhysicsSensor.h
+    Public/Physics/PhysicsSystem.h
+    Public/Physics/PhysicsVehicle.h
+    Public/Physics/PhysicsWorld.h
+
+    Public/Sound/Pcm.h
+    Public/Sound/SoundSystem.h
+
+    Public/Input/InputSystem.h
+    Public/Input/KeyCmd.h
+    Public/Input/KeyCodes.h
 
     Public/Components/ComAnimation.h
     Public/Components/ComAnimator.h
@@ -217,60 +267,12 @@ set(COMMON_ENGINE_FILES
     Public/Game/InputUtils.h
 
     Public/StaticBatching/StaticBatch.h
-    
-    Public/Physics/Collider.h
-    Public/Physics/Physics.h
-    Public/Physics/PhysicsCollidable.h
-    Public/Physics/PhysicsCollisionListener.h
-    Public/Physics/PhysicsConstraint.h
-    Public/Physics/PhysicsGenericConstraint.h
-    Public/Physics/PhysicsGenericSpringConstraint.h
-    Public/Physics/PhysicsHingeConstraint.h
-    Public/Physics/PhysicsP2PConstraint.h
-    Public/Physics/PhysicsSliderConstraint.h
-    Public/Physics/PhysicsRigidBody.h
-    Public/Physics/PhysicsSensor.h
-    Public/Physics/PhysicsSystem.h
-    Public/Physics/PhysicsVehicle.h
-    Public/Physics/PhysicsWorld.h
-
-    Public/Sound/Pcm.h
-    Public/Sound/SoundSystem.h
-
-    Public/Render/Anim.h
-    Public/Render/BufferCache.h
-    Public/Render/SkinningJointCache.h
-    Public/Render/Font.h
-    Public/Render/FontFile.h
-    Public/Render/FreeTypeFont.h
-    Public/Render/ParticleMesh.h
-    Public/Render/GuiMesh.h
-    Public/Render/Material.h
-    Public/Render/Mesh.h
-    Public/Render/Render.h
-    Public/Render/RenderSystem.h
-    Public/Render/RenderContext.h  
-    Public/Render/ParticleSystem.h
-    Public/Render/EnvProbe.h
-    Public/Render/RenderObject.h
-    Public/Render/RenderLight.h
-    Public/Render/RenderCamera.h
-    Public/Render/RenderWorld.h
-    Public/Render/Shader.h
-    Public/Render/Skeleton.h
-    Public/Render/Skin.h
-    Public/Render/SubMesh.h
-    Public/Render/Texture.h
-
-    Public/Platform/Platform.h
-
-    Public/Input/InputSystem.h
-    Public/Input/KeyCmd.h
-    Public/Input/KeyCodes.h
 
     Public/Scripting/LuaVM.h
 
     Public/Profiler/Profiler.h
+
+    Private/Containers/HashIndex.cpp
 
     Private/Core/Checksum_CRC32.cpp
     Private/Core/Checksum_MD5.cpp
@@ -293,8 +295,11 @@ set(COMMON_ENGINE_FILES
     Private/Core/Variant.cpp
     Private/Core/DynamicAABBTree.cpp
     Private/Core/Vec4Color.cpp
-
-    Private/Containers/HashIndex.cpp
+    Private/Core/Event.cpp
+    Private/Core/Object.cpp
+    Private/Core/Serializable.cpp
+    Private/Core/Signal.cpp
+    Private/Core/SignalObject.cpp
 
     Private/Image/ImageInternal.h
     Private/Image/Image.cpp
@@ -369,6 +374,10 @@ set(COMMON_ENGINE_FILES
     Private/Platform/PlatformBaseTime.cpp
     Private/Platform/PlatformBaseSystem.cpp
 
+    Private/Platform/Platform.cpp
+    Private/Platform/PlatformGeneric.h
+    Private/Platform/PlatformGeneric.cpp
+
     Private/IO/File.cpp
     Private/IO/FileSystem.cpp
     Private/IO/ZipArchiver.cpp
@@ -424,98 +433,6 @@ set(COMMON_ENGINE_FILES
     Private/Animator/Animator.cpp
     Private/Animator/AnimStateBlender.cpp
   
-    Private/Components/ComAnimation.cpp
-    Private/Components/ComAnimator.cpp
-    Private/Components/ComAudioListener.cpp
-    Private/Components/ComAudioSource.cpp
-    Private/Components/ComBoxCollider.cpp  
-    Private/Components/ComCamera.cpp
-    Private/Components/ComCapsuleCollider.cpp
-    Private/Components/ComCharacterController.cpp
-    Private/Components/ComCharacterJoint.cpp
-    Private/Components/ComCollider.cpp
-    Private/Components/ComConeCollider.cpp
-    Private/Components/ComConstantForce.cpp
-    Private/Components/ComCylinderCollider.cpp
-    Private/Components/ComFixedJoint.cpp
-    Private/Components/ComHingeJoint.cpp
-    Private/Components/ComJoint.cpp
-    Private/Components/ComLight.cpp
-    Private/Components/ComEnvironmentProbe.cpp
-    Private/Components/ComLogic.cpp
-    Private/Components/ComScript.cpp
-    Private/Components/ComMeshCollider.cpp
-    Private/Components/ComMeshRenderer.cpp
-    Private/Components/ComTextRenderer.cpp
-    Private/Components/ComText.cpp
-    Private/Components/Component.cpp
-    Private/Components/ComParticleSystem.cpp
-    Private/Components/ComRectTransform.cpp
-    Private/Components/ComRenderable.cpp
-    Private/Components/ComRigidBody.cpp
-    Private/Components/ComSensor.cpp
-    Private/Components/ComSkinnedMeshRenderer.cpp
-    Private/Components/ComSliderJoint.cpp
-    Private/Components/ComSocketJoint.cpp
-    Private/Components/ComSphereCollider.cpp
-    Private/Components/ComSpline.cpp
-    Private/Components/ComSpringJoint.cpp
-    Private/Components/ComStaticMeshRenderer.cpp
-    Private/Components/ComTransform.cpp
-    Private/Components/ComWheelJoint.cpp
-    Private/Components/ComVehicleWheel.cpp
-    Private/Components/ComCanvas.cpp
-    Private/Components/ComImage.cpp
-
-    Private/Game/Entity.cpp
-    Private/Game/Prefab.cpp
-    Private/Game/PrefabManager.cpp
-    Private/Game/MapRenderSettings.cpp
-    Private/Game/GameWorld.cpp
-    Private/Game/CastResult.cpp  
-    Private/Game/GameSettings.cpp
-    Private/Game/TagLayerSettings.cpp
-    Private/Game/PhysicsSettings.cpp
-    Private/Game/PlayerSettings.cpp
-    Private/Game/InputUtils.cpp
-
-    Private/StaticBatching/MeshCombiner.h
-    Private/StaticBatching/MeshCombiner.cpp
-    Private/StaticBatching/StaticBatch.cpp
-
-    Private/Core/Event.cpp
-    Private/Core/Object.cpp
-    Private/Core/Serializable.cpp
-    Private/Core/Signal.cpp
-    Private/Core/SignalObject.cpp
-
-    Private/Physics/ColliderInternal.h
-    Private/Physics/PhysicsCVars.h
-    Private/Physics/PhysicsInternal.h
-    Private/Physics/Collider.cpp
-    Private/Physics/ColliderManager.cpp
-    Private/Physics/PhysicsCollidable.cpp
-    Private/Physics/PhysicsCollisionListener.cpp
-    Private/Physics/PhysicsConstraint.cpp
-    Private/Physics/PhysicsCVars.cpp
-    Private/Physics/PhysicsDebugDraw.cpp
-    Private/Physics/PhysicsGenericConstraint.cpp
-    Private/Physics/PhysicsGenericSpringConstraint.cpp
-    Private/Physics/PhysicsHingeConstraint.cpp
-    Private/Physics/PhysicsP2PConstraint.cpp
-    Private/Physics/PhysicsSliderConstraint.cpp
-    Private/Physics/PhysicsRigidBody.cpp
-    Private/Physics/PhysicsSensor.cpp
-    Private/Physics/PhysicsSystem.cpp
-    Private/Physics/PhysicsVehicle.cpp
-    Private/Physics/PhysicsWorld.cpp
-
-    Private/Sound/Pcm.cpp
-    Private/Sound/Pcm_DecodeWav.cpp
-    Private/Sound/Pcm_DecodeOgg.cpp
-    Private/Sound/Sound.cpp
-    Private/Sound/SoundSystem.cpp
-
     Private/Render/BModel.h
     Private/Render/Anim.cpp
     Private/Render/Anim_banim.cpp
@@ -586,12 +503,94 @@ set(COMMON_ENGINE_FILES
     Private/Render/RenderUtils.cpp
     Private/Render/VertexFormat.cpp  
 
-    Private/Platform/Platform.cpp
-    Private/Platform/PlatformGeneric.h
-    Private/Platform/PlatformGeneric.cpp
+    Private/Physics/ColliderInternal.h
+    Private/Physics/PhysicsCVars.h
+    Private/Physics/PhysicsInternal.h
+    Private/Physics/Collider.cpp
+    Private/Physics/ColliderManager.cpp
+    Private/Physics/PhysicsCollidable.cpp
+    Private/Physics/PhysicsCollisionListener.cpp
+    Private/Physics/PhysicsConstraint.cpp
+    Private/Physics/PhysicsCVars.cpp
+    Private/Physics/PhysicsDebugDraw.cpp
+    Private/Physics/PhysicsGenericConstraint.cpp
+    Private/Physics/PhysicsGenericSpringConstraint.cpp
+    Private/Physics/PhysicsHingeConstraint.cpp
+    Private/Physics/PhysicsP2PConstraint.cpp
+    Private/Physics/PhysicsSliderConstraint.cpp
+    Private/Physics/PhysicsRigidBody.cpp
+    Private/Physics/PhysicsSensor.cpp
+    Private/Physics/PhysicsSystem.cpp
+    Private/Physics/PhysicsVehicle.cpp
+    Private/Physics/PhysicsWorld.cpp
+
+    Private/Sound/Pcm.cpp
+    Private/Sound/Pcm_DecodeWav.cpp
+    Private/Sound/Pcm_DecodeOgg.cpp
+    Private/Sound/Sound.cpp
+    Private/Sound/SoundSystem.cpp
 
     Private/Input/InputSystem.cpp
     Private/Input/KeyCmd.cpp
+
+    Private/Components/ComAnimation.cpp
+    Private/Components/ComAnimator.cpp
+    Private/Components/ComAudioListener.cpp
+    Private/Components/ComAudioSource.cpp
+    Private/Components/ComBoxCollider.cpp  
+    Private/Components/ComCamera.cpp
+    Private/Components/ComCapsuleCollider.cpp
+    Private/Components/ComCharacterController.cpp
+    Private/Components/ComCharacterJoint.cpp
+    Private/Components/ComCollider.cpp
+    Private/Components/ComConeCollider.cpp
+    Private/Components/ComConstantForce.cpp
+    Private/Components/ComCylinderCollider.cpp
+    Private/Components/ComFixedJoint.cpp
+    Private/Components/ComHingeJoint.cpp
+    Private/Components/ComJoint.cpp
+    Private/Components/ComLight.cpp
+    Private/Components/ComEnvironmentProbe.cpp
+    Private/Components/ComLogic.cpp
+    Private/Components/ComScript.cpp
+    Private/Components/ComMeshCollider.cpp
+    Private/Components/ComMeshRenderer.cpp
+    Private/Components/ComTextRenderer.cpp
+    Private/Components/ComText.cpp
+    Private/Components/Component.cpp
+    Private/Components/ComParticleSystem.cpp
+    Private/Components/ComRectTransform.cpp
+    Private/Components/ComRenderable.cpp
+    Private/Components/ComRigidBody.cpp
+    Private/Components/ComSensor.cpp
+    Private/Components/ComSkinnedMeshRenderer.cpp
+    Private/Components/ComSliderJoint.cpp
+    Private/Components/ComSocketJoint.cpp
+    Private/Components/ComSphereCollider.cpp
+    Private/Components/ComSpline.cpp
+    Private/Components/ComSpringJoint.cpp
+    Private/Components/ComStaticMeshRenderer.cpp
+    Private/Components/ComTransform.cpp
+    Private/Components/ComWheelJoint.cpp
+    Private/Components/ComVehicleWheel.cpp
+    Private/Components/ComCanvas.cpp
+    Private/Components/ComImage.cpp
+
+    Private/Game/Entity.cpp
+    Private/Game/Prefab.cpp
+    Private/Game/PrefabManager.cpp
+    Private/Game/MapRenderSettings.cpp
+    Private/Game/GameWorld.cpp
+    Private/Game/CastResult.cpp  
+    Private/Game/GameSettings.cpp
+    Private/Game/TagLayerSettings.cpp
+    Private/Game/PhysicsSettings.cpp
+    Private/Game/PlayerSettings.cpp
+    Private/Game/InputUtils.cpp
+
+    Private/StaticBatching/MeshCombiner.h
+    Private/StaticBatching/MeshCombiner.cpp
+    Private/StaticBatching/StaticBatch.cpp
 
     Private/Scripting/LuaVM.cpp
     Private/Scripting/Math/LuaModule_Math.cpp

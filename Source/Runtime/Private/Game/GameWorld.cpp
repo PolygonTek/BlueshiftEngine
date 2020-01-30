@@ -477,17 +477,18 @@ void GameWorld::FinishMapLoading() {
     renderWorld->FinishMapLoading();
 
     animControllerManager.DestroyUnusedAnimControllers();
-    fontManager.DestroyUnusedFonts();
-    textureManager.DestroyUnusedTextures();
-    shaderManager.DestroyUnusedShaders();
-    materialManager.DestroyUnusedMaterials();
-    meshManager.DestroyUnusedMeshes();
     particleSystemManager.DestroyUnusedParticleSystems();
     skeletonManager.DestroyUnusedSkeletons();
     animManager.DestroyUnusedAnims();
     skinManager.DestroyUnusedSkins();
+    meshManager.DestroyUnusedMeshes();
+    fontManager.DestroyUnusedFonts();
+    materialManager.DestroyUnusedMaterials();
+    shaderManager.DestroyUnusedShaders();
+    textureManager.DestroyUnusedTextures();
     colliderManager.DestroyUnusedColliders();
     soundSystem.DestroyUnusedSounds();
+
     //meshManager.EndLevelLoad();
 
     StaticBatch::ClearAllStaticBatches();
