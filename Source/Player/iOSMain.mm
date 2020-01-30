@@ -391,18 +391,13 @@ static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum dev
 
 - (void)initInstance {
     // ----- Core initialization -----
-    BE1::Engine::InitParms initParms;
-    
     BE1::Str appDir = BE1::PlatformFile::ExecutablePath();
-    initParms.baseDir = appDir;
-    
     BE1::Str dataDir = appDir + "/Data";
+    BE1::Str assetDir = dataDir + "/Contents";
 
-    BE1::Str assetDir = dataDir;
-    assetDir.AppendPath("Contents", '/');
-
+    BE1::Engine::InitParms initParms;
+    initParms.baseDir = appDir;
     initParms.searchPath = assetDir + ";" + dataDir;
-
     BE1::Engine::Init(&initParms);
     // -------------------------------
     

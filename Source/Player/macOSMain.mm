@@ -416,6 +416,12 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
 }
 
 - (void)initInstance {
+    BE1::Str playerDir = BE1::PlatformFile::ExecutablePath();
+    playerDir.AppendPath("../../..");
+
+    BE1::Str dataDir = playerDir + "/Data";
+    BE1::Str assetDir = dataDir + "/Contents";
+
     BE1::Engine::InitParms initParms;
 
     const NSArray *arguments = [[NSProcessInfo processInfo] arguments];
@@ -424,15 +430,7 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
         initParms.args.AppendArg(str);
     }
 
-    BE1::Str playerDir = BE1::PlatformFile::ExecutablePath();
-    playerDir.AppendPath("../../..");
     initParms.baseDir = playerDir;
-
-    BE1::Str dataDir = playerDir + "/Data";
-
-    BE1::Str assetDir = dataDir;
-    assetDir.AppendPath("Contents", '/');
-
     initParms.searchPath = assetDir + ";" + dataDir;
 
     BE1::Engine::Init(&initParms);
