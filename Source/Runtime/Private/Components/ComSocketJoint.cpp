@@ -51,7 +51,7 @@ void ComSocketJoint::CreateConstraint() {
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
-    // Fill up a constraint description 
+    // Fill up a constraint description.
     PhysConstraintDesc desc;
     desc.type = PhysConstraint::Type::Point2Point;
     desc.collision = collisionEnabled;
@@ -74,7 +74,7 @@ void ComSocketJoint::CreateConstraint() {
         connectedAnchor = Vec3::origin;
     }
 
-    // Create a constraint with the given description
+    // Create a constraint with the given description.
     PhysP2PConstraint *p2pConstraint = (PhysP2PConstraint *)physicsSystem.CreateConstraint(desc);
     p2pConstraint->SetImpulseClamp(impulseClamp);
 

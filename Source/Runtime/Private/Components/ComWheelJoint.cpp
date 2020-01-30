@@ -61,15 +61,16 @@ ComWheelJoint::~ComWheelJoint() {
 void ComWheelJoint::Init() {
     ComJoint::Init();
 
-    // Mark as initialized
+    // Mark as initialized.
     SetInitialized(true);
 }
 
 void ComWheelJoint::CreateConstraint() {
     const ComTransform *transform = GetEntity()->GetTransform();
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
+    assert(rigidBody);
 
-    // Fill up a constraint description 
+    // Fill up a constraint description.
     PhysConstraintDesc desc;
     desc.type = PhysConstraint::Type::GenericSpring;
     desc.collision = collisionEnabled;
@@ -97,24 +98,24 @@ void ComWheelJoint::CreateConstraint() {
         connectedAnchor = Vec3::origin;
     }
 
-    // Create a constraint with the given description
+    // Create a constraint with the given description.
     PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(desc);
 
-    // Apply limit suspension distances
+    // Apply limit suspension distances.
     genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, minSusDist));
     genericSpringConstraint->SetLinearUpperLimit(Vec3(0, 0, maxSusDist));
     genericSpringConstraint->EnableLinearLimits(true, true, enableSusLimit);
 
-    // Apply limit steering angles
+    // Apply limit steering angles.
     genericSpringConstraint->SetAngularLowerLimit(Vec3(0, 0, DEG2RAD(minSteeringAngle)));
     genericSpringConstraint->SetAngularUpperLimit(Vec3(0, 0, DEG2RAD(maxSteeringAngle)));
     genericSpringConstraint->EnableAngularLimits(false, true, enableSteeringLimit);
 
-    // Apply suspension stiffness & damping
+    // Apply suspension stiffness & damping.
     genericSpringConstraint->SetLinearStiffness(Vec3(0, 0, susStiffness));
     genericSpringConstraint->SetLinearDamping(Vec3(0, 0, susDamping));
 
-    // Apply motor
+    // Apply motor.
     if (motorTargetVelocity != 0.0f) {
         genericSpringConstraint->SetMotor(Vec3(DEG2RAD(motorTargetVelocity), 0, 0), Vec3(maxMotorImpulse, 0, 0));
         genericSpringConstraint->EnableMotor(true, false, false);

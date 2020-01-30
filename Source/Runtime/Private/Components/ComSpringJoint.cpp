@@ -51,7 +51,7 @@ ComSpringJoint::~ComSpringJoint() {
 void ComSpringJoint::Init() {
     ComJoint::Init();
 
-    // Mark as initialized
+    // Mark as initialized.
     SetInitialized(true);
 }
 
@@ -60,7 +60,7 @@ void ComSpringJoint::CreateConstraint() {
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
-    // Fill up a constraint description
+    // Fill up a constraint description.
     PhysConstraintDesc desc;
     desc.type = PhysConstraint::Type::GenericSpring;
     desc.collision = collisionEnabled;
@@ -88,15 +88,15 @@ void ComSpringJoint::CreateConstraint() {
         connectedAnchor = Vec3::origin;
     }
 
-    // Create a constraint with the given description
+    // Create a constraint with the given description.
     PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(desc);
 
-    // Apply limit distances
+    // Apply limit distances.
     genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, minDist));
     genericSpringConstraint->SetLinearUpperLimit(Vec3(0, 0, maxDist));
     genericSpringConstraint->EnableLinearLimits(true, true, enableLimitDistances);
 
-    // Apply spring stiffness & damping
+    // Apply spring stiffness & damping.
     genericSpringConstraint->SetLinearStiffness(Vec3(0, 0, stiffness));
     genericSpringConstraint->SetLinearDamping(Vec3(0, 0, damping));
 

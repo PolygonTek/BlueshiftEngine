@@ -61,7 +61,7 @@ ComSliderJoint::~ComSliderJoint() {
 void ComSliderJoint::Init() {
     ComJoint::Init();
 
-    // Mark as initialized
+    // Mark as initialized.
     SetInitialized(true);
 }
 
@@ -70,7 +70,7 @@ void ComSliderJoint::CreateConstraint() {
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
-    // Fill up a constraint description 
+    // Fill up a constraint description.
     PhysConstraintDesc desc;
     desc.type = PhysConstraint::Type::Slider;
     desc.collision = collisionEnabled;
@@ -98,24 +98,24 @@ void ComSliderJoint::CreateConstraint() {
         connectedAnchor = Vec3::origin;
     }
 
-    // Create a constraint with the given description
+    // Create a constraint with the given description.
     PhysSliderConstraint *sliderConstraint = (PhysSliderConstraint *)physicsSystem.CreateConstraint(desc);
 
-    // Apply limit distances
+    // Apply limit distances.
     sliderConstraint->SetLinearLimits(minDist, maxDist);
     sliderConstraint->EnableLinearLimits(enableLimitDistances);
 
-    // Apply limit angles
+    // Apply limit angles.
     sliderConstraint->SetAngularLimits(DEG2RAD(minAngle), DEG2RAD(maxAngle));
     sliderConstraint->EnableAngularLimits(enableLimitAngles);
 
-    // Apply linear motor
+    // Apply linear motor.
     if (linearMotorTargetVelocity != 0.0f) {
         sliderConstraint->SetLinearMotor(linearMotorTargetVelocity, maxLinearMotorImpulse / GetGameWorld()->GetPhysicsWorld()->GetFrameTimeDelta());
         sliderConstraint->EnableLinearMotor(true);
     }
 
-    // Apply angular motor
+    // Apply angular motor.
     if (angularMotorTargetVelocity != 0.0f) {
         sliderConstraint->SetAngularMotor(DEG2RAD(angularMotorTargetVelocity), maxAngularMotorImpulse / GetGameWorld()->GetPhysicsWorld()->GetFrameTimeDelta());
         sliderConstraint->EnableAngularMotor(true);

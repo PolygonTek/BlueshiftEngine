@@ -87,14 +87,14 @@ void ComHingeJoint::CreateConstraint() {
         connectedAnchor = Vec3::origin;
     }
 
-    // Create a constraint with the given description
+    // Create a constraint with the given description.
     PhysHingeConstraint *hingeConstraint = (PhysHingeConstraint *)physicsSystem.CreateConstraint(desc);
 
-    // Apply limit angles
+    // Apply limit angles.
     hingeConstraint->SetAngularLimits(DEG2RAD(minAngle), DEG2RAD(maxAngle));
     hingeConstraint->EnableAngularLimits(enableLimitAngles);
 
-    // Apply motor
+    // Apply motor.
     if (motorTargetVelocity != 0.0f) {
         hingeConstraint->SetMotor(DEG2RAD(motorTargetVelocity), maxMotorImpulse);
         hingeConstraint->EnableMotor(true);

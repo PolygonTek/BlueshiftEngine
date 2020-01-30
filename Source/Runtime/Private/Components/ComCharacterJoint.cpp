@@ -108,7 +108,7 @@ void ComCharacterJoint::CreateConstraint() {
     genericSpringConstraint->SetAngularStiffness(stiffness);
     genericSpringConstraint->SetAngularDamping(damping);
 
-    // Apply limit angles
+    // Apply limit angles.
     genericSpringConstraint->SetAngularLowerLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
     genericSpringConstraint->SetAngularUpperLimit(Vec3(DEG2RAD(upperLimit.x), DEG2RAD(upperLimit.y), DEG2RAD(upperLimit.z)));
     genericSpringConstraint->EnableAngularLimits(true, true, true);
