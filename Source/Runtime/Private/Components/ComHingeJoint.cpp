@@ -69,6 +69,7 @@ void ComHingeJoint::CreateConstraint() {
     desc.axisInA = localAxis;
     desc.anchorInA = transform->GetScale() * localAnchor;
 
+    const ComRigidBody *connectedBody = GetConnectedBody();
     if (connectedBody) {
         Mat3 worldAxis = desc.bodyA->GetAxis() * localAxis;
         Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
@@ -199,6 +200,8 @@ void ComHingeJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool s
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 
         Mat3 constraintAxis = Mat3::identity;
+
+        const ComRigidBody *connectedBody = GetConnectedBody();
         if (connectedBody) {
             constraintAxis = connectedBody->GetEntity()->GetTransform()->GetAxis();
         }

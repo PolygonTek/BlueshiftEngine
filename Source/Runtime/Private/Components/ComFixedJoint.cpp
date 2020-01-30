@@ -55,6 +55,7 @@ void ComFixedJoint::CreateConstraint() {
     desc.axisInA = Mat3::identity;
     desc.anchorInA = Vec3::zero;
 
+    const ComRigidBody *connectedBody = GetConnectedBody();
     if (connectedBody) {
         desc.bodyB = connectedBody->GetBody();
         desc.axisInB = Mat3::identity;

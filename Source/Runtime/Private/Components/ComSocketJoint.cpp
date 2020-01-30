@@ -60,6 +60,7 @@ void ComSocketJoint::CreateConstraint() {
     desc.bodyA = rigidBody->GetBody();
     desc.anchorInA = transform->GetScale() * localAnchor;
 
+    const ComRigidBody *connectedBody = GetConnectedBody();
     if (connectedBody) {
         Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
 

@@ -70,6 +70,7 @@ void ComSpringJoint::CreateConstraint() {
     desc.axisInA = localAxis;
     desc.anchorInA = transform->GetScale() * localAnchor;
 
+    const ComRigidBody *connectedBody = GetConnectedBody();
     if (connectedBody) {
         Mat3 worldAxis = desc.bodyA->GetAxis() * localAxis;
         Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
