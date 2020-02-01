@@ -527,7 +527,7 @@ void Entity::SetActiveInHierarchy(bool active) {
     EmitSignal(&SIG_ActiveInHierarchyChanged, this, active ? 1 : 0);
 #endif
 
-    for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
+    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component->IsEnabled()) {
@@ -548,7 +548,7 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
     AABB outAabb;
     outAabb.Clear();
 
-    for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
+    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
         if (component) {
@@ -670,7 +670,7 @@ bool Entity::IntersectRay(const Ray &ray, bool backFaceCull, float &lastDist) co
     float minDist = lastDist;
     float dist;
 
-    for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
+    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         const Component *component = components[componentIndex];
 
         if (component && component->IsActiveInHierarchy()) {
