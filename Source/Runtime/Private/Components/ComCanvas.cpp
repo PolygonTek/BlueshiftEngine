@@ -302,7 +302,9 @@ bool ComCanvas::ProcessMousePointerInput() {
         // Convert screen point to ray.
         Ray ray = ScreenPointToRay(screenPoint);
         // Cast ray to detect entity.
-        return GetEntity()->RayCastRect(ray);
+        Entity *hitEntity = GetEntity()->RayCastRect(ray);
+        // Return hit entity except for canvas entity.
+        return hitEntity != GetEntity() ? hitEntity : nullptr;
     });
 }
 
@@ -311,7 +313,9 @@ bool ComCanvas::ProcessTouchPointerInput() {
         // Convert screen point to ray.
         Ray ray = ScreenPointToRay(screenPoint);
         // Cast ray to detect entity.
-        return GetEntity()->RayCastRect(ray);
+        Entity *hitEntity = GetEntity()->RayCastRect(ray);
+        // Return hit entity except for canvas entity.
+        return hitEntity != GetEntity() ? hitEntity : nullptr;
     });
 }
 
