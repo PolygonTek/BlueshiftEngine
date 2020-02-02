@@ -677,9 +677,9 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
     GLint fragmentGPUProcessing, vertexGPUProcessing;
     CGLGetParameter(ctx->cglContext, kCGLCPGPUVertexProcessing, &vertexGPUProcessing);
     CGLGetParameter(ctx->cglContext, kCGLCPGPUFragmentProcessing, &fragmentGPUProcessing);
-    
-    BE_LOG("GPU vertex processing: %s\n", vertexGPUProcessing ? "YES" : "NO");
-    BE_LOG("GPU fragment processing: %s\n", fragmentGPUProcessing ? "YES" : "NO");
+
+    BE_DLOG("GPU vertex processing: %s\n", vertexGPUProcessing ? "YES" : "NO");
+    BE_DLOG("GPU fragment processing: %s\n", fragmentGPUProcessing ? "YES" : "NO");
 
     SetContext((Handle)handle);
 
@@ -697,7 +697,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
 
 void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     GLContext *ctx = contextList[ctxHandle];
-    
+
     if (ctx->nsglContext != mainContext->nsglContext) {
         // Delete default VAO for shared context
         gglDeleteVertexArrays(1, &ctx->defaultVAO);
