@@ -104,6 +104,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
     int blendDst = 0;
     int colorWrite = RHI::RedWrite | RHI::GreenWrite | RHI::BlueWrite;
     int depthWrite = RHI::DepthWrite;
+    int depthTestBits = RHI::DF_LEqual;
 
     pass->renderingMode     = RenderingMode::Opaque;
     pass->transparency      = Transparency::Default;
@@ -163,6 +164,10 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                 }
             } else {
                 BE_WARNLOG("missing transparency cull keyword in material '%s'\n", hashName.c_str());
+            }
+        } else if (!token.Icmp("depthTest")) {
+            if (!ParseDepthTest(lexer, &depthTestBits)) {
+                BE_WARNLOG("missing depthTest parm in material '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("shader")) {
             if (lexer.ReadToken(&token, false)) {
@@ -341,7 +346,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
         } else if (!token.Icmp("useOwnerColor")) {
             pass->useOwnerColor = true;
         } else if (!token.Icmp("instancingEnabled")) {
-            pass->instancingEnabled = true;        
+            pass->instancingEnabled = true;
         } else {
             BE_WARNLOG("unknown material pass parameter '%s' in material '%s'\n", token.c_str(), hashName.c_str());
             lexer.SkipRestOfLine();
@@ -358,6 +363,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
     }
 
     pass->stateBits = blendSrc | blendDst | colorWrite | depthWrite;
+    pass->depthTestBits = depthTestBits;
 
     return true;
 }
@@ -520,6 +526,36 @@ bool Material::ParseRenderingMode(Lexer &lexer, RenderingMode::Enum *renderingMo
     }
 
     BE_WARNLOG("missing parameter for renderingMode keyword in material '%s\n", hashName.c_str());
+    return false;
+}
+
+bool Material::ParseDepthTest(Lexer &lexer, int *depthTest) const {
+    Str	token;
+
+    if (lexer.ReadToken(&token, false)) {
+        if (!token.Icmp("less")) {
+            *depthTest = RHI::DF_Less;
+        } else if (!token.Icmp("greater")) {
+            *depthTest = RHI::DF_Greater;
+        } else if (!token.Icmp("lequal")) {
+            *depthTest = RHI::DF_LEqual;
+        } else if (!token.Icmp("gequal")) {
+            *depthTest = RHI::DF_GEqual;
+        } else if (!token.Icmp("equal")) {
+            *depthTest = RHI::DF_Equal;
+        } else if (!token.Icmp("notequal")) {
+            *depthTest = RHI::DF_NotEqual;
+        } else if (!token.Icmp("always")) {
+            *depthTest = RHI::DF_Always;
+        } else {
+            *depthTest = RHI::DF_LEqual;
+            BE_WARNLOG("unknown depthTest '%s' in material '%s', substituting LEQUAL\n", token.c_str(), hashName.c_str());
+        }
+
+        return true;
+    }
+
+    BE_WARNLOG("missing parameter for depthTest keyword in material '%s'\n", hashName.c_str());
     return false;
 }
 
@@ -691,30 +727,30 @@ void Material::Write(const char *filename) {
 
     Str cullStr;
     switch (pass->cullType) {
-    case RHI::CullType::Back: 
-        cullStr = "back"; 
+    case RHI::CullType::Back:
+        cullStr = "back";
         break;
-    case RHI::CullType::Front: 
-        cullStr = "front"; 
+    case RHI::CullType::Front:
+        cullStr = "front";
         break;
-    case RHI::CullType::None: 
+    case RHI::CullType::None:
     default: 
-        cullStr = "none"; 
+        cullStr = "none";
         break;
     }
     fp->Printf("%scull %s\n", indentSpace.c_str(), cullStr.c_str());
 
     Str transparencyStr;
     switch (pass->transparency) {
-    case Transparency::Default: 
-        transparencyStr = "default"; 
+    case Transparency::Default:
+        transparencyStr = "default";
         break;
-    case Transparency::TwoPassesOneSide: 
-        transparencyStr = "twoPassesOneSide"; 
+    case Transparency::TwoPassesOneSide:
+        transparencyStr = "twoPassesOneSide";
         break;
-    case Transparency::TwoPassesTwoSides: 
+    case Transparency::TwoPassesTwoSides:
     default: 
-        transparencyStr = "twoPassesTwoSides"; 
+        transparencyStr = "twoPassesTwoSides";
         break;
     }
     fp->Printf("%stransparency %s\n", indentSpace.c_str(), transparencyStr.c_str());
@@ -807,6 +843,21 @@ void Material::Write(const char *filename) {
 
     if (pass->renderingMode == RenderingMode::AlphaCutoff) {
         fp->Printf("%scutoffAlpha %.3f\n", indentSpace.c_str(), pass->cutoffAlpha);
+    }
+
+    if (pass->depthTestBits != RHI::DF_LEqual) {
+        Str depthTestStr;
+        switch (pass->depthTestBits) {
+        case RHI::DF_Less: depthTestStr = "LESS"; break;
+        case RHI::DF_Greater: depthTestStr = "GREATER"; break;
+        case RHI::DF_LEqual: depthTestStr = "LEQUAL"; break;
+        case RHI::DF_GEqual: depthTestStr = "GEQUAL"; break;
+        case RHI::DF_Equal: depthTestStr = "EQUAL"; break;
+        case RHI::DF_NotEqual: depthTestStr = "NOTEQUAL"; break;
+        case RHI::DF_Always: depthTestStr = "ALWAYS"; break;
+        }
+
+        fp->Printf("%sdepthTest %s\n", indentSpace.c_str(), depthTestStr.c_str());
     }
 
     int blendFuncMask = pass->stateBits & RHI::MaskBF;
