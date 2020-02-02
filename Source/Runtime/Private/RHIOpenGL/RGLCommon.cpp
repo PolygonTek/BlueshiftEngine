@@ -398,6 +398,10 @@ bool OpenGLRHI::SupportsDebugLabel() const {
     return OpenGL::SupportsDebugLabel();
 }
 
+bool OpenGLRHI::SupportsCopyImage() const {
+    return OpenGL::SupportsCopyImage();
+}
+
 void OpenGLRHI::Clear(int clearBits, const Color4 &color, float depth, unsigned int stencil) {
 #if 1
     if (clearBits & ClearBit::Color) {

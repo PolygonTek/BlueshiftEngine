@@ -173,6 +173,7 @@ private:
     RenderTarget *          diffuseProbeRT = nullptr;
 
     Texture *               envProbeTexture = nullptr;
+    RenderTarget *          envProbeRT = nullptr;
 
     Texture *               specularProbeTexture = nullptr;
     int                     specularProbeTextureMaxMipLevel = 0;

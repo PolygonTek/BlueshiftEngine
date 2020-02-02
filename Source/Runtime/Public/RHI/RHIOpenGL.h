@@ -74,6 +74,7 @@ public:
     bool                    SupportsBufferStorage() const;
     bool                    SupportsMultiDrawIndirect() const;
     bool                    SupportsDebugLabel() const;
+    bool                    SupportsCopyImage() const;
 
     bool                    IsFullscreen() const;
     bool                    SetFullscreen(Handle windowHandle, int width, int height);

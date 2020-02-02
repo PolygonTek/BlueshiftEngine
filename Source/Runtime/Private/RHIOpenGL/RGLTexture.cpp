@@ -689,7 +689,9 @@ void OpenGLRHI::CopyImageSubData(Handle srcTextureHandle, int srcLevel, int srcX
     assert(srcTexture);
     assert(dstTexture);
 
-    OpenGL::CopyImageSubData(srcTexture->object, srcTexture->target, srcLevel, srcX, srcY, srcZ, dstTexture->object, dstTexture->target, dstLevel, dstX, dstY, dstZ, width, height, depth);
+    if (OpenGL::SupportsCopyImage()) {
+        OpenGL::CopyImageSubData(srcTexture->object, srcTexture->target, srcLevel, srcX, srcY, srcZ, dstTexture->object, dstTexture->target, dstLevel, dstX, dstY, dstZ, width, height, depth);
+    }
 }
 
 void OpenGLRHI::GetTextureImage2D(int level, Image::Format::Enum dstFormat, void *pixels) {
