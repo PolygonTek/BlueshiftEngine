@@ -160,27 +160,28 @@ static void InitDisplay(ANativeWindow *window) {
         int renderWidth;
         int renderHeight;
 
-        if (renderQuality == RenderQuality::High) {
-            renderWidth = currentWindowWidth;
-            renderHeight = currentWindowHeight;
-        } else {
-            if (currentWindowWidth > currentWindowHeight) {
-                // landscape mode
-                if (renderQuality == RenderQuality::Medium) {
-                    renderWidth = BE1::Min(1280, currentWindowWidth);
-                    renderHeight = BE1::Min(720, currentWindowHeight);
-                } else {
-                    renderWidth = BE1::Min(1024, currentWindowWidth);
-                    renderHeight = BE1::Min(576, currentWindowHeight);
-                }
+        if (currentWindowWidth > currentWindowHeight) {
+            // landscape mode
+            if (renderQuality == RenderQuality::High) {
+                renderWidth = BE1::Min(1920, currentWindowWidth);
+                renderHeight = BE1::Min(1080, currentWindowHeight);
+            } else if (renderQuality == RenderQuality::Medium) {
+                renderWidth = BE1::Min(1280, currentWindowWidth);
+                renderHeight = BE1::Min(720, currentWindowHeight);
             } else {
-                if (renderQuality == RenderQuality::Medium) {
-                    renderWidth = BE1::Min(720, currentWindowWidth);
-                    renderHeight = BE1::Min(1280, currentWindowHeight);
-                } else {
-                    renderWidth = BE1::Min(576, currentWindowWidth);
-                    renderHeight = BE1::Min(1024, currentWindowHeight);
-                }
+                renderWidth = BE1::Min(1024, currentWindowWidth);
+                renderHeight = BE1::Min(576, currentWindowHeight);
+            }
+        } else {
+            if (renderQuality == RenderQuality::High) {
+                renderWidth = BE1::Min(1080, currentWindowWidth);
+                renderHeight = BE1::Min(1920, currentWindowHeight);
+            } else if (renderQuality == RenderQuality::Medium) {
+                renderWidth = BE1::Min(720, currentWindowWidth);
+                renderHeight = BE1::Min(1280, currentWindowHeight);
+            } else {
+                renderWidth = BE1::Min(576, currentWindowWidth);
+                renderHeight = BE1::Min(1024, currentWindowHeight);
             }
         }
 
