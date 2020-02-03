@@ -206,7 +206,7 @@ Str Str::NumberedName(int *number) const {
 
 int BE_CDECL Str::sPrintf(const char *fmt, ...) {
     va_list argptr;
-    char buffer[32000];	// big, but small enough to fit in PPC stack
+    char buffer[32000];
     va_start(argptr, fmt);
     len = Str::vsnPrintf(buffer, COUNT_OF(buffer) - 1, fmt, argptr);
     va_end(argptr);
@@ -416,7 +416,7 @@ Str &Str::SetFileExtension(const char *extension) {
 }
 
 Str &Str::DefaultFileExtension(const char *extension) {
-    // 확장자가 있다면 그냥 리턴
+    // Return if this string already has an extension.
     for (int i = len - 1; i >= 0; i--) {
         if (data[i] == '.') {
             return *this;
@@ -1337,7 +1337,7 @@ const char *Str::FloatArrayToString(const float *arr, const int length, const in
 
 int BE_CDECL Str::snPrintf(char *dest, int size, const char *fmt, ...) {
     va_list argptr;
-    char buffer[32000];	// big, but small enough to fit in PPC stack
+    char buffer[32000];
     va_start(argptr, fmt);
     int len = ::vsprintf(buffer, fmt, argptr);
     va_end(argptr);
