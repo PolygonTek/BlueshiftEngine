@@ -660,9 +660,6 @@ void ComScript::InitScriptFields() {
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "object")) {
-            const char *classname = prop["classname"];
-            const MetaObject *metaObject = Object::FindMetaObject(classname);
-
             auto pairPtr = fieldGuids.Get(name);
 
             auto propInfo = PropertyInfo(name, label, VariantType<Guid>::GetType(), 
@@ -681,7 +678,10 @@ void ComScript::InitScriptFields() {
 #endif
                     }
                 ), pairPtr->second.As<Guid>(), desc, PropertyInfo::Flag::Editor);
-            
+
+            const char *classname = prop["classname"];
+            const MetaObject *metaObject = Object::FindMetaObject(classname);
+
             propInfo.SetMetaObject(metaObject);
 
             fieldInfos.Append(propInfo);
@@ -836,8 +836,9 @@ void ComScript::SetScriptProperties() {
             } else {
                 if (propInfo->GetMetaObject()->IsTypeOf(Resource::metaObject)) {
                     if (!objectGuid.IsZero()) {
-                        object = propInfo->GetMetaObject()->CreateInstance(objectGuid); // FIXME: when to delete ?
-                        property["value"] = object;
+                        Asset *asset = (Asset *)Asset::CreateInstance(objectGuid); // FIXME: when to delete ?
+                        asset->CreateResource(*propInfo->GetMetaObject());
+                        property["value"] = asset;
                     }
                 }
             }
