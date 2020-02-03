@@ -84,7 +84,7 @@ public:
     const Ray               CanvasPointToRay(const Point &canvasPoint);
 
                             /// Returns true if the given screen point is in child rect transform.
-    bool                    IsPointOverChildRect(const Point &screenPoint);
+    bool                    IsScreenPointOverChildRect(const Point &screenPoint);
 
     void                    UpdateRenderingOrderForCanvasElements() const;
 

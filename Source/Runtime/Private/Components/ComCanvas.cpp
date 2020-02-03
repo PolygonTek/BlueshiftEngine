@@ -285,7 +285,7 @@ const Ray ComCanvas::CanvasPointToRay(const Point &canvasPoint) {
     return ScreenPointToRay(screenPoint);
 }
 
-bool ComCanvas::IsPointOverChildRect(const Point &screenPoint) {
+bool ComCanvas::IsScreenPointOverChildRect(const Point &screenPoint) {
     Ray ray = ScreenPointToRay(screenPoint);
 
     Entity *hitEntity = GetEntity()->RayCastRect(ray);
@@ -293,7 +293,6 @@ bool ComCanvas::IsPointOverChildRect(const Point &screenPoint) {
     if (!hitEntity || hitEntity == GetEntity()) {
         return false;
     }
-
     return true;
 }
 
