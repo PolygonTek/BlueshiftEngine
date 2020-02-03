@@ -46,7 +46,7 @@ int Sound::ByteOffset() const {
 }
 
 void Sound::Purge() {
-    // If this sound have a original sound pointer, this is the duplicated one
+    // If this sound have a original sound pointer, this is the duplicated one.
     if (originalSound) {
         if (dupNode.InList()) {
             dupNode.Remove();
@@ -110,14 +110,14 @@ Sound *Sound::Instantiate() {
     Sound *lruSound = nullptr;
     int reusableCount = 0;
 
-    // Find a reusable duplicated sound buffer which is currently not playing
+    // Find a reusable duplicated sound buffer which is currently not playing.
     for (LinkList<Sound> *node = dupNode.NextNode(); node; node = node->NextNode()) {
         Sound *s = node->Owner();
         if (!s->playNode.InList()) {
             return s;
         }
 
-        // Only non-looping sound can be reusable
+        // Only non-looping sound can be reusable.
         if (!s->looping) {
             if (!lruSound) {
                 lruSound = s;
@@ -131,13 +131,13 @@ Sound *Sound::Instantiate() {
         }
     }
 
-    // Forces to stop and reuse duplicated sound if maximum reusable count is reached
+    // Forces to stop and reuse duplicated sound if maximum reusable count is reached.
     if (reusableCount >= MAX_REUSABLE_SOUND) {
         lruSound->Stop();
         return lruSound;
     }
 
-    // If not found, duplicate original sound buffer
+    // If not found, duplicate original sound buffer.
     Sound *s = new Sound;
     s->refCount = 1;
     s->DuplicateFrom(this);
