@@ -57,7 +57,7 @@ extern CVar     r_CSM_pancaking;
 extern CVar     r_CSM_nonCachedDistance;
 extern CVar     r_CSM_updateRatio;
 extern CVar     r_CSM_selectionMethod;
-extern CVar     r_CSM_splitLamda;
+extern CVar     r_CSM_splitLambda;
 extern CVar     r_CSM_blend;
 extern CVar     r_CSM_offsetFactor0;
 extern CVar     r_CSM_offsetFactor1;

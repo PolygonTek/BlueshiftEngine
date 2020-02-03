@@ -668,7 +668,7 @@ static void RB_CascadedShadowMapPass(const VisLight *visLight) {
     float dFar = r_CSM_maxDistance.GetFloat();
     int csmCount = r_CSM_count.GetInteger();
 
-    R_ComputeSplitDistances(dNear, dFar, r_CSM_splitLamda.GetFloat(), csmCount, backEnd.csmDistances);
+    R_ComputeSplitDistances(dNear, dFar, r_CSM_splitLambda.GetFloat(), csmCount, backEnd.csmDistances);
 
     if (r_CSM_selectionMethod.GetInteger() == 0) {
         // z-based selection shader needs shadowSplitFar value
