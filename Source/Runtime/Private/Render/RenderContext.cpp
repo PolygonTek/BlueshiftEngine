@@ -630,7 +630,7 @@ float RenderContext::QueryDepth(const Point &point) {
     return depth;
 }
 
-bool RenderContext::QuerySelection(const Point &point, int &index) {
+bool RenderContext::QuerySelection(const Point &point, uint32_t &index) {
     Image::Format::Enum format = screenSelectionRT->ColorTexture()->GetFormat();
     byte *data = (byte *)_alloca(Image::BytesPerPixel(format));
 
@@ -645,7 +645,7 @@ bool RenderContext::QuerySelection(const Point &point, int &index) {
     rhi.ReadPixels(scaledReadPoint.x, scaledReadPoint.y, 1, 1, format, data);
     screenSelectionRT->End();
 
-    int id = ((int)data[2] << 16) | ((int)data[1] << 8) | ((int)data[0]);
+    uint32_t id = ((uint32_t)data[2] << 16) | ((uint32_t)data[1] << 8) | ((uint32_t)data[0]);
     if (id != 0x00FFFFFF) {
         index = id;
         return true;
@@ -654,13 +654,13 @@ bool RenderContext::QuerySelection(const Point &point, int &index) {
     return false;
 }
 
-bool RenderContext::QuerySelection(const Rect &rect, Inclusion::Enum inclusion, Array<int> &indexes) {
+bool RenderContext::QuerySelection(const Rect &rect, Inclusion::Enum inclusion, Array<uint32_t> &indexes) {
     if (rect.IsEmpty()) {
         return false;
     }
 
     if (rect.w == 1 && rect.h == 1) {
-        int index;
+        uint32_t index;
 
         if (QuerySelection(rect.GetPoint(0), index)) {
             indexes.Append(index);
@@ -694,7 +694,7 @@ bool RenderContext::QuerySelection(const Rect &rect, Inclusion::Enum inclusion, 
         byte *data_ptr = data;
 
         for (int i = 0; i < pixelCount; i++) {
-            int id = (((int)data_ptr[2]) << 16) | (((int)data_ptr[1]) << 8) | ((int)data_ptr[0]);
+            uint32_t id = (((uint32_t)data_ptr[2]) << 16) | (((uint32_t)data_ptr[1]) << 8) | ((uint32_t)data_ptr[0]);
             if (id != 0x00FFFFFF) {
                 indexes.AddUnique(id);
             }
@@ -718,7 +718,7 @@ bool RenderContext::QuerySelection(const Rect &rect, Inclusion::Enum inclusion, 
             for (int x = scaledReadRect.x; x < scaledReadRect.X2(); x++) {
                 byte *data_ptr = &data[pitch + x * bpp];
 
-                int id = (((int)data_ptr[2]) << 16) | (((int)data_ptr[1]) << 8) | ((int)data_ptr[0]);
+                uint32_t id = (((uint32_t)data_ptr[2]) << 16) | (((uint32_t)data_ptr[1]) << 8) | ((uint32_t)data_ptr[0]);
                 if (id != 0x00FFFFFF) {
                     indexes.AddUnique(id);
                 }
@@ -732,7 +732,7 @@ bool RenderContext::QuerySelection(const Rect &rect, Inclusion::Enum inclusion, 
                 if (!scaledReadRect.IsContainPoint(x, y)) {
                     byte *data_ptr = &data[pitch + x * bpp];
 
-                    int id = (((int)data_ptr[2]) << 16) | (((int)data_ptr[1]) << 8) | ((int)data_ptr[0]);
+                    uint32_t id = (((uint32_t)data_ptr[2]) << 16) | (((uint32_t)data_ptr[1]) << 8) | ((uint32_t)data_ptr[0]);
                     if (id != 0x00FFFFFF) {
                         indexes.RemoveFast(id);
                     }

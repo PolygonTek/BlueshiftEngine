@@ -177,6 +177,9 @@ public:
                         /// Creates from RGB888.
     static Color3       FromRGB888(uint8_t r, uint8_t g, uint8_t b);
 
+                        /// Creates from packed to a 32-bit integer, with R component in the lowest 8 bits.
+    static Color3       FromUInt32(uint32_t rgbx);
+
                         /// Converts color to a 32-bit integer, with R component in the lowest 8 bits. Components are clamped to [0, 1] range.
     uint32_t            ToUInt32() const;
 

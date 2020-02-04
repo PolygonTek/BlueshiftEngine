@@ -91,7 +91,7 @@ private:
     void                    SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shader *shader, bool useShadowMap) const;
 
     void                    RenderColor(const Material::ShaderPass *mtrlPass, const Color4 &color) const;
-    void                    RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &idInVec3) const;
+    void                    RenderSelection(const Material::ShaderPass *mtrlPass, const Color3 &idInColor3) const;
     void                    RenderDepth(const Material::ShaderPass *mtrlPass) const;
     void                    RenderDepthNormal(const Material::ShaderPass *mtrlPass) const;
     void                    RenderVelocity(const Material::ShaderPass *mtrlPass) const;

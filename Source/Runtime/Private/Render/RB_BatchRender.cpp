@@ -338,7 +338,7 @@ void Batch::RenderColor(const Material::ShaderPass *mtrlPass, const Color4 &colo
     DrawPrimitives();
 }
 
-void Batch::RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &idInVec3) const {
+void Batch::RenderSelection(const Material::ShaderPass *mtrlPass, const Color3 &idInColor3) const {
     Shader *shader = ShaderManager::selectionIdShader;
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
@@ -373,7 +373,7 @@ void Batch::RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &id
         shader->SetConstant1f(shader->builtInConstantIndices[Shader::BuiltInConstant::PerforatedAlpha], mtrlPass->cutoffAlpha);
     }
 
-    shader->SetConstant3f("id", idInVec3);
+    shader->SetConstant3f("id", idInColor3);
 
     DrawPrimitives();
 }

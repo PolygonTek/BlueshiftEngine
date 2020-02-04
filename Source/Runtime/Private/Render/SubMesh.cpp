@@ -172,24 +172,28 @@ void SubMesh::FreeSubMesh() {
 }
 
 void SubMesh::CacheStaticDataToGpu() {
-    // Fill in static vertex buffer
+    // Fill in static vertex buffer.
     if (!bufferCacheManager.IsCached(vertexCache)) {
-        // skinning subMesh 라면 vertex weight 값을 vertex buffer 뒤에 write 한다
+        int sizeVerts = sizeof(VertexGenericLit) * numVerts;
+
+        // Write vertex weights after vertex data in the vertex buffer.
         if (vertWeights) {//surfSpace->def->state.joints && useGpuSkinning) {
-            int sizeofVertWeight = VertexWeightSize();
-            int size = sizeof(VertexGenericLit) * numVerts + sizeofVertWeight * numVerts;
+            int sizeWeights = VertexWeightSize() * numVerts;
+            int size = sizeVerts + sizeWeights;
             
             bufferCacheManager.AllocStaticVertex(size, nullptr, vertexCache);
 
             rhi.BindBuffer(RHI::BufferType::Vertex, vertexCache->buffer);
             byte *ptr = (byte *)rhi.MapBufferRange(vertexCache->buffer, RHI::BufferLockMode::WriteOnly, 0, size);
 
-            simdProcessor->Memcpy(ptr, verts, sizeof(VertexGenericLit) * numVerts);
-            simdProcessor->Memcpy(ptr + sizeof(VertexGenericLit) * numVerts, vertWeights, sizeofVertWeight * numVerts);
+            simdProcessor->Memcpy(ptr, verts, sizeVerts);
+            simdProcessor->Memcpy(ptr + sizeVerts, vertWeights, sizeWeights);
 
-            rhi.UnmapBuffer(vertexCache->buffer);
+            if (!rhi.UnmapBuffer(vertexCache->buffer)) {
+                BE_WARNLOG("Error unmapping buffer\n");
+            }
         } else {
-            bufferCacheManager.AllocStaticVertex(numVerts * sizeof(VertexGenericLit), verts, vertexCache);
+            bufferCacheManager.AllocStaticVertex(sizeVerts, verts, vertexCache);
         }
     }
 

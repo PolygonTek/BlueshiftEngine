@@ -142,7 +142,7 @@ private:
     int                     frameCount;
     int                     flags = 0;                  // texture load flags
 
-    RHI::Handle             textureHandle = RHI::Handle::NullTexture; // texture handle
+    RHI::Handle             textureHandle = RHI::NullTexture; // texture handle
     RHI::TextureType::Enum  type = RHI::TextureType::Texture2D;
     RHI::AddressMode::Enum  addressMode = RHI::AddressMode::Repeat;
 

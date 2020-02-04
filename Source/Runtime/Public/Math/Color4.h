@@ -198,6 +198,9 @@ public:
                         /// Creates from RGBA8888.
     static Color4       FromRGBA8888(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
+                        /// Creates from packed to a 32-bit integer, with R component in the lowest 8 bits.
+    static Color4       FromUInt32(uint32_t rgba);
+
                         /// Convert color packed to a 32-bit integer, with R component in the lowest 8 bits. Components are clamped to [0, 1] range.
     uint32_t            ToUInt32() const;
 

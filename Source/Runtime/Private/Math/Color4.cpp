@@ -81,6 +81,15 @@ Color4 Color4::FromRGBA8888(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
     return Color4(r * invNorm, g * invNorm, b * invNorm, a * invNorm);
 }
 
+Color4 Color4::FromUInt32(uint32_t rgba) {
+    const uint32_t r = Max<uint32_t>((rgba >> 0) & 0xFF, 0);
+    const uint32_t g = Max<uint32_t>((rgba >> 8) & 0xFF, 0);
+    const uint32_t b = Max<uint32_t>((rgba >> 16) & 0xFF, 0);
+    const uint32_t a = Max<uint32_t>((rgba >> 24) & 0xFF, 0);
+
+    return Color4((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f, (float)a / 255.0f);
+}
+
 uint32_t Color4::ToUInt32() const {
     uint32_t ur = (uint32_t)Clamp(((int)(r * 255.0f)), 0, 255);
     uint32_t ug = (uint32_t)Clamp(((int)(g * 255.0f)), 0, 255);

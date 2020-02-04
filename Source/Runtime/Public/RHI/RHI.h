@@ -31,8 +31,8 @@ public:
     static constexpr int MaxTMU             = 16;       // maximum texture map units
     static constexpr int MaxTCU             = 8;        // maximum texture coordinates units
     static constexpr int MaxVertexStream    = 8;
-    
-    enum Handle {
+
+    enum {
         NullContext                         = 0,
         NullStencilState                    = 0,
         NullTexture                         = 0,
@@ -43,7 +43,7 @@ public:
         NullVertexFormat                    = 0,
         NullQuery                           = 0
     };
-    
+
     enum StateBits {
         //----------------------------------------------------------------------------------------------
         // polygon mode
@@ -56,7 +56,7 @@ public:
         // depth mask: enabled (if set) or disabled (else)
         //----------------------------------------------------------------------------------------------
         DepthWrite                          = 0x00000004,
-        
+
         //----------------------------------------------------------------------------------------------
         // color mask
         //----------------------------------------------------------------------------------------------
@@ -65,7 +65,7 @@ public:
         BlueWrite                           = 0x00000040,
         AlphaWrite                          = 0x00000080,
         ColorWrite                          = RedWrite | GreenWrite | BlueWrite,
-        
+
         //----------------------------------------------------------------------------------------------
         // depth func
         //----------------------------------------------------------------------------------------------
@@ -78,7 +78,7 @@ public:
         DF_GEqual                           = 0x00000600,
         DF_Greater                          = 0x00000700,
         DF_Never                            = 0x00000800,
-        
+
         //----------------------------------------------------------------------------------------------
         // source blending factor
         //----------------------------------------------------------------------------------------------
@@ -94,7 +94,7 @@ public:
         BS_SrcAlphaSaturate                 = 0x00009000,
         BS_ConstantColor                    = 0x0000A000,
         BS_OneMinusConstantColor            = 0x0000B000,
-        
+
         //----------------------------------------------------------------------------------------------
         // dest blending factor
         //----------------------------------------------------------------------------------------------
@@ -109,7 +109,7 @@ public:
         BD_OneMinusDstAlpha                 = 0x00080000,
         BD_ConstantColor                    = 0x000A0000,
         BD_OneMinusConstantColor            = 0x000B0000,
-        
+
         //----------------------------------------------------------------------------------------------
         // state bits mask
         //----------------------------------------------------------------------------------------------
@@ -120,7 +120,7 @@ public:
         MaskBD                              = 0x000F0000,   // blend dest mask
         MaskBF                              = 0x000FF000,   // blend func mask
     };
-    
+
     struct ClearBit {
         enum Enum {
             Color                           = BIT(0),
@@ -128,7 +128,7 @@ public:
             Stencil                         = BIT(2)
         };
     };
-    
+
     struct CullType {
         enum Enum {
             Back,
@@ -136,7 +136,7 @@ public:
             None
         };
     };
-    
+
     struct StencilFunc {
         enum Enum {
             Always,
@@ -149,7 +149,7 @@ public:
             NotEqual
         };
     };
-    
+
     struct StencilOp {
         enum Enum {
             Keep,
@@ -193,7 +193,7 @@ public:
             WriteOnlyPersistent
         };
     };
-    
+
     struct TextureType {
         enum Enum {
             Texture2D,
@@ -204,7 +204,7 @@ public:
             TextureBuffer
         };
     };
-    
+
     struct CubeMapFace {
         enum Enum {
             PositiveX,
@@ -215,7 +215,7 @@ public:
             NegativeZ
         };
     };
-    
+
     struct TextureFilter {
         enum Enum {
             Nearest,
@@ -226,7 +226,7 @@ public:
             LinearMipmapLinear
         };
     };
-    
+
     struct AddressMode {
         enum Enum {
             Repeat,
@@ -235,7 +235,7 @@ public:
             ClampToBorder
         };
     };
-    
+
     struct RenderTargetType {
         enum Enum {
             RT2D,
@@ -243,7 +243,7 @@ public:
             RT2DArray
         };
     };
-    
+
     struct RenderTargetFlag {
         enum Enum {
             HasColorBuffer                  = BIT(0),
@@ -252,14 +252,14 @@ public:
             SRGBWrite                       = BIT(3)
         };
     };
-    
+
     struct BlitMask {
         enum Enum {
             Color                           = BIT(0),
             Depth                           = BIT(1)
         };
     };
-    
+
     struct BlitFilter {
         enum Enum {
             Nearest,
@@ -274,7 +274,7 @@ public:
             Timestamp       // Result is time in micro seconds (1/1000000 sec)
         };
     };
-    
+
     // Shader type.
     struct ShaderType {
         enum Enum {
@@ -283,7 +283,7 @@ public:
             Geometry
         };
     };
-    
+
     // Primitive topology.
     struct Topology {
         enum Enum {
@@ -296,7 +296,7 @@ public:
             PointList                       = 6
         };
     };
-    
+
     struct VertexElement {
         struct Type {
             enum Enum {
@@ -343,7 +343,7 @@ public:
         bool                normalize;
         int                 divisor;
     };
-    
+
     struct SamplerInfo {
         Str                 name;
         unsigned int        unit;
@@ -364,7 +364,7 @@ public:
         uint32_t            baseVertex;
         uint32_t            baseInstance;
     };
-    
+
     struct HWLimit {
         int                 maxTextureSize;
         int                 max3dTextureSize;
@@ -411,8 +411,9 @@ public:
         int                 multiSamples;
     };
 
-    typedef void *          WindowHandle;
-    typedef void            (*DisplayContextFunc)(Handle ctxHandle, void *dataPtr);
+    using Handle = int;
+    using WindowHandle = void *;
+    using DisplayContextFunc = void (*)(Handle ctxHandle, void *dataPtr);
 };
 
 BE_NAMESPACE_END

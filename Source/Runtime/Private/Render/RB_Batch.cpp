@@ -291,33 +291,8 @@ void Batch::Flush() {
     instanceEndIndex = -1;
 }
 
-// Converts 24-bit ID to Vec3
-static Vec3 MakeVec3Id(uint32_t id) {
-    assert((id & 0xFF000000) == 0);
-    const uint32_t b = Max<uint32_t>(id >> 16, 0);
-    id -= (b << 16);
-    const uint32_t g = Max<uint32_t>(id >> 8, 0);
-    id -= (g << 8);
-    const uint32_t r = Max<uint32_t>(id, 0);
-
-    return Vec3((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f);
-}
-
-// Converts 32-bit ID to Vec4
-static Vec4 MakeVec4Id(uint32_t id) {
-    const uint32_t a = Max<uint32_t>(id >> 24, 0);
-    id -= (a << 24);
-    const uint32_t b = Max<uint32_t>(id >> 16, 0);
-    id -= (b << 16);
-    const uint32_t g = Max<uint32_t>(id >> 8, 0);
-    id -= (g << 8);
-    const uint32_t r = Max<uint32_t>(id, 0);
-
-    return Vec4((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f, (float)a / 255.0f);
-}
-
 void Batch::Flush_SelectionPass() {
-    const Vec3 id = MakeVec3Id(surfSpace->def->GetIndex());
+    const Color3 idInColor3 = Color3::FromUInt32(surfSpace->def->GetIndex());
 
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
@@ -342,7 +317,7 @@ void Batch::Flush_SelectionPass() {
 
     rhi.SetStateBits(stateBits);
 
-    RenderSelection(mtrlPass, id);
+    RenderSelection(mtrlPass, idInColor3);
 
     if (backEnd.camera->def->GetState().flags & RenderCamera::Flag::WireFrameMode) {
         rhi.SetLineWidth(1);
