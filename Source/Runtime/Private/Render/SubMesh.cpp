@@ -142,10 +142,12 @@ void SubMesh::FreeSubMesh() {
     if (type == Mesh::Type::Reference) {
         if (vertexCache->buffer != RHI::NullBuffer) {
             rhi.DestroyBuffer(vertexCache->buffer);
+            vertexCache->buffer = RHI::NullBuffer;
         }
 
         if (indexCache->buffer != RHI::NullBuffer) {
             rhi.DestroyBuffer(indexCache->buffer);
+            indexCache->buffer = RHI::NullBuffer;
         }
 
         Mem_AlignedFree(verts);

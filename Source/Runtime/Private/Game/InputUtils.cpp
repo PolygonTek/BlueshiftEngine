@@ -29,7 +29,7 @@ bool InputUtils::ProcessMousePointerInput(PointerState &mousePointerState, const
 
     if (inputSystem.IsKeyUp(KeyCode::Mouse1)) {
         Entity *captureEntity = (Entity *)Entity::FindInstance(mousePointerState.captureEntityGuid);
-        if (captureEntity) {
+        if (captureEntity && captureEntity->IsActiveInHierarchy()) {
             ComponentPtrArray scriptComponents = captureEntity->GetComponents(&ComScript::metaObject);
 
             for (int i = 0; i < scriptComponents.Count(); i++) {
@@ -48,7 +48,7 @@ bool InputUtils::ProcessMousePointerInput(PointerState &mousePointerState, const
 
     Entity *oldHitEntity = (Entity *)Entity::FindInstance(mousePointerState.oldHitEntityGuid);
 
-    if (oldHitEntity) {
+    if (oldHitEntity && oldHitEntity->IsActiveInHierarchy()) {
         ComponentPtrArray scriptComponents = oldHitEntity->GetComponents(&ComScript::metaObject);
 
         for (int i = 0; i < scriptComponents.Count(); i++) {
@@ -128,19 +128,19 @@ bool InputUtils::ProcessTouchPointerInput(HashTable<int32_t, PointerState> &touc
             PointerState touchPointerState;
 
             if (touchPointerStateTable.Get(touch.id, &touchPointerState)) {
-                Entity *capturedEntity = (Entity *)Entity::FindInstance(touchPointerState.captureEntityGuid);
+                Entity *captureEntity = (Entity *)Entity::FindInstance(touchPointerState.captureEntityGuid);
 
-                if (capturedEntity) {
+                if (captureEntity && captureEntity->IsActiveInHierarchy()) {
                     processed = true;
 
-                    ComponentPtrArray scriptComponents = capturedEntity->GetComponents(&ComScript::metaObject);
+                    ComponentPtrArray scriptComponents = captureEntity->GetComponents(&ComScript::metaObject);
 
                     for (int i = 0; i < scriptComponents.Count(); i++) {
                         ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
                         scriptComponent->OnPointerUp();
 
-                        if (touch.phase == InputSystem::Touch::Phase::Ended && hitTestEntity == capturedEntity) {
+                        if (touch.phase == InputSystem::Touch::Phase::Ended && hitTestEntity == captureEntity) {
                             scriptComponent->OnPointerClick();
                         }
 
@@ -154,21 +154,21 @@ bool InputUtils::ProcessTouchPointerInput(HashTable<int32_t, PointerState> &touc
             PointerState touchPointerState;
 
             if (touchPointerStateTable.Get(touch.id, &touchPointerState)) {
-                Entity *capturedEntity = (Entity *)Entity::FindInstance(touchPointerState.captureEntityGuid);
+                Entity *captureEntity = (Entity *)Entity::FindInstance(touchPointerState.captureEntityGuid);
                 Entity *oldHitEntity = (Entity *)Entity::FindInstance(touchPointerState.oldHitEntityGuid);
 
-                if (capturedEntity) {
+                if (captureEntity && captureEntity->IsActiveInHierarchy()) {
                     processed = true;
 
-                    ComponentPtrArray scriptComponents = capturedEntity->GetComponents(&ComScript::metaObject);
+                    ComponentPtrArray scriptComponents = captureEntity->GetComponents(&ComScript::metaObject);
 
                     for (int i = 0; i < scriptComponents.Count(); i++) {
                         ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
 
                         if (hitTestEntity != oldHitEntity) {
-                            if (hitTestEntity == capturedEntity) {
+                            if (hitTestEntity == captureEntity) {
                                 scriptComponent->OnPointerEnter();
-                            } else if (oldHitEntity == capturedEntity) {
+                            } else if (oldHitEntity == captureEntity) {
                                 scriptComponent->OnPointerExit();
                             }
                         }
@@ -178,6 +178,7 @@ bool InputUtils::ProcessTouchPointerInput(HashTable<int32_t, PointerState> &touc
                 }
 
                 touchPointerState.oldHitEntityGuid = hitTestEntity ? hitTestEntity->GetGuid() : Guid::zero;
+
                 touchPointerStateTable.Set(touch.id, touchPointerState);
             }
         }

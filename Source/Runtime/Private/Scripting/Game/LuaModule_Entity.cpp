@@ -69,6 +69,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "layer", &Entity::GetLayer,
         "is_frozen", &Entity::IsFrozen,
         "is_active_self", &Entity::IsActiveSelf,
+        "is_active_in_hierarchy", &Entity::IsActiveInHierarchy,
         "set_active", &Entity::SetActive,
         "game_world", &Entity::GetGameWorld,
         "parent", &Entity::GetParent,
