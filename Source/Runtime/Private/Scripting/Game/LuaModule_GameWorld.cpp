@@ -26,6 +26,7 @@ void LuaVM::RegisterGameWorld(LuaCpp::Module &module) {
     _GameWorld.AddClassMembers<GameWorld>(
         "time", &GameWorld::GetTime,
         "prev_time", &GameWorld::GetPrevTime,
+        "unscaled_delta_time", &GameWorld::GetUnscaledDeltaTime,
         "delta_time", &GameWorld::GetDeltaTime,
         "time_scale", &GameWorld::GetTimeScale,
         "set_time_scale", &GameWorld::SetTimeScale,

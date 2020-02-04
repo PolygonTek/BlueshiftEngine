@@ -140,19 +140,7 @@ void LuaVM::LoadTween() {
 
     size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
     if (data) {
-        if (state->RunBuffer(filename, data, size)) {
-            LuaCpp::Selector tween = (*state)["tween"];
-
-            clearTweeners = tween["clear_tweeners"];
-            if (!clearTweeners.IsFunction()) {
-                clearTweeners = LuaCpp::Selector();
-            }
-
-            updateTweeners = tween["update_tweeners"];
-            if (!updateTweeners.IsFunction()) {
-                updateTweeners = LuaCpp::Selector();
-            }
-        }
+        state->RunBuffer(filename, data, size);
     }
 }
 
@@ -278,9 +266,6 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
 void LuaVM::Shutdown() {
     engineModuleCallbacks.Clear();
 
-    clearTweeners = LuaCpp::Selector();
-    updateTweeners = LuaCpp::Selector();
-
     clearWaitingThreads = LuaCpp::Selector();
     wakeUpWaitingThreads = LuaCpp::Selector();
 
@@ -313,18 +298,6 @@ const char *LuaVM::GetLuaJitVersion() const {
 
 void LuaVM::EnableJIT(bool enabled) {
     state->EnableJIT(enabled);
-}
-
-void LuaVM::ClearTweeners() {
-    if (clearTweeners.IsFunction()) {
-        clearTweeners();
-    }
-}
-
-void LuaVM::UpdateTweeners(float unscaledDeltaTime, float timeScale) {
-    if (updateTweeners.IsFunction()) {
-        updateTweeners(unscaledDeltaTime, timeScale);
-    }
 }
 
 void LuaVM::ClearWaitingThreads() {

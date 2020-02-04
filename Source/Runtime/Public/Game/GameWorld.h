@@ -89,6 +89,8 @@ public:
     int                         GetPrevTime() const { return prevTime; }
                                 /// Returns the delta time between the current frame and the previous frame.
     int                         GetDeltaTime() const;
+                                /// Returns the unscaled delta time between the current frame and the previous frame.
+    int                         GetUnscaledDeltaTime() const;
 
                                 /// Returns update time scale.
     float                       GetTimeScale() const { return timeScale; }
@@ -236,6 +238,8 @@ private:
     int                         time;
     int                         prevTime;
     float                       timeScale = 1.0f;
+    int                         deltaTime = 0;
+    int                         unscaledDeltaTime = 0;
 
     bool                        gameAwaking = false;
     bool                        gameStarted = false;

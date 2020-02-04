@@ -39,9 +39,6 @@ public:
 
     void                    EnableJIT(bool enabled);
 
-    void                    ClearTweeners();
-    void                    UpdateTweeners(float unscaledDeltaTime, float timeScale);
-
     void                    ClearWaitingThreads();
     void                    WakeUpWaitingThreads(float currentTime);
 
@@ -155,8 +152,6 @@ private:
     void                    RegisterGameWorld(LuaCpp::Module &module);
 
     LuaCpp::State *         state;
-    LuaCpp::Selector        clearTweeners;
-    LuaCpp::Selector        updateTweeners;
     LuaCpp::Selector        clearWaitingThreads;
     LuaCpp::Selector        wakeUpWaitingThreads;
     LuaCpp::Selector        startDebuggee;

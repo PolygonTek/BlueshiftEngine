@@ -99,10 +99,6 @@ void GameWorld::Reset() {
     physicsWorld->Reset();
 }
 
-int GameWorld::GetDeltaTime() const {
-    return (time - prevTime);
-}
-
 void GameWorld::DontDestroyOnLoad(Entity *entity) {
     if (entity->GetParent()) {
         BE_WARNLOG("DontDestroyOnLoad only works on root entity\n");
@@ -520,8 +516,6 @@ void GameWorld::StartGame() {
         luaVM.StartDebuggee();
     }
 
-    luaVM.ClearTweeners();
-
     luaVM.ClearWaitingThreads();
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
@@ -561,8 +555,6 @@ void GameWorld::StopGame(bool stopAllSounds) {
         luaVM.StopDebuggee();
     }
 
-    luaVM.ClearTweeners();
-
     luaVM.ClearWaitingThreads();
 
     if (stopAllSounds) {
@@ -574,8 +566,7 @@ void GameWorld::StopGame(bool stopAllSounds) {
 }
 
 void GameWorld::RestartGame(const char *mapFilename) {
-    // HACK: Delay game restart for 200 ms to update the tweener.
-    PostEventMS(&EV_RestartGame, 200, mapFilename);
+    PostEvent(&EV_RestartGame, mapFilename);
 }
 
 void GameWorld::StopAllSounds() {
@@ -696,6 +687,14 @@ void GameWorld::SaveMap(const char *filename) {
     fileSystem.WriteFile(filename, jsonText.c_str(), jsonText.Length());
 }
 
+int GameWorld::GetDeltaTime() const {
+    return deltaTime;
+}
+
+int GameWorld::GetUnscaledDeltaTime() const {
+    return unscaledDeltaTime;
+}
+
 void GameWorld::Update(int elapsedTime) {
     BE_PROFILE_CPU_SCOPE("GameWorld::Update", Color3::white);
 
@@ -705,13 +704,15 @@ void GameWorld::Update(int elapsedTime) {
 
     prevTime = time;
 
-    int scaledElapsedTime = elapsedTime * timeScale;
+    unscaledDeltaTime = elapsedTime;
 
-    time += scaledElapsedTime;
+    deltaTime = elapsedTime * timeScale;
+
+    time += deltaTime;
 
     if (gameStarted) {
         // FixedUpdate() is called in StepSimulation() internally
-        physicsWorld->StepSimulation(scaledElapsedTime);
+        physicsWorld->StepSimulation(deltaTime);
 
         UpdateEntities();
 
@@ -719,9 +720,6 @@ void GameWorld::Update(int elapsedTime) {
 
         // Wake up waiting coroutine in Lua scripts
         luaVM.WakeUpWaitingThreads(MS2SEC(time));
-
-        // Update tweeners in Lua scripts
-        luaVM.UpdateTweeners(MS2SEC(elapsedTime), timeScale);
 
         luaVM.State().ForceGC();
     }
