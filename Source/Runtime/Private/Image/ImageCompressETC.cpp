@@ -23,8 +23,8 @@ BE_NAMESPACE_BEGIN
 #define MIN_JOBS 8
 #define MAX_JOBS 1024
 
-static float QualityToEffort(Image::CompressionQuality::Enum compressoinQuality) {
-    switch (compressoinQuality) {
+static float QualityToEffort(Image::CompressionQuality::Enum compressionQuality) {
+    switch (compressionQuality) {
     case Image::CompressionQuality::HighQuality:
         return 80;
     case Image::CompressionQuality::Normal:
@@ -35,10 +35,10 @@ static float QualityToEffort(Image::CompressionQuality::Enum compressoinQuality)
     return 0;
 }
 
-static void CompressETC(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality, Etc::Image::Format format, Etc::ErrorMetric errorMetric) {
+static void CompressETC(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality, Etc::Image::Format format, Etc::ErrorMetric errorMetric) {
     Etc::ColorFloatRGBA *fsrc = (Etc::ColorFloatRGBA *)Mem_Alloc16(srcImage.GetWidth() * srcImage.GetHeight() * sizeof(Etc::ColorFloatRGBA));
 
-    float effort = QualityToEffort(compressoinQuality);
+    float effort = QualityToEffort(compressionQuality);
 
     int numMipmaps = srcImage.NumMipmaps();
 
@@ -73,28 +73,28 @@ static void CompressETC(const Image &srcImage, Image &dstImage, Image::Compressi
     Mem_AlignedFree(fsrc);
 }
 
-void CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
-    CompressETC(srcImage, dstImage, compressoinQuality, Etc::Image::Format::ETC1, Etc::ErrorMetric::RGBX);
+void CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+    CompressETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::ETC1, Etc::ErrorMetric::RGBX);
 }
 
-void CompressETC2_RGB8(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
-    CompressETC(srcImage, dstImage, compressoinQuality, Etc::Image::Format::RGB8, Etc::ErrorMetric::RGBX);
+void CompressETC2_RGB8(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+    CompressETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::RGB8, Etc::ErrorMetric::RGBX);
 }
 
-void CompressETC2_RGBA1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
-    CompressETC(srcImage, dstImage, compressoinQuality, Etc::Image::Format::RGB8A1, Etc::ErrorMetric::RGBA);
+void CompressETC2_RGBA1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+    CompressETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::RGB8A1, Etc::ErrorMetric::RGBA);
 }
 
-void CompressETC2_RGBA8(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
-    CompressETC(srcImage, dstImage, compressoinQuality, Etc::Image::Format::RGBA8, Etc::ErrorMetric::RGBA);
+void CompressETC2_RGBA8(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+    CompressETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::RGBA8, Etc::ErrorMetric::RGBA);
 }
 
-void CompressETC2_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
-    CompressETC(srcImage, dstImage, compressoinQuality, Etc::Image::Format::RG11, Etc::ErrorMetric::NORMALXYZ);
+void CompressETC2_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+    CompressETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::RG11, Etc::ErrorMetric::NORMALXYZ);
 }
 
-void CompressETC2_Signed_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
-    CompressETC(srcImage, dstImage, compressoinQuality, Etc::Image::Format::SIGNED_RG11, Etc::ErrorMetric::NORMALXYZ);
+void CompressETC2_Signed_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+    CompressETC(srcImage, dstImage, compressionQuality, Etc::Image::Format::SIGNED_RG11, Etc::ErrorMetric::NORMALXYZ);
 }
 
 BE_NAMESPACE_END

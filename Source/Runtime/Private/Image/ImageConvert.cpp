@@ -78,7 +78,7 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
     return true;
 }
 
-static bool CompressImage(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
+static bool CompressImage(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
     assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
     assert(srcImage.GetPixels());
 
@@ -86,34 +86,34 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
 
     switch (dstImage.GetFormat()) {
     case Image::Format::RGBA_DXT1:
-        CompressDXT1(srcImage, dstImage, compressoinQuality);
+        CompressDXT1(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::RGBA_DXT3:
-        CompressDXT3(srcImage, dstImage, compressoinQuality);
+        CompressDXT3(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::RGBA_DXT5:
-        CompressDXT5(srcImage, dstImage, compressoinQuality);
+        CompressDXT5(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::DXN2:
-        CompressDXN2(srcImage, dstImage, compressoinQuality);
+        CompressDXN2(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::RGB_8_ETC1:
-        CompressETC1(srcImage, dstImage, compressoinQuality);
+        CompressETC1(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::RGB_8_ETC2:
-        CompressETC2_RGB8(srcImage, dstImage, compressoinQuality);
+        CompressETC2_RGB8(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::RGBA_8_1_ETC2:
-        CompressETC2_RGBA1(srcImage, dstImage, compressoinQuality);
+        CompressETC2_RGBA1(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::RGBA_8_8_ETC2:
-        CompressETC2_RGBA8(srcImage, dstImage, compressoinQuality);
+        CompressETC2_RGBA8(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::RG_11_11_EAC:
-        CompressETC2_RG11(srcImage, dstImage, compressoinQuality);
+        CompressETC2_RG11(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::SignedRG_11_11_EAC:
-        CompressETC2_Signed_RG11(srcImage, dstImage, compressoinQuality);
+        CompressETC2_Signed_RG11(srcImage, dstImage, compressionQuality);
         break;
     default:
         BE_WARNLOG("CompressImage: unsupported format %s\n", dstImage.FormatName());
