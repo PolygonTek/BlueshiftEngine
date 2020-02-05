@@ -194,7 +194,11 @@ void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMo
     if (offset > 0 || offset + size < buffer->size) {
         ptr = gglMapBufferRange(buffer->target, offset, size, access | GL_MAP_INVALIDATE_RANGE_BIT);
     } else {
-        ptr = gglMapBufferRange(buffer->target, 0, size, access | GL_MAP_INVALIDATE_RANGE_BIT);
+        if (lockMode == BufferLockMode::WriteOnly) {
+            ptr = gglMapBuffer(buffer->target, GL_WRITE_ONLY);
+        } else {
+            ptr = gglMapBufferRange(buffer->target, 0, size, access | GL_MAP_INVALIDATE_RANGE_BIT);
+        }
     }
 
     assert(ptr);
