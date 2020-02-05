@@ -109,6 +109,9 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
     case Image::Format::RGBA_8_8_ETC2:
         CompressETC2_RGBA8(srcImage, dstImage, compressoinQuality);
         break;
+    case Image::Format::RG_11_11_EAC:
+        CompressETC2_RG11(srcImage, dstImage, compressoinQuality);
+        break;
     case Image::Format::SignedRG_11_11_EAC:
         CompressETC2_Signed_RG11(srcImage, dstImage, compressoinQuality);
         break;
