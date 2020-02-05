@@ -186,23 +186,23 @@ void OpenGLRHI::SetVertexFormat(Handle vertexFormatHandle) {
 void OpenGLRHI::SetStreamSource(int stream, Handle vertexBufferHandle, int base, int stride) {
     const GLVertexFormat *vertexFormat = vertexFormatList[currentContext->state->vertexFormatHandle];
     const GLVertexElementInternal *ve;
-    GLVertexAttrib *currentVertexAttrib;
 
     BindBuffer(BufferType::Vertex, vertexBufferHandle);
 
 #if 1
     for (int i = 0; i < VertexElement::Usage::Count; i++) {
-        currentVertexAttrib = &currentContext->state->vertexAttribs[i];
+        //GLVertexAttrib *currentVertexAttrib = &currentContext->state->vertexAttribs[i];
+
         ve = &vertexFormat->vertexElements[i];
 
         if (ve->stream == stream && ve->components > 0) {
-            if (currentVertexAttrib->vertexBufferHandle != vertexBufferHandle ||
+            /*if (currentVertexAttrib->vertexBufferHandle != vertexBufferHandle ||
                 currentVertexAttrib->components != ve->components ||
                 currentVertexAttrib->type != ve->type ||
                 currentVertexAttrib->normalize != ve->normalize ||
                 currentVertexAttrib->stride != stride ||
                 currentVertexAttrib->ptr != BUFFER_OFFSET(base + ve->offset) ||
-                currentVertexAttrib->divisor != ve->divisor) {
+                currentVertexAttrib->divisor != ve->divisor) {*/
                 if (!ve->shouldConvertToFloat) {
                     gglVertexAttribIPointer(i, ve->components, ve->type, stride, BUFFER_OFFSET(base + ve->offset));
                 } else {
@@ -214,14 +214,14 @@ void OpenGLRHI::SetStreamSource(int stream, Handle vertexBufferHandle, int base,
 
                 OpenGL::VertexAttribDivisor(i, ve->divisor);
 
-                currentVertexAttrib->vertexBufferHandle = vertexBufferHandle;
+                /*currentVertexAttrib->vertexBufferHandle = vertexBufferHandle;
                 currentVertexAttrib->components = ve->components;
                 currentVertexAttrib->type = ve->type;
                 currentVertexAttrib->normalize = ve->normalize;
                 currentVertexAttrib->stride = stride;
                 currentVertexAttrib->ptr = BUFFER_OFFSET(base + ve->offset);
                 currentVertexAttrib->divisor = ve->divisor;
-            }
+            }*/
         }
     }
 #else
