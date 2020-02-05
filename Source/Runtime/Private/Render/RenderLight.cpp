@@ -46,38 +46,38 @@ RenderLight::~RenderLight() {
 void RenderLight::Update(const RenderLight::State *stateDef) {
     state = *stateDef;
 
-    // Saturate light color RGBA in range [0, 1]
+    // Saturate light color RGBA in range [0, 1].
     Clamp01(state.materialParms[RenderObject::MaterialParm::Red]);
     Clamp01(state.materialParms[RenderObject::MaterialParm::Green]);
     Clamp01(state.materialParms[RenderObject::MaterialParm::Blue]);
     Clamp01(state.materialParms[RenderObject::MaterialParm::Alpha]);
 
-    // NOTE: shader 에서 이미 한번 square 처리가 되므로 여기서 sqrt 해준다
+    // NOTE: shader 에서 이미 한번 square 처리가 되므로 여기서 sqrt 해준다.
     state.fallOffExponent = Math::Sqrt(state.fallOffExponent);
 
-    // Calculate view matrix with the given origin and axis
+    // Calculate view matrix with the given origin and axis.
     R_SetViewMatrix(state.axis, state.origin, viewMatrix);
 
     if (state.type == Type::Point) {
-        // Set bounding volume for point light
+        // Set bounding volume for point light.
         worldOBB = OBB(state.origin, state.size, state.axis);
 
-        // Calculate point light orthogonal projection matrix
+        // Calculate point light orthogonal projection matrix.
         R_SetOrthogonalProjectionMatrix(state.size[1], state.size[2], -state.size[0], state.size[0], projMatrix);
 
-        // Calculate light fall-off matrix
+        // Calculate light fall-off matrix.
         fallOffMatrix = projMatrix * viewMatrix;
     } else if (state.type == Type::Directional) {
-        // Bounding volume for box light
+        // Bounding volume for box light.
         worldOBB = OBB(state.origin + state.axis[0] * state.size[0] * 0.5f, Vec3(state.size[0] * 0.5f, state.size[1], state.size[2]), state.axis);
 
-        // Calculate box light orthogonal projection matrix
+        // Calculate box light orthogonal projection matrix.
         R_SetOrthogonalProjectionMatrix(worldOBB.Extents()[1], worldOBB.Extents()[2], 0, 2 * worldOBB.Extents()[0], projMatrix);
 
-        // No fall-off for directional light
+        // No fall-off for directional light.
         fallOffMatrix = Mat3x4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     } else if (state.type == Type::Spot) {
-        // Set bounding frustum for spot light
+        // Set bounding frustum for spot light.
         worldFrustum.SetOrigin(state.origin);
         worldFrustum.SetAxis(state.axis);
         worldFrustum.SetSize(Max(state.zNear, 0.01f), state.size[0], state.size[1], state.size[2]);
@@ -85,10 +85,10 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
         float xFov = RAD2DEG(Math::ATan(worldFrustum.GetLeft(), worldFrustum.GetFarDistance())) * 2.0f;
         float yFov = RAD2DEG(Math::ATan(worldFrustum.GetUp(), worldFrustum.GetFarDistance())) * 2.0f;
 
-        // Calculate spot light perspective projection matrix
+        // Calculate spot light perspective projection matrix.
         R_SetPerspectiveProjectionMatrix(xFov, yFov, worldFrustum.GetNearDistance(), worldFrustum.GetFarDistance(), false, projMatrix);
 
-        // Calculate light fall-off matrix
+        // Calculate light fall-off matrix.
         Mat4 orthoProjMatrix;
         R_SetOrthogonalProjectionMatrix(state.size[1], state.size[2], 0, state.size[0], orthoProjMatrix);
         fallOffMatrix = orthoProjMatrix * viewMatrix;
@@ -152,9 +152,9 @@ bool RenderLight::DirLight_ShadowBVFromCaster(const OBB &casterOBB, OBB &shadowO
     assert(state.type == RenderLight::Type::Directional);
 
     AABB b1, b2;
-    // Compute caster bounds for light axis
+    // Compute caster bounds for light axis.
     casterOBB.ProjectOnAxis(state.axis, b1);
-    // Compute light bounds for light axis
+    // Compute light bounds for light axis.
     worldOBB.ProjectOnAxis(state.axis, b2);
 
     b1.IntersectSelf(b2);

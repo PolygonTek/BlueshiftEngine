@@ -76,18 +76,18 @@ Color4 &Color4::Grayscale() {
     return *this;
 }
 
-Color4 Color4::FromRGBA8888(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-    float invNorm = 1.0f / 255.0f;
-    return Color4(r * invNorm, g * invNorm, b * invNorm, a * invNorm);
+Color4 Color4::FromRGBA8888(uint8_t ur, uint8_t ug, uint8_t ub, uint8_t ua) {
+    constexpr float invNorm = 1.0f / 255.0f;
+    return Color4(ur * invNorm, ug * invNorm, ub * invNorm, ua * invNorm);
 }
 
 Color4 Color4::FromUInt32(uint32_t rgba) {
-    const uint32_t r = Max<uint32_t>((rgba >> 0) & 0xFF, 0);
-    const uint32_t g = Max<uint32_t>((rgba >> 8) & 0xFF, 0);
-    const uint32_t b = Max<uint32_t>((rgba >> 16) & 0xFF, 0);
-    const uint32_t a = Max<uint32_t>((rgba >> 24) & 0xFF, 0);
-
-    return Color4((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f, (float)a / 255.0f);
+    constexpr float invNorm = 1.0f / 255.0f;
+    uint32_t ur = Max<uint32_t>((rgba >> 0) & 0xFF, 0);
+    uint32_t ug = Max<uint32_t>((rgba >> 8) & 0xFF, 0);
+    uint32_t ub = Max<uint32_t>((rgba >> 16) & 0xFF, 0);
+    uint32_t ua = Max<uint32_t>((rgba >> 24) & 0xFF, 0);
+    return Color4(ur * invNorm, ug * invNorm, ub * invNorm, ua * invNorm);
 }
 
 uint32_t Color4::ToUInt32() const {

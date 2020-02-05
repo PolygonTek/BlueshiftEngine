@@ -193,7 +193,7 @@ void VertexFormat::CreateSkinningVertexFormats(int stream, int originalIndex, in
     vertexFormats[skinning8Index].Create();
 }
 
-// Create instanced array vertex format
+// Create instanced array vertex format.
 void VertexFormat::CreateInstancingVertexFormats(int stream, int originalIndex, int instancingIndex, bool useVtfSkinning) {
     vertexFormats[instancingIndex].CopyFrom(vertexFormats[originalIndex]);
     vertexFormats[instancingIndex].Append(stream,  0, RHI::VertexElement::Usage::TexCoord1, 12, RHI::VertexElement::Type::Float, false, 1);  // localToWorldMatrix

@@ -832,19 +832,19 @@ const char *Shader::MangleNameWithDefineList(const Str &basename, const Array<Sh
 
 Shader *Shader::InstantiateShader(const Array<Define> &defineArray) {
     Str mangledName;
-    // instantiated shader name start with '@' character
+    // Instantiated shader name start with '@' character.
     MangleNameWithDefineList("@" + name, defineArray, mangledName);
 
-    // return instantiated shader if it already exist
+    // Return instantiated shader if it already exist.
     Shader *shader = shaderManager.FindShader(mangledName);
     if (shader) {
-        // instantiated shader always has pointer to original shader
+        // Instantiated shader always has pointer to original shader.
         assert(shader->originalShader);
         shader->AddRefCount();
         return shader;
     }
 
-    // allocate new instantiated shader
+    // Allocate new instantiated shader.
     shader = shaderManager.AllocShader(mangledName);
     shader->originalShader = this;
     shader->flags = flags;
@@ -1189,12 +1189,12 @@ bool Shader::InstantiateShaderInternal(const Array<Define> &defineArray) {
 bool Shader::ProcessShaderText(const char *text, const char *baseDir, const Array<Define> &defineArray, Str &outStr) const {
     outStr = text;
 
-    // insert local define array
+    // Insert local define array.
     for (int i = 0; i < defineArray.Count(); i++) {
         outStr.Insert(va("#define %s %i\n", defineArray[i].name.c_str(), defineArray[i].value), 0);
     }
 
-    // insert global define array
+    // Insert global define array.
     for (int i = shaderManager.globalHeaderList.Count() - 1; i >= 0; i--) {
         outStr.Insert(shaderManager.globalHeaderList[i].c_str(), 0);
     }

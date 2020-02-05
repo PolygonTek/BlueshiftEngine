@@ -24,8 +24,8 @@
 
 BE_NAMESPACE_BEGIN
 
-RenderGlobal        renderGlobal;
-RenderSystem        renderSystem;
+RenderGlobal    renderGlobal;
+RenderSystem    renderSystem;
 
 void RenderSystem::InitRHI(void *windowHandle) {
     RHI::Settings settings;
@@ -35,7 +35,7 @@ void RenderSystem::InitRHI(void *windowHandle) {
     settings.stencilBits = cvarSystem.GetCVarInteger("r_stencilBits");
     settings.multiSamples = cvarSystem.GetCVarInteger("r_multiSamples");
 
-    // Initialize OpenGL renderer
+    // Initialize OpenGL renderer.
     rhi.Init(windowHandle, &settings);
 }
 
@@ -43,7 +43,7 @@ void RenderSystem::Init() {
     cmdSystem.AddCommand("screenshot", Cmd_ScreenShot);
     cmdSystem.AddCommand("genDFGSumGGX", Cmd_GenerateDFGSumGGX);
 
-    // Save current gamma ramp table
+    // Save current gamma ramp table.
     rhi.GetGammaRamp(savedGammaRamp);
 
     if (r_fastSkinning.GetInteger() == 2 && rhi.HWLimit().maxVertexTextureImageUnits > 0) {
@@ -278,10 +278,10 @@ void RenderSystem::CmdScreenshot(int x, int y, int width, int height, const char
 
 void RenderSystem::IssueCommands() {
     RenderCommandBuffer *cmds = frameData.GetCommands();
-    // add an end-of-list command
+    // Add an end-of-list command.
     *(int *)(cmds->data + cmds->used) = RenderCommand::End;
 
-    // clear it out, in case this is a sync and not a buffer flip
+    // Clear it out, in case this is a sync and not a buffer flip.
     cmds->used = 0;
 
     if (!r_skipBackEnd.GetBool()) {
@@ -654,7 +654,7 @@ void RenderSystem::CaptureScreenRT(RenderWorld *renderWorld, int layerMask,
 
     RenderCamera::ComputeFov(fov, 1.25f, (float)width / height, &cameraDef.fovX, &cameraDef.fovY);
 
-    // Use any render context
+    // Use any render context.
     RenderContext *renderContext = renderSystem.renderContexts[0];
 
     renderCamera.Update(&cameraDef);
@@ -793,19 +793,19 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
                 float s = (x + 0.5f) * invSize;
                 float t = (y + 0.5f) * invSize;
 
-                // Gets sample direction for each faces 
+                // Gets sample direction for each faces.
                 Vec3 dir = Image::FaceToCubeMapCoords((Image::CubeMapFace::Enum)faceIndex, s, t);
                 dir.Normalize();
 
-                // 9 terms are required for order 3 SH basis functions
+                // 9 terms are required for order 3 SH basis functions.
                 float basisEval[16] = { 0, };
-                // Evaluates the 9 SH basis functions Ylm with the given direction
+                // Evaluates the 9 SH basis functions Ylm with the given direction.
                 SphericalHarmonics::EvalBasis(3, dir, basisEval);
 
-                // Solid angle of the cubemap texel
+                // Solid angle of the cubemap texel.
                 float dw = Image::CubeMapTexelSolidAngle(x, y, envMapSize);
 
-                // Precalculates 9 terms (basisEval * dw) for each envmap pixel in the 4-by-4 envmap sized block texture for each faces  
+                // Precalculates 9 terms (basisEval * dw) for each envmap pixel in the 4-by-4 envmap sized block texture for each faces.
                 for (int j = 0; j < 4; j++) {
                     for (int i = 0; i < 4; i++) {
                         int offset = (((j * envMapSize + y) * envMapSize) << 2) + i * envMapSize + x;
@@ -869,7 +869,7 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
     int size = targetCubeRT->GetWidth();
 
     // Precompute ZH coefficients * sqrt(4PI/(2l + 1)) of Lambert diffuse spherical function cos(theta) / PI
-    // which function is rotationally symmetric so only 3 terms are needed
+    // which function is rotationally symmetric so only 3 terms are needed.
     float al[3];
     al[0] = SphericalHarmonics::Lambert_Al_Evaluator(0); // 1
     al[1] = SphericalHarmonics::Lambert_Al_Evaluator(1); // 2/3

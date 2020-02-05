@@ -49,13 +49,13 @@ void TextureManager::Init() {
 
     textureHashMap.Init(1024, 1024, 1024);
 
-    // Set texture filtering mode
+    // Set texture filtering mode.
     SetFilter(texture_filter.GetString());//"LinearMipmapNearest");
 
-    // Set texture anisotropy mode
+    // Set texture anisotropy mode.
     SetAnisotropy(texture_anisotropy.GetFloat());
 
-    // Create pre-defined textures
+    // Create pre-defined textures.
     CreateEngineTextures();
 }
 
@@ -72,68 +72,68 @@ void TextureManager::CreateEngineTextures() {
     byte *  data;
     Image   image;
 
-    // Create default texture
+    // Create default texture.
     defaultTexture = AllocTexture("_defaultTexture");
     defaultTexture->CreateDefaultTexture(16, Texture::Flag::Permanence);
 
-    // Create zeroClamp texture
+    // Create zeroClamp texture.
     zeroClampTexture = AllocTexture("_zeroClampTexture");
     zeroClampTexture->CreateZeroClampTexture(16, Texture::Flag::Permanence);
 
-    // Create defaultCube texture
+    // Create defaultCube texture.
     defaultCubeMapTexture = AllocTexture("_defaultCubeTexture");
     defaultCubeMapTexture->CreateDefaultCubeMapTexture(16, Texture::Flag::Permanence);
 
-    // Create blackCube texture
+    // Create blackCube texture.
     blackCubeMapTexture = AllocTexture("_blackCubeTexture");
     blackCubeMapTexture->CreateBlackCubeMapTexture(8, Texture::Flag::Permanence);
 
-    // Create white texture
+    // Create white texture.
     image.Create2D(8, 8, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, 0);
     data = image.GetPixels();
     memset(data, 0xFF, 8 * 8);
     whiteTexture = AllocTexture("_whiteTexture");
     whiteTexture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
 
-    // Create black texture
+    // Create black texture.
     image.Create2D(8, 8, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, 0);
     data = image.GetPixels();
     memset(data, 0, 8 * 8);
     blackTexture = AllocTexture("_blackTexture");
     blackTexture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
 
-    // Create grey texture
+    // Create grey texture.
     image.Create2D(8, 8, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, 0);
     data = image.GetPixels();
     memset(data, 0x80, 8 * 8);
     greyTexture = AllocTexture("_greyTexture");
     greyTexture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
 
-    // Create flatNormal texture
+    // Create flatNormal texture.
     flatNormalTexture = AllocTexture("_flatNormalTexture");
     flatNormalTexture->CreateFlatNormalTexture(16, Texture::Flag::Permanence);
 
-    // Create normalCube texture
+    // Create normalCube texture.
     /*normalCubeMapTexture = AllocTexture("_normalCubeTexture");
     normalCubeMapTexture->CreateNormalizationCubeMapTexture(32, Texture::Flag::Permanence);*/
 
-    // Create _cubicNormalCube texture
+    // Create _cubicNormalCube texture.
     cubicNormalCubeMapTexture = AllocTexture("_cubicNormalCubeTexture");
     cubicNormalCubeMapTexture->CreateCubicNormalCubeMapTexture(1, Texture::Flag::Permanence);
 
-    // Create fog texture
+    // Create fog texture.
     fogTexture = AllocTexture("_fogTexture");
     fogTexture->CreateFogTexture(Texture::Flag::Permanence);
 
-    // Create fogEnter texture
+    // Create fogEnter texture.
     fogEnterTexture = AllocTexture("_fogEnterTexture");
     fogEnterTexture->CreateFogEnterTexture(Texture::Flag::Permanence);
 
-    // Create randomRotMat texture
+    // Create randomRotMat texture.
     randomRotMatTexture = AllocTexture("_randomRotMatTexture");
     randomRotMatTexture->CreateRandomRotMatTexture(64, Texture::Flag::Permanence);
 
-    // Create randomRot4x4 texture
+    // Create randomRot4x4 texture.
     randomDir4x4Texture = AllocTexture("_randomDir4x4Texture");
     randomDir4x4Texture->CreateRandomDir4x4Texture(Texture::Flag::Permanence);
 }

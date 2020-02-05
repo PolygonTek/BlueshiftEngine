@@ -295,7 +295,7 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
 */
 
 void Texture::CreateCubicNormalCubeMapTexture(int size, int flags) {
-    char faceNormal[6][3];
+    int8_t faceNormal[6][3];
 
     faceNormal[0][0] = 127;
     faceNormal[0][1] = 0;
@@ -323,7 +323,7 @@ void Texture::CreateCubicNormalCubeMapTexture(int size, int flags) {
 
     Image image;
     image.CreateCube(size, 1, Image::Format::RGB_8_8_8_SNORM, Image::GammaSpace::Linear, nullptr, 0);
-    char *dst = (char *)image.GetPixels();
+    int8_t *dst = (int8_t *)image.GetPixels();
 
     int facesize = image.GetSliceSize();
 

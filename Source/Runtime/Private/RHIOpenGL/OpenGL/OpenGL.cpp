@@ -150,9 +150,9 @@ extern "C" void CheckGLError(const char *msg) {
                 Str::snPrintf(errCode, sizeof(errCode), "unknown (%i)", err);
                 break;
         }
-        
+
         BE_WARNLOG("GL Error: %s in %s\n", errCode, msg);
-    }	
+    }
 }
 
 BE_NAMESPACE_END

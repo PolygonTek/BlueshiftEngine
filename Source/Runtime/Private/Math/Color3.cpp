@@ -68,17 +68,17 @@ Color3 &Color3::Grayscale() {
     return *this;
 }
 
-Color3 Color3::FromRGB888(uint8_t r, uint8_t g, uint8_t b) {
-    float invNorm = 1.0f / 255.0f;
-    return Color3(r * invNorm, g * invNorm, b * invNorm);
+Color3 Color3::FromRGB888(uint8_t ur, uint8_t ug, uint8_t ub) {
+    constexpr float invNorm = 1.0f / 255.0f;
+    return Color3(ur * invNorm, ug * invNorm, ub * invNorm);
 }
 
 Color3 Color3::FromUInt32(uint32_t rgbx) {
-    const uint32_t r = Max<uint32_t>((rgbx >> 0) & 0xFF, 0);
-    const uint32_t g = Max<uint32_t>((rgbx >> 8) & 0xFF, 0);
-    const uint32_t b = Max<uint32_t>((rgbx >> 16) & 0xFF, 0);
-
-    return Color3((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f);
+    constexpr float invNorm = 1.0f / 255.0f;
+    uint32_t ur = Max<uint32_t>((rgbx >> 0) & 0xFF, 0);
+    uint32_t ug = Max<uint32_t>((rgbx >> 8) & 0xFF, 0);
+    uint32_t ub = Max<uint32_t>((rgbx >> 16) & 0xFF, 0);
+    return Color3(ur * invNorm, ug * invNorm, ub * invNorm);
 }
 
 uint32_t Color3::ToUInt32() const {
