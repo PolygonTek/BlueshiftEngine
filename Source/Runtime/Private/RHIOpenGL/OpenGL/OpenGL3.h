@@ -38,6 +38,7 @@ public:
     static bool             SupportsDepthClamp() { return true; }
     static bool             SupportsDepthBufferFloat() { return true; }
     static bool             SupportsPixelBufferObject() { return true; }
+    static bool             SupportsMapBuffer() { return true; }
     static bool             SupportsDiscardFrameBuffer() { return true; }
     static bool             SupportsFrameBufferSRGB() { return true; }
     static bool             SupportsTextureRectangle() { return true; }

@@ -19,6 +19,7 @@ BE_NAMESPACE_BEGIN
 
 const char *OpenGLES3::GLSL_VERSION_STRING = "300 es";
 
+bool OpenGLES3::supportsMapBufferOES = false;
 bool OpenGLES3::supportsFrameBufferSRGB = false;
 bool OpenGLES3::supportsTextureBuffer = false;
 bool OpenGLES3::supportsTimestampQueries = false;
@@ -32,6 +33,10 @@ int OpenGLES3::shaderIntPrecisionHigh = 0;
 
 void OpenGLES3::Init() {
     OpenGLBase::Init();
+
+#ifdef GL_OES_mapbuffer
+    supportsMapBufferOES = gglext._GL_OES_mapbuffer ? true : false;
+#endif
 
 #ifdef GL_EXT_sRGB_write_control
     supportsFrameBufferSRGB = gglext._GL_EXT_sRGB_write_control ? true : false;

@@ -126,6 +126,7 @@ public:
     static bool             SupportsPackedFloat() { return true; }
     static bool             SupportsDepthClamp() { return false; }
     static bool             SupportsDepthBufferFloat() { return true; }
+    static bool             SupportsMapBuffer() { return supportsMapBufferOES; }
     static bool             SupportsPixelBufferObject() { return true; }
     static bool             SupportsDiscardFrameBuffer() { return true; }
     static bool             SupportsFrameBufferSRGB() { return supportsFrameBufferSRGB; }
@@ -168,6 +169,7 @@ public:
     static Image::Format::Enum ToUncompressedImageFormat(Image::Format::Enum inFormat);
 
 private:
+    static bool             supportsMapBufferOES;
     static bool             supportsFrameBufferSRGB;
     static bool             supportsTextureBuffer;
     static bool             supportsTimestampQueries;

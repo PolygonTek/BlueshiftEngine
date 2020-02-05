@@ -194,9 +194,13 @@ void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMo
         ptr = gglMapBufferRange(buffer->target, offset, size, access | GL_MAP_INVALIDATE_RANGE_BIT);
     } else {
         if (lockMode == BufferLockMode::WriteOnly) {
-            ptr = OpenGL::MapBuffer(buffer->target, GL_WRITE_ONLY);
+            if (OpenGL::SupportsMapBuffer()) {
+                ptr = OpenGL::MapBuffer(buffer->target, GL_WRITE_ONLY);
+            } else {
+                ptr = gglMapBufferRange(buffer->target, 0, size, access | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+            }
         } else {
-            ptr = gglMapBufferRange(buffer->target, 0, size, access | GL_MAP_INVALIDATE_RANGE_BIT);
+            ptr = gglMapBufferRange(buffer->target, 0, size, access | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
         }
     }
 
