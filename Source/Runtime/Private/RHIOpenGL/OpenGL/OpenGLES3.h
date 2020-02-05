@@ -91,7 +91,7 @@
 #endif
 
 #ifndef GL_WRITE_ONLY
-#define GL_WRITE_ONLY GL_WRITE_ONLY_OES
+#define GL_WRITE_ONLY 0x88B9
 #endif
 
 #ifndef GL_TEXTURE_CUBE_MAP_ARRAY
