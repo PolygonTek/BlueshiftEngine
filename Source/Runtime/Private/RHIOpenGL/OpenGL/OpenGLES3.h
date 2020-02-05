@@ -151,6 +151,8 @@ public:
     static void             ReadBuffer(GLenum buffer) { gglReadBuffer(buffer); }
     static void             DrawBuffers(GLsizei count, const GLenum *buffers) { gglDrawBuffers(count, buffers); }
     static void             TexBuffer(GLenum internalFormat, GLuint buffer);
+    static void *           MapBuffer(GLenum target, GLenum access) { return gglMapBufferOES(target, access); }
+    static bool             UnmapBuffer(GLenum target) { return gglUnmapBufferOES(target); }
     static void             DiscardFramebuffer(GLenum target, GLsizei numAttachments, const GLenum *attachments) { gglInvalidateFramebuffer(target, numAttachments, attachments); }
 
     static void             VertexAttribDivisor(int index, int divisor) { gglVertexAttribDivisor(index, divisor); }

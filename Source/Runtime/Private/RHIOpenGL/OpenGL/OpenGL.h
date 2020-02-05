@@ -316,6 +316,8 @@ public:
     static void             DrawBuffer(GLenum buffer) {}
     static void             ReadBuffer(GLenum buffer) {}
     static void             DrawBuffers(GLsizei count, const GLenum *buffers) {}
+    static void *           MapBuffer(GLenum target, GLenum access) { return nullptr; }
+    static bool             UnmapBuffer(GLenum target) { return false; }
     static void             BindDefaultFBO() { gglBindFramebuffer(GL_FRAMEBUFFER, 0); }
     static void             DiscardFramebuffer(GLenum target, GLsizei numAttachments, const GLenum *attachments) {}
     static void             CopyImageSubData(GLuint src, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, GLuint dst, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei srcWidth, GLsizei srcHeight, GLsizei srcDepth) {}
