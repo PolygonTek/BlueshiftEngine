@@ -197,7 +197,7 @@ void SubMesh::CacheStaticDataToGpu() {
         }
     }
 
-    // Fill in static index buffer
+    // Fill in static index buffer.
     if (!bufferCacheManager.IsCached(indexCache)) {
         bufferCacheManager.AllocStaticIndex(numIndexes * sizeof(TriIndex), indexes, indexCache);
     }

@@ -56,8 +56,6 @@ MeshSurf *Mesh::AllocSurface(int numVerts, int numIndexes) const {
 }
 
 void Mesh::FreeSurface(MeshSurf *surf) const {
-    surf->subMesh->FreeSubMesh();
-
     delete surf->subMesh;
 
     SAFE_DELETE(surf);

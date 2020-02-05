@@ -90,9 +90,8 @@ RHI::Handle OpenGLRHI::CreateBuffer(BufferType::Enum type, BufferUsage::Enum usa
     }
 
     if (size > 0) {
-        Handle bufferHandle = currentContext->state->bufferHandles[type];
-        const GLBuffer *buffer = bufferList[bufferHandle];
-        gglBindBuffer(target, buffer->object);
+        Handle *bufferHandlePtr = &currentContext->state->bufferHandles[type];
+        *bufferHandlePtr = handle;
     }
 
     return (Handle)handle;
