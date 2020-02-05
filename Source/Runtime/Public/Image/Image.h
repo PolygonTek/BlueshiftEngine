@@ -99,8 +99,8 @@ public:
             RGBA_8_1_ETC2,
             RGBA_8_8_ETC2,
             R_11_EAC,
-            SignedR_11_EAC,
             RG_11_11_EAC,
+            SignedR_11_EAC,
             SignedRG_11_11_EAC,
             // Compressed (ATC) formats
             RGB_ATC,
