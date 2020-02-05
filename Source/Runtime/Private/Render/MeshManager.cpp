@@ -162,15 +162,13 @@ Mesh *MeshManager::AllocInstantiatedMesh(Mesh *refMesh) {
 void MeshManager::DestroyMesh(Mesh *mesh) {
     if (mesh->isInstantiated) {
         instantiatedMeshList.RemoveFast(mesh);
-        delete mesh;
-        return;
-    }
+    } else {
+        if (mesh->refCount > 1) {
+            BE_WARNLOG("MeshManager::DestroyMesh: mesh '%s' has %i reference count\n", mesh->name.c_str(), mesh->refCount);
+        }
 
-    if (mesh->refCount > 1) {
-        BE_WARNLOG("MeshManager::DestroyMesh: mesh '%s' has %i reference count\n", mesh->name.c_str(), mesh->refCount);
+        meshHashMap.Remove(mesh->hashName);
     }
-
-    meshHashMap.Remove(mesh->hashName);
 
     delete mesh;
 }

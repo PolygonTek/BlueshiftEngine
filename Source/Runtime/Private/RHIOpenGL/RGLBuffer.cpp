@@ -107,8 +107,8 @@ void OpenGLRHI::DestroyBuffer(Handle bufferHandle) {
         }
     }
 
+    // If a buffer object that is currently bound is deleted, the binding reverts to 0.
     gglDeleteBuffers(1, &buffer->object);
-    buffer->object = 0;
 
     delete bufferList[bufferHandle];
     bufferList[bufferHandle] = nullptr;
