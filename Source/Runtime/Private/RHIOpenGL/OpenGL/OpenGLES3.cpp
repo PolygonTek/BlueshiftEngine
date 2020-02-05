@@ -112,6 +112,22 @@ void OpenGLES3::TexBuffer(GLenum internalFormat, GLuint buffer) {
 #endif
 }
 
+void *OpenGLES3::MapBuffer(GLenum target, GLenum access) { 
+#ifdef GL_OES_mapbuffer
+    return gglMapBufferOES(target, access);
+#else
+    return nullptr;
+#endif
+}
+
+bool OpenGLES3::UnmapBuffer(GLenum target) {
+#ifdef GL_OES_mapbuffer
+    return gglUnmapBufferOES(target);
+#else
+    return false;
+#endif
+}
+
 void OpenGLES3::SetTextureSwizzling(GLenum target, Image::Format::Enum format) {
     switch (format) {
     case Image::Format::L_8:
