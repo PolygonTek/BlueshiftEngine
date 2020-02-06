@@ -181,7 +181,7 @@ void ShaderManager::InitGlobalDefines() {
         if (rhi.SupportsTextureCompressionLATC()) {
             shaderManager.AddGlobalHeader("#define LATC_NORMAL\n");
         } else if (rhi.SupportsTextureCompressionETC2()) {
-            //shaderManager.AddGlobalHeader("#define ETC2_NORMAL\n");
+            shaderManager.AddGlobalHeader("#define EAC_NORMAL\n");
         } else if (rhi.SupportsTextureCompressionS3TC()) {
             shaderManager.AddGlobalHeader("#define DXT5_XGBR_NORMAL\n");
         }
