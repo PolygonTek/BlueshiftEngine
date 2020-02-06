@@ -668,6 +668,23 @@ bool Image::IsDepthStencilFormat(Image::Format::Enum imageFormat) {
     return (GetImageFormatInfo(imageFormat)->type & FormatType::DepthStencil) == FormatType::DepthStencil;
 }
 
+bool Image::NeedFloatConversion(Image::Format::Enum imageFormat) {
+    const ImageFormatInfo *formatInfo = GetImageFormatInfo(imageFormat);
+    if (formatInfo->type & (FormatType::Float | FormatType::SNorm)) {
+        return true;
+    }
+    if (formatInfo->redBits > 8 || formatInfo->greenBits > 8 || formatInfo->blueBits > 8 || formatInfo->alphaBits > 8) {
+        return true;
+    }
+    if (imageFormat == Format::R_11_EAC ||
+        imageFormat == Format::RG_11_11_EAC ||
+        imageFormat == Format::SignedR_11_EAC ||
+        imageFormat == Format::SignedRG_11_11_EAC) {
+        return true;
+    }
+    return false;
+}
+
 int Image::MemRequired(int width, int height, int depth, int numMipmaps, Image::Format::Enum imageFormat) {
     int w = width;
     int h = height;

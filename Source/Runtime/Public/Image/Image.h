@@ -235,6 +235,8 @@ public:
     bool                IsDepthFormat() const { return Image::IsDepthFormat(format); }
                         /// Returns true if image format is depth & stencil.
     bool                IsDepthStencilFormat() const { return Image::IsDepthStencilFormat(format); }
+                        /// Returns true if image format needs floating conversion in order to not lose precision.
+    bool                NeedFloatConversion() const { return Image::NeedFloatConversion(format); }
                         /// Returns true if image is cube map.
     bool                IsCubeMap() const { return !!(flags & Flag::CubeMap) && numSlices == 6; }
 
@@ -260,6 +262,8 @@ public:
     Format::Enum        GetFormat() const { return format; }
                         /// Returns gamma space of this image.
     GammaSpace::Enum    GetGammaSpace() const { return gammaSpace; }
+                        /// Sets gamma space.
+    void                SetGammaSpace(GammaSpace::Enum gammaSpace) { this->gammaSpace = gammaSpace; }
 
                         /// Returns pixel data pointer.
     byte *              GetPixels() const { return pic; }
@@ -382,6 +386,7 @@ public:
     static bool         IsHalfFormat(Format::Enum imageFormat);
     static bool         IsDepthFormat(Format::Enum imageFormat);
     static bool         IsDepthStencilFormat(Format::Enum imageFormat);
+    static bool         NeedFloatConversion(Format::Enum imageFormat);
     static int          MemRequired(int width, int height, int depth, int numMipmaps, Format::Enum imageFormat);
     static int          MaxMipMapLevels(int width, int height, int depth);
 

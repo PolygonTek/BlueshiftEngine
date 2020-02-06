@@ -195,12 +195,12 @@ void DecompressETC1(const Image &srcImage, Image &dstImage) {
 
     const byte *pSrcData = srcImage.GetPixels();
 
-    if (x<ETC_MIN_TEXWIDTH || y<ETC_MIN_TEXHEIGHT) {	
+    if (x<ETC_MIN_TEXWIDTH || y<ETC_MIN_TEXHEIGHT) {
         // decompress into a buffer big enough to take the minimum size
         char* pTempBuffer = (char*)malloc(PVRT_MAX(x, ETC_MIN_TEXWIDTH)*PVRT_MAX(y, ETC_MIN_TEXHEIGHT) * 4);
         i32read = ETCTextureDecompress(pSrcData, PVRT_MAX(x, ETC_MIN_TEXWIDTH), PVRT_MAX(y, ETC_MIN_TEXHEIGHT), pTempBuffer, 0);
 
-        for (unsigned int i = 0; i<y; i++) {	
+        for (unsigned int i = 0; i<y; i++) {
             // copy from larger temp buffer to output data
             memcpy((char*)(pDecompressedData)+i*x * 4, pTempBuffer + PVRT_MAX(x, ETC_MIN_TEXWIDTH) * 4 * i, x * 4);
         }
@@ -249,7 +249,7 @@ static void ReadColorBlockETC2(const byte *data, uint32_t &block1, uint32_t &blo
     block2 = block2 << 8; block2 |= data[7];
 }
 
-static void DecompressImageETC2_RGB8(const byte *src, const int width, const int height, const int depth, byte *out) {
+static void DecodeETC2_RGB8ToRGBA8(const byte *src, const int width, const int height, const int depth, byte *out) {
     ALIGN_AS16 byte unpackedBlock[64];
     uint32_t block1;
     uint32_t block2;
@@ -272,8 +272,10 @@ static void DecompressImageETC2_RGB8(const byte *src, const int width, const int
 
             const byte *srcPtr = unpackedBlock;
 
-            for (int i = 0; i < dstBlockHeight; i++, srcPtr += 4 * 4) {
-                memcpy(dstPtr + i * 4 * width, srcPtr, 4 * dstBlockWidth);
+            for (int by = 0; by < dstBlockHeight; by++) {
+                memcpy(dstPtr + by * 4 * width, srcPtr, 4 * dstBlockWidth);
+
+                srcPtr += 4 * 4;
             }
 
             dstPtr += 4 * dstBlockWidth;
@@ -281,7 +283,7 @@ static void DecompressImageETC2_RGB8(const byte *src, const int width, const int
     }
 }
 
-static void DecompressImageETC2_RGB8A1(const byte *src, const int width, const int height, const int depth, byte *out) {
+static void DecodeETC2_RGB8A1ToRGBA8(const byte *src, const int width, const int height, const int depth, byte *out) {
     ALIGN_AS16 byte unpackedBlock[64];
     uint32_t block1;
     uint32_t block2;
@@ -301,8 +303,10 @@ static void DecompressImageETC2_RGB8A1(const byte *src, const int width, const i
 
             const byte *srcPtr = unpackedBlock;
 
-            for (int i = 0; i < dstBlockHeight; i++, srcPtr += 4 * 4) {
-                memcpy(dstPtr + i * 4 * width, srcPtr, 4 * dstBlockWidth);
+            for (int by = 0; by < dstBlockHeight; by++) {
+                memcpy(dstPtr + 4 * width * by, srcPtr, 4 * dstBlockWidth);
+
+                srcPtr += 4 * 4;
             }
 
             dstPtr += 4 * dstBlockWidth;
@@ -310,7 +314,7 @@ static void DecompressImageETC2_RGB8A1(const byte *src, const int width, const i
     }
 }
 
-static void DecompressImageETC2_RGBA8(const byte *src, const int width, const int height, const int depth, byte *out) {
+static void DecodeETC2_RGBA8ToRGBA8(const byte *src, const int width, const int height, const int depth, byte *out) {
     ALIGN_AS16 byte unpackedBlock[64];
     uint32_t block1;
     uint32_t block2;
@@ -333,8 +337,10 @@ static void DecompressImageETC2_RGBA8(const byte *src, const int width, const in
 
             const byte *srcPtr = unpackedBlock;
 
-            for (int i = 0; i < dstBlockHeight; i++, srcPtr += 4 * 4) {
-                memcpy(dstPtr + i * 4 * width, srcPtr, 4 * dstBlockWidth);
+            for (int by = 0; by < dstBlockHeight; by++) {
+                memcpy(dstPtr + 4 * width * by, srcPtr, 4 * dstBlockWidth);
+
+                srcPtr += 4 * 4;
             }
 
             dstPtr += 4 * dstBlockWidth;
@@ -342,13 +348,60 @@ static void DecompressImageETC2_RGBA8(const byte *src, const int width, const in
     }
 }
 
-static void DecompressImageETC2_RG11(const byte *src, const int width, const int height, const int depth, bool signedFormat, byte *out) {
+static void DecodeEAC_R11ToRGBA32F(const byte *src, const int width, const int height, const int depth, bool signedFormat, float *out) {
     ALIGN_AS16 byte unpackedBlock[64];
 
     etcpack::formatSigned = signedFormat;
 
     for (int y = 0; y < height; y += 4) {
-        byte *dstPtr = out + 4 * width * y;
+        float *dstPtr = out + 4 * width * y;
+
+        int dstBlockHeight = Min(4, height - y);
+
+        for (int x = 0; x < width; x += 4) {
+            // EAC block
+            etcpack::decompressBlockAlpha16bitC(const_cast<byte *>(src), unpackedBlock, 4, 4, 0, 0, 1);
+            src += 8;
+
+            float fdata[4 * 16];
+            if (signedFormat) {
+                for (int i = 0; i < 16; i++) {
+                    fdata[4 * i + 0] = (((int16_t *)unpackedBlock)[i] + 0.5f) / (32767.0f + 0.5f);
+                    fdata[4 * i + 1] = 0;
+                    fdata[4 * i + 2] = 0;
+                    fdata[4 * i + 3] = 255;
+                }
+            } else {
+                for (int i = 0; i < 16; i++) {
+                    fdata[4 * i + 0] = ((uint16_t *)unpackedBlock)[i] / 65535.0f;
+                    fdata[4 * i + 1] = 0;
+                    fdata[4 * i + 2] = 0;
+                    fdata[4 * i + 3] = 255;
+                }
+            }
+
+            int dstBlockWidth = Min(4, width - x);
+
+            const float *srcPtr = (float *)fdata;
+
+            for (int by = 0; by < dstBlockHeight; by++) {
+                memcpy(dstPtr + 4 * width * by, srcPtr, sizeof(float) * 4 * dstBlockWidth);
+
+                srcPtr += 4 * 4;
+            }
+
+            dstPtr += 4 * dstBlockWidth;
+        }
+    }
+}
+
+static void DecodeEAC_RG11ToRGBA32F(const byte *src, const int width, const int height, const int depth, bool signedFormat, bool normal, float *out) {
+    ALIGN_AS16 byte unpackedBlock[64];
+
+    etcpack::formatSigned = signedFormat;
+
+    for (int y = 0; y < height; y += 4) {
+        float *dstPtr = out + 4 * width * y;
 
         int dstBlockHeight = Min(4, height - y);
 
@@ -361,40 +414,40 @@ static void DecompressImageETC2_RG11(const byte *src, const int width, const int
             etcpack::decompressBlockAlpha16bitC(const_cast<byte *>(src), unpackedBlock + 2, 4, 4, 0, 0, 2);
             src += 8;
 
-            float normals[16 * 4];
+            float fdata[4 * 16];
             if (signedFormat) {
                 for (int i = 0; i < 16; i++) {
-                    normals[i * 4 + 0] = (((int16_t *)unpackedBlock)[i + 0] + 0.5f) / (32767.0f + 0.5f);
-                    normals[i * 4 + 1] = (((int16_t *)unpackedBlock)[i + 1] + 0.5f) / (32767.0f + 0.5f);
+                    fdata[4 * i + 0] = (((int16_t *)unpackedBlock)[2 * i + 0] + 0.5f) / (32767.0f + 0.5f);
+                    fdata[4 * i + 1] = (((int16_t *)unpackedBlock)[2 * i + 1] + 0.5f) / (32767.0f + 0.5f);
+                    fdata[4 * i + 2] = 0.0f;
+                    fdata[4 * i + 3] = 1.0f;
                 }
             } else {
                 for (int i = 0; i < 16; i++) {
-                    normals[i * 4 + 0] = ((uint16_t *)unpackedBlock)[i + 0] / 65535 * 2.0f - 1.0f;
-                    normals[i * 4 + 1] = ((uint16_t *)unpackedBlock)[i + 1] / 65535 * 2.0f - 1.0f;
+                    fdata[4 * i + 0] = (((uint16_t *)unpackedBlock)[2 * i + 0] / 65535.0f) * 2.0f - 1.0f;
+                    fdata[4 * i + 1] = (((uint16_t *)unpackedBlock)[2 * i + 1] / 65535.0f) * 2.0f - 1.0f;
+                    fdata[4 * i + 2] = 0.0f;
+                    fdata[4 * i + 3] = 1.0f;
                 }
             }
 
-            for (int i = 0; i < 16; i++) {
-                float x = normals[i * 4 + 0];
-                float y = normals[i * 4 + 1];
-                float z = 1.0f - x * x - y * y;
-                if (z < 0.0f) z = 0.0f;
-                normals[i * 4 + 2] = sqrt(z);
-            }
+            if (normal) {
+                for (int i = 0; i < 16; i++) {
+                    float x = fdata[4 * i + 0];
+                    float y = fdata[4 * i + 1];
 
-            for (int i = 0; i < 16; i++) {
-                unpackedBlock[i * 4 + 0] = Math::Ftob((normals[i * 4 + 0] + 1.0f) / 2.0f * 255.0f);
-                unpackedBlock[i * 4 + 1] = Math::Ftob((normals[i * 4 + 1] + 1.0f) / 2.0f * 255.0f);
-                unpackedBlock[i * 4 + 2] = Math::Ftob((normals[i * 4 + 2] + 1.0f) / 2.0f * 255.0f);
-                unpackedBlock[i * 4 + 3] = 255;
+                    fdata[4 * i + 2] = Math::Sqrt(Math::Fabs(1.0f - x * x - y * y));
+                }
             }
 
             int dstBlockWidth = Min(4, width - x);
 
-            const byte *srcPtr = unpackedBlock;
+            const float *srcPtr = fdata;
 
-            for (int i = 0; i < dstBlockHeight; i++, srcPtr += 4 * 4) {
-                memcpy(dstPtr + i * 4 * width, srcPtr, 4 * dstBlockWidth);
+            for (int by = 0; by < dstBlockHeight; by++) {
+                memcpy(dstPtr + 4 * width * by, srcPtr, sizeof(float) * 4 * dstBlockWidth);
+
+                srcPtr += 4 * 4;
             }
 
             dstPtr += 4 * dstBlockWidth;
@@ -403,6 +456,8 @@ static void DecompressImageETC2_RG11(const byte *src, const int width, const int
 }
 
 void DecompressETC2_RGB8(const Image &srcImage, Image &dstImage) {
+    assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 
@@ -415,12 +470,14 @@ void DecompressETC2_RGB8(const Image &srcImage, Image &dstImage) {
             const byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
             byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-            DecompressImageETC2_RGB8(src, w, h, d, dst);
+            DecodeETC2_RGB8ToRGBA8(src, w, h, d, dst);
         }
     }
 }
 
 void DecompressETC2_RGB8A1(const Image &srcImage, Image &dstImage) {
+    assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 
@@ -433,12 +490,14 @@ void DecompressETC2_RGB8A1(const Image &srcImage, Image &dstImage) {
             const byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
             byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-            DecompressImageETC2_RGB8A1(src, w, h, d, dst);
+            DecodeETC2_RGB8A1ToRGBA8(src, w, h, d, dst);
         }
     }
 }
 
 void DecompressETC2_RGBA8(const Image &srcImage, Image &dstImage) {
+    assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 
@@ -451,12 +510,14 @@ void DecompressETC2_RGBA8(const Image &srcImage, Image &dstImage) {
             const byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
             byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-            DecompressImageETC2_RGBA8(src, w, h, d, dst);
+            DecodeETC2_RGBA8ToRGBA8(src, w, h, d, dst);
         }
     }
 }
 
-void DecompressETC2_RG11(const Image &srcImage, Image &dstImage) {
+void DecompressEAC_R11(const Image &srcImage, Image &dstImage, bool signedFormat) {
+    assert(dstImage.GetFormat() == Image::Format::RGBA_32F_32F_32F_32F);
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 
@@ -469,12 +530,14 @@ void DecompressETC2_RG11(const Image &srcImage, Image &dstImage) {
             const byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
             byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-            DecompressImageETC2_RG11(src, w, h, d, false, dst);
+            DecodeEAC_R11ToRGBA32F(src, w, h, d, signedFormat, (float *)dst);
         }
     }
 }
 
-void DecompressETC2_Signed_RG11(const Image &srcImage, Image &dstImage) {
+void DecompressEAC_RG11(const Image &srcImage, Image &dstImage, bool signedFormat, bool normal) {
+    assert(dstImage.GetFormat() == Image::Format::RGBA_32F_32F_32F_32F);
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 
@@ -487,7 +550,7 @@ void DecompressETC2_Signed_RG11(const Image &srcImage, Image &dstImage) {
             const byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
             byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-            DecompressImageETC2_RG11(src, w, h, d, true, dst);
+            DecodeEAC_RG11ToRGBA32F(src, w, h, d, signedFormat, normal, (float *)dst);
         }
     }
 }

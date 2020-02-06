@@ -22,7 +22,6 @@
 BE_NAMESPACE_BEGIN
 
 static bool DecompressImage(const Image &srcImage, Image &dstImage) {
-    assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
     assert(dstImage.GetPixels());
 
     switch (srcImage.GetFormat()) {
@@ -64,11 +63,17 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
     case Image::Format::RGBA_8_8_ETC2:
         DecompressETC2_RGBA8(srcImage, dstImage);
         break;
+    case Image::Format::R_11_EAC:
+        DecompressEAC_R11(srcImage, dstImage, false);
+        break;
     case Image::Format::RG_11_11_EAC:
-        DecompressETC2_RG11(srcImage, dstImage);
+        DecompressEAC_RG11(srcImage, dstImage, false, true);//
+        break;
+    case Image::Format::SignedR_11_EAC:
+        DecompressEAC_R11(srcImage, dstImage, true);
         break;
     case Image::Format::SignedRG_11_11_EAC:
-        DecompressETC2_Signed_RG11(srcImage, dstImage);
+        DecompressEAC_RG11(srcImage, dstImage, true, true);//
         break;
     default:
         BE_WARNLOG("DecompressImage: unsupported format %s\n", srcImage.FormatName());
@@ -79,7 +84,6 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
 }
 
 static bool CompressImage(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
-    assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
     assert(srcImage.GetPixels());
 
     //uint64_t startClocks = rdtsc();
@@ -109,11 +113,17 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
     case Image::Format::RGBA_8_8_ETC2:
         CompressETC2_RGBA8(srcImage, dstImage, compressionQuality);
         break;
+    case Image::Format::R_11_EAC:
+        CompressEAC_R11(srcImage, dstImage, compressionQuality);
+        break;
     case Image::Format::RG_11_11_EAC:
-        CompressETC2_RG11(srcImage, dstImage, compressionQuality);
+        CompressEAC_RG11(srcImage, dstImage, compressionQuality);
+        break;
+    case Image::Format::SignedR_11_EAC:
+        CompressEAC_Signed_R11(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::SignedRG_11_11_EAC:
-        CompressETC2_Signed_RG11(srcImage, dstImage, compressionQuality);
+        CompressEAC_Signed_RG11(srcImage, dstImage, compressionQuality);
         break;
     default:
         BE_WARNLOG("CompressImage: unsupported format %s\n", dstImage.FormatName());
@@ -141,10 +151,11 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
     // Create an output image based on source (this) image.
     dstImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, dstFormat, srcImage->gammaSpace, nullptr, srcImage->flags);
 
-    // If the source format is compressed, decompress it to RGBA_8_8_8_8.
+    // If the source image is compressed, decompress it first.
     Image decompressedImage;
     if (srcFormatInfo->type & FormatType::Compressed) {
-        decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, Format::RGBA_8_8_8_8, srcImage->gammaSpace, nullptr, srcImage->flags);
+        decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, 
+            srcImage->NeedFloatConversion() ? Format::RGBA_32F_32F_32F_32F : Format::RGBA_8_8_8_8, srcImage->gammaSpace, nullptr, srcImage->flags);
 
         DecompressImage(*this, decompressedImage);
 
@@ -153,7 +164,7 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
         }
 
         srcImage = &decompressedImage;
-        srcFormatInfo = GetImageFormatInfo(Format::RGBA_8_8_8_8);
+        srcFormatInfo = GetImageFormatInfo(decompressedImage.GetFormat());
     } else {
         if (regenerateMipmaps) {
             decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, srcImage->format, srcImage->gammaSpace, nullptr, srcImage->flags);
@@ -164,13 +175,20 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
         }
     }
 
-    // If the target format is compressed, source image should be decompressed to RGBA_8_8_8_8.
-    Image rgba8888Image;
+    // If the target format is compressed, source image should be decompressed to RGBA_8_8_8_8 or RGBA_32F_32F_32F_32F.
     if (dstFormatInfo->type & FormatType::Compressed) {
-        if (srcImage->GetFormat() != Format::RGBA_8_8_8_8) {
-            srcImage->ConvertFormat(Format::RGBA_8_8_8_8, rgba8888Image);
-            srcImage = &rgba8888Image;
-            srcFormatInfo = GetImageFormatInfo(Format::RGBA_8_8_8_8);
+        Image tempImage;
+
+        if (NeedFloatConversion(dstFormat)) {
+            if (srcImage->GetFormat() != Format::RGBA_32F_32F_32F_32F) {
+                srcImage->ConvertFormat(Format::RGBA_32F_32F_32F_32F, tempImage);
+                srcImage = &tempImage;
+            }
+        } else {
+            if (srcImage->GetFormat() != Format::RGBA_8_8_8_8) {
+                srcImage->ConvertFormat(Format::RGBA_8_8_8_8, tempImage);
+                srcImage = &tempImage;
+            }
         }
 
         if (!CompressImage(*srcImage, dstImage, compressionQuality)) {
@@ -184,9 +202,7 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
     ImageUnpackFunc unpackFunc;
     ImagePackFunc packFunc;
 
-    bool useUnpackFloat = 
-        (srcFormatInfo->type & (FormatType::Float | FormatType::SNorm)) || 
-        (dstFormatInfo->type & (FormatType::Float | FormatType::SNorm));
+    bool useUnpackFloat = NeedFloatConversion(srcImage->GetFormat()) || NeedFloatConversion(dstFormat);
 
     if (useUnpackFloat) {
         unpackFunc = srcFormatInfo->unpackRGBA32F;
