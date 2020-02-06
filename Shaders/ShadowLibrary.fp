@@ -265,8 +265,8 @@ vec3 SampleSpotShadowMap() {
 
 //-------------------------------------------------------------------------------------------------
 
-uniform samplerCube cubicNormalCubeMap;
-uniform samplerCube indirectionCubeMap;
+uniform MEDIUMP samplerCube cubicNormalCubeMap;
+uniform MEDIUMP samplerCube indirectionCubeMap;
 uniform vec2 shadowProjectionDepth;
 uniform float vscmBiasedScale;
 
@@ -320,7 +320,7 @@ vec4 GetShadowIndirectCoord(const vec3 worldLightVec) {
     vec3 biasedDir = a * dir + b * dir;
     
     vec4 shadowIndirectCoord;
-    shadowIndirectCoord.xy = texCUBE(indirectionCubeMap, biasedDir).zw; // indirectionCubeMap has LA_16_16 format 
+    shadowIndirectCoord.xy = texCUBE(indirectionCubeMap, biasedDir).zw; // indirectionCubeMap has LA_16F_16F format 
     shadowIndirectCoord.z = (1.0 / Zeye) * shadowProjectionDepth.x + shadowProjectionDepth.y;
     shadowIndirectCoord.w = 1.0;
 

@@ -80,9 +80,9 @@ void Texture::CreateFromBuffer(Image::Format::Enum format, RHI::Handle bufferHan
 // Indirection cubemap : Converts cubic coords to VCM coords
 void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, int flags) {
     Image cubeImage;
-    cubeImage.CreateCube(size, 1, Image::Format::LA_16_16, Image::GammaSpace::Linear, nullptr, 0);
+    cubeImage.CreateCube(size, 1, Image::Format::LA_16F_16F, Image::GammaSpace::Linear, nullptr, 0);
 
-    word *dstPtr = (word *)cubeImage.GetPixels();
+    float16_t *dstPtr = (float16_t *)cubeImage.GetPixels();
 
     int vcmFaceWidth = vcmWidth / 3;
     int vcmFaceHeight = vcmHeight / 2;
@@ -100,15 +100,13 @@ void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, in
             Vec2 vcmSt;
             vcmSt.y = ((float)y / (float)(size - 1)) * vcmFaceHeight;
             vcmSt.y = (vcmSt.y + vcmFaceHeight * (i & 1)) / vcmHeight;
-            vcmSt.y = vcmSt.y * 65535.0f;
 
             for (int x = 0; x < size; x++) {
                 vcmSt.x = ((float)x / (float)(size - 1)) * vcmFaceWidth;
                 vcmSt.x = (vcmSt.x + vcmFaceWidth * (i >> 1)) / vcmWidth;
-                vcmSt.x = vcmSt.x * 65535.0f;
 
-                *dstPtr++ = (word)(vcmSt.x);
-                *dstPtr++ = (word)(vcmSt.y);
+                *dstPtr++ = F16Converter::FromF32(vcmSt.x);
+                *dstPtr++ = F16Converter::FromF32(vcmSt.y);
             }
         }
     }

@@ -1922,7 +1922,6 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "L_8",                    1,  1,  0,  0,  0,  0,  0, L8ToRGBA8888, RGBA8888ToL8, L8ToRGBA32F, RGBA32FToL8 },
     { "A_8",                    1,  1,  0,  0,  0,  8,  0, A8ToRGBA8888, RGBA8888ToA8, A8ToRGBA32F, RGBA32FToA8 },
     { "LA_8_8",                 2,  2,  0,  0,  0,  8,  0, LA88ToRGBA8888, RGBA8888ToLA88, LA88ToRGBA32F, RGBA32FToLA88 },
-    { "LA_16_16",               4,  2,  0,  0,  0,  16, 0, LA1616ToRGBA8888, RGBA8888ToLA1616, LA1616ToRGBA32F, RGBA32FToLA1616 },
     { "R_8",                    1,  1,  8,  0,  0,  0,  0, R8ToRGBA8888, RGBA8888ToR8, R8ToRGBA32F, RGBA32FToR8 },
     { "RG_8_8",                 2,  2,  8,  8,  0,  0,  0, RG88ToRGBA8888, RGBA8888ToRG88, RG88ToRGBA32F, RGBA32FToRG88 },
     { "RGB_8_8_8",              3,  3,  8,  8,  8,  0,  0, RGB888ToRGBA8888, RGBA8888ToRGB888, RGB888ToRGBA32F, RGBA32FToRGB888 },
@@ -1955,7 +1954,7 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "ARGB_1_5_5_5",           2,  4,  5,  5,  5,  1,  Image::FormatType::Packed, ARGB1555ToRGBA8888, RGBA8888ToARGB1555, nullptr, nullptr },
     { "RGB_5_6_5",              2,  3,  5,  6,  5,  0,  Image::FormatType::Packed, RGB565ToRGBA8888, RGBA8888ToRGB565, nullptr, nullptr },
     { "BGR_5_6_5",              2,  3,  5,  6,  5,  0,  Image::FormatType::Packed, BGR565ToRGBA8888, RGBA8888ToBGR565, nullptr, nullptr },
-    { "RGBA_10_10_10_2",        4,  4, 10, 10, 10,  2,  Image::FormatType::Packed, nullptr, nullptr, RGBA1010102ToRGBA32F, RGBA32FToRGBA1010102 },
+    { "RGBA_10_10_10_2",        4,  4, 10, 10, 10,  2,  Image::FormatType::Packed, nullptr, nullptr, RGBA1010102ToRGBA32F, RGBA32FToRGBA1010102 },//
 
     // float format -------------------------------------------------------------------------------
     { "L_16F",                  2,  1,  0,  0,  0,  0,  Image::FormatType::Half, L16FToRGBA8888, RGBA8888ToL16F, L16FToRGBA32F, RGBA32FToL16F },
@@ -1967,10 +1966,10 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "RGBA_16F_16F_16F_16F",   8,  4,  16, 16, 16, 16, Image::FormatType::Half, RGBA16FToRGBA8888, RGBA8888ToRGBA16F, RGBA16FToRGBA32F, RGBA32FToRGBA16F },
     { "L_32F",                  4,  1,  0,  0,  0,  0,  Image::FormatType::Float, L32FToRGBA8888, RGBA8888ToL32F, L32FToRGBA32F, RGBA32FToL32F },
     { "A_32F",                  4,  1,  0,  0,  0,  32, Image::FormatType::Float, A32FToRGBA8888, RGBA8888ToA32F, A32FToRGBA32F, RGBA32FToA32F },
-    { "LA_32F_32F",             8,  2,  0,  0,  0,  32, Image::FormatType::Float, LA32FToRGBA8888, RGBA8888ToLA32F, LA32FToRGBA32F, RGBA32FToLA32F },    
-    { "R_32F",                  4,  1,  32, 0,  0,  0,  Image::FormatType::Float, R32FToRGBA8888, RGBA8888ToR32F, R32FToRGBA32F, RGBA32FToR32F },    
+    { "LA_32F_32F",             8,  2,  0,  0,  0,  32, Image::FormatType::Float, LA32FToRGBA8888, RGBA8888ToLA32F, LA32FToRGBA32F, RGBA32FToLA32F },
+    { "R_32F",                  4,  1,  32, 0,  0,  0,  Image::FormatType::Float, R32FToRGBA8888, RGBA8888ToR32F, R32FToRGBA32F, RGBA32FToR32F },
     { "RG_32F_32F",             8,  2,  32, 32, 0,  0,  Image::FormatType::Float, RG32FToRGBA8888, RGBA8888ToRG32F, RG32FToRGBA32F, RGBA32FToRG32F },
-    { "RGB_32F_32F_32F",        12, 3,  32, 32, 32, 0,  Image::FormatType::Float, RGB32FToRGBA8888, RGBA8888ToRGB32F, RGB32FToRGBA32F, RGBA32FToRGB32F },    
+    { "RGB_32F_32F_32F",        12, 3,  32, 32, 32, 0,  Image::FormatType::Float, RGB32FToRGBA8888, RGBA8888ToRGB32F, RGB32FToRGBA32F, RGBA32FToRGB32F },
     { "RGBA_32F_32F_32F_32F",   16, 4,  32, 32, 32, 32, Image::FormatType::Float, RGBA32FToRGBA8888, RGBA8888ToRGBA32F, RGBA32FToRGBA32F, RGBA32FToRGBA32F },
     { "RGBE_9_9_9_5",           4,  3,  9,  9,  9,  0,  Image::FormatType::Float | Image::FormatType::Packed, RGBE9995ToRGBA8888, RGBA8888ToRGBE9995, RGBE9995ToRGBA32F, RGBA32FToRGBE9995 },
     { "RGB_11F_11F_10F",        4,  3,  11, 11, 10, 0,  Image::FormatType::Float | Image::FormatType::Packed, RGB11F11F10FToRGBA8888, RGBA8888ToRGB11F11F10F, RGB11F11F10FToRGBA32F, RGBA32FToRGB11F11F10F },
@@ -1996,10 +1995,10 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "RGB_8_ETC2",             8,  3,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "RGBA_8_1_ETC2",          8,  4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
     { "RGBA_8_8_ETC2",          16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "R_11_EAC",               8,  1,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "RG_11_11_EAC",           16, 2,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "SignedR_11_EAC",         8,  1,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
-    { "SignedRG_11_11_EAC",     16, 2,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
+    { "R_11_EAC",               8,  1,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },//
+    { "RG_11_11_EAC",           16, 2,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },//
+    { "SignedR_11_EAC",         8,  1,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },//
+    { "SignedRG_11_11_EAC",     16, 2,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },//
 
     // ATC ----------------------------------------------------------------------------------------
     { "RGB_ATC",                8,  3,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
@@ -2009,7 +2008,7 @@ static const ImageFormatInfo imageFormatInfo[] = {
     // depth --------------------------------------------------------------------------------------
     { "Depth_16",               2,  1,  0,  0,  0,  0,  Image::FormatType::Depth, nullptr, nullptr, nullptr, nullptr },
     { "Depth_24",               3,  1,  0,  0,  0,  0,  Image::FormatType::Depth, nullptr, nullptr, nullptr, nullptr },
-    { "Depth_32F",              4,  1,  0,  0,  0,  0,  Image::FormatType::Depth | Image::FormatType::Float, nullptr, nullptr, nullptr, nullptr },
+    { "Depth_32F",              4,  1,  0,  0,  0,  0,  Image::FormatType::Depth | Image::FormatType::Float, nullptr, nullptr, L32FToRGBA32F, RGBA32FToL32F },
     { "DepthStencil_24_8",      4,  2,  0,  0,  0,  0,  Image::FormatType::DepthStencil, nullptr, nullptr, nullptr, nullptr },
     { "DepthStencil_32F_8",     5,  2,  0,  0,  0,  0,  Image::FormatType::DepthStencil, nullptr, nullptr, nullptr, nullptr },
 };

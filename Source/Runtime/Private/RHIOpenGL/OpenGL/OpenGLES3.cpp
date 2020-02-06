@@ -147,7 +147,6 @@ void OpenGLES3::SetTextureSwizzling(GLenum target, Image::Format::Enum format) {
         gglTexParameteri(target, GL_TEXTURE_SWIZZLE_A, GL_RED);
         break;
     case Image::Format::LA_8_8:
-    case Image::Format::LA_16_16:
     case Image::Format::LA_16F_16F:
     case Image::Format::LA_32F_32F:
     case Image::Format::DXN1:
@@ -238,11 +237,6 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSR
         if (glFormat)   *glFormat = GL_RG;
         if (glType)     *glType = GL_BYTE;
         if (glInternal) *glInternal = GL_RG8_SNORM;
-        return true;
-    case Image::Format::LA_16_16:
-        if (glFormat)   *glFormat = GL_RG_INTEGER;
-        if (glType)     *glType = GL_UNSIGNED_SHORT;
-        if (glInternal) *glInternal = GL_RG16UI;
         return true;
     case Image::Format::RGB_8_8_8:
         if (glFormat)   *glFormat = GL_RGB;
