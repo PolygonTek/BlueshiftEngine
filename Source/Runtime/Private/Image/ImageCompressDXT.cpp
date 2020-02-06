@@ -20,6 +20,8 @@
 BE_NAMESPACE_BEGIN
 
 void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+    assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 
@@ -42,6 +44,8 @@ void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQual
 }
 
 void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+    assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 
@@ -64,6 +68,8 @@ void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQual
 }
 
 void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+    assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 
@@ -86,6 +92,8 @@ void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQual
 }
 
 void CompressDXN2(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+    assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 
