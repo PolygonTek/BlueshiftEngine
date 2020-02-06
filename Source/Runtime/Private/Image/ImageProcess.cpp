@@ -462,34 +462,34 @@ void BuildMipMap(T *dst, const T *src, const int width, const int height, const 
     }
 }
 
-static void BuildMipMap1DWithGamma(byte *dst, const byte *src, const int width, const int components) {
+static void BuildMipMap1DWithGamma(byte *dst, const byte *src, const int width, const int components, const float gammaToLinear[256], float (*linearToGamma)(float)) {
     int xOff = (width < 2) ? 0 : components;
 
     for (int x = 0; x < width; x += 2) {
         for (int i = 0; i < components; i++) {
-            float p0 = Image::sRGBToLinearTable[src[0]];
-            float p1 = Image::sRGBToLinearTable[src[xOff]];
+            float p0 = gammaToLinear[src[0]];
+            float p1 = gammaToLinear[src[xOff]];
 
-            *dst++ = Math::Ftob(255.0f * Math::Pow(0.5f * (p0 + p1), 1.0f / 2.2f));
+            *dst++ = Math::Ftob(255.0f * linearToGamma(0.5f * (p0 + p1)));
             src++;
         }
         src += xOff;
     }
 }
 
-static void BuildMipMap2DWithGamma(byte *dst, const byte *src, const int width, const int height, const int components) {
+static void BuildMipMap2DWithGamma(byte *dst, const byte *src, const int width, const int height, const int components, const float gammaToLinear[256], float (*linearToGamma)(float)) {
     int xOff = (width < 2) ? 0 : components;
     int yOff = (height < 2) ? 0 : components * width;
 
     for (int y = 0; y < height; y += 2) {
         for (int x = 0; x < width; x += 2) {
             for (int i = 0; i < components; i++) {
-                float p0 = Image::sRGBToLinearTable[src[0]];
-                float p1 = Image::sRGBToLinearTable[src[xOff]];
-                float p2 = Image::sRGBToLinearTable[src[yOff]];
-                float p3 = Image::sRGBToLinearTable[src[yOff + xOff]];
+                float p0 = gammaToLinear[src[0]];
+                float p1 = gammaToLinear[src[xOff]];
+                float p2 = gammaToLinear[src[yOff]];
+                float p3 = gammaToLinear[src[yOff + xOff]];
 
-                *dst++ = Math::Ftob(255.0f * Math::Pow(0.25f * (p0 + p1 + p2 + p3), 1.0f / 2.2f));
+                *dst++ = Math::Ftob(255.0f * linearToGamma(0.25f * (p0 + p1 + p2 + p3)));
                 src++;
             }
             src += xOff;
@@ -498,7 +498,7 @@ static void BuildMipMap2DWithGamma(byte *dst, const byte *src, const int width, 
     }
 }
 
-static void BuildMipMap3DWithGamma(byte *dst, const byte *src, const int width, const int height, const int depth, const int components) {
+static void BuildMipMap3DWithGamma(byte *dst, const byte *src, const int width, const int height, const int depth, const int components, const float gammaToLinear[256], float (*linearToGamma)(float)) {
     int xOff = (width < 2) ? 0 : components;
     int yOff = (height < 2) ? 0 : components * width;
     int zOff = (depth < 2) ? 0 : components * width * height;
@@ -507,16 +507,16 @@ static void BuildMipMap3DWithGamma(byte *dst, const byte *src, const int width, 
         for (int y = 0; y < height; y += 2) {
             for (int x = 0; x < width; x += 2) {
                 for (int i = 0; i < components; i++) {
-                    float p0 = Image::sRGBToLinearTable[src[0]];
-                    float p1 = Image::sRGBToLinearTable[src[xOff]];
-                    float p2 = Image::sRGBToLinearTable[src[yOff]];
-                    float p3 = Image::sRGBToLinearTable[src[yOff + xOff]];
-                    float p4 = Image::sRGBToLinearTable[src[zOff]];
-                    float p5 = Image::sRGBToLinearTable[src[zOff + xOff]];
-                    float p6 = Image::sRGBToLinearTable[src[zOff + yOff]];
-                    float p7 = Image::sRGBToLinearTable[src[zOff + yOff + xOff]];
+                    float p0 = gammaToLinear[src[0]];
+                    float p1 = gammaToLinear[src[xOff]];
+                    float p2 = gammaToLinear[src[yOff]];
+                    float p3 = gammaToLinear[src[yOff + xOff]];
+                    float p4 = gammaToLinear[src[zOff]];
+                    float p5 = gammaToLinear[src[zOff + xOff]];
+                    float p6 = gammaToLinear[src[zOff + yOff]];
+                    float p7 = gammaToLinear[src[zOff + yOff + xOff]];
 
-                    *dst++ = Math::Ftob(255.0f * Math::Pow(0.125f * (p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7), 1.0f / 2.2f));
+                    *dst++ = Math::Ftob(255.0f * linearToGamma(0.125f * (p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7)));
                     src++;
                 }
                 src += xOff;
@@ -527,13 +527,13 @@ static void BuildMipMap3DWithGamma(byte *dst, const byte *src, const int width, 
     }
 }
 
-static void BuildMipMapWithGamma(byte *dst, const byte *src, const int width, const int height, const int depth, const int components) {
+static void BuildMipMapWithGamma(byte *dst, const byte *src, const int width, const int height, const int depth, const int components, const float gammaToLinear[256], float (*linearToGamma)(float)) {
     if (depth > 1) {
-        BuildMipMap3DWithGamma(dst, src, width, height, depth, components);
+        BuildMipMap3DWithGamma(dst, src, width, height, depth, components, gammaToLinear, linearToGamma);
     } else if (height > 1) {
-        BuildMipMap2DWithGamma(dst, src, width, height, components);
+        BuildMipMap2DWithGamma(dst, src, width, height, components, gammaToLinear, linearToGamma);
     } else {
-        BuildMipMap1DWithGamma(dst, src, width, components);
+        BuildMipMap1DWithGamma(dst, src, width, components, gammaToLinear, linearToGamma);
     }
 }
 
@@ -569,8 +569,10 @@ Image &Image::GenerateMipmaps() {
                     BuildMipMap<float>((float *)dst, (float *)src, w, h, d, numComponents);
                 }
             } else {
-                if (gammaSpace != GammaSpace::Linear) {
-                    BuildMipMapWithGamma(dst, src, w, h, d, numComponents);
+                if (gammaSpace == GammaSpace::sRGB) {
+                    BuildMipMapWithGamma(dst, src, w, h, d, numComponents, Image::sRGBToLinearTable, Image::LinearToGamma);
+                } else if (gammaSpace == GammaSpace::Pow22) {
+                    BuildMipMapWithGamma(dst, src, w, h, d, numComponents, Image::pow22ToLinearTable, Image::LinearToGammaFast);
                 } else {
                     BuildMipMap(dst, src, w, h, d, numComponents);
                 }
