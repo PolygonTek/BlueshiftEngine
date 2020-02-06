@@ -286,6 +286,7 @@ public:
     static bool             SupportsDepthClamp() { return supportsDepthClamp; }
     static bool             SupportsDepthBoundsTest() { return supportsDepthBoundsTest; }
     static bool             SupportsDepthBufferFloat() { return supportsDepthBufferFloat; }
+    static bool             SupportsMapBuffer() { return false; }
     static bool             SupportsPixelBufferObject() { return supportsPixelBufferObject; }
     static bool             SupportsDiscardFrameBuffer() { return false; }
     static bool             SupportsFrameBufferSRGB() { return false; }
