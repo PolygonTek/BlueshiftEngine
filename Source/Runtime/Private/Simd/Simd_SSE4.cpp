@@ -480,6 +480,122 @@ void BE_FASTCALL SIMD_SSE4::MatrixMultiply(float *dst, const float *src0, const 
     _mm_store_ps(dst + 12, a0);
 }
 
+// make the intrinsics "type unsafe"
+typedef union __declspec(intrin_type) __m128c {
+    __m128c() {}
+    __m128c(__m128 f) { m128 = f; }
+    __m128c(__m128i i) { m128i = i; }
+    operator __m128() { return m128; }
+    operator __m128i() { return m128i; }
+    __m128 m128;
+    __m128i m128i;
+} __m128c;
+
+void BE_FASTCALL SIMD_SSE4::TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
+    const __m128 vector_float_mask_keep_last = __m128c(_mm_set_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000));
+
+    const float *__restrict firstMatrix = jointMats->Ptr() + (firstJoint + firstJoint + firstJoint - 3) * 4;
+
+    __m128 pma = _mm_load_ps(firstMatrix + 0);
+    __m128 pmb = _mm_load_ps(firstMatrix + 4);
+    __m128 pmc = _mm_load_ps(firstMatrix + 8);
+
+    for (int joint = firstJoint; joint <= lastJoint; joint++) {
+        const int parent = parents[joint];
+        const float *__restrict parentMatrix = jointMats->Ptr() + (parent + parent + parent) * 4;
+        float *__restrict childMatrix = jointMats->Ptr() + (joint + joint + joint) * 4;
+
+        if (parent != joint - 1) {
+            pma = _mm_load_ps(parentMatrix + 0);
+            pmb = _mm_load_ps(parentMatrix + 4);
+            pmc = _mm_load_ps(parentMatrix + 8);
+        }
+
+        __m128 cma = _mm_load_ps(childMatrix + 0);
+        __m128 cmb = _mm_load_ps(childMatrix + 4);
+        __m128 cmc = _mm_load_ps(childMatrix + 8);
+
+        __m128 ta = __m128c(_mm_shuffle_epi32(__m128c(pma), _MM_SHUFFLE(0, 0, 0, 0)));
+        __m128 tb = __m128c(_mm_shuffle_epi32(__m128c(pmb), _MM_SHUFFLE(0, 0, 0, 0)));
+        __m128 tc = __m128c(_mm_shuffle_epi32(__m128c(pmc), _MM_SHUFFLE(0, 0, 0, 0)));
+
+        __m128 td = __m128c(_mm_shuffle_epi32(__m128c(pma), _MM_SHUFFLE(1, 1, 1, 1)));
+        __m128 te = __m128c(_mm_shuffle_epi32(__m128c(pmb), _MM_SHUFFLE(1, 1, 1, 1)));
+        __m128 tf = __m128c(_mm_shuffle_epi32(__m128c(pmc), _MM_SHUFFLE(1, 1, 1, 1)));
+
+        __m128 tg = __m128c(_mm_shuffle_epi32(__m128c(pma), _MM_SHUFFLE(2, 2, 2, 2)));
+        __m128 th = __m128c(_mm_shuffle_epi32(__m128c(pmb), _MM_SHUFFLE(2, 2, 2, 2)));
+        __m128 ti = __m128c(_mm_shuffle_epi32(__m128c(pmc), _MM_SHUFFLE(2, 2, 2, 2)));
+
+        pma = _mm_add_ps(_mm_mul_ps(ta, cma), _mm_and_ps(pma, vector_float_mask_keep_last));
+        pmb = _mm_add_ps(_mm_mul_ps(tb, cma), _mm_and_ps(pmb, vector_float_mask_keep_last));
+        pmc = _mm_add_ps(_mm_mul_ps(tc, cma), _mm_and_ps(pmc, vector_float_mask_keep_last));
+
+        pma = _mm_add_ps(_mm_mul_ps(td, cmb), pma);
+        pmb = _mm_add_ps(_mm_mul_ps(te, cmb), pmb);
+        pmc = _mm_add_ps(_mm_mul_ps(tf, cmb), pmc);
+
+        pma = _mm_add_ps(_mm_mul_ps(tg, cmc), pma);
+        pmb = _mm_add_ps(_mm_mul_ps(th, cmc), pmb);
+        pmc = _mm_add_ps(_mm_mul_ps(ti, cmc), pmc);
+
+        _mm_store_ps(childMatrix + 0, pma);
+        _mm_store_ps(childMatrix + 4, pmb);
+        _mm_store_ps(childMatrix + 8, pmc);
+    }
+}
+
+void BE_FASTCALL SIMD_SSE4::UntransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
+    const __m128 vector_float_mask_keep_last = __m128c(_mm_set_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000));
+
+    for (int joint = lastJoint; joint >= firstJoint; joint--) {
+        assert(parents[joint] < joint);
+        const int parent = parents[joint];
+        const float *__restrict parentMatrix = jointMats->Ptr() + (parent + parent + parent) * 4;
+        float *__restrict childMatrix = jointMats->Ptr() + (joint + joint + joint) * 4;
+
+        __m128 pma = _mm_load_ps(parentMatrix + 0);
+        __m128 pmb = _mm_load_ps(parentMatrix + 4);
+        __m128 pmc = _mm_load_ps(parentMatrix + 8);
+
+        __m128 cma = _mm_load_ps(childMatrix + 0);
+        __m128 cmb = _mm_load_ps(childMatrix + 4);
+        __m128 cmc = _mm_load_ps(childMatrix + 8);
+
+        __m128 ta = __m128c(_mm_shuffle_epi32(__m128c(pma), _MM_SHUFFLE(0, 0, 0, 0)));
+        __m128 tb = __m128c(_mm_shuffle_epi32(__m128c(pma), _MM_SHUFFLE(1, 1, 1, 1)));
+        __m128 tc = __m128c(_mm_shuffle_epi32(__m128c(pma), _MM_SHUFFLE(2, 2, 2, 2)));
+
+        __m128 td = __m128c(_mm_shuffle_epi32(__m128c(pmb), _MM_SHUFFLE(0, 0, 0, 0)));
+        __m128 te = __m128c(_mm_shuffle_epi32(__m128c(pmb), _MM_SHUFFLE(1, 1, 1, 1)));
+        __m128 tf = __m128c(_mm_shuffle_epi32(__m128c(pmb), _MM_SHUFFLE(2, 2, 2, 2)));
+
+        __m128 tg = __m128c(_mm_shuffle_epi32(__m128c(pmc), _MM_SHUFFLE(0, 0, 0, 0)));
+        __m128 th = __m128c(_mm_shuffle_epi32(__m128c(pmc), _MM_SHUFFLE(1, 1, 1, 1)));
+        __m128 ti = __m128c(_mm_shuffle_epi32(__m128c(pmc), _MM_SHUFFLE(2, 2, 2, 2)));
+
+        cma = _mm_sub_ps(cma, _mm_and_ps(pma, vector_float_mask_keep_last));
+        cmb = _mm_sub_ps(cmb, _mm_and_ps(pmb, vector_float_mask_keep_last));
+        cmc = _mm_sub_ps(cmc, _mm_and_ps(pmc, vector_float_mask_keep_last));
+
+        pma = _mm_mul_ps(ta, cma);
+        pmb = _mm_mul_ps(tb, cma);
+        pmc = _mm_mul_ps(tc, cma);
+
+        pma = _mm_add_ps(_mm_mul_ps(td, cmb), pma);
+        pmb = _mm_add_ps(_mm_mul_ps(te, cmb), pmb);
+        pmc = _mm_add_ps(_mm_mul_ps(tf, cmb), pmc);
+
+        pma = _mm_add_ps(_mm_mul_ps(tg, cmc), pma);
+        pmb = _mm_add_ps(_mm_mul_ps(th, cmc), pmb);
+        pmc = _mm_add_ps(_mm_mul_ps(ti, cmc), pmc);
+
+        _mm_store_ps(childMatrix + 0, pma);
+        _mm_store_ps(childMatrix + 4, pmb);
+        _mm_store_ps(childMatrix + 8, pmc);
+    }
+}
+
 #if 0
 
 static void SSE_Memcpy64B(void *dst, const void *src, const int count) {
