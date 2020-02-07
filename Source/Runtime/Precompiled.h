@@ -245,10 +245,10 @@ typedef uint64_t        qword;      // 64 bits
 #endif
 
 #ifdef _MSC_VER
-    #if (_MSC_VER >= 1800)
+    #if (_MSC_VER >= 1800) // VS2013
         #define __alignas_is_defined 1
     #endif
-    #if (_MSC_VER >= 1900)
+    #if (_MSC_VER >= 1900) // VS2015
         #define __alignof_is_defined 1
     #endif
 #else
@@ -343,6 +343,8 @@ constexpr std::size_t count_of(T (&)[N]) {
 
 #define BE_FORCE_INLINE             __forceinline
 #define BE_INLINE                   inline
+
+#define BE_DEPRECATED               __declspec(deprecated("This is deprecated and will be removed in a future version."))
 
 #define CURRENT_FUNC                __FUNCTION__
 
@@ -446,6 +448,8 @@ constexpr std::size_t count_of(T (&)[N]) {
 
 #define BE_FORCE_INLINE             inline //__attribute__((always_inline))
 #define BE_INLINE                   inline
+
+#define BE_DEPRECATED               __attribute__((deprecated("This is deprecated and will be removed in a future version.")))
 
 #define CURRENT_FUNC                __func__
 
