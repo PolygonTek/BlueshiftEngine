@@ -33,6 +33,7 @@ BE_NAMESPACE_BEGIN
 static CVAR(developer, "0", CVar::Flag::Bool, "");
 static CVAR(logFile, "0", CVar::Flag::Bool, "");
 static CVAR(forceGenericSIMD, "0", CVar::Flag::Bool, "");
+static CVAR(forceGenericSIMDForDebug, "1", CVar::Flag::Bool, "");
 
 static File *   consoleLogFile;
 
@@ -104,7 +105,14 @@ static void Common_Error(const int errLevel, const char *msg) {
 }
 
 void Common::Init(const char *baseDir) {
-    Engine::InitBase(baseDir, forceGenericSIMD.GetBool(), (const streamOutFunc_t)Common_Log, (const streamOutFunc_t)Common_Error);
+    bool genericSIMD = forceGenericSIMD.GetBool();
+#ifdef _DEBUG
+    if (!genericSIMD) {
+        genericSIMD = forceGenericSIMDForDebug.GetBool();
+    }
+#endif
+
+    Engine::InitBase(baseDir, genericSIMD, (const streamOutFunc_t)Common_Log, (const streamOutFunc_t)Common_Error);
 
     EventSystem::Init();
     
