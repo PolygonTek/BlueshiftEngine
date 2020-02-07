@@ -149,7 +149,7 @@ protected:
     Angles                  localEulerAnglesHint;
 #endif
 
-    ALIGN_AS16 mutable Mat3x4 worldMatrix;
+    mutable Mat3x4          worldMatrix;
     mutable bool            worldMatrixInvalidated;
 
     bool                    physicsUpdating;
