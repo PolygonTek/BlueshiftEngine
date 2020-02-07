@@ -30,10 +30,13 @@ void BE_FASTCALL SIMD_SSE4::Add(float *dst, const float constant, const float *s
     const float *src_ptr = src;
 
     if (count > 16) {
+        assert_16_byte_aligned(dst);
+        assert_16_byte_aligned(src);
+
         ssef c(constant);
         int c16 = count >> 4;
         while (c16 > 0) {
-            //_mm_prefetch((const char *)(src_ptr + 16), _MM_HINT_NTA);
+            //prefetchNTA(src_ptr + 16);
 
             ssef x0 = c + ssef(_mm_load_ps(src_ptr + 0));
             ssef x1 = c + ssef(_mm_load_ps(src_ptr + 4));
@@ -66,10 +69,14 @@ void BE_FASTCALL SIMD_SSE4::Add(float *dst, const float *src0, const float *src1
     const float *src1_ptr = src1;
 
     if (count > 16) {
+        assert_16_byte_aligned(dst);
+        assert_16_byte_aligned(src0);
+        assert_16_byte_aligned(src1);
+
         int c16 = count >> 4;
         while (c16 > 0) {
-            //_mm_prefetch((const char *)(src0_ptr + 16), _MM_HINT_NTA);
-            //_mm_prefetch((const char *)(src1_ptr + 16), _MM_HINT_NTA);
+            //prefetchNTA(src0_ptr + 16);
+            //prefetchNTA(src1_ptr + 16);
 
             ssef x0(_mm_load_ps(src0_ptr + 0));
             ssef x1(_mm_load_ps(src0_ptr + 4));
@@ -107,10 +114,13 @@ void BE_FASTCALL SIMD_SSE4::Sub(float *dst, const float constant, const float *s
     const float *src_ptr = src;
 
     if (count > 16) {
+        assert_16_byte_aligned(dst);
+        assert_16_byte_aligned(src);
+
         ssef c(constant);
         int c16 = count >> 4;
         while (c16 > 0) {
-            //_mm_prefetch((const char *)(src0_ptr + 16), _MM_HINT_NTA);
+            //prefetchNTA(src0_ptr + 16);
 
             ssef x0 = c - ssef(_mm_load_ps(src_ptr + 0));
             ssef x1 = c - ssef(_mm_load_ps(src_ptr + 4));
@@ -143,10 +153,14 @@ void BE_FASTCALL SIMD_SSE4::Sub(float *dst, const float *src0, const float *src1
     const float *src1_ptr = src1;
 
     if (count > 16) {
+        assert_16_byte_aligned(dst);
+        assert_16_byte_aligned(src0);
+        assert_16_byte_aligned(src1);
+
         int c16 = count >> 4;
         while (c16 > 0) {
-            //_mm_prefetch((const char *)(src0_ptr + 16), _MM_HINT_NTA);
-            //_mm_prefetch((const char *)(src1_ptr + 16), _MM_HINT_NTA);
+            //prefetchNTA(src0_ptr + 16);
+            //prefetchNTA(src1_ptr + 16);
 
             ssef x0(_mm_load_ps(src0_ptr + 0));
             ssef x1(_mm_load_ps(src0_ptr + 4));
@@ -184,10 +198,13 @@ void BE_FASTCALL SIMD_SSE4::Mul(float *dst, const float constant, const float *s
     const float *src_ptr = src;
 
     if (count > 16) {
+        assert_16_byte_aligned(dst);
+        assert_16_byte_aligned(src);
+
         ssef c(constant);
         int c16 = count >> 4;
         while (c16 > 0) {
-            //_mm_prefetch((const char *)(src0_ptr + 16), _MM_HINT_NTA);
+            //prefetchNTA(src0_ptr + 16);
 
             ssef x0 = c * ssef(_mm_load_ps(src_ptr + 0));
             ssef x1 = c * ssef(_mm_load_ps(src_ptr + 4));
@@ -220,10 +237,14 @@ void BE_FASTCALL SIMD_SSE4::Mul(float *dst, const float *src0, const float *src1
     const float *src1_ptr = src1;
 
     if (count > 16) {
+        assert_16_byte_aligned(dst);
+        assert_16_byte_aligned(src0);
+        assert_16_byte_aligned(src1);
+
         int c16 = count >> 4;
         while (c16 > 0) {
-            //_mm_prefetch((const char *)(src0_ptr + 16), _MM_HINT_NTA);
-            //_mm_prefetch((const char *)(src1_ptr + 16), _MM_HINT_NTA);
+            //prefetchNTA(src0_ptr + 16);
+            //prefetchNTA(src1_ptr + 16);
 
             ssef x0(_mm_load_ps(src0_ptr + 0));
             ssef x1(_mm_load_ps(src0_ptr + 4));
@@ -261,10 +282,13 @@ void BE_FASTCALL SIMD_SSE4::Div(float *dst, const float constant, const float *s
     const float *src_ptr = src;
 
     if (count > 16) {
+        assert_16_byte_aligned(dst);
+        assert_16_byte_aligned(src);
+        
         ssef c(constant);
         int c16 = count >> 4;
         while (c16 > 0) {
-            //_mm_prefetch((const char *)(src0_ptr + 16), _MM_HINT_NTA);
+            //prefetchNTA(src0_ptr + 16);
 
             ssef x0 = c / ssef(_mm_load_ps(src_ptr + 0));
             ssef x1 = c / ssef(_mm_load_ps(src_ptr + 4));
@@ -297,10 +321,14 @@ void BE_FASTCALL SIMD_SSE4::Div(float *dst, const float *src0, const float *src1
     const float *src1_ptr = src1;
 
     if (count > 16) {
+        assert_16_byte_aligned(dst);
+        assert_16_byte_aligned(src0);
+        assert_16_byte_aligned(src1);
+
         int c16 = count >> 4;
         while (c16 > 0) {
-            //_mm_prefetch((const char *)(src0_ptr + 16), _MM_HINT_NTA);
-            //_mm_prefetch((const char *)(src1_ptr + 16), _MM_HINT_NTA);
+            //prefetchNTA(src0_ptr + 16);
+            //prefetchNTA(src1_ptr + 16);
 
             ssef x0(_mm_load_ps(src0_ptr + 0));
             ssef x1(_mm_load_ps(src0_ptr + 4));
@@ -338,6 +366,8 @@ float BE_FASTCALL SIMD_SSE4::Sum(const float *src, const int count0) {
     float ret = 0;
     
     if (count > 4) {
+        assert_16_byte_aligned(src);
+
         int c4 = count >> 2;
         while (c4 > 0) {
             ret += reduce_add(ssef(_mm_load_ps(src_ptr)));
@@ -357,21 +387,29 @@ float BE_FASTCALL SIMD_SSE4::Sum(const float *src, const int count0) {
 }
 
 void BE_FASTCALL SIMD_SSE4::MatrixTranspose(float *dst, const float *src) {
-    ssef a0(src);
-    ssef a1(src + 4);
-    ssef a2(src + 8);
-    ssef a3(src + 12);
-    ssef r0, r1, r2, r3;
+    assert_16_byte_aligned(dst);
+    assert_16_byte_aligned(src);
 
-    transpose(a0, a1, a2, a3, r0, r1, r2, r3);
+    ssef r0(_mm_load_ps(src + 0));
+    ssef r1(_mm_load_ps(src + 4));
+    ssef r2(_mm_load_ps(src + 8));
+    ssef r3(_mm_load_ps(src + 12));
 
-    _mm_store_ps(dst, r0.m128);
-    _mm_store_ps(dst + 4, r1.m128);
-    _mm_store_ps(dst + 8, r2.m128);
-    _mm_store_ps(dst + 12, r3.m128);
+    ssef c0, c1, c2, c3;
+
+    transpose(r0, r1, r2, r3, c0, c1, c2, c3);
+
+    _mm_store_ps(dst, c0);
+    _mm_store_ps(dst + 4, c1);
+    _mm_store_ps(dst + 8, c2);
+    _mm_store_ps(dst + 12, c3);
 }
 
 void BE_FASTCALL SIMD_SSE4::MatrixMultiply(float *dst, const float *src0, const float *src1) {
+    assert_16_byte_aligned(dst);
+    assert_16_byte_aligned(src0);
+    assert_16_byte_aligned(src1);
+
     __m128 b0 = _mm_load_ps(src1);
     __m128 b1 = _mm_load_ps(src1 + 4);
     __m128 b2 = _mm_load_ps(src1 + 8);
@@ -452,7 +490,7 @@ static void SSE_Memcpy64B(void *dst, const void *src, const int count) {
 
     int c64 = count >> 6;
     while (c64 > 0) {
-        //_mm_prefetch(src_ptr + 64, _MM_HINT_NTA);
+        //prefetchNTA(src_ptr + 64);
         
         r0 = _mm_load_si128((__m128i *)src_ptr);
         r1 = _mm_load_si128((__m128i *)(src_ptr + 16));
@@ -484,8 +522,8 @@ static void SSE_Memcpy2kB(void *dst, const void *src, const int count) {
     while (c2k > 0) {
         c128 = 16;
         while (c128 > 0) {
-            //_mm_prefetch(src_ptr + 128, _MM_HINT_NTA);
-            //_mm_prefetch(src_ptr + 192, _MM_HINT_NTA);
+            //prefetchNTA(src_ptr + 128);
+            //prefetchNTA(src_ptr + 192);
             
             r0 = _mm_load_si128((__m128i *)(src_ptr + 0));
             r1 = _mm_load_si128((__m128i *)(src_ptr + 16));
@@ -536,8 +574,8 @@ static void SSE_MemcpyStream2kB(void *dst, const void *src, const int count) {
 
         c128 = 16;
         while (c128 > 0) {
-            _mm_prefetch(src_ptr + 128, _MM_HINT_NTA);
-            _mm_prefetch(src_ptr + 192, _MM_HINT_NTA);
+            prefetchNTA(src_ptr + 128);
+            prefetchNTA(src_ptr + 192);
         
             r0 = _mm_load_si128((__m128i *)src_ptr);
             r1 = _mm_load_si128((__m128i *)(src_ptr + 16));
