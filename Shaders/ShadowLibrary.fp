@@ -110,6 +110,16 @@ vec3 SampleShadowArray(vec4 shadowTC, vec2 filterOffset) {
 #endif
 }
 
+vec3 SampleSpotShadowMap() {
+    vec4 shadowTC = v2f_shadowVec.xyzz / v2f_shadowVec.w;
+    shadowTC.z = 0.0;
+#if SHADOW_MAP_QUALITY >= 1
+    return SampleShadowArrayPCF_Q1(shadowTC, shadowMapTexelSize);
+#else
+    return tex2Darray(shadowArrayMap, shadowTC).rgb;
+#endif
+}
+
 vec3 SampleSingleCascadedShadowMap() {
     vec4 shadowCascadedTC;
     shadowCascadedTC = shadowCascadeProjMatrix[0] * v2f_shadowVec;
@@ -253,19 +263,9 @@ vec3 SampleShadowPCF_Q1(vec3 shadowTC, vec2 filterOffset) {
     return shadow;
 }
 
-vec3 SampleSpotShadowMap() {
-    vec4 shadowTC = v2f_shadowVec.xyzz / v2f_shadowVec.w;
-    shadowTC.z = 0.0;
-#if SHADOW_MAP_QUALITY >= 1
-    return SampleShadowArrayPCF_Q1(shadowTC, shadowMapTexelSize);
-#else
-    return tex2Darray(shadowArrayMap, shadowTC).rgb;
-#endif
-}
-
 //-------------------------------------------------------------------------------------------------
 
-uniform MEDIUMP samplerCube cubicNormalCubeMap;
+uniform samplerCube cubicNormalCubeMap;
 uniform MEDIUMP samplerCube indirectionCubeMap;
 uniform vec2 shadowProjectionDepth;
 uniform float vscmBiasedScale;
@@ -320,7 +320,7 @@ vec3 GetShadowIndirectCoord(const vec3 worldLightVec) {
     vec3 biasedDir = a * dir + b * dir;
     
     vec3 shadowIndirectCoord;
-    shadowIndirectCoord.xy = texCUBE(indirectionCubeMap, biasedDir).xy; // indirectionCubeMap has RG_16F_16F format
+    shadowIndirectCoord.xy = texCUBE(indirectionCubeMap, biasedDir).xy;
     shadowIndirectCoord.z = (1.0 / Zeye) * shadowProjectionDepth.x + shadowProjectionDepth.y;
     
     return shadowIndirectCoord;
