@@ -211,7 +211,7 @@ public:
     Texture *               hdrLuminanceTexture[3] = { nullptr, };
 
     Texture *               currentRenderTexture = nullptr;
-    bool                    updateCurrentRenderTexture;
+    bool                    updateCurrentRenderTexture = false;
 
     RenderTarget *          screenRT = nullptr;
     RenderTarget *          screenLitAccRT = nullptr;
