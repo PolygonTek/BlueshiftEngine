@@ -436,6 +436,26 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSR
 #else
         return false;
 #endif
+    case Image::Format::DXN1:
+#ifdef GL_EXT_texture_compression_rgtc
+        if (!gglext._GL_EXT_texture_compression_rgtc) return false;
+        if (glFormat)   *glFormat = GL_COMPRESSED_RED_RGTC1;
+        if (glType)     *glType = 0;
+        if (glInternal) *glInternal = GL_COMPRESSED_RED_RGTC1;
+        return true;
+#else
+        return false;
+#endif
+    case Image::Format::DXN2:
+#ifdef GL_EXT_texture_compression_rgtc
+        if (!gglext._GL_EXT_texture_compression_rgtc) return false;
+        if (glFormat)   *glFormat = GL_COMPRESSED_RG_RGTC2;
+        if (glType)     *glType = 0;
+        if (glInternal) *glInternal = GL_COMPRESSED_RG_RGTC2;
+        return true;
+#else
+        return false;
+#endif
     case Image::Format::RGB_PVRTC_2BPPV1:
         if (!gglext._GL_IMG_texture_compression_pvrtc) return false;
         if (glFormat)   *glFormat = (isSRGB && gglext._GL_EXT_pvrtc_sRGB) ? GL_COMPRESSED_SRGB_PVRTC_2BPPV1_EXT : GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG;

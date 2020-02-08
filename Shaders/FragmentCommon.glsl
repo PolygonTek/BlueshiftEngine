@@ -21,7 +21,7 @@ float GetMipmapLevel(vec2 uv, vec2 textureSize) {
 }
 
 vec3 GetNormal(sampler2D normalMap, in vec2 tc) {
-#if defined(LATC_NORMAL) || defined(EAC_NORMAL)
+#if defined(RGTC_NORMAL) || defined(EAC_NORMAL)
     vec3 n = tex2D(normalMap, tc).xyy * 2.0 - 1.0;
     n.z = 0.0;
     n.z = sqrt(abs(1.0 - dot(n, n)));

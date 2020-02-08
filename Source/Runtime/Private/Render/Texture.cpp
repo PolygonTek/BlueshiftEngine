@@ -80,7 +80,7 @@ void Texture::CreateFromBuffer(Image::Format::Enum format, RHI::Handle bufferHan
 // Indirection cubemap : Converts cubic coords to VCM coords
 void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, int flags) {
     Image cubeImage;
-    cubeImage.CreateCube(size, 1, Image::Format::LA_16F_16F, Image::GammaSpace::Linear, nullptr, 0);
+    cubeImage.CreateCube(size, 1, Image::Format::RG_16F_16F, Image::GammaSpace::Linear, nullptr, 0);
 
     float16_t *dstPtr = (float16_t *)cubeImage.GetPixels();
 

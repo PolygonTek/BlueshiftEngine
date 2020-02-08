@@ -69,6 +69,7 @@ public:
     bool                    SupportsTextureBufferObject() const;
     bool                    SupportsTextureCompressionS3TC() const;
     bool                    SupportsTextureCompressionLATC() const;
+    bool                    SupportsTextureCompressionRGTC() const;
     bool                    SupportsTextureCompressionETC2() const;
     bool                    SupportsInstancedArrays() const;
     bool                    SupportsBufferStorage() const;

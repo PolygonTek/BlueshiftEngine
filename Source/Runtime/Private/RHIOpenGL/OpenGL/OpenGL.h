@@ -296,6 +296,7 @@ public:
     static bool             SupportsTextureFilterAnisotropic() { return supportsTextureFilterAnisotropic; }
     static bool             SupportsTextureCompressionS3TC() { return supportsTextureCompressionS3TC; }
     static bool             SupportsTextureCompressionLATC() { return supportsTextureCompressionLATC; }
+    static bool             SupportsTextureCompressionRGTC() { return supportsTextureCompressionRGTC; }
     static bool             SupportsTextureCompressionETC2() { return supportsTextureCompressionETC2; }
     static bool             SupportsTextureCompressionATC() { return supportsTextureCompressionATC; }
     static bool             SupportsCompressedGenMipmaps() { return false; }

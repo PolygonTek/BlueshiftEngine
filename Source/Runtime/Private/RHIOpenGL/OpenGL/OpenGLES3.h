@@ -135,6 +135,7 @@ public:
     static bool             SupportsTextureBuffer() { return supportsTextureBuffer; }
     static bool             SupportsTextureCompressionS3TC() { return false; }
     static bool             SupportsTextureCompressionLATC() { return false; }
+    static bool             SupportsTextureCompressionRGTC() { return false; }
     static bool             SupportsTextureCompressionETC2() { return true; }
     static bool             SupportsCompressedGenMipmaps() { return false; }
     static bool             SupportsInstancedArrays() { return true; }

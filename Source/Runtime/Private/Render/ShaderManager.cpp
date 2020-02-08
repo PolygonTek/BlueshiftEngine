@@ -178,8 +178,8 @@ void ShaderManager::Shutdown() {
 
 void ShaderManager::InitGlobalDefines() {
     if (textureManager.texture_useNormalCompression.GetBool()) {
-        if (rhi.SupportsTextureCompressionLATC()) {
-            shaderManager.AddGlobalHeader("#define LATC_NORMAL\n");
+        if (rhi.SupportsTextureCompressionRGTC()) {
+            shaderManager.AddGlobalHeader("#define RGTC_NORMAL\n");
         } else if (rhi.SupportsTextureCompressionETC2()) {
             shaderManager.AddGlobalHeader("#define EAC_NORMAL\n");
         } else if (rhi.SupportsTextureCompressionS3TC()) {

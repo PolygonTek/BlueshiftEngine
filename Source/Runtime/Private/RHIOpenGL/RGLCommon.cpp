@@ -378,6 +378,10 @@ bool OpenGLRHI::SupportsTextureCompressionLATC() const {
     return OpenGL::SupportsTextureCompressionLATC();
 }
 
+bool OpenGLRHI::SupportsTextureCompressionRGTC() const {
+    return OpenGL::SupportsTextureCompressionRGTC();
+}
+
 bool OpenGLRHI::SupportsTextureCompressionETC2() const {
     return OpenGL::SupportsTextureCompressionETC2();
 }
