@@ -203,7 +203,8 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
         localVerts[2].xyz.Set(x + w, -(y + h), 0);
         localVerts[3].xyz.Set(x + w, -y, 0);
     }
-
+    
+    // TODO: SIMD optimization
     const float16_t hs1 = F16Converter::FromF32(s1);
     const float16_t ht1 = F16Converter::FromF32(t1);
     const float16_t hs2 = F16Converter::FromF32(s2);

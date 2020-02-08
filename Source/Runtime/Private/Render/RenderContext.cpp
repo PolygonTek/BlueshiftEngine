@@ -399,13 +399,13 @@ void RenderContext::InitShadowMapRT() {
 
     int csmCount = r_CSM_count.GetInteger();
 
-    // Cascaded shadow map
+    // Create cascaded shadow map.
     shadowRenderTexture = textureManager.AllocTexture(va("_%i_shadowRender", (int)contextHandle));
     shadowRenderTexture->CreateEmpty(textureType, r_shadowMapSize.GetInteger(), r_shadowMapSize.GetInteger(), 1, csmCount, 1, shadowImageFormat,
         Texture::Flag::Shadow | Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality | Texture::Flag::HighPriority);
     shadowMapRT = RenderTarget::Create(nullptr, shadowRenderTexture, 0);
 
-    // Virtual shadow cube map
+    // Create virtual shadow cube map.
     vscmTexture = textureManager.AllocTexture(va("_%i_vscmRender", (int)contextHandle));
     vscmTexture->CreateEmpty(RHI::TextureType::Texture2D, r_shadowCubeMapSize.GetInteger(), r_shadowCubeMapSize.GetInteger(), 1, 1, 1, shadowCubeImageFormat,
         Texture::Flag::Shadow | Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality | Texture::Flag::HighPriority);
