@@ -174,10 +174,10 @@ public:
     bool                IsSymmetric(const float epsilon = MATRIX_EPSILON) const;
                         /// Tests if this is the diagonal matrix, up to the given epsilon.
     bool                IsDiagonal(const float epsilon = MATRIX_EPSILON) const;
-                        /// Tests if this is the singular matrix.
-    bool                IsSingular() const;
-
-    bool                IsAffine() const;
+                        /// Tests if this is the singular matrix, up to the given epsilon.
+    bool                IsSingular(const float epsilon = MATRIX_EPSILON) const;
+                        /// Tests if this is the affine transform matrix, up to the given epsilon.
+    bool                IsAffine(const float epsilon = MATRIX_EPSILON) const;
 
                         /// Sets all the element of this matrix to zero.
     void                SetZero();
@@ -710,12 +710,15 @@ BE_INLINE bool Mat4::IsDiagonal(const float epsilon) const {
     return true;
 }
 
-BE_INLINE bool Mat4::IsSingular() const {
-    return Determinant() == 0 ? true : false;
+BE_INLINE bool Mat4::IsSingular(const float epsilon) const {
+    return Math::Fabs(Determinant()) > epsilon ? false : true;
 }
 
-BE_INLINE bool Mat4::IsAffine() const {
-    if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
+BE_INLINE bool Mat4::IsAffine(const float epsilon) const {
+    if (Math::Fabs(mat[3][0]) > epsilon || 
+        Math::Fabs(mat[3][1]) > epsilon || 
+        Math::Fabs(mat[3][2]) > epsilon || 
+        Math::Fabs(mat[3][3] - 1.0f) > epsilon) {
         return false;
     }
     return true;
