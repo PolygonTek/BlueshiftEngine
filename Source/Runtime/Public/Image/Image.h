@@ -69,7 +69,7 @@ public:
             RG_16F_16F,
             RGB_16F_16F_16F,
             RGBA_16F_16F_16F_16F,
-            L_32F,            
+            L_32F,
             A_32F,
             LA_32F_32F,
             R_32F,
