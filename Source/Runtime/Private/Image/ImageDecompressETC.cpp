@@ -1142,8 +1142,8 @@ static void DecodeEAC_RG11ToRGBA32F(const byte *src, const int width, const int 
                 }
             } else {
                 for (int i = 0; i < 16; i++) {
-                    fdata[4 * i + 0] = (((uint16_t *)unpackedBlock)[2 * i + 0] / 65535.0f) * 2.0f - 1.0f;
-                    fdata[4 * i + 1] = (((uint16_t *)unpackedBlock)[2 * i + 1] / 65535.0f) * 2.0f - 1.0f;
+                    fdata[4 * i + 0] = (((uint16_t *)unpackedBlock)[2 * i + 0] / 65535.0f);
+                    fdata[4 * i + 1] = (((uint16_t *)unpackedBlock)[2 * i + 1] / 65535.0f);
                     fdata[4 * i + 2] = 0.0f;
                     fdata[4 * i + 3] = 1.0f;
                 }
@@ -1153,6 +1153,11 @@ static void DecodeEAC_RG11ToRGBA32F(const byte *src, const int width, const int 
                 for (int i = 0; i < 16; i++) {
                     float x = fdata[4 * i + 0];
                     float y = fdata[4 * i + 1];
+
+                    if (!signedFormat) {
+                        x = x * 2.0f - 1.0f;
+                        y = y * 2.0f - 1.0f;
+                    }
 
                     fdata[4 * i + 2] = Math::Sqrt(Math::Fabs(1.0f - x * x - y * y));
                 }
