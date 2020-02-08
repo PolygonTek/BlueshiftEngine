@@ -148,13 +148,13 @@ struct GLStencilState {
 };
 
 struct GLTexture {
-    int                     type;
+    RHI::TextureType::Enum  type;
     GLenum                  target;
     GLuint                  object;
 };
 
 struct GLBuffer {
-    int                     type;
+    RHI::BufferType::Enum   type;
     GLenum                  target;
     GLenum                  usage;
     GLuint                  object;

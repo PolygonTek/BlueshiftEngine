@@ -48,7 +48,7 @@ void RenderSystem::Init() {
 
     if (r_fastSkinning.GetInteger() == 2 && rhi.HWLimit().maxVertexTextureImageUnits > 0) {
         renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::VertexTextureFetch;
-    } else if (r_fastSkinning.GetInteger() == 1) {
+    } else if (r_fastSkinning.GetInteger() >= 1) {
         renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::VertexShader;
     } else {
         renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::Cpu;
@@ -56,7 +56,7 @@ void RenderSystem::Init() {
 
     if (r_vertexTextureUpdate.GetInteger() == 2 && rhi.SupportsTextureBufferObject()) {
         renderGlobal.vertexTextureMethod = BufferCacheManager::VertexTextureMethod::Tbo;
-    } else if (r_vertexTextureUpdate.GetInteger() == 1 && rhi.SupportsPixelBufferObject()) {
+    } else if (r_vertexTextureUpdate.GetInteger() >= 1 && rhi.SupportsPixelBufferObject()) {
         renderGlobal.vertexTextureMethod = BufferCacheManager::VertexTextureMethod::Pbo;
     } else {
         renderGlobal.vertexTextureMethod = BufferCacheManager::VertexTextureMethod::DirectCopy;
@@ -65,7 +65,7 @@ void RenderSystem::Init() {
     if (r_instancing.GetInteger() == 2 && rhi.SupportsInstancedArrays() && rhi.SupportsMultiDrawIndirect()) {
         renderGlobal.instancingMethod = Mesh::InstancingMethod::InstancedArrays;
         renderGlobal.instanceBufferOffsetAlignment = 64;
-    } else if (r_instancing.GetInteger() == 1) {
+    } else if (r_instancing.GetInteger() >= 1) {
         renderGlobal.instancingMethod = Mesh::InstancingMethod::UniformBuffer;
         renderGlobal.instanceBufferOffsetAlignment = rhi.HWLimit().uniformBufferOffsetAlignment;
     } else {
