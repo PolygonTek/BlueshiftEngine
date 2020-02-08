@@ -481,7 +481,7 @@ void BE_FASTCALL SIMD_SSE4::MatrixMultiply(float *dst, const float *src0, const 
 }
 
 // make the intrinsics "type unsafe"
-typedef union __declspec(intrin_type) __m128c {
+typedef union __m128c {
     __m128c() {}
     __m128c(__m128 f) { m128 = f; }
     __m128c(__m128i i) { m128i = i; }
