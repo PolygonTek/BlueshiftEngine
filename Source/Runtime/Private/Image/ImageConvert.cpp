@@ -67,13 +67,15 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
         DecompressEAC_R11(srcImage, dstImage, false);
         break;
     case Image::Format::RG_11_11_EAC:
-        DecompressEAC_RG11(srcImage, dstImage, false, true);//
+        // Consider RG_11_11_EAC format image as normal values.
+        DecompressEAC_RG11(srcImage, dstImage, false, true);
         break;
     case Image::Format::SignedR_11_EAC:
         DecompressEAC_R11(srcImage, dstImage, true);
         break;
     case Image::Format::SignedRG_11_11_EAC:
-        DecompressEAC_RG11(srcImage, dstImage, true, true);//
+        // Consider SignedRG_11_11_EAC format image as normal values.
+        DecompressEAC_RG11(srcImage, dstImage, true, true);
         break;
     default:
         BE_WARNLOG("DecompressImage: unsupported format %s\n", srcImage.FormatName());

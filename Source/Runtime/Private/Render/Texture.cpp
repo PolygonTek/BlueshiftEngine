@@ -77,9 +77,10 @@ void Texture::CreateFromBuffer(Image::Format::Enum format, RHI::Handle bufferHan
     rhi.BindBuffer(RHI::BufferType::Texel, RHI::NullBuffer);
 }
 
-// Indirection cubemap : Converts cubic coords to VCM coords
+// Indirection cubemap : Converts cubic coords to VCM coords.
 void Texture::CreateIndirectionCubemap(int size, int vcmWidth, int vcmHeight, int flags) {
     Image cubeImage;
+    // FIXME: Use RG_32F_32F to get the linear filter working normally.
     cubeImage.CreateCube(size, 1, Image::Format::RG_16F_16F, Image::GammaSpace::Linear, nullptr, 0);
 
     float16_t *dstPtr = (float16_t *)cubeImage.GetPixels();

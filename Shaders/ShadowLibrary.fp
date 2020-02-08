@@ -266,7 +266,7 @@ vec3 SampleShadowPCF_Q1(vec3 shadowTC, vec2 filterOffset) {
 //-------------------------------------------------------------------------------------------------
 
 uniform samplerCube cubicNormalCubeMap;
-uniform MEDIUMP samplerCube indirectionCubeMap;
+uniform HIGHP samplerCube indirectionCubeMap;
 uniform vec2 shadowProjectionDepth;
 uniform float vscmBiasedScale;
 
