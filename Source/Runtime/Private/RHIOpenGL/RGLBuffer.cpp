@@ -156,7 +156,7 @@ void OpenGLRHI::BindIndexedBufferRange(BufferType::Enum type, int bindingIndex, 
 // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glMapBufferRange.xhtml
 // GL_MAP_INVALIDATE_RANGE_BIT -- previous contents of the specified range may be discarded
 // GL_MAP_UNSYNCHRONIZED_BIT -- GL should not attempt to synchronize pending operations on the buffer prior to returning from glMapBufferRange
-// GL_MAP_FLUSH_EXPLICIT_BIT -- modifications to each subrange must be explicitly flushed (DMA) by calling glFlushMappedBufferRange()
+// GL_MAP_FLUSH_EXPLICIT_BIT -- modifications to each subrange must be explicitly flushed by calling glFlushMappedBufferRange()
 // GL_MAP_PERSISTENT_BIT -- keep mapping and that the client intends to hold and use the returned pointer during subsequent GL operation
 // GL_MAP_COHERENT_BIT -- persistent mapping is also to be coherent (automatically visible to GPU)
 void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMode, int offset, int size) {
@@ -175,7 +175,7 @@ void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMo
         access |= GL_MAP_WRITE_BIT;
         break;
     case BufferLockMode::WriteOnlyExplicitFlush:
-        access |= (GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+        access |= (GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
         break;
     case BufferLockMode::WriteOnlyPersistent:
         access |= GL_MAP_WRITE_BIT;
@@ -193,12 +193,8 @@ void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMo
     if (offset > 0 || offset + size < buffer->size) {
         ptr = gglMapBufferRange(buffer->target, offset, size, access | GL_MAP_INVALIDATE_RANGE_BIT);
     } else {
-        if (lockMode == BufferLockMode::WriteOnly) {
-            if (OpenGL::SupportsMapBuffer()) {
-                ptr = OpenGL::MapBuffer(buffer->target, GL_WRITE_ONLY);
-            } else {
-                ptr = gglMapBufferRange(buffer->target, 0, size, access | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-            }
+        if (access == GL_MAP_WRITE_BIT && OpenGL::SupportsMapBuffer()) {
+            ptr = OpenGL::MapBuffer(buffer->target, GL_WRITE_ONLY);
         } else {
             ptr = gglMapBufferRange(buffer->target, 0, size, access | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
         }

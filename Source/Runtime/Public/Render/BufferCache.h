@@ -120,6 +120,7 @@ private:
     int                         mostUsedTexelMem;
 
     bool                        usePersistentMappedBuffers;
+    bool                        useFlushMappedBuffers;
 
     int                         pboWriteOffset;
 };

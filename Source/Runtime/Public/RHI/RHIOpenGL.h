@@ -264,9 +264,10 @@ public:
     void                    BindIndexedBuffer(BufferType::Enum type, int bindingIndex, Handle bufferHandle);
     void                    BindIndexedBufferRange(BufferType::Enum type, int bindingIndex, Handle bufferHandle, int offset, int size);
 
-    void *                  MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMode, int offset = 0, int size = -1);
+    void *                  MapBuffer(Handle bufferHandle, BufferLockMode::Enum lockMode) { return MapBufferRange(bufferHandle, lockMode, 0, -1); }
+    void *                  MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMode, int offset, int size);
     bool                    UnmapBuffer(Handle bufferHandle);
-    void                    FlushMappedBufferRange(Handle bufferHandle, int offset = 0, int size = -1);
+    void                    FlushMappedBufferRange(Handle bufferHandle, int offset, int size);
 
                             /// Discards current buffer and write data to new buffer. 
                             /// Returns written start offset. (Always 0)
@@ -349,7 +350,6 @@ protected:
     const char *            rendererString;
     const char *            versionString;
     float                   version;
-    const char *            extensionsString;
     const char *            glslVersionString;
     float                   glslVersion;
     int                     colorBits;

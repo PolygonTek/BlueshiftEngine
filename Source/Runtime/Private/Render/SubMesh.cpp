@@ -184,7 +184,7 @@ void SubMesh::CacheStaticDataToGpu() {
             bufferCacheManager.AllocStaticVertex(size, nullptr, vertexCache);
 
             rhi.BindBuffer(RHI::BufferType::Vertex, vertexCache->buffer);
-            byte *ptr = (byte *)rhi.MapBufferRange(vertexCache->buffer, RHI::BufferLockMode::WriteOnly, 0, size);
+            byte *ptr = (byte *)rhi.MapBuffer(vertexCache->buffer, RHI::BufferLockMode::WriteOnly);
 
             simdProcessor->Memcpy(ptr, verts, sizeVerts);
             simdProcessor->Memcpy(ptr + sizeVerts, vertWeights, sizeWeights);

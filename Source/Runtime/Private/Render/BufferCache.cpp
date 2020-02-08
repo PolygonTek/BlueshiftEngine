@@ -30,6 +30,9 @@ static constexpr int    TB_PITCH    = TB_BPP * TB_WIDTH;
 static constexpr int    TB_BYTES    = TB_PITCH * TB_HEIGHT;
 
 void BufferCacheManager::Init() {
+    usePersistentMappedBuffers = rhi.SupportsBufferStorage();
+    useFlushMappedBuffers = false;
+
     int vcSize = r_dynamicVertexCacheSize.GetInteger();
     int icSize = r_dynamicIndexCacheSize.GetInteger();
     int ucSize = r_dynamicUniformCacheSize.GetInteger();
@@ -64,7 +67,9 @@ void BufferCacheManager::Init() {
         }
 
 #if PINNED_MEMORY
-        frameData[frameDataIndex].sync = rhi.CreateSync();
+        if (usePersistentMappedBuffers || !useFlushMappedBuffers) {
+            frameData[frameDataIndex].sync = rhi.CreateSync();
+        }
 #endif
     }
     
@@ -92,8 +97,6 @@ void BufferCacheManager::Init() {
     mostUsedUniformMem = 0;
     mostUsedTexelMem = 0;
 
-    usePersistentMappedBuffers = rhi.SupportsBufferStorage();
-
 #if PINNED_MEMORY
     MapBufferSet(frameData[mappedNum]);
         
@@ -114,7 +117,9 @@ void BufferCacheManager::Shutdown() {
 #if PINNED_MEMORY
         UnmapBufferSet(frameData[i], false);
 
-        rhi.DestroySync(frameData[i].sync);
+        if (frameData[i].sync) {
+            rhi.DestroySync(frameData[i].sync);
+        }
 #endif
 
         rhi.DestroyBuffer(frameData[i].vertexBuffer);
@@ -132,29 +137,29 @@ void BufferCacheManager::Shutdown() {
 }
 
 void BufferCacheManager::MapBufferSet(FrameDataBufferSet &bufferSet) {
-    RHI::BufferLockMode::Enum lockMode = usePersistentMappedBuffers ? RHI::BufferLockMode::WriteOnlyPersistent : RHI::BufferLockMode::WriteOnlyExplicitFlush;
+    RHI::BufferLockMode::Enum lockMode = usePersistentMappedBuffers ? RHI::BufferLockMode::WriteOnlyPersistent : (useFlushMappedBuffers ? RHI::BufferLockMode::WriteOnlyExplicitFlush : RHI::BufferLockMode::WriteOnly);
     
     if (!bufferSet.mappedVertexBase) {
         rhi.BindBuffer(RHI::BufferType::Vertex, bufferSet.vertexBuffer);
-        bufferSet.mappedVertexBase = rhi.MapBufferRange(bufferSet.vertexBuffer, lockMode);
+        bufferSet.mappedVertexBase = rhi.MapBuffer(bufferSet.vertexBuffer, lockMode);
         rhi.BindBuffer(RHI::BufferType::Vertex, RHI::NullBuffer);
     }
 
     if (!bufferSet.mappedIndexBase) {
         rhi.BindBuffer(RHI::BufferType::Index, bufferSet.indexBuffer);
-        bufferSet.mappedIndexBase = rhi.MapBufferRange(bufferSet.indexBuffer, lockMode);
+        bufferSet.mappedIndexBase = rhi.MapBuffer(bufferSet.indexBuffer, lockMode);
         rhi.BindBuffer(RHI::BufferType::Index, RHI::NullBuffer);
     }
 
     if (!bufferSet.mappedUniformBase) {
         rhi.BindBuffer(RHI::BufferType::Uniform, bufferSet.uniformBuffer);
-        bufferSet.mappedUniformBase = rhi.MapBufferRange(bufferSet.uniformBuffer, lockMode);
+        bufferSet.mappedUniformBase = rhi.MapBuffer(bufferSet.uniformBuffer, lockMode);
         rhi.BindBuffer(RHI::BufferType::Uniform, RHI::NullBuffer);
     }
 
     if (!bufferSet.mappedTexelBase && bufferSet.texelBuffer) {
         rhi.BindBuffer(bufferSet.texelBufferType, bufferSet.texelBuffer);
-        bufferSet.mappedTexelBase = rhi.MapBufferRange(bufferSet.texelBuffer, lockMode);
+        bufferSet.mappedTexelBase = rhi.MapBuffer(bufferSet.texelBuffer, lockMode);
         rhi.BindBuffer(bufferSet.texelBufferType, RHI::NullBuffer);
     }
 }
@@ -203,20 +208,24 @@ void BufferCacheManager::UnmapBufferSet(FrameDataBufferSet &bufferSet, bool flus
 
 void BufferCacheManager::BeginWrite() {
 #if PINNED_MEMORY
-    // Wait until the gpu is no longer using the buffer
-    if (rhi.IsSync(frameData[mappedNum].sync)) {
-        rhi.WaitSync(frameData[mappedNum].sync);
+    if (usePersistentMappedBuffers || !useFlushMappedBuffers) {
+        // Wait until the gpu is no longer using the buffer
+        if (rhi.IsSync(frameData[mappedNum].sync)) {
+            rhi.WaitSync(frameData[mappedNum].sync);
+        }
     }
 #endif
 }
 
 void BufferCacheManager::EndDrawCommand() {
 #if PINNED_MEMORY
-    if (rhi.IsSync(frameData[unmappedNum].sync)) {
-        rhi.DeleteSync(frameData[unmappedNum].sync);
+    if (usePersistentMappedBuffers || !useFlushMappedBuffers) {
+        if (rhi.IsSync(frameData[unmappedNum].sync)) {
+            rhi.DeleteSync(frameData[unmappedNum].sync);
+        }
+        // Place a fence which will be removed when the draw command has finished
+        rhi.FenceSync(frameData[unmappedNum].sync);
     }
-    // Place a fence which will be removed when the draw command has finished
-    rhi.FenceSync(frameData[unmappedNum].sync);
 #endif
 }
 
@@ -243,7 +252,7 @@ void BufferCacheManager::BeginBackEnd() {
     if (!usePersistentMappedBuffers) {
         // Unmap the current frame so the GPU can read it
         const double startUnmap = PlatformTime::Seconds();
-        UnmapBufferSet(frameData[mappedNum], true);
+        UnmapBufferSet(frameData[mappedNum], useFlushMappedBuffers);
         const double endUnmap = PlatformTime::Seconds();
         if (r_showBufferCacheTiming.GetBool() && endUnmap - startUnmap > 1.0) {
             BE_DLOG("BufferCacheManager::BeginBackEnd: unmap took %.3f seconds\n", endUnmap - startUnmap);
@@ -353,7 +362,7 @@ bool BufferCacheManager::AllocVertex(int numVertexes, int vertexSize, const void
         WriteBuffer((byte *)currentBufferSet->mappedVertexBase + offset, data, bytes);
 #else
         rhi.BindBuffer(RHI::BufferType::Vertex, currentBufferSet->vertexBuffer);
-        void *base = rhi.MapBufferRange(currentBufferSet->vertexBuffer, RHI::WriteOnly, offset, bytes);
+        void *base = rhi.MapBufferRange(currentBufferSet->vertexBuffer, RHI::BufferLockMode::WriteOnly, offset, bytes);
 
         WriteBuffer((byte *)base, data, bytes);
         
@@ -390,7 +399,7 @@ bool BufferCacheManager::AllocIndex(int numIndexes, int indexSize, const void *d
         WriteBuffer((byte *)currentBufferSet->mappedIndexBase + offset, data, bytes);
 #else
         rhi.BindBuffer(RHI::BufferType::Index, currentBufferSet->indexBuffer);
-        void *base = rhi.MapBufferRange(currentBufferSet->indexBuffer, RHI::WriteOnly, offset, bytes);
+        void *base = rhi.MapBufferRange(currentBufferSet->indexBuffer, RHI::BufferLockMode::WriteOnly, offset, bytes);
 
         WriteBuffer((byte *)base, data, bytes);
 
@@ -425,7 +434,7 @@ bool BufferCacheManager::AllocUniform(int bytes, const void *data, BufferCache *
         WriteBuffer((byte *)currentBufferSet->mappedUniformBase + offset, data, bytes);
 #else
         rhi.BindBuffer(RHI::BufferType::Uniform, currentBufferSet->uniformBuffer);
-        void *base = rhi.MapBufferRange(currentBufferSet->uniformBuffer, RHI::WriteOnly, offset, bytes);
+        void *base = rhi.MapBufferRange(currentBufferSet->uniformBuffer, RHI::BufferLockMode::WriteOnly, offset, bytes);
 
         WriteBuffer((byte *)base, data, bytes);
 
@@ -461,7 +470,7 @@ bool BufferCacheManager::AllocTexel(int bytes, const void *data, BufferCache *bc
         WriteBuffer((byte *)currentBufferSet->mappedTexelBase + offset, data, bytes);
 #else
         rhi.BindBuffer(currentBufferSet->texelBufferType, currentBufferSet->texelBuffer);
-        void *base = rhi.MapBufferRange(currentBufferSet->texelBuffer, RHI::WriteOnly, offset, bytes);
+        void *base = rhi.MapBufferRange(currentBufferSet->texelBuffer, RHI::BufferLockMode::WriteOnly, offset, bytes);
 
         WriteBuffer((byte *)base, data, bytes);
 
@@ -498,7 +507,7 @@ byte *BufferCacheManager::MapVertexBuffer(BufferCache *bc) const {
     return (byte *)currentBufferSet->mappedVertexBase + bc->offset;
 #else
     rhi.BindBuffer(RHI::BufferType::Vertex, currentBufferSet->vertexBuffer);
-    return (byte *)rhi.MapBufferRange(currentBufferSet->vertexBuffer, RHI::WriteOnly, bc->offset, bc->bytes);
+    return (byte *)rhi.MapBufferRange(currentBufferSet->vertexBuffer, RHI::BufferLockMode::WriteOnly, bc->offset, bc->bytes);
 #endif
 }
 
@@ -509,7 +518,7 @@ byte *BufferCacheManager::MapIndexBuffer(BufferCache *bc) const {
     return (byte *)currentBufferSet->mappedIndexBase + bc->offset;
 #else
     rhi.BindBuffer(RHI::BufferType::Index, currentBufferSet->indexBuffer);
-    return (byte *)rhi.MapBufferRange(currentBufferSet->indexBuffer, RHI::WriteOnly, bc->offset, bc->bytes);
+    return (byte *)rhi.MapBufferRange(currentBufferSet->indexBuffer, RHI::BufferLockMode::WriteOnly, bc->offset, bc->bytes);
 #endif
 }
 
@@ -520,7 +529,7 @@ byte *BufferCacheManager::MapUniformBuffer(BufferCache *bc) const {
     return (byte *)currentBufferSet->mappedUniformBase + bc->offset;
 #else
     rhi.BindBuffer(RHI::BufferType::Uniform, currentBufferSet->uniformBuffer);
-    return (byte *)rhi.MapBufferRange(currentBufferSet->uniformBuffer, RHI::WriteOnly, bc->offset, bc->bytes);
+    return (byte *)rhi.MapBufferRange(currentBufferSet->uniformBuffer, RHI::BufferLockMode::WriteOnly, bc->offset, bc->bytes);
 #endif
 }
 
@@ -531,7 +540,7 @@ byte *BufferCacheManager::MapTexelBuffer(BufferCache *bc) const {
     return (byte *)currentBufferSet->mappedTexelBase + bc->offset;
 #else
     rhi.BindBuffer(currentBufferSet->texelBufferType, currentBufferSet->texelBuffer);
-    return (byte *)rhi.MapBufferRange(currentBufferSet->texelBuffer, RHI::WriteOnly, bc->offset, bc->bytes);
+    return (byte *)rhi.MapBufferRange(currentBufferSet->texelBuffer, RHI::BufferLockMode::WriteOnly, bc->offset, bc->bytes);
 #endif
 }
 
