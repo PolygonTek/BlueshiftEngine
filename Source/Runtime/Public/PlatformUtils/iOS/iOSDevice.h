@@ -20,10 +20,13 @@ class IOSDevice {
 public:
     struct Type {
         enum Enum {
+            // iPod
             IPodTouch4,         // (960 x 640)
             IPodTouch5,         // (1136 x 640)
             IPodTouch6,
+            IPodTouch7,
 
+            // iPhone
             IPhone4,            // (960 x 640)
             IPhone4S,
             IPhone5,            // also the iPhone5c (1136 x 640)
@@ -38,15 +41,14 @@ public:
             IPhone8,
             IPhone8Plus,
             IPhoneX,            // (2436 x 1125)
-
             IPhoneXR,           // (1792 x 828)
             IPhoneXS,           // (2436 x 1125)
             IPhoneXSMax,        // (2688 x 1242)
-
             IPhone11,           // (1792 x 828)
             IPhone11Pro,        // (2436 x 1125)
             IPhone11ProMax,     // (2688 x 1242)
 
+            // iPad
             IPad2,              // (1024 x 768)
             IPadMini,
             IPad3,
@@ -66,6 +68,7 @@ public:
             IPadPro3_11,        // iPad Pro 11 inch (2388 x 1668)
             IPadMini5,
             IPadAir3,
+
             UnknownDevice = -1
         };
     };
