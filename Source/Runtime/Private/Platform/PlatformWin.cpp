@@ -101,7 +101,11 @@ void PlatformWin::Error(const char *text) {
     PlatformWinUtils::UTF8ToUCS2(text, wText, len);
 
     MessageBox(hwnd ? hwnd : GetDesktopWindow(), wText, L"Error", MB_OK);
-    
+
+#ifdef _DEBUG
+    debugbreak();
+#endif
+
     Quit();
 }
 

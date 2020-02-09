@@ -53,6 +53,10 @@ void PlatformAndroid::Error(const char *msg) {
 
     env->DeleteLocalRef(javaMsg);
 
+#ifdef _DEBUG
+    debugbreak();
+#endif
+
     Quit();
 }
 

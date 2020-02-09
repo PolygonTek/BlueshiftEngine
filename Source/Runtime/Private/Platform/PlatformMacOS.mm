@@ -58,6 +58,10 @@ void PlatformMacOS::Error(const char *msg) {
     [alert setInformativeText:nsmsg];
     [alert setAlertStyle:NSAlertStyleCritical];
     [alert runModal];
+
+#ifdef _DEBUG
+    debugbreak();
+#endif
     
     Quit();
 }

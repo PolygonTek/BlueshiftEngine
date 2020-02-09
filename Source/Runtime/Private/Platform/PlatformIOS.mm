@@ -67,6 +67,10 @@ void PlatformIOS::Error(const char *msg) {
     
     UIViewController *viewController = [[[[UIApplication sharedApplication] delegate] window] rootViewController];
     [viewController presentViewController:alert animated:YES completion:nil];
+
+#ifdef _DEBUG
+    debugbreak();
+#endif
     
     Quit();
 }
