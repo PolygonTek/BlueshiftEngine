@@ -19,23 +19,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(CMakeDependentOption)
 include(BlueshiftCommon)
 
+set(VERSION_MAJOR 0 CACHE INTERNAL "Project major version number.")
+set(VERSION_MINOR 7 CACHE INTERNAL "Project minor version number.")
+set(VERSION_PATCH 0 CACHE INTERNAL "Project patch version number.")
+
+string(TIMESTAMP NOW "%Y-%m-%d %H:%M:%S")
+set(VERSION_DATE ${NOW} CACHE INTERNAL "Project version date")
+
+# Advanced variables will not be displayed in any of the cmake GUIs unless the show advanced option is on.
+mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH VERSION_DATE)
+
 option(BUILD_RUNTIME "Build Blueshift Runtime libraies" OFF)
 option(BUILD_PLAYER "Build Blueshift Player executable" OFF)
 option(BUILD_EDITOR "Build Blueshift Editor executable" OFF)
 option(BUILD_TEST "Build test projects" OFF)
-
-if (BUILD_RUNTIME)
-    set(ROOT_PROJECT_NAME Blueshift)
-
-    set(ENGINE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Source CACHE STRING "engine include directory")
-    set(ENGINE_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Library CACHE STRING "engine library directory")
-elseif (BUILD_PLAYER)
-    set(ROOT_PROJECT_NAME BlueshiftPlayer)
-else ()
-    message(FATAL_ERROR "Neither BUILD_RUNTIME nor BUILD_PLAYER are set")
-endif ()
-
-project(${ROOT_PROJECT_NAME})
 
 cmake_dependent_option(USE_LUAJIT "Use LuaJIT" ON "NOT IOS AND NOT ANDROID" OFF)
 
@@ -73,15 +70,30 @@ else ()
     endif ()
 endif ()
 
-set(VERSION_MAJOR 0 CACHE INTERNAL "Project major version number.")
-set(VERSION_MINOR 7 CACHE INTERNAL "Project minor version number.")
-set(VERSION_PATCH 0 CACHE INTERNAL "Project patch version number.")
+if (BUILD_RUNTIME)
+    set(ROOT_PROJECT_NAME Blueshift)
 
-string(TIMESTAMP NOW "%Y-%m-%d %H:%M:%S")
-set(VERSION_DATE ${NOW} CACHE INTERNAL "Project version date")
+    set(ENGINE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Source CACHE STRING "engine include directory")
+    set(ENGINE_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Library CACHE STRING "engine library directory")
+elseif (BUILD_PLAYER)
+    set(ROOT_PROJECT_NAME BlueshiftPlayer)
+else ()
+    message(FATAL_ERROR "Neither BUILD_RUNTIME nor BUILD_PLAYER are set")
+endif ()
 
-# Advanced variables will not be displayed in any of the cmake GUIs unless the show advanced option is on.
-mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH VERSION_DATE)
+if (PLATFORM_WINDOWS)
+    set(ROOT_PROJECT_NAME "${ROOT_PROJECT_NAME}-Win64")
+elseif (PLATFORM_LINUX)
+    set(ROOT_PROJECT_NAME "${ROOT_PROJECT_NAME}-Linux")
+elseif (PLATFORM_MACOS)
+    set(ROOT_PROJECT_NAME "${ROOT_PROJECT_NAME}-macOS")
+elseif (PLATFORM_IOS)
+    set(ROOT_PROJECT_NAME "${ROOT_PROJECT_NAME}-iOS")
+elseif (PLATFORM_ANDROID)
+    set(ROOT_PROJECT_NAME "${ROOT_PROJECT_NAME}-Android")
+endif ()
+
+project(${ROOT_PROJECT_NAME})
 
 message(STATUS "Running from ${CMAKE_CURRENT_SOURCE_DIR}")
 
