@@ -34,7 +34,7 @@ const char *PlatformPosixSystem::UserDir() {
     return path;
 }
 
-void PlatformPosixSystem::IsDebuggerPresent() {
+bool PlatformPosixSystem::IsDebuggerPresent() {
     return false;
 }
 
