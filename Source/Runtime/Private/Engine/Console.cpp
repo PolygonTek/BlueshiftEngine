@@ -81,7 +81,7 @@ void Console::Print(const Str &inString) {
     int offset = 0;
     char32_t unicodeChar;
 
-    while (unicodeChar = inString.UTF8CharAdvance(offset)) {
+    while ((unicodeChar = inString.UTF8CharAdvance(offset))) {
         switch (unicodeChar) {
         case U'\t':
             textLines[currentLineIndex].Append("    ");
