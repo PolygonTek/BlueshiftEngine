@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
+#include "Game/CastResult.h"
 #include "Components/ComSensor.h"
 
 BE_NAMESPACE_BEGIN
@@ -24,6 +25,8 @@ void LuaVM::RegisterSensorComponent(LuaCpp::Module &module) {
     _ComSensor.SetClass<ComSensor>(module["Component"]);
 
     _ComSensor["meta_object"] = ComSensor::metaObject;
+
+    _ComSensor["from_cast_result"].SetFunc(&GetSensorFromCastResult);
 }
 
 BE_NAMESPACE_END

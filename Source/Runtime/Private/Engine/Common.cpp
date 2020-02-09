@@ -187,15 +187,15 @@ void Common::RunFrame(int frameMsec) {
 
 Common::PlatformId::Enum Common::GetPlatformId() const {
 #if defined(__IOS__)
-    return PlatformId::ID_IOS;
+    return PlatformId::IOS;
 #elif defined(__ANDROID__)
-    return PlatformId::ID_Android;
+    return PlatformId::Android;
 #elif defined(__WIN32__)
-    return PlatformId::ID_Windows;
+    return PlatformId::Windows;
 #elif defined(__MACOSX__)
-    return PlatformId::ID_MacOS;
+    return PlatformId::MacOS;
 #elif defined(__LINUX__)
-    return PlatformId::ID_Linux;
+    return PlatformId::Linux;
 #endif
 }
 

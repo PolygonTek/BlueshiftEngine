@@ -89,7 +89,7 @@ protected:
     PhysSensor *            correctionSensor;
 
     Vec3                    origin;
-    CastResultEx            groundTrace;
+    CastResult              groundTrace;
     bool                    isValidGroundTrace;
     bool                    onGround;
 

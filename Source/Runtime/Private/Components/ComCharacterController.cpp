@@ -260,7 +260,7 @@ void ComCharacterController::OnInactive() {
 
 bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
     const float backoffScale = 1.0001f;
-    CastResultEx trace;
+    CastResult trace;
     Vec3 moveVec = moveVector;
     Vec3 slideVec;
 

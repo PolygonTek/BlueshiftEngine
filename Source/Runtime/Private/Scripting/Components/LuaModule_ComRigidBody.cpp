@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
 #include "Game/Entity.h"
+#include "Game/CastResult.h"
 #include "Components/ComCharacterController.h"
 #include "Components/ComRigidBody.h"
 
@@ -57,6 +58,8 @@ void LuaVM::RegisterRigidBodyComponent(LuaCpp::Module &module) {
         "apply_angular_impulse", &ComRigidBody::ApplyAngularImpulse);
 
     _ComRigidBody["meta_object"] = ComRigidBody::metaObject;
+
+    _ComRigidBody["from_cast_result"].SetFunc(&GetRigidBodyFromCastResult);
 
     LuaCpp::Selector _Collision = module["Collision"];
 

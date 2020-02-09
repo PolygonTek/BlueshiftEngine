@@ -917,13 +917,13 @@ Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask, const Array<Entit
 }
 
 Entity *GameWorld::RayCast(const Ray &ray, int layerMask) const {
-    CastResultEx castResult;
+    CastResult castResult;
 
     if (!GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetPoint(MeterToUnit(10000.0f)), layerMask, castResult)) {
         return nullptr;
     }
 
-    ComRigidBody *hitTestRigidBody = castResult.GetRigidBody();
+    ComRigidBody *hitTestRigidBody = GetRigidBodyFromCastResult(castResult);
     if (hitTestRigidBody) {
         return hitTestRigidBody->GetEntity();
     }
