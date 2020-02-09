@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "PlatformGeneric.h"
 #include "PlatformIOS.h"
+#include "Platform/PlatformSystem.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -68,10 +69,8 @@ void PlatformIOS::Error(const char *msg) {
     UIViewController *viewController = [[[[UIApplication sharedApplication] delegate] window] rootViewController];
     [viewController presentViewController:alert animated:YES completion:nil];
 
-#ifdef _DEBUG
-    debugbreak();
-#endif
-    
+    PlatformSystem::DebugBreak();
+
     Quit();
 }
 

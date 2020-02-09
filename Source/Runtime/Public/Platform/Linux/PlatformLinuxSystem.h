@@ -21,6 +21,8 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformLinuxSystem : public PlatformPosixSystem {
 public:
+    static bool             IsDebuggerPresent();
+    static void             DebugBreak();
 };
 
 typedef PlatformLinuxSystem   PlatformSystem;

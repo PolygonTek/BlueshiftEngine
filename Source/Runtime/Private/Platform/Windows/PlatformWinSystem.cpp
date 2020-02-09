@@ -169,4 +169,10 @@ bool PlatformWinSystem::IsDebuggerPresent() {
     return ::IsDebuggerPresent();
 }
 
+void PlatformWinSystem::DebugBreak() {
+    if (IsDebuggerPresent()) {
+        __debugbreak();
+    }
+}
+
 BE_NAMESPACE_END

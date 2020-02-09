@@ -91,6 +91,16 @@ bool PlatformIOSSystem::IsDebuggerPresent() {
     return (info.kp_proc.p_flag & P_TRACED) != 0;
 }
 
+bool PlatformIOSSystem::DebugBreak() {
+    if (IsDebuggerPresent()) {
+#if defined(__IOS_SIMULATOR__)
+        __asm__("int $3");
+#elif defined(__IOS__)
+        __asm__("svc 0");
+#endif
+    }
+}
+
 bool PlatformIOSSystem::HasActiveWiFiConnection() {
     struct sockaddr_in zeroAddress;
     memset(&zeroAddress, 0, sizeof(zeroAddress));

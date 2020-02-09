@@ -52,4 +52,11 @@ bool PlatformBaseSystem::IsDebuggerPresent() {
     return false;
 }
 
+void PlatformBaseSystem::DebugBreak() {
+    if (IsDebuggerPresent()) {
+        // unknown platforms crash into the debugger
+        *((int32_t *)3) = 13;
+    }
+}
+
 BE_NAMESPACE_END

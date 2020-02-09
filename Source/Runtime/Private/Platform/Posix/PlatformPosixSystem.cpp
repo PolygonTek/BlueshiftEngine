@@ -34,4 +34,14 @@ const char *PlatformPosixSystem::UserDir() {
     return path;
 }
 
+void PlatformPosixSystem::IsDebuggerPresent() {
+    return false;
+}
+
+void PlatformPosixSystem::DebugBreak() {
+    if (IsDebuggerPresent()) {
+        raise(SIGTRAP);
+    }
+}
+
 BE_NAMESPACE_END

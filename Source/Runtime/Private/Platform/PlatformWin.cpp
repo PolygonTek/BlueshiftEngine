@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "PlatformWin.h"
+#include "Platform/PlatformSystem.h"
 #include "Platform/Windows/PlatformWinUtils.h"
 
 BE_NAMESPACE_BEGIN
@@ -102,9 +103,7 @@ void PlatformWin::Error(const char *text) {
 
     MessageBox(hwnd ? hwnd : GetDesktopWindow(), wText, L"Error", MB_OK);
 
-#ifdef _DEBUG
-    debugbreak();
-#endif
+    PlatformSystem::DebugBreak();
 
     Quit();
 }

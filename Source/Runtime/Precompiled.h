@@ -183,18 +183,6 @@
     #define BE_FASTCALL
 #endif
 
-#if defined(__WIN32__)
-    #define debugbreak() __debugbreak()
-#elif defined(__ANDROID__)
-    #define debugbreak() __builtin_trap()
-#elif defined(__IOS_SIMULATOR__)
-    #define debugbreak() __asm__("int $3")
-#elif defined(__IOS__)
-    #define debugbreak() __asm__("svc 0")
-#elif defined(__UNIX__)
-    #define debugbreak() __asm__("int $3")
-#endif
-
 #define COUNT_OF(a)                 ((int)(sizeof(a) / sizeof((a)[0])))
 
 #define OFFSET_OF(type, member)     ((intptr_t)&((type *)0)->member)

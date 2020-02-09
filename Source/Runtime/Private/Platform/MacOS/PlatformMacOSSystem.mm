@@ -110,4 +110,10 @@ bool PlatformMacOSSystem::IsDebuggerPresent() {
     return (info.kp_proc.p_flag & P_TRACED) != 0;
 }
 
+void PlatformMacOSSystem::DebugBreak() {
+    if (IsDebuggerPresent()) {
+        __asm__("int $3");
+    }
+}
+
 BE_NAMESPACE_END

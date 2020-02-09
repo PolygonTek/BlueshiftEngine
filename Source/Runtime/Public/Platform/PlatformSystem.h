@@ -30,6 +30,7 @@ public:
     static int32_t          NumCPUCoresIncludingHyperthreads();
 
     static bool             IsDebuggerPresent();
+    static void             DebugBreak();
 };
 
 BE_NAMESPACE_END

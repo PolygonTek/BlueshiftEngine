@@ -16,6 +16,7 @@
 #include "Core/Str.h"
 #include "PlatformGeneric.h"
 #include "PlatformAndroid.h"
+#include "Platform/PlatformSystem.h"
 #include "PlatformUtils/Android/AndroidJNI.h"
 #include <android/log.h>
 
@@ -53,9 +54,7 @@ void PlatformAndroid::Error(const char *msg) {
 
     env->DeleteLocalRef(javaMsg);
 
-#ifdef _DEBUG
-    debugbreak();
-#endif
+    PlatformSystem::DebugBreak();
 
     Quit();
 }
