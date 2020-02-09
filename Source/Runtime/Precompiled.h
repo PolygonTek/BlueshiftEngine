@@ -163,9 +163,9 @@
 #include <exception>
 #include <atomic>
 
-#define BE1                         BE1
-#define BE_NAMESPACE_BEGIN          namespace BE1 {
-#define BE_NAMESPACE_END            }
+#define BE1 BE1
+#define BE_NAMESPACE_BEGIN namespace BE1 {
+#define BE_NAMESPACE_END }
 
 #define BE_STATIC_LINK
 
@@ -178,9 +178,21 @@
 #endif
 
 #if defined(__WIN32__) && !defined(__X86_64__)
-    #define BE_FASTCALL             __fastcall
+    #define BE_FASTCALL __fastcall
 #else
     #define BE_FASTCALL
+#endif
+
+#if defined(__WIN32__)
+    #define debugbreak() __debugbreak()
+#elif defined(__ANDROID__)
+    #define debugbreak() __builtin_trap()
+#elif defined(__IOS_SIMULATOR__)
+    #define debugbreak() __asm__("int $3")
+#elif defined(__IOS__)
+    #define debugbreak() __asm__("svc 0")
+#elif defined(__UNIX__)
+    #define debugbreak() __asm__("int $3")
 #endif
 
 #define COUNT_OF(a)                 ((int)(sizeof(a) / sizeof((a)[0])))
@@ -223,10 +235,10 @@
     #define OBJC_CLASS(name) typedef struct objc_object name
 #endif
 
-typedef uint8_t         byte;       // 8 bits
-typedef uint16_t        word;       // 16 bits
-typedef uint32_t        dword;      // 32 bits
-typedef uint64_t        qword;      // 64 bits
+typedef uint8_t     byte;   // 8 bits
+typedef uint16_t    word;   // 16 bits
+typedef uint32_t    dword;  // 32 bits
+typedef uint64_t    qword;  // 64 bits
 
 #ifdef _DEBUG
 
@@ -363,8 +375,6 @@ constexpr std::size_t count_of(T (&)[N]) {
 #define wcstoll                     _wcstoi64
 #define wcstoull                    _wcstoui64
 
-#define debugbreak()                __debugbreak()
-
 #ifdef _DEBUG
 //#define _CRTDBG_MAP_ALLOC
 #endif
@@ -463,7 +473,6 @@ constexpr std::size_t count_of(T (&)[N]) {
 #define _alloca16(x)                ((void *)((((intptr_t)alloca((x) + 15)) + 15) & ~15))
 #define _alloca32(x)                ((void *)((((intptr_t)alloca((x) + 31)) + 31) & ~31))
 
-#define debugbreak()                asm("int $3")
 #define TCHAR   char
 #endif // __UNIX__
 
