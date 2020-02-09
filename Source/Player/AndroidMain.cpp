@@ -58,7 +58,13 @@ static RenderQuality::Enum DetermineRenderQuality() {
 
     switch (gpuInfo.processor) {
     case BE1::AndroidGPUInfo::Processor::Qualcomm_Adreno:
-        if (gpuInfo.model >= 500) {
+        if (gpuInfo.model >= 600) {
+            if (gpuInfo.model <= 612) {
+                renderQuality = RenderQuality::Low;
+            } else if (gpuInfo.model <= 620) {
+                renderQuality = RenderQuality::Medium;
+            }
+        } else if (gpuInfo.model >= 500) {
             if (gpuInfo.model < 510) {
                 renderQuality = RenderQuality::Low;
             } else if (gpuInfo.model < 530) {
