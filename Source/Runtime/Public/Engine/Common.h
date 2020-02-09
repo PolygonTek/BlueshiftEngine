@@ -25,11 +25,11 @@ class Common {
 public:
     struct PlatformId {
         enum Enum {
-            Windows,
-            Linux,
-            MacOS,
-            IOS,
-            Android
+            WindowsId,
+            LinuxId,
+            MacOSId,
+            IOSId,
+            AndroidId
         };
     };
 
