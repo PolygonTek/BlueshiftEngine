@@ -22,12 +22,12 @@ BE_NAMESPACE_BEGIN
 class BE_API PlatformLinuxTime : public PlatformPosixTime {
 public:
     static void             Init();
-    
+
     static double           Seconds();
-    
+
     static uint64_t         Cycles();
 };
 
-typedef PlatformLinuxTime	PlatformTime;
+typedef PlatformLinuxTime   PlatformTime;
 
 BE_NAMESPACE_END

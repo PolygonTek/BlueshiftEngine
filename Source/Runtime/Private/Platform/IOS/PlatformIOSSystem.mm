@@ -91,7 +91,7 @@ bool PlatformIOSSystem::IsDebuggerPresent() {
     return (info.kp_proc.p_flag & P_TRACED) != 0;
 }
 
-bool PlatformIOSSystem::DebugBreak() {
+void PlatformIOSSystem::DebugBreak() {
     if (IsDebuggerPresent()) {
 #if defined(__IOS_SIMULATOR__)
         __asm__("int $3");
