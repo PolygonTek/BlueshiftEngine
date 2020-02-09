@@ -48,4 +48,8 @@ int32_t PlatformBaseSystem::NumCPUCoresIncludingHyperthreads() {
     return PlatformSystem::NumCPUCores();
 }
 
+bool PlatformBaseSystem::IsDebuggerPresent() {
+    return false;
+}
+
 BE_NAMESPACE_END

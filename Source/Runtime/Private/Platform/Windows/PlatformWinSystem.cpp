@@ -165,4 +165,8 @@ int32_t PlatformWinSystem::NumCPUCoresIncludingHyperthreads() {
 #endif
 }
 
+bool PlatformWinSystem::IsDebuggerPresent() {
+    return ::IsDebuggerPresent();
+}
+
 BE_NAMESPACE_END

@@ -28,6 +28,8 @@ public:
 
     static int32_t          NumCPUCores();
     static int32_t          NumCPUCoresIncludingHyperthreads();
+
+    static bool             IsDebuggerPresent();
 };
 
 BE_NAMESPACE_END
