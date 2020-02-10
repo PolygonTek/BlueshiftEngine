@@ -221,7 +221,7 @@ struct GLVertexElementInternal {
     int                     components;
     GLenum                  type;
     GLboolean               normalize;
-    bool                    shouldConvertToFloat;
+    bool                    useFloatAttribute;
     int                     divisor;
 };
 

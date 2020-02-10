@@ -1,5 +1,5 @@
-in LOWP vec4 in_weightIndex0 : WEIGHT_INDEX0;
-in LOWP vec4 in_weightIndex1 : WEIGHT_INDEX1;
+in LOWP uvec4 in_weightIndex0 : WEIGHT_INDEX0;
+in LOWP uvec4 in_weightIndex1 : WEIGHT_INDEX1;
 in MEDIUMP vec4 in_weightValue0 : WEIGHT_VALUE0;
 in MEDIUMP vec4 in_weightValue1 : WEIGHT_VALUE1;
 
@@ -14,8 +14,6 @@ in MEDIUMP vec4 in_weightValue1 : WEIGHT_VALUE1;
 	#ifndef INSTANCING
 		uniform VTF_SKINNING_TC_TYPE skinningBaseTc;
 	#endif
-
-	uniform LOWP ivec2 jointIndexOffset;
 #else
     uniform HIGHP vec4 joints[MAX_SHADER_JOINTSX3];   // 4x3 matrix
 #endif
@@ -81,49 +79,49 @@ void accumulateJointMatrices(out vec4 R0, out vec4 R1, out vec4 R2, int jointInd
 			}
 		}
 	#else
-		vec2 baseST = skinningBaseTc + vec2((float(jointIndexOffset) + in_weightIndex0.x) * 3.0, 0.0);
+		vec2 baseST = skinningBaseTc + vec2((float(jointIndexOffset) + float(in_weightIndex0.x)) * 3.0, 0.0);
 		R0 = w0.x * tex2Dlod(jointsMap, vec4((baseST + vec2(0.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 		R1 = w0.x * tex2Dlod(jointsMap, vec4((baseST + vec2(1.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 		R2 = w0.x * tex2Dlod(jointsMap, vec4((baseST + vec2(2.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 
 		if (w0.y > 0.0) {
-			baseST = skinningBaseTc + vec2((float(jointIndexOffset) + in_weightIndex0.y) * 3.0, 0.0);
+			baseST = skinningBaseTc + vec2((float(jointIndexOffset) + float(in_weightIndex0.y)) * 3.0, 0.0);
 			R0 += w0.y * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(0.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 			R1 += w0.y * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(1.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 			R2 += w0.y * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(2.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 
 			if (w0.z > 0.0) {
-				baseST = skinningBaseTc + vec2((float(jointIndexOffset) + in_weightIndex0.z) * 3.0, 0.0);
+				baseST = skinningBaseTc + vec2((float(jointIndexOffset) + float(in_weightIndex0.z)) * 3.0, 0.0);
 				R0 += w0.z * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(0.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 				R1 += w0.z * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(1.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 				R2 += w0.z * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(2.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 
 				if (w0.w > 0.0) {
-					baseST = skinningBaseTc + vec2((float(jointIndexOffset) + in_weightIndex0.w) * 3.0, 0.0);
+					baseST = skinningBaseTc + vec2((float(jointIndexOffset) + float(in_weightIndex0.w)) * 3.0, 0.0);
 					R0 += w0.w * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(0.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 					R1 += w0.w * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(1.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 					R2 += w0.w * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(2.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 
 					if (w1.x > 0.0) {
-						baseST = skinningBaseTc + vec2((float(jointIndexOffset) + in_weightIndex1.x) * 3.0, 0.0);
+						baseST = skinningBaseTc + vec2((float(jointIndexOffset) + float(in_weightIndex1.x)) * 3.0, 0.0);
 						R0 += w1.x * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(0.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 						R1 += w1.x * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(1.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 						R2 += w1.x * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(2.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 
 						if (w1.y > 0.0) {
-							baseST = skinningBaseTc + vec2((float(jointIndexOffset) + in_weightIndex1.y) * 3.0, 0.0);
+							baseST = skinningBaseTc + vec2((float(jointIndexOffset) + float(in_weightIndex1.y)) * 3.0, 0.0);
 							R0 += w1.y * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(0.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 							R1 += w1.y * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(1.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 							R2 += w1.y * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(2.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 
 							if (w1.z > 0.0) {
-								baseST = skinningBaseTc + vec2((float(jointIndexOffset) + in_weightIndex1.z) * 3.0, 0.0);
+								baseST = skinningBaseTc + vec2((float(jointIndexOffset) + float(in_weightIndex1.z)) * 3.0, 0.0);
 								R0 += w1.z * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(0.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 								R1 += w1.z * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(1.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 								R2 += w1.z * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(2.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 
 								if (w1.w > 0.0) {
-									baseST = skinningBaseTc + vec2((float(jointIndexOffset) + in_weightIndex1.w) * 3.0, 0.0);
+									baseST = skinningBaseTc + vec2((float(jointIndexOffset) + float(in_weightIndex1.w)) * 3.0, 0.0);
 									R0 += w1.w * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(0.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 									R1 += w1.w * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(1.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
 									R2 += w1.w * tex2Dlod(jointsMap, vec4((skinningBaseTc + vec2(2.0, 0.0)) * invJointsMapSize, 0.0, 0.0));
