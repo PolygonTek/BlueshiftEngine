@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 #include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
-#include "Simd/Simd.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -268,8 +267,8 @@ int OpenGLRHI::BufferDiscardWrite(Handle bufferHandle, int size, const void *dat
     if (gglMapBufferRange) {
         // glMapBufferRange 함수는 buffer alloc 되어 있지 않다면 GL_INVALID_VALUE error 발생
         gglBufferData(buffer->target, size, nullptr, buffer->usage);
-        void *ptr = gglMapBufferRange(buffer->target, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-        simdProcessor->Memcpy(ptr, data, size);
+        byte *dest = (byte *)gglMapBufferRange(buffer->target, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+        WriteBuffer(dest, (const byte *)data, size);
         gglUnmapBuffer(buffer->target);
     } else {
         // buffer respecification using glBufferData
@@ -312,8 +311,8 @@ int OpenGLRHI::BufferWrite(Handle bufferHandle, int alignSize, int size, const v
     // If date == nullptr, buffer memory is reserved
     if (data) {
         /*if (gglMapBufferRange) {
-            byte *ptr = (byte *)gglMapBufferRange(buffer->target, offset, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-            simdProcessor->Memcpy(ptr, data, size);
+            byte *dest = (byte *)gglMapBufferRange(buffer->target, offset, size, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+            WriteBuffer(dest, (const byte *)data, size);
             gglUnmapBuffer(buffer->target);
         }*/
         gglBufferSubData(writeBuffer->target, base, size, data);
