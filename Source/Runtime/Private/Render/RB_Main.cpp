@@ -380,7 +380,7 @@ static void RB_QueryOccludeeAABBs(int numAmbientOccludees, const AABB *occludeeA
 
     // alloc ambient occludee buffer in a AABB form
     struct Occludee { Vec2 position; Vec3 center; Vec3 extents; };
-    Occludee *occludeeBuffer = (Occludee *)_alloca(numAmbientOccludees * sizeof(Occludee));
+    Occludee *occludeeBuffer = (Occludee *)_alloca16(numAmbientOccludees * sizeof(Occludee));
     Occludee *occludeePtr = occludeeBuffer;
     int x = 0;
     int y = 0;

@@ -268,7 +268,11 @@ int OpenGLRHI::BufferDiscardWrite(Handle bufferHandle, int size, const void *dat
         // glMapBufferRange 함수는 buffer alloc 되어 있지 않다면 GL_INVALID_VALUE error 발생
         gglBufferData(buffer->target, size, nullptr, buffer->usage);
         byte *dest = (byte *)gglMapBufferRange(buffer->target, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-        WriteBuffer(dest, (const byte *)data, size);
+        if (!((intptr_t)data & 15)) {
+            WriteBuffer(dest, (const byte *)data, size);
+        } else {
+            memcpy(dest, data, size);
+        }
         gglUnmapBuffer(buffer->target);
     } else {
         // buffer respecification using glBufferData

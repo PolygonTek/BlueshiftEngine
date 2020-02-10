@@ -20,7 +20,7 @@
 BE_NAMESPACE_BEGIN
 
 void RB_DrawRect(float x, float y, float x2, float y2, float s, float t, float s2, float t2) {
-    const struct {
+    ALIGN_AS16 const struct {
         Vec2 position;
         Vec2 texcoord;
     } verts[] = { 
@@ -43,7 +43,7 @@ void RB_DrawClipRect(float s, float t, float s2, float t2) {
 }
 
 void RB_DrawRectSlice(float x, float y, float x2, float y2, float s, float t, float s2, float t2, float slice) {
-    const struct {
+    ALIGN_AS16 const struct {
         Vec2 position;
         Vec3 texcoord;
     } verts[] = { 
@@ -112,7 +112,7 @@ void RB_DrawCircle(const Vec3 &origin, const Vec3 &left, const Vec3 &up, const f
 
 void RB_DrawAABB(const AABB &aabb) {
     //static const uint16_t indices[24] = { 3, 2, 1, 0, 5, 4, 0, 1, 6, 5, 1, 2, 7, 6, 2, 3, 4, 7, 3, 0, 6, 7, 4, 5 };
-    static const uint16_t indices[14] = { 7, 4, 6, 5, 1, 4, 0, 7, 3, 6, 2, 1, 3, 0 };
+    ALIGN_AS16 static const uint16_t indices[14] = { 7, 4, 6, 5, 1, 4, 0, 7, 3, 6, 2, 1, 3, 0 };
 
     Vec3 verts[8];
     aabb.ToPoints(verts);
@@ -130,7 +130,7 @@ void RB_DrawAABB(const AABB &aabb) {
 
 void RB_DrawOBB(const OBB &obb) {	
     //static const uint16_t indices[24] = { 3, 2, 1, 0, 5, 4, 0, 1, 6, 5, 1, 2, 7, 6, 2, 3, 4, 7, 3, 0, 6, 7, 4, 5 };
-    static const uint16_t indices[14] = { 7, 4, 6, 5, 1, 4, 0, 7, 3, 6, 2, 1, 3, 0 };
+    ALIGN_AS16 static const uint16_t indices[14] = { 7, 4, 6, 5, 1, 4, 0, 7, 3, 6, 2, 1, 3, 0 };
 
     Vec3 verts[8];
     obb.ToPoints(verts);
@@ -148,7 +148,7 @@ void RB_DrawOBB(const OBB &obb) {
 
 void RB_DrawFrustum(const Frustum &frustum) {
     //static const uint16_t indices[24] = { 3, 2, 1, 0, 5, 4, 0, 1, 6, 5, 1, 2, 7, 6, 2, 3, 4, 7, 3, 0, 6, 7, 4, 5 };
-    static const uint16_t indices[14] = { 7, 4, 6, 5, 1, 4, 0, 7, 3, 6, 2, 1, 3, 0 };
+    ALIGN_AS16 static const uint16_t indices[14] = { 7, 4, 6, 5, 1, 4, 0, 7, 3, 6, 2, 1, 3, 0 };
 
     Vec3 verts[8];
     frustum.ToPoints(verts);
