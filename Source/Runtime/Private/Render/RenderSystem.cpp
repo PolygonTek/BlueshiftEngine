@@ -54,9 +54,9 @@ void RenderSystem::Init() {
         renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::Cpu;
     }
 
-    if (r_vertexTextureUpdate.GetInteger() == 2 && rhi.SupportsTextureBufferObject()) {
+    if (r_vertexTextureUpdate.GetInteger() == 2 && rhi.SupportsTextureBuffer()) {
         renderGlobal.vertexTextureMethod = BufferCacheManager::VertexTextureMethod::Tbo;
-    } else if (r_vertexTextureUpdate.GetInteger() >= 1 && rhi.SupportsPixelBufferObject()) {
+    } else if (r_vertexTextureUpdate.GetInteger() >= 1 && rhi.SupportsPixelBuffer()) {
         renderGlobal.vertexTextureMethod = BufferCacheManager::VertexTextureMethod::Pbo;
     } else {
         renderGlobal.vertexTextureMethod = BufferCacheManager::VertexTextureMethod::DirectCopy;

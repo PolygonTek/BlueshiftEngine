@@ -21,7 +21,7 @@ bool OpenGLBase::supportsPackedFloat = false;
 bool OpenGLBase::supportsDepthClamp = false;
 bool OpenGLBase::supportsDepthBoundsTest = false;
 bool OpenGLBase::supportsDepthBufferFloat = false;
-bool OpenGLBase::supportsPixelBufferObject = false;
+bool OpenGLBase::supportsPixelBuffer = false;
 bool OpenGLBase::supportsTextureRectangle = false;
 bool OpenGLBase::supportsTextureArray = false;
 bool OpenGLBase::supportsTextureFilterAnisotropic = false;
@@ -54,7 +54,7 @@ void OpenGLBase::Init() {
 #endif
 
 #ifdef GL_ARB_pixel_buffer_object // 2.1
-    supportsPixelBufferObject = gglext._GL_ARB_pixel_buffer_object ? true : false;
+    supportsPixelBuffer = gglext._GL_ARB_pixel_buffer_object ? true : false;
 #endif
 
 #ifdef GL_ARB_texture_rectangle // 3.1

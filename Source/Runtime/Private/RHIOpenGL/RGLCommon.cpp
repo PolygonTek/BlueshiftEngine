@@ -205,7 +205,7 @@ void OpenGLRHI::InitGL() {
     BE_LOG("Maximum rectangle texture size: %i\n", hwLimit.maxRectangleTextureSize);
 #endif
     
-    if (OpenGL::SupportsTextureBufferObject()) {
+    if (OpenGL::SupportsTextureBuffer()) {
         gglGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &hwLimit.maxTextureBufferSize);
         BE_LOG("Maximum texture buffer size: %i\n", hwLimit.maxTextureBufferSize);
     }
@@ -354,8 +354,8 @@ bool OpenGLRHI::SupportsDepthBufferFloat() const {
     return OpenGL::SupportsDepthBufferFloat();
 }
 
-bool OpenGLRHI::SupportsPixelBufferObject() const {
-    return OpenGL::SupportsPixelBufferObject();
+bool OpenGLRHI::SupportsPixelBuffer() const {
+    return OpenGL::SupportsPixelBuffer();
 }
 
 bool OpenGLRHI::SupportsTextureRectangle() const {
@@ -366,8 +366,8 @@ bool OpenGLRHI::SupportsTextureArray() const {
     return OpenGL::SupportsTextureArray();
 }
 
-bool OpenGLRHI::SupportsTextureBufferObject() const {
-    return OpenGL::SupportsTextureBufferObject();
+bool OpenGLRHI::SupportsTextureBuffer() const {
+    return OpenGL::SupportsTextureBuffer();
 }
 
 bool OpenGLRHI::SupportsTextureCompressionS3TC() const {

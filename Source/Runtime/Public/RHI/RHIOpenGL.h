@@ -63,10 +63,10 @@ public:
     bool                    SupportsPolygonMode() const;
     bool                    SupportsPackedFloat() const;
     bool                    SupportsDepthBufferFloat() const;
-    bool                    SupportsPixelBufferObject() const;
+    bool                    SupportsPixelBuffer() const;
     bool                    SupportsTextureRectangle() const;
     bool                    SupportsTextureArray() const;
-    bool                    SupportsTextureBufferObject() const;
+    bool                    SupportsTextureBuffer() const;
     bool                    SupportsTextureCompressionS3TC() const;
     bool                    SupportsTextureCompressionLATC() const;
     bool                    SupportsTextureCompressionRGTC() const;

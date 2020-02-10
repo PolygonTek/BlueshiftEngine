@@ -31,10 +31,10 @@ public:
     static bool             SupportPolygonMode() { return true; }
     static bool             SupportPackedFloat() { return true; }
     static bool             SupportDepthBufferFloat() { return true; }
-    static bool             SupportPixelBufferObject() { return true; }
+    static bool             SupportPixelBuffer() { return true; }
     static bool             SupportTextureRectangle() { return true; }
     static bool             SupportTextureArray() { return true; }
-    static bool             SupportTextureBufferObject() { return true; }
+    static bool             SupportTextureBuffer() { return true; }
     static bool             SupportTextureCompressionLATC() { return true; }
 };
 

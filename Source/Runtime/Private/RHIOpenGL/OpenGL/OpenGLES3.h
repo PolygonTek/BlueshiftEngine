@@ -126,7 +126,7 @@ public:
     static bool             SupportsPackedFloat() { return true; }
     static bool             SupportsDepthClamp() { return false; }
     static bool             SupportsDepthBufferFloat() { return true; }
-    static bool             SupportsPixelBufferObject() { return true; }
+    static bool             SupportsPixelBuffer() { return true; }
     static bool             SupportsDiscardFrameBuffer() { return true; }
     static bool             SupportsFrameBufferSRGB() { return supportsFrameBufferSRGB; }
     static bool             SupportsTextureRectangle() { return true; }

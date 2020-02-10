@@ -548,7 +548,7 @@ void OpenGLRHI::SetTextureImageBuffer(Image::Format::Enum dstFormat, bool isSRGB
         return;
     }
 
-    if (OpenGL::SupportsTextureBufferObject()) {
+    if (OpenGL::SupportsTextureBuffer()) {
         OpenGL::TexBuffer(internalFormat, bufferList[bufferHandle]->object);
     }
     

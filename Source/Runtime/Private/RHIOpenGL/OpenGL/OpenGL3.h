@@ -37,12 +37,12 @@ public:
     static bool             SupportsPackedFloat() { return true; }
     static bool             SupportsDepthClamp() { return true; }
     static bool             SupportsDepthBufferFloat() { return true; }
-    static bool             SupportsPixelBufferObject() { return true; }
+    static bool             SupportsPixelBuffer() { return true; }
     static bool             SupportsDiscardFrameBuffer() { return true; }
     static bool             SupportsFrameBufferSRGB() { return true; }
     static bool             SupportsTextureRectangle() { return true; }
     static bool             SupportsTextureArray() { return true; }
-    static bool             SupportsTextureBufferObject() { return true; }
+    static bool             SupportsTextureBuffer() { return true; }
     static bool             SupportsTextureCompressionS3TC() { return true; }
     static bool             SupportsTextureCompressionLATC() { return true; }
     static bool             SupportsTextureCompressionRGTC() { return true; }
