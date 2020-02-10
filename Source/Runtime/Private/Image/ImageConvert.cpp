@@ -140,10 +140,10 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
 
 bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool regenerateMipmaps, Image::CompressionQuality::Enum compressionQuality) const {
     const Image *srcImage = this;
-    const ImageFormatInfo *srcFormatInfo = GetImageFormatInfo(srcImage->GetFormat());
+    const ImageFormatInfo *srcFormatInfo = GetImageFormatInfo(GetFormat());
     const ImageFormatInfo *dstFormatInfo = GetImageFormatInfo(dstFormat);
     
-    if (srcFormatInfo == dstFormatInfo) {
+    if (GetFormat() == dstFormat) {
         dstImage = *srcImage;
         return true;
     }
@@ -166,7 +166,7 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
         }
 
         srcImage = &decompressedImage;
-        srcFormatInfo = GetImageFormatInfo(decompressedImage.GetFormat());
+        srcFormatInfo = GetImageFormatInfo(srcImage->GetFormat());
     } else {
         if (regenerateMipmaps) {
             decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, srcImage->format, srcImage->gammaSpace, nullptr, srcImage->flags);
@@ -201,10 +201,10 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
         return true;
     }
 
+    bool useUnpackFloat = NeedFloatConversion(srcImage->GetFormat()) || NeedFloatConversion(dstFormat);
+
     ImageUnpackFunc unpackFunc;
     ImagePackFunc packFunc;
-
-    bool useUnpackFloat = NeedFloatConversion(srcImage->GetFormat()) || NeedFloatConversion(dstFormat);
 
     if (useUnpackFloat) {
         unpackFunc = srcFormatInfo->unpackRGBA32F;

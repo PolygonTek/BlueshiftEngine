@@ -389,7 +389,6 @@ Entity *GameWorld::CreateEmptyEntity(const char *name) {
 
     value["components"][0]["classname"] = ComTransform::metaObject.ClassName();
     value["components"][0]["origin"] = Vec3::zero.ToString();
-    value["components"][0]["angles"] = Angles::zero.ToString();
 
     Entity *entity = Entity::CreateEntity(value, this);
 
