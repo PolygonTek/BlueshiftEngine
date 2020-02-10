@@ -220,7 +220,7 @@ void OpenGLRHI::FlushMappedBufferRange(Handle bufferHandle, int offset, int size
 }
 
 void OpenGLRHI::WriteBuffer(byte *dst, const byte *src, int numBytes) {
-#if BE_WIN_X86_SSE_INTRIN
+#ifdef ENABLE_X86_SSE_INTRIN
     assert_16_byte_aligned(dst);
     assert_16_byte_aligned(src);
 

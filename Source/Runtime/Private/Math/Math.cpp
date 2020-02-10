@@ -40,7 +40,7 @@ const float Math::Infinity                      = 1e30f;
 const float Math::FloatEpsilon                  = 1.192092896e-07f;
 const float Math::FloatSmallestNonDenormal      = *reinterpret_cast<const float *>(&SmallestNonDenormal);    // 1.1754944e-038f
 
-#if defined(BE_WIN_X86_SSE_INTRIN)
+#ifdef ENABLE_X86_SSE_INTRIN
 
 const __m128 Math::SIMD_SP_zero                 = { 0.0f, 0.0f, 0.0f, 0.0f };
 const __m128 Math::SIMD_SP_255                  = { 255.0f, 255.0f, 255.0f, 255.0f };

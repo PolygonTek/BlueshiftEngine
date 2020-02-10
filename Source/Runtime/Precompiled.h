@@ -183,6 +183,13 @@
     #define BE_FASTCALL
 #endif
 
+// FIXME
+#if defined(__X86__)
+    #define ENABLE_X86_SSE_INTRIN
+#elif defined(__ARM64__)
+    #define ENABLE_NEON_INTRIN
+#endif
+
 #define COUNT_OF(a)                 ((int)(sizeof(a) / sizeof((a)[0])))
 
 #define OFFSET_OF(type, member)     ((intptr_t)&((type *)0)->member)
@@ -337,8 +344,6 @@ constexpr std::size_t count_of(T (&)[N]) {
 #pragma warning (disable: 4996)     // This function or variable may be unsafe
 #endif
 
-#define BE_WIN_X86_SSE_INTRIN       1
-
 #define BE_CDECL
 
 #define BE_FORCE_INLINE             __forceinline
@@ -465,7 +470,7 @@ constexpr std::size_t count_of(T (&)[N]) {
 #endif // __UNIX__
 
 //----------------------------------------------------------------------------------------------
-// iOS & OSX
+// iOS & macOS
 //----------------------------------------------------------------------------------------------
 
 #ifdef __APPLE__

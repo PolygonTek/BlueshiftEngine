@@ -76,7 +76,7 @@ void DetectCpu() {
 
     if (info[2] & BIT(0)) {
         cpuInfo.cpuid |= CPUID_SSE3;
-        cpuInfo.cpuid |= CPUID_DAZ;		
+        cpuInfo.cpuid |= CPUID_DAZ;
 
         if (info[2] & BIT(19)) {
             cpuInfo.cpuid |= CPUID_SSE4;
