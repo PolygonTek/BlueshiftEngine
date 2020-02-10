@@ -193,11 +193,7 @@ void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMo
     if (offset > 0 || offset + size < buffer->size) {
         ptr = gglMapBufferRange(buffer->target, offset, size, access | GL_MAP_UNSYNCHRONIZED_BIT);
     } else {
-        if (access == GL_MAP_WRITE_BIT && OpenGL::SupportsMapBuffer()) {
-            ptr = OpenGL::MapBuffer(buffer->target, GL_WRITE_ONLY);
-        } else {
-            ptr = gglMapBufferRange(buffer->target, 0, size, access | GL_MAP_UNSYNCHRONIZED_BIT);
-        }
+        ptr = gglMapBufferRange(buffer->target, 0, size, access);
     }
 
     return ptr;
@@ -209,7 +205,7 @@ bool OpenGLRHI::UnmapBuffer(Handle bufferHandle) {
     // store was mapped. This can occur for system-specific reasons that affect the availability of graphics
     // memory, such as screen mode changes. In such situations, GL_FALSE is returned and the data store contents
     // are undefined. An application must detect this rare condition and reinitialize the data store.
-    return !!OpenGL::UnmapBuffer(buffer->target);
+    return !!gglUnmapBuffer(buffer->target);
 }
 
 void OpenGLRHI::FlushMappedBufferRange(Handle bufferHandle, int offset, int size) {

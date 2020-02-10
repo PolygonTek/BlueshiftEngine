@@ -19,7 +19,6 @@ BE_NAMESPACE_BEGIN
 
 const char *OpenGLES3::GLSL_VERSION_STRING = "300 es";
 
-bool OpenGLES3::supportsMapBufferOES = false;
 bool OpenGLES3::supportsFrameBufferSRGB = false;
 bool OpenGLES3::supportsTextureBuffer = false;
 bool OpenGLES3::supportsTimestampQueries = false;
@@ -33,10 +32,6 @@ int OpenGLES3::shaderIntPrecisionHigh = 0;
 
 void OpenGLES3::Init() {
     OpenGLBase::Init();
-
-#ifdef GL_OES_mapbuffer
-    supportsMapBufferOES = gglext._GL_OES_mapbuffer ? true : false;
-#endif
 
 #ifdef GL_EXT_sRGB_write_control
     supportsFrameBufferSRGB = gglext._GL_EXT_sRGB_write_control ? true : false;
@@ -109,22 +104,6 @@ void OpenGLES3::TexBuffer(GLenum internalFormat, GLuint buffer) {
     if (gglext._GL_EXT_texture_buffer) {
         gglTexBufferEXT(GL_TEXTURE_BUFFER, internalFormat, buffer);
     }
-#endif
-}
-
-void *OpenGLES3::MapBuffer(GLenum target, GLenum access) { 
-#ifdef GL_OES_mapbuffer
-    return gglMapBufferOES(target, access);
-#else
-    return nullptr;
-#endif
-}
-
-bool OpenGLES3::UnmapBuffer(GLenum target) {
-#ifdef GL_OES_mapbuffer
-    return gglUnmapBufferOES(target);
-#else
-    return false;
 #endif
 }
 

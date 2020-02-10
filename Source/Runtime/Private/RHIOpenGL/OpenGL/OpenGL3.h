@@ -38,7 +38,6 @@ public:
     static bool             SupportsDepthClamp() { return true; }
     static bool             SupportsDepthBufferFloat() { return true; }
     static bool             SupportsPixelBufferObject() { return true; }
-    static bool             SupportsMapBuffer() { return true; }
     static bool             SupportsDiscardFrameBuffer() { return true; }
     static bool             SupportsFrameBufferSRGB() { return true; }
     static bool             SupportsTextureRectangle() { return true; }
@@ -66,8 +65,6 @@ public:
     static void             ReadBuffer(GLenum buffer) { gglReadBuffer(buffer); }
     static void             DrawBuffers(GLsizei count, const GLenum *buffers) { gglDrawBuffers(count, buffers); }
     static void             TexBuffer(GLenum internalFormat, GLuint buffer) { gglTexBuffer(GL_TEXTURE_BUFFER, internalFormat, buffer); }
-    static void *           MapBuffer(GLenum target, GLenum access) { return gglMapBuffer(target, access); }
-    static bool             UnmapBuffer(GLenum target) { return gglUnmapBuffer(target); }
     static void             VertexAttribDivisor(int index, int divisor) { gglVertexAttribDivisorARB(index, divisor); }
     static void             DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex) { gglDrawElementsBaseVertex(mode, count, type, indices, basevertex); }
     static void             DrawElementsInstancedBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount, GLint basevertex) { gglDrawElementsInstancedBaseVertex(mode, count, type, indices, instancecount, basevertex); }
