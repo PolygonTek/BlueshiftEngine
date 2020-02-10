@@ -196,8 +196,10 @@ void Batch::SetSubMeshVertexFormat(const SubMesh *subMesh, int vertexFormatIndex
         if (subMesh->useGpuSkinning) {
             rhi.SetVertexFormat(vertexFormats[vertexFormatIndex + 4 + subMesh->gpuSkinningVersionIndex + 1].vertexFormatHandle);
 
+            int vertexWeightBase = ((vertexSize * numVerts + 15) >> 4) << 4;
+
             rhi.SetStreamSource(0, vertexBuffer, 0, vertexSize);
-            rhi.SetStreamSource(1, vertexBuffer, vertexSize * numVerts, subMesh->VertexWeightSize());
+            rhi.SetStreamSource(1, vertexBuffer, vertexWeightBase, subMesh->VertexWeightSize());
             rhi.SetStreamSource(2, backEnd.instanceBufferCache->buffer, backEnd.instanceBufferCache->offset, renderGlobal.instanceBufferOffsetAlignment);
         } else {
             rhi.SetVertexFormat(vertexFormats[vertexFormatIndex + 4].vertexFormatHandle);
@@ -209,8 +211,10 @@ void Batch::SetSubMeshVertexFormat(const SubMesh *subMesh, int vertexFormatIndex
         if (subMesh->useGpuSkinning) {
             rhi.SetVertexFormat(vertexFormats[vertexFormatIndex + subMesh->gpuSkinningVersionIndex + 1].vertexFormatHandle);
 
+            int vertexWeightBase = ((vertexSize * numVerts + 15) >> 4) << 4;
+
             rhi.SetStreamSource(0, vertexBuffer, 0, vertexSize);
-            rhi.SetStreamSource(1, vertexBuffer, vertexSize * numVerts, subMesh->VertexWeightSize());
+            rhi.SetStreamSource(1, vertexBuffer, vertexWeightBase, subMesh->VertexWeightSize());
         } else {
             rhi.SetVertexFormat(vertexFormats[vertexFormatIndex].vertexFormatHandle);
 

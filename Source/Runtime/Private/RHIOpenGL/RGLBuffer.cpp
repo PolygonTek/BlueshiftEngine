@@ -191,16 +191,15 @@ void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMo
 
     void *ptr = nullptr;
     if (offset > 0 || offset + size < buffer->size) {
-        ptr = gglMapBufferRange(buffer->target, offset, size, access | GL_MAP_INVALIDATE_RANGE_BIT);
+        ptr = gglMapBufferRange(buffer->target, offset, size, access | GL_MAP_UNSYNCHRONIZED_BIT);
     } else {
         if (access == GL_MAP_WRITE_BIT && OpenGL::SupportsMapBuffer()) {
             ptr = OpenGL::MapBuffer(buffer->target, GL_WRITE_ONLY);
         } else {
-            ptr = gglMapBufferRange(buffer->target, 0, size, access | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+            ptr = gglMapBufferRange(buffer->target, 0, size, access | GL_MAP_UNSYNCHRONIZED_BIT);
         }
     }
 
-    assert(ptr);
     return ptr;
 }
 
@@ -223,6 +222,48 @@ void OpenGLRHI::FlushMappedBufferRange(Handle bufferHandle, int offset, int size
     assert(offset + size <= buffer->size);
 
     gglFlushMappedBufferRange(buffer->target, offset, size);
+}
+
+void OpenGLRHI::WriteBuffer(byte *dst, const byte *src, int numBytes) {
+#if BE_WIN_X86_SSE_INTRIN
+    assert_16_byte_aligned(dst);
+    assert_16_byte_aligned(src);
+
+    int i = 0;
+    for (; i + 128 <= numBytes; i += 128) {
+        __m128i d0 = _mm_load_si128((__m128i *)&src[i + 0 * 16]);
+        __m128i d1 = _mm_load_si128((__m128i *)&src[i + 1 * 16]);
+        __m128i d2 = _mm_load_si128((__m128i *)&src[i + 2 * 16]);
+        __m128i d3 = _mm_load_si128((__m128i *)&src[i + 3 * 16]);
+        __m128i d4 = _mm_load_si128((__m128i *)&src[i + 4 * 16]);
+        __m128i d5 = _mm_load_si128((__m128i *)&src[i + 5 * 16]);
+        __m128i d6 = _mm_load_si128((__m128i *)&src[i + 6 * 16]);
+        __m128i d7 = _mm_load_si128((__m128i *)&src[i + 7 * 16]);
+        _mm_stream_si128((__m128i *)&dst[i + 0 * 16], d0);
+        _mm_stream_si128((__m128i *)&dst[i + 1 * 16], d1);
+        _mm_stream_si128((__m128i *)&dst[i + 2 * 16], d2);
+        _mm_stream_si128((__m128i *)&dst[i + 3 * 16], d3);
+        _mm_stream_si128((__m128i *)&dst[i + 4 * 16], d4);
+        _mm_stream_si128((__m128i *)&dst[i + 5 * 16], d5);
+        _mm_stream_si128((__m128i *)&dst[i + 6 * 16], d6);
+        _mm_stream_si128((__m128i *)&dst[i + 7 * 16], d7);
+    }
+    for (; i + 16 <= numBytes; i += 16) {
+        __m128i d = _mm_load_si128((__m128i *)&src[i]);
+        _mm_stream_si128((__m128i *)&dst[i], d);
+    }
+    for (; i + 4 <= numBytes; i += 4) {
+        *(uint32_t *)&dst[i] = *(const uint32_t *)&src[i];
+    }
+    for (; i < numBytes; i++) {
+        dst[i] = src[i];
+    }
+    _mm_sfence();
+#else
+    assert_16_byte_aligned(dst);
+    assert_16_byte_aligned(src);
+    memcpy(dst, src, numBytes);
+#endif
 }
 
 int OpenGLRHI::BufferDiscardWrite(Handle bufferHandle, int size, const void *data) {

@@ -178,16 +178,17 @@ void SubMesh::CacheStaticDataToGpu() {
 
         // Write vertex weights after vertex data in the vertex buffer.
         if (vertWeights) {//surfSpace->def->state.joints && useGpuSkinning) {
+            int sizeVertsAligned = ((sizeVerts + 15) >> 4) << 4;
             int sizeWeights = VertexWeightSize() * numVerts;
-            int size = sizeVerts + sizeWeights;
+            int size = sizeVertsAligned + sizeWeights;
             
             bufferCacheManager.AllocStaticVertex(size, nullptr, vertexCache);
 
             rhi.BindBuffer(RHI::BufferType::Vertex, vertexCache->buffer);
             byte *ptr = (byte *)rhi.MapBuffer(vertexCache->buffer, RHI::BufferLockMode::WriteOnly);
 
-            simdProcessor->Memcpy(ptr, verts, sizeVerts);
-            simdProcessor->Memcpy(ptr + sizeVerts, vertWeights, sizeWeights);
+            rhi.WriteBuffer(ptr, (const byte *)verts, sizeVerts);
+            rhi.WriteBuffer(ptr + sizeVertsAligned, (const byte *)vertWeights, sizeWeights);
 
             if (!rhi.UnmapBuffer(vertexCache->buffer)) {
                 BE_WARNLOG("Error unmapping buffer\n");

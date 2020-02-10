@@ -268,6 +268,7 @@ public:
     void *                  MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMode, int offset, int size);
     bool                    UnmapBuffer(Handle bufferHandle);
     void                    FlushMappedBufferRange(Handle bufferHandle, int offset, int size);
+    void                    WriteBuffer(byte *dst, const byte *src, int numBytes);
 
                             /// Discards current buffer and write data to new buffer. 
                             /// Returns written start offset. (Always 0)
