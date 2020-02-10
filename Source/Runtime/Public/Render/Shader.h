@@ -212,6 +212,16 @@ public:
     void                    SetConstant3i(const char *name, const int *constant) const;
     void                    SetConstant4i(const char *name, const int *constant) const;
 
+                            /// Sets constant of unsigned integer type.
+    void                    SetConstant1ui(int index, const unsigned int constant) const;
+    void                    SetConstant2ui(int index, const unsigned int *constant) const;
+    void                    SetConstant3ui(int index, const unsigned int *constant) const;
+    void                    SetConstant4ui(int index, const unsigned int *constant) const;
+    void                    SetConstant1ui(const char *name, const unsigned int constant) const;
+    void                    SetConstant2ui(const char *name, const unsigned int *constant) const;
+    void                    SetConstant3ui(const char *name, const unsigned int *constant) const;
+    void                    SetConstant4ui(const char *name, const unsigned int *constant) const;
+
                             /// Sets constant of float type.
     void                    SetConstant1f(int index, const float constant) const;
     void                    SetConstant2f(int index, const float *constant) const;

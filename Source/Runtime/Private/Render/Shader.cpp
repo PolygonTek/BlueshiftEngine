@@ -1274,6 +1274,22 @@ void Shader::SetConstant4i(int index, const int *constant) const {
     rhi.SetShaderConstant4i(index, constant);
 }
 
+void Shader::SetConstant1ui(int index, const unsigned int constant) const {
+    rhi.SetShaderConstant1ui(index, constant);
+}
+
+void Shader::SetConstant2ui(int index, const unsigned int *constant) const {
+    rhi.SetShaderConstant2ui(index, constant);
+}
+
+void Shader::SetConstant3ui(int index, const unsigned int *constant) const {
+    rhi.SetShaderConstant3ui(index, constant);
+}
+
+void Shader::SetConstant4ui(int index, const unsigned int *constant) const {
+    rhi.SetShaderConstant4ui(index, constant);
+}
+
 void Shader::SetConstant1f(int index, float x) const {
     rhi.SetShaderConstant1f(index, x);
 }
@@ -1416,6 +1432,42 @@ void Shader::SetConstant4i(const char *name, const int *constant) const {
         return;
     }
     rhi.SetShaderConstant4i(index, constant);
+}
+
+void Shader::SetConstant1ui(const char *name, unsigned int x) const {
+    int index = rhi.GetShaderConstantIndex(shaderHandle, name);
+    if (index < 0) {
+        //BE_WARNLOG("Shader::SetConstant1ui: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
+        return;
+    }
+    rhi.SetShaderConstant1ui(index, x);
+}
+
+void Shader::SetConstant2ui(const char *name, const unsigned int *constant) const {
+    int index = rhi.GetShaderConstantIndex(shaderHandle, name);
+    if (index < 0) {
+        //BE_WARNLOG("Shader::SetConstant2ui: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
+        return;
+    }
+    rhi.SetShaderConstant2ui(index, constant);
+}
+
+void Shader::SetConstant3ui(const char *name, const unsigned int *constant) const {
+    int index = rhi.GetShaderConstantIndex(shaderHandle, name);
+    if (index < 0) {
+        //BE_WARNLOG("Shader::SetConstant3ui: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
+        return;
+    }
+    rhi.SetShaderConstant3ui(index, constant);
+}
+
+void Shader::SetConstant4ui(const char *name, const unsigned int *constant) const {
+    int index = rhi.GetShaderConstantIndex(shaderHandle, name);
+    if (index < 0) {
+        //BE_WARNLOG("Shader::SetConstant4ui: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
+        return;
+    }
+    rhi.SetShaderConstant4ui(index, constant);
 }
 
 void Shader::SetConstant1f(const char *name, float x) const {

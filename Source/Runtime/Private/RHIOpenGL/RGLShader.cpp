@@ -1055,6 +1055,34 @@ void OpenGLRHI::SetShaderConstantGeneric(int index, bool rowMajor, int count, co
     const GLShader *shader = shaderList[currentContext->state->shaderHandle];
     const GLUniform *uniform = &shader->uniforms[index];
     switch (uniform->type) {
+    case GL_INT:
+    case GL_BOOL:
+        gglUniform1iv(uniform->location, count, (const GLint *)data);
+        break;
+    case GL_INT_VEC2:
+    case GL_BOOL_VEC2:
+        gglUniform2iv(uniform->location, count, (const GLint *)data);
+        break;
+    case GL_INT_VEC3:
+    case GL_BOOL_VEC3:
+        gglUniform3iv(uniform->location, count, (const GLint *)data);
+        break;
+    case GL_INT_VEC4:
+    case GL_BOOL_VEC4:
+        gglUniform4iv(uniform->location, count, (const GLint *)data);
+        break;
+    case GL_UNSIGNED_INT:
+        gglUniform1uiv(uniform->location, count, (const GLuint *)data);
+        break;
+    case GL_UNSIGNED_INT_VEC2:
+        gglUniform2uiv(uniform->location, count, (const GLuint *)data);
+        break;
+    case GL_UNSIGNED_INT_VEC3:
+        gglUniform3uiv(uniform->location, count, (const GLuint *)data);
+        break;
+    case GL_UNSIGNED_INT_VEC4:
+        gglUniform4uiv(uniform->location, count, (const GLuint *)data);
+        break;
     case GL_FLOAT:
         gglUniform1fv(uniform->location, count, (const GLfloat *)data);
         break;
@@ -1066,26 +1094,6 @@ void OpenGLRHI::SetShaderConstantGeneric(int index, bool rowMajor, int count, co
         break;
     case GL_FLOAT_VEC4:
         gglUniform4fv(uniform->location, count, (const GLfloat *)data);
-        break;
-    case GL_INT:
-    case GL_UNSIGNED_INT:
-    case GL_BOOL:
-        gglUniform1iv(uniform->location, count, (const GLint *)data);
-        break;
-    case GL_INT_VEC2:
-    case GL_UNSIGNED_INT_VEC2:
-    case GL_BOOL_VEC2:
-        gglUniform2iv(uniform->location, count, (const GLint *)data);
-        break;
-    case GL_INT_VEC3:
-    case GL_UNSIGNED_INT_VEC3:
-    case GL_BOOL_VEC3:
-        gglUniform3iv(uniform->location, count, (const GLint *)data);
-        break;
-    case GL_INT_VEC4:
-    case GL_UNSIGNED_INT_VEC4:
-    case GL_BOOL_VEC4:
-        gglUniform4iv(uniform->location, count, (const GLint *)data);
         break;
     case GL_FLOAT_MAT2:
         gglUniformMatrix2fv(uniform->location, count, rowMajor, (const GLfloat *)data);
@@ -1115,6 +1123,22 @@ void OpenGLRHI::SetShaderConstant3i(int index, const int *constant) const {
 }
 
 void OpenGLRHI::SetShaderConstant4i(int index, const int *constant) const {
+    SetShaderConstantGeneric(index, false, 1, constant);
+}
+
+void OpenGLRHI::SetShaderConstant1ui(int index, const unsigned int constant) const {
+    SetShaderConstantGeneric(index, false, 1, &constant);
+}
+
+void OpenGLRHI::SetShaderConstant2ui(int index, const unsigned int *constant) const {
+    SetShaderConstantGeneric(index, false, 1, constant);
+}
+
+void OpenGLRHI::SetShaderConstant3ui(int index, const unsigned int *constant) const {
+    SetShaderConstantGeneric(index, false, 1, constant);
+}
+
+void OpenGLRHI::SetShaderConstant4ui(int index, const unsigned int *constant) const {
     SetShaderConstantGeneric(index, false, 1, constant);
 }
 

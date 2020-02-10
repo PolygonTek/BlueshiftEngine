@@ -215,6 +215,12 @@ public:
     void                    SetShaderConstant3i(int index, const int *constant) const;
     void                    SetShaderConstant4i(int index, const int *constant) const;
 
+                            /// Sets the value of unsigned integer constant variable for the current bound shader.
+    void                    SetShaderConstant1ui(int index, const unsigned int constant) const;
+    void                    SetShaderConstant2ui(int index, const unsigned int *constant) const;
+    void                    SetShaderConstant3ui(int index, const unsigned int *constant) const;
+    void                    SetShaderConstant4ui(int index, const unsigned int *constant) const;
+
                             /// Sets the value of float constant variable for the current bound shader.
     void                    SetShaderConstant1f(int index, const float constant) const;
     void                    SetShaderConstant2f(int index, const float *constant) const;
