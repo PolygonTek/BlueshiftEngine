@@ -94,6 +94,10 @@ void Serializable::Deserialize(const Json::Value &node) {
     for (int propertyIndex = 0; propertyIndex < propertyInfoList.Count(); propertyIndex++) {
         const PropertyInfo &propertyInfo = propertyInfoList[propertyIndex];
 
+        if (propertyInfo.GetFlags() & PropertyInfo::Flag::SkipSerialization) {
+            continue;
+        }
+
         if (propertyInfo.GetFlags() & PropertyInfo::Flag::ReadOnly) {
             continue;
         }
