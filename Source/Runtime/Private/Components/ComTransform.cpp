@@ -29,9 +29,9 @@ END_EVENTS
 void ComTransform::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("origin", "Origin", Vec3, GetLocalOrigin, SetLocalOrigin, Vec3::zero,
         "xyz position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("rotation", "Rotation", Quat, GetLocalRotation, SetLocalRotation, Quat::identity,
-        "", PropertyInfo::Flag::Empty);
     REGISTER_PROPERTY("localEulerAnglesHint", "LocalEulerAnglesHint", Angles, localEulerAnglesHint, Angles::zero,
+        "", PropertyInfo::Flag::Empty);
+    REGISTER_ACCESSOR_PROPERTY("rotation", "Rotation", Quat, GetLocalRotation, SetLocalRotation, Quat::identity,
         "", PropertyInfo::Flag::Empty);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero,
         "roll, pitch, yaw in degree in local space", PropertyInfo::Flag::Editor | PropertyInfo::Flag::SkipSerialization);
