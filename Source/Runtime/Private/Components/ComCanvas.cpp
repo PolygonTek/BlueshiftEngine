@@ -117,10 +117,10 @@ void ComCanvas::DrawGizmos(const RenderCamera *camera, bool selected, bool selec
 
         renderWorld->SetDebugColor(Color4(0.75f, 0.75f, 0.75f, 0.75f), Color4::zero);
 
-        renderWorld->DebugLine(worldCorners[0], worldCorners[1]);
-        renderWorld->DebugLine(worldCorners[1], worldCorners[2]);
-        renderWorld->DebugLine(worldCorners[2], worldCorners[3]);
-        renderWorld->DebugLine(worldCorners[3], worldCorners[0]);
+        renderWorld->DebugLine(worldCorners[0], worldCorners[1], 1.0f, true);
+        renderWorld->DebugLine(worldCorners[1], worldCorners[2], 1.0f, true);
+        renderWorld->DebugLine(worldCorners[2], worldCorners[3], 1.0f, true);
+        renderWorld->DebugLine(worldCorners[3], worldCorners[0], 1.0f, true);
     }
 }
 #endif

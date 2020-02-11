@@ -399,10 +399,10 @@ void ComRectTransform::DrawGizmos(const RenderCamera *camera, bool selected, boo
 
         renderWorld->SetDebugColor(Color4(1.0f, 1.0f, 1.0f, 1.0f), Color4::zero);
 
-        renderWorld->DebugLine(worldCorners[0], worldCorners[1]);
-        renderWorld->DebugLine(worldCorners[1], worldCorners[2]);
-        renderWorld->DebugLine(worldCorners[2], worldCorners[3]);
-        renderWorld->DebugLine(worldCorners[3], worldCorners[0]);
+        renderWorld->DebugLine(worldCorners[0], worldCorners[1], 1.0f, true);
+        renderWorld->DebugLine(worldCorners[1], worldCorners[2], 1.0f, true);
+        renderWorld->DebugLine(worldCorners[2], worldCorners[3], 1.0f, true);
+        renderWorld->DebugLine(worldCorners[3], worldCorners[0], 1.0f, true);
 
         ComTransform *parentTransform = GetParent();
         while (parentTransform) {
@@ -414,10 +414,10 @@ void ComRectTransform::DrawGizmos(const RenderCamera *camera, bool selected, boo
 
                 renderWorld->SetDebugColor(Color4(0.0f, 1.0f, 0.75f, 1.0f), Color4::zero);
 
-                renderWorld->DebugLine(parentWorldCorners[0], parentWorldCorners[1]);
-                renderWorld->DebugLine(parentWorldCorners[1], parentWorldCorners[2]);
-                renderWorld->DebugLine(parentWorldCorners[2], parentWorldCorners[3]);
-                renderWorld->DebugLine(parentWorldCorners[3], parentWorldCorners[0]);
+                renderWorld->DebugLine(parentWorldCorners[0], parentWorldCorners[1], 1.0f, true);
+                renderWorld->DebugLine(parentWorldCorners[1], parentWorldCorners[2], 1.0f, true);
+                renderWorld->DebugLine(parentWorldCorners[2], parentWorldCorners[3], 1.0f, true);
+                renderWorld->DebugLine(parentWorldCorners[3], parentWorldCorners[0], 1.0f, true);
                 break;
             }
 
