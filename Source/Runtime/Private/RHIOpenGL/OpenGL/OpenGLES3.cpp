@@ -384,7 +384,7 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSR
         if (glType)     *glType = GL_FLOAT;
         if (glInternal) *glInternal = GL_RGBA32F;
         return true;
-    case Image::Format::RGBA_DXT1:
+    case Image::Format::DXT1:
 #ifdef GL_EXT_texture_compression_s3tc
         if (!gglext._GL_EXT_texture_compression_s3tc) return false;
         if (glFormat)   *glFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
@@ -394,7 +394,7 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSR
 #else
         return false;
 #endif
-    case Image::Format::RGBA_DXT3:
+    case Image::Format::DXT3:
 #ifdef GL_EXT_texture_compression_s3tc
         if (!gglext._GL_EXT_texture_compression_s3tc) return false;
         if (glFormat)   *glFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
@@ -404,7 +404,7 @@ bool OpenGLES3::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSR
 #else
         return false;
 #endif
-    case Image::Format::RGBA_DXT5:
+    case Image::Format::DXT5:
     case Image::Format::XGBR_DXT5:
 #ifdef GL_EXT_texture_compression_s3tc
         if (!gglext._GL_EXT_texture_compression_s3tc) return false;
@@ -636,9 +636,9 @@ Image::Format::Enum OpenGLES3::ToUncompressedImageFormat(Image::Format::Enum inF
     case Image::Format::RGB_ATC:
         outFormat = Image::Format::RGB_8_8_8;
         break;
-    case Image::Format::RGBA_DXT1:
-    case Image::Format::RGBA_DXT3:
-    case Image::Format::RGBA_DXT5:
+    case Image::Format::DXT1:
+    case Image::Format::DXT3:
+    case Image::Format::DXT5:
     case Image::Format::RGBA_PVRTC_2BPPV1:
     case Image::Format::RGBA_PVRTC_4BPPV1:
     case Image::Format::RGBA_PVRTC_2BPPV2:

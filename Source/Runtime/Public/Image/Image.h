@@ -79,9 +79,9 @@ public:
             RGBE_9_9_9_5,
             RGB_11F_11F_10F,
             // Compressed (DXT) formats
-            RGBA_DXT1,
-            RGBA_DXT3,
-            RGBA_DXT5,
+            DXT1,
+            DXT3,
+            DXT5,
             XGBR_DXT5,
             DXN1,
             DXN2,

@@ -384,17 +384,17 @@ bool OpenGL3::ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB
         if (glType)     *glType = GL_FLOAT;
         if (glInternal) *glInternal = GL_RGBA32F;
         return true;
-    case Image::Format::RGBA_DXT1:
+    case Image::Format::DXT1:
         if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT : GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT : GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
         return true;
-    case Image::Format::RGBA_DXT3:
+    case Image::Format::DXT3:
         if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT : GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
         if (glType)     *glType = 0;
         if (glInternal) *glInternal = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT : GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
         return true;
-    case Image::Format::RGBA_DXT5:
+    case Image::Format::DXT5:
     case Image::Format::XGBR_DXT5:
         if (glFormat)   *glFormat = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
         if (glType)     *glType = 0;
@@ -462,11 +462,11 @@ Image::Format::Enum OpenGL3::ToCompressedImageFormat(Image::Format::Enum inForma
             outFormat = Image::Format::DXN2;
         } else {
             if (alphaBits <= 1) {
-                outFormat = Image::Format::RGBA_DXT1;
+                outFormat = Image::Format::DXT1;
             } else if (alphaBits <= 4) {
-                outFormat = Image::Format::RGBA_DXT3;
+                outFormat = Image::Format::DXT3;
             } else {
-                outFormat = Image::Format::RGBA_DXT5;
+                outFormat = Image::Format::DXT5;
             }
         }
     }
@@ -483,7 +483,7 @@ Image::Format::Enum OpenGL3::ToUncompressedImageFormat(Image::Format::Enum inFor
     Image::Format::Enum outFormat;
 
     switch (inFormat) {
-    case Image::Format::RGBA_DXT1:
+    case Image::Format::DXT1:
         outFormat = Image::Format::RGBA_5_5_5_1;
         break;
     case Image::Format::RGB_PVRTC_2BPPV1:
@@ -494,8 +494,8 @@ Image::Format::Enum OpenGL3::ToUncompressedImageFormat(Image::Format::Enum inFor
     case Image::Format::SignedRG_11_11_EAC:
         outFormat = Image::Format::RGB_8_8_8;
         break;
-    case Image::Format::RGBA_DXT3:
-    case Image::Format::RGBA_DXT5:
+    case Image::Format::DXT3:
+    case Image::Format::DXT5:
     case Image::Format::RGBA_PVRTC_2BPPV1:
     case Image::Format::RGBA_PVRTC_2BPPV2:
     case Image::Format::RGBA_PVRTC_4BPPV1:

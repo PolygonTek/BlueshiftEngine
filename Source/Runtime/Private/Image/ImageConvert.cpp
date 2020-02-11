@@ -25,18 +25,18 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
     assert(dstImage.GetPixels());
 
     switch (srcImage.GetFormat()) {
-    case Image::Format::RGBA_DXT1:
+    case Image::Format::DXT1:
         DecompressDXT1(srcImage, dstImage);
         break;
-    case Image::Format::RGBA_DXT3:
+    case Image::Format::DXT3:
         DecompressDXT3(srcImage, dstImage);
         break;
-    case Image::Format::RGBA_DXT5:
+    case Image::Format::DXT5:
         DecompressDXT5(srcImage, dstImage);
         break;
     case Image::Format::XGBR_DXT5:
         DecompressDXT5(srcImage, dstImage);
-        BE_WARNLOG("XGBR_DXT5n\n");
+        BE_WARNLOG("DecompressImage: XGBR_DXT5 need to swap channels\n");
         break;
     case Image::Format::DXN2:
         DecompressDXN2(srcImage, dstImage);
@@ -66,12 +66,12 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
     case Image::Format::R_11_EAC:
         DecompressEAC_R11(srcImage, dstImage, false);
         break;
+    case Image::Format::SignedR_11_EAC:
+        DecompressEAC_R11(srcImage, dstImage, true);
+        break;
     case Image::Format::RG_11_11_EAC:
         // Consider RG_11_11_EAC format image as normal values.
         DecompressEAC_RG11(srcImage, dstImage, false, true);
-        break;
-    case Image::Format::SignedR_11_EAC:
-        DecompressEAC_R11(srcImage, dstImage, true);
         break;
     case Image::Format::SignedRG_11_11_EAC:
         // Consider SignedRG_11_11_EAC format image as normal values.
@@ -91,13 +91,13 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
     //uint64_t startClocks = rdtsc();
 
     switch (dstImage.GetFormat()) {
-    case Image::Format::RGBA_DXT1:
+    case Image::Format::DXT1:
         CompressDXT1(srcImage, dstImage, compressionQuality);
         break;
-    case Image::Format::RGBA_DXT3:
+    case Image::Format::DXT3:
         CompressDXT3(srcImage, dstImage, compressionQuality);
         break;
-    case Image::Format::RGBA_DXT5:
+    case Image::Format::DXT5:
         CompressDXT5(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::DXN2:
@@ -118,11 +118,11 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
     case Image::Format::R_11_EAC:
         CompressEAC_R11(srcImage, dstImage, compressionQuality);
         break;
-    case Image::Format::RG_11_11_EAC:
-        CompressEAC_RG11(srcImage, dstImage, compressionQuality);
-        break;
     case Image::Format::SignedR_11_EAC:
         CompressEAC_Signed_R11(srcImage, dstImage, compressionQuality);
+        break;
+    case Image::Format::RG_11_11_EAC:
+        CompressEAC_RG11(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::SignedRG_11_11_EAC:
         CompressEAC_Signed_RG11(srcImage, dstImage, compressionQuality);

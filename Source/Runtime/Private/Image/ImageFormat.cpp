@@ -2020,9 +2020,9 @@ const ImageFormatInfo *GetImageFormatInfo(Image::Format::Enum imageFormat) {
 
 bool CompressedFormatMinDimensions(Image::Format::Enum imageFormat, int &minWidth, int &minHeight) {
     switch (imageFormat) {
-    case Image::Format::RGBA_DXT1:
-    case Image::Format::RGBA_DXT3:
-    case Image::Format::RGBA_DXT5:
+    case Image::Format::DXT1:
+    case Image::Format::DXT3:
+    case Image::Format::DXT5:
     case Image::Format::XGBR_DXT5:
     case Image::Format::DXN1:
     case Image::Format::DXN2:
@@ -2073,9 +2073,9 @@ bool CompressedFormatMinDimensions(Image::Format::Enum imageFormat, int &minWidt
 
 bool CompressedFormatBlockDimensions(Image::Format::Enum imageFormat, int &blockWidth, int &blockHeight) {
     switch (imageFormat) {
-    case Image::Format::RGBA_DXT1:
-    case Image::Format::RGBA_DXT3:
-    case Image::Format::RGBA_DXT5:
+    case Image::Format::DXT1:
+    case Image::Format::DXT3:
+    case Image::Format::DXT5:
     case Image::Format::XGBR_DXT5:
     case Image::Format::DXN1:
     case Image::Format::DXN2:

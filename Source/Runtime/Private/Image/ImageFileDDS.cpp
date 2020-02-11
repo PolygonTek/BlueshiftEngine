@@ -368,9 +368,9 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
         case DX10_FORMAT_R9G9B9E5_SHAREDEXP: format = Format::RGBE_9_9_9_5; break;
         case DX10_FORMAT_R11G11B10_FLOAT: format = Format::RGB_11F_11F_10F; break;
         case DX10_FORMAT_R10G10B10A2_UNORM: format = Format::RGBA_10_10_10_2; break;
-        case DX10_FORMAT_BC1_UNORM: format = Format::RGBA_DXT1; break;
-        case DX10_FORMAT_BC2_UNORM: format = Format::RGBA_DXT3; break;
-        case DX10_FORMAT_BC3_UNORM: format = Format::RGBA_DXT5; break;
+        case DX10_FORMAT_BC1_UNORM: format = Format::DXT1; break;
+        case DX10_FORMAT_BC2_UNORM: format = Format::DXT3; break;
+        case DX10_FORMAT_BC3_UNORM: format = Format::DXT5; break;
         case DX10_FORMAT_BC4_UNORM: format = Format::DXN1; break;
         case DX10_FORMAT_BC5_UNORM: format = Format::DXN2; break;
         default:
@@ -534,16 +534,16 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
             this->format = Format::RGBA_32F_32F_32F_32F;
             break;
         case DDS_FORMAT_DXT1:
-            this->format = Format::RGBA_DXT1;
+            this->format = Format::DXT1;
             break;
         case DDS_FORMAT_DXT3:
-            this->format = Format::RGBA_DXT3;
+            this->format = Format::DXT3;
             break;
         case DDS_FORMAT_DXT5:
             if (header->ddsPixelFormat.RGBBitCount == MAKE_FOURCC('x', 'G', 'B', 'R')) {
                 this->format = Format::XGBR_DXT5;
             } else {
-                this->format = Format::RGBA_DXT5;
+                this->format = Format::DXT5;
             }
             break;
         case MAKE_FOURCC('R', 'X', 'G', 'B'):   // doom3 RXGB
@@ -875,15 +875,15 @@ bool Image::WriteDDS(const char *filename) const {
         header.ddsPixelFormat.BBitMask = 0x00000000;
         header.ddsPixelFormat.ABitMask = 0x000000FF;
         break;
-    case Format::RGBA_DXT1:
+    case Format::DXT1:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', 'T', '1');
         break;
-    case Format::RGBA_DXT3:
+    case Format::DXT3:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', 'T', '3');
         break;
-    case Format::RGBA_DXT5:
+    case Format::DXT5:
         header.ddsPixelFormat.flags = DDSPF_FOURCC;
         header.ddsPixelFormat.fourCC = MAKE_FOURCC('D', 'X', 'T', '5');
         break;
