@@ -86,7 +86,7 @@ void ComScript::OnInactive() {
 void ComScript::Init() {
     Component::Init();
 
-    // Mark as initialized
+    // Mark as initialized.
     SetInitialized(true);
 }
 
@@ -112,7 +112,7 @@ void ComScript::GetPropertyInfoList(Array<PropertyInfo> &propInfos) const {
 }
 
 void ComScript::Deserialize(const Json::Value &in) {
-    // Get the script GUID in JSON value
+    // Get the script GUID in JSON value.
     const Str scriptGuidString = in.get("script", Guid::zero.ToString()).asCString();
     const Guid scriptGuid = Guid::FromString(scriptGuidString);
 
@@ -129,7 +129,7 @@ void ComScript::Deserialize(const Json::Value &in) {
 
 void ComScript::ChangeScript(const Guid &scriptGuid) {
 #if WITH_EDITOR
-    // Disconnect with previously connected script asset
+    // Disconnect with previously connected script asset.
     if (scriptAsset) {
         scriptAsset->Disconnect(&Asset::SIG_Reloaded, this);
         scriptAsset = nullptr;
@@ -156,33 +156,35 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
         return;
     }
 
-    // Sandbox name is same as component GUID in string
+    // Sandbox name is same as component GUID in string.
     sandboxName = GetGuid().ToString();
 
     const Str scriptPath = resourceGuidMapper.Get(scriptGuid);
-    char *data;
-    size_t size = fileSystem.LoadFile(scriptPath, true, (void **)&data);
-    if (!data) {
+    char *text;
+    size_t size = fileSystem.LoadFile(scriptPath, true, (void **)&text);
+    if (!text) {
         sandboxName = "";
         BE_WARNLOG("ComScript::ChangeScript: Failed to load script '%s'\n", scriptPath.c_str());
         return;
     }
 
-    // Load a script with sandboxed on current Lua state
-    if (!state->LoadBuffer(scriptPath.c_str(), data, size, sandboxName)) {
+    ParsePropertyNames(scriptPath, text);
+
+    // Load a script with sandboxed on current Lua state.
+    if (!state->LoadBuffer(scriptPath.c_str(), text, size, sandboxName)) {
         hasError = true;
     }
 
-    fileSystem.FreeFile(data);
+    fileSystem.FreeFile(text);
 
     if (!hasError) {
-        // Get the state of current loaded script
+        // Get the state of current loaded script.
         sandbox = (*state)[sandboxName];
 
-        // Run this script
+        // Run this script.
         state->Run();
 
-        // Check execute modes
+        // Check execute modes.
         if (sandbox["execute_in_edit_mode"].IsValid()) {
             executeInEditMode = sandbox["execute_in_edit_mode"];
         } else {
@@ -196,14 +198,14 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
         fieldInfos.Clear();
         fieldGuids.Clear();
 
-        // Get the script property informations with this sandboxed script
-        if (sandbox["properties"].IsTable() && sandbox["property_names"].IsTable()) {
+        // Get the script property informations with this sandboxed script.
+        if (sandbox["properties"].IsTable() && propertyNames.Count() > 0) {
             InitScriptFields();
         }
     }
 
 #if WITH_EDITOR
-    // Need to script asset to be reloaded in editor
+    // Need to script asset to be reloaded in editor.
     Object *scriptObject = Asset::FindInstance(scriptGuid);
     if (scriptObject) {
         scriptAsset = scriptObject->Cast<Asset>();
@@ -215,10 +217,62 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
 #endif
 }
 
+bool ComScript::ParsePropertyNames(const Str &textName, const Str &text) {
+    static const char *propertiesMarker = "--[properties]--";
+
+    propertyNames.Clear();
+
+    int index = text.Find(propertiesMarker);
+    if (index == -1) {
+        return false;
+    }
+
+    index += Str::Length(propertiesMarker);
+    Lexer lexer(&text[index], text.Length() - index, textName);
+
+    if (!lexer.ExpectTokenString("properties")) {
+        return false;
+    }
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::Assign)) {
+        return false;
+    }
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
+        return false;
+    }
+
+    Str token;
+
+    while (lexer.ReadToken(&token, true)) {
+        if (token.IsEmpty()) {
+            return false;
+        }
+
+        if (lexer.GetPunctuationType() == Lexer::PuncType::BraceClose) {
+            break;
+        }
+
+        propertyNames.Append(token);
+
+        if (!lexer.ExpectPunctuation(Lexer::PuncType::Assign)) {
+            return false;
+        }
+
+        lexer.SkipBracedSection();
+
+        lexer.ReadToken(&token, true);
+        if (token == ",") {
+            continue;
+        }
+
+        lexer.UnreadToken(&token);
+    }
+
+    return true;
+}
+
 void ComScript::InitScriptFields() {
-    // Set zero values of object script properties
-    auto fieldGuidEnumerator = [this](LuaCpp::Selector &selector) {
-        const char *name = selector;
+    // Set zero values of object script properties.
+    auto fieldGuidEnumerator = [this](const char *name) {
         auto prop = sandbox["properties"][name];
         if (!prop.IsValid()) {
             return;
@@ -232,9 +286,8 @@ void ComScript::InitScriptFields() {
         }
     };
 
-    // Create all the property info
-    auto fieldInfoEnumerator = [this](LuaCpp::Selector &selector) {
-        const char *name = selector;
+    // Create all the property info.
+    auto fieldInfoEnumerator = [this](const char *name) {
         auto prop = sandbox["properties"][name];
         if (!prop.IsValid()) {
             return;
@@ -688,8 +741,10 @@ void ComScript::InitScriptFields() {
         }
     };
 
-    sandbox["property_names"].Enumerate(fieldGuidEnumerator);
-    sandbox["property_names"].Enumerate(fieldInfoEnumerator);
+    for (int i = 0; i < propertyNames.Count(); i++) {
+        fieldGuidEnumerator(propertyNames[i]);
+        fieldInfoEnumerator(propertyNames[i]);
+    }
 }
 
 void ComScript::ClearFunctionMap() {
@@ -1011,7 +1066,7 @@ void ComScript::ScriptReloaded() {
     Deserialize(value);
 
 #if WITH_EDITOR
-    // Update editor UI
+    // Update editor UI.
     EmitSignal(&Serializable::SIG_PropertyInfoUpdated, 1);
 #endif
 }
@@ -1027,7 +1082,7 @@ void ComScript::SetScriptGuid(const Guid &guid) {
 
 #if WITH_EDITOR
     if (IsInitialized()) {
-        // Update editor UI
+        // Update editor UI.
         EmitSignal(&Serializable::SIG_PropertyInfoUpdated, 1);
     }
 #endif
