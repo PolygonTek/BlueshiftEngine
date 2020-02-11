@@ -205,7 +205,7 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
                 // Convert range [0, pi] to [0.0, 1.0].
                 float srcT = Math::Fract(theta * Math::InvPi);
 
-                Color4 color = equirectangularImage.Sample2D(Vec2(srcS, srcT), Image::SampleWrapMode::Repeat, Image::SampleWrapMode::Clamp);
+                Color4 color = equirectangularImage.Sample2D(Vec2(srcS, srcT), Image::SampleWrapMode::Repeat, Image::SampleWrapMode::Clamp, Image::SampleFilter::Bilinear);
 
                 // Convert color from float format to destination format.
                 formatInfo->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1);
@@ -249,7 +249,7 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
             Vec3 dir;
             dir.SetFromSpherical(1.0f, theta, phi);
 
-            Color4 color = cubeImage.SampleCube(dir);
+            Color4 color = cubeImage.SampleCube(dir, Image::SampleFilter::Bilinear);
 
             // Convert color from float format to destination format.
             formatInfo->packRGBA32F((const byte *)&color, &dst[(dstY * width + dstX) * BytesPerPixel()], 1);
@@ -331,34 +331,64 @@ void Image::Clear() {
     }
 }
 
-Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWrapMode::Enum wrapModeT, int level) const {
-    if (IsCompressed()) {
-        assert(0);
-        return Color4::zero;
-    }
-
+Color4 Image::Sample2DNearest(const byte *src, const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWrapMode::Enum wrapModeT) const {
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
-    int numComponents = NumComponents();
+
     int bpp = BytesPerPixel();
     int pitch = width * bpp;
 
-    float x = WrapCoord(st[0] * width, (float)(width - 1), wrapModeS);
+    float x = WrapCoord(st[0] * (width - 1), (float)(width - 1), wrapModeS);
+    float y = WrapCoord(st[1] * (height - 1), (float)(height - 1), wrapModeT);
+
+    int iX = Math::Round(x);
+    int iY = Math::Round(y);
+
+    Color4 outputColor;
+
+    if (NeedFloatConversion()) {
+        ALIGN_AS16 float rgba32f[4];
+
+        formatInfo->unpackRGBA32F(&src[iY * pitch + iX * bpp], (byte *)rgba32f, 1);
+
+        for (int i = 0; i < 4; i++) {
+            outputColor[i] = rgba32f[i];
+        }
+    } else {
+        ALIGN_AS16 byte rgba8888[4];
+
+        formatInfo->unpackRGBA8888(&src[iY * pitch + iX * bpp], rgba8888, 1);
+
+        for (int i = 0; i < 4; i++) {
+            outputColor[i] = rgba8888[i] / 255.0f;
+        }
+    }
+
+    return outputColor;
+}
+
+Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWrapMode::Enum wrapModeT) const {
+    const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
+
+    int bpp = BytesPerPixel();
+    int pitch = width * bpp;
+
+    float x = WrapCoord(st[0] * (width - 1), (float)(width - 1), wrapModeS);
+    float y = WrapCoord(st[1] * (height - 1), (float)(height - 1), wrapModeT);
+
     int iX0 = (int)x;
     int iX1 = WrapCoord(iX0 + 1, width - 1, wrapModeS);
     float fracX = x - (float)iX0;
 
-    float y = WrapCoord(st[1] * height, (float)(height - 1), wrapModeT);
     int iY0 = (int)y;
     int iY1 = WrapCoord(iY0 + 1, height - 1, wrapModeT);
     float fracY = y - (float)iY0;
 
-    const byte *src = GetPixels(level);
     const byte *srcY0 = &src[iY0 * pitch];
     const byte *srcY1 = &src[iY1 * pitch];
 
-    Color4 color = Color4(0, 0, 0, 1);
+    Color4 outputColor;
 
-    if (formatInfo->type & FormatType::Float) {
+    if (NeedFloatConversion()) {
         // [0] [1]
         // [2] [3]
         ALIGN_AS16 float rgba32f[4][4];
@@ -368,11 +398,11 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWra
         formatInfo->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)rgba32f[2], 1);
         formatInfo->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3], 1);
 
-        for (int i = 0; i < numComponents; i++) {
+        for (int i = 0; i < 4; i++) {
             float a = Math::Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
             float b = Math::Lerp(rgba32f[2][i], rgba32f[3][i], fracX);
 
-            color[i] = Math::Lerp(a, b, fracY);
+            outputColor[i] = Math::Lerp(a, b, fracY);
         }
     } else {
         // [0] [1]
@@ -384,82 +414,58 @@ Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWra
         formatInfo->unpackRGBA8888(&srcY1[iX0 * bpp], rgba8888[2], 1);
         formatInfo->unpackRGBA8888(&srcY1[iX1 * bpp], rgba8888[3], 1);
 
-        for (int i = 0; i < numComponents; i++) {
+        for (int i = 0; i < 4; i++) {
             byte a = Math::Lerp(rgba8888[0][i], rgba8888[1][i], fracX);
             byte b = Math::Lerp(rgba8888[2][i], rgba8888[3][i], fracX);
 
-            color[i] = Math::Lerp(a, b, fracY) / 255.0f;
+            outputColor[i] = Math::Lerp(a, b, fracY) / 255.0f;
         }
     }
 
-    return color;
+    return outputColor;
 }
 
-Color4 Image::SampleCube(const Vec3 &str, int level) const {
+Color4 Image::Sample2D(const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWrapMode::Enum wrapModeT, SampleFilter::Enum filter, int level) const {
     if (IsCompressed()) {
         assert(0);
         return Color4::zero;
     }
-    
-    const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
-    int numComponents = NumComponents();
-    int bpp = BytesPerPixel();
-    int pitch = width * bpp;
 
-    float x, y;
-    CubeMapFace::Enum cubeMapFace = CubeMapToFaceCoords(str, x, y);
-    x *= width;
-    y *= height;
+    Color4 outputColor = Color4(0, 0, 0, 1);
 
-    int iX0 = (int)x;
-    int iX1 = Min(iX0 + 1, width - 1);
-    float fracX = x - (float)iX0;
+    const byte *src = GetPixels(level);
 
-    int iY0 = (int)y;
-    int iY1 = Min(iY0 + 1, height - 1);
-    float fracY = y - (float)iY0;
-
-    const byte *src = GetPixels(level, cubeMapFace);
-    const byte *srcY0 = &src[iY0 * pitch];
-    const byte *srcY1 = &src[iY1 * pitch];
-
-    Color4 color = Color4(0, 0, 0, 1);
-
-    if (formatInfo->type & FormatType::Float) {
-        // [0] [1]
-        // [2] [3]
-        ALIGN_AS16 float rgba32f[4][4];
-
-        formatInfo->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)rgba32f[0], 1);
-        formatInfo->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)rgba32f[1], 1);
-        formatInfo->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)rgba32f[2], 1);
-        formatInfo->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3], 1);
-
-        for (int i = 0; i < numComponents; i++) {
-            float a = Math::Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
-            float b = Math::Lerp(rgba32f[2][i], rgba32f[3][i], fracX);
-
-            color[i] = Math::Lerp(a, b, fracY);
-        }
-    } else {
-        // [0] [1]
-        // [2] [3]
-        ALIGN_AS16 byte rgba8888[4][4];
-
-        formatInfo->unpackRGBA8888(&srcY0[iX0 * bpp], rgba8888[0], 1);
-        formatInfo->unpackRGBA8888(&srcY0[iX1 * bpp], rgba8888[1], 1);
-        formatInfo->unpackRGBA8888(&srcY1[iX0 * bpp], rgba8888[2], 1);
-        formatInfo->unpackRGBA8888(&srcY1[iX1 * bpp], rgba8888[3], 1);
-
-        for (int i = 0; i < numComponents; i++) {
-            byte a = Math::Lerp(rgba8888[0][i], rgba8888[1][i], fracX);
-            byte b = Math::Lerp(rgba8888[2][i], rgba8888[3][i], fracX);
-
-            color[i] = Math::Lerp(a, b, fracY) / 255.0f;
-        }
+    if (filter == SampleFilter::Nearest) {
+        outputColor = Sample2DNearest(src, st, wrapModeS, wrapModeT);
+    } else if (filter == SampleFilter::Bilinear) {
+        outputColor = Sample2DBilinear(src, st, wrapModeS, wrapModeT);
     }
 
-    return color;
+    return outputColor;
+}
+
+Color4 Image::SampleCube(const Vec3 &str, SampleFilter::Enum filter, int level) const {
+    if (IsCompressed()) {
+        assert(0);
+        return Color4::zero;
+    }
+
+    Color4 outputColor = Color4(0, 0, 0, 1);
+
+    Vec2 st;
+    CubeMapFace::Enum cubeMapFace = CubeMapToFaceCoords(str, st[0], st[1]);
+    st[0] *= width;
+    st[1] *= height;
+
+    const byte *src = GetPixels(level, cubeMapFace);
+
+    if (filter == SampleFilter::Nearest) {
+        outputColor = Sample2DNearest(src, st, SampleWrapMode::Clamp, SampleWrapMode::Clamp);
+    } else if (filter == SampleFilter::Bilinear) {
+        outputColor = Sample2DBilinear(src, st, SampleWrapMode::Clamp, SampleWrapMode::Clamp);
+    }
+
+    return outputColor;
 }
 
 Vec3 Image::FaceToCubeMapCoords(CubeMapFace::Enum cubeMapFace, float s, float t) {
@@ -475,12 +481,12 @@ Vec3 Image::FaceToCubeMapCoords(CubeMapFace::Enum cubeMapFace, float s, float t)
     case CubeMapFace::PositiveZ: glCubeMapCoords = Vec3(+sc, -tc, +1.0f); break; // +X direction in z-up axis
     case CubeMapFace::NegativeZ: glCubeMapCoords = Vec3(-sc, -tc, -1.0f); break; // -X direction in z-up axis
     }
-    // Convert cubemap coordinates from GL axis to z-up axis
+    // Convert cubemap coordinates from GL axis to z-up axis.
     return Vec3(glCubeMapCoords.z, glCubeMapCoords.x, glCubeMapCoords.y);
 }
 
 Image::CubeMapFace::Enum Image::CubeMapToFaceCoords(const Vec3 &cubeMapCoords, float &s, float &t) {
-    // Convert cubemap coordinates from z-up axis to GL axis
+    // Convert cubemap coordinates from z-up axis to GL axis.
     Vec3 glCubeMapCoords = Vec3(cubeMapCoords.y, cubeMapCoords.z, cubeMapCoords.x);
 
     int faceIndex = glCubeMapCoords.Abs().MaxComponentIndex();

@@ -166,6 +166,13 @@ public:
         };
     };
 
+    struct SampleFilter {
+        enum Enum {
+            Nearest,
+            Bilinear
+        };
+    };
+
     /// Image resample filter
     struct ResampleFilter {
         enum Enum {
@@ -272,10 +279,10 @@ public:
                         /// Returns pixel data pointer with the given mip level and slice index.
     byte *              GetPixels(int level, int sliceIndex) const;
 
-                        /// Returns Color4 sample with the given 2D coordinates.
-    Color4              Sample2D(const Vec2 &st, SampleWrapMode::Enum wrapModeS = SampleWrapMode::Clamp, SampleWrapMode::Enum wrapModeT = SampleWrapMode::Clamp, int level = 0) const;
-                        /// Returns Color4 sample with the given cubemap coordinates.
-    Color4              SampleCube(const Vec3 &str, int level = 0) const;
+                        /// Returns linearly interpolated Color4 sample with the given 2D coordinates.
+    Color4              Sample2D(const Vec2 &st, SampleWrapMode::Enum wrapModeS = SampleWrapMode::Clamp, SampleWrapMode::Enum wrapModeT = SampleWrapMode::Clamp, SampleFilter::Enum filter = SampleFilter::Bilinear, int level = 0) const;
+                        /// Returns linearly interpolated Color4 sample with the given cubemap coordinates.
+    Color4              SampleCube(const Vec3 &str, SampleFilter::Enum filter = SampleFilter::Bilinear, int level = 0) const;
 
                         /// Returns number of pixels with the given mipmap levels.
     int                 NumPixels(int firstLevel = 0, int numLevels = 1) const;
@@ -344,7 +351,7 @@ public:
                         /// Returns eroded image.
     Image               MakeErosion() const;
 
-                        /// Returns SDK image.
+                        /// Returns SDF image.
     Image               MakeSDF(int spread) const;
 
                         /// Swaps the component red with alpha.
@@ -419,6 +426,9 @@ public:
 private:
     template <typename T>
     T                   WrapCoord(T coord, T maxCoord, SampleWrapMode::Enum wrapMode) const;
+
+    Color4              Sample2DNearest(const byte *src, const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWrapMode::Enum wrapModeT) const;
+    Color4              Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWrapMode::Enum wrapModeT) const;
 
     bool                LoadDDSFromMemory(const char *name, const byte *data, size_t size);
     bool                LoadPVRFromMemory(const char *name, const byte *data, size_t size);
