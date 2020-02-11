@@ -243,6 +243,9 @@ float GuiMesh::DrawChar(float x, float y, float sx, float sy, Font *font, char32
 
     if (drawMode == RenderObject::TextDrawMode::DropShadows || drawMode == RenderObject::TextDrawMode::AddOutlines) {
         FontGlyph *glyph = font->GetGlyph(unicodeChar, Font::RenderMode::Border);
+        if (!glyph) {
+            return 0;
+        }
 
         float charX = x + glyph->offsetX * sx;
         float charY = y + glyph->offsetY * sy;

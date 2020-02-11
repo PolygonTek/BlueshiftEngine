@@ -44,8 +44,6 @@ private:
     FT_Byte *               ftFontFileData = nullptr;       ///< FreeType font flie data.
     FT_Face                 ftFace = nullptr;               ///< FreeType font face object.
     FT_Long                 ftFaceIndex = 0;
-
-    mutable char32_t        lastLoadedChar;                 ///< Last loaded character code.
 };
 
 BE_INLINE FreeTypeFont::~FreeTypeFont() {

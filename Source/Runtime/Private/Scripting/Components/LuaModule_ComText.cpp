@@ -18,7 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-void LuaVM::RegisterTextRendererComponent(LuaCpp::Module &module) {
+void LuaVM::RegisterTextComponent(LuaCpp::Module &module) {
     LuaCpp::Selector _ComText = module["ComText"];
 
     _ComText.SetClass<ComText>(module["ComRenderable"]);
@@ -26,7 +26,7 @@ void LuaVM::RegisterTextRendererComponent(LuaCpp::Module &module) {
         "get_text", &ComText::GetTextCString,
         "set_text", &ComText::SetTextCString);
 
-    _ComText["meta_object"] = _ComText::metaObject;
+    _ComText["meta_object"] = ComText::metaObject;
 }
 
 BE_NAMESPACE_END

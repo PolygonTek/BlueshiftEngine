@@ -87,27 +87,21 @@ bool FreeTypeFont::Load(const char *filename, int fontSize) {
         return false;
     }
 
-    lastLoadedChar = 0;
-
     return true;
 }
 
 // Load glyph into glyph slot to get the bitmap.
 bool FreeTypeFont::LoadGlyph(char32_t unicodeChar) const {
-    if (lastLoadedChar != unicodeChar) {
-        unsigned int glyphIndex = FT_Get_Char_Index(ftFace, unicodeChar);
+    unsigned int glyphIndex = FT_Get_Char_Index(ftFace, unicodeChar);
 
-        if (glyphIndex == 0) {
-            // There is no glyph image for this character.
-            return false;
-        }
+    if (glyphIndex == 0) {
+        // There is no glyph image for this character.
+        return false;
+    }
 
-        // Load glyph into glyph slot.
-        if (FT_Load_Glyph(ftFace, glyphIndex, FT_LOAD_TARGET_NORMAL | FT_LOAD_NO_BITMAP) != 0) {
-            return false;
-        }
-
-        lastLoadedChar = unicodeChar;
+    // Load glyph into glyph slot.
+    if (FT_Load_Glyph(ftFace, glyphIndex, FT_LOAD_TARGET_NORMAL | FT_LOAD_NO_BITMAP) != 0) {
+        return false;
     }
 
     return true;

@@ -140,6 +140,9 @@ Texture *FontFaceFreeType::RenderGlyphToAtlasTexture(char32_t unicodeChar, Font:
 
     if (renderMode == Font::RenderMode::Enum::Border) {
         glyph = freeTypeFont->RenderGlyphWithBorder(FT_RENDER_MODE_NORMAL, 1.5f); // Fixed ?
+        if (!glyph) {
+            return nullptr;
+        }
 
         const FT_BitmapGlyph bitmapGlyph = (FT_BitmapGlyph)glyph;
 
