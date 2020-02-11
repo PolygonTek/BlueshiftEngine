@@ -714,7 +714,7 @@ void Texture::GenerateMipmap() const {
 void Texture::GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, Image &cubeImage) {
     Image faceImages[6];
 
-    Image::GammaSpace::Enum gammaSpace = Image::IsFloatFormat(cubeTexture->GetFormat()) ? Image::GammaSpace::Linear : Image::GammaSpace::sRGB;
+    Image::GammaSpace::Enum gammaSpace = Image::NeedFloatConversion(cubeTexture->GetFormat()) ? Image::GammaSpace::Linear : Image::GammaSpace::sRGB;
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
         faceImages[faceIndex].Create2D(cubeTexture->GetWidth(), cubeTexture->GetWidth(), numMipLevels, cubeTexture->GetFormat(), gammaSpace, nullptr, 0);

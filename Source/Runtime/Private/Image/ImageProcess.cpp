@@ -88,6 +88,7 @@ Image &Image::FlipX() {
     return *this;
 }
 
+// FIXME
 Image &Image::AdjustBrightness(float factor) {
     if (IsPacked() || IsCompressed() || IsFloatFormat()) {
         assert(0);
@@ -146,7 +147,7 @@ Image &Image::AdjustBrightness(float factor) {
 }
 
 Image &Image::ApplyGammaRampTableRGB888(const uint16_t table[768]) {
-    if (IsPacked() || IsCompressed() || IsFloatFormat()) {
+    if (format != Format::RGB_8_8_8) {
         assert(0);
         return *this;
     }
@@ -563,11 +564,9 @@ Image &Image::GenerateMipmaps() {
             byte *dst = GetPixels(mipLevel + 1, sliceIndex);
 
             if (IsFloatFormat()) {
-                if (IsHalfFormat()) {
-                    BuildMipMap<half>((half *)dst, (half *)src, w, h, d, numComponents);
-                } else {
-                    BuildMipMap<float>((float *)dst, (float *)src, w, h, d, numComponents);
-                }
+                BuildMipMap<float>((float *)dst, (float *)src, w, h, d, numComponents);
+            } else if (IsHalfFormat()) {
+                BuildMipMap<half>((half *)dst, (half *)src, w, h, d, numComponents);
             } else {
                 if (gammaSpace == GammaSpace::sRGB) {
                     BuildMipMapWithGamma(dst, src, w, h, d, numComponents, Image::sRGBToLinearTable, Image::LinearToGamma);

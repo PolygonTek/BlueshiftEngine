@@ -570,7 +570,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     this->numSlices = isCube ? 6 : 1;
     this->flags = isCube ? Flag::CubeMap : 0;
 
-    if (IsFloatFormat() || format == Format::DXN1 || format == Format::DXN2) {
+    if (NeedFloatConversion() || format == Format::DXN1 || format == Format::DXN2) {
         this->gammaSpace = Image::GammaSpace::Linear;
     } else {
         this->gammaSpace = Image::GammaSpace::sRGB;

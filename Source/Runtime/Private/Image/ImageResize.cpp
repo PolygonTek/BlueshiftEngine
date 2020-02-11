@@ -226,11 +226,9 @@ bool Image::ResizeSelf(int dstWidth, int dstHeight, Image::ResampleFilter::Enum 
     int numComponents = NumComponents();
 
     if (IsFloatFormat()) {
-        if (IsHalfFormat()) {
-            ResizeImage((half *)this->pic, this->width, this->height, (half *)dst, dstWidth, dstHeight, numComponents, filter);
-        } else {
-            ResizeImage((float *)this->pic, this->width, this->height, (float *)dst, dstWidth, dstHeight, numComponents, filter);
-        }
+        ResizeImage((float *)this->pic, this->width, this->height, (float *)dst, dstWidth, dstHeight, numComponents, filter);
+    } else if (IsHalfFormat()) {
+        ResizeImage((half *)this->pic, this->width, this->height, (half *)dst, dstWidth, dstHeight, numComponents, filter);
     } else {
         ResizeImage(this->pic, this->width, this->height, dst, dstWidth, dstHeight, numComponents, filter);
     }

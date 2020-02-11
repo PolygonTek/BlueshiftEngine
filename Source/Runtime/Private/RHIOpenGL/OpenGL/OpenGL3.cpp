@@ -454,7 +454,7 @@ Image::Format::Enum OpenGL3::ToCompressedImageFormat(Image::Format::Enum inForma
     Image::Format::Enum outFormat = inFormat;
 
     if (redBits > 0 && greenBits > 0 && blueBits > 0) {
-        if (Image::IsFloatFormat(inFormat)) {
+        if (Image::IsFloatFormat(inFormat) || Image::IsHalfFormat(inFormat)) {
             if (alphaBits == 0) {
                 outFormat = Image::Format::RGBE_9_9_9_5;
             }

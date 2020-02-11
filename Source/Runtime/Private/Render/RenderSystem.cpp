@@ -690,7 +690,7 @@ void RenderSystem::CaptureScreenImage(RenderWorld *renderWorld, int layerMask,
     bool colorClear, const Color4 &clearColor, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height, Image &screenImage) {
     Texture *screenTexture = CaptureScreenTexture(renderWorld, layerMask, colorClear, clearColor, origin, axis, fov, useHDR, width, height);
 
-    Image::GammaSpace::Enum gammaSpace = Image::IsFloatFormat(screenTexture->GetFormat()) ? Image::GammaSpace::Linear : Image::GammaSpace::sRGB;
+    Image::GammaSpace::Enum gammaSpace = Image::NeedFloatConversion(screenTexture->GetFormat()) ? Image::GammaSpace::Linear : Image::GammaSpace::sRGB;
 
     screenImage.Create2D(screenTexture->GetWidth(), screenTexture->GetHeight(), 1, screenTexture->GetFormat(), gammaSpace, nullptr, 0);
 
