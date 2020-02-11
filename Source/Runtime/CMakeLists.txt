@@ -667,6 +667,7 @@ set(COMMON_ENGINE_FILES
     Private/Scripting/Components/LuaModule_ComAnimation.cpp
     Private/Scripting/Components/LuaModule_ComAnimator.cpp
     Private/Scripting/Components/LuaModule_ComTextRenderer.cpp
+    Private/Scripting/Components/LuaModule_ComText.cpp
     Private/Scripting/Components/LuaModule_ComImage.cpp
     Private/Scripting/Components/LuaModule_ComParticleSystem.cpp
     Private/Scripting/Components/LuaModule_ComLight.cpp

@@ -138,6 +138,7 @@ private:
     void                    RegisterAnimationComponent(LuaCpp::Module &module);
     void                    RegisterAnimatorComponent(LuaCpp::Module &module);
     void                    RegisterTextRendererComponent(LuaCpp::Module &module);
+    void                    RegisterTextComponent(LuaCpp::Module &module);
     void                    RegisterImageComponent(LuaCpp::Module &module);
     void                    RegisterParticleSystemComponent(LuaCpp::Module &module);
     void                    RegisterCameraComponent(LuaCpp::Module &module);
