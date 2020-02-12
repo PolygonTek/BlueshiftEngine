@@ -140,64 +140,65 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
 
 bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool regenerateMipmaps, Image::CompressionQuality::Enum compressionQuality) const {
     const Image *srcImage = this;
-    const ImageFormatInfo *srcFormatInfo = GetImageFormatInfo(GetFormat());
-    const ImageFormatInfo *dstFormatInfo = GetImageFormatInfo(dstFormat);
     
+    // If the source and destination formats are the same, copy the source image to the destination image and return.
     if (GetFormat() == dstFormat) {
         dstImage = *srcImage;
         return true;
     }
 
+    // Get the mipmap count for the destination image.
     int numDstMipmaps = !regenerateMipmaps ? srcImage->numMipmaps : MaxMipMapLevels(srcImage->width, srcImage->height, srcImage->depth);
     
-    // Create an output image based on source (this) image.
+    // Create an destination image based on source (this) image.
     dstImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, dstFormat, srcImage->gammaSpace, nullptr, srcImage->flags);
 
-    // If the source image is compressed, decompress it first.
-    Image decompressedImage;
-    if (srcFormatInfo->type & FormatType::Compressed) {
-        decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, 
+    Image unpackedSrcImage;
+    if (srcImage->IsCompressed()) {
+        // If the source image is compressed, decompress it first.
+        unpackedSrcImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps,
             srcImage->NeedFloatConversion() ? Format::RGBA_32F_32F_32F_32F : Format::RGBA_8_8_8_8, srcImage->gammaSpace, nullptr, srcImage->flags);
 
-        DecompressImage(*this, decompressedImage);
+        DecompressImage(*this, unpackedSrcImage);
 
         if (regenerateMipmaps) {
-            decompressedImage.GenerateMipmaps();
+            unpackedSrcImage.GenerateMipmaps();
         }
 
-        srcImage = &decompressedImage;
-        srcFormatInfo = GetImageFormatInfo(srcImage->GetFormat());
-    } else {
-        if (regenerateMipmaps) {
-            decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, srcImage->format, srcImage->gammaSpace, nullptr, srcImage->flags);
-            decompressedImage.CopyFrom(*srcImage, 0, 1);
-            decompressedImage.GenerateMipmaps();
-
-            srcImage = &decompressedImage;
-        }
-    }
-
-    // If the target format is compressed, source image should be decompressed to RGBA_8_8_8_8 or RGBA_32F_32F_32F_32F.
-    if (dstFormatInfo->type & FormatType::Compressed) {
-        Image tempImage;
-
-        if (NeedFloatConversion(dstFormat)) {
+        srcImage = &unpackedSrcImage;
+    } else if (Image::IsCompressed(dstFormat) || (srcImage->IsPacked() && regenerateMipmaps)) {
+        // If the destination format is compressed or the source format is packed and mipmap generation required,
+        // We need to convert source image to RGBA_8_8_8_8 or RGBA_32F_32F_32F_32F first.
+        if (Image::NeedFloatConversion(dstFormat)) {
             if (srcImage->GetFormat() != Format::RGBA_32F_32F_32F_32F) {
-                srcImage->ConvertFormat(Format::RGBA_32F_32F_32F_32F, tempImage);
-                srcImage = &tempImage;
+                srcImage->ConvertFormat(Format::RGBA_32F_32F_32F_32F, unpackedSrcImage);
+                srcImage = &unpackedSrcImage;
             }
         } else {
             if (srcImage->GetFormat() != Format::RGBA_8_8_8_8) {
-                srcImage->ConvertFormat(Format::RGBA_8_8_8_8, tempImage);
-                srcImage = &tempImage;
+                srcImage->ConvertFormat(Format::RGBA_8_8_8_8, unpackedSrcImage);
+                srcImage = &unpackedSrcImage;
             }
         }
 
+        if (regenerateMipmaps) {
+            unpackedSrcImage.GenerateMipmaps();
+        }
+    } else {
+        if (regenerateMipmaps) {
+            unpackedSrcImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, srcImage->format, srcImage->gammaSpace, nullptr, srcImage->flags);
+            unpackedSrcImage.CopyFrom(*srcImage, 0, 1);
+            unpackedSrcImage.GenerateMipmaps();
+
+            srcImage = &unpackedSrcImage;
+        }
+    }
+
+    if (Image::IsCompressed(dstFormat)) {
         if (!CompressImage(*srcImage, dstImage, compressionQuality)) {
             dstImage.Clear();
             return false;
         }
-
         return true;
     }
 
@@ -205,6 +206,9 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
 
     ImageUnpackFunc unpackFunc;
     ImagePackFunc packFunc;
+
+    const ImageFormatInfo *srcFormatInfo = GetImageFormatInfo(srcImage->GetFormat());
+    const ImageFormatInfo *dstFormatInfo = GetImageFormatInfo(dstFormat);
 
     if (useUnpackFloat) {
         unpackFunc = srcFormatInfo->unpackRGBA32F;

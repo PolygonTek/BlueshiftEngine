@@ -416,7 +416,7 @@ void OpenGLRHI::SetTextureImage(TextureType::Enum textureType, const Image *srcI
             int d = srcImage->GetDepth();
             int maxGenLevels = Image::MaxMipMapLevels(w, h, d);
 
-            if (srcImage->IsCompressed() && OpenGL::SupportsCompressedGenMipmaps()) {
+            if (srcImage->IsPacked() || (srcImage->IsCompressed() && OpenGL::SupportsCompressedGenMipmaps())) {
                 generateMipmaps = true;
             } else {
                 mipmapedImage.Create(w, h, d, srcImage->NumSlices(), maxGenLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
