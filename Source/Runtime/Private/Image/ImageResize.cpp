@@ -367,7 +367,7 @@ bool Image::Resize(int dstWidth, int dstHeight, Image::ResampleFilter::Enum filt
         }
     } else {
         if (gammaSpace == GammaSpace::sRGB) {
-            ResizeImageWithGamma(this->pic, this->width, this->height, dstImage.pic, dstWidth, dstHeight, numComponents, filter, Image::sRGBToLinearTable, Image::LinearToGamma);
+            ResizeImageWithGamma(this->pic, this->width, this->height, dstImage.pic, dstWidth, dstHeight, numComponents, filter, Image::sRGBToLinearTable, Image::LinearToGammaApprox);
         } else if (gammaSpace == GammaSpace::Pow22) {
             ResizeImageWithGamma(this->pic, this->width, this->height, dstImage.pic, dstWidth, dstHeight, numComponents, filter, Image::pow22ToLinearTable, Image::LinearToGammaFast);
         } else {

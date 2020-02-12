@@ -592,7 +592,7 @@ Image &Image::GenerateMipmaps() {
                 BuildMipMap<half>((half *)dst, (half *)src, w, h, d, numComponents);
             } else {
                 if (gammaSpace == GammaSpace::sRGB) {
-                    BuildMipMapWithGamma(dst, src, w, h, d, numComponents, Image::sRGBToLinearTable, Image::LinearToGamma);
+                    BuildMipMapWithGamma(dst, src, w, h, d, numComponents, Image::sRGBToLinearTable, Image::LinearToGammaApprox);
                 } else if (gammaSpace == GammaSpace::Pow22) {
                     BuildMipMapWithGamma(dst, src, w, h, d, numComponents, Image::pow22ToLinearTable, Image::LinearToGammaFast);
                 } else {
