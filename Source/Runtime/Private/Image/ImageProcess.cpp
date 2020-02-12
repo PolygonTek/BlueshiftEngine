@@ -407,7 +407,11 @@ void BuildMipMap1D(T *dst, const T *src, const int width, const int components) 
 
     for (int x = 0; x < width; x += 2) {
         for (int i = 0; i < components; i++) {
-            *dst++ = (src[0] + src[xOff]) / 2;
+            T p0 = src[0];
+            T p1 = src[xOff];
+            T po = (p0 + p1) / 2;
+
+            *dst++ = po;
             src++;
         }
         src += xOff;
@@ -422,7 +426,13 @@ void BuildMipMap2D(T *dst, const T *src, const int width, const int height, cons
     for (int y = 0; y < height; y += 2) {
         for (int x = 0; x < width; x += 2) {
             for (int i = 0; i < components; i++) {
-                *dst++ = (src[0] + src[xOff] + src[yOff] + src[yOff + xOff]) / 4;
+                T p0 = src[0];
+                T p1 = src[xOff];
+                T p2 = src[yOff];
+                T p3 = src[yOff + xOff];
+                T po = (p0 + p1 + p2 + p3) / 4;
+
+                *dst++ = po;
                 src++;
             }
             src += xOff;
@@ -441,7 +451,17 @@ void BuildMipMap3D(T *dst, const T *src, const int width, const int height, cons
         for (int y = 0; y < height; y += 2) {
             for (int x = 0; x < width; x += 2) {
                 for (int i = 0; i < components; i++) {
-                    *dst++ = (src[0] + src[xOff] + src[yOff] + src[yOff + xOff] + src[zOff] + src[zOff + xOff] + src[zOff + yOff] + src[zOff + yOff + xOff]) / 8;
+                    T p0 = src[0];
+                    T p1 = src[xOff];
+                    T p2 = src[yOff];
+                    T p3 = src[yOff + xOff];
+                    T p4 = src[zOff];
+                    T p5 = src[zOff + xOff];
+                    T p6 = src[zOff + yOff];
+                    T p7 = src[zOff + yOff + xOff];
+                    T po = (p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7) / 8;
+
+                    *dst++ = po;
                     src++;
                 }
                 src += xOff;
@@ -470,8 +490,9 @@ static void BuildMipMap1DWithGamma(byte *dst, const byte *src, const int width, 
         for (int i = 0; i < components; i++) {
             float p0 = gammaToLinear[src[0]];
             float p1 = gammaToLinear[src[xOff]];
+            float po = linearToGamma((p0 + p1) * 0.5f);
 
-            *dst++ = Math::Ftob(255.0f * linearToGamma(0.5f * (p0 + p1)));
+            *dst++ = Math::Ftob(255.0f * po);
             src++;
         }
         src += xOff;
@@ -489,8 +510,9 @@ static void BuildMipMap2DWithGamma(byte *dst, const byte *src, const int width, 
                 float p1 = gammaToLinear[src[xOff]];
                 float p2 = gammaToLinear[src[yOff]];
                 float p3 = gammaToLinear[src[yOff + xOff]];
+                float po = linearToGamma((p0 + p1 + p2 + p3) * 0.25f);
 
-                *dst++ = Math::Ftob(255.0f * linearToGamma(0.25f * (p0 + p1 + p2 + p3)));
+                *dst++ = Math::Ftob(255.0f * po);
                 src++;
             }
             src += xOff;
@@ -516,8 +538,9 @@ static void BuildMipMap3DWithGamma(byte *dst, const byte *src, const int width, 
                     float p5 = gammaToLinear[src[zOff + xOff]];
                     float p6 = gammaToLinear[src[zOff + yOff]];
                     float p7 = gammaToLinear[src[zOff + yOff + xOff]];
+                    float po = linearToGamma(0.125f * (p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7));
 
-                    *dst++ = Math::Ftob(255.0f * linearToGamma(0.125f * (p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7)));
+                    *dst++ = Math::Ftob(255.0f * po);
                     src++;
                 }
                 src += xOff;

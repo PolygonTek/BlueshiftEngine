@@ -251,10 +251,6 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
 }
 
 bool Image::ConvertFormatSelf(Image::Format::Enum dstFormat, bool regenerateMipmaps, Image::CompressionQuality::Enum compressionQuality) {
-    if (this->format == dstFormat) {
-        return true;
-    }
-
     Image dstImage;
     bool ret = ConvertFormat(dstFormat, dstImage, regenerateMipmaps, compressionQuality);
     if (ret) {
