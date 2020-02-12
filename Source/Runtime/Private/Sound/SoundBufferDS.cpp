@@ -54,16 +54,16 @@ bool SoundBuffer::CreateStaticBuffer(int numChannels, int bitsWidth, int sampleR
     fmt.nChannels       = numChannels;
     fmt.nSamplesPerSec  = sampleRates;
     fmt.wBitsPerSample  = bitsWidth;
-    fmt.nBlockAlign     = fmt.nChannels * fmt.wBitsPerSample / 8;
+    fmt.nBlockAlign     = fmt.nChannels * (fmt.wBitsPerSample >> 3);
     fmt.nAvgBytesPerSec = fmt.nSamplesPerSec * fmt.nBlockAlign;
 
     DSBUFFERDESC dsbd;
-    memset(&dsbd.guid3DAlgorithm, 0, sizeof(dsbd.guid3DAlgorithm));
     dsbd.dwSize         = sizeof(dsbd);
     dsbd.dwFlags        = dwFlags;
-    dsbd.dwReserved     = 0;
     dsbd.dwBufferBytes  = size;
     dsbd.lpwfxFormat    = &fmt;
+    dsbd.dwReserved     = 0;
+    memset(&dsbd.guid3DAlgorithm, 0, sizeof(dsbd.guid3DAlgorithm));
 
     HRESULT hr = soundSystem.dsDevice->CreateSoundBuffer(&dsbd, &dsBuffer, nullptr);
     if (hr != DS_OK) {
@@ -74,14 +74,16 @@ bool SoundBuffer::CreateStaticBuffer(int numChannels, int bitsWidth, int sampleR
     DWORD lockedSize;
     void *lockedPtr;
 
-    if (SUCCEEDED(dsBuffer->Lock(0, size, &lockedPtr, &lockedSize, nullptr, nullptr, 0))) {
-        simdProcessor->Memcpy(lockedPtr, data, lockedSize);
-        dsBuffer->Unlock(lockedPtr, lockedSize, nullptr, 0);
-    } else {
+    hr = dsBuffer->Lock(0, size, &lockedPtr, &lockedSize, nullptr, nullptr, DSBLOCK_ENTIREBUFFER);
+    if (hr != DS_OK) {
         dsBuffer->Release();
         return false;
     }
 
+    CopyMemory(lockedPtr, data, lockedSize);
+
+    dsBuffer->Unlock(lockedPtr, lockedSize, nullptr, 0);
+    
     if (numChannels == 1) {
         dsBuffer->QueryInterface(IID_IDirectSound3DBuffer, (void **)&ds3dBuffer);
     }

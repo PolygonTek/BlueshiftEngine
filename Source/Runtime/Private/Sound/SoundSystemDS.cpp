@@ -55,8 +55,8 @@ bool SoundSystem::InitDevice(void *windowHandle) {
     dscaps.dwSize = sizeof(dscaps);
     hr = dsDevice->GetCaps(&dscaps);
     if (hr == DS_OK) {
-        // No HW driver
         if (dscaps.dwFlags & DSCAPS_EMULDRIVER) {
+            // No HW driver found.
             BE_LOG("no DirectSound driver found\n");
             Shutdown();
             return false;
@@ -74,7 +74,7 @@ bool SoundSystem::InitDevice(void *windowHandle) {
     }
     BE_LOG("ok\n");
 
-    // Create primary sound
+    // Create primary sound.
     DSBUFFERDESC dsbd;
     memset(&dsbd, 0, sizeof(dsbd));
     dsbd.dwSize = sizeof(dsbd);
@@ -91,7 +91,7 @@ bool SoundSystem::InitDevice(void *windowHandle) {
     }
     BE_LOG("ok\n");
 
-    // Set the primary sound format
+    // Set the primary sound format.
     const int khz = s_khz.GetInteger();
 
     WAVEFORMATEX fmt;
@@ -107,24 +107,24 @@ bool SoundSystem::InitDevice(void *windowHandle) {
         BE_LOG("Couldn't set DirectSound primary sound format. Using default\n");
     }
 
-    // Get actual format of the primary sound
+    // Get actual format of the primary sound.
     dsPrimaryBuffer->GetFormat(&fmt, sizeof(fmt), nullptr);
 
     //this->numChannels = fmt.nChannels;
     //this->sampleRates = fmt.nSamplesPerSec;
     //this->bitsWidth = fmt.wBitsPerSample;
 
-    // Start mixer engine !
+    // Start mixer engine.
     dsPrimaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
 
-    // Get the listener interface
+    // Get the listener interface.
     if (dsPrimaryBuffer->QueryInterface(IID_IDirectSound3DListener8, (void **)&dsListener3D) != DS_OK) {
         BE_LOG("failed to QueryInterface to get listener interface\n");
         Shutdown();
         return false;
     }
 
-    // Set the listener properties
+    // Set the listener properties.
     DS3DLISTENER listenerProps;
     listenerProps.dwSize = sizeof(listenerProps);
     listenerProps.vPosition.x = 0.0f;
@@ -140,7 +140,7 @@ bool SoundSystem::InitDevice(void *windowHandle) {
     listenerProps.vOrientTop.y = 1.0f;
     listenerProps.vOrientTop.z = 0.0f;
     listenerProps.flDistanceFactor = UnitToMeter(1.0f);
-    // no attenuation needed because we attenuate volume manually
+    // no attenuation needed because we attenuate volume manually.
     listenerProps.flRolloffFactor = DS3D_MINROLLOFFFACTOR;//s_rolloff.GetFloat();
     listenerProps.flDopplerFactor = s_doppler.GetFloat();
 
@@ -150,7 +150,7 @@ bool SoundSystem::InitDevice(void *windowHandle) {
         return false;
     }
 
-    // Initialize sources
+    // Initialize sources.
     for (int sourceIndex = 0; sourceIndex < MaxSources; sourceIndex++) {
         SoundSource *source = new SoundSource;
         sources.Append(source);
