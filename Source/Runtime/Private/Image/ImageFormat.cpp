@@ -1913,7 +1913,7 @@ static void RGBA32FToRGBA1010102(const byte *src, byte *dst, int numPixels) {
     uint32_t *dstPtr = (uint32_t *)dst;
 
     for (; srcPtr < srcEnd; srcPtr += 4, dstPtr++) {
-        *dstPtr = Math::Ftoi(1023.0f * srcPtr[0]) | (Math::Ftoi(1023.0f * srcPtr[1]) << 10) | (Math::Ftoi(1023.0f * srcPtr[2]) << 20) | (Math::Ftoi(3.0f * srcPtr[3]) << 30);
+        *dstPtr = Math::Ftoi(1023.0f * Clamp01(srcPtr[0])) | (Math::Ftoi(1023.0f * Clamp01(srcPtr[1])) << 10) | (Math::Ftoi(1023.0f * Clamp01(srcPtr[2])) << 20) | (Math::Ftoi(3.0f * Clamp01(srcPtr[3])) << 30);
     }
 }
 
