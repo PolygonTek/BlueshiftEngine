@@ -1119,10 +1119,26 @@ static void LA88ToRGBA32F(const byte *src, byte *dst, int numPixels) {
     }
 }
 
+static void L16ToRGBA32F(const byte *src, byte *dst, int numPixels) {
+    const float invNorm = 1.0f / 65535.0f;
+    const uint16_t *srcPtr = (const uint16_t *)src;
+    const uint16_t *srcEnd = srcPtr + numPixels;
+    float *dstPtr = (float *)dst;
+    float l;
+
+    for (; srcPtr < srcEnd; srcPtr += 1, dstPtr += 4) {
+        l = srcPtr[0] * invNorm;
+        dstPtr[0] = l;
+        dstPtr[1] = l;
+        dstPtr[2] = l;
+        dstPtr[3] = 1.0f;
+    }
+}
+
 static void LA1616ToRGBA32F(const byte *src, byte *dst, int numPixels) {
     const float invNorm = 1.0f / 65535.0f;
     const uint16_t *srcPtr = (const uint16_t *)src;
-    const uint16_t *srcEnd = srcPtr + numPixels * 2;
+    const uint16_t *srcEnd = srcPtr + (numPixels << 1);
     float *dstPtr = (float *)dst;
     float l, a;
 
@@ -1562,6 +1578,16 @@ static void RGBA32FToLA88(const byte *src, byte *dst, int numPixels) {
     }
 }
 
+static void RGBA32FToL16(const byte *src, byte *dst, int numPixels) {
+    const float *srcPtr = (const float *)src;
+    const float *srcEnd = srcPtr + numPixels * 4;
+    uint16_t *dstPtr = (uint16_t *)dst;
+
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 1) {
+        dstPtr[0] = Clamp<int>((0.299f * srcPtr[0] + 0.587f * srcPtr[1] + 0.114f * srcPtr[2]) * 65535.0f, 0, 65535);
+    }
+}
+
 static void RGBA32FToLA1616(const byte *src, byte *dst, int numPixels) {
     const float *srcPtr = (const float *)src;
     const float *srcEnd = srcPtr + numPixels * 4;
@@ -1954,7 +1980,7 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "ARGB_1_5_5_5",           2,  4,  5,  5,  5,  1,  Image::FormatType::Packed, ARGB1555ToRGBA8888, RGBA8888ToARGB1555, nullptr, nullptr },
     { "RGB_5_6_5",              2,  3,  5,  6,  5,  0,  Image::FormatType::Packed, RGB565ToRGBA8888, RGBA8888ToRGB565, nullptr, nullptr },
     { "BGR_5_6_5",              2,  3,  5,  6,  5,  0,  Image::FormatType::Packed, BGR565ToRGBA8888, RGBA8888ToBGR565, nullptr, nullptr },
-    { "RGBA_10_10_10_2",        4,  4, 10, 10, 10,  2,  Image::FormatType::Packed, nullptr, nullptr, RGBA1010102ToRGBA32F, RGBA32FToRGBA1010102 },//
+    { "RGBA_10_10_10_2",        4,  4, 10, 10, 10,  2,  Image::FormatType::Packed, nullptr, nullptr, RGBA1010102ToRGBA32F, RGBA32FToRGBA1010102 },
 
     // float format -------------------------------------------------------------------------------
     { "L_16F",                  2,  1,  0,  0,  0,  0,  Image::FormatType::Half, L16FToRGBA8888, RGBA8888ToL16F, L16FToRGBA32F, RGBA32FToL16F },
@@ -2006,7 +2032,7 @@ static const ImageFormatInfo imageFormatInfo[] = {
     { "RGBA_IA_ATC",            16, 4,  0,  0,  0,  0,  Image::FormatType::Compressed, nullptr, nullptr, nullptr, nullptr },
 
     // depth --------------------------------------------------------------------------------------
-    { "Depth_16",               2,  1,  0,  0,  0,  0,  Image::FormatType::Depth, nullptr, nullptr, nullptr, nullptr },
+    { "Depth_16",               2,  1,  0,  0,  0,  0,  Image::FormatType::Depth, nullptr, nullptr, L16ToRGBA32F, RGBA32FToL16 },
     { "Depth_24",               3,  1,  0,  0,  0,  0,  Image::FormatType::Depth, nullptr, nullptr, nullptr, nullptr },
     { "Depth_32F",              4,  1,  0,  0,  0,  0,  Image::FormatType::Depth | Image::FormatType::Float, nullptr, nullptr, L32FToRGBA32F, RGBA32FToL32F },
     { "DepthStencil_24_8",      4,  2,  0,  0,  0,  0,  Image::FormatType::DepthStencil, nullptr, nullptr, nullptr, nullptr },
