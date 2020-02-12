@@ -474,43 +474,4 @@ Image::Format::Enum OpenGL3::ToCompressedImageFormat(Image::Format::Enum inForma
     return outFormat;
 }
 
-Image::Format::Enum OpenGL3::ToUncompressedImageFormat(Image::Format::Enum inFormat) {
-    if (!Image::IsCompressed(inFormat)) {
-        assert(0);
-        return inFormat;
-    }
-
-    Image::Format::Enum outFormat;
-
-    switch (inFormat) {
-    case Image::Format::DXT1:
-        outFormat = Image::Format::RGBA_5_5_5_1;
-        break;
-    case Image::Format::RGB_PVRTC_2BPPV1:
-    case Image::Format::RGB_PVRTC_4BPPV1:
-    case Image::Format::RGB_8_ETC1:
-    case Image::Format::RGB_8_ETC2:
-    case Image::Format::RG_11_11_EAC:
-    case Image::Format::SignedRG_11_11_EAC:
-        outFormat = Image::Format::RGB_8_8_8;
-        break;
-    case Image::Format::DXT3:
-    case Image::Format::DXT5:
-    case Image::Format::RGBA_PVRTC_2BPPV1:
-    case Image::Format::RGBA_PVRTC_2BPPV2:
-    case Image::Format::RGBA_PVRTC_4BPPV1:
-    case Image::Format::RGBA_PVRTC_4BPPV2:
-    case Image::Format::RGBA_8_1_ETC2:
-    case Image::Format::RGBA_8_8_ETC2:
-        outFormat = Image::Format::RGBA_8_8_8_8;
-        break;
-    default:
-        assert(0);
-        outFormat = inFormat;
-        break;
-    }
-
-    return outFormat;
-}
-
 BE_NAMESPACE_END

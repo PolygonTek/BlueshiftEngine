@@ -329,7 +329,8 @@ public:
 
     static bool             ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
     static Image::Format::Enum ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
-    
+    static Image::Format::Enum ToUncompressedImageFormat(Image::Format::Enum inFormat);
+
 private:
     static bool             supportsPackedFloat;
     static bool             supportsDepthClamp;

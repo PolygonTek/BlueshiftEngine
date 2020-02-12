@@ -76,7 +76,6 @@ public:
     static bool             ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
     static bool             SupportedImageFormat(Image::Format::Enum imageFormat) { return ImageFormatToGLFormat(imageFormat, false, nullptr, nullptr, nullptr); }
     static Image::Format::Enum ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
-    static Image::Format::Enum ToUncompressedImageFormat(Image::Format::Enum inFormat);
 
 private:
     static bool             supportsInstancedArrays;
