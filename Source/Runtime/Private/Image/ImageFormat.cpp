@@ -1055,7 +1055,7 @@ static void RGBA8888ToRGBA32F(const byte *src, byte *dst, int numPixels) {
     const byte *srcEnd = srcPtr + (numPixels << 2);
     float *dstPtr = (float *)dst;
 
-    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
         dstPtr[0] = srcPtr[0] * invNorm;
         dstPtr[1] = srcPtr[1] * invNorm;
         dstPtr[2] = srcPtr[2] * invNorm;
@@ -1326,7 +1326,7 @@ static void RGBA8888SNormToRGBA32F(const byte *src, byte *dst, int numPixels) {
     const int8_t *srcEnd = srcPtr + (numPixels << 2);
     float *dstPtr = (float *)dst;
 
-    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 3) {
+    for (; srcPtr < srcEnd; srcPtr += 4, dstPtr += 4) {
         dstPtr[0] = Max(srcPtr[0] * invNorm, -1.0f);
         dstPtr[1] = Max(srcPtr[1] * invNorm, -1.0f);
         dstPtr[2] = Max(srcPtr[2] * invNorm, -1.0f);
