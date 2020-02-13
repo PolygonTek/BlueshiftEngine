@@ -342,8 +342,7 @@ void FontFaceFreeType::WriteBitmapFiles(const char *fontFilename) {
         const Texture *texture = atlasArray[i].texture;
 
         Image bitmapImage;
-        Image::GammaSpace::Enum gammaSpace = (texture->GetFlags() & Texture::Flag::SRGBColorSpace) ? Image::GammaSpace::sRGB : Image::GammaSpace::Linear;
-        bitmapImage.Create2D(texture->GetWidth(), texture->GetHeight(), 1, texture->GetFormat(), gammaSpace, nullptr, 0);
+        bitmapImage.Create2D(texture->GetWidth(), texture->GetHeight(), 1, texture->GetFormat(), Image::GammaSpace::DontCare, nullptr, 0);
 
         texture->Bind();
         texture->GetTexels2D(0, texture->GetFormat(), bitmapImage.GetPixels(0));

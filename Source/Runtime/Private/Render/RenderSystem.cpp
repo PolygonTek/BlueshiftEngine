@@ -1146,7 +1146,7 @@ void RenderSystem::TakeIrradianceEnvShot(const char *filename, RenderWorld *rend
 
     char path[256];
     Str::snPrintf(path, sizeof(path), "%s.dds", filename);
-    //irradianceEnvCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
+    //irradianceEnvCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, Image::GammaSpace::DontCare, false, Image::HighQuality);
     irradianceEnvCubeImage.WriteDDS(path);
 
     BE_LOG("Generated diffuse irradiance cubemap to \"%s\"\n", path);
@@ -1179,7 +1179,7 @@ void RenderSystem::TakePrefilteredEnvShot(const char *filename, RenderWorld *ren
 
     char path[256];
     Str::snPrintf(path, sizeof(path), "%s.dds", filename);
-    //prefilteredCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
+    //prefilteredCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, Image::GammaSpace::DontCare, false, Image::HighQuality);
     prefilteredCubeImage.WriteDDS(path);
 
     BE_LOG("Generated specular prefiltered cubemap to \"%s\"\n", path);

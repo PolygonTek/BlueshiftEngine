@@ -371,13 +371,13 @@ void OpenGLRHI::SetTextureImage(TextureType::Enum textureType, const Image *srcI
             dstCompressed = false;
         } else {
             if (dstFormat == Image::Format::DXN2 && srcFormat != Image::Format::DXN2) {
-                srcImage->ConvertFormat(Image::Format::DXN2, tmpImage);
+                srcImage->ConvertFormat(Image::Format::DXN2, tmpImage, Image::GammaSpace::Linear);
                 srcImage = &tmpImage;
 
                 srcFormat = Image::Format::DXN2;
                 srcCompressed = true;
             } else if (dstFormat == Image::Format::XGBR_DXT5 && srcFormat != Image::Format::XGBR_DXT5) {
-                srcImage->ConvertFormat(Image::Format::RGBA_8_8_8_8, tmpImage);
+                srcImage->ConvertFormat(Image::Format::RGBA_8_8_8_8, tmpImage, Image::GammaSpace::Linear);
                 tmpImage.SwapRedAlphaRGBA8888();
                 srcImage = &tmpImage;
 

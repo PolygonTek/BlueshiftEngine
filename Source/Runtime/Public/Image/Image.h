@@ -132,6 +132,7 @@ public:
     /// Enum for the different kinds of gamma spaces we expect to need to convert from/to.
     struct GammaSpace {
         enum Enum {
+            DontCare,
             Linear,
             Pow22,
             sRGB
@@ -326,9 +327,11 @@ public:
     Image &             GenerateMipmaps();
 
                         /// Converts this image to the given target image.
-    bool                ConvertFormat(Format::Enum dstFormat, Image &dstImage, bool regenerateMipmaps = false, CompressionQuality::Enum compressionQuality = CompressionQuality::Normal) const;
+    bool                ConvertFormat(Format::Enum dstFormat, Image &dstImage, 
+                            GammaSpace::Enum dstGammaSpace = GammaSpace::DontCare, bool regenerateMipmaps = false, CompressionQuality::Enum compressionQuality = CompressionQuality::Normal) const;
                         /// Converts this image in-place.
-    bool                ConvertFormatSelf(Format::Enum dstFormat, bool regenerateMipmaps = false, CompressionQuality::Enum compressionQuality = CompressionQuality::Normal);
+    bool                ConvertFormatSelf(Format::Enum dstFormat, 
+                            GammaSpace::Enum dstGammaSpace = GammaSpace::DontCare, bool regenerateMipmaps = false, CompressionQuality::Enum compressionQuality = CompressionQuality::Normal);
 
                         /// Resizes this image to the given target image.
     bool                Resize(int width, int height, ResampleFilter::Enum resampleFilter, Image &dstImage) const;
