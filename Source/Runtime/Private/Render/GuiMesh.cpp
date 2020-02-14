@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Engine/Coords2D.h"
 #include "Render/Render.h"
 #include "Render/Font.h"
 #include "RenderInternal.h"
@@ -194,14 +195,14 @@ void GuiMesh::DrawPic(float x, float y, float w, float h, float s1, float t1, fl
         localVerts[3].xyz.Set(x + w, y, 0);
     } else {
         // 3D frame
-        // +Y
+        // +Z
         //  |
         //  |
-        //  +-----> +X
-        localVerts[0].xyz.Set(x, -y, 0);
-        localVerts[1].xyz.Set(x, -(y + h), 0);
-        localVerts[2].xyz.Set(x + w, -(y + h), 0);
-        localVerts[3].xyz.Set(x + w, -y, 0);
+        //  +-----> +Y
+        localVerts[0].xyz = Coords2D::To3D(x, -y);
+        localVerts[1].xyz = Coords2D::To3D(x, -(y + h));
+        localVerts[2].xyz = Coords2D::To3D(x + w, -(y + h));
+        localVerts[3].xyz = Coords2D::To3D(x + w, -y);
     }
     
     // TODO: SIMD optimization

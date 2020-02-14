@@ -148,10 +148,10 @@ void ComRectTransform::GetLocalCorners(Vec3 (&localCorners)[4]) const {
     float x2 = rect.X2();
     float y2 = rect.Y2();
 
-    localCorners[0] = Vec3(x1, y1, 0);
-    localCorners[1] = Vec3(x2, y1, 0);
-    localCorners[2] = Vec3(x2, y2, 0);
-    localCorners[3] = Vec3(x1, y2, 0);
+    localCorners[0] = Coords2D::To3D(x1, y1);
+    localCorners[1] = Coords2D::To3D(x2, y1);
+    localCorners[2] = Coords2D::To3D(x2, y2);
+    localCorners[3] = Coords2D::To3D(x1, y2);
 }
 
 void ComRectTransform::GetWorldCorners(Vec3 (&worldCorners)[4]) const {
@@ -241,8 +241,8 @@ Vec3 ComRectTransform::ComputeWorldPositionFromNormalized(const Vec3(&worldCorne
 }
 
 Vec2 ComRectTransform::ComputeNormalizedPositionFromWorld(const Vec3 (&worldCorners)[4], const Vec3 &worldPos) {
-    // TODO: Check worldPos should be on the plane of rectangle.
-    Vec3 dir = worldPos - worldCorners[0];
+    Vec3 worldPosOnPlane = worldPos;//Plane::FromPoints(worldCorners[0], worldCorners[1], worldCorners[2]).Project(worldPos);
+    Vec3 dir = worldPosOnPlane - worldCorners[0];
 
     Vec3 xAxis = worldCorners[1] - worldCorners[0];
     Vec3 yAxis = worldCorners[3] - worldCorners[0];
@@ -258,7 +258,7 @@ Vec2 ComRectTransform::ComputeNormalizedPositionFromWorld(const Vec3 (&worldCorn
 }
 
 bool ComRectTransform::RayToWorldPointInRectangle(const Ray &ray, Vec3 &worldPoint) const {
-    Plane plane(GetRotation() * Vec3::unitZ, GetOrigin());
+    Plane plane(GetRotation() * Coords2D::ZAxis(), GetOrigin());
 
     float hitDist;
     if (!plane.IntersectRay(ray, false, &hitDist)) {
@@ -277,7 +277,7 @@ bool ComRectTransform::RayToLocalPointInRectangle(const Ray &ray, Vec2 &localPoi
         return false;
     }
 
-    localPoint = GetMatrixNoScale().ToMat3().TransposedMulVec(worldPoint - GetOrigin()).ToVec2();
+    localPoint = Coords2D::From3D(GetMatrixNoScale().ToMat3().TransposedMulVec(worldPoint - GetOrigin()));
     return true;
 }
 
@@ -371,19 +371,20 @@ RectF ComRectTransform::ComputePivotRect() const {
 Vec2 ComRectTransform::ComputeLocalOrigin2D() const {
     RectF rect = ComputeLocalRect();
 
-    return Vec2(
-        rect.x + rect.w * pivot.x,
-        rect.y + rect.h * pivot.y);
+    float x = rect.x + rect.w * pivot.x;
+    float y = rect.y + rect.h * pivot.y;
+
+    return Vec2(x, y);
 }
 
 Vec3 ComRectTransform::ComputeLocalOrigin3D() const {
     RectF rect = ComputeLocalRect();
-    Vec3 localOrigin = ComTransform::GetLocalOrigin();
 
-    return Vec3(
-        rect.x + rect.w * pivot.x,
-        rect.y + rect.h * pivot.y,
-        localOrigin.z);
+    float x = rect.x + rect.w * pivot.x;
+    float y = rect.y + rect.h * pivot.y;
+    float z = Coords2D::ZFrom3D(ComTransform::GetLocalOrigin());
+
+    return Coords2D::To3D(x, y, z);
 }
 
 #if WITH_EDITOR

@@ -196,6 +196,7 @@
 #include "Game/GameWorld.h"
 
 #include "Engine/Common.h"
+#include "Engine/Coords2D.h"
 #include "Engine/Console.h"
 #include "Engine/GameClient.h"
 #include "Engine/Engine.h"

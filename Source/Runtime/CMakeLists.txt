@@ -149,6 +149,7 @@ set(COMMON_ENGINE_FILES
     Public/Engine/GameClient.h
     Public/Engine/Console.h
     Public/Engine/Engine.h
+    Public/Engine/Coords2D.h
 
     Public/Asset/Asset.h
     Public/Asset/AssetImporter.h

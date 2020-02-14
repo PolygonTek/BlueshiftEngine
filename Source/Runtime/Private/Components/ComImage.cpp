@@ -170,19 +170,19 @@ void ComImage::UpdateRawVertexes() {
 
         renderObjectDef.numVerts = 4;
 
-        renderObjectDef.verts[0].SetPosition(x1, y1, 0);
+        renderObjectDef.verts[0].SetPosition(Coords2D::To3D(x1, y1));
         renderObjectDef.verts[0].SetTexCoord(0, 1);
         renderObjectDef.verts[0].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[1].SetPosition(x2, y1, 0);
+        renderObjectDef.verts[1].SetPosition(Coords2D::To3D(x2, y1));
         renderObjectDef.verts[1].SetTexCoord(1, 1);
         renderObjectDef.verts[1].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[2].SetPosition(x2, y2, 0);
+        renderObjectDef.verts[2].SetPosition(Coords2D::To3D(x2, y2));
         renderObjectDef.verts[2].SetTexCoord(1, 0);
         renderObjectDef.verts[2].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[3].SetPosition(x1, y2, 0);
+        renderObjectDef.verts[3].SetPosition(Coords2D::To3D(x1, y2));
         renderObjectDef.verts[3].SetTexCoord(0, 0);
         renderObjectDef.verts[3].SetColor(0xFFFFFFFF);
 
@@ -241,67 +241,67 @@ void ComImage::UpdateRawVertexes() {
 
         renderObjectDef.numVerts = 16;
 
-        renderObjectDef.verts[0].SetPosition(x1, y1, 0);
+        renderObjectDef.verts[0].SetPosition(Coords2D::To3D(x1, y1));
         renderObjectDef.verts[0].SetTexCoord(0, 1);
         renderObjectDef.verts[0].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[1].SetPosition(x1b, y1, 0);
+        renderObjectDef.verts[1].SetPosition(Coords2D::To3D(x1b, y1));
         renderObjectDef.verts[1].SetTexCoord(s1b, 1);
         renderObjectDef.verts[1].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[2].SetPosition(x2b, y1, 0);
+        renderObjectDef.verts[2].SetPosition(Coords2D::To3D(x2b, y1));
         renderObjectDef.verts[2].SetTexCoord(s2b, 1);
         renderObjectDef.verts[2].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[3].SetPosition(x2, y1, 0);
+        renderObjectDef.verts[3].SetPosition(Coords2D::To3D(x2, y1));
         renderObjectDef.verts[3].SetTexCoord(1, 1);
         renderObjectDef.verts[3].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[4].SetPosition(x1, y1b, 0);
+        renderObjectDef.verts[4].SetPosition(Coords2D::To3D(x1, y1b));
         renderObjectDef.verts[4].SetTexCoord(0, t2b);
         renderObjectDef.verts[4].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[5].SetPosition(x1b, y1b, 0);
+        renderObjectDef.verts[5].SetPosition(Coords2D::To3D(x1b, y1b));
         renderObjectDef.verts[5].SetTexCoord(s1b, t2b);
         renderObjectDef.verts[5].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[6].SetPosition(x2b, y1b, 0);
+        renderObjectDef.verts[6].SetPosition(Coords2D::To3D(x2b, y1b));
         renderObjectDef.verts[6].SetTexCoord(s2b, t2b);
         renderObjectDef.verts[6].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[7].SetPosition(x2, y1b, 0);
+        renderObjectDef.verts[7].SetPosition(Coords2D::To3D(x2, y1b));
         renderObjectDef.verts[7].SetTexCoord(1, t2b);
         renderObjectDef.verts[7].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[8].SetPosition(x1, y2b, 0);
+        renderObjectDef.verts[8].SetPosition(Coords2D::To3D(x1, y2b));
         renderObjectDef.verts[8].SetTexCoord(0, t1b);
         renderObjectDef.verts[8].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[9].SetPosition(x1b, y2b, 0);
+        renderObjectDef.verts[9].SetPosition(Coords2D::To3D(x1b, y2b));
         renderObjectDef.verts[9].SetTexCoord(s1b, t1b);
         renderObjectDef.verts[9].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[10].SetPosition(x2b, y2b, 0);
+        renderObjectDef.verts[10].SetPosition(Coords2D::To3D(x2b, y2b));
         renderObjectDef.verts[10].SetTexCoord(s2b, t1b);
         renderObjectDef.verts[10].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[11].SetPosition(x2, y2b, 0);
+        renderObjectDef.verts[11].SetPosition(Coords2D::To3D(x2, y2b));
         renderObjectDef.verts[11].SetTexCoord(1, t1b);
         renderObjectDef.verts[11].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[12].SetPosition(x1, y2, 0);
+        renderObjectDef.verts[12].SetPosition(Coords2D::To3D(x1, y2));
         renderObjectDef.verts[12].SetTexCoord(0, 0);
         renderObjectDef.verts[12].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[13].SetPosition(x1b, y2, 0);
+        renderObjectDef.verts[13].SetPosition(Coords2D::To3D(x1b, y2));
         renderObjectDef.verts[13].SetTexCoord(s1b, 0);
         renderObjectDef.verts[13].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[14].SetPosition(x2b, y2, 0);
+        renderObjectDef.verts[14].SetPosition(Coords2D::To3D(x2b, y2));
         renderObjectDef.verts[14].SetTexCoord(s2b, 0);
         renderObjectDef.verts[14].SetColor(0xFFFFFFFF);
 
-        renderObjectDef.verts[15].SetPosition(x2, y2, 0);
+        renderObjectDef.verts[15].SetPosition(Coords2D::To3D(x2, y2));
         renderObjectDef.verts[15].SetTexCoord(1, 0);
         renderObjectDef.verts[15].SetColor(0xFFFFFFFF);
 

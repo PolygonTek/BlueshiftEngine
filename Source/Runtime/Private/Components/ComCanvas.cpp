@@ -79,7 +79,9 @@ void ComCanvas::Init() {
     renderCameraDef.clearMethod = RenderCamera::ClearMethod::DepthOnly;
 
     renderCameraDef.origin = Vec3::origin;
-    renderCameraDef.axis = Angles(0, 90, 90).ToMat3();
+    renderCameraDef.axis[0] = -Coords2D::ZAxis();
+    renderCameraDef.axis[1] = -Coords2D::XAxis();
+    renderCameraDef.axis[2] = +Coords2D::YAxis();
     renderCameraDef.axis.FixDegeneracies();
 
     renderCameraDef.zNear = -1000.0f;

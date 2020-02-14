@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "Engine/Coords2D.h"
+
 #include "ComTransform.h"
 
 BE_NAMESPACE_BEGIN
