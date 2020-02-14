@@ -117,7 +117,7 @@ void ComCanvas::DrawGizmos(const RenderCamera *camera, bool selected, bool selec
         Vec3 worldCorners[4];
         rectTransform->GetWorldCorners(worldCorners);
 
-        renderWorld->SetDebugColor(Color4(0.75f, 0.75f, 0.75f, 0.75f), Color4::zero);
+        renderWorld->SetDebugColor(Color4(0.3f, 0.3f, 0.3f, 0.7f), Color4::zero);
 
         renderWorld->DebugLine(worldCorners[0], worldCorners[1], 1.0f, true);
         renderWorld->DebugLine(worldCorners[1], worldCorners[2], 1.0f, true);
