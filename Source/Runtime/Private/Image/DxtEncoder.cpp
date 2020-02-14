@@ -493,14 +493,13 @@ void DXTEncoder::ComputeColorIndicesFast(const byte *colorBlock, const byte *max
     colors[3][2] = (1 * colors[0][2] + 2 * colors[1][2]) / 3;
     colors[3][3] = 0;
 
-    // uses sum of absolute differences instead of squared distance to find the best match
+    // Uses sum of absolute differences instead of squared distance to find the best match.
     for (int i = 15; i >= 0; i--) {
-        int c0, c1, c2, c3, m, d0, d1, d2, d3;
+        int c0, c1, c2, m, d0, d1, d2, d3;
 
         c0 = colorBlock[i * 4 + 0];
         c1 = colorBlock[i * 4 + 1];
         c2 = colorBlock[i * 4 + 2];
-        c3 = colorBlock[i * 4 + 3];
 
         m = colors[0][0] - c0;
         d0 = abs(m);
