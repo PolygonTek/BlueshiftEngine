@@ -95,6 +95,10 @@ public:
                         /// The normal of the plane will be oriented in counter-clockwise order.
     bool                SetFromPoints(const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, bool fixDegenerate = true);
 
+                        /// Returns plane by specifying three points on the plane.
+                        /// The normal of the plane will be oriented in counter-clockwise order.
+    static Plane        FromPoints(const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, bool fixDegenerate = true);
+
                         /// Moves this plane by specifying a single point on the plane.
     void                FitThroughPoint(const Vec3 &p) { offset = normal.Dot(p); }
 
@@ -181,6 +185,12 @@ BE_INLINE bool Plane::SetFromPoints(const Vec3 &p1, const Vec3 &p2, const Vec3 &
 
     offset = normal.Dot(p2);
     return true;
+}
+
+BE_INLINE Plane Plane::FromPoints(const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, bool fixDegenerate) {
+    Plane plane;
+    plane.SetFromPoints(p1, p2, p3, fixDegenerate);
+    return plane;
 }
 
 BE_INLINE void Plane::Flip() {

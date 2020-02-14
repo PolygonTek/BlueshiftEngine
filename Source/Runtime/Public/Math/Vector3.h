@@ -36,8 +36,10 @@ public:
     Vec3() = default;
     /// Constructs a Vec3 with the value (x, y, z).
     constexpr Vec3(float x, float y, float z);
-    /// Constructs a Vec3 with the value (xy.x, xy.y, z).
-    explicit constexpr Vec3(const Vec2 &xy, float z);
+    /// Constructs a Vec3 with the value (xy[0], xy[1], z).
+    explicit constexpr Vec3(const Vec2 &xy, const float z);
+    /// Constructs a Vec3 with the value (x, yz[0], yz.[1]).
+    explicit constexpr Vec3(const float x, const Vec2 &yz);
     /// Constructs a Vec3 from a C array, to the value (data[0], data[1], data[2]).
     explicit constexpr Vec3(const float data[3]);
     /// Constructs a Vec3 from a single value (s, s, s).
@@ -398,8 +400,12 @@ BE_INLINE constexpr Vec3::Vec3(float inX, float inY, float inZ) :
     x(inX), y(inY), z(inZ) {
 }
 
-BE_INLINE constexpr Vec3::Vec3(const Vec2 &inXy, float inZ) :
+BE_INLINE constexpr Vec3::Vec3(const Vec2 &inXy, const float inZ) :
     x(inXy.x), y(inXy.y), z(inZ) {
+}
+
+BE_INLINE constexpr Vec3::Vec3(const float inX, const Vec2 &inYz) :
+    x(inX), y(inYz.x), z(inYz.y) {
 }
 
 BE_INLINE constexpr Vec3::Vec3(const float data[3]) :
