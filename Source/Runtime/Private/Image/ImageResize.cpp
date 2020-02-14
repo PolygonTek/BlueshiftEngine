@@ -99,7 +99,7 @@ static void ResizeImageBilinear(const T *src, int srcWidth, int srcHeight, T *ds
 }
 
 static void ResizeImageBilinearWithGamma(const byte *src, int srcWidth, int srcHeight, byte *dst, int dstWidth, int dstHeight, int numComponents, 
-    const float gammaToLinear[256], float (*linearToGamma)(float)) {
+    const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
     int srcPitch = srcWidth * numComponents;
 
     float ratioX = (float)srcWidth / dstWidth;
@@ -229,7 +229,7 @@ static void ResizeImageBicubic(const T *src, int srcWidth, int srcHeight, T *dst
 }
 
 static void ResizeImageBicubicWithGamma(const byte *src, int srcWidth, int srcHeight, byte *dst, int dstWidth, int dstHeight, int numComponents, 
-    const float gammaToLinear[256], float (*linearToGamma)(float)) {
+    const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
     int srcPitch = srcWidth * numComponents;
 
     float ratioX = (float)srcWidth / dstWidth;
@@ -323,7 +323,7 @@ static void ResizeImage(const T *src, int srcWidth, int srcHeight, T *dst, int d
 }
 
 static void ResizeImageWithGamma(const byte *src, int srcWidth, int srcHeight, byte *dst, int dstWidth, int dstHeight, int numComponents, Image::ResampleFilter::Enum filter, 
-    const float gammaToLinear[256], float (*linearToGamma)(float)) {
+    const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
     switch (filter) {
     case Image::ResampleFilter::Nearest:
         ResizeImageNearest<byte>(src, srcWidth, srcHeight, dst, dstWidth, dstHeight, numComponents);

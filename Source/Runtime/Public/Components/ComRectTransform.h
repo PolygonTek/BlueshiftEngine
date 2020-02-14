@@ -89,10 +89,10 @@ public:
     Vec2                    WorldPosToNormalized(const Vec3 &worldPosition) const;
 
                             /// Compute world space position from normalized position of rectangle.
-    static Vec3             ComputeWorldPositionFromNormalized(const Vec3(&worldCorners)[4], const Vec2 &localPosition);
+    static Vec3             ComputeWorldPositionFromNormalized(const Vec3 (&worldCorners)[4], const Vec2 &localPosition);
 
                             /// Compute normalized position of rectangle from world space position.
-    static Vec2             ComputeNormalizedPositionFromWorld(const Vec3(&worldCorners)[4], const Vec3 &worldPosition);
+    static Vec2             ComputeNormalizedPositionFromWorld(const Vec3 (&worldCorners)[4], const Vec3 &worldPosition);
 
                             /// Computes ray intersection point in world space of the rectangle.
     bool                    RayToWorldPointInRectangle(const Ray &ray, Vec3 &worldPoint) const;

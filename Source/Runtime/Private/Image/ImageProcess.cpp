@@ -483,7 +483,7 @@ void BuildMipMap(T *dst, const T *src, const int width, const int height, const 
     }
 }
 
-static void BuildMipMap1DWithGamma(byte *dst, const byte *src, const int width, const int components, const float gammaToLinear[256], float (*linearToGamma)(float)) {
+static void BuildMipMap1DWithGamma(byte *dst, const byte *src, const int width, const int components, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
     int xOff = (width < 2) ? 0 : components;
 
     for (int x = 0; x < width; x += 2) {
@@ -499,7 +499,7 @@ static void BuildMipMap1DWithGamma(byte *dst, const byte *src, const int width, 
     }
 }
 
-static void BuildMipMap2DWithGamma(byte *dst, const byte *src, const int width, const int height, const int components, const float gammaToLinear[256], float (*linearToGamma)(float)) {
+static void BuildMipMap2DWithGamma(byte *dst, const byte *src, const int width, const int height, const int components, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
     int xOff = (width < 2) ? 0 : components;
     int yOff = (height < 2) ? 0 : components * width;
 
@@ -521,7 +521,7 @@ static void BuildMipMap2DWithGamma(byte *dst, const byte *src, const int width, 
     }
 }
 
-static void BuildMipMap3DWithGamma(byte *dst, const byte *src, const int width, const int height, const int depth, const int components, const float gammaToLinear[256], float (*linearToGamma)(float)) {
+static void BuildMipMap3DWithGamma(byte *dst, const byte *src, const int width, const int height, const int depth, const int components, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
     int xOff = (width < 2) ? 0 : components;
     int yOff = (height < 2) ? 0 : components * width;
     int zOff = (depth < 2) ? 0 : components * width * height;
@@ -551,7 +551,7 @@ static void BuildMipMap3DWithGamma(byte *dst, const byte *src, const int width, 
     }
 }
 
-static void BuildMipMapWithGamma(byte *dst, const byte *src, const int width, const int height, const int depth, const int components, const float gammaToLinear[256], float (*linearToGamma)(float)) {
+static void BuildMipMapWithGamma(byte *dst, const byte *src, const int width, const int height, const int depth, const int components, const float (&gammaToLinear)[256], float (*linearToGamma)(float)) {
     if (depth > 1) {
         BuildMipMap3DWithGamma(dst, src, width, height, depth, components, gammaToLinear, linearToGamma);
     } else if (height > 1) {

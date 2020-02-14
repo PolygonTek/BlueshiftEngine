@@ -363,66 +363,38 @@ private:
     static bool                 initialized;
 };
 
+// http://www.lomont.org/papers/2003/InvSqrt.pdf
 BE_INLINE float Math::RSqrt(float x) {
     int32_t i;
     float y, r;
 
     y = x * 0.5f;
-    i = *reinterpret_cast<int32_t *>(&x);
-    i = 0x5f3759df - (i >> 1);
-    r = *reinterpret_cast<float *>(&i);
-    r = r * (1.5f - r * r * y);
+    i = *reinterpret_cast<int32_t *>(&x);   // Get bits for floating point value
+    i = 0x5f375a86 - (i >> 1);              // Initial guess for Newton's method 
+    r = *reinterpret_cast<float *>(&i);     // Convert bits back to float
+    r = r * (1.5f - r * r * y);             // Newton step, repeating increase accuracy
     return r;
-}
-
-BE_INLINE float Math::InvSqrt16(float x) {
-    uint32_t a = ((union _flint *)(&x))->i;
-    union _flint seed;
-
-    assert(initialized);
-
-    double y = x * 0.5f;
-    seed.i = ((((3 * EXP_BIAS - 1) - ((a >> EXP_POS) & 0xFF)) >> 1) << EXP_POS) | iSqrt[(a >> (EXP_POS-LOOKUP_BITS)) & LOOKUP_MASK];
-    double r = seed.f;
-    r = r * (1.5f - r * r * y);
-    return (float)r;
 }
 
 BE_INLINE float Math::InvSqrt(float x) {
-    uint32_t a = ((union _flint *)(&x))->i;
-    union _flint seed;
+    return (x > FloatSmallestNonDenormal) ? sqrtf(1.0f / x) : INFINITY;
+}
 
-    assert(initialized);
-
-    double y = x * 0.5f;
-    seed.i = ((((3 * EXP_BIAS - 1) - ((a >> EXP_POS) & 0xFF)) >> 1) << EXP_POS) | iSqrt[(a >> (EXP_POS-LOOKUP_BITS)) & LOOKUP_MASK];
-    double r = seed.f;
-    r = r * (1.5f - r * r * y);
-    r = r * (1.5f - r * r * y);
-    return (float) r;
+BE_INLINE float Math::InvSqrt16(float x) {
+    return (x > FloatSmallestNonDenormal) ? sqrtf(1.0f / x) : INFINITY;
 }
 
 BE_INLINE double Math::InvSqrt64(float x) {
-    uint32_t a = ((union _flint *)(&x))->i;
-    union _flint seed;
+    return (x > FloatSmallestNonDenormal) ? sqrtf(1.0f / x) : INFINITY;
 
-    assert(initialized);
-
-    double y = x * 0.5f;
-    seed.i = ((((3 * EXP_BIAS - 1) - ((a >> EXP_POS) & 0xFF)) >> 1) << EXP_POS) | iSqrt[(a >> (EXP_POS-LOOKUP_BITS)) & LOOKUP_MASK];
-    double r = seed.f;
-    r = r * (1.5f - r * r * y);
-    r = r * (1.5f - r * r * y);
-    r = r * (1.5f - r * r * y);
-    return r;
-}
-
-BE_INLINE float Math::Sqrt16(float x) {
-    return x * InvSqrt16(x);
 }
 
 BE_INLINE float Math::Sqrt(float x) {
     return x * InvSqrt(x);
+}
+
+BE_INLINE float Math::Sqrt16(float x) {
+    return x * InvSqrt16(x);
 }
 
 BE_INLINE double Math::Sqrt64(float x) {
