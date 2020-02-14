@@ -377,28 +377,69 @@ BE_INLINE float Math::RSqrt(float x) {
 }
 
 BE_INLINE float Math::InvSqrt(float x) {
+#if 0
+    uint32_t a = ((union _flint *)(&x))->i;
+    union _flint seed;
+
+    assert(initialized);
+
+    double y = x * 0.5f;
+    seed.i = ((((3 * EXP_BIAS - 1) - ((a >> EXP_POS) & 0xFF)) >> 1) << EXP_POS) | iSqrt[(a >> (EXP_POS - LOOKUP_BITS)) & LOOKUP_MASK];
+    double r = seed.f;
+    r = r * (1.5f - r * r * y);
+    r = r * (1.5f - r * r * y);
+    return (float)r;
+#else
     return (x > FloatSmallestNonDenormal) ? sqrtf(1.0f / x) : INFINITY;
+#endif
 }
 
 BE_INLINE float Math::InvSqrt16(float x) {
+#if 0
+    uint32_t a = ((union _flint *)(&x))->i;
+    union _flint seed;
+
+    assert(initialized);
+
+    double y = x * 0.5f;
+    seed.i = ((((3 * EXP_BIAS - 1) - ((a >> EXP_POS) & 0xFF)) >> 1) << EXP_POS) | iSqrt[(a >> (EXP_POS - LOOKUP_BITS)) & LOOKUP_MASK];
+    double r = seed.f;
+    r = r * (1.5f - r * r * y);
+    return (float)r;
+#else
     return (x > FloatSmallestNonDenormal) ? sqrtf(1.0f / x) : INFINITY;
+#endif
 }
 
 BE_INLINE double Math::InvSqrt64(float x) {
-    return (x > FloatSmallestNonDenormal) ? sqrtf(1.0f / x) : INFINITY;
+#if 0
+    uint32_t a = ((union _flint *)(&x))->i;
+    union _flint seed;
 
+    assert(initialized);
+
+    double y = x * 0.5f;
+    seed.i = ((((3 * EXP_BIAS - 1) - ((a >> EXP_POS) & 0xFF)) >> 1) << EXP_POS) | iSqrt[(a >> (EXP_POS - LOOKUP_BITS)) & LOOKUP_MASK];
+    double r = seed.f;
+    r = r * (1.5f - r * r * y);
+    r = r * (1.5f - r * r * y);
+    r = r * (1.5f - r * r * y);
+    return r;
+#else
+    return (x > FloatSmallestNonDenormal) ? sqrtf(1.0f / x) : INFINITY;
+#endif
 }
 
 BE_INLINE float Math::Sqrt(float x) {
-    return x * InvSqrt(x);
+    return (x >= 0.0f) ? sqrtf(x) : 0.0f;
 }
 
 BE_INLINE float Math::Sqrt16(float x) {
-    return x * InvSqrt16(x);
+    return (x >= 0.0f) ? sqrtf(x) : 0.0f;
 }
 
 BE_INLINE double Math::Sqrt64(float x) {
-    return x * InvSqrt64(x);
+    return (x >= 0.0f) ? sqrtf(x) : 0.0f;
 }
 
 BE_INLINE float Math::Sin(float a) {
