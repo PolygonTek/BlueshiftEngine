@@ -260,15 +260,15 @@ void DXTEncoder::GetMinMaxColorHQ(const byte *colorBlock, byte *minColor, byte *
 #if 1
     Vec3 principalAxis = ComputePrincipalComponent(covMatrix);
     float l = principalAxis.Normalize();
-    if (l == 0.0f) {
+    if (l == 0.0f || IEEE_FLT_IS_NAN(l)) {
         principalAxis.Set(1.0f, 1.0f, 1.0f);
         principalAxis.Normalize();
     }
 #else
     Eigen::Matrix3f m;
     m << covMatrix[0], covMatrix[1], covMatrix[2],
-        covMatrix[1], covMatrix[3], covMatrix[4],
-        covMatrix[2], covMatrix[4], covMatrix[5];
+         covMatrix[1], covMatrix[3], covMatrix[4],
+         covMatrix[2], covMatrix[4], covMatrix[5];
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigSolver(m);
     Vec3 principalAxis(eigSolver.eigenvectors().col(2).data());
 #endif
@@ -556,7 +556,8 @@ void DXTEncoder::ComputeColorIndicesFast(const byte *colorBlock, const byte *max
 }
 
 int DXTEncoder::ComputeColorIndices(const byte *colorBlock, const uint16_t color0, const uint16_t color1, uint32_t &result) {
-    byte colors[4][4];
+    ALIGN_AS16 byte colors[4][4];
+    ALIGN_AS16 uint32_t indexes[16];
 
     RGB888From565(color0, colors[0]);
     RGB888From565(color1, colors[1]);
@@ -576,8 +577,6 @@ int DXTEncoder::ComputeColorIndices(const byte *colorBlock, const uint16_t color
         colors[3][1] = 0;
         colors[3][2] = 0;
     }
-
-    uint32_t indexes[16];
 
     int error = 0;
     for (int i = 0; i < 16; i++) {
@@ -714,7 +713,7 @@ void DXTEncoder::EncodeDXT1BlockHQ(const byte *colorBlock, byte **dstPtr) {
     ComputeColorIndices(colorBlock, dxtColorBlock.color0, dxtColorBlock.color1, dxtColorBlock.indexes);
 
     memcpy(*dstPtr, &dxtColorBlock, sizeof(dxtColorBlock));
-    *dstPtr += sizeof(DXTBlock::ColorBlock);
+    *dstPtr += sizeof(dxtColorBlock);
 }
 
 void DXTEncoder::EncodeDXT3BlockHQ(const byte *colorBlock, byte **dstPtr) {
