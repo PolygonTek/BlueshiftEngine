@@ -26,6 +26,7 @@ struct avxf {
     BE_FORCE_INLINE avxf() {}
     BE_FORCE_INLINE avxf(const avxf &other) { m256 = other.m256; }
     BE_FORCE_INLINE avxf(const __m256 a) { m256 = a; }
+
     BE_FORCE_INLINE explicit avxf(const __m256i a) { m256 = _mm256_cvtepi32_ps(a); }
     BE_FORCE_INLINE explicit avxf(const __m128 a) { m256 = _mm256_insertf128_ps(_mm256_castps128_ps256(a), a, 1); }
     BE_FORCE_INLINE explicit avxf(const __m128 a, const __m128 b) { m256 = _mm256_insertf128_ps(_mm256_castps128_ps256(a), b, 1); }
@@ -38,6 +39,7 @@ struct avxf {
     BE_FORCE_INLINE void setOne() { m256 = _mm256_set1_ps(1.0f); }
 
     BE_FORCE_INLINE avxf &operator=(const avxf &other) { m256 = other.m256; return *this; }
+
     BE_FORCE_INLINE operator const __m256 &() const { return m256; };
     BE_FORCE_INLINE operator __m256 &() { return m256; };
 

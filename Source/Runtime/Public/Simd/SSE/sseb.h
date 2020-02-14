@@ -17,12 +17,14 @@
 struct sseb {
     union {
         __m128      m128;
+        __m128i     m128i;
         int32_t     pi32[4];
     };
 
     BE_FORCE_INLINE sseb() {}
     BE_FORCE_INLINE sseb(const sseb &other) { m128 = other.m128; }
     BE_FORCE_INLINE sseb(const __m128 a) { m128 = a; }
+
     BE_FORCE_INLINE explicit sseb(bool a) { m128 = _mm_lookupmask_ps[(size_t(a) << 3) | (size_t(a) << 2) | (size_t(a) << 1) | size_t(a)]; }
     BE_FORCE_INLINE explicit sseb(bool a, bool b, bool c, bool d) { m128 = _mm_lookupmask_ps[(size_t(d) << 3) | (size_t(c) << 2) | (size_t(b) << 1) | size_t(a)]; } 
 

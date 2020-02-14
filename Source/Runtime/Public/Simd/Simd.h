@@ -53,7 +53,7 @@ class Mat3x4;
 class BE_API SIMDProcessor {
 public:
     SIMDProcessor() { cpuid = CPUID_NONE; }
-    virtual ~SIMDProcessor() = 0;
+    virtual ~SIMDProcessor() = 0 {};
 
     CpuId cpuid;
 
@@ -89,10 +89,17 @@ public:
     virtual void BE_FASTCALL            DeriveTriPlanes(Plane *planes, const VertexGenericLit *verts, const int numVerts, const int *indexes, const int numIndexes) = 0;
 };
 
-BE_INLINE SIMDProcessor::~SIMDProcessor() {
-}
-
-extern SIMDProcessor *      simdGeneric;
-extern SIMDProcessor *      simdProcessor;
+extern SIMDProcessor *simdGeneric;
+extern SIMDProcessor *simdProcessor;
 
 BE_NAMESPACE_END
+
+#include "Simd_Generic.h"
+
+#ifdef ENABLE_X86_SSE_INTRIN
+#include "Simd_SSE4.h"
+#endif 
+
+#ifdef ENABLE_X86_AVX_INTRIN
+#include "Simd_AVX.h"
+#endif

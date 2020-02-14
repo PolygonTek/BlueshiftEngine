@@ -18,9 +18,9 @@
 
 BE_NAMESPACE_BEGIN
 
-typedef sseb simd4b;
-typedef ssef simd4f;
-typedef ssei simd4i;
+using simd4b = sseb;
+using simd4f = ssef;
+using simd4i = ssei;
 
 class SIMD_SSE4 : public SIMD_Generic {
 public:

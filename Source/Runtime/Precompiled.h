@@ -183,13 +183,6 @@
     #define BE_FASTCALL
 #endif
 
-// FIXME
-#if defined(__X86__)
-    #define ENABLE_X86_SSE_INTRIN
-#elif defined(__ARM64__)
-    #define ENABLE_NEON_INTRIN
-#endif
-
 #define COUNT_OF(a)                 ((int)(sizeof(a) / sizeof((a)[0])))
 
 #define OFFSET_OF(type, member)     ((intptr_t)&((type *)0)->member)
@@ -531,6 +524,16 @@ BE_FORCE_INLINE CFStringRef WideStringToCFString(const wchar_t *string) {
 #endif // __ANDROID__
 
 //----------------------------------------------------------------------------------------------
+
+#if defined(__SSE4_2__)
+    #define ENABLE_X86_SSE_INTRIN
+#elif defined(__ARM64__)
+    #define ENABLE_NEON_INTRIN
+#endif
+
+#if defined(__AVX__)
+    #define ENABLE_X86_AVX_INTRIN
+#endif
 
 typedef void (*streamOutFunc_t)(int level, const char *msg);
 

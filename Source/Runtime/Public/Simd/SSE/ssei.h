@@ -18,27 +18,32 @@
 
 struct ssei {
     union { 
-        __m128i     m128; 
-        int64_t     pi64[2]; 
-        int32_t     pi32[4]; 
-        int16_t     pi16[8]; 
-        int8_t      pi8[16]; 
+        __m128i     m128i;
+        __m128      m128;
+        int64_t     pi64[2];
+        int32_t     pi32[4];
+        int16_t     pi16[8];
+        int8_t      pi8[16];
     };
 
     BE_FORCE_INLINE ssei() {}
-    BE_FORCE_INLINE ssei(const ssei &other) { m128 = other.m128; }
-    BE_FORCE_INLINE ssei &operator=(const ssei &other) { m128 = other.m128; return *this; }
-    BE_FORCE_INLINE ssei(const __m128i a) { m128 = a; }
-    BE_FORCE_INLINE explicit ssei(const __m128 a) { m128 = _mm_cvtps_epi32(a); }
-    BE_FORCE_INLINE explicit ssei(const int32_t *a) { m128 = _mm_loadu_si128((__m128i *)a); }
-    BE_FORCE_INLINE explicit ssei(int32_t a) { m128 = _mm_set1_epi32(a); }
-    BE_FORCE_INLINE explicit ssei(int32_t a, int32_t b, int32_t c, int32_t d) { m128 = _mm_set_epi32(d, c, b, a); }
+    BE_FORCE_INLINE ssei(const ssei &other) { m128i = other.m128i; }
+    BE_FORCE_INLINE ssei &operator=(const ssei &other) { m128i = other.m128i; return *this; }
+    BE_FORCE_INLINE ssei(const __m128i a) { m128i = a; }
 
-    BE_FORCE_INLINE void setZero() { m128 = _mm_setzero_si128(); }
-    BE_FORCE_INLINE void setOne() { m128 = _mm_set1_epi32(1); }
+    BE_FORCE_INLINE explicit ssei(const __m128 a) { m128i = _mm_cvtps_epi32(a); }
+    BE_FORCE_INLINE explicit ssei(const int32_t *a) { m128i = _mm_loadu_si128((__m128i *)a); }
+    BE_FORCE_INLINE explicit ssei(int32_t a) { m128i = _mm_set1_epi32(a); }
+    BE_FORCE_INLINE explicit ssei(int32_t a, int32_t b, int32_t c, int32_t d) { m128i = _mm_set_epi32(d, c, b, a); }
 
-    BE_FORCE_INLINE operator const __m128i &() const { return m128; }
-    BE_FORCE_INLINE operator __m128i &() { return m128; }
+    BE_FORCE_INLINE void setZero() { m128i = _mm_setzero_si128(); }
+    BE_FORCE_INLINE void setOne() { m128i = _mm_set1_epi32(1); }
+
+    BE_FORCE_INLINE operator const __m128i &() const { return m128i; }
+    BE_FORCE_INLINE operator __m128i &() { return m128i; }
+
+    BE_FORCE_INLINE operator const __m128 &() const { return m128; }
+    BE_FORCE_INLINE operator __m128 &() { return m128; }
 
     BE_FORCE_INLINE const int32_t &operator[](const size_t i) const { assert(i < 4); return pi32[i]; }
     BE_FORCE_INLINE int32_t &operator[](const size_t i) { assert(i < 4); return pi32[i]; }
@@ -49,10 +54,10 @@ struct ssei {
 //-------------------------------------------------------------
 
 BE_FORCE_INLINE const ssei operator+(const ssei &a) { return a; }
-BE_FORCE_INLINE const ssei operator-(const ssei &a) { return _mm_sub_epi32(_mm_setzero_si128(), a.m128); }
+BE_FORCE_INLINE const ssei operator-(const ssei &a) { return _mm_sub_epi32(_mm_setzero_si128(), a.m128i); }
 BE_FORCE_INLINE const ssei abs(const ssei &a) {
 #ifdef __SSSE3__
-    return _mm_abs_epi32(a.m128);
+    return _mm_abs_epi32(a.m128i);
 #else
     __m128i mask = _mm_cmplt_epi32(a, _mm_setzero_si128()); // FFFF   where a < 0
     ssei r = _mm_xor_si128(a, mask);                        // Invert where a < 0
@@ -66,41 +71,41 @@ BE_FORCE_INLINE const ssei abs(const ssei &a) {
 // Binary Operators
 //-------------------------------------------------------------
 
-BE_FORCE_INLINE const ssei operator+(const ssei &a, const ssei &b) { return _mm_add_epi32(a.m128, b.m128); }
+BE_FORCE_INLINE const ssei operator+(const ssei &a, const ssei &b) { return _mm_add_epi32(a.m128i, b.m128i); }
 BE_FORCE_INLINE const ssei operator+(const ssei &a, const int32_t &b) { return a + ssei(b); }
 BE_FORCE_INLINE const ssei operator+(const int32_t &a, const ssei &b) { return ssei(a) + b; }
 
-BE_FORCE_INLINE const ssei operator-(const ssei &a, const ssei &b) { return _mm_sub_epi32(a.m128, b.m128); }
+BE_FORCE_INLINE const ssei operator-(const ssei &a, const ssei &b) { return _mm_sub_epi32(a.m128i, b.m128i); }
 BE_FORCE_INLINE const ssei operator-(const ssei &a, const int32_t &b) { return a - ssei(b); }
 BE_FORCE_INLINE const ssei operator-(const int32_t &a, const ssei &b) { return ssei(a) - b; }
 
-BE_FORCE_INLINE const ssei operator*(const ssei &a, const ssei &b) { return _mm_mullo_epi32(a.m128, b.m128); }
+BE_FORCE_INLINE const ssei operator*(const ssei &a, const ssei &b) { return _mm_mullo_epi32(a.m128i, b.m128i); }
 BE_FORCE_INLINE const ssei operator*(const ssei &a, const int32_t &b) { return a * ssei(b); }
 BE_FORCE_INLINE const ssei operator*(const int32_t &a, const ssei &b) { return ssei(a) * b; }
 
-BE_FORCE_INLINE const ssei operator&(const ssei &a, const ssei &b) { return _mm_and_si128(a.m128, b.m128); }
+BE_FORCE_INLINE const ssei operator&(const ssei &a, const ssei &b) { return _mm_and_si128(a.m128i, b.m128i); }
 BE_FORCE_INLINE const ssei operator&(const ssei &a, const int32_t &b) { return a & ssei(b); }
 BE_FORCE_INLINE const ssei operator&(const int32_t &a, const ssei &b) { return ssei(a) & b; }
 
-BE_FORCE_INLINE const ssei operator|(const ssei &a, const ssei &b) { return _mm_or_si128(a.m128, b.m128); }
+BE_FORCE_INLINE const ssei operator|(const ssei &a, const ssei &b) { return _mm_or_si128(a.m128i, b.m128i); }
 BE_FORCE_INLINE const ssei operator|(const ssei &a, const int32_t &b) { return a | ssei(b); }
 BE_FORCE_INLINE const ssei operator|(const int32_t &a, const ssei &b) { return ssei(a) | b; }
 
-BE_FORCE_INLINE const ssei operator^(const ssei &a, const ssei &b) { return _mm_xor_si128(a.m128, b.m128); }
+BE_FORCE_INLINE const ssei operator^(const ssei &a, const ssei &b) { return _mm_xor_si128(a.m128i, b.m128i); }
 BE_FORCE_INLINE const ssei operator^(const ssei &a, const int32_t &b) { return a ^ ssei(b); }
 BE_FORCE_INLINE const ssei operator^(const int32_t &a, const ssei &b) { return ssei(a) ^ b; }
 
-BE_FORCE_INLINE const ssei operator<<(const ssei &a, const int32_t &n) { return _mm_slli_epi32(a.m128, n); }
-BE_FORCE_INLINE const ssei operator>>(const ssei &a, const int32_t &n) { return _mm_srai_epi32(a.m128, n); }
+BE_FORCE_INLINE const ssei operator<<(const ssei &a, const int32_t &n) { return _mm_slli_epi32(a.m128i, n); }
+BE_FORCE_INLINE const ssei operator>>(const ssei &a, const int32_t &n) { return _mm_srai_epi32(a.m128i, n); }
 
-BE_FORCE_INLINE const ssei sra(const ssei &a, const int32_t &b) { return _mm_srai_epi32(a.m128, b); }
-BE_FORCE_INLINE const ssei srl(const ssei &a, const int32_t &b) { return _mm_srli_epi32(a.m128, b); }
+BE_FORCE_INLINE const ssei sra(const ssei &a, const int32_t &b) { return _mm_srai_epi32(a.m128i, b); }
+BE_FORCE_INLINE const ssei srl(const ssei &a, const int32_t &b) { return _mm_srli_epi32(a.m128i, b); }
 
-BE_FORCE_INLINE const ssei vmin(const ssei &a, const ssei &b) { return _mm_min_epi32(a.m128, b.m128); }
+BE_FORCE_INLINE const ssei vmin(const ssei &a, const ssei &b) { return _mm_min_epi32(a.m128i, b.m128i); }
 BE_FORCE_INLINE const ssei vmin(const ssei &a, const int32_t &b) { return vmin(a, ssei(b)); }
 BE_FORCE_INLINE const ssei vmin(const int32_t &a, const ssei &b) { return vmin(ssei(a), b); }
 
-BE_FORCE_INLINE const ssei vmax(const ssei &a, const ssei &b) { return _mm_max_epi32(a.m128, b.m128); }
+BE_FORCE_INLINE const ssei vmax(const ssei &a, const ssei &b) { return _mm_max_epi32(a.m128i, b.m128i); }
 BE_FORCE_INLINE const ssei vmax(const ssei &a, const int32_t &b) { return vmax(a, ssei(b)); }
 BE_FORCE_INLINE const ssei vmax(const int32_t &a, const ssei &b) { return vmax(ssei(a), b); }
 
@@ -130,7 +135,7 @@ BE_FORCE_INLINE ssei &operator>>=(ssei &a, const int32_t &b) { return a = a >> b
 // Comparision Operators + Select
 //-------------------------------------------------------------
 
-BE_FORCE_INLINE const sseb operator==(const ssei &a, const ssei &b) { return _mm_castsi128_ps(_mm_cmpeq_epi32(a.m128, b.m128)); }
+BE_FORCE_INLINE const sseb operator==(const ssei &a, const ssei &b) { return _mm_castsi128_ps(_mm_cmpeq_epi32(a.m128i, b.m128i)); }
 BE_FORCE_INLINE const sseb operator==(const ssei &a, const int32_t &b) { return a == ssei(b); }
 BE_FORCE_INLINE const sseb operator==(const int32_t &a, const ssei &b) { return ssei(a) == b; }
 
@@ -138,7 +143,7 @@ BE_FORCE_INLINE const sseb operator!=(const ssei &a, const ssei &b) { return !(a
 BE_FORCE_INLINE const sseb operator!=(const ssei &a, const int32_t &b) { return a != ssei(b); }
 BE_FORCE_INLINE const sseb operator!=(const int32_t &a, const ssei &b) { return ssei(a) != b; }
 
-BE_FORCE_INLINE const sseb operator<(const ssei &a, const ssei &b) { return _mm_castsi128_ps(_mm_cmplt_epi32(a.m128, b.m128)); }
+BE_FORCE_INLINE const sseb operator<(const ssei &a, const ssei &b) { return _mm_castsi128_ps(_mm_cmplt_epi32(a.m128i, b.m128i)); }
 BE_FORCE_INLINE const sseb operator<(const ssei &a, const int32_t &b) { return a < ssei(b); }
 BE_FORCE_INLINE const sseb operator<(const int32_t &a, const ssei &b) { return ssei(a) <  b; }
 
@@ -146,7 +151,7 @@ BE_FORCE_INLINE const sseb operator>=(const ssei &a, const ssei &b) { return !(a
 BE_FORCE_INLINE const sseb operator>=(const ssei &a, const int32_t &b) { return a >= ssei(b); }
 BE_FORCE_INLINE const sseb operator>=(const int32_t &a, const ssei &b) { return ssei(a) >= b; }
 
-BE_FORCE_INLINE const sseb operator>(const ssei &a, const ssei &b) { return _mm_castsi128_ps(_mm_cmpgt_epi32(a.m128, b.m128)); }
+BE_FORCE_INLINE const sseb operator>(const ssei &a, const ssei &b) { return _mm_castsi128_ps(_mm_cmpgt_epi32(a.m128i, b.m128i)); }
 BE_FORCE_INLINE const sseb operator>(const ssei &a, const int32_t &b) { return a > ssei(b); }
 BE_FORCE_INLINE const sseb operator>(const int32_t &a, const ssei &b) { return ssei(a) >  b; }
 
@@ -169,8 +174,8 @@ BE_FORCE_INLINE const ssei select(const sseb &mask, const ssei &a, const ssei &b
 // Movement/Shifting/Shuffling
 //-------------------------------------------------------------
 
-BE_FORCE_INLINE ssei unpacklo(const ssei &a, const ssei &b) { return _mm_castps_si128(_mm_unpacklo_ps(_mm_castsi128_ps(a.m128), _mm_castsi128_ps(b.m128))); }
-BE_FORCE_INLINE ssei unpackhi(const ssei &a, const ssei &b) { return _mm_castps_si128(_mm_unpackhi_ps(_mm_castsi128_ps(a.m128), _mm_castsi128_ps(b.m128))); }
+BE_FORCE_INLINE ssei unpacklo(const ssei &a, const ssei &b) { return _mm_castps_si128(_mm_unpacklo_ps(_mm_castsi128_ps(a.m128i), _mm_castsi128_ps(b.m128i))); }
+BE_FORCE_INLINE ssei unpackhi(const ssei &a, const ssei &b) { return _mm_castps_si128(_mm_unpackhi_ps(_mm_castsi128_ps(a.m128i), _mm_castsi128_ps(b.m128i))); }
 
 // 한개의 4 packed 32 bit operand 에 대한 shuffle. 4 개의 2 bit index 를 이용한다.
 template <size_t i0, size_t i1, size_t i2, size_t i3> BE_FORCE_INLINE const ssei shuffle(const ssei &a) {

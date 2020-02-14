@@ -16,13 +16,10 @@
 #include "Math/Math.h"
 #include "Core/JointPose.h"
 #include "Simd/Simd.h"
-#include "Simd/Simd_Generic.h"
-
-#if defined(__X86__)
-
-#include "Simd/Simd_SSE4.h"
 
 BE_NAMESPACE_BEGIN
+
+#ifdef ENABLE_X86_SSE_INTRIN
 
 void BE_FASTCALL SIMD_SSE4::Add(float *dst, const float constant, const float *src, const int count0) {
     int count = count0;
@@ -34,6 +31,7 @@ void BE_FASTCALL SIMD_SSE4::Add(float *dst, const float constant, const float *s
         assert_16_byte_aligned(src);
 
         ssef c(constant);
+
         int c16 = count >> 4;
         while (c16 > 0) {
             //prefetchNTA(src_ptr + 16);
@@ -118,6 +116,7 @@ void BE_FASTCALL SIMD_SSE4::Sub(float *dst, const float constant, const float *s
         assert_16_byte_aligned(src);
 
         ssef c(constant);
+
         int c16 = count >> 4;
         while (c16 > 0) {
             //prefetchNTA(src0_ptr + 16);
@@ -454,7 +453,7 @@ void BE_FASTCALL SIMD_SSE4::MatrixMultiply(float *dst, const float *src0, const 
     a3 = a0;
 
     a0 = _mm_shuffle_ps(a0, a0, _MM_SHUFFLE(0, 0, 0, 0));
-    a1 = _mm_shuffle_ps(a1, a1, _MM_SHUFFLE(1, 1, 1, 1));  
+    a1 = _mm_shuffle_ps(a1, a1, _MM_SHUFFLE(1, 1, 1, 1));
     a2 = _mm_shuffle_ps(a2, a2, _MM_SHUFFLE(2, 2, 2, 2));
     a3 = _mm_shuffle_ps(a3, a3, _MM_SHUFFLE(3, 3, 3, 3));
 
@@ -850,6 +849,6 @@ void BE_FASTCALL SIMD_SSE4::Memset(void *dest0, const int val, const int count0)
 
 #endif
 
-BE_NAMESPACE_END
+#endif // ENABLE_X86_SSE_INTRIN
 
-#endif // #if defined(__X86__)
+BE_NAMESPACE_END
