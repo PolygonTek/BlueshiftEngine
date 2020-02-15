@@ -91,6 +91,13 @@ void ComCanvas::Init() {
 
     renderCameraDef.layerMask = BIT(TagLayerSettings::BuiltInLayer::UI);
 
+#if WITH_EDITOR
+    ComRectTransform *rectTransform = GetEntity()->GetRectTransform();
+    if (rectTransform) {
+        rectTransform->Connect(&ComRectTransform::SIG_RectTransformUpdated, this, (SignalCallback)&ComCanvas::RectTransformUpdated, SignalObject::ConnectionType::Unique);
+    }
+#endif
+
     // Mark as initialized
     SetInitialized(true);
 }
@@ -135,6 +142,14 @@ const AABB ComCanvas::GetAABB() const {
 
     return AABB(mins, maxs);
 }
+
+#if WITH_EDITOR
+void ComCanvas::RectTransformUpdated(ComRectTransform *rectTransform) {
+    if (rectTransform->GetAnchoredPosition() != Vec2::zero) {
+        rectTransform->SetAnchoredPosition(Vec2::zero);
+    }
+}
+#endif
 
 Size ComCanvas::GetOrthoSize() const {
     int screenWidth = 320;

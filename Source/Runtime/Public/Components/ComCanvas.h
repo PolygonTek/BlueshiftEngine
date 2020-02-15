@@ -20,6 +20,7 @@
 
 BE_NAMESPACE_BEGIN
 
+class ComTransform;
 class ComRectTransform;
 
 class ComCanvas : public Component {
@@ -90,6 +91,10 @@ public:
 
 protected:
     virtual void            OnInactive() override;
+
+#if WITH_EDITOR
+    void                    RectTransformUpdated(ComRectTransform *rectTransform);
+#endif
 
     RenderCamera *          renderCamera;
     RenderCamera::State     renderCameraDef;
