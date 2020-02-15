@@ -155,6 +155,37 @@ public:
                         /// Sets all element of this color.
     void                Set(float r, float g, float b);
 
+                        /// Performs a RGB swizzled access to this color.
+    Color3              rrr() const { return Color3(r, r, r); }
+    Color3              rrg() const { return Color3(r, r, g); }
+    Color3              rrb() const { return Color3(r, r, b); }
+    Color3              rgr() const { return Color3(r, g, r); }
+    Color3              rgg() const { return Color3(r, g, g); }
+    Color3              rgb() const { return Color3(r, g, b); }
+    Color3              rbr() const { return Color3(r, b, r); }
+    Color3              rbg() const { return Color3(r, b, g); }
+    Color3              rbb() const { return Color3(r, b, b); }
+
+    Color3              grr() const { return Color3(g, r, r); }
+    Color3              grg() const { return Color3(g, r, g); }
+    Color3              grb() const { return Color3(g, r, b); }
+    Color3              ggr() const { return Color3(g, g, r); }
+    Color3              ggg() const { return Color3(g, g, g); }
+    Color3              ggb() const { return Color3(g, g, b); }
+    Color3              gbr() const { return Color3(g, b, r); }
+    Color3              gbg() const { return Color3(g, b, g); }
+    Color3              gbb() const { return Color3(g, b, b); }
+
+    Color3              brr() const { return Color3(b, r, r); }
+    Color3              brg() const { return Color3(b, r, g); }
+    Color3              brb() const { return Color3(b, r, b); }
+    Color3              bgr() const { return Color3(b, g, r); }
+    Color3              bgg() const { return Color3(b, g, g); }
+    Color3              bgb() const { return Color3(b, g, b); }
+    Color3              bbr() const { return Color3(b, b, r); }
+    Color3              bbg() const { return Color3(b, b, g); }
+    Color3              bbb() const { return Color3(b, b, b); }
+
                         /// Clip to [0, 1] range.
     void                Clip();
                         /// Inverts the RGB channels.
