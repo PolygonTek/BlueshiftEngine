@@ -144,23 +144,23 @@ void ComTextRenderer::SetDrawMode(RenderObject::TextDrawMode::Enum drawMode) {
 }
 
 Color3 ComTextRenderer::GetSecondaryColor() const {
-    return renderObjectDef.textSecondaryColor.ToColor3();
+    return renderObjectDef.textFxColor.ToColor3();
 }
 
 void ComTextRenderer::SetSecondaryColor(const Color3 &color) {
-    renderObjectDef.textSecondaryColor.r = color.r;
-    renderObjectDef.textSecondaryColor.g = color.g;
-    renderObjectDef.textSecondaryColor.b = color.b;
+    renderObjectDef.textFxColor.r = color.r;
+    renderObjectDef.textFxColor.g = color.g;
+    renderObjectDef.textFxColor.b = color.b;
 
     UpdateVisuals();
 }
 
 float ComTextRenderer::GetSecondaryAlpha() const {
-    return renderObjectDef.textSecondaryColor.a;
+    return renderObjectDef.textFxColor.a;
 }
 
 void ComTextRenderer::SetSecondaryAlpha(float alpha) {
-    renderObjectDef.textSecondaryColor.a = alpha;
+    renderObjectDef.textFxColor.a = alpha;
 
     UpdateVisuals();
 }

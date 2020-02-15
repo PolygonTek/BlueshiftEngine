@@ -461,12 +461,14 @@ void RenderWorld::AddTextMeshes(VisCamera *camera) {
             flags |= DrawSurf::Flag::ShowWires;
         }
 
+        Color4 textColor(&renderObjectDef.materialParms[RenderObject::MaterialParm::Red]);
+
         textMesh.Clear();
-        textMesh.SetColor(Color4(&renderObjectDef.materialParms[RenderObject::MaterialParm::Red]));
+        textMesh.SetColor(textColor);
 
         if (renderObjectDef.textDrawMode == RenderObject::TextDrawMode::DropShadows ||
             renderObjectDef.textDrawMode == RenderObject::TextDrawMode::AddOutlines) {
-            textMesh.SetTextBorderColor(renderObjectDef.textSecondaryColor);
+            textMesh.SetTextBorderColor(Color4(renderObjectDef.textFxColor.ToColor3(), renderObjectDef.textFxColor.a * textColor.a));
         }
 
         if (renderObjectDef.textRect != RectF::zero) {

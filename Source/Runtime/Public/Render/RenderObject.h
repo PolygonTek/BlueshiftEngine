@@ -178,7 +178,7 @@ public:
         Font *              font = nullptr;
         Str                 text;                       ///< UTF8 encoded string
         TextDrawMode::Enum  textDrawMode = TextDrawMode::Normal;
-        Color4              textSecondaryColor = Color4::black;
+        Color4              textFxColor = Color4::black;
         TextAnchor::Enum    textAnchor = TextAnchor::UpperLeft;
         TextHorzAlignment::Enum textHorzAlignment = TextHorzAlignment::Center;
         TextVertAlignment::Enum textVertAlignment = TextVertAlignment::Middle;
