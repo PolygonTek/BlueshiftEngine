@@ -19,6 +19,7 @@
 #include "Asset/GuidMapper.h"
 #include "Components/ComScript.h"
 #include "Components/ComTransform.h"
+#include "Components/ComRectTransform.h"
 #include "Components/ComRigidBody.h"
 #include "Game/GameWorld.h"
 
@@ -100,6 +101,7 @@ void ComScript::SetOwnerValues() {
     owner["entity"] = GetEntity();
     owner["name"] = GetEntity()->GetName().c_str();
     owner["transform"] = GetEntity()->GetTransform();
+    owner["rect_transform"] = GetEntity()->GetRectTransform();
     owner["script"] = this;
 }
 

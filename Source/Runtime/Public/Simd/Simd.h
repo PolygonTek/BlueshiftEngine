@@ -53,7 +53,7 @@ class Mat3x4;
 class BE_API SIMDProcessor {
 public:
     SIMDProcessor() { cpuid = CPUID_NONE; }
-    virtual ~SIMDProcessor() = 0 {};
+    virtual ~SIMDProcessor() {}
 
     CpuId cpuid;
 
