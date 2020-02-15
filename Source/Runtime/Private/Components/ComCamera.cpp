@@ -300,7 +300,7 @@ float ComCamera::GetAspectRatio() const {
     int screenWidth = ctx->GetScreenWidth();
     int screenHeight = ctx->GetScreenHeight();
 
-    return (float)screenWidth / screenHeight;
+    return (float)screenWidth / (float)screenHeight;
 }
 
 const Point ComCamera::WorldToScreenPoint(const Vec3 &worldPos) const {
