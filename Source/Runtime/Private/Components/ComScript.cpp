@@ -716,13 +716,16 @@ void ComScript::InitScriptFields() {
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "object")) {
             auto pairPtr = fieldGuids.Get(name);
+            int fieldIndex = fieldGuids.GetPairs().IndexOf(pairPtr);
 
             auto propInfo = PropertyInfo(name, label, VariantType<Guid>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Guid, MixedPropertyTrait>(
-                    [pairPtr]() {
+                    [fieldIndex, this]() {
+                        auto pairPtr = fieldGuids.GetByIndex(fieldIndex);
                         return pairPtr->second.As<Guid>();
                     },
-                    [pairPtr, this](const Guid &value) {
+                    [fieldIndex, this](const Guid &value) {
+                        auto pairPtr = fieldGuids.GetByIndex(fieldIndex);
                         pairPtr->second = value;
 #if WITH_EDITOR
                         if (executeInEditMode) {
