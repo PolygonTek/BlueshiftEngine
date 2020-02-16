@@ -717,6 +717,7 @@ void ComScript::InitScriptFields() {
         } else if (!Str::Cmp(type, "object")) {
             auto pairPtr = fieldGuids.Get(name);
             int fieldIndex = fieldGuids.GetPairs().IndexOf(pairPtr);
+            assert(fieldIndex >= 0);
 
             auto propInfo = PropertyInfo(name, label, VariantType<Guid>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Guid, MixedPropertyTrait>(
@@ -900,6 +901,8 @@ void ComScript::SetScriptProperties() {
                         asset->CreateResource(*propInfo->GetMetaObject());
                         property["value"] = asset;
                     }
+                } else {
+                    property["value"] = nullptr;
                 }
             }
             break; 
