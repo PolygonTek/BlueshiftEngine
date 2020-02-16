@@ -270,7 +270,7 @@ void main() {
     shadingColor += albedo.rgb * ambientScale;
 #endif
 
-#ifndef DIRECT_LIGHTING
+#if defined(INDIRECT_LIGHTING) || (!defined(INDIRECT_LIGHTING) && !defined(DIRECT_LIGHTING))
     #if _EMISSION != 0
         MEDIUMP vec3 emission;
 
