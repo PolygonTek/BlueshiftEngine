@@ -528,7 +528,7 @@ BE_FORCE_INLINE CFStringRef WideStringToCFString(const wchar_t *string) {
 #if defined(__SSE4_2__)
     #define ENABLE_X86_SSE_INTRIN
 #elif defined(__ARM64__)
-    #define ENABLE_NEON_INTRIN
+    #define ENABLE_ARM_NEON_INTRIN
 #endif
 
 #if defined(__AVX__)
