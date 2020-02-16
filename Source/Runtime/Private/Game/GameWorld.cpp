@@ -54,13 +54,13 @@ void GameWorld::RegisterProperties() {
 }
 
 GameWorld::GameWorld() {
-    // Create render world
+    // Create render world.
     renderWorld = renderSystem.AllocRenderWorld();
 
-    // Create physics world
+    // Create physics world.
     physicsWorld = physicsSystem.AllocPhysicsWorld();
 
-    // Create render settings
+    // Create render settings.
     mapRenderSettings = static_cast<MapRenderSettings *>(MapRenderSettings::metaObject.CreateInstance());
     mapRenderSettings->gameWorld = this;
 
@@ -78,10 +78,10 @@ GameWorld::~GameWorld() {
         MapRenderSettings::DestroyInstanceImmediate(mapRenderSettings);
     }
 
-    // Free render world
+    // Free render world.
     renderSystem.FreeRenderWorld(renderWorld);
 
-    // Free physics world
+    // Free physics world.
     physicsSystem.FreePhysicsWorld(physicsWorld);
 
     luaVM.Shutdown();
@@ -120,7 +120,7 @@ void GameWorld::ClearEntities(bool clearAll) {
         }
     }
 
-    // Remove entities in reverse depth first order
+    // Remove entities in reverse depth first order.
     for (int i = entitiesToRemove.Count() - 1; i >= 0; i--) {
         Entity *ent = entitiesToRemove[i];
 
@@ -710,14 +710,14 @@ void GameWorld::Update(int elapsedTime) {
     time += deltaTime;
 
     if (gameStarted) {
-        // FixedUpdate() is called in StepSimulation() internally
+        // FixedUpdate() is called in StepSimulation() internally.
         physicsWorld->StepSimulation(deltaTime);
 
         UpdateEntities();
 
         LateUpdateEntities();
 
-        // Wake up waiting coroutine in Lua scripts
+        // Wake up waiting coroutine in Lua scripts.
         luaVM.WakeUpWaitingThreads(MS2SEC(time));
 
         luaVM.State().ForceGC();
@@ -725,7 +725,7 @@ void GameWorld::Update(int elapsedTime) {
 }
 
 void GameWorld::FixedUpdateEntities(float timeStep) {
-    // Call fixed update function for each entities in depth-first order
+    // Call fixed update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->FixedUpdate(timeStep * timeScale);
@@ -734,7 +734,7 @@ void GameWorld::FixedUpdateEntities(float timeStep) {
 }
 
 void GameWorld::FixedLateUpdateEntities(float timeStep) {
-    // Call fixed post-update function for each entities in depth-first order
+    // Call fixed post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->FixedLateUpdate(timeStep * timeScale);
@@ -743,7 +743,7 @@ void GameWorld::FixedLateUpdateEntities(float timeStep) {
 }
 
 void GameWorld::UpdateEntities() {
-    // Call update function for each entities in depth-first order
+    // Call update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->Update();
@@ -752,7 +752,7 @@ void GameWorld::UpdateEntities() {
 }
 
 void GameWorld::LateUpdateEntities() {
-    // Call post-update function for each entities in depth-first order
+    // Call post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->LateUpdate();
@@ -844,7 +844,7 @@ void GameWorld::ProcessPointerInput() {
     StaticArray<ComCamera *, 16> cameraComponents;
     ListUpActiveCameraComponents(cameraComponents);
 
-    // Process pointer input in reverse order
+    // Process pointer input in reverse order.
     for (int i = cameraComponents.Count() - 1; i >= 0; i--) {
         ComCamera *cameraComponent = cameraComponents[i];
 
@@ -856,7 +856,7 @@ void GameWorld::ProcessPointerInput() {
     StaticArray<ComCanvas *, 16> canvasComponents;
     ListUpActiveCanvasComponents(canvasComponents);
 
-    // Process pointer input in reverse order
+    // Process pointer input in reverse order.
     for (int i = canvasComponents.Count() - 1; i >= 0; i--) {
         ComCanvas *canvasComponent = canvasComponents[i];
 

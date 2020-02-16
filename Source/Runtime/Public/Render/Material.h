@@ -180,7 +180,8 @@ private:
     bool                        ParseDepthTest(Lexer &lexer, int *depthTest) const;
     bool                        ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const;
     //void                      MultiplyTextureMatrix(Pass *pass, int inMatrix[2][3]);
-    bool                        ParseShaderProperties(Lexer &lexer, Dict &properties);
+    bool                        ParseShaderProperties(Lexer &lexer, Dict &properties) const;
+    bool                        ParseShader(Lexer &lexer, Shader *&referenceShader, StrHashMap<Shader::Property> &shaderProperties) const;
 
     Str                         hashName;
     Str                         name;

@@ -166,75 +166,10 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
                 BE_WARNLOG("missing transparency cull keyword in material '%s'\n", hashName.c_str());
             }
         } else if (!token.Icmp("depthTest")) {
-            if (!ParseDepthTest(lexer, &depthTestBits)) {
-                BE_WARNLOG("missing depthTest parm in material '%s'\n", hashName.c_str());
-            }
+            ParseDepthTest(lexer, &depthTestBits);
         } else if (!token.Icmp("shader")) {
-            if (lexer.ReadToken(&token, false)) {
-                const Guid shaderGuid = Guid::FromString(token);
-                const Str shaderPath = resourceGuidMapper.Get(shaderGuid);
-
-                pass->referenceShader = shaderManager.GetShader(shaderPath);
-
-                // Parse shader property string values in dictionary
-                Dict propDict;
-                if (!ParseShaderProperties(lexer, propDict)) {
-                    if (pass->referenceShader) {
-                        shaderManager.ReleaseShader(pass->referenceShader);
-                    }
-                    return false;
-                }
-
-                if (pass->referenceShader) {
-                    // Shader has property info
-                    const auto &shaderPropInfoHashMap = pass->referenceShader->GetPropertyInfoHashMap();
-
-                    // Set shader property values
-                    for (int i = 0; i < shaderPropInfoHashMap.Count(); i++) {
-                        const auto entry = shaderPropInfoHashMap.GetByIndex(i);
-                        const auto &propName = entry->first;
-                        const auto &propInfo = entry->second;
-
-                        Shader::Property shaderProperty;
-
-                        if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject()->IsTypeOf(TextureResource::metaObject)) {
-                            // Value string
-                            Str value = propDict.GetString(propName, propInfo.GetDefaultValue().As<Guid>().ToString(Guid::Format::DigitsWithHyphensInBraces));
-
-                            if (version >= 2) {
-                                if (value.Length() == 38 && value[0] == '{' && value[value.Length() - 1] == '}') {
-                                    shaderProperty.data = Variant::FromString(Variant::Type::Guid, value);
-                                } else {
-                                    shaderProperty.data = Guid::CreateGuid();
-                                    resourceGuidMapper.Set(shaderProperty.data.As<Guid>(), value);
-                                }
-                            } else {
-                                shaderProperty.data = Variant::FromString(Variant::Type::Guid, value);
-                            }
-
-                            const Guid textureGuid = shaderProperty.data.As<Guid>();
-
-                            // Get texture path from GUID
-                            const Str texturePath = resourceGuidMapper.Get(textureGuid);
-
-                            // Get texture from path
-                            shaderProperty.texture = textureManager.GetTexture(texturePath);
-                        } else {
-                            // Value string
-                            Str value = propDict.GetString(propName, propInfo.GetDefaultValue().ToString());
-
-                            // Get value
-                            shaderProperty.data = Variant::FromString(propInfo.GetType(), value);
-                            shaderProperty.texture = nullptr;
-                        }
-
-                        pass->shaderProperties.Set(propName, shaderProperty);
-                    }
-
-                    CommitShaderPropertiesChanged();
-                }
-            } else {
-                BE_WARNLOG("missing shader name in material '%s'\n", hashName.c_str());
+            if (ParseShader(lexer, pass->referenceShader, pass->shaderProperties)) {
+                CommitShaderPropertiesChanged();
             }
         } else if (!token.Icmp("map")) {
             if (lexer.ReadToken(&token, false)) {
@@ -431,11 +366,11 @@ void Material::ChangeShader(Shader *shader) {
 void Material::CommitShaderPropertiesChanged() {
     Array<Shader::Define> defineArray;
 
-    const auto &shaderPropInfoHashMap = pass->referenceShader->GetPropertyInfoHashMap();
+    const auto &shaderPropertyInfos = pass->referenceShader->GetPropertyInfoHashMap();
 
     // List up define list for re-instantiating shader.
-    for (int i = 0; i < shaderPropInfoHashMap.Count(); i++) {
-        const auto entry = shaderPropInfoHashMap.GetByIndex(i);
+    for (int i = 0; i < shaderPropertyInfos.Count(); i++) {
+        const auto entry = shaderPropertyInfos.GetByIndex(i);
         const auto &propName = entry->first;
         const auto &propInfo = entry->second;
 
@@ -460,8 +395,8 @@ void Material::CommitShaderPropertiesChanged() {
     pass->shader = pass->referenceShader->InstantiateShader(defineArray);
 
     // Reload shader's texture.
-    for (int i = 0; i < shaderPropInfoHashMap.Count(); i++) {
-        const auto entry = shaderPropInfoHashMap.GetByIndex(i);
+    for (int i = 0; i < shaderPropertyInfos.Count(); i++) {
+        const auto entry = shaderPropertyInfos.GetByIndex(i);
         const auto &propName = entry->first;
         const auto &propInfo = entry->second;
 
@@ -478,34 +413,6 @@ void Material::CommitShaderPropertiesChanged() {
             shaderProperty.texture = textureManager.GetTexture(texturePath);
         }
     }
-}
-
-bool Material::ParseShaderProperties(Lexer &lexer, Dict &properties) {
-    Str token;
-    Str value;
-
-    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
-        return false;
-    }
-
-    while (1) {
-        lexer.ReadToken(&token);
-
-        if (token.IsEmpty()) {
-            BE_WARNLOG("no matching '}' found\n");
-            return false;
-        } else if (token[0] == '}') {
-            break;
-        } else {
-            if (lexer.ReadToken(&value, false)) {
-                properties.Set(token, value);
-            } else {
-                BE_WARNLOG("missing property value for property '%s' in material '%s'\n", token.c_str(), hashName.c_str());
-            }
-        }
-    }
-
-    return true;
 }
 
 bool Material::ParseRenderingMode(Lexer &lexer, RenderingMode::Enum *renderingMode) const {
@@ -557,6 +464,108 @@ bool Material::ParseDepthTest(Lexer &lexer, int *depthTest) const {
 
     BE_WARNLOG("missing parameter for depthTest keyword in material '%s'\n", hashName.c_str());
     return false;
+}
+
+bool Material::ParseShaderProperties(Lexer &lexer, Dict &properties) const {
+    Str token;
+    Str value;
+
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
+        return false;
+    }
+
+    while (1) {
+        lexer.ReadToken(&token);
+
+        if (token.IsEmpty()) {
+            BE_WARNLOG("no matching '}' found\n");
+            return false;
+        } else if (token[0] == '}') {
+            break;
+        } else {
+            if (lexer.ReadToken(&value, false)) {
+                properties.Set(token, value);
+            } else {
+                BE_WARNLOG("missing property value for property '%s' in material '%s'\n", token.c_str(), hashName.c_str());
+            }
+        }
+    }
+
+    return true;
+}
+
+bool Material::ParseShader(Lexer &lexer, Shader *&referenceShader, StrHashMap<Shader::Property> &shaderProperties) const {
+    Str token;
+
+    // Parse shader name.
+    if (!lexer.ReadToken(&token, false)) {
+        BE_WARNLOG("missing shader name in material '%s'\n", hashName.c_str());
+        return false;
+    }
+
+    const Guid shaderGuid = Guid::FromString(token);
+    const Str shaderPath = resourceGuidMapper.Get(shaderGuid);
+
+    // Get the refernece shader by shader path.
+    referenceShader = shaderManager.GetShader(shaderPath);
+    if (!referenceShader) {
+        return false;
+    }
+
+    // Parse the shader properties into a string and put it in the dictionary.
+    Dict propDict;
+    if (!ParseShaderProperties(lexer, propDict)) {
+        if (referenceShader) {
+            shaderManager.ReleaseShader(referenceShader);
+            referenceShader = nullptr;
+        }
+        return false;
+    }
+
+    const auto &shaderPropertyInfos = referenceShader->GetPropertyInfoHashMap();
+
+    // Set shader property values.
+    for (int i = 0; i < shaderPropertyInfos.Count(); i++) {
+        const auto entry = shaderPropertyInfos.GetByIndex(i);
+        const auto &propName = entry->first;
+        const auto &propInfo = entry->second;
+
+        Shader::Property shaderProperty;
+
+        if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject()->IsTypeOf(TextureResource::metaObject)) {
+            // Get the value as a string.
+            Str value = propDict.GetString(propName, propInfo.GetDefaultValue().As<Guid>().ToString(Guid::Format::DigitsWithHyphensInBraces));
+
+            if (version >= 2) {
+                if (value.Length() == 38/*Str::Length("{00000000-0000-0000-0000-000000000000}")*/ && value[0] == '{' && value[value.Length() - 1] == '}') {
+                    shaderProperty.data = Variant::FromString(Variant::Type::Guid, value);
+                } else {
+                    shaderProperty.data = Guid::CreateGuid();
+                    resourceGuidMapper.Set(shaderProperty.data.As<Guid>(), value);
+                }
+            } else {
+                shaderProperty.data = Variant::FromString(Variant::Type::Guid, value);
+            }
+
+            // Get texture path by GUID.
+            const Guid textureGuid = shaderProperty.data.As<Guid>();
+            const Str texturePath = resourceGuidMapper.Get(textureGuid);
+
+            // Set texture.
+            shaderProperty.texture = textureManager.GetTexture(texturePath);
+        } else {
+            // Get the value as a string.
+            Str value = propDict.GetString(propName, propInfo.GetDefaultValue().ToString());
+
+            // Set value.
+            shaderProperty.data = Variant::FromString(propInfo.GetType(), value);
+            shaderProperty.texture = nullptr;
+        }
+
+        shaderProperties.Set(propName, shaderProperty);
+    }
+
+    return true;
 }
 
 bool Material::ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const {
