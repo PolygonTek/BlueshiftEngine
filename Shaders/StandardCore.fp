@@ -266,12 +266,22 @@ void main() {
             shadingColor += IndirectLit_PhongFresnel();
         #endif
     #endif
-
-    #if _EMISSION != 0
-        shadingColor += shading.emission;
-    #endif
 #else
     shadingColor += albedo.rgb * ambientScale;
+#endif
+
+#ifndef DIRECT_LIGHTING
+    #if _EMISSION != 0
+        MEDIUMP vec3 emission;
+
+        #if _EMISSION == 1
+            emission = emissionColor * emissionScale;
+        #elif _EMISSION == 2
+            emission = tex2D(emissionMap, baseTc).rgb * emissionScale;
+        #endif
+
+        shadingColor += emission;
+    #endif
 #endif
 
 #ifdef DIRECT_LIGHTING

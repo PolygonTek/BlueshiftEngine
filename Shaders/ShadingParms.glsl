@@ -40,10 +40,6 @@ struct ShadingParms {
 #if _OCC != 0
     MEDIUMP float ambientOcclusion;
 #endif
-
-#if _EMISSION != 0
-    MEDIUMP vec3 emission;
-#endif
 };
 
 ShadingParms shading;
@@ -73,7 +69,7 @@ void PrepareShadingParms(vec4 albedo) {
     shading.n = normalize(v2f_normalWS.xyz);
 #endif
 
-#ifdef TWOSIDED
+#ifdef TWO_SIDED
     shading.n = gl_FrontFacing ? shading.n : -shading.n;
 #endif
 
@@ -309,14 +305,6 @@ void PrepareShadingParms(vec4 albedo) {
         #else
             shading.clearCoatN = shading.n;
         #endif
-    #endif
-#endif
-
-#if defined(INDIRECT_LIGHTING)
-    #if _EMISSION == 1
-        shading.emission = emissionColor * emissionScale;
-    #elif _EMISSION == 2
-        shading.emission = tex2D(emissionMap, baseTc).rgb * emissionScale;
     #endif
 #endif
 }

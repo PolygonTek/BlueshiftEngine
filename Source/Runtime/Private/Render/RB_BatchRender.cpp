@@ -572,7 +572,7 @@ void Batch::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
 }
 
 void Batch::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientScale) const {
-    Shader *shader = ShaderManager::standardDefaultShader;
+    Shader *shader = mtrlPass->shader;
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
         if (shader->GetPerforatedVersion()) {
@@ -594,6 +594,8 @@ void Batch::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientSca
     }
 
     shader->Bind();
+
+    SetShaderProperties(shader, mtrlPass->shaderProperties);
 
     const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
     shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
