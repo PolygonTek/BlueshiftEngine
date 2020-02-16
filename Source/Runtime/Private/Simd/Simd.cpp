@@ -61,7 +61,7 @@ void SIMD::Init(bool forceGeneric) {
     }
 
     if (cpuid & CPUID_DAZ) {
-        _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);	
+        _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
         BE_LOG("enabled Denormals-Are-Zero mode\n");
     }
 #endif
