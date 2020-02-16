@@ -150,6 +150,12 @@ public:
         int                 value;
     };
 
+    struct ShaderPropertyInfo : public PropertyInfo {
+        Array<Define>       conditionArray;
+
+        bool                Parse(Lexer &lexer);
+    };
+
     struct Property {
         Variant             data;
         Texture *           texture;
@@ -170,6 +176,8 @@ public:
 
     bool                    IsOriginalShader() const { return !originalShader; }
     bool                    IsInstantiatedShader() const { return !!originalShader; }
+
+    bool                    IsPropertyUsed(const Str &propName) const;
 
                             /// Returns shader flags.
     int                     GetFlags() const;
@@ -308,7 +316,7 @@ public:
     bool                    Load(const char *filename);
     bool                    Reload();
 
-    const StrHashMap<PropertyInfo> &GetPropertyInfoHashMap() const;
+    const StrHashMap<ShaderPropertyInfo> &GetPropertyInfoHashMap() const;
 
 private:
     bool                    ParseProperties(Lexer &lexer);
@@ -354,7 +362,7 @@ private:
     Shader *                gpuSkinningVersion[3] = { nullptr, };
     Shader *                gpuInstancingVersion = nullptr;
 
-    StrHashMap<PropertyInfo> propertyInfoHashMap;
+    StrHashMap<ShaderPropertyInfo> propertyInfoHashMap;
 };
 
 BE_INLINE Shader::Shader() {

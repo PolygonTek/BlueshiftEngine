@@ -304,10 +304,10 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
 }
 
 void Material::ChangeShader(Shader *shader) {
-    const auto &oldPropInfoHashMap = pass->referenceShader ? pass->referenceShader->GetPropertyInfoHashMap() : StrHashMap<PropertyInfo>();
+    const auto &oldPropInfoHashMap = pass->referenceShader ? pass->referenceShader->GetPropertyInfoHashMap() : StrHashMap<Shader::ShaderPropertyInfo>();
     const auto &newPropInfoHashMap = shader->GetPropertyInfoHashMap();
 
-    // Release textures of old shader property
+    // Release textures of old shader properties.
     for (int i = 0; i < pass->shaderProperties.Count(); i++) {
         const auto entry = pass->shaderProperties.GetByIndex(i);
         if (entry->second.texture) {
@@ -316,13 +316,13 @@ void Material::ChangeShader(Shader *shader) {
         }
     }
 
-    // Change new reference shader
+    // Change new reference shader.
     if (pass->referenceShader) {
         shaderManager.ReleaseShader(pass->referenceShader);
     }
     pass->referenceShader = shader;
 
-    // Set shader properties with reusing old shader properties
+    // Set shader properties with reusing old shader properties.
     StrHashMap<Shader::Property> newShaderProperties;
 
     for (int i = 0; i < newPropInfoHashMap.Count(); i++) {
@@ -357,7 +357,7 @@ void Material::ChangeShader(Shader *shader) {
 
     pass->shaderProperties.Swap(newShaderProperties);
 
-    // Instantiate shader with changed define properites 
+    // Instantiate shader with changed define properites.
     CommitShaderPropertiesChanged();
 
     Finish();
@@ -537,7 +537,8 @@ bool Material::ParseShader(Lexer &lexer, Shader *&referenceShader, StrHashMap<Sh
             Str value = propDict.GetString(propName, propInfo.GetDefaultValue().As<Guid>().ToString(Guid::Format::DigitsWithHyphensInBraces));
 
             if (version >= 2) {
-                if (value.Length() == 38/*Str::Length("{00000000-0000-0000-0000-000000000000}")*/ && value[0] == '{' && value[value.Length() - 1] == '}') {
+                if (value.Length() == 38/*Str::Length("{00000000-0000-0000-0000-000000000000}")*/ && 
+                    value[0] == '{' && value[value.Length() - 1] == '}') {
                     shaderProperty.data = Variant::FromString(Variant::Type::Guid, value);
                 } else {
                     shaderProperty.data = Guid::CreateGuid();
@@ -769,30 +770,22 @@ void Material::Write(const char *filename) {
         fp->Printf("%sshader \"%s\" {\n", indentSpace.c_str(), shaderGuid.ToString(Guid::Format::DigitsWithHyphensInBraces));
         indentSpace += "  ";
 
-        const auto &propertyInfoHashMap = pass->shader->GetOriginalShader()->GetPropertyInfoHashMap();
+        const auto &shaderPropertyInfos = pass->shader->GetOriginalShader()->GetPropertyInfoHashMap();
         
-        for (int i = 0; i < propertyInfoHashMap.Count(); i++) {
-            const auto *keyValue = propertyInfoHashMap.GetByIndex(i);
+        for (int i = 0; i < shaderPropertyInfos.Count(); i++) {
+            const auto *keyValue = shaderPropertyInfos.GetByIndex(i);
             const PropertyInfo &propInfo = keyValue->second;
             const char *name = propInfo.GetName();
+            const auto *shaderPropEntry = pass->shaderProperties.Get(name);
+            const Variant &value = shaderPropEntry->second.data;
 
-            // Skip useless properties in shader.
+            // Skip writing useless properties in shader.
             if (!(propInfo.GetFlags() & PropertyInfo::Flag::ShaderDefine)) {
-                bool isTexture = propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject()->IsTypeOf(TextureResource::metaObject);
-                if (isTexture) {
-                    if (pass->shader->GetSamplerUnit(name) < 0) {
-                        continue;
-                    }
-                } else {
-                    if (pass->shader->GetConstantIndex(name) < 0) {
-                        continue;
-                    }
+                if (!pass->shader->IsPropertyUsed(name)) {
+                    continue;
                 }
             }
 
-            const auto *shaderPropEntry = pass->shaderProperties.Get(name);
-            const auto &value = shaderPropEntry->second.data;
-            
             switch (propInfo.GetType()) {
             case Variant::Type::Float:
                 fp->Printf("%s%s \"%.4f\"\n", indentSpace.c_str(), name, value.As<float>());

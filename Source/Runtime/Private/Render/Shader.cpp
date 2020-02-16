@@ -97,11 +97,37 @@ int Shader::GetFlags() const {
     return flags;
 }
 
-const StrHashMap<PropertyInfo> &Shader::GetPropertyInfoHashMap() const {
+const StrHashMap<Shader::ShaderPropertyInfo> &Shader::GetPropertyInfoHashMap() const {
     if (originalShader) {
         return originalShader->propertyInfoHashMap;
     }
     return propertyInfoHashMap;
+}
+
+bool Shader::IsPropertyUsed(const Str &propName) const {
+    const auto &propInfos = GetPropertyInfoHashMap();
+    const auto *keyValue = propInfos.Get(propName);
+    const ShaderPropertyInfo &propInfo = keyValue->second;
+
+    // No conditions.
+    if (propInfo.conditionArray.Count() == 0) {
+        return true;
+    }
+
+    for (int defineIndex = 0; defineIndex < defineArray.Count(); defineIndex++) {
+        const Define &define = defineArray[defineIndex];
+
+        for (int conditionIndex = 0; conditionIndex < propInfo.conditionArray.Count(); conditionIndex++) {
+            const Define &codition = propInfo.conditionArray[conditionIndex];
+
+            if (codition.name == define.name && codition.value == define.value) {
+                // Found matched condition.
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 void Shader::Purge() {
@@ -332,13 +358,13 @@ bool Shader::Create(const char *text, const char *baseDir) {
     return Finish(generatePerforatedVersion, generateGpuSkinningVersion, generateGpuInstancingVersion, generateParallelShadowVersion, generateSpotShadowVersion, generatePointShadowVersion);
 }
 
-bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
-    propInfo.type = Variant::Type::None;
-    propInfo.flags = PropertyInfo::Flag::Editor;
-    propInfo.range = Rangef(0, 0, 1);
-    propInfo.metaObject = nullptr;
+bool Shader::ShaderPropertyInfo::Parse(Lexer &lexer) {
+    type = Variant::Type::None;
+    flags = PropertyInfo::Flag::Editor;
+    range = Rangef(0, 0, 1);
+    metaObject = nullptr;
 
-    if (!lexer.ReadToken(&propInfo.name, false)) {
+    if (!lexer.ReadToken(&name, false)) {
         return false;
     }
 
@@ -346,7 +372,7 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
         return false;
     }
 
-    if (!lexer.ExpectTokenType(Lexer::TokenType::String, &propInfo.label)) {
+    if (!lexer.ExpectTokenType(Lexer::TokenType::String, &label)) {
         return false;
     }
 
@@ -364,37 +390,37 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
     }
 
     if (!Str::Cmp(typeStr, "bool")) {
-        propInfo.type = Variant::Type::Bool;
+        type = Variant::Type::Bool;
     } else if (!Str::Cmp(typeStr, "int")) {
-        propInfo.type = Variant::Type::Int;
+        type = Variant::Type::Int;
     } else if (!Str::Cmp(typeStr, "point")) {
-        propInfo.type = Variant::Type::Point;
+        type = Variant::Type::Point;
     } else if (!Str::Cmp(typeStr, "size")) {
-        propInfo.type = Variant::Type::Size;
+        type = Variant::Type::Size;
     } else if (!Str::Cmp(typeStr, "rect")) {
-        propInfo.type = Variant::Type::Rect;
+        type = Variant::Type::Rect;
     } else if (!Str::Cmp(typeStr, "float")) {
-        propInfo.type = Variant::Type::Float;
+        type = Variant::Type::Float;
     } else if (!Str::Cmp(typeStr, "vec2")) {
-        propInfo.type = Variant::Type::Vec2;
+        type = Variant::Type::Vec2;
     } else if (!Str::Cmp(typeStr, "vec3")) {
-        propInfo.type = Variant::Type::Vec3;
+        type = Variant::Type::Vec3;
     } else if (!Str::Cmp(typeStr, "vec4")) {
-        propInfo.type = Variant::Type::Vec4;
+        type = Variant::Type::Vec4;
     } else if (!Str::Cmp(typeStr, "color3")) {
-        propInfo.type = Variant::Type::Color3;
+        type = Variant::Type::Color3;
     } else if (!Str::Cmp(typeStr, "color4")) {
-        propInfo.type = Variant::Type::Color4;
+        type = Variant::Type::Color4;
     } else if (!Str::Cmp(typeStr, "enum")) {
         Str enumSequence;
         if (!lexer.ExpectTokenType(Lexer::TokenType::String, &enumSequence)) {
             return false;
         }
-        propInfo.type = Variant::Type::Int;
-        propInfo.enumeration.Clear();
-        SplitStringIntoList(propInfo.enumeration, enumSequence, ";");
+        type = Variant::Type::Int;
+        enumeration.Clear();
+        SplitStringIntoList(enumeration, enumSequence, ";");
     } else if (!Str::Cmp(typeStr, "texture")) {
-        propInfo.type = Variant::Type::Guid;
+        type = Variant::Type::Guid;
 
         Str textureTypeStr;
         if (!lexer.ReadToken(&textureTypeStr, false)) {
@@ -402,29 +428,29 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
         }
 
         if (!Str::Icmp(textureTypeStr, "2D")) {
-            propInfo.metaObject = &Texture2DResource::metaObject;
+            metaObject = &Texture2DResource::metaObject;
         } else if (!Str::Icmp(textureTypeStr, "CUBE")) {
-            propInfo.metaObject = &TextureCubeMapResource::metaObject;
+            metaObject = &TextureCubeMapResource::metaObject;
         } else if (!Str::Icmp(textureTypeStr, "SPRITE")) {
-            propInfo.metaObject = &TextureSpriteResource::metaObject;
+            metaObject = &TextureSpriteResource::metaObject;
         } else {
             BE_WARNLOG("unknown texture type %s in shader '%s'\n", textureTypeStr.c_str(), lexer.GetFilename());
-            propInfo.metaObject = &Texture2DResource::metaObject;
+            metaObject = &Texture2DResource::metaObject;
         }
     }
 
-    if (propInfo.type == Variant::Type::Int ||
-        propInfo.type == Variant::Type::Float ||
-        propInfo.type == Variant::Type::Vec2 ||
-        propInfo.type == Variant::Type::Vec3 ||
-        propInfo.type == Variant::Type::Vec4) {
+    if (type == Variant::Type::Int ||
+        type == Variant::Type::Float ||
+        type == Variant::Type::Vec2 ||
+        type == Variant::Type::Vec3 ||
+        type == Variant::Type::Vec4) {
         Str token;
         lexer.ReadToken(&token, false);
 
         if (token == "range") {
-            propInfo.range.minValue = lexer.ParseNumber();
-            propInfo.range.maxValue = lexer.ParseNumber();
-            propInfo.range.step = lexer.ParseNumber();
+            range.minValue = lexer.ParseNumber();
+            range.maxValue = lexer.ParseNumber();
+            range.step = lexer.ParseNumber();
         } else {
             lexer.UnreadToken(&token);
         }
@@ -440,9 +466,9 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
     }
 
     if (!Str::Cmp(typeStr, "texture")) {
-        propInfo.defaultValue = resourceGuidMapper.Get(defaultValueString);
+        defaultValue = resourceGuidMapper.Get(defaultValueString);
     } else {
-        propInfo.defaultValue = Variant::FromString(propInfo.type, defaultValueString);
+        defaultValue = Variant::FromString(type, defaultValueString);
     }
 
     Str token;
@@ -451,8 +477,23 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
         while (lexer.ReadToken(&token, false)) {
             if (token == ")") {
                 break;
+            } else if (token == "condition") {
+                Str name;
+                int value;
+
+                while (lexer.ReadToken(&token, false)) {
+                    if (token == ")") {
+                        break;
+                    } else if (lexer.GetTokenType() & Lexer::TokenType::Identifier) {
+                        name = token;
+                    } else if (lexer.GetTokenType() & Lexer::TokenType::Integer) {
+                        value = Str::ToI32(token);
+
+                        conditionArray.Append(Define(name, value));
+                    }
+                }
             } else if (token == "shaderDefine") {
-                propInfo.flags |= PropertyInfo::Flag::ShaderDefine;
+                flags |= PropertyInfo::Flag::ShaderDefine;
             } else {
                 return false;
             }
@@ -463,7 +504,6 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
 }
 
 bool Shader::ParseProperties(Lexer &lexer) {
-    PropertyInfo propInfo;
     Str token;
 
     if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
@@ -482,13 +522,14 @@ bool Shader::ParseProperties(Lexer &lexer) {
 
             lexer.UnreadToken(&token);
 
-            if (!ParseShaderPropertyInfo(lexer, propInfo)) {
+            ShaderPropertyInfo shaderPropInfo;
+            if (!shaderPropInfo.Parse(lexer)) {
                 BE_WARNLOG("error occured in parsing property propInfo in shader '%s'\n", hashName.c_str());
                 lexer.SkipRestOfLine();
                 continue;
             }
 
-            propertyInfoHashMap.Set(token, propInfo);
+            propertyInfoHashMap.Set(token, shaderPropInfo);
         }
     }
 

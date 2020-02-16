@@ -109,9 +109,7 @@ public:
 
     void                    SetMetaObject(const MetaObject *metaObject) { this->metaObject = metaObject; }
 
-    friend bool             ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo);
-
-private:
+protected:
     Variant::Type::Enum     type;               ///< Property type
     Variant                 defaultValue;       ///< Default value
     Str                     name;               ///< Property name
