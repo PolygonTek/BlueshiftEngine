@@ -775,6 +775,21 @@ void Material::Write(const char *filename) {
             const auto *keyValue = propertyInfoHashMap.GetByIndex(i);
             const PropertyInfo &propInfo = keyValue->second;
             const char *name = propInfo.GetName();
+
+            // Skip useless properties in shader.
+            if (!(propInfo.GetFlags() & PropertyInfo::Flag::ShaderDefine)) {
+                bool isTexture = propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject()->IsTypeOf(TextureResource::metaObject);
+                if (isTexture) {
+                    if (pass->shader->GetSamplerUnit(name) < 0) {
+                        continue;
+                    }
+                } else {
+                    if (pass->shader->GetConstantIndex(name) < 0) {
+                        continue;
+                    }
+                }
+            }
+
             const auto *shaderPropEntry = pass->shaderProperties.Get(name);
             const auto &value = shaderPropEntry->second.data;
             
