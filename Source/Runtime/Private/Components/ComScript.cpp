@@ -901,8 +901,6 @@ void ComScript::SetScriptProperties() {
                         asset->CreateResource(*propInfo->GetMetaObject());
                         property["value"] = asset;
                     }
-                } else {
-                    property["value"] = nullptr;
                 }
             }
             break; 
