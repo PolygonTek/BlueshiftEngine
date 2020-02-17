@@ -345,17 +345,7 @@ Color4 Image::Sample2DNearest(const byte *src, const Vec2 &st, SampleWrapMode::E
 
     ALIGN_AS16 Color4 outputColor;
 
-    if (NeedFloatConversion()) {
-        formatInfo->unpackRGBA32F(&src[iY * pitch + iX * bpp], (byte *)&outputColor, 1);
-    } else {
-        ALIGN_AS16 byte rgba8888[4];
-
-        formatInfo->unpackRGBA8888(&src[iY * pitch + iX * bpp], rgba8888, 1);
-
-        for (int i = 0; i < 4; i++) {
-            outputColor[i] = rgba8888[i] / 255.0f;
-        }
-    }
+    formatInfo->unpackRGBA32F(&src[iY * pitch + iX * bpp], (byte *)&outputColor, 1);
 
     return outputColor;
 }
@@ -386,16 +376,16 @@ Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode::
     // [2] [3]
     ALIGN_AS16 Color4 rgba32f[4];
 
-    formatInfo->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)rgba32f[0].Ptr(), 1);
-    formatInfo->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)rgba32f[1].Ptr(), 1);
-    formatInfo->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)rgba32f[2].Ptr(), 1);
-    formatInfo->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3].Ptr(), 1);
+    formatInfo->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)&rgba32f[0], 1);
+    formatInfo->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)&rgba32f[1], 1);
+    formatInfo->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)&rgba32f[2], 1);
+    formatInfo->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)&rgba32f[3], 1);
 
 #ifdef ENABLE_X86_SSE_INTRIN
-    __m128 a00 = _mm_load_ps(rgba32f[0].Ptr());
-    __m128 a01 = _mm_load_ps(rgba32f[1].Ptr());
-    __m128 a10 = _mm_load_ps(rgba32f[2].Ptr());
-    __m128 a11 = _mm_load_ps(rgba32f[3].Ptr());
+    __m128 a00 = _mm_load_ps(rgba32f[0]);
+    __m128 a01 = _mm_load_ps(rgba32f[1]);
+    __m128 a10 = _mm_load_ps(rgba32f[2]);
+    __m128 a11 = _mm_load_ps(rgba32f[3]);
 
     __m128 x1 = _mm_set_ps1(1 - fracX);
     __m128 y1 = _mm_set_ps1(1 - fracY);
