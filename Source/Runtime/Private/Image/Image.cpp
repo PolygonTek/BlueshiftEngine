@@ -343,16 +343,10 @@ Color4 Image::Sample2DNearest(const byte *src, const Vec2 &st, SampleWrapMode::E
     int iX = Math::Round(x);
     int iY = Math::Round(y);
 
-    Color4 outputColor;
+    ALIGN_AS16 Color4 outputColor;
 
     if (NeedFloatConversion()) {
-        ALIGN_AS16 float rgba32f[4];
-
-        formatInfo->unpackRGBA32F(&src[iY * pitch + iX * bpp], (byte *)rgba32f, 1);
-
-        for (int i = 0; i < 4; i++) {
-            outputColor[i] = rgba32f[i];
-        }
+        formatInfo->unpackRGBA32F(&src[iY * pitch + iX * bpp], (byte *)&outputColor, 1);
     } else {
         ALIGN_AS16 byte rgba8888[4];
 
@@ -386,41 +380,40 @@ Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode::
     const byte *srcY0 = &src[iY0 * pitch];
     const byte *srcY1 = &src[iY1 * pitch];
 
-    Color4 outputColor;
+    ALIGN_AS16 Color4 outputColor;
 
-    if (NeedFloatConversion()) {
-        // [0] [1]
-        // [2] [3]
-        ALIGN_AS16 float rgba32f[4][4];
+    // [0] [1]
+    // [2] [3]
+    ALIGN_AS16 Color4 rgba32f[4];
 
-        formatInfo->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)rgba32f[0], 1);
-        formatInfo->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)rgba32f[1], 1);
-        formatInfo->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)rgba32f[2], 1);
-        formatInfo->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3], 1);
+    formatInfo->unpackRGBA32F(&srcY0[iX0 * bpp], (byte *)rgba32f[0].Ptr(), 1);
+    formatInfo->unpackRGBA32F(&srcY0[iX1 * bpp], (byte *)rgba32f[1].Ptr(), 1);
+    formatInfo->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)rgba32f[2].Ptr(), 1);
+    formatInfo->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)rgba32f[3].Ptr(), 1);
 
-        for (int i = 0; i < 4; i++) {
-            float a = Math::Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
-            float b = Math::Lerp(rgba32f[2][i], rgba32f[3][i], fracX);
+#ifdef ENABLE_X86_SSE_INTRIN
+    __m128 a00 = _mm_load_ps(rgba32f[0].Ptr());
+    __m128 a01 = _mm_load_ps(rgba32f[1].Ptr());
+    __m128 a10 = _mm_load_ps(rgba32f[2].Ptr());
+    __m128 a11 = _mm_load_ps(rgba32f[3].Ptr());
 
-            outputColor[i] = Math::Lerp(a, b, fracY);
-        }
-    } else {
-        // [0] [1]
-        // [2] [3]
-        ALIGN_AS16 byte rgba8888[4][4];
+    __m128 x1 = _mm_set_ps1(1 - fracX);
+    __m128 y1 = _mm_set_ps1(1 - fracY);
+    __m128 x2 = _mm_set_ps1(fracX);
+    __m128 y2 = _mm_set_ps1(fracY);
 
-        formatInfo->unpackRGBA8888(&srcY0[iX0 * bpp], rgba8888[0], 1);
-        formatInfo->unpackRGBA8888(&srcY0[iX1 * bpp], rgba8888[1], 1);
-        formatInfo->unpackRGBA8888(&srcY1[iX0 * bpp], rgba8888[2], 1);
-        formatInfo->unpackRGBA8888(&srcY1[iX1 * bpp], rgba8888[3], 1);
+    __m128 a0x = _mm_add_ps(_mm_mul_ps(a00, x1), _mm_mul_ps(a01, x2));
+    __m128 a1x = _mm_add_ps(_mm_mul_ps(a10, x1), _mm_mul_ps(a11, x2));
 
-        for (int i = 0; i < 4; i++) {
-            byte a = Math::Lerp(rgba8888[0][i], rgba8888[1][i], fracX);
-            byte b = Math::Lerp(rgba8888[2][i], rgba8888[3][i], fracX);
+    _mm_store_ps(outputColor, _mm_add_ps(_mm_mul_ps(a0x, y1), _mm_mul_ps(a1x, y2)));
+#else
+    for (int i = 0; i < 4; i++) {
+        float a = Math::Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
+        float b = Math::Lerp(rgba32f[2][i], rgba32f[3][i], fracX);
 
-            outputColor[i] = Math::Lerp(a, b, fracY) / 255.0f;
-        }
+        outputColor[i] = Math::Lerp(a, b, fracY);
     }
+#endif
 
     return outputColor;
 }
@@ -474,12 +467,12 @@ Vec3 Image::FaceToCubeMapCoords(CubeMapFace::Enum cubeMapFace, float s, float t)
 
     Vec3 glCubeMapCoords;
     switch (cubeMapFace) {
-    case CubeMapFace::PositiveX: glCubeMapCoords = Vec3(+1.0f, -tc, -sc); break; // +Y direction in z-up axis
-    case CubeMapFace::NegativeX: glCubeMapCoords = Vec3(-1.0f, -tc, +sc); break; // -Y direction in z-up axis
-    case CubeMapFace::PositiveY: glCubeMapCoords = Vec3(+sc, +1.0f, +tc); break; // +Z direction in z-up axis
-    case CubeMapFace::NegativeY: glCubeMapCoords = Vec3(+sc, -1.0f, -tc); break; // -Z direction in z-up axis
-    case CubeMapFace::PositiveZ: glCubeMapCoords = Vec3(+sc, -tc, +1.0f); break; // +X direction in z-up axis
-    case CubeMapFace::NegativeZ: glCubeMapCoords = Vec3(-sc, -tc, -1.0f); break; // -X direction in z-up axis
+    case CubeMapFace::PositiveX: glCubeMapCoords = Vec3(+1.0f, -tc, -sc); break; // +Y direction in z-up axis.
+    case CubeMapFace::NegativeX: glCubeMapCoords = Vec3(-1.0f, -tc, +sc); break; // -Y direction in z-up axis.
+    case CubeMapFace::PositiveY: glCubeMapCoords = Vec3(+sc, +1.0f, +tc); break; // +Z direction in z-up axis.
+    case CubeMapFace::NegativeY: glCubeMapCoords = Vec3(+sc, -1.0f, -tc); break; // -Z direction in z-up axis.
+    case CubeMapFace::PositiveZ: glCubeMapCoords = Vec3(+sc, -tc, +1.0f); break; // +X direction in z-up axis.
+    case CubeMapFace::NegativeZ: glCubeMapCoords = Vec3(-sc, -tc, -1.0f); break; // -X direction in z-up axis.
     }
     // Convert cubemap coordinates from GL axis to z-up axis.
     return Vec3(glCubeMapCoords.z, glCubeMapCoords.x, glCubeMapCoords.y);
