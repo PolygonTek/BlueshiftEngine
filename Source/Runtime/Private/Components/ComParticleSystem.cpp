@@ -500,7 +500,8 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
 }
 
 void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::Stage *stage, float particleAge) {
-    Mat3x4 offsetMatrix;
+    ALIGN_AS16 Mat3x4 offsetMatrix;
+
     if (stage->standardModule.simulationSpace == ParticleSystem::StandardModule::SimulationSpace::Global) {
         offsetMatrix = GetEntity()->GetTransform()->GetMatrix().Inverse() * particle->worldMatrix;
     }

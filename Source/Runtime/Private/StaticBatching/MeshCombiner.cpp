@@ -136,7 +136,7 @@ void MeshCombiner::MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMesh
 
     StaticBatch *staticBatch = StaticBatch::AllocStaticBatch(staticBatchRoot);
 
-    Mat3x4 worldToLocalMatrix = staticBatchRoot->GetTransform()->GetMatrix().Inverse();
+    ALIGN_AS16 Mat3x4 worldToLocalMatrix = staticBatchRoot->GetTransform()->GetMatrix().Inverse();
 
     Array<BatchSubMesh> batchSubMeshes;
 

@@ -17,8 +17,8 @@
 
 BE_NAMESPACE_BEGIN
 
-const Mat3 Mat3::zero(Vec3(0, 0, 0), Vec3(0, 0, 0), Vec3(0, 0, 0));
-const Mat3 Mat3::identity(Vec3(1, 0, 0), Vec3(0, 1, 0), Vec3(0, 0, 1));
+ALIGN_AS16 const Mat3 Mat3::zero(Vec3(0, 0, 0), Vec3(0, 0, 0), Vec3(0, 0, 0));
+ALIGN_AS16 const Mat3 Mat3::identity(Vec3(1, 0, 0), Vec3(0, 1, 0), Vec3(0, 0, 1));
 
 float Mat3::Determinant() const {
     float det2_12_01 = mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0];

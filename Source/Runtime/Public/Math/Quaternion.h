@@ -256,7 +256,7 @@ public:
                         /// Returns dimension of this type.
     constexpr int       GetDimension() const { return 4; }
 
-    static const Quat   identity;
+    ALIGN_AS16 static const Quat identity;
     
     float               x;          ///< The factor of i.
     float               y;          ///< The factor of j.

@@ -125,7 +125,7 @@ BE_INLINE void VertexGeneric::Transform(const Mat3x4 &transform) {
 }
 
 BE_INLINE void VertexGeneric::Transform(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation) {
-    Mat4 matrix;
+    ALIGN_AS16 Mat4 matrix;
     matrix.SetTRS(translation, rotation, scale);
     xyz = matrix * xyz;
 }
@@ -385,7 +385,7 @@ BE_INLINE void VertexGenericLit::Transform(const Mat3x4 &transform) {
 }
 
 BE_INLINE void VertexGenericLit::Transform(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation) {
-    Mat4 matrix;
+    ALIGN_AS16 Mat4 matrix;
     matrix.SetTRS(translation, rotation, scale);
     xyz = matrix * xyz;
     SetNormal(matrix.ToMat3() * GetNormal());

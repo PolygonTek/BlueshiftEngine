@@ -79,7 +79,7 @@ void RB_PostProcess() {
             PP_SunShaftsMaskGen(bc->screenRT->ColorTexture(), bc->ppRTs[PP_RT_LINEAR_DEPTH]->ColorTexture(), screenTc[0], screenTc[1], screenTc[2], screenTc[3], bc->ppRTs[PP_RT_2X]);
 
             // shafts blur 8x -> 64x -> 512x
-            Mat4 viewProjectionMatrix = backEnd.camera->def->GetProjMatrix() * backEnd.camera->def->GetViewMatrix().ToMat3().ToMat4();
+            ALIGN_AS16 Mat4 viewProjectionMatrix = backEnd.camera->def->GetProjMatrix() * backEnd.camera->def->GetViewMatrix().ToMat3().ToMat4();
             float invShaftsScale = 1.0f / r_sunShafts_scale.GetFloat();
             PP_SunShaftsGen(bc->ppRTs[PP_RT_2X]->ColorTexture(), viewProjectionMatrix, sunLight->GetState().origin, invShaftsScale * 0.25f, bc->ppRTs[PP_RT_TEMP_2X]);
             PP_SunShaftsGen(bc->ppRTs[PP_RT_TEMP_2X]->ColorTexture(), viewProjectionMatrix, sunLight->GetState().origin, invShaftsScale * 0.5f, bc->ppRTs[PP_RT_2X]);
@@ -139,7 +139,7 @@ void RB_PostProcess() {
             backEnd.viewMatrixPrev[1][3] = -(backEnd.camera->def->GetState().origin.Dot(prevAxis[1]));
             backEnd.viewMatrixPrev[2][3] = -(backEnd.camera->def->GetState().origin.Dot(prevAxis[2]));
 
-            Mat4 viewProjMatrix[2];
+            ALIGN_AS16 Mat4 viewProjMatrix[2];
             viewProjMatrix[0] = backEnd.camera->def->GetViewProjMatrix();
             viewProjMatrix[1] = backEnd.camera->def->GetProjMatrix() * backEnd.viewMatrixPrev;
 

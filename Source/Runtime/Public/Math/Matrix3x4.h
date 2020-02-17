@@ -229,9 +229,9 @@ public:
 
                         /// Returns dimension of this type.
     constexpr int       GetDimension() const { return Rows * Cols; }
-    
-    static const Mat3x4 zero;
-    static const Mat3x4 identity;
+
+    ALIGN_AS16 static const Mat3x4 zero;
+    ALIGN_AS16 static const Mat3x4 identity;
 
     Vec4                mat[Rows];
 };
@@ -437,7 +437,7 @@ BE_INLINE bool Mat3x4::FixDenormals() {
 }
 
 BE_INLINE Mat3x4 Mat3x4::Inverse() const {
-    Mat3x4 invMat = *this;
+    ALIGN_AS16 Mat3x4 invMat = *this;
     invMat.InverseSelf();
     return invMat;
 }
@@ -641,7 +641,7 @@ BE_INLINE Vec3 Mat3x4::ToTranslationVec3() const {
 }
 
 BE_INLINE Mat3x4 Mat3x4::FromTranslation(float tx, float ty, float tz) {
-    Mat3x4 m;
+    ALIGN_AS16 Mat3x4 m;
     m.mat[0][0] = 1;
     m.mat[0][1] = 0;
     m.mat[0][2] = 0;
@@ -660,7 +660,7 @@ BE_INLINE Mat3x4 Mat3x4::FromTranslation(float tx, float ty, float tz) {
 }
 
 BE_INLINE Mat3x4 Mat3x4::FromScale(float sx, float sy, float sz) {
-    Mat3x4 m;
+    ALIGN_AS16 Mat3x4 m;
     m.mat[0][0] = sx;
     m.mat[0][1] = 0;
     m.mat[0][2] = 0;

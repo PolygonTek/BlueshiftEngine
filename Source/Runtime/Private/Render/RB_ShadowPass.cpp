@@ -351,8 +351,8 @@ static void RB_ShadowCubeMapPass(const VisLight *visLight, const Frustum &viewFr
     Mat3 axis;
 
     Rect prevScissorRect = rhi.GetScissor();
-    Mat4 prevProjMatrix = backEnd.projMatrix;
-    Mat4 prevViewProjMatrix = backEnd.viewProjMatrix;
+    ALIGN_AS16 Mat4 prevProjMatrix = backEnd.projMatrix;
+    ALIGN_AS16 Mat4 prevViewProjMatrix = backEnd.viewProjMatrix;
     backEnd.projMatrix = backEnd.shadowProjectionMatrix;
 
     for (int faceIndex = RHI::CubeMapFace::PositiveX; faceIndex <= RHI::CubeMapFace::NegativeZ; faceIndex++) {
@@ -364,7 +364,7 @@ static void RB_ShadowCubeMapPass(const VisLight *visLight, const Frustum &viewFr
             continue;
         }
 
-        Mat4 lightViewMatrix;
+        ALIGN_AS16 Mat4 lightViewMatrix;
         R_SetViewMatrix(axis, visLight->def->GetState().origin, lightViewMatrix);
 
         backEnd.viewProjMatrix = backEnd.shadowProjectionMatrix * lightViewMatrix;
@@ -406,8 +406,8 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
 
     rhi.SetDepthBias(backEnd.shadowMapOffsetFactor, backEnd.shadowMapOffsetUnits);
 
-    Mat4 prevProjMatrix = backEnd.projMatrix;
-    Mat4 prevViewProjMatrix = backEnd.viewProjMatrix;
+    ALIGN_AS16 Mat4 prevProjMatrix = backEnd.projMatrix;
+    ALIGN_AS16 Mat4 prevViewProjMatrix = backEnd.viewProjMatrix;
 
     backEnd.projMatrix = backEnd.shadowProjectionMatrix;
     backEnd.viewProjMatrix = backEnd.shadowProjectionMatrix * visLight->def->GetViewMatrix();
@@ -521,12 +521,12 @@ static void RB_OrthogonalShadowMapPass(const VisLight *visLight, const Frustum &
     R_SetOrthogonalProjectionMatrix(visLight->def->GetWorldOBB().Extents()[1], visLight->def->GetWorldOBB().Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
 
     if (r_optimizedShadowProjection.GetInteger() == 2) {
-        Mat4 shadowCropMatrix;
-        OBB lightOBB = visLight->def->GetWorldOBB();
+        ALIGN_AS16 Mat4 shadowCropMatrix;
+        ALIGN_AS16 OBB lightOBB = visLight->def->GetWorldOBB();
 
         lightOBB.SetCenter(visLight->def->GetState().origin + visLight->def->GetState().axis[0] * (dFar + dNear) * 0.5f);
 
-        Vec3 extents = lightOBB.Extents();
+        ALIGN_AS16 Vec3 extents = lightOBB.Extents();
         lightOBB.SetExtents(Vec3((dFar - dNear) * 0.5f, extents.y, extents.z));
 
         if (!RB_ComputeShadowCropMatrix(lightOBB, OBB(visLight->shadowCastersAABB), viewFrustum, shadowCropMatrix)) {
@@ -539,7 +539,7 @@ static void RB_OrthogonalShadowMapPass(const VisLight *visLight, const Frustum &
 
     backEnd.shadowMapFilterSize[0] = r_shadowMapFilterSize.GetFloat();
 
-    static const Mat4 textureScaleBiasMatrix(Vec4(0.5, 0, 0, 0.5), Vec4(0, 0.5, 0, 0.5), Vec4(0, 0, 0.5, 0.5), Vec4(0.0, 0.0, 0.0, 1));
+    ALIGN_AS16 static const Mat4 textureScaleBiasMatrix(Vec4(0.5, 0, 0, 0.5), Vec4(0, 0.5, 0, 0.5), Vec4(0, 0, 0.5, 0.5), Vec4(0.0, 0.0, 0.0, 1));
     backEnd.shadowViewProjectionScaleBiasMatrix[0] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * visLight->def->GetViewMatrix();
 
     if (RB_ShadowMapPass(visLight, viewFrustum, 0, false)) {
@@ -564,7 +564,7 @@ static void RB_ProjectedShadowMapPass(const VisLight *visLight, const Frustum &v
     R_SetPerspectiveProjectionMatrix(xFov, yFov, dNear, dFar, false, backEnd.shadowProjectionMatrix);
 
     /*if (r_optimizedShadowProjection.GetInteger() > 0) {
-        Mat4 shadowCropMatrix;
+        ALIGN_AS16 Mat4 shadowCropMatrix;
         Frustum lightFrustum = visLight->def->frustum;
 
         lightFrustum.MoveNearDistance(dNear);
@@ -629,12 +629,12 @@ static bool RB_SingleCascadedShadowMapPass(const VisLight *visLight, const Frust
     R_SetOrthogonalProjectionMatrix(visLight->def->GetWorldOBB().Extents()[1], visLight->def->GetWorldOBB().Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
 
     if (r_optimizedShadowProjection.GetInteger() > 0) {
-        Mat4 shadowCropMatrix;
-        OBB lightOBB = visLight->def->GetWorldOBB();
+        ALIGN_AS16 Mat4 shadowCropMatrix;
+        ALIGN_AS16 OBB lightOBB = visLight->def->GetWorldOBB();
 
         lightOBB.SetCenter(visLight->def->GetState().origin + visLight->def->GetState().axis[0] * (dFar + dNear) * 0.5f);
 
-        Vec3 extents = lightOBB.Extents();
+        ALIGN_AS16 Vec3 extents = lightOBB.Extents();
         lightOBB.SetExtents(Vec3((dFar - dNear) * 0.5f, extents.y, extents.z));
 
         if (r_optimizedShadowProjection.GetInteger() == 2) {

@@ -49,7 +49,7 @@ public:
 
 struct BatchSubMesh {
     SubMesh *               subMesh;
-    Mat3x4                  localTransform;
+    ALIGN_AS16 Mat3x4       localTransform;
 };
 
 class Mesh {

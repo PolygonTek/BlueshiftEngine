@@ -158,7 +158,7 @@ void ComRectTransform::GetWorldCorners(Vec3 (&worldCorners)[4]) const {
     Vec3 localCorners[4];
     GetLocalCorners(localCorners);
 
-    Mat3x4 worldMatrix = GetMatrix();
+    ALIGN_AS16 Mat3x4 worldMatrix = GetMatrix();
 
     for (int i = 0; i < COUNT_OF(localCorners); i++) {
         worldCorners[i] = worldMatrix.Transform(localCorners[i]);

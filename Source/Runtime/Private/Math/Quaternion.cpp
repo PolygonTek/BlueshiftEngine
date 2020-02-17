@@ -17,7 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const Quat Quat::identity(0.0f, 0.0f, 0.0f, 1.0f);
+ALIGN_AS16 const Quat Quat::identity(0.0f, 0.0f, 0.0f, 1.0f);
 
 Quat Quat::FromString(const char *str) {
     Quat q;

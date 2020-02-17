@@ -277,8 +277,8 @@ public:
                         /// Returns dimension of this type.
     constexpr int       GetDimension() const { return Rows * Cols; }
 
-    static const Mat3   zero;
-    static const Mat3   identity;
+    ALIGN_AS16 static const Mat3 zero;
+    ALIGN_AS16 static const Mat3 identity;
 
     Vec3                mat[Cols];
 };

@@ -155,7 +155,7 @@ void ComRigidBody::AddChildShapeRecursive(const Mat3x4 &parentWorldMatrixInverse
     
     ComTransform *transform = entity->GetTransform();
 
-    Mat3x4 localTransform = parentWorldMatrixInverse * Mat3x4(transform->GetAxis(), transform->GetOrigin());
+    ALIGN_AS16 Mat3x4 localTransform = parentWorldMatrixInverse * Mat3x4(transform->GetAxis(), transform->GetOrigin());
     localTransform.FixDegeneracies();
 
     PhysShapeDesc &shapeDesc = shapeDescs.Alloc();

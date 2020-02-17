@@ -608,7 +608,7 @@ void RenderWorld::DrawGUICamera(GuiMesh &guiMesh) {
     new (&guiCamera->visLights) LinkList<VisLight>();
 
     // GUI visible object
-    Mat4 projMatrix;
+    ALIGN_AS16 Mat4 projMatrix;
     projMatrix.SetOrtho(0, renderSystem.currentContext->GetDeviceWidth(), renderSystem.currentContext->GetDeviceHeight(), 0, -1.0, 1.0);
 
     VisObject *visObject = RegisterVisObject(guiCamera, &renderObject);

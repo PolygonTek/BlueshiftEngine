@@ -257,14 +257,14 @@ public:
                         /// Compute 4D barycentric coordinates from the point based on 4 simplex vector.
     static const Vec4   Compute4DBarycentricCoords(const Vec3 &s1, const Vec3 &s2, const Vec3 &s3, const Vec3 &s4, const Vec3 &p);
 
-    static const Vec4   origin;     ///< (0, 0, 0, 0)
-    static const Vec4   zero;       ///< (0, 0, 0, 0)
-    static const Vec4   one;        ///< (1, 1, 1, 1)
-    static const Vec4   unitX;      ///< (1, 0, 0, 0)
-    static const Vec4   unitY;      ///< (0, 1, 0, 0)
-    static const Vec4   unitZ;      ///< (0, 0, 1, 0)
-    static const Vec4   unitW;      ///< (0, 0, 0, 1)
-    static const Vec4   infinity;   ///< (1e30f, 1e30f, 1e30f, 1e30f)
+    ALIGN_AS16 static const Vec4 origin;    ///< (0, 0, 0, 0)
+    ALIGN_AS16 static const Vec4 zero;      ///< (0, 0, 0, 0)
+    ALIGN_AS16 static const Vec4 one;       ///< (1, 1, 1, 1)
+    ALIGN_AS16 static const Vec4 unitX;     ///< (1, 0, 0, 0)
+    ALIGN_AS16 static const Vec4 unitY;     ///< (0, 1, 0, 0)
+    ALIGN_AS16 static const Vec4 unitZ;     ///< (0, 0, 1, 0)
+    ALIGN_AS16 static const Vec4 unitW;     ///< (0, 0, 0, 1)
+    ALIGN_AS16 static const Vec4 infinity;  ///< (1e30f, 1e30f, 1e30f, 1e30f)
 
     float               x;          ///< The x components.
     float               y;          ///< The y components.

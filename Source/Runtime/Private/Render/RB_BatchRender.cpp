@@ -473,10 +473,10 @@ void Batch::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
 
     SetMatrixConstants(shader);
 
-    Mat4 prevModelViewMatrix = backEnd.camera->def->GetViewMatrix() * surfSpace->def->GetPrevWorldMatrix();
+    ALIGN_AS16 Mat4 prevModelViewMatrix = backEnd.camera->def->GetViewMatrix() * surfSpace->def->GetPrevWorldMatrix();
     //shader->SetConstantMatrix4fv("prevModelViewMatrix", 1, true, prevModelViewMatrix);
 
-    Mat4 prevModelViewProjMatrix = backEnd.camera->def->GetProjMatrix() * prevModelViewMatrix;
+    ALIGN_AS16 Mat4 prevModelViewProjMatrix = backEnd.camera->def->GetProjMatrix() * prevModelViewMatrix;
     shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::PrevModelViewProjectionMatrix], true, prevModelViewProjMatrix);
 
     shader->SetConstant1f("shutterSpeed", r_motionBlur_ShutterSpeed.GetFloat() / backEnd.ctx->frameTime);
@@ -488,8 +488,8 @@ void Batch::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
         const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
         shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
         
-        Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
-        Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
+        ALIGN_AS16 Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
+        ALIGN_AS16 Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
 
         shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::TextureMatrixS], textureMatrixS);
         shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::TextureMatrixT], textureMatrixT);
@@ -987,11 +987,11 @@ void Batch::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) cons
     shader->Bind();
 
     // light texture transform matrix
-    Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetWorldMatrix();
+    ALIGN_AS16 Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetWorldMatrix();
     shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::LightTextureMatrix], true, viewProjScaleBiasMat);
     shader->SetConstant3f("fogColor", &surfLight->def->GetState().materialParms[RenderObject::MaterialParm::Red]);
 
-    Vec3 vec = surfLight->def->GetState().origin - backEnd.camera->def->GetState().origin;
+    ALIGN_AS16 Vec3 vec = surfLight->def->GetState().origin - backEnd.camera->def->GetState().origin;
     bool fogEnter = vec.Dot(surfLight->def->GetState().axis[0]) < 0.0f ? true : false;
 
     if (fogEnter) {
@@ -1033,7 +1033,7 @@ void Batch::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) co
     shader->Bind();
 
     // light texture transform matrix
-    Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetWorldMatrix();
+    ALIGN_AS16 Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetWorldMatrix();
     shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::LightTextureMatrix], true, viewProjScaleBiasMat);
     shader->SetConstant3f("blendColor", blendColor);
 

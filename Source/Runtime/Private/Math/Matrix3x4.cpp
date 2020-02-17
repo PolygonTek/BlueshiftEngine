@@ -17,8 +17,8 @@
 
 BE_NAMESPACE_BEGIN
 
-const Mat3x4 Mat3x4::zero(Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0));
-const Mat3x4 Mat3x4::identity(Vec4(1, 0, 0, 0), Vec4(0, 1, 0, 0), Vec4(0, 0, 1, 0));
+ALIGN_AS16 const Mat3x4 Mat3x4::zero(Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0));
+ALIGN_AS16 const Mat3x4 Mat3x4::identity(Vec4(1, 0, 0, 0), Vec4(0, 1, 0, 0), Vec4(0, 0, 1, 0));
 
 //---------------------------------------------------
 //
@@ -69,7 +69,7 @@ Mat3x4 &Mat3x4::Scale(float sx, float sy, float sz) {
 }
 
 Mat3x4 Mat3x4::operator*(const Mat3x4 &a) const {
-    Mat3x4 dst;
+    ALIGN_AS16 Mat3x4 dst;
 
     dst.mat[0][0] = mat[0][0] * a.mat[0][0] + mat[0][1] * a.mat[1][0] + mat[0][2] * a.mat[2][0];
     dst.mat[0][1] = mat[0][0] * a.mat[0][1] + mat[0][1] * a.mat[1][1] + mat[0][2] * a.mat[2][1];

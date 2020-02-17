@@ -17,8 +17,8 @@
 
 BE_NAMESPACE_BEGIN
 
-const Mat4 Mat4::zero(Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0));
-const Mat4 Mat4::identity(Vec4(1, 0, 0, 0), Vec4(0, 1, 0, 0), Vec4(0, 0, 1, 0), Vec4(0, 0, 0, 1));
+ALIGN_AS16 const Mat4 Mat4::zero(Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0));
+ALIGN_AS16 const Mat4 Mat4::identity(Vec4(1, 0, 0, 0), Vec4(0, 1, 0, 0), Vec4(0, 0, 1, 0), Vec4(0, 0, 0, 1));
 
 Mat4 &Mat4::operator=(const Mat3x4 &rhs) {
     mat[0][0] = rhs[0][0];
@@ -45,7 +45,7 @@ Mat4 &Mat4::operator=(const Mat3x4 &rhs) {
 }
 
 Mat4 Mat4::operator*(const Mat3x4 &a) const {
-    Mat4 dst;
+    ALIGN_AS16 Mat4 dst;
 
     dst[0][0] = mat[0][0] * a[0][0] + mat[0][1] * a[1][0] + mat[0][2] * a[2][0];
     dst[0][1] = mat[0][0] * a[0][1] + mat[0][1] * a[1][1] + mat[0][2] * a[2][1];
@@ -71,7 +71,7 @@ Mat4 Mat4::operator*(const Mat3x4 &a) const {
 }
 
 Mat4 Mat4::TransposedMul(const Mat3x4 &a) const {
-    Mat4 dst;
+    ALIGN_AS16 Mat4 dst;
 
     dst[0][0] = mat[0][0] * a[0][0] + mat[0][1] * a[0][1] + mat[0][2] * a[0][2] + mat[0][3] * a[0][3];
     dst[0][1] = mat[0][0] * a[1][0] + mat[0][1] * a[1][1] + mat[0][2] * a[1][2] + mat[1][3] * a[1][3];
@@ -97,7 +97,7 @@ Mat4 Mat4::TransposedMul(const Mat3x4 &a) const {
 }
 
 Mat4 Mat4::Transpose() const {
-    Mat4 transpose;
+    ALIGN_AS16 Mat4 transpose;
     
     for (int i = 0; i < 4; i++ ) {
         for (int j = 0; j < 4; j++ ) {
@@ -404,8 +404,8 @@ bool Mat4::InverseSelf() {
 }
 
 bool Mat4::AffineInverseSelf() {
-    Mat4    invMat;
-    Vec3    t;
+    ALIGN_AS16 Mat4 invMat;
+    ALIGN_AS16 Vec3 t;
 
     // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
     if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
@@ -441,9 +441,9 @@ bool Mat4::AffineInverseSelf() {
 }
 
 bool Mat4::EuclideanInverseSelf() {
-    Mat4    invMat;
-    Vec3    t;
-    float   temp;
+    ALIGN_AS16 Mat4 invMat;
+    ALIGN_AS16 Vec3 t;
+    float temp;
     
     // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
     if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
