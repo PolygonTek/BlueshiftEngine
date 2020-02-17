@@ -17,6 +17,7 @@
 struct avxb {
     union {
         __m256      m256;
+        __m256i     m256i;
         int32_t     pi32[8];
     };
 

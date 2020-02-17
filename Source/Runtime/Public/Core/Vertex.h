@@ -200,9 +200,9 @@ BE_INLINE void ConvertNormalToBytes(const float &x, const float &y, const float 
     const __m128i xyzChar = _mm_packus_epi16(xyzShort, xyzShort);
     const __m128i xyz16 = _mm_unpacklo_epi8(xyzChar, _mm_setzero_si128());
 
-    bval[0] = (byte)_mm_extract_epi16(xyz16, 0);    // cannot use _mm_extract_epi8 because it is an SSE4 instruction
-    bval[1] = (byte)_mm_extract_epi16(xyz16, 1);
-    bval[2] = (byte)_mm_extract_epi16(xyz16, 2);
+    bval[0] = (byte)_mm_extract_epi8(xyz16, 0);
+    bval[1] = (byte)_mm_extract_epi8(xyz16, 2);
+    bval[2] = (byte)_mm_extract_epi8(xyz16, 4);
 #else
     bval[0] = SIGNED_FLOAT_TO_BYTE(x);
     bval[1] = SIGNED_FLOAT_TO_BYTE(y);

@@ -309,9 +309,9 @@ public:
     Image &             CreateCube(int size, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
     Image &             Create2DArray(int width, int height, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
 
-                        /// Creates an cubic image from six square images.
+                        /// Creates a cubic image from six square images.
     Image &             CreateCubeFrom6Faces(const Image *faceImages);
-                        /// Creates an cubic image from single equirectangular spherical image.
+                        /// Creates a cubic image from single equirectangular spherical image.
     Image &             CreateCubeFromEquirectangular(const Image &equirectangularImage, int faceSize);
                         /// Creates an equirectangular spherical image from cubic image.
     Image &             CreateEquirectangularFromCube(const Image &cubeImage);

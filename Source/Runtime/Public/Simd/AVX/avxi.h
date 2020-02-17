@@ -18,7 +18,8 @@
 
 struct avxi {
     union {
-        __m256i     m256;
+        __m256i     m256i;
+        __m256      m256;
         struct {
             __m128i l, h;
         };
@@ -29,19 +30,19 @@ struct avxi {
     };
 
     BE_FORCE_INLINE avxi() {}
-    BE_FORCE_INLINE avxi(const avxi &other) { m256 = other.m256; }
-    BE_FORCE_INLINE avxi(const __m256i a) { m256 = a; }
-    BE_FORCE_INLINE explicit avxi(const __m256 a) { m256 = _mm256_cvtps_epi32(a); }
+    BE_FORCE_INLINE avxi(const avxi &other) { m256i = other.m256i; }
+    BE_FORCE_INLINE avxi(const __m256i a) { m256i = a; }
+    BE_FORCE_INLINE explicit avxi(const __m256 a) { m256i = _mm256_cvtps_epi32(a); }
     BE_FORCE_INLINE explicit avxi(const __m128i &a, const __m128i &b) { l = a; h = b; }
-    BE_FORCE_INLINE explicit avxi(const int32_t *a) { m256 = _mm256_loadu_si256((__m256i *)a); }
-    BE_FORCE_INLINE explicit avxi(int32_t a) { m256 = _mm256_set1_epi32(a); }
-    BE_FORCE_INLINE explicit avxi(int32_t a, int32_t b, int32_t c, int32_t d, int32_t e, int32_t f, int32_t g, int32_t h) { m256 = _mm256_set_epi32(h, g, f, e, d, c, b, a); }
+    BE_FORCE_INLINE explicit avxi(const int32_t *a) { m256i = _mm256_loadu_si256((__m256i *)a); }
+    BE_FORCE_INLINE explicit avxi(int32_t a) { m256i = _mm256_set1_epi32(a); }
+    BE_FORCE_INLINE explicit avxi(int32_t a, int32_t b, int32_t c, int32_t d, int32_t e, int32_t f, int32_t g, int32_t h) { m256i = _mm256_set_epi32(h, g, f, e, d, c, b, a); }
 
-    BE_FORCE_INLINE void setZero() { m256 = _mm256_setzero_si256(); }
-    BE_FORCE_INLINE void setOne() { m256 = _mm256_set1_epi32(1); }
+    BE_FORCE_INLINE void setZero() { m256i = _mm256_setzero_si256(); }
+    BE_FORCE_INLINE void setOne() { m256i = _mm256_set1_epi32(1); }
 
-    BE_FORCE_INLINE operator const __m256i &() const { return m256; }
-    BE_FORCE_INLINE operator __m256i &() { return m256; }
+    BE_FORCE_INLINE operator const __m256i &() const { return m256i; }
+    BE_FORCE_INLINE operator __m256i &() { return m256i; }
 
     BE_FORCE_INLINE const int32_t &operator[](const size_t i) const { assert(i < 4); return pi32[i]; }
     BE_FORCE_INLINE int32_t &operator[](const size_t i) { assert(i < 4); return pi32[i]; }

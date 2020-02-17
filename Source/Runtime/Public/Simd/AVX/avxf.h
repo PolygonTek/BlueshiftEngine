@@ -19,6 +19,7 @@
 struct avxf {
     union {
         __m256      m256;
+        __m256i     m256i;
         float       ps[8];
         int32_t     pi32[8];
     };
