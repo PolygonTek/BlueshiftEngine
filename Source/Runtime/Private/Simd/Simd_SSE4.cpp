@@ -479,19 +479,8 @@ void BE_FASTCALL SIMD_SSE4::MatrixMultiply(float *dst, const float *src0, const 
     _mm_store_ps(dst + 12, a0);
 }
 
-// make the intrinsics "type unsafe"
-typedef union __m128c {
-    __m128c() {}
-    __m128c(__m128 f) { m128 = f; }
-    __m128c(__m128i i) { m128i = i; }
-    operator __m128() { return m128; }
-    operator __m128i() { return m128i; }
-    __m128 m128;
-    __m128i m128i;
-} __m128c;
-
 void BE_FASTCALL SIMD_SSE4::TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
-    const __m128 vector_float_mask_keep_last = __m128c(_mm_set_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000));
+    const __m128 vector_float_mask_keep_last = _mm_castsi128_ps(_mm_set_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000));
 
     const float *__restrict firstMatrix = jointMats->Ptr() + (firstJoint + firstJoint + firstJoint - 3) * 4;
 
@@ -514,17 +503,17 @@ void BE_FASTCALL SIMD_SSE4::TransformJoints(Mat3x4 *jointMats, const int *parent
         __m128 cmb = _mm_load_ps(childMatrix + 4);
         __m128 cmc = _mm_load_ps(childMatrix + 8);
 
-        __m128 ta = __m128c(_mm_shuffle_epi32(__m128c(pma), _MM_SHUFFLE(0, 0, 0, 0)));
-        __m128 tb = __m128c(_mm_shuffle_epi32(__m128c(pmb), _MM_SHUFFLE(0, 0, 0, 0)));
-        __m128 tc = __m128c(_mm_shuffle_epi32(__m128c(pmc), _MM_SHUFFLE(0, 0, 0, 0)));
+        __m128 ta = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pma), _MM_SHUFFLE(0, 0, 0, 0)));
+        __m128 tb = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pmb), _MM_SHUFFLE(0, 0, 0, 0)));
+        __m128 tc = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pmc), _MM_SHUFFLE(0, 0, 0, 0)));
 
-        __m128 td = __m128c(_mm_shuffle_epi32(__m128c(pma), _MM_SHUFFLE(1, 1, 1, 1)));
-        __m128 te = __m128c(_mm_shuffle_epi32(__m128c(pmb), _MM_SHUFFLE(1, 1, 1, 1)));
-        __m128 tf = __m128c(_mm_shuffle_epi32(__m128c(pmc), _MM_SHUFFLE(1, 1, 1, 1)));
+        __m128 td = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pma), _MM_SHUFFLE(1, 1, 1, 1)));
+        __m128 te = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pmb), _MM_SHUFFLE(1, 1, 1, 1)));
+        __m128 tf = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pmc), _MM_SHUFFLE(1, 1, 1, 1)));
 
-        __m128 tg = __m128c(_mm_shuffle_epi32(__m128c(pma), _MM_SHUFFLE(2, 2, 2, 2)));
-        __m128 th = __m128c(_mm_shuffle_epi32(__m128c(pmb), _MM_SHUFFLE(2, 2, 2, 2)));
-        __m128 ti = __m128c(_mm_shuffle_epi32(__m128c(pmc), _MM_SHUFFLE(2, 2, 2, 2)));
+        __m128 tg = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pma), _MM_SHUFFLE(2, 2, 2, 2)));
+        __m128 th = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pmb), _MM_SHUFFLE(2, 2, 2, 2)));
+        __m128 ti = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pmc), _MM_SHUFFLE(2, 2, 2, 2)));
 
         pma = _mm_add_ps(_mm_mul_ps(ta, cma), _mm_and_ps(pma, vector_float_mask_keep_last));
         pmb = _mm_add_ps(_mm_mul_ps(tb, cma), _mm_and_ps(pmb, vector_float_mask_keep_last));
@@ -545,7 +534,7 @@ void BE_FASTCALL SIMD_SSE4::TransformJoints(Mat3x4 *jointMats, const int *parent
 }
 
 void BE_FASTCALL SIMD_SSE4::UntransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
-    const __m128 vector_float_mask_keep_last = __m128c(_mm_set_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000));
+    const __m128 vector_float_mask_keep_last = _mm_castsi128_ps(_mm_set_epi32(0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000));
 
     for (int joint = lastJoint; joint >= firstJoint; joint--) {
         assert(parents[joint] < joint);
@@ -561,17 +550,17 @@ void BE_FASTCALL SIMD_SSE4::UntransformJoints(Mat3x4 *jointMats, const int *pare
         __m128 cmb = _mm_load_ps(childMatrix + 4);
         __m128 cmc = _mm_load_ps(childMatrix + 8);
 
-        __m128 ta = __m128c(_mm_shuffle_epi32(__m128c(pma), _MM_SHUFFLE(0, 0, 0, 0)));
-        __m128 tb = __m128c(_mm_shuffle_epi32(__m128c(pma), _MM_SHUFFLE(1, 1, 1, 1)));
-        __m128 tc = __m128c(_mm_shuffle_epi32(__m128c(pma), _MM_SHUFFLE(2, 2, 2, 2)));
+        __m128 ta = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pma), _MM_SHUFFLE(0, 0, 0, 0)));
+        __m128 tb = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pma), _MM_SHUFFLE(1, 1, 1, 1)));
+        __m128 tc = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pma), _MM_SHUFFLE(2, 2, 2, 2)));
 
-        __m128 td = __m128c(_mm_shuffle_epi32(__m128c(pmb), _MM_SHUFFLE(0, 0, 0, 0)));
-        __m128 te = __m128c(_mm_shuffle_epi32(__m128c(pmb), _MM_SHUFFLE(1, 1, 1, 1)));
-        __m128 tf = __m128c(_mm_shuffle_epi32(__m128c(pmb), _MM_SHUFFLE(2, 2, 2, 2)));
+        __m128 td = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pmb), _MM_SHUFFLE(0, 0, 0, 0)));
+        __m128 te = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pmb), _MM_SHUFFLE(1, 1, 1, 1)));
+        __m128 tf = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pmb), _MM_SHUFFLE(2, 2, 2, 2)));
 
-        __m128 tg = __m128c(_mm_shuffle_epi32(__m128c(pmc), _MM_SHUFFLE(0, 0, 0, 0)));
-        __m128 th = __m128c(_mm_shuffle_epi32(__m128c(pmc), _MM_SHUFFLE(1, 1, 1, 1)));
-        __m128 ti = __m128c(_mm_shuffle_epi32(__m128c(pmc), _MM_SHUFFLE(2, 2, 2, 2)));
+        __m128 tg = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pmc), _MM_SHUFFLE(0, 0, 0, 0)));
+        __m128 th = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pmc), _MM_SHUFFLE(1, 1, 1, 1)));
+        __m128 ti = _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(pmc), _MM_SHUFFLE(2, 2, 2, 2)));
 
         cma = _mm_sub_ps(cma, _mm_and_ps(pma, vector_float_mask_keep_last));
         cmb = _mm_sub_ps(cmb, _mm_and_ps(pmb, vector_float_mask_keep_last));

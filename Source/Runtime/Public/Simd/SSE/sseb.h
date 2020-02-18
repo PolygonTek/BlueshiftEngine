@@ -18,11 +18,11 @@ struct sseb {
     union {
         __m128      m128;
         __m128i     m128i;
-        int32_t     pi32[4];
     };
 
-    BE_FORCE_INLINE sseb() {}
+    BE_FORCE_INLINE sseb() = default;
     BE_FORCE_INLINE sseb(const sseb &other) { m128 = other.m128; }
+
     BE_FORCE_INLINE sseb(const __m128 a) { m128 = a; }
 
     BE_FORCE_INLINE explicit sseb(bool a) { m128 = _mm_lookupmask_ps[(size_t(a) << 3) | (size_t(a) << 2) | (size_t(a) << 1) | size_t(a)]; }
@@ -33,7 +33,6 @@ struct sseb {
     BE_FORCE_INLINE operator const __m128d() const { return _mm_castps_pd(m128); }
 
     BE_FORCE_INLINE bool operator[](const size_t i) const { assert(i < 4); return (_mm_movemask_ps(m128) >> i) & 1; }
-    BE_FORCE_INLINE int32_t &operator[](const size_t i) { assert(i < 4); return pi32[i]; }
 };
 
 //-------------------------------------------------------------
@@ -96,7 +95,7 @@ template <size_t i0, size_t i1, size_t i2, size_t i3> BE_FORCE_INLINE const sseb
 // 특수한 case 의 shuffle 은 간단한 intrinsic 으로 대응.
 template<> BE_FORCE_INLINE const sseb shuffle<0, 0, 2, 2>(const sseb &a) { return _mm_moveldup_ps(a); }
 template<> BE_FORCE_INLINE const sseb shuffle<1, 1, 3, 3>(const sseb &a) { return _mm_movehdup_ps(a); }
-template<> BE_FORCE_INLINE const sseb shuffle<0, 1, 0, 1>(const sseb &a) { return _mm_castpd_ps(_mm_movedup_pd (a)); }
+template<> BE_FORCE_INLINE const sseb shuffle<0, 1, 0, 1>(const sseb &a) { return _mm_castpd_ps(_mm_movedup_pd(a)); }
 
 // 2-bit index 를 사용해서 src 에서 dst 로 insert 한다. 4 bit clr 로 0 으로 채우기 가능. (SSE4.1)
 template <size_t dst, size_t src, size_t clr> BE_FORCE_INLINE const sseb insert(const sseb &a, const sseb &b) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }

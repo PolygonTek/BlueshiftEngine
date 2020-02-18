@@ -17,16 +17,15 @@
 #include "Platform/Intrinsics.h"
 
 struct ssef {
-    union { 
+    union {
         __m128      m128;
         __m128i     m128i;
-        float       ps[4];
-        int32_t     pi32[4];
     };
 
-    BE_FORCE_INLINE ssef() {}
+    BE_FORCE_INLINE ssef() = default;
     BE_FORCE_INLINE ssef(const ssef &other) { m128 = other.m128; }
     BE_FORCE_INLINE ssef &operator=(const ssef &other) { m128 = other.m128; return *this; }
+
     BE_FORCE_INLINE ssef(const __m128 a) { m128 = a; }
 
     BE_FORCE_INLINE explicit ssef(const __m128i a) { m128 = _mm_cvtepi32_ps(a); }
@@ -38,13 +37,6 @@ struct ssef {
     BE_FORCE_INLINE void setOne() { m128 = _mm_set1_ps(1.0f); }
 
     BE_FORCE_INLINE operator const __m128 &() const { return m128; };
-    BE_FORCE_INLINE operator __m128 &() { return m128; };
-
-    BE_FORCE_INLINE operator const __m128i &() const { return m128i; };
-    BE_FORCE_INLINE operator __m128i &() { return m128i; };
-
-    BE_FORCE_INLINE const float &operator[](const size_t i) const { assert(i < 4); return ps[i]; }
-    BE_FORCE_INLINE float &operator[](const size_t i) { assert(i < 4); return ps[i]; }
 };
 
 //-------------------------------------------------------------

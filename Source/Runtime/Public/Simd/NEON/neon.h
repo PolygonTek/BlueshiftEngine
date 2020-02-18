@@ -18,6 +18,16 @@
 #include "arm_neon.h"
 #endif
 
-using __m64 = float32x2_t;
-using __m128 = float32x4_t;
-using __m128i = int32x4_t;
+struct neon128 {
+    union {
+        float32x4_t     f32;
+        uint64x2_t      ui64;
+        uint32x4_t      ui32;
+        uint16x8_t      ui16;
+        uint8x16_t      ui8;
+        int64x2_t       i64;
+        int32x4_t       i32;
+        int16x8_t       i16;
+        int8x16_t       i8;
+    };
+};

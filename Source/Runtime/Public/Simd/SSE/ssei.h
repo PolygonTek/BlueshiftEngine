@@ -18,17 +18,14 @@
 
 struct ssei {
     union { 
-        __m128i     m128i;
         __m128      m128;
-        int64_t     pi64[2];
-        int32_t     pi32[4];
-        int16_t     pi16[8];
-        int8_t      pi8[16];
+        __m128i     m128i;
     };
 
-    BE_FORCE_INLINE ssei() {}
+    BE_FORCE_INLINE ssei() = default;
     BE_FORCE_INLINE ssei(const ssei &other) { m128i = other.m128i; }
     BE_FORCE_INLINE ssei &operator=(const ssei &other) { m128i = other.m128i; return *this; }
+
     BE_FORCE_INLINE ssei(const __m128i a) { m128i = a; }
 
     BE_FORCE_INLINE explicit ssei(const __m128 a) { m128i = _mm_cvtps_epi32(a); }
@@ -40,13 +37,6 @@ struct ssei {
     BE_FORCE_INLINE void setOne() { m128i = _mm_set1_epi32(1); }
 
     BE_FORCE_INLINE operator const __m128i &() const { return m128i; }
-    BE_FORCE_INLINE operator __m128i &() { return m128i; }
-
-    BE_FORCE_INLINE operator const __m128 &() const { return m128; }
-    BE_FORCE_INLINE operator __m128 &() { return m128; }
-
-    BE_FORCE_INLINE const int32_t &operator[](const size_t i) const { assert(i < 4); return pi32[i]; }
-    BE_FORCE_INLINE int32_t &operator[](const size_t i) { assert(i < 4); return pi32[i]; }
 };
 
 //-------------------------------------------------------------
