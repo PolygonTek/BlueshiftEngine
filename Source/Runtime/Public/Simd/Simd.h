@@ -103,3 +103,7 @@ BE_NAMESPACE_END
 #ifdef ENABLE_X86_AVX_INTRIN
 #include "Simd_AVX.h"
 #endif
+
+#ifdef ENABLE_ARM_NEON_INTRIN
+#include "Simd_NEON.h"
+#endif

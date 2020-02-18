@@ -14,10 +14,13 @@
 
 #pragma once
 
-#ifdef __ARM_NEON__
-#include "arm_neon.h"
-#endif
+#include "NEON/neon.h"
 
-using __m64 = float32x2_t;
-using __m128 = float32x4_t;
-using __m128i = int32x4_t;
+BE_NAMESPACE_BEGIN
+
+class SIMD_NEON : public SIMD_Generic {
+public:
+    SIMD_NEON() { cpuid = CPUID_NEON; }
+};
+
+BE_NAMESPACE_END

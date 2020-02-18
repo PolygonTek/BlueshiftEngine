@@ -112,9 +112,10 @@ set(COMMON_ENGINE_FILES
     Public/Math/Vector4.h
 
     Public/SIMD/Simd.h
-    Public/SIMD/Simd_AVX.h
     Public/SIMD/Simd_Generic.h
     Public/SIMD/Simd_SSE4.h
+    Public/SIMD/Simd_AVX.h
+    Public/SIMD/Simd_NEON.h
     Public/SIMD/smmintrin_emu.h
     Public/SIMD/immintrin_emu.h
     Public/SIMD/AVX/avx.h
