@@ -226,8 +226,8 @@ BE_FORCE_INLINE void transpose(const ssef &r0, const ssef &r1, const ssef &r2, c
     ssef l13 = unpacklo(r1, r3); // m10, m30, m11, m31
     ssef h13 = unpackhi(r1, r3); // m12, m32, m13, m33
     c0 = unpacklo(l02, l13); // m00, m10, m20, m30
-    c1 = unpackhi(l02, l13); // m01, m12, m21, m31
-    c2 = unpacklo(h02, h13); // m02, m13, m23, m32
+    c1 = unpackhi(l02, l13); // m01, m11, m21, m31
+    c2 = unpacklo(h02, h13); // m02, m12, m22, m32
 }
 
 //-------------------------------------------------------------

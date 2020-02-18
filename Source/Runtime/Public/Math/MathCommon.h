@@ -145,7 +145,7 @@ public:
     static const float          FloatEpsilon;               ///< smallest positive number such that 1.0 + FloatEpsilon != 1.0
     static const float          FloatSmallestNonDenormal;   ///< smallest non-denormal 32-bit floating point value
     
-#ifdef ENABLE_X86_SSE_INTRIN
+#if defined(ENABLE_X86_SSE_INTRIN) || defined(ENABLE_ARM64_NEON_INTRIN)
     static const __m128         SIMD_SP_zero;
     static const __m128         SIMD_SP_255;
     static const __m128         SIMD_SP_min_char;

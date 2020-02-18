@@ -296,9 +296,10 @@ const Vec3 Vec3::Compute3DBarycentricCoords(const Vec2 &s1, const Vec2 &s2, cons
         return Vec3::zero;
     }
 
+    float invDet = 1.0f / det;
     Vec2 c = p - s3;
-    float b1 = (b[1] * c[0] - b[0] * c[1]) / det;
-    float b2 = (a[0] * c[1] - a[1] * c[0]) / det;
+    float b1 = (b[1] * c[0] - b[0] * c[1]) * invDet;
+    float b2 = (a[0] * c[1] - a[1] * c[0]) * invDet;
     return Vec3(b1, b2, 1.0f - b1 - b2);
 }
 
