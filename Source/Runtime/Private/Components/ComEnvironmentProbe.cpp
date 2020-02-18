@@ -142,7 +142,7 @@ void ComEnvironmentProbe::Init() {
 
     sphereDef.mesh = sphereMesh->InstantiateMesh(Mesh::Type::Static);
     sphereDef.aabb = sphereMesh->GetAABB();
-    sphereDef.worldMatrix = transform->GetMatrix();
+    sphereDef.worldMatrix.SetTRS(transform->GetOrigin(), Mat3::identity, Vec3(0.75f, 0.75f, 0.75f));
     sphereDef.materialParms[RenderObject::MaterialParm::Red] = 1.0f;
     sphereDef.materialParms[RenderObject::MaterialParm::Green] = 1.0f;
     sphereDef.materialParms[RenderObject::MaterialParm::Blue] = 1.0f;

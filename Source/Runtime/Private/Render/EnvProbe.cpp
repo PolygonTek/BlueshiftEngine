@@ -311,7 +311,7 @@ bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing::Enum timeSlicing) {
             specularProbeCubemapComputedLevel0Face++;
 
             if (timeSlicing == EnvProbe::TimeSlicing::IndividualFaces) {
-                break;
+                return false;
             }
         }
 
@@ -332,10 +332,6 @@ bool EnvProbeJob::Refresh(EnvProbe::TimeSlicing::Enum timeSlicing) {
         // Generate mipmaps of environment cubemap to generate specular convolution cube map using pre-filtered environment cubemap.
         envProbe->envProbeTexture->Bind();
         envProbe->envProbeTexture->GenerateMipmap();
-
-        if (timeSlicing != EnvProbe::TimeSlicing::NoTimeSlicing) {
-            return false;
-        }
     }
 
     while (specularProbeCubemapComputedLevel < specularProbeCubemapMaxLevel) {
