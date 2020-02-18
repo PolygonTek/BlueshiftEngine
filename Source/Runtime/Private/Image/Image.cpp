@@ -370,8 +370,6 @@ Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode::
     const byte *srcY0 = &src[iY0 * pitch];
     const byte *srcY1 = &src[iY1 * pitch];
 
-    ALIGN_AS16 Color4 outputColor;
-
     // [0] [1]
     // [2] [3]
     ALIGN_AS16 Color4 rgba32f[4];
@@ -381,14 +379,16 @@ Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode::
     formatInfo->unpackRGBA32F(&srcY1[iX0 * bpp], (byte *)&rgba32f[2], 1);
     formatInfo->unpackRGBA32F(&srcY1[iX1 * bpp], (byte *)&rgba32f[3], 1);
 
+    ALIGN_AS16 Color4 outputColor;
+
 #ifdef ENABLE_X86_SSE_INTRIN
     __m128 a00 = _mm_load_ps(rgba32f[0]);
     __m128 a01 = _mm_load_ps(rgba32f[1]);
     __m128 a10 = _mm_load_ps(rgba32f[2]);
     __m128 a11 = _mm_load_ps(rgba32f[3]);
 
-    __m128 x1 = _mm_set_ps1(1 - fracX);
-    __m128 y1 = _mm_set_ps1(1 - fracY);
+    __m128 x1 = _mm_set_ps1(1.0f - fracX);
+    __m128 y1 = _mm_set_ps1(1.0f - fracY);
     __m128 x2 = _mm_set_ps1(fracX);
     __m128 y2 = _mm_set_ps1(fracY);
 
