@@ -186,23 +186,20 @@ struct BE_API VertexGenericLit : public VertexGeneric {
 };
 
 BE_INLINE void ConvertNormalToBytes(const float &x, const float &y, const float &z, byte *bval) {
-    assert((((uintptr_t)bval) & 3) == 0);
-
 #ifdef ENABLE_X86_SSE_INTRIN
     const __m128 vector_float_one           = { 1.0f, 1.0f, 1.0f, 1.0f };
     const __m128 vector_float_half          = { 0.5f, 0.5f, 0.5f, 0.5f };
     const __m128 vector_float_255_over_2    = { 255.0f / 2.0f, 255.0f / 2.0f, 255.0f / 2.0f, 255.0f / 2.0f };
 
-    const __m128 xyz = _mm_unpacklo_ps(_mm_unpacklo_ps(_mm_load_ss(&x), _mm_load_ss(&z)), _mm_load_ss(&y));
+    const __m128 xyz = _mm_setr_ps(x, y, z, 0);
     const __m128 xyzScaled = _mm_add_ps(_mm_mul_ps(_mm_add_ps(xyz, vector_float_one), vector_float_255_over_2), vector_float_half);
-    const __m128i xyzInt = _mm_cvtps_epi32(xyzScaled);
-    const __m128i xyzShort = _mm_packs_epi32(xyzInt, xyzInt);
-    const __m128i xyzChar = _mm_packus_epi16(xyzShort, xyzShort);
-    const __m128i xyz16 = _mm_unpacklo_epi8(xyzChar, _mm_setzero_si128());
+    const __m128i xyzI32 = _mm_cvtps_epi32(xyzScaled);
+    const __m128i xyzU16 = _mm_packus_epi32(xyzI32, xyzI32);
+    const __m128i xyzU8 = _mm_packus_epi16(xyzU16, xyzU16);
 
-    bval[0] = (byte)_mm_extract_epi8(xyz16, 0);
-    bval[1] = (byte)_mm_extract_epi8(xyz16, 2);
-    bval[2] = (byte)_mm_extract_epi8(xyz16, 4);
+    bval[0] = (byte)_mm_extract_epi8(xyzU8, 0);
+    bval[1] = (byte)_mm_extract_epi8(xyzU8, 1);
+    bval[2] = (byte)_mm_extract_epi8(xyzU8, 2);
 #else
     bval[0] = SIGNED_FLOAT_TO_BYTE(x);
     bval[1] = SIGNED_FLOAT_TO_BYTE(y);
