@@ -103,7 +103,7 @@ protected:
     virtual void            OnInactive() override;
 
     void                    ChangeScript(const Guid &scriptGuid);
-    bool                    ParsePropertyNames(const Str &textName, const Str &text);
+    bool                    ParsePropertyNames(const Str &textName, const Str &text, StrArray &propertyNames);
     void                    InitScriptFields();
     void                    SetScriptProperties();
     LuaCpp::Selector        CacheFunction(const char *funcname);

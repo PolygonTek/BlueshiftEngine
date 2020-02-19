@@ -170,7 +170,9 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
         return;
     }
 
-    ParsePropertyNames(scriptPath, text);
+    if (!ParsePropertyNames(scriptPath, text, propertyNames)) {
+        propertyNames.Clear();
+    }
 
     // Load a script with sandboxed on current Lua state.
     if (!state->LoadBuffer(scriptPath.c_str(), text, size, sandboxName)) {
@@ -219,7 +221,7 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
 #endif
 }
 
-bool ComScript::ParsePropertyNames(const Str &textName, const Str &text) {
+bool ComScript::ParsePropertyNames(const Str &textName, const Str &text, StrArray &propertyNames) {
     static const char *propertiesMarker = "--[properties]--";
 
     propertyNames.Clear();

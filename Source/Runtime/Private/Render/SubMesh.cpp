@@ -1114,7 +1114,7 @@ static void Moment01SubExpressions(float w0, float w1, float w2, float &f1, floa
 
 const Vec3 SubMesh::ComputeCentroid() const {
     const float multipliers[2] = { 1.0f/6, 1.0f/24 };
-    float intg[4] = { 0, };
+    float intg[4] = { 0, 0, 0, 0 };
     float f1x, f1y, f1z, f2x, f2y, f2z;
 
     for (int i = 0; i < numIndexes; i += 3) {
@@ -1127,9 +1127,9 @@ const Vec3 SubMesh::ComputeCentroid() const {
 
         const Vec3 cr = side0.Cross(side1);
 
-        Moment01SubExpressions(a.x, b.x, c.x, f1x, f2x); 
-        Moment01SubExpressions(a.y, b.y, c.y, f1y, f2y); 
-        Moment01SubExpressions(a.z, b.z, c.z, f1z, f2z); 
+        Moment01SubExpressions(a.x, b.x, c.x, f1x, f2x);
+        Moment01SubExpressions(a.y, b.y, c.y, f1y, f2y);
+        Moment01SubExpressions(a.z, b.z, c.z, f1z, f2z);
 
         intg[0] += cr.x * f1x;
         intg[1] += cr.x * f2x;
