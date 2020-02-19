@@ -20,14 +20,14 @@
 
 struct neon128 {
     union {
-        float32x4_t     f32;
-        uint64x2_t      ui64;
-        uint32x4_t      ui32;
-        uint16x8_t      ui16;
-        uint8x16_t      ui8;
-        int64x2_t       i64;
-        int32x4_t       i32;
-        int16x8_t       i16;
-        int8x16_t       i8;
+        float32x4_t     f32x4;
+        uint64x2_t      ui64x2;
+        uint32x4_t      ui32x4;
+        uint16x8_t      ui16x8;
+        uint8x16_t      ui8x16;
+        int64x2_t       i64x2;
+        int32x4_t       i32x4;
+        int16x8_t       i16x8;
+        int8x16_t       i8x16;
     };
 };
