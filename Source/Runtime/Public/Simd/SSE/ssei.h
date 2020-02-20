@@ -149,17 +149,6 @@ BE_FORCE_INLINE const sseb operator<=(const ssei &a, const ssei &b) { return !(a
 BE_FORCE_INLINE const sseb operator<=(const ssei &a, const int32_t &b) { return a <= ssei(b); }
 BE_FORCE_INLINE const sseb operator<=(const int32_t &a, const ssei &b) { return ssei(a) <= b; }
 
-// workaround for compiler bug in VS2008
-#if defined(_MSC_VER) && (_MSC_VER < 1600)
-BE_FORCE_INLINE const ssei select(const sseb &mask, const ssei &a, const ssei &b) { 
-    return _mm_castps_si128(_mm_or_ps(_mm_and_ps(mask, _mm_castsi128_ps(a)), _mm_andnot_ps(mask, _mm_castsi128_ps(b)))); 
-}
-#else
-BE_FORCE_INLINE const ssei select(const sseb &mask, const ssei &a, const ssei &b) { 
-    return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(b), _mm_castsi128_ps(a), mask)); 
-}
-#endif
-
 //-------------------------------------------------------------
 // Movement/Shifting/Shuffling
 //-------------------------------------------------------------
@@ -212,10 +201,10 @@ BE_FORCE_INLINE size_t select_max(const ssei &v) { return __bsf(movemask(v == vr
 
 // mask 된 4 개의 integer 중에서 minimum/maximum 값의 bit index 를 리턴.
 BE_FORCE_INLINE size_t select_min(const sseb &valid, const ssei &v) {
-    const ssei a = select(valid, v, ssei(INT_MAX)); 
-    return __bsf(movemask(valid & (a == vreduce_min(a)))); 
+    const ssei a = _mm_sel_si128(ssei(INT_MAX), v, valid);
+    return __bsf(movemask(valid & (a == vreduce_min(a))));
 }
 BE_FORCE_INLINE size_t select_max(const sseb &valid, const ssei &v) {
-    const ssei a = select(valid, v, ssei(INT_MIN)); 
-    return __bsf(movemask(valid & (a == vreduce_max(a)))); 
+    const ssei a = _mm_sel_si128(ssei(INT_MIN), v, valid);
+    return __bsf(movemask(valid & (a == vreduce_max(a))));
 }

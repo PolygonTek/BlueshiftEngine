@@ -137,17 +137,6 @@ BE_FORCE_INLINE const sseb operator<=(const ssef &a, const ssef &b) { return _mm
 BE_FORCE_INLINE const sseb operator<=(const ssef &a, const float &b) { return a <= ssef(b); }
 BE_FORCE_INLINE const sseb operator<=(const float &a, const ssef &b) { return ssef(a) <= b; }
 
-// workaround for compiler bug in VS2008
-#if defined(_MSC_VER) && (_MSC_VER < 1600)
-BE_FORCE_INLINE const ssef select(const sseb &mask, const ssef &a, const ssef &b) {
-    return _mm_or_ps(_mm_and_ps(mask, a), _mm_andnot_ps(mask, b));
-}
-#else
-BE_FORCE_INLINE const ssef select(const sseb &mask, const ssef &t, const ssef &f) {
-    return _mm_blendv_ps(f, t, mask); // SSE4.1
-}
-#endif
-
 //-------------------------------------------------------------
 // Rounding Functions SSE4.1
 //-------------------------------------------------------------
@@ -241,11 +230,11 @@ BE_FORCE_INLINE size_t select_min(const ssef &v) { return __bsf(movemask(v == vr
 BE_FORCE_INLINE size_t select_max(const ssef &v) { return __bsf(movemask(v == vreduce_max(v))); }
 
 // mask 된 4 개의 float 중에서 minimum/maximum 값의 bit index 를 리턴.
-BE_FORCE_INLINE size_t select_min(const sseb &validmask, const ssef &v) { 
-    const ssef a = select(validmask, v, ssef(FLT_INFINITY)); 
-    return __bsf(movemask(validmask & (a == vreduce_min(a)))); 
+BE_FORCE_INLINE size_t select_min(const sseb &validmask, const ssef &v) {
+    const ssef a = _mm_sel_ps(ssef(FLT_INFINITY), v, validmask);
+    return __bsf(movemask(validmask & (a == vreduce_min(a))));
 }
-BE_FORCE_INLINE size_t select_max(const sseb &validmask, const ssef &v) { 
-    const ssef a = select(validmask, v, ssef(-FLT_INFINITY)); 
-    return __bsf(movemask(validmask & (a == vreduce_max(a)))); 
+BE_FORCE_INLINE size_t select_max(const sseb &validmask, const ssef &v) {
+    const ssef a = _mm_sel_ps(ssef(-FLT_INFINITY), v, validmask);
+    return __bsf(movemask(validmask & (a == vreduce_max(a))));
 }

@@ -208,14 +208,6 @@
     #define FLT_INFINITY            std::numeric_limits<float>::infinity()
 #endif
 
-#if defined(_MSC_VER) && !defined(__SSE4_2__)
-    #define __SSE4_2__  // enable to activate SSE4.2 under Windows
-#endif
-
-#if defined(_MSC_VER) && !defined(__AVX__)
-    #define __AVX__  // enable to activate AVX under Windows
-#endif
-
 // Useful macro for forward declaration of Objective-C class in C/C++.
 #ifdef __OBJC__
     #define OBJC_CLASS(name) @class name
@@ -525,7 +517,7 @@ BE_FORCE_INLINE CFStringRef WideStringToCFString(const wchar_t *string) {
 
 //----------------------------------------------------------------------------------------------
 
-#if defined(__SSE4_2__)
+#if defined(__SSE3__)
     #define ENABLE_X86_SSE_INTRIN
 #elif defined(__ARM64__)
     #define ENABLE_ARM_NEON_INTRIN
