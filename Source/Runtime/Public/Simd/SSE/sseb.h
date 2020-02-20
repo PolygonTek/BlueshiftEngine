@@ -82,25 +82,15 @@ BE_FORCE_INLINE const sseb select(const sseb &mask, const sseb &t, const sseb &f
 BE_FORCE_INLINE const sseb unpacklo(const sseb &a, const sseb &b) { return _mm_unpacklo_ps(a, b); }
 BE_FORCE_INLINE const sseb unpackhi(const sseb &a, const sseb &b) { return _mm_unpackhi_ps(a, b); }
 
-// 한개의 4 packed 32 bit operand 에 대한 shuffle. 4 개의 2 bit index 를 이용한다.
-template <size_t i0, size_t i1, size_t i2, size_t i3> BE_FORCE_INLINE const sseb shuffle(const sseb &a) {
-    return _mm_shuffle_epi32(a, _MM_SHUFFLE(i3, i2, i1, i0));
-}
-
-// 두개의 4 packed 32 bit operand 에 대한 shuffle. 4 개의 2 bit index 를 이용한다.
-template <size_t i0, size_t i1, size_t i2, size_t i3> BE_FORCE_INLINE const sseb shuffle(const sseb &a, const sseb &b) {
-    return _mm_shuffle_ps(a, b, _MM_SHUFFLE(i3, i2, i1, i0));
-}
-
-// 특수한 case 의 shuffle 은 간단한 intrinsic 으로 대응.
-template<> BE_FORCE_INLINE const sseb shuffle<0, 0, 2, 2>(const sseb &a) { return _mm_moveldup_ps(a); }
-template<> BE_FORCE_INLINE const sseb shuffle<1, 1, 3, 3>(const sseb &a) { return _mm_movehdup_ps(a); }
-template<> BE_FORCE_INLINE const sseb shuffle<0, 1, 0, 1>(const sseb &a) { return _mm_castpd_ps(_mm_movedup_pd(a)); }
-
 // 2-bit index 를 사용해서 src 에서 dst 로 insert 한다. 4 bit clr 로 0 으로 채우기 가능. (SSE4.1)
-template <size_t dst, size_t src, size_t clr> BE_FORCE_INLINE const sseb insert(const sseb &a, const sseb &b) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }
-template <size_t dst, size_t src> BE_FORCE_INLINE const sseb insert(const sseb &a, const sseb &b) { return insert<dst, src, 0>(a, b); }
-template <size_t dst> BE_FORCE_INLINE const sseb insert(const sseb &a, const bool b) { return insert<dst, 0>(a, sseb(b)); }
+template <size_t dst, size_t src, size_t clr> 
+BE_FORCE_INLINE const sseb insert(const sseb &a, const sseb &b) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }
+
+template <size_t dst, size_t src> 
+BE_FORCE_INLINE const sseb insert(const sseb &a, const sseb &b) { return insert<dst, src, 0>(a, b); }
+
+template <size_t dst> 
+BE_FORCE_INLINE const sseb insert(const sseb &a, const bool b) { return insert<dst, 0>(a, sseb(b)); }
 
 //-------------------------------------------------------------
 // Reduction Operations

@@ -298,8 +298,8 @@ void SubMesh::SplitMirroredVerts() {
         simdProcessor->Memcpy(newVerts, verts, sizeof(VertexGenericLit) * numVerts);
         simdProcessor->Memcpy(newVerts + numVerts, dupVerts, sizeof(VertexGenericLit) * numMirroredVerts);
 
-        int *newMirroredVerts = (int *)Mem_Alloc16(sizeof(int) * numMirroredVerts);
-        simdProcessor->Memcpy(newMirroredVerts, mirroredVertsIndexes, sizeof(int) * numMirroredVerts);
+        TriIndex *newMirroredVerts = (TriIndex *)Mem_Alloc16(sizeof(TriIndex) * numMirroredVerts);
+        simdProcessor->Memcpy(newMirroredVerts, mirroredVertsIndexes, sizeof(TriIndex) * numMirroredVerts);
 
         if (numJointWeights > 0) {
             int numAppendedJointWeights = 0;
@@ -766,8 +766,8 @@ void SubMesh::ComputeDominantTris() {
     // The dominant triangle should have most larger surface area among the adjacent triangles of a vertex
     for (int i = 0; i < numVerts; i++) {
         float dominantTriArea = -1.0f;
-        int dominantTriVertex2 = -1;
-        int dominantTriVertex3 = -1;
+        TriIndex dominantTriVertex2 = -1;
+        TriIndex dominantTriVertex3 = -1;
 
         for (int j = 0; j < numIndexes; j += 3) {
             if (indexes[j] == i || indexes[j+1] == i || indexes[j+2] == i) {
@@ -822,7 +822,7 @@ void SubMesh::ComputeDominantTris() {
 
         // We just need determinant sign because tangents vectors should be normalized
         float det = ds1 * dt2 - ds2 * dt1;
-        unsigned int signBit = (*(unsigned int *)&det) & (1 << 31);
+        uint32_t signBit = (*(uint32_t *)&det) & (1 << 31);
 
         Vec3 t0;
         t0.x = dt2 * side0.x - dt1 * side1.x;
@@ -830,7 +830,7 @@ void SubMesh::ComputeDominantTris() {
         t0.z = dt2 * side0.z - dt1 * side1.z;
 
         const float f0 = Math::InvSqrt(t0.LengthSqr());
-        *(unsigned int *)&f0 ^= signBit;
+        *(uint32_t *)&f0 ^= signBit;
         dominantTris[i].normalizationScale[0] = f0;
 
         Vec3 t1;
@@ -839,7 +839,7 @@ void SubMesh::ComputeDominantTris() {
         t1.z = ds1 * side1.z - ds2 * side0.z;
 
         const float f1 = Math::InvSqrt(t1.LengthSqr());
-        *(unsigned int *)&f1 ^= signBit;
+        *(uint32_t *)&f1 ^= signBit;
         dominantTris[i].normalizationScale[1] = f1;
 
         Vec3 n;
@@ -880,7 +880,7 @@ void SubMesh::ComputeEdges() {
 
     // Temporary edge buffer to compute real 'edges'.
     // Maximum edge count is same as index count. but we need one more space for 0'th edge for dummy.
-    Edge *tempEdges = (Edge *)Mem_Alloc16((numIndexes + 1) * sizeof(Edge));
+    Edge *tempEdges = (Edge *)Mem_Alloc16((numIndexes + 1) * sizeof(tempEdges[0]));
 
     Edge triEdges[3];
     // 0'th edge is not possible to have negative index, so we'll ignore it.
@@ -888,13 +888,13 @@ void SubMesh::ComputeEdges() {
     tempEdges[0] = triEdges[0];
 
     // edge's vertex index v0 to the edge table.
-    int *vertexEdges = (int *)Mem_Alloc16(numVerts * sizeof(int));
-    memset(vertexEdges, -1, numVerts * sizeof(int));
+    int32_t *vertexEdges = (int32_t *)Mem_Alloc16(numVerts * sizeof(vertexEdges[0]));
+    memset(vertexEdges, -1, numVerts * sizeof(int32_t));
     // vertices might have many edges.
-    int *edgeChain = (int *)Mem_Alloc16((numIndexes + 1) * sizeof(int));
+    int32_t *edgeChain = (int32_t *)Mem_Alloc16((numIndexes + 1) * sizeof(edgeChain[0]));
 
     // edge indexes.
-    edgeIndexes = (int *)Mem_Alloc16(numIndexes * sizeof(int));
+    edgeIndexes = (int32_t *)Mem_Alloc16(numIndexes * sizeof(edgeIndexes[0]));
 
     int numTempEdges = 1;
     int numDisjunctiveEdges = 0;
@@ -921,8 +921,8 @@ void SubMesh::ComputeEdges() {
         for (int j = 0; j < 3; j++) {
             Edge &edge = triEdges[j];
 
-            const int v0 = edge.v[0]; // edge vertex index 0
-            const int v1 = edge.v[1]; // edge vertex index 1
+            const int32_t v0 = edge.v[0]; // edge vertex index 0
+            const int32_t v1 = edge.v[1]; // edge vertex index 1
 
             // edge vertex winding 이 triangle winding (CCW) 과 같다면 0
             // edge vertex winding 이 triangle winding (CCW) 과 다르다면 1
@@ -978,12 +978,12 @@ void SubMesh::ComputeEdges() {
     edgesCalculated = true;
 }
 
-int SubMesh::FindEdge(int v1, int v2) const {
+int SubMesh::FindEdge(int32_t v1, int32_t v2) const {
     if (!edgesCalculated) {
         return false;
     }
 
-    int firstVert, secondVert;
+    int32_t firstVert, secondVert;
     if (v1 < v2) {
         firstVert = v1;
         secondVert = v2;
@@ -1113,8 +1113,51 @@ static void Moment01SubExpressions(float w0, float w1, float w2, float &f1, floa
 }
 
 const Vec3 SubMesh::ComputeCentroid() const {
-    const float multipliers[2] = { 1.0f/6, 1.0f/24 };
+#ifdef ENABLE_X86_SSE_INTRIN
+    const __m128 multipliers = { 1.0f/6.0f, 1.0f/24.0f, 1.0f/24.0f, 1.0f/24.0f };
+    const __m128 mask = _mm_castsi128_ps(_mm_set_epi32(0x0, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF));
+
+    __m128 mintg = _mm_setzero_ps();
+
+    for (int i = 0; i < numIndexes; i += 3) {
+        __m128 a = _mm_loadu_ps(verts[indexes[i]].xyz);
+        __m128 b = _mm_loadu_ps(verts[indexes[i + 1]].xyz);
+        __m128 c = _mm_loadu_ps(verts[indexes[i + 2]].xyz);
+
+        __m128 side0 = _mm_sub_ps(b, a);
+        __m128 side1 = _mm_sub_ps(c, a);
+
+        __m128 cr = _mm_cross_ps(side0, side1);
+
+        __m128 temp0 = _mm_add_ps(a, b);
+        __m128 temp1 = _mm_mul_ps(a, a);
+        __m128 temp2 = _mm_madd_ps(b, temp0, temp1);
+
+        __m128 f1 = _mm_add_ps(c, temp0);
+        __m128 f2 = _mm_madd_ps(c, f1, temp2);
+
+        temp0 = _mm_shuffle_ps<0, 0, 1, 2>(cr);
+        temp1 = _mm_sel_ps(f1, (_mm_shuffle_ps<0, 0, 1, 2>(f2)), mask);
+
+        mintg = _mm_madd_ps(temp0, temp1, mintg);
+    }
+
+    mintg = _mm_mul_ps(mintg, multipliers);
+
+    ALIGN_AS16 float intg[4];
+    _mm_store_ps(intg, mintg);
+
+    const float invVolume = 1.0f / intg[0];
+
+    Vec3 centroid;
+    centroid.x = intg[1] * invVolume;
+    centroid.y = intg[2] * invVolume;
+    centroid.z = intg[3] * invVolume;
+
+    return centroid;
+#else
     float intg[4] = { 0, 0, 0, 0 };
+    const float multipliers[2] = { 1.0f/6.0f, 1.0f/24.0f };
     float f1x, f1y, f1z, f2x, f2y, f2z;
 
     for (int i = 0; i < numIndexes; i += 3) {
@@ -1142,13 +1185,15 @@ const Vec3 SubMesh::ComputeCentroid() const {
     intg[2] *= multipliers[1];
     intg[3] *= multipliers[1];
 
-    const float volume = intg[0];
+    const float invVolume = 1.0f / intg[0];
 
     Vec3 centroid;
-    centroid.x = intg[1] / volume;
-    centroid.y = intg[2] / volume;
-    centroid.z = intg[3] / volume;
+    centroid.x = intg[1] * invVolume;
+    centroid.y = intg[2] * invVolume;
+    centroid.z = intg[3] * invVolume;
+
     return centroid;
+#endif
 }
 
 static void Moment012SubExpressions(float w0, float w1, float w2, float &f1, float &f2, float &f3, float &g0, float &g1, float &g2) {
@@ -1164,7 +1209,64 @@ static void Moment012SubExpressions(float w0, float w1, float w2, float &f1, flo
 }
 
 const Mat3 SubMesh::ComputeInertiaTensor(const Vec3 &centroid, float mass) const {
-    const float multipliers[2] = { 1.0f/60, 1.0f/120 };
+#ifdef ENABLE_X86_SSE_INTRIN
+    const __m128 multipliers1 = { 1.0f / 60.0f, 1.0f / 60.0f, 1.0f / 60.0f, 0.0f };
+    const __m128 multipliers2 = { 1.0f / 120.0f, 1.0f / 120.0f, 1.0f / 120.0f, 0.0f };
+
+    __m128 mintg1 = _mm_setzero_ps();
+    __m128 mintg2 = _mm_setzero_ps();
+
+    for (int i = 0; i < numIndexes; i += 3) {
+        __m128 a = _mm_loadu_ps(verts[indexes[i]].xyz);
+        __m128 b = _mm_loadu_ps(verts[indexes[i + 1]].xyz);
+        __m128 c = _mm_loadu_ps(verts[indexes[i + 2]].xyz);
+
+        __m128 side0 = _mm_sub_ps(b, a);
+        __m128 side1 = _mm_sub_ps(c, a);
+
+        __m128 cr = _mm_cross_ps(side0, side1);
+
+        __m128 temp0 = _mm_add_ps(a, b);
+        __m128 temp1 = _mm_mul_ps(a, a);
+        __m128 temp2 = _mm_madd_ps(b, temp0, temp1);
+
+        __m128 f1 = _mm_add_ps(c, temp0);
+        __m128 f2 = _mm_madd_ps(c, f1, temp2);
+        __m128 f3 = _mm_add_ps(_mm_add_ps(_mm_mul_ps(a, temp1), _mm_mul_ps(b, temp2)), _mm_mul_ps(c, f2));
+        __m128 g0 = _mm_madd_ps(_mm_add_ps(f1, a), a, f2);
+        __m128 g1 = _mm_madd_ps(_mm_add_ps(f1, b), b, f2);
+        __m128 g2 = _mm_madd_ps(_mm_add_ps(f1, c), c, f2);
+
+        temp0 = _mm_mul_ps(_mm_shuffle_ps<1, 2, 0, 3>(a), g0);
+        temp1 = _mm_mul_ps(_mm_shuffle_ps<1, 2, 0, 3>(b), g1);
+        temp2 = _mm_mul_ps(_mm_shuffle_ps<1, 2, 0, 3>(c), g2);
+
+        mintg1 = _mm_madd_ps(cr, f3, mintg1);
+        mintg2 = _mm_mul_ps(cr, _mm_add_ps(_mm_add_ps(temp0, temp1), temp2));
+    }
+
+    mintg1 = _mm_mul_ps(mintg1, multipliers1);
+    mintg2 = _mm_mul_ps(mintg2, multipliers2);
+
+    ALIGN_AS16 float intg1[4];
+    ALIGN_AS16 float intg2[4];
+    _mm_store_ps(intg1, mintg1);
+    _mm_store_ps(intg2, mintg2);
+
+    Mat3 inertia;
+    inertia[0][0] = intg1[1] + intg1[2] - mass * (centroid.y * centroid.y + centroid.z * centroid.z);
+    inertia[1][1] = intg1[0] + intg1[2] - mass * (centroid.z * centroid.z + centroid.x * centroid.x);
+    inertia[2][2] = intg1[0] + intg1[1] - mass * (centroid.x * centroid.x + centroid.y * centroid.y);
+    inertia[0][1] = -(intg2[0] - mass * centroid.x * centroid.y);
+    inertia[1][2] = -(intg2[1] - mass * centroid.y * centroid.z);
+    inertia[0][2] = -(intg2[2] - mass * centroid.z * centroid.x);
+    inertia[1][0] = inertia[0][1];
+    inertia[2][0] = inertia[0][2];
+    inertia[2][1] = inertia[1][2];
+
+    return inertia;
+#else
+    const float multipliers[2] = { 1.0f / 60.0f, 1.0f / 120.0f };
     float intg[10] = { 0, };
     float f1x, f1y, f1z, f2x, f2y, f2z, f3x, f3y, f3z;
     float g0x, g0y, g0z, g1x, g1y, g1z, g2x, g2y, g2z;
@@ -1179,24 +1281,24 @@ const Mat3 SubMesh::ComputeInertiaTensor(const Vec3 &centroid, float mass) const
 
         const Vec3 cr = side0.Cross(side1);
 
-        Moment012SubExpressions(a.x, b.x, c.x, f1x, f2x, f3x, g0x, g1x, g2x); 
-        Moment012SubExpressions(a.y, b.y, c.y, f1y, f2y, f3y, g0y, g1y, g2y); 
-        Moment012SubExpressions(a.z, b.z, c.z, f1z, f2z, f3z, g0z, g1z, g2z); 
+        Moment012SubExpressions(a.x, b.x, c.x, f1x, f2x, f3x, g0x, g1x, g2x);
+        Moment012SubExpressions(a.y, b.y, c.y, f1y, f2y, f3y, g0y, g1y, g2y);
+        Moment012SubExpressions(a.z, b.z, c.z, f1z, f2z, f3z, g0z, g1z, g2z);
 
         intg[4] += cr.x * f3x;
         intg[5] += cr.y * f3y;
         intg[6] += cr.z * f3z;
         intg[7] += cr.x * (a.y * g0x + b.y * g1x + c.y * g2x);
-        intg[8] += cr.y * (a.z * g0y + b.z * g1y + c.y * g2y);
+        intg[8] += cr.y * (a.z * g0y + b.z * g1y + c.z * g2y);
         intg[9] += cr.z * (a.x * g0z + b.x * g1z + c.x * g2z);
     }
 
     intg[4] *= multipliers[0];
-    intg[4] *= multipliers[0];
-    intg[4] *= multipliers[0];
-    intg[4] *= multipliers[1];
-    intg[4] *= multipliers[1];
-    intg[4] *= multipliers[1];
+    intg[5] *= multipliers[0];
+    intg[6] *= multipliers[0];
+    intg[7] *= multipliers[1];
+    intg[8] *= multipliers[1];
+    intg[9] *= multipliers[1];
 
     Mat3 inertia;
     inertia[0][0] = intg[5] + intg[6] - mass * (centroid.y * centroid.y + centroid.z * centroid.z);
@@ -1210,6 +1312,7 @@ const Mat3 SubMesh::ComputeInertiaTensor(const Vec3 &centroid, float mass) const
     inertia[2][1] = inertia[1][2];
 
     return inertia;
+#endif
 }
 
 void SubMesh::OptimizeIndexedTriangles() {

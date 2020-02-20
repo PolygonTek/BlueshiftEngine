@@ -87,7 +87,7 @@ public:
                             /// Finds a edge index by two vertex indexes.
                             /// if v1 is larger than v2, negative number will be returned.
                             /// To use this function, edge information must be pre-calculated.
-    int                     FindEdge(int v1, int v2) const;
+    int                     FindEdge(int32_t v1, int32_t v2) const;
 
                             /// Test if this sub mesh is closed surface form.
                             /// To use this function, edge information must be pre-calculated.
@@ -141,7 +141,7 @@ private:
     int                     numVerts;                   // mirrored vertices 스플릿팅 후에,
     VertexGenericLit *      verts;                      // verts 배열 뒷 부분에 스플릿팅된 vertex 들이 추가된다.
     int                     numMirroredVerts;           // numVerts 에 합산되어 있다 (numOriginalVerts = numVerts - numMirroredVerts)
-    int *                   mirroredVerts;              // 추가된 mirrored vertex 들의 original vertex index 배열
+    TriIndex *              mirroredVerts;              // 추가된 mirrored vertex 들의 original vertex index 배열
     DominantTri *           dominantTris;               // dominant triangles for each vertices
 
     int                     numIndexes;                 // number of triangle indexes
@@ -149,7 +149,7 @@ private:
                             
     int                     numEdges;                   // number of edges that is not including shared edges
     Edge *                  edges;                      // shared edges are not stored explicitly
-    int *                   edgeIndexes;                // triangle edge indexes to edge indexes including negative index number
+    int32_t *               edgeIndexes;                // triangle edge indexes to edge indexes including negative index number
 
     int                     numJointWeights;            // verts 와 별개로 weight 배열을 따로 관리 (for CPU skinning)
     JointWeight *           jointWeights;               // weight information array

@@ -156,21 +156,6 @@ BE_FORCE_INLINE const sseb operator<=(const int32_t &a, const ssei &b) { return 
 BE_FORCE_INLINE ssei unpacklo(const ssei &a, const ssei &b) { return _mm_castps_si128(_mm_unpacklo_ps(_mm_castsi128_ps(a.m128i), _mm_castsi128_ps(b.m128i))); }
 BE_FORCE_INLINE ssei unpackhi(const ssei &a, const ssei &b) { return _mm_castps_si128(_mm_unpackhi_ps(_mm_castsi128_ps(a.m128i), _mm_castsi128_ps(b.m128i))); }
 
-// 한개의 4 packed 32 bit operand 에 대한 shuffle. 4 개의 2 bit index 를 이용한다.
-template <size_t i0, size_t i1, size_t i2, size_t i3> BE_FORCE_INLINE const ssei shuffle(const ssei &a) {
-    return _mm_shuffle_epi32(a, _MM_SHUFFLE(i3, i2, i1, i0));
-}
-
-// 두개의 4 packed 32 bit operand 에 대한 shuffle. 4 개의 2 bit index 를 이용한다.
-template <size_t i0, size_t i1, size_t i2, size_t i3> BE_FORCE_INLINE const ssei shuffle(const ssei &a, const ssei &b) {
-    return _mm_castps_si128(_mm_shuffle_ps(_mm_castsi128_ps(a), _mm_castsi128_ps(b), _MM_SHUFFLE(i3, i2, i1, i0)));
-}
-
-// 특수한 case 의 shuffle 은 간단한 intrinsic 으로 대응.
-template<> BE_FORCE_INLINE const ssei shuffle<0, 0, 2, 2>(const ssei &a) { return _mm_castps_si128(_mm_moveldup_ps(_mm_castsi128_ps(a))); }
-template<> BE_FORCE_INLINE const ssei shuffle<1, 1, 3, 3>(const ssei &a) { return _mm_castps_si128(_mm_movehdup_ps(_mm_castsi128_ps(a))); }
-template<> BE_FORCE_INLINE const ssei shuffle<0, 1, 0, 1>(const ssei &a) { return _mm_castpd_si128(_mm_movedup_pd(_mm_castsi128_pd(a))); }
-
 // workaround for compiler bug in VS2008
 #if defined(_MSC_VER) && (_MSC_VER < 1600)
 template <size_t src> BE_FORCE_INLINE int extract(const ssei &b) { return b[src]; }
@@ -186,9 +171,9 @@ template <size_t dst> BE_FORCE_INLINE const ssei insert(const ssei &a, const int
 //-------------------------------------------------------------
 
 // 4 개의 integer 의 minimum/maximum/addition 을 구한다.
-BE_FORCE_INLINE const ssei vreduce_min(const ssei &v) { ssei h = vmin(shuffle<1, 0, 3, 2>(v), v); return vmin(shuffle<2, 3, 0, 1>(h), h); }
-BE_FORCE_INLINE const ssei vreduce_max(const ssei &v) { ssei h = vmax(shuffle<1, 0, 3, 2>(v), v); return vmax(shuffle<2, 3, 0, 1>(h), h); }
-BE_FORCE_INLINE const ssei vreduce_add(const ssei &v) { ssei h = shuffle<1, 0, 3, 2>(v) + v ; return shuffle<2, 3, 0, 1>(h) + h ; }
+BE_FORCE_INLINE const ssei vreduce_min(const ssei &v) { ssei h = vmin(_mm_shuffle_si128<1, 0, 3, 2>(v), v); return vmin(_mm_shuffle_si128<2, 3, 0, 1>(h), h); }
+BE_FORCE_INLINE const ssei vreduce_max(const ssei &v) { ssei h = vmax(_mm_shuffle_si128<1, 0, 3, 2>(v), v); return vmax(_mm_shuffle_si128<2, 3, 0, 1>(h), h); }
+BE_FORCE_INLINE const ssei vreduce_add(const ssei &v) { ssei h = _mm_shuffle_si128<1, 0, 3, 2>(v) + v ; return _mm_shuffle_si128<2, 3, 0, 1>(h) + h ; }
 
 // 4 개의 integer 의 minimum/maximum/addition 을 구해서 float 으로 리턴.
 BE_FORCE_INLINE int reduce_min(const ssei &v) { return extract<0>(vreduce_min(v)); }
