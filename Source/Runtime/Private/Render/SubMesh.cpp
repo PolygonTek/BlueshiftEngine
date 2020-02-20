@@ -1105,11 +1105,11 @@ float SubMesh::ComputeVolume() const {
 }
 
 static void Moment01SubExpressions(float w0, float w1, float w2, float &f1, float &f2) {
-    const float temp0 = w0 + w1; 
-    f1 = temp0 + w2;
-    const float temp1 = w0 * w0; 
+    const float temp0 = w0 + w1;
+    const float temp1 = w0 * w0;
     const float temp2 = temp1 + w1 * temp0;
-    f2 = temp2 + w2 * f1; 
+    f1 = temp0 + w2;
+    f2 = temp2 + w2 * f1;
 }
 
 const Vec3 SubMesh::ComputeCentroid() const {
@@ -1152,14 +1152,14 @@ const Vec3 SubMesh::ComputeCentroid() const {
 }
 
 static void Moment012SubExpressions(float w0, float w1, float w2, float &f1, float &f2, float &f3, float &g0, float &g1, float &g2) {
-    float temp0 = w0 + w1; 
-    f1 = temp0 + w2;
-    float temp1 = w0 * w0; 
+    float temp0 = w0 + w1;
+    float temp1 = w0 * w0;
     float temp2 = temp1 + w1 * temp0;
-    f2 = temp2 + w2 * f1; 
+    f1 = temp0 + w2;
+    f2 = temp2 + w2 * f1;
     f3 = w0 * temp1 + w1 * temp2 + w2 * f2;
-    g0 = f2 + w0 * (f1 + w0); 
-    g1 = f2 + w1 * (f1 + w1); 
+    g0 = f2 + w0 * (f1 + w0);
+    g1 = f2 + w1 * (f1 + w1);
     g2 = f2 + w2 * (f1 + w2);
 }
 
