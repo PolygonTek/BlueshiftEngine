@@ -128,6 +128,7 @@ struct ssef {
 
     BE_FORCE_INLINE ssef() = default;
     BE_FORCE_INLINE ssef(const __m128 a) { m128 = a; }
+    BE_FORCE_INLINE ssef(float a, float b, float c, float d) { m128 = _mm_set_ps(d, c, b, a); }
     BE_FORCE_INLINE ssef(const ssef &other) { m128 = other.m128; }
     BE_FORCE_INLINE ssef &operator=(const ssef &rhs) { m128 = rhs.m128; return *this; }
 
@@ -154,6 +155,7 @@ struct ssei {
 
     BE_FORCE_INLINE ssei() = default;
     BE_FORCE_INLINE ssei(const __m128i a) { m128i = a; }
+    BE_FORCE_INLINE ssei(int32_t a, int32_t b, int32_t c, int32_t d) { m128i = _mm_set_epi32(d, c, b, a); }
     BE_FORCE_INLINE ssei(const ssei &other) { m128i = other.m128i; }
     BE_FORCE_INLINE ssei &operator=(const ssei &rhs) { m128i = rhs.m128i; return *this; }
 
@@ -179,6 +181,7 @@ struct sseb {
     BE_FORCE_INLINE sseb() = default;
     BE_FORCE_INLINE sseb(const __m128 a) { m128 = a; }
     BE_FORCE_INLINE sseb(const __m128i a) { m128i = a; }
+    BE_FORCE_INLINE sseb(bool a, bool b, bool c, bool d) { m128 = _mm_lookupmask_ps[(size_t(d) << 3) | (size_t(c) << 2) | (size_t(b) << 1) | size_t(a)]; }
     BE_FORCE_INLINE sseb(const sseb &other) { m128i = other.m128i; }
     BE_FORCE_INLINE sseb &operator=(const sseb &rhs) { m128 = rhs.m128; return *this; }
 

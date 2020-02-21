@@ -19,7 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
-#ifdef ENABLE_X86_SSE_INTRIN
+#ifdef ENABLE_X86_SSE_INTRINSICS
 
 void BE_FASTCALL SIMD_SSE4::Add(float *dst, const float constant, const float *src, const int count0) {
     int count = count0;
@@ -840,6 +840,6 @@ void BE_FASTCALL SIMD_SSE4::Memset(void *dest0, const int val, const int count0)
 
 #endif
 
-#endif // ENABLE_X86_SSE_INTRIN
+#endif // ENABLE_X86_SSE_INTRINSICS
 
 BE_NAMESPACE_END

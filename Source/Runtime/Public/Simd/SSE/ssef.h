@@ -293,7 +293,7 @@ template <int dst>
 BE_FORCE_INLINE ssef insert_ps(const ssef &a, float b) { ssef c = a; c[dst & 3] = b; return c; }
 #endif
 
-// Selects 4x32 bits floats using mask.
+// Select 4x32 bits floats using mask.
 BE_FORCE_INLINE ssef select_ps(const ssef &a, const ssef &b, const sseb &mask) {
 #if defined(__SSE4_1__)
     return _mm_blendv_ps(a, b, mask);

@@ -41,7 +41,7 @@ BE_FORCE_INLINE sseb operator^=(sseb &a, const sseb &b) { return a = a ^ b; }
 BE_FORCE_INLINE sseb operator!=(const sseb &a, const sseb &b) { return _mm_xor_ps(a, b); }
 BE_FORCE_INLINE sseb operator==(const sseb &a, const sseb &b) { return _mm_castsi128_ps(_mm_cmpeq_epi32(a, b)); }
 
-// Selects 4x32 bits using mask.
+// Select 4x32 bits using mask.
 BE_FORCE_INLINE sseb select_b32(const sseb &a, const sseb &b, const sseb &mask) {
 #if defined(__SSE4_1__)
     return _mm_blendv_ps(a, b, mask);

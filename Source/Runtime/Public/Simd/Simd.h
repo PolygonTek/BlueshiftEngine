@@ -96,14 +96,14 @@ BE_NAMESPACE_END
 
 #include "Simd_Generic.h"
 
-#ifdef ENABLE_X86_SSE_INTRIN
+#ifdef ENABLE_X86_SSE_INTRINSICS
 #include "Simd_SSE4.h"
 #endif 
 
-#ifdef ENABLE_X86_AVX_INTRIN
+#ifdef ENABLE_X86_AVX_INTRINSICS
 #include "Simd_AVX.h"
 #endif
 
-#ifdef ENABLE_ARM_NEON_INTRIN
+#ifdef ENABLE_ARM_NEON_INTRINSIC
 #include "Simd_NEON.h"
 #endif

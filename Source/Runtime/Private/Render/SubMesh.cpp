@@ -1114,8 +1114,8 @@ static void Moment01SubExpressions(float w0, float w1, float w2, float &f1, floa
 
 const Vec3 SubMesh::ComputeCentroid() const {
 #ifdef ENABLE_SIMD_INTRINSICS
-    const simd4f multipliers = set_ps(1.0f/6.0f, 1.0f/24.0f, 1.0f/24.0f, 1.0f/24.0f);
-    const simd4b mask = set_b32(0x0, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
+    const simd4f multipliers = { 1.0f / 6.0f, 1.0f / 24.0f, 1.0f / 24.0f, 1.0f / 24.0f };
+    const simd4b mask = { false, true, true, true };
 
     simd4f mintg = setzero_ps();
 
@@ -1210,8 +1210,8 @@ static void Moment012SubExpressions(float w0, float w1, float w2, float &f1, flo
 
 const Mat3 SubMesh::ComputeInertiaTensor(const Vec3 &centroid, float mass) const {
 #ifdef ENABLE_SIMD_INTRINSICS
-    const simd4f multipliers1 = set_ps(1.0f / 60.0f, 1.0f / 60.0f, 1.0f / 60.0f, 0.0f);
-    const simd4f multipliers2 = set_ps(1.0f / 120.0f, 1.0f / 120.0f, 1.0f / 120.0f, 0.0f);
+    const simd4f multipliers1 = { 1.0f / 60.0f, 1.0f / 60.0f, 1.0f / 60.0f, 0.0f };
+    const simd4f multipliers2 = { 1.0f / 120.0f, 1.0f / 120.0f, 1.0f / 120.0f, 0.0f };
 
     simd4f mintg1 = setzero_ps();
     simd4f mintg2 = setzero_ps();

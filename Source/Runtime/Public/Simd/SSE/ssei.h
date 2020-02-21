@@ -199,7 +199,7 @@ BE_FORCE_INLINE const ssei insert_epi32(const ssei &a, const int32_t b) { ssei c
 template <> 
 BE_FORCE_INLINE int extract_epi32<0>(const ssei &a) { return _mm_cvtsi128_si32(a); }
 
-// Selects 4x32 bits integer using mask.
+// Select 4x32 bits integer using mask.
 BE_FORCE_INLINE ssei select_epi32(const ssei &a, const ssei &b, const sseb &mask) {
 #if defined(__SSE4_1__)
     return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(a), _mm_castsi128_ps(b), (mask)));

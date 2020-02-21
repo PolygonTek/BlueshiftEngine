@@ -524,13 +524,13 @@ BE_FORCE_INLINE CFStringRef WideStringToCFString(const wchar_t *string) {
 #endif
 
 #if defined(__SSE3__)
-    #define ENABLE_X86_SSE_INTRIN
+    #define ENABLE_X86_SSE_INTRINSICS
 #elif defined(__ARM64__)
-    #define ENABLE_ARM_NEON_INTRIN
+    #define ENABLE_ARM_NEON_INTRINSICS
 #endif
 
 #if defined(__AVX__)
-    #define ENABLE_X86_AVX_INTRIN
+    #define ENABLE_X86_AVX_INTRINSICS
 #endif
 
 typedef void (*streamOutFunc_t)(int level, const char *msg);

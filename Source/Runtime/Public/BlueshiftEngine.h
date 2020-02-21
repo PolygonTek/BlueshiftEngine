@@ -16,6 +16,9 @@
 
 #include "../Precompiled.h"
 
+// SIMD
+#include "Simd/Simd.h"
+
 // Common
 #include "Core/Checksum_CRC32.h"
 #include "Core/Checksum_MD5.h"
@@ -97,9 +100,6 @@
 #include "Core/SignalObject.h"
 #include "Core/Property.h"
 #include "Core/Object.h"
-
-// SIMD
-#include "Simd/Simd.h"
 
 // Image
 #include "Image/Image.h"

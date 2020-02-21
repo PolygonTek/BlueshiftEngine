@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "SIMD/Simd.h"
+
 #define INT8_SIGN_BIT               7
 #define INT16_SIGN_BIT              15
 #define INT32_SIGN_BIT              31
@@ -145,17 +147,17 @@ public:
     static const float          FloatEpsilon;               ///< smallest positive number such that 1.0 + FloatEpsilon != 1.0
     static const float          FloatSmallestNonDenormal;   ///< smallest non-denormal 32-bit floating point value
     
-#if defined(ENABLE_X86_SSE_INTRIN) || defined(ENABLE_ARM64_NEON_INTRIN)
-    static const __m128         SIMD_SP_zero;
-    static const __m128         SIMD_SP_255;
-    static const __m128         SIMD_SP_min_char;
-    static const __m128         SIMD_SP_max_char;
-    static const __m128         SIMD_SP_min_short;
-    static const __m128         SIMD_SP_max_short;
-    static const __m128         SIMD_SP_rsqrt_c0;
-    static const __m128         SIMD_SP_rsqrt_c1;
-    static const __m128         SIMD_SP_tiny;
-    static const __m128         SIMD_SP_smallestNonDenorm;
+#if defined(ENABLE_SIMD_INTRINSICS)
+    static const simd4f         SIMD_SP_zero;
+    static const simd4f         SIMD_SP_255;
+    static const simd4f         SIMD_SP_min_char;
+    static const simd4f         SIMD_SP_max_char;
+    static const simd4f         SIMD_SP_min_short;
+    static const simd4f         SIMD_SP_max_short;
+    static const simd4f         SIMD_SP_rsqrt_c0;
+    static const simd4f         SIMD_SP_rsqrt_c1;
+    static const simd4f         SIMD_SP_tiny;
+    static const simd4f         SIMD_SP_smallestNonDenorm;
 #endif
 
     static void                 Init();
@@ -937,7 +939,7 @@ BE_INLINE int Math::Ftoi(float f) {
 }
 
 BE_INLINE int Math::FtoiFast(float f) {
-#ifdef ENABLE_X86_SSE_INTRIN
+#ifdef ENABLE_X86_SSE_INTRINSICS
     // If a converted result is larger than the maximum signed doubleword integer,
     // the floating-point invalid exception is raised, and if this exception is masked,
     // the indefinite integer value (80000000H) is returned.
@@ -957,7 +959,7 @@ BE_INLINE int Math::FtoiFast(float f) {
 }
 
 BE_INLINE int8_t Math::Ftoi8(float f) {
-#ifdef ENABLE_X86_SSE_INTRIN
+#ifdef ENABLE_X86_SSE_INTRINSICS
     __m128 x = _mm_load_ss(&f);
     x = _mm_max_ss(x, SIMD_SP_min_char);
     x = _mm_min_ss(x, SIMD_SP_max_char);
@@ -975,7 +977,7 @@ BE_INLINE int8_t Math::Ftoi8(float f) {
 }
 
 BE_INLINE int16_t Math::Ftoi16(float f) {
-#ifdef ENABLE_X86_SSE_INTRIN
+#ifdef ENABLE_X86_SSE_INTRINSICS
     __m128 x = _mm_load_ss(&f);
     x = _mm_max_ss(x, SIMD_SP_min_short);
     x = _mm_min_ss(x, SIMD_SP_max_short);
@@ -1004,7 +1006,7 @@ BE_INLINE uint16_t Math::Ftoui16(float f) {
 }
 
 BE_INLINE byte Math::Ftob(float f) {
-#ifdef ENABLE_X86_SSE_INTRIN
+#ifdef ENABLE_X86_SSE_INTRINSICS
     // If a converted result is negative the value (0) is returned and if the
     // converted result is larger than the maximum byte the value (255) is returned.
     __m128 x = _mm_load_ss(&f);
