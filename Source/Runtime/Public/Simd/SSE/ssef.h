@@ -362,7 +362,7 @@ BE_FORCE_INLINE ssef cross_ps(const ssef &a, const ssef &b) {
     ssef b_yzxw = shuffle_ps<1, 2, 0, 3>(b); // (b.y, b.z, b.x, b.w)
     ssef ab_yzxw = a_yzxw * b; // (a.y * b.x, a.z * b.y, a.x * b.z, a.w * b.w)
 
-    return shuffle_ps<1, 2, 0, 3>(_mm_msub_ps(b_yzxw, a, ab_yzxw)); // (a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x, 0)
+    return shuffle_ps<1, 2, 0, 3>(msub_ps(b_yzxw, a, ab_yzxw)); // (a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x, 0)
 }
 
 // Transpose 4x4 matrix.
