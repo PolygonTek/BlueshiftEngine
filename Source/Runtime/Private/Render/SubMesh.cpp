@@ -1113,39 +1113,39 @@ static void Moment01SubExpressions(float w0, float w1, float w2, float &f1, floa
 }
 
 const Vec3 SubMesh::ComputeCentroid() const {
-#ifdef ENABLE_X86_SSE_INTRIN
-    const __m128 multipliers = { 1.0f/6.0f, 1.0f/24.0f, 1.0f/24.0f, 1.0f/24.0f };
-    const __m128 mask = _mm_castsi128_ps(_mm_set_epi32(0x0, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF));
+#ifdef ENABLE_SIMD_INTRINSICS
+    const simd4f multipliers = set_ps(1.0f/6.0f, 1.0f/24.0f, 1.0f/24.0f, 1.0f/24.0f);
+    const simd4b mask = set_b32(0x0, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
 
-    __m128 mintg = _mm_setzero_ps();
+    simd4f mintg = setzero_ps();
 
     for (int i = 0; i < numIndexes; i += 3) {
-        __m128 a = _mm_loadu_ps(verts[indexes[i]].xyz);
-        __m128 b = _mm_loadu_ps(verts[indexes[i + 1]].xyz);
-        __m128 c = _mm_loadu_ps(verts[indexes[i + 2]].xyz);
+        simd4f a = loadu_ps(verts[indexes[i]].xyz);
+        simd4f b = loadu_ps(verts[indexes[i + 1]].xyz);
+        simd4f c = loadu_ps(verts[indexes[i + 2]].xyz);
 
-        __m128 side0 = _mm_sub_ps(b, a);
-        __m128 side1 = _mm_sub_ps(c, a);
+        simd4f side0 = b - a;
+        simd4f side1 = c - a;
 
-        __m128 cr = _mm_cross_ps(side0, side1);
+        simd4f cr = cross_ps(side0, side1);
 
-        __m128 temp0 = _mm_add_ps(a, b);
-        __m128 temp1 = _mm_mul_ps(a, a);
-        __m128 temp2 = _mm_madd_ps(b, temp0, temp1);
+        simd4f temp0 = a + b;
+        simd4f temp1 = a * a;
+        simd4f temp2 = madd_ps(b, temp0, temp1);
 
-        __m128 f1 = _mm_add_ps(c, temp0);
-        __m128 f2 = _mm_madd_ps(c, f1, temp2);
+        simd4f f1 = c + temp0;
+        simd4f f2 = madd_ps(c, f1, temp2);
 
-        temp0 = _mm_shuffle_ps<0, 0, 1, 2>(cr);
-        temp1 = _mm_sel_ps(f1, (_mm_shuffle_ps<0, 0, 1, 2>(f2)), mask);
+        temp0 = shuffle_ps<0, 0, 1, 2>(cr);
+        temp1 = select_ps(f1, shuffle_ps<0, 0, 1, 2>(f2), mask);
 
-        mintg = _mm_madd_ps(temp0, temp1, mintg);
+        mintg = madd_ps(temp0, temp1, mintg);
     }
 
-    mintg = _mm_mul_ps(mintg, multipliers);
+    mintg = mintg * multipliers;
 
     ALIGN_AS16 float intg[4];
-    _mm_store_ps(intg, mintg);
+    store_ps(mintg, intg);
 
     const float invVolume = 1.0f / intg[0];
 
@@ -1209,49 +1209,49 @@ static void Moment012SubExpressions(float w0, float w1, float w2, float &f1, flo
 }
 
 const Mat3 SubMesh::ComputeInertiaTensor(const Vec3 &centroid, float mass) const {
-#ifdef ENABLE_X86_SSE_INTRIN
-    const __m128 multipliers1 = { 1.0f / 60.0f, 1.0f / 60.0f, 1.0f / 60.0f, 0.0f };
-    const __m128 multipliers2 = { 1.0f / 120.0f, 1.0f / 120.0f, 1.0f / 120.0f, 0.0f };
+#ifdef ENABLE_SIMD_INTRINSICS
+    const simd4f multipliers1 = set_ps(1.0f / 60.0f, 1.0f / 60.0f, 1.0f / 60.0f, 0.0f);
+    const simd4f multipliers2 = set_ps(1.0f / 120.0f, 1.0f / 120.0f, 1.0f / 120.0f, 0.0f);
 
-    __m128 mintg1 = _mm_setzero_ps();
-    __m128 mintg2 = _mm_setzero_ps();
+    simd4f mintg1 = setzero_ps();
+    simd4f mintg2 = setzero_ps();
 
     for (int i = 0; i < numIndexes; i += 3) {
-        __m128 a = _mm_loadu_ps(verts[indexes[i]].xyz);
-        __m128 b = _mm_loadu_ps(verts[indexes[i + 1]].xyz);
-        __m128 c = _mm_loadu_ps(verts[indexes[i + 2]].xyz);
+        simd4f a = loadu_ps(verts[indexes[i]].xyz);
+        simd4f b = loadu_ps(verts[indexes[i + 1]].xyz);
+        simd4f c = loadu_ps(verts[indexes[i + 2]].xyz);
 
-        __m128 side0 = _mm_sub_ps(b, a);
-        __m128 side1 = _mm_sub_ps(c, a);
+        simd4f side0 = b - a;
+        simd4f side1 = c - a;
 
-        __m128 cr = _mm_cross_ps(side0, side1);
+        simd4f cr = cross_ps(side0, side1);
 
-        __m128 temp0 = _mm_add_ps(a, b);
-        __m128 temp1 = _mm_mul_ps(a, a);
-        __m128 temp2 = _mm_madd_ps(b, temp0, temp1);
+        simd4f temp0 = a + b;
+        simd4f temp1 = a * a;
+        simd4f temp2 = madd_ps(b, temp0, temp1);
 
-        __m128 f1 = _mm_add_ps(c, temp0);
-        __m128 f2 = _mm_madd_ps(c, f1, temp2);
-        __m128 f3 = _mm_add_ps(_mm_add_ps(_mm_mul_ps(a, temp1), _mm_mul_ps(b, temp2)), _mm_mul_ps(c, f2));
-        __m128 g0 = _mm_madd_ps(_mm_add_ps(f1, a), a, f2);
-        __m128 g1 = _mm_madd_ps(_mm_add_ps(f1, b), b, f2);
-        __m128 g2 = _mm_madd_ps(_mm_add_ps(f1, c), c, f2);
+        simd4f f1 = c + temp0;
+        simd4f f2 = madd_ps(c, f1, temp2);
+        simd4f f3 = a * temp1 + b * temp2 + c * f2;
+        simd4f g0 = madd_ps(f1 + a, a, f2);
+        simd4f g1 = madd_ps(f1 + b, b, f2);
+        simd4f g2 = madd_ps(f1 + c, c, f2);
 
-        temp0 = _mm_mul_ps(_mm_shuffle_ps<1, 2, 0, 3>(a), g0);
-        temp1 = _mm_mul_ps(_mm_shuffle_ps<1, 2, 0, 3>(b), g1);
-        temp2 = _mm_mul_ps(_mm_shuffle_ps<1, 2, 0, 3>(c), g2);
+        temp0 = shuffle_ps<1, 2, 0, 3>(a) * g0;
+        temp1 = shuffle_ps<1, 2, 0, 3>(b) * g1;
+        temp2 = shuffle_ps<1, 2, 0, 3>(c) * g2;
 
         mintg1 = _mm_madd_ps(cr, f3, mintg1);
-        mintg2 = _mm_mul_ps(cr, _mm_add_ps(_mm_add_ps(temp0, temp1), temp2));
+        mintg2 = cr * (temp0 + temp1 + temp2);
     }
 
-    mintg1 = _mm_mul_ps(mintg1, multipliers1);
-    mintg2 = _mm_mul_ps(mintg2, multipliers2);
+    mintg1 = mintg1 * multipliers1;
+    mintg2 = mintg2 * multipliers2;
 
     ALIGN_AS16 float intg1[4];
     ALIGN_AS16 float intg2[4];
-    _mm_store_ps(intg1, mintg1);
-    _mm_store_ps(intg2, mintg2);
+    store_ps(mintg1, intg1);
+    store_ps(mintg2, intg2);
 
     Mat3 inertia;
     inertia[0][0] = intg1[1] + intg1[2] - mass * (centroid.y * centroid.y + centroid.z * centroid.z);

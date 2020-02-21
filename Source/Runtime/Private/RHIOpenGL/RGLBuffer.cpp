@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
+#include "Simd/Simd.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -220,32 +221,33 @@ void OpenGLRHI::FlushMappedBufferRange(Handle bufferHandle, int offset, int size
 }
 
 void OpenGLRHI::WriteBuffer(byte *dst, const byte *src, int numBytes) {
-#ifdef ENABLE_X86_SSE_INTRIN
+#ifdef ENABLE_SIMD_INTRINSICS
     assert_16_byte_aligned(dst);
     assert_16_byte_aligned(src);
 
     int i = 0;
     for (; i + 128 <= numBytes; i += 128) {
-        __m128i d0 = _mm_load_si128((__m128i *)&src[i + 0 * 16]);
-        __m128i d1 = _mm_load_si128((__m128i *)&src[i + 1 * 16]);
-        __m128i d2 = _mm_load_si128((__m128i *)&src[i + 2 * 16]);
-        __m128i d3 = _mm_load_si128((__m128i *)&src[i + 3 * 16]);
-        __m128i d4 = _mm_load_si128((__m128i *)&src[i + 4 * 16]);
-        __m128i d5 = _mm_load_si128((__m128i *)&src[i + 5 * 16]);
-        __m128i d6 = _mm_load_si128((__m128i *)&src[i + 6 * 16]);
-        __m128i d7 = _mm_load_si128((__m128i *)&src[i + 7 * 16]);
-        _mm_stream_si128((__m128i *)&dst[i + 0 * 16], d0);
-        _mm_stream_si128((__m128i *)&dst[i + 1 * 16], d1);
-        _mm_stream_si128((__m128i *)&dst[i + 2 * 16], d2);
-        _mm_stream_si128((__m128i *)&dst[i + 3 * 16], d3);
-        _mm_stream_si128((__m128i *)&dst[i + 4 * 16], d4);
-        _mm_stream_si128((__m128i *)&dst[i + 5 * 16], d5);
-        _mm_stream_si128((__m128i *)&dst[i + 6 * 16], d6);
-        _mm_stream_si128((__m128i *)&dst[i + 7 * 16], d7);
+        simd4i d0 = load_si128((int32_t *)&src[i + 0 * 16]);
+        simd4i d1 = load_si128((int32_t *)&src[i + 1 * 16]);
+        simd4i d2 = load_si128((int32_t *)&src[i + 2 * 16]);
+        simd4i d3 = load_si128((int32_t *)&src[i + 3 * 16]);
+        simd4i d4 = load_si128((int32_t *)&src[i + 4 * 16]);
+        simd4i d5 = load_si128((int32_t *)&src[i + 5 * 16]);
+        simd4i d6 = load_si128((int32_t *)&src[i + 6 * 16]);
+        simd4i d7 = load_si128((int32_t *)&src[i + 7 * 16]);
+
+        storent_si128(d0, (int32_t *)&dst[i + 0 * 16]);
+        storent_si128(d1, (int32_t *)&dst[i + 1 * 16]);
+        storent_si128(d2, (int32_t *)&dst[i + 2 * 16]);
+        storent_si128(d3, (int32_t *)&dst[i + 3 * 16]);
+        storent_si128(d4, (int32_t *)&dst[i + 4 * 16]);
+        storent_si128(d5, (int32_t *)&dst[i + 5 * 16]);
+        storent_si128(d6, (int32_t *)&dst[i + 6 * 16]);
+        storent_si128(d7, (int32_t *)&dst[i + 7 * 16]);
     }
     for (; i + 16 <= numBytes; i += 16) {
-        __m128i d = _mm_load_si128((__m128i *)&src[i]);
-        _mm_stream_si128((__m128i *)&dst[i], d);
+        simd4i d = load_si128((int32_t *)&src[i]);
+        storent_si128(d, (int32_t *)&dst[i]);
     }
     for (; i + 4 <= numBytes; i += 4) {
         *(uint32_t *)&dst[i] = *(const uint32_t *)&src[i];
@@ -253,7 +255,7 @@ void OpenGLRHI::WriteBuffer(byte *dst, const byte *src, int numBytes) {
     for (; i < numBytes; i++) {
         dst[i] = src[i];
     }
-    _mm_sfence();
+    sfence();
 #else
     assert_16_byte_aligned(dst);
     assert_16_byte_aligned(src);

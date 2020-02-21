@@ -18,10 +18,6 @@
 
 BE_NAMESPACE_BEGIN
 
-using simd4b = sseb;
-using simd4f = ssef;
-using simd4i = ssei;
-
 class SIMD_SSE4 : public SIMD_Generic {
 public:
     SIMD_SSE4() { cpuid = CPUID_SSE4; }

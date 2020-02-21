@@ -30,16 +30,16 @@ void BE_FASTCALL SIMD_SSE4::Add(float *dst, const float constant, const float *s
         assert_16_byte_aligned(dst);
         assert_16_byte_aligned(src);
 
-        ssef c(constant);
+        __m128 c = _mm_set1_ps(constant);
 
         int c16 = count >> 4;
         while (c16 > 0) {
             //prefetchNTA(src_ptr + 16);
 
-            ssef x0 = c + ssef(_mm_load_ps(src_ptr + 0));
-            ssef x1 = c + ssef(_mm_load_ps(src_ptr + 4));
-            ssef x2 = c + ssef(_mm_load_ps(src_ptr + 8));
-            ssef x3 = c + ssef(_mm_load_ps(src_ptr + 12));
+            __m128 x0 = _mm_add_ps(c, _mm_load_ps(src_ptr + 0));
+            __m128 x1 = _mm_add_ps(c, _mm_load_ps(src_ptr + 4));
+            __m128 x2 = _mm_add_ps(c, _mm_load_ps(src_ptr + 8));
+            __m128 x3 = _mm_add_ps(c, _mm_load_ps(src_ptr + 12));
         
             _mm_store_ps(dst_ptr + 0, x0);
             _mm_store_ps(dst_ptr + 4, x1);
@@ -76,15 +76,15 @@ void BE_FASTCALL SIMD_SSE4::Add(float *dst, const float *src0, const float *src1
             //prefetchNTA(src0_ptr + 16);
             //prefetchNTA(src1_ptr + 16);
 
-            ssef x0(_mm_load_ps(src0_ptr + 0));
-            ssef x1(_mm_load_ps(src0_ptr + 4));
-            ssef x2(_mm_load_ps(src0_ptr + 8));
-            ssef x3(_mm_load_ps(src0_ptr + 12));
+            __m128 x0 = _mm_load_ps(src0_ptr + 0);
+            __m128 x1 = _mm_load_ps(src0_ptr + 4);
+            __m128 x2 = _mm_load_ps(src0_ptr + 8);
+            __m128 x3 = _mm_load_ps(src0_ptr + 12);
 
-            x0 += ssef(_mm_load_ps(src1_ptr + 0));
-            x1 += ssef(_mm_load_ps(src1_ptr + 4));
-            x2 += ssef(_mm_load_ps(src1_ptr + 8));
-            x3 += ssef(_mm_load_ps(src1_ptr + 12));
+            x0 = _mm_add_ps(x0, _mm_load_ps(src1_ptr + 0));
+            x1 = _mm_add_ps(x1, _mm_load_ps(src1_ptr + 4));
+            x2 = _mm_add_ps(x2, _mm_load_ps(src1_ptr + 8));
+            x3 = _mm_add_ps(x3, _mm_load_ps(src1_ptr + 12));
         
             _mm_store_ps(dst_ptr + 0, x0);
             _mm_store_ps(dst_ptr + 4, x1);
@@ -115,16 +115,16 @@ void BE_FASTCALL SIMD_SSE4::Sub(float *dst, const float constant, const float *s
         assert_16_byte_aligned(dst);
         assert_16_byte_aligned(src);
 
-        ssef c(constant);
+        __m128 c = _mm_set1_ps(constant);
 
         int c16 = count >> 4;
         while (c16 > 0) {
             //prefetchNTA(src0_ptr + 16);
 
-            ssef x0 = c - ssef(_mm_load_ps(src_ptr + 0));
-            ssef x1 = c - ssef(_mm_load_ps(src_ptr + 4));
-            ssef x2 = c - ssef(_mm_load_ps(src_ptr + 8));
-            ssef x3 = c - ssef(_mm_load_ps(src_ptr + 12));
+            __m128 x0 = _mm_sub_ps(c, _mm_load_ps(src_ptr + 0));
+            __m128 x1 = _mm_sub_ps(c, _mm_load_ps(src_ptr + 4));
+            __m128 x2 = _mm_sub_ps(c, _mm_load_ps(src_ptr + 8));
+            __m128 x3 = _mm_sub_ps(c, _mm_load_ps(src_ptr + 12));
         
             _mm_store_ps(dst_ptr + 0, x0);
             _mm_store_ps(dst_ptr + 4, x1);
@@ -161,15 +161,15 @@ void BE_FASTCALL SIMD_SSE4::Sub(float *dst, const float *src0, const float *src1
             //prefetchNTA(src0_ptr + 16);
             //prefetchNTA(src1_ptr + 16);
 
-            ssef x0(_mm_load_ps(src0_ptr + 0));
-            ssef x1(_mm_load_ps(src0_ptr + 4));
-            ssef x2(_mm_load_ps(src0_ptr + 8));
-            ssef x3(_mm_load_ps(src0_ptr + 12));
+            __m128 x0 = _mm_load_ps(src0_ptr + 0);
+            __m128 x1 = _mm_load_ps(src0_ptr + 4);
+            __m128 x2 = _mm_load_ps(src0_ptr + 8);
+            __m128 x3 = _mm_load_ps(src0_ptr + 12);
 
-            x0 -= ssef(_mm_load_ps(src1_ptr + 0));
-            x1 -= ssef(_mm_load_ps(src1_ptr + 4));
-            x2 -= ssef(_mm_load_ps(src1_ptr + 8));
-            x3 -= ssef(_mm_load_ps(src1_ptr + 12));
+            x0 = _mm_sub_ps(x0, _mm_load_ps(src1_ptr + 0));
+            x1 = _mm_sub_ps(x1, _mm_load_ps(src1_ptr + 4));
+            x2 = _mm_sub_ps(x2, _mm_load_ps(src1_ptr + 8));
+            x3 = _mm_sub_ps(x3, _mm_load_ps(src1_ptr + 12));
         
             _mm_store_ps(dst_ptr + 0, x0);
             _mm_store_ps(dst_ptr + 4, x1);
@@ -200,15 +200,16 @@ void BE_FASTCALL SIMD_SSE4::Mul(float *dst, const float constant, const float *s
         assert_16_byte_aligned(dst);
         assert_16_byte_aligned(src);
 
-        ssef c(constant);
+        __m128 c = _mm_set1_ps(constant);
+
         int c16 = count >> 4;
         while (c16 > 0) {
             //prefetchNTA(src0_ptr + 16);
 
-            ssef x0 = c * ssef(_mm_load_ps(src_ptr + 0));
-            ssef x1 = c * ssef(_mm_load_ps(src_ptr + 4));
-            ssef x2 = c * ssef(_mm_load_ps(src_ptr + 8));
-            ssef x3 = c * ssef(_mm_load_ps(src_ptr + 12));
+            __m128 x0 = _mm_mul_ps(c, _mm_load_ps(src_ptr + 0));
+            __m128 x1 = _mm_mul_ps(c, _mm_load_ps(src_ptr + 4));
+            __m128 x2 = _mm_mul_ps(c, _mm_load_ps(src_ptr + 8));
+            __m128 x3 = _mm_mul_ps(c, _mm_load_ps(src_ptr + 12));
         
             _mm_store_ps(dst_ptr + 0, x0);
             _mm_store_ps(dst_ptr + 4, x1);
@@ -245,15 +246,15 @@ void BE_FASTCALL SIMD_SSE4::Mul(float *dst, const float *src0, const float *src1
             //prefetchNTA(src0_ptr + 16);
             //prefetchNTA(src1_ptr + 16);
 
-            ssef x0(_mm_load_ps(src0_ptr + 0));
-            ssef x1(_mm_load_ps(src0_ptr + 4));
-            ssef x2(_mm_load_ps(src0_ptr + 8));
-            ssef x3(_mm_load_ps(src0_ptr + 12));
+            __m128 x0 = _mm_load_ps(src0_ptr + 0);
+            __m128 x1 = _mm_load_ps(src0_ptr + 4);
+            __m128 x2 = _mm_load_ps(src0_ptr + 8);
+            __m128 x3 = _mm_load_ps(src0_ptr + 12);
 
-            x0 *= ssef(_mm_load_ps(src1_ptr + 0));
-            x1 *= ssef(_mm_load_ps(src1_ptr + 4));
-            x2 *= ssef(_mm_load_ps(src1_ptr + 8));
-            x3 *= ssef(_mm_load_ps(src1_ptr + 12));
+            x0 = _mm_mul_ps(x0, _mm_load_ps(src1_ptr + 0));
+            x1 = _mm_mul_ps(x1, _mm_load_ps(src1_ptr + 4));
+            x2 = _mm_mul_ps(x2, _mm_load_ps(src1_ptr + 8));
+            x3 = _mm_mul_ps(x3, _mm_load_ps(src1_ptr + 12));
         
             _mm_store_ps(dst_ptr + 0, x0);
             _mm_store_ps(dst_ptr + 4, x1);
@@ -284,15 +285,16 @@ void BE_FASTCALL SIMD_SSE4::Div(float *dst, const float constant, const float *s
         assert_16_byte_aligned(dst);
         assert_16_byte_aligned(src);
         
-        ssef c(constant);
+        __m128 c = _mm_set1_ps(constant);
+
         int c16 = count >> 4;
         while (c16 > 0) {
             //prefetchNTA(src0_ptr + 16);
 
-            ssef x0 = c / ssef(_mm_load_ps(src_ptr + 0));
-            ssef x1 = c / ssef(_mm_load_ps(src_ptr + 4));
-            ssef x2 = c / ssef(_mm_load_ps(src_ptr + 8));
-            ssef x3 = c / ssef(_mm_load_ps(src_ptr + 12));
+            __m128 x0 = _mm_div_ps(c, _mm_load_ps(src_ptr + 0));
+            __m128 x1 = _mm_div_ps(c, _mm_load_ps(src_ptr + 4));
+            __m128 x2 = _mm_div_ps(c, _mm_load_ps(src_ptr + 8));
+            __m128 x3 = _mm_div_ps(c, _mm_load_ps(src_ptr + 12));
         
             _mm_store_ps(dst_ptr + 0, x0);
             _mm_store_ps(dst_ptr + 4, x1);
@@ -329,15 +331,15 @@ void BE_FASTCALL SIMD_SSE4::Div(float *dst, const float *src0, const float *src1
             //prefetchNTA(src0_ptr + 16);
             //prefetchNTA(src1_ptr + 16);
 
-            ssef x0(_mm_load_ps(src0_ptr + 0));
-            ssef x1(_mm_load_ps(src0_ptr + 4));
-            ssef x2(_mm_load_ps(src0_ptr + 8));
-            ssef x3(_mm_load_ps(src0_ptr + 12));
+            __m128 x0 = _mm_load_ps(src0_ptr + 0);
+            __m128 x1 = _mm_load_ps(src0_ptr + 4);
+            __m128 x2 = _mm_load_ps(src0_ptr + 8);
+            __m128 x3 = _mm_load_ps(src0_ptr + 12);
 
-            x0 /= ssef(_mm_load_ps(src1_ptr + 0));
-            x1 /= ssef(_mm_load_ps(src1_ptr + 4));
-            x2 /= ssef(_mm_load_ps(src1_ptr + 8));
-            x3 /= ssef(_mm_load_ps(src1_ptr + 12));
+            x0 = _mm_div_ps(x0, _mm_load_ps(src1_ptr + 0));
+            x1 = _mm_div_ps(x1, _mm_load_ps(src1_ptr + 4));
+            x2 = _mm_div_ps(x2, _mm_load_ps(src1_ptr + 8));
+            x3 = _mm_div_ps(x3, _mm_load_ps(src1_ptr + 12));
         
             _mm_store_ps(dst_ptr + 0, x0);
             _mm_store_ps(dst_ptr + 4, x1);
@@ -369,7 +371,7 @@ float BE_FASTCALL SIMD_SSE4::Sum(const float *src, const int count0) {
 
         int c4 = count >> 2;
         while (c4 > 0) {
-            ret += reduce_add(ssef(_mm_load_ps(src_ptr)));
+            ret += extract_ps<0>(sum_ps(_mm_load_ps(src_ptr)));
             src_ptr += 4;
             c4--;
         }
@@ -389,14 +391,14 @@ void BE_FASTCALL SIMD_SSE4::MatrixTranspose(float *dst, const float *src) {
     assert_16_byte_aligned(dst);
     assert_16_byte_aligned(src);
 
-    ssef r0(_mm_load_ps(src + 0));
-    ssef r1(_mm_load_ps(src + 4));
-    ssef r2(_mm_load_ps(src + 8));
-    ssef r3(_mm_load_ps(src + 12));
+    __m128 r0 = _mm_load_ps(src + 0);
+    __m128 r1 = _mm_load_ps(src + 4);
+    __m128 r2 = _mm_load_ps(src + 8);
+    __m128 r3 = _mm_load_ps(src + 12);
 
     ssef c0, c1, c2, c3;
 
-    transpose(r0, r1, r2, r3, c0, c1, c2, c3);
+    mat4x4_transpose(r0, r1, r2, r3, c0, c1, c2, c3);
 
     _mm_store_ps(dst, c0);
     _mm_store_ps(dst + 4, c1);
@@ -420,10 +422,10 @@ void BE_FASTCALL SIMD_SSE4::MatrixMultiply(float *dst, const float *src0, const 
     __m128 a2 = a0;
     __m128 a3 = a0;
 
-    a0 = _mm_shuffle_ps<0, 0, 0, 0>(a0);
-    a1 = _mm_shuffle_ps<1, 1, 1, 1>(a1);
-    a2 = _mm_shuffle_ps<2, 2, 2, 2>(a2);
-    a3 = _mm_shuffle_ps<3, 3, 3, 3>(a3);
+    a0 = shuffle_ps<0, 0, 0, 0>(a0);
+    a1 = shuffle_ps<1, 1, 1, 1>(a1);
+    a2 = shuffle_ps<2, 2, 2, 2>(a2);
+    a3 = shuffle_ps<3, 3, 3, 3>(a3);
 
     a0 = _mm_add_ps(_mm_mul_ps(a0, b0), _mm_mul_ps(a1, b1));
     a0 = _mm_add_ps(a0, _mm_mul_ps(a2, b2));
@@ -436,10 +438,10 @@ void BE_FASTCALL SIMD_SSE4::MatrixMultiply(float *dst, const float *src0, const 
     a2 = a0;
     a3 = a0;
 
-    a0 = _mm_shuffle_ps<0, 0, 0, 0>(a0);
-    a1 = _mm_shuffle_ps<1, 1, 1, 1>(a1);
-    a2 = _mm_shuffle_ps<2, 2, 2, 2>(a2);
-    a3 = _mm_shuffle_ps<3, 3, 3, 3>(a3);
+    a0 = shuffle_ps<0, 0, 0, 0>(a0);
+    a1 = shuffle_ps<1, 1, 1, 1>(a1);
+    a2 = shuffle_ps<2, 2, 2, 2>(a2);
+    a3 = shuffle_ps<3, 3, 3, 3>(a3);
 
     a0 = _mm_add_ps(_mm_mul_ps(a0, b0), _mm_mul_ps(a1, b1));
     a0 = _mm_add_ps(a0, _mm_mul_ps(a2, b2));
@@ -452,10 +454,10 @@ void BE_FASTCALL SIMD_SSE4::MatrixMultiply(float *dst, const float *src0, const 
     a2 = a0;
     a3 = a0;
 
-    a0 = _mm_shuffle_ps<0, 0, 0, 0>(a0);
-    a1 = _mm_shuffle_ps<1, 1, 1, 1>(a1);
-    a2 = _mm_shuffle_ps<2, 2, 2, 2>(a2);
-    a3 = _mm_shuffle_ps<3, 3, 3, 3>(a3);
+    a0 = shuffle_ps<0, 0, 0, 0>(a0);
+    a1 = shuffle_ps<1, 1, 1, 1>(a1);
+    a2 = shuffle_ps<2, 2, 2, 2>(a2);
+    a3 = shuffle_ps<3, 3, 3, 3>(a3);
 
     a0 = _mm_add_ps(_mm_mul_ps(a0, b0), _mm_mul_ps(a1, b1));
     a0 = _mm_add_ps(a0, _mm_mul_ps(a2, b2));
@@ -468,10 +470,10 @@ void BE_FASTCALL SIMD_SSE4::MatrixMultiply(float *dst, const float *src0, const 
     a2 = a0;
     a3 = a0;
 
-    a0 = _mm_shuffle_ps<0, 0, 0, 0>(a0);
-    a1 = _mm_shuffle_ps<1, 1, 1, 1>(a1);
-    a2 = _mm_shuffle_ps<2, 2, 2, 2>(a2);
-    a3 = _mm_shuffle_ps<3, 3, 3, 3>(a3);
+    a0 = shuffle_ps<0, 0, 0, 0>(a0);
+    a1 = shuffle_ps<1, 1, 1, 1>(a1);
+    a2 = shuffle_ps<2, 2, 2, 2>(a2);
+    a3 = shuffle_ps<3, 3, 3, 3>(a3);
 
     a0 = _mm_add_ps(_mm_mul_ps(a0, b0), _mm_mul_ps(a1, b1));
     a0 = _mm_add_ps(a0, _mm_mul_ps(a2, b2));
@@ -503,17 +505,17 @@ void BE_FASTCALL SIMD_SSE4::TransformJoints(Mat3x4 *jointMats, const int *parent
         __m128 cmb = _mm_load_ps(childMatrix + 4);
         __m128 cmc = _mm_load_ps(childMatrix + 8);
 
-        __m128 ta = _mm_shuffle_ps<0, 0, 0, 0>(pma);
-        __m128 tb = _mm_shuffle_ps<0, 0, 0, 0>(pmb);
-        __m128 tc = _mm_shuffle_ps<0, 0, 0, 0>(pmc);
+        __m128 ta = shuffle_ps<0, 0, 0, 0>(pma);
+        __m128 tb = shuffle_ps<0, 0, 0, 0>(pmb);
+        __m128 tc = shuffle_ps<0, 0, 0, 0>(pmc);
 
-        __m128 td = _mm_shuffle_ps<1, 1, 1, 1>(pma);
-        __m128 te = _mm_shuffle_ps<1, 1, 1, 1>(pmb);
-        __m128 tf = _mm_shuffle_ps<1, 1, 1, 1>(pmc);
+        __m128 td = shuffle_ps<1, 1, 1, 1>(pma);
+        __m128 te = shuffle_ps<1, 1, 1, 1>(pmb);
+        __m128 tf = shuffle_ps<1, 1, 1, 1>(pmc);
 
-        __m128 tg = _mm_shuffle_ps<2, 2, 2, 2>(pma);
-        __m128 th = _mm_shuffle_ps<2, 2, 2, 2>(pmb);
-        __m128 ti = _mm_shuffle_ps<2, 2, 2, 2>(pmc);
+        __m128 tg = shuffle_ps<2, 2, 2, 2>(pma);
+        __m128 th = shuffle_ps<2, 2, 2, 2>(pmb);
+        __m128 ti = shuffle_ps<2, 2, 2, 2>(pmc);
 
         pma = _mm_madd_ps(ta, cma, _mm_and_ps(pma, vector_float_mask_keep_last));
         pmb = _mm_madd_ps(tb, cma, _mm_and_ps(pmb, vector_float_mask_keep_last));
@@ -550,17 +552,17 @@ void BE_FASTCALL SIMD_SSE4::UntransformJoints(Mat3x4 *jointMats, const int *pare
         __m128 cmb = _mm_load_ps(childMatrix + 4);
         __m128 cmc = _mm_load_ps(childMatrix + 8);
 
-        __m128 ta = _mm_shuffle_ps<0, 0, 0, 0>(pma);
-        __m128 tb = _mm_shuffle_ps<1, 1, 1, 1>(pma);
-        __m128 tc = _mm_shuffle_ps<2, 2, 2, 2>(pma);
+        __m128 ta = shuffle_ps<0, 0, 0, 0>(pma);
+        __m128 tb = shuffle_ps<1, 1, 1, 1>(pma);
+        __m128 tc = shuffle_ps<2, 2, 2, 2>(pma);
 
-        __m128 td = _mm_shuffle_ps<0, 0, 0, 0>(pmb);
-        __m128 te = _mm_shuffle_ps<1, 1, 1, 1>(pmb);
-        __m128 tf = _mm_shuffle_ps<2, 2, 2, 2>(pmb);
+        __m128 td = shuffle_ps<0, 0, 0, 0>(pmb);
+        __m128 te = shuffle_ps<1, 1, 1, 1>(pmb);
+        __m128 tf = shuffle_ps<2, 2, 2, 2>(pmb);
 
-        __m128 tg = _mm_shuffle_ps<0, 0, 0, 0>(pmc);
-        __m128 th = _mm_shuffle_ps<1, 1, 1, 1>(pmc);
-        __m128 ti = _mm_shuffle_ps<2, 2, 2, 2>(pmc);
+        __m128 tg = shuffle_ps<0, 0, 0, 0>(pmc);
+        __m128 th = shuffle_ps<1, 1, 1, 1>(pmc);
+        __m128 ti = shuffle_ps<2, 2, 2, 2>(pmc);
 
         cma = _mm_sub_ps(cma, _mm_and_ps(pma, vector_float_mask_keep_last));
         cmb = _mm_sub_ps(cmb, _mm_and_ps(pmb, vector_float_mask_keep_last));

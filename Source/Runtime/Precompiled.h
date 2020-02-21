@@ -517,6 +517,12 @@ BE_FORCE_INLINE CFStringRef WideStringToCFString(const wchar_t *string) {
 
 //----------------------------------------------------------------------------------------------
 
+#define ENABLE_SIMD_INTRINSICS_IN_DEBUG
+
+#if !defined(_DEBUG) || defined(ENABLE_SIMD_INTRINSICS_IN_DEBUG)
+#define ENABLE_SIMD_INTRINSICS
+#endif
+
 #if defined(__SSE3__)
     #define ENABLE_X86_SSE_INTRIN
 #elif defined(__ARM64__)

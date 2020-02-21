@@ -381,21 +381,21 @@ Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode::
 
     ALIGN_AS16 Color4 outputColor;
 
-#ifdef ENABLE_X86_SSE_INTRIN
-    __m128 a00 = _mm_load_ps(rgba32f[0]);
-    __m128 a01 = _mm_load_ps(rgba32f[1]);
-    __m128 a10 = _mm_load_ps(rgba32f[2]);
-    __m128 a11 = _mm_load_ps(rgba32f[3]);
+#ifdef ENABLE_SIMD_INTRINSICS
+    simd4f a00 = load_ps(rgba32f[0]);
+    simd4f a01 = load_ps(rgba32f[1]);
+    simd4f a10 = load_ps(rgba32f[2]);
+    simd4f a11 = load_ps(rgba32f[3]);
 
-    __m128 x1 = _mm_set_ps1(1.0f - fracX);
-    __m128 y1 = _mm_set_ps1(1.0f - fracY);
-    __m128 x2 = _mm_set_ps1(fracX);
-    __m128 y2 = _mm_set_ps1(fracY);
+    simd4f x1 = set1_ps(1.0f - fracX);
+    simd4f y1 = set1_ps(1.0f - fracY);
+    simd4f x2 = set1_ps(fracX);
+    simd4f y2 = set1_ps(fracY);
 
-    __m128 a0x = _mm_add_ps(_mm_mul_ps(a00, x1), _mm_mul_ps(a01, x2));
-    __m128 a1x = _mm_add_ps(_mm_mul_ps(a10, x1), _mm_mul_ps(a11, x2));
+    simd4f a0x = (a00 * x1) + (a01 * x2);
+    simd4f a1x = (a10 * x1) + (a11 * x2);
 
-    _mm_store_ps(outputColor, _mm_add_ps(_mm_mul_ps(a0x, y1), _mm_mul_ps(a1x, y2)));
+    store_ps((a0x * y1) + (a1x * y2), (float *)outputColor);
 #else
     for (int i = 0; i < 4; i++) {
         float a = Math::Lerp(rgba32f[0][i], rgba32f[1][i], fracX);

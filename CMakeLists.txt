@@ -131,21 +131,18 @@ if (WIN32)
 
     if (MSVC)
         # SIMD compile option flags
-        set(FLAGS_SSE2 "/D__SSE__ /D__SSE2__")
-        set(FLAGS_SSE42 "${FLAGS_SSE2} /D__SSE3__ /D__SSSE3__ /D__SSE4_1__ /D__SSE4_2__")
-        set(FLAGS_AVX "${FLAGS_SSE42} /arch:AVX")
-        set(FLAGS_AVX2 "${FLAGS_SSE42} /arch:AVX2")
+        set(FLAGS_SSE2 "-D__SSE__ -D__SSE2__")
+        set(FLAGS_SSE42 "${FLAGS_SSE2} -D__SSE3__ -D__SSSE3__ -D__SSE4_1__ -D__SSE4_2__")
+        set(FLAGS_AVX "${FLAGS_SSE42} /arch:AVX -D__AVX__")
+        set(FLAGS_AVX2 "${FLAGS_SSE42} /arch:AVX2 -D__AVX__2")
 
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS_AVX}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_AVX}")
+        add_definitions(${FLAGS_AVX})
 
         # Enable Function-Level Linking
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy")
+        add_definitions("/Gy")
     
         # Force Synchronous PDB Writes
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
+        add_definitions("/FS")
     
         # Remove RTTI
         string(REGEX REPLACE "/GR-?" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
