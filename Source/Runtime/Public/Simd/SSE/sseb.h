@@ -41,7 +41,7 @@ BE_FORCE_INLINE sseb operator^=(sseb &a, const sseb &b) { return a = a ^ b; }
 BE_FORCE_INLINE sseb operator!=(const sseb &a, const sseb &b) { return _mm_xor_ps(a, b); }
 BE_FORCE_INLINE sseb operator==(const sseb &a, const sseb &b) { return _mm_castsi128_ps(_mm_cmpeq_epi32(a, b)); }
 
-// Select 4x32 bits using mask.
+// Selects 4x32 bits using mask.
 BE_FORCE_INLINE sseb select_b32(const sseb &a, const sseb &b, const sseb &mask) {
 #if defined(__SSE4_1__)
     return _mm_blendv_ps(a, b, mask);
@@ -51,10 +51,10 @@ BE_FORCE_INLINE sseb select_b32(const sseb &a, const sseb &b, const sseb &mask) 
 #endif
 }
 
-// Unpack to [a0, a1, b0, b1].
+// Unpacks to (a0, b0, a1, b1).
 BE_FORCE_INLINE sseb unpacklo_b32(const sseb &a, const sseb &b) { return _mm_unpacklo_ps(a.m128, b.m128); }
 
-// Unpack to [a2, a3, b2, b3].
+// Unpacks to (a2, b2, a3, b3).
 BE_FORCE_INLINE sseb unpackhi_b32(const sseb &a, const sseb &b) { return _mm_unpacklo_ps(a.m128, b.m128); }
 
 BE_FORCE_INLINE size_t movemask_b32(const sseb &a) { return _mm_movemask_ps(a); }

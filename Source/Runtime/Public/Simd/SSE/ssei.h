@@ -16,6 +16,18 @@
 
 #include "Platform/Intrinsics.h"
 
+BE_FORCE_INLINE ssei set_epi32(int32_t a, int32_t b, int32_t c, int32_t d) {
+    return _mm_set_epi32(d, c, b, a);
+}
+
+BE_FORCE_INLINE ssei set1_epi32(int32_t a) {
+    return _mm_set1_epi32(a);
+}
+
+BE_FORCE_INLINE ssei setzero_si128() {
+    return _mm_setzero_si128();
+}
+
 BE_FORCE_INLINE ssei load_si128(const int32_t *src) {
     return _mm_load_si128((__m128i *)src);
 }
@@ -44,36 +56,12 @@ BE_FORCE_INLINE void storent_si128(const ssei &a, int32_t *dst) {
     _mm_stream_si128((__m128i *)dst, a);
 }
 
-BE_FORCE_INLINE ssei set_epi32(int32_t a, int32_t b, int32_t c, int32_t d) {
-    return _mm_set_epi32(d, c, b, a);
-}
-
-BE_FORCE_INLINE ssei set1_epi32(int32_t a) {
-    return _mm_set1_epi32(a);
-}
-
-BE_FORCE_INLINE ssei setzero_si128() {
-    return _mm_setzero_si128();
-}
-
-BE_FORCE_INLINE ssei setone_si128() {
-    return _mm_set1_epi32(1);
-}
-
 BE_FORCE_INLINE ssei ps_to_epi32(const ssef &a) {
     return _mm_cvtps_epi32(a);
 }
 
 BE_FORCE_INLINE ssei abs_epi32(const ssei &a) {
-#ifdef __SSSE3__
     return _mm_abs_epi32(a.m128i);
-#else
-    __m128i mask = _mm_cmplt_epi32(a, _mm_setzero_si128()); // FFFF   where a < 0
-    ssei r = _mm_xor_si128(a, mask);                        // Invert where a < 0
-    mask = _mm_srli_epi32(mask, 31);                        // 0001   where a < 0
-    r = _mm_add_epi32(r, mask);                             // Add 1  where a < 0
-    return a;
-#endif
 }
 
 BE_FORCE_INLINE ssei operator+(const ssei &a) { return a; }
@@ -148,22 +136,22 @@ BE_FORCE_INLINE ssei &operator|=(ssei &a, const int32_t &b) { return a = a | b; 
 BE_FORCE_INLINE ssei &operator<<=(ssei &a, const int32_t &b) { return a = a << b; }
 BE_FORCE_INLINE ssei &operator>>=(ssei &a, const int32_t &b) { return a = a >> b; }
 
-// Shift right arithmetic.
+// Shifts right arithmetic.
 BE_FORCE_INLINE ssei sra_epi32(const ssei &a, const int32_t &b) { return _mm_srai_epi32(a.m128i, b); }
 
-// Shift right logical.
+// Shifts right logical.
 BE_FORCE_INLINE ssei srl_epi32(const ssei &a, const int32_t &b) { return _mm_srli_epi32(a.m128i, b); }
 
-// Shift left logical.
+// Shifts left logical.
 BE_FORCE_INLINE ssei sll_epi32(const ssei &a, const int32_t &b) { return _mm_slli_epi32(a.m128i, b); }
 
-// Unpack to [a0, a1, b0, b1].
+// Unpacks to (a0, b0, a1, b1).
 BE_FORCE_INLINE ssei unpacklo_epi32(const ssei &a, const ssei &b) { return _mm_castps_si128(_mm_unpacklo_ps(_mm_castsi128_ps(a.m128i), _mm_castsi128_ps(b.m128i))); }
 
-// Unpack to [a2, a3, b2, b3].
+// Unpacks to (a2, b2, a3, b3).
 BE_FORCE_INLINE ssei unpackhi_epi32(const ssei &a, const ssei &b) { return _mm_castps_si128(_mm_unpackhi_ps(_mm_castsi128_ps(a.m128i), _mm_castsi128_ps(b.m128i))); }
 
-// Shuffles 4x32 bits integers using template parameters. x(0), y(1), z(2), w(3).
+// Shuffles 4x32 bits integers using template parameters. ix = [0, 3].
 template <size_t i0, size_t i1, size_t i2, size_t i3>
 BE_FORCE_INLINE ssei shuffle_epi32(const ssei &a) { return _mm_shuffle_epi32(a, _MM_SHUFFLE(i3, i2, i1, i0)); }
 
@@ -174,7 +162,7 @@ BE_FORCE_INLINE ssei shuffle_epi32<1, 1, 3, 3>(const ssei &a) { return _mm_castp
 template<> 
 BE_FORCE_INLINE ssei shuffle_epi32<0, 1, 0, 1>(const ssei &a) { return _mm_castpd_si128(_mm_movedup_pd(_mm_castsi128_pd(a))); }
 
-// Shuffles two 4x32 bits integers using template parameters. x(0), y(1), z(2), w(3).
+// Shuffles two 4x32 bits integers using template parameters. ax, bx = [0, 3].
 template <size_t a0, size_t a1, size_t b0, size_t b1>
 BE_FORCE_INLINE ssei shuffle_epi32(const ssei &a, const ssei &b) {
     return _mm_castps_si128(_mm_shuffle_ps(_mm_castsi128_ps(a), _mm_castsi128_ps(b), _MM_SHUFFLE(b1, b0, a1, a0)));
@@ -199,7 +187,7 @@ BE_FORCE_INLINE const ssei insert_epi32(const ssei &a, const int32_t b) { ssei c
 template <> 
 BE_FORCE_INLINE int extract_epi32<0>(const ssei &a) { return _mm_cvtsi128_si32(a); }
 
-// Select 4x32 bits integer using mask.
+// Selects 4x32 bits integer using mask.
 BE_FORCE_INLINE ssei select_epi32(const ssei &a, const ssei &b, const sseb &mask) {
 #if defined(__SSE4_1__)
     return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(a), _mm_castsi128_ps(b), (mask)));
@@ -223,13 +211,13 @@ BE_FORCE_INLINE ssei min_epi32(const int32_t &a, const ssei &b) { return min_epi
 BE_FORCE_INLINE ssei max_epi32(const ssei &a, const int32_t &b) { return max_epi32(a, set1_epi32(b)); }
 BE_FORCE_INLINE ssei max_epi32(const int32_t &a, const ssei &b) { return max_epi32(set1_epi32(a), b); }
 
-// Broadcast minimum value of all 4 components.
+// Broadcasts minimum value of all 4 components.
 BE_FORCE_INLINE ssei vreduce_min_epi32(const ssei &v) {
     ssei h = min_epi32(shuffle_epi32<1, 0, 3, 2>(v), v);
     return min_epi32(shuffle_epi32<2, 3, 0, 1>(h), h);
 }
 
-// Broadcast maximum value of all 4 components.
+// Broadcasts maximum value of all 4 components.
 BE_FORCE_INLINE ssei vreduce_max_epi32(const ssei &v) { 
     ssei h = max_epi32(shuffle_epi32<1, 0, 3, 2>(v), v);
     return max_epi32(shuffle_epi32<2, 3, 0, 1>(h), h);
@@ -238,25 +226,25 @@ BE_FORCE_INLINE ssei vreduce_max_epi32(const ssei &v) {
 BE_FORCE_INLINE int reduce_min_epi32(const ssei &v) { return extract_epi32<0>(vreduce_min_epi32(v)); }
 BE_FORCE_INLINE int reduce_max_epi32(const ssei &v) { return extract_epi32<0>(vreduce_max_epi32(v)); }
 
-// Return index of minimum component.
+// Returns index of minimum component.
 BE_FORCE_INLINE size_t select_min_epi32(const ssei &v) { return __bsf(_mm_movemask_ps(v == vreduce_min_epi32(v))); }
 
-// Return index of maximum component.
+// Returns index of maximum component.
 BE_FORCE_INLINE size_t select_max_epi32(const ssei &v) { return __bsf(_mm_movemask_ps(v == vreduce_max_epi32(v))); }
 
-// Return index of minimum component with valid index mask.
+// Returns index of minimum component with valid index mask.
 BE_FORCE_INLINE size_t select_min_epi32(const sseb &valid, const ssei &v) {
     const ssei a = select_epi32(set1_epi32(INT_MAX), v, valid);
     return __bsf(_mm_movemask_ps(valid & (a == vreduce_min_epi32(a))));
 }
 
-// Return index of maximum component with valid index mask.
-BE_FORCE_INLINE size_t select_max_epire(const sseb &valid, const ssei &v) {
+// Returns index of maximum component with valid index mask.
+BE_FORCE_INLINE size_t select_max_epi32(const sseb &valid, const ssei &v) {
     const ssei a = select_epi32(set1_epi32(INT_MIN), v, valid);
     return __bsf(_mm_movemask_ps(valid & (a == vreduce_max_epi32(a))));
 }
 
-// Broadcast sums of all components.
+// Broadcasts sums of all components.
 BE_FORCE_INLINE ssei sum_epi32(const ssei &a) {
     __m128i hadd = _mm_hadd_epi32(a, a); // (x + y, z + w, x + y, z + w)
     return _mm_hadd_epi32(hadd, hadd); // (x + y + z + w, x + y + z + w, x + y + z + w, x + y + z + w)

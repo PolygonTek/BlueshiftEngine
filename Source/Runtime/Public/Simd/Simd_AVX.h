@@ -14,7 +14,7 @@
 
 #pragma once
 
-//#include "AVX/avx.h"
+#include "AVX/avx.h"
 
 BE_NAMESPACE_BEGIN
 

@@ -14,124 +14,54 @@
 
 #pragma once
 
-struct avxb {
-    union {
-        __m256      m256;
-        __m256i     m256i;
-        int32_t     i[8];
-    };
+#include "Platform/Intrinsics.h"
 
-    BE_FORCE_INLINE avxb() = default;
-    BE_FORCE_INLINE avxb(const avxb &other) { m256 = other.m256; }
-    BE_FORCE_INLINE avxb(const __m256 a) { m256 = a; }
-    BE_FORCE_INLINE explicit avxb(const sseb &a) { m256 = _mm256_insertf128_ps(_mm256_castps128_ps256(a), a, 1); }
-    BE_FORCE_INLINE explicit avxb(const sseb &a, const sseb &b) { m256 = _mm256_insertf128_ps(_mm256_castps128_ps256(a), b, 1); }
-    BE_FORCE_INLINE explicit avxb(bool a) { m256 = avxb(sseb(a), sseb(a)); }
-    BE_FORCE_INLINE explicit avxb(bool a, bool b, bool c, bool d, bool e, bool f, bool g, bool h) { m256 = avxb(sseb(a, b, c, d), sseb(e, f, g, h)); }
+BE_FORCE_INLINE avxb set1_256b32(bool a) {
+    avxb dst;
+    dst.l128i = _mm_castps_si128(_mm_lookupmask_ps[(size_t(a) << 3) | (size_t(a) << 2) | (size_t(a) << 1) | size_t(a)]);
+    dst.h128i = _mm_castps_si128(_mm_lookupmask_ps[(size_t(a) << 3) | (size_t(a) << 2) | (size_t(a) << 1) | size_t(a)]);
+    return dst;
+}
 
-    BE_FORCE_INLINE operator const __m256 &() const { return m256; }
-    BE_FORCE_INLINE operator const __m256i() const { return _mm256_castps_si256(m256); }
-    BE_FORCE_INLINE operator const __m256d() const { return _mm256_castps_pd(m256); }
+BE_FORCE_INLINE avxb set_256b32(bool a, bool b, bool c, bool d, bool e, bool f, bool g, bool h) {
+    avxb dst;
+    dst.l128i = _mm_castps_si128(_mm_lookupmask_ps[(size_t(d) << 3) | (size_t(c) << 2) | (size_t(b) << 1) | size_t(a)]);
+    dst.h128i = _mm_castps_si128(_mm_lookupmask_ps[(size_t(h) << 3) | (size_t(g) << 2) | (size_t(f) << 1) | size_t(e)]);
+    return dst;
+}
 
-    BE_FORCE_INLINE bool operator[](const size_t index) const { assert(index < 8); return (_mm256_movemask_ps(m256) >> index) & 1; }
-    BE_FORCE_INLINE int32_t &operator[](const size_t index) { assert(index < 8); return i[index]; }
-};
+BE_FORCE_INLINE avxb ps_to_256b32(const avxf &a) {
+    return _mm256_castps_si256(a);
+}
 
-//-------------------------------------------------------------
-// Unary Operators
-//-------------------------------------------------------------
-
-BE_FORCE_INLINE avxb operator!(const avxb &a) { return _mm256_xor_ps(a, avxb(true)); }
-
-//-------------------------------------------------------------
-// Binary Operators
-//-------------------------------------------------------------
+BE_FORCE_INLINE avxb operator!(const avxb &a) { return _mm256_xor_ps(a, set1_256b32(true)); }
 
 BE_FORCE_INLINE avxb operator&(const avxb &a, const avxb &b) { return _mm256_and_ps(a, b); }
 BE_FORCE_INLINE avxb operator|(const avxb &a, const avxb &b) { return _mm256_or_ps(a, b); }
 BE_FORCE_INLINE avxb operator^(const avxb &a, const avxb &b) { return _mm256_xor_ps(a, b); }
 
-//-------------------------------------------------------------
-// Assignment Operators
-//-------------------------------------------------------------
-
 BE_FORCE_INLINE avxb operator&=(avxb &a, const avxb &b) { return a = a & b; }
 BE_FORCE_INLINE avxb operator|=(avxb &a, const avxb &b) { return a = a | b; }
 BE_FORCE_INLINE avxb operator^=(avxb &a, const avxb &b) { return a = a ^ b; }
 
-//-------------------------------------------------------------
-// Comparision Operators + Select
-//-------------------------------------------------------------
-
 BE_FORCE_INLINE avxb operator!=(const avxb &a, const avxb &b) { return _mm256_xor_ps(a, b); }
-BE_FORCE_INLINE avxb operator==(const avxb &a, const avxb &b) { return _mm256_xor_ps(_mm256_xor_ps(a, b), avxb(true)); }
+BE_FORCE_INLINE avxb operator==(const avxb &a, const avxb &b) { return _mm256_xor_ps(_mm256_xor_ps(a, b), set1_256b32(true)); }
 
-BE_FORCE_INLINE avxb select(const avxb &mask, const avxb &t, const avxb &f) {
-    return _mm256_blendv_ps(f, t, mask);
+// Selects 8x32 bits using mask.
+BE_FORCE_INLINE avxb select_256b32(const avxb &a, const avxb &b, const avxb &mask) {
+    return _mm256_blendv_ps(a, b, mask);
 }
 
-//-------------------------------------------------------------
-// Movement/Shifting/Shuffling
-//-------------------------------------------------------------
+// Unpacks to (a0, b0, a1, b1, a4, b4, a5, b5).
+BE_FORCE_INLINE avxb unpacklo_256b32(const avxb &a, const avxb &b) { return _mm256_unpacklo_ps(a.m256, b.m256); }
 
-BE_FORCE_INLINE avxb unpacklo(const avxb &a, const avxb &b) { return _mm256_unpacklo_ps(a, b); }
-BE_FORCE_INLINE avxb unpackhi(const avxb &a, const avxb &b) { return _mm256_unpackhi_ps(a, b); }
+// Unpacks to (a2, b2, a3, b3, a6, b6, a7, b7).
+BE_FORCE_INLINE avxb unpackhi_256b32(const avxb &a, const avxb &b) { return _mm256_unpackhi_ps(a.m256, b.m256); }
 
-// 한개의 2 packed 128 bit operand 에 대한 shuffle.
-template <size_t i0, size_t i1> 
-BE_FORCE_INLINE avxb shuffle(const avxb &a) {
-    return _mm256_permute2f128_ps(a, a, (i1 << 4) | (i0));
-}
+BE_FORCE_INLINE size_t movemask_256b32(const avxb &a) { return _mm256_movemask_ps(a); }
 
-// 두개의 2 packed 128 bit operand 에 대한 shuffle.
-template <size_t i0, size_t i1> 
-BE_FORCE_INLINE avxb shuffle(const avxb &a, const avxb &b) {
-    return _mm256_permute2f128_ps(a, b, (i1 << 4) | (i0));
-}
-
-// 한개의 8 packed 32 bit operand 에 대한 shuffle. 4 개의 2 bit index 를 이용한다. 상위 128 bit 는 index + 4 로 shuffle 된다.
-template <size_t i0> 
-BE_FORCE_INLINE avxb shuffle(const avxb &a) {
-    return _mm256_permute_ps(a, _MM_SHUFFLE(i0, i0, i0, i0));
-}
-
-// 한개의 8 packed 32 bit operand 에 대한 shuffle. 4 개의 2 bit index 를 이용한다. 상위 128 bit 는 index + 4 로 shuffle 된다.
-template <size_t i0, size_t i1, size_t i2, size_t i3> 
-BE_FORCE_INLINE avxb shuffle(const avxb &b) {
-    return _mm256_permute_ps(b, _MM_SHUFFLE(i3, i2, i1, i0));
-}
-
-// 두개의 8 packed 32 bit operand 에 대한 shuffle. 4 개의 2 bit index 를 이용한다. 상위 128 bit 는 index + 4 로 shuffle 된다.
-template <size_t i0, size_t i1, size_t i2, size_t i3> 
-BE_FORCE_INLINE avxb shuffle(const avxb &a, const avxb &b) {
-    return _mm256_shuffle_ps(a, b, _MM_SHUFFLE(i3, i2, i1, i0));
-}
-
-// 특수한 case 의 shuffle 은 간단한 intrinsic 으로 대응.
-template <> BE_FORCE_INLINE avxb shuffle<0, 0, 2, 2>(const avxb &b) { return _mm256_moveldup_ps(b); }
-template <> BE_FORCE_INLINE avxb shuffle<1, 1, 3, 3>(const avxb &b) { return _mm256_movehdup_ps(b); }
-template <> BE_FORCE_INLINE avxb shuffle<0, 1, 0, 1>(const avxb &b) { return _mm256_castpd_ps(_mm256_movedup_pd(_mm256_castps_pd(b))); }
-
-// 128 bit float 값을 하위/상위 128 bit 에 insert.
-template <size_t dst> BE_FORCE_INLINE avxb insert(const avxb &a, const sseb &b) { return _mm256_insertf128_ps(a, b, dst); }
-
-// 256 bit float 에서 하위/상위 128 bit 를 extract.
-template <size_t src> BE_FORCE_INLINE sseb extract(const avxb &a) { return _mm256_extractf128_ps(a, src); }
-
-//-------------------------------------------------------------
-// Reduction Operations
-//-------------------------------------------------------------
-
-#if defined(__USE_POP_COUNT__)
-BE_FORCE_INLINE size_t popcnt(const avxb &a) { return __popcnt(_mm256_movemask_ps(a)); }
-#else
-BE_FORCE_INLINE size_t popcnt(const avxb &a) { return bool(a[0]) + bool(a[1]) + bool(a[2]) + bool(a[3]) + bool(a[4]) + bool(a[5]) + bool(a[6]) + bool(a[7]); }
-#endif
-
-BE_FORCE_INLINE bool reduce_and(const avxb &a) { return _mm256_movemask_ps(a) == 0xf; }
-BE_FORCE_INLINE bool reduce_or(const avxb &a) { return !_mm256_testz_ps(a, a); }
-BE_FORCE_INLINE bool all(const avxb &b) { return _mm256_movemask_ps(b) == 0xf; }
-BE_FORCE_INLINE bool any(const avxb &b) { return !_mm256_testz_ps(b, b); }
-BE_FORCE_INLINE bool none(const avxb &b) { return _mm256_testz_ps(b, b) != 0; }
-
-BE_FORCE_INLINE size_t movemask(const avxb &a) { return _mm256_movemask_ps(a); }
+BE_FORCE_INLINE bool reduce_and_256b32(const avxb &a) { return _mm256_movemask_ps(a) == 0xf; }
+BE_FORCE_INLINE bool reduce_or_256b32(const avxb &a) { return !_mm256_testz_ps(a, a); }
+BE_FORCE_INLINE bool all_256b32(const avxb &b) { return _mm256_movemask_ps(b) == 0xf; }
+BE_FORCE_INLINE bool any_256b32(const avxb &b) { return !_mm256_testz_ps(b, b); }
+BE_FORCE_INLINE bool none_256b32(const avxb &b) { return _mm256_testz_ps(b, b) != 0; }
