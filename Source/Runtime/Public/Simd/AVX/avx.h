@@ -112,8 +112,8 @@ struct avxi {
     BE_FORCE_INLINE operator const __m256i &() const { return m256i; };
     BE_FORCE_INLINE operator __m256i &() { return m256i; };
 
-    BE_FORCE_INLINE const int32_t &operator[](const size_t index) const { assert(i < 8); return i32[index]; }
-    BE_FORCE_INLINE int32_t &operator[](const size_t index) { assert(i < 8); return i32[index]; }
+    BE_FORCE_INLINE const int32_t &operator[](const size_t index) const { assert(index < 8); return i32[index]; }
+    BE_FORCE_INLINE int32_t &operator[](const size_t index) { assert(index < 8); return i32[index]; }
 };
 
 // 8 wide AVX boolean type.
