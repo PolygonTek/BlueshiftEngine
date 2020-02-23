@@ -71,6 +71,19 @@ Mat3x4 &Mat3x4::Scale(float sx, float sy, float sz) {
 Mat3x4 Mat3x4::operator*(const Mat3x4 &a) const {
     ALIGN_AS16 Mat3x4 dst;
 
+#ifdef ENABLE_SIMD_INTRINSICS
+    simd4f ar0 = loadu_ps(mat[0]);
+    simd4f ar1 = loadu_ps(mat[1]);
+    simd4f ar2 = loadu_ps(mat[2]);
+
+    simd4f br0 = loadu_ps(a.mat[0]);
+    simd4f br1 = loadu_ps(a.mat[1]);
+    simd4f br2 = loadu_ps(a.mat[2]);
+
+    store_ps(lincomb3x4(ar0, br0, br1, br2), dst.mat[0]);
+    store_ps(lincomb3x4(ar1, br0, br1, br2), dst.mat[1]);
+    store_ps(lincomb3x4(ar2, br0, br1, br2), dst.mat[2]);
+#else
     dst.mat[0][0] = mat[0][0] * a.mat[0][0] + mat[0][1] * a.mat[1][0] + mat[0][2] * a.mat[2][0];
     dst.mat[0][1] = mat[0][0] * a.mat[0][1] + mat[0][1] * a.mat[1][1] + mat[0][2] * a.mat[2][1];
     dst.mat[0][2] = mat[0][0] * a.mat[0][2] + mat[0][1] * a.mat[1][2] + mat[0][2] * a.mat[2][2];
@@ -85,7 +98,7 @@ Mat3x4 Mat3x4::operator*(const Mat3x4 &a) const {
     dst.mat[2][1] = mat[2][0] * a.mat[0][1] + mat[2][1] * a.mat[1][1] + mat[2][2] * a.mat[2][1];
     dst.mat[2][2] = mat[2][0] * a.mat[0][2] + mat[2][1] * a.mat[1][2] + mat[2][2] * a.mat[2][2];
     dst.mat[2][3] = mat[2][0] * a.mat[0][3] + mat[2][1] * a.mat[1][3] + mat[2][2] * a.mat[2][3] + mat[2][3];
-
+#endif
     return dst;
 }
 

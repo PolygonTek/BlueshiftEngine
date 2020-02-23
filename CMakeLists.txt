@@ -170,6 +170,8 @@ elseif (APPLE)
     if (IOS)
         add_compile_options("-DIOS")
 
+        add_definitions("-D__NEON__")
+
         set(IOS_DEPLOYMENT_TARGET 9.0)
    else ()
         set(CMAKE_OSX_SYSROOT "macosx")
@@ -187,6 +189,8 @@ elseif (APPLE)
 elseif (ANDROID)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++14 -fno-exceptions -fno-rtti")
+
+    add_definitions("-D__NEON__")
 
     # Settings for Android
     add_compile_options("-DANDROID")

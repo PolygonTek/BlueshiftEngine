@@ -52,10 +52,10 @@ BE_FORCE_INLINE sseb select_b32(const sseb &a, const sseb &b, const sseb &mask) 
 }
 
 // Unpacks to (a0, b0, a1, b1).
-BE_FORCE_INLINE sseb unpacklo_b32(const sseb &a, const sseb &b) { return _mm_unpacklo_ps(a.m128, b.m128); }
+BE_FORCE_INLINE sseb unpacklo_b32(const sseb &a, const sseb &b) { return _mm_unpacklo_ps(a, b); }
 
 // Unpacks to (a2, b2, a3, b3).
-BE_FORCE_INLINE sseb unpackhi_b32(const sseb &a, const sseb &b) { return _mm_unpacklo_ps(a.m128, b.m128); }
+BE_FORCE_INLINE sseb unpackhi_b32(const sseb &a, const sseb &b) { return _mm_unpacklo_ps(a, b); }
 
 BE_FORCE_INLINE size_t movemask_b32(const sseb &a) { return _mm_movemask_ps(a); }
 

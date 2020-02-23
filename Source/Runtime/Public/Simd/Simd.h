@@ -70,8 +70,9 @@ public:
 
     virtual float BE_FASTCALL           Sum(const float *src, const int count) = 0;
 
-    virtual void BE_FASTCALL            MatrixTranspose(float *dst, const float *src) = 0;
-    virtual void BE_FASTCALL            MatrixMultiply(float *dst, const float *src0, const float *src1) = 0;
+    virtual void BE_FASTCALL            Matrix4x4Transpose(float *dst, const float *src) = 0;
+    virtual void BE_FASTCALL            Matrix3x4Multiply(float *dst, const float *src0, const float *src1) = 0;
+    virtual void BE_FASTCALL            Matrix4x4Multiply(float *dst, const float *src0, const float *src1) = 0;
 
     virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const int count) = 0;
     virtual void BE_FASTCALL            Memset(void *dst, const int val, const int count) = 0;
@@ -86,7 +87,6 @@ public:
     virtual void BE_FASTCALL            UntransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) = 0;
     virtual void BE_FASTCALL            MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, const Mat3x4 *joints2, const int numJoints) = 0;
     virtual void BE_FASTCALL            TransformVerts(VertexGenericLit *verts, const int numVerts, const Mat3x4 *joints, const Vec4 *weights, const int *index, const int numWeights) = 0;
-    virtual void BE_FASTCALL            DeriveTriPlanes(Plane *planes, const VertexGenericLit *verts, const int numVerts, const int *indexes, const int numIndexes) = 0;
 };
 
 extern SIMDProcessor *simdGeneric;
@@ -104,6 +104,6 @@ BE_NAMESPACE_END
 #include "Simd_AVX.h"
 #endif
 
-#ifdef ENABLE_ARM_NEON_INTRINSIC
+#ifdef ENABLE_ARM_NEON_INTRINSICS
 #include "Simd_NEON.h"
 #endif

@@ -390,46 +390,6 @@ BE_INLINE Mat4 Mat4::operator-(const Mat4 &a) const {
         mat[3].x - a[3].x, mat[3].y - a[3].y, mat[3].z - a[3].z, mat[3].w - a[3].w);
 }
 
-BE_INLINE Mat4 Mat4::operator*(const Mat4 &a) const {
-    Mat4 dst;
-    float *dstPtr = dst.Ptr();
-    const float *m1Ptr = Ptr();
-    const float *m2Ptr = a.Ptr();
-
-    for (int c = 0; c < Cols; c++) {
-        for (int r = 0; r < Rows; r++) {
-            *dstPtr = 
-                m1Ptr[0] * m2Ptr[0 * Cols + r] +
-                m1Ptr[1] * m2Ptr[1 * Cols + r] +
-                m1Ptr[2] * m2Ptr[2 * Cols + r] +
-                m1Ptr[3] * m2Ptr[3 * Cols + r];
-            dstPtr++;
-        }
-        m1Ptr += Cols;
-    }
-    return dst;
-}
-
-BE_INLINE Mat4 Mat4::TransposedMul(const Mat4 &a) const {
-    Mat4 dst;
-    float *dstPtr = dst.Ptr();
-    const float *m1Ptr = Ptr();
-    const float *m2Ptr = a.Ptr();
-
-    for (int c = 0; c < Cols; c++) {
-        for (int r = 0; r < Rows; r++) {
-            *dstPtr = 
-                m1Ptr[0 * Cols] * m2Ptr[0 * Cols + r] +
-                m1Ptr[1 * Cols] * m2Ptr[1 * Cols + r] +
-                m1Ptr[2 * Cols] * m2Ptr[2 * Cols + r] +
-                m1Ptr[3 * Cols] * m2Ptr[3 * Cols + r];
-            dstPtr++;
-        }
-        m1Ptr += 1;
-    }
-    return dst;
-}
-
 BE_INLINE Mat4 Mat4::operator*(float a) const {
     return Mat4(
         mat[0].x * a, mat[0].y * a, mat[0].z * a, mat[0].z * a,
@@ -769,13 +729,6 @@ BE_INLINE Mat4 Mat3::ToMat4() const {
         mat[0][1], mat[1][1], mat[2][1], 0.0f, 
         mat[0][2], mat[1][2], mat[2][2], 0.0f, 
         0.0f, 0.0f, 0.0f, 1.0f);
-}
-
-BE_INLINE Vec3 Mat4::ToScaleVec3() const {
-    return Vec3(
-        Math::Sqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]),
-        Math::Sqrt(mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]),
-        Math::Sqrt(mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]));
 }
 
 BE_INLINE Vec3 Mat4::ToTranslationVec3() const {

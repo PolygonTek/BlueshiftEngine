@@ -29,6 +29,7 @@ struct neonf {
 
     BE_FORCE_INLINE neonf() = default;
     BE_FORCE_INLINE neonf(const float32x4_t a) { f32x4 = a; }
+    BE_FORCE_INLINE neonf(const int32x4_t a) { i32x4 = a; }
     BE_FORCE_INLINE neonf(float a, float b, float c, float d) { ALIGN_AS16 float data[4] = { a, b, c, d }; f32x4 = vld1q_f32(data); }
     BE_FORCE_INLINE neonf(const neonf &other) { f32x4 = other.f32x4; }
     BE_FORCE_INLINE neonf &operator=(const neonf &rhs) { f32x4 = rhs.f32x4; return *this; }
@@ -55,6 +56,7 @@ struct neoni {
     };
 
     BE_FORCE_INLINE neoni() = default;
+    BE_FORCE_INLINE neoni(const float32x4_t a) { f32x4 = a; }
     BE_FORCE_INLINE neoni(const int32x4_t a) { i32x4 = a; }
     BE_FORCE_INLINE neoni(int32_t a, int32_t b, int32_t c, int32_t d) { ALIGN_AS16 int32_t data[4] = { a, b, c, d }; i32x4 = vld1q_s32(data); }
     BE_FORCE_INLINE neoni(const neoni &other) { i32x4 = other.i32x4; }

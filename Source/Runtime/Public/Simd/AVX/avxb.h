@@ -53,10 +53,10 @@ BE_FORCE_INLINE avxb select_256b32(const avxb &a, const avxb &b, const avxb &mas
 }
 
 // Unpacks to (a0, b0, a1, b1, a4, b4, a5, b5).
-BE_FORCE_INLINE avxb unpacklo_256b32(const avxb &a, const avxb &b) { return _mm256_unpacklo_ps(a.m256, b.m256); }
+BE_FORCE_INLINE avxb unpacklo_256b32(const avxb &a, const avxb &b) { return _mm256_unpacklo_ps(a, b); }
 
 // Unpacks to (a2, b2, a3, b3, a6, b6, a7, b7).
-BE_FORCE_INLINE avxb unpackhi_256b32(const avxb &a, const avxb &b) { return _mm256_unpackhi_ps(a.m256, b.m256); }
+BE_FORCE_INLINE avxb unpackhi_256b32(const avxb &a, const avxb &b) { return _mm256_unpackhi_ps(a, b); }
 
 BE_FORCE_INLINE size_t movemask_256b32(const avxb &a) { return _mm256_movemask_ps(a); }
 

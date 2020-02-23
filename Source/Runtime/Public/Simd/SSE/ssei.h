@@ -61,62 +61,62 @@ BE_FORCE_INLINE ssei ps_to_epi32(const ssef &a) {
 }
 
 BE_FORCE_INLINE ssei abs_epi32(const ssei &a) {
-    return _mm_abs_epi32(a.m128i);
+    return _mm_abs_epi32(a);
 }
 
 BE_FORCE_INLINE ssei operator+(const ssei &a) { return a; }
-BE_FORCE_INLINE ssei operator-(const ssei &a) { return _mm_sub_epi32(_mm_setzero_si128(), a.m128i); }
+BE_FORCE_INLINE ssei operator-(const ssei &a) { return _mm_sub_epi32(_mm_setzero_si128(), a); }
 
-BE_FORCE_INLINE ssei operator+(const ssei &a, const ssei &b) { return _mm_add_epi32(a.m128i, b.m128i); }
+BE_FORCE_INLINE ssei operator+(const ssei &a, const ssei &b) { return _mm_add_epi32(a, b); }
 BE_FORCE_INLINE ssei operator+(const ssei &a, const int32_t &b) { return a + set1_epi32(b); }
 BE_FORCE_INLINE ssei operator+(const int32_t &a, const ssei &b) { return set1_epi32(a) + b; }
 
-BE_FORCE_INLINE ssei operator-(const ssei &a, const ssei &b) { return _mm_sub_epi32(a.m128i, b.m128i); }
+BE_FORCE_INLINE ssei operator-(const ssei &a, const ssei &b) { return _mm_sub_epi32(a, b); }
 BE_FORCE_INLINE ssei operator-(const ssei &a, const int32_t &b) { return a - set1_epi32(b); }
 BE_FORCE_INLINE ssei operator-(const int32_t &a, const ssei &b) { return set1_epi32(a) - b; }
 
-BE_FORCE_INLINE ssei operator*(const ssei &a, const ssei &b) { return _mm_mullo_epi32(a.m128i, b.m128i); }
+BE_FORCE_INLINE ssei operator*(const ssei &a, const ssei &b) { return _mm_mullo_epi32(a, b); }
 BE_FORCE_INLINE ssei operator*(const ssei &a, const int32_t &b) { return a * set1_epi32(b); }
 BE_FORCE_INLINE ssei operator*(const int32_t &a, const ssei &b) { return set1_epi32(a) * b; }
 
-BE_FORCE_INLINE ssei operator&(const ssei &a, const ssei &b) { return _mm_and_si128(a.m128i, b.m128i); }
+BE_FORCE_INLINE ssei operator&(const ssei &a, const ssei &b) { return _mm_and_si128(a, b); }
 BE_FORCE_INLINE ssei operator&(const ssei &a, const int32_t &b) { return a & set1_epi32(b); }
 BE_FORCE_INLINE ssei operator&(const int32_t &a, const ssei &b) { return set1_epi32(a) & b; }
 
-BE_FORCE_INLINE ssei operator|(const ssei &a, const ssei &b) { return _mm_or_si128(a.m128i, b.m128i); }
+BE_FORCE_INLINE ssei operator|(const ssei &a, const ssei &b) { return _mm_or_si128(a, b); }
 BE_FORCE_INLINE ssei operator|(const ssei &a, const int32_t &b) { return a | set1_epi32(b); }
 BE_FORCE_INLINE ssei operator|(const int32_t &a, const ssei &b) { return set1_epi32(a) | b; }
 
-BE_FORCE_INLINE ssei operator^(const ssei &a, const ssei &b) { return _mm_xor_si128(a.m128i, b.m128i); }
+BE_FORCE_INLINE ssei operator^(const ssei &a, const ssei &b) { return _mm_xor_si128(a, b); }
 BE_FORCE_INLINE ssei operator^(const ssei &a, const int32_t &b) { return a ^ set1_epi32(b); }
 BE_FORCE_INLINE ssei operator^(const int32_t &a, const ssei &b) { return set1_epi32(a) ^ b; }
 
-BE_FORCE_INLINE ssei operator<<(const ssei &a, const int32_t &n) { return _mm_slli_epi32(a.m128i, n); }
-BE_FORCE_INLINE ssei operator>>(const ssei &a, const int32_t &n) { return _mm_srai_epi32(a.m128i, n); }
+BE_FORCE_INLINE ssei operator<<(const ssei &a, const int32_t &n) { return _mm_slli_epi32(a, n); }
+BE_FORCE_INLINE ssei operator>>(const ssei &a, const int32_t &n) { return _mm_srai_epi32(a, n); }
 
-BE_FORCE_INLINE sseb operator==(const ssei &a, const ssei &b) { return _mm_castsi128_ps(_mm_cmpeq_epi32(a.m128i, b.m128i)); }
-BE_FORCE_INLINE sseb operator==(const ssei &a, const int32_t &b) { return a == set1_epi32(b); }
-BE_FORCE_INLINE sseb operator==(const int32_t &a, const ssei &b) { return set1_epi32(a) == b; }
+BE_FORCE_INLINE ssei operator==(const ssei &a, const ssei &b) { return _mm_cmpeq_epi32(a, b); }
+BE_FORCE_INLINE ssei operator==(const ssei &a, const int32_t &b) { return a == set1_epi32(b); }
+BE_FORCE_INLINE ssei operator==(const int32_t &a, const ssei &b) { return set1_epi32(a) == b; }
 
-BE_FORCE_INLINE sseb operator!=(const ssei &a, const ssei &b) { return !(a == b); }
-BE_FORCE_INLINE sseb operator!=(const ssei &a, const int32_t &b) { return a != set1_epi32(b); }
-BE_FORCE_INLINE sseb operator!=(const int32_t &a, const ssei &b) { return set1_epi32(a) != b; }
+BE_FORCE_INLINE ssei operator!=(const ssei &a, const ssei &b) { return _mm_inv_si128(_mm_cmpeq_epi32(a, b)); }
+BE_FORCE_INLINE ssei operator!=(const ssei &a, const int32_t &b) { return a != set1_epi32(b); }
+BE_FORCE_INLINE ssei operator!=(const int32_t &a, const ssei &b) { return set1_epi32(a) != b; }
 
-BE_FORCE_INLINE sseb operator<(const ssei &a, const ssei &b) { return _mm_castsi128_ps(_mm_cmplt_epi32(a.m128i, b.m128i)); }
-BE_FORCE_INLINE sseb operator<(const ssei &a, const int32_t &b) { return a < set1_epi32(b); }
-BE_FORCE_INLINE sseb operator<(const int32_t &a, const ssei &b) { return set1_epi32(a) < b; }
+BE_FORCE_INLINE ssei operator<(const ssei &a, const ssei &b) { return _mm_cmplt_epi32(a, b); }
+BE_FORCE_INLINE ssei operator<(const ssei &a, const int32_t &b) { return a < set1_epi32(b); }
+BE_FORCE_INLINE ssei operator<(const int32_t &a, const ssei &b) { return set1_epi32(a) < b; }
 
-BE_FORCE_INLINE sseb operator>=(const ssei &a, const ssei &b) { return !(a < b); }
-BE_FORCE_INLINE sseb operator>=(const ssei &a, const int32_t &b) { return a >= set1_epi32(b); }
-BE_FORCE_INLINE sseb operator>=(const int32_t &a, const ssei &b) { return set1_epi32(a) >= b; }
+BE_FORCE_INLINE ssei operator>(const ssei &a, const ssei &b) { return _mm_cmpgt_epi32(a, b); }
+BE_FORCE_INLINE ssei operator>(const ssei &a, const int32_t &b) { return a > set1_epi32(b); }
+BE_FORCE_INLINE ssei operator>(const int32_t &a, const ssei &b) { return set1_epi32(a) > b; }
 
-BE_FORCE_INLINE sseb operator>(const ssei &a, const ssei &b) { return _mm_castsi128_ps(_mm_cmpgt_epi32(a.m128i, b.m128i)); }
-BE_FORCE_INLINE sseb operator>(const ssei &a, const int32_t &b) { return a > set1_epi32(b); }
-BE_FORCE_INLINE sseb operator>(const int32_t &a, const ssei &b) { return set1_epi32(a) > b; }
+BE_FORCE_INLINE ssei operator>=(const ssei &a, const ssei &b) { return _mm_inv_si128(_mm_cmplt_epi32(a, b)); }
+BE_FORCE_INLINE ssei operator>=(const ssei &a, const int32_t &b) { return a >= set1_epi32(b); }
+BE_FORCE_INLINE ssei operator>=(const int32_t &a, const ssei &b) { return set1_epi32(a) >= b; }
 
-BE_FORCE_INLINE sseb operator<=(const ssei &a, const ssei &b) { return !(a > b); }
-BE_FORCE_INLINE sseb operator<=(const ssei &a, const int32_t &b) { return a <= set1_epi32(b); }
-BE_FORCE_INLINE sseb operator<=(const int32_t &a, const ssei &b) { return set1_epi32(a) <= b; }
+BE_FORCE_INLINE ssei operator<=(const ssei &a, const ssei &b) { return _mm_inv_si128(_mm_cmpgt_epi32(a, b)); }
+BE_FORCE_INLINE ssei operator<=(const ssei &a, const int32_t &b) { return a <= set1_epi32(b); }
+BE_FORCE_INLINE ssei operator<=(const int32_t &a, const ssei &b) { return set1_epi32(a) <= b; }
 
 BE_FORCE_INLINE ssei &operator+=(ssei &a, const ssei &b) { return a = a + b; }
 BE_FORCE_INLINE ssei &operator+=(ssei &a, const int32_t &b) { return a = a + b; }
@@ -137,19 +137,19 @@ BE_FORCE_INLINE ssei &operator<<=(ssei &a, const int32_t &b) { return a = a << b
 BE_FORCE_INLINE ssei &operator>>=(ssei &a, const int32_t &b) { return a = a >> b; }
 
 // Shifts right arithmetic.
-BE_FORCE_INLINE ssei sra_epi32(const ssei &a, const int32_t &b) { return _mm_srai_epi32(a.m128i, b); }
+BE_FORCE_INLINE ssei sra_epi32(const ssei &a, const int32_t &b) { return _mm_srai_epi32(a, b); }
 
 // Shifts right logical.
-BE_FORCE_INLINE ssei srl_epi32(const ssei &a, const int32_t &b) { return _mm_srli_epi32(a.m128i, b); }
+BE_FORCE_INLINE ssei srl_epi32(const ssei &a, const int32_t &b) { return _mm_srli_epi32(a, b); }
 
 // Shifts left logical.
-BE_FORCE_INLINE ssei sll_epi32(const ssei &a, const int32_t &b) { return _mm_slli_epi32(a.m128i, b); }
+BE_FORCE_INLINE ssei sll_epi32(const ssei &a, const int32_t &b) { return _mm_slli_epi32(a, b); }
 
 // Unpacks to (a0, b0, a1, b1).
-BE_FORCE_INLINE ssei unpacklo_epi32(const ssei &a, const ssei &b) { return _mm_castps_si128(_mm_unpacklo_ps(_mm_castsi128_ps(a.m128i), _mm_castsi128_ps(b.m128i))); }
+BE_FORCE_INLINE ssei unpacklo_epi32(const ssei &a, const ssei &b) { return _mm_castps_si128(_mm_unpacklo_ps(_mm_castsi128_ps(a), _mm_castsi128_ps(b))); }
 
 // Unpacks to (a2, b2, a3, b3).
-BE_FORCE_INLINE ssei unpackhi_epi32(const ssei &a, const ssei &b) { return _mm_castps_si128(_mm_unpackhi_ps(_mm_castsi128_ps(a.m128i), _mm_castsi128_ps(b.m128i))); }
+BE_FORCE_INLINE ssei unpackhi_epi32(const ssei &a, const ssei &b) { return _mm_castps_si128(_mm_unpackhi_ps(_mm_castsi128_ps(a), _mm_castsi128_ps(b))); }
 
 // Shuffles 4x32 bits integers using template parameters. ix = [0, 3].
 template <size_t i0, size_t i1, size_t i2, size_t i3>
@@ -198,8 +198,8 @@ BE_FORCE_INLINE ssei select_epi32(const ssei &a, const ssei &b, const sseb &mask
 }
 
 #ifdef __SSE4_1__
-BE_FORCE_INLINE ssei min_epi32(const ssei &a, const ssei &b) { return _mm_min_epi32(a.m128i, b.m128i); }
-BE_FORCE_INLINE ssei max_epi32(const ssei &a, const ssei &b) { return _mm_max_epi32(a.m128i, b.m128i); }
+BE_FORCE_INLINE ssei min_epi32(const ssei &a, const ssei &b) { return _mm_min_epi32(a, b); }
+BE_FORCE_INLINE ssei max_epi32(const ssei &a, const ssei &b) { return _mm_max_epi32(a, b); }
 #else
 BE_FORCE_INLINE ssei min_epi32(const ssei &a, const ssei &b) { return select_epi32(a, b, a < b); }
 BE_FORCE_INLINE ssei max_epi32(const ssei &a, const ssei &b) { return select_epi32(b, a, a < b); }
@@ -235,13 +235,13 @@ BE_FORCE_INLINE size_t select_max_epi32(const ssei &v) { return __bsf(_mm_movema
 // Returns index of minimum component with valid index mask.
 BE_FORCE_INLINE size_t select_min_epi32(const sseb &valid, const ssei &v) {
     const ssei a = select_epi32(set1_epi32(INT_MAX), v, valid);
-    return __bsf(_mm_movemask_ps(valid & (a == vreduce_min_epi32(a))));
+    return __bsf(_mm_movemask_ps(_mm_and_ps(valid.m128, _mm_castsi128_ps(a == vreduce_min_epi32(a)))));
 }
 
 // Returns index of maximum component with valid index mask.
 BE_FORCE_INLINE size_t select_max_epi32(const sseb &valid, const ssei &v) {
     const ssei a = select_epi32(set1_epi32(INT_MIN), v, valid);
-    return __bsf(_mm_movemask_ps(valid & (a == vreduce_max_epi32(a))));
+    return __bsf(_mm_movemask_ps(_mm_and_ps(valid.m128, _mm_castsi128_ps(a == vreduce_max_epi32(a)))));
 }
 
 // Broadcasts sums of all components.

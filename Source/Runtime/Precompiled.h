@@ -525,7 +525,7 @@ BE_FORCE_INLINE CFStringRef WideStringToCFString(const wchar_t *string) {
 
 #if defined(__SSE3__)
     #define ENABLE_X86_SSE_INTRINSICS
-#elif defined(__ARM64__)
+#elif defined(__NEON__) || defined(__ARM64__)
     #define ENABLE_ARM_NEON_INTRINSICS
 #endif
 

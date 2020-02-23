@@ -44,9 +44,102 @@ Mat4 &Mat4::operator=(const Mat3x4 &rhs) {
     return *this;
 }
 
+Mat4 Mat4::operator*(const Mat4 &a) const {
+    ALIGN_AS16 Mat4 dst;
+
+#ifdef ENABLE_SIMD_INTRINSICS
+    simd4f ar0 = loadu_ps(mat[0]);
+    simd4f ar1 = loadu_ps(mat[1]);
+    simd4f ar2 = loadu_ps(mat[2]);
+    simd4f ar3 = loadu_ps(mat[3]);
+
+    simd4f br0 = loadu_ps(a.mat[0]);
+    simd4f br1 = loadu_ps(a.mat[1]);
+    simd4f br2 = loadu_ps(a.mat[2]);
+    simd4f br3 = loadu_ps(a.mat[3]);
+
+    store_ps(lincomb4x4(ar0, br0, br1, br2, br3), dst.mat[0]);
+    store_ps(lincomb4x4(ar1, br0, br1, br2, br3), dst.mat[1]);
+    store_ps(lincomb4x4(ar2, br0, br1, br2, br3), dst.mat[2]);
+    store_ps(lincomb4x4(ar3, br0, br1, br2, br3), dst.mat[3]);
+#else
+    float *dstPtr = dst.Ptr();
+    const float *m1Ptr = Ptr();
+    const float *m2Ptr = a.Ptr();
+
+    for (int c = 0; c < Cols; c++) {
+        for (int r = 0; r < Rows; r++) {
+            *dstPtr =
+                m1Ptr[0] * m2Ptr[0 * Cols + r] +
+                m1Ptr[1] * m2Ptr[1 * Cols + r] +
+                m1Ptr[2] * m2Ptr[2 * Cols + r] +
+                m1Ptr[3] * m2Ptr[3 * Cols + r];
+            dstPtr++;
+        }
+        m1Ptr += Cols;
+    }
+#endif
+    return dst;
+}
+
+Mat4 Mat4::TransposedMul(const Mat4 &a) const {
+    ALIGN_AS16 Mat4 dst;
+
+#ifdef ENABLE_SIMD_INTRINSICS
+    simd4f ar0 = loadu_ps(mat[0]);
+    simd4f ar1 = loadu_ps(mat[1]);
+    simd4f ar2 = loadu_ps(mat[2]);
+    simd4f ar3 = loadu_ps(mat[3]);
+
+    mat4x4_transpose(ar0, ar1, ar2, ar3);
+
+    simd4f br0 = loadu_ps(a.mat[0]);
+    simd4f br1 = loadu_ps(a.mat[1]);
+    simd4f br2 = loadu_ps(a.mat[2]);
+    simd4f br3 = loadu_ps(a.mat[3]);
+
+    store_ps(lincomb4x4(ar0, br0, br1, br2, br3), dst.mat[0]);
+    store_ps(lincomb4x4(ar1, br0, br1, br2, br3), dst.mat[1]);
+    store_ps(lincomb4x4(ar2, br0, br1, br2, br3), dst.mat[2]);
+    store_ps(lincomb4x4(ar3, br0, br1, br2, br3), dst.mat[3]);
+#else
+    float *dstPtr = dst.Ptr();
+    const float *m1Ptr = Ptr();
+    const float *m2Ptr = a.Ptr();
+
+    for (int c = 0; c < Cols; c++) {
+        for (int r = 0; r < Rows; r++) {
+            *dstPtr =
+                m1Ptr[0 * Cols] * m2Ptr[0 * Cols + r] +
+                m1Ptr[1 * Cols] * m2Ptr[1 * Cols + r] +
+                m1Ptr[2 * Cols] * m2Ptr[2 * Cols + r] +
+                m1Ptr[3 * Cols] * m2Ptr[3 * Cols + r];
+            dstPtr++;
+        }
+        m1Ptr += 1;
+    }
+#endif
+    return dst;
+}
+
 Mat4 Mat4::operator*(const Mat3x4 &a) const {
     ALIGN_AS16 Mat4 dst;
 
+#ifdef ENABLE_SIMD_INTRINSICS
+    simd4f ar0 = loadu_ps(mat[0]);
+    simd4f ar1 = loadu_ps(mat[1]);
+    simd4f ar2 = loadu_ps(mat[2]);
+    simd4f ar3 = loadu_ps(mat[3]);
+
+    simd4f br0 = loadu_ps(a.mat[0]);
+    simd4f br1 = loadu_ps(a.mat[1]);
+    simd4f br2 = loadu_ps(a.mat[2]);
+
+    store_ps(lincomb3x4(ar0, br0, br1, br2), dst.mat[0]);
+    store_ps(lincomb3x4(ar1, br0, br1, br2), dst.mat[1]);
+    store_ps(lincomb3x4(ar2, br0, br1, br2), dst.mat[2]);
+    store_ps(lincomb3x4(ar3, br0, br1, br2), dst.mat[3]);
+#else
     dst[0][0] = mat[0][0] * a[0][0] + mat[0][1] * a[1][0] + mat[0][2] * a[2][0];
     dst[0][1] = mat[0][0] * a[0][1] + mat[0][1] * a[1][1] + mat[0][2] * a[2][1];
     dst[0][2] = mat[0][0] * a[0][2] + mat[0][1] * a[1][2] + mat[0][2] * a[2][2];
@@ -66,13 +159,30 @@ Mat4 Mat4::operator*(const Mat3x4 &a) const {
     dst[3][1] = mat[3][0] * a[0][1] + mat[3][1] * a[1][1] + mat[3][2] * a[2][1];
     dst[3][2] = mat[3][0] * a[0][2] + mat[3][1] * a[1][2] + mat[3][2] * a[2][2];
     dst[3][3] = mat[3][0] * a[0][3] + mat[3][1] * a[1][3] + mat[3][2] * a[2][3] + mat[3][3];
-
+#endif
     return dst;
 }
 
 Mat4 Mat4::TransposedMul(const Mat3x4 &a) const {
     ALIGN_AS16 Mat4 dst;
 
+#ifdef ENABLE_SIMD_INTRINSICS
+    simd4f ar0 = loadu_ps(mat[0]);
+    simd4f ar1 = loadu_ps(mat[1]);
+    simd4f ar2 = loadu_ps(mat[2]);
+    simd4f ar3 = loadu_ps(mat[3]);
+
+    mat4x4_transpose(ar0, ar1, ar2, ar3);
+
+    simd4f br0 = loadu_ps(a.mat[0]);
+    simd4f br1 = loadu_ps(a.mat[1]);
+    simd4f br2 = loadu_ps(a.mat[2]);
+
+    store_ps(lincomb3x4(ar0, br0, br1, br2), dst.mat[0]);
+    store_ps(lincomb3x4(ar1, br0, br1, br2), dst.mat[1]);
+    store_ps(lincomb3x4(ar2, br0, br1, br2), dst.mat[2]);
+    store_ps(lincomb3x4(ar3, br0, br1, br2), dst.mat[3]);
+#else
     dst[0][0] = mat[0][0] * a[0][0] + mat[0][1] * a[0][1] + mat[0][2] * a[0][2] + mat[0][3] * a[0][3];
     dst[0][1] = mat[0][0] * a[1][0] + mat[0][1] * a[1][1] + mat[0][2] * a[1][2] + mat[1][3] * a[1][3];
     dst[0][2] = mat[0][0] * a[2][0] + mat[0][1] * a[2][1] + mat[0][2] * a[2][2] + mat[2][3] * a[2][3];
@@ -92,18 +202,32 @@ Mat4 Mat4::TransposedMul(const Mat3x4 &a) const {
     dst[3][1] = mat[3][0] * a[1][0] + mat[3][1] * a[1][1] + mat[3][2] * a[1][2] + mat[3][3] * a[1][3];
     dst[3][2] = mat[3][0] * a[2][0] + mat[3][1] * a[2][1] + mat[3][2] * a[2][2] + mat[3][3] * a[2][3];
     dst[3][3] = mat[3][3];
-    
+#endif
     return dst;
 }
 
 Mat4 Mat4::Transpose() const {
     ALIGN_AS16 Mat4 transpose;
-    
+
+#ifdef ENABLE_SIMD_INTRINSICS
+    simd4f r0 = loadu_ps(mat[0]);
+    simd4f r1 = loadu_ps(mat[1]);
+    simd4f r2 = loadu_ps(mat[2]);
+    simd4f r3 = loadu_ps(mat[3]);
+
+    mat4x4_transpose(r0, r1, r2, r3);
+
+    store_ps(r0, transpose[0]);
+    store_ps(r1, transpose[1]);
+    store_ps(r2, transpose[2]);
+    store_ps(r3, transpose[3]);
+#else
     for (int i = 0; i < 4; i++ ) {
         for (int j = 0; j < 4; j++ ) {
             transpose[i][j] = mat[j][i];
         }
     }
+#endif
     return transpose;
 }
 
@@ -716,6 +840,13 @@ void Mat4::GetTQS(Vec3 &translation, Quat &rotation, Vec3 &scale) const {
     Mat3 r;
     GetTRS(translation, r, scale);
     rotation = r.ToQuat();
+}
+
+Vec3 Mat4::ToScaleVec3() const {
+    return Vec3(
+        Math::Sqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]),
+        Math::Sqrt(mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]),
+        Math::Sqrt(mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]));
 }
 
 Mat4 Mat4::FromString(const char *str) {

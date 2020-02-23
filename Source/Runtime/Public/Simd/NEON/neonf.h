@@ -16,6 +16,19 @@
 
 #include "Platform/Intrinsics.h"
 
+BE_FORCE_INLINE neonf set_ps(float a, float b, float c, float d) {
+    ALIGN_AS16 float data[4] = { a, b, c, d };
+    return vld1q_f32(data);
+}
+
+BE_FORCE_INLINE neonf set1_ps(float a) {
+    return vdupq_n_f32(a);
+}
+
+BE_FORCE_INLINE neonf setzero_ps() {
+    return vdupq_n_f32(0);
+}
+
 BE_FORCE_INLINE neonf load_ps(const float *src) {
     return vld1q_f32(src);
 }
@@ -44,25 +57,12 @@ BE_FORCE_INLINE void storent_ps(const neonf &a, float *dst) {
     vst1q_f32(dst, a);
 }
 
-BE_FORCE_INLINE neonf set_ps(float a, float b, float c, float d) {
-    ALIGN_AS16 float data[4] = { a, b, c, d };
-    return vld1q_f32(data);
-}
-
-BE_FORCE_INLINE neonf set1_ps(float a) {
-    return vdupq_n_f32(a);
-}
-
-BE_FORCE_INLINE neonf setzero_ps() {
-    return vdupq_n_f32(0);
-}
-
 BE_FORCE_INLINE neonf epi32_to_ps(const i32x4 a) {
     return vcvtq_f32_s32(vreinterpretq_s32_m128i(a));
 }
 
 BE_FORCE_INLINE neonf abs_ps(const neonf &a) {
-    return vreinterpretq_f32_s32(vandq_s32(vreinterpretq_s32_f32(a.f32x4), vdupq_n_s32(0x7fffffff)));
+    return vreinterpretq_f32_s32(vandq_s32(vreinterpretq_s32_f32(a), vdupq_n_s32(0x7fffffff)));
 }
 
 BE_FORCE_INLINE neonf sqr_ps(const neonf &a) {
@@ -142,32 +142,38 @@ BE_FORCE_INLINE neonf operator/(const neonf &a, const neonf &b) { return a * rcp
 BE_FORCE_INLINE neonf operator/(const neonf &a, const float &b) { return a * rcp32_ps(set1_ps(b)); }
 BE_FORCE_INLINE neonf operator/(const float &a, const neonf &b) { return a * rcp32_ps(b); }
 
+BE_FORCE_INLINE neonf operator&(const neonf &a, const neonf &b) { return _mm_and_ps(a.m128, b.m128); }
+BE_FORCE_INLINE neonf operator&(const neonf &a, const neoni &b) { return _mm_and_ps(a.m128, _mm_castsi128_ps(b.m128i)); }
+
+BE_FORCE_INLINE neonf operator|(const neonf &a, const neonf &b) { return _mm_or_ps(a.m128, b.m128); }
+BE_FORCE_INLINE neonf operator|(const neonf &a, const neoni &b) { return _mm_or_ps(a.m128, _mm_castsi128_ps(b.m128i)); }
+
 BE_FORCE_INLINE neonf operator^(const neonf &a, const neonf &b) { return veorq_s32(a.i32x4, b.i32x4); }
 BE_FORCE_INLINE neonf operator^(const neonf &a, const neoni &b) { return veorq_s32(a.i32x4, b.i32x4); }
 
-BE_FORCE_INLINE neonb operator==(const neonf &a, const neonf &b) { return vceqq_f32(a.f32x4, b.f32x4); }
-BE_FORCE_INLINE neonb operator==(const neonf &a, const float &b) { return a == set1_ps(b); }
-BE_FORCE_INLINE neonb operator==(const float &a, const neonf &b) { return set1_ps(a) == b; }
+BE_FORCE_INLINE neonf operator==(const neonf &a, const neonf &b) { return vceqq_f32(a.f32x4, b.f32x4); }
+BE_FORCE_INLINE neonf operator==(const neonf &a, const float &b) { return a == set1_ps(b); }
+BE_FORCE_INLINE neonf operator==(const float &a, const neonf &b) { return set1_ps(a) == b; }
 
-BE_FORCE_INLINE neonb operator!=(const neonf &a, const neonf &b) { return vmvnq_u32(vceqq_f32(a.f32x4, b.f32x4)); }
-BE_FORCE_INLINE neonb operator!=(const neonf &a, const float &b) { return a != set1_ps(b); }
-BE_FORCE_INLINE neonb operator!=(const float &a, const neonf &b) { return set1_ps(a) != b; }
+BE_FORCE_INLINE neonf operator!=(const neonf &a, const neonf &b) { return vmvnq_u32(vceqq_f32(a.f32x4, b.f32x4)); }
+BE_FORCE_INLINE neonf operator!=(const neonf &a, const float &b) { return a != set1_ps(b); }
+BE_FORCE_INLINE neonf operator!=(const float &a, const neonf &b) { return set1_ps(a) != b; }
 
-BE_FORCE_INLINE neonb operator<(const neonf &a, const neonf &b) { return vcltq_f32(a.f32x4, b.f32x4); }
-BE_FORCE_INLINE neonb operator<(const neonf &a, const float &b) { return a < set1_ps(b); }
-BE_FORCE_INLINE neonb operator<(const float &a, const neonf &b) { return set1_ps(a) < b; }
+BE_FORCE_INLINE neonf operator<(const neonf &a, const neonf &b) { return vcltq_f32(a.f32x4, b.f32x4); }
+BE_FORCE_INLINE neonf operator<(const neonf &a, const float &b) { return a < set1_ps(b); }
+BE_FORCE_INLINE neonf operator<(const float &a, const neonf &b) { return set1_ps(a) < b; }
 
-BE_FORCE_INLINE neonb operator>=(const neonf &a, const neonf &b) { return vcgeq_f32(a.f32x4, b.f32x4); }
-BE_FORCE_INLINE neonb operator>=(const neonf &a, const float &b) { return a >= set1_ps(b); }
-BE_FORCE_INLINE neonb operator>=(const float &a, const neonf &b) { return set1_ps(a) >= b; }
+BE_FORCE_INLINE neonf operator>(const neonf &a, const neonf &b) { return vcgtq_f32(a.f32x4, b.f32x4); }
+BE_FORCE_INLINE neonf operator>(const neonf &a, const float &b) { return a > set1_ps(b); }
+BE_FORCE_INLINE neonf operator>(const float &a, const neonf &b) { return set1_ps(a) > b; }
 
-BE_FORCE_INLINE neonb operator>(const neonf &a, const neonf &b) { return vcgtq_f32(a.f32x4, b.f32x4); }
-BE_FORCE_INLINE neonb operator>(const neonf &a, const float &b) { return a > set1_ps(b); }
-BE_FORCE_INLINE neonb operator>(const float &a, const neonf &b) { return set1_ps(a) > b; }
+BE_FORCE_INLINE neonf operator>=(const neonf &a, const neonf &b) { return vcgeq_f32(a.f32x4, b.f32x4); }
+BE_FORCE_INLINE neonf operator>=(const neonf &a, const float &b) { return a >= set1_ps(b); }
+BE_FORCE_INLINE neonf operator>=(const float &a, const neonf &b) { return set1_ps(a) >= b; }
 
-BE_FORCE_INLINE neonb operator<=(const neonf &a, const neonf &b) { return vcleq_f32(a.f32x4, b.f32x4); }
-BE_FORCE_INLINE neonb operator<=(const neonf &a, const float &b) { return a <= set1_ps(b); }
-BE_FORCE_INLINE neonb operator<=(const float &a, const neonf &b) { return set1_ps(a) <= b; }
+BE_FORCE_INLINE neonf operator<=(const neonf &a, const neonf &b) { return vcleq_f32(a.f32x4, b.f32x4); }
+BE_FORCE_INLINE neonf operator<=(const neonf &a, const float &b) { return a <= set1_ps(b); }
+BE_FORCE_INLINE neonf operator<=(const float &a, const neonf &b) { return set1_ps(a) <= b; }
 
 BE_FORCE_INLINE neonf &operator+=(neonf &a, const neonf &b) { return a = a + b; }
 BE_FORCE_INLINE neonf &operator+=(neonf &a, const float &b) { return a = a + b; }
@@ -180,6 +186,15 @@ BE_FORCE_INLINE neonf &operator*=(neonf &a, const float &b) { return a = a * b; 
 
 BE_FORCE_INLINE neonf &operator/=(neonf &a, const neonf &b) { return a = a / b; }
 BE_FORCE_INLINE neonf &operator/=(neonf &a, const float &b) { return a = a / b; }
+
+BE_FORCE_INLINE neonf &operator&=(neonf &a, const neonf &b) { return a = a & b; }
+BE_FORCE_INLINE neonf &operator&=(neonf &a, const neoni &b) { return a = a & b; }
+
+BE_FORCE_INLINE neonf &operator|=(neonf &a, const neonf &b) { return a = a | b; }
+BE_FORCE_INLINE neonf &operator|=(neonf &a, const neoni &b) { return a = a | b; }
+
+BE_FORCE_INLINE neonf &operator^=(neonf &a, const neonf &b) { return a = a ^ b; }
+BE_FORCE_INLINE neonf &operator^=(neonf &a, const neoni &b) { return a = a ^ b; }
 
 // dst = a * b + c
 BE_FORCE_INLINE neonf madd_ps(const neonf &a, const neonf &b, const neonf &c) { return vmlaq_f32(c.f32x4, a.f32x4, b.f32x4); }
@@ -204,13 +219,13 @@ BE_FORCE_INLINE neonf round_ps(const neonf &a) { return neonf(roundf(a[0]), roun
 
 BE_FORCE_INLINE neonf frac_ps(const neonf &a) { return a - floor_ps(a); }
 
-// Unpack to [a0, a1, b0, b1].
+// Unpack to (a0, b0, a1, b1).
 BE_FORCE_INLINE neonf unpacklo_ps(const neonf &a, const neonf &b) { return _mm_unpacklo_ps(a.f32x4, b.f32x4); }
 
-// Unpack to [a2, a3, b2, b3].
+// Unpack to (a2, b2, a3, b3).
 BE_FORCE_INLINE neonf unpackhi_ps(const neonf &a, const neonf &b) { return _mm_unpackhi_ps(a.f32x4, b.f32x4); }
 
-// Shuffles 4x32 bits floats using template parameters. x(0), y(1), z(2), w(3).
+// Shuffles 4x32 bits floats using template parameters. ix = [0, 3].
 template <size_t i0, size_t i1, size_t i2, size_t i3>
 BE_FORCE_INLINE neonf shuffle_ps(const neonf &a) { return _mm_perm_ps(a, _MM_SHUFFLE(i3, i2, i1, i0)); }
 
@@ -223,7 +238,7 @@ BE_FORCE_INLINE neonf shuffle_ps<2, 2, 2, 2>(const neonf &a) { return vdupq_lane
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<3, 3, 3, 3>(const neonf &a) { return vdupq_lane_f32(vget_high_f32(a), 1); }
 
-// Shuffles two 4x32 bits floats using template parameters. x(0), y(1), z(2), w(3).
+// Shuffles two 4x32 bits floats using template parameters. ax, bx = [0, 3].
 template <size_t a0, size_t a1, size_t b0, size_t b1>
 BE_FORCE_INLINE neonf shuffle_ps(const neonf &a, const neonf &b) { return _mm_shuffle_ps(a, b, _MM_SHUFFLE(b1, b0, a1, a0)); }
 
@@ -244,36 +259,18 @@ BE_FORCE_INLINE float z_ps(const neonf &a) { return extract_ps<2>(a); }
 // Given a 4-channel single-precision neonf variable, returns the first channel 'w' as a float.
 BE_FORCE_INLINE float w_ps(const neonf &a) { return extract_ps<3>(a); }
 
-#ifdef __SSE4_1__
-// Insert [32*src, 32*src+32] bits of b to a in [32*dst, 32*dst+32] bits with clear mask.
-template <int dst, int src, int clearmask>
-BE_FORCE_INLINE neonf insert_ps(const neonf &a, const neonf &b) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clearmask); }
-
-// Insert [32*src, 32*src+32] bits of b to a in [32*dst, 32*dst+32] bits.
-template <int dst, int src>
-BE_FORCE_INLINE neonf insert_ps(const neonf &a, const neonf &b) { return insert<dst, src, 0>(a, b); }
-
-// Insert b to a in [32*dst, 32*dst+32] bits.
-template <int dst>
-BE_FORCE_INLINE neonf insert_ps(const neonf &a, const float b) { return insert<dst, 0>(a, _mm_set_ss(b)); }
-#else
-// Insert [32*src, 32*src+32] bits of b to a in [32*dst, 32*dst+32] bits.
-template <int dst, int src>
+// Insert [32*src, 32*src+31] bits of b to a in [32*dst, 32*dst+31] bits.
+template <int src, int dst>
 BE_FORCE_INLINE neonf insert_ps(const neonf &a, const neonf &b) { neonf c = a; c[dst & 3] = b[src & 3]; return c; }
 
-// Insert b to a in [32*dst, 32*dst+32] bits.
+// Insert b to a in [32*dst, 32*dst+31] bits.
 template <int dst>
 BE_FORCE_INLINE neonf insert_ps(const neonf &a, float b) { neonf c = a; c[dst & 3] = b; return c; }
-#endif
 
 // Select 4x32 bits floats using mask.
 BE_FORCE_INLINE neonf select_ps(const neonf &a, const neonf &b, const neonb &mask) {
-#if defined(__SSE4_1__)
-    return _mm_blendv_ps(a, b, mask);
-#else
     // dst = (a & !mask) | (b & mask)
     return _mm_or_ps(_mm_andnot_ps(_mm_castsi128_ps(mask), a), _mm_and_ps(_mm_castsi128_ps(mask), b));
-#endif
 }
 
 BE_FORCE_INLINE neonf min_ps(const neonf &a, const neonf &b) { return vminq_f32(a.f32x4, b.f32x4); }
@@ -306,13 +303,13 @@ BE_FORCE_INLINE size_t select_min_ps(const neonf &v) { return __bsf(_mm_movemask
 BE_FORCE_INLINE size_t select_max_ps(const neonf &v) { return __bsf(_mm_movemask_ps(v == vreduce_max_ps(v))); }
 
 // Return index of minimum component with valid index mask.
-BE_FORCE_INLINE size_t select_min_ps(const neonb &validmask, const neonf &v) {
+BE_FORCE_INLINE size_t select_min_ps(const neonf &v, const neonb &validmask) {
     const neonf a = select_ps(set1_ps(FLT_INFINITY), v, validmask);
     return __bsf(_mm_movemask_ps(validmask & (a == vreduce_min_ps(a))));
 }
 
 // Return index of maximum component with valid index mask.
-BE_FORCE_INLINE size_t select_max_ps(const neonb &validmask, const neonf &v) {
+BE_FORCE_INLINE size_t select_max_ps(const neonf &v, const neonb &validmask) {
     const neonf a = select_ps(set1_ps(-FLT_INFINITY), v, validmask);
     return __bsf(_mm_movemask_ps(validmask & (a == vreduce_max_ps(a))));
 }
@@ -323,29 +320,7 @@ BE_FORCE_INLINE neonf sum_ps(const neonf &a) {
     return _mm_hadd_ps(hadd, hadd); // (x + y + z + w, x + y + z + w, x + y + z + w, x + y + z + w)
 }
 
-// Dot product.
-BE_FORCE_INLINE float dot4_ps(const neonf &a, const neonf &b) {
-    neonf mul = a * b;
-    return x_ps(sum_ps(mul));
-}
-
-// Cross product.
-BE_FORCE_INLINE neonf cross_ps(const neonf &a, const neonf &b) {
-    neonf a_yzxw = shuffle_ps<1, 2, 0, 3>(a); // (a.y, a.z, a.x, a.w)
-    neonf b_yzxw = shuffle_ps<1, 2, 0, 3>(b); // (b.y, b.z, b.x, b.w)
-    neonf ab_yzxw = a_yzxw * b; // (a.y * b.x, a.z * b.y, a.x * b.z, a.w * b.w)
-
-    return shuffle_ps<1, 2, 0, 3>(msub_ps(b_yzxw, a, ab_yzxw)); // (a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x, 0)
-}
-
-// Transpose 4x4 matrix.
-BE_FORCE_INLINE void mat4x4_transpose(const neonf &r0, const neonf &r1, const neonf &r2, const neonf &r3, neonf &c0, neonf &c1, neonf &c2, neonf &c3) {
-    neonf l02 = unpacklo_ps(r0, r2); // m00, m20, m01, m21
-    neonf h02 = unpackhi_ps(r0, r2); // m02, m22, m03, m23
-    neonf l13 = unpacklo_ps(r1, r3); // m10, m30, m11, m31
-    neonf h13 = unpackhi_ps(r1, r3); // m12, m32, m13, m33
-    c0 = unpacklo_ps(l02, l13); // m00, m10, m20, m30
-    c1 = unpackhi_ps(l02, l13); // m01, m11, m21, m31
-    c2 = unpacklo_ps(h02, h13); // m02, m12, m22, m32
-    c3 = unpackhi_ps(h02, h13); // m03, m13, m23, m33
+// Broadcast dot4 product.
+BE_FORCE_INLINE neonf dot4_ps(const neonf &a, const neonf &b) {
+    return sum_ps(a * b);
 }

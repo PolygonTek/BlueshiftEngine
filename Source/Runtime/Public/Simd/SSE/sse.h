@@ -69,6 +69,9 @@ const __m128d mm_lookupmask_pd[4] = {
 // Negates 4x32 bits floats.
 #define _mm_neg_ps(a)               _mm_xor_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x80000000))) // _mm_sub_ps(_mm_setzero_ps(), (a))
 
+// Inverts 128 bits.
+#define _mm_inv_si128(a)            _mm_xor_si128(a, _mm_set1_epi32(0xFFFFFFFF))
+
 // dst = a * b + c
 #ifdef __FMA__
     #define _mm_madd_ps(a, b, c)    _mm_fmadd_ps(a, b, c)
@@ -128,6 +131,7 @@ struct ssef {
 
     BE_FORCE_INLINE ssef() = default;
     BE_FORCE_INLINE ssef(const __m128 a) { m128 = a; }
+    BE_FORCE_INLINE ssef(const __m128i a) { m128i = a; }
     BE_FORCE_INLINE ssef(float a, float b, float c, float d) { m128 = _mm_set_ps(d, c, b, a); }
 
     BE_FORCE_INLINE ssef(const ssef &other) { m128 = other.m128; }
@@ -155,6 +159,7 @@ struct ssei {
     };
 
     BE_FORCE_INLINE ssei() = default;
+    BE_FORCE_INLINE ssei(const __m128 a) { m128 = a; }
     BE_FORCE_INLINE ssei(const __m128i a) { m128i = a; }
     BE_FORCE_INLINE ssei(int32_t a, int32_t b, int32_t c, int32_t d) { m128i = _mm_set_epi32(d, c, b, a); }
 

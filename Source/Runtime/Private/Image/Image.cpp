@@ -392,10 +392,10 @@ Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode::
     simd4f x2 = set1_ps(fracX);
     simd4f y2 = set1_ps(fracY);
 
-    simd4f a0x = (a00 * x1) + (a01 * x2);
-    simd4f a1x = (a10 * x1) + (a11 * x2);
+    simd4f a0x = a00 * x1 + a01 * x2;
+    simd4f a1x = a10 * x1 + a11 * x2;
 
-    store_ps((a0x * y1) + (a1x * y2), (float *)outputColor);
+    store_ps(a0x * y1 + a1x * y2, (float *)outputColor);
 #else
     for (int i = 0; i < 4; i++) {
         float a = Math::Lerp(rgba32f[0][i], rgba32f[1][i], fracX);

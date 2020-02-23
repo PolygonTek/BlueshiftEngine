@@ -51,24 +51,24 @@
     #define _mm256_nmsub_ps(a, b, c)    _mm256_sub_ps(_mm256_neg_ps(_mm256_mul_ps(a, b)), c)
 #endif
 
-#define BEGIN_ITERATE_AVXB(valid_i, id_o) { \
-  int _valid_t = movemask(valid_i); \
-  while (_valid_t) { \
-    int id_o = __bsf(_valid_t); \
-    _valid_t = __btc(_valid_t, id_o);
-#define END_ITERATE_AVXB } }
-
 // 8 wide AVX float type.
 struct avxf {
     union {
         __m256 m256;
         __m256i m256i;
+        union {
+            struct { __m128 l128; __m128 h128; };
+            struct { __m128i l128i; __m128i h128i; };
+        };
         float f32[8];
         int32_t i32[8];
     };
 
     BE_FORCE_INLINE avxf() = default;
     BE_FORCE_INLINE avxf(const __m256 a) { m256 = a; }
+    BE_FORCE_INLINE avxf(const __m256i a) { m256i = a; }
+    BE_FORCE_INLINE avxf(const __m128 &a, const __m128 &b) { l128 = a; h128 = b; }
+    BE_FORCE_INLINE avxf(const __m128i &a, const __m128i &b) { l128i = a; h128i = b; }
     BE_FORCE_INLINE avxf(float a, float b, float c, float d, float e, float f, float g, float h) { m256 = _mm256_set_ps(h, g, f, e, d, c, b, a); }
 
     BE_FORCE_INLINE avxf(const avxf &other) { m256 = other.m256; }

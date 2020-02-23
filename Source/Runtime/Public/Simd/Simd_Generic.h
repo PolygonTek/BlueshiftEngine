@@ -33,8 +33,10 @@ public:
 
     virtual float BE_FASTCALL           Sum(const float *src, const int count);
 
-    virtual void BE_FASTCALL            MatrixTranspose(float *dst, const float *src);
-    virtual void BE_FASTCALL            MatrixMultiply(float *dst, const float *src0, const float *src1);
+    virtual void BE_FASTCALL            Matrix4x4Transpose(float *dst, const float *src);
+
+    virtual void BE_FASTCALL            Matrix3x4Multiply(float *dst, const float *src0, const float *src1);
+    virtual void BE_FASTCALL            Matrix4x4Multiply(float *dst, const float *src0, const float *src1);
 
     virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const int count);
     virtual void BE_FASTCALL            Memset(void *dst, const int val, const int count);
@@ -49,7 +51,6 @@ public:
     virtual void BE_FASTCALL            UntransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint);
     virtual void BE_FASTCALL            MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, const Mat3x4 *joints2, const int numJoints);
     virtual void BE_FASTCALL            TransformVerts(VertexGenericLit *verts, const int numVerts, const Mat3x4 *joints, const Vec4 *weights, const int *index, const int numWeights);
-    virtual void BE_FASTCALL            DeriveTriPlanes(Plane *planes, const VertexGenericLit *verts, const int numVerts, const int *indexes, const int numIndexes);
 };
 
 BE_NAMESPACE_END

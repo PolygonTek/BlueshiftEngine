@@ -380,7 +380,7 @@ static void TestMemset() {
     BE1::Mem_AlignedFree(buffer);
 }
 
-static void TestMatrixMultiply() {
+static void TestMatrix4x4Multiply() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
     ALIGN_AS32 float matrixA[16 * 1024];
@@ -401,7 +401,7 @@ static void TestMatrixMultiply() {
 
         uint64_t startClocks = rdtsc();
         for (int j = 0; j < 1024; j++) {
-            BE1::simdGeneric->MatrixMultiply(matrixCPtr, matrixAPtr, matrixBPtr);
+            BE1::simdGeneric->Matrix4x4Multiply(matrixCPtr, matrixAPtr, matrixBPtr);
             matrixAPtr += 16;
             matrixBPtr += 16;
             matrixCPtr += 16;
@@ -410,7 +410,7 @@ static void TestMatrixMultiply() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric("MatrixMultiply", bestClocksGeneric);
+    PrintClocksGeneric("Matrix4x4Multiply", bestClocksGeneric);
     //BE_LOG("  Result: %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n",
     //  matrixC[0], matrixC[1], matrixC[2], matrixC[3], matrixC[4], matrixC[5], matrixC[6], matrixC[7], matrixC[8], matrixC[9], matrixC[10], matrixC[11], matrixC[12], matrixC[13], matrixC[14], matrixC[15]);
 
@@ -425,7 +425,7 @@ static void TestMatrixMultiply() {
 
         uint64_t startClocks = rdtsc();
         for (int j = 0; j < 1024; j++) {
-            BE1::simdProcessor->MatrixMultiply(matrixCPtr, matrixAPtr, matrixBPtr);
+            BE1::simdProcessor->Matrix4x4Multiply(matrixCPtr, matrixAPtr, matrixBPtr);
             matrixAPtr += 16;
             matrixBPtr += 16;
             matrixCPtr += 16;
@@ -434,12 +434,12 @@ static void TestMatrixMultiply() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD("MatrixMultiply", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD("Matrix4x4Multiply", bestClocksGeneric, bestClocksSIMD);
     //BE_LOG("  Result: %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n",
     //  matrixC[0], matrixC[1], matrixC[2], matrixC[3], matrixC[4], matrixC[5], matrixC[6], matrixC[7], matrixC[8], matrixC[9], matrixC[10], matrixC[11], matrixC[12], matrixC[13], matrixC[14], matrixC[15]);	
 }
 
-static void TestMatrixTranspose() {
+static void TestMatrix4x4Transpose() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
     ALIGN_AS32 float matrixA[16 * 1024];
@@ -456,7 +456,7 @@ static void TestMatrixTranspose() {
 
         uint64_t startClocks = rdtsc();
         for (int j = 0; j < 1024; j++) {
-            BE1::simdGeneric->MatrixTranspose(matrixBPtr, matrixAPtr);
+            BE1::simdGeneric->Matrix4x4Transpose(matrixBPtr, matrixAPtr);
             matrixAPtr += 16;
             matrixBPtr += 16;
         }
@@ -464,7 +464,7 @@ static void TestMatrixTranspose() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric("MatrixTranspose", bestClocksGeneric);
+    PrintClocksGeneric("Matrix4x4Transpose", bestClocksGeneric);
 
     RandomFloatArrayInit(matrixA, COUNT_OF(matrixA), -100.0f, 100.0f);
 
@@ -475,7 +475,7 @@ static void TestMatrixTranspose() {
 
         uint64_t startClocks = rdtsc();
         for (int j = 0; j < 1024; j++) {
-            BE1::simdProcessor->MatrixTranspose(matrixBPtr, matrixAPtr);
+            BE1::simdProcessor->Matrix4x4Transpose(matrixBPtr, matrixAPtr);
             matrixAPtr += 16;
             matrixBPtr += 16;
         }
@@ -483,7 +483,7 @@ static void TestMatrixTranspose() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD("MatrixTranspose", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD("Matrix4x4Transpose", bestClocksGeneric, bestClocksSIMD);
 }
 
 void TestSIMD() {
@@ -496,6 +496,6 @@ void TestSIMD() {
     TestSum();
     TestMemcpy();
     TestMemset();
-    TestMatrixMultiply();
-    TestMatrixTranspose();
+    TestMatrix4x4Multiply();
+    TestMatrix4x4Transpose();
 }

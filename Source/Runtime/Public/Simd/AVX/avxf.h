@@ -40,6 +40,14 @@ BE_FORCE_INLINE avxf loadu_256ps(const float *a) {
     return _mm256_loadu_ps(a);
 }
 
+BE_FORCE_INLINE avxf broadcast_256ss(const float *a) {
+    return _mm256_broadcast_ss(a);
+}
+
+BE_FORCE_INLINE avxf broadcast_256ps(const ssef *a) {
+    return _mm256_broadcast_ps(&a->m128);
+}
+
 BE_FORCE_INLINE void store_256ps(const avxf &a, float *dst) {
     _mm256_store_ps(dst, a);
 }
@@ -57,32 +65,32 @@ BE_FORCE_INLINE avxf epi32_to_256ps(const __m256i a) {
 }
 
 BE_FORCE_INLINE avxf abs_256ps(const avxf &a) {
-    return _mm256_and_ps(a.m256, _mm256_castsi256_ps(_mm256_set1_epi32(0x7fffffff)));
+    return _mm256_and_ps(a, _mm256_castsi256_ps(_mm256_set1_epi32(0x7fffffff)));
 }
 
 BE_FORCE_INLINE avxf sqr_256ps(const avxf &a) {
-    return _mm256_mul_ps(a.m256, a.m256);
+    return _mm256_mul_ps(a, a);
 }
 
 BE_FORCE_INLINE avxf sqrt_256ps(const avxf &a) {
-    return _mm256_sqrt_ps(a.m256);
+    return _mm256_sqrt_ps(a);
 }
 
 // Returns reciprocal with 12 bits of precision.
 BE_FORCE_INLINE avxf rcp12_256ps(const avxf &a) { 
-    return _mm256_rcp_ps(a.m256); 
+    return _mm256_rcp_ps(a); 
 }
 
 // Returns reciprocal with at least 16 bits precision.
 BE_FORCE_INLINE avxf rcp16_256ps(const avxf &a) {
-    avxf r = _mm256_rcp_ps(a.m256);
+    avxf r = _mm256_rcp_ps(a);
     // Newton-Raphson approximation to improve precision.
     return _mm256_mul_ps(r, _mm256_sub_ps(_mm256_set1_ps(2.0f), _mm256_mul_ps(a, r)));
 }
 
 // Returns reciprocal with close to full precision.
 BE_FORCE_INLINE avxf rcp32_256ps(const avxf &a) {
-    avxf r = _mm256_rcp_ps(a.m256);
+    avxf r = _mm256_rcp_ps(a);
     // Newton-Raphson approximation to improve precision.
     r = _mm256_mul_ps(r, _mm256_sub_ps(_mm256_set1_ps(2.0f), _mm256_mul_ps(a, r)));
     return _mm256_mul_ps(r, _mm256_sub_ps(_mm256_set1_ps(2.0f), _mm256_mul_ps(a, r)));
@@ -90,34 +98,34 @@ BE_FORCE_INLINE avxf rcp32_256ps(const avxf &a) {
 
 // Divides with at least 12 bits precision.
 BE_FORCE_INLINE avxf div12_256ps(const avxf &a, const avxf &b) {
-    return _mm256_mul_ps(a.m256, rcp12_256ps(b.m256));
+    return _mm256_mul_ps(a, rcp12_256ps(b));
 }
 
 // Divides with at least 16 bits precision.
 BE_FORCE_INLINE avxf div16_256ps(const avxf &a, const avxf &b) {
-    return _mm256_mul_ps(a.m256, rcp16_256ps(b.m256));
+    return _mm256_mul_ps(a, rcp16_256ps(b));
 }
 
 // Divides with close to full precision.
 BE_FORCE_INLINE avxf div32_256ps(const avxf &a, const avxf &b) {
-    return _mm256_mul_ps(a.m256, rcp32_256ps(b.m256));
+    return _mm256_mul_ps(a, rcp32_256ps(b));
 }
 
 // Returns reciprocal square root with 12 bits of precision.
 BE_FORCE_INLINE avxf rsqrt12_256ps(const avxf &a) { 
-    return _mm256_rsqrt_ps(a.m256); 
+    return _mm256_rsqrt_ps(a); 
 }
 
 // Returns reciprocal square root with at least 16 bits precision.
 BE_FORCE_INLINE avxf rsqrt16_256ps(const avxf &a) {
-    avxf r = _mm256_rsqrt_ps(a.m256);
+    avxf r = _mm256_rsqrt_ps(a);
     // Newton-Raphson approximation to improve precision.
     return _mm256_add_ps(_mm256_mul_ps(_mm256_set1_ps(1.5f), r), _mm256_mul_ps(_mm256_mul_ps(_mm256_mul_ps(a, _mm256_set1_ps(-0.5f)), r), _mm256_mul_ps(r, r)));
 }
 
 // Returns reciprocal square root with close to full precision.
 BE_FORCE_INLINE avxf rsqrt32_256ps(const avxf &a) {
-    avxf r = _mm256_rsqrt_ps(a.m256);
+    avxf r = _mm256_rsqrt_ps(a);
     // Newton-Raphson approximation to improve precision.
     r = _mm256_add_ps(_mm256_mul_ps(_mm256_set1_ps(1.5f), r), _mm256_mul_ps(_mm256_mul_ps(_mm256_mul_ps(a, _mm256_set1_ps(-0.5f)), r), _mm256_mul_ps(r, r)));
     return _mm256_add_ps(_mm256_mul_ps(_mm256_set1_ps(1.5f), r), _mm256_mul_ps(_mm256_mul_ps(_mm256_mul_ps(a, _mm256_set1_ps(-0.5f)), r), _mm256_mul_ps(r, r)));
@@ -126,15 +134,15 @@ BE_FORCE_INLINE avxf rsqrt32_256ps(const avxf &a) {
 BE_FORCE_INLINE avxf operator+(const avxf &a) { return a; }
 BE_FORCE_INLINE avxf operator-(const avxf &a) { return _mm256_neg_ps(a.m256); }
 
-BE_FORCE_INLINE avxf operator+(const avxf &a, const avxf &b) { return _mm256_add_ps(a.m256, b.m256); }
+BE_FORCE_INLINE avxf operator+(const avxf &a, const avxf &b) { return _mm256_add_ps(a, b); }
 BE_FORCE_INLINE avxf operator+(const avxf &a, const float &b) { return a + set1_256ps(b); }
 BE_FORCE_INLINE avxf operator+(const float &a, const avxf &b) { return set1_256ps(a) + b; }
 
-BE_FORCE_INLINE avxf operator-(const avxf &a, const avxf &b) { return _mm256_sub_ps(a.m256, b.m256); }
+BE_FORCE_INLINE avxf operator-(const avxf &a, const avxf &b) { return _mm256_sub_ps(a, b); }
 BE_FORCE_INLINE avxf operator-(const avxf &a, const float &b) { return a - set1_256ps(b); }
 BE_FORCE_INLINE avxf operator-(const float &a, const avxf &b) { return set1_256ps(a) - b; }
 
-BE_FORCE_INLINE avxf operator*(const avxf &a, const avxf &b) { return _mm256_mul_ps(a.m256, b.m256); }
+BE_FORCE_INLINE avxf operator*(const avxf &a, const avxf &b) { return _mm256_mul_ps(a, b); }
 BE_FORCE_INLINE avxf operator*(const avxf &a, const float &b) { return a * set1_256ps(b); }
 BE_FORCE_INLINE avxf operator*(const float &a, const avxf &b) { return set1_256ps(a) * b; }
 
@@ -142,32 +150,38 @@ BE_FORCE_INLINE avxf operator/(const avxf &a, const avxf &b) { return a * rcp32_
 BE_FORCE_INLINE avxf operator/(const avxf &a, const float &b) { return a * rcp32_256ps(set1_256ps(b)); }
 BE_FORCE_INLINE avxf operator/(const float &a, const avxf &b) { return a * rcp32_256ps(b); }
 
-BE_FORCE_INLINE avxf operator^(const avxf &a, const avxf &b) { return _mm256_xor_ps(a.m256, b.m256); }
-BE_FORCE_INLINE avxf operator^(const avxf &a, const avxi &b) { return _mm256_xor_ps(a.m256, _mm256_castsi256_ps(b.m256i)); }
+BE_FORCE_INLINE avxf operator&(const avxf &a, const avxf &b) { return _mm256_and_ps(a, b); }
+BE_FORCE_INLINE avxf operator&(const avxf &a, const avxi &b) { return _mm256_and_ps(a, _mm256_castsi256_ps(b)); }
 
-BE_FORCE_INLINE avxb operator==(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a.m256, b.m256, _CMP_EQ_UQ); }
-BE_FORCE_INLINE avxb operator==(const avxf &a, const float &b) { return a == set1_256ps(b); }
-BE_FORCE_INLINE avxb operator==(const float &a, const avxf &b) { return set1_256ps(a) == b; }
+BE_FORCE_INLINE avxf operator|(const avxf &a, const avxf &b) { return _mm256_or_ps(a, b); }
+BE_FORCE_INLINE avxf operator|(const avxf &a, const avxi &b) { return _mm256_or_ps(a, _mm256_castsi256_ps(b)); }
 
-BE_FORCE_INLINE avxb operator!=(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a.m256, b.m256, _CMP_NEQ_UQ); }
-BE_FORCE_INLINE avxb operator!=(const avxf &a, const float &b) { return a != set1_256ps(b); }
-BE_FORCE_INLINE avxb operator!=(const float &a, const avxf &b) { return set1_256ps(a) != b; }
+BE_FORCE_INLINE avxf operator^(const avxf &a, const avxf &b) { return _mm256_xor_ps(a, b); }
+BE_FORCE_INLINE avxf operator^(const avxf &a, const avxi &b) { return _mm256_xor_ps(a, _mm256_castsi256_ps(b)); }
 
-BE_FORCE_INLINE avxb operator<(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a.m256, b.m256, _CMP_NGE_UQ); }
-BE_FORCE_INLINE avxb operator<(const avxf &a, const float &b) { return a < set1_256ps(b); }
-BE_FORCE_INLINE avxb operator<(const float &a, const avxf &b) { return set1_256ps(a) < b; }
+BE_FORCE_INLINE avxf operator==(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a, b, _CMP_EQ_UQ); }
+BE_FORCE_INLINE avxf operator==(const avxf &a, const float &b) { return a == set1_256ps(b); }
+BE_FORCE_INLINE avxf operator==(const float &a, const avxf &b) { return set1_256ps(a) == b; }
 
-BE_FORCE_INLINE avxb operator>=(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a.m256, b.m256, _CMP_NLT_UQ); }
-BE_FORCE_INLINE avxb operator>=(const avxf &a, const float &b) { return a >= set1_256ps(b); }
-BE_FORCE_INLINE avxb operator>=(const float &a, const avxf &b) { return set1_256ps(a) >= b; }
+BE_FORCE_INLINE avxf operator!=(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a, b, _CMP_NEQ_UQ); }
+BE_FORCE_INLINE avxf operator!=(const avxf &a, const float &b) { return a != set1_256ps(b); }
+BE_FORCE_INLINE avxf operator!=(const float &a, const avxf &b) { return set1_256ps(a) != b; }
 
-BE_FORCE_INLINE avxb operator>(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a.m256, b.m256, _CMP_NLE_UQ); }
-BE_FORCE_INLINE avxb operator>(const avxf &a, const float &b) { return a > set1_256ps(b); }
-BE_FORCE_INLINE avxb operator>(const float &a, const avxf &b) { return set1_256ps(a) > b; }
+BE_FORCE_INLINE avxf operator<(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a, b, _CMP_NGE_UQ); }
+BE_FORCE_INLINE avxf operator<(const avxf &a, const float &b) { return a < set1_256ps(b); }
+BE_FORCE_INLINE avxf operator<(const float &a, const avxf &b) { return set1_256ps(a) < b; }
 
-BE_FORCE_INLINE avxb operator<=(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a.m256, b.m256, _CMP_NGT_UQ); }
-BE_FORCE_INLINE avxb operator<=(const avxf &a, const float &b) { return a <= set1_256ps(b); }
-BE_FORCE_INLINE avxb operator<=(const float &a, const avxf &b) { return set1_256ps(a) <= b; }
+BE_FORCE_INLINE avxf operator>(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a, b, _CMP_NLE_UQ); }
+BE_FORCE_INLINE avxf operator>(const avxf &a, const float &b) { return a > set1_256ps(b); }
+BE_FORCE_INLINE avxf operator>(const float &a, const avxf &b) { return set1_256ps(a) > b; }
+
+BE_FORCE_INLINE avxf operator>=(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a, b, _CMP_NLT_UQ); }
+BE_FORCE_INLINE avxf operator>=(const avxf &a, const float &b) { return a >= set1_256ps(b); }
+BE_FORCE_INLINE avxf operator>=(const float &a, const avxf &b) { return set1_256ps(a) >= b; }
+
+BE_FORCE_INLINE avxf operator<=(const avxf &a, const avxf &b) { return _mm256_cmp_ps(a, b, _CMP_NGT_UQ); }
+BE_FORCE_INLINE avxf operator<=(const avxf &a, const float &b) { return a <= set1_256ps(b); }
+BE_FORCE_INLINE avxf operator<=(const float &a, const avxf &b) { return set1_256ps(a) <= b; }
 
 BE_FORCE_INLINE avxf &operator+=(avxf &a, const avxf &b) { return a = a + b; }
 BE_FORCE_INLINE avxf &operator+=(avxf &a, const float &b) { return a = a + b; }
@@ -180,6 +194,15 @@ BE_FORCE_INLINE avxf &operator*=(avxf &a, const float &b) { return a = a * b; }
 
 BE_FORCE_INLINE avxf &operator/=(avxf &a, const avxf &b) { return a = a / b; }
 BE_FORCE_INLINE avxf &operator/=(avxf &a, const float &b) { return a = a / b; }
+
+BE_FORCE_INLINE avxf &operator&=(avxf &a, const avxf &b) { return a = a & b; }
+BE_FORCE_INLINE avxf &operator&=(avxf &a, const avxi &b) { return a = a & b; }
+
+BE_FORCE_INLINE avxf &operator|=(avxf &a, const avxf &b) { return a = a | b; }
+BE_FORCE_INLINE avxf &operator|=(avxf &a, const avxi &b) { return a = a | b; }
+
+BE_FORCE_INLINE avxf &operator^=(avxf &a, const avxf &b) { return a = a ^ b; }
+BE_FORCE_INLINE avxf &operator^=(avxf &a, const avxi &b) { return a = a ^ b; }
 
 // dst = a * b + c
 BE_FORCE_INLINE avxf madd_256ps(const avxf &a, const avxf &b, const avxf &c) { return _mm256_madd_ps(a.m256, b.m256, c.m256); }
@@ -290,53 +313,17 @@ BE_FORCE_INLINE size_t select_max_256ps(const avxf &a) { return __bsf(_mm256_mov
 // Returns index of minimum component with valid index mask.
 BE_FORCE_INLINE size_t select_min_256ps(const avxf &v, const avxb &validmask) {
     const avxf a = select_256ps(set1_256ps(FLT_INFINITY), v, validmask);
-    return __bsf(_mm256_movemask_ps(validmask & (a == vreduce_min_256ps(a))));
+    return __bsf(_mm256_movemask_ps(_mm256_and_ps(validmask.m256, (a == vreduce_min_256ps(a)))));
 }
 
 // Returns index of maximum component with valid index mask.
 BE_FORCE_INLINE size_t select_max_256ps(const avxf &v, const avxb &validmask) {
     const avxf a = select_256ps(set1_256ps(-FLT_INFINITY), v, validmask);
-    return __bsf(_mm256_movemask_ps(validmask & (a == vreduce_max_256ps(a))));
+    return __bsf(_mm256_movemask_ps(_mm256_and_ps(validmask.m256, (a == vreduce_max_256ps(a)))));
 }
 
 // Broadcasts sums of all components for each 128 bits packed floats.
 BE_FORCE_INLINE avxf sum_256ps(const avxf &a) {
     __m256 hadd = _mm256_hadd_ps(a, a); // (x1 + y1, z1 + w1, x1 + y1, z1 + w1, x2 + y2, z2 + w2, x2 + y2, z2 + w2)
     return _mm256_hadd_ps(hadd, hadd); // (x1 + y1 + z1 + w1, x1 + y1 + z1 + w1, x2 + y2 + z2 + w2, x2 + y2 + z2 + w2)
-}
-
-// Transposes two 4x4 matrices.
-BE_FORCE_INLINE void mat4x4_transpose2(const avxf &r0, const avxf &r1, const avxf &r2, const avxf &r3, avxf &c0, avxf &c1, avxf &c2, avxf &c3) {
-    avxf l02 = unpacklo_256ps(r0, r2); // m00, m20, m01, m21, m04, m24, m05, m25
-    avxf h02 = unpackhi_256ps(r0, r2); // m02, m22, m03, m23, m06, m26, m07, m27
-    avxf l13 = unpacklo_256ps(r1, r3); // m10, m30, m11, m31, m14, m34, m15, m35
-    avxf h13 = unpackhi_256ps(r1, r3); // m12, m32, m13, m33, m16, m36, m17, m37
-    c0 = unpacklo_256ps(l02, l13); // m00, m10, m20, m30, m04, m14, m24, m34
-    c1 = unpackhi_256ps(l02, l13); // m01, m11, m21, m31, m05, m15, m25, m35
-    c2 = unpacklo_256ps(h02, h13); // m02, m12, m22, m32, m06, m16, m26, m36
-    c3 = unpackhi_256ps(h02, h13); // m03, m13, m23, m33, m07, m17, m27, m37
-}
-
-// Transposes 8x8 matrix.
-BE_FORCE_INLINE void mat8x8_transpose(const avxf &r0, const avxf &r1, const avxf &r2, const avxf &r3, const avxf &r4, const avxf &r5, const avxf &r6, const avxf &r7,
-    avxf &c0, avxf &c1, avxf &c2, avxf &c3, avxf &c4, avxf &c5, avxf &c6, avxf &c7) {
-    avxf h0, h1, h2, h3; 
-    mat4x4_transpose2(r0, r1, r2, r3, h0, h1, h2, h3);
-    avxf h4, h5, h6, h7; 
-    mat4x4_transpose2(r4, r5, r6, r7, h4, h5, h6, h7);
-    c0 = shuffle_256ps<0, 2>(h0, h4);
-    c1 = shuffle_256ps<0, 2>(h1, h5);
-    c2 = shuffle_256ps<0, 2>(h2, h6);
-    c3 = shuffle_256ps<0, 2>(h3, h7);
-    c4 = shuffle_256ps<1, 3>(h0, h4);
-    c5 = shuffle_256ps<1, 3>(h1, h5);
-    c6 = shuffle_256ps<1, 3>(h2, h6);
-    c7 = shuffle_256ps<1, 3>(h3, h7);
-    avxf l02 = unpacklo_256ps(r0, r2);
-    avxf h02 = unpackhi_256ps(r0, r2);
-    avxf l13 = unpacklo_256ps(r1, r3);
-    avxf h13 = unpackhi_256ps(r1, r3);
-    c0 = unpacklo_256ps(l02, l13);
-    c1 = unpackhi_256ps(l02, l13);
-    c2 = unpacklo_256ps(h02, h13);
 }

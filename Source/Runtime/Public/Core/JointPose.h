@@ -44,9 +44,9 @@ public:
 
     void                SetFromMat3x4(const Mat3x4 &mat);
 
-    Quat                q;  ///< Rotation in quaternion
-    Vec3                t;  ///< Translation vector
-    Vec3                s;  ///< Scaling vector for each axis
+    ALIGN_AS16 Quat     q;  ///< Rotation in quaternion
+    ALIGN_AS16 Vec3     t;  ///< Translation vector
+    ALIGN_AS16 Vec3     s;  ///< Scaling vector for each axis
 };
 
 BE_INLINE bool JointPose::Equals(const JointPose &jointPose, float epsilonQ, float epsilonT, float epsilonS) const {
