@@ -25,7 +25,7 @@ BE_FORCE_INLINE neonb set_b32(bool a, bool b, bool c, bool d) {
     return vld1q_u32(data);
 }
 
-BE_FORCE_INLINE neonb ps_to_b32(const ssef &a) {
+BE_FORCE_INLINE neonb ps_to_b32(const neonf &a) {
     return vcvtq_u32_f32(a);
 }
 
@@ -48,10 +48,10 @@ BE_FORCE_INLINE neonb select_b32(const neonb &a, const neonb &b, const neonb &ma
 }
 
 // Unpacks to (a0, b0, a1, b1).
-BE_FORCE_INLINE neonb unpacklo_b32(const neonb &a, const neonb &b) { return unpacklo_ps(a, b); }
+BE_FORCE_INLINE neonb unpacklo_b32(const neonb &a, const neonb &b) { return vunpackloq_f32(a, b); }
 
 // Unpacks to (a2, b2, a3, b3).
-BE_FORCE_INLINE neonb unpackhi_b32(const neonb &a, const neonb &b) { return unpackhi_ps(a, b); }
+BE_FORCE_INLINE neonb unpackhi_b32(const neonb &a, const neonb &b) { return vunpackhiq_f32(a, b); }
 
 BE_FORCE_INLINE size_t movemask_b32(const neonb &a) { return vmovemaskq_f32(a); }
 

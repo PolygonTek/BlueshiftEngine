@@ -151,7 +151,7 @@ BE_FORCE_INLINE neonf operator|(const neonf &a, const neoni &b) { return vreinte
 BE_FORCE_INLINE neonf operator^(const neonf &a, const neonf &b) { return vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(a), vreinterpretq_u32_f32(b))); }
 BE_FORCE_INLINE neonf operator^(const neonf &a, const neoni &b) { return vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(a), b)); }
 
-BE_FORCE_INLINE neonf operator==(const neonf &a, const neonf &b) { return vceqq_f32(a, b); }
+BE_FORCE_INLINE neonf operator==(const neonf &a, const neonf &b) { return vreinterpretq_f32_u32(vceqq_f32(a, b)); }
 BE_FORCE_INLINE neonf operator==(const neonf &a, const float &b) { return a == set1_ps(b); }
 BE_FORCE_INLINE neonf operator==(const float &a, const neonf &b) { return set1_ps(a) == b; }
 
@@ -199,34 +199,24 @@ BE_FORCE_INLINE neonf &operator^=(neonf &a, const neoni &b) { return a = a ^ b; 
 // dst = a * b + c
 BE_FORCE_INLINE neonf madd_ps(const neonf &a, const neonf &b, const neonf &c) { return vmlaq_f32(c, a, b); }
 // dst = a * b - c
-BE_FORCE_INLINE neonf msub_ps(const neonf &a, const neonf &b, const neonf &c) { return neg_ps(vmlsq_f32(c, a, b)); }
+BE_FORCE_INLINE neonf msub_ps(const neonf &a, const neonf &b, const neonf &c) { return vnegq_f32(vmlsq_f32(c, a, b)); }
 // dst = -(a * b) + c
 BE_FORCE_INLINE neonf nmadd_ps(const neonf &a, const neonf &b, const neonf &c) { return vmlsq_f32(c, a, b); }
 // dst = -(a * b) - c
-BE_FORCE_INLINE neonf nmsub_ps(const neonf &a, const neonf &b, const neonf &c) { return neg_ps(vmlaq_f32(c, a, b)); }
+BE_FORCE_INLINE neonf nmsub_ps(const neonf &a, const neonf &b, const neonf &c) { return vnegq_f32(vmlaq_f32(c, a, b)); }
 
-BE_FORCE_INLINE neonf floor_ps(const ssef &a) { return neonf(floorf(a[0]), floorf(a[1]), floorf(a[2]), floorf(a[3])); }
-BE_FORCE_INLINE neonf ceil_ps(const ssef &a) { return neonf(ceilf(a[0]), ceilf(a[1]), ceilf(a[2]), ceilf(a[3])); }
-BE_FORCE_INLINE neonf trunc_ps(const ssef &a) { return neonf(truncf(a[0]), truncf(a[1]), truncf(a[2]), truncf(a[3])); }
-BE_FORCE_INLINE neonf round_ps(const ssef &a) { return neonf(roundf(a[0]), roundf(a[1]), roundf(a[2]), roundf(a[3])); }
+BE_FORCE_INLINE neonf floor_ps(const neonf &a) { return neonf(floorf(a[0]), floorf(a[1]), floorf(a[2]), floorf(a[3])); }
+BE_FORCE_INLINE neonf ceil_ps(const neonf &a) { return neonf(ceilf(a[0]), ceilf(a[1]), ceilf(a[2]), ceilf(a[3])); }
+BE_FORCE_INLINE neonf trunc_ps(const neonf &a) { return neonf(truncf(a[0]), truncf(a[1]), truncf(a[2]), truncf(a[3])); }
+BE_FORCE_INLINE neonf round_ps(const neonf &a) { return neonf(roundf(a[0]), roundf(a[1]), roundf(a[2]), roundf(a[3])); }
 
 BE_FORCE_INLINE neonf frac_ps(const neonf &a) { return a - floor_ps(a); }
 
 // Unpack to (a0, b0, a1, b1).
-BE_FORCE_INLINE neonf unpacklo_ps(const neonf &a, const neonf &b) {
-    float32x2_t al = vget_low_f32(a);
-    float32x2_t bl = vget_low_f32(b);
-    float32x2x2_t result = vzip_f32(al, bl);
-    return vcombine_f32(result.val[0], result.val[1]);
-}
+BE_FORCE_INLINE neonf unpacklo_ps(const neonf &a, const neonf &b) { return vunpackloq_f32(a, b); }
 
 // Unpack to (a2, b2, a3, b3).
-BE_FORCE_INLINE neonf unpackhi_ps(const neonf &a, const neonf &b) {
-    float32x2_t ah = vget_high_f32(a);
-    float32x2_t bh = vget_high_f32(b);
-    float32x2x2_t result = vzip_f32(ah, bh);
-    return vcombine_f32(result.val[0], result.val[1]);
-}
+BE_FORCE_INLINE neonf unpackhi_ps(const neonf &a, const neonf &b) { return vunpackhiq_f32(a, b); }
 
 // Shuffles 4x32 bits floats using template parameters. ix = [0, 3].
 template <size_t i0, size_t i1, size_t i2, size_t i3>

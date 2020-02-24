@@ -139,7 +139,7 @@ BE_FORCE_INLINE float32x4_t vshuffleq_f32_2032(float32x4_t a, float32x4_t b) {
 }
 
 #if 0 /* C version */
-FORCE_INLINE float32x4_t vshuffleq_f32_default(float32x4_t a, float32x4_t b, __constrange(0, 255) int imm) {
+BE_FORCE_INLINE float32x4_t vshuffleq_f32_default(float32x4_t a, float32x4_t b, __constrange(0, 255) int imm) {
     float32x4_t ret;
     ret[0] = a[imm & 0x3];
     ret[1] = a[(imm >> 2) & 0x3];
@@ -238,7 +238,7 @@ FORCE_INLINE float32x4_t vshuffleq_f32_default(float32x4_t a, float32x4_t b, __c
 
 // Takes the upper 64 bits of a and places it in the low end of the result
 // Takes the lower 64 bits of a and places it into the high end of the result.
-FORCE_INLINE int32x4_t vshuffleq_s32_1032(int32x4_t a) {
+BE_FORCE_INLINE int32x4_t vshuffleq_s32_1032(int32x4_t a) {
     int32x2_t a32 = vget_high_s32(a);
     int32x2_t a10 = vget_low_s32(a);
     return vcombine_s32(a32, a10);
@@ -247,32 +247,32 @@ FORCE_INLINE int32x4_t vshuffleq_s32_1032(int32x4_t a) {
 // takes the lower two 32-bit values from a and swaps them and places in low end
 // of result takes the higher two 32 bit values from a and swaps them and places
 // in high end of result.
-FORCE_INLINE int32x4_t vshuffleq_s32_2301(int32x4_t a) {
+BE_FORCE_INLINE int32x4_t vshuffleq_s32_2301(int32x4_t a) {
     return vrev64q_s32(a);
 }
 
 // rotates the least significant 32 bits into the most signficant 32 bits, and
 // shifts the rest down
-FORCE_INLINE int32x4_t vshuffleq_s32_0321(int32x4_t a) {
+BE_FORCE_INLINE int32x4_t vshuffleq_s32_0321(int32x4_t a) {
     return vextq_s32(a, a, 1);
 }
 
 // rotates the most significant 32 bits into the least signficant 32 bits, and
 // shifts the rest up
-FORCE_INLINE int32x4_t vshuffleq_s32_2103(int32x4_t a) {
+BE_FORCE_INLINE int32x4_t vshuffleq_s32_2103(int32x4_t a) {
     return vextq_s32(a, a, 3);
 }
 
 // gets the lower 64 bits of a, and places it in the upper 64 bits
 // gets the lower 64 bits of a and places it in the lower 64 bits
-FORCE_INLINE int32x4_t vshuffleq_s32_1010(int32x4_t a) {
+BE_FORCE_INLINE int32x4_t vshuffleq_s32_1010(int32x4_t a) {
     int32x2_t a10 = vget_low_s32(a);
     return vcombine_s32(a10, a10);
 }
 
 // gets the lower 64 bits of a, swaps the 0 and 1 elements, and places it in the
 // lower 64 bits gets the lower 64 bits of a, and places it in the upper 64 bits
-FORCE_INLINE int32x4_t vshuffleq_s32_1001(int32x4_t a) {
+BE_FORCE_INLINE int32x4_t vshuffleq_s32_1001(int32x4_t a) {
     int32x2_t a01 = vrev64_s32(vget_low_s32(a));
     int32x2_t a10 = vget_low_s32(a);
     return vcombine_s32(a01, a10);
@@ -281,24 +281,24 @@ FORCE_INLINE int32x4_t vshuffleq_s32_1001(int32x4_t a) {
 // gets the lower 64 bits of a, swaps the 0 and 1 elements and places it in the
 // upper 64 bits gets the lower 64 bits of a, swaps the 0 and 1 elements, and
 // places it in the lower 64 bits
-FORCE_INLINE int32x4_t vshuffleq_s32_0101(int32x4_t a) {
+BE_FORCE_INLINE int32x4_t vshuffleq_s32_0101(int32x4_t a) {
     int32x2_t a01 = vrev64_s32(vget_low_s32(a));
     return vcombine_s32(a01, a01);
 }
 
-FORCE_INLINE int32x4_t vshuffleq_s32_2211(int32x4_t a) {
+BE_FORCE_INLINE int32x4_t vshuffleq_s32_2211(int32x4_t a) {
     int32x2_t a11 = vdup_lane_s32(vget_low_s32(a), 1);
     int32x2_t a22 = vdup_lane_s32(vget_high_s32(a), 0);
     return vcombine_s32(a11, a22);
 }
 
-FORCE_INLINE int32x4_t vshuffleq_s32_0122(int32x4_t a) {
+BE_FORCE_INLINE int32x4_t vshuffleq_s32_0122(int32x4_t a) {
     int32x2_t a22 = vdup_lane_s32(vget_high_s32(a), 0);
     int32x2_t a01 = vrev64_s32(vget_low_s32(a));
     return vcombine_s32(a22, a01);
 }
 
-FORCE_INLINE int32x4_t vshuffleq_s32_3332(int32x4_t a) {
+BE_FORCE_INLINE int32x4_t vshuffleq_s32_3332(int32x4_t a) {
     int32x2_t a32 = vget_high_s32(a);
     int32x2_t a33 = vdup_lane_s32(vget_high_s32(a), 1);
     return vcombine_s32(a32, a33);
@@ -307,7 +307,7 @@ FORCE_INLINE int32x4_t vshuffleq_s32_3332(int32x4_t a) {
 // Shuffle packed 8-bit integers in a according to shuffle control mask in the
 // corresponding 8-bit element of b, and store the results in dst.
 // https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_shuffle_epi8&expand=5146
-FORCE_INLINE int32x4_t vshuffleq_s8(int32x4_t a, int32x4_t b) {
+BE_FORCE_INLINE int32x4_t vshuffleq_s8(int32x4_t a, int32x4_t b) {
 #if __aarch64__
     int8x16_t tbl = vreinterpretq_s8_s32(a);   // input a
     uint8x16_t idx = vreinterpretq_u8_s32(b);  // input b
@@ -345,7 +345,7 @@ FORCE_INLINE int32x4_t vshuffleq_s8(int32x4_t a, int32x4_t b) {
 }
 
 #if 0 /* C version */
-FORCE_INLINE int32x4_t vshuffleq_s32_default(int32x4_t a, __constrange(0, 255) int imm) {
+BE_FORCE_INLINE int32x4_t vshuffleq_s32_default(int32x4_t a, __constrange(0, 255) int imm) {
     int32x4_t ret;
     ret[0] = a[imm & 0x3];
     ret[1] = a[(imm >> 2) & 0x3];
@@ -364,7 +364,7 @@ FORCE_INLINE int32x4_t vshuffleq_s32_default(int32x4_t a, __constrange(0, 255) i
         (ret);                                                                  \
     })
 
-// FORCE_INLINE int32x4_t vshuffleq_s32_splat(int32x4_t a, __constrange(0, 255) int imm)
+// BE_FORCE_INLINE int32x4_t vshuffleq_s32_splat(int32x4_t a, __constrange(0, 255) int imm)
 #if defined(__aarch64__)
 #define vshuffleq_s32_splat(a, imm)     vdupq_laneq_s32((a), (imm))
 #else
@@ -373,7 +373,7 @@ FORCE_INLINE int32x4_t vshuffleq_s32_default(int32x4_t a, __constrange(0, 255) i
 
 // Shuffles the 4 signed or unsigned 32-bit integers in a as specified by imm.
 // https://msdn.microsoft.com/en-us/library/56f67xbk%28v=vs.90%29.aspx
-// FORCE_INLINE int32x4_t vshuffleq_s32(int32x4_t a, __constrange(0,255) int imm)
+// BE_FORCE_INLINE int32x4_t vshuffleq_s32(int32x4_t a, __constrange(0,255) int imm)
 #define vshuffleq_s32(a, imm)                           \
     ({                                                  \
         int32x4_t ret;                                  \
@@ -427,10 +427,49 @@ FORCE_INLINE int32x4_t vshuffleq_s32_default(int32x4_t a, __constrange(0, 255) i
         ret;                                            \
     })
 
+float32x4_t vsqrtq_f32(float32x4_t s) {
+    float32x4_t x = vrsqrteq_f32(s);
+    // Code to handle sqrt(0).
+    // If the input to sqrtf() is zero, a zero will be returned.
+    // If the input to vrsqrteq_f32() is zero, positive infinity is returned.
+    const uint32x4_t vec_p_inf = vdupq_n_u32(0x7F800000);
+    // check for divide by zero
+    const uint32x4_t div_by_zero = vceqq_u32(vec_p_inf, vreinterpretq_u32_f32(x));
+    // zero out the positive infinity results
+    x = vreinterpretq_f32_u32(vandq_u32(vmvnq_u32(div_by_zero), vreinterpretq_u32_f32(x)));
+    // from arm documentation
+    // The Newton-Raphson iteration:
+    //     x[n+1] = x[n] * (3 - d * (x[n] * x[n])) / 2)
+    // converges to (1/sqrt(d)) if x0 is the result of VRSQRTE applied to d.
+    //
+    // Note: The precision did not improve after 2 iterations.
+    x = vmulq_f32(vrsqrtsq_f32(vmulq_f32(x, x), s), x);
+    x = vmulq_f32(vrsqrtsq_f32(vmulq_f32(x, x), s), x);
+
+    // sqrt(s) = s * 1/sqrt(s)
+    return vmulq_f32(s, x);
+}
+
+// Unpack to (a0, b0, a1, b1).
+BE_FORCE_INLINE float32x4_t vunpackloq_f32(const float32x4_t a, const float32x4_t b) {
+    float32x2_t al = vget_low_f32(a);
+    float32x2_t bl = vget_low_f32(b);
+    float32x2x2_t result = vzip_f32(al, bl);
+    return vcombine_f32(result.val[0], result.val[1]);
+}
+
+// Unpack to (a2, b2, a3, b3).
+BE_FORCE_INLINE float32x4_t vunpackhiq_f32(const float32x4_t a, const float32x4_t b) {
+    float32x2_t ah = vget_high_f32(a);
+    float32x2_t bh = vget_high_f32(b);
+    float32x2x2_t result = vzip_f32(ah, bh);
+    return vcombine_f32(result.val[0], result.val[1]);
+}
+
 // Creates a 4-bit mask from the most significant bits of the four
 // single-precision, floating-point values.
 // https://msdn.microsoft.com/en-us/library/vstudio/4490ys29(v=vs.100).aspx
-FORCE_INLINE int vmovemaskq_f32(float32x4_t a) {
+BE_FORCE_INLINE int vmovemaskq_f32(float32x4_t a) {
 #if 0 /* C version */
     uint32x4_t &ia = *(uint32x4_t *)&a;
     return (ia[0] >> 31) | ((ia[1] >> 30) & 2) | ((ia[2] >> 29) & 4) |
@@ -450,6 +489,7 @@ struct neonf {
     union {
         float32x4_t f32x4;
         int32x4_t   i32x4;
+        uint32x4_t  u32x4;
         float       f32[4];
         int32_t     i32[4];
     };
@@ -467,6 +507,9 @@ struct neonf {
 
     BE_FORCE_INLINE operator const int32x4_t &() const { return i32x4; };
     BE_FORCE_INLINE operator int32x4_t &() { return i32x4; };
+
+    BE_FORCE_INLINE operator const uint32x4_t &() const { return u32x4; };
+    BE_FORCE_INLINE operator uint32x4_t &() { return u32x4; };
 
     BE_FORCE_INLINE const float &operator[](size_t index) const { assert(index < 4); return f32[index]; }
     BE_FORCE_INLINE float &operator[](size_t index) { assert(index < 4); return f32[index]; }
@@ -497,6 +540,9 @@ struct neoni {
 
     BE_FORCE_INLINE operator const int32x4_t &() const { return i32x4; };
     BE_FORCE_INLINE operator int32x4_t &() { return i32x4; };
+
+    BE_FORCE_INLINE operator const uint32x4_t &() const { return u32x4; };
+    BE_FORCE_INLINE operator uint32x4_t &() { return u32x4; };
 
     BE_FORCE_INLINE const int32_t &operator[](size_t index) const { assert(index < 4); return i32[index]; }
     BE_FORCE_INLINE int32_t &operator[](size_t index) { assert(index < 4); return i32[index]; }
@@ -537,3 +583,7 @@ struct neonb {
 using simd4f = neonf;
 using simd4i = neoni;
 using simd4b = neonb;
+
+#include "neonb.h"
+#include "neonf.h"
+#include "neoni.h"

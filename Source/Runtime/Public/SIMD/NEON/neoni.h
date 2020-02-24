@@ -53,7 +53,7 @@ BE_FORCE_INLINE void storent_si128(const neoni &a, int32_t *dst) {
     vst1q_s32(dst, a);
 }
 
-BE_FORCE_INLINE neoni ps_to_epi32(const ssef &a) {
+BE_FORCE_INLINE neoni ps_to_epi32(const neonf &a) {
     return vcvtq_s32_f32(a);
 }
 
@@ -169,13 +169,13 @@ BE_FORCE_INLINE int extract_epi8(const neoni &a) { return vgetq_lane_s8(a, src);
 
 template <size_t dst>
 BE_FORCE_INLINE const neoni insert_epi32(const neoni &a, const int32_t b) {
-    ssei c = a;
+    neoni c = a;
     c[dst & 3] = b;
     return c;
 }
 
 // Selects 4x32 bits integer using mask.
-BE_FORCE_INLINE neoni select_epi32(const neoni &a, const neoni &b, const sseb &mask) {
+BE_FORCE_INLINE neoni select_epi32(const neoni &a, const neoni &b, const neonb &mask) {
     return vbslq_s32(mask, a, b);
 }
 
@@ -210,13 +210,13 @@ BE_FORCE_INLINE size_t select_min_epi32(const neoni &a) { return __bsf(vmovemask
 BE_FORCE_INLINE size_t select_max_epi32(const neoni &a) { return __bsf(vmovemaskq_f32(a == vreduce_max_epi32(a))); }
 
 // Returns index of minimum component with valid index mask.
-BE_FORCE_INLINE size_t select_min_epi32(const neoni &a, const sseb &validmask) {
+BE_FORCE_INLINE size_t select_min_epi32(const neoni &a, const neonb &validmask) {
     const neoni v = select_epi32(set1_epi32(INT_MAX), a, valid);
     return __bsf(vmovemaskq_f32(vandq_s32(validmask, v == vreduce_min_epi32(v))));
 }
 
 // Returns index of maximum component with valid index mask.
-BE_FORCE_INLINE size_t select_max_epi32(const neoni &a, const sseb &validmask) {
+BE_FORCE_INLINE size_t select_max_epi32(const neoni &a, const neonb &validmask) {
     const neoni v = select_epi32(set1_epi32(INT_MIN), a, valid);
     return __bsf(vmovemaskq_f32(vandq_s32(validmask, v == vreduce_max_epi32(v))));
 }
