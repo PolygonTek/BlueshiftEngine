@@ -94,16 +94,12 @@ extern SIMDProcessor *simdProcessor;
 
 BE_NAMESPACE_END
 
-#include "Simd_Generic.h"
+#include "SIMD_Generic.h"
 
-#ifdef ENABLE_X86_SSE_INTRINSICS
-#include "Simd_SSE4.h"
+#if defined(ENABLE_X86_SSE_INTRINSICS) || defined(ENABLE_ARM_NEON_INTRINSICS)
+#include "SIMD_4.h"
 #endif 
 
-#ifdef ENABLE_X86_AVX_INTRINSICS
-#include "Simd_AVX.h"
-#endif
-
-#ifdef ENABLE_ARM_NEON_INTRINSICS
-#include "Simd_NEON.h"
+#if defined(ENABLE_X86_AVX_INTRINSICS)
+#include "SIMD_8.h"
 #endif

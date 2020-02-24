@@ -49,9 +49,9 @@ static void TestAdd() {
 
     bestClocksGeneric = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Add(dst, c, src0, COUNT_OF(dst));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
@@ -61,9 +61,9 @@ static void TestAdd() {
 
     bestClocksSIMD = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Add(dst, c, src0, COUNT_OF(dst));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
@@ -74,9 +74,9 @@ static void TestAdd() {
 
     bestClocksGeneric = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Add(dst, src0, src1, COUNT_OF(dst));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
@@ -87,9 +87,9 @@ static void TestAdd() {
 
     bestClocksSIMD = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Add(dst, src0, src1, COUNT_OF(dst));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
@@ -108,9 +108,9 @@ static void TestSub() {
 
     bestClocksGeneric = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Sub(dst, c, src0, COUNT_OF(dst));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
@@ -120,9 +120,9 @@ static void TestSub() {
 
     bestClocksSIMD = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Sub(dst, c, src0, COUNT_OF(dst));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
@@ -133,9 +133,9 @@ static void TestSub() {
 
     bestClocksGeneric = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Sub(dst, src0, src1, COUNT_OF(dst));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
@@ -146,9 +146,9 @@ static void TestSub() {
 
     bestClocksSIMD = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Sub(dst, src0, src1, COUNT_OF(dst));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
@@ -167,9 +167,9 @@ static void TestMul() {
 
     bestClocksGeneric = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Mul(dst, c, src0, COUNT_OF(dst));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
@@ -179,9 +179,9 @@ static void TestMul() {
 
     bestClocksSIMD = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Mul(dst, c, src0, COUNT_OF(dst));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
@@ -192,9 +192,9 @@ static void TestMul() {
 
     bestClocksGeneric = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Mul(dst, src0, src1, COUNT_OF(dst));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
@@ -205,9 +205,9 @@ static void TestMul() {
 
     bestClocksSIMD = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Mul(dst, src0, src1, COUNT_OF(dst));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
@@ -226,9 +226,9 @@ static void TestDiv() {
 
     bestClocksGeneric = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Div(dst, c, src0, COUNT_OF(dst));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
@@ -238,9 +238,9 @@ static void TestDiv() {
 
     bestClocksSIMD = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Div(dst, c, src0, COUNT_OF(dst));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
@@ -251,9 +251,9 @@ static void TestDiv() {
 
     bestClocksGeneric = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Div(dst, src0, src1, COUNT_OF(dst));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
@@ -264,9 +264,9 @@ static void TestDiv() {
 
     bestClocksSIMD = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Div(dst, src0, src1, COUNT_OF(dst));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
@@ -283,9 +283,9 @@ static void TestSum() {
 
     bestClocksGeneric = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         sum = BE1::simdGeneric->Sum(src, COUNT_OF(src));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
@@ -295,9 +295,9 @@ static void TestSum() {
 
     bestClocksSIMD = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         sum = BE1::simdProcessor->Sum(src, COUNT_OF(src));
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
@@ -317,9 +317,9 @@ static void TestMemcpy() {
             bufferSrc[j] = rand() % 256;
         }
 
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Memcpy(bufferDst, bufferSrc, bufferSize);
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
@@ -331,9 +331,9 @@ static void TestMemcpy() {
             bufferSrc[j] = rand() % 256;
         }
 
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Memcpy(bufferDst, bufferSrc, bufferSize);
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
@@ -355,9 +355,9 @@ static void TestMemset() {
             buffer[j] = rand() % 256;
         }
 
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdGeneric->Memset(buffer, 0, bufferSize);
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
@@ -369,9 +369,9 @@ static void TestMemset() {
             buffer[j] = rand() % 256;
         }
 
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         BE1::simdProcessor->Memset(buffer, 0, bufferSize);
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
@@ -399,14 +399,14 @@ static void TestMatrix4x4Multiply() {
         matrixBPtr = matrixB;
         matrixCPtr = matrixC;
 
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         for (int j = 0; j < 1024; j++) {
             BE1::simdGeneric->Matrix4x4Multiply(matrixCPtr, matrixAPtr, matrixBPtr);
             matrixAPtr += 16;
             matrixBPtr += 16;
             matrixCPtr += 16;
         }
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
@@ -423,14 +423,14 @@ static void TestMatrix4x4Multiply() {
         matrixBPtr = matrixB;
         matrixCPtr = matrixC;
 
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         for (int j = 0; j < 1024; j++) {
             BE1::simdProcessor->Matrix4x4Multiply(matrixCPtr, matrixAPtr, matrixBPtr);
             matrixAPtr += 16;
             matrixBPtr += 16;
             matrixCPtr += 16;
         }
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
@@ -454,13 +454,13 @@ static void TestMatrix4x4Transpose() {
         matrixAPtr = matrixA;
         matrixBPtr = matrixB;
 
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         for (int j = 0; j < 1024; j++) {
             BE1::simdGeneric->Matrix4x4Transpose(matrixBPtr, matrixAPtr);
             matrixAPtr += 16;
             matrixBPtr += 16;
         }
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
@@ -473,13 +473,13 @@ static void TestMatrix4x4Transpose() {
         matrixAPtr = matrixA;
         matrixBPtr = matrixB;
 
-        uint64_t startClocks = rdtsc();
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
         for (int j = 0; j < 1024; j++) {
             BE1::simdProcessor->Matrix4x4Transpose(matrixBPtr, matrixAPtr);
             matrixAPtr += 16;
             matrixBPtr += 16;
         }
-        uint64_t endClocks = rdtsc();
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 

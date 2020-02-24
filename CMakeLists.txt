@@ -190,6 +190,11 @@ elseif (ANDROID)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++14 -fno-exceptions -fno-rtti")
 
+    set(FLAGS_NEON "-mfpu=neon")
+
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS_NEON}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_NEON}")
+
     add_definitions("-D__NEON__")
 
     # Settings for Android

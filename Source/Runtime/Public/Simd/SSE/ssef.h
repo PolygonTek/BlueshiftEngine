@@ -60,7 +60,7 @@ BE_FORCE_INLINE void storent_ps(const ssef &a, float *dst) {
     _mm_stream_ps(dst, a);
 }
 
-BE_FORCE_INLINE ssef epi32_to_ps(const __m128i a) {
+BE_FORCE_INLINE ssef epi32_to_ps(const __m128i &a) {
     return _mm_cvtepi32_ps(a);
 }
 
@@ -206,10 +206,10 @@ BE_FORCE_INLINE ssef &operator^=(ssef &a, const ssei &b) { return a = a ^ b; }
 
 // dst = a * b + c
 BE_FORCE_INLINE ssef madd_ps(const ssef &a, const ssef &b, const ssef &c) { return _mm_madd_ps(a.m128, b.m128, c.m128); }
-// dst = -(a * b) + c
-BE_FORCE_INLINE ssef nmadd_ps(const ssef &a, const ssef &b, const ssef &c) { return _mm_nmadd_ps(a.m128, b.m128, c.m128); }
 // dst = a * b - c
 BE_FORCE_INLINE ssef msub_ps(const ssef &a, const ssef &b, const ssef &c) { return _mm_msub_ps(a.m128, b.m128, c.m128); }
+// dst = -(a * b) + c
+BE_FORCE_INLINE ssef nmadd_ps(const ssef &a, const ssef &b, const ssef &c) { return _mm_nmadd_ps(a.m128, b.m128, c.m128); }
 // dst = -(a * b) - c
 BE_FORCE_INLINE ssef nmsub_ps(const ssef &a, const ssef &b, const ssef &c) { return _mm_nmsub_ps(a.m128, b.m128, c.m128); }
 
@@ -299,11 +299,19 @@ BE_FORCE_INLINE ssef insert_ps(const ssef &a, const float b) { return insert_ps<
 #else
 // Inserts [32*src, 32*src+31] bits of b to a in [32*dst, 32*dst+31] bits.
 template <int src, int dst>
-BE_FORCE_INLINE ssef insert_ps(const ssef &a, const ssef &b) { ssef c = a; c[dst & 3] = b[src & 3]; return c; }
+BE_FORCE_INLINE ssef insert_ps(const ssef &a, const ssef &b) { 
+    ssef c = a;
+    c[dst & 3] = b[src & 3];
+    return c;
+}
 
 // Inserts b to a in [32*dst, 32*dst+31] bits.
 template <int dst>
-BE_FORCE_INLINE ssef insert_ps(const ssef &a, float b) { ssef c = a; c[dst & 3] = b; return c; }
+BE_FORCE_INLINE ssef insert_ps(const ssef &a, float b) { 
+    ssef c = a;
+    c[dst & 3] = b;
+    return c;
+}
 #endif
 
 // Selects 4x32 bits floats using mask.

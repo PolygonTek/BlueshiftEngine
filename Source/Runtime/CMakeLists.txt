@@ -111,21 +111,20 @@ set(COMMON_ENGINE_FILES
     Public/Math/Vector3.h
     Public/Math/Vector4.h
 
-    Public/SIMD/Simd.h
-    Public/SIMD/Simd_Generic.h
-    Public/SIMD/Simd_SSE4.h
-    Public/SIMD/Simd_AVX.h
-    Public/SIMD/Simd_NEON.h
-    Public/SIMD/smmintrin_emu.h
-    Public/SIMD/immintrin_emu.h
+    Public/SIMD/SIMD.h
+    Public/SIMD/SIMD_Generic.h
+    Public/SIMD/SIMD_4.h
+    Public/SIMD/SIMD_8.h
     Public/SIMD/AVX/avx.h
     Public/SIMD/AVX/avxb.h
     Public/SIMD/AVX/avxf.h
     Public/SIMD/AVX/avxi.h
+    Public/SIMD/AVX/immintrin_emu.h
     Public/SIMD/SSE/sse.h
     Public/SIMD/SSE/sseb.h
     Public/SIMD/SSE/ssef.h
     Public/SIMD/SSE/ssei.h
+    Public/SIMD/SSE/smmintrin_emu.h
     Public/SIMD/NEON/neon.h
     Public/SIMD/NEON/neonb.h
     Public/SIMD/NEON/neonf.h
@@ -367,10 +366,10 @@ set(COMMON_ENGINE_FILES
     Private/Math/SizeF.cpp
     Private/Math/Vector2.cpp
 
-    Private/SIMD/Simd.cpp
-    Private/SIMD/Simd_AVX.cpp
-    Private/SIMD/Simd_Generic.cpp
-    Private/SIMD/Simd_SSE4.cpp
+    Private/SIMD/SIMD.cpp
+    Private/SIMD/SIMD_Generic.cpp
+    Private/SIMD/SIMD_4.cpp
+    Private/SIMD/SIMD_8.cpp
 
     Private/Platform/cpuid.cpp
     Private/Platform/PlatformBaseProcess.cpp

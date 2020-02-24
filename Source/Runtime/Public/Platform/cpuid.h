@@ -20,25 +20,27 @@ BE_NAMESPACE_BEGIN
 // cpuid
 //--------------------------------------------------------------------------------------------------
 enum CpuId {
-    CPUID_NONE                  = 0x00000,
-    CPUID_UNSUPPORTED           = 0x00001,  ///< unsupported (386/486)
-    CPUID_GENERIC               = 0x00002,  ///< unrecognized processor
-    CPUID_INTEL                 = 0x00004,  ///< Intel
-    CPUID_AMD                   = 0x00008,  ///< AMD
-    CPUID_HTT                   = 0x00010,  ///< Hyper-Threading Technology
-    CPUID_CMOV                  = 0x00020,  ///< Conditional Move (CMOV) and fast floating point comparison (FCOMI) instructions
-    CPUID_FTZ                   = 0x00040,  ///< Flush-To-Zero mode (denormal results are flushed to zero)
-    CPUID_DAZ                   = 0x00080,  ///< Denormals-Are-Zero mode (denormal source operands are set to zero)
-    CPUID_MMX                   = 0x00100,  ///< Multi Media Extensions
-    CPUID_3DNOW                 = 0x00200,  ///< 3DNow!
-    CPUID_SSE                   = 0x00400,  ///< Streaming SIMD Extensions
-    CPUID_SSE2                  = 0x00800,  ///< Streaming SIMD Extensions 2
-    CPUID_SSE3                  = 0x01000,  ///< Streaming SIMD Extentions 3 aka Prescott's New Instructions
-    CPUID_SSE4                  = 0x02000,  ///< Streaming SIMD Extensions 4.1
-    CPUID_SSE42                 = 0x04000,  ///< Streaming SIMD Extensions 4.2
-    CPUID_AVX                   = 0x08000,  ///< Advanced Vector Extensions
-    CPUID_AVX2                  = 0x10000,  ///< Advanced Vector Extensions 2
-    CPUID_NEON                  = 0x20000   ///< ARM Neon
+    CPUID_NONE                  = 0x00000000,
+    CPUID_UNSUPPORTED           = 0x00000001,  ///< unsupported (386/486)
+    CPUID_GENERIC               = 0x00000002,  ///< unrecognized processor
+    CPUID_INTEL                 = 0x00000004,  ///< Intel
+    CPUID_AMD                   = 0x00000008,  ///< AMD
+    CPUID_ARM                   = 0x00000010,  ///< ARM
+    CPUID_HTT                   = 0x00000100,  ///< Hyper-Threading Technology
+    CPUID_CMOV                  = 0x00000200,  ///< Conditional Move (CMOV) and fast floating point comparison (FCOMI) instructions
+    CPUID_FTZ                   = 0x00000400,  ///< Flush-To-Zero mode (denormal results are flushed to zero)
+    CPUID_DAZ                   = 0x00000800,  ///< Denormals-Are-Zero mode (denormal source operands are set to zero)
+    CPUID_MMX                   = 0x00001000,  ///< Multi Media Extensions
+    CPUID_3DNOW                 = 0x00002000,  ///< 3DNow!
+    CPUID_SSE                   = 0x00004000,  ///< Streaming SIMD Extensions
+    CPUID_SSE2                  = 0x00008000,  ///< Streaming SIMD Extensions 2
+    CPUID_SSE3                  = 0x00010000,  ///< Streaming SIMD Extentions 3 aka Prescott's New Instructions
+    CPUID_SSSE3                 = 0x00020000,  ///< Supplemental Streaming SIMD Extentions 3
+    CPUID_SSE4_1                = 0x00040000,  ///< Streaming SIMD Extensions 4.1
+    CPUID_SSE4_2                = 0x00080000,  ///< Streaming SIMD Extensions 4.2
+    CPUID_AVX                   = 0x00100000,  ///< Advanced Vector Extensions
+    CPUID_AVX2                  = 0x00200000,  ///< Advanced Vector Extensions 2
+    CPUID_NEON                  = 0x00400000   ///< ARM Neon
 };
 
 struct CpuInfo {

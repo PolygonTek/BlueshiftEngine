@@ -56,7 +56,7 @@ BE_FORCE_INLINE void storent_si256(const avxi &a, int32_t *dst) {
     _mm256_stream_si256((__m256i *)dst, a);
 }
 
-BE_FORCE_INLINE avxi ps_to_256epi32(const __m256 a) {
+BE_FORCE_INLINE avxi ps_to_256epi32(const __m256 &a) {
     return _mm256_cvtps_epi32(a);
 }
 

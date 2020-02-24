@@ -14,7 +14,13 @@
 
 #pragma once
 
+#if defined(ENABLE_X86_SSE_INTRINSICS)
 #include "SSE/sse.h"
+#elif defined(ENABLE_ARM_NEON_INTRINSICS)
+#include "NEON/neon.h"
+#else
+#error "No SIMD4 intrinsics"
+#endif
 
 // Cross product.
 BE_FORCE_INLINE simd4f cross_ps(const simd4f &a, const simd4f &b) {
@@ -39,8 +45,8 @@ BE_FORCE_INLINE void mat4x4_transpose(simd4f &r0, simd4f &r1, simd4f &r2, simd4f
 
 // Linear combination.
 // r0 = a[0] * b0 + a[1] * b1 + a[2] * b2 + a[3] * b3
-BE_FORCE_INLINE ssef lincomb4x4(const ssef &a, const ssef &br0, const ssef &br1, const ssef &br2, const ssef &br3) {
-    ssef result = shuffle_ps<0, 0, 0, 0>(a) * br0;
+BE_FORCE_INLINE simd4f lincomb4x4(const simd4f &a, const simd4f &br0, const simd4f &br1, const simd4f &br2, const simd4f &br3) {
+    simd4f result = shuffle_ps<0, 0, 0, 0>(a) * br0;
     result += shuffle_ps<1, 1, 1, 1>(a) * br1;
     result += shuffle_ps<2, 2, 2, 2>(a) * br2;
     result += shuffle_ps<3, 3, 3, 3>(a) * br3;
@@ -49,8 +55,8 @@ BE_FORCE_INLINE ssef lincomb4x4(const ssef &a, const ssef &br0, const ssef &br1,
 
 // Linear combination.
 // r0 = a[0] * b0 + a[1] * b1 + a[2] * b2 + a[3] * (0, 0, 0, 1)
-BE_FORCE_INLINE ssef lincomb3x4(const ssef &a, const ssef &br0, const ssef &br1, const ssef &br2) {
-    ssef result = shuffle_ps<0, 0, 0, 0>(a) * br0;
+BE_FORCE_INLINE simd4f lincomb3x4(const simd4f &a, const simd4f &br0, const simd4f &br1, const simd4f &br2) {
+    simd4f result = shuffle_ps<0, 0, 0, 0>(a) * br0;
     result += shuffle_ps<1, 1, 1, 1>(a) * br1;
     result += shuffle_ps<2, 2, 2, 2>(a) * br2;
     result += a & (simd4f &)simd4i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF);
@@ -59,11 +65,12 @@ BE_FORCE_INLINE ssef lincomb3x4(const ssef &a, const ssef &br0, const ssef &br1,
 
 BE_NAMESPACE_BEGIN
 
-class SIMD_SSE4 : public SIMD_Generic {
+class SIMD_4 : public SIMD_Generic {
 public:
-    SIMD_SSE4() { cpuid = CPUID_SSE4; }
+    SIMD_4() = default;
+    SIMD_4(CpuId cpuid) { this->cpuid = cpuid; }
 
-    virtual const char * BE_FASTCALL    GetName() const { return "SSE4"; }
+    virtual const char * BE_FASTCALL    GetName() const { return "SIMD4"; }
 
     virtual void BE_FASTCALL            Add(float *dst, const float constant, const float *src, const int count);
     virtual void BE_FASTCALL            Add(float *dst, const float *src0, const float *src1, const int count);

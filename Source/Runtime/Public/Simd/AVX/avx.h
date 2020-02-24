@@ -17,7 +17,7 @@
 #if defined(__AVX__)
 #include <immintrin.h>
 #else
-#include "../immintrin_emu.h"
+#include "immintrin_emu.h"
 #endif
 
 // Negates 4x32 bits floats.

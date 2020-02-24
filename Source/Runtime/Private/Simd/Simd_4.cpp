@@ -15,13 +15,13 @@
 #include "Precompiled.h"
 #include "Math/Math.h"
 #include "Core/JointPose.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
+
+#if defined(ENABLE_X86_SSE_INTRINSICS) || defined(ENABLE_ARM_NEON_INTRINSICS)
 
 BE_NAMESPACE_BEGIN
 
-#ifdef ENABLE_X86_SSE_INTRINSICS
-
-void BE_FASTCALL SIMD_SSE4::Add(float *dst, const float constant, const float *src, const int count0) {
+void BE_FASTCALL SIMD_4::Add(float *dst, const float constant, const float *src, const int count0) {
     int count = count0;
     float *dst_ptr = dst;
     const float *src_ptr = src;
@@ -60,7 +60,7 @@ void BE_FASTCALL SIMD_SSE4::Add(float *dst, const float constant, const float *s
     }
 }
 
-void BE_FASTCALL SIMD_SSE4::Add(float *dst, const float *src0, const float *src1, const int count0) {
+void BE_FASTCALL SIMD_4::Add(float *dst, const float *src0, const float *src1, const int count0) {
     int count = count0;
     float *dst_ptr = dst;
     const float *src0_ptr = src0;
@@ -106,7 +106,7 @@ void BE_FASTCALL SIMD_SSE4::Add(float *dst, const float *src0, const float *src1
     }
 }
 
-void BE_FASTCALL SIMD_SSE4::Sub(float *dst, const float constant, const float *src, const int count0) {
+void BE_FASTCALL SIMD_4::Sub(float *dst, const float constant, const float *src, const int count0) {
     int count = count0;
     float *dst_ptr = dst;
     const float *src_ptr = src;
@@ -145,7 +145,7 @@ void BE_FASTCALL SIMD_SSE4::Sub(float *dst, const float constant, const float *s
     }
 }
 
-void BE_FASTCALL SIMD_SSE4::Sub(float *dst, const float *src0, const float *src1, const int count0) {
+void BE_FASTCALL SIMD_4::Sub(float *dst, const float *src0, const float *src1, const int count0) {
     int count = count0;
     float *dst_ptr = dst;
     const float *src0_ptr = src0;
@@ -191,7 +191,7 @@ void BE_FASTCALL SIMD_SSE4::Sub(float *dst, const float *src0, const float *src1
     }
 }
 
-void BE_FASTCALL SIMD_SSE4::Mul(float *dst, const float constant, const float *src, const int count0) {
+void BE_FASTCALL SIMD_4::Mul(float *dst, const float constant, const float *src, const int count0) {
     int count = count0;
     float *dst_ptr = dst;
     const float *src_ptr = src;
@@ -230,7 +230,7 @@ void BE_FASTCALL SIMD_SSE4::Mul(float *dst, const float constant, const float *s
     }
 }
 
-void BE_FASTCALL SIMD_SSE4::Mul(float *dst, const float *src0, const float *src1, const int count0) {
+void BE_FASTCALL SIMD_4::Mul(float *dst, const float *src0, const float *src1, const int count0) {
     int count = count0;
     float *dst_ptr = dst;
     const float *src0_ptr = src0;
@@ -276,7 +276,7 @@ void BE_FASTCALL SIMD_SSE4::Mul(float *dst, const float *src0, const float *src1
     }
 }
 
-void BE_FASTCALL SIMD_SSE4::Div(float *dst, const float constant, const float *src, const int count0) {
+void BE_FASTCALL SIMD_4::Div(float *dst, const float constant, const float *src, const int count0) {
     int count = count0;
     float *dst_ptr = dst;
     const float *src_ptr = src;
@@ -315,7 +315,7 @@ void BE_FASTCALL SIMD_SSE4::Div(float *dst, const float constant, const float *s
     }
 }
 
-void BE_FASTCALL SIMD_SSE4::Div(float *dst, const float *src0, const float *src1, const int count0) {
+void BE_FASTCALL SIMD_4::Div(float *dst, const float *src0, const float *src1, const int count0) {
     int count = count0;
     float *dst_ptr = dst;
     const float *src0_ptr = src0;
@@ -361,7 +361,7 @@ void BE_FASTCALL SIMD_SSE4::Div(float *dst, const float *src0, const float *src1
     }
 }
 
-float BE_FASTCALL SIMD_SSE4::Sum(const float *src, const int count0) {
+float BE_FASTCALL SIMD_4::Sum(const float *src, const int count0) {
     int count = count0;
     const float *src_ptr = src;
     float ret = 0;
@@ -387,7 +387,7 @@ float BE_FASTCALL SIMD_SSE4::Sum(const float *src, const int count0) {
     return ret;
 }
 
-void BE_FASTCALL SIMD_SSE4::Matrix4x4Transpose(float *dst, const float *src) {
+void BE_FASTCALL SIMD_4::Matrix4x4Transpose(float *dst, const float *src) {
     assert_16_byte_aligned(dst);
     assert_16_byte_aligned(src);
 
@@ -409,7 +409,7 @@ void BE_FASTCALL SIMD_SSE4::Matrix4x4Transpose(float *dst, const float *src) {
     store_ps(r3, dst + 12);
 }
 
-void BE_FASTCALL SIMD_SSE4::Matrix3x4Multiply(float *dst, const float *src0, const float *src1) {
+void BE_FASTCALL SIMD_4::Matrix3x4Multiply(float *dst, const float *src0, const float *src1) {
     assert_16_byte_aligned(dst);
     assert_16_byte_aligned(src0);
     assert_16_byte_aligned(src1);
@@ -427,7 +427,7 @@ void BE_FASTCALL SIMD_SSE4::Matrix3x4Multiply(float *dst, const float *src0, con
     store_ps(lincomb3x4(ar2, br0, br1, br2), dst + 8);
 }
 
-void BE_FASTCALL SIMD_SSE4::Matrix4x4Multiply(float *dst, const float *src0, const float *src1) {
+void BE_FASTCALL SIMD_4::Matrix4x4Multiply(float *dst, const float *src0, const float *src1) {
     assert_16_byte_aligned(dst);
     assert_16_byte_aligned(src0);
     assert_16_byte_aligned(src1);
@@ -448,7 +448,7 @@ void BE_FASTCALL SIMD_SSE4::Matrix4x4Multiply(float *dst, const float *src0, con
     store_ps(lincomb4x4(ar3, br0, br1, br2, br3), dst + 12);
 }
 
-void BE_FASTCALL SIMD_SSE4::BlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) {
+void BE_FASTCALL SIMD_4::BlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) {
     assert_16_byte_aligned(joints);
     assert_16_byte_aligned(blendJoints);
 
@@ -721,7 +721,7 @@ void BE_FASTCALL SIMD_SSE4::BlendJoints(JointPose *joints, const JointPose *blen
     }
 }
 
-void BE_FASTCALL SIMD_SSE4::BlendJointsFast(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) {
+void BE_FASTCALL SIMD_4::BlendJointsFast(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) {
     assert_16_byte_aligned(joints);
     assert_16_byte_aligned(blendJoints);
 
@@ -923,7 +923,7 @@ void BE_FASTCALL SIMD_SSE4::BlendJointsFast(JointPose *joints, const JointPose *
     }
 }
 
-void BE_FASTCALL SIMD_SSE4::ConvertJointPosesToJointMats(Mat3x4 *jointMats, const JointPose *jointPoses, const int numJoints) {
+void BE_FASTCALL SIMD_4::ConvertJointPosesToJointMats(Mat3x4 *jointMats, const JointPose *jointPoses, const int numJoints) {
 #if 0
     int i;
 
@@ -1083,7 +1083,7 @@ void BE_FASTCALL SIMD_SSE4::ConvertJointPosesToJointMats(Mat3x4 *jointMats, cons
 #endif
 }
 
-void BE_FASTCALL SIMD_SSE4::ConvertJointMatsToJointPoses(JointPose *jointPoses, const Mat3x4 *jointMats, const int numJoints) {
+void BE_FASTCALL SIMD_4::ConvertJointMatsToJointPoses(JointPose *jointPoses, const Mat3x4 *jointMats, const int numJoints) {
     // TODO: Implement this with SIMD code.
     int i;
 
@@ -1092,7 +1092,7 @@ void BE_FASTCALL SIMD_SSE4::ConvertJointMatsToJointPoses(JointPose *jointPoses, 
     }
 }
 
-void BE_FASTCALL SIMD_SSE4::TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
+void BE_FASTCALL SIMD_4::TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
     const simd4f vector_float_mask_keep_last = (simd4f &)simd4i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF);
 
     const float *__restrict firstMatrix = jointMats->Ptr() + (firstJoint + firstJoint + firstJoint - 3) * 4;
@@ -1146,7 +1146,7 @@ void BE_FASTCALL SIMD_SSE4::TransformJoints(Mat3x4 *jointMats, const int *parent
     }
 }
 
-void BE_FASTCALL SIMD_SSE4::UntransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
+void BE_FASTCALL SIMD_4::UntransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
     const simd4f vector_float_mask_keep_last = (simd4f &)simd4i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF);
 
     for (int joint = lastJoint; joint >= firstJoint; joint--) {
@@ -1197,7 +1197,7 @@ void BE_FASTCALL SIMD_SSE4::UntransformJoints(Mat3x4 *jointMats, const int *pare
     }
 }
 
-void BE_FASTCALL SIMD_SSE4::MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, const Mat3x4 *joints2, const int numJoints) {
+void BE_FASTCALL SIMD_4::MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, const Mat3x4 *joints2, const int numJoints) {
 #if 0
     int i;
 
@@ -1390,7 +1390,7 @@ static void SSE_MemcpyStream2kB(void *dst, const void *src, const int count) {
 }
 
 // optimized memory copy routine that handles all alignment cases and block sizes efficiently
-void BE_FASTCALL SIMD_SSE4::Memcpy(void *dest0, const void *src0, const int count0) {
+void BE_FASTCALL SIMD_4::Memcpy(void *dest0, const void *src0, const int count0) {
     if (count0 > 4096 && !(((intptr_t)dest0 ^ (intptr_t)src0) & 15)) {
         byte *dest = (byte *)dest0;
         byte *src = (byte *)src0;
@@ -1429,7 +1429,7 @@ void BE_FASTCALL SIMD_SSE4::Memcpy(void *dest0, const void *src0, const int coun
     }
 }
 
-void BE_FASTCALL SIMD_SSE4::Memset(void *dest0, const int val, const int count0) {
+void BE_FASTCALL SIMD_4::Memset(void *dest0, const int val, const int count0) {
     byte *dest = (byte *)dest0;
     int	count = count0;
 
@@ -1485,6 +1485,6 @@ void BE_FASTCALL SIMD_SSE4::Memset(void *dest0, const int val, const int count0)
 
 #endif
 
-#endif // ENABLE_X86_SSE_INTRINSICS
-
 BE_NAMESPACE_END
+
+#endif

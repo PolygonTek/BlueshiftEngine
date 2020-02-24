@@ -60,7 +60,7 @@ BE_FORCE_INLINE void storent_256ps(const avxf &a, float *dst) {
     _mm256_stream_ps(dst, a);
 }
 
-BE_FORCE_INLINE avxf epi32_to_256ps(const __m256i a) {
+BE_FORCE_INLINE avxf epi32_to_256ps(const __m256i &a) {
     return _mm256_cvtepi32_ps(a);
 }
 
@@ -206,10 +206,10 @@ BE_FORCE_INLINE avxf &operator^=(avxf &a, const avxi &b) { return a = a ^ b; }
 
 // dst = a * b + c
 BE_FORCE_INLINE avxf madd_256ps(const avxf &a, const avxf &b, const avxf &c) { return _mm256_madd_ps(a.m256, b.m256, c.m256); }
-// dst = -(a * b) + c
-BE_FORCE_INLINE avxf nmadd_256ps(const avxf &a, const avxf &b, const avxf &c) { return _mm256_nmadd_ps(a.m256, b.m256, c.m256); }
 // dst = a * b - c
 BE_FORCE_INLINE avxf msub_256ps(const avxf &a, const avxf &b, const avxf &c) { return _mm256_msub_ps(a.m256, b.m256, c.m256); }
+// dst = -(a * b) + c
+BE_FORCE_INLINE avxf nmadd_256ps(const avxf &a, const avxf &b, const avxf &c) { return _mm256_nmadd_ps(a.m256, b.m256, c.m256); }
 // dst = -(a * b) - c
 BE_FORCE_INLINE avxf nmsub_256ps(const avxf &a, const avxf &b, const avxf &c) { return _mm256_nmsub_ps(a.m256, b.m256, c.m256); }
 
@@ -311,15 +311,15 @@ BE_FORCE_INLINE size_t select_min_256ps(const avxf &a) { return __bsf(_mm256_mov
 BE_FORCE_INLINE size_t select_max_256ps(const avxf &a) { return __bsf(_mm256_movemask_ps(a == vreduce_max_256ps(a))); }
 
 // Returns index of minimum component with valid index mask.
-BE_FORCE_INLINE size_t select_min_256ps(const avxf &v, const avxb &validmask) {
-    const avxf a = select_256ps(set1_256ps(FLT_INFINITY), v, validmask);
-    return __bsf(_mm256_movemask_ps(_mm256_and_ps(validmask.m256, (a == vreduce_min_256ps(a)))));
+BE_FORCE_INLINE size_t select_min_256ps(const avxf &a, const avxb &validmask) {
+    const avxf v = select_256ps(set1_256ps(FLT_INFINITY), a, validmask);
+    return __bsf(_mm256_movemask_ps(_mm256_and_ps(validmask, (v == vreduce_min_256ps(v)))));
 }
 
 // Returns index of maximum component with valid index mask.
-BE_FORCE_INLINE size_t select_max_256ps(const avxf &v, const avxb &validmask) {
-    const avxf a = select_256ps(set1_256ps(-FLT_INFINITY), v, validmask);
-    return __bsf(_mm256_movemask_ps(_mm256_and_ps(validmask.m256, (a == vreduce_max_256ps(a)))));
+BE_FORCE_INLINE size_t select_max_256ps(const avxf &a, const avxb &validmask) {
+    const avxf v = select_256ps(set1_256ps(-FLT_INFINITY), a, validmask);
+    return __bsf(_mm256_movemask_ps(_mm256_and_ps(validmask, (v == vreduce_max_256ps(v)))));
 }
 
 // Broadcasts sums of all components for each 128 bits packed floats.

@@ -16,12 +16,15 @@
 #include "Platform/Intrinsics.h"
 #include "Platform/cpuid.h"
 
+#if defined(__ANDROID__)
+#include <cpu-features.h>
+#endif
+
 BE_NAMESPACE_BEGIN
 
 #define VENDOR_INTEL    "GenuineIntel"
 #define VENDOR_AMD      "AuthenticAMD"
 
-// Reference: http://msdn.microsoft.com/en-us/library/hskdteyh(v=vs.100).aspx
 static CpuInfo cpuInfo;
 
 const CpuInfo *GetCpuInfo() {
@@ -30,8 +33,9 @@ const CpuInfo *GetCpuInfo() {
 
 void DetectCpu() {
     memset(&cpuInfo, 0, sizeof(cpuInfo));
-    
-#if defined(__X86__)
+
+#if defined(__WIN32__) || (defined(__X86__) && defined(__UNIX__))
+    // __cpuid(): http://msdn.microsoft.com/en-us/library/hskdteyh(v=vs.100).aspx
     int info[4] = { -1, };
     __cpuid(info, 0);
     //unsigned int nIds = info[0];
@@ -68,7 +72,7 @@ void DetectCpu() {
     if (info[3] & BIT(25)) {
         cpuInfo.cpuid |= CPUID_SSE;
         cpuInfo.cpuid |= CPUID_FTZ;
-                
+
         if (info[3] & BIT(26)) {
             cpuInfo.cpuid |= CPUID_SSE2;
         }
@@ -78,11 +82,15 @@ void DetectCpu() {
         cpuInfo.cpuid |= CPUID_SSE3;
         cpuInfo.cpuid |= CPUID_DAZ;
 
-        if (info[2] & BIT(19)) {
-            cpuInfo.cpuid |= CPUID_SSE4;
+        if (info[2] & BIT(9)) {
+            cpuInfo.cpuid |= CPUID_SSSE3;
 
-            if (info[2] & BIT(20)) {
-                cpuInfo.cpuid |= CPUID_SSE42;
+            if (info[2] & BIT(19)) {
+                cpuInfo.cpuid |= CPUID_SSE4_1;
+
+                if (info[2] & BIT(20)) {
+                    cpuInfo.cpuid |= CPUID_SSE4_2;
+                }
             }
         }
     }
@@ -156,8 +164,46 @@ void DetectCpu() {
     } else {
         cpuInfo.cpuid |= CPUID_GENERIC;
     }
+#elif defined(__ANDROID__)
+    cpuInfo.cpuid |= CPUID_ARM;
+
+    AndroidCpuFamily family = android_getCpuFamily();
+    uint64_t features = android_getCpuFeatures();
+
+    if (family == ANDROID_CPU_FAMILY_ARM || family == ANDROID_CPU_FAMILY_ARM64) {
+        cpuInfo.cpuid |= CPUID_ARM;
+
+        if (features & ANDROID_CPU_ARM_FEATURE_NEON) {
+            cpuInfo.cpuid |= CPUID_NEON;
+        }
+    } else if (family == ANDROID_CPU_FAMILY_X86 || family == ANDROID_CPU_FAMILY_X86_64) {
+        cpuInfo.cpuid |= CPUID_GENERIC;
+
+        if (features & ANDROID_CPU_X86_FEATURE_SSSE3) {
+            cpuInfo.cpuid |= (CPUID_MMX | CPUID_SSE | CPUID_SSE2 | CPUID_SSE3);
+        }
+        if (features & ANDROID_CPU_X86_FEATURE_SSE4_1) {
+            cpuInfo.cpuid |= CPUID_SSE4_1;
+        }
+        if (features & ANDROID_CPU_X86_FEATURE_SSE4_2) {
+            cpuInfo.cpuid |= CPUID_SSE4_2;
+        }
+        if (features & ANDROID_CPU_X86_FEATURE_AVX) {
+            cpuInfo.cpuid |= CPUID_AVX;
+        }
+        if (features & ANDROID_CPU_X86_FEATURE_AVX2) {
+            cpuInfo.cpuid |= CPUID_AVX2;
+        }
+    } else {
+        cpuInfo.cpuid |= CPUID_UNSUPPORTED;
+    }
+#elif defined(__IOS__)
+    #ifdef __ARM_NEON__
+        cpuInfo.cpuid |= CPUID_ARM;
+        cpuInfo.cpuid |= CPUID_NEON;
+#endif
 #else
-    cpuInfo.cpuid |= CPUID_GENERIC;
+    cpuInfo.cpuid |= CPUID_UNSUPPORTED;
 #endif
 }
 

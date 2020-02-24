@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -27,39 +27,30 @@ void SIMD::Init(bool forceGeneric) {
 
     if (forceGeneric) {
         simdProcessor = simdGeneric;
-    } else {
-#if defined(__X86__)
-        if ((cpuid & CPUID_MMX) && 
-            (cpuid & CPUID_SSE) && 
-            (cpuid & CPUID_SSE2) && 
-            (cpuid & CPUID_SSE3) && 
-            (cpuid & CPUID_SSE4) && 
-            (cpuid & CPUID_AVX)) {
-            simdProcessor = new SIMD_AVX;
-        } else if ((cpuid & CPUID_MMX) && 
-            (cpuid & CPUID_SSE) && 
-            (cpuid & CPUID_SSE2) && 
-            (cpuid & CPUID_SSE3) && 
-            (cpuid & CPUID_SSE4)) {
-            simdProcessor = new SIMD_SSE4;
-        } else {
-            simdProcessor = simdGeneric;
-        }
-#elif defined(__ARM__)
-        simdProcessor = simdGeneric;
-#else
-        simdProcessor = simdGeneric;
+#ifdef ENABLE_X86_AVX_INTRINSICS
+    } else if ((cpuid & CPUID_MMX) && (cpuid & CPUID_SSE) && (cpuid & CPUID_SSE2) && (cpuid & CPUID_SSE3) && (cpuid & CPUID_SSSE3) && 
+        (cpuid & CPUID_SSE4_1) && (cpuid & CPUID_SSE4_2) && (cpuid & CPUID_AVX)) {
+        simdProcessor = new SIMD_8(CPUID_AVX);
 #endif
+#ifdef ENABLE_X86_SSE_INTRINSICS
+    } else if ((cpuid & CPUID_MMX) && (cpuid & CPUID_SSE) && (cpuid & CPUID_SSE2) && (cpuid & CPUID_SSE3) && (cpuid & CPUID_SSSE3)) {
+        simdProcessor = new SIMD_4(CPUID_SSSE3);
+#endif
+#ifdef ENABLE_ARM_NEON_INTRINSICS
+    } else if ((cpuid & CPUID_NEON)) {
+        simdProcessor = new SIMD_4(CPUID_NEON);
+#endif
+    } else {
+        simdProcessor = simdGeneric;
     }
 
     BE_LOG("using %s for SIMD processing\n", simdProcessor->GetName());
 
-#if defined(__X86__)
+#ifdef ENABLE_X86_SSE_INTRINSICS
     if (cpuid & CPUID_FTZ) {
         _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
         BE_LOG("enabled Flush-To-Zero mode\n");
     }
-
     if (cpuid & CPUID_DAZ) {
         _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
         BE_LOG("enabled Denormals-Are-Zero mode\n");

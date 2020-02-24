@@ -33,7 +33,7 @@
 #if defined(__SSE4_1__) || defined(__SSE4_2__)
 #include <smmintrin.h>
 #else
-#include "../smmintrin_emu.h"
+#include "smmintrin_emu.h"
 #endif
 
 #if defined(__AES__) || defined(__PCLMUL__)
@@ -79,18 +79,18 @@ const __m128d mm_lookupmask_pd[4] = {
     #define _mm_madd_ps(a, b, c)    _mm_add_ps(_mm_mul_ps(a, b), c)
 #endif
 
-// dst = -(a * b) + c
-#ifdef __FMA__
-    #define _mm_nmadd_ps(a, b, c)   _mm_fnmadd_ps(a, b, c)
-#else
-    #define _mm_nmadd_ps(a, b, c)   _mm_sub_ps(c, _mm_mul_ps(a, b))
-#endif
-
 // dst = a * b - c
 #ifdef __FMA__
     #define _mm_msub_ps(a, b, c)    _mm_fmsub_ps(a, b, c)
 #else
     #define _mm_msub_ps(a, b, c)    _mm_sub_ps(_mm_mul_ps(a, b), c)
+#endif
+
+// dst = -(a * b) + c
+#ifdef __FMA__
+    #define _mm_nmadd_ps(a, b, c)   _mm_fnmadd_ps(a, b, c)
+#else
+    #define _mm_nmadd_ps(a, b, c)   _mm_sub_ps(c, _mm_mul_ps(a, b))
 #endif
 
 // dst = -(a * b) - c
@@ -191,7 +191,7 @@ struct sseb {
     BE_FORCE_INLINE sseb(bool a, bool b, bool c, bool d) { m128 = _mm_lookupmask_ps[(size_t(d) << 3) | (size_t(c) << 2) | (size_t(b) << 1) | size_t(a)]; }
 
     BE_FORCE_INLINE sseb(const sseb &other) { m128i = other.m128i; }
-    BE_FORCE_INLINE sseb &operator=(const sseb &rhs) { m128 = rhs.m128; return *this; }
+    BE_FORCE_INLINE sseb &operator=(const sseb &rhs) { m128i = rhs.m128i; return *this; }
 
     BE_FORCE_INLINE operator const __m128 &() const { return m128; };
     BE_FORCE_INLINE operator __m128 &() { return m128; };

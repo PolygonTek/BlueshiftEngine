@@ -13,11 +13,13 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
+
+#if defined(ENABLE_X86_AVX_INTRINSICS)
 
 BE_NAMESPACE_BEGIN
 
-void BE_FASTCALL SIMD_AVX::Matrix4x4Multiply(float *dst, const float *src0, const float *src1) {
+void BE_FASTCALL SIMD_8::Matrix4x4Multiply(float *dst, const float *src0, const float *src1) {
     assert_32_byte_aligned(dst);
     assert_32_byte_aligned(src0);
     assert_32_byte_aligned(src1);
@@ -35,3 +37,5 @@ void BE_FASTCALL SIMD_AVX::Matrix4x4Multiply(float *dst, const float *src0, cons
 }
 
 BE_NAMESPACE_END
+
+#endif

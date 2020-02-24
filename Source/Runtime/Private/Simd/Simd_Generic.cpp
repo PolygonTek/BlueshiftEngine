@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Core/Vertex.h"
 #include "Core/JointPose.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 
 BE_NAMESPACE_BEGIN
 
