@@ -1,6 +1,6 @@
 #include "Precompiled.h"
 #include "Math/Math.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Core/CVars.h"
 #include "Sound/SoundSystem.h"
 

@@ -18,7 +18,7 @@
 #include "Render/Mesh.h"
 #include "AnimController/AnimController.h"
 #include "Animator/Animator.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Core/JointPose.h"
 #include "Game/Entity.h"
 

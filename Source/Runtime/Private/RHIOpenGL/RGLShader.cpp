@@ -17,7 +17,7 @@
 #include "RGLInternal.h"
 #include "Platform/PlatformFile.h"
 #include "Core/BinSearch.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Core/Checksum_MD5.h"
 #include "Core/Heap.h"
 #include "Core/Lexer.h"

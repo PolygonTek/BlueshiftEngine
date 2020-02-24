@@ -17,7 +17,7 @@
 #include "../Precompiled.h"
 
 // SIMD
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 
 // Common
 #include "Core/Checksum_CRC32.h"

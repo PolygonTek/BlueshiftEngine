@@ -17,7 +17,7 @@
 #include "AnimController/AnimState.h"
 #include "Animator/Animator.h"
 #include "Core/JointPose.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Game/Entity.h"
 #include "Components/ComScript.h"
 

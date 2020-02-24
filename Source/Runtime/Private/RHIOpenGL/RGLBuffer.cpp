@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 
 BE_NAMESPACE_BEGIN
 

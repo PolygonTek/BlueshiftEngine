@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "SIMD/Simd.h"
+#include "SIMD/SIMD.h"
 
 #define INT8_SIGN_BIT               7
 #define INT16_SIGN_BIT              15

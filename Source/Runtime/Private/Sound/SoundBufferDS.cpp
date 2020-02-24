@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Sound/Pcm.h"
 #include "Sound/SoundSystem.h"
 

@@ -21,7 +21,7 @@
 #include "Engine/Console.h"
 #include "Engine/Common.h"
 #include "Platform/PlatformProcess.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Core/StrColor.h"
 #include "Core/CVars.h"
 #include "Core/Cmds.h"

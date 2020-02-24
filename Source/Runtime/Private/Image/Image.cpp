@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Core/Heap.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Math/Math.h"
 #include "Image/Image.h"
 #include "ImageInternal.h"

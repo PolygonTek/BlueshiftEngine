@@ -16,7 +16,7 @@
 #include "Render/Render.h"
 #include "RenderInternal.h"
 #include "Core/JointPose.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Core/Heap.h"
 
 BE_NAMESPACE_BEGIN

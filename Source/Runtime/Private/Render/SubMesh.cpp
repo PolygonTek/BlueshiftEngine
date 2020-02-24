@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Core/Heap.h"
 #include "NvTriStrip.h"
 

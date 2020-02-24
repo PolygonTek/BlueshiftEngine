@@ -17,7 +17,7 @@
 #include "RenderInternal.h"
 #include "Render/FreeTypeFont.h"
 #include "Render/FontFile.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Core/Heap.h"
 #include "IO/FileSystem.h"
 #include "FontFace.h"

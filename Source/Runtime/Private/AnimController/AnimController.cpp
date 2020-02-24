@@ -19,7 +19,7 @@
 #include "Asset/GuidMapper.h"
 #include "Core/Heap.h"
 #include "Core/JointPose.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "IO/FileSystem.h"
 
 BE_NAMESPACE_BEGIN

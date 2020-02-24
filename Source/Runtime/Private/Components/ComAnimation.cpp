@@ -21,7 +21,7 @@
 #include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 #include "Core/JointPose.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 
 BE_NAMESPACE_BEGIN
 
