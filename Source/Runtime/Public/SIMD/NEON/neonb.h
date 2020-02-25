@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "Platform/Intrinsics.h"
-
 BE_FORCE_INLINE neonb set1_b32(bool a) {
     return vdupq_n_u32(a ? 0xFFFFFFFF : 0);
 }
@@ -31,9 +29,9 @@ BE_FORCE_INLINE neonb ps_to_b32(const neonf &a) {
 
 BE_FORCE_INLINE neonb operator!(const neonb &a) { return vmvnq_u32(a); }
 
-BE_FORCE_INLINE neonb operator&(const neonb &a, const neonb &b) { return vandq_s32(a, b); }
-BE_FORCE_INLINE neonb operator|(const neonb &a, const neonb &b) { return vorrq_s32(a, b); }
-BE_FORCE_INLINE neonb operator^(const neonb &a, const neonb &b) { return veorq_s32(a, b); }
+BE_FORCE_INLINE neonb operator&(const neonb &a, const neonb &b) { return vandq_u32(a, b); }
+BE_FORCE_INLINE neonb operator|(const neonb &a, const neonb &b) { return vorrq_u32(a, b); }
+BE_FORCE_INLINE neonb operator^(const neonb &a, const neonb &b) { return veorq_u32(a, b); }
 
 BE_FORCE_INLINE neonb operator&=(neonb &a, const neonb &b) { return a = a & b; }
 BE_FORCE_INLINE neonb operator|=(neonb &a, const neonb &b) { return a = a | b; }

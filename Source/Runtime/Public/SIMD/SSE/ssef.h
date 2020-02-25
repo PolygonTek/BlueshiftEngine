@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "Platform/Intrinsics.h"
-
 BE_FORCE_INLINE ssef set_ps(float a, float b, float c, float d) {
     return _mm_set_ps(d, c, b, a);
 }
@@ -213,17 +211,10 @@ BE_FORCE_INLINE ssef nmadd_ps(const ssef &a, const ssef &b, const ssef &c) { ret
 // dst = -(a * b) - c
 BE_FORCE_INLINE ssef nmsub_ps(const ssef &a, const ssef &b, const ssef &c) { return _mm_nmsub_ps(a.m128, b.m128, c.m128); }
 
-#ifdef __SSE4_1__
 BE_FORCE_INLINE ssef floor_ps(const ssef &a) { return _mm_round_ps(a, _MM_FROUND_TO_NEG_INF); }
 BE_FORCE_INLINE ssef ceil_ps(const ssef &a) { return _mm_round_ps(a, _MM_FROUND_TO_POS_INF); }
 BE_FORCE_INLINE ssef trunc_ps(const ssef &a) { return _mm_round_ps(a, _MM_FROUND_TO_ZERO); }
 BE_FORCE_INLINE ssef round_ps(const ssef &a) { return _mm_round_ps(a, _MM_FROUND_TO_NEAREST_INT); }
-#else
-BE_FORCE_INLINE ssef floor_ps(const ssef &a) { return ssef(floorf(a[0]), floorf(a[1]), floorf(a[2]), floorf(a[3])); }
-BE_FORCE_INLINE ssef ceil_ps(const ssef &a) { return ssef(ceilf(a[0]), ceilf(a[1]), ceilf(a[2]), ceilf(a[3])); }
-BE_FORCE_INLINE ssef trunc_ps(const ssef &a) { return ssef(truncf(a[0]), truncf(a[1]), truncf(a[2]), truncf(a[3])); }
-BE_FORCE_INLINE ssef round_ps(const ssef &a) { return ssef(roundf(a[0]), roundf(a[1]), roundf(a[2]), roundf(a[3])); }
-#endif
 
 BE_FORCE_INLINE ssef frac_ps(const ssef &a) { return a - floor_ps(a); }
 
@@ -284,7 +275,6 @@ BE_FORCE_INLINE float z_ps(const ssef &a) { return extract_ps<2>(a); }
 // Given a 4-channel single-precision ssef variable, returns the first channel 'w' as a float.
 BE_FORCE_INLINE float w_ps(const ssef &a) { return extract_ps<3>(a); }
 
-#ifdef __SSE4_1__
 // Inserts [32*src, 32*src+31] bits of b to a in [32*dst, 32*dst+31] bits with clear mask.
 template <int src, int dst, int clearmask>
 BE_FORCE_INLINE ssef insert_ps(const ssef &a, const ssef &b) { return _mm_insert_ps(a, b, (src << 6) | (dst << 4) | clearmask); }
@@ -296,32 +286,10 @@ BE_FORCE_INLINE ssef insert_ps(const ssef &a, const ssef &b) { return insert_ps<
 // Inserts b to a in [32*dst, 32*dst+31] bits.
 template <int dst>
 BE_FORCE_INLINE ssef insert_ps(const ssef &a, const float b) { return insert_ps<0, dst>(a, _mm_set_ss(b)); }
-#else
-// Inserts [32*src, 32*src+31] bits of b to a in [32*dst, 32*dst+31] bits.
-template <int src, int dst>
-BE_FORCE_INLINE ssef insert_ps(const ssef &a, const ssef &b) { 
-    ssef c = a;
-    c[dst & 3] = b[src & 3];
-    return c;
-}
-
-// Inserts b to a in [32*dst, 32*dst+31] bits.
-template <int dst>
-BE_FORCE_INLINE ssef insert_ps(const ssef &a, float b) { 
-    ssef c = a;
-    c[dst & 3] = b;
-    return c;
-}
-#endif
 
 // Selects 4x32 bits floats using mask.
 BE_FORCE_INLINE ssef select_ps(const ssef &a, const ssef &b, const sseb &mask) {
-#if defined(__SSE4_1__)
     return _mm_blendv_ps(a, b, mask);
-#else
-    // dst = (a & !mask) | (b & mask)
-    return _mm_or_ps(_mm_andnot_ps(_mm_castsi128_ps(mask), a), _mm_and_ps(_mm_castsi128_ps(mask), b));
-#endif
 }
 
 BE_FORCE_INLINE ssef min_ps(const ssef &a, const ssef &b) { return _mm_min_ps(a, b); }
@@ -348,21 +316,21 @@ BE_FORCE_INLINE float reduce_min_ps(const ssef &a) { return _mm_cvtss_f32(vreduc
 BE_FORCE_INLINE float reduce_max_ps(const ssef &a) { return _mm_cvtss_f32(vreduce_max_ps(a)); }
 
 // Returns index of minimum component.
-BE_FORCE_INLINE size_t select_min_ps(const ssef &a) { return __bsf(_mm_movemask_ps(a == vreduce_min_ps(a))); }
+BE_FORCE_INLINE size_t select_min_ps(const ssef &a) { return CountTrailingZeros(_mm_movemask_ps(a == vreduce_min_ps(a))); }
 
 // Returns index of maximum component.
-BE_FORCE_INLINE size_t select_max_ps(const ssef &a) { return __bsf(_mm_movemask_ps(a == vreduce_max_ps(a))); }
+BE_FORCE_INLINE size_t select_max_ps(const ssef &a) { return CountTrailingZeros(_mm_movemask_ps(a == vreduce_max_ps(a))); }
 
 // Returns index of minimum component with valid index mask.
 BE_FORCE_INLINE size_t select_min_ps(const ssef &a, const sseb &validmask) {
     const ssef v = select_ps(set1_ps(FLT_INFINITY), a, validmask);
-    return __bsf(_mm_movemask_ps(_mm_and_ps(validmask.m128, (v == vreduce_min_ps(v)))));
+    return CountTrailingZeros(_mm_movemask_ps(_mm_and_ps(validmask.m128, (v == vreduce_min_ps(v)))));
 }
 
 // Returns index of maximum component with valid index mask.
 BE_FORCE_INLINE size_t select_max_ps(const ssef &a, const sseb &validmask) {
     const ssef v = select_ps(set1_ps(-FLT_INFINITY), a, validmask);
-    return __bsf(_mm_movemask_ps(_mm_and_ps(validmask.m128, (v == vreduce_max_ps(v)))));
+    return CountTrailingZeros(_mm_movemask_ps(_mm_and_ps(validmask.m128, (v == vreduce_max_ps(v)))));
 }
 
 // Broadcasts sums of all components.
@@ -378,4 +346,16 @@ BE_FORCE_INLINE ssef dot4_ps(const ssef &a, const ssef &b) {
 #else
     return sum_ps(a * b);
 #endif
+}
+
+// Transposes 4x4 matrix.
+BE_FORCE_INLINE void transpose4x4(ssef &r0, ssef &r1, ssef &r2, ssef &r3) {
+    ssef l02 = unpacklo_ps(r0, r2); // m00, m20, m01, m21
+    ssef h02 = unpackhi_ps(r0, r2); // m02, m22, m03, m23
+    ssef l13 = unpacklo_ps(r1, r3); // m10, m30, m11, m31
+    ssef h13 = unpackhi_ps(r1, r3); // m12, m32, m13, m33
+    r0 = unpacklo_ps(l02, l13); // m00, m10, m20, m30
+    r1 = unpackhi_ps(l02, l13); // m01, m11, m21, m31
+    r2 = unpacklo_ps(h02, h13); // m02, m12, m22, m32
+    r3 = unpackhi_ps(h02, h13); // m03, m13, m23, m33
 }

@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "Platform/Intrinsics.h"
-
 BE_FORCE_INLINE avxb set1_256b32(bool a) {
     avxb dst;
     dst.l128i = _mm_castps_si128(_mm_lookupmask_ps[(size_t(a) << 3) | (size_t(a) << 2) | (size_t(a) << 1) | size_t(a)]);

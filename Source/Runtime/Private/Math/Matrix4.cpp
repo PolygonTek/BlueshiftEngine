@@ -91,7 +91,7 @@ Mat4 Mat4::TransposedMul(const Mat4 &a) const {
     simd4f ar2 = loadu_ps(mat[2]);
     simd4f ar3 = loadu_ps(mat[3]);
 
-    mat4x4_transpose(ar0, ar1, ar2, ar3);
+    transpose4x4(ar0, ar1, ar2, ar3);
 
     simd4f br0 = loadu_ps(a.mat[0]);
     simd4f br1 = loadu_ps(a.mat[1]);
@@ -172,7 +172,7 @@ Mat4 Mat4::TransposedMul(const Mat3x4 &a) const {
     simd4f ar2 = loadu_ps(mat[2]);
     simd4f ar3 = loadu_ps(mat[3]);
 
-    mat4x4_transpose(ar0, ar1, ar2, ar3);
+    transpose4x4(ar0, ar1, ar2, ar3);
 
     simd4f br0 = loadu_ps(a.mat[0]);
     simd4f br1 = loadu_ps(a.mat[1]);
@@ -215,7 +215,7 @@ Mat4 Mat4::Transpose() const {
     simd4f r2 = loadu_ps(mat[2]);
     simd4f r3 = loadu_ps(mat[3]);
 
-    mat4x4_transpose(r0, r1, r2, r3);
+    transpose4x4(r0, r1, r2, r3);
 
     store_ps(r0, transpose[0]);
     store_ps(r1, transpose[1]);

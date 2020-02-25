@@ -22,6 +22,8 @@
 #error "No SIMD4 intrinsics"
 #endif
 
+BE_NAMESPACE_BEGIN
+
 // Cross product.
 BE_FORCE_INLINE simd4f cross_ps(const simd4f &a, const simd4f &b) {
     simd4f a_yzxw = shuffle_ps<1, 2, 0, 3>(a); // (a.y, a.z, a.x, a.w)
@@ -29,18 +31,6 @@ BE_FORCE_INLINE simd4f cross_ps(const simd4f &a, const simd4f &b) {
     simd4f ab_yzxw = a_yzxw * b; // (a.y * b.x, a.z * b.y, a.x * b.z, a.w * b.w)
 
     return shuffle_ps<1, 2, 0, 3>(msub_ps(b_yzxw, a, ab_yzxw)); // (a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x, 0)
-}
-
-// Transposes 4x4 matrix.
-BE_FORCE_INLINE void mat4x4_transpose(simd4f &r0, simd4f &r1, simd4f &r2, simd4f &r3) {
-    simd4f l02 = unpacklo_ps(r0, r2); // m00, m20, m01, m21
-    simd4f h02 = unpackhi_ps(r0, r2); // m02, m22, m03, m23
-    simd4f l13 = unpacklo_ps(r1, r3); // m10, m30, m11, m31
-    simd4f h13 = unpackhi_ps(r1, r3); // m12, m32, m13, m33
-    r0 = unpacklo_ps(l02, l13); // m00, m10, m20, m30
-    r1 = unpackhi_ps(l02, l13); // m01, m11, m21, m31
-    r2 = unpacklo_ps(h02, h13); // m02, m12, m22, m32
-    r3 = unpackhi_ps(h02, h13); // m03, m13, m23, m33
 }
 
 // Linear combination.
@@ -59,18 +49,16 @@ BE_FORCE_INLINE simd4f lincomb3x4(const simd4f &a, const simd4f &br0, const simd
     simd4f result = shuffle_ps<0, 0, 0, 0>(a) * br0;
     result += shuffle_ps<1, 1, 1, 1>(a) * br1;
     result += shuffle_ps<2, 2, 2, 2>(a) * br2;
-    result += a & (simd4f &)simd4i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF);
+    result += a & simd4i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF);
     return result;
 }
-
-BE_NAMESPACE_BEGIN
 
 class SIMD_4 : public SIMD_Generic {
 public:
     SIMD_4() = default;
     SIMD_4(CpuId cpuid) { this->cpuid = cpuid; }
 
-    virtual const char * BE_FASTCALL    GetName() const { return "SIMD4"; }
+    virtual const char * BE_FASTCALL    GetName() const { return "SIMD 4"; }
 
     virtual void BE_FASTCALL            Add(float *dst, const float constant, const float *src, const int count);
     virtual void BE_FASTCALL            Add(float *dst, const float *src0, const float *src1, const int count);
@@ -95,6 +83,18 @@ public:
     virtual void BE_FASTCALL            TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint);
     virtual void BE_FASTCALL            UntransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint);
     virtual void BE_FASTCALL            MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, const Mat3x4 *joints2, const int numJoints);
+
+    static const simd4f                 F4_zero;
+    static const simd4f                 F4_one;
+    static const simd4f                 F4_half;
+    static const simd4f                 F4_255;
+    static const simd4f                 F4_min_char;
+    static const simd4f                 F4_max_char;
+    static const simd4f                 F4_min_short;
+    static const simd4f                 F4_max_short;
+    static const simd4f                 F4_tiny;
+    static const simd4f                 F4_smallestNonDenorm;
+    static const simd4f                 F4_sign_bit;
 };
 
 BE_NAMESPACE_END

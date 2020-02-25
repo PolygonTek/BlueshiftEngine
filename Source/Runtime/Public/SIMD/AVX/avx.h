@@ -51,6 +51,10 @@
     #define _mm256_nmsub_ps(a, b, c)    _mm256_sub_ps(_mm256_neg_ps(_mm256_mul_ps(a, b)), c)
 #endif
 
+struct avxf;
+struct avxi;
+struct avxb;
+
 // 8 wide AVX float type.
 struct avxf {
     union {
@@ -73,6 +77,12 @@ struct avxf {
 
     BE_FORCE_INLINE avxf(const avxf &other) { m256 = other.m256; }
     BE_FORCE_INLINE avxf &operator=(const avxf &rhs) { m256 = rhs.m256; return *this; }
+
+    BE_FORCE_INLINE operator const avxi &() const { return *reinterpret_cast<const avxi *>(this); };
+    BE_FORCE_INLINE operator avxi &() { return *reinterpret_cast<avxi *>(this); };
+
+    BE_FORCE_INLINE operator const avxb &() const { return *reinterpret_cast<const avxb *>(this); };
+    BE_FORCE_INLINE operator avxb &() { return *reinterpret_cast<avxb *>(this); };
 
     BE_FORCE_INLINE operator const __m256 &() const { return m256; };
     BE_FORCE_INLINE operator __m256 &() { return m256; };
@@ -106,6 +116,12 @@ struct avxi {
     BE_FORCE_INLINE avxi(const avxi &other) { m256i = other.m256i; }
     BE_FORCE_INLINE avxi &operator=(const avxi &rhs) { m256i = rhs.m256i; return *this; }
 
+    BE_FORCE_INLINE operator const avxf &() const { return *reinterpret_cast<const avxf *>(this); };
+    BE_FORCE_INLINE operator avxf &() { return *reinterpret_cast<avxf *>(this); };
+
+    BE_FORCE_INLINE operator const avxb &() const { return *reinterpret_cast<const avxb *>(this); };
+    BE_FORCE_INLINE operator avxb &() { return *reinterpret_cast<avxb *>(this); };
+
     BE_FORCE_INLINE operator const __m256 &() const { return m256; };
     BE_FORCE_INLINE operator __m256 &() { return m256; };
 
@@ -138,6 +154,12 @@ struct avxb {
 
     BE_FORCE_INLINE avxb(const avxb &other) { m256 = other.m256; }
     BE_FORCE_INLINE avxb &operator=(const avxb &rhs) { m256 = rhs.m256; return *this; }
+
+    BE_FORCE_INLINE operator const avxf &() const { return *reinterpret_cast<const avxf *>(this); };
+    BE_FORCE_INLINE operator avxf &() { return *reinterpret_cast<avxf *>(this); };
+
+    BE_FORCE_INLINE operator const avxi &() const { return *reinterpret_cast<const avxi *>(this); };
+    BE_FORCE_INLINE operator avxi &() { return *reinterpret_cast<avxi *>(this); };
 
     BE_FORCE_INLINE operator const __m256 &() const { return m256; };
     BE_FORCE_INLINE operator __m256 &() { return m256; };

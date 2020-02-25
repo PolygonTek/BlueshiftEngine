@@ -17,8 +17,10 @@
 #if defined(ENABLE_X86_AVX_INTRINSICS)
 #include "AVX/avx.h"
 #else
-#error "No SIMD4 intrinsics"
+#error "No SIMD8 intrinsics"
 #endif
+
+BE_NAMESPACE_BEGIN
 
 // Dual linear combination.
 // r0 = a[0] * b0 + a[1] * b1 + a[2] * b2 + a[3] * b3
@@ -67,16 +69,26 @@ BE_FORCE_INLINE void mat8x8_transpose(const simd8f &r0, const simd8f &r1, const 
     c2 = unpacklo_256ps(h02, h13);
 }
 
-BE_NAMESPACE_BEGIN
-
 class SIMD_8 : public SIMD_4 {
 public:
     SIMD_8() = default;
     SIMD_8(CpuId cpuid) { this->cpuid = cpuid; }
 
-    virtual const char * BE_FASTCALL    GetName() const { return "SIMD8"; }
+    virtual const char * BE_FASTCALL    GetName() const { return "SIMD 8"; }
 
     virtual void BE_FASTCALL            Matrix4x4Multiply(float *dst, const float *src0, const float *src1);
+
+    static const simd8f                 F8_zero;
+    static const simd8f                 F8_one;
+    static const simd8f                 F8_half;
+    static const simd8f                 F8_255;
+    static const simd8f                 F8_min_char;
+    static const simd8f                 F8_max_char;
+    static const simd8f                 F8_min_short;
+    static const simd8f                 F8_max_short;
+    static const simd8f                 F8_tiny;
+    static const simd8f                 F8_smallestNonDenorm;
+    static const simd8f                 F8_sign_bit;
 };
 
 BE_NAMESPACE_END

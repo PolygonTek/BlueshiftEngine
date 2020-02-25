@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "Platform/Intrinsics.h"
-
 BE_FORCE_INLINE ssei set_epi32(int32_t a, int32_t b, int32_t c, int32_t d) {
     return _mm_set_epi32(d, c, b, a);
 }
@@ -193,21 +191,11 @@ BE_FORCE_INLINE const ssei insert_epi32(const ssei &a, const int32_t b) { ssei c
 
 // Selects 4x32 bits integer using mask.
 BE_FORCE_INLINE ssei select_epi32(const ssei &a, const ssei &b, const sseb &mask) {
-#if defined(__SSE4_1__)
     return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(a), _mm_castsi128_ps(b), (mask)));
-#else
-    // dst = (a & !mask) | (b & mask)
-    return _mm_or_si128(_mm_andnot_si128(_mm_castps_si128(mask), a), _mm_and_si128(_mm_castps_si128(mask), b));
-#endif
 }
 
-#ifdef __SSE4_1__
 BE_FORCE_INLINE ssei min_epi32(const ssei &a, const ssei &b) { return _mm_min_epi32(a, b); }
 BE_FORCE_INLINE ssei max_epi32(const ssei &a, const ssei &b) { return _mm_max_epi32(a, b); }
-#else
-BE_FORCE_INLINE ssei min_epi32(const ssei &a, const ssei &b) { return select_epi32(a, b, a < b); }
-BE_FORCE_INLINE ssei max_epi32(const ssei &a, const ssei &b) { return select_epi32(b, a, a < b); }
-#endif
 
 BE_FORCE_INLINE ssei min_epi32(const ssei &a, const int32_t &b) { return min_epi32(a, set1_epi32(b)); }
 BE_FORCE_INLINE ssei min_epi32(const int32_t &a, const ssei &b) { return min_epi32(set1_epi32(a), b); }
@@ -231,21 +219,21 @@ BE_FORCE_INLINE int reduce_min_epi32(const ssei &a) { return extract_epi32<0>(vr
 BE_FORCE_INLINE int reduce_max_epi32(const ssei &a) { return extract_epi32<0>(vreduce_max_epi32(a)); }
 
 // Returns index of minimum component.
-BE_FORCE_INLINE size_t select_min_epi32(const ssei &a) { return __bsf(_mm_movemask_ps(a == vreduce_min_epi32(a))); }
+BE_FORCE_INLINE size_t select_min_epi32(const ssei &a) { return CountTrailingZeros(_mm_movemask_ps(a == vreduce_min_epi32(a))); }
 
 // Returns index of maximum component.
-BE_FORCE_INLINE size_t select_max_epi32(const ssei &a) { return __bsf(_mm_movemask_ps(a == vreduce_max_epi32(a))); }
+BE_FORCE_INLINE size_t select_max_epi32(const ssei &a) { return CountTrailingZeros(_mm_movemask_ps(a == vreduce_max_epi32(a))); }
 
 // Returns index of minimum component with valid index mask.
 BE_FORCE_INLINE size_t select_min_epi32(const ssei &a, const sseb &validmask) {
     const ssei v = select_epi32(set1_epi32(INT_MAX), a, validmask);
-    return __bsf(_mm_movemask_ps(_mm_and_ps(validmask.m128, _mm_castsi128_ps(v == vreduce_min_epi32(v)))));
+    return CountTrailingZeros(_mm_movemask_ps(_mm_and_ps(validmask.m128, _mm_castsi128_ps(v == vreduce_min_epi32(v)))));
 }
 
 // Returns index of maximum component with valid index mask.
 BE_FORCE_INLINE size_t select_max_epi32(const ssei &a, const sseb &validmask) {
     const ssei v = select_epi32(set1_epi32(INT_MIN), a, validmask);
-    return __bsf(_mm_movemask_ps(_mm_and_ps(validmask.m128, _mm_castsi128_ps(v == vreduce_max_epi32(v)))));
+    return CountTrailingZeros(_mm_movemask_ps(_mm_and_ps(validmask.m128, _mm_castsi128_ps(v == vreduce_max_epi32(v)))));
 }
 
 // Broadcasts sums of all components.

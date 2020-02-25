@@ -187,12 +187,10 @@ struct BE_API VertexGenericLit : public VertexGeneric {
 
 BE_INLINE void ConvertNormalToBytes(const float &x, const float &y, const float &z, byte *bval) {
 #ifdef ENABLE_X86_SSE_INTRINSICS
-    const __m128 vector_float_one           = { 1.0f, 1.0f, 1.0f, 1.0f };
-    const __m128 vector_float_half          = { 0.5f, 0.5f, 0.5f, 0.5f };
-    const __m128 vector_float_255_over_2    = { 255.0f / 2.0f, 255.0f / 2.0f, 255.0f / 2.0f, 255.0f / 2.0f };
+    const __m128 vector_float_255_over_2 = { 255.0f / 2.0f, 255.0f / 2.0f, 255.0f / 2.0f, 255.0f / 2.0f };
 
     const __m128 xyz = _mm_setr_ps(x, y, z, 0);
-    const __m128 xyzScaled = _mm_add_ps(_mm_mul_ps(_mm_add_ps(xyz, vector_float_one), vector_float_255_over_2), vector_float_half);
+    const __m128 xyzScaled = _mm_add_ps(_mm_mul_ps(_mm_add_ps(xyz, SIMD_4::F4_one), vector_float_255_over_2), SIMD_4::F4_half);
     const __m128i xyzI32 = _mm_cvtps_epi32(xyzScaled);
     const __m128i xyzU16 = _mm_packus_epi32(xyzI32, xyzI32);
     const __m128i xyzU8 = _mm_packus_epi16(xyzU16, xyzU16);

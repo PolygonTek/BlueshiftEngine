@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "Platform/Intrinsics.h"
-
 BE_FORCE_INLINE neonf set_ps(float a, float b, float c, float d) {
     ALIGN_AS16 float data[4] = { a, b, c, d };
     return vld1q_f32(data);
@@ -74,7 +72,7 @@ BE_FORCE_INLINE neonf sqrt_ps(const neonf &a) {
 }
 
 // Reciprocal with 12 bits of precision.
-BE_FORCE_INLINE neonf rcp_ps(const neonf &a) {
+BE_FORCE_INLINE neonf rcp12_ps(const neonf &a) {
     return vrecpeq_f32(a);
 }
 
@@ -104,7 +102,7 @@ BE_FORCE_INLINE neonf div32_ps(const neonf &a, const neonf &b) {
 }
 
 // Reciprocal square root with 12 bits of precision.
-BE_FORCE_INLINE neonf rsqrt_12ps(const neonf &a) {
+BE_FORCE_INLINE neonf rsqrt12_ps(const neonf &a) {
     return vrsqrteq_f32(a);
 }
 
@@ -220,11 +218,163 @@ BE_FORCE_INLINE neonf unpackhi_ps(const neonf &a, const neonf &b) { return vunpa
 
 // Shuffles 4x32 bits floats using template parameters. ix = [0, 3].
 template <size_t i0, size_t i1, size_t i2, size_t i3>
-BE_FORCE_INLINE neonf shuffle_ps(const neonf &a) { return vreinterpretq_f32_u32(vshuffleq_s32(vreinterpretq_u32_f32(a), _MM_SHUFFLE(i3, i2, i1, i0))); }
+BE_FORCE_INLINE neonf shuffle_ps(const neonf &a) {
+    float32x4_t ret = vmovq_n_f32(vgetq_lane_f32(a, i0));
+    ret = vsetq_lane_f32(vgetq_lane_f32(a, i1), ret, 1);
+    ret = vsetq_lane_f32(vgetq_lane_f32(a, i2), ret, 2);
+    return vsetq_lane_f32(vgetq_lane_f32(a, i3), ret, 3);
+}
+
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<0, 0, 0, 0>(const neonf &a) {
+    return vsplatq_f32(a, 0);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<1, 1, 1, 1>(const neonf &a) {
+    return vsplatq_f32(a, 1);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<2, 2, 2, 2>(const neonf &a) {
+    return vsplatq_f32(a, 2);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<3, 3, 3, 3>(const neonf &a) {
+    return vsplatq_f32(a, 3);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<2, 3, 0, 1>(const neonf &a) {
+    return vpermq_f32_1032(a);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<1, 0, 3, 2>(const neonf &a) {
+    return vpermq_f32_2301(a);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<1, 2, 3, 0>(const neonf &a) {
+    return vpermq_f32_0321(a);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<3, 0, 1, 2>(const neonf &a) {
+    return vpermq_f32_2103(a);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<0, 1, 0, 1>(const neonf &a) {
+    return vpermq_f32_1010(a);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<1, 0, 0, 1>(const neonf &a) {
+    return vpermq_f32_1001(a);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<1, 0, 1, 0>(const neonf &a) {
+    return vpermq_f32_0101(a);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<1, 1, 2, 2>(const neonf &a) {
+    return vpermq_f32_2211(a);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<2, 2, 1, 0>(const neonf &a) {
+    return vpermq_f32_0122(a);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<2, 3, 3, 3>(const neonf &a) {
+    return vpermq_f32_3332(a);
+}
 
 // Shuffles two 4x32 bits floats using template parameters. ax, bx = [0, 3].
 template <size_t a0, size_t a1, size_t b0, size_t b1>
-BE_FORCE_INLINE neonf shuffle_ps(const neonf &a, const neonf &b) { return vshuffleq_f32(a, b, _MM_SHUFFLE(b1, b0, a1, a0)); }
+BE_FORCE_INLINE neonf shuffle_ps(const neonf &a, const neonf &b) {
+    float32x4_t ret = vmovq_n_f32(vgetq_lane_f32(a, a0));
+    ret = vsetq_lane_f32(vgetq_lane_f32(a, a1), ret, 1);
+    ret = vsetq_lane_f32(vgetq_lane_f32(b, b0), ret, 2);
+    return vsetq_lane_f32(vgetq_lane_f32(b, b1), ret, 3);
+}
+
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<0, 0, 0, 0>(const neonf &a, const neonf &b) {
+    return vshufq_f32_0000(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<1, 1, 1, 1>(const neonf &a, const neonf &b) {
+    return vshufq_f32_1111(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<2, 2, 2, 2>(const neonf &a, const neonf &b) {
+    return vshufq_f32_2222(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<3, 3, 3, 3>(const neonf &a, const neonf &b) {
+    return vshufq_f32_3333(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<2, 3, 0, 1>(const neonf &a, const neonf &b) {
+    return vshufq_f32_1032(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<1, 0, 3, 2>(const neonf &a, const neonf &b) {
+    return vshufq_f32_2301(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<1, 2, 3, 0>(const neonf &a, const neonf &b) {
+    return vshufq_f32_0321(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<3, 0, 1, 2>(const neonf &a, const neonf &b) {
+    return vshufq_f32_2103(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<0, 1, 0, 1>(const neonf &a, const neonf &b) {
+    return vshufq_f32_1010(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<1, 0, 0, 1>(const neonf &a, const neonf &b) {
+    return vshufq_f32_1001(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<1, 0, 1, 0>(const neonf &a, const neonf &b) {
+    return vshufq_f32_0101(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<0, 1, 2, 3>(const neonf &a, const neonf &b) {
+    return vshufq_f32_3210(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<1, 1, 0, 0>(const neonf &a, const neonf &b) {
+    return vshufq_f32_0011(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<2, 2, 0, 0>(const neonf &a, const neonf &b) {
+    return vshufq_f32_0022(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<0, 0, 2, 2>(const neonf &a, const neonf &b) {
+    return vshufq_f32_2200(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<2, 0, 2, 3>(const neonf &a, const neonf &b) {
+    return vshufq_f32_3202(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<2, 3, 2, 3>(const neonf &a, const neonf &b) {
+    return vshufq_f32_3232(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<3, 3, 1, 1>(const neonf &a, const neonf &b) {
+    return vshufq_f32_1133(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<0, 1, 0, 2>(const neonf &a, const neonf &b) {
+    return vshufq_f32_2010(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<1, 0, 0, 2>(const neonf &a, const neonf &b) {
+    return vshufq_f32_2001(a, b);
+}
+template <>
+BE_FORCE_INLINE neonf shuffle_ps<2, 3, 0, 2>(const neonf &a, const neonf &b) {
+    return vshufq_f32_2032(a, b);
+}
 
 template <size_t i>
 BE_FORCE_INLINE float extract_ps(const neonf &a) {
@@ -288,21 +438,21 @@ BE_FORCE_INLINE float reduce_min_ps(const neonf &a) { return vgetq_lane_f32(vred
 BE_FORCE_INLINE float reduce_max_ps(const neonf &a) { return vgetq_lane_f32(vreduce_max_ps(a), 0); }
 
 // Return index of minimum component.
-BE_FORCE_INLINE size_t select_min_ps(const neonf &a) { return __bsf(vmovemaskq_f32(a == vreduce_min_ps(a))); }
+BE_FORCE_INLINE size_t select_min_ps(const neonf &a) { return CountTrailingZeros(vmovemaskq_f32(a == vreduce_min_ps(a))); }
 
 // Return index of maximum component.
-BE_FORCE_INLINE size_t select_max_ps(const neonf &a) { return __bsf(vmovemaskq_f32(a == vreduce_max_ps(a))); }
+BE_FORCE_INLINE size_t select_max_ps(const neonf &a) { return CountTrailingZeros(vmovemaskq_f32(a == vreduce_max_ps(a))); }
 
 // Return index of minimum component with valid index mask.
 BE_FORCE_INLINE size_t select_min_ps(const neonf &a, const neonb &validmask) {
     const neonf v = select_ps(set1_ps(FLT_INFINITY), a, validmask);
-    return __bsf(vmovemaskq_f32(validmask & (v == vreduce_min_ps(v))));
+    return CountTrailingZeros(vmovemaskq_f32(vandq_u32(validmask.u32x4, (v == vreduce_min_ps(v)).u32x4)));
 }
 
 // Return index of maximum component with valid index mask.
 BE_FORCE_INLINE size_t select_max_ps(const neonf &a, const neonb &validmask) {
     const neonf v = select_ps(set1_ps(-FLT_INFINITY), a, validmask);
-    return __bsf(vmovemaskq_f32(validmask & (v == vreduce_max_ps(v))));
+    return CountTrailingZeros(vmovemaskq_f32(vandq_u32(validmask.u32x4, (v == vreduce_max_ps(v)).u32x4)));
 }
 
 // Broadcast sums of all components.
@@ -315,4 +465,14 @@ BE_FORCE_INLINE neonf sum_ps(const neonf &a) {
 // Broadcast dot4 product.
 BE_FORCE_INLINE neonf dot4_ps(const neonf &a, const neonf &b) {
     return sum_ps(a * b);
+}
+
+// Transposes 4x4 matrix.
+BE_FORCE_INLINE void transpose4x4(neonf &r0, neonf &r1, neonf &r2, neonf &r3) {
+    float32x4x2_t r01 = vtrnq_f32(r0, r1); // (m00, m10, m02, m12), (m01, m11, m03, m13)
+    float32x4x2_t r23 = vtrnq_f32(r2, r3); // (m20, m30, m22, m32), (m21, m31, m23, m33)
+    r0 = vcombine_f32(vget_low_f32(r01.val[0]), vget_low_f32(r23.val[0])); // (m00, m10, m20, m30)
+    r1 = vcombine_f32(vget_low_f32(r01.val[1]), vget_low_f32(r23.val[1])); // (m01, m11, m21, m31)
+    r2 = vcombine_f32(vget_high_f32(r01.val[0]), vget_high_f32(r23.val[0])); // (m02, m12, m22, m32)
+    r3 = vcombine_f32(vget_high_f32(r01.val[1]), vget_high_f32(r23.val[1])); // (m03, m13, m23, m33)
 }

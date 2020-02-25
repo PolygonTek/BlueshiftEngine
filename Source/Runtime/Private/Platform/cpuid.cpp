@@ -198,10 +198,10 @@ void DetectCpu() {
         cpuInfo.cpuid |= CPUID_UNSUPPORTED;
     }
 #elif defined(__IOS__)
-    #ifdef __ARM_NEON__
+    #if defined(__ARM__) && defined(__NEON__)
         cpuInfo.cpuid |= CPUID_ARM;
         cpuInfo.cpuid |= CPUID_NEON;
-#endif
+    #endif
 #else
     cpuInfo.cpuid |= CPUID_UNSUPPORTED;
 #endif

@@ -147,19 +147,6 @@ public:
     static const float          FloatEpsilon;               ///< smallest positive number such that 1.0 + FloatEpsilon != 1.0
     static const float          FloatSmallestNonDenormal;   ///< smallest non-denormal 32-bit floating point value
     
-#if defined(ENABLE_SIMD_INTRINSICS)
-    static const simd4f         SIMD_SP_zero;
-    static const simd4f         SIMD_SP_255;
-    static const simd4f         SIMD_SP_min_char;
-    static const simd4f         SIMD_SP_max_char;
-    static const simd4f         SIMD_SP_min_short;
-    static const simd4f         SIMD_SP_max_short;
-    static const simd4f         SIMD_SP_rsqrt_c0;
-    static const simd4f         SIMD_SP_rsqrt_c1;
-    static const simd4f         SIMD_SP_tiny;
-    static const simd4f         SIMD_SP_smallestNonDenorm;
-#endif
-
     static void                 Init();
 
                                 /// Reciprocal square root, returns huge number when x == 0.0.
@@ -281,6 +268,14 @@ public:
     static int                  RoundDownPowerOfTwo(int x);
                                 /// Round x up to the nearest power of 2.
     static int                  RoundUpPowerOfTwo(int x);
+
+                                /// Computes the base 2 logarithm for an integer value that is greater than 0.
+                                /// The result is rounded down to the nearest integer.
+    static uint32_t             FloorLog2(uint32_t value);
+                                /// Counts the number of leading zeros in the bit representation of the value
+    static uint32_t             CountLeadingZeros(uint32_t value);
+                                /// Counts the number of trailing zeros in the bit representation of the value.
+    static uint32_t             CountTrailingZeros(uint32_t value);
 
                                 /// Returns the absolute value of the integer value (for reference only).
     static int                  Abs(int x);
@@ -961,8 +956,8 @@ BE_INLINE int Math::FtoiFast(float f) {
 BE_INLINE int8_t Math::Ftoi8(float f) {
 #ifdef ENABLE_X86_SSE_INTRINSICS
     __m128 x = _mm_load_ss(&f);
-    x = _mm_max_ss(x, SIMD_SP_min_char);
-    x = _mm_min_ss(x, SIMD_SP_max_char);
+    x = _mm_max_ss(x, SIMD_4::F4_min_char);
+    x = _mm_min_ss(x, SIMD_4::F4_max_char);
     return static_cast<int8_t>(_mm_cvttss_si32(x));
 #else
     // The converted result is clamped to the range [-128, 127].
@@ -979,8 +974,8 @@ BE_INLINE int8_t Math::Ftoi8(float f) {
 BE_INLINE int16_t Math::Ftoi16(float f) {
 #ifdef ENABLE_X86_SSE_INTRINSICS
     __m128 x = _mm_load_ss(&f);
-    x = _mm_max_ss(x, SIMD_SP_min_short);
-    x = _mm_min_ss(x, SIMD_SP_max_short);
+    x = _mm_max_ss(x, SIMD_4::F4_min_short);
+    x = _mm_min_ss(x, SIMD_4::F4_max_short);
     return static_cast<int16_t>(_mm_cvttss_si32(x));
 #else
     // The converted result is clamped to the range [-32768, 32767].
@@ -1010,8 +1005,8 @@ BE_INLINE byte Math::Ftob(float f) {
     // If a converted result is negative the value (0) is returned and if the
     // converted result is larger than the maximum byte the value (255) is returned.
     __m128 x = _mm_load_ss(&f);
-    x = _mm_max_ss(x, SIMD_SP_zero);
-    x = _mm_min_ss(x, SIMD_SP_255);
+    x = _mm_max_ss(x, SIMD_4::F4_zero);
+    x = _mm_min_ss(x, SIMD_4::F4_255);
     return static_cast<byte>(_mm_cvttss_si32(x));
 #else
     // The converted result is clamped to the range [0,255].

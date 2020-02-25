@@ -370,6 +370,7 @@ set(COMMON_ENGINE_FILES
     Private/SIMD/SIMD_Generic.cpp
     Private/SIMD/SIMD_4.cpp
     Private/SIMD/SIMD_8.cpp
+    Private/SIMD/sse.cpp
 
     Private/Platform/cpuid.cpp
     Private/Platform/PlatformBaseProcess.cpp

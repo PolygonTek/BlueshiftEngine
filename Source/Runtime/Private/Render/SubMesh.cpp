@@ -1241,7 +1241,7 @@ const Mat3 SubMesh::ComputeInertiaTensor(const Vec3 &centroid, float mass) const
         temp1 = shuffle_ps<1, 2, 0, 3>(b) * g1;
         temp2 = shuffle_ps<1, 2, 0, 3>(c) * g2;
 
-        mintg1 = _mm_madd_ps(cr, f3, mintg1);
+        mintg1 = madd_ps(cr, f3, mintg1);
         mintg2 = cr * (temp0 + temp1 + temp2);
     }
 

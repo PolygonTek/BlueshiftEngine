@@ -18,83 +18,19 @@
 /// Windows Platform
 ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(__WIN32__)
+#ifdef __WIN32__
 
-#include <intrin.h>
-
-BE_FORCE_INLINE size_t read_tsc() {
-    LARGE_INTEGER li;
-    QueryPerformanceCounter(&li);
-    return (size_t)li.QuadPart;
+BE_FORCE_INLINE int32_t atomic_add(volatile int32_t *p, int32_t v) {
+    return _InterlockedExchangeAdd((volatile long *)p, v);
 }
 
-BE_FORCE_INLINE uint64_t __rdpmc(int i) {
-    return __readpmc(i);
+BE_FORCE_INLINE int32_t atomic_xchg(volatile int32_t *p, int32_t v) {
+    return _InterlockedExchange((volatile long *)p, v);
 }
 
-BE_FORCE_INLINE int __bsf(int v) {
-    unsigned long r = 0; 
-    _BitScanForward(&r, v); 
-    return r;
+BE_FORCE_INLINE int32_t atomic_cmpxchg(volatile int32_t *p, int32_t v, int32_t c) {
+    return _InterlockedCompareExchange((volatile long *)p, v, c);
 }
-
-BE_FORCE_INLINE int __bsr(int v) {
-    unsigned long r = 0; 
-    _BitScanReverse(&r, v); 
-    return r;
-}
-
-BE_FORCE_INLINE int __btc(int v, int i) {
-    long r = v; 
-    _bittestandcomplement(&r, i); 
-    return r;
-}
-
-BE_FORCE_INLINE int __bts(int v, int i) {
-    long r = v; 
-    _bittestandset(&r, i); 
-    return r;
-}
-
-BE_FORCE_INLINE int __btr(int v, int i) {
-    long r = v; 
-    _bittestandreset(&r, i); 
-    return r;
-}
-
-#if (defined(__X86_64__) || defined(__ARM64__)) && !defined(__INTEL_COMPILER)
-
-BE_FORCE_INLINE size_t __bsf(size_t v) {
-    unsigned long r = 0; 
-    _BitScanForward64(&r, v); 
-    return r;
-}
-
-BE_FORCE_INLINE size_t __bsr(size_t v) {
-    unsigned long r = 0; 
-    _BitScanReverse64(&r, v); 
-    return r;
-}
-
-BE_FORCE_INLINE size_t __btc(size_t v, size_t i) {
-    __int64 r = v; 
-    _bittestandcomplement64(&r, i); 
-    return r;
-}
-
-BE_FORCE_INLINE size_t __bts(size_t v, size_t i) {
-    __int64 r = v; 
-    _bittestandset64(&r, i); 
-    return r;
-}
-
-BE_FORCE_INLINE size_t __btr(size_t v, size_t i) {
-    __int64 r = v; 
-    _bittestandreset64(&r, i); 
-    return r;
-}
-
-#endif // (defined(__X86_64__) || defined(__ARM64__)) && !defined(__INTEL_COMPILER)
 
 #if defined(__X86_64__) || defined(__ARM64__)
 
@@ -112,23 +48,43 @@ BE_FORCE_INLINE int64_t atomic_cmpxchg(volatile int64_t *p, int64_t v, int64_t c
 
 #endif // !defined(__X86_64__) && !defined(__ARM64__)
 
-BE_FORCE_INLINE int32_t atomic_add(volatile int32_t *p, int32_t v) {
-    return _InterlockedExchangeAdd((volatile long *)p, v);
+#pragma intrinsic(_BitScanReverse)
+#pragma intrinsic(_BitScanForward)
+
+BE_INLINE uint32_t FloorLog2(uint32_t value) {
+    // Use BSR to return the log2 of the integer
+    DWORD log2;
+    if (_BitScanReverse(&log2, value) != 0) {
+        return log2;
+    }
+    return 0;
 }
 
-BE_FORCE_INLINE int32_t atomic_xchg(volatile int32_t *p, int32_t v) {
-    return _InterlockedExchange((volatile long *)p, v);
+BE_INLINE uint32_t CountLeadingZeros(uint32_t value) {
+    // Use BSR to return the log2 of the integer
+    DWORD log2;
+    if (_BitScanReverse(&log2, value) != 0) {
+        return 31 - log2;
+    }
+    return 32;
 }
 
-BE_FORCE_INLINE int32_t atomic_cmpxchg(volatile int32_t *p, int32_t v, int32_t c) {
-    return _InterlockedCompareExchange((volatile long *)p, v, c);
+BE_INLINE uint32_t CountTrailingZeros(uint32_t value) {
+    if (value == 0) {
+        return 32;
+    }
+    uint32_t bitIndex;    // 0-based, where the LSB is 0 and MSB is 31
+    _BitScanForward((::DWORD *)&bitIndex, value);   // Scans from LSB to MSB
+    return bitIndex;
 }
+
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Unix Platform
 ////////////////////////////////////////////////////////////////////////////////
 
-#elif defined(__UNIX__)
+#ifdef __UNIX__
 
 #if defined(__X86__)
 
@@ -142,79 +98,19 @@ BE_FORCE_INLINE uint64_t read_tsc()  {
     return (((uint64_t)high) << 32) + (uint64_t)low;
 }
 
-BE_FORCE_INLINE uint64_t __rdpmc(int i) {
-    uint32_t high, low;
-    asm volatile ("rdpmc" : "=d"(high), "=a"(low) : "c"(i));
-    return (((uint64_t)high) << 32) + (uint64_t)low;
-}
-
-BE_FORCE_INLINE unsigned int __popcnt(unsigned int in) {
-    int r = 0; 
-    asm ("popcnt %1,%0" : "=r"(r) : "r"(in)); 
-    return r;
-}
-
-BE_FORCE_INLINE int __bsf(int v) {
-    int r = 0; 
-    asm ("bsf %1,%0" : "=r"(r) : "r"(v)); 
-    return r;
-}
-
-BE_FORCE_INLINE int __bsr(int v) {
-    int r = 0; 
-    asm ("bsr %1,%0" : "=r"(r) : "r"(v)); 
-    return r;
-}
-
-BE_FORCE_INLINE int __btc(int v, int i) {
-    int r = 0; 
-    asm ("btc %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); 
-    return r;
-}
-
-BE_FORCE_INLINE int __bts(int v, int i) {
-    int r = 0; 
-    asm ("bts %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); 
-    return r;
-}
-
-BE_FORCE_INLINE int __btr(int v, int i) {
-    int r = 0; 
-    asm ("btr %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); 
-    return r;
-}
-
-BE_FORCE_INLINE size_t __bsf(size_t v) {
-    size_t r = 0; 
-    asm ("bsf %1,%0" : "=r"(r) : "r"(v)); 
-    return r;
-}
-
-BE_FORCE_INLINE size_t __bsr(size_t v) {
-    size_t r = 0; 
-    asm ("bsr %1,%0" : "=r"(r) : "r"(v)); 
-    return r;
-}
-
-BE_FORCE_INLINE size_t __btc(size_t v, size_t i) {
-    size_t r = 0; 
-    asm ("btc %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); 
-    return r;
-}
-
-BE_FORCE_INLINE size_t __bts(size_t v, size_t i) {
-    size_t r = 0; 
-    asm ("bts %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); 
-    return r;
-}
-
-BE_FORCE_INLINE size_t __btr(size_t v, size_t i) {
-    size_t r = 0; 
-    asm ("btr %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); 
-    return r;
-}
-
 #endif // defined(__X86__)
+
+BE_FORCE_INLINE int32_t atomic_add(int32_t volatile *value, int32_t input) {
+    return __sync_fetch_and_add(value, input);
+}
+
+BE_FORCE_INLINE int32_t atomic_xchg(int32_t volatile *value, int32_t input) {
+    return __sync_lock_test_and_set(value, input);
+}
+
+BE_FORCE_INLINE int32_t atomic_cmpxchg(int32_t volatile *value, int32_t input, int32_t comparand) {
+    return __sync_val_compare_and_swap(value, comparand, input);
+}
 
 #if defined(__X86_64__) || defined(__ARM64__)
 
@@ -232,44 +128,28 @@ BE_FORCE_INLINE int64_t atomic_cmpxchg(int64_t volatile *value, int64_t input, i
 
 #endif // !defined(__X86_64__) && !defined(__ARM64__)
 
-BE_FORCE_INLINE int32_t atomic_add(int32_t volatile *value, int32_t input) {
-    return __sync_fetch_and_add(value, input);
+BE_INLINE uint32_t FloorLog2(uint32_t value) {
+    uint32_t pos = 0;
+    if (value >= 1 << 16) { value >>= 16; pos += 16; }
+    if (value >= 1 << 8) { value >>= 8; pos += 8; }
+    if (value >= 1 << 4) { value >>= 4; pos += 4; }
+    if (value >= 1 << 2) { value >>= 2; pos += 2; }
+    if (value >= 1 << 1) { pos += 1; }
+    return (value == 0) ? 0 : pos;
 }
 
-BE_FORCE_INLINE int32_t atomic_xchg(int32_t volatile *value, int32_t input) {
-    return __sync_lock_test_and_set(value, input);
+BE_INLINE uint32_t CountLeadingZeros(uint32_t value) {
+    if (value == 0) {
+        return 32;
+    }
+    return __builtin_clz(value);
 }
 
-BE_FORCE_INLINE int32_t atomic_cmpxchg(int32_t volatile *value, int32_t input, int32_t comparand) {
-    return __sync_val_compare_and_swap(value, comparand, input);
+BE_INLINE uint32_t CountTrailingZeros(uint32_t value) {
+    if (value == 0) {
+        return 32;
+    }
+    return __builtin_ctz(value);
 }
 
 #endif // __UNIX__
-
-////////////////////////////////////////////////////////////////////////////////
-/// All Platforms
-////////////////////////////////////////////////////////////////////////////////
-
-#if defined(__X86__)
-
-BE_FORCE_INLINE uint64_t rdtsc() {
-    int dummy[4];
-    __cpuid(dummy, 0);
-    uint64_t clock = read_tsc();
-    __cpuid(dummy, 0);
-    return clock;
-}
-
-#endif // defined(__X86__)
-
-BE_FORCE_INLINE int cast_f2i(float f) {
-    union { float f; int i; } v; 
-    v.f = f; 
-    return v.i;
-}
-
-BE_FORCE_INLINE float cast_i2f(int i) {
-    union { float f; int i; } v; 
-    v.i = i; 
-    return v.f;
-}

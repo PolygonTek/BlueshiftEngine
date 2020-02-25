@@ -20,7 +20,7 @@ class SIMD_Generic : public SIMDProcessor {
 public:
     SIMD_Generic() { cpuid = CPUID_GENERIC; }
 
-    virtual const char * BE_FASTCALL    GetName() const { return "generic code"; }
+    virtual const char * BE_FASTCALL    GetName() const { return "Generic"; }
 
     virtual void BE_FASTCALL            Add(float *dst, const float constant, const float *src, const int count);
     virtual void BE_FASTCALL            Add(float *dst, const float *src0, const float *src1, const int count);

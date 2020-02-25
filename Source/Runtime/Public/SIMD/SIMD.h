@@ -14,6 +14,9 @@
 
 #pragma once
 
+#include "Platform/cpuid.h"
+#include "Platform/Intrinsics.h"
+
 /*
 -------------------------------------------------------------------------------
 
@@ -21,8 +24,6 @@
     
 -------------------------------------------------------------------------------
 */
-
-#include "Platform/cpuid.h"
 
 BE_NAMESPACE_BEGIN
 

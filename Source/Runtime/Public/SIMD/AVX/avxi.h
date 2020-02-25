@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "Platform/Intrinsics.h"
-
 BE_FORCE_INLINE avxi set_256epi32(int32_t a, int32_t b, int32_t c, int32_t d, int32_t e, int32_t f, int32_t g, int32_t h) {
     return _mm256_set_epi32(h, g, f, e, d, c, b, a);
 }
@@ -233,17 +231,17 @@ BE_FORCE_INLINE int reduce_min_256epi32(const avxi &a) { return extract_epi32<0>
 BE_FORCE_INLINE int reduce_max_256epi32(const avxi &a) { return extract_epi32<0>(extract_256epi32<0>(vreduce_max_256epi32(a))); }
 
 // Returns index of minimum component.
-BE_FORCE_INLINE size_t select_min_256epi32(const avxi &a) { return __bsf(_mm256_movemask_ps(a == vreduce_min_256epi32(a))); }
+BE_FORCE_INLINE size_t select_min_256epi32(const avxi &a) { return CountTrailingZeros(_mm256_movemask_ps(a == vreduce_min_256epi32(a))); }
 
 // Returns index of maximum component.
-BE_FORCE_INLINE size_t select_max_256epi32(const avxi &a) { return __bsf(_mm256_movemask_ps(a == vreduce_max_256epi32(a))); }
+BE_FORCE_INLINE size_t select_max_256epi32(const avxi &a) { return CountTrailingZeros(_mm256_movemask_ps(a == vreduce_max_256epi32(a))); }
 
 // mask 된 8 개의 packed float 중에서 minimum/maximum 값의 bit index 를 리턴.
 BE_FORCE_INLINE size_t select_min_256epi32(const avxi &a, const avxb &validmask) {
     const avxi v = select_256epi32(set1_256epi32(INT_MAX), a, validmask);
-    return __bsf(_mm256_movemask_ps(_mm256_and_ps(validmask.m256, (v == vreduce_min_256epi32(v)))));
+    return CountTrailingZeros(_mm256_movemask_ps(_mm256_and_ps(validmask.m256, (v == vreduce_min_256epi32(v)))));
 }
 BE_FORCE_INLINE size_t select_max_256epi32(const avxi &a, const avxb &validmask) {
     const avxi v = select_256epi32(set1_256epi32(INT_MIN), a, validmask);
-    return __bsf(_mm256_movemask_ps(_mm256_and_ps(validmask.m256, (v == vreduce_max_256epi32(v)))));
+    return CountTrailingZeros(_mm256_movemask_ps(_mm256_and_ps(validmask.m256, (v == vreduce_max_256epi32(v)))));
 }

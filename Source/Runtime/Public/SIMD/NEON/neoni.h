@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "Platform/Intrinsics.h"
-
 BE_FORCE_INLINE neoni set_epi32(int32_t a, int32_t b, int32_t c, int32_t d) {
     ALIGN_AS16 int32_t data[4] = { a, b, c, d };
     return vld1q_s32(data);
@@ -88,14 +86,14 @@ BE_FORCE_INLINE neoni operator^(const neoni &a, const neoni &b) { return veorq_u
 BE_FORCE_INLINE neoni operator^(const neoni &a, const int32_t &b) { return a ^ set1_epi32(b); }
 BE_FORCE_INLINE neoni operator^(const int32_t &a, const neoni &b) { return set1_epi32(a) ^ b; }
 
-BE_FORCE_INLINE neoni operator<<(const neoni &a, const int32_t &n) { return vshlq_n_u32(a, n); }
-BE_FORCE_INLINE neoni operator>>(const neoni &a, const int32_t &n) { return vshrq_n_s32(a, n); }
+BE_FORCE_INLINE neoni operator<<(const neoni &a, const int32_t &n) { return vshlq_u32(a, vdupq_n_s32(n)); }
+BE_FORCE_INLINE neoni operator>>(const neoni &a, const int32_t &n) { return vshlq_s32(a, vdupq_n_s32(-n)); }
 
-BE_FORCE_INLINE neoni operator==(const neoni &a, const neoni &b) { return vceq_u32(a, b); }
+BE_FORCE_INLINE neoni operator==(const neoni &a, const neoni &b) { return vceqq_u32(a, b); }
 BE_FORCE_INLINE neoni operator==(const neoni &a, const int32_t &b) { return a == set1_epi32(b); }
 BE_FORCE_INLINE neoni operator==(const int32_t &a, const neoni &b) { return set1_epi32(a) == b; }
 
-BE_FORCE_INLINE neoni operator!=(const neoni &a, const neoni &b) { return vmvnq_u32(vceq_u32(a, b)); }
+BE_FORCE_INLINE neoni operator!=(const neoni &a, const neoni &b) { return vmvnq_u32(vceqq_u32(a, b)); }
 BE_FORCE_INLINE neoni operator!=(const neoni &a, const int32_t &b) { return a != set1_epi32(b); }
 BE_FORCE_INLINE neoni operator!=(const int32_t &a, const neoni &b) { return set1_epi32(a) != b; }
 
@@ -134,13 +132,13 @@ BE_FORCE_INLINE neoni &operator<<=(neoni &a, const int32_t &b) { return a = a <<
 BE_FORCE_INLINE neoni &operator>>=(neoni &a, const int32_t &b) { return a = a >> b; }
 
 // Shifts right arithmetic.
-BE_FORCE_INLINE neoni sra_epi32(const neoni &a, const int32_t &b) { return vshrq_n_s32(a, b); }
+BE_FORCE_INLINE neoni sra_epi32(const neoni &a, const int32_t &b) { return vshlq_s32(a, vdupq_n_s32(-b)); }
 
 // Shifts right logical.
-BE_FORCE_INLINE neoni srl_epi32(const neoni &a, const int32_t &b) { return vshrq_n_u32(a, b); }
+BE_FORCE_INLINE neoni srl_epi32(const neoni &a, const int32_t &b) { return vshlq_u32(a, vdupq_n_s32(-b)); }
 
 // Shifts left logical.
-BE_FORCE_INLINE neoni sll_epi32(const neoni &a, const int32_t &b) { return vshlq_n_u32(a, b); }
+BE_FORCE_INLINE neoni sll_epi32(const neoni &a, const int32_t &b) { return vshlq_u32(a, vdupq_n_s32(b)); }
 
 // Unpacks to (a0, b0, a1, b1).
 BE_FORCE_INLINE neoni unpacklo_epi32(const neoni &a, const neoni &b) { 
@@ -154,12 +152,14 @@ BE_FORCE_INLINE neoni unpackhi_epi32(const neoni &a, const neoni &b) {
 
 // Shuffles 4x32 bits integers using template parameters. ix = [0, 3].
 template <size_t i0, size_t i1, size_t i2, size_t i3>
-BE_FORCE_INLINE neoni shuffle_epi32(const neoni &a) { return vshuffleq_s32(a, _MM_SHUFFLE(i3, i2, i1, i0)); }
+BE_FORCE_INLINE neoni shuffle_epi32(const neoni &a) {
+    return shuffle_ps<i0, i1, i2, i3>(a.f32x4).i32x4;
+}
 
 // Shuffles two 4x32 bits integers using template parameters. ax, bx = [0, 3].
 template <size_t a0, size_t a1, size_t b0, size_t b1>
 BE_FORCE_INLINE neoni shuffle_epi32(const neoni &a, const neoni &b) {
-    return vreinterpretq_u32_f32(vshuffleq_f32(vreinterpretq_f32_u32(a), vreinterpretq_f32_u32(b), _MM_SHUFFLE(b1, b0, a1, a0)));
+    return shuffle_ps<a0, a1, b0, b1>(a.f32x4, b.f32x4).i32x4;
 }
 
 template <size_t src>
@@ -204,21 +204,21 @@ BE_FORCE_INLINE int reduce_min_epi32(const neoni &a) { return extract_epi32<0>(v
 BE_FORCE_INLINE int reduce_max_epi32(const neoni &a) { return extract_epi32<0>(vreduce_max_epi32(a)); }
 
 // Returns index of minimum component.
-BE_FORCE_INLINE size_t select_min_epi32(const neoni &a) { return __bsf(vmovemaskq_f32(a == vreduce_min_epi32(a))); }
+BE_FORCE_INLINE size_t select_min_epi32(const neoni &a) { return CountTrailingZeros(vmovemaskq_f32(a == vreduce_min_epi32(a))); }
 
 // Returns index of maximum component.
-BE_FORCE_INLINE size_t select_max_epi32(const neoni &a) { return __bsf(vmovemaskq_f32(a == vreduce_max_epi32(a))); }
+BE_FORCE_INLINE size_t select_max_epi32(const neoni &a) { return CountTrailingZeros(vmovemaskq_f32(a == vreduce_max_epi32(a))); }
 
 // Returns index of minimum component with valid index mask.
 BE_FORCE_INLINE size_t select_min_epi32(const neoni &a, const neonb &validmask) {
-    const neoni v = select_epi32(set1_epi32(INT_MAX), a, valid);
-    return __bsf(vmovemaskq_f32(vandq_s32(validmask, v == vreduce_min_epi32(v))));
+    const neoni v = select_epi32(set1_epi32(INT_MAX), a, validmask);
+    return CountTrailingZeros(vmovemaskq_f32(vandq_s32(validmask, v == vreduce_min_epi32(v))));
 }
 
 // Returns index of maximum component with valid index mask.
 BE_FORCE_INLINE size_t select_max_epi32(const neoni &a, const neonb &validmask) {
-    const neoni v = select_epi32(set1_epi32(INT_MIN), a, valid);
-    return __bsf(vmovemaskq_f32(vandq_s32(validmask, v == vreduce_max_epi32(v))));
+    const neoni v = select_epi32(set1_epi32(INT_MIN), a, validmask);
+    return CountTrailingZeros(vmovemaskq_f32(vandq_s32(validmask, v == vreduce_max_epi32(v))));
 }
 
 // Broadcasts sums of all components.

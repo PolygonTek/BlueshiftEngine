@@ -19,6 +19,18 @@
 
 BE_NAMESPACE_BEGIN
 
+const simd8f SIMD_8::F8_zero                 = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+const simd8f SIMD_8::F8_one                  = { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
+const simd8f SIMD_8::F8_half                 = { 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f };
+const simd8f SIMD_8::F8_255                  = { 255.0f, 255.0f, 255.0f, 255.0f, 255.0f, 255.0f, 255.0f, 255.0f };
+const simd8f SIMD_8::F8_min_char             = { -128.0f, -128.0f, -128.0f, -128.0f, -128.0f, -128.0f, -128.0f, -128.0f };
+const simd8f SIMD_8::F8_max_char             = { 127.0f, 127.0f, 127.0f, 127.0f, 127.0f, 127.0f, 127.0f, 127.0f };
+const simd8f SIMD_8::F8_min_short            = { -32768.0f, -32768.0f, -32768.0f, -32768.0f, -32768.0f, -32768.0f, -32768.0f, -32768.0f };
+const simd8f SIMD_8::F8_max_short            = { 32767.0f, 32767.0f, 32767.0f, 32767.0f, 32767.0f, 32767.0f, 32767.0f, 32767.0f };
+const simd8f SIMD_8::F8_tiny                 = { 1e-4f, 1e-4f, 1e-4f, 1e-4f, 1e-4f, 1e-4f, 1e-4f, 1e-4f };
+const simd8f SIMD_8::F8_smallestNonDenorm    = { 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f };
+const simd8f SIMD_8::F8_sign_bit             = (simd8f &)simd8i(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
+
 void BE_FASTCALL SIMD_8::Matrix4x4Multiply(float *dst, const float *src0, const float *src1) {
     assert_32_byte_aligned(dst);
     assert_32_byte_aligned(src0);

@@ -40,32 +40,6 @@
 #include <wmmintrin.h>
 #endif
 
-const __m128 _mm_lookupmask_ps[16] = {
-    _mm_castsi128_ps(_mm_set_epi32( 0,  0,  0,  0)),
-    _mm_castsi128_ps(_mm_set_epi32( 0,  0,  0, -1)),
-    _mm_castsi128_ps(_mm_set_epi32( 0,  0, -1,  0)),
-    _mm_castsi128_ps(_mm_set_epi32( 0,  0, -1, -1)),
-    _mm_castsi128_ps(_mm_set_epi32( 0, -1,  0,  0)),
-    _mm_castsi128_ps(_mm_set_epi32( 0, -1,  0, -1)),
-    _mm_castsi128_ps(_mm_set_epi32( 0, -1, -1,  0)),
-    _mm_castsi128_ps(_mm_set_epi32( 0, -1, -1, -1)),
-    _mm_castsi128_ps(_mm_set_epi32(-1,  0,  0,  0)),
-    _mm_castsi128_ps(_mm_set_epi32(-1,  0,  0, -1)),
-    _mm_castsi128_ps(_mm_set_epi32(-1,  0, -1,  0)),
-    _mm_castsi128_ps(_mm_set_epi32(-1,  0, -1, -1)),
-    _mm_castsi128_ps(_mm_set_epi32(-1, -1,  0,  0)),
-    _mm_castsi128_ps(_mm_set_epi32(-1, -1,  0, -1)),
-    _mm_castsi128_ps(_mm_set_epi32(-1, -1, -1,  0)),
-    _mm_castsi128_ps(_mm_set_epi32(-1, -1, -1, -1))
-};
-
-const __m128d mm_lookupmask_pd[4] = {
-    _mm_castsi128_pd(_mm_set_epi32( 0,  0,  0,  0)),
-    _mm_castsi128_pd(_mm_set_epi32( 0,  0, -1, -1)),
-    _mm_castsi128_pd(_mm_set_epi32(-1, -1,  0,  0)),
-    _mm_castsi128_pd(_mm_set_epi32(-1, -1, -1, -1))
-};
-
 // Negates 4x32 bits floats.
 #define _mm_neg_ps(a)               _mm_xor_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x80000000))) // _mm_sub_ps(_mm_setzero_ps(), (a))
 
@@ -114,11 +88,19 @@ const __m128d mm_lookupmask_pd[4] = {
 // dst = (a >> imm*8) | (b << (16 - imm)*8)
 #define _mm_sld_si128(a, b, imm)    _mm_or_si128(_mm_srli_si128(a, imm), _mm_slli_si128(b, 16 - (imm))))
 
+extern const __m128                 _mm_lookupmask_ps[16];
+extern const __m128d                _mm_lookupmask_pd[4];
+
 BE_FORCE_INLINE void prefetchL1(const void *ptr) { _mm_prefetch((const char *)ptr, _MM_HINT_T0); }
 BE_FORCE_INLINE void prefetchL2(const void *ptr) { _mm_prefetch((const char *)ptr, _MM_HINT_T1); }
 BE_FORCE_INLINE void prefetchL3(const void *ptr) { _mm_prefetch((const char *)ptr, _MM_HINT_T2); }
 BE_FORCE_INLINE void prefetchNTA(const void *ptr) { _mm_prefetch((const char *)ptr, _MM_HINT_NTA); }
+
 BE_FORCE_INLINE void sfence() { _mm_sfence(); }
+
+struct ssef;
+struct ssei;
+struct sseb;
 
 // 4 wide SSE float type.
 struct ssef {
@@ -136,6 +118,12 @@ struct ssef {
 
     BE_FORCE_INLINE ssef(const ssef &other) { m128 = other.m128; }
     BE_FORCE_INLINE ssef &operator=(const ssef &rhs) { m128 = rhs.m128; return *this; }
+
+    BE_FORCE_INLINE operator const ssei &() const { return *this; };
+    BE_FORCE_INLINE operator ssei &() { return *this; };
+
+    BE_FORCE_INLINE operator const sseb &() const { return *this; };
+    BE_FORCE_INLINE operator sseb &() { return *this; };
 
     BE_FORCE_INLINE operator const __m128 &() const { return m128; };
     BE_FORCE_INLINE operator __m128 &() { return m128; };
@@ -166,6 +154,12 @@ struct ssei {
     BE_FORCE_INLINE ssei(const ssei &other) { m128i = other.m128i; }
     BE_FORCE_INLINE ssei &operator=(const ssei &rhs) { m128i = rhs.m128i; return *this; }
 
+    BE_FORCE_INLINE operator const ssef &() const { return *reinterpret_cast<const ssef *>(this); };
+    BE_FORCE_INLINE operator ssef &() { return *reinterpret_cast<ssef *>(this); };
+
+    BE_FORCE_INLINE operator const sseb &() const { return *reinterpret_cast<const sseb *>(this); };
+    BE_FORCE_INLINE operator sseb &() { return *reinterpret_cast<sseb *>(this); };
+
     BE_FORCE_INLINE operator const __m128 &() const { return m128; };
     BE_FORCE_INLINE operator __m128 &() { return m128; };
 
@@ -192,6 +186,12 @@ struct sseb {
 
     BE_FORCE_INLINE sseb(const sseb &other) { m128i = other.m128i; }
     BE_FORCE_INLINE sseb &operator=(const sseb &rhs) { m128i = rhs.m128i; return *this; }
+
+    BE_FORCE_INLINE operator const ssef &() const { return *reinterpret_cast<const ssef *>(this); };
+    BE_FORCE_INLINE operator ssef &() { return *reinterpret_cast<ssef *>(this); };
+
+    BE_FORCE_INLINE operator const ssei &() const { return *reinterpret_cast<const ssei *>(this); };
+    BE_FORCE_INLINE operator ssei &() { return *reinterpret_cast<ssei *>(this); };
 
     BE_FORCE_INLINE operator const __m128 &() const { return m128; };
     BE_FORCE_INLINE operator __m128 &() { return m128; };

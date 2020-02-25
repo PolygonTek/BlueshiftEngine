@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "Platform/Intrinsics.h"
+#include "Math/MathCommon.h"
 
 BE_FORCE_INLINE avxf set_256ps(float a, float b, float c, float d, float e, float f, float g, float h) {
     return _mm256_set_ps(h, g, f, e, d, c, b, a);
@@ -305,21 +305,21 @@ BE_FORCE_INLINE float reduce_min_256ps(const avxf &a) { return _mm_cvtss_f32(ext
 BE_FORCE_INLINE float reduce_max_256ps(const avxf &a) { return _mm_cvtss_f32(extract_256ps<0>(vreduce_max_256ps(a))); }
 
 // Returns index of minimum component.
-BE_FORCE_INLINE size_t select_min_256ps(const avxf &a) { return __bsf(_mm256_movemask_ps(a == vreduce_min_256ps(a))); }
+BE_FORCE_INLINE size_t select_min_256ps(const avxf &a) { return CountTrailingZeros(_mm256_movemask_ps(a == vreduce_min_256ps(a))); }
 
 // Returns index of maximum component.
-BE_FORCE_INLINE size_t select_max_256ps(const avxf &a) { return __bsf(_mm256_movemask_ps(a == vreduce_max_256ps(a))); }
+BE_FORCE_INLINE size_t select_max_256ps(const avxf &a) { return CountTrailingZeros(_mm256_movemask_ps(a == vreduce_max_256ps(a))); }
 
 // Returns index of minimum component with valid index mask.
 BE_FORCE_INLINE size_t select_min_256ps(const avxf &a, const avxb &validmask) {
     const avxf v = select_256ps(set1_256ps(FLT_INFINITY), a, validmask);
-    return __bsf(_mm256_movemask_ps(_mm256_and_ps(validmask, (v == vreduce_min_256ps(v)))));
+    return CountTrailingZeros(_mm256_movemask_ps(_mm256_and_ps(validmask, (v == vreduce_min_256ps(v)))));
 }
 
 // Returns index of maximum component with valid index mask.
 BE_FORCE_INLINE size_t select_max_256ps(const avxf &a, const avxb &validmask) {
     const avxf v = select_256ps(set1_256ps(-FLT_INFINITY), a, validmask);
-    return __bsf(_mm256_movemask_ps(_mm256_and_ps(validmask, (v == vreduce_max_256ps(v)))));
+    return CountTrailingZeros(_mm256_movemask_ps(_mm256_and_ps(validmask, (v == vreduce_max_256ps(v)))));
 }
 
 // Broadcasts sums of all components for each 128 bits packed floats.
