@@ -7,6 +7,7 @@ Version History
 - Added support for GUI components
 - Added support for drawing 9-sliced image rendering for GUI
 - Added support for text rendering with shadows/outlines
+- SSE/AVX/NEON optimization
 - Updated Bullet physics library to 2.89
 - Fixed an issue where editing euler angles rotation in editor
 - Additional bug fixes and stability improvements
