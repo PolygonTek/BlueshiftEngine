@@ -143,7 +143,8 @@ static void SRGBToLinear(float *data, int count) {
     float *dataEnd = data + count;
 
     while (dataPtr < dataEnd) {
-        *dataPtr++ = Image::GammaToLinearApprox(*dataPtr);
+        *dataPtr = Image::GammaToLinearApprox(*dataPtr);
+        dataPtr++;
     }
 }
 
@@ -152,7 +153,8 @@ static void Pow22ToLinear(float *data, int count) {
     float *dataEnd = data + count;
 
     while (dataPtr < dataEnd) {
-        *dataPtr++ = Image::GammaToLinearFast(*dataPtr);
+        *dataPtr = Image::GammaToLinearFast(*dataPtr);
+        dataPtr++;
     }
 }
 
@@ -161,7 +163,8 @@ static void LinearToSRGB(float *data, int count) {
     float *dataEnd = data + count;
 
     while (dataPtr < dataEnd) {
-        *dataPtr++ = Image::LinearToGammaApprox(*dataPtr);
+        *dataPtr = Image::LinearToGammaApprox(*dataPtr);
+        dataPtr++;
     }
 }
 
@@ -170,7 +173,8 @@ static void LinearToPow22(float *data, int count) {
     float *dataEnd = data + count;
 
     while (dataPtr < dataEnd) {
-        *dataPtr++ = Image::LinearToGammaFast(*dataPtr);
+        *dataPtr = Image::LinearToGammaFast(*dataPtr);
+        dataPtr++;
     }
 }
 
@@ -179,7 +183,8 @@ static void SRGBToPow22(float *data, int count) {
     float *dataEnd = data + count;
 
     while (dataPtr < dataEnd) {
-        *dataPtr++ = Image::LinearToGammaFast(Image::GammaToLinearApprox(*dataPtr));
+        *dataPtr = Image::LinearToGammaFast(Image::GammaToLinearApprox(*dataPtr));
+        dataPtr++;
     }
 }
 
@@ -188,7 +193,8 @@ static void Pow22ToSRGB(float *data, int count) {
     float *dataEnd = data + count;
 
     while (dataPtr < dataEnd) {
-        *dataPtr++ = Image::LinearToGammaApprox(Image::GammaToLinearFast(*dataPtr));
+        *dataPtr = Image::LinearToGammaApprox(Image::GammaToLinearFast(*dataPtr));
+        dataPtr++;
     }
 }
 
