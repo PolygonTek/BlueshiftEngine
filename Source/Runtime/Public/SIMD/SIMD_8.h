@@ -27,9 +27,9 @@ BE_NAMESPACE_BEGIN
 // r1 = a[4] * b0 + a[5] * b1 + a[6] * b2 + a[7] * b3
 BE_FORCE_INLINE simd8f lincomb4x8(simd8f a, const simd8f &br00, const simd8f &br11, const simd8f &br22, const simd8f &br33) {
     simd8f result = shuffle_256ps<0, 0, 0, 0>(a) * br00;
-    result += shuffle_256ps<1, 1, 1, 1>(a) * br11;
-    result += shuffle_256ps<2, 2, 2, 2>(a) * br22;
-    result += shuffle_256ps<3, 3, 3, 3>(a) * br33;
+    result = madd_256ps(shuffle_256ps<1, 1, 1, 1>(a), br11, result);
+    result = madd_256ps(shuffle_256ps<2, 2, 2, 2>(a), br22, result);
+    result = madd_256ps(shuffle_256ps<3, 3, 3, 3>(a), br33, result);
     return result;
 }
 

@@ -37,9 +37,9 @@ BE_FORCE_INLINE simd4f cross_ps(const simd4f &a, const simd4f &b) {
 // r0 = a[0] * b0 + a[1] * b1 + a[2] * b2 + a[3] * b3
 BE_FORCE_INLINE simd4f lincomb4x4(const simd4f &a, const simd4f &br0, const simd4f &br1, const simd4f &br2, const simd4f &br3) {
     simd4f result = shuffle_ps<0, 0, 0, 0>(a) * br0;
-    result += shuffle_ps<1, 1, 1, 1>(a) * br1;
-    result += shuffle_ps<2, 2, 2, 2>(a) * br2;
-    result += shuffle_ps<3, 3, 3, 3>(a) * br3;
+    result = madd_ps(shuffle_ps<1, 1, 1, 1>(a), br1, result);
+    result = madd_ps(shuffle_ps<2, 2, 2, 2>(a), br2, result);
+    result = madd_ps(shuffle_ps<3, 3, 3, 3>(a), br3, result);
     return result;
 }
 
@@ -47,9 +47,9 @@ BE_FORCE_INLINE simd4f lincomb4x4(const simd4f &a, const simd4f &br0, const simd
 // r0 = a[0] * b0 + a[1] * b1 + a[2] * b2 + a[3] * (0, 0, 0, 1)
 BE_FORCE_INLINE simd4f lincomb3x4(const simd4f &a, const simd4f &br0, const simd4f &br1, const simd4f &br2) {
     simd4f result = shuffle_ps<0, 0, 0, 0>(a) * br0;
-    result += shuffle_ps<1, 1, 1, 1>(a) * br1;
-    result += shuffle_ps<2, 2, 2, 2>(a) * br2;
-    result += a & simd4i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF);
+    result = madd_ps(shuffle_ps<1, 1, 1, 1>(a), br1, result);
+    result = madd_ps(shuffle_ps<2, 2, 2, 2>(a), br2, result);
+    result += (a & simd4i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF));
     return result;
 }
 

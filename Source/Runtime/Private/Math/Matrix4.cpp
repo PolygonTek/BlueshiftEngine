@@ -44,6 +44,40 @@ Mat4 &Mat4::operator=(const Mat3x4 &rhs) {
     return *this;
 }
 
+Mat4 Mat4::operator*(float a) const {
+    Mat4 dst;
+    dst[0][0] = mat[0].x * a;
+    dst[0][1] = mat[0].y * a;
+    dst[0][2] = mat[0].z * a;
+    dst[0][3] = mat[0].z * a;
+
+    dst[1][0] = mat[1].x * a;
+    dst[1][1] = mat[1].y * a;
+    dst[1][2] = mat[1].z * a;
+    dst[1][3] = mat[1].w * a;
+
+    dst[2][0] = mat[2].x * a;
+    dst[2][1] = mat[2].y * a;
+    dst[2][2] = mat[2].z * a;
+    dst[2][3] = mat[2].w * a;
+
+    dst[3][0] = mat[3].x * a;
+    dst[3][1] = mat[3].y * a;
+    dst[3][2] = mat[3].z * a;
+    dst[3][3] = mat[3].w * a;
+
+    return dst;
+}
+
+Vec4 Mat4::operator*(const Vec4 &vec) const {
+    Vec4 dst;
+    dst[0] = mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w * vec.w;
+    dst[1] = mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w * vec.w;
+    dst[2] = mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w * vec.w;
+    dst[3] = mat[3].x * vec.x + mat[3].y * vec.y + mat[3].z * vec.z + mat[3].w * vec.w;
+    return dst;
+}
+
 Mat4 Mat4::operator*(const Mat4 &a) const {
     ALIGN_AS16 Mat4 dst;
 
@@ -207,28 +241,36 @@ Mat4 Mat4::TransposedMul(const Mat3x4 &a) const {
 }
 
 Mat4 Mat4::Transpose() const {
-    ALIGN_AS16 Mat4 transpose;
+    ALIGN_AS16 Mat4 result;
 
 #ifdef ENABLE_SIMD_INTRINSICS
-    simd4f r0 = loadu_ps(mat[0]);
-    simd4f r1 = loadu_ps(mat[1]);
-    simd4f r2 = loadu_ps(mat[2]);
-    simd4f r3 = loadu_ps(mat[3]);
+    #ifdef ENABLE_ARM_NEON_INTRINSICS
+        float32x4x4_t m = vld4q_f32((const float32_t *)mat);
+        vst1q_f32((float32_t *)result[0], m.val[0]);
+        vst1q_f32((float32_t *)result[1], m.val[1]);
+        vst1q_f32((float32_t *)result[2], m.val[2]);
+        vst1q_f32((float32_t *)result[3], m.val[3]);
+    #else
+        simd4f r0 = loadu_ps(mat[0]);
+        simd4f r1 = loadu_ps(mat[1]);
+        simd4f r2 = loadu_ps(mat[2]);
+        simd4f r3 = loadu_ps(mat[3]);
 
-    transpose4x4(r0, r1, r2, r3);
+        transpose4x4(r0, r1, r2, r3);
 
-    store_ps(r0, transpose[0]);
-    store_ps(r1, transpose[1]);
-    store_ps(r2, transpose[2]);
-    store_ps(r3, transpose[3]);
+        store_ps(r0, result[0]);
+        store_ps(r1, result[1]);
+        store_ps(r2, result[2]);
+        store_ps(r3, result[3]);
+    #endif
 #else
     for (int i = 0; i < 4; i++ ) {
         for (int j = 0; j < 4; j++ ) {
-            transpose[i][j] = mat[j][i];
+            result[i][j] = mat[j][i];
         }
     }
 #endif
-    return transpose;
+    return result;
 }
 
 Mat4 &Mat4::TransposeSelf() {

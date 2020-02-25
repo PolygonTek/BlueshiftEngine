@@ -272,6 +272,7 @@ BE_FORCE_INLINE int32x4_t vshufq_s8(int32x4_t a, int32x4_t b) {
 #endif
 }
 
+#if !defined(__aarch64__)
 BE_FORCE_INLINE float32x4_t vsqrtq_f32(float32x4_t s) {
     float32x4_t x = vrsqrteq_f32(s);
     // Code to handle sqrt(0).
@@ -294,6 +295,7 @@ BE_FORCE_INLINE float32x4_t vsqrtq_f32(float32x4_t s) {
     // sqrt(s) = s * 1/sqrt(s)
     return vmulq_f32(s, x);
 }
+#endif
 
 // Unpack to (a0, b0, a1, b1).
 BE_FORCE_INLINE float32x4_t vunpackloq_f32(const float32x4_t a, const float32x4_t b) {

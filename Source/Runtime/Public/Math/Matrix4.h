@@ -390,22 +390,6 @@ BE_INLINE Mat4 Mat4::operator-(const Mat4 &a) const {
         mat[3].x - a[3].x, mat[3].y - a[3].y, mat[3].z - a[3].z, mat[3].w - a[3].w);
 }
 
-BE_INLINE Mat4 Mat4::operator*(float a) const {
-    return Mat4(
-        mat[0].x * a, mat[0].y * a, mat[0].z * a, mat[0].z * a,
-        mat[1].x * a, mat[1].y * a, mat[1].z * a, mat[1].w * a,
-        mat[2].x * a, mat[2].y * a, mat[2].z * a, mat[2].w * a,
-        mat[3].x * a, mat[3].y * a, mat[3].z * a, mat[3].w * a);
-}
-
-BE_INLINE Vec4 Mat4::operator*(const Vec4 &vec) const {
-    return Vec4(
-        mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w * vec.w, 
-        mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w * vec.w, 
-        mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w * vec.w, 
-        mat[3].x * vec.x + mat[3].y * vec.y + mat[3].z * vec.z + mat[3].w * vec.w);
-}
-
 BE_INLINE Vec3 Mat4::operator*(const Vec3 &vec) const {
     // homogeneous w
     float hw = mat[3].x * vec.x + mat[3].y * vec.y + mat[3].z * vec.z + mat[3].w;
