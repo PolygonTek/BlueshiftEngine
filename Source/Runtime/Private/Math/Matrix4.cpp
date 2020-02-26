@@ -80,13 +80,13 @@ Vec4 Mat4::operator*(const Vec4 &vec) const {
 
     simd4f v = loadu_ps(vec);
 
-    ssef x = ar0 * v;
-    ssef y = ar1 * v;
-    ssef z = ar2 * v;
-    ssef w = ar3 * v;
-    ssef tmp1 = hadd_ps(x, y);
-    ssef tmp2 = hadd_ps(z, w);
-    ssef result = hadd_ps(tmp1, tmp2);
+    simd4f x = ar0 * v;
+    simd4f y = ar1 * v;
+    simd4f z = ar2 * v;
+    simd4f w = ar3 * v;
+    simd4f tmp1 = hadd_ps(x, y);
+    simd4f tmp2 = hadd_ps(z, w);
+    simd4f result = hadd_ps(tmp1, tmp2);
 
     store_ps(result, dst);
 #else
