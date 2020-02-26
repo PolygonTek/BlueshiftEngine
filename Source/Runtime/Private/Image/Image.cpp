@@ -387,15 +387,14 @@ Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode::
     simd4f a10 = load_ps(rgba32f[2]);
     simd4f a11 = load_ps(rgba32f[3]);
 
-    simd4f x1 = set1_ps(1.0f - fracX);
-    simd4f y1 = set1_ps(1.0f - fracY);
-    simd4f x2 = set1_ps(fracX);
-    simd4f y2 = set1_ps(fracY);
+    simd4f fx = set1_ps(fracX);
+    simd4f fy = set1_ps(fracY);
 
-    simd4f a0x = a00 * x1 + a01 * x2;
-    simd4f a1x = a10 * x1 + a11 * x2;
+    simd4f a0x = nmadd_ps(a00 - a01, fx, a00);
+    simd4f a1x = nmadd_ps(a10 - a11, fx, a10);
+    simd4f result = nmadd_ps(a0x - a1x, fy, a0x);
 
-    store_ps(a0x * y1 + a1x * y2, (float *)outputColor);
+    store_ps(result, (float *)outputColor);
 #else
     for (int i = 0; i < 4; i++) {
         float a = Math::Lerp(rgba32f[0][i], rgba32f[1][i], fracX);
