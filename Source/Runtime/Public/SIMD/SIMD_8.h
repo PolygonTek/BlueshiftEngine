@@ -23,13 +23,13 @@
 BE_NAMESPACE_BEGIN
 
 // Dual linear combination.
-// r0 = a[0] * b0 + a[1] * b1 + a[2] * b2 + a[3] * b3
-// r1 = a[4] * b0 + a[5] * b1 + a[6] * b2 + a[7] * b3
-BE_FORCE_INLINE simd8f lincomb4x8(simd8f a, const simd8f &br00, const simd8f &br11, const simd8f &br22, const simd8f &br33) {
-    simd8f result = shuffle_256ps<0, 0, 0, 0>(a) * br00;
-    result = madd_256ps(shuffle_256ps<1, 1, 1, 1>(a), br11, result);
-    result = madd_256ps(shuffle_256ps<2, 2, 2, 2>(a), br22, result);
-    result = madd_256ps(shuffle_256ps<3, 3, 3, 3>(a), br33, result);
+// r[0] = a[0][0] * b[0] + a[0][1] * b[1] + a[0][2] * b[2] + a[0][3] * b[3]
+// r[1] = a[1][0] * b[0] + a[1][1] * b[1] + a[1][2] * b[2] + a[1][3] * b[3]
+BE_FORCE_INLINE simd8f lincomb2x4x2x4(simd8f a01, const simd8f &br00, const simd8f &br11, const simd8f &br22, const simd8f &br33) {
+    simd8f result = shuffle_256ps<0, 0, 0, 0>(a01) * br00;
+    result = madd_256ps(shuffle_256ps<1, 1, 1, 1>(a01), br11, result);
+    result = madd_256ps(shuffle_256ps<2, 2, 2, 2>(a01), br22, result);
+    result = madd_256ps(shuffle_256ps<3, 3, 3, 3>(a01), br33, result);
     return result;
 }
 
@@ -76,6 +76,7 @@ public:
 
     virtual const char * BE_FASTCALL    GetName() const { return "SIMD 8"; }
 
+    virtual void BE_FASTCALL            MulMat3x4RM(float *dst, const float *src0, const float *src1);
     virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1);
 
     static const simd8f                 F8_zero;
