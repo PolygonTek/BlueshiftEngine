@@ -144,6 +144,9 @@ if (WIN32)
     
         # Force Synchronous PDB Writes
         add_definitions("/FS")
+
+        # Enable parallel compilation
+        add_definitions("/MP")
     
         # Remove RTTI
         string(REGEX REPLACE "/GR-?" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
