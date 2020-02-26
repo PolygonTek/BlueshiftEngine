@@ -15,7 +15,12 @@
 #pragma once
 
 #if defined(__ARM__) && defined(__NEON__)
-#include "arm_neon.h"
+    // MSVC specific header
+    #ifdef _M_ARM64
+        #include <arm64_neon.h>
+    #else
+        #include <arm_neon.h>
+    #endif
 #endif
 
 #if defined(__ARM64__)
