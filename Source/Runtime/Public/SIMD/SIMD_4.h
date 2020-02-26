@@ -86,32 +86,32 @@ public:
     SIMD_4() = default;
     SIMD_4(CpuId cpuid) { this->cpuid = cpuid; }
 
-    virtual const char * BE_FASTCALL    GetName() const { return "SIMD 4"; }
+    virtual const char * BE_FASTCALL    GetName() const override { return "SIMD 4"; }
 
-    virtual void BE_FASTCALL            Add(float *dst, const float constant, const float *src, const int count);
-    virtual void BE_FASTCALL            Add(float *dst, const float *src0, const float *src1, const int count);
-    virtual void BE_FASTCALL            Sub(float *dst, const float constant, const float *src, const int count);
-    virtual void BE_FASTCALL            Sub(float *dst, const float *src0, const float *src1, const int count);
-    virtual void BE_FASTCALL            Mul(float *dst, const float constant, const float *src, const int count);
-    virtual void BE_FASTCALL            Mul(float *dst, const float *src0, const float *src1, const int count);
-    virtual void BE_FASTCALL            Div(float *dst, const float constant, const float *src, const int count);
-    virtual void BE_FASTCALL            Div(float *dst, const float *src0, const float *src1, const int count);
+    virtual void BE_FASTCALL            Add(float *dst, const float constant, const float *src, const int count) override;
+    virtual void BE_FASTCALL            Add(float *dst, const float *src0, const float *src1, const int count) override;
+    virtual void BE_FASTCALL            Sub(float *dst, const float constant, const float *src, const int count) override;
+    virtual void BE_FASTCALL            Sub(float *dst, const float *src0, const float *src1, const int count) override;
+    virtual void BE_FASTCALL            Mul(float *dst, const float constant, const float *src, const int count) override;
+    virtual void BE_FASTCALL            Mul(float *dst, const float *src0, const float *src1, const int count) override;
+    virtual void BE_FASTCALL            Div(float *dst, const float constant, const float *src, const int count) override;
+    virtual void BE_FASTCALL            Div(float *dst, const float *src0, const float *src1, const int count) override;
 
-    virtual float BE_FASTCALL           Sum(const float *src, const int count);
+    virtual float BE_FASTCALL           Sum(const float *src, const int count) override;
 
-    virtual void BE_FASTCALL            TransposeMat4x4(float *dst, const float *src);
+    virtual void BE_FASTCALL            TransposeMat4x4(float *dst, const float *src) override;
 
-    virtual void BE_FASTCALL            MulMat3x4RM(float *dst, const float *src0, const float *src1);
-    virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1);
-    virtual void BE_FASTCALL            MulMat4x4RMVec4(float *dst, const float *src0, const float *src1);
+    virtual void BE_FASTCALL            MulMat3x4RM(float *dst, const float *src0, const float *src1) override;
+    virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1) override;
+    virtual void BE_FASTCALL            MulMat4x4RMVec4(float *dst, const float *src0, const float *src1) override;
 
-    virtual void BE_FASTCALL            BlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints);
-    virtual void BE_FASTCALL            BlendJointsFast(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints);
-    virtual void BE_FASTCALL            ConvertJointPosesToJointMats(Mat3x4 *jointMats, const JointPose *jointPoses, const int numJoints);
-    virtual void BE_FASTCALL            ConvertJointMatsToJointPoses(JointPose *jointPoses, const Mat3x4 *jointMats, const int numJoints);
-    virtual void BE_FASTCALL            TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint);
-    virtual void BE_FASTCALL            UntransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint);
-    virtual void BE_FASTCALL            MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, const Mat3x4 *joints2, const int numJoints);
+    virtual void BE_FASTCALL            BlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) override;
+    virtual void BE_FASTCALL            BlendJointsFast(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) override;
+    virtual void BE_FASTCALL            ConvertJointPosesToJointMats(Mat3x4 *jointMats, const JointPose *jointPoses, const int numJoints) override;
+    virtual void BE_FASTCALL            ConvertJointMatsToJointPoses(JointPose *jointPoses, const Mat3x4 *jointMats, const int numJoints) override;
+    virtual void BE_FASTCALL            TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) override;
+    virtual void BE_FASTCALL            UntransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) override;
+    virtual void BE_FASTCALL            MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, const Mat3x4 *joints2, const int numJoints) override;
 
     static const simd4f                 F4_zero;
     static const simd4f                 F4_one;

@@ -74,10 +74,11 @@ public:
     SIMD_8() = default;
     SIMD_8(CpuId cpuid) { this->cpuid = cpuid; }
 
-    virtual const char * BE_FASTCALL    GetName() const { return "SIMD 8"; }
+    virtual const char * BE_FASTCALL    GetName() const override { return "SIMD 8"; }
 
-    virtual void BE_FASTCALL            MulMat3x4RM(float *dst, const float *src0, const float *src1);
-    virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1);
+    virtual void BE_FASTCALL            MulMat3x4RM(float *dst, const float *src0, const float *src1) override;
+    virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1) override;
+    virtual void BE_FASTCALL            MulMat4x4RMVec4(float *dst, const float *src0, const float *src1) override;
 
     static const simd8f                 F8_zero;
     static const simd8f                 F8_one;
