@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "Math/MathCommon.h"
+#include "Platform/Intrinsics.h"
 
 BE_FORCE_INLINE avxf set_256ps(float a, float b, float c, float d, float e, float f, float g, float h) {
     return _mm256_set_ps(h, g, f, e, d, c, b, a);

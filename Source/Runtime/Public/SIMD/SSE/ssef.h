@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "Platform/Intrinsics.h"
+
 BE_FORCE_INLINE ssef set_ps(float a, float b, float c, float d) {
     return _mm_set_ps(d, c, b, a);
 }

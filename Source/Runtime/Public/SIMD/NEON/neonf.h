@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "Platform/Intrinsics.h"
+
 BE_FORCE_INLINE neonf set_ps(float a, float b, float c, float d) {
     ALIGN_AS16 float data[4] = { a, b, c, d };
     return vld1q_f32(data);

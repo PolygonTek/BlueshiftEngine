@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "Platform/Intrinsics.h"
+
 BE_FORCE_INLINE neoni set_epi32(int32_t a, int32_t b, int32_t c, int32_t d) {
     ALIGN_AS16 int32_t data[4] = { a, b, c, d };
     return vld1q_s32(data);

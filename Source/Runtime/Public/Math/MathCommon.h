@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -268,14 +268,6 @@ public:
     static int                  RoundDownPowerOfTwo(int x);
                                 /// Round x up to the nearest power of 2.
     static int                  RoundUpPowerOfTwo(int x);
-
-                                /// Computes the base 2 logarithm for an integer value that is greater than 0.
-                                /// The result is rounded down to the nearest integer.
-    static uint32_t             FloorLog2(uint32_t value);
-                                /// Counts the number of leading zeros in the bit representation of the value
-    static uint32_t             CountLeadingZeros(uint32_t value);
-                                /// Counts the number of trailing zeros in the bit representation of the value.
-    static uint32_t             CountTrailingZeros(uint32_t value);
 
                                 /// Returns the absolute value of the integer value (for reference only).
     static int                  Abs(int x);

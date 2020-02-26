@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "Platform/Intrinsics.h"
+
 BE_FORCE_INLINE ssei set_epi32(int32_t a, int32_t b, int32_t c, int32_t d) {
     return _mm_set_epi32(d, c, b, a);
 }

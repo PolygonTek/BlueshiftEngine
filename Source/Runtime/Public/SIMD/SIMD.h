@@ -15,7 +15,6 @@
 #pragma once
 
 #include "Platform/cpuid.h"
-#include "Platform/Intrinsics.h"
 
 /*
 -------------------------------------------------------------------------------

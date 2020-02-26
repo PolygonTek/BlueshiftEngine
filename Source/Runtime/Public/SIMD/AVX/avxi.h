@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "Platform/Intrinsics.h"
+
 BE_FORCE_INLINE avxi set_256epi32(int32_t a, int32_t b, int32_t c, int32_t d, int32_t e, int32_t f, int32_t g, int32_t h) {
     return _mm256_set_epi32(h, g, f, e, d, c, b, a);
 }
