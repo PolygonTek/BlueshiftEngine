@@ -211,6 +211,9 @@ BE_FORCE_INLINE ssef nmadd_ps(const ssef &a, const ssef &b, const ssef &c) { ret
 // dst = -(a * b) - c
 BE_FORCE_INLINE ssef nmsub_ps(const ssef &a, const ssef &b, const ssef &c) { return _mm_nmsub_ps(a.m128, b.m128, c.m128); }
 
+// dst = (a0 + a1, a2 + a3, b0 + b1, b2 + b3)
+BE_FORCE_INLINE ssef hadd_ps(const ssef &a, const ssef &b) { return _mm_hadd_ps(a, b); }
+
 BE_FORCE_INLINE ssef floor_ps(const ssef &a) { return _mm_round_ps(a, _MM_FROUND_TO_NEG_INF); }
 BE_FORCE_INLINE ssef ceil_ps(const ssef &a) { return _mm_round_ps(a, _MM_FROUND_TO_POS_INF); }
 BE_FORCE_INLINE ssef trunc_ps(const ssef &a) { return _mm_round_ps(a, _MM_FROUND_TO_ZERO); }
@@ -358,4 +361,20 @@ BE_FORCE_INLINE void transpose4x4(ssef &r0, ssef &r1, ssef &r2, ssef &r3) {
     r1 = unpackhi_ps(l02, l13); // m01, m11, m21, m31
     r2 = unpacklo_ps(h02, h13); // m02, m12, m22, m32
     r3 = unpackhi_ps(h02, h13); // m03, m13, m23, m33
+}
+
+// M(4x4) * v(4)
+BE_FORCE_INLINE ssef mat4x4rowmajor_mul_vec4(const float *mat, const ssef &v) {
+    assert_16_byte_aligned(mat);
+    ssef ar0 = load_ps(mat);
+    ssef ar1 = load_ps(mat + 4);
+    ssef ar2 = load_ps(mat + 8);
+    ssef ar3 = load_ps(mat + 12);
+    ssef x = ar0 * v;
+    ssef y = ar1 * v;
+    ssef z = ar2 * v;
+    ssef w = ar3 * v;
+    ssef tmp1 = hadd_ps(x, y); // x0+x1, x2+x3, y0+y1, y2+y3
+    ssef tmp2 = hadd_ps(z, w); // z0+z1, z2+z3, w0+w1, w2+w3
+    return hadd_ps(tmp1, tmp2); // x0+x1+x2+x3, y0+y1+y2+y3, z0+z1+z2+z3, w0+w1+w2+w3
 }

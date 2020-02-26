@@ -34,7 +34,7 @@ BE_FORCE_INLINE simd8f lincomb4x8(simd8f a, const simd8f &br00, const simd8f &br
 }
 
 // Transposes two 4x4 matrices.
-BE_FORCE_INLINE void mat4x4_transpose2(const simd8f &r0, const simd8f &r1, const simd8f &r2, const simd8f &r3, simd8f &c0, simd8f &c1, simd8f &c2, simd8f &c3) {
+BE_FORCE_INLINE void transpose2x4x4(const simd8f &r0, const simd8f &r1, const simd8f &r2, const simd8f &r3, simd8f &c0, simd8f &c1, simd8f &c2, simd8f &c3) {
     simd8f l02 = unpacklo_256ps(r0, r2); // m00, m20, m01, m21, m04, m24, m05, m25
     simd8f h02 = unpackhi_256ps(r0, r2); // m02, m22, m03, m23, m06, m26, m07, m27
     simd8f l13 = unpacklo_256ps(r1, r3); // m10, m30, m11, m31, m14, m34, m15, m35
@@ -46,12 +46,12 @@ BE_FORCE_INLINE void mat4x4_transpose2(const simd8f &r0, const simd8f &r1, const
 }
 
 // Transposes 8x8 matrix.
-BE_FORCE_INLINE void mat8x8_transpose(const simd8f &r0, const simd8f &r1, const simd8f &r2, const simd8f &r3, const simd8f &r4, const simd8f &r5, const simd8f &r6, const simd8f &r7,
+BE_FORCE_INLINE void transpose8x8(const simd8f &r0, const simd8f &r1, const simd8f &r2, const simd8f &r3, const simd8f &r4, const simd8f &r5, const simd8f &r6, const simd8f &r7,
     simd8f &c0, simd8f &c1, simd8f &c2, simd8f &c3, simd8f &c4, simd8f &c5, simd8f &c6, simd8f &c7) {
     simd8f h0, h1, h2, h3;
-    mat4x4_transpose2(r0, r1, r2, r3, h0, h1, h2, h3);
+    transpose2x4x4(r0, r1, r2, r3, h0, h1, h2, h3);
     simd8f h4, h5, h6, h7;
-    mat4x4_transpose2(r4, r5, r6, r7, h4, h5, h6, h7);
+    transpose2x4x4(r4, r5, r6, r7, h4, h5, h6, h7);
     c0 = shuffle_256ps<0, 2>(h0, h4);
     c1 = shuffle_256ps<0, 2>(h1, h5);
     c2 = shuffle_256ps<0, 2>(h2, h6);

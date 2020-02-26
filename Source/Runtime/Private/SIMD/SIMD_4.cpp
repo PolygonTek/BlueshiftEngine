@@ -434,9 +434,13 @@ void BE_FASTCALL SIMD_4::Matrix3x4Multiply(float *dst, const float *src0, const 
     simd4f br1 = load_ps(src1 + 4);
     simd4f br2 = load_ps(src1 + 8);
 
-    store_ps(lincomb3x4(ar0, br0, br1, br2), dst);
-    store_ps(lincomb3x4(ar1, br0, br1, br2), dst + 4);
-    store_ps(lincomb3x4(ar2, br0, br1, br2), dst + 8);
+    simd4f cr0 = lincomb3x4(ar0, br0, br1, br2);
+    simd4f cr1 = lincomb3x4(ar1, br0, br1, br2);
+    simd4f cr2 = lincomb3x4(ar2, br0, br1, br2);
+
+    store_ps(cr0, dst);
+    store_ps(cr1, dst + 4);
+    store_ps(cr2, dst + 8);
 }
 
 void BE_FASTCALL SIMD_4::Matrix4x4Multiply(float *dst, const float *src0, const float *src1) {
@@ -454,10 +458,15 @@ void BE_FASTCALL SIMD_4::Matrix4x4Multiply(float *dst, const float *src0, const 
     simd4f br2 = load_ps(src1 + 8);
     simd4f br3 = load_ps(src1 + 12);
 
-    store_ps(lincomb4x4(ar0, br0, br1, br2, br3), dst);
-    store_ps(lincomb4x4(ar1, br0, br1, br2, br3), dst + 4);
-    store_ps(lincomb4x4(ar2, br0, br1, br2, br3), dst + 8);
-    store_ps(lincomb4x4(ar3, br0, br1, br2, br3), dst + 12);
+    simd4f cr0 = lincomb4x4(ar0, br0, br1, br2, br3);
+    simd4f cr1 = lincomb4x4(ar1, br0, br1, br2, br3);
+    simd4f cr2 = lincomb4x4(ar2, br0, br1, br2, br3);
+    simd4f cr3 = lincomb4x4(ar3, br0, br1, br2, br3);
+
+    store_ps(cr0, dst);
+    store_ps(cr1, dst + 4);
+    store_ps(cr2, dst + 8);
+    store_ps(cr3, dst + 12);
 }
 
 void BE_FASTCALL SIMD_4::BlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) {

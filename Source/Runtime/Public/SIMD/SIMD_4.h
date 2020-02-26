@@ -53,6 +53,34 @@ BE_FORCE_INLINE simd4f lincomb3x4(const simd4f &a, const simd4f &br0, const simd
     return result;
 }
 
+// M(3x4) * v(4)
+BE_FORCE_INLINE simd4f mat3x4rowmajor_mul_vec4(const float *mat, const simd4f &v) {
+    assert_16_byte_aligned(mat);
+    simd4f ar0 = load_ps(mat);
+    simd4f ar1 = load_ps(mat + 4);
+    simd4f ar2 = load_ps(mat + 8);
+    simd4f x = ar0 * v;
+    simd4f y = ar1 * v;
+    simd4f z = ar2 * v;
+    simd4f w = (v & simd4i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF));
+    simd4f tmp1 = hadd_ps(x, y); // x0+x1, x2+x3, y0+y1, y2+y3
+    simd4f tmp2 = hadd_ps(z, w); // z0+z1, z2+z3, w0+w1, w2+w3
+    return hadd_ps(tmp1, tmp2); // x0+x1+x2+x3, y0+y1+y2+y3, z0+z1+z2+z3, w0+w1+w2+w3
+}
+
+// M(4x4) * v(4)
+BE_FORCE_INLINE simd4f mat4x4colmajor_mul_vec4(const float *mat, const simd4f &v) {
+    assert_16_byte_aligned(mat);
+    simd4f ac0 = load_ps(mat);
+    simd4f ac1 = load_ps(mat + 4);
+    simd4f ac2 = load_ps(mat + 8);
+    simd4f ac3 = load_ps(mat + 12);
+    simd4f result = ac0 * shuffle_ps<0, 0, 0, 0>(v);
+    result = madd_ps(ac1, shuffle_ps<1, 1, 1, 1>(v), result);
+    result = madd_ps(ac2, shuffle_ps<2, 2, 2, 2>(v), result);
+    return madd_ps(ac3, shuffle_ps<3, 3, 3, 3>(v), result);
+}
+
 class SIMD_4 : public SIMD_Generic {
 public:
     SIMD_4() = default;

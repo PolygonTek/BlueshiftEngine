@@ -203,6 +203,19 @@ BE_FORCE_INLINE neonf nmadd_ps(const neonf &a, const neonf &b, const neonf &c) {
 // dst = -(a * b) - c
 BE_FORCE_INLINE neonf nmsub_ps(const neonf &a, const neonf &b, const neonf &c) { return vnegq_f32(vmlaq_f32(c, a, b)); }
 
+// dst = (a0 + a1, a2 + a3, b0 + b1, b2 + b3)
+BE_FORCE_INLINE neonf hadd_ps(const neonf &a, const neonf &b) {
+#if defined(__aarch64__)
+    return vpaddq_f32(a, b);
+#else
+    float32x2_t a10 = vget_low_f32(a);
+    float32x2_t a32 = vget_high_f32(a);
+    float32x2_t b10 = vget_low_f32(b);
+    float32x2_t b32 = vget_high_f32(b);
+    return vcombine_f32(vpadd_f32(a10, a32), vpadd_f32(b10, b32));
+#endif
+}
+
 BE_FORCE_INLINE neonf floor_ps(const neonf &a) { return neonf(floorf(a[0]), floorf(a[1]), floorf(a[2]), floorf(a[3])); }
 BE_FORCE_INLINE neonf ceil_ps(const neonf &a) { return neonf(ceilf(a[0]), ceilf(a[1]), ceilf(a[2]), ceilf(a[3])); }
 BE_FORCE_INLINE neonf trunc_ps(const neonf &a) { return neonf(truncf(a[0]), truncf(a[1]), truncf(a[2]), truncf(a[3])); }
@@ -475,4 +488,15 @@ BE_FORCE_INLINE void transpose4x4(neonf &r0, neonf &r1, neonf &r2, neonf &r3) {
     r1 = vcombine_f32(vget_low_f32(r01.val[1]), vget_low_f32(r23.val[1])); // (m01, m11, m21, m31)
     r2 = vcombine_f32(vget_high_f32(r01.val[0]), vget_high_f32(r23.val[0])); // (m02, m12, m22, m32)
     r3 = vcombine_f32(vget_high_f32(r01.val[1]), vget_high_f32(r23.val[1])); // (m03, m13, m23, m33)
+}
+
+// M(4x4) * v(4)
+BE_FORCE_INLINE neonf mat4x4rowmajor_mul_vec4(const float *mat, const neonf &v) {
+    assert_16_byte_aligned(mat);
+    // Transpose matrix at load time to get in registers in column-major format.
+    float32x4x4_t cm = vld4q_f32((const float32_t *)mat);
+    neonf result = vmulq_lane_f32(cm.val[0], vget_low_f32(v), 0);
+    result = vmlaq_lane_f32(result, cm.val[1], vget_low_f32(v), 1);
+    result = vmlaq_lane_f32(result, cm.val[2], vget_high_f32(v), 0);
+    return vmlaq_lane_f32(result, cm.val[3], vget_high_f32(v), 1);
 }

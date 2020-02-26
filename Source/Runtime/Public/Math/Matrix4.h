@@ -413,11 +413,25 @@ BE_INLINE Vec3 Mat4::operator*(const Vec3 &vec) const {
 }
 
 BE_INLINE Vec4 Mat4::TransposedMulVec(const Vec4 &vec) const {
-    return Vec4(
-        mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z + mat[3].x * vec.w,
-        mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z + mat[3].y * vec.w,
-        mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z + mat[3].z * vec.w,
-        mat[0].w * vec.x + mat[1].w * vec.y + mat[2].w * vec.z + mat[3].w * vec.w);
+    ALIGN_AS16 Vec4 dst;
+#ifdef ENABLE_SIMD_INTRINSICS
+    simd4f ac0 = loadu_ps(mat[0]);
+    simd4f ac1 = loadu_ps(mat[1]);
+    simd4f ac2 = loadu_ps(mat[2]);
+    simd4f ac3 = loadu_ps(mat[3]);
+    simd4f v = loadu_ps(vec);
+    simd4f result = ac0 * shuffle_ps<0, 0, 0, 0>(v);
+    result = madd_ps(ac1, shuffle_ps<1, 1, 1, 1>(v), result);
+    result = madd_ps(ac2, shuffle_ps<2, 2, 2, 2>(v), result);
+    result = madd_ps(ac3, shuffle_ps<3, 3, 3, 3>(v), result);
+    store_ps(result, dst);
+#else
+    dst[0] = mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z + mat[3].x * vec.w;
+    dst[1] = mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z + mat[3].y * vec.w;
+    dst[2] = mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z + mat[3].z * vec.w;
+    dst[3] = mat[0].w * vec.x + mat[1].w * vec.y + mat[2].w * vec.z + mat[3].w * vec.w;
+#endif
+    return dst;
 }
 
 BE_INLINE Vec3 Mat4::TransposedMulVec(const Vec3 &vec) const {
