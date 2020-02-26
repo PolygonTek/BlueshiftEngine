@@ -58,7 +58,7 @@
     #if !defined(__ARM__)
         #define __ARM__
     #endif
-    #if defined(__ARM64__)
+    #if !defined(__ARM64__)
         #define __ARM64__
     #endif
 #endif
