@@ -69,7 +69,7 @@ if (CMAKE_CROSSCOMPILING)
     if (IOS)
         set(ENGINE_ARCH ${IOS_ARCH})
     elseif (ANDROID)
-        set(ENGINE_ARCH ${CMAKE_ANDROID_ARCH})
+        set(ENGINE_ARCH ${ANDROID_ABI})
 
         include_directories(${ANDROID_SYSROOT}/usr/include/${ANDROID_HEADER_TRIPLE})
     endif ()
@@ -192,13 +192,13 @@ elseif (ANDROID)
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++14 -fno-exceptions -fno-rtti")
 
     if (${ENGINE_ARCH} MATCHES "arm")
-        set(FLAGS_NEON "-mfpu=neon")
-
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS_NEON}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_NEON}")
+        set(FLAGS_SIMD "-mfpu=neon -D__NEON__")
+    elseif (${ENGINE_ARCH} MATCHES "x86")
+        set(FLAGS_SIMD "-D__SSE__ -D__SSE2__ -D__SSE3__ -D__SSSE3__ -D__SSE4_1__")
     endif ()
 
-    add_definitions("-D__NEON__")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS_SIMD}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_SIMD}")
 
     # Settings for Android
     add_compile_options("-DANDROID")
