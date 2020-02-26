@@ -85,6 +85,7 @@ cmake_dependent_option(USE_LUAJIT "Use LuaJIT" ON "NOT IOS AND NOT ANDROID" OFF)
 
 message(STATUS "Running from ${CMAKE_CURRENT_SOURCE_DIR}")
 
+message(STATUS "Arch: ${ENGINE_ARCH}")
 message(STATUS "Version: ${CMAKE_VERSION}")
 message(STATUS "Generator: ${CMAKE_GENERATOR}")
 message(STATUS "System: ${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_VERSION} ${CMAKE_SYSTEM_PROCESSOR}") 
