@@ -481,13 +481,13 @@ void BE_FASTCALL SIMD_4::MulMat4x4RMVec4(float *dst, const float *src0, const fl
 
     simd4f v = load_ps(src1);
 
-    ssef x = ar0 * v;
-    ssef y = ar1 * v;
-    ssef z = ar2 * v;
-    ssef w = ar3 * v;
-    ssef tmp1 = hadd_ps(x, y);
-    ssef tmp2 = hadd_ps(z, w);
-    ssef result = hadd_ps(tmp1, tmp2);
+    simd4f x = ar0 * v;
+    simd4f y = ar1 * v;
+    simd4f z = ar2 * v;
+    simd4f w = ar3 * v;
+    simd4f tmp1 = hadd_ps(x, y);
+    simd4f tmp2 = hadd_ps(z, w);
+    simd4f result = hadd_ps(tmp1, tmp2);
 
     store_ps(result, dst);
 }
