@@ -524,7 +524,7 @@ BE_FORCE_INLINE CFStringRef WideStringToCFString(const wchar_t *string) {
 
 //----------------------------------------------------------------------------------------------
 
-#if defined(__SSE3__) || defined(__NEON__)
+#if (defined(__SSE__) && defined(__SSE2__) && defined(__SSE3__) && defined(__SSSE3__)) || defined(__NEON__)
     #define ENABLE_SIMD_INTRINSICS
     //#define ENABLE_SIMD_INTRINSICS_IN_DEBUG
 #endif
@@ -534,7 +534,7 @@ BE_FORCE_INLINE CFStringRef WideStringToCFString(const wchar_t *string) {
 #endif
 
 #ifdef ENABLE_SIMD_INTRINSICS
-    #if defined(__SSE3__)
+    #if defined(__SSE__) && defined(__SSE2__) && defined(__SSE3__) && defined(__SSSE3__)
         #define ENABLE_X86_SSE_INTRINSICS
     #elif defined(__NEON__)
         #define ENABLE_ARM_NEON_INTRINSICS
