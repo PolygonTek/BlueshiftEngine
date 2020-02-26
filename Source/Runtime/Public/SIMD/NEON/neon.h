@@ -18,7 +18,7 @@
 #include "arm_neon.h"
 #endif
 
-#if defined(__aarch64__)
+#if defined(__ARM64__)
     #define vsplatq_f32(a, imm)     vdupq_laneq_f32((a), (imm))
 #else
     #define vsplatq_f32(a, imm)     vdupq_n_f32(vgetq_lane_f32((a), (imm)))
@@ -236,7 +236,7 @@ BE_FORCE_INLINE float32x4_t vshufq_f32_2032(float32x4_t a, float32x4_t b) {
 // corresponding 8-bit element of b, and store the results in dst.
 // https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_shuffle_epi8&expand=5146
 BE_FORCE_INLINE int32x4_t vshufq_s8(int32x4_t a, int32x4_t b) {
-#if __aarch64__
+#if defined(__ARM64__)
     int8x16_t tbl = vreinterpretq_s8_s32(a);   // input a
     uint8x16_t idx = vreinterpretq_u8_s32(b);  // input b
     uint8_t __attribute__((aligned(16))) mask[16] = { 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F, 0x8F };
@@ -272,7 +272,7 @@ BE_FORCE_INLINE int32x4_t vshufq_s8(int32x4_t a, int32x4_t b) {
 #endif
 }
 
-#if !defined(__aarch64__)
+#if !defined(__ARM64__)
 BE_FORCE_INLINE float32x4_t vsqrtq_f32(float32x4_t s) {
     float32x4_t x = vrsqrteq_f32(s);
     // Code to handle sqrt(0).

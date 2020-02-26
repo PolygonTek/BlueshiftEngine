@@ -46,12 +46,19 @@
     #endif
 #endif
 
-// Detect ARM platform.
-#if defined(__arm__) || defined(__arm64__) || defined(_M_ARM)
-    #if !defined(__LINUX__)
+// Detect ARM 32 bit platform.
+#if defined(__arm__) || defined(_M_ARM)
+    #if !defined(__ARM__)
         #define __ARM__
     #endif
-    #if defined(__arm64__)
+#endif
+
+// Detect ARM 64 bit platform.
+#if defined(__arm64__) || defined(__aarch64__) || defined(_M_ARM64)
+    #if !defined(__ARM__)
+        #define __ARM__
+    #endif
+    #if defined(__ARM64__)
         #define __ARM64__
     #endif
 #endif

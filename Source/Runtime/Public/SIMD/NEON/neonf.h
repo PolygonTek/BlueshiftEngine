@@ -205,7 +205,7 @@ BE_FORCE_INLINE neonf nmsub_ps(const neonf &a, const neonf &b, const neonf &c) {
 
 // dst = (a0 + a1, a2 + a3, b0 + b1, b2 + b3)
 BE_FORCE_INLINE neonf hadd_ps(const neonf &a, const neonf &b) {
-#if defined(__aarch64__)
+#if defined(__ARM64__)
     return vpaddq_f32(a, b);
 #else
     float32x2_t a10 = vget_low_f32(a);
