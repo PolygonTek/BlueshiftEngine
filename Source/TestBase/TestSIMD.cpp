@@ -616,6 +616,6 @@ void TestSIMD() {
     TestMulMat4x4RM();
     TestMulMat4x4RMVec4();
     TestTransposeMat4x4();
-    TestMemcpy();
-    TestMemset();
+    //TestMemcpy();
+    //TestMemset();
 }
