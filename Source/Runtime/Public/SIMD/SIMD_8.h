@@ -76,7 +76,7 @@ public:
 
     virtual const char * BE_FASTCALL    GetName() const { return "SIMD 8"; }
 
-    virtual void BE_FASTCALL            Matrix4x4Multiply(float *dst, const float *src0, const float *src1);
+    virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1);
 
     static const simd8f                 F8_zero;
     static const simd8f                 F8_one;

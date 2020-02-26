@@ -399,7 +399,7 @@ float BE_FASTCALL SIMD_4::Sum(const float *src, const int count0) {
     return ret;
 }
 
-void BE_FASTCALL SIMD_4::Matrix4x4Transpose(float *dst, const float *src) {
+void BE_FASTCALL SIMD_4::TransposeMat4x4(float *dst, const float *src) {
     assert_16_byte_aligned(dst);
     assert_16_byte_aligned(src);
 
@@ -421,7 +421,7 @@ void BE_FASTCALL SIMD_4::Matrix4x4Transpose(float *dst, const float *src) {
     store_ps(r3, dst + 12);
 }
 
-void BE_FASTCALL SIMD_4::Matrix3x4Multiply(float *dst, const float *src0, const float *src1) {
+void BE_FASTCALL SIMD_4::MulMat3x4RM(float *dst, const float *src0, const float *src1) {
     assert_16_byte_aligned(dst);
     assert_16_byte_aligned(src0);
     assert_16_byte_aligned(src1);
@@ -443,7 +443,7 @@ void BE_FASTCALL SIMD_4::Matrix3x4Multiply(float *dst, const float *src0, const 
     store_ps(cr2, dst + 8);
 }
 
-void BE_FASTCALL SIMD_4::Matrix4x4Multiply(float *dst, const float *src0, const float *src1) {
+void BE_FASTCALL SIMD_4::MulMat4x4RM(float *dst, const float *src0, const float *src1) {
     assert_16_byte_aligned(dst);
     assert_16_byte_aligned(src0);
     assert_16_byte_aligned(src1);
@@ -467,6 +467,29 @@ void BE_FASTCALL SIMD_4::Matrix4x4Multiply(float *dst, const float *src0, const 
     store_ps(cr1, dst + 4);
     store_ps(cr2, dst + 8);
     store_ps(cr3, dst + 12);
+}
+
+void BE_FASTCALL SIMD_4::MulMat4x4RMVec4(float *dst, const float *src0, const float *src1) {
+    assert_16_byte_aligned(dst);
+    assert_16_byte_aligned(src0);
+    assert_16_byte_aligned(src1);
+
+    simd4f ar0 = load_ps(src0);
+    simd4f ar1 = load_ps(src0 + 4);
+    simd4f ar2 = load_ps(src0 + 8);
+    simd4f ar3 = load_ps(src0 + 12);
+
+    simd4f v = load_ps(src1);
+
+    ssef x = ar0 * v;
+    ssef y = ar1 * v;
+    ssef z = ar2 * v;
+    ssef w = ar3 * v;
+    ssef tmp1 = hadd_ps(x, y);
+    ssef tmp2 = hadd_ps(z, w);
+    ssef result = hadd_ps(tmp1, tmp2);
+
+    store_ps(result, dst);
 }
 
 void BE_FASTCALL SIMD_4::BlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) {

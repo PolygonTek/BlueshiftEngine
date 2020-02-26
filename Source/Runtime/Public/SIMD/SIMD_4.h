@@ -99,10 +99,11 @@ public:
 
     virtual float BE_FASTCALL           Sum(const float *src, const int count);
 
-    virtual void BE_FASTCALL            Matrix4x4Transpose(float *dst, const float *src);
+    virtual void BE_FASTCALL            TransposeMat4x4(float *dst, const float *src);
 
-    virtual void BE_FASTCALL            Matrix3x4Multiply(float *dst, const float *src0, const float *src1);
-    virtual void BE_FASTCALL            Matrix4x4Multiply(float *dst, const float *src0, const float *src1);
+    virtual void BE_FASTCALL            MulMat3x4RM(float *dst, const float *src0, const float *src1);
+    virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1);
+    virtual void BE_FASTCALL            MulMat4x4RMVec4(float *dst, const float *src0, const float *src1);
 
     virtual void BE_FASTCALL            BlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints);
     virtual void BE_FASTCALL            BlendJointsFast(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints);

@@ -31,7 +31,7 @@ const simd8f SIMD_8::F8_tiny                 = { 1e-4f, 1e-4f, 1e-4f, 1e-4f, 1e-
 const simd8f SIMD_8::F8_smallestNonDenorm    = { 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f };
 const simd8f SIMD_8::F8_sign_bit             = (simd8f &)simd8i(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
 
-void BE_FASTCALL SIMD_8::Matrix4x4Multiply(float *dst, const float *src0, const float *src1) {
+void BE_FASTCALL SIMD_8::MulMat4x4RM(float *dst, const float *src0, const float *src1) {
     assert_32_byte_aligned(dst);
     assert_32_byte_aligned(src0);
     assert_32_byte_aligned(src1);

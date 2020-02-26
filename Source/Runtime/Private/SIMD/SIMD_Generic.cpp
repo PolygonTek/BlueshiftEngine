@@ -82,7 +82,7 @@ float BE_FASTCALL SIMD_Generic::Sum(const float *src, const int count) {
     return ret;
 }
 
-void BE_FASTCALL SIMD_Generic::Matrix4x4Transpose(float *dst, const float *src) {
+void BE_FASTCALL SIMD_Generic::TransposeMat4x4(float *dst, const float *src) {
     dst[0] = src[0];
     dst[1] = src[4];
     dst[2] = src[8];
@@ -104,7 +104,7 @@ void BE_FASTCALL SIMD_Generic::Matrix4x4Transpose(float *dst, const float *src) 
     dst[15] = src[15];
 }
 
-void BE_FASTCALL SIMD_Generic::Matrix3x4Multiply(float *dst, const float *src0, const float *src1) {
+void BE_FASTCALL SIMD_Generic::MulMat3x4RM(float *dst, const float *src0, const float *src1) {
     // row 0
     dst[0] = src0[0] * src1[0] + src0[1] * src1[4] + src0[2] * src1[8];
     dst[1] = src0[0] * src1[1] + src0[1] * src1[5] + src0[2] * src1[9];
@@ -124,7 +124,7 @@ void BE_FASTCALL SIMD_Generic::Matrix3x4Multiply(float *dst, const float *src0, 
     dst[11] = src0[8] * src1[3] + src0[9] * src1[7] + src0[10] * src1[11] + src0[11];
 }
 
-void BE_FASTCALL SIMD_Generic::Matrix4x4Multiply(float *dst, const float *src0, const float *src1) {
+void BE_FASTCALL SIMD_Generic::MulMat4x4RM(float *dst, const float *src0, const float *src1) {
     // row 0
     dst[0] = src0[0] * src1[0] + src0[1] * src1[4] + src0[2] * src1[8] + src0[3] * src1[12];
     dst[1] = src0[0] * src1[1] + src0[1] * src1[5] + src0[2] * src1[9] + src0[3] * src1[13];
@@ -148,6 +148,13 @@ void BE_FASTCALL SIMD_Generic::Matrix4x4Multiply(float *dst, const float *src0, 
     dst[13] = src0[12] * src1[1] + src0[13] * src1[5] + src0[14] * src1[9] + src0[15] * src1[13];
     dst[14] = src0[12] * src1[2] + src0[13] * src1[6] + src0[14] * src1[10] + src0[15] * src1[14];
     dst[15] = src0[12] * src1[3] + src0[13] * src1[7] + src0[14] * src1[11] + src0[15] * src1[15];
+}
+
+void BE_FASTCALL SIMD_Generic::MulMat4x4RMVec4(float *dst, const float *src0, const float *src1) {
+    dst[0] = src0[0] * src1[0] + src0[1] * src1[1] + src0[2] * src1[2] + src0[3] * src1[3];
+    dst[1] = src0[4] * src1[0] + src0[5] * src1[1] + src0[6] * src1[2] + src0[7] * src1[3];
+    dst[2] = src0[8] * src1[0] + src0[9] * src1[1] + src0[10] * src1[2] + src0[11] * src1[3];
+    dst[3] = src0[12] * src1[0] + src0[13] * src1[1] + src0[14] * src1[2] + src0[15] * src1[3];
 }
 
 void BE_FASTCALL SIMD_Generic::Memcpy(void *dst, const void *src, const int count) {
