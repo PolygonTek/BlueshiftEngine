@@ -68,6 +68,74 @@ Mat3x4 &Mat3x4::Scale(float sx, float sy, float sz) {
     return *this;
 }
 
+Vec4 Mat3x4::operator*(const Vec4 &vec) const {
+    ALIGN_AS16 Vec4 dst;
+    
+#ifdef ENABLE_SIMD_INTRINSICS
+    simd4f ar0 = loadu_ps(mat[0]);
+    simd4f ar1 = loadu_ps(mat[1]);
+    simd4f ar2 = loadu_ps(mat[2]);
+
+    simd4f v = loadu_ps(vec);
+
+    simd4f x = ar0 * v;
+    simd4f y = ar1 * v;
+    simd4f z = ar2 * v;
+    simd4f w = (v & simd4i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF));
+    simd4f tmp1 = hadd_ps(x, y); // x0+x1, x2+x3, y0+y1, y2+y3
+    simd4f tmp2 = hadd_ps(z, w); // z0+z1, z2+z3, w0+w1, w2+w3
+    simd4f result = hadd_ps(tmp1, tmp2); // x0+x1+x2+x3, y0+y1+y2+y3, z0+z1+z2+z3, w0+w1+w2+w3
+
+    store_ps(result, dst);
+#else
+    dst[0] = mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w * vec.w;
+    dst[1] = mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w * vec.w;
+    dst[2] = mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w * vec.w;
+    dst[3] = vec.w;
+#endif
+    return dst;
+}
+
+Vec3 Mat3x4::operator*(const Vec3 &vec) const {
+    Vec3 dst;
+    dst[0] = mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w;
+    dst[1] = mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w;
+    dst[2] = mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w;
+    return dst;
+}
+
+Vec4 Mat3x4::TransposedMulVec(const Vec4 &vec) const {
+    ALIGN_AS16 Vec4 dst;
+#ifdef ENABLE_SIMD_INTRINSICS
+    simd4f ac0 = load_ps(mat[0]);
+    simd4f ac1 = load_ps(mat[1]);
+    simd4f ac2 = load_ps(mat[2]);
+
+    simd4f v = loadu_ps(vec);
+
+    simd4f result = ac0 * shuffle_ps<0, 0, 0, 0>(v);
+    result = madd_ps(ac1, shuffle_ps<1, 1, 1, 1>(v), result);
+    result = madd_ps(ac2, shuffle_ps<2, 2, 2, 2>(v), result);
+    result = simd4f(0, 0, 0, w_ps(v)) + result;
+
+    store_ps(result, dst);
+#else
+    dst[0] = mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z;
+    dst[1] = mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z;
+    dst[2] = mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z;
+    dst[3] = mat[0].w * vec.x + mat[1].w * vec.y + mat[2].w * vec.z + vec.w;
+#endif
+    return dst;
+}
+
+Vec3 Mat3x4::TransposedMulVec(const Vec3 &vec) const {
+    Vec3 dst;
+    dst[0] = mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z;
+    dst[1] = mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z;
+    dst[2] = mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z;
+    return dst;
+}
+
 Mat3x4 Mat3x4::operator*(const Mat3x4 &a) const {
     ALIGN_AS16 Mat3x4 dst;
 

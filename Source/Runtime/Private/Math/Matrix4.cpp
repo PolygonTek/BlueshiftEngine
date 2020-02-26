@@ -70,11 +70,54 @@ Mat4 Mat4::operator*(float a) const {
 }
 
 Vec4 Mat4::operator*(const Vec4 &vec) const {
-    Vec4 dst;
+    ALIGN_AS16 Vec4 dst;
+
+#ifdef ENABLE_SIMD_INTRINSICS
+    simd4f ar0 = loadu_ps(mat[0]);
+    simd4f ar1 = loadu_ps(mat[1]);
+    simd4f ar2 = loadu_ps(mat[2]);
+    simd4f ar3 = loadu_ps(mat[3]);
+
+    simd4f v = loadu_ps(vec);
+
+    ssef x = ar0 * v;
+    ssef y = ar1 * v;
+    ssef z = ar2 * v;
+    ssef w = ar3 * v;
+    ssef tmp1 = hadd_ps(x, y);
+    ssef tmp2 = hadd_ps(z, w);
+    ssef result = hadd_ps(tmp1, tmp2);
+
+    store_ps(result, dst);
+#else
     dst[0] = mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w * vec.w;
     dst[1] = mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w * vec.w;
     dst[2] = mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w * vec.w;
     dst[3] = mat[3].x * vec.x + mat[3].y * vec.y + mat[3].z * vec.z + mat[3].w * vec.w;
+#endif
+    return dst;
+}
+
+Vec3 Mat4::operator*(const Vec3 &vec) const {
+    Vec3 dst;
+    // homogeneous w
+    float hw = mat[3].x * vec.x + mat[3].y * vec.y + mat[3].z * vec.z + mat[3].w;
+
+    if (hw == 0.0f) {
+        dst[0] = 0.0f;
+        dst[1] = 0.0f;
+        dst[2] = 0.0f;
+    } else {
+        dst[0] = mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w;
+        dst[1] = mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w;
+        dst[2] = mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w;
+
+        if (hw != 1.0f) {
+            float rhw = 1.0f / hw;
+            dst *= rhw;
+        }
+    }
+
     return dst;
 }
 
@@ -111,46 +154,6 @@ Mat4 Mat4::operator*(const Mat4 &a) const {
             dstPtr++;
         }
         m1Ptr += Cols;
-    }
-#endif
-    return dst;
-}
-
-Mat4 Mat4::TransposedMul(const Mat4 &a) const {
-    ALIGN_AS16 Mat4 dst;
-
-#ifdef ENABLE_SIMD_INTRINSICS
-    simd4f ar0 = loadu_ps(mat[0]);
-    simd4f ar1 = loadu_ps(mat[1]);
-    simd4f ar2 = loadu_ps(mat[2]);
-    simd4f ar3 = loadu_ps(mat[3]);
-
-    transpose4x4(ar0, ar1, ar2, ar3);
-
-    simd4f br0 = loadu_ps(a.mat[0]);
-    simd4f br1 = loadu_ps(a.mat[1]);
-    simd4f br2 = loadu_ps(a.mat[2]);
-    simd4f br3 = loadu_ps(a.mat[3]);
-
-    store_ps(lincomb4x4(ar0, br0, br1, br2, br3), dst.mat[0]);
-    store_ps(lincomb4x4(ar1, br0, br1, br2, br3), dst.mat[1]);
-    store_ps(lincomb4x4(ar2, br0, br1, br2, br3), dst.mat[2]);
-    store_ps(lincomb4x4(ar3, br0, br1, br2, br3), dst.mat[3]);
-#else
-    float *dstPtr = dst.Ptr();
-    const float *m1Ptr = Ptr();
-    const float *m2Ptr = a.Ptr();
-
-    for (int c = 0; c < Cols; c++) {
-        for (int r = 0; r < Rows; r++) {
-            *dstPtr =
-                m1Ptr[0 * Cols] * m2Ptr[0 * Cols + r] +
-                m1Ptr[1 * Cols] * m2Ptr[1 * Cols + r] +
-                m1Ptr[2 * Cols] * m2Ptr[2 * Cols + r] +
-                m1Ptr[3 * Cols] * m2Ptr[3 * Cols + r];
-            dstPtr++;
-        }
-        m1Ptr += 1;
     }
 #endif
     return dst;
@@ -193,6 +196,91 @@ Mat4 Mat4::operator*(const Mat3x4 &a) const {
     dst[3][1] = mat[3][0] * a[0][1] + mat[3][1] * a[1][1] + mat[3][2] * a[2][1];
     dst[3][2] = mat[3][0] * a[0][2] + mat[3][1] * a[1][2] + mat[3][2] * a[2][2];
     dst[3][3] = mat[3][0] * a[0][3] + mat[3][1] * a[1][3] + mat[3][2] * a[2][3] + mat[3][3];
+#endif
+    return dst;
+}
+
+Vec4 Mat4::TransposedMulVec(const Vec4 &vec) const {
+    ALIGN_AS16 Vec4 dst;
+#ifdef ENABLE_SIMD_INTRINSICS
+    simd4f ac0 = loadu_ps(mat[0]);
+    simd4f ac1 = loadu_ps(mat[1]);
+    simd4f ac2 = loadu_ps(mat[2]);
+    simd4f ac3 = loadu_ps(mat[3]);
+    simd4f v = loadu_ps(vec);
+    simd4f result = ac0 * shuffle_ps<0, 0, 0, 0>(v);
+    result = madd_ps(ac1, shuffle_ps<1, 1, 1, 1>(v), result);
+    result = madd_ps(ac2, shuffle_ps<2, 2, 2, 2>(v), result);
+    result = madd_ps(ac3, shuffle_ps<3, 3, 3, 3>(v), result);
+    store_ps(result, dst);
+#else
+    dst[0] = mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z + mat[3].x * vec.w;
+    dst[1] = mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z + mat[3].y * vec.w;
+    dst[2] = mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z + mat[3].z * vec.w;
+    dst[3] = mat[0].w * vec.x + mat[1].w * vec.y + mat[2].w * vec.z + mat[3].w * vec.w;
+#endif
+    return dst;
+}
+
+Vec3 Mat4::TransposedMulVec(const Vec3 &vec) const {
+    Vec3 dst;
+    // homogeneous w
+    float hw = mat[0].w * vec.x + mat[1].w * vec.y + mat[2].w * vec.z + mat[3].w;
+
+    if (hw == 0.0f) {
+        dst[0] = 0.0f;
+        dst[1] = 0.0f;
+        dst[2] = 0.0f;
+    } else {
+        dst[0] = mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z + mat[3].x;
+        dst[1] = mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z + mat[3].y;
+        dst[2] = mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z + mat[3].z;
+
+        if (hw != 1.0f) {
+            float rhw = 1.0f / hw;
+            dst *= rhw;
+        }
+    }
+
+    return dst;
+}
+
+Mat4 Mat4::TransposedMul(const Mat4 &a) const {
+    ALIGN_AS16 Mat4 dst;
+
+#ifdef ENABLE_SIMD_INTRINSICS
+    simd4f ar0 = loadu_ps(mat[0]);
+    simd4f ar1 = loadu_ps(mat[1]);
+    simd4f ar2 = loadu_ps(mat[2]);
+    simd4f ar3 = loadu_ps(mat[3]);
+
+    transpose4x4(ar0, ar1, ar2, ar3);
+
+    simd4f br0 = loadu_ps(a.mat[0]);
+    simd4f br1 = loadu_ps(a.mat[1]);
+    simd4f br2 = loadu_ps(a.mat[2]);
+    simd4f br3 = loadu_ps(a.mat[3]);
+
+    store_ps(lincomb4x4(ar0, br0, br1, br2, br3), dst.mat[0]);
+    store_ps(lincomb4x4(ar1, br0, br1, br2, br3), dst.mat[1]);
+    store_ps(lincomb4x4(ar2, br0, br1, br2, br3), dst.mat[2]);
+    store_ps(lincomb4x4(ar3, br0, br1, br2, br3), dst.mat[3]);
+#else
+    float *dstPtr = dst.Ptr();
+    const float *m1Ptr = Ptr();
+    const float *m2Ptr = a.Ptr();
+
+    for (int c = 0; c < Cols; c++) {
+        for (int r = 0; r < Rows; r++) {
+            *dstPtr =
+                m1Ptr[0 * Cols] * m2Ptr[0 * Cols + r] +
+                m1Ptr[1 * Cols] * m2Ptr[1 * Cols + r] +
+                m1Ptr[2 * Cols] * m2Ptr[2 * Cols + r] +
+                m1Ptr[3 * Cols] * m2Ptr[3 * Cols + r];
+            dstPtr++;
+        }
+        m1Ptr += 1;
+    }
 #endif
     return dst;
 }

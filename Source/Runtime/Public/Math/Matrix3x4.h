@@ -449,36 +449,6 @@ BE_INLINE Mat3x4 Mat3x4::operator*(const float rhs) const {
         mat[2][0] * rhs, mat[2][1] * rhs, mat[2][2] * rhs, mat[2][3] * rhs);
 }
 
-BE_INLINE Vec4 Mat3x4::operator*(const Vec4 &vec) const {
-    return Vec4(
-        mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w * vec.w,
-        mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w * vec.w,
-        mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w * vec.w,
-        vec.w);
-}
-
-BE_INLINE Vec3 Mat3x4::operator*(const Vec3 &vec) const {
-    return Vec3(
-        mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w,
-        mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w,
-        mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w);
-}
-
-BE_INLINE Vec4 Mat3x4::TransposedMulVec(const Vec4 &vec) const {
-    return Vec4(
-        mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z,
-        mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z,
-        mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z,
-        mat[0].w * vec.x + mat[1].w * vec.y + mat[2].w * vec.z + vec.w);
-}
-
-BE_INLINE Vec3 Mat3x4::TransposedMulVec(const Vec3 &vec) const {
-    return Vec3(
-        mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z,
-        mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z,
-        mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z);
-}
-
 BE_INLINE Mat3x4 &Mat3x4::operator=(const Mat3x4 &rhs) {
     mat[0][0] = rhs[0][0];
     mat[0][1] = rhs[0][1];
