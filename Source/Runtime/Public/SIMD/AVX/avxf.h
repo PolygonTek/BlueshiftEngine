@@ -213,6 +213,9 @@ BE_FORCE_INLINE avxf nmadd_256ps(const avxf &a, const avxf &b, const avxf &c) { 
 // dst = -(a * b) - c
 BE_FORCE_INLINE avxf nmsub_256ps(const avxf &a, const avxf &b, const avxf &c) { return _mm256_nmsub_ps(a.m256, b.m256, c.m256); }
 
+// dst = (a0 + a1, a2 + a3, b0 + b1, b2 + b3, a4 + a5, a6 + a7, b4 + b5, b6 + b7)
+BE_FORCE_INLINE avxf hadd_256ps(const avxf &a, const avxf &b) { return _mm256_hadd_ps(a, b); }
+
 BE_FORCE_INLINE avxf floor_256ps(const avxf &a) { return _mm256_round_ps(a, _MM_FROUND_TO_NEG_INF); }
 BE_FORCE_INLINE avxf ceil_256ps(const avxf &a) { return _mm256_round_ps(a, _MM_FROUND_TO_POS_INF); }
 BE_FORCE_INLINE avxf trunc_256ps(const avxf &a) { return _mm256_round_ps(a, _MM_FROUND_TO_ZERO); }
