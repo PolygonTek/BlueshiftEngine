@@ -2,35 +2,56 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(TestRenderer)
 
-set(ALL_FILES
+set(COMMON_SOURCE_FILES
     Precompiled.h
     Precompiled.cpp
     Application.h
     Application.cpp)
 
-if (ANDROID)
-    list(APPEND ALL_FILES
-        android_native_app_glue.h
-        android_native_app_glue.c
-        AndroidMain.cpp)
-elseif (APPLE)
-    if (IOS)
-        list(APPEND ALL_FILES
-            iOSMain.mm
-            iOSLaunchScreen.xib)
-    else ()
-        list(APPEND ALL_FILES
-            macOSMain.mm
-            macOSMainMenu.xib)
-    endif ()
-elseif (WIN32)
-    list(APPEND ALL_FILES
-        WinMain.cpp
-        WinResource.h
-        WinRes/small.ico
-        WinRes/TestRenderer.ico
-        WinRes/TestRenderer.rc)
+set(WINDOWS_SOURCE_FILES
+    WinMain.cpp
+    WinResource.h
+    WinRes/small.ico
+    WinRes/TestRenderer.ico
+    WinRes/TestRenderer.rc)
+
+set(MACOS_SOURCE_FILES
+    macOSMain.mm
+    macOSMainMenu.xib)
+
+set(IOS_SOURCE_FILES
+    iOSMain.mm
+    iOSLaunchScreen.xib)
+
+set(ANDROID_SOURCE_FILES
+    android_native_app_glue.h
+    android_native_app_glue.c
+    AndroidMain.cpp)
+
+if (NOT PLATFORM_WINDOWS)
+    list(APPEND COMPILING_DISABLED_SOURCES ${WINDOWS_SOURCE_FILES})
 endif ()
+
+if (NOT PLATFORM_MACOS)
+    list(APPEND COMPILING_DISABLED_SOURCES ${MACOS_SOURCE_FILES})
+endif ()
+
+if (NOT PLATFORM_IOS)
+    list(APPEND COMPILING_DISABLED_SOURCES ${IOS_SOURCE_FILES})
+endif ()
+
+if (NOT PLATFORM_ANDROID)
+    list(APPEND COMPILING_DISABLED_SOURCES ${ANDROID_SOURCE_FILES})
+endif ()
+
+set_source_files_properties(${COMPILING_DISABLED_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+
+set(ALL_FILES
+    ${COMMON_SOURCE_FILES}
+    ${WINDOWS_SOURCE_FILES}
+    ${MACOS_SOURCE_FILES}
+    ${IOS_SOURCE_FILES}
+    ${ANDROID_SOURCE_FILES})
 
 auto_source_group(${ALL_FILES})
 
