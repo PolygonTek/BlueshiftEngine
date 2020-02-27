@@ -262,7 +262,7 @@ void ComCamera::DrawGizmos(const RenderCamera *camera, bool selected, bool selec
     }
 
     // Fade icon alpha in near distance
-    float alpha = Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(renderCameraDef.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
+    float alpha = Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(camera->GetState().origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
 
     spriteDef.materials[0]->GetPass()->constantColor[3] = alpha;
 }
