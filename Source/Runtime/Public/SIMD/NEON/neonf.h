@@ -502,3 +502,7 @@ BE_FORCE_INLINE neonf mat4x4rowmajor_mul_vec4(const float *mat, const neonf &v) 
     result = vmlaq_lane_f32(result, cm.val[2], vget_high_f32(v), 0);
     return vmlaq_lane_f32(result, cm.val[3], vget_high_f32(v), 1);
 }
+
+BE_FORCE_INLINE neonf mat4x4rowmajoru_mul_vec4(const float *mat, const neonf &v) {
+    return mat4x4rowmajor_mul_vec4(mat, v);
+}

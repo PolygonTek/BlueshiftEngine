@@ -379,7 +379,7 @@ Vec4 Mat3x4::operator*(const Vec4 &vec) const {
     simd4f x = ar0 * v;
     simd4f y = ar1 * v;
     simd4f z = ar2 * v;
-    simd4f w = (v & simd4i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF));
+    simd4f w = v & SIMD_4::F4_mask_000x;
     simd4f tmp1 = hadd_ps(x, y); // x0+x1, x2+x3, y0+y1, y2+y3
     simd4f tmp2 = hadd_ps(z, w); // z0+z1, z2+z3, w0+w1, w2+w3
     simd4f result = hadd_ps(tmp1, tmp2); // x0+x1+x2+x3, y0+y1+y2+y3, z0+z1+z2+z3, w0+w1+w2+w3
@@ -440,7 +440,19 @@ Vec3 Mat3x4::TransposedMulVec(const Vec3 &vec) const {
 }
 
 Mat3x4 Mat3x4::operator*(const Mat3x4 &a) const {
-#if defined(ENABLE_SIMD4_INTRIN)
+#if defined(ENABLE_SIMD8_INTRIN)
+    ALIGN_AS32 Mat3x4 dst;
+
+    simd8f ar01 = loadu_256ps(mat[0]);
+    simd4f ar2 = loadu_ps(mat[2]);
+
+    simd8f br00 = broadcast_256ps((simd4f *)&a.mat[0]);
+    simd8f br11 = broadcast_256ps((simd4f *)&a.mat[1]);
+    simd8f br22 = broadcast_256ps((simd4f *)&a.mat[2]);
+
+    store_256ps(lincomb2x3x4(ar01, br00, br11, br22), dst);
+    store_ps(lincomb3x4(ar2, extract_256ps<0>(br00), extract_256ps<0>(br11), extract_256ps<0>(br22)), dst + 8);
+#elif defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Mat3x4 dst;
 
     simd4f ar0 = loadu_ps(mat[0]);

@@ -24,63 +24,6 @@
 
 BE_NAMESPACE_BEGIN
 
-// Cross product.
-BE_FORCE_INLINE simd4f cross_ps(const simd4f &a, const simd4f &b) {
-    simd4f a_yzxw = shuffle_ps<1, 2, 0, 3>(a); // (a.y, a.z, a.x, a.w)
-    simd4f b_yzxw = shuffle_ps<1, 2, 0, 3>(b); // (b.y, b.z, b.x, b.w)
-    simd4f ab_yzxw = a_yzxw * b; // (a.y * b.x, a.z * b.y, a.x * b.z, a.w * b.w)
-
-    return shuffle_ps<1, 2, 0, 3>(msub_ps(b_yzxw, a, ab_yzxw)); // (a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x, 0)
-}
-
-// Linear combination.
-// r0 = a[0] * b0 + a[1] * b1 + a[2] * b2 + a[3] * b3
-BE_FORCE_INLINE simd4f lincomb4x4(const simd4f &a, const simd4f &br0, const simd4f &br1, const simd4f &br2, const simd4f &br3) {
-    simd4f result = shuffle_ps<0, 0, 0, 0>(a) * br0;
-    result = madd_ps(shuffle_ps<1, 1, 1, 1>(a), br1, result);
-    result = madd_ps(shuffle_ps<2, 2, 2, 2>(a), br2, result);
-    result = madd_ps(shuffle_ps<3, 3, 3, 3>(a), br3, result);
-    return result;
-}
-
-// Linear combination.
-// r0 = a[0] * b0 + a[1] * b1 + a[2] * b2 + a[3] * (0, 0, 0, 1)
-BE_FORCE_INLINE simd4f lincomb3x4(const simd4f &a, const simd4f &br0, const simd4f &br1, const simd4f &br2) {
-    simd4f result = shuffle_ps<0, 0, 0, 0>(a) * br0;
-    result = madd_ps(shuffle_ps<1, 1, 1, 1>(a), br1, result);
-    result = madd_ps(shuffle_ps<2, 2, 2, 2>(a), br2, result);
-    result += (a & simd4i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF));
-    return result;
-}
-
-// M(3x4) * v(4)
-BE_FORCE_INLINE simd4f mat3x4rowmajor_mul_vec4(const float *mat, const simd4f &v) {
-    assert_16_byte_aligned(mat);
-    simd4f ar0 = load_ps(mat);
-    simd4f ar1 = load_ps(mat + 4);
-    simd4f ar2 = load_ps(mat + 8);
-    simd4f x = ar0 * v;
-    simd4f y = ar1 * v;
-    simd4f z = ar2 * v;
-    simd4f w = (v & simd4i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF));
-    simd4f tmp1 = hadd_ps(x, y); // x0+x1, x2+x3, y0+y1, y2+y3
-    simd4f tmp2 = hadd_ps(z, w); // z0+z1, z2+z3, w0+w1, w2+w3
-    return hadd_ps(tmp1, tmp2); // x0+x1+x2+x3, y0+y1+y2+y3, z0+z1+z2+z3, w0+w1+w2+w3
-}
-
-// M(4x4) * v(4)
-BE_FORCE_INLINE simd4f mat4x4colmajor_mul_vec4(const float *mat, const simd4f &v) {
-    assert_16_byte_aligned(mat);
-    simd4f ac0 = load_ps(mat);
-    simd4f ac1 = load_ps(mat + 4);
-    simd4f ac2 = load_ps(mat + 8);
-    simd4f ac3 = load_ps(mat + 12);
-    simd4f result = ac0 * shuffle_ps<0, 0, 0, 0>(v);
-    result = madd_ps(ac1, shuffle_ps<1, 1, 1, 1>(v), result);
-    result = madd_ps(ac2, shuffle_ps<2, 2, 2, 2>(v), result);
-    return madd_ps(ac3, shuffle_ps<3, 3, 3, 3>(v), result);
-}
-
 class SIMD_4 : public SIMD_Generic {
 public:
     SIMD_4() = default;
@@ -127,6 +70,64 @@ public:
     static const simd4f                 F4_tiny;
     static const simd4f                 F4_smallestNonDenorm;
     static const simd4f                 F4_sign_bit;
+    static const simd4f                 F4_mask_000x;
 };
+
+// Cross product.
+BE_FORCE_INLINE simd4f cross_ps(const simd4f &a, const simd4f &b) {
+    simd4f a_yzxw = shuffle_ps<1, 2, 0, 3>(a); // (a.y, a.z, a.x, a.w)
+    simd4f b_yzxw = shuffle_ps<1, 2, 0, 3>(b); // (b.y, b.z, b.x, b.w)
+    simd4f ab_yzxw = a_yzxw * b; // (a.y * b.x, a.z * b.y, a.x * b.z, a.w * b.w)
+
+    return shuffle_ps<1, 2, 0, 3>(msub_ps(b_yzxw, a, ab_yzxw)); // (a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x, 0)
+}
+
+// Linear combination.
+// r0 = a[0] * b0 + a[1] * b1 + a[2] * b2 + a[3] * b3
+BE_FORCE_INLINE simd4f lincomb4x4(const simd4f &a, const simd4f &br0, const simd4f &br1, const simd4f &br2, const simd4f &br3) {
+    simd4f result = shuffle_ps<0, 0, 0, 0>(a) * br0;
+    result = madd_ps(shuffle_ps<1, 1, 1, 1>(a), br1, result);
+    result = madd_ps(shuffle_ps<2, 2, 2, 2>(a), br2, result);
+    result = madd_ps(shuffle_ps<3, 3, 3, 3>(a), br3, result);
+    return result;
+}
+
+// Linear combination.
+// r0 = a[0] * b0 + a[1] * b1 + a[2] * b2 + a[3] * (0, 0, 0, 1)
+BE_FORCE_INLINE simd4f lincomb3x4(const simd4f &a, const simd4f &br0, const simd4f &br1, const simd4f &br2) {
+    simd4f result = shuffle_ps<0, 0, 0, 0>(a) * br0;
+    result = madd_ps(shuffle_ps<1, 1, 1, 1>(a), br1, result);
+    result = madd_ps(shuffle_ps<2, 2, 2, 2>(a), br2, result);
+    result += (a & SIMD_4::F4_mask_000x);
+    return result;
+}
+
+// M(3x4) * v(4)
+BE_FORCE_INLINE simd4f mat3x4rowmajor_mul_vec4(const float *mat, const simd4f &v) {
+    assert_16_byte_aligned(mat);
+    simd4f ar0 = load_ps(mat);
+    simd4f ar1 = load_ps(mat + 4);
+    simd4f ar2 = load_ps(mat + 8);
+    simd4f x = ar0 * v;
+    simd4f y = ar1 * v;
+    simd4f z = ar2 * v;
+    simd4f w = (v & SIMD_4::F4_mask_000x);
+    simd4f tmp1 = hadd_ps(x, y); // x0+x1, x2+x3, y0+y1, y2+y3
+    simd4f tmp2 = hadd_ps(z, w); // z0+z1, z2+z3, w0+w1, w2+w3
+    return hadd_ps(tmp1, tmp2); // x0+x1+x2+x3, y0+y1+y2+y3, z0+z1+z2+z3, w0+w1+w2+w3
+}
+
+// M(4x4) * v(4)
+BE_FORCE_INLINE simd4f mat4x4colmajor_mul_vec4(const float *mat, const simd4f &v) {
+    assert_16_byte_aligned(mat);
+    simd4f ac0 = load_ps(mat);
+    simd4f ac1 = load_ps(mat + 4);
+    simd4f ac2 = load_ps(mat + 8);
+    simd4f ac3 = load_ps(mat + 12);
+    simd4f result = ac0 * shuffle_ps<0, 0, 0, 0>(v);
+    result = madd_ps(ac1, shuffle_ps<1, 1, 1, 1>(v), result);
+    result = madd_ps(ac2, shuffle_ps<2, 2, 2, 2>(v), result);
+    return madd_ps(ac3, shuffle_ps<3, 3, 3, 3>(v), result);
+}
 
 BE_NAMESPACE_END

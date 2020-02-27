@@ -21,17 +21,18 @@
 
 BE_NAMESPACE_BEGIN
 
-const simd4f SIMD_4::F4_zero                 = { 0.0f, 0.0f, 0.0f, 0.0f };
-const simd4f SIMD_4::F4_one                  = { 1.0f, 1.0f, 1.0f, 1.0f };
-const simd4f SIMD_4::F4_half                 = { 0.5f, 0.5f, 0.5f, 0.5f };
-const simd4f SIMD_4::F4_255                  = { 255.0f, 255.0f, 255.0f, 255.0f };
-const simd4f SIMD_4::F4_min_char             = { -128.0f, -128.0f, -128.0f, -128.0f };
-const simd4f SIMD_4::F4_max_char             = { 127.0f, 127.0f, 127.0f, 127.0f };
-const simd4f SIMD_4::F4_min_short            = { -32768.0f, -32768.0f, -32768.0f, -32768.0f };
-const simd4f SIMD_4::F4_max_short            = { 32767.0f, 32767.0f, 32767.0f, 32767.0f };
-const simd4f SIMD_4::F4_tiny                 = { 1e-4f, 1e-4f, 1e-4f, 1e-4f };
-const simd4f SIMD_4::F4_smallestNonDenorm    = { 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f };
-const simd4f SIMD_4::F4_sign_bit             = simd4i(0x80000000, 0x80000000, 0x80000000, 0x80000000);
+const simd4f SIMD_4::F4_zero                = { 0.0f, 0.0f, 0.0f, 0.0f };
+const simd4f SIMD_4::F4_one                 = { 1.0f, 1.0f, 1.0f, 1.0f };
+const simd4f SIMD_4::F4_half                = { 0.5f, 0.5f, 0.5f, 0.5f };
+const simd4f SIMD_4::F4_255                 = { 255.0f, 255.0f, 255.0f, 255.0f };
+const simd4f SIMD_4::F4_min_char            = { -128.0f, -128.0f, -128.0f, -128.0f };
+const simd4f SIMD_4::F4_max_char            = { 127.0f, 127.0f, 127.0f, 127.0f };
+const simd4f SIMD_4::F4_min_short           = { -32768.0f, -32768.0f, -32768.0f, -32768.0f };
+const simd4f SIMD_4::F4_max_short           = { 32767.0f, 32767.0f, 32767.0f, 32767.0f };
+const simd4f SIMD_4::F4_tiny                = { 1e-4f, 1e-4f, 1e-4f, 1e-4f };
+const simd4f SIMD_4::F4_smallestNonDenorm   = { 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f };
+const simd4f SIMD_4::F4_sign_bit            = simd4i(0x80000000, 0x80000000, 0x80000000, 0x80000000);
+const simd4f SIMD_4::F4_mask_000x           = simd4i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF);
 
 void BE_FASTCALL SIMD_4::Add(float *dst, const float constant, const float *src, const int count0) {
     int count = count0;
@@ -474,20 +475,9 @@ void BE_FASTCALL SIMD_4::MulMat4x4RMVec4(float *dst, const float *src0, const fl
     assert_16_byte_aligned(src0);
     assert_16_byte_aligned(src1);
 
-    simd4f ar0 = load_ps(src0);
-    simd4f ar1 = load_ps(src0 + 4);
-    simd4f ar2 = load_ps(src0 + 8);
-    simd4f ar3 = load_ps(src0 + 12);
-
     simd4f v = load_ps(src1);
 
-    simd4f x = ar0 * v;
-    simd4f y = ar1 * v;
-    simd4f z = ar2 * v;
-    simd4f w = ar3 * v;
-    simd4f tmp1 = hadd_ps(x, y);
-    simd4f tmp2 = hadd_ps(z, w);
-    simd4f result = hadd_ps(tmp1, tmp2);
+    simd4f result = mat4x4rowmajor_mul_vec4(src0, v);
 
     store_ps(result, dst);
 }
@@ -1086,8 +1076,6 @@ void BE_FASTCALL SIMD_4::ConvertJointMatsToJointPoses(JointPose *jointPoses, con
 }
 
 void BE_FASTCALL SIMD_4::TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
-    const simd4f vector_float_mask_keep_last = simd4i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF);
-
     const float *__restrict firstMatrix = jointMats->Ptr() + (firstJoint + firstJoint + firstJoint - 3) * 4;
 
     simd4f pma = load_ps(firstMatrix + 0);
@@ -1121,9 +1109,9 @@ void BE_FASTCALL SIMD_4::TransformJoints(Mat3x4 *jointMats, const int *parents, 
         simd4f th = shuffle_ps<2, 2, 2, 2>(pmb);
         simd4f ti = shuffle_ps<2, 2, 2, 2>(pmc);
 
-        pma = madd_ps(ta, cma, pma & vector_float_mask_keep_last);
-        pmb = madd_ps(tb, cma, pmb & vector_float_mask_keep_last);
-        pmc = madd_ps(tc, cma, pmc & vector_float_mask_keep_last);
+        pma = madd_ps(ta, cma, pma & SIMD_4::F4_mask_000x);
+        pmb = madd_ps(tb, cma, pmb & SIMD_4::F4_mask_000x);
+        pmc = madd_ps(tc, cma, pmc & SIMD_4::F4_mask_000x);
 
         pma = madd_ps(td, cmb, pma);
         pmb = madd_ps(te, cmb, pmb);
@@ -1140,8 +1128,6 @@ void BE_FASTCALL SIMD_4::TransformJoints(Mat3x4 *jointMats, const int *parents, 
 }
 
 void BE_FASTCALL SIMD_4::UntransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
-    const simd4f vector_float_mask_keep_last = simd4i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF);
-
     for (int joint = lastJoint; joint >= firstJoint; joint--) {
         assert(parents[joint] < joint);
         const int parent = parents[joint];
@@ -1168,9 +1154,9 @@ void BE_FASTCALL SIMD_4::UntransformJoints(Mat3x4 *jointMats, const int *parents
         simd4f th = shuffle_ps<1, 1, 1, 1>(pmc);
         simd4f ti = shuffle_ps<2, 2, 2, 2>(pmc);
 
-        cma = cma - (pma & vector_float_mask_keep_last);
-        cmb = cmb - (pmb & vector_float_mask_keep_last);
-        cmc = cmc - (pmc & vector_float_mask_keep_last);
+        cma = cma - (pma & SIMD_4::F4_mask_000x);
+        cmb = cmb - (pmb & SIMD_4::F4_mask_000x);
+        cmc = cmc - (pmc & SIMD_4::F4_mask_000x);
 
         pma = ta * cma;
         pmb = tb * cma;

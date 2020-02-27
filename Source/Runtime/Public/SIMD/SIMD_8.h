@@ -22,6 +22,40 @@
 
 BE_NAMESPACE_BEGIN
 
+class SIMD_8 : public SIMD_4 {
+public:
+    SIMD_8() = default;
+    SIMD_8(CpuId cpuid) { this->cpuid = cpuid; }
+
+    virtual const char * BE_FASTCALL    GetName() const override { return "SIMD 8"; }
+
+    virtual void BE_FASTCALL            Add(float *dst, const float constant, const float *src, const int count) override;
+    virtual void BE_FASTCALL            Add(float *dst, const float *src0, const float *src1, const int count) override;
+    virtual void BE_FASTCALL            Sub(float *dst, const float constant, const float *src, const int count) override;
+    virtual void BE_FASTCALL            Sub(float *dst, const float *src0, const float *src1, const int count) override;
+    virtual void BE_FASTCALL            Mul(float *dst, const float constant, const float *src, const int count) override;
+    virtual void BE_FASTCALL            Mul(float *dst, const float *src0, const float *src1, const int count) override;
+    virtual void BE_FASTCALL            Div(float *dst, const float constant, const float *src, const int count) override;
+    virtual void BE_FASTCALL            Div(float *dst, const float *src0, const float *src1, const int count) override;
+
+    virtual void BE_FASTCALL            MulMat3x4RM(float *dst, const float *src0, const float *src1) override;
+    virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1) override;
+    virtual void BE_FASTCALL            MulMat4x4RMVec4(float *dst, const float *src0, const float *src1) override;
+
+    static const simd8f                 F8_zero;
+    static const simd8f                 F8_one;
+    static const simd8f                 F8_half;
+    static const simd8f                 F8_255;
+    static const simd8f                 F8_min_char;
+    static const simd8f                 F8_max_char;
+    static const simd8f                 F8_min_short;
+    static const simd8f                 F8_max_short;
+    static const simd8f                 F8_tiny;
+    static const simd8f                 F8_smallestNonDenorm;
+    static const simd8f                 F8_sign_bit;
+    static const simd8f                 F8_mask_000x000x;
+};
+
 // Dual linear combination.
 // r[0] = a[0][0] * b[0] + a[0][1] * b[1] + a[0][2] * b[2] + a[0][3] * b[3]
 // r[1] = a[1][0] * b[0] + a[1][1] * b[1] + a[1][2] * b[2] + a[1][3] * b[3]
@@ -30,6 +64,17 @@ BE_FORCE_INLINE simd8f lincomb2x4x4(simd8f a01, const simd8f &br00, const simd8f
     result = madd_256ps(shuffle_256ps<1, 1, 1, 1>(a01), br11, result);
     result = madd_256ps(shuffle_256ps<2, 2, 2, 2>(a01), br22, result);
     result = madd_256ps(shuffle_256ps<3, 3, 3, 3>(a01), br33, result);
+    return result;
+}
+
+// Dual linear combination.
+// r[0] = a[0][0] * b[0] + a[0][1] * b[1] + a[0][2] * b[2] + a[0][3] * (0, 0, 0, 1)
+// r[1] = a[1][0] * b[0] + a[1][1] * b[1] + a[1][2] * b[2] + a[1][3] * (0, 0, 0, 1)
+BE_FORCE_INLINE simd8f lincomb2x3x4(simd8f a01, const simd8f &br00, const simd8f &br11, const simd8f &br22) {
+    simd8f result = shuffle_256ps<0, 0, 0, 0>(a01) * br00;
+    result = madd_256ps(shuffle_256ps<1, 1, 1, 1>(a01), br11, result);
+    result = madd_256ps(shuffle_256ps<2, 2, 2, 2>(a01), br22, result);
+    result += (a01 & SIMD_8::F8_mask_000x000x);
     return result;
 }
 
@@ -68,37 +113,5 @@ BE_FORCE_INLINE void transpose8x8(const simd8f &r0, const simd8f &r1, const simd
     c1 = unpackhi_256ps(l02, l13);
     c2 = unpacklo_256ps(h02, h13);
 }
-
-class SIMD_8 : public SIMD_4 {
-public:
-    SIMD_8() = default;
-    SIMD_8(CpuId cpuid) { this->cpuid = cpuid; }
-
-    virtual const char * BE_FASTCALL    GetName() const override { return "SIMD 8"; }
-
-    virtual void BE_FASTCALL            Add(float *dst, const float constant, const float *src, const int count) override;
-    virtual void BE_FASTCALL            Add(float *dst, const float *src0, const float *src1, const int count) override;
-    virtual void BE_FASTCALL            Sub(float *dst, const float constant, const float *src, const int count) override;
-    virtual void BE_FASTCALL            Sub(float *dst, const float *src0, const float *src1, const int count) override;
-    virtual void BE_FASTCALL            Mul(float *dst, const float constant, const float *src, const int count) override;
-    virtual void BE_FASTCALL            Mul(float *dst, const float *src0, const float *src1, const int count) override;
-    virtual void BE_FASTCALL            Div(float *dst, const float constant, const float *src, const int count) override;
-    virtual void BE_FASTCALL            Div(float *dst, const float *src0, const float *src1, const int count) override;
-
-    virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1) override;
-    virtual void BE_FASTCALL            MulMat4x4RMVec4(float *dst, const float *src0, const float *src1) override;
-
-    static const simd8f                 F8_zero;
-    static const simd8f                 F8_one;
-    static const simd8f                 F8_half;
-    static const simd8f                 F8_255;
-    static const simd8f                 F8_min_char;
-    static const simd8f                 F8_max_char;
-    static const simd8f                 F8_min_short;
-    static const simd8f                 F8_max_short;
-    static const simd8f                 F8_tiny;
-    static const simd8f                 F8_smallestNonDenorm;
-    static const simd8f                 F8_sign_bit;
-};
 
 BE_NAMESPACE_END

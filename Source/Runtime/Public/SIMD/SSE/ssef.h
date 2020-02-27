@@ -347,7 +347,7 @@ BE_FORCE_INLINE ssef sum_ps(const ssef &a) {
 // Broadcasts dot4 product.
 BE_FORCE_INLINE ssef dot4_ps(const ssef &a, const ssef &b) {
 #if defined(__SSE4_1__)
-    return _mm_dp_ps(a, b, 0xF1);
+    return _mm_dp_ps(a, b, 0xFF);
 #else
     return sum_ps(a * b);
 #endif
@@ -366,17 +366,40 @@ BE_FORCE_INLINE void transpose4x4(ssef &r0, ssef &r1, ssef &r2, ssef &r3) {
 }
 
 // M(4x4) * v(4)
+BE_FORCE_INLINE ssef mat4x4rowmajor_mul_vec4(const ssef &r0, const ssef &r1, const ssef &r2, const ssef &r3, const ssef &v) {
+#if 0//defined(__SSE4_1__) // This code is not as fast as below, so comment it out.
+    ssef v0 = _mm_dp_ps(r0, v, 0xF1);
+    ssef v1 = _mm_dp_ps(r1, v, 0xF2);
+    ssef v2 = _mm_dp_ps(r2, v, 0xF4);
+    ssef v3 = _mm_dp_ps(r3, v, 0xF8);
+    return (v0 | v1) | (v2 | v3);
+#else
+    ssef x = r0 * v;
+    ssef y = r1 * v;
+    ssef z = r2 * v;
+    ssef w = r3 * v;
+    ssef tmp1 = hadd_ps(x, y); // x0+x1, x2+x3, y0+y1, y2+y3
+    ssef tmp2 = hadd_ps(z, w); // z0+z1, z2+z3, w0+w1, w2+w3
+    return hadd_ps(tmp1, tmp2); // x0+x1+x2+x3, y0+y1+y2+y3, z0+z1+z2+z3, w0+w1+w2+w3
+#endif
+}
+
+// M(4x4 - algiend mem) * v(4)
 BE_FORCE_INLINE ssef mat4x4rowmajor_mul_vec4(const float *mat, const ssef &v) {
     assert_16_byte_aligned(mat);
     ssef ar0 = load_ps(mat);
     ssef ar1 = load_ps(mat + 4);
     ssef ar2 = load_ps(mat + 8);
     ssef ar3 = load_ps(mat + 12);
-    ssef x = ar0 * v;
-    ssef y = ar1 * v;
-    ssef z = ar2 * v;
-    ssef w = ar3 * v;
-    ssef tmp1 = hadd_ps(x, y); // x0+x1, x2+x3, y0+y1, y2+y3
-    ssef tmp2 = hadd_ps(z, w); // z0+z1, z2+z3, w0+w1, w2+w3
-    return hadd_ps(tmp1, tmp2); // x0+x1+x2+x3, y0+y1+y2+y3, z0+z1+z2+z3, w0+w1+w2+w3
+    return mat4x4rowmajor_mul_vec4(ar0, ar1, ar2, ar3, v);
+}
+
+// M(4x4 - unaligned mem) * v(4)
+BE_FORCE_INLINE ssef mat4x4rowmajoru_mul_vec4(const float *mat, const ssef &v) {
+    assert_16_byte_aligned(mat);
+    ssef ar0 = loadu_ps(mat);
+    ssef ar1 = loadu_ps(mat + 4);
+    ssef ar2 = loadu_ps(mat + 8);
+    ssef ar3 = loadu_ps(mat + 12);
+    return mat4x4rowmajor_mul_vec4(ar0, ar1, ar2, ar3, v);
 }

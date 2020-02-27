@@ -399,20 +399,9 @@ Vec4 Mat4::operator*(const Vec4 &vec) const {
 #if defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Vec4 dst;
 
-    simd4f r0 = loadu_ps(mat[0]);
-    simd4f r1 = loadu_ps(mat[1]);
-    simd4f r2 = loadu_ps(mat[2]);
-    simd4f r3 = loadu_ps(mat[3]);
-
     simd4f v = loadu_ps(vec);
 
-    simd4f x = r0 * v;
-    simd4f y = r1 * v;
-    simd4f z = r2 * v;
-    simd4f w = r3 * v;
-    simd4f tmp1 = hadd_ps(x, y);
-    simd4f tmp2 = hadd_ps(z, w);
-    simd4f result = hadd_ps(tmp1, tmp2);
+    simd4f result = mat4x4rowmajoru_mul_vec4((const float *)mat, v);
 
     store_ps(result, dst);
 #else
