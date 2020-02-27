@@ -94,7 +94,7 @@ public:
     Mat3x4              MulScalar(float s) const { return *this * s; }
                         /// Multiplies this matrix by a scalar.
                         /// This function is identical to the member function MulScalar().
-    Mat3x4              operator*(const float rhs) const;
+    Mat3x4              operator*(float rhs) const;
 
                         /// Transforms the given vector by this matrix
     Vec4                MulVec(const Vec4 &v) const { return *this * v; }
@@ -363,27 +363,6 @@ BE_INLINE Vec4 &Mat3x4::operator[](int index) {
     return mat[index];
 }
 
-BE_INLINE Mat3x4 Mat3x4::operator-() const {
-    return Mat3x4(
-        -mat[0][0], -mat[0][1], -mat[0][2], -mat[0][3],
-        -mat[1][0], -mat[1][1], -mat[1][2], -mat[1][3],
-        -mat[2][0], -mat[2][1], -mat[2][2], -mat[2][3]);
-}
-
-BE_INLINE Mat3x4 Mat3x4::operator+(const Mat3x4 &a) const {
-    return Mat3x4(
-        mat[0].x + a[0].x, mat[0].y + a[0].y, mat[0].z + a[0].z, mat[0].w + a[0].w,
-        mat[1].x + a[1].x, mat[1].y + a[1].y, mat[1].z + a[1].z, mat[1].w + a[1].w,
-        mat[2].x + a[2].x, mat[2].y + a[2].y, mat[2].z + a[2].z, mat[2].w + a[2].w);
-}
-
-BE_INLINE Mat3x4 Mat3x4::operator-(const Mat3x4 &a) const {
-    return Mat3x4(
-        mat[0].x - a[0].x, mat[0].y - a[0].y, mat[0].z - a[0].z, mat[0].w - a[0].w,
-        mat[1].x - a[1].x, mat[1].y - a[1].y, mat[1].z - a[1].z, mat[1].w - a[1].w,
-        mat[2].x - a[2].x, mat[2].y - a[2].y, mat[2].z - a[2].z, mat[2].w - a[2].w);
-}
-
 BE_INLINE bool Mat3x4::Equals(const Mat3x4 &a) const {
     if (mat[0].Equals(a[0]) &&
         mat[1].Equals(a[1]) &&
@@ -440,13 +419,6 @@ BE_INLINE Mat3x4 Mat3x4::Inverse() const {
     ALIGN_AS16 Mat3x4 invMat = *this;
     invMat.InverseSelf();
     return invMat;
-}
-
-BE_INLINE Mat3x4 Mat3x4::operator*(const float rhs) const {
-    return Mat3x4(
-        mat[0][0] * rhs, mat[0][1] * rhs, mat[0][2] * rhs, mat[0][3] * rhs, 
-        mat[1][1] * rhs, mat[1][1] * rhs, mat[1][2] * rhs, mat[1][3] * rhs,
-        mat[2][0] * rhs, mat[2][1] * rhs, mat[2][2] * rhs, mat[2][3] * rhs);
 }
 
 BE_INLINE Mat3x4 &Mat3x4::operator=(const Mat3x4 &rhs) {

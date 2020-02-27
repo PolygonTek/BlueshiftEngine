@@ -366,30 +366,6 @@ BE_INLINE Vec4 &Mat4::operator[](int index) {
     return mat[index];
 }
 
-BE_INLINE Mat4 Mat4::operator-() const {
-    return Mat4(
-        -mat[0][0], -mat[0][1], -mat[0][2], -mat[0][3], 
-        -mat[1][0], -mat[1][1], -mat[1][2], -mat[1][3], 
-        -mat[2][0], -mat[2][1], -mat[2][2], -mat[2][3], 
-        -mat[3][0], -mat[3][1], -mat[3][2], -mat[3][3]);
-}
-
-BE_INLINE Mat4 Mat4::operator+(const Mat4 &a) const {
-    return Mat4(
-        mat[0].x + a[0].x, mat[0].y + a[0].y, mat[0].z + a[0].z, mat[0].w + a[0].w, 
-        mat[1].x + a[1].x, mat[1].y + a[1].y, mat[1].z + a[1].z, mat[1].w + a[1].w, 
-        mat[2].x + a[2].x, mat[2].y + a[2].y, mat[2].z + a[2].z, mat[2].w + a[2].w, 
-        mat[3].x + a[3].x, mat[3].y + a[3].y, mat[3].z + a[3].z, mat[3].w + a[3].w);
-}
-
-BE_INLINE Mat4 Mat4::operator-(const Mat4 &a) const {
-    return Mat4(
-        mat[0].x - a[0].x, mat[0].y - a[0].y, mat[0].z - a[0].z, mat[0].w - a[0].w, 
-        mat[1].x - a[1].x, mat[1].y - a[1].y, mat[1].z - a[1].z, mat[1].w - a[1].w, 
-        mat[2].x - a[2].x, mat[2].y - a[2].y, mat[2].z - a[2].z, mat[2].w - a[2].w, 
-        mat[3].x - a[3].x, mat[3].y - a[3].y, mat[3].z - a[3].z, mat[3].w - a[3].w);
-}
-
 BE_INLINE Mat4 &Mat4::operator=(const Mat4 &rhs) {
     mat[0][0] = rhs[0][0];
     mat[0][1] = rhs[0][1];

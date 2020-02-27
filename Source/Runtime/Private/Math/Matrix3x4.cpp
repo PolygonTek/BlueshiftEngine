@@ -68,10 +68,148 @@ Mat3x4 &Mat3x4::Scale(float sx, float sy, float sz) {
     return *this;
 }
 
+Mat3x4 Mat3x4::operator-() const {
+#if defined(ENABLE_SIMD4_INTRIN)
+    ALIGN_AS16 Mat3x4 dst;
+
+    simd4f r0 = loadu_ps(mat[0]);
+    simd4f r1 = loadu_ps(mat[1]);
+    simd4f r2 = loadu_ps(mat[2]);
+
+    store_ps(-r0, dst[0]);
+    store_ps(-r1, dst[1]);
+    store_ps(-r2, dst[2]);
+#else
+    Mat3x4 dst;
+
+    dst[0][0] = -mat[0][0];
+    dst[0][1] = -mat[0][1];
+    dst[0][2] = -mat[0][2];
+    dst[0][3] = -mat[0][3];
+
+    dst[1][0] = -mat[1][0];
+    dst[1][1] = -mat[1][1];
+    dst[1][2] = -mat[1][2];
+    dst[1][3] = -mat[1][3];
+
+    dst[2][0] = -mat[2][0];
+    dst[2][1] = -mat[2][1];
+    dst[2][2] = -mat[2][2];
+    dst[2][3] = -mat[2][3];
+#endif
+    return dst;
+}
+
+Mat3x4 Mat3x4::operator+(const Mat3x4 &a) const {
+#if defined(ENABLE_SIMD4_INTRIN)
+    ALIGN_AS16 Mat3x4 dst;
+
+    simd4f ar0 = loadu_ps(mat[0]);
+    simd4f ar1 = loadu_ps(mat[1]);
+    simd4f ar2 = loadu_ps(mat[2]);
+
+    simd4f br0 = loadu_ps(a[0]);
+    simd4f br1 = loadu_ps(a[1]);
+    simd4f br2 = loadu_ps(a[2]);
+
+    store_ps(ar0 + br0, dst[0]);
+    store_ps(ar1 + br1, dst[1]);
+    store_ps(ar2 + br2, dst[2]);
+#else
+    Mat3x4 dst;
+
+    dst[0][0] = mat[0][0] + a[0][0];
+    dst[0][1] = mat[0][1] + a[0][1];
+    dst[0][2] = mat[0][2] + a[0][2];
+    dst[0][3] = mat[0][3] + a[0][3];
+
+    dst[1][0] = mat[1][0] + a[1][0];
+    dst[1][1] = mat[1][1] + a[1][1];
+    dst[1][2] = mat[1][2] + a[1][2];
+    dst[1][3] = mat[1][3] + a[1][3];
+
+    dst[2][0] = mat[2][0] + a[2][0];
+    dst[2][1] = mat[2][1] + a[2][1];
+    dst[2][2] = mat[2][2] + a[2][2];
+    dst[2][3] = mat[2][3] + a[2][3];
+#endif
+    return dst;
+}
+
+Mat3x4 Mat3x4::operator-(const Mat3x4 &a) const {
+#if defined(ENABLE_SIMD4_INTRIN)
+    ALIGN_AS16 Mat3x4 dst;
+
+    simd4f ar0 = loadu_ps(mat[0]);
+    simd4f ar1 = loadu_ps(mat[1]);
+    simd4f ar2 = loadu_ps(mat[2]);
+
+    simd4f br0 = loadu_ps(a[0]);
+    simd4f br1 = loadu_ps(a[1]);
+    simd4f br2 = loadu_ps(a[2]);
+
+    store_ps(ar0 - br0, dst[0]);
+    store_ps(ar1 - br1, dst[1]);
+    store_ps(ar2 - br2, dst[2]);
+#else
+    Mat3x4 dst;
+
+    dst[0][0] = mat[0][0] - a[0][0];
+    dst[0][1] = mat[0][1] - a[0][1];
+    dst[0][2] = mat[0][2] - a[0][2];
+    dst[0][3] = mat[0][3] - a[0][3];
+
+    dst[1][0] = mat[1][0] - a[1][0];
+    dst[1][1] = mat[1][1] - a[1][1];
+    dst[1][2] = mat[1][2] - a[1][2];
+    dst[1][3] = mat[1][3] - a[1][3];
+
+    dst[2][0] = mat[2][0] - a[2][0];
+    dst[2][1] = mat[2][1] - a[2][1];
+    dst[2][2] = mat[2][2] - a[2][2];
+    dst[2][3] = mat[2][3] - a[2][3];
+#endif
+    return dst;
+}
+
+Mat3x4 Mat3x4::operator*(float rhs) const {
+#if defined(ENABLE_SIMD4_INTRIN)
+    ALIGN_AS16 Mat3x4 dst;
+
+    simd4f ar0 = loadu_ps(mat[0]);
+    simd4f ar1 = loadu_ps(mat[1]);
+    simd4f ar2 = loadu_ps(mat[2]);
+
+    simd4f c = set1_ps(rhs);
+
+    store_ps(ar0 * c, dst[0]);
+    store_ps(ar1 * c, dst[1]);
+    store_ps(ar2 * c, dst[2]);
+#else
+    Mat3x4 dst;
+
+    dst[0][0] = mat[0][0] * rhs;
+    dst[0][1] = mat[0][1] * rhs;
+    dst[0][2] = mat[0][2] * rhs;
+    dst[0][3] = mat[0][3] * rhs,
+
+    dst[1][0] = mat[1][1] * rhs;
+    dst[1][1] = mat[1][1] * rhs;
+    dst[1][2] = mat[1][2] * rhs;
+    dst[1][3] = mat[1][3] * rhs;
+
+    dst[2][0] = mat[2][0] * rhs;
+    dst[2][1] = mat[2][1] * rhs;
+    dst[2][2] = mat[2][2] * rhs;
+    dst[2][3] = mat[2][3] * rhs;
+#endif
+    return dst;
+}
+
 Vec4 Mat3x4::operator*(const Vec4 &vec) const {
+#if defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Vec4 dst;
-    
-#ifdef ENABLE_SIMD_INTRINSICS
+
     simd4f ar0 = loadu_ps(mat[0]);
     simd4f ar1 = loadu_ps(mat[1]);
     simd4f ar2 = loadu_ps(mat[2]);
@@ -88,6 +226,8 @@ Vec4 Mat3x4::operator*(const Vec4 &vec) const {
 
     store_ps(result, dst);
 #else
+    Vec4 dst;
+
     dst[0] = mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w * vec.w;
     dst[1] = mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w * vec.w;
     dst[2] = mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w * vec.w;
@@ -105,8 +245,9 @@ Vec3 Mat3x4::operator*(const Vec3 &vec) const {
 }
 
 Vec4 Mat3x4::TransposedMulVec(const Vec4 &vec) const {
+#if defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Vec4 dst;
-#ifdef ENABLE_SIMD_INTRINSICS
+
     simd4f ac0 = load_ps(mat[0]);
     simd4f ac1 = load_ps(mat[1]);
     simd4f ac2 = load_ps(mat[2]);
@@ -120,6 +261,8 @@ Vec4 Mat3x4::TransposedMulVec(const Vec4 &vec) const {
 
     store_ps(result, dst);
 #else
+    Vec4 dst;
+
     dst[0] = mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z;
     dst[1] = mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z;
     dst[2] = mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z;
@@ -137,9 +280,9 @@ Vec3 Mat3x4::TransposedMulVec(const Vec3 &vec) const {
 }
 
 Mat3x4 Mat3x4::operator*(const Mat3x4 &a) const {
+#if defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Mat3x4 dst;
 
-#ifdef ENABLE_SIMD_INTRINSICS
     simd4f ar0 = loadu_ps(mat[0]);
     simd4f ar1 = loadu_ps(mat[1]);
     simd4f ar2 = loadu_ps(mat[2]);
@@ -152,6 +295,8 @@ Mat3x4 Mat3x4::operator*(const Mat3x4 &a) const {
     store_ps(lincomb3x4(ar1, br0, br1, br2), dst.mat[1]);
     store_ps(lincomb3x4(ar2, br0, br1, br2), dst.mat[2]);
 #else
+    Mat3x4 dst;
+
     dst.mat[0][0] = mat[0][0] * a.mat[0][0] + mat[0][1] * a.mat[1][0] + mat[0][2] * a.mat[2][0];
     dst.mat[0][1] = mat[0][0] * a.mat[0][1] + mat[0][1] * a.mat[1][1] + mat[0][2] * a.mat[2][1];
     dst.mat[0][2] = mat[0][0] * a.mat[0][2] + mat[0][1] * a.mat[1][2] + mat[0][2] * a.mat[2][2];
