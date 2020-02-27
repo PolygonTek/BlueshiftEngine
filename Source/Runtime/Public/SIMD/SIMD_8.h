@@ -40,7 +40,6 @@ public:
 
     virtual void BE_FASTCALL            MulMat3x4RM(float *dst, const float *src0, const float *src1) override;
     virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1) override;
-    virtual void BE_FASTCALL            MulMat4x4RMVec4(float *dst, const float *src0, const float *src1) override;
 
     static const simd8f                 F8_zero;
     static const simd8f                 F8_one;

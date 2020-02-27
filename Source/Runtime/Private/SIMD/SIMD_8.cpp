@@ -653,26 +653,6 @@ void BE_FASTCALL SIMD_8::MulMat4x4RM(float *dst, const float *src0, const float 
     store_256ps(lincomb2x4x4(ar23, br00, br11, br22, br33), dst + 8);
 }
 
-void BE_FASTCALL SIMD_8::MulMat4x4RMVec4(float *dst, const float *src0, const float *src1) {
-    assert_32_byte_aligned(dst);
-    assert_32_byte_aligned(src0);
-    assert_32_byte_aligned(src1);
-
-    simd8f ar01 = load_256ps(src0);
-    simd8f ar23 = load_256ps(src0 + 8);
-
-    simd8f v = broadcast_256ps((simd4f *)src1);
-
-    simd8f xy = ar01 * v;
-    simd8f zw = ar23 * v;
-
-    simd8f tmp1 = hadd_256ps(xy, xy);
-    simd8f tmp2 = hadd_256ps(zw, zw);
-    simd4f result = extract_256ps<0>(hadd_256ps(tmp1, tmp2));
-
-    store_ps(result, dst);
-}
-
 BE_NAMESPACE_END
 
 #endif
