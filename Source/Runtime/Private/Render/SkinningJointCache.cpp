@@ -27,15 +27,13 @@ SkinningJointCache::SkinningJointCache(int numJoints) {
     this->viewFrameCount = -1;
     this->numJoints = numJoints;
 
-    // NOTE: VTF skinning 일 때만 모션블러 함
+    // Object motion blur is available when VTF skinning is enabled.
     if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetch) {
         if (r_motionBlur.GetInteger() == 2) {
             this->numJoints *= 2;
         }
-        this->skinningJoints = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4) * this->numJoints);
-    } else {
-        this->skinningJoints = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4) * this->numJoints);
     }
+    this->skinningJoints = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4) * this->numJoints);
 }
 
 void SkinningJointCache::Purge() {

@@ -25,7 +25,7 @@ BE_NAMESPACE_BEGIN
 // Dual linear combination.
 // r[0] = a[0][0] * b[0] + a[0][1] * b[1] + a[0][2] * b[2] + a[0][3] * b[3]
 // r[1] = a[1][0] * b[0] + a[1][1] * b[1] + a[1][2] * b[2] + a[1][3] * b[3]
-BE_FORCE_INLINE simd8f lincomb2x4x2x4(simd8f a01, const simd8f &br00, const simd8f &br11, const simd8f &br22, const simd8f &br33) {
+BE_FORCE_INLINE simd8f lincomb2x4x4(simd8f a01, const simd8f &br00, const simd8f &br11, const simd8f &br22, const simd8f &br33) {
     simd8f result = shuffle_256ps<0, 0, 0, 0>(a01) * br00;
     result = madd_256ps(shuffle_256ps<1, 1, 1, 1>(a01), br11, result);
     result = madd_256ps(shuffle_256ps<2, 2, 2, 2>(a01), br22, result);
@@ -85,7 +85,6 @@ public:
     virtual void BE_FASTCALL            Div(float *dst, const float constant, const float *src, const int count) override;
     virtual void BE_FASTCALL            Div(float *dst, const float *src0, const float *src1, const int count) override;
 
-    virtual void BE_FASTCALL            MulMat3x4RM(float *dst, const float *src0, const float *src1) override;
     virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1) override;
     virtual void BE_FASTCALL            MulMat4x4RMVec4(float *dst, const float *src0, const float *src1) override;
 

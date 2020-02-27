@@ -461,8 +461,8 @@ Mat4 Mat4::operator*(const Mat4 &a) const {
     simd8f br22 = broadcast_256ps((simd4f *)&a[2]);
     simd8f br33 = broadcast_256ps((simd4f *)&a[3]);
 
-    store_256ps(lincomb2x4x2x4(ar01, br00, br11, br22, br33), dst[0]);
-    store_256ps(lincomb2x4x2x4(ar23, br00, br11, br22, br33), dst[2]);
+    store_256ps(lincomb2x4x4(ar01, br00, br11, br22, br33), dst[0]);
+    store_256ps(lincomb2x4x4(ar23, br00, br11, br22, br33), dst[2]);
 #elif defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Mat4 dst;
 
