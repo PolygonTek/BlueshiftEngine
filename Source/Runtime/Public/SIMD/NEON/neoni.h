@@ -25,6 +25,14 @@ BE_FORCE_INLINE neoni set1_epi32(int32_t a) {
     return vdupq_n_s32(a);
 }
 
+BE_FORCE_INLINE neoni set1_epi16(int16_t a) {
+    return vdupq_n_s16(a);
+}
+
+BE_FORCE_INLINE neoni set1_epi8(int8_t a) {
+    return vdupq_n_s8(a);
+}
+
 BE_FORCE_INLINE neoni setzero_si128() {
     return vdupq_n_s32(0);
 }

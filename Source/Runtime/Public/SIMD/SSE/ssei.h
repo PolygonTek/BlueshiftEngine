@@ -24,6 +24,14 @@ BE_FORCE_INLINE ssei set1_epi32(int32_t a) {
     return _mm_set1_epi32(a);
 }
 
+BE_FORCE_INLINE ssei set1_epi16(int16_t a) {
+    return _mm_set1_epi16(a);
+}
+
+BE_FORCE_INLINE ssei set1_epi8(int8_t a) {
+    return _mm_set1_epi8(a);
+}
+
 BE_FORCE_INLINE ssei setzero_si128() {
     return _mm_setzero_si128();
 }

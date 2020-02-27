@@ -24,7 +24,15 @@ BE_FORCE_INLINE avxi set1_256epi32(int32_t a) {
     return _mm256_set1_epi32(a);
 }
 
-BE_FORCE_INLINE avxi set2x128_256epi32(const __m128i &a, const __m128i &b) {
+BE_FORCE_INLINE avxi set1_256epi16(int16_t a) {
+    return _mm256_set1_epi16(a);
+}
+
+BE_FORCE_INLINE avxi set1_256epi8(int8_t a) {
+    return _mm256_set1_epi8(a);
+}
+
+BE_FORCE_INLINE avxi set2x128_256epi32(const ssei &a, const ssei &b) {
     return _mm256_set_m128i(b, a);
 }
 
