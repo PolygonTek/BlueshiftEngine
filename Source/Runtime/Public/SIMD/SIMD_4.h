@@ -14,9 +14,9 @@
 
 #pragma once
 
-#if defined(ENABLE_X86_SSE_INTRINSICS)
+#if defined(HAVE_X86_SSE_INTRIN)
 #include "SSE/sse.h"
-#elif defined(ENABLE_ARM_NEON_INTRINSICS)
+#elif defined(HAVE_ARM_NEON_INTRIN)
 #include "NEON/neon.h"
 #else
 #error "No SIMD4 intrinsics"

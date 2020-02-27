@@ -525,23 +525,31 @@ BE_FORCE_INLINE CFStringRef WideStringToCFString(const wchar_t *string) {
 //----------------------------------------------------------------------------------------------
 
 #if (defined(__SSE__) && defined(__SSE2__) && defined(__SSE3__) && defined(__SSSE3__)) || defined(__NEON__)
-    #define ENABLE_SIMD_INTRINSICS
-    //#define ENABLE_SIMD_INTRINSICS_IN_DEBUG
+    #define ENABLE_SIMD_INTRIN
+    //#define ENABLE_SIMD_INTRIN_IN_DEBUG
 #endif
 
-#if defined(_DEBUG) && !defined(ENABLE_SIMD_INTRINSICS_IN_DEBUG)
-    #undef ENABLE_SIMD_INTRINSICS
+#if defined(_DEBUG) && !defined(ENABLE_SIMD_INTRIN_IN_DEBUG)
+    #undef ENABLE_SIMD_INTRIN
 #endif
 
-#ifdef ENABLE_SIMD_INTRINSICS
+#ifdef ENABLE_SIMD_INTRIN
     #if defined(__SSE__) && defined(__SSE2__) && defined(__SSE3__) && defined(__SSSE3__)
-        #define ENABLE_X86_SSE_INTRINSICS
+        #define HAVE_X86_SSE_INTRIN
     #elif defined(__NEON__)
-        #define ENABLE_ARM_NEON_INTRINSICS
+        #define HAVE_ARM_NEON_INTRIN
     #endif
 
     #if defined(__AVX__)
-        #define ENABLE_X86_AVX_INTRINSICS
+        #define HAVE_X86_AVX_INTRIN
+    #endif
+
+    #if defined(HAVE_X86_SSE_INTRIN) || defined(HAVE_ARM_NEON_INTRIN)
+        #define ENABLE_SIMD4_INTRIN
+    #endif
+
+    #if defined(HAVE_X86_AVX_INTRIN)
+        #define ENABLE_SIMD8_INTRIN
     #endif
 #endif
 

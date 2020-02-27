@@ -381,7 +381,7 @@ Color4 Image::Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode::
 
     ALIGN_AS16 Color4 outputColor;
 
-#ifdef ENABLE_SIMD_INTRINSICS
+#if defined(ENABLE_SIMD4_INTRIN)
     simd4f a00 = load_ps(rgba32f[0]);
     simd4f a01 = load_ps(rgba32f[1]);
     simd4f a10 = load_ps(rgba32f[2]);

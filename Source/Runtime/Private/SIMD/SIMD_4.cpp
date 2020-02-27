@@ -17,7 +17,7 @@
 #include "Core/JointPose.h"
 #include "SIMD/SIMD.h"
 
-#if defined(ENABLE_X86_SSE_INTRINSICS) || defined(ENABLE_ARM_NEON_INTRINSICS)
+#if defined(HAVE_X86_SSE_INTRIN) || defined(HAVE_ARM_NEON_INTRIN)
 
 BE_NAMESPACE_BEGIN
 

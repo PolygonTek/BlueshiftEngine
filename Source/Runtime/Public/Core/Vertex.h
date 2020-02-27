@@ -186,7 +186,7 @@ struct BE_API VertexGenericLit : public VertexGeneric {
 };
 
 BE_INLINE void ConvertNormalToBytes(const float &x, const float &y, const float &z, byte *bval) {
-#ifdef ENABLE_X86_SSE_INTRINSICS
+#ifdef HAVE_X86_SSE_INTRIN
     const __m128 vector_float_255_over_2 = { 255.0f / 2.0f, 255.0f / 2.0f, 255.0f / 2.0f, 255.0f / 2.0f };
 
     const __m128 xyz = _mm_setr_ps(x, y, z, 0);

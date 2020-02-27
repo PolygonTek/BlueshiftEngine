@@ -926,7 +926,7 @@ BE_INLINE int Math::Ftoi(float f) {
 }
 
 BE_INLINE int Math::FtoiFast(float f) {
-#ifdef ENABLE_X86_SSE_INTRINSICS
+#ifdef HAVE_X86_SSE_INTRIN
     // If a converted result is larger than the maximum signed doubleword integer,
     // the floating-point invalid exception is raised, and if this exception is masked,
     // the indefinite integer value (80000000H) is returned.
@@ -946,7 +946,7 @@ BE_INLINE int Math::FtoiFast(float f) {
 }
 
 BE_INLINE int8_t Math::Ftoi8(float f) {
-#ifdef ENABLE_X86_SSE_INTRINSICS
+#ifdef HAVE_X86_SSE_INTRIN
     __m128 x = _mm_load_ss(&f);
     x = _mm_max_ss(x, SIMD_4::F4_min_char);
     x = _mm_min_ss(x, SIMD_4::F4_max_char);
@@ -964,7 +964,7 @@ BE_INLINE int8_t Math::Ftoi8(float f) {
 }
 
 BE_INLINE int16_t Math::Ftoi16(float f) {
-#ifdef ENABLE_X86_SSE_INTRINSICS
+#ifdef HAVE_X86_SSE_INTRIN
     __m128 x = _mm_load_ss(&f);
     x = _mm_max_ss(x, SIMD_4::F4_min_short);
     x = _mm_min_ss(x, SIMD_4::F4_max_short);
@@ -993,7 +993,7 @@ BE_INLINE uint16_t Math::Ftoui16(float f) {
 }
 
 BE_INLINE byte Math::Ftob(float f) {
-#ifdef ENABLE_X86_SSE_INTRINSICS
+#ifdef HAVE_X86_SSE_INTRIN
     // If a converted result is negative the value (0) is returned and if the
     // converted result is larger than the maximum byte the value (255) is returned.
     __m128 x = _mm_load_ss(&f);

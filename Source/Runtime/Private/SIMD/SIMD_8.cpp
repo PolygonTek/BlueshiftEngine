@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "SIMD/SIMD.h"
 
-#if defined(ENABLE_X86_AVX_INTRINSICS)
+#if defined(HAVE_X86_AVX_INTRIN)
 
 BE_NAMESPACE_BEGIN
 

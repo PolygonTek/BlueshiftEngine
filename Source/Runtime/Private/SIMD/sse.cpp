@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 
-#ifdef ENABLE_X86_SSE_INTRINSICS
+#ifdef HAVE_X86_SSE_INTRIN
 
 #include "SIMD/SSE/sse.h"
 

@@ -221,10 +221,10 @@ void OpenGLRHI::FlushMappedBufferRange(Handle bufferHandle, int offset, int size
 }
 
 void OpenGLRHI::WriteBuffer(byte *dst, const byte *src, int numBytes) {
-#ifdef ENABLE_SIMD_INTRINSICS
     assert_16_byte_aligned(dst);
     assert_16_byte_aligned(src);
 
+#if defined(ENABLE_SIMD4_INTRIN)
     int i = 0;
     for (; i + 128 <= numBytes; i += 128) {
         simd4i d0 = load_si128((int32_t *)&src[i + 0 * 16]);
@@ -257,8 +257,6 @@ void OpenGLRHI::WriteBuffer(byte *dst, const byte *src, int numBytes) {
     }
     sfence();
 #else
-    assert_16_byte_aligned(dst);
-    assert_16_byte_aligned(src);
     memcpy(dst, src, numBytes);
 #endif
 }

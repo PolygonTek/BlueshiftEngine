@@ -14,7 +14,7 @@
 
 #pragma once
 
-#if defined(ENABLE_X86_AVX_INTRINSICS)
+#if defined(HAVE_X86_AVX_INTRIN)
 #include "AVX/avx.h"
 #else
 #error "No SIMD8 intrinsics"

@@ -97,10 +97,10 @@ BE_NAMESPACE_END
 
 #include "SIMD_Generic.h"
 
-#if defined(ENABLE_X86_SSE_INTRINSICS) || defined(ENABLE_ARM_NEON_INTRINSICS)
+#if defined(HAVE_X86_SSE_INTRIN) || defined(HAVE_ARM_NEON_INTRIN)
 #include "SIMD_4.h"
 #endif 
 
-#if defined(ENABLE_X86_AVX_INTRINSICS)
+#if defined(HAVE_X86_AVX_INTRIN)
 #include "SIMD_8.h"
 #endif
