@@ -365,6 +365,15 @@ BE_FORCE_INLINE void transpose4x4(ssef &r0, ssef &r1, ssef &r2, ssef &r3) {
     r3 = unpackhi_ps(h02, h13); // m03, m13, m23, m33
 }
 
+// Transposes 3x3 matrix.
+BE_FORCE_INLINE void transpose3x3(ssef &r0, ssef &r1, ssef &r2) {
+    ssef t0 = unpacklo_ps(r0, r1); // m00, m10, m01, m11
+    ssef t1 = unpackhi_ps(r0, r1); // m02, m12, m03, m13
+    r0 = _mm_movelh_ps(t0, r2); // m00, m10, m20, [m21]
+    r1 = shuffle_ps<2, 3, 1, 0>(t0, r2); // m01, m11, m21, [m20]
+    r2 = shuffle_ps<0, 1, 2, 3>(t1, r2); // m02, m12, m22, [m23]
+}
+
 // M(4x4) * v(4)
 BE_FORCE_INLINE ssef mat4x4rowmajor_mul_vec4(const ssef &r0, const ssef &r1, const ssef &r2, const ssef &r3, const ssef &v) {
 #if 0//defined(__SSE4_1__) // This code is not as fast as below, so comment it out.
