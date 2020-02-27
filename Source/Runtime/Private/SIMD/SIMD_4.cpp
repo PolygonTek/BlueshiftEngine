@@ -1230,21 +1230,21 @@ static void SSE_Memcpy64B(void *dst, const void *src, const int count) {
     char *src_ptr = (char *)src;
     char *dst_ptr = (char *)dst;
 
-    __m128i r0, r1, r2, r3;
+    simd4i r0, r1, r2, r3;
 
     int c64 = count >> 6;
     while (c64 > 0) {
-        //prefetchNTA(src_ptr + 64);
+        prefetchNTA(src_ptr + 64);
         
-        r0 = _mm_load_si128((__m128i *)src_ptr);
-        r1 = _mm_load_si128((__m128i *)(src_ptr + 16));
-        r2 = _mm_load_si128((__m128i *)(src_ptr + 32));
-        r3 = _mm_load_si128((__m128i *)(src_ptr + 48));
+        r0 = load_si128((int32_t *)src_ptr);
+        r1 = load_si128((int32_t *)(src_ptr + 16));
+        r2 = load_si128((int32_t *)(src_ptr + 32));
+        r3 = load_si128((int32_t *)(src_ptr + 48));
 
-        _mm_store_si128((__m128i *)dst_ptr, r0);
-        _mm_store_si128((__m128i *)(dst_ptr + 16), r1);
-        _mm_store_si128((__m128i *)(dst_ptr + 32), r2);
-        _mm_store_si128((__m128i *)(dst_ptr + 48), r3);
+        store_si128(r0, (int32_t *)dst_ptr);
+        store_si128(r1, (int32_t *)(dst_ptr + 16));
+        store_si128(r2, (int32_t *)(dst_ptr + 32));
+        store_si128(r3, (int32_t *)(dst_ptr + 48));
 
         src_ptr += 64;
         dst_ptr += 64;
@@ -1252,40 +1252,40 @@ static void SSE_Memcpy64B(void *dst, const void *src, const int count) {
         c64--;
     }
 
-    //_mm_mfence();
+    sfence();
 }
 
 static void SSE_Memcpy2kB(void *dst, const void *src, const int count) {
     char *src_ptr = (char *)src;
     char *dst_ptr = (char *)dst;
 
-    __m128i r0, r1, r2, r3, r4, r5, r6, r7;
+    simd4i r0, r1, r2, r3, r4, r5, r6, r7;
 
     int c128;
     int c2k = count >> 11;
     while (c2k > 0) {
         c128 = 16;
         while (c128 > 0) {
-            //prefetchNTA(src_ptr + 128);
-            //prefetchNTA(src_ptr + 192);
+            prefetchNTA(src_ptr + 128);
+            prefetchNTA(src_ptr + 192);
             
-            r0 = _mm_load_si128((__m128i *)(src_ptr + 0));
-            r1 = _mm_load_si128((__m128i *)(src_ptr + 16));
-            r2 = _mm_load_si128((__m128i *)(src_ptr + 32));
-            r3 = _mm_load_si128((__m128i *)(src_ptr + 48));
-            r4 = _mm_load_si128((__m128i *)(src_ptr + 64));
-            r5 = _mm_load_si128((__m128i *)(src_ptr + 80));
-            r6 = _mm_load_si128((__m128i *)(src_ptr + 96));
-            r7 = _mm_load_si128((__m128i *)(src_ptr + 112));
+            r0 = load_si128((int32_t *)(src_ptr + 0));
+            r1 = load_si128((int32_t *)(src_ptr + 16));
+            r2 = load_si128((int32_t *)(src_ptr + 32));
+            r3 = load_si128((int32_t *)(src_ptr + 48));
+            r4 = load_si128((int32_t *)(src_ptr + 64));
+            r5 = load_si128((int32_t *)(src_ptr + 80));
+            r6 = load_si128((int32_t *)(src_ptr + 96));
+            r7 = load_si128((int32_t *)(src_ptr + 112));
 
-            _mm_store_si128((__m128i *)(dst_ptr + 0), r0);
-            _mm_store_si128((__m128i *)(dst_ptr + 16), r1);
-            _mm_store_si128((__m128i *)(dst_ptr + 32), r2);
-            _mm_store_si128((__m128i *)(dst_ptr + 48), r3);
-            _mm_store_si128((__m128i *)(dst_ptr + 64), r4);
-            _mm_store_si128((__m128i *)(dst_ptr + 80), r5);
-            _mm_store_si128((__m128i *)(dst_ptr + 96), r6);
-            _mm_store_si128((__m128i *)(dst_ptr + 112), r7);
+            store_si128(r0, (int32_t *)(dst_ptr + 0));
+            store_si128(r1, (int32_t *)(dst_ptr + 16));
+            store_si128(r2, (int32_t *)(dst_ptr + 32));
+            store_si128(r3, (int32_t *)(dst_ptr + 48));
+            store_si128(r4, (int32_t *)(dst_ptr + 64));
+            store_si128(r5, (int32_t *)(dst_ptr + 80));
+            store_si128(r6, (int32_t *)(dst_ptr + 96));
+            store_si128(r7, (int32_t *)(dst_ptr + 112));
                     
             src_ptr += 128;
             dst_ptr += 128;
@@ -1296,7 +1296,7 @@ static void SSE_Memcpy2kB(void *dst, const void *src, const int count) {
         c2k--;
     }
 
-    //_mm_mfence();
+    sfence();
 }
 
 static void SSE_MemcpyStream2kB(void *dst, const void *src, const int count) {
@@ -1306,7 +1306,7 @@ static void SSE_MemcpyStream2kB(void *dst, const void *src, const int count) {
     char *dst_ptr = (char *)dst;
     char *dst_next;
 
-    __m128i r0, r1, r2, r3, r4, r5, r6, r7;
+    simd4i r0, r1, r2, r3, r4, r5, r6, r7;
 
     int c128;
     int c2k = count >> 11;
@@ -1321,23 +1321,23 @@ static void SSE_MemcpyStream2kB(void *dst, const void *src, const int count) {
             prefetchNTA(src_ptr + 128);
             prefetchNTA(src_ptr + 192);
         
-            r0 = _mm_load_si128((__m128i *)src_ptr);
-            r1 = _mm_load_si128((__m128i *)(src_ptr + 16));
-            r2 = _mm_load_si128((__m128i *)(src_ptr + 32));
-            r3 = _mm_load_si128((__m128i *)(src_ptr + 48));
-            r4 = _mm_load_si128((__m128i *)(src_ptr + 64));
-            r5 = _mm_load_si128((__m128i *)(src_ptr + 80));
-            r6 = _mm_load_si128((__m128i *)(src_ptr + 96));
-            r7 = _mm_load_si128((__m128i *)(src_ptr + 112));
+            r0 = load_si128((int32_t *)src_ptr);
+            r1 = load_si128((int32_t *)(src_ptr + 16));
+            r2 = load_si128((int32_t *)(src_ptr + 32));
+            r3 = load_si128((int32_t *)(src_ptr + 48));
+            r4 = load_si128((int32_t *)(src_ptr + 64));
+            r5 = load_si128((int32_t *)(src_ptr + 80));
+            r6 = load_si128((int32_t *)(src_ptr + 96));
+            r7 = load_si128((int32_t *)(src_ptr + 112));
 
-            _mm_store_si128((__m128i *)dst_ptr, r0);
-            _mm_store_si128((__m128i *)(dst_ptr + 16), r1);
-            _mm_store_si128((__m128i *)(dst_ptr + 32), r2);
-            _mm_store_si128((__m128i *)(dst_ptr + 48), r3);
-            _mm_store_si128((__m128i *)(dst_ptr + 64), r4);
-            _mm_store_si128((__m128i *)(dst_ptr + 80), r5);
-            _mm_store_si128((__m128i *)(dst_ptr + 96), r6);
-            _mm_store_si128((__m128i *)(dst_ptr + 112), r7);
+            store_si128(r0, (int32_t *)dst_ptr);
+            store_si128(r1, (int32_t *)(dst_ptr + 16));
+            store_si128(r2, (int32_t *)(dst_ptr + 32));
+            store_si128(r3, (int32_t *)(dst_ptr + 48));
+            store_si128(r4, (int32_t *)(dst_ptr + 64));
+            store_si128(r5, (int32_t *)(dst_ptr + 80));
+            store_si128(r6, (int32_t *)(dst_ptr + 96));
+            store_si128(r7, (int32_t *)(dst_ptr + 112));
 
             src_ptr += 128;
             dst_ptr += 128;
@@ -1352,23 +1352,23 @@ static void SSE_MemcpyStream2kB(void *dst, const void *src, const int count) {
     
         c128 = 16;
         while (c128 > 0) {
-            r0 = _mm_load_si128((__m128i *)src_ptr);
-            r1 = _mm_load_si128((__m128i *)(src_ptr + 16));
-            r2 = _mm_load_si128((__m128i *)(src_ptr + 32));
-            r3 = _mm_load_si128((__m128i *)(src_ptr + 48));
-            r4 = _mm_load_si128((__m128i *)(src_ptr + 64));
-            r5 = _mm_load_si128((__m128i *)(src_ptr + 80));
-            r6 = _mm_load_si128((__m128i *)(src_ptr + 96));
-            r7 = _mm_load_si128((__m128i *)(src_ptr + 112));
+            r0 = load_si128((int32_t *)src_ptr);
+            r1 = load_si128((int32_t *)(src_ptr + 16));
+            r2 = load_si128((int32_t *)(src_ptr + 32));
+            r3 = load_si128((int32_t *)(src_ptr + 48));
+            r4 = load_si128((int32_t *)(src_ptr + 64));
+            r5 = load_si128((int32_t *)(src_ptr + 80));
+            r6 = load_si128((int32_t *)(src_ptr + 96));
+            r7 = load_si128((int32_t *)(src_ptr + 112));
 
-            _mm_stream_si128((__m128i *)dst_ptr, r0);
-            _mm_stream_si128((__m128i *)(dst_ptr + 16), r1);
-            _mm_stream_si128((__m128i *)(dst_ptr + 32), r2);
-            _mm_stream_si128((__m128i *)(dst_ptr + 48), r3);
-            _mm_stream_si128((__m128i *)(dst_ptr + 64), r4);
-            _mm_stream_si128((__m128i *)(dst_ptr + 80), r5);
-            _mm_stream_si128((__m128i *)(dst_ptr + 96), r6);
-            _mm_stream_si128((__m128i *)(dst_ptr + 112), r7);
+            storent_si128(r0, (int32_t *)dst_ptr);
+            storent_si128(r1, (int32_t *)(dst_ptr + 16));
+            storent_si128(r2, (int32_t *)(dst_ptr + 32));
+            storent_si128(r3, (int32_t *)(dst_ptr + 48));
+            storent_si128(r4, (int32_t *)(dst_ptr + 64));
+            storent_si128(r5, (int32_t *)(dst_ptr + 80));
+            storent_si128(r6, (int32_t *)(dst_ptr + 96));
+            storent_si128(r7, (int32_t *)(dst_ptr + 112));
         
             src_ptr += 128;
             dst_ptr += 128;
@@ -1379,7 +1379,7 @@ static void SSE_MemcpyStream2kB(void *dst, const void *src, const int count) {
         c2k--;
     }
 
-    _mm_mfence();
+    sfence();
 }
 
 // optimized memory copy routine that handles all alignment cases and block sizes efficiently
@@ -1424,7 +1424,7 @@ void BE_FASTCALL SIMD_4::Memcpy(void *dest0, const void *src0, const int count0)
 
 void BE_FASTCALL SIMD_4::Memset(void *dest0, const int val, const int count0) {
     byte *dest = (byte *)dest0;
-    int	count = count0;
+    int count = count0;
 
     while (count > 0 && (((intptr_t)dest) & 15)) {
         *dest = val;
@@ -1436,19 +1436,19 @@ void BE_FASTCALL SIMD_4::Memset(void *dest0, const int val, const int count0) {
         return;
     }
 
-    __m128i data = _mm_set1_epi8((char)val);
+    simd4i data = set1_epi8((char)val);
 
     if (count >= 128) {
         int c128 = count >> 7;
         while (c128 > 0) {
-            _mm_store_si128((__m128i *)dest, data);
-            _mm_store_si128((__m128i *)(dest + 16), data);
-            _mm_store_si128((__m128i *)(dest + 32), data);
-            _mm_store_si128((__m128i *)(dest + 48), data);
-            _mm_store_si128((__m128i *)(dest + 64), data);
-            _mm_store_si128((__m128i *)(dest + 80), data);
-            _mm_store_si128((__m128i *)(dest + 96), data);
-            _mm_store_si128((__m128i *)(dest + 112), data);
+            store_si128(data, (int32_t *)dest);
+            store_si128(data, (int32_t *)(dest + 16));
+            store_si128(data, (int32_t *)(dest + 32));
+            store_si128(data, (int32_t *)(dest + 48));
+            store_si128(data, (int32_t *)(dest + 64));
+            store_si128(data, (int32_t *)(dest + 80));
+            store_si128(data, (int32_t *)(dest + 96));
+            store_si128(data, (int32_t *)(dest + 112));
 
             dest += 128;
             c128--;
@@ -1460,7 +1460,7 @@ void BE_FASTCALL SIMD_4::Memset(void *dest0, const int val, const int count0) {
     if (count >= 16) {
         int c16 = count >> 4;
         while (c16 > 0) {
-            _mm_store_si128((__m128i *)dest, data);
+            store_si128(data, (int32_t *)dest);
 
             dest += 16;
             c16--;
@@ -1474,6 +1474,16 @@ void BE_FASTCALL SIMD_4::Memset(void *dest0, const int val, const int count0) {
         dest++;
         count--;
     }
+}
+
+#else
+
+void BE_FASTCALL SIMD_4::Memcpy(void *dst, const void *src, const int count) {
+    memcpy(dst, src, count);
+}
+
+void BE_FASTCALL SIMD_4::Memset(void *dst, const int val, const int count) {
+    memset(dst, val, count);
 }
 
 #endif
