@@ -55,7 +55,7 @@ static void TestAdd() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric("Add( float, float[] )", bestClocksGeneric);
+    PrintClocksGeneric(BE1::va("Add( float, float[], %i )", COUNT_OF(dst)), bestClocksGeneric);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
 
@@ -67,7 +67,7 @@ static void TestAdd() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD("Add( float, float[] )", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD(BE1::va("Add( float, float[], %i )", COUNT_OF(dst)), bestClocksGeneric, bestClocksSIMD);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
@@ -80,7 +80,7 @@ static void TestAdd() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric("Add( float[], float[] )", bestClocksGeneric);
+    PrintClocksGeneric(BE1::va("Add( float[], float[], %i )", COUNT_OF(dst)), bestClocksGeneric);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
@@ -93,7 +93,7 @@ static void TestAdd() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD("Add( float[], float[] )", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD(BE1::va("Add( float[], float[], %i )", COUNT_OF(dst)), bestClocksGeneric, bestClocksSIMD);
 }
 
 static void TestSub() {
@@ -114,7 +114,7 @@ static void TestSub() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric("Sub( float, float[] )", bestClocksGeneric);
+    PrintClocksGeneric(BE1::va("Sub( float, float[], %i )", COUNT_OF(dst)), bestClocksGeneric);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
 
@@ -126,7 +126,7 @@ static void TestSub() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD("Sub( float, float[] )", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD(BE1::va("Sub( float, float[], %i )", COUNT_OF(dst)), bestClocksGeneric, bestClocksSIMD);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
@@ -139,7 +139,7 @@ static void TestSub() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric("Sub( float[], float[] )", bestClocksGeneric);
+    PrintClocksGeneric(BE1::va("Sub( float[], float[], %i )", COUNT_OF(dst)), bestClocksGeneric);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
@@ -152,7 +152,7 @@ static void TestSub() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD("Sub( float[], float[] )", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD(BE1::va("Sub( float[], float[], %i )", COUNT_OF(dst)), bestClocksGeneric, bestClocksSIMD);
 }
 
 static void TestMul() {
@@ -173,7 +173,7 @@ static void TestMul() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric("Mul( float, float[] )", bestClocksGeneric);
+    PrintClocksGeneric(BE1::va("Mul( float, float[], %i )", COUNT_OF(dst)), bestClocksGeneric);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
 
@@ -185,7 +185,7 @@ static void TestMul() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD("Mul( float, float[] )", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD(BE1::va("Mul( float, float[], %i )", COUNT_OF(dst)), bestClocksGeneric, bestClocksSIMD);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
@@ -198,7 +198,7 @@ static void TestMul() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric("Mul( float[], float[] )", bestClocksGeneric);
+    PrintClocksGeneric(BE1::va("Mul( float[], float[], %i )", COUNT_OF(dst)), bestClocksGeneric);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
@@ -211,7 +211,7 @@ static void TestMul() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD("Mul( float[], float[] )", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD(BE1::va("Mul( float[], float[], %i )", COUNT_OF(dst)), bestClocksGeneric, bestClocksSIMD);
 }
 
 static void TestDiv() {
@@ -232,7 +232,7 @@ static void TestDiv() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric("Div( float, float[] )", bestClocksGeneric);
+    PrintClocksGeneric(BE1::va("Div( float, float[], %i )", COUNT_OF(dst)), bestClocksGeneric);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
 
@@ -244,7 +244,7 @@ static void TestDiv() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD("Div( float, float[] )", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD(BE1::va("Div( float, float[], %i )", COUNT_OF(dst)), bestClocksGeneric, bestClocksSIMD);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
@@ -257,7 +257,7 @@ static void TestDiv() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric("Div( float[], float[] )", bestClocksGeneric);
+    PrintClocksGeneric(BE1::va("Div( float[], float[], %i )", COUNT_OF(dst)), bestClocksGeneric);
 
     RandomFloatArrayInit(src0, COUNT_OF(dst), -100.0f, 100.0f);
     RandomFloatArrayInit(src1, COUNT_OF(dst), -100.0f, 100.0f);
@@ -270,7 +270,7 @@ static void TestDiv() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD("Div( float[], float[] )", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD(BE1::va("Div( float[], float[], %i )", COUNT_OF(dst)), bestClocksGeneric, bestClocksSIMD);
 }
 
 static void TestSum() {
