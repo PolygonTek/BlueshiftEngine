@@ -24,11 +24,11 @@
     }
 
 static void PrintClocksGeneric(const char *string, uint64_t clocks) {
-    BE_LOG("generic->%s: %" PRIu64 " clocks\n", string, clocks);
+    BE_LOG("Generic->%s: %" PRIu64 " clocks\n", string, clocks);
 }
 
 static void PrintClocksSIMD(const char *string, uint64_t clocksGeneric, uint64_t clocksSIMD) {
-    BE_LOG("   simd->%s: %" PRIu64 " clocks (%.2fx fast)\n", string, clocksSIMD, (float)clocksGeneric / (float)clocksSIMD);
+    BE_LOG("   SIMD->%s: %" PRIu64 " clocks (%.2fx fast)\n", string, clocksSIMD, (float)clocksGeneric / (float)clocksSIMD);
 }
 
 static void RandomFloatArrayInit(float *dst, int count, float minimum, float maximum) {
