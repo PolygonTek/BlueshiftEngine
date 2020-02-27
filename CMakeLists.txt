@@ -135,7 +135,7 @@ if (WIN32)
         set(FLAGS_SSE2 "-D__SSE__ -D__SSE2__")
         set(FLAGS_SSE42 "${FLAGS_SSE2} -D__SSE3__ -D__SSSE3__ -D__SSE4_1__ -D__SSE4_2__")
         set(FLAGS_AVX "${FLAGS_SSE42} /arch:AVX -D__AVX__")
-        set(FLAGS_AVX2 "${FLAGS_SSE42} /arch:AVX2 -D__AVX__2")
+        set(FLAGS_AVX2 "${FLAGS_SSE42} /arch:AVX2 -D__AVX2__")
 
         add_definitions(${FLAGS_AVX})
 
