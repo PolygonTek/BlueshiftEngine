@@ -17,8 +17,8 @@
 
 BE_NAMESPACE_BEGIN
 
-ALIGN_AS16 const Mat3x4 Mat3x4::zero(Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0));
-ALIGN_AS16 const Mat3x4 Mat3x4::identity(Vec4(1, 0, 0, 0), Vec4(0, 1, 0, 0), Vec4(0, 0, 1, 0));
+ALIGN_AS32 const Mat3x4 Mat3x4::zero(Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0));
+ALIGN_AS32 const Mat3x4 Mat3x4::identity(Vec4(1, 0, 0, 0), Vec4(0, 1, 0, 0), Vec4(0, 0, 1, 0));
 
 //---------------------------------------------------
 //
@@ -69,7 +69,15 @@ Mat3x4 &Mat3x4::Scale(float sx, float sy, float sz) {
 }
 
 Mat3x4 Mat3x4::operator-() const {
-#if defined(ENABLE_SIMD4_INTRIN)
+#if defined(ENABLE_SIMD8_INTRIN)
+    ALIGN_AS32 Mat3x4 dst;
+
+    simd8f r01 = loadu_256ps(mat[0]);
+    simd4f r2 = loadu_ps(mat[2]);
+
+    store_256ps(-r01, dst[0]);
+    store_ps(-r2, dst[2]);
+#elif defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Mat3x4 dst;
 
     simd4f r0 = loadu_ps(mat[0]);
@@ -101,7 +109,18 @@ Mat3x4 Mat3x4::operator-() const {
 }
 
 Mat3x4 Mat3x4::operator+(const Mat3x4 &a) const {
-#if defined(ENABLE_SIMD4_INTRIN)
+#if defined(ENABLE_SIMD8_INTRIN)
+    ALIGN_AS32 Mat3x4 dst;
+
+    simd8f ar01 = loadu_256ps(mat[0]);
+    simd4f ar2 = loadu_ps(mat[2]);
+
+    simd8f br01 = loadu_256ps(a[0]);
+    simd4f br2 = loadu_ps(a[2]);
+
+    store_256ps(ar01 + br01, dst[0]);
+    store_ps(ar2 + br2, dst[2]);
+#elif defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Mat3x4 dst;
 
     simd4f ar0 = loadu_ps(mat[0]);
@@ -178,7 +197,18 @@ Mat3x4 &Mat3x4::operator+=(const Mat3x4 &rhs) {
 }
 
 Mat3x4 Mat3x4::operator-(const Mat3x4 &a) const {
-#if defined(ENABLE_SIMD4_INTRIN)
+#if defined(ENABLE_SIMD8_INTRIN)
+    ALIGN_AS32 Mat3x4 dst;
+
+    simd8f ar01 = loadu_256ps(mat[0]);
+    simd4f ar2 = loadu_ps(mat[2]);
+
+    simd8f br01 = loadu_256ps(a[0]);
+    simd4f br2 = loadu_ps(a[2]);
+
+    store_256ps(ar01 - br01, dst[0]);
+    store_ps(ar2 - br2, dst[2]);
+#elif defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Mat3x4 dst;
 
     simd4f ar0 = loadu_ps(mat[0]);
@@ -255,7 +285,17 @@ Mat3x4 &Mat3x4::operator-=(const Mat3x4 &rhs) {
 }
 
 Mat3x4 Mat3x4::operator*(float rhs) const {
-#if defined(ENABLE_SIMD4_INTRIN)
+#if defined(ENABLE_SIMD8_INTRIN)
+    ALIGN_AS32 Mat3x4 dst;
+
+    simd8f ar01 = loadu_256ps(mat[0]);
+    simd4f ar2 = loadu_ps(mat[2]);
+
+    simd8f c = set1_256ps(rhs);
+
+    store_256ps(ar01 * c, dst[0]);
+    store_ps(ar2 * extract_256ps<0>(c), dst[2]);
+#elif defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Mat3x4 dst;
 
     simd4f ar0 = loadu_ps(mat[0]);

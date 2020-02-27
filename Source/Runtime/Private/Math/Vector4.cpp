@@ -17,14 +17,14 @@
 
 BE_NAMESPACE_BEGIN
 
-ALIGN_AS16 const Vec4 Vec4::origin(0.0f, 0.0f, 0.0f, 0.0f);
-ALIGN_AS16 const Vec4 Vec4::zero(0.0f, 0.0f, 0.0f, 0.0f);
-ALIGN_AS16 const Vec4 Vec4::one(1.0f, 1.0f, 1.0f, 1.0f);
-ALIGN_AS16 const Vec4 Vec4::unitX(1.0f, 0.0f, 0.0f, 0.0f);
-ALIGN_AS16 const Vec4 Vec4::unitY(0.0f, 1.0f, 0.0f, 0.0f);
-ALIGN_AS16 const Vec4 Vec4::unitZ(0.0f, 0.0f, 1.0f, 0.0f);
-ALIGN_AS16 const Vec4 Vec4::unitW(0.0f, 0.0f, 0.0f, 1.0f);
-ALIGN_AS16 const Vec4 Vec4::infinity(Math::Infinity, Math::Infinity, Math::Infinity, Math::Infinity);
+ALIGN_AS32 const Vec4 Vec4::origin(0.0f, 0.0f, 0.0f, 0.0f);
+ALIGN_AS32 const Vec4 Vec4::zero(0.0f, 0.0f, 0.0f, 0.0f);
+ALIGN_AS32 const Vec4 Vec4::one(1.0f, 1.0f, 1.0f, 1.0f);
+ALIGN_AS32 const Vec4 Vec4::unitX(1.0f, 0.0f, 0.0f, 0.0f);
+ALIGN_AS32 const Vec4 Vec4::unitY(0.0f, 1.0f, 0.0f, 0.0f);
+ALIGN_AS32 const Vec4 Vec4::unitZ(0.0f, 0.0f, 1.0f, 0.0f);
+ALIGN_AS32 const Vec4 Vec4::unitW(0.0f, 0.0f, 0.0f, 1.0f);
+ALIGN_AS32 const Vec4 Vec4::infinity(Math::Infinity, Math::Infinity, Math::Infinity, Math::Infinity);
 
 Vec4 Vec4::FromString(const char *str) {
     Vec4 v;

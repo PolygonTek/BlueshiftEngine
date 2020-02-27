@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ void ComSensor::AddChildShapeRecursive(const Mat3x4 &parentWorldMatrixInverse, c
 
     const ComTransform *transform = entity->GetTransform();
 
-    ALIGN_AS16 Mat3x4 localTransform = parentWorldMatrixInverse * Mat3x4(transform->GetAxis(), transform->GetOrigin());
+    ALIGN_AS32 Mat3x4 localTransform = parentWorldMatrixInverse * Mat3x4(transform->GetAxis(), transform->GetOrigin());
     localTransform.FixDegeneracies();
 
     PhysShapeDesc &shapeDesc = shapes.Alloc();

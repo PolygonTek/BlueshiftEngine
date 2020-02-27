@@ -142,7 +142,7 @@ void RB_SetupLight(VisLight *visLight) {
     }
 
     // Build light texture transform matrix
-    ALIGN_AS16 float lightTexMatrix[2][4];
+    ALIGN_AS32 float lightTexMatrix[2][4];
     lightTexMatrix[0][0] = lightPass->tcScale[0];
     lightTexMatrix[0][1] = 0.0f;
     lightTexMatrix[0][2] = 0.0f;

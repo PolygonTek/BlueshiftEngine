@@ -535,7 +535,7 @@ void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
     VisObject *visObject = RegisterVisObject(camera, &renderObject);
 
     if (camera->def->GetState().orthogonal) {
-        ALIGN_AS16 Mat4 projMatrix;
+        ALIGN_AS32 Mat4 projMatrix;
         R_SetPerspectiveProjectionMatrix(45, 45, 0.01, 1000, false, projMatrix);
 
         visObject->modelViewMatrix = camera->def->viewMatrix * renderObject.GetWorldMatrix();

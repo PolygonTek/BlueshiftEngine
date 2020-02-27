@@ -155,7 +155,7 @@ void ComRigidBody::AddChildShapeRecursive(const Mat3x4 &parentWorldMatrixInverse
     
     ComTransform *transform = entity->GetTransform();
 
-    ALIGN_AS16 Mat3x4 localTransform = parentWorldMatrixInverse * Mat3x4(transform->GetAxis(), transform->GetOrigin());
+    ALIGN_AS32 Mat3x4 localTransform = parentWorldMatrixInverse * Mat3x4(transform->GetAxis(), transform->GetOrigin());
     localTransform.FixDegeneracies();
 
     PhysShapeDesc &shapeDesc = shapeDescs.Alloc();
@@ -181,8 +181,8 @@ void ComRigidBody::AddChildWheelRecursive(const Mat3x4 &parentWorldMatrixInverse
 
         ComTransform *transform = entity->GetTransform();
 
-        ALIGN_AS16 Mat3x4 worldTransform = Mat3x4(transform->GetAxis(), transform->GetOrigin()) * Mat3x4(vehicleWheel->localAxis, vehicleWheel->localOrigin);
-        ALIGN_AS16 Mat3x4 localTransform = parentWorldMatrixInverse * worldTransform;
+        ALIGN_AS32 Mat3x4 worldTransform = Mat3x4(transform->GetAxis(), transform->GetOrigin()) * Mat3x4(vehicleWheel->localAxis, vehicleWheel->localOrigin);
+        ALIGN_AS32 Mat3x4 localTransform = parentWorldMatrixInverse * worldTransform;
         localTransform.FixDegeneracies();
 
         PhysWheelDesc &wheelDesc = wheelDescs.Alloc();
@@ -217,7 +217,7 @@ void ComRigidBody::CreateBody() {
 
     ComTransform *transform = GetEntity()->GetTransform();
 
-    ALIGN_AS16 Mat3x4 worldMatrixNoScaleInverse = transform->GetMatrixNoScale().Inverse();
+    ALIGN_AS32 Mat3x4 worldMatrixNoScaleInverse = transform->GetMatrixNoScale().Inverse();
 
     physicsDesc.origin = transform->GetOrigin();
     physicsDesc.axis = transform->GetAxis();

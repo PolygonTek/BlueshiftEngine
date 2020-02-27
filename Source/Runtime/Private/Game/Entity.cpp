@@ -557,7 +557,7 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
     }
 
     if (includingChildren) {
-        ALIGN_AS16 Mat3x4 rootMatrixInverse = GetTransform()->GetMatrix().Inverse();
+        ALIGN_AS32 Mat3x4 rootMatrixInverse = GetTransform()->GetMatrix().Inverse();
 
         Array<Entity *> children;
         GetChildrenRecursive(children);
@@ -567,7 +567,7 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
 
             AABB childLocalAabb = child->GetLocalAABB();
             if (!childLocalAabb.IsCleared()) {
-                ALIGN_AS16 Mat3x4 localMatrix = rootMatrixInverse * child->GetTransform()->GetMatrix();
+                ALIGN_AS32 Mat3x4 localMatrix = rootMatrixInverse * child->GetTransform()->GetMatrix();
 
                 childLocalAabb.SetFromTransformedAABB(childLocalAabb, localMatrix);
 

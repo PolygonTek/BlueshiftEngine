@@ -20,8 +20,8 @@ BE_NAMESPACE_BEGIN
 
 class VisObject {
 public:
-    ALIGN_AS16 Mat3x4       modelViewMatrix;
-    ALIGN_AS16 Mat4         modelViewProjMatrix;
+    ALIGN_AS32 Mat4         modelViewProjMatrix;
+    ALIGN_AS32 Mat3x4       modelViewMatrix;
 
     int                     instanceIndex;
 
@@ -37,9 +37,9 @@ public:
 
 class VisLight {
 public:
-    ALIGN_AS16 Mat4         viewProjTexMatrix;
+    ALIGN_AS32 Mat4         viewProjTexMatrix;
 
-    ALIGN_AS16 Color4       lightColor;
+    Color4                  lightColor;
 
     float *                 materialRegisters;
 

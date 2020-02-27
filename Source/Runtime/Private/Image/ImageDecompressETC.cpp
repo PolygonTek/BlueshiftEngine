@@ -923,7 +923,7 @@ static void decode_eac_11(const EAC_Data & data, uint16_t *output_colors, int ou
 //-------------------------------------------------------------------------------------------------
 
 static void DecodeETC2_RGB8ToRGBA8(const byte *src, const int width, const int height, const int depth, byte *out) {
-    ALIGN_AS16 byte unpackedBlock[64];
+    ALIGN_AS32 byte unpackedBlock[64];
     
     // Fill alpha channel first
     memset(unpackedBlock, 255, sizeof(unpackedBlock));
@@ -965,7 +965,7 @@ static void DecodeETC2_RGB8ToRGBA8(const byte *src, const int width, const int h
 }
 
 static void DecodeETC2_RGB8A1ToRGBA8(const byte *src, const int width, const int height, const int depth, byte *out) {
-    ALIGN_AS16 byte unpackedBlock[64];
+    ALIGN_AS32 byte unpackedBlock[64];
 
     for (int y = 0; y < height; y += 4) {
         byte *dstPtr = out + 4 * width * y;
@@ -1003,7 +1003,7 @@ static void DecodeETC2_RGB8A1ToRGBA8(const byte *src, const int width, const int
 }
 
 static void DecodeETC2_RGBA8ToRGBA8(const byte *src, const int width, const int height, const int depth, byte *out) {
-    ALIGN_AS16 byte unpackedBlock[64];
+    ALIGN_AS32 byte unpackedBlock[64];
 
     for (int y = 0; y < height; y += 4) {
         byte *dstPtr = out + 4 * width * y;
@@ -1051,7 +1051,7 @@ static void DecodeETC2_RGBA8ToRGBA8(const byte *src, const int width, const int 
 }
 
 static void DecodeEAC_R11ToRGBA32F(const byte *src, const int width, const int height, const int depth, bool signedFormat, float *out) {
-    ALIGN_AS16 byte unpackedBlock[64];
+    ALIGN_AS32 byte unpackedBlock[64];
 
     etcpack::formatSigned = signedFormat;
 
@@ -1105,7 +1105,7 @@ static void DecodeEAC_R11ToRGBA32F(const byte *src, const int width, const int h
 }
 
 static void DecodeEAC_RG11ToRGBA32F(const byte *src, const int width, const int height, const int depth, bool signedFormat, bool normal, float *out) {
-    ALIGN_AS16 byte unpackedBlock[64];
+    ALIGN_AS32 byte unpackedBlock[64];
 
     etcpack::formatSigned = signedFormat;
 

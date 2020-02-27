@@ -193,8 +193,8 @@ public:
                         /// Returns dimension of this type.
     constexpr int       GetDimension() const { return Rows * Cols; }
 
-    ALIGN_AS16 static const Mat2 zero;
-    ALIGN_AS16 static const Mat2 identity;
+    static const Mat2   zero;
+    static const Mat2   identity;
 
     Vec2                mat[Rows];
 };

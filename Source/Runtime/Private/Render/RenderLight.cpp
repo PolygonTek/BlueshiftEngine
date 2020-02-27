@@ -89,7 +89,7 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
         R_SetPerspectiveProjectionMatrix(xFov, yFov, worldFrustum.GetNearDistance(), worldFrustum.GetFarDistance(), false, projMatrix);
 
         // Calculate light fall-off matrix.
-        ALIGN_AS16 Mat4 orthoProjMatrix;
+        ALIGN_AS32 Mat4 orthoProjMatrix;
         R_SetOrthogonalProjectionMatrix(state.size[1], state.size[2], 0, state.size[0], orthoProjMatrix);
         fallOffMatrix = orthoProjMatrix * viewMatrix;
     } else {
@@ -102,7 +102,7 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
         worldAABB = worldFrustum.ToOBB().ToAABB();
     }
 
-    static const Mat4 textureScaleBiasMatrix(Vec4(0.5f, 0.0f, 0.0f, 0.5f), Vec4(0.0f, 0.5f, 0.0f, 0.5f), Vec4(0.0f, 0.0f, 0.5f, 0.5f), Vec4(0.0, 0.0, 0.0, 1.0f));
+    ALIGN_AS32 static const Mat4 textureScaleBiasMatrix(Vec4(0.5f, 0.0f, 0.0f, 0.5f), Vec4(0.0f, 0.5f, 0.0f, 0.5f), Vec4(0.0f, 0.0f, 0.5f, 0.5f), Vec4(0.0, 0.0, 0.0, 1.0f));
     viewProjScaleBiasMatrix = textureScaleBiasMatrix * projMatrix * viewMatrix;
 
     maxVisDistSquared = state.maxVisDist * state.maxVisDist;

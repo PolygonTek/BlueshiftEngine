@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -608,7 +608,7 @@ void RenderWorld::DrawGUICamera(GuiMesh &guiMesh) {
     new (&guiCamera->visLights) LinkList<VisLight>();
 
     // GUI visible object
-    ALIGN_AS16 Mat4 projMatrix;
+    ALIGN_AS32 Mat4 projMatrix;
     projMatrix.SetOrtho(0, renderSystem.currentContext->GetDeviceWidth(), renderSystem.currentContext->GetDeviceHeight(), 0, -1.0, 1.0);
 
     VisObject *visObject = RegisterVisObject(guiCamera, &renderObject);
