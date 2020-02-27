@@ -31,6 +31,594 @@ const simd8f SIMD_8::F8_tiny                 = { 1e-4f, 1e-4f, 1e-4f, 1e-4f, 1e-
 const simd8f SIMD_8::F8_smallestNonDenorm    = { 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f };
 const simd8f SIMD_8::F8_sign_bit             = (simd8f &)simd8i(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
 
+void BE_FASTCALL SIMD_8::Add(float *dst, const float constant, const float *src, const int count0) {
+    int count = count0;
+    float *dst_ptr = dst;
+    const float *src_ptr = src;
+
+    if (count > 32) {
+        assert_32_byte_aligned(dst);
+        assert_32_byte_aligned(src);
+
+        simd8f c = set1_256ps(constant);
+
+        int c32 = count >> 5;
+        while (c32 > 0) {
+            //prefetchNTA(src_ptr + 16);
+
+            simd8f x0 = c + load_256ps(src_ptr + 0);
+            simd8f x1 = c + load_256ps(src_ptr + 8);
+            simd8f x2 = c + load_256ps(src_ptr + 16);
+            simd8f x3 = c + load_256ps(src_ptr + 24);
+
+            store_256ps(x0, dst_ptr + 0);
+            store_256ps(x1, dst_ptr + 8);
+            store_256ps(x2, dst_ptr + 16);
+            store_256ps(x3, dst_ptr + 24);
+
+            src_ptr += 32;
+            dst_ptr += 32;
+            c32--;
+        }
+
+        count &= 31;
+    }
+
+    if (count > 16) {
+        assert_16_byte_aligned(dst);
+        assert_16_byte_aligned(src);
+
+        simd4f c = set1_ps(constant);
+
+        int c16 = count >> 4;
+        while (c16 > 0) {
+            //prefetchNTA(src_ptr + 16);
+
+            simd4f x0 = c + load_ps(src_ptr + 0);
+            simd4f x1 = c + load_ps(src_ptr + 4);
+            simd4f x2 = c + load_ps(src_ptr + 8);
+            simd4f x3 = c + load_ps(src_ptr + 12);
+
+            store_ps(x0, dst_ptr + 0);
+            store_ps(x1, dst_ptr + 4);
+            store_ps(x2, dst_ptr + 8);
+            store_ps(x3, dst_ptr + 12);
+
+            src_ptr += 16;
+            dst_ptr += 16;
+            c16--;
+        }
+
+        count &= 15;
+    }
+
+    while (count > 0) {
+        *dst_ptr++ = constant + *src_ptr++;
+        count--;
+    }
+}
+
+void BE_FASTCALL SIMD_8::Add(float *dst, const float *src0, const float *src1, const int count0) {
+    int count = count0;
+    float *dst_ptr = dst;
+    const float *src0_ptr = src0;
+    const float *src1_ptr = src1;
+
+    if (count > 32) {
+        assert_32_byte_aligned(dst);
+        assert_32_byte_aligned(src0);
+        assert_32_byte_aligned(src1);
+
+        int c32 = count >> 5;
+        while (c32 > 0) {
+            //prefetchNTA(src0_ptr + 16);
+            //prefetchNTA(src1_ptr + 16);
+
+            simd8f x0 = load_256ps(src0_ptr + 0);
+            simd8f x1 = load_256ps(src0_ptr + 8);
+            simd8f x2 = load_256ps(src0_ptr + 16);
+            simd8f x3 = load_256ps(src0_ptr + 24);
+
+            x0 = x0 + load_256ps(src1_ptr + 0);
+            x1 = x1 + load_256ps(src1_ptr + 8);
+            x2 = x2 + load_256ps(src1_ptr + 16);
+            x3 = x3 + load_256ps(src1_ptr + 24);
+
+            store_256ps(x0, dst_ptr + 0);
+            store_256ps(x1, dst_ptr + 8);
+            store_256ps(x2, dst_ptr + 16);
+            store_256ps(x3, dst_ptr + 24);
+
+            src0_ptr += 32;
+            src1_ptr += 32;
+            dst_ptr += 32;
+            c32--;
+        }
+
+        count &= 31;
+    }
+
+    if (count > 16) {
+        assert_16_byte_aligned(dst);
+        assert_16_byte_aligned(src0);
+        assert_16_byte_aligned(src1);
+
+        int c16 = count >> 4;
+        while (c16 > 0) {
+            //prefetchNTA(src0_ptr + 16);
+            //prefetchNTA(src1_ptr + 16);
+
+            simd4f x0 = load_ps(src0_ptr + 0);
+            simd4f x1 = load_ps(src0_ptr + 4);
+            simd4f x2 = load_ps(src0_ptr + 8);
+            simd4f x3 = load_ps(src0_ptr + 12);
+
+            x0 = x0 + load_ps(src1_ptr + 0);
+            x1 = x1 + load_ps(src1_ptr + 4);
+            x2 = x2 + load_ps(src1_ptr + 8);
+            x3 = x3 + load_ps(src1_ptr + 12);
+
+            store_ps(x0, dst_ptr + 0);
+            store_ps(x1, dst_ptr + 4);
+            store_ps(x2, dst_ptr + 8);
+            store_ps(x3, dst_ptr + 12);
+
+            src0_ptr += 16;
+            src1_ptr += 16;
+            dst_ptr += 16;
+            c16--;
+        }
+
+        count &= 15;
+    }
+
+    while (count > 0) {
+        *dst_ptr++ = *src0_ptr++ + *src1_ptr++;
+        count--;
+    }
+}
+
+void BE_FASTCALL SIMD_8::Sub(float *dst, const float constant, const float *src, const int count0) {
+    int count = count0;
+    float *dst_ptr = dst;
+    const float *src_ptr = src;
+
+    if (count > 32) {
+        assert_32_byte_aligned(dst);
+        assert_32_byte_aligned(src);
+
+        simd8f c = set1_256ps(constant);
+
+        int c32 = count >> 5;
+        while (c32 > 0) {
+            //prefetchNTA(src0_ptr + 16);
+
+            simd8f x0 = c - load_256ps(src_ptr + 0);
+            simd8f x1 = c - load_256ps(src_ptr + 8);
+            simd8f x2 = c - load_256ps(src_ptr + 16);
+            simd8f x3 = c - load_256ps(src_ptr + 24);
+
+            store_256ps(x0, dst_ptr + 0);
+            store_256ps(x1, dst_ptr + 8);
+            store_256ps(x2, dst_ptr + 16);
+            store_256ps(x3, dst_ptr + 24);
+
+            src_ptr += 32;
+            dst_ptr += 32;
+            c32--;
+        }
+
+        count &= 31;
+    }
+
+    if (count > 16) {
+        assert_16_byte_aligned(dst);
+        assert_16_byte_aligned(src);
+
+        simd4f c = set1_ps(constant);
+
+        int c16 = count >> 4;
+        while (c16 > 0) {
+            //prefetchNTA(src0_ptr + 16);
+
+            simd4f x0 = c - load_ps(src_ptr + 0);
+            simd4f x1 = c - load_ps(src_ptr + 4);
+            simd4f x2 = c - load_ps(src_ptr + 8);
+            simd4f x3 = c - load_ps(src_ptr + 12);
+
+            store_ps(x0, dst_ptr + 0);
+            store_ps(x1, dst_ptr + 4);
+            store_ps(x2, dst_ptr + 8);
+            store_ps(x3, dst_ptr + 12);
+
+            src_ptr += 16;
+            dst_ptr += 16;
+            c16--;
+        }
+
+        count &= 15;
+    }
+
+    while (count > 0) {
+        *dst_ptr++ = constant + *src_ptr++;
+        count--;
+    }
+}
+
+void BE_FASTCALL SIMD_8::Sub(float *dst, const float *src0, const float *src1, const int count0) {
+    int count = count0;
+    float *dst_ptr = dst;
+    const float *src0_ptr = src0;
+    const float *src1_ptr = src1;
+
+    if (count > 32) {
+        assert_32_byte_aligned(dst);
+        assert_32_byte_aligned(src0);
+        assert_32_byte_aligned(src1);
+
+        int c32 = count >> 5;
+        while (c32 > 0) {
+            //prefetchNTA(src0_ptr + 16);
+            //prefetchNTA(src1_ptr + 16);
+
+            simd8f x0 = load_256ps(src0_ptr + 0);
+            simd8f x1 = load_256ps(src0_ptr + 8);
+            simd8f x2 = load_256ps(src0_ptr + 16);
+            simd8f x3 = load_256ps(src0_ptr + 24);
+
+            x0 = x0 - load_256ps(src1_ptr + 0);
+            x1 = x1 - load_256ps(src1_ptr + 8);
+            x2 = x2 - load_256ps(src1_ptr + 16);
+            x3 = x3 - load_256ps(src1_ptr + 24);
+
+            store_256ps(x0, dst_ptr + 0);
+            store_256ps(x1, dst_ptr + 8);
+            store_256ps(x2, dst_ptr + 16);
+            store_256ps(x3, dst_ptr + 24);
+
+            src0_ptr += 32;
+            src1_ptr += 32;
+            dst_ptr += 32;
+            c32--;
+        }
+
+        count &= 31;
+    }
+
+    if (count > 16) {
+        assert_16_byte_aligned(dst);
+        assert_16_byte_aligned(src0);
+        assert_16_byte_aligned(src1);
+
+        int c16 = count >> 4;
+        while (c16 > 0) {
+            //prefetchNTA(src0_ptr + 16);
+            //prefetchNTA(src1_ptr + 16);
+
+            simd4f x0 = load_ps(src0_ptr + 0);
+            simd4f x1 = load_ps(src0_ptr + 4);
+            simd4f x2 = load_ps(src0_ptr + 8);
+            simd4f x3 = load_ps(src0_ptr + 12);
+
+            x0 = x0 - load_ps(src1_ptr + 0);
+            x1 = x1 - load_ps(src1_ptr + 4);
+            x2 = x2 - load_ps(src1_ptr + 8);
+            x3 = x3 - load_ps(src1_ptr + 12);
+
+            store_ps(x0, dst_ptr + 0);
+            store_ps(x1, dst_ptr + 4);
+            store_ps(x2, dst_ptr + 8);
+            store_ps(x3, dst_ptr + 12);
+
+            src0_ptr += 16;
+            src1_ptr += 16;
+            dst_ptr += 16;
+            c16--;
+        }
+
+        count &= 15;
+    }
+
+    while (count > 0) {
+        *dst_ptr++ = *src0_ptr++ + *src1_ptr++;
+        count--;
+    }
+}
+
+void BE_FASTCALL SIMD_8::Mul(float *dst, const float constant, const float *src, const int count0) {
+    int count = count0;
+    float *dst_ptr = dst;
+    const float *src_ptr = src;
+
+    if (count > 32) {
+        assert_32_byte_aligned(dst);
+        assert_32_byte_aligned(src);
+
+        simd8f c = set1_256ps(constant);
+
+        int c32 = count >> 5;
+        while (c32 > 0) {
+            //prefetchNTA(src0_ptr + 16);
+
+            simd8f x0 = c * load_256ps(src_ptr + 0);
+            simd8f x1 = c * load_256ps(src_ptr + 8);
+            simd8f x2 = c * load_256ps(src_ptr + 16);
+            simd8f x3 = c * load_256ps(src_ptr + 24);
+
+            store_256ps(x0, dst_ptr + 0);
+            store_256ps(x1, dst_ptr + 8);
+            store_256ps(x2, dst_ptr + 16);
+            store_256ps(x3, dst_ptr + 24);
+
+            src_ptr += 32;
+            dst_ptr += 32;
+            c32--;
+        }
+
+        count &= 31;
+    }
+
+    if (count > 16) {
+        assert_16_byte_aligned(dst);
+        assert_16_byte_aligned(src);
+
+        simd4f c = set1_ps(constant);
+
+        int c16 = count >> 4;
+        while (c16 > 0) {
+            //prefetchNTA(src0_ptr + 16);
+
+            simd4f x0 = c * load_ps(src_ptr + 0);
+            simd4f x1 = c * load_ps(src_ptr + 4);
+            simd4f x2 = c * load_ps(src_ptr + 8);
+            simd4f x3 = c * load_ps(src_ptr + 12);
+
+            store_ps(x0, dst_ptr + 0);
+            store_ps(x1, dst_ptr + 4);
+            store_ps(x2, dst_ptr + 8);
+            store_ps(x3, dst_ptr + 12);
+
+            src_ptr += 16;
+            dst_ptr += 16;
+            c16--;
+        }
+
+        count &= 15;
+    }
+
+    while (count > 0) {
+        *dst_ptr++ = constant + *src_ptr++;
+        count--;
+    }
+}
+
+void BE_FASTCALL SIMD_8::Mul(float *dst, const float *src0, const float *src1, const int count0) {
+    int count = count0;
+    float *dst_ptr = dst;
+    const float *src0_ptr = src0;
+    const float *src1_ptr = src1;
+
+    if (count > 32) {
+        assert_32_byte_aligned(dst);
+        assert_32_byte_aligned(src0);
+        assert_32_byte_aligned(src1);
+
+        int c32 = count >> 5;
+        while (c32 > 0) {
+            //prefetchNTA(src0_ptr + 16);
+            //prefetchNTA(src1_ptr + 16);
+
+            simd8f x0 = load_256ps(src0_ptr + 0);
+            simd8f x1 = load_256ps(src0_ptr + 8);
+            simd8f x2 = load_256ps(src0_ptr + 16);
+            simd8f x3 = load_256ps(src0_ptr + 24);
+
+            x0 = x0 * load_256ps(src1_ptr + 0);
+            x1 = x1 * load_256ps(src1_ptr + 8);
+            x2 = x2 * load_256ps(src1_ptr + 16);
+            x3 = x3 * load_256ps(src1_ptr + 24);
+
+            store_256ps(x0, dst_ptr + 0);
+            store_256ps(x1, dst_ptr + 8);
+            store_256ps(x2, dst_ptr + 16);
+            store_256ps(x3, dst_ptr + 24);
+
+            src0_ptr += 32;
+            src1_ptr += 32;
+            dst_ptr += 32;
+            c32--;
+        }
+
+        count &= 31;
+    }
+
+    if (count > 16) {
+        assert_16_byte_aligned(dst);
+        assert_16_byte_aligned(src0);
+        assert_16_byte_aligned(src1);
+
+        int c16 = count >> 4;
+        while (c16 > 0) {
+            //prefetchNTA(src0_ptr + 16);
+            //prefetchNTA(src1_ptr + 16);
+
+            simd4f x0 = load_ps(src0_ptr + 0);
+            simd4f x1 = load_ps(src0_ptr + 4);
+            simd4f x2 = load_ps(src0_ptr + 8);
+            simd4f x3 = load_ps(src0_ptr + 12);
+
+            x0 = x0 * load_ps(src1_ptr + 0);
+            x1 = x1 * load_ps(src1_ptr + 4);
+            x2 = x2 * load_ps(src1_ptr + 8);
+            x3 = x3 * load_ps(src1_ptr + 12);
+
+            store_ps(x0, dst_ptr + 0);
+            store_ps(x1, dst_ptr + 4);
+            store_ps(x2, dst_ptr + 8);
+            store_ps(x3, dst_ptr + 12);
+
+            src0_ptr += 16;
+            src1_ptr += 16;
+            dst_ptr += 16;
+            c16--;
+        }
+
+        count &= 15;
+    }
+
+    while (count > 0) {
+        *dst_ptr++ = *src0_ptr++ + *src1_ptr++;
+        count--;
+    }
+}
+
+void BE_FASTCALL SIMD_8::Div(float *dst, const float constant, const float *src, const int count0) {
+    int count = count0;
+    float *dst_ptr = dst;
+    const float *src_ptr = src;
+
+    if (count > 32) {
+        assert_32_byte_aligned(dst);
+        assert_32_byte_aligned(src);
+
+        simd8f c = set1_256ps(constant);
+
+        int c32 = count >> 5;
+        while (c32 > 0) {
+            //prefetchNTA(src0_ptr + 16);
+
+            simd8f x0 = c / load_256ps(src_ptr + 0);
+            simd8f x1 = c / load_256ps(src_ptr + 8);
+            simd8f x2 = c / load_256ps(src_ptr + 16);
+            simd8f x3 = c / load_256ps(src_ptr + 24);
+
+            store_256ps(x0, dst_ptr + 0);
+            store_256ps(x1, dst_ptr + 8);
+            store_256ps(x2, dst_ptr + 16);
+            store_256ps(x3, dst_ptr + 24);
+
+            src_ptr += 32;
+            dst_ptr += 32;
+            c32--;
+        }
+
+        count &= 31;
+    }
+
+    if (count > 16) {
+        assert_16_byte_aligned(dst);
+        assert_16_byte_aligned(src);
+
+        simd4f c = set1_ps(constant);
+
+        int c16 = count >> 4;
+        while (c16 > 0) {
+            //prefetchNTA(src0_ptr + 16);
+
+            simd4f x0 = c / load_ps(src_ptr + 0);
+            simd4f x1 = c / load_ps(src_ptr + 4);
+            simd4f x2 = c / load_ps(src_ptr + 8);
+            simd4f x3 = c / load_ps(src_ptr + 12);
+
+            store_ps(x0, dst_ptr + 0);
+            store_ps(x1, dst_ptr + 4);
+            store_ps(x2, dst_ptr + 8);
+            store_ps(x3, dst_ptr + 12);
+
+            src_ptr += 16;
+            dst_ptr += 16;
+            c16--;
+        }
+
+        count &= 15;
+    }
+
+    while (count > 0) {
+        *dst_ptr++ = constant + *src_ptr++;
+        count--;
+    }
+}
+
+void BE_FASTCALL SIMD_8::Div(float *dst, const float *src0, const float *src1, const int count0) {
+    int count = count0;
+    float *dst_ptr = dst;
+    const float *src0_ptr = src0;
+    const float *src1_ptr = src1;
+
+    if (count > 32) {
+        assert_32_byte_aligned(dst);
+        assert_32_byte_aligned(src0);
+        assert_32_byte_aligned(src1);
+
+        int c32 = count >> 5;
+        while (c32 > 0) {
+            //prefetchNTA(src0_ptr + 16);
+            //prefetchNTA(src1_ptr + 16);
+
+            simd8f x0 = load_256ps(src0_ptr + 0);
+            simd8f x1 = load_256ps(src0_ptr + 8);
+            simd8f x2 = load_256ps(src0_ptr + 16);
+            simd8f x3 = load_256ps(src0_ptr + 24);
+
+            x0 = x0 / load_256ps(src1_ptr + 0);
+            x1 = x1 / load_256ps(src1_ptr + 8);
+            x2 = x2 / load_256ps(src1_ptr + 16);
+            x3 = x3 / load_256ps(src1_ptr + 24);
+
+            store_256ps(x0, dst_ptr + 0);
+            store_256ps(x1, dst_ptr + 8);
+            store_256ps(x2, dst_ptr + 16);
+            store_256ps(x3, dst_ptr + 24);
+
+            src0_ptr += 32;
+            src1_ptr += 32;
+            dst_ptr += 32;
+            c32--;
+        }
+
+        count &= 31;
+    }
+
+    if (count > 16) {
+        assert_16_byte_aligned(dst);
+        assert_16_byte_aligned(src0);
+        assert_16_byte_aligned(src1);
+
+        int c16 = count >> 4;
+        while (c16 > 0) {
+            //prefetchNTA(src0_ptr + 16);
+            //prefetchNTA(src1_ptr + 16);
+
+            simd4f x0 = load_ps(src0_ptr + 0);
+            simd4f x1 = load_ps(src0_ptr + 4);
+            simd4f x2 = load_ps(src0_ptr + 8);
+            simd4f x3 = load_ps(src0_ptr + 12);
+
+            x0 = x0 / load_ps(src1_ptr + 0);
+            x1 = x1 / load_ps(src1_ptr + 4);
+            x2 = x2 / load_ps(src1_ptr + 8);
+            x3 = x3 / load_ps(src1_ptr + 12);
+
+            store_ps(x0, dst_ptr + 0);
+            store_ps(x1, dst_ptr + 4);
+            store_ps(x2, dst_ptr + 8);
+            store_ps(x3, dst_ptr + 12);
+
+            src0_ptr += 16;
+            src1_ptr += 16;
+            dst_ptr += 16;
+            c16--;
+        }
+
+        count &= 15;
+    }
+
+    while (count > 0) {
+        *dst_ptr++ = *src0_ptr++ + *src1_ptr++;
+        count--;
+    }
+}
+
 void BE_FASTCALL SIMD_8::MulMat3x4RM(float *dst, const float *src0, const float *src1) {
     assert_32_byte_aligned(dst);
     assert_32_byte_aligned(src0);

@@ -76,6 +76,15 @@ public:
 
     virtual const char * BE_FASTCALL    GetName() const override { return "SIMD 8"; }
 
+    virtual void BE_FASTCALL            Add(float *dst, const float constant, const float *src, const int count) override;
+    virtual void BE_FASTCALL            Add(float *dst, const float *src0, const float *src1, const int count) override;
+    virtual void BE_FASTCALL            Sub(float *dst, const float constant, const float *src, const int count) override;
+    virtual void BE_FASTCALL            Sub(float *dst, const float *src0, const float *src1, const int count) override;
+    virtual void BE_FASTCALL            Mul(float *dst, const float constant, const float *src, const int count) override;
+    virtual void BE_FASTCALL            Mul(float *dst, const float *src0, const float *src1, const int count) override;
+    virtual void BE_FASTCALL            Div(float *dst, const float constant, const float *src, const int count) override;
+    virtual void BE_FASTCALL            Div(float *dst, const float *src0, const float *src1, const int count) override;
+
     virtual void BE_FASTCALL            MulMat3x4RM(float *dst, const float *src0, const float *src1) override;
     virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1) override;
     virtual void BE_FASTCALL            MulMat4x4RMVec4(float *dst, const float *src0, const float *src1) override;
