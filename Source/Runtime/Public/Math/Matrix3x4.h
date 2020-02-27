@@ -459,65 +459,8 @@ BE_INLINE Mat3x4 &Mat3x4::operator=(const Mat3 &rhs) {
     return *this;
 }
 
-BE_INLINE Mat3x4 &Mat3x4::operator+=(const Mat3x4 &rhs) {
-    mat[0][0] += rhs.mat[0][0];
-    mat[0][1] += rhs.mat[0][1];
-    mat[0][2] += rhs.mat[0][2];
-    mat[0][3] += rhs.mat[0][3];
-
-    mat[1][0] += rhs.mat[1][0];
-    mat[1][1] += rhs.mat[1][1];
-    mat[1][2] += rhs.mat[1][2];
-    mat[1][3] += rhs.mat[1][3];
-
-    mat[2][0] += rhs.mat[2][0];
-    mat[2][1] += rhs.mat[2][1];
-    mat[2][2] += rhs.mat[2][2];
-    mat[2][3] += rhs.mat[2][3];
-
-    return *this;
-}
-
-BE_INLINE Mat3x4 &Mat3x4::operator-=(const Mat3x4 &rhs) {
-    mat[0][0] -= rhs.mat[0][0];
-    mat[0][1] -= rhs.mat[0][1];
-    mat[0][2] -= rhs.mat[0][2];
-    mat[0][3] -= rhs.mat[0][3];
-
-    mat[1][0] -= rhs.mat[1][0];
-    mat[1][1] -= rhs.mat[1][1];
-    mat[1][2] -= rhs.mat[1][2];
-    mat[1][3] -= rhs.mat[1][3];
-
-    mat[2][0] -= rhs.mat[2][0];
-    mat[2][1] -= rhs.mat[2][1];
-    mat[2][2] -= rhs.mat[2][2];
-    mat[2][3] -= rhs.mat[2][3];
-
-    return *this;
-}
-
 BE_INLINE Mat3x4 &Mat3x4::operator*=(const Mat3x4 &rhs) {
     *this = (*this) * rhs;
-    return *this;
-}
-
-BE_INLINE Mat3x4 &Mat3x4::operator*=(float rhs) {
-    mat[0].x *= rhs;
-    mat[0].y *= rhs;
-    mat[0].z *= rhs;
-    mat[0].w *= rhs;
-
-    mat[1].x *= rhs;
-    mat[1].y *= rhs;
-    mat[1].z *= rhs;
-    mat[1].w *= rhs;
-
-    mat[2].x *= rhs;
-    mat[2].y *= rhs;
-    mat[2].z *= rhs;
-    mat[2].w *= rhs;
-
     return *this;
 }
 
