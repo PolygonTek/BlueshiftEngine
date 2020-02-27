@@ -36,7 +36,7 @@ void ComCanvas::RegisterProperties() {
         "", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("matchMode", "Match Mode", MatchMode::Enum, matchMode, MatchMode::MatchWidthOrHeight,
         "", PropertyInfo::Flag::Editor).SetEnumString("Match Width Or Height;Expand;Shrink");
-    REGISTER_PROPERTY("match", "Match", float, match, 0.0f,
+    REGISTER_PROPERTY("match", "Match (Width " u8"\u27f7" " Height)", float, match, 0.0f,
         "", PropertyInfo::Flag::Editor).SetRange(0.0f, 1.0f, 0.01f);
 }
 
