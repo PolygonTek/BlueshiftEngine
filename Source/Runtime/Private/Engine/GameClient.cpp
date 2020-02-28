@@ -394,6 +394,7 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
 
     Color4 textColor = currentTextColor;
     guiMesh.SetColor(textColor);
+    guiMesh.SetTextBorderColor(Color4::black);
 
     for (int lineIndex = 0; lineIndex < numLines; lineIndex++) {
         offset = lineOffsets[lineIndex];
@@ -414,29 +415,6 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
 
         for (int lineTextIndex = 0; lineTextIndex < lineLen[lineIndex]; lineTextIndex++) {
             char32_t unicodeChar = text.UTF8CharAdvance(offset);
-
-            if (flags & DrawTextFlag::Outline) {
-                // Draw outline of text with black color
-                guiMesh.SetColor(Color4(0, 0, 0, textColor[3]));
-
-                guiMesh.DrawChar(x - 1, y + 0, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-                guiMesh.DrawChar(x - 1, y - 1, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-                guiMesh.DrawChar(x + 0, y - 1, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-                guiMesh.DrawChar(x + 1, y - 1, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-                guiMesh.DrawChar(x + 1, y + 0, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-                guiMesh.DrawChar(x + 1, y + 1, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-                guiMesh.DrawChar(x + 0, y + 1, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-                guiMesh.DrawChar(x - 1, y + 1, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-
-                guiMesh.SetColor(textColor);
-            } else if (flags & DrawTextFlag::DropShadow) {
-                // Draw text shadow with black color
-                guiMesh.SetColor(Color4(0, 0, 0, textColor[3]));
-
-                guiMesh.DrawChar(x + 1, y + 1, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-
-                guiMesh.SetColor(textColor);
-            }
 
             int colorIndex = -1;
 
@@ -461,7 +439,17 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
                 continue;
             }
 
-            x += guiMesh.DrawChar(x, y, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
+            RenderObject::TextDrawMode::Enum drawMode;
+
+            if (flags & DrawTextFlag::Outline) {
+                drawMode = RenderObject::TextDrawMode::AddOutlines;
+            } else if (flags & DrawTextFlag::DropShadow) {
+                drawMode = RenderObject::TextDrawMode::DropShadows;
+            } else {
+                drawMode = RenderObject::TextDrawMode::Normal;
+            }
+
+            x += guiMesh.DrawChar(x, y, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar, drawMode);
         }
 
         if (truncated && lineIndex == numLines - 1) {
