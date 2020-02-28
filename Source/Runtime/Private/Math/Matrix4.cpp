@@ -1314,10 +1314,7 @@ void Mat4::GetTQS(Vec3 &translation, Quat &rotation, Vec3 &scale) const {
 }
 
 Vec3 Mat4::ToScaleVec3() const {
-    return Vec3(
-        Math::Sqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]),
-        Math::Sqrt(mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]),
-        Math::Sqrt(mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]));
+    return ToMat3x4().ToScaleVec3();
 }
 
 Mat4 Mat4::FromString(const char *str) {

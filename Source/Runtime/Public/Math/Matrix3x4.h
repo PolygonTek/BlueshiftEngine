@@ -104,8 +104,8 @@ public:
     Vec3                TransposedMulVec(const Vec3 &v) const;
                         /// Transforms the given vector by this matrix.
                         /// This function is identical to the member function MulVec().
-    Vec4                operator*(const Vec4 &rhs) const;
-    Vec3                operator*(const Vec3 &rhs) const;
+    Vec4                operator*(const Vec4 &rhs) const { return Transform(rhs); }
+    Vec3                operator*(const Vec3 &rhs) const { return Transform(rhs); }
                         /// Transforms the given vector by the given matrix m.
     friend Vec4         operator*(const Vec4 &lhs, const Mat3x4 &rhs) { return rhs * lhs; }
     friend Vec3         operator*(const Vec3 &lhs, const Mat3x4 &rhs) { return rhs * lhs; }
@@ -201,8 +201,8 @@ public:
     static Mat3x4       FromScale(float sx, float sy, float sz);
     static Mat3x4       FromScale(const Vec3 &s) { return FromScale(s.x, s.y, s.z); }
 
+    Vec4                Transform(const Vec4 &v) const;
     Vec3                Transform(const Vec3 &v) const;
-    Vec3                Transform(const Vec4 &v) const;
     Vec3                TransformNormal(const Vec3 &v) const;
     Mat3x4 &            TransformSelf(const Mat3x4 &a);
 
@@ -464,27 +464,6 @@ BE_INLINE Mat3x4 &Mat3x4::operator*=(const Mat3x4 &rhs) {
     return *this;
 }
 
-BE_INLINE Vec3 Mat3x4::Transform(const Vec3 &v) const {
-    return Vec3(
-        mat[0][0] * v[0] + mat[0][1] * v[1] + mat[0][2] * v[2] + mat[0][3],
-        mat[1][0] * v[0] + mat[1][1] * v[1] + mat[1][2] * v[2] + mat[1][3],
-        mat[2][0] * v[0] + mat[2][1] * v[1] + mat[2][2] * v[2] + mat[2][3]);
-}
-
-BE_INLINE Vec3 Mat3x4::Transform(const Vec4 &v) const {
-    return Vec3(
-        mat[0][0] * v[0] + mat[0][1] * v[1] + mat[0][2] * v[2] + mat[0][3] * v[3],
-        mat[1][0] * v[0] + mat[1][1] * v[1] + mat[1][2] * v[2] + mat[1][3] * v[3],
-        mat[2][0] * v[0] + mat[2][1] * v[1] + mat[2][2] * v[2] + mat[2][3] * v[3]);
-}
-
-BE_INLINE Vec3 Mat3x4::TransformNormal(const Vec3 &v) const {
-    return Vec3(
-        mat[0][0] * v[0] + mat[0][1] * v[1] + mat[0][2] * v[2],
-        mat[1][0] * v[0] + mat[1][1] * v[1] + mat[1][2] * v[2],
-        mat[2][0] * v[0] + mat[2][1] * v[1] + mat[2][2] * v[2]);
-}
-
 BE_INLINE Mat2 Mat3x4::ToMat2() const {
     return Mat2(
         mat[0][0], mat[0][1],
@@ -512,13 +491,6 @@ BE_INLINE const Mat3x4 &Mat4::ToMat3x4() const {
 
 BE_INLINE Mat3x4 &Mat4::ToMat3x4() {
     return *reinterpret_cast<Mat3x4 *>(this);
-}
-
-BE_INLINE Vec3 Mat3x4::ToScaleVec3() const {
-    return Vec3(
-        Math::Sqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]),
-        Math::Sqrt(mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]),
-        Math::Sqrt(mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]));
 }
 
 BE_INLINE Vec3 Mat3x4::ToTranslationVec3() const {

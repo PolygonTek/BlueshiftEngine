@@ -366,7 +366,7 @@ Mat3x4 &Mat3x4::operator*=(float rhs) {
     return *this;
 }
 
-Vec4 Mat3x4::operator*(const Vec4 &vec) const {
+Vec4 Mat3x4::Transform(const Vec4 &vec) const {
 #if defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Vec4 dst;
 
@@ -396,21 +396,71 @@ Vec4 Mat3x4::operator*(const Vec4 &vec) const {
     return dst;
 }
 
-Vec3 Mat3x4::operator*(const Vec3 &vec) const {
+Vec3 Mat3x4::Transform(const Vec3 &vec) const {
+#if defined(ENABLE_SIMD4_INTRIN)
+    ALIGN_AS16 Vec4 dst;
+
+    simd4f ar0 = loadu_ps(mat[0]);
+    simd4f ar1 = loadu_ps(mat[1]);
+    simd4f ar2 = loadu_ps(mat[2]);
+
+    simd4f v = set_ps(vec.x, vec.y, vec.z, 1.0f);
+
+    simd4f x = ar0 * v;
+    simd4f y = ar1 * v;
+    simd4f z = ar2 * v;
+    simd4f tmp1 = hadd_ps(x, y); // x0+x1, x2+x3, y0+y1, y2+y3
+    simd4f tmp2 = hadd_ps(z, SIMD_4::F4_zero); // z0+z1, z2+z3, 0, 0
+    simd4f result = hadd_ps(tmp1, tmp2); // x0+x1+x2+x3, y0+y1+y2+y3, z0+z1+z2+z3, 0
+
+    store_ps(result, dst);
+
+    return dst.ToVec3();
+#else
     Vec3 dst;
-    dst[0] = mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w;
-    dst[1] = mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w;
-    dst[2] = mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w;
+    dst[0] = mat[0][0] * vec[0] + mat[0][1] * vec[1] + mat[0][2] * vec[2] + mat[0][3];
+    dst[1] = mat[1][0] * vec[0] + mat[1][1] * vec[1] + mat[1][2] * vec[2] + mat[1][3];
+    dst[2] = mat[2][0] * vec[0] + mat[2][1] * vec[1] + mat[2][2] * vec[2] + mat[2][3];
     return dst;
+#endif
+}
+
+Vec3 Mat3x4::TransformNormal(const Vec3 &vec) const {
+#if defined(ENABLE_SIMD4_INTRIN)
+    ALIGN_AS16 Vec4 dst;
+
+    simd4f ar0 = loadu_ps(mat[0]);
+    simd4f ar1 = loadu_ps(mat[1]);
+    simd4f ar2 = loadu_ps(mat[2]);
+
+    simd4f v = set_ps(vec.x, vec.y, vec.z, 0.0f);
+
+    simd4f x = ar0 * v;
+    simd4f y = ar1 * v;
+    simd4f z = ar2 * v;
+    simd4f tmp1 = hadd_ps(x, y); // x0+x1, x2+x3, y0+y1, y2+y3
+    simd4f tmp2 = hadd_ps(z, SIMD_4::F4_zero); // z0+z1, z2+z3, 0, 0
+    simd4f result = hadd_ps(tmp1, tmp2); // x0+x1+x2+x3, y0+y1+y2+y3, z0+z1+z2+z3, 0
+
+    store_ps(result, dst);
+
+    return dst.ToVec3();
+#else
+    Vec3 dst;
+    dst[0] = mat[0][0] * vec[0] + mat[0][1] * vec[1] + mat[0][2] * vec[2];
+    dst[1] = mat[1][0] * vec[0] + mat[1][1] * vec[1] + mat[1][2] * vec[2];
+    dst[2] = mat[2][0] * vec[0] + mat[2][1] * vec[1] + mat[2][2] * vec[2];
+    return dst;
+#endif
 }
 
 Vec4 Mat3x4::TransposedMulVec(const Vec4 &vec) const {
 #if defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Vec4 dst;
 
-    simd4f ac0 = load_ps(mat[0]);
-    simd4f ac1 = load_ps(mat[1]);
-    simd4f ac2 = load_ps(mat[2]);
+    simd4f ac0 = loadu_ps(mat[0]);
+    simd4f ac1 = loadu_ps(mat[1]);
+    simd4f ac2 = loadu_ps(mat[2]);
 
     simd4f v = loadu_ps(vec);
 
@@ -423,20 +473,38 @@ Vec4 Mat3x4::TransposedMulVec(const Vec4 &vec) const {
 #else
     Vec4 dst;
 
-    dst[0] = mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z;
-    dst[1] = mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z;
-    dst[2] = mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z;
-    dst[3] = mat[0].w * vec.x + mat[1].w * vec.y + mat[2].w * vec.z + vec.w;
+    dst[0] = mat[0][0] * vec.x + mat[1][0] * vec.y + mat[2][0] * vec.z;
+    dst[1] = mat[0][1] * vec.x + mat[1][1] * vec.y + mat[2][1] * vec.z;
+    dst[2] = mat[0][2] * vec.x + mat[1][2] * vec.y + mat[2][2] * vec.z;
+    dst[3] = mat[0][3] * vec.x + mat[1][3] * vec.y + mat[2][3] * vec.z + vec.w;
 #endif
     return dst;
 }
 
 Vec3 Mat3x4::TransposedMulVec(const Vec3 &vec) const {
+#if defined(ENABLE_SIMD4_INTRIN)
+    ALIGN_AS16 Vec4 dst;
+
+    simd4f ac0 = loadu_ps(mat[0]);
+    simd4f ac1 = loadu_ps(mat[1]);
+    simd4f ac2 = loadu_ps(mat[2]);
+
+    simd4f v = loadu_ps(vec);
+
+    simd4f result = ac0 * shuffle_ps<0, 0, 0, 0>(v);
+    result = madd_ps(ac1, shuffle_ps<1, 1, 1, 1>(v), result);
+    result = madd_ps(ac2, shuffle_ps<2, 2, 2, 2>(v), result);
+
+    store_ps(result, dst);
+
+    return dst.ToVec3();
+#else
     Vec3 dst;
-    dst[0] = mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z;
-    dst[1] = mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z;
-    dst[2] = mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z;
+    dst[0] = mat[0][0] * vec.x + mat[1][0] * vec.y + mat[2][0] * vec.z;
+    dst[1] = mat[0][1] * vec.x + mat[1][1] * vec.y + mat[2][1] * vec.z;
+    dst[2] = mat[0][2] * vec.x + mat[1][2] * vec.y + mat[2][2] * vec.z;
     return dst;
+#endif
 }
 
 Mat3x4 Mat3x4::operator*(const Mat3x4 &a) const {
@@ -641,6 +709,27 @@ Mat3x4 &Mat3x4::UntransformSelf(const Mat3x4 &a) {
     mat[2][3] = dst[2];
 
     return *this;
+}
+
+Vec3 Mat3x4::ToScaleVec3() const {
+#if defined(ENABLE_SIMD4_INTRIN)
+    ALIGN_AS16 Vec4 dst;
+
+    simd4f r0 = loadu_ps(mat[0]);
+    simd4f r1 = loadu_ps(mat[1]);
+    simd4f r2 = loadu_ps(mat[2]);
+    simd4f result = sqrt_ps(sqr_ps(r0) + sqr_ps(r1) + sqr_ps(r2));
+    store_ps(result, dst);
+
+    return dst.ToVec3();
+#else
+    Vec3 dst;
+    dst[0] = Math::Sqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]);
+    dst[1] = Math::Sqrt(mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]);
+    dst[2] = Math::Sqrt(mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]);
+
+    return dst;
+#endif
 }
 
 Mat3x4 Mat3x4::FromString(const char *str) {
