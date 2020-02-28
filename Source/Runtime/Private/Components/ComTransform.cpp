@@ -398,9 +398,11 @@ void ComTransform::InvalidateCachedRect() {
 static Angles SyncEulerAngles(const Angles &eulerAngles, const Angles &eulerAnglesHint) {
     Angles syncEulerAngles;
 
-    syncEulerAngles[0] = eulerAngles[0] + Math::Round((eulerAnglesHint[0] - eulerAngles[0]) / 360.0f) * 360.0f;
-    syncEulerAngles[1] = eulerAngles[1] + Math::Round((eulerAnglesHint[1] - eulerAngles[1]) / 360.0f) * 360.0f;
-    syncEulerAngles[2] = eulerAngles[2] + Math::Round((eulerAnglesHint[2] - eulerAngles[2]) / 360.0f) * 360.0f;
+    Angles deltaAnglesDiv360 = (eulerAnglesHint - eulerAngles) / 360.0f;
+
+    syncEulerAngles[0] = eulerAngles[0] + Math::Round(deltaAnglesDiv360[0]) * 360.0f;
+    syncEulerAngles[1] = eulerAngles[1] + Math::Round(deltaAnglesDiv360[1]) * 360.0f;
+    syncEulerAngles[2] = eulerAngles[2] + Math::Round(deltaAnglesDiv360[2]) * 360.0f;
 
     return syncEulerAngles;
 }
