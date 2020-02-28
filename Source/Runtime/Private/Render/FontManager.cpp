@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const char *    FontManager::defaultFontFilename = "Data/EngineFonts/D2Coding.ttf";//"Data/EngineFonts/Lucida Console12.font"
+const char *    FontManager::defaultFontFilename = "Data/EngineFonts/consola.ttf";//"Data/EngineFonts/Lucida Console12.font"
 Font *          FontManager::defaultFont;
 FontManager     fontManager;
 
@@ -32,7 +32,7 @@ void FontManager::Init() {
 
     fontHashMap.Init(1024, 64, 64);
 
-    defaultFont = AllocFont(defaultFontFilename, 14);
+    defaultFont = AllocFont(defaultFontFilename, 18);
     if (!defaultFont->Load(defaultFontFilename)) {
         BE_FATALERROR("Couldn't load default font!");
     }
