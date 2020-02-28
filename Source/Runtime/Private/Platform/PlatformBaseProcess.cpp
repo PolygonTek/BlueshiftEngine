@@ -35,9 +35,17 @@ const char *PlatformBaseProcess::PlatformName() {
 #elif defined(__WIN32__) && defined(__X86_64__)
     return "Windows-x64";
 #elif defined(__MACOSX__) && !defined(__X86_64__)
-    return "MacOSX-x86";
+    return "macOS-x86";
 #elif defined(__MACOSX__) && defined(__X86_64__)
-    return "MacOSX-x64";
+    return "macOS-x64";
+#elif defined(__IOS__) && defined(__ARM64__)
+    return "iOS-arm64";
+#elif defined(__IOS__) && defined(__ARM__)
+    return "iOS-arm";
+#elif defined(__ANDROID__) && defined(__ARM64__)
+    return "Android-arm64";
+#elif defined(__ANDROID__) && defined(__ARM__)
+    return "Android-arm";
 #elif defined(__UNIX__) && !defined(__X86_64__)
     return "Unix-x86";
 #elif defined(__UNIX__) && defined(__X86_64__)
