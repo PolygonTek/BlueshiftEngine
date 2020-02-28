@@ -137,7 +137,7 @@ if (WIN32)
         set(FLAGS_AVX "${FLAGS_SSE42} /arch:AVX -D__AVX__")
         set(FLAGS_AVX2 "${FLAGS_SSE42} /arch:AVX2 -D__AVX2__")
 
-        add_definitions(${FLAGS_AVX})
+        add_definitions(${FLAGS_AVX2})
 
         # Enable Function-Level Linking
         add_definitions("/Gy")
@@ -187,8 +187,8 @@ elseif (APPLE)
         set(FLAGS_AVX "-mavx")
         set(FLAGS_AVX2 "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
 
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS_AVX}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_AVX}")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS_AVX2}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_AVX2}")
     endif ()
 elseif (ANDROID)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")

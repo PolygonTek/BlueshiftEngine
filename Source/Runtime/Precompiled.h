@@ -524,7 +524,9 @@ BE_FORCE_INLINE CFStringRef WideStringToCFString(const wchar_t *string) {
 
 //----------------------------------------------------------------------------------------------
 
-#ifdef __AVX2__
+// For Intel processors FMA were introduced with AVX2 by Intel Haswell.
+// And all AMD processors support FMA/FMA3 if AVX2 is present.
+#if !defined(__FMA__) && defined(__AVX2__)
     #define __FMA__
 #endif
 
