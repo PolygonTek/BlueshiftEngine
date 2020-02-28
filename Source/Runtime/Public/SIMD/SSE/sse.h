@@ -41,55 +41,47 @@
 #endif
 
 // Negates 4x32 bits floats.
-#define _mm_neg_ps(a)               _mm_xor_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x80000000))) // _mm_sub_ps(_mm_setzero_ps(), (a))
+#define bx_mm_neg_ps(a)                 _mm_xor_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x80000000))) // _mm_sub_ps(_mm_setzero_ps(), (a))
 
 // Inverts 128 bits.
-#define _mm_inv_si128(a)            _mm_xor_si128(a, _mm_set1_epi32(0xFFFFFFFF))
-
-// dst = a * b + c
-#ifdef __FMA__
-    #define _mm_madd_ps(a, b, c)    _mm_fmadd_ps(a, b, c)
-#else
-    #define _mm_madd_ps(a, b, c)    _mm_add_ps(_mm_mul_ps(a, b), c)
-#endif
-
-// dst = a * b - c
-#ifdef __FMA__
-    #define _mm_msub_ps(a, b, c)    _mm_fmsub_ps(a, b, c)
-#else
-    #define _mm_msub_ps(a, b, c)    _mm_sub_ps(_mm_mul_ps(a, b), c)
-#endif
-
-// dst = -(a * b) + c
-#ifdef __FMA__
-    #define _mm_nmadd_ps(a, b, c)   _mm_fnmadd_ps(a, b, c)
-#else
-    #define _mm_nmadd_ps(a, b, c)   _mm_sub_ps(c, _mm_mul_ps(a, b))
-#endif
-
-// dst = -(a * b) - c
-#ifdef __FMA__
-    #define _mm_nmsub_ps(a, b, c)   _mm_fnmsub_ps(a, b, c)
-#else
-    #define _mm_nmsub_ps(a, b, c)   _mm_sub_ps(_mm_neg_ps(_mm_mul_ps(a, b)), c)
-#endif
+#define bx_mm_inv_si128(a)              _mm_xor_si128(a, _mm_set1_epi32(0xFFFFFFFF))
 
 // Splats 4x32 bits floats using 2 bits selector.
-#define _mm_splat_ps(a, i)          _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(a), _MM_SHUFFLE(i, i, i, i)))
+#define bx_mm_splat_ps(a, i)            _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(a), _MM_SHUFFLE(i, i, i, i)))
 
 // Permutates 4x32 bits floats using 4x2 bits selector.
-#define _mm_perm_ps(a, imm)         _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(a), imm))
+#define bx_mm_perm_ps(a, imm)           _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(a), imm))
 
 // Shifts load for two 128 bits.
 // dst = (a >> imm*8) | (b << (16 - imm)*8)
-#define _mm_sld_ps(a, b, imm)       _mm_castsi128_ps(_mm_or_si128(_mm_srli_si128(_mm_castps_si128(a), imm), _mm_slli_si128(_mm_castps_si128(b), 16 - (imm))))
+#define bx_mm_sld_ps(a, b, imm)         _mm_castsi128_ps(_mm_or_si128(_mm_srli_si128(_mm_castps_si128(a), imm), _mm_slli_si128(_mm_castps_si128(b), 16 - (imm))))
 
 // Shifts load for two 128 bits.
 // dst = (a >> imm*8) | (b << (16 - imm)*8)
-#define _mm_sld_si128(a, b, imm)    _mm_or_si128(_mm_srli_si128(a, imm), _mm_slli_si128(b, 16 - (imm))))
+#define bx_mm_sld_si128(a, b, imm)      _mm_or_si128(_mm_srli_si128(a, imm), _mm_slli_si128(b, 16 - (imm))))
 
-extern const __m128                 _mm_lookupmask_ps[16];
-extern const __m128d                _mm_lookupmask_pd[4];
+#ifdef __FMA__
+    // dst = a * b + c
+    #define bx_mm_madd_ps(a, b, c)      _mm_fmadd_ps(a, b, c)
+    // dst = a * b - c
+    #define bx_mm_msub_ps(a, b, c)      _mm_fmsub_ps(a, b, c)
+    // dst = -(a * b) + c
+    #define bx_mm_nmadd_ps(a, b, c)     _mm_fnmadd_ps(a, b, c)
+    // dst = -(a * b) - c
+    #define bx_mm_nmsub_ps(a, b, c)     _mm_fnmsub_ps(a, b, c)
+#else
+    // dst = a * b + c
+    #define bx_mm_madd_ps(a, b, c)      _mm_add_ps(_mm_mul_ps(a, b), c)
+    // dst = a * b - c
+    #define bx_mm_msub_ps(a, b, c)      _mm_sub_ps(_mm_mul_ps(a, b), c)
+    // dst = -(a * b) + c
+    #define bx_mm_nmadd_ps(a, b, c)     _mm_sub_ps(c, _mm_mul_ps(a, b))
+    // dst = -(a * b) - c
+    #define bx_mm_nmsub_ps(a, b, c)     _mm_sub_ps(bx_mm_neg_ps(_mm_mul_ps(a, b)), c)
+#endif
+
+extern const __m128     _mm_lookupmask_ps[16];
+extern const __m128d    _mm_lookupmask_pd[4];
 
 BE_FORCE_INLINE void prefetchL1(const void *ptr) { _mm_prefetch((const char *)ptr, _MM_HINT_T0); }
 BE_FORCE_INLINE void prefetchL2(const void *ptr) { _mm_prefetch((const char *)ptr, _MM_HINT_T1); }

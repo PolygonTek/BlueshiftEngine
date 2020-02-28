@@ -73,7 +73,8 @@ BE_FORCE_INLINE ssei abs_epi32(const ssei &a) {
 }
 
 BE_FORCE_INLINE ssei operator+(const ssei &a) { return a; }
-BE_FORCE_INLINE ssei operator-(const ssei &a) { return _mm_sub_epi32(_mm_setzero_si128(), a); }
+BE_FORCE_INLINE ssei operator-(const ssei &a) { return bx_mm_neg_ps(a); }
+BE_FORCE_INLINE ssei operator~(const ssei &a) { return bx_mm_inv_si128(a); }
 
 BE_FORCE_INLINE ssei operator+(const ssei &a, const ssei &b) { return _mm_add_epi32(a, b); }
 BE_FORCE_INLINE ssei operator+(const ssei &a, const int32_t &b) { return a + set1_epi32(b); }
@@ -106,7 +107,7 @@ BE_FORCE_INLINE ssei operator==(const ssei &a, const ssei &b) { return _mm_cmpeq
 BE_FORCE_INLINE ssei operator==(const ssei &a, const int32_t &b) { return a == set1_epi32(b); }
 BE_FORCE_INLINE ssei operator==(const int32_t &a, const ssei &b) { return set1_epi32(a) == b; }
 
-BE_FORCE_INLINE ssei operator!=(const ssei &a, const ssei &b) { return _mm_inv_si128(_mm_cmpeq_epi32(a, b)); }
+BE_FORCE_INLINE ssei operator!=(const ssei &a, const ssei &b) { return bx_mm_inv_si128(_mm_cmpeq_epi32(a, b)); }
 BE_FORCE_INLINE ssei operator!=(const ssei &a, const int32_t &b) { return a != set1_epi32(b); }
 BE_FORCE_INLINE ssei operator!=(const int32_t &a, const ssei &b) { return set1_epi32(a) != b; }
 
@@ -118,11 +119,11 @@ BE_FORCE_INLINE ssei operator>(const ssei &a, const ssei &b) { return _mm_cmpgt_
 BE_FORCE_INLINE ssei operator>(const ssei &a, const int32_t &b) { return a > set1_epi32(b); }
 BE_FORCE_INLINE ssei operator>(const int32_t &a, const ssei &b) { return set1_epi32(a) > b; }
 
-BE_FORCE_INLINE ssei operator>=(const ssei &a, const ssei &b) { return _mm_inv_si128(_mm_cmplt_epi32(a, b)); }
+BE_FORCE_INLINE ssei operator>=(const ssei &a, const ssei &b) { return bx_mm_inv_si128(_mm_cmplt_epi32(a, b)); }
 BE_FORCE_INLINE ssei operator>=(const ssei &a, const int32_t &b) { return a >= set1_epi32(b); }
 BE_FORCE_INLINE ssei operator>=(const int32_t &a, const ssei &b) { return set1_epi32(a) >= b; }
 
-BE_FORCE_INLINE ssei operator<=(const ssei &a, const ssei &b) { return _mm_inv_si128(_mm_cmpgt_epi32(a, b)); }
+BE_FORCE_INLINE ssei operator<=(const ssei &a, const ssei &b) { return bx_mm_inv_si128(_mm_cmpgt_epi32(a, b)); }
 BE_FORCE_INLINE ssei operator<=(const ssei &a, const int32_t &b) { return a <= set1_epi32(b); }
 BE_FORCE_INLINE ssei operator<=(const int32_t &a, const ssei &b) { return set1_epi32(a) <= b; }
 

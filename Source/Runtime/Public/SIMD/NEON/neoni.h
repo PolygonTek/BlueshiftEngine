@@ -71,6 +71,7 @@ BE_FORCE_INLINE neoni abs_epi32(const neoni &a) {
 
 BE_FORCE_INLINE neoni operator+(const neoni &a) { return a; }
 BE_FORCE_INLINE neoni operator-(const neoni &a) { return vnegq_s32(a); }
+BE_FORCE_INLINE neoni operator~(const neoni &a) { return vmvnq_s32(a); }
 
 BE_FORCE_INLINE neoni operator+(const neoni &a, const neoni &b) { return vaddq_s32(a, b); }
 BE_FORCE_INLINE neoni operator+(const neoni &a, const int32_t &b) { return a + set1_epi32(b); }
@@ -214,21 +215,21 @@ BE_FORCE_INLINE int reduce_min_epi32(const neoni &a) { return extract_epi32<0>(v
 BE_FORCE_INLINE int reduce_max_epi32(const neoni &a) { return extract_epi32<0>(vreduce_max_epi32(a)); }
 
 // Returns index of minimum component.
-BE_FORCE_INLINE size_t select_min_epi32(const neoni &a) { return CountTrailingZeros(vmovemaskq_f32(a == vreduce_min_epi32(a))); }
+BE_FORCE_INLINE size_t select_min_epi32(const neoni &a) { return CountTrailingZeros(bx_vmovemaskq_f32(a == vreduce_min_epi32(a))); }
 
 // Returns index of maximum component.
-BE_FORCE_INLINE size_t select_max_epi32(const neoni &a) { return CountTrailingZeros(vmovemaskq_f32(a == vreduce_max_epi32(a))); }
+BE_FORCE_INLINE size_t select_max_epi32(const neoni &a) { return CountTrailingZeros(bx_vmovemaskq_f32(a == vreduce_max_epi32(a))); }
 
 // Returns index of minimum component with valid index mask.
 BE_FORCE_INLINE size_t select_min_epi32(const neoni &a, const neonb &validmask) {
     const neoni v = select_epi32(set1_epi32(INT_MAX), a, validmask);
-    return CountTrailingZeros(vmovemaskq_f32(vandq_s32(validmask, v == vreduce_min_epi32(v))));
+    return CountTrailingZeros(bx_vmovemaskq_f32(vandq_s32(validmask, v == vreduce_min_epi32(v))));
 }
 
 // Returns index of maximum component with valid index mask.
 BE_FORCE_INLINE size_t select_max_epi32(const neoni &a, const neonb &validmask) {
     const neoni v = select_epi32(set1_epi32(INT_MIN), a, validmask);
-    return CountTrailingZeros(vmovemaskq_f32(vandq_s32(validmask, v == vreduce_max_epi32(v))));
+    return CountTrailingZeros(bx_vmovemaskq_f32(vandq_s32(validmask, v == vreduce_max_epi32(v))));
 }
 
 // Broadcasts sums of all components.

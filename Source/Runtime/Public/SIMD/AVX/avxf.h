@@ -132,7 +132,7 @@ BE_FORCE_INLINE avxf rsqrt32_256ps(const avxf &a) {
 }
 
 BE_FORCE_INLINE avxf operator+(const avxf &a) { return a; }
-BE_FORCE_INLINE avxf operator-(const avxf &a) { return _mm256_neg_ps(a.m256); }
+BE_FORCE_INLINE avxf operator-(const avxf &a) { return bx_mm256_neg_ps(a.m256); }
 
 BE_FORCE_INLINE avxf operator+(const avxf &a, const avxf &b) { return _mm256_add_ps(a, b); }
 BE_FORCE_INLINE avxf operator+(const avxf &a, const float &b) { return a + set1_256ps(b); }
@@ -205,13 +205,13 @@ BE_FORCE_INLINE avxf &operator^=(avxf &a, const avxf &b) { return a = a ^ b; }
 BE_FORCE_INLINE avxf &operator^=(avxf &a, const avxi &b) { return a = a ^ b; }
 
 // dst = a * b + c
-BE_FORCE_INLINE avxf madd_256ps(const avxf &a, const avxf &b, const avxf &c) { return _mm256_madd_ps(a.m256, b.m256, c.m256); }
+BE_FORCE_INLINE avxf madd_256ps(const avxf &a, const avxf &b, const avxf &c) { return bx_mm256_madd_ps(a.m256, b.m256, c.m256); }
 // dst = a * b - c
-BE_FORCE_INLINE avxf msub_256ps(const avxf &a, const avxf &b, const avxf &c) { return _mm256_msub_ps(a.m256, b.m256, c.m256); }
+BE_FORCE_INLINE avxf msub_256ps(const avxf &a, const avxf &b, const avxf &c) { return bx_mm256_msub_ps(a.m256, b.m256, c.m256); }
 // dst = -(a * b) + c
-BE_FORCE_INLINE avxf nmadd_256ps(const avxf &a, const avxf &b, const avxf &c) { return _mm256_nmadd_ps(a.m256, b.m256, c.m256); }
+BE_FORCE_INLINE avxf nmadd_256ps(const avxf &a, const avxf &b, const avxf &c) { return bx_mm256_nmadd_ps(a.m256, b.m256, c.m256); }
 // dst = -(a * b) - c
-BE_FORCE_INLINE avxf nmsub_256ps(const avxf &a, const avxf &b, const avxf &c) { return _mm256_nmsub_ps(a.m256, b.m256, c.m256); }
+BE_FORCE_INLINE avxf nmsub_256ps(const avxf &a, const avxf &b, const avxf &c) { return bx_mm256_nmsub_ps(a.m256, b.m256, c.m256); }
 
 // dst = (a0 + a1, a2 + a3, b0 + b1, b2 + b3, a4 + a5, a6 + a7, b4 + b5, b6 + b7)
 BE_FORCE_INLINE avxf hadd_256ps(const avxf &a, const avxf &b) { return _mm256_hadd_ps(a, b); }

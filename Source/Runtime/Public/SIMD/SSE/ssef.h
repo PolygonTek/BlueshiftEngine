@@ -132,7 +132,7 @@ BE_FORCE_INLINE ssef rsqrt32_ps(const ssef &a) {
 }
 
 BE_FORCE_INLINE ssef operator+(const ssef &a) { return a; }
-BE_FORCE_INLINE ssef operator-(const ssef &a) { return _mm_neg_ps(a.m128); }
+BE_FORCE_INLINE ssef operator-(const ssef &a) { return bx_mm_neg_ps(a.m128); }
 
 BE_FORCE_INLINE ssef operator+(const ssef &a, const ssef &b) { return _mm_add_ps(a, b); }
 BE_FORCE_INLINE ssef operator+(const ssef &a, const float &b) { return a + set1_ps(b); }
@@ -205,13 +205,13 @@ BE_FORCE_INLINE ssef &operator^=(ssef &a, const ssef &b) { return a = a ^ b; }
 BE_FORCE_INLINE ssef &operator^=(ssef &a, const ssei &b) { return a = a ^ b; }
 
 // dst = a * b + c
-BE_FORCE_INLINE ssef madd_ps(const ssef &a, const ssef &b, const ssef &c) { return _mm_madd_ps(a.m128, b.m128, c.m128); }
+BE_FORCE_INLINE ssef madd_ps(const ssef &a, const ssef &b, const ssef &c) { return bx_mm_madd_ps(a.m128, b.m128, c.m128); }
 // dst = a * b - c
-BE_FORCE_INLINE ssef msub_ps(const ssef &a, const ssef &b, const ssef &c) { return _mm_msub_ps(a.m128, b.m128, c.m128); }
+BE_FORCE_INLINE ssef msub_ps(const ssef &a, const ssef &b, const ssef &c) { return bx_mm_msub_ps(a.m128, b.m128, c.m128); }
 // dst = -(a * b) + c
-BE_FORCE_INLINE ssef nmadd_ps(const ssef &a, const ssef &b, const ssef &c) { return _mm_nmadd_ps(a.m128, b.m128, c.m128); }
+BE_FORCE_INLINE ssef nmadd_ps(const ssef &a, const ssef &b, const ssef &c) { return bx_mm_nmadd_ps(a.m128, b.m128, c.m128); }
 // dst = -(a * b) - c
-BE_FORCE_INLINE ssef nmsub_ps(const ssef &a, const ssef &b, const ssef &c) { return _mm_nmsub_ps(a.m128, b.m128, c.m128); }
+BE_FORCE_INLINE ssef nmsub_ps(const ssef &a, const ssef &b, const ssef &c) { return bx_mm_nmsub_ps(a.m128, b.m128, c.m128); }
 
 // dst = (a0 + a1, a2 + a3, b0 + b1, b2 + b3)
 BE_FORCE_INLINE ssef hadd_ps(const ssef &a, const ssef &b) { return _mm_hadd_ps(a, b); }
@@ -231,10 +231,10 @@ BE_FORCE_INLINE ssef unpackhi_ps(const ssef &a, const ssef &b) { return _mm_unpa
 
 // Shuffles 4x32 bits floats using template parameters. ix = [0, 3].
 template <size_t i0, size_t i1, size_t i2, size_t i3>
-BE_FORCE_INLINE ssef shuffle_ps(const ssef &a) { return _mm_perm_ps(a, _MM_SHUFFLE(i3, i2, i1, i0)); }
+BE_FORCE_INLINE ssef shuffle_ps(const ssef &a) { return bx_mm_perm_ps(a, _MM_SHUFFLE(i3, i2, i1, i0)); }
 
 template <size_t i0>
-BE_FORCE_INLINE ssef shuffle_ps(const ssef &a) { return _mm_splat_ps(a, i0); }
+BE_FORCE_INLINE ssef shuffle_ps(const ssef &a) { return bx_mm_splat_ps(a, i0); }
 template <>
 BE_FORCE_INLINE ssef shuffle_ps<0, 1, 0, 1>(const ssef &a) { return _mm_movelh_ps(a, a); }
 template <> 

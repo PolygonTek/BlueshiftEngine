@@ -70,7 +70,7 @@ BE_FORCE_INLINE neonf sqr_ps(const neonf &a) {
 }
 
 BE_FORCE_INLINE neonf sqrt_ps(const neonf &a) {
-    return vsqrtq_f32(a);
+    return bx_vsqrtq_f32(a);
 }
 
 // Reciprocal with 12 bits of precision.
@@ -242,59 +242,59 @@ BE_FORCE_INLINE neonf shuffle_ps(const neonf &a) {
 
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<0, 0, 0, 0>(const neonf &a) {
-    return vsplatq_f32(a, 0);
+    return bx_vsplatq_f32(a, 0);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<1, 1, 1, 1>(const neonf &a) {
-    return vsplatq_f32(a, 1);
+    return bx_vsplatq_f32(a, 1);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<2, 2, 2, 2>(const neonf &a) {
-    return vsplatq_f32(a, 2);
+    return bx_vsplatq_f32(a, 2);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<3, 3, 3, 3>(const neonf &a) {
-    return vsplatq_f32(a, 3);
+    return bx_vsplatq_f32(a, 3);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<2, 3, 0, 1>(const neonf &a) {
-    return vpermq_f32_1032(a);
+    return bx_vpermq_f32_1032(a);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<1, 0, 3, 2>(const neonf &a) {
-    return vpermq_f32_2301(a);
+    return bx_vpermq_f32_2301(a);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<1, 2, 3, 0>(const neonf &a) {
-    return vpermq_f32_0321(a);
+    return bx_vpermq_f32_0321(a);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<3, 0, 1, 2>(const neonf &a) {
-    return vpermq_f32_2103(a);
+    return bx_vpermq_f32_2103(a);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<0, 1, 0, 1>(const neonf &a) {
-    return vpermq_f32_1010(a);
+    return bx_vpermq_f32_1010(a);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<1, 0, 0, 1>(const neonf &a) {
-    return vpermq_f32_1001(a);
+    return bx_vpermq_f32_1001(a);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<1, 0, 1, 0>(const neonf &a) {
-    return vpermq_f32_0101(a);
+    return bx_vpermq_f32_0101(a);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<1, 1, 2, 2>(const neonf &a) {
-    return vpermq_f32_2211(a);
+    return bx_vpermq_f32_2211(a);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<2, 2, 1, 0>(const neonf &a) {
-    return vpermq_f32_0122(a);
+    return bx_vpermq_f32_0122(a);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<2, 3, 3, 3>(const neonf &a) {
-    return vpermq_f32_3332(a);
+    return bx_vpermq_f32_3332(a);
 }
 
 // Shuffles two 4x32 bits floats using template parameters. ax, bx = [0, 3].
@@ -308,92 +308,92 @@ BE_FORCE_INLINE neonf shuffle_ps(const neonf &a, const neonf &b) {
 
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<0, 0, 0, 0>(const neonf &a, const neonf &b) {
-    return vshufq_f32_0000(a, b);
+    return bx_vshufq_f32_0000(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<1, 1, 1, 1>(const neonf &a, const neonf &b) {
-    return vshufq_f32_1111(a, b);
+    return bx_vshufq_f32_1111(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<2, 2, 2, 2>(const neonf &a, const neonf &b) {
-    return vshufq_f32_2222(a, b);
+    return bx_vshufq_f32_2222(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<3, 3, 3, 3>(const neonf &a, const neonf &b) {
-    return vshufq_f32_3333(a, b);
+    return bx_vshufq_f32_3333(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<2, 3, 0, 1>(const neonf &a, const neonf &b) {
-    return vshufq_f32_1032(a, b);
+    return bx_vshufq_f32_1032(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<1, 0, 3, 2>(const neonf &a, const neonf &b) {
-    return vshufq_f32_2301(a, b);
+    return bx_vshufq_f32_2301(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<1, 2, 3, 0>(const neonf &a, const neonf &b) {
-    return vshufq_f32_0321(a, b);
+    return bx_vshufq_f32_0321(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<3, 0, 1, 2>(const neonf &a, const neonf &b) {
-    return vshufq_f32_2103(a, b);
+    return bx_vshufq_f32_2103(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<0, 1, 0, 1>(const neonf &a, const neonf &b) {
-    return vshufq_f32_1010(a, b);
+    return bx_vshufq_f32_1010(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<1, 0, 0, 1>(const neonf &a, const neonf &b) {
-    return vshufq_f32_1001(a, b);
+    return bx_vshufq_f32_1001(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<1, 0, 1, 0>(const neonf &a, const neonf &b) {
-    return vshufq_f32_0101(a, b);
+    return bx_vshufq_f32_0101(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<0, 1, 2, 3>(const neonf &a, const neonf &b) {
-    return vshufq_f32_3210(a, b);
+    return bx_vshufq_f32_3210(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<1, 1, 0, 0>(const neonf &a, const neonf &b) {
-    return vshufq_f32_0011(a, b);
+    return bx_vshufq_f32_0011(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<2, 2, 0, 0>(const neonf &a, const neonf &b) {
-    return vshufq_f32_0022(a, b);
+    return bx_vshufq_f32_0022(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<0, 0, 2, 2>(const neonf &a, const neonf &b) {
-    return vshufq_f32_2200(a, b);
+    return bx_vshufq_f32_2200(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<2, 0, 2, 3>(const neonf &a, const neonf &b) {
-    return vshufq_f32_3202(a, b);
+    return bx_vshufq_f32_3202(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<2, 3, 2, 3>(const neonf &a, const neonf &b) {
-    return vshufq_f32_3232(a, b);
+    return bx_vshufq_f32_3232(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<3, 3, 1, 1>(const neonf &a, const neonf &b) {
-    return vshufq_f32_1133(a, b);
+    return bx_vshufq_f32_1133(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<0, 1, 0, 2>(const neonf &a, const neonf &b) {
-    return vshufq_f32_2010(a, b);
+    return bx_vshufq_f32_2010(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<1, 0, 0, 2>(const neonf &a, const neonf &b) {
-    return vshufq_f32_2001(a, b);
+    return bx_vshufq_f32_2001(a, b);
 }
 template <>
 BE_FORCE_INLINE neonf shuffle_ps<2, 3, 0, 2>(const neonf &a, const neonf &b) {
-    return vshufq_f32_2032(a, b);
+    return bx_vshufq_f32_2032(a, b);
 }
 
 template <size_t i>
 BE_FORCE_INLINE float extract_ps(const neonf &a) {
-    return vgetq_lane_f32(a, i);
+    return bx_vgetq_lane_f32(a, i);
 }
 
 // Given a 4-channel single-precision neonf variable, returns the first channel 'x' as a float.
@@ -453,21 +453,21 @@ BE_FORCE_INLINE float reduce_min_ps(const neonf &a) { return vgetq_lane_f32(vred
 BE_FORCE_INLINE float reduce_max_ps(const neonf &a) { return vgetq_lane_f32(vreduce_max_ps(a), 0); }
 
 // Return index of minimum component.
-BE_FORCE_INLINE size_t select_min_ps(const neonf &a) { return CountTrailingZeros(vmovemaskq_f32(a == vreduce_min_ps(a))); }
+BE_FORCE_INLINE size_t select_min_ps(const neonf &a) { return CountTrailingZeros(bx_vmovemaskq_f32(a == vreduce_min_ps(a))); }
 
 // Return index of maximum component.
-BE_FORCE_INLINE size_t select_max_ps(const neonf &a) { return CountTrailingZeros(vmovemaskq_f32(a == vreduce_max_ps(a))); }
+BE_FORCE_INLINE size_t select_max_ps(const neonf &a) { return CountTrailingZeros(bx_vmovemaskq_f32(a == vreduce_max_ps(a))); }
 
 // Return index of minimum component with valid index mask.
 BE_FORCE_INLINE size_t select_min_ps(const neonf &a, const neonb &validmask) {
     const neonf v = select_ps(set1_ps(FLT_INFINITY), a, validmask);
-    return CountTrailingZeros(vmovemaskq_f32(vandq_u32(validmask.u32x4, (v == vreduce_min_ps(v)).u32x4)));
+    return CountTrailingZeros(bx_vmovemaskq_f32(vandq_u32(validmask.u32x4, (v == vreduce_min_ps(v)).u32x4)));
 }
 
 // Return index of maximum component with valid index mask.
 BE_FORCE_INLINE size_t select_max_ps(const neonf &a, const neonb &validmask) {
     const neonf v = select_ps(set1_ps(-FLT_INFINITY), a, validmask);
-    return CountTrailingZeros(vmovemaskq_f32(vandq_u32(validmask.u32x4, (v == vreduce_max_ps(v)).u32x4)));
+    return CountTrailingZeros(bx_vmovemaskq_f32(vandq_u32(validmask.u32x4, (v == vreduce_max_ps(v)).u32x4)));
 }
 
 // Broadcast sums of all components.

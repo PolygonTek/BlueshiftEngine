@@ -20,35 +20,70 @@
 #include "immintrin_emu.h"
 #endif
 
+#ifdef __AVX2__
+    #define bx_mm256_add_epi32(a, b)        _mm256_add_epi32(a, b)
+    #define bx_mm256_sub_epi32(a, b)        _mm256_sub_epi32(a, b)
+    #define bx_mm256_mullo_epi32(a, b)      _mm256_mullo_epi32(a, b)
+    #define bx_mm256_min_epi32(a, b)        _mm256_min_epi32(a, b)
+    #define bx_mm256_max_epi32(a, b)        _mm256_max_epi32(a, b)
+    #define bx_mm256_cmpeq_epi32(a, b)      _mm256_cmpeq_epi32(a, b)
+    #define bx_mm256_cmpgt_epi32(a, b)      _mm256_cmpgt_epi32(a, b)
+    #define bx_mm256_slli_epi32(a, b)       _mm256_slli_epi32(a, b)
+    #define bx_mm256_srli_epi32(a, b)       _mm256_srli_epi32(a, b)
+    #define bx_mm256_srai_epi32(a, b)       _mm256_srai_epi32(a, b)
+    #define bx_mm256_and_si256(a, b)        _mm256_and_si256(a, b)
+    #define bx_mm256_or_si256(a, b)         _mm256_or_si256(a, b)
+    #define bx_mm256_xor_si256(a, b)        _mm256_xor_si256(a, b)
+    #define bx_mm256_unpacklo_epi32(a, b)   _mm256_unpacklo_epi32(a, b)
+    #define bx_mm256_unpackhi_epi32(a, b)   _mm256_unpackhi_epi32(a, b)
+#else
+    #define bx_mm256_add_epi32(a, b)        _mm256_set_m128i(_mm_add_epi32(_mm256_extractf128_si256(a, 0), _mm256_extractf128_si256(b, 0)), _mm_add_epi32(_mm256_extractf128_si256(a, 1), _mm256_extractf128_si256(b, 1)))
+    #define bx_mm256_sub_epi32(a, b)        _mm256_set_m128i(_mm_sub_epi32(_mm256_extractf128_si256(a, 0), _mm256_extractf128_si256(b, 0)), _mm_sub_epi32(_mm256_extractf128_si256(a, 1), _mm256_extractf128_si256(b, 1)))
+    #define bx_mm256_mullo_epi32(a, b)      _mm256_set_m128i(_mm_mullo_epi32(_mm256_extractf128_si256(a, 0), _mm256_extractf128_si256(b, 0)), _mm_mullo_epi32(_mm256_extractf128_si256(a, 1), _mm256_extractf128_si256(b, 1)))
+    #define bx_mm256_min_epi32(a, b)        _mm256_set_m128i(_mm_min_epi32(_mm256_extractf128_si256(a, 0), _mm256_extractf128_si256(b, 0)), _mm_min_epi32(_mm256_extractf128_si256(a, 1), _mm256_extractf128_si256(b, 1)))
+    #define bx_mm256_max_epi32(a, b)        _mm256_set_m128i(_mm_max_epi32(_mm256_extractf128_si256(a, 0), _mm256_extractf128_si256(b, 0)), _mm_max_epi32(_mm256_extractf128_si256(a, 1), _mm256_extractf128_si256(b, 1)))
+    #define bx_mm256_cmpeq_epi32(a, b)      _mm256_set_m128i(_mm_cmpeq_epi32(_mm256_extractf128_si256(a, 0), _mm256_extractf128_si256(b, 0)), _mm_cmpeq_epi32(_mm256_extractf128_si256(a, 1), _mm256_extractf128_si256(b, 1)))
+    #define bx_mm256_cmpgt_epi32(a, b)      _mm256_set_m128i(_mm_cmpgt_epi32(_mm256_extractf128_si256(a, 0), _mm256_extractf128_si256(b, 0)), _mm_cmpgt_epi32(_mm256_extractf128_si256(a, 1), _mm256_extractf128_si256(b, 1)))
+    #define bx_mm256_slli_epi32(a, b)       _mm256_set_m128i(_mm_slli_epi32(_mm256_extractf128_si256(a, 0), b), _mm_slli_epi32(_mm256_extractf128_si256(a, 1), b))
+    #define bx_mm256_srli_epi32(a, b)       _mm256_set_m128i(_mm_srli_epi32(_mm256_extractf128_si256(a, 0), b), _mm_srli_epi32(_mm256_extractf128_si256(a, 1), b))
+    #define bx_mm256_srai_epi32(a, b)       _mm256_set_m128i(_mm_srai_epi32(_mm256_extractf128_si256(a, 0), b), _mm_srai_epi32(_mm256_extractf128_si256(a, 1), b))
+    #define bx_mm256_and_si256(a, b)        _mm256_castps_si256(_mm256_and_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b)))
+    #define bx_mm256_or_si256(a, b)         _mm256_castps_si256(_mm256_or_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b)))
+    #define bx_mm256_xor_si256(a, b)        _mm256_castps_si256(_mm256_or_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b)))
+    #define bx_mm256_unpacklo_epi32(a, b)   _mm256_castps_si256(_mm256_unpacklo_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b)))
+    #define bx_mm256_unpackhi_epi32(a, b)   _mm256_castps_si256(_mm256_unpackhi_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b)))
+#endif
+
+// Compares packed 32-bit integers in a and b for less-than.
+#define bx_mm256_cmplt_epi32(a, b)          bx_mm256_cmpgt_epi32(b, a)
+
+// Inverts 256 bits.
+#define bx_mm256_inv_si256(a)               bx_mm256_xor_si256(a, _mm256_set1_epi32(0xFFFFFFFF))
+
+// Negates 256 bits.
+#define bx_mm256_neg_epi32(a)               bx_mm256_xor_si256(a, _mm256_set1_epi32(0x80000000))
+
 // Negates 4x32 bits floats.
-#define _mm256_neg_ps(a)                _mm256_xor_ps(a, _mm256_castsi256_ps(_mm256_set1_epi32(0x80000000)))
+#define bx_mm256_neg_ps(a)                  _mm256_xor_ps(a, _mm256_castsi256_ps(_mm256_set1_epi32(0x80000000)))
 
-// dst = a * b + c
 #ifdef __FMA__
-    #define _mm256_madd_ps(a, b, c)     _mm256_fmadd_ps(a, b, c)
+    // dst = a * b + c
+    #define bx_mm256_madd_ps(a, b, c)       _mm256_fmadd_ps(a, b, c)
+    // dst = -(a * b) + c
+    #define bx_mm256_nmadd_ps(a, b, c)      _mm256_fnmadd_ps(a, b, c)
+    // dst = a * b - c
+    #define bx_mm256_msub_ps(a, b, c)       _mm256_fmsub_ps(a, b, c)
+    // dst = -(a * b) - c
+    #define bx_mm256_nmsub_ps(a, b, c)      _mm256_fnmsub_ps(a, b, c)
 #else
-    #define _mm256_madd_ps(a, b, c)     _mm256_add_ps(_mm256_mul_ps(a, b), c)
-#endif
-
-// dst = -(a * b) + c
-#ifdef __FMA__
-    #define _mm256_nmadd_ps(a, b, c)    _mm256_fnmadd_ps(a, b, c)
-#else
-    #define _mm256_nmadd_ps(a, b, c)    _mm256_sub_ps(c, _mm256_mul_ps(a, b))
-#endif
-
-// dst = a * b - c
-#ifdef __FMA__
-    #define _mm256_msub_ps(a, b, c)     _mm256_fmsub_ps(a, b, c)
-#else
-    #define _mm256_msub_ps(a, b, c)     _mm256_sub_ps(_mm256_mul_ps(a, b), c)
-#endif
-
-// dst = -(a * b) - c
-#ifdef __FMA__
-    #define _mm256_nmsub_ps(a, b, c)    _mm256_fnmsub_ps(a, b, c)
-#else
-    #define _mm256_nmsub_ps(a, b, c)    _mm256_sub_ps(_mm256_neg_ps(_mm256_mul_ps(a, b)), c)
+    // dst = a * b + c
+    #define bx_mm256_madd_ps(a, b, c)       _mm256_add_ps(_mm256_mul_ps(a, b), c)
+    // dst = -(a * b) + c
+    #define bx_mm256_nmadd_ps(a, b, c)      _mm256_sub_ps(c, _mm256_mul_ps(a, b))
+    // dst = a * b - c
+    #define bx_mm256_msub_ps(a, b, c)       _mm256_sub_ps(_mm256_mul_ps(a, b), c)
+    // dst = -(a * b) - c
+    #define bx_mm256_nmsub_ps(a, b, c)      _mm256_sub_ps(bx_mm256_neg_ps(_mm256_mul_ps(a, b)), c)
 #endif
 
 struct avxf;

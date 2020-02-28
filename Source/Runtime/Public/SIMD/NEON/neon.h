@@ -24,14 +24,14 @@
 #endif
 
 #if defined(__ARM64__)
-    #define vsplatq_f32(a, imm)     vdupq_laneq_f32((a), (imm))
+    #define bx_vsplatq_f32(a, imm)      vdupq_laneq_f32((a), (imm))
 #else
-    #define vsplatq_f32(a, imm)     vdupq_n_f32(vgetq_lane_f32((a), (imm)))
+    #define bx_vsplatq_f32(a, imm)      vdupq_n_f32(vgetq_lane_f32((a), (imm)))
 #endif
 
 // Takes the upper 64 bits of a and places it in the low end of the result
 // Takes the lower 64 bits of a and places it into the high end of the result.
-BE_FORCE_INLINE float32x4_t vpermq_f32_1032(float32x4_t a) {
+BE_FORCE_INLINE float32x4_t bx_vpermq_f32_1032(float32x4_t a) {
     float32x2_t a32 = vget_high_f32(a);
     float32x2_t a10 = vget_low_f32(a);
     return vcombine_f32(a32, a10);
@@ -40,32 +40,32 @@ BE_FORCE_INLINE float32x4_t vpermq_f32_1032(float32x4_t a) {
 // takes the lower two 32-bit values from a and swaps them and places in low end
 // of result takes the higher two 32 bit values from a and swaps them and places
 // in high end of result.
-BE_FORCE_INLINE float32x4_t vpermq_f32_2301(float32x4_t a) {
+BE_FORCE_INLINE float32x4_t bx_vpermq_f32_2301(float32x4_t a) {
     return vrev64q_f32(a);
 }
 
 // rotates the least significant 32 bits into the most signficant 32 bits, and
 // shifts the rest down
-BE_FORCE_INLINE float32x4_t vpermq_f32_0321(float32x4_t a) {
+BE_FORCE_INLINE float32x4_t bx_vpermq_f32_0321(float32x4_t a) {
     return vextq_f32(a, a, 1);
 }
 
 // rotates the most significant 32 bits into the least signficant 32 bits, and
 // shifts the rest up
-BE_FORCE_INLINE float32x4_t vpermq_f32_2103(float32x4_t a) {
+BE_FORCE_INLINE float32x4_t bx_vpermq_f32_2103(float32x4_t a) {
     return vextq_f32(a, a, 3);
 }
 
 // gets the lower 64 bits of a, and places it in the upper 64 bits
 // gets the lower 64 bits of a and places it in the lower 64 bits
-BE_FORCE_INLINE float32x4_t vpermq_f32_1010(float32x4_t a) {
+BE_FORCE_INLINE float32x4_t bx_vpermq_f32_1010(float32x4_t a) {
     float32x2_t a10 = vget_low_f32(a);
     return vcombine_f32(a10, a10);
 }
 
 // gets the lower 64 bits of a, swaps the 0 and 1 elements, and places it in the
 // lower 64 bits gets the lower 64 bits of a, and places it in the upper 64 bits
-BE_FORCE_INLINE float32x4_t vpermq_f32_1001(float32x4_t a) {
+BE_FORCE_INLINE float32x4_t bx_vpermq_f32_1001(float32x4_t a) {
     float32x2_t a01 = vrev64_f32(vget_low_f32(a));
     float32x2_t a10 = vget_low_f32(a);
     return vcombine_f32(a01, a10);
@@ -74,48 +74,48 @@ BE_FORCE_INLINE float32x4_t vpermq_f32_1001(float32x4_t a) {
 // gets the lower 64 bits of a, swaps the 0 and 1 elements and places it in the
 // upper 64 bits gets the lower 64 bits of a, swaps the 0 and 1 elements, and
 // places it in the lower 64 bits
-BE_FORCE_INLINE float32x4_t vpermq_f32_0101(float32x4_t a) {
+BE_FORCE_INLINE float32x4_t bx_vpermq_f32_0101(float32x4_t a) {
     float32x2_t a01 = vrev64_f32(vget_low_f32(a));
     return vcombine_f32(a01, a01);
 }
 
-BE_FORCE_INLINE float32x4_t vpermq_f32_2211(float32x4_t a) {
+BE_FORCE_INLINE float32x4_t bx_vpermq_f32_2211(float32x4_t a) {
     float32x2_t a11 = vdup_lane_f32(vget_low_f32(a), 1);
     float32x2_t a22 = vdup_lane_f32(vget_high_f32(a), 0);
     return vcombine_f32(a11, a22);
 }
 
-BE_FORCE_INLINE float32x4_t vpermq_f32_0122(float32x4_t a) {
+BE_FORCE_INLINE float32x4_t bx_vpermq_f32_0122(float32x4_t a) {
     float32x2_t a22 = vdup_lane_f32(vget_high_f32(a), 0);
     float32x2_t a01 = vrev64_f32(vget_low_f32(a));
     return vcombine_f32(a22, a01);
 }
 
-BE_FORCE_INLINE float32x4_t vpermq_f32_3332(float32x4_t a) {
+BE_FORCE_INLINE float32x4_t bx_vpermq_f32_3332(float32x4_t a) {
     float32x2_t a32 = vget_high_f32(a);
     float32x2_t a33 = vdup_lane_f32(vget_high_f32(a), 1);
     return vcombine_f32(a32, a33);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_0000(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_0000(float32x4_t a, float32x4_t b) {
     float32x2_t a00 = vdup_lane_f32(vget_low_f32(a), 0);
     float32x2_t b00 = vdup_lane_f32(vget_low_f32(b), 0);
     return vcombine_f32(a00, b00);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_1111(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_1111(float32x4_t a, float32x4_t b) {
     float32x2_t a11 = vdup_lane_f32(vget_low_f32(a), 1);
     float32x2_t b11 = vdup_lane_f32(vget_low_f32(b), 1);
     return vcombine_f32(a11, b11);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_2222(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_2222(float32x4_t a, float32x4_t b) {
     float32x2_t a22 = vdup_lane_f32(vget_high_f32(a), 0);
     float32x2_t b22 = vdup_lane_f32(vget_high_f32(b), 0);
     return vcombine_f32(a22, b22);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_3333(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_3333(float32x4_t a, float32x4_t b) {
     float32x2_t a33 = vdup_lane_f32(vget_high_f32(a), 1);
     float32x2_t b33 = vdup_lane_f32(vget_high_f32(b), 1);
     return vcombine_f32(a33, b33);
@@ -123,7 +123,7 @@ BE_FORCE_INLINE float32x4_t vshufq_f32_3333(float32x4_t a, float32x4_t b) {
 
 // Takes the upper 64 bits of a and places it in the low end of the result
 // Takes the lower 64 bits of b and places it into the high end of the result.
-BE_FORCE_INLINE float32x4_t vshufq_f32_1032(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_1032(float32x4_t a, float32x4_t b) {
     float32x2_t a32 = vget_high_f32(a);
     float32x2_t b10 = vget_low_f32(b);
     return vcombine_f32(a32, b10);
@@ -132,68 +132,68 @@ BE_FORCE_INLINE float32x4_t vshufq_f32_1032(float32x4_t a, float32x4_t b) {
 // takes the lower two 32-bit values from a and swaps them and places in high
 // end of result takes the higher two 32 bit values from b and swaps them and
 // places in low end of result.
-BE_FORCE_INLINE float32x4_t vshufq_f32_2301(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_2301(float32x4_t a, float32x4_t b) {
     float32x2_t a01 = vrev64_f32(vget_low_f32(a));
     float32x2_t b23 = vrev64_f32(vget_high_f32(b));
     return vcombine_f32(a01, b23);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_0321(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_0321(float32x4_t a, float32x4_t b) {
     float32x2_t a21 = vget_high_f32(vextq_f32(a, a, 3));
     float32x2_t b03 = vget_low_f32(vextq_f32(b, b, 3));
     return vcombine_f32(a21, b03);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_2103(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_2103(float32x4_t a, float32x4_t b) {
     float32x2_t a03 = vget_low_f32(vextq_f32(a, a, 3));
     float32x2_t b21 = vget_high_f32(vextq_f32(b, b, 3));
     return vcombine_f32(a03, b21);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_1010(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_1010(float32x4_t a, float32x4_t b) {
     float32x2_t a10 = vget_low_f32(a);
     float32x2_t b10 = vget_low_f32(b);
     return vcombine_f32(a10, b10);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_1001(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_1001(float32x4_t a, float32x4_t b) {
     float32x2_t a01 = vrev64_f32(vget_low_f32(a));
     float32x2_t b10 = vget_low_f32(b);
     return vcombine_f32(a01, b10);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_0101(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_0101(float32x4_t a, float32x4_t b) {
     float32x2_t a01 = vrev64_f32(vget_low_f32(a));
     float32x2_t b01 = vrev64_f32(vget_low_f32(b));
     return vcombine_f32(a01, b01);
 }
 
 // keeps the low 64 bits of b in the low and puts the high 64 bits of a in the high
-BE_FORCE_INLINE float32x4_t vshufq_f32_3210(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_3210(float32x4_t a, float32x4_t b) {
     float32x2_t a10 = vget_low_f32(a);
     float32x2_t b32 = vget_high_f32(b);
     return vcombine_f32(a10, b32);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_0011(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_0011(float32x4_t a, float32x4_t b) {
     float32x2_t a11 = vdup_lane_f32(vget_low_f32(a), 1);
     float32x2_t b00 = vdup_lane_f32(vget_low_f32(b), 0);
     return vcombine_f32(a11, b00);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_0022(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_0022(float32x4_t a, float32x4_t b) {
     float32x2_t a22 = vdup_lane_f32(vget_high_f32(a), 0);
     float32x2_t b00 = vdup_lane_f32(vget_low_f32(b), 0);
     return vcombine_f32(a22, b00);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_2200(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_2200(float32x4_t a, float32x4_t b) {
     float32x2_t a00 = vdup_lane_f32(vget_low_f32(a), 0);
     float32x2_t b22 = vdup_lane_f32(vget_high_f32(b), 0);
     return vcombine_f32(a00, b22);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_3202(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_3202(float32x4_t a, float32x4_t b) {
     float32_t a0 = vgetq_lane_f32(a, 0);
     float32x2_t a22 = vdup_lane_f32(vget_high_f32(a), 0);
     float32x2_t a02 = vset_lane_f32(a0, a22, 1); /* TODO: use vzip ?*/
@@ -201,19 +201,19 @@ BE_FORCE_INLINE float32x4_t vshufq_f32_3202(float32x4_t a, float32x4_t b) {
     return vcombine_f32(a02, b32);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_3232(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_3232(float32x4_t a, float32x4_t b) {
     float32x2_t a32 = vget_high_f32(a);
     float32x2_t b32 = vget_high_f32(b);
     return vcombine_f32(b32, a32);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_1133(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_1133(float32x4_t a, float32x4_t b) {
     float32x2_t a33 = vdup_lane_f32(vget_high_f32(a), 1);
     float32x2_t b11 = vdup_lane_f32(vget_low_f32(b), 1);
     return vcombine_f32(a33, b11);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_2010(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_2010(float32x4_t a, float32x4_t b) {
     float32x2_t a10 = vget_low_f32(a);
     float32_t b2 = vgetq_lane_f32(b, 2);
     float32x2_t b00 = vdup_lane_f32(vget_low_f32((b)), 0);
@@ -221,7 +221,7 @@ BE_FORCE_INLINE float32x4_t vshufq_f32_2010(float32x4_t a, float32x4_t b) {
     return vcombine_f32(a10, b20);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_2001(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_2001(float32x4_t a, float32x4_t b) {
     float32x2_t a01 = vrev64_f32(vget_low_f32(a));
     float32_t b2 = vgetq_lane_f32(b, 2);
     float32x2_t b00 = vdup_lane_f32(vget_low_f32(b), 0);
@@ -229,7 +229,7 @@ BE_FORCE_INLINE float32x4_t vshufq_f32_2001(float32x4_t a, float32x4_t b) {
     return vcombine_f32(a01, b20);
 }
 
-BE_FORCE_INLINE float32x4_t vshufq_f32_2032(float32x4_t a, float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vshufq_f32_2032(float32x4_t a, float32x4_t b) {
     float32x2_t a32 = vget_high_f32(a);
     float32_t b2 = vgetq_lane_f32(b, 2);
     float32x2_t b00 = vdup_lane_f32(vget_low_f32(b), 0);
@@ -240,7 +240,7 @@ BE_FORCE_INLINE float32x4_t vshufq_f32_2032(float32x4_t a, float32x4_t b) {
 // Shuffle packed 8-bit integers in a according to shuffle control mask in the
 // corresponding 8-bit element of b, and store the results in dst.
 // https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_shuffle_epi8&expand=5146
-BE_FORCE_INLINE int32x4_t vshufq_s8(int32x4_t a, int32x4_t b) {
+BE_FORCE_INLINE int32x4_t bx_vshufq_s8(int32x4_t a, int32x4_t b) {
 #if defined(__ARM64__)
     int8x16_t tbl = vreinterpretq_s8_s32(a);   // input a
     uint8x16_t idx = vreinterpretq_u8_s32(b);  // input b
@@ -277,8 +277,10 @@ BE_FORCE_INLINE int32x4_t vshufq_s8(int32x4_t a, int32x4_t b) {
 #endif
 }
 
-#if !defined(__ARM64__)
-BE_FORCE_INLINE float32x4_t vsqrtq_f32(float32x4_t s) {
+#if defined(__ARM64__)
+    #define bx_vsqrtq_f32   vsqrtq_f32
+#else
+BE_FORCE_INLINE float32x4_t bx_vsqrtq_f32(float32x4_t s) {
     float32x4_t x = vrsqrteq_f32(s);
     // Code to handle sqrt(0).
     // If the input to sqrtf() is zero, a zero will be returned.
@@ -303,7 +305,7 @@ BE_FORCE_INLINE float32x4_t vsqrtq_f32(float32x4_t s) {
 #endif
 
 // Unpack to (a0, b0, a1, b1).
-BE_FORCE_INLINE float32x4_t vunpackloq_f32(const float32x4_t a, const float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vunpackloq_f32(const float32x4_t a, const float32x4_t b) {
     float32x2_t al = vget_low_f32(a);
     float32x2_t bl = vget_low_f32(b);
     float32x2x2_t result = vzip_f32(al, bl);
@@ -311,7 +313,7 @@ BE_FORCE_INLINE float32x4_t vunpackloq_f32(const float32x4_t a, const float32x4_
 }
 
 // Unpack to (a2, b2, a3, b3).
-BE_FORCE_INLINE float32x4_t vunpackhiq_f32(const float32x4_t a, const float32x4_t b) {
+BE_FORCE_INLINE float32x4_t bx_vunpackhiq_f32(const float32x4_t a, const float32x4_t b) {
     float32x2_t ah = vget_high_f32(a);
     float32x2_t bh = vget_high_f32(b);
     float32x2x2_t result = vzip_f32(ah, bh);
@@ -321,7 +323,7 @@ BE_FORCE_INLINE float32x4_t vunpackhiq_f32(const float32x4_t a, const float32x4_
 // Creates a 4-bit mask from the most significant bits of the four
 // single-precision, floating-point values.
 // https://msdn.microsoft.com/en-us/library/vstudio/4490ys29(v=vs.100).aspx
-BE_FORCE_INLINE int vmovemaskq_f32(float32x4_t a) {
+BE_FORCE_INLINE int bx_vmovemaskq_f32(float32x4_t a) {
 #if 0 /* C version */
     uint32x4_t &ia = *(uint32x4_t *)&a;
     return (ia[0] >> 31) | ((ia[1] >> 30) & 2) | ((ia[2] >> 29) & 4) |

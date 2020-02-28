@@ -73,56 +73,57 @@ BE_FORCE_INLINE avxi abs_256epi32(const avxi &a) {
 }
 
 BE_FORCE_INLINE avxi operator+(const avxi &a) { return a; }
-BE_FORCE_INLINE avxi operator-(const avxi &a) { return avxi(_mm_sub_epi32(_mm_setzero_si128(), a.l128i), _mm_sub_epi32(_mm_setzero_si128(), a.h128i)); }
+BE_FORCE_INLINE avxi operator-(const avxi &a) { return bx_mm256_neg_epi32(a); }
+BE_FORCE_INLINE avxi operator~(const avxi &a) { return bx_mm256_inv_si256(a); }
 
-BE_FORCE_INLINE avxi operator+(const avxi &a, const avxi &b) { return avxi(_mm_add_epi32(a.l128i, b.l128i), _mm_add_epi32(a.h128i, a.h128i)); }
+BE_FORCE_INLINE avxi operator+(const avxi &a, const avxi &b) { return bx_mm256_add_epi32(a, b); }
 BE_FORCE_INLINE avxi operator+(const avxi &a, const int32_t &b) { return a + set1_256epi32(b); }
 BE_FORCE_INLINE avxi operator+(const int32_t &a, const avxi &b) { return set1_256epi32(a) + b; }
 
-BE_FORCE_INLINE avxi operator-(const avxi &a, const avxi &b) { return avxi(_mm_sub_epi32(a.l128i, b.l128i), _mm_sub_epi32(a.h128i, b.h128i)); }
+BE_FORCE_INLINE avxi operator-(const avxi &a, const avxi &b) { return bx_mm256_sub_epi32(a, b); }
 BE_FORCE_INLINE avxi operator-(const avxi &a, const int32_t &b) { return a - set1_256epi32(b); }
 BE_FORCE_INLINE avxi operator-(const int32_t &a, const avxi &b) { return set1_256epi32(a) - b; }
 
-BE_FORCE_INLINE avxi operator*(const avxi &a, const avxi &b) { return avxi(_mm_mullo_epi32(a.l128i, b.l128i), _mm_mullo_epi32(a.h128i, b.h128i)); }
+BE_FORCE_INLINE avxi operator*(const avxi &a, const avxi &b) { return bx_mm256_mullo_epi32(a, b); }
 BE_FORCE_INLINE avxi operator*(const avxi &a, const int32_t &b) { return a * set1_256epi32(b); }
 BE_FORCE_INLINE avxi operator*(const int32_t &a, const avxi &b) { return set1_256epi32(a) * b; }
 
-BE_FORCE_INLINE avxi operator&(const avxi &a, const avxi &b) { return _mm256_castps_si256(_mm256_and_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b))); }
+BE_FORCE_INLINE avxi operator&(const avxi &a, const avxi &b) { return bx_mm256_and_si256(a, b); }
 BE_FORCE_INLINE avxi operator&(const avxi &a, const int32_t &b) { return a & set1_256epi32(b); }
 BE_FORCE_INLINE avxi operator&(const int32_t &a, const avxi &b) { return set1_256epi32(a) & b; }
 
-BE_FORCE_INLINE avxi operator|(const avxi &a, const avxi &b) { return _mm256_castps_si256(_mm256_or_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b))); }
+BE_FORCE_INLINE avxi operator|(const avxi &a, const avxi &b) { return bx_mm256_or_si256(a, b); }
 BE_FORCE_INLINE avxi operator|(const avxi &a, const int32_t &b) { return a | set1_256epi32(b); }
 BE_FORCE_INLINE avxi operator|(const int32_t &a, const avxi &b) { return set1_256epi32(a) | b; }
 
-BE_FORCE_INLINE avxi operator^(const avxi &a, const avxi &b) { return _mm256_castps_si256(_mm256_xor_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b))); }
+BE_FORCE_INLINE avxi operator^(const avxi &a, const avxi &b) { return bx_mm256_xor_si256(a, b); }
 BE_FORCE_INLINE avxi operator^(const avxi &a, const int32_t &b) { return a ^ set1_256epi32(b); }
 BE_FORCE_INLINE avxi operator^(const int32_t &a, const avxi &b) { return set1_256epi32(a) ^ b; }
 
-BE_FORCE_INLINE avxi operator<<(const avxi &a, const int32_t &n) { return avxi(_mm_slli_epi32(a.l128i, n), _mm_slli_epi32(a.h128i, n)); }
-BE_FORCE_INLINE avxi operator>>(const avxi &a, const int32_t &n) { return avxi(_mm_srai_epi32(a.l128i, n), _mm_slli_epi32(a.h128i, n)); }
+BE_FORCE_INLINE avxi operator<<(const avxi &a, const int32_t &n) { return bx_mm256_slli_epi32(a, n); }
+BE_FORCE_INLINE avxi operator>>(const avxi &a, const int32_t &n) { return bx_mm256_srli_epi32(a, n); }
 
-BE_FORCE_INLINE avxi operator==(const avxi &a, const avxi &b) { return avxi(_mm_cmpeq_epi32(a.l128i, b.l128i), _mm_cmpeq_epi32(a.h128i, b.h128i)); }
+BE_FORCE_INLINE avxi operator==(const avxi &a, const avxi &b) { return bx_mm256_cmpeq_epi32(a, b); }
 BE_FORCE_INLINE avxi operator==(const avxi &a, const int32_t &b) { return a == set1_256epi32(b); }
 BE_FORCE_INLINE avxi operator==(const int32_t &a, const avxi &b) { return set1_256epi32(a) == b; }
 
-BE_FORCE_INLINE avxi operator!=(const avxi &a, const avxi &b) { return avxi(_mm_inv_si128(_mm_cmpeq_epi32(a.l128i, b.l128i)), _mm_inv_si128(_mm_cmpeq_epi32(a.h128i, b.h128i))); }
+BE_FORCE_INLINE avxi operator!=(const avxi &a, const avxi &b) { return bx_mm256_inv_si256(bx_mm256_cmpeq_epi32(a, b)); }
 BE_FORCE_INLINE avxi operator!=(const avxi &a, const int32_t &b) { return a != set1_256epi32(b); }
 BE_FORCE_INLINE avxi operator!=(const int32_t &a, const avxi &b) { return set1_256epi32(a) != b; }
 
-BE_FORCE_INLINE avxi operator<(const avxi &a, const avxi &b) { return avxi(_mm_cmplt_epi32(a.l128i, b.l128i), _mm_cmplt_epi32(a.h128i, b.h128i)); }
+BE_FORCE_INLINE avxi operator<(const avxi &a, const avxi &b) { return bx_mm256_cmplt_epi32(a, b); }
 BE_FORCE_INLINE avxi operator<(const avxi &a, const int32_t &b) { return a < set1_256epi32(b); }
 BE_FORCE_INLINE avxi operator<(const int32_t &a, const avxi &b) { return set1_256epi32(a) < b; }
 
-BE_FORCE_INLINE avxi operator>(const avxi &a, const avxi &b) { return avxi(_mm_cmpgt_epi32(a.l128i, b.l128i), _mm_cmpgt_epi32(a.h128i, b.h128i)); }
+BE_FORCE_INLINE avxi operator>(const avxi &a, const avxi &b) { return bx_mm256_cmpgt_epi32(a, b); }
 BE_FORCE_INLINE avxi operator>(const avxi &a, const int32_t &b) { return a > set1_256epi32(b); }
 BE_FORCE_INLINE avxi operator>(const int32_t &a, const avxi &b) { return set1_256epi32(a) > b; }
 
-BE_FORCE_INLINE avxi operator>=(const avxi &a, const avxi &b) { return avxi(_mm_inv_si128(_mm_cmplt_epi32(a.l128i, b.l128i)), _mm_inv_si128(_mm_cmplt_epi32(a.h128i, b.h128i))); }
+BE_FORCE_INLINE avxi operator>=(const avxi &a, const avxi &b) { return bx_mm256_inv_si256(bx_mm256_cmplt_epi32(a, b)); }
 BE_FORCE_INLINE avxi operator>=(const avxi &a, const int32_t &b) { return a >= set1_256epi32(b); }
 BE_FORCE_INLINE avxi operator>=(const int32_t &a, const avxi &b) { return set1_256epi32(a) >= b; }
 
-BE_FORCE_INLINE avxi operator<=(const avxi &a, const avxi &b) { return avxi(_mm_inv_si128(_mm_cmpgt_epi32(a.l128i, b.l128i)), _mm_inv_si128(_mm_cmpgt_epi32(a.h128i, b.h128i))); }
+BE_FORCE_INLINE avxi operator<=(const avxi &a, const avxi &b) { return bx_mm256_inv_si256(bx_mm256_cmpgt_epi32(a, b)); }
 BE_FORCE_INLINE avxi operator<=(const avxi &a, const int32_t &b) { return a <= set1_256epi32(b); }
 BE_FORCE_INLINE avxi operator<=(const int32_t &a, const avxi &b) { return set1_256epi32(a) <= b; }
 
@@ -145,19 +146,19 @@ BE_FORCE_INLINE avxi &operator<<=(avxi &a, const int32_t &b) { return a = a << b
 BE_FORCE_INLINE avxi &operator>>=(avxi &a, const int32_t &b) { return a = a >> b; }
 
 // Shifts right arithmetic.
-BE_FORCE_INLINE avxi sra_256epi32(const avxi &a, const int32_t &b) { return avxi(_mm_srai_epi32(a.l128i, b), _mm_srai_epi32(a.h128i, b)); }
+BE_FORCE_INLINE avxi sra_256epi32(const avxi &a, const int32_t &b) { return bx_mm256_srai_epi32(a, b); }
 
 // Shifts right logical.
-BE_FORCE_INLINE avxi srl_256epi32(const avxi &a, const int32_t &b) { return avxi(_mm_srli_epi32(a.l128i, b), _mm_srli_epi32(a.h128i, b)); }
+BE_FORCE_INLINE avxi srl_256epi32(const avxi &a, const int32_t &b) { return bx_mm256_srli_epi32(a, b); }
 
 // Shifts left logical.
-BE_FORCE_INLINE avxi sll_256epi32(const avxi &a, const int32_t &b) { return avxi(_mm_slli_epi32(a.l128i, b), _mm_slli_epi32(a.h128i, b)); }
+BE_FORCE_INLINE avxi sll_256epi32(const avxi &a, const int32_t &b) { return bx_mm256_slli_epi32(a, b); }
 
 // Unpacks to (a0, b0, a1, b1, a4, b4, a5, b5).
-BE_FORCE_INLINE avxi unpacklo_256epi32(const avxi &a, const avxi &b) { return _mm256_castps_si256(_mm256_unpacklo_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b))); }
+BE_FORCE_INLINE avxi unpacklo_256epi32(const avxi &a, const avxi &b) { return bx_mm256_unpacklo_epi32(a, b); }
 
 // Unpacks to (a2, b2, a3, b3, a6, b6, a7, b7).
-BE_FORCE_INLINE avxi unpackhi_256epi32(const avxi &a, const avxi &b) { return _mm256_castps_si256(_mm256_unpackhi_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b))); }
+BE_FORCE_INLINE avxi unpackhi_256epi32(const avxi &a, const avxi &b) { return bx_mm256_unpackhi_epi32(a, b); }
 
 // Shuffles 2x128 bits packed integers using template parameters. ix = [0(2), 1(3)].
 template <size_t i0, size_t i1>
@@ -205,14 +206,14 @@ BE_FORCE_INLINE avxi insert_256epi32(const avxi &a, const ssef &b) { return _mm2
 
 // Selects 8x32 bits integer using mask.
 BE_FORCE_INLINE avxi select_256epi32(const avxi &a, const avxi &b, const avxb &mask) {
-    return _mm256_castps_si256(_mm256_blendv_ps(_mm256_castsi256_ps(b), _mm256_castsi256_ps(a), mask));
+    return _mm256_castps_si256(_mm256_blendv_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b), mask));
 }
 
-BE_FORCE_INLINE avxi min_256epi32(const avxi &a, const avxi &b) { return avxi(_mm_min_epi32(a.l128i, b.l128i), _mm_min_epi32(a.h128i, b.h128i)); }
+BE_FORCE_INLINE avxi min_256epi32(const avxi &a, const avxi &b) { return bx_mm256_min_epi32(a, b); }
 BE_FORCE_INLINE avxi min_256epi32(const avxi &a, const int32_t &b) { return min_256epi32(a, set1_256epi32(b)); }
 BE_FORCE_INLINE avxi min_256epi32(const int32_t &a, const avxi &b) { return min_256epi32(set1_256epi32(a), b); }
 
-BE_FORCE_INLINE avxi max_256epi32(const avxi &a, const avxi &b) { return avxi(_mm_max_epi32(a.l128i, b.l128i), _mm_max_epi32(a.h128i, b.h128i)); }
+BE_FORCE_INLINE avxi max_256epi32(const avxi &a, const avxi &b) { return bx_mm256_max_epi32(a, b); }
 BE_FORCE_INLINE avxi max_256epi32(const avxi &a, const int32_t &b) { return max_256epi32(a, set1_256epi32(b)); }
 BE_FORCE_INLINE avxi max_256epi32(const int32_t &a, const avxi &b) { return max_256epi32(set1_256epi32(a), b); }
 

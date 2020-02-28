@@ -58,35 +58,35 @@ public:
 // Dual linear combination.
 // r[0] = a[0][0] * b[0] + a[0][1] * b[1] + a[0][2] * b[2] + a[0][3] * b[3]
 // r[1] = a[1][0] * b[0] + a[1][1] * b[1] + a[1][2] * b[2] + a[1][3] * b[3]
-BE_FORCE_INLINE simd8f lincomb2x4x4(simd8f a01, const simd8f &br00, const simd8f &br11, const simd8f &br22, const simd8f &br33) {
-    simd8f result = shuffle_256ps<0, 0, 0, 0>(a01) * br00;
-    result = madd_256ps(shuffle_256ps<1, 1, 1, 1>(a01), br11, result);
-    result = madd_256ps(shuffle_256ps<2, 2, 2, 2>(a01), br22, result);
-    result = madd_256ps(shuffle_256ps<3, 3, 3, 3>(a01), br33, result);
+BE_FORCE_INLINE simd8f lincomb2x4x4(simd8f ar0ar1, const simd8f &br0br0, const simd8f &br1br1, const simd8f &br2br2, const simd8f &br3br3) {
+    simd8f result = shuffle_256ps<0, 0, 0, 0>(ar0ar1) * br0br0;
+    result = madd_256ps(shuffle_256ps<1, 1, 1, 1>(ar0ar1), br1br1, result);
+    result = madd_256ps(shuffle_256ps<2, 2, 2, 2>(ar0ar1), br2br2, result);
+    result = madd_256ps(shuffle_256ps<3, 3, 3, 3>(ar0ar1), br3br3, result);
     return result;
 }
 
 // Dual linear combination.
 // r[0] = a[0][0] * b[0] + a[0][1] * b[1] + a[0][2] * b[2] + a[0][3] * (0, 0, 0, 1)
 // r[1] = a[1][0] * b[0] + a[1][1] * b[1] + a[1][2] * b[2] + a[1][3] * (0, 0, 0, 1)
-BE_FORCE_INLINE simd8f lincomb2x3x4(simd8f a01, const simd8f &br00, const simd8f &br11, const simd8f &br22) {
-    simd8f result = shuffle_256ps<0, 0, 0, 0>(a01) * br00;
-    result = madd_256ps(shuffle_256ps<1, 1, 1, 1>(a01), br11, result);
-    result = madd_256ps(shuffle_256ps<2, 2, 2, 2>(a01), br22, result);
-    result += (a01 & SIMD_8::F8_mask_000x000x);
+BE_FORCE_INLINE simd8f lincomb2x3x4(simd8f ar0ar1, const simd8f &br0br0, const simd8f &br1br1, const simd8f &br2br2) {
+    simd8f result = shuffle_256ps<0, 0, 0, 0>(ar0ar1) * br0br0;
+    result = madd_256ps(shuffle_256ps<1, 1, 1, 1>(ar0ar1), br1br1, result);
+    result = madd_256ps(shuffle_256ps<2, 2, 2, 2>(ar0ar1), br2br2, result);
+    result += (ar0ar1 & SIMD_8::F8_mask_000x000x);
     return result;
 }
 
 // Transposes two 4x4 matrices.
-BE_FORCE_INLINE void transpose2x4x4(const simd8f &r0, const simd8f &r1, const simd8f &r2, const simd8f &r3, simd8f &c0, simd8f &c1, simd8f &c2, simd8f &c3) {
-    simd8f l02 = unpacklo_256ps(r0, r2); // m00, m20, m01, m21, m04, m24, m05, m25
-    simd8f h02 = unpackhi_256ps(r0, r2); // m02, m22, m03, m23, m06, m26, m07, m27
-    simd8f l13 = unpacklo_256ps(r1, r3); // m10, m30, m11, m31, m14, m34, m15, m35
-    simd8f h13 = unpackhi_256ps(r1, r3); // m12, m32, m13, m33, m16, m36, m17, m37
-    c0 = unpacklo_256ps(l02, l13); // m00, m10, m20, m30, m04, m14, m24, m34
-    c1 = unpackhi_256ps(l02, l13); // m01, m11, m21, m31, m05, m15, m25, m35
-    c2 = unpacklo_256ps(h02, h13); // m02, m12, m22, m32, m06, m16, m26, m36
-    c3 = unpackhi_256ps(h02, h13); // m03, m13, m23, m33, m07, m17, m27, m37
+BE_FORCE_INLINE void transpose2x4x4(const simd8f &ar0br0, const simd8f &ar1br1, const simd8f &ar2br2, const simd8f &ar3br3, simd8f &ac0bc0, simd8f &ac1bc1, simd8f &ac2bc2, simd8f &ac3bc3) {
+    simd8f l02 = unpacklo_256ps(ar0br0, ar2br2); // m00, m20, m01, m21, m04, m24, m05, m25
+    simd8f h02 = unpackhi_256ps(ar0br0, ar2br2); // m02, m22, m03, m23, m06, m26, m07, m27
+    simd8f l13 = unpacklo_256ps(ar1br1, ar3br3); // m10, m30, m11, m31, m14, m34, m15, m35
+    simd8f h13 = unpackhi_256ps(ar1br1, ar3br3); // m12, m32, m13, m33, m16, m36, m17, m37
+    ac0bc0 = unpacklo_256ps(l02, l13); // m00, m10, m20, m30, m04, m14, m24, m34
+    ac1bc1 = unpackhi_256ps(l02, l13); // m01, m11, m21, m31, m05, m15, m25, m35
+    ac2bc2 = unpacklo_256ps(h02, h13); // m02, m12, m22, m32, m06, m16, m26, m36
+    ac3bc3 = unpackhi_256ps(h02, h13); // m03, m13, m23, m33, m07, m17, m27, m37
 }
 
 // Transposes 8x8 matrix.
