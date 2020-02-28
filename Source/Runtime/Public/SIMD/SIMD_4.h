@@ -113,8 +113,8 @@ BE_FORCE_INLINE simd4f mat3x4rowmajor_mul_vec4(const float *mat, const simd4f &v
     simd4f z = ar2 * v;
     simd4f w = (v & SIMD_4::F4_mask_000x);
     simd4f tmp1 = hadd_ps(x, y); // x0+x1, x2+x3, y0+y1, y2+y3
-    simd4f tmp2 = hadd_ps(z, w); // z0+z1, z2+z3, w0+w1, w2+w3
-    return hadd_ps(tmp1, tmp2); // x0+x1+x2+x3, y0+y1+y2+y3, z0+z1+z2+z3, w0+w1+w2+w3
+    simd4f tmp2 = hadd_ps(z, w); // z0+z1, z2+z3, 0, w3
+    return hadd_ps(tmp1, tmp2); // x0+x1+x2+x3, y0+y1+y2+y3, z0+z1+z2+z3, w3
 }
 
 // M(4x4) * v(4)
