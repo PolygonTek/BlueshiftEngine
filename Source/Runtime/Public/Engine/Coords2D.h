@@ -18,6 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
+/// Coordinates frame of 2D.
 struct Coords2D {
     BE_FORCE_INLINE static int XAxisIndex() {
         return 1;

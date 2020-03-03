@@ -54,7 +54,7 @@ BE_FORCE_INLINE int64_t atomic_cmpxchg(volatile int64_t *p, int64_t v, int64_t c
 // Computes the base 2 logarithm for an integer value that is greater than 0.
 // The result is rounded down to the nearest integer.
 BE_INLINE uint32_t FloorLog2(uint32_t value) {
-    // Use BSR to return the log2 of the integer
+    // Use BSR to return the log2 of the integer.
     DWORD log2;
     if (_BitScanReverse(&log2, value) != 0) {
         return log2;
@@ -62,9 +62,9 @@ BE_INLINE uint32_t FloorLog2(uint32_t value) {
     return 0;
 }
 
-// Counts the number of leading zeros in the bit representation of the value
+// Counts the number of leading zeros in the bit representation of the value.
 BE_INLINE uint32_t CountLeadingZeros(uint32_t value) {
-    // Use BSR to return the log2 of the integer
+    // Use BSR to return the log2 of the integer.
     DWORD log2;
     if (_BitScanReverse(&log2, value) != 0) {
         return 31 - log2;
@@ -77,8 +77,8 @@ BE_INLINE uint32_t CountTrailingZeros(uint32_t value) {
     if (value == 0) {
         return 32;
     }
-    uint32_t bitIndex;    // 0-based, where the LSB is 0 and MSB is 31
-    _BitScanForward((::DWORD *)&bitIndex, value);   // Scans from LSB to MSB
+    uint32_t bitIndex;    // 0-based, where the LSB is 0 and MSB is 31.
+    _BitScanForward((::DWORD *)&bitIndex, value);   // Scans from LSB to MSB.
     return bitIndex;
 }
 

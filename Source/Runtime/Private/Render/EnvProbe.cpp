@@ -116,7 +116,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
         // Use baked specular probe cubemap.
         specularProbeTexture = state.bakedSpecularProbeTexture;
         specularProbeTexture->AddRefCount();
-        specularProbeTextureMaxMipLevel = Math::Log(2.0f, specularProbeTexture->GetWidth());
+        specularProbeTextureMaxMipLevel = Math::Log(2, specularProbeTexture->GetWidth());
     } else {
         if (!specularProbeTexture) {
             // Create default specular probe cubemap.
@@ -128,7 +128,7 @@ void EnvProbe::Update(const EnvProbe::State *stateDef) {
                 state.useHDR ? Image::Format::RGBA_16F_16F_16F_16F : Image::Format::RGBA_8_8_8_8,
                 Texture::Flag::Clamp | Texture::Flag::Trilinear | Texture::Flag::HighQuality);
 
-            specularProbeTextureMaxMipLevel = Math::Log(2.0f, specularProbeTexture->GetWidth());
+            specularProbeTextureMaxMipLevel = Math::Log(2, specularProbeTexture->GetWidth());
 
             resourceGuidMapper.Set(Guid::CreateGuid(), specularProbeTexture->GetHashName());
         }
