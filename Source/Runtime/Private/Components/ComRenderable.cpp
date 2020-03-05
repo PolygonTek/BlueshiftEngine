@@ -39,6 +39,8 @@ void ComRenderable::RegisterProperties() {
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("maxVisDist", "Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 4000.f, 
         "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("skipRendering", "Skip Rendering", bool, IsSkipRendering, SetSkipRendering, false,
+        "", PropertyInfo::Flag::SkipSerialization);
     REGISTER_ACCESSOR_PROPERTY("skipSelection", "Skip Selection", bool, IsSkipSelection, SetSkipSelection, false, 
         "", PropertyInfo::Flag::SkipSerialization);
 }
@@ -255,6 +257,20 @@ void ComRenderable::SetBillboard(bool billboard) {
         renderObjectDef.flags |= RenderObject::Flag::Billboard;
     } else {
         renderObjectDef.flags &= ~RenderObject::Flag::Billboard;
+    }
+
+    UpdateVisuals();
+}
+
+bool ComRenderable::IsSkipRendering() const {
+    return !!(renderObjectDef.flags & RenderObject::Flag::SkipRendering);
+}
+
+void ComRenderable::SetSkipRendering(bool skip) {
+    if (skip) {
+        renderObjectDef.flags |= RenderObject::Flag::SkipRendering;
+    } else {
+        renderObjectDef.flags &= ~RenderObject::Flag::SkipRendering;
     }
 
     UpdateVisuals();

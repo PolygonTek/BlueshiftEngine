@@ -31,7 +31,8 @@ const SignalDef Entity::SIG_StaticMaskChanged("Entity::StaticMaskChanged", "ai")
 const SignalDef Entity::SIG_ActiveChanged("Entity::ActiveChanged", "ai");
 const SignalDef Entity::SIG_ActiveInHierarchyChanged("Entity::ActiveInHierachyChanged", "ai");
 const SignalDef Entity::SIG_NameChanged("Entity::NameChanged", "as");
-const SignalDef Entity::SIG_FrozenChanged("Entity::FrozenChanged", "ai");
+const SignalDef Entity::SIG_VisibilityChanged("Entity::VisibilityChanged", "ai");
+const SignalDef Entity::SIG_SelectabilityChanged("Entity::SelectabilityChanged", "ai");
 const SignalDef Entity::SIG_ParentChanged("Entity::ParentChanged", "aa");
 const SignalDef Entity::SIG_SiblingIndexChanged("Entity::SiblingIndexChanged", "ai");
 const SignalDef Entity::SIG_ComponentInserted("Entity::ComponentInserted", "ai");
@@ -65,8 +66,12 @@ void Entity::RegisterProperties() {
         "", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("activeInHierarchy", "Active In Hierarchy", bool, activeInHierarchy, true,
         "", PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("frozen", "Frozen", bool, IsFrozen, SetFrozen, false,
+#if WITH_EDITOR
+    REGISTER_ACCESSOR_PROPERTY("visibleInEditor", "Visible", bool, IsVisible, SetVisible, true,
         "", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("selectableInEditor", "Selectable", bool, IsSelectable, SetSelectable, true,
+        "", PropertyInfo::Flag::Editor);
+#endif
 }
 
 Entity::Entity() {
@@ -74,7 +79,6 @@ Entity::Entity() {
     entityNum = GameWorld::BadEntityNum;
     node.SetOwner(this);
     layer = 0;
-    frozen = false;
     staticMask = 0;
     prefab = false;
     prefabSourceGuid = Guid::zero;
@@ -90,7 +94,7 @@ Entity::~Entity() {
 }
 
 void Entity::Purge() {
-    // Purge all the components in opposite order
+    // Purge all the components in opposite order.
     for (int componentIndex = components.Count() - 1; componentIndex >= 0; componentIndex--) {
         Component *component = components[componentIndex];
         if (component) {
@@ -129,7 +133,7 @@ void Entity::Init() {
 void Entity::InitComponents() {
     assert(gameWorld);
 
-    // Initialize components
+    // Initialize components.
     for (int i = 0; i < components.Count(); i++) {
         Component *component = components[i];
         if (component) {
@@ -140,10 +144,10 @@ void Entity::InitComponents() {
     }
 
 #if WITH_EDITOR
-    if (frozen) {
+    if (!selectableInEditor) {
         ComRenderable *renderable = GetComponent<ComRenderable>();
         if (renderable) {
-            renderable->SetProperty("skipSelection", frozen);
+            renderable->SetProperty("skipSelection", true);
         }
     }
 #endif
@@ -792,20 +796,33 @@ void Entity::SetPrefabSourceGuid(const Guid &prefabSourceGuid) {
     this->prefabSourceGuid = prefabSourceGuid;
 }
 
-void Entity::SetFrozen(bool frozen) {
-    this->frozen = frozen;
-
 #if WITH_EDITOR
+void Entity::SetVisible(bool visible) {
+    this->visibleInEditor = visible;
+
     if (initialized) {
         ComRenderable *renderable = GetComponent<ComRenderable>();
         if (renderable) {
-            renderable->SetProperty("skipSelection", frozen);
+            renderable->SetProperty("skipRendering", !visible);
         }
 
-        EmitSignal(&SIG_FrozenChanged, this, frozen ? 1 : 0);
+        EmitSignal(&SIG_VisibilityChanged, this, visible ? 1 : 0);
     }
-#endif
 }
+
+void Entity::SetSelectable(bool selectable) {
+    this->selectableInEditor = selectable;
+
+    if (initialized) {
+        ComRenderable *renderable = GetComponent<ComRenderable>();
+        if (renderable) {
+            renderable->SetProperty("skipSelection", !selectable);
+        }
+
+        EmitSignal(&SIG_SelectabilityChanged, this, selectable ? 1 : 0);
+    }
+}
+#endif
 
 Entity *Entity::CreateEntity(Json::Value &entityValue, GameWorld *gameWorld, int sceneNum) {
     Guid entityGuid = Guid::FromString(entityValue.get("guid", Guid::zero.ToString()).asCString());

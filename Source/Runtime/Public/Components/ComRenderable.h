@@ -68,6 +68,9 @@ public:
     bool                    IsBillboard() const;
     void                    SetBillboard(bool billboard);
 
+    bool                    IsSkipRendering() const;
+    void                    SetSkipRendering(bool skip);
+
     bool                    IsSkipSelection() const;
     void                    SetSkipSelection(bool skip);
 

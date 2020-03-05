@@ -58,8 +58,9 @@ public:
             CastShadows         = BIT(7),
             ReceiveShadows      = BIT(8),
             Occluder            = BIT(9),   // for use in HOM
-            SkipSelection       = BIT(10),
-            RichText            = BIT(11),
+            SkipRendering       = BIT(10),
+            SkipSelection       = BIT(11),
+            RichText            = BIT(12),
         };
     };
 

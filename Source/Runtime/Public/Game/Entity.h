@@ -82,10 +82,16 @@ public:
                                 /// Sets static mask.
     void                        SetStaticMask(int staticMask);
 
-                                /// Returns true if this entity is frozen. Frozen entity will not be selectable in the editor.
-    bool                        IsFrozen() const { return frozen; }
-                                /// Sets this entity to frozen.
-    void                        SetFrozen(bool frozen);
+#if WITH_EDITOR
+                                /// Returns true if this entity is visible in editor.
+    bool                        IsVisible() const { return visibleInEditor; }
+                                /// Sets this entity's visiblilty in editor.
+    void                        SetVisible(bool visible);
+                                /// Returns true if this entity is selectable in editor.
+    bool                        IsSelectable() const { return selectableInEditor; }
+                                /// Sets this entity's selectablilty in editor.
+    void                        SetSelectable(bool selectable);
+#endif
 
                                 /// Returns true if this entity is a prefab source.
     bool                        IsPrefabSource() const { return prefab; }
@@ -266,7 +272,8 @@ public:
     static const SignalDef      SIG_ActiveChanged;
     static const SignalDef      SIG_ActiveInHierarchyChanged;
     static const SignalDef      SIG_NameChanged;
-    static const SignalDef      SIG_FrozenChanged;
+    static const SignalDef      SIG_VisibilityChanged;
+    static const SignalDef      SIG_SelectabilityChanged;
     static const SignalDef      SIG_ParentChanged;
     static const SignalDef      SIG_SiblingIndexChanged;
     static const SignalDef      SIG_ComponentInserted;
@@ -302,7 +309,11 @@ protected:
     bool                        activeSelf;         ///< Local active state
     bool                        activeInHierarchy;  ///< Actual active state 
     bool                        prefab;
-    bool                        frozen;
+
+#if WITH_EDITOR
+    bool                        visibleInEditor = true;
+    bool                        selectableInEditor = true;
+#endif
 
     GameWorld *                 gameWorld;
     int                         sceneNum = -1;

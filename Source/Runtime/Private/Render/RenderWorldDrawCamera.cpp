@@ -137,6 +137,10 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
             return true;
         }
 
+        if (renderObject->state.flags & RenderObject::Flag::SkipRendering) {
+            return true;
+        }
+
         // Skip if object layer is not visible with this camera
         if (!(BIT(renderObject->state.layer) & camera->def->GetState().layerMask)) {
             return true;
@@ -567,6 +571,10 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
             return true;
         }
 
+        if (renderObject->state.flags & RenderObject::Flag::SkipRendering) {
+            return true;
+        }
+
         // Skip if object layer is not visible with this camera
         if (!(BIT(renderObject->state.layer) & camera->def->GetState().layerMask)) {
             return true;
@@ -678,6 +686,10 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
 
         // Skip if not skinned mesh
         if (!renderObject->state.joints) {
+            return true;
+        }
+
+        if (renderObject->state.flags & RenderObject::Flag::SkipRendering) {
             return true;
         }
 
