@@ -204,6 +204,7 @@ public:
     Vec4                Transform(const Vec4 &v) const;
     Vec3                Transform(const Vec3 &v) const;
     Vec3                TransformNormal(const Vec3 &v) const;
+
     Mat3x4 &            TransformSelf(const Mat3x4 &a);
 
     Mat3x4 &            UntransformSelf(const Mat3x4 &a);
@@ -460,7 +461,7 @@ BE_INLINE Mat3x4 &Mat3x4::operator=(const Mat3 &rhs) {
 }
 
 BE_INLINE Mat3x4 &Mat3x4::operator*=(const Mat3x4 &rhs) {
-    *this = (*this) * rhs;
+    TransformSelf(rhs);
     return *this;
 }
 

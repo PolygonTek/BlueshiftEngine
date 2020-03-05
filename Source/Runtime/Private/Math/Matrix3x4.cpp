@@ -636,6 +636,23 @@ void Mat3x4::InverseSelf() {
 }
 
 Mat3x4 &Mat3x4::TransformSelf(const Mat3x4 &a) {
+#if defined(ENABLE_SIMD4_INTRIN)
+    simd4f m0 = loadu_ps(mat[0]);
+    simd4f m1 = loadu_ps(mat[1]);
+    simd4f m2 = loadu_ps(mat[2]);
+
+    simd4f a0 = loadu_ps(a.mat[0]);
+    simd4f a1 = loadu_ps(a.mat[1]);
+    simd4f a2 = loadu_ps(a.mat[2]);
+
+    simd4f r0 = m0 * shuffle_ps<0, 0, 0, 0>(a0) + m1 * shuffle_ps<1, 1, 1, 1>(a0) + m2 * shuffle_ps<2, 2, 2, 2>(a0);
+    simd4f r1 = m0 * shuffle_ps<0, 0, 0, 0>(a1) + m1 * shuffle_ps<1, 1, 1, 1>(a1) + m2 * shuffle_ps<2, 2, 2, 2>(a1);
+    simd4f r2 = m0 * shuffle_ps<0, 0, 0, 0>(a2) + m1 * shuffle_ps<1, 1, 1, 1>(a2) + m2 * shuffle_ps<2, 2, 2, 2>(a2);
+
+    storeu_ps(r0, mat[0]);
+    storeu_ps(r1, mat[1]);
+    storeu_ps(r2, mat[2]);
+#else
     float dst[3];
 
     dst[0] = mat[0][0] * a.mat[0][0] + mat[1][0] * a.mat[0][1] + mat[2][0] * a.mat[0][2];
@@ -665,6 +682,7 @@ Mat3x4 &Mat3x4::TransformSelf(const Mat3x4 &a) {
     mat[0][3] = dst[0];
     mat[1][3] = dst[1];
     mat[2][3] = dst[2];
+#endif
 
     mat[0][3] += a.mat[0][3];
     mat[1][3] += a.mat[1][3];
@@ -674,11 +692,28 @@ Mat3x4 &Mat3x4::TransformSelf(const Mat3x4 &a) {
 }
 
 Mat3x4 &Mat3x4::UntransformSelf(const Mat3x4 &a) {
-    float dst[3];
-
     mat[0][3] -= a.mat[0][3];
     mat[1][3] -= a.mat[1][3];
     mat[2][3] -= a.mat[2][3];
+
+#if defined(ENABLE_SIMD4_INTRIN)
+    simd4f m0 = loadu_ps(mat[0]);
+    simd4f m1 = loadu_ps(mat[1]);
+    simd4f m2 = loadu_ps(mat[2]);
+
+    simd4f a0 = loadu_ps(a.mat[0]);
+    simd4f a1 = loadu_ps(a.mat[1]);
+    simd4f a2 = loadu_ps(a.mat[2]);
+
+    simd4f r0 = m0 * shuffle_ps<0, 0, 0, 0>(a0) + m1 * shuffle_ps<0, 0, 0, 0>(a1) + m2 * shuffle_ps<0, 0, 0, 0>(a2);
+    simd4f r1 = m0 * shuffle_ps<1, 1, 1, 1>(a0) + m1 * shuffle_ps<1, 1, 1, 1>(a1) + m2 * shuffle_ps<1, 1, 1, 1>(a2);
+    simd4f r2 = m0 * shuffle_ps<2, 2, 2, 2>(a0) + m1 * shuffle_ps<2, 2, 2, 2>(a1) + m2 * shuffle_ps<2, 2, 2, 2>(a2);
+
+    storeu_ps(r0, mat[0]);
+    storeu_ps(r1, mat[1]);
+    storeu_ps(r2, mat[2]);
+#else
+    float dst[3];
 
     dst[0] = mat[0][0] * a.mat[0][0] + mat[1][0] * a.mat[1][0] + mat[2][0] * a.mat[2][0];
     dst[1] = mat[0][0] * a.mat[0][1] + mat[1][0] * a.mat[1][1] + mat[2][0] * a.mat[2][1];
@@ -707,6 +742,7 @@ Mat3x4 &Mat3x4::UntransformSelf(const Mat3x4 &a) {
     mat[0][3] = dst[0];
     mat[1][3] = dst[1];
     mat[2][3] = dst[2];
+#endif
 
     return *this;
 }
