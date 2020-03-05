@@ -792,25 +792,25 @@ bool Mat4::InverseSelf() {
     float det3_301_023 = mat[3][0] * det2_01_23 - mat[3][2] * det2_01_03 + mat[3][3] * det2_01_02;
     float det3_301_123 = mat[3][1] * det2_01_23 - mat[3][2] * det2_01_13 + mat[3][3] * det2_01_12;
 
-    mat[0][0] = - det3_213_123 * invDet;
-    mat[1][0] = + det3_213_023 * invDet;
-    mat[2][0] = - det3_213_013 * invDet;
-    mat[3][0] = + det3_213_012 * invDet;
+    mat[0][0] = -det3_213_123 * invDet;
+    mat[1][0] = +det3_213_023 * invDet;
+    mat[2][0] = -det3_213_013 * invDet;
+    mat[3][0] = +det3_213_012 * invDet;
 
-    mat[0][1] = + det3_203_123 * invDet;
-    mat[1][1] = - det3_203_023 * invDet;
-    mat[2][1] = + det3_203_013 * invDet;
-    mat[3][1] = - det3_203_012 * invDet;
+    mat[0][1] = +det3_203_123 * invDet;
+    mat[1][1] = -det3_203_023 * invDet;
+    mat[2][1] = +det3_203_013 * invDet;
+    mat[3][1] = -det3_203_012 * invDet;
 
-    mat[0][2] = + det3_301_123 * invDet;
-    mat[1][2] = - det3_301_023 * invDet;
-    mat[2][2] = + det3_301_013 * invDet;
-    mat[3][2] = - det3_301_012 * invDet;
+    mat[0][2] = +det3_301_123 * invDet;
+    mat[1][2] = -det3_301_023 * invDet;
+    mat[2][2] = +det3_301_013 * invDet;
+    mat[3][2] = -det3_301_012 * invDet;
 
-    mat[0][3] = - det3_201_123 * invDet;
-    mat[1][3] = + det3_201_023 * invDet;
-    mat[2][3] = - det3_201_013 * invDet;
-    mat[3][3] = + det3_201_012 * invDet;
+    mat[0][3] = -det3_201_123 * invDet;
+    mat[1][3] = +det3_201_023 * invDet;
+    mat[2][3] = -det3_201_013 * invDet;
+    mat[3][3] = +det3_201_012 * invDet;
 
     return true;
 #elif 0
