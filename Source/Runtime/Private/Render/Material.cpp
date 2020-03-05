@@ -346,7 +346,7 @@ void Material::ChangeShader(Shader *shader) {
 
                 shaderProperty.data = defaultTextureGuid;
             } else {
-                shaderProperty.data = Variant::FromString(propInfo.GetType(), propInfo.GetDefaultValue().As<Str>());
+                shaderProperty.data = propInfo.GetDefaultValue();
             }
 
             shaderProperty.texture = nullptr;
