@@ -375,7 +375,7 @@ void Material::CommitShaderPropertiesChanged() {
         const auto &propInfo = entry->second;
 
         // property propInfo with shaderDefine allows only bool/enum type.
-        if (propInfo.GetFlags() & PropertyInfo::Flag::ShaderDefine) {
+        if (propInfo.shaderFlags & Shader::ShaderPropertyInfo::Flag::ShaderDefine) {
             const auto *entry = pass->shaderProperties.Get(propName);
             const Shader::Property &shaderProp = entry->second;
 
@@ -774,13 +774,13 @@ void Material::Write(const char *filename) {
         
         for (int i = 0; i < shaderPropertyInfos.Count(); i++) {
             const auto *keyValue = shaderPropertyInfos.GetByIndex(i);
-            const PropertyInfo &propInfo = keyValue->second;
+            const Shader::ShaderPropertyInfo &propInfo = keyValue->second;
             const char *name = propInfo.GetName();
             const auto *shaderPropEntry = pass->shaderProperties.Get(name);
             const Variant &value = shaderPropEntry->second.data;
 
             // Skip writing useless properties in shader.
-            if (!(propInfo.GetFlags() & PropertyInfo::Flag::ShaderDefine)) {
+            if (!(propInfo.shaderFlags & Shader::ShaderPropertyInfo::Flag::ShaderDefine)) {
                 if (!pass->shader->IsPropertyUsed(name, pass->shaderProperties)) {
                     continue;
                 }

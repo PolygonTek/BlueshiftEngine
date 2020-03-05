@@ -359,6 +359,7 @@ bool Shader::Create(const char *text, const char *baseDir) {
 bool Shader::ShaderPropertyInfo::Parse(Lexer &lexer) {
     type = Variant::Type::None;
     flags = PropertyInfo::Flag::Editor;
+    shaderFlags = 0;
     range = Rangef(0, 0, 1);
     metaObject = nullptr;
 
@@ -510,7 +511,11 @@ bool Shader::ShaderPropertyInfo::Parse(Lexer &lexer) {
             if (token == "]") {
                 break;
             } else if (token == "shaderDefine") {
-                flags |= PropertyInfo::Flag::ShaderDefine;
+                shaderFlags |= ShaderPropertyInfo::Flag::ShaderDefine;
+            } else if (token == "normal") {
+                shaderFlags |= ShaderPropertyInfo::Flag::Normal;
+            } else if (token == "linear") {
+                shaderFlags |= ShaderPropertyInfo::Flag::Linear;
             }
         }
     } else {

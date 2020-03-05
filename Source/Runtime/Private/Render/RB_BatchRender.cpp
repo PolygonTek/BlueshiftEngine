@@ -54,7 +54,7 @@ void Batch::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::P
         const auto &propInfo = entry->second;
 
         // Skip if it is a shader define
-        if (propInfo.GetFlags() & PropertyInfo::Flag::ShaderDefine) {
+        if (propInfo.GetFlags() & Shader::ShaderPropertyInfo::Flag::ShaderDefine) {
             continue;
         }
 
@@ -123,7 +123,7 @@ const Texture *Batch::TextureFromShaderProperties(const Material::ShaderPass *mt
     }
 
     const auto &propInfo = entry->second;
-    if ((propInfo.GetFlags() & PropertyInfo::Flag::ShaderDefine) || (propInfo.GetType() != Variant::Type::Guid)) {
+    if ((propInfo.GetFlags() & Shader::ShaderPropertyInfo::Flag::ShaderDefine) || (propInfo.GetType() != Variant::Type::Guid)) {
         return nullptr;
     }
 

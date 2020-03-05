@@ -146,229 +146,239 @@ public:
         Define() {}
         Define(const char *name, int value) : name(name), value(value) {}
 
-        Str                 name;
-        int                 value;
+        Str                     name;
+        int                     value;
     };
 
     struct Condition {
         Condition() {}
         Condition(const char *name, const Array<int> &valueList) : name(name), valueList(valueList) {}
 
-        Str                 name;
-        Array<int>          valueList;
+        Str                     name;
+        Array<int>              valueList;
     };
 
     struct ShaderPropertyInfo : public PropertyInfo {
-        Array<Condition>    conditions;
+        /// Shader property flags
+        struct Flag {
+            enum Enum {
+                ShaderDefine    = BIT(0),
+                Normal          = BIT(1),
+                Linear          = BIT(2)
+            };
+        };
 
-        bool                Parse(Lexer &lexer);
+        int                     shaderFlags;
+        Array<Condition>        conditions;
+
+        bool                    Parse(Lexer &lexer);
     };
 
     struct Property {
-        Variant             data;
-        Texture *           texture;
+        Variant                 data;
+        Texture *               texture;
     };
 
     Shader();
     ~Shader();
 
-    const char *            GetName() const { return name; }
-    const char *            GetHashName() const { return hashName; }
+    const char *                GetName() const { return name; }
+    const char *                GetHashName() const { return hashName; }
 
-                            /// Tests if this shader has vertex shader.
-    bool                    HasVertexShader() const { return !!(flags & Flag::HasVertexShader); }
-                            /// Tests if this shader has fragment shader.
-    bool                    HasFragmentShader() const { return !!(flags & Flag::HasFragmentShader); }
-                            /// Tests if this shader has geometry shader.
-    bool                    HasGeometryShader() const { return !!(flags & Flag::HasGeometryShader); }
+                                /// Tests if this shader has vertex shader.
+    bool                        HasVertexShader() const { return !!(flags & Flag::HasVertexShader); }
+                                /// Tests if this shader has fragment shader.
+    bool                        HasFragmentShader() const { return !!(flags & Flag::HasFragmentShader); }
+                                /// Tests if this shader has geometry shader.
+    bool                        HasGeometryShader() const { return !!(flags & Flag::HasGeometryShader); }
 
-    bool                    IsOriginalShader() const { return !originalShader; }
-    bool                    IsInstantiatedShader() const { return !!originalShader; }
+    bool                        IsOriginalShader() const { return !originalShader; }
+    bool                        IsInstantiatedShader() const { return !!originalShader; }
 
-    bool                    IsPropertyUsed(const Str &propName, const StrHashMap<Shader::Property> &shaderProperties) const;
+    bool                        IsPropertyUsed(const Str &propName, const StrHashMap<Shader::Property> &shaderProperties) const;
 
-                            /// Returns shader flags.
-    int                     GetFlags() const;
+                                /// Returns shader flags.
+    int                         GetFlags() const;
 
-                            /// Creates instantiated shader.
-    Shader *                InstantiateShader(const Array<Define> &defineArray);
+                                /// Creates instantiated shader.
+    Shader *                    InstantiateShader(const Array<Define> &defineArray);
 
-                            /// Reinstantiates itself.
-    void                    Reinstantiate();
+                                /// Reinstantiates itself.
+    void                        Reinstantiate();
 
-                            /// Returns original shader. Instantiated shader has it's original shader
-    Shader *                GetOriginalShader() const { return originalShader; }
+                                /// Returns original shader. Instantiated shader has it's original shader
+    Shader *                    GetOriginalShader() const { return originalShader; }
 
-    Shader *                GetPerforatedVersion();
-    Shader *                GetPremulAlphaVersion();
-    Shader *                GetIndirectLitVersion();
-    Shader *                GetDirectLitVersion();
-    Shader *                GetIndirectLitDirectLitVersion();
-    Shader *                GetParallelShadowVersion();
-    Shader *                GetSpotShadowVersion();
-    Shader *                GetPointShadowVersion();
-    Shader *                GetGPUSkinningVersion(int index);
-    Shader *                GetGPUInstancingVersion();
+    Shader *                    GetPerforatedVersion();
+    Shader *                    GetPremulAlphaVersion();
+    Shader *                    GetIndirectLitVersion();
+    Shader *                    GetDirectLitVersion();
+    Shader *                    GetIndirectLitDirectLitVersion();
+    Shader *                    GetParallelShadowVersion();
+    Shader *                    GetSpotShadowVersion();
+    Shader *                    GetPointShadowVersion();
+    Shader *                    GetGPUSkinningVersion(int index);
+    Shader *                    GetGPUInstancingVersion();
 
-    void                    Bind() const;
+    void                        Bind() const;
 
-                            /// Returns constant index with the given name.
-    int                     GetConstantIndex(const char *name) const;
+                                /// Returns constant index with the given name.
+    int                         GetConstantIndex(const char *name) const;
 
-                            /// Returns constant block index with the given name.
-    int                     GetConstantBlockIndex(const char *name) const;
+                                /// Returns constant block index with the given name.
+    int                         GetConstantBlockIndex(const char *name) const;
 
-                            /// Sets constant of integer type.
-    void                    SetConstant1i(int index, const int constant) const;
-    void                    SetConstant2i(int index, const int *constant) const;
-    void                    SetConstant3i(int index, const int *constant) const;
-    void                    SetConstant4i(int index, const int *constant) const;
-    void                    SetConstant1i(const char *name, const int constant) const;
-    void                    SetConstant2i(const char *name, const int *constant) const;
-    void                    SetConstant3i(const char *name, const int *constant) const;
-    void                    SetConstant4i(const char *name, const int *constant) const;
+                                /// Sets constant of integer type.
+    void                        SetConstant1i(int index, const int constant) const;
+    void                        SetConstant2i(int index, const int *constant) const;
+    void                        SetConstant3i(int index, const int *constant) const;
+    void                        SetConstant4i(int index, const int *constant) const;
+    void                        SetConstant1i(const char *name, const int constant) const;
+    void                        SetConstant2i(const char *name, const int *constant) const;
+    void                        SetConstant3i(const char *name, const int *constant) const;
+    void                        SetConstant4i(const char *name, const int *constant) const;
 
-                            /// Sets constant of unsigned integer type.
-    void                    SetConstant1ui(int index, const unsigned int constant) const;
-    void                    SetConstant2ui(int index, const unsigned int *constant) const;
-    void                    SetConstant3ui(int index, const unsigned int *constant) const;
-    void                    SetConstant4ui(int index, const unsigned int *constant) const;
-    void                    SetConstant1ui(const char *name, const unsigned int constant) const;
-    void                    SetConstant2ui(const char *name, const unsigned int *constant) const;
-    void                    SetConstant3ui(const char *name, const unsigned int *constant) const;
-    void                    SetConstant4ui(const char *name, const unsigned int *constant) const;
+                                /// Sets constant of unsigned integer type.
+    void                        SetConstant1ui(int index, const unsigned int constant) const;
+    void                        SetConstant2ui(int index, const unsigned int *constant) const;
+    void                        SetConstant3ui(int index, const unsigned int *constant) const;
+    void                        SetConstant4ui(int index, const unsigned int *constant) const;
+    void                        SetConstant1ui(const char *name, const unsigned int constant) const;
+    void                        SetConstant2ui(const char *name, const unsigned int *constant) const;
+    void                        SetConstant3ui(const char *name, const unsigned int *constant) const;
+    void                        SetConstant4ui(const char *name, const unsigned int *constant) const;
 
-                            /// Sets constant of float type.
-    void                    SetConstant1f(int index, const float constant) const;
-    void                    SetConstant2f(int index, const float *constant) const;
-    void                    SetConstant3f(int index, const float *constant) const;
-    void                    SetConstant4f(int index, const float *constant) const;
-    void                    SetConstant2f(int index, const Vec2 &constant) const;
-    void                    SetConstant3f(int index, const Vec3 &constant) const;
-    void                    SetConstant4f(int index, const Vec4 &constant) const;
-    void                    SetConstant1f(const char *name, const float constant) const;
-    void                    SetConstant2f(const char *name, const float *constant) const;
-    void                    SetConstant3f(const char *name, const float *constant) const;
-    void                    SetConstant4f(const char *name, const float *constant) const;
-    void                    SetConstant2f(const char *name, const Vec2 &constant) const;
-    void                    SetConstant3f(const char *name, const Vec3 &constant) const;
-    void                    SetConstant4f(const char *name, const Vec4 &constant) const;
+                                /// Sets constant of float type.
+    void                        SetConstant1f(int index, const float constant) const;
+    void                        SetConstant2f(int index, const float *constant) const;
+    void                        SetConstant3f(int index, const float *constant) const;
+    void                        SetConstant4f(int index, const float *constant) const;
+    void                        SetConstant2f(int index, const Vec2 &constant) const;
+    void                        SetConstant3f(int index, const Vec3 &constant) const;
+    void                        SetConstant4f(int index, const Vec4 &constant) const;
+    void                        SetConstant1f(const char *name, const float constant) const;
+    void                        SetConstant2f(const char *name, const float *constant) const;
+    void                        SetConstant3f(const char *name, const float *constant) const;
+    void                        SetConstant4f(const char *name, const float *constant) const;
+    void                        SetConstant2f(const char *name, const Vec2 &constant) const;
+    void                        SetConstant3f(const char *name, const Vec3 &constant) const;
+    void                        SetConstant4f(const char *name, const Vec4 &constant) const;
 
-                            /// Sets matrix constant.
-    void                    SetConstant2x2f(int index, bool rowMajor, const Mat2 &constant) const;
-    void                    SetConstant3x3f(int index, bool rowMajor, const Mat3 &constant) const;
-    void                    SetConstant4x4f(int index, bool rowMajor, const Mat4 &constant) const;
-    void                    SetConstant4x3f(int index, bool rowMajor, const Mat3x4 &constant) const;
-    void                    SetConstant2x2f(const char *name, bool rowMajor, const Mat2 &constant) const;
-    void                    SetConstant3x3f(const char *name, bool rowMajor, const Mat3 &constant) const;
-    void                    SetConstant4x4f(const char *name, bool rowMajor, const Mat4 &constant) const;
-    void                    SetConstant4x3f(const char *name, bool rowMajor, const Mat3x4 &constant) const;
+                                /// Sets matrix constant.
+    void                        SetConstant2x2f(int index, bool rowMajor, const Mat2 &constant) const;
+    void                        SetConstant3x3f(int index, bool rowMajor, const Mat3 &constant) const;
+    void                        SetConstant4x4f(int index, bool rowMajor, const Mat4 &constant) const;
+    void                        SetConstant4x3f(int index, bool rowMajor, const Mat3x4 &constant) const;
+    void                        SetConstant2x2f(const char *name, bool rowMajor, const Mat2 &constant) const;
+    void                        SetConstant3x3f(const char *name, bool rowMajor, const Mat3 &constant) const;
+    void                        SetConstant4x4f(const char *name, bool rowMajor, const Mat4 &constant) const;
+    void                        SetConstant4x3f(const char *name, bool rowMajor, const Mat3x4 &constant) const;
 
-                            /// Sets array constant of integer type.
-    void                    SetConstantArray1i(int index, int num, const int *constant) const;
-    void                    SetConstantArray2i(int index, int num, const int *constant) const;
-    void                    SetConstantArray3i(int index, int num, const int *constant) const;
-    void                    SetConstantArray4i(int index, int num, const int *constant) const;
-    void                    SetConstantArray1i(const char *name, int num, const int *constant) const;
-    void                    SetConstantArray2i(const char *name, int num, const int *constant) const;
-    void                    SetConstantArray3i(const char *name, int num, const int *constant) const;
-    void                    SetConstantArray4i(const char *name, int num, const int *constant) const;
+                                /// Sets array constant of integer type.
+    void                        SetConstantArray1i(int index, int num, const int *constant) const;
+    void                        SetConstantArray2i(int index, int num, const int *constant) const;
+    void                        SetConstantArray3i(int index, int num, const int *constant) const;
+    void                        SetConstantArray4i(int index, int num, const int *constant) const;
+    void                        SetConstantArray1i(const char *name, int num, const int *constant) const;
+    void                        SetConstantArray2i(const char *name, int num, const int *constant) const;
+    void                        SetConstantArray3i(const char *name, int num, const int *constant) const;
+    void                        SetConstantArray4i(const char *name, int num, const int *constant) const;
 
-                            /// Sets array constant of float type.
-    void                    SetConstantArray1f(int index, int num, const float *constant) const;
-    void                    SetConstantArray2f(int index, int num, const float *constant) const;
-    void                    SetConstantArray3f(int index, int num, const float *constant) const;
-    void                    SetConstantArray4f(int index, int num, const float *constant) const;
-    void                    SetConstantArray2f(int index, int num, const Vec2 *constant) const;
-    void                    SetConstantArray3f(int index, int num, const Vec3 *constant) const;
-    void                    SetConstantArray4f(int index, int num, const Vec4 *constant) const;
-    void                    SetConstantArray1f(const char *name, int num, const float *constant) const;
-    void                    SetConstantArray2f(const char *name, int num, const float *constant) const;
-    void                    SetConstantArray3f(const char *name, int num, const float *constant) const;
-    void                    SetConstantArray4f(const char *name, int num, const float *constant) const;
-    void                    SetConstantArray2f(const char *name, int num, const Vec2 *constant) const;
-    void                    SetConstantArray3f(const char *name, int num, const Vec3 *constant) const;
-    void                    SetConstantArray4f(const char *name, int num, const Vec4 *constant) const;
+                                /// Sets array constant of float type.
+    void                        SetConstantArray1f(int index, int num, const float *constant) const;
+    void                        SetConstantArray2f(int index, int num, const float *constant) const;
+    void                        SetConstantArray3f(int index, int num, const float *constant) const;
+    void                        SetConstantArray4f(int index, int num, const float *constant) const;
+    void                        SetConstantArray2f(int index, int num, const Vec2 *constant) const;
+    void                        SetConstantArray3f(int index, int num, const Vec3 *constant) const;
+    void                        SetConstantArray4f(int index, int num, const Vec4 *constant) const;
+    void                        SetConstantArray1f(const char *name, int num, const float *constant) const;
+    void                        SetConstantArray2f(const char *name, int num, const float *constant) const;
+    void                        SetConstantArray3f(const char *name, int num, const float *constant) const;
+    void                        SetConstantArray4f(const char *name, int num, const float *constant) const;
+    void                        SetConstantArray2f(const char *name, int num, const Vec2 *constant) const;
+    void                        SetConstantArray3f(const char *name, int num, const Vec3 *constant) const;
+    void                        SetConstantArray4f(const char *name, int num, const Vec4 *constant) const;
 
-                            /// Sets matrix array constant.
-    void                    SetConstantArray2x2f(int index, bool rowMajor, int num, const Mat2 *constant) const;
-    void                    SetConstantArray3x3f(int index, bool rowMajor, int num, const Mat3 *constant) const;
-    void                    SetConstantArray4x4f(int index, bool rowMajor, int num, const Mat4 *constant) const;
-    void                    SetConstantArray4x3f(int index, bool rowMajor, int num, const Mat3x4 *constant) const;
-    void                    SetConstantArray2x2f(const char *name, bool rowMajor, int num, const Mat2 *constant) const;
-    void                    SetConstantArray3x3f(const char *name, bool rowMajor, int num, const Mat3 *constant) const;
-    void                    SetConstantArray4x4f(const char *name, bool rowMajor, int num, const Mat4 *constant) const;
-    void                    SetConstantArray4x3f(const char *name, bool rowMajor, int num, const Mat3x4 *constant) const;
+                                /// Sets matrix array constant.
+    void                        SetConstantArray2x2f(int index, bool rowMajor, int num, const Mat2 *constant) const;
+    void                        SetConstantArray3x3f(int index, bool rowMajor, int num, const Mat3 *constant) const;
+    void                        SetConstantArray4x4f(int index, bool rowMajor, int num, const Mat4 *constant) const;
+    void                        SetConstantArray4x3f(int index, bool rowMajor, int num, const Mat3x4 *constant) const;
+    void                        SetConstantArray2x2f(const char *name, bool rowMajor, int num, const Mat2 *constant) const;
+    void                        SetConstantArray3x3f(const char *name, bool rowMajor, int num, const Mat3 *constant) const;
+    void                        SetConstantArray4x4f(const char *name, bool rowMajor, int num, const Mat4 *constant) const;
+    void                        SetConstantArray4x3f(const char *name, bool rowMajor, int num, const Mat3x4 *constant) const;
 
-                            /// Sets constant buffer.
-    void                    SetConstantBuffer(int index, int bindingIndex) const;
-    void                    SetConstantBuffer(const char *name, int bindingIndex) const;
+                                /// Sets constant buffer.
+    void                        SetConstantBuffer(int index, int bindingIndex) const;
+    void                        SetConstantBuffer(const char *name, int bindingIndex) const;
 
-                            /// Returns sampler unit index with the given name.
-    int                     GetSamplerUnit(const char *name) const;
+                                /// Returns sampler unit index with the given name.
+    int                         GetSamplerUnit(const char *name) const;
 
-                            /// Sets texture.
-    void                    SetTexture(int unit, const Texture *texture) const;
-    void                    SetTexture(const char *name, const Texture *texture) const;
+                                /// Sets texture.
+    void                        SetTexture(int unit, const Texture *texture) const;
+    void                        SetTexture(const char *name, const Texture *texture) const;
 
-                            /// Sets texture array.
-    void                    SetTextureArray(const char *name, int num, const Texture **textures) const;
+                                /// Sets texture array.
+    void                        SetTextureArray(const char *name, int num, const Texture **textures) const;
 
-    bool                    Create(const char *text, const char *baseDir);
+    bool                        Create(const char *text, const char *baseDir);
 
-    const Shader *          AddRefCount() const { refCount++; return this; }
-    int                     GetRefCount() const { return refCount; }
+    const Shader *              AddRefCount() const { refCount++; return this; }
+    int                         GetRefCount() const { return refCount; }
 
-    void                    Purge();
+    void                        Purge();
 
-    bool                    Load(const char *filename);
-    bool                    Reload();
+    bool                        Load(const char *filename);
+    bool                        Reload();
 
     const StrHashMap<ShaderPropertyInfo> &GetPropertyInfoHashMap() const;
 
 private:
-    bool                    ParseProperties(Lexer &lexer);
-    Shader *                GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool shadowing, int skinningWeightCount, bool instancing);
-    bool                    GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool shadowing, bool instancing);
-    bool                    GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool shadowing, bool genGpuSkinningVersion, bool genGpuInstancingVersion);
-    bool                    GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool shadowing, bool genGpuSkinningVersion, bool genGpuInstancingVersion);
-    bool                    InstantiateShaderInternal(const Array<Define> &defineArray);
+    bool                        ParseProperties(Lexer &lexer);
+    Shader *                    GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHeaderText, const Str &fsHeaderText, bool shadowing, int skinningWeightCount, bool instancing);
+    bool                        GenerateGpuSkinningVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool shadowing, bool instancing);
+    bool                        GeneratePerforatedVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool shadowing, bool genGpuSkinningVersion, bool genGpuInstancingVersion);
+    bool                        GeneratePremulAlphaVersion(Shader *shader, const Str &shaderNamePrefix, const Str &vpText, const Str &fpText, bool shadowing, bool genGpuSkinningVersion, bool genGpuInstancingVersion);
+    bool                        InstantiateShaderInternal(const Array<Define> &defineArray);
 
-    bool                    Finish(bool genPerforatedVersion, bool genGpuSkinningVersion, bool genGpuInstancingVersion, bool genParallelShadowVersion, bool genSpotShadowVersion, bool genPointShadowVersion);
-    bool                    ProcessShaderText(const char *text, const char *baseDir, const Array<Define> &defineArray, Str &outStr) const;
-    bool                    ProcessIncludeRecursive(const char *baseDir, Str &text) const;
+    bool                        Finish(bool genPerforatedVersion, bool genGpuSkinningVersion, bool genGpuInstancingVersion, bool genParallelShadowVersion, bool genSpotShadowVersion, bool genPointShadowVersion);
+    bool                        ProcessShaderText(const char *text, const char *baseDir, const Array<Define> &defineArray, Str &outStr) const;
+    bool                        ProcessIncludeRecursive(const char *baseDir, Str &text) const;
 
-    static const char *     MangleNameWithDefineList(const Str &basename, const Array<Shader::Define> &defineArray, Str &mangledName);
+    static const char *         MangleNameWithDefineList(const Str &basename, const Array<Shader::Define> &defineArray, Str &mangledName);
 
-    Str                     hashName;
-    Str                     name;
-    Str                     baseDir; ///< Base directory to include other shaders
-    int                     flags = 0;
-    mutable int             refCount = 0;
-    bool                    permanence = false;
-    int                     frameCount = 0;
+    Str                         hashName;
+    Str                         name;
+    Str                         baseDir; ///< Base directory to include other shaders
+    int                         flags = 0;
+    mutable int                 refCount = 0;
+    bool                        permanence = false;
+    int                         frameCount = 0;
 
-    RHI::Handle             shaderHandle = RHI::NullShader;
-    Str                     vsText; ///< Vertex shader souce code text
-    Str                     fsText; ///< Fragment shader source code text
-    int                     builtInConstantIndices[BuiltInConstant::Count];
-    int                     builtInSamplerUnits[BuiltInSampler::Count];
+    RHI::Handle                 shaderHandle = RHI::NullShader;
+    Str                         vsText; ///< Vertex shader souce code text
+    Str                         fsText; ///< Fragment shader source code text
+    int                         builtInConstantIndices[BuiltInConstant::Count];
+    int                         builtInSamplerUnits[BuiltInSampler::Count];
 
-    Array<Define>           defineArray; ///< Define list for instantiated shader
+    Array<Define>               defineArray; ///< Define list for instantiated shader
 
-    Shader *                originalShader = nullptr; ///< Instantiated shader has a pointer to the it's original shader
-    Array<Shader *>         instantiatedShaders; ///< Original shader has the pointer array of it's instantiated shaders
+    Shader *                    originalShader = nullptr; ///< Instantiated shader has a pointer to the it's original shader
+    Array<Shader *>             instantiatedShaders; ///< Original shader has the pointer array of it's instantiated shaders
 
-    Shader *                perforatedVersion = nullptr;
-    Shader *                premulAlphaVersion = nullptr;
-    Shader *                indirectLitVersion = nullptr;
-    Shader *                directLitVersion = nullptr;
-    Shader *                indirectLitDirectLitVersion = nullptr;
-    Shader *                parallelShadowVersion = nullptr;
-    Shader *                spotShadowVersion = nullptr;
-    Shader *                pointShadowVersion = nullptr;
-    Shader *                gpuSkinningVersion[3] = { nullptr, };
-    Shader *                gpuInstancingVersion = nullptr;
+    Shader *                    perforatedVersion = nullptr;
+    Shader *                    premulAlphaVersion = nullptr;
+    Shader *                    indirectLitVersion = nullptr;
+    Shader *                    directLitVersion = nullptr;
+    Shader *                    indirectLitDirectLitVersion = nullptr;
+    Shader *                    parallelShadowVersion = nullptr;
+    Shader *                    spotShadowVersion = nullptr;
+    Shader *                    pointShadowVersion = nullptr;
+    Shader *                    gpuSkinningVersion[3] = { nullptr, };
+    Shader *                    gpuInstancingVersion = nullptr;
 
     StrHashMap<ShaderPropertyInfo> propertyInfoHashMap;
 };

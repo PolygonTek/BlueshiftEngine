@@ -68,7 +68,6 @@ public:
             MultiLines          = BIT(6),   ///< Str type in multilines
             Array               = BIT(7),   ///< Is array property ?
             Network             = BIT(8),   ///< Not used yet
-            ShaderDefine        = BIT(9),
             ForceToSet          = BIT(10),  ///< Internal use
         };
     };
