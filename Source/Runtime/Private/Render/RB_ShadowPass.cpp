@@ -69,8 +69,10 @@ static void RB_AlignProjectionBounds(float &xmin, float &xmax, float &ymin, floa
     xmax = (xmax + 1.0f) * 0.5f;
     ymax = (ymax + 1.0f) * 0.5f;
 
-    xmin = Math::Floor(xmin * size.x / alignSize);
-    ymin = Math::Floor(ymin * size.y / alignSize);
+    float invAlignSize = 1.0f / alignSize;
+
+    xmin = Math::Floor(xmin * size.x * invAlignSize);
+    ymin = Math::Floor(ymin * size.y * invAlignSize);
 
     xmax = xmin + r_shadowMapSize.GetFloat();
     ymax = ymin + r_shadowMapSize.GetFloat();
