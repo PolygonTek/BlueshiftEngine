@@ -171,7 +171,7 @@ void PrepareShadingParms(vec4 albedo) {
     shading.diffuse = albedo;
 
     #if _SPECULAR == 0
-        shading.specular = specularColor;
+        shading.specular = vec4(specularColor, specularAlpha);
     #elif _SPECULAR == 1
         shading.specular = tex2D(specularMap, baseTc);
     #endif
@@ -231,7 +231,7 @@ void PrepareShadingParms(vec4 albedo) {
     shading.diffuse = albedo;
 
     #if _SPECULAR == 0
-        shading.specular = specularColor;
+        shading.specular = vec4(specularColor, specularAlpha);
     #elif _SPECULAR == 1
         shading.specular = tex2D(specularMap, baseTc);
     #endif

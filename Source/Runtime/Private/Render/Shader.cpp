@@ -104,30 +104,28 @@ const StrHashMap<Shader::ShaderPropertyInfo> &Shader::GetPropertyInfoHashMap() c
     return propertyInfoHashMap;
 }
 
-bool Shader::IsPropertyUsed(const Str &propName) const {
+bool Shader::IsPropertyUsed(const Str &propName, const StrHashMap<Shader::Property> &shaderProperties) const {
     const auto &propInfos = GetPropertyInfoHashMap();
     const auto *keyValue = propInfos.Get(propName);
     const ShaderPropertyInfo &propInfo = keyValue->second;
 
     // No conditions.
-    if (propInfo.conditionArray.Count() == 0) {
+    if (propInfo.conditions.Count() == 0) {
         return true;
     }
 
-    for (int defineIndex = 0; defineIndex < defineArray.Count(); defineIndex++) {
-        const Define &define = defineArray[defineIndex];
+    for (int conditionIndex = 0; conditionIndex < propInfo.conditions.Count(); conditionIndex++) {
+        const Condition &condition = propInfo.conditions[conditionIndex];
 
-        for (int conditionIndex = 0; conditionIndex < propInfo.conditionArray.Count(); conditionIndex++) {
-            const Define &codition = propInfo.conditionArray[conditionIndex];
+        const BE1::Variant &value = shaderProperties.Get(condition.name)->second.data;
 
-            if (codition.name == define.name && codition.value == define.value) {
-                // Found matched condition.
-                return true;
-            }
+        if (!condition.valueList.Find(value.As<int>())) {
+            // Found unmatched condition.
+            return false;
         }
     }
 
-    return false;
+    return true;
 }
 
 void Shader::Purge() {
@@ -452,7 +450,9 @@ bool Shader::ShaderPropertyInfo::Parse(Lexer &lexer) {
             range.maxValue = lexer.ParseNumber();
             range.step = lexer.ParseNumber();
         } else {
-            lexer.UnreadToken(&token);
+            if (!token.IsEmpty()) {
+                lexer.UnreadToken(&token);
+            }
         }
     }
 
@@ -479,24 +479,43 @@ bool Shader::ShaderPropertyInfo::Parse(Lexer &lexer) {
                 break;
             } else if (token == "condition") {
                 Str name;
-                int value;
+                Array<int> valueList;
 
                 while (lexer.ReadToken(&token, false)) {
                     if (token == ")") {
+                        conditions.Append(Condition(name, valueList));
+
+                        lexer.UnreadToken(&token);
                         break;
                     } else if (lexer.GetTokenType() & Lexer::TokenType::Identifier) {
                         name = token;
                     } else if (lexer.GetTokenType() & Lexer::TokenType::Integer) {
-                        value = Str::ToI32(token);
-
-                        conditionArray.Append(Define(name, value));
+                        int value = Str::ToI32(token);
+                        valueList.Append(value);
                     }
                 }
-            } else if (token == "shaderDefine") {
-                flags |= PropertyInfo::Flag::ShaderDefine;
             } else {
                 return false;
             }
+        }
+    } else {
+        if (!token.IsEmpty()) {
+            lexer.UnreadToken(&token);
+        }
+    }
+
+    lexer.ReadToken(&token, false);
+    if (token == "[") {
+        while (lexer.ReadToken(&token, false)) {
+            if (token == "]") {
+                break;
+            } else if (token == "shaderDefine") {
+                flags |= PropertyInfo::Flag::ShaderDefine;
+            }
+        }
+    } else {
+        if (!token.IsEmpty()) {
+            lexer.UnreadToken(&token);
         }
     }
 

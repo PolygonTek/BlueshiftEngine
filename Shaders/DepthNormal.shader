@@ -1,10 +1,10 @@
 shader "DepthNormal" {
     properties {
-        _ALBEDO("Albedo") : enum "Color;Texture" = "0" (shaderDefine)
+        _ALBEDO("Albedo") : enum "Color;Texture" = "0" [shaderDefine]
         albedoMap("Albedo Map") : texture "2D" = "_whiteTexture" (condition _ALBEDO 1)
-        _NORMAL("Normal") : enum "Vertex;Texture;Texture + Detail Texture" = "0" (shaderDefine)
+        _NORMAL("Normal") : enum "Vertex;Texture;Texture + Detail Texture" = "0" [shaderDefine]
         normalMap("Normal Map") : texture "2D" = "_flatNormalTexture" (condition _NORMAL 1 2)
-        _PARALLAX("Parallax") : enum "None;Texture (R)" = "0" (shaderDefine)
+        _PARALLAX("Parallax") : enum "None;Texture (R)" = "0" [shaderDefine]
         heightMap("Height Map") : texture "2D" = "_whiteTexture" (condition _PARALLAX 1)
         heightScale("Height Scale") : float range 0.01 0.1 0.001 = "1.0" (condition _PARALLAX 1)
     }

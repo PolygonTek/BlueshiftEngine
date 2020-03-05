@@ -150,8 +150,16 @@ public:
         int                 value;
     };
 
+    struct Condition {
+        Condition() {}
+        Condition(const char *name, const Array<int> &valueList) : name(name), valueList(valueList) {}
+
+        Str                 name;
+        Array<int>          valueList;
+    };
+
     struct ShaderPropertyInfo : public PropertyInfo {
-        Array<Define>       conditionArray;
+        Array<Condition>    conditions;
 
         bool                Parse(Lexer &lexer);
     };
@@ -177,7 +185,7 @@ public:
     bool                    IsOriginalShader() const { return !originalShader; }
     bool                    IsInstantiatedShader() const { return !!originalShader; }
 
-    bool                    IsPropertyUsed(const Str &propName) const;
+    bool                    IsPropertyUsed(const Str &propName, const StrHashMap<Shader::Property> &shaderProperties) const;
 
                             /// Returns shader flags.
     int                     GetFlags() const;

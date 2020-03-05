@@ -781,7 +781,7 @@ void Material::Write(const char *filename) {
 
             // Skip writing useless properties in shader.
             if (!(propInfo.GetFlags() & PropertyInfo::Flag::ShaderDefine)) {
-                if (!pass->shader->IsPropertyUsed(name)) {
+                if (!pass->shader->IsPropertyUsed(name, pass->shaderProperties)) {
                     continue;
                 }
             }

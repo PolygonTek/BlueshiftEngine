@@ -81,7 +81,8 @@ uniform LOWP float wrappedDiffuse;
     #endif
 #elif defined(STANDARD_SPECULAR_LIGHTING) || defined(LEGACY_PHONG_LIGHTING)
     #if _SPECULAR == 0
-        uniform LOWP vec4 specularColor;
+        uniform LOWP vec3 specularColor;
+        uniform LOWP float specularAlpha;
     #elif _SPECULAR == 1
         uniform sampler2D specularMap;
     #endif
@@ -106,7 +107,7 @@ uniform LOWP float wrappedDiffuse;
     #endif
 
     uniform MEDIUMP float clearCoatRoughnessScale;
-    #if _CC_ROUGHNESS == 2
+    #if _CC_ROUGHNESS == 1
         uniform sampler2D clearCoatRoughnessMap;
     #endif
     
