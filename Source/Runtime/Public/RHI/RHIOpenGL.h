@@ -336,7 +336,7 @@ public:
     void                    EndQuery(Handle queryHandle);
     void                    QueryTimestamp(Handle queryHandle);
     bool                    QueryResultAvailable(Handle queryHandle) const;
-    unsigned int            QueryResult(Handle queryHandle) const;
+    uint64_t                QueryResult(Handle queryHandle) const;
 
 protected:
     void                    InitMainContext(WindowHandle windowHandle, const Settings *settings);

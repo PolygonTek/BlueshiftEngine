@@ -77,11 +77,11 @@ bool OpenGLRHI::QueryResultAvailable(Handle queryHandle) const {
     return available ? true : false;
 }
 
-unsigned int OpenGLRHI::QueryResult(Handle queryHandle) const {
+uint64_t OpenGLRHI::QueryResult(Handle queryHandle) const {
     const GLQuery *query = queryList[queryHandle];
 
-    GLuint samples;
-    gglGetQueryObjectuiv(query->id, GL_QUERY_RESULT, &samples);
+    GLuint64 samples;
+    gglGetQueryObjectui64v(query->id, GL_QUERY_RESULT, &samples);
     return samples;
 }
 
