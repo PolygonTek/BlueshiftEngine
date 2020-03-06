@@ -18,6 +18,8 @@
 
 #include "Version.h"
 
+#define BE_CONCAT(a, b) a ## b
+#define BE_CONCAT2(a, b) BE_CONCAT(a, b)
 #define BE_STRINGIZE(x) #x
 #define BE_CONCAT_VERSION(a, b, c) BE_STRINGIZE(a) "." BE_STRINGIZE(b) "." BE_STRINGIZE(c)
 #define BE_VERSION BE_CONCAT_VERSION(BE_VERSION_MAJOR, BE_VERSION_MINOR, BE_VERSION_PATCH)

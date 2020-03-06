@@ -31,6 +31,8 @@ BE_NAMESPACE_BEGIN
 #define BE_PROFILE_INIT()
 #define BE_PROFILE_SHUTDOWN()
 #define BE_PROFILE_SYNC_FRAME()
+#define BE_PROFILE_STOP()
+#define BE_PROFILE_START()
 #define BE_SCOPE_PROFILE_CPU(name, color)
 #define BE_SCOPE_PROFILE_GPU(name, color)
 
@@ -39,8 +41,10 @@ BE_NAMESPACE_BEGIN
 #define BE_PROFILE_INIT() profiler.Init()
 #define BE_PROFILE_SHUTDOWN() profiler.Shutdown()
 #define BE_PROFILE_SYNC_FRAME() profiler.SyncFrame()
-#define BE_SCOPE_PROFILE_CPU(name, color) static int tag_##__LINE__ = profiler.CreateTag(name, color); ScopeProfileCPU profile_scope_##__LINE__(tag_##__LINE__)
-#define BE_SCOPE_PROFILE_GPU(name, color) static int tag_##__LINE__ = profiler.CreateTag(name, color); ScopeProfileGPU profile_scope_##__LINE__(tag_##__LINE__)
+#define BE_PROFILE_STOP() profiler.IsFrozen() ? 0 : profiler.ToggleFreeze();
+#define BE_PROFILE_START() profiler.IsFrozen() ? profiler.ToggleFreeze() : 0;
+#define BE_SCOPE_PROFILE_CPU(name, color) static int BE_CONCAT2(tag_cpu_, __LINE__) = profiler.CreateTag(name, color); ScopeProfileCPU BE_CONCAT2(profile_scope_cpu_, __LINE__)(BE_CONCAT2(tag_cpu_, __LINE__))
+#define BE_SCOPE_PROFILE_GPU(name, color) static int BE_CONCAT2(tag_gpu_, __LINE__) = profiler.CreateTag(name, color); ScopeProfileGPU BE_CONCAT2(profile_scope_gpu_, __LINE__)(BE_CONCAT2(tag_gpu_, __LINE__))
 
 #endif
 
@@ -125,6 +129,12 @@ public:
 
     bool                        ToggleFreeze();
 
+    template <typename Func>
+    void                        IterateCpuMarkers(uint64_t threadId, Func func) const;
+
+    template <typename Func>
+    void                        IterateGpuMarkers(Func func) const;
+
     int                         CreateTag(const char *name, const Color3 &color);
 
     void                        PushCpuMarker(int tagIndex);
@@ -148,7 +158,60 @@ private:
     GpuThreadInfo               gpuThreadInfo;
 };
 
-extern Profiler                 profiler;
+template <typename Func>
+BE_INLINE void Profiler::IterateCpuMarkers(uint64_t threadId, Func func) const {
+    const FrameData &readFrame = frameData[readFrameIndex];
+
+    if (readFrame.time != InvalidTime) {
+        for (int i = 0; i < cpuThreadInfoMap.Count(); i++) {
+            const CpuThreadInfo &ti = cpuThreadInfoMap.GetByIndex(i)->second;
+            if (ti.threadId != threadId) {
+                continue;
+            }
+
+            int startMarkerIndex = ti.frameIndexes[readFrameIndex];
+            int endMarkerIndex = ti.frameIndexes[(readFrameIndex + 1) % COUNT_OF(ti.frameIndexes)];
+
+            for (int markerIndex = startMarkerIndex; markerIndex < endMarkerIndex; markerIndex++) {
+                const CpuMarker &marker = ti.markers[markerIndex];
+
+                float seconds = (marker.endTime - marker.startTime) / 1e9;
+
+                const Tag &tag = tags[marker.tagIndex];
+
+                func(tag.name, tag.color, marker.depth, seconds);
+            }
+        }
+    }
+}
+
+template <typename Func>
+BE_INLINE void Profiler::IterateGpuMarkers(Func func) const {
+    const FrameData &readFrame = frameData[readFrameIndex];
+
+    if (readFrame.time != InvalidTime) {
+        const GpuThreadInfo &ti = gpuThreadInfo;
+
+        int startMarkerIndex = ti.frameIndexes[readFrameIndex];
+        int endMarkerIndex = ti.frameIndexes[(readFrameIndex + 1) % COUNT_OF(ti.frameIndexes)];
+
+        for (int markerIndex = startMarkerIndex; markerIndex < endMarkerIndex; markerIndex++) {
+            const GpuMarker &marker = ti.markers[markerIndex];
+
+            if (rhi.QueryResultAvailable(marker.startQueryHandle) && rhi.QueryResultAvailable(marker.endQueryHandle)) {
+                uint64_t startTime = rhi.QueryResult(marker.startQueryHandle);
+                uint64_t endTime = rhi.QueryResult(marker.endQueryHandle);
+                float seconds = (endTime - startTime) / 1e9;
+
+                const Tag &tag = tags[marker.tagIndex];
+
+                func(tag.name, tag.color, marker.depth, seconds);
+            }
+        }
+    }
+}
+
+extern Profiler     profiler;
 
 class ScopeProfileCPU {
 public:

@@ -509,6 +509,8 @@ bool GameWorld::HasScriptError() const {
 void GameWorld::StartGame() {
     gameStarted = true;
 
+    BE_PROFILE_START();
+
     timeScale = 1.0f;
 
     if (isDebuggable) {
@@ -549,6 +551,8 @@ void GameWorld::StartGame() {
 
 void GameWorld::StopGame(bool stopAllSounds) {
     gameStarted = false;
+
+    BE_PROFILE_STOP();
 
     if (isDebuggable) {
         luaVM.StopDebuggee();

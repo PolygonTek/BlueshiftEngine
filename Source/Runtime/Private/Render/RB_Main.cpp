@@ -1062,6 +1062,7 @@ static const void *RB_ExecuteSwapBuffers(const void *data) {
 
 void RB_Execute(const void *data) {
     BE_SCOPE_PROFILE_CPU("RB_Execute", Color3::green);
+    BE_SCOPE_PROFILE_GPU("RB_Execute", Color3::green);
 
     int t1, t2;
 

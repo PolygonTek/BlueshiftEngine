@@ -25,7 +25,7 @@ Profiler profiler;
 static PlatformMutex *mapMutex;
 
 void Profiler::Init() {
-    freezeState = FreezeState::Unfrozen;
+    freezeState = FreezeState::Frozen;
 
     frameCount = 0;
     writeFrameIndex = 0;
@@ -76,29 +76,12 @@ void Profiler::SyncFrame() {
 
     readFrameIndex = (writeFrameIndex + 1) % COUNT_OF(frameData);
 
-    const FrameData &readFrame = frameData[readFrameIndex];
-
-    if (readFrame.time != InvalidTime) {
-        for (int i = 0; i < cpuThreadInfoMap.Count(); i++) {
-            const CpuThreadInfo &ti = cpuThreadInfoMap.GetByIndex(i)->second;
-
-            int startMarkerIndex = ti.frameIndexes[readFrameIndex];
-            int endMarkerIndex = ti.frameIndexes[(readFrameIndex + 1) % COUNT_OF(ti.frameIndexes)];
-
-            for (int markerIndex = startMarkerIndex; markerIndex < endMarkerIndex; markerIndex++) {
-                const CpuMarker &marker = ti.markers[markerIndex];
-
-                BE_LOG("%s: %.3f\n", tags[marker.tagIndex].name, (marker.endTime - marker.startTime) / 1000000.0f);
-            }
-        }
-    }
-
     writeFrameIndex = frameCount % COUNT_OF(frameData);
 
     FrameData &writeFrame = frameData[writeFrameIndex];
 
     writeFrame.frameCount = frameCount;
-    writeFrame.time = PlatformTime::Microseconds();
+    writeFrame.time = PlatformTime::Nanoseconds();
 
     for (int i = 0; i < cpuThreadInfoMap.Count(); i++) {
         CpuThreadInfo &ti = cpuThreadInfoMap.GetByIndex(i)->second;
@@ -168,7 +151,7 @@ void Profiler::PushCpuMarker(int tagIndex) {
     ti.currentIndex = (ti.currentIndex + 1) % COUNT_OF(ti.markers);
 
     marker.tagIndex = tagIndex;
-    marker.startTime = PlatformTime::Microseconds();
+    marker.startTime = PlatformTime::Nanoseconds();
     marker.endTime = InvalidTime;
     marker.frameCount = frameCount;
     marker.depth = ti.currentIndexStack.Count();
@@ -186,7 +169,7 @@ void Profiler::PopCpuMarker() {
 
     CpuMarker &marker = ti.markers[currentIndex];
 
-    marker.endTime = PlatformTime::Microseconds();
+    marker.endTime = PlatformTime::Nanoseconds();
 }
 
 void Profiler::PushGpuMarker(int tagIndex) {
