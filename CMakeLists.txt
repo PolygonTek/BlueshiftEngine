@@ -304,6 +304,7 @@ if (BUILD_RUNTIME)
     add_subdirectory(Source/ThirdParty/Bullet)
     add_subdirectory(Source/ThirdParty/HACD)
     add_subdirectory(Source/ThirdParty/STB)
+    add_subdirectory(Source/ThirdParty/imgui)
  
     if (USE_LUAJIT)
         add_subdirectory(Source/ThirdParty/luaJIT)
