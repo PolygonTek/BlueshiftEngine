@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -282,7 +282,7 @@ Sound *SoundSystem::GetSound(const char *hashName) {
 
 // TODO: SoundSystem::Update 함수를 별도 쓰레드로 바꿀것
 void SoundSystem::Update() {
-    BE_PROFILE_CPU_SCOPE("SoundSystem::Update", Color3::violet);
+    BE_SCOPE_PROFILE_CPU("SoundSystem::Update", Color3::violet);
 
     if (!initialized) {
         return;

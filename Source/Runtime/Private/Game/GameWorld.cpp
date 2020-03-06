@@ -695,7 +695,7 @@ int GameWorld::GetUnscaledDeltaTime() const {
 }
 
 void GameWorld::Update(int elapsedTime) {
-    BE_PROFILE_CPU_SCOPE("GameWorld::Update", Color3::white);
+    BE_SCOPE_PROFILE_CPU("GameWorld::Update", Color3::white);
 
     if (isDebuggable) {
         luaVM.PollDebuggee();
@@ -725,6 +725,8 @@ void GameWorld::Update(int elapsedTime) {
 }
 
 void GameWorld::FixedUpdateEntities(float timeStep) {
+    BE_SCOPE_PROFILE_CPU("GameWorld::FixedUpdateEntities", Color3::white);
+
     // Call fixed update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
@@ -734,6 +736,8 @@ void GameWorld::FixedUpdateEntities(float timeStep) {
 }
 
 void GameWorld::FixedLateUpdateEntities(float timeStep) {
+    BE_SCOPE_PROFILE_CPU("GameWorld::FixedLateUpdateEntities", Color3::white);
+
     // Call fixed post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
@@ -743,6 +747,8 @@ void GameWorld::FixedLateUpdateEntities(float timeStep) {
 }
 
 void GameWorld::UpdateEntities() {
+    BE_SCOPE_PROFILE_CPU("GameWorld::UpdateEntities", Color3::white);
+
     // Call update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
@@ -752,6 +758,8 @@ void GameWorld::UpdateEntities() {
 }
 
 void GameWorld::LateUpdateEntities() {
+    BE_SCOPE_PROFILE_CPU("GameWorld::LateUpdateEntities", Color3::white);
+
     // Call post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {

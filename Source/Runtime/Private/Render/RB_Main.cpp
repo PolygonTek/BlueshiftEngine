@@ -850,7 +850,7 @@ void RB_DrawDebugTextures() {
 
 // FIXME: Consider this view is sub camera
 static void RB_DrawCamera3D() {
-    BE_PROFILE_CPU_SCOPE("RB_DrawCamera3D", Color3::red);
+    BE_SCOPE_PROFILE_CPU("RB_DrawCamera3D", Color3::red);
 
     if (backEnd.ctx->flags & RenderContext::Flag::UseSelectionBuffer) {
         backEnd.ctx->screenSelectionRT->Begin();
@@ -916,7 +916,7 @@ static void RB_DrawCamera3D() {
 }
 
 static void RB_DrawCamera2D() {
-    BE_PROFILE_CPU_SCOPE("RB_DrawCamera2D", Color3::blue);
+    BE_SCOPE_PROFILE_CPU("RB_DrawCamera2D", Color3::blue);
 
     if (!backEnd.numDrawSurfs) {
         return;
@@ -1061,7 +1061,7 @@ static const void *RB_ExecuteSwapBuffers(const void *data) {
 }
 
 void RB_Execute(const void *data) {
-    BE_PROFILE_CPU_SCOPE("RB_Execute", Color3::green);
+    BE_SCOPE_PROFILE_CPU("RB_Execute", Color3::green);
 
     int t1, t2;
 

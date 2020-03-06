@@ -222,7 +222,7 @@ void PhysicsWorld::SetFrameRate(int frameRate) {
 }
 
 void PhysicsWorld::StepSimulation(int frameTime) {
-    BE_PROFILE_CPU_SCOPE("PhysicsWorld::StepSimulation", Color3::cyan);
+    BE_SCOPE_PROFILE_CPU("PhysicsWorld::StepSimulation", Color3::cyan);
 
     if (!physics_enable.GetBool()) {
         return;

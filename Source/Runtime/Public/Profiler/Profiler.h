@@ -31,16 +31,16 @@ BE_NAMESPACE_BEGIN
 #define BE_PROFILE_INIT()
 #define BE_PROFILE_SHUTDOWN()
 #define BE_PROFILE_SYNC_FRAME()
-#define BE_PROFILE_CPU_SCOPE(name, color)
-#define BE_PROFILE_GPU_SCOPE(name, color)
+#define BE_SCOPE_PROFILE_CPU(name, color)
+#define BE_SCOPE_PROFILE_GPU(name, color)
 
 #else
 
 #define BE_PROFILE_INIT() profiler.Init()
 #define BE_PROFILE_SHUTDOWN() profiler.Shutdown()
 #define BE_PROFILE_SYNC_FRAME() profiler.SyncFrame()
-#define BE_PROFILE_CPU_SCOPE(name, color) static int tag_##__LINE__ = profiler.CreateTag(name, color); ProfileCpuScope profile_scope_##__LINE__(tag_##__LINE__)
-#define BE_PROFILE_GPU_SCOPE(name, color) static int tag_##__LINE__ = profiler.CreateTag(name, color); ProfileGpuScope profile_scope_##__LINE__(tag_##__LINE__)
+#define BE_SCOPE_PROFILE_CPU(name, color) static int tag_##__LINE__ = profiler.CreateTag(name, color); ScopeProfileCPU profile_scope_##__LINE__(tag_##__LINE__)
+#define BE_SCOPE_PROFILE_GPU(name, color) static int tag_##__LINE__ = profiler.CreateTag(name, color); ScopeProfileGPU profile_scope_##__LINE__(tag_##__LINE__)
 
 #endif
 
@@ -75,18 +75,18 @@ public:
         Color3                  color;
     };
 
-    struct Marker {
+    struct MarkerBase {
         int                     tagIndex;
-        int                     depth;
+        int                     depth;          // marker stack depth
         int                     frameCount;
     };
 
-    struct CpuMarker : public Marker {
+    struct CpuMarker : public MarkerBase {
         uint64_t                startTime;
         uint64_t                endTime;
     };
 
-    struct GpuMarker : public Marker {
+    struct GpuMarker : public MarkerBase {
         RHI::Handle             startQueryHandle;
         RHI::Handle             endQueryHandle;
     };
@@ -94,20 +94,20 @@ public:
     struct CpuThreadInfo {
         uint64_t                threadId;
         CpuMarker               markers[MaxCpuMarkersPerThread];
-        Stack<int>              markerIndexStack;
-        int                     writeMarkerIndex;
-        int                     frameMarkerIndexes[MaxRecordedFrames];
+        int                     currentIndex;
+        Stack<int>              currentIndexStack;
+        int                     frameIndexes[MaxRecordedFrames];    // marker indexes for frames
 
-        CpuThreadInfo() : markerIndexStack(MaxDepth), writeMarkerIndex(0) {}
+        CpuThreadInfo() : currentIndexStack(MaxDepth), currentIndex(0) {}
     };
 
     struct GpuThreadInfo {
         GpuMarker               markers[MaxGpuMarkers];
-        Stack<int>              markerIndexStack;
-        int                     writeMarkerIndex;
-        int                     frameMarkerIndexes[MaxRecordedFrames];
+        int                     currentIndex;
+        Stack<int>              currentIndexStack;
+        int                     frameIndexes[MaxRecordedFrames];    // marker indexes for frames
 
-        GpuThreadInfo() : markerIndexStack(MaxDepth), writeMarkerIndex(0) {}
+        GpuThreadInfo() : currentIndexStack(MaxDepth), currentIndex(0) {}
     };
 
     struct FrameData {
@@ -118,9 +118,11 @@ public:
     void                        Init();
     void                        Shutdown();
 
+                                // Call SyncFrame() on the starting frame.
     void                        SyncFrame();
 
     bool                        IsFrozen() const { return (freezeState == FreezeState::Frozen || freezeState == FreezeState::WaitingForUnfreeze); }
+
     bool                        ToggleFreeze();
 
     int                         CreateTag(const char *name, const Color3 &color);
@@ -136,10 +138,10 @@ private:
 
     FreezeState::Enum           freezeState;
 
-    int                         frameCount;
-    int                         currentFrameDataIndex;
-    int                         readFameDataIndex;
     FrameData                   frameData[MaxRecordedFrames];
+    int                         frameCount;
+    int                         writeFrameIndex;
+    int                         readFrameIndex;
 
     StaticArray<Tag, MaxTags>   tags;
     HashMap<uint64_t, CpuThreadInfo> cpuThreadInfoMap;
@@ -148,16 +150,16 @@ private:
 
 extern Profiler                 profiler;
 
-class ProfileCpuScope {
+class ScopeProfileCPU {
 public:
-    ProfileCpuScope(int tagIndex) { profiler.PushCpuMarker(tagIndex); }
-    ~ProfileCpuScope() { profiler.PopCpuMarker(); }
+    ScopeProfileCPU(int tagIndex) { profiler.PushCpuMarker(tagIndex); }
+    ~ScopeProfileCPU() { profiler.PopCpuMarker(); }
 };
 
-class ProfileGpuScope {
+class ScopeProfileGPU {
 public:
-    ProfileGpuScope(int tagIndex) { profiler.PushGpuMarker(tagIndex); }
-    ~ProfileGpuScope() { profiler.PopGpuMarker(); }
+    ScopeProfileGPU(int tagIndex) { profiler.PushGpuMarker(tagIndex); }
+    ~ScopeProfileGPU() { profiler.PopGpuMarker(); }
 };
 
 BE_NAMESPACE_END

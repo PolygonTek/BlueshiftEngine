@@ -524,7 +524,7 @@ void RenderWorld::FinishMapLoading() {
 }
 
 void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
-    BE_PROFILE_CPU_SCOPE("RenderWorld::RenderScene", Color3::orange);
+    BE_SCOPE_PROFILE_CPU("RenderWorld::RenderScene", Color3::orange);
 
     if (renderCamera->GetState().renderRect.w <= 0.0f || renderCamera->GetState().renderRect.h <= 0.0f) {
         return;
@@ -561,7 +561,7 @@ void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
 }
 
 void RenderWorld::DrawGUICamera(GuiMesh &guiMesh) {
-    BE_PROFILE_CPU_SCOPE("RenderWorld::DrawGUICamera", Color3::yellow);
+    BE_SCOPE_PROFILE_CPU("RenderWorld::DrawGUICamera", Color3::yellow);
 
     if (guiMesh.NumSurfaces() == 0) {
         return;
