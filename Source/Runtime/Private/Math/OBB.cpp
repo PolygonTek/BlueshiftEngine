@@ -344,7 +344,7 @@ float OBB::DistanceSqr(const Vec3 &p) const {
         } else if (d < -extents[i]) {
             d = d + extents[i];
             dsq += d * d;
-        }		
+        }
     }
 
     return dsq;

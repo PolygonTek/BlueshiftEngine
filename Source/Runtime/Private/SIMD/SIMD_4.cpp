@@ -32,6 +32,7 @@ const simd4f SIMD_4::F4_max_short           = { 32767.0f, 32767.0f, 32767.0f, 32
 const simd4f SIMD_4::F4_tiny                = { 1e-4f, 1e-4f, 1e-4f, 1e-4f };
 const simd4f SIMD_4::F4_smallestNonDenorm   = { 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f };
 const simd4f SIMD_4::F4_sign_bit            = simd4i(0x80000000, 0x80000000, 0x80000000, 0x80000000);
+const simd4f SIMD_4::F4_mask_xxx0           = simd4i(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000);
 const simd4f SIMD_4::F4_mask_000x           = simd4i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF);
 
 void BE_FASTCALL SIMD_4::Add(float *dst, const float constant, const float *src, const int count0) {

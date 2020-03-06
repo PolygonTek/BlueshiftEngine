@@ -280,7 +280,10 @@ public:
         enum Enum {
             Vertex,
             Fragment,
-            Geometry
+            Geometry,
+            TessControl,
+            TessEval,
+            Compute
         };
     };
 

@@ -52,6 +52,7 @@ public:
     static const simd8f                 F8_tiny;
     static const simd8f                 F8_smallestNonDenorm;
     static const simd8f                 F8_sign_bit;
+    static const simd8f                 F8_mask_xxx0xxx0;
     static const simd8f                 F8_mask_000x000x;
 };
 

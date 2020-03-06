@@ -70,6 +70,7 @@ public:
     static const simd4f                 F4_tiny;
     static const simd4f                 F4_smallestNonDenorm;
     static const simd4f                 F4_sign_bit;
+    static const simd4f                 F4_mask_xxx0;
     static const simd4f                 F4_mask_000x;
 };
 

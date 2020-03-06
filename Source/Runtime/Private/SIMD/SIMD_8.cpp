@@ -30,6 +30,7 @@ const simd8f SIMD_8::F8_max_short           = { 32767.0f, 32767.0f, 32767.0f, 32
 const simd8f SIMD_8::F8_tiny                = { 1e-4f, 1e-4f, 1e-4f, 1e-4f, 1e-4f, 1e-4f, 1e-4f, 1e-4f };
 const simd8f SIMD_8::F8_smallestNonDenorm   = { 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f, 1.1754944e-038f };
 const simd8f SIMD_8::F8_sign_bit            = (simd8f &)simd8i(0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
+const simd8f SIMD_8::F8_mask_xxx0xxx0       = (simd8f &)simd8i(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000);
 const simd8f SIMD_8::F8_mask_000x000x       = (simd8f &)simd8i(0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF);
 
 void BE_FASTCALL SIMD_8::Add(float *dst, const float constant, const float *src, const int count0) {
