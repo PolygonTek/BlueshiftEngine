@@ -224,27 +224,69 @@ void OpenGLRHI::WriteBuffer(byte *dst, const byte *src, int numBytes) {
     assert_16_byte_aligned(dst);
     assert_16_byte_aligned(src);
 
-#if defined(ENABLE_SIMD4_INTRIN)
+#if defined(ENABLE_SIMD_INTRIN)
     int i = 0;
-    for (; i + 128 <= numBytes; i += 128) {
-        simd4i d0 = load_si128((int32_t *)&src[i + 0 * 16]);
-        simd4i d1 = load_si128((int32_t *)&src[i + 1 * 16]);
-        simd4i d2 = load_si128((int32_t *)&src[i + 2 * 16]);
-        simd4i d3 = load_si128((int32_t *)&src[i + 3 * 16]);
-        simd4i d4 = load_si128((int32_t *)&src[i + 4 * 16]);
-        simd4i d5 = load_si128((int32_t *)&src[i + 5 * 16]);
-        simd4i d6 = load_si128((int32_t *)&src[i + 6 * 16]);
-        simd4i d7 = load_si128((int32_t *)&src[i + 7 * 16]);
+    #if defined(ENABLE_SIMD8_INTRIN)
+        for (; i + 512 <= numBytes; i += 512) {
+            simd8i d0 = load_si256((int32_t *)&src[i + 0 * 32]);
+            simd8i d1 = load_si256((int32_t *)&src[i + 1 * 32]);
+            simd8i d2 = load_si256((int32_t *)&src[i + 2 * 32]);
+            simd8i d3 = load_si256((int32_t *)&src[i + 3 * 32]);
+            simd8i d4 = load_si256((int32_t *)&src[i + 4 * 32]);
+            simd8i d5 = load_si256((int32_t *)&src[i + 5 * 32]);
+            simd8i d6 = load_si256((int32_t *)&src[i + 6 * 32]);
+            simd8i d7 = load_si256((int32_t *)&src[i + 7 * 32]);
+            simd8i d8 = load_si256((int32_t *)&src[i + 8 * 32]);
+            simd8i d9 = load_si256((int32_t *)&src[i + 9 * 32]);
+            simd8i d10 = load_si256((int32_t *)&src[i + 10 * 32]);
+            simd8i d11 = load_si256((int32_t *)&src[i + 11 * 32]);
+            simd8i d12 = load_si256((int32_t *)&src[i + 12 * 32]);
+            simd8i d13 = load_si256((int32_t *)&src[i + 13 * 32]);
+            simd8i d14 = load_si256((int32_t *)&src[i + 14 * 32]);
+            simd8i d15 = load_si256((int32_t *)&src[i + 15 * 32]);
 
-        storent_si128(d0, (int32_t *)&dst[i + 0 * 16]);
-        storent_si128(d1, (int32_t *)&dst[i + 1 * 16]);
-        storent_si128(d2, (int32_t *)&dst[i + 2 * 16]);
-        storent_si128(d3, (int32_t *)&dst[i + 3 * 16]);
-        storent_si128(d4, (int32_t *)&dst[i + 4 * 16]);
-        storent_si128(d5, (int32_t *)&dst[i + 5 * 16]);
-        storent_si128(d6, (int32_t *)&dst[i + 6 * 16]);
-        storent_si128(d7, (int32_t *)&dst[i + 7 * 16]);
-    }
+            storent_si256(d0, (int32_t *)&dst[i + 0 * 32]);
+            storent_si256(d1, (int32_t *)&dst[i + 1 * 32]);
+            storent_si256(d2, (int32_t *)&dst[i + 2 * 32]);
+            storent_si256(d3, (int32_t *)&dst[i + 3 * 32]);
+            storent_si256(d4, (int32_t *)&dst[i + 4 * 32]);
+            storent_si256(d5, (int32_t *)&dst[i + 5 * 32]);
+            storent_si256(d6, (int32_t *)&dst[i + 6 * 32]);
+            storent_si256(d7, (int32_t *)&dst[i + 7 * 32]);
+            storent_si256(d8, (int32_t *)&dst[i + 8 * 32]);
+            storent_si256(d9, (int32_t *)&dst[i + 9 * 32]);
+            storent_si256(d10, (int32_t *)&dst[i + 10 * 32]);
+            storent_si256(d11, (int32_t *)&dst[i + 11 * 32]);
+            storent_si256(d12, (int32_t *)&dst[i + 12 * 32]);
+            storent_si256(d13, (int32_t *)&dst[i + 13 * 32]);
+            storent_si256(d14, (int32_t *)&dst[i + 14 * 32]);
+            storent_si256(d15, (int32_t *)&dst[i + 15 * 32]);
+        }
+        for (; i + 32 <= numBytes; i += 32) {
+            simd8i d = load_si256((int32_t *)&src[i]);
+            storent_si256(d, (int32_t *)&dst[i]);
+        }
+    #elif defined(ENABLE_SIMD4_INTRIN)
+        for (; i + 128 <= numBytes; i += 128) {
+            simd4i d0 = load_si128((int32_t *)&src[i + 0 * 16]);
+            simd4i d1 = load_si128((int32_t *)&src[i + 1 * 16]);
+            simd4i d2 = load_si128((int32_t *)&src[i + 2 * 16]);
+            simd4i d3 = load_si128((int32_t *)&src[i + 3 * 16]);
+            simd4i d4 = load_si128((int32_t *)&src[i + 4 * 16]);
+            simd4i d5 = load_si128((int32_t *)&src[i + 5 * 16]);
+            simd4i d6 = load_si128((int32_t *)&src[i + 6 * 16]);
+            simd4i d7 = load_si128((int32_t *)&src[i + 7 * 16]);
+
+            storent_si128(d0, (int32_t *)&dst[i + 0 * 16]);
+            storent_si128(d1, (int32_t *)&dst[i + 1 * 16]);
+            storent_si128(d2, (int32_t *)&dst[i + 2 * 16]);
+            storent_si128(d3, (int32_t *)&dst[i + 3 * 16]);
+            storent_si128(d4, (int32_t *)&dst[i + 4 * 16]);
+            storent_si128(d5, (int32_t *)&dst[i + 5 * 16]);
+            storent_si128(d6, (int32_t *)&dst[i + 6 * 16]);
+            storent_si128(d7, (int32_t *)&dst[i + 7 * 16]);
+        }
+    #endif
     for (; i + 16 <= numBytes; i += 16) {
         simd4i d = load_si128((int32_t *)&src[i]);
         storent_si128(d, (int32_t *)&dst[i]);
