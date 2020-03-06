@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -195,8 +195,8 @@ void SoundSystem::ShutdownDevice() {
     }
 }
 
-void SoundSystem::PlaceListenerInternal(const Vec3 &pos, const Vec3 &forward, const Vec3 &up) {
-    dsListener3D->SetPosition(pos.x, pos.y, pos.z, DS3D_DEFERRED);
+void SoundSystem::PlaceListenerInternal(const Vec3 &position, const Vec3 &forward, const Vec3 &up) {
+    dsListener3D->SetPosition(position.x, position.y, position.z, DS3D_DEFERRED);
     dsListener3D->SetOrientation(-forward.x, -forward.y, -forward.z, up.x, up.y, up.z, DS3D_DEFERRED);
     dsListener3D->CommitDeferredSettings();
 }

@@ -331,10 +331,12 @@ void SoundSystem::Update() {
         prioritySounds.Append(sound);
     }
 
-    // Sort sounds by priority decending order
-    prioritySounds.StableSort([](const Sound *a, const Sound *b) {
-        return a->priority - b->priority > 0;
-    });
+    if (prioritySounds.Count() > 1) {
+        // Sort sounds by priority decending order
+        prioritySounds.StableSort([](const Sound *a, const Sound *b) {
+            return a->priority - b->priority > 0;
+        });
+    }
 
     // Stop sources that have lower priority first
     int soundIndex = prioritySounds.Count() - 1;
@@ -406,7 +408,9 @@ void SoundSystem::Update() {
         }
     }
 
-    PlaceListenerInternal(listenerPosition, listenerForward, listenerUp);
+    if (prioritySounds.Count() > 0) {
+        PlaceListenerInternal(listenerPosition, listenerForward, listenerUp);
+    }
 }
 
 //--------------------------------------------------------------------------------------------------
