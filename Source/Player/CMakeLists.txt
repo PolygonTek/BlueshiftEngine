@@ -167,7 +167,7 @@ else ()
     else ()
         set_target_properties(${PROJECT_NAME} PROPERTIES
             PREFIX ""
-            #DEBUG_POSTFIX "_d"
+            #DEVELOPMENT_POSTFIX "_dev"
             OUTPUT_NAME ${PROJECT_NAME}
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Bin/${ENGINE_BUILD_PLATFORM_DIR})
     endif ()
