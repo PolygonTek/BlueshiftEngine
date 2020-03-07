@@ -43,8 +43,12 @@ static void Common_Log(const int logLevel, const char *msg) {
     char buffer[16384];
     const char *bufptr;
 
-    if (logLevel == LogLevel::Dev && !developer.GetBool()) {
-        return;
+    if (logLevel == LogLevel::Dev) {
+#ifndef DEVELOPMENT
+        if (!developer.GetBool()) {
+            return;
+        }
+#endif
     }
     
     if (logLevel == LogLevel::Dev) {
