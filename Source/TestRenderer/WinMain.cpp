@@ -228,6 +228,7 @@ BOOL InitInstance(int nCmdShow) {
     app.LoadResources();
 
     mainContext = BE1::rhi.CreateContext(hwndMain, USE_SHARED_CONTEXT);
+
     BE1::rhi.SetContextDisplayFunc(mainContext, DisplayMainContext, nullptr, false);
 
     // FBO cannot be shared, so we should create FBO for each context
@@ -237,6 +238,7 @@ BOOL InitInstance(int nCmdShow) {
     HWND hwndSub = CreateSubWindow(_T("sub window"), 512, 384);
 
     subContext = BE1::rhi.CreateContext(hwndSub, USE_SHARED_CONTEXT);
+
     BE1::rhi.SetContextDisplayFunc(subContext, DisplaySubContext, nullptr, false);
 
     subRenderTarget = app.CreateRenderTarget(subContext);
@@ -250,7 +252,7 @@ void ShutdownInstance() {
     
 #ifdef CREATE_SUB_WINDOW
     if (subContext) {
-        BE1::rhi.DeleteRenderTarget(subRenderTarget);
+        BE1::rhi.DestroyRenderTarget(subRenderTarget);
 
         HWND hwnd = (HWND)BE1::rhi.GetWindowHandleFromContext(subContext);
         BE1::rhi.DestroyContext(subContext);

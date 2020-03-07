@@ -26,6 +26,10 @@
 #include "Image/Image.h"
 #include "RHI.h"
 
+#ifdef ENABLE_IMGUI
+#include "imgui/imgui.h"
+#endif
+
 BE_NAMESPACE_BEGIN
 
 class Rect;
@@ -338,6 +342,13 @@ public:
     bool                    QueryResultAvailable(Handle queryHandle) const;
     uint64_t                QueryResult(Handle queryHandle) const;
 
+    //---------------------------------------------------------------------------------------------
+    // ImGui
+    //---------------------------------------------------------------------------------------------
+    void                    ImGuiNewFrame(Handle ctxHandle);
+    void                    ImGuiRender();
+    void                    ImGuiEndFrame();
+
 protected:
     void                    InitMainContext(WindowHandle windowHandle, const Settings *settings);
     void                    FreeMainContext();
@@ -345,6 +356,9 @@ protected:
 
     void                    InitHandles();
     void                    FreeHandles();
+
+    void                    ImGuiCreateContext(GLContext *ctx);
+    void                    ImGuiDestroyContext(GLContext *ctx);
 
     int                     GetTypeSize(const VertexElement::Type::Enum type) const;
     void                    SetShaderConstantGeneric(int index, bool rowMajor, int count, const void *data) const;

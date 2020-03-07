@@ -50,6 +50,8 @@ OBJC_CLASS(EAGLView);
 
 #include "Core/CVars.h"
 
+struct ImGuiContext;
+
 BE_NAMESPACE_BEGIN
 
 #define BUFFER_OFFSET(i)    ((byte *)nullptr + (i))
@@ -136,6 +138,8 @@ struct GLContext {
     GLState *               state;
     GLuint                  defaultFramebuffer;
     GLuint                  defaultVAO;
+    ImGuiContext *          imGuiContext;
+    float                   imGuiLastTime;
 };
 
 struct GLStencilState {

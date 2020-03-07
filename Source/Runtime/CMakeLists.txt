@@ -831,7 +831,8 @@ set(WINDOWS_RENDERER_FILES
     Private/RHIOpenGL/OpenGL/OpenGL4.h
     Private/RHIOpenGL/OpenGL/OpenGL4.cpp
     Private/RHIOpenGL/OpenGL/WinOpenGL.h
-    Private/RHIOpenGL/RGLPlatformWin.cpp)
+    Private/RHIOpenGL/RGLPlatformWin.cpp
+    Private/RHIOpenGL/RGLImGuiWin.cpp)
 
 set(ANDROID_RENDERER_FILES
     Private/RHIOpenGL/OpenGL/OpenGLES3.h
@@ -1030,6 +1031,7 @@ target_link_libraries(${PROJECT_NAME}
     tinyxml2
     freetype
     GGL
+    imgui
     Bullet
     HACD
     STB

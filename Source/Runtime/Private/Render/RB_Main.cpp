@@ -1055,6 +1055,10 @@ static const void *RB_ExecuteSwapBuffers(const void *data) {
 
     rhi.SetScissor(Rect::zero);
 
+#ifdef ENABLE_IMGUI
+    rhi.ImGuiRender();
+#endif
+
     rhi.SwapBuffers();
     
     return (const void *)(cmd + 1);

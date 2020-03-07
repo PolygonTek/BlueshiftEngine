@@ -62,6 +62,11 @@ void OpenGLRHI::Init(WindowHandle windowHandle, const Settings *settings) {
         }
     }
 
+#ifdef ENABLE_IMGUI
+    IMGUI_CHECKVERSION();
+    BE_LOG("ImGui version: %s\n", ImGui::GetVersion());
+#endif
+
     initialized = true;
 }
 

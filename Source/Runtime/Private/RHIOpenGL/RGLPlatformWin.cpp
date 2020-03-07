@@ -540,19 +540,32 @@ void OpenGLRHI::FreeMainContext() {
     SAFE_DELETE(mainContext);
 }
 
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 static LRESULT CALLBACK NewWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    PAINTSTRUCT ps;
-    HDC hdc;
     GLContext *ctx = (GLContext *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+
+#ifdef ENABLE_IMGUI
+    ImGuiContext *oldContext = ImGui::GetCurrentContext();
+    ImGui::SetCurrentContext(ctx->imGuiContext);
+    if (ImGui_ImplWin32_WndProcHandler(hwnd, uMsg, wParam, lParam)) {
+        ImGui::SetCurrentContext(oldContext);
+        return 0;
+    }
+    ImGui::SetCurrentContext(oldContext);
+#endif
 
     switch (uMsg) {
     case WM_PAINT:
-        hdc = BeginPaint(hwnd, &ps);
-        if (ctx->onDemandDrawing) {
-            rhi.DisplayContext(ctx->handle);
+        {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hwnd, &ps);
+            if (ctx->onDemandDrawing) {
+                rhi.DisplayContext(ctx->handle);
+            }
+            EndPaint(hwnd, &ps);
+            break;
         }
-        EndPaint(hwnd, &ps);
-        break;
     }
 
     return ctx->oldWndProc(hwnd, uMsg, wParam, lParam);
@@ -620,6 +633,10 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         }
     }
 
+#ifdef ENABLE_IMGUI
+    ImGuiCreateContext(ctx);
+#endif
+
     SetContext((Handle)handle);
 
     ctx->defaultFramebuffer = 0;
@@ -636,6 +653,10 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
 
 void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     GLContext *ctx = contextList[ctxHandle];
+
+#ifdef ENABLE_IMGUI
+    ImGuiDestroyContext(ctx);
+#endif
 
     if (ctx->hrc != mainContext->hrc) {
         // Delete default VAO for shared context
@@ -687,6 +708,10 @@ void OpenGLRHI::SetContext(Handle ctxHandle) {
     }
 
     this->currentContext = ctx;
+
+#ifdef ENABLE_IMGUI
+    ImGui::SetCurrentContext(ctx->imGuiContext);
+#endif
 }
 
 void OpenGLRHI::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *displayFuncDataPtr, bool onDemandDrawing) {
@@ -699,7 +724,7 @@ void OpenGLRHI::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displ
 
 void OpenGLRHI::DisplayContext(Handle ctxHandle) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
-    
+
     ctx->displayFunc(ctxHandle, ctx->displayFuncDataPtr);
 }
 

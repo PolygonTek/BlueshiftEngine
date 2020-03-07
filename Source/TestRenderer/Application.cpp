@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "Application.h"
+#include "imgui/imgui.h"
 
 struct Vertex2D {
     BE1::Vec2       position;
@@ -218,6 +219,10 @@ void Application::DrawToRenderTarget(BE1::RHI::Handle renderTargetHandle, float 
 void Application::Draw(const BE1::RHI::Handle contextHandle, const BE1::RHI::Handle renderTargetHandle, float t) {
     BE1::rhi.SetContext(contextHandle);
 
+#ifdef ENABLE_IMGUI
+    BE1::rhi.ImGuiNewFrame(contextHandle);
+#endif
+
     DrawToRenderTarget(renderTargetHandle, t);
 
     BE1::RHI::DisplayMetrics displayMetrics;
@@ -253,9 +258,16 @@ void Application::Draw(const BE1::RHI::Handle contextHandle, const BE1::RHI::Han
     BE1::rhi.DrawArrays(BE1::RHI::Topology::TriangleList, 0, 6);
 #endif
 
+#ifdef ENABLE_IMGUI
+    ImGui::Text("Hello, world !");
+    //ImGui::ShowDemoWindow();
+    
+    BE1::rhi.ImGuiRender();
+#endif
+
     BE1::rhi.SwapBuffers();
 }
 
 void Application::RunFrame() {
-   BE1::cmdSystem.ExecuteCommandBuffer();
+    BE1::cmdSystem.ExecuteCommandBuffer();
 }

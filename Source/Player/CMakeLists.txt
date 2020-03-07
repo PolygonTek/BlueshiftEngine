@@ -130,6 +130,7 @@ if (XAMARIN)
         freetype
         jsoncpp
         GGL
+        imgui
         Bullet
         HACD
         lua

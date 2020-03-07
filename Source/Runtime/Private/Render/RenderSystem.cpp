@@ -200,6 +200,10 @@ void RenderSystem::BeginCommands(RenderContext *renderContext) {
 
     rhi.SetContext(renderContext->GetContextHandle());
 
+#ifdef ENABLE_IMGUI
+    rhi.ImGuiNewFrame(renderContext->GetContextHandle());
+#endif
+
     bufferCacheManager.BeginWrite();
 
     BeginContextRenderCommand *cmd = (BeginContextRenderCommand *)renderSystem.GetCommandBuffer(sizeof(BeginContextRenderCommand));
@@ -215,6 +219,10 @@ void RenderSystem::EndCommands() {
     bufferCacheManager.EndDrawCommand();
 
     frameData.ToggleFrame();
+
+#ifdef ENABLE_IMGUI
+    rhi.ImGuiEndFrame();
+#endif
 
     renderSystem.currentContext = nullptr;
 }

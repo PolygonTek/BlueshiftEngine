@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Platform/PlatformThread.h"
 #include "IO/FileSystem.h"
 #include "Render/Render.h"
 #include "Physics/Collider.h"
@@ -729,8 +730,6 @@ void GameWorld::Update(int elapsedTime) {
 }
 
 void GameWorld::FixedUpdateEntities(float timeStep) {
-    BE_SCOPE_PROFILE_CPU("GameWorld::FixedUpdateEntities", Color3::white);
-
     // Call fixed update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
@@ -740,8 +739,6 @@ void GameWorld::FixedUpdateEntities(float timeStep) {
 }
 
 void GameWorld::FixedLateUpdateEntities(float timeStep) {
-    BE_SCOPE_PROFILE_CPU("GameWorld::FixedLateUpdateEntities", Color3::white);
-
     // Call fixed post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
@@ -751,8 +748,6 @@ void GameWorld::FixedLateUpdateEntities(float timeStep) {
 }
 
 void GameWorld::UpdateEntities() {
-    BE_SCOPE_PROFILE_CPU("GameWorld::UpdateEntities", Color3::white);
-
     // Call update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
@@ -762,8 +757,6 @@ void GameWorld::UpdateEntities() {
 }
 
 void GameWorld::LateUpdateEntities() {
-    BE_SCOPE_PROFILE_CPU("GameWorld::LateUpdateEntities", Color3::white);
-
     // Call post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
@@ -841,6 +834,24 @@ void GameWorld::Render() {
     // Render canvas in order.
     for (int i = 0; i < canvasComponents.Count(); i++) {
         canvasComponents[i]->Render();
+    }
+
+    // Render statistics.
+    if (showStatistics) {
+        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 410, 10), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(400, 220), ImGuiCond_Always);
+        ImGui::Begin("Statistics");
+
+        uint64_t tid = PlatformThread::GetCurrentThreadId();
+        profiler.IterateCpuMarkers(tid, [](const char *tagName, const Color3 &tagColor, int stackDepth, float seconds) {
+            ImGui::TextColored(ImColor(tagColor.r, tagColor.g, tagColor.b), "%s: %.3fms", tagName, SEC2MS(seconds));
+        });
+
+        profiler.IterateGpuMarkers([](const char *tagName, const Color3 &tagColor, int stackDepth, float seconds) {
+            ImGui::TextColored(ImColor(tagColor.r, tagColor.g, tagColor.b), "%s: %.3fms", tagName, SEC2MS(seconds));
+        });
+
+        ImGui::End();
     }
 }
 
