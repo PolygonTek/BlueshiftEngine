@@ -2,7 +2,7 @@
  *
  * gglx.h
  * ggl (OpenGL glue code library)
- * Version: 0.5
+ * Version: 1.0
  *
  * Copyright 2011 Ju Hyung Lee. All rights reserved.
  *
@@ -38,6 +38,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 #ifndef APIENTRY
 #define APIENTRY

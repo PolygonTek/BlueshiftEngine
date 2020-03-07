@@ -2,7 +2,7 @@
  *
  * gwgl.c
  * ggl (OpenGL glue code library)
- * Version: 0.5
+ * Version: 1.0
  *
  * Copyright 2011 Ju Hyung Lee. All rights reserved.
  *
@@ -35,14 +35,14 @@
 #include "gwgl.h"
 #include <string.h>
 
-extern void CheckGLError(const char *msg);
+extern void (*GGLCheckError)(const char *msg);
 
 typedef int (APIENTRYP PFNCHOOSEPIXELFORMAT)(HDC hDc, const PIXELFORMATDESCRIPTOR *pPfd);
 PFNCHOOSEPIXELFORMAT gChoosePixelFormat;
 static PFNCHOOSEPIXELFORMAT _ChoosePixelFormat;
 static int APIENTRY d_ChoosePixelFormat(HDC hDc, const PIXELFORMATDESCRIPTOR *pPfd) {
 	int ret = _ChoosePixelFormat(hDc, pPfd);
-	CheckGLError("ChoosePixelFormat");
+	GGLCheckError("ChoosePixelFormat");
 	return ret;
 }
 typedef int (APIENTRYP PFNDESCRIBEPIXELFORMAT)(HDC hdc, int ipfd, UINT cjpfd, const PIXELFORMATDESCRIPTOR *ppfd);
@@ -50,7 +50,7 @@ PFNDESCRIBEPIXELFORMAT gDescribePixelFormat;
 static PFNDESCRIBEPIXELFORMAT _DescribePixelFormat;
 static int APIENTRY d_DescribePixelFormat(HDC hdc, int ipfd, UINT cjpfd, const PIXELFORMATDESCRIPTOR *ppfd) {
 	int ret = _DescribePixelFormat(hdc, ipfd, cjpfd, ppfd);
-	CheckGLError("DescribePixelFormat");
+	GGLCheckError("DescribePixelFormat");
 	return ret;
 }
 typedef int (APIENTRYP PFNGETPIXELFORMAT)(HDC hdc);
@@ -58,7 +58,7 @@ PFNGETPIXELFORMAT gGetPixelFormat;
 static PFNGETPIXELFORMAT _GetPixelFormat;
 static int APIENTRY d_GetPixelFormat(HDC hdc) {
 	int ret = _GetPixelFormat(hdc);
-	CheckGLError("GetPixelFormat");
+	GGLCheckError("GetPixelFormat");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNSETPIXELFORMAT)(HDC hdc, int ipfd, const PIXELFORMATDESCRIPTOR *ppfd);
@@ -66,7 +66,7 @@ PFNSETPIXELFORMAT gSetPixelFormat;
 static PFNSETPIXELFORMAT _SetPixelFormat;
 static BOOL APIENTRY d_SetPixelFormat(HDC hdc, int ipfd, const PIXELFORMATDESCRIPTOR *ppfd) {
 	BOOL ret = _SetPixelFormat(hdc, ipfd, ppfd);
-	CheckGLError("SetPixelFormat");
+	GGLCheckError("SetPixelFormat");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNSWAPBUFFERS)(HDC hdc);
@@ -74,7 +74,7 @@ PFNSWAPBUFFERS gSwapBuffers;
 static PFNSWAPBUFFERS _SwapBuffers;
 static BOOL APIENTRY d_SwapBuffers(HDC hdc) {
 	BOOL ret = _SwapBuffers(hdc);
-	CheckGLError("SwapBuffers");
+	GGLCheckError("SwapBuffers");
 	return ret;
 }
 typedef void * (APIENTRYP PFNWGLALLOCATEMEMORYNV)(GLsizei size, GLfloat readfreq, GLfloat writefreq, GLfloat priority);
@@ -82,7 +82,7 @@ PFNWGLALLOCATEMEMORYNV gwglAllocateMemoryNV;
 static PFNWGLALLOCATEMEMORYNV _wglAllocateMemoryNV;
 static void * APIENTRY d_wglAllocateMemoryNV(GLsizei size, GLfloat readfreq, GLfloat writefreq, GLfloat priority) {
 	void * ret = _wglAllocateMemoryNV(size, readfreq, writefreq, priority);
-	CheckGLError("wglAllocateMemoryNV");
+	GGLCheckError("wglAllocateMemoryNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLASSOCIATEIMAGEBUFFEREVENTSI3D)(HDC hDC, const HANDLE *pEvent, const LPVOID *pAddress, const DWORD *pSize, UINT count);
@@ -90,7 +90,7 @@ PFNWGLASSOCIATEIMAGEBUFFEREVENTSI3D gwglAssociateImageBufferEventsI3D;
 static PFNWGLASSOCIATEIMAGEBUFFEREVENTSI3D _wglAssociateImageBufferEventsI3D;
 static BOOL APIENTRY d_wglAssociateImageBufferEventsI3D(HDC hDC, const HANDLE *pEvent, const LPVOID *pAddress, const DWORD *pSize, UINT count) {
 	BOOL ret = _wglAssociateImageBufferEventsI3D(hDC, pEvent, pAddress, pSize, count);
-	CheckGLError("wglAssociateImageBufferEventsI3D");
+	GGLCheckError("wglAssociateImageBufferEventsI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLBEGINFRAMETRACKINGI3D)();
@@ -98,7 +98,7 @@ PFNWGLBEGINFRAMETRACKINGI3D gwglBeginFrameTrackingI3D;
 static PFNWGLBEGINFRAMETRACKINGI3D _wglBeginFrameTrackingI3D;
 static BOOL APIENTRY d_wglBeginFrameTrackingI3D() {
 	BOOL ret = _wglBeginFrameTrackingI3D();
-	CheckGLError("wglBeginFrameTrackingI3D");
+	GGLCheckError("wglBeginFrameTrackingI3D");
 	return ret;
 }
 typedef GLboolean (APIENTRYP PFNWGLBINDDISPLAYCOLORTABLEEXT)(GLushort id);
@@ -106,7 +106,7 @@ PFNWGLBINDDISPLAYCOLORTABLEEXT gwglBindDisplayColorTableEXT;
 static PFNWGLBINDDISPLAYCOLORTABLEEXT _wglBindDisplayColorTableEXT;
 static GLboolean APIENTRY d_wglBindDisplayColorTableEXT(GLushort id) {
 	GLboolean ret = _wglBindDisplayColorTableEXT(id);
-	CheckGLError("wglBindDisplayColorTableEXT");
+	GGLCheckError("wglBindDisplayColorTableEXT");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLBINDSWAPBARRIERNV)(GLuint group, GLuint barrier);
@@ -114,7 +114,7 @@ PFNWGLBINDSWAPBARRIERNV gwglBindSwapBarrierNV;
 static PFNWGLBINDSWAPBARRIERNV _wglBindSwapBarrierNV;
 static BOOL APIENTRY d_wglBindSwapBarrierNV(GLuint group, GLuint barrier) {
 	BOOL ret = _wglBindSwapBarrierNV(group, barrier);
-	CheckGLError("wglBindSwapBarrierNV");
+	GGLCheckError("wglBindSwapBarrierNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLBINDTEXIMAGEARB)(HPBUFFERARB hPbuffer, int iBuffer);
@@ -122,7 +122,7 @@ PFNWGLBINDTEXIMAGEARB gwglBindTexImageARB;
 static PFNWGLBINDTEXIMAGEARB _wglBindTexImageARB;
 static BOOL APIENTRY d_wglBindTexImageARB(HPBUFFERARB hPbuffer, int iBuffer) {
 	BOOL ret = _wglBindTexImageARB(hPbuffer, iBuffer);
-	CheckGLError("wglBindTexImageARB");
+	GGLCheckError("wglBindTexImageARB");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLBINDVIDEOCAPTUREDEVICENV)(UINT uVideoSlot, HVIDEOINPUTDEVICENV hDevice);
@@ -130,7 +130,7 @@ PFNWGLBINDVIDEOCAPTUREDEVICENV gwglBindVideoCaptureDeviceNV;
 static PFNWGLBINDVIDEOCAPTUREDEVICENV _wglBindVideoCaptureDeviceNV;
 static BOOL APIENTRY d_wglBindVideoCaptureDeviceNV(UINT uVideoSlot, HVIDEOINPUTDEVICENV hDevice) {
 	BOOL ret = _wglBindVideoCaptureDeviceNV(uVideoSlot, hDevice);
-	CheckGLError("wglBindVideoCaptureDeviceNV");
+	GGLCheckError("wglBindVideoCaptureDeviceNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLBINDVIDEODEVICENV)(HDC hDC, unsigned int uVideoSlot, HVIDEOOUTPUTDEVICENV hVideoDevice, const int *piAttribList);
@@ -138,7 +138,7 @@ PFNWGLBINDVIDEODEVICENV gwglBindVideoDeviceNV;
 static PFNWGLBINDVIDEODEVICENV _wglBindVideoDeviceNV;
 static BOOL APIENTRY d_wglBindVideoDeviceNV(HDC hDC, unsigned int uVideoSlot, HVIDEOOUTPUTDEVICENV hVideoDevice, const int *piAttribList) {
 	BOOL ret = _wglBindVideoDeviceNV(hDC, uVideoSlot, hVideoDevice, piAttribList);
-	CheckGLError("wglBindVideoDeviceNV");
+	GGLCheckError("wglBindVideoDeviceNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLBINDVIDEOIMAGENV)(HPVIDEODEV hVideoDevice, HPBUFFERARB hPbuffer, int iVideoBuffer);
@@ -146,7 +146,7 @@ PFNWGLBINDVIDEOIMAGENV gwglBindVideoImageNV;
 static PFNWGLBINDVIDEOIMAGENV _wglBindVideoImageNV;
 static BOOL APIENTRY d_wglBindVideoImageNV(HPVIDEODEV hVideoDevice, HPBUFFERARB hPbuffer, int iVideoBuffer) {
 	BOOL ret = _wglBindVideoImageNV(hVideoDevice, hPbuffer, iVideoBuffer);
-	CheckGLError("wglBindVideoImageNV");
+	GGLCheckError("wglBindVideoImageNV");
 	return ret;
 }
 typedef VOID (APIENTRYP PFNWGLBLITCONTEXTFRAMEBUFFERAMD)(HGLRC dstCtx, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
@@ -154,14 +154,14 @@ PFNWGLBLITCONTEXTFRAMEBUFFERAMD gwglBlitContextFramebufferAMD;
 static PFNWGLBLITCONTEXTFRAMEBUFFERAMD _wglBlitContextFramebufferAMD;
 static VOID APIENTRY d_wglBlitContextFramebufferAMD(HGLRC dstCtx, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter) {
 	_wglBlitContextFramebufferAMD(dstCtx, srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
-	CheckGLError("wglBlitContextFramebufferAMD");
+	GGLCheckError("wglBlitContextFramebufferAMD");
 }
 typedef BOOL (APIENTRYP PFNWGLCHOOSEPIXELFORMATARB)(HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
 PFNWGLCHOOSEPIXELFORMATARB gwglChoosePixelFormatARB;
 static PFNWGLCHOOSEPIXELFORMATARB _wglChoosePixelFormatARB;
 static BOOL APIENTRY d_wglChoosePixelFormatARB(HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats) {
 	BOOL ret = _wglChoosePixelFormatARB(hdc, piAttribIList, pfAttribFList, nMaxFormats, piFormats, nNumFormats);
-	CheckGLError("wglChoosePixelFormatARB");
+	GGLCheckError("wglChoosePixelFormatARB");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLCHOOSEPIXELFORMATEXT)(HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
@@ -169,7 +169,7 @@ PFNWGLCHOOSEPIXELFORMATEXT gwglChoosePixelFormatEXT;
 static PFNWGLCHOOSEPIXELFORMATEXT _wglChoosePixelFormatEXT;
 static BOOL APIENTRY d_wglChoosePixelFormatEXT(HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats) {
 	BOOL ret = _wglChoosePixelFormatEXT(hdc, piAttribIList, pfAttribFList, nMaxFormats, piFormats, nNumFormats);
-	CheckGLError("wglChoosePixelFormatEXT");
+	GGLCheckError("wglChoosePixelFormatEXT");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLCOPYCONTEXT)(HGLRC hglrcSrc, HGLRC hglrcDst, UINT mask);
@@ -177,7 +177,7 @@ PFNWGLCOPYCONTEXT gwglCopyContext;
 static PFNWGLCOPYCONTEXT _wglCopyContext;
 static BOOL APIENTRY d_wglCopyContext(HGLRC hglrcSrc, HGLRC hglrcDst, UINT mask) {
 	BOOL ret = _wglCopyContext(hglrcSrc, hglrcDst, mask);
-	CheckGLError("wglCopyContext");
+	GGLCheckError("wglCopyContext");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLCOPYIMAGESUBDATANV)(HGLRC hSrcRC, GLuint srcName, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, HGLRC hDstRC, GLuint dstName, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei width, GLsizei height, GLsizei depth);
@@ -185,7 +185,7 @@ PFNWGLCOPYIMAGESUBDATANV gwglCopyImageSubDataNV;
 static PFNWGLCOPYIMAGESUBDATANV _wglCopyImageSubDataNV;
 static BOOL APIENTRY d_wglCopyImageSubDataNV(HGLRC hSrcRC, GLuint srcName, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, HGLRC hDstRC, GLuint dstName, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei width, GLsizei height, GLsizei depth) {
 	BOOL ret = _wglCopyImageSubDataNV(hSrcRC, srcName, srcTarget, srcLevel, srcX, srcY, srcZ, hDstRC, dstName, dstTarget, dstLevel, dstX, dstY, dstZ, width, height, depth);
-	CheckGLError("wglCopyImageSubDataNV");
+	GGLCheckError("wglCopyImageSubDataNV");
 	return ret;
 }
 typedef HDC (APIENTRYP PFNWGLCREATEAFFINITYDCNV)(const HGPUNV *phGpuList);
@@ -193,7 +193,7 @@ PFNWGLCREATEAFFINITYDCNV gwglCreateAffinityDCNV;
 static PFNWGLCREATEAFFINITYDCNV _wglCreateAffinityDCNV;
 static HDC APIENTRY d_wglCreateAffinityDCNV(const HGPUNV *phGpuList) {
 	HDC ret = _wglCreateAffinityDCNV(phGpuList);
-	CheckGLError("wglCreateAffinityDCNV");
+	GGLCheckError("wglCreateAffinityDCNV");
 	return ret;
 }
 typedef HGLRC (APIENTRYP PFNWGLCREATEASSOCIATEDCONTEXTAMD)(UINT id);
@@ -201,7 +201,7 @@ PFNWGLCREATEASSOCIATEDCONTEXTAMD gwglCreateAssociatedContextAMD;
 static PFNWGLCREATEASSOCIATEDCONTEXTAMD _wglCreateAssociatedContextAMD;
 static HGLRC APIENTRY d_wglCreateAssociatedContextAMD(UINT id) {
 	HGLRC ret = _wglCreateAssociatedContextAMD(id);
-	CheckGLError("wglCreateAssociatedContextAMD");
+	GGLCheckError("wglCreateAssociatedContextAMD");
 	return ret;
 }
 typedef HGLRC (APIENTRYP PFNWGLCREATEASSOCIATEDCONTEXTATTRIBSAMD)(UINT id, HGLRC hShareContext, const int *attribList);
@@ -209,7 +209,7 @@ PFNWGLCREATEASSOCIATEDCONTEXTATTRIBSAMD gwglCreateAssociatedContextAttribsAMD;
 static PFNWGLCREATEASSOCIATEDCONTEXTATTRIBSAMD _wglCreateAssociatedContextAttribsAMD;
 static HGLRC APIENTRY d_wglCreateAssociatedContextAttribsAMD(UINT id, HGLRC hShareContext, const int *attribList) {
 	HGLRC ret = _wglCreateAssociatedContextAttribsAMD(id, hShareContext, attribList);
-	CheckGLError("wglCreateAssociatedContextAttribsAMD");
+	GGLCheckError("wglCreateAssociatedContextAttribsAMD");
 	return ret;
 }
 typedef HANDLE (APIENTRYP PFNWGLCREATEBUFFERREGIONARB)(HDC hDC, int iLayerPlane, UINT uType);
@@ -217,7 +217,7 @@ PFNWGLCREATEBUFFERREGIONARB gwglCreateBufferRegionARB;
 static PFNWGLCREATEBUFFERREGIONARB _wglCreateBufferRegionARB;
 static HANDLE APIENTRY d_wglCreateBufferRegionARB(HDC hDC, int iLayerPlane, UINT uType) {
 	HANDLE ret = _wglCreateBufferRegionARB(hDC, iLayerPlane, uType);
-	CheckGLError("wglCreateBufferRegionARB");
+	GGLCheckError("wglCreateBufferRegionARB");
 	return ret;
 }
 typedef HGLRC (APIENTRYP PFNWGLCREATECONTEXT)(HDC hDc);
@@ -225,7 +225,7 @@ PFNWGLCREATECONTEXT gwglCreateContext;
 static PFNWGLCREATECONTEXT _wglCreateContext;
 static HGLRC APIENTRY d_wglCreateContext(HDC hDc) {
 	HGLRC ret = _wglCreateContext(hDc);
-	CheckGLError("wglCreateContext");
+	GGLCheckError("wglCreateContext");
 	return ret;
 }
 typedef HGLRC (APIENTRYP PFNWGLCREATECONTEXTATTRIBSARB)(HDC hDC, HGLRC hShareContext, const int *attribList);
@@ -233,7 +233,7 @@ PFNWGLCREATECONTEXTATTRIBSARB gwglCreateContextAttribsARB;
 static PFNWGLCREATECONTEXTATTRIBSARB _wglCreateContextAttribsARB;
 static HGLRC APIENTRY d_wglCreateContextAttribsARB(HDC hDC, HGLRC hShareContext, const int *attribList) {
 	HGLRC ret = _wglCreateContextAttribsARB(hDC, hShareContext, attribList);
-	CheckGLError("wglCreateContextAttribsARB");
+	GGLCheckError("wglCreateContextAttribsARB");
 	return ret;
 }
 typedef GLboolean (APIENTRYP PFNWGLCREATEDISPLAYCOLORTABLEEXT)(GLushort id);
@@ -241,7 +241,7 @@ PFNWGLCREATEDISPLAYCOLORTABLEEXT gwglCreateDisplayColorTableEXT;
 static PFNWGLCREATEDISPLAYCOLORTABLEEXT _wglCreateDisplayColorTableEXT;
 static GLboolean APIENTRY d_wglCreateDisplayColorTableEXT(GLushort id) {
 	GLboolean ret = _wglCreateDisplayColorTableEXT(id);
-	CheckGLError("wglCreateDisplayColorTableEXT");
+	GGLCheckError("wglCreateDisplayColorTableEXT");
 	return ret;
 }
 typedef LPVOID (APIENTRYP PFNWGLCREATEIMAGEBUFFERI3D)(HDC hDC, DWORD dwSize, UINT uFlags);
@@ -249,7 +249,7 @@ PFNWGLCREATEIMAGEBUFFERI3D gwglCreateImageBufferI3D;
 static PFNWGLCREATEIMAGEBUFFERI3D _wglCreateImageBufferI3D;
 static LPVOID APIENTRY d_wglCreateImageBufferI3D(HDC hDC, DWORD dwSize, UINT uFlags) {
 	LPVOID ret = _wglCreateImageBufferI3D(hDC, dwSize, uFlags);
-	CheckGLError("wglCreateImageBufferI3D");
+	GGLCheckError("wglCreateImageBufferI3D");
 	return ret;
 }
 typedef HGLRC (APIENTRYP PFNWGLCREATELAYERCONTEXT)(HDC hDc, int level);
@@ -257,7 +257,7 @@ PFNWGLCREATELAYERCONTEXT gwglCreateLayerContext;
 static PFNWGLCREATELAYERCONTEXT _wglCreateLayerContext;
 static HGLRC APIENTRY d_wglCreateLayerContext(HDC hDc, int level) {
 	HGLRC ret = _wglCreateLayerContext(hDc, level);
-	CheckGLError("wglCreateLayerContext");
+	GGLCheckError("wglCreateLayerContext");
 	return ret;
 }
 typedef HPBUFFERARB (APIENTRYP PFNWGLCREATEPBUFFERARB)(HDC hDC, int iPixelFormat, int iWidth, int iHeight, const int *piAttribList);
@@ -265,7 +265,7 @@ PFNWGLCREATEPBUFFERARB gwglCreatePbufferARB;
 static PFNWGLCREATEPBUFFERARB _wglCreatePbufferARB;
 static HPBUFFERARB APIENTRY d_wglCreatePbufferARB(HDC hDC, int iPixelFormat, int iWidth, int iHeight, const int *piAttribList) {
 	HPBUFFERARB ret = _wglCreatePbufferARB(hDC, iPixelFormat, iWidth, iHeight, piAttribList);
-	CheckGLError("wglCreatePbufferARB");
+	GGLCheckError("wglCreatePbufferARB");
 	return ret;
 }
 typedef HPBUFFEREXT (APIENTRYP PFNWGLCREATEPBUFFEREXT)(HDC hDC, int iPixelFormat, int iWidth, int iHeight, const int *piAttribList);
@@ -273,7 +273,7 @@ PFNWGLCREATEPBUFFEREXT gwglCreatePbufferEXT;
 static PFNWGLCREATEPBUFFEREXT _wglCreatePbufferEXT;
 static HPBUFFEREXT APIENTRY d_wglCreatePbufferEXT(HDC hDC, int iPixelFormat, int iWidth, int iHeight, const int *piAttribList) {
 	HPBUFFEREXT ret = _wglCreatePbufferEXT(hDC, iPixelFormat, iWidth, iHeight, piAttribList);
-	CheckGLError("wglCreatePbufferEXT");
+	GGLCheckError("wglCreatePbufferEXT");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLDELAYBEFORESWAPNV)(HDC hDC, GLfloat seconds);
@@ -281,7 +281,7 @@ PFNWGLDELAYBEFORESWAPNV gwglDelayBeforeSwapNV;
 static PFNWGLDELAYBEFORESWAPNV _wglDelayBeforeSwapNV;
 static BOOL APIENTRY d_wglDelayBeforeSwapNV(HDC hDC, GLfloat seconds) {
 	BOOL ret = _wglDelayBeforeSwapNV(hDC, seconds);
-	CheckGLError("wglDelayBeforeSwapNV");
+	GGLCheckError("wglDelayBeforeSwapNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLDELETEASSOCIATEDCONTEXTAMD)(HGLRC hglrc);
@@ -289,7 +289,7 @@ PFNWGLDELETEASSOCIATEDCONTEXTAMD gwglDeleteAssociatedContextAMD;
 static PFNWGLDELETEASSOCIATEDCONTEXTAMD _wglDeleteAssociatedContextAMD;
 static BOOL APIENTRY d_wglDeleteAssociatedContextAMD(HGLRC hglrc) {
 	BOOL ret = _wglDeleteAssociatedContextAMD(hglrc);
-	CheckGLError("wglDeleteAssociatedContextAMD");
+	GGLCheckError("wglDeleteAssociatedContextAMD");
 	return ret;
 }
 typedef VOID (APIENTRYP PFNWGLDELETEBUFFERREGIONARB)(HANDLE hRegion);
@@ -297,14 +297,14 @@ PFNWGLDELETEBUFFERREGIONARB gwglDeleteBufferRegionARB;
 static PFNWGLDELETEBUFFERREGIONARB _wglDeleteBufferRegionARB;
 static VOID APIENTRY d_wglDeleteBufferRegionARB(HANDLE hRegion) {
 	_wglDeleteBufferRegionARB(hRegion);
-	CheckGLError("wglDeleteBufferRegionARB");
+	GGLCheckError("wglDeleteBufferRegionARB");
 }
 typedef BOOL (APIENTRYP PFNWGLDELETECONTEXT)(HGLRC oldContext);
 PFNWGLDELETECONTEXT gwglDeleteContext;
 static PFNWGLDELETECONTEXT _wglDeleteContext;
 static BOOL APIENTRY d_wglDeleteContext(HGLRC oldContext) {
 	BOOL ret = _wglDeleteContext(oldContext);
-	CheckGLError("wglDeleteContext");
+	GGLCheckError("wglDeleteContext");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLDELETEDCNV)(HDC hdc);
@@ -312,7 +312,7 @@ PFNWGLDELETEDCNV gwglDeleteDCNV;
 static PFNWGLDELETEDCNV _wglDeleteDCNV;
 static BOOL APIENTRY d_wglDeleteDCNV(HDC hdc) {
 	BOOL ret = _wglDeleteDCNV(hdc);
-	CheckGLError("wglDeleteDCNV");
+	GGLCheckError("wglDeleteDCNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLDESCRIBELAYERPLANE)(HDC hDc, int pixelFormat, int layerPlane, UINT nBytes, const LAYERPLANEDESCRIPTOR *plpd);
@@ -320,7 +320,7 @@ PFNWGLDESCRIBELAYERPLANE gwglDescribeLayerPlane;
 static PFNWGLDESCRIBELAYERPLANE _wglDescribeLayerPlane;
 static BOOL APIENTRY d_wglDescribeLayerPlane(HDC hDc, int pixelFormat, int layerPlane, UINT nBytes, const LAYERPLANEDESCRIPTOR *plpd) {
 	BOOL ret = _wglDescribeLayerPlane(hDc, pixelFormat, layerPlane, nBytes, plpd);
-	CheckGLError("wglDescribeLayerPlane");
+	GGLCheckError("wglDescribeLayerPlane");
 	return ret;
 }
 typedef VOID (APIENTRYP PFNWGLDESTROYDISPLAYCOLORTABLEEXT)(GLushort id);
@@ -328,14 +328,14 @@ PFNWGLDESTROYDISPLAYCOLORTABLEEXT gwglDestroyDisplayColorTableEXT;
 static PFNWGLDESTROYDISPLAYCOLORTABLEEXT _wglDestroyDisplayColorTableEXT;
 static VOID APIENTRY d_wglDestroyDisplayColorTableEXT(GLushort id) {
 	_wglDestroyDisplayColorTableEXT(id);
-	CheckGLError("wglDestroyDisplayColorTableEXT");
+	GGLCheckError("wglDestroyDisplayColorTableEXT");
 }
 typedef BOOL (APIENTRYP PFNWGLDESTROYIMAGEBUFFERI3D)(HDC hDC, LPVOID pAddress);
 PFNWGLDESTROYIMAGEBUFFERI3D gwglDestroyImageBufferI3D;
 static PFNWGLDESTROYIMAGEBUFFERI3D _wglDestroyImageBufferI3D;
 static BOOL APIENTRY d_wglDestroyImageBufferI3D(HDC hDC, LPVOID pAddress) {
 	BOOL ret = _wglDestroyImageBufferI3D(hDC, pAddress);
-	CheckGLError("wglDestroyImageBufferI3D");
+	GGLCheckError("wglDestroyImageBufferI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLDESTROYPBUFFERARB)(HPBUFFERARB hPbuffer);
@@ -343,7 +343,7 @@ PFNWGLDESTROYPBUFFERARB gwglDestroyPbufferARB;
 static PFNWGLDESTROYPBUFFERARB _wglDestroyPbufferARB;
 static BOOL APIENTRY d_wglDestroyPbufferARB(HPBUFFERARB hPbuffer) {
 	BOOL ret = _wglDestroyPbufferARB(hPbuffer);
-	CheckGLError("wglDestroyPbufferARB");
+	GGLCheckError("wglDestroyPbufferARB");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLDESTROYPBUFFEREXT)(HPBUFFEREXT hPbuffer);
@@ -351,7 +351,7 @@ PFNWGLDESTROYPBUFFEREXT gwglDestroyPbufferEXT;
 static PFNWGLDESTROYPBUFFEREXT _wglDestroyPbufferEXT;
 static BOOL APIENTRY d_wglDestroyPbufferEXT(HPBUFFEREXT hPbuffer) {
 	BOOL ret = _wglDestroyPbufferEXT(hPbuffer);
-	CheckGLError("wglDestroyPbufferEXT");
+	GGLCheckError("wglDestroyPbufferEXT");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLDISABLEFRAMELOCKI3D)();
@@ -359,7 +359,7 @@ PFNWGLDISABLEFRAMELOCKI3D gwglDisableFrameLockI3D;
 static PFNWGLDISABLEFRAMELOCKI3D _wglDisableFrameLockI3D;
 static BOOL APIENTRY d_wglDisableFrameLockI3D() {
 	BOOL ret = _wglDisableFrameLockI3D();
-	CheckGLError("wglDisableFrameLockI3D");
+	GGLCheckError("wglDisableFrameLockI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLDISABLEGENLOCKI3D)(HDC hDC);
@@ -367,7 +367,7 @@ PFNWGLDISABLEGENLOCKI3D gwglDisableGenlockI3D;
 static PFNWGLDISABLEGENLOCKI3D _wglDisableGenlockI3D;
 static BOOL APIENTRY d_wglDisableGenlockI3D(HDC hDC) {
 	BOOL ret = _wglDisableGenlockI3D(hDC);
-	CheckGLError("wglDisableGenlockI3D");
+	GGLCheckError("wglDisableGenlockI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLDXCLOSEDEVICENV)(HANDLE hDevice);
@@ -375,7 +375,7 @@ PFNWGLDXCLOSEDEVICENV gwglDXCloseDeviceNV;
 static PFNWGLDXCLOSEDEVICENV _wglDXCloseDeviceNV;
 static BOOL APIENTRY d_wglDXCloseDeviceNV(HANDLE hDevice) {
 	BOOL ret = _wglDXCloseDeviceNV(hDevice);
-	CheckGLError("wglDXCloseDeviceNV");
+	GGLCheckError("wglDXCloseDeviceNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLDXLOCKOBJECTSNV)(HANDLE hDevice, GLint count, HANDLE *hObjects);
@@ -383,7 +383,7 @@ PFNWGLDXLOCKOBJECTSNV gwglDXLockObjectsNV;
 static PFNWGLDXLOCKOBJECTSNV _wglDXLockObjectsNV;
 static BOOL APIENTRY d_wglDXLockObjectsNV(HANDLE hDevice, GLint count, HANDLE *hObjects) {
 	BOOL ret = _wglDXLockObjectsNV(hDevice, count, hObjects);
-	CheckGLError("wglDXLockObjectsNV");
+	GGLCheckError("wglDXLockObjectsNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLDXOBJECTACCESSNV)(HANDLE hObject, GLenum access);
@@ -391,7 +391,7 @@ PFNWGLDXOBJECTACCESSNV gwglDXObjectAccessNV;
 static PFNWGLDXOBJECTACCESSNV _wglDXObjectAccessNV;
 static BOOL APIENTRY d_wglDXObjectAccessNV(HANDLE hObject, GLenum access) {
 	BOOL ret = _wglDXObjectAccessNV(hObject, access);
-	CheckGLError("wglDXObjectAccessNV");
+	GGLCheckError("wglDXObjectAccessNV");
 	return ret;
 }
 typedef HANDLE (APIENTRYP PFNWGLDXOPENDEVICENV)(void *dxDevice);
@@ -399,7 +399,7 @@ PFNWGLDXOPENDEVICENV gwglDXOpenDeviceNV;
 static PFNWGLDXOPENDEVICENV _wglDXOpenDeviceNV;
 static HANDLE APIENTRY d_wglDXOpenDeviceNV(void *dxDevice) {
 	HANDLE ret = _wglDXOpenDeviceNV(dxDevice);
-	CheckGLError("wglDXOpenDeviceNV");
+	GGLCheckError("wglDXOpenDeviceNV");
 	return ret;
 }
 typedef HANDLE (APIENTRYP PFNWGLDXREGISTEROBJECTNV)(HANDLE hDevice, void *dxObject, GLuint name, GLenum type, GLenum access);
@@ -407,7 +407,7 @@ PFNWGLDXREGISTEROBJECTNV gwglDXRegisterObjectNV;
 static PFNWGLDXREGISTEROBJECTNV _wglDXRegisterObjectNV;
 static HANDLE APIENTRY d_wglDXRegisterObjectNV(HANDLE hDevice, void *dxObject, GLuint name, GLenum type, GLenum access) {
 	HANDLE ret = _wglDXRegisterObjectNV(hDevice, dxObject, name, type, access);
-	CheckGLError("wglDXRegisterObjectNV");
+	GGLCheckError("wglDXRegisterObjectNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLDXSETRESOURCESHAREHANDLENV)(void *dxObject, HANDLE shareHandle);
@@ -415,7 +415,7 @@ PFNWGLDXSETRESOURCESHAREHANDLENV gwglDXSetResourceShareHandleNV;
 static PFNWGLDXSETRESOURCESHAREHANDLENV _wglDXSetResourceShareHandleNV;
 static BOOL APIENTRY d_wglDXSetResourceShareHandleNV(void *dxObject, HANDLE shareHandle) {
 	BOOL ret = _wglDXSetResourceShareHandleNV(dxObject, shareHandle);
-	CheckGLError("wglDXSetResourceShareHandleNV");
+	GGLCheckError("wglDXSetResourceShareHandleNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLDXUNLOCKOBJECTSNV)(HANDLE hDevice, GLint count, HANDLE *hObjects);
@@ -423,7 +423,7 @@ PFNWGLDXUNLOCKOBJECTSNV gwglDXUnlockObjectsNV;
 static PFNWGLDXUNLOCKOBJECTSNV _wglDXUnlockObjectsNV;
 static BOOL APIENTRY d_wglDXUnlockObjectsNV(HANDLE hDevice, GLint count, HANDLE *hObjects) {
 	BOOL ret = _wglDXUnlockObjectsNV(hDevice, count, hObjects);
-	CheckGLError("wglDXUnlockObjectsNV");
+	GGLCheckError("wglDXUnlockObjectsNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLDXUNREGISTEROBJECTNV)(HANDLE hDevice, HANDLE hObject);
@@ -431,7 +431,7 @@ PFNWGLDXUNREGISTEROBJECTNV gwglDXUnregisterObjectNV;
 static PFNWGLDXUNREGISTEROBJECTNV _wglDXUnregisterObjectNV;
 static BOOL APIENTRY d_wglDXUnregisterObjectNV(HANDLE hDevice, HANDLE hObject) {
 	BOOL ret = _wglDXUnregisterObjectNV(hDevice, hObject);
-	CheckGLError("wglDXUnregisterObjectNV");
+	GGLCheckError("wglDXUnregisterObjectNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLENABLEFRAMELOCKI3D)();
@@ -439,7 +439,7 @@ PFNWGLENABLEFRAMELOCKI3D gwglEnableFrameLockI3D;
 static PFNWGLENABLEFRAMELOCKI3D _wglEnableFrameLockI3D;
 static BOOL APIENTRY d_wglEnableFrameLockI3D() {
 	BOOL ret = _wglEnableFrameLockI3D();
-	CheckGLError("wglEnableFrameLockI3D");
+	GGLCheckError("wglEnableFrameLockI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLENABLEGENLOCKI3D)(HDC hDC);
@@ -447,7 +447,7 @@ PFNWGLENABLEGENLOCKI3D gwglEnableGenlockI3D;
 static PFNWGLENABLEGENLOCKI3D _wglEnableGenlockI3D;
 static BOOL APIENTRY d_wglEnableGenlockI3D(HDC hDC) {
 	BOOL ret = _wglEnableGenlockI3D(hDC);
-	CheckGLError("wglEnableGenlockI3D");
+	GGLCheckError("wglEnableGenlockI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLENDFRAMETRACKINGI3D)();
@@ -455,7 +455,7 @@ PFNWGLENDFRAMETRACKINGI3D gwglEndFrameTrackingI3D;
 static PFNWGLENDFRAMETRACKINGI3D _wglEndFrameTrackingI3D;
 static BOOL APIENTRY d_wglEndFrameTrackingI3D() {
 	BOOL ret = _wglEndFrameTrackingI3D();
-	CheckGLError("wglEndFrameTrackingI3D");
+	GGLCheckError("wglEndFrameTrackingI3D");
 	return ret;
 }
 typedef UINT (APIENTRYP PFNWGLENUMERATEVIDEOCAPTUREDEVICESNV)(HDC hDc, HVIDEOINPUTDEVICENV *phDeviceList);
@@ -463,7 +463,7 @@ PFNWGLENUMERATEVIDEOCAPTUREDEVICESNV gwglEnumerateVideoCaptureDevicesNV;
 static PFNWGLENUMERATEVIDEOCAPTUREDEVICESNV _wglEnumerateVideoCaptureDevicesNV;
 static UINT APIENTRY d_wglEnumerateVideoCaptureDevicesNV(HDC hDc, HVIDEOINPUTDEVICENV *phDeviceList) {
 	UINT ret = _wglEnumerateVideoCaptureDevicesNV(hDc, phDeviceList);
-	CheckGLError("wglEnumerateVideoCaptureDevicesNV");
+	GGLCheckError("wglEnumerateVideoCaptureDevicesNV");
 	return ret;
 }
 typedef int (APIENTRYP PFNWGLENUMERATEVIDEODEVICESNV)(HDC hDC, HVIDEOOUTPUTDEVICENV *phDeviceList);
@@ -471,7 +471,7 @@ PFNWGLENUMERATEVIDEODEVICESNV gwglEnumerateVideoDevicesNV;
 static PFNWGLENUMERATEVIDEODEVICESNV _wglEnumerateVideoDevicesNV;
 static int APIENTRY d_wglEnumerateVideoDevicesNV(HDC hDC, HVIDEOOUTPUTDEVICENV *phDeviceList) {
 	int ret = _wglEnumerateVideoDevicesNV(hDC, phDeviceList);
-	CheckGLError("wglEnumerateVideoDevicesNV");
+	GGLCheckError("wglEnumerateVideoDevicesNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLENUMGPUDEVICESNV)(HGPUNV hGpu, UINT iDeviceIndex, PGPU_DEVICE lpGpuDevice);
@@ -479,7 +479,7 @@ PFNWGLENUMGPUDEVICESNV gwglEnumGpuDevicesNV;
 static PFNWGLENUMGPUDEVICESNV _wglEnumGpuDevicesNV;
 static BOOL APIENTRY d_wglEnumGpuDevicesNV(HGPUNV hGpu, UINT iDeviceIndex, PGPU_DEVICE lpGpuDevice) {
 	BOOL ret = _wglEnumGpuDevicesNV(hGpu, iDeviceIndex, lpGpuDevice);
-	CheckGLError("wglEnumGpuDevicesNV");
+	GGLCheckError("wglEnumGpuDevicesNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLENUMGPUSFROMAFFINITYDCNV)(HDC hAffinityDC, UINT iGpuIndex, HGPUNV *hGpu);
@@ -487,7 +487,7 @@ PFNWGLENUMGPUSFROMAFFINITYDCNV gwglEnumGpusFromAffinityDCNV;
 static PFNWGLENUMGPUSFROMAFFINITYDCNV _wglEnumGpusFromAffinityDCNV;
 static BOOL APIENTRY d_wglEnumGpusFromAffinityDCNV(HDC hAffinityDC, UINT iGpuIndex, HGPUNV *hGpu) {
 	BOOL ret = _wglEnumGpusFromAffinityDCNV(hAffinityDC, iGpuIndex, hGpu);
-	CheckGLError("wglEnumGpusFromAffinityDCNV");
+	GGLCheckError("wglEnumGpusFromAffinityDCNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLENUMGPUSNV)(UINT iGpuIndex, HGPUNV *phGpu);
@@ -495,7 +495,7 @@ PFNWGLENUMGPUSNV gwglEnumGpusNV;
 static PFNWGLENUMGPUSNV _wglEnumGpusNV;
 static BOOL APIENTRY d_wglEnumGpusNV(UINT iGpuIndex, HGPUNV *phGpu) {
 	BOOL ret = _wglEnumGpusNV(iGpuIndex, phGpu);
-	CheckGLError("wglEnumGpusNV");
+	GGLCheckError("wglEnumGpusNV");
 	return ret;
 }
 typedef void (APIENTRYP PFNWGLFREEMEMORYNV)(void *pointer);
@@ -503,14 +503,14 @@ PFNWGLFREEMEMORYNV gwglFreeMemoryNV;
 static PFNWGLFREEMEMORYNV _wglFreeMemoryNV;
 static void APIENTRY d_wglFreeMemoryNV(void *pointer) {
 	_wglFreeMemoryNV(pointer);
-	CheckGLError("wglFreeMemoryNV");
+	GGLCheckError("wglFreeMemoryNV");
 }
 typedef BOOL (APIENTRYP PFNWGLGENLOCKSAMPLERATEI3D)(HDC hDC, UINT uRate);
 PFNWGLGENLOCKSAMPLERATEI3D gwglGenlockSampleRateI3D;
 static PFNWGLGENLOCKSAMPLERATEI3D _wglGenlockSampleRateI3D;
 static BOOL APIENTRY d_wglGenlockSampleRateI3D(HDC hDC, UINT uRate) {
 	BOOL ret = _wglGenlockSampleRateI3D(hDC, uRate);
-	CheckGLError("wglGenlockSampleRateI3D");
+	GGLCheckError("wglGenlockSampleRateI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGENLOCKSOURCEDELAYI3D)(HDC hDC, UINT uDelay);
@@ -518,7 +518,7 @@ PFNWGLGENLOCKSOURCEDELAYI3D gwglGenlockSourceDelayI3D;
 static PFNWGLGENLOCKSOURCEDELAYI3D _wglGenlockSourceDelayI3D;
 static BOOL APIENTRY d_wglGenlockSourceDelayI3D(HDC hDC, UINT uDelay) {
 	BOOL ret = _wglGenlockSourceDelayI3D(hDC, uDelay);
-	CheckGLError("wglGenlockSourceDelayI3D");
+	GGLCheckError("wglGenlockSourceDelayI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGENLOCKSOURCEEDGEI3D)(HDC hDC, UINT uEdge);
@@ -526,7 +526,7 @@ PFNWGLGENLOCKSOURCEEDGEI3D gwglGenlockSourceEdgeI3D;
 static PFNWGLGENLOCKSOURCEEDGEI3D _wglGenlockSourceEdgeI3D;
 static BOOL APIENTRY d_wglGenlockSourceEdgeI3D(HDC hDC, UINT uEdge) {
 	BOOL ret = _wglGenlockSourceEdgeI3D(hDC, uEdge);
-	CheckGLError("wglGenlockSourceEdgeI3D");
+	GGLCheckError("wglGenlockSourceEdgeI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGENLOCKSOURCEI3D)(HDC hDC, UINT uSource);
@@ -534,7 +534,7 @@ PFNWGLGENLOCKSOURCEI3D gwglGenlockSourceI3D;
 static PFNWGLGENLOCKSOURCEI3D _wglGenlockSourceI3D;
 static BOOL APIENTRY d_wglGenlockSourceI3D(HDC hDC, UINT uSource) {
 	BOOL ret = _wglGenlockSourceI3D(hDC, uSource);
-	CheckGLError("wglGenlockSourceI3D");
+	GGLCheckError("wglGenlockSourceI3D");
 	return ret;
 }
 typedef UINT (APIENTRYP PFNWGLGETCONTEXTGPUIDAMD)(HGLRC hglrc);
@@ -542,7 +542,7 @@ PFNWGLGETCONTEXTGPUIDAMD gwglGetContextGPUIDAMD;
 static PFNWGLGETCONTEXTGPUIDAMD _wglGetContextGPUIDAMD;
 static UINT APIENTRY d_wglGetContextGPUIDAMD(HGLRC hglrc) {
 	UINT ret = _wglGetContextGPUIDAMD(hglrc);
-	CheckGLError("wglGetContextGPUIDAMD");
+	GGLCheckError("wglGetContextGPUIDAMD");
 	return ret;
 }
 typedef HGLRC (APIENTRYP PFNWGLGETCURRENTASSOCIATEDCONTEXTAMD)();
@@ -550,7 +550,7 @@ PFNWGLGETCURRENTASSOCIATEDCONTEXTAMD gwglGetCurrentAssociatedContextAMD;
 static PFNWGLGETCURRENTASSOCIATEDCONTEXTAMD _wglGetCurrentAssociatedContextAMD;
 static HGLRC APIENTRY d_wglGetCurrentAssociatedContextAMD() {
 	HGLRC ret = _wglGetCurrentAssociatedContextAMD();
-	CheckGLError("wglGetCurrentAssociatedContextAMD");
+	GGLCheckError("wglGetCurrentAssociatedContextAMD");
 	return ret;
 }
 typedef HGLRC (APIENTRYP PFNWGLGETCURRENTCONTEXT)();
@@ -558,7 +558,7 @@ PFNWGLGETCURRENTCONTEXT gwglGetCurrentContext;
 static PFNWGLGETCURRENTCONTEXT _wglGetCurrentContext;
 static HGLRC APIENTRY d_wglGetCurrentContext() {
 	HGLRC ret = _wglGetCurrentContext();
-	CheckGLError("wglGetCurrentContext");
+	GGLCheckError("wglGetCurrentContext");
 	return ret;
 }
 typedef HDC (APIENTRYP PFNWGLGETCURRENTDC)();
@@ -566,7 +566,7 @@ PFNWGLGETCURRENTDC gwglGetCurrentDC;
 static PFNWGLGETCURRENTDC _wglGetCurrentDC;
 static HDC APIENTRY d_wglGetCurrentDC() {
 	HDC ret = _wglGetCurrentDC();
-	CheckGLError("wglGetCurrentDC");
+	GGLCheckError("wglGetCurrentDC");
 	return ret;
 }
 typedef HDC (APIENTRYP PFNWGLGETCURRENTREADDCARB)();
@@ -574,7 +574,7 @@ PFNWGLGETCURRENTREADDCARB gwglGetCurrentReadDCARB;
 static PFNWGLGETCURRENTREADDCARB _wglGetCurrentReadDCARB;
 static HDC APIENTRY d_wglGetCurrentReadDCARB() {
 	HDC ret = _wglGetCurrentReadDCARB();
-	CheckGLError("wglGetCurrentReadDCARB");
+	GGLCheckError("wglGetCurrentReadDCARB");
 	return ret;
 }
 typedef HDC (APIENTRYP PFNWGLGETCURRENTREADDCEXT)();
@@ -582,7 +582,7 @@ PFNWGLGETCURRENTREADDCEXT gwglGetCurrentReadDCEXT;
 static PFNWGLGETCURRENTREADDCEXT _wglGetCurrentReadDCEXT;
 static HDC APIENTRY d_wglGetCurrentReadDCEXT() {
 	HDC ret = _wglGetCurrentReadDCEXT();
-	CheckGLError("wglGetCurrentReadDCEXT");
+	GGLCheckError("wglGetCurrentReadDCEXT");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGETDIGITALVIDEOPARAMETERSI3D)(HDC hDC, int iAttribute, int *piValue);
@@ -590,7 +590,7 @@ PFNWGLGETDIGITALVIDEOPARAMETERSI3D gwglGetDigitalVideoParametersI3D;
 static PFNWGLGETDIGITALVIDEOPARAMETERSI3D _wglGetDigitalVideoParametersI3D;
 static BOOL APIENTRY d_wglGetDigitalVideoParametersI3D(HDC hDC, int iAttribute, int *piValue) {
 	BOOL ret = _wglGetDigitalVideoParametersI3D(hDC, iAttribute, piValue);
-	CheckGLError("wglGetDigitalVideoParametersI3D");
+	GGLCheckError("wglGetDigitalVideoParametersI3D");
 	return ret;
 }
 typedef UINT (APIENTRYP PFNGETENHMETAFILEPIXELFORMAT)(HENHMETAFILE hemf, const PIXELFORMATDESCRIPTOR *ppfd);
@@ -598,7 +598,7 @@ PFNGETENHMETAFILEPIXELFORMAT gGetEnhMetaFilePixelFormat;
 static PFNGETENHMETAFILEPIXELFORMAT _GetEnhMetaFilePixelFormat;
 static UINT APIENTRY d_GetEnhMetaFilePixelFormat(HENHMETAFILE hemf, const PIXELFORMATDESCRIPTOR *ppfd) {
 	UINT ret = _GetEnhMetaFilePixelFormat(hemf, ppfd);
-	CheckGLError("GetEnhMetaFilePixelFormat");
+	GGLCheckError("GetEnhMetaFilePixelFormat");
 	return ret;
 }
 typedef const char * (APIENTRYP PFNWGLGETEXTENSIONSSTRINGARB)(HDC hdc);
@@ -606,7 +606,7 @@ PFNWGLGETEXTENSIONSSTRINGARB gwglGetExtensionsStringARB;
 static PFNWGLGETEXTENSIONSSTRINGARB _wglGetExtensionsStringARB;
 static const char * APIENTRY d_wglGetExtensionsStringARB(HDC hdc) {
 	const char * ret = _wglGetExtensionsStringARB(hdc);
-	CheckGLError("wglGetExtensionsStringARB");
+	GGLCheckError("wglGetExtensionsStringARB");
 	return ret;
 }
 typedef const char * (APIENTRYP PFNWGLGETEXTENSIONSSTRINGEXT)();
@@ -614,7 +614,7 @@ PFNWGLGETEXTENSIONSSTRINGEXT gwglGetExtensionsStringEXT;
 static PFNWGLGETEXTENSIONSSTRINGEXT _wglGetExtensionsStringEXT;
 static const char * APIENTRY d_wglGetExtensionsStringEXT() {
 	const char * ret = _wglGetExtensionsStringEXT();
-	CheckGLError("wglGetExtensionsStringEXT");
+	GGLCheckError("wglGetExtensionsStringEXT");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGETFRAMEUSAGEI3D)(float *pUsage);
@@ -622,7 +622,7 @@ PFNWGLGETFRAMEUSAGEI3D gwglGetFrameUsageI3D;
 static PFNWGLGETFRAMEUSAGEI3D _wglGetFrameUsageI3D;
 static BOOL APIENTRY d_wglGetFrameUsageI3D(float *pUsage) {
 	BOOL ret = _wglGetFrameUsageI3D(pUsage);
-	CheckGLError("wglGetFrameUsageI3D");
+	GGLCheckError("wglGetFrameUsageI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGETGAMMATABLEI3D)(HDC hDC, int iEntries, USHORT *puRed, USHORT *puGreen, USHORT *puBlue);
@@ -630,7 +630,7 @@ PFNWGLGETGAMMATABLEI3D gwglGetGammaTableI3D;
 static PFNWGLGETGAMMATABLEI3D _wglGetGammaTableI3D;
 static BOOL APIENTRY d_wglGetGammaTableI3D(HDC hDC, int iEntries, USHORT *puRed, USHORT *puGreen, USHORT *puBlue) {
 	BOOL ret = _wglGetGammaTableI3D(hDC, iEntries, puRed, puGreen, puBlue);
-	CheckGLError("wglGetGammaTableI3D");
+	GGLCheckError("wglGetGammaTableI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGETGAMMATABLEPARAMETERSI3D)(HDC hDC, int iAttribute, int *piValue);
@@ -638,7 +638,7 @@ PFNWGLGETGAMMATABLEPARAMETERSI3D gwglGetGammaTableParametersI3D;
 static PFNWGLGETGAMMATABLEPARAMETERSI3D _wglGetGammaTableParametersI3D;
 static BOOL APIENTRY d_wglGetGammaTableParametersI3D(HDC hDC, int iAttribute, int *piValue) {
 	BOOL ret = _wglGetGammaTableParametersI3D(hDC, iAttribute, piValue);
-	CheckGLError("wglGetGammaTableParametersI3D");
+	GGLCheckError("wglGetGammaTableParametersI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGETGENLOCKSAMPLERATEI3D)(HDC hDC, UINT *uRate);
@@ -646,7 +646,7 @@ PFNWGLGETGENLOCKSAMPLERATEI3D gwglGetGenlockSampleRateI3D;
 static PFNWGLGETGENLOCKSAMPLERATEI3D _wglGetGenlockSampleRateI3D;
 static BOOL APIENTRY d_wglGetGenlockSampleRateI3D(HDC hDC, UINT *uRate) {
 	BOOL ret = _wglGetGenlockSampleRateI3D(hDC, uRate);
-	CheckGLError("wglGetGenlockSampleRateI3D");
+	GGLCheckError("wglGetGenlockSampleRateI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGETGENLOCKSOURCEDELAYI3D)(HDC hDC, UINT *uDelay);
@@ -654,7 +654,7 @@ PFNWGLGETGENLOCKSOURCEDELAYI3D gwglGetGenlockSourceDelayI3D;
 static PFNWGLGETGENLOCKSOURCEDELAYI3D _wglGetGenlockSourceDelayI3D;
 static BOOL APIENTRY d_wglGetGenlockSourceDelayI3D(HDC hDC, UINT *uDelay) {
 	BOOL ret = _wglGetGenlockSourceDelayI3D(hDC, uDelay);
-	CheckGLError("wglGetGenlockSourceDelayI3D");
+	GGLCheckError("wglGetGenlockSourceDelayI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGETGENLOCKSOURCEEDGEI3D)(HDC hDC, UINT *uEdge);
@@ -662,7 +662,7 @@ PFNWGLGETGENLOCKSOURCEEDGEI3D gwglGetGenlockSourceEdgeI3D;
 static PFNWGLGETGENLOCKSOURCEEDGEI3D _wglGetGenlockSourceEdgeI3D;
 static BOOL APIENTRY d_wglGetGenlockSourceEdgeI3D(HDC hDC, UINT *uEdge) {
 	BOOL ret = _wglGetGenlockSourceEdgeI3D(hDC, uEdge);
-	CheckGLError("wglGetGenlockSourceEdgeI3D");
+	GGLCheckError("wglGetGenlockSourceEdgeI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGETGENLOCKSOURCEI3D)(HDC hDC, UINT *uSource);
@@ -670,7 +670,7 @@ PFNWGLGETGENLOCKSOURCEI3D gwglGetGenlockSourceI3D;
 static PFNWGLGETGENLOCKSOURCEI3D _wglGetGenlockSourceI3D;
 static BOOL APIENTRY d_wglGetGenlockSourceI3D(HDC hDC, UINT *uSource) {
 	BOOL ret = _wglGetGenlockSourceI3D(hDC, uSource);
-	CheckGLError("wglGetGenlockSourceI3D");
+	GGLCheckError("wglGetGenlockSourceI3D");
 	return ret;
 }
 typedef UINT (APIENTRYP PFNWGLGETGPUIDSAMD)(UINT maxCount, UINT *ids);
@@ -678,7 +678,7 @@ PFNWGLGETGPUIDSAMD gwglGetGPUIDsAMD;
 static PFNWGLGETGPUIDSAMD _wglGetGPUIDsAMD;
 static UINT APIENTRY d_wglGetGPUIDsAMD(UINT maxCount, UINT *ids) {
 	UINT ret = _wglGetGPUIDsAMD(maxCount, ids);
-	CheckGLError("wglGetGPUIDsAMD");
+	GGLCheckError("wglGetGPUIDsAMD");
 	return ret;
 }
 typedef INT (APIENTRYP PFNWGLGETGPUINFOAMD)(UINT id, int property, GLenum dataType, UINT size, void *data);
@@ -686,7 +686,7 @@ PFNWGLGETGPUINFOAMD gwglGetGPUInfoAMD;
 static PFNWGLGETGPUINFOAMD _wglGetGPUInfoAMD;
 static INT APIENTRY d_wglGetGPUInfoAMD(UINT id, int property, GLenum dataType, UINT size, void *data) {
 	INT ret = _wglGetGPUInfoAMD(id, property, dataType, size, data);
-	CheckGLError("wglGetGPUInfoAMD");
+	GGLCheckError("wglGetGPUInfoAMD");
 	return ret;
 }
 typedef int (APIENTRYP PFNWGLGETLAYERPALETTEENTRIES)(HDC hdc, int iLayerPlane, int iStart, int cEntries, const COLORREF *pcr);
@@ -694,7 +694,7 @@ PFNWGLGETLAYERPALETTEENTRIES gwglGetLayerPaletteEntries;
 static PFNWGLGETLAYERPALETTEENTRIES _wglGetLayerPaletteEntries;
 static int APIENTRY d_wglGetLayerPaletteEntries(HDC hdc, int iLayerPlane, int iStart, int cEntries, const COLORREF *pcr) {
 	int ret = _wglGetLayerPaletteEntries(hdc, iLayerPlane, iStart, cEntries, pcr);
-	CheckGLError("wglGetLayerPaletteEntries");
+	GGLCheckError("wglGetLayerPaletteEntries");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGETMSCRATEOML)(HDC hdc, INT32 *numerator, INT32 *denominator);
@@ -702,7 +702,7 @@ PFNWGLGETMSCRATEOML gwglGetMscRateOML;
 static PFNWGLGETMSCRATEOML _wglGetMscRateOML;
 static BOOL APIENTRY d_wglGetMscRateOML(HDC hdc, INT32 *numerator, INT32 *denominator) {
 	BOOL ret = _wglGetMscRateOML(hdc, numerator, denominator);
-	CheckGLError("wglGetMscRateOML");
+	GGLCheckError("wglGetMscRateOML");
 	return ret;
 }
 typedef HDC (APIENTRYP PFNWGLGETPBUFFERDCARB)(HPBUFFERARB hPbuffer);
@@ -710,7 +710,7 @@ PFNWGLGETPBUFFERDCARB gwglGetPbufferDCARB;
 static PFNWGLGETPBUFFERDCARB _wglGetPbufferDCARB;
 static HDC APIENTRY d_wglGetPbufferDCARB(HPBUFFERARB hPbuffer) {
 	HDC ret = _wglGetPbufferDCARB(hPbuffer);
-	CheckGLError("wglGetPbufferDCARB");
+	GGLCheckError("wglGetPbufferDCARB");
 	return ret;
 }
 typedef HDC (APIENTRYP PFNWGLGETPBUFFERDCEXT)(HPBUFFEREXT hPbuffer);
@@ -718,7 +718,7 @@ PFNWGLGETPBUFFERDCEXT gwglGetPbufferDCEXT;
 static PFNWGLGETPBUFFERDCEXT _wglGetPbufferDCEXT;
 static HDC APIENTRY d_wglGetPbufferDCEXT(HPBUFFEREXT hPbuffer) {
 	HDC ret = _wglGetPbufferDCEXT(hPbuffer);
-	CheckGLError("wglGetPbufferDCEXT");
+	GGLCheckError("wglGetPbufferDCEXT");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGETPIXELFORMATATTRIBFVARB)(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int *piAttributes, FLOAT *pfValues);
@@ -726,7 +726,7 @@ PFNWGLGETPIXELFORMATATTRIBFVARB gwglGetPixelFormatAttribfvARB;
 static PFNWGLGETPIXELFORMATATTRIBFVARB _wglGetPixelFormatAttribfvARB;
 static BOOL APIENTRY d_wglGetPixelFormatAttribfvARB(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int *piAttributes, FLOAT *pfValues) {
 	BOOL ret = _wglGetPixelFormatAttribfvARB(hdc, iPixelFormat, iLayerPlane, nAttributes, piAttributes, pfValues);
-	CheckGLError("wglGetPixelFormatAttribfvARB");
+	GGLCheckError("wglGetPixelFormatAttribfvARB");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGETPIXELFORMATATTRIBFVEXT)(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, int *piAttributes, FLOAT *pfValues);
@@ -734,7 +734,7 @@ PFNWGLGETPIXELFORMATATTRIBFVEXT gwglGetPixelFormatAttribfvEXT;
 static PFNWGLGETPIXELFORMATATTRIBFVEXT _wglGetPixelFormatAttribfvEXT;
 static BOOL APIENTRY d_wglGetPixelFormatAttribfvEXT(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, int *piAttributes, FLOAT *pfValues) {
 	BOOL ret = _wglGetPixelFormatAttribfvEXT(hdc, iPixelFormat, iLayerPlane, nAttributes, piAttributes, pfValues);
-	CheckGLError("wglGetPixelFormatAttribfvEXT");
+	GGLCheckError("wglGetPixelFormatAttribfvEXT");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGETPIXELFORMATATTRIBIVARB)(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int *piAttributes, int *piValues);
@@ -742,7 +742,7 @@ PFNWGLGETPIXELFORMATATTRIBIVARB gwglGetPixelFormatAttribivARB;
 static PFNWGLGETPIXELFORMATATTRIBIVARB _wglGetPixelFormatAttribivARB;
 static BOOL APIENTRY d_wglGetPixelFormatAttribivARB(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int *piAttributes, int *piValues) {
 	BOOL ret = _wglGetPixelFormatAttribivARB(hdc, iPixelFormat, iLayerPlane, nAttributes, piAttributes, piValues);
-	CheckGLError("wglGetPixelFormatAttribivARB");
+	GGLCheckError("wglGetPixelFormatAttribivARB");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGETPIXELFORMATATTRIBIVEXT)(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, int *piAttributes, int *piValues);
@@ -750,7 +750,7 @@ PFNWGLGETPIXELFORMATATTRIBIVEXT gwglGetPixelFormatAttribivEXT;
 static PFNWGLGETPIXELFORMATATTRIBIVEXT _wglGetPixelFormatAttribivEXT;
 static BOOL APIENTRY d_wglGetPixelFormatAttribivEXT(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, int *piAttributes, int *piValues) {
 	BOOL ret = _wglGetPixelFormatAttribivEXT(hdc, iPixelFormat, iLayerPlane, nAttributes, piAttributes, piValues);
-	CheckGLError("wglGetPixelFormatAttribivEXT");
+	GGLCheckError("wglGetPixelFormatAttribivEXT");
 	return ret;
 }
 typedef PROC (APIENTRYP PFNWGLGETPROCADDRESS)(LPCSTR lpszProc);
@@ -758,7 +758,7 @@ PFNWGLGETPROCADDRESS gwglGetProcAddress;
 static PFNWGLGETPROCADDRESS _wglGetProcAddress;
 static PROC APIENTRY d_wglGetProcAddress(LPCSTR lpszProc) {
 	PROC ret = _wglGetProcAddress(lpszProc);
-	CheckGLError("wglGetProcAddress");
+	GGLCheckError("wglGetProcAddress");
 	return ret;
 }
 typedef int (APIENTRYP PFNWGLGETSWAPINTERVALEXT)();
@@ -766,7 +766,7 @@ PFNWGLGETSWAPINTERVALEXT gwglGetSwapIntervalEXT;
 static PFNWGLGETSWAPINTERVALEXT _wglGetSwapIntervalEXT;
 static int APIENTRY d_wglGetSwapIntervalEXT() {
 	int ret = _wglGetSwapIntervalEXT();
-	CheckGLError("wglGetSwapIntervalEXT");
+	GGLCheckError("wglGetSwapIntervalEXT");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGETSYNCVALUESOML)(HDC hdc, INT64 *ust, INT64 *msc, INT64 *sbc);
@@ -774,7 +774,7 @@ PFNWGLGETSYNCVALUESOML gwglGetSyncValuesOML;
 static PFNWGLGETSYNCVALUESOML _wglGetSyncValuesOML;
 static BOOL APIENTRY d_wglGetSyncValuesOML(HDC hdc, INT64 *ust, INT64 *msc, INT64 *sbc) {
 	BOOL ret = _wglGetSyncValuesOML(hdc, ust, msc, sbc);
-	CheckGLError("wglGetSyncValuesOML");
+	GGLCheckError("wglGetSyncValuesOML");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGETVIDEODEVICENV)(HDC hDC, int numDevices, HPVIDEODEV *hVideoDevice);
@@ -782,7 +782,7 @@ PFNWGLGETVIDEODEVICENV gwglGetVideoDeviceNV;
 static PFNWGLGETVIDEODEVICENV _wglGetVideoDeviceNV;
 static BOOL APIENTRY d_wglGetVideoDeviceNV(HDC hDC, int numDevices, HPVIDEODEV *hVideoDevice) {
 	BOOL ret = _wglGetVideoDeviceNV(hDC, numDevices, hVideoDevice);
-	CheckGLError("wglGetVideoDeviceNV");
+	GGLCheckError("wglGetVideoDeviceNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLGETVIDEOINFONV)(HPVIDEODEV hpVideoDevice, unsigned long *pulCounterOutputPbuffer, unsigned long *pulCounterOutputVideo);
@@ -790,7 +790,7 @@ PFNWGLGETVIDEOINFONV gwglGetVideoInfoNV;
 static PFNWGLGETVIDEOINFONV _wglGetVideoInfoNV;
 static BOOL APIENTRY d_wglGetVideoInfoNV(HPVIDEODEV hpVideoDevice, unsigned long *pulCounterOutputPbuffer, unsigned long *pulCounterOutputVideo) {
 	BOOL ret = _wglGetVideoInfoNV(hpVideoDevice, pulCounterOutputPbuffer, pulCounterOutputVideo);
-	CheckGLError("wglGetVideoInfoNV");
+	GGLCheckError("wglGetVideoInfoNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLISENABLEDFRAMELOCKI3D)(BOOL *pFlag);
@@ -798,7 +798,7 @@ PFNWGLISENABLEDFRAMELOCKI3D gwglIsEnabledFrameLockI3D;
 static PFNWGLISENABLEDFRAMELOCKI3D _wglIsEnabledFrameLockI3D;
 static BOOL APIENTRY d_wglIsEnabledFrameLockI3D(BOOL *pFlag) {
 	BOOL ret = _wglIsEnabledFrameLockI3D(pFlag);
-	CheckGLError("wglIsEnabledFrameLockI3D");
+	GGLCheckError("wglIsEnabledFrameLockI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLISENABLEDGENLOCKI3D)(HDC hDC, BOOL *pFlag);
@@ -806,7 +806,7 @@ PFNWGLISENABLEDGENLOCKI3D gwglIsEnabledGenlockI3D;
 static PFNWGLISENABLEDGENLOCKI3D _wglIsEnabledGenlockI3D;
 static BOOL APIENTRY d_wglIsEnabledGenlockI3D(HDC hDC, BOOL *pFlag) {
 	BOOL ret = _wglIsEnabledGenlockI3D(hDC, pFlag);
-	CheckGLError("wglIsEnabledGenlockI3D");
+	GGLCheckError("wglIsEnabledGenlockI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLJOINSWAPGROUPNV)(HDC hDC, GLuint group);
@@ -814,7 +814,7 @@ PFNWGLJOINSWAPGROUPNV gwglJoinSwapGroupNV;
 static PFNWGLJOINSWAPGROUPNV _wglJoinSwapGroupNV;
 static BOOL APIENTRY d_wglJoinSwapGroupNV(HDC hDC, GLuint group) {
 	BOOL ret = _wglJoinSwapGroupNV(hDC, group);
-	CheckGLError("wglJoinSwapGroupNV");
+	GGLCheckError("wglJoinSwapGroupNV");
 	return ret;
 }
 typedef GLboolean (APIENTRYP PFNWGLLOADDISPLAYCOLORTABLEEXT)(const GLushort *table, GLuint length);
@@ -822,7 +822,7 @@ PFNWGLLOADDISPLAYCOLORTABLEEXT gwglLoadDisplayColorTableEXT;
 static PFNWGLLOADDISPLAYCOLORTABLEEXT _wglLoadDisplayColorTableEXT;
 static GLboolean APIENTRY d_wglLoadDisplayColorTableEXT(const GLushort *table, GLuint length) {
 	GLboolean ret = _wglLoadDisplayColorTableEXT(table, length);
-	CheckGLError("wglLoadDisplayColorTableEXT");
+	GGLCheckError("wglLoadDisplayColorTableEXT");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLLOCKVIDEOCAPTUREDEVICENV)(HDC hDc, HVIDEOINPUTDEVICENV hDevice);
@@ -830,7 +830,7 @@ PFNWGLLOCKVIDEOCAPTUREDEVICENV gwglLockVideoCaptureDeviceNV;
 static PFNWGLLOCKVIDEOCAPTUREDEVICENV _wglLockVideoCaptureDeviceNV;
 static BOOL APIENTRY d_wglLockVideoCaptureDeviceNV(HDC hDc, HVIDEOINPUTDEVICENV hDevice) {
 	BOOL ret = _wglLockVideoCaptureDeviceNV(hDc, hDevice);
-	CheckGLError("wglLockVideoCaptureDeviceNV");
+	GGLCheckError("wglLockVideoCaptureDeviceNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLMAKEASSOCIATEDCONTEXTCURRENTAMD)(HGLRC hglrc);
@@ -838,7 +838,7 @@ PFNWGLMAKEASSOCIATEDCONTEXTCURRENTAMD gwglMakeAssociatedContextCurrentAMD;
 static PFNWGLMAKEASSOCIATEDCONTEXTCURRENTAMD _wglMakeAssociatedContextCurrentAMD;
 static BOOL APIENTRY d_wglMakeAssociatedContextCurrentAMD(HGLRC hglrc) {
 	BOOL ret = _wglMakeAssociatedContextCurrentAMD(hglrc);
-	CheckGLError("wglMakeAssociatedContextCurrentAMD");
+	GGLCheckError("wglMakeAssociatedContextCurrentAMD");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLMAKECONTEXTCURRENTARB)(HDC hDrawDC, HDC hReadDC, HGLRC hglrc);
@@ -846,7 +846,7 @@ PFNWGLMAKECONTEXTCURRENTARB gwglMakeContextCurrentARB;
 static PFNWGLMAKECONTEXTCURRENTARB _wglMakeContextCurrentARB;
 static BOOL APIENTRY d_wglMakeContextCurrentARB(HDC hDrawDC, HDC hReadDC, HGLRC hglrc) {
 	BOOL ret = _wglMakeContextCurrentARB(hDrawDC, hReadDC, hglrc);
-	CheckGLError("wglMakeContextCurrentARB");
+	GGLCheckError("wglMakeContextCurrentARB");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLMAKECONTEXTCURRENTEXT)(HDC hDrawDC, HDC hReadDC, HGLRC hglrc);
@@ -854,7 +854,7 @@ PFNWGLMAKECONTEXTCURRENTEXT gwglMakeContextCurrentEXT;
 static PFNWGLMAKECONTEXTCURRENTEXT _wglMakeContextCurrentEXT;
 static BOOL APIENTRY d_wglMakeContextCurrentEXT(HDC hDrawDC, HDC hReadDC, HGLRC hglrc) {
 	BOOL ret = _wglMakeContextCurrentEXT(hDrawDC, hReadDC, hglrc);
-	CheckGLError("wglMakeContextCurrentEXT");
+	GGLCheckError("wglMakeContextCurrentEXT");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLMAKECURRENT)(HDC hDc, HGLRC newContext);
@@ -862,7 +862,7 @@ PFNWGLMAKECURRENT gwglMakeCurrent;
 static PFNWGLMAKECURRENT _wglMakeCurrent;
 static BOOL APIENTRY d_wglMakeCurrent(HDC hDc, HGLRC newContext) {
 	BOOL ret = _wglMakeCurrent(hDc, newContext);
-	CheckGLError("wglMakeCurrent");
+	GGLCheckError("wglMakeCurrent");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLQUERYCURRENTCONTEXTNV)(int iAttribute, int *piValue);
@@ -870,7 +870,7 @@ PFNWGLQUERYCURRENTCONTEXTNV gwglQueryCurrentContextNV;
 static PFNWGLQUERYCURRENTCONTEXTNV _wglQueryCurrentContextNV;
 static BOOL APIENTRY d_wglQueryCurrentContextNV(int iAttribute, int *piValue) {
 	BOOL ret = _wglQueryCurrentContextNV(iAttribute, piValue);
-	CheckGLError("wglQueryCurrentContextNV");
+	GGLCheckError("wglQueryCurrentContextNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLQUERYFRAMECOUNTNV)(HDC hDC, GLuint *count);
@@ -878,7 +878,7 @@ PFNWGLQUERYFRAMECOUNTNV gwglQueryFrameCountNV;
 static PFNWGLQUERYFRAMECOUNTNV _wglQueryFrameCountNV;
 static BOOL APIENTRY d_wglQueryFrameCountNV(HDC hDC, GLuint *count) {
 	BOOL ret = _wglQueryFrameCountNV(hDC, count);
-	CheckGLError("wglQueryFrameCountNV");
+	GGLCheckError("wglQueryFrameCountNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLQUERYFRAMELOCKMASTERI3D)(BOOL *pFlag);
@@ -886,7 +886,7 @@ PFNWGLQUERYFRAMELOCKMASTERI3D gwglQueryFrameLockMasterI3D;
 static PFNWGLQUERYFRAMELOCKMASTERI3D _wglQueryFrameLockMasterI3D;
 static BOOL APIENTRY d_wglQueryFrameLockMasterI3D(BOOL *pFlag) {
 	BOOL ret = _wglQueryFrameLockMasterI3D(pFlag);
-	CheckGLError("wglQueryFrameLockMasterI3D");
+	GGLCheckError("wglQueryFrameLockMasterI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLQUERYFRAMETRACKINGI3D)(DWORD *pFrameCount, DWORD *pMissedFrames, float *pLastMissedUsage);
@@ -894,7 +894,7 @@ PFNWGLQUERYFRAMETRACKINGI3D gwglQueryFrameTrackingI3D;
 static PFNWGLQUERYFRAMETRACKINGI3D _wglQueryFrameTrackingI3D;
 static BOOL APIENTRY d_wglQueryFrameTrackingI3D(DWORD *pFrameCount, DWORD *pMissedFrames, float *pLastMissedUsage) {
 	BOOL ret = _wglQueryFrameTrackingI3D(pFrameCount, pMissedFrames, pLastMissedUsage);
-	CheckGLError("wglQueryFrameTrackingI3D");
+	GGLCheckError("wglQueryFrameTrackingI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLQUERYGENLOCKMAXSOURCEDELAYI3D)(HDC hDC, UINT *uMaxLineDelay, UINT *uMaxPixelDelay);
@@ -902,7 +902,7 @@ PFNWGLQUERYGENLOCKMAXSOURCEDELAYI3D gwglQueryGenlockMaxSourceDelayI3D;
 static PFNWGLQUERYGENLOCKMAXSOURCEDELAYI3D _wglQueryGenlockMaxSourceDelayI3D;
 static BOOL APIENTRY d_wglQueryGenlockMaxSourceDelayI3D(HDC hDC, UINT *uMaxLineDelay, UINT *uMaxPixelDelay) {
 	BOOL ret = _wglQueryGenlockMaxSourceDelayI3D(hDC, uMaxLineDelay, uMaxPixelDelay);
-	CheckGLError("wglQueryGenlockMaxSourceDelayI3D");
+	GGLCheckError("wglQueryGenlockMaxSourceDelayI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLQUERYMAXSWAPGROUPSNV)(HDC hDC, GLuint *maxGroups, GLuint *maxBarriers);
@@ -910,7 +910,7 @@ PFNWGLQUERYMAXSWAPGROUPSNV gwglQueryMaxSwapGroupsNV;
 static PFNWGLQUERYMAXSWAPGROUPSNV _wglQueryMaxSwapGroupsNV;
 static BOOL APIENTRY d_wglQueryMaxSwapGroupsNV(HDC hDC, GLuint *maxGroups, GLuint *maxBarriers) {
 	BOOL ret = _wglQueryMaxSwapGroupsNV(hDC, maxGroups, maxBarriers);
-	CheckGLError("wglQueryMaxSwapGroupsNV");
+	GGLCheckError("wglQueryMaxSwapGroupsNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLQUERYPBUFFERARB)(HPBUFFERARB hPbuffer, int iAttribute, int *piValue);
@@ -918,7 +918,7 @@ PFNWGLQUERYPBUFFERARB gwglQueryPbufferARB;
 static PFNWGLQUERYPBUFFERARB _wglQueryPbufferARB;
 static BOOL APIENTRY d_wglQueryPbufferARB(HPBUFFERARB hPbuffer, int iAttribute, int *piValue) {
 	BOOL ret = _wglQueryPbufferARB(hPbuffer, iAttribute, piValue);
-	CheckGLError("wglQueryPbufferARB");
+	GGLCheckError("wglQueryPbufferARB");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLQUERYPBUFFEREXT)(HPBUFFEREXT hPbuffer, int iAttribute, int *piValue);
@@ -926,7 +926,7 @@ PFNWGLQUERYPBUFFEREXT gwglQueryPbufferEXT;
 static PFNWGLQUERYPBUFFEREXT _wglQueryPbufferEXT;
 static BOOL APIENTRY d_wglQueryPbufferEXT(HPBUFFEREXT hPbuffer, int iAttribute, int *piValue) {
 	BOOL ret = _wglQueryPbufferEXT(hPbuffer, iAttribute, piValue);
-	CheckGLError("wglQueryPbufferEXT");
+	GGLCheckError("wglQueryPbufferEXT");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLQUERYSWAPGROUPNV)(HDC hDC, GLuint *group, GLuint *barrier);
@@ -934,7 +934,7 @@ PFNWGLQUERYSWAPGROUPNV gwglQuerySwapGroupNV;
 static PFNWGLQUERYSWAPGROUPNV _wglQuerySwapGroupNV;
 static BOOL APIENTRY d_wglQuerySwapGroupNV(HDC hDC, GLuint *group, GLuint *barrier) {
 	BOOL ret = _wglQuerySwapGroupNV(hDC, group, barrier);
-	CheckGLError("wglQuerySwapGroupNV");
+	GGLCheckError("wglQuerySwapGroupNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLQUERYVIDEOCAPTUREDEVICENV)(HDC hDc, HVIDEOINPUTDEVICENV hDevice, int iAttribute, int *piValue);
@@ -942,7 +942,7 @@ PFNWGLQUERYVIDEOCAPTUREDEVICENV gwglQueryVideoCaptureDeviceNV;
 static PFNWGLQUERYVIDEOCAPTUREDEVICENV _wglQueryVideoCaptureDeviceNV;
 static BOOL APIENTRY d_wglQueryVideoCaptureDeviceNV(HDC hDc, HVIDEOINPUTDEVICENV hDevice, int iAttribute, int *piValue) {
 	BOOL ret = _wglQueryVideoCaptureDeviceNV(hDc, hDevice, iAttribute, piValue);
-	CheckGLError("wglQueryVideoCaptureDeviceNV");
+	GGLCheckError("wglQueryVideoCaptureDeviceNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLREALIZELAYERPALETTE)(HDC hdc, int iLayerPlane, BOOL bRealize);
@@ -950,7 +950,7 @@ PFNWGLREALIZELAYERPALETTE gwglRealizeLayerPalette;
 static PFNWGLREALIZELAYERPALETTE _wglRealizeLayerPalette;
 static BOOL APIENTRY d_wglRealizeLayerPalette(HDC hdc, int iLayerPlane, BOOL bRealize) {
 	BOOL ret = _wglRealizeLayerPalette(hdc, iLayerPlane, bRealize);
-	CheckGLError("wglRealizeLayerPalette");
+	GGLCheckError("wglRealizeLayerPalette");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLRELEASEIMAGEBUFFEREVENTSI3D)(HDC hDC, const LPVOID *pAddress, UINT count);
@@ -958,7 +958,7 @@ PFNWGLRELEASEIMAGEBUFFEREVENTSI3D gwglReleaseImageBufferEventsI3D;
 static PFNWGLRELEASEIMAGEBUFFEREVENTSI3D _wglReleaseImageBufferEventsI3D;
 static BOOL APIENTRY d_wglReleaseImageBufferEventsI3D(HDC hDC, const LPVOID *pAddress, UINT count) {
 	BOOL ret = _wglReleaseImageBufferEventsI3D(hDC, pAddress, count);
-	CheckGLError("wglReleaseImageBufferEventsI3D");
+	GGLCheckError("wglReleaseImageBufferEventsI3D");
 	return ret;
 }
 typedef int (APIENTRYP PFNWGLRELEASEPBUFFERDCARB)(HPBUFFERARB hPbuffer, HDC hDC);
@@ -966,7 +966,7 @@ PFNWGLRELEASEPBUFFERDCARB gwglReleasePbufferDCARB;
 static PFNWGLRELEASEPBUFFERDCARB _wglReleasePbufferDCARB;
 static int APIENTRY d_wglReleasePbufferDCARB(HPBUFFERARB hPbuffer, HDC hDC) {
 	int ret = _wglReleasePbufferDCARB(hPbuffer, hDC);
-	CheckGLError("wglReleasePbufferDCARB");
+	GGLCheckError("wglReleasePbufferDCARB");
 	return ret;
 }
 typedef int (APIENTRYP PFNWGLRELEASEPBUFFERDCEXT)(HPBUFFEREXT hPbuffer, HDC hDC);
@@ -974,7 +974,7 @@ PFNWGLRELEASEPBUFFERDCEXT gwglReleasePbufferDCEXT;
 static PFNWGLRELEASEPBUFFERDCEXT _wglReleasePbufferDCEXT;
 static int APIENTRY d_wglReleasePbufferDCEXT(HPBUFFEREXT hPbuffer, HDC hDC) {
 	int ret = _wglReleasePbufferDCEXT(hPbuffer, hDC);
-	CheckGLError("wglReleasePbufferDCEXT");
+	GGLCheckError("wglReleasePbufferDCEXT");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLRELEASETEXIMAGEARB)(HPBUFFERARB hPbuffer, int iBuffer);
@@ -982,7 +982,7 @@ PFNWGLRELEASETEXIMAGEARB gwglReleaseTexImageARB;
 static PFNWGLRELEASETEXIMAGEARB _wglReleaseTexImageARB;
 static BOOL APIENTRY d_wglReleaseTexImageARB(HPBUFFERARB hPbuffer, int iBuffer) {
 	BOOL ret = _wglReleaseTexImageARB(hPbuffer, iBuffer);
-	CheckGLError("wglReleaseTexImageARB");
+	GGLCheckError("wglReleaseTexImageARB");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLRELEASEVIDEOCAPTUREDEVICENV)(HDC hDc, HVIDEOINPUTDEVICENV hDevice);
@@ -990,7 +990,7 @@ PFNWGLRELEASEVIDEOCAPTUREDEVICENV gwglReleaseVideoCaptureDeviceNV;
 static PFNWGLRELEASEVIDEOCAPTUREDEVICENV _wglReleaseVideoCaptureDeviceNV;
 static BOOL APIENTRY d_wglReleaseVideoCaptureDeviceNV(HDC hDc, HVIDEOINPUTDEVICENV hDevice) {
 	BOOL ret = _wglReleaseVideoCaptureDeviceNV(hDc, hDevice);
-	CheckGLError("wglReleaseVideoCaptureDeviceNV");
+	GGLCheckError("wglReleaseVideoCaptureDeviceNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLRELEASEVIDEODEVICENV)(HPVIDEODEV hVideoDevice);
@@ -998,7 +998,7 @@ PFNWGLRELEASEVIDEODEVICENV gwglReleaseVideoDeviceNV;
 static PFNWGLRELEASEVIDEODEVICENV _wglReleaseVideoDeviceNV;
 static BOOL APIENTRY d_wglReleaseVideoDeviceNV(HPVIDEODEV hVideoDevice) {
 	BOOL ret = _wglReleaseVideoDeviceNV(hVideoDevice);
-	CheckGLError("wglReleaseVideoDeviceNV");
+	GGLCheckError("wglReleaseVideoDeviceNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLRELEASEVIDEOIMAGENV)(HPBUFFERARB hPbuffer, int iVideoBuffer);
@@ -1006,7 +1006,7 @@ PFNWGLRELEASEVIDEOIMAGENV gwglReleaseVideoImageNV;
 static PFNWGLRELEASEVIDEOIMAGENV _wglReleaseVideoImageNV;
 static BOOL APIENTRY d_wglReleaseVideoImageNV(HPBUFFERARB hPbuffer, int iVideoBuffer) {
 	BOOL ret = _wglReleaseVideoImageNV(hPbuffer, iVideoBuffer);
-	CheckGLError("wglReleaseVideoImageNV");
+	GGLCheckError("wglReleaseVideoImageNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLRESETFRAMECOUNTNV)(HDC hDC);
@@ -1014,7 +1014,7 @@ PFNWGLRESETFRAMECOUNTNV gwglResetFrameCountNV;
 static PFNWGLRESETFRAMECOUNTNV _wglResetFrameCountNV;
 static BOOL APIENTRY d_wglResetFrameCountNV(HDC hDC) {
 	BOOL ret = _wglResetFrameCountNV(hDC);
-	CheckGLError("wglResetFrameCountNV");
+	GGLCheckError("wglResetFrameCountNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLRESTOREBUFFERREGIONARB)(HANDLE hRegion, int x, int y, int width, int height, int xSrc, int ySrc);
@@ -1022,7 +1022,7 @@ PFNWGLRESTOREBUFFERREGIONARB gwglRestoreBufferRegionARB;
 static PFNWGLRESTOREBUFFERREGIONARB _wglRestoreBufferRegionARB;
 static BOOL APIENTRY d_wglRestoreBufferRegionARB(HANDLE hRegion, int x, int y, int width, int height, int xSrc, int ySrc) {
 	BOOL ret = _wglRestoreBufferRegionARB(hRegion, x, y, width, height, xSrc, ySrc);
-	CheckGLError("wglRestoreBufferRegionARB");
+	GGLCheckError("wglRestoreBufferRegionARB");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLSAVEBUFFERREGIONARB)(HANDLE hRegion, int x, int y, int width, int height);
@@ -1030,7 +1030,7 @@ PFNWGLSAVEBUFFERREGIONARB gwglSaveBufferRegionARB;
 static PFNWGLSAVEBUFFERREGIONARB _wglSaveBufferRegionARB;
 static BOOL APIENTRY d_wglSaveBufferRegionARB(HANDLE hRegion, int x, int y, int width, int height) {
 	BOOL ret = _wglSaveBufferRegionARB(hRegion, x, y, width, height);
-	CheckGLError("wglSaveBufferRegionARB");
+	GGLCheckError("wglSaveBufferRegionARB");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLSENDPBUFFERTOVIDEONV)(HPBUFFERARB hPbuffer, int iBufferType, unsigned long *pulCounterPbuffer, BOOL bBlock);
@@ -1038,7 +1038,7 @@ PFNWGLSENDPBUFFERTOVIDEONV gwglSendPbufferToVideoNV;
 static PFNWGLSENDPBUFFERTOVIDEONV _wglSendPbufferToVideoNV;
 static BOOL APIENTRY d_wglSendPbufferToVideoNV(HPBUFFERARB hPbuffer, int iBufferType, unsigned long *pulCounterPbuffer, BOOL bBlock) {
 	BOOL ret = _wglSendPbufferToVideoNV(hPbuffer, iBufferType, pulCounterPbuffer, bBlock);
-	CheckGLError("wglSendPbufferToVideoNV");
+	GGLCheckError("wglSendPbufferToVideoNV");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLSETDIGITALVIDEOPARAMETERSI3D)(HDC hDC, int iAttribute, const int *piValue);
@@ -1046,7 +1046,7 @@ PFNWGLSETDIGITALVIDEOPARAMETERSI3D gwglSetDigitalVideoParametersI3D;
 static PFNWGLSETDIGITALVIDEOPARAMETERSI3D _wglSetDigitalVideoParametersI3D;
 static BOOL APIENTRY d_wglSetDigitalVideoParametersI3D(HDC hDC, int iAttribute, const int *piValue) {
 	BOOL ret = _wglSetDigitalVideoParametersI3D(hDC, iAttribute, piValue);
-	CheckGLError("wglSetDigitalVideoParametersI3D");
+	GGLCheckError("wglSetDigitalVideoParametersI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLSETGAMMATABLEI3D)(HDC hDC, int iEntries, const USHORT *puRed, const USHORT *puGreen, const USHORT *puBlue);
@@ -1054,7 +1054,7 @@ PFNWGLSETGAMMATABLEI3D gwglSetGammaTableI3D;
 static PFNWGLSETGAMMATABLEI3D _wglSetGammaTableI3D;
 static BOOL APIENTRY d_wglSetGammaTableI3D(HDC hDC, int iEntries, const USHORT *puRed, const USHORT *puGreen, const USHORT *puBlue) {
 	BOOL ret = _wglSetGammaTableI3D(hDC, iEntries, puRed, puGreen, puBlue);
-	CheckGLError("wglSetGammaTableI3D");
+	GGLCheckError("wglSetGammaTableI3D");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLSETGAMMATABLEPARAMETERSI3D)(HDC hDC, int iAttribute, const int *piValue);
@@ -1062,7 +1062,7 @@ PFNWGLSETGAMMATABLEPARAMETERSI3D gwglSetGammaTableParametersI3D;
 static PFNWGLSETGAMMATABLEPARAMETERSI3D _wglSetGammaTableParametersI3D;
 static BOOL APIENTRY d_wglSetGammaTableParametersI3D(HDC hDC, int iAttribute, const int *piValue) {
 	BOOL ret = _wglSetGammaTableParametersI3D(hDC, iAttribute, piValue);
-	CheckGLError("wglSetGammaTableParametersI3D");
+	GGLCheckError("wglSetGammaTableParametersI3D");
 	return ret;
 }
 typedef int (APIENTRYP PFNWGLSETLAYERPALETTEENTRIES)(HDC hdc, int iLayerPlane, int iStart, int cEntries, const COLORREF *pcr);
@@ -1070,7 +1070,7 @@ PFNWGLSETLAYERPALETTEENTRIES gwglSetLayerPaletteEntries;
 static PFNWGLSETLAYERPALETTEENTRIES _wglSetLayerPaletteEntries;
 static int APIENTRY d_wglSetLayerPaletteEntries(HDC hdc, int iLayerPlane, int iStart, int cEntries, const COLORREF *pcr) {
 	int ret = _wglSetLayerPaletteEntries(hdc, iLayerPlane, iStart, cEntries, pcr);
-	CheckGLError("wglSetLayerPaletteEntries");
+	GGLCheckError("wglSetLayerPaletteEntries");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLSETPBUFFERATTRIBARB)(HPBUFFERARB hPbuffer, const int *piAttribList);
@@ -1078,7 +1078,7 @@ PFNWGLSETPBUFFERATTRIBARB gwglSetPbufferAttribARB;
 static PFNWGLSETPBUFFERATTRIBARB _wglSetPbufferAttribARB;
 static BOOL APIENTRY d_wglSetPbufferAttribARB(HPBUFFERARB hPbuffer, const int *piAttribList) {
 	BOOL ret = _wglSetPbufferAttribARB(hPbuffer, piAttribList);
-	CheckGLError("wglSetPbufferAttribARB");
+	GGLCheckError("wglSetPbufferAttribARB");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLSETSTEREOEMITTERSTATE3DL)(HDC hDC, UINT uState);
@@ -1086,7 +1086,7 @@ PFNWGLSETSTEREOEMITTERSTATE3DL gwglSetStereoEmitterState3DL;
 static PFNWGLSETSTEREOEMITTERSTATE3DL _wglSetStereoEmitterState3DL;
 static BOOL APIENTRY d_wglSetStereoEmitterState3DL(HDC hDC, UINT uState) {
 	BOOL ret = _wglSetStereoEmitterState3DL(hDC, uState);
-	CheckGLError("wglSetStereoEmitterState3DL");
+	GGLCheckError("wglSetStereoEmitterState3DL");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLSHARELISTS)(HGLRC hrcSrvShare, HGLRC hrcSrvSource);
@@ -1094,7 +1094,7 @@ PFNWGLSHARELISTS gwglShareLists;
 static PFNWGLSHARELISTS _wglShareLists;
 static BOOL APIENTRY d_wglShareLists(HGLRC hrcSrvShare, HGLRC hrcSrvSource) {
 	BOOL ret = _wglShareLists(hrcSrvShare, hrcSrvSource);
-	CheckGLError("wglShareLists");
+	GGLCheckError("wglShareLists");
 	return ret;
 }
 typedef INT64 (APIENTRYP PFNWGLSWAPBUFFERSMSCOML)(HDC hdc, INT64 target_msc, INT64 divisor, INT64 remainder);
@@ -1102,7 +1102,7 @@ PFNWGLSWAPBUFFERSMSCOML gwglSwapBuffersMscOML;
 static PFNWGLSWAPBUFFERSMSCOML _wglSwapBuffersMscOML;
 static INT64 APIENTRY d_wglSwapBuffersMscOML(HDC hdc, INT64 target_msc, INT64 divisor, INT64 remainder) {
 	INT64 ret = _wglSwapBuffersMscOML(hdc, target_msc, divisor, remainder);
-	CheckGLError("wglSwapBuffersMscOML");
+	GGLCheckError("wglSwapBuffersMscOML");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLSWAPLAYERBUFFERS)(HDC hdc, UINT fuFlags);
@@ -1110,7 +1110,7 @@ PFNWGLSWAPLAYERBUFFERS gwglSwapLayerBuffers;
 static PFNWGLSWAPLAYERBUFFERS _wglSwapLayerBuffers;
 static BOOL APIENTRY d_wglSwapLayerBuffers(HDC hdc, UINT fuFlags) {
 	BOOL ret = _wglSwapLayerBuffers(hdc, fuFlags);
-	CheckGLError("wglSwapLayerBuffers");
+	GGLCheckError("wglSwapLayerBuffers");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLSWAPINTERVALEXT)(int interval);
@@ -1118,7 +1118,7 @@ PFNWGLSWAPINTERVALEXT gwglSwapIntervalEXT;
 static PFNWGLSWAPINTERVALEXT _wglSwapIntervalEXT;
 static BOOL APIENTRY d_wglSwapIntervalEXT(int interval) {
 	BOOL ret = _wglSwapIntervalEXT(interval);
-	CheckGLError("wglSwapIntervalEXT");
+	GGLCheckError("wglSwapIntervalEXT");
 	return ret;
 }
 typedef INT64 (APIENTRYP PFNWGLSWAPLAYERBUFFERSMSCOML)(HDC hdc, int fuPlanes, INT64 target_msc, INT64 divisor, INT64 remainder);
@@ -1126,7 +1126,7 @@ PFNWGLSWAPLAYERBUFFERSMSCOML gwglSwapLayerBuffersMscOML;
 static PFNWGLSWAPLAYERBUFFERSMSCOML _wglSwapLayerBuffersMscOML;
 static INT64 APIENTRY d_wglSwapLayerBuffersMscOML(HDC hdc, int fuPlanes, INT64 target_msc, INT64 divisor, INT64 remainder) {
 	INT64 ret = _wglSwapLayerBuffersMscOML(hdc, fuPlanes, target_msc, divisor, remainder);
-	CheckGLError("wglSwapLayerBuffersMscOML");
+	GGLCheckError("wglSwapLayerBuffersMscOML");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLUSEFONTBITMAPS)(HDC hDC, DWORD first, DWORD count, DWORD listBase);
@@ -1134,7 +1134,7 @@ PFNWGLUSEFONTBITMAPS gwglUseFontBitmaps;
 static PFNWGLUSEFONTBITMAPS _wglUseFontBitmaps;
 static BOOL APIENTRY d_wglUseFontBitmaps(HDC hDC, DWORD first, DWORD count, DWORD listBase) {
 	BOOL ret = _wglUseFontBitmaps(hDC, first, count, listBase);
-	CheckGLError("wglUseFontBitmaps");
+	GGLCheckError("wglUseFontBitmaps");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLUSEFONTBITMAPSA)(HDC hDC, DWORD first, DWORD count, DWORD listBase);
@@ -1142,7 +1142,7 @@ PFNWGLUSEFONTBITMAPSA gwglUseFontBitmapsA;
 static PFNWGLUSEFONTBITMAPSA _wglUseFontBitmapsA;
 static BOOL APIENTRY d_wglUseFontBitmapsA(HDC hDC, DWORD first, DWORD count, DWORD listBase) {
 	BOOL ret = _wglUseFontBitmapsA(hDC, first, count, listBase);
-	CheckGLError("wglUseFontBitmapsA");
+	GGLCheckError("wglUseFontBitmapsA");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLUSEFONTBITMAPSW)(HDC hDC, DWORD first, DWORD count, DWORD listBase);
@@ -1150,7 +1150,7 @@ PFNWGLUSEFONTBITMAPSW gwglUseFontBitmapsW;
 static PFNWGLUSEFONTBITMAPSW _wglUseFontBitmapsW;
 static BOOL APIENTRY d_wglUseFontBitmapsW(HDC hDC, DWORD first, DWORD count, DWORD listBase) {
 	BOOL ret = _wglUseFontBitmapsW(hDC, first, count, listBase);
-	CheckGLError("wglUseFontBitmapsW");
+	GGLCheckError("wglUseFontBitmapsW");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLUSEFONTOUTLINES)(HDC hDC, DWORD first, DWORD count, DWORD listBase, FLOAT deviation, FLOAT extrusion, int format, LPGLYPHMETRICSFLOAT lpgmf);
@@ -1158,7 +1158,7 @@ PFNWGLUSEFONTOUTLINES gwglUseFontOutlines;
 static PFNWGLUSEFONTOUTLINES _wglUseFontOutlines;
 static BOOL APIENTRY d_wglUseFontOutlines(HDC hDC, DWORD first, DWORD count, DWORD listBase, FLOAT deviation, FLOAT extrusion, int format, LPGLYPHMETRICSFLOAT lpgmf) {
 	BOOL ret = _wglUseFontOutlines(hDC, first, count, listBase, deviation, extrusion, format, lpgmf);
-	CheckGLError("wglUseFontOutlines");
+	GGLCheckError("wglUseFontOutlines");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLUSEFONTOUTLINESA)(HDC hDC, DWORD first, DWORD count, DWORD listBase, FLOAT deviation, FLOAT extrusion, int format, LPGLYPHMETRICSFLOAT lpgmf);
@@ -1166,7 +1166,7 @@ PFNWGLUSEFONTOUTLINESA gwglUseFontOutlinesA;
 static PFNWGLUSEFONTOUTLINESA _wglUseFontOutlinesA;
 static BOOL APIENTRY d_wglUseFontOutlinesA(HDC hDC, DWORD first, DWORD count, DWORD listBase, FLOAT deviation, FLOAT extrusion, int format, LPGLYPHMETRICSFLOAT lpgmf) {
 	BOOL ret = _wglUseFontOutlinesA(hDC, first, count, listBase, deviation, extrusion, format, lpgmf);
-	CheckGLError("wglUseFontOutlinesA");
+	GGLCheckError("wglUseFontOutlinesA");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLUSEFONTOUTLINESW)(HDC hDC, DWORD first, DWORD count, DWORD listBase, FLOAT deviation, FLOAT extrusion, int format, LPGLYPHMETRICSFLOAT lpgmf);
@@ -1174,7 +1174,7 @@ PFNWGLUSEFONTOUTLINESW gwglUseFontOutlinesW;
 static PFNWGLUSEFONTOUTLINESW _wglUseFontOutlinesW;
 static BOOL APIENTRY d_wglUseFontOutlinesW(HDC hDC, DWORD first, DWORD count, DWORD listBase, FLOAT deviation, FLOAT extrusion, int format, LPGLYPHMETRICSFLOAT lpgmf) {
 	BOOL ret = _wglUseFontOutlinesW(hDC, first, count, listBase, deviation, extrusion, format, lpgmf);
-	CheckGLError("wglUseFontOutlinesW");
+	GGLCheckError("wglUseFontOutlinesW");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLWAITFORMSCOML)(HDC hdc, INT64 target_msc, INT64 divisor, INT64 remainder, INT64 *ust, INT64 *msc, INT64 *sbc);
@@ -1182,7 +1182,7 @@ PFNWGLWAITFORMSCOML gwglWaitForMscOML;
 static PFNWGLWAITFORMSCOML _wglWaitForMscOML;
 static BOOL APIENTRY d_wglWaitForMscOML(HDC hdc, INT64 target_msc, INT64 divisor, INT64 remainder, INT64 *ust, INT64 *msc, INT64 *sbc) {
 	BOOL ret = _wglWaitForMscOML(hdc, target_msc, divisor, remainder, ust, msc, sbc);
-	CheckGLError("wglWaitForMscOML");
+	GGLCheckError("wglWaitForMscOML");
 	return ret;
 }
 typedef BOOL (APIENTRYP PFNWGLWAITFORSBCOML)(HDC hdc, INT64 target_sbc, INT64 *ust, INT64 *msc, INT64 *sbc);
@@ -1190,7 +1190,7 @@ PFNWGLWAITFORSBCOML gwglWaitForSbcOML;
 static PFNWGLWAITFORSBCOML _wglWaitForSbcOML;
 static BOOL APIENTRY d_wglWaitForSbcOML(HDC hdc, INT64 target_sbc, INT64 *ust, INT64 *msc, INT64 *sbc) {
 	BOOL ret = _wglWaitForSbcOML(hdc, target_sbc, ust, msc, sbc);
-	CheckGLError("wglWaitForSbcOML");
+	GGLCheckError("wglWaitForSbcOML");
 	return ret;
 }
 

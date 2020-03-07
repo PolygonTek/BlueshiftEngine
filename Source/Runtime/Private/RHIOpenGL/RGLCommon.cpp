@@ -534,7 +534,7 @@ void OpenGLRHI::MultiDrawElementsIndirect(Topology::Enum topology, int indexType
     OpenGL::MultiDrawElementsIndirect(toGLTopology[topology], indexType, BUFFER_OFFSET(indirectBufferOffset), drawCount, stride);
 }
 
-extern "C" void CheckGLError(const char *msg);
+extern "C" void (*GGLCheckError)(const char *msg);
 
 void OpenGLRHI::CheckError(const char *fmt, ...) const {
     char buffer[16384];
@@ -544,7 +544,7 @@ void OpenGLRHI::CheckError(const char *fmt, ...) const {
     Str::vsnPrintf(buffer, COUNT_OF(buffer), fmt, args);
     va_end(args);
 
-    CheckGLError(buffer);
+    GGLCheckError(buffer);
 }
 
 BE_NAMESPACE_END

@@ -167,8 +167,8 @@ Image::Format::Enum OpenGLBase::ToUncompressedImageFormat(Image::Format::Enum in
     return outFormat;
 }
 
-// NOTE: Do not call gglXXX function in CheckGLError
-extern "C" void CheckGLError(const char *msg) {
+// NOTE: Do not call gglXXX function in MyGLCheckError
+extern "C" void MyGLCheckError(const char *msg) {
     char errCode[64];
     GLenum err = glGetError();
     
@@ -202,5 +202,7 @@ extern "C" void CheckGLError(const char *msg) {
         BE_WARNLOG("GL Error: %s in %s\n", errCode, msg);
     }
 }
+
+extern "C" void (*GGLCheckError)(const char *msg) = MyGLCheckError;
 
 BE_NAMESPACE_END

@@ -2,7 +2,7 @@
  *
  * gglcore32.h
  * ggl (OpenGL glue code library)
- * Version: 0.5
+ * Version: 1.0
  *
  * Copyright 2011 Ju Hyung Lee. All rights reserved.
  *
@@ -52,6 +52,7 @@ extern "C" {
 #if defined(__linux__)
 #include <gl/gl.h>
 #endif
+
 #ifndef APIENTRY
 #define APIENTRY
 #endif

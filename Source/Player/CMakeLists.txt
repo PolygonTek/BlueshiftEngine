@@ -129,6 +129,7 @@ if (XAMARIN)
         libvorbis
         freetype
         jsoncpp
+        GGL
         Bullet
         HACD
         lua
@@ -319,6 +320,7 @@ else ()
             libvorbis
             freetype
             jsoncpp
+            GGL
             Bullet
             HACD
             STB

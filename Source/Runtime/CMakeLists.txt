@@ -826,10 +826,6 @@ set(MACOS_ENGINE_FILES
     Private/Network/Packet.cpp)
 
 set(WINDOWS_RENDERER_FILES
-    Private/RHIOpenGL/OpenGL/GGL/gglcore32.c
-    Private/RHIOpenGL/OpenGL/GGL/gglcore32.h
-    Private/RHIOpenGL/OpenGL/GGL/gwgl.c
-    Private/RHIOpenGL/OpenGL/GGL/gwgl.h
     Private/RHIOpenGL/OpenGL/OpenGL3.h
     Private/RHIOpenGL/OpenGL/OpenGL3.cpp
     Private/RHIOpenGL/OpenGL/OpenGL4.h
@@ -838,10 +834,6 @@ set(WINDOWS_RENDERER_FILES
     Private/RHIOpenGL/RGLPlatformWin.cpp)
 
 set(ANDROID_RENDERER_FILES
-    Private/RHIOpenGL/OpenGL/GGL/ggles3.c
-    Private/RHIOpenGL/OpenGL/GGL/ggles3.h
-    Private/RHIOpenGL/OpenGL/GGL/gegl.c
-    Private/RHIOpenGL/OpenGL/GGL/gegl.h
     Private/RHIOpenGL/OpenGL/OpenGLES3.h
     Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
     Private/RHIOpenGL/OpenGL/AndroidOpenGL.h
@@ -849,8 +841,6 @@ set(ANDROID_RENDERER_FILES
     Private/RHIOpenGL/RGLPlatformAndroid.cpp)
 
 set(IOS_RENDERER_FILES
-    Private/RHIOpenGL/OpenGL/GGL/ggles3.c
-    Private/RHIOpenGL/OpenGL/GGL/ggles3.h
     Private/RHIOpenGL/OpenGL/OpenGLES3.h
     Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
     Private/RHIOpenGL/OpenGL/IOSOpenGL.h
@@ -858,8 +848,6 @@ set(IOS_RENDERER_FILES
     Private/RHIOpenGL/RGLPlatformIOS.mm)
 
 set(MACOS_RENDERER_FILES
-    Private/RHIOpenGL/OpenGL/GGL/gglcore32.c
-    Private/RHIOpenGL/OpenGL/GGL/gglcore32.h
     Private/RHIOpenGL/OpenGL/OpenGL3.h
     Private/RHIOpenGL/OpenGL/OpenGL3.cpp
     Private/RHIOpenGL/OpenGL/MacOSOpenGL.h
@@ -1041,6 +1029,7 @@ target_link_libraries(${PROJECT_NAME}
     jsoncpp
     tinyxml2
     freetype
+    GGL
     Bullet
     HACD
     STB

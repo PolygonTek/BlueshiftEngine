@@ -149,7 +149,7 @@ if (WIN32)
         add_definitions("/FS")
 
         # Enable parallel compilation
-        add_definitions("/MP")
+        #add_definitions("/MP")
     
         # Remove RTTI
         string(REGEX REPLACE "/GR-?" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -271,11 +271,11 @@ set(FLAGS
     CMAKE_C_FLAGS
     CMAKE_C_FLAGS_DEBUG
     CMAKE_C_FLAGS_RELEASE
-    CMAKE_C_FLAGS_RELWITHDEBINFO
+    CMAKE_C_FLAGS_DEVELOPMENT
     CMAKE_CXX_FLAGS
     CMAKE_CXX_FLAGS_DEBUG
     CMAKE_CXX_FLAGS_RELEASE
-    CMAKE_CXX_FLAGS_RELWITHDEBINFO
+    CMAKE_CXX_FLAGS_DEVELOPMENT
 )
 
 foreach(FLAG ${FLAGS})
@@ -303,11 +303,12 @@ if (BUILD_RUNTIME)
     add_subdirectory(Source/ThirdParty/libvorbis)
     add_subdirectory(Source/ThirdParty/jsoncpp)
     add_subdirectory(Source/ThirdParty/tinyxml2)
+    add_subdirectory(Source/ThirdParty/GGL)
     add_subdirectory(Source/ThirdParty/NvTriStrip)
     add_subdirectory(Source/ThirdParty/Bullet)
     add_subdirectory(Source/ThirdParty/HACD)
     add_subdirectory(Source/ThirdParty/STB)
-    add_subdirectory(Source/ThirdParty/imgui)
+    #add_subdirectory(Source/ThirdParty/imgui)
  
     if (USE_LUAJIT)
         add_subdirectory(Source/ThirdParty/luaJIT)
