@@ -17,6 +17,7 @@
 #include "RenderInternal.h"
 #include "Core/Heap.h"
 #include "Platform/PlatformTime.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -484,6 +485,8 @@ void RenderContext::Display() {
 }
 
 void RenderContext::BeginFrame() {
+    BE_SCOPE_PROFILE_CPU("RenderContext::BeginFrame", Color3::olive);
+
     startFrameSec = PlatformTime::Seconds();
 
     frameTime = startFrameSec - elapsedTime;
@@ -507,6 +510,8 @@ void RenderContext::BeginFrame() {
 }
 
 void RenderContext::EndFrame() {
+    BE_SCOPE_PROFILE_CPU("RenderContext::EndFrame", Color3::olive);
+
     frameCount++;
 
     // Adds system GUI commands

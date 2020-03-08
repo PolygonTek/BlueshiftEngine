@@ -345,7 +345,7 @@ public:
     //---------------------------------------------------------------------------------------------
     // ImGui
     //---------------------------------------------------------------------------------------------
-    void                    ImGuiNewFrame(Handle ctxHandle);
+    void                    ImGuiBeginFrame(Handle ctxHandle);
     void                    ImGuiRender();
     void                    ImGuiEndFrame();
 

@@ -96,6 +96,10 @@ void Profiler::SyncFrame() {
     gpuThreadInfo.frameIndexes[writeFrameIndex] = gpuThreadInfo.currentIndex;
 }
 
+bool Profiler::IsFrozen() const {
+    return (freezeState == FreezeState::Frozen || freezeState == FreezeState::WaitingForUnfreeze);
+}
+
 bool Profiler::ToggleFreeze() {
     if (freezeState == FreezeState::Unfrozen) {
         // Arise freeze in the next SyncFrame() call.
@@ -156,7 +160,7 @@ void Profiler::PushCpuMarker(int tagIndex) {
     marker.startTime = PlatformTime::Nanoseconds();
     marker.endTime = InvalidTime;
     marker.frameCount = frameCount;
-    marker.depth = ti.indexStack.Count();
+    marker.depth = ti.indexStack.Count() - 1;
 }
 
 void Profiler::PopCpuMarker() {
@@ -188,7 +192,7 @@ void Profiler::PushGpuMarker(int tagIndex) {
     marker.tagIndex = tagIndex;
     rhi.QueryTimestamp(marker.startQueryHandle);
     marker.frameCount = frameCount;
-    marker.depth = ti.indexStack.Count();
+    marker.depth = ti.indexStack.Count() - 1;
 }
 
 void Profiler::PopGpuMarker() {

@@ -201,7 +201,7 @@ void RenderSystem::BeginCommands(RenderContext *renderContext) {
     rhi.SetContext(renderContext->GetContextHandle());
 
 #ifdef ENABLE_IMGUI
-    rhi.ImGuiNewFrame(renderContext->GetContextHandle());
+    rhi.ImGuiBeginFrame(renderContext->GetContextHandle());
 #endif
 
     bufferCacheManager.BeginWrite();

@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "BlueshiftEngine.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -168,6 +169,8 @@ void Engine::Shutdown() {
 }
 
 void Engine::RunFrame(int elapsedMsec) {
+    BE_PROFILE_SYNC_FRAME();
+
     common.RunFrame(elapsedMsec);
 }
 

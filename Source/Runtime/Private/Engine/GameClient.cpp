@@ -175,8 +175,6 @@ void GameClient::Shutdown() {
 }
 
 void GameClient::RunFrame() {
-    BE_PROFILE_SYNC_FRAME();
-
     frameCount++;
 
     time += common.frameTime;

@@ -121,7 +121,7 @@ public:
                                 // Call SyncFrame() on the starting frame.
     void                        SyncFrame();
 
-    bool                        IsFrozen() const { return (freezeState == FreezeState::Frozen || freezeState == FreezeState::WaitingForUnfreeze); }
+    bool                        IsFrozen() const;
 
     bool                        ToggleFreeze();
 

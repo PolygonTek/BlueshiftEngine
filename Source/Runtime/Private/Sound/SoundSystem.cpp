@@ -282,7 +282,7 @@ Sound *SoundSystem::GetSound(const char *hashName) {
 
 // TODO: SoundSystem::Update 함수를 별도 쓰레드로 바꿀것
 void SoundSystem::Update() {
-    BE_SCOPE_PROFILE_CPU("SoundSystem::Update", Color3::violet);
+    BE_SCOPE_PROFILE_CPU("SoundSystem::Update", Color3::coral);
 
     if (!initialized) {
         return;

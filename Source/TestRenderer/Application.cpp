@@ -220,7 +220,7 @@ void Application::Draw(const BE1::RHI::Handle contextHandle, const BE1::RHI::Han
     BE1::rhi.SetContext(contextHandle);
 
 #ifdef ENABLE_IMGUI
-    BE1::rhi.ImGuiNewFrame(contextHandle);
+    BE1::rhi.ImGuiBeginFrame(contextHandle);
 #endif
 
     DrawToRenderTarget(renderTargetHandle, t);

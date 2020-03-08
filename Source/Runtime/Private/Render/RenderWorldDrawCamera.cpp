@@ -16,6 +16,7 @@
 #include "Render/Render.h"
 #include "RenderInternal.h"
 #include "SIMD/SIMD.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -925,6 +926,8 @@ void RenderWorld::OptimizeLights(VisCamera *camera) {
 }
 
 void RenderWorld::DrawCamera(VisCamera *camera) {
+    BE_SCOPE_PROFILE_CPU("RenderWorld::DrawCamera", Color3::paleGoldenrod);
+
     viewCount++;
 
     // Find visible renderLights by querying view frustum in lightDBVT.
@@ -1000,6 +1003,7 @@ void RenderWorld::AddSubCamera(VisCamera *camera) {
 }
 
 void RenderWorld::DrawSubCamera(const VisObject *visObject, const DrawSurf *drawSurf, const Material *material) {
+    BE_SCOPE_PROFILE_CPU("RenderWorld::DrawSubCamera", Color3::paleGoldenrod);
 }
 
 void RenderWorld::AddDrawSurf(VisCamera *camera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, int flags) {

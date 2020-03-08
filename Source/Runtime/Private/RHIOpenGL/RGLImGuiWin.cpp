@@ -753,7 +753,7 @@ void OpenGLRHI::ImGuiDestroyContext(GLContext *ctx) {
     ImGui::DestroyContext(ctx->imGuiContext);
 }
 
-void OpenGLRHI::ImGuiNewFrame(Handle ctxHandle) {
+void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     if (!g_ShaderHandle) {

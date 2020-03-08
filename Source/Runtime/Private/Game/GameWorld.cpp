@@ -700,7 +700,7 @@ int GameWorld::GetUnscaledDeltaTime() const {
 }
 
 void GameWorld::Update(int elapsedTime) {
-    BE_SCOPE_PROFILE_CPU("GameWorld::Update", Color3::white);
+    BE_SCOPE_PROFILE_CPU("GameWorld::Update", Color3::wheat);
 
     if (isDebuggable) {
         luaVM.PollDebuggee();
@@ -838,18 +838,28 @@ void GameWorld::Render() {
 
     // Render statistics.
     if (showStatistics) {
+        //ImGui::ShowDemoWindow();
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 410, 10), ImGuiCond_Always);
-        ImGui::SetNextWindowSize(ImVec2(400, 220), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(400, 320), ImGuiCond_Always);
         ImGui::Begin("Statistics");
 
         uint64_t tid = PlatformThread::GetCurrentThreadId();
-        profiler.IterateCpuMarkers(tid, [](const char *tagName, const Color3 &tagColor, int stackDepth, float seconds) {
-            ImGui::TextColored(ImColor(tagColor.r, tagColor.g, tagColor.b), "%s: %.3fms", tagName, SEC2MS(seconds));
-        });
 
-        profiler.IterateGpuMarkers([](const char *tagName, const Color3 &tagColor, int stackDepth, float seconds) {
-            ImGui::TextColored(ImColor(tagColor.r, tagColor.g, tagColor.b), "%s: %.3fms", tagName, SEC2MS(seconds));
-        });
+        if (ImGui::CollapsingHeader(BE1::va("CPU (%" PRIu64 ")", tid), ImGuiTreeNodeFlags_DefaultOpen)) {
+            profiler.IterateCpuMarkers(tid, [](const char *tagName, const Color3 &tagColor, int stackDepth, float seconds) {
+                Str indentSpaces;
+                indentSpaces.Fill(' ', stackDepth * 2);
+                ImGui::TextColored(ImColor(tagColor.r, tagColor.g, tagColor.b), "%s%s: %.3fms", indentSpaces.c_str(), tagName, seconds * 1000.0f);
+            });
+        }
+
+        if (ImGui::CollapsingHeader("GPU", ImGuiTreeNodeFlags_DefaultOpen)) {
+            profiler.IterateGpuMarkers([](const char *tagName, const Color3 &tagColor, int stackDepth, float seconds) {
+                Str indentSpaces;
+                indentSpaces.Fill(' ', stackDepth * 2);
+                ImGui::TextColored(ImColor(tagColor.r, tagColor.g, tagColor.b), "%s%s: %.3fms", indentSpaces.c_str(), tagName, seconds * 1000.0f);
+            });
+        }
 
         ImGui::End();
     }

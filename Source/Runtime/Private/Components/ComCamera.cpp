@@ -20,6 +20,7 @@
 #include "Components/ComCamera.h"
 #include "Game/GameWorld.h"
 #include "Game/TagLayerSettings.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -389,6 +390,8 @@ bool ComCamera::ProcessTouchPointerInput() {
 }
 
 void ComCamera::Render() {
+    BE_SCOPE_PROFILE_CPU("ComCamera::Render", Color3::olive);
+
     // Get current render context which is unique for each OS-level window in general.
     const RenderContext *ctx = renderSystem.GetCurrentRenderContext();
     if (!ctx) {
