@@ -685,6 +685,7 @@ IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARA
 void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
     // Setup Dear ImGui context
     ctx->imGuiContext = ImGui::CreateContext();
+    ImGui::SetCurrentContext(ctx->imGuiContext);
     ImGuiIO &io = ImGui::GetIO();
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
@@ -694,6 +695,8 @@ void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
     //ImGui::StyleColorsClassic();
 
     ctx->imGuiLastTime = PlatformTime::Seconds();
+
+    io.IniFilename = nullptr;
 
     // Setup back-end capabilities flags
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;         // We can honor GetMouseCursor() values (optional)
