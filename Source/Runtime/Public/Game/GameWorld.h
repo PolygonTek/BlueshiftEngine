@@ -187,6 +187,8 @@ public:
 
     bool                        HasScriptError() const;
 
+    void                        ShowStatistics(bool show) { showStatistics = show; }
+
     void                        StopAllSounds();
 
     void                        UpdateCanvas();
@@ -245,6 +247,7 @@ private:
     bool                        gameStarted = false;
     bool                        isDebuggable = false;
     bool                        isMapLoading = false;
+    bool                        showStatistics = false;
 };
 
 template <typename Func>

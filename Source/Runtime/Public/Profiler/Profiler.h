@@ -22,10 +22,6 @@
 
 BE_NAMESPACE_BEGIN
 
-#ifdef DEVELOPMENT
-#define ENABLE_PROFILER
-#endif
-
 #ifndef ENABLE_PROFILER
 
 #define BE_PROFILE_INIT()
@@ -98,20 +94,20 @@ public:
     struct CpuThreadInfo {
         uint64_t                threadId;
         CpuMarker               markers[MaxCpuMarkersPerThread];
-        int                     currentIndex;
-        Stack<int>              currentIndexStack;
-        int                     frameIndexes[MaxRecordedFrames];    // marker indexes for frames
+        int                     currentIndex;                       // current marker index
+        Stack<int>              indexStack;                         // marker index stack for recursive usage
+        int                     frameIndexes[MaxRecordedFrames];    // start marker indexes for frames
 
-        CpuThreadInfo() : currentIndexStack(MaxDepth), currentIndex(0) {}
+        CpuThreadInfo() : indexStack(MaxDepth), currentIndex(0) {}
     };
 
     struct GpuThreadInfo {
         GpuMarker               markers[MaxGpuMarkers];
-        int                     currentIndex;
-        Stack<int>              currentIndexStack;
-        int                     frameIndexes[MaxRecordedFrames];    // marker indexes for frames
+        int                     currentIndex;                       // current marker index
+        Stack<int>              indexStack;                         // marker index stack for recursive usage
+        int                     frameIndexes[MaxRecordedFrames];    // start marker indexes for frames
 
-        GpuThreadInfo() : currentIndexStack(MaxDepth), currentIndex(0) {}
+        GpuThreadInfo() : indexStack(MaxDepth), currentIndex(0) {}
     };
 
     struct FrameData {
@@ -149,17 +145,21 @@ private:
     FreezeState::Enum           freezeState;
 
     FrameData                   frameData[MaxRecordedFrames];
-    int                         frameCount;
+    int                         frameCount;                     ///< Incremental value for each SyncFrame() calls.
     int                         writeFrameIndex;
     int                         readFrameIndex;
 
-    StaticArray<Tag, MaxTags>   tags;
+    StaticArray<Tag, MaxTags>   tags;                           ///< tag informations.
     HashMap<uint64_t, CpuThreadInfo> cpuThreadInfoMap;
     GpuThreadInfo               gpuThreadInfo;
 };
 
 template <typename Func>
 BE_INLINE void Profiler::IterateCpuMarkers(uint64_t threadId, Func func) const {
+    if (readFrameIndex < 0) {
+        return;
+    }
+
     const FrameData &readFrame = frameData[readFrameIndex];
 
     if (readFrame.time != InvalidTime) {
@@ -172,14 +172,21 @@ BE_INLINE void Profiler::IterateCpuMarkers(uint64_t threadId, Func func) const {
             int startMarkerIndex = ti.frameIndexes[readFrameIndex];
             int endMarkerIndex = ti.frameIndexes[(readFrameIndex + 1) % COUNT_OF(ti.frameIndexes)];
 
-            for (int markerIndex = startMarkerIndex; markerIndex < endMarkerIndex; markerIndex++) {
+            int markerIndex = startMarkerIndex;
+
+            while (markerIndex != endMarkerIndex) {
                 const CpuMarker &marker = ti.markers[markerIndex];
 
-                float seconds = (marker.endTime - marker.startTime) / 1e9;
+                uint64_t deltaTime = marker.endTime - marker.startTime;
+
+                // Convert nanoseconds to seconds.
+                float seconds = deltaTime / 1e9;
 
                 const Tag &tag = tags[marker.tagIndex];
 
                 func(tag.name, tag.color, marker.depth, seconds);
+
+                markerIndex = (markerIndex + 1) % COUNT_OF(ti.markers);
             }
         }
     }
@@ -187,6 +194,10 @@ BE_INLINE void Profiler::IterateCpuMarkers(uint64_t threadId, Func func) const {
 
 template <typename Func>
 BE_INLINE void Profiler::IterateGpuMarkers(Func func) const {
+    if (readFrameIndex < 0) {
+        return;
+    }
+
     const FrameData &readFrame = frameData[readFrameIndex];
 
     if (readFrame.time != InvalidTime) {
@@ -195,18 +206,25 @@ BE_INLINE void Profiler::IterateGpuMarkers(Func func) const {
         int startMarkerIndex = ti.frameIndexes[readFrameIndex];
         int endMarkerIndex = ti.frameIndexes[(readFrameIndex + 1) % COUNT_OF(ti.frameIndexes)];
 
-        for (int markerIndex = startMarkerIndex; markerIndex < endMarkerIndex; markerIndex++) {
+        int markerIndex = startMarkerIndex;
+
+        while (markerIndex != endMarkerIndex) {
             const GpuMarker &marker = ti.markers[markerIndex];
 
             if (rhi.QueryResultAvailable(marker.startQueryHandle) && rhi.QueryResultAvailable(marker.endQueryHandle)) {
                 uint64_t startTime = rhi.QueryResult(marker.startQueryHandle);
                 uint64_t endTime = rhi.QueryResult(marker.endQueryHandle);
-                float seconds = (endTime - startTime) / 1e9;
+                uint64_t deltaTime = endTime - startTime;
+
+                // Convert nanoseconds to seconds.
+                float seconds = deltaTime / 1e9;
 
                 const Tag &tag = tags[marker.tagIndex];
 
                 func(tag.name, tag.color, marker.depth, seconds);
             }
+
+            markerIndex = (markerIndex + 1) % COUNT_OF(ti.markers);
         }
     }
 }

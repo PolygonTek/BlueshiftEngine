@@ -28,9 +28,11 @@ void Profiler::Init() {
     freezeState = FreezeState::Frozen;
 
     frameCount = 0;
+
     writeFrameIndex = 0;
     readFrameIndex = -1;
 
+    // Initialize frame data.
     for (int i = 0; i < COUNT_OF(frameData); i++) {
         FrameData &fd = frameData[i];
 
@@ -74,7 +76,9 @@ void Profiler::SyncFrame() {
         return;
     }
 
-    readFrameIndex = (writeFrameIndex + 1) % COUNT_OF(frameData);
+    readFrameIndex = writeFrameIndex % COUNT_OF(frameData);
+
+    frameCount++;
 
     writeFrameIndex = frameCount % COUNT_OF(frameData);
 
@@ -90,8 +94,6 @@ void Profiler::SyncFrame() {
     }
 
     gpuThreadInfo.frameIndexes[writeFrameIndex] = gpuThreadInfo.currentIndex;
-
-    frameCount++;
 }
 
 bool Profiler::ToggleFreeze() {
@@ -147,14 +149,14 @@ void Profiler::PushCpuMarker(int tagIndex) {
     CpuThreadInfo &ti = GetCpuThreadInfo();
     CpuMarker &marker = ti.markers[ti.currentIndex];
 
-    ti.currentIndexStack.Push(ti.currentIndex);
+    ti.indexStack.Push(ti.currentIndex);
     ti.currentIndex = (ti.currentIndex + 1) % COUNT_OF(ti.markers);
 
     marker.tagIndex = tagIndex;
     marker.startTime = PlatformTime::Nanoseconds();
     marker.endTime = InvalidTime;
     marker.frameCount = frameCount;
-    marker.depth = ti.currentIndexStack.Count();
+    marker.depth = ti.indexStack.Count();
 }
 
 void Profiler::PopCpuMarker() {
@@ -163,9 +165,9 @@ void Profiler::PopCpuMarker() {
     }
 
     CpuThreadInfo &ti = GetCpuThreadInfo();
-    assert(!ti.currentIndexStack.IsEmpty());
+    assert(!ti.indexStack.IsEmpty());
 
-    int currentIndex = ti.currentIndexStack.Pop();
+    int currentIndex = ti.indexStack.Pop();
 
     CpuMarker &marker = ti.markers[currentIndex];
 
@@ -180,13 +182,13 @@ void Profiler::PushGpuMarker(int tagIndex) {
     GpuThreadInfo &ti = gpuThreadInfo;
     GpuMarker &marker = ti.markers[ti.currentIndex];
 
-    ti.currentIndexStack.Push(ti.currentIndex);
+    ti.indexStack.Push(ti.currentIndex);
     ti.currentIndex = (ti.currentIndex + 1) % COUNT_OF(ti.markers);
 
     marker.tagIndex = tagIndex;
     rhi.QueryTimestamp(marker.startQueryHandle);
     marker.frameCount = frameCount;
-    marker.depth = ti.currentIndexStack.Count();
+    marker.depth = ti.indexStack.Count();
 }
 
 void Profiler::PopGpuMarker() {
@@ -195,9 +197,9 @@ void Profiler::PopGpuMarker() {
     }
 
     GpuThreadInfo &ti = gpuThreadInfo;
-    assert(!ti.currentIndexStack.IsEmpty());
+    assert(!ti.indexStack.IsEmpty());
 
-    int currentIndex = ti.currentIndexStack.Pop();
+    int currentIndex = ti.indexStack.Pop();
 
     GpuMarker &marker = ti.markers[currentIndex];
 
