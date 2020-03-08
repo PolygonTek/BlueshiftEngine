@@ -466,7 +466,7 @@ void GameClient::DrawConsole() {
     Font *oldFont = gameClient.GetFont();
 
     SetFont(nullptr);
-    SetTextColor(Color4::grey);
+    SetTextColor(Color4::gray);
 
     if (cl_showFps.GetBool()) {
         SetTextColor(Color4::white);

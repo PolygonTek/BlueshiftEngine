@@ -23,14 +23,14 @@ BE_NAMESPACE_BEGIN
 double PlatformWinTime::secondsPerCycle;
 
 void PlatformWinTime::Init() {
-    LARGE_INTEGER frequency;
+    INT64 frequency;
 
-    if (!QueryPerformanceFrequency(&frequency)) {
+    if (!QueryPerformanceFrequency((LARGE_INTEGER *)&frequency)) {
         BE_FATALERROR("No hardware timer available");
         return;
     }
 
-    secondsPerCycle = 1.0 / frequency.QuadPart;
+    secondsPerCycle = 1.0 / frequency;
 
     PlatformTime::Seconds();
 }
@@ -40,11 +40,11 @@ void PlatformWinTime::Shutdown() {
 }
 
 double PlatformWinTime::Seconds() {
-    LARGE_INTEGER cycles;
+    INT64 cycles;
 
-    QueryPerformanceCounter(&cycles);
+    QueryPerformanceCounter((LARGE_INTEGER *)&cycles);
 
-    return cycles.QuadPart * secondsPerCycle;
+    return cycles * secondsPerCycle;
 }
 
 uint32_t PlatformWinTime::Milliseconds() {
@@ -60,9 +60,9 @@ uint64_t PlatformWinTime::Nanoseconds() {
 }
 
 uint64_t PlatformWinTime::Cycles() {
-    LARGE_INTEGER count;
-    QueryPerformanceCounter(&count);
-    return count.QuadPart;
+    INT64 count;
+    QueryPerformanceCounter((LARGE_INTEGER *)&count);
+    return count;
 }
 
 int PlatformWinTime::GetTimeOfDay(struct timeval *tv) {
