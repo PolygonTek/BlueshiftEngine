@@ -487,8 +487,8 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
     CFRelease(currentKeyboard);
 }
 
-- (void)runFrameInstance:(float)elapsedTime {
-    BE1::Engine::RunFrame(elapsedTime);
+- (void)runFrameInstance:(uint32_t)elapsedTime {
+    BE1::Engine::RunFrame(MILLI2SEC(elapsedTime));
         
     BE1::gameClient.RunFrame();
         
@@ -528,13 +528,13 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     [self initInstance];
     
-    int t0 = BE1::PlatformTime::Milliseconds();
+    uint32_t t0 = BE1::PlatformTime::Milliseconds();
     
     while (1) {
-        double t = BE1::PlatformTime::Milliseconds();
-        double elapsedTime = t - t0;
-        if (elapsedTime > 1.0) {
-            elapsedTime = 1.0;
+        uint32_t t = BE1::PlatformTime::Milliseconds();
+        uint32_t elapsedTime = t - t0;
+        if (elapsedTime > 1000) {
+            elapsedTime = 1000;
         }
 
         t0 = t;

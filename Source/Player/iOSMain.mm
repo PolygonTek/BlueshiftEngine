@@ -50,21 +50,21 @@
 @implementation RootViewController
 
 static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
-    static double t0 = 0;
+    static uint32_t t0 = 0;
     
     if (t0 == 0) {
-        t0 = BE1::PlatformTime::Seconds();
+        t0 = BE1::PlatformTime::Milliseconds();
     }
     
-    double t = BE1::PlatformTime::Seconds();
-    double elapsedTime = t - t0;
-    if (elapsedTime > 1.0) {
-        elapsedTime = 1.0;
+    uint32_t t = BE1::PlatformTime::Milliseconds();
+    uint32_t elapsedTime = t - t0;
+    if (elapsedTime > 1000) {
+        elapsedTime = 1000;
     }
 
     t0 = t;
 
-    BE1::Engine::RunFrame(elapsedTime);
+    BE1::Engine::RunFrame(MILLI2SEC(elapsedTime));
     
     BE1::gameClient.RunFrame();
     

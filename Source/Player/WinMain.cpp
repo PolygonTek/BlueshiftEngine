@@ -243,7 +243,7 @@ static void ShutdownInstance() {
     BE1::Engine::Shutdown();
 }
 
-static bool RunFrameInstance(float elapsedTime) {
+static bool RunFrameInstance(uint32_t elapsedTime) {
     MSG msg;
 
     while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -257,7 +257,7 @@ static bool RunFrameInstance(float elapsedTime) {
         }
     }
 
-    BE1::Engine::RunFrame(elapsedTime);
+    BE1::Engine::RunFrame(MILLI2SEC(elapsedTime));
 
     BE1::gameClient.RunFrame();
 
@@ -287,13 +287,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
     ::SetFocus(hmainWnd);
 
-    double t0 = BE1::PlatformTime::Seconds();
+    uint32_t t0 = BE1::PlatformTime::Milliseconds();
 
     while (1) {
-        double t = BE1::PlatformTime::Seconds();
-        double elapsedTime = t - t0;
-        if (elapsedTime > 1.0) {
-            elapsedTime = 1.0;
+        uint32_t t = BE1::PlatformTime::Milliseconds();
+        uint32_t elapsedTime = t - t0;
+        if (elapsedTime > 1000) {
+            elapsedTime = 1000;
         }
 
         t0 = t;

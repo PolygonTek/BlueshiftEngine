@@ -19,8 +19,8 @@
 
 BE_NAMESPACE_BEGIN
 
-static int          originalmouseparms[3];
-static int          newmouseparms[3];
+static int          originalMouseParms[3];
+static int          newMouseParms[3];
 static POINT        oldCursorPos;
 static Point        windowCenter;
 
@@ -67,10 +67,12 @@ void PlatformWin::Shutdown() {
 }
 
 void PlatformWin::EnableMouse(bool enable) {
-    //SystemParametersInfo(SPI_GETMOUSE, 0, originalmouseparms, 0);
-    //newmouseparms[0] = 0;
-    //newmouseparms[1] = 0;
-    //newmouseparms[2] = 1;
+#if 0
+    SystemParametersInfo(SPI_GETMOUSE, 0, originalMouseParms, 0);
+    newMouseParms[0] = 0;
+    newMouseParms[1] = 0;
+    newMouseParms[2] = 1;
+#endif
 
     GetCursorPos(&oldCursorPos);
 
@@ -123,7 +125,9 @@ bool PlatformWin::LockCursor(bool lock) {
         cursorLocked = lock;
 
         if (lock) {
-            SystemParametersInfo(SPI_SETMOUSE, 0, newmouseparms, 0);
+#if 0
+            SystemParametersInfo(SPI_SETMOUSE, 0, newMouseParms, 0);
+#endif
 
             RECT windowRect = GetScreenWindowRect(hwnd);
             windowCenter.x = (windowRect.left + windowRect.right) / 2;
@@ -141,7 +145,9 @@ bool PlatformWin::LockCursor(bool lock) {
             ClipCursor(&windowRect);
             while (ShowCursor(FALSE) >= 0);
         } else {
-            SystemParametersInfo(SPI_SETMOUSE, 0, originalmouseparms, 0);
+#if 0
+            SystemParametersInfo(SPI_SETMOUSE, 0, originalMouseParms, 0);
+#endif
 
             SetCursorPos(oldCursorPos.x, oldCursorPos.y);
 

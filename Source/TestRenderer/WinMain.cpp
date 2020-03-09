@@ -153,19 +153,19 @@ static void ToggleFullscreen(BE1::RHI::Handle ctx) {
 }
 
 static void DisplayMainContext(BE1::RHI::Handle context, void *dataPtr) {
-    static double t0 = BE1::PlatformTime::Seconds();
+    static uint32_t t0 = BE1::PlatformTime::Milliseconds();
 
-    float t = BE1::PlatformTime::Seconds() - t0;
+    uint32_t t = BE1::PlatformTime::Milliseconds() - t0;
 
-    ::app.Draw(context, mainRenderTarget, t);
+    ::app.Draw(context, mainRenderTarget, MILLI2SEC(t));
 }
 
 static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
-    static double t0 = BE1::PlatformTime::Seconds();
+    static uint32_t t0 = BE1::PlatformTime::Milliseconds();
 
-    float t = BE1::PlatformTime::Seconds() - t0;
+    uint32_t t = BE1::PlatformTime::Milliseconds() - t0;
 
-    ::app.Draw(context, subRenderTarget, t);
+    ::app.Draw(context, subRenderTarget, MILLI2SEC(t));
 }
 
 static HWND CreateMainWindow(const TCHAR *title, int width, int height) {
