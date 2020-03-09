@@ -850,9 +850,11 @@ void GameWorld::Render(const RenderContext *renderContext) {
     // Render statistics.
     if (showStatistics) {
         //ImGui::ShowDemoWindow();
-        ImGui::SetNextWindowSize(ImVec2(380, 120), ImGuiCond_Appearing);
-        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 390, 10), ImGuiCond_Always);
-        ImGui::SetNextWindowSizeConstraints(ImVec2(380, -1), ImVec2(380, -1));
+        const int fixedWidth = 390;
+
+        ImGui::SetNextWindowSize(ImVec2(fixedWidth, 120), ImGuiCond_Appearing);
+        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - fixedWidth - 10, 10), ImGuiCond_Always);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(fixedWidth, -1), ImVec2(fixedWidth, -1));
         ImGui::Begin("Statistics", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
         const RenderCounter &renderCounter = renderContext->GetPrevFrameRenderCounter();

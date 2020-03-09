@@ -44,7 +44,7 @@ public:
     void                        Shutdown();
 
     void                        BeginWrite();
-    void                        EndDrawCommand();
+    void                        EndWrite();
 
     void                        BeginBackEnd();
 

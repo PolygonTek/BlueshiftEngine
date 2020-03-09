@@ -481,6 +481,8 @@ void RenderContext::OnResize(int width, int height) {
 }
 
 void RenderContext::Display() {
+    BE_SCOPE_PROFILE_CPU("RenderContext::Display", Color3::olive);
+
     rhi.DisplayContext(contextHandle);
 }
 

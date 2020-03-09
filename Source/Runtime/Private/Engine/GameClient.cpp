@@ -89,6 +89,8 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
     platform->SetMainWindowHandle(windowHandle);
     platform->EnableMouse(useMouseInput);
 
+    BE_PROFILE_INIT();
+
     inputSystem.Init();
 
     renderSystem.Init();
@@ -107,8 +109,6 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
     currentFont = nullptr;
     
     SetFont(fontManager.defaultFont);
-
-    BE_PROFILE_INIT();
 }
 
 void GameClient::InitDefaultGuids() {
@@ -159,8 +159,6 @@ void GameClient::Shutdown() {
     cmdSystem.RemoveCommand("disconnect");
     cmdSystem.RemoveCommand("toggleConsole");
 
-    BE_PROFILE_SHUTDOWN();
-
     //materialManager.ReleaseMaterial(consoleMaterial);
 
     animControllerManager.Shutdown();
@@ -172,6 +170,8 @@ void GameClient::Shutdown() {
     renderSystem.Shutdown();
 
     inputSystem.Shutdown();
+
+    BE_PROFILE_SHUTDOWN();
 }
 
 void GameClient::RunFrame() {

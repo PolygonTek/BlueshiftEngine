@@ -21,6 +21,7 @@
 #include "Core/Cmds.h"
 #include "IO/FileSystem.h"
 #include "Platform/PlatformTime.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -196,6 +197,8 @@ void RenderSystem::FreeRenderContext(RenderContext *rc) {
 }
 
 void RenderSystem::BeginCommands(RenderContext *renderContext) {
+    BE_SCOPE_PROFILE_CPU("RenderSystem::BeginCommands", Color3::olive);
+
     renderSystem.currentContext = renderContext;
 
     rhi.SetContext(renderContext->GetContextHandle());
@@ -212,11 +215,13 @@ void RenderSystem::BeginCommands(RenderContext *renderContext) {
 }
 
 void RenderSystem::EndCommands() {
+    BE_SCOPE_PROFILE_CPU("RenderSystem::EndCommands", Color3::olive);
+
     bufferCacheManager.BeginBackEnd();
 
     renderSystem.IssueCommands();
 
-    bufferCacheManager.EndDrawCommand();
+    bufferCacheManager.EndWrite();
 
     frameData.ToggleFrame();
 
@@ -285,6 +290,8 @@ void RenderSystem::CmdScreenshot(int x, int y, int width, int height, const char
 }
 
 void RenderSystem::IssueCommands() {
+    BE_SCOPE_PROFILE_CPU("RenderSystem::IssueCommands", Color3::olive);
+
     RenderCommandBuffer *cmds = frameData.GetCommands();
     // Add an end-of-list command.
     *(int *)(cmds->data + cmds->used) = RenderCommand::End;
@@ -585,6 +592,8 @@ void RenderSystem::CheckModifiedCVars() {
 }
 
 void RenderSystem::UpdateEnvProbes() {
+    BE_SCOPE_PROFILE_CPU("RenderSystem::UpdateEnvProbes", Color3::olive);
+
     // Needs any render context to render environment cubemap
     if (!renderSystem.renderContexts.Count()) {
         return;

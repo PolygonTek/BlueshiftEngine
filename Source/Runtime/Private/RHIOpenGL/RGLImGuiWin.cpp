@@ -237,6 +237,8 @@ void OpenGLRHI::ImGuiDestroyContext(GLContext *ctx) {
 }
 
 void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
+    BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiBeginFrame", Color3::khaki);
+
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     ImGuiIO &io = ImGui::GetIO();
@@ -293,6 +295,8 @@ void OpenGLRHI::ImGuiRender() {
 }
 
 void OpenGLRHI::ImGuiEndFrame() {
+    BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiEndFrame", Color3::khaki);
+
     ImGui::EndFrame();
 }
 
