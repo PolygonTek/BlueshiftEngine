@@ -14,7 +14,6 @@
 
 #include "Precompiled.h"
 #include "Application.h"
-#include "imgui/imgui.h"
 
 struct Vertex2D {
     BE1::Vec2       position;

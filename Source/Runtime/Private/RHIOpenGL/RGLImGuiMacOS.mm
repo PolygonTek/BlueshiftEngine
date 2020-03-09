@@ -18,8 +18,6 @@
 #include "RGLInternal.h"
 #include "Profiler/Profiler.h"
 
-BE_NAMESPACE_BEGIN
-
 // Undocumented methods for creating cursors.
 @interface NSCursor()
 + (id)_windowResizeNorthWestSouthEastCursor;
@@ -27,6 +25,8 @@ BE_NAMESPACE_BEGIN
 + (id)_windowResizeNorthSouthCursor;
 + (id)_windowResizeEastWestCursor;
 @end
+
+BE_NAMESPACE_BEGIN
 
 static CFAbsoluteTime g_Time = 0.0;
 static NSCursor*      g_MouseCursors[ImGuiMouseCursor_COUNT] = {};
