@@ -139,7 +139,6 @@ extern CVar     r_skipFogLights;
 extern CVar     r_skipBlendPass;
 extern CVar     r_skipFinalPass;
 
-extern CVar     r_showStats;
 extern CVar     r_showBufferCache;
 extern CVar     r_showBufferCacheTiming;
 extern CVar     r_showAABB;

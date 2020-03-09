@@ -33,15 +33,17 @@ void Batch::DrawPrimitives() const {
 
     int instanceCount = Max(numInstances, 1);
 
-    if (flushType == Flush::Shadow) {
-        backEnd.ctx->renderCounter.shadowDrawCalls++;
-        backEnd.ctx->renderCounter.shadowDrawIndexes += numIndexes * instanceCount;
-        backEnd.ctx->renderCounter.shadowDrawVerts += numVerts * instanceCount;
-    }
+    RenderCounter &renderCounter = backEnd.ctx->GetRenderCounter();
 
-    backEnd.ctx->renderCounter.drawCalls++;
-    backEnd.ctx->renderCounter.drawIndexes += numIndexes * instanceCount;
-    backEnd.ctx->renderCounter.drawVerts += numVerts * instanceCount;
+    if (flushType == Flush::Shadow) {
+        renderCounter.shadowDrawCalls++;
+        renderCounter.shadowDrawIndexes += numIndexes * instanceCount;
+        renderCounter.shadowDrawVerts += numVerts * instanceCount;
+    } else {
+        renderCounter.drawCalls++;
+        renderCounter.drawIndexes += numIndexes * instanceCount;
+        renderCounter.drawVerts += numVerts * instanceCount;
+    }
 }
 
 void Batch::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::Property> &shaderProperties) const {
@@ -479,7 +481,7 @@ void Batch::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
     ALIGN_AS32 Mat4 prevModelViewProjMatrix = backEnd.camera->def->GetProjMatrix() * prevModelViewMatrix;
     shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::PrevModelViewProjectionMatrix], true, prevModelViewProjMatrix);
 
-    shader->SetConstant1f("shutterSpeed", r_motionBlur_ShutterSpeed.GetFloat() / backEnd.ctx->frameTime);
+    shader->SetConstant1f("shutterSpeed", r_motionBlur_ShutterSpeed.GetFloat() / MILLI2SEC(backEnd.ctx->frameMsec));
     //shader->SetConstant1f("motionBlurID", (float)surfSpace->id);
 
     shader->SetTexture("depthMap", backEnd.ctx->screenDepthTexture);

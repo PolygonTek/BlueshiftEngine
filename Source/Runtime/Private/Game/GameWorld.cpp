@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Platform/PlatformThread.h"
 #include "IO/FileSystem.h"
+#include "Engine/GameClient.h"
 #include "Render/Render.h"
 #include "Physics/Collider.h"
 #include "Physics/Physics.h"
@@ -723,13 +724,15 @@ void GameWorld::Update(int elapsedTime) {
         LateUpdateEntities();
 
         // Wake up waiting coroutine in Lua scripts.
-        luaVM.WakeUpWaitingThreads(MS2SEC(time));
+        luaVM.WakeUpWaitingThreads(MILLI2SEC(time));
 
         luaVM.State().ForceGC();
     }
 }
 
 void GameWorld::FixedUpdateEntities(float timeStep) {
+    //BE_SCOPE_PROFILE_CPU("GameWorld::FixedUpdateEntities", Color3::wheat);
+
     // Call fixed update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
@@ -739,6 +742,8 @@ void GameWorld::FixedUpdateEntities(float timeStep) {
 }
 
 void GameWorld::FixedLateUpdateEntities(float timeStep) {
+    //BE_SCOPE_PROFILE_CPU("GameWorld::FixedLateUpdateEntities", Color3::wheat);
+
     // Call fixed post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
@@ -748,6 +753,8 @@ void GameWorld::FixedLateUpdateEntities(float timeStep) {
 }
 
 void GameWorld::UpdateEntities() {
+    BE_SCOPE_PROFILE_CPU("GameWorld::UpdateEntities", Color3::wheat);
+
     // Call update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
@@ -757,6 +764,8 @@ void GameWorld::UpdateEntities() {
 }
 
 void GameWorld::LateUpdateEntities() {
+    BE_SCOPE_PROFILE_CPU("GameWorld::LateUpdateEntities", Color3::wheat);
+
     // Call post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
@@ -819,7 +828,9 @@ void GameWorld::ListUpActiveCanvasComponents(StaticArray<ComCanvas *, 16> &canva
     }
 }
 
-void GameWorld::Render() {
+void GameWorld::Render(const RenderContext *renderContext) {
+    BE_SCOPE_PROFILE_CPU("GameWorld::Render", Color3::olive);
+
     StaticArray<ComCamera *, 16> cameraComponents;
     ListUpActiveCameraComponents(cameraComponents);
 
@@ -839,26 +850,89 @@ void GameWorld::Render() {
     // Render statistics.
     if (showStatistics) {
         //ImGui::ShowDemoWindow();
-        ImGui::SetNextWindowSize(ImVec2(380, 500), ImGuiCond_Appearing);
-        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 390, 10), ImGuiCond_Appearing);
-        ImGui::Begin("Statistics");
+        ImGui::SetNextWindowSize(ImVec2(380, 120), ImGuiCond_Appearing);
+        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 390, 10), ImGuiCond_Always);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(380, -1), ImVec2(380, -1));
+        ImGui::Begin("Statistics", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+        const RenderCounter &renderCounter = renderContext->GetPrevFrameRenderCounter();
+
+        ImGui::Text("Frame: %ims, FPS: %i", renderCounter.frameMsec, gameClient.GetFPS());
+        ImGui::Text("Draw: %i, Verts: %i, Tris: %i", renderCounter.drawCalls, renderCounter.drawVerts, renderCounter.drawIndexes / 3);
+        ImGui::Text("Shadow Draw: %i, Verts: %i, Tris: %i", renderCounter.shadowDrawCalls, renderCounter.shadowDrawVerts, renderCounter.shadowDrawIndexes / 3);
 
         uint64_t tid = PlatformThread::GetCurrentThreadId();
 
         if (ImGui::CollapsingHeader(BE1::va("CPU (%" PRIu64 ")", tid), ImGuiTreeNodeFlags_DefaultOpen)) {
-            profiler.IterateCpuMarkers(tid, [](const char *tagName, const Color3 &tagColor, int stackDepth, float seconds) {
-                Str indentSpaces;
-                indentSpaces.Fill(' ', stackDepth * 2);
-                ImGui::TextColored(ImColor(tagColor.r, tagColor.g, tagColor.b), "%s%s: %.3fms", indentSpaces.c_str(), tagName, seconds * 1000.0f);
+            int lastStackDepth = 0;
+
+            ImGui::BeginGroup();
+
+            profiler.IterateCpuMarkers(tid, [&lastStackDepth](int frameCount, const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
+                // Convert nanoseconds to milliseconds.
+                const float durationMs = (endTime - startTime) * 0.0000001f;
+
+                Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.5f);
+
+                while (stackDepth < lastStackDepth) {
+                    ImGui::TreePop();
+                    lastStackDepth--;
+                }
+
+                lastStackDepth = stackDepth;
+
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(textColor.r, textColor.g, textColor.b, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+                ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+
+                bool opened = ImGui::TreeNodeEx(tagName, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
+
+                ImGui::PopStyleColor(3);
+
+                return opened;
             });
+
+            while (lastStackDepth-- > 0) {
+                ImGui::TreePop();
+            }
+
+            ImGui::EndGroup();
         }
 
         if (ImGui::CollapsingHeader("GPU", ImGuiTreeNodeFlags_DefaultOpen)) {
-            profiler.IterateGpuMarkers([](const char *tagName, const Color3 &tagColor, int stackDepth, float seconds) {
-                Str indentSpaces;
-                indentSpaces.Fill(' ', stackDepth * 2);
-                ImGui::TextColored(ImColor(tagColor.r, tagColor.g, tagColor.b), "%s%s: %.3fms", indentSpaces.c_str(), tagName, seconds * 1000.0f);
+            int lastStackDepth = 0;
+
+            ImGui::BeginGroup();
+
+            profiler.IterateGpuMarkers([&lastStackDepth](int frameCount, const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
+                // Convert nanoseconds to milliseconds.
+                const float durationMs = (endTime - startTime) * 0.0000001f;
+
+                Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.5f);
+
+                while (stackDepth < lastStackDepth) {
+                    ImGui::TreePop();
+                    lastStackDepth--;
+                }
+
+                lastStackDepth = stackDepth;
+
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(textColor.r, textColor.g, textColor.b, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+                ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+
+                bool opened = ImGui::TreeNodeEx(tagName, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
+
+                ImGui::PopStyleColor(3);
+
+                return opened;
             });
+
+            while (lastStackDepth-- > 0) {
+                ImGui::TreePop();
+            }
+
+            ImGui::EndGroup();
         }
 
         ImGui::End();

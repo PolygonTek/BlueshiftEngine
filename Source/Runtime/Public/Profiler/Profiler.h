@@ -18,30 +18,26 @@
 #include "Containers/HashMap.h"
 #include "Containers/Stack.h"
 #include "Math/Math.h"
-#include "RHI/RHI.h"
+#include "RHI/RHIOpenGL.h"
 
 BE_NAMESPACE_BEGIN
 
-#ifndef ENABLE_PROFILER
-
-#define BE_PROFILE_INIT()
-#define BE_PROFILE_SHUTDOWN()
-#define BE_PROFILE_SYNC_FRAME()
-#define BE_PROFILE_STOP()
-#define BE_PROFILE_START()
-#define BE_SCOPE_PROFILE_CPU(name, color)
-#define BE_SCOPE_PROFILE_GPU(name, color)
-
+#ifdef ENABLE_PROFILER
+    #define BE_PROFILE_INIT() BE1::profiler.Init()
+    #define BE_PROFILE_SHUTDOWN() BE1::profiler.Shutdown()
+    #define BE_PROFILE_SYNC_FRAME() BE1::profiler.SyncFrame()
+    #define BE_PROFILE_STOP() BE1::profiler.IsFrozen() ? 0 : BE1::profiler.ToggleFreeze();
+    #define BE_PROFILE_START() BE1::profiler.IsFrozen() ? BE1::profiler.ToggleFreeze() : 0;
+    #define BE_SCOPE_PROFILE_CPU(name, color) static int BE_CONCAT2(tag_cpu_, __LINE__) = BE1::profiler.CreateTag(name, color); BE1::ScopeProfileCPU BE_CONCAT2(profile_scope_cpu_, __LINE__)(BE_CONCAT2(tag_cpu_, __LINE__))
+    #define BE_SCOPE_PROFILE_GPU(name, color) static int BE_CONCAT2(tag_gpu_, __LINE__) = BE1::profiler.CreateTag(name, color); BE1::ScopeProfileGPU BE_CONCAT2(profile_scope_gpu_, __LINE__)(BE_CONCAT2(tag_gpu_, __LINE__))
 #else
-
-#define BE_PROFILE_INIT() profiler.Init()
-#define BE_PROFILE_SHUTDOWN() profiler.Shutdown()
-#define BE_PROFILE_SYNC_FRAME() profiler.SyncFrame()
-#define BE_PROFILE_STOP() profiler.IsFrozen() ? 0 : profiler.ToggleFreeze();
-#define BE_PROFILE_START() profiler.IsFrozen() ? profiler.ToggleFreeze() : 0;
-#define BE_SCOPE_PROFILE_CPU(name, color) static int BE_CONCAT2(tag_cpu_, __LINE__) = profiler.CreateTag(name, color); ScopeProfileCPU BE_CONCAT2(profile_scope_cpu_, __LINE__)(BE_CONCAT2(tag_cpu_, __LINE__))
-#define BE_SCOPE_PROFILE_GPU(name, color) static int BE_CONCAT2(tag_gpu_, __LINE__) = profiler.CreateTag(name, color); ScopeProfileGPU BE_CONCAT2(profile_scope_gpu_, __LINE__)(BE_CONCAT2(tag_gpu_, __LINE__))
-
+    #define BE_PROFILE_INIT()
+    #define BE_PROFILE_SHUTDOWN()
+    #define BE_PROFILE_SYNC_FRAME()
+    #define BE_PROFILE_STOP()
+    #define BE_PROFILE_START()
+    #define BE_SCOPE_PROFILE_CPU(name, color)
+    #define BE_SCOPE_PROFILE_GPU(name, color)
 #endif
 
 class Profiler {
@@ -174,19 +170,25 @@ BE_INLINE void Profiler::IterateCpuMarkers(uint64_t threadId, Func func) const {
 
             int markerIndex = startMarkerIndex;
 
+            int skipMinDepth = INT_MAX;
+
             while (markerIndex != endMarkerIndex) {
                 const CpuMarker &marker = ti.markers[markerIndex];
 
-                uint64_t deltaTime = marker.endTime - marker.startTime;
+                int nextMarkerIndex = (markerIndex + 1) % COUNT_OF(ti.markers);
+                bool isLeaf = nextMarkerIndex == endMarkerIndex || ti.markers[nextMarkerIndex].depth <= marker.depth;
 
-                // Convert nanoseconds to seconds.
-                float seconds = deltaTime / 1e9;
+                if (marker.depth < skipMinDepth) {
+                    const Tag &tag = tags[marker.tagIndex];
 
-                const Tag &tag = tags[marker.tagIndex];
+                    if (!func(readFrame.frameCount, tag.name, tag.color, marker.depth, isLeaf, marker.startTime, marker.endTime)) {
+                        skipMinDepth = marker.depth + 1;
+                    } else {
+                        skipMinDepth = INT_MAX;
+                    }
+                }
 
-                func(tag.name, tag.color, marker.depth, seconds);
-
-                markerIndex = (markerIndex + 1) % COUNT_OF(ti.markers);
+                markerIndex = nextMarkerIndex;
             }
         }
     }
@@ -208,20 +210,27 @@ BE_INLINE void Profiler::IterateGpuMarkers(Func func) const {
 
         int markerIndex = startMarkerIndex;
 
+        int skipMinDepth = INT_MAX;
+
         while (markerIndex != endMarkerIndex) {
             const GpuMarker &marker = ti.markers[markerIndex];
 
-            if (rhi.QueryResultAvailable(marker.startQueryHandle) && rhi.QueryResultAvailable(marker.endQueryHandle)) {
+            int nextMarkerIndex = (markerIndex + 1) % COUNT_OF(ti.markers);
+            bool isLeaf = nextMarkerIndex == endMarkerIndex || ti.markers[nextMarkerIndex].depth <= marker.depth;
+
+            if (marker.depth < skipMinDepth) {
+                while (!rhi.QueryResultAvailable(marker.startQueryHandle)) {}
+                while (!rhi.QueryResultAvailable(marker.endQueryHandle)) {}
                 uint64_t startTime = rhi.QueryResult(marker.startQueryHandle);
                 uint64_t endTime = rhi.QueryResult(marker.endQueryHandle);
-                uint64_t deltaTime = endTime - startTime;
-
-                // Convert nanoseconds to seconds.
-                float seconds = deltaTime / 1e9;
 
                 const Tag &tag = tags[marker.tagIndex];
 
-                func(tag.name, tag.color, marker.depth, seconds);
+                if (!func(readFrame.frameCount, tag.name, tag.color, marker.depth, isLeaf, startTime, endTime)) {
+                    skipMinDepth = marker.depth + 1;
+                } else {
+                    skipMinDepth = INT_MAX;
+                }
             }
 
             markerIndex = (markerIndex + 1) % COUNT_OF(ti.markers);

@@ -129,7 +129,7 @@ void Application::Draw() {
 
     mainRenderContext->BeginFrame();
 
-    gameWorld->Render();
+    gameWorld->Render(mainRenderContext);
 
     gameWorld->GetPhysicsWorld()->DebugDraw();
 

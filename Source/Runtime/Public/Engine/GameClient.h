@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "Input/InputSystem.h"
+
 BE_NAMESPACE_BEGIN
 
 struct KeyFocus {
@@ -95,6 +97,8 @@ public:
     void                    PacketEvent();
 
     void                    DrawConsole();
+
+    int                     GetFPS() const { return fps; }
 
 private:
     void                    InitDefaultGuids();

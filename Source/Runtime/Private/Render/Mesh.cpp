@@ -312,7 +312,7 @@ void Mesh::UpdateSkinningJointCache(const Skeleton *skeleton, const Mat3x4 *join
 
     skinningJointCache->Update(skeleton, jointMats);
 
-    renderSystem.GetCurrentRenderContext()->renderCounter.numSkinningEntities++;
+    renderSystem.GetCurrentRenderContext()->GetRenderCounter().numSkinningEntities++;
 }
 
 float Mesh::ComputeVolume() const {

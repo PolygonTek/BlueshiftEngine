@@ -389,7 +389,7 @@ static void RB_ShadowCubeMapPass(const VisLight *visLight, const Frustum &viewFr
     rhi.SetScissor(prevScissorRect);
     rhi.SetViewport(backEnd.renderRect);
 
-    backEnd.ctx->renderCounter.numShadowMapDraw += shadowMapDraw;
+    backEnd.ctx->GetRenderCounter().numShadowMapDraw += shadowMapDraw;
 }
 
 // TODO: To be culled by for each cascades.
@@ -545,7 +545,7 @@ static void RB_OrthogonalShadowMapPass(const VisLight *visLight, const Frustum &
     backEnd.shadowViewProjectionScaleBiasMatrix[0] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * visLight->def->GetViewMatrix();
 
     if (RB_ShadowMapPass(visLight, viewFrustum, 0, false)) {
-        backEnd.ctx->renderCounter.numShadowMapDraw++;
+        backEnd.ctx->GetRenderCounter().numShadowMapDraw++;
     }
 }
 
@@ -592,7 +592,7 @@ static void RB_ProjectedShadowMapPass(const VisLight *visLight, const Frustum &v
     backEnd.shadowViewProjectionScaleBiasMatrix[0] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * visLight->def->GetViewMatrix();
 
     if (RB_ShadowMapPass(visLight, viewFrustum, 0, false)) {
-        backEnd.ctx->renderCounter.numShadowMapDraw++;
+        backEnd.ctx->GetRenderCounter().numShadowMapDraw++;
     }
 }
 
@@ -709,7 +709,7 @@ static void RB_CascadedShadowMapPass(const VisLight *visLight) {
         splitViewFrustum.MoveFarDistance(dFar);
 
         if (RB_SingleCascadedShadowMapPass(visLight, splitViewFrustum, cascadeIndex, true)) {
-            backEnd.ctx->renderCounter.numShadowMapDraw++;
+            backEnd.ctx->GetRenderCounter().numShadowMapDraw++;
         }
     }
 }

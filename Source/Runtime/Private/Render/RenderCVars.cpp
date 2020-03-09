@@ -130,7 +130,6 @@ CVAR(r_skipBlendLights, "0", CVar::Flag::Bool, "skip blend lights");
 CVAR(r_skipBlendPass, "0", CVar::Flag::Bool, "skip alpha blending draw pass");
 CVAR(r_skipFinalPass, "0", CVar::Flag::Bool, "skip final draw pass");
 
-CVAR(r_showStats, "0", CVar::Flag::Integer, "show rendering statistics");
 CVAR(r_showBufferCache, "0", CVar::Flag::Bool, "print dynamic buffer usage every frame");
 CVAR(r_showBufferCacheTiming, "1", CVar::Flag::Bool, "print dynamic buffer map/unmap timing every frame");
 CVAR(r_showAABB, "0", CVar::Flag::Integer, "show axis-aligned bounding boxes");

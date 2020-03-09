@@ -175,6 +175,8 @@ void GameClient::Shutdown() {
 }
 
 void GameClient::RunFrame() {
+    BE_SCOPE_PROFILE_CPU("GameClient::RunFrame", Color3::moccasin);
+
     frameCount++;
 
     time += common.frameTime;

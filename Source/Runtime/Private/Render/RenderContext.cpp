@@ -65,7 +65,7 @@ void RenderContext::Init(RHI::WindowHandle hwnd, int renderingWidth, int renderi
 
     this->random.SetSeed(123123);
 
-    this->elapsedTime = PlatformTime::Milliseconds() * 0.001f;
+    this->lastFrameMsec = PlatformTime::Milliseconds();
 }
 
 void RenderContext::Shutdown() {
@@ -487,13 +487,13 @@ void RenderContext::Display() {
 void RenderContext::BeginFrame() {
     BE_SCOPE_PROFILE_CPU("RenderContext::BeginFrame", Color3::olive);
 
-    startFrameSec = PlatformTime::Seconds();
+    startFrameMsec = PlatformTime::Milliseconds();
 
-    frameTime = startFrameSec - elapsedTime;
+    frameMsec = startFrameMsec - lastFrameMsec;
 
-    elapsedTime = startFrameSec;
+    lastFrameMsec = startFrameMsec;
 
-    memset(&renderCounter, 0, sizeof(renderCounter));
+    memset(&renderCounters[frameCount & 1], 0, sizeof(renderCounters[0]));
 
     renderSystem.UpdateEnvProbes();
 
@@ -512,8 +512,6 @@ void RenderContext::BeginFrame() {
 void RenderContext::EndFrame() {
     BE_SCOPE_PROFILE_CPU("RenderContext::EndFrame", Color3::olive);
 
-    frameCount++;
-
     // Adds system GUI commands
     renderSystem.primaryWorld->DrawGUICamera(guiMesh);
 
@@ -525,25 +523,11 @@ void RenderContext::EndFrame() {
 
     guiMesh.Clear();
 
-    renderCounter.frameMsec = PlatformTime::Milliseconds() - Math::FtoiFast(SEC2MILLI(startFrameSec));
+    RenderCounter *currentRenderCounter = &renderCounters[frameCount & 1];
 
-    if (r_showStats.GetInteger() > 0) {
-        switch (r_showStats.GetInteger()) {
-        case 1:
-            BE_LOG("draw:%i verts:%i tris:%i sdraw:%i sverts:%i stris:%i\n", 
-                renderCounter.drawCalls, renderCounter.drawVerts, renderCounter.drawIndexes / 3, 
-                renderCounter.shadowDrawCalls, renderCounter.shadowDrawVerts, renderCounter.shadowDrawIndexes / 3);
-            break;
-        case 2:
-            BE_LOG("frame:%i rb:%i homGen:%i homQuery:%i homCull:%i\n", 
-                renderCounter.frameMsec, renderCounter.backEndMsec, renderCounter.homGenMsec, renderCounter.homQueryMsec, renderCounter.homCullMsec);
-            break;
-        case 3:
-            BE_LOG("shadowmap:%i skinning:%i\n",
-                renderCounter.numShadowMapDraw, renderCounter.numSkinningEntities);
-            break;
-        }
-    }
+    currentRenderCounter->frameMsec = PlatformTime::Milliseconds() - startFrameMsec;
+
+    frameCount++;
 }
 
 void RenderContext::AdjustFrom640x480(float *x, float *y, float *w, float *h) const {

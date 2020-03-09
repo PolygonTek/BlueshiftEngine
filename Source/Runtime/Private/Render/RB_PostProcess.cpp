@@ -143,18 +143,20 @@ void RB_PostProcess() {
             viewProjMatrix[0] = backEnd.camera->def->GetViewProjMatrix();
             viewProjMatrix[1] = backEnd.camera->def->GetProjMatrix() * backEnd.viewMatrixPrev;
 
+            float frameTime = MILLI2SEC(bc->frameMsec);
+
             // 카메라 rotation 정도에 따라 iterative blur
             if (minCos > Math::Cos(DEG2RAD(4.0f))) {
                 PP_PassThruPass(bc->screenRT->ColorTexture(), 0.0f, 0.0f, 1.0f, 1.0f, bc->ppRTs[PP_RT_TEMP]);
-                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 1.0f, bc->frameTime, bc->screenRT);
+                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 1.0f, frameTime, bc->screenRT);
             } else if (minCos > Math::Cos(DEG2RAD(8.0f))) {
-                PP_CameraMotionBlur(bc->screenRT->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 1.0f, bc->frameTime, bc->ppRTs[PP_RT_TEMP]);
-                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 0.5f, bc->frameTime, bc->screenRT);
+                PP_CameraMotionBlur(bc->screenRT->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 1.0f, frameTime, bc->ppRTs[PP_RT_TEMP]);
+                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 0.5f, frameTime, bc->screenRT);
             } else {
                 PP_PassThruPass(bc->screenRT->ColorTexture(), 0.0f, 0.0f, 1.0f, 1.0f, bc->ppRTs[PP_RT_TEMP]);
-                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 1.0f, bc->frameTime, bc->screenRT);
-                PP_CameraMotionBlur(bc->screenRT->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 0.5f, bc->frameTime, bc->ppRTs[PP_RT_TEMP]);
-                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 0.25f, bc->frameTime, bc->screenRT);
+                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 1.0f, frameTime, bc->screenRT);
+                PP_CameraMotionBlur(bc->screenRT->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 0.5f, frameTime, bc->ppRTs[PP_RT_TEMP]);
+                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 0.25f, frameTime, bc->screenRT);
             }
         }
     }
@@ -178,7 +180,7 @@ void RB_PostProcess() {
             } else {
                 // Luminance adaptation using luminance of previous frame.
                 PP_LuminanceAdaptation(bc->hdrLuminanceRT[0]->ColorTexture(),
-                    bc->hdrLuminanceRT[bc->prevLumTarget]->ColorTexture(), bc->frameTime, bc->hdrLuminanceRT[bc->currLumTarget]);
+                    bc->hdrLuminanceRT[bc->prevLumTarget]->ColorTexture(), MILLI2SEC(bc->frameMsec), bc->hdrLuminanceRT[bc->currLumTarget]);
 
                 luminanceRT = bc->hdrLuminanceRT[bc->currLumTarget];
 

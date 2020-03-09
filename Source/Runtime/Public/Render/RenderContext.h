@@ -52,12 +52,12 @@ enum ppTexture_t {
 };
 
 struct RenderCounter {
-    int                     frontEndMsec;
-    int                     backEndMsec;
-    int                     frameMsec;
-    int                     homGenMsec;
-    int                     homQueryMsec;
-    int                     homCullMsec;
+    uint32_t                frontEndMsec;
+    uint32_t                backEndMsec;
+    uint32_t                frameMsec;
+    uint32_t                homGenMsec;
+    uint32_t                homQueryMsec;
+    uint32_t                homCullMsec;
 
     unsigned int            drawCalls;
     unsigned int            drawVerts;
@@ -125,6 +125,9 @@ public:
 
     void                    OnResize(int width, int height);
 
+    const RenderCounter &   GetPrevFrameRenderCounter() const { return renderCounters[(frameCount + 1) & 1]; }
+    RenderCounter &         GetRenderCounter() { return renderCounters[frameCount & 1]; }
+
     void                    Display();
 
     void                    BeginFrame();
@@ -181,9 +184,9 @@ public:
 
     Random                  random;
 
-    float                   elapsedTime;
-    float                   frameTime;
     int                     frameCount;
+    uint32_t                frameMsec;
+    uint32_t                lastFrameMsec;
 
     Color4                  color;
     Color4                  clearColor;
@@ -194,8 +197,8 @@ public:
     int                     prevLumTarget;
     int                     currLumTarget;
 
-    RenderCounter           renderCounter;
-    int                     startFrameSec;
+    RenderCounter           renderCounters[2];
+    uint32_t                startFrameMsec;
 
     Texture *               screenColorTexture = nullptr;
     Texture *               screenDepthTexture = nullptr;

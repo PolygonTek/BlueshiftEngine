@@ -324,7 +324,7 @@ static void RB_RenderOcclusionMap(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 static void RB_GenerateOcclusionMapHierarchy() {
-    int startTime = PlatformTime::Milliseconds();
+    uint32_t startTime = PlatformTime::Milliseconds();
 
     Rect prevViewportRect = rhi.GetViewport();
 
@@ -372,11 +372,11 @@ static void RB_GenerateOcclusionMapHierarchy() {
 
     rhi.SetViewport(prevViewportRect);
 
-    backEnd.ctx->renderCounter.homGenMsec = PlatformTime::Milliseconds() - startTime;
+    backEnd.ctx->GetRenderCounter().homGenMsec = PlatformTime::Milliseconds() - startTime;
 }
 
 static void RB_QueryOccludeeAABBs(int numAmbientOccludees, const AABB *occludeeAABB) {
-    int startTime = PlatformTime::Milliseconds();
+    uint32_t startTime = PlatformTime::Milliseconds();
 
     // alloc ambient occludee buffer in a AABB form
     struct Occludee { Vec2 position; Vec3 center; Vec3 extents; };
@@ -432,11 +432,11 @@ static void RB_QueryOccludeeAABBs(int numAmbientOccludees, const AABB *occludeeA
 
     rhi.SetViewport(prevViewportRect);
 
-    backEnd.ctx->renderCounter.homQueryMsec = PlatformTime::Milliseconds() - startTime;
+    backEnd.ctx->GetRenderCounter().homQueryMsec = PlatformTime::Milliseconds() - startTime;
 }
 
 static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occludeeSurfIndexes, int numDrawSurfs, DrawSurf **drawSurfs) {
-    int startTime = PlatformTime::Milliseconds();
+    uint32_t startTime = PlatformTime::Milliseconds();
 
     // write back for visibility information to each surf
     int size = backEnd.homCullingOutputTexture->MemRequired(false);
@@ -470,7 +470,7 @@ static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occlud
         visibilityPtr += 4;
     }
 
-    backEnd.ctx->renderCounter.homCullMsec = PlatformTime::Milliseconds() - startTime;
+    backEnd.ctx->GetRenderCounter().homCullMsec = PlatformTime::Milliseconds() - startTime;
 }
 
 static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
@@ -1073,9 +1073,8 @@ void RB_Execute(const void *data) {
     BE_SCOPE_PROFILE_CPU("RB_Execute", Color3::limeGreen);
     BE_SCOPE_PROFILE_GPU("RB_Execute", Color3::limeGreen);
 
-    int t1, t2;
-
-    t1 = PlatformTime::Milliseconds();
+    uint32_t t1 = PlatformTime::Milliseconds();
+    uint32_t t2;
 
     backEnd.batch.SetCurrentLight(nullptr);
     backEnd.batch.Begin(Batch::Flush::Final, nullptr, nullptr, nullptr);
@@ -1097,7 +1096,7 @@ void RB_Execute(const void *data) {
             continue;
         case RenderCommand::End:
             t2 = PlatformTime::Milliseconds();
-            backEnd.ctx->renderCounter.backEndMsec = t2 - t1;
+            backEnd.ctx->GetRenderCounter().backEndMsec = t2 - t1;
             return;
         }
     }

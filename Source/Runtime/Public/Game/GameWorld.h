@@ -121,7 +121,7 @@ public:
     Entity *                    RayCast(const Ray &ray, int layerMask) const;
 
                                 /// Render camera component from all registered entities.
-    void                        Render();
+    void                        Render(const RenderContext *renderContext);
 
                                 /// Calls function for each entities for each scenes.
     template <typename Func>
