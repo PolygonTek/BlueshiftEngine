@@ -175,7 +175,7 @@ void Animator::UpdateFrame(Entity *entity, int previousTime, int currentTime) {
 
             int blendDuration;
             if (transition->fixedDuration) {
-                blendDuration = SEC2MS(transition->duration);
+                blendDuration = Math::FtoiFast(SEC2MILLI(transition->duration));
             } else {
                 blendDuration = transition->duration * stateBlenders[0].animState->GetDuration(this);
             }

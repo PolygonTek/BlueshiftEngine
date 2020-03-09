@@ -310,7 +310,7 @@ BE_INLINE bool Object::PostEventMS(const EventDef *evdef, int milliseconds, Args
 template <typename... Args>
 BE_INLINE bool Object::PostEventSec(const EventDef *evdef, int seconds, Args&&... args) {
     static_assert(is_assignable_all<VariantArg, Args...>::value, "args is not assignable to VariantArg");
-    return PostEventArgs(evdef, SEC2MS(seconds), sizeof...(args), address_of(VariantArg(std::forward<Args>(args)))...);
+    return PostEventArgs(evdef, seconds * 1000, sizeof...(args), address_of(VariantArg(std::forward<Args>(args)))...);
 }
 
 template <typename... Args>

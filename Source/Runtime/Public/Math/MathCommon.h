@@ -88,8 +88,16 @@ floating point bit layouts according to the IEEE 754-1985 and 754-2008 standard
 #define RAD2DEG(a)                  ((a) * BE1::Math::MulRadianToDegree)
 
 // seconds <-> miliseconds
-#define SEC2MS(t)                   (BE1::Math::FtoiFast((t) * BE1::Math::MulSecondToMs))
-#define MS2SEC(t)                   ((t) * BE1::Math::MulMsToSecond)
+#define SEC2MILLI(t)                ((t) * BE1::Math::MulSecondToMilli)
+#define MILLI2SEC(t)                ((t) * BE1::Math::MulMilliToSecond)
+
+// seconds <-> microseconds
+#define SEC2MICRO(t)                ((t) * BE1::Math::MulSecondToMicro)
+#define MICRO2SEC(t)                ((t) * BE1::Math::MulMicroToSecond)
+
+// seconds <-> nanoseconds
+#define SEC2NANO(t)                 ((t) * BE1::Math::MulSecondToNano)
+#define NANO2SEC(t)                 ((t) * BE1::Math::MulNanoToSecond)
 
 // degree <-> short value
 #define ANGLE2SHORT(x)              (BE1::Math::FtoiFast((x) * 65536.0f / 360.0f) & 65535)
@@ -141,8 +149,12 @@ public:
     static const float          SqrtOneOverThree;           ///< sqrt( 1 / 3 )
     static const float          MulDegreeToRadian;          ///< degrees to radians multiplier
     static const float          MulRadianToDegree;          ///< radians to degrees multiplier
-    static const float          MulSecondToMs;              ///< seconds to milliseconds multiplier
-    static const float          MulMsToSecond;              ///< milliseconds to seconds multiplier
+    static const float          MulSecondToMilli;           ///< seconds to milliseconds multiplier
+    static const float          MulMilliToSecond;           ///< milliseconds to seconds multiplier
+    static const float          MulSecondToMicro;           ///< seconds to microseconds multiplier
+    static const float          MulMicroToSecond;           ///< microseconds to seconds multiplier
+    static const float          MulSecondToNano;            ///< seconds to nanoseconds multiplier
+    static const float          MulNanoToSecond;            ///< nanoseconds to seconds multiplier
     static const float          Infinity;                   ///< huge number which should be larger than any valid number used
     static const float          FloatEpsilon;               ///< smallest positive number such that 1.0 + FloatEpsilon != 1.0
     static const float          FloatSmallestNonDenormal;   ///< smallest non-denormal 32-bit floating point value

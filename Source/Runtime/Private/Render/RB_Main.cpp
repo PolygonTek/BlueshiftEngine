@@ -937,7 +937,7 @@ static const void *RB_ExecuteDrawCamera(const void *data) {
     DrawCameraRenderCommand *cmd = (DrawCameraRenderCommand *)data;
 
     backEnd.camera              = &cmd->camera;
-    backEnd.time                = MS2SEC(cmd->camera.def->GetState().time);
+    backEnd.time                = MILLI2SEC(cmd->camera.def->GetState().time);
     backEnd.visObjects          = &cmd->camera.visObjects;
     backEnd.visLights           = &cmd->camera.visLights;
     backEnd.primaryLight        = cmd->camera.primaryLight;

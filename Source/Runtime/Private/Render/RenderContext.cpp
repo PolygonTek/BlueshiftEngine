@@ -525,7 +525,7 @@ void RenderContext::EndFrame() {
 
     guiMesh.Clear();
 
-    renderCounter.frameMsec = PlatformTime::Milliseconds() - SEC2MS(startFrameSec);
+    renderCounter.frameMsec = PlatformTime::Milliseconds() - Math::FtoiFast(SEC2MILLI(startFrameSec));
 
     if (r_showStats.GetInteger() > 0) {
         switch (r_showStats.GetInteger()) {

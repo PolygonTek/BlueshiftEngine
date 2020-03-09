@@ -104,7 +104,7 @@ void ComAnimation::Update() {
         return;
     }
 
-    int currentTime = (GetGameWorld()->GetTime() - playStartTime) * GetTimeScale() + SEC2MS(GetTimeOffset());
+    int currentTime = (GetGameWorld()->GetTime() - playStartTime) * GetTimeScale() + Math::FtoiFast(SEC2MILLI(GetTimeOffset()));
 
     UpdateAnim(currentTime);
 }
@@ -358,7 +358,7 @@ float ComAnimation::GetCurrentAnimSeconds() const {
         return 0;
     }
 
-    return MS2SEC(currentAnim->Length());
+    return MILLI2SEC(currentAnim->Length());
 }
 
 BE_NAMESPACE_END

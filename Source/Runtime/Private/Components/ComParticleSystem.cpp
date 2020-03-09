@@ -258,7 +258,7 @@ void ComParticleSystem::Update() {
 }
 
 void ComParticleSystem::UpdateSimulation(int currentTime) {
-    float time = MS2SEC(currentTime);
+    float time = MILLI2SEC(currentTime);
 
     renderObjectDef.time = currentTime;
 
@@ -292,7 +292,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
         }
 
         if (stopTime != 0) {
-            if (time > MS2SEC(stopTime) + cycleDuration) {
+            if (time > MILLI2SEC(stopTime) + cycleDuration) {
                 continue;
             }
         }
@@ -346,7 +346,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
                 }
 
                 if (stopTime > 0) {
-                    if (particleGenTime + particle->cycle * cycleDuration > MS2SEC(stopTime)) {
+                    if (particleGenTime + particle->cycle * cycleDuration > MILLI2SEC(stopTime)) {
                         continue;
                     }
                 }

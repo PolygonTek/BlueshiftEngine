@@ -181,7 +181,7 @@ void Common::SaveConfig(const char *filename) {
 
 void Common::RunFrame(int frameMsec) {
     frameTime = frameMsec;
-    frameSec = MS2SEC(frameMsec);
+    frameSec = MILLI2SEC(frameMsec);
     realTime += frameMsec;
 
     ProcessPlatformEvent();

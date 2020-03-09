@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ void Sound::Create(Pcm &pcm) {
     sampleRates     = pcm.SampleRates();
     bitsWidth       = pcm.BitsWidth();
     bytes           = pcm.DataSize();
-    duration        = SEC2MS(pcm.Duration());
+    duration        = Math::FtoiFast(SEC2MILLI(pcm.Duration()));
     playingTime     = 0;
 
     if (pcm.DataSize() <= 0x10000) {

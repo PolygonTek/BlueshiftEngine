@@ -45,7 +45,7 @@ void AnimClip::SetAnim(const Anim *anim) {
 
     // TODO: 구간 (startTime, endTime) 을 정해서 구할 것
     if (this->anim->Length() > 0) {
-        this->averageVelocity = anim->TotalMovementDelta() / MS2SEC(anim->Length());
+        this->averageVelocity = anim->TotalMovementDelta() / MILLI2SEC(anim->Length());
     } else {
         this->averageVelocity.SetFromScalar(0);
     }
