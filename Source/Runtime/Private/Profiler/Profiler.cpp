@@ -74,11 +74,11 @@ void Profiler::SyncFrame() {
         return;
     }
 
-    readFrameIndex = writeFrameIndex % COUNT_OF(frameData);
-
     frameCount++;
 
     writeFrameIndex = frameCount % COUNT_OF(frameData);
+
+    readFrameIndex = (writeFrameIndex + 1) % COUNT_OF(frameData);
 
     FrameData &writeFrame = frameData[writeFrameIndex];
 

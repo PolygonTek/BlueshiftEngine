@@ -42,17 +42,17 @@ BE_NAMESPACE_BEGIN
 
 class Profiler {
 public:
-    static const int            MaxRecordedFrames = 3;
+    static const int            MaxRecordedFrames = 6;
     static const int            MaxTags = 1024;
     static const int            MaxCpuThreads = 32;
     static const int            MaxDepth = 32;
 
     static const uint64_t       InvalidTime = -1;
 
-    static const int            MaxCpuMarkersPerFrame = 100;
+    static const int            MaxCpuMarkersPerFrame = 128;
     static const int            MaxCpuMarkersPerThread = MaxRecordedFrames * MaxCpuMarkersPerFrame;
 
-    static const int            MaxGpuMarkersPerFrame = 100;
+    static const int            MaxGpuMarkersPerFrame = 128;
     static const int            MaxGpuMarkers = MaxRecordedFrames * MaxGpuMarkersPerFrame;
 
     static const int            MaxTagNameLength = 64;
