@@ -50,17 +50,15 @@
 @implementation RootViewController
 
 static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
-    static uint32_t t0 = 0;
+    static int t0 = 0;
     
     if (t0 == 0) {
         t0 = BE1::PlatformTime::Milliseconds();
     }
     
-    uint32_t t = BE1::PlatformTime::Milliseconds();
-    uint32_t elapsedTime = t - t0;
-    if (elapsedTime > 1000) {
-        elapsedTime = 1000;
-    }
+    int t = BE1::PlatformTime::Milliseconds();
+    int elapsedTime = t - t0;
+    BE1::Clamp(elapsedTime, 0, 1000);
 
     t0 = t;
 

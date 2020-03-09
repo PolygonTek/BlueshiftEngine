@@ -554,7 +554,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 void android_main(android_app *appState) {
     InitInstance(appState);
 
-    uint32_t t0 = BE1::PlatformTime::Milliseconds();
+    int t0 = BE1::PlatformTime::Milliseconds();
 
     // loop waiting for stuff to do.
     while (1) {
@@ -589,11 +589,9 @@ void android_main(android_app *appState) {
                 WindowSizeChanged(displayMetrics.backingWidth, displayMetrics.backingHeight);
             }
 
-            uint32_t t = BE1::PlatformTime::Milliseconds();
-            uint32_t elapsedMsec = t - t0;
-            if (elapsedMsec > 1000) {
-                elapsedMsec = 1000;
-            }
+            int t = BE1::PlatformTime::Milliseconds();
+            int elapsedMsec = t - t0;
+            BE1::Clamp(elapsedTime, 0, 1000);
 
             t0 = t;
 

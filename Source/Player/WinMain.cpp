@@ -243,7 +243,7 @@ static void ShutdownInstance() {
     BE1::Engine::Shutdown();
 }
 
-static bool RunFrameInstance(uint32_t elapsedTime) {
+static bool RunFrameInstance(int elapsedTime) {
     MSG msg;
 
     while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -287,14 +287,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
     ::SetFocus(hmainWnd);
 
-    uint32_t t0 = BE1::PlatformTime::Milliseconds();
+    int t0 = BE1::PlatformTime::Milliseconds();
 
     while (1) {
-        uint32_t t = BE1::PlatformTime::Milliseconds();
-        uint32_t elapsedTime = t - t0;
-        if (elapsedTime > 1000) {
-            elapsedTime = 1000;
-        }
+        int t = BE1::PlatformTime::Milliseconds();
+        int elapsedTime = t - t0;
+        BE1::Clamp(elapsedTime, 0, 1000);
 
         t0 = t;
 
