@@ -16,6 +16,7 @@
 #include "Render/Render.h"
 #include "RenderInternal.h"
 #include "Platform/PlatformTime.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -214,6 +215,8 @@ void BufferCacheManager::BeginWrite() {
 }
 
 void BufferCacheManager::EndDrawCommand() {
+    BE_SCOPE_PROFILE_CPU("BufferCacheManager::EndDrawCommand", Color3::olive);
+
 #if USE_PINNED_MEMORY
     if (rhi.IsSync(frameData[unmappedNum].sync)) {
         rhi.DeleteSync(frameData[unmappedNum].sync);

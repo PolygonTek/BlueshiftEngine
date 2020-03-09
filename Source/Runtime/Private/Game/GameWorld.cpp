@@ -857,7 +857,11 @@ void GameWorld::Render(const RenderContext *renderContext) {
 
         const RenderCounter &renderCounter = renderContext->GetPrevFrameRenderCounter();
 
-        ImGui::Text("Frame: %ims, FPS: %i", renderCounter.frameMsec, gameClient.GetFPS());
+        Str fpsText = va("FPS: %3i", gameClient.GetFPS());
+
+        ImGui::Text("Render: %ims, FrontEnd: %ims, BackEnd: %ims", renderCounter.frameMsec, renderCounter.frontEndMsec, renderCounter.backEndMsec);
+        ImGui::SameLine(ImGui::GetWindowSize().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(fpsText.c_str()).x);
+        ImGui::Text(fpsText.c_str());
         ImGui::Text("Draw: %i, Verts: %i, Tris: %i", renderCounter.drawCalls, renderCounter.drawVerts, renderCounter.drawIndexes / 3);
         ImGui::Text("Shadow Draw: %i, Verts: %i, Tris: %i", renderCounter.shadowDrawCalls, renderCounter.shadowDrawVerts, renderCounter.shadowDrawIndexes / 3);
 
