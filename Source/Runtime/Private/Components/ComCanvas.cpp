@@ -74,8 +74,8 @@ void ComCanvas::Init() {
     if (!renderCamera) {
         renderCamera = new RenderCamera;
     }
-
-    renderCameraDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews;
+    
+    renderCameraDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews | RenderCamera::Flag::SkipPostProcess;
 
     renderCameraDef.clearMethod = RenderCamera::ClearMethod::DepthOnly;
 
