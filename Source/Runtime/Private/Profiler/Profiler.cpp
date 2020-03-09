@@ -25,8 +25,6 @@ Profiler profiler;
 static PlatformMutex *mapMutex;
 
 void Profiler::Init() {
-    freezeState = FreezeState::Frozen;
-
     frameCount = 0;
 
     writeFrameIndex = 0;

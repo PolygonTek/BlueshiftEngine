@@ -138,7 +138,7 @@ public:
 private:
     CpuThreadInfo &             GetCpuThreadInfo();
 
-    FreezeState::Enum           freezeState;
+    FreezeState::Enum           freezeState = FreezeState::Frozen;
 
     FrameData                   frameData[MaxRecordedFrames];
     int                         frameCount;                     ///< Incremental value for each SyncFrame() calls.

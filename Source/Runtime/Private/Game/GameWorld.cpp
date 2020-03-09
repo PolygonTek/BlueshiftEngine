@@ -511,7 +511,9 @@ bool GameWorld::HasScriptError() const {
 void GameWorld::StartGame() {
     gameStarted = true;
 
-    BE_PROFILE_START();
+    if (showStatistics) {
+        BE_PROFILE_START();
+    }
 
     timeScale = 1.0f;
 
@@ -555,7 +557,7 @@ void GameWorld::StopGame(bool stopAllSounds) {
     gameStarted = false;
 
     BE_PROFILE_STOP();
-
+    
     if (isDebuggable) {
         luaVM.StopDebuggee();
     }
@@ -850,7 +852,7 @@ void GameWorld::Render(const RenderContext *renderContext) {
     // Render statistics.
     if (showStatistics) {
         //ImGui::ShowDemoWindow();
-        const int fixedWidth = 390;
+        const int fixedWidth = 400;
 
         ImGui::SetNextWindowSize(ImVec2(fixedWidth, 120), ImGuiCond_Appearing);
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - fixedWidth - 10, 10), ImGuiCond_Always);
@@ -861,84 +863,88 @@ void GameWorld::Render(const RenderContext *renderContext) {
 
         Str fpsText = va("FPS: %3i", gameClient.GetFPS());
 
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
         ImGui::Text("Render: %ims, FrontEnd: %ims, BackEnd: %ims", renderCounter.frameMsec, renderCounter.frontEndMsec, renderCounter.backEndMsec);
         ImGui::SameLine(ImGui::GetWindowSize().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(fpsText.c_str()).x);
         ImGui::Text(fpsText.c_str());
         ImGui::Text("Draw: %i, Verts: %i, Tris: %i", renderCounter.drawCalls, renderCounter.drawVerts, renderCounter.drawIndexes / 3);
         ImGui::Text("Shadow Draw: %i, Verts: %i, Tris: %i", renderCounter.shadowDrawCalls, renderCounter.shadowDrawVerts, renderCounter.shadowDrawIndexes / 3);
+        ImGui::PopStyleColor();
 
-        uint64_t tid = PlatformThread::GetCurrentThreadId();
+        if (!profiler.IsFrozen()) {
+            uint64_t tid = PlatformThread::GetCurrentThreadId();
 
-        if (ImGui::CollapsingHeader(BE1::va("CPU (%" PRIu64 ")", tid), ImGuiTreeNodeFlags_DefaultOpen)) {
-            int lastStackDepth = 0;
+            if (ImGui::CollapsingHeader(BE1::va("CPU (%" PRIu64 ")", tid), ImGuiTreeNodeFlags_DefaultOpen)) {
+                int lastStackDepth = 0;
 
-            ImGui::BeginGroup();
+                ImGui::BeginGroup();
 
-            profiler.IterateCpuMarkers(tid, [&lastStackDepth](int frameCount, const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
-                // Convert nanoseconds to milliseconds.
-                const float durationMs = (endTime - startTime) * 0.0000001f;
+                profiler.IterateCpuMarkers(tid, [&lastStackDepth](int frameCount, const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
+                    // Convert nanoseconds to milliseconds.
+                    const float durationMs = (endTime - startTime) * 0.0000001f;
 
-                Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.5f);
+                    Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.5f);
 
-                while (stackDepth < lastStackDepth) {
+                    while (stackDepth < lastStackDepth) {
+                        ImGui::TreePop();
+                        lastStackDepth--;
+                    }
+
+                    lastStackDepth = stackDepth;
+
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(textColor.r, textColor.g, textColor.b, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+                    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+
+                    bool opened = ImGui::TreeNodeEx(tagName, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
+
+                    ImGui::PopStyleColor(3);
+
+                    return opened;
+                });
+
+                while (lastStackDepth-- > 0) {
                     ImGui::TreePop();
-                    lastStackDepth--;
                 }
 
-                lastStackDepth = stackDepth;
-
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(textColor.r, textColor.g, textColor.b, 1.0f));
-                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
-                ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
-
-                bool opened = ImGui::TreeNodeEx(tagName, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
-
-                ImGui::PopStyleColor(3);
-
-                return opened;
-            });
-
-            while (lastStackDepth-- > 0) {
-                ImGui::TreePop();
+                ImGui::EndGroup();
             }
 
-            ImGui::EndGroup();
-        }
+            if (ImGui::CollapsingHeader("GPU", ImGuiTreeNodeFlags_DefaultOpen)) {
+                int lastStackDepth = 0;
 
-        if (ImGui::CollapsingHeader("GPU", ImGuiTreeNodeFlags_DefaultOpen)) {
-            int lastStackDepth = 0;
+                ImGui::BeginGroup();
 
-            ImGui::BeginGroup();
+                profiler.IterateGpuMarkers([&lastStackDepth](int frameCount, const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
+                    // Convert nanoseconds to milliseconds.
+                    const float durationMs = (endTime - startTime) * 0.0000001f;
 
-            profiler.IterateGpuMarkers([&lastStackDepth](int frameCount, const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
-                // Convert nanoseconds to milliseconds.
-                const float durationMs = (endTime - startTime) * 0.0000001f;
+                    Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.5f);
 
-                Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.5f);
+                    while (stackDepth < lastStackDepth) {
+                        ImGui::TreePop();
+                        lastStackDepth--;
+                    }
 
-                while (stackDepth < lastStackDepth) {
+                    lastStackDepth = stackDepth;
+
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(textColor.r, textColor.g, textColor.b, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+                    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+
+                    bool opened = ImGui::TreeNodeEx(tagName, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
+
+                    ImGui::PopStyleColor(3);
+
+                    return opened;
+                });
+
+                while (lastStackDepth-- > 0) {
                     ImGui::TreePop();
-                    lastStackDepth--;
                 }
 
-                lastStackDepth = stackDepth;
-
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(textColor.r, textColor.g, textColor.b, 1.0f));
-                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
-                ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
-
-                bool opened = ImGui::TreeNodeEx(tagName, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
-
-                ImGui::PopStyleColor(3);
-
-                return opened;
-            });
-
-            while (lastStackDepth-- > 0) {
-                ImGui::TreePop();
+                ImGui::EndGroup();
             }
-
-            ImGui::EndGroup();
         }
 
         ImGui::End();

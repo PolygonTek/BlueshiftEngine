@@ -159,6 +159,8 @@ void GameClient::Shutdown() {
     cmdSystem.RemoveCommand("disconnect");
     cmdSystem.RemoveCommand("toggleConsole");
 
+    BE_PROFILE_SHUTDOWN();
+
     //materialManager.ReleaseMaterial(consoleMaterial);
 
     animControllerManager.Shutdown();
@@ -170,8 +172,6 @@ void GameClient::Shutdown() {
     renderSystem.Shutdown();
 
     inputSystem.Shutdown();
-
-    BE_PROFILE_SHUTDOWN();
 }
 
 void GameClient::RunFrame() {
