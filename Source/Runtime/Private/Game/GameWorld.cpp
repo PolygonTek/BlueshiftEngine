@@ -891,9 +891,9 @@ void GameWorld::Render(const RenderContext *renderContext) {
 
                 profiler.IterateCpuMarkers(tid, [&lastStackDepth](int frameCount, const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
                     // Convert nanoseconds to milliseconds.
-                    const float durationMs = (endTime - startTime) * 0.0000001f;
+                    const float durationMs = (endTime - startTime) * 0.000001f;
 
-                    Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.5f);
+                    Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.65f);
 
                     while (stackDepth < lastStackDepth) {
                         ImGui::TreePop();
@@ -927,9 +927,9 @@ void GameWorld::Render(const RenderContext *renderContext) {
 
                 profiler.IterateGpuMarkers([&lastStackDepth](int frameCount, const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
                     // Convert nanoseconds to milliseconds.
-                    const float durationMs = (endTime - startTime) * 0.0000001f;
+                    const float durationMs = (endTime - startTime) * 0.000001f;
 
-                    Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.5f);
+                    Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.65f);
 
                     while (stackDepth < lastStackDepth) {
                         ImGui::TreePop();
