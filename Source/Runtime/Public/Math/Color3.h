@@ -219,10 +219,10 @@ public:
     QColor              ToQColor() const { return QColor::fromRgbF(r, g, b); }
 #endif
 
-                        /// Converts RGB to HSL.
+                        /// Converts RGB to HSL (Hue, Saturation, Lightness).
     Color3              ToHSL() const;
-                        /// Converts HSL to RGB.
-    Color3              FromHSL() const;
+                        /// Converts HSL (Hue, Saturation, Lightness) to RGB.
+    static Color3       FromHSL(float h, float s, float l);
 
                         /// Converts sRGB to Linear.
     Color3              SRGBToLinear() const;

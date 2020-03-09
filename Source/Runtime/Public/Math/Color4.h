@@ -209,10 +209,10 @@ public:
     QColor              ToQColor() const { return QColor::fromRgbF(r, g, b, a); }
 #endif
 
-                        /// Convert RGB to HSL.
+                        /// Convert RGB to HSL (Hue, Saturation, Lightness).
     Color4              ToHSL() const { return Color4(ToColor3().ToHSL(), a); }
-                        /// Convert HSL to RGB.
-    Color4              FromHSL() const { return Color4(ToColor3().FromHSL(), a); }
+                        /// Convert HSL (Hue, Saturation, Lightness) to RGB.
+    static Color4       FromHSL(float h, float s, float l, float a) { return Color4(Color3::FromHSL(h, s, l), a); }
 
                         /// Convert sRGB to Linear.
     Color4              SRGBToLinear() const { return Color4(ToColor3().SRGBToLinear(), a); }

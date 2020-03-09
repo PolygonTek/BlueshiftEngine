@@ -238,10 +238,7 @@ Color3 Color3::ToHSL() const {
     return Color3(h, s, l);
 }
 
-Color3 Color3::FromHSL() const {
-    float h = r;
-    float s = g;
-    float l = b;
+Color3 Color3::FromHSL(float h, float s, float l) {
     float v = ((l <= 0.5f) ? (l * (1.0f + s)) : (l + s - l * s));
     float r, g, b;
 
