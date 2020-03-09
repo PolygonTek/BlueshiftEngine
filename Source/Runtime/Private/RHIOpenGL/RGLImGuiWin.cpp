@@ -250,8 +250,8 @@ void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
     io.DisplaySize = ImVec2((float)(rect.right - rect.left), (float)(rect.bottom - rect.top));
 
     // Setup time step
-    float currentTime = PlatformTime::Seconds();
-    io.DeltaTime = Max(currentTime - ctx->imGuiLastTime, 0.0001f);
+    double currentTime = PlatformTime::Seconds();
+    io.DeltaTime = currentTime - ctx->imGuiLastTime;
     ctx->imGuiLastTime = currentTime;
 
     // Read keyboard modifiers inputs

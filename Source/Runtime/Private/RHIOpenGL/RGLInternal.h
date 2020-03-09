@@ -139,7 +139,7 @@ struct GLContext {
     GLuint                  defaultFramebuffer;
     GLuint                  defaultVAO;
     ImGuiContext *          imGuiContext;
-    float                   imGuiLastTime;
+    double                  imGuiLastTime;
 };
 
 struct GLStencilState {

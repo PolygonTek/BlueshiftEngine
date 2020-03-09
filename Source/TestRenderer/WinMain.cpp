@@ -153,7 +153,7 @@ static void ToggleFullscreen(BE1::RHI::Handle ctx) {
 }
 
 static void DisplayMainContext(BE1::RHI::Handle context, void *dataPtr) {
-    static float t0 = BE1::PlatformTime::Seconds();
+    static double t0 = BE1::PlatformTime::Seconds();
 
     float t = BE1::PlatformTime::Seconds() - t0;
 
@@ -161,7 +161,7 @@ static void DisplayMainContext(BE1::RHI::Handle context, void *dataPtr) {
 }
 
 static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
-    static float t0 = BE1::PlatformTime::Seconds();
+    static double t0 = BE1::PlatformTime::Seconds();
 
     float t = BE1::PlatformTime::Seconds() - t0;
 
