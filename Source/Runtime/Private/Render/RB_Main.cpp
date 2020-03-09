@@ -851,6 +851,7 @@ void RB_DrawDebugTextures() {
 // FIXME: Consider this view is sub camera
 static void RB_DrawCamera3D() {
     BE_SCOPE_PROFILE_CPU("RB_DrawCamera3D", Color3::mistyRose);
+    BE_SCOPE_PROFILE_GPU("RB_DrawCamera3D", Color3::mistyRose);
 
     if (backEnd.ctx->flags & RenderContext::Flag::UseSelectionBuffer) {
         backEnd.ctx->screenSelectionRT->Begin();
@@ -917,6 +918,7 @@ static void RB_DrawCamera3D() {
 
 static void RB_DrawCamera2D() {
     BE_SCOPE_PROFILE_CPU("RB_DrawCamera2D", Color3::mistyRose);
+    BE_SCOPE_PROFILE_GPU("RB_DrawCamera2D", Color3::mistyRose);
 
     if (!backEnd.numDrawSurfs) {
         return;
@@ -1023,6 +1025,9 @@ static const void *RB_ExecuteScreenshot(const void *data) {
 }
 
 static const void *RB_ExecuteSwapBuffers(const void *data) {
+    BE_SCOPE_PROFILE_CPU("RB_ExecuteSwapBuffers", Color3::mediumVioletRed);
+    BE_SCOPE_PROFILE_GPU("RB_ExecuteSwapBuffers", Color3::mediumVioletRed);
+
     SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)data;
 
     Rect deviceRect(0, 0, backEnd.ctx->GetDeviceWidth(), backEnd.ctx->GetDeviceHeight());

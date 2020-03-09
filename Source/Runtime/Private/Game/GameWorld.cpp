@@ -839,8 +839,8 @@ void GameWorld::Render() {
     // Render statistics.
     if (showStatistics) {
         //ImGui::ShowDemoWindow();
-        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 410, 10), ImGuiCond_Always);
-        ImGui::SetNextWindowSize(ImVec2(400, 320), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(380, 500), ImGuiCond_Appearing);
+        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 390, 10), ImGuiCond_Appearing);
         ImGui::Begin("Statistics");
 
         uint64_t tid = PlatformThread::GetCurrentThreadId();

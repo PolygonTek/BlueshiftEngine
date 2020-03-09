@@ -16,6 +16,7 @@
 #include "Platform/PlatformTime.h"
 #include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -796,6 +797,9 @@ void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
 }
 
 void OpenGLRHI::ImGuiRender() {
+    BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiRender", Color3::khaki);
+    BE_SCOPE_PROFILE_GPU("OpenGLRHI::ImGuiRender", Color3::khaki);
+
     ImGui::Render();
 
     GLboolean frameBufferSRGBEnabled = gglIsEnabled(GL_FRAMEBUFFER_SRGB);

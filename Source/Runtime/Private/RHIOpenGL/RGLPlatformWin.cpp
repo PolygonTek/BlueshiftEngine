@@ -16,6 +16,7 @@
 #include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
 #include "Platform/PlatformProcess.h"
+#include "Profiler/Profiler.h"
 #include <tchar.h>
 
 BE_NAMESPACE_BEGIN
@@ -843,6 +844,9 @@ void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
 }
 
 bool OpenGLRHI::SwapBuffers() {
+    BE_SCOPE_PROFILE_CPU("OpenGLRHI::SwapBuffers", Color3::hotPink);
+    BE_SCOPE_PROFILE_GPU("OpenGLRHI::SwapBuffers", Color3::hotPink);
+
     if (!gl_ignoreGLError.GetBool()) {
         CheckError("OpenGLRHI::SwapBuffers");
     }
