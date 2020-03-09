@@ -179,9 +179,11 @@ void Common::SaveConfig(const char *filename) {
     }
 }
 
-void Common::RunFrame(int frameMsec) {
+void Common::RunFrame(float elapsedTime) {
+    frameSec = elapsedTime;
+
+    int frameMsec = Math::FtoiFast(SEC2MILLI(frameSec));
     frameTime = frameMsec;
-    frameSec = MILLI2SEC(frameMsec);
     realTime += frameMsec;
 
     ProcessPlatformEvent();

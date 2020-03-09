@@ -33,7 +33,7 @@ public:
     static void             InitBase(const char *path, bool forceGenericSIMD, const streamOutFunc_t logFunc, const streamOutFunc_t errorFunc);
     static void             ShutdownBase();
 
-    static void             RunFrame(int elapsedMsec);
+    static void             RunFrame(float elapsedTime);
 
     static CmdArgs          args;
     static Str              baseDir;

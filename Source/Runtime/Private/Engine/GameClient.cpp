@@ -177,17 +177,17 @@ void GameClient::Shutdown() {
 void GameClient::RunFrame() {
     BE_SCOPE_PROFILE_CPU("GameClient::RunFrame", Color3::moccasin);
 
+    if (fpsFrametime >= cl_updateFps.GetInteger()) {
+        fps = fpsFrames / MILLI2SEC(fpsFrametime);
+        fpsFrames = 0;
+        fpsFrametime -= cl_updateFps.GetInteger();
+    }
+
     frameCount++;
 
     time += common.frameTime;
 
     fpsFrametime += common.frameTime;
-    
-    if (fpsFrametime >= cl_updateFps.GetInteger()) {
-        fps = Math::Round(fpsFrames / MILLI2SEC(fpsFrametime));
-        fpsFrames = 0;
-        fpsFrametime -= cl_updateFps.GetInteger();
-    }
 
     fpsFrames++;
 

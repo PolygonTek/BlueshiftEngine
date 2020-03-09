@@ -36,7 +36,7 @@ public:
     void                Init(const char *baseDir);
     void                Shutdown();
 
-    void                RunFrame(int frameMsec);
+    void                RunFrame(float frameTime);
 
     PlatformId::Enum    GetPlatformId() const;
 
