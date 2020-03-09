@@ -852,7 +852,8 @@ set(MACOS_RENDERER_FILES
     Private/RHIOpenGL/OpenGL/OpenGL3.h
     Private/RHIOpenGL/OpenGL/OpenGL3.cpp
     Private/RHIOpenGL/OpenGL/MacOSOpenGL.h
-    Private/RHIOpenGL/RGLPlatformMacOS.mm)
+    Private/RHIOpenGL/RGLPlatformMacOS.mm
+    Private/RHIOpenGL/RGLImGuiMacOS.mm)
 
 if (NOT PLATFORM_WINDOWS)
     list(APPEND COMPILING_DISABLED_SOURCES ${WINDOWS_ENGINE_FILES} ${WINDOWS_RENDERER_FILES})

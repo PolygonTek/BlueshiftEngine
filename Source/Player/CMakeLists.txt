@@ -322,6 +322,7 @@ else ()
             freetype
             jsoncpp
             GGL
+            imgui
             Bullet
             HACD
             STB
