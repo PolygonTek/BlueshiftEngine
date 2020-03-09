@@ -263,6 +263,9 @@ else ()
     add_definitions(-DWITH_EDITOR=0)
 endif ()
 
+add_definitions(-DENABLE_PROFILER)
+add_definitions(-DENABLE_IMGUI)
+
 ################################################################################
 # Print C/CXX FLAGS
 ################################################################################
