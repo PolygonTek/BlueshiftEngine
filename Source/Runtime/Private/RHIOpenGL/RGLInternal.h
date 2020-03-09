@@ -250,4 +250,10 @@ struct GLQuery {
     GLuint                  id;
 };
 
+// ImGui OpenGL implementation
+bool ImGui_ImplOpenGL_Init(const char *glsl_version);
+void ImGui_ImplOpenGL_Shutdown();
+bool ImGui_ImplOpenGL_CreateFontsTexture();
+void ImGui_ImplOpenGL_RenderDrawData(ImDrawData *draw_data);
+
 BE_NAMESPACE_END

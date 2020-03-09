@@ -20,13 +20,6 @@
 
 BE_NAMESPACE_BEGIN
 
-// Desktop GL 3.2+ has glDrawElementsBaseVertex() which GL ES and WebGL don't have.
-#if defined(IMGUI_IMPL_OPENGL_ES2) || defined(IMGUI_IMPL_OPENGL_ES3) || !defined(GL_VERSION_3_2)
-#define IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET   0
-#else
-#define IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET   1
-#endif
-
 // Undocumented methods for creating cursors.
 @interface NSCursor()
 + (id)_windowResizeNorthWestSouthEastCursor;
@@ -40,7 +33,7 @@ static NSCursor*      g_MouseCursors[ImGuiMouseCursor_COUNT] = {};
 static bool           g_MouseCursorHidden = false;
 
 static void ImGui_ImplOSX_UpdateMouseCursor() {
-    ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO &io = ImGui::GetIO();
     if (io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange) {
         return;
     }
@@ -273,11 +266,13 @@ void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
         return s_clipboard.Data;
     };
 
+    ImGui_ImplOpenGL_Init("#version 130");
+
     return true;
 }
 
 void OpenGLRHI::ImGuiDestroyContext(GLContext *ctx) {
-    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplOpenGL_Shutdown();
 
     ImGui::DestroyContext(ctx->imGuiContext);
 }
@@ -313,7 +308,7 @@ void OpenGLRHI::ImGuiRender() {
         gglDisable(GL_FRAMEBUFFER_SRGB);
     }
 
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    ImGui_ImplOpenGL_RenderDrawData(ImGui::GetDrawData());
 
     if (frameBufferSRGBEnabled) {
         gglEnable(GL_FRAMEBUFFER_SRGB);

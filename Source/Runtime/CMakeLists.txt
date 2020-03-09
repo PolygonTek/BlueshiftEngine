@@ -400,6 +400,7 @@ set(COMMON_ENGINE_FILES
     Private/RHIOpenGL/RGLSync.cpp
     Private/RHIOpenGL/RGLTexture.cpp
     Private/RHIOpenGL/RGLVertexFormat.cpp
+    Private/RHIOpenGL/RGLImGui.cpp
 
     Private/Engine/Common.cpp
     Private/Engine/GameClient.cpp
