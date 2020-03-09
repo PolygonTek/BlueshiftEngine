@@ -580,6 +580,16 @@ void GameWorld::StopAllSounds() {
     soundSystem.StopAllSounds();
 }
 
+void GameWorld::ShowStatistics(bool show) {
+    showStatistics = show;
+
+    if (IsGameStarted() && show) {
+        BE_PROFILE_START();
+    } else {
+        BE_PROFILE_STOP();
+    }
+}
+
 void GameWorld::Event_RestartGame(const char *mapFilename) {
     StopGame(false);
     

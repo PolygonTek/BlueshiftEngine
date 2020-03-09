@@ -187,7 +187,8 @@ public:
 
     bool                        HasScriptError() const;
 
-    void                        ShowStatistics(bool show) { showStatistics = show; }
+    bool                        IsStatisticsVisible() const { return showStatistics; }
+    void                        ShowStatistics(bool show);
 
     void                        StopAllSounds();
 

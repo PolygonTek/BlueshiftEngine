@@ -95,7 +95,7 @@ void Profiler::SyncFrame() {
 }
 
 bool Profiler::IsFrozen() const {
-    return (freezeState == FreezeState::Frozen || freezeState == FreezeState::WaitingForUnfreeze);
+    return !(freezeState == FreezeState::Unfrozen);
 }
 
 bool Profiler::ToggleFreeze() {
