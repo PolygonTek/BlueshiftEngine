@@ -26,8 +26,8 @@ BE_NAMESPACE_BEGIN
     #define BE_PROFILE_INIT() BE1::profiler.Init()
     #define BE_PROFILE_SHUTDOWN() BE1::profiler.Shutdown()
     #define BE_PROFILE_SYNC_FRAME() BE1::profiler.SyncFrame()
-    #define BE_PROFILE_STOP() BE1::profiler.IsFrozen() ? 0 : BE1::profiler.ToggleFreeze();
-    #define BE_PROFILE_START() BE1::profiler.IsFrozen() ? BE1::profiler.ToggleFreeze() : 0;
+    #define BE_PROFILE_STOP() BE1::profiler.SetFreeze(true)
+    #define BE_PROFILE_START() BE1::profiler.SetFreeze(false)
     #define BE_SCOPE_PROFILE_CPU(name, color) static int BE_CONCAT2(tag_cpu_, __LINE__) = BE1::profiler.CreateTag(name, color); BE1::ScopeProfileCPU BE_CONCAT2(profile_scope_cpu_, __LINE__)(BE_CONCAT2(tag_cpu_, __LINE__))
     #define BE_SCOPE_PROFILE_GPU(name, color) static int BE_CONCAT2(tag_gpu_, __LINE__) = BE1::profiler.CreateTag(name, color); BE1::ScopeProfileGPU BE_CONCAT2(profile_scope_gpu_, __LINE__)(BE_CONCAT2(tag_gpu_, __LINE__))
 #else
@@ -119,7 +119,7 @@ public:
 
     bool                        IsFrozen() const;
 
-    bool                        ToggleFreeze();
+    bool                        SetFreeze(bool freeze);
 
     template <typename Func>
     void                        IterateCpuMarkers(uint64_t threadId, Func func) const;

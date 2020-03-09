@@ -70,7 +70,7 @@ void Profiler::SyncFrame() {
         freezeState = FreezeState::Unfrozen;
     }
 
-    if (IsFrozen()) {
+    if (freezeState == FreezeState::Frozen) {
         return;
     }
 
@@ -95,19 +95,22 @@ void Profiler::SyncFrame() {
 }
 
 bool Profiler::IsFrozen() const {
-    return !(freezeState == FreezeState::Unfrozen);
+    return freezeState == FreezeState::Frozen;
 }
 
-bool Profiler::ToggleFreeze() {
-    if (freezeState == FreezeState::Unfrozen) {
-        // Arise freeze in the next SyncFrame() call.
-        freezeState = FreezeState::WaitingForFreeze;
-        return true;
-    }
-    if (freezeState == FreezeState::Frozen) {
-        // Arise unfreeze in the next SyncFrame() call.
-        freezeState = FreezeState::WaitingForUnfreeze;
-        return true;
+bool Profiler::SetFreeze(bool freeze) {
+    if (freeze) {
+        if (freezeState == FreezeState::Unfrozen || FreezeState::WaitingForUnfreeze) {
+            // Arise freeze in the next SyncFrame() call.
+            freezeState = FreezeState::WaitingForFreeze;
+            return true;
+        }
+    } else {
+        if (freezeState == FreezeState::Frozen || FreezeState::WaitingForFreeze) {
+            // Arise unfreeze in the next SyncFrame() call.
+            freezeState = FreezeState::WaitingForUnfreeze;
+            return true;
+        }
     }
     return false;
 }
@@ -144,7 +147,7 @@ Profiler::CpuThreadInfo &Profiler::GetCpuThreadInfo() {
 }
 
 void Profiler::PushCpuMarker(int tagIndex) {
-    if (IsFrozen()) {
+    if (freezeState != FreezeState::Unfrozen) {
         return;
     }
 
@@ -162,7 +165,7 @@ void Profiler::PushCpuMarker(int tagIndex) {
 }
 
 void Profiler::PopCpuMarker() {
-    if (IsFrozen()) {
+    if (freezeState != FreezeState::Unfrozen) {
         return;
     }
 
@@ -177,7 +180,7 @@ void Profiler::PopCpuMarker() {
 }
 
 void Profiler::PushGpuMarker(int tagIndex) {
-    if (IsFrozen()) {
+    if (freezeState != FreezeState::Unfrozen) {
         return;
     }
 
@@ -194,7 +197,7 @@ void Profiler::PushGpuMarker(int tagIndex) {
 }
 
 void Profiler::PopGpuMarker() {
-    if (IsFrozen()) {
+    if (freezeState != FreezeState::Unfrozen) {
         return;
     }
 
