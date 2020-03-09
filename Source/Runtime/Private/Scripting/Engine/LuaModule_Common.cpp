@@ -28,6 +28,7 @@ void LuaVM::RegisterCommon(LuaCpp::Module &module) {
         "real_time", &Common::realTime,
         "frame_time", &Common::frameTime,
         "frame_sec", &Common::frameSec,
+        "with_editor", &Common::WithEditor,
         "platform_id", &Common::GetPlatformId,
         "preference_dir", &Common::GetAppPreferenceDir);
 

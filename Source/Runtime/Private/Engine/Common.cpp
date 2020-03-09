@@ -191,6 +191,14 @@ void Common::RunFrame(float elapsedTime) {
     cmdSystem.ExecuteCommandBuffer();
 }
 
+bool Common::WithEditor() const {
+#if WITH_EDITOR
+    return true;
+#else
+    return false;
+#endif
+}
+
 Common::PlatformId::Enum Common::GetPlatformId() const {
 #if defined(__IOS__)
     return PlatformId::IOSId;

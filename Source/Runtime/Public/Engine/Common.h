@@ -38,6 +38,8 @@ public:
 
     void                RunFrame(float frameTime);
 
+    bool                WithEditor() const;
+
     PlatformId::Enum    GetPlatformId() const;
 
     Str                 GetAppPreferenceDir() const;
