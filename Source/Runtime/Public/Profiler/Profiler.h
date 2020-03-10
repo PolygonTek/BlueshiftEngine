@@ -126,6 +126,7 @@ public:
     void                        SyncFrame();
 
     bool                        IsFrozen() const;
+    bool                        IsUnfrozen() const;
 
     bool                        SetFreeze(bool freeze);
 

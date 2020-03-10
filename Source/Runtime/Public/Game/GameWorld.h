@@ -121,7 +121,7 @@ public:
     Entity *                    RayCast(const Ray &ray, int layerMask) const;
 
                                 /// Render camera component from all registered entities.
-    void                        Render(const RenderContext *renderContext);
+    void                        Render();
 
                                 /// Calls function for each entities for each scenes.
     template <typename Func>
@@ -187,9 +187,6 @@ public:
 
     bool                        HasScriptError() const;
 
-    bool                        IsStatisticsVisible() const { return showStatistics; }
-    void                        ShowStatistics(bool show);
-
     void                        StopAllSounds();
 
     void                        UpdateCanvas();
@@ -248,7 +245,6 @@ private:
     bool                        gameStarted = false;
     bool                        isDebuggable = false;
     bool                        isMapLoading = false;
-    bool                        showStatistics = false;
 };
 
 template <typename Func>

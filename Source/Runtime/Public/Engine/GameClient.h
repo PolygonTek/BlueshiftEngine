@@ -53,6 +53,7 @@ struct DrawTextFlag {
 
 class Font;
 class Material;
+class RenderContext;
 
 class GameClient {
 public:
@@ -65,8 +66,10 @@ public:
     void                    EnableConsole(bool flag);
     void                    ClearCommandLine();
 
-    void                    RunFrame();
+    void                    Update();
     void                    EndFrame();
+
+    void                    Render(const RenderContext *renderContext);
 
     KeyFocus::Enum          GetKeyFocus() const { return keyFocus; }
     void                    SetKeyFocus(KeyFocus::Enum keyFocus) { this->keyFocus = keyFocus; }
@@ -96,9 +99,13 @@ public:
     void                    TouchEvent(InputSystem::Touch::Phase::Enum phase, uint64_t touchId, int x, int y, int time);
     void                    PacketEvent();
 
-    void                    DrawConsole();
-
     int                     GetFPS() const { return fps; }
+
+    bool                    IsMenuVisible() const { return showMenu; }
+    void                    ShowMenu(bool show);
+
+    bool                    IsStatisticsVisible() const { return showStatistics; }
+    void                    ShowStatistics(bool show);
 
 private:
     void                    InitDefaultGuids();
@@ -107,6 +114,7 @@ private:
     void                    ConsoleCompositionEvent(char32_t ch);
     void                    UpdateConsole();
 
+    void                    DrawConsole();
     void                    DrawConsoleScreen();
     void                    DrawConsoleNotify();
     void                    DrawConsoleCmdLine();
@@ -120,6 +128,9 @@ private:
     int                     fps;
     int                     fpsFrames;
     int                     fpsFrametime;
+
+    bool                    showMenu = false;
+    bool                    showStatistics = false;
     
     Color4                  currentColor;
     Color4                  currentTextColor;
@@ -143,6 +154,8 @@ private:
     static void             Cmd_Connect(const CmdArgs &args);
     static void             Cmd_Disconnect(const CmdArgs &args);
     static void             Cmd_ToggleConsole(const CmdArgs &args);
+    static void             Cmd_ToggleMenu(const CmdArgs &args);
+    static void             Cmd_ToggleStatistics(const CmdArgs &args);
 };
 
 extern GameClient           gameClient;

@@ -490,7 +490,7 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
 - (void)runFrameInstance:(int)elapsedTime {
     BE1::Engine::RunFrame(MILLI2SEC(elapsedTime));
         
-    BE1::gameClient.RunFrame();
+    BE1::gameClient.Update();
         
     app.Update();
         

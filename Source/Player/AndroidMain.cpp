@@ -521,7 +521,7 @@ static void ShutdownInstance() {
 static void RunFrameInstance(int elapsedMsec) {
     BE1::Engine::RunFrame(elapsedMsec);
 
-    BE1::gameClient.RunFrame();
+    BE1::gameClient.Update();
 
 #ifdef USE_ADMOB
     AdMob::ProcessQueue();

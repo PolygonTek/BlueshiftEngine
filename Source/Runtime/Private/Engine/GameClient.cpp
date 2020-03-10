@@ -13,11 +13,13 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Platform/PlatformThread.h"
 #include "Core/StrColor.h"
 #include "Core/Cmds.h"
 #include "Core/CVars.h"
 #include "Core/Vec4Color.h"
 #include "Render/Render.h"
+#include "../Render/RenderCVars.h"
 #include "Physics/Physics.h"
 #include "Input/KeyCmd.h"
 #include "Input/InputSystem.h"
@@ -55,6 +57,8 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
     cmdSystem.AddCommand("connect", Cmd_Connect);
     cmdSystem.AddCommand("disconnect", Cmd_Disconnect);
     cmdSystem.AddCommand("toggleConsole", Cmd_ToggleConsole);
+    cmdSystem.AddCommand("toggleMenu", Cmd_ToggleMenu);
+    cmdSystem.AddCommand("toggleStatistics", Cmd_ToggleStatistics);
 
     state = ClientState::Disconnected;
 
@@ -158,6 +162,8 @@ void GameClient::Shutdown() {
     cmdSystem.RemoveCommand("connect");
     cmdSystem.RemoveCommand("disconnect");
     cmdSystem.RemoveCommand("toggleConsole");
+    cmdSystem.RemoveCommand("toggleMenu");
+    cmdSystem.RemoveCommand("toggleStatistics");
 
     BE_PROFILE_SHUTDOWN();
 
@@ -174,8 +180,8 @@ void GameClient::Shutdown() {
     inputSystem.Shutdown();
 }
 
-void GameClient::RunFrame() {
-    BE_SCOPE_PROFILE_CPU("GameClient::RunFrame");
+void GameClient::Update() {
+    BE_SCOPE_PROFILE_CPU("GameClient::Update");
 
     if (fpsFrametime >= cl_updateFps.GetInteger()) {
         fps = fpsFrames / MILLI2SEC(fpsFrametime);
@@ -207,6 +213,194 @@ void GameClient::RunFrame() {
 
 void GameClient::EndFrame() {
     inputSystem.EndFrame();
+}
+
+void GameClient::Render(const RenderContext *renderContext) {
+    BE_SCOPE_PROFILE_CPU("GameClient::Render");
+
+    float menuBarHeight = 0.0f;
+
+    // Render menu bar.
+    if (showMenu) {
+        if (ImGui::BeginMainMenuBar()) {
+            if (ImGui::BeginMenu("Engine")) {
+                bool showStatistics = IsStatisticsVisible();
+                if (ImGui::MenuItem("Show Statistics", "", &showStatistics)) {
+                    cmdSystem.BufferCommandText(CmdSystem::Execution::Append, "toggleStatistics");
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Graphics")) {
+                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "HDR");
+                ImGui::Indent();
+                bool hdr = r_HDR.GetInteger() > 0;
+                if (ImGui::MenuItem("Enabled", "", &hdr)) {
+                    cvarSystem.SetCVarInteger("r_HDR", hdr ? 2 : 0);
+                }
+                bool hdrToneMapping = r_HDR_toneMapping.GetBool();
+                if (ImGui::MenuItem("Tone Mapping", "", &hdrToneMapping)) {
+                    cvarSystem.SetCVarBool("r_HDR_toneMapping", hdrToneMapping);
+                }
+                int hdrToneMapOp = r_HDR_toneMapOp.GetInteger();
+                if (ImGui::Combo("Tone Map Op", &hdrToneMapOp, "Linear\0Exponential\0Logarithmic\0Drago Logarithmic\0Reinhard\0Reinhard Extended\0Filmic ALU\0Flimic ACES\0Filmic Unreal\0Filmic Uncharted 2\0\0")) {
+                    cvarSystem.SetCVarInteger("r_HDR_toneMapOp", hdrToneMapOp);
+                }
+                ImGui::Unindent();
+
+                ImGui::Separator();
+
+                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Sun Shafts");
+                ImGui::Indent();
+                bool sunShafts = r_sunShafts.GetBool();
+                if (ImGui::MenuItem("Enabled", "", &sunShafts)) {
+                    cvarSystem.SetCVarBool("r_sunShafts", sunShafts);
+                }
+                float sunShaftsScale = r_sunShafts_scale.GetFloat();
+                if (ImGui::SliderFloat("Scale", &sunShaftsScale, 1.0f, 32.0f)) {
+                    cvarSystem.SetCVarFloat("r_sunShafts_scale", sunShaftsScale);
+                }
+                ImGui::Unindent();
+
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Physics")) {
+                if (ImGui::MenuItem("Debug Draw")) {
+                }
+                ImGui::EndMenu();
+            }
+
+            menuBarHeight = ImGui::GetWindowSize().y;
+
+            ImGui::EndMainMenuBar();
+        }
+    }
+
+    // Render statistics.
+    if (showStatistics) {
+        const int fixedWidth = 500;
+        int rightOffset = 10;
+        int topOffset = menuBarHeight + 10;
+
+        ImGui::SetNextWindowSize(ImVec2(fixedWidth, 120), ImGuiCond_Appearing);
+        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - fixedWidth - rightOffset, topOffset), ImGuiCond_Always);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(fixedWidth, -1), ImVec2(fixedWidth, -1));
+        ImGui::Begin("Statistics", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+        const RenderCounter &renderCounter = renderContext->GetPrevFrameRenderCounter();
+
+        Str fpsText = va("FPS: %3i", gameClient.GetFPS());
+
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+        ImGui::Text("Render: %ims, FrontEnd: %ims, BackEnd: %ims", renderCounter.frameMsec, renderCounter.frontEndMsec, renderCounter.backEndMsec);
+        ImGui::SameLine(ImGui::GetWindowSize().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(fpsText.c_str()).x);
+        ImGui::Text(fpsText.c_str());
+        ImGui::Text("Draw: %i, Verts: %i, Tris: %i", renderCounter.drawCalls, renderCounter.drawVerts, renderCounter.drawIndexes / 3);
+        ImGui::Text("Shadow Draw: %i, Verts: %i, Tris: %i", renderCounter.shadowDrawCalls, renderCounter.shadowDrawVerts, renderCounter.shadowDrawIndexes / 3);
+        ImGui::PopStyleColor();
+
+        ImGui::Separator();
+
+        if (profiler.IsUnfrozen()) {
+            uint64_t tid = PlatformThread::GetCurrentThreadId();
+
+            if (ImGui::CollapsingHeader(BE1::va("CPU (%" PRIu64 ")", tid), ImGuiTreeNodeFlags_DefaultOpen)) {
+                int lastStackDepth = 0;
+
+                ImGui::BeginGroup();
+
+                profiler.IterateCpuMarkers(tid, [&lastStackDepth](const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
+                    // Convert nanoseconds to milliseconds.
+                    const float durationMs = (endTime - startTime) * 0.000001f;
+
+                    Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.65f);
+
+                    while (stackDepth < lastStackDepth) {
+                        ImGui::TreePop();
+                        lastStackDepth--;
+                    }
+
+                    lastStackDepth = stackDepth;
+
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(textColor.r, textColor.g, textColor.b, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+                    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+
+                    Str id = tagName;
+                    bool opened = ImGui::TreeNodeEx(id, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
+
+                    ImGui::PopStyleColor(3);
+
+                    return opened;
+                });
+
+                while (lastStackDepth-- > 0) {
+                    ImGui::TreePop();
+                }
+
+                ImGui::EndGroup();
+            }
+
+            if (ImGui::CollapsingHeader("GPU", ImGuiTreeNodeFlags_DefaultOpen)) {
+                int lastStackDepth = 0;
+
+                ImGui::BeginGroup();
+
+                profiler.IterateGpuMarkers([&lastStackDepth](const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
+                    // Convert nanoseconds to milliseconds.
+                    const float durationMs = (endTime - startTime) * 0.000001f;
+
+                    Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.65f);
+
+                    while (stackDepth < lastStackDepth) {
+                        ImGui::TreePop();
+                        lastStackDepth--;
+                    }
+
+                    lastStackDepth = stackDepth;
+
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(textColor.r, textColor.g, textColor.b, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+                    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+
+                    Str id = tagName;
+                    bool opened = ImGui::TreeNodeEx(id, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
+
+                    ImGui::PopStyleColor(3);
+
+                    return opened;
+                });
+
+                while (lastStackDepth-- > 0) {
+                    ImGui::TreePop();
+                }
+
+                ImGui::EndGroup();
+            }
+        }
+
+        ImGui::End();
+
+        renderSystem.CheckModifiedCVars();
+    }
+
+    // Render IMGUI demo window.
+    //ImGui::ShowDemoWindow();
+
+    DrawConsole();    
+}
+
+void GameClient::ShowMenu(bool show) {
+    showMenu = show;
+}
+
+void GameClient::ShowStatistics(bool show) {
+    showStatistics = show;
+
+    if (showStatistics) {
+        BE_PROFILE_START();
+    } else {
+        BE_PROFILE_STOP();
+    }
 }
 
 void GameClient::UpdateConsole() {
@@ -953,6 +1147,14 @@ void GameClient::Cmd_ToggleConsole(const CmdArgs &args) {
     keyCmdSystem.ClearStates();
 
     gameClient.SetKeyFocus(gameClient.GetKeyFocus() == KeyFocus::Console ? KeyFocus::Game : KeyFocus::Console);
+}
+
+void GameClient::Cmd_ToggleMenu(const CmdArgs &args) {
+    gameClient.ShowMenu(!gameClient.IsMenuVisible());
+}
+
+void GameClient::Cmd_ToggleStatistics(const CmdArgs &args) {
+    gameClient.ShowStatistics(!gameClient.IsStatisticsVisible());
 }
 
 BE_NAMESPACE_END

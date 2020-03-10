@@ -98,15 +98,19 @@ bool Profiler::IsFrozen() const {
     return freezeState == FreezeState::Frozen;
 }
 
+bool Profiler::IsUnfrozen() const {
+    return freezeState == FreezeState::Unfrozen;
+}
+
 bool Profiler::SetFreeze(bool freeze) {
     if (freeze) {
-        if (freezeState == FreezeState::Unfrozen || FreezeState::WaitingForUnfreeze) {
+        if (freezeState == FreezeState::Unfrozen || freezeState == FreezeState::WaitingForUnfreeze) {
             // Arise freeze in the next SyncFrame() call.
             freezeState = FreezeState::WaitingForFreeze;
             return true;
         }
     } else {
-        if (freezeState == FreezeState::Frozen || FreezeState::WaitingForFreeze) {
+        if (freezeState == FreezeState::Frozen || freezeState == FreezeState::WaitingForFreeze) {
             // Arise unfreeze in the next SyncFrame() call.
             freezeState = FreezeState::WaitingForUnfreeze;
             return true;
@@ -147,7 +151,7 @@ Profiler::CpuThreadInfo &Profiler::GetCpuThreadInfo() {
 }
 
 void Profiler::PushCpuMarker(int tagIndex) {
-    if (freezeState != FreezeState::Unfrozen) {
+    if (freezeState == FreezeState::Frozen) {
         return;
     }
 
@@ -165,7 +169,7 @@ void Profiler::PushCpuMarker(int tagIndex) {
 }
 
 void Profiler::PopCpuMarker() {
-    if (freezeState != FreezeState::Unfrozen) {
+    if (freezeState == FreezeState::Frozen) {
         return;
     }
 
@@ -180,7 +184,7 @@ void Profiler::PopCpuMarker() {
 }
 
 void Profiler::PushGpuMarker(int tagIndex) {
-    if (freezeState != FreezeState::Unfrozen) {
+    if (freezeState == FreezeState::Frozen) {
         return;
     }
 
@@ -197,7 +201,7 @@ void Profiler::PushGpuMarker(int tagIndex) {
 }
 
 void Profiler::PopGpuMarker() {
-    if (freezeState != FreezeState::Unfrozen) {
+    if (freezeState == FreezeState::Frozen) {
         return;
     }
 

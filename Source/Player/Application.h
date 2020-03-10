@@ -41,7 +41,6 @@ public:
     LuaCpp::State *         state;
     LuaCpp::Selector        sandbox;
 
-    static void             Cmd_ShowStatistics(const BE1::CmdArgs &args);
     static void             Cmd_Map(const BE1::CmdArgs &args);
 };
 

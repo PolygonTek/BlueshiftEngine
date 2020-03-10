@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Platform/PlatformThread.h"
 #include "IO/FileSystem.h"
 #include "Engine/GameClient.h"
 #include "Render/Render.h"
@@ -511,7 +510,7 @@ bool GameWorld::HasScriptError() const {
 void GameWorld::StartGame() {
     gameStarted = true;
 
-    if (showStatistics) {
+    if (gameClient.IsStatisticsVisible()) {
         BE_PROFILE_START();
     }
 
@@ -578,16 +577,6 @@ void GameWorld::RestartGame(const char *mapFilename) {
 
 void GameWorld::StopAllSounds() {
     soundSystem.StopAllSounds();
-}
-
-void GameWorld::ShowStatistics(bool show) {
-    showStatistics = show;
-
-    if (IsGameStarted() && show) {
-        BE_PROFILE_START();
-    } else {
-        BE_PROFILE_STOP();
-    }
 }
 
 void GameWorld::Event_RestartGame(const char *mapFilename) {
@@ -840,7 +829,7 @@ void GameWorld::ListUpActiveCanvasComponents(StaticArray<ComCanvas *, 16> &canva
     }
 }
 
-void GameWorld::Render(const RenderContext *renderContext) {
+void GameWorld::Render() {
     BE_SCOPE_PROFILE_CPU("GameWorld::Render");
 
     StaticArray<ComCamera *, 16> cameraComponents;
@@ -857,111 +846,6 @@ void GameWorld::Render(const RenderContext *renderContext) {
     // Render canvas in order.
     for (int i = 0; i < canvasComponents.Count(); i++) {
         canvasComponents[i]->Render();
-    }
-
-    // Render statistics.
-    if (showStatistics) {
-        //ImGui::ShowDemoWindow();
-        const int fixedWidth = 500;
-
-        ImGui::SetNextWindowSize(ImVec2(fixedWidth, 120), ImGuiCond_Appearing);
-        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - fixedWidth - 10, 10), ImGuiCond_Always);
-        ImGui::SetNextWindowSizeConstraints(ImVec2(fixedWidth, -1), ImVec2(fixedWidth, -1));
-        ImGui::Begin("Statistics", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-
-        const RenderCounter &renderCounter = renderContext->GetPrevFrameRenderCounter();
-
-        Str fpsText = va("FPS: %3i", gameClient.GetFPS());
-
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
-        ImGui::Text("Render: %ims, FrontEnd: %ims, BackEnd: %ims", renderCounter.frameMsec, renderCounter.frontEndMsec, renderCounter.backEndMsec);
-        ImGui::SameLine(ImGui::GetWindowSize().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(fpsText.c_str()).x);
-        ImGui::Text(fpsText.c_str());
-        ImGui::Text("Draw: %i, Verts: %i, Tris: %i", renderCounter.drawCalls, renderCounter.drawVerts, renderCounter.drawIndexes / 3);
-        ImGui::Text("Shadow Draw: %i, Verts: %i, Tris: %i", renderCounter.shadowDrawCalls, renderCounter.shadowDrawVerts, renderCounter.shadowDrawIndexes / 3);
-        ImGui::PopStyleColor();
-
-        ImGui::Separator();
-
-        if (!profiler.IsFrozen()) {
-            uint64_t tid = PlatformThread::GetCurrentThreadId();
-
-            if (ImGui::CollapsingHeader(BE1::va("CPU (%" PRIu64 ")", tid), ImGuiTreeNodeFlags_DefaultOpen)) {
-                int lastStackDepth = 0;
-
-                ImGui::BeginGroup();
-
-                profiler.IterateCpuMarkers(tid, [&lastStackDepth](const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
-                    // Convert nanoseconds to milliseconds.
-                    const float durationMs = (endTime - startTime) * 0.000001f;
-
-                    Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.65f);
-
-                    while (stackDepth < lastStackDepth) {
-                        ImGui::TreePop();
-                        lastStackDepth--;
-                    }
-
-                    lastStackDepth = stackDepth;
-
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(textColor.r, textColor.g, textColor.b, 1.0f));
-                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
-                    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
-
-                    Str id = tagName;
-                    bool opened = ImGui::TreeNodeEx(id, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
-
-                    ImGui::PopStyleColor(3);
-
-                    return opened;
-                });
-
-                while (lastStackDepth-- > 0) {
-                    ImGui::TreePop();
-                }
-
-                ImGui::EndGroup();
-            }
-
-            if (ImGui::CollapsingHeader("GPU", ImGuiTreeNodeFlags_DefaultOpen)) {
-                int lastStackDepth = 0;
-
-                ImGui::BeginGroup();
-
-                profiler.IterateGpuMarkers([&lastStackDepth](const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
-                    // Convert nanoseconds to milliseconds.
-                    const float durationMs = (endTime - startTime) * 0.000001f;
-
-                    Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.65f);
-
-                    while (stackDepth < lastStackDepth) {
-                        ImGui::TreePop();
-                        lastStackDepth--;
-                    }
-
-                    lastStackDepth = stackDepth;
-
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(textColor.r, textColor.g, textColor.b, 1.0f));
-                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
-                    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
-
-                    Str id = tagName;
-                    bool opened = ImGui::TreeNodeEx(id, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
-
-                    ImGui::PopStyleColor(3);
-
-                    return opened;
-                });
-
-                while (lastStackDepth-- > 0) {
-                    ImGui::TreePop();
-                }
-
-                ImGui::EndGroup();
-            }
-        }
-
-        ImGui::End();
     }
 }
 

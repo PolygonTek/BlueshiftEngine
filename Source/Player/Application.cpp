@@ -32,7 +32,6 @@ static void RegisterApp(LuaCpp::Module &module) {
 }
 
 void Application::Init() {
-    BE1::cmdSystem.AddCommand("showStatistics", Cmd_ShowStatistics);
     BE1::cmdSystem.AddCommand("map", Cmd_Map);
 
     BE1::prefabManager.Init();
@@ -60,7 +59,6 @@ void Application::Shutdown() {
 
     BE1::GameSettings::Shutdown();
 
-    BE1::cmdSystem.RemoveCommand("showStatistics");
     BE1::cmdSystem.RemoveCommand("map");
 }
 
@@ -131,11 +129,11 @@ void Application::Draw() {
 
     mainRenderContext->BeginFrame();
 
-    gameWorld->Render(mainRenderContext);
+    gameWorld->Render();
 
     gameWorld->GetPhysicsWorld()->DebugDraw();
 
-    BE1::gameClient.DrawConsole();
+    BE1::gameClient.Render(mainRenderContext);
 
     mainRenderContext->EndFrame();
 }
@@ -144,10 +142,6 @@ void Application::LoadMap(const char *mapName) {
     gameWorld->LoadMap(mapName, BE1::GameWorld::LoadSceneMode::Single);
 
     gameWorld->StartGame();
-}
-
-void Application::Cmd_ShowStatistics(const BE1::CmdArgs &args) {
-    app.gameWorld->ShowStatistics(!app.gameWorld->IsStatisticsVisible());
 }
 
 void Application::Cmd_Map(const BE1::CmdArgs &args) {
