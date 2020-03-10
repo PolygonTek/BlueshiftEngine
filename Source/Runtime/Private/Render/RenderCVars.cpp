@@ -38,7 +38,7 @@ CVAR(r_shadowMapFilterSize, "1.0", CVar::Flag::Float | CVar::Flag::Archive, "sha
 CVAR(r_shadowCubeMapSize, "2048", CVar::Flag::Integer | CVar::Flag::Archive, "virtual shadow cube map size of each face");
 CVAR(r_shadowCubeMapZNear, "0.04", CVar::Flag::Float, "");
 CVAR(r_shadowCubeMapFloat, "0", CVar::Flag::Bool | CVar::Flag::Archive, "use float texture for shadow cube map");
-CVAR(r_shadowMapQuality, "1", CVar::Flag::Integer | CVar::Flag::Archive, "shadow map PCF level, 0 = HW-PCF only, 1 = HW-PCFx5, 2 = PCFx9, 3 = PCFx16 (randomly jittered sample)");
+CVAR(r_shadowMapQuality, "1", CVar::Flag::Integer | CVar::Flag::Archive, "shadow map PCF level, 0 = PCFx1, 1 = PCFx5, 2 = PCFx9, 3 = PCFx16 (randomly jittered sample)");
 CVAR(r_shadowMapCropAlign, "1", CVar::Flag::Bool, "");
 
 CVAR(r_CSM_count, "4", CVar::Flag::Integer | CVar::Flag::Archive, "");
