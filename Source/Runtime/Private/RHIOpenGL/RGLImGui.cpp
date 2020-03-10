@@ -216,7 +216,18 @@ void ImGui_ImplOpenGL_RenderDrawData(ImDrawData *draw_data) {
     gglScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
 }
 
+static void ImGui_ImplOpenGL_DestroyFontsTexture() {
+    if (g_FontTexture) {
+        ImGuiIO &io = ImGui::GetIO();
+        gglDeleteTextures(1, &g_FontTexture);
+        io.Fonts->TexID = 0;
+        g_FontTexture = 0;
+    }
+}
+
 bool ImGui_ImplOpenGL_CreateFontsTexture() {
+    ImGui_ImplOpenGL_DestroyFontsTexture();
+
     // Build texture atlas
     ImGuiIO &io = ImGui::GetIO();
     unsigned char *pixels;
@@ -244,15 +255,6 @@ bool ImGui_ImplOpenGL_CreateFontsTexture() {
     gglBindTexture(GL_TEXTURE_2D, last_texture);
 
     return true;
-}
-
-static void ImGui_ImplOpenGL_DestroyFontsTexture() {
-    if (g_FontTexture) {
-        ImGuiIO &io = ImGui::GetIO();
-        gglDeleteTextures(1, &g_FontTexture);
-        io.Fonts->TexID = 0;
-        g_FontTexture = 0;
-    }
 }
 
 // If you get an error please report on github. You may try different GL context version or GLSL version. See GL<>GLSL version table at the top of this file.
@@ -529,13 +531,20 @@ bool ImGui_ImplOpenGL_Init(const char *glsl_version) {
     strcpy(g_GlslVersionString, glsl_version);
     strcat(g_GlslVersionString, "\n");
 
-    ImGui_ImplOpenGL_CreateDeviceObjects();
-
     return true;
 }
 
 void ImGui_ImplOpenGL_Shutdown() {
     ImGui_ImplOpenGL_DestroyDeviceObjects();
+}
+
+void ImGui_ImplOpenGL_ValidateFrame() {
+    if (!g_ShaderHandle) {
+        ImGui_ImplOpenGL_CreateDeviceObjects();
+    }
+    if (!ImGui::GetIO().Fonts->IsBuilt()) {
+        ImGui_ImplOpenGL_CreateFontsTexture();
+    }
 }
 
 BE_NAMESPACE_END

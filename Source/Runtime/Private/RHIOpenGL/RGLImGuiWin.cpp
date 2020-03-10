@@ -241,14 +241,12 @@ void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
 
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
-    ImGuiIO &io = ImGui::GetIO();
-    if (!io.Fonts->IsBuilt()) {
-        ImGui_ImplOpenGL_CreateFontsTexture();
-    }
+    ImGui_ImplOpenGL_ValidateFrame();
 
     // Setup display size (every frame to accommodate for window resizing)
     RECT rect;
     ::GetClientRect(ctx->hwnd, &rect);
+    ImGuiIO &io = ImGui::GetIO();
     io.DisplaySize = ImVec2((float)(rect.right - rect.left), (float)(rect.bottom - rect.top));
 
     // Setup time step
