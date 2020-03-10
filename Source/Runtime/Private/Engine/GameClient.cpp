@@ -19,7 +19,6 @@
 #include "Core/CVars.h"
 #include "Core/Vec4Color.h"
 #include "Render/Render.h"
-#include "../Render/RenderCVars.h"
 #include "Physics/Physics.h"
 #include "Input/KeyCmd.h"
 #include "Input/InputSystem.h"
@@ -228,23 +227,27 @@ void GameClient::Render(const RenderContext *renderContext) {
                 if (ImGui::MenuItem("Show Statistics", "", &showStatistics)) {
                     cmdSystem.BufferCommandText(CmdSystem::Execution::Append, "toggleStatistics");
                 }
+                bool enableLuaDebugging = cvarSystem.GetCVarBool("lua_debug");
+                if (ImGui::MenuItem("Enable Lua Debugging", "", &enableLuaDebugging)) {
+                    cvarSystem.SetCVarBool("lua_debug", enableLuaDebugging);
+                }
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Graphics")) {
                 ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Shadows");
                 ImGui::Indent();
-                bool shadows = r_shadows.GetBool();
+                bool shadows = cvarSystem.GetCVarBool("r_shadows");
                 if (ImGui::MenuItem("Enabled", "", &shadows)) {
                     cvarSystem.SetCVarBool("r_shadows", shadows);
                 }
-                int shadowMapSize = r_shadowMapSize.GetInteger();
+                int shadowMapSize = cvarSystem.GetCVarInteger("r_shadowMapSize");
                 const char *shadowMapSizeNames[] = { "256", "512", "1024", "2048", "4096" };
                 int shadowMapSizeIndex = Clamp((int)Math::Log(2, shadowMapSize) - 8, 0, COUNT_OF(shadowMapSizeNames) - 1);
                 if (ImGui::SliderInt("Size", &shadowMapSizeIndex, 0, COUNT_OF(shadowMapSizeNames) - 1, shadowMapSizeNames[shadowMapSizeIndex])) {
                     shadowMapSize = (int)Math::Pow(2, shadowMapSizeIndex + 8);
                     cvarSystem.SetCVarInteger("r_shadowMapSize", shadowMapSize);
                 }
-                int shadowMapQuality = r_shadowMapQuality.GetInteger();
+                int shadowMapQuality = cvarSystem.GetCVarInteger("r_shadowMapQuality");
                 if (ImGui::Combo("Quality", &shadowMapQuality, "PCFx1\0PCFx5\0PCFx9\0PCFx16 (randomly jittered)\0\0")) {
                     cvarSystem.SetCVarInteger("r_shadowMapQuality", shadowMapQuality);
                 }
@@ -254,15 +257,15 @@ void GameClient::Render(const RenderContext *renderContext) {
 
                 ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "HDR");
                 ImGui::Indent();
-                bool hdr = r_HDR.GetInteger() > 0;
+                bool hdr = cvarSystem.GetCVarInteger("r_HDR") > 0;
                 if (ImGui::MenuItem("Enabled", "", &hdr)) {
                     cvarSystem.SetCVarInteger("r_HDR", hdr ? 2 : 0);
                 }
-                bool hdrToneMapping = r_HDR_toneMapping.GetBool();
+                bool hdrToneMapping = cvarSystem.GetCVarBool("r_HDR_toneMapping");
                 if (ImGui::MenuItem("Tone Mapping", "", &hdrToneMapping)) {
                     cvarSystem.SetCVarBool("r_HDR_toneMapping", hdrToneMapping);
                 }
-                int hdrToneMapOp = r_HDR_toneMapOp.GetInteger();
+                int hdrToneMapOp = cvarSystem.GetCVarInteger("r_HDR_toneMapOp");
                 if (ImGui::Combo("Tone Map Op", &hdrToneMapOp, "Linear\0Exponential\0Logarithmic\0Drago Logarithmic\0Reinhard\0Reinhard Extended\0Filmic ALU\0Flimic ACES\0Filmic Unreal\0Filmic Uncharted 2\0\0")) {
                     cvarSystem.SetCVarInteger("r_HDR_toneMapOp", hdrToneMapOp);
                 }
@@ -272,11 +275,11 @@ void GameClient::Render(const RenderContext *renderContext) {
 
                 ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Sun Shafts");
                 ImGui::Indent();
-                bool sunShafts = r_sunShafts.GetBool();
+                bool sunShafts = cvarSystem.GetCVarBool("r_sunShafts");
                 if (ImGui::MenuItem("Enabled", "", &sunShafts)) {
                     cvarSystem.SetCVarBool("r_sunShafts", sunShafts);
                 }
-                float sunShaftsScale = r_sunShafts_scale.GetFloat();
+                float sunShaftsScale = cvarSystem.GetCVarFloat("r_sunShafts_scale");
                 if (ImGui::SliderFloat("Scale", &sunShaftsScale, 1.0f, 32.0f)) {
                     cvarSystem.SetCVarFloat("r_sunShafts_scale", sunShaftsScale);
                 }
@@ -285,8 +288,26 @@ void GameClient::Render(const RenderContext *renderContext) {
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Physics")) {
-                if (ImGui::MenuItem("Debug Draw")) {
+                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Debug Draw");
+                ImGui::Indent();
+                bool showWireframe = cvarSystem.GetCVarBool("physics_showWireframe");
+                if (ImGui::MenuItem("Show Wireframe", "", &showWireframe)) {
+                    cvarSystem.SetCVarBool("physics_showWireframe", showWireframe);
                 }
+                bool showAABB = cvarSystem.GetCVarBool("physics_showAABB");
+                if (ImGui::MenuItem("Show AABB", "", &showAABB)) {
+                    cvarSystem.SetCVarBool("physics_showAABB", showAABB);
+                }
+                bool showContactPoints = cvarSystem.GetCVarBool("physics_showContactPoints");
+                if (ImGui::MenuItem("Show Contact Points", "", &showContactPoints)) {
+                    cvarSystem.SetCVarBool("physics_showContactPoints", showContactPoints);
+                }
+                bool showNormals = cvarSystem.GetCVarBool("physics_showNormals");
+                if (ImGui::MenuItem("Show Normals", "", &showNormals)) {
+                    cvarSystem.SetCVarBool("physics_showNormals", showNormals);
+                }
+                ImGui::Unindent();
+
                 ImGui::EndMenu();
             }
 
@@ -298,7 +319,7 @@ void GameClient::Render(const RenderContext *renderContext) {
 
     // Render statistics.
     if (showStatistics) {
-        const int fixedWidth = 500;
+        const int fixedWidth = 480;
         int rightOffset = 10;
         int topOffset = menuBarHeight + 10;
 
@@ -309,7 +330,7 @@ void GameClient::Render(const RenderContext *renderContext) {
 
         const RenderCounter &renderCounter = renderContext->GetPrevFrameRenderCounter();
 
-        Str fpsText = va("FPS: %3i", gameClient.GetFPS());
+        Str fpsText = va("FPS: %3i", GetFPS());
 
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
         ImGui::Text("Render: %ims, FrontEnd: %ims, BackEnd: %ims", renderCounter.frameMsec, renderCounter.frontEndMsec, renderCounter.backEndMsec);
