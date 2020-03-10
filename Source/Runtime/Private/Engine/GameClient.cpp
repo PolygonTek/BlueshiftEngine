@@ -231,6 +231,27 @@ void GameClient::Render(const RenderContext *renderContext) {
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Graphics")) {
+                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Shadows");
+                ImGui::Indent();
+                bool shadows = r_shadows.GetBool();
+                if (ImGui::MenuItem("Enabled", "", &shadows)) {
+                    cvarSystem.SetCVarBool("r_shadows", shadows);
+                }
+                int shadowMapSize = r_shadowMapSize.GetInteger();
+                const char *shadowMapSizeNames[] = { "256", "512", "1024", "2048", "4096" };
+                int shadowMapSizeIndex = Clamp((int)Math::Log(2, shadowMapSize) - 8, 0, COUNT_OF(shadowMapSizeNames) - 1);
+                if (ImGui::SliderInt("Size", &shadowMapSizeIndex, 0, COUNT_OF(shadowMapSizeNames) - 1, shadowMapSizeNames[shadowMapSizeIndex])) {
+                    shadowMapSize = (int)Math::Pow(2, shadowMapSizeIndex + 8);
+                    cvarSystem.SetCVarInteger("r_shadowMapSize", shadowMapSize);
+                }
+                int shadowMapQuality = r_shadowMapQuality.GetInteger();
+                if (ImGui::Combo("Quality", &shadowMapQuality, "PCFx1\0PCFx5\0PCFx9\0PCFx16 (randomly jittered)\0\0")) {
+                    cvarSystem.SetCVarInteger("r_shadowMapQuality", shadowMapQuality);
+                }
+                ImGui::Unindent();
+
+                ImGui::Separator();
+
                 ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "HDR");
                 ImGui::Indent();
                 bool hdr = r_HDR.GetInteger() > 0;
