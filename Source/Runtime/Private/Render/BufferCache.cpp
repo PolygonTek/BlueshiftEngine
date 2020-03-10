@@ -136,7 +136,7 @@ void BufferCacheManager::Shutdown() {
 }
 
 void BufferCacheManager::MapBufferSet(FrameDataBufferSet &bufferSet) {
-    BE_SCOPE_PROFILE_CPU("BufferCacheManager::MapBufferSet", Color3::olive);
+    BE_SCOPE_PROFILE_CPU("BufferCacheManager::MapBufferSet");
 
     RHI::BufferLockMode::Enum lockMode = usePersistentMappedBuffers ? RHI::BufferLockMode::WriteOnlyPersistent : (useFlushMappedBuffers ? RHI::BufferLockMode::WriteOnlyExplicitFlush : RHI::BufferLockMode::WriteOnly);
     
@@ -166,7 +166,7 @@ void BufferCacheManager::MapBufferSet(FrameDataBufferSet &bufferSet) {
 }
 
 void BufferCacheManager::UnmapBufferSet(FrameDataBufferSet &bufferSet, bool flush) {
-    BE_SCOPE_PROFILE_CPU("BufferCacheManager::UnmapBufferSet", Color3::olive);
+    BE_SCOPE_PROFILE_CPU("BufferCacheManager::UnmapBufferSet");
 
     if (bufferSet.mappedVertexBase) {
         rhi.BindBuffer(RHI::BufferType::Vertex, bufferSet.vertexBuffer);
@@ -210,7 +210,7 @@ void BufferCacheManager::UnmapBufferSet(FrameDataBufferSet &bufferSet, bool flus
 }
 
 void BufferCacheManager::BeginWrite() {
-    BE_SCOPE_PROFILE_CPU("BufferCacheManager::BeginWrite", Color3::olive);
+    BE_SCOPE_PROFILE_CPU("BufferCacheManager::BeginWrite");
 
 #if USE_PINNED_MEMORY
     // Wait until the gpu is no longer using the buffer.
@@ -221,7 +221,7 @@ void BufferCacheManager::BeginWrite() {
 }
 
 void BufferCacheManager::EndWrite() {
-    BE_SCOPE_PROFILE_CPU("BufferCacheManager::EndWrite", Color3::olive);
+    BE_SCOPE_PROFILE_CPU("BufferCacheManager::EndWrite");
 
 #if USE_PINNED_MEMORY
     if (rhi.IsSync(frameData[unmappedNum].sync)) {
@@ -233,7 +233,7 @@ void BufferCacheManager::EndWrite() {
 }
 
 void BufferCacheManager::BeginBackEnd() {
-    BE_SCOPE_PROFILE_CPU("BufferCacheManager::BeginBackEnd", Color3::olive);
+    BE_SCOPE_PROFILE_CPU("BufferCacheManager::BeginBackEnd");
 
     mostUsedVertexMem = Max(mostUsedVertexMem, (int)frameData[mappedNum].vertexMemUsed.load());
     mostUsedIndexMem = Max(mostUsedIndexMem, (int)frameData[mappedNum].indexMemUsed.load());

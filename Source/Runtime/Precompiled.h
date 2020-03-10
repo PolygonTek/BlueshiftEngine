@@ -18,8 +18,6 @@
 
 #include "Version.h"
 
-#define BE_CONCAT(a, b) a ## b
-#define BE_CONCAT2(a, b) BE_CONCAT(a, b)
 #define BE_STRINGIZE(x) #x
 #define BE_CONCAT_VERSION(a, b, c) BE_STRINGIZE(a) "." BE_STRINGIZE(b) "." BE_STRINGIZE(c)
 #define BE_VERSION BE_CONCAT_VERSION(BE_VERSION_MAJOR, BE_VERSION_MINOR, BE_VERSION_PATCH)
@@ -191,6 +189,16 @@
 #else
     #define BE_FASTCALL
 #endif
+
+#define CONCAT(a, b)                _CONCAT_IMPL(a, b)
+#define _CONCAT_IMPL(a, b)          a ## b
+
+#define OVERLOADED_MACRO(m, ...)    _OVR(m, COUNT_ARGS(__VA_ARGS__)) (__VA_ARGS__)
+#define _OVR(macro, num)            _OVR_EXPAND(macro, num)
+#define _OVR_EXPAND(macro, num)     macro##_ARG##num
+
+#define COUNT_ARGS(...)             _ARG_PATTERN_MATCH(__VA_ARGS__, 8, 7, 6, 5, 4, 3, 2, 1)
+#define _ARG_PATTERN_MATCH(_1, _2, _3, _4, _5, _6, _7, _8, n, ...) n
 
 #define COUNT_OF(a)                 ((int)(sizeof(a) / sizeof((a)[0])))
 

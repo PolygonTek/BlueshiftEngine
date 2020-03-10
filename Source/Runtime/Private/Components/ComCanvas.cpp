@@ -357,7 +357,7 @@ void ComCanvas::UpdateRenderingOrderRecursive(Entity *entity, int sceneNum, int 
 }
 
 void ComCanvas::Render() {
-    BE_SCOPE_PROFILE_CPU("ComCanvas::Render", Color3::olive);
+    BE_SCOPE_PROFILE_CPU("ComCanvas::Render");
 
     // Get current render context which is unique for each OS-level window in general.
     const RenderContext *ctx = renderSystem.GetCurrentRenderContext();

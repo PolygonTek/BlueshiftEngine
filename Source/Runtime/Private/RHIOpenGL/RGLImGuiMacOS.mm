@@ -298,8 +298,8 @@ void ImGui_ImplOSX_NewFrame(NSView *view) {
 }
 
 void OpenGLRHI::ImGuiRender() {
-    BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiRender", Color3::khaki);
-    BE_SCOPE_PROFILE_GPU("OpenGLRHI::ImGuiRender", Color3::khaki);
+    BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiRender");
+    BE_SCOPE_PROFILE_GPU("OpenGLRHI::ImGuiRender");
 
     ImGui::Render();
 

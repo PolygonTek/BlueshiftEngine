@@ -175,7 +175,7 @@ void GameClient::Shutdown() {
 }
 
 void GameClient::RunFrame() {
-    BE_SCOPE_PROFILE_CPU("GameClient::RunFrame", Color3::moccasin);
+    BE_SCOPE_PROFILE_CPU("GameClient::RunFrame");
 
     if (fpsFrametime >= cl_updateFps.GetInteger()) {
         fps = fpsFrames / MILLI2SEC(fpsFrametime);

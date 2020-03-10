@@ -540,6 +540,9 @@ static void RB_HiOcclusionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 static void RB_ClearView() {
+    BE_SCOPE_PROFILE_CPU("RB_ClearView");
+    BE_SCOPE_PROFILE_GPU("RB_ClearView");
+
     int clearBits = 0;
 
     if (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::DepthOnly || 
@@ -558,6 +561,9 @@ static void RB_ClearView() {
 }
 
 static void RB_RenderView() {
+    BE_SCOPE_PROFILE_CPU("RB_RenderView");
+    BE_SCOPE_PROFILE_GPU("RB_RenderView");
+
     if (backEnd.camera->def->GetState().flags & RenderCamera::Flag::TexturedMode) {
         // Render pass for HiZ occlusion culling.
         RB_HiOcclusionPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
@@ -850,8 +856,8 @@ void RB_DrawDebugTextures() {
 
 // FIXME: Consider this view is sub camera
 static void RB_DrawCamera3D() {
-    BE_SCOPE_PROFILE_CPU("RB_DrawCamera3D", Color3::mistyRose);
-    BE_SCOPE_PROFILE_GPU("RB_DrawCamera3D", Color3::mistyRose);
+    BE_SCOPE_PROFILE_CPU("RB_DrawCamera3D");
+    BE_SCOPE_PROFILE_GPU("RB_DrawCamera3D");
 
     if (backEnd.ctx->flags & RenderContext::Flag::UseSelectionBuffer) {
         backEnd.ctx->screenSelectionRT->Begin();
@@ -917,8 +923,8 @@ static void RB_DrawCamera3D() {
 }
 
 static void RB_DrawCamera2D() {
-    BE_SCOPE_PROFILE_CPU("RB_DrawCamera2D", Color3::mistyRose);
-    BE_SCOPE_PROFILE_GPU("RB_DrawCamera2D", Color3::mistyRose);
+    BE_SCOPE_PROFILE_CPU("RB_DrawCamera2D");
+    BE_SCOPE_PROFILE_GPU("RB_DrawCamera2D");
 
     if (!backEnd.numDrawSurfs) {
         return;
@@ -1025,8 +1031,8 @@ static const void *RB_ExecuteScreenshot(const void *data) {
 }
 
 static const void *RB_ExecuteSwapBuffers(const void *data) {
-    BE_SCOPE_PROFILE_CPU("RB_ExecuteSwapBuffers", Color3::mediumVioletRed);
-    BE_SCOPE_PROFILE_GPU("RB_ExecuteSwapBuffers", Color3::mediumVioletRed);
+    BE_SCOPE_PROFILE_CPU("RB_ExecuteSwapBuffers");
+    BE_SCOPE_PROFILE_GPU("RB_ExecuteSwapBuffers");
 
     SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)data;
 
@@ -1070,8 +1076,8 @@ static const void *RB_ExecuteSwapBuffers(const void *data) {
 }
 
 void RB_Execute(const void *data) {
-    BE_SCOPE_PROFILE_CPU("RB_Execute", Color3::limeGreen);
-    BE_SCOPE_PROFILE_GPU("RB_Execute", Color3::limeGreen);
+    BE_SCOPE_PROFILE_CPU("RB_Execute");
+    BE_SCOPE_PROFILE_GPU("RB_Execute");
 
     uint32_t t1 = PlatformTime::Milliseconds();
     uint32_t t2;

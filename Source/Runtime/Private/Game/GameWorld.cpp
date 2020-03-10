@@ -713,7 +713,7 @@ int GameWorld::GetUnscaledDeltaTime() const {
 }
 
 void GameWorld::Update(int elapsedTime) {
-    BE_SCOPE_PROFILE_CPU("GameWorld::Update", Color3::wheat);
+    BE_SCOPE_PROFILE_CPU("GameWorld::Update");
 
     if (isDebuggable) {
         luaVM.PollDebuggee();
@@ -743,7 +743,7 @@ void GameWorld::Update(int elapsedTime) {
 }
 
 void GameWorld::FixedUpdateEntities(float timeStep) {
-    //BE_SCOPE_PROFILE_CPU("GameWorld::FixedUpdateEntities", Color3::wheat);
+    //BE_SCOPE_PROFILE_CPU("GameWorld::FixedUpdateEntities");
 
     // Call fixed update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
@@ -754,7 +754,7 @@ void GameWorld::FixedUpdateEntities(float timeStep) {
 }
 
 void GameWorld::FixedLateUpdateEntities(float timeStep) {
-    //BE_SCOPE_PROFILE_CPU("GameWorld::FixedLateUpdateEntities", Color3::wheat);
+    //BE_SCOPE_PROFILE_CPU("GameWorld::FixedLateUpdateEntities");
 
     // Call fixed post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
@@ -765,7 +765,7 @@ void GameWorld::FixedLateUpdateEntities(float timeStep) {
 }
 
 void GameWorld::UpdateEntities() {
-    BE_SCOPE_PROFILE_CPU("GameWorld::UpdateEntities", Color3::wheat);
+    BE_SCOPE_PROFILE_CPU("GameWorld::UpdateEntities");
 
     // Call update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
@@ -776,7 +776,7 @@ void GameWorld::UpdateEntities() {
 }
 
 void GameWorld::LateUpdateEntities() {
-    BE_SCOPE_PROFILE_CPU("GameWorld::LateUpdateEntities", Color3::wheat);
+    BE_SCOPE_PROFILE_CPU("GameWorld::LateUpdateEntities");
 
     // Call post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
@@ -841,7 +841,7 @@ void GameWorld::ListUpActiveCanvasComponents(StaticArray<ComCanvas *, 16> &canva
 }
 
 void GameWorld::Render(const RenderContext *renderContext) {
-    BE_SCOPE_PROFILE_CPU("GameWorld::Render", Color3::olive);
+    BE_SCOPE_PROFILE_CPU("GameWorld::Render");
 
     StaticArray<ComCamera *, 16> cameraComponents;
     ListUpActiveCameraComponents(cameraComponents);
@@ -862,7 +862,7 @@ void GameWorld::Render(const RenderContext *renderContext) {
     // Render statistics.
     if (showStatistics) {
         //ImGui::ShowDemoWindow();
-        const int fixedWidth = 400;
+        const int fixedWidth = 500;
 
         ImGui::SetNextWindowSize(ImVec2(fixedWidth, 120), ImGuiCond_Appearing);
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - fixedWidth - 10, 10), ImGuiCond_Always);
@@ -881,6 +881,8 @@ void GameWorld::Render(const RenderContext *renderContext) {
         ImGui::Text("Shadow Draw: %i, Verts: %i, Tris: %i", renderCounter.shadowDrawCalls, renderCounter.shadowDrawVerts, renderCounter.shadowDrawIndexes / 3);
         ImGui::PopStyleColor();
 
+        ImGui::Separator();
+
         if (!profiler.IsFrozen()) {
             uint64_t tid = PlatformThread::GetCurrentThreadId();
 
@@ -889,7 +891,7 @@ void GameWorld::Render(const RenderContext *renderContext) {
 
                 ImGui::BeginGroup();
 
-                profiler.IterateCpuMarkers(tid, [&lastStackDepth](int frameCount, const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
+                profiler.IterateCpuMarkers(tid, [&lastStackDepth](const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
                     // Convert nanoseconds to milliseconds.
                     const float durationMs = (endTime - startTime) * 0.000001f;
 
@@ -906,7 +908,8 @@ void GameWorld::Render(const RenderContext *renderContext) {
                     ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
                     ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
 
-                    bool opened = ImGui::TreeNodeEx(tagName, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
+                    Str id = tagName;
+                    bool opened = ImGui::TreeNodeEx(id, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
 
                     ImGui::PopStyleColor(3);
 
@@ -925,7 +928,7 @@ void GameWorld::Render(const RenderContext *renderContext) {
 
                 ImGui::BeginGroup();
 
-                profiler.IterateGpuMarkers([&lastStackDepth](int frameCount, const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
+                profiler.IterateGpuMarkers([&lastStackDepth](const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
                     // Convert nanoseconds to milliseconds.
                     const float durationMs = (endTime - startTime) * 0.000001f;
 
@@ -942,7 +945,8 @@ void GameWorld::Render(const RenderContext *renderContext) {
                     ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
                     ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
 
-                    bool opened = ImGui::TreeNodeEx(tagName, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
+                    Str id = tagName;
+                    bool opened = ImGui::TreeNodeEx(id, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
 
                     ImGui::PopStyleColor(3);
 

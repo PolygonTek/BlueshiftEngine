@@ -237,7 +237,7 @@ void OpenGLRHI::ImGuiDestroyContext(GLContext *ctx) {
 }
 
 void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
-    BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiBeginFrame", Color3::khaki);
+    BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiBeginFrame");
 
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
@@ -277,8 +277,8 @@ void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
 }
 
 void OpenGLRHI::ImGuiRender() {
-    BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiRender", Color3::khaki);
-    BE_SCOPE_PROFILE_GPU("OpenGLRHI::ImGuiRender", Color3::khaki);
+    BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiRender");
+    BE_SCOPE_PROFILE_GPU("OpenGLRHI::ImGuiRender");
 
     ImGui::Render();
 
@@ -295,7 +295,7 @@ void OpenGLRHI::ImGuiRender() {
 }
 
 void OpenGLRHI::ImGuiEndFrame() {
-    BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiEndFrame", Color3::khaki);
+    BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiEndFrame");
 
     ImGui::EndFrame();
 }

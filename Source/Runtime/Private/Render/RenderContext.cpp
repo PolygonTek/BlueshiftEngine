@@ -481,13 +481,13 @@ void RenderContext::OnResize(int width, int height) {
 }
 
 void RenderContext::Display() {
-    BE_SCOPE_PROFILE_CPU("RenderContext::Display", Color3::olive);
+    BE_SCOPE_PROFILE_CPU("RenderContext::Display");
 
     rhi.DisplayContext(contextHandle);
 }
 
 void RenderContext::BeginFrame() {
-    BE_SCOPE_PROFILE_CPU("RenderContext::BeginFrame", Color3::olive);
+    BE_SCOPE_PROFILE_CPU("RenderContext::BeginFrame");
 
     startFrameMsec = PlatformTime::Milliseconds();
 
@@ -512,7 +512,7 @@ void RenderContext::BeginFrame() {
 }
 
 void RenderContext::EndFrame() {
-    BE_SCOPE_PROFILE_CPU("RenderContext::EndFrame", Color3::olive);
+    BE_SCOPE_PROFILE_CPU("RenderContext::EndFrame");
 
     // Adds system GUI commands
     renderSystem.primaryWorld->DrawGUICamera(guiMesh);

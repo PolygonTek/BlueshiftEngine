@@ -161,7 +161,7 @@ void Profiler::PushCpuMarker(int tagIndex) {
     marker.startTime = PlatformTime::Nanoseconds();
     marker.endTime = InvalidTime;
     marker.frameCount = frameCount;
-    marker.depth = ti.indexStack.Count() - 1;
+    marker.stackDepth = ti.indexStack.Count() - 1;
 }
 
 void Profiler::PopCpuMarker() {
@@ -193,7 +193,7 @@ void Profiler::PushGpuMarker(int tagIndex) {
     marker.tagIndex = tagIndex;
     rhi.QueryTimestamp(marker.startQueryHandle);
     marker.frameCount = frameCount;
-    marker.depth = ti.indexStack.Count() - 1;
+    marker.stackDepth = ti.indexStack.Count() - 1;
 }
 
 void Profiler::PopGpuMarker() {

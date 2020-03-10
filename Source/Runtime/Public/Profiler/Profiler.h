@@ -23,21 +23,29 @@
 BE_NAMESPACE_BEGIN
 
 #ifdef ENABLE_PROFILER
-    #define BE_PROFILE_INIT() BE1::profiler.Init()
-    #define BE_PROFILE_SHUTDOWN() BE1::profiler.Shutdown()
-    #define BE_PROFILE_SYNC_FRAME() BE1::profiler.SyncFrame()
-    #define BE_PROFILE_STOP() BE1::profiler.SetFreeze(true)
-    #define BE_PROFILE_START() BE1::profiler.SetFreeze(false)
-    #define BE_SCOPE_PROFILE_CPU(name, color) static int BE_CONCAT2(tag_cpu_, __LINE__) = BE1::profiler.CreateTag(name, color); BE1::ScopeProfileCPU BE_CONCAT2(profile_scope_cpu_, __LINE__)(BE_CONCAT2(tag_cpu_, __LINE__))
-    #define BE_SCOPE_PROFILE_GPU(name, color) static int BE_CONCAT2(tag_gpu_, __LINE__) = BE1::profiler.CreateTag(name, color); BE1::ScopeProfileGPU BE_CONCAT2(profile_scope_gpu_, __LINE__)(BE_CONCAT2(tag_gpu_, __LINE__))
+    #define BE_PROFILE_INIT()                       BE1::profiler.Init()
+    #define BE_PROFILE_SHUTDOWN()                   BE1::profiler.Shutdown()
+    #define BE_PROFILE_SYNC_FRAME()                 BE1::profiler.SyncFrame()
+    #define BE_PROFILE_STOP()                       BE1::profiler.SetFreeze(true)
+    #define BE_PROFILE_START()                      BE1::profiler.SetFreeze(false)
+    #define BE_SCOPE_PROFILE_CPU_BASE(name, color)  static int CONCAT(tag_cpu_, __LINE__) = BE1::profiler.CreateTag(name, color); \
+                                                    BE1::ScopeProfileCPU CONCAT(profile_scope_cpu_, __LINE__)(CONCAT(tag_cpu_, __LINE__))
+    #define BE_SCOPE_PROFILE_CPU_ARG1(name)         BE_SCOPE_PROFILE_CPU_BASE(name, Color3::lightGray)
+    #define BE_SCOPE_PROFILE_CPU_ARG2(name, color)  BE_SCOPE_PROFILE_CPU_BASE(name, color)
+    #define BE_SCOPE_PROFILE_CPU(...)               OVERLOADED_MACRO(BE_SCOPE_PROFILE_CPU, __VA_ARGS__)
+    #define BE_SCOPE_PROFILE_GPU_BASE(name, color)  static int CONCAT(tag_gpu_, __LINE__) = BE1::profiler.CreateTag(name, color); \
+                                                    BE1::ScopeProfileGPU CONCAT(profile_scope_gpu_, __LINE__)(CONCAT(tag_gpu_, __LINE__))
+    #define BE_SCOPE_PROFILE_GPU_ARG1(name)         BE_SCOPE_PROFILE_GPU_BASE(name, Color3::lightGray)
+    #define BE_SCOPE_PROFILE_GPU_ARG2(name, color)  BE_SCOPE_PROFILE_GPU_BASE(name, color)
+    #define BE_SCOPE_PROFILE_GPU(...)               OVERLOADED_MACRO(BE_SCOPE_PROFILE_GPU, __VA_ARGS__)
 #else
     #define BE_PROFILE_INIT()
     #define BE_PROFILE_SHUTDOWN()
     #define BE_PROFILE_SYNC_FRAME()
     #define BE_PROFILE_STOP()
     #define BE_PROFILE_START()
-    #define BE_SCOPE_PROFILE_CPU(name, color)
-    #define BE_SCOPE_PROFILE_GPU(name, color)
+    #define BE_SCOPE_PROFILE_CPU(...)
+    #define BE_SCOPE_PROFILE_GPU(...)
 #endif
 
 class Profiler {
@@ -73,7 +81,7 @@ public:
 
     struct MarkerBase {
         int                     tagIndex;
-        int                     depth;          // marker stack depth
+        int                     stackDepth;                         // marker stack depth
         int                     frameCount;
     };
 
@@ -176,13 +184,13 @@ BE_INLINE void Profiler::IterateCpuMarkers(uint64_t threadId, Func func) const {
                 const CpuMarker &marker = ti.markers[markerIndex];
 
                 int nextMarkerIndex = (markerIndex + 1) % COUNT_OF(ti.markers);
-                bool isLeaf = nextMarkerIndex == endMarkerIndex || ti.markers[nextMarkerIndex].depth <= marker.depth;
+                bool isLeaf = nextMarkerIndex == endMarkerIndex || ti.markers[nextMarkerIndex].stackDepth <= marker.stackDepth;
 
-                if (marker.depth < skipMinDepth) {
+                if (marker.stackDepth < skipMinDepth) {
                     const Tag &tag = tags[marker.tagIndex];
 
-                    if (!func(readFrame.frameCount, tag.name, tag.color, marker.depth, isLeaf, marker.startTime, marker.endTime)) {
-                        skipMinDepth = marker.depth + 1;
+                    if (!func(tag.name, tag.color, marker.stackDepth, isLeaf, marker.startTime, marker.endTime)) {
+                        skipMinDepth = marker.stackDepth + 1;
                     } else {
                         skipMinDepth = INT_MAX;
                     }
@@ -216,9 +224,9 @@ BE_INLINE void Profiler::IterateGpuMarkers(Func func) const {
             const GpuMarker &marker = ti.markers[markerIndex];
 
             int nextMarkerIndex = (markerIndex + 1) % COUNT_OF(ti.markers);
-            bool isLeaf = nextMarkerIndex == endMarkerIndex || ti.markers[nextMarkerIndex].depth <= marker.depth;
+            bool isLeaf = nextMarkerIndex == endMarkerIndex || ti.markers[nextMarkerIndex].stackDepth <= marker.stackDepth;
 
-            if (marker.depth < skipMinDepth) {
+            if (marker.stackDepth < skipMinDepth) {
                 while (!rhi.QueryResultAvailable(marker.startQueryHandle)) {}
                 while (!rhi.QueryResultAvailable(marker.endQueryHandle)) {}
                 uint64_t startTime = rhi.QueryResult(marker.startQueryHandle);
@@ -226,8 +234,8 @@ BE_INLINE void Profiler::IterateGpuMarkers(Func func) const {
 
                 const Tag &tag = tags[marker.tagIndex];
 
-                if (!func(readFrame.frameCount, tag.name, tag.color, marker.depth, isLeaf, startTime, endTime)) {
-                    skipMinDepth = marker.depth + 1;
+                if (!func(tag.name, tag.color, marker.stackDepth, isLeaf, startTime, endTime)) {
+                    skipMinDepth = marker.stackDepth + 1;
                 } else {
                     skipMinDepth = INT_MAX;
                 }
@@ -238,7 +246,7 @@ BE_INLINE void Profiler::IterateGpuMarkers(Func func) const {
     }
 }
 
-extern Profiler     profiler;
+extern Profiler profiler;
 
 class ScopeProfileCPU {
 public:
