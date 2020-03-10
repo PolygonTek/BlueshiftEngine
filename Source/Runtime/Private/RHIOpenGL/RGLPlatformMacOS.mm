@@ -239,7 +239,7 @@ static NSOpenGLPixelFormat *mainContextPixelFormat;
 
 static CVar         gl_debug("gl_debug", "0", CVar::Flag::Bool, "");
 static CVar         gl_debugLevel("gl_debugLevel", "3", CVar::Flag::Integer, "");
-static CVar         gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Flag::Bool, "");
+static CVar         gl_ignoreError("gl_ignoreError", "0", CVar::Flag::Bool, "");
 static CVar         gl_finish("gl_finish", "0", CVar::Flag::Bool, "");
 static CVar         gl_screen("gl_screen", "-1", CVar::Flag::Integer, "");
 static CVar         gl_useMacMTEngine("gl_useMacMTEngine", "1", CVar::Flag::Bool, "");
@@ -859,7 +859,7 @@ void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
 }
 
 bool OpenGLRHI::SwapBuffers() {
-    if (!gl_ignoreGLError.GetBool()) {
+    if (!gl_ignoreError.GetBool()) {
         CheckError("GLRenderer::SwapBuffers");
     }
 

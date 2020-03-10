@@ -42,7 +42,7 @@ static HGLRC        hrcMain;
 
 static CVar         gl_debug("gl_debug", "0", CVar::Flag::Bool, "");
 static CVar         gl_debugLevel("gl_debugLevel", "3", CVar::Flag::Integer, "");
-static CVar         gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Flag::Bool, "");
+static CVar         gl_ignoreError("gl_ignoreError", "0", CVar::Flag::Bool, "");
 static CVar         gl_finish("gl_finish", "0", CVar::Flag::Bool, "");
 
 static LRESULT CALLBACK FakeWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -847,7 +847,7 @@ bool OpenGLRHI::SwapBuffers() {
     BE_SCOPE_PROFILE_CPU("OpenGLRHI::SwapBuffers");
     BE_SCOPE_PROFILE_GPU("OpenGLRHI::SwapBuffers");
 
-    if (!gl_ignoreGLError.GetBool()) {
+    if (!gl_ignoreError.GetBool()) {
         CheckError("OpenGLRHI::SwapBuffers");
     }
 

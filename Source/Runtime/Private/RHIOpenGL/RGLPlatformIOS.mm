@@ -25,7 +25,7 @@ static int          minorVersion = 0;
 
 static CVar         gl_debug("gl_debug", "0", CVar::Flag::Bool, "");
 static CVar         gl_debugLevel("gl_debugLevel", "3", CVar::Flag::Integer, "");
-static CVar         gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Flag::Bool, "");
+static CVar         gl_ignoreError("gl_ignoreError", "0", CVar::Flag::Bool, "");
 static CVar         gl_finish("gl_finish", "0", CVar::Flag::Bool, "");
 
 extern CVar         r_sRGB;
@@ -448,7 +448,7 @@ void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
 }
 
 bool OpenGLRHI::SwapBuffers() {
-    if (!gl_ignoreGLError.GetBool()) {
+    if (!gl_ignoreError.GetBool()) {
         CheckError("OpenGLRHI::SwapBuffers");
     }
 
