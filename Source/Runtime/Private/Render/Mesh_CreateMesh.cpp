@@ -213,49 +213,7 @@ void Mesh::CreateSphere(const Vec3 &origin, const Mat3 &axis, float radius, int 
 void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numSubdivisions) {
     assert(numSubdivisions >= 0);
 #if 1
-    par_octasphere_config cfg;
-    cfg.corner_radius = radius;
-    cfg.width = 0;
-    cfg.height = 0;
-    cfg.depth = 0;
-    cfg.num_subdivisions = numSubdivisions;
-    cfg.uv_mode = PAR_OCTASPHERE_UV_LATLONG;
-    cfg.normals_mode = PAR_OCTASPHERE_NORMALS_SMOOTH;
-
-    uint32_t num_indices;
-    uint32_t num_vertices;
-    par_octasphere_get_counts(&cfg, &num_indices, &num_vertices);
-
-    MeshSurf *surf = AllocSurface(num_vertices, num_indices);
-    surf->materialIndex = 0;
-    surfaces.Append(surf);
-
-    par_octasphere_mesh mesh;
-    mesh.positions = (float *)malloc(sizeof(float) * 3 * num_vertices);
-    mesh.normals = (float *)malloc(sizeof(float) * 3 * num_vertices);
-    mesh.texcoords = (float *)malloc(sizeof(float) * 2 * num_vertices);
-    mesh.indices = (uint16_t *)malloc(sizeof(uint16_t) * num_indices);
-
-    par_octasphere_populate(&cfg, &mesh);
-
-    VertexGenericLit *vptr = surf->subMesh->verts;
-    for (int i = 0; i < surf->subMesh->numVerts; i++) {
-        vptr->SetPosition(Vec3(&mesh.positions[i * 3]));
-        vptr->SetNormal(Vec3(&mesh.normals[i * 3]));
-        vptr->SetTexCoord(Vec2(&mesh.texcoords[i * 2]));
-        vptr->SetColor(0xffffffff);
-        vptr++;
-    }
-
-    TriIndex *iptr = surf->subMesh->indexes;
-    for (int i = 0; i < surf->subMesh->numIndexes; i++) {
-        *iptr++ = (TriIndex)mesh.indices[i];
-    }
-
-    free(mesh.positions);
-    free(mesh.normals);
-    free(mesh.texcoords);
-    free(mesh.indices);
+    CreateRoundedBox(origin, Vec3::zero, radius, numSubdivisions);
 #else
     static constexpr float x = 0.525731112119133606f;
     static constexpr float z = 0.850650808352039932f;
@@ -301,7 +259,62 @@ void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numSubdivisions
             *idx++ = icosa_tris[i][j];
         }
     }
+
+    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
+
+    if (!origin.IsZero()) {
+        TransformVerts(Mat3::identity, Vec3::one, origin);
+    }
 #endif
+}
+
+void Mesh::CreateRoundedBox(const Vec3 &origin, const Vec3 extents, float radius, int numSubdivisions) {
+    assert(numSubdivisions >= 0);
+
+    par_octasphere_config cfg;
+    cfg.corner_radius = radius;
+    cfg.width = radius * 2 + extents[0];
+    cfg.height = radius * 2 + extents[1];
+    cfg.depth = radius * 2 + extents[2];
+    cfg.num_subdivisions = numSubdivisions;
+    cfg.uv_mode = PAR_OCTASPHERE_UV_LATLONG;
+    cfg.normals_mode = PAR_OCTASPHERE_NORMALS_SMOOTH;
+
+    uint32_t num_indices;
+    uint32_t num_vertices;
+    par_octasphere_get_counts(&cfg, &num_indices, &num_vertices);
+
+    MeshSurf *surf = AllocSurface(num_vertices, num_indices);
+    surf->materialIndex = 0;
+    surfaces.Append(surf);
+
+    par_octasphere_mesh mesh;
+    mesh.positions = (float *)malloc(sizeof(float) * 3 * num_vertices);
+    mesh.normals = (float *)malloc(sizeof(float) * 3 * num_vertices);
+    mesh.texcoords = (float *)malloc(sizeof(float) * 2 * num_vertices);
+    mesh.indices = (uint16_t *)malloc(sizeof(uint16_t) * num_indices);
+
+    par_octasphere_populate(&cfg, &mesh);
+
+    VertexGenericLit *vptr = surf->subMesh->verts;
+    for (int i = 0; i < surf->subMesh->numVerts; i++) {
+        vptr->SetPosition(mesh.positions[i * 3 + 0], mesh.positions[i * 3 + 1], mesh.positions[i * 3 + 2]);
+        vptr->SetNormal(mesh.normals[i * 3 + 0], mesh.normals[i * 3 + 1], mesh.normals[i * 3 + 2]);
+        vptr->SetTexCoord(mesh.texcoords[i * 2 + 0], mesh.texcoords[i * 2 + 1]);
+        vptr->SetColor(0xffffffff);
+        vptr++;
+    }
+
+    TriIndex *iptr = surf->subMesh->indexes;
+    for (int i = 0; i < surf->subMesh->numIndexes; i++) {
+        *iptr++ = (TriIndex)mesh.indices[i];
+    }
+
+    free(mesh.positions);
+    free(mesh.normals);
+    free(mesh.texcoords);
+    free(mesh.indices);
+
     FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
 
     if (!origin.IsZero()) {

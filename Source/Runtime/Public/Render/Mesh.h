@@ -147,6 +147,7 @@ public:
     void                    CreateGeosphere(const Vec3 &origin, float radius, int numSubdivisions);
     void                    CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, float height, int numSegments);
     void                    CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, float height, int numSegments);
+    void                    CreateRoundedBox(const Vec3 &origin, const Vec3 extents, float radius, int numSubdivisions);
 
     bool                    Load(const char *filename);
     bool                    Reload();
