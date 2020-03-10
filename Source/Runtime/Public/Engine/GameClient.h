@@ -101,8 +101,8 @@ public:
 
     int                     GetFPS() const { return fps; }
 
-    bool                    IsMenuVisible() const { return showMenu; }
-    void                    ShowMenu(bool show);
+    bool                    IsMenuBarVisible() const { return showMenuBar; }
+    void                    ShowMenuBar(bool show);
 
     bool                    IsStatisticsVisible() const { return showStatistics; }
     void                    ShowStatistics(bool show);
@@ -129,7 +129,7 @@ private:
     int                     fpsFrames;
     int                     fpsFrametime;
 
-    bool                    showMenu = false;
+    bool                    showMenuBar = false;
     bool                    showStatistics = false;
     
     Color4                  currentColor;
@@ -154,7 +154,7 @@ private:
     static void             Cmd_Connect(const CmdArgs &args);
     static void             Cmd_Disconnect(const CmdArgs &args);
     static void             Cmd_ToggleConsole(const CmdArgs &args);
-    static void             Cmd_ToggleMenu(const CmdArgs &args);
+    static void             Cmd_ToggleMenuBar(const CmdArgs &args);
     static void             Cmd_ToggleStatistics(const CmdArgs &args);
 };
 

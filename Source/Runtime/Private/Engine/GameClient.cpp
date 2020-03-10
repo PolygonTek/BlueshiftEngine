@@ -56,7 +56,7 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
     cmdSystem.AddCommand("connect", Cmd_Connect);
     cmdSystem.AddCommand("disconnect", Cmd_Disconnect);
     cmdSystem.AddCommand("toggleConsole", Cmd_ToggleConsole);
-    cmdSystem.AddCommand("toggleMenu", Cmd_ToggleMenu);
+    cmdSystem.AddCommand("toggleMenuBar", Cmd_ToggleMenuBar);
     cmdSystem.AddCommand("toggleStatistics", Cmd_ToggleStatistics);
 
     state = ClientState::Disconnected;
@@ -161,7 +161,7 @@ void GameClient::Shutdown() {
     cmdSystem.RemoveCommand("connect");
     cmdSystem.RemoveCommand("disconnect");
     cmdSystem.RemoveCommand("toggleConsole");
-    cmdSystem.RemoveCommand("toggleMenu");
+    cmdSystem.RemoveCommand("toggleMenuBar");
     cmdSystem.RemoveCommand("toggleStatistics");
 
     BE_PROFILE_SHUTDOWN();
@@ -220,7 +220,7 @@ void GameClient::Render(const RenderContext *renderContext) {
     float menuBarHeight = 0.0f;
 
     // Render menu bar.
-    if (showMenu) {
+    if (showMenuBar) {
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("Engine")) {
                 bool showStatistics = IsStatisticsVisible();
@@ -431,8 +431,8 @@ void GameClient::Render(const RenderContext *renderContext) {
     DrawConsole();    
 }
 
-void GameClient::ShowMenu(bool show) {
-    showMenu = show;
+void GameClient::ShowMenuBar(bool show) {
+    showMenuBar = show;
 }
 
 void GameClient::ShowStatistics(bool show) {
@@ -1191,8 +1191,8 @@ void GameClient::Cmd_ToggleConsole(const CmdArgs &args) {
     gameClient.SetKeyFocus(gameClient.GetKeyFocus() == KeyFocus::Console ? KeyFocus::Game : KeyFocus::Console);
 }
 
-void GameClient::Cmd_ToggleMenu(const CmdArgs &args) {
-    gameClient.ShowMenu(!gameClient.IsMenuVisible());
+void GameClient::Cmd_ToggleMenuBar(const CmdArgs &args) {
+    gameClient.ShowMenuBar(!gameClient.IsMenuBarVisible());
 }
 
 void GameClient::Cmd_ToggleStatistics(const CmdArgs &args) {
