@@ -453,6 +453,7 @@ set(COMMON_ENGINE_FILES
     Private/Render/MaterialManager.cpp
     Private/Render/Mesh.cpp
     Private/Render/Mesh_bmesh.cpp
+    Private/Render/par_octasphere.h
     Private/Render/Mesh_CreateMesh.cpp
     Private/Render/Mesh_SortAndMerge.cpp
     Private/Render/MeshManager.cpp
