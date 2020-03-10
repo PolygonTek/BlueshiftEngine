@@ -228,7 +228,7 @@ void PhysicsWorld::StepSimulation(int frameTime) {
         return;
     }
 
-    accumulatedTimeDelta += frameTime * 0.001f;
+    accumulatedTimeDelta += MILLI2SEC(frameTime);
 
 #if 0
     int steps = Math::Floor(accumulatedTimeDelta / h);

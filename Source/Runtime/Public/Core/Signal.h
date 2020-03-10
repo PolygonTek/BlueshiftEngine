@@ -77,7 +77,7 @@ private:
 
 class BE_API SignalSystem {
 public:
-    static constexpr int MaxSignals = 4096;
+    static constexpr int    MaxSignals = 8192;
 
     static void             Init();
     static void             Shutdown();
