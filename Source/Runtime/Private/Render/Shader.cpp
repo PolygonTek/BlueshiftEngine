@@ -1082,7 +1082,7 @@ void Shader::Reinstantiate() {
             indirectLitVersion->originalShader = originalShader->indirectLitVersion;
             indirectLitVersion->Reinstantiate();
         } else {
-            indirectLitVersion = originalShader->indirectLitVersion->InstantiateShader(defineArray);
+            //indirectLitVersion = originalShader->indirectLitVersion->InstantiateShader(defineArray);
         }
     } else {
         if (indirectLitVersion) {
@@ -1096,7 +1096,7 @@ void Shader::Reinstantiate() {
             directLitVersion->originalShader = originalShader->directLitVersion;
             directLitVersion->Reinstantiate();
         } else {
-            directLitVersion = originalShader->directLitVersion->InstantiateShader(defineArray);
+            //directLitVersion = originalShader->directLitVersion->InstantiateShader(defineArray);
         }
     } else {
         if (directLitVersion) {
@@ -1110,7 +1110,7 @@ void Shader::Reinstantiate() {
             indirectLitDirectLitVersion->originalShader = originalShader->indirectLitDirectLitVersion;
             indirectLitDirectLitVersion->Reinstantiate();
         } else {
-            indirectLitDirectLitVersion = originalShader->indirectLitDirectLitVersion->InstantiateShader(defineArray);
+            //indirectLitDirectLitVersion = originalShader->indirectLitDirectLitVersion->InstantiateShader(defineArray);
         }
     } else {
         if (indirectLitDirectLitVersion) {
@@ -1124,7 +1124,7 @@ void Shader::Reinstantiate() {
             perforatedVersion->originalShader = originalShader->perforatedVersion;
             perforatedVersion->Reinstantiate();
         } else {
-            perforatedVersion = originalShader->perforatedVersion->InstantiateShader(defineArray);
+            //perforatedVersion = originalShader->perforatedVersion->InstantiateShader(defineArray);
         }
     } else {
         if (perforatedVersion) {
@@ -1138,7 +1138,7 @@ void Shader::Reinstantiate() {
             premulAlphaVersion->originalShader = originalShader->premulAlphaVersion;
             premulAlphaVersion->Reinstantiate();
         } else {
-            premulAlphaVersion = originalShader->premulAlphaVersion->InstantiateShader(defineArray);
+            //premulAlphaVersion = originalShader->premulAlphaVersion->InstantiateShader(defineArray);
         }
     } else {
         if (premulAlphaVersion) {
@@ -1152,7 +1152,7 @@ void Shader::Reinstantiate() {
             parallelShadowVersion->originalShader = originalShader->parallelShadowVersion;
             parallelShadowVersion->Reinstantiate();
         } else {
-            parallelShadowVersion = originalShader->parallelShadowVersion->InstantiateShader(defineArray);
+            //parallelShadowVersion = originalShader->parallelShadowVersion->InstantiateShader(defineArray);
         }
     } else {
         if (parallelShadowVersion) {
@@ -1166,7 +1166,7 @@ void Shader::Reinstantiate() {
             spotShadowVersion->originalShader = originalShader->spotShadowVersion;
             spotShadowVersion->Reinstantiate();
         } else {
-            spotShadowVersion = originalShader->spotShadowVersion->InstantiateShader(defineArray);
+            //spotShadowVersion = originalShader->spotShadowVersion->InstantiateShader(defineArray);
         }
     } else {
         if (spotShadowVersion) {
@@ -1180,7 +1180,7 @@ void Shader::Reinstantiate() {
             pointShadowVersion->originalShader = originalShader->pointShadowVersion;
             pointShadowVersion->Reinstantiate();
         } else {
-            pointShadowVersion = originalShader->pointShadowVersion->InstantiateShader(defineArray);
+            //pointShadowVersion = originalShader->pointShadowVersion->InstantiateShader(defineArray);
         }
     } else {
         if (pointShadowVersion) {
@@ -1195,7 +1195,7 @@ void Shader::Reinstantiate() {
                 gpuSkinningVersion[i]->originalShader = originalShader->gpuSkinningVersion[i];
                 gpuSkinningVersion[i]->Reinstantiate();
             } else {
-                gpuSkinningVersion[i] = originalShader->gpuSkinningVersion[i]->InstantiateShader(defineArray);
+                //gpuSkinningVersion[i] = originalShader->gpuSkinningVersion[i]->InstantiateShader(defineArray);
             }
         } else {
             if (gpuSkinningVersion[i]) {
@@ -1210,7 +1210,7 @@ void Shader::Reinstantiate() {
             gpuInstancingVersion->originalShader = originalShader->gpuInstancingVersion;
             gpuInstancingVersion->Reinstantiate();
         } else {
-            gpuInstancingVersion = originalShader->gpuInstancingVersion->InstantiateShader(defineArray);
+            //gpuInstancingVersion = originalShader->gpuInstancingVersion->InstantiateShader(defineArray);
         }
     } else {
         if (gpuInstancingVersion) {
