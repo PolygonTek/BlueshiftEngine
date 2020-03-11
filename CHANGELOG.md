@@ -8,7 +8,7 @@ Version History
 - Added support for drawing 9-sliced image rendering for GUI
 - Added support for text rendering with shadows/outlines
 - Added support for profiler
-- Added support for debug GUI rendering thanks to ImGui
+- Added support for debug GUI rendering thanks to [ImGui](https://github.com/ocornut/imgui)
 - SIMD (SSE/AVX/NEON) optimization
 - Updated Bullet physics library to 2.89
 - Fixed an issue where editing euler angles rotation in editor
