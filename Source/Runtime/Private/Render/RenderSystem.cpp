@@ -362,18 +362,18 @@ void RenderSystem::CheckModifiedCVars() {
     if (r_useDeferredLighting.IsModified()) {
         r_useDeferredLighting.ClearModified();
 
+        bool foundDefine = shaderManager.FindGlobalHeader("#define USE_DEFERRED_LIGHTING\n");
+
         if (r_useDeferredLighting.GetBool()) {
-            if (!shaderManager.FindGlobalHeader("#define USE_DEFERRED_LIGHTING\n")) {
+            if (!foundDefine) {
                 shaderManager.AddGlobalHeader("#define USE_DEFERRED_LIGHTING\n");
                 shaderManager.ReloadShaders();
-
                 RecreateScreenMapRT();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define USE_DEFERRED_LIGHTING\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define USE_DEFERRED_LIGHTING\n");
                 shaderManager.ReloadShaders();
-
                 RecreateScreenMapRT();
             }
         }
@@ -420,23 +420,21 @@ void RenderSystem::CheckModifiedCVars() {
 
     if (r_motionBlur.IsModified()) {
         r_motionBlur.ClearModified();
+
+        bool foundDefine = shaderManager.FindGlobalHeader("#define OBJECT_MOTION_BLUR\n");
         
         if (r_usePostProcessing.GetBool() && (r_motionBlur.GetInteger() & 2)) {
-            if (!shaderManager.FindGlobalHeader("#define OBJECT_MOTION_BLUR\n")) {
+            if (!foundDefine) {
                 shaderManager.AddGlobalHeader("#define OBJECT_MOTION_BLUR\n");
                 shaderManager.ReloadShaders();
-
                 meshManager.ReinstantiateSkinnedMeshes();
-
                 RecreateScreenMapRT();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define OBJECT_MOTION_BLUR\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define OBJECT_MOTION_BLUR\n");
                 shaderManager.ReloadShaders();
-
                 meshManager.ReinstantiateSkinnedMeshes();
-
                 RecreateScreenMapRT();
             }
         }
@@ -444,14 +442,16 @@ void RenderSystem::CheckModifiedCVars() {
 
     if (r_SSAO_quality.IsModified()) {
         r_SSAO_quality.ClearModified();
+
+        bool foundDefine = shaderManager.FindGlobalHeader("#define HIGH_QUALITY_SSAO\n");
         
         if (r_usePostProcessing.GetBool() && r_SSAO_quality.GetInteger() > 0) {
-            if (!shaderManager.FindGlobalHeader("#define HIGH_QUALITY_SSAO\n")) {
+            if (!foundDefine) {
                 shaderManager.AddGlobalHeader("#define HIGH_QUALITY_SSAO\n");
                 shaderManager.ReloadShaders();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define HIGH_QUALITY_SSAO\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define HIGH_QUALITY_SSAO\n");
                 shaderManager.ReloadShaders();
             }
@@ -461,13 +461,15 @@ void RenderSystem::CheckModifiedCVars() {
     if (r_probeBoxProjection.IsModified()) {
         r_probeBoxProjection.ClearModified();
 
+        bool foundDefine = shaderManager.FindGlobalHeader("#define SPECULAR_PROBE_BOX_PROJECTION\n");
+
         if (r_probeBoxProjection.GetBool()) {
-            if (!shaderManager.FindGlobalHeader("#define SPECULAR_PROBE_BOX_PROJECTION\n")) {
+            if (!foundDefine) {
                 shaderManager.AddGlobalHeader("#define SPECULAR_PROBE_BOX_PROJECTION\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define SPECULAR_PROBE_BOX_PROJECTION\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define SPECULAR_PROBE_BOX_PROJECTION\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
@@ -477,13 +479,15 @@ void RenderSystem::CheckModifiedCVars() {
     if (r_probeBlending.IsModified()) {
         r_probeBlending.ClearModified();
 
+        bool foundDefine = shaderManager.FindGlobalHeader("#define PROBE_BLENDING\n");
+
         if (r_probeBlending.GetBool()) {
-            if (!shaderManager.FindGlobalHeader("#define PROBE_BLENDING\n")) {
+            if (!foundDefine) {
                 shaderManager.AddGlobalHeader("#define PROBE_BLENDING\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define PROBE_BLENDING\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define PROBE_BLENDING\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
@@ -493,13 +497,15 @@ void RenderSystem::CheckModifiedCVars() {
     if (r_specularEnergyCompensation.IsModified()) {
         r_specularEnergyCompensation.ClearModified();
 
+        bool foundDefine = shaderManager.FindGlobalHeader("#define USE_MULTIPLE_SCATTERING_COMPENSATION\n");
+
         if (r_specularEnergyCompensation.GetBool()) {
-            if (!shaderManager.FindGlobalHeader("#define USE_MULTIPLE_SCATTERING_COMPENSATION\n")) {
+            if (!foundDefine) {
                 shaderManager.AddGlobalHeader("#define USE_MULTIPLE_SCATTERING_COMPENSATION\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define USE_MULTIPLE_SCATTERING_COMPENSATION\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define USE_MULTIPLE_SCATTERING_COMPENSATION\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
@@ -524,15 +530,16 @@ void RenderSystem::CheckModifiedCVars() {
     if (r_shadows.IsModified()) {
         r_shadows.ClearModified();
 
+        bool foundDefine = shaderManager.FindGlobalHeader("#define USE_SHADOW_MAP\n");
+
         if (r_shadows.GetInteger() == 1) {
-            if (!shaderManager.FindGlobalHeader("#define USE_SHADOW_MAP\n")) {
+            if (!foundDefine) {
                 shaderManager.AddGlobalHeader("#define USE_SHADOW_MAP\n");
                 shaderManager.ReloadLitSurfaceShaders();
-
                 RecreateShadowMapRT();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define USE_SHADOW_MAP\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define USE_SHADOW_MAP\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
@@ -542,16 +549,16 @@ void RenderSystem::CheckModifiedCVars() {
     if (r_showShadows.IsModified()) {
         r_showShadows.ClearModified();
 
-        if (r_showShadows.GetInteger() == 1) {
-            if (!shaderManager.FindGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n")) {
-                shaderManager.AddGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n");
+        bool foundDefine = shaderManager.FindGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n");
 
+        if (r_showShadows.GetInteger() == 1) {
+            if (!foundDefine) {
+                shaderManager.AddGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n");
-
                 shaderManager.ReloadLitSurfaceShaders();
             }
         }
@@ -582,13 +589,15 @@ void RenderSystem::CheckModifiedCVars() {
     if (r_CSM_blend.IsModified()) {
         r_CSM_blend.ClearModified();
 
+        bool foundDefine = shaderManager.FindGlobalHeader("#define CASCADE_BLENDING\n");
+
         if (r_CSM_blend.GetBool()) {
-            if (!shaderManager.FindGlobalHeader("#define CASCADE_BLENDING\n")) {
+            if (!foundDefine) {
                 shaderManager.AddGlobalHeader("#define CASCADE_BLENDING\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define CASCADE_BLENDING\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define CASCADE_BLENDING\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
