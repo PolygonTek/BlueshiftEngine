@@ -89,7 +89,7 @@ CVAR(r_HDR_brightThreshold, "5.0", CVar::Flag::Float, "");
 CVAR(r_HDR_brightOffset, "10.0", CVar::Flag::Float, "");
 
 CVAR(r_sunShafts, "1", CVar::Flag::Bool | CVar::Flag::Archive, "sun shaft");
-CVAR(r_sunShafts_scale, "16.0", CVar::Flag::Float, "sun shaft scale");
+CVAR_MINMAX(r_sunShafts_scale, "16.0", CVar::Flag::Float, "sun shaft scale", 1, 64);
 
 CVAR(r_SSAO, "1", CVar::Flag::Bool | CVar::Flag::Archive, "screen space ambient occlusion");
 CVAR(r_SSAO_quality, "2", CVar::Flag::Integer | CVar::Flag::Archive, "");
