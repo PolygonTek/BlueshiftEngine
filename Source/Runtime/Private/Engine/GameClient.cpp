@@ -234,8 +234,6 @@ void GameClient::Render(const RenderContext *renderContext) {
     // Draw IMGUI demo window.
     //ImGui::ShowDemoWindow();
 
-    ImGui::End();
-
     DrawConsole();
 }
 
@@ -474,6 +472,8 @@ void GameClient::DrawStatistics(const RenderContext *renderContext) {
             ImGui::EndGroup();
         }
     }
+
+    ImGui::End();
 }
 
 void GameClient::ShowMenuBar(bool show) {
