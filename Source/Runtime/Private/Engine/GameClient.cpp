@@ -217,218 +217,264 @@ void GameClient::EndFrame() {
 void GameClient::Render(const RenderContext *renderContext) {
     BE_SCOPE_PROFILE_CPU("GameClient::Render");
 
-    float menuBarHeight = 0.0f;
-
-    // Render menu bar.
+    // Draw menu bar.
     if (showMenuBar) {
-        if (ImGui::BeginMainMenuBar()) {
-            if (ImGui::BeginMenu("Engine")) {
-                bool showStatistics = IsStatisticsVisible();
-                if (ImGui::MenuItem("Show Statistics", "", &showStatistics)) {
-                    cmdSystem.BufferCommandText(CmdSystem::Execution::Append, "toggleStatistics");
-                }
-                bool enableLuaDebugging = cvarSystem.GetCVarBool("lua_debug");
-                if (ImGui::MenuItem("Enable Lua Debugging", "", &enableLuaDebugging)) {
-                    cvarSystem.SetCVarBool("lua_debug", enableLuaDebugging);
-                }
-                ImGui::EndMenu();
-            }
-            if (ImGui::BeginMenu("Graphics")) {
-                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Shadows");
-                ImGui::Indent();
-                bool shadows = cvarSystem.GetCVarBool("r_shadows");
-                if (ImGui::MenuItem("Enabled", "", &shadows)) {
-                    cvarSystem.SetCVarBool("r_shadows", shadows);
-                }
-                int shadowMapSize = cvarSystem.GetCVarInteger("r_shadowMapSize");
-                const char *shadowMapSizeNames[] = { "256", "512", "1024", "2048", "4096" };
-                int shadowMapSizeIndex = Clamp((int)Math::Log(2, shadowMapSize) - 8, 0, COUNT_OF(shadowMapSizeNames) - 1);
-                if (ImGui::SliderInt("Size", &shadowMapSizeIndex, 0, COUNT_OF(shadowMapSizeNames) - 1, shadowMapSizeNames[shadowMapSizeIndex])) {
-                    shadowMapSize = (int)Math::Pow(2, shadowMapSizeIndex + 8);
-                    cvarSystem.SetCVarInteger("r_shadowMapSize", shadowMapSize);
-                }
-                int shadowMapQuality = cvarSystem.GetCVarInteger("r_shadowMapQuality");
-                if (ImGui::Combo("Quality", &shadowMapQuality, "PCFx1\0PCFx5\0PCFx9\0PCFx16 (randomly jittered)\0\0")) {
-                    cvarSystem.SetCVarInteger("r_shadowMapQuality", shadowMapQuality);
-                }
-                ImGui::Unindent();
-
-                ImGui::Separator();
-
-                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "HDR");
-                ImGui::Indent();
-                bool hdr = cvarSystem.GetCVarInteger("r_HDR") > 0;
-                if (ImGui::MenuItem("Enabled", "", &hdr)) {
-                    cvarSystem.SetCVarInteger("r_HDR", hdr ? 2 : 0);
-                }
-                bool hdrToneMapping = cvarSystem.GetCVarBool("r_HDR_toneMapping");
-                if (ImGui::MenuItem("Tone Mapping", "", &hdrToneMapping)) {
-                    cvarSystem.SetCVarBool("r_HDR_toneMapping", hdrToneMapping);
-                }
-                int hdrToneMapOp = cvarSystem.GetCVarInteger("r_HDR_toneMapOp");
-                if (ImGui::Combo("Tone Map Op", &hdrToneMapOp, "Linear\0Exponential\0Logarithmic\0Drago Logarithmic\0Reinhard\0Reinhard Extended\0Filmic ALU\0Flimic ACES\0Filmic Unreal\0Filmic Uncharted 2\0\0")) {
-                    cvarSystem.SetCVarInteger("r_HDR_toneMapOp", hdrToneMapOp);
-                }
-                ImGui::Unindent();
-
-                ImGui::Separator();
-
-                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Sun Shafts");
-                ImGui::Indent();
-                bool sunShafts = cvarSystem.GetCVarBool("r_sunShafts");
-                if (ImGui::MenuItem("Enabled", "", &sunShafts)) {
-                    cvarSystem.SetCVarBool("r_sunShafts", sunShafts);
-                }
-                float sunShaftsScale = cvarSystem.GetCVarFloat("r_sunShafts_scale");
-                if (ImGui::SliderFloat("Scale", &sunShaftsScale, 1.0f, 32.0f)) {
-                    cvarSystem.SetCVarFloat("r_sunShafts_scale", sunShaftsScale);
-                }
-                ImGui::Unindent();
-
-                ImGui::EndMenu();
-            }
-            if (ImGui::BeginMenu("Physics")) {
-                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Debug Draw");
-                ImGui::Indent();
-                bool showWireframe = cvarSystem.GetCVarBool("physics_showWireframe");
-                if (ImGui::MenuItem("Show Wireframe", "", &showWireframe)) {
-                    cvarSystem.SetCVarBool("physics_showWireframe", showWireframe);
-                }
-                bool showAABB = cvarSystem.GetCVarBool("physics_showAABB");
-                if (ImGui::MenuItem("Show AABB", "", &showAABB)) {
-                    cvarSystem.SetCVarBool("physics_showAABB", showAABB);
-                }
-                bool showContactPoints = cvarSystem.GetCVarBool("physics_showContactPoints");
-                if (ImGui::MenuItem("Show Contact Points", "", &showContactPoints)) {
-                    cvarSystem.SetCVarBool("physics_showContactPoints", showContactPoints);
-                }
-                bool showNormals = cvarSystem.GetCVarBool("physics_showNormals");
-                if (ImGui::MenuItem("Show Normals", "", &showNormals)) {
-                    cvarSystem.SetCVarBool("physics_showNormals", showNormals);
-                }
-                ImGui::Unindent();
-
-                ImGui::EndMenu();
-            }
-
-            menuBarHeight = ImGui::GetWindowSize().y;
-
-            ImGui::EndMainMenuBar();
-        }
-    }
-
-    // Render statistics.
-    if (showStatistics) {
-        const int fixedWidth = 480;
-        int rightOffset = 10;
-        int topOffset = menuBarHeight + 10;
-
-        ImGui::SetNextWindowSize(ImVec2(fixedWidth, 120), ImGuiCond_Appearing);
-        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - fixedWidth - rightOffset, topOffset), ImGuiCond_Always);
-        ImGui::SetNextWindowSizeConstraints(ImVec2(fixedWidth, -1), ImVec2(fixedWidth, -1));
-        ImGui::Begin("Statistics", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-
-        const RenderCounter &renderCounter = renderContext->GetPrevFrameRenderCounter();
-
-        Str fpsText = va("FPS: %3i", GetFPS());
-
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
-        ImGui::Text("Render: %ims, FrontEnd: %ims, BackEnd: %ims", renderCounter.frameMsec, renderCounter.frontEndMsec, renderCounter.backEndMsec);
-        ImGui::SameLine(ImGui::GetWindowSize().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(fpsText.c_str()).x);
-        ImGui::Text(fpsText.c_str());
-        ImGui::Text("Draw: %i, Verts: %i, Tris: %i", renderCounter.drawCalls, renderCounter.drawVerts, renderCounter.drawIndexes / 3);
-        ImGui::Text("Shadow Draw: %i, Verts: %i, Tris: %i", renderCounter.shadowDrawCalls, renderCounter.shadowDrawVerts, renderCounter.shadowDrawIndexes / 3);
-        ImGui::PopStyleColor();
-
-        ImGui::Separator();
-
-        if (profiler.IsUnfrozen()) {
-            uint64_t tid = PlatformThread::GetCurrentThreadId();
-
-            if (ImGui::CollapsingHeader(BE1::va("CPU (%" PRIu64 ")", tid), ImGuiTreeNodeFlags_DefaultOpen)) {
-                int lastStackDepth = 0;
-
-                ImGui::BeginGroup();
-
-                profiler.IterateCpuMarkers(tid, [&lastStackDepth](const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
-                    // Convert nanoseconds to milliseconds.
-                    const float durationMs = (endTime - startTime) * 0.000001f;
-
-                    Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.65f);
-
-                    while (stackDepth < lastStackDepth) {
-                        ImGui::TreePop();
-                        lastStackDepth--;
-                    }
-
-                    lastStackDepth = stackDepth;
-
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(textColor.r, textColor.g, textColor.b, 1.0f));
-                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
-                    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
-
-                    Str id = tagName;
-                    bool opened = ImGui::TreeNodeEx(id, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
-
-                    ImGui::PopStyleColor(3);
-
-                    return opened;
-                });
-
-                while (lastStackDepth-- > 0) {
-                    ImGui::TreePop();
-                }
-
-                ImGui::EndGroup();
-            }
-
-            if (ImGui::CollapsingHeader("GPU", ImGuiTreeNodeFlags_DefaultOpen)) {
-                int lastStackDepth = 0;
-
-                ImGui::BeginGroup();
-
-                profiler.IterateGpuMarkers([&lastStackDepth](const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
-                    // Convert nanoseconds to milliseconds.
-                    const float durationMs = (endTime - startTime) * 0.000001f;
-
-                    Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.65f);
-
-                    while (stackDepth < lastStackDepth) {
-                        ImGui::TreePop();
-                        lastStackDepth--;
-                    }
-
-                    lastStackDepth = stackDepth;
-
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(textColor.r, textColor.g, textColor.b, 1.0f));
-                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
-                    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
-
-                    Str id = tagName;
-                    bool opened = ImGui::TreeNodeEx(id, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
-
-                    ImGui::PopStyleColor(3);
-
-                    return opened;
-                });
-
-                while (lastStackDepth-- > 0) {
-                    ImGui::TreePop();
-                }
-
-                ImGui::EndGroup();
-            }
-        }
-
-        ImGui::End();
+        DrawMenuBar();
 
         renderSystem.CheckModifiedCVars();
     }
 
-    // Render IMGUI demo window.
+    // Draw statistics.
+    if (showStatistics) {
+        DrawStatistics(renderContext);
+    }
+
+    // Draw IMGUI demo window.
     //ImGui::ShowDemoWindow();
 
-    DrawConsole();    
+    ImGui::End();
+
+    DrawConsole();
+}
+
+void GameClient::DrawMenuBar() {
+    menuBarHeight = 0.0f;
+
+    if (ImGui::BeginMainMenuBar()) {
+        auto addMenuItemCVarBool = [](const char *label, const char *cvarName) {
+            CVar *cvar = cvarSystem.Find(cvarName);
+            if (cvar) {
+                bool value = cvar->GetBool();
+                if (ImGui::MenuItem(label, "", &value)) {
+                    cvar->SetBool(value);
+                }
+            }
+        };
+
+        auto addMenuItemCVarFloat = [](const char *label, const char *cvarName) {
+            CVar *cvar = cvarSystem.Find(cvarName);
+            if (cvar) {
+                float value = cvar->GetFloat();
+                if (cvar->GetMinValue() < cvar->GetMaxValue()) {
+                    if (ImGui::SliderFloat(label, &value, cvar->GetMinValue(), cvar->GetMaxValue())) {
+                        cvar->SetFloat(value);
+                    }
+                } else {
+                    if (ImGui::InputFloat(label, &value)) {
+                        cvar->SetFloat(value);
+                    }
+                }
+            }
+        };
+
+        auto addMenuItemCVarInt = [](const char *label, const char *cvarName) {
+            CVar *cvar = cvarSystem.Find(cvarName);
+            if (cvar) {
+                int value = cvar->GetInteger();
+                if (cvar->GetMinValue() < cvar->GetMaxValue()) {
+                    if (ImGui::SliderInt(label, &value, cvar->GetMinValue(), cvar->GetMaxValue())) {
+                        cvar->SetInteger(value);
+                    }
+                } else {
+                    if (ImGui::InputInt(label, &value)) {
+                        cvar->SetInteger(value);
+                    }
+                }
+            }
+        };
+
+        auto addMenuItemCVarIntArray = [](const char *label, const char *cvarName, int count, const int intArray[]) {
+            CVar *cvar = cvarSystem.Find(cvarName);
+            if (cvar) {
+                int value = cvar->GetInteger();
+                int index = 0;
+                while (value > intArray[index]) {
+                    index++;
+                }
+                if (ImGui::SliderInt(label, &index, 0, count - 1, va("%i", intArray[index]))) {
+                    cvar->SetInteger(intArray[index]);
+                }
+            }
+        };
+
+        auto addMenuItemCVarEnum = [](const char *label, const char *cvarName, const char *enumNames) {
+            CVar *cvar = cvarSystem.Find(cvarName);
+            if (cvar) {
+                int value = cvar->GetInteger();
+                if (ImGui::Combo(label, &value, enumNames)) {
+                    cvar->SetInteger(value);
+                }
+            }
+        };
+
+        if (ImGui::BeginMenu("Engine")) {
+            bool showStatistics = IsStatisticsVisible();
+            if (ImGui::MenuItem("Show Statistics", "", &showStatistics)) {
+                cmdSystem.BufferCommandText(CmdSystem::Execution::Append, "toggleStatistics");
+            }
+            addMenuItemCVarBool("Enable Lua Debugging", "lua_debug");
+
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Graphics")) {
+            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Lighting");
+            ImGui::Indent();
+            addMenuItemCVarBool("Debug Lights", "r_showLights");
+            addMenuItemCVarBool("Specular Energy Compensation", "r_specularEnergyCompensation");
+            addMenuItemCVarBool("Indirect Lighting", "r_indirectLit");
+            addMenuItemCVarBool("Blending Probes", "r_probeBlending");
+            addMenuItemCVarBool("Box Projected Probes", "r_probeBoxProjection");
+            addMenuItemCVarInt("Bake Bounces", "r_probeBakeBounces");
+            ImGui::Unindent();
+
+            ImGui::Separator();
+
+            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Shadows");
+            ImGui::Indent();
+            addMenuItemCVarBool("Enabled", "r_shadows");
+            addMenuItemCVarBool("Debug Shadows", "r_showShadows");
+            const int shadowMapSizeArray[] = { 256, 512, 1024, 2048, 4096 };
+            addMenuItemCVarIntArray("Size", "r_shadowMapSize", COUNT_OF(shadowMapSizeArray), shadowMapSizeArray);
+            addMenuItemCVarEnum("Quality", "r_shadowMapQuality", "PCFx1\0PCFx5\0PCFx9\0PCFx16 (randomly jittered)\0\0");
+            addMenuItemCVarEnum("Cascade Selection", "r_CSM_selectionMethod", "Z-Based\0Map-Based\0\0");
+            addMenuItemCVarBool("Cascade Blending", "r_CSM_blend");
+            ImGui::Unindent();
+
+            ImGui::Separator();
+
+            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Post Processing");
+            ImGui::Indent();
+            addMenuItemCVarEnum("HDR", "r_HDR", "No HDR\0FP11 or FP16\0FP16\0FP32\0\0");
+            addMenuItemCVarBool("Debug HDR", "r_HDR_debug");
+            addMenuItemCVarBool("Tone Mapping", "r_HDR_toneMapping");
+            addMenuItemCVarEnum("Tone Map Operator", "r_HDR_toneMapOp", "Linear\0Exponential\0Logarithmic\0Drago Logarithmic\0Reinhard\0Reinhard Extended\0Filmic ALU\0Flimic ACES\0Filmic Unreal\0Filmic Uncharted 2\0\0");
+            addMenuItemCVarBool("Sun Shafts", "r_sunShafts");
+            addMenuItemCVarFloat("Sun Shafts Scale", "r_sunShafts_scale");
+            ImGui::Unindent();
+
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Physics")) {
+            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Debug Draw");
+            ImGui::Indent();
+            addMenuItemCVarBool("Show Wireframe", "physics_showWireframe");
+            addMenuItemCVarBool("Show AABB", "physics_showAABB");
+            addMenuItemCVarBool("Show Contact Points", "physics_showContactPoints");
+            addMenuItemCVarBool("Show Normals", "physics_showNormals");
+            ImGui::Unindent();
+
+            ImGui::EndMenu();
+        }
+
+        menuBarHeight = ImGui::GetWindowSize().y;
+
+        ImGui::EndMainMenuBar();
+    }
+}
+
+void GameClient::DrawStatistics(const RenderContext *renderContext) {
+    const int fixedWidth = 480;
+    int rightOffset = 10;
+    int topOffset = menuBarHeight + 10;
+
+    ImGui::SetNextWindowSize(ImVec2(fixedWidth, 120), ImGuiCond_Appearing);
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - fixedWidth - rightOffset, topOffset), ImGuiCond_Always);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(fixedWidth, -1), ImVec2(fixedWidth, -1));
+    ImGui::Begin("Statistics", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+    const RenderCounter &renderCounter = renderContext->GetPrevFrameRenderCounter();
+
+    Str fpsText = va("FPS: %3i", GetFPS());
+
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+    ImGui::Text("Render: %ims, FrontEnd: %ims, BackEnd: %ims", renderCounter.frameMsec, renderCounter.frontEndMsec, renderCounter.backEndMsec);
+    ImGui::SameLine(ImGui::GetWindowSize().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(fpsText.c_str()).x);
+    ImGui::Text(fpsText.c_str());
+    ImGui::Text("Draw: %i, Verts: %i, Tris: %i", renderCounter.drawCalls, renderCounter.drawVerts, renderCounter.drawIndexes / 3);
+    ImGui::Text("Shadow Draw: %i, Verts: %i, Tris: %i", renderCounter.shadowDrawCalls, renderCounter.shadowDrawVerts, renderCounter.shadowDrawIndexes / 3);
+    ImGui::PopStyleColor();
+
+    ImGui::Separator();
+
+    if (profiler.IsUnfrozen()) {
+        uint64_t tid = PlatformThread::GetCurrentThreadId();
+
+        if (ImGui::CollapsingHeader(BE1::va("CPU (%" PRIu64 ")", tid), ImGuiTreeNodeFlags_DefaultOpen)) {
+            int lastStackDepth = 0;
+
+            ImGui::BeginGroup();
+
+            profiler.IterateCpuMarkers(tid, [&lastStackDepth](const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
+                // Convert nanoseconds to milliseconds.
+                const float durationMs = (endTime - startTime) * 0.000001f;
+
+                Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.65f);
+
+                while (stackDepth < lastStackDepth) {
+                    ImGui::TreePop();
+                    lastStackDepth--;
+                }
+
+                lastStackDepth = stackDepth;
+
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(textColor.r, textColor.g, textColor.b, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+                ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+
+                Str id = tagName;
+                bool opened = ImGui::TreeNodeEx(id, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
+
+                ImGui::PopStyleColor(3);
+
+                return opened;
+            });
+
+            while (lastStackDepth-- > 0) {
+                ImGui::TreePop();
+            }
+
+            ImGui::EndGroup();
+        }
+
+        if (ImGui::CollapsingHeader("GPU", ImGuiTreeNodeFlags_DefaultOpen)) {
+            int lastStackDepth = 0;
+
+            ImGui::BeginGroup();
+
+            profiler.IterateGpuMarkers([&lastStackDepth](const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
+                // Convert nanoseconds to milliseconds.
+                const float durationMs = (endTime - startTime) * 0.000001f;
+
+                Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.65f);
+
+                while (stackDepth < lastStackDepth) {
+                    ImGui::TreePop();
+                    lastStackDepth--;
+                }
+
+                lastStackDepth = stackDepth;
+
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(textColor.r, textColor.g, textColor.b, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+                ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+
+                Str id = tagName;
+                bool opened = ImGui::TreeNodeEx(id, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
+
+                ImGui::PopStyleColor(3);
+
+                return opened;
+            });
+
+            while (lastStackDepth-- > 0) {
+                ImGui::TreePop();
+            }
+
+            ImGui::EndGroup();
+        }
+    }
 }
 
 void GameClient::ShowMenuBar(bool show) {

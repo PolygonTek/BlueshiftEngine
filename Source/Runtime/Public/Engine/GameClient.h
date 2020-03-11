@@ -114,6 +114,8 @@ private:
     void                    ConsoleCompositionEvent(char32_t ch);
     void                    UpdateConsole();
 
+    void                    DrawMenuBar();
+    void                    DrawStatistics(const RenderContext *renderContext);
     void                    DrawConsole();
     void                    DrawConsoleScreen();
     void                    DrawConsoleNotify();
@@ -131,6 +133,8 @@ private:
 
     bool                    showMenuBar = false;
     bool                    showStatistics = false;
+
+    float                   menuBarHeight;
     
     Color4                  currentColor;
     Color4                  currentTextColor;
