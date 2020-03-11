@@ -58,9 +58,19 @@ void LuaVM::Init() {
 
     state = new LuaCpp::State(true);
 
-    //BE_LOG("Lua version %.1f\n", state->Version());
+#if 0
+    int major, minor;
+    state->Version(major, minor);
+    BE_LOG("Lua version %i.%i\n", major, minor);
 
-    // Redirect global print function
+#if USE_LUAJIT
+    int patch;
+    state->JitVersion(major, minor, patch);
+    BE_LOG("Lua JIT version %i.%i.%i\n", major, minor, patch);
+#endif
+#endif
+
+    // Redirect global print function.
     state->RegisterLib(printlib, nullptr);
 
     state->HandleExceptionsWith([](int status, std::string msg, std::exception_ptr exception) {

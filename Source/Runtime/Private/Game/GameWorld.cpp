@@ -724,10 +724,7 @@ void GameWorld::Update(int elapsedTime) {
 
         LateUpdateEntities();
 
-        // Wake up waiting coroutine in Lua scripts.
-        luaVM.WakeUpWaitingThreads(MILLI2SEC(time));
-
-        luaVM.State().ForceGC();
+        UpdateLuaVM();
     }
 }
 
@@ -773,6 +770,15 @@ void GameWorld::LateUpdateEntities() {
             ent->LateUpdate();
         }
     }
+}
+
+void GameWorld::UpdateLuaVM() {
+    BE_SCOPE_PROFILE_CPU("GameWorld::UpdateLuaVM");
+
+    // Wake up waiting coroutine in Lua scripts.
+    luaVM.WakeUpWaitingThreads(MILLI2SEC(time));
+
+    luaVM.State().ForceGC();
 }
 
 void GameWorld::UpdateCanvas() {
@@ -829,8 +835,8 @@ void GameWorld::ListUpActiveCanvasComponents(StaticArray<ComCanvas *, 16> &canva
     }
 }
 
-void GameWorld::Render() {
-    BE_SCOPE_PROFILE_CPU("GameWorld::Render");
+void GameWorld::RenderCamera() {
+    BE_SCOPE_PROFILE_CPU("GameWorld::RenderCamera");
 
     StaticArray<ComCamera *, 16> cameraComponents;
     ListUpActiveCameraComponents(cameraComponents);

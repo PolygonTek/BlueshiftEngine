@@ -110,7 +110,7 @@ public:
                                 /// Simulates physics system and update all registered entities.
     void                        Update(int elapsedTime);
 
-                                /// Processes mouse (touch) input feedback for all responsive entities.
+                                /// Processes mouse & touch input feedback for all responsive entities.
     void                        ProcessPointerInput();
 
                                 /// Ray intersection test for all entities.
@@ -121,7 +121,7 @@ public:
     Entity *                    RayCast(const Ray &ray, int layerMask) const;
 
                                 /// Render camera component from all registered entities.
-    void                        Render();
+    void                        RenderCamera();
 
                                 /// Calls function for each entities for each scenes.
     template <typename Func>
@@ -211,6 +211,7 @@ private:
     void                        FixedLateUpdateEntities(float timeStep);
     void                        UpdateEntities();
     void                        LateUpdateEntities();
+    void                        UpdateLuaVM();
 
     void                        ListUpActiveCameraComponents(StaticArray<ComCamera *, 16> &cameraComponents) const;
     void                        ListUpActiveCanvasComponents(StaticArray<ComCanvas *, 16> &canvasComponents) const;
