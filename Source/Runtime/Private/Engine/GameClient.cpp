@@ -237,82 +237,84 @@ void GameClient::Render(const RenderContext *renderContext) {
     DrawConsole();
 }
 
+static void AddMenuItemCVarBool(const char *cvarName, const char *label) {
+    CVar *cvar = cvarSystem.Find(cvarName);
+    if (cvar) {
+        bool value = cvar->GetBool();
+        if (ImGui::MenuItem(label, "", &value)) {
+            cvar->SetBool(value);
+        }
+    }
+};
+
+static void AddMenuItemCVarFloat(const char *cvarName, const char *label) {
+    CVar *cvar = cvarSystem.Find(cvarName);
+    if (cvar) {
+        float value = cvar->GetFloat();
+        if (cvar->GetMinValue() < cvar->GetMaxValue()) {
+            if (ImGui::SliderFloat(label, &value, cvar->GetMinValue(), cvar->GetMaxValue())) {
+                cvar->SetFloat(value);
+            }
+        } else {
+            if (ImGui::InputFloat(label, &value)) {
+                cvar->SetFloat(value);
+            }
+        }
+    }
+};
+
+static void AddMenuItemCVarInt(const char *cvarName, const char *label) {
+    CVar *cvar = cvarSystem.Find(cvarName);
+    if (cvar) {
+        int value = cvar->GetInteger();
+        if (cvar->GetMinValue() < cvar->GetMaxValue()) {
+            if (ImGui::SliderInt(label, &value, cvar->GetMinValue(), cvar->GetMaxValue())) {
+                cvar->SetInteger(value);
+            }
+        } else {
+            if (ImGui::InputInt(label, &value)) {
+                cvar->SetInteger(value);
+            }
+        }
+    }
+};
+
+static void AddMenuItemCVarIntArray(const char *cvarName, const char *label, int count, const int intArray[]) {
+    CVar *cvar = cvarSystem.Find(cvarName);
+    if (cvar) {
+        int value = cvar->GetInteger();
+        int index = 0;
+        while (value > intArray[index]) {
+            index++;
+        }
+        if (ImGui::SliderInt(label, &index, 0, count - 1, va("%i", intArray[index]))) {
+            cvar->SetInteger(intArray[index]);
+        }
+    }
+};
+
+static void AddMenuItemCVarEnum(const char *cvarName, const char *label, const char *enumNames) {
+    CVar *cvar = cvarSystem.Find(cvarName);
+    if (cvar) {
+        int value = cvar->GetInteger();
+        if (ImGui::Combo(label, &value, enumNames)) {
+            cvar->SetInteger(value);
+        }
+    }
+};
+
 void GameClient::DrawMenuBar() {
     menuBarHeight = 0.0f;
 
     if (ImGui::BeginMainMenuBar()) {
-        auto addMenuItemCVarBool = [](const char *label, const char *cvarName) {
-            CVar *cvar = cvarSystem.Find(cvarName);
-            if (cvar) {
-                bool value = cvar->GetBool();
-                if (ImGui::MenuItem(label, "", &value)) {
-                    cvar->SetBool(value);
-                }
-            }
-        };
-
-        auto addMenuItemCVarFloat = [](const char *label, const char *cvarName) {
-            CVar *cvar = cvarSystem.Find(cvarName);
-            if (cvar) {
-                float value = cvar->GetFloat();
-                if (cvar->GetMinValue() < cvar->GetMaxValue()) {
-                    if (ImGui::SliderFloat(label, &value, cvar->GetMinValue(), cvar->GetMaxValue())) {
-                        cvar->SetFloat(value);
-                    }
-                } else {
-                    if (ImGui::InputFloat(label, &value)) {
-                        cvar->SetFloat(value);
-                    }
-                }
-            }
-        };
-
-        auto addMenuItemCVarInt = [](const char *label, const char *cvarName) {
-            CVar *cvar = cvarSystem.Find(cvarName);
-            if (cvar) {
-                int value = cvar->GetInteger();
-                if (cvar->GetMinValue() < cvar->GetMaxValue()) {
-                    if (ImGui::SliderInt(label, &value, cvar->GetMinValue(), cvar->GetMaxValue())) {
-                        cvar->SetInteger(value);
-                    }
-                } else {
-                    if (ImGui::InputInt(label, &value)) {
-                        cvar->SetInteger(value);
-                    }
-                }
-            }
-        };
-
-        auto addMenuItemCVarIntArray = [](const char *label, const char *cvarName, int count, const int intArray[]) {
-            CVar *cvar = cvarSystem.Find(cvarName);
-            if (cvar) {
-                int value = cvar->GetInteger();
-                int index = 0;
-                while (value > intArray[index]) {
-                    index++;
-                }
-                if (ImGui::SliderInt(label, &index, 0, count - 1, va("%i", intArray[index]))) {
-                    cvar->SetInteger(intArray[index]);
-                }
-            }
-        };
-
-        auto addMenuItemCVarEnum = [](const char *label, const char *cvarName, const char *enumNames) {
-            CVar *cvar = cvarSystem.Find(cvarName);
-            if (cvar) {
-                int value = cvar->GetInteger();
-                if (ImGui::Combo(label, &value, enumNames)) {
-                    cvar->SetInteger(value);
-                }
-            }
-        };
+        
 
         if (ImGui::BeginMenu("Engine")) {
             bool showStatistics = IsStatisticsVisible();
             if (ImGui::MenuItem("Show Statistics", "", &showStatistics)) {
                 cmdSystem.BufferCommandText(CmdSystem::Execution::Append, "toggleStatistics");
             }
-            addMenuItemCVarBool("Enable Lua Debugging", "lua_debug");
+            AddMenuItemCVarBool("lua_debug", "Enable Lua Debugging");
 
             ImGui::EndMenu();
         }
@@ -320,37 +322,36 @@ void GameClient::DrawMenuBar() {
         if (ImGui::BeginMenu("Graphics")) {
             ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Lighting");
             ImGui::Indent();
-            addMenuItemCVarBool("Debug Lights", "r_showLights");
-            addMenuItemCVarBool("Specular Energy Compensation", "r_specularEnergyCompensation");
-            addMenuItemCVarBool("Indirect Lighting", "r_indirectLit");
-            addMenuItemCVarBool("Blending Probes", "r_probeBlending");
-            addMenuItemCVarBool("Box Projected Probes", "r_probeBoxProjection");
-            addMenuItemCVarInt("Bake Bounces", "r_probeBakeBounces");
+            AddMenuItemCVarBool("r_showLights", "Debug Lights");
+            AddMenuItemCVarBool("r_specularEnergyCompensation", "Specular Energy Compensation");
+            AddMenuItemCVarBool("r_indirectLit", "Indirect Lighting");
+            AddMenuItemCVarBool("r_probeBlending", "Blending Probes");
+            AddMenuItemCVarBool("r_probeBoxProjection", "Box Projected Probes");
             ImGui::Unindent();
 
             ImGui::Separator();
 
             ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Shadows");
             ImGui::Indent();
-            addMenuItemCVarBool("Enabled", "r_shadows");
-            addMenuItemCVarBool("Debug Shadows", "r_showShadows");
+            AddMenuItemCVarBool("r_shadows", "Enabled");
+            AddMenuItemCVarBool("r_showShadows", "Debug Shadows");
             const int shadowMapSizeArray[] = { 256, 512, 1024, 2048, 4096 };
-            addMenuItemCVarIntArray("Size", "r_shadowMapSize", COUNT_OF(shadowMapSizeArray), shadowMapSizeArray);
-            addMenuItemCVarEnum("Quality", "r_shadowMapQuality", "PCFx1\0PCFx5\0PCFx9\0PCFx16 (randomly jittered)\0\0");
-            addMenuItemCVarEnum("Cascade Selection", "r_CSM_selectionMethod", "Z-Based\0Map-Based\0\0");
-            addMenuItemCVarBool("Cascade Blending", "r_CSM_blend");
+            AddMenuItemCVarIntArray("r_shadowMapSize", "Size", COUNT_OF(shadowMapSizeArray), shadowMapSizeArray);
+            AddMenuItemCVarEnum("r_shadowMapQuality", "Quality", "PCFx1\0PCFx5\0PCFx9\0PCFx16 (randomly jittered)\0\0");
+            AddMenuItemCVarEnum("r_CSM_selectionMethod", "Cascade Selection", "Z-Based\0Map-Based\0\0");
+            AddMenuItemCVarBool("r_CSM_blend", "Cascade Blending");
             ImGui::Unindent();
 
             ImGui::Separator();
 
             ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Post Processing");
             ImGui::Indent();
-            addMenuItemCVarEnum("HDR", "r_HDR", "No HDR\0FP11 or FP16\0FP16\0FP32\0\0");
-            addMenuItemCVarBool("Debug HDR", "r_HDR_debug");
-            addMenuItemCVarBool("Tone Mapping", "r_HDR_toneMapping");
-            addMenuItemCVarEnum("Tone Map Operator", "r_HDR_toneMapOp", "Linear\0Exponential\0Logarithmic\0Drago Logarithmic\0Reinhard\0Reinhard Extended\0Filmic ALU\0Flimic ACES\0Filmic Unreal\0Filmic Uncharted 2\0\0");
-            addMenuItemCVarBool("Sun Shafts", "r_sunShafts");
-            addMenuItemCVarFloat("Sun Shafts Scale", "r_sunShafts_scale");
+            AddMenuItemCVarEnum("r_HDR", "HDR", "No HDR\0FP11 or FP16\0FP16\0FP32\0\0");
+            AddMenuItemCVarBool("r_HDR_debug", "Debug HDR");
+            AddMenuItemCVarBool("r_HDR_toneMapping", "Tone Mapping");
+            AddMenuItemCVarEnum("r_HDR_toneMapOp", "Tone Map Operator", "Linear\0Exponential\0Logarithmic\0Drago Logarithmic\0Reinhard\0Reinhard Extended\0Filmic ALU\0Flimic ACES\0Filmic Unreal\0Filmic Uncharted 2\0\0");
+            AddMenuItemCVarBool("r_sunShafts", "Sun Shafts");
+            AddMenuItemCVarFloat("r_sunShafts_scale", "Sun Shafts Scale");
             ImGui::Unindent();
 
             ImGui::EndMenu();
@@ -359,10 +360,10 @@ void GameClient::DrawMenuBar() {
         if (ImGui::BeginMenu("Physics")) {
             ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Debug Draw");
             ImGui::Indent();
-            addMenuItemCVarBool("Show Wireframe", "physics_showWireframe");
-            addMenuItemCVarBool("Show AABB", "physics_showAABB");
-            addMenuItemCVarBool("Show Contact Points", "physics_showContactPoints");
-            addMenuItemCVarBool("Show Normals", "physics_showNormals");
+            AddMenuItemCVarBool("physics_showWireframe", "Show Wireframe");
+            AddMenuItemCVarBool("physics_showAABB", "Show AABB");
+            AddMenuItemCVarBool("physics_showContactPoints", "Show Contact Points");
+            AddMenuItemCVarBool("physics_showNormals", "Show Normals");
             ImGui::Unindent();
 
             ImGui::EndMenu();
