@@ -490,6 +490,22 @@ void RenderSystem::CheckModifiedCVars() {
         }
     }
 
+    if (r_specularEnergyCompensation.IsModified()) {
+        r_specularEnergyCompensation.ClearModified();
+
+        if (r_specularEnergyCompensation.GetBool()) {
+            if (!shaderManager.FindGlobalHeader("#define USE_MULTIPLE_SCATTERING_COMPENSATION\n")) {
+                shaderManager.AddGlobalHeader("#define USE_MULTIPLE_SCATTERING_COMPENSATION\n");
+                shaderManager.ReloadLitSurfaceShaders();
+            }
+        } else {
+            if (shaderManager.FindGlobalHeader("#define USE_MULTIPLE_SCATTERING_COMPENSATION\n")) {
+                shaderManager.RemoveGlobalHeader("#define USE_MULTIPLE_SCATTERING_COMPENSATION\n");
+                shaderManager.ReloadLitSurfaceShaders();
+            }
+        }
+    }
+
     if (r_shadowMapSize.IsModified()) {
         r_shadowMapSize.ClearModified();
         RecreateShadowMapRT();
