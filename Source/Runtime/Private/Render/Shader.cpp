@@ -612,6 +612,10 @@ Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHea
         return nullptr;
     }
 
+    if (flags & Flag::LitSurface) {
+        shader->flags |= Flag::LitSurface;
+    }
+
     if (shadowing) {
         shader->flags |= Flag::Shadowing;
     }
@@ -1861,12 +1865,12 @@ bool Shader::Reload() {
         shader = originalShader;
     }
 
-    if (!(shader->flags & Flag::LoadedFromFile)) {
-        return false;
-    }
+    bool ret = true;
 
-    Str _hashName = shader->hashName;
-    bool ret = shader->Load(_hashName);
+    if (shader->flags & Flag::LoadedFromFile) {
+        Str _hashName = shader->hashName;
+        ret = shader->Load(_hashName);
+    }
 
     for (int i = 0; i < shader->instantiatedShaders.Count(); i++) {
         instantiatedShaders[i]->flags |= Flag::NeedReinstatiate;
