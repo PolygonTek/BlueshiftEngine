@@ -315,7 +315,12 @@ bool ComCanvas::IsScreenPointOverChildRect(const Point &screenPoint) {
 }
 
 bool ComCanvas::ProcessMousePointerInput() {
-    return InputUtils::ProcessMousePointerInput(mousePointerState, [this](const Point &screenPoint) {
+    return InputUtils::ProcessMousePointerInput(mousePointerState, [this](const Point &screenPoint) -> Entity * {
+#ifdef ENABLE_IMGUI
+        if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
+            return nullptr;
+        }
+#endif
         // Convert screen point to ray.
         Ray ray = ScreenPointToRay(screenPoint);
         // Cast ray to detect entity.
@@ -326,7 +331,12 @@ bool ComCanvas::ProcessMousePointerInput() {
 }
 
 bool ComCanvas::ProcessTouchPointerInput() {
-    return InputUtils::ProcessTouchPointerInput(touchPointerStateTable, [this](const Point &screenPoint) {
+    return InputUtils::ProcessTouchPointerInput(touchPointerStateTable, [this](const Point &screenPoint) -> Entity * {
+#ifdef ENABLE_IMGUI
+        if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
+            return nullptr;
+        }
+#endif
         // Convert screen point to ray.
         Ray ray = ScreenPointToRay(screenPoint);
         // Cast ray to detect entity.
