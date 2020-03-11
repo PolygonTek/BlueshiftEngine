@@ -731,6 +731,8 @@ void Batch::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float 
         shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
     }
 
+    shader->SetConstant1f("ambientScale", ambientScale);
+
     // Requires pre-filtered DFG LUT for energy compensation even in direct lighting pass.
     if (r_specularEnergyCompensation.GetBool()) {
         shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::PrefilteredDfgMap], backEnd.dfgSumGgxTexture);
