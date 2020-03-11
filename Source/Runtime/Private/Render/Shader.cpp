@@ -90,13 +90,6 @@ static const char *builtInSamplerNames[] = {
     "probe1SpecularCubeMap",                // Probe1SpecularCubeMap
 };
 
-int Shader::GetFlags() const {
-    if (originalShader) {
-        return originalShader->flags;
-    }
-    return flags;
-}
-
 const StrHashMap<Shader::ShaderPropertyInfo> &Shader::GetPropertyInfoHashMap() const {
     if (originalShader) {
         return originalShader->propertyInfoHashMap;
@@ -1077,6 +1070,8 @@ void Shader::Reinstantiate() {
     assert(originalShader);
     InstantiateShaderInternal(defineArray);
 
+    flags ^= Flag::NeedReinstatiate;
+
     if (originalShader->indirectLitVersion) {
         if (indirectLitVersion) {
             indirectLitVersion->originalShader = originalShader->indirectLitVersion;
@@ -1311,7 +1306,11 @@ bool Shader::ProcessIncludeRecursive(const char *baseDir, Str &outText) const {
     return true;
 }
 
-void Shader::Bind() const {
+void Shader::Bind() {
+    if (flags & Shader::Flag::NeedReinstatiate) {
+        Reinstantiate();
+    }
+
     rhi.BindShader(shaderHandle);
 }
 
@@ -1870,7 +1869,7 @@ bool Shader::Reload() {
     bool ret = shader->Load(_hashName);
 
     for (int i = 0; i < shader->instantiatedShaders.Count(); i++) {
-        instantiatedShaders[i]->Reinstantiate();
+        instantiatedShaders[i]->flags |= Flag::NeedReinstatiate;
     }
 
     return ret;

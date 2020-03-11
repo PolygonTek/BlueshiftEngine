@@ -334,7 +334,7 @@ static void RB_GenerateOcclusionMapHierarchy() {
     float size = Max(w, h);
     int numLevels = Math::Log(2.0f, size);
     
-    const Shader *shader = ShaderManager::generateHomShader;
+    Shader *shader = ShaderManager::generateHomShader;
 
     shader->Bind();
 
@@ -406,7 +406,7 @@ static void RB_QueryOccludeeAABBs(int numAmbientOccludees, const AABB *occludeeA
     // Query HOM culling for each occludees
     backEnd.homCullingOutputRT->Begin();
 
-    const Shader *shader = ShaderManager::queryHomShader;
+    Shader *shader = ShaderManager::queryHomShader;
 
     shader->Bind();
     shader->SetTexture("homap", backEnd.ctx->homTexture);
@@ -623,7 +623,7 @@ static void RB_DrawDebugShadowMap() {
         shadowTexture->Bind();
         rhi.SetTextureShadowFunc(false);
 
-        const Shader *shader = ShaderManager::drawArrayTextureShader;
+        Shader *shader = ShaderManager::drawArrayTextureShader;
 
         shader->Bind();
         shader->SetTexture("tex0", shadowTexture);
@@ -652,7 +652,7 @@ static void RB_DrawDebugShadowMap() {
         shadowTexture->Bind();
         rhi.SetTextureShadowFunc(false);
 
-        const Shader *shader = ShaderManager::postPassThruShader;
+        Shader *shader = ShaderManager::postPassThruShader;
 
         shader->Bind();
         shader->SetTexture("tex0", shadowTexture);
@@ -693,7 +693,7 @@ void RB_DrawRenderTargetTexture() {
     if (index < RenderTarget::rts.Count()) {
         const RenderTarget *rt = RenderTarget::rts[index];
         if (rt && rt->ColorTexture()) {
-            const Shader *shader = ShaderManager::postPassThruShader;
+            Shader *shader = ShaderManager::postPassThruShader;
 
             shader->Bind();
             shader->SetTexture("tex0", rt->ColorTexture());
@@ -714,7 +714,7 @@ void RB_DrawDebugHdrMap() {
 
     rhi.SetStateBits(RHI::ColorWrite);
 
-    const Shader *shader = ShaderManager::postPassThruShader;
+    Shader *shader = ShaderManager::postPassThruShader;
 
     shader->Bind();
     shader->SetTexture("tex0", backEnd.ctx->screenColorTexture);
@@ -782,7 +782,7 @@ static void RB_DrawDebugHOMap() {
         backEnd.ctx->homRT->DepthStencilTexture()->Bind();
         rhi.SetTextureLevel(i, i);
 
-        const Shader *shader = ShaderManager::postPassThruShader;
+        Shader *shader = ShaderManager::postPassThruShader;
 
         shader->Bind();
         shader->SetTexture("tex0", backEnd.ctx->homRT->DepthStencilTexture());
@@ -820,7 +820,7 @@ void RB_DrawDebugTextures() {
         }
         
         if (texture->GetType() == RHI::TextureType::Texture2D || texture->GetType() == RHI::TextureType::TextureRectangle) {
-            const Shader *shader = ShaderManager::postPassThruShader;
+            Shader *shader = ShaderManager::postPassThruShader;
             
             shader->Bind();
             shader->SetTexture("tex0", texture);

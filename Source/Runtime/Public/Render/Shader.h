@@ -45,7 +45,8 @@ public:
             Shadowing           = BIT(5),
             LitSurface          = BIT(6),
             SkySurface          = BIT(7),
-            LoadedFromFile      = BIT(8)
+            NeedReinstatiate    = BIT(8),
+            LoadedFromFile      = BIT(9)
         };
     };
 
@@ -198,7 +199,7 @@ public:
     bool                        IsPropertyUsed(const Str &propName, const StrHashMap<Shader::Property> &shaderProperties) const;
 
                                 /// Returns shader flags.
-    int                         GetFlags() const;
+    int                         GetFlags() const { return flags; }
 
                                 /// Creates instantiated shader.
     Shader *                    InstantiateShader(const Array<Define> &defineArray);
@@ -220,7 +221,7 @@ public:
     Shader *                    GetGPUSkinningVersion(int index);
     Shader *                    GetGPUInstancingVersion();
 
-    void                        Bind() const;
+    void                        Bind();
 
                                 /// Returns constant index with the given name.
     int                         GetConstantIndex(const char *name) const;

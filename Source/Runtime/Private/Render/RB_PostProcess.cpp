@@ -39,7 +39,7 @@ void RB_PostProcessDepth() {
             rhi.SetStateBits(RHI::ColorWrite | RHI::BS_DstColor | RHI::BD_Zero);
             rhi.SetCullFace(RHI::CullType::None);
 
-            const Shader *shader = ShaderManager::postPassThruShader;
+            Shader *shader = ShaderManager::postPassThruShader;
 
             shader->Bind();
             shader->SetTexture("tex0", backEnd.ctx->ppRTs[PP_RT_AO]->ColorTexture());
@@ -213,7 +213,7 @@ void RB_PostProcess() {
         rhi.SetCullFace(RHI::CullType::None);
 
         // Do HDR composition.
-        const Shader *shader = ShaderManager::hdrFinalShader;
+        Shader *shader = ShaderManager::hdrFinalShader;
 
         shader->Bind();
         shader->SetTexture("colorSampler", bc->screenRT->ColorTexture());
@@ -232,7 +232,7 @@ void RB_PostProcess() {
         rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
         rhi.SetCullFace(RHI::CullType::None);
 
-        const Shader *shader = ShaderManager::ldrFinalShader;
+        Shader *shader = ShaderManager::ldrFinalShader;
 
         shader->Bind();
         shader->SetTexture("colorSampler", bc->screenRT->ColorTexture());

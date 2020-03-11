@@ -152,7 +152,7 @@ static void RB_DrawDebugPrimsElements(int numElements, const int *elements, int 
         rhi.SetLineWidth(lineWidth);
     }
 
-    const Shader *shader = ShaderManager::vertexColorShader;
+    Shader *shader = ShaderManager::vertexColorShader;
 
     shader->Bind();
     shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->GetViewProjMatrix());
@@ -451,7 +451,7 @@ static void RB_DrawDebugTextElements(int numElements, const int *elements, int n
     }
     rhi.SetLineWidth(lineWidth);
 
-    const Shader *shader = ShaderManager::vertexColorShader;
+    Shader *shader = ShaderManager::vertexColorShader;
 
     shader->Bind();
     shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->GetViewProjMatrix());
@@ -627,7 +627,7 @@ static void RB_DrawDebugLights(int mode) {
         rhi.SetStateBits(RHI::ColorWrite | RHI::BS_SrcAlpha | RHI::BD_One | RHI::DF_LEqual);
         rhi.SetCullFace(RHI::CullType::Back);
 
-        const Shader *shader = ShaderManager::constantColorShader;
+        Shader *shader = ShaderManager::constantColorShader;
 
         shader->Bind();
         shader->SetConstant4x4f("modelViewProjectionMatrix", true, backEnd.camera->def->GetViewProjMatrix());
@@ -659,7 +659,7 @@ static void RB_DrawDebugLightScissorRects() {
         rhi.SetStateBits(RHI::ColorWrite | RHI::PM_Wireframe);
         rhi.SetCullFace(RHI::CullType::None);
         
-        const Shader *shader = ShaderManager::postPassThruColorShader;
+        Shader *shader = ShaderManager::postPassThruColorShader;
 
         shader->Bind();
         shader->SetTexture("tex0", textureManager.whiteTexture);

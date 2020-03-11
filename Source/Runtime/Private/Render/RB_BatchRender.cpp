@@ -49,18 +49,18 @@ void Batch::DrawPrimitives() const {
 void Batch::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::Property> &shaderProperties) const {
     const auto &propertyInfoHashMap = shader->GetPropertyInfoHashMap();
 
-    // Iterate over all shader property specs
+    // Iterate over all shader property specs.
     for (int i = 0; i < propertyInfoHashMap.Count(); i++) {
         const auto *entry = propertyInfoHashMap.GetByIndex(i);
         const auto &key = entry->first;
         const auto &propInfo = entry->second;
 
-        // Skip if it is a shader define
+        // Skip if it is a shader define.
         if (propInfo.GetFlags() & Shader::ShaderPropertyInfo::Flag::ShaderDefine) {
             continue;
         }
 
-        // Skip if not exist in shader properties
+        // Skip if not exist in shader properties.
         const auto *propEntry = shaderProperties.Get(key);
         if (!propEntry) {
             continue;
@@ -1046,7 +1046,7 @@ void Batch::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) co
 }
 
 void Batch::RenderGui(const Material::ShaderPass *mtrlPass) const {
-    const Shader *shader;
+    Shader *shader;
 
     if (mtrlPass->shader) {
         shader = mtrlPass->shader;
