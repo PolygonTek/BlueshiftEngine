@@ -241,7 +241,7 @@ static void AddMenuItemCVarBool(const char *cvarName, const char *label) {
     CVar *cvar = cvarSystem.Find(cvarName);
     if (cvar) {
         bool value = cvar->GetBool();
-        if (ImGui::MenuItem(label, "", &value)) {
+        if (ImGui::Checkbox(label, &value)) {
             cvar->SetBool(value);
         }
     }
