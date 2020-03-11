@@ -217,6 +217,8 @@ void GameClient::EndFrame() {
 void GameClient::Render(const RenderContext *renderContext) {
     BE_SCOPE_PROFILE_CPU("GameClient::Render");
 
+    menuBarHeight = 0.0f;
+
     // Draw menu bar.
     if (showMenuBar) {
         DrawMenuBar();
@@ -304,11 +306,7 @@ static void AddMenuItemCVarEnum(const char *cvarName, const char *label, const c
 };
 
 void GameClient::DrawMenuBar() {
-    menuBarHeight = 0.0f;
-
     if (ImGui::BeginMainMenuBar()) {
-        
-
         if (ImGui::BeginMenu("Engine")) {
             bool showStatistics = IsStatisticsVisible();
             if (ImGui::MenuItem("Show Statistics", "", &showStatistics)) {
