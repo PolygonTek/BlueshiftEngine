@@ -47,8 +47,6 @@ static CVAR(cl_conSize, "0.6", CVar::Flag::Float | CVar::Flag::Archive, "");
 static CVAR(cl_conSpeed, "5.0", CVar::Flag::Float | CVar::Flag::Archive, "");
 static CVAR(cl_conNoPrint, "1", CVar::Flag::Bool, "");
 static CVAR(cl_conNotifyTime, "3.0", CVar::Flag::Float | CVar::Flag::Archive, "");
-static CVAR(cl_showFps, "0", CVar::Flag::Bool, "");
-static CVAR(cl_showTimer, "0", CVar::Flag::Bool, "");
 
 GameClient          gameClient;
 
@@ -304,12 +302,14 @@ static void AddMenuItemCVarEnum(const char *cvarName, const char *label, const c
 };
 
 void GameClient::DrawMenuBar() {
+#ifdef ENABLE_IMGUI
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("Engine")) {
             bool showStatistics = IsStatisticsVisible();
-            if (ImGui::MenuItem("Show Statistics", "", &showStatistics)) {
+            if (ImGui::Checkbox("Show Statistics", &showStatistics)) {
                 cmdSystem.BufferCommandText(CmdSystem::Execution::Append, "toggleStatistics");
             }
+            AddMenuItemCVarBool("developer", "Enable Developer");
             AddMenuItemCVarBool("lua_debug", "Enable Lua Debugging");
 
             ImGui::EndMenu();
@@ -342,7 +342,7 @@ void GameClient::DrawMenuBar() {
 
             ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Post Processing");
             ImGui::Indent();
-            AddMenuItemCVarEnum("r_HDR", "HDR", "No HDR\0FP11 or FP16\0FP16\0FP32\0\0");
+            AddMenuItemCVarEnum("r_HDR", "HDR Mode", "No HDR\0FP11 or FP16\0FP16\0FP32\0\0");
             AddMenuItemCVarBool("r_HDR_debug", "Debug HDR");
             AddMenuItemCVarBool("r_HDR_toneMapping", "Tone Mapping");
             AddMenuItemCVarEnum("r_HDR_toneMapOp", "Tone Map Operator", "Linear\0Exponential\0Logarithmic\0Drago Logarithmic\0Reinhard\0Reinhard Extended\0Filmic ALU\0Flimic ACES\0Filmic Unreal\0Filmic Uncharted 2\0\0");
@@ -354,6 +354,14 @@ void GameClient::DrawMenuBar() {
         }
 
         if (ImGui::BeginMenu("Physics")) {
+            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Settings");
+            ImGui::Indent();
+            AddMenuItemCVarBool("physics_enableCCD", "Enable CCD");
+            AddMenuItemCVarBool("physics_noDeactivation", "No Deactivation");
+            ImGui::Unindent();
+
+            ImGui::Separator();
+
             ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Debug Draw");
             ImGui::Indent();
             AddMenuItemCVarBool("physics_showWireframe", "Show Wireframe");
@@ -369,9 +377,11 @@ void GameClient::DrawMenuBar() {
 
         ImGui::EndMainMenuBar();
     }
+#endif
 }
 
 void GameClient::DrawStatistics(const RenderContext *renderContext) {
+#ifdef ENABLE_IMGUI
     const int fixedWidth = 480;
     int rightOffset = 10;
     int topOffset = menuBarHeight + 10;
@@ -474,6 +484,7 @@ void GameClient::DrawStatistics(const RenderContext *renderContext) {
     }
 
     ImGui::End();
+#endif
 }
 
 void GameClient::ShowMenuBar(bool show) {
@@ -748,22 +759,6 @@ void GameClient::DrawConsole() {
 
     SetFont(nullptr);
     SetTextColor(Color4::gray);
-
-    if (cl_showFps.GetBool()) {
-        SetTextColor(Color4::white);
-        DrawString(0, 0, va("%ifps", fps), -1, DrawTextFlag::Right | DrawTextFlag::DropShadow);
-    }
-
-    if (cl_showTimer.GetBool()) {
-        SetTextColor(Color4::white);
-
-        int ts = (int)(time * 0.001f);
-        int hours = (ts / 3600) % 24;
-        int minutes = (ts / 60) % 60;
-        int seconds = ts % 60;
-        
-        DrawString(0, CONSOLE_FONT_HEIGHT, va("%02i:%02i:%02i", hours, minutes, seconds), -1, DrawTextFlag::Right | DrawTextFlag::DropShadow);
-    }
 
     if (consoleHeight > 0.0f) {
         DrawConsoleScreen();
