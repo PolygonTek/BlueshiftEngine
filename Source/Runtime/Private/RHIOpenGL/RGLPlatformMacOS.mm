@@ -55,9 +55,10 @@
 }
 
 #if USE_DISPLAY_LINK
+
 - (CVReturn)getFrameForTime:(const CVTimeStamp *)outputTime {
-    // There is no autorelease pool when this method is called because it will be called from a background thread
-    // It's important to create one or you will leak objects
+    // There is no autorelease pool when this method is called because it will be called from a background thread.
+    // It's important to create one or you will leak objects.
     @autoreleasepool {
         //CFAbsoluteTime currentTime = CFAbsoluteTimeGetCurrent();
         //[[controller scene] advanceTimeBy:(currentTime - [controller renderTime])];
@@ -68,7 +69,7 @@
     return kCVReturnSuccess;
 }
 
-// This is the renderer output callback function
+// This is the renderer output callback function.
 static CVReturn displayLinkCallback(CVDisplayLinkRef displayLink,
     const CVTimeStamp *now, const CVTimeStamp *outputTime, CVOptionFlags flagsIn, CVOptionFlags *flagsOut, void *displayLinkContext) {
     CVReturn result = [(__bridge GLView *)displayLinkContext getFrameForTime:outputTime];
@@ -76,13 +77,13 @@ static CVReturn displayLinkCallback(CVDisplayLinkRef displayLink,
 }
 
 - (void)setupDisplayLink {
-    // Create a display link capable of being used with all active displays
+    // Create a display link capable of being used with all active displays.
     CVDisplayLinkCreateWithActiveCGDisplays(&displayLink);
     
-    // Set the renderer output callback function
+    // Set the renderer output callback function.
     CVDisplayLinkSetOutputCallback(displayLink, &displayLinkCallback, (__bridge void *)(self));
     
-    // Set the display link for the current renderer
+    // Set the display link for the current renderer.
     NSOpenGLPixelFormat *pf = [glContext->nsglContext pixelFormat];
     CGLPixelFormatObj cglPixelFormat = [pf CGLPixelFormatObj];
     CVDisplayLinkSetCurrentCGDisplayFromOpenGLContext(displayLink, glContext->cglContext, cglPixelFormat);
@@ -340,23 +341,22 @@ static uint32_t MacOS_QueryVideoMemory() {
                 maxVRAM = vram;
             }
         }
-
 #if 0
         err = CGLDestroyRendererInfo(rendererInfo);
         if (err) {
             BLib::Log(LogLevel::Normal, "CGLDestroyRendererInfo -> %d\n", err);
         }
 #endif
-	}
+    }
 
-	return maxVRAM;
+    return maxVRAM;
 }
 
 static void MacOS_ResetFullscreen() {
     if (!desktopDisplayMode) {
         return;
     }
-    
+
     CGDisplaySetDisplayMode(kCGDirectMainDisplay, desktopDisplayMode, nullptr);
     CGDisplayModeRelease(desktopDisplayMode);
     CGDisplayShowCursor(kCGDirectMainDisplay);
@@ -367,11 +367,11 @@ static bool MacOS_SetFullscreen(int displayWidth, int displayHeight, bool stretc
     if (desktopDisplayMode) {
         MacOS_ResetFullscreen();
     }
-    
+
     const CFStringRef pixelFormatCFStr = CFSTR(IO32BitDirectPixels);
     const int minRefresh = 0;
     const int maxRefresh = 0;
-    
+
     // An array of display modes that the display supports, or NULL if the display is invalid.
     // The caller is responsible for releasing the array.
     CFArrayRef modeList = (CFArrayRef)CGDisplayCopyAllDisplayModes(kCGDirectMainDisplay, nullptr);
@@ -379,12 +379,12 @@ static bool MacOS_SetFullscreen(int displayWidth, int displayHeight, bool stretc
         NSLog(@"CGDisplayAvailableModes returned NULL -- 0x%0x is an invalid display", kCGDirectMainDisplay);
         return false;
     }
-    
+
     long modeCount = CFArrayGetCount(modeList);
-    
+
     // Default to the current desktop mode
     int bestModeIndex = 0xFFFFFFFF;
-    
+
     for (int modeIndex = 0; modeIndex < modeCount; ++modeIndex) {
         CGDisplayModeRef mode = (CGDisplayModeRef)CFArrayGetValueAtIndex(modeList, modeIndex);
         
@@ -499,7 +499,7 @@ static NSOpenGLPixelFormatAttribute *GetPixelFormatAttributes(bool fullScreen, i
     // Terminate the list
     attribs[numAttribs++] = 0;
 
-return attribs;
+    return attribs;
 }
 
 static void GetGLVersion(int *major, int *minor) {
@@ -541,7 +541,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
 
     // Get CGLContextObj from NSOpenGLContext object
     mainContext->cglContext = (CGLContextObj)[mainContext->nsglContext CGLContextObj];
-    
+
 #if 0 //SUPPORT_GL3
     // When we're using a CoreProfile context, crash if we call a legacy OpenGL function
     // This will make it much more obvious where and when such a function call is made so
@@ -554,7 +554,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     if (gl_useMacMTEngine.GetBool()) {
         CGLEnable(mainContext->cglContext, kCGLCEMPEngine);
     }
-    
+
     //[mainContext->nsglContext setView:mainContext->glView];
 
     // Make current context
@@ -569,16 +569,16 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
 
     // gglXXX 함수 바인딩 및 확장 flag 초기화
     ggl_init(gl_debug.GetBool() && !gglext._GL_ARB_debug_output);
-    
+
     // Enable debug callback
     if (gl_debug.GetBool() && gglext._GL_ARB_debug_output) {
         gglDebugMessageCallbackARB(OpenGL::DebugCallback, nullptr);
         gglEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
     }
-    
+
     // default FBO
     mainContext->defaultFramebuffer = 0;
-    
+
     // Create default VAO for main context
     gglGenVertexArrays(1, &mainContext->defaultVAO);
 }
@@ -656,11 +656,11 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         //int surfaceOpacity = 0;
         //[ctx->nsglContext setValues: &surfaceOpacity forParameter: NSOpenGLCPSurfaceOpacity];
     }
-    
+
     NSRect contentRect = [ctx->contentView bounds];
-    
+
     ctx->glView = [[GLView alloc] initWithFrame:NSMakeRect(0, 0, contentRect.size.width, contentRect.size.height)];
-    
+
     [ctx->glView setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
     [ctx->glView setGLContext:ctx];
     

@@ -22,14 +22,12 @@ static BE1::CVar    disp_bpp("disp_bpp", "0", BE1::CVar::Flag::Integer | BE1::CV
 static BE1::CVar    disp_frequency("disp_frequency", "0", BE1::CVar::Flag::Integer | BE1::CVar::Flag::Archive, "");
 
 @interface MyWindow : NSWindow
-
 @end
 
 @implementation MyWindow
 
 - (void)moveToCenter {
-    NSRect mainDisplayRect = [[NSScreen mainScreen] frame];
-    
+    NSRect mainDisplayRect = [[NSScreen mainScreen] frame];    
     NSRect windowRect = [self frame];
     
     NSPoint newPos = NSMakePoint(MAX(0, (mainDisplayRect.size.width - windowRect.size.width) / 2),
@@ -43,18 +41,17 @@ static BE1::CVar    disp_frequency("disp_frequency", "0", BE1::CVar::Flag::Integ
     
     if (cascadePos.x == 0 && cascadePos.y == 0) {
         [self moveToCenter];
-    }
-    
+    }    
     cascadePos = [self cascadeTopLeftFromPoint:cascadePos];
 }
 
-@end
+@end // @implementation MyWindow
 
 //---------------------------------------------------------------------------------------
 
 @interface AppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate> {
     TISInputSourceRef currentKeyboard;
-    
+
     MyWindow *mainWindow;
 }
 
@@ -66,14 +63,14 @@ static BE1::CVar    disp_frequency("disp_frequency", "0", BE1::CVar::Flag::Integ
     UInt32 deadKeyState = 0;
     UniChar unicodeChars[4];
     UniCharCount actualLength;
-    
+
     CFDataRef layoutData = (CFDataRef)TISGetInputSourceProperty(currentKeyboard, kTISPropertyUnicodeKeyLayoutData);
     if (!layoutData) {
         return false;
     }
-    
+
     const UCKeyboardLayout *keyboardLayout = (const UCKeyboardLayout *)CFDataGetBytePtr(layoutData);
-    
+
     UCKeyTranslate(keyboardLayout,
                    keyCode,
                    keyDown ? kUCKeyActionDown : kUCKeyActionUp,
@@ -348,38 +345,37 @@ static const struct {
 
 - (void)processEvent:(NSEvent *)event {
     NSEventType eventType = [event type];
-    
+
     switch (eventType) {
-        case NSKeyDown: {
-        case NSKeyUp:
-            [self processKeyEvent:event keyDown:eventType == NSKeyDown ? YES : NO];
-            return;
-        }
-        case NSFlagsChanged:
-            [self processFlagsChangedEvent:event];
-            break;
-        case NSLeftMouseDown:
-        case NSLeftMouseUp:
-        case NSRightMouseDown:
-        case NSRightMouseUp:
-        case NSOtherMouseDown:
-        case NSOtherMouseUp:
-            // ignore simple mouse button event
-            break;
-        case NSSystemDefined:
-            [self processSystemDefinedEvent:event];
-            break;
-        case NSMouseMoved:
-        case NSLeftMouseDragged:
-        case NSRightMouseDragged:
-        case NSOtherMouseDragged:
-            [self processMouseMovedEvent:event];
-            break;
-        case NSScrollWheel:
-            [self processMouseWheelEvent:event];
-            break;
-        default:
-            break;
+    case NSKeyDown:
+    case NSKeyUp:
+        [self processKeyEvent:event keyDown:eventType == NSKeyDown ? YES : NO];
+        return;
+    case NSFlagsChanged:
+        [self processFlagsChangedEvent:event];
+        break;
+    case NSLeftMouseDown:
+    case NSLeftMouseUp:
+    case NSRightMouseDown:
+    case NSRightMouseUp:
+    case NSOtherMouseDown:
+    case NSOtherMouseUp:
+        // ignore simple mouse button event
+        break;
+    case NSSystemDefined:
+        [self processSystemDefinedEvent:event];
+        break;
+    case NSMouseMoved:
+    case NSLeftMouseDragged:
+    case NSRightMouseDragged:
+    case NSOtherMouseDragged:
+        [self processMouseMovedEvent:event];
+        break;
+    case NSScrollWheel:
+        [self processMouseWheelEvent:event];
+        break;
+    default:
+        break;
     }
     
     [NSApp sendEvent: event];
@@ -502,7 +498,7 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
 - (void)windowWillEnterFullScreen:(NSNotification *)notification {
     MyWindow *window = [notification object];
 
-    // set window is resizable to make fullscreen window
+    // Set window is resizable to make fullscreen window.
     NSInteger oldStyleMask = [window styleMask];
     [window setStyleMask:oldStyleMask | NSResizableWindowMask];
 
@@ -514,7 +510,7 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
 - (void)windowWillExitFullScreen:(NSNotification *)notification {
     MyWindow *window = [notification object];
 
-    // set window is non-resizable not to allow resizable window
+    // Set window is non-resizable not to allow resizable window.
     NSInteger oldStyleMask = [window styleMask];
     [window setStyleMask:oldStyleMask & ~NSResizableWindowMask];
 
@@ -558,18 +554,19 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
     return YES;
 }
 
-@end
+@end // @implementation AppDelegate
 
 int main(int argc, const char *argv[]) {
     BE1::Str workingDir = argv[0];
     workingDir.StripFileName();
-    workingDir.AppendPath("../../.."); // Strip "Player.app/Contents/MacOS"
+    workingDir.AppendPath("../../.."); // Strip "BlueshiftPlayer.app/Contents/MacOS"
     workingDir.CleanPath(PATHSEPERATOR_CHAR);
+
     chdir(workingDir.c_str());
-    
+
     Class appDelegateClass = NSClassFromString(@"AppDelegate");
     id appDelegate = [[appDelegateClass alloc] init];
     [[NSApplication sharedApplication] setDelegate:appDelegate];
-    
+
     return NSApplicationMain(argc, argv);
 }
