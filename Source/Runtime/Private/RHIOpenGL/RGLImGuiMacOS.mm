@@ -71,15 +71,14 @@ static int mapCharacterToKey(int c) {
     return -1;
 }
 
-static void resetKeys()
-{
+static void resetKeys() {
     ImGuiIO &io = ImGui::GetIO();
     for (int n = 0; n < IM_ARRAYSIZE(io.KeysDown); n++) {
         io.KeysDown[n] = false;
     }
 }
 
-static bool ImGui_ImplOSX_HandleEvent(NSEvent *event, NSView *view) {
+bool ImGui_ImplOSX_HandleEvent(NSEvent *event, NSView *view) {
     ImGuiIO &io = ImGui::GetIO();
 
     if (event.type == NSEventTypeLeftMouseDown || event.type == NSEventTypeRightMouseDown || event.type == NSEventTypeOtherMouseDown) {
@@ -161,8 +160,9 @@ static bool ImGui_ImplOSX_HandleEvent(NSEvent *event, NSView *view) {
         for (int i = 0; i < len; i++) {
             int c = [str characterAtIndex:i];
             int key = mapCharacterToKey(c);
-            if (key != -1)
+            if (key != -1) {
                 io.KeysDown[key] = false;
+            }
         }
         return io.WantCaptureKeyboard;
     }
@@ -175,6 +175,7 @@ static bool ImGui_ImplOSX_HandleEvent(NSEvent *event, NSView *view) {
         bool oldKeyShift = io.KeyShift;
         bool oldKeyAlt = io.KeyAlt;
         bool oldKeySuper = io.KeySuper;
+
         io.KeyCtrl      = flags & NSEventModifierFlagControl;
         io.KeyShift     = flags & NSEventModifierFlagShift;
         io.KeyAlt       = flags & NSEventModifierFlagOption;
@@ -191,7 +192,10 @@ static bool ImGui_ImplOSX_HandleEvent(NSEvent *event, NSView *view) {
 }
 
 void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
-	ImGuiIO &io = ImGui::GetIO();
+    // Setup Dear ImGui context
+    ctx->imGuiContext = ImGui::CreateContext();
+    ImGui::SetCurrentContext(ctx->imGuiContext);
+    ImGuiIO &io = ImGui::GetIO();
 
     // Setup back-end capabilities flags
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;           // We can honor GetMouseCursor() values (optional)
@@ -316,6 +320,8 @@ void OpenGLRHI::ImGuiRender() {
 }
 
 void OpenGLRHI::ImGuiEndFrame() {
+    BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiEndFrame");
+
     ImGui::EndFrame();
 }
 
