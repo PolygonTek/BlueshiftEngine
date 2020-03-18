@@ -37,12 +37,12 @@
 
 - (id)initWithFrame:(NSRect)frameRect {
     self = [super initWithFrame:frameRect];
-    
+
 #if SUPPORT_RETINA_RESOLUTION
     // Opt-In to Retina resolution
     [self setWantsBestResolutionOpenGLSurface:YES];
 #endif // SUPPORT_RETINA_RESOLUTION
-    
+
     // NSViewGlobalFrameDidChangeNotification:
     // Posted whenever an NSView object that has attached surfaces (that is, NSOpenGLContext objects) moves to a different screen,
     // or other cases where the NSOpenGLContext object needs to be updated.
@@ -50,7 +50,7 @@
                                              selector:@selector(reshape)
                                                  name:NSViewGlobalFrameDidChangeNotification
                                                object:self];
-    
+
     return self;
 }
 
@@ -793,17 +793,17 @@ bool OpenGLRHI::SetFullscreen(Handle ctxHandle, int width, int height) {
     GLint dim[2] = { width, height };
     CGLSetParameter(ctx->cglContext, kCGLCPSurfaceBackingSize, dim);
     CGLEnable(ctx->cglContext, kCGLCESurfaceBackingSize);
-    
+
     /*NSWindow *window = [ctx->contentView window];
-    
+
     ctx->windowTitle = [window title];
     ctx->windowSize = [window frame].size;
-    
+
     [window setStyleMask:NSBorderlessWindowMask | NSFullSizeContentViewWindowMask];
     [window setLevel:NSMainMenuWindowLevel+1];
     [window setFrame:[[NSScreen mainScreen] frame] display:YES];
     [window setHidesOnDeactivate:YES];*/
-    
+
     return true;
 }
 
@@ -832,29 +832,29 @@ void OpenGLRHI::ResetFullscreen(Handle ctxHandle) {
 void OpenGLRHI::GetGammaRamp(unsigned short ramp[768]) const {
     uint32_t tableSize = 256;
     CGGammaValue *values = (CGGammaValue *)calloc(tableSize * 3, sizeof(CGGammaValue));
-    
+
     CGGetDisplayTransferByTable(mainContext->display, tableSize, values, values + tableSize, values + tableSize * 2, &tableSize);
-    
+
     for (uint32_t i = 0; i < tableSize; i++) {
         ramp[i]         = (unsigned short)(values[i] * 65535);
         ramp[256 + i]   = (unsigned short)(values[i + tableSize] * 65535);
         ramp[512 + i]   = (unsigned short)(values[i + tableSize * 2] * 65535);
     }
-    
+
     free(values);
 }
 
 void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
     CGGammaValue *values = (CGGammaValue *)calloc(768, sizeof(CGGammaValue));
-    
+
     for (int i = 0; i < 256;  i++) {
         values[i]       = ramp[i] / 65535.f;
         values[256 + i] = ramp[256 + i] / 65535.f;
         values[512 + i] = ramp[512 + i] / 65535.f;
     }
-    
+
     CGSetDisplayTransferByTable(mainContext->display, 256, values, values + 256, values + 512);
-    
+
     free(values);
 }
 
@@ -891,7 +891,7 @@ bool OpenGLRHI::SwapBuffers() {
 }
 
 void OpenGLRHI::SwapInterval(int interval) const {
-	[currentContext->nsglContext setValues: &interval forParameter: NSOpenGLCPSwapInterval];
+    [currentContext->nsglContext setValues: &interval forParameter: NSOpenGLCPSwapInterval];
 }
 
 BE_NAMESPACE_END

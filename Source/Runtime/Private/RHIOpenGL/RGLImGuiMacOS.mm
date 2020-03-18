@@ -28,7 +28,6 @@
 
 BE_NAMESPACE_BEGIN
 
-static CFAbsoluteTime g_Time = 0.0;
 static NSCursor*      g_MouseCursors[ImGuiMouseCursor_COUNT] = {};
 static bool           g_MouseCursorHidden = false;
 
@@ -281,7 +280,14 @@ void OpenGLRHI::ImGuiDestroyContext(GLContext *ctx) {
     ImGui::DestroyContext(ctx->imGuiContext);
 }
 
-void ImGui_ImplOSX_NewFrame(NSView *view) {
+void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
+    BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiBeginFrame");
+
+    ImGui_ImplOpenGL_ValidateFrame();
+
+    GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
+    NSView *view = ctx->contentView;
+
     // Setup display size
     ImGuiIO &io = ImGui::GetIO();
     if (view) {
@@ -291,12 +297,9 @@ void ImGui_ImplOSX_NewFrame(NSView *view) {
     }
 
     // Setup time step
-    if (g_Time == 0.0) {
-        g_Time = CFAbsoluteTimeGetCurrent();
-    }
-    CFAbsoluteTime current_time = CFAbsoluteTimeGetCurrent();
-    io.DeltaTime = current_time - g_Time;
-    g_Time = current_time;
+    double currentTime = PlatformTime::Seconds();
+    io.DeltaTime = currentTime - ctx->imGuiLastTime;
+    ctx->imGuiLastTime = currentTime;
 
     ImGui_ImplOSX_UpdateMouseCursor();
 }
