@@ -21,13 +21,22 @@
 #define SUPPORT_RETINA_RESOLUTION   1
 #define USE_DISPLAY_LINK            0
 
-@interface OpenGLView : NSView
+#ifdef ENABLE_IMGUI
+
+BE_NAMESPACE_BEGIN
+extern bool ImGui_ImplOSX_HandleEvent(NSEvent *event, NSView *view);
+BE_NAMESPACE_END
+
+#endif
+
+@interface GLView : NSView
 
 @end
 
-@implementation OpenGLView {
+@implementation GLView {
     BE1::GLContext *    glContext;
     CVDisplayLinkRef    displayLink;
+    BOOL                wasAcceptingMouseMoveEvents;
 }
 
 - (void)setGLContext:(BE1::GLContext *)ctx {
@@ -36,6 +45,8 @@
 
 - (id)initWithFrame:(NSRect)frameRect {
     self = [super initWithFrame:frameRect];
+    
+    [[self window] setAcceptsMouseMovedEvents:YES];
 
 #if SUPPORT_RETINA_RESOLUTION
     // Opt-In to Retina resolution
@@ -70,7 +81,7 @@
 
 // This is the renderer output callback function.
 static CVReturn displayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeStamp *now, const CVTimeStamp *outputTime, CVOptionFlags flagsIn, CVOptionFlags *flagsOut, void *displayLinkContext) {
-    CVReturn result = [(__bridge OpenGLView *)displayLinkContext getFrameForTime:outputTime];
+    CVReturn result = [(__bridge GLView *)displayLinkContext getFrameForTime:outputTime];
     return result;
 }
 
@@ -220,7 +231,67 @@ static CVReturn displayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeSt
     return YES;
 }
 
-@end // end of @implementation OpenGLView
+#ifdef ENABLE_IMGUI
+
+- (void)keyDown:(NSEvent *)event {
+    if (BE1::ImGui_ImplOSX_HandleEvent(event, self)) {
+        return;
+    }
+    [super keyDown:event];
+}
+
+- (void)keyUp:(NSEvent *)event {
+    if (BE1::ImGui_ImplOSX_HandleEvent(event, self)) {
+        return;
+    }
+    [super keyUp:event];
+}
+
+- (void)flagsChanged:(NSEvent *)event {
+    if (BE1::ImGui_ImplOSX_HandleEvent(event, self)) {
+        return;
+    }
+    [super flagsChanged:event];
+}
+
+- (void)mouseDown:(NSEvent *)event {
+    if (BE1::ImGui_ImplOSX_HandleEvent(event, self)) {
+        return;
+    }
+    [super mouseDown:event];
+}
+
+- (void)mouseUp:(NSEvent *)event {
+    if (BE1::ImGui_ImplOSX_HandleEvent(event, self)) {
+        return;
+    }
+    [super mouseUp:event];
+}
+
+- (void)mouseMoved:(NSEvent *)event {
+    if (BE1::ImGui_ImplOSX_HandleEvent(event, self)) {
+        return;
+    }
+    [super mouseMoved:event];
+}
+
+- (void)mouseDragged:(NSEvent *)event {
+    if (BE1::ImGui_ImplOSX_HandleEvent(event, self)) {
+        return;
+    }
+    [super mouseDragged:event];
+}
+
+- (void)scrollWheel:(NSEvent *)event {
+    if (BE1::ImGui_ImplOSX_HandleEvent(event, self)) {
+        return;
+    }
+    [super scrollWheel:event];
+}
+
+#endif
+
+@end // end of @implementation GLView
 
 //-------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------
@@ -519,7 +590,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     mainContext = new GLContext;
     mainContext->state = new GLState;
     mainContext->display = MacOS_DisplayToUse();
-    //mainContext->glView = [[OpenGLView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
+    //mainContext->glView = [[GLView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
     
     //[mainContext->glView setGLContext:mainContext];
     
@@ -657,7 +728,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
 
     NSRect contentRect = [ctx->contentView bounds];
 
-    ctx->glView = [[OpenGLView alloc] initWithFrame:NSMakeRect(0, 0, contentRect.size.width, contentRect.size.height)];
+    ctx->glView = [[GLView alloc] initWithFrame:NSMakeRect(0, 0, contentRect.size.width, contentRect.size.height)];
 
     [ctx->glView setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
     [ctx->glView setGLContext:ctx];
@@ -671,6 +742,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
     [ctx->nsglContext setView:ctx->glView];
 
     [[ctx->contentView window] setInitialFirstResponder:ctx->glView];
+    [[ctx->contentView window] setAcceptsMouseMovedEvents:YES];
 
     GLint fragmentGPUProcessing, vertexGPUProcessing;
     CGLGetParameter(ctx->cglContext, kCGLCPGPUVertexProcessing, &vertexGPUProcessing);

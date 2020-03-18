@@ -191,12 +191,20 @@ bool ImGui_ImplOSX_HandleEvent(NSEvent *event, NSView *view) {
 }
 
 void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
-    // Setup Dear ImGui context
+    // Setup Dear ImGui context.
     ctx->imGuiContext = ImGui::CreateContext();
     ImGui::SetCurrentContext(ctx->imGuiContext);
     ImGuiIO &io = ImGui::GetIO();
 
-    // Setup back-end capabilities flags
+    // Setup Dear ImGui style.
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsClassic();
+    
+    ctx->imGuiLastTime = PlatformTime::Seconds();
+    
+    io.IniFilename = nullptr;
+
+    // Setup back-end capabilities flags.
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;           // We can honor GetMouseCursor() values (optional)
     //io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;          // We can honor io.WantSetMousePos requests (optional, rarely used)
     //io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;    // We can create multi-viewports on the Platform side (optional)
@@ -269,9 +277,7 @@ void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
         return s_clipboard.Data;
     };
 
-    ImGui_ImplOpenGL_Init("#version 130");
-
-    return true;
+    ImGui_ImplOpenGL_Init("#version 150");
 }
 
 void OpenGLRHI::ImGuiDestroyContext(GLContext *ctx) {
@@ -286,7 +292,7 @@ void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
     ImGui_ImplOpenGL_ValidateFrame();
 
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
-    NSView *view = ctx->contentView;
+    NSView *view = ctx->nsglContext.view;
 
     // Setup display size
     ImGuiIO &io = ImGui::GetIO();
@@ -302,6 +308,8 @@ void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
     ctx->imGuiLastTime = currentTime;
 
     ImGui_ImplOSX_UpdateMouseCursor();
+    
+    ImGui::NewFrame();
 }
 
 void OpenGLRHI::ImGuiRender() {
