@@ -235,9 +235,9 @@ void OpenGLRHI::ImGuiDestroyContext(GLContext *ctx) {
 void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
     BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiBeginFrame");
 
-    GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
-
     ImGui_ImplOpenGL_ValidateFrame();
+
+    GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     // Setup display size (every frame to accommodate for window resizing)
     RECT rect;
