@@ -179,7 +179,7 @@ void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
 
     // Setup back-end capabilities flags
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;         // We can honor GetMouseCursor() values (optional)
-    io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;          // We can honor io.WantSetMousePos requests (optional, rarely used)
+    //io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;          // We can honor io.WantSetMousePos requests (optional, rarely used)
     io.BackendPlatformName = "OpenGLRHI-Windows";
     io.ImeWindowHandle = ctx->hwnd;
 
