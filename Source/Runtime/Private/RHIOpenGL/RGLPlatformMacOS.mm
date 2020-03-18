@@ -21,14 +21,13 @@
 #define SUPPORT_RETINA_RESOLUTION   1
 #define USE_DISPLAY_LINK            0
 
-@interface GLView : NSView
+@interface OpenGLView : NSView
+
 @end
 
-@implementation GLView {
+@implementation OpenGLView {
     BE1::GLContext *    glContext;
     CVDisplayLinkRef    displayLink;
-    int                 backingPixelWidth;
-    int                 backingPixelHeight;
 }
 
 - (void)setGLContext:(BE1::GLContext *)ctx {
@@ -70,9 +69,8 @@
 }
 
 // This is the renderer output callback function.
-static CVReturn displayLinkCallback(CVDisplayLinkRef displayLink,
-    const CVTimeStamp *now, const CVTimeStamp *outputTime, CVOptionFlags flagsIn, CVOptionFlags *flagsOut, void *displayLinkContext) {
-    CVReturn result = [(__bridge GLView *)displayLinkContext getFrameForTime:outputTime];
+static CVReturn displayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeStamp *now, const CVTimeStamp *outputTime, CVOptionFlags flagsIn, CVOptionFlags *flagsOut, void *displayLinkContext) {
+    CVReturn result = [(__bridge OpenGLView *)displayLinkContext getFrameForTime:outputTime];
     return result;
 }
 
@@ -172,8 +170,8 @@ static CVReturn displayLinkCallback(CVDisplayLinkRef displayLink,
 - (void)reshape {
 #if USE_DISPLAY_LINK
     // This method will be called on the main thread when resizing,
-    // but we may be drawing on a secondary thread through the display link
-    // Add a mutex around to avoid the threads accessing the context simultaneously
+    // but we may be drawing on a secondary thread through the display link.
+    // Add a mutex around to avoid the threads accessing the context simultaneously.
     CGLLockContext(glContext->cglContext);
 #endif
     
@@ -191,8 +189,8 @@ static CVReturn displayLinkCallback(CVDisplayLinkRef displayLink,
 #if USE_DISPLAY_LINK
     // This method will be called on both the main thread (through -drawRect:)
     // and a secondary thread (through the display link rendering loop)
-    // Also, when resizing the view, -reshape is called on the main thread, but we may be drawing on a secondary thread
-    // Add a mutex around to avoid the threads accessing the context simultaneously
+    // Also, when resizing the view, -reshape is called on the main thread, but we may be drawing on a secondary thread.
+    // Add a mutex around to avoid the threads accessing the context simultaneously.
     CGLLockContext(glContext->cglContext);
 #endif
     
@@ -209,7 +207,7 @@ static CVReturn displayLinkCallback(CVDisplayLinkRef displayLink,
     }
     
 #if USE_DISPLAY_LINK
-    // Ignore if the display link is still running
+    // Ignore if the display link is still running.
     if (!CVDisplayLinkIsRunning(displayLink)) {
         [self drawView];
     }
@@ -222,7 +220,7 @@ static CVReturn displayLinkCallback(CVDisplayLinkRef displayLink,
     return YES;
 }
 
-@end // @implementation GLView
+@end // end of @implementation OpenGLView
 
 //-------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------
@@ -521,7 +519,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     mainContext = new GLContext;
     mainContext->state = new GLState;
     mainContext->display = MacOS_DisplayToUse();
-    //mainContext->glView = [[GLView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
+    //mainContext->glView = [[OpenGLView alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)];
     
     //[mainContext->glView setGLContext:mainContext];
     
@@ -659,7 +657,7 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
 
     NSRect contentRect = [ctx->contentView bounds];
 
-    ctx->glView = [[GLView alloc] initWithFrame:NSMakeRect(0, 0, contentRect.size.width, contentRect.size.height)];
+    ctx->glView = [[OpenGLView alloc] initWithFrame:NSMakeRect(0, 0, contentRect.size.width, contentRect.size.height)];
 
     [ctx->glView setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
     [ctx->glView setGLContext:ctx];
@@ -681,6 +679,10 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
     BE_DLOG("GPU vertex processing: %s\n", vertexGPUProcessing ? "YES" : "NO");
     BE_DLOG("GPU fragment processing: %s\n", fragmentGPUProcessing ? "YES" : "NO");
 
+#ifdef ENABLE_IMGUI
+    ImGuiCreateContext(ctx);
+#endif
+
     SetContext((Handle)handle);
 
     ctx->defaultFramebuffer = 0;
@@ -697,6 +699,10 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
 
 void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     GLContext *ctx = contextList[ctxHandle];
+
+#ifdef ENABLE_IMGUI
+    ImGuiDestroyContext(ctx);
+#endif
 
     if (ctx->nsglContext != mainContext->nsglContext) {
         // Delete default VAO for shared context
@@ -743,6 +749,10 @@ void OpenGLRHI::SetContext(Handle ctxHandle) {
     [ctx->nsglContext makeCurrentContext];
 
     this->currentContext = ctx;
+
+#ifdef ENABLE_IMGUI
+    ImGui::SetCurrentContext(ctx->imGuiContext);
+#endif
 }
 
 void OpenGLRHI::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing) {
