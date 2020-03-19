@@ -319,7 +319,7 @@ void ComScript::InitScriptFields() {
 
                 auto propInfo = PropertyInfo(name, label, VariantType<int>::GetType(), 
                     new PropertyLambdaAccessorImpl<Class, int>(
-                        [propValue, this]() {
+                        [propValue]() {
                             return (int)propValue;
                         },
                         [propValue, this](int value) {
