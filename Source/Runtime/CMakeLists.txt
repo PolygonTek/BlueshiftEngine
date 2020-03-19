@@ -971,8 +971,6 @@ if (APPLE)
         XCODE_ATTRIBUTE_MTL_ENABLE_DEBUG_INFO[variant=Debug] "INCLUDE_SOURCE")
 
     if (IOS)
-        include_directories(${ENGINE_INCLUDE_DIR}/ThirdParty/OpenGL/include)
-
         set_target_properties(${PROJECT_NAME} PROPERTIES
             XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET ${IOS_DEPLOYMENT_TARGET}
             XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2") # Universal (iPad + iPhone)
@@ -998,8 +996,6 @@ elseif (WIN32)
     if (USE_DESKTOP_EGL)
         include(FindOpenGLES3)
         include(FindEGL)
-
-        include_directories(${ENGINE_INCLUDE_DIR}/ThirdParty/OpenGL/include)
 
         find_library(OPENGLES3_LIBRARY GLESv2)
         find_library(EGL_LIBRARY EGL)

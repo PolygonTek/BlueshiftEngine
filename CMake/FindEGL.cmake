@@ -36,6 +36,9 @@ find_library(EGL_LIBRARY ${EGL_LIBNAME}
 
 if (EGL_LIBRARY AND EGL_INCLUDE_DIR)
     set(EGL_FOUND "YES")
+
+    include_directories(${CMAKE_SOURCE_DIR}/Source/ThirdParty/OpenGL/include)
+
     message(STATUS "Found EGL: ${EGL_LIBRARY}")
 else ()
     set(EGL_FOUND "NO")
