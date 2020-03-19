@@ -56,6 +56,12 @@ auto_source_group(${SRC_FILES})
 
 add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
 
+if (PlATFORM_WINDOWS AND USE_DESKTOP_EGL)
+    target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${ENGINE_INCLUDE_DIR}/ThirdParty/OpenGL/include>)
+elseif (PLATFORM_IOS)
+    target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${ENGINE_INCLUDE_DIR}/ThirdParty/OpenGL/include>)
+endif()
+
 set_target_properties(${PROJECT_NAME} PROPERTIES 
     FOLDER ThirdParty
     PREFIX ""
