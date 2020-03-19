@@ -146,7 +146,7 @@ static void InitDisplay(ANativeWindow *window) {
         appInitialized = true;
 
         BE1::renderSystem.InitRHI(window);
-        
+
         RenderQuality::Enum renderQuality = DetermineRenderQuality();
 
         const char *configName = "";
@@ -197,7 +197,7 @@ static void InitDisplay(ANativeWindow *window) {
         app.mainRenderContext->Init(window, renderWidth, renderHeight, DisplayContext, nullptr);
 
         app.mainRenderContext->OnResize(renderWidth, renderHeight);
-    
+
         app.OnApplicationResize(renderWidth, renderHeight);
 
         app.Init();
@@ -427,14 +427,14 @@ static int32_t HandleInput(android_app *appState, AInputEvent *event) {
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, 0);
                 x = (int)AMotionEvent_getX(event, 0);
                 y = (int)AMotionEvent_getY(event, 0);
-                locationQword = BE1::MakeQWord(x, y);
+                locationQword = (uint64_t)BE1::MakeQWord(x, y);
                 BE1::platform->QueEvent(BE1::Platform::EventType::TouchBegan, pointerId, locationQword, 0, NULL);
                 break;
             case AMOTION_EVENT_ACTION_UP:
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, 0);
                 x = (int)AMotionEvent_getX(event, 0);
                 y = (int)AMotionEvent_getY(event, 0);
-                locationQword = BE1::MakeQWord(x, y);
+                locationQword = (uint64_t)BE1::MakeQWord(x, y);
                 BE1::platform->QueEvent(BE1::Platform::EventType::TouchEnded, pointerId, locationQword, 0, NULL);
                 break;
             case AMOTION_EVENT_ACTION_POINTER_DOWN:
@@ -442,7 +442,7 @@ static int32_t HandleInput(android_app *appState, AInputEvent *event) {
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, pointerIndex);
                 x = (int)AMotionEvent_getX(event, pointerIndex);
                 y = (int)AMotionEvent_getY(event, pointerIndex);
-                locationQword = BE1::MakeQWord(x, y);
+                locationQword = (uint64_t)BE1::MakeQWord(x, y);
                 BE1::platform->QueEvent(BE1::Platform::EventType::TouchBegan, pointerId, locationQword, 0, NULL);
                 break;
             case AMOTION_EVENT_ACTION_POINTER_UP:
@@ -450,7 +450,7 @@ static int32_t HandleInput(android_app *appState, AInputEvent *event) {
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, pointerIndex);
                 x = (int)AMotionEvent_getX(event, pointerIndex);
                 y = (int)AMotionEvent_getY(event, pointerIndex);
-                locationQword = BE1::MakeQWord(x, y);
+                locationQword = (uint64_t)BE1::MakeQWord(x, y);
                 BE1::platform->QueEvent(BE1::Platform::EventType::TouchEnded, pointerId, locationQword, 0, NULL);
                 break;
             case AMOTION_EVENT_ACTION_MOVE:
@@ -460,7 +460,7 @@ static int32_t HandleInput(android_app *appState, AInputEvent *event) {
                     pointerId = (uint64_t)AMotionEvent_getPointerId(event, i);
                     x = (int)AMotionEvent_getX(event, i);
                     y = (int)AMotionEvent_getY(event, i);
-                    locationQword = BE1::MakeQWord(x, y);
+                    locationQword = (uint64_t)BE1::MakeQWord(x, y);
                     BE1::platform->QueEvent(BE1::Platform::EventType::TouchMoved, pointerId, locationQword, 0, NULL);
                 }
                 break;
@@ -486,7 +486,7 @@ static void InitInstance(android_app *appState) {
     assetDir.AppendPath("Contents", '/');
 
     initParms.searchPath = assetDir + ";" + dataDir;
-    
+
     BE1::Engine::Init(&initParms);
     // -------------------------------
 
@@ -554,7 +554,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 void android_main(android_app *appState) {
     InitInstance(appState);
 
-    int t0 = BE1::PlatformTime::Milliseconds();
+    int lastMsec = BE1::PlatformTime::Milliseconds();
 
     // loop waiting for stuff to do.
     while (1) {
@@ -584,16 +584,16 @@ void android_main(android_app *appState) {
         if (surfaceCreated && !suspended) {
             BE1::RHI::DisplayMetrics displayMetrics;
             BE1::rhi.GetDisplayMetrics(app.mainRenderContext->GetContextHandle(), &displayMetrics);
-            
+
             if (displayMetrics.backingWidth != currentWindowWidth || displayMetrics.backingHeight != currentWindowHeight) {
                 WindowSizeChanged(displayMetrics.backingWidth, displayMetrics.backingHeight);
             }
 
-            int t = BE1::PlatformTime::Milliseconds();
-            int elapsedMsec = t - t0;
-            BE1::Clamp(elapsedTime, 0, 1000);
+            int currentMsec = BE1::PlatformTime::Milliseconds();
+            int elapsedMsec = currentMsec - lastMsec;
+            BE1::Clamp(elapsedMsec, 0, 1000);
 
-            t0 = t;
+            lastMsec = currentMsec;
 
             RunFrameInstance(elapsedMsec);
         }
