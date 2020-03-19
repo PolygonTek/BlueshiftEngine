@@ -24,7 +24,7 @@ uint32_t PlatformPosixTLS::AllocTlsSlot() {
     if (pthread_key_create(&key, nullptr) != 0) {
         key = 0xFFFFFFFF;
     }
-    return key;
+    return (uint32_t)key;
 }
 
 void PlatformPosixTLS::FreeTlsSlot(uint32_t slotIndex) {

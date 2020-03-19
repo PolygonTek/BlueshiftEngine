@@ -398,7 +398,7 @@ void GameClient::DrawStatistics(const RenderContext *renderContext) {
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
     ImGui::Text("Render: %ims, FrontEnd: %ims, BackEnd: %ims", renderCounter.frameMsec, renderCounter.frontEndMsec, renderCounter.backEndMsec);
     ImGui::SameLine(ImGui::GetWindowSize().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(fpsText.c_str()).x);
-    ImGui::Text(fpsText.c_str());
+    ImGui::TextUnformatted(fpsText.c_str());
     ImGui::Text("Draw: %i, Verts: %i, Tris: %i", renderCounter.drawCalls, renderCounter.drawVerts, renderCounter.drawIndexes / 3);
     ImGui::Text("Shadow Draw: %i, Verts: %i, Tris: %i", renderCounter.shadowDrawCalls, renderCounter.shadowDrawVerts, renderCounter.shadowDrawIndexes / 3);
     ImGui::PopStyleColor();
@@ -1038,7 +1038,7 @@ void GameClient::ConsoleCharEvent(char32_t unicodeChar) {
     char temp[7];
     char *tempPtr = temp;
     UTF8::Encode(tempPtr, unicodeChar);
-    int charSize = tempPtr - temp;
+    ptrdiff_t charSize = tempPtr - temp;
     temp[charSize] = '\0';
 
     char *lineText = cmdLines[editLine];
@@ -1083,7 +1083,7 @@ void GameClient::ConsoleCompositionEvent(char32_t unicodeChar) {
     char temp[7];
     char *tempPtr = temp;
     UTF8::Encode(tempPtr, unicodeChar);
-    int charSize = tempPtr - temp;
+    ptrdiff_t charSize = tempPtr - temp;
     temp[charSize] = '\0';
 
     char *lineText = cmdLines[editLine];
