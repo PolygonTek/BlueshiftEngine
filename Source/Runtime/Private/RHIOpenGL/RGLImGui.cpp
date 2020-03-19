@@ -16,6 +16,10 @@
 #include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
 
+#if defined(__IOS__) || defined(__ANDROID__)
+    #define IMGUI_IMPL_OPENGL_ES3
+#endif
+
 BE_NAMESPACE_BEGIN
 
 // Desktop GL 3.2+ has glDrawElementsBaseVertex() which GL ES and WebGL don't have.
@@ -178,8 +182,9 @@ void ImGui_ImplOpenGL_RenderDrawData(ImDrawData *draw_data) {
 #if IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET
                     if (g_GlVersion >= 3200) {
                         gglDrawElementsBaseVertex(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)), (GLint)pcmd->VtxOffset);
-                    } else {
+                    } else
 #endif
+                    {
                         gglDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)));
                     }
                 }
