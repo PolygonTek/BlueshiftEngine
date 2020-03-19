@@ -841,7 +841,8 @@ set(ANDROID_RENDERER_FILES
     Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
     Private/RHIOpenGL/OpenGL/AndroidOpenGL.h
     Private/RHIOpenGL/OpenGL/AndroidOpenGL.cpp
-    Private/RHIOpenGL/RGLPlatformAndroid.cpp)
+    Private/RHIOpenGL/RGLPlatformAndroid.cpp
+    Private/RHIOpenGL/RGLImGuiAndroid.cpp)
 
 set(IOS_RENDERER_FILES
     Private/RHIOpenGL/OpenGL/OpenGLES3.h

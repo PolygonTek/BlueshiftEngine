@@ -308,6 +308,10 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         ActivateSurface(ctx->handle, windowHandle);
     }
 
+#ifdef ENABLE_IMGUI
+    ImGuiCreateContext(ctx);
+#endif
+
     SetContext((Handle)handle);
 
     ctx->defaultFramebuffer = 0;
@@ -324,6 +328,10 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
 
 void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     GLContext *ctx = contextList[ctxHandle];
+
+#ifdef ENABLE_IMGUI
+    ImGuiDestroyContext(ctx);
+#endif
 
     if (ctx->eglContext != mainContext->eglContext) {
         // Delete default VAO for shared context
@@ -426,6 +434,10 @@ void OpenGLRHI::SetContext(Handle ctxHandle) {
     }
     
     this->currentContext = ctx;
+
+#ifdef ENABLE_IMGUI
+    ImGui::SetCurrentContext(ctx->imGuiContext);
+#endif
 }
 
 void OpenGLRHI::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *displayFuncDataPtr, bool onDemandDrawing) {
