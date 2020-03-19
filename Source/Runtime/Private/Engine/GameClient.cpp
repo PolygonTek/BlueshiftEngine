@@ -1038,7 +1038,7 @@ void GameClient::ConsoleCharEvent(char32_t unicodeChar) {
     char temp[7];
     char *tempPtr = temp;
     UTF8::Encode(tempPtr, unicodeChar);
-    ptrdiff_t charSize = tempPtr - temp;
+    int charSize = (int)(tempPtr - temp);
     temp[charSize] = '\0';
 
     char *lineText = cmdLines[editLine];
@@ -1083,7 +1083,7 @@ void GameClient::ConsoleCompositionEvent(char32_t unicodeChar) {
     char temp[7];
     char *tempPtr = temp;
     UTF8::Encode(tempPtr, unicodeChar);
-    ptrdiff_t charSize = tempPtr - temp;
+    int charSize = (int)(tempPtr - temp);
     temp[charSize] = '\0';
 
     char *lineText = cmdLines[editLine];
