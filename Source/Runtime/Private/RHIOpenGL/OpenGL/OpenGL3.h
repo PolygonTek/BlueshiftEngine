@@ -57,6 +57,8 @@ public:
     static void APIENTRY    DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 
     static void             QueryTimestampCounter(GLuint queryId);
+    static uint32_t         QueryResult32(GLuint queryId);
+    static uint64_t         QueryResult64(GLuint queryId);
 
     static void             PolygonMode(GLenum face, GLenum mode) { gglPolygonMode(face, mode); }
     static void             ClearDepth(GLdouble depth) { gglClearDepth(depth); }

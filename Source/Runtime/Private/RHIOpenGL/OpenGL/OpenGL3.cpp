@@ -155,6 +155,18 @@ void OpenGL3::QueryTimestampCounter(GLuint queryId) {
     gglQueryCounter(queryId, GL_TIMESTAMP);
 }
 
+uint32_t OpenGL3::QueryResult32(GLuint queryId) {
+    GLuint result;
+    gglGetQueryObjectuiv(queryId, GL_QUERY_RESULT, &result);
+    return result;
+}
+
+uint64_t OpenGL3::QueryResult64(GLuint queryId) {
+    GLuint64 result;
+    gglGetQueryObjectui64v(queryId, GL_QUERY_RESULT, &result);
+    return result;
+}
+
 void OpenGL3::SetTextureSwizzling(GLenum target, Image::Format::Enum format) {
     static constexpr GLint swiz_l[4] = { GL_RED, GL_RED, GL_RED, GL_ONE };
     static constexpr GLint swiz_a[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };

@@ -277,6 +277,8 @@ public:
     static bool             SupportsTimestampQueries() { return supportsTimestampQueries; }
 
     static void             QueryTimestampCounter(GLuint queryId);
+    static uint32_t         QueryResult32(GLuint queryId);
+    static uint64_t         QueryResult64(GLuint queryId);
 
     static void             PolygonMode(GLenum face, GLenum mode) {}
     static void             ClearDepth(GLdouble depth) { gglClearDepthf(depth); }

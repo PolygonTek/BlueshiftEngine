@@ -67,6 +67,22 @@ void OpenGLES3::QueryTimestampCounter(GLuint queryId) {
 #endif
 }
 
+uint32_t OpenGLES3::QueryResult32(GLuint queryId) {
+    GLuint result;
+    gglGetQueryObjectuiv(queryId, GL_QUERY_RESULT, &result);
+    return result;
+}
+
+uint64_t OpenGLES3::QueryResult64(GLuint queryId) {
+#ifdef GL_EXT_disjoint_timer_query
+    GLuint64 result;
+    gglGetQueryObjectui64v(queryId, GL_QUERY_RESULT, &result);
+    return result;
+#else
+    return 0;
+#endif
+}
+
 void OpenGLES3::DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex) {
 #ifdef GL_EXT_draw_elements_base_vertex
     if (gglext._GL_EXT_draw_elements_base_vertex) {
