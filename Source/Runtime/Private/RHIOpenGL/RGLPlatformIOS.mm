@@ -63,7 +63,7 @@ static const float userContentScaleFactor = 2.0f;
 
 - (id)initWithFrame:(CGRect)frameRect {
     self = [super initWithFrame:frameRect];
-    
+
     // Configure EAGLDrawable (CAEAGLLayer)
     CAEAGLLayer *eaglLayer = (CAEAGLLayer *)self.layer;
     eaglLayer.opaque = YES;
@@ -72,10 +72,10 @@ static const float userContentScaleFactor = 2.0f;
     const NSString *colorFormat = BE1::r_sRGB.GetBool() ? kEAGLColorFormatSRGBA8 : kEAGLColorFormatRGBA8;
     [dict setValue:colorFormat forKey:kEAGLDrawablePropertyColorFormat];
     eaglLayer.drawableProperties = dict;
-    
+
     displayLinkStarted = NO;
     displayLinkFrameInterval = 1;
-    
+
     return self;
 }
 
@@ -99,27 +99,27 @@ static const float userContentScaleFactor = 2.0f;
         CAEAGLLayer *eaglLayer = (CAEAGLLayer *)self.layer;
         eaglLayer.magnificationFilter = kCAFilterNearest;
     }
-    
+
     // Create FBO
     gglGenFramebuffers(1, &framebuffer);
     gglBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-    
+
     // Create color buffer for display
     gglGenRenderbuffers(1, &colorbuffer);
     gglBindRenderbuffer(GL_RENDERBUFFER, colorbuffer);
     [glContext->eaglContext renderbufferStorage:GL_RENDERBUFFER fromDrawable:(CAEAGLLayer *)self.layer];
     gglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, colorbuffer);
-    
+
     // Get the size of the buffer
     gglGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH, &backingWidth);
     gglGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_HEIGHT, &backingHeight);
-    
+
     // Create depth buffer
     gglGenRenderbuffers(1, &depthbuffer);
     gglBindRenderbuffer(GL_RENDERBUFFER, depthbuffer);
     gglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, backingWidth, backingHeight);
     gglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthbuffer);
-    
+
     GLenum status = gglCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE) {
         BE_FATALERROR("failed to make complete framebuffer object 0x%x", status);
@@ -128,7 +128,7 @@ static const float userContentScaleFactor = 2.0f;
         gglDeleteRenderbuffers(1, &depthbuffer);
         return NO;
     }
-    
+
     return YES;
 }
 
@@ -195,18 +195,18 @@ static const float userContentScaleFactor = 2.0f;
     [glContext->eaglContext renderbufferStorage:GL_RENDERBUFFER fromDrawable:(CAEAGLLayer *)self.layer];
     gglGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH, &backingWidth);
     gglGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_HEIGHT, &backingHeight);
-    
+
     GLenum depthbufferStorage;
     gglBindRenderbuffer(GL_RENDERBUFFER, depthbuffer);
     gglGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_INTERNAL_FORMAT, (GLint *)&depthbufferStorage);
     gglRenderbufferStorage(GL_RENDERBUFFER, depthbufferStorage, backingWidth, backingHeight);
     gglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthbuffer);
-    
+
     GLenum status = gglCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE) {
         BE_FATALERROR("Failed to make complete framebuffer object 0x%x", status);
     }
-    
+
     [self drawView:nil];
 }
 
@@ -216,14 +216,14 @@ static const float userContentScaleFactor = 2.0f;
 
 - (bool)swapBuffers {
     gglBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-    
+
     gglBindRenderbuffer(GL_RENDERBUFFER, colorbuffer);
-    
+
     // Discard the unncessary depth/stencil buffer
     const GLenum discards[]  = { GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT };
     //gglDiscardFramebufferEXT(GL_READ_FRAMEBUFFER, 2, discards);
     gglInvalidateFramebuffer(GL_READ_FRAMEBUFFER, 2, discards);
-    
+
     bool succeeded = [glContext->eaglContext presentRenderbuffer:GL_RENDERBUFFER];
     return succeeded;
 }
@@ -266,7 +266,7 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
     
     // default FBO
     mainContext->defaultFramebuffer = 0;
-    
+
     // Create default VAO for main context
     gglGenVertexArrays(1, &mainContext->defaultVAO);
 }
@@ -314,24 +314,28 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
     CGRect contentRect = [ctx->rootView bounds];
     ctx->eaglView = [[EAGLView alloc] initWithFrame:CGRectMake(0, 0, contentRect.size.width, contentRect.size.height)];
     ctx->eaglView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    
+
     [ctx->eaglView setGLContext:ctx];
-    
+
     [ctx->eaglView initFramebuffer];
-    
+
     [ctx->rootView addSubview:ctx->eaglView];
-    
+
+#ifdef ENABLE_IMGUI
+    ImGuiCreateContext(ctx);
+#endif
+
     SetContext((Handle)handle);
-    
+
     ctx->defaultFramebuffer = ctx->eaglView.framebuffer;
-    
+
     if (useSharedContext) {
         // Create default VAO for shared context
         gglGenVertexArrays(1, &ctx->defaultVAO);
     } else {
         ctx->defaultVAO = mainContext->defaultVAO;
     }
-    
+
     SetDefaultState();
 
     return (Handle)handle;
@@ -340,17 +344,21 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
 void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     GLContext *ctx = contextList[ctxHandle];
 
+#ifdef ENABLE_IMGUI
+    ImGuiDestroyContext(ctx);
+#endif
+
     [ctx->eaglView stopDisplayLink];
     [ctx->eaglView removeFromSuperview];
     
     if (ctx->eaglContext != mainContext->eaglContext) {
         // Delete default VAO for shared context
         gglDeleteVertexArrays(1, &ctx->defaultVAO);
-        
+
 #if !__has_feature(objc_arc)
         [ctx->eaglContext release];
 #endif
-        
+
         delete ctx->state;
     }
 
@@ -359,7 +367,7 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
 
         [EAGLContext setCurrentContext:mainContext->eaglContext];
     }
-    
+
     delete ctx;
     contextList[ctxHandle] = nullptr;
 }
@@ -384,15 +392,19 @@ void OpenGLRHI::SetContext(Handle ctxHandle) {
     [EAGLContext setCurrentContext:ctx->eaglContext];
 
     this->currentContext = ctx;
+
+#ifdef ENABLE_IMGUI
+    ImGui::SetCurrentContext(ctx->imGuiContext);
+#endif
 }
 
 void OpenGLRHI::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *dataPtr, bool onDemandDrawing) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
-    
+
     ctx->displayFunc = displayFunc;
     ctx->displayFuncDataPtr = dataPtr;
     ctx->onDemandDrawing = onDemandDrawing;
-    
+
 #if USE_DISPLAY_LINK
     [ctx->eaglView startDisplayLink];
 #endif
@@ -406,7 +418,7 @@ void OpenGLRHI::DisplayContext(Handle ctxHandle) {
 
 RHI::WindowHandle OpenGLRHI::GetWindowHandleFromContext(Handle ctxHandle) {
     const GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
-    
+
     return (__bridge WindowHandle)ctx->rootView;
 }
 
