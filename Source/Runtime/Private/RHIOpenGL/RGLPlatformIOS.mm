@@ -214,7 +214,7 @@ static const float userContentScaleFactor = 2.0f;
     glContext->displayFunc(glContext->handle, glContext->displayFuncDataPtr);
 }
 
-- (bool)swapBuffers {
+- (BOOL)swapBuffers {
     gglBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
     gglBindRenderbuffer(GL_RENDERBUFFER, colorbuffer);
@@ -224,9 +224,63 @@ static const float userContentScaleFactor = 2.0f;
     //gglDiscardFramebufferEXT(GL_READ_FRAMEBUFFER, 2, discards);
     gglInvalidateFramebuffer(GL_READ_FRAMEBUFFER, 2, discards);
 
-    bool succeeded = [glContext->eaglContext presentRenderbuffer:GL_RENDERBUFFER];
+    BOOL succeeded = [glContext->eaglContext presentRenderbuffer:GL_RENDERBUFFER];
     return succeeded;
 }
+
+#ifdef ENABLE_IMGUI
+
+- (BOOL)isFirstResponder {
+    return YES;
+}
+
+// This touch mapping is super cheesy/hacky. We treat any touch on the screen
+// as if it were a depressed left mouse button, and we don't bother handling
+// multitouch correctly at all. This causes the "cursor" to behave very erratically
+// when there are multiple active touches. But for demo purposes, single-touch
+// interaction actually works surprisingly well.
+- (BOOL)updateIOWithTouchEvent:(UIEvent *)event {
+    UITouch *anyTouch = event.allTouches.anyObject;
+    CGPoint touchLocation = [anyTouch locationInView:self];
+    ImGuiIO &io = ImGui::GetIO();
+    io.MousePos = ImVec2(touchLocation.x, touchLocation.y);
+    
+    BOOL hasActiveTouch = NO;
+    for (UITouch *touch in event.allTouches) {
+        if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled) {
+            hasActiveTouch = YES;
+            break;
+        }
+    }
+    io.MouseDown[0] = hasActiveTouch;
+    return io.WantCaptureMouse;
+}
+
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if ([self updateIOWithTouchEvent:event]) {
+        return;
+    }
+    
+    [super touchesBegan:touches withEvent:event];
+}
+
+- (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if ([self updateIOWithTouchEvent:event]) {
+        return;
+    }
+
+    [super touchesEnded:touches withEvent:event];
+}
+
+- (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if ([self updateIOWithTouchEvent:event]) {
+        return;
+    }
+
+    [super touchesMoved:touches withEvent:event];
+}
+
+#endif
 
 @end // @implementation EAGLView
 
