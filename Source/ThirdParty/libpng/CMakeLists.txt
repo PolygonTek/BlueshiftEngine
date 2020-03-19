@@ -27,12 +27,17 @@ set(SRC_FILES
     pngwutil.c
 )
 
-if (IOS OR ANDROID)
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "^arm" OR CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch64")
     list(APPEND SRC_FILES
         arm/arm_init.c
         arm/filter_neon_intrinsics.c
+        arm/palette_neon_intrinsics.c
         #arm/filter_neon.S
     )
+elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "^i?86" OR CMAKE_SYSTEM_PROCESSOR MATCHES "^x86_64*")
+    list(APPEND SRC_FILES
+        intel/intel_init.c
+        intel/filter_sse2_intrinsics.c)
 endif ()
 
 add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
