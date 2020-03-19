@@ -848,7 +848,8 @@ set(IOS_RENDERER_FILES
     Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
     Private/RHIOpenGL/OpenGL/IOSOpenGL.h
     Private/RHIOpenGL/OpenGL/IOSOpenGL.mm
-    Private/RHIOpenGL/RGLPlatformIOS.mm)
+    Private/RHIOpenGL/RGLPlatformIOS.mm
+    Private/RHIOpenGL/RGLImGuiIOS.mm)
 
 set(MACOS_RENDERER_FILES
     Private/RHIOpenGL/OpenGL/OpenGL3.h

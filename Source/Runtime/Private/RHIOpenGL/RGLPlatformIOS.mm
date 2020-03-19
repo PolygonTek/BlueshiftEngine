@@ -83,7 +83,7 @@ static const float userContentScaleFactor = 2.0f;
     [self stopDisplayLink];
     
     [self freeFramebuffer];
-    
+
 #if !__has_feature(objc_arc)
     [super dealloc];
 #endif
@@ -91,10 +91,10 @@ static const float userContentScaleFactor = 2.0f;
 
 - (BOOL)initFramebuffer {
     const float nativeScale = [[UIScreen mainScreen] scale];
-    
+
     self.contentScaleFactor = userContentScaleFactor;
     BE_LOG("Setting contentScaleFactor to %0.4f (optimal = %0.4f)", self.contentScaleFactor, nativeScale);
-    
+
     if (self.contentScaleFactor == 1.0f || self.contentScaleFactor == 2.0f) {
         CAEAGLLayer *eaglLayer = (CAEAGLLayer *)self.layer;
         eaglLayer.magnificationFilter = kCAFilterNearest;
