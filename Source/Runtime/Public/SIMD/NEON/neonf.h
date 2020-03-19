@@ -226,10 +226,10 @@ BE_FORCE_INLINE neonf round_ps(const neonf &a) { return neonf(roundf(a[0]), roun
 BE_FORCE_INLINE neonf frac_ps(const neonf &a) { return a - floor_ps(a); }
 
 // Unpack to (a0, b0, a1, b1).
-BE_FORCE_INLINE neonf unpacklo_ps(const neonf &a, const neonf &b) { return vunpackloq_f32(a, b); }
+BE_FORCE_INLINE neonf unpacklo_ps(const neonf &a, const neonf &b) { return bx_vunpackloq_f32(a, b); }
 
 // Unpack to (a2, b2, a3, b3).
-BE_FORCE_INLINE neonf unpackhi_ps(const neonf &a, const neonf &b) { return vunpackhiq_f32(a, b); }
+BE_FORCE_INLINE neonf unpackhi_ps(const neonf &a, const neonf &b) { return bx_vunpackhiq_f32(a, b); }
 
 // Shuffles 4x32 bits floats using template parameters. ix = [0, 3].
 template <size_t i0, size_t i1, size_t i2, size_t i3>
@@ -393,7 +393,7 @@ BE_FORCE_INLINE neonf shuffle_ps<2, 3, 0, 2>(const neonf &a, const neonf &b) {
 
 template <size_t i>
 BE_FORCE_INLINE float extract_ps(const neonf &a) {
-    return bx_vgetq_lane_f32(a, i);
+    return vgetq_lane_f32(a, i);
 }
 
 // Given a 4-channel single-precision neonf variable, returns the first channel 'x' as a float.
