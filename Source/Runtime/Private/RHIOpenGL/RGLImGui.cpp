@@ -23,7 +23,7 @@
 BE_NAMESPACE_BEGIN
 
 // Desktop GL 3.2+ has glDrawElementsBaseVertex() which GL ES and WebGL don't have.
-#if defined(IMGUI_IMPL_OPENGL_ES2) || defined(IMGUI_IMPL_OPENGL_ES3) || !defined(GL_VERSION_3_2)
+#if defined(IMGUI_IMPL_OPENGL_ES3) || !defined(GL_VERSION_3_2)
     #define IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET 0
 #else
     #define IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET 1
@@ -69,10 +69,7 @@ static void ImGui_ImplOpenGL_SetupRenderState(ImDrawData *draw_data, int fb_widt
     gglBindSampler(0, 0); // We use combined texture/sampler state. Applications using GL 3.3 may set that otherwise.
 #endif
 
-    (void)vertex_array_object;
-#ifndef IMGUI_IMPL_OPENGL_ES2
     gglBindVertexArray(vertex_array_object);
-#endif
 
     // Bind vertex/index buffers and setup attributes for ImDrawVert
     gglBindBuffer(GL_ARRAY_BUFFER, g_VboHandle);
@@ -105,9 +102,7 @@ void ImGui_ImplOpenGL_RenderDrawData(ImDrawData *draw_data) {
     GLint last_sampler; gglGetIntegerv(GL_SAMPLER_BINDING, &last_sampler);
 #endif
     GLint last_array_buffer; gglGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
-#ifndef IMGUI_IMPL_OPENGL_ES2
     GLint last_vertex_array_object; gglGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array_object);
-#endif
 #ifdef GL_POLYGON_MODE
     GLint last_polygon_mode[2]; gglGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
 #endif
@@ -134,9 +129,7 @@ void ImGui_ImplOpenGL_RenderDrawData(ImDrawData *draw_data) {
     // Recreate the VAO every time (this is to easily allow multiple GL contexts to be rendered to. VAO are not shared among GL contexts)
     // The renderer would actually work without any VAO bound, but then our VertexAttrib calls would overwrite the default one currently bound.
     GLuint vertex_array_object = 0;
-#ifndef IMGUI_IMPL_OPENGL_ES2
     gglGenVertexArrays(1, &vertex_array_object);
-#endif
     ImGui_ImplOpenGL_SetupRenderState(draw_data, fb_width, fb_height, vertex_array_object);
 
     // Will project scissor/clipping rectangles into framebuffer space
@@ -193,9 +186,7 @@ void ImGui_ImplOpenGL_RenderDrawData(ImDrawData *draw_data) {
     }
 
     // Destroy the temporary VAO
-#ifndef IMGUI_IMPL_OPENGL_ES2
     gglDeleteVertexArrays(1, &vertex_array_object);
-#endif
 
     // Restore modified GL state
     gglUseProgram(last_program);
@@ -204,9 +195,7 @@ void ImGui_ImplOpenGL_RenderDrawData(ImDrawData *draw_data) {
     gglBindSampler(0, last_sampler);
 #endif
     gglActiveTexture(last_active_texture);
-#ifndef IMGUI_IMPL_OPENGL_ES2
     gglBindVertexArray(last_vertex_array_object);
-#endif
     gglBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
     gglBlendEquationSeparate(last_blend_equation_rgb, last_blend_equation_alpha);
     gglBlendFuncSeparate(last_blend_src_rgb, last_blend_dst_rgb, last_blend_src_alpha, last_blend_dst_alpha);
@@ -246,8 +235,17 @@ bool ImGui_ImplOpenGL_CreateFontsTexture() {
     gglBindTexture(GL_TEXTURE_2D, g_FontTexture);
     gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+#ifdef GL_VERSION_3_2
     constexpr GLint swiz_a[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
     gglTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swiz_a);
+#else
+    gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
+    gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
+    gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
+    gglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
+#endif
+
 #ifdef GL_UNPACK_ROW_LENGTH
     gglPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #endif
@@ -303,10 +301,8 @@ static bool ImGui_ImplOpenGL_CreateDeviceObjects() {
     GLint last_texture, last_array_buffer;
     gglGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
     gglGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
-#ifndef IMGUI_IMPL_OPENGL_ES2
     GLint last_vertex_array;
     gglGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
-#endif
 
     // Parse GLSL version string
     int glsl_version = 130;
@@ -461,9 +457,7 @@ static bool ImGui_ImplOpenGL_CreateDeviceObjects() {
     // Restore modified GL state
     gglBindTexture(GL_TEXTURE_2D, last_texture);
     gglBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
-#ifndef IMGUI_IMPL_OPENGL_ES2
     gglBindVertexArray(last_vertex_array);
-#endif
 
     return true;
 }
@@ -501,14 +495,10 @@ static void ImGui_ImplOpenGL_DestroyDeviceObjects() {
 
 bool ImGui_ImplOpenGL_Init(const char *glsl_version) {
     // Query for GL version
-#if !defined(IMGUI_IMPL_OPENGL_ES2)
     GLint major, minor;
     gglGetIntegerv(GL_MAJOR_VERSION, &major);
     gglGetIntegerv(GL_MINOR_VERSION, &minor);
     g_GlVersion = major * 1000 + minor;
-#else
-    g_GlVersion = 2000; // GLES 2
-#endif
 
     // Setup back-end capabilities flags
     ImGuiIO &io = ImGui::GetIO();
@@ -521,15 +511,14 @@ bool ImGui_ImplOpenGL_Init(const char *glsl_version) {
 
     // Store GLSL version string so we can refer to it later in case we recreate shaders.
     // Note: GLSL version is NOT the same as GL version. Leave this to NULL if unsure.
-#if defined(IMGUI_IMPL_OPENGL_ES2)
-    if (glsl_version == NULL)
-        glsl_version = "#version 100";
-#elif defined(IMGUI_IMPL_OPENGL_ES3)
-    if (glsl_version == NULL)
+#if defined(IMGUI_IMPL_OPENGL_ES3)
+    if (glsl_version == NULL) {
         glsl_version = "#version 300 es";
+    }
 #else
-    if (glsl_version == NULL)
+    if (glsl_version == NULL) {
         glsl_version = "#version 130";
+    }
 #endif
 
     IM_ASSERT((int)strlen(glsl_version) + 2 < IM_ARRAYSIZE(g_GlslVersionString));
