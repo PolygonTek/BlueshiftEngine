@@ -48,6 +48,8 @@ OBJC_CLASS(EAGLView);
 
 #endif
 
+#include "imgui/imgui.h"
+
 #include "Core/CVars.h"
 
 struct ImGuiContext;

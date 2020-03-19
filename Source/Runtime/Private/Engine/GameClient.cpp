@@ -31,6 +31,10 @@
 #include "Platform/PlatformProcess.h"
 #include "Profiler/Profiler.h"
 
+#ifdef ENABLE_IMGUI
+#include "imgui/imgui.h"
+#endif
+
 BE_NAMESPACE_BEGIN
 
 static const char   CMDLINE_PROMPT_MARK = ']';
@@ -235,6 +239,8 @@ void GameClient::Render(const RenderContext *renderContext) {
     DrawConsole();
 }
 
+#ifdef ENABLE_IMGUI
+
 static void AddMenuItemCVarBool(const char *cvarName, const char *label) {
     CVar *cvar = cvarSystem.Find(cvarName);
     if (cvar) {
@@ -300,6 +306,8 @@ static void AddMenuItemCVarEnum(const char *cvarName, const char *label, const c
         }
     }
 };
+
+#endif
 
 void GameClient::DrawMenuBar() {
 #ifdef ENABLE_IMGUI

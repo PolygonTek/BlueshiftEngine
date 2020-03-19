@@ -26,10 +26,6 @@
 #include "Image/Image.h"
 #include "RHI.h"
 
-#ifdef ENABLE_IMGUI
-#include "imgui/imgui.h"
-#endif
-
 BE_NAMESPACE_BEGIN
 
 class Rect;

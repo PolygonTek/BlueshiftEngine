@@ -24,6 +24,10 @@
 #include "Game/TagLayerSettings.h"
 #include "Profiler/Profiler.h"
 
+#ifdef ENABLE_IMGUI
+#include "imgui/imgui.h"
+#endif
+
 BE_NAMESPACE_BEGIN
 
 OBJECT_DECLARATION("Canvas", ComCanvas, Component)
