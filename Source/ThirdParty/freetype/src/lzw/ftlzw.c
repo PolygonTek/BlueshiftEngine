@@ -1,26 +1,25 @@
-/***************************************************************************/
-/*                                                                         */
-/*  ftlzw.c                                                                */
-/*                                                                         */
-/*    FreeType support for .Z compressed files.                            */
-/*                                                                         */
-/*  This optional component relies on NetBSD's zopen().  It should mainly  */
-/*  be used to parse compressed PCF fonts, as found with many X11 server   */
-/*  distributions.                                                         */
-/*                                                                         */
-/*  Copyright 2004-2006, 2009, 2010, 2012-2014 by                          */
-/*  Albert Chin-A-Young.                                                   */
-/*                                                                         */
-/*  Based on code in src/gzip/ftgzip.c, Copyright 2004 by                  */
-/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
-/*                                                                         */
-/*  This file is part of the FreeType project, and may only be used,       */
-/*  modified, and distributed under the terms of the FreeType project      */
-/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
-/*  this file you indicate that you have read the license and              */
-/*  understand and accept it fully.                                        */
-/*                                                                         */
-/***************************************************************************/
+/****************************************************************************
+ *
+ * ftlzw.c
+ *
+ *   FreeType support for .Z compressed files.
+ *
+ * This optional component relies on NetBSD's zopen().  It should mainly
+ * be used to parse compressed PCF fonts, as found with many X11 server
+ * distributions.
+ *
+ * Copyright (C) 2004-2019 by
+ * Albert Chin-A-Young.
+ *
+ * based on code in `src/gzip/ftgzip.c'
+ *
+ * This file is part of the FreeType project, and may only be used,
+ * modified, and distributed under the terms of the FreeType project
+ * license, LICENSE.TXT.  By continuing to use, modify, or distribute
+ * this file you indicate that you have read the license and
+ * understand and accept it fully.
+ *
+ */
 
 #include <ft2build.h>
 #include FT_INTERNAL_MEMORY_H
@@ -32,7 +31,7 @@
 
 #include FT_MODULE_ERRORS_H
 
-#undef __FTERRORS_H__
+#undef FTERRORS_H_
 
 #undef  FT_ERR_PREFIX
 #define FT_ERR_PREFIX  LZW_Err_
@@ -42,10 +41,6 @@
 
 
 #ifdef FT_CONFIG_OPTION_USE_LZW
-
-#ifdef FT_CONFIG_OPTION_PIC
-#error "lzw code does not support PIC yet"
-#endif
 
 #include "ftzopen.h"
 
@@ -331,16 +326,16 @@
   }
 
 
-  static FT_ULong
-  ft_lzw_stream_io( FT_Stream  stream,
-                    FT_ULong   pos,
-                    FT_Byte*   buffer,
-                    FT_ULong   count )
+  static unsigned long
+  ft_lzw_stream_io( FT_Stream       stream,
+                    unsigned long   offset,
+                    unsigned char*  buffer,
+                    unsigned long   count )
   {
     FT_LZWFile  zip = (FT_LZWFile)stream->descriptor.pointer;
 
 
-    return ft_lzw_file_io( zip, pos, buffer, count );
+    return ft_lzw_file_io( zip, offset, buffer, count );
   }
 
 
@@ -362,11 +357,11 @@
     memory = source->memory;
 
     /*
-     *  Check the header right now; this prevents allocation of a huge
-     *  LZWFile object (400 KByte of heap memory) if not necessary.
+     * Check the header right now; this prevents allocation of a huge
+     * LZWFile object (400 KByte of heap memory) if not necessary.
      *
-     *  Did I mention that you should never use .Z compressed font
-     *  files?
+     * Did I mention that you should never use .Z compressed font
+     * files?
      */
     error = ft_lzw_check_header( source );
     if ( error )

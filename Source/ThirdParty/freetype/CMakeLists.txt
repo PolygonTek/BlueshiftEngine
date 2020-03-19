@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 2.8.12)
 project(freetype)
 
 set(VERSION_MAJOR "2")
-set(VERSION_MINOR "5")
-set(VERSION_PATCH "5")
+set(VERSION_MINOR "10")
+set(VERSION_PATCH "1")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 
 # Compiler definitions for building the library
@@ -19,38 +19,25 @@ file(GLOB PRIVATE_HEADERS "include/internal/*.h")
 
 set(BASE_SRCS
   src/autofit/autofit.c
-  src/base/ftadvanc.c
+  src/base/ftbase.c
   src/base/ftbbox.c
   src/base/ftbdf.c
   src/base/ftbitmap.c
-  src/base/ftcalc.c
   src/base/ftcid.c
-  src/base/ftdbgmem.c
-  src/base/ftdebug.c
   src/base/ftfstype.c
   src/base/ftgasp.c
-  src/base/ftgloadr.c
   src/base/ftglyph.c
   src/base/ftgxval.c
   src/base/ftinit.c
-  src/base/ftlcdfil.c
   src/base/ftmm.c
-  src/base/ftobjs.c
   src/base/ftotval.c
-  src/base/ftoutln.c
   src/base/ftpatent.c
   src/base/ftpfr.c
-  src/base/ftrfork.c
-  src/base/ftsnames.c
-  src/base/ftstream.c
   src/base/ftstroke.c
   src/base/ftsynth.c
   src/base/ftsystem.c
-  src/base/fttrigon.c
   src/base/fttype1.c
-  src/base/ftutil.c
   src/base/ftwinfnt.c
-  src/base/ftxf86.c
   src/bdf/bdf.c
   src/bzip2/ftbzip2.c
   src/cache/ftcache.c
@@ -62,7 +49,7 @@ set(BASE_SRCS
   src/pfr/pfr.c
   src/psaux/psaux.c
   src/pshinter/pshinter.c
-  src/psnames/psmodule.c
+  src/psnames/psnames.c
   src/raster/raster.c
   src/sfnt/sfnt.c
   src/smooth/smooth.c
@@ -71,6 +58,16 @@ set(BASE_SRCS
   src/type42/type42.c
   src/winfonts/winfnt.c
 )
+
+if (WIN32)
+  enable_language(RC)
+  list(APPEND BASE_SRCS builds/windows/ftdebug.c
+                        src/base/ftver.rc)
+elseif (WINCE)
+  list(APPEND BASE_SRCS builds/wince/ftdebug.c)
+else ()
+  list(APPEND BASE_SRCS src/base/ftdebug.c)
+endif ()
 
 set(ALL_FILES ${PUBLIC_HEADERS}
   ${PUBLIC_CONFIG_HEADERS}

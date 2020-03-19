@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "IO/FileSystem.h"
 #include "Render/FreeTypeFont.h"
-#include "freetype/include/ftstroke.h"
+#include "freetype/ftstroke.h"
 
 BE_NAMESPACE_BEGIN
 

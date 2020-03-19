@@ -1,41 +1,42 @@
-/***************************************************************************/
-/*                                                                         */
-/*  gxvmort1.c                                                             */
-/*                                                                         */
-/*    TrueTypeGX/AAT mort table validation                                 */
-/*    body for type1 (Contextual Substitution) subtable.                   */
-/*                                                                         */
-/*  Copyright 2005, 2007 by suzuki toshiya, Masatake YAMATO, Red Hat K.K., */
-/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
-/*                                                                         */
-/*  This file is part of the FreeType project, and may only be used,       */
-/*  modified, and distributed under the terms of the FreeType project      */
-/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
-/*  this file you indicate that you have read the license and              */
-/*  understand and accept it fully.                                        */
-/*                                                                         */
-/***************************************************************************/
+/****************************************************************************
+ *
+ * gxvmort1.c
+ *
+ *   TrueTypeGX/AAT mort table validation
+ *   body for type1 (Contextual Substitution) subtable.
+ *
+ * Copyright (C) 2005-2019 by
+ * suzuki toshiya, Masatake YAMATO, Red Hat K.K.,
+ * David Turner, Robert Wilhelm, and Werner Lemberg.
+ *
+ * This file is part of the FreeType project, and may only be used,
+ * modified, and distributed under the terms of the FreeType project
+ * license, LICENSE.TXT.  By continuing to use, modify, or distribute
+ * this file you indicate that you have read the license and
+ * understand and accept it fully.
+ *
+ */
 
-/***************************************************************************/
-/*                                                                         */
-/* gxvalid is derived from both gxlayout module and otvalid module.        */
-/* Development of gxlayout is supported by the Information-technology      */
-/* Promotion Agency(IPA), Japan.                                           */
-/*                                                                         */
-/***************************************************************************/
+/****************************************************************************
+ *
+ * gxvalid is derived from both gxlayout module and otvalid module.
+ * Development of gxlayout is supported by the Information-technology
+ * Promotion Agency(IPA), Japan.
+ *
+ */
 
 
 #include "gxvmort.h"
 
 
-  /*************************************************************************/
-  /*                                                                       */
-  /* The macro FT_COMPONENT is used in trace mode.  It is an implicit      */
-  /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
-  /* messages during execution.                                            */
-  /*                                                                       */
+  /**************************************************************************
+   *
+   * The macro FT_COMPONENT is used in trace mode.  It is an implicit
+   * parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log
+   * messages during execution.
+   */
 #undef  FT_COMPONENT
-#define FT_COMPONENT  trace_gxvmort
+#define FT_COMPONENT  gxvmort
 
 
   typedef struct  GXV_mort_subtable_type1_StateOptRec_
@@ -155,7 +156,7 @@
     setMark       = (FT_UShort)(   flags >> 15            );
     dontAdvance   = (FT_UShort)( ( flags >> 14 ) & 1      );
 #endif
-    reserved      = (FT_Short)(    flags         & 0x3FFF );
+    reserved      = (FT_UShort)(    flags        & 0x3FFF );
 
     markOffset    = (FT_Short)( glyphOffset_p->ul >> 16 );
     currentOffset = (FT_Short)( glyphOffset_p->ul       );
@@ -191,7 +192,7 @@
 
 
     GXV_NAME_ENTER( "validating contents of substitutionTable" );
-    for ( i = 0; i < num_gids ; i ++ )
+    for ( i = 0; i < num_gids; i++ )
     {
       FT_UShort  dst_gid;
 

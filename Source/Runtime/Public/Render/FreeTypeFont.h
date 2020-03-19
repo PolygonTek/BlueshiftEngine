@@ -14,9 +14,9 @@
 
 #pragma once
 
-#include "freetype/include/ft2build.h"
-#include "freetype/include/freetype.h"
-#include "freetype/include/ftglyph.h"
+#include "ft2build.h"
+#include "freetype/freetype.h"
+#include "freetype/ftglyph.h"
 
 BE_NAMESPACE_BEGIN
 
