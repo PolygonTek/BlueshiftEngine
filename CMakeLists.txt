@@ -81,6 +81,18 @@ else ()
     endif ()
 endif ()
 
+if (PLATFORM_WINDOWS)
+    set(ENGINE_BUILD_PLATFORM_DIR "Win64")
+elseif (PLATFORM_ANDROID)
+    set(ENGINE_BUILD_PLATFORM_DIR "Android/${CMAKE_BUILD_TYPE}/${ANDROID_ABI}")
+elseif (PLATFORM_IOS)
+    set(ENGINE_BUILD_PLATFORM_DIR "iOS$(EFFECTIVE_PLATFORM_NAME)")
+elseif (PLATFORM_MACOS)
+    set(ENGINE_BUILD_PLATFORM_DIR "macOS")
+else ()
+    set(ENGINE_BUILD_PLATFORM_DIR ${CMAKE_GENERATOR})
+endif ()
+
 cmake_dependent_option(USE_LUAJIT "Use LuaJIT" ON "NOT IOS AND NOT ANDROID" OFF)
 
 message(STATUS "Running from ${CMAKE_CURRENT_SOURCE_DIR}")
@@ -123,7 +135,7 @@ if (USE_DESKTOP_EGL)
     add_definitions(-DUSE_DESKTOP_EGL)
 endif ()
 
-if (WIN32)
+if (PLATFORM_WINDOWS)
     # Settings for Windows
     add_definitions(-D_UNICODE -DUNICODE)
     
@@ -161,39 +173,7 @@ if (WIN32)
         # Suppress warnings when linking with release library
         set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /NODEFAULTLIB:\"msvcrt.lib\"")
     endif ()
-elseif (APPLE) 
-    # Settings for macOS, iOS
-    #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -stdlib=libc++")
-
-    add_compile_options("-Wno-unused-parameter")
-    add_compile_options("-Wno-unused-variable")
-    add_compile_options("-Wno-unused-local-typedef")
-    add_compile_options("-Wno-unused-function")
-    add_compile_options("-Wno-reorder")
-    add_compile_options("-Wno-inconsistent-missing-override")
-    add_compile_options("-Wno-tautological-undefined-compare")
-
-    if (IOS)
-        add_compile_options("-DIOS")
-
-        add_definitions("-D__NEON__")
-
-        set(IOS_DEPLOYMENT_TARGET 9.0)
-   else ()
-        set(CMAKE_OSX_SYSROOT "macosx")
-        set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9") # 10.9 Mavericks
-        #set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
-
-        set(FLAGS_SSE2 "-msse2")
-        set(FLAGS_SSE42 "-msse4.2")
-        set(FLAGS_AVX "-mavx")
-        set(FLAGS_AVX2 "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
-
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS_AVX}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_AVX}")
-    endif ()
-elseif (ANDROID)
+elseif (PLATFORM_ANDROID)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++14 -fno-exceptions -fno-rtti")
 
@@ -224,32 +204,41 @@ elseif (ANDROID)
     add_compile_options("-Wlogical-not-parentheses")
     add_compile_options("-Wshift-overflow")
     add_compile_options("-Wno-tautological-undefined-compare")
+elseif (APPLE) 
+    # Settings for macOS, iOS
+    #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -stdlib=libc++")
+
+    add_compile_options("-Wno-unused-parameter")
+    add_compile_options("-Wno-unused-variable")
+    add_compile_options("-Wno-unused-local-typedef")
+    add_compile_options("-Wno-unused-function")
+    add_compile_options("-Wno-reorder")
+    add_compile_options("-Wno-inconsistent-missing-override")
+    add_compile_options("-Wno-tautological-undefined-compare")
+
+    if (PLATFORM_IOS)
+        add_compile_options("-DIOS")
+
+        add_definitions("-D__NEON__")
+
+        set(IOS_DEPLOYMENT_TARGET 9.0)
+   elseif (PLATFORM_MACOS)
+        set(CMAKE_OSX_SYSROOT "macosx")
+        set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9") # 10.9 Mavericks
+        #set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
+
+        set(FLAGS_SSE2 "-msse2")
+        set(FLAGS_SSE42 "-msse4.2")
+        set(FLAGS_AVX "-mavx")
+        set(FLAGS_AVX2 "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
+
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS_AVX}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_AVX}")
+    endif ()
 endif ()
 
 ################################################################################
-
-if (XAMARIN)
-    if (MSVC)
-        set(ENGINE_BUILD_PLATFORM_DIR "XamarinWin64")
-    endif ()
-
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__XAMARIN__")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__XAMARIN__")
-else ()
-    if (MSVC)
-        set(ENGINE_BUILD_PLATFORM_DIR "Win64")
-    elseif (ANDROID)
-        set(ENGINE_BUILD_PLATFORM_DIR "Android/${CMAKE_BUILD_TYPE}/${ANDROID_ABI}")
-    elseif (APPLE)
-        if (IOS)
-            set(ENGINE_BUILD_PLATFORM_DIR "iOS$(EFFECTIVE_PLATFORM_NAME)")
-        else ()
-            set(ENGINE_BUILD_PLATFORM_DIR "macOS")
-        endif ()
-    else ()
-        set(ENGINE_BUILD_PLATFORM_DIR ${CMAKE_GENERATOR})
-    endif ()
-endif ()
 
 if (USE_LUAJIT)
     add_definitions(-DUSE_LUAJIT=1)
@@ -338,7 +327,7 @@ if (BUILD_EDITOR)
 endif ()
 
 if (BUILD_TEST)
-    if (NOT ANDROID)
+    if (NOT PLATFORM_ANDROID)
         add_subdirectory(Source/TestBase)
     endif ()
     add_subdirectory(Source/TestRenderer)

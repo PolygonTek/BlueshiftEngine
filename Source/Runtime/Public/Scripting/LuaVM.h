@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "Core/CmdArgs.h"
 #include "Containers/Array.h"
 #include "LuaCpp/LuaCpp.h"
 
@@ -26,7 +25,7 @@ using EngineModuleCallback = void (*)(LuaCpp::Module &);
 
 class LuaVM {
 public:
-    LuaVM();
+    LuaVM() = default;
 
     void                    Init();
     void                    Shutdown();
@@ -152,7 +151,7 @@ private:
     void                    RegisterEntity(LuaCpp::Module &module);
     void                    RegisterGameWorld(LuaCpp::Module &module);
 
-    LuaCpp::State *         state;
+    LuaCpp::State *         state = nullptr;
     LuaCpp::Selector        clearWaitingThreads;
     LuaCpp::Selector        wakeUpWaitingThreads;
     LuaCpp::Selector        startDebuggee;
@@ -163,12 +162,7 @@ private:
 
     Array<EngineModuleCallback> engineModuleCallbacks;
 
-    const GameWorld *       gameWorld;
+    const GameWorld *       gameWorld = nullptr;
 };
-
-BE_INLINE LuaVM::LuaVM() {
-    state = nullptr;
-    gameWorld = nullptr;
-}
 
 BE_NAMESPACE_END

@@ -29,9 +29,9 @@ void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
     // Setup Dear ImGui style.
     ImGui::StyleColorsDark();
     //ImGui::StyleColorsClassic();
-    
+
     ctx->imGuiLastTime = PlatformTime::Seconds();
-    
+
     io.IniFilename = nullptr;
 
     // Setup back-end capabilities flags.

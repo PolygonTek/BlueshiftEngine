@@ -18,11 +18,6 @@
 
 #include "OpenGL/WinOpenGL.h"
 
-#elif defined(__XAMARIN__)
-
-#include "OpenGL/XamarinOpenGL.h"
-#include "RHI/EGLUtil.h"
-
 #elif defined(__MACOSX__)
 
 #include <OpenGL/OpenGL.h>
@@ -105,7 +100,26 @@ struct GLContext {
     RHI::DisplayContextFunc displayFunc;
     void *                  displayFuncDataPtr;
     bool                    onDemandDrawing;
-#if defined(__IOS__) || defined(__IOS_SIMULATOR__)
+#if defined(__WIN32__)
+    HWND                    hwnd;
+    WNDPROC                 oldWndProc;
+    HDC                     hdc;
+    HGLRC                   hrc;
+    #ifdef USE_DESKTOP_EGL
+        EGLDisplay          eglDisplay;
+        EGLConfig           eglConfig;
+        EGLContext          eglContext;
+        EGLSurface          eglSurface;
+    #endif
+#elif defined(__MACOSX__)
+    CGDirectDisplayID       display;
+    NSView *                contentView;
+    GLView *                glView;
+    //NSString *            windowTitle;
+    //CGSize                windowSize;
+    NSOpenGLContext *       nsglContext;
+    CGLContextObj           cglContext;
+#elif defined(__IOS__) || defined(__IOS_SIMULATOR__)
     UIView *                rootView;
     EAGLView *              eaglView;
     EAGLContext *           eaglContext;
@@ -115,27 +129,6 @@ struct GLContext {
     EGLConfig               eglConfig;
     EGLContext              eglContext;
     EGLSurface              eglSurface;
-#elif defined(__WIN32__)
-    HWND                    hwnd;
-    WNDPROC                 oldWndProc;
-    HDC                     hdc;
-    HGLRC                   hrc;
-#ifdef USE_DESKTOP_EGL
-    EGLDisplay              eglDisplay;
-    EGLConfig               eglConfig;
-    EGLContext              eglContext;
-    EGLSurface              eglSurface;
-#endif
-#elif defined(__XAMARIN__)
-    EGLUtil *               rootView;
-#elif defined(__MACOSX__)
-    CGDirectDisplayID       display;
-    NSView *                contentView;
-    GLView *                glView;
-    //NSString *            windowTitle;
-    //CGSize                windowSize;
-    NSOpenGLContext *       nsglContext;
-    CGLContextObj           cglContext;
 #endif
     GLState *               state;
     GLuint                  defaultFramebuffer;

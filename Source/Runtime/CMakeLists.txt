@@ -933,65 +933,9 @@ include_directories(
 
 enable_precompiled_header(Precompiled.h Precompiled.cpp ENGINE_FILES)
 
-if (PLATFORM_ANDROID)
-    include_directories(${ANDROID_NDK}/sources/android/cpufeatures)
-    set(CPU_FEATURES_FILE ${ANDROID_NDK}/sources/android/cpufeatures/cpu-features.c)
-
-    add_library(${PROJECT_NAME} STATIC ${ALL_FILES} ${CPU_FEATURES_FILE})
-
-    target_link_libraries(${PROJECT_NAME}
-        android
-        atomic
-        log
-        EGL
-        GLESv3
-        OpenSLES)
-else ()
+if (PLATFORM_WINDOWS)
     add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
-endif ()
 
-if (APPLE)
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-        XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "gnu++14"
-        XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
-        XCODE_ATTRIBUTE_CLANG_MODULES_AUTOLINK "NO"
-        XCODE_ATTRIBUTE_CLANG_ENABLE_MODULES "YES"
-        XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
-        XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_WEAK "YES"
-        XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS "NO"
-        XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Debug] "YES"
-        #XCODE_ATTRIBUTE_GCC_PREFIX_HEADER ${CMAKE_CURRENT_LIST_DIR}/Precompiled.h
-        #XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER "YES"
-        XCODE_ATTRIBUTE_GCC_C_LANGUAGE_STANDARD "gnu11"
-        XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
-        XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT[variant=Debug] "dwarf"
-        XCODE_ATTRIBUTE_COPY_PHASE_STRIP "YES"
-        XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] "NO"
-        XCODE_ATTRIBUTE_MTL_FAST_MATH "YES"
-        XCODE_ATTRIBUTE_MTL_ENABLE_DEBUG_INFO "NO"
-        XCODE_ATTRIBUTE_MTL_ENABLE_DEBUG_INFO[variant=Debug] "INCLUDE_SOURCE")
-
-    if (IOS)
-        set_target_properties(${PROJECT_NAME} PROPERTIES
-            XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET ${IOS_DEPLOYMENT_TARGET}
-            XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2") # Universal (iPad + iPhone)
-
-        add_framework(${PROJECT_NAME} Foundation)
-        add_framework(${PROJECT_NAME} UIKit)
-        add_framework(${PROJECT_NAME} OpenGLES)
-        add_framework(${PROJECT_NAME} CoreGraphics)
-        add_framework(${PROJECT_NAME} QuartzCore)
-    elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-        add_framework(${PROJECT_NAME} Carbon)
-        add_framework(${PROJECT_NAME} Foundation)
-        add_framework(${PROJECT_NAME} AppKit)
-        add_framework(${PROJECT_NAME} OpenGL)
-        add_framework(${PROJECT_NAME} CoreGraphics)
-        add_framework(${PROJECT_NAME} CoreVideo)
-    endif ()
-
-    add_framework(${PROJECT_NAME} OpenAL)
-elseif (WIN32)
     target_link_libraries(${PROJECT_NAME} ws2_32)
 
     if (USE_DESKTOP_EGL)
@@ -1016,6 +960,62 @@ elseif (WIN32)
     else ()
         target_link_libraries(${PROJECT_NAME} dxguid dsound)
     endif ()
+elseif (PLATFORM_ANDROID)
+    include_directories(${ANDROID_NDK}/sources/android/cpufeatures)
+    set(CPU_FEATURES_FILE ${ANDROID_NDK}/sources/android/cpufeatures/cpu-features.c)
+
+    add_library(${PROJECT_NAME} STATIC ${ALL_FILES} ${CPU_FEATURES_FILE})
+
+    target_link_libraries(${PROJECT_NAME}
+        android
+        atomic
+        log
+        EGL
+        GLESv3
+        OpenSLES)
+elseif (APPLE)
+    add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
+
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "gnu++14"
+        XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
+        XCODE_ATTRIBUTE_CLANG_MODULES_AUTOLINK "NO"
+        XCODE_ATTRIBUTE_CLANG_ENABLE_MODULES "YES"
+        XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
+        XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_WEAK "YES"
+        XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS "NO"
+        XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Debug] "YES"
+        #XCODE_ATTRIBUTE_GCC_PREFIX_HEADER ${CMAKE_CURRENT_LIST_DIR}/Precompiled.h
+        #XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER "YES"
+        XCODE_ATTRIBUTE_GCC_C_LANGUAGE_STANDARD "gnu11"
+        XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
+        XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT[variant=Debug] "dwarf"
+        XCODE_ATTRIBUTE_COPY_PHASE_STRIP "YES"
+        XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] "NO"
+        XCODE_ATTRIBUTE_MTL_FAST_MATH "YES"
+        XCODE_ATTRIBUTE_MTL_ENABLE_DEBUG_INFO "NO"
+        XCODE_ATTRIBUTE_MTL_ENABLE_DEBUG_INFO[variant=Debug] "INCLUDE_SOURCE")
+
+    if (PLATFORM_IOS)
+        set_target_properties(${PROJECT_NAME} PROPERTIES
+            XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET ${IOS_DEPLOYMENT_TARGET}
+            XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2") # Universal (iPad + iPhone)
+
+        add_framework(${PROJECT_NAME} Foundation)
+        add_framework(${PROJECT_NAME} UIKit)
+        add_framework(${PROJECT_NAME} OpenGLES)
+        add_framework(${PROJECT_NAME} CoreGraphics)
+        add_framework(${PROJECT_NAME} QuartzCore)
+    elseif (PLATFORM_MACOS)
+        add_framework(${PROJECT_NAME} Carbon)
+        add_framework(${PROJECT_NAME} Foundation)
+        add_framework(${PROJECT_NAME} AppKit)
+        add_framework(${PROJECT_NAME} OpenGL)
+        add_framework(${PROJECT_NAME} CoreGraphics)
+        add_framework(${PROJECT_NAME} CoreVideo)
+    endif ()
+
+    add_framework(${PROJECT_NAME} OpenAL)
 endif ()
 
 target_link_libraries(${PROJECT_NAME} 
