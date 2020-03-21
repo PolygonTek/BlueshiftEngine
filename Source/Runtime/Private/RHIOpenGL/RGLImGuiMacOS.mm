@@ -318,15 +318,15 @@ void OpenGLRHI::ImGuiRender() {
 
     ImGui::Render();
 
-    GLboolean frameBufferSRGBEnabled = gglIsEnabled(GL_FRAMEBUFFER_SRGB);
-    if (frameBufferSRGBEnabled) {
-        gglDisable(GL_FRAMEBUFFER_SRGB);
+    bool sRGBWriteEnabled = OpenGL::SupportsFrameBufferSRGB() && IsSRGBWriteEnabled();
+    if (sRGBWriteEnabled) {
+        SetSRGBWrite(false);
     }
 
     ImGui_ImplOpenGL_RenderDrawData(ImGui::GetDrawData());
 
-    if (frameBufferSRGBEnabled) {
-        gglEnable(GL_FRAMEBUFFER_SRGB);
+    if (sRGBWriteEnabled) {
+        SetSRGBWrite(true);
     }
 }
 
