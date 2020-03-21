@@ -297,9 +297,9 @@ void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
     // Setup display size
     ImGuiIO &io = ImGui::GetIO();
     if (view) {
-        const float dpi = [view.window backingScaleFactor];
+        const float backingScaleFactor = [view.window backingScaleFactor];
         io.DisplaySize = ImVec2((float)view.bounds.size.width, (float)view.bounds.size.height);
-        io.DisplayFramebufferScale = ImVec2(dpi, dpi);
+        io.DisplayFramebufferScale = ImVec2(backingScaleFactor, backingScaleFactor);
     }
 
     // Setup time step
