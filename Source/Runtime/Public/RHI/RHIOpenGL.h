@@ -75,6 +75,7 @@ public:
     bool                    SupportsBufferStorage() const;
     bool                    SupportsMultiDrawIndirect() const;
     bool                    SupportsDebugLabel() const;
+    bool                    SupportsTimestampQueries() const;
     bool                    SupportsCopyImage() const;
 
     bool                    IsFullscreen() const;

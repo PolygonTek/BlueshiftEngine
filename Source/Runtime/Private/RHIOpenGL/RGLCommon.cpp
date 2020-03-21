@@ -407,6 +407,10 @@ bool OpenGLRHI::SupportsDebugLabel() const {
     return OpenGL::SupportsDebugLabel();
 }
 
+bool OpenGLRHI::SupportsTimestampQueries() const {
+    return OpenGL::SupportsTimestampQueries();
+}
+
 bool OpenGLRHI::SupportsCopyImage() const {
     return OpenGL::SupportsCopyImage();
 }

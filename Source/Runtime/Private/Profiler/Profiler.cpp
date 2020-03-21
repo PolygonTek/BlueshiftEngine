@@ -40,24 +40,28 @@ void Profiler::Init() {
 
     cpuThreadInfoMap.Init(MaxCpuThreads, MaxCpuThreads, MaxCpuThreads);
 
-    // Create GPU queries for GPU markers.
-    for (int i = 0; i < COUNT_OF(gpuThreadInfo.markers); i++) {
-        GpuMarker &marker = gpuThreadInfo.markers[i];
+    if (rhi.SupportsTimestampQueries()) {
+        // Create GPU queries for GPU markers.
+        for (int i = 0; i < COUNT_OF(gpuThreadInfo.markers); i++) {
+            GpuMarker &marker = gpuThreadInfo.markers[i];
 
-        marker.startQueryHandle = rhi.CreateQuery(RHI::QueryType::Timestamp);
-        marker.endQueryHandle = rhi.CreateQuery(RHI::QueryType::Timestamp);
+            marker.startQueryHandle = rhi.CreateQuery(RHI::QueryType::Timestamp);
+            marker.endQueryHandle = rhi.CreateQuery(RHI::QueryType::Timestamp);
+        }
     }
 
     mapMutex = (PlatformMutex *)PlatformMutex::Create();
 }
 
 void Profiler::Shutdown() {
-    // Destroy all GPU queries.
-    for (int i = 0; i < COUNT_OF(gpuThreadInfo.markers); i++) {
-        auto &marker = gpuThreadInfo.markers[i];
+    if (rhi.SupportsTimestampQueries()) {
+        // Destroy all GPU queries.
+        for (int i = 0; i < COUNT_OF(gpuThreadInfo.markers); i++) {
+            auto &marker = gpuThreadInfo.markers[i];
 
-        rhi.DestroyQuery(marker.startQueryHandle);
-        rhi.DestroyQuery(marker.endQueryHandle);
+            rhi.DestroyQuery(marker.startQueryHandle);
+            rhi.DestroyQuery(marker.endQueryHandle);
+        }
     }
 
     PlatformMutex::Destroy(mapMutex);
@@ -91,7 +95,9 @@ void Profiler::SyncFrame() {
         ti.frameIndexes[writeFrameIndex] = ti.currentIndex;
     }
 
-    gpuThreadInfo.frameIndexes[writeFrameIndex] = gpuThreadInfo.currentIndex;
+    if (rhi.SupportsTimestampQueries()) {
+        gpuThreadInfo.frameIndexes[writeFrameIndex] = gpuThreadInfo.currentIndex;
+    }
 }
 
 bool Profiler::IsFrozen() const {
@@ -188,6 +194,10 @@ void Profiler::PushGpuMarker(int tagIndex) {
         return;
     }
 
+    if (!rhi.SupportsTimestampQueries()) {
+        return;
+    }
+
     GpuThreadInfo &ti = gpuThreadInfo;
     GpuMarker &marker = ti.markers[ti.currentIndex];
 
@@ -202,6 +212,10 @@ void Profiler::PushGpuMarker(int tagIndex) {
 
 void Profiler::PopGpuMarker() {
     if (freezeState == FreezeState::Frozen) {
+        return;
+    }
+
+    if (!rhi.SupportsTimestampQueries()) {
         return;
     }
 
