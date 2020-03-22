@@ -239,11 +239,12 @@ void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
 
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
+    DisplayMetrics dm;
+    GetDisplayMetrics(ctxHandle, &dm);
+
     // Setup display size (every frame to accommodate for window resizing)
-    RECT rect;
-    ::GetClientRect(ctx->hwnd, &rect);
     ImGuiIO &io = ImGui::GetIO();
-    io.DisplaySize = ImVec2((float)(rect.right - rect.left), (float)(rect.bottom - rect.top));
+    io.DisplaySize = ImVec2(dm.screenWidth, dm.screenHeight);
 
     // Setup time step
     double currentTime = PlatformTime::Seconds();

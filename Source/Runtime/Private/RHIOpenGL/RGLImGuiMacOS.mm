@@ -292,15 +292,14 @@ void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
     ImGui_ImplOpenGL_ValidateFrame();
 
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
-    NSView *view = ctx->nsglContext.view;
+
+    DisplayMetrics dm;
+    GetDisplayMetrics(ctxHandle, &dm);
 
     // Setup display size
     ImGuiIO &io = ImGui::GetIO();
-    if (view) {
-        const float backingScaleFactor = [view.window backingScaleFactor];
-        io.DisplaySize = ImVec2((float)view.bounds.size.width, (float)view.bounds.size.height);
-        io.DisplayFramebufferScale = ImVec2(backingScaleFactor, backingScaleFactor);
-    }
+    io.DisplaySize = ImVec2(dm.screenWidth, dm.screenHeight);
+    io.DisplayFramebufferScale = ImVec2((float)dm.backingWidth / dm.screenWidth, (float)dm.backingHeight / dm.screenHeight);
 
     // Setup time step
     double currentTime = PlatformTime::Seconds();

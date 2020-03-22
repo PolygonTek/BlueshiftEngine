@@ -60,15 +60,10 @@ void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
     DisplayMetrics dm;
     GetDisplayMetrics(ctxHandle, &dm);
 
-    UIView *view = ctx->rootView;
-
     // Setup display size
     ImGuiIO &io = ImGui::GetIO();
-    if (view) {
-        const float backingScaleFactor = [view contentScaleFactor];
-        io.DisplaySize = ImVec2((float)view.bounds.size.width, (float)view.bounds.size.height);
-        io.DisplayFramebufferScale = ImVec2(backingScaleFactor, backingScaleFactor);
-    }
+    io.DisplaySize = ImVec2(dm.screenWidth, dm.screenHeight);
+    io.DisplayFramebufferScale = ImVec2((float)dm.backingWidth / dm.screenWidth, (float)dm.backingHeight / dm.screenHeight);
 
     // Setup time step
     double currentTime = PlatformTime::Seconds();
