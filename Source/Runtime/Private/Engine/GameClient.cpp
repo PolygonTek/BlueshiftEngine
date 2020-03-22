@@ -106,7 +106,7 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
 
     animControllerManager.Init();
 
-    consoleMaterial = nullptr;// materialManager.GetMaterial("Data/EngineMaterials/console.material");    
+    consoleMaterial = nullptr;// materialManager.GetMaterial("Data/EngineMaterials/console.material");
 
     currentColor = Color4::white;
     currentTextColor = Color4::white;
@@ -114,6 +114,8 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
     currentFont = nullptr;
     
     SetFont(fontManager.defaultFont);
+
+    cmdSystem.BufferCommandText(CmdSystem::Execution::Append, "exec \"Config/autoexec.cfg\"\n");
 }
 
 void GameClient::InitDefaultGuids() {
