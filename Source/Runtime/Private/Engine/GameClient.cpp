@@ -313,8 +313,6 @@ static void AddMenuItemCVarEnum(const char *cvarName, const char *label, const c
 
 void GameClient::DrawMenuBar() {
 #ifdef ENABLE_IMGUI
-    static bool showAbout = false;
-
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("Engine")) {
             bool showStatistics = IsStatisticsVisible();
@@ -323,10 +321,6 @@ void GameClient::DrawMenuBar() {
             }
             AddMenuItemCVarBool("developer", "Enable Developer");
             AddMenuItemCVarBool("lua_debug", "Enable Lua Debugging");
-
-            ImGui::Separator();
-
-            ImGui::MenuItem("About...", nullptr, &showAbout);
 
             ImGui::EndMenu();
         }
@@ -392,15 +386,12 @@ void GameClient::DrawMenuBar() {
 
         menuBarHeight = ImGui::GetWindowSize().y;
 
-        ImGui::EndMainMenuBar();
-    }
+        Str versionText = va("%s %s v%s (%s)", BE_NAME, PlatformProcess::PlatformName(), BE_VERSION, simdProcessor->GetName());
 
-    if (showAbout) {
-        ImGuiIO &io = ImGui::GetIO();
-        ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-        ImGui::Begin("About...", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::Text("%s-%s %s (%s) [%s %s]\n", BE_NAME, PlatformProcess::PlatformName(), BE_VERSION, simdProcessor->GetName(), __DATE__, __TIME__);
-        ImGui::End();
+        ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(versionText.c_str()).x);
+        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), versionText);
+
+        ImGui::EndMainMenuBar();
     }
 #endif
 }
