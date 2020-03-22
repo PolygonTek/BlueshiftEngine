@@ -24,13 +24,16 @@ void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
     // Setup Dear ImGui context.
     ctx->imGuiContext = ImGui::CreateContext();
     ImGui::SetCurrentContext(ctx->imGuiContext);
-    ImGuiIO &io = ImGui::GetIO();
+
+    ImGui::GetStyle().TouchExtraPadding = ImVec2(4.0F, 4.0F);
 
     // Setup Dear ImGui style.
     ImGui::StyleColorsDark();
     //ImGui::StyleColorsClassic();
 
     ctx->imGuiLastTime = PlatformTime::Seconds();
+
+    ImGuiIO &io = ImGui::GetIO();
 
     io.IniFilename = nullptr;
 
