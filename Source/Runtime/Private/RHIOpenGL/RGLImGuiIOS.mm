@@ -98,6 +98,9 @@ void OpenGLRHI::ImGuiEndFrame() {
     BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiEndFrame");
 
     ImGui::EndFrame();
+
+    ImGuiIO &io = ImGui::GetIO();
+    io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
 }
 
 BE_NAMESPACE_END
