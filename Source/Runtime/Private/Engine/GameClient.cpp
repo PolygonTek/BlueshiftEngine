@@ -366,7 +366,8 @@ void GameClient::DrawMenuBar() {
         if (ImGui::BeginMenu("Physics")) {
             ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Settings");
             ImGui::Indent();
-            AddMenuItemCVarBool("physics_enableCCD", "Enable CCD");
+            AddMenuItemCVarBool("physics_enable", "Enable");
+            AddMenuItemCVarBool("physics_enableCCD", "CCD");
             AddMenuItemCVarBool("physics_noDeactivation", "No Deactivation");
             ImGui::Unindent();
 
@@ -407,7 +408,7 @@ void GameClient::DrawStatistics(const RenderContext *renderContext) {
 
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
     ImGui::Text("Render: %ims, FrontEnd: %ims, BackEnd: %ims", renderCounter.frameMsec, renderCounter.frontEndMsec, renderCounter.backEndMsec);
-    ImGui::SameLine(ImGui::GetWindowSize().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(fpsText.c_str()).x);
+    ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(fpsText.c_str()).x);
     ImGui::TextUnformatted(fpsText.c_str());
     ImGui::Text("Draw: %i, Verts: %i, Tris: %i", renderCounter.drawCalls, renderCounter.drawVerts, renderCounter.drawIndexes / 3);
     ImGui::Text("Shadow Draw: %i, Verts: %i, Tris: %i", renderCounter.shadowDrawCalls, renderCounter.shadowDrawVerts, renderCounter.shadowDrawIndexes / 3);
