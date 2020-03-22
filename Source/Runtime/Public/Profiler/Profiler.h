@@ -209,10 +209,6 @@ BE_INLINE void Profiler::IterateGpuMarkers(Func func) const {
         return;
     }
 
-    if (!rhi.SupportsTimestampQueries()) {
-        return;
-    }
-
     const FrameData &readFrame = frameData[readFrameIndex];
 
     if (readFrame.time != InvalidTime) {

@@ -418,7 +418,7 @@ void GameClient::DrawStatistics(const RenderContext *renderContext) {
     if (profiler.IsUnfrozen()) {
         uint64_t tid = PlatformThread::GetCurrentThreadId();
 
-        if (ImGui::CollapsingHeader(BE1::va("CPU (%" PRIu64 ")", tid), ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::CollapsingHeader(BE1::va("CPU (tid %" PRIu64 ")", tid), ImGuiTreeNodeFlags_DefaultOpen)) {
             int lastStackDepth = 0;
 
             ImGui::BeginGroup();
@@ -455,7 +455,7 @@ void GameClient::DrawStatistics(const RenderContext *renderContext) {
             ImGui::EndGroup();
         }
 
-        if (ImGui::CollapsingHeader("GPU", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (rhi.SupportsTimestampQueries() && ImGui::CollapsingHeader("GPU", ImGuiTreeNodeFlags_DefaultOpen)) {
             int lastStackDepth = 0;
 
             ImGui::BeginGroup();
