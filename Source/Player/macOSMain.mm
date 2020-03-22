@@ -485,14 +485,14 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
 
 - (void)runFrameInstance:(int)elapsedTime {
     BE1::Engine::RunFrame(MILLI2SEC(elapsedTime));
-        
+
     BE1::gameClient.Update();
-        
+
     app.Update();
-        
-    BE1::gameClient.EndFrame();
-        
+
     app.mainRenderContext->Display();
+
+    BE1::gameClient.EndFrame();
 }
 
 - (void)windowWillEnterFullScreen:(NSNotification *)notification {
