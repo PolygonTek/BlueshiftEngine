@@ -101,7 +101,9 @@ void OpenGLRHI::ImGuiEndFrame() {
 
     // HACK: invalidate touch position after one frame.
     ImGuiIO &io = ImGui::GetIO();
-    io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
+    if (!io.MouseDown[0]) {
+        io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
+    }
 }
 
 BE_NAMESPACE_END
