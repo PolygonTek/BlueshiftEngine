@@ -285,8 +285,7 @@ void Common::GetPlatformEvent(Platform::Event *ev) {
 }
 
 void Common::Cmd_Version(const CmdArgs &args) {
-    BE_LOG("%s-%s %s %s %s\n", BE_NAME, PlatformProcess::PlatformName(),
-        BE_VERSION, __DATE__, __TIME__);
+    BE_LOG("%s-%s (SIMD: %s) %s %s %s\n", BE_NAME, PlatformProcess::PlatformName(), simdProcessor->GetName(), BE_VERSION, __DATE__, __TIME__);
 }
 
 void Common::Cmd_Error(const CmdArgs &args) {
