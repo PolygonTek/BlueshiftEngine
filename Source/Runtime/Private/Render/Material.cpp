@@ -440,7 +440,9 @@ bool Material::ParseDepthTest(Lexer &lexer, int *depthTest) const {
     Str	token;
 
     if (lexer.ReadToken(&token, false)) {
-        if (!token.Icmp("less")) {
+        if (!token.Icmp("none")) {
+            *depthTest = RHI::DF_None;
+        } else if (!token.Icmp("less")) {
             *depthTest = RHI::DF_Less;
         } else if (!token.Icmp("greater")) {
             *depthTest = RHI::DF_Greater;
@@ -865,13 +867,14 @@ void Material::Write(const char *filename) {
     if (pass->depthTestBits != RHI::DF_LEqual) {
         Str depthTestStr;
         switch (pass->depthTestBits) {
+        case RHI::DF_None: depthTestStr = "NONE"; break;
+        case RHI::DF_Always: depthTestStr = "ALWAYS"; break;
         case RHI::DF_Less: depthTestStr = "LESS"; break;
         case RHI::DF_Greater: depthTestStr = "GREATER"; break;
         case RHI::DF_LEqual: depthTestStr = "LEQUAL"; break;
         case RHI::DF_GEqual: depthTestStr = "GEQUAL"; break;
         case RHI::DF_Equal: depthTestStr = "EQUAL"; break;
         case RHI::DF_NotEqual: depthTestStr = "NOTEQUAL"; break;
-        case RHI::DF_Always: depthTestStr = "ALWAYS"; break;
         }
 
         fp->Printf("%sdepthTest %s\n", indentSpace.c_str(), depthTestStr.c_str());
