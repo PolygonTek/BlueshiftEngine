@@ -243,7 +243,7 @@ static void ShutdownInstance() {
     BE1::Engine::Shutdown();
 }
 
-static bool RunFrameInstance(int elapsedTime) {
+static bool ProcessEventLoop() {
     MSG msg;
 
     while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -255,6 +255,14 @@ static bool RunFrameInstance(int elapsedTime) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
+    }
+
+    return true;
+}
+
+static bool RunFrameInstance(int elapsedTime) {
+    if (!ProcessEventLoop()) {
+        return false;
     }
 
     BE1::Engine::RunFrame(MILLI2SEC(elapsedTime));

@@ -49,30 +49,6 @@
 
 @implementation RootViewController
 
-static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
-    static int t0 = 0;
-    
-    if (t0 == 0) {
-        t0 = BE1::PlatformTime::Milliseconds();
-    }
-    
-    int t = BE1::PlatformTime::Milliseconds();
-    int elapsedTime = t - t0;
-    BE1::Clamp(elapsedTime, 0, 1000);
-
-    t0 = t;
-
-    BE1::Engine::RunFrame(MILLI2SEC(elapsedTime));
-    
-    BE1::gameClient.Update();
-    
-    app.Update();
-
-    app.Draw();
-
-    BE1::gameClient.EndFrame();
-}
-
 - (void)loadView {
     CGRect frame = [[UIScreen mainScreen] bounds];
     
@@ -385,6 +361,30 @@ static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum dev
     }
 
     return RenderQuality::Low;
+}
+
+static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
+    static int t0 = 0;
+    
+    if (t0 == 0) {
+        t0 = BE1::PlatformTime::Milliseconds();
+    }
+    
+    int t = BE1::PlatformTime::Milliseconds();
+    int elapsedTime = t - t0;
+    BE1::Clamp(elapsedTime, 0, 1000);
+
+    t0 = t;
+
+    BE1::Engine::RunFrame(MILLI2SEC(elapsedTime));
+    
+    BE1::gameClient.Update();
+    
+    app.Update();
+
+    app.Draw();
+
+    BE1::gameClient.EndFrame();
 }
 
 - (void)initInstance {

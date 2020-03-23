@@ -71,7 +71,7 @@ void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
     double currentTime = PlatformTime::Seconds();
     io.DeltaTime = currentTime - ctx->imGuiLastTime;
     ctx->imGuiLastTime = currentTime;
-    
+
     ImGui::NewFrame();
 }
 

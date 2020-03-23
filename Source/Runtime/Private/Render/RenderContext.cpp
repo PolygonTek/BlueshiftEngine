@@ -42,12 +42,15 @@ void RenderContext::Init(RHI::WindowHandle hwnd, int renderingWidth, int renderi
     RHI::DisplayMetrics displayMetrics;
     rhi.GetDisplayMetrics(this->contextHandle, &displayMetrics);
 
+    // This is window resolution in logical units (points).
     this->windowWidth = displayMetrics.screenWidth;
     this->windowHeight = displayMetrics.screenHeight;
+
+    // This is device resolution in pixels.
     this->deviceWidth = displayMetrics.backingWidth;
     this->deviceHeight = displayMetrics.backingHeight;
     
-    // This is actual rendering resolution that will be upscaled if it is smaller than device resolution
+    // This is actual rendering resolution that will be upscaled if it is smaller than device resolution.
     this->renderingWidth = renderingWidth;
     this->renderingHeight = renderingHeight;
     

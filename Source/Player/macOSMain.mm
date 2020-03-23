@@ -521,6 +521,17 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
     [NSApp terminate:nil];
 }
 
+- (void)processEventLoop {
+    @autoreleasepool {
+        while (NSEvent *event = [NSApp nextEventMatchingMask:NSAnyEventMask
+                                                    untilDate:nil
+                                                        inMode:NSDefaultRunLoopMode
+                                                        dequeue:YES]) {
+            [self processEvent:event];
+        }
+    }
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     [self initInstance];
     
@@ -532,16 +543,9 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
         BE1::Clamp(elapsedTime, 0, 1000);
 
         t0 = t;
-        
-        @autoreleasepool {
-            while (NSEvent *event = [NSApp nextEventMatchingMask:NSAnyEventMask
-                                                       untilDate:nil
-                                                          inMode:NSDefaultRunLoopMode
-                                                         dequeue:YES]) {
-                [self processEvent:event];
-            }
-        }
-        
+
+        [self processEventLoop];
+
         [self runFrameInstance:elapsedTime];
     }
 }
