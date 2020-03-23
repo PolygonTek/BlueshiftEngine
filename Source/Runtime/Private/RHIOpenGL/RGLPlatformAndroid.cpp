@@ -468,10 +468,14 @@ void OpenGLRHI::GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetri
     eglQuerySurface(ctx->eglDisplay, ctx->eglSurface, EGL_WIDTH, &surfaceWidth);
     eglQuerySurface(ctx->eglDisplay, ctx->eglSurface, EGL_HEIGHT, &surfaceHeight);
 
-    displayMetrics->screenWidth = surfaceWidth;
-    displayMetrics->screenHeight = surfaceHeight;
+    float aspectRatio = (float)surfaceWidth / (float)surfaceHeight;
+
+    displayMetrics->screenHeight = 720;
+    displayMetrics->screenWidth = displayMetrics->screenHeight * aspectRatio;
+
     displayMetrics->backingWidth = surfaceWidth;
     displayMetrics->backingHeight = surfaceHeight;
+
     displayMetrics->safeAreaInsets.Set(0, 0, 0, 0);
 }
 
