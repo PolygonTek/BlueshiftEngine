@@ -242,6 +242,7 @@ static const float userContentScaleFactor = 2.0f;
 - (BOOL)updateIOWithTouchEvent:(UIEvent *)event {
     UITouch *anyTouch = event.allTouches.anyObject;
     CGPoint touchLocation = [anyTouch locationInView:self];
+
     ImGuiIO &io = ImGui::GetIO();
     io.MousePos = ImVec2(touchLocation.x, touchLocation.y);
     
@@ -253,7 +254,9 @@ static const float userContentScaleFactor = 2.0f;
         }
     }
     io.MouseDown[0] = hasActiveTouch;
-    return io.WantCaptureMouse;
+    //ImGui::UpdateHoveredWindowAndCaptureFlags();
+    //return io.WantCaptureMouse;
+    return false;
 }
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {

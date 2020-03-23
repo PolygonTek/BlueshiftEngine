@@ -390,7 +390,7 @@ void GameClient::DrawMenuBar() {
 
         ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(versionText.c_str()).x);
 
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
         ImGui::TextUnformatted(versionText.c_str());
         ImGui::PopStyleColor();
 
