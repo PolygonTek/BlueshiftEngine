@@ -389,7 +389,10 @@ void GameClient::DrawMenuBar() {
         Str versionText = va("%s %s v%s (%s)", BE_NAME, PlatformProcess::PlatformName(), BE_VERSION, simdProcessor->GetName());
 
         ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(versionText.c_str()).x);
-        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), versionText);
+
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+        ImGui::TextUnformatted(versionText.c_str());
+        ImGui::PopStyleColor();
 
         ImGui::EndMainMenuBar();
     }
