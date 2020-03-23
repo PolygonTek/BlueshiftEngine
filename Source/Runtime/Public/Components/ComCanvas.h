@@ -66,6 +66,9 @@ public:
     ScaleMode::Enum         GetScaleMode() const;
     void                    SetScaleMode(ScaleMode::Enum scaleMode);
 
+    bool                    GetClearDepth() const;
+    void                    SetClearDepth(bool clearDepth);
+
                             /// Converts position in world space to screen space.
     const Point             WorldToScreenPoint(const Vec3 &worldPos) const;
 

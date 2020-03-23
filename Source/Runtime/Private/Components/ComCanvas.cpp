@@ -43,6 +43,8 @@ void ComCanvas::RegisterProperties() {
         "", PropertyInfo::Flag::Editor).SetEnumString("Match Width Or Height;Expand;Shrink");
     REGISTER_PROPERTY("match", "Match (Width " u8"\u27f7" " Height)", float, match, 0.0f,
         "", PropertyInfo::Flag::Editor).SetRange(0.0f, 1.0f, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("clearDepth", "Clear Depth", bool, GetClearDepth, SetClearDepth, false,
+        "", PropertyInfo::Flag::Editor);
 }
 
 ComCanvas::ComCanvas() {
@@ -80,8 +82,6 @@ void ComCanvas::Init() {
     }
     
     renderCameraDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews | RenderCamera::Flag::SkipPostProcess;
-
-    renderCameraDef.clearMethod = RenderCamera::ClearMethod::DepthOnly;
 
     renderCameraDef.origin = Vec3::origin;
     renderCameraDef.axis[0] = -Coords2D::ZAxis();
@@ -205,6 +205,14 @@ ComCanvas::ScaleMode::Enum ComCanvas::GetScaleMode() const {
 
 void ComCanvas::SetScaleMode(ScaleMode::Enum scaleMode) {
     this->scaleMode = scaleMode;
+}
+
+bool ComCanvas::GetClearDepth() const {
+    return renderCameraDef.clearMethod == RenderCamera::ClearMethod::DepthOnly;
+}
+
+void ComCanvas::SetClearDepth(bool clearDepth) {
+    renderCameraDef.clearMethod = clearDepth ? RenderCamera::ClearMethod::DepthOnly : RenderCamera::ClearMethod::NoClear;
 }
 
 const Point ComCanvas::WorldToScreenPoint(const Vec3 &worldPos) const {
