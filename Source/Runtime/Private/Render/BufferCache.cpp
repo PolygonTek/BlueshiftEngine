@@ -602,12 +602,14 @@ bool BufferCacheManager::IsCacheStatic(const BufferCache *bc) const {
     return false;
 }
 
-void BufferCacheManager::UpdatePBOTexture() const {
+void BufferCacheManager::UpdatePBOTexture() {
     BE_SCOPE_PROFILE_CPU("BufferCacheManager::UpdatePBOTexture");
 
     const FrameDataBufferSet *currentBufferSet = &frameData[unmappedNum];
 
     int texelOffset = pboWriteOffset / TB_BPP;
+
+    pboWriteOffset = 0;
 
     int updateW = Min(texelOffset, TB_WIDTH);
     int updateH = (texelOffset + TB_WIDTH - 1) / TB_WIDTH;

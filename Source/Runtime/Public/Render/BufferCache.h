@@ -76,7 +76,7 @@ public:
     bool                        IsCacheStatic(const BufferCache *bufferCache) const;
 
                                 // Update PBO to Texture
-    void                        UpdatePBOTexture() const;
+    void                        UpdatePBOTexture();
 
     const Texture *             GetFrameTexture() const;
 
