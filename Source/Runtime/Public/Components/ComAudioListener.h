@@ -37,9 +37,6 @@ public:
                             /// When game already started, called immediately after spawned
     virtual void            Awake() override;
 
-                            /// Called on game world update, variable timestep.
-    virtual void            Update() override;
-
     float                   GetVolume() const;
     void                    SetVolume(float volume);
 

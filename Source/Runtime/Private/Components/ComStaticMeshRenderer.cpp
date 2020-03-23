@@ -61,9 +61,6 @@ void ComStaticMeshRenderer::Init() {
     UpdateVisuals();
 }
 
-void ComStaticMeshRenderer::Update() {
-}
-
 void ComStaticMeshRenderer::MeshUpdated() {
     if (!IsInitialized()) {
         return;

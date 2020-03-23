@@ -88,12 +88,6 @@ void ComAudioSource::Awake() {
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComAudioSource::TransformUpdated, SignalObject::ConnectionType::Unique);
 }
 
-void ComAudioSource::Update() {
-    if (!IsActiveInHierarchy()) {
-        return;
-    }
-}
-
 void ComAudioSource::OnActive() {
     if (sound) {
         sound->SetVolume(volume);
