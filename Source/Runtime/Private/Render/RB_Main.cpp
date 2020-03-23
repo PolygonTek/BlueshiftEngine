@@ -543,20 +543,13 @@ static void RB_ClearView() {
     BE_SCOPE_PROFILE_CPU("RB_ClearView");
     BE_SCOPE_PROFILE_GPU("RB_ClearView");
 
-    int clearBits = 0;
-
     if (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::DepthOnly || 
         backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Skybox) {
-        clearBits = RHI::ClearBit::Depth | RHI::ClearBit::Stencil;
-
         rhi.SetStateBits(rhi.GetStateBits() | RHI::DepthWrite);
-        rhi.Clear(clearBits, Color4::black, 1.0f, 0);
+        rhi.Clear(RHI::ClearBit::Depth | RHI::ClearBit::Stencil, Color4::black, 1.0f, 0);
     } else if (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Color) {
-        clearBits = RHI::ClearBit::Depth | RHI::ClearBit::Stencil | RHI::ClearBit::Color;
-        Color4 clearColor = backEnd.camera->def->GetState().clearColor;
-
         rhi.SetStateBits(rhi.GetStateBits() | RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
-        rhi.Clear(clearBits, clearColor, 1.0f, 0);
+        rhi.Clear(RHI::ClearBit::Depth | RHI::ClearBit::Stencil | RHI::ClearBit::Color, backEnd.camera->def->GetState().clearColor, 1.0f, 0);
     }
 }
 
