@@ -603,6 +603,8 @@ bool BufferCacheManager::IsCacheStatic(const BufferCache *bc) const {
 }
 
 void BufferCacheManager::UpdatePBOTexture() const {
+    BE_SCOPE_PROFILE_CPU("BufferCacheManager::UpdatePBOTexture");
+
     const FrameDataBufferSet *currentBufferSet = &frameData[unmappedNum];
 
     int texelOffset = pboWriteOffset / TB_BPP;
