@@ -111,17 +111,27 @@ floating point bit layouts according to the IEEE 754-1985 and 754-2008 standard
 
 BE_NAMESPACE_BEGIN
 
-template <typename T> BE_INLINE T   Sign(const T x) { return (x > 0) ? 1 : ((x < 0) ? -1 : 0 ); }
-template <typename T> BE_INLINE T   Square(const T &x) { return x * x; }
-template <typename T> BE_INLINE T   Cube(const T &x) { return x * x * x; }
+template <typename T>
+BE_FORCE_INLINE T Sign(const T x) { return (x > 0) ? 1 : ((x < 0) ? -1 : 0 ); }
+template <typename T>
+BE_FORCE_INLINE T Square(const T &x) { return x * x; }
+template <typename T>
+BE_FORCE_INLINE T Cube(const T &x) { return x * x * x; }
 
-template <typename T> BE_INLINE T   InchesToMetres(const T x) { return static_cast<T>(x * 0.0254f); }
-template <typename T> BE_INLINE T   MetresToInches(const T x) { return static_cast<T>(x * 39.37f); }
-template <typename T> BE_INLINE T   InchesToFeet(const T x) { return static_cast<T>(x / 12.f); }
-template <typename T> BE_INLINE T   FeetToMiles(const T x) { return static_cast<T>(x / 5280.f); }
-template <typename T> BE_INLINE T   FeetToInches(const T x) { return static_cast<T>(x * 12.f); }
-template <typename T> BE_INLINE T   MetresToFeet(const T x) { return InchesToFeet(MetresToInches(x)); }
-template <typename T> BE_INLINE T   FeetToMetres(const T x) { return FeetToInches(InchesToMetres(x)); }
+template <typename T>
+BE_FORCE_INLINE T InchesToMetres(const T x) { return static_cast<T>(x * 0.0254f); }
+template <typename T>
+BE_FORCE_INLINE T MetresToInches(const T x) { return static_cast<T>(x * 39.37f); }
+template <typename T>
+BE_FORCE_INLINE T InchesToFeet(const T x) { return static_cast<T>(x / 12.f); }
+template <typename T>
+BE_FORCE_INLINE T FeetToMiles(const T x) { return static_cast<T>(x / 5280.f); }
+template <typename T>
+BE_FORCE_INLINE T FeetToInches(const T x) { return static_cast<T>(x * 12.f); }
+template <typename T>
+BE_FORCE_INLINE T MetresToFeet(const T x) { return InchesToFeet(MetresToInches(x)); }
+template <typename T>
+BE_FORCE_INLINE T FeetToMetres(const T x) { return FeetToInches(InchesToMetres(x)); }
 
 template <unsigned int Value>
 struct Factorial {
@@ -331,6 +341,9 @@ public:
     static int                  FloatHash(const float *arr, const int numFloats);
 
     static float                Random(float minimum, float maximum);
+
+                                /// Perform Hermite interpolation between two values.
+    static float                SmoothStep(float edge0, float edge1, float x);
 
                                 /// Returns linearly interpolated value between p0 and p1 with the given floating point parameter t in range [0, 1].
     template <typename T> 
@@ -1087,6 +1100,11 @@ BE_INLINE int Math::FloatHash(const float *arr, const int numFloats) {
 BE_INLINE float Math::Random(float minimum, float maximum) {
     //return minimum + (maximum - minimum) * ((::rand()%8193) / 8193.0f);
     return minimum + (maximum - minimum) * ((float)::rand() / (float)RAND_MAX);
+}
+
+BE_INLINE float Math::SmoothStep(float edge0, float edge1, float x) {
+    float t = Clamp01((x - edge0) / (edge1 - edge0));
+    return t * t * (3.0 - 2.0 * t);
 }
 
 template <typename T>
