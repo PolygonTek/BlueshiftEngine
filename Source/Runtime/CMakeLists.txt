@@ -833,31 +833,27 @@ set(WINDOWS_RENDERER_FILES
     Private/RHIOpenGL/OpenGL/OpenGL4.h
     Private/RHIOpenGL/OpenGL/OpenGL4.cpp
     Private/RHIOpenGL/OpenGL/WinOpenGL.h
-    Private/RHIOpenGL/RGLPlatformWin.cpp
-    Private/RHIOpenGL/RGLImGuiWin.cpp)
+    Private/RHIOpenGL/RGLPlatformWin.cpp)
 
 set(ANDROID_RENDERER_FILES
     Private/RHIOpenGL/OpenGL/OpenGLES3.h
     Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
     Private/RHIOpenGL/OpenGL/AndroidOpenGL.h
     Private/RHIOpenGL/OpenGL/AndroidOpenGL.cpp
-    Private/RHIOpenGL/RGLPlatformAndroid.cpp
-    Private/RHIOpenGL/RGLImGuiAndroid.cpp)
+    Private/RHIOpenGL/RGLPlatformAndroid.cpp)
 
 set(IOS_RENDERER_FILES
     Private/RHIOpenGL/OpenGL/OpenGLES3.h
     Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
     Private/RHIOpenGL/OpenGL/IOSOpenGL.h
     Private/RHIOpenGL/OpenGL/IOSOpenGL.mm
-    Private/RHIOpenGL/RGLPlatformIOS.mm
-    Private/RHIOpenGL/RGLImGuiIOS.mm)
+    Private/RHIOpenGL/RGLPlatformIOS.mm)
 
 set(MACOS_RENDERER_FILES
     Private/RHIOpenGL/OpenGL/OpenGL3.h
     Private/RHIOpenGL/OpenGL/OpenGL3.cpp
     Private/RHIOpenGL/OpenGL/MacOSOpenGL.h
-    Private/RHIOpenGL/RGLPlatformMacOS.mm
-    Private/RHIOpenGL/RGLImGuiMacOS.mm)
+    Private/RHIOpenGL/RGLPlatformMacOS.mm)
 
 if (NOT PLATFORM_WINDOWS)
     list(APPEND COMPILING_DISABLED_SOURCES ${WINDOWS_ENGINE_FILES} ${WINDOWS_RENDERER_FILES})
