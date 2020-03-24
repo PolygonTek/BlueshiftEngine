@@ -26,8 +26,8 @@ void RB_DrawRect(float x, float y, float x2, float y2, float s, float t, float s
     } verts[] = {
         { Vec2(x, y), Vec2(s, t) }, 
         { Vec2(x2, y), Vec2(s2, t) }, 
-        { Vec2(x2, y2), Vec2(s2, t2) }, 
-        { Vec2(x, y2), Vec2(s, t2) }
+        { Vec2(x, y2), Vec2(s, t2) },
+        { Vec2(x2, y2), Vec2(s2, t2) }
     };
 
     rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
@@ -35,7 +35,7 @@ void RB_DrawRect(float x, float y, float x2, float y2, float s, float t, float s
 
     rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::XySt].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(verts[0]));
-    rhi.DrawArrays(RHI::Topology::TriangleFan, 0, 4);
+    rhi.DrawArrays(RHI::Topology::TriangleStrip, 0, 4);
 }
 
 void RB_DrawClipRect(float s, float t, float s2, float t2) {
@@ -49,8 +49,9 @@ void RB_DrawRectSlice(float x, float y, float x2, float y2, float s, float t, fl
     } verts[] = { 
         { Vec2(x, y), Vec3(s, t, slice) }, 
         { Vec2(x2, y), Vec3(s2, t, slice) }, 
-        { Vec2(x2, y2), Vec3(s2, t2, slice) }, 
-        { Vec2(x, y2), Vec3(s, t2, slice) }
+        { Vec2(x, y2), Vec3(s, t2, slice) },
+        { Vec2(x2, y2), Vec3(s2, t2, slice) }
+
     };
         
     rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
@@ -58,7 +59,7 @@ void RB_DrawRectSlice(float x, float y, float x2, float y2, float s, float t, fl
 
     rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::XyStr].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(verts[0]));
-    rhi.DrawArrays(RHI::Topology::TriangleFan, 0, 4);
+    rhi.DrawArrays(RHI::Topology::TriangleStrip, 0, 4);
 }
 
 static void ScreenToClipCoord(float x, float y, float *clip_x, float *clip_y) {
