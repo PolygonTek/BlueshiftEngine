@@ -16,6 +16,7 @@
 #include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
 #include "Platform/PlatformProcess.h"
+#include "Platform/PlatformTime.h"
 #include "Profiler/Profiler.h"
 #include <tchar.h>
 
@@ -40,7 +41,7 @@ static int          deviceBpp = 0;
 static int          deviceHz = 0;
 static HGLRC        hrcMain;
 
-static CVar         gl_debug("gl_debug", "0", CVar::Flag::Bool, "");
+static CVar         gl_debug("gl_debug", "1", CVar::Flag::Bool, "");
 static CVar         gl_debugLevel("gl_debugLevel", "3", CVar::Flag::Integer, "");
 static CVar         gl_ignoreError("gl_ignoreError", "0", CVar::Flag::Bool, "");
 static CVar         gl_finish("gl_finish", "0", CVar::Flag::Bool, "");
@@ -517,9 +518,17 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
 
     // Create default VAO for main context
     gglGenVertexArrays(1, &mainContext->defaultVAO);
+
+#ifdef ENABLE_IMGUI
+    ImGuiCreateContext(mainContext);
+#endif
 }
 
 void OpenGLRHI::FreeMainContext() {
+#ifdef ENABLE_IMGUI
+    ImGuiDestroyContext(mainContext);
+#endif
+
     // Delete default VAO for main context
     gglDeleteVertexArrays(1, &mainContext->defaultVAO);
 
@@ -635,7 +644,8 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
     }
 
 #ifdef ENABLE_IMGUI
-    ImGuiCreateContext(ctx);
+    ctx->imGuiContext = mainContext->imGuiContext;
+    ctx->imGuiLastTime = PlatformTime::Seconds();
 #endif
 
     SetContext((Handle)handle);
@@ -654,10 +664,6 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
 
 void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     GLContext *ctx = contextList[ctxHandle];
-
-#ifdef ENABLE_IMGUI
-    ImGuiDestroyContext(ctx);
-#endif
 
     if (ctx->hrc != mainContext->hrc) {
         // Delete default VAO for shared context

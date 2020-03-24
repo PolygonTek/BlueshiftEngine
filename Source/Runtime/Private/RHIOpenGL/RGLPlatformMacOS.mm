@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
+#include "Platform/PlatformTime.h"
 
 #import <QuartzCore/CVDisplayLink.h>
 
@@ -650,9 +651,17 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
 
     // Create default VAO for main context
     gglGenVertexArrays(1, &mainContext->defaultVAO);
+
+#ifdef ENABLE_IMGUI
+    ImGuiCreateContext(mainContext);
+#endif
 }
 
 void OpenGLRHI::FreeMainContext() {
+#ifdef ENABLE_IMGUI
+    ImGuiDestroyContext(mainContext);
+#endif
+
     // Delete default VAO for main context
     gglDeleteVertexArrays(1, &mainContext->defaultVAO);
 
@@ -752,7 +761,8 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
     BE_DLOG("GPU fragment processing: %s\n", fragmentGPUProcessing ? "YES" : "NO");
 
 #ifdef ENABLE_IMGUI
-    ImGuiCreateContext(ctx);
+    ctx->imGuiContext = mainContext->imGuiContext;
+    ctx->imGuiLastTime = PlatformTime::Seconds();
 #endif
 
     SetContext((Handle)handle);
@@ -771,10 +781,6 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
 
 void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     GLContext *ctx = contextList[ctxHandle];
-
-#ifdef ENABLE_IMGUI
-    ImGuiDestroyContext(ctx);
-#endif
 
     if (ctx->nsglContext != mainContext->nsglContext) {
         // Delete default VAO for shared context

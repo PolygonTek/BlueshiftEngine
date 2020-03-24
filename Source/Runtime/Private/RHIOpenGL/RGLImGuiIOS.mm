@@ -31,8 +31,6 @@ void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
     ImGui::StyleColorsDark();
     //ImGui::StyleColorsClassic();
 
-    ctx->imGuiLastTime = PlatformTime::Seconds();
-
     ImGuiIO &io = ImGui::GetIO();
 
     io.IniFilename = nullptr;
