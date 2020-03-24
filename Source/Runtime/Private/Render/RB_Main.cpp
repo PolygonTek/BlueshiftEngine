@@ -529,6 +529,9 @@ static void RB_HiOcclusionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         return;
     }
 
+    BE_SCOPE_PROFILE_CPU("RB_HiOcclusionPass");
+    BE_SCOPE_PROFILE_GPU("RB_HiOcclusionPass");
+
     // Render occluder to HiZ occlusion buffer
     RB_RenderOcclusionMap(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
@@ -546,10 +549,10 @@ static void RB_ClearView() {
     if (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::DepthOnly || 
         backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Skybox) {
         rhi.SetStateBits(rhi.GetStateBits() | RHI::DepthWrite);
-        rhi.Clear(RHI::ClearBit::Depth | RHI::ClearBit::Stencil, Color4::black, 1.0f, 0);
+        rhi.Clear(RHI::ClearBit::Depth, Color4::black, 1.0f, 0);
     } else if (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Color) {
         rhi.SetStateBits(rhi.GetStateBits() | RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
-        rhi.Clear(RHI::ClearBit::Depth | RHI::ClearBit::Stencil | RHI::ClearBit::Color, backEnd.camera->def->GetState().clearColor, 1.0f, 0);
+        rhi.Clear(RHI::ClearBit::Depth | RHI::ClearBit::Color, backEnd.camera->def->GetState().clearColor, 1.0f, 0);
     }
 }
 

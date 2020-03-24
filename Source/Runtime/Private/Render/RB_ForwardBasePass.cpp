@@ -16,6 +16,7 @@
 #include "Render/Render.h"
 #include "RenderInternal.h"
 #include "RBackEnd.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -103,6 +104,9 @@ void RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
     if (r_skipBasePass.GetBool()) {
         return;
     }
+
+    BE_SCOPE_PROFILE_CPU("RB_ForwardBasePass");
+    BE_SCOPE_PROFILE_GPU("RB_ForwardBasePass");
 
     if (backEnd.primaryLight) {
         RB_SetupLight(backEnd.primaryLight);

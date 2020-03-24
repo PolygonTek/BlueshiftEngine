@@ -16,6 +16,7 @@
 #include "Render/Render.h"
 #include "RenderInternal.h"
 #include "RBackEnd.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -125,6 +126,9 @@ void RB_ForwardAdditivePass(const LinkList<VisLight> *visLights) {
     if (r_skipShadowAndLitPass.GetBool()) {
         return;
     }
+
+    BE_SCOPE_PROFILE_CPU("RB_ForwardAdditivePass");
+    BE_SCOPE_PROFILE_GPU("RB_ForwardAdditivePass");
 
     for (VisLight *visLight = visLights->Next(); visLight; visLight = visLight->node.Next()) {
         const RenderLight *renderLight = visLight->def;
