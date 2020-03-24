@@ -199,8 +199,6 @@ void DetectCpu() {
         cpuInfo.cpuid |= CPUID_GENERIC;
     }
 #elif defined(__ANDROID__)
-    cpuInfo.cpuid |= CPUID_ARM;
-
     AndroidCpuFamily family = android_getCpuFamily();
     uint64_t features = android_getCpuFeatures();
 
@@ -209,6 +207,9 @@ void DetectCpu() {
 
         if (features & ANDROID_CPU_ARM_FEATURE_NEON) {
             cpuInfo.cpuid |= CPUID_NEON;
+        }
+        if (features & ANDROID_CPU_ARM_FEATURE_NEON_FMA) {
+            cpuInfo.cpuid |= CPUID_NEON_FMA;
         }
     } else if (family == ANDROID_CPU_FAMILY_X86 || family == ANDROID_CPU_FAMILY_X86_64) {
         cpuInfo.cpuid |= CPUID_GENERIC;
@@ -221,6 +222,9 @@ void DetectCpu() {
         }
         if (features & ANDROID_CPU_X86_FEATURE_SSE4_2) {
             cpuInfo.cpuid |= CPUID_SSE4_2;
+        }
+        if (features & ANDROID_CPU_X86_FEATURE_POPCNT) {
+            cpuInfo.cpuid |= CPUID_POPCNT;
         }
         if (features & ANDROID_CPU_X86_FEATURE_AVX) {
             cpuInfo.cpuid |= CPUID_AVX;

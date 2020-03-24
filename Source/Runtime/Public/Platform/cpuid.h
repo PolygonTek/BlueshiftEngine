@@ -45,7 +45,8 @@ enum CpuId {
     CPUID_AVX512CD              = BIT(21),  ///< AVX-512 Conflict Detection Instructions
     CPUID_AVX512ER              = BIT(22),  ///< AVX-512 Exponential and Reciprocal Instructions
     CPUID_AVX512PF              = BIT(23),  ///< AVX-512 Prefetch Instructions
-    CPUID_NEON                  = BIT(24)   ///< ARM Neon
+    CPUID_NEON                  = BIT(24),  ///< ARM Neon
+    CPUID_NEON_FMA              = BIT(25)   ///< ARM Neon FMA
 };
 
 struct CpuInfo {
