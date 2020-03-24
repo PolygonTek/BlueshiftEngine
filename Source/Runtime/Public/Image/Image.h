@@ -517,7 +517,9 @@ BE_INLINE byte *Image::GetPixels(int level) const {
 }
 
 BE_INLINE byte *Image::GetPixels(int level, int sliceIndex) const {
-    if (level >= numMipmaps || sliceIndex >= numSlices) return nullptr;
+    if (level >= numMipmaps || sliceIndex >= numSlices) {
+        return nullptr;
+    }
     return pic + GetSliceSize(0, numMipmaps) * sliceIndex + GetSliceSize(0, level);
 }
 
