@@ -197,7 +197,7 @@ void RenderSystem::FreeRenderContext(RenderContext *rc) {
 }
 
 void RenderSystem::BeginCommands(RenderContext *renderContext) {
-    BE_SCOPE_PROFILE_CPU("RenderSystem::BeginCommands");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderSystem::BeginCommands");
 
     renderSystem.currentContext = renderContext;
 
@@ -215,7 +215,7 @@ void RenderSystem::BeginCommands(RenderContext *renderContext) {
 }
 
 void RenderSystem::EndCommands() {
-    BE_SCOPE_PROFILE_CPU("RenderSystem::EndCommands");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderSystem::EndCommands");
 
     bufferCacheManager.BeginBackEnd();
 
@@ -290,7 +290,7 @@ void RenderSystem::CmdScreenshot(int x, int y, int width, int height, const char
 }
 
 void RenderSystem::IssueCommands() {
-    BE_SCOPE_PROFILE_CPU("RenderSystem::IssueCommands");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderSystem::IssueCommands");
 
     RenderCommandBuffer *cmds = frameData.GetCommands();
     // Add an end-of-list command.
@@ -617,7 +617,7 @@ void RenderSystem::CheckModifiedCVars() {
 }
 
 void RenderSystem::UpdateEnvProbes() {
-    BE_SCOPE_PROFILE_CPU("RenderSystem::UpdateEnvProbes");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderSystem::UpdateEnvProbes");
 
     // Needs any render context to render environment cubemap
     if (!renderSystem.renderContexts.Count()) {

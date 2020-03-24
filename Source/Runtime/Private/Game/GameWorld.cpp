@@ -702,7 +702,7 @@ int GameWorld::GetUnscaledDeltaTime() const {
 }
 
 void GameWorld::Update(int elapsedTime) {
-    BE_SCOPE_PROFILE_CPU("GameWorld::Update");
+    BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::Update");
 
     if (isDebuggable) {
         luaVM.PollDebuggee();
@@ -729,7 +729,7 @@ void GameWorld::Update(int elapsedTime) {
 }
 
 void GameWorld::FixedUpdateEntities(float timeStep) {
-    //BE_SCOPE_PROFILE_CPU("GameWorld::FixedUpdateEntities");
+    //BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::FixedUpdateEntities");
 
     // Call fixed update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
@@ -740,7 +740,7 @@ void GameWorld::FixedUpdateEntities(float timeStep) {
 }
 
 void GameWorld::FixedLateUpdateEntities(float timeStep) {
-    //BE_SCOPE_PROFILE_CPU("GameWorld::FixedLateUpdateEntities");
+    //BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::FixedLateUpdateEntities");
 
     // Call fixed post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
@@ -751,7 +751,7 @@ void GameWorld::FixedLateUpdateEntities(float timeStep) {
 }
 
 void GameWorld::UpdateEntities() {
-    BE_SCOPE_PROFILE_CPU("GameWorld::UpdateEntities");
+    BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::UpdateEntities");
 
     // Call update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
@@ -762,7 +762,7 @@ void GameWorld::UpdateEntities() {
 }
 
 void GameWorld::LateUpdateEntities() {
-    BE_SCOPE_PROFILE_CPU("GameWorld::LateUpdateEntities");
+    BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::LateUpdateEntities");
 
     // Call post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
@@ -773,7 +773,7 @@ void GameWorld::LateUpdateEntities() {
 }
 
 void GameWorld::UpdateLuaVM() {
-    BE_SCOPE_PROFILE_CPU("GameWorld::UpdateLuaVM");
+    BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::UpdateLuaVM");
 
     // Wake up waiting coroutine in Lua scripts.
     luaVM.WakeUpWaitingThreads(MILLI2SEC(time));
@@ -836,7 +836,7 @@ void GameWorld::ListUpActiveCanvasComponents(StaticArray<ComCanvas *, 16> &canva
 }
 
 void GameWorld::RenderCamera() {
-    BE_SCOPE_PROFILE_CPU("GameWorld::RenderCamera");
+    BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::RenderCamera");
 
     StaticArray<ComCamera *, 16> cameraComponents;
     ListUpActiveCameraComponents(cameraComponents);

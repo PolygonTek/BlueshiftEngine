@@ -207,8 +207,8 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 void RB_DepthPrePass(int numDrawSurfs, DrawSurf **drawSurfs) {
-    BE_SCOPE_PROFILE_CPU("RB_DepthPrePass");
-    BE_SCOPE_PROFILE_GPU("RB_DepthPrePass");
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_DepthPrePass");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_DepthPrePass");
 
     if (r_usePostProcessing.GetBool() && r_SSAO.GetBool()) {
         backEnd.ctx->screenRT->SetMRTMask(3);
@@ -310,8 +310,8 @@ void RB_BlendPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         return;
     }
 
-    BE_SCOPE_PROFILE_CPU("RB_BlendPass");
-    BE_SCOPE_PROFILE_GPU("RB_BlendPass");
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_BlendPass");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_BlendPass");
 
     const VisObject *   prevSpace = nullptr;
     const SubMesh *     prevSubMesh = nullptr;
@@ -403,8 +403,8 @@ void RB_VelocityMapPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         return;
     }
 
-    BE_SCOPE_PROFILE_CPU("RB_VelocityMapPass");
-    BE_SCOPE_PROFILE_GPU("RB_VelocityMapPass");
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_VelocityMapPass");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_VelocityMapPass");
 
     const VisObject *   prevSpace = nullptr;
     const VisObject *   skipObject = nullptr;
@@ -498,8 +498,8 @@ void RB_FinalPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         return;
     }
 
-    BE_SCOPE_PROFILE_CPU("RB_FinalPass");
-    BE_SCOPE_PROFILE_GPU("RB_FinalPass");
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_FinalPass");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_FinalPass");
 
     const VisObject *   prevSpace = nullptr;
     const SubMesh *     prevSubMesh = nullptr;

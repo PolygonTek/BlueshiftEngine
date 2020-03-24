@@ -184,7 +184,7 @@ void GameClient::Shutdown() {
 }
 
 void GameClient::Update() {
-    BE_SCOPE_PROFILE_CPU("GameClient::Update");
+    BE_PROFILE_CPU_SCOPE_STATIC("GameClient::Update");
 
     if (fpsFrametime >= cl_updateFps.GetInteger()) {
         fps = fpsFrames / MILLI2SEC(fpsFrametime);
@@ -219,7 +219,7 @@ void GameClient::EndFrame() {
 }
 
 void GameClient::Render(const RenderContext *renderContext) {
-    BE_SCOPE_PROFILE_CPU("GameClient::Render");
+    BE_PROFILE_CPU_SCOPE_STATIC("GameClient::Render");
 
     menuBarHeight = 0.0f;
 

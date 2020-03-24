@@ -78,7 +78,7 @@ VisLight *RenderWorld::RegisterVisLight(VisCamera *camera, RenderLight *renderLi
 
 // Add visible lights/objects using bounding view volume.
 void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
-    BE_SCOPE_PROFILE_CPU("RenderWorld::FindVisLightsAndObjects");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::FindVisLightsAndObjects");
 
     camera->worldAABB.Clear();
     camera->visLights.Clear();
@@ -238,7 +238,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
 
 // Add drawing surfaces of visible static meshes.
 void RenderWorld::AddStaticMeshes(VisCamera *camera) {
-    BE_SCOPE_PROFILE_CPU("RenderWorld::AddStaticMeshes");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::AddStaticMeshes");
 
     // Called for each static mesh surfaces intersecting with camera frustum 
     // Returns true if it want to proceed next query
@@ -302,7 +302,7 @@ void RenderWorld::AddStaticMeshes(VisCamera *camera) {
 
 // Add drawing surfaces of visible skinned meshes.
 void RenderWorld::AddSkinnedMeshes(VisCamera *camera) {
-    BE_SCOPE_PROFILE_CPU("RenderWorld::AddSkinnedMeshes");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::AddSkinnedMeshes");
 
     for (VisObject *visObject = camera->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
         if (!visObject->ambientVisible) {
@@ -347,7 +347,7 @@ void RenderWorld::AddSkinnedMeshes(VisCamera *camera) {
 }
 
 void RenderWorld::AddRawMeshes(VisCamera *camera) {
-    BE_SCOPE_PROFILE_CPU("RenderWorld::AddRawMeshes");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::AddRawMeshes");
 
     for (VisObject *visObject = camera->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
         if (!visObject->ambientVisible) {
@@ -409,7 +409,7 @@ void RenderWorld::AddRawMeshes(VisCamera *camera) {
 
 // Add drawing surfaces of visible particle meshes.
 void RenderWorld::AddParticleMeshes(VisCamera *camera) {
-    BE_SCOPE_PROFILE_CPU("RenderWorld::AddParticleMeshes");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::AddParticleMeshes");
 
     for (VisObject *visObject = camera->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
         if (!visObject->ambientVisible) {
@@ -460,7 +460,7 @@ void RenderWorld::AddParticleMeshes(VisCamera *camera) {
 
 // Add drawing surfaces of visible text meshes.
 void RenderWorld::AddTextMeshes(VisCamera *camera) {
-    BE_SCOPE_PROFILE_CPU("RenderWorld::AddTextMeshes");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::AddTextMeshes");
 
     for (VisObject *visObject = camera->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
         if (!visObject->ambientVisible) {
@@ -529,7 +529,7 @@ void RenderWorld::AddTextMeshes(VisCamera *camera) {
 
 // Add drawing surfaces of the skybox mesh.
 void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
-    BE_SCOPE_PROFILE_CPU("RenderWorld::AddSkyBoxMeshes");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::AddSkyBoxMeshes");
 
     if (camera->def->state.clearMethod != RenderCamera::ClearMethod::Skybox) {
         return;
@@ -572,7 +572,7 @@ void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
 
 // Add lit drawing surfaces of visible static meshes for each light.
 void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
-    BE_SCOPE_PROFILE_CPU("RenderWorld::AddStaticMeshesForLights");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::AddStaticMeshesForLights");
 
     VisLight *visLight;
 
@@ -689,7 +689,7 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
 
 // Add lit drawing surfaces of visible skinned meshes for each light.
 void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
-    BE_SCOPE_PROFILE_CPU("RenderWorld::AddSkinnedMeshesForLights");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::AddSkinnedMeshesForLights");
 
     VisLight *visLight;
 
@@ -818,7 +818,7 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
 }
 
 void RenderWorld::CacheInstanceBuffer(VisCamera *camera) {
-    BE_SCOPE_PROFILE_CPU("RenderWorld::CacheInstanceBuffer");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::CacheInstanceBuffer");
 
     if (renderGlobal.instancingMethod == Mesh::InstancingMethod::NoInstancing) {
         return;
@@ -946,7 +946,7 @@ void RenderWorld::OptimizeLights(VisCamera *camera) {
 }
 
 void RenderWorld::DrawCamera(VisCamera *camera) {
-    BE_SCOPE_PROFILE_CPU("RenderWorld::DrawCamera");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::DrawCamera");
 
     viewCount++;
 
@@ -1023,7 +1023,7 @@ void RenderWorld::AddSubCamera(VisCamera *camera) {
 }
 
 void RenderWorld::DrawSubCamera(const VisObject *visObject, const DrawSurf *drawSurf, const Material *material) {
-    BE_SCOPE_PROFILE_CPU("RenderWorld::DrawSubCamera");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::DrawSubCamera");
 }
 
 void RenderWorld::AddDrawSurf(VisCamera *camera, VisLight *visLight, VisObject *visObject, const Material *material, SubMesh *subMesh, int flags) {
@@ -1163,7 +1163,7 @@ static int BE_CDECL _CompareDrawSurf(const void *elem1, const void *elem2) {
 }
 
 void RenderWorld::SortDrawSurfs(VisCamera *camera) {
-    BE_SCOPE_PROFILE_CPU("RenderWorld::SortDrawSurfs");
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::SortDrawSurfs");
 
     // FIXME: Use radix sort to boost up speed
     qsort(camera->drawSurfs, camera->numDrawSurfs, sizeof(DrawSurf *), _CompareDrawSurf);

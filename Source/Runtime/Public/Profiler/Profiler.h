@@ -23,29 +23,41 @@
 BE_NAMESPACE_BEGIN
 
 #ifdef ENABLE_PROFILER
-    #define BE_PROFILE_INIT()                       BE1::profiler.Init()
-    #define BE_PROFILE_SHUTDOWN()                   BE1::profiler.Shutdown()
-    #define BE_PROFILE_SYNC_FRAME()                 BE1::profiler.SyncFrame()
-    #define BE_PROFILE_STOP()                       BE1::profiler.SetFreeze(true)
-    #define BE_PROFILE_START()                      BE1::profiler.SetFreeze(false)
-    #define BE_SCOPE_PROFILE_CPU_BASE(name, color)  static int CONCAT(tag_cpu_, __LINE__) = BE1::profiler.CreateTag(name, color); \
-                                                    BE1::ScopeProfileCPU CONCAT(profile_scope_cpu_, __LINE__)(CONCAT(tag_cpu_, __LINE__))
-    #define BE_SCOPE_PROFILE_CPU_ARG1(name)         BE_SCOPE_PROFILE_CPU_BASE(name, Color3::lightGray)
-    #define BE_SCOPE_PROFILE_CPU_ARG2(name, color)  BE_SCOPE_PROFILE_CPU_BASE(name, color)
-    #define BE_SCOPE_PROFILE_CPU(...)               OVERLOADED_MACRO(BE_SCOPE_PROFILE_CPU, __VA_ARGS__)
-    #define BE_SCOPE_PROFILE_GPU_BASE(name, color)  static int CONCAT(tag_gpu_, __LINE__) = BE1::profiler.CreateTag(name, color); \
-                                                    BE1::ScopeProfileGPU CONCAT(profile_scope_gpu_, __LINE__)(CONCAT(tag_gpu_, __LINE__))
-    #define BE_SCOPE_PROFILE_GPU_ARG1(name)         BE_SCOPE_PROFILE_GPU_BASE(name, Color3::lightGray)
-    #define BE_SCOPE_PROFILE_GPU_ARG2(name, color)  BE_SCOPE_PROFILE_GPU_BASE(name, color)
-    #define BE_SCOPE_PROFILE_GPU(...)               OVERLOADED_MACRO(BE_SCOPE_PROFILE_GPU, __VA_ARGS__)
+    #define BE_PROFILE_INIT()                               BE1::profiler.Init()
+    #define BE_PROFILE_SHUTDOWN()                           BE1::profiler.Shutdown()
+    #define BE_PROFILE_SYNC_FRAME()                         BE1::profiler.SyncFrame()
+    #define BE_PROFILE_STOP()                               BE1::profiler.SetFreeze(true)
+    #define BE_PROFILE_START()                              BE1::profiler.SetFreeze(false)
+
+    #define BE_PROFILE_TAG(var)                             CONCAT(profile_tag_, var)
+    #define BE_PROFILE_DEFINE_TAG(var, name, color)         int BE_PROFILE_TAG(var) = BE1::profiler.CreateTag(name, color)
+    #define BE_PROFILE_DECLARE_TAG(var)                     extern int BE_PROFILE_TAG(var)
+
+    #define BE_PROFILE_CPU_SCOPE(var)                       BE1::ScopeProfileCPU CONCAT(profile_scope_cpu_, __LINE__)(BE_PROFILE_TAG(var))
+    #define BE_PROFILE_GPU_SCOPE(var)                       BE1::ScopeProfileGPU CONCAT(profile_scope_gpu_, __LINE__)(BE_PROFILE_TAG(var))
+
+    #define BE_PROFILE_CPU_SCOPE_STATIC_BASE(name, color)   static BE_PROFILE_DEFINE_TAG(CONCAT(cpu_, __LINE__), name, color); BE_PROFILE_CPU_SCOPE(CONCAT(cpu_, __LINE__))
+    #define BE_PROFILE_CPU_SCOPE_STATIC_ARG1(name)          BE_PROFILE_CPU_SCOPE_STATIC_BASE(name, Color3::lightGray)
+    #define BE_PROFILE_CPU_SCOPE_STATIC_ARG2(name, color)   BE_PROFILE_CPU_SCOPE_STATIC_BASE(name, color)
+    #define BE_PROFILE_CPU_SCOPE_STATIC(...)                OVERLOADED_MACRO(BE_PROFILE_CPU_SCOPE_STATIC, __VA_ARGS__)
+
+    #define BE_PROFILE_GPU_SCOPE_STATIC_BASE(name, color)   static BE_PROFILE_DEFINE_TAG(CONCAT(gpu_, __LINE__), name, color); BE_PROFILE_GPU_SCOPE(CONCAT(gpu_, __LINE__))
+    #define BE_PROFILE_GPU_SCOPE_STATIC_ARG1(name)          BE_PROFILE_GPU_SCOPE_STATIC_BASE(name, Color3::lightGray)
+    #define BE_PROFILE_GPU_SCOPE_STATIC_ARG2(name, color)   BE_PROFILE_GPU_SCOPE_STATIC_BASE(name, color)
+    #define BE_PROFILE_GPU_SCOPE_STATIC(...)                OVERLOADED_MACRO(BE_PROFILE_GPU_SCOPE_STATIC, __VA_ARGS__)
 #else
     #define BE_PROFILE_INIT()
     #define BE_PROFILE_SHUTDOWN()
     #define BE_PROFILE_SYNC_FRAME()
     #define BE_PROFILE_STOP()
     #define BE_PROFILE_START()
-    #define BE_SCOPE_PROFILE_CPU(...)
-    #define BE_SCOPE_PROFILE_GPU(...)
+    #define BE_PROFILE_TAG(var)
+    #define BE_PROFILE_DEFINE_TAG(var, name, color)
+    #define BE_PROFILE_DECLARE_TAG(var)
+    #define BE_PROFILE_SCOPE_CPU(var)
+    #define BE_PROFILE_SCOPE_GPU(var)
+    #define BE_PROFILE_CPU_SCOPE_STATIC(...)
+    #define BE_PROFILE_GPU_SCOPE_STATIC(...)
 #endif
 
 class Profiler {

@@ -52,8 +52,8 @@ void RB_PostProcessDepth() {
 }
 
 void RB_PostProcess() {
-    BE_SCOPE_PROFILE_CPU("RB_PostProcess");
-    BE_SCOPE_PROFILE_GPU("RB_PostProcess");
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_PostProcess");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_PostProcess");
 
     float bloomScale;
     float screenTc[4];

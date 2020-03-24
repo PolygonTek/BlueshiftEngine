@@ -105,8 +105,8 @@ void RB_ForwardBasePass(int numDrawSurfs, DrawSurf **drawSurfs) {
         return;
     }
 
-    BE_SCOPE_PROFILE_CPU("RB_ForwardBasePass");
-    BE_SCOPE_PROFILE_GPU("RB_ForwardBasePass");
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_ForwardBasePass");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_ForwardBasePass");
 
     if (backEnd.primaryLight) {
         RB_SetupLight(backEnd.primaryLight);

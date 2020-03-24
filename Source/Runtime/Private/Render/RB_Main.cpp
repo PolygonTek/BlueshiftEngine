@@ -529,8 +529,8 @@ static void RB_HiOcclusionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         return;
     }
 
-    BE_SCOPE_PROFILE_CPU("RB_HiOcclusionPass");
-    BE_SCOPE_PROFILE_GPU("RB_HiOcclusionPass");
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_HiOcclusionPass");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_HiOcclusionPass");
 
     // Render occluder to HiZ occlusion buffer
     RB_RenderOcclusionMap(backEnd.numAmbientSurfs, backEnd.drawSurfs);
@@ -543,8 +543,8 @@ static void RB_HiOcclusionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 static void RB_ClearView() {
-    BE_SCOPE_PROFILE_CPU("RB_ClearView");
-    BE_SCOPE_PROFILE_GPU("RB_ClearView");
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_ClearView");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_ClearView");
 
     if (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::DepthOnly || 
         backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Skybox) {
@@ -557,8 +557,8 @@ static void RB_ClearView() {
 }
 
 static void RB_RenderView() {
-    BE_SCOPE_PROFILE_CPU("RB_RenderView");
-    BE_SCOPE_PROFILE_GPU("RB_RenderView");
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_RenderView");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_RenderView");
 
     if (backEnd.camera->def->GetState().flags & RenderCamera::Flag::TexturedMode) {
         // Render pass for HiZ occlusion culling.
@@ -852,8 +852,8 @@ void RB_DrawDebugTextures() {
 
 // FIXME: Consider this view is sub camera
 static void RB_DrawCamera3D() {
-    BE_SCOPE_PROFILE_CPU("RB_DrawCamera3D");
-    BE_SCOPE_PROFILE_GPU("RB_DrawCamera3D");
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_DrawCamera3D");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_DrawCamera3D");
 
     if (backEnd.ctx->flags & RenderContext::Flag::UseSelectionBuffer) {
         backEnd.ctx->screenSelectionRT->Begin();
@@ -919,8 +919,8 @@ static void RB_DrawCamera3D() {
 }
 
 static void RB_DrawCamera2D() {
-    BE_SCOPE_PROFILE_CPU("RB_DrawCamera2D");
-    BE_SCOPE_PROFILE_GPU("RB_DrawCamera2D");
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_DrawCamera2D");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_DrawCamera2D");
 
     if (!backEnd.numDrawSurfs) {
         return;
@@ -1027,8 +1027,8 @@ static const void *RB_ExecuteScreenshot(const void *data) {
 }
 
 static const void *RB_ExecuteSwapBuffers(const void *data) {
-    BE_SCOPE_PROFILE_CPU("RB_ExecuteSwapBuffers");
-    BE_SCOPE_PROFILE_GPU("RB_ExecuteSwapBuffers");
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_ExecuteSwapBuffers");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_ExecuteSwapBuffers");
 
     SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)data;
 
@@ -1072,8 +1072,8 @@ static const void *RB_ExecuteSwapBuffers(const void *data) {
 }
 
 void RB_Execute(const void *data) {
-    BE_SCOPE_PROFILE_CPU("RB_Execute");
-    BE_SCOPE_PROFILE_GPU("RB_Execute");
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_Execute");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_Execute");
 
     uint32_t t1 = PlatformTime::Milliseconds();
     uint32_t t2;

@@ -1240,7 +1240,7 @@ void OpenGLRHI::ImGuiDestroyContext(GLContext *ctx) {
 }
 
 void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
-    BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiBeginFrame");
+    BE_PROFILE_CPU_SCOPE_STATIC("OpenGLRHI::ImGuiBeginFrame");
 
     ImGui_ImplOpenGL_ValidateFrame();
 
@@ -1265,8 +1265,8 @@ void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
 }
 
 void OpenGLRHI::ImGuiRender() {
-    BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiRender");
-    BE_SCOPE_PROFILE_GPU("OpenGLRHI::ImGuiRender");
+    BE_PROFILE_CPU_SCOPE_STATIC("OpenGLRHI::ImGuiRender");
+    BE_PROFILE_GPU_SCOPE_STATIC("OpenGLRHI::ImGuiRender");
 
     ImGui::Render();
 
@@ -1283,7 +1283,7 @@ void OpenGLRHI::ImGuiRender() {
 }
 
 void OpenGLRHI::ImGuiEndFrame() {
-    BE_SCOPE_PROFILE_CPU("OpenGLRHI::ImGuiEndFrame");
+    BE_PROFILE_CPU_SCOPE_STATIC("OpenGLRHI::ImGuiEndFrame");
 
     ImGui::EndFrame();
 }

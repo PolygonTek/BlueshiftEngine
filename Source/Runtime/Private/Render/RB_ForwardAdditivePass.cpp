@@ -127,8 +127,8 @@ void RB_ForwardAdditivePass(const LinkList<VisLight> *visLights) {
         return;
     }
 
-    BE_SCOPE_PROFILE_CPU("RB_ForwardAdditivePass");
-    BE_SCOPE_PROFILE_GPU("RB_ForwardAdditivePass");
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_ForwardAdditivePass");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_ForwardAdditivePass");
 
     for (VisLight *visLight = visLights->Next(); visLight; visLight = visLight->node.Next()) {
         const RenderLight *renderLight = visLight->def;

@@ -222,7 +222,7 @@ void PhysicsWorld::SetFrameRate(int frameRate) {
 }
 
 void PhysicsWorld::StepSimulation(int frameTime) {
-    BE_SCOPE_PROFILE_CPU("PhysicsWorld::StepSimulation");
+    BE_PROFILE_CPU_SCOPE_STATIC("PhysicsWorld::StepSimulation");
 
     if (!physics_enable.GetBool()) {
         return;

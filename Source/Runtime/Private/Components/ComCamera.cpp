@@ -390,7 +390,7 @@ bool ComCamera::ProcessTouchPointerInput() {
 }
 
 void ComCamera::Render() {
-    BE_SCOPE_PROFILE_CPU("ComCamera::Render");
+    BE_PROFILE_CPU_SCOPE_STATIC("ComCamera::Render");
 
     // Get current render context which is unique for each OS-level window in general.
     const RenderContext *ctx = renderSystem.GetCurrentRenderContext();
