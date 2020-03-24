@@ -434,9 +434,9 @@ void GameClient::DrawStatistics(const RenderContext *renderContext) {
 
             profiler.IterateCpuMarkers(tid, [&lastStackDepth](const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
                 // Convert nanoseconds to milliseconds.
-                const float durationMs = (endTime - startTime) * 0.000001f;
+                float durationMs = (endTime - startTime) * 0.000001f;
 
-                Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.65f);
+                Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 4.0f, 0.0f, 1.0f), 0.65f);
 
                 while (stackDepth < lastStackDepth) {
                     ImGui::TreePop();
@@ -450,7 +450,7 @@ void GameClient::DrawStatistics(const RenderContext *renderContext) {
                 ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
 
                 Str id = tagName;
-                bool opened = ImGui::TreeNodeEx(id, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
+                bool opened = ImGui::TreeNodeEx(id, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.2fms", tagName, durationMs);
 
                 ImGui::PopStyleColor(3);
 
@@ -471,9 +471,9 @@ void GameClient::DrawStatistics(const RenderContext *renderContext) {
 
             profiler.IterateGpuMarkers([&lastStackDepth](const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
                 // Convert nanoseconds to milliseconds.
-                const float durationMs = (endTime - startTime) * 0.000001f;
+                float durationMs = (endTime - startTime) * 0.000001f;
 
-                Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 3.0f, 0.0f, 1.0f), 0.65f);
+                Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 4.0f, 0.0f, 1.0f), 0.65f);
 
                 while (stackDepth < lastStackDepth) {
                     ImGui::TreePop();
@@ -487,7 +487,7 @@ void GameClient::DrawStatistics(const RenderContext *renderContext) {
                 ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
 
                 Str id = tagName;
-                bool opened = ImGui::TreeNodeEx(id, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.3fms", tagName, durationMs);
+                bool opened = ImGui::TreeNodeEx(id, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.2fms", tagName, durationMs);
 
                 ImGui::PopStyleColor(3);
 
