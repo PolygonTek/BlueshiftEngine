@@ -83,13 +83,15 @@ void ComCanvas::Init() {
     
     renderCameraDef.flags = RenderCamera::Flag::TexturedMode | RenderCamera::Flag::NoSubViews | RenderCamera::Flag::SkipPostProcess;
 
-    renderCameraDef.origin = Vec3::origin;
+    ComRectTransform *rectTransform = GetEntity()->GetRectTransform();
+
+    renderCameraDef.origin = rectTransform->GetOrigin();
     renderCameraDef.axis[0] = -Coords2D::ZAxis();
     renderCameraDef.axis[1] = -Coords2D::XAxis();
     renderCameraDef.axis[2] = +Coords2D::YAxis();
     renderCameraDef.axis.FixDegeneracies();
 
-    renderCameraDef.zNear = -1000.0f;
+    renderCameraDef.zNear = -10.0f;
     renderCameraDef.zFar = 1000.0f;
 
     renderCameraDef.orthogonal = true;
@@ -97,7 +99,6 @@ void ComCanvas::Init() {
     renderCameraDef.layerMask = BIT(TagLayerSettings::BuiltInLayer::UI);
 
 #if WITH_EDITOR
-    ComRectTransform *rectTransform = GetEntity()->GetRectTransform();
     if (rectTransform) {
         rectTransform->Connect(&ComRectTransform::SIG_RectTransformUpdated, this, (SignalCallback)&ComCanvas::RectTransformUpdated, SignalObject::ConnectionType::Unique);
     }
@@ -150,6 +151,8 @@ const AABB ComCanvas::GetAABB() const {
 
 #if WITH_EDITOR
 void ComCanvas::RectTransformUpdated(ComRectTransform *rectTransform) {
+    renderCameraDef.origin = rectTransform->GetOrigin();
+
     if (rectTransform->GetAnchoredPosition() != Vec2::zero) {
         rectTransform->SetAnchoredPosition(Vec2::zero);
     }
