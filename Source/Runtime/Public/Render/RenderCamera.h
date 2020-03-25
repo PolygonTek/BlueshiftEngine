@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ public:
         float               zNear;                  ///< Near distance in z axis
         float               zFar;                   ///< Far distance in z axis
         float               blendDistance;          ///< Blend distance for local probe rendering
-        bool                orthogonal = false;     ///< True for orthogonal projection or perspective projection
+        bool                orthogonal = false;     ///< True for orthogonal projection or false for perspective projection
     };
 
     void                    Update(const State *state);

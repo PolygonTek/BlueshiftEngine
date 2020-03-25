@@ -38,14 +38,16 @@ public:
 
     TagLayerSettings();
 
+                                /// Return tag index with the given tag name.
     int32_t                     FindTag(const char *tagName) const;
+                                /// Return layer index with the given layer name.
     int32_t                     FindLayer(const char *layerName) const;
 
     static TagLayerSettings *   Load(const char *filename);
 
 private:
-    Array<Str>                  tags;
-    Array<Str>                  layers;
+    Array<Str>                  tags;       ///< tag names
+    Array<Str>                  layers;     ///< layer names
 };
 
 BE_NAMESPACE_END

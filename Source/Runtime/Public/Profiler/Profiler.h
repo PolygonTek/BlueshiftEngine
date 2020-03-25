@@ -240,8 +240,9 @@ BE_INLINE void Profiler::IterateGpuMarkers(Func func) const {
             bool isLeaf = nextMarkerIndex == endMarkerIndex || ti.markers[nextMarkerIndex].stackDepth <= marker.stackDepth;
 
             if (marker.stackDepth < skipMinDepth) {
-                while (!rhi.QueryResultAvailable(marker.startQueryHandle)) {}
-                while (!rhi.QueryResultAvailable(marker.endQueryHandle)) {}
+                if (!rhi.QueryResultAvailable(marker.startQueryHandle) || !rhi.QueryResultAvailable(marker.endQueryHandle)) {
+                    continue;
+                }
                 uint64_t startTime = rhi.QueryResult(marker.startQueryHandle);
                 uint64_t endTime = rhi.QueryResult(marker.endQueryHandle);
 
