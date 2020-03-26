@@ -41,7 +41,7 @@ static int          deviceBpp = 0;
 static int          deviceHz = 0;
 static HGLRC        hrcMain;
 
-static CVar         gl_debug("gl_debug", "1", CVar::Flag::Bool, "");
+static CVar         gl_debug("gl_debug", "0", CVar::Flag::Bool, "");
 static CVar         gl_debugLevel("gl_debugLevel", "3", CVar::Flag::Integer, "");
 static CVar         gl_ignoreError("gl_ignoreError", "0", CVar::Flag::Bool, "");
 static CVar         gl_finish("gl_finish", "0", CVar::Flag::Bool, "");
