@@ -141,7 +141,6 @@ void Common::Init(const char *baseDir) {
 
     realTime = 0;
     frameTime = 0;
-    frameSec = 0;
 }
 
 void Common::Shutdown() {
@@ -179,12 +178,9 @@ void Common::SaveConfig(const char *filename) {
     }
 }
 
-void Common::RunFrame(float elapsedTime) {
-    frameSec = elapsedTime;
-
-    int frameMsec = Math::FtoiFast(SEC2MILLI(frameSec));
-    frameTime = frameMsec;
-    realTime += frameMsec;
+void Common::RunFrame(int elapsedMsec) {
+    frameTime = elapsedMsec;
+    realTime += elapsedMsec;
 
     ProcessPlatformEvent();
 

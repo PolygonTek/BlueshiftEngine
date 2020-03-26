@@ -108,7 +108,7 @@ public:
     void                        DontDestroyOnLoad(Entity *entity);
 
                                 /// Simulates physics system and update all registered entities.
-    void                        Update(int elapsedTime);
+    void                        Update(int elapsedMsec);
 
                                 /// Processes mouse & touch input feedback for all responsive entities.
     void                        ProcessPointerInput();

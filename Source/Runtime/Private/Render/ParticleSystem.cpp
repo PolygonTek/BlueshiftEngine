@@ -255,9 +255,9 @@ bool ParticleSystem::ParseStandardModule(Lexer &lexer, StandardModule &module) c
         } else if (!token.Icmp("spawnBunching")) {
             module.spawnBunching = lexer.ParseFloat();
         } else if (!token.Icmp("lifeTime")) {
-            module.lifeTime = lexer.ParseFloat();
+            module.lifeTime = SEC2MILLI(lexer.ParseFloat());
         } else if (!token.Icmp("deadTime")) {
-            module.deadTime = lexer.ParseFloat();
+            module.deadTime = SEC2MILLI(lexer.ParseFloat());
         } else if (!token.Icmp("looping")) {
             if (lexer.ReadToken(&token)) {
                 module.looping = (token == "false" ? false : true); 
@@ -959,8 +959,8 @@ void ParticleSystem::Write(const char *filename) {
 
         fp->Printf("%scount %i\n", indentSpace.c_str(), standardModule.count);
         fp->Printf("%sspawnBunching %.3f\n", indentSpace.c_str(), standardModule.spawnBunching);
-        fp->Printf("%slifeTime %.3f\n", indentSpace.c_str(), standardModule.lifeTime);
-        fp->Printf("%sdeadTime %.3f\n", indentSpace.c_str(), standardModule.deadTime);
+        fp->Printf("%slifeTime %.3f\n", indentSpace.c_str(), MILLI2SEC(standardModule.lifeTime));
+        fp->Printf("%sdeadTime %.3f\n", indentSpace.c_str(), MILLI2SEC(standardModule.deadTime));
         fp->Printf("%slooping %s\n", indentSpace.c_str(), standardModule.looping ? "true" : "false");
         fp->Printf("%sprewarm %s\n", indentSpace.c_str(), standardModule.prewarm ? "true" : "false");
         fp->Printf("%smaxCycles %i\n", indentSpace.c_str(), standardModule.maxCycles);

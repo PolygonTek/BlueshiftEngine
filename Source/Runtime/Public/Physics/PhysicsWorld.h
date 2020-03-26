@@ -113,7 +113,8 @@ public:
 
     void                    ClearScene();
     void                    Reset();
-    void                    StepSimulation(int frameTime);
+
+    void                    StepSimulation(float frameTime);
 
     int                     GetConstraintSolverIterations() const;
     void                    SetConstraintSolverIterations(int iterationCount);

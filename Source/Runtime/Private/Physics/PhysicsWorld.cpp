@@ -221,14 +221,14 @@ void PhysicsWorld::SetFrameRate(int frameRate) {
     this->frameTimeDelta = 1.0f / frameRate; 
 }
 
-void PhysicsWorld::StepSimulation(int frameTime) {
+void PhysicsWorld::StepSimulation(float frameTime) {
     BE_PROFILE_CPU_SCOPE_STATIC("PhysicsWorld::StepSimulation");
 
     if (!physics_enable.GetBool()) {
         return;
     }
 
-    accumulatedTimeDelta += MILLI2SEC(frameTime);
+    accumulatedTimeDelta += frameTime;
 
 #if 0
     int steps = Math::Floor(accumulatedTimeDelta / h);

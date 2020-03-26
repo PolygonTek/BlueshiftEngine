@@ -530,7 +530,7 @@ void GameClient::UpdateConsole() {
     }
 
     if (targetHeight > consoleHeight) {
-        consoleHeight += 720 * cl_conSpeed.GetFloat() * common.frameSec;
+        consoleHeight += 720 * cl_conSpeed.GetFloat() * MILLI2SEC(common.frameTime);
         if (targetHeight < consoleHeight) {
             consoleHeight = targetHeight;
         }

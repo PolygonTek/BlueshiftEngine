@@ -260,12 +260,12 @@ static bool ProcessEventLoop() {
     return true;
 }
 
-static bool RunFrameInstance(int elapsedTime) {
+static bool RunFrameInstance(int elapsedMsec) {
     if (!ProcessEventLoop()) {
         return false;
     }
 
-    BE1::Engine::RunFrame(MILLI2SEC(elapsedTime));
+    BE1::Engine::RunFrame(elapsedMsec);
 
     BE1::gameClient.Update();
 
@@ -299,12 +299,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
     while (1) {
         int t = BE1::PlatformTime::Milliseconds();
-        int elapsedTime = t - t0;
-        BE1::Clamp(elapsedTime, 0, 1000);
+        int elapsedMsec = t - t0;
+        BE1::Clamp(elapsedMsec, 0, 1000);
 
         t0 = t;
 
-        if (!RunFrameInstance(elapsedTime)) {
+        if (!RunFrameInstance(elapsedMsec)) {
             break;
         }
     }

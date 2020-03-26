@@ -36,7 +36,7 @@ public:
     void                Init(const char *baseDir);
     void                Shutdown();
 
-    void                RunFrame(float frameTime);
+    void                RunFrame(int elapsedMsec);
 
     bool                WithEditor() const;
 
@@ -48,7 +48,6 @@ public:
 
     int                 realTime;       // absolute time in milliseconds
     int                 frameTime;      // frame time in milliseconds
-    float               frameSec;       // frame time in seconds
 
 private:
     void                SaveConfig(const char *filename);

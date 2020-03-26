@@ -580,7 +580,7 @@ static void ShutdownInstance() {
 }
 
 static void RunFrameInstance(int elapsedMsec) {
-    BE1::Engine::RunFrame(MILLI2SEC(elapsedMsec));
+    BE1::Engine::RunFrame(elapsedMsec);
 
     BE1::gameClient.Update();
 

@@ -701,7 +701,7 @@ int GameWorld::GetUnscaledDeltaTime() const {
     return unscaledDeltaTime;
 }
 
-void GameWorld::Update(int elapsedTime) {
+void GameWorld::Update(int elapsedMsec) {
     BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::Update");
 
     if (isDebuggable) {
@@ -710,15 +710,15 @@ void GameWorld::Update(int elapsedTime) {
 
     prevTime = time;
 
-    unscaledDeltaTime = elapsedTime;
+    unscaledDeltaTime = elapsedMsec;
 
-    deltaTime = elapsedTime * timeScale;
+    deltaTime = unscaledDeltaTime * timeScale;
 
     time += deltaTime;
 
     if (gameStarted) {
         // FixedUpdate() is called in StepSimulation() internally.
-        physicsWorld->StepSimulation(deltaTime);
+        physicsWorld->StepSimulation(MILLI2SEC(deltaTime));
 
         UpdateEntities();
 

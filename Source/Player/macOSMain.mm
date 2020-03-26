@@ -483,8 +483,8 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
     CFRelease(currentKeyboard);
 }
 
-- (void)runFrameInstance:(int)elapsedTime {
-    BE1::Engine::RunFrame(MILLI2SEC(elapsedTime));
+- (void)runFrameInstance:(int)elapsedMsec {
+    BE1::Engine::RunFrame(elapsedMsec);
 
     BE1::gameClient.Update();
 
@@ -539,14 +539,14 @@ static void DisplayContext(BE1::RHI::Handle contextHandle, void *dataPtr) {
     
     while (1) {
         int t = BE1::PlatformTime::Milliseconds();
-        int elapsedTime = t - t0;
-        BE1::Clamp(elapsedTime, 0, 1000);
+        int elapsedMsec = t - t0;
+        BE1::Clamp(elapsedMsec, 0, 1000);
 
         t0 = t;
 
         [self processEventLoop];
 
-        [self runFrameInstance:elapsedTime];
+        [self runFrameInstance:elapsedMsec];
     }
 }
 

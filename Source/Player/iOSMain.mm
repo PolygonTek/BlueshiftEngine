@@ -371,12 +371,12 @@ static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
     }
     
     int t = BE1::PlatformTime::Milliseconds();
-    int elapsedTime = t - t0;
-    BE1::Clamp(elapsedTime, 0, 1000);
+    int elapsedMsec = t - t0;
+    BE1::Clamp(elapsedMsec, 0, 1000);
 
     t0 = t;
 
-    BE1::Engine::RunFrame(MILLI2SEC(elapsedTime));
+    BE1::Engine::RunFrame(elapsedMsec);
     
     BE1::gameClient.Update();
     

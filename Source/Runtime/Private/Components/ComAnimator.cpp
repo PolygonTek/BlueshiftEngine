@@ -78,11 +78,12 @@ void ComAnimator::Update() {
 
     animator.ClearForceUpdate();*/
 
-    animator.UpdateFrame(GetEntity(), GetGameWorld()->GetPrevTime(), GetGameWorld()->GetTime());
+    int prevTime = GetGameWorld()->GetPrevTime();
+    int currTime = GetGameWorld()->GetTime();
 
-    int currentTime = GetGameWorld()->GetTime();
+    animator.UpdateFrame(GetEntity(), prevTime, currTime);
 
-    UpdateAnim(currentTime);
+    UpdateAnim(currTime);
 }
 
 void ComAnimator::UpdateAnim(int currentTime) {

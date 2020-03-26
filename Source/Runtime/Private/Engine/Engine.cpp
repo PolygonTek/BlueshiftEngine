@@ -168,10 +168,10 @@ void Engine::Shutdown() {
     Platform::Shutdown();
 }
 
-void Engine::RunFrame(float elapsedTime) {
+void Engine::RunFrame(int elapsedMsec) {
     BE_PROFILE_SYNC_FRAME();
 
-    common.RunFrame(elapsedTime);
+    common.RunFrame(elapsedMsec);
 }
 
 void Log(int logLevel, const char *fmt, ...) {
