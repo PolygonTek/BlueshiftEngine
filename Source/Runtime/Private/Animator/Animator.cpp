@@ -104,18 +104,18 @@ void Animator::UpdateFrame(Entity *entity, int previousTime, int currentTime) {
         const AnimLayer *animLayer = animController->GetAnimLayerByIndex(layerIndex);
         if (!animLayer) {
             break;
-        }        
+        }
 
         AnimStateBlender *stateBlenders = layerAnimStateBlenders[layerIndex];
 
         for (int blenderIndex = 0; blenderIndex < MaxBlendersPerLayer; blenderIndex++) {
             AnimStateBlender *stateBlender = &stateBlenders[blenderIndex];
             if (stateBlender->animState && stateBlender->GetBlendWeight(currentTime) > 0) {
-                // Sets blended duration for each blending states
+                // Sets blended duration for each blending states.
                 const int duration = stateBlenders[blenderIndex].animState->GetDuration(this);
                 stateBlenders[blenderIndex].SetDuration(currentTime, duration);
 
-                // Calls events for each blending states
+                // Calls events for each blending states.
                 stateBlenders[blenderIndex].CallEvents(entity, previousTime, currentTime);
             }
         }
@@ -123,21 +123,21 @@ void Animator::UpdateFrame(Entity *entity, int previousTime, int currentTime) {
         float animTime = stateBlenders[0].NormalizedTime(currentTime);
         //BE_LOG("%s: %.3f\n", stateBlenders[0].animState->GetName().c_str(), animTime);
 
-        // Gets the transitions which have src state currently blended in
+        // Gets the transitions which have src state currently blended in.
         Array<const AnimLayer::AnimTransition *> transitionArray;
         animLayer->ListTransitionsFrom(stateBlenders[0].animState->GetName(), transitionArray);
 
         for (int transitionIndex = 0; transitionIndex < transitionArray.Count(); transitionIndex++) {
             const AnimLayer::AnimTransition *transition = transitionArray[transitionIndex];
 
-            // Atomic transition cannot be interrupted by other transition until it finish
+            // Atomic transition cannot be interrupted by other transition until it finish.
             if (stateBlenders[0].IsAtomic()) {
                 if (stateBlenders[0].IsInBlending(currentTime)) {
                     continue;
                 }
             }
 
-            // Check all of the conditions to transit to
+            // Check all of the conditions to transit to.
             int conditionIndex = 0;
             for (; conditionIndex < transition->conditions.Count(); conditionIndex++) {
                 const AnimLayer::Condition &condition = transition->conditions[conditionIndex];
@@ -157,12 +157,12 @@ void Animator::UpdateFrame(Entity *entity, int previousTime, int currentTime) {
                 }
             }
 
-            // Skip transition unless all of the conditions are satisfied
+            // Skip transition unless all of the conditions are satisfied.
             if (conditionIndex < transition->conditions.Count()) {
                 continue;
             }
 
-            // Defer transition if it has exit time
+            // Defer transition if it has exit time.
             if (transition->hasExitTime) {
                 if (stateBlenders[0].exitTime == 0) {
                     stateBlenders[0].exitTime = Math::Ceil(animTime - transition->exitTime) + transition->exitTime;
@@ -204,17 +204,17 @@ void Animator::SetAnimController(const Str &name) {
         return;
     }
 
-    // Initialize jointMats from bindposes
+    // Initialize jointMats from bindposes.
     animController->BuildBindPoseMats(&numJoints, &jointMats);
 
-    // Clear all animation state blenders for each layers 
+    // Clear all animation state blenders for each layers.
     for (int i = 0; i < MaxLayers; i++) {
         for (int j = 0; j < MaxBlendersPerLayer; j++) {
             layerAnimStateBlenders[i][j].Clear();
         }
     }
 
-    // Set all the parameter values to 0
+    // Set all the parameter values to 0.
     parameters.SetCount(animController->NumParameters());
     for (int i = 0; i < parameters.Count(); i++) {
         parameters[i] = 0;
@@ -267,7 +267,7 @@ void Animator::ComputeAnimAABBs(const Mesh *mesh) {
         }
     }
 #endif
-    // bindpose AABB
+    // bindpose AABB.
     frameAABB = mesh->GetAABB();
 
     meshAABB = mesh->GetAABB();
@@ -280,12 +280,12 @@ void Animator::ResetState(int currentTime) {
             break;
         }
 
-        // Clear all animation state blenders for each layers 
+        // Clear all animation state blenders for each layers.
         for (int j = 0; j < MaxBlendersPerLayer; j++) {
             layerAnimStateBlenders[i][j].Clear();
         }
 
-        // Set to the default animation state for each layers
+        // Set to the default animation state for each layers.
         const AnimState *state = animLayer->GetDefaultState();
         if (state) {
             layerAnimStateBlenders[i][0].BlendIn(state, currentTime, 0, 0, false);
@@ -299,7 +299,7 @@ const AnimState *Animator::CurrentAnimState(int layerNum) const {
         return nullptr;
     }
 
-    // 0'th element of the animation state array represents current animation state
+    // 0'th element of the animation state array represents current animation state.
     return layerAnimStateBlenders[layerNum][0].animState;
 }
 
@@ -323,7 +323,7 @@ void Animator::TransitState(int layerNum, const char *stateName, int currentTime
 
     AnimStateBlender *stateBlenders = layerAnimStateBlenders[layerNum];
 
-    // If current state animation is still blending in
+    // If current state animation is still blending in.
     if (currentTime > stateBlenders[0].startTime && stateBlenders[0].GetBlendWeight(currentTime) > 0.0f) {
         PushStateBlenders(layerNum, currentTime, blendDuration);
     }
@@ -341,9 +341,9 @@ void Animator::PushStateBlenders(int layerNum, int currentTime, int blendDuratio
         stateBlenders[i] = stateBlenders[i - 1];
     }
 
-    // ready to blend in new animation state
+    // ready to blend in new animation state.
     stateBlenders[0].Clear();
-    // blend out for previous animation state
+    // blend out for previous animation state.
     stateBlenders[1].BlendOut(currentTime, blendDuration);
 }
 
@@ -354,15 +354,15 @@ void Animator::ComputeFrame(int currentTime) {
         return;
     }
 
-    // Temporary buffer for the joint poses of base layer
+    // Temporary buffer for the joint poses of base layer.
     JointPose *jointFrame1 = (JointPose *)_alloca16(numJoints * sizeof(jointFrame1[0]));
     // Copy bindposes for all joints
-    // Masked joints will be calculated against a layer so unmasked joints still have bindposes
+    // Masked joints will be calculated against a layer so unmasked joints still have bindposes.
     simdProcessor->Memcpy(jointFrame1, bindPoses, numJoints * sizeof(jointFrame1[0]));
 
     bool hasAnim = false;
 
-    // Blending animation state only for base layer 
+    // Blending animation state only for base layer .
     float blendedWeight = 0.0f;
     AnimStateBlender *stateBlender = layerAnimStateBlenders[0];
     for (int i = 0; i < MaxBlendersPerLayer; i++, stateBlender++) {
@@ -376,10 +376,10 @@ void Animator::ComputeFrame(int currentTime) {
         }
     }
 
-    // Temporary buffer for the joint poses of the other layers
+    // Temporary buffer for the joint poses of the other layers.
     JointPose *jointFrame2 = (JointPose *)_alloca16(numJoints * sizeof(jointFrame2[0]));
 
-    // Blending animation state for other layers
+    // Blending animation state for other layers.
     for (int i = 1; i < MaxLayers; i++) {
         const AnimLayer *animLayer = animController->GetAnimLayerByIndex(i);
         if (!animLayer) {
@@ -399,9 +399,9 @@ void Animator::ComputeFrame(int currentTime) {
             }
         }
 
-        // layer 의 blended weight 가 있다면 layer 끼리 블렌딩한다
+        // layer 의 blended weight 가 있다면 layer 끼리 블렌딩한다.
         if (blendedWeight > 0) {
-            // other layers have the mask joints
+            // other layers have the mask joints.
             const Array<int> &maskJoints = animLayer->GetMaskJoints();
             float layerBlendWeight = blendedWeight * animLayer->GetWeight(); // NOTE: anim layer weight -- is it really necessary ?
 
@@ -419,13 +419,13 @@ void Animator::ComputeFrame(int currentTime) {
         return;
     }
 
-    // Convert the joint quaternions to rotation matrices
+    // Convert the joint quaternions to rotation matrices.
     simdProcessor->ConvertJointPosesToJointMats(jointMats, jointFrame1, numJoints);
 
-    // Add in the animController offset
+    // Add in the animController offset.
     jointMats[0].SetTranslation(jointMats[0].ToTranslationVec3() + animController->GetRootOffset());
 
-    // Transform the rest of the hierarchy
+    // Transform the rest of the hierarchy.
     simdProcessor->TransformJoints(jointMats, animController->GetJointParents(), 1, numJoints - 1);
 }
 
