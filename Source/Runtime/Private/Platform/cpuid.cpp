@@ -16,14 +16,18 @@
 #include "Platform/Intrinsics.h"
 #include "Platform/cpuid.h"
 
+#if defined(__AVX__)
+#include <immintrin.h>
+#endif
+
 #if defined(__ANDROID__)
 #include <cpu-features.h>
 #endif
 
 BE_NAMESPACE_BEGIN
 
-#define VENDOR_INTEL    "GenuineIntel"
-#define VENDOR_AMD      "AuthenticAMD"
+#define VENDOR_STRING_INTEL     "GenuineIntel"
+#define VENDOR_STRING_AMD       "AuthenticAMD"
 
 static CpuInfo cpuInfo;
 
@@ -105,6 +109,7 @@ void DetectCpu() {
         }
     }
 
+#if defined(__AVX__)
     // Checking for AVX requires 3 things:
     // 1) CPUID indicates that the OS uses XSAVE and XRSTORE instructions (allowing saving YMM registers on context switch).
     // 2) CPUID indicates support for AVX.
@@ -113,7 +118,6 @@ void DetectCpu() {
     // Note that XGETBV is only available on 686 or later CPUs, so the instruction needs to be conditionally run.
     bool osUsesXSAVE_XRSTORE = cpuinfo_1[2] & BIT(27) || false;
     bool cpuAVXSupport = cpuinfo_1[2] & BIT(28) || false;
-    //bool cpuAVX2Support = cpuinfo_1[1] & BIT(5) || false;
 
     if (osUsesXSAVE_XRSTORE && cpuAVXSupport) {
         // Check if the OS will save the YMM registers.
@@ -147,15 +151,16 @@ void DetectCpu() {
             }
         }
     }
-        
-    if (!strncmp(cpuInfo.vendorString, VENDOR_INTEL, 12)) {
+#endif
+
+    if (!strncmp(cpuInfo.vendorString, VENDOR_STRING_INTEL, 12)) {
         cpuInfo.cpuid |= CPUID_INTEL;
 
         if (cpuInfo.family <= 4) {
             // Unsupported 386/486 processor.
             cpuInfo.cpuid |= CPUID_UNSUPPORTED;
         }
-    } else if (!strncmp(cpuInfo.vendorString, VENDOR_AMD, 12)) {
+    } else if (!strncmp(cpuInfo.vendorString, VENDOR_STRING_AMD, 12)) {
         cpuInfo.cpuid |= CPUID_AMD;
 
         int cpuinfo_ext0[4];
@@ -216,6 +221,8 @@ void DetectCpu() {
 
         if (features & ANDROID_CPU_X86_FEATURE_SSSE3) {
             cpuInfo.cpuid |= (CPUID_MMX | CPUID_SSE | CPUID_SSE2 | CPUID_SSE3);
+            cpuInfo.cpuid |= CPUID_FTZ;
+            cpuInfo.cpuid |= CPUID_DAZ;
         }
         if (features & ANDROID_CPU_X86_FEATURE_SSE4_1) {
             cpuInfo.cpuid |= CPUID_SSE4_1;
