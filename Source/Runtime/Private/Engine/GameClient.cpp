@@ -386,7 +386,11 @@ void GameClient::DrawMenuBar() {
 
         menuBarHeight = ImGui::GetWindowSize().y;
 
-        Str versionText = va("%s %s v%s (%s)", BE_NAME, PlatformProcess::PlatformName(), BE_VERSION, simdProcessor->GetName());
+        Str versionText = va("%s %s v%s", BE_NAME, PlatformProcess::PlatformName(), BE_VERSION);
+
+#ifdef _DEBUG
+        versionText += " (DEBUG)";
+#endif
 
         ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(versionText.c_str()).x);
 
