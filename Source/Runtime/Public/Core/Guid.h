@@ -16,7 +16,7 @@
 
 BE_NAMESPACE_BEGIN
 
-/// A GUID class
+/// A GUID class (256 bits).
 class BE_API Guid {
 public:
     struct Format {

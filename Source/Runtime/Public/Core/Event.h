@@ -26,7 +26,7 @@ public:
     static constexpr int    MaxEventDefs = 4096;
 
     explicit EventDef(const char *name, bool guiEvent = false, const char *formatSpec = nullptr, char returnType = 0);
-    /// Prevents copy constructor
+    /// Prevents copy constructor.
     EventDef(const EventDef &rhs) = delete;
 
                             /// Returns event def name.

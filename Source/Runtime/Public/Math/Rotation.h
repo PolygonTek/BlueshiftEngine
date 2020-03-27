@@ -31,7 +31,7 @@ public:
     /// The default constructor does not initialize any members of this class.
     Rotation() {}
     Rotation(const Vec3 &rotOrigin, const Vec3 &rotVec, const float rotAngle);
-    /// Assignment operator
+    /// Assignment operator.
     Rotation &operator=(const Rotation &rhs);
 
     void                Set(const Vec3 &rotOrigin, const Vec3 &rotVec, const float rotAngle);
@@ -46,28 +46,29 @@ public:
     const Vec3 &        GetVec() const { return vec; }
     float               GetAngle() const { return angle; }
 
-                        /// Flips rotation
+                        /// Flips rotation.
     Rotation            operator-() const { return Rotation(origin, vec, -angle); }
 
-                        /// Scale rotation
+                        /// Scale rotation.
     Rotation &          operator*=(const float rhs);
-                        /// Rotate vector
+                        /// Rotate vector.
     friend Vec3 &       operator*=(Vec3 &lhs, const Rotation &rhs);
-                        /// Scale rotation
+                        /// Scale rotation.
     Rotation &          operator/=(const float rhs);
 
-                        /// Scale rotation
+                        /// Scale rotation.
     Rotation            operator*(const float rhs) const { return Rotation(origin, vec, angle * rhs); }
-                        /// Rotate vector
+                        /// Rotate vector.
     Vec3                operator*(const Vec3 &rhs) const;
-                        /// Scale rotation
+                        /// Scale rotation.
     friend Rotation     operator*(const float lhs, const Rotation &rhs) { return rhs * lhs; }
-                        /// Rotate vector
+                        /// Rotate vector.
     friend Vec3         operator*(const Vec3 &lhs, const Rotation &rhs) { return rhs * lhs; }
-                        /// Scale rotation
+                        /// Scale rotation.
     Rotation            operator/(const float rhs) const;
 
     void                Scale(const float s);
+
     void                ReCalculateMatrix();
 
     Vec3                RotatePoint(const Vec3 &point) const;

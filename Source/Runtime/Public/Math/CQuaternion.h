@@ -54,13 +54,13 @@ public:
     float               operator[](int index) const;
     float &             operator[](int index);
 
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const CQuat &a) const;
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const CQuat &a, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const CQuat &rhs) const { return Equals(rhs); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const CQuat &rhs) const { return !Equals(rhs); }
 
     void                Set(float x, float y, float z);

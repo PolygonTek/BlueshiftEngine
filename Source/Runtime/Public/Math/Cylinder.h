@@ -27,7 +27,7 @@ BE_NAMESPACE_BEGIN
 class OBB;
 class Ray;
 
-/// A cylinder
+/// A cylinder.
 class BE_API Cylinder {
 public:
     /// The default constructor does not initialize any members of this class.
