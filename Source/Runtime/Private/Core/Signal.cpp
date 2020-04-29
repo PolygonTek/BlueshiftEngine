@@ -65,10 +65,15 @@ SignalDef::SignalDef(const char *name, const char *formatSpec, char returnType) 
             this->argSize += sizeof(int);
             break;
         case VariantArg::FloatType:
-            if (i)
-                argBits |= 1 << i;
-            else
-                argBits |= 1; // Maybe fatal hardware bug !!! shlx ecx, ecx, eax
+            // argBits |= 1 << i;
+            // Maybe fatal hardware bug !!! shlx instruction fault
+            {
+                int shift;
+                for (shift = 1; shift < i; shift++)
+                    shift *= 2;
+                argBits |= shift;
+
+            }
             this->argSize += sizeof(float);
             break;
         case VariantArg::PointerType:
