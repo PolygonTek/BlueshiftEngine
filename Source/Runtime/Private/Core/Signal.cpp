@@ -65,7 +65,8 @@ SignalDef::SignalDef(const char *name, const char *formatSpec, char returnType) 
             this->argSize += sizeof(int);
             break;
         case VariantArg::FloatType:
-            argBits |= 1 << i;
+            if (i)
+                argBits |= 1 << i;
             this->argSize += sizeof(float);
             break;
         case VariantArg::PointerType:
