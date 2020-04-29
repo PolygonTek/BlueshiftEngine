@@ -67,6 +67,8 @@ SignalDef::SignalDef(const char *name, const char *formatSpec, char returnType) 
         case VariantArg::FloatType:
             if (i)
                 argBits |= 1 << i;
+            else
+                argBits |= 1; // Maybe fatal hardware bug !!! shlx ecx, ecx, eax
             this->argSize += sizeof(float);
             break;
         case VariantArg::PointerType:
