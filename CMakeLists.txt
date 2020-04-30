@@ -152,7 +152,7 @@ if (PLATFORM_WINDOWS)
         set(FLAGS_AVX "${FLAGS_SSE42} /arch:AVX -D__AVX__")
         set(FLAGS_AVX2 "${FLAGS_SSE42} /arch:AVX2 -D__AVX__ -D__AVX2__")
 
-        add_definitions(${FLAGS_AVX2})
+        add_definitions(${FLAGS_AVX}) # AVX2 is not supported on older AMD machines including Mac Pro etc.
 
         # Enable Function-Level Linking
         add_definitions("/Gy")
