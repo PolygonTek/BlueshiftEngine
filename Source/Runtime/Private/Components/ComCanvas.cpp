@@ -375,9 +375,9 @@ void ComCanvas::UpdateRenderingOrderRecursive(Entity *entity, int sceneNum, int 
         if (renderableComponent) {
             renderableComponent->SetRenderingOrder((sceneNum << 12) | order);
             order++;
-
-            UpdateRenderingOrderRecursive(ent, sceneNum, order);
         }
+
+        UpdateRenderingOrderRecursive(ent, sceneNum, order);
     }
 }
 
