@@ -33,7 +33,7 @@ Quat Rotation::ToQuat() const {
 //------------------------------------------------------------------------------
 // Essential Mathematics for Games & Interactive Applications 2nd Edition, pp. 148
 //
-// N(x, y, z) = 단위 축벡터
+// N(x, y, z) = Unit axis vector
 //
 //     |  0  -z   y |          | -(y^2 + z^2)           x*y           x*z |
 // S = |  z   0  -x |    S^2 = |          x*y  -(x^2 + z^2)           y*z |

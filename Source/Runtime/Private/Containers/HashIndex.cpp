@@ -118,22 +118,22 @@ void HashIndex::ResizeIndex(const int newIndexSize) {
     }
 
     if (indexChain == EmptyTable) {
-        // 초기화된 상태이므로 indexSize 만 변경하고 나온다.
+        // Since it was initialized, just set indexSize.
         indexSize = newSize;
         return;
     }
 
     int *oldIndexChain = indexChain;
 
-    // allocate new index chain data
+    // Allocate new index chain data.
     indexChain = new int [newSize];
-    // copy old index chain data
+    // Copy old index chain data.
     memcpy(indexChain, oldIndexChain, indexSize * sizeof(int));
-    // fill -1 for redundant values
+    // Fill -1 for redundant values.
     memset(indexChain + indexSize, 0xFF, (newSize - indexSize) * sizeof(int)); 
-    // delete old index chain data
+    // Delete old index chain data.
     delete [] oldIndexChain;
-    // update new index size
+    // Update new index size.
     indexSize = newSize;
 }
 
@@ -154,7 +154,7 @@ float HashIndex::GetVariance() const {
         totalItems += numHashItems[i];
     }
 
-    // if no items in hash
+    // If no items in hash..
     if (totalItems <= 1) {
         delete [] numHashItems;
         return 0;

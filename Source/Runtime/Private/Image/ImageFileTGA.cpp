@@ -97,7 +97,6 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
         header->image_type == TGA_COMPMAP || 
         header->image_type == TGA_COMPMAP4) && header->colormap_type == 1;	
 
-    // 칼라맵 정보가 있다면 읽어들인다
     if (has_colormap) {
         switch (header->colormap_bpp) {
         case 8:

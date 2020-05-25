@@ -59,14 +59,14 @@ const char *CmdSystem::CompleteCommand(const char *partial) {
 
     Cmd *cmd;
 
-    // 동일한 것이 있나 먼저 검사
+    // Find the same command with the given text.
     for (cmd = cmdList; cmd; cmd = cmd->next) {
         if (!Str::Icmp(partial, cmd->name)) {
             return cmd->name;
         }
     }
-        
-    // 없다면 부분 매치검색
+
+    // If there is no such command, do a partial match.
     for (cmd = cmdList; cmd; cmd = cmd->next) {
         if (!Str::Icmpn(partial, cmd->name, len)) {
             return cmd->name;
@@ -97,7 +97,7 @@ void CmdSystem::AddCommand(const char *name, cmdFunction_t function, const char 
     }
             
     if (cvarSystem.Find(name)) {
-        // cvar 와 이름이 중복됐다
+        // Duplicated name with cvar.
         BE_WARNLOG("CmdSystem::AddCommand: %s already defined as a var\n", name);
         return;
     }
@@ -137,7 +137,7 @@ void CmdSystem::BufferCommandText(Execution::Enum exec, const char *text) {
         BufferCommandText(Execution::Insert, text);
         ExecuteCommandBuffer();
     } else if (exec == Execution::Insert) {
-        // copy off any commands still remaining in the exec buffer
+        // Copy off any commands still remaining in the exec buffer.
         char *temp;
         int tempSize = commandBufferSize;
 
@@ -146,13 +146,13 @@ void CmdSystem::BufferCommandText(Execution::Enum exec, const char *text) {
             memcpy(temp, commandBuffer, sizeof(char) * tempSize);
             commandBufferSize = 0;
         } else {
-            temp = nullptr; // shut up compiler
+            temp = nullptr; // Shut up compiler.
         }
             
-        // add the entire text of the file
+        // Add the entire text of the file.
         BufferCommandText(Execution::Append, text);
         
-        // add the copied off data
+        // Add the copied off data.
         if (tempSize) {
             if ((commandBufferSize + tempSize + 1) <= MaxBufferLength) {
                 memcpy(commandBuffer + commandBufferSize, temp, sizeof(char) * tempSize);
@@ -191,7 +191,7 @@ void CmdSystem::ExecuteString(const char *text) {
         cmdName.Append(args.Argv(1));
     }
 
-    // Execute a command
+    // Execute a command.
     for (Cmd *cmd = cmdList; cmd; cmd = cmd->next) {
         if (!Str::Icmp(cmdName.c_str(), cmd->name)) {
             cmd->function(args);
@@ -199,7 +199,7 @@ void CmdSystem::ExecuteString(const char *text) {
         }
     }
     
-    // Process a cvar command
+    // Process a cvar command.
     if (cvarSystem.Command(args)) {
         return;
     }
@@ -247,10 +247,10 @@ void CmdSystem::ExecuteCommandBuffer() {
             memmove(text, &text[i], sizeof(char) * commandBufferSize);
         }
 
-        // 커맨드 라인 실행
+        // Execute command line.
         ExecuteString(commandLine);
         
-        // commandBufferWait 명령이 켜져 있다면 나머지 커맨드들을 다음프레임으로 미룬다
+        // If commandBufferWait is set, postpone the rest of commands to the next frame.
         if (commandBufferWait) {
             commandBufferWait--;
             break;

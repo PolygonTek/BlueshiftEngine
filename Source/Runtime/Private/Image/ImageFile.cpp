@@ -31,7 +31,7 @@ bool Image::Load(const char *filename) {
     byte *data;
     size_t size = fileSystem.LoadFile(name, true, (void **)&data);
     if (data) {
-        // 확장자에 맞춰서 로딩함수 call
+        // Call image loading function by cheking file extension.
         if (name.CheckExtension(".btex")) {
             //LoadBTexFromMemory(name, data, size);
         } else if (name.CheckExtension(".dds")) {
@@ -62,7 +62,7 @@ bool Image::Load(const char *filename) {
 #if 0
     static const char *extensions[] = { ".dds", ".pvr", ".tga", ".jpg", ".png", ".bmp", ".pcx", ".hdr" };
 
-    // 못 읽었다면 확장자를 붙여가면서 읽어본다.
+    // If it failed to load the image, do it by changing file extensions.
     for (int i = 0; i < COUNT_OF(extensions); i++) {
         Str name2 = name + extensions[i];
 

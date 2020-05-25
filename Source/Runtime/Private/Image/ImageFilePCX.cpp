@@ -140,7 +140,6 @@ bool Image::WritePCX(const char *filename) const {
 
     fp->Write(&pcxfh, sizeof(pcxfh));
 
-    // FIXME: fwrite 를 한번에 하자
     for (int y = 0; y < height; y++) {
         for (int c = 2; c >= 0; c--) {
             byte run_n = 0;
