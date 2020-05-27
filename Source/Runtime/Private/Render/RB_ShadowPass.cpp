@@ -597,11 +597,11 @@ static void RB_ProjectedShadowMapPass(const VisLight *visLight, const Frustum &v
 }
 
 static bool RB_SingleCascadedShadowMapPass(const VisLight *visLight, const Frustum &splitViewFrustum, int cascadeIndex, bool forceClear) {
+    backEnd.shadowViewProjectionScaleBiasMatrix[cascadeIndex].SetZero();
+
     if (splitViewFrustum.CullAABB(visLight->litSurfsAABB)) {
         return false;
     }
-
-    backEnd.shadowViewProjectionScaleBiasMatrix[cascadeIndex].SetZero();
 
     switch (cascadeIndex) {
     case 0:
