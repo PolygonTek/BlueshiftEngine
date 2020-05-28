@@ -363,7 +363,7 @@ bool ComCanvas::ProcessTouchPointerInput() {
 
 void ComCanvas::UpdateRenderingOrderForCanvasElements() const {
     int sceneNum = GetEntity()->GetSceneNum();
-    int order = 0;
+    int order = GetEntity()->GetEntityNum();
 
     UpdateRenderingOrderRecursive(GetEntity(), sceneNum, order);
 }
