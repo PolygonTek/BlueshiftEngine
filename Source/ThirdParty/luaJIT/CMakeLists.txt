@@ -1,12 +1,5 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-if (COMMAND cmake_policy)
-    if (POLICY CMP0053)
-        # Simplify variable reference and escape sequence evaluation.
-        cmake_policy(SET CMP0053 OLD)
-    endif ()
-endif ()
-
 project(LuaJIT)
 
 include(FindLuaJIT)
