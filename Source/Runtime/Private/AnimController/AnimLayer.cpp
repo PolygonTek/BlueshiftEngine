@@ -105,7 +105,7 @@ int32_t AnimLayer::CreateNode(const Vec3 &blendSpaceVector, AnimBlendTree *animB
     childNode->blendSpaceVector = blendSpaceVector;
     childNode->animBlendTree    = animBlendTree;
 
-    // return node num
+    // Return node num.
     return index;
 }
 
@@ -120,7 +120,7 @@ int32_t AnimLayer::CreateLeaf(const Vec3 &blendSpaceVector, AnimClip *animClip) 
     childLeaf->blendSpaceVector = blendSpaceVector;
     childLeaf->animClip         = animClip;
 
-    // return leaf num which is negative number
+    // Return leaf num which is negative number.
     return -(index + 1);
 }
 
@@ -367,13 +367,13 @@ bool AnimLayer::ParseState(Lexer &lexer) {
             
             state->SetAnimClip(animClip);
         } else if (token == "blendTree") {
-            // parse name
+            // Parse name.
             if (!lexer.ReadToken(&token2)) {
                 lexer.Warning("Unexpected end of file");
                 return false;
             }
 
-            // parse type
+            // Parse type.
             if (!lexer.ReadToken(&type)) {
                 lexer.Warning("Unexpected end of file");
                 return false;
@@ -440,7 +440,7 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
             break;
         }
 
-        if (token == "parameter") { // blendTree 가 참조하는 parameter
+        if (token == "parameter") { // The parameter referenced by blendTree.
             switch (blendTree->GetBlendType()) {
             case AnimBlendTree::BlendType::BlendAngle:
             case AnimBlendTree::BlendType::Blend1D:
@@ -519,7 +519,7 @@ bool AnimLayer::ParseBlendTree(Lexer &lexer, AnimBlendTree *blendTree) {
                 break;
             }
 
-            // Parse blend tree name
+            // Parse blend tree name.
             if (!lexer.ReadToken(&token2)) { 
                 lexer.Warning("Unexpected end of file");
                 return false;
@@ -632,7 +632,7 @@ bool AnimLayer::ParseTransition(Lexer &lexer) {
         } else if (token == "condition") {
             Condition condition;
 
-            // Parse parameter name
+            // Parse parameter name.
             if (!lexer.ReadToken(&token)) {
                 lexer.Warning("Unexpected end of file");
                 return false;
@@ -640,7 +640,7 @@ bool AnimLayer::ParseTransition(Lexer &lexer) {
 
             condition.parameterIndex = animController->FindParameterIndex(token);
 
-            // Parse compare func
+            // Parse compare func.
             if (!lexer.ReadToken(&token)) {
                 lexer.Warning("Unexpected end of file");
                 return false;
@@ -658,7 +658,7 @@ bool AnimLayer::ParseTransition(Lexer &lexer) {
                 condition.compareFunc = Condition::Equal;
             }
 
-            // Parse compare value
+            // Parse compare value.
             condition.value = lexer.ParseNumber();
 
             transition->conditions.Append(condition);

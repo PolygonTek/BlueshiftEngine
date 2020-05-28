@@ -248,7 +248,7 @@ void PhysicsWorld::StepSimulation(float frameTime) {
     // The btDiscreteDynamicsWorld is guaranteed to call setWorldTransform() once per substep 
     // for every btRigidBody that : has a MotionState AND is active AND is not KINEMATIC or STATIC.
 
-    // maxSubSteps > 0 이면 motion state 의 getWorldTransform() 은 interpolation 된 결과를 반환한다.
+    // If maxSubSteps > 0, getWorldTransform() of motion state will have interpolated value.
     dynamicsWorld->stepSimulation(accumulatedTimeDelta, maxSubSteps, frameTimeDelta);
     
     accumulatedTimeDelta = 0.0f;

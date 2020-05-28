@@ -124,7 +124,7 @@ void OpenGLRHI::BindBuffer(BufferType::Enum type, Handle bufferHandle) {
 }
 
 void OpenGLRHI::BindIndexedBuffer(BufferType::Enum type, int bindingIndex, Handle bufferHandle) {
-    // Allowed only target UniformBuffer or TransformFeedbackBuffer
+    // Allowed only target UniformBuffer or TransformFeedbackBuffer.
     assert(type == BufferType::Uniform || type == BufferType::TransformFeedback);
     int targetIndex = type - BufferType::Uniform;
     Handle *bufferHandlePtr = &currentContext->state->indexedBufferHandles[targetIndex];
@@ -139,7 +139,7 @@ void OpenGLRHI::BindIndexedBuffer(BufferType::Enum type, int bindingIndex, Handl
 }
 
 void OpenGLRHI::BindIndexedBufferRange(BufferType::Enum type, int bindingIndex, Handle bufferHandle, int offset, int size) {
-    // Allowed only target UniformBuffer or TransformFeedbackBuffer
+    // Allowed only target UniformBuffer or TransformFeedbackBuffer.
     assert(type == BufferType::Uniform || type == BufferType::TransformFeedback);
     int targetIndex = type - BufferType::Uniform;
     Handle *bufferHandlePtr = &currentContext->state->indexedBufferHandles[targetIndex];
@@ -265,7 +265,7 @@ int OpenGLRHI::BufferDiscardWrite(Handle bufferHandle, int size, const void *dat
     GLBuffer *buffer = bufferList[bufferHandle];
 
     if (gglMapBufferRange) {
-        // glMapBufferRange 함수는 buffer alloc 되어 있지 않다면 GL_INVALID_VALUE error 발생
+        // NOTE: glMapBufferRange() function causes GL_INVALID_VALUE error if buffer is not alloced.
         gglBufferData(buffer->target, size, nullptr, buffer->usage);
         byte *dest = (byte *)gglMapBufferRange(buffer->target, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
         if (!((intptr_t)data & 15)) {
@@ -275,7 +275,7 @@ int OpenGLRHI::BufferDiscardWrite(Handle bufferHandle, int size, const void *dat
         }
         gglUnmapBuffer(buffer->target);
     } else {
-        // buffer respecification using glBufferData
+        // Do buffer respecification using glBufferData().
         gglBufferData(buffer->target, size, nullptr, buffer->usage);
         gglBufferData(buffer->target, size, data, buffer->usage);
     }

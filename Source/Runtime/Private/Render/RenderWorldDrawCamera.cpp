@@ -124,7 +124,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
 
         VisLight *visLight = RegisterVisLight(camera, renderLight);
         visLight->scissorRect = screenClipRect;
-        // glScissor 의 x, y 좌표는 lower left corner 이므로 y 좌표를 밑에서 증가되도록 뒤집는다.
+        // Since the x and y coordinates of glScissor are lower left corner, we flip the y coordinates to increase from the bottom.
         visLight->scissorRect.y = renderSystem.currentContext->GetRenderingHeight() - (screenClipRect.y + screenClipRect.h);
 
         return true;
@@ -144,36 +144,36 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
             return true;
         }
 
-        // Skip if object layer is not visible with this camera
+        // Skip if object layer is not visible with this camera.
         if (!(BIT(renderObject->state.layer) & camera->def->GetState().layerMask)) {
             return true;
         }
 
-        // Skip if camera renders static objects and this object is not static
+        // Skip if camera renders static objects and this object is not static.
         if (camera->def->GetState().flags & RenderCamera::Flag::StaticOnly) {
             if (!(renderObject->state.staticMask & camera->def->GetState().staticMask)) {
                 return true;
             }
         }
 
-        // Skip first person camera only object in sub camera
+        // Skip first person camera only object in sub camera.
         if ((renderObject->state.flags & RenderObject::Flag::FirstPersonOnly) && camera->isSubCamera) {
             return true;
         }
 
-        // Skip 3rd person camera only object in sub camera
+        // Skip 3rd person camera only object in sub camera.
         if ((renderObject->state.flags & RenderObject::Flag::ThirdPersonOnly) && !camera->isSubCamera) {
             return true;
         }
 
-        // Skip if a object is farther than maximum visible distance
+        // Skip if a object is farther than maximum visible distance.
         if (!(renderObject->state.flags & RenderObject::Flag::NoVisDist)) {
             if (renderObject->state.worldMatrix.ToTranslationVec3().DistanceSqr(camera->def->GetState().origin) > renderObject->maxVisDistSquared) {
                 return true;
             }
         }
 
-        // Register visible object form the render object
+        // Register visible object form the render object.
         VisObject *visObject = RegisterVisObject(camera, renderObject);
 
         visObject->ambientVisible = true;
@@ -240,8 +240,8 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
 void RenderWorld::AddStaticMeshes(VisCamera *camera) {
     BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::AddStaticMeshes");
 
-    // Called for each static mesh surfaces intersecting with camera frustum 
-    // Returns true if it want to proceed next query
+    // Called for each static mesh surfaces intersecting with camera frustum.
+    // Returns true if it want to proceed next query.
     auto addStaticMeshSurfs = [this, camera](int32_t proxyId) -> bool {
         const DbvtProxy *proxy = (const DbvtProxy *)staticMeshDbvt.GetUserData(proxyId);
         MeshSurf *surf = proxy->mesh->GetSurface(proxy->meshSurfIndex);
@@ -329,7 +329,7 @@ void RenderWorld::AddSkinnedMeshes(VisCamera *camera) {
         }
 
         if (renderObjectDef.skeleton && renderObjectDef.joints) {
-            // Update skinning joint cache for GPU skinning
+            // Update skinning joint cache for GPU skinning.
             renderObjectDef.mesh->UpdateSkinningJointCache(renderObjectDef.skeleton, renderObjectDef.joints);
         }
 
@@ -437,7 +437,7 @@ void RenderWorld::AddParticleMeshes(VisCamera *camera) {
                 break;
             }
 
-            // Copy this SubMesh to the temporary frame data to use in backend
+            // Copy this SubMesh to the temporary frame data to use in backend.
             SubMesh *subMesh = (SubMesh *)frameData.ClearedAlloc(sizeof(SubMesh));
             new (subMesh) SubMesh();
 
@@ -535,7 +535,7 @@ void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
         return;
     }
 
-    // Skybox object parameters
+    // Skybox object parameters.
     RenderObject::State roDef;
     roDef.staticMask = -1;
     roDef.flags = RenderObject::Flag::SkipSelection;
@@ -550,7 +550,7 @@ void RenderWorld::AddSkyBoxMeshes(VisCamera *camera) {
     new (&renderObject) RenderObject(this, -1);
     renderObject.Update(&roDef);
 
-    // Add skybox object
+    // Add skybox object.
     VisObject *visObject = RegisterVisObject(camera, &renderObject);
 
     if (camera->def->GetState().orthogonal) {
@@ -592,12 +592,12 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
             return true;
         }
 
-        // Skip if object layer is not visible with this camera
+        // Skip if object layer is not visible with this camera.
         if (!(BIT(renderObject->state.layer) & camera->def->GetState().layerMask)) {
             return true;
         }
 
-        // Skip if camera renders static objects and this object is not static
+        // Skip if camera renders static objects and this object is not static.
         if (camera->def->GetState().flags & RenderCamera::Flag::StaticOnly) {
             if (!(renderObject->state.staticMask & camera->def->GetState().staticMask)) {
                 return true;
@@ -693,8 +693,8 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
 
     VisLight *visLight;
 
-    // Called for entities intersecting with each light volume
-    // Returns true if it want to proceed next query
+    // Called for entities intersecting with each light volume.
+    // Returns true if it want to proceed next query.
     auto addShadowCasterObjects = [this, camera, &visLight](int32_t proxyId) -> bool {
         const DbvtProxy *proxy = (const DbvtProxy *)this->objectDbvt.GetUserData(proxyId);
         RenderObject *renderObject = proxy->renderObject;
@@ -703,7 +703,7 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
             return true;
         }
 
-        // Skip if not skinned mesh
+        // Skip if not skinned mesh.
         if (!renderObject->state.joints) {
             return true;
         }
@@ -712,24 +712,24 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
             return true;
         }
 
-        // Skip if object layer is not visible with this camera
+        // Skip if object layer is not visible with this camera.
         if (!(BIT(renderObject->state.layer) & camera->def->GetState().layerMask)) {
             return true;
         }
 
-        // Skip if camera renders static objects and this object is not static
+        // Skip if camera renders static objects and this object is not static.
         if (camera->def->GetState().flags & RenderCamera::Flag::StaticOnly) {
             if (!(renderObject->state.staticMask & camera->def->GetState().staticMask)) {
                 return true;
             }
         }
 
-        // Skip first person camera only object in sub camera 
+        // Skip first person camera only object in sub camera.
         if ((renderObject->state.flags & RenderObject::Flag::FirstPersonOnly) && camera->isSubCamera) {
             return true;
         }
 
-        // Skip 3rd person camera only object in sub camera
+        // Skip 3rd person camera only object in sub camera.
         if ((renderObject->state.flags & RenderObject::Flag::ThirdPersonOnly) && !camera->isSubCamera) {
             return true;
         }
@@ -750,10 +750,10 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
 
             const Material *material = renderObject->state.materials[surf->materialIndex];
 
-            // Already visible in this frame
+            // Already visible in this frame.
             if (surf->viewCount == this->viewCount) {
                 if ((surf->drawSurf->flags & DrawSurf::Flag::Visible) && material->IsLitSurface()) {
-                    // Add drawSurf from visible drawSurf
+                    // Add drawSurf from visible drawSurf.
                     AddDrawSurfFromAmbient(camera, visLight, isShadowCaster && material->IsShadowCaster(), surf->drawSurf);
 
                     visLight->numDrawSurfs++;
@@ -766,7 +766,7 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
             } else if (isShadowCaster && material->IsShadowCaster()) {
                 if (!shadowCasterCulled) {
                     // This surface is not visible but shadow might be visible as a shadow caster.
-                    // Register a visObject used only for shadow caster
+                    // Register a visObject used only for shadow caster.
                     if (!shadowCasterObject) {
                         shadowCasterObject = RegisterVisObject(camera, renderObject);
                         shadowCasterObject->shadowVisible = true;
@@ -829,7 +829,7 @@ void RenderWorld::CacheInstanceBuffer(VisCamera *camera) {
     for (VisObject *visObject = camera->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
         const RenderObject *renderObject = visObject->def;
 
-        // Only for mesh type render object
+        // Only for mesh type render object.
         if (!renderObject->state.mesh) {
             continue;
         }
@@ -900,7 +900,7 @@ void RenderWorld::CacheInstanceBuffer(VisCamera *camera) {
 void RenderWorld::OptimizeLights(VisCamera *camera) {
     LinkList<VisLight> *nextNode;
 
-    // Iterate over light linked list in camera
+    // Iterate over light linked list in camera.
     for (LinkList<VisLight> *node = camera->visLights.NextNode(); node; node = nextNode) {
         VisLight *visLight = node->Owner();
 
@@ -915,7 +915,7 @@ void RenderWorld::OptimizeLights(VisCamera *camera) {
 
         const AABB lightAABB = visLight->def->GetWorldAABB();
 
-        // Compute effective AABB
+        // Compute effective AABB.
         visLight->litSurfsAABB.IntersectSelf(lightAABB);
         visLight->shadowCastersAABB.IntersectSelf(lightAABB);
         
@@ -1165,7 +1165,7 @@ static int BE_CDECL _CompareDrawSurf(const void *elem1, const void *elem2) {
 void RenderWorld::SortDrawSurfs(VisCamera *camera) {
     BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::SortDrawSurfs");
 
-    // FIXME: Use radix sort to boost up speed
+    // FIXME: Use radix sort to boost up speed.
     qsort(camera->drawSurfs, camera->numDrawSurfs, sizeof(DrawSurf *), _CompareDrawSurf);
 
     VisLight *visLight = camera->visLights.Next();

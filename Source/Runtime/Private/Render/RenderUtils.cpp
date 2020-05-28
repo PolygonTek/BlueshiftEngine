@@ -334,8 +334,7 @@ bool R_CullShadowVolumeBackCap(const Mat4 &viewProjMatrix, const OBB &boundingBo
 
         *pv = viewProjMatrix * Vec4(silVerts[i], 0.0f);
 
-        // NOTE: Normalized device coordinates 에서 z 값이 -1 로 클리핑(near plane clip)
-        // 하기 위해서는 xy 를 -w 로 나눈다.
+        // NOTE: Divide xy by -w in NDC so that z is clipped by -1.
         if (pv->z < 0.0f) {
             pv->w = -pv->w;
         }

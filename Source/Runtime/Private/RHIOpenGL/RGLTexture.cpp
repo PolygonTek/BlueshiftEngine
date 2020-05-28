@@ -250,21 +250,21 @@ void OpenGLRHI::GenerateMipmap() {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
-    // NOTE: OpenGL ES 에서는 compressed format 일 경우 GL_INVALID_OPERATION
+    // NOTE: GL_INVALID_OPERATION occurs in compressed format in OpenGL ES.
     gglGenerateMipmap(texture->target);
 }
 
 void OpenGLRHI::AdjustTextureSize(TextureType::Enum type, bool useNPOT, int inWidth, int inHeight, int inDepth, int *outWidth, int *outHeight, int *outDepth) {
     int w, h, d;
 
-    // NOTE: GL_ARB_texture_non_power_of_two 익스텐션 스트링이 없다면,
-    // NPOT 텍스쳐는 밉맵이나 wrapmode 에 따라서 hw-accelerate 되지 않을수도 있다.
+    // NOTE: Without the GL_ARB_texture_non_power_of_two extension string,
+    // NPOT textures may not hw-accelerate depending on the mipmap or wrapmode.
     if (useNPOT || type == TextureType::TextureRectangle) {
         w = inWidth;
         h = inHeight;
         d = inDepth;
     } else {
-        // 2의 승수 사이즈 맞추기
+        // Fit multiplier size of 2.
         w = Math::RoundUpPowerOfTwo(inWidth);
         h = Math::RoundUpPowerOfTwo(inHeight);
         d = Math::RoundUpPowerOfTwo(inDepth);
@@ -679,7 +679,7 @@ void OpenGLRHI::CopyTextureSubImage2D(int xoffset, int yoffset, int x, int y, in
     GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
-    // GL_READ_BUFFER 에서 읽어서 텍스쳐로 저장
+    // Read from GL_READ_BUFFER and save as texture.
     gglCopyTexSubImage2D(texture->target, 0, xoffset, yoffset, x, y, width, height);
 }
 

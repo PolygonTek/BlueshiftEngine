@@ -283,7 +283,7 @@ void AnimController::GetJointNumListByString(const char *jointNames, Array<int> 
     bool subtract;
     bool getChildren;
 
-    // scan through list of joints and add each to the joint list
+    // Scan through list of joints and add each to the joint list.
     const char *pos = jointNames;
     while (*pos) {
         while ((*pos != 0) && ::isspace(*pos)) {
@@ -308,7 +308,7 @@ void AnimController::GetJointNumListByString(const char *jointNames, Array<int> 
             getChildren = false;
         }
 
-        // copy joint name
+        // Copy joint name.
         Str jointName = "";
         while ((*pos != 0) && !::isspace(*pos)) {
             jointName += *pos;
@@ -328,7 +328,7 @@ void AnimController::GetJointNumListByString(const char *jointNames, Array<int> 
         }
 
         if (getChildren) {
-            // include all joint's children
+            // Include all joint's children.
             const JointInfo *child = joint + 1;
             for (int i = joint->index + 1; i < numJoints; i++, child++) {
                 if (child->parentIndex < joint->index) {
@@ -368,7 +368,7 @@ AnimClip *AnimController::LoadAnimClip(const Guid &animGuid) {
         return nullptr;
     }
 
-    // FIXME: hash search
+    // FIXME: hash search.
     int animClipIndex = 0;
     while (animClipIndex < animClips.Count()) {
         if (!Str::Icmp(animClips[animClipIndex]->GetAnim()->GetHashName(), anim->GetHashName())) {
@@ -491,18 +491,18 @@ void AnimController::BuildBindPoseMats(int *numJoints, Mat3x4 **jointMats) const
         BE_FATALERROR("skeleton '%s' has no joints", skeleton->GetHashName());
     }
  
-    // Set up initial pose for skeleton
+    // Set up initial pose for skeleton.
     Mat3x4 *mats = (Mat3x4 *)Mem_Alloc16(num * sizeof(mats[0]));
 
     const JointPose *bindPoses = GetBindPoses();
 
-    // Convert the joint quaternions to joint matrices (quaternions -> local joint matrices)
+    // Convert the joint quaternions to joint matrices (quaternions -> local joint matrices).
     simdProcessor->ConvertJointPosesToJointMats(mats, bindPoses, joints.Count());
 
-    // Check if we offset the skeleton by the root joint
+    // Check if we offset the skeleton by the root joint.
     mats[0].SetTranslation(bindPoses[0].t + offset);
     
-    // Transform the joint hierarchy (local matrices -> world matrices)
+    // Transform the joint hierarchy (local matrices -> world matrices).
     simdProcessor->TransformJoints(mats, jointParents.Ptr(), 1, joints.Count() - 1);
 
     *numJoints = num;
@@ -559,7 +559,7 @@ bool AnimController::Create(const char *text) {
         }
     }
 
-    // shrink animClips & animLayers down to save space
+    // Shrink animClips & animLayers down to save space.
     animClips.SetGranularity(1);
     animClips.SetCount(animClips.Count());
     animLayers.SetGranularity(1);
@@ -596,7 +596,7 @@ void AnimController::SetSkeleton(Skeleton *skeleton) {
     joints.SetGranularity(1);
     joints.SetCount(skeleton->NumJoints());
 
-    // jointParents 는 SIMD 연산을 위해 따로 배열 형태로 저장한다.
+    // jointParents are stored separately as an array for SIMD operations.
     jointParents.SetGranularity(1);
     jointParents.SetCount(skeleton->NumJoints());
 
@@ -633,7 +633,7 @@ bool AnimController::ParseBaseAnimLayer(Lexer &lexer) {
     for (int i = 0; i < joints.Count(); i++) {
         animLayer->maskJoints[i] = joints[i].index;
     }
-    // first layer should be a base layer
+    // First layer should be a base layer.
     animLayers.Append(animLayer);
 
     while (1) {
@@ -754,11 +754,11 @@ void AnimController::Write(const char *filename) {
     fp->Printf("animController {\n");
     indentSpace += "  ";
 
-    // Write skeleton
+    // Write skeleton.
     const Guid skeletonGuid = resourceGuidMapper.Get(skeleton->GetHashName());
     fp->Printf("%sskeleton \"%s\"\n", indentSpace.c_str(), skeletonGuid.ToString());
 
-    // Write parameters
+    // Write parameters.
     for (int i = 0; i < animParameters.Count(); i++) {
         const AnimParm *animParm = animParameters[i];
 
@@ -766,9 +766,9 @@ void AnimController::Write(const char *filename) {
         fp->Printf("%sparameter \"%s\" %s\n", indentSpace.c_str(), animParm->name.c_str(), defaultValueStr.c_str());
     }
 
-    // Write layers
+    // Write layers.
     if (animLayers.Count() > 0) {
-        // Write base layer
+        // Write base layer.
         const AnimLayer *baseLayer = animLayers[0];
 
         fp->Printf("%sbaseLayer {\n", indentSpace.c_str());
@@ -890,7 +890,7 @@ void AnimController::Write(const char *filename) {
         indentSpace.Truncate(indentSpace.Length() - 2);
         fp->Printf("%s}\n", indentSpace.c_str());
 
-        // Write additional anim layers
+        // Write additional anim layers.
         for (int layerIndex = 1; layerIndex < animLayers.Count(); layerIndex++) {
             const AnimLayer *animLayer = animLayers[layerIndex];
 

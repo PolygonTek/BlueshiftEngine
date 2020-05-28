@@ -57,7 +57,7 @@ static float CompareJointsS(const JointPose *joints1, const JointPose *joints2, 
         const JointPose *joint1Ptr = &joints1[i];
         const JointPose *joint2Ptr = &joints2[i];
 
-        // FIXME: compare method
+        // FIXME: compare method.
         maxDeltaS = Max(maxDeltaS, joint1Ptr->s.DistanceSqr(joint2Ptr->s));
     }
 
@@ -164,7 +164,7 @@ void Anim::OptimizeFrames(float epsilonT, float epsilonQ, float epsilonS) {
         return;
     }
     
-    // Set up whole joint indexes
+    // Set up whole joint indexes.
     int *jointIndexes = (int *)_alloca16(numJoints * sizeof(int));
     for (int i = 0; i < numJoints; i++) {
         jointIndexes[i] = i;

@@ -73,7 +73,7 @@ void RB_ClearDebugPrimitives(int time) {
         return;
     }
 
-    // copy any text that still needs to be drawn
+    // Copy any text that still needs to be drawn.
     int numVerts = 0;
     int num = 0;
     DebugPrims *topology = rb_debugPrims;

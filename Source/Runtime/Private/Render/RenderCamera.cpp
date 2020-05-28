@@ -25,34 +25,34 @@ void RenderCamera::Update(const State *stateCopy) {
     zFar = state.zFar;
 
     if (state.orthogonal) {
-        // Set bounding volume for orthogonal view
+        // Set bounding volume for orthogonal view.
         Vec3 extents((zFar - zNear) * 0.5f, state.sizeX, state.sizeY);
         box.SetCenter(state.origin + state.axis[0] * (zNear + extents[0]));
         box.SetExtents(extents);
         box.SetAxis(state.axis);
 
-        // Calculate orthogonal projection matrix
+        // Calculate orthogonal projection matrix.
         R_SetOrthogonalProjectionMatrix(state.sizeX, state.sizeY, zNear, zFar, projMatrix);
     } else {
-        // Set bounding frustum for perspective view
+        // Set bounding frustum for perspective view.
         frustum.SetOrigin(state.origin);
         frustum.SetAxis(state.axis);
         frustum.SetSize(zNear, zFar, zFar * Math::Tan(DEG2RAD(state.fovX) * 0.5f), zFar * Math::Tan(DEG2RAD(state.fovY) * 0.5f));
 
-        // Calculate view frustum planes
+        // Calculate view frustum planes.
         frustum.ToPlanes(frustumPlanes);
 
-        // Calculate view frustum points
+        // Calculate view frustum points.
         frustum.ToPoints(frustumPoints);
 
-        // Calculate perspective projection matrix
+        // Calculate perspective projection matrix.
         R_SetPerspectiveProjectionMatrix(state.fovX, state.fovY, zNear, zFar, false, projMatrix);
     }
 
-    // Calculate view matrix
+    // Calculate view matrix.
     R_SetViewMatrix(state.axis, state.origin, viewMatrix);
 
-    // Calculate view projection matrix
+    // Calculate view projection matrix.
     viewProjMatrix = projMatrix * viewMatrix;
 }
 
@@ -60,28 +60,28 @@ void RenderCamera::RecalcZFar(float zFar) {
     this->zFar = zFar;
 
     if (state.orthogonal) {
-        // Set bounding volume for orthogonal view
+        // Set bounding volume for orthogonal view.
         Vec3 extents((zFar - zNear) * 0.5f, state.sizeX, state.sizeY);
         box.SetCenter(state.origin + state.axis[0] * (zNear + extents[0]));
         box.SetExtents(extents);
 
-        // Calculate orthogonal projection matrix
+        // Calculate orthogonal projection matrix.
         R_SetOrthogonalProjectionMatrix(state.sizeX, state.sizeY, zNear, zFar, projMatrix);
     } else {
-        // Set bounding frustum for perspective view
+        // Set bounding frustum for perspective view.
         frustum.SetSize(zNear, zFar, zFar * Math::Tan(DEG2RAD(state.fovX) * 0.5f), zFar * Math::Tan(DEG2RAD(state.fovY) * 0.5f));
 
-        // Calculate view frustum planes
+        // Calculate view frustum planes.
         frustum.ToPlanes(frustumPlanes);
 
-        // Calculate view frustum points
+        // Calculate view frustum points.
         frustum.ToPoints(frustumPoints);
 
-        // Calculate perspective projection matrix
+        // Calculate perspective projection matrix.
         R_SetPerspectiveProjectionMatrix(state.fovX, state.fovY, zNear, zFar, false, projMatrix);
     }
 
-    // Re-calculate view projection matrix
+    // Re-calculate view projection matrix.
     viewProjMatrix = projMatrix * viewMatrix;
 }
 
@@ -138,7 +138,7 @@ bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) 
         return true;
     }
 
-    // sphere 의 중심좌표(L) 를 카메라 로컬좌표계(X, Y, Z = FORWARD, LEFT, UP) 로 변환
+    // sphere 의 중심좌표(L) 를 카메라 로컬좌표계(X, Y, Z = FORWARD, LEFT, UP) 로 변환.
     Vec3 localOrigin = state.axis.TransposedMulVec(sphere.center - state.origin);
 
     float x2 = localOrigin.x * localOrigin.x;

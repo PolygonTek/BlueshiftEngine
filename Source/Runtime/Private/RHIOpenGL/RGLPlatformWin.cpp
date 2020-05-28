@@ -403,11 +403,11 @@ static HGLRC CreateContextAttribs(HDC hdc, HGLRC hSharedContext, GLContextProfil
 
 static void GetGLVersion(int *major, int *minor) {
 #if 1
-    // GL_MAJOR_VERSION, GL_MINOR_VERSION 쿼리는 3.0 core context 부터 지원된다
+    // GL_MAJOR_VERSION and GL_MINOR_VERSION queries are supported from 3.0 or higher core context.
     glGetIntegerv(GL_MAJOR_VERSION, major);
     glGetIntegerv(GL_MINOR_VERSION, minor);
 #else
-    // 아직 context 가 만들어지기 전이라면 glGetString 을 이용
+    // Use glGetString if context has not been created yet.
     const char *verstr = (const char *)glGetString(GL_VERSION);
     if (!verstr || sscanf(verstr, "%d.%d", major, minor) != 2) {
         *major = *minor = 0;
@@ -449,7 +449,7 @@ static void InitGLFunctions() {
 
     wglMakeCurrent(hdcFake, hrcFake);
 
-    // NOTE: WGL extension string 을 얻기 위해서는 RC 와 연결된 valid DC 가 필요하다
+    // NOTE: To get the WGL extension string, you need a valid DC connected to RC.
     // gwglXXX function bindings & check WGL extensions
     gwgl_init(hdcFake, false);
 

@@ -43,7 +43,7 @@ void AnimClip::SetAnim(const Anim *anim) {
 
     this->anim = const_cast<Anim *>(anim->AddRefCount());
 
-    // TODO: 구간 (startTime, endTime) 을 정해서 구할 것
+    // TODO: Determine interval (startTime, endTime)
     if (this->anim->Length() > 0) {
         this->averageVelocity = anim->TotalMovementDelta() / MILLI2SEC(anim->Length());
     } else {

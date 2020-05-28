@@ -385,7 +385,7 @@ void KeyCmdSystem::KeyEvent(KeyCode::Enum keynum, bool down) {
         return; 
     }
         
-    if (keynum >= KeyCode::Joy1 && !key->binding) { // K_JOY1 이상은 키보드외 입력장치의 키 이벤트 신호
+    if (keynum >= KeyCode::Joy1 && !key->binding) {
         //BE_LOG("%s is unbound.\n", KeyCmdSystem::KeynumToString(keynum));
     }
     

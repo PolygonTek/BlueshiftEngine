@@ -362,7 +362,7 @@ void Animator::ComputeFrame(int currentTime) {
 
     bool hasAnim = false;
 
-    // Blending animation state only for base layer .
+    // Blending animation state only for base layer.
     float blendedWeight = 0.0f;
     AnimStateBlender *stateBlender = layerAnimStateBlenders[0];
     for (int i = 0; i < MaxBlendersPerLayer; i++, stateBlender++) {
@@ -399,9 +399,9 @@ void Animator::ComputeFrame(int currentTime) {
             }
         }
 
-        // layer 의 blended weight 가 있다면 layer 끼리 블렌딩한다.
+        // Blend layers if they have blendedWeight value.
         if (blendedWeight > 0) {
-            // other layers have the mask joints.
+            // Other layers have the mask joints.
             const Array<int> &maskJoints = animLayer->GetMaskJoints();
             float layerBlendWeight = blendedWeight * animLayer->GetWeight(); // NOTE: anim layer weight -- is it really necessary ?
 

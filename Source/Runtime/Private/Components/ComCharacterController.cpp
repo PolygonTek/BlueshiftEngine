@@ -205,7 +205,7 @@ void ComCharacterController::RecoverFromPenetration() {
     int numPenetrationLoop = 0;
     while (1) {
         numPenetrationLoop++;
-        // 최대 4 번까지 iteration
+        // Repeat up to 4 times.
         if (numPenetrationLoop > 4) {
             break;
         }
@@ -226,14 +226,14 @@ void ComCharacterController::RecoverFromPenetration() {
             if (contact.dist < maxPen) {
                 maxPen = contact.dist;
 
-                // 한번에 밀어내지 않고, 가장 깊이 penetration 된 contact 부터 조금씩 밀어낸다.
+                // Don't pushed out at once, but gradually pushes out from the deepest penetration contact.
                 origin -= contact.normal * contact.dist * 0.25f;
 
                 //BE_LOG("%s (%f) -> %s\n", contact.normal.ToString(), contact.dist, origin.ToString());
             }
         }
 
-        // 다 밀어냈다면 종료
+        // Quit, if pushed it all out.
         if (maxPen == 0) {
             break;
         }

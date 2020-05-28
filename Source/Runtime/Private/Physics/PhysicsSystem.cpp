@@ -168,7 +168,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
         body->SetAngularDamping(desc.angularDamping);
         body->SetKinematic(desc.kinematic);
         body->SetCharacter(desc.character);
-        // NOTE: compound shape 일 경우 CCD 적용 안됨
+        // NOTE: CCD cannot be used with the compound shape.
         body->SetCCD(desc.ccd);
 
         rigidBody->setUserPointer(body);
@@ -213,7 +213,7 @@ void PhysicsSystem::DestroyCollidable(PhysCollidable *collidable) {
         btRigidBody *rigidBody = btRigidBody::upcast(collidable->collisionObject);
         assert(rigidBody);
 
-        // Remove attached constraints of rigid body
+        // Remove attached constraints of rigid body.
         int numConstraintRefs = rigidBody->getNumConstraintRefs();
         if (numConstraintRefs > 0) {
             PhysConstraint **constraintRefs = (PhysConstraint **)_alloca(numConstraintRefs * sizeof(constraintRefs[0]));

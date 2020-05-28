@@ -280,7 +280,7 @@ Sound *SoundSystem::GetSound(const char *hashName) {
     return sound;
 }
 
-// TODO: SoundSystem::Update 함수를 별도 쓰레드로 바꿀것
+// TODO: Use thread for SoundSystem::Update()
 void SoundSystem::Update() {
     BE_PROFILE_CPU_SCOPE_STATIC("SoundSystem::Update");
 

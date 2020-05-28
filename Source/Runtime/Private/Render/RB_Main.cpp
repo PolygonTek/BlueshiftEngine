@@ -137,11 +137,11 @@ void RB_SetupLight(VisLight *visLight) {
     }
 
     if (rhi.IsSRGBWriteEnabled()) {
-        // Linearize light color
+        // Linearize light color.
         visLight->lightColor.ToColor3() = visLight->lightColor.ToColor3().SRGBToLinear();
     }
 
-    // Build light texture transform matrix
+    // Build light texture transform matrix.
     ALIGN_AS32 float lightTexMatrix[2][4];
     lightTexMatrix[0][0] = lightPass->tcScale[0];
     lightTexMatrix[0][1] = 0.0f;

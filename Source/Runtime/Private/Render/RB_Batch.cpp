@@ -189,7 +189,7 @@ void Batch::DrawDynamicSubMesh(SubMesh *subMesh) {
 
 void Batch::SetSubMeshVertexFormat(const SubMesh *subMesh, int vertexFormatIndex) const {
     // HACK!!
-    // TODO: check vertex type of the subMesh instead of this
+    // TODO: check vertex type of the subMesh instead of this.
     int vertexSize = subMesh->GetType() != Mesh::Type::Dynamic ? sizeof(VertexGenericLit) : sizeof(VertexGeneric);
 
     if (numIndirectCommands > 0 && renderGlobal.instancingMethod == Mesh::InstancingMethod::InstancedArrays) {

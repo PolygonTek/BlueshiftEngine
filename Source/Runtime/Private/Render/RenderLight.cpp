@@ -52,7 +52,7 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
     Clamp01(state.materialParms[RenderObject::MaterialParm::Blue]);
     Clamp01(state.materialParms[RenderObject::MaterialParm::Alpha]);
 
-    // NOTE: shader 에서 이미 한번 square 처리가 되므로 여기서 sqrt 해준다.
+    // NOTE: Since it is already squared once in the shader, we do sqrt() here.
     state.fallOffExponent = Math::Sqrt(state.fallOffExponent);
 
     // Calculate view matrix with the given origin and axis.
