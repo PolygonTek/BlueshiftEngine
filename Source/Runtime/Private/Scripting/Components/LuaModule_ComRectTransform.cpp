@@ -29,8 +29,8 @@ void LuaVM::RegisterRectTransformComponent(LuaCpp::Module &module) {
         "size_delta", &ComRectTransform::GetSizeDelta,
         "pivot", &ComRectTransform::GetPivot,
         "local_rect", &ComRectTransform::GetLocalRect,
-        "set_anchor_min", &ComRectTransform::SetAnchorMins,
-        "set_anchor_man", &ComRectTransform::SetAnchorMaxs,
+        "set_anchor_mins", &ComRectTransform::SetAnchorMins,
+        "set_anchor_maxs", &ComRectTransform::SetAnchorMaxs,
         "set_anchored_position", &ComRectTransform::SetAnchoredPosition,
         "set_size_delta", &ComRectTransform::SetSizeDelta,
         "set_pivot", &ComRectTransform::SetPivot);
