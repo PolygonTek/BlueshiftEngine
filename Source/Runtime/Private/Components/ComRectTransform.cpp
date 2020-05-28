@@ -40,6 +40,8 @@ void ComRectTransform::RegisterProperties() {
         "", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("rayCastTarget", "Ray Cast Target", bool, rayCastTarget, true,
         "", PropertyInfo::Flag::Editor);
+    REGISTER_PROPERTY("clipChildren", "Clip Children", bool, clipChildren, true,
+        "", PropertyInfo::Flag::Editor);
 }
 
 ComRectTransform::ComRectTransform() {

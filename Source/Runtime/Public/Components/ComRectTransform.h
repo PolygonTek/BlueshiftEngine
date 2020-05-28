@@ -57,6 +57,8 @@ public:
 
     bool                    IsRayCastTarget() const { return rayCastTarget; }
 
+    bool                    IsClipChildren() const { return clipChildren; }
+
                             /// Returns position in world space (overrided).
     Vec3                    GetOrigin() const;
 
@@ -132,6 +134,7 @@ protected:
     Vec2                    sizeDelta;
     Vec2                    pivot;
     bool                    rayCastTarget;
+    bool                    clipChildren;
 
     mutable bool            cachedRectInvalidated;
     mutable RectF           cachedRect;                 ///< Cached rectangle in local space.

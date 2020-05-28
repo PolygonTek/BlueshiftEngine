@@ -243,13 +243,15 @@ Entity *Entity::RayCastRect(const Ray &ray) {
             return nullptr;
         }
 
-        Vec2 localPoint;
-        if (!rectTransform->RayToLocalPointInRectangle(ray, localPoint)) {
-            return nullptr;
-        }
+        if (rectTransform->IsClipChildren()) {
+            Vec2 localPoint;
+            if (!rectTransform->RayToLocalPointInRectangle(ray, localPoint)) {
+                return nullptr;
+            }
 
-        if (!rectTransform->IsLocalPointInRectangle(localPoint)) {
-            return nullptr;
+            if (!rectTransform->IsLocalPointInRectangle(localPoint)) {
+                return nullptr;
+            }
         }
 
         hitEntity = this;
