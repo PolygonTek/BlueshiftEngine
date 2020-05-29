@@ -28,7 +28,7 @@ void Mesh::CreateDefaultBox() {
     surf->materialIndex = 0;
     surfaces.Append(surf);
 
-    float extent = MeterToUnit(0.1f);
+    constexpr float extent = MeterToUnit(0.1f);
 
     VertexGenericLit *v = surf->subMesh->verts;
     // bottom face
