@@ -790,11 +790,9 @@ void GameWorld::UpdateCanvas() {
 
             if (canvasComponent) {
                 canvasComponent->UpdateRenderingOrderForCanvasElements();
-
-                ent = ent->node.GetNextSibling();
-            } else {
-                ent = ent->node.GetNext();
             }
+
+            ent = ent->node.GetNext();
         }
     }
 }
