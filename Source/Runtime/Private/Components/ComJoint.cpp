@@ -36,7 +36,6 @@ void ComJoint::RegisterProperties() {
 
 ComJoint::ComJoint() {
     constraint = nullptr;
-    connectedBody = nullptr;
 }
 
 ComJoint::~ComJoint() {
@@ -56,10 +55,9 @@ void ComJoint::Purge(bool chainPurge) {
             }
         }
 
-        connectedBody = Object::FindInstance(connectedBodyGuid)->Cast<ComRigidBody>();
+        ComRigidBody *connectedBody = GetConnectedBody();
         if (connectedBody) {
             connectedBody->Activate();
-            connectedBody = nullptr;
         }
     }
 
@@ -111,12 +109,6 @@ void ComJoint::SetConnectedBodyGuid(const Guid &guid) {
     }
     connectedBodyGuid = guid;
 
-    if (!connectedBodyGuid.IsZero()) {
-        connectedBody = Object::FindInstance(connectedBodyGuid)->Cast<ComRigidBody>();
-    } else {
-        connectedBody = nullptr;
-    }
-
     if (constraint) {
         physicsSystem.DestroyConstraint(constraint);
 
@@ -126,6 +118,7 @@ void ComJoint::SetConnectedBodyGuid(const Guid &guid) {
             constraint->AddToWorld(GetGameWorld()->GetPhysicsWorld());
         }
 
+        ComRigidBody *connectedBody = GetConnectedBody();
         if (connectedBody) {
             connectedBody->Activate();
         }
@@ -133,7 +126,8 @@ void ComJoint::SetConnectedBodyGuid(const Guid &guid) {
 }
 
 ComRigidBody *ComJoint::GetConnectedBody() const {
-    if (!connectedBody && !connectedBodyGuid.IsZero()) {
+    ComRigidBody *connectedBody = nullptr;
+    if (!connectedBodyGuid.IsZero()) {
         connectedBody = Object::FindInstance(connectedBodyGuid)->Cast<ComRigidBody>();
     }
     return connectedBody;

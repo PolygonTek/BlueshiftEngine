@@ -13,9 +13,9 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Game/PlayerSettings.h"
-#include "Asset/Asset.h"
+#include "Asset/Resource.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -27,7 +27,7 @@ void PlayerSettings::RegisterProperties() {
     REGISTER_PROPERTY("companyName", "Company Name", Str, companyName, "DefaultCompany", "", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("productName", "Product Name", Str, productName, "MyApp", "", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("appScript", "App Script", Guid, appScriptGuid, Guid::zero, "", PropertyInfo::Flag::Editor)
-        .SetMetaObject(&ScriptAsset::metaObject);
+        .SetMetaObject(&ScriptResource::metaObject);
 }
 
 PlayerSettings::PlayerSettings() {

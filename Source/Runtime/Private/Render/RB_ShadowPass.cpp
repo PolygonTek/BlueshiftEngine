@@ -19,7 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
-// litVisAABB 와 viewFrustum 을 이용해서 light OBB 의 near, far 를 구한다
+// litVisAABB 와 viewFrustum 을 이용해서 light OBB 의 near, far 를 구한다.
 static bool RB_ComputeNearFar(const Vec3 &lightOrigin, const OBB &lightOBB, const AABB &litVisAABB, const Frustum &viewFrustum, float *dNear, float *dFar) {
     float dmin1, dmax1;
     float dmin2, dmax2;
@@ -42,7 +42,7 @@ static bool RB_ComputeNearFar(const Vec3 &lightOrigin, const OBB &lightOBB, cons
     return true;
 }
 
-// litVisAABB 와 viewFrustum 을 이용해서 light frustum 의 near 와 far 를 구한다
+// litVisAABB 와 viewFrustum 을 이용해서 light frustum 의 near 와 far 를 구한다.
 static bool RB_ComputeNearFar(const Frustum &lightFrustum, const AABB &litVisAABB, const Frustum &viewFrustum, float *dNear, float *dFar) {
     float dmin1, dmax1;
     float dmin2, dmax2;
@@ -69,8 +69,10 @@ static void RB_AlignProjectionBounds(float &xmin, float &xmax, float &ymin, floa
     xmax = (xmax + 1.0f) * 0.5f;
     ymax = (ymax + 1.0f) * 0.5f;
 
-    xmin = Math::Floor(xmin * size.x / alignSize);
-    ymin = Math::Floor(ymin * size.y / alignSize);
+    float invAlignSize = 1.0f / alignSize;
+
+    xmin = Math::Floor(xmin * size.x * invAlignSize);
+    ymin = Math::Floor(ymin * size.y * invAlignSize);
 
     xmax = xmin + r_shadowMapSize.GetFloat();
     ymax = ymin + r_shadowMapSize.GetFloat();
@@ -94,7 +96,7 @@ static void RB_AlignProjectionBounds(float &xmin, float &xmax, float &ymin, floa
 }
 
 static bool RB_ComputeShadowCropMatrix(const OBB &lightOBB, const OBB &shadowCasterOBB, const Frustum &viewFrustum, Mat4 &shadowCropMatrix) {
-    // Calculates crop bounds of view frustum in light OBB space
+    // Calculates crop bounds of view frustum in light OBB space.
     AABB viewCropBounds;
     if (!lightOBB.ProjectionBounds(viewFrustum, viewCropBounds)) {
         return false;
@@ -128,7 +130,7 @@ static bool RB_ComputeShadowCropMatrix(const OBB &lightOBB, const OBB &shadowCas
 }
 
 static bool RB_ComputeShadowCropMatrix(const OBB &lightOBB, const Sphere &viewSphere, Mat4 &shadowCropMatrix) {
-    // Calculate crop bounds [-1, 1] of view sphere in light OBB space
+    // Calculate crop bounds [-1, 1] of view sphere in light OBB space.
     AABB cropBounds;
     if (!lightOBB.ProjectionBounds(viewSphere, cropBounds)) {
         return false;
@@ -151,12 +153,12 @@ static bool RB_ComputeShadowCropMatrix(const OBB &lightOBB, const Sphere &viewSp
 }
 
 static bool RB_ComputeShadowCropMatrix(const Frustum &lightFrustum, const OBB &shadowCasterOBB, const Frustum &viewFrustum, Mat4 &shadowCropMatrix) {
-    // crop bounds 를 만든다
+    // Make crop bounds.
     AABB casterCropBounds, viewCropBounds;
     lightFrustum.ProjectionBounds(viewFrustum, viewCropBounds);
     lightFrustum.ProjectionBounds(shadowCasterOBB, casterCropBounds);
 
-    // 두개의 crop bounds 의 교집합
+    // Intersection of two crop bounds.
     AABB cropBounds;
     cropBounds[0][AxisIndex::Left] = (casterCropBounds[0][AxisIndex::Left] > viewCropBounds[0][AxisIndex::Left]) ? casterCropBounds[0][AxisIndex::Left] : viewCropBounds[0][AxisIndex::Left];
     cropBounds[1][AxisIndex::Left] = (casterCropBounds[1][AxisIndex::Left] < viewCropBounds[1][AxisIndex::Left]) ? casterCropBounds[1][AxisIndex::Left] : viewCropBounds[1][AxisIndex::Left];
@@ -351,8 +353,8 @@ static void RB_ShadowCubeMapPass(const VisLight *visLight, const Frustum &viewFr
     Mat3 axis;
 
     Rect prevScissorRect = rhi.GetScissor();
-    Mat4 prevProjMatrix = backEnd.projMatrix;
-    Mat4 prevViewProjMatrix = backEnd.viewProjMatrix;
+    ALIGN_AS32 Mat4 prevProjMatrix = backEnd.projMatrix;
+    ALIGN_AS32 Mat4 prevViewProjMatrix = backEnd.viewProjMatrix;
     backEnd.projMatrix = backEnd.shadowProjectionMatrix;
 
     for (int faceIndex = RHI::CubeMapFace::PositiveX; faceIndex <= RHI::CubeMapFace::NegativeZ; faceIndex++) {
@@ -364,7 +366,7 @@ static void RB_ShadowCubeMapPass(const VisLight *visLight, const Frustum &viewFr
             continue;
         }
 
-        Mat4 lightViewMatrix;
+        ALIGN_AS32 Mat4 lightViewMatrix;
         R_SetViewMatrix(axis, visLight->def->GetState().origin, lightViewMatrix);
 
         backEnd.viewProjMatrix = backEnd.shadowProjectionMatrix * lightViewMatrix;
@@ -387,10 +389,10 @@ static void RB_ShadowCubeMapPass(const VisLight *visLight, const Frustum &viewFr
     rhi.SetScissor(prevScissorRect);
     rhi.SetViewport(backEnd.renderRect);
 
-    backEnd.ctx->renderCounter.numShadowMapDraw += shadowMapDraw;
+    backEnd.ctx->GetRenderCounter().numShadowMapDraw += shadowMapDraw;
 }
 
-// TODO: cascade 별로 컬링해야함
+// TODO: To be culled by for each cascades.
 static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustum, int cascadeIndex, bool forceClear) {
     const VisObject *   prevSpace = nullptr;
     const SubMesh *     prevSubMesh = nullptr;
@@ -406,8 +408,8 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
 
     rhi.SetDepthBias(backEnd.shadowMapOffsetFactor, backEnd.shadowMapOffsetUnits);
 
-    Mat4 prevProjMatrix = backEnd.projMatrix;
-    Mat4 prevViewProjMatrix = backEnd.viewProjMatrix;
+    ALIGN_AS32 Mat4 prevProjMatrix = backEnd.projMatrix;
+    ALIGN_AS32 Mat4 prevViewProjMatrix = backEnd.viewProjMatrix;
 
     backEnd.projMatrix = backEnd.shadowProjectionMatrix;
     backEnd.viewProjMatrix = backEnd.shadowProjectionMatrix * visLight->def->GetViewMatrix();
@@ -432,7 +434,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
             rhi.SetViewport(Rect(0, 0, backEnd.ctx->shadowMapRT->GetWidth(), backEnd.ctx->shadowMapRT->GetHeight()));
 
             prevScissorRect = rhi.GetScissor();
-            rhi.SetScissor(Rect::empty);
+            rhi.SetScissor(Rect::zero);
             rhi.SetStateBits(RHI::DepthWrite);
             rhi.Clear(RHI::ClearBit::Depth, Color4::black, 1.0f, 0);
         }
@@ -484,7 +486,7 @@ static bool RB_ShadowMapPass(const VisLight *visLight, const Frustum &viewFrustu
 
         rhi.SetViewport(Rect(0, 0, backEnd.ctx->shadowMapRT->GetWidth(), backEnd.ctx->shadowMapRT->GetHeight()));
         prevScissorRect = rhi.GetScissor();
-        rhi.SetScissor(Rect::empty);
+        rhi.SetScissor(Rect::zero);
         
         rhi.SetStateBits(RHI::DepthWrite);
         rhi.Clear(RHI::ClearBit::Depth, Color4::black, 1.0f, 0);
@@ -521,29 +523,29 @@ static void RB_OrthogonalShadowMapPass(const VisLight *visLight, const Frustum &
     R_SetOrthogonalProjectionMatrix(visLight->def->GetWorldOBB().Extents()[1], visLight->def->GetWorldOBB().Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
 
     if (r_optimizedShadowProjection.GetInteger() == 2) {
-        Mat4 shadowCropMatrix;
-        OBB lightOBB = visLight->def->GetWorldOBB();
+        ALIGN_AS32 Mat4 shadowCropMatrix;
+        ALIGN_AS32 OBB lightOBB = visLight->def->GetWorldOBB();
 
         lightOBB.SetCenter(visLight->def->GetState().origin + visLight->def->GetState().axis[0] * (dFar + dNear) * 0.5f);
 
-        Vec3 extents = lightOBB.Extents();
+        ALIGN_AS32 Vec3 extents = lightOBB.Extents();
         lightOBB.SetExtents(Vec3((dFar - dNear) * 0.5f, extents.y, extents.z));
 
         if (!RB_ComputeShadowCropMatrix(lightOBB, OBB(visLight->shadowCastersAABB), viewFrustum, shadowCropMatrix)) {
             return;
         }
 
-        // crop matrix 를 곱해서 effective 'zoomed in' shadow view-projection matrix 를 만든다
+        // Multiply the crop matrix to create an effective 'zoomed in' shadow view-projection matrix.
         backEnd.shadowProjectionMatrix = shadowCropMatrix * backEnd.shadowProjectionMatrix;
     }
 
     backEnd.shadowMapFilterSize[0] = r_shadowMapFilterSize.GetFloat();
 
-    static const Mat4 textureScaleBiasMatrix(Vec4(0.5, 0, 0, 0.5), Vec4(0, 0.5, 0, 0.5), Vec4(0, 0, 0.5, 0.5), Vec4(0.0, 0.0, 0.0, 1));
+    ALIGN_AS32 static const Mat4 textureScaleBiasMatrix(Vec4(0.5, 0, 0, 0.5), Vec4(0, 0.5, 0, 0.5), Vec4(0, 0, 0.5, 0.5), Vec4(0.0, 0.0, 0.0, 1));
     backEnd.shadowViewProjectionScaleBiasMatrix[0] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * visLight->def->GetViewMatrix();
 
     if (RB_ShadowMapPass(visLight, viewFrustum, 0, false)) {
-        backEnd.ctx->renderCounter.numShadowMapDraw++;
+        backEnd.ctx->GetRenderCounter().numShadowMapDraw++;
     }
 }
 
@@ -564,7 +566,7 @@ static void RB_ProjectedShadowMapPass(const VisLight *visLight, const Frustum &v
     R_SetPerspectiveProjectionMatrix(xFov, yFov, dNear, dFar, false, backEnd.shadowProjectionMatrix);
 
     /*if (r_optimizedShadowProjection.GetInteger() > 0) {
-        Mat4 shadowCropMatrix;
+        ALIGN_AS32 Mat4 shadowCropMatrix;
         Frustum lightFrustum = visLight->def->frustum;
 
         lightFrustum.MoveNearDistance(dNear);
@@ -580,7 +582,7 @@ static void RB_ProjectedShadowMapPass(const VisLight *visLight, const Frustum &v
             }
         }
 
-        // crop matrix 를 곱해서 effective 'zoomed in' shadow view-projection matrix 를 만든다
+        // Multiply the crop matrix to create an effective 'zoomed in' shadow view-projection matrix.
         backEnd.shadowProjectionMatrix = shadowCropMatrix * backEnd.shadowProjectionMatrix;
     }*/
 
@@ -590,17 +592,16 @@ static void RB_ProjectedShadowMapPass(const VisLight *visLight, const Frustum &v
     backEnd.shadowViewProjectionScaleBiasMatrix[0] = textureScaleBiasMatrix * backEnd.shadowProjectionMatrix * visLight->def->GetViewMatrix();
 
     if (RB_ShadowMapPass(visLight, viewFrustum, 0, false)) {
-        backEnd.ctx->renderCounter.numShadowMapDraw++;
+        backEnd.ctx->GetRenderCounter().numShadowMapDraw++;
     }
 }
 
 static bool RB_SingleCascadedShadowMapPass(const VisLight *visLight, const Frustum &splitViewFrustum, int cascadeIndex, bool forceClear) {
-    // split 된 viewFrustum 일 수 있기 때문에 컬링 가능
-    if (splitViewFrustum.CullAABB(visLight->litSurfsAABB)) {
-        //return false;
-    }
-
     backEnd.shadowViewProjectionScaleBiasMatrix[cascadeIndex].SetZero();
+
+    if (splitViewFrustum.CullAABB(visLight->litSurfsAABB)) {
+        return false;
+    }
 
     switch (cascadeIndex) {
     case 0:
@@ -630,12 +631,12 @@ static bool RB_SingleCascadedShadowMapPass(const VisLight *visLight, const Frust
     R_SetOrthogonalProjectionMatrix(visLight->def->GetWorldOBB().Extents()[1], visLight->def->GetWorldOBB().Extents()[2], dNear, dFar, backEnd.shadowProjectionMatrix);
 
     if (r_optimizedShadowProjection.GetInteger() > 0) {
-        Mat4 shadowCropMatrix;
-        OBB lightOBB = visLight->def->GetWorldOBB();
+        ALIGN_AS32 Mat4 shadowCropMatrix;
+        ALIGN_AS32 OBB lightOBB = visLight->def->GetWorldOBB();
 
         lightOBB.SetCenter(visLight->def->GetState().origin + visLight->def->GetState().axis[0] * (dFar + dNear) * 0.5f);
 
-        Vec3 extents = lightOBB.Extents();
+        ALIGN_AS32 Vec3 extents = lightOBB.Extents();
         lightOBB.SetExtents(Vec3((dFar - dNear) * 0.5f, extents.y, extents.z));
 
         if (r_optimizedShadowProjection.GetInteger() == 2) {
@@ -653,7 +654,7 @@ static bool RB_SingleCascadedShadowMapPass(const VisLight *visLight, const Frust
             }
         }
 
-        // crop matrix 를 곱해서 effective 'zoomed in' shadow view-projection matrix 를 만든다
+        // Multiply the crop matrix to create an effective 'zoomed in' shadow view-projection matrix.
         backEnd.shadowProjectionMatrix = shadowCropMatrix * backEnd.shadowProjectionMatrix;
     }
 
@@ -668,10 +669,10 @@ static void RB_CascadedShadowMapPass(const VisLight *visLight) {
     float dFar = r_CSM_maxDistance.GetFloat();
     int csmCount = r_CSM_count.GetInteger();
 
-    R_ComputeSplitDistances(dNear, dFar, r_CSM_splitLamda.GetFloat(), csmCount, backEnd.csmDistances);
+    R_ComputeSplitDistances(dNear, dFar, r_CSM_splitLambda.GetFloat(), csmCount, backEnd.csmDistances);
 
     if (r_CSM_selectionMethod.GetInteger() == 0) {
-        // z-based selection shader needs shadowSplitFar value
+        // Z-based selection shader needs shadowSplitFar value.
         for (int cascadeIndex = 0; cascadeIndex < r_CSM_count.GetInteger(); cascadeIndex++) {
             float dFar = backEnd.csmDistances[cascadeIndex + 1];
 
@@ -680,7 +681,7 @@ static void RB_CascadedShadowMapPass(const VisLight *visLight) {
         }
     }
 
-    // 각 split 뷰 프러스텀에 대하여 shadow map 생성
+    // Render shadow maps for each split view frustum.
     for (int cascadeIndex = 0; cascadeIndex < csmCount; cascadeIndex++) {
         if (backEnd.csmDistances[cascadeIndex + 1] <= r_CSM_nonCachedDistance.GetFloat()) {
             backEnd.csmUpdateRatio[cascadeIndex] = 1.0f;
@@ -708,7 +709,7 @@ static void RB_CascadedShadowMapPass(const VisLight *visLight) {
         splitViewFrustum.MoveFarDistance(dFar);
 
         if (RB_SingleCascadedShadowMapPass(visLight, splitViewFrustum, cascadeIndex, true)) {
-            backEnd.ctx->renderCounter.numShadowMapDraw++;
+            backEnd.ctx->GetRenderCounter().numShadowMapDraw++;
         }
     }
 }

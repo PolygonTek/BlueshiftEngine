@@ -27,7 +27,11 @@ void LuaVM::RegisterRay(LuaCpp::Module &module) {
         "set", &Ray::Set,
         "origin", &Ray::GetOrigin,
         "direction", &Ray::GetDirection,
-        "get_point", &Ray::GetPoint);
+        "get_point", &Ray::GetPoint,
+        "to_string", static_cast<const char*(Ray::*)(void)const>(&Ray::ToString));
+
+    _Ray.AddClassMembers<Ray>(
+        "__tostring", static_cast<const char *(Ray::*)(void)const>(&Ray::ToString));
 }
 
 BE_NAMESPACE_END

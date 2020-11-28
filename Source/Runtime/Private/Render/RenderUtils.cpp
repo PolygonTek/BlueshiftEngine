@@ -21,34 +21,34 @@ BE_NAMESPACE_BEGIN
 void R_EnvCubeMapFaceToOpenGLAxis(RHI::CubeMapFace::Enum face, Mat3 &axis) {
     switch (face) {
     case RHI::CubeMapFace::PositiveX:
-        axis[0] = Vec3(1, 0, 0);
-        axis[1] = Vec3(0, 0, 1);
-        axis[2] = Vec3(0, -1, 0);
+        axis[0] = Vec3( 1.0f,  0.0f,  0.0f);
+        axis[1] = Vec3( 0.0f,  0.0f,  1.0f);
+        axis[2] = Vec3( 0.0f, -1.0f,  0.0f);
         break;
     case RHI::CubeMapFace::NegativeX:
-        axis[0] = Vec3(-1, 0, 0);
-        axis[1] = Vec3(0, 0, -1);
-        axis[2] = Vec3(0, -1, 0);
+        axis[0] = Vec3(-1.0f,  0.0f,  0.0f);
+        axis[1] = Vec3( 0.0f,  0.0f, -1.0f);
+        axis[2] = Vec3( 0.0f, -1.0f,  0.0f);
         break;
     case RHI::CubeMapFace::PositiveY:
-        axis[0] = Vec3(0, 1, 0);
-        axis[1] = Vec3(-1, 0, 0);
-        axis[2] = Vec3(0, 0, 1);
+        axis[0] = Vec3( 0.0f,  1.0f,  0.0f);
+        axis[1] = Vec3(-1.0f,  0.0f,  0.0f);
+        axis[2] = Vec3( 0.0f,  0.0f,  1.0f);
         break;
     case RHI::CubeMapFace::NegativeY:
-        axis[0] = Vec3(0, -1, 0);
-        axis[1] = Vec3(-1, 0, 0);
-        axis[2] = Vec3(0, 0, -1);
+        axis[0] = Vec3( 0.0f, -1.0f,  0.0f);
+        axis[1] = Vec3(-1.0f,  0.0f,  0.0f);
+        axis[2] = Vec3( 0.0f,  0.0f, -1.0f);
         break;
     case RHI::CubeMapFace::PositiveZ:
-        axis[0] = Vec3(0, 0, 1);
-        axis[1] = Vec3(-1, 0, 0);
-        axis[2] = Vec3(0, -1, 0);
+        axis[0] = Vec3( 0.0f,  0.0f,  1.0f);
+        axis[1] = Vec3(-1.0f,  0.0f,  0.0f);
+        axis[2] = Vec3( 0.0f, -1.0f,  0.0f);
         break;
     case RHI::CubeMapFace::NegativeZ:
-        axis[0] = Vec3(0, 0, -1);
-        axis[1] = Vec3(1, 0, 0);
-        axis[2] = Vec3(0, -1, 0);
+        axis[0] = Vec3( 0.0f,  0.0f, -1.0f);
+        axis[1] = Vec3( 1.0f,  0.0f,  0.0f);
+        axis[2] = Vec3( 0.0f, -1.0f,  0.0f);
         break;
     }
 }
@@ -334,8 +334,7 @@ bool R_CullShadowVolumeBackCap(const Mat4 &viewProjMatrix, const OBB &boundingBo
 
         *pv = viewProjMatrix * Vec4(silVerts[i], 0.0f);
 
-        // NOTE: Normalized device coordinates 에서 z 값이 -1 로 클리핑(near plane clip)
-        // 하기 위해서는 xy 를 -w 로 나눈다.
+        // NOTE: Divide xy by -w in NDC so that z is clipped by -1.
         if (pv->z < 0.0f) {
             pv->w = -pv->w;
         }
@@ -375,7 +374,7 @@ void R_ComputeSplitDistances(float dNear, float dFar, float lamda, int numSplits
     splitDistances[numSplits] = dFar;
 }
 
-// Calculate Gaussian weights based on kernel size
+// Calculate Gaussian weights based on kernel size.
 void R_ComputeGaussianWeights(int kernelSize, float *weights) {
     float sum = 0.0f;
     float sigma = kernelSize / 6.0f;
@@ -395,8 +394,8 @@ void R_ComputeGaussianWeights(int kernelSize, float *weights) {
     }
 }
 
-// Generate weights and offsets for filter, taking advantage of linear texture filtering
-// GPU Gems 2, Chapter 20. Fast Third Order Texture Filtering 참고
+// Generate weights and offsets for filter, taking advantage of linear texture filtering.
+// Reference: GPU Gems 2, Chapter 20. Fast Third Order Texture Filtering
 void R_Compute1DLinearSamplingWeightsAndOffsets(int numSamples, const float *weights, float *lweights, Vec2 *hoffsets, Vec2 *voffsets) {
     int numSamplesHalf = (numSamples + 1) / 2;
     float kernelRadius = (numSamples - 1) / 2.0f;

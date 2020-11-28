@@ -74,7 +74,7 @@ public:
                             /// Removes render object.
     void                    RemoveRenderObject(int handle);
 
-                            /// Gets RenderObject pointer by given render object handle.
+                            /// Returns RenderObject pointer by given render object handle.
     RenderObject *          GetRenderObject(int handle) const;
 
                             /// Adds render light to this world.
@@ -86,7 +86,7 @@ public:
                             /// Removes render light.
     void                    RemoveRenderLight(int handle);
 
-                            /// Gets RenderLight pointer by given render light handle.
+                            /// Returns RenderLight pointer by given render light handle.
     RenderLight *           GetRenderLight(int handle) const;
 
                             /// Adds environment probe to this world.
@@ -98,7 +98,7 @@ public:
                             /// Removes environment probe.
     void                    RemoveEnvProbe(int handle);
 
-                            /// Gets EnvProbe pointer by given environment probe handle.
+                            /// Returns EnvProbe pointer by given environment probe handle.
     EnvProbe *              GetEnvProbe(int handle) const;
 
                             /// Adds global environment probe to this world.
@@ -122,15 +122,16 @@ public:
 
     void                    FinishMapLoading();
 
-                            /// Set color for the debug primitives.
+                            /// Sets color for the debug primitives.
     void                    SetDebugColor(const Color4 &lineColor, const Color4 &fillColor) { debugLineColor = lineColor; debugFillColor = fillColor; }
 
     void                    ClearDebugPrimitives(int time);
 
-    void                    DebugLine(const Vec3 &start, const Vec3 &end, float lineWidth, bool depthTest = false, int lifeTime = 0);
+    void                    DebugLine(const Vec3 &start, const Vec3 &end, float lineWidth = 1, bool depthTest = false, int lifeTime = 0);
     void                    DebugTriangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, float lineWidth = 1, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
     void                    DebugQuad(const Vec3 &origin, const Vec3 &right, const Vec3 &up, float size, float lineWidth = 1, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
     void                    DebugCircle(const Vec3 &origin, const Vec3 &dir, const float radius, float lineWidth = 1, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
+    void                    DebugHollowCircle(const Vec3 &origin, const Vec3 &dir, const float radius1, const float radius2, float lineWidth = 1, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
     void                    DebugArc(const Vec3 &origin, const Vec3 &right, const Vec3 &up, const float radius, float angle1, float angle2, bool drawSector, float lineWidth = 1, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
     void                    DebugEllipse(const Vec3 &origin, const Vec3 &right, const Vec3 &up, const float radius1, const float radius2, float lineWidth = 1, bool twoSided = true, bool depthTest = false, int lifeTime = 0);
     void                    DebugHemisphere(const Vec3 &origin, const Mat3 &axis, float radius, float lineWidth = 1, bool twoSided = true, bool depthTest = false, int lifeTime = 0);	
@@ -162,6 +163,7 @@ private:
     void                    FindVisLightsAndObjects(VisCamera *camera);
     void                    AddStaticMeshes(VisCamera *camera);
     void                    AddSkinnedMeshes(VisCamera *camera);
+    void                    AddRawMeshes(VisCamera *camera);
     void                    AddParticleMeshes(VisCamera *camera);
     void                    AddTextMeshes(VisCamera *camera);
     void                    AddSkyBoxMeshes(VisCamera *camera);

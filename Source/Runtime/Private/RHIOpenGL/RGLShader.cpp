@@ -17,7 +17,7 @@
 #include "RGLInternal.h"
 #include "Platform/PlatformFile.h"
 #include "Core/BinSearch.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Core/Checksum_MD5.h"
 #include "Core/Heap.h"
 #include "Core/Lexer.h"
@@ -936,7 +936,7 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
         samplers = (GLSampler *)Mem_Alloc(sizeof(GLSampler) * numSamplers);
         simdProcessor->Memcpy(samplers, tempSamplers, sizeof(GLSampler) * numSamplers);
 
-        // binary search 를 위해 정렬
+        // Sort for binary search.
         qsort(samplers, numSamplers, sizeof(samplers[0]), CompareSampler);
     }
 
@@ -944,7 +944,7 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
         uniforms = (GLUniform *)Mem_Alloc(sizeof(GLUniform) * numUniforms);
         simdProcessor->Memcpy(uniforms, tempUniforms, sizeof(GLUniform) * numUniforms);
 
-        // binary search 를 위해 정렬
+        // Sort for binary search.
         qsort(uniforms, numUniforms, sizeof(uniforms[0]), CompareUniform);
     }
 
@@ -952,7 +952,7 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
         uniformBlocks = (GLUniformBlock *)Mem_Alloc(sizeof(GLUniformBlock) * numUniformBlocks);
         simdProcessor->Memcpy(uniformBlocks, tempUniformBlocks, sizeof(GLUniform) * numUniformBlocks);
 
-        // binary search 를 위해 정렬
+        // Sort for binary search.
         qsort(uniformBlocks, numUniformBlocks, sizeof(uniformBlocks[0]), CompareUniformBlock);
     }
 
@@ -1055,6 +1055,34 @@ void OpenGLRHI::SetShaderConstantGeneric(int index, bool rowMajor, int count, co
     const GLShader *shader = shaderList[currentContext->state->shaderHandle];
     const GLUniform *uniform = &shader->uniforms[index];
     switch (uniform->type) {
+    case GL_INT:
+    case GL_BOOL:
+        gglUniform1iv(uniform->location, count, (const GLint *)data);
+        break;
+    case GL_INT_VEC2:
+    case GL_BOOL_VEC2:
+        gglUniform2iv(uniform->location, count, (const GLint *)data);
+        break;
+    case GL_INT_VEC3:
+    case GL_BOOL_VEC3:
+        gglUniform3iv(uniform->location, count, (const GLint *)data);
+        break;
+    case GL_INT_VEC4:
+    case GL_BOOL_VEC4:
+        gglUniform4iv(uniform->location, count, (const GLint *)data);
+        break;
+    case GL_UNSIGNED_INT:
+        gglUniform1uiv(uniform->location, count, (const GLuint *)data);
+        break;
+    case GL_UNSIGNED_INT_VEC2:
+        gglUniform2uiv(uniform->location, count, (const GLuint *)data);
+        break;
+    case GL_UNSIGNED_INT_VEC3:
+        gglUniform3uiv(uniform->location, count, (const GLuint *)data);
+        break;
+    case GL_UNSIGNED_INT_VEC4:
+        gglUniform4uiv(uniform->location, count, (const GLuint *)data);
+        break;
     case GL_FLOAT:
         gglUniform1fv(uniform->location, count, (const GLfloat *)data);
         break;
@@ -1066,26 +1094,6 @@ void OpenGLRHI::SetShaderConstantGeneric(int index, bool rowMajor, int count, co
         break;
     case GL_FLOAT_VEC4:
         gglUniform4fv(uniform->location, count, (const GLfloat *)data);
-        break;
-    case GL_INT:
-    case GL_UNSIGNED_INT:
-    case GL_BOOL:
-        gglUniform1iv(uniform->location, count, (const GLint *)data);
-        break;
-    case GL_INT_VEC2:
-    case GL_UNSIGNED_INT_VEC2:
-    case GL_BOOL_VEC2:
-        gglUniform2iv(uniform->location, count, (const GLint *)data);
-        break;
-    case GL_INT_VEC3:
-    case GL_UNSIGNED_INT_VEC3:
-    case GL_BOOL_VEC3:
-        gglUniform3iv(uniform->location, count, (const GLint *)data);
-        break;
-    case GL_INT_VEC4:
-    case GL_UNSIGNED_INT_VEC4:
-    case GL_BOOL_VEC4:
-        gglUniform4iv(uniform->location, count, (const GLint *)data);
         break;
     case GL_FLOAT_MAT2:
         gglUniformMatrix2fv(uniform->location, count, rowMajor, (const GLfloat *)data);
@@ -1115,6 +1123,22 @@ void OpenGLRHI::SetShaderConstant3i(int index, const int *constant) const {
 }
 
 void OpenGLRHI::SetShaderConstant4i(int index, const int *constant) const {
+    SetShaderConstantGeneric(index, false, 1, constant);
+}
+
+void OpenGLRHI::SetShaderConstant1ui(int index, const unsigned int constant) const {
+    SetShaderConstantGeneric(index, false, 1, &constant);
+}
+
+void OpenGLRHI::SetShaderConstant2ui(int index, const unsigned int *constant) const {
+    SetShaderConstantGeneric(index, false, 1, constant);
+}
+
+void OpenGLRHI::SetShaderConstant3ui(int index, const unsigned int *constant) const {
+    SetShaderConstantGeneric(index, false, 1, constant);
+}
+
+void OpenGLRHI::SetShaderConstant4ui(int index, const unsigned int *constant) const {
     SetShaderConstantGeneric(index, false, 1, constant);
 }
 

@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ public:
         float               zNear;                  ///< Near distance in z axis
         float               zFar;                   ///< Far distance in z axis
         float               blendDistance;          ///< Blend distance for local probe rendering
-        bool                orthogonal = false;     ///< True for orthogonal projection or perspective projection
+        bool                orthogonal = false;     ///< True for orthogonal projection or false for perspective projection
     };
 
     void                    Update(const State *state);
@@ -98,10 +98,10 @@ public:
     bool                    TransformClipToNDC(const Vec4 &clipCoords, Vec3 &normalizedDeviceCoords) const;
 
                             /// Transform normlized device coordinates to pixel coordinates.
-    void                    TransformNDCToPixel(const Vec3 normalizedDeviceCoords, Point &pixelCoords) const;
+    void                    TransformNDCToPixel(const Vec3 normalizedDeviceCoords, PointF &pixelCoords) const;
 
                             /// Transforms world coordinates to pixel coordinates.
-    bool                    TransformWorldToPixel(const Vec3 &worldCoords, Point &pixelCoords) const;
+    bool                    TransformWorldToPixel(const Vec3 &worldCoords, PointF &pixelCoords) const;
 
                             /// Calculates clipping rectangle from bounding sphere (Different camera axis with Eric Lengyel's method)
     bool                    CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) const;
@@ -122,6 +122,8 @@ public:
     bool                    CalcDepthBoundsFromFrustum(const Frustum &frustum, const Mat4 &mvp, float *depthMin, float *depthMax) const;
     bool                    CalcDepthBoundsFromLight(const RenderLight *light, const Mat4 &mvp, float *depthMin, float *depthMax) const;
 
+    float                   CalcViewScale(const Vec3 &position) const;
+
     const OBB               GetBox() const { return box; }
 
     const Frustum &         GetFrustum() const { return frustum; }
@@ -134,7 +136,7 @@ public:
 
     static void             ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY);
 
-    static const Ray        RayFromScreenND(const RenderCamera::State &sceneView, float ndx, float ndy);
+    static const Ray        RayFromScreenPoint(const RenderCamera::State &sceneView, const Rect &screenRect, const Point &screenPoint);
 
 private:
     State                   state;

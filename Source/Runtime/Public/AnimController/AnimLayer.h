@@ -19,8 +19,8 @@
 
     Animation Layer
 
-    animation clip 이 tree 형태로 연결되어 있다.
-    모든 node/leaf 데이터는 AnimLayer 에서 관리
+    Tree structure of animation clips.
+    All the data in the nodes/leafs are managed by AnimLayer.
 
     AnimState.nodeNum <  0 ? AnimLeaf -> AnimClip
     AnimState.nodeNum >= 0 ? AnimNode -> AnimBlendTree

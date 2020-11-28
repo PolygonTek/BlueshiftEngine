@@ -32,7 +32,7 @@ static void RegisterApp(LuaCpp::Module &module) {
 }
 
 void Application::Init() {
-    BE1::cmdSystem.AddCommand("map", Cmd_Map_f);
+    BE1::cmdSystem.AddCommand("map", Cmd_Map);
 
     BE1::prefabManager.Init();
 
@@ -129,11 +129,11 @@ void Application::Draw() {
 
     mainRenderContext->BeginFrame();
 
-    gameWorld->Render();
+    gameWorld->RenderCamera();
 
     gameWorld->GetPhysicsWorld()->DebugDraw();
 
-    BE1::gameClient.DrawConsole();
+    BE1::gameClient.Render(mainRenderContext);
 
     mainRenderContext->EndFrame();
 }
@@ -144,7 +144,7 @@ void Application::LoadMap(const char *mapName) {
     gameWorld->StartGame();
 }
 
-void Application::Cmd_Map_f(const BE1::CmdArgs &args) {
+void Application::Cmd_Map(const BE1::CmdArgs &args) {
     if (args.Argc() != 2) {
         BE_LOG("map <filename>\n");
         return;

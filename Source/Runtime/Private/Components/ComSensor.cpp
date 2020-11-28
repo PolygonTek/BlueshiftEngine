@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ void ComSensor::AddChildShapeRecursive(const Mat3x4 &parentWorldMatrixInverse, c
 
     const ComTransform *transform = entity->GetTransform();
 
-    Mat3x4 localTransform = parentWorldMatrixInverse * Mat3x4(transform->GetAxis(), transform->GetOrigin());
+    ALIGN_AS32 Mat3x4 localTransform = parentWorldMatrixInverse * Mat3x4(transform->GetAxis(), transform->GetOrigin());
     localTransform.FixDegeneracies();
 
     PhysShapeDesc &shapeDesc = shapes.Alloc();
@@ -81,7 +81,7 @@ void ComSensor::AddChildShapeRecursive(const Mat3x4 &parentWorldMatrixInverse, c
     shapeDesc.localOrigin = localTransform.ToTranslationVec3();
     shapeDesc.localAxis = localTransform.ToMat3();
 
-    for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+    for (Entity *childEntity = entity->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
         AddChildShapeRecursive(parentWorldMatrixInverse, childEntity, shapes);
     }
 }
@@ -126,7 +126,7 @@ void ComSensor::CreateSensor() {
     }
 
     // Collect collider shadpes in children recursively
-    for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+    for (Entity *childEntity = entity->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
         AddChildShapeRecursive(transform->GetMatrixNoScale().Inverse(), childEntity, physicsDesc.shapes);
     }
 
@@ -225,8 +225,8 @@ void ComSensor::OnInactive() {
     }
 }
 
-#if 1
-void ComSensor::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+#if WITH_EDITOR
+void ComSensor::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     // TODO: draw blend mesh
     /*ComponentPtrArray colliderComponents = GetEntity()->GetComponents(ComCollider::metaObject);
 

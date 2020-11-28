@@ -19,6 +19,10 @@
 #include <android/sensor.h>
 #include <GLES/GL.h>
 
+#ifdef ENABLE_IMGUI
+#include "imgui/imgui.h"
+#endif
+
 #ifdef USE_ANALYTICS
 #include "AndroidAnalytics.h"
 #endif
@@ -39,9 +43,7 @@ static const ASensor *      accelerometerSensor = nullptr;
 static const ASensor *      gyroscopeSensor = nullptr;
 static ASensorEventQueue *  sensorEventQueue = nullptr;
 
-static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
-    app.Draw();
-}
+static BE1::RHI::DisplayMetrics displayMetrics;
 
 struct RenderQuality {
     enum Enum {
@@ -58,7 +60,13 @@ static RenderQuality::Enum DetermineRenderQuality() {
 
     switch (gpuInfo.processor) {
     case BE1::AndroidGPUInfo::Processor::Qualcomm_Adreno:
-        if (gpuInfo.model >= 500) {
+        if (gpuInfo.model >= 600) {
+            if (gpuInfo.model <= 612) {
+                renderQuality = RenderQuality::Low;
+            } else if (gpuInfo.model <= 620) {
+                renderQuality = RenderQuality::Medium;
+            }
+        } else if (gpuInfo.model >= 500) {
             if (gpuInfo.model < 510) {
                 renderQuality = RenderQuality::Low;
             } else if (gpuInfo.model < 530) {
@@ -135,80 +143,89 @@ static RenderQuality::Enum DetermineRenderQuality() {
     return renderQuality;
 }
 
+static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
+    app.Draw();
+}
+
 static void InitDisplay(ANativeWindow *window) {
-    if (!appInitialized) {
-        appInitialized = true;
+    if (appInitialized) {
+        BE1::rhi.ActivateSurface(app.mainRenderContext->GetContextHandle(), window);
+        return;
+    }
 
-        BE1::renderSystem.InitRHI(window);
-        
-        RenderQuality::Enum renderQuality = DetermineRenderQuality();
+    appInitialized = true;
 
-        const char *configName = "";
+    BE1::renderSystem.InitRHI(window);
+
+    RenderQuality::Enum renderQuality = DetermineRenderQuality();
+
+    const char *configName = "";
+    if (renderQuality == RenderQuality::High) {
+        configName = "highQuality";
+    } else if (renderQuality == RenderQuality::Medium) {
+        configName = "mediumQuality";
+    } else {
+        configName = "lowQuality";
+    }
+    BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, BE1::va("exec \"Config/%s.cfg\"\n", configName));
+    BE1::cvarSystem.ClearModified();
+
+    // Get window width/height in pixels.
+    currentWindowWidth = ANativeWindow_getWidth(window);
+    currentWindowHeight = ANativeWindow_getHeight(window);
+
+    int renderWidth;
+    int renderHeight;
+
+    if (currentWindowWidth > currentWindowHeight) {
+        // landscape mode
         if (renderQuality == RenderQuality::High) {
-            configName = "highQuality";
+            renderWidth = BE1::Min(1920, currentWindowWidth);
+            renderHeight = BE1::Min(1080, currentWindowHeight);
         } else if (renderQuality == RenderQuality::Medium) {
-            configName = "mediumQuality";
+            renderWidth = BE1::Min(1280, currentWindowWidth);
+            renderHeight = BE1::Min(720, currentWindowHeight);
         } else {
-            configName = "lowQuality";
+            renderWidth = BE1::Min(1024, currentWindowWidth);
+            renderHeight = BE1::Min(576, currentWindowHeight);
         }
-        BE1::cmdSystem.BufferCommandText(BE1::CmdSystem::Execution::Now, BE1::va("exec \"Config/%s.cfg\"\n", configName));
-        BE1::cvarSystem.ClearModified();
-
-        currentWindowWidth = ANativeWindow_getWidth(window);
-        currentWindowHeight = ANativeWindow_getHeight(window);
-
-        int renderWidth;
-        int renderHeight;
-
+    } else {
         if (renderQuality == RenderQuality::High) {
-            renderWidth = currentWindowWidth;
-            renderHeight = currentWindowHeight;
+            renderWidth = BE1::Min(1080, currentWindowWidth);
+            renderHeight = BE1::Min(1920, currentWindowHeight);
+        } else if (renderQuality == RenderQuality::Medium) {
+            renderWidth = BE1::Min(720, currentWindowWidth);
+            renderHeight = BE1::Min(1280, currentWindowHeight);
         } else {
-            if (currentWindowWidth > currentWindowHeight) {
-                // landscape mode
-                if (renderQuality == RenderQuality::Medium) {
-                    renderWidth = BE1::Min(1280, currentWindowWidth);
-                    renderHeight = BE1::Min(720, currentWindowHeight);
-                } else {
-                    renderWidth = BE1::Min(1024, currentWindowWidth);
-                    renderHeight = BE1::Min(576, currentWindowHeight);
-                }
-            } else {
-                if (renderQuality == RenderQuality::Medium) {
-                    renderWidth = BE1::Min(720, currentWindowWidth);
-                    renderHeight = BE1::Min(1280, currentWindowHeight);
-                } else {
-                    renderWidth = BE1::Min(576, currentWindowWidth);
-                    renderHeight = BE1::Min(1024, currentWindowHeight);
-                }
-            }
+            renderWidth = BE1::Min(576, currentWindowWidth);
+            renderHeight = BE1::Min(1024, currentWindowHeight);
         }
+    }
 
-        BE1::gameClient.Init(window, false);
+    BE1::gameClient.Init(window, false);
 
-        app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
-        app.mainRenderContext->Init(window, renderWidth, renderHeight, DisplayContext, nullptr);
+    app.mainRenderContext = BE1::renderSystem.AllocRenderContext(true);
+    app.mainRenderContext->Init(window, renderWidth, renderHeight, DisplayContext, nullptr);
 
-        app.mainRenderContext->OnResize(renderWidth, renderHeight);
-    
-        app.OnApplicationResize(renderWidth, renderHeight);
+    app.mainRenderContext->OnResize(renderWidth, renderHeight);
 
-        app.Init();
+    app.OnApplicationResize(renderWidth, renderHeight);
+
+    BE1::rhi.GetDisplayMetrics(app.mainRenderContext->GetContextHandle(), &displayMetrics);
+
+    app.Init();
 
 #ifdef USE_ANALYTICS
-        Analytics::RegisterLuaModule(&app.gameWorld->GetLuaVM().State());
+    Analytics::RegisterLuaModule(&app.gameWorld->GetLuaVM().State());
 #endif
 
 #ifdef USE_ADMOB
-        AdMob::RegisterLuaModule(&app.gameWorld->GetLuaVM().State());
+    AdMob::RegisterLuaModule(&app.gameWorld->GetLuaVM().State());
 #endif
 
-        app.LoadAppScript("Application");
+    app.LoadAppScript("Application");
 
-        app.StartAppScript();
-    } else {
-        BE1::rhi.ActivateSurface(app.mainRenderContext->GetContextHandle(), window);
-    }
+    app.StartAppScript();
 }
 
 /*
@@ -220,6 +237,7 @@ static ASensorManager *AcquireASensorManagerInstance(android_app *app) {
     typedef ASensorManager *(*PF_GETINSTANCEFORPACKAGE)(const char *name);
     void *androidHandle = dlopen("libandroid.so", RTLD_NOW);
     PF_GETINSTANCEFORPACKAGE getInstanceForPackageFunc = (PF_GETINSTANCEFORPACKAGE)dlsym(androidHandle, "ASensorManager_getInstanceForPackage");
+
     if (getInstanceForPackageFunc) {
         JNIEnv *env = nullptr;
         app->activity->vm->AttachCurrentThread(&env, nullptr);
@@ -399,6 +417,58 @@ static void HandleCmd(android_app *appState, int32_t cmd) {
     }
 }
 
+static void ConvertPixelToScreen(int &x, int &y) {
+    x = ((float)x / (float)displayMetrics.backingWidth) * displayMetrics.screenWidth;
+    y = ((float)y / (float)displayMetrics.backingHeight) * displayMetrics.screenHeight;
+}
+
+static void OnTouchBegan(int x, int y, uint64_t pointerId) {
+    ConvertPixelToScreen(x, y);
+
+#ifdef ENABLE_IMGUI
+    ImGuiIO &io = ImGui::GetIO();
+    io.MousePos = ImVec2(x, y);
+    io.MouseDown[0] = true;
+    /*ImGui::UpdateHoveredWindowAndCaptureFlags();
+    if (io.WantCaptureMouse) {
+        return;
+    }*/
+#endif
+    uint64_t locationQword = (uint64_t)BE1::MakeQWord(x, y);
+    BE1::platform->QueEvent(BE1::Platform::EventType::TouchBegan, pointerId, locationQword, 0, NULL);
+}
+
+static void OnTouchEnded(int x, int y, uint64_t pointerId) {
+    ConvertPixelToScreen(x, y);
+
+#ifdef ENABLE_IMGUI
+    ImGuiIO &io = ImGui::GetIO();
+    io.MousePos = ImVec2(x, y);
+    io.MouseDown[0] = false;
+    /*ImGui::UpdateHoveredWindowAndCaptureFlags();
+    if (io.WantCaptureMouse) {
+        return;
+    }*/
+#endif
+    uint64_t locationQword = (uint64_t)BE1::MakeQWord(x, y);
+    BE1::platform->QueEvent(BE1::Platform::EventType::TouchEnded, pointerId, locationQword, 0, NULL);
+}
+
+static void OnTouchMoved(int x, int y, uint64_t pointerId) {
+    ConvertPixelToScreen(x, y);
+
+#ifdef ENABLE_IMGUI
+    ImGuiIO &io = ImGui::GetIO();
+    io.MousePos = ImVec2(x, y);
+    /*ImGui::UpdateHoveredWindowAndCaptureFlags();
+    if (io.WantCaptureMouse) {
+        return;
+    }*/
+#endif
+    uint64_t locationQword = (uint64_t)BE1::MakeQWord(x, y);
+    BE1::platform->QueEvent(BE1::Platform::EventType::TouchMoved, pointerId, locationQword, 0, NULL);
+}
+
 // Process the next input event.
 static int32_t HandleInput(android_app *appState, AInputEvent *event) {
     int32_t type = AInputEvent_getType(event);
@@ -409,7 +479,6 @@ static int32_t HandleInput(android_app *appState, AInputEvent *event) {
         uint64_t pointerId;
         size_t pointerIndex;
         size_t pointerCount;
-        uint64_t locationQword;
         int x, y;
 
         if ((source & AINPUT_SOURCE_JOYSTICK) == AINPUT_SOURCE_JOYSTICK) {
@@ -417,34 +486,34 @@ static int32_t HandleInput(android_app *appState, AInputEvent *event) {
         } else {
             switch (action & AMOTION_EVENT_ACTION_MASK) {
             case AMOTION_EVENT_ACTION_DOWN:
+                // A pressed gesture has started, the motion contains the initial starting location.
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, 0);
                 x = (int)AMotionEvent_getX(event, 0);
                 y = (int)AMotionEvent_getY(event, 0);
-                locationQword = BE1::MakeQWord(x, y);
-                BE1::platform->QueEvent(BE1::Platform::EventType::TouchBegan, pointerId, locationQword, 0, NULL);
+                OnTouchBegan(x, y, pointerId);
                 break;
             case AMOTION_EVENT_ACTION_UP:
+                // A pressed gesture has finished, the motion contains the final release location as well as any intermediate points since the last down or move event.
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, 0);
                 x = (int)AMotionEvent_getX(event, 0);
                 y = (int)AMotionEvent_getY(event, 0);
-                locationQword = BE1::MakeQWord(x, y);
-                BE1::platform->QueEvent(BE1::Platform::EventType::TouchEnded, pointerId, locationQword, 0, NULL);
+                OnTouchEnded(x, y, pointerId);
                 break;
             case AMOTION_EVENT_ACTION_POINTER_DOWN:
+                // A non-primary pointer has gone down.
                 pointerIndex = (size_t)((action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, pointerIndex);
                 x = (int)AMotionEvent_getX(event, pointerIndex);
                 y = (int)AMotionEvent_getY(event, pointerIndex);
-                locationQword = BE1::MakeQWord(x, y);
-                BE1::platform->QueEvent(BE1::Platform::EventType::TouchBegan, pointerId, locationQword, 0, NULL);
+                OnTouchBegan(x, y, pointerId);
                 break;
             case AMOTION_EVENT_ACTION_POINTER_UP:
+                // A non-primary pointer has gone up.
                 pointerIndex = (size_t)((action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
                 pointerId = (uint64_t)AMotionEvent_getPointerId(event, pointerIndex);
                 x = (int)AMotionEvent_getX(event, pointerIndex);
                 y = (int)AMotionEvent_getY(event, pointerIndex);
-                locationQword = BE1::MakeQWord(x, y);
-                BE1::platform->QueEvent(BE1::Platform::EventType::TouchEnded, pointerId, locationQword, 0, NULL);
+                OnTouchEnded(x, y, pointerId);
                 break;
             case AMOTION_EVENT_ACTION_MOVE:
                 // ACTION_MOVE events are batched, unlike the other events.
@@ -453,8 +522,7 @@ static int32_t HandleInput(android_app *appState, AInputEvent *event) {
                     pointerId = (uint64_t)AMotionEvent_getPointerId(event, i);
                     x = (int)AMotionEvent_getX(event, i);
                     y = (int)AMotionEvent_getY(event, i);
-                    locationQword = BE1::MakeQWord(x, y);
-                    BE1::platform->QueEvent(BE1::Platform::EventType::TouchMoved, pointerId, locationQword, 0, NULL);
+                    OnTouchMoved(x, y, pointerId);
                 }
                 break;
             }
@@ -479,13 +547,13 @@ static void InitInstance(android_app *appState) {
     assetDir.AppendPath("Contents", '/');
 
     initParms.searchPath = assetDir + ";" + dataDir;
-    
+
     BE1::Engine::Init(&initParms);
     // -------------------------------
 
     BE1::resourceGuidMapper.Read("Data/guidmap");
 
-    // Set window format to 8888
+    // Set window format to RGBA_8888
     ANativeActivity_setWindowFormat(appState->activity, WINDOW_FORMAT_RGBA_8888);
 
     appState->onAppCmd = HandleCmd; // app command callback
@@ -514,7 +582,7 @@ static void ShutdownInstance() {
 static void RunFrameInstance(int elapsedMsec) {
     BE1::Engine::RunFrame(elapsedMsec);
 
-    BE1::gameClient.RunFrame();
+    BE1::gameClient.Update();
 
 #ifdef USE_ADMOB
     AdMob::ProcessQueue();
@@ -525,6 +593,32 @@ static void RunFrameInstance(int elapsedMsec) {
     app.mainRenderContext->Display();
 
     BE1::gameClient.EndFrame();
+}
+
+// Process all pending events.
+static bool ProcessEventLoop(android_app *appState) {
+    int id;
+    int events;
+    android_poll_source *source;
+
+    // If not animating, we will block forever waiting for events.
+    // If animating, we loop until all events are read, then continue
+    // to draw the next frame of animation.
+    while ((id = ALooper_pollAll(!suspended ? 0 : -1, nullptr, &events, (void **)&source)) >= 0) {
+        // Process this event.
+        if (source) {
+            source->process(appState, source);
+        }
+
+        ProcessSensors(id);
+
+        // Check if we are exiting.
+        if (appState->destroyRequested != 0) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 extern "C" {
@@ -547,48 +641,25 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 void android_main(android_app *appState) {
     InitInstance(appState);
 
-    int t0 = BE1::PlatformTime::Milliseconds();
+    int lastMsec = BE1::PlatformTime::Milliseconds();
 
-    // loop waiting for stuff to do.
     while (1) {
-        // Read all pending events.
-        int id;
-        int events;
-        android_poll_source *source;
-
-        // If not animating, we will block forever waiting for events.
-        // If animating, we loop until all events are read, then continue
-        // to draw the next frame of animation.
-        while ((id = ALooper_pollAll(!suspended ? 0 : -1, nullptr, &events, (void **)&source)) >= 0) {
-            // Process this event.
-            if (source) {
-                source->process(appState, source);
-            }
-
-            ProcessSensors(id);
-
-            // Check if we are exiting.
-            if (appState->destroyRequested != 0) {
-                ShutdownInstance();
-                return;
-            }
+        if (!ProcessEventLoop(appState)) {
+            ShutdownInstance();
         }
 
         if (surfaceCreated && !suspended) {
-            BE1::RHI::DisplayMetrics displayMetrics;
             BE1::rhi.GetDisplayMetrics(app.mainRenderContext->GetContextHandle(), &displayMetrics);
-            
+
             if (displayMetrics.backingWidth != currentWindowWidth || displayMetrics.backingHeight != currentWindowHeight) {
                 WindowSizeChanged(displayMetrics.backingWidth, displayMetrics.backingHeight);
             }
 
-            int t = BE1::PlatformTime::Milliseconds();
-            int elapsedMsec = t - t0;
-            if (elapsedMsec > 1000) {
-                elapsedMsec = 1000;
-            }
+            int currentMsec = BE1::PlatformTime::Milliseconds();
+            int elapsedMsec = currentMsec - lastMsec;
+            BE1::Clamp(elapsedMsec, 0, 1000);
 
-            t0 = t;
+            lastMsec = currentMsec;
 
             RunFrameInstance(elapsedMsec);
         }

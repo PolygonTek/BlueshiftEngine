@@ -36,9 +36,13 @@ public:
     Vec3() = default;
     /// Constructs a Vec3 with the value (x, y, z).
     constexpr Vec3(float x, float y, float z);
+    /// Constructs a Vec3 with the value (xy[0], xy[1], z).
+    explicit constexpr Vec3(const Vec2 &xy, float z);
+    /// Constructs a Vec3 with the value (x, yz[0], yz.[1]).
+    explicit constexpr Vec3(float x, const Vec2 &yz);
     /// Constructs a Vec3 from a C array, to the value (data[0], data[1], data[2]).
     explicit constexpr Vec3(const float data[3]);
-    /// Constructs a Vec3 from a single value (s, s, s)
+    /// Constructs a Vec3 from a single value (s, s, s).
     explicit constexpr Vec3(float s);
 
                         /// Casts this Vec3 to a C array.
@@ -193,6 +197,48 @@ public:
                         /// Get the maximum component index of a vector
     int                 MaxComponentIndex() const { return Max3Index(x, y, z); }
 
+                        /// Performs a 2D swizzled access to this vector.
+    Vec2                xx() const { return Vec2(x, x); }
+    Vec2                xy() const { return Vec2(x, y); }
+    Vec2                xz() const { return Vec2(x, z); }
+    Vec2                yx() const { return Vec2(y, x); }
+    Vec2                yy() const { return Vec2(y, y); }
+    Vec2                yz() const { return Vec2(y, z); }
+    Vec2                zx() const { return Vec2(z, x); }
+    Vec2                zy() const { return Vec2(z, y); }
+    Vec2                zz() const { return Vec2(z, z); }
+
+                        /// Performs a 3D swizzled access to this vector.
+    Vec3                xxx() const { return Vec3(x, x, x); }
+    Vec3                xxy() const { return Vec3(x, x, y); }
+    Vec3                xxz() const { return Vec3(x, x, z); }
+    Vec3                xyx() const { return Vec3(x, y, x); }
+    Vec3                xyy() const { return Vec3(x, y, y); }
+    Vec3                xyz() const { return Vec3(x, y, z); }
+    Vec3                xzx() const { return Vec3(x, z, x); }
+    Vec3                xzy() const { return Vec3(x, z, y); }
+    Vec3                xzz() const { return Vec3(x, z, z); }
+
+    Vec3                yxx() const { return Vec3(y, x, x); }
+    Vec3                yxy() const { return Vec3(y, x, y); }
+    Vec3                yxz() const { return Vec3(y, x, z); }
+    Vec3                yyx() const { return Vec3(y, y, x); }
+    Vec3                yyy() const { return Vec3(y, y, y); }
+    Vec3                yyz() const { return Vec3(y, y, z); }
+    Vec3                yzx() const { return Vec3(y, z, x); }
+    Vec3                yzy() const { return Vec3(y, z, y); }
+    Vec3                yzz() const { return Vec3(y, z, z); }
+
+    Vec3                zxx() const { return Vec3(z, x, x); }
+    Vec3                zxy() const { return Vec3(z, x, y); }
+    Vec3                zxz() const { return Vec3(z, x, z); }
+    Vec3                zyx() const { return Vec3(z, y, x); }
+    Vec3                zyy() const { return Vec3(z, y, y); }
+    Vec3                zyz() const { return Vec3(z, y, z); }
+    Vec3                zzx() const { return Vec3(z, z, x); }
+    Vec3                zzy() const { return Vec3(z, z, y); }
+    Vec3                zzz() const { return Vec3(z, z, z); }
+
                         /// Computes the length of this vector.
     float               Length() const;
 
@@ -216,6 +262,11 @@ public:
                         /// Normalizes this vector fast but approximately.
                         /// @return Length of this vector
     float               NormalizeFast();
+
+                        /// Returns a normalized copy of this vector.
+    Vec3                Normalized() const;
+                        /// Returns a fast but approximately normalized copy of this vector.
+    Vec3                NormalizedFast() const;
 
                         /// Scales this vector so that its new length is as given.
     Vec3 &              ScaleToLength(float length);
@@ -244,6 +295,13 @@ public:
     Vec3                Refract(const Vec3 &normal, float eta) const;
                         /// Refracts this vector about a plane with the given normal, in-place.
     Vec3 &              RefractSelf(const Vec3 &normal, float eta);
+
+                        /// Returns this vector onto the given unnormalized direction vector.
+    Vec3                ProjectTo(const Vec3 &direction) const;
+                        /// Returns this vector onto the given normalized direction vector.
+    Vec3                ProjectToNorm(const Vec3 &direction) const;
+                        /// Projects this vector onto the given plane normal vector.
+    Vec3                ProjectOnPlane(const Vec3 &planeNormal) const;
 
                         /// Returns the angle between this vector and the specified vector, in radians.
     float               AngleBetween(const Vec3 &other) const;
@@ -279,12 +337,15 @@ public:
                         /// Compute pitch angle in degree looking from the viewpoint of 2D view in x-y plane.
     float               ComputePitch() const;
 
+                        /// Return hash value for HashIndex.
+    int                 ToHash() const { return ((int)x) * 31 * 31 + ((int)y) * 31 + ((int)z); }
+
                         /// Returns "x y z".
     const char *        ToString() const { return ToString(4); }
                         /// Returns "x y z" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Vec3         FromString(const char *str);
         
                         /// Casts this Vec3 to a Vec2.
@@ -299,7 +360,7 @@ public:
 
     Angles              ToAngles() const;
 
-                        /// Converts to the spherical coordinates.
+                        /// Converts cartesian coordinates to the spherical coordinates.
                         /// @return Length of this vector
     float               ToSpherical(float &theta, float &phi) const;
 
@@ -315,19 +376,20 @@ public:
     void                OrthogonalBasis(Vec3 &left, Vec3 &up) const;
 
                         /// Returns dimension of this type.
-    int                 GetDimension() const { return Size; }
+    constexpr int       GetDimension() const { return Size; }
 
                         /// Compute 3D barycentric coordinates from the point based on 3 simplex vector.
     static const Vec3   Compute3DBarycentricCoords(const Vec2 &s1, const Vec2 &s2, const Vec2 &s3, const Vec2 &p);
 
     static float        ComputeBitangentSign(const Vec3 &n, const Vec3 &t0, const Vec3 &t1);
 
-    static const Vec3   origin;     ///< (0, 0, 0)
-    static const Vec3   zero;       ///< (0, 0, 0)
-    static const Vec3   one;        ///< (1, 1, 1)
-    static const Vec3   unitX;      ///< (1, 0, 0)
-    static const Vec3   unitY;      ///< (0, 1, 0)
-    static const Vec3   unitZ;      ///< (0, 0, 1)
+    ALIGN_AS32 static const Vec3 origin;    ///< (0, 0, 0)
+    ALIGN_AS32 static const Vec3 zero;      ///< (0, 0, 0)
+    ALIGN_AS32 static const Vec3 one;       ///< (1, 1, 1)
+    ALIGN_AS32 static const Vec3 unitX;     ///< (1, 0, 0)
+    ALIGN_AS32 static const Vec3 unitY;     ///< (0, 1, 0)
+    ALIGN_AS32 static const Vec3 unitZ;     ///< (0, 0, 1)
+    ALIGN_AS32 static const Vec3 infinity;  ///< (1e30f, 1e30f, 1e30f)
 
     float               x;          ///< The x component.
     float               y;          ///< The y component.
@@ -336,6 +398,14 @@ public:
 
 BE_INLINE constexpr Vec3::Vec3(float inX, float inY, float inZ) :
     x(inX), y(inY), z(inZ) {
+}
+
+BE_INLINE constexpr Vec3::Vec3(const Vec2 &inXy, float inZ) :
+    x(inXy.x), y(inXy.y), z(inZ) {
+}
+
+BE_INLINE constexpr Vec3::Vec3(float inX, const Vec2 &inYz) :
+    x(inX), y(inYz.x), z(inYz.y) {
 }
 
 BE_INLINE constexpr Vec3::Vec3(const float data[3]) :
@@ -492,6 +562,18 @@ BE_INLINE float Vec3::NormalizeFast() {
     return invLength * sqrLength;
 }
 
+BE_INLINE Vec3 Vec3::Normalized() const {
+    Vec3 n = *this;
+    n.Normalize();
+    return n;
+}
+
+BE_INLINE Vec3 Vec3::NormalizedFast() const {
+    Vec3 n = *this;
+    n.NormalizeFast();
+    return n;
+}
+
 BE_INLINE Vec3 &Vec3::ScaleToLength(float length) {
     if (!length) {
         SetFromScalar(0);
@@ -578,6 +660,18 @@ BE_INLINE Vec3 &Vec3::RefractSelf(const Vec3 &normal, float eta) {
     return *this;
 }
 
+BE_INLINE Vec3 Vec3::ProjectTo(const Vec3 &direction) const {
+    return direction * Dot(direction) / direction.LengthSqr();
+}
+
+BE_INLINE Vec3 Vec3::ProjectToNorm(const Vec3 &direction) const {
+    return direction * Dot(direction);
+}
+
+BE_INLINE Vec3 Vec3::ProjectOnPlane(const Vec3 &planeNormal) const {
+    return *this - ProjectToNorm(planeNormal);
+}
+
 BE_INLINE float Vec3::AngleBetween(const Vec3 &other) const {
     float cosa = Dot(other) / Math::Sqrt(LengthSqr() * other.LengthSqr());
     if (cosa >= 1.f) {
@@ -644,7 +738,7 @@ BE_INLINE Color3 &Vec3::ToColor3() {
 }
 
 BE_INLINE const char *Vec3::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), Size, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_INLINE void Vec3::SetFromSpherical(float radius, float theta, float phi) {

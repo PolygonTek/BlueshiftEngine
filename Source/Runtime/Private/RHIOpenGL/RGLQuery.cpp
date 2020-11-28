@@ -77,12 +77,16 @@ bool OpenGLRHI::QueryResultAvailable(Handle queryHandle) const {
     return available ? true : false;
 }
 
-unsigned int OpenGLRHI::QueryResult(Handle queryHandle) const {
+uint64_t OpenGLRHI::QueryResult(Handle queryHandle) const {
     const GLQuery *query = queryList[queryHandle];
 
-    GLuint samples;
-    gglGetQueryObjectuiv(query->id, GL_QUERY_RESULT, &samples);
-    return samples;
+    uint64_t result;
+    if (OpenGL::SupportsTimestampQueries()) {
+        result = OpenGL::QueryResult64(query->id);
+    } else {
+        result = OpenGL::QueryResult32(query->id);
+    }
+    return result;
 }
 
 BE_NAMESPACE_END

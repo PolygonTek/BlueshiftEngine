@@ -14,9 +14,9 @@
 
 #include "Precompiled.h"
 #include "Core/Heap.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Math/Math.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Image/Image.h"
 #include "ImageInternal.h"
 #include "libpvrt/PVRTTexture.h"
@@ -290,12 +290,12 @@ bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSi
     this->width = header->u32Width;
     this->height = header->u32Height;
     this->depth = header->u32Depth;
-    this->flags = header->u32ColourSpace == ePVRTCSpacelRGB ? Flag::LinearSpace : 0;
+    this->gammaSpace = header->u32ColourSpace == ePVRTCSpacelRGB ? GammaSpace::Linear : GammaSpace::sRGB;
     this->numMipmaps = Max(1, (int)header->u32MIPMapCount);
     //Max(1, (int)header->u32NumSurfaces);
     this->numSlices = Max(1, (int)header->u32NumFaces);
 
-    this->flags |= header->u32NumFaces == 6 ? Flag::CubeMap : 0;
+    this->flags = header->u32NumFaces == 6 ? Flag::CubeMap : 0;
     
     size_t dataSize = fileSize - (ptr - data);
     

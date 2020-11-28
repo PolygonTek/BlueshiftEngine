@@ -16,6 +16,7 @@
 #include "Render/Render.h"
 #include "RenderInternal.h"
 #include "RBackEnd.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -38,7 +39,7 @@ void RB_PostProcessDepth() {
             rhi.SetStateBits(RHI::ColorWrite | RHI::BS_DstColor | RHI::BD_Zero);
             rhi.SetCullFace(RHI::CullType::None);
 
-            const Shader *shader = ShaderManager::postPassThruShader;
+            Shader *shader = ShaderManager::postPassThruShader;
 
             shader->Bind();
             shader->SetTexture("tex0", backEnd.ctx->ppRTs[PP_RT_AO]->ColorTexture());
@@ -51,6 +52,9 @@ void RB_PostProcessDepth() {
 }
 
 void RB_PostProcess() {
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_PostProcess");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_PostProcess");
+
     float bloomScale;
     float screenTc[4];
 
@@ -79,7 +83,7 @@ void RB_PostProcess() {
             PP_SunShaftsMaskGen(bc->screenRT->ColorTexture(), bc->ppRTs[PP_RT_LINEAR_DEPTH]->ColorTexture(), screenTc[0], screenTc[1], screenTc[2], screenTc[3], bc->ppRTs[PP_RT_2X]);
 
             // shafts blur 8x -> 64x -> 512x
-            Mat4 viewProjectionMatrix = backEnd.camera->def->GetProjMatrix() * backEnd.camera->def->GetViewMatrix().ToMat3().ToMat4();
+            ALIGN_AS32 Mat4 viewProjectionMatrix = backEnd.camera->def->GetProjMatrix() * backEnd.camera->def->GetViewMatrix().ToMat3().ToMat4();
             float invShaftsScale = 1.0f / r_sunShafts_scale.GetFloat();
             PP_SunShaftsGen(bc->ppRTs[PP_RT_2X]->ColorTexture(), viewProjectionMatrix, sunLight->GetState().origin, invShaftsScale * 0.25f, bc->ppRTs[PP_RT_TEMP_2X]);
             PP_SunShaftsGen(bc->ppRTs[PP_RT_TEMP_2X]->ColorTexture(), viewProjectionMatrix, sunLight->GetState().origin, invShaftsScale * 0.5f, bc->ppRTs[PP_RT_2X]);
@@ -139,22 +143,24 @@ void RB_PostProcess() {
             backEnd.viewMatrixPrev[1][3] = -(backEnd.camera->def->GetState().origin.Dot(prevAxis[1]));
             backEnd.viewMatrixPrev[2][3] = -(backEnd.camera->def->GetState().origin.Dot(prevAxis[2]));
 
-            Mat4 viewProjMatrix[2];
+            ALIGN_AS32 Mat4 viewProjMatrix[2];
             viewProjMatrix[0] = backEnd.camera->def->GetViewProjMatrix();
             viewProjMatrix[1] = backEnd.camera->def->GetProjMatrix() * backEnd.viewMatrixPrev;
+
+            float frameTime = MILLI2SEC(bc->frameMsec);
 
             // 카메라 rotation 정도에 따라 iterative blur
             if (minCos > Math::Cos(DEG2RAD(4.0f))) {
                 PP_PassThruPass(bc->screenRT->ColorTexture(), 0.0f, 0.0f, 1.0f, 1.0f, bc->ppRTs[PP_RT_TEMP]);
-                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 1.0f, bc->frameTime, bc->screenRT);
+                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 1.0f, frameTime, bc->screenRT);
             } else if (minCos > Math::Cos(DEG2RAD(8.0f))) {
-                PP_CameraMotionBlur(bc->screenRT->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 1.0f, bc->frameTime, bc->ppRTs[PP_RT_TEMP]);
-                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 0.5f, bc->frameTime, bc->screenRT);
+                PP_CameraMotionBlur(bc->screenRT->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 1.0f, frameTime, bc->ppRTs[PP_RT_TEMP]);
+                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 0.5f, frameTime, bc->screenRT);
             } else {
                 PP_PassThruPass(bc->screenRT->ColorTexture(), 0.0f, 0.0f, 1.0f, 1.0f, bc->ppRTs[PP_RT_TEMP]);
-                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 1.0f, bc->frameTime, bc->screenRT);
-                PP_CameraMotionBlur(bc->screenRT->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 0.5f, bc->frameTime, bc->ppRTs[PP_RT_TEMP]);
-                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 0.25f, bc->frameTime, bc->screenRT);
+                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 1.0f, frameTime, bc->screenRT);
+                PP_CameraMotionBlur(bc->screenRT->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 0.5f, frameTime, bc->ppRTs[PP_RT_TEMP]);
+                PP_CameraMotionBlur(bc->ppRTs[PP_RT_TEMP]->ColorTexture(), bc->screenDepthTexture, viewProjMatrix, backEnd.camera->def->GetState().origin, 0.25f, frameTime, bc->screenRT);
             }
         }
     }
@@ -178,7 +184,7 @@ void RB_PostProcess() {
             } else {
                 // Luminance adaptation using luminance of previous frame.
                 PP_LuminanceAdaptation(bc->hdrLuminanceRT[0]->ColorTexture(),
-                    bc->hdrLuminanceRT[bc->prevLumTarget]->ColorTexture(), bc->frameTime, bc->hdrLuminanceRT[bc->currLumTarget]);
+                    bc->hdrLuminanceRT[bc->prevLumTarget]->ColorTexture(), MILLI2SEC(bc->frameMsec), bc->hdrLuminanceRT[bc->currLumTarget]);
 
                 luminanceRT = bc->hdrLuminanceRT[bc->currLumTarget];
 
@@ -207,7 +213,7 @@ void RB_PostProcess() {
         rhi.SetCullFace(RHI::CullType::None);
 
         // Do HDR composition.
-        const Shader *shader = ShaderManager::hdrFinalShader;
+        Shader *shader = ShaderManager::hdrFinalShader;
 
         shader->Bind();
         shader->SetTexture("colorSampler", bc->screenRT->ColorTexture());
@@ -226,7 +232,7 @@ void RB_PostProcess() {
         rhi.SetStateBits(RHI::ColorWrite | RHI::AlphaWrite);
         rhi.SetCullFace(RHI::CullType::None);
 
-        const Shader *shader = ShaderManager::ldrFinalShader;
+        Shader *shader = ShaderManager::ldrFinalShader;
 
         shader->Bind();
         shader->SetTexture("colorSampler", bc->screenRT->ColorTexture());

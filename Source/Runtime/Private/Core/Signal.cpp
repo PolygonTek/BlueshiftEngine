@@ -51,7 +51,7 @@ SignalDef::SignalDef(const char *name, const char *formatSpec, char returnType) 
         return;
     }
 
-    // Calculate the offsets for each argument
+    // Calculate the offsets for each argument.
     memset(this->argOffset, 0, sizeof(this->argOffset));
     this->argSize = 0;
 
@@ -105,14 +105,14 @@ SignalDef::SignalDef(const char *name, const char *formatSpec, char returnType) 
         SignalDef *sigdef = this->signalDefs[i];
 
         if (!Str::Cmp(name, sigdef->name)) {
-            // Same name but different formatSpec
+            // Same name but different formatSpec.
             if (Str::Cmp(formatSpec, sigdef->formatSpec)) {
                 signalErrorOccured = true;
                 ::sprintf(signalErrorMsg, "Signal '%s' defined twice with same name but differing format strings ('%s'!='%s').", name, formatSpec, sigdef->formatSpec);
                 return;
             }
 
-            // Same name but different returnType
+            // Same name but different returnType.
             if (sigdef->returnType != returnType) {
                 signalErrorOccured = true;
                 ::sprintf(signalErrorMsg, "Signal '%s' defined twice with same name but differing return types ('%c'!='%c').", name, returnType, sigdef->returnType);
@@ -163,7 +163,7 @@ void SignalSystem::Clear() {
     freeSignals.Clear();
     signalQueue.Clear();
 
-    for (int i = 0; i < SignalSystem::MaxSignals; i++) {
+    for (int i = 0; i < COUNT_OF(signalPool); i++) {
         FreeSignal(&signalPool[i]);
     }
 }
@@ -217,6 +217,7 @@ void SignalSystem::FreeSignal(Signal *signal) {
 Signal *SignalSystem::AllocSignal(const SignalDef *sigdef, const SignalCallback callback, int numArgs, va_list args) {
     if (freeSignals.IsListEmpty()) {
         BE_ERRLOG("SignalSystem::AllocSignal: No more free signals\n");
+        return nullptr;
     }
 
     Signal *newSignal = freeSignals.Next();
@@ -230,13 +231,12 @@ Signal *SignalSystem::AllocSignal(const SignalDef *sigdef, const SignalCallback 
 
     size_t size = sigdef->GetArgSize();
     if (size) {
-        newSignal->data = (byte *)Mem_Alloc(size);
-        memset(newSignal->data, 0, size);
+        newSignal->data = (byte *)Mem_ClearedAlloc(size);
     } else {
         newSignal->data = nullptr;
     }
 
-    // Copy arguments to signal data
+    // Copy arguments to signal data.
     const char *format = sigdef->GetArgFormat();
     for (int argIndex = 0; argIndex < numArgs; argIndex++) {
         VariantArg *arg = va_arg(args, VariantArg *);
@@ -350,7 +350,7 @@ void SignalSystem::CancelSignal(const SignalObject *receiver, const SignalDef *s
 void SignalSystem::ServiceSignal(Signal *signal) {
     intptr_t argPtrs[EventDef::MaxArgs];
 
-    // copy the data into the local argPtrs array and set up pointers
+    // Copy the data into the local argPtrs array and set up pointers.
     const SignalDef *sigdef = signal->signalDef;
     const char *formatSpec = sigdef->GetArgFormat();
 
@@ -396,13 +396,13 @@ void SignalSystem::ServiceSignal(Signal *signal) {
         }
     }
 
-    // the signal is removed from its list so that if then object
-    // is deleted, the signal won't be freed twice
+    // The signal is removed from its list so that
+    // if then object is deleted, the signal won't be freed twice.
     signal->node.Remove();
     assert(signal->receiver);
     signal->receiver->ExecuteCallback(signal->callback, sigdef, argPtrs);
 
-    // return the signal to the free list
+    // Return the signal to the free list.
     FreeSignal(signal);
 }
 

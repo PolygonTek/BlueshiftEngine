@@ -28,7 +28,7 @@ END_EVENTS
 void ComHingeJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, 
         "Joint position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero, 
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero, 
         "Joint angles in local space", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("useLimits", "Limits/Use Limits", bool, GetEnableLimitAngles, SetEnableLimitAngles, false, 
         "Activate joint limits", PropertyInfo::Flag::Editor);
@@ -43,6 +43,7 @@ void ComHingeJoint::RegisterProperties() {
 }
 
 ComHingeJoint::ComHingeJoint() {
+    localAxis = Mat3::identity;
 }
 
 ComHingeJoint::~ComHingeJoint() {
@@ -69,6 +70,7 @@ void ComHingeJoint::CreateConstraint() {
     desc.axisInA = localAxis;
     desc.anchorInA = transform->GetScale() * localAnchor;
 
+    const ComRigidBody *connectedBody = GetConnectedBody();
     if (connectedBody) {
         Mat3 worldAxis = desc.bodyA->GetAxis() * localAxis;
         Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
@@ -86,14 +88,14 @@ void ComHingeJoint::CreateConstraint() {
         connectedAnchor = Vec3::origin;
     }
 
-    // Create a constraint with the given description
+    // Create a constraint with the given description.
     PhysHingeConstraint *hingeConstraint = (PhysHingeConstraint *)physicsSystem.CreateConstraint(desc);
 
-    // Apply limit angles
+    // Apply limit angles.
     hingeConstraint->SetAngularLimits(DEG2RAD(minAngle), DEG2RAD(maxAngle));
     hingeConstraint->EnableAngularLimits(enableLimitAngles);
 
-    // Apply motor
+    // Apply motor.
     if (motorTargetVelocity != 0.0f) {
         hingeConstraint->SetMotor(DEG2RAD(motorTargetVelocity), maxMotorImpulse);
         hingeConstraint->EnableMotor(true);
@@ -188,31 +190,38 @@ void ComHingeJoint::SetMaxMotorImpulse(float maxMotorImpulse) {
     }
 }
 
-#if 1
-void ComHingeJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+#if WITH_EDITOR
+void ComHingeJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
+    if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
         Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 
         Mat3 constraintAxis = Mat3::identity;
+
+        const ComRigidBody *connectedBody = GetConnectedBody();
         if (connectedBody) {
             constraintAxis = connectedBody->GetEntity()->GetTransform()->GetAxis();
         }
 
+        float viewScale = camera->CalcViewScale(worldOrigin);
+
         if (enableLimitAngles) {
             renderWorld->SetDebugColor(Color4::yellow, Color4::yellow * 0.5f);
-            renderWorld->DebugArc(worldOrigin, constraintAxis[0], constraintAxis[1], CentiToUnit(2.5f), minAngle, maxAngle, true);
+            renderWorld->DebugArc(worldOrigin, constraintAxis[0], constraintAxis[1], MeterToUnit(5) * viewScale, minAngle, maxAngle, true);
 
             renderWorld->SetDebugColor(Color4::red, Color4::zero);
-            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * CentiToUnit(2.5f), 1);
+            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * MeterToUnit(5) * viewScale);
         }
 
         renderWorld->SetDebugColor(Color4::red, Color4::red);
-        renderWorld->DebugArrow(worldOrigin - worldAxis[2] * CentiToUnit(5), worldOrigin + worldAxis[2] * CentiToUnit(5.0f), CentiToUnit(3.0f), CentiToUnit(0.75f));
+        renderWorld->DebugArrow(
+            worldOrigin - worldAxis[2] * MeterToUnit(6) * viewScale, 
+            worldOrigin + worldAxis[2] * MeterToUnit(6) * viewScale, 
+            MeterToUnit(6) * viewScale, MeterToUnit(1.5) * viewScale);
     }
 }
 #endif

@@ -98,6 +98,10 @@ public:
     Vec3                operator*(const Vec3 &rhs) const;
     friend Vec3         operator*(const Vec3 &lhs, const Quat &rhs);
 
+                        /// Divides a quaternion by another. Division "q1 / q2" results in a quaternion that rotates the orientation q2
+                        /// to coincide with the orientation q1.
+    Quat                operator/(const Quat &rhs) const;
+
                         /// Adds a quaternion to this quaternion, in-place.
     Quat &              operator+=(const Quat &rhs);
 
@@ -110,6 +114,9 @@ public:
                         /// Multiplies two quaternions, in-place.
     Quat &              operator*=(const Quat &rhs);
 
+                        /// Divides two quaternions, in-place.
+    Quat &              operator/=(const Quat &rhs);
+
                         /// Exact compare, no epsilon.
     bool                Equals(const Quat &a) const;
                         /// Compare with epsilon.
@@ -119,53 +126,125 @@ public:
                         /// Exact compare, no epsilon.
     bool                operator!=(const Quat &rhs) const { return !Equals(rhs); }
 
+                        /// Tests if this is the identity quaternion, up to the given epsilon.
+    bool                IsIdentity(const float epsilon = 1e-5f) const;
+
                         /// Sets all elements of this quaternion.
     void                Set(float x, float y, float z, float w);
 
                         /// Sets identity quaternion (0, 0, 0, 1)
     void                SetIdentity();
 
+                        /// Calculate w component by based on x, y, z components.
+                        /// x, y, z components must be normalized.
     float               CalcW() const;
 
-                        // Compute square root of norm
-    float               Length();
+                        /// Returns the axis of rotation for this quaternion.
+    Vec3                Axis() const;
 
-    float               LengthSqr();
+                        /// Returns the angle of rotation for this quaternion, in radians.
+    float               Angle() const;
+
+                        /// Computes the dot product of this and the given quaternion.
+                        /// Dot product is commutative.
+    float               Dot(const Quat &rhs) const;
+
+                        /// Returns length of quaternion.
+    float               Length() const;
+                        /// Returns squred length of quaternion.
+    float               LengthSqr() const;
 
                         /// Normalizes this quaternion in-place.
     Quat &              Normalize();
+
+                        /// Returns true if the length of this quaternion is one.
+    bool                IsNormalized(float epsilonSq = 1e-5f) const;
+
+                        /// Compute conjugate of this quaternion.
+    Quat                Conjugate() const;
+                        /// Compute conjugate of this quaternion, in-place.
+    Quat &              ConjugateSelf();
 
                         /// Inverts this quaternion.
     Quat                Inverse() const;
                         /// Inverts this quaternion, in-place.
     Quat &              InverseSelf();
 
-                        /// Sets this quaternion by specifying the axis about which the rotation is performed, and the angle of rotation.
-    Quat &              SetFromAngleAxis(float angle, const Vec3 &axis);
-                        /// Returns the quaternion with the given angle and axis.
-    static Quat         FromAngleAxis(float angle, const Vec3 &axis);
-                        /// Sets this quaternion by specifying the Euler angles.
-    Quat &              SetFromAngles(const Angles &angles);
-                        /// Returns the quaternion with the given Euler angles.
-    static Quat         FromAngles(const Angles &angles);
+                        /// Returns the quaternion that rotates about the positive X axis by the given angle in radians.
+    static Quat         FromRotationX(float angle) { return FromAngleAxis(angle, Vec3::unitX); }
+                        /// Returns the quaternion that rotates about the positive Y axis by the given angle in radians.
+    static Quat         FromRotationY(float angle) { return FromAngleAxis(angle, Vec3::unitY); }
+                        /// Returns the quaternion that rotates about the positive Z axis by the given angle in radians.
+    static Quat         FromRotationZ(float angle) { return FromAngleAxis(angle, Vec3::unitZ); }
 
-                        /// Compute a quaternion that rotates unit-length vector "from" to unit-length vector "to".
+                        /// Creates the quaternion from the given sequence of Euler rotation angles in radians.
+                        /// The FromRotationABC function returns a matrix M = A(a) * B(b) * C(c). 
+                        /// Rotation C is applied first, followed by B and then A.
+    static Quat         FromRotationXYZ(float ex, float ey, float ez) { return (FromRotationX(ex) * FromRotationY(ey) * FromRotationZ(ez)).Normalize(); }
+    static Quat         FromRotationXZY(float ex, float ez, float ey) { return (FromRotationX(ex) * FromRotationZ(ez) * FromRotationY(ey)).Normalize(); }
+    static Quat         FromRotationYXZ(float ey, float ex, float ez) { return (FromRotationY(ey) * FromRotationX(ex) * FromRotationZ(ez)).Normalize(); }
+    static Quat         FromRotationYZX(float ey, float ez, float ex) { return (FromRotationY(ey) * FromRotationZ(ez) * FromRotationX(ex)).Normalize(); }
+    static Quat         FromRotationZXY(float ez, float ex, float ey) { return (FromRotationZ(ez) * FromRotationX(ex) * FromRotationY(ey)).Normalize(); }
+    static Quat         FromRotationZYX(float ez, float ey, float ex) { return (FromRotationZ(ez) * FromRotationY(ey) * FromRotationX(ex)).Normalize(); }
+    static Quat         FromRotationXYX(float ex2, float ey, float ex1) { return (FromRotationX(ex2) * FromRotationY(ey) * FromRotationX(ex1)).Normalize(); }
+    static Quat         FromRotationXZX(float ex2, float ez, float ex1) { return (FromRotationX(ex2) * FromRotationZ(ez) * FromRotationZ(ex1)).Normalize(); }
+    static Quat         FromRotationYXY(float ey2, float ex, float ey1) { return (FromRotationY(ey2) * FromRotationX(ex) * FromRotationY(ey1)).Normalize(); }
+    static Quat         FromRotationYZY(float ey2, float ez, float ey1) { return (FromRotationY(ey2) * FromRotationZ(ez) * FromRotationY(ey1)).Normalize(); }
+    static Quat         FromRotationZXZ(float ez2, float ex, float ez1) { return (FromRotationZ(ez2) * FromRotationX(ex) * FromRotationZ(ez1)).Normalize(); }
+    static Quat         FromRotationZYZ(float ez2, float ey, float ez1) { return (FromRotationZ(ez2) * FromRotationY(ey) * FromRotationZ(ez1)).Normalize(); }
+
+                        /// Extracts the rotation part of this quaternion into Euler rotation angles in radians.
+    void                ToRotationXYZ(float &ex, float &ey, float &ez) const { return ToMat3().ToRotationXYZ(ex, ey, ez); }
+    void                ToRotationXZY(float &ex, float &ez, float &ey) const { return ToMat3().ToRotationXZY(ex, ez, ey); }
+    void                ToRotationYXZ(float &ey, float &ex, float &ez) const { return ToMat3().ToRotationYXZ(ey, ex, ez); }
+    void                ToRotationYZX(float &ey, float &ez, float &ex) const { return ToMat3().ToRotationYZX(ey, ez, ex); }
+    void                ToRotationZXY(float &ez, float &ex, float &ey) const { return ToMat3().ToRotationZXY(ez, ex, ey); }
+    void                ToRotationZYX(float &ez, float &ey, float &ex) const { return ToMat3().ToRotationZYX(ez, ey, ex); }
+    void                ToRotationXYX(float &ex2, float &ey, float &ex1) const { return ToMat3().ToRotationXYX(ex2, ey, ex1); }
+    void                ToRotationXZX(float &ex2, float &ez, float &ex1) const { return ToMat3().ToRotationXZX(ex2, ez, ex1); }
+    void                ToRotationYXY(float &ey2, float &ex, float &ey1) const { return ToMat3().ToRotationYXY(ey2, ex, ey1); }
+    void                ToRotationYZY(float &ey2, float &ez, float &ey1) const { return ToMat3().ToRotationYZY(ey2, ez, ey1); }
+    void                ToRotationZXZ(float &ez2, float &ex, float &ez1) const { return ToMat3().ToRotationZXZ(ez2, ex, ez1); }
+    void                ToRotationZYZ(float &ez2, float &ey, float &ez1) const { return ToMat3().ToRotationZYZ(ez2, ey, ez1); }
+
+                        /// Sets this quaternion by specifying the axis about which the rotation is performed, and the angle in radians.
+    Quat &              SetFromAngleAxis(float angle, const Vec3 &axis);
+                        /// Returns the quaternion with the given angle in radians and axis.
+    static Quat         FromAngleAxis(float angle, const Vec3 &axis);
+
+                        /// Compute a quaternion that rotates unit-length vector 'from' to unit-length vector 'to'.
     Quat &              SetFromTwoVectors(const Vec3 &from, const Vec3 &to);
-                        /// Returns the quaternion that rotates unit-length vector "from" to unit-length vector "to".
+                        /// Returns the quaternion that rotates unit-length vector 'from' to unit-length vector 'to'.
     static Quat         FromTwoVectors(const Vec3 &from, const Vec3 &to);
 
+                        /// Returns the angle between this and the target orientation (the shortest route) in radians.
+    float               AngleBetween(const Quat &target) const;
+                        /// Returns the axis of rotation to get from this orientation to target orientation (the shortest route).
+    Vec3                AxisBetween(const Quat &target) const;
+
+                        /// Sets this quaternion to rotate the given 'from' vector towards the 'to' vector by the normalized t parameter.
     Quat &              SetFromSlerp(const Quat &from, const Quat &to, float t);
     Quat &              SetFromSlerpFast(const Quat &from, const Quat &to, float t);
 
+                        /// Returns the quaternion to rotate the given 'from' vector towards the 'to' vector by the normalized t parameter.
     static Quat         FromSlerp(const Quat &from, const Quat &to, float t);
     static Quat         FromSlerpFast(const Quat &from, const Quat &to, float t);
 
-    Angles              ToAngles() const;
-    Rotation            ToRotation() const;
-    Mat3                ToMat3() const;
-    Mat4                ToMat4() const;
     CQuat               ToCQuat() const;
+
+                        /// Converts this quaternion to Euler angles.
+    Angles              ToAngles() const;
+
+                        /// Converts this quaternion to axis-angle rotation representation.
+    Rotation            ToRotation() const;
+
+                        /// Converts this quaternion to 3x3 matrix.
+    Mat3                ToMat3() const;
+                        /// Converts this quaternion to 4x4 matrix.
+    Mat4                ToMat4() const;
+
     Vec3                ToAngularVelocity() const;
+
                         /// Returns "x y z w".
     const char *        ToString() const { return ToString(4); }
                         /// Returns "x y z w" with the given precision.
@@ -175,9 +254,9 @@ public:
     static Quat         FromString(const char *str);
 
                         /// Returns dimension of this type.
-    int                 GetDimension() const { return 4; }
+    constexpr int       GetDimension() const { return 4; }
 
-    static const Quat   identity;
+    ALIGN_AS16 static const Quat identity;
     
     float               x;          ///< The factor of i.
     float               y;          ///< The factor of j.
@@ -256,10 +335,18 @@ BE_INLINE Quat& Quat::operator-=(const Quat &a) {
 
 BE_INLINE Quat Quat::operator*(const Quat &a) const {
     return Quat(
-        w * a.x + x * a.w + y * a.z - z * a.y,
-        w * a.y + y * a.w + z * a.x - x * a.z,
-        w * a.z + z * a.w + x * a.y - y * a.x,
-        w * a.w - x * a.x - y * a.y - z * a.z);
+        x * a.w + y * a.z - z * a.y + w * a.x,
+       -x * a.z + y * a.w + z * a.x + w * a.y,
+        x * a.y - y * a.x + z * a.w + w * a.z,
+       -x * a.x - y * a.y - z * a.z + w * a.w);
+}
+
+BE_INLINE Quat Quat::operator/(const Quat &a) const {
+    return Quat(
+        x * a.w - y * a.z + z * a.y - w * a.x,
+        x * a.z + y * a.w - z * a.x - w * a.y,
+       -x * a.y + y * a.x + z * a.w - w * a.z,
+        x * a.x + y * a.y + z * a.z + w * a.w);
 }
 
 BE_INLINE Vec3 Quat::operator*(const Vec3 &a) const {
@@ -280,6 +367,11 @@ BE_INLINE Vec3 operator*(const Vec3 &a, const Quat &b) {
 
 BE_INLINE Quat& Quat::operator*=(const Quat &a) {
     *this = *this * a;
+    return *this;
+}
+
+BE_INLINE Quat& Quat::operator/=(const Quat &a) {
+    *this = *this / a;
     return *this;
 }
 
@@ -316,11 +408,26 @@ BE_INLINE float Quat::CalcW() const {
     return sqrt(fabs(1.0f - (x * x + y * y + z * z)));
 }
 
-BE_INLINE float Quat::Length() {
+BE_INLINE Vec3 Quat::Axis() const {
+    // Convert cos to sin via the identity sin^2 + cos^2 = 1, and fuse reciprocal and square root to the same instruction,
+    // since we are about to divide by it.
+    float rcpSinAngle = Math::RSqrt(1.0f - w * w);
+    return Vec3(x, y, z) * rcpSinAngle;
+}
+
+BE_INLINE float Quat::Angle() const {
+    return Math::ACos(w) * 2.0f;
+}
+
+BE_INLINE float Quat::Dot(const Quat &rhs) const {
+    return x * rhs.x + y * rhs.y + z * rhs.z + w * rhs.w;
+}
+
+BE_INLINE float Quat::Length() const {
     return Math::Sqrt(x * x + y * y + z * z + w * w);
 }
 
-BE_INLINE float Quat::LengthSqr() {
+BE_INLINE float Quat::LengthSqr() const {
     return x * x + y * y + z * z + w * w;
 }
 
@@ -336,6 +443,14 @@ BE_INLINE Quat &Quat::Normalize() {
     return *this;
 }
 
+BE_INLINE bool Quat::IsNormalized(float epsilonSqr) const {
+    return Math::Fabs(LengthSqr() - 1.0f) < epsilonSqr;
+}
+
+BE_INLINE bool Quat::IsIdentity(const float epsilon) const {
+    return Equals(Quat::identity, epsilon);
+}
+
 BE_INLINE void Quat::SetIdentity() {
     x = 0.0f;
     y = 0.0f;
@@ -346,12 +461,6 @@ BE_INLINE void Quat::SetIdentity() {
 BE_INLINE Quat Quat::FromAngleAxis(float angle, const Vec3 &axis) {
     Quat q;
     q.SetFromAngleAxis(angle, axis);
-    return q;
-}
-
-BE_INLINE Quat Quat::FromAngles(const Angles &angles) {
-    Quat q;
-    q.SetFromAngles(angles);
     return q;
 }
 
@@ -373,14 +482,24 @@ BE_INLINE Quat Quat::FromSlerpFast(const Quat &from, const Quat &to, float t) {
     return q;
 }
 
+BE_INLINE Quat Quat::Conjugate() const {
+    return Quat(-x, -y, -z, w);
+}
+
+BE_INLINE Quat &Quat::ConjugateSelf() {
+    x = -x;
+    y = -y;
+    z = -z;
+    return *this;
+}
+
 BE_INLINE Quat Quat::Inverse() const {
-    // 켤레 사원수 (conjugate quaternion)
-    // q  = w + xi + yj + zk
-    // q' = w - xi - yj - zk
+    assert(IsNormalized());
     return Quat(-x, -y, -z, w);
 }
 
 BE_INLINE Quat &Quat::InverseSelf() {
+    assert(IsNormalized());
     x = -x;
     y = -y;
     z = -z;
@@ -388,7 +507,7 @@ BE_INLINE Quat &Quat::InverseSelf() {
 }
 
 BE_INLINE const char *Quat::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), 4, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_NAMESPACE_END

@@ -14,12 +14,13 @@
 
 #include "Precompiled.h"
 #include "PlatformWin.h"
+#include "Platform/PlatformSystem.h"
 #include "Platform/Windows/PlatformWinUtils.h"
 
 BE_NAMESPACE_BEGIN
 
-static int          originalmouseparms[3];
-static int          newmouseparms[3];
+static int          originalMouseParms[3];
+static int          newMouseParms[3];
 static POINT        oldCursorPos;
 static Point        windowCenter;
 
@@ -66,10 +67,12 @@ void PlatformWin::Shutdown() {
 }
 
 void PlatformWin::EnableMouse(bool enable) {
-    //SystemParametersInfo(SPI_GETMOUSE, 0, originalmouseparms, 0);
-    //newmouseparms[0] = 0;
-    //newmouseparms[1] = 0;
-    //newmouseparms[2] = 1;
+#if 0
+    SystemParametersInfo(SPI_GETMOUSE, 0, originalMouseParms, 0);
+    newMouseParms[0] = 0;
+    newMouseParms[1] = 0;
+    newMouseParms[2] = 1;
+#endif
 
     GetCursorPos(&oldCursorPos);
 
@@ -101,7 +104,9 @@ void PlatformWin::Error(const char *text) {
     PlatformWinUtils::UTF8ToUCS2(text, wText, len);
 
     MessageBox(hwnd ? hwnd : GetDesktopWindow(), wText, L"Error", MB_OK);
-    
+
+    PlatformSystem::DebugBreak();
+
     Quit();
 }
 
@@ -120,7 +125,9 @@ bool PlatformWin::LockCursor(bool lock) {
         cursorLocked = lock;
 
         if (lock) {
-            SystemParametersInfo(SPI_SETMOUSE, 0, newmouseparms, 0);
+#if 0
+            SystemParametersInfo(SPI_SETMOUSE, 0, newMouseParms, 0);
+#endif
 
             RECT windowRect = GetScreenWindowRect(hwnd);
             windowCenter.x = (windowRect.left + windowRect.right) / 2;
@@ -134,11 +141,13 @@ bool PlatformWin::LockCursor(bool lock) {
 
             SetCapture(hwnd);
 
-            // 커서를 화면에 가둔다
+            // Lock the cursor in the screen.
             ClipCursor(&windowRect);
             while (ShowCursor(FALSE) >= 0);
         } else {
-            SystemParametersInfo(SPI_SETMOUSE, 0, originalmouseparms, 0);
+#if 0
+            SystemParametersInfo(SPI_SETMOUSE, 0, originalMouseParms, 0);
+#endif
 
             SetCursorPos(oldCursorPos.x, oldCursorPos.y);
 

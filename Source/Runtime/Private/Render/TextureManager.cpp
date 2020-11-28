@@ -16,7 +16,7 @@
 #include "Render/Render.h"
 #include "RenderInternal.h"
 #include "Core/Cmds.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -44,23 +44,25 @@ CVar TextureManager::texture_mipLevel("texture_mipLevel", "0", CVar::Flag::Archi
 void TextureManager::Init() {
     cmdSystem.AddCommand("listTextures", Cmd_ListTextures);
     cmdSystem.AddCommand("reloadTexture", Cmd_ReloadTexture);
+    cmdSystem.AddCommand("dumpTexture", Cmd_DumpTexture);
     cmdSystem.AddCommand("convertNormalAR2RGB", Cmd_ConvertNormalAR2RGB);
 
     textureHashMap.Init(1024, 1024, 1024);
 
-    // Set texture filtering mode
+    // Set texture filtering mode.
     SetFilter(texture_filter.GetString());//"LinearMipmapNearest");
 
-    // Set texture anisotropy mode
+    // Set texture anisotropy mode.
     SetAnisotropy(texture_anisotropy.GetFloat());
 
-    // Create pre-defined textures
+    // Create pre-defined textures.
     CreateEngineTextures();
 }
 
 void TextureManager::Shutdown() {
     cmdSystem.RemoveCommand("listTextures");
     cmdSystem.RemoveCommand("reloadTexture");
+    cmdSystem.RemoveCommand("dumpTexture");
     cmdSystem.RemoveCommand("convertNormalAR2RGB");
 
     textureHashMap.DeleteContents(true);
@@ -70,68 +72,68 @@ void TextureManager::CreateEngineTextures() {
     byte *  data;
     Image   image;
 
-    // Create default texture
+    // Create default texture.
     defaultTexture = AllocTexture("_defaultTexture");
     defaultTexture->CreateDefaultTexture(16, Texture::Flag::Permanence);
 
-    // Create zeroClamp texture
+    // Create zeroClamp texture.
     zeroClampTexture = AllocTexture("_zeroClampTexture");
     zeroClampTexture->CreateZeroClampTexture(16, Texture::Flag::Permanence);
 
-    // Create defaultCube texture
+    // Create defaultCube texture.
     defaultCubeMapTexture = AllocTexture("_defaultCubeTexture");
     defaultCubeMapTexture->CreateDefaultCubeMapTexture(16, Texture::Flag::Permanence);
 
-    // Create blackCube texture
+    // Create blackCube texture.
     blackCubeMapTexture = AllocTexture("_blackCubeTexture");
     blackCubeMapTexture->CreateBlackCubeMapTexture(8, Texture::Flag::Permanence);
 
-    // Create white texture
-    image.Create2D(8, 8, 1, Image::Format::L_8, nullptr, 0);
+    // Create white texture.
+    image.Create2D(8, 8, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, 0);
     data = image.GetPixels();
     memset(data, 0xFF, 8 * 8);
     whiteTexture = AllocTexture("_whiteTexture");
     whiteTexture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
 
-    // Create black texture
-    image.Create2D(8, 8, 1, Image::Format::L_8, nullptr, 0);
+    // Create black texture.
+    image.Create2D(8, 8, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, 0);
     data = image.GetPixels();
     memset(data, 0, 8 * 8);
     blackTexture = AllocTexture("_blackTexture");
     blackTexture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
 
-    // Create grey texture
-    image.Create2D(8, 8, 1, Image::Format::L_8, nullptr, 0);
+    // Create grey texture.
+    image.Create2D(8, 8, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, 0);
     data = image.GetPixels();
     memset(data, 0x80, 8 * 8);
     greyTexture = AllocTexture("_greyTexture");
     greyTexture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Permanence | Texture::Flag::NoScaleDown);
 
-    // Create flatNormal texture
+    // Create flatNormal texture.
     flatNormalTexture = AllocTexture("_flatNormalTexture");
     flatNormalTexture->CreateFlatNormalTexture(16, Texture::Flag::Permanence);
 
-    // Create normalCube texture
+    // Create normalCube texture.
     /*normalCubeMapTexture = AllocTexture("_normalCubeTexture");
     normalCubeMapTexture->CreateNormalizationCubeMapTexture(32, Texture::Flag::Permanence);*/
 
-    // Create _cubicNormalCube texture
+    // Create _cubicNormalCube texture.
     cubicNormalCubeMapTexture = AllocTexture("_cubicNormalCubeTexture");
     cubicNormalCubeMapTexture->CreateCubicNormalCubeMapTexture(1, Texture::Flag::Permanence);
 
-    // Create fog texture
+    // Create fog texture.
     fogTexture = AllocTexture("_fogTexture");
     fogTexture->CreateFogTexture(Texture::Flag::Permanence);
 
-    // Create fogEnter texture
+    // Create fogEnter texture.
     fogEnterTexture = AllocTexture("_fogEnterTexture");
     fogEnterTexture->CreateFogEnterTexture(Texture::Flag::Permanence);
 
-    // Create randomRotMat texture
+    // Create randomRotMat texture.
     randomRotMatTexture = AllocTexture("_randomRotMatTexture");
     randomRotMatTexture->CreateRandomRotMatTexture(64, Texture::Flag::Permanence);
 
-    // Create randomRot4x4 texture
+    // Create randomRot4x4 texture.
     randomDir4x4Texture = AllocTexture("_randomDir4x4Texture");
     randomDir4x4Texture->CreateRandomDir4x4Texture(Texture::Flag::Permanence);
 }
@@ -242,7 +244,7 @@ Texture *TextureManager::FindTexture(const char *hashName) const {
     return nullptr;
 }
 
-Texture *TextureManager::GetTexture(const char *hashName, int creationFlags) {
+Texture *TextureManager::GetTextureWithoutTextureInfo(const char *hashName, int creationFlags) {
     if (!hashName || !hashName[0]) {
         return defaultTexture;
     }
@@ -251,11 +253,6 @@ Texture *TextureManager::GetTexture(const char *hashName, int creationFlags) {
     if (texture) {
         texture->refCount++;
         return texture;
-    }
-
-    if (creationFlags == 0) {
-        const Str textureInfoPath = Str(hashName) + ".texture";
-        creationFlags = LoadTextureInfo(textureInfoPath);
     }
 
     texture = AllocTexture(hashName);
@@ -267,33 +264,58 @@ Texture *TextureManager::GetTexture(const char *hashName, int creationFlags) {
     return texture;
 }
 
+Texture *TextureManager::GetTexture(const char *hashName) {
+    if (!hashName || !hashName[0]) {
+        return defaultTexture;
+    }
+
+    Texture *texture = FindTexture(hashName);
+    if (texture) {
+        texture->refCount++;
+        return texture;
+    }
+
+    const Str textureInfoPath = Str(hashName) + ".texture";
+    int flags = LoadTextureInfo(textureInfoPath);
+
+    texture = AllocTexture(hashName);
+    if (!texture->Load(hashName, flags)) {
+        DestroyTexture(texture);
+        return defaultTexture;
+    }
+
+    return texture;
+}
+
 int TextureManager::LoadTextureInfo(const char *filename) const {
-    const int defaultFlags = Texture::Flag::Clamp | Texture::Flag::SRGBColorSpace;
+    int flags;
+
+    flags = Texture::Flag::Clamp | Texture::Flag::SRGBColorSpace;
 
     if (!filename || !filename[0]) {
-        return defaultFlags;
+        return flags;
     }
 
     char *text = nullptr;
     size_t size = fileSystem.LoadFile(filename, true, (void **)&text);
     if (!text) {
-        return defaultFlags;
+        return flags;
     }
 
     Json::Value node;
     Json::Reader jsonReader;
     if (!jsonReader.parse(text, node)) {
         BE_WARNLOG("Failed to parse JSON text\n");
-        return defaultFlags;
+        return flags;
     }
 
-    int flags = 0;
+    flags = 0;
 
     int version = node["version"].asInt();
     if (version >= 4) {
         const Json::Value textureTypeValue = node.get("textureType", "2D");
         const char *textureTypeString = textureTypeValue.asCString();
-        if (!Str::Icmp(textureTypeString, "UI")) {
+        if (!Str::Icmp(textureTypeString, "Sprite")) {
             flags |= Texture::Flag::HighQuality | Texture::Flag::NonPowerOfTwo;
         }
 
@@ -471,6 +493,70 @@ void TextureManager::Cmd_ReloadTexture(const CmdArgs &args) {
     }
 }
 
+void TextureManager::Cmd_DumpTexture(const CmdArgs &args) {
+    if (args.Argc() < 2) {
+        BE_LOG("dumpTexture <index>\n");
+        return;
+    }
+
+    int index = atoi(args.Argv(1));
+
+    if (index < 0 || index >= textureManager.textureHashMap.Count()) {
+        BE_WARNLOG("Invalid index\n");
+        return;
+    }
+
+    const auto *entry = textureManager.textureHashMap.GetByIndex(index);
+    Texture *texture = entry->second;
+
+    if (texture->type != RHI::TextureType::Texture2D &&
+        texture->type != RHI::TextureType::Texture3D &&
+        texture->type != RHI::TextureType::TextureCubeMap &&
+        texture->type != RHI::TextureType::TextureRectangle) {
+        BE_WARNLOG("Not supported type\n");
+        return;
+    }
+
+    Image bitmapImage;
+    Image::GammaSpace::Enum gammaSpace = texture->GetFlags() & Texture::Flag::SRGBColorSpace ? Image::GammaSpace::sRGB : Image::GammaSpace::Linear;
+    bitmapImage.Create(texture->GetWidth(), texture->GetHeight(), texture->GetDepth(), texture->NumSlices(), 1, texture->GetFormat(), gammaSpace, nullptr, 0);
+
+    texture->Bind();
+
+    switch (texture->type) {
+    case RHI::TextureType::Texture2D:
+        texture->GetTexels2D(0, texture->GetFormat(), bitmapImage.GetPixels(0));
+        break;
+    case RHI::TextureType::Texture3D:
+        texture->GetTexels3D(0, texture->GetFormat(), bitmapImage.GetPixels(0));
+        break;
+    case RHI::TextureType::TextureCubeMap:
+        for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
+            texture->GetTexelsCubemap(faceIndex, 0, texture->GetFormat(), bitmapImage.GetPixels(0, faceIndex));
+        }
+        break;
+    case RHI::TextureType::TextureRectangle:
+        texture->GetTexelsRect(texture->GetFormat(), bitmapImage.GetPixels(0));
+        break;
+    default:
+        assert(0);
+        return;
+    }
+
+    Str filename = "DumpTextures";
+    filename.AppendPath(texture->GetName());
+
+    if (texture->type == RHI::TextureType::Texture2D || texture->type == RHI::TextureType::TextureRectangle) {
+        filename.Append(".png");
+        bitmapImage.WritePNG(filename);
+    } else {
+        filename.Append(".dds");
+        bitmapImage.WriteDDS(filename);
+    }
+
+    BE_LOG("Dumped texture to %s\n", filename.c_str());
+}
+
 void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
     char path[MaxAbsolutePath];
     
@@ -482,7 +568,7 @@ void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
     FileArray fileArray;
     int numFiles = fileSystem.ListFiles(args.Argv(1), args.Argv(2), fileArray);
     if (!numFiles) {
-        BE_WARNLOG("no files found\n");
+        BE_WARNLOG("Files not founded\n");
         return;
     }
 
@@ -495,13 +581,13 @@ void TextureManager::Cmd_ConvertNormalAR2RGB(const CmdArgs &args) {
         if (image1.IsEmpty())
             continue;
 
-        BE_LOG("converting '%s'\n", path);
+        BE_LOG("Converting '%s'\n", path);
 
         if (image1.GetFormat() != Image::Format::RGBA_8_8_8_8) {
             image1.ConvertFormatSelf(Image::Format::RGBA_8_8_8_8);
         }
 
-        image2.Create2D(image1.GetWidth(), image1.GetHeight(), 1, Image::Format::RGB_8_8_8, nullptr, Image::Flag::LinearSpace);
+        image2.Create2D(image1.GetWidth(), image1.GetHeight(), 1, Image::Format::RGB_8_8_8, Image::GammaSpace::Linear, nullptr, 0);
         byte *data2Ptr = image2.GetPixels();
         byte *data1Ptr = image1.GetPixels();
         byte *endData1 = data1Ptr + image1.GetWidth() * image1.GetHeight() * 4;

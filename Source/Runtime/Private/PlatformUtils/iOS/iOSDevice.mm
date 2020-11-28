@@ -31,6 +31,7 @@ static IOSDeviceModel iOSModels[] = {
     { "iPod Touch 4th generation",  960, 640 },
     { "iPod Touch 5th generation",  1136, 640 },
     { "iPod Touch 6th generation",  1136, 640 },
+    { "iPod Touch 7th generation",  1136, 640 },
     // iPhone
     { "iPhone 4",                   960, 640 },
     { "iPhone 4s",                  960, 640 },
@@ -45,9 +46,12 @@ static IOSDeviceModel iOSModels[] = {
     { "iPhone 8",                   1334, 750 },
     { "iPhone 8 Plus",              1920, 1080 },
     { "iPhone X",                   2436, 1125 },
+    { "iPhone Xr",                  1792, 828 },
     { "iPhone Xs",                  2436, 1125 },
     { "iPhone Xs Max",              2688, 1242 },
-    { "iPhone Xr",                  1792, 828 },
+    { "iPhone 11",                  1792, 828 },
+    { "iPhone 11 Pro",              2436, 1125 },
+    { "iPhone 11 Pro Max",          2688, 1242 },
     // iPad
     { "iPad 2",                     1024, 768 },
     { "iPad Mini",                  1024, 768 },
@@ -130,8 +134,12 @@ IOSDevice::Type::Enum IOSDevice::GetIOSDeviceType() {
             deviceType = Type::IPodTouch4;
         } else if (major == 5) {
             deviceType = Type::IPodTouch5;
-        } else if (major >= 7) {
+        } else if (major == 7) {
             deviceType = Type::IPodTouch6;
+        } else if (major == 9) {
+            deviceType = Type::IPodTouch7;
+        } else if (major >= 10) {
+            deviceType = Type::IPodTouch7;
         }
     } else if (!deviceIDString.Cmpn("iPad", 4)) {
         // get major revision number
@@ -253,11 +261,19 @@ IOSDevice::Type::Enum IOSDevice::GetIOSDeviceType() {
             } else if (minor == 8) {
                 deviceType = Type::IPhoneXR;
             }
-        } else if (major >= 12) {
+        } else if (major == 12) {
+            if (minor == 1) {
+                deviceType = Type::IPhone11;
+            } else if (minor == 3) {
+                deviceType = Type::IPhone11Pro;
+            } else if (minor == 5) {
+                deviceType = Type::IPhone11ProMax;
+            }
+        } else if (major >= 13) {
             if ([UIScreen mainScreen].scale > 2.5f) {
-                deviceType = Type::IPhoneXSMax;
+                deviceType = Type::IPhone11ProMax;
             } else {
-                deviceType = Type::IPhoneXS;
+                deviceType = Type::IPhone11Pro;
             }
         }
     } else if (!deviceIDString.Cmpn("x86", 3)) { // simulator

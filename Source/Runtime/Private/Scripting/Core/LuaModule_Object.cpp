@@ -38,6 +38,7 @@
 #include "Components/ComCharacterJoint.h"
 #include "Components/ComCharacterController.h"
 #include "Components/ComCamera.h"
+#include "Components/ComCanvas.h"
 #include "Components/ComLight.h"
 #include "Components/ComRenderable.h"
 #include "Components/ComMeshRenderer.h"
@@ -46,6 +47,8 @@
 #include "Components/ComAnimation.h"
 #include "Components/ComAnimator.h"
 #include "Components/ComTextRenderer.h"
+#include "Components/ComText.h"
+#include "Components/ComImage.h"
 #include "Components/ComParticleSystem.h"
 #include "Components/ComLogic.h"
 #include "Components/ComSpline.h"
@@ -99,6 +102,7 @@ void LuaVM::RegisterObject(LuaCpp::Module &module) {
         "cast_character_joint", static_cast<ComCharacterJoint*(Object::*)()>(&Object::Cast<ComCharacterJoint>),
         "cast_character_controller", static_cast<ComCharacterController*(Object::*)()>(&Object::Cast<ComCharacterController>),
         "cast_camera", static_cast<ComCamera*(Object::*)()>(&Object::Cast<ComCamera>),
+        "cast_canvas", static_cast<ComCanvas*(Object::*)()>(&Object::Cast<ComCanvas>),
         "cast_light", static_cast<ComLight*(Object::*)()>(&Object::Cast<ComLight>),
         "cast_renderable", static_cast<ComRenderable*(Object::*)()>(&Object::Cast<ComRenderable>),
         "cast_mesh_renderer", static_cast<ComMeshRenderer*(Object::*)()>(&Object::Cast<ComMeshRenderer>),
@@ -107,19 +111,14 @@ void LuaVM::RegisterObject(LuaCpp::Module &module) {
         "cast_animation", static_cast<ComAnimation*(Object::*)()>(&Object::Cast<ComAnimation>),
         "cast_animator", static_cast<ComAnimator*(Object::*)()>(&Object::Cast<ComAnimator>),
         "cast_text_renderer", static_cast<ComTextRenderer*(Object::*)()>(&Object::Cast<ComTextRenderer>),
+        "cast_text", static_cast<ComText*(Object::*)()>(&Object::Cast<ComText>),
+        "cast_image", static_cast<ComImage*(Object::*)()>(&Object::Cast<ComImage>),
         "cast_particle_system", static_cast<ComParticleSystem*(Object::*)()>(&Object::Cast<ComParticleSystem>),
         "cast_audio_source", static_cast<ComAudioSource*(Object::*)()>(&Object::Cast<ComAudioSource>),
         "cast_audio_listener", static_cast<ComAudioListener*(Object::*)()>(&Object::Cast<ComAudioListener>),
         "cast_spline", static_cast<ComSpline*(Object::*)()>(&Object::Cast<ComSpline>),
         "cast_script", static_cast<ComScript*(Object::*)()>(&Object::Cast<ComScript>),
-        "cast_texture_asset", static_cast<TextureAsset*(Object::*)()>(&Object::Cast<TextureAsset>), 
-        "cast_shader_asset", static_cast<ShaderAsset*(Object::*)()>(&Object::Cast<ShaderAsset>),
-        "cast_material_asset", static_cast<MaterialAsset*(Object::*)()>(&Object::Cast<MaterialAsset>),
-        "cast_skeleton_asset", static_cast<SkeletonAsset*(Object::*)()>(&Object::Cast<SkeletonAsset>),
-        "cast_mesh_asset", static_cast<MeshAsset*(Object::*)()>(&Object::Cast<MeshAsset>),
-        "cast_anim_asset", static_cast<AnimAsset*(Object::*)()>(&Object::Cast<AnimAsset>),
-        "cast_sound_asset", static_cast<SoundAsset*(Object::*)()>(&Object::Cast<SoundAsset>),
-        "cast_prefab_asset", static_cast<PrefabAsset*(Object::*)()>(&Object::Cast<PrefabAsset>));
+        "cast_asset", static_cast<Asset*(Object::*)()>(&Object::Cast<Asset>));
 
     _Object["meta_object"] = Object::metaObject;
     _Object["destroy"].SetFunc(&Object::DestroyInstance);

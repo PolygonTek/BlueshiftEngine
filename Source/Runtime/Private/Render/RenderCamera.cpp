@@ -25,34 +25,34 @@ void RenderCamera::Update(const State *stateCopy) {
     zFar = state.zFar;
 
     if (state.orthogonal) {
-        // Set bounding volume for orthogonal view
+        // Set bounding volume for orthogonal view.
         Vec3 extents((zFar - zNear) * 0.5f, state.sizeX, state.sizeY);
         box.SetCenter(state.origin + state.axis[0] * (zNear + extents[0]));
         box.SetExtents(extents);
         box.SetAxis(state.axis);
 
-        // Calculate orthogonal projection matrix
+        // Calculate orthogonal projection matrix.
         R_SetOrthogonalProjectionMatrix(state.sizeX, state.sizeY, zNear, zFar, projMatrix);
     } else {
-        // Set bounding frustum for perspective view
+        // Set bounding frustum for perspective view.
         frustum.SetOrigin(state.origin);
         frustum.SetAxis(state.axis);
         frustum.SetSize(zNear, zFar, zFar * Math::Tan(DEG2RAD(state.fovX) * 0.5f), zFar * Math::Tan(DEG2RAD(state.fovY) * 0.5f));
 
-        // Calculate view frustum planes
+        // Calculate view frustum planes.
         frustum.ToPlanes(frustumPlanes);
 
-        // Calculate view frustum points
+        // Calculate view frustum points.
         frustum.ToPoints(frustumPoints);
 
-        // Calculate perspective projection matrix
+        // Calculate perspective projection matrix.
         R_SetPerspectiveProjectionMatrix(state.fovX, state.fovY, zNear, zFar, false, projMatrix);
     }
 
-    // Calculate view matrix
+    // Calculate view matrix.
     R_SetViewMatrix(state.axis, state.origin, viewMatrix);
 
-    // Calculate view projection matrix
+    // Calculate view projection matrix.
     viewProjMatrix = projMatrix * viewMatrix;
 }
 
@@ -60,28 +60,28 @@ void RenderCamera::RecalcZFar(float zFar) {
     this->zFar = zFar;
 
     if (state.orthogonal) {
-        // Set bounding volume for orthogonal view
+        // Set bounding volume for orthogonal view.
         Vec3 extents((zFar - zNear) * 0.5f, state.sizeX, state.sizeY);
         box.SetCenter(state.origin + state.axis[0] * (zNear + extents[0]));
         box.SetExtents(extents);
 
-        // Calculate orthogonal projection matrix
+        // Calculate orthogonal projection matrix.
         R_SetOrthogonalProjectionMatrix(state.sizeX, state.sizeY, zNear, zFar, projMatrix);
     } else {
-        // Set bounding frustum for perspective view
+        // Set bounding frustum for perspective view.
         frustum.SetSize(zNear, zFar, zFar * Math::Tan(DEG2RAD(state.fovX) * 0.5f), zFar * Math::Tan(DEG2RAD(state.fovY) * 0.5f));
 
-        // Calculate view frustum planes
+        // Calculate view frustum planes.
         frustum.ToPlanes(frustumPlanes);
 
-        // Calculate view frustum points
+        // Calculate view frustum points.
         frustum.ToPoints(frustumPoints);
 
-        // Calculate perspective projection matrix
+        // Calculate perspective projection matrix.
         R_SetPerspectiveProjectionMatrix(state.fovX, state.fovY, zNear, zFar, false, projMatrix);
     }
 
-    // Re-calculate view projection matrix
+    // Re-calculate view projection matrix.
     viewProjMatrix = projMatrix * viewMatrix;
 }
 
@@ -93,27 +93,27 @@ bool RenderCamera::TransformClipToNDC(const Vec4 &clipCoords, Vec3 &normalizedDe
     if (clipCoords.w > 0) {
         const float invW = 1.0f / clipCoords.w;
 
-        normalizedDeviceCoords.x = clipCoords.x * invW; // [-1, 1]
-        normalizedDeviceCoords.y = clipCoords.y * invW; // [-1, 1]
-        normalizedDeviceCoords.z = clipCoords.z * invW; // [-1, 1] or [0, 1] in D3D
+        normalizedDeviceCoords.x = clipCoords.x * invW; // Clipping range is [-1, 1]
+        normalizedDeviceCoords.y = clipCoords.y * invW; // Clipping range is [-1, 1]
+        normalizedDeviceCoords.z = clipCoords.z * invW; // Clipping range is [-1, 1] or [0, 1] in D3D
         return true;
     } else {
         return false;
     }
 }
 
-void RenderCamera::TransformNDCToPixel(const Vec3 normalizedDeviceCoords, Point &pixelCoords) const {
-    float fx = (normalizedDeviceCoords.x + 1.0f) * 0.5f; // [0, 1]
-    float fy = (normalizedDeviceCoords.y + 1.0f) * 0.5f; // [0, 1]
+void RenderCamera::TransformNDCToPixel(const Vec3 normalizedDeviceCoords, PointF &pixelCoords) const {
+    float fx = (normalizedDeviceCoords.x + 1.0f) * 0.5f; // Valid range is [0, 1]
+    float fy = (normalizedDeviceCoords.y + 1.0f) * 0.5f; // Valid range is [0, 1]
 
-    // Invert Y axis
+    // Invert y coordinate.
     fy = 1.0f - fy;
 
     pixelCoords.x = fx * (state.renderRect.x + state.renderRect.w);
     pixelCoords.y = fy * (state.renderRect.y + state.renderRect.h);
 }
 
-bool RenderCamera::TransformWorldToPixel(const Vec3 &worldPosition, Point &pixelCoords) const {
+bool RenderCamera::TransformWorldToPixel(const Vec3 &worldPosition, PointF &pixelCoords) const {
     Vec4 clipCoords = TransformWorldToClip(worldPosition);
 
     Vec3 normalizedDeviceCoords;
@@ -132,13 +132,13 @@ bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) 
 
     float r2 = sphere.radius * sphere.radius;
 
-    // in case camera in in sphere
+    // in case camera in in sphere.
     if (state.origin.DistanceSqr(sphere.center) < r2) {
         clipRect = state.renderRect;
         return true;
     }
 
-    // sphere 의 중심좌표(L) 를 카메라 로컬좌표계(X, Y, Z = FORWARD, LEFT, UP) 로 변환
+    // sphere 의 중심좌표(L) 를 카메라 로컬좌표계(X, Y, Z = FORWARD, LEFT, UP) 로 변환.
     Vec3 localOrigin = state.axis.TransposedMulVec(sphere.center - state.origin);
 
     float x2 = localOrigin.x * localOrigin.x;
@@ -161,7 +161,7 @@ bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) 
     } else {
         d = Math::Sqrt(d);
 
-        // sphere 가 카메라 뒤에 있다면..
+        // If the sphere is behind the camera..
         if (localOrigin.x < 0) {
             d = -d;
         }
@@ -225,7 +225,7 @@ bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) 
     } else {
         d = Math::Sqrt(d);
 
-        // sphere 가 카메라 뒤에 있다면..
+        // If the sphere is behind the camera..
         if (localOrigin.x < 0) {
             d = -d;
         }
@@ -425,6 +425,29 @@ bool RenderCamera::CalcDepthBoundsFromLight(const RenderLight *light, const Mat4
     return true;
 }
 
+float RenderCamera::CalcViewScale(const Vec3 &position) const {
+    if (state.renderRect.w == 0.0f) {
+        return 0.0f;
+    }
+
+    Vec3 vec = position - state.origin;
+    Vec3 forwardProj = vec.ProjectToNorm(state.axis[0]);
+    Vec3 forwardProjPos = state.origin + forwardProj;
+
+    PointF screenPos1, screenPos2;
+    bool screenPos1Valid = TransformWorldToPixel(forwardProjPos, screenPos1);
+    bool screenPos2Valid = TransformWorldToPixel(forwardProjPos + state.axis[1], screenPos2);
+
+    float pixelDist;
+    if (!screenPos1Valid || !screenPos2Valid) {
+        pixelDist = state.renderRect.GetSize().ToVec2().Length();
+    } else {
+        pixelDist = screenPos1.Distance(screenPos2);
+    }
+
+    return 2.0f / Max(pixelDist, 0.0001f);
+}
+
 void RenderCamera::ComputeFov(float fromFovX, float fromAspectRatio, float toAspectRatio, float *toFovX, float *toFovY) {
     float tanFovX = Math::Tan(DEG2RAD(fromFovX * 0.5f));
     float tanFovY = tanFovX / fromAspectRatio;
@@ -433,11 +456,16 @@ void RenderCamera::ComputeFov(float fromFovX, float fromAspectRatio, float toAsp
     *toFovY = RAD2DEG(Math::ATan(tanFovY) * 2.0f);
 }
 
-const Ray RenderCamera::RayFromScreenND(const RenderCamera::State &renderCamera, float ndx, float ndy) {
+const Ray RenderCamera::RayFromScreenPoint(const RenderCamera::State &renderCamera, const Rect &screenRect, const Point &screenPoint) {
     Ray ray;
 
+    // Convert screen point to right/down normalized screen coordinates [-1.0, +1.0]
+    float ndx = ((float)(screenPoint.x - screenRect.x) / screenRect.w) * 2.0f - 1.0f;
+    float ndy = ((float)(screenPoint.y - screenRect.y) / screenRect.h) * 2.0f - 1.0f;
+
     if (renderCamera.orthogonal) {
-        ray.origin = renderCamera.origin + renderCamera.axis[0] * renderCamera.zNear; // zNear can be negative number in orthogonal view
+        // NOTE: zNear can be negative number in orthogonal view.
+        ray.origin = renderCamera.origin + renderCamera.axis[0] * renderCamera.zNear; 
         ray.origin -= renderCamera.axis[1] * ndx * renderCamera.sizeX;
         ray.origin -= renderCamera.axis[2] * ndy * renderCamera.sizeY;
 

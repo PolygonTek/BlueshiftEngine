@@ -90,10 +90,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
         // Construct initial world transform 
         Vec3 worldCentroid = desc.origin + desc.axis * totalCentroid;
         Mat3 worldAxis = desc.axis * shapeDesc->localAxis;
-        initialTransform.setBasis(btMatrix3x3(
-            worldAxis[0][0], worldAxis[1][0], worldAxis[2][0],
-            worldAxis[0][1], worldAxis[1][1], worldAxis[2][1],
-            worldAxis[0][2], worldAxis[1][2], worldAxis[2][2]));
+        initialTransform.setBasis(ToBtMatrix3x3(worldAxis));
         initialTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(worldCentroid)));
     } else {
         btCompoundShape *compoundShape = new btCompoundShape;
@@ -124,10 +121,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
 
             // Construct local transform for each child shapes
             btTransform localTransform;
-            localTransform.setBasis(btMatrix3x3(
-                shapeDesc->localAxis[0][0], shapeDesc->localAxis[1][0], shapeDesc->localAxis[2][0],
-                shapeDesc->localAxis[0][1], shapeDesc->localAxis[1][1], shapeDesc->localAxis[2][1],
-                shapeDesc->localAxis[0][2], shapeDesc->localAxis[1][2], shapeDesc->localAxis[2][2]));
+            localTransform.setBasis(ToBtMatrix3x3(shapeDesc->localAxis));
             localTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(localCentroid)));
 
             compoundShape->addChildShape(localTransform, shapeDesc->collider->shape);
@@ -135,18 +129,15 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
 
         // Construct initial world transform 
         Vec3 worldCentroid = desc.origin + desc.axis * totalCentroid;
-        initialTransform.setBasis(btMatrix3x3(
-            desc.axis[0][0], desc.axis[1][0], desc.axis[2][0],
-            desc.axis[0][1], desc.axis[1][1], desc.axis[2][1],
-            desc.axis[0][2], desc.axis[1][2], desc.axis[2][2]));
+        initialTransform.setBasis(ToBtMatrix3x3(desc.axis));
         initialTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(worldCentroid)));
     }
 
     btVector3 inertia(0, 0, 0);
     if (shape != emptyShape) {
         if (desc.mass != 0.0f) {
-            // NOTE: bullet 에서는 shape 이 center of mass 에 정렬되어 있다고 가정하고,
-            // 대부분의 경우에 AABB approximation 으로 inertia tensor 를 계산한다.
+            // NOTE: The bullet assumes that the shape is aligned to the center of mass, 
+            // and in most cases computes the inertia tensor by AABB approximation.
             shape->calculateLocalInertia(desc.mass, inertia);
         }
     }
@@ -177,7 +168,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
         body->SetAngularDamping(desc.angularDamping);
         body->SetKinematic(desc.kinematic);
         body->SetCharacter(desc.character);
-        // NOTE: compound shape 일 경우 CCD 적용 안됨
+        // NOTE: CCD cannot be used with the compound shape.
         body->SetCCD(desc.ccd);
 
         rigidBody->setUserPointer(body);
@@ -222,7 +213,7 @@ void PhysicsSystem::DestroyCollidable(PhysCollidable *collidable) {
         btRigidBody *rigidBody = btRigidBody::upcast(collidable->collisionObject);
         assert(rigidBody);
 
-        // Remove attached constraints of rigid body
+        // Remove attached constraints of rigid body.
         int numConstraintRefs = rigidBody->getNumConstraintRefs();
         if (numConstraintRefs > 0) {
             PhysConstraint **constraintRefs = (PhysConstraint **)_alloca(numConstraintRefs * sizeof(constraintRefs[0]));
@@ -297,7 +288,7 @@ PhysConstraint *PhysicsSystem::CreateConstraint(const PhysConstraintDesc &desc) 
 
     constraint->EnableCollision(desc.collision);
     constraint->SetBreakImpulse(desc.breakImpulse);
-    constraint->constraint->setDbgDrawSize(0.1f);
+    constraint->constraint->setDbgDrawSize(2.0f);
 
     return constraint;
 }

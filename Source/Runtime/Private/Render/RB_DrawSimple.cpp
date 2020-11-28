@@ -20,14 +20,14 @@
 BE_NAMESPACE_BEGIN
 
 void RB_DrawRect(float x, float y, float x2, float y2, float s, float t, float s2, float t2) {
-    const struct {
+    const struct ALIGN_AS32 {
         Vec2 position;
         Vec2 texcoord;
-    } verts[] = { 
+    } verts[] = {
         { Vec2(x, y), Vec2(s, t) }, 
         { Vec2(x2, y), Vec2(s2, t) }, 
-        { Vec2(x2, y2), Vec2(s2, t2) }, 
-        { Vec2(x, y2), Vec2(s, t2) }
+        { Vec2(x, y2), Vec2(s, t2) },
+        { Vec2(x2, y2), Vec2(s2, t2) }
     };
 
     rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
@@ -35,7 +35,7 @@ void RB_DrawRect(float x, float y, float x2, float y2, float s, float t, float s
 
     rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::XySt].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(verts[0]));
-    rhi.DrawArrays(RHI::Topology::TriangleFan, 0, 4);
+    rhi.DrawArrays(RHI::Topology::TriangleStrip, 0, 4);
 }
 
 void RB_DrawClipRect(float s, float t, float s2, float t2) {
@@ -43,14 +43,15 @@ void RB_DrawClipRect(float s, float t, float s2, float t2) {
 }
 
 void RB_DrawRectSlice(float x, float y, float x2, float y2, float s, float t, float s2, float t2, float slice) {
-    const struct {
+    const struct ALIGN_AS32 {
         Vec2 position;
         Vec3 texcoord;
     } verts[] = { 
         { Vec2(x, y), Vec3(s, t, slice) }, 
         { Vec2(x2, y), Vec3(s2, t, slice) }, 
-        { Vec2(x2, y2), Vec3(s2, t2, slice) }, 
-        { Vec2(x, y2), Vec3(s, t2, slice) }
+        { Vec2(x, y2), Vec3(s, t2, slice) },
+        { Vec2(x2, y2), Vec3(s2, t2, slice) }
+
     };
         
     rhi.BindBuffer(RHI::BufferType::Vertex, bufferCacheManager.streamVertexBuffer);
@@ -58,7 +59,7 @@ void RB_DrawRectSlice(float x, float y, float x2, float y2, float s, float t, fl
 
     rhi.SetVertexFormat(vertexFormats[VertexFormat::Type::XyStr].vertexFormatHandle);
     rhi.SetStreamSource(0, bufferCacheManager.streamVertexBuffer, 0, sizeof(verts[0]));
-    rhi.DrawArrays(RHI::Topology::TriangleFan, 0, 4);
+    rhi.DrawArrays(RHI::Topology::TriangleStrip, 0, 4);
 }
 
 static void ScreenToClipCoord(float x, float y, float *clip_x, float *clip_y) {
@@ -96,7 +97,7 @@ void RB_DrawCircle(const Vec3 &origin, const Vec3 &left, const Vec3 &up, const f
     }
 
     int size = (segments + 1) * sizeof(Vec3);
-    Vec3 *verts = (Vec3 *)_alloca16(size);
+    Vec3 *verts = (Vec3 *)_alloca32(size);
     for (int i = 0; i < segments + 1; i++) {
         Math::SinCos(Math::TwoPi * i / segments, s, c);
         verts[i] = origin + radius * (left * c + up * s);
@@ -111,8 +112,8 @@ void RB_DrawCircle(const Vec3 &origin, const Vec3 &left, const Vec3 &up, const f
 }
 
 void RB_DrawAABB(const AABB &aabb) {
-    //static const uint16_t indices[24] = { 3, 2, 1, 0, 5, 4, 0, 1, 6, 5, 1, 2, 7, 6, 2, 3, 4, 7, 3, 0, 6, 7, 4, 5 };
-    static const uint16_t indices[14] = { 7, 4, 6, 5, 1, 4, 0, 7, 3, 6, 2, 1, 3, 0 };
+    //ALIGN_AS32 static const uint16_t indices[24] = { 3, 2, 1, 0, 5, 4, 0, 1, 6, 5, 1, 2, 7, 6, 2, 3, 4, 7, 3, 0, 6, 7, 4, 5 };
+    ALIGN_AS32 static const uint16_t indices[14] = { 7, 4, 6, 5, 1, 4, 0, 7, 3, 6, 2, 1, 3, 0 };
 
     Vec3 verts[8];
     aabb.ToPoints(verts);
@@ -129,8 +130,8 @@ void RB_DrawAABB(const AABB &aabb) {
 }
 
 void RB_DrawOBB(const OBB &obb) {	
-    //static const uint16_t indices[24] = { 3, 2, 1, 0, 5, 4, 0, 1, 6, 5, 1, 2, 7, 6, 2, 3, 4, 7, 3, 0, 6, 7, 4, 5 };
-    static const uint16_t indices[14] = { 7, 4, 6, 5, 1, 4, 0, 7, 3, 6, 2, 1, 3, 0 };
+    //ALIGN_AS32 static const uint16_t indices[24] = { 3, 2, 1, 0, 5, 4, 0, 1, 6, 5, 1, 2, 7, 6, 2, 3, 4, 7, 3, 0, 6, 7, 4, 5 };
+    ALIGN_AS32 static const uint16_t indices[14] = { 7, 4, 6, 5, 1, 4, 0, 7, 3, 6, 2, 1, 3, 0 };
 
     Vec3 verts[8];
     obb.ToPoints(verts);
@@ -147,8 +148,8 @@ void RB_DrawOBB(const OBB &obb) {
 }
 
 void RB_DrawFrustum(const Frustum &frustum) {
-    //static const uint16_t indices[24] = { 3, 2, 1, 0, 5, 4, 0, 1, 6, 5, 1, 2, 7, 6, 2, 3, 4, 7, 3, 0, 6, 7, 4, 5 };
-    static const uint16_t indices[14] = { 7, 4, 6, 5, 1, 4, 0, 7, 3, 6, 2, 1, 3, 0 };
+    //ALIGN_AS32 static const uint16_t indices[24] = { 3, 2, 1, 0, 5, 4, 0, 1, 6, 5, 1, 2, 7, 6, 2, 3, 4, 7, 3, 0, 6, 7, 4, 5 };
+    ALIGN_AS32 static const uint16_t indices[14] = { 7, 4, 6, 5, 1, 4, 0, 7, 3, 6, 2, 1, 3, 0 };
 
     Vec3 verts[8];
     frustum.ToPoints(verts);
@@ -166,7 +167,7 @@ void RB_DrawFrustum(const Frustum &frustum) {
 
 void RB_DrawSphere(const Sphere &sphere, int lats, int longs) {
     int size = lats * (longs + 1) * 2 * sizeof(Vec3);
-    Vec3 *verts = (Vec3 *)_alloca16(size);
+    Vec3 *verts = (Vec3 *)_alloca32(size);
 
     R_GenerateSphereTriangleStripVerts(sphere, lats, longs, verts);
         

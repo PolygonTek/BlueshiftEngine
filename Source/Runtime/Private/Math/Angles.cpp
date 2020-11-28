@@ -32,28 +32,29 @@ Angles &Angles::Normalize360() {
             }
         }
     }
-
     return *this;
 }
 
 Angles &Angles::Normalize180() {
+    // Angle in the range [0, 360)
     Normalize360();
     
-    if (roll > 180.0f) {
-        roll -= 360.0f;
+    // Shift to (-180, 180]
+    if (x > 180.0f) {
+        x -= 360.0f;
     }
-    if (pitch > 180.0f) {
-        pitch -= 360.0f;
+    if (y > 180.0f) {
+        y -= 360.0f;
     }
-    if (yaw > 180.0f) {
-        yaw -= 360.0f;
+    if (z > 180.0f) {
+        z -= 360.0f;
     }
     return *this;
 }
 
 Angles Angles::FromString(const char *str) {
     Angles a;
-    sscanf(str, "%f %f %f", &a.roll, &a.pitch, &a.yaw);
+    sscanf(str, "%f %f %f", &a.x, &a.y, &a.z);
     return a;
 }
 
@@ -70,9 +71,9 @@ Angles Angles::FromString(const char *str) {
 //---------------------------------------------------------------------------------
 void Angles::ToVectors(Vec3 *forward, Vec3 *right, Vec3 *up) const {
     float sr, sp, sy, cr, cp, cy;
-    Math::SinCos(DEG2RAD(yaw), sy, cy);
-    Math::SinCos(DEG2RAD(pitch), sp, cp);
-    Math::SinCos(DEG2RAD(roll), sr, cr);
+    Math::SinCos(DEG2RAD(x), sr, cr);
+    Math::SinCos(DEG2RAD(y), sp, cp);
+    Math::SinCos(DEG2RAD(z), sy, cy);
 
     if (forward) {
         forward->Set(cp * cy, cp * sy, -sp);
@@ -89,8 +90,8 @@ void Angles::ToVectors(Vec3 *forward, Vec3 *right, Vec3 *up) const {
 
 Vec3 Angles::ToForward() const {
     float sp, sy, cp, cy;
-    Math::SinCos(DEG2RAD(yaw), sy, cy);
-    Math::SinCos(DEG2RAD(pitch), sp, cp);
+    Math::SinCos(DEG2RAD(y), sp, cp);
+    Math::SinCos(DEG2RAD(z), sy, cy);
 
     return Vec3(cp * cy, cp * sy, -sp);
 }
@@ -122,21 +123,21 @@ Vec3 Angles::ToUp() const {
 //      
 //-------------------------------------------------------------------------------------------
 Rotation Angles::ToRotation() const {
-    if (pitch == 0.0f) {
-        if (yaw == 0.0f) {
-            return Rotation(Vec3::origin, Vec3(-1.0f, 0.0f, 0.0f), roll);
+    if (y == 0.0f) {
+        if (z == 0.0f) {
+            return Rotation(Vec3::origin, Vec3(-1.0f, 0.0f, 0.0f), x);
         }
-        if (roll == 0.0f) {
-            return Rotation(Vec3::origin, Vec3(0.0f, 0.0f, -1.0f), yaw);
+        if (x == 0.0f) {
+            return Rotation(Vec3::origin, Vec3(0.0f, 0.0f, -1.0f), z);
         }
-    } else if (yaw == 0.0f && roll == 0.0f) {
-        return Rotation(Vec3::origin, Vec3(0.0f, -1.0f, 0.0f), pitch);
+    } else if (z == 0.0f && x == 0.0f) {
+        return Rotation(Vec3::origin, Vec3(0.0f, -1.0f, 0.0f), y);
     }
 
     float sx, cx, sy, cy, sz, cz;
-    Math::SinCos(DEG2RAD(yaw) * 0.5f, sz, cz);
-    Math::SinCos(DEG2RAD(pitch) * 0.5f, sy, cy);
-    Math::SinCos(DEG2RAD(roll) * 0.5f, sx, cx);
+    Math::SinCos(DEG2RAD(x) * 0.5f, sx, cx);
+    Math::SinCos(DEG2RAD(y) * 0.5f, sy, cy);
+    Math::SinCos(DEG2RAD(z) * 0.5f, sz, cz);
 
     float sxcy = sx * cy;
     float cxcy = cx * cy;
@@ -164,15 +165,14 @@ Rotation Angles::ToRotation() const {
 }
 
 Quat Angles::ToQuat() const {
-    // get sines and cosines of half angles
+    const float DegreeToRadianHalf = Math::MulDegreeToRadian * 0.5f;
     float sz, cz;
-    Math::SinCos(DEG2RAD(yaw) * 0.5f, sz, cz);
-
     float sy, cy;
-    Math::SinCos(DEG2RAD(pitch) * 0.5f, sy, cy);
-    
     float sx, cx;
-    Math::SinCos(DEG2RAD(roll) * 0.5f, sx, cx);
+
+    Math::SinCos(DegreeToRadianHalf * z, sz, cz);
+    Math::SinCos(DegreeToRadianHalf * y, sy, cy);
+    Math::SinCos(DegreeToRadianHalf * x, sx, cx);
 
     float sxcy = sx * cy;
     float cxcy = cx * cy;
@@ -192,9 +192,9 @@ Quat Angles::ToQuat() const {
 // V = Rz * Ry * Rx
 //   = R(yaw) * R(pitch) * R(roll)
 //
-//     | 1     0      0 |   |  cosp  0  sinp |   | cosy  -siny  0 |
-//   = | 0  cosr  -sinr | * |     0  1     0 | * | siny   cosy  0 |
-//     | 0  sinr   cosr |   | -sinp  0  cosp |   |    0      0  1 |
+//     | cosy  -siny  0 |   |  cosp  0  sinp |   | 1     0      0 |
+//   = | siny   cosy  0 | * |     0  1     0 | * | 0  cosr  -sinr |
+//     |    0      0  1 |   | -sinp  0  cosp |   | 0  sinr   cosr |
 //
 //     | cosy*cosp  -siny*cosr + sinr*sinp*cosy   sinr*siny + sinp*cosy*cosr |
 //   = | siny*cosp   cosr*cosy + sinr*sinp*siny  -cosy*sinr + cosr*sinp*siny |
@@ -202,15 +202,14 @@ Quat Angles::ToQuat() const {
 //
 //---------------------------------------------------------------------------------
 Mat3 Angles::ToMat3() const {
-    // This is an "unrolled" contatenation of rotation matrices Rx Ry and Rz
-    float sy, cy;
-    Math::SinCos(DEG2RAD(yaw), sy, cy);
-    
-    float sp, cp;
-    Math::SinCos(DEG2RAD(pitch), sp, cp);
-    
     float sr, cr;
-    Math::SinCos(DEG2RAD(roll), sr, cr);
+    Math::SinCos(DEG2RAD(x), sr, cr);
+
+    float sp, cp;
+    Math::SinCos(DEG2RAD(y), sp, cp);
+
+    float sy, cy;
+    Math::SinCos(DEG2RAD(z), sy, cy);
 
     float srsp = sr * sp;
     float crsp = cr * sp;

@@ -54,13 +54,13 @@ public:
     float               operator[](int index) const;
     float &             operator[](int index);
 
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const CQuat &a) const;
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const CQuat &a, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const CQuat &rhs) const { return Equals(rhs); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const CQuat &rhs) const { return !Equals(rhs); }
 
     void                Set(float x, float y, float z);
@@ -75,15 +75,15 @@ public:
                         /// Returns "x y z" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Change tiny numbers to zero
+                        /// Change tiny numbers to zero.
     bool                FixDenormals();
 
-                        /// Returns dimension of this type
-    int                 GetDimension() const { return 3; }
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return 3; }
 
-    float               x;      ///< The factor of i.
-    float               y;      ///< The factor of j.
-    float               z;      ///< The factor of k.
+    float               x;      ///< The factor of i
+    float               y;      ///< The factor of j
+    float               z;      ///< The factor of k
 };
 
 BE_INLINE constexpr CQuat::CQuat(float inX, float inY, float inZ) :
@@ -137,7 +137,7 @@ BE_INLINE Quat CQuat::ToQuat() const {
 }
 
 BE_INLINE const char *CQuat::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), 3, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_INLINE bool CQuat::FixDenormals() {

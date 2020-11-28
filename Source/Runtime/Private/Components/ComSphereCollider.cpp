@@ -38,6 +38,12 @@ ComSphereCollider::ComSphereCollider() {
 ComSphereCollider::~ComSphereCollider() {
 }
 
+void ComSphereCollider::Init() {
+    ComCollider::Init();
+
+    CreateCollider();
+}
+
 void ComSphereCollider::CreateCollider() {
     if (collider) {
         colliderManager.ReleaseCollider(collider);
@@ -68,18 +74,18 @@ void ComSphereCollider::SetRadius(float radius) {
     }
 }
 
-#if 1
-void ComSphereCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+#if WITH_EDITOR
+void ComSphereCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
-    if (selected) {
+    if (selectedByParent) {
         const ComTransform *transform = GetEntity()->GetTransform();
 
-        if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
+        if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(500.0f * 500.0f)) {
             float scaledRadius = (transform->GetScale() * radius).MaxComponent();
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-            renderWorld->DebugSphereSimple(transform->GetMatrix() * center, transform->GetAxis(), scaledRadius + BE1::CentiToUnit(0.15f), 1.25f, true);
+            renderWorld->DebugSphereSimple(transform->GetMatrix() * center, transform->GetAxis(), scaledRadius + CentiToUnit(0.15f), 1.25f, true);
         }
     }
 }

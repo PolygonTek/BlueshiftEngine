@@ -31,6 +31,7 @@ BE_NAMESPACE_BEGIN
 
 class Component;
 class ComTransform;
+class ComRectTransform;
 class GameWorld;
 class Prefab;
 class Entity;
@@ -41,7 +42,6 @@ using EntityPtrArray = Array<EntityPtr>;
 /// An Entity is any object that can be placed into a scene.
 class Entity : public Object {
     friend class GameWorld;
-    friend class GameEdit;
     friend class Prefab;
     friend class Component;
 
@@ -77,16 +77,23 @@ public:
                                 /// Sets layer index.
     void                        SetLayer(int layer);
 
-                                /// Returns entity static mask.
+                                /// Returns static mask.
     int                         GetStaticMask() const { return staticMask; }
-                                /// Sets entity static mask.
+                                /// Sets static mask.
     void                        SetStaticMask(int staticMask);
 
-                                /// Returns if this entity is frozen. Frozen entity will not be selectable in editor.
-    bool                        IsFrozen() const { return frozen; }
-                                /// Sets this entity frozen.
-    void                        SetFrozen(bool frozen);
+#if WITH_EDITOR
+                                /// Returns true if this entity is visible in editor.
+    bool                        IsVisible() const { return visibleInEditor; }
+                                /// Sets this entity's visiblilty in editor.
+    void                        SetVisible(bool visible);
+                                /// Returns true if this entity is selectable in editor.
+    bool                        IsSelectable() const { return selectableInEditor; }
+                                /// Sets this entity's selectablilty in editor.
+    void                        SetSelectable(bool selectable);
+#endif
 
+                                /// Returns true if this entity is a prefab source.
     bool                        IsPrefabSource() const { return prefab; }
 
     Guid                        GetPrefabSourceGuid() const;
@@ -97,12 +104,14 @@ public:
 
     int                         GetEntityNum() const { return entityNum; }
 
+    int                         GetSceneNum() const { return sceneNum; }
+
                                 /// Returns hierarchy node.
     const Hierarchy<Entity> &   GetNode() const { return node; }
 
                                 /// Returns root entity.
     Entity *                    GetRoot() const;
-                                /// Is root entity ?
+                                /// Returns true if this entity is a root entity.
     bool                        IsRoot() const { return GetRoot() == this; }
 
                                 /// Returns parent entity.
@@ -115,13 +124,24 @@ public:
                                 /// Sets parent entity by GUID.
     void                        SetParentGuid(const Guid &parentGuid);
 
+                                /// Returns sibling index.
+    int                         GetSiblingIndex() const;
+                                /// Sets sibling index.
+    void                        SetSiblingIndex(int index);
+
                                 /// Returns true if this entity have any children.
     bool                        HasChildren() const;
-                                /// Gets the children by depth first order.
-    void                        GetChildren(EntityPtrArray &children) const;
+                                /// Returns the number of children the parent entity has.
+    int                         GetChildCount() const;
+                                /// Returns a child entity by index.
+    Entity *                    GetChild(int childIndex) const;
                                 /// Finds a child entity with the given name.
     Entity *                    FindChild(const char *name) const;
-    
+                                /// Gets the children entities.
+    void                        GetChildren(EntityPtrArray &children) const;
+                                /// Gets all of the children by depth first order.
+    void                        GetChildrenRecursive(EntityPtrArray &children) const;
+
                                 /// Returns number of components.
     int                         NumComponents() const { return components.Count(); }
                                 /// Checks if component exist by the given meta object.
@@ -143,13 +163,18 @@ public:
                                 /// Returns all component pointers by the given meta object.
     ComponentPtrArray           GetComponents(const MetaObject *type) const;
                                 /// Returns all component pointers by the given meta object in this entity or any children.
-    ComponentPtrArray           GetComponentsInChildren(const MetaObject *type) const;
+    ComponentPtrArray           GetComponentsInChildren(const MetaObject *type, bool skipIfParentDontHave = false) const;
                                 /// Returns all component pointers by the given type T in this entity or any children.
     template <typename T> 
-    ComponentPtrArray           GetComponentsInChildren() const;
+    ComponentPtrArray           GetComponentsInChildren(bool skipIfParentDontHave = false) const;
 
                                 /// Returns a transform component.
     ComTransform *              GetTransform() const;
+                                /// Returns a rect transform component.
+    ComRectTransform *          GetRectTransform() const;
+
+                                /// Returns an entity has rect transform which is hit by ray. 
+    Entity *                    RayCastRect(const Ray &ray);
 
                                 /// Adds a component to the entity.
     void                        AddComponent(Component *component) { InsertComponent(component, components.Count()); }
@@ -163,7 +188,8 @@ public:
                                 /// Adds new component to the entity in real-time.
     Component *                 AddNewComponent(const MetaObject *type);
 
-    bool                        HasRenderEntity(int renderEntityHandle) const;
+                                /// Returns if any components of this entity have render object by checking given render object handle.
+    bool                        HasRenderObject(int renderObjectHandle) const;
 
                                 /// Purges all of the data.
     void                        Purge();
@@ -208,14 +234,18 @@ public:
 
                                 /// Returns AABB in local space.
     const AABB                  GetLocalAABB(bool includingChildren = false) const;
-                                /// Returns AABB in world space.
+                                /// Returns AABB in world space exactly. This is slow than GetWorldAABB().
     const AABB                  GetWorldAABB(bool includingChildren = false) const;
+                                /// Returns AABB in world space.
+    const AABB                  GetWorldAABBFast(bool includingChildren = false) const;
+                                /// Returns AABB in the given space.
+    const AABB                  GetAABBInSpace(const Vec3 &origin, const Mat3 &axis, bool includingChildren = false) const;
                                 /// Returns position in world space with given trait.
     const Vec3                  GetWorldPosition(WorldPosTrait::Enum posTrait, bool includingChildren = false) const;
 
-#if 1
+#if WITH_EDITOR
                                 /// Visualizes the component in editor.
-    void                        DrawGizmos(const RenderCamera::State &viewState, bool selected);
+    void                        DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent);
 #endif
 
                                 /// Ray cast to this entity.
@@ -230,21 +260,26 @@ public:
     static Json::Value          CloneEntitiesValue(const Json::Value &entitiesValue, HashTable<Guid, Guid> &oldToNewGuidMap);
 
                                 /// Replaces GUIDs of an entity (including components) using GUID map.
-    static void                 RemapGuids(Entity *entity, const HashTable<Guid, Guid> &remapGuidMap);
-
+    void                        RemapGuids(const HashTable<Guid, Guid> &guidMap);
+        
+                                /// Destroys given entity and it's children.
     static void                 DestroyInstance(Entity *entity);
 
-                                // FIXME: Don't emit these signals in player mode
+    static const SignalDef      SIG_LayerChanged;
+    static const SignalDef      SIG_StaticMaskChanged;
+
+#if WITH_EDITOR
     static const SignalDef      SIG_ActiveChanged;
     static const SignalDef      SIG_ActiveInHierarchyChanged;
     static const SignalDef      SIG_NameChanged;
-    static const SignalDef      SIG_LayerChanged;
-    static const SignalDef      SIG_StaticMaskChanged;
-    static const SignalDef      SIG_FrozenChanged;
+    static const SignalDef      SIG_VisibilityChanged;
+    static const SignalDef      SIG_SelectabilityChanged;
     static const SignalDef      SIG_ParentChanged;
+    static const SignalDef      SIG_SiblingIndexChanged;
     static const SignalDef      SIG_ComponentInserted;
     static const SignalDef      SIG_ComponentRemoved;
     static const SignalDef      SIG_ComponentSwapped;
+#endif
 
 protected:
     void                        SetActiveInHierarchy(bool active);
@@ -274,10 +309,14 @@ protected:
     bool                        activeSelf;         ///< Local active state
     bool                        activeInHierarchy;  ///< Actual active state 
     bool                        prefab;
-    bool                        frozen;
+
+#if WITH_EDITOR
+    bool                        visibleInEditor = true;
+    bool                        selectableInEditor = true;
+#endif
 
     GameWorld *                 gameWorld;
-    int                         sceneIndex = -1;
+    int                         sceneNum = -1;
 
     ComponentPtrArray           components;         ///< 0'th component is always transform component
 };
@@ -315,8 +354,8 @@ BE_INLINE int Entity::GetComponentIndex(const Component *component) const {
 }
 
 template <typename T>
-BE_INLINE ComponentPtrArray Entity::GetComponentsInChildren() const {
-    ComponentPtrArray subComponents = GetComponentsInChildren(&T::metaObject);
+BE_INLINE ComponentPtrArray Entity::GetComponentsInChildren(bool skipIfParentDontHave) const {
+    ComponentPtrArray subComponents = GetComponentsInChildren(&T::metaObject, skipIfParentDontHave);
 
     return subComponents;
 }

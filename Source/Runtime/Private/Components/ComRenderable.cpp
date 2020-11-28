@@ -37,8 +37,10 @@ void ComRenderable::RegisterProperties() {
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("timeScale", "Time Scale", float, GetTimeScale, SetTimeScale, 1.f, 
         "", PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("maxVisDist", "Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 1000.f, 
+    REGISTER_ACCESSOR_PROPERTY("maxVisDist", "Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 4000.f, 
         "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("skipRendering", "Skip Rendering", bool, IsSkipRendering, SetSkipRendering, false,
+        "", PropertyInfo::Flag::SkipSerialization);
     REGISTER_ACCESSOR_PROPERTY("skipSelection", "Skip Selection", bool, IsSkipSelection, SetSkipSelection, false, 
         "", PropertyInfo::Flag::SkipSerialization);
 }
@@ -101,7 +103,7 @@ void ComRenderable::OnInactive() {
     }
 }
 
-bool ComRenderable::HasRenderEntity(int renderObjectHandle) const { 
+bool ComRenderable::HasRenderObject(int renderObjectHandle) const { 
     if (this->renderObjectHandle == renderObjectHandle) {
         return true;
     }
@@ -137,7 +139,7 @@ bool ComRenderable::IsVisibleInPreviousFrame() const {
     return renderWorld->GetViewCount() - renderObject->GetViewCount() <= 1;
 }
 
-const AABB ComRenderable::GetAABB() {
+const AABB ComRenderable::GetAABB() const {
     return renderObjectDef.aabb;
 }
 
@@ -146,7 +148,7 @@ bool ComRenderable::IntersectRay(const Ray &ray, bool backFaceCull, float *hitDi
         return false;
     }
 
-    Mat3x4 worldToLocal = renderObjectDef.worldMatrix.Inverse();
+    ALIGN_AS32 Mat3x4 worldToLocal = renderObjectDef.worldMatrix.Inverse();
 
     Ray localRay;
     localRay.origin = worldToLocal.Transform(ray.origin);
@@ -260,6 +262,20 @@ void ComRenderable::SetBillboard(bool billboard) {
     UpdateVisuals();
 }
 
+bool ComRenderable::IsSkipRendering() const {
+    return !!(renderObjectDef.flags & RenderObject::Flag::SkipRendering);
+}
+
+void ComRenderable::SetSkipRendering(bool skip) {
+    if (skip) {
+        renderObjectDef.flags |= RenderObject::Flag::SkipRendering;
+    } else {
+        renderObjectDef.flags &= ~RenderObject::Flag::SkipRendering;
+    }
+
+    UpdateVisuals();
+}
+
 bool ComRenderable::IsSkipSelection() const {
     return !!(renderObjectDef.flags & RenderObject::Flag::SkipSelection);
 }
@@ -270,6 +286,13 @@ void ComRenderable::SetSkipSelection(bool skip) {
     } else {
         renderObjectDef.flags &= ~RenderObject::Flag::SkipSelection;
     }
+
+    UpdateVisuals();
+}
+
+void ComRenderable::SetRenderingOrder(int order) {
+    renderObjectDef.flags |= RenderObject::Flag::UseRenderingOrder;
+    renderObjectDef.renderingOrder = order;
 
     UpdateVisuals();
 }

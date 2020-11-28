@@ -16,7 +16,7 @@
 #include "Render/Render.h"
 #include "RenderInternal.h"
 #include "Core/JointPose.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Core/Heap.h"
 
 BE_NAMESPACE_BEGIN
@@ -56,8 +56,6 @@ MeshSurf *Mesh::AllocSurface(int numVerts, int numIndexes) const {
 }
 
 void Mesh::FreeSurface(MeshSurf *surf) const {
-    surf->subMesh->FreeSubMesh();
-
     delete surf->subMesh;
 
     SAFE_DELETE(surf);
@@ -314,11 +312,11 @@ void Mesh::UpdateSkinningJointCache(const Skeleton *skeleton, const Mat3x4 *join
 
     skinningJointCache->Update(skeleton, jointMats);
 
-    renderSystem.GetCurrentRenderContext()->renderCounter.numSkinningEntities++;
+    renderSystem.GetCurrentRenderContext()->GetRenderCounter().numSkinningEntities++;
 }
 
 float Mesh::ComputeVolume() const {
-    float   totalVolume = 0;
+    float totalVolume = 0;
 
     for (int i = 0; i < NumSurfaces(); i++) {
         const MeshSurf *surf = GetSurface(i);

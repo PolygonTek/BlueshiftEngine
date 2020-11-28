@@ -24,7 +24,7 @@ CVAR(r_multiSamples, "0", CVar::Flag::Integer | CVar::Flag::Archive, "number of 
 
 CVAR(r_sRGB, "1", CVar::Flag::Bool, "enable sRGB color calibration");
 CVAR(r_gamma, "1.0", CVar::Flag::Float | CVar::Flag::Archive, "changes gamma tables");
-CVAR(r_swapInterval, "-1", CVar::Flag::Integer | CVar::Flag::Archive, "control vsync, 0 = no vsync, 1 = vsync, -1 = adaptive vsync");
+CVAR(r_swapInterval, "0", CVar::Flag::Integer | CVar::Flag::Archive, "control vsync, 0 = no vsync, 1 = vsync, -1 = adaptive vsync");
 CVAR(r_dynamicVertexCacheSize, "0x800000", CVar::Flag::Integer, "size of dynamic vertex buffer");
 CVAR(r_dynamicIndexCacheSize, "0x300000", CVar::Flag::Integer, "size of dynamic index buffer");
 CVAR(r_dynamicUniformCacheSize, "0x200000", CVar::Flag::Integer, "size of dynamic uniform buffer");
@@ -35,10 +35,10 @@ CVAR(r_vertexTextureUpdate, "2", CVar::Flag::Integer | CVar::Flag::Archive, "tex
 CVAR(r_shadows, "1", CVar::Flag::Integer | CVar::Flag::Archive, "enable shadows, 1 = shadow map");
 CVAR(r_shadowMapSize, "1024", CVar::Flag::Integer | CVar::Flag::Archive, "directional/projected shadow map size");
 CVAR(r_shadowMapFilterSize, "1.0", CVar::Flag::Float | CVar::Flag::Archive, "shadow map blurring filter size in centi-meter unit");
-CVAR(r_shadowCubeMapSize, "1024", CVar::Flag::Integer | CVar::Flag::Archive, "virtual shadow cube map size of each face");
+CVAR(r_shadowCubeMapSize, "2048", CVar::Flag::Integer | CVar::Flag::Archive, "virtual shadow cube map size of each face");
 CVAR(r_shadowCubeMapZNear, "0.04", CVar::Flag::Float, "");
 CVAR(r_shadowCubeMapFloat, "0", CVar::Flag::Bool | CVar::Flag::Archive, "use float texture for shadow cube map");
-CVAR(r_shadowMapQuality, "1", CVar::Flag::Integer | CVar::Flag::Archive, "shadow map PCF level, 0 = HW-PCF only, 1 = HW-PCFx5, 2 = PCFx9, 3 = PCFx16 (randomly jittered sample)");
+CVAR(r_shadowMapQuality, "1", CVar::Flag::Integer | CVar::Flag::Archive, "shadow map PCF level, 0 = PCFx1, 1 = PCFx5, 2 = PCFx9, 3 = PCFx16 (randomly jittered sample)");
 CVAR(r_shadowMapCropAlign, "1", CVar::Flag::Bool, "");
 
 CVAR(r_CSM_count, "4", CVar::Flag::Integer | CVar::Flag::Archive, "");
@@ -47,7 +47,7 @@ CVAR(r_CSM_pancaking, "0", CVar::Flag::Bool, "");
 CVAR(r_CSM_nonCachedDistance, "50", CVar::Flag::Float, "");
 CVAR(r_CSM_updateRatio, "1.0", CVar::Flag::Float, "");
 CVAR(r_CSM_selectionMethod, "1", CVar::Flag::Integer, "cascade selection method, 0 = z-based selection, 1 = map-based selection");
-CVAR(r_CSM_splitLamda, "0.9", CVar::Flag::Float, "");
+CVAR(r_CSM_splitLambda, "0.9", CVar::Flag::Float, "");
 CVAR(r_CSM_blend, "1", CVar::Flag::Bool, "");
 CVAR(r_CSM_offsetFactor0, "5.0", CVar::Flag::Float, "scale value for CSM0 drawing");
 CVAR(r_CSM_offsetFactor1, "4.0", CVar::Flag::Float, "scale value for CSM1 drawing");
@@ -65,6 +65,8 @@ CVAR(r_HOM_debug, "0", CVar::Flag::Bool, "");
 CVAR(r_ambientScale, "0.5", CVar::Flag::Float | CVar::Flag::Archive, "ambient intensities are mutipled by this");
 CVAR(r_lightScale, "1.0", CVar::Flag::Float | CVar::Flag::Archive, "all light intensities are multiplied by this");
 CVAR(r_indirectLit, "1", CVar::Flag::Bool | CVar::Flag::Archive, "use indirect lighting");
+CVAR(r_specularEnergyCompensation, "0", CVar::Flag::Bool | CVar::Flag::Archive, "use energy compensation for multiple scattering in a microfacet model");
+
 CVAR(r_probeBlending, "1", CVar::Flag::Bool | CVar::Flag::Archive, "use blending probe lighting");
 CVAR(r_probeBoxProjection, "1", CVar::Flag::Bool | CVar::Flag::Archive, "use box projected cubemap");
 CVAR_MINMAX(r_probeBakeBounces, "2", CVar::Flag::Integer | CVar::Flag::Archive, "", 1, 5);
@@ -87,7 +89,7 @@ CVAR(r_HDR_brightThreshold, "5.0", CVar::Flag::Float, "");
 CVAR(r_HDR_brightOffset, "10.0", CVar::Flag::Float, "");
 
 CVAR(r_sunShafts, "1", CVar::Flag::Bool | CVar::Flag::Archive, "sun shaft");
-CVAR(r_sunShafts_scale, "16.0", CVar::Flag::Float, "sun shaft scale");
+CVAR_MINMAX(r_sunShafts_scale, "16.0", CVar::Flag::Float, "sun shaft scale", 1, 64);
 
 CVAR(r_SSAO, "1", CVar::Flag::Bool | CVar::Flag::Archive, "screen space ambient occlusion");
 CVAR(r_SSAO_quality, "2", CVar::Flag::Integer | CVar::Flag::Archive, "");
@@ -128,10 +130,12 @@ CVAR(r_skipBlendLights, "0", CVar::Flag::Bool, "skip blend lights");
 CVAR(r_skipBlendPass, "0", CVar::Flag::Bool, "skip alpha blending draw pass");
 CVAR(r_skipFinalPass, "0", CVar::Flag::Bool, "skip final draw pass");
 
-CVAR(r_showStats, "0", CVar::Flag::Integer, "show rendering statistics");
 CVAR(r_showBufferCache, "0", CVar::Flag::Bool, "print dynamic buffer usage every frame");
 CVAR(r_showBufferCacheTiming, "1", CVar::Flag::Bool, "print dynamic buffer map/unmap timing every frame");
 CVAR(r_showAABB, "0", CVar::Flag::Integer, "show axis-aligned bounding boxes");
+CVAR(r_showDynamicAABBTree, "0", CVar::Flag::Bool, "show dynamic AABB tree");
+CVAR(r_showDynamicAABBTreeMinDepth, "0", CVar::Flag::Integer, "");
+CVAR(r_showDynamicAABBTreeMaxDepth, "0", CVar::Flag::Integer, "");
 CVAR(r_showWireframe, "0", CVar::Flag::Integer, "show wireframe");
 CVAR(r_showSkeleton, "0", CVar::Flag::Integer, "show skeleton");
 CVAR(r_showTextures, "0", CVar::Flag::Integer, "show textures");

@@ -22,22 +22,21 @@
 BE_NAMESPACE_BEGIN
 
 static bool DecompressImage(const Image &srcImage, Image &dstImage) {
-    assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
     assert(dstImage.GetPixels());
 
     switch (srcImage.GetFormat()) {
-    case Image::Format::RGBA_DXT1:
+    case Image::Format::DXT1:
         DecompressDXT1(srcImage, dstImage);
         break;
-    case Image::Format::RGBA_DXT3:
+    case Image::Format::DXT3:
         DecompressDXT3(srcImage, dstImage);
         break;
-    case Image::Format::RGBA_DXT5:
+    case Image::Format::DXT5:
         DecompressDXT5(srcImage, dstImage);
         break;
     case Image::Format::XGBR_DXT5:
         DecompressDXT5(srcImage, dstImage);
-        BE_WARNLOG("XGBR_DXT5n\n");
+        BE_WARNLOG("DecompressImage: XGBR_DXT5 need to swap channels\n");
         break;
     case Image::Format::DXN2:
         DecompressDXN2(srcImage, dstImage);
@@ -64,11 +63,19 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
     case Image::Format::RGBA_8_8_ETC2:
         DecompressETC2_RGBA8(srcImage, dstImage);
         break;
+    case Image::Format::R_11_EAC:
+        DecompressEAC_R11(srcImage, dstImage, false);
+        break;
+    case Image::Format::SignedR_11_EAC:
+        DecompressEAC_R11(srcImage, dstImage, true);
+        break;
     case Image::Format::RG_11_11_EAC:
-        DecompressETC2_RG11(srcImage, dstImage);
+        // Consider RG_11_11_EAC format image as normal values.
+        DecompressEAC_RG11(srcImage, dstImage, false, true);
         break;
     case Image::Format::SignedRG_11_11_EAC:
-        DecompressETC2_Signed_RG11(srcImage, dstImage);
+        // Consider SignedRG_11_11_EAC format image as normal values.
+        DecompressEAC_RG11(srcImage, dstImage, true, true);
         break;
     default:
         BE_WARNLOG("DecompressImage: unsupported format %s\n", srcImage.FormatName());
@@ -78,39 +85,47 @@ static bool DecompressImage(const Image &srcImage, Image &dstImage) {
     return true;
 }
 
-static bool CompressImage(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
-    assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+static bool CompressImage(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
     assert(srcImage.GetPixels());
 
     //uint64_t startClocks = rdtsc();
 
     switch (dstImage.GetFormat()) {
-    case Image::Format::RGBA_DXT1:
-        CompressDXT1(srcImage, dstImage, compressoinQuality);
+    case Image::Format::DXT1:
+        CompressDXT1(srcImage, dstImage, compressionQuality);
         break;
-    case Image::Format::RGBA_DXT3:
-        CompressDXT3(srcImage, dstImage, compressoinQuality);
+    case Image::Format::DXT3:
+        CompressDXT3(srcImage, dstImage, compressionQuality);
         break;
-    case Image::Format::RGBA_DXT5:
-        CompressDXT5(srcImage, dstImage, compressoinQuality);
+    case Image::Format::DXT5:
+        CompressDXT5(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::DXN2:
-        CompressDXN2(srcImage, dstImage, compressoinQuality);
+        CompressDXN2(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::RGB_8_ETC1:
-        CompressETC1(srcImage, dstImage, compressoinQuality);
+        CompressETC1(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::RGB_8_ETC2:
-        CompressETC2_RGB8(srcImage, dstImage, compressoinQuality);
+        CompressETC2_RGB8(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::RGBA_8_1_ETC2:
-        CompressETC2_RGBA1(srcImage, dstImage, compressoinQuality);
+        CompressETC2_RGBA1(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::RGBA_8_8_ETC2:
-        CompressETC2_RGBA8(srcImage, dstImage, compressoinQuality);
+        CompressETC2_RGBA8(srcImage, dstImage, compressionQuality);
+        break;
+    case Image::Format::R_11_EAC:
+        CompressEAC_R11(srcImage, dstImage, compressionQuality);
+        break;
+    case Image::Format::SignedR_11_EAC:
+        CompressEAC_Signed_R11(srcImage, dstImage, compressionQuality);
+        break;
+    case Image::Format::RG_11_11_EAC:
+        CompressEAC_RG11(srcImage, dstImage, compressionQuality);
         break;
     case Image::Format::SignedRG_11_11_EAC:
-        CompressETC2_Signed_RG11(srcImage, dstImage, compressoinQuality);
+        CompressEAC_Signed_RG11(srcImage, dstImage, compressionQuality);
         break;
     default:
         BE_WARNLOG("CompressImage: unsupported format %s\n", dstImage.FormatName());
@@ -123,82 +138,192 @@ static bool CompressImage(const Image &srcImage, Image &dstImage, Image::Compres
     return true;
 }
 
-bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool regenerateMipmaps, Image::CompressionQuality::Enum compressionQuality) const {
-    const Image *srcImage = this;
-    const ImageFormatInfo *srcFormatInfo = GetImageFormatInfo(srcImage->GetFormat());
-    const ImageFormatInfo *dstFormatInfo = GetImageFormatInfo(dstFormat);
+static void SRGBToLinear(float *data, int count) {
+    float *dataPtr = data;
+    float *dataEnd = data + count;
+
+    while (dataPtr < dataEnd) {
+        *dataPtr = Image::GammaToLinearApprox(*dataPtr);
+        dataPtr++;
+    }
+}
+
+static void Pow22ToLinear(float *data, int count) {
+    float *dataPtr = data;
+    float *dataEnd = data + count;
+
+    while (dataPtr < dataEnd) {
+        *dataPtr = Image::GammaToLinearFast(*dataPtr);
+        dataPtr++;
+    }
+}
+
+static void LinearToSRGB(float *data, int count) {
+    float *dataPtr = data;
+    float *dataEnd = data + count;
+
+    while (dataPtr < dataEnd) {
+        *dataPtr = Image::LinearToGammaApprox(*dataPtr);
+        dataPtr++;
+    }
+}
+
+static void LinearToPow22(float *data, int count) {
+    float *dataPtr = data;
+    float *dataEnd = data + count;
+
+    while (dataPtr < dataEnd) {
+        *dataPtr = Image::LinearToGammaFast(*dataPtr);
+        dataPtr++;
+    }
+}
+
+static void SRGBToPow22(float *data, int count) {
+    float *dataPtr = data;
+    float *dataEnd = data + count;
+
+    while (dataPtr < dataEnd) {
+        *dataPtr = Image::LinearToGammaFast(Image::GammaToLinearApprox(*dataPtr));
+        dataPtr++;
+    }
+}
+
+static void Pow22ToSRGB(float *data, int count) {
+    float *dataPtr = data;
+    float *dataEnd = data + count;
+
+    while (dataPtr < dataEnd) {
+        *dataPtr = Image::LinearToGammaApprox(Image::GammaToLinearFast(*dataPtr));
+        dataPtr++;
+    }
+}
+
+using GammaConversionFunc = void (*)(float *data, int count);
+
+static GammaConversionFunc GetGammaConversionFunc(Image::GammaSpace::Enum srcGammaSpace, Image::GammaSpace::Enum dstGammaSpace) {
+    if (srcGammaSpace == dstGammaSpace) {
+        return nullptr;
+    }
+
+    if (srcGammaSpace == Image::GammaSpace::Linear) {
+        if (dstGammaSpace == Image::GammaSpace::sRGB) {
+            return LinearToSRGB;
+        }
+        return LinearToPow22;
+    }
     
-    if (srcFormatInfo == dstFormatInfo) {
-        dstImage = *srcImage;
+    if (dstGammaSpace == Image::GammaSpace::Linear) {
+        if (srcGammaSpace == Image::GammaSpace::sRGB) {
+            return SRGBToLinear;
+        }
+        return Pow22ToLinear;
+    }
+
+    if (srcGammaSpace == Image::GammaSpace::sRGB) {
+        return SRGBToPow22;
+    }
+    return Pow22ToSRGB;
+}
+
+bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, GammaSpace::Enum dstGammaSpace, bool regenerateMipmaps, Image::CompressionQuality::Enum compressionQuality) const {
+    if (dstGammaSpace == GammaSpace::DontCare) {
+        dstGammaSpace = gammaSpace;
+    }
+
+    // If the source and destination formats are the same, copy the source image to the destination image and return.
+    if (format == dstFormat && gammaSpace == dstGammaSpace) {
+        dstImage = *this;
         return true;
     }
 
-    int numDstMipmaps = !regenerateMipmaps ? srcImage->numMipmaps : MaxMipMapLevels(srcImage->width, srcImage->height, srcImage->depth);
-    
-    // Create output image based on src (this) image
-    dstImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, dstFormat, nullptr, srcImage->flags);
+    const Image *srcImage = this;
 
-    // If source format is compressed, then decompress to RGBA_8_8_8_8
-    Image decompressedImage;
-    if (srcFormatInfo->type & FormatType::Compressed) {
-        decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, Format::RGBA_8_8_8_8, nullptr, srcImage->flags);
+    // Calculate the mipmap count for the destination image.
+    int numDstMipmaps = regenerateMipmaps ? MaxMipMapLevels(width, height, depth) : numMipmaps;
 
-        DecompressImage(*this, decompressedImage);
+    // Create a destination image based on the source (this) image.
+    dstImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, dstFormat, dstGammaSpace, nullptr, srcImage->flags);
+
+    Image unpackedSrcImage;
+
+    if (srcImage->IsCompressed()) {
+        // If the source image is compressed, decompress it first.
+        unpackedSrcImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps,
+            srcImage->NeedFloatConversion() ? Format::RGBA_32F_32F_32F_32F : Format::RGBA_8_8_8_8, srcImage->gammaSpace, nullptr, srcImage->flags);
+        
+        DecompressImage(*this, unpackedSrcImage);
 
         if (regenerateMipmaps) {
-            decompressedImage.GenerateMipmaps();
+            unpackedSrcImage.GenerateMipmaps();
         }
 
-        srcImage = &decompressedImage;
-        srcFormatInfo = GetImageFormatInfo(Format::RGBA_8_8_8_8);
-    } else {
-        if (regenerateMipmaps) {
-            decompressedImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps, srcImage->format, nullptr, srcImage->flags);
-            decompressedImage.CopyFrom(*srcImage, 0, 1);
-            decompressedImage.GenerateMipmaps();
+        srcImage = &unpackedSrcImage;
+    } else if (regenerateMipmaps) {
+        if (!srcImage->IsPacked()) {
+            unpackedSrcImage.Create(srcImage->width, srcImage->height, srcImage->depth, srcImage->numSlices, numDstMipmaps,
+                srcImage->format, srcImage->gammaSpace, nullptr, srcImage->flags);
 
-            srcImage = &decompressedImage;
+            // Copy only the first level of the source image for mipmap generation.
+            unpackedSrcImage.CopyFrom(*srcImage, 0, 1);
+        } else {
+            // Packed format can't generate mipmaps directly, so we need to unpack it.
+            srcImage->ConvertFormat(Format::RGBA_8_8_8_8, unpackedSrcImage, dstGammaSpace);
         }
+
+        unpackedSrcImage.GenerateMipmaps();
+
+        srcImage = &unpackedSrcImage;
     }
 
-    Image rgba8888Image;
-    if (dstFormatInfo->type & FormatType::Compressed) {
-        if (srcImage->GetFormat() != Format::RGBA_8_8_8_8) {
-            srcImage->ConvertFormat(Format::RGBA_8_8_8_8, rgba8888Image);
-            srcImage = &rgba8888Image;
-            srcFormatInfo = GetImageFormatInfo(Format::RGBA_8_8_8_8);
+    // If the destination format is compressed, we need to convert source image to RGBA_8_8_8_8 or RGBA_32F_32F_32F_32F first.
+    if (Image::IsCompressed(dstFormat)) {
+        Image tempImage;
+
+        if (Image::NeedFloatConversion(dstFormat) || srcImage->gammaSpace != dstGammaSpace) {
+            if (srcImage->GetFormat() != Format::RGBA_32F_32F_32F_32F) {
+                srcImage->ConvertFormat(Format::RGBA_32F_32F_32F_32F, tempImage, dstGammaSpace);
+                srcImage = &tempImage;
+            }
+        } else {
+            if (srcImage->GetFormat() != Format::RGBA_8_8_8_8) {
+                srcImage->ConvertFormat(Format::RGBA_8_8_8_8, tempImage);
+                srcImage = &tempImage;
+            }
         }
 
         if (!CompressImage(*srcImage, dstImage, compressionQuality)) {
             dstImage.Clear();
             return false;
         }
-
         return true;
     }
 
     ImageUnpackFunc unpackFunc;
     ImagePackFunc packFunc;
+    int componentSize;
 
-    bool unpackFloat = (srcFormatInfo->type & FormatType::Float) || (dstFormatInfo->type & FormatType::Float);
+    const ImageFormatInfo *srcFormatInfo = GetImageFormatInfo(srcImage->GetFormat());
+    const ImageFormatInfo *dstFormatInfo = GetImageFormatInfo(dstFormat);
 
-    if (unpackFloat) {
+    GammaConversionFunc gammaConversionFunc = GetGammaConversionFunc(srcImage->gammaSpace, dstGammaSpace);
+
+    if (gammaConversionFunc || NeedFloatConversion(srcImage->GetFormat()) || NeedFloatConversion(dstFormat)) {
         unpackFunc = srcFormatInfo->unpackRGBA32F;
         packFunc = dstFormatInfo->packRGBA32F;
+        componentSize = sizeof(float);
     } else {
         unpackFunc = srcFormatInfo->unpackRGBA8888;
         packFunc = dstFormatInfo->packRGBA8888;
+        componentSize = sizeof(byte);
     }
-    
+
     if (!unpackFunc || !packFunc) {
         BE_WARNLOG("Image::ConvertFormat: unsupported convert type (from %s to %s)\n", srcImage->FormatName(), dstImage.FormatName());
         dstImage.Clear();
         return false;
     }
 
-    bool isGamma = !(flags & Flag::LinearSpace);
-
-    byte *unpackedBuffer = (byte *)Mem_Alloc16(width * 4 * (unpackFloat ? sizeof(float) : 1));
+    byte *unpackedBuffer = (byte *)Mem_Alloc16(width * 4 * componentSize);
 
     byte *srcPtr = srcImage->GetPixels();
     byte *dstPtr = dstImage.GetPixels();
@@ -212,12 +337,19 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
         int dstPitch = dstImage.BytesPerPixel() * w;
 
         for (int sliceIndex = 0; sliceIndex < srcImage->numSlices; sliceIndex++) {
-            for (int y = 0; y < h * d; y++) {
-                unpackFunc(srcPtr, unpackedBuffer, w, isGamma);
-                packFunc(unpackedBuffer, dstPtr, w, isGamma);
+            for (int z = 0; z < d; z++) {
+                for (int y = 0; y < h; y++) {
+                    unpackFunc(srcPtr, unpackedBuffer, w);
 
-                srcPtr += srcPitch;
-                dstPtr += dstPitch;
+                    if (gammaConversionFunc) {
+                        gammaConversionFunc((float *)unpackedBuffer, 4 * w);
+                    }
+
+                    packFunc(unpackedBuffer, dstPtr, w);
+
+                    srcPtr += srcPitch;
+                    dstPtr += dstPitch;
+                }
             }
         }
     }
@@ -226,13 +358,9 @@ bool Image::ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool r
     return true;
 }
 
-bool Image::ConvertFormatSelf(Image::Format::Enum dstFormat, bool regenerateMipmaps, Image::CompressionQuality::Enum compressionQuality) {
-    if (this->format == dstFormat) {
-        return true;
-    }
-
+bool Image::ConvertFormatSelf(Image::Format::Enum dstFormat, GammaSpace::Enum dstGammaSpace, bool regenerateMipmaps, Image::CompressionQuality::Enum compressionQuality) {
     Image dstImage;
-    bool ret = ConvertFormat(dstFormat, dstImage, regenerateMipmaps, compressionQuality);
+    bool ret = ConvertFormat(dstFormat, dstImage, dstGammaSpace, regenerateMipmaps, compressionQuality);
     if (ret) {
         *this = dstImage;
     }

@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Components/ComMeshRenderer.h"
 #include "Render/Material.h"
 

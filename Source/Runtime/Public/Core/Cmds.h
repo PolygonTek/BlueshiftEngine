@@ -62,7 +62,7 @@ public:
 
     void                    BufferCommandText(Execution::Enum exec, const char *text);
 
-                            // buffer 에 쌓여있는 command 실행
+                            /// Executes commands pending in the buffer.
     void                    ExecuteCommandBuffer();
 
 private:

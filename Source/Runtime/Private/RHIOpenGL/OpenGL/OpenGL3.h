@@ -37,14 +37,15 @@ public:
     static bool             SupportsPackedFloat() { return true; }
     static bool             SupportsDepthClamp() { return true; }
     static bool             SupportsDepthBufferFloat() { return true; }
-    static bool             SupportsPixelBufferObject() { return true; }
+    static bool             SupportsPixelBuffer() { return true; }
     static bool             SupportsDiscardFrameBuffer() { return true; }
     static bool             SupportsFrameBufferSRGB() { return true; }
     static bool             SupportsTextureRectangle() { return true; }
     static bool             SupportsTextureArray() { return true; }
-    static bool             SupportsTextureBufferObject() { return true; }
+    static bool             SupportsTextureBuffer() { return true; }
     static bool             SupportsTextureCompressionS3TC() { return true; }
     static bool             SupportsTextureCompressionLATC() { return true; }
+    static bool             SupportsTextureCompressionRGTC() { return true; }
     static bool             SupportsCompressedGenMipmaps() { return true; }
     static bool             SupportsGeometryShader() { return true; }
     static bool             SupportsInstancedArrays() { return supportsInstancedArrays; }
@@ -56,6 +57,8 @@ public:
     static void APIENTRY    DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 
     static void             QueryTimestampCounter(GLuint queryId);
+    static uint32_t         QueryResult32(GLuint queryId);
+    static uint64_t         QueryResult64(GLuint queryId);
 
     static void             PolygonMode(GLenum face, GLenum mode) { gglPolygonMode(face, mode); }
     static void             ClearDepth(GLdouble depth) { gglClearDepth(depth); }
@@ -75,7 +78,6 @@ public:
     static bool             ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
     static bool             SupportedImageFormat(Image::Format::Enum imageFormat) { return ImageFormatToGLFormat(imageFormat, false, nullptr, nullptr, nullptr); }
     static Image::Format::Enum ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
-    static Image::Format::Enum ToUncompressedImageFormat(Image::Format::Enum inFormat);
 
 private:
     static bool             supportsInstancedArrays;

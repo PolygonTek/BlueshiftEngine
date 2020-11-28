@@ -23,23 +23,17 @@ Angles Rotation::ToAngles() const {
 
 Quat Rotation::ToQuat() const {
     // take half-angle
-    float a = DEG2RAD(angle) * 0.5f;
+    float ha = DEG2RAD(angle) * 0.5f;
     float s, c;
-    Math::SinCos(a, s, c);
+    Math::SinCos(ha, s, c);
 
-    Quat q;
-    q.x = vec.x * s;
-    q.y = vec.y * s;
-    q.z = vec.z * s;
-    q.w = c;
-
-    return q;
+    return Quat(vec.x * s, vec.y * s, vec.z * s, c);
 }
 
 //------------------------------------------------------------------------------
-// ref. Essential Mathematics for Games & Interactive Applications 2nd Edition p.148
+// Essential Mathematics for Games & Interactive Applications 2nd Edition, pp. 148
 //
-// N(x, y, z) = 단위 축벡터
+// N(x, y, z) = Unit axis vector
 //
 //     |  0  -z   y |          | -(y^2 + z^2)           x*y           x*z |
 // S = |  z   0  -x |    S^2 = |          x*y  -(x^2 + z^2)           y*z |

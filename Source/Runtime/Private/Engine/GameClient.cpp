@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Platform/PlatformThread.h"
 #include "Core/StrColor.h"
 #include "Core/Cmds.h"
 #include "Core/CVars.h"
@@ -30,6 +31,10 @@
 #include "Platform/PlatformProcess.h"
 #include "Profiler/Profiler.h"
 
+#ifdef ENABLE_IMGUI
+#include "imgui/imgui.h"
+#endif
+
 BE_NAMESPACE_BEGIN
 
 static const char   CMDLINE_PROMPT_MARK = ']';
@@ -46,8 +51,6 @@ static CVAR(cl_conSize, "0.6", CVar::Flag::Float | CVar::Flag::Archive, "");
 static CVAR(cl_conSpeed, "5.0", CVar::Flag::Float | CVar::Flag::Archive, "");
 static CVAR(cl_conNoPrint, "1", CVar::Flag::Bool, "");
 static CVAR(cl_conNotifyTime, "3.0", CVar::Flag::Float | CVar::Flag::Archive, "");
-static CVAR(cl_showFps, "0", CVar::Flag::Bool, "");
-static CVAR(cl_showTimer, "0", CVar::Flag::Bool, "");
 
 GameClient          gameClient;
 
@@ -55,6 +58,8 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
     cmdSystem.AddCommand("connect", Cmd_Connect);
     cmdSystem.AddCommand("disconnect", Cmd_Disconnect);
     cmdSystem.AddCommand("toggleConsole", Cmd_ToggleConsole);
+    cmdSystem.AddCommand("toggleMenuBar", Cmd_ToggleMenuBar);
+    cmdSystem.AddCommand("toggleStatistics", Cmd_ToggleStatistics);
 
     state = ClientState::Disconnected;
 
@@ -89,6 +94,8 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
     platform->SetMainWindowHandle(windowHandle);
     platform->EnableMouse(useMouseInput);
 
+    BE_PROFILE_INIT();
+
     inputSystem.Init();
 
     renderSystem.Init();
@@ -99,7 +106,7 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
 
     animControllerManager.Init();
 
-    consoleMaterial = nullptr;// materialManager.GetMaterial("Data/EngineMaterials/console.material");    
+    consoleMaterial = nullptr;// materialManager.GetMaterial("Data/EngineMaterials/console.material");
 
     currentColor = Color4::white;
     currentTextColor = Color4::white;
@@ -108,7 +115,7 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
     
     SetFont(fontManager.defaultFont);
 
-    BE_PROFILE_INIT();
+    cmdSystem.BufferCommandText(CmdSystem::Execution::Append, "exec \"Config/autoexec.cfg\"\n");
 }
 
 void GameClient::InitDefaultGuids() {
@@ -124,6 +131,7 @@ void GameClient::InitDefaultGuids() {
     resourceGuidMapper.Set(GuidMapper::flatNormalTextureGuid, "_flatNormalTexture");
     resourceGuidMapper.Set(GuidMapper::normalCubeTextureGuid, "_normalCubeTexture");
     resourceGuidMapper.Set(GuidMapper::cubicNormalCubeTextureGuid, "_cubicNormalCubeTexture");
+    resourceGuidMapper.Set(GuidMapper::imageShaderGuid, "Shaders/Image");
     resourceGuidMapper.Set(GuidMapper::unlitShaderGuid, "Shaders/Unlit");
     resourceGuidMapper.Set(GuidMapper::standardSpecularShaderGuid, "Shaders/StandardSpec");
     resourceGuidMapper.Set(GuidMapper::standardShaderGuid, "Shaders/Standard");
@@ -157,6 +165,8 @@ void GameClient::Shutdown() {
     cmdSystem.RemoveCommand("connect");
     cmdSystem.RemoveCommand("disconnect");
     cmdSystem.RemoveCommand("toggleConsole");
+    cmdSystem.RemoveCommand("toggleMenuBar");
+    cmdSystem.RemoveCommand("toggleStatistics");
 
     BE_PROFILE_SHUTDOWN();
 
@@ -173,20 +183,20 @@ void GameClient::Shutdown() {
     inputSystem.Shutdown();
 }
 
-void GameClient::RunFrame() {
-    BE_PROFILE_SYNC_FRAME();
+void GameClient::Update() {
+    BE_PROFILE_CPU_SCOPE_STATIC("GameClient::Update");
+
+    if (fpsFrametime >= cl_updateFps.GetInteger()) {
+        fps = fpsFrames / MILLI2SEC(fpsFrametime);
+        fpsFrames = 0;
+        fpsFrametime -= cl_updateFps.GetInteger();
+    }
 
     frameCount++;
 
     time += common.frameTime;
 
     fpsFrametime += common.frameTime;
-    
-    if (fpsFrametime >= cl_updateFps.GetInteger()) {
-        fps = Math::Rint(fpsFrames / MS2SEC(fpsFrametime));
-        fpsFrames = 0;
-        fpsFrametime -= cl_updateFps.GetInteger();
-    }
 
     fpsFrames++;
 
@@ -208,6 +218,312 @@ void GameClient::EndFrame() {
     inputSystem.EndFrame();
 }
 
+void GameClient::Render(const RenderContext *renderContext) {
+    BE_PROFILE_CPU_SCOPE_STATIC("GameClient::Render");
+
+    menuBarHeight = 0.0f;
+
+    // Draw menu bar.
+    if (showMenuBar) {
+        DrawMenuBar();
+
+        renderSystem.CheckModifiedCVars();
+    }
+
+    // Draw statistics.
+    if (showStatistics) {
+        DrawStatistics(renderContext);
+    }
+
+    // Draw IMGUI demo window.
+    //ImGui::ShowDemoWindow();
+
+    DrawConsole();
+}
+
+#ifdef ENABLE_IMGUI
+
+static void AddMenuItemCVarBool(const char *cvarName, const char *label) {
+    CVar *cvar = cvarSystem.Find(cvarName);
+    if (cvar) {
+        bool value = cvar->GetBool();
+        if (ImGui::Checkbox(label, &value)) {
+            cvar->SetBool(value);
+        }
+    }
+};
+
+static void AddMenuItemCVarFloat(const char *cvarName, const char *label) {
+    CVar *cvar = cvarSystem.Find(cvarName);
+    if (cvar) {
+        float value = cvar->GetFloat();
+        if (cvar->GetMinValue() < cvar->GetMaxValue()) {
+            if (ImGui::SliderFloat(label, &value, cvar->GetMinValue(), cvar->GetMaxValue())) {
+                cvar->SetFloat(value);
+            }
+        } else {
+            if (ImGui::InputFloat(label, &value)) {
+                cvar->SetFloat(value);
+            }
+        }
+    }
+};
+
+static void AddMenuItemCVarInt(const char *cvarName, const char *label) {
+    CVar *cvar = cvarSystem.Find(cvarName);
+    if (cvar) {
+        int value = cvar->GetInteger();
+        if (cvar->GetMinValue() < cvar->GetMaxValue()) {
+            if (ImGui::SliderInt(label, &value, cvar->GetMinValue(), cvar->GetMaxValue())) {
+                cvar->SetInteger(value);
+            }
+        } else {
+            if (ImGui::InputInt(label, &value)) {
+                cvar->SetInteger(value);
+            }
+        }
+    }
+};
+
+static void AddMenuItemCVarIntArray(const char *cvarName, const char *label, int count, const int intArray[]) {
+    CVar *cvar = cvarSystem.Find(cvarName);
+    if (cvar) {
+        int value = cvar->GetInteger();
+        int index = 0;
+        while (value > intArray[index]) {
+            index++;
+        }
+        if (ImGui::SliderInt(label, &index, 0, count - 1, va("%i", intArray[index]))) {
+            cvar->SetInteger(intArray[index]);
+        }
+    }
+};
+
+static void AddMenuItemCVarEnum(const char *cvarName, const char *label, const char *enumNames) {
+    CVar *cvar = cvarSystem.Find(cvarName);
+    if (cvar) {
+        int value = cvar->GetInteger();
+        if (ImGui::Combo(label, &value, enumNames)) {
+            cvar->SetInteger(value);
+        }
+    }
+};
+
+#endif
+
+void GameClient::DrawMenuBar() {
+#ifdef ENABLE_IMGUI
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("Engine")) {
+            bool showStatistics = IsStatisticsVisible();
+            if (ImGui::Checkbox("Show Statistics", &showStatistics)) {
+                cmdSystem.BufferCommandText(CmdSystem::Execution::Append, "toggleStatistics");
+            }
+            AddMenuItemCVarBool("developer", "Enable Developer");
+            AddMenuItemCVarBool("lua_debug", "Enable Lua Debugging");
+
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Graphics")) {
+            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Lighting");
+            ImGui::Indent();
+            AddMenuItemCVarBool("r_showLights", "Debug Lights");
+            AddMenuItemCVarBool("r_specularEnergyCompensation", "Specular Energy Compensation");
+            AddMenuItemCVarBool("r_indirectLit", "Indirect Lighting");
+            AddMenuItemCVarBool("r_probeBlending", "Blending Probes");
+            AddMenuItemCVarBool("r_probeBoxProjection", "Box Projected Probes");
+            ImGui::Unindent();
+
+            ImGui::Separator();
+
+            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Shadows");
+            ImGui::Indent();
+            AddMenuItemCVarBool("r_shadows", "Enabled");
+            AddMenuItemCVarBool("r_showShadows", "Debug Shadows");
+            const int shadowMapSizeArray[] = { 256, 512, 1024, 2048, 4096 };
+            AddMenuItemCVarIntArray("r_shadowMapSize", "Size", COUNT_OF(shadowMapSizeArray), shadowMapSizeArray);
+            AddMenuItemCVarEnum("r_shadowMapQuality", "Quality", "PCFx1\0PCFx5\0PCFx9\0PCFx16 (randomly jittered)\0\0");
+            AddMenuItemCVarEnum("r_CSM_selectionMethod", "Cascade Selection", "Z-Based\0Map-Based\0\0");
+            AddMenuItemCVarBool("r_CSM_blend", "Cascade Blending");
+            ImGui::Unindent();
+
+            ImGui::Separator();
+
+            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Post Processing");
+            ImGui::Indent();
+            AddMenuItemCVarEnum("r_HDR", "HDR Mode", "No HDR\0FP11 or FP16\0FP16\0FP32\0\0");
+            AddMenuItemCVarBool("r_HDR_debug", "Debug HDR");
+            AddMenuItemCVarBool("r_HDR_toneMapping", "Tone Mapping");
+            AddMenuItemCVarEnum("r_HDR_toneMapOp", "Tone Map Operator", "Linear\0Exponential\0Logarithmic\0Drago Logarithmic\0Reinhard\0Reinhard Extended\0Filmic ALU\0Flimic ACES\0Filmic Unreal\0Filmic Uncharted 2\0\0");
+            AddMenuItemCVarBool("r_sunShafts", "Sun Shafts");
+            AddMenuItemCVarFloat("r_sunShafts_scale", "Sun Shafts Scale");
+            ImGui::Unindent();
+
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Physics")) {
+            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Settings");
+            ImGui::Indent();
+            AddMenuItemCVarBool("physics_enable", "Enable");
+            AddMenuItemCVarBool("physics_enableCCD", "CCD");
+            AddMenuItemCVarBool("physics_noDeactivation", "No Deactivation");
+            ImGui::Unindent();
+
+            ImGui::Separator();
+
+            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Debug Draw");
+            ImGui::Indent();
+            AddMenuItemCVarBool("physics_showWireframe", "Show Wireframe");
+            AddMenuItemCVarBool("physics_showAABB", "Show AABB");
+            AddMenuItemCVarBool("physics_showContactPoints", "Show Contact Points");
+            AddMenuItemCVarBool("physics_showNormals", "Show Normals");
+            ImGui::Unindent();
+
+            ImGui::EndMenu();
+        }
+
+        menuBarHeight = ImGui::GetWindowSize().y;
+
+        Str versionText = va("%s %s v%s", BE_NAME, PlatformProcess::PlatformName(), BE_VERSION);
+
+#ifdef _DEBUG
+        versionText += " (DEBUG)";
+#endif
+
+        ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(versionText.c_str()).x);
+
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
+        ImGui::TextUnformatted(versionText.c_str());
+        ImGui::PopStyleColor();
+
+        ImGui::EndMainMenuBar();
+    }
+#endif
+}
+
+void GameClient::DrawStatistics(const RenderContext *renderContext) {
+#ifdef ENABLE_IMGUI
+    const int fixedWidth = 480;
+    int rightOffset = 10;
+    int topOffset = menuBarHeight + 10;
+
+    ImGui::SetNextWindowSize(ImVec2(fixedWidth, 120), ImGuiCond_Appearing);
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - fixedWidth - rightOffset, topOffset), ImGuiCond_Always);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(fixedWidth, -1), ImVec2(fixedWidth, -1));
+    ImGui::Begin("Statistics", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+    const RenderCounter &renderCounter = renderContext->GetPrevFrameRenderCounter();
+
+    Str fpsText = va("FPS: %3i", GetFPS());
+
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+    ImGui::Text("Render: %ims, FrontEnd: %ims, BackEnd: %ims", renderCounter.frameMsec, renderCounter.frontEndMsec, renderCounter.backEndMsec);
+    ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(fpsText.c_str()).x);
+    ImGui::TextUnformatted(fpsText.c_str());
+    ImGui::Text("Draw: %i, Verts: %i, Tris: %i", renderCounter.drawCalls, renderCounter.drawVerts, renderCounter.drawIndexes / 3);
+    ImGui::Text("Shadow Draw: %i, Verts: %i, Tris: %i", renderCounter.shadowDrawCalls, renderCounter.shadowDrawVerts, renderCounter.shadowDrawIndexes / 3);
+    ImGui::PopStyleColor();
+
+    ImGui::Separator();
+
+    if (profiler.IsUnfrozen()) {
+        uint64_t tid = PlatformThread::GetCurrentThreadId();
+
+        if (ImGui::CollapsingHeader(BE1::va("CPU (tid %" PRIu64 ")", tid), ImGuiTreeNodeFlags_DefaultOpen)) {
+            int lastStackDepth = 0;
+
+            ImGui::BeginGroup();
+
+            profiler.IterateCpuMarkers(tid, [&lastStackDepth](const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
+                // Convert nanoseconds to milliseconds.
+                float durationMs = (endTime - startTime) * 0.000001f;
+
+                Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 4.0f, 0.0f, 1.0f), 0.65f);
+
+                while (stackDepth < lastStackDepth) {
+                    ImGui::TreePop();
+                    lastStackDepth--;
+                }
+
+                lastStackDepth = stackDepth;
+
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(textColor.r, textColor.g, textColor.b, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+                ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+
+                Str id = tagName;
+                bool opened = ImGui::TreeNodeEx(id, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.2fms", tagName, durationMs);
+
+                ImGui::PopStyleColor(3);
+
+                return opened;
+            });
+
+            while (lastStackDepth-- > 0) {
+                ImGui::TreePop();
+            }
+
+            ImGui::EndGroup();
+        }
+
+        if (rhi.SupportsTimestampQueries() && ImGui::CollapsingHeader("GPU", ImGuiTreeNodeFlags_DefaultOpen)) {
+            int lastStackDepth = 0;
+
+            ImGui::BeginGroup();
+
+            profiler.IterateGpuMarkers([&lastStackDepth](const char *tagName, const Color3 &tagColor, int stackDepth, bool isLeaf, uint64_t startTime, uint64_t endTime) {
+                // Convert nanoseconds to milliseconds.
+                float durationMs = (endTime - startTime) * 0.000001f;
+
+                Color3 textColor = Color3::FromHSL(0.0f, Clamp(durationMs / 4.0f, 0.0f, 1.0f), 0.65f);
+
+                while (stackDepth < lastStackDepth) {
+                    ImGui::TreePop();
+                    lastStackDepth--;
+                }
+
+                lastStackDepth = stackDepth;
+
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(textColor.r, textColor.g, textColor.b, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+                ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(textColor.r, textColor.g, textColor.b, 0.2f));
+
+                Str id = tagName;
+                bool opened = ImGui::TreeNodeEx(id, isLeaf ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen : 0, "%s: %.2fms", tagName, durationMs);
+
+                ImGui::PopStyleColor(3);
+
+                return opened;
+            });
+
+            while (lastStackDepth-- > 0) {
+                ImGui::TreePop();
+            }
+
+            ImGui::EndGroup();
+        }
+    }
+
+    ImGui::End();
+#endif
+}
+
+void GameClient::ShowMenuBar(bool show) {
+    showMenuBar = show;
+}
+
+void GameClient::ShowStatistics(bool show) {
+    showStatistics = show;
+
+    if (showStatistics) {
+        BE_PROFILE_START();
+    } else {
+        BE_PROFILE_STOP();
+    }
+}
+
 void GameClient::UpdateConsole() {
     float targetHeight;
 
@@ -218,7 +534,7 @@ void GameClient::UpdateConsole() {
     }
 
     if (targetHeight > consoleHeight) {
-        consoleHeight += 720 * cl_conSpeed.GetFloat() * common.frameSec;
+        consoleHeight += 720 * cl_conSpeed.GetFloat() * MILLI2SEC(common.frameTime);
         if (targetHeight < consoleHeight) {
             consoleHeight = targetHeight;
         }
@@ -335,7 +651,7 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
             // Save next line offset
             lineOffsets[numLines] = offset;
         } else {
-            int charWidth = currentFont->GetGlyphAdvance(unicodeChar) * currentTextScale.x;
+            int charWidth = currentFont->GetGlyphAdvanceX(unicodeChar) * currentTextScale.x;
 
             if (flags & DrawTextFlag::WordWrap) {
                 if (currentLineWidth + charWidth > rect.w - marginX) {
@@ -352,10 +668,10 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
             } else if (currentLineWidth + charWidth > rect.w - marginX) {
                 if (flags & DrawTextFlag::Truncate) {
                     if (currentLineWidth > 0) {
-                        int dotdotdotWidth = currentFont->GetGlyphAdvance(U'.') * currentTextScale.x * 3;
+                        int dotdotdotWidth = currentFont->GetGlyphAdvanceX(U'.') * currentTextScale.x * 3;
                 
                         do {
-                            dotdotdotWidth -= currentFont->GetGlyphAdvance(unicodeChar) * currentTextScale.x;
+                            dotdotdotWidth -= currentFont->GetGlyphAdvanceX(unicodeChar) * currentTextScale.x;
                             unicodeChar = text.UTF8CharPrevious(offset);
                         } while (dotdotdotWidth > 0 && unicodeChar);
                     
@@ -393,6 +709,7 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
 
     Color4 textColor = currentTextColor;
     guiMesh.SetColor(textColor);
+    guiMesh.SetTextBorderColor(Color4::black);
 
     for (int lineIndex = 0; lineIndex < numLines; lineIndex++) {
         offset = lineOffsets[lineIndex];
@@ -400,7 +717,7 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
         // Calculate the x-coordinate
         int x;
         if (flags & (DrawTextFlag::Right | DrawTextFlag::Center)) {
-            int width = currentFont->StringWidth(&text[offset], lineLen[lineIndex], false, true, currentTextScale.x);
+            int width = currentFont->TextWidth(&text[offset], lineLen[lineIndex], false, true, currentTextScale.x);
 
             if (flags & DrawTextFlag::Right) {
                 x = rect.x + rect.w - width - marginX;
@@ -413,29 +730,6 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
 
         for (int lineTextIndex = 0; lineTextIndex < lineLen[lineIndex]; lineTextIndex++) {
             char32_t unicodeChar = text.UTF8CharAdvance(offset);
-
-            if (flags & DrawTextFlag::Outline) {
-                // Draw outline of text with black color
-                guiMesh.SetColor(Color4(0, 0, 0, textColor[3]));
-
-                guiMesh.DrawChar(x - 1, y + 0, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-                guiMesh.DrawChar(x - 1, y - 1, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-                guiMesh.DrawChar(x + 0, y - 1, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-                guiMesh.DrawChar(x + 1, y - 1, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-                guiMesh.DrawChar(x + 1, y + 0, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-                guiMesh.DrawChar(x + 1, y + 1, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-                guiMesh.DrawChar(x + 0, y + 1, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-                guiMesh.DrawChar(x - 1, y + 1, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-
-                guiMesh.SetColor(textColor);
-            } else if (flags & DrawTextFlag::DropShadow) {
-                // Draw text shadow with black color
-                guiMesh.SetColor(Color4(0, 0, 0, textColor[3]));
-
-                guiMesh.DrawChar(x + 1, y + 1, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
-
-                guiMesh.SetColor(textColor);
-            }
 
             int colorIndex = -1;
 
@@ -460,7 +754,17 @@ void GameClient::DrawStringInRect(const Rect &rect, int marginX, int marginY, co
                 continue;
             }
 
-            x += guiMesh.DrawChar(x, y, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar);
+            RenderObject::TextDrawMode::Enum drawMode;
+
+            if (flags & DrawTextFlag::Outline) {
+                drawMode = RenderObject::TextDrawMode::AddOutlines;
+            } else if (flags & DrawTextFlag::DropShadow) {
+                drawMode = RenderObject::TextDrawMode::DropShadows;
+            } else {
+                drawMode = RenderObject::TextDrawMode::Normal;
+            }
+
+            x += guiMesh.DrawChar(x, y, currentTextScale.x, currentTextScale.y, currentFont, unicodeChar, drawMode);
         }
 
         if (truncated && lineIndex == numLines - 1) {
@@ -477,23 +781,7 @@ void GameClient::DrawConsole() {
     Font *oldFont = gameClient.GetFont();
 
     SetFont(nullptr);
-    SetTextColor(Color4::grey);
-
-    if (cl_showFps.GetBool()) {
-        SetTextColor(Color4::white);
-        DrawString(0, 0, va("%ifps", fps), -1, DrawTextFlag::Right | DrawTextFlag::DropShadow);
-    }
-
-    if (cl_showTimer.GetBool()) {
-        SetTextColor(Color4::white);
-
-        int ts = (int)(time * 0.001f);
-        int hours = (ts / 3600) % 24;
-        int minutes = (ts / 60) % 60;
-        int seconds = ts % 60;
-        
-        DrawString(0, CONSOLE_FONT_HEIGHT, va("%02i:%02i:%02i", hours, minutes, seconds), -1, DrawTextFlag::Right | DrawTextFlag::DropShadow);
-    }
+    SetTextColor(Color4::gray);
 
     if (consoleHeight > 0.0f) {
         DrawConsoleScreen();
@@ -579,7 +867,7 @@ void GameClient::DrawConsoleCmdLine() {
 
         char32_t unicodeChar = UTF8::CharAdvance(text, offset);
 
-        int charWidth = currentFont->GetGlyphAdvance(unicodeChar);
+        int charWidth = currentFont->GetGlyphAdvanceX(unicodeChar);
         if (textWidth + charWidth < screenWidth) {
             textWidth += charWidth;
         } else {
@@ -599,7 +887,7 @@ void GameClient::DrawConsoleCmdLine() {
     Color4 caretColor = Color4(1, 1, 1, 0.5f);
 
     if (replaceMode || compositionMode) {
-        caretW = currentFont->GetGlyphAdvance(UTF8::Char(text, offset));
+        caretW = currentFont->GetGlyphAdvanceX(UTF8::Char(text, offset));
     } else {
         caretW = 2;
     }
@@ -773,7 +1061,7 @@ void GameClient::ConsoleCharEvent(char32_t unicodeChar) {
     char temp[7];
     char *tempPtr = temp;
     UTF8::Encode(tempPtr, unicodeChar);
-    int charSize = tempPtr - temp;
+    int charSize = (int)(tempPtr - temp);
     temp[charSize] = '\0';
 
     char *lineText = cmdLines[editLine];
@@ -818,7 +1106,7 @@ void GameClient::ConsoleCompositionEvent(char32_t unicodeChar) {
     char temp[7];
     char *tempPtr = temp;
     UTF8::Encode(tempPtr, unicodeChar);
-    int charSize = tempPtr - temp;
+    int charSize = (int)(tempPtr - temp);
     temp[charSize] = '\0';
 
     char *lineText = cmdLines[editLine];
@@ -943,7 +1231,7 @@ void GameClient::JoyAxisEvent(int dx, int dy, int time) {
     inputSystem.JoyAxisEvent(dx, dy, time);
 }
 
-void GameClient::TouchEvent(InputSystem::Touch::Phase phase, uint64_t touchId, int x, int y, int time) {
+void GameClient::TouchEvent(InputSystem::Touch::Phase::Enum phase, uint64_t touchId, int x, int y, int time) {
     inputSystem.TouchEvent(phase, touchId, x, y);
 }
 
@@ -964,6 +1252,14 @@ void GameClient::Cmd_ToggleConsole(const CmdArgs &args) {
     keyCmdSystem.ClearStates();
 
     gameClient.SetKeyFocus(gameClient.GetKeyFocus() == KeyFocus::Console ? KeyFocus::Game : KeyFocus::Console);
+}
+
+void GameClient::Cmd_ToggleMenuBar(const CmdArgs &args) {
+    gameClient.ShowMenuBar(!gameClient.IsMenuBarVisible());
+}
+
+void GameClient::Cmd_ToggleStatistics(const CmdArgs &args) {
+    gameClient.ShowStatistics(!gameClient.IsStatisticsVisible());
 }
 
 BE_NAMESPACE_END

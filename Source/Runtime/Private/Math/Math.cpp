@@ -34,26 +34,15 @@ const float Math::SqrtOneOverTwo                = 0.70710678118654752440f;
 const float Math::SqrtOneOverThree              = 0.57735026918962576450f;
 const float Math::MulDegreeToRadian             = Pi / 180.0f;
 const float Math::MulRadianToDegree             = 180.0f / Pi;
-const float Math::MulSecondToMs                 = 1000.0f;
-const float Math::MulMsToSecond                 = 0.001f;
+const float Math::MulSecondToMilli              = 1000.0f;
+const float Math::MulMilliToSecond              = 0.001f;
+const float Math::MulSecondToMicro              = 1000000.0f;
+const float Math::MulMicroToSecond              = 0.000001f;
+const float Math::MulSecondToNano               = 1000000000.0f;
+const float Math::MulNanoToSecond               = 0.000000001f;
 const float Math::Infinity                      = 1e30f;
 const float Math::FloatEpsilon                  = 1.192092896e-07f;
 const float Math::FloatSmallestNonDenormal      = *reinterpret_cast<const float *>(&SmallestNonDenormal);    // 1.1754944e-038f
-
-#if defined(BE_WIN_X86_SSE_INTRIN)
-
-const __m128 Math::SIMD_SP_zero                 = { 0.0f, 0.0f, 0.0f, 0.0f };
-const __m128 Math::SIMD_SP_255                  = { 255.0f, 255.0f, 255.0f, 255.0f };
-const __m128 Math::SIMD_SP_min_char             = { -128.0f, -128.0f, -128.0f, -128.0f };
-const __m128 Math::SIMD_SP_max_char             = { 127.0f, 127.0f, 127.0f, 127.0f };
-const __m128 Math::SIMD_SP_min_short            = { -32768.0f, -32768.0f, -32768.0f, -32768.0f };
-const __m128 Math::SIMD_SP_max_short            = { 32767.0f, 32767.0f, 32767.0f, 32767.0f };
-const __m128 Math::SIMD_SP_rsqrt_c0             = { 3.0f, 3.0f, 3.0f, 3.0f };
-const __m128 Math::SIMD_SP_rsqrt_c1             = { -0.5f, -0.5f, -0.5f, -0.5f };
-const __m128 Math::SIMD_SP_tiny                 = { 1e-4f, 1e-4f, 1e-4f, 1e-4f };
-const __m128 Math::SIMD_SP_smallestNonDenorm    = { FloatSmallestNonDenormal, FloatSmallestNonDenormal, FloatSmallestNonDenormal, FloatSmallestNonDenormal };
-
-#endif
 
 bool        Math::initialized = false;
 uint32_t    Math::iSqrt[SQRT_TABLE_SIZE];       // inverse square root lookup table

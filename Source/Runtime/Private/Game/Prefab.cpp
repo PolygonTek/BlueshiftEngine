@@ -16,7 +16,7 @@
 #include "Game/Entity.h"
 #include "Game/Prefab.h"
 #include "Game/GameWorld.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -95,7 +95,7 @@ bool Prefab::Load(const char *filename) {
 void Prefab::Write(const char *filename) {
     // Serialize root entity and it's children
     Json::Value entitiesValue;
-    Entity::SerializeHierarchy(entityHierarchy.GetChild(), entitiesValue);
+    Entity::SerializeHierarchy(entityHierarchy.GetFirstChild(), entitiesValue);
 
     Json::StyledWriter jsonWriter;
     Str jsonText = jsonWriter.write(entitiesValue).c_str();

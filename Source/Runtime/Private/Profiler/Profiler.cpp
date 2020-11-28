@@ -22,88 +22,105 @@ BE_NAMESPACE_BEGIN
 
 Profiler profiler;
 
-static PlatformMutex *mapAddMutex;
+static PlatformMutex *mapMutex;
 
 void Profiler::Init() {
-    freezeState = Unfrozen;
-
     frameCount = 0;
-    currentFrameDataIndex = 0;
-    readFameDataIndex = -1;
 
+    writeFrameIndex = 0;
+    readFrameIndex = -1;
+
+    // Initialize frame data.
     for (int i = 0; i < COUNT_OF(frameData); i++) {
-        auto &fd = frameData[i];
+        FrameData &fd = frameData[i];
 
+        fd.frameCount = 0;
         fd.time = InvalidTime;
     }
 
     cpuThreadInfoMap.Init(MaxCpuThreads, MaxCpuThreads, MaxCpuThreads);
 
-    for (int i = 0; i < COUNT_OF(gpuThreadInfo.markers); i++) {
-        auto &marker = gpuThreadInfo.markers[i];
+    if (rhi.SupportsTimestampQueries()) {
+        // Create GPU queries for GPU markers.
+        for (int i = 0; i < COUNT_OF(gpuThreadInfo.markers); i++) {
+            GpuMarker &marker = gpuThreadInfo.markers[i];
 
-        marker.startQueryHandle = rhi.CreateQuery(RHI::QueryType::Timestamp);
-        marker.endQueryHandle = rhi.CreateQuery(RHI::QueryType::Timestamp);
+            marker.startQueryHandle = rhi.CreateQuery(RHI::QueryType::Timestamp);
+            marker.endQueryHandle = rhi.CreateQuery(RHI::QueryType::Timestamp);
+        }
     }
 
-    mapAddMutex = (PlatformMutex *)PlatformMutex::Create();
+    mapMutex = (PlatformMutex *)PlatformMutex::Create();
 }
 
 void Profiler::Shutdown() {
-    for (int i = 0; i < COUNT_OF(gpuThreadInfo.markers); i++) {
-        auto &marker = gpuThreadInfo.markers[i];
+    if (rhi.SupportsTimestampQueries()) {
+        // Destroy all GPU queries.
+        for (int i = 0; i < COUNT_OF(gpuThreadInfo.markers); i++) {
+            auto &marker = gpuThreadInfo.markers[i];
 
-        rhi.DestroyQuery(marker.startQueryHandle);
-        rhi.DestroyQuery(marker.endQueryHandle);
+            rhi.DestroyQuery(marker.startQueryHandle);
+            rhi.DestroyQuery(marker.endQueryHandle);
+        }
     }
 
-    PlatformMutex::Destroy(mapAddMutex);
+    PlatformMutex::Destroy(mapMutex);
 }
 
 void Profiler::SyncFrame() {
-    if (freezeState == WatingForFreeze) {
-        freezeState = Frozen;
-    } else if (freezeState == WatingForUnfreeze) {
-        freezeState = Unfrozen;
+    if (freezeState == FreezeState::WaitingForFreeze) {
+        freezeState = FreezeState::Frozen;
+    } else if (freezeState == FreezeState::WaitingForUnfreeze) {
+        freezeState = FreezeState::Unfrozen;
     }
 
-    if (IsFrozen()) {
+    if (freezeState == FreezeState::Frozen) {
         return;
     }
 
-    readFameDataIndex = (currentFrameDataIndex + 1) % COUNT_OF(frameData);
+    frameCount++;
 
-    // readFrameDataIndex is valid only if frameData[readFrameDataIndex].time != InvalidTime
-    if (frameData[readFameDataIndex].time != InvalidTime) {
-        
-    }
+    writeFrameIndex = frameCount % COUNT_OF(frameData);
 
-    currentFrameDataIndex = frameCount % COUNT_OF(frameData);
+    readFrameIndex = (writeFrameIndex + 1) % COUNT_OF(frameData);
 
-    FrameData &currentFrame = frameData[currentFrameDataIndex];
+    FrameData &writeFrame = frameData[writeFrameIndex];
 
-    currentFrame.frameCount = frameCount;
-    currentFrame.time = PlatformTime::Nanoseconds();
+    writeFrame.frameCount = frameCount;
+    writeFrame.time = PlatformTime::Nanoseconds();
 
     for (int i = 0; i < cpuThreadInfoMap.Count(); i++) {
         CpuThreadInfo &ti = cpuThreadInfoMap.GetByIndex(i)->second;
 
-        ti.frameMarkerIndexes[currentFrameDataIndex] = ti.writeMarkerIndex;
+        ti.frameIndexes[writeFrameIndex] = ti.currentIndex;
     }
 
-    gpuThreadInfo.frameMarkerIndexes[currentFrameDataIndex] = gpuThreadInfo.writeMarkerIndex;
-
-    frameCount++;
+    if (rhi.SupportsTimestampQueries()) {
+        gpuThreadInfo.frameIndexes[writeFrameIndex] = gpuThreadInfo.currentIndex;
+    }
 }
 
-bool Profiler::ToggleFreeze() {
-    if (freezeState == Unfrozen) {
-        freezeState = WatingForFreeze;
-        return true;
-    }
-    if (freezeState == Frozen) {
-        freezeState = WatingForUnfreeze;
-        return true;
+bool Profiler::IsFrozen() const {
+    return freezeState == FreezeState::Frozen;
+}
+
+bool Profiler::IsUnfrozen() const {
+    return freezeState == FreezeState::Unfrozen;
+}
+
+bool Profiler::SetFreeze(bool freeze) {
+    if (freeze) {
+        if (freezeState == FreezeState::Unfrozen || freezeState == FreezeState::WaitingForUnfreeze) {
+            // Arise freeze in the next SyncFrame() call.
+            freezeState = FreezeState::WaitingForFreeze;
+            return true;
+        }
+    } else {
+        if (freezeState == FreezeState::Frozen || freezeState == FreezeState::WaitingForFreeze) {
+            // Arise unfreeze in the next SyncFrame() call.
+            freezeState = FreezeState::WaitingForUnfreeze;
+            return true;
+        }
     }
     return false;
 }
@@ -113,7 +130,9 @@ int Profiler::CreateTag(const char *name, const Color3 &color) {
     Str::Copynz(tag.name, name, COUNT_OF(tag.name));
     tag.color = color;
 
-    return tags.Append(tag);
+    int tagIndex = tags.Append(tag);
+
+    return tagIndex;
 }
 
 Profiler::CpuThreadInfo &Profiler::GetCpuThreadInfo() {
@@ -124,82 +143,88 @@ Profiler::CpuThreadInfo &Profiler::GetCpuThreadInfo() {
         return entry->second;
     }
 
-    PlatformMutex::Lock(mapAddMutex);
+    PlatformMutex::Lock(mapMutex);
 
     CpuThreadInfo cpuThreadInfo;
     cpuThreadInfo.threadId = tid;
-    cpuThreadInfo.frameMarkerIndexes[currentFrameDataIndex] = cpuThreadInfo.writeMarkerIndex;
+    cpuThreadInfo.frameIndexes[writeFrameIndex] = cpuThreadInfo.currentIndex;
 
     entry = cpuThreadInfoMap.Set(tid, cpuThreadInfo);
 
-    PlatformMutex::Unlock(mapAddMutex);
+    PlatformMutex::Unlock(mapMutex);
 
     return entry->second;
 }
 
 void Profiler::PushCpuMarker(int tagIndex) {
-    if (IsFrozen()) {
+    if (freezeState == FreezeState::Frozen) {
         return;
     }
 
     CpuThreadInfo &ti = GetCpuThreadInfo();
-    CpuMarker &marker = ti.markers[ti.writeMarkerIndex];
+    CpuMarker &marker = ti.markers[ti.currentIndex];
 
-    ti.markerIndexStack.Push(ti.writeMarkerIndex);
-
-    ti.writeMarkerIndex = (ti.writeMarkerIndex + 1) % COUNT_OF(ti.markers);
+    ti.indexStack.Push(ti.currentIndex);
+    ti.currentIndex = (ti.currentIndex + 1) % COUNT_OF(ti.markers);
 
     marker.tagIndex = tagIndex;
     marker.startTime = PlatformTime::Nanoseconds();
     marker.endTime = InvalidTime;
     marker.frameCount = frameCount;
-    marker.depth = ti.markerIndexStack.Count();
+    marker.stackDepth = ti.indexStack.Count() - 1;
 }
 
 void Profiler::PopCpuMarker() {
-    if (IsFrozen()) {
+    if (freezeState == FreezeState::Frozen) {
         return;
     }
 
     CpuThreadInfo &ti = GetCpuThreadInfo();
-    assert(!ti.markerIndexStack.IsEmpty());
+    assert(!ti.indexStack.IsEmpty());
 
-    int markerIndex = ti.markerIndexStack.Pop();
+    int currentIndex = ti.indexStack.Pop();
 
-    CpuMarker &marker = ti.markers[markerIndex];
+    CpuMarker &marker = ti.markers[currentIndex];
 
     marker.endTime = PlatformTime::Nanoseconds();
 }
 
 void Profiler::PushGpuMarker(int tagIndex) {
-    if (IsFrozen()) {
+    if (freezeState == FreezeState::Frozen) {
+        return;
+    }
+
+    if (!rhi.SupportsTimestampQueries()) {
         return;
     }
 
     GpuThreadInfo &ti = gpuThreadInfo;
-    GpuMarker &marker = ti.markers[ti.writeMarkerIndex];
+    GpuMarker &marker = ti.markers[ti.currentIndex];
 
-    ti.markerIndexStack.Push(ti.writeMarkerIndex);
-
-    ti.writeMarkerIndex = (ti.writeMarkerIndex + 1) % COUNT_OF(ti.markers);
+    ti.indexStack.Push(ti.currentIndex);
+    ti.currentIndex = (ti.currentIndex + 1) % COUNT_OF(ti.markers);
 
     marker.tagIndex = tagIndex;
     rhi.QueryTimestamp(marker.startQueryHandle);
     marker.frameCount = frameCount;
-    marker.depth = ti.markerIndexStack.Count();
+    marker.stackDepth = ti.indexStack.Count() - 1;
 }
 
 void Profiler::PopGpuMarker() {
-    if (IsFrozen()) {
+    if (freezeState == FreezeState::Frozen) {
+        return;
+    }
+
+    if (!rhi.SupportsTimestampQueries()) {
         return;
     }
 
     GpuThreadInfo &ti = gpuThreadInfo;
-    assert(!ti.markerIndexStack.IsEmpty());
+    assert(!ti.indexStack.IsEmpty());
 
-    int markerIndex = ti.markerIndexStack.Pop();
+    int currentIndex = ti.indexStack.Pop();
 
-    GpuMarker &marker = ti.markers[markerIndex];
+    GpuMarker &marker = ti.markers[currentIndex];
 
     rhi.QueryTimestamp(marker.endQueryHandle);
 }

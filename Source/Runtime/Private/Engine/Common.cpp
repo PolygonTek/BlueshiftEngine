@@ -21,11 +21,11 @@
 #include "Engine/Console.h"
 #include "Engine/Common.h"
 #include "Platform/PlatformProcess.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Core/StrColor.h"
 #include "Core/CVars.h"
 #include "Core/Cmds.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Game/GameSettings.h"
 
 BE_NAMESPACE_BEGIN
@@ -33,6 +33,7 @@ BE_NAMESPACE_BEGIN
 static CVAR(developer, "0", CVar::Flag::Bool, "");
 static CVAR(logFile, "0", CVar::Flag::Bool, "");
 static CVAR(forceGenericSIMD, "0", CVar::Flag::Bool, "");
+static CVAR(forceGenericSIMDForDebug, "1", CVar::Flag::Bool, "");
 
 static File *   consoleLogFile;
 
@@ -42,17 +43,21 @@ static void Common_Log(const int logLevel, const char *msg) {
     char buffer[16384];
     const char *bufptr;
 
-    if (logLevel == DevLog && !developer.GetBool()) {
-        return;
+    if (logLevel == LogLevel::Dev) {
+#ifndef DEVELOPMENT
+        if (!developer.GetBool()) {
+            return;
+        }
+#endif
     }
     
-    if (logLevel == DevLog) {
+    if (logLevel == LogLevel::Dev) {
         Str::snPrintf(buffer, COUNT_OF(buffer), S_COLOR_CYAN "%s", msg);
         bufptr = buffer;
-    } else if (logLevel == WarningLog) {
+    } else if (logLevel == LogLevel::Warning) {
         Str::snPrintf(buffer, COUNT_OF(buffer), S_COLOR_YELLOW "WARNING: %s", msg);
         bufptr = buffer;
-    } else if (logLevel == ErrorLog) {
+    } else if (logLevel == LogLevel::Error) {
         Str::snPrintf(buffer, COUNT_OF(buffer), S_COLOR_RED "ERROR: %s", msg);
         bufptr = buffer;
     } else {
@@ -84,7 +89,7 @@ static void Common_Log(const int logLevel, const char *msg) {
 static void Common_Error(const int errLevel, const char *msg) {
     static bool errorEntered = false;
 
-    if (errLevel == FatalErr) {
+    if (errLevel == ErrorLevel::Fatal) {
         if (errorEntered) {
             platform->Error(va("Recursive error after: %s", msg));
         }
@@ -104,7 +109,14 @@ static void Common_Error(const int errLevel, const char *msg) {
 }
 
 void Common::Init(const char *baseDir) {
-    Engine::InitBase(baseDir, forceGenericSIMD.GetBool(), (const streamOutFunc_t)Common_Log, (const streamOutFunc_t)Common_Error);
+    bool genericSIMD = forceGenericSIMD.GetBool();
+#ifdef _DEBUG
+    if (!genericSIMD) {
+        genericSIMD = forceGenericSIMDForDebug.GetBool();
+    }
+#endif
+
+    Engine::InitBase(baseDir, genericSIMD, (const streamOutFunc_t)Common_Log, (const streamOutFunc_t)Common_Error);
 
     EventSystem::Init();
     
@@ -129,7 +141,6 @@ void Common::Init(const char *baseDir) {
 
     realTime = 0;
     frameTime = 0;
-    frameSec = 0;
 }
 
 void Common::Shutdown() {
@@ -167,34 +178,41 @@ void Common::SaveConfig(const char *filename) {
     }
 }
 
-void Common::RunFrame(int frameMsec) {
-    frameTime = frameMsec;
-    frameSec = MS2SEC(frameMsec);
-    realTime += frameMsec;
+void Common::RunFrame(int elapsedMsec) {
+    frameTime = elapsedMsec;
+    realTime += elapsedMsec;
 
     ProcessPlatformEvent();
 
     cmdSystem.ExecuteCommandBuffer();
 }
 
+bool Common::WithEditor() const {
+#if WITH_EDITOR
+    return true;
+#else
+    return false;
+#endif
+}
+
 Common::PlatformId::Enum Common::GetPlatformId() const {
 #if defined(__IOS__)
-    return PlatformId::ID_IOS;
+    return PlatformId::IOSId;
 #elif defined(__ANDROID__)
-    return PlatformId::ID_Android;
+    return PlatformId::AndroidId;
 #elif defined(__WIN32__)
-    return PlatformId::ID_Windows;
+    return PlatformId::WindowsId;
 #elif defined(__MACOSX__)
-    return PlatformId::ID_MacOS;
+    return PlatformId::MacOSId;
 #elif defined(__LINUX__)
-    return PlatformId::ID_Linux;
+    return PlatformId::LinuxId;
 #endif
 }
 
 Str Common::GetAppPreferenceDir() const {
     Str companyName = GameSettings::playerSettings->GetProperty("companyName").As<Str>();
     Str productName = GameSettings::playerSettings->GetProperty("productName").As<Str>();
-    return fileSystem.GetAppDataDir(companyName, productName);
+    return fileSystem.GetUserAppDataDir(companyName, productName);
 }
 
 int Common::ProcessPlatformEvent() {
@@ -229,16 +247,16 @@ int Common::ProcessPlatformEvent() {
             gameClient.JoyAxisEvent((int)ev.value, (int)ev.value2, ev.time);
             break;
         case Platform::EventType::TouchBegan:
-            gameClient.TouchEvent(InputSystem::Touch::Started, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);
+            gameClient.TouchEvent(InputSystem::Touch::Phase::Started, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);
             break;
         case Platform::EventType::TouchMoved:
-            gameClient.TouchEvent(InputSystem::Touch::Moved, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);
+            gameClient.TouchEvent(InputSystem::Touch::Phase::Moved, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);
             break;
         case Platform::EventType::TouchEnded:
-            gameClient.TouchEvent(InputSystem::Touch::Ended, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);
+            gameClient.TouchEvent(InputSystem::Touch::Phase::Ended, ev.value, LowDWord(ev.value2), HighDWord(ev.value2), ev.time);
             break;
         case Platform::EventType::TouchCanceled:
-            gameClient.TouchEvent(InputSystem::Touch::Canceled, ev.value, 0, 0, ev.time);
+            gameClient.TouchEvent(InputSystem::Touch::Phase::Canceled, ev.value, 0, 0, ev.time);
             break;
         case Platform::EventType::Console:
             cmdSystem.BufferCommandText(CmdSystem::Execution::Append, (const char *)ev.ptr);
@@ -263,8 +281,7 @@ void Common::GetPlatformEvent(Platform::Event *ev) {
 }
 
 void Common::Cmd_Version(const CmdArgs &args) {
-    BE_LOG("%s-%s %s %s %s\n", BE_NAME, PlatformProcess::PlatformName(),
-        BE_VERSION, __DATE__, __TIME__);
+    BE_LOG("%s-%s (SIMD: %s) %s %s %s\n", BE_NAME, PlatformProcess::PlatformName(), simdProcessor->GetName(), BE_VERSION, __DATE__, __TIME__);
 }
 
 void Common::Cmd_Error(const CmdArgs &args) {

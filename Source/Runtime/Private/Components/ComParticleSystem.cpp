@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 #include "Components/ComTransform.h"
 #include "Components/ComParticleSystem.h"
@@ -29,7 +30,7 @@ END_EVENTS
 
 void ComParticleSystem::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("particleSystem", "Particle System", Guid, GetParticleSystemGuid, SetParticleSystemGuid, GuidMapper::defaultParticleSystemGuid, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&ParticleSystemAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&ParticleSystemResource::metaObject);
     REGISTER_PROPERTY("playOnAwake", "Play On Awake", bool, playOnAwake, true, 
         "", PropertyInfo::Flag::Editor);
 }
@@ -37,7 +38,7 @@ void ComParticleSystem::RegisterProperties() {
 ComParticleSystem::ComParticleSystem() {
     particleSystemAsset = nullptr;
 
-#if 1
+#if WITH_EDITOR
     spriteHandle = -1;
     spriteReferenceMesh = nullptr;
 #endif
@@ -48,7 +49,7 @@ ComParticleSystem::~ComParticleSystem() {
 }
 
 void ComParticleSystem::Purge(bool chainPurge) {
-#if 1
+#if WITH_EDITOR
     if (spriteDef.mesh) {
         meshManager.ReleaseMesh(spriteDef.mesh);
         spriteDef.mesh = nullptr;
@@ -91,17 +92,17 @@ void ComParticleSystem::Init() {
 
     simulationStarted = false;
 
+    ComTransform *transform = GetEntity()->GetTransform();
+
+#if WITH_EDITOR
     // 3d spriteDef
     spriteReferenceMesh = meshManager.GetMesh("_defaultQuadMesh");
 
-    ComTransform *transform = GetEntity()->GetTransform();
-
-#if 1
     spriteDef.flags = RenderObject::Flag::Billboard;
     spriteDef.layer = TagLayerSettings::BuiltInLayer::Editor;
     spriteDef.maxVisDist = MeterToUnit(50.0f);
 
-    Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/ParticleSystem.png", Texture::Flag::Clamp | Texture::Flag::HighQuality);
+    Texture *spriteTexture = textureManager.GetTextureWithoutTextureInfo("Data/EditorUI/ParticleSystem.png", Texture::Flag::Clamp | Texture::Flag::HighQuality);
     spriteDef.materials.SetCount(1);
     spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::TextureHint::Sprite);
     textureManager.ReleaseTexture(spriteTexture);
@@ -119,36 +120,36 @@ void ComParticleSystem::Init() {
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComParticleSystem::TransformUpdated, SignalObject::ConnectionType::Unique);
 
-    // Mark as initialized
+    // Mark as initialized.
     SetInitialized(true);
 
     UpdateVisuals();
 }
 
 void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
-#if 1
-    // Disconnect with previously connected particleSystem asset
+#if WITH_EDITOR
+    // Disconnect with previously connected particleSystem asset.
     if (particleSystemAsset) {
         particleSystemAsset->Disconnect(&Asset::SIG_Reloaded, this);
         particleSystemAsset = nullptr;
     }
 #endif
 
-    // Release the previously used particleSystem
+    // Release the previously used particleSystem.
     if (renderObjectDef.particleSystem) {
         particleSystemManager.ReleaseParticleSystem(renderObjectDef.particleSystem);
         renderObjectDef.particleSystem = nullptr;
     }
 
-    // Get the new particleSystem
+    // Get the new particleSystem.
     const Str particleSystemPath = resourceGuidMapper.Get(particleSystemGuid);
     renderObjectDef.particleSystem = particleSystemManager.GetParticleSystem(particleSystemPath);
 
     ResetParticles();
 
-#if 1
-    // Need to particleSystem asset to be reloaded in editor
-    particleSystemAsset = (ParticleSystemAsset *)ParticleSystemAsset::FindInstance(particleSystemGuid);
+#if WITH_EDITOR
+    // Need to particleSystem asset to be reloaded in editor.
+    particleSystemAsset = (Asset *)Asset::FindInstance(particleSystemGuid);
     if (particleSystemAsset) {
         particleSystemAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComParticleSystem::ParticleSystemReloaded, SignalObject::ConnectionType::Queued);
     }
@@ -158,7 +159,7 @@ void ComParticleSystem::ChangeParticleSystem(const Guid &particleSystemGuid) {
 void ComParticleSystem::ResetParticles() {
     renderObjectDef.stageStartDelay.SetCount(renderObjectDef.particleSystem->NumStages());
 
-    // Free memory used for particles
+    // Free memory used for particles.
     if (renderObjectDef.stageParticles.Count() > 0) {
         for (int stageIndex = 0; stageIndex < renderObjectDef.stageParticles.Count(); stageIndex++) {
             Mem_Free(renderObjectDef.stageParticles[stageIndex]);
@@ -196,7 +197,7 @@ void ComParticleSystem::OnActive() {
 }
 
 void ComParticleSystem::OnInactive() {
-#if 1
+#if WITH_EDITOR
     if (spriteHandle != -1) {
         renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
@@ -206,14 +207,14 @@ void ComParticleSystem::OnInactive() {
     ComRenderable::OnInactive();
 }
 
-bool ComParticleSystem::HasRenderEntity(int renderEntityHandle) const {
-#if 1
-    if (this->spriteHandle == renderEntityHandle) {
+bool ComParticleSystem::HasRenderObject(int renderObjectHandle) const {
+#if WITH_EDITOR
+    if (this->spriteHandle == renderObjectHandle) {
         return true;
     }
 #endif
 
-    return ComRenderable::HasRenderEntity(renderEntityHandle);
+    return ComRenderable::HasRenderObject(renderObjectHandle);
 }
 
 int ComParticleSystem::GetAliveParticleCount() const {
@@ -228,7 +229,7 @@ int ComParticleSystem::GetAliveParticleCount() const {
         for (int particleIndex = 0; particleIndex < standardModule.count; particleIndex++) {
             int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * trailCount;
 
-            // Get the particle pointer with the given particle index
+            // Get the particle pointer with the given particle index.
             Particle *particle = (Particle *)((byte *)renderObjectDef.stageParticles[stageIndex] + particleIndex * particleSize);
 
             if (particle->alive) {
@@ -257,8 +258,6 @@ void ComParticleSystem::Update() {
 }
 
 void ComParticleSystem::UpdateSimulation(int currentTime) {
-    float time = MS2SEC(currentTime);
-
     renderObjectDef.time = currentTime;
 
     renderObjectDef.aabb.SetZero();
@@ -274,15 +273,15 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
         const ParticleSystem::StandardModule &standardModule = stage->standardModule;
 
         // Is in delay time ?
-        float simulationTime = standardModule.simulationSpeed * time - renderObjectDef.stageStartDelay[stageIndex];
+        int simulationTime = standardModule.simulationSpeed * currentTime - SEC2MILLI(renderObjectDef.stageStartDelay[stageIndex]);
         if (simulationTime < 0) {
             simulationEnded = false;
             continue;
         }
 
-        float cycleDuration = standardModule.lifeTime + standardModule.deadTime;
+        int cycleDuration = standardModule.lifeTime + standardModule.deadTime;
 
-        int curCycles = (int)(simulationTime / cycleDuration);
+        int curCycles = simulationTime / cycleDuration;
 
         if (!standardModule.looping) {
             if (curCycles > standardModule.maxCycles) {
@@ -291,20 +290,20 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
         }
 
         if (stopTime != 0) {
-            if (time > MS2SEC(stopTime) + cycleDuration) {
+            if (currentTime > stopTime + cycleDuration) {
                 continue;
             }
         }
 
         simulationEnded = false;
 
-        float inCycleTime = simulationTime - curCycles * cycleDuration;
+        int inCycleTime = simulationTime - curCycles * cycleDuration;
 
         int trailCount = (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::Trails)) ? stage->trailsModule.count : 0;
 
         for (int particleIndex = 0; particleIndex < standardModule.count; particleIndex++) {
-            float particleGenTime = standardModule.lifeTime * standardModule.spawnBunching * particleIndex / standardModule.count;
-            float particleAge = inCycleTime - particleGenTime;
+            int particleGenTime = standardModule.lifeTime * standardModule.spawnBunching * particleIndex / standardModule.count;
+            int particleAge = inCycleTime - particleGenTime;
 
             // Wrap elapsed time of this particle if it is needed
             if (particleAge <= 0) {
@@ -345,7 +344,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
                 }
 
                 if (stopTime > 0) {
-                    if (particleGenTime + particle->cycle * cycleDuration > MS2SEC(stopTime)) {
+                    if (particleGenTime + particle->cycle * cycleDuration > stopTime) {
                         continue;
                     }
                 }
@@ -357,7 +356,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
                         particle->worldMatrix = worldMatrix;
                     }
 
-                    InitializeParticle(particle, stage, inCycleTime / cycleDuration);
+                    InitializeParticle(particle, stage, (float)inCycleTime / cycleDuration);
                 }
 
                 ProcessTrail(particle, stage, particleAge);
@@ -427,7 +426,7 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
             } else {
                 Vec3 randomDir = Vec3::FromUniformSampleSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
 
-                particle->direction = Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
+                particle->direction = Math::Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
             }
         } else if (shapeModule.shape == ParticleSystem::ShapeModule::Shape::Sphere) {
             float r = MeterToUnit(shapeModule.radius);
@@ -443,7 +442,7 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
             } else {
                 Vec3 randomDir = Vec3::FromUniformSampleSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
 
-                particle->direction = Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
+                particle->direction = Math::Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
             }
         } else if (shapeModule.shape == ParticleSystem::ShapeModule::Shape::Circle) {
             float r = MeterToUnit(shapeModule.radius);
@@ -460,7 +459,7 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
             } else {
                 Vec3 randomDir = Vec3::FromUniformSampleSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
 
-                particle->direction = Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
+                particle->direction = Math::Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
             }
         } else if (shapeModule.shape == ParticleSystem::ShapeModule::Shape::Cone) {
             float r = MeterToUnit(shapeModule.radius);
@@ -481,7 +480,7 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
                 if (l2 > FLT_EPSILON) {
                     float angleScale = l2 / (r * r);
                     if (shapeModule.randomizeDir > 0) {
-                        angleScale = Lerp(angleScale, RANDOM_FLOAT(-1.f, 1.f), shapeModule.randomizeDir);
+                        angleScale = Math::Lerp(angleScale, RANDOM_FLOAT(-1.f, 1.f), shapeModule.randomizeDir);
                     }
 
                     float rotAngle = shapeModule.angle * angleScale;
@@ -498,8 +497,9 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
     }    
 }
 
-void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::Stage *stage, float particleAge) {
-    Mat3x4 offsetMatrix;
+void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::Stage *stage, int particleAge) {
+    ALIGN_AS32 Mat3x4 offsetMatrix;
+
     if (stage->standardModule.simulationSpace == ParticleSystem::StandardModule::SimulationSpace::Global) {
         offsetMatrix = GetEntity()->GetTransform()->GetMatrix().Inverse() * particle->worldMatrix;
     }
@@ -536,7 +536,7 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
             }
         }
 
-        // Compute size
+        // Compute size.
         if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::LTSize)) {
             trail->size = particle->initialSize * stage->sizeOverLifetimeModule.size.Evaluate(particle->randomSize, trailFrac);
         } else if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::SizeBySpeed)) {
@@ -548,45 +548,45 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
         }
 
         if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::Trails)) {
-            trail->size *= Lerp(1.0f, stage->trailsModule.trailScale, (float)pivotIndex / trailCount);
+            trail->size *= Math::Lerp(1.0f, stage->trailsModule.trailScale, (float)pivotIndex / trailCount);
         }
 
-        // Compute aspect ratio
+        // Compute aspect ratio.
         if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::LTAspectRatio)) {
             trail->aspectRatio = particle->initialAspectRatio * stage->aspectRatioOverLifetimeModule.aspectRatio.Evaluate(particle->randomAspectRatio, trailFrac);
         } else {
             trail->aspectRatio = particle->initialAspectRatio;
         }
 
-        // Compute rotation angle
+        // Compute rotation angle.
         if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::LTRotation)) {
             float angularVelocity = stage->rotationOverLifetimeModule.rotation.Evaluate(particle->randomAngularVelocity, trailFrac);
-            trail->angle = particle->initialAngle + trailAge * angularVelocity;
+            trail->angle = particle->initialAngle + MILLI2SEC(trailAge) * angularVelocity;
         } else if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::RotationBySpeed)) {
             float l = Math::Fabs(stage->rotationBySpeedModule.speedRange[1] - stage->rotationBySpeedModule.speedRange[0]);
             float speedFrac = (UnitToMeter(trailSpeed) - stage->rotationBySpeedModule.speedRange[0]) / l;
             float angularVelocity = stage->rotationBySpeedModule.rotation.Evaluate(particle->randomSize, speedFrac);
-            trail->angle = particle->initialAngle + trailAge * angularVelocity; 
+            trail->angle = particle->initialAngle + MILLI2SEC(trailAge) * angularVelocity; 
         } else {
             trail->angle = particle->initialAngle;
         }
         
-        // Compute color
+        // Compute color.
         if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::LTColor)) {
             if (trailFrac < stage->colorOverLifetimeModule.fadeLocation) {
-                // fade in
+                // fade in.
                 float f = trailFrac / stage->colorOverLifetimeModule.fadeLocation;
-                trail->color = Lerp(stage->colorOverLifetimeModule.targetColor, particle->initialColor, f);
+                trail->color = Math::Lerp(stage->colorOverLifetimeModule.targetColor, particle->initialColor, f);
             } else { 
-                // fade out
+                // fade out.
                 float f = (trailFrac - stage->colorOverLifetimeModule.fadeLocation) / (1.f - stage->colorOverLifetimeModule.fadeLocation);
-                trail->color = Lerp(particle->initialColor, stage->colorOverLifetimeModule.targetColor, f);
+                trail->color = Math::Lerp(particle->initialColor, stage->colorOverLifetimeModule.targetColor, f);
             }
         } else {
             trail->color = particle->initialColor;
         }
 
-        // Compute position
+        // Compute position.
         if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::CustomPath)) {
             ComputeTrailPositionFromCustomPath(stage->customPathModule, particle, trailFrac, trail);
         } else if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::LTSpeed)) {
@@ -599,7 +599,7 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
             trail->position = particle->initialPosition + particle->direction * dist;
         }
 
-        // Apply force
+        // Apply force.
         if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::LTForce)) {
             Vec3 force(
                 MeterToUnit(stage->forceOverLifetimeModule.force[0].Evaluate(particle->randomForce.x, trailFrac)),
@@ -609,14 +609,14 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
             trail->position += force * 0.5f * trailFrac * trailFrac;
         }
 
-        // Apply gravity
+        // Apply gravity.
         trail->position.z -= MeterToUnit(stage->standardModule.gravity) * 0.5f * trailFrac * trailFrac;
 
         if (stage->standardModule.simulationSpace == ParticleSystem::StandardModule::SimulationSpace::Global) {
             trail->position = offsetMatrix * trail->position;
         }
 
-        // Add trail bounds to the entity bounds
+        // Add trail bounds to the entity bounds.
         float radius;
         if (stage->standardModule.orientation == ParticleSystem::StandardModule::Orientation::Aimed || 
             stage->standardModule.orientation == ParticleSystem::StandardModule::Orientation::AimedZ) {
@@ -675,10 +675,10 @@ void ComParticleSystem::ComputeTrailPositionFromCustomPath(const ParticleSystem:
     assert(0);
 }
 
-#if 1
-void ComParticleSystem::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+#if WITH_EDITOR
+void ComParticleSystem::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     // Fade icon alpha in near distance
-    float alpha = BE1::Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(viewState.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
+    float alpha = Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(camera->GetState().origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
 
     spriteDef.materials[0]->GetPass()->constantColor[3] = alpha;
 }
@@ -713,7 +713,7 @@ void ComParticleSystem::UpdateVisuals() {
         return;
     }
 
-#if 1
+#if WITH_EDITOR
     if (spriteHandle == -1) {
         spriteHandle = renderWorld->AddRenderObject(&spriteDef);
     } else {
@@ -725,7 +725,7 @@ void ComParticleSystem::UpdateVisuals() {
 }
 
 void ComParticleSystem::TransformUpdated(const ComTransform *transform) {
-#if 1
+#if WITH_EDITOR
     spriteDef.worldMatrix.SetTranslation(transform->GetOrigin());
 #endif
 

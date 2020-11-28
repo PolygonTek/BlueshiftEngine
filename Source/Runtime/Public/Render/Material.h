@@ -118,6 +118,7 @@ public:
         Transparency::Enum      transparency;
         int                     cullType;
         int                     stateBits;
+        int                     depthTestBits;
         float                   cutoffAlpha;
         VertexColorMode::Enum   vertexColorMode;
         bool                    useOwnerColor;
@@ -125,6 +126,8 @@ public:
         Texture *               texture;
         Vec2                    tcScale;
         Vec2                    tcTranslation;
+        Point                   imageBorderLT = Point(0, 0);
+        Point                   imageBorderRB = Point(0, 0);
         bool                    instancingEnabled;
         Shader *                referenceShader;
         Shader *                shader;
@@ -142,6 +145,9 @@ public:
     void                        SetRenderingMode(RenderingMode::Enum mode);
     int                         GetCullType() const { return pass->cullType; }
     int                         GetSort() const { return sort; }
+
+    const Point &               GetImageBorderLT() const { return pass->imageBorderLT; }
+    const Point &               GetImageBorderRB() const { return pass->imageBorderRB; }
 
     bool                        IsLitSurface() const;
     bool                        IsSkySurface() const;
@@ -171,9 +177,11 @@ private:
     void                        Finish();
     bool                        ParsePass(Lexer &lexer, ShaderPass *pass);
     bool                        ParseRenderingMode(Lexer &lexer, RenderingMode::Enum *renderingMode) const;
+    bool                        ParseDepthTest(Lexer &lexer, int *depthTest) const;
     bool                        ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const;
     //void                      MultiplyTextureMatrix(Pass *pass, int inMatrix[2][3]);
-    bool                        ParseShaderProperties(Lexer &lexer, Dict &properties);
+    bool                        ParseShaderProperties(Lexer &lexer, Dict &properties) const;
+    bool                        ParseShader(Lexer &lexer, Shader *&referenceShader, StrHashMap<Shader::Property> &shaderProperties) const;
 
     Str                         hashName;
     Str                         name;

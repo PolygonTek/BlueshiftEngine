@@ -14,9 +14,6 @@
 
 #pragma once
 
-#include "jsoncpp/include/json/json.h"
-#include "Core/Guid.h"
-#include "Math/Math.h"
 #include "Core/Str.h"
 #include "Core/Range.h"
 #include "Core/Variant.h"
@@ -71,7 +68,7 @@ public:
             MultiLines          = BIT(6),   ///< Str type in multilines
             Array               = BIT(7),   ///< Is array property ?
             Network             = BIT(8),   ///< Not used yet
-            ShaderDefine        = BIT(9),
+            ForceToSet          = BIT(10),  ///< Internal use
         };
     };
 
@@ -111,9 +108,7 @@ public:
 
     void                    SetMetaObject(const MetaObject *metaObject) { this->metaObject = metaObject; }
 
-    friend bool             ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo);
-
-private:
+protected:
     Variant::Type::Enum     type;               ///< Property type
     Variant                 defaultValue;       ///< Default value
     Str                     name;               ///< Property name
@@ -384,6 +379,8 @@ public:
     /// Class-specific pointer to set count function.
     SetCountFunctionPtr setCountFunction;
 };
+
+#define UNREGISTER_PROPERTY(name) Class::metaObject.UnregisterProperty(name)
 
 #define REGISTER_PROPERTY(name, label, type, var, defaultValue, desc, flags) \
     Class::metaObject.RegisterProperty(BE1::PropertyInfo(name, label, BE1::VariantType<type>::GetType(), \

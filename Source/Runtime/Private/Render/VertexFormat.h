@@ -27,7 +27,7 @@ BE_NAMESPACE_BEGIN
 class VertexFormat {
 public:
     struct Type {
-        enum {
+        enum Enum {
             // --- For Debug ---
             Xy,
             XySt,

@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "SIMD/SIMD.h"
+
 #define INT8_SIGN_BIT               7
 #define INT16_SIGN_BIT              15
 #define INT32_SIGN_BIT              31
@@ -24,7 +26,7 @@
 #define INT32_SIGN_MASK             (1UL << INT32_SIGN_BIT)
 #define INT64_SIGN_MASK             (1ULL << INT64_SIGN_BIT)
 
-// int 비트 검출
+// integer bit detection
 #define INT64_SIGNBITSET(i)         (((const uint64_t)(i)) >> INT64_SIGN_BIT)
 #define INT64_SIGNBITNOTSET(i)      ((~((const uint64_t)(i))) >> INT64_SIGN_BIT)
 #define INT32_SIGNBITSET(i)         (((const uint32_t)(i)) >> INT32_SIGN_BIT)
@@ -70,12 +72,12 @@ floating point bit layouts according to the IEEE 754-1985 and 754-2008 standard
 #define IEEE_QDBL_EXPONENT_BIAS     16383
 #define IEEE_QDBL_SIGN_BIT          127
 
-// float 비트 검출
+// float bit detection
 #define IEEE_FLT_SIGNBITSET(f)      ((*(const uint32_t *)&(f)) >> 31)
 #define IEEE_FLT_SIGNBITNOTSET(f)   ((~(*(const uint32_t *)&(f))) >> 31)
 #define IEEE_FLT_NOTZERO(f)         ((*(const uint32_t *)&(f)) & ~(1 << 31))
 
-// float NaN, INF, IND, DENORMAL 검출 (INF, IND 는 NaN 에 포함)
+// float NaN, INF, IND, DENORMAL detection (INF, IND is included in NaN)
 #define IEEE_FLT_IS_NAN(x)          (((*(const uint32_t *)&x) & 0x7f800000) == 0x7f800000)
 #define IEEE_FLT_IS_INF(x)          (((*(const uint32_t *)&x) & 0x7fffffff) == 0x7f800000)
 #define IEEE_FLT_IS_IND(x)          ((*(const uint32_t *)&x) == 0xffc00000)
@@ -86,8 +88,16 @@ floating point bit layouts according to the IEEE 754-1985 and 754-2008 standard
 #define RAD2DEG(a)                  ((a) * BE1::Math::MulRadianToDegree)
 
 // seconds <-> miliseconds
-#define SEC2MS(t)                   (BE1::Math::FtoiFast((t) * BE1::Math::MulSecondToMs))
-#define MS2SEC(t)                   ((t) * BE1::Math::MulMsToSecond)
+#define SEC2MILLI(t)                ((t) * BE1::Math::MulSecondToMilli)
+#define MILLI2SEC(t)                ((t) * BE1::Math::MulMilliToSecond)
+
+// seconds <-> microseconds
+#define SEC2MICRO(t)                ((t) * BE1::Math::MulSecondToMicro)
+#define MICRO2SEC(t)                ((t) * BE1::Math::MulMicroToSecond)
+
+// seconds <-> nanoseconds
+#define SEC2NANO(t)                 ((t) * BE1::Math::MulSecondToNano)
+#define NANO2SEC(t)                 ((t) * BE1::Math::MulNanoToSecond)
 
 // degree <-> short value
 #define ANGLE2SHORT(x)              (BE1::Math::FtoiFast((x) * 65536.0f / 360.0f) & 65535)
@@ -101,17 +111,27 @@ floating point bit layouts according to the IEEE 754-1985 and 754-2008 standard
 
 BE_NAMESPACE_BEGIN
 
-template <typename T> BE_INLINE T   Sign(const T x) { return (x > 0) ? 1 : ((x < 0) ? -1 : 0 ); }
-template <typename T> BE_INLINE T   Square(const T &x) { return x * x; }
-template <typename T> BE_INLINE T   Cube(const T &x) { return x * x * x; }
+template <typename T>
+BE_FORCE_INLINE T Sign(const T x) { return (x > 0) ? 1 : ((x < 0) ? -1 : 0 ); }
+template <typename T>
+BE_FORCE_INLINE T Square(const T &x) { return x * x; }
+template <typename T>
+BE_FORCE_INLINE T Cube(const T &x) { return x * x * x; }
 
-template <typename T> BE_INLINE T   InchesToMetres(const T x) { return static_cast<T>(x * 0.0254f); }
-template <typename T> BE_INLINE T   MetresToInches(const T x) { return static_cast<T>(x * 39.37f); }
-template <typename T> BE_INLINE T   InchesToFeet(const T x) { return static_cast<T>(x / 12.f); }
-template <typename T> BE_INLINE T   FeetToMiles(const T x) { return static_cast<T>(x / 5280.f); }
-template <typename T> BE_INLINE T   FeetToInches(const T x) { return static_cast<T>(x * 12.f); }
-template <typename T> BE_INLINE T   MetresToFeet(const T x) { return InchesToFeet(MetresToInches(x)); }
-template <typename T> BE_INLINE T   FeetToMetres(const T x) { return FeetToInches(InchesToMetres(x)); }
+template <typename T>
+BE_FORCE_INLINE T InchesToMetres(const T x) { return static_cast<T>(x * 0.0254f); }
+template <typename T>
+BE_FORCE_INLINE T MetresToInches(const T x) { return static_cast<T>(x * 39.37f); }
+template <typename T>
+BE_FORCE_INLINE T InchesToFeet(const T x) { return static_cast<T>(x / 12.f); }
+template <typename T>
+BE_FORCE_INLINE T FeetToMiles(const T x) { return static_cast<T>(x / 5280.f); }
+template <typename T>
+BE_FORCE_INLINE T FeetToInches(const T x) { return static_cast<T>(x * 12.f); }
+template <typename T>
+BE_FORCE_INLINE T MetresToFeet(const T x) { return InchesToFeet(MetresToInches(x)); }
+template <typename T>
+BE_FORCE_INLINE T FeetToMetres(const T x) { return FeetToInches(InchesToMetres(x)); }
 
 template <unsigned int Value>
 struct Factorial {
@@ -139,180 +159,181 @@ public:
     static const float          SqrtOneOverThree;           ///< sqrt( 1 / 3 )
     static const float          MulDegreeToRadian;          ///< degrees to radians multiplier
     static const float          MulRadianToDegree;          ///< radians to degrees multiplier
-    static const float          MulSecondToMs;              ///< seconds to milliseconds multiplier
-    static const float          MulMsToSecond;              ///< milliseconds to seconds multiplier
+    static const float          MulSecondToMilli;           ///< seconds to milliseconds multiplier
+    static const float          MulMilliToSecond;           ///< milliseconds to seconds multiplier
+    static const float          MulSecondToMicro;           ///< seconds to microseconds multiplier
+    static const float          MulMicroToSecond;           ///< microseconds to seconds multiplier
+    static const float          MulSecondToNano;            ///< seconds to nanoseconds multiplier
+    static const float          MulNanoToSecond;            ///< nanoseconds to seconds multiplier
     static const float          Infinity;                   ///< huge number which should be larger than any valid number used
     static const float          FloatEpsilon;               ///< smallest positive number such that 1.0 + FloatEpsilon != 1.0
     static const float          FloatSmallestNonDenormal;   ///< smallest non-denormal 32-bit floating point value
     
-#if defined(BE_WIN_X86_SSE_INTRIN)
-    static const __m128         SIMD_SP_zero;
-    static const __m128         SIMD_SP_255;
-    static const __m128         SIMD_SP_min_char;
-    static const __m128         SIMD_SP_max_char;
-    static const __m128         SIMD_SP_min_short;
-    static const __m128         SIMD_SP_max_short;
-    static const __m128         SIMD_SP_rsqrt_c0;
-    static const __m128         SIMD_SP_rsqrt_c1;
-    static const __m128         SIMD_SP_tiny;
-    static const __m128         SIMD_SP_smallestNonDenorm;
-#endif
-
     static void                 Init();
 
-                                /// Reciprocal square root, returns huge number when x == 0.0
+                                /// Reciprocal square root, returns huge number when x == 0.0.
     static float                RSqrt(float x);
 
-                                /// Inverse square root with 32 bits precision, returns huge number when x == 0.0
+                                /// Inverse square root with 32 bits precision, returns huge number when x == 0.0.
     static float                InvSqrt(float x);
-                                /// Inverse square root with 16 bits precision, returns huge number when x == 0.0
+                                /// Inverse square root with 16 bits precision, returns huge number when x == 0.0.
     static float                InvSqrt16(float x);
-                                /// Inverse square root with 64 bits precision, returns huge number when x == 0.0
+                                /// Inverse square root with 64 bits precision, returns huge number when x == 0.0.
     static double               InvSqrt64(float x);
 
-                                /// Square root with 32 bits precision
+                                /// Square root with 32 bits precision.
     static float                Sqrt(float x);
-                                /// Square root with 16 bits precision
+                                /// Square root with 16 bits precision.
     static float                Sqrt16(float x);
-                                /// Square root with 64 bits precision
+                                /// Square root with 64 bits precision.
     static double               Sqrt64(float x);
 
-                                /// Sine with 32 bits precision
+                                /// Sine with 32 bits precision.
     static float                Sin(float a);
-                                /// Sine with 16 bits precision, maximum absolute error is 2.3082e-09
+                                /// Sine with 16 bits precision, maximum absolute error is 2.3082e-09.
     static float                Sin16(float a);
-                                /// Sine with 64 bits precision
+                                /// Sine with 64 bits precision.
     static double               Sin64(float a);
 
-                                /// Cosine with 32 bits precision
+                                /// Cosine with 32 bits precision.
     static float                Cos(float a);
-                                /// Cosine with 16 bits precision, maximum absolute error is 2.3082e-09
+                                /// Cosine with 16 bits precision, maximum absolute error is 2.3082e-09.
     static float                Cos16(float a);
-                                /// Cosine with 64 bits precision
+                                /// Cosine with 64 bits precision.
     static double               Cos64(float a);
 
-                                /// Sine and cosine with 32 bits precision
+                                /// Sine and cosine with 32 bits precision.
     static void                 SinCos(float a, float &s, float &c);
-                                /// Sine and cosine with 16 bits precision
+                                /// Sine and cosine with 16 bits precision.
     static void                 SinCos16(float a, float &s, float &c);
-                                /// Sine and cosine with 64 bits precision
+                                /// Sine and cosine with 64 bits precision.
     static void                 SinCos64(float a, double &s, double &c);
 
-                                /// Tangent with 32 bits precision
+                                /// Tangent with 32 bits precision.
     static float                Tan(float a);
-                                /// Tangent with 16 bits precision, maximum absolute error is 1.8897e-08
+                                /// Tangent with 16 bits precision, maximum absolute error is 1.8897e-08.
     static float                Tan16(float a);
-                                /// Tangent with 64 bits precision
+                                /// Tangent with 64 bits precision.
     static double               Tan64(float a);
 
-                                /// Arc sine with 32 bits precision, input is clamped to [-1, 1] to avoid a silent NaN
+                                /// Arc sine with 32 bits precision, input is clamped to [-1, 1] to avoid a silent NaN.
     static float                ASin(float a);
-                                /// Arc sine with 16 bits precision, maximum absolute error is 6.7626e-05
+                                /// Arc sine with 16 bits precision, maximum absolute error is 6.7626e-05.
     static float                ASin16(float a);
-                                /// Arc sine with 64 bits precision
+                                /// Arc sine with 64 bits precision.
     static double               ASin64(float a);
 
-                                /// Arc cosine with 32 bits precision, input is clamped to [-1, 1] to avoid a silent NaN
+                                /// Arc cosine with 32 bits precision, input is clamped to [-1, 1] to avoid a silent NaN.
     static float                ACos(float a);
-                                /// Arc cosine with 16 bits precision, maximum absolute error is 6.7626e-05
+                                /// Arc cosine with 16 bits precision, maximum absolute error is 6.7626e-05.
     static float                ACos16(float a);
-                                /// Arc cosine with 64 bits precision
+                                /// Arc cosine with 64 bits precision.
     static double               ACos64(float a);
 
-                                /// Arc tangent with 32 bits precision
+                                /// Arc tangent with 32 bits precision.
     static float                ATan(float a);
-                                /// Arc tangent with 16 bits precision, maximum absolute error is 1.3593e-08
+                                /// Arc tangent with 16 bits precision, maximum absolute error is 1.3593e-08.
     static float                ATan16(float a);
-                                /// Arc tangent with 64 bits precision
+                                /// Arc tangent with 64 bits precision.
     static double               ATan64(float a);
 
-                                /// Arc tangent with 32 bits precision
+                                /// Arc tangent with 32 bits precision.
     static float                ATan(float y, float x);
-                                /// Arc tangent with 16 bits precision, maximum absolute error is 1.3593e-08
+                                /// Arc tangent with 16 bits precision, maximum absolute error is 1.3593e-08.
     static float                ATan16(float y, float x);
-                                /// Arc tangent with 64 bits precision
+                                /// Arc tangent with 64 bits precision.
     static double               ATan64(float y, float x);
 
-                                /// x raised to the power y with 32 bits precision
+                                /// x raised to the power y with 32 bits precision.
     static float                Pow(float x, float y);
-                                /// x raised to the power y with 16 bits precision
+                                /// x raised to the power y with 16 bits precision.
     static float                Pow16(float x, float y);
-                                /// x raised to the power y with 64 bits precision
+                                /// x raised to the power y with 64 bits precision.
     static double               Pow64(float x, float y);
 
-                                /// e raised to the power f with 32 bits precision
+                                /// e raised to the power f with 32 bits precision.
     static float                Exp(float f);
-                                /// e raised to the power f with 16 bits precision
+                                /// e raised to the power f with 16 bits precision.
     static float                Exp16(float f);
-                                /// e raised to the power f with 64 bits precision
+                                /// e raised to the power f with 64 bits precision.
     static double               Exp64(float f);
 
-                                /// Natural logarithm with 32 bits precision
-    static float                Log(float f);
-                                /// Natural logarithm with 16 bits precision
-    static float                Log16(float f);
-                                /// Natural logarithm with 64 bits precision
-    static double               Log64(float f);
+                                /// Natural logarithm with 32 bits precision.
+    static float                Ln(float f);
+                                /// Natural logarithm with 16 bits precision.
+    static float                Ln16(float f);
+                                /// Natural logarithm with 64 bits precision.
+    static double               Ln64(float f);
 
-                                /// Base b logarithm with 32 bits precision
+                                /// Base b logarithm with 32 bits precision.
     static float                Log(float b, float f);
-                                /// Base b logarithm with 16 bits precision
+                                /// Base b logarithm with 16 bits precision.
     static float                Log16(float b, float f);
-                                /// Base b logarithm with 64 bits precision
+                                /// Base b logarithm with 64 bits precision.
     static double               Log64(float b, float f);
 
-                                /// Integral x raised to the power y
+                                /// Integral x raised to the power y.
     static int                  IPow(int x, int y);
-                                /// Integral base-2 logarithm of the floating point value
+                                /// Integral base-2 logarithm of the floating point value.
     static int                  ILog2(float f);
-                                /// Integral base-2 logarithm of the integer value
+                                /// Integral base-2 logarithm of the integer value.
     static int                  ILog2(int i);
 
-                                /// Minumum number of bits required to represent ceil(f)
+                                /// Minumum number of bits required to represent ceil(f).
     static int                  BitsForFloat(float f);
-                                /// Minumum number of bits required to represent i
+                                /// Minumum number of bits required to represent i.
     static int                  BitsForInteger(int i);
-                                /// Round x down to the nearest power of 2
-    static int                  FloorPowerOfTwo(int x);
-                                /// Round x up to the nearest power of 2
-    static int                  CeilPowerOfTwo(int x);
-                                /// Returns true if x is a power of 2
-    static bool                 IsPowerOfTwo(int x);
 
-                                /// Returns the absolute value of the integer value (for reference only)
+                                /// Returns true if x is a power of 2.
+    static bool                 IsPowerOfTwo(int x);
+                                /// Round x down to the nearest power of 2.
+    static int                  RoundDownPowerOfTwo(int x);
+                                /// Round x up to the nearest power of 2.
+    static int                  RoundUpPowerOfTwo(int x);
+
+                                /// Returns the absolute value of the integer value (for reference only).
     static int                  Abs(int x);
-                                /// Returns the absolute value of the floating point value
+                                /// Returns the absolute value of the floating point value.
     static float                Fabs(float f);
-                                /// Returns the largest integer that is less than or equal to the given value
+
+                                /// Returns the largest integer that is less than or equal to the given value.
     static float                Floor(float f);
-                                /// Returns the smallest integer that is greater than or equal to the given value
+                                /// Returns the smallest integer that is greater than or equal to the given value.
     static float                Ceil(float f);
-                                /// Returns the fraction component (part after the decimal)
+                                /// Returns the nearest integer.
+    static float                Round(float f);
+                                /// Returns the fraction component (part after the decimal).
     static float                Fract(float f);
-                                /// Returns the nearest integer
-    static float                Rint(float f);
-                                /// Float to int conversion
+
+                                /// Float to int conversion.
     static int                  Ftoi(float f);
-                                /// Fast float to int conversion but uses current FPU round mode (default round nearest)
+                                /// Fast float to int conversion but uses current FPU round mode (default round nearest).
     static int                  FtoiFast(float f);
-                                /// Float to char conversion
+                                /// Float to char conversion.
     static int8_t               Ftoi8(float f);
-                                /// Float to short conversion
+                                /// Float to short conversion.
     static int16_t              Ftoi16(float f);
-                                /// Float to unsigned short conversion
+                                /// Float to unsigned short conversion.
     static uint16_t             Ftoui16(float f);
-                                /// Float to byte conversion, the result is clamped to the range [0-255]
+                                /// Float to byte conversion, the result is clamped to the range [0-255].
     static byte                 Ftob(float f);
 
+                                /// Returns factorial number without recursive manner.
     static double               Factorial(unsigned int n);
 
-    static float                FloorSnap(float value, float snapSize);
+    static float                Snap(float value, float snapSize);
 
-    static float                CeilSnap(float value, float snapSize);
-
+                                /// Returns normalized angle in range [0, 360).
     static float                AngleNormalize360(float angle);
+                                /// Returns normalized angle in range (-180, 180].
     static float                AngleNormalize180(float angle);
+                                /// Returns smallest difference (-180, 180] between two angles.
     static float                AngleDelta(float angle1, float angle2);
+
+                                /// Flip angle in x-axis.
+    static float                FlipAngleX(float angle);
+                                /// Flip angle in y-axis.
+    static float                FlipAngleY(float angle);
 
     static int                  FloatToBits(float f, int exponentBits, int mantissaBits);
     static float                BitsToFloat(int i, int exponentBits, int mantissaBits);
@@ -321,14 +342,29 @@ public:
 
     static float                Random(float minimum, float maximum);
 
+                                /// Perform Hermite interpolation between two values.
+    static float                SmoothStep(float edge0, float edge1, float x);
+
+                                /// Returns linearly interpolated value between p0 and p1 with the given floating point parameter t in range [0, 1].
+    template <typename T> 
+    static T                    Lerp(const T p0, const T p1, float t);
+                                /// Returns linearly interpolated value between p0 and p1 with the given fixed point parameter t in range [0, 255].
+    static int                  FixedLerp(int p0, int p1, int t);
+
+                                /// Returns cubic interpolated value between p0, p1, p2 and p3 with the given floating point parameter t in range [0, 1].
+    template <typename T> 
+    static T                    Cerp(const T p0, const T p1, const T p2, const T p3, float t);
+                                /// Returns cubic interpolated value between p0, p1, p2 and p3 with the given fixed point parameter t in range [0, 255].
+    static int                  FixedCerp(int p0, int p1, int p2, int p3, int t);
+
 private:
     enum {
         LOOKUP_BITS             = 8,
         EXP_POS                 = 23,
         EXP_BIAS                = 127,
-        LOOKUP_POS              = (EXP_POS-LOOKUP_BITS), 
+        LOOKUP_POS              = (EXP_POS - LOOKUP_BITS), 
         SEED_POS                = (EXP_POS-8), 
-        SQRT_TABLE_SIZE         = (2<<LOOKUP_BITS), 
+        SQRT_TABLE_SIZE         = (2 << LOOKUP_BITS), 
         LOOKUP_MASK             = (SQRT_TABLE_SIZE-1)
     };
 
@@ -341,70 +377,83 @@ private:
     static bool                 initialized;
 };
 
+// http://www.lomont.org/papers/2003/InvSqrt.pdf
 BE_INLINE float Math::RSqrt(float x) {
     int32_t i;
     float y, r;
 
     y = x * 0.5f;
-    i = *reinterpret_cast<int32_t *>(&x);
-    i = 0x5f3759df - (i >> 1);
-    r = *reinterpret_cast<float *>(&i);
-    r = r * (1.5f - r * r * y);
+    i = *reinterpret_cast<int32_t *>(&x);   // Get bits for floating point value
+    i = 0x5f375a86 - (i >> 1);              // Initial guess for Newton's method 
+    r = *reinterpret_cast<float *>(&i);     // Convert bits back to float
+    r = r * (1.5f - r * r * y);             // Newton step, repeating increase accuracy
     return r;
-}
-
-BE_INLINE float Math::InvSqrt16(float x) {
-    uint32_t a = ((union _flint*)(&x))->i;
-    union _flint seed;
-
-    assert(initialized);
-
-    double y = x * 0.5f;
-    seed.i = ((((3*EXP_BIAS-1) - ((a >> EXP_POS) & 0xFF)) >> 1)<<EXP_POS) | iSqrt[(a >> (EXP_POS-LOOKUP_BITS)) & LOOKUP_MASK];
-    double r = seed.f;
-    r = r * (1.5f - r * r * y);
-    return (float)r;
 }
 
 BE_INLINE float Math::InvSqrt(float x) {
-    uint32_t a = ((union _flint*)(&x))->i;
+#if 0
+    uint32_t a = ((union _flint *)(&x))->i;
     union _flint seed;
 
     assert(initialized);
 
     double y = x * 0.5f;
-    seed.i = ((((3*EXP_BIAS-1) - ((a >> EXP_POS) & 0xFF)) >> 1)<<EXP_POS) | iSqrt[(a >> (EXP_POS-LOOKUP_BITS)) & LOOKUP_MASK];
+    seed.i = ((((3 * EXP_BIAS - 1) - ((a >> EXP_POS) & 0xFF)) >> 1) << EXP_POS) | iSqrt[(a >> (EXP_POS - LOOKUP_BITS)) & LOOKUP_MASK];
     double r = seed.f;
     r = r * (1.5f - r * r * y);
     r = r * (1.5f - r * r * y);
-    return (float) r;
+    return (float)r;
+#else
+    return (x > FloatSmallestNonDenormal) ? sqrtf(1.0f / x) : INFINITY;
+#endif
 }
 
-BE_INLINE double Math::InvSqrt64(float x) {
-    uint32_t a = ((union _flint*)(&x))->i;
+BE_INLINE float Math::InvSqrt16(float x) {
+#if 0
+    uint32_t a = ((union _flint *)(&x))->i;
     union _flint seed;
 
     assert(initialized);
 
     double y = x * 0.5f;
-    seed.i = ((((3*EXP_BIAS-1) - ((a >> EXP_POS) & 0xFF)) >> 1)<<EXP_POS) | iSqrt[(a >> (EXP_POS-LOOKUP_BITS)) & LOOKUP_MASK];
+    seed.i = ((((3 * EXP_BIAS - 1) - ((a >> EXP_POS) & 0xFF)) >> 1) << EXP_POS) | iSqrt[(a >> (EXP_POS - LOOKUP_BITS)) & LOOKUP_MASK];
+    double r = seed.f;
+    r = r * (1.5f - r * r * y);
+    return (float)r;
+#else
+    return (x > FloatSmallestNonDenormal) ? sqrtf(1.0f / x) : INFINITY;
+#endif
+}
+
+BE_INLINE double Math::InvSqrt64(float x) {
+#if 0
+    uint32_t a = ((union _flint *)(&x))->i;
+    union _flint seed;
+
+    assert(initialized);
+
+    double y = x * 0.5f;
+    seed.i = ((((3 * EXP_BIAS - 1) - ((a >> EXP_POS) & 0xFF)) >> 1) << EXP_POS) | iSqrt[(a >> (EXP_POS - LOOKUP_BITS)) & LOOKUP_MASK];
     double r = seed.f;
     r = r * (1.5f - r * r * y);
     r = r * (1.5f - r * r * y);
     r = r * (1.5f - r * r * y);
     return r;
-}
-
-BE_INLINE float Math::Sqrt16(float x) {
-    return x * InvSqrt16(x);
+#else
+    return (x > FloatSmallestNonDenormal) ? sqrtf(1.0f / x) : INFINITY;
+#endif
 }
 
 BE_INLINE float Math::Sqrt(float x) {
-    return x * InvSqrt(x);
+    return (x >= 0.0f) ? sqrtf(x) : 0.0f;
+}
+
+BE_INLINE float Math::Sqrt16(float x) {
+    return (x >= 0.0f) ? sqrtf(x) : 0.0f;
 }
 
 BE_INLINE double Math::Sqrt64(float x) {
-    return x * InvSqrt64(x);
+    return (x >= 0.0f) ? sqrtf(x) : 0.0f;
 }
 
 BE_INLINE float Math::Sin(float a) {
@@ -738,7 +787,7 @@ BE_INLINE float Math::Pow(float x, float y) {
 }
 
 BE_INLINE float Math::Pow16(float x, float y) {
-    return Exp16(y * Log16(x));
+    return Exp16(y * Ln16(x));
 }
 
 BE_INLINE double Math::Pow64(float x, float y) {
@@ -750,7 +799,7 @@ BE_INLINE float Math::Exp(float f) {
 }
 
 BE_INLINE float Math::Exp16(float f) {
-    float x = f * 1.44269504088896340f;		// multiply with ( 1 / log( 2 ) )
+    float x = f * 1.44269504088896340f; // multiply with ( 1 / log( 2 ) )
 #if 1
     int i = *reinterpret_cast<int *>(&x);
     int s = (i >> IEEE_FLT_SIGN_BIT);
@@ -767,7 +816,7 @@ BE_INLINE float Math::Exp16(float f) {
     x -= (float)i;
     if (x >= 0.5f) {
         x -= 0.5f;
-        y *= 1.4142135623730950488f;	// multiply with sqrt( 2 )
+        y *= 1.4142135623730950488f;    // multiply with sqrt( 2 )
     }
     float x2 = x * x;
     float p = x * (7.2152891511493f + x2 * 0.0576900723731f);
@@ -780,16 +829,16 @@ BE_INLINE double Math::Exp64(float f) {
     return exp(f);
 }
 
-BE_INLINE float Math::Log(float f) {
+BE_INLINE float Math::Ln(float f) {
     return logf(f);
 }
 
-BE_INLINE float Math::Log16(float f) {
+BE_INLINE float Math::Ln16(float f) {
     int i = *reinterpret_cast<int *>(&f);
     int exponent = ((i >> IEEE_FLT_MANTISSA_BITS) & ((1 << IEEE_FLT_EXPONENT_BITS) - 1)) - IEEE_FLT_EXPONENT_BIAS;
-    i -= (exponent + 1 ) << IEEE_FLT_MANTISSA_BITS;	// get value in the range [.5, 1>
+    i -= (exponent + 1 ) << IEEE_FLT_MANTISSA_BITS; // get value in the range [.5, 1>
     float y = *reinterpret_cast<float *>(&i);
-    y *= 1.4142135623730950488f;					// multiply with sqrt( 2 )
+    y *= 1.4142135623730950488f;                    // multiply with sqrt( 2 )
     y = (y - 1.0f) / (y + 1.0f);
     float y2 = y * y;
     y = y * (2.000000000046727f + y2 * (0.666666635059382f + y2 * (0.4000059794795f + y2 * (0.28525381498f + y2 * 0.2376245609f))));
@@ -797,20 +846,20 @@ BE_INLINE float Math::Log16(float f) {
     return y;
 }
 
-BE_INLINE double Math::Log64(float f) {
+BE_INLINE double Math::Ln64(float f) {
     return log(f);
 }
 
 BE_INLINE float Math::Log(float b, float f) {
-    return Log(f) / Log(b);
+    return Ln(f) / Ln(b);
 }
 
 BE_INLINE float Math::Log16(float b, float f) {
-    return Log16(f) / Log16(b);
+    return Ln16(f) / Ln16(b);
 }
 
 BE_INLINE double Math::Log64(float b, float f) {
-    return Log64(f) / Log64(b);
+    return Ln64(f) / Ln64(b);
 }
 
 BE_INLINE int Math::IPow(int x, int y) {
@@ -837,7 +886,11 @@ BE_INLINE int Math::BitsForInteger(int i) {
     return ILog2((float)i) + 1;
 }
 
-BE_INLINE int Math::FloorPowerOfTwo(int x) {
+BE_INLINE bool Math::IsPowerOfTwo(int x) {
+    return (x & (x - 1)) == 0 && x > 0;
+}
+
+BE_INLINE int Math::RoundDownPowerOfTwo(int x) {
     x |= x >> 1;
     x |= x >> 2;
     x |= x >> 4;
@@ -848,7 +901,7 @@ BE_INLINE int Math::FloorPowerOfTwo(int x) {
     return x;
 }
 
-BE_INLINE int Math::CeilPowerOfTwo(int x) {
+BE_INLINE int Math::RoundUpPowerOfTwo(int x) {
     x--;
     x |= x >> 1;
     x |= x >> 2;
@@ -857,10 +910,6 @@ BE_INLINE int Math::CeilPowerOfTwo(int x) {
     x |= x >> 16;
     x++;
     return x;
-}
-
-BE_INLINE bool Math::IsPowerOfTwo(int x) {
-    return (x & (x - 1)) == 0 && x > 0;
 }
 
 BE_INLINE int Math::Abs(int x) {
@@ -893,7 +942,7 @@ BE_INLINE float Math::Fract(float f) {
     return f - floorf(f);
 }
 
-BE_INLINE float Math::Rint(float f) {
+BE_INLINE float Math::Round(float f) {
     return floorf(f + 0.5f);
 }
 
@@ -902,7 +951,7 @@ BE_INLINE int Math::Ftoi(float f) {
 }
 
 BE_INLINE int Math::FtoiFast(float f) {
-#if BE_WIN_X86_SSE_INTRIN
+#ifdef HAVE_X86_SSE_INTRIN
     // If a converted result is larger than the maximum signed doubleword integer,
     // the floating-point invalid exception is raised, and if this exception is masked,
     // the indefinite integer value (80000000H) is returned.
@@ -922,10 +971,10 @@ BE_INLINE int Math::FtoiFast(float f) {
 }
 
 BE_INLINE int8_t Math::Ftoi8(float f) {
-#ifdef BE_WIN_X86_SSE_INTRIN
+#ifdef HAVE_X86_SSE_INTRIN
     __m128 x = _mm_load_ss(&f);
-    x = _mm_max_ss(x, SIMD_SP_min_char);
-    x = _mm_min_ss(x, SIMD_SP_max_char);
+    x = _mm_max_ss(x, SIMD_4::F4_min_char);
+    x = _mm_min_ss(x, SIMD_4::F4_max_char);
     return static_cast<int8_t>(_mm_cvttss_si32(x));
 #else
     // The converted result is clamped to the range [-128, 127].
@@ -940,10 +989,10 @@ BE_INLINE int8_t Math::Ftoi8(float f) {
 }
 
 BE_INLINE int16_t Math::Ftoi16(float f) {
-#ifdef BE_WIN_X86_SSE_INTRIN
+#ifdef HAVE_X86_SSE_INTRIN
     __m128 x = _mm_load_ss(&f);
-    x = _mm_max_ss(x, SIMD_SP_min_short);
-    x = _mm_min_ss(x, SIMD_SP_max_short);
+    x = _mm_max_ss(x, SIMD_4::F4_min_short);
+    x = _mm_min_ss(x, SIMD_4::F4_max_short);
     return static_cast<int16_t>(_mm_cvttss_si32(x));
 #else
     // The converted result is clamped to the range [-32768, 32767].
@@ -969,12 +1018,12 @@ BE_INLINE uint16_t Math::Ftoui16(float f) {
 }
 
 BE_INLINE byte Math::Ftob(float f) {
-#ifdef BE_WIN_X86_SSE_INTRIN
+#ifdef HAVE_X86_SSE_INTRIN
     // If a converted result is negative the value (0) is returned and if the
     // converted result is larger than the maximum byte the value (255) is returned.
     __m128 x = _mm_load_ss(&f);
-    x = _mm_max_ss(x, SIMD_SP_zero);
-    x = _mm_min_ss(x, SIMD_SP_255);
+    x = _mm_max_ss(x, SIMD_4::F4_zero);
+    x = _mm_min_ss(x, SIMD_4::F4_255);
     return static_cast<byte>(_mm_cvttss_si32(x));
 #else
     // The converted result is clamped to the range [0,255].
@@ -1000,12 +1049,8 @@ BE_INLINE double Math::Factorial(unsigned int n) {
     return result;
 }
 
-BE_INLINE float Math::FloorSnap(float value, float snap) {
-    return Math::Floor(value / snap) * snap;
-}
-
-BE_INLINE float Math::CeilSnap(float value, float snap) {
-    return Math::Ceil(value / snap) * snap;
+BE_INLINE float Math::Snap(float value, float snapSize) {
+    return Math::Round(value / snapSize) * snapSize;
 }
 
 BE_INLINE float Math::AngleNormalize360(float angle) {
@@ -1028,6 +1073,18 @@ BE_INLINE float Math::AngleDelta(float angle1, float angle2) {
     return AngleNormalize180(angle1 - angle2);
 }
 
+BE_INLINE float Math::FlipAngleX(float angle) {
+    float s, c;
+    SinCos(angle, s, c);
+    return ATan(s, -c);
+}
+
+BE_INLINE float Math::FlipAngleY(float angle) {
+    float s, c;
+    SinCos(angle, s, c);
+    return ATan(-s, c);
+}
+
 BE_INLINE int Math::FloatHash(const float *arr, const int numFloats) {
     int i, hash = 0;
     const int *ptr;
@@ -1045,23 +1102,14 @@ BE_INLINE float Math::Random(float minimum, float maximum) {
     return minimum + (maximum - minimum) * ((float)::rand() / (float)RAND_MAX);
 }
 
-template <typename T> 
-BE_INLINE T	Lerp(const T p0, const T p1, float t) { 
-    return p0 + ((p1 - p0) * t); 
-}
-
-template<> 
-BE_INLINE int Lerp(const int p0, const int p1, float t) { 
-    return Math::Ftoi((float)p0 + (((float)p1 - (float)p0) * t)); 
+BE_INLINE float Math::SmoothStep(float edge0, float edge1, float x) {
+    float t = Clamp01((x - edge0) / (edge1 - edge0));
+    return t * t * (3.0 - 2.0 * t);
 }
 
 template <typename T>
-BE_INLINE T	Cerp(const T p0, const T p1, const T p2, const T p3, float t) {
-    T a = p3 - 3 * p2 + 3 * p1 - p0;
-    T b = p2 - 2 * p1 + p0 - a; // simplified version of (-p3 + 4 * p2 - 5 * p1 + 2 * p0)
-    T c = p2 - p0;
-    T d = 2 * p1;
-    return (t * (t * (t * a + b) + c) + d) * 0.5f;
+BE_INLINE T Math::Lerp(const T p0, const T p1, float t) {
+    return p0 + ((p1 - p0) * t); 
 }
 
 // Fixed point linear interpolation
@@ -1069,13 +1117,22 @@ BE_INLINE T	Cerp(const T p0, const T p1, const T p2, const T p3, float t) {
 // p0: f(0)
 // p1: f(1)
 // t: interpolater in range [0, 255]
-BE_INLINE int FixedLerp(int p0, int p1, int t) {
+BE_INLINE int Math::FixedLerp(int p0, int p1, int t) {
     // p0 : f(0) = b
     // p1 : f(1) = a + b
     //
     // a = p1 - p0
     // b = p0
     return ((p0 << 8) + (p1 - p0) * t) >> 8;
+}
+
+template <typename T>
+BE_INLINE T Math::Cerp(const T p0, const T p1, const T p2, const T p3, float t) {
+    T a = p3 - 3 * p2 + 3 * p1 - p0;
+    T b = p2 - 2 * p1 + p0 - a; // simplified version of (-p3 + 4 * p2 - 5 * p1 + 2 * p0)
+    T c = p2 - p0;
+    T d = 2 * p1;
+    return (t * (t * (t * a + b) + c) + d) * 0.5f;
 }
 
 // Fixed point cubic interpolation
@@ -1085,7 +1142,7 @@ BE_INLINE int FixedLerp(int p0, int p1, int t) {
 // p2: f(1)
 // p3: f(2)
 // t: interpolater in range [0, 127]
-BE_INLINE int FixedCerp(int p0, int p1, int p2, int p3, int t) {
+BE_INLINE int Math::FixedCerp(int p0, int p1, int p2, int p3, int t) {
 #if 0
     // Hermite cubic spline with 4 points
     // f'(x) = 3ax^2 + 2bx + c

@@ -48,17 +48,16 @@ public:
     static T FromF32(float x) {
         const uint32_t f = reinterpret_cast<uint32_t &>(x);
         const int32_t e = ((f >> IEEE_FLT_MANTISSA_BITS) & ((1 << IEEE_FLT_EXPONENT_BITS) - 1)) - (IEEE_FLT_EXPONENT_BIAS - EBias);
-        const uint32_t s = (f >> IEEE_FLT_SIGN_BIT) << SBit;
-        const uint32_t m = (f & ((1 << IEEE_FLT_MANTISSA_BITS) - 1)) >> (IEEE_FLT_MANTISSA_BITS - MBits);
-
         if (e <= 0) {
             // denormals are zero
             return 0;
         }
+        const uint32_t s = (f >> IEEE_FLT_SIGN_BIT) << SBit;
         if (e >= (1 << EBits) - 1) {
             // map +INF to largest number, -INF to smallest number
             return (T)(s | ((1 << EBits) - 2) | ((1 << MBits) - 1));
         }
+        const uint32_t m = (f & ((1 << IEEE_FLT_MANTISSA_BITS) - 1)) >> (IEEE_FLT_MANTISSA_BITS - MBits);
         return (T)(s | (e << MBits) | m);
     }
 };
@@ -93,8 +92,6 @@ public:
     static T FromF32(float x) {
         const uint32_t f = *reinterpret_cast<uint32_t *>(&x);
         const int32_t e = ((f >> IEEE_FLT_MANTISSA_BITS) & ((1 << IEEE_FLT_EXPONENT_BITS) - 1)) - (IEEE_FLT_EXPONENT_BIAS - EBias);
-        const uint32_t m = (f & ((1 << IEEE_FLT_MANTISSA_BITS) - 1)) >> (IEEE_FLT_MANTISSA_BITS - MBits);
-
         if (e <= 0) {
             // denormals are zero
             return 0;
@@ -103,11 +100,12 @@ public:
             // map +INF to largest number, -INF to smallest number
             return (T)(((1 << EBits) - 2) | ((1 << MBits) - 1));
         }
+        const uint32_t m = (f & ((1 << IEEE_FLT_MANTISSA_BITS) - 1)) >> (IEEE_FLT_MANTISSA_BITS - MBits);
         return (T)((e << MBits) | m);
     }
 };
 
-typedef unsigned short float16_t;
+using float16_t = unsigned short;
 
 using F16Converter = FloatConverter<float16_t, IEEE_FLT16_MANTISSA_BITS, IEEE_FLT16_EXPONENT_BITS, IEEE_FLT16_EXPONENT_BIAS, IEEE_FLT16_SIGN_BIT>;
 using F11Converter = FloatConverter<uint32_t, 6, 5, 15, 0>;

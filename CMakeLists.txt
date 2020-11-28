@@ -24,6 +24,16 @@ option(BUILD_PLAYER "Build Blueshift Player executable" OFF)
 option(BUILD_EDITOR "Build Blueshift Editor executable" OFF)
 option(BUILD_TEST "Build test projects" OFF)
 
+set(VERSION_MAJOR 0 CACHE INTERNAL "Project major version number.")
+set(VERSION_MINOR 7 CACHE INTERNAL "Project minor version number.")
+set(VERSION_PATCH 0 CACHE INTERNAL "Project patch version number.")
+
+string(TIMESTAMP NOW "%Y-%m-%d %H:%M:%S")
+set(VERSION_DATE ${NOW} CACHE INTERNAL "Project version date")
+
+# Advanced variables will not be displayed in any of the cmake GUIs unless the show advanced option is on.
+mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH VERSION_DATE)
+
 if (BUILD_RUNTIME)
     set(ROOT_PROJECT_NAME Blueshift)
 
@@ -36,8 +46,6 @@ else ()
 endif ()
 
 project(${ROOT_PROJECT_NAME})
-
-cmake_dependent_option(USE_LUAJIT "Use LuaJIT" ON "NOT IOS AND NOT ANDROID" OFF)
 
 # Check platform
 if (ANDROID)
@@ -52,6 +60,7 @@ elseif (UNIX)
     set(PLATFORM_LINUX TRUE)
 endif ()
 
+# Check 64 bit platform
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(ENGINE_64BIT TRUE)
 endif ()
@@ -60,7 +69,7 @@ if (CMAKE_CROSSCOMPILING)
     if (IOS)
         set(ENGINE_ARCH ${IOS_ARCH})
     elseif (ANDROID)
-        set(ENGINE_ARCH ${CMAKE_ANDROID_ARCH})
+        set(ENGINE_ARCH ${ANDROID_ABI})
 
         include_directories(${ANDROID_SYSROOT}/usr/include/${ANDROID_HEADER_TRIPLE})
     endif ()
@@ -72,18 +81,23 @@ else ()
     endif ()
 endif ()
 
-set(VERSION_MAJOR 0 CACHE INTERNAL "Project major version number.")
-set(VERSION_MINOR 6 CACHE INTERNAL "Project minor version number.")
-set(VERSION_PATCH 0 CACHE INTERNAL "Project patch version number.")
+if (PLATFORM_WINDOWS)
+    set(ENGINE_BUILD_PLATFORM_DIR "Win64")
+elseif (PLATFORM_ANDROID)
+    set(ENGINE_BUILD_PLATFORM_DIR "Android/${CMAKE_BUILD_TYPE}/${ANDROID_ABI}")
+elseif (PLATFORM_IOS)
+    set(ENGINE_BUILD_PLATFORM_DIR "iOS$(EFFECTIVE_PLATFORM_NAME)")
+elseif (PLATFORM_MACOS)
+    set(ENGINE_BUILD_PLATFORM_DIR "macOS")
+else ()
+    set(ENGINE_BUILD_PLATFORM_DIR ${CMAKE_GENERATOR})
+endif ()
 
-string(TIMESTAMP NOW "%Y-%m-%d %H:%M:%S")
-set(VERSION_DATE ${NOW} CACHE INTERNAL "Project version date")
-
-# Advanced variables will not be displayed in any of the cmake GUIs unless the show advanced option is on.
-mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH VERSION_DATE)
+cmake_dependent_option(USE_LUAJIT "Use LuaJIT" ON "NOT IOS AND NOT ANDROID" OFF)
 
 message(STATUS "Running from ${CMAKE_CURRENT_SOURCE_DIR}")
 
+message(STATUS "Arch: ${ENGINE_ARCH}")
 message(STATUS "Version: ${CMAKE_VERSION}")
 message(STATUS "Generator: ${CMAKE_GENERATOR}")
 message(STATUS "System: ${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_VERSION} ${CMAKE_SYSTEM_PROCESSOR}") 
@@ -93,7 +107,7 @@ message(STATUS "CXX Compiler: ${CMAKE_CXX_COMPILER}")
 set(CMAKE_CONFIGURATION_TYPES Debug Release Development)
 
 # Set this variable to specify a common place where CMake should put all executable files
-set(RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Bin/${CMAKE_GENERATOR})
+set(RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Bin/${CMAKE_GENERATOR}")
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "")
@@ -103,10 +117,13 @@ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
 
 # Add DEVELOPMENT, _DEVELOPMENT definition to compiler in development build
-set(CMAKE_C_FLAGS_DEVELOPMENT "${CMAKE_C_FLAGS_RELEASE} -DDEVELOPMENT -D_DEVELOPMENT")
-set(CMAKE_CXX_FLAGS_DEVELOPMENT "${CMAKE_CXX_FLAGS_RELEASE} -DDEVELOPMENT -D_DEVELOPMENT")
+set(CMAKE_C_FLAGS_DEVELOPMENT "${CMAKE_C_FLAGS_RELWITHDEBINFO} -DDEVELOPMENT -D_DEVELOPMENT")
+set(CMAKE_CXX_FLAGS_DEVELOPMENT "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DDEVELOPMENT -D_DEVELOPMENT")
 
-set(CMAKE_EXE_LINKER_FLAGS_DEVELOPMENT ${CMAKE_EXE_LINKER_FLAGS_RELEASE})
+set(CMAKE_EXE_LINKER_FLAGS_DEVELOPMENT "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO}")
+set(CMAKE_MODULE_LINKER_FLAGS_DEVELOPMENT "${CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO}")
+set(CMAKE_STATIC_LINKER_FLAGS_DEVELOPMENT "${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO}")
+set(CMAKE_SHARED_LINKER_FLAGS_DEVELOPMENT "${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO}")
 
 ################################################################################
 
@@ -118,7 +135,7 @@ if (USE_DESKTOP_EGL)
     add_definitions(-DUSE_DESKTOP_EGL)
 endif ()
 
-if (WIN32)
+if (PLATFORM_WINDOWS)
     # Settings for Windows
     add_definitions(-D_UNICODE -DUNICODE)
     
@@ -129,13 +146,22 @@ if (WIN32)
     endif ()
 
     if (MSVC)
+        # SIMD compile option flags
+        set(FLAGS_SSE2 "-D__SSE__ -D__SSE2__")
+        set(FLAGS_SSE42 "${FLAGS_SSE2} -D__SSE3__ -D__SSSE3__ -D__SSE4_1__ -D__SSE4_2__")
+        set(FLAGS_AVX "${FLAGS_SSE42} /arch:AVX -D__AVX__")
+        set(FLAGS_AVX2 "${FLAGS_SSE42} /arch:AVX2 -D__AVX__ -D__AVX2__")
+
+        add_definitions(${FLAGS_AVX}) # AVX2 is not supported on older AMD machines including Mac Pro etc.
+
         # Enable Function-Level Linking
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy")
+        add_definitions("/Gy")
     
         # Force Synchronous PDB Writes
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
+        add_definitions("/FS")
+
+        # Enable parallel compilation
+        #add_definitions("/MP")
     
         # Remove RTTI
         string(REGEX REPLACE "/GR-?" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -147,31 +173,22 @@ if (WIN32)
         # Suppress warnings when linking with release library
         set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /NODEFAULTLIB:\"msvcrt.lib\"")
     endif ()
-elseif (APPLE) 
-    # Settings for macOS, iOS
-    #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -stdlib=libc++")
-
-    add_compile_options("-Wno-unused-parameter")
-    add_compile_options("-Wno-unused-variable")
-    add_compile_options("-Wno-unused-local-typedef")
-    add_compile_options("-Wno-unused-function")
-    add_compile_options("-Wno-reorder")
-    add_compile_options("-Wno-inconsistent-missing-override")
-    add_compile_options("-Wno-tautological-undefined-compare")
-
-    if (IOS)
-        add_compile_options("-DIOS")
-
-        set(IOS_DEPLOYMENT_TARGET 9.0)
-   else ()
-        set(CMAKE_OSX_SYSROOT "macosx")
-        set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9") # 10.9 Mavericks
-        #set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
-    endif ()
-elseif (ANDROID)
+elseif (PLATFORM_ANDROID)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++14 -fno-exceptions -fno-rtti")
+
+    if (${ENGINE_ARCH} MATCHES "arm64")
+        set(FLAGS_SIMD "-D__NEON__")
+    elseif (${ENGINE_ARCH} MATCHES "arm")
+        set(FLAGS_SIMD "-D__NEON__ -mfpu=neon")
+    elseif (${ENGINE_ARCH} MATCHES "x86_64")
+        set(FLAGS_SIMD "-D__SSE__ -D__SSE2__ -D__SSE3__ -D__SSSE3__ -D__SSE4_1__ -D__SSE4_2__ -msse4.2 -mpopcnt -m64 -mtune=intel")
+    elseif (${ENGINE_ARCH} MATCHES "x86")
+        set(FLAGS_SIMD "-D__SSE__ -D__SSE2__ -D__SSE3__ -D__SSSE3__ -mssse3 -mfpmath=sse -m32")
+    endif ()
+
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS_SIMD}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_SIMD}")
 
     # Settings for Android
     add_compile_options("-DANDROID")
@@ -187,38 +204,56 @@ elseif (ANDROID)
     add_compile_options("-Wlogical-not-parentheses")
     add_compile_options("-Wshift-overflow")
     add_compile_options("-Wno-tautological-undefined-compare")
+elseif (APPLE) 
+    # Settings for macOS, iOS
+    #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -stdlib=libc++")
+
+    add_compile_options("-Wno-unused-parameter")
+    add_compile_options("-Wno-unused-variable")
+    add_compile_options("-Wno-unused-local-typedef")
+    add_compile_options("-Wno-unused-function")
+    add_compile_options("-Wno-reorder")
+    add_compile_options("-Wno-inconsistent-missing-override")
+    add_compile_options("-Wno-tautological-undefined-compare")
+
+    if (PLATFORM_IOS)
+        add_compile_options("-DIOS")
+
+        add_definitions("-D__NEON__")
+
+        set(IOS_DEPLOYMENT_TARGET 9.0)
+   elseif (PLATFORM_MACOS)
+        set(CMAKE_OSX_SYSROOT "macosx")
+        set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9") # 10.9 Mavericks
+        #set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
+
+        set(FLAGS_SSE2 "-msse2")
+        set(FLAGS_SSE42 "-msse4.2")
+        set(FLAGS_AVX "-mavx")
+        set(FLAGS_AVX2 "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
+
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS_AVX}")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS_AVX}")
+    endif ()
 endif ()
 
 ################################################################################
-
-if (XAMARIN)
-    if (MSVC)
-        set(ENGINE_BUILD_PLATFORM_DIR "XamarinWin64")
-    endif ()
-
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__XAMARIN__")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__XAMARIN__")
-else ()
-    if (MSVC)
-        set(ENGINE_BUILD_PLATFORM_DIR "Win64")
-    elseif (ANDROID)
-        set(ENGINE_BUILD_PLATFORM_DIR "Android/${CMAKE_BUILD_TYPE}/${ANDROID_ABI}")
-    elseif (APPLE)
-        if (IOS)
-            set(ENGINE_BUILD_PLATFORM_DIR "iOS$(EFFECTIVE_PLATFORM_NAME)")
-        else ()
-            set(ENGINE_BUILD_PLATFORM_DIR "macOS")
-        endif ()
-    else ()
-        set(ENGINE_BUILD_PLATFORM_DIR ${CMAKE_GENERATOR})
-    endif ()
-endif ()
 
 if (USE_LUAJIT)
     add_definitions(-DUSE_LUAJIT=1)
 else ()
     add_definitions(-DUSE_LUAJIT=0)
 endif ()
+
+if (BUILD_RUNTIME AND BUILD_EDITOR)
+    add_definitions(-DWITH_EDITOR=1)
+else ()
+    add_definitions(-DWITH_EDITOR=0)
+endif ()
+
+add_definitions(-DENABLE_PROFILER)
+add_definitions(-DENABLE_IMGUI)
 
 ################################################################################
 # Print C/CXX FLAGS
@@ -228,11 +263,11 @@ set(FLAGS
     CMAKE_C_FLAGS
     CMAKE_C_FLAGS_DEBUG
     CMAKE_C_FLAGS_RELEASE
-    CMAKE_C_FLAGS_RELWITHDEBINFO
+    CMAKE_C_FLAGS_DEVELOPMENT
     CMAKE_CXX_FLAGS
     CMAKE_CXX_FLAGS_DEBUG
     CMAKE_CXX_FLAGS_RELEASE
-    CMAKE_CXX_FLAGS_RELWITHDEBINFO
+    CMAKE_CXX_FLAGS_DEVELOPMENT
 )
 
 foreach(FLAG ${FLAGS})
@@ -260,9 +295,12 @@ if (BUILD_RUNTIME)
     add_subdirectory(Source/ThirdParty/libvorbis)
     add_subdirectory(Source/ThirdParty/jsoncpp)
     add_subdirectory(Source/ThirdParty/tinyxml2)
+    add_subdirectory(Source/ThirdParty/GGL)
     add_subdirectory(Source/ThirdParty/NvTriStrip)
     add_subdirectory(Source/ThirdParty/Bullet)
     add_subdirectory(Source/ThirdParty/HACD)
+    add_subdirectory(Source/ThirdParty/STB)
+    add_subdirectory(Source/ThirdParty/imgui)
  
     if (USE_LUAJIT)
         add_subdirectory(Source/ThirdParty/luaJIT)
@@ -289,7 +327,7 @@ if (BUILD_EDITOR)
 endif ()
 
 if (BUILD_TEST)
-    if (NOT ANDROID)
+    if (NOT PLATFORM_ANDROID)
         add_subdirectory(Source/TestBase)
     endif ()
     add_subdirectory(Source/TestRenderer)
@@ -302,4 +340,3 @@ if (MSVC)
         set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT BlueshiftPlayer)
     endif ()
 endif ()
-

@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Asset/GuidMapper.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -42,6 +42,7 @@ Guid        GuidMapper::standardShaderGuid(0, 0, 0, 203);
 Guid        GuidMapper::unlitShaderGuid(0, 0, 0, 204);
 Guid        GuidMapper::phongLightingShaderGuid(0, 0, 0, 205);
 Guid        GuidMapper::envCubemapShaderGuid(0, 0, 0, 206);
+Guid        GuidMapper::imageShaderGuid(0, 0, 0, 207);
 // predefined material GUID
 Guid        GuidMapper::defaultMaterialGuid(0, 0, 0, 300);
 Guid        GuidMapper::whiteMaterialGuid(0, 0, 0, 301);

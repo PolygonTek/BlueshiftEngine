@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "Containers/HashMap.h"
+
 /*
 -------------------------------------------------------------------------------
 
@@ -25,13 +27,14 @@
 BE_NAMESPACE_BEGIN
 
 class FontFace;
+class Material;
 
-// Freetype / bitmap font 에 공통으로 쓰이는 glyph 정보 구조체
+// Font glyph information.
 struct FontGlyph {
-    uint32_t                charCode;
+    char32_t                charCode;
     int                     width, height;
-    int                     bearingX, bearingY;
-    int                     advance;
+    int                     offsetX, offsetY;
+    int                     advanceX, advanceY;
     float                   s, t, s2, t2;
     Material *              material;
 };
@@ -48,21 +51,34 @@ public:
         };
     };
 
-    Font();
+    struct RenderMode {
+        enum Enum {
+            Normal          = 0,
+            Border          = 1
+        };
+    };
+
+    Font() = default;
     ~Font();
 
     const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
 
+                            /// Returns font type.
+    FontType::Enum          GetFontType() const { return fontType; }
+
+                            /// Returns pointer to the glyph structure corresponding to a character. Return null if no glyphs are found.
+    FontGlyph *             GetGlyph(char32_t unicodeChar, RenderMode::Enum renderMode = RenderMode::Normal);
+
+                            /// Returns a offset for the next character.
+    int                     GetGlyphAdvanceX(char32_t unicodeChar) const;
+    int                     GetGlyphAdvanceY(char32_t unicodeChar) const;
+
+                            /// Returns font height in pixels.
     int                     GetFontHeight() const;
 
-                            /// Returns pointer to the glyph structure corresponding to a character. Return null if glyph not found.
-    FontGlyph *             GetGlyph(char32_t unicodeChar);
-
-                            /// Returns a offset for a next character 
-    int                     GetGlyphAdvance(char32_t unicodeChar) const;
-
-    float                   StringWidth(const Str &text, int maxLen, bool allowLineBreak = false, bool allowColoredText = false, float xScale = 1.0f) const;
+                            /// Computes text width.
+    float                   TextWidth(const Str &text, int maxLen, bool allowLineBreak = false, bool allowColoredText = false, float xScale = 1.0f) const;
 
     void                    Purge();
     bool                    Load(const char *filename);
@@ -77,9 +93,6 @@ private:
     int                     fontSize = 0;
     FontFace *              fontFace = nullptr;
 };
-
-BE_INLINE Font::Font() {
-}
 
 BE_INLINE Font::~Font() {
     Purge();
@@ -97,6 +110,8 @@ public:
     void                    ReleaseFont(Font *font, bool immediateDestroy = false);
     void                    DestroyFont(Font *font);
     void                    DestroyUnusedFonts();
+
+    void                    ClearAtlasTextures();
 
     static const char *     defaultFontFilename;
     static Font *           defaultFont;
@@ -120,7 +135,7 @@ private:
     struct FontHashGenerator {
         template <typename Type>
         static int Hash(const HashIndex &hasher, const Type &value) {
-            return hasher.GenerateHash(value.name, false) & value.fontSize;
+            return hasher.GenerateHash(value.name, false) * value.fontSize;
         }
     };
 

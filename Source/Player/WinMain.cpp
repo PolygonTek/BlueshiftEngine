@@ -243,7 +243,7 @@ static void ShutdownInstance() {
     BE1::Engine::Shutdown();
 }
 
-static bool RunFrameInstance(int elapsedMsec) {
+static bool ProcessEventLoop() {
     MSG msg;
 
     while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -257,9 +257,17 @@ static bool RunFrameInstance(int elapsedMsec) {
         }
     }
 
+    return true;
+}
+
+static bool RunFrameInstance(int elapsedMsec) {
+    if (!ProcessEventLoop()) {
+        return false;
+    }
+
     BE1::Engine::RunFrame(elapsedMsec);
 
-    BE1::gameClient.RunFrame();
+    BE1::gameClient.Update();
 
     app.Update();
 
@@ -292,9 +300,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     while (1) {
         int t = BE1::PlatformTime::Milliseconds();
         int elapsedMsec = t - t0;
-        if (elapsedMsec > 1000) {
-            elapsedMsec = 1000;
-        }
+        BE1::Clamp(elapsedMsec, 0, 1000);
 
         t0 = t;
 

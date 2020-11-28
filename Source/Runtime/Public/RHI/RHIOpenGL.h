@@ -63,17 +63,20 @@ public:
     bool                    SupportsPolygonMode() const;
     bool                    SupportsPackedFloat() const;
     bool                    SupportsDepthBufferFloat() const;
-    bool                    SupportsPixelBufferObject() const;
+    bool                    SupportsPixelBuffer() const;
     bool                    SupportsTextureRectangle() const;
     bool                    SupportsTextureArray() const;
-    bool                    SupportsTextureBufferObject() const;
+    bool                    SupportsTextureBuffer() const;
     bool                    SupportsTextureCompressionS3TC() const;
     bool                    SupportsTextureCompressionLATC() const;
+    bool                    SupportsTextureCompressionRGTC() const;
     bool                    SupportsTextureCompressionETC2() const;
     bool                    SupportsInstancedArrays() const;
     bool                    SupportsBufferStorage() const;
     bool                    SupportsMultiDrawIndirect() const;
     bool                    SupportsDebugLabel() const;
+    bool                    SupportsTimestampQueries() const;
+    bool                    SupportsCopyImage() const;
 
     bool                    IsFullscreen() const;
     bool                    SetFullscreen(Handle windowHandle, int width, int height);
@@ -213,6 +216,12 @@ public:
     void                    SetShaderConstant3i(int index, const int *constant) const;
     void                    SetShaderConstant4i(int index, const int *constant) const;
 
+                            /// Sets the value of unsigned integer constant variable for the current bound shader.
+    void                    SetShaderConstant1ui(int index, const unsigned int constant) const;
+    void                    SetShaderConstant2ui(int index, const unsigned int *constant) const;
+    void                    SetShaderConstant3ui(int index, const unsigned int *constant) const;
+    void                    SetShaderConstant4ui(int index, const unsigned int *constant) const;
+
                             /// Sets the value of float constant variable for the current bound shader.
     void                    SetShaderConstant1f(int index, const float constant) const;
     void                    SetShaderConstant2f(int index, const float *constant) const;
@@ -262,20 +271,22 @@ public:
     void                    BindIndexedBuffer(BufferType::Enum type, int bindingIndex, Handle bufferHandle);
     void                    BindIndexedBufferRange(BufferType::Enum type, int bindingIndex, Handle bufferHandle, int offset, int size);
 
-    void *                  MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMode, int offset = 0, int size = -1);
+    void *                  MapBuffer(Handle bufferHandle, BufferLockMode::Enum lockMode) { return MapBufferRange(bufferHandle, lockMode, 0, -1); }
+    void *                  MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMode, int offset, int size);
     bool                    UnmapBuffer(Handle bufferHandle);
-    void                    FlushMappedBufferRange(Handle bufferHandle, int offset = 0, int size = -1);
+    void                    FlushMappedBufferRange(Handle bufferHandle, int offset, int size);
+    void                    WriteBuffer(byte *dst, const byte *src, int numBytes);
 
                             /// Discards current buffer and write data to new buffer. 
                             /// Returns written start offset. (Always 0)
     int                     BufferDiscardWrite(Handle bufferHandle, int size, const void *data);
 
-                            /// 기존에 쓰던 buffer 를 유지하면서 data 를 asyncronous 하게 write 한다. 
+                            /// Write data asyncronous while maintaining the existing buffer.
                             /// Returns written start offset.
-                            /// overflow 되면 -1 을 리턴, data == nullptr 이면 write 를 안하기 때문에 overflow 여부만 체크할 수 있다.
+                            /// If overflow occurs, -1 is returned. If data == nullptr, write is not performed, so only overflow can be checked.
     int                     BufferWrite(Handle bufferHandle, int alignSize, int size, const void *data);
 
-                            /// CopyReadBuffer 로 생성한 버퍼를 CPU 메모리 카피 부담없이 GPU 상에서 빠르게 카피
+                            /// Quickly copy buffers created with CopyReadBuffer on GPU without burdening CPU memory copy.
     int                     BufferCopy(Handle readBufferHandle, Handle writeBufferHandle, int alignSize, int size);
 
                             /// Sets write offset to 0.
@@ -326,7 +337,14 @@ public:
     void                    EndQuery(Handle queryHandle);
     void                    QueryTimestamp(Handle queryHandle);
     bool                    QueryResultAvailable(Handle queryHandle) const;
-    unsigned int            QueryResult(Handle queryHandle) const;
+    uint64_t                QueryResult(Handle queryHandle) const;
+
+    //---------------------------------------------------------------------------------------------
+    // ImGui
+    //---------------------------------------------------------------------------------------------
+    void                    ImGuiBeginFrame(Handle ctxHandle);
+    void                    ImGuiRender();
+    void                    ImGuiEndFrame();
 
 protected:
     void                    InitMainContext(WindowHandle windowHandle, const Settings *settings);
@@ -335,6 +353,9 @@ protected:
 
     void                    InitHandles();
     void                    FreeHandles();
+
+    void                    ImGuiCreateContext(GLContext *ctx);
+    void                    ImGuiDestroyContext(GLContext *ctx);
 
     int                     GetTypeSize(const VertexElement::Type::Enum type) const;
     void                    SetShaderConstantGeneric(int index, bool rowMajor, int count, const void *data) const;
@@ -347,7 +368,6 @@ protected:
     const char *            rendererString;
     const char *            versionString;
     float                   version;
-    const char *            extensionsString;
     const char *            glslVersionString;
     float                   glslVersion;
     int                     colorBits;

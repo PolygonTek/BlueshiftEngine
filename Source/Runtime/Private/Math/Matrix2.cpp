@@ -17,8 +17,8 @@
 
 BE_NAMESPACE_BEGIN
 
-const Mat2 Mat2::zero(Vec2(0, 0), Vec2(0, 0));
-const Mat2 Mat2::identity(Vec2(1, 0), Vec2(0, 1));
+ALIGN_AS16 const Mat2 Mat2::zero(Vec2(0, 0), Vec2(0, 0));
+ALIGN_AS16 const Mat2 Mat2::identity(Vec2(1, 0), Vec2(0, 1));
 
 Mat2 Mat2::FromString(const char *str) {
     Mat2 m;

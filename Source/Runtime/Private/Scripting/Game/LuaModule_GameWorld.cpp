@@ -26,11 +26,12 @@ void LuaVM::RegisterGameWorld(LuaCpp::Module &module) {
     _GameWorld.AddClassMembers<GameWorld>(
         "time", &GameWorld::GetTime,
         "prev_time", &GameWorld::GetPrevTime,
+        "unscaled_delta_time", &GameWorld::GetUnscaledDeltaTime,
         "delta_time", &GameWorld::GetDeltaTime,
         "time_scale", &GameWorld::GetTimeScale,
         "set_time_scale", &GameWorld::SetTimeScale,
         "create_empty_entity", &GameWorld::CreateEmptyEntity,
-        "find_entity", &GameWorld::FindEntity,
+        "find_entity", static_cast<Entity*(GameWorld::*)(const char *)const>(&GameWorld::FindEntity),
         "find_entity_by_name", &GameWorld::FindEntityByName,
         "find_entity_by_tag", &GameWorld::FindEntityByTag,
         "find_entities_by_tag", &GameWorld::FindEntitiesByTag,
@@ -38,7 +39,7 @@ void LuaVM::RegisterGameWorld(LuaCpp::Module &module) {
         "instantiate_entity", &GameWorld::InstantiateEntity,
         "instantiate_entity_with_transform", &GameWorld::InstantiateEntityWithTransform,
         "dont_destroy_on_load", &GameWorld::DontDestroyOnLoad,
-        "map_name", &GameWorld::MapName,
+        "map_filename", &GameWorld::MapFilename,
         "restart_game", &GameWorld::RestartGame,
         "stop_all_sounds", &GameWorld::StopAllSounds);
 

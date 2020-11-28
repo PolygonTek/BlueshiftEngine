@@ -98,4 +98,22 @@ int32_t PlatformMacOSSystem::NumCPUCoresIncludingHyperthreads() {
     return numCores;
 }
 
+bool PlatformMacOSSystem::IsDebuggerPresent() {
+    // Based on http://developer.apple.com/library/mac/#qa/qa1361/index.html
+    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()};
+    struct kinfo_proc info;
+    size_t size = sizeof(info);
+    info.kp_proc.p_flag = 0;
+
+    sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &size, NULL, 0);
+
+    return (info.kp_proc.p_flag & P_TRACED) != 0;
+}
+
+void PlatformMacOSSystem::DebugBreak() {
+    if (IsDebuggerPresent()) {
+        __asm__("int $3");
+    }
+}
+
 BE_NAMESPACE_END

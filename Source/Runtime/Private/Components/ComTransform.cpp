@@ -27,20 +27,23 @@ BEGIN_EVENTS(ComTransform)
 END_EVENTS
 
 void ComTransform::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("origin", "Origin", Vec3, GetLocalOrigin, SetLocalOrigin, Vec3::zero, 
+    REGISTER_ACCESSOR_PROPERTY("origin", "Origin", Vec3, GetLocalOrigin, SetLocalOrigin, Vec3::zero,
         "xyz position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero, 
-        "roll, pitch, yaw in degree in local space", PropertyInfo::Flag::Editor);
+#if WITH_EDITOR
+    REGISTER_PROPERTY("localEulerAnglesHint", "LocalEulerAnglesHint", Angles, localEulerAnglesHint, Angles::zero,
+        "", PropertyInfo::Flag::Empty);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero,
+        "roll, pitch, yaw in degree in local space", PropertyInfo::Flag::Editor | PropertyInfo::Flag::SkipSerialization);
+#endif
+    REGISTER_ACCESSOR_PROPERTY("rotation", "Rotation", Quat, GetLocalRotation, SetLocalRotation, Quat::identity,
+        "", PropertyInfo::Flag::Empty);
     REGISTER_ACCESSOR_PROPERTY("scale", "Scale", Vec3, GetLocalScale, SetLocalScale, Vec3::one, 
         "xyz scale in local space", PropertyInfo::Flag::Editor);
 }
 
 ComTransform::ComTransform() {
-    localOrigin = Vec3::zero;
-    localScale = Vec3::one;
-    localRotation = Quat::identity;
     worldMatrix = Mat3x4::identity;
-    worldMatrixInvalidated = false;
+    worldMatrixInvalidated = true;
     physicsUpdating = false;
 }
 
@@ -64,6 +67,14 @@ void ComTransform::Init() {
     SetInitialized(true);
 }
 
+Angles ComTransform::GetLocalAngles() const {
+#if WITH_EDITOR
+    return localEulerAnglesHint;
+#else
+    return localRotation.ToAngles();
+#endif
+}
+
 void ComTransform::SetLocalOrigin(const Vec3 &origin) {
     this->localOrigin = origin;
 
@@ -83,6 +94,10 @@ void ComTransform::SetLocalScale(const Vec3 &scale) {
 void ComTransform::SetLocalRotation(const Quat &rotation) {
     this->localRotation = rotation;
 
+#if WITH_EDITOR
+    localEulerAnglesHint = CalculateLocalEulerAnglesHint(localRotation, localEulerAnglesHint);
+#endif
+
     if (IsInitialized()) {
         InvalidateWorldMatrix();
     }
@@ -91,6 +106,10 @@ void ComTransform::SetLocalRotation(const Quat &rotation) {
 void ComTransform::SetLocalOriginRotation(const Vec3 &origin, const Quat &rotation) {
     this->localOrigin = origin;
     this->localRotation = rotation;
+
+#if WITH_EDITOR
+    localEulerAnglesHint = CalculateLocalEulerAnglesHint(localRotation, localEulerAnglesHint);
+#endif
 
     if (IsInitialized()) {
         InvalidateWorldMatrix();
@@ -102,6 +121,10 @@ void ComTransform::SetLocalOriginRotationScale(const Vec3 &origin, const Quat &r
     this->localRotation = rotation;
     this->localScale = scale;
 
+#if WITH_EDITOR
+    localEulerAnglesHint = CalculateLocalEulerAnglesHint(localRotation, localEulerAnglesHint);
+#endif
+
     if (IsInitialized()) {
         InvalidateWorldMatrix();
     }
@@ -110,14 +133,30 @@ void ComTransform::SetLocalOriginRotationScale(const Vec3 &origin, const Quat &r
 void ComTransform::SetLocalAxis(const Mat3 &axis) {
     this->localRotation = axis.ToQuat();
 
+#if WITH_EDITOR
+    localEulerAnglesHint = CalculateLocalEulerAnglesHint(localRotation, localEulerAnglesHint);
+#endif
+
     if (IsInitialized()) {
         InvalidateWorldMatrix();
     }
 }
 
+void ComTransform::SetLocalAngles(const Angles &localAngles) {
+#if WITH_EDITOR
+    localEulerAnglesHint = localAngles;
+#endif
+
+    SetLocalRotation(localAngles.ToQuat());
+}
+
 void ComTransform::SetLocalOriginAxis(const Vec3 &origin, const Mat3 &axis) {
     this->localOrigin = origin;
     this->localRotation = axis.ToQuat();
+
+#if WITH_EDITOR
+    localEulerAnglesHint = CalculateLocalEulerAnglesHint(localRotation, localEulerAnglesHint);
+#endif
 
     if (IsInitialized()) {
         InvalidateWorldMatrix();
@@ -128,6 +167,10 @@ void ComTransform::SetLocalOriginAxisScale(const Vec3 &origin, const Mat3 &axis,
     this->localOrigin = origin;
     this->localRotation = axis.ToQuat();
     this->localScale = scale;
+
+#if WITH_EDITOR
+    localEulerAnglesHint = CalculateLocalEulerAnglesHint(localRotation, localEulerAnglesHint);
+#endif
 
     if (IsInitialized()) {
         InvalidateWorldMatrix();
@@ -174,8 +217,8 @@ const Mat3x4 &ComTransform::GetMatrix() const {
 }
 
 Mat3x4 ComTransform::GetMatrixNoScale() const {
-    Mat3x4 worldMatrixNoScale;
-    Mat3x4 localTransform = GetLocalMatrixNoScale();
+    ALIGN_AS32 Mat3x4 worldMatrixNoScale;
+    ALIGN_AS32 Mat3x4 localTransform = GetLocalMatrixNoScale();
     
     const ComTransform *parent = GetParent();
     if (parent) {
@@ -222,6 +265,10 @@ void ComTransform::SetOriginRotationScale(const Vec3 &origin, const Quat &rotati
 void ComTransform::SetAxis(const Mat3 &axis) {
     const ComTransform *parent = GetParent();
     SetLocalAxis(parent ? parent->GetAxis().Transpose() * axis : axis);
+}
+
+void ComTransform::SetAngles(const Angles &angles) {
+    SetRotation(angles.ToQuat());
 }
 
 void ComTransform::SetOriginAxis(const Vec3 &origin, const Mat3 &axis) {
@@ -288,7 +335,7 @@ void ComTransform::Translate(const Vec3 &translation, TransformSpace space) {
 }
 
 void ComTransform::Rotate(const Vec3 &rotVec, float angle, TransformSpace space) {
-    Quat rotation = Quat::FromAngleAxis(angle, rotVec);
+    Quat rotation = Quat::FromAngleAxis(DEG2RAD(angle), rotVec);
 
     if (space == LocalSpace) {
         SetLocalRotation(GetLocalRotation() * rotation);
@@ -306,11 +353,11 @@ void ComTransform::InvalidateWorldMatrix() {
     }
     worldMatrixInvalidated = true;
 
-    // World matrix should be updated so we emit this signal
+    // World matrix will be updated so it's safe to emit can safely emit this signal.
     EmitSignal(&SIG_TransformUpdated, this);
 
     if (physicsUpdating) {
-        for (Entity *childEntity = GetEntity()->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+        for (Entity *childEntity = GetEntity()->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
             // Don't update children that has rigid body. they will be updated by own.
             if (childEntity->GetComponent(&ComRigidBody::metaObject) || childEntity->GetComponent(&ComVehicleWheel::metaObject)) {
                 continue;
@@ -319,14 +366,14 @@ void ComTransform::InvalidateWorldMatrix() {
             childEntity->GetTransform()->InvalidateWorldMatrix();
         }
     } else {
-        for (Entity *childEntity = GetEntity()->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+        for (Entity *childEntity = GetEntity()->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
             childEntity->GetTransform()->InvalidateWorldMatrix();
         }
     }
 }
 
 void ComTransform::UpdateWorldMatrix() const {
-    Mat3x4 localTransform = GetLocalMatrix();
+    ALIGN_AS32 Mat3x4 localTransform = GetLocalMatrix();
 
     const ComTransform *parent = GetParent();
     if (parent) {
@@ -336,6 +383,58 @@ void ComTransform::UpdateWorldMatrix() const {
     }
 
     worldMatrixInvalidated = false;
+}
+
+void ComTransform::InvalidateCachedRect() {
+    for (Entity *childEntity = GetEntity()->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+        ComTransform *transform = childEntity->GetTransform();
+
+        if (transform) {
+            transform->InvalidateCachedRect();
+        }
+    }
+}
+
+static Angles SyncEulerAngles(const Angles &eulerAngles, const Angles &eulerAnglesHint) {
+    Angles syncEulerAngles;
+
+    Angles deltaAnglesDiv360 = (eulerAnglesHint - eulerAngles) / 360.0f;
+
+    syncEulerAngles[0] = eulerAngles[0] + Math::Round(deltaAnglesDiv360[0]) * 360.0f;
+    syncEulerAngles[1] = eulerAngles[1] + Math::Round(deltaAnglesDiv360[1]) * 360.0f;
+    syncEulerAngles[2] = eulerAngles[2] + Math::Round(deltaAnglesDiv360[2]) * 360.0f;
+
+    return syncEulerAngles;
+}
+
+Angles ComTransform::CalculateLocalEulerAnglesHint(const Quat &newRotation, const Angles &currentEulerHint) {
+    Quat currentQuaternionHint = currentEulerHint.ToQuat();
+    float angleDiff = newRotation.AngleBetween(currentQuaternionHint);
+    if (angleDiff < 1e-3f) {
+        return currentEulerHint;
+    }
+
+    Angles e1 = newRotation.ToAngles();
+
+    // Round off degrees to the fourth decimal place
+    e1[0] = Math::Round(e1[0] / 1e-3f) * 1e-3f;
+    e1[1] = Math::Round(e1[1] / 1e-3f) * 1e-3f;
+    e1[2] = Math::Round(e1[2] / 1e-3f) * 1e-3f;
+
+    // Make another Euler angles
+    Angles e2 = e1 + Angles(180, 180, 180);
+    e2.y = -e2.y;
+
+    // Synchronize Euler angles to hint
+    Angles eulerAnglesSynced1 = SyncEulerAngles(e1, currentEulerHint);
+    Angles eulerAnglesSynced2 = SyncEulerAngles(e2, currentEulerHint);
+
+    // Calculate differences between current Euler angles hint
+    Vec3 diff1 = Vec3(eulerAnglesSynced1 - currentEulerHint);
+    Vec3 diff2 = Vec3(eulerAnglesSynced2 - currentEulerHint);
+
+    // Returns synchronized Euler angles which have smaller angle difference
+    return diff1.Dot(diff1) < diff2.Dot(diff2) ? eulerAnglesSynced1 : eulerAnglesSynced2;
 }
 
 BE_NAMESPACE_END

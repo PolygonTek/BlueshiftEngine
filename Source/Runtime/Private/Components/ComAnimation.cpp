@@ -18,9 +18,10 @@
 #include "Components/ComSkinnedMeshRenderer.h"
 #include "Game/GameWorld.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 #include "Core/JointPose.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -30,9 +31,9 @@ END_EVENTS
 
 void ComAnimation::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("skeleton", "Skeleton", Guid, GetSkeletonGuid, SetSkeletonGuid, Guid::zero,
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&SkeletonAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&SkeletonResource::metaObject);
     REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("anims", "Animations", Guid, GetAnimGuid, SetAnimGuid, GetAnimCount, SetAnimCount, Guid::zero,
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&AnimAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&AnimResource::metaObject);
     REGISTER_PROPERTY("animIndex", "Animation Index", int, currentAnimIndex, 0,
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("timeOffset", "Time Offset", float, GetTimeOffset, SetTimeOffset, 0.f,
@@ -103,7 +104,7 @@ void ComAnimation::Update() {
         return;
     }
 
-    int currentTime = (GetGameWorld()->GetTime() - playStartTime) * GetTimeScale() + SEC2MS(GetTimeOffset());
+    int currentTime = (GetGameWorld()->GetTime() - playStartTime) * GetTimeScale() + Math::FtoiFast(SEC2MILLI(GetTimeOffset()));
 
     UpdateAnim(currentTime);
 }
@@ -150,7 +151,7 @@ void ComAnimation::SkeletonReloaded() {
 }
 
 void ComAnimation::ChangeSkeleton(const Guid &skeletonGuid) {
-#if 1
+#if WITH_EDITOR
     // Disconnect with previously connected skeleton asset
     if (skeletonAsset) {
         skeletonAsset->Disconnect(&Asset::SIG_Reloaded, this);
@@ -199,9 +200,9 @@ void ComAnimation::ChangeSkeleton(const Guid &skeletonGuid) {
 
     //anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
 
-#if 1
+#if WITH_EDITOR
     // Need to connect skeleton asset to be reloaded in Editor
-    skeletonAsset = (SkeletonAsset *)SkeletonAsset::FindInstance(skeletonGuid);
+    skeletonAsset = (Asset *)Asset::FindInstance(skeletonGuid);
     if (skeletonAsset) {
         skeletonAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComAnimation::SkeletonReloaded, SignalObject::ConnectionType::Queued);
     }
@@ -240,7 +241,7 @@ void ComAnimation::SetAnimCount(int count) {
                 anims[index] = nullptr;
             }
 
-#if 1
+#if WITH_EDITOR
             if (animAssets[index]) {
                 animAssets[index]->Disconnect(&Asset::SIG_Reloaded, this);
                 animAssets[index] = nullptr;
@@ -256,7 +257,7 @@ void ComAnimation::SetAnimCount(int count) {
         for (int index = oldCount; index < count; index++) {
             anims[index] = nullptr;
 
-#if 1
+#if WITH_EDITOR
             animAssets[index] = nullptr;
 #endif
         }
@@ -270,7 +271,7 @@ void ComAnimation::AnimReloaded() {
 }
 
 void ComAnimation::ChangeAnim(int index, const Guid &animGuid) {
-#if 1
+#if WITH_EDITOR
     // Disconnect with previously connected anim asset
     if (animAssets[index]) {
         animAssets[index]->Disconnect(&Asset::SIG_Reloaded, this);
@@ -309,9 +310,9 @@ void ComAnimation::ChangeAnim(int index, const Guid &animGuid) {
         }
     }
 
-#if 1
+#if WITH_EDITOR
     // Need to connect anim asset to be reloaded in Editor
-    animAssets[index] = (AnimAsset *)AnimAsset::FindInstance(animGuid);
+    animAssets[index] = (Asset *)Asset::FindInstance(animGuid);
     if (animAssets[index]) {
         animAssets[index]->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComAnimation::AnimReloaded, SignalObject::ConnectionType::Queued);
     }
@@ -357,7 +358,7 @@ float ComAnimation::GetCurrentAnimSeconds() const {
         return 0;
     }
 
-    return MS2SEC(currentAnim->Length());
+    return MILLI2SEC(currentAnim->Length());
 }
 
 BE_NAMESPACE_END

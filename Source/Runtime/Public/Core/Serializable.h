@@ -14,9 +14,12 @@
 
 #pragma once
 
-#include "jsoncpp/include/json/json.h"
 #include "Variant.h"
 #include "Signal.h"
+
+namespace Json {
+    class Value;
+}
 
 BE_NAMESPACE_BEGIN
 

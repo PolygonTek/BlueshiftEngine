@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Math/Math.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Image/Image.h"
 #include "ImageInternal.h"
 
@@ -50,7 +50,7 @@ bool Image::LoadPCXFromMemory(const char *name, const byte *data, size_t size) {
         return false;
     }
     
-    Create2D(header->xmax - header->xmin + 1, header->ymax - header->ymin + 1, 1, Format::RGB_8_8_8, nullptr, 0);
+    Create2D(header->xmax - header->xmin + 1, header->ymax - header->ymin + 1, 1, Format::RGB_8_8_8, GammaSpace::sRGB, nullptr, 0);
 
     if (header->planes == 1) { // 8 bits paletted color
         const byte *palette = data + size - 768;
@@ -140,7 +140,6 @@ bool Image::WritePCX(const char *filename) const {
 
     fp->Write(&pcxfh, sizeof(pcxfh));
 
-    // FIXME: fwrite 를 한번에 하자
     for (int y = 0; y < height; y++) {
         for (int c = 2; c >= 0; c--) {
             byte run_n = 0;

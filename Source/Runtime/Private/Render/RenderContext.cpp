@@ -17,6 +17,7 @@
 #include "RenderInternal.h"
 #include "Core/Heap.h"
 #include "Platform/PlatformTime.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -41,17 +42,20 @@ void RenderContext::Init(RHI::WindowHandle hwnd, int renderingWidth, int renderi
     RHI::DisplayMetrics displayMetrics;
     rhi.GetDisplayMetrics(this->contextHandle, &displayMetrics);
 
+    // This is window resolution in logical units (points).
     this->windowWidth = displayMetrics.screenWidth;
     this->windowHeight = displayMetrics.screenHeight;
+
+    // This is device resolution in pixels.
     this->deviceWidth = displayMetrics.backingWidth;
     this->deviceHeight = displayMetrics.backingHeight;
     
-    // This is actual rendering resolution that will be upscaled if it is smaller than device resolution
+    // This is actual rendering resolution that will be upscaled if it is smaller than device resolution.
     this->renderingWidth = renderingWidth;
     this->renderingHeight = renderingHeight;
     
     this->guiMesh.Clear();
-    this->guiMesh.SetCoordFrame(GuiMesh::CoordFrame2D);
+    this->guiMesh.SetCoordFrame(GuiMesh::CoordFrame::CoordFrame2D);
     this->guiMesh.SetClipRect(Rect(0, 0, renderingWidth, renderingHeight));
     
     rhi.SetContextDisplayFunc(contextHandle, displayFunc, displayFuncDataPtr, (flags & Flag::OnDemandDrawing) ? true : false);
@@ -64,7 +68,7 @@ void RenderContext::Init(RHI::WindowHandle hwnd, int renderingWidth, int renderi
 
     this->random.SetSeed(123123);
 
-    this->elapsedTime = PlatformTime::Milliseconds() * 0.001f;
+    this->lastFrameMsec = PlatformTime::Milliseconds();
 }
 
 void RenderContext::Shutdown() {
@@ -144,13 +148,13 @@ void RenderContext::InitScreenMapRT() {
     }
 
     if (r_HOM.GetBool()) {
-        int w = Math::FloorPowerOfTwo(renderingWidth >> 1);
-        int h = Math::FloorPowerOfTwo(renderingHeight >> 1);
+        int w = Math::RoundDownPowerOfTwo(renderingWidth >> 1);
+        int h = Math::RoundDownPowerOfTwo(renderingHeight >> 1);
 
         homTexture = textureManager.AllocTexture(va("_%i_hom", (int)contextHandle));
         homTexture->CreateEmpty(RHI::TextureType::Texture2D, w, h, 1, 1, 1, Image::Format::Depth_32F, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::HighPriority | Texture::Flag::Nearest);
         homTexture->Bind();
-        rhi.GenerateMipmap();
+        homTexture->GenerateMipmap();
         homRT = RenderTarget::Create(nullptr, (const Texture *)homTexture, 0);
     }
 
@@ -312,7 +316,7 @@ void RenderContext::InitHdrMapRT() {
    
     Image::Format::Enum screenImageFormat = GetScreenImageFormat();
     Image hdrBloomImage;
-    hdrBloomImage.Create2D(quarterWidth, quarterHeight, 1, screenImageFormat, nullptr, Image::Flag::LinearSpace);
+    hdrBloomImage.Create2D(quarterWidth, quarterHeight, 1, screenImageFormat, Image::GammaSpace::Linear, nullptr, 0);
 
     for (int i = 0; i < COUNT_OF(hdrBloomRT); i++) {
         hdrBloomTexture[i] = textureManager.AllocTexture(va("_%i_hdrBloom%i", (int)contextHandle, i));
@@ -326,7 +330,7 @@ void RenderContext::InitHdrMapRT() {
         lumImageFormat = Image::Format::L_32F;
     }
 
-    int size = Min(Math::CeilPowerOfTwo(Max(quarterWidth, quarterHeight)) >> 2, 1024);
+    int size = Min(Math::RoundUpPowerOfTwo(Max(quarterWidth, quarterHeight)) >> 2, 1024);
 
     for (int i = 0; i < COUNT_OF(hdrLumAverageRT); i++) {
         hdrLumAverageTexture[i] = textureManager.AllocTexture(va("_%i_hdrLumAverage%i", (int)contextHandle, i));
@@ -399,13 +403,13 @@ void RenderContext::InitShadowMapRT() {
 
     int csmCount = r_CSM_count.GetInteger();
 
-    // Cascaded shadow map
+    // Create cascaded shadow map.
     shadowRenderTexture = textureManager.AllocTexture(va("_%i_shadowRender", (int)contextHandle));
     shadowRenderTexture->CreateEmpty(textureType, r_shadowMapSize.GetInteger(), r_shadowMapSize.GetInteger(), 1, csmCount, 1, shadowImageFormat,
         Texture::Flag::Shadow | Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality | Texture::Flag::HighPriority);
     shadowMapRT = RenderTarget::Create(nullptr, shadowRenderTexture, 0);
 
-    // Virtual shadow cube map
+    // Create virtual shadow cube map.
     vscmTexture = textureManager.AllocTexture(va("_%i_vscmRender", (int)contextHandle));
     vscmTexture->CreateEmpty(RHI::TextureType::Texture2D, r_shadowCubeMapSize.GetInteger(), r_shadowCubeMapSize.GetInteger(), 1, 1, 1, shadowCubeImageFormat,
         Texture::Flag::Shadow | Texture::Flag::Clamp | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality | Texture::Flag::HighPriority);
@@ -480,17 +484,21 @@ void RenderContext::OnResize(int width, int height) {
 }
 
 void RenderContext::Display() {
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderContext::Display");
+
     rhi.DisplayContext(contextHandle);
 }
 
 void RenderContext::BeginFrame() {
-    startFrameSec = PlatformTime::Seconds();
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderContext::BeginFrame");
 
-    frameTime = startFrameSec - elapsedTime;
+    startFrameMsec = PlatformTime::Milliseconds();
 
-    elapsedTime = startFrameSec;
+    frameMsec = startFrameMsec - lastFrameMsec;
 
-    memset(&renderCounter, 0, sizeof(renderCounter));
+    lastFrameMsec = startFrameMsec;
+
+    memset(&renderCounters[frameCount & 1], 0, sizeof(renderCounters[0]));
 
     renderSystem.UpdateEnvProbes();
 
@@ -507,7 +515,7 @@ void RenderContext::BeginFrame() {
 }
 
 void RenderContext::EndFrame() {
-    frameCount++;
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderContext::EndFrame");
 
     // Adds system GUI commands
     renderSystem.primaryWorld->DrawGUICamera(guiMesh);
@@ -520,25 +528,11 @@ void RenderContext::EndFrame() {
 
     guiMesh.Clear();
 
-    renderCounter.frameMsec = PlatformTime::Milliseconds() - SEC2MS(startFrameSec);
+    RenderCounter *currentRenderCounter = &renderCounters[frameCount & 1];
 
-    if (r_showStats.GetInteger() > 0) {
-        switch (r_showStats.GetInteger()) {
-        case 1:
-            BE_LOG("draw:%i verts:%i tris:%i sdraw:%i sverts:%i stris:%i\n", 
-                renderCounter.drawCalls, renderCounter.drawVerts, renderCounter.drawIndexes / 3, 
-                renderCounter.shadowDrawCalls, renderCounter.shadowDrawVerts, renderCounter.shadowDrawIndexes / 3);
-            break;
-        case 2:
-            BE_LOG("frame:%i rb:%i homGen:%i homQuery:%i homCull:%i\n", 
-                renderCounter.frameMsec, renderCounter.backEndMsec, renderCounter.homGenMsec, renderCounter.homQueryMsec, renderCounter.homCullMsec);
-            break;
-        case 3:
-            BE_LOG("shadowmap:%i skinning:%i\n",
-                renderCounter.numShadowMapDraw, renderCounter.numSkinningEntities);
-            break;
-        }
-    }
+    currentRenderCounter->frameMsec = PlatformTime::Milliseconds() - startFrameMsec;
+
+    frameCount++;
 }
 
 void RenderContext::AdjustFrom640x480(float *x, float *y, float *w, float *h) const {
@@ -604,7 +598,7 @@ void RenderContext::UpdateCurrentRenderTexture() const {
 
     currentRenderTexture->Bind();
     rhi.CopyTextureSubImage2D(0, 0, 0, 0, currentRenderTexture->GetWidth(), currentRenderTexture->GetHeight());
-    //rhi.GenerateMipmap();
+    //currentRenderTexture->GenerateMipmap();
     
     //BE_LOG("%lf\n", PlatformTime::Seconds() - starttime);
 }
@@ -630,7 +624,7 @@ float RenderContext::QueryDepth(const Point &point) {
     return depth;
 }
 
-int RenderContext::QuerySelection(const Point &point) {
+bool RenderContext::QuerySelection(const Point &point, uint32_t &index) {
     Image::Format::Enum format = screenSelectionRT->ColorTexture()->GetFormat();
     byte *data = (byte *)_alloca(Image::BytesPerPixel(format));
 
@@ -645,13 +639,27 @@ int RenderContext::QuerySelection(const Point &point) {
     rhi.ReadPixels(scaledReadPoint.x, scaledReadPoint.y, 1, 1, format, data);
     screenSelectionRT->End();
 
-    int id = ((int)data[2] << 16) | ((int)data[1] << 8) | ((int)data[0]);
+    uint32_t id = ((uint32_t)data[2] << 16) | ((uint32_t)data[1] << 8) | ((uint32_t)data[0]);
+    if (id != 0x00FFFFFF) {
+        index = id;
+        return true;
+    }
 
-    return id;
+    return false;
 }
 
-bool RenderContext::QuerySelection(const Rect &rect, Inclusion::Enum inclusion, Array<int> &indexes) {
+bool RenderContext::QuerySelection(const Rect &rect, Inclusion::Enum inclusion, Array<uint32_t> &indexes) {
     if (rect.IsEmpty()) {
+        return false;
+    }
+
+    if (rect.w == 1 && rect.h == 1) {
+        uint32_t index;
+
+        if (QuerySelection(rect.GetPoint(0), index)) {
+            indexes.Append(index);
+            return true;
+        }
         return false;
     }
 
@@ -680,8 +688,10 @@ bool RenderContext::QuerySelection(const Rect &rect, Inclusion::Enum inclusion, 
         byte *data_ptr = data;
 
         for (int i = 0; i < pixelCount; i++) {
-            int id = (((int)data_ptr[2]) << 16) | (((int)data_ptr[1]) << 8) | ((int)data_ptr[0]);
-            indexes.AddUnique(id);
+            uint32_t id = (((uint32_t)data_ptr[2]) << 16) | (((uint32_t)data_ptr[1]) << 8) | ((uint32_t)data_ptr[0]);
+            if (id != 0x00FFFFFF) {
+                indexes.AddUnique(id);
+            }
 
             data_ptr += bpp;
         }
@@ -702,8 +712,10 @@ bool RenderContext::QuerySelection(const Rect &rect, Inclusion::Enum inclusion, 
             for (int x = scaledReadRect.x; x < scaledReadRect.X2(); x++) {
                 byte *data_ptr = &data[pitch + x * bpp];
 
-                int id = (((int)data_ptr[2]) << 16) | (((int)data_ptr[1]) << 8) | ((int)data_ptr[0]);
-                indexes.AddUnique(id);
+                uint32_t id = (((uint32_t)data_ptr[2]) << 16) | (((uint32_t)data_ptr[1]) << 8) | ((uint32_t)data_ptr[0]);
+                if (id != 0x00FFFFFF) {
+                    indexes.AddUnique(id);
+                }
             }
         }
         
@@ -714,8 +726,10 @@ bool RenderContext::QuerySelection(const Rect &rect, Inclusion::Enum inclusion, 
                 if (!scaledReadRect.IsContainPoint(x, y)) {
                     byte *data_ptr = &data[pitch + x * bpp];
 
-                    int id = (((int)data_ptr[2]) << 16) | (((int)data_ptr[1]) << 8) | ((int)data_ptr[0]);
-                    indexes.RemoveFast(id);
+                    uint32_t id = (((uint32_t)data_ptr[2]) << 16) | (((uint32_t)data_ptr[1]) << 8) | ((uint32_t)data_ptr[0]);
+                    if (id != 0x00FFFFFF) {
+                        indexes.RemoveFast(id);
+                    }
                 }
             }
         }
@@ -745,10 +759,15 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     cameraDef.axis = axis;
     cameraDef.orthogonal = false;
 
-    Vec3 v;
-    renderWorld->GetStaticAABB().GetFarthestVertexFromDir(axis[0], v);
-    cameraDef.zFar = Max(BE1::MeterToUnit(100.0f), origin.Distance(v));
-    cameraDef.zNear = BE1::CentiToUnit(5.0f);
+    AABB worldAABB = renderWorld->GetStaticAABB();
+    if (!worldAABB.IsCleared()) {
+        Vec3 v;
+        worldAABB.GetFarthestVertexFromDir(axis[0], v);
+        cameraDef.zFar = Max(MeterToUnit(100.0f), origin.Distance(v));
+    } else {
+        cameraDef.zFar = MeterToUnit(100.0f);
+    }
+    cameraDef.zNear = CentiToUnit(5.0f);
 
     RenderCamera::ComputeFov(fov, 1.25f, (float)width / height, &cameraDef.fovX, &cameraDef.fovY);
 

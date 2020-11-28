@@ -28,29 +28,29 @@ class Console : public SignalObject {
 public:
     Console() = default;
 
-    void                Init();
-    void                Shutdown();
+    void                    Init();
+    void                    Shutdown();
 
-    void                Clear();
+    void                    Clear();
 
-    int                 GetFirstLineIndex() const;
-    int                 NumLines() const;
+    int                     GetFirstLineIndex() const;
+    int                     NumLines() const;
 
-    void                Print(const Str &string);
+    void                    Print(const Str &string);
 
-    void                DumpToFile(const char *filename);
+    void                    DumpToFile(const char *filename);
 
-    bool                initialized = false;
+    bool                    initialized = false;
 
-    StrArray            textLines;
-    int                 currentLineIndex;
+    StrArray                textLines;
+    int                     currentLineIndex;
 
-    static void         Cmd_ConClear(const CmdArgs &args);
-    static void         Cmd_ConDump(const CmdArgs &args);
+    static void             Cmd_ConClear(const CmdArgs &args);
+    static void             Cmd_ConDump(const CmdArgs &args);
 
-    static const SignalDef SIG_TextAdded;
+    static const SignalDef  SIG_TextAdded;
 };
 
-extern Console          console;
+extern Console              console;
 
 BE_NAMESPACE_END

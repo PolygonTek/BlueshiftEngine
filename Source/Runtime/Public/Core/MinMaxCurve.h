@@ -93,9 +93,9 @@ BE_INLINE float MinMaxCurve::Evaluate(float random, float t) const {
     case Type::Curve:
         return scalar * maxCurve.Evaluate(t);
     case Type::RandomBetweenTwoConstants:
-        return scalar * Lerp(minCurve.GetPoint(0), maxCurve.GetPoint(0), random);
+        return scalar * Math::Lerp(minCurve.GetPoint(0), maxCurve.GetPoint(0), random);
     case Type::RandomBetweenTwoCurves:
-        return scalar * Lerp(minCurve.Evaluate(t), maxCurve.Evaluate(t), random);
+        return scalar * Math::Lerp(minCurve.Evaluate(t), maxCurve.Evaluate(t), random);
     default:
         assert(0);
         return 0;
@@ -109,9 +109,9 @@ BE_INLINE float MinMaxCurve::Integrate(float random, float t) const {
     case Type::Curve:
         return scalar * maxCurve.Integrate(0, t);
     case Type::RandomBetweenTwoConstants:
-        return scalar * Lerp(minCurve.GetPoint(0), maxCurve.GetPoint(0), random) * t;
+        return scalar * Math::Lerp(minCurve.GetPoint(0), maxCurve.GetPoint(0), random) * t;
     case Type::RandomBetweenTwoCurves:
-        return scalar * Lerp(minCurve.Integrate(0, t), maxCurve.Integrate(0, t), random);
+        return scalar * Math::Lerp(minCurve.Integrate(0, t), maxCurve.Integrate(0, t), random);
     default:
         assert(0);
         return 0;

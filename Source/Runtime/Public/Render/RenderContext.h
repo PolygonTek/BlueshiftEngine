@@ -52,12 +52,12 @@ enum ppTexture_t {
 };
 
 struct RenderCounter {
-    int                     frontEndMsec;
-    int                     backEndMsec;
-    int                     frameMsec;
-    int                     homGenMsec;
-    int                     homQueryMsec;
-    int                     homCullMsec;
+    uint32_t                frontEndMsec;
+    uint32_t                backEndMsec;
+    uint32_t                frameMsec;
+    uint32_t                homGenMsec;
+    uint32_t                homQueryMsec;
+    uint32_t                homCullMsec;
 
     unsigned int            drawCalls;
     unsigned int            drawVerts;
@@ -105,25 +105,28 @@ public:
 
     RHI::Handle             GetContextHandle() const { return contextHandle; }
     
-                            // logical screen resolution
+                            // Returns logical screen resolution.
     int                     GetScreenWidth() const { return windowWidth; }
     int                     GetScreenHeight() const { return windowHeight; }
 
-                            // device resolution
+                            // Returns device resolution.
     int                     GetDeviceWidth() const { return deviceWidth; }
     int                     GetDeviceHeight() const { return deviceHeight; }
 
-                            // actual screen render target resolution
+                            // Returns actual screen render target resolution.
     int                     GetRenderingWidth() const { return renderingWidth; }
     int                     GetRenderingHeight() const { return renderingHeight; }
 
-                            // upscale factor for render to device mapping
+                            // Returns upscale factor for render to device mapping.
     float                   GetUpscaleFactorX() const { return (float)deviceWidth / renderingWidth; }
     float                   GetUpscaleFactorY() const { return (float)deviceHeight / renderingHeight; }
 
     Rect                    GetSafeAreaInsets() const { return safeAreaInsets; }
 
     void                    OnResize(int width, int height);
+
+    const RenderCounter &   GetPrevFrameRenderCounter() const { return renderCounters[(frameCount + 1) & 1]; }
+    RenderCounter &         GetRenderCounter() { return renderCounters[frameCount & 1]; }
 
     void                    Display();
 
@@ -138,7 +141,7 @@ public:
     void                    SetClearColor(const Color4 &clearColor);
     void                    SetClearDepth(float clearDepth);
                             
-                            // set clipping rect for DrawPic/DrawStretchPic
+                            // Set clipping rect for DrawPic/DrawStretchPic
     void                    SetClipRect(const Rect &clipRect);
 
     GuiMesh &               GetGuiMesh() { return guiMesh; }
@@ -154,8 +157,8 @@ public:
 
                             // Query in render coordinates
     float                   QueryDepth(const Point &pt);
-    int                     QuerySelection(const Point &pt);
-    bool                    QuerySelection(const Rect &rect, Inclusion::Enum inclusion, Array<int> &indexes);
+    bool                    QuerySelection(const Point &pt, uint32_t &index);
+    bool                    QuerySelection(const Rect &rect, Inclusion::Enum inclusion, Array<uint32_t> &indexes);
 
     void                    TakeScreenShot(const char *filename, RenderWorld *renderWorld, int layerMask, const Vec3 &origin, const Mat3 &axis, float fov, int width, int height);
 
@@ -181,9 +184,9 @@ public:
 
     Random                  random;
 
-    float                   elapsedTime;
-    float                   frameTime;
     int                     frameCount;
+    uint32_t                frameMsec;
+    uint32_t                lastFrameMsec;
 
     Color4                  color;
     Color4                  clearColor;
@@ -194,8 +197,8 @@ public:
     int                     prevLumTarget;
     int                     currLumTarget;
 
-    RenderCounter           renderCounter;
-    int                     startFrameSec;
+    RenderCounter           renderCounters[2];
+    uint32_t                startFrameMsec;
 
     Texture *               screenColorTexture = nullptr;
     Texture *               screenDepthTexture = nullptr;
@@ -211,7 +214,7 @@ public:
     Texture *               hdrLuminanceTexture[3] = { nullptr, };
 
     Texture *               currentRenderTexture = nullptr;
-    bool                    updateCurrentRenderTexture;
+    bool                    updateCurrentRenderTexture = false;
 
     RenderTarget *          screenRT = nullptr;
     RenderTarget *          screenLitAccRT = nullptr;

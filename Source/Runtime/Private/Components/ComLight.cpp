@@ -19,7 +19,7 @@
 #include "Components/ComLight.h"
 #include "Game/GameWorld.h"
 #include "Game/TagLayerSettings.h"
-#include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
@@ -29,12 +29,12 @@ BEGIN_EVENTS(ComLight)
 END_EVENTS
 
 void ComLight::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("lightType", "Light Type", RenderLight::Type::Enum, GetLightType, SetLightType, 0, 
+    REGISTER_ACCESSOR_PROPERTY("lightType", "Light Type", RenderLight::Type::Enum, GetLightType, SetLightType, RenderLight::Type::Point,
         "", PropertyInfo::Flag::Editor).SetEnumString("Point;Spot;Directional");
     REGISTER_ACCESSOR_PROPERTY("primaryLight", "Is Main Light", bool, IsPrimaryLight, SetPrimaryLight, false,
         "", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("material", "Material", Guid, GetMaterialGuid, SetMaterialGuid, GuidMapper::zeroClampLightMaterialGuid, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&MaterialAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&MaterialResource::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("color", "Color", Color3, GetColor, SetColor, Color3::white, 
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("intensity", "Intensity", float, GetIntensity, SetIntensity, 2.f,
@@ -55,14 +55,14 @@ void ComLight::RegisterProperties() {
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("timeScale", "Time Scale", float, GetTimeScale, SetTimeScale, 1.f, 
         "", PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("maxVisDist", "Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 16384.f, 
+    REGISTER_ACCESSOR_PROPERTY("maxVisDist", "Max Visible Distance", float, GetMaxVisDist, SetMaxVisDist, 1000.f, 
         "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
 }
 
 ComLight::ComLight() {
     renderLightHandle = -1;
 
-#if 1
+#if WITH_EDITOR
     spriteHandle = -1;
     spriteMesh = nullptr;
 #endif
@@ -73,7 +73,7 @@ ComLight::~ComLight() {
 }
 
 void ComLight::Purge(bool chainPurge) {
-#if 1
+#if WITH_EDITOR
     for (int i = 0; i < spriteDef.materials.Count(); i++) {
         materialManager.ReleaseMaterial(spriteDef.materials[i]);
     }
@@ -138,7 +138,7 @@ void ComLight::Init() {
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComLight::TransformUpdated, SignalObject::ConnectionType::Unique);
 
-#if 1
+#if WITH_EDITOR
     // 3d sprite for editor
     spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
 
@@ -146,7 +146,7 @@ void ComLight::Init() {
     spriteDef.layer = TagLayerSettings::BuiltInLayer::Editor;
     spriteDef.maxVisDist = MeterToUnit(50.0f);
 
-    Texture *spriteTexture = textureManager.GetTexture(LightSpriteTexturePath(renderLightDef.type), Texture::Flag::Clamp | Texture::Flag::HighQuality);
+    Texture *spriteTexture = textureManager.GetTextureWithoutTextureInfo(LightSpriteTexturePath(renderLightDef.type), Texture::Flag::Clamp | Texture::Flag::HighQuality);
     spriteDef.materials.SetCount(1);
     spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::TextureHint::Sprite);
     textureManager.ReleaseTexture(spriteTexture);
@@ -181,7 +181,7 @@ void ComLight::OnInactive() {
         renderLightHandle = -1;
     }
 
-#if 1
+#if WITH_EDITOR
     if (spriteHandle != -1) {
         renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
@@ -189,9 +189,9 @@ void ComLight::OnInactive() {
 #endif
 }
 
-bool ComLight::HasRenderEntity(int renderEntityHandle) const { 
-#if 1
-    if (spriteHandle == renderEntityHandle) {
+bool ComLight::HasRenderObject(int renderObjectHandle) const { 
+#if WITH_EDITOR
+    if (spriteHandle == renderObjectHandle) {
         return true;
     }
 #endif
@@ -199,18 +199,18 @@ bool ComLight::HasRenderEntity(int renderEntityHandle) const {
     return false;
 }
 
-#if 1
-void ComLight::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+#if WITH_EDITOR
+void ComLight::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     const Color4 lightColor = Color4(GetColor(), 1.0f);
 
     if (renderLightDef.type == RenderLight::Type::Directional || renderLightDef.type == RenderLight::Type::Spot) {
-        if (selected) {
+        if (selectedByParent) {
             renderWorld->SetDebugColor(Color4::white, Color4::zero);
         } else {
             renderWorld->SetDebugColor(lightColor, Color4::zero);
         }
 
-        if (selected) {
+        if (selectedByParent) {
             renderWorld->SetDebugColor(lightColor, Color4::zero);
 
             if (renderLightDef.type == RenderLight::Type::Directional) {
@@ -228,13 +228,13 @@ void ComLight::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
             }
         }
     } else if (renderLightDef.type == RenderLight::Type::Point) {
-        if (selected) {
+        if (selectedByParent) {
             renderWorld->SetDebugColor(Color4::white, Color4::zero);
         } else {
             renderWorld->SetDebugColor(lightColor, Color4::zero);
         }
 
-        if (selected) {
+        if (selectedByParent) {
             renderWorld->SetDebugColor(lightColor, Color4::zero);
             renderWorld->DebugEllipse(renderLightDef.origin, renderLightDef.axis[0], renderLightDef.axis[1], renderLightDef.size[0], renderLightDef.size[1], 1, true, true);
             renderWorld->DebugEllipse(renderLightDef.origin, renderLightDef.axis[1], renderLightDef.axis[2], renderLightDef.size[1], renderLightDef.size[2], 1, true, true);
@@ -253,13 +253,13 @@ void ComLight::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
     }
 
     // Fade icon alpha in near distance
-    float alpha = BE1::Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(viewState.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
+    float alpha = Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(camera->GetState().origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
 
     spriteDef.materials[0]->GetPass()->constantColor[3] = alpha;
 }
 #endif
 
-const AABB ComLight::GetAABB() {
+const AABB ComLight::GetAABB() const {
     return Sphere(Vec3::origin, MeterToUnit(0.5f)).ToAABB();
 }
 
@@ -274,7 +274,7 @@ void ComLight::UpdateVisuals() {
         renderWorld->UpdateRenderLight(renderLightHandle, &renderLightDef);
     }
 
-#if 1
+#if WITH_EDITOR
     if (spriteHandle == -1) {
         spriteHandle = renderWorld->AddRenderObject(&spriteDef);
     } else {
@@ -299,7 +299,7 @@ void ComLight::TransformUpdated(const ComTransform *transform) {
     renderLightDef.origin = transform->GetOrigin();
     renderLightDef.axis = transform->GetAxis();
 
-#if 1
+#if WITH_EDITOR
     spriteDef.worldMatrix.SetTranslation(renderLightDef.origin);
 #endif
 
@@ -314,10 +314,10 @@ void ComLight::SetLightType(RenderLight::Type::Enum type) {
     renderLightDef.type = type;
 
     if (IsInitialized()) {
-#if 1
+#if WITH_EDITOR
         materialManager.ReleaseMaterial(spriteDef.materials[0]);
 
-        Texture *spriteTexture = textureManager.GetTexture(LightSpriteTexturePath(renderLightDef.type), Texture::Flag::Clamp | Texture::Flag::HighQuality);
+        Texture *spriteTexture = textureManager.GetTextureWithoutTextureInfo(LightSpriteTexturePath(renderLightDef.type), Texture::Flag::Clamp | Texture::Flag::HighQuality);
         spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::TextureHint::Sprite);
         textureManager.ReleaseTexture(spriteTexture);
 #endif
@@ -383,10 +383,12 @@ Guid ComLight::GetMaterialGuid() const {
 }
 
 void ComLight::SetMaterialGuid(const Guid &materialGuid) {
+    // Release the previously used material
     if (renderLightDef.material) {
         materialManager.ReleaseMaterial(renderLightDef.material);
     }
 
+    // Get the new material
     const Str materialPath = resourceGuidMapper.Get(materialGuid);
     renderLightDef.material = materialManager.GetMaterial(materialPath);
 
@@ -402,7 +404,7 @@ void ComLight::SetColor(const Color3 &color) {
     renderLightDef.materialParms[RenderObject::MaterialParm::Green] = color.g;
     renderLightDef.materialParms[RenderObject::MaterialParm::Blue] = color.b;
 
-#if 1
+#if WITH_EDITOR
     spriteDef.materialParms[RenderObject::MaterialParm::Red] = color.r;
     spriteDef.materialParms[RenderObject::MaterialParm::Green] = color.g;
     spriteDef.materialParms[RenderObject::MaterialParm::Blue] = color.b;

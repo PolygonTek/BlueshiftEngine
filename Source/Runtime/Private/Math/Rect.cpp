@@ -17,7 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const Rect Rect::empty = Rect(0, 0, 0, 0);
+const Rect Rect::zero = Rect(0, 0, 0, 0);
 
 Rect Rect::Add(const Rect &a) const {
     Rect rc;
@@ -104,6 +104,8 @@ Rect Rect::Move(int ax, int ay) const {
     Rect rect;
     rect.x = x + ax;
     rect.y = y + ay;
+    rect.w = w;
+    rect.h = h;
     return rect;
 }
 
@@ -145,6 +147,10 @@ Rect &Rect::ExpandSelf(int ax, int ay) {
     w += ax * 2;
     h += ay * 2;
     return *this;
+}
+
+RectF Rect::ToRectF() const { 
+    return RectF(x, y, w, h); 
 }
 
 Rect Rect::FromString(const char *str) {

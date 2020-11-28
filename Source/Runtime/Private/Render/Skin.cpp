@@ -16,7 +16,7 @@
 #include "Render/Render.h"
 #include "Asset/GuidMapper.h"
 #include "RenderInternal.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 

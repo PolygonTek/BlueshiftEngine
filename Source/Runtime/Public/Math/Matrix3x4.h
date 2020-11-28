@@ -94,7 +94,7 @@ public:
     Mat3x4              MulScalar(float s) const { return *this * s; }
                         /// Multiplies this matrix by a scalar.
                         /// This function is identical to the member function MulScalar().
-    Mat3x4              operator*(const float rhs) const;
+    Mat3x4              operator*(float rhs) const;
 
                         /// Transforms the given vector by this matrix
     Vec4                MulVec(const Vec4 &v) const { return *this * v; }
@@ -104,8 +104,8 @@ public:
     Vec3                TransposedMulVec(const Vec3 &v) const;
                         /// Transforms the given vector by this matrix.
                         /// This function is identical to the member function MulVec().
-    Vec4                operator*(const Vec4 &rhs) const;
-    Vec3                operator*(const Vec3 &rhs) const;
+    Vec4                operator*(const Vec4 &rhs) const { return Transform(rhs); }
+    Vec3                operator*(const Vec3 &rhs) const { return Transform(rhs); }
                         /// Transforms the given vector by the given matrix m.
     friend Vec4         operator*(const Vec4 &lhs, const Mat3x4 &rhs) { return rhs * lhs; }
     friend Vec3         operator*(const Vec3 &lhs, const Mat3x4 &rhs) { return rhs * lhs; }
@@ -126,25 +126,25 @@ public:
                         /// This function is identical to the member function SubSelf().
     Mat3x4 &            operator-=(const Mat3x4 &rhs);
 
-                        /// Multiplies this matrix with the given matrix, in-place
+                        /// Multiplies this matrix with the given matrix, in-place.
     Mat3x4 &            MulSelf(const Mat3x4 &m) { *this *= m; return *this; }
-                        /// Multiplies this matrix with the given matrix, in-place
+                        /// Multiplies this matrix with the given matrix, in-place.
                         /// This function is identical to the member function MulSelf().
     Mat3x4 &            operator*=(const Mat3x4 &rhs);
     
-                        /// Multiplies this matrix with the given scalar, in-place
+                        /// Multiplies this matrix with the given scalar, in-place.
     Mat3x4 &            MulScalarSelf(float s) { *this *= s; return *this; }
-                        /// Multiplies this matrix with the given scalar, in-place
+                        /// Multiplies this matrix with the given scalar, in-place.
                         /// This function is identical to the member function MulScalarSelf().
     Mat3x4 &            operator*=(float rhs);
 
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const Mat3x4 &a) const;
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const Mat3x4 &a, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const Mat3x4 &rhs) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const Mat3x4 &rhs) const;
 
                         /// Tests if this is the identity matrix, up to the given epsilon.
@@ -155,9 +155,9 @@ public:
                         /// Sets this matrix to equal the identity.
     void                SetIdentity();
 
-                        /// Fix degenerate axial cases
+                        /// Fix degenerate axial cases.
     bool                FixDegeneracies();
-                        /// Change tiny numbers to zero
+                        /// Change tiny numbers to zero.
     bool                FixDenormals();
 
     void                SetRotationScale(const Mat3 &rotation, const Vec3 &scale);
@@ -193,21 +193,24 @@ public:
                         /// Performs uniform scaling by the given amount, in-place.
     Mat3x4 &            UniformScale(const float s) { return Scale(s, s, s); }
 
-                        /// Returns translation matrix
+                        /// Returns translation matrix.
     static Mat3x4       FromTranslation(float tx, float ty, float tz);
     static Mat3x4       FromTranslation(const Vec3 &t) { return FromTranslation(t.x, t.y, t.z); }
 
-                        /// Returns scaling matrix
+                        /// Returns scaling matrix.
     static Mat3x4       FromScale(float sx, float sy, float sz);
     static Mat3x4       FromScale(const Vec3 &s) { return FromScale(s.x, s.y, s.z); }
 
+    Vec4                Transform(const Vec4 &v) const;
     Vec3                Transform(const Vec3 &v) const;
-    Vec3                Transform(const Vec4 &v) const;
     Vec3                TransformNormal(const Vec3 &v) const;
+
     Mat3x4 &            TransformSelf(const Mat3x4 &a);
 
     Mat3x4 &            UntransformSelf(const Mat3x4 &a);
 
+                        /// Returns upper left 2x2 part.
+    Mat2                ToMat2() const;
                         /// Returns upper left 3x3 part.
     Mat3                ToMat3() const;
                         /// Returns 4x4 square matrix.
@@ -222,14 +225,14 @@ public:
                         /// Returns "_00 _01 _02 _03 _10 _11 _12 _13 _20 _21 _22 _23" with the given precisions.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Mat3x4       FromString(const char *str);
 
-                        /// Returns dimension of this type
-    int                 GetDimension() const { return Rows * Cols; }
-    
-    static const Mat3x4 zero;
-    static const Mat3x4 identity;
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return Rows * Cols; }
+
+    ALIGN_AS32 static const Mat3x4 zero;
+    ALIGN_AS32 static const Mat3x4 identity;
 
     Vec4                mat[Rows];
 };
@@ -361,27 +364,6 @@ BE_INLINE Vec4 &Mat3x4::operator[](int index) {
     return mat[index];
 }
 
-BE_INLINE Mat3x4 Mat3x4::operator-() const {
-    return Mat3x4(
-        -mat[0][0], -mat[0][1], -mat[0][2], -mat[0][3],
-        -mat[1][0], -mat[1][1], -mat[1][2], -mat[1][3],
-        -mat[2][0], -mat[2][1], -mat[2][2], -mat[2][3]);
-}
-
-BE_INLINE Mat3x4 Mat3x4::operator+(const Mat3x4 &a) const {
-    return Mat3x4(
-        mat[0].x + a[0].x, mat[0].y + a[0].y, mat[0].z + a[0].z, mat[0].w + a[0].w,
-        mat[1].x + a[1].x, mat[1].y + a[1].y, mat[1].z + a[1].z, mat[1].w + a[1].w,
-        mat[2].x + a[2].x, mat[2].y + a[2].y, mat[2].z + a[2].z, mat[2].w + a[2].w);
-}
-
-BE_INLINE Mat3x4 Mat3x4::operator-(const Mat3x4 &a) const {
-    return Mat3x4(
-        mat[0].x - a[0].x, mat[0].y - a[0].y, mat[0].z - a[0].z, mat[0].w - a[0].w,
-        mat[1].x - a[1].x, mat[1].y - a[1].y, mat[1].z - a[1].z, mat[1].w - a[1].w,
-        mat[2].x - a[2].x, mat[2].y - a[2].y, mat[2].z - a[2].z, mat[2].w - a[2].w);
-}
-
 BE_INLINE bool Mat3x4::Equals(const Mat3x4 &a) const {
     if (mat[0].Equals(a[0]) &&
         mat[1].Equals(a[1]) &&
@@ -435,46 +417,9 @@ BE_INLINE bool Mat3x4::FixDenormals() {
 }
 
 BE_INLINE Mat3x4 Mat3x4::Inverse() const {
-    Mat3x4 invMat = *this;
+    ALIGN_AS32 Mat3x4 invMat = *this;
     invMat.InverseSelf();
     return invMat;
-}
-
-BE_INLINE Mat3x4 Mat3x4::operator*(const float rhs) const {
-    return Mat3x4(
-        mat[0][0] * rhs, mat[0][1] * rhs, mat[0][2] * rhs, mat[0][3] * rhs, 
-        mat[1][1] * rhs, mat[1][1] * rhs, mat[1][2] * rhs, mat[1][3] * rhs,
-        mat[2][0] * rhs, mat[2][1] * rhs, mat[2][2] * rhs, mat[2][3] * rhs);
-}
-
-BE_INLINE Vec4 Mat3x4::operator*(const Vec4 &vec) const {
-    return Vec4(
-        mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w * vec.w,
-        mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w * vec.w,
-        mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w * vec.w,
-        vec.w);
-}
-
-BE_INLINE Vec3 Mat3x4::operator*(const Vec3 &vec) const {
-    return Vec3(
-        mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w,
-        mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w,
-        mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w);
-}
-
-BE_INLINE Vec4 Mat3x4::TransposedMulVec(const Vec4 &vec) const {
-    return Vec4(
-        mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z,
-        mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z,
-        mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z,
-        mat[0].w * vec.x + mat[1].w * vec.y + mat[2].w * vec.z + vec.w);
-}
-
-BE_INLINE Vec3 Mat3x4::TransposedMulVec(const Vec3 &vec) const {
-    return Vec3(
-        mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z,
-        mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z,
-        mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z);
 }
 
 BE_INLINE Mat3x4 &Mat3x4::operator=(const Mat3x4 &rhs) {
@@ -515,87 +460,15 @@ BE_INLINE Mat3x4 &Mat3x4::operator=(const Mat3 &rhs) {
     return *this;
 }
 
-BE_INLINE Mat3x4 &Mat3x4::operator+=(const Mat3x4 &rhs) {
-    mat[0][0] += rhs.mat[0][0];
-    mat[0][1] += rhs.mat[0][1];
-    mat[0][2] += rhs.mat[0][2];
-    mat[0][3] += rhs.mat[0][3];
-
-    mat[1][0] += rhs.mat[1][0];
-    mat[1][1] += rhs.mat[1][1];
-    mat[1][2] += rhs.mat[1][2];
-    mat[1][3] += rhs.mat[1][3];
-
-    mat[2][0] += rhs.mat[2][0];
-    mat[2][1] += rhs.mat[2][1];
-    mat[2][2] += rhs.mat[2][2];
-    mat[2][3] += rhs.mat[2][3];
-
-    return *this;
-}
-
-BE_INLINE Mat3x4 &Mat3x4::operator-=(const Mat3x4 &rhs) {
-    mat[0][0] -= rhs.mat[0][0];
-    mat[0][1] -= rhs.mat[0][1];
-    mat[0][2] -= rhs.mat[0][2];
-    mat[0][3] -= rhs.mat[0][3];
-
-    mat[1][0] -= rhs.mat[1][0];
-    mat[1][1] -= rhs.mat[1][1];
-    mat[1][2] -= rhs.mat[1][2];
-    mat[1][3] -= rhs.mat[1][3];
-
-    mat[2][0] -= rhs.mat[2][0];
-    mat[2][1] -= rhs.mat[2][1];
-    mat[2][2] -= rhs.mat[2][2];
-    mat[2][3] -= rhs.mat[2][3];
-
-    return *this;
-}
-
 BE_INLINE Mat3x4 &Mat3x4::operator*=(const Mat3x4 &rhs) {
-    *this = (*this) * rhs;
+    TransformSelf(rhs);
     return *this;
 }
 
-BE_INLINE Mat3x4 &Mat3x4::operator*=(float rhs) {
-    mat[0].x *= rhs;
-    mat[0].y *= rhs;
-    mat[0].z *= rhs;
-    mat[0].w *= rhs;
-
-    mat[1].x *= rhs;
-    mat[1].y *= rhs;
-    mat[1].z *= rhs;
-    mat[1].w *= rhs;
-
-    mat[2].x *= rhs;
-    mat[2].y *= rhs;
-    mat[2].z *= rhs;
-    mat[2].w *= rhs;
-
-    return *this;
-}
-
-BE_INLINE Vec3 Mat3x4::Transform(const Vec3 &v) const {
-    return Vec3(
-        mat[0][0] * v[0] + mat[0][1] * v[1] + mat[0][2] * v[2] + mat[0][3],
-        mat[1][0] * v[0] + mat[1][1] * v[1] + mat[1][2] * v[2] + mat[1][3],
-        mat[2][0] * v[0] + mat[2][1] * v[1] + mat[2][2] * v[2] + mat[2][3]);
-}
-
-BE_INLINE Vec3 Mat3x4::Transform(const Vec4 &v) const {
-    return Vec3(
-        mat[0][0] * v[0] + mat[0][1] * v[1] + mat[0][2] * v[2] + mat[0][3] * v[3],
-        mat[1][0] * v[0] + mat[1][1] * v[1] + mat[1][2] * v[2] + mat[1][3] * v[3],
-        mat[2][0] * v[0] + mat[2][1] * v[1] + mat[2][2] * v[2] + mat[2][3] * v[3]);
-}
-
-BE_INLINE Vec3 Mat3x4::TransformNormal(const Vec3 &v) const {
-    return Vec3(
-        mat[0][0] * v[0] + mat[0][1] * v[1] + mat[0][2] * v[2],
-        mat[1][0] * v[0] + mat[1][1] * v[1] + mat[1][2] * v[2],
-        mat[2][0] * v[0] + mat[2][1] * v[1] + mat[2][2] * v[2]);
+BE_INLINE Mat2 Mat3x4::ToMat2() const {
+    return Mat2(
+        mat[0][0], mat[0][1],
+        mat[1][0], mat[1][1]);
 }
 
 BE_INLINE Mat3 Mat3x4::ToMat3() const {
@@ -619,13 +492,6 @@ BE_INLINE const Mat3x4 &Mat4::ToMat3x4() const {
 
 BE_INLINE Mat3x4 &Mat4::ToMat3x4() {
     return *reinterpret_cast<Mat3x4 *>(this);
-}
-
-BE_INLINE Vec3 Mat3x4::ToScaleVec3() const {
-    return Vec3(
-        Math::Sqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]),
-        Math::Sqrt(mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]),
-        Math::Sqrt(mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]));
 }
 
 BE_INLINE Vec3 Mat3x4::ToTranslationVec3() const {
@@ -671,7 +537,7 @@ BE_INLINE Mat3x4 Mat3x4::FromScale(float sx, float sy, float sz) {
 }
 
 BE_INLINE const char *Mat3x4::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), Rows * Cols, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_NAMESPACE_END

@@ -1,6 +1,6 @@
 #include "Precompiled.h"
 #include "Core/Heap.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Sound/SoundSystem.h"
 
 BE_NAMESPACE_BEGIN

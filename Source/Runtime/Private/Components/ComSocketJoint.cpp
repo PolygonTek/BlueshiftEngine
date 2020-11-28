@@ -51,7 +51,7 @@ void ComSocketJoint::CreateConstraint() {
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
-    // Fill up a constraint description 
+    // Fill up a constraint description.
     PhysConstraintDesc desc;
     desc.type = PhysConstraint::Type::Point2Point;
     desc.collision = collisionEnabled;
@@ -60,6 +60,7 @@ void ComSocketJoint::CreateConstraint() {
     desc.bodyA = rigidBody->GetBody();
     desc.anchorInA = transform->GetScale() * localAnchor;
 
+    const ComRigidBody *connectedBody = GetConnectedBody();
     if (connectedBody) {
         Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
 
@@ -73,7 +74,7 @@ void ComSocketJoint::CreateConstraint() {
         connectedAnchor = Vec3::origin;
     }
 
-    // Create a constraint with the given description
+    // Create a constraint with the given description.
     PhysP2PConstraint *p2pConstraint = (PhysP2PConstraint *)physicsSystem.CreateConstraint(desc);
     p2pConstraint->SetImpulseClamp(impulseClamp);
 
@@ -113,17 +114,22 @@ void ComSocketJoint::SetImpulseClamp(float impulseClamp) {
     }
 }
 
-#if 1
-void ComSocketJoint::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+#if WITH_EDITOR
+void ComSocketJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();
-    Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
     
-    renderWorld->SetDebugColor(Color4::red, Color4::zero);
-    renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * CentiToUnit(1.0f), worldOrigin + Mat3::identity[0] * CentiToUnit(1.0f), 1);
-    renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * CentiToUnit(1.0f), worldOrigin + Mat3::identity[1] * CentiToUnit(1.0f), 1);
-    renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * CentiToUnit(1.0f), worldOrigin + Mat3::identity[2] * CentiToUnit(1.0f), 1);
+    if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
+        Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
+
+        float viewScale = camera->CalcViewScale(worldOrigin);
+
+        renderWorld->SetDebugColor(Color4::red, Color4::zero);
+        renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * MeterToUnit(3) * viewScale, worldOrigin + Mat3::identity[0] * MeterToUnit(3) * viewScale);
+        renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * MeterToUnit(3) * viewScale, worldOrigin + Mat3::identity[1] * MeterToUnit(3) * viewScale);
+        renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * MeterToUnit(3) * viewScale, worldOrigin + Mat3::identity[2] * MeterToUnit(3) * viewScale);
+    }
 }
 #endif
 

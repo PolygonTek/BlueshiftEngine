@@ -80,7 +80,7 @@ PhysicsWorld::PhysicsWorld() {
 #endif
 
     // the default constraint solver. For parallel processing you can use a different solver (see Extras/BulletMultiThreaded)
-    solverType = SequentialImpulseSolver;
+    solverType = ConstraintSolver::SequentialImpulseSolver;
     constraintSolver = new btSequentialImpulseConstraintSolver;
     dynamicsWorld = new btDiscreteDynamicsWorld(collisionDispatcher, broadphase, constraintSolver, collisionConfiguration);
 
@@ -122,7 +122,7 @@ PhysicsWorld::PhysicsWorld() {
     accumulatedTimeDelta = 0;
     time = 0;
 
-    frameRate = 50;
+    SetFrameRate(50);
     maximumAllowedTimeStep = 0.2f;
 
     SetGravity(Vec3(0, 0, 0));
@@ -174,25 +174,25 @@ void PhysicsWorld::Reset() {
     accumulatedTimeDelta = 0;
 }
 
-PhysicsWorld::ConstraintSolver PhysicsWorld::GetConstraintSolver() const {
+PhysicsWorld::ConstraintSolver::Enum PhysicsWorld::GetConstraintSolver() const {
     return solverType;
 }
 
-void PhysicsWorld::SetConstraintSolver(ConstraintSolver solverType) {
+void PhysicsWorld::SetConstraintSolver(ConstraintSolver::Enum solverType) {
     // Direct MLCP solvers are useful when higher quality simulation is needed, for example in robotics. 
     // The performance is less than the SI solver,
     // NOTE: rolling friction is not working with MLCP solver ! (bullet bug)
     switch (solverType) {
-    case SequentialImpulseSolver:
+    case ConstraintSolver::SequentialImpulseSolver:
         constraintSolver = new btSequentialImpulseConstraintSolver;
         break;
-    case NNCGSolver:
+    case ConstraintSolver::NNCGSolver:
         constraintSolver = new btNNCGConstraintSolver;
         break;
-    case ProjectedGaussSeidelSolver:
+    case ConstraintSolver::ProjectedGaussSeidelSolver:
         constraintSolver = new btMLCPSolver(new btSolveProjectedGaussSeidel);
         break;
-    case DantzigSolver:
+    case ConstraintSolver::DantzigSolver:
         constraintSolver = new btMLCPSolver(new btDantzigSolver());
         break;
     default:
@@ -221,14 +221,14 @@ void PhysicsWorld::SetFrameRate(int frameRate) {
     this->frameTimeDelta = 1.0f / frameRate; 
 }
 
-void PhysicsWorld::StepSimulation(int frameTime) {
-    BE_PROFILE_CPU_SCOPE("PhysicsWorld::StepSimulation", Color3::cyan);
+void PhysicsWorld::StepSimulation(float frameTime) {
+    BE_PROFILE_CPU_SCOPE_STATIC("PhysicsWorld::StepSimulation");
 
     if (!physics_enable.GetBool()) {
         return;
     }
 
-    accumulatedTimeDelta += frameTime * 0.001f;
+    accumulatedTimeDelta += frameTime;
 
 #if 0
     int steps = Math::Floor(accumulatedTimeDelta / h);
@@ -248,7 +248,7 @@ void PhysicsWorld::StepSimulation(int frameTime) {
     // The btDiscreteDynamicsWorld is guaranteed to call setWorldTransform() once per substep 
     // for every btRigidBody that : has a MotionState AND is active AND is not KINEMATIC or STATIC.
 
-    // maxSubSteps > 0 이면 motion state 의 getWorldTransform() 은 interpolation 된 결과를 반환한다.
+    // If maxSubSteps > 0, getWorldTransform() of motion state will have interpolated value.
     dynamicsWorld->stepSimulation(accumulatedTimeDelta, maxSubSteps, frameTimeDelta);
     
     accumulatedTimeDelta = 0.0f;

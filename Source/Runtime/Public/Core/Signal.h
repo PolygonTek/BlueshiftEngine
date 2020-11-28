@@ -26,10 +26,10 @@ public:
     static constexpr int MaxSignalDefs = 4096;
     
     explicit SignalDef(const char *name, const char *formatSpec = nullptr, char returnType = 0);
-    /// Prevents copy constructor
+    /// Prevents copy constructor.
     SignalDef(const SignalDef &rhs) = delete;
 
-                            /// Prevents assignment operator
+                            /// Prevents assignment operator.
     SignalDef &             operator=(const SignalDef &rhs) = delete;
 
     const char *            GetName() const { return name; }
@@ -77,14 +77,14 @@ private:
 
 class BE_API SignalSystem {
 public:
-    static constexpr int MaxSignals = 4096;
+    static constexpr int    MaxSignals = 8192;
 
     static void             Init();
     static void             Shutdown();
 
     static void             Clear();
 
-                            /// Create a new signal with the given signal def and arguments
+                            /// Create a new signal with the given signal def and arguments.
     static Signal *         AllocSignal(const SignalDef *signalDef, const SignalCallback callback, int numArgs, va_list args);
     static void             FreeSignal(Signal *signal);
 

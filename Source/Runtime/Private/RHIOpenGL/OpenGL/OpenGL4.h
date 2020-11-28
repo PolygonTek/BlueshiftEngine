@@ -41,6 +41,9 @@ public:
 
     static void             DrawElementsIndirect(GLenum mode, GLenum type, const void *indirect) { gglDrawElementsIndirect(mode, type, indirect); }
     static void             MultiDrawElementsIndirect(GLenum mode, GLenum type, const void *indirect, GLsizei drawcount, GLsizei stride) { gglMultiDrawElementsIndirect(mode, type, indirect, drawcount, stride); }
+
+    static bool             ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
+    static bool             SupportedImageFormat(Image::Format::Enum imageFormat) { return ImageFormatToGLFormat(imageFormat, false, nullptr, nullptr, nullptr); }
 };
 
 BE_NAMESPACE_END

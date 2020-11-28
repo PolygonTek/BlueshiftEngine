@@ -45,7 +45,7 @@ void ComFixedJoint::CreateConstraint() {
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
-    // Fill up a constraint description 
+    // Fill up a constraint description.
     PhysConstraintDesc desc;
     desc.type = PhysConstraint::Type::Hinge;
     desc.collision = collisionEnabled;
@@ -55,6 +55,7 @@ void ComFixedJoint::CreateConstraint() {
     desc.axisInA = Mat3::identity;
     desc.anchorInA = Vec3::zero;
 
+    const ComRigidBody *connectedBody = GetConnectedBody();
     if (connectedBody) {
         desc.bodyB = connectedBody->GetBody();
         desc.axisInB = Mat3::identity;
@@ -63,7 +64,7 @@ void ComFixedJoint::CreateConstraint() {
         desc.bodyB = nullptr;
     }
 
-    // Create a constraint with the given description
+    // Create a constraint with the given description.
     PhysHingeConstraint *hingeConstraint = (PhysHingeConstraint *)physicsSystem.CreateConstraint(desc);
 
     hingeConstraint->SetAngularLimits(0, 0);

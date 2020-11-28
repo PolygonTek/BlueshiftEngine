@@ -15,9 +15,9 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
-#include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -104,6 +104,7 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
     int blendDst = 0;
     int colorWrite = RHI::RedWrite | RHI::GreenWrite | RHI::BlueWrite;
     int depthWrite = RHI::DepthWrite;
+    int depthTestBits = RHI::DF_LEqual;
 
     pass->renderingMode     = RenderingMode::Opaque;
     pass->transparency      = Transparency::Default;
@@ -164,72 +165,11 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
             } else {
                 BE_WARNLOG("missing transparency cull keyword in material '%s'\n", hashName.c_str());
             }
+        } else if (!token.Icmp("depthTest")) {
+            ParseDepthTest(lexer, &depthTestBits);
         } else if (!token.Icmp("shader")) {
-            if (lexer.ReadToken(&token, false)) {
-                const Guid shaderGuid = Guid::FromString(token);
-                const Str shaderPath = resourceGuidMapper.Get(shaderGuid);
-
-                pass->referenceShader = shaderManager.GetShader(shaderPath);
-
-                // Parse shader property string values in dictionary
-                Dict propDict;
-                if (!ParseShaderProperties(lexer, propDict)) {
-                    if (pass->referenceShader) {
-                        shaderManager.ReleaseShader(pass->referenceShader);
-                    }
-                    return false;
-                }
-
-                if (pass->referenceShader) {
-                    // Shader has property info
-                    const auto &shaderPropInfoHashMap = pass->referenceShader->GetPropertyInfoHashMap();
-
-                    // Set shader property values
-                    for (int i = 0; i < shaderPropInfoHashMap.Count(); i++) {
-                        const auto entry = shaderPropInfoHashMap.GetByIndex(i);
-                        const auto &propName = entry->first;
-                        const auto &propInfo = entry->second;
-
-                        Shader::Property shaderProperty;
-
-                        if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject() == &TextureAsset::metaObject) {
-                            // Value string
-                            Str value = propDict.GetString(propName, propInfo.GetDefaultValue().As<Guid>().ToString(Guid::Format::DigitsWithHyphensInBraces));
-
-                            if (version >= 2) {
-                                if (value.Length() == 38 && value[0] == '{' && value[value.Length() - 1] == '}') {
-                                    shaderProperty.data = Variant::FromString(Variant::Type::Guid, value);
-                                } else {
-                                    shaderProperty.data = Guid::CreateGuid();
-                                    resourceGuidMapper.Set(shaderProperty.data.As<Guid>(), value);
-                                }
-                            } else {
-                                shaderProperty.data = Variant::FromString(Variant::Type::Guid, value);
-                            }
-
-                            const Guid textureGuid = shaderProperty.data.As<Guid>();
-
-                            // Get texture path from GUID
-                            const Str texturePath = resourceGuidMapper.Get(textureGuid);
-
-                            // Get texture from path
-                            shaderProperty.texture = textureManager.GetTexture(texturePath);
-                        } else {
-                            // Value string
-                            Str value = propDict.GetString(propName, propInfo.GetDefaultValue().ToString());
-
-                            // Get value
-                            shaderProperty.data = Variant::FromString(propInfo.GetType(), value);
-                            shaderProperty.texture = nullptr;
-                        }
-
-                        pass->shaderProperties.Set(propName, shaderProperty);
-                    }
-
-                    CommitShaderPropertiesChanged();
-                }
-            } else {
-                BE_WARNLOG("missing shader name in material '%s'\n", hashName.c_str());
+            if (ParseShader(lexer, pass->referenceShader, pass->shaderProperties)) {
+                CommitShaderPropertiesChanged();
             }
         } else if (!token.Icmp("map")) {
             if (lexer.ReadToken(&token, false)) {
@@ -252,6 +192,11 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
         } else if (!token.Icmp("tc")) {
             lexer.ParseVec(2, pass->tcScale);
             lexer.ParseVec(2, pass->tcTranslation);
+        } else if (!token.Icmp("imageBorders")) {
+            pass->imageBorderLT.x = lexer.ParseInt();
+            pass->imageBorderLT.y = lexer.ParseInt();
+            pass->imageBorderRB.x = lexer.ParseInt();
+            pass->imageBorderRB.y = lexer.ParseInt();
         } else if (!token.Icmp("cutoffAlpha")) {
             pass->cutoffAlpha = lexer.ParseFloat(); 
         } else if (!token.Icmp("blendFunc")) {
@@ -353,15 +298,16 @@ bool Material::ParsePass(Lexer &lexer, ShaderPass *pass) {
     }
 
     pass->stateBits = blendSrc | blendDst | colorWrite | depthWrite;
+    pass->depthTestBits = depthTestBits;
 
     return true;
 }
 
 void Material::ChangeShader(Shader *shader) {
-    const auto &oldPropInfoHashMap = pass->referenceShader ? pass->referenceShader->GetPropertyInfoHashMap() : StrHashMap<PropertyInfo>();
+    const auto &oldPropInfoHashMap = pass->referenceShader ? pass->referenceShader->GetPropertyInfoHashMap() : StrHashMap<Shader::ShaderPropertyInfo>();
     const auto &newPropInfoHashMap = shader->GetPropertyInfoHashMap();
 
-    // Release textures of old shader property
+    // Release textures of old shader properties.
     for (int i = 0; i < pass->shaderProperties.Count(); i++) {
         const auto entry = pass->shaderProperties.GetByIndex(i);
         if (entry->second.texture) {
@@ -370,13 +316,13 @@ void Material::ChangeShader(Shader *shader) {
         }
     }
 
-    // Change new reference shader
+    // Change new reference shader.
     if (pass->referenceShader) {
         shaderManager.ReleaseShader(pass->referenceShader);
     }
     pass->referenceShader = shader;
 
-    // Set shader properties with reusing old shader properties
+    // Set shader properties with reusing old shader properties.
     StrHashMap<Shader::Property> newShaderProperties;
 
     for (int i = 0; i < newPropInfoHashMap.Count(); i++) {
@@ -393,14 +339,14 @@ void Material::ChangeShader(Shader *shader) {
         } else {
             Shader::Property shaderProperty;
 
-            if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject() == &TextureAsset::metaObject) {
+            if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject()->IsTypeOf(TextureResource::metaObject)) {
                 const Str defaultTextureName = resourceGuidMapper.Get(propInfo.GetDefaultValue().As<Guid>());
                 const Texture *defaultTexture = textureManager.FindTexture(defaultTextureName);
                 const Guid defaultTextureGuid = resourceGuidMapper.Get(defaultTexture->GetHashName());
 
                 shaderProperty.data = defaultTextureGuid;
             } else {
-                shaderProperty.data = Variant::FromString(propInfo.GetType(), propInfo.GetDefaultValue().As<Str>());
+                shaderProperty.data = propInfo.GetDefaultValue();
             }
 
             shaderProperty.texture = nullptr;
@@ -411,7 +357,7 @@ void Material::ChangeShader(Shader *shader) {
 
     pass->shaderProperties.Swap(newShaderProperties);
 
-    // Instantiate shader with changed define properites 
+    // Instantiate shader with changed define properites.
     CommitShaderPropertiesChanged();
 
     Finish();
@@ -420,16 +366,16 @@ void Material::ChangeShader(Shader *shader) {
 void Material::CommitShaderPropertiesChanged() {
     Array<Shader::Define> defineArray;
 
-    const auto &shaderPropInfoHashMap = pass->referenceShader->GetPropertyInfoHashMap();
+    const auto &shaderPropertyInfos = pass->referenceShader->GetPropertyInfoHashMap();
 
     // List up define list for re-instantiating shader.
-    for (int i = 0; i < shaderPropInfoHashMap.Count(); i++) {
-        const auto entry = shaderPropInfoHashMap.GetByIndex(i);
+    for (int i = 0; i < shaderPropertyInfos.Count(); i++) {
+        const auto entry = shaderPropertyInfos.GetByIndex(i);
         const auto &propName = entry->first;
         const auto &propInfo = entry->second;
 
         // property propInfo with shaderDefine allows only bool/enum type.
-        if (propInfo.GetFlags() & PropertyInfo::Flag::ShaderDefine) {
+        if (propInfo.shaderFlags & Shader::ShaderPropertyInfo::Flag::ShaderDefine) {
             const auto *entry = pass->shaderProperties.Get(propName);
             const Shader::Property &shaderProp = entry->second;
 
@@ -449,12 +395,12 @@ void Material::CommitShaderPropertiesChanged() {
     pass->shader = pass->referenceShader->InstantiateShader(defineArray);
 
     // Reload shader's texture.
-    for (int i = 0; i < shaderPropInfoHashMap.Count(); i++) {
-        const auto entry = shaderPropInfoHashMap.GetByIndex(i);
+    for (int i = 0; i < shaderPropertyInfos.Count(); i++) {
+        const auto entry = shaderPropertyInfos.GetByIndex(i);
         const auto &propName = entry->first;
         const auto &propInfo = entry->second;
 
-        if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject() == &TextureAsset::metaObject) {
+        if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject()->IsTypeOf(TextureResource::metaObject)) {
             auto *entry = pass->shaderProperties.Get(propName);
             Shader::Property &shaderProperty = entry->second;
 
@@ -469,7 +415,60 @@ void Material::CommitShaderPropertiesChanged() {
     }
 }
 
-bool Material::ParseShaderProperties(Lexer &lexer, Dict &properties) {
+bool Material::ParseRenderingMode(Lexer &lexer, RenderingMode::Enum *renderingMode) const {
+    Str	token;
+
+    if (lexer.ReadToken(&token, false)) {
+        if (!token.Icmp("opaque")) {
+            *renderingMode = RenderingMode::Opaque;
+        } else if (!token.Icmp("alphaCutoff")) {
+            *renderingMode = RenderingMode::AlphaCutoff;
+        } else if (!token.Icmp("alphaBlend")) {
+            *renderingMode = RenderingMode::AlphaBlend;
+        } else {
+            BE_WARNLOG("unknown renderingMode '%s' in material '%s'\n", token.c_str(), hashName.c_str());
+        }
+
+        return true;
+    }
+
+    BE_WARNLOG("missing parameter for renderingMode keyword in material '%s\n", hashName.c_str());
+    return false;
+}
+
+bool Material::ParseDepthTest(Lexer &lexer, int *depthTest) const {
+    Str	token;
+
+    if (lexer.ReadToken(&token, false)) {
+        if (!token.Icmp("none")) {
+            *depthTest = RHI::DF_None;
+        } else if (!token.Icmp("less")) {
+            *depthTest = RHI::DF_Less;
+        } else if (!token.Icmp("greater")) {
+            *depthTest = RHI::DF_Greater;
+        } else if (!token.Icmp("lequal")) {
+            *depthTest = RHI::DF_LEqual;
+        } else if (!token.Icmp("gequal")) {
+            *depthTest = RHI::DF_GEqual;
+        } else if (!token.Icmp("equal")) {
+            *depthTest = RHI::DF_Equal;
+        } else if (!token.Icmp("notequal")) {
+            *depthTest = RHI::DF_NotEqual;
+        } else if (!token.Icmp("always")) {
+            *depthTest = RHI::DF_Always;
+        } else {
+            *depthTest = RHI::DF_LEqual;
+            BE_WARNLOG("unknown depthTest '%s' in material '%s', substituting LEQUAL\n", token.c_str(), hashName.c_str());
+        }
+
+        return true;
+    }
+
+    BE_WARNLOG("missing parameter for depthTest keyword in material '%s'\n", hashName.c_str());
+    return false;
+}
+
+bool Material::ParseShaderProperties(Lexer &lexer, Dict &properties) const {
     Str token;
     Str value;
 
@@ -497,25 +496,79 @@ bool Material::ParseShaderProperties(Lexer &lexer, Dict &properties) {
     return true;
 }
 
-bool Material::ParseRenderingMode(Lexer &lexer, RenderingMode::Enum *renderingMode) const {
-    Str	token;
+bool Material::ParseShader(Lexer &lexer, Shader *&referenceShader, StrHashMap<Shader::Property> &shaderProperties) const {
+    Str token;
 
-    if (lexer.ReadToken(&token, false)) {
-        if (!token.Icmp("opaque")) {
-            *renderingMode = RenderingMode::Opaque;
-        } else if (!token.Icmp("alphaCutoff")) {
-            *renderingMode = RenderingMode::AlphaCutoff;
-        } else if (!token.Icmp("alphaBlend")) {
-            *renderingMode = RenderingMode::AlphaBlend;
-        } else {
-            BE_WARNLOG("unknown renderingMode '%s' in material '%s'\n", token.c_str(), hashName.c_str());
-        }
-
-        return true;
+    // Parse shader name.
+    if (!lexer.ReadToken(&token, false)) {
+        BE_WARNLOG("missing shader name in material '%s'\n", hashName.c_str());
+        return false;
     }
 
-    BE_WARNLOG("missing parameter for renderingMode keyword in material '%s\n", hashName.c_str());
-    return false;
+    const Guid shaderGuid = Guid::FromString(token);
+    const Str shaderPath = resourceGuidMapper.Get(shaderGuid);
+
+    // Get the refernece shader by shader path.
+    referenceShader = shaderManager.GetShader(shaderPath);
+    if (!referenceShader) {
+        return false;
+    }
+
+    // Parse the shader properties into a string and put it in the dictionary.
+    Dict propDict;
+    if (!ParseShaderProperties(lexer, propDict)) {
+        if (referenceShader) {
+            shaderManager.ReleaseShader(referenceShader);
+            referenceShader = nullptr;
+        }
+        return false;
+    }
+
+    const auto &shaderPropertyInfos = referenceShader->GetPropertyInfoHashMap();
+
+    // Set shader property values.
+    for (int i = 0; i < shaderPropertyInfos.Count(); i++) {
+        const auto entry = shaderPropertyInfos.GetByIndex(i);
+        const auto &propName = entry->first;
+        const auto &propInfo = entry->second;
+
+        Shader::Property shaderProperty;
+
+        if (propInfo.GetType() == Variant::Type::Guid && propInfo.GetMetaObject()->IsTypeOf(TextureResource::metaObject)) {
+            // Get the value as a string.
+            Str value = propDict.GetString(propName, propInfo.GetDefaultValue().As<Guid>().ToString(Guid::Format::DigitsWithHyphensInBraces));
+
+            if (version >= 2) {
+                if (value.Length() == 38/*Str::Length("{00000000-0000-0000-0000-000000000000}")*/ && 
+                    value[0] == '{' && value[value.Length() - 1] == '}') {
+                    shaderProperty.data = Variant::FromString(Variant::Type::Guid, value);
+                } else {
+                    shaderProperty.data = Guid::CreateGuid();
+                    resourceGuidMapper.Set(shaderProperty.data.As<Guid>(), value);
+                }
+            } else {
+                shaderProperty.data = Variant::FromString(Variant::Type::Guid, value);
+            }
+
+            // Get texture path by GUID.
+            const Guid textureGuid = shaderProperty.data.As<Guid>();
+            const Str texturePath = resourceGuidMapper.Get(textureGuid);
+
+            // Set texture.
+            shaderProperty.texture = textureManager.GetTexture(texturePath);
+        } else {
+            // Get the value as a string.
+            Str value = propDict.GetString(propName, propInfo.GetDefaultValue().ToString());
+
+            // Set value.
+            shaderProperty.data = Variant::FromString(propInfo.GetType(), value);
+            shaderProperty.texture = nullptr;
+        }
+
+        shaderProperties.Set(propName, shaderProperty);
+    }
+
+    return true;
 }
 
 bool Material::ParseBlendFunc(Lexer &lexer, int *blendSrc, int *blendDst) const {
@@ -686,30 +739,30 @@ void Material::Write(const char *filename) {
 
     Str cullStr;
     switch (pass->cullType) {
-    case RHI::CullType::Back: 
-        cullStr = "back"; 
+    case RHI::CullType::Back:
+        cullStr = "back";
         break;
-    case RHI::CullType::Front: 
-        cullStr = "front"; 
+    case RHI::CullType::Front:
+        cullStr = "front";
         break;
-    case RHI::CullType::None: 
+    case RHI::CullType::None:
     default: 
-        cullStr = "none"; 
+        cullStr = "none";
         break;
     }
     fp->Printf("%scull %s\n", indentSpace.c_str(), cullStr.c_str());
 
     Str transparencyStr;
     switch (pass->transparency) {
-    case Transparency::Default: 
-        transparencyStr = "default"; 
+    case Transparency::Default:
+        transparencyStr = "default";
         break;
-    case Transparency::TwoPassesOneSide: 
-        transparencyStr = "twoPassesOneSide"; 
+    case Transparency::TwoPassesOneSide:
+        transparencyStr = "twoPassesOneSide";
         break;
-    case Transparency::TwoPassesTwoSides: 
+    case Transparency::TwoPassesTwoSides:
     default: 
-        transparencyStr = "twoPassesTwoSides"; 
+        transparencyStr = "twoPassesTwoSides";
         break;
     }
     fp->Printf("%stransparency %s\n", indentSpace.c_str(), transparencyStr.c_str());
@@ -719,15 +772,22 @@ void Material::Write(const char *filename) {
         fp->Printf("%sshader \"%s\" {\n", indentSpace.c_str(), shaderGuid.ToString(Guid::Format::DigitsWithHyphensInBraces));
         indentSpace += "  ";
 
-        const auto &propertyInfoHashMap = pass->shader->GetOriginalShader()->GetPropertyInfoHashMap();
+        const auto &shaderPropertyInfos = pass->shader->GetOriginalShader()->GetPropertyInfoHashMap();
         
-        for (int i = 0; i < propertyInfoHashMap.Count(); i++) {
-            const auto *keyValue = propertyInfoHashMap.GetByIndex(i);
-            const PropertyInfo &propInfo = keyValue->second;
+        for (int i = 0; i < shaderPropertyInfos.Count(); i++) {
+            const auto *keyValue = shaderPropertyInfos.GetByIndex(i);
+            const Shader::ShaderPropertyInfo &propInfo = keyValue->second;
             const char *name = propInfo.GetName();
             const auto *shaderPropEntry = pass->shaderProperties.Get(name);
-            const auto &value = shaderPropEntry->second.data;
-            
+            const Variant &value = shaderPropEntry->second.data;
+
+            // Skip writing useless properties in shader.
+            if (!(propInfo.shaderFlags & Shader::ShaderPropertyInfo::Flag::ShaderDefine)) {
+                if (!pass->shader->IsPropertyUsed(name, pass->shaderProperties)) {
+                    continue;
+                }
+            }
+
             switch (propInfo.GetType()) {
             case Variant::Type::Float:
                 fp->Printf("%s%s \"%.4f\"\n", indentSpace.c_str(), name, value.As<float>());
@@ -743,6 +803,9 @@ void Material::Write(const char *filename) {
                 break;
             case Variant::Type::Point:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Point>().ToString());
+                break;
+            case Variant::Type::Size:
+                fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Size>().ToString());
                 break;
             case Variant::Type::Rect:
                 fp->Printf("%s%s \"%s\"\n", indentSpace.c_str(), name, value.As<Rect>().ToString());
@@ -777,6 +840,8 @@ void Material::Write(const char *filename) {
 
     fp->Printf("%stc (%.3f %.3f) (%.3f %.3f)\n", indentSpace.c_str(), pass->tcScale[0], pass->tcScale[1], pass->tcTranslation[0], pass->tcTranslation[1]);     
 
+    fp->Printf("%simageBorders %i %i %i %i\n", indentSpace.c_str(), pass->imageBorderLT.x, pass->imageBorderLT.y, pass->imageBorderRB.x, pass->imageBorderRB.y);
+
     int colorMask = pass->stateBits & RHI::MaskColor;
     if (colorMask) {
         Str colorMaskStr;
@@ -797,6 +862,22 @@ void Material::Write(const char *filename) {
 
     if (pass->renderingMode == RenderingMode::AlphaCutoff) {
         fp->Printf("%scutoffAlpha %.3f\n", indentSpace.c_str(), pass->cutoffAlpha);
+    }
+
+    if (pass->depthTestBits != RHI::DF_LEqual) {
+        Str depthTestStr;
+        switch (pass->depthTestBits) {
+        case RHI::DF_None: depthTestStr = "NONE"; break;
+        case RHI::DF_Always: depthTestStr = "ALWAYS"; break;
+        case RHI::DF_Less: depthTestStr = "LESS"; break;
+        case RHI::DF_Greater: depthTestStr = "GREATER"; break;
+        case RHI::DF_LEqual: depthTestStr = "LEQUAL"; break;
+        case RHI::DF_GEqual: depthTestStr = "GEQUAL"; break;
+        case RHI::DF_Equal: depthTestStr = "EQUAL"; break;
+        case RHI::DF_NotEqual: depthTestStr = "NOTEQUAL"; break;
+        }
+
+        fp->Printf("%sdepthTest %s\n", indentSpace.c_str(), depthTestStr.c_str());
     }
 
     int blendFuncMask = pass->stateBits & RHI::MaskBF;

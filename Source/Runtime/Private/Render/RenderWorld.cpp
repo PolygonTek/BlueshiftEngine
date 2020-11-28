@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ static constexpr int MaxViewDrawSurfs = 0x4000;
 RenderWorld::RenderWorld() {
     viewCount = 0;
 
-    textMesh.SetCoordFrame(GuiMesh::CoordFrame3D);
+    textMesh.SetCoordFrame(GuiMesh::CoordFrame::CoordFrame3D);
 
     skyboxMaterial = nullptr;
 
@@ -54,10 +54,10 @@ RenderWorld::~RenderWorld() {
 }
 
 void RenderWorld::ClearScene() {
-    objectDbvt.Purge();
-    lightDbvt.Purge();
-    staticMeshDbvt.Purge();
-    probeDbvt.Purge();
+    objectDbvt.Clear();
+    lightDbvt.Clear();
+    staticMeshDbvt.Clear();
+    probeDbvt.Clear();
 
     for (int i = 0; i < renderObjects.Count(); i++) {
         SAFE_DELETE(renderObjects[i]);
@@ -114,7 +114,7 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
         renderObject->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
         renderObject->proxy->renderObject = renderObject;
         renderObject->proxy->worldAABB = renderObject->GetWorldAABB();
-        renderObject->proxy->id = objectDbvt.CreateProxy(renderObject->proxy->worldAABB, MeterToUnit(0.5f), renderObject->proxy);
+        renderObject->proxy->id = objectDbvt.CreateProxy(renderObject->proxy->worldAABB, MeterToUnit(0.0f), renderObject->proxy);
 
         // If this object is a static mesh, add proxy for each sub meshes in the DBVT for the static meshes
         if (def->mesh && !def->joints) {
@@ -141,14 +141,12 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
         Vec3 displacement;
         if (proxyMoved) {
             displacement = def->worldMatrix.ToTranslationVec3() - renderObject->state.worldMatrix.ToTranslationVec3();
+
+            renderObject->proxy->worldAABB.SetFromTransformedAABBFast(def->aabb, def->worldMatrix);
+            objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->worldAABB, MeterToUnit(0.5f), displacement);
         }
 
         if (proxyMoved || !meshMatch) {
-            if (proxyMoved) {
-                renderObject->proxy->worldAABB.SetFromTransformedAABBFast(def->aabb, def->worldMatrix);
-                objectDbvt.MoveProxy(renderObject->proxy->id, renderObject->proxy->worldAABB, MeterToUnit(0.5f), displacement);
-            }
-
             // If this object is a static mesh
             if (renderObject->state.mesh && !renderObject->state.joints) {
                 // mesh surface count changed so we recreate static proxies
@@ -326,7 +324,7 @@ void RenderWorld::UpdateEnvProbe(int handle, const EnvProbe::State *def) {
         envProbe->proxy = (DbvtProxy *)Mem_ClearedAlloc(sizeof(DbvtProxy));
         envProbe->proxy->envProbe = envProbe;
         envProbe->proxy->worldAABB = envProbe->GetInfluenceAABB();
-        envProbe->proxy->id = probeDbvt.CreateProxy(envProbe->proxy->worldAABB, MeterToUnit(0.0f), envProbe->proxy);
+        envProbe->proxy->id = probeDbvt.CreateProxy(envProbe->proxy->worldAABB, 0.0f, envProbe->proxy);
     } else {
         const bool originMatch = (def->origin == envProbe->state.origin);
         const bool boxOffsetMatch = (def->boxOffset == envProbe->state.boxOffset);
@@ -515,21 +513,18 @@ void RenderWorld::SetSkyboxMaterial(Material *skyboxMaterial) {
 }
 
 void RenderWorld::FinishMapLoading() {
-//#ifndef _DEBUG
-//    int startTime = PlatformTime::Milliseconds();
-//
-//    objectDbvt.RebuildBottomUp();
-//    staticMeshDbvt.RebuildBottomUp();
-//    lightDbvt.RebuildBottomUp();
-//    probeDbvt.RebuildBottomUp();
-//
-//    int elapsedTime = PlatformTime::Milliseconds() - startTime;
-//    BE_LOG("%i msec to build dynamic AABB tree\n", elapsedTime);
-//#endif
+/*#ifndef _DEBUG
+      int startTime = PlatformTime::Milliseconds();
+
+      staticMeshDbvt.RebuildBottomUp();
+
+      int elapsedTime = PlatformTime::Milliseconds() - startTime;
+      BE_LOG("%i msec to build dynamic AABB tree\n", elapsedTime);
+#endif*/
 }
 
 void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
-    BE_PROFILE_CPU_SCOPE("RenderWorld::RenderScene", Color3::orange);
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::RenderScene");
 
     if (renderCamera->GetState().renderRect.w <= 0.0f || renderCamera->GetState().renderRect.h <= 0.0f) {
         return;
@@ -546,10 +541,27 @@ void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
     new (&currentVisCamera->visLights) LinkList<VisLight>();
 
     DrawCamera(currentVisCamera);
+
+    if (r_showDynamicAABBTree.GetInteger() > 0) {
+        int totalDepth = objectDbvt.GetHeight();
+        int minDepth = Min(r_showDynamicAABBTreeMinDepth.GetInteger(), totalDepth);
+        int maxDepth = Min(r_showDynamicAABBTreeMaxDepth.GetInteger(), totalDepth);
+
+        objectDbvt.QueryDepthRange(minDepth, maxDepth, [minDepth, maxDepth, this](int32_t proxyId, int depth) -> bool {
+            const AABB &proxyAABB = objectDbvt.GetFatAABB(proxyId);
+
+            float alpha = (float)(depth - minDepth + 1) / (maxDepth - minDepth + 1);
+
+            SetDebugColor(Color4(1.0f, 0.1f, 0.0f, alpha), Color4::zero);
+            DebugAABB(proxyAABB, 1, true, r_showDynamicAABBTree.GetInteger() <= 1);
+
+            return true;
+        });
+    }
 }
 
 void RenderWorld::DrawGUICamera(GuiMesh &guiMesh) {
-    BE_PROFILE_CPU_SCOPE("RenderWorld::DrawGUICamera", Color3::yellow);
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::DrawGUICamera");
 
     if (guiMesh.NumSurfaces() == 0) {
         return;
@@ -596,7 +608,7 @@ void RenderWorld::DrawGUICamera(GuiMesh &guiMesh) {
     new (&guiCamera->visLights) LinkList<VisLight>();
 
     // GUI visible object
-    Mat4 projMatrix;
+    ALIGN_AS32 Mat4 projMatrix;
     projMatrix.SetOrtho(0, renderSystem.currentContext->GetDeviceWidth(), renderSystem.currentContext->GetDeviceHeight(), 0, -1.0, 1.0);
 
     VisObject *visObject = RegisterVisObject(guiCamera, &renderObject);

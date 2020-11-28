@@ -21,7 +21,7 @@ bool OpenGLBase::supportsPackedFloat = false;
 bool OpenGLBase::supportsDepthClamp = false;
 bool OpenGLBase::supportsDepthBoundsTest = false;
 bool OpenGLBase::supportsDepthBufferFloat = false;
-bool OpenGLBase::supportsPixelBufferObject = false;
+bool OpenGLBase::supportsPixelBuffer = false;
 bool OpenGLBase::supportsTextureRectangle = false;
 bool OpenGLBase::supportsTextureArray = false;
 bool OpenGLBase::supportsTextureFilterAnisotropic = false;
@@ -54,7 +54,7 @@ void OpenGLBase::Init() {
 #endif
 
 #ifdef GL_ARB_pixel_buffer_object // 2.1
-    supportsPixelBufferObject = gglext._GL_ARB_pixel_buffer_object ? true : false;
+    supportsPixelBuffer = gglext._GL_ARB_pixel_buffer_object ? true : false;
 #endif
 
 #ifdef GL_ARB_texture_rectangle // 3.1
@@ -119,8 +119,56 @@ Image::Format::Enum OpenGLBase::ToCompressedImageFormat(Image::Format::Enum inFo
     return Image::Format::Unknown;
 }
 
-// NOTE: Do not call gglXXX function in CheckGLError
-extern "C" void CheckGLError(const char *msg) {
+Image::Format::Enum OpenGLBase::ToUncompressedImageFormat(Image::Format::Enum inFormat) {
+    if (!Image::IsCompressed(inFormat)) {
+        assert(0);
+        return inFormat;
+    }
+
+    Image::Format::Enum outFormat;
+
+    switch (inFormat) {
+    case Image::Format::DXN1:
+    case Image::Format::DXN2:
+    case Image::Format::RGB_PVRTC_2BPPV1:
+    case Image::Format::RGB_PVRTC_4BPPV1:
+    case Image::Format::RGB_8_ETC1:
+    case Image::Format::RGB_8_ETC2:
+    case Image::Format::RGB_ATC:
+        outFormat = Image::Format::RGB_8_8_8;
+        break;
+    case Image::Format::DXT1:
+    case Image::Format::DXT3:
+    case Image::Format::DXT5:
+    case Image::Format::RGBA_PVRTC_2BPPV1:
+    case Image::Format::RGBA_PVRTC_4BPPV1:
+    case Image::Format::RGBA_PVRTC_2BPPV2:
+    case Image::Format::RGBA_PVRTC_4BPPV2:
+    case Image::Format::RGBA_8_1_ETC2:
+    case Image::Format::RGBA_8_8_ETC2:
+    case Image::Format::RGBA_EA_ATC:
+    case Image::Format::RGBA_IA_ATC:
+        outFormat = Image::Format::RGBA_8_8_8_8;
+        break;
+    case Image::Format::R_11_EAC:
+    case Image::Format::SignedR_11_EAC:
+        outFormat = Image::Format::R_8;
+        break;
+    case Image::Format::RG_11_11_EAC:
+    case Image::Format::SignedRG_11_11_EAC:
+        outFormat = Image::Format::RGB_8_8_8;
+        break;
+    default:
+        assert(0);
+        outFormat = inFormat;
+        break;
+    }
+
+    return outFormat;
+}
+
+// NOTE: Do not call gglXXX function in MyGLCheckError
+extern "C" void MyGLCheckError(const char *msg) {
     char errCode[64];
     GLenum err = glGetError();
     
@@ -150,9 +198,11 @@ extern "C" void CheckGLError(const char *msg) {
                 Str::snPrintf(errCode, sizeof(errCode), "unknown (%i)", err);
                 break;
         }
-        
+
         BE_WARNLOG("GL Error: %s in %s\n", errCode, msg);
-    }	
+    }
 }
+
+extern "C" void (*GGLCheckError)(const char *msg) = MyGLCheckError;
 
 BE_NAMESPACE_END

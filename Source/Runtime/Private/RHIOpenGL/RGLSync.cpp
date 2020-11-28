@@ -46,7 +46,7 @@ void OpenGLRHI::DestroySync(Handle syncHandle) {
 }
 
 bool OpenGLRHI::IsSync(Handle syncHandle) const {
-    GLSync *sync = syncList[syncHandle];
+    const GLSync *sync = syncList[syncHandle];
 
     if (syncHandle == NullSync || !sync->sync || !gglIsSync(sync->sync)) {
         return false;
@@ -71,10 +71,11 @@ void OpenGLRHI::WaitSync(Handle syncHandle) {
         return;
     }
 
-    GLSync *sync = syncList[syncHandle];
+    const GLSync *sync = syncList[syncHandle];
 
     while (1) {
-        GLenum result = gglClientWaitSync(sync->sync, GL_SYNC_FLUSH_COMMANDS_BIT, 1);
+        //  Wait up to 0.5 sec for sync execution.
+        GLenum result = gglClientWaitSync(sync->sync, GL_SYNC_FLUSH_COMMANDS_BIT, 500 * 1000 * 1000);
         if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED) {
             return;
         }

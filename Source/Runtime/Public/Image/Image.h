@@ -26,26 +26,26 @@ public:
     struct Format {
         enum Enum {
             Unknown,
-            // plain bytes format
+            // Plain bytes formats
             L_8,
             A_8,
             LA_8_8,
-            LA_16_16,
             R_8,
-            R_SNORM_8,
             RG_8_8,
-            RG_SNORM_8_8,
             RGB_8_8_8,
-            RGB_SNORM_8_8_8,
             BGR_8_8_8,
             RGBX_8_8_8_8,
             BGRX_8_8_8_8,
             RGBA_8_8_8_8,
-            RGBA_SNORM_8_8_8_8,
             BGRA_8_8_8_8,
             ABGR_8_8_8_8,
             ARGB_8_8_8_8,
-            // packed format
+            // Signed norm formats
+            R_8_SNORM,
+            RG_8_8_SNORM,
+            RGB_8_8_8_SNORM,
+            RGBA_8_8_8_8_SNORM,
+            // Packed formats
             RGBX_4_4_4_4,
             BGRX_4_4_4_4,
             RGBA_4_4_4_4,
@@ -60,7 +60,8 @@ public:
             ARGB_1_5_5_5,
             RGB_5_6_5,
             BGR_5_6_5,
-            // float format
+            RGBA_10_10_10_2,
+            // Float formats
             L_16F,
             A_16F,
             LA_16F_16F,
@@ -75,36 +76,36 @@ public:
             RG_32F_32F,
             RGB_32F_32F_32F,
             RGBA_32F_32F_32F_32F,
-            RGB_11F_11F_10F,
             RGBE_9_9_9_5,
-            // DXT (BTC)
-            RGBA_DXT1,
-            RGBA_DXT3,
-            RGBA_DXT5,
+            RGB_11F_11F_10F,
+            // Compressed (DXT) formats
+            DXT1,
+            DXT3,
+            DXT5,
             XGBR_DXT5,
             DXN1,
             DXN2,
-            // PVRTC
+            // Compressed (PVRTC) formats
             RGB_PVRTC_2BPPV1,
             RGB_PVRTC_4BPPV1,
             RGBA_PVRTC_2BPPV1,
             RGBA_PVRTC_4BPPV1,
             RGBA_PVRTC_2BPPV2,
             RGBA_PVRTC_4BPPV2,
-            // ETC
+            // Compressed (ETC1/ETC2/EAC) formats
             RGB_8_ETC1,
             RGB_8_ETC2,
             RGBA_8_1_ETC2,
             RGBA_8_8_ETC2,
             R_11_EAC,
-            SignedR_11_EAC,
             RG_11_11_EAC,
+            SignedR_11_EAC,
             SignedRG_11_11_EAC,
-            // ATC
+            // Compressed (ATC) formats
             RGB_ATC,
             RGBA_EA_ATC, // Explicit alpha
             RGBA_IA_ATC, // Interpolated alpha
-            // depth format
+            // Depth formats
             Depth_16,
             Depth_24,
             Depth_32F,
@@ -114,25 +115,35 @@ public:
         };
     };
 
+    /// Format type
     struct FormatType {
         enum Enum {
             Packed          = BIT(0),
-            Float           = BIT(1),
-            Half            = Float | BIT(2),
-            Depth           = BIT(3),
-            Stencil         = BIT(4),
+            SNorm           = BIT(1),
+            Float           = BIT(2),
+            Half            = Float | BIT(3),
+            Depth           = BIT(4),
+            Stencil         = BIT(5),
             DepthStencil    = Depth | Stencil,
-            Compressed      = BIT(5)
+            Compressed      = BIT(6)
+        };
+    };
+
+    /// Enum for the different kinds of gamma spaces we expect to need to convert from/to.
+    struct GammaSpace {
+        enum Enum {
+            DontCare,
+            Linear,
+            Pow22,
+            sRGB
         };
     };
 
     /// Image flags
     struct Flag {
         enum Enum {
-            Clamp           = BIT(0),
-            CubeMap         = BIT(1),
-            NormalMap       = BIT(5),
-            LinearSpace     = BIT(7)
+            CubeMap         = BIT(0),
+            NormalMap       = BIT(1)
         };
     };
 
@@ -156,6 +167,13 @@ public:
         };
     };
 
+    struct SampleFilter {
+        enum Enum {
+            Nearest,
+            Bilinear
+        };
+    };
+
     /// Image resample filter
     struct ResampleFilter {
         enum Enum {
@@ -174,26 +192,26 @@ public:
         };
     };
 
-    /// Default constructor
+    /// Default constructor.
     Image();
 
     /// Constructs image with the given data.
-    /// If data is not nullptr, the image data is initialized with given data
-    Image(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, byte *data, int flags);
+    /// If data is not nullptr, the image data is initialized with given data.
+    Image(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, byte *data, int flags);
     
-    /// Copy constructor
+    /// Copy constructor.
     Image(const Image &other);
     
-    /// Assignment operator
+    /// Assignment operator.
     Image &operator=(const Image &other);
     
-    /// Move constructor
+    /// Move constructor.
     Image(Image &&other);
     
-    /// Move operator
+    /// Move operator.
     Image &operator=(Image &&other);
     
-    /// Destructor
+    /// Destructor.
     ~Image();
 
                         /// Returns true if image has no pixel data.
@@ -213,8 +231,6 @@ public:
     bool                HasAlpha() const { return Image::HasAlpha(format); }
                         /// Returns true if image format has 1 bit alpha channel.
     bool                HasOneBitAlpha() const { return Image::HasOneBitAlpha(format); }
-                        /// Returns true if image is in the linear space.
-    bool                IsLinearSpace() const { return (flags & Flag::LinearSpace) ? true : false; }
                         /// Returns true if image format is packed.
     bool                IsPacked() const { return Image::IsPacked(format); }
                         /// Returns true if image format is compressed.
@@ -227,6 +243,8 @@ public:
     bool                IsDepthFormat() const { return Image::IsDepthFormat(format); }
                         /// Returns true if image format is depth & stencil.
     bool                IsDepthStencilFormat() const { return Image::IsDepthStencilFormat(format); }
+                        /// Returns true if image format needs floating conversion in order to not lose precision.
+    bool                NeedFloatConversion() const { return Image::NeedFloatConversion(format); }
                         /// Returns true if image is cube map.
     bool                IsCubeMap() const { return !!(flags & Flag::CubeMap) && numSlices == 6; }
 
@@ -249,7 +267,11 @@ public:
                         /// Returns image flags.
     int                 GetFlags() const { return flags; }
                         /// Returns image format.
-    Image::Format::Enum GetFormat() const { return format; }
+    Format::Enum        GetFormat() const { return format; }
+                        /// Returns gamma space of this image.
+    GammaSpace::Enum    GetGammaSpace() const { return gammaSpace; }
+                        /// Sets gamma space.
+    void                SetGammaSpace(GammaSpace::Enum gammaSpace) { this->gammaSpace = gammaSpace; }
 
                         /// Returns pixel data pointer.
     byte *              GetPixels() const { return pic; }
@@ -258,10 +280,10 @@ public:
                         /// Returns pixel data pointer with the given mip level and slice index.
     byte *              GetPixels(int level, int sliceIndex) const;
 
-                        /// Returns Color4 sample with the given 2D coordinates.
-    Color4              Sample2D(const Vec2 &st, SampleWrapMode::Enum wrapModeS = SampleWrapMode::Clamp, SampleWrapMode::Enum wrapModeT = SampleWrapMode::Clamp, int level = 0) const;
-                        /// Returns Color4 sample with the given cubemap coordinates.
-    Color4              SampleCube(const Vec3 &str, int level = 0) const;
+                        /// Returns linearly interpolated Color4 sample with the given 2D coordinates.
+    Color4              Sample2D(const Vec2 &st, SampleWrapMode::Enum wrapModeS = SampleWrapMode::Clamp, SampleWrapMode::Enum wrapModeT = SampleWrapMode::Clamp, SampleFilter::Enum filter = SampleFilter::Bilinear, int level = 0) const;
+                        /// Returns linearly interpolated Color4 sample with the given cubemap coordinates.
+    Color4              SampleCube(const Vec3 &str, SampleFilter::Enum filter = SampleFilter::Bilinear, int level = 0) const;
 
                         /// Returns number of pixels with the given mipmap levels.
     int                 NumPixels(int firstLevel = 0, int numLevels = 1) const;
@@ -276,48 +298,64 @@ public:
     void                Clear();
 
                         /// Creates an image with the given memory.
-    Image &             InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, byte *data, int flags);
+    Image &             InitFromMemory(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, byte *data, int flags);
 
                         /// Creates an image.
                         /// If data is nullptr, just allocate the memory.
-    Image &             Create(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, const byte *data, int flags);
+    Image &             Create(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
 
-    Image &             Create2D(int width, int height, int numMipmaps, Image::Format::Enum format, const byte *data, int flags);
-    Image &             Create3D(int width, int height, int depth, int numMipmaps, Image::Format::Enum format, const byte *data, int flags);
-    Image &             CreateCube(int size, int numMipmaps, Image::Format::Enum format, const byte *data, int flags);
-    Image &             Create2DArray(int width, int height, int numSlices, int numMipmaps, Image::Format::Enum format, const byte *data, int flags);
+    Image &             Create2D(int width, int height, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
+    Image &             Create3D(int width, int height, int depth, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
+    Image &             CreateCube(int size, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
+    Image &             Create2DArray(int width, int height, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags);
 
-                        /// Creates an cubic image from six square images.
+                        /// Creates a cubic image from six square images.
     Image &             CreateCubeFrom6Faces(const Image *faceImages);
-                        /// Creates an cubic image from single equirectangular spherical image.
+                        /// Creates a cubic image from single equirectangular spherical image.
     Image &             CreateCubeFromEquirectangular(const Image &equirectangularImage, int faceSize);
                         /// Creates an equirectangular spherical image from cubic image.
     Image &             CreateEquirectangularFromCube(const Image &cubeImage);
 
-                        /// Copy image data from another.
+                        /// Copies image data from another.
                         /// Nothing happen if source image dimensions are not match with this image.
     Image &             CopyFrom(const Image &srcImage, int firstLevel = 0, int numLevels = 1);
+
+                        /// Updates sub region.
+    void                Update2D(int level, int x, int y, int width, int height, const byte *data);
     
-                        /// Generates full mipmaps if this image has
+                        /// Generates all mipmaps this image has.
     Image &             GenerateMipmaps();
 
-                        /// Converts this image to the given targetimage.
-    bool                ConvertFormat(Image::Format::Enum dstFormat, Image &dstImage, bool regenerateMipmaps = false, CompressionQuality::Enum compressionQuality = CompressionQuality::Normal) const;
+                        /// Converts this image to the given target image.
+    bool                ConvertFormat(Format::Enum dstFormat, Image &dstImage, 
+                            GammaSpace::Enum dstGammaSpace = GammaSpace::DontCare, bool regenerateMipmaps = false, CompressionQuality::Enum compressionQuality = CompressionQuality::Normal) const;
                         /// Converts this image in-place.
-    bool                ConvertFormatSelf(Image::Format::Enum dstFormat, bool regenerateMipmaps = false, CompressionQuality::Enum compressionQuality = CompressionQuality::Normal);
+    bool                ConvertFormatSelf(Format::Enum dstFormat, 
+                            GammaSpace::Enum dstGammaSpace = GammaSpace::DontCare, bool regenerateMipmaps = false, CompressionQuality::Enum compressionQuality = CompressionQuality::Normal);
 
                         /// Resizes this image to the given target image.
-    bool                Resize(int width, int height, Image::ResampleFilter::Enum resampleFilter, Image &dstImage) const;
+    bool                Resize(int width, int height, ResampleFilter::Enum resampleFilter, Image &dstImage) const;
                         /// Resizes this image in-places.
-    bool                ResizeSelf(int width, int height, Image::ResampleFilter::Enum resampleFilter);
+    bool                ResizeSelf(int width, int height, ResampleFilter::Enum resampleFilter);
 
                         /// Flips vertically.
     Image &             FlipX();
                         /// Flips horizontally.
     Image &             FlipY();
 
+                        /// Adjusts brightness of this image, in-place.
     Image &             AdjustBrightness(float factor);
-    Image &             ApplyGammaRampRGB888(uint16_t ramp[768]);
+
+    Image &             ApplyGammaRampTableRGB888(const uint16_t table[768]);
+
+                        /// Returns dilated image.
+    Image               MakeDilation() const;
+
+                        /// Returns eroded image.
+    Image               MakeErosion() const;
+
+                        /// Returns SDF image.
+    Image               MakeSDF(int spread) const;
 
                         /// Swaps the component red with alpha.
     Image &             SwapRedAlphaRGBA8888();
@@ -345,20 +383,21 @@ public:
     bool                WriteHDR(const char *filename) const;
     
                         // static helper functions to get image information
-    static const char * FormatName(Image::Format::Enum imageFormat);
-    static int          BytesPerPixel(Image::Format::Enum imageFormat);
-    static int          BytesPerBlock(Image::Format::Enum imageFormat);
-    static int          NumComponents(Image::Format::Enum imageFormat);
-    static void         GetBits(Image::Format::Enum imageFormat, int *redBits, int *greenBits, int *blueBits, int *alphaBits);
-    static bool         HasAlpha(Image::Format::Enum imageFormat);
-    static bool         HasOneBitAlpha(Image::Format::Enum imageFormat);
-    static bool         IsPacked(Image::Format::Enum imageFormat);
-    static bool         IsCompressed(Image::Format::Enum imageFormat);
-    static bool         IsFloatFormat(Image::Format::Enum imageFormat);
-    static bool         IsHalfFormat(Image::Format::Enum imageFormat);
-    static bool         IsDepthFormat(Image::Format::Enum imageFormat);
-    static bool         IsDepthStencilFormat(Image::Format::Enum imageFormat);
-    static int          MemRequired(int width, int height, int depth, int numMipmaps, Image::Format::Enum imageFormat);
+    static const char * FormatName(Format::Enum imageFormat);
+    static int          BytesPerPixel(Format::Enum imageFormat);
+    static int          BytesPerBlock(Format::Enum imageFormat);
+    static int          NumComponents(Format::Enum imageFormat);
+    static void         GetBits(Format::Enum imageFormat, int *redBits, int *greenBits, int *blueBits, int *alphaBits);
+    static bool         HasAlpha(Format::Enum imageFormat);
+    static bool         HasOneBitAlpha(Format::Enum imageFormat);
+    static bool         IsPacked(Format::Enum imageFormat);
+    static bool         IsCompressed(Format::Enum imageFormat);
+    static bool         IsFloatFormat(Format::Enum imageFormat);
+    static bool         IsHalfFormat(Format::Enum imageFormat);
+    static bool         IsDepthFormat(Format::Enum imageFormat);
+    static bool         IsDepthStencilFormat(Format::Enum imageFormat);
+    static bool         NeedFloatConversion(Format::Enum imageFormat);
+    static int          MemRequired(int width, int height, int depth, int numMipmaps, Format::Enum imageFormat);
     static int          MaxMipMapLevels(int width, int height, int depth);
 
                         /// Converts an sRGB value in the range [0, 1] to a linear value in the range [0, 1].
@@ -384,9 +423,15 @@ public:
 
     static Image *      NewImageFromFile(const char *filename);
 
+    static float        pow22ToLinearTable[256];
+    static float        sRGBToLinearTable[256];
+
 private:
     template <typename T>
     T                   WrapCoord(T coord, T maxCoord, SampleWrapMode::Enum wrapMode) const;
+
+    Color4              Sample2DNearest(const byte *src, const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWrapMode::Enum wrapModeT) const;
+    Color4              Sample2DBilinear(const byte *src, const Vec2 &st, SampleWrapMode::Enum wrapModeS, SampleWrapMode::Enum wrapModeT) const;
 
     bool                LoadDDSFromMemory(const char *name, const byte *data, size_t size);
     bool                LoadPVRFromMemory(const char *name, const byte *data, size_t size);
@@ -404,7 +449,8 @@ private:
     int                 depth;          ///< Depth
     int                 numSlices;      ///< Number of array images or 6 for cubic image
     int                 numMipmaps;     ///< Number of mipmaps
-    Image::Format::Enum format;         ///< Image format
+    Format::Enum        format;         ///< Image format
+    GammaSpace::Enum    gammaSpace;     ///< Gamma space enum
     int                 flags;          ///< Image flags
     bool                alloced;        ///< Is memory allocated ?
     byte *              pic;            ///< Actual pixel data
@@ -416,21 +462,22 @@ BE_INLINE Image::Image() {
     depth = 0;
     numSlices = 0;
     numMipmaps = 0;
-    format = Image::Format::Unknown;
+    format = Format::Unknown;
+    gammaSpace = GammaSpace::sRGB;
     flags = 0;
     alloced = false;
     pic = nullptr;
 }
 
-BE_INLINE Image::Image(int width, int height, int depth, int numSlices, int numMipmaps, Image::Format::Enum format, byte *data, int flags) {
+BE_INLINE Image::Image(int width, int height, int depth, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, byte *data, int flags) {
     alloced = false;
-    InitFromMemory(width, height, depth, numSlices, numMipmaps, format, data, flags);
-    //Create(width, height, depth, numSlices, numMipmaps, format, data, flags);
+    InitFromMemory(width, height, depth, numSlices, numMipmaps, format, gammaSpace, data, flags);
+    //Create(width, height, depth, numSlices, numMipmaps, format, gammaSpace, data, flags);
 }
 
 BE_INLINE Image::Image(const Image &rhs) {
     alloced = false;
-    Create(rhs.width, rhs.height, rhs.depth, rhs.numSlices, rhs.numMipmaps, rhs.format, rhs.pic, rhs.flags);
+    Create(rhs.width, rhs.height, rhs.depth, rhs.numSlices, rhs.numMipmaps, rhs.format, rhs.gammaSpace, rhs.pic, rhs.flags);
 }
 
 BE_INLINE Image::Image(Image &&rhs) : Image() {
@@ -440,6 +487,7 @@ BE_INLINE Image::Image(Image &&rhs) : Image() {
     BE1::Swap(numSlices, rhs.numSlices);
     BE1::Swap(numMipmaps, rhs.numMipmaps);
     BE1::Swap(format, rhs.format);
+    BE1::Swap(gammaSpace, rhs.gammaSpace);
     BE1::Swap(flags, rhs.flags);
     BE1::Swap(alloced, rhs.alloced);
     BE1::Swap(pic, rhs.pic);
@@ -469,24 +517,26 @@ BE_INLINE byte *Image::GetPixels(int level) const {
 }
 
 BE_INLINE byte *Image::GetPixels(int level, int sliceIndex) const {
-    if (level >= numMipmaps || sliceIndex >= numSlices) return nullptr;
+    if (level >= numMipmaps || sliceIndex >= numSlices) {
+        return nullptr;
+    }
     return pic + GetSliceSize(0, numMipmaps) * sliceIndex + GetSliceSize(0, level);
 }
 
-BE_INLINE Image &Image::Create2D(int width, int height, int numMipmaps, Image::Format::Enum format, const byte *data, int flags) {
-    return Create(width, height, 1, 1, numMipmaps, format, data, flags);
+BE_INLINE Image &Image::Create2D(int width, int height, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags) {
+    return Create(width, height, 1, 1, numMipmaps, format, gammaSpace, data, flags);
 }
 
-BE_INLINE Image &Image::Create3D(int width, int height, int depth, int numMipmaps, Image::Format::Enum format, const byte *data, int flags) {
-    return Create(width, height, depth, 1, numMipmaps, format, data, flags);
+BE_INLINE Image &Image::Create3D(int width, int height, int depth, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags) {
+    return Create(width, height, depth, 1, numMipmaps, format, gammaSpace, data, flags);
 }
 
-BE_INLINE Image &Image::CreateCube(int size, int numMipmaps, Image::Format::Enum format, const byte *data, int flags) {
-    return Create(size, size, 1, 6, numMipmaps, format, data, flags | Flag::CubeMap);
+BE_INLINE Image &Image::CreateCube(int size, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags) {
+    return Create(size, size, 1, 6, numMipmaps, format, gammaSpace, data, flags | Flag::CubeMap);
 }
 
-BE_INLINE Image &Image::Create2DArray(int width, int height, int numSlices, int numMipmaps, Image::Format::Enum format, const byte *data, int flags) {
-    return Create(width, height, 1, numSlices, numMipmaps, format, data, flags);
+BE_INLINE Image &Image::Create2DArray(int width, int height, int numSlices, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags) {
+    return Create(width, height, 1, numSlices, numMipmaps, format, gammaSpace, data, flags);
 }
 
 BE_INLINE float Image::GammaToLinear(float f) {

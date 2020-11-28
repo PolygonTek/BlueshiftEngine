@@ -200,7 +200,7 @@ void OpenGLRHI::SetTextureAnisotropy(int aniso) {
         const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
         assert(texture);
     
-        BE1::Clamp(aniso, 1, hwLimit.maxTextureAnisotropy);
+        Clamp(aniso, 1, hwLimit.maxTextureAnisotropy);
         gglTexParameterf(texture->target, GL_TEXTURE_MAX_ANISOTROPY_EXT, (float)aniso);
     }
 }
@@ -250,24 +250,24 @@ void OpenGLRHI::GenerateMipmap() {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
-    // NOTE: OpenGL ES 에서는 compressed format 일 경우 GL_INVALID_OPERATION
+    // NOTE: GL_INVALID_OPERATION occurs in compressed format in OpenGL ES.
     gglGenerateMipmap(texture->target);
 }
 
 void OpenGLRHI::AdjustTextureSize(TextureType::Enum type, bool useNPOT, int inWidth, int inHeight, int inDepth, int *outWidth, int *outHeight, int *outDepth) {
     int w, h, d;
 
-    // NOTE: GL_ARB_texture_non_power_of_two 익스텐션 스트링이 없다면,
-    // NPOT 텍스쳐는 밉맵이나 wrapmode 에 따라서 hw-accelerate 되지 않을수도 있다.
+    // NOTE: Without the GL_ARB_texture_non_power_of_two extension string,
+    // NPOT textures may not hw-accelerate depending on the mipmap or wrapmode.
     if (useNPOT || type == TextureType::TextureRectangle) {
         w = inWidth;
         h = inHeight;
         d = inDepth;
     } else {
-        // 2의 승수 사이즈 맞추기
-        w = Math::CeilPowerOfTwo(inWidth);
-        h = Math::CeilPowerOfTwo(inHeight);
-        d = Math::CeilPowerOfTwo(inDepth);
+        // Fit multiplier size of 2.
+        w = Math::RoundUpPowerOfTwo(inWidth);
+        h = Math::RoundUpPowerOfTwo(inHeight);
+        d = Math::RoundUpPowerOfTwo(inDepth);
     }
 
     switch (type) {
@@ -285,7 +285,7 @@ void OpenGLRHI::AdjustTextureSize(TextureType::Enum type, bool useNPOT, int inWi
         if (w > hwLimit.maxCubeMapTextureSize) w = hwLimit.maxCubeMapTextureSize;
         if (h > hwLimit.maxCubeMapTextureSize) h = hwLimit.maxCubeMapTextureSize;
 
-        // 큐브맵일 경우에는 가로 세로 길이를 동일하게 맞춘다
+        // For cubemaps, set the width and height equally.
         if (w < h) {
             h = w;
         } else {
@@ -371,13 +371,13 @@ void OpenGLRHI::SetTextureImage(TextureType::Enum textureType, const Image *srcI
             dstCompressed = false;
         } else {
             if (dstFormat == Image::Format::DXN2 && srcFormat != Image::Format::DXN2) {
-                srcImage->ConvertFormat(Image::Format::DXN2, tmpImage);
+                srcImage->ConvertFormat(Image::Format::DXN2, tmpImage, Image::GammaSpace::Linear);
                 srcImage = &tmpImage;
 
                 srcFormat = Image::Format::DXN2;
                 srcCompressed = true;
             } else if (dstFormat == Image::Format::XGBR_DXT5 && srcFormat != Image::Format::XGBR_DXT5) {
-                srcImage->ConvertFormat(Image::Format::RGBA_8_8_8_8, tmpImage);
+                srcImage->ConvertFormat(Image::Format::RGBA_8_8_8_8, tmpImage, Image::GammaSpace::Linear);
                 tmpImage.SwapRedAlphaRGBA8888();
                 srcImage = &tmpImage;
 
@@ -416,10 +416,10 @@ void OpenGLRHI::SetTextureImage(TextureType::Enum textureType, const Image *srcI
             int d = srcImage->GetDepth();
             int maxGenLevels = Image::MaxMipMapLevels(w, h, d);
 
-            if (srcImage->IsCompressed() && OpenGL::SupportsCompressedGenMipmaps()) {
+            if (srcImage->IsPacked() || (srcImage->IsCompressed() && OpenGL::SupportsCompressedGenMipmaps())) {
                 generateMipmaps = true;
             } else {
-                mipmapedImage.Create(w, h, d, srcImage->NumSlices(), maxGenLevels, srcImage->GetFormat(), nullptr, srcImage->GetFlags());
+                mipmapedImage.Create(w, h, d, srcImage->NumSlices(), maxGenLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
                 mipmapedImage.CopyFrom(*srcImage, 0, 1);
                 mipmapedImage.GenerateMipmaps();
                 srcImage = &mipmapedImage;
@@ -548,7 +548,7 @@ void OpenGLRHI::SetTextureImageBuffer(Image::Format::Enum dstFormat, bool isSRGB
         return;
     }
 
-    if (OpenGL::SupportsTextureBufferObject()) {
+    if (OpenGL::SupportsTextureBuffer()) {
         OpenGL::TexBuffer(internalFormat, bufferList[bufferHandle]->object);
     }
     
@@ -679,7 +679,7 @@ void OpenGLRHI::CopyTextureSubImage2D(int xoffset, int yoffset, int x, int y, in
     GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);
 
-    // GL_READ_BUFFER 에서 읽어서 텍스쳐로 저장
+    // Read from GL_READ_BUFFER and save as texture.
     gglCopyTexSubImage2D(texture->target, 0, xoffset, yoffset, x, y, width, height);
 }
 
@@ -689,7 +689,9 @@ void OpenGLRHI::CopyImageSubData(Handle srcTextureHandle, int srcLevel, int srcX
     assert(srcTexture);
     assert(dstTexture);
 
-    OpenGL::CopyImageSubData(srcTexture->object, srcTexture->target, srcLevel, srcX, srcY, srcZ, dstTexture->object, dstTexture->target, dstLevel, dstX, dstY, dstZ, width, height, depth);
+    if (OpenGL::SupportsCopyImage()) {
+        OpenGL::CopyImageSubData(srcTexture->object, srcTexture->target, srcLevel, srcX, srcY, srcZ, dstTexture->object, dstTexture->target, dstLevel, dstX, dstY, dstZ, width, height, depth);
+    }
 }
 
 void OpenGLRHI::GetTextureImage2D(int level, Image::Format::Enum dstFormat, void *pixels) {

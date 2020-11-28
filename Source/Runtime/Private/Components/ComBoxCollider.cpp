@@ -38,6 +38,12 @@ ComBoxCollider::ComBoxCollider() {
 ComBoxCollider::~ComBoxCollider() {
 }
 
+void ComBoxCollider::Init() {
+    ComCollider::Init();
+
+    CreateCollider();
+}
+
 void ComBoxCollider::CreateCollider() {
     if (collider) {
         colliderManager.ReleaseCollider(collider);
@@ -68,14 +74,14 @@ void ComBoxCollider::SetExtents(const Vec3 &extents) {
     }
 }
 
-#if 1
-void ComBoxCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+#if WITH_EDITOR
+void ComBoxCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
-    if (selected) {
+    if (selectedByParent) {
         ComTransform *transform = GetEntity()->GetTransform();
 
-        if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
+        if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(500.0f * 500.0f)) {
             Vec3 scaledExtents = transform->GetScale() * extents;
 
             OBB obb(transform->GetMatrix() * center, scaledExtents + CentiToUnit(0.15f), transform->GetAxis());

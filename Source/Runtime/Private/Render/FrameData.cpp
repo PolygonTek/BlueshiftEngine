@@ -16,7 +16,7 @@
 #include "Render/Render.h"
 #include "RenderInternal.h"
 #include "Core/Heap.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -53,10 +53,10 @@ void FrameData::Shutdown() {
 }
 
 void FrameData::ToggleFrame() {
-    // reset the mem allocation to the first block
+    // Reset the mem allocation to the first block.
     this->alloc = this->mem;
 
-    // clear all the blocks
+    // Clear all the blocks.
     for (MemBlock *block = this->mem; block; block = block->next) {
         block->used = 0;
     }
@@ -72,9 +72,9 @@ void *FrameData::Alloc(int bytes) {
         return buf;
     }
 
-    // advance to the next mem block if available
+    // Advance to the next mem block if available.
     block = block->next;
-    // create a new block if we are at the end of the chain
+    // Create a new block if we are at the end of the chain.
     if (!block) {
         int size = MEMORY_BLOCK_SIZE;
         block = (MemBlock *)Mem_Alloc(sizeof(*block) + 15 + size);

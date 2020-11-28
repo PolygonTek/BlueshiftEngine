@@ -19,7 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
-class ParticleSystemAsset;
+class Asset;
 
 class ComParticleSystem : public ComRenderable {
 public:
@@ -37,14 +37,14 @@ public:
                             /// When game already started, called immediately after spawned
     virtual void            Awake() override;
 
-    virtual bool            HasRenderEntity(int renderEntityHandle) const override;
+    virtual bool            HasRenderObject(int renderObjectHandle) const override;
 
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
-#if 1
+#if WITH_EDITOR
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
+    virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
     void                    UpdateSimulation(int currentTime);
@@ -70,20 +70,22 @@ protected:
     virtual void            UpdateVisuals() override;
     void                    ChangeParticleSystem(const Guid &particleSystemGuid);
     void                    InitializeParticle(Particle *particle, const ParticleSystem::Stage *stage, float inCycleFraction) const;
-    void                    ProcessTrail(Particle *particle, const ParticleSystem::Stage *stage, float genTimeDelta);
+    void                    ProcessTrail(Particle *particle, const ParticleSystem::Stage *stage, int genTimeDelta);
     void                    ComputeTrailPositionFromCustomPath(const ParticleSystem::CustomPathModule &customPathModule, const Particle *particle, float t, Particle::Trail *trail) const;
     void                    ParticleSystemReloaded();
     void                    TransformUpdated(const ComTransform *transform);
 
     bool                    playOnAwake;
-    ParticleSystemAsset *   particleSystemAsset;
+    Asset *                 particleSystemAsset;
     bool                    simulationStarted;
     int                     currentTime;
     int                     stopTime;
 
+#if WITH_EDITOR
     RenderObject::State     spriteDef;
     int                     spriteHandle;
     Mesh *                  spriteReferenceMesh;
+#endif
 };
 
 BE_NAMESPACE_END

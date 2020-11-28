@@ -34,7 +34,7 @@ public:
     Str                         GetFileName() const { return hashName; }
 
     Hierarchy<Entity> &         GetRootNode() { return entityHierarchy; }
-    Entity *                    GetRootEntity() { return entityHierarchy.GetChild(); }
+    Entity *                    GetRootEntity() { return entityHierarchy.GetFirstChild(); }
 
     void                        Clear();
     bool                        Create(const Json::Value &entitiesValue);

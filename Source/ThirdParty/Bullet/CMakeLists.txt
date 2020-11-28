@@ -217,6 +217,7 @@ set(SRC_FILES
     src/BulletCollision/Gimpact/gim_math.h
     src/BulletCollision/Gimpact/gim_memory.h
     src/BulletCollision/Gimpact/gim_memory.cpp
+    src/BulletCollision/Gimpact/gim_pair.h
     src/BulletCollision/Gimpact/gim_radixsort.h
     src/BulletCollision/Gimpact/gim_tri_collision.h
     src/BulletCollision/Gimpact/gim_tri_collision.cpp
@@ -325,6 +326,7 @@ set(SRC_FILES
     src/BulletDynamics/Featherstone/btMultiBodyFixedConstraint.cpp
     src/BulletDynamics/Featherstone/btMultiBodyGearConstraint.h
     src/BulletDynamics/Featherstone/btMultiBodyGearConstraint.cpp
+    src/BulletDynamics/Featherstone/btMultiBodyInplaceSolverIslandCallback.h
     src/BulletDynamics/Featherstone/btMultiBodyJointFeedback.h
     src/BulletDynamics/Featherstone/btMultiBodyJointLimitConstraint.h
     src/BulletDynamics/Featherstone/btMultiBodyJointLimitConstraint.cpp
@@ -376,8 +378,29 @@ set(SRC_FILES
     src/BulletInverseDynamics/MultiBodyTree.hpp
     src/BulletInverseDynamics/MultiBodyTree.cpp
 
+    src/BulletSoftBody/btCGProjection.h
+    src/BulletSoftBody/btConjugateGradient.h
     src/BulletSoftBody/btDefaultSoftBodySolver.h
     src/BulletSoftBody/btDefaultSoftBodySolver.cpp
+    src/BulletSoftBody/btDeformableBackwardEulerObjective.h
+    src/BulletSoftBody/btDeformableBackwardEulerObjective.cpp
+    src/BulletSoftBody/btDeformableBodySolver.h
+    src/BulletSoftBody/btDeformableBodySolver.cpp
+    src/BulletSoftBody/btDeformableContactConstraint.h
+    src/BulletSoftBody/btDeformableContactConstraint.cpp
+    src/BulletSoftBody/btDeformableContactProjection.h
+    src/BulletSoftBody/btDeformableContactProjection.cpp
+    src/BulletSoftBody/btDeformableCorotatedForce.h
+    src/BulletSoftBody/btDeformableGravityForce.h
+    src/BulletSoftBody/btDeformableLinearElasticityForce.h
+    src/BulletSoftBody/btDeformableLagrangianForce.h
+    src/BulletSoftBody/btDeformableMassSpringForce.h
+    src/BulletSoftBody/btDeformableMultiBodyConstraintSolver.h
+    src/BulletSoftBody/btDeformableMultiBodyConstraintSolver.cpp
+    src/BulletSoftBody/btDeformableMultiBodyDynamicsWorld.h
+    src/BulletSoftBody/btDeformableMultiBodyDynamicsWorld.cpp
+    src/BulletSoftBody/btDeformableNeoHookeanForce.h
+    src/BulletSoftBody/btPreconditioner.h
     src/BulletSoftBody/btSoftBody.h
     src/BulletSoftBody/btSoftBody.cpp
     src/BulletSoftBody/btSoftBodyConcaveCollisionAlgorithm.h
@@ -392,6 +415,8 @@ set(SRC_FILES
     src/BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.cpp
     src/BulletSoftBody/btSoftBodySolvers.h
     src/BulletSoftBody/btSoftBodySolverVertexBuffer.h
+    src/BulletSoftBody/btSoftMultiBodyDynamicsWorld.h
+    src/BulletSoftBody/btSoftMultiBodyDynamicsWorld.cpp
     src/BulletSoftBody/btSoftRigidCollisionAlgorithm.h
     src/BulletSoftBody/btSoftRigidCollisionAlgorithm.cpp
     src/BulletSoftBody/btSoftRigidDynamicsWorld.h
@@ -399,6 +424,7 @@ set(SRC_FILES
     src/BulletSoftBody/btSoftSoftCollisionAlgorithm.h
     src/BulletSoftBody/btSoftSoftCollisionAlgorithm.cpp
     src/BulletSoftBody/btSparseSDF.h
+    src/BulletSoftBody/DeformableBodyInplaceSolverIslandCallback.h
 
     src/LinearMath/btAabbUtil2.h
     src/LinearMath/btAlignedAllocator.h
@@ -415,6 +441,7 @@ set(SRC_FILES
     src/LinearMath/btGrahamScan2dConvexHull.h
     src/LinearMath/btHashMap.h
     src/LinearMath/btIDebugDraw.h
+    src/LinearMath/btImplicitQRSVD.h
     src/LinearMath/btList.h
     src/LinearMath/btMatrix3x3.h
     src/LinearMath/btMatrixX.h

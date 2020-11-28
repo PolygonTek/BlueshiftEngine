@@ -33,27 +33,43 @@
 
 BE_NAMESPACE_BEGIN
 
-/// Converts Vec3 to btVector3
+/// Converts Vec3 to btVector3.
 BE_INLINE btVector3 ToBtVector3(const Vec3 &vector) {
     return btVector3(vector.x, vector.y, vector.z);
 }
 
-/// Converts Quat to btQuaternion
+/// Converts Quat to btQuaternion.
 BE_INLINE btQuaternion ToBtQuaternion(const Quat &quaternion) {
     return btQuaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
 }
 
-/// Converts btVector3 to Vec3
+/// Converts Mat3 to btMatrix3x3.
+BE_INLINE btMatrix3x3 ToBtMatrix3x3(const Mat3 &matrix) {
+    return btMatrix3x3(
+        matrix[0][0], matrix[1][0], matrix[2][0],
+        matrix[0][1], matrix[1][1], matrix[2][1],
+        matrix[0][2], matrix[1][2], matrix[2][2]);
+}
+
+/// Converts btVector3 to Vec3.
 BE_INLINE Vec3 ToVec3(const btVector3 &vector) {
     return Vec3(vector.x(), vector.y(), vector.z());
 }
 
-/// Converts btQuaternion to Quat
+/// Converts btQuaternion to Quat.
 BE_INLINE Quat ToQuat(const btQuaternion &quaternion) {
     return Quat(quaternion.w(), quaternion.x(), quaternion.y(), quaternion.z());
 }
 
-/// Converts Mat3 and Vec3 to btTransform
+/// Converts btMatrix3x3 to Mat3.
+BE_INLINE Mat3 ToMat3(const btMatrix3x3 &matrix) {
+    return Mat3(
+        matrix[0][0], matrix[1][0], matrix[2][0],
+        matrix[0][1], matrix[1][1], matrix[2][1],
+        matrix[0][2], matrix[1][2], matrix[2][2]);
+}
+
+/// Converts Mat3 and Vec3 to btTransform.
 BE_INLINE btTransform ToBtTransform(const Mat3 &rotation, const Vec3 &translation = Vec3::origin) {
     return btTransform(btMatrix3x3(
         rotation[0][0], rotation[1][0], rotation[2][0],

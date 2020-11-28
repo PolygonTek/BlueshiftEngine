@@ -73,26 +73,26 @@ vec3 SampleShadowArrayPCF_Q3(vec4 shadowTC, vec2 filterOffset) {
 }
 
 vec3 SampleShadowArrayPCF_Q2(vec4 shadowTC, vec2 filterOffset) {
-    // 9 sample
+    // 9 samples
     vec3 shadow = tex2Darray(shadowArrayMap, shadowTC).rgb;
-    shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(0, filterOffset.y, 0, 0)).rgb;
+    shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(0, +filterOffset.y, 0, 0)).rgb;
     shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(0, -filterOffset.y, 0, 0)).rgb;
-    shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(filterOffset.x, 0, 0, 0)).rgb;
+    shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(+filterOffset.x, 0, 0, 0)).rgb;
     shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(-filterOffset.x, 0, 0, 0)).rgb;
-    shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(filterOffset.x, filterOffset.y, 0, 0)).rgb;
-    shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(filterOffset.x, -filterOffset.y, 0, 0)).rgb;
-    shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(-filterOffset.x, filterOffset.y, 0, 0)).rgb;
+    shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(+filterOffset.x, +filterOffset.y, 0, 0)).rgb;
+    shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(+filterOffset.x, -filterOffset.y, 0, 0)).rgb;
+    shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(-filterOffset.x, +filterOffset.y, 0, 0)).rgb;
     shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(-filterOffset.x, -filterOffset.y, 0, 0)).rgb;
     shadow /= 9.0;
     return shadow;
 }
 
 vec3 SampleShadowArrayPCF_Q1(vec4 shadowTC, vec2 filterOffset) {
-    // 5 sample
+    // 5 samples
     vec3 shadow = tex2Darray(shadowArrayMap, shadowTC).rgb;
-    shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(0, filterOffset.y, 0, 0)).rgb;
+    shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(0, +filterOffset.y, 0, 0)).rgb;
     shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(0, -filterOffset.y, 0, 0)).rgb;
-    shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(filterOffset.x, 0, 0, 0)).rgb;
+    shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(+filterOffset.x, 0, 0, 0)).rgb;
     shadow += tex2Darray(shadowArrayMap, shadowTC + vec4(-filterOffset.x, 0, 0, 0)).rgb;
     shadow *= 0.2;
     return shadow;
@@ -104,6 +104,16 @@ vec3 SampleShadowArray(vec4 shadowTC, vec2 filterOffset) {
 #elif SHADOW_MAP_QUALITY == 2
     return SampleShadowArrayPCF_Q2(shadowTC, shadowMapTexelSize);
 #elif SHADOW_MAP_QUALITY == 1
+    return SampleShadowArrayPCF_Q1(shadowTC, shadowMapTexelSize);
+#else
+    return tex2Darray(shadowArrayMap, shadowTC).rgb;
+#endif
+}
+
+vec3 SampleSpotShadowMap() {
+    vec4 shadowTC = v2f_shadowVec.xyzz / v2f_shadowVec.w;
+    shadowTC.z = 0.0;
+#if SHADOW_MAP_QUALITY >= 1
     return SampleShadowArrayPCF_Q1(shadowTC, shadowMapTexelSize);
 #else
     return tex2Darray(shadowArrayMap, shadowTC).rgb;
@@ -206,7 +216,7 @@ vec3 shadow2D4(in sampler2DShadow tex, in vec3 texcoord, in float width, in floa
     return s00 + s10 + s01 + s11;
 }
 
-vec3 SampleShadowPCF_Q3(vec4 shadowTC, vec2 filterOffset) {
+vec3 SampleShadowPCF_Q3(vec3 shadowTC, vec2 filterOffset) {
     const float kernelRadius = 1.0;
     //vec2 jitter_texcoord = gl_FragCoord.xy / 64.0;
     vec2 jitter_texcoord = shadowTC.xy * 512.0;
@@ -227,46 +237,36 @@ vec3 SampleShadowPCF_Q3(vec4 shadowTC, vec2 filterOffset) {
     return shadow;
 }
 
-vec3 SampleShadowPCF_Q2(vec4 shadowTC, vec2 filterOffset) {
-    // 9 sample
-    vec3 shadow = tex2D(shadowMap, shadowTC.xyz).rgb;
-    shadow += tex2D(shadowMap, vec3(shadowTC.x, shadowTC.y + filterOffset.y, shadowTC.z)).rgb;
-    shadow += tex2D(shadowMap, vec3(shadowTC.x, shadowTC.y - filterOffset.y, shadowTC.z)).rgb;
-    shadow += tex2D(shadowMap, vec3(shadowTC.x + filterOffset.x, shadowTC.y, shadowTC.z)).rgb;
-    shadow += tex2D(shadowMap, vec3(shadowTC.x - filterOffset.x, shadowTC.y, shadowTC.z)).rgb;
-    shadow += tex2D(shadowMap, vec3(shadowTC.x + filterOffset.x, shadowTC.y + filterOffset.y, shadowTC.z)).rgb;
-    shadow += tex2D(shadowMap, vec3(shadowTC.x + filterOffset.x, shadowTC.y - filterOffset.y, shadowTC.z)).rgb;
-    shadow += tex2D(shadowMap, vec3(shadowTC.x - filterOffset.x, shadowTC.y + filterOffset.y, shadowTC.z)).rgb;
-    shadow += tex2D(shadowMap, vec3(shadowTC.x - filterOffset.x, shadowTC.y - filterOffset.y, shadowTC.z)).rgb;
+vec3 SampleShadowPCF_Q2(vec3 shadowTC, vec2 filterOffset) {
+    // 9 samples
+    vec3 shadow = tex2D(shadowMap, shadowTC).rgb;
+    shadow += tex2D(shadowMap, shadowTC + vec3(0, +filterOffset.y, 0)).rgb;
+    shadow += tex2D(shadowMap, shadowTC + vec3(0, -filterOffset.y, 0)).rgb;
+    shadow += tex2D(shadowMap, shadowTC + vec3(+filterOffset.x, 0, 0)).rgb;
+    shadow += tex2D(shadowMap, shadowTC + vec3(-filterOffset.x, 0, 0)).rgb;
+    shadow += tex2D(shadowMap, shadowTC + vec3(+filterOffset.x, +filterOffset.y, 0)).rgb;
+    shadow += tex2D(shadowMap, shadowTC + vec3(+filterOffset.x, -filterOffset.y, 0)).rgb;
+    shadow += tex2D(shadowMap, shadowTC + vec3(-filterOffset.x, +filterOffset.y, 0)).rgb;
+    shadow += tex2D(shadowMap, shadowTC + vec3(-filterOffset.x, -filterOffset.y, 0)).rgb;
     shadow /= 9.0;
     return shadow;
 }
 
-vec3 SampleShadowPCF_Q1(vec4 shadowTC, vec2 filterOffset) {
-    // 5 sample
-    vec3 shadow = tex2D(shadowMap, shadowTC.xyz).rgb;
-    shadow += tex2D(shadowMap, vec3(shadowTC.x, shadowTC.y + filterOffset.y, shadowTC.z)).rgb;
-    shadow += tex2D(shadowMap, vec3(shadowTC.x, shadowTC.y - filterOffset.y, shadowTC.z)).rgb;
-    shadow += tex2D(shadowMap, vec3(shadowTC.x + filterOffset.x, shadowTC.y, shadowTC.z)).rgb;
-    shadow += tex2D(shadowMap, vec3(shadowTC.x - filterOffset.x, shadowTC.y, shadowTC.z)).rgb;
+vec3 SampleShadowPCF_Q1(vec3 shadowTC, vec2 filterOffset) {
+    // 5 samples
+    vec3 shadow = tex2D(shadowMap, shadowTC).rgb;
+    shadow += tex2D(shadowMap, shadowTC + vec3(0, +filterOffset.y, 0)).rgb;
+    shadow += tex2D(shadowMap, shadowTC + vec3(0, -filterOffset.y, 0)).rgb;
+    shadow += tex2D(shadowMap, shadowTC + vec3(+filterOffset.x, 0, 0)).rgb;
+    shadow += tex2D(shadowMap, shadowTC + vec3(-filterOffset.x, 0, 0)).rgb;
     shadow *= 0.2;
     return shadow;
-}
-
-vec3 SampleSpotShadowMap() {
-    vec4 shadowTC = v2f_shadowVec.xyzz / v2f_shadowVec.w;
-    shadowTC.z = 0.0;
-#if SHADOW_MAP_QUALITY >= 1
-    return SampleShadowArrayPCF_Q1(shadowTC, shadowMapTexelSize);
-#else
-    return tex2Darray(shadowArrayMap, shadowTC).rgb;
-#endif
 }
 
 //-------------------------------------------------------------------------------------------------
 
 uniform samplerCube cubicNormalCubeMap;
-uniform samplerCube indirectionCubeMap;
+uniform HIGHP samplerCube indirectionCubeMap;
 uniform vec2 shadowProjectionDepth;
 uniform float vscmBiasedScale;
 
@@ -299,7 +299,7 @@ uniform float vscmBiasedScale;
 }*/
 
 // ShaderX3 - 5.4 Efficient Omnidirectional Shadow Maps
-vec4 GetShadowIndirectCoord(const vec3 worldLightVec) {
+vec3 GetShadowIndirectCoord(const vec3 worldLightVec) {
     // Get the world cubic face normal
     vec3 faceNormal = texCUBE(cubicNormalCubeMap, worldLightVec).xyz;
 
@@ -319,16 +319,15 @@ vec4 GetShadowIndirectCoord(const vec3 worldLightVec) {
     vec3 b = vscmBiasedScale * (vec3(1.0, 1.0, 1.0) - a);
     vec3 biasedDir = a * dir + b * dir;
     
-    vec4 shadowIndirectCoord;
-    shadowIndirectCoord.xy = texCUBE(indirectionCubeMap, biasedDir).zw; // indirectionCubeMap has LA_16_16 format 
+    vec3 shadowIndirectCoord;
+    shadowIndirectCoord.xy = texCUBE(indirectionCubeMap, biasedDir).xy;
     shadowIndirectCoord.z = (1.0 / Zeye) * shadowProjectionDepth.x + shadowProjectionDepth.y;
-    shadowIndirectCoord.w = 1.0;
-
+    
     return shadowIndirectCoord;
 }
 
 vec3 SamplePointShadowMap() {
-    vec4 shadowTC = GetShadowIndirectCoord(v2f_shadowVec.xyz);
+    vec3 shadowTC = GetShadowIndirectCoord(v2f_shadowVec.xyz);
 #if SHADOW_MAP_QUALITY == 3
     return SampleShadowPCF_Q3(shadowTC, shadowMapTexelSize);
 #elif SHADOW_MAP_QUALITY == 2
@@ -336,7 +335,7 @@ vec3 SamplePointShadowMap() {
 #elif SHADOW_MAP_QUALITY == 1
     return SampleShadowPCF_Q1(shadowTC, shadowMapTexelSize);
 #else
-    return tex2D(shadowMap, shadowTC.xyz).rgb;
+    return tex2D(shadowMap, shadowTC).rgb;
 #endif
 }
 

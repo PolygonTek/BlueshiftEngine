@@ -35,14 +35,14 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-    virtual bool            HasRenderEntity(int renderEntityHandle) const override;
+    virtual bool            HasRenderObject(int renderObjectHandle) const override;
 
-#if 1
+#if WITH_EDITOR
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
+    virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
-    virtual const AABB      GetAABB() override;
+    virtual const AABB      GetAABB() const override;
 
     RenderLight::Type::Enum GetLightType() const;
     void                    SetLightType(RenderLight::Type::Enum type);
@@ -102,11 +102,13 @@ protected:
     RenderLight::State      renderLightDef;
     int                     renderLightHandle;
 
+    RenderWorld *           renderWorld;
+
+#if WITH_EDITOR
     Mesh *                  spriteMesh;
     RenderObject::State     spriteDef;
     int                     spriteHandle;
-
-    RenderWorld *           renderWorld;
+#endif
 };
 
 BE_NAMESPACE_END

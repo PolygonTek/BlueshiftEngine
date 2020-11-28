@@ -17,6 +17,7 @@
 #include "Game/Entity.h"
 #include "Game/GameWorld.h"
 #include "Components/ComTransform.h"
+#include "Components/ComRectTransform.h"
 #include "Components/ComCollider.h"
 #include "Components/ComBoxCollider.h"
 #include "Components/ComSphereCollider.h"
@@ -38,6 +39,7 @@
 #include "Components/ComCharacterJoint.h"
 #include "Components/ComCharacterController.h"
 #include "Components/ComCamera.h"
+#include "Components/ComCanvas.h"
 #include "Components/ComLight.h"
 #include "Components/ComRenderable.h"
 #include "Components/ComMeshRenderer.h"
@@ -46,6 +48,8 @@
 #include "Components/ComAnimation.h"
 #include "Components/ComAnimator.h"
 #include "Components/ComTextRenderer.h"
+#include "Components/ComText.h"
+#include "Components/ComImage.h"
 #include "Components/ComParticleSystem.h"
 #include "Components/ComLogic.h"
 #include "Components/ComScript.h"
@@ -63,23 +67,26 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "name", &Entity::GetName,
         "tag", &Entity::GetTag,
         "layer", &Entity::GetLayer,
-        "is_frozen", &Entity::IsFrozen,
         "is_active_self", &Entity::IsActiveSelf,
+        "is_active_in_hierarchy", &Entity::IsActiveInHierarchy,
         "set_active", &Entity::SetActive,
         "game_world", &Entity::GetGameWorld,
         "parent", &Entity::GetParent,
         "set_parent", &Entity::SetParent,
         "children", &Entity::GetChildren,
+        "children_recursive", &Entity::GetChildrenRecursive,
         "find_child", &Entity::FindChild,
         "local_aabb", &Entity::GetLocalAABB,
         "world_aabb", &Entity::GetWorldAABB,
+        "ray_cast_rect", &Entity::RayCastRect,
         "num_components", &Entity::NumComponents,
         "has_component", &Entity::HasComponent,
         "component_index", &Entity::GetComponentIndex,
         "component_by_index", static_cast<Component*(Entity::*)(int)const>(&Entity::GetComponent),
-        "components_in_children", static_cast<ComponentPtrArray(Entity::*)(const MetaObject *)const>(&Entity::GetComponentsInChildren),
+        "components_in_children", static_cast<ComponentPtrArray(Entity::*)(const MetaObject *, bool)const>(&Entity::GetComponentsInChildren),
         "components", static_cast<ComponentPtrArray(Entity::*)(const MetaObject *)const>(&Entity::GetComponents),
         "transform", static_cast<ComTransform*(Entity::*)()const>(&Entity::GetComponent<ComTransform>),
+        "rect_transform", static_cast<ComRectTransform*(Entity::*)()const>(&Entity::GetComponent<ComRectTransform>),
         "collider", static_cast<ComCollider*(Entity::*)()const>(&Entity::GetComponent<ComCollider>),
         "box_collider", static_cast<ComBoxCollider*(Entity::*)()const>(&Entity::GetComponent<ComBoxCollider>),
         "sphere_collider", static_cast<ComSphereCollider*(Entity::*)()const>(&Entity::GetComponent<ComSphereCollider>),
@@ -101,6 +108,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "character_joint", static_cast<ComCharacterJoint*(Entity::*)()const>(&Entity::GetComponent<ComCharacterJoint>),
         "character_controller", static_cast<ComCharacterController*(Entity::*)()const>(&Entity::GetComponent<ComCharacterController>),
         "camera", static_cast<ComCamera*(Entity::*)()const>(&Entity::GetComponent<ComCamera>),
+        "canvas", static_cast<ComCanvas*(Entity::*)()const>(&Entity::GetComponent<ComCanvas>),
         "light", static_cast<ComLight*(Entity::*)()const>(&Entity::GetComponent<ComLight>),
         "renderable", static_cast<ComRenderable*(Entity::*)()const>(&Entity::GetComponent<ComRenderable>),
         "mesh_renderer", static_cast<ComMeshRenderer*(Entity::*)()const>(&Entity::GetComponent<ComMeshRenderer>),
@@ -109,7 +117,9 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "animation", static_cast<ComAnimation*(Entity::*)()const>(&Entity::GetComponent<ComAnimation>),
         "animator", static_cast<ComAnimator*(Entity::*)()const>(&Entity::GetComponent<ComAnimator>),
         "text_renderer", static_cast<ComTextRenderer*(Entity::*)()const>(&Entity::GetComponent<ComTextRenderer>),
-        "particle_system", static_cast<ComParticleSystem*(Entity::*)()const>(&Entity::GetComponent<ComParticleSystem>),
+        "text", static_cast<ComText*(Entity::*)()const>(&Entity::GetComponent<ComText>),
+        "image", static_cast<ComImage*(Entity::*)()const>(&Entity::GetComponent<ComImage>),
+        "particle_system", static_cast<ComParticleSystem*(Entity::*)()const>(&Entity::GetComponent<ComParticleSystem>),        
         "audio_source", static_cast<ComAudioSource*(Entity::*)()const>(&Entity::GetComponent<ComAudioSource>),
         "audio_listener", static_cast<ComAudioListener*(Entity::*)()const>(&Entity::GetComponent<ComAudioListener>),
         "spline", static_cast<ComSpline*(Entity::*)()const>(&Entity::GetComponent<ComSpline>),

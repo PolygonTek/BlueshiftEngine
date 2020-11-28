@@ -13,14 +13,12 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Platform/PlatformFile.h"
 #include "Platform/Windows/PlatformWinFile.h"
 #include "Platform/Windows/PlatformWinUtils.h"
 #include "Platform/PlatformProcess.h"
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 #include <errno.h>
 #include <float.h>
 #include <fcntl.h>

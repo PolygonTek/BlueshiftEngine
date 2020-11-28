@@ -2,35 +2,56 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(TestRenderer)
 
-set(ALL_FILES
+set(COMMON_SOURCE_FILES
     Precompiled.h
     Precompiled.cpp
     Application.h
     Application.cpp)
 
-if (ANDROID)
-    list(APPEND ALL_FILES
-        android_native_app_glue.h
-        android_native_app_glue.c
-        AndroidMain.cpp)
-elseif (APPLE)
-    if (IOS)
-        list(APPEND ALL_FILES
-            iOSMain.mm
-            iOSLaunchScreen.xib)
-    else ()
-        list(APPEND ALL_FILES
-            macOSMain.mm
-            macOSMainMenu.xib)
-    endif ()
-elseif (WIN32)
-    list(APPEND ALL_FILES
-        WinMain.cpp
-        WinResource.h
-        WinRes/small.ico
-        WinRes/TestRenderer.ico
-        WinRes/TestRenderer.rc)
+set(WINDOWS_SOURCE_FILES
+    WinMain.cpp
+    WinResource.h
+    WinRes/small.ico
+    WinRes/TestRenderer.ico
+    WinRes/TestRenderer.rc)
+
+set(MACOS_SOURCE_FILES
+    macOSMain.mm
+    macOSMainMenu.xib)
+
+set(IOS_SOURCE_FILES
+    iOSMain.mm
+    iOSLaunchScreen.xib)
+
+set(ANDROID_SOURCE_FILES
+    android_native_app_glue.h
+    android_native_app_glue.c
+    AndroidMain.cpp)
+
+if (NOT PLATFORM_WINDOWS)
+    list(APPEND COMPILING_DISABLED_SOURCES ${WINDOWS_SOURCE_FILES})
 endif ()
+
+if (NOT PLATFORM_MACOS)
+    list(APPEND COMPILING_DISABLED_SOURCES ${MACOS_SOURCE_FILES})
+endif ()
+
+if (NOT PLATFORM_IOS)
+    list(APPEND COMPILING_DISABLED_SOURCES ${IOS_SOURCE_FILES})
+endif ()
+
+if (NOT PLATFORM_ANDROID)
+    list(APPEND COMPILING_DISABLED_SOURCES ${ANDROID_SOURCE_FILES})
+endif ()
+
+set_source_files_properties(${COMPILING_DISABLED_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+
+set(ALL_FILES
+    ${COMMON_SOURCE_FILES}
+    ${WINDOWS_SOURCE_FILES}
+    ${MACOS_SOURCE_FILES}
+    ${IOS_SOURCE_FILES}
+    ${ANDROID_SOURCE_FILES})
 
 auto_source_group(${ALL_FILES})
 
@@ -56,7 +77,7 @@ endif ()
 if (NOT ANDROID AND NOT IOS)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         PREFIX ""
-        #DEBUG_POSTFIX "_d"
+        #DEVELOPMENT_POSTFIX "_dev"
         OUTPUT_NAME ${PROJECT_NAME}
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Bin/${ENGINE_BUILD_PLATFORM_DIR})
 endif ()
@@ -77,19 +98,24 @@ elseif (APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES 
         XCODE_ATTRIBUTE_PRODUCT_NAME "TestRenderer"
         XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.polygontek.TestRenderer"
-        XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "gnu++0x"
+        XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "gnu++14"
         XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
         XCODE_ATTRIBUTE_CLANG_MODULES_AUTOLINK "NO"
         XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
-        XCODE_ATTRIBUTE_GCC_C_LANGUAGE_STANDARD "gnu99"
-        #XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS NO
-        #XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Debug] YES
-        XCODE_ATTRIBUTE_COPY_PHASE_STRIP YES
-        XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] NO
+        XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS "NO"
+        XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Debug] "YES"
+        XCODE_ATTRIBUTE_GCC_C_LANGUAGE_STANDARD "gnu11"
+        XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
+        XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT[variant=Debug] "dwarf"
+        XCODE_ATTRIBUTE_COPY_PHASE_STRIP "YES"
+        XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] "NO"
         #XCODE_ATTRIBUTE_GCC_PREFIX_HEADER ${CMAKE_CURRENT_LIST_DIR}/Precompiled.h
         #XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER "YES"
         XCODE_ATTRIBUTE_INSTALL_PATH "/Applications"
-        XCODE_ATTRIBUTE_SKIP_INSTALL "NO")
+        XCODE_ATTRIBUTE_SKIP_INSTALL "NO"
+        XCODE_ATTRIBUTE_MTL_FAST_MATH "YES"
+        XCODE_ATTRIBUTE_MTL_ENABLE_DEBUG_INFO "NO"
+        XCODE_ATTRIBUTE_MTL_ENABLE_DEBUG_INFO[variant=Debug] "INCLUDE_SOURCE")
 
     if (IOS)
         set_target_properties(${PROJECT_NAME} PROPERTIES 

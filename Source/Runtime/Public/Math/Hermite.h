@@ -54,60 +54,60 @@ public:
     Hermite();
     ~Hermite() = default;
 
-                        /// Compare with another
+                        /// Compare with another.
     bool                operator==(const Hermite<T> &rhs) const;
     bool                operator!=(const Hermite<T> &rhs) const;
 
-                        /// Clears all data
+                        /// Clears all data.
     void                Clear();
 
-                        /// Adds point with the given time t
+                        /// Adds a point with the given time t.
     int                 AddPoint(float t, const T &value);
 
-                        /// Removes point with the given key index index
+                        /// Removes point with the given key index index.
     bool                RemoveIndex(int index);
 
-                        /// Returns number of points
+                        /// Returns number of points.
     int                 NumKeys() const { return keys.Count(); }
 
-                        /// Sets time of the point with the given key index index
-                        /// If key index changed, returns new index
+                        /// Sets time of the point with the given key index index.
+                        /// If key index changed, returns new index.
     int                 SetTime(int index, float t);
 
-                        /// Gets time of the point with the given key index index
+                        /// Gets time of the point with the given key index index.
     float               GetTime(int index) const { return keys[index].time; }
 
-                        /// Sets point value with the given key index index
+                        /// Sets a point value with the given key index index.
     void                SetPoint(int index, const T &value) { keys[index].point = value; changed = true; }
 
-                        /// Moves all points with the given translation value
+                        /// Moves all points with the given translation value.
     void                MovePoints(const T &translation);
 
-                        /// Gets point value with the given key index index
+                        /// Gets a point value with the given key index index.
     T                   GetPoint(int index) const { return keys[index].point; }
 
-                        /// Gets minimum value of all points
+                        /// Gets minimum value of all points.
     T                   GetMinPoint() const;
 
-                        /// Gets maximum value of all points
+                        /// Gets maximum value of all points.
     T                   GetMaxPoint() const;
 
-                        /// Sets outgoing slope of the point with the given key index index
+                        /// Sets outgoing slope of the point with the given key index index.
     void                SetOutgoingSlope(int index, const T &slope) { keys[index].outSlope = slope; changed = true; }
 
-                        /// Gets outgoing slope of the point with the given key index index
+                        /// Gets outgoing slope of the point with the given key index index.
     T                   GetOutgoingSlope(int index) const { return keys[index].outSlope; }
 
-                        /// Sets incoming slope of the point with the given key index index
+                        /// Sets incoming slope of the point with the given key index index.
     void                SetIncomingSlope(int index, const T &slope) { keys[index].inSlope = slope; changed = true; }
 
-                        /// Gets incoming slope of the point with the given key index index
+                        /// Gets incoming slope of the point with the given key index index.
     T                   GetIncomingSlope(int index) const { return keys[index].inSlope; }
 
-                        /// Sets tangent mode flags with the given key index index
+                        /// Sets tangent mode flags with the given key index index.
     void                SetTangentModeFlags(int index, int flags) { keys[index].tangentModeFlags = flags; }
 
-                        /// Gets tangent mode flags with the given key index 
+                        /// Gets tangent mode flags with the given key index .
     int                 GetTangentModeFlags(int index) const { return keys[index].tangentModeFlags; }
 
     TimeWrapMode        GetMinTimeWrapMode() const { return timeWrapModes[0]; }
@@ -116,25 +116,25 @@ public:
     TimeWrapMode        GetMaxTimeWrapMode() const { return timeWrapModes[1]; }
     void                SetMaxTimeWrapMode(TimeWrapMode timeWrapMode) { timeWrapModes[1] = timeWrapMode; }
 
-                        /// Initializes Hermite spline with given boundary condition
+                        /// Initializes Hermite spline with given boundary condition.
     bool                Initialize(BoundaryCondition boundaryCondition);
 
-                        /// Evaluates point
+                        /// Evaluates a point.
     T                   Evaluate(float t) const;
 
-                        /// Evaluates derivative
+                        /// Evaluates a derivative.
     T                   EvaluateDerivative(float t) const;
 
-                        /// Evaluates second derivative
+                        /// Evaluates a second derivative.
     T                   EvaluateSecondDerivative(float t) const;
 
-                        /// Evaluates antiderivate from 0 to t
+                        /// Evaluates antiderivate from 0 to t.
     T                   Integrate(float t) const;
 
-                        /// Evaluates antiderivate from t0 to t1
+                        /// Evaluates antiderivate from t0 to t1.
     T                   Integrate(float t0, float t1) const { return Integrate(t1) - Integrate(t0); }
 
-                        /// Gets index at time t
+                        /// Gets a index at time t.
     int                 IndexForTime(float t) const;
     
 private:

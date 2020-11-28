@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Core/Heap.h"
 #include "NvTriStrip.h"
 
@@ -142,10 +142,12 @@ void SubMesh::FreeSubMesh() {
     if (type == Mesh::Type::Reference) {
         if (vertexCache->buffer != RHI::NullBuffer) {
             rhi.DestroyBuffer(vertexCache->buffer);
+            vertexCache->buffer = RHI::NullBuffer;
         }
 
         if (indexCache->buffer != RHI::NullBuffer) {
             rhi.DestroyBuffer(indexCache->buffer);
+            indexCache->buffer = RHI::NullBuffer;
         }
 
         Mem_AlignedFree(verts);
@@ -170,28 +172,33 @@ void SubMesh::FreeSubMesh() {
 }
 
 void SubMesh::CacheStaticDataToGpu() {
-    // Fill in static vertex buffer
+    // Fill in static vertex buffer.
     if (!bufferCacheManager.IsCached(vertexCache)) {
-        // skinning subMesh 라면 vertex weight 값을 vertex buffer 뒤에 write 한다
+        int sizeVerts = sizeof(VertexGenericLit) * numVerts;
+
+        // Write vertex weights after vertex data in the vertex buffer.
         if (vertWeights) {//surfSpace->def->state.joints && useGpuSkinning) {
-            int sizeofVertWeight = VertexWeightSize();
-            int size = sizeof(VertexGenericLit) * numVerts + sizeofVertWeight * numVerts;
+            int sizeVertsAligned = ((sizeVerts + 15) >> 4) << 4;
+            int sizeWeights = VertexWeightSize() * numVerts;
+            int size = sizeVertsAligned + sizeWeights;
             
             bufferCacheManager.AllocStaticVertex(size, nullptr, vertexCache);
 
             rhi.BindBuffer(RHI::BufferType::Vertex, vertexCache->buffer);
-            byte *ptr = (byte *)rhi.MapBufferRange(vertexCache->buffer, RHI::BufferLockMode::WriteOnly, 0, size);
+            byte *ptr = (byte *)rhi.MapBuffer(vertexCache->buffer, RHI::BufferLockMode::WriteOnly);
 
-            simdProcessor->Memcpy(ptr, verts, sizeof(VertexGenericLit) * numVerts);
-            simdProcessor->Memcpy(ptr + sizeof(VertexGenericLit) * numVerts, vertWeights, sizeofVertWeight * numVerts);
+            rhi.WriteBuffer(ptr, (const byte *)verts, sizeVerts);
+            rhi.WriteBuffer(ptr + sizeVertsAligned, (const byte *)vertWeights, sizeWeights);
 
-            rhi.UnmapBuffer(vertexCache->buffer);
+            if (!rhi.UnmapBuffer(vertexCache->buffer)) {
+                BE_WARNLOG("Error unmapping buffer\n");
+            }
         } else {
-            bufferCacheManager.AllocStaticVertex(numVerts * sizeof(VertexGenericLit), verts, vertexCache);
+            bufferCacheManager.AllocStaticVertex(sizeVerts, verts, vertexCache);
         }
     }
 
-    // Fill in static index buffer
+    // Fill in static index buffer.
     if (!bufferCacheManager.IsCached(indexCache)) {
         bufferCacheManager.AllocStaticIndex(numIndexes * sizeof(TriIndex), indexes, indexCache);
     }
@@ -206,11 +213,14 @@ void SubMesh::CacheDynamicDataToGpu(const Mat3x4 *joints, const Material *materi
         simdProcessor->TransformVerts(verts, numVerts, joints, jointWeightVerts, reinterpret_cast<int *>(jointWeights), numJointWeights);
     }
 
+    // NOTE: No need normals and tangents for VertexGeneric
+#if 0
     bool unsmoothedTangents = (material->GetFlags() & Material::Flag::UnsmoothTangents) ? true : false;
 
     ComputeTangents(true, unsmoothedTangents);
 
     FixMirroredVerts();
+#endif
 
     // Fill in dynamic vertex buffer
     bufferCacheManager.AllocVertex(numVerts, sizeof(VertexGenericLit), verts, vertexCache);
@@ -288,8 +298,8 @@ void SubMesh::SplitMirroredVerts() {
         simdProcessor->Memcpy(newVerts, verts, sizeof(VertexGenericLit) * numVerts);
         simdProcessor->Memcpy(newVerts + numVerts, dupVerts, sizeof(VertexGenericLit) * numMirroredVerts);
 
-        int *newMirroredVerts = (int *)Mem_Alloc16(sizeof(int) * numMirroredVerts);
-        simdProcessor->Memcpy(newMirroredVerts, mirroredVertsIndexes, sizeof(int) * numMirroredVerts);
+        TriIndex *newMirroredVerts = (TriIndex *)Mem_Alloc16(sizeof(TriIndex) * numMirroredVerts);
+        simdProcessor->Memcpy(newMirroredVerts, mirroredVertsIndexes, sizeof(TriIndex) * numMirroredVerts);
 
         if (numJointWeights > 0) {
             int numAppendedJointWeights = 0;
@@ -536,10 +546,10 @@ static void R_DeriveTangentsWithoutNormals(VertexGenericLit *verts, const int nu
         Vec3 normal = verts[i].GetNormal();
         normal.Normalize();
 
-        vertexTangents[i] -= (vertexTangents[i].Dot(normal)) * normal;
+        vertexTangents[i].ProjectOnPlane(normal);
         vertexTangents[i].Normalize();
 
-        vertexBitangents[i] -= (vertexBitangents[i].Dot(normal)) * normal;
+        vertexBitangents[i].ProjectOnPlane(normal);
         vertexBitangents[i].Normalize();
     }
 
@@ -658,8 +668,8 @@ static void R_DeriveNormalsAndTangents(VertexGenericLit *verts, const int numVer
         vertexNormals[i].y *= normalScale;
         vertexNormals[i].z *= normalScale;
 
-        vertexTangents[i] -= (vertexTangents[i].Dot(vertexNormals[i])) * vertexNormals[i];
-        vertexBitangents[i] -= (vertexBitangents[i].Dot(vertexNormals[i])) * vertexNormals[i];
+        vertexTangents[i].ProjectOnPlane(vertexNormals[i]);
+        vertexBitangents[i].ProjectOnPlane(vertexNormals[i]);
 
         const float tangentScale = Math::InvSqrt(vertexTangents[i].LengthSqr());
         vertexTangents[i].x *= tangentScale;
@@ -756,8 +766,8 @@ void SubMesh::ComputeDominantTris() {
     // The dominant triangle should have most larger surface area among the adjacent triangles of a vertex
     for (int i = 0; i < numVerts; i++) {
         float dominantTriArea = -1.0f;
-        int dominantTriVertex2 = -1;
-        int dominantTriVertex3 = -1;
+        TriIndex dominantTriVertex2 = -1;
+        TriIndex dominantTriVertex3 = -1;
 
         for (int j = 0; j < numIndexes; j += 3) {
             if (indexes[j] == i || indexes[j+1] == i || indexes[j+2] == i) {
@@ -812,7 +822,7 @@ void SubMesh::ComputeDominantTris() {
 
         // We just need determinant sign because tangents vectors should be normalized
         float det = ds1 * dt2 - ds2 * dt1;
-        unsigned int signBit = (*(unsigned int *)&det) & (1 << 31);
+        uint32_t signBit = (*(uint32_t *)&det) & (1 << 31);
 
         Vec3 t0;
         t0.x = dt2 * side0.x - dt1 * side1.x;
@@ -820,7 +830,7 @@ void SubMesh::ComputeDominantTris() {
         t0.z = dt2 * side0.z - dt1 * side1.z;
 
         const float f0 = Math::InvSqrt(t0.LengthSqr());
-        *(unsigned int *)&f0 ^= signBit;
+        *(uint32_t *)&f0 ^= signBit;
         dominantTris[i].normalizationScale[0] = f0;
 
         Vec3 t1;
@@ -829,7 +839,7 @@ void SubMesh::ComputeDominantTris() {
         t1.z = ds1 * side1.z - ds2 * side0.z;
 
         const float f1 = Math::InvSqrt(t1.LengthSqr());
-        *(unsigned int *)&f1 ^= signBit;
+        *(uint32_t *)&f1 ^= signBit;
         dominantTris[i].normalizationScale[1] = f1;
 
         Vec3 n;
@@ -868,23 +878,23 @@ void SubMesh::ComputeEdges() {
         return;
     }
 
-    // Temporary edge buffer to compute real 'edges'
-    // Maximum edge count is same as index count. but we need one more space for 0'th edge for dummy
-    Edge *tempEdges = (Edge *)Mem_Alloc16((numIndexes + 1) * sizeof(Edge));
+    // Temporary edge buffer to compute real 'edges'.
+    // Maximum edge count is same as index count. but we need one more space for 0'th edge for dummy.
+    Edge *tempEdges = (Edge *)Mem_Alloc16((numIndexes + 1) * sizeof(tempEdges[0]));
 
     Edge triEdges[3];
     // 0'th edge is not possible to have negative index, so we'll ignore it.
     memset(&triEdges[0], 0, sizeof(triEdges[0]));
     tempEdges[0] = triEdges[0];
 
-    // edge's vertex index v0 to the edge table
-    int *vertexEdges = (int *)Mem_Alloc16(numVerts * sizeof(int));
-    memset(vertexEdges, -1, numVerts * sizeof(int));
+    // edge's vertex index v0 to the edge table.
+    int32_t *vertexEdges = (int32_t *)Mem_Alloc16(numVerts * sizeof(vertexEdges[0]));
+    memset(vertexEdges, -1, numVerts * sizeof(int32_t));
     // vertices might have many edges.
-    int *edgeChain = (int *)Mem_Alloc16((numIndexes + 1) * sizeof(int));
+    int32_t *edgeChain = (int32_t *)Mem_Alloc16((numIndexes + 1) * sizeof(edgeChain[0]));
 
-    // edge indexes
-    edgeIndexes = (int *)Mem_Alloc16(numIndexes * sizeof(int));
+    // edge indexes.
+    edgeIndexes = (int32_t *)Mem_Alloc16(numIndexes * sizeof(edgeIndexes[0]));
 
     int numTempEdges = 1;
     int numDisjunctiveEdges = 0;
@@ -897,7 +907,7 @@ void SubMesh::ComputeEdges() {
         const int32_t i1 = triIndexes[1];
         const int32_t i2 = triIndexes[2];
 
-        // 작은 인덱스가 먼저오도록 ordering
+        // Ordering to small index comes first.
         int32_t s = INT32_SIGNBITSET(i1 - i0);
         triEdges[0].v[0] = triIndexes[s];
         triEdges[0].v[1] = triIndexes[s^1];
@@ -911,14 +921,14 @@ void SubMesh::ComputeEdges() {
         for (int j = 0; j < 3; j++) {
             Edge &edge = triEdges[j];
 
-            const int v0 = edge.v[0]; // edge vertex index 0
-            const int v1 = edge.v[1]; // edge vertex index 1
+            const int32_t v0 = edge.v[0]; // edge vertex index 0
+            const int32_t v1 = edge.v[1]; // edge vertex index 1
 
             // edge vertex winding 이 triangle winding (CCW) 과 같다면 0
             // edge vertex winding 이 triangle winding (CCW) 과 다르다면 1
             const unsigned int order = (v0 == triIndexes[j] ? 0 : 1);
 
-            // 공유하는 edge 를 찾는다
+            // Find the shared edge.
             int edgeNum;
             for (edgeNum = vertexEdges[v0]; edgeNum >= 0; edgeNum = edgeChain[edgeNum]) {
                 if (tempEdges[edgeNum].v[1] == v1) {
@@ -926,32 +936,32 @@ void SubMesh::ComputeEdges() {
                 }
             }
 
-            // 공유하는 edge 를 못 찾았거나 이미 두개의 edge 가 공유되어 있다면 새로운 edge 를 추가
+            // Add new edge if no shared edge is found or two edges are already shared.
             if (edgeNum < 0 || tempEdges[edgeNum].t[order] != -1) {
                 if (edgeNum >= 0) {
                     numDisjunctiveEdges++;
                 }
 
-                // Add an edge to the temporary edge buffer 
+                // Add an edge to the temporary edge buffer.
                 edge.t[0] = edge.t[1] = -1;
                 edgeNum = numTempEdges;
                 tempEdges[numTempEdges++] = edge;
 
-                // Update edge chain for later use
+                // Update edge chain for later use.
                 edgeChain[edgeNum] = vertexEdges[v0];
                 vertexEdges[v0] = edgeNum;
             }
 
-            // Update a triangle index of an edge
+            // Update a triangle index of an edge.
             //assert(tempEdges[edgeNum].t[order] == -1);
             tempEdges[edgeNum].t[order] = i / 3;
 
-            // Update an edge index
+            // Update an edge index.
             edgeIndexes[i + j] = order ? -edgeNum : edgeNum;
         }
     }
 
-    // 2개 이상 공유된 edge 개수를 경고 출력.
+    // Warning output for two or more shared edges.
     if (numDisjunctiveEdges > 0) {
         BE_WARNLOG("%i disjunctive edges found\n", numDisjunctiveEdges);
     }
@@ -968,12 +978,12 @@ void SubMesh::ComputeEdges() {
     edgesCalculated = true;
 }
 
-int SubMesh::FindEdge(int v1, int v2) const {
+int SubMesh::FindEdge(int32_t v1, int32_t v2) const {
     if (!edgesCalculated) {
         return false;
     }
 
-    int firstVert, secondVert;
+    int32_t firstVert, secondVert;
     if (v1 < v2) {
         firstVert = v1;
         secondVert = v2;
@@ -1095,16 +1105,59 @@ float SubMesh::ComputeVolume() const {
 }
 
 static void Moment01SubExpressions(float w0, float w1, float w2, float &f1, float &f2) {
-    const float temp0 = w0 + w1; 
-    f1 = temp0 + w2;
-    const float temp1 = w0 * w0; 
+    const float temp0 = w0 + w1;
+    const float temp1 = w0 * w0;
     const float temp2 = temp1 + w1 * temp0;
-    f2 = temp2 + w2 * f1; 
+    f1 = temp0 + w2;
+    f2 = temp2 + w2 * f1;
 }
 
 const Vec3 SubMesh::ComputeCentroid() const {
-    const float multipliers[2] = { 1.0f/6, 1.0f/24 };
-    float intg[4] = { 0, };
+#if defined(ENABLE_SIMD4_INTRIN)
+    const simd4f multipliers = { 1.0f / 6.0f, 1.0f / 24.0f, 1.0f / 24.0f, 1.0f / 24.0f };
+    const simd4b mask = { false, true, true, true };
+
+    simd4f mintg = setzero_ps();
+
+    for (int i = 0; i < numIndexes; i += 3) {
+        simd4f a = loadu_ps(verts[indexes[i]].xyz);
+        simd4f b = loadu_ps(verts[indexes[i + 1]].xyz);
+        simd4f c = loadu_ps(verts[indexes[i + 2]].xyz);
+
+        simd4f side0 = b - a;
+        simd4f side1 = c - a;
+
+        simd4f cr = cross_ps(side0, side1);
+
+        simd4f temp0 = a + b;
+        simd4f temp1 = a * a;
+        simd4f temp2 = madd_ps(b, temp0, temp1);
+
+        simd4f f1 = c + temp0;
+        simd4f f2 = madd_ps(c, f1, temp2);
+
+        temp0 = shuffle_ps<0, 0, 1, 2>(cr);
+        temp1 = select_ps(f1, shuffle_ps<0, 0, 1, 2>(f2), mask);
+
+        mintg = madd_ps(temp0, temp1, mintg);
+    }
+
+    mintg = mintg * multipliers;
+
+    ALIGN_AS16 float intg[4];
+    store_ps(mintg, intg);
+
+    const float invVolume = 1.0f / intg[0];
+
+    Vec3 centroid;
+    centroid.x = intg[1] * invVolume;
+    centroid.y = intg[2] * invVolume;
+    centroid.z = intg[3] * invVolume;
+
+    return centroid;
+#else
+    float intg[4] = { 0, 0, 0, 0 };
+    const float multipliers[2] = { 1.0f/6.0f, 1.0f/24.0f };
     float f1x, f1y, f1z, f2x, f2y, f2z;
 
     for (int i = 0; i < numIndexes; i += 3) {
@@ -1117,9 +1170,9 @@ const Vec3 SubMesh::ComputeCentroid() const {
 
         const Vec3 cr = side0.Cross(side1);
 
-        Moment01SubExpressions(a.x, b.x, c.x, f1x, f2x); 
-        Moment01SubExpressions(a.y, b.y, c.y, f1y, f2y); 
-        Moment01SubExpressions(a.z, b.z, c.z, f1z, f2z); 
+        Moment01SubExpressions(a.x, b.x, c.x, f1x, f2x);
+        Moment01SubExpressions(a.y, b.y, c.y, f1y, f2y);
+        Moment01SubExpressions(a.z, b.z, c.z, f1z, f2z);
 
         intg[0] += cr.x * f1x;
         intg[1] += cr.x * f2x;
@@ -1132,29 +1185,88 @@ const Vec3 SubMesh::ComputeCentroid() const {
     intg[2] *= multipliers[1];
     intg[3] *= multipliers[1];
 
-    const float volume = intg[0];
+    const float invVolume = 1.0f / intg[0];
 
     Vec3 centroid;
-    centroid.x = intg[1] / volume;
-    centroid.y = intg[2] / volume;
-    centroid.z = intg[3] / volume;
+    centroid.x = intg[1] * invVolume;
+    centroid.y = intg[2] * invVolume;
+    centroid.z = intg[3] * invVolume;
+
     return centroid;
+#endif
 }
 
 static void Moment012SubExpressions(float w0, float w1, float w2, float &f1, float &f2, float &f3, float &g0, float &g1, float &g2) {
-    float temp0 = w0 + w1; 
-    f1 = temp0 + w2;
-    float temp1 = w0 * w0; 
+    float temp0 = w0 + w1;
+    float temp1 = w0 * w0;
     float temp2 = temp1 + w1 * temp0;
-    f2 = temp2 + w2 * f1; 
+    f1 = temp0 + w2;
+    f2 = temp2 + w2 * f1;
     f3 = w0 * temp1 + w1 * temp2 + w2 * f2;
-    g0 = f2 + w0 * (f1 + w0); 
-    g1 = f2 + w1 * (f1 + w1); 
+    g0 = f2 + w0 * (f1 + w0);
+    g1 = f2 + w1 * (f1 + w1);
     g2 = f2 + w2 * (f1 + w2);
 }
 
 const Mat3 SubMesh::ComputeInertiaTensor(const Vec3 &centroid, float mass) const {
-    const float multipliers[2] = { 1.0f/60, 1.0f/120 };
+#if defined(ENABLE_SIMD4_INTRIN)
+    const simd4f multipliers1 = { 1.0f / 60.0f, 1.0f / 60.0f, 1.0f / 60.0f, 0.0f };
+    const simd4f multipliers2 = { 1.0f / 120.0f, 1.0f / 120.0f, 1.0f / 120.0f, 0.0f };
+
+    simd4f mintg1 = setzero_ps();
+    simd4f mintg2 = setzero_ps();
+
+    for (int i = 0; i < numIndexes; i += 3) {
+        simd4f a = loadu_ps(verts[indexes[i]].xyz);
+        simd4f b = loadu_ps(verts[indexes[i + 1]].xyz);
+        simd4f c = loadu_ps(verts[indexes[i + 2]].xyz);
+
+        simd4f side0 = b - a;
+        simd4f side1 = c - a;
+
+        simd4f cr = cross_ps(side0, side1);
+
+        simd4f temp0 = a + b;
+        simd4f temp1 = a * a;
+        simd4f temp2 = madd_ps(b, temp0, temp1);
+
+        simd4f f1 = c + temp0;
+        simd4f f2 = madd_ps(c, f1, temp2);
+        simd4f f3 = a * temp1 + b * temp2 + c * f2;
+        simd4f g0 = madd_ps(f1 + a, a, f2);
+        simd4f g1 = madd_ps(f1 + b, b, f2);
+        simd4f g2 = madd_ps(f1 + c, c, f2);
+
+        temp0 = shuffle_ps<1, 2, 0, 3>(a) * g0;
+        temp1 = shuffle_ps<1, 2, 0, 3>(b) * g1;
+        temp2 = shuffle_ps<1, 2, 0, 3>(c) * g2;
+
+        mintg1 = madd_ps(cr, f3, mintg1);
+        mintg2 = cr * (temp0 + temp1 + temp2);
+    }
+
+    mintg1 = mintg1 * multipliers1;
+    mintg2 = mintg2 * multipliers2;
+
+    ALIGN_AS16 float intg1[4];
+    ALIGN_AS16 float intg2[4];
+    store_ps(mintg1, intg1);
+    store_ps(mintg2, intg2);
+
+    Mat3 inertia;
+    inertia[0][0] = intg1[1] + intg1[2] - mass * (centroid.y * centroid.y + centroid.z * centroid.z);
+    inertia[1][1] = intg1[0] + intg1[2] - mass * (centroid.z * centroid.z + centroid.x * centroid.x);
+    inertia[2][2] = intg1[0] + intg1[1] - mass * (centroid.x * centroid.x + centroid.y * centroid.y);
+    inertia[0][1] = -(intg2[0] - mass * centroid.x * centroid.y);
+    inertia[1][2] = -(intg2[1] - mass * centroid.y * centroid.z);
+    inertia[0][2] = -(intg2[2] - mass * centroid.z * centroid.x);
+    inertia[1][0] = inertia[0][1];
+    inertia[2][0] = inertia[0][2];
+    inertia[2][1] = inertia[1][2];
+
+    return inertia;
+#else
+    const float multipliers[2] = { 1.0f / 60.0f, 1.0f / 120.0f };
     float intg[10] = { 0, };
     float f1x, f1y, f1z, f2x, f2y, f2z, f3x, f3y, f3z;
     float g0x, g0y, g0z, g1x, g1y, g1z, g2x, g2y, g2z;
@@ -1169,24 +1281,24 @@ const Mat3 SubMesh::ComputeInertiaTensor(const Vec3 &centroid, float mass) const
 
         const Vec3 cr = side0.Cross(side1);
 
-        Moment012SubExpressions(a.x, b.x, c.x, f1x, f2x, f3x, g0x, g1x, g2x); 
-        Moment012SubExpressions(a.y, b.y, c.y, f1y, f2y, f3y, g0y, g1y, g2y); 
-        Moment012SubExpressions(a.z, b.z, c.z, f1z, f2z, f3z, g0z, g1z, g2z); 
+        Moment012SubExpressions(a.x, b.x, c.x, f1x, f2x, f3x, g0x, g1x, g2x);
+        Moment012SubExpressions(a.y, b.y, c.y, f1y, f2y, f3y, g0y, g1y, g2y);
+        Moment012SubExpressions(a.z, b.z, c.z, f1z, f2z, f3z, g0z, g1z, g2z);
 
         intg[4] += cr.x * f3x;
         intg[5] += cr.y * f3y;
         intg[6] += cr.z * f3z;
         intg[7] += cr.x * (a.y * g0x + b.y * g1x + c.y * g2x);
-        intg[8] += cr.y * (a.z * g0y + b.z * g1y + c.y * g2y);
+        intg[8] += cr.y * (a.z * g0y + b.z * g1y + c.z * g2y);
         intg[9] += cr.z * (a.x * g0z + b.x * g1z + c.x * g2z);
     }
 
     intg[4] *= multipliers[0];
-    intg[4] *= multipliers[0];
-    intg[4] *= multipliers[0];
-    intg[4] *= multipliers[1];
-    intg[4] *= multipliers[1];
-    intg[4] *= multipliers[1];
+    intg[5] *= multipliers[0];
+    intg[6] *= multipliers[0];
+    intg[7] *= multipliers[1];
+    intg[8] *= multipliers[1];
+    intg[9] *= multipliers[1];
 
     Mat3 inertia;
     inertia[0][0] = intg[5] + intg[6] - mass * (centroid.y * centroid.y + centroid.z * centroid.z);
@@ -1200,6 +1312,7 @@ const Mat3 SubMesh::ComputeInertiaTensor(const Vec3 &centroid, float mass) const
     inertia[2][1] = inertia[1][2];
 
     return inertia;
+#endif
 }
 
 void SubMesh::OptimizeIndexedTriangles() {

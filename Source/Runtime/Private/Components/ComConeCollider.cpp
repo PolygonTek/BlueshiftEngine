@@ -40,6 +40,12 @@ ComConeCollider::ComConeCollider() {
 ComConeCollider::~ComConeCollider() {
 }
 
+void ComConeCollider::Init() {
+    ComCollider::Init();
+
+    CreateCollider();
+}
+
 void ComConeCollider::CreateCollider() {
     if (collider) {
         colliderManager.ReleaseCollider(collider);
@@ -79,21 +85,21 @@ void ComConeCollider::SetHeight(float height) {
     }
 }
 
-#if 1
-void ComConeCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+#if WITH_EDITOR
+void ComConeCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
-    if (selected) {
+    if (selectedByParent) {
         ComTransform *transform = GetEntity()->GetTransform();
 
-        if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
+        if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(500.0f * 500.0f)) {
             float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
             float scaledHeight = transform->GetScale().z * height;
 
             Vec3 worldOrigin = transform->GetMatrix() * center - transform->GetAxis()[2] * scaledHeight * 0.5f;
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-            renderWorld->DebugCone(worldOrigin, transform->GetAxis(), scaledHeight, 0, scaledRadius + BE1::CentiToUnit(0.15f), false, 1.25f);
+            renderWorld->DebugCone(worldOrigin, transform->GetAxis(), scaledHeight, 0, scaledRadius + CentiToUnit(0.15f), false, 1.25f);
         }
     }
 }

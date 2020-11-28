@@ -17,7 +17,7 @@
 #include "Core/Str.h"
 #include "Core/Heap.h"
 #include "Core/Cmds.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -259,7 +259,7 @@ const char *KeyCmdSystem::KeynumToString(KeyCode::Enum keynum) {
 void KeyCmdSystem::Init() {
     for (int i = 0; i < 256; i++) {
         keyList[i].binding = nullptr;
-        keyList[i].is_down = false;
+        keyList[i].isDown = false;
         keyList[i].count = 0;
     }
 
@@ -285,11 +285,11 @@ void KeyCmdSystem::Shutdown() {
 
 void KeyCmdSystem::ClearStates() {
     for (int i = 0; i < COUNT_OF(keyList); i++) {
-        if (keyList[i].is_down || keyList[i].count) {
+        if (keyList[i].isDown || keyList[i].count) {
             KeyEvent((KeyCode::Enum)i, false);
         }
 
-        keyList[i].is_down = false;
+        keyList[i].isDown = false;
         keyList[i].count = 0;
     }
 }
@@ -342,7 +342,7 @@ bool KeyCmdSystem::IsPressed(KeyCode::Enum keynum) const {
 
 bool KeyCmdSystem::IsPressedAnyKey() const {
     for (int i = 0; i < COUNT_OF(keyList); i++) {
-        if (keyList[i].is_down) {
+        if (keyList[i].isDown) {
             return true;
         }
     }
@@ -359,7 +359,7 @@ void KeyCmdSystem::KeyEvent(KeyCode::Enum keynum, bool down) {
     }
 
     Key *key = &keyList[(int)keynum];
-    key->is_down = down;
+    key->isDown = down;
 
     if (down) {
         key->count++;
@@ -381,10 +381,11 @@ void KeyCmdSystem::KeyEvent(KeyCode::Enum keynum, bool down) {
     }
     
     if (key->count > 1) {
-        return; // 키를 누르는 동안 오는 자동 반복 신호 무시
+        // Ignore auto repeat signal coming from key press.
+        return; 
     }
         
-    if (keynum >= KeyCode::Joy1 && !key->binding) { // K_JOY1 이상은 키보드외 입력장치의 키 이벤트 신호
+    if (keynum >= KeyCode::Joy1 && !key->binding) {
         //BE_LOG("%s is unbound.\n", KeyCmdSystem::KeynumToString(keynum));
     }
     

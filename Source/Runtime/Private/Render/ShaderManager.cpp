@@ -26,6 +26,7 @@ struct engineShader_t {
 static const engineShader_t originalShaderList[] = {
     { "Shaders/WriteValue" },
     { "Shaders/drawArrayTexture" },
+    { "Shaders/Image"},
     { "Shaders/Unlit" },
     { "Shaders/SelectionId" },
     { "Shaders/Depth" },
@@ -177,10 +178,10 @@ void ShaderManager::Shutdown() {
 
 void ShaderManager::InitGlobalDefines() {
     if (textureManager.texture_useNormalCompression.GetBool()) {
-        if (rhi.SupportsTextureCompressionLATC()) {
-            shaderManager.AddGlobalHeader("#define LATC_NORMAL\n");
+        if (rhi.SupportsTextureCompressionRGTC()) {
+            shaderManager.AddGlobalHeader("#define RGTC_NORMAL\n");
         } else if (rhi.SupportsTextureCompressionETC2()) {
-            //shaderManager.AddGlobalHeader("#define ETC2_NORMAL\n");
+            shaderManager.AddGlobalHeader("#define EAC_NORMAL\n");
         } else if (rhi.SupportsTextureCompressionS3TC()) {
             shaderManager.AddGlobalHeader("#define DXT5_XGBR_NORMAL\n");
         }
@@ -209,7 +210,7 @@ void ShaderManager::InitGlobalDefines() {
         shaderManager.AddGlobalHeader(va("#define MAX_INSTANCE_COUNT %i\n", Min(r_maxInstancingCount.GetInteger(), rhi.HWLimit().maxUniformBlockSize / renderGlobal.instanceBufferOffsetAlignment)));
     }
 
-    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetchSkinning) {
+    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetch) {
         shaderManager.AddGlobalHeader("#define VTF_SKINNING\n");
     }
 
@@ -232,6 +233,10 @@ void ShaderManager::InitGlobalDefines() {
     }
 
     shaderManager.AddGlobalHeader(va("#define TONE_MAPPING_OPERATOR %i\n", r_HDR_toneMapOp.GetInteger()));
+
+    if (r_specularEnergyCompensation.GetBool()) {
+        shaderManager.AddGlobalHeader("#define USE_MULTIPLE_SCATTERING_COMPENSATION\n");
+    }
 
     shaderManager.AddGlobalHeader(va("#define SHADOW_MAP_QUALITY %i\n", r_shadowMapQuality.GetInteger()));
 

@@ -286,15 +286,16 @@ public:
     static bool             SupportsDepthClamp() { return supportsDepthClamp; }
     static bool             SupportsDepthBoundsTest() { return supportsDepthBoundsTest; }
     static bool             SupportsDepthBufferFloat() { return supportsDepthBufferFloat; }
-    static bool             SupportsPixelBufferObject() { return supportsPixelBufferObject; }
+    static bool             SupportsPixelBuffer() { return supportsPixelBuffer; }
     static bool             SupportsDiscardFrameBuffer() { return false; }
     static bool             SupportsFrameBufferSRGB() { return false; }
     static bool             SupportsTextureRectangle() { return supportsTextureRectangle; }
     static bool             SupportsTextureArray() { return supportsTextureArray; }
-    static bool             SupportsTextureBufferObject() { return false; }
+    static bool             SupportsTextureBuffer() { return false; }
     static bool             SupportsTextureFilterAnisotropic() { return supportsTextureFilterAnisotropic; }
     static bool             SupportsTextureCompressionS3TC() { return supportsTextureCompressionS3TC; }
     static bool             SupportsTextureCompressionLATC() { return supportsTextureCompressionLATC; }
+    static bool             SupportsTextureCompressionRGTC() { return supportsTextureCompressionRGTC; }
     static bool             SupportsTextureCompressionETC2() { return supportsTextureCompressionETC2; }
     static bool             SupportsTextureCompressionATC() { return supportsTextureCompressionATC; }
     static bool             SupportsCompressedGenMipmaps() { return false; }
@@ -328,13 +329,14 @@ public:
 
     static bool             ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
     static Image::Format::Enum ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
-    
+    static Image::Format::Enum ToUncompressedImageFormat(Image::Format::Enum inFormat);
+
 private:
     static bool             supportsPackedFloat;
     static bool             supportsDepthClamp;
     static bool             supportsDepthBoundsTest;
     static bool             supportsDepthBufferFloat;
-    static bool             supportsPixelBufferObject;
+    static bool             supportsPixelBuffer;
     static bool             supportsTextureRectangle;
     static bool             supportsTextureArray;
     static bool             supportsTextureFilterAnisotropic;

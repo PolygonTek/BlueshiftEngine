@@ -92,12 +92,13 @@ void InputSystem::JoyAxisEvent(int dx, int dy, int time) {
     axisDelta.y += dy;
 }
 
-void InputSystem::TouchEvent(InputSystem::Touch::Phase phase, uint64_t id, int x, int y) {
+void InputSystem::TouchEvent(InputSystem::Touch::Phase::Enum phase, uint64_t id, int x, int y) {
     TouchEv *newEvent = touchEventAllocator.Alloc();
     newEvent->touch.id = (int32_t)id;
     newEvent->touch.phase = phase;
     newEvent->touch.position = Point(x, y);
     newEvent->node.SetOwner(newEvent);
+
     touchEventQueue.Add(newEvent->node);
 
     inputUpdated = true;
@@ -149,6 +150,7 @@ int InputSystem::GetTouchCount() const {
 
 const InputSystem::Touch InputSystem::GetTouch(int touchIndex) const {
     int count = 0;
+
     for (Queue<TouchEv> *node = touchEventQueue.GetFirst(); node; node = node->GetNext()) {
         if (count == touchIndex) {
             const TouchEv *touchEvent = node->Owner();
@@ -156,7 +158,6 @@ const InputSystem::Touch InputSystem::GetTouch(int touchIndex) const {
         }
         count++;
     }
-
     return nullTouch;
 }
 

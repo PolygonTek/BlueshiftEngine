@@ -98,7 +98,7 @@ public:
     float                   NormalizeSelf();
 
                             /// Returns dimension of this type
-    int                     GetDimension() const { return 6; }
+    constexpr int           GetDimension() const { return 6; }
 
     static const Pluecker   origin;
     static const Pluecker   zero;

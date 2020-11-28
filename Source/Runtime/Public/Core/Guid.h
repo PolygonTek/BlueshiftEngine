@@ -16,7 +16,7 @@
 
 BE_NAMESPACE_BEGIN
 
-/// A GUID class
+/// A GUID class (256 bits).
 class BE_API Guid {
 public:
     struct Format {
@@ -49,7 +49,8 @@ public:
 
     static Guid         FromString(const char *str);
 
-    static int          Hash(const Guid &guid) { return guid[0] + guid[1] + guid[2] + guid[3]; }
+                        /// Return hash value for HashIndex.
+    int                 ToHash() const { return u1 + u2 + u3 + u4; }
 
     static Guid         CreateGuid();
 
@@ -68,17 +69,17 @@ BE_INLINE bool operator!=(const Guid &lhs, const Guid &rhs) {
 }
 
 BE_INLINE bool operator<(const Guid &lhs, const Guid &rhs) {
-    return  ((lhs.u1 < rhs.u1) ? true : ((lhs.u1 > rhs.u1) ? false :
-            ((lhs.u2 < rhs.u2) ? true : ((lhs.u2 > rhs.u2) ? false :
-            ((lhs.u3 < rhs.u3) ? true : ((lhs.u3 > rhs.u3) ? false :
-            ((lhs.u4 < rhs.u4) ? true : ((lhs.u4 > rhs.u4) ? false : false)))))))); 
+    return ((lhs.u1 < rhs.u1) ? true : ((lhs.u1 > rhs.u1) ? false :
+           ((lhs.u2 < rhs.u2) ? true : ((lhs.u2 > rhs.u2) ? false :
+           ((lhs.u3 < rhs.u3) ? true : ((lhs.u3 > rhs.u3) ? false :
+           ((lhs.u4 < rhs.u4) ? true : ((lhs.u4 > rhs.u4) ? false : false)))))))); 
 }
 
 BE_INLINE bool operator>(const Guid &lhs, const Guid &rhs) {
-    return  ((lhs.u1 > rhs.u1) ? true : ((lhs.u1 < rhs.u1) ? false :
-            ((lhs.u2 > rhs.u2) ? true : ((lhs.u2 < rhs.u2) ? false :
-            ((lhs.u3 > rhs.u3) ? true : ((lhs.u3 < rhs.u3) ? false :
-            ((lhs.u4 > rhs.u4) ? true : ((lhs.u4 < rhs.u4) ? false : false))))))));
+    return ((lhs.u1 > rhs.u1) ? true : ((lhs.u1 < rhs.u1) ? false :
+           ((lhs.u2 > rhs.u2) ? true : ((lhs.u2 < rhs.u2) ? false :
+           ((lhs.u3 > rhs.u3) ? true : ((lhs.u3 < rhs.u3) ? false :
+           ((lhs.u4 > rhs.u4) ? true : ((lhs.u4 < rhs.u4) ? false : false))))))));
 }
 
 BE_INLINE uint32_t Guid::operator[](int index) const {

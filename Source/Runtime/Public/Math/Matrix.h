@@ -19,7 +19,8 @@
 
     Matrix Classes
 
-    3x3 행렬은 column major order, 그 외 모든 행렬은 row major order
+    3x3 matrices are column major order,
+    all other matrices are row major order.
 
 -------------------------------------------------------------------------------
 */

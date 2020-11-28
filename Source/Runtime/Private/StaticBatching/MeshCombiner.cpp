@@ -136,7 +136,7 @@ void MeshCombiner::MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMesh
 
     StaticBatch *staticBatch = StaticBatch::AllocStaticBatch(staticBatchRoot);
 
-    Mat3x4 worldToLocalMatrix = staticBatchRoot->GetTransform()->GetMatrix().Inverse();
+    ALIGN_AS32 Mat3x4 worldToLocalMatrix = staticBatchRoot->GetTransform()->GetMatrix().Inverse();
 
     Array<BatchSubMesh> batchSubMeshes;
 
@@ -161,7 +161,7 @@ void MeshCombiner::MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMesh
 }
 
 void MeshCombiner::EnumerateCombinableEntities(const Hierarchy<Entity> &rootNode, Array<Entity *> &staticChildren) {
-    for (Entity *entity = rootNode.GetChild(); entity; entity = entity->GetNode().GetNext()) {
+    for (Entity *entity = rootNode.GetFirstChild(); entity; entity = entity->GetNode().GetNext()) {
         if (!entity->GetStaticMask()) { // TODO: Check BatchingStatic
             continue;
         }

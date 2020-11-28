@@ -19,6 +19,10 @@ BE_NAMESPACE_BEGIN
 
 const Point Point::zero = Point(0, 0);
 
+PointF Point::ToPointF() const { 
+    return PointF(x, y); 
+}
+
 Point Point::FromString(const char *str) {
     Point p;
     sscanf(str, "%i %i", &p.x, &p.y);

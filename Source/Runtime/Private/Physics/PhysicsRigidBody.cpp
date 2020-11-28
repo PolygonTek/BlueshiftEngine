@@ -78,20 +78,12 @@ const Mat3 PhysRigidBody::GetAxis() const {
     Mat3 axis;
 
     if (IsStatic()) {
-        const btMatrix3x3 &basis = rigidBody->getWorldTransform().getBasis();
-        axis = Mat3(
-            basis[0][0], basis[1][0], basis[2][0],
-            basis[0][1], basis[1][1], basis[2][1],
-            basis[0][2], basis[1][2], basis[2][2]);
+        axis = ToMat3(rigidBody->getWorldTransform().getBasis());
     } else {
         btTransform motionTransform;
         rigidBody->getMotionState()->getWorldTransform(motionTransform);
 
-        const btMatrix3x3 &basis = motionTransform.getBasis();
-        axis = Mat3(
-            basis[0][0], basis[1][0], basis[2][0],
-            basis[0][1], basis[1][1], basis[2][1],
-            basis[0][2], basis[1][2], basis[2][2]);
+        axis = ToMat3(motionTransform.getBasis());
     }
 
     return axis;
@@ -101,10 +93,7 @@ void PhysRigidBody::SetAxis(const Mat3 &axis) {
     btRigidBody *rigidBody = GetRigidBody();
 
     btTransform worldTransform = rigidBody->getWorldTransform();
-    worldTransform.setBasis(btMatrix3x3(
-        axis[0][0], axis[1][0], axis[2][0],
-        axis[0][1], axis[1][1], axis[2][1],
-        axis[0][2], axis[1][2], axis[2][2]));
+    worldTransform.setBasis(ToBtMatrix3x3(axis));
 
     rigidBody->setWorldTransform(worldTransform);
     

@@ -22,6 +22,7 @@ const Vec2 Vec2::zero(0.0f, 0.0f);
 const Vec2 Vec2::one(1.0f, 1.0f);
 const Vec2 Vec2::unitX(1.0f, 0.0f);
 const Vec2 Vec2::unitY(0.0f, 1.0f);
+const Vec2 Vec2::infinity(Math::Infinity, Math::Infinity);
 
 Vec2 Vec2::FromString(const char *str) {
     Vec2 v;

@@ -18,7 +18,7 @@
 BE_NAMESPACE_BEGIN
 
 const char *Ray::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), 6, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 Ray Ray::FromString(const char *str) {

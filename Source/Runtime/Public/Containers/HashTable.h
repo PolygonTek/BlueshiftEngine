@@ -19,12 +19,12 @@
 
     Hash table
 
-    Similar with STL hash_map/unorderd_map
-    The key should be unique
+    Similar with STL hash_map/unorderd_map.
+    The key should be unique.
 
     NOTE:
-    - 검색/삭제가 HashMap 에 비해 빠르다.
-    - bucket list 는 오름차순 정렬된 링크드 리스트로 구현되어있다.
+    - Search / delete is faster than HashMap.
+    - The bucket list is implemented as a linked list sorted in ascending order.
 
 -------------------------------------------------------------------------------
 */
@@ -37,7 +37,7 @@
 
 BE_NAMESPACE_BEGIN
 
-// HashBucket class template
+/// HashBucket class template.
 template <typename KeyT, class ValueT> 
 class HashBucket {
 public:
@@ -65,7 +65,7 @@ public:
     HashBucket<KeyT, ValueT> *next;
 };
 
-// HashBucket class template specialization with hash key type is given Guid
+/// HashBucket class template specialization with hash key type is given Guid.
 template <typename ValueT>
 class HashBucket<Guid, ValueT> {
 public:
@@ -74,7 +74,7 @@ public:
         : key(key), value(value), next(next) {}
 
     static int GenerateHash(const Guid &key, const int tableMask) {
-        return Guid::Hash(key) & tableMask;
+        return key.ToHash() & tableMask;
     }
 
     static int Compare(const Guid &key1, const Guid &key2) {
@@ -92,7 +92,7 @@ public:
     HashBucket<Guid, ValueT> *next;
 };
 
-// HashBucket class template specialization with hash key type is given Str
+/// HashBucket class template specialization with hash key type is given Str.
 template <typename ValueT>
 class HashBucket<Str, ValueT> {
 public:
@@ -114,7 +114,7 @@ public:
     HashBucket<Str, ValueT> *next;
 };
 
-// HashBucket class template specialization with hash key type is given string pointer
+/// HashBucket class template specialization with hash key type is given string pointer.
 template <typename ValueT>
 class HashBucket<const char *, ValueT> {
 public:
@@ -160,21 +160,21 @@ public:
                         /// Returns total size of allocated memory including size of this type.
     size_t              Size() const { return sizeof(heads) * tableSize + sizeof(*heads) * numEntries + blockAllocator.Allocated() + sizeof(*this); }
 
-                        // 전체 hash bucket 을 순서대로 검색해서 주어진 index 와 맞는 entry 의 value pointer 를 리턴
-                        // index 로 전체 bucket 들을 iteration 할 수 있지만 bucket 이 추가 or 삭제되면 기존 index 는 더 이상 유효하지 않을 수 있다.
+                        /// Searches the entire hash bucket in order and return the value pointer of the entry that matches the given index.
+                        /// You can iterate entire buckets with an index, but when a bucket is added or removed, the existing index may no longer be valid.
     ValueT *            GetByIndex(int index) const;
 
-                        // 전체 hash bucket 을 순서대로 검색해서 주어진 index 와 맞는 entry 의 key 를 얻는다
-                        // index 로 전체 bucket 들을 iteration 할 수 있지만 bucket 이 추가 or 삭제되면 기존 index 는 더 이상 유효하지 않을 수 있다.
+                        /// Searches the entire hash bucket in order and get the key of the entry that matches the given index.
+                        /// You can iterate entire buckets with an index, but when a bucket is added or removed, the existing index may no longer be valid.
     bool                GetKeyByIndex(int index, KeyT &key) const;
 
-                        // key 값으로 find 해서 value pointer 를 얻는다.
+                        /// Finds the value by key and get the value pointer.
     bool                Get(const KeyT &key, ValueT *value = nullptr) const;
 
-                        // key/value 추가. 이미 존재하는 key 라면 value 값만 바꾼다.
+                        /// Adds key / value. If the key already exists, only the value will be changed.
     void                Set(const KeyT &key, ValueT &value);
     
-                        // key 값으로 search 해서 value 참조 리턴. 없다면 새로 bucket 추가 후 참조 리턴
+                        /// Searches by key and return value reference. If not, add a new bucket and return a reference
     ValueT &            operator[](const KeyT &key);
 
                         /// Removes bucket with the given key.
@@ -186,8 +186,8 @@ public:
                         /// Clears all hash buckets and delete each values.
     void                DeleteContents();
 
-                        // 분산된 hash bucket 의 표준편차를 구한다.
-    float               GetStandardDeviation() const;
+                        /// Get the variance of the distributed hash buckets.
+    float               GetVariance() const;
 
 private:
     void                Copy(const HashTable<KeyT, ValueT> &other);
@@ -440,7 +440,7 @@ BE_INLINE void HashTable<KeyT, ValueT, BucketGranularity>::Copy(const HashTable<
 }
 
 template <typename KeyT, typename ValueT, int BucketGranularity>
-float HashTable<KeyT, ValueT, BucketGranularity>::GetStandardDeviation() const {
+float HashTable<KeyT, ValueT, BucketGranularity>::GetVariance() const {
     // if no items in hash
     if (!numEntries) {
         return 0;
@@ -458,8 +458,7 @@ float HashTable<KeyT, ValueT, BucketGranularity>::GetStandardDeviation() const {
         s += e * e;
     }
 
-    float v = (float)s / numEntries;
-    return sqrtf(v);
+    return (float)s / numEntries;
 }
 
 BE_NAMESPACE_END

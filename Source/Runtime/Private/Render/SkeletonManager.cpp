@@ -84,7 +84,6 @@ void SkeletonManager::ReleaseSkeleton(Skeleton *skeleton, bool immediateDestroy)
         return;
     }
 
-    // 레퍼런스 카운터가 0 인 skeleton 만 제거한다
     if (skeleton->refCount > 0) {
         skeleton->refCount--;
     }

@@ -15,6 +15,9 @@
 #include "Precompiled.h"
 #include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
+#include "Platform/PlatformTime.h"
+#include "Profiler/Profiler.h"
+
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
 
@@ -30,7 +33,7 @@ static int      minorVersion = 0;
 
 static CVar     gl_debug("gl_debug", "0", CVar::Flag::Bool, "");
 static CVar     gl_debugLevel("gl_debugLevel", "3", CVar::Flag::Integer, "");
-static CVar     gl_ignoreGLError("gl_ignoreGLError", "0", CVar::Flag::Bool, "");
+static CVar     gl_ignoreError("gl_ignoreError", "0", CVar::Flag::Bool, "");
 static CVar     gl_finish("gl_finish", "0", CVar::Flag::Bool, "");
 
 extern CVar     r_sRGB;
@@ -247,9 +250,17 @@ void OpenGLRHI::InitMainContext(WindowHandle windowHandle, const Settings *setti
 
     // Create default VAO for main context
     gglGenVertexArrays(1, &mainContext->defaultVAO);
+
+#ifdef ENABLE_IMGUI
+    ImGuiCreateContext(mainContext);
+#endif
 }
 
 void OpenGLRHI::FreeMainContext() {
+#ifdef ENABLE_IMGUI
+    ImGuiDestroyContext(mainContext);
+#endif
+
     // Delete default VAO for main context
     gglDeleteVertexArrays(1, &mainContext->defaultVAO);
 
@@ -308,6 +319,11 @@ RHI::Handle OpenGLRHI::CreateContext(RHI::WindowHandle windowHandle, bool useSha
         ActivateSurface(ctx->handle, windowHandle);
     }
 
+#ifdef ENABLE_IMGUI
+    ctx->imGuiContext = mainContext->imGuiContext;
+    ctx->imGuiLastTime = PlatformTime::Seconds();
+#endif
+
     SetContext((Handle)handle);
 
     ctx->defaultFramebuffer = 0;
@@ -352,7 +368,7 @@ void OpenGLRHI::DestroyContext(Handle ctxHandle) {
     contextList[ctxHandle] = nullptr; 
 }
 
-void OpenGLRHI::ActivateSurface(Handle ctxHandle, RHI::WindowHandle windowHandle) {
+void OpenGLRHI::ActivateSurface(Handle ctxHandle, WindowHandle windowHandle) {
     GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
 
     ctx->nativeWindow = (ANativeWindow *)windowHandle;
@@ -426,6 +442,10 @@ void OpenGLRHI::SetContext(Handle ctxHandle) {
     }
     
     this->currentContext = ctx;
+
+#ifdef ENABLE_IMGUI
+    ImGui::SetCurrentContext(ctx->imGuiContext);
+#endif
 }
 
 void OpenGLRHI::SetContextDisplayFunc(Handle ctxHandle, DisplayContextFunc displayFunc, void *displayFuncDataPtr, bool onDemandDrawing) {
@@ -456,10 +476,14 @@ void OpenGLRHI::GetDisplayMetrics(Handle ctxHandle, DisplayMetrics *displayMetri
     eglQuerySurface(ctx->eglDisplay, ctx->eglSurface, EGL_WIDTH, &surfaceWidth);
     eglQuerySurface(ctx->eglDisplay, ctx->eglSurface, EGL_HEIGHT, &surfaceHeight);
 
-    displayMetrics->screenWidth = surfaceWidth;
-    displayMetrics->screenHeight = surfaceHeight;
+    float aspectRatio = (float)surfaceWidth / (float)surfaceHeight;
+
+    displayMetrics->screenHeight = 720;
+    displayMetrics->screenWidth = displayMetrics->screenHeight * aspectRatio;
+
     displayMetrics->backingWidth = surfaceWidth;
     displayMetrics->backingHeight = surfaceHeight;
+
     displayMetrics->safeAreaInsets.Set(0, 0, 0, 0);
 }
 
@@ -481,7 +505,7 @@ void OpenGLRHI::SetGammaRamp(unsigned short ramp[768]) const {
 }
 
 bool OpenGLRHI::SwapBuffers() {
-    if (!gl_ignoreGLError.GetBool()) {
+    if (!gl_ignoreError.GetBool()) {
         CheckError("OpenGLRHI::SwapBuffers");
     }
 
@@ -513,6 +537,89 @@ bool OpenGLRHI::SwapBuffers() {
 
 void OpenGLRHI::SwapInterval(int interval) const {
     eglSwapInterval(currentContext->eglContext, interval);
+}
+
+void OpenGLRHI::ImGuiCreateContext(GLContext *ctx) {
+    // Setup Dear ImGui context.
+    ctx->imGuiContext = ImGui::CreateContext();
+    ImGui::SetCurrentContext(ctx->imGuiContext);
+
+    ImGui::GetStyle().TouchExtraPadding = ImVec2(4.0F, 4.0F);
+
+    // Setup Dear ImGui style.
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsClassic();
+
+    ImGuiIO &io = ImGui::GetIO();
+    io.IniFilename = nullptr;
+
+    // Setup back-end capabilities flags.
+    //io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;         // We can honor GetMouseCursor() values (optional)
+    //io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;          // We can honor io.WantSetMousePos requests (optional, rarely used)
+    //io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;    // We can create multi-viewports on the Platform side (optional)
+    //io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport; // We can set io.MouseHoveredViewport correctly (optional, not easy)
+    io.BackendPlatformName = "OpenGLRHI-Android";
+
+    ImGui_ImplOpenGL_Init("#version 300 es");
+}
+
+void OpenGLRHI::ImGuiDestroyContext(GLContext *ctx) {
+    ImGui_ImplOpenGL_Shutdown();
+
+    ImGui::DestroyContext(ctx->imGuiContext);
+}
+
+void OpenGLRHI::ImGuiBeginFrame(Handle ctxHandle) {
+    BE_PROFILE_CPU_SCOPE_STATIC("OpenGLRHI::ImGuiBeginFrame");
+
+    ImGui_ImplOpenGL_ValidateFrame();
+
+    GLContext *ctx = ctxHandle == NullContext ? mainContext : contextList[ctxHandle];
+
+    DisplayMetrics dm;
+    GetDisplayMetrics(ctxHandle, &dm);
+
+    // Setup display size
+    ImGuiIO &io = ImGui::GetIO();
+    io.DisplaySize = ImVec2(dm.screenWidth, dm.screenHeight);
+    io.DisplayFramebufferScale = ImVec2((float)dm.backingWidth / dm.screenWidth, (float)dm.backingHeight / dm.screenHeight);
+
+    // Setup time step
+    double currentTime = PlatformTime::Seconds();
+    io.DeltaTime = currentTime - ctx->imGuiLastTime;
+    ctx->imGuiLastTime = currentTime;
+
+    ImGui::NewFrame();
+}
+
+void OpenGLRHI::ImGuiRender() {
+    BE_PROFILE_CPU_SCOPE_STATIC("OpenGLRHI::ImGuiRender");
+    BE_PROFILE_GPU_SCOPE_STATIC("OpenGLRHI::ImGuiRender");
+
+    ImGui::Render();
+
+    bool sRGBWriteEnabled = OpenGL::SupportsFrameBufferSRGB() && IsSRGBWriteEnabled();
+    if (sRGBWriteEnabled) {
+        SetSRGBWrite(false);
+    }
+
+    ImGui_ImplOpenGL_RenderDrawData(ImGui::GetDrawData());
+
+    if (sRGBWriteEnabled) {
+        SetSRGBWrite(true);
+    }
+}
+
+void OpenGLRHI::ImGuiEndFrame() {
+    BE_PROFILE_CPU_SCOPE_STATIC("OpenGLRHI::ImGuiEndFrame");
+
+    ImGui::EndFrame();
+
+    // HACK: invalidate touch position after one frame.
+    ImGuiIO &io = ImGui::GetIO();
+    if (!io.MouseDown[0]) {
+        io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
+    }
 }
 
 BE_NAMESPACE_END

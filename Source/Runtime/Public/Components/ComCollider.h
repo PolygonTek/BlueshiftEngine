@@ -40,7 +40,7 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-    virtual const AABB      GetAABB() override;
+    virtual const AABB      GetAABB() const override;
 
     Collider *              GetCollider() const { return collider; }
 

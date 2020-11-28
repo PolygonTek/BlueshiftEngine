@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "AnimController/AnimController.h"
 #include "Animator/Animator.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -41,11 +41,11 @@ void AnimClip::Purge() {
 void AnimClip::SetAnim(const Anim *anim) {
     Purge();
 
-    this->anim = const_cast<Anim *>(anim);//const_cast<Anim *>(anim->AddRefCount());
+    this->anim = const_cast<Anim *>(anim->AddRefCount());
 
-    // TODO: 구간 (startTime, endTime) 을 정해서 구할 것
+    // TODO: Determine interval (startTime, endTime)
     if (this->anim->Length() > 0) {
-        this->averageVelocity = anim->TotalMovementDelta() / MS2SEC(anim->Length());
+        this->averageVelocity = anim->TotalMovementDelta() / MILLI2SEC(anim->Length());
     } else {
         this->averageVelocity.SetFromScalar(0);
     }

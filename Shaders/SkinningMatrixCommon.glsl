@@ -1,3 +1,7 @@
+#ifdef OBJECT_MOTION_BLUR
+    uniform LOWP ivec2 jointIndexOffset;
+#endif
+
 void skinningMatrix(vec4 position, out vec4 transformedPosition) {
 	vec4 R0, R1, R2;
 	

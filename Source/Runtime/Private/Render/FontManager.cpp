@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,20 +16,23 @@
 #include "Render/Render.h"
 #include "Core/StrColor.h"
 #include "Render/Font.h"
+#include "Render/FreeTypeFont.h"
 #include "FontFace.h"
 
 BE_NAMESPACE_BEGIN
 
-const char *    FontManager::defaultFontFilename = "Data/EngineFonts/D2Coding.ttf";//"Data/EngineFonts/Lucida Console12.font"
+const char *    FontManager::defaultFontFilename = "Data/EngineFonts/consola.ttf";//"Data/EngineFonts/Lucida Console12.font"
 Font *          FontManager::defaultFont;
 FontManager     fontManager;
 
 void FontManager::Init() {
-    FontFaceFreeType::Init();
+    FreeTypeFont::Init();
+
+    FontFaceFreeType::InitAtlas();
 
     fontHashMap.Init(1024, 64, 64);
 
-    defaultFont = AllocFont(defaultFontFilename, 14);
+    defaultFont = AllocFont(defaultFontFilename, 18);
     if (!defaultFont->Load(defaultFontFilename)) {
         BE_FATALERROR("Couldn't load default font!");
     }
@@ -39,7 +42,13 @@ void FontManager::Init() {
 void FontManager::Shutdown() {
     fontHashMap.DeleteContents(true);
 
-    FontFaceFreeType::Shutdown();
+    FontFaceFreeType::FreeAtlas();
+
+    FreeTypeFont::Shutdown();
+}
+
+void FontManager::ClearAtlasTextures() {
+    //FontFaceFreeType::FreeAtlas();
 }
 
 Font *FontManager::AllocFont(const char *hashName, int fontSize) {
@@ -73,7 +82,6 @@ void FontManager::ReleaseFont(Font *font, bool immediateDestroy) {
         return;
     }
 
-    // 레퍼런스 카운터가 0 인 font 만 제거한다
     if (font->refCount > 0) {
         font->refCount--;
     }
@@ -105,7 +113,6 @@ Font *FontManager::FindFont(const char *hashName, int fontSize) const {
     if (entry) {
         return entry->second;
     }
-
     return nullptr;
 }
 
@@ -125,8 +132,7 @@ Font *FontManager::GetFont(const char *hashName, int fontSize) {
         DestroyFont(font);
         return defaultFont;
     }
-
     return font;
 }
-    
+
 BE_NAMESPACE_END

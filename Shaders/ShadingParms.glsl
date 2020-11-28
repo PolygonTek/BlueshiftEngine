@@ -40,10 +40,6 @@ struct ShadingParms {
 #if _OCC != 0
     MEDIUMP float ambientOcclusion;
 #endif
-
-#if _EMISSION != 0
-    MEDIUMP vec3 emission;
-#endif
 };
 
 ShadingParms shading;
@@ -73,7 +69,7 @@ void PrepareShadingParms(vec4 albedo) {
     shading.n = normalize(v2f_normalWS.xyz);
 #endif
 
-#ifdef TWOSIDED
+#ifdef TWO_SIDED
     shading.n = gl_FrontFacing ? shading.n : -shading.n;
 #endif
 
@@ -175,7 +171,7 @@ void PrepareShadingParms(vec4 albedo) {
     shading.diffuse = albedo;
 
     #if _SPECULAR == 0
-        shading.specular = specularColor;
+        shading.specular = vec4(specularColor, specularAlpha);
     #elif _SPECULAR == 1
         shading.specular = tex2D(specularMap, baseTc);
     #endif
@@ -235,7 +231,7 @@ void PrepareShadingParms(vec4 albedo) {
     shading.diffuse = albedo;
 
     #if _SPECULAR == 0
-        shading.specular = specularColor;
+        shading.specular = vec4(specularColor, specularAlpha);
     #elif _SPECULAR == 1
         shading.specular = tex2D(specularMap, baseTc);
     #endif
@@ -274,10 +270,10 @@ void PrepareShadingParms(vec4 albedo) {
     shading.linearRoughness = shading.roughness * shading.roughness;
 
 #if defined(STANDARD_METALLIC_LIGHTING) || defined(STANDARD_SPECULAR_LIGHTING)
-    #if defined(INDIRECT_LIGHTING)
+    #if defined(INDIRECT_LIGHTING) || defined(USE_MULTIPLE_SCATTERING_COMPENSATION)
         shading.preDFG = tex2D(prefilteredDfgMap, vec2(shading.ndotv, shading.roughness)).xy;
     #else
-        shading.preDFG = GetPrefilteredDFG(shading.ndotv, shading.roughness);
+        shading.preDFG = vec2(1.0, 1.0);
     #endif
 
     #ifdef USE_MULTIPLE_SCATTERING_COMPENSATION
@@ -309,14 +305,6 @@ void PrepareShadingParms(vec4 albedo) {
         #else
             shading.clearCoatN = shading.n;
         #endif
-    #endif
-#endif
-
-#if defined(INDIRECT_LIGHTING)
-    #if _EMISSION == 1
-        shading.emission = emissionColor * emissionScale;
-    #elif _EMISSION == 2
-        shading.emission = tex2D(emissionMap, baseTc).rgb * emissionScale;
     #endif
 #endif
 }

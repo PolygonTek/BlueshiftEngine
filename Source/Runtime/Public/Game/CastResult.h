@@ -21,9 +21,7 @@ BE_NAMESPACE_BEGIN
 class ComRigidBody;
 class ComSensor;
 
-struct CastResultEx : public CastResult {
-    ComRigidBody *          GetRigidBody();
-    ComSensor *             GetSensor();
-};
+ComRigidBody *  GetRigidBodyFromCastResult(const CastResult &castResult);
+ComSensor *     GetSensorFromCastResult(const CastResult &castResult);
 
 BE_NAMESPACE_END

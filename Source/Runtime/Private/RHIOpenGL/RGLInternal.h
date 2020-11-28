@@ -18,11 +18,6 @@
 
 #include "OpenGL/WinOpenGL.h"
 
-#elif defined(__XAMARIN__)
-
-#include "OpenGL/XamarinOpenGL.h"
-#include "RHI/EGLUtil.h"
-
 #elif defined(__MACOSX__)
 
 #include <OpenGL/OpenGL.h>
@@ -48,7 +43,11 @@ OBJC_CLASS(EAGLView);
 
 #endif
 
+#include "imgui/imgui.h"
+
 #include "Core/CVars.h"
+
+struct ImGuiContext;
 
 BE_NAMESPACE_BEGIN
 
@@ -89,7 +88,7 @@ struct GLState {
 
     GLState() : tmu(0), 
         shaderHandle(RHI::NullShader), vertexFormatHandle(RHI::NullVertexFormat), renderTargetHandle(RHI::NullRenderTarget), renderTargetHandleStackDepth(0), stencilStateHandle(RHI::NullStencilState), 
-        renderState(0), cull(RHI::CullType::Back), viewportRect(Rect::empty), scissorRect(Rect::empty), oldUnpackAlignment(0), newUnpackAlignment(0), sRGBWriteEnabled(true) {
+        renderState(0), cull(RHI::CullType::Back), viewportRect(Rect::zero), scissorRect(Rect::zero), oldUnpackAlignment(0), newUnpackAlignment(0), sRGBWriteEnabled(true) {
         memset(textureHandles, 0, sizeof(textureHandles));
         memset(bufferHandles, 0, sizeof(textureHandles));
         memset(indexedBufferHandles, 0, sizeof(indexedBufferHandles));
@@ -101,7 +100,26 @@ struct GLContext {
     RHI::DisplayContextFunc displayFunc;
     void *                  displayFuncDataPtr;
     bool                    onDemandDrawing;
-#if defined(__IOS__) || defined(__IOS_SIMULATOR__)
+#if defined(__WIN32__)
+    HWND                    hwnd;
+    WNDPROC                 oldWndProc;
+    HDC                     hdc;
+    HGLRC                   hrc;
+    #ifdef USE_DESKTOP_EGL
+        EGLDisplay          eglDisplay;
+        EGLConfig           eglConfig;
+        EGLContext          eglContext;
+        EGLSurface          eglSurface;
+    #endif
+#elif defined(__MACOSX__)
+    CGDirectDisplayID       display;
+    NSView *                contentView;
+    GLView *                glView;
+    //NSString *            windowTitle;
+    //CGSize                windowSize;
+    NSOpenGLContext *       nsglContext;
+    CGLContextObj           cglContext;
+#elif defined(__IOS__) || defined(__IOS_SIMULATOR__)
     UIView *                rootView;
     EAGLView *              eaglView;
     EAGLContext *           eaglContext;
@@ -111,31 +129,12 @@ struct GLContext {
     EGLConfig               eglConfig;
     EGLContext              eglContext;
     EGLSurface              eglSurface;
-#elif defined(__WIN32__)
-    HWND                    hwnd;
-    WNDPROC                 oldWndProc;
-    HDC                     hdc;
-    HGLRC                   hrc;
-#ifdef USE_DESKTOP_EGL
-    EGLDisplay              eglDisplay;
-    EGLConfig               eglConfig;
-    EGLContext              eglContext;
-    EGLSurface              eglSurface;
-#endif
-#elif defined(__XAMARIN__)
-    EGLUtil *               rootView;
-#elif defined(__MACOSX__)
-    CGDirectDisplayID       display;
-    NSView *                contentView;
-    GLView *                glView;
-    //NSString *            windowTitle;
-    //CGSize                windowSize;
-    NSOpenGLContext *       nsglContext;
-    CGLContextObj           cglContext;
 #endif
     GLState *               state;
     GLuint                  defaultFramebuffer;
     GLuint                  defaultVAO;
+    ImGuiContext *          imGuiContext;
+    double                  imGuiLastTime;
 };
 
 struct GLStencilState {
@@ -148,13 +147,13 @@ struct GLStencilState {
 };
 
 struct GLTexture {
-    int                     type;
+    RHI::TextureType::Enum  type;
     GLenum                  target;
     GLuint                  object;
 };
 
 struct GLBuffer {
-    int                     type;
+    RHI::BufferType::Enum   type;
     GLenum                  target;
     GLenum                  usage;
     GLuint                  object;
@@ -221,7 +220,7 @@ struct GLVertexElementInternal {
     int                     components;
     GLenum                  type;
     GLboolean               normalize;
-    bool                    shouldConvertToFloat;
+    bool                    useFloatAttribute;
     int                     divisor;
 };
 
@@ -245,5 +244,11 @@ struct GLQuery {
     RHI::QueryType::Enum    queryType;
     GLuint                  id;
 };
+
+// ImGui OpenGL implementation
+bool ImGui_ImplOpenGL_Init(const char *glsl_version);
+void ImGui_ImplOpenGL_Shutdown();
+void ImGui_ImplOpenGL_ValidateFrame();
+void ImGui_ImplOpenGL_RenderDrawData(ImDrawData *draw_data);
 
 BE_NAMESPACE_END

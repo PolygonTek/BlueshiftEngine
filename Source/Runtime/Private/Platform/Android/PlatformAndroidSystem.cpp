@@ -39,4 +39,14 @@ int32_t PlatformAndroidSystem::NumCPUCores() {
     return numCores;
 }
 
+bool PlatformAndroidSystem::IsDebuggerPresent() {
+    return false;
+}
+
+void PlatformAndroidSystem::DebugBreak() {
+    if (IsDebuggerPresent()) {
+        __builtin_trap();
+    }
+}
+
 BE_NAMESPACE_END

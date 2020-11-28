@@ -19,6 +19,7 @@
 #include "Components/ComSkinnedMeshRenderer.h"
 #include "Game/GameWorld.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
@@ -29,7 +30,7 @@ END_EVENTS
 
 void ComAnimator::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("animController", "Anim Controller", Guid, GetAnimControllerGuid, SetAnimControllerGuid, GuidMapper::defaultAnimControllerGuid, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&AnimControllerAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&AnimControllerResource::metaObject);
 }
 
 ComAnimator::ComAnimator() {
@@ -77,11 +78,12 @@ void ComAnimator::Update() {
 
     animator.ClearForceUpdate();*/
 
-    animator.UpdateFrame(GetEntity(), GetGameWorld()->GetPrevTime(), GetGameWorld()->GetTime());
+    int prevTime = GetGameWorld()->GetPrevTime();
+    int currTime = GetGameWorld()->GetTime();
 
-    int currentTime = GetGameWorld()->GetTime();
+    animator.UpdateFrame(GetEntity(), prevTime, currTime);
 
-    UpdateAnim(currentTime);
+    UpdateAnim(currTime);
 }
 
 void ComAnimator::UpdateAnim(int currentTime) {
@@ -130,7 +132,7 @@ void ComAnimator::AnimControllerReloaded() {
 }
 
 void ComAnimator::ChangeAnimController(const Guid &animControllerGuid) {
-#if 1
+#if WITH_EDITOR
     // Disconnect with previously connected animation controller asset
     if (animControllerAsset) {
         animControllerAsset->Disconnect(&Asset::SIG_Reloaded, this);
@@ -145,9 +147,9 @@ void ComAnimator::ChangeAnimController(const Guid &animControllerGuid) {
     // Reset animator state
     animator.ResetState(GetGameWorld() ? GetGameWorld()->GetTime() : 0);
 
-#if 1
+#if WITH_EDITOR
     // Need to connect animation controller asset to be reloaded in Editor
-    animControllerAsset = (AnimControllerAsset *)AnimControllerAsset::FindInstance(animControllerGuid);
+    animControllerAsset = (Asset *)Asset::FindInstance(animControllerGuid);
     if (animControllerAsset) {
         animControllerAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComAnimator::AnimControllerReloaded, SignalObject::ConnectionType::Queued);
     }

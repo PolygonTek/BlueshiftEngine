@@ -29,24 +29,18 @@ void LuaVM::RegisterPhysics(LuaCpp::Module &module) {
 
     PhysicsWorld *physicsWorld = gameWorld->GetPhysicsWorld();
 
-    LuaCpp::Selector _Physics_CastResultParent = _Physics["CastResultParent"];
-    _Physics_CastResultParent.SetClass<CastResult>();
-    _Physics_CastResultParent.AddClassMembers<CastResult>(
+    LuaCpp::Selector _Physics_CastResult = _Physics["CastResult"];
+    _Physics_CastResult.SetClass<CastResult>();
+    _Physics_CastResult.AddClassMembers<CastResult>(
         "point", &CastResult::point,
         "normal", &CastResult::normal,
         "end_pos", &CastResult::endPos,
         "fraction", &CastResult::fraction,
         "surface_flags", &CastResult::surfaceFlags);
-    
-    LuaCpp::Selector _Physics_CastResult = _Physics["CastResult"];
-    _Physics_CastResult.SetClass<CastResultEx>(_Physics_CastResultParent);
-    _Physics_CastResult.AddClassMembers<CastResultEx>(
-        "rigid_body", &CastResultEx::GetRigidBody,
-        "sensor", &CastResultEx::GetSensor);
 
     _Physics["gravity"].SetFunc([physicsWorld]() { return physicsWorld->GetGravity(); });
     _Physics["set_gravity"].SetFunc([physicsWorld](const Vec3 &gravity) { return physicsWorld->SetGravity(gravity); });
-    _Physics["ray_cast"].SetFunc([physicsWorld](const Vec3 &start, const Vec3 &end, int mask, CastResultEx &castResult) {
+    _Physics["ray_cast"].SetFunc([physicsWorld](const Vec3 &start, const Vec3 &end, int mask, CastResult &castResult) {
         return physicsWorld->RayCast(nullptr, start, end, mask, castResult);
     });
 }

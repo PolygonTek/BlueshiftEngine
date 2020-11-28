@@ -26,10 +26,10 @@ public:
     static constexpr int    MaxEventDefs = 4096;
 
     explicit EventDef(const char *name, bool guiEvent = false, const char *formatSpec = nullptr, char returnType = 0);
-    /// Prevents copy constructor
+    /// Prevents copy constructor.
     EventDef(const EventDef &rhs) = delete;
 
-                            /// Returns event def name
+                            /// Returns event def name.
     const char *            GetName() const { return name; }
     const char *            GetArgFormat() const { return formatSpec; }
     char                    GetReturnType() const { return returnType; }
@@ -40,13 +40,13 @@ public:
     int                     GetArgOffset(int arg) const { assert((arg >= 0) && (arg < MaxArgs)); return argOffset[arg]; }
     bool                    IsGuiEvent() const { return guiEvent; }
 
-                            /// Returns number of event defs
+                            /// Returns number of event defs.
     static int              NumEvents() { return numEventDefs; }
 
-                            /// Returns event def by event number
+                            /// Returns event def by event number.
     static const EventDef * GetEvent(int eventNum) { return eventDefs[eventNum]; }
 
-                            /// Returns event def by name
+                            /// Returns event def by name.
     static const EventDef * FindEvent(const char *name);
 
 private:
@@ -90,7 +90,7 @@ public:
 
     static void             Clear();
 
-                            /// Create a new event with the given event def and arguments
+                            /// Create a new event with the given event def and arguments.
     static Event *          AllocEvent(const EventDef *eventDef, int numArgs, va_list args);
     static void             FreeEvent(Event *event);
 
@@ -98,7 +98,7 @@ public:
 
     static void             ScheduleEvent(Event *event, Object *sender, int time);
 
-                            /// Cancels a event which is posted by sender in event queue
+                            /// Cancels a event which is posted by sender in event queue.
     static void             CancelEvents(const Object *sender, const EventDef *eventDef = nullptr);
 
     static void             ServiceEvents();

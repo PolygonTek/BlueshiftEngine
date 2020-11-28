@@ -17,7 +17,7 @@
 #include "AnimController/AnimState.h"
 #include "Animator/Animator.h"
 #include "Core/JointPose.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Game/Entity.h"
 #include "Components/ComScript.h"
 
@@ -71,7 +71,7 @@ float AnimStateBlender::GetBlendWeight(int currentTime) const {
         w = blendEndWeight;
     } else {
         float frac = Clamp((float)timeDelta / (float)blendDuration, 0.0f, 1.0f);
-        w = Lerp(blendStartWeight, blendEndWeight, frac);
+        w = Math::Lerp(blendStartWeight, blendEndWeight, frac);
     }
 
     return w;
@@ -135,7 +135,7 @@ void AnimStateBlender::BlendOut(int currentTime, int blendDuration) {
     if (blendDuration == 0) {
         Clear();
     } else {
-        // blendEndWeight 를 0 으로 설정하고, blendDuration 동안 서서히 value 를 줄여간다
+        // Set blendEndWeight to 0 and gradually decrease the value during blendDuration.
         SetBlendWeight(currentTime, 0.0f, blendDuration);
     }
 }
@@ -233,7 +233,7 @@ bool AnimStateBlender::BlendTranslation(int currentTime, Vec3 &blendedTranslatio
     } else {
         blendedWeight += currentWeight;
         float fraction = currentWeight / blendedWeight;
-        blendedTranslation = Lerp(blendedTranslation, translation, fraction);
+        blendedTranslation = Math::Lerp(blendedTranslation, translation, fraction);
     }
 
     return true;
@@ -266,7 +266,7 @@ bool AnimStateBlender::BlendTranslationDelta(int fromTime, int toTime, Vec3 &ble
     } else {
         blendedWeight += currentWeight;
         float fraction = currentWeight / blendedWeight;
-        blendedDelta = Lerp(blendedDelta, delta, fraction);
+        blendedDelta = Math::Lerp(blendedDelta, delta, fraction);
     }
 
     return true;
@@ -285,7 +285,9 @@ bool AnimStateBlender::BlendRotationDelta(int fromTime, int toTime, Quat &blende
     float time1 = NormalizedTime(fromTime);
     float time2 = NormalizedTime(toTime);
 
-    Quat q1, q2;
+    ALIGN_AS16 Quat q1;
+    ALIGN_AS16 Quat q2;
+
     q1.SetIdentity();
     q2.SetIdentity();
 

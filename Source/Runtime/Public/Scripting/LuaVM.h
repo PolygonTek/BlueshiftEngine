@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "Core/CmdArgs.h"
 #include "Containers/Array.h"
 #include "LuaCpp/LuaCpp.h"
 
@@ -26,7 +25,7 @@ using EngineModuleCallback = void (*)(LuaCpp::Module &);
 
 class LuaVM {
 public:
-    LuaVM();
+    LuaVM() = default;
 
     void                    Init();
     void                    Shutdown();
@@ -39,11 +38,8 @@ public:
 
     void                    EnableJIT(bool enabled);
 
-    void                    ClearTweeners();
-    void                    UpdateTweeners(float unscaledDeltaTime, float timeScale);
-
-    void                    ClearWatingThreads();
-    void                    WakeUpWatingThreads(float currentTime);
+    void                    ClearWaitingThreads();
+    void                    WakeUpWaitingThreads(float currentTime);
 
     void                    StartDebuggee();
     void                    StopDebuggee();
@@ -79,7 +75,11 @@ private:
     void                    RegisterFrustum(LuaCpp::Module &module);
     void                    RegisterRay(LuaCpp::Module &module);
     void                    RegisterPoint(LuaCpp::Module &module);
+    void                    RegisterPointF(LuaCpp::Module &module);
+    void                    RegisterSize(LuaCpp::Module &module);
+    void                    RegisterSizeF(LuaCpp::Module &module);
     void                    RegisterRect(LuaCpp::Module &module);
+    void                    RegisterRectF(LuaCpp::Module &module);
 
     void                    RegisterCommon(LuaCpp::Module &module);
 
@@ -98,19 +98,19 @@ private:
     void                    RegisterObject(LuaCpp::Module &module);
 
     void                    RegisterAsset(LuaCpp::Module &module);
-    void                    RegisterTextureAsset(LuaCpp::Module &module);
-    void                    RegisterShaderAsset(LuaCpp::Module &module);
-    void                    RegisterMaterialAsset(LuaCpp::Module &module);
-    void                    RegisterSkeletonAsset(LuaCpp::Module &module);
-    void                    RegisterMeshAsset(LuaCpp::Module &module);
-    void                    RegisterAnimAsset(LuaCpp::Module &module);
-    void                    RegisterAnimControllerAsset(LuaCpp::Module &module);
-    void                    RegisterSoundAsset(LuaCpp::Module &module);
-    void                    RegisterMapAsset(LuaCpp::Module &module);
-    void                    RegisterPrefabAsset(LuaCpp::Module &module);
+    void                    RegisterTexture(LuaCpp::Module &module);
+    void                    RegisterShader(LuaCpp::Module &module);
+    void                    RegisterMaterial(LuaCpp::Module &module);
+    void                    RegisterSkeleton(LuaCpp::Module &module);
+    void                    RegisterMesh(LuaCpp::Module &module);
+    void                    RegisterAnim(LuaCpp::Module &module);
+    void                    RegisterAnimController(LuaCpp::Module &module);
+    void                    RegisterSound(LuaCpp::Module &module);
+    void                    RegisterPrefab(LuaCpp::Module &module);
 
     void                    RegisterComponent(LuaCpp::Module &module);
     void                    RegisterTransformComponent(LuaCpp::Module &module);
+    void                    RegisterRectTransformComponent(LuaCpp::Module &module);
     void                    RegisterColliderComponent(LuaCpp::Module &module);
     void                    RegisterBoxColliderComponent(LuaCpp::Module &module);
     void                    RegisterSphereColliderComponent(LuaCpp::Module &module);
@@ -137,8 +137,11 @@ private:
     void                    RegisterAnimationComponent(LuaCpp::Module &module);
     void                    RegisterAnimatorComponent(LuaCpp::Module &module);
     void                    RegisterTextRendererComponent(LuaCpp::Module &module);
+    void                    RegisterTextComponent(LuaCpp::Module &module);
+    void                    RegisterImageComponent(LuaCpp::Module &module);
     void                    RegisterParticleSystemComponent(LuaCpp::Module &module);
     void                    RegisterCameraComponent(LuaCpp::Module &module);
+    void                    RegisterCanvasComponent(LuaCpp::Module &module);
     void                    RegisterLightComponent(LuaCpp::Module &module);
     void                    RegisterAudioListenerComponent(LuaCpp::Module &module);
     void                    RegisterAudioSourceComponent(LuaCpp::Module &module);
@@ -148,11 +151,9 @@ private:
     void                    RegisterEntity(LuaCpp::Module &module);
     void                    RegisterGameWorld(LuaCpp::Module &module);
 
-    LuaCpp::State *         state;
-    LuaCpp::Selector        clearTweeners;
-    LuaCpp::Selector        updateTweeners;
-    LuaCpp::Selector        clearWatingThreads;
-    LuaCpp::Selector        wakeUpWatingThreads;
+    LuaCpp::State *         state = nullptr;
+    LuaCpp::Selector        clearWaitingThreads;
+    LuaCpp::Selector        wakeUpWaitingThreads;
     LuaCpp::Selector        startDebuggee;
     LuaCpp::Selector        stopDebuggee;
     LuaCpp::Selector        pollDebuggee;
@@ -161,12 +162,7 @@ private:
 
     Array<EngineModuleCallback> engineModuleCallbacks;
 
-    const GameWorld *       gameWorld;
+    const GameWorld *       gameWorld = nullptr;
 };
-
-BE_INLINE LuaVM::LuaVM() {
-    state = nullptr;
-    gameWorld = nullptr;
-}
 
 BE_NAMESPACE_END

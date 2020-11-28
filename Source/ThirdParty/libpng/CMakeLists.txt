@@ -27,12 +27,17 @@ set(SRC_FILES
     pngwutil.c
 )
 
-if (IOS OR ANDROID)
+if (ENGINE_ARCH MATCHES "^arm" OR ENGINE_ARCH MATCHES "^aarch64")
     list(APPEND SRC_FILES
         arm/arm_init.c
         arm/filter_neon_intrinsics.c
+        arm/palette_neon_intrinsics.c
         #arm/filter_neon.S
     )
+elseif (ENGINE_ARCH MATCHES "^i?86" OR ENGINE_ARCH MATCHES "^x86_64*")
+    list(APPEND SRC_FILES
+        intel/intel_init.c
+        intel/filter_sse2_intrinsics.c)
 endif ()
 
 add_library(${PROJECT_NAME} STATIC ${SRC_FILES})

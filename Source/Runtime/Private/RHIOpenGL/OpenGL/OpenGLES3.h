@@ -24,6 +24,139 @@
 ===============================================================================
 */
 
+/*
+------------------------------------------------------------------------------
+ OpenGL ES extensions
+
+ https://en.wikipedia.org/wiki/OpenGL_ES
+
+OpenGL ES 1.0
+    OES_byte_coordinates
+    OES_compressed_paletted_texture
+    OES_fixed_point
+    OES_query_matrix
+    OES_read_format
+    OES_single_precision
+    OES_compressed_ETC1_RGB8_texture
+
+OpenGL ES 1.1
+    OES_draw_texture
+    OES_matrix_get
+    OES_point_size_array
+    OES_point_sprite
+    OES_EGL_image
+    OES_EGL_image_external
+    OES_required_internalformat
+
+OpenGL ES 2.0
+    GLSL 1.00
+    OES_texture_cube_map
+    OES_texture_npot
+    OES_depth24
+    OES_depth_texture
+    OES_element_index_uint
+    OES_fbo_render_mipma
+    OES_get_program_binary
+    OES_mapbuffer
+    OES_packed_depth_stencil
+    OES_rgb8_rgba8
+    OES_stencil8
+    OES_vertex_half_float
+    OES_EGL_image
+    OES_EGL_image_external
+    OES_texture_float_linear
+    OES_texture_half_float_linear
+    OES_texture_float
+    OES_texture_half_float
+    OES_standard_derivatives
+    OES_surfaceless_context
+    OES_depth_texture_cube_map
+    EXT_texture_filter_anisotropic
+    EXT_texture_type_2_10_10_10_REV
+    EXT_texture_compression_dxt1
+    EXT_texture_format_BGRA8888
+    EXT_discard_framebuffer
+    EXT_blend_minmax
+    EXT_read_format_bgra
+    EXT_multi_draw_arrays
+    EXT_frag_depth
+    EXT_unpack_subimage
+    EXT_texture_rg
+    EXT_draw_buffers
+    EXT_compressed_ETC1_RGB8_sub_texture
+    NV_draw_buffers
+    NV_fbo_color_attachments
+    NV_read_buffer
+    NV_read_depth_stencil
+    ANGLE_texture_compression_dxt
+
+OpenGL ES 3.0
+    GLSL 3.00
+    OES_vertex_array_object
+    KHR_context_flush_control
+    OES_texture_compression_astc
+    EXT_texture_border_clamp
+    EXT_draw_elements_base_vertex
+    OES_EGL_image_external_essl3
+    MESA_shader_integer_functions
+
+OpenGL ES 3.1
+    GLSL  3.10
+    ARB_arrays_of_arrays
+    ARB_compute_shader
+    ARB_explicit_uniform_location
+    ARB_framebuffer_no_attachments
+    ARB_program_interface_query
+    ARB_shader_atomic_counters
+    ARB_shader_image_load_store
+    ARB_shader_storage_buffer_object
+    ARB_separate_shader_objects
+    ARB_stencil_texturing
+    ARB_vertex_attrib_binding
+    ARB_draw_indirect
+    ARB_shading_language_packing
+    ARB_shader_image_size
+    ARB_texture_storage_multisample
+    ARB_texture_multisample
+    EXT_shader_integer_mix
+    ARB_sample_locations
+    OES_texture_view
+    NV_image_formats
+    EXT_render_snorm
+    EXT_texture_norm16
+
+OpenGL ES 3.2
+    GLSL  3.20
+    KHR_blend_equation_advanced
+    EXT_color_buffer_float
+    KHR_debug
+    KHR_robustness
+    OES_copy_image
+    OES_draw_buffers_indexed
+    OES_draw_elements_base_vertex
+    OES_geometry_shader
+    OES_gpu_shader5
+    OES_sample_shading
+    OES_sample_variables
+    OES_shader_image_atomic
+    OES_shader_io_blocks
+    OES_shader_multisample_interpolation
+    OES_tessellation_shader
+    OES_texture_border_clamp
+    OES_texture_buffer
+    OES_texture_cube_map_array
+    OES_texture_stencil8
+    OES_texture_storage_multisample_2d_array
+    KHR_texture_compression_astc_ldr
+    OES_primitive_bounding_box
+    KHR_texture_compression_astc_hdr
+    KHR_blend_equation_advanced_coherent
+    KHR_texture_compression_astc_sliced_3d
+    OES_viewport_array
+
+ ------------------------------------------------------------------------------
+*/
+
 #include "OpenGL.h"
 
 #ifndef GL_FILL
@@ -91,7 +224,7 @@
 #endif
 
 #ifndef GL_WRITE_ONLY
-#define GL_WRITE_ONLY GL_WRITE_ONLY_OES
+#define GL_WRITE_ONLY 0x88B9
 #endif
 
 #ifndef GL_TEXTURE_CUBE_MAP_ARRAY
@@ -126,7 +259,7 @@ public:
     static bool             SupportsPackedFloat() { return true; }
     static bool             SupportsDepthClamp() { return false; }
     static bool             SupportsDepthBufferFloat() { return true; }
-    static bool             SupportsPixelBufferObject() { return true; }
+    static bool             SupportsPixelBuffer() { return true; }
     static bool             SupportsDiscardFrameBuffer() { return true; }
     static bool             SupportsFrameBufferSRGB() { return supportsFrameBufferSRGB; }
     static bool             SupportsTextureRectangle() { return true; }
@@ -134,6 +267,7 @@ public:
     static bool             SupportsTextureBuffer() { return supportsTextureBuffer; }
     static bool             SupportsTextureCompressionS3TC() { return false; }
     static bool             SupportsTextureCompressionLATC() { return false; }
+    static bool             SupportsTextureCompressionRGTC() { return false; }
     static bool             SupportsTextureCompressionETC2() { return true; }
     static bool             SupportsCompressedGenMipmaps() { return false; }
     static bool             SupportsInstancedArrays() { return true; }
@@ -143,6 +277,8 @@ public:
     static bool             SupportsTimestampQueries() { return supportsTimestampQueries; }
 
     static void             QueryTimestampCounter(GLuint queryId);
+    static uint32_t         QueryResult32(GLuint queryId);
+    static uint64_t         QueryResult64(GLuint queryId);
 
     static void             PolygonMode(GLenum face, GLenum mode) {}
     static void             ClearDepth(GLdouble depth) { gglClearDepthf(depth); }
@@ -163,7 +299,6 @@ public:
     static bool             ImageFormatToGLFormat(Image::Format::Enum imageFormat, bool isSRGB, GLenum *glFormat, GLenum *glType, GLenum *glInternal);
     static bool             SupportedImageFormat(Image::Format::Enum imageFormat) { return ImageFormatToGLFormat(imageFormat, false, nullptr, nullptr, nullptr); }
     static Image::Format::Enum ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
-    static Image::Format::Enum ToUncompressedImageFormat(Image::Format::Enum inFormat);
 
 private:
     static bool             supportsFrameBufferSRGB;

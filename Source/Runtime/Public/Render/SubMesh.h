@@ -29,8 +29,8 @@ class MeshImporter;
 BE_NAMESPACE_BEGIN
 
 /// Represents a line segment of a triangle.
-/// vertex index 는 작은 값에서 큰 값으로의 선분을 나타낸다.
-/// 이 방향을 나타내는 edge 는 positive index 를 사용하고, 공유되는 반대 방향의 edge 는 negative index 를 사용한다.
+/// The vertex index represents the line segment from small to large.
+/// Edges in this direction use positive indexes, and shared opposite edges use negative indexes.
 struct Edge {
 /*
      ------ v1
@@ -46,8 +46,8 @@ struct Edge {
 
 /// Joint weight
 struct JointWeight {
-    int32_t                 jointMatOffset;     ///< weight index 가 참조하는 matrix 배열의 offset
-    int32_t                 nextVertOffset;     ///< 0 인 경우 동일한 vertex 를 나타낸다
+    int32_t                 jointMatOffset;     ///< offset of matrix array referenced by weight index.
+    int32_t                 nextVertOffset;     ///< 0 means the same vertex.
 };
 
 struct BufferCache;
@@ -87,7 +87,7 @@ public:
                             /// Finds a edge index by two vertex indexes.
                             /// if v1 is larger than v2, negative number will be returned.
                             /// To use this function, edge information must be pre-calculated.
-    int                     FindEdge(int v1, int v2) const;
+    int                     FindEdge(int32_t v1, int32_t v2) const;
 
                             /// Test if this sub mesh is closed surface form.
                             /// To use this function, edge information must be pre-calculated.
@@ -141,7 +141,7 @@ private:
     int                     numVerts;                   // mirrored vertices 스플릿팅 후에,
     VertexGenericLit *      verts;                      // verts 배열 뒷 부분에 스플릿팅된 vertex 들이 추가된다.
     int                     numMirroredVerts;           // numVerts 에 합산되어 있다 (numOriginalVerts = numVerts - numMirroredVerts)
-    int *                   mirroredVerts;              // 추가된 mirrored vertex 들의 original vertex index 배열
+    TriIndex *              mirroredVerts;              // 추가된 mirrored vertex 들의 original vertex index 배열
     DominantTri *           dominantTris;               // dominant triangles for each vertices
 
     int                     numIndexes;                 // number of triangle indexes
@@ -149,13 +149,13 @@ private:
                             
     int                     numEdges;                   // number of edges that is not including shared edges
     Edge *                  edges;                      // shared edges are not stored explicitly
-    int *                   edgeIndexes;                // triangle edge indexes to edge indexes including negative index number
+    int32_t *               edgeIndexes;                // triangle edge indexes to edge indexes including negative index number
 
-    int                     numJointWeights;            // verts 와 별개로 weight 배열을 따로 관리 (CPU skinning 용)
-    JointWeight *           jointWeights;               // weight 정보 배열
-    Vec4 *                  jointWeightVerts;           // weight 의 local vertex
+    int                     numJointWeights;            // verts 와 별개로 weight 배열을 따로 관리 (for CPU skinning)
+    JointWeight *           jointWeights;               // weight information array
+    Vec4 *                  jointWeightVerts;           // local vertex of weight.
 
-    void *                  vertWeights;                // GPU skinning 용 vertex weights (numVerts * sizeof(VertexWeightX))
+    void *                  vertWeights;                // vertex weights for GPU skinning (numVerts * sizeof(VertexWeightX))
     bool                    useGpuSkinning;
     int                     gpuSkinningVersionIndex;    // 0: VertexWeight1, 1: VertexWeight4, 2: VertexWeight8
 

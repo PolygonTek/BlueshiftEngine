@@ -125,7 +125,6 @@ public:
                         /// Divides vector (s, s, s, s) by a vector, element-wise.
     friend Vec2         operator/(float lhs, const Vec2 &rhs) { return Vec2(lhs / rhs.x, lhs / rhs.y); }
 
-
                         /// Assign from another vector.
     Vec2 &              operator=(const Vec2 &rhs);
 
@@ -194,6 +193,12 @@ public:
                         /// Get the maximum component index of a vector.
     int                 MaxComponentIndex() const { return MaxIndex(x, y); }
 
+                        /// Performs a 2D swizzled access to this vector.
+    Vec2                xx() const { return Vec2(x, x); }
+    Vec2                xy() const { return Vec2(x, y); }
+    Vec2                yx() const { return Vec2(y, x); }
+    Vec2                yy() const { return Vec2(y, y); }
+
                         /// Computes the length of this vector.
     float               Length() const;
 
@@ -213,6 +218,11 @@ public:
                         /// @return Length of this vector.
     float               NormalizeFast();
 
+                        /// Returns a normalized copy of this vector.
+    Vec2                Normalized() const;
+                        /// Returns a fast but approximately normalized copy of this vector.
+    Vec2                NormalizedFast() const;
+
                         /// Scales this vector so that its new length is as given.
     Vec2 &              ScaleToLength(float length);
 
@@ -226,6 +236,13 @@ public:
 
                         /// Computes z-component of 3D vector cross product of this (x, y, 0) and the given vector (a.x, a.y, 0).
     float               Cross(const Vec2 &a) const;
+
+                        /// Returns this vector onto the given unnormalized direction vector.
+    Vec2                ProjectTo(const Vec2 &direction) const;
+                        /// Returns this vector onto the given normalized direction vector.
+    Vec2                ProjectToNorm(const Vec2 &direction) const;
+                        /// Projects this vector onto the given plane normal vector.
+    Vec2                ProjectOnPlane(const Vec2 &planeNormal) const;
 
                         /// Returns the angle between this vector and the specified vector, in radians.
     float               AngleBetween(const Vec2 &other) const;
@@ -247,12 +264,15 @@ public:
                         /// Less distorted mapping than FromUniformSampleDisk()
     static Vec2         FromConcentricSampleDisk(float u1, float u2);
 
+                        /// Return hash value for HashIndex.
+    int                 ToHash() const { return ((int)x) * 31 + ((int)y); }
+
                         /// Returns "x y z".
     const char *        ToString() const { return ToString(4); }
                         /// Returns "x y z" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Vec2         FromString(const char *str);
 
                         /// Converts to the polar coordinates.
@@ -271,7 +291,7 @@ public:
     static Vec2         FromAngle(float theta);
 
                         /// Returns dimension of this type.
-    int                 GetDimension() const { return Size; }
+    constexpr int       GetDimension() const { return Size; }
 
                         /// Compute 2D barycentric coordinates from the point based on 2 simplex vector.
     static const Vec2   Compute2DBarycentricCoords(const float s1, const float s2, const float p);
@@ -281,6 +301,7 @@ public:
     static const Vec2   one;        ///< (1, 1)
     static const Vec2   unitX;      ///< (1, 0)
     static const Vec2   unitY;      ///< (0, 1)
+    static const Vec2   infinity;   ///< (1e30f, 1e30f)
 
     float               x;          ///< The x components.
     float               y;          ///< The y components.
@@ -412,6 +433,18 @@ BE_INLINE float Vec2::NormalizeFast() {
     return invLength * sqrLength;
 }
 
+BE_INLINE Vec2 Vec2::Normalized() const {
+    Vec2 n = *this;
+    n.Normalize();
+    return n;
+}
+
+BE_INLINE Vec2 Vec2::NormalizedFast() const {
+    Vec2 n = *this;
+    n.NormalizeFast();
+    return n;
+}
+
 BE_INLINE Vec2 &Vec2::ScaleToLength(float length) {
     if (!length) {
         SetFromScalar(0);
@@ -449,6 +482,18 @@ BE_INLINE float Vec2::AbsDot(const Vec2 &a) const {
 
 BE_INLINE float Vec2::Cross(const Vec2 &a) const {
     return x * a.y - y * a.x;
+}
+
+BE_INLINE Vec2 Vec2::ProjectTo(const Vec2 &direction) const {
+    return direction * Dot(direction) / direction.LengthSqr();
+}
+
+BE_INLINE Vec2 Vec2::ProjectToNorm(const Vec2 &direction) const {
+    return direction * Dot(direction);
+}
+
+BE_INLINE Vec2 Vec2::ProjectOnPlane(const Vec2 &planeNormal) const {
+    return *this - ProjectToNorm(planeNormal);
 }
 
 BE_INLINE float Vec2::AngleBetween(const Vec2 &other) const {
@@ -502,7 +547,7 @@ BE_INLINE Vec2 Vec2::FromAngle(float theta) {
 }
 
 BE_INLINE const char *Vec2::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), Size, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_INLINE void Vec2::SetFromPolar(float radius, float theta) {

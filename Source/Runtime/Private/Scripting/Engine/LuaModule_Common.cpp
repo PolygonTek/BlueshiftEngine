@@ -27,17 +27,17 @@ void LuaVM::RegisterCommon(LuaCpp::Module &module) {
     _Common.AddObjMembers(common,
         "real_time", &Common::realTime,
         "frame_time", &Common::frameTime,
-        "frame_sec", &Common::frameSec,
+        "with_editor", &Common::WithEditor,
         "platform_id", &Common::GetPlatformId,
         "preference_dir", &Common::GetAppPreferenceDir);
 
     LuaCpp::Selector _Common_PlatformId = _Common["PlatformId"];
     _Common_PlatformId.SetClass<CommonPlatformId>();
-    _Common_PlatformId["Windows"] = Common::PlatformId::ID_Windows;
-    _Common_PlatformId["Linux"] = Common::PlatformId::ID_Linux;
-    _Common_PlatformId["MacOS"] = Common::PlatformId::ID_MacOS;
-    _Common_PlatformId["IOS"] = Common::PlatformId::ID_IOS;
-    _Common_PlatformId["Android"] = Common::PlatformId::ID_Android;
+    _Common_PlatformId["Windows"] = Common::PlatformId::WindowsId;
+    _Common_PlatformId["Linux"] = Common::PlatformId::LinuxId;
+    _Common_PlatformId["MacOS"] = Common::PlatformId::MacOSId;
+    _Common_PlatformId["IOS"] = Common::PlatformId::IOSId;
+    _Common_PlatformId["Android"] = Common::PlatformId::AndroidId;
 }
 
 BE_NAMESPACE_END

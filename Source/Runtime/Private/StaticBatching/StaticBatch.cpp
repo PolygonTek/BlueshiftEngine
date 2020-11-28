@@ -53,7 +53,7 @@ void StaticBatch::DestroyStaticBatch(StaticBatch *staticBatch) {
 void StaticBatch::CombineAll(Hierarchy<Entity> &entityHierarchy) {
     MeshCombiner::CombineHierarchy(entityHierarchy);
 
-    for (const Entity *ent = entityHierarchy.GetChild(); ent; ent = ent->GetNode().GetNext()) {
+    for (const Entity *ent = entityHierarchy.GetFirstChild(); ent; ent = ent->GetNode().GetNext()) {
         ComStaticMeshRenderer *staticMeshRenderer = ent->GetComponent<ComStaticMeshRenderer>();
         
         if (staticMeshRenderer && staticMeshRenderer->staticBatchIndex >= 0) {

@@ -39,9 +39,9 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-    virtual bool            HasRenderEntity(int renderEntityHandle) const override;
+    virtual bool            HasRenderObject(int renderObjectHandle) const override;
 
-    virtual const AABB      GetAABB() override;
+    virtual const AABB      GetAABB() const override;
 
     virtual bool            IntersectRay(const Ray &ray, bool backFaceCull, float *hitDist) const override;
 
@@ -68,10 +68,15 @@ public:
     bool                    IsBillboard() const;
     void                    SetBillboard(bool billboard);
 
+    bool                    IsSkipRendering() const;
+    void                    SetSkipRendering(bool skip);
+
     bool                    IsSkipSelection() const;
     void                    SetSkipSelection(bool skip);
 
     bool                    IsVisibleInPreviousFrame() const;
+
+    void                    SetRenderingOrder(int order);
 
 protected:
     virtual void            OnActive() override;

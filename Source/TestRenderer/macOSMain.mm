@@ -121,10 +121,10 @@ static void SystemError(int errLevel, const char *msg) {
     NSAlert *alert = [[NSAlert alloc] init];
     [alert setMessageText:[NSString stringWithUTF8String:"Error"]];
     [alert setInformativeText:nsmsg];
-    [alert setAlertStyle:errLevel == BE1::FatalErr ? NSCriticalAlertStyle : NSWarningAlertStyle];
+    [alert setAlertStyle:errLevel == BE1::ErrorLevel::Fatal ? NSCriticalAlertStyle : NSWarningAlertStyle];
     [alert runModal];
     
-    if (errLevel == BE1::FatalErr) {
+    if (errLevel == BE1::ErrorLevel::Fatal) {
         exit(0);
     }
 }

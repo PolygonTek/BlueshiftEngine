@@ -39,8 +39,17 @@ public:
     RenderObject::TextAnchor::Enum GetAnchor() const;
     void                    SetAnchor(RenderObject::TextAnchor::Enum anchor);
 
-    RenderObject::TextAlignment::Enum GetAlignment() const;
-    void                    SetAlignment(RenderObject::TextAlignment::Enum alignment);
+    RenderObject::TextHorzAlignment::Enum GetAlignment() const;
+    void                    SetAlignment(RenderObject::TextHorzAlignment::Enum alignment);
+
+    RenderObject::TextDrawMode::Enum GetDrawMode() const;
+    void                    SetDrawMode(RenderObject::TextDrawMode::Enum drawMode);
+
+    Color3                  GetSecondaryColor() const;
+    void                    SetSecondaryColor(const Color3 &color);
+
+    float                   GetSecondaryAlpha() const;
+    void                    SetSecondaryAlpha(float alpha);
 
     float                   GetLineSpacing() const;
     void                    SetLineSpacing(float lineSpacing);
@@ -56,6 +65,7 @@ protected:
 
     void                    UpdateAABB();
 
+    Guid                    fontGuid;
     int                     fontSize;
 };
 

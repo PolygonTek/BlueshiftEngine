@@ -137,12 +137,12 @@ void RB_SetupLight(VisLight *visLight) {
     }
 
     if (rhi.IsSRGBWriteEnabled()) {
-        // Linearize light color
+        // Linearize light color.
         visLight->lightColor.ToColor3() = visLight->lightColor.ToColor3().SRGBToLinear();
     }
 
-    // Build light texture transform matrix
-    float lightTexMatrix[2][4];
+    // Build light texture transform matrix.
+    ALIGN_AS32 float lightTexMatrix[2][4];
     lightTexMatrix[0][0] = lightPass->tcScale[0];
     lightTexMatrix[0][1] = 0.0f;
     lightTexMatrix[0][2] = 0.0f;
@@ -155,15 +155,15 @@ void RB_SetupLight(VisLight *visLight) {
 
     const Mat4 &viewProjScaleBiasMat = visLight->def->GetViewProjScaleBiasMatrix();
 
-    visLight->viewProjTexMatrix[0][0] = lightTexMatrix[0][0] * viewProjScaleBiasMat[0][0] + lightTexMatrix[0][1] * viewProjScaleBiasMat[1][0] + lightTexMatrix[0][3] * viewProjScaleBiasMat[3][0];
-    visLight->viewProjTexMatrix[0][1] = lightTexMatrix[0][0] * viewProjScaleBiasMat[0][1] + lightTexMatrix[0][1] * viewProjScaleBiasMat[1][1] + lightTexMatrix[0][3] * viewProjScaleBiasMat[3][1];
-    visLight->viewProjTexMatrix[0][2] = lightTexMatrix[0][0] * viewProjScaleBiasMat[0][2] + lightTexMatrix[0][1] * viewProjScaleBiasMat[1][2] + lightTexMatrix[0][3] * viewProjScaleBiasMat[3][2];
-    visLight->viewProjTexMatrix[0][3] = lightTexMatrix[0][0] * viewProjScaleBiasMat[0][3] + lightTexMatrix[0][1] * viewProjScaleBiasMat[1][3] + lightTexMatrix[0][3] * viewProjScaleBiasMat[3][3];
+    visLight->viewProjTexMatrix[0][0] = lightTexMatrix[0][0] * viewProjScaleBiasMat[0][0] + /*lightTexMatrix[0][1] * viewProjScaleBiasMat[1][0] + */lightTexMatrix[0][3] * viewProjScaleBiasMat[3][0];
+    visLight->viewProjTexMatrix[0][1] = lightTexMatrix[0][0] * viewProjScaleBiasMat[0][1] + /*lightTexMatrix[0][1] * viewProjScaleBiasMat[1][1] + */lightTexMatrix[0][3] * viewProjScaleBiasMat[3][1];
+    visLight->viewProjTexMatrix[0][2] = lightTexMatrix[0][0] * viewProjScaleBiasMat[0][2] + /*lightTexMatrix[0][1] * viewProjScaleBiasMat[1][2] + */lightTexMatrix[0][3] * viewProjScaleBiasMat[3][2];
+    visLight->viewProjTexMatrix[0][3] = lightTexMatrix[0][0] * viewProjScaleBiasMat[0][3] + /*lightTexMatrix[0][1] * viewProjScaleBiasMat[1][3] + */lightTexMatrix[0][3] * viewProjScaleBiasMat[3][3];
 
-    visLight->viewProjTexMatrix[1][0] = lightTexMatrix[1][0] * viewProjScaleBiasMat[0][0] + lightTexMatrix[1][1] * viewProjScaleBiasMat[1][0] + lightTexMatrix[1][3] * viewProjScaleBiasMat[3][0];
-    visLight->viewProjTexMatrix[1][1] = lightTexMatrix[1][0] * viewProjScaleBiasMat[0][1] + lightTexMatrix[1][1] * viewProjScaleBiasMat[1][1] + lightTexMatrix[1][3] * viewProjScaleBiasMat[3][1];
-    visLight->viewProjTexMatrix[1][2] = lightTexMatrix[1][0] * viewProjScaleBiasMat[0][2] + lightTexMatrix[1][1] * viewProjScaleBiasMat[1][2] + lightTexMatrix[1][3] * viewProjScaleBiasMat[3][2];
-    visLight->viewProjTexMatrix[1][3] = lightTexMatrix[1][0] * viewProjScaleBiasMat[0][3] + lightTexMatrix[1][1] * viewProjScaleBiasMat[1][3] + lightTexMatrix[1][3] * viewProjScaleBiasMat[3][3];
+    visLight->viewProjTexMatrix[1][0] = /*lightTexMatrix[1][0] * viewProjScaleBiasMat[0][0] + */lightTexMatrix[1][1] * viewProjScaleBiasMat[1][0] + lightTexMatrix[1][3] * viewProjScaleBiasMat[3][0];
+    visLight->viewProjTexMatrix[1][1] = /*lightTexMatrix[1][0] * viewProjScaleBiasMat[0][1] + */lightTexMatrix[1][1] * viewProjScaleBiasMat[1][1] + lightTexMatrix[1][3] * viewProjScaleBiasMat[3][1];
+    visLight->viewProjTexMatrix[1][2] = /*lightTexMatrix[1][0] * viewProjScaleBiasMat[0][2] + */lightTexMatrix[1][1] * viewProjScaleBiasMat[1][2] + lightTexMatrix[1][3] * viewProjScaleBiasMat[3][2];
+    visLight->viewProjTexMatrix[1][3] = /*lightTexMatrix[1][0] * viewProjScaleBiasMat[0][3] + */lightTexMatrix[1][1] * viewProjScaleBiasMat[1][3] + lightTexMatrix[1][3] * viewProjScaleBiasMat[3][3];
 
     visLight->viewProjTexMatrix[2][0] = viewProjScaleBiasMat[2][0];
     visLight->viewProjTexMatrix[2][1] = viewProjScaleBiasMat[2][1];
@@ -324,7 +324,7 @@ static void RB_RenderOcclusionMap(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 static void RB_GenerateOcclusionMapHierarchy() {
-    int startTime = PlatformTime::Milliseconds();
+    uint32_t startTime = PlatformTime::Milliseconds();
 
     Rect prevViewportRect = rhi.GetViewport();
 
@@ -332,9 +332,9 @@ static void RB_GenerateOcclusionMapHierarchy() {
     int h = backEnd.ctx->homRT->GetHeight();
 
     float size = Max(w, h);
-    int numLevels = (Math::Log(size) / Math::Log(2.0f));
+    int numLevels = Math::Log(2.0f, size);
     
-    const Shader *shader = ShaderManager::generateHomShader;
+    Shader *shader = ShaderManager::generateHomShader;
 
     shader->Bind();
 
@@ -372,15 +372,15 @@ static void RB_GenerateOcclusionMapHierarchy() {
 
     rhi.SetViewport(prevViewportRect);
 
-    backEnd.ctx->renderCounter.homGenMsec = PlatformTime::Milliseconds() - startTime;
+    backEnd.ctx->GetRenderCounter().homGenMsec = PlatformTime::Milliseconds() - startTime;
 }
 
 static void RB_QueryOccludeeAABBs(int numAmbientOccludees, const AABB *occludeeAABB) {
-    int startTime = PlatformTime::Milliseconds();
+    uint32_t startTime = PlatformTime::Milliseconds();
 
     // alloc ambient occludee buffer in a AABB form
     struct Occludee { Vec2 position; Vec3 center; Vec3 extents; };
-    Occludee *occludeeBuffer = (Occludee *)_alloca(numAmbientOccludees * sizeof(Occludee));
+    Occludee *occludeeBuffer = (Occludee *)_alloca16(numAmbientOccludees * sizeof(Occludee));
     Occludee *occludeePtr = occludeeBuffer;
     int x = 0;
     int y = 0;
@@ -406,7 +406,7 @@ static void RB_QueryOccludeeAABBs(int numAmbientOccludees, const AABB *occludeeA
     // Query HOM culling for each occludees
     backEnd.homCullingOutputRT->Begin();
 
-    const Shader *shader = ShaderManager::queryHomShader;
+    Shader *shader = ShaderManager::queryHomShader;
 
     shader->Bind();
     shader->SetTexture("homap", backEnd.ctx->homTexture);
@@ -432,11 +432,11 @@ static void RB_QueryOccludeeAABBs(int numAmbientOccludees, const AABB *occludeeA
 
     rhi.SetViewport(prevViewportRect);
 
-    backEnd.ctx->renderCounter.homQueryMsec = PlatformTime::Milliseconds() - startTime;
+    backEnd.ctx->GetRenderCounter().homQueryMsec = PlatformTime::Milliseconds() - startTime;
 }
 
 static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occludeeSurfIndexes, int numDrawSurfs, DrawSurf **drawSurfs) {
-    int startTime = PlatformTime::Milliseconds();
+    uint32_t startTime = PlatformTime::Milliseconds();
 
     // write back for visibility information to each surf
     int size = backEnd.homCullingOutputTexture->MemRequired(false);
@@ -470,7 +470,7 @@ static void RB_MarkOccludeeVisibility(int numAmbientOccludees, const int *occlud
         visibilityPtr += 4;
     }
 
-    backEnd.ctx->renderCounter.homCullMsec = PlatformTime::Milliseconds() - startTime;
+    backEnd.ctx->GetRenderCounter().homCullMsec = PlatformTime::Milliseconds() - startTime;
 }
 
 static void RB_TestOccludeeBounds(int numDrawSurfs, DrawSurf **drawSurfs) {
@@ -529,6 +529,9 @@ static void RB_HiOcclusionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
         return;
     }
 
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_HiOcclusionPass");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_HiOcclusionPass");
+
     // Render occluder to HiZ occlusion buffer
     RB_RenderOcclusionMap(backEnd.numAmbientSurfs, backEnd.drawSurfs);
 
@@ -540,24 +543,23 @@ static void RB_HiOcclusionPass(int numDrawSurfs, DrawSurf **drawSurfs) {
 }
 
 static void RB_ClearView() {
-    int clearBits = 0;
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_ClearView");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_ClearView");
 
     if (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::DepthOnly || 
         backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Skybox) {
-        clearBits = RHI::ClearBit::Depth | RHI::ClearBit::Stencil;
-
         rhi.SetStateBits(rhi.GetStateBits() | RHI::DepthWrite);
-        rhi.Clear(clearBits, Color4::black, 1.0f, 0);
+        rhi.Clear(RHI::ClearBit::Depth, Color4::black, 1.0f, 0);
     } else if (backEnd.camera->def->GetState().clearMethod == RenderCamera::ClearMethod::Color) {
-        clearBits = RHI::ClearBit::Depth | RHI::ClearBit::Stencil | RHI::ClearBit::Color;
-        Color4 clearColor = backEnd.camera->def->GetState().clearColor;
-
         rhi.SetStateBits(rhi.GetStateBits() | RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
-        rhi.Clear(clearBits, clearColor, 1.0f, 0);
+        rhi.Clear(RHI::ClearBit::Depth | RHI::ClearBit::Color, backEnd.camera->def->GetState().clearColor, 1.0f, 0);
     }
 }
 
 static void RB_RenderView() {
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_RenderView");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_RenderView");
+
     if (backEnd.camera->def->GetState().flags & RenderCamera::Flag::TexturedMode) {
         // Render pass for HiZ occlusion culling.
         RB_HiOcclusionPass(backEnd.numAmbientSurfs, backEnd.drawSurfs);
@@ -617,7 +619,7 @@ static void RB_DrawDebugShadowMap() {
         shadowTexture->Bind();
         rhi.SetTextureShadowFunc(false);
 
-        const Shader *shader = ShaderManager::drawArrayTextureShader;
+        Shader *shader = ShaderManager::drawArrayTextureShader;
 
         shader->Bind();
         shader->SetTexture("tex0", shadowTexture);
@@ -646,7 +648,7 @@ static void RB_DrawDebugShadowMap() {
         shadowTexture->Bind();
         rhi.SetTextureShadowFunc(false);
 
-        const Shader *shader = ShaderManager::postPassThruShader;
+        Shader *shader = ShaderManager::postPassThruShader;
 
         shader->Bind();
         shader->SetTexture("tex0", shadowTexture);
@@ -687,7 +689,7 @@ void RB_DrawRenderTargetTexture() {
     if (index < RenderTarget::rts.Count()) {
         const RenderTarget *rt = RenderTarget::rts[index];
         if (rt && rt->ColorTexture()) {
-            const Shader *shader = ShaderManager::postPassThruShader;
+            Shader *shader = ShaderManager::postPassThruShader;
 
             shader->Bind();
             shader->SetTexture("tex0", rt->ColorTexture());
@@ -708,7 +710,7 @@ void RB_DrawDebugHdrMap() {
 
     rhi.SetStateBits(RHI::ColorWrite);
 
-    const Shader *shader = ShaderManager::postPassThruShader;
+    Shader *shader = ShaderManager::postPassThruShader;
 
     shader->Bind();
     shader->SetTexture("tex0", backEnd.ctx->screenColorTexture);
@@ -776,7 +778,7 @@ static void RB_DrawDebugHOMap() {
         backEnd.ctx->homRT->DepthStencilTexture()->Bind();
         rhi.SetTextureLevel(i, i);
 
-        const Shader *shader = ShaderManager::postPassThruShader;
+        Shader *shader = ShaderManager::postPassThruShader;
 
         shader->Bind();
         shader->SetTexture("tex0", backEnd.ctx->homRT->DepthStencilTexture());
@@ -814,7 +816,7 @@ void RB_DrawDebugTextures() {
         }
         
         if (texture->GetType() == RHI::TextureType::Texture2D || texture->GetType() == RHI::TextureType::TextureRectangle) {
-            const Shader *shader = ShaderManager::postPassThruShader;
+            Shader *shader = ShaderManager::postPassThruShader;
             
             shader->Bind();
             shader->SetTexture("tex0", texture);
@@ -850,7 +852,8 @@ void RB_DrawDebugTextures() {
 
 // FIXME: Consider this view is sub camera
 static void RB_DrawCamera3D() {
-    BE_PROFILE_CPU_SCOPE("RB_DrawCamera3D", Color3::red);
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_DrawCamera3D");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_DrawCamera3D");
 
     if (backEnd.ctx->flags & RenderContext::Flag::UseSelectionBuffer) {
         backEnd.ctx->screenSelectionRT->Begin();
@@ -867,7 +870,7 @@ static void RB_DrawCamera3D() {
         rhi.SetViewport(renderRect);
         rhi.SetDepthRange(0, 1);
 
-        rhi.SetScissor(Rect::empty);
+        rhi.SetScissor(Rect::zero);
 
         rhi.SetStateBits(RHI::DepthWrite | RHI::ColorWrite | RHI::AlphaWrite);
         rhi.Clear(RHI::ClearBit::Color | RHI::ClearBit::Depth, Color4::white, 1.0f, 0);
@@ -879,10 +882,10 @@ static void RB_DrawCamera3D() {
     }
 
     Rect upscaledRenderRect;
-    upscaledRenderRect.x = Math::Rint(backEnd.renderRect.x * backEnd.upscaleFactor.x);
-    upscaledRenderRect.y = Math::Rint(backEnd.renderRect.y * backEnd.upscaleFactor.y);
-    upscaledRenderRect.w = Math::Rint(backEnd.renderRect.w * backEnd.upscaleFactor.x);
-    upscaledRenderRect.h = Math::Rint(backEnd.renderRect.h * backEnd.upscaleFactor.y);
+    upscaledRenderRect.x = Math::Round(backEnd.renderRect.x * backEnd.upscaleFactor.x);
+    upscaledRenderRect.y = Math::Round(backEnd.renderRect.y * backEnd.upscaleFactor.y);
+    upscaledRenderRect.w = Math::Round(backEnd.renderRect.w * backEnd.upscaleFactor.x);
+    upscaledRenderRect.h = Math::Round(backEnd.renderRect.h * backEnd.upscaleFactor.y);
 
     if (!(backEnd.camera->def->GetState().flags & RenderCamera::Flag::SkipPostProcess) && r_usePostProcessing.GetBool()) {
         backEnd.ctx->screenRT->Begin();
@@ -890,7 +893,7 @@ static void RB_DrawCamera3D() {
         rhi.SetViewport(backEnd.renderRect);
         rhi.SetDepthRange(0, 1);
 
-        rhi.SetScissor(Rect::empty);
+        rhi.SetScissor(Rect::zero);
 
         RB_ClearView();
 
@@ -907,7 +910,7 @@ static void RB_DrawCamera3D() {
         rhi.SetViewport(upscaledRenderRect);
         rhi.SetDepthRange(0, 1);
 
-        rhi.SetScissor(Rect::empty);
+        rhi.SetScissor(Rect::zero);
 
         RB_ClearView();
 
@@ -916,7 +919,8 @@ static void RB_DrawCamera3D() {
 }
 
 static void RB_DrawCamera2D() {
-    BE_PROFILE_CPU_SCOPE("RB_DrawCamera2D", Color3::blue);
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_DrawCamera2D");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_DrawCamera2D");
 
     if (!backEnd.numDrawSurfs) {
         return;
@@ -928,14 +932,14 @@ static void RB_DrawCamera2D() {
     
     RB_GuiPass(backEnd.numDrawSurfs, backEnd.drawSurfs);
 
-    rhi.SetScissor(Rect::empty);
+    rhi.SetScissor(Rect::zero);
 }
 
 static const void *RB_ExecuteDrawCamera(const void *data) {
     DrawCameraRenderCommand *cmd = (DrawCameraRenderCommand *)data;
 
     backEnd.camera              = &cmd->camera;
-    backEnd.time                = MS2SEC(cmd->camera.def->GetState().time);
+    backEnd.time                = MILLI2SEC(cmd->camera.def->GetState().time);
     backEnd.visObjects          = &cmd->camera.visObjects;
     backEnd.visLights           = &cmd->camera.visLights;
     backEnd.primaryLight        = cmd->camera.primaryLight;
@@ -973,7 +977,7 @@ static const void *RB_ExecuteScreenshot(const void *data) {
     }
     
     Image screenImage;
-    screenImage.Create2D(captureRect.w, captureRect.h, 1, Image::Format::BGR_8_8_8, nullptr, 0);
+    screenImage.Create2D(captureRect.w, captureRect.h, 1, Image::Format::BGR_8_8_8, Image::GammaSpace::sRGB, nullptr, 0);
     rhi.ReadPixels(captureRect.x, captureRect.y, captureRect.w, captureRect.h, Image::Format::BGR_8_8_8, screenImage.GetPixels());
     screenImage.FlipY();
 
@@ -981,7 +985,7 @@ static const void *RB_ExecuteScreenshot(const void *data) {
     if (r_gamma.GetFloat() != 1.0) {
         uint16_t ramp[768];
         rhi.GetGammaRamp(ramp);
-        screenImage.ApplyGammaRampRGB888(ramp);
+        screenImage.ApplyGammaRampTableRGB888(ramp);
     }
 
     Str filename = cmd->filename;
@@ -1023,6 +1027,9 @@ static const void *RB_ExecuteScreenshot(const void *data) {
 }
 
 static const void *RB_ExecuteSwapBuffers(const void *data) {
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_ExecuteSwapBuffers");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_ExecuteSwapBuffers");
+
     SwapBuffersRenderCommand *cmd = (SwapBuffersRenderCommand *)data;
 
     Rect deviceRect(0, 0, backEnd.ctx->GetDeviceWidth(), backEnd.ctx->GetDeviceHeight());
@@ -1053,7 +1060,11 @@ static const void *RB_ExecuteSwapBuffers(const void *data) {
         RB_DrawDebugHOMap();
     }
 
-    rhi.SetScissor(Rect::empty);
+    rhi.SetScissor(Rect::zero);
+
+#ifdef ENABLE_IMGUI
+    rhi.ImGuiRender();
+#endif
 
     rhi.SwapBuffers();
     
@@ -1061,11 +1072,11 @@ static const void *RB_ExecuteSwapBuffers(const void *data) {
 }
 
 void RB_Execute(const void *data) {
-    BE_PROFILE_CPU_SCOPE("RB_Execute", Color3::green);
+    BE_PROFILE_CPU_SCOPE_STATIC("RB_Execute");
+    BE_PROFILE_GPU_SCOPE_STATIC("RB_Execute");
 
-    int t1, t2;
-
-    t1 = PlatformTime::Milliseconds();
+    uint32_t t1 = PlatformTime::Milliseconds();
+    uint32_t t2;
 
     backEnd.batch.SetCurrentLight(nullptr);
     backEnd.batch.Begin(Batch::Flush::Final, nullptr, nullptr, nullptr);
@@ -1087,7 +1098,7 @@ void RB_Execute(const void *data) {
             continue;
         case RenderCommand::End:
             t2 = PlatformTime::Milliseconds();
-            backEnd.ctx->renderCounter.backEndMsec = t2 - t1;
+            backEnd.ctx->GetRenderCounter().backEndMsec = t2 - t1;
             return;
         }
     }

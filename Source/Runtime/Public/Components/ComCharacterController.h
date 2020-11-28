@@ -49,9 +49,9 @@ public:
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
-#if 1
+#if WITH_EDITOR
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
+    virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
     bool                    IsOnGround() const { return onGround; }
@@ -89,7 +89,7 @@ protected:
     PhysSensor *            correctionSensor;
 
     Vec3                    origin;
-    CastResultEx            groundTrace;
+    CastResult              groundTrace;
     bool                    isValidGroundTrace;
     bool                    onGround;
 

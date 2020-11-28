@@ -50,7 +50,7 @@ EventDef::EventDef(const char *name, bool guiEvent, const char *formatSpec, char
         return;
     }
 
-    // Calculate the offsets for each argument
+    // Calculate the offsets for each argument.
     memset(this->argOffset, 0, sizeof(this->argOffset));
     this->argSize = 0;
 
@@ -100,19 +100,19 @@ EventDef::EventDef(const char *name, bool guiEvent, const char *formatSpec, char
 
     formatSpecBits = (numArgs << EventDef::MaxArgs) | argBits;
 
-    // Check if same name event def already exist
+    // Check if same name event def already exist.
     for (int i = 0; i < this->numEventDefs; i++) {
         EventDef *evdef = this->eventDefs[i];
 
         if (!Str::Cmp(name, evdef->name)) {
-            // Same name but different formatSpec
+            // Same name but different formatSpec.
             if (Str::Cmp(formatSpec, evdef->formatSpec)) {
                 eventErrorOccured = true;
                 ::sprintf(eventErrorMsg, "Event '%s' defined twice with same name but differing format strings ('%s'!='%s').", name, formatSpec, evdef->formatSpec);
                 return;
             }
 
-            // Same name but different returnType
+            // Same name but different returnType.
             if (evdef->returnType != returnType) {
                 eventErrorOccured = true;
                 ::sprintf(eventErrorMsg, "Event '%s' defined twice with same name but differing return types ('%c'!='%c').", name, returnType, evdef->returnType);
@@ -236,7 +236,7 @@ Event *EventSystem::AllocEvent(const EventDef *evdef, int numArgs, va_list args)
         newEvent->data = nullptr;
     }
 
-    // Copy arguments to event data
+    // Copy arguments to event data.
     const char *format = evdef->GetArgFormat();
     for (int argIndex = 0; argIndex < numArgs; argIndex++) {
         const VariantArg *arg = va_arg(args, VariantArg *);
@@ -330,7 +330,7 @@ void EventSystem::ScheduleEvent(Event *event, Object *sender, int time) {
 
     LinkList<Event> &queue = event->eventDef->IsGuiEvent() ? guiEventQueue : eventQueue;
 
-    // event queue 는 시간 순으로 정렬되어 있다.
+    // Event queue is ordered in time.
     Event *ev = queue.Next();
     while (ev && (event->time >= ev->time)) {
         ev = ev->node.Next();
@@ -364,7 +364,7 @@ void EventSystem::CancelEvents(const Object *sender, const EventDef *evdef) {
 void EventSystem::ServiceEvent(Event *event) {
     intptr_t argPtrs[EventDef::MaxArgs];
 
-    // copy the data into the local argPtrs array and set up pointers
+    // Copy the data into the local argPtrs array and set up pointers.
     const EventDef *evdef = event->eventDef;
     const char *formatSpec = evdef->GetArgFormat();
     int numArgs = evdef->GetNumArgs();
@@ -409,14 +409,14 @@ void EventSystem::ServiceEvent(Event *event) {
         }
     }
 
-    // the event is removed from its list so that if then object
-    // is deleted, the event won't be freed twice
+    // The event is removed from its list so that if then object
+    // is deleted, the event won't be freed twice.
     event->node.Remove();
 
     assert(event->sender);
     event->sender->ProcessEventArgPtr(evdef, argPtrs);
 
-    // return the event to the free list
+    // Return the event to the free list.
     FreeEvent(event);
 }
 
@@ -433,8 +433,8 @@ void EventSystem::ServiceEvents() {
 
         ServiceEvent(ev);
 
-        // Don't allow ourselves to stay in here too long.  An abnormally high number
-        // of events being processed is evidence of an infinite loop of events.
+        // Don't allow ourselves to stay in here too long.
+        // An abnormally high number of events being processed is evidence of an infinite loop of events.
         processedCount++;
         if (processedCount > MaxEventsPerFrame) {
             BE_ERRLOG("Event overflow.  Possible infinite loop in script.\n");
@@ -455,8 +455,8 @@ void EventSystem::ServiceGuiEvents() {
 
         ServiceEvent(ev);
 
-        // Don't allow ourselves to stay in here too long.  An abnormally high number
-        // of events being processed is evidence of an infinite loop of events.
+        // Don't allow ourselves to stay in here too long.
+        // An abnormally high number of events being processed is evidence of an infinite loop of events.
         processedCount++;
         if (processedCount > MaxEventsPerFrame) {
             BE_ERRLOG("Event overflow.  Possible infinite loop in script.\n");

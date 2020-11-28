@@ -67,7 +67,9 @@ public:
     Texture();
     ~Texture();
 
+    const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
+
     int                     GetType() const { return type; }
     int                     GetWidth() const { return width; }
     int                     GetHeight() const { return height; }
@@ -128,6 +130,8 @@ public:
 
     void                    Bind() const;
 
+    void                    GenerateMipmap() const;
+
     static void             GetCubeImageFromCubeTexture(const Texture *cubeTexture, int numMipLevels, Image &cubeImage);
 
 private:
@@ -138,7 +142,7 @@ private:
     int                     frameCount;
     int                     flags = 0;                  // texture load flags
 
-    RHI::Handle             textureHandle = RHI::Handle::NullTexture; // texture handle
+    RHI::Handle             textureHandle = RHI::NullTexture; // texture handle
     RHI::TextureType::Enum  type = RHI::TextureType::Texture2D;
     RHI::AddressMode::Enum  addressMode = RHI::AddressMode::Repeat;
 
@@ -190,7 +194,8 @@ public:
 
     Texture *               AllocTexture(const char *name);
     Texture *               FindTexture(const char *name) const;
-    Texture *               GetTexture(const char *name, int creationFlags = 0);
+    Texture *               GetTexture(const char *name);
+    Texture *               GetTextureWithoutTextureInfo(const char *name, int creationFlags);
 
     Texture *               TextureFromGenerator(const char *name, const TextureGeneratorBase &generator);
 
@@ -238,6 +243,7 @@ private:
 
     static void             Cmd_ListTextures(const CmdArgs &args);
     static void             Cmd_ReloadTexture(const CmdArgs &args);
+    static void             Cmd_DumpTexture(const CmdArgs &args);
     static void             Cmd_ConvertNormalAR2RGB(const CmdArgs &args);
 
     friend void             RB_DrawDebugTextures();

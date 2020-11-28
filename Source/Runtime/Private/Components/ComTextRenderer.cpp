@@ -17,7 +17,7 @@
 #include "Components/ComTransform.h"
 #include "Components/ComTextRenderer.h"
 #include "Game/GameWorld.h"
-#include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
@@ -29,19 +29,27 @@ END_EVENTS
 void ComTextRenderer::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("text", "Text", Str, GetText, SetText, "Hello World", 
         "The text that will be rendered.", PropertyInfo::Flag::Editor | PropertyInfo::Flag::MultiLines);
-    REGISTER_ACCESSOR_PROPERTY("textAnchor", "Anchor", RenderObject::TextAnchor::Enum, GetAnchor, SetAnchor, 0, 
-        "Which point of the text shares the position of the Transform.", PropertyInfo::Flag::Editor).SetEnumString("Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right");
-    REGISTER_ACCESSOR_PROPERTY("textAlignment", "Alignment", RenderObject::TextAlignment::Enum, GetAlignment, SetAlignment, 0, 
-        "How lines of text are aligned (Left, Right, Center).", PropertyInfo::Flag::Editor).SetEnumString("Left;Center;Right");
-    REGISTER_ACCESSOR_PROPERTY("lineSpacing", "Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f, 
-        "How much space will be in-between lines of text.", PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("fontSize", "Font Size", int, GetFontSize, SetFontSize, 14, 
+    REGISTER_MIXED_ACCESSOR_PROPERTY("font", "Font", Guid, GetFontGuid, SetFontGuid, GuidMapper::defaultFontGuid,
+        "The TrueType Font to use when rendering the text.", PropertyInfo::Flag::Editor).SetMetaObject(&FontResource::metaObject);
+    REGISTER_ACCESSOR_PROPERTY("fontSize", "Font Size", int, GetFontSize, SetFontSize, 14,
         "The size of the font.", PropertyInfo::Flag::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("font", "Font", Guid, GetFontGuid, SetFontGuid, GuidMapper::defaultFontGuid, 
-        "The TrueType Font to use when rendering the text.", PropertyInfo::Flag::Editor).SetMetaObject(&FontAsset::metaObject);
+    REGISTER_ACCESSOR_PROPERTY("drawMode", "Draw Mode", RenderObject::TextDrawMode::Enum, GetDrawMode, SetDrawMode, RenderObject::TextDrawMode::Normal,
+        "The font drawing mode.", PropertyInfo::Flag::Editor).SetEnumString("Normal;Drop Shadows;Add Outlines");
+    REGISTER_MIXED_ACCESSOR_PROPERTY("textSecondaryColor", "Secondary Color", Color3, GetSecondaryColor, SetSecondaryColor, Color3::black,
+        "The color for drawing shadows or outlines.", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("textSecondaryAlpha", "Secondary Alpha", float, GetSecondaryAlpha, SetSecondaryAlpha, 1.f,
+        "The alpha for drawing shadows or outlines.", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("lineSpacing", "Line Spacing", float, GetLineSpacing, SetLineSpacing, 1.f,
+        "How much space will be in-between lines of text.", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("textAnchor", "Anchor", RenderObject::TextAnchor::Enum, GetAnchor, SetAnchor, RenderObject::TextAnchor::UpperLeft,
+        "Which point of the text shares the position of the Transform.", PropertyInfo::Flag::Editor).SetEnumString("Upper Left;Upper Center;Upper Right;Middle Left;Middle Center;Middle Right;Lower Left;Lower Center;Lower Right");
+    REGISTER_ACCESSOR_PROPERTY("textAlignment", "Alignment", RenderObject::TextHorzAlignment::Enum, GetAlignment, SetAlignment, RenderObject::TextHorzAlignment::Center,
+        "How lines of text are aligned (Left, Right, Center).", PropertyInfo::Flag::Editor).SetEnumString("Left;Center;Right");
 }
 
 ComTextRenderer::ComTextRenderer() {
+    fontGuid = Guid();
+    fontSize = 0;
 }
 
 ComTextRenderer::~ComTextRenderer() {
@@ -64,10 +72,12 @@ void ComTextRenderer::Init() {
 
     renderObjectDef.textScale = CentiToUnit(1.0f);
 
-    UpdateAABB();
-
     // Mark as initialized
     SetInitialized(true);
+
+    ChangeFont(fontGuid, fontSize);
+
+    UpdateAABB();
 
     UpdateVisuals();
 }
@@ -108,17 +118,51 @@ void ComTextRenderer::SetAnchor(RenderObject::TextAnchor::Enum anchor) {
     }
 }
 
-RenderObject::TextAlignment::Enum ComTextRenderer::GetAlignment() const {
-    return renderObjectDef.textAlignment;
+RenderObject::TextHorzAlignment::Enum ComTextRenderer::GetAlignment() const {
+    return renderObjectDef.textHorzAlignment;
 }
 
-void ComTextRenderer::SetAlignment(RenderObject::TextAlignment::Enum alignment) {
-    renderObjectDef.textAlignment = alignment;
+void ComTextRenderer::SetAlignment(RenderObject::TextHorzAlignment::Enum alignment) {
+    renderObjectDef.textHorzAlignment = alignment;
     
     if (IsInitialized()) {
         UpdateAABB();
         UpdateVisuals();
     }
+}
+
+RenderObject::TextDrawMode::Enum ComTextRenderer::GetDrawMode() const {
+    return renderObjectDef.textDrawMode;
+}
+
+void ComTextRenderer::SetDrawMode(RenderObject::TextDrawMode::Enum drawMode) {
+    renderObjectDef.textDrawMode = drawMode;
+
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
+}
+
+Color3 ComTextRenderer::GetSecondaryColor() const {
+    return renderObjectDef.textFxColor.ToColor3();
+}
+
+void ComTextRenderer::SetSecondaryColor(const Color3 &color) {
+    renderObjectDef.textFxColor.r = color.r;
+    renderObjectDef.textFxColor.g = color.g;
+    renderObjectDef.textFxColor.b = color.b;
+
+    UpdateVisuals();
+}
+
+float ComTextRenderer::GetSecondaryAlpha() const {
+    return renderObjectDef.textFxColor.a;
+}
+
+void ComTextRenderer::SetSecondaryAlpha(float alpha) {
+    renderObjectDef.textFxColor.a = alpha;
+
+    UpdateVisuals();
 }
 
 float ComTextRenderer::GetLineSpacing() const {
@@ -135,17 +179,15 @@ void ComTextRenderer::SetLineSpacing(float lineSpacing) {
 }
 
 Guid ComTextRenderer::GetFontGuid() const {
-    if (renderObjectDef.font) {
-        const Str fontPath = renderObjectDef.font->GetHashName();
-        return resourceGuidMapper.Get(fontPath);
-    }
-    return Guid();
+    return fontGuid;
 }
 
 void ComTextRenderer::SetFontGuid(const Guid &fontGuid) {
-    ChangeFont(fontGuid, fontSize);
-    
+    this->fontGuid = fontGuid;
+
     if (IsInitialized()) {
+        ChangeFont(fontGuid, fontSize);
+
         UpdateAABB();
         UpdateVisuals();
     }

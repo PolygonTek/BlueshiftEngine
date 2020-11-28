@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Core/Heap.h"
 #include "Math/Math.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Image/Image.h"
 #include "ImageInternal.h"
 
@@ -58,7 +58,7 @@ bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
         BE_WARNLOG("Image::LoadBMPFromMemory: bad BMP format %s\n", name);
         return false;
     }
-    
+
     BmpInfoHeader *bmih = (BmpInfoHeader *)ptr;
     ptr += sizeof(BmpInfoHeader);
 
@@ -70,14 +70,14 @@ bool Image::LoadBMPFromMemory(const char *name, const byte *data, size_t size) {
     int w = bmih->width;
     int h = bmih->height;
     bool flipped = false;
-    
+
     if (h < 0) {
         flipped = true;
         h = -h;
     }
 
-    Create2D(w, h, 1, Image::Format::BGR_8_8_8, nullptr, 0);
-        
+    Create2D(w, h, 1, Image::Format::BGR_8_8_8, Image::GammaSpace::sRGB, nullptr, 0);
+
     int padbytes = (((bmih->bpp * w + 31) & ~31) - (bmih->bpp * w)) >> 3;
     const byte *palette;
 

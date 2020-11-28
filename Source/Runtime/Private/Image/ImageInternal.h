@@ -16,11 +16,8 @@
 
 BE_NAMESPACE_BEGIN
 
-//--------------------------------------------------------------------------------------------------
-// various pack/unpack function type for each color format
-//--------------------------------------------------------------------------------------------------
-using ImageUnpackFunc = void(*)(const byte *src, byte *dst, int numPixels, bool isGamma);
-using ImagePackFunc = void(*)(const byte *src, byte *dst, int numPixels, bool isGamma);
+using ImageUnpackFunc = void(*)(const byte *src, byte *dst, int numPixels);
+using ImagePackFunc = void(*)(const byte *src, byte *dst, int numPixels);
 
 struct ImageFormatInfo {
     const char *name;
@@ -31,13 +28,11 @@ struct ImageFormatInfo {
     int blueBits;
     int alphaBits;
     int type;
-    ImageUnpackFunc unpackRGBA8888;
-    ImagePackFunc packRGBA8888;
-    ImageUnpackFunc unpackRGBA32F;
-    ImagePackFunc packRGBA32F;
+    ImageUnpackFunc unpackRGBA8888; // Unpack to RGBA_8_8_8_8
+    ImagePackFunc packRGBA8888;     // Pack from RGBA_8_8_8_8`
+    ImageUnpackFunc unpackRGBA32F;  // Unpack to RGBA_32F_32F_32F_32F
+    ImagePackFunc packRGBA32F;      // Pack from RGBA_32F_32F_32F_32F
 };
-
-extern float gammaToLinearTable[256];
 
 void DecompressDXT1(const Image &srcImage, Image &dstImage);
 void DecompressDXT3(const Image &srcImage, Image &dstImage);
@@ -50,20 +45,22 @@ void DecompressETC1(const Image &srcImage, Image &dstImage);
 void DecompressETC2_RGB8(const Image &srcImage, Image &dstImage);
 void DecompressETC2_RGBA8(const Image &srcImage, Image &dstImage);
 void DecompressETC2_RGB8A1(const Image &srcImage, Image &dstImage);
-void DecompressETC2_RG11(const Image &srcImage, Image &dstImage);
-void DecompressETC2_Signed_RG11(const Image &srcImage, Image &dstImage);
+void DecompressEAC_R11(const Image &srcImage, Image &dstImage, bool signedFormat);
+void DecompressEAC_RG11(const Image &srcImage, Image &dstImage, bool signedFormat, bool normal);
 
-void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality);
-void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality);
-void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality);
-void CompressDXN2(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality);
+void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality);
+void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality);
+void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality);
+void CompressDXN2(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality);
 
-void CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality);
-void CompressETC2_RGB8(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality);
-void CompressETC2_RGBA1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality);
-void CompressETC2_RGBA8(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality);
-void CompressETC2_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality);
-void CompressETC2_Signed_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality);
+void CompressETC1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality);
+void CompressETC2_RGB8(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality);
+void CompressETC2_RGBA1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality);
+void CompressETC2_RGBA8(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality);
+void CompressEAC_R11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality);
+void CompressEAC_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality);
+void CompressEAC_Signed_R11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality);
+void CompressEAC_Signed_RG11(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality);
 
 bool CompressedFormatBlockDimensions(Image::Format::Enum imageFormat, int &blockWidth, int &blockHeight);
 bool CompressedFormatMinDimensions(Image::Format::Enum imageFormat, int &minWidth, int &minHeight);

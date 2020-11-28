@@ -31,9 +31,13 @@ public:
 
     struct Format {
         enum Enum {
-            MS_PCM      = 0x0001,
-            MS_ADPCM    = 0x0002,
-            IMA_ADPCM   = 0x0011
+            PCM         = 0x1,
+            ADPCM       = 0x2,
+            IEEE_FLOAT  = 0x3,
+            ALAW        = 0x6,
+            MULAW       = 0x7,
+            DVI_ADPCM   = 0x11,
+            EXTENSIBLE  = 0xFFFE
         };
     };
 

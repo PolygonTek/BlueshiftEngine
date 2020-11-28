@@ -50,7 +50,7 @@ static void SystemError(int errLevel, const char *text) {
 
     HWND hwnd = FindWindow(mainWindowClassName, nullptr);
     MessageBox(hwnd, wText, L"Error", MB_OK);
-    if (errLevel == BE1::FatalErr) {
+    if (errLevel == BE1::ErrorLevel::Fatal) {
         exit(0);
     }
 }
@@ -153,19 +153,19 @@ static void ToggleFullscreen(BE1::RHI::Handle ctx) {
 }
 
 static void DisplayMainContext(BE1::RHI::Handle context, void *dataPtr) {
-    static float t0 = BE1::PlatformTime::Seconds();
+    static uint32_t t0 = BE1::PlatformTime::Milliseconds();
 
-    float t = BE1::PlatformTime::Seconds() - t0;
+    uint32_t t = BE1::PlatformTime::Milliseconds() - t0;
 
-    ::app.Draw(context, mainRenderTarget, t);
+    ::app.Draw(context, mainRenderTarget, MILLI2SEC(t));
 }
 
 static void DisplaySubContext(BE1::RHI::Handle context, void *dataPtr) {
-    static float t0 = BE1::PlatformTime::Seconds();
+    static uint32_t t0 = BE1::PlatformTime::Milliseconds();
 
-    float t = BE1::PlatformTime::Seconds() - t0;
+    uint32_t t = BE1::PlatformTime::Milliseconds() - t0;
 
-    ::app.Draw(context, subRenderTarget, t);
+    ::app.Draw(context, subRenderTarget, MILLI2SEC(t));
 }
 
 static HWND CreateMainWindow(const TCHAR *title, int width, int height) {
@@ -228,6 +228,7 @@ BOOL InitInstance(int nCmdShow) {
     app.LoadResources();
 
     mainContext = BE1::rhi.CreateContext(hwndMain, USE_SHARED_CONTEXT);
+
     BE1::rhi.SetContextDisplayFunc(mainContext, DisplayMainContext, nullptr, false);
 
     // FBO cannot be shared, so we should create FBO for each context
@@ -237,6 +238,7 @@ BOOL InitInstance(int nCmdShow) {
     HWND hwndSub = CreateSubWindow(_T("sub window"), 512, 384);
 
     subContext = BE1::rhi.CreateContext(hwndSub, USE_SHARED_CONTEXT);
+
     BE1::rhi.SetContextDisplayFunc(subContext, DisplaySubContext, nullptr, false);
 
     subRenderTarget = app.CreateRenderTarget(subContext);
@@ -250,7 +252,7 @@ void ShutdownInstance() {
     
 #ifdef CREATE_SUB_WINDOW
     if (subContext) {
-        BE1::rhi.DeleteRenderTarget(subRenderTarget);
+        BE1::rhi.DestroyRenderTarget(subRenderTarget);
 
         HWND hwnd = (HWND)BE1::rhi.GetWindowHandleFromContext(subContext);
         BE1::rhi.DestroyContext(subContext);

@@ -17,6 +17,7 @@
 #include "Containers/HashTable.h"
 #include "Render/RenderObject.h"
 #include "Component.h"
+#include "Game/InputUtils.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -38,25 +39,29 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-    virtual bool            HasRenderEntity(int renderEntityHandle) const override;
+    virtual bool            HasRenderObject(int renderObjectHandle) const override;
 
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
-#if 1
+#if WITH_EDITOR
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
+    virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
-    virtual const AABB      GetAABB() override;
+    virtual const AABB      GetAABB() const override;
 
     float                   GetSize() const { return size; }
 
+    Size                    GetOrthoSize() const;
+
     float                   GetAspectRatio() const;
 
-    const Point             WorldToScreen(const Vec3 &position) const;
+                            /// Converts position in world space to screen space.
+    const Point             WorldToScreenPoint(const Vec3 &position) const;
 
-    const Ray               ScreenToRay(const Point &screenPoint);
+                            /// Makes world space ray from screen space point.
+    const Ray               ScreenPointToRay(const Point &screenPoint);
 
     int                     GetLayerMask() const;
     void                    SetLayerMask(int layerMask);
@@ -79,14 +84,6 @@ public:
     float                   GetClearAlpha() const;
     void                    SetClearAlpha(float clearAlpha);
 
-private:
-    int                     GetOrder() const { return order; }
-
-    bool                    ProcessMousePointerInput(const Point &screenPoint);
-    bool                    ProcessTouchPointerInput();
-
-    void                    RenderScene();
-
 protected:
     virtual void            OnActive() override;
     virtual void            OnInactive() override;
@@ -105,17 +102,22 @@ protected:
 
     RenderWorld *           renderWorld;
 
+    InputUtils::PointerState mousePointerState;
+    HashTable<int32_t, InputUtils::PointerState> touchPointerStateTable;
+
+#if WITH_EDITOR
     Mesh *                  spriteMesh;
     RenderObject::State     spriteDef;
     int                     spriteHandle;
+#endif
 
-    struct PointerState {
-        Guid                oldHitEntityGuid;
-        Guid                captureEntityGuid;
-    };
+private:
+    int                     GetOrder() const { return order; }
 
-    PointerState            mousePointerState;
-    HashTable<int32_t, PointerState> touchPointerStateTable;
+    bool                    ProcessMousePointerInput();
+    bool                    ProcessTouchPointerInput();
+
+    void                    Render();
 };
 
 BE_NAMESPACE_END

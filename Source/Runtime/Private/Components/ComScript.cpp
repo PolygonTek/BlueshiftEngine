@@ -13,11 +13,13 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 #include "Components/ComScript.h"
 #include "Components/ComTransform.h"
+#include "Components/ComRectTransform.h"
 #include "Components/ComRigidBody.h"
 #include "Game/GameWorld.h"
 
@@ -29,7 +31,7 @@ END_EVENTS
 
 void ComScript::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("script", "Script", Guid, GetScriptGuid, SetScriptGuid, Guid::zero, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&ScriptAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&ScriptResource::metaObject);
 }
 
 ComScript::ComScript() {
@@ -85,7 +87,7 @@ void ComScript::OnInactive() {
 void ComScript::Init() {
     Component::Init();
 
-    // Mark as initialized
+    // Mark as initialized.
     SetInitialized(true);
 }
 
@@ -99,6 +101,7 @@ void ComScript::SetOwnerValues() {
     owner["entity"] = GetEntity();
     owner["name"] = GetEntity()->GetName().c_str();
     owner["transform"] = GetEntity()->GetTransform();
+    owner["rect_transform"] = GetEntity()->GetRectTransform();
     owner["script"] = this;
 }
 
@@ -111,7 +114,7 @@ void ComScript::GetPropertyInfoList(Array<PropertyInfo> &propInfos) const {
 }
 
 void ComScript::Deserialize(const Json::Value &in) {
-    // Get the script GUID in JSON value
+    // Get the script GUID in JSON value.
     const Str scriptGuidString = in.get("script", Guid::zero.ToString()).asCString();
     const Guid scriptGuid = Guid::FromString(scriptGuidString);
 
@@ -127,8 +130,8 @@ void ComScript::Deserialize(const Json::Value &in) {
 }
 
 void ComScript::ChangeScript(const Guid &scriptGuid) {
-#if 1
-    // Disconnect with previously connected script asset
+#if WITH_EDITOR
+    // Disconnect with previously connected script asset.
     if (scriptAsset) {
         scriptAsset->Disconnect(&Asset::SIG_Reloaded, this);
         scriptAsset = nullptr;
@@ -155,33 +158,37 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
         return;
     }
 
-    // Sandbox name is same as component GUID in string
+    // Sandbox name is same as component GUID in string.
     sandboxName = GetGuid().ToString();
 
     const Str scriptPath = resourceGuidMapper.Get(scriptGuid);
-    char *data;
-    size_t size = fileSystem.LoadFile(scriptPath, true, (void **)&data);
-    if (!data) {
+    char *text;
+    size_t size = fileSystem.LoadFile(scriptPath, true, (void **)&text);
+    if (!text) {
         sandboxName = "";
         BE_WARNLOG("ComScript::ChangeScript: Failed to load script '%s'\n", scriptPath.c_str());
         return;
     }
 
-    // Load a script with sandboxed on current Lua state
-    if (!state->LoadBuffer(scriptPath.c_str(), data, size, sandboxName)) {
+    if (!ParsePropertyNames(scriptPath, text, propertyNames)) {
+        propertyNames.Clear();
+    }
+
+    // Load a script with sandboxed on current Lua state.
+    if (!state->LoadBuffer(scriptPath.c_str(), text, size, sandboxName)) {
         hasError = true;
     }
 
-    fileSystem.FreeFile(data);
+    fileSystem.FreeFile(text);
 
     if (!hasError) {
-        // Get the state of current loaded script
+        // Get the state of current loaded script.
         sandbox = (*state)[sandboxName];
 
-        // Run this script
+        // Run this script.
         state->Run();
 
-        // Check execute modes
+        // Check execute modes.
         if (sandbox["execute_in_edit_mode"].IsValid()) {
             executeInEditMode = sandbox["execute_in_edit_mode"];
         } else {
@@ -195,17 +202,17 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
         fieldInfos.Clear();
         fieldGuids.Clear();
 
-        // Get the script property informations with this sandboxed script
-        if (sandbox["properties"].IsTable() && sandbox["property_names"].IsTable()) {
+        // Get the script property informations with this sandboxed script.
+        if (sandbox["properties"].IsTable() && propertyNames.Count() > 0) {
             InitScriptFields();
         }
     }
 
-#if 1
-    // Need to script asset to be reloaded in editor
-    Object *scriptObject = ScriptAsset::FindInstance(scriptGuid);
+#if WITH_EDITOR
+    // Need to script asset to be reloaded in editor.
+    Object *scriptObject = Asset::FindInstance(scriptGuid);
     if (scriptObject) {
-        scriptAsset = scriptObject->Cast<ScriptAsset>();
+        scriptAsset = scriptObject->Cast<Asset>();
 
         if (scriptAsset) {
             scriptAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComScript::ScriptReloaded, SignalObject::ConnectionType::Queued);
@@ -214,10 +221,62 @@ void ComScript::ChangeScript(const Guid &scriptGuid) {
 #endif
 }
 
+bool ComScript::ParsePropertyNames(const Str &textName, const Str &text, StrArray &propertyNames) {
+    static const char *propertiesMarker = "--[properties]--";
+
+    propertyNames.Clear();
+
+    int index = text.Find(propertiesMarker);
+    if (index == -1) {
+        return false;
+    }
+
+    index += Str::Length(propertiesMarker);
+    Lexer lexer(&text[index], text.Length() - index, textName);
+
+    if (!lexer.ExpectTokenString("properties")) {
+        return false;
+    }
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::Assign)) {
+        return false;
+    }
+    if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
+        return false;
+    }
+
+    Str token;
+
+    while (lexer.ReadToken(&token, true)) {
+        if (token.IsEmpty()) {
+            return false;
+        }
+
+        if (lexer.GetPunctuationType() == Lexer::PuncType::BraceClose) {
+            break;
+        }
+
+        propertyNames.Append(token);
+
+        if (!lexer.ExpectPunctuation(Lexer::PuncType::Assign)) {
+            return false;
+        }
+
+        lexer.SkipBracedSection();
+
+        lexer.ReadToken(&token, true);
+        if (token == ",") {
+            continue;
+        }
+
+        lexer.UnreadToken(&token);
+    }
+
+    return true;
+}
+
 void ComScript::InitScriptFields() {
-    // Set zero values of object script properties
-    auto fieldGuidEnumerator = [this](LuaCpp::Selector &selector) {
-        const char *name = selector;
+    // Set zero values of object script properties.
+    auto fieldGuidEnumerator = [this](const char *name) {
         auto prop = sandbox["properties"][name];
         if (!prop.IsValid()) {
             return;
@@ -231,9 +290,8 @@ void ComScript::InitScriptFields() {
         }
     };
 
-    // Create all the property info
-    auto fieldInfoEnumerator = [this](LuaCpp::Selector &selector) {
-        const char *name = selector;
+    // Create all the property info.
+    auto fieldInfoEnumerator = [this](const char *name) {
         auto prop = sandbox["properties"][name];
         if (!prop.IsValid()) {
             return;
@@ -261,12 +319,12 @@ void ComScript::InitScriptFields() {
 
                 auto propInfo = PropertyInfo(name, label, VariantType<int>::GetType(), 
                     new PropertyLambdaAccessorImpl<Class, int>(
-                        [propValue, this]() {
+                        [propValue]() {
                             return (int)propValue;
                         },
                         [propValue, this](int value) {
                             propValue = value;
-#if 1
+#if WITH_EDITOR
                             if (executeInEditMode) {
                                 if (!deserializing) {
                                     OnValidate();
@@ -287,7 +345,7 @@ void ComScript::InitScriptFields() {
                         },
                         [propValue, this](int value) {
                             propValue = value;
-#if 1
+#if WITH_EDITOR
                             if (executeInEditMode) {
                                 if (!deserializing) {
                                     OnValidate();
@@ -309,7 +367,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](int value) {
                         propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -330,7 +388,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](bool value) {
                         propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -359,7 +417,7 @@ void ComScript::InitScriptFields() {
                         },
                         [propValue, this](float value) {
                             propValue = value;
-#if 1
+#if WITH_EDITOR
                             if (executeInEditMode) {
                                 if (!deserializing) {
                                     OnValidate();
@@ -380,7 +438,7 @@ void ComScript::InitScriptFields() {
                         },
                         [propValue, this](float value) {
                             propValue = value;
-#if 1
+#if WITH_EDITOR
                             if (executeInEditMode) {
                                 if (!deserializing) {
                                     OnValidate();
@@ -400,7 +458,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Vec2 &value) { 
                         (Vec2 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -419,7 +477,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Vec3 &value) {
                         (Vec3 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -438,7 +496,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Vec4 &value) {
                         (Vec4 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -457,7 +515,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Color3 &value) {
                         (Color3 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -476,7 +534,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Color4 &value) {
                         (Color4 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -495,7 +553,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Angles &value) {
                         (Angles &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -514,7 +572,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Quat &value) {
                         (Quat &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -533,7 +591,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Mat2 &value) {
                         (Mat2 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -552,7 +610,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Mat3 &value) {
                         (Mat3 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -571,7 +629,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Mat3x4 &value) {
                         (Mat3x4 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -590,7 +648,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Mat4 &value) {
                         (Mat4 &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -609,7 +667,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Point &value) {
                         (Point &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -628,7 +686,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Rect &value) {
                         (Rect &)propValue = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -647,7 +705,7 @@ void ComScript::InitScriptFields() {
                     },
                     [propValue, this](const Str &value) {
                         propValue = value.c_str();
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -659,19 +717,20 @@ void ComScript::InitScriptFields() {
 
             fieldInfos.Append(propInfo);
         } else if (!Str::Cmp(type, "object")) {
-            const char *classname = prop["classname"];
-            const MetaObject *metaObject = Object::FindMetaObject(classname);
-
             auto pairPtr = fieldGuids.Get(name);
+            int fieldIndex = fieldGuids.GetPairs().IndexOf(pairPtr);
+            assert(fieldIndex >= 0);
 
             auto propInfo = PropertyInfo(name, label, VariantType<Guid>::GetType(), 
                 new PropertyLambdaAccessorImpl<Class, Guid, MixedPropertyTrait>(
-                    [pairPtr]() {
+                    [fieldIndex, this]() {
+                        auto pairPtr = fieldGuids.GetByIndex(fieldIndex);
                         return pairPtr->second.As<Guid>();
                     },
-                    [pairPtr, this](const Guid &value) {
+                    [fieldIndex, this](const Guid &value) {
+                        auto pairPtr = fieldGuids.GetByIndex(fieldIndex);
                         pairPtr->second = value;
-#if 1
+#if WITH_EDITOR
                         if (executeInEditMode) {
                             if (!deserializing) {
                                 OnValidate();
@@ -680,15 +739,20 @@ void ComScript::InitScriptFields() {
 #endif
                     }
                 ), pairPtr->second.As<Guid>(), desc, PropertyInfo::Flag::Editor);
-            
+
+            const char *classname = prop["classname"];
+            const MetaObject *metaObject = Object::FindMetaObject(classname);
+
             propInfo.SetMetaObject(metaObject);
 
             fieldInfos.Append(propInfo);
         }
     };
 
-    sandbox["property_names"].Enumerate(fieldGuidEnumerator);
-    sandbox["property_names"].Enumerate(fieldInfoEnumerator);
+    for (int i = 0; i < propertyNames.Count(); i++) {
+        fieldGuidEnumerator(propertyNames[i]);
+        fieldInfoEnumerator(propertyNames[i]);
+    }
 }
 
 void ComScript::ClearFunctionMap() {
@@ -818,6 +882,9 @@ void ComScript::SetScriptProperties() {
         case Variant::Type::Point:
             (Point &)property["value"] = value.As<Point>();
             break;
+        case Variant::Type::Size:
+            (Size &)property["value"] = value.As<Size>();
+            break;
         case Variant::Type::Rect:
             (Rect &)property["value"] = value.As<Rect>();
             break;
@@ -830,10 +897,11 @@ void ComScript::SetScriptProperties() {
             if (object) {
                 property["value"] = object;
             } else {
-                if (propInfo->GetMetaObject()->IsTypeOf(Asset::metaObject)) {
+                if (propInfo->GetMetaObject()->IsTypeOf(Resource::metaObject)) {
                     if (!objectGuid.IsZero()) {
-                        object = propInfo->GetMetaObject()->CreateInstance(objectGuid); // FIXME: when to delete ?
-                        property["value"] = object;
+                        Asset *asset = (Asset *)Asset::CreateInstance(objectGuid); // FIXME: when to delete ?
+                        asset->CreateResource(*propInfo->GetMetaObject());
+                        property["value"] = asset;
                     }
                 }
             }
@@ -1005,8 +1073,8 @@ void ComScript::ScriptReloaded() {
 
     Deserialize(value);
 
-#if 1
-    // Update editor UI
+#if WITH_EDITOR
+    // Update editor UI.
     EmitSignal(&Serializable::SIG_PropertyInfoUpdated, 1);
 #endif
 }
@@ -1020,9 +1088,9 @@ void ComScript::SetScriptGuid(const Guid &guid) {
         ChangeScript(guid);
     }
 
-#if 1
+#if WITH_EDITOR
     if (IsInitialized()) {
-        // Update editor UI
+        // Update editor UI.
         EmitSignal(&Serializable::SIG_PropertyInfoUpdated, 1);
     }
 #endif

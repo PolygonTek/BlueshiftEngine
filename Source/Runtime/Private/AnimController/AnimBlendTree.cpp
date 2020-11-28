@@ -17,8 +17,8 @@
 #include "Animator/Animator.h"
 #include "Asset/GuidMapper.h"
 #include "Core/JointPose.h"
-#include "Simd/Simd.h"
-#include "File/File.h"
+#include "SIMD/SIMD.h"
+#include "IO/File.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -179,9 +179,9 @@ int AnimBlendTree::BlendTypeDimensions(BlendType::Enum blendType) {
     return 0;
 }
 
-// Sum of all the weights are equal to 1.0
+// Sum of all the weights are equal to 1.0.
 void AnimBlendTree::ComputeChildrenWeights(const Animator *animator, float *weights) const {
-    // TODO: Cache results if parameters are not changed
+    // TODO: Cache results if parameters are not changed.
     if (blendType == AnimBlendTree::BlendType::Blend1D ||
         blendType == AnimBlendTree::BlendType::Blend2DBarycentric ||
         blendType == AnimBlendTree::BlendType::Blend3DBarycentric) {
@@ -196,12 +196,12 @@ void AnimBlendTree::ComputeChildrenWeights(const Animator *animator, float *weig
 void AnimBlendTree::ComputeChildrenBarycentricWeights(const Animator *animator, int blendType, float *weights) const {
     const AnimLayer::AnimNode *node = animLayer->GetNode(nodeNum);
 
-    // Clears weights
+    // Clears weights.
     for (int i = 0; i < node->children.Count(); i++) {
         weights[i] = 0;
     }
 
-    // Gets a current parametric point
+    // Gets a current parametric point.
     Vec3 currentPoint = Vec3::zero;
     for (int i = 0; i < 3; i++) {
         if (parameterIndex[i] >= 0) {
@@ -209,7 +209,7 @@ void AnimBlendTree::ComputeChildrenBarycentricWeights(const Animator *animator, 
         }
     }
 
-    // Gets blending sample points
+    // Gets blending sample points.
     struct BlendNodePoint {
         int     childIndex;
         float   distanceSqr;
@@ -222,7 +222,7 @@ void AnimBlendTree::ComputeChildrenBarycentricWeights(const Animator *animator, 
         samplePoints.Append(blendNodePoint);
     }
 
-    // Sort by nearest distance with currentPoint
+    // Sort by nearest distance with currentPoint.
     samplePoints.Sort([](const BlendNodePoint &p1, const BlendNodePoint &p2) -> bool {
         return p1.distanceSqr - p2.distanceSqr < 0;
     });
@@ -270,12 +270,12 @@ void AnimBlendTree::ComputeChildrenBarycentricWeights(const Animator *animator, 
 void AnimBlendTree::ComputeChildren2DDirectionalWeights(const Animator *animator, float *weights) const {
     const AnimLayer::AnimNode *node = animLayer->GetNode(nodeNum);
 
-    // Clears weights
+    // Clears weights.
     for (int i = 0; i < node->children.Count(); i++) {
         weights[i] = 0;
     }
 
-    // Gets a current parametric point
+    // Gets a current parametric point.
     Vec2 currentPoint = Vec2::zero;
     for (int i = 0; i < 2; i++) {
         if (parameterIndex[i] >= 0) {
@@ -289,7 +289,7 @@ void AnimBlendTree::ComputeChildren2DDirectionalWeights(const Animator *animator
 
     int originIndex = -1;
 
-    // Gets blending sample points
+    // Gets blending sample points.
     struct BlendNodePoint {
         int     childIndex;
         float   dot;
@@ -309,7 +309,7 @@ void AnimBlendTree::ComputeChildren2DDirectionalWeights(const Animator *animator
         samplePoints.Append(blendNodePoint);
     }
 
-    // Sort by largest dot product with currentPoint
+    // Sort by largest dot product with currentPoint.
     samplePoints.Sort([](const BlendNodePoint &p1, const BlendNodePoint &p2) -> bool {
         return p1.dot - p2.dot > 0;
     });    
@@ -332,7 +332,7 @@ void AnimBlendTree::ComputeChildren2DDirectionalWeights(const Animator *animator
                 barycentricCoord.y >= 0.0f && barycentricCoord.y <= 1.0f &&
                 barycentricCoord.z >= 0.0f && barycentricCoord.z <= 1.0f;
 
-            // If current point is inside of a triangle, we'll use triangular interpolation
+            // If current point is inside of a triangle, we'll use triangular interpolation.
             if (!barycentricCoord.IsZero() && isConvexHull) {
                 weights[indexA] = barycentricCoord[0];
                 weights[indexB] = barycentricCoord[1];
@@ -359,18 +359,18 @@ void AnimBlendTree::ComputeChildren2DDirectionalWeights(const Animator *animator
 void AnimBlendTree::ComputeChildrenAngleWeights(const Animator *animator, float *weights) const {
     const AnimLayer::AnimNode *node = animLayer->GetNode(nodeNum);
 
-    // Clears weights
+    // Clears weights.
     for (int i = 0; i < node->children.Count(); i++) {
         weights[i] = 0;
     }
 
-    // Gets a current parametric angle
+    // Gets a current parametric angle.
     float currentAngle = 0;
     if (parameterIndex[0] >= 0) {
         currentAngle = animator->GetParameterValue(parameterIndex[0]);
     }
 
-    // Gets blending sample angles
+    // Gets blending sample angles.
     struct BlendNodePoint {
         int     childIndex;
         float   deltaAngle;
@@ -383,7 +383,7 @@ void AnimBlendTree::ComputeChildrenAngleWeights(const Animator *animator, float 
         samplePoints.Append(blendNodePoint);
     }
 
-    // Sort by nearest angle with currentAngle
+    // Sort by nearest angle with currentAngle.
     samplePoints.Sort([](const BlendNodePoint &p1, const BlendNodePoint &p2) -> bool {
         return p1.deltaAngle - p2.deltaAngle < 0;
     });
@@ -481,7 +481,7 @@ void AnimBlendTree::GetFrame(const Animator *animator, float normalizedTime, int
 
                 blendedWeight += weights[i];
                 
-                // only blend after the first animation is mixed in
+                // only blend after the first animation is mixed in.
                 if (ptr != outJointFrame) {
                     float fraction = weights[i] / blendedWeight;
 
@@ -606,7 +606,7 @@ void AnimBlendTree::GetAABB(const Animator *animator, float normalizedTime, AABB
         float weights[AnimLayer::MaxBlendTreeChildren] = { 0, };
         ComputeChildrenWeights(animator, weights);
 
-        // children 의 time 은 child->duration * (time / nodeDuration) 에 맞춰서 흐른다
+        // The children's time flows according to child-> duration * (time / nodeDuration)
 
         aabb.Clear();
 

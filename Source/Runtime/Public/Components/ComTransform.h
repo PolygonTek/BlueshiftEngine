@@ -18,8 +18,11 @@
 
 BE_NAMESPACE_BEGIN
 
+class ComRectTransform;
+
 class ComTransform : public Component {
     friend class Entity;
+    friend class ComRectTransform;
 
 public:
     OBJECT_PROTOTYPE(ComTransform);
@@ -50,7 +53,7 @@ public:
                             /// Returns rotation axis in local space.
     Mat3                    GetLocalAxis() const { return localRotation.ToMat3(); }
                             /// Returns Euler angles in local space.
-    Angles                  GetLocalAngles() const { return localRotation.ToAngles(); }
+    Angles                  GetLocalAngles() const;
                             /// Returns local space transform matrix.
     Mat3x4                  GetLocalMatrix() const { return Mat3x4(localScale, localRotation.ToMat3(), localOrigin); }
                             /// Returns local space transform matrix without scaling.
@@ -69,7 +72,7 @@ public:
                             /// Sets rotation axis in local space.
     void                    SetLocalAxis(const Mat3 &axis);
                             /// Sets Euler angles in local space.
-    void                    SetLocalAngles(const Angles &localAngles) { SetLocalRotation(localAngles.ToQuat()); }
+    void                    SetLocalAngles(const Angles &localAngles);
                             /// Sets position, rotation axis in local space.
     void                    SetLocalOriginAxis(const Vec3 &origin, const Mat3 &axis);
                             /// Sets position, rotation axis and scale in local space as an atomic operation.
@@ -103,7 +106,7 @@ public:
                             /// Sets rotation axis in world space.
     void                    SetAxis(const Mat3 &axis);
                             /// Sets position angles in world space.
-    void                    SetAngles(const Angles &angles) { SetRotation(angles.ToQuat()); }
+    void                    SetAngles(const Angles &angles);
                             /// Sets position, rotation in world space.
     void                    SetOriginAxis(const Vec3 &origin, const Mat3 &axis);
                             /// Sets position, rotation and scale in world space as an atomic operation.
@@ -126,20 +129,29 @@ public:
 
     void                    SetPhysicsUpdating(bool updating) { physicsUpdating = updating; }
 
+    static Angles           CalculateLocalEulerAnglesHint(const Quat &q, const Angles &eHint);
+
     static const SignalDef  SIG_TransformUpdated;
 
 protected:
                             /// Mark this component and children to need world transform recalculation.
     void                    InvalidateWorldMatrix();
-                            /// Recalculate world matrix
+                            /// Recalculate world matrix.
     void                    UpdateWorldMatrix() const;
+                            /// Marks this component and children to need cached rect recalculation.
+    virtual void            InvalidateCachedRect();
 
+    Quat                    localRotation;          ///< Rotation in local space.
     Vec3                    localOrigin;            ///< Position in local space.
     Vec3                    localScale;             ///< Scale in local space.
-    Quat                    localRotation;          ///< Rotation in local space.
+
+#if WITH_EDITOR
+    Angles                  localEulerAnglesHint;
+#endif
 
     mutable Mat3x4          worldMatrix;
     mutable bool            worldMatrixInvalidated;
+
     bool                    physicsUpdating;
 };
 

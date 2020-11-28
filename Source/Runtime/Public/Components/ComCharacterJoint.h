@@ -32,9 +32,9 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-#if 1
+#if WITH_EDITOR
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
+    virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
     const Vec3 &            GetLocalAnchor() const;

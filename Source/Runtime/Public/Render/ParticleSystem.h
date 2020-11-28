@@ -118,8 +118,8 @@ public:
 
         int                     count;
         float                   spawnBunching;          ///< 0.0 = all come out at first instant, 1.0 = evenly spaced over life time
-        float                   lifeTime;               ///< Total seconds of life for each particles
-        float                   deadTime;               ///< Time after lifeTime before re-emit
+        int                     lifeTime;               ///< Total milliseconds of life for each particles
+        int                     deadTime;               ///< Time after lifeTime before re-emit
         bool                    looping;
         bool                    prewarm;
         int                     maxCycles;
@@ -334,8 +334,8 @@ BE_INLINE ParticleSystem::~ParticleSystem() {
 }
 
 BE_INLINE void ParticleSystem::StandardModule::Reset() {
-    lifeTime = 2.0f;
-    deadTime = 0.0f;
+    lifeTime = 2000;
+    deadTime = 0;
     looping = true;
     prewarm = true;
     maxCycles = 1;

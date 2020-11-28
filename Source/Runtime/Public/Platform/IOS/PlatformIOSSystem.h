@@ -31,6 +31,9 @@ public:
 
     static int32_t          NumCPUCores();
 
+    static bool             IsDebuggerPresent();
+    static void             DebugBreak();
+
     static bool             HasActiveWiFiConnection();
 };
 

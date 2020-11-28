@@ -62,7 +62,7 @@ void LuaVM::RegisterScreen(LuaCpp::Module &module) {
         if (renderSystem.GetMainRenderContext()) {
             return renderSystem.GetMainRenderContext()->GetSafeAreaInsets();
         }
-        return Rect::empty;
+        return Rect::zero;
     });
     _Screen["upscale_factor_x"].SetFunc([]() { 
         if (renderSystem.GetMainRenderContext()) {

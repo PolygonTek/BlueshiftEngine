@@ -28,7 +28,7 @@ END_EVENTS
 void ComVehicleWheel::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("center", "Center", Vec3, GetLocalOrigin, SetLocalOrigin, Vec3::origin,
         "Wheel position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Vec3::zero,
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero,
         "Wheel angles in local space", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("radius", "Radius", float, GetRadius, SetRadius, MeterToUnit(0.5f),
         "Wheel radius", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
@@ -51,6 +51,7 @@ void ComVehicleWheel::RegisterProperties() {
 }
 
 ComVehicleWheel::ComVehicleWheel() {
+    localAxis = Mat3::identity;
     vehicle = nullptr;
     vehicleWheelIndex = -1;
 }
@@ -84,7 +85,7 @@ void ComVehicleWheel::Update() {
 
     vehicle->UpdateWheelTransform(vehicleWheelIndex);
 
-    const Mat3x4 wheelMatrix = vehicle->GetWheelTransform(vehicleWheelIndex);
+    ALIGN_AS32 const Mat3x4 wheelMatrix = vehicle->GetWheelTransform(vehicleWheelIndex);
 
     ComTransform *transform = GetEntity()->GetTransform();
 
@@ -196,13 +197,13 @@ float ComVehicleWheel::GetSuspensionRelativeVelocity() const {
     return 1.0f;
 }
 
-#if 1
-void ComVehicleWheel::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+#if WITH_EDITOR
+void ComVehicleWheel::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     const ComTransform *transform = GetEntity()->GetTransform();
 
-    if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
+    if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
         Vec3 worldOrigin = transform->GetMatrix() * localOrigin;
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 
@@ -210,18 +211,18 @@ void ComVehicleWheel::DrawGizmos(const RenderCamera::State &viewState, bool sele
         renderWorld->SetDebugColor(Color4::green, Color4::zero);
         renderWorld->DebugCircle(worldOrigin, worldAxis[1], radius, 1, true, true);
 
-        if (selected) {
+        if (selectedByParent) {
             // Draw forward direction
             renderWorld->SetDebugColor(Color4::red, Color4::zero);
-            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * radius, 1);
+            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * radius);
 
             // Draw axle axis
             renderWorld->SetDebugColor(Color4::green, Color4::zero);
-            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[1] * radius, 1);
+            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[1] * radius);
 
             // Draw suspension direction
             renderWorld->SetDebugColor(Color4::blue, Color4::zero);
-            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[2] * radius, 1);
+            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[2] * radius);
         }
     }
 }

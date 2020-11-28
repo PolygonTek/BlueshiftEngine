@@ -16,8 +16,8 @@
 #include "Core/JointPose.h"
 #include "Render/Render.h"
 #include "BModel.h"
-#include "File/FileSystem.h"
-#include "Simd/Simd.h"
+#include "IO/FileSystem.h"
+#include "SIMD/SIMD.h"
 
 BE_NAMESPACE_BEGIN
 

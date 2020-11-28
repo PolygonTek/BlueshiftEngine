@@ -45,27 +45,56 @@ public:
                         /// Makes the given node a nextSibling after the passed in node.
     void                MakeSiblingAfter(Hierarchy &node);
 
-                        /// Removes the node from parent
+                        /// Removes the node from parent.
     void                RemoveFromParent();
 
                         /// Removes the node from the hierarchy and adds it's children to the parent.
     void                RemoveFromHierarchy();
 
-                        /// Root of this node
+                        /// Returns number of children of this node.
+    int                 GetChildCount() const;
+
+                        /// Returns root of this node.
     T *                 GetRoot() const;
-                        /// Parent of this node
+
+                        /// Returns parent of this node.
     T *                 GetParent() const;
-                        /// First child of this node
-    T *                 GetChild() const;
-                        /// Next node with the same parent
+   
+                        /// Returns first child of this node.
+    T *                 GetFirstChild() const;
+
+                        /// Returns last child of this node.
+    T *                 GetLastChild() const;
+
+                        /// Returns child of this node with the given sibling index.
+    T *                 GetChild(int index) const;
+
+                        /// Returns next node with the same parent.
     T *                 GetNextSibling() const;
-                        /// Previous node with the same parent. Returns nullptr if no parent, or if it is the first child
+
+                        /// Returns previous node with the same parent. Returns nullptr if no parent, or if it is the first child.
     T *                 GetPrevSibling() const;
 
-                        /// Get next node in depth-first order
+                        /// Returns the sibling index.
+    int                 GetSiblingIndex() const;
+
+                        /// Sets the sibling index.
+    void                SetSiblingIndex(int index);
+
+                        /// Moves this node to the start of the sibling list.
+    void                SetAsFirstSibling();
+
+                        /// Moves this node to the end of the sibling list.
+    void                SetAsLastSibling();
+
+                        /// Returns next node in depth-first order.
     T *                 GetNext() const;
-                        /// Get next leaf in depth-first order
+
+                        /// Returns next leaf in depth-first order.
     T *                 GetNextLeaf() const;
+
+                        /// Returns the depth-first order index.
+    int                 GetIndex() const;
 
 private:
     Hierarchy *         parent;
@@ -73,8 +102,10 @@ private:
     Hierarchy *         child;
     T *                 owner;
 
-                        /// Previous node with the same parent. Returns nullptr if no parent, or if it is the first child
-    Hierarchy<T> *      GetPrevSiblingNode() const;
+                        /// Returns next node in depth-first order.
+    Hierarchy *         GetNextNode() const;
+                        /// Previous node with the same parent. Returns nullptr if no parent, or if it is the first child.
+    Hierarchy *         GetPrevSiblingNode() const;
 };
 
 template <typename T>
@@ -104,8 +135,20 @@ template <typename T>
 void Hierarchy<T>::SetParent(Hierarchy &node) {
     RemoveFromParent();
     parent = &node;
-    nextSibling = node.child;
-    node.child = this;
+    nextSibling = nullptr;
+
+    Hierarchy<T> *currNode = node.child;
+    Hierarchy<T> *prevNode = nullptr;
+    while (currNode) {
+        prevNode = currNode;
+        currNode = currNode->nextSibling;
+    }
+
+    if (prevNode) {
+        prevNode->nextSibling = this;
+    } else {
+        node.child = this;
+    }
 }
 
 template <typename T>
@@ -151,8 +194,19 @@ void Hierarchy<T>::RemoveFromHierarchy() {
 }
 
 template <typename T>
+int Hierarchy<T>::GetChildCount() const {
+    int count = 0;
+    Hierarchy<T> *node = child;
+    while (node) {
+        count++;
+        node = node->nextSibling;
+    }
+    return count;
+}
+
+template <typename T>
 T *Hierarchy<T>::GetRoot() const {
-    const Hierarchy *p = this;
+    const Hierarchy<T> *p = this;
     while (p->parent) {
         p = p->parent;
     }
@@ -168,9 +222,32 @@ T *Hierarchy<T>::GetParent() const {
 }
 
 template <typename T>
-T *Hierarchy<T>::GetChild() const {
+T *Hierarchy<T>::GetFirstChild() const {
     if (child) {
         return child->owner;
+    }
+    return nullptr;
+}
+
+template <typename T>
+T *Hierarchy<T>::GetLastChild() const {
+    int childCount = GetChildCount();
+    if (childCount == 0) {
+        return nullptr;
+    }
+    return GetChild(childCount - 1); 
+}
+
+template <typename T>
+T *Hierarchy<T>::GetChild(int index) const {
+    int currentIndex = 0;
+    Hierarchy<T> *node = child;
+    while (node) {
+        if (currentIndex == index) {
+            return node->owner;
+        }
+        node = node->nextSibling;
+        currentIndex++;
     }
     return nullptr;
 }
@@ -189,7 +266,6 @@ T *Hierarchy<T>::GetPrevSibling() const {
     if (prior) {
         return prior->owner;
     }
-
     return nullptr;
 }
 
@@ -216,23 +292,106 @@ Hierarchy<T> *Hierarchy<T>::GetPrevSiblingNode() const {
 }
 
 template <typename T>
-T *Hierarchy<T>::GetNext() const {
-    const Hierarchy<T> *node;
-
-    if (child) {
-        return child->owner;
-    } else {
-        node = this;
-        while (node && node->nextSibling == nullptr) {
-            node = node->parent;
-        }
-
-        if (node) {
-            return node->nextSibling->owner;
-        } else {
-            return nullptr;
-        }
+int Hierarchy<T>::GetSiblingIndex() const {
+    if (!parent) {
+        return -1;
     }
+    int currentIndex = 0;
+    Hierarchy<T> *node = parent->child;
+    while (node) {
+        if (node == this) {
+            return currentIndex;
+        }
+        currentIndex++;
+        node = node->nextSibling;
+    }
+    return -1;
+}
+
+template <typename T>
+void Hierarchy<T>::SetSiblingIndex(int siblingIndex) {
+    if (!parent) {
+        return;
+    }
+
+    Hierarchy<T> *prev = GetPrevSiblingNode();
+    if (prev) {
+        prev->nextSibling = nextSibling;
+    } else {
+        parent->child = nextSibling;
+    }
+
+    if (siblingIndex == 0) {
+        nextSibling = parent->child;
+        parent->child = this;
+        return;
+    }
+
+    int currentIndex = 1;
+    Hierarchy<T> *node = parent->child;
+
+    while (node) {
+        if (currentIndex == siblingIndex) {
+            nextSibling = node->nextSibling;
+            node->nextSibling = this;
+            return;
+        }
+        currentIndex++;
+        node = node->nextSibling;
+    }
+}
+
+template <typename T>
+void Hierarchy<T>::SetAsFirstSibling() {
+    SetSiblingIndex(0);
+}
+
+template <typename T>
+void Hierarchy<T>::SetAsLastSibling() {
+    SetSiblingIndex(parent->GetChildCount() - 1);
+}
+
+template <typename T>
+int Hierarchy<T>::GetIndex() const {
+    const Hierarchy<T> *rootNode = this;
+    while (rootNode->parent) {
+        rootNode = rootNode->parent;
+    }
+
+    int index = 0;
+    for (const Hierarchy<T> *node = rootNode->GetNextNode(); node; node = node->GetNextNode()) {
+        if (node == this) {
+            return index;
+        }
+        index++;
+    }
+    return -1;
+}
+
+template <typename T>
+Hierarchy<T> *Hierarchy<T>::GetNextNode() const {
+    if (child) {
+        return child;
+    }
+
+    const Hierarchy<T> *node = this;
+    while (node && node->nextSibling == nullptr) {
+        node = node->parent;
+    }
+
+    if (node) {
+        return node->nextSibling;
+    }
+    return nullptr;
+}
+
+template <typename T>
+T *Hierarchy<T>::GetNext() const {
+    Hierarchy<T> *nextNode = GetNextNode();
+    if (nextNode) {
+        return nextNode->owner;
+    }
+    return nullptr;
 }
 
 template <typename T>
@@ -245,22 +404,20 @@ T *Hierarchy<T>::GetNextLeaf() const {
             node = node->child;
         }
         return node->owner;
-    } else {
-        node = this;
-        while (node && node->nextSibling == nullptr) {
-            node = node->parent;
-        }
-        
-        if (node) {
-            node = node->nextSibling;
-            while (node->child) {
-                node = node->child;
-            }
-            return node->owner;
-        } else {
-            return nullptr;
-        }
     }
+    node = this;
+    while (node && node->nextSibling == nullptr) {
+        node = node->parent;
+    }
+        
+    if (node) {
+        node = node->nextSibling;
+        while (node->child) {
+            node = node->child;
+        }
+        return node->owner;
+    }
+    return nullptr;
 }
 
 BE_NAMESPACE_END

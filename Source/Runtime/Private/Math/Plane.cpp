@@ -67,7 +67,7 @@ bool Plane::IntersectRay(const Ray &ray, bool ignoreBackside, float *hitDist) co
         return false;
     }
 
-    if (Math::Abs(d1) == 0.000001f) {
+    if (Math::Fabs(d1) == 0.000001f) {
         return false;
     }
 
@@ -93,7 +93,7 @@ float Plane::IntersectRay(const Ray &ray, bool ignoreBackside) const {
 }
 
 const char *Plane::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), 4, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 Plane Plane::FromString(const char *str) {

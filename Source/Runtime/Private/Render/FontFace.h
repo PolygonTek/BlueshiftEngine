@@ -1,4 +1,4 @@
-// Copyright(c) 2017 POLYGONTEK
+﻿// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,101 +14,120 @@
 
 #pragma once
 
-#include "freetype/include/ft2build.h"
-#include "freetype/include/freetype.h"
-
 BE_NAMESPACE_BEGIN
 
 class Material;
+class FreeTypeFont;
+
+/*
+-------------------------------------------------------------------------------
+
+    Abstract class for Font
+
+-------------------------------------------------------------------------------
+*/
 
 class FontFace {
 public:
     virtual ~FontFace() {}
 
+    virtual FontGlyph *     GetGlyph(char32_t unicodeChar, Font::RenderMode::Enum renderMode) = 0;
+
+                            /// Returns a offset for the next character.
+    virtual int             GetGlyphAdvanceX(char32_t unicodeChar) const = 0;
+    virtual int             GetGlyphAdvanceY(char32_t unicodeChar) const = 0;
+
     virtual int             GetFontHeight() const = 0;
 
-    virtual FontGlyph *     GetGlyph(char32_t unicodeChar) = 0;
-
-                            // Returns width of charCode character for the next character in string.
-    virtual int             GetGlyphAdvance(char32_t unicodeChar) const = 0;
-
     virtual bool            Load(const char *filename, int fontSize) = 0;
-
-protected:
-    // Hash generator for the wide character
-    struct HashGeneratorCharCode {
-        template <typename Type>
-        static int Hash(const HashIndex &hasher, const Type &value) {
-            return (((value >> 8) & 0xFF) * 119 + (value & 0xFF)) & (hasher.GetHashSize() - 1);
-        }
-    };
-
-    using GlyphHashMap      = HashMap<char32_t, FontGlyph *, HashCompareDefault, HashGeneratorCharCode>;
-    GlyphHashMap            glyphHashMap;
 };
+
+/*
+-------------------------------------------------------------------------------
+
+    Bitmap Font Face
+
+-------------------------------------------------------------------------------
+*/
 
 class FontFaceBitmap : public FontFace {
 public:
     FontFaceBitmap();
     virtual ~FontFaceBitmap();
 
-    virtual int             GetFontHeight() const override;
+    virtual FontGlyph *     GetGlyph(char32_t unicodeChar, Font::RenderMode::Enum renderMode) override;
 
-    virtual FontGlyph *     GetGlyph(char32_t unicodeChar) override;
-    virtual int             GetGlyphAdvance(char32_t unicodeChar) const override;
+    virtual int             GetGlyphAdvanceX(char32_t unicodeChar) const override;
+    virtual int             GetGlyphAdvanceY(char32_t unicodeChar) const override;
+
+    virtual int             GetFontHeight() const override;
 
     virtual bool            Load(const char *filename, int fontSize) override;
 
+    void                    Write(const char *filename);
+
 private:
     void                    Purge();
+    Texture *               AddBitmap(const char *filename);
+    FontGlyph *             AddGlyph(char32_t charCode, int width, int height, int offsetX, int offsetY, int advanceX, int advanceY, float s, float t, float s2, float t2, int textureIndex);
+
+    using GlyphHashMap = HashMap<char32_t, FontGlyph *>;
+    GlyphHashMap            glyphHashMap;
+
+    Array<Str>              bitmapNames;
+    Array<Material *>       materialArray;
 
     int                     fontHeight;
 };
 
-BE_INLINE FontFaceBitmap::FontFaceBitmap() {
-    glyphHashMap.Init(1024, 1024, 1024);
-}
+/*
+-------------------------------------------------------------------------------
 
-BE_INLINE FontFaceBitmap::~FontFaceBitmap() {
-    Purge();
-}
+    FreeType Font Face
+
+-------------------------------------------------------------------------------
+*/
 
 class FontFaceFreeType : public FontFace {
 public:
-    FontFaceFreeType();
+    FontFaceFreeType() = default;
     virtual ~FontFaceFreeType();
 
-    virtual int             GetFontHeight() const override;
+                            /// Caches a glyph in the texture with the given character code.
+    virtual FontGlyph *     GetGlyph(char32_t unicodeChar, Font::RenderMode::Enum renderMode) override;
 
-    virtual FontGlyph *     GetGlyph(char32_t unicodeChar) override;
-    virtual int             GetGlyphAdvance(char32_t unicodeChar) const override;
+    virtual int             GetGlyphAdvanceX(char32_t unicodeChar) const override;
+    virtual int             GetGlyphAdvanceY(char32_t unicodeChar) const override;
+
+    virtual int             GetFontHeight() const override { return fontHeight; }
 
     virtual bool            Load(const char *filename, int fontSize) override;
 
-                            // Init/Shutdown function for FreeType libary.
-    static void             Init();
-    static void             Shutdown();
-    
+    void                    ClearGlyphCaches();
+
+                            /// Writes font file with bitmaps.
+    bool                    Write(const char *filename);
+
+    static void             InitAtlas();
+    static void             FreeAtlas();
+
 private:
     void                    Purge();
 
-    bool                    LoadFTGlyph(char32_t unicodeChar) const;
-    void                    DrawGlyphBufferFromFTBitmap(const FT_Bitmap *bitmap) const;
+    FontGlyph *             CacheGlyph(char32_t unicodeChar, Font::RenderMode::Enum renderMode, int atlasPadding);
+    Texture *               RenderGlyphToAtlasTexture(char32_t unicodeChar, Font::RenderMode::Enum renderMode, int atlasPadding, int &bitmapLeft, int &bitmapTop, int &glyphX, int &glyphY, int &glyphWidth, int &glyphHeight);
 
-    int                     faceIndex;
+    void                    WriteBitmapFiles(const char *fontFilename);
+
+    using GlyphHashMap = HashMap<int64_t, FontGlyph *>;
+    GlyphHashMap            glyphHashMap;
+
+    FreeTypeFont *          freeTypeFont = nullptr;
+
     int                     fontHeight;
 
-    byte *                  ftFontFileData;             // FreeType font flie data
-    FT_Face                 ftFace;
-    mutable char32_t        ftLastLoadedChar;
-    byte *                  glyphBuffer;
+    byte *                  glyphBuffer = nullptr;          ///< Intermediate glyph buffer to upload texture
 };
-
-BE_INLINE FontFaceFreeType::FontFaceFreeType() {
-    ftFontFileData = nullptr;
-    ftFace = nullptr;
-    glyphBuffer = nullptr;
-}
 
 BE_INLINE FontFaceFreeType::~FontFaceFreeType() {
     Purge();

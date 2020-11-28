@@ -145,7 +145,7 @@ static void SystemError(int errLevel, const char *msg) {
                                           otherButtonTitles: nil];
     [alert show];
     
-    if (errLevel == BE1::FatalErr) {
+    if (errLevel == BE1::ErrorLevel::Fatal) {
         exit(0);
     }
 }

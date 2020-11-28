@@ -16,8 +16,7 @@
 #include "Core/BinSearch.h"
 #include "Render/Render.h"
 #include "Core/JointPose.h"
-#include "Simd/Simd.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 
 //#define CYCLIC_DELTA_MOVEMENT
 

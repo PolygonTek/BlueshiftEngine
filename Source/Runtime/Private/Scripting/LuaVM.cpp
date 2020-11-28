@@ -15,8 +15,8 @@
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
 #include "Game/GameWorld.h"
-#include "File/FileSystem.h"
-#include "File/File.h"
+#include "IO/FileSystem.h"
+#include "IO/File.h"
 #include "Core/CVars.h"
 #include "Core/Cmds.h"
 
@@ -58,9 +58,19 @@ void LuaVM::Init() {
 
     state = new LuaCpp::State(true);
 
-    //BE_LOG("Lua version %.1f\n", state->Version());
+#if 0
+    int major, minor;
+    state->Version(major, minor);
+    BE_LOG("Lua version %i.%i\n", major, minor);
 
-    // Redirect global print function
+#if USE_LUAJIT
+    int patch;
+    state->JitVersion(major, minor, patch);
+    BE_LOG("Lua JIT version %i.%i.%i\n", major, minor, patch);
+#endif
+#endif
+
+    // Redirect global print function.
     state->RegisterLib(printlib, nullptr);
 
     state->HandleExceptionsWith([](int status, std::string msg, std::exception_ptr exception) {
@@ -121,14 +131,14 @@ void LuaVM::LoadWaitSupport() {
         if (state->RunBuffer(filename, data, size)) {
             LuaCpp::Selector waitSupport = (*state)["wait_support"];
 
-            clearWatingThreads = waitSupport["clear_waiting_threads"];
-            if (!clearWatingThreads.IsFunction()) {
-                clearWatingThreads = LuaCpp::Selector();
+            clearWaitingThreads = waitSupport["clear_waiting_threads"];
+            if (!clearWaitingThreads.IsFunction()) {
+                clearWaitingThreads = LuaCpp::Selector();
             }
 
-            wakeUpWatingThreads = waitSupport["wake_up_waiting_threads"];
-            if (!wakeUpWatingThreads.IsFunction()) {
-                wakeUpWatingThreads = LuaCpp::Selector();
+            wakeUpWaitingThreads = waitSupport["wake_up_waiting_threads"];
+            if (!wakeUpWaitingThreads.IsFunction()) {
+                wakeUpWaitingThreads = LuaCpp::Selector();
             }
         }
     }
@@ -140,19 +150,7 @@ void LuaVM::LoadTween() {
 
     size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
     if (data) {
-        if (state->RunBuffer(filename, data, size)) {
-            LuaCpp::Selector tween = (*state)["tween"];
-
-            clearTweeners = tween["clear_tweeners"];
-            if (!clearTweeners.IsFunction()) {
-                clearTweeners = LuaCpp::Selector();
-            }
-
-            updateTweeners = tween["update_tweeners"];
-            if (!updateTweeners.IsFunction()) {
-                updateTweeners = LuaCpp::Selector();
-            }
-        }
+        state->RunBuffer(filename, data, size);
     }
 }
 
@@ -191,7 +189,11 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterFrustum(module);
         RegisterRay(module);
         RegisterPoint(module);
+        RegisterPointF(module);
+        RegisterSize(module);
+        RegisterSizeF(module);
         RegisterRect(module);
+        RegisterRectF(module);
         // Common
         RegisterCommon(module);
         // Input
@@ -211,19 +213,19 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterObject(module);
         // Asset
         RegisterAsset(module);
-        RegisterTextureAsset(module);
-        RegisterShaderAsset(module);
-        RegisterMaterialAsset(module);
-        RegisterSkeletonAsset(module);
-        RegisterMeshAsset(module);
-        RegisterAnimAsset(module);
-        RegisterAnimControllerAsset(module);
-        RegisterSoundAsset(module);
-        RegisterMapAsset(module);
-        RegisterPrefabAsset(module);
+        RegisterTexture(module);
+        RegisterShader(module);
+        RegisterMaterial(module);
+        RegisterSkeleton(module);
+        RegisterMesh(module);
+        RegisterAnim(module);
+        RegisterAnimController(module);
+        RegisterSound(module);
+        RegisterPrefab(module);
         // Component
         RegisterComponent(module);
         RegisterTransformComponent(module);
+        RegisterRectTransformComponent(module);
         RegisterColliderComponent(module);
         RegisterBoxColliderComponent(module);
         RegisterSphereColliderComponent(module);
@@ -250,8 +252,11 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterAnimationComponent(module);
         RegisterAnimatorComponent(module);
         RegisterTextRendererComponent(module);
+        RegisterTextComponent(module);
+        RegisterImageComponent(module);
         RegisterParticleSystemComponent(module);
         RegisterCameraComponent(module);
+        RegisterCanvasComponent(module);
         RegisterLightComponent(module);
         RegisterAudioListenerComponent(module);
         RegisterAudioSourceComponent(module);
@@ -272,11 +277,8 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
 void LuaVM::Shutdown() {
     engineModuleCallbacks.Clear();
 
-    clearTweeners = LuaCpp::Selector();
-    updateTweeners = LuaCpp::Selector();
-
-    clearWatingThreads = LuaCpp::Selector();
-    wakeUpWatingThreads = LuaCpp::Selector();
+    clearWaitingThreads = LuaCpp::Selector();
+    wakeUpWaitingThreads = LuaCpp::Selector();
 
     startDebuggee = LuaCpp::Selector();
     stopDebuggee = LuaCpp::Selector();
@@ -309,27 +311,15 @@ void LuaVM::EnableJIT(bool enabled) {
     state->EnableJIT(enabled);
 }
 
-void LuaVM::ClearTweeners() {
-    if (clearTweeners.IsFunction()) {
-        clearTweeners();
+void LuaVM::ClearWaitingThreads() {
+    if (clearWaitingThreads.IsFunction()) {
+        clearWaitingThreads();
     }
 }
 
-void LuaVM::UpdateTweeners(float unscaledDeltaTime, float timeScale) {
-    if (updateTweeners.IsFunction()) {
-        updateTweeners(unscaledDeltaTime, timeScale);
-    }
-}
-
-void LuaVM::ClearWatingThreads() {
-    if (clearWatingThreads.IsFunction()) {
-        clearWatingThreads();
-    }
-}
-
-void LuaVM::WakeUpWatingThreads(float currentTime) {
-    if (wakeUpWatingThreads.IsFunction()) {
-        wakeUpWatingThreads(currentTime);
+void LuaVM::WakeUpWaitingThreads(float currentTime) {
+    if (wakeUpWaitingThreads.IsFunction()) {
+        wakeUpWaitingThreads(currentTime);
     }
 }
 

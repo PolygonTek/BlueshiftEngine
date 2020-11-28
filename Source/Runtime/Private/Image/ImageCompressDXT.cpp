@@ -19,7 +19,17 @@
 
 BE_NAMESPACE_BEGIN
 
-void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
+void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+    assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+
+    void (*CompressImage)(const byte *src, const int width, const int height, const int depth, byte *dst);
+
+    if (compressionQuality == Image::CompressionQuality::HighQuality) {
+        CompressImage = DXTEncoder::CompressImageDXT1HQ;
+    } else {
+        CompressImage = DXTEncoder::CompressImageDXT1Fast;
+    }
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 
@@ -32,16 +42,22 @@ void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQual
             byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
             byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-            if (compressoinQuality == Image::CompressionQuality::HighQuality) {
-                DXTEncoder::CompressImageDXT1HQ(src, w, h, d, dst);
-            } else {
-                DXTEncoder::CompressImageDXT1Fast(src, w, h, d, dst);
-            }
+            CompressImage(src, w, h, d, dst);
         }
     }
 }
 
-void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
+void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+    assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+
+    void (*CompressImage)(const byte *src, const int width, const int height, const int depth, byte *dst);
+
+    if (compressionQuality == Image::CompressionQuality::HighQuality) {
+        CompressImage = DXTEncoder::CompressImageDXT3HQ;
+    } else {
+        CompressImage = DXTEncoder::CompressImageDXT3Fast;
+    }
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 
@@ -54,16 +70,22 @@ void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQual
             byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
             byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-            if (compressoinQuality == Image::CompressionQuality::HighQuality) {
-                DXTEncoder::CompressImageDXT3HQ(src, w, h, d, dst);
-            } else {
-                DXTEncoder::CompressImageDXT3Fast(src, w, h, d, dst);
-            }
+            CompressImage(src, w, h, d, dst);
         }
     }
 }
 
-void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
+void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+    assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+
+    void (*CompressImage)(const byte *src, const int width, const int height, const int depth, byte *dst);
+
+    if (compressionQuality == Image::CompressionQuality::HighQuality) {
+        CompressImage = DXTEncoder::CompressImageDXT5HQ;
+    } else {
+        CompressImage = DXTEncoder::CompressImageDXT5Fast;
+    }
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 
@@ -76,16 +98,22 @@ void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQual
             byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
             byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-            if (compressoinQuality == Image::CompressionQuality::HighQuality) {
-                DXTEncoder::CompressImageDXT5HQ(src, w, h, d, dst);
-            } else {
-                DXTEncoder::CompressImageDXT5Fast(src, w, h, d, dst);
-            }
+            CompressImage(src, w, h, d, dst);
         }
     }
 }
 
-void CompressDXN2(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressoinQuality) {
+void CompressDXN2(const Image &srcImage, Image &dstImage, Image::CompressionQuality::Enum compressionQuality) {
+    assert(srcImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+
+    void (*CompressImage)(const byte *src, const int width, const int height, const int depth, byte *dst);
+
+    if (compressionQuality == Image::CompressionQuality::HighQuality) {
+        CompressImage = DXTEncoder::CompressImageDXN2HQ;
+    } else {
+        CompressImage = DXTEncoder::CompressImageDXN2Fast;
+    }
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 
@@ -98,11 +126,7 @@ void CompressDXN2(const Image &srcImage, Image &dstImage, Image::CompressionQual
             byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
             byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
 
-            if (compressoinQuality == Image::CompressionQuality::HighQuality) {
-                DXTEncoder::CompressImageDXN2HQ(src, w, h, d, dst);
-            } else {
-                DXTEncoder::CompressImageDXN2Fast(src, w, h, d, dst);
-            }
+            CompressImage(src, w, h, d, dst);
         }
     }
 }

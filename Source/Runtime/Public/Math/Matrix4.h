@@ -136,17 +136,17 @@ public:
                         /// This function is identical to the member function SubSelf().
     Mat4 &              operator-=(const Mat4 &rhs);
     
-                        /// Multiplies this matrix with the given matrix, in-place
+                        /// Multiplies this matrix with the given matrix, in-place.
     Mat4 &              MulSelf(const Mat4 &m) { *this *= m; return *this; }
     Mat4 &              MulSelf(const Mat3x4 &m) { *this *= m; return *this; }
-                        /// Multiplies this matrix with the given matrix, in-place
+                        /// Multiplies this matrix with the given matrix, in-place.
                         /// This function is identical to the member function MulSelf().
     Mat4 &              operator*=(const Mat4 &rhs);
     Mat4 &              operator*=(const Mat3x4 &rhs);
     
-                        /// Multiplies this matrix with the given scalar, in-place
+                        /// Multiplies this matrix with the given scalar, in-place.
     Mat4 &              MulScalarSelf(float s) { *this *= s; return *this; }
-                        /// Multiplies this matrix with the given scalar, in-place
+                        /// Multiplies this matrix with the given scalar, in-place.
                         /// This function is identical to the member function MulScalarSelf().
     Mat4 &              operator*=(float rhs);
                         
@@ -155,25 +155,29 @@ public:
                         /// Multiplies the vector lhs with the given matrix rhs, in-place on vector. i.e. lhs *= rhs
     friend Vec3 &       operator*=(Vec3 &lhs, const Mat4 &rhs) { lhs = rhs * lhs; return lhs; }
 
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const Mat4 &m) const;
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const Mat4 &m, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const Mat4 &rhs) const { return Equals(rhs); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const Mat4 &rhs) const { return !Equals(rhs); }
 
                         /// Tests if this is the identity matrix, up to the given epsilon.
     bool                IsIdentity(const float epsilon = MATRIX_EPSILON) const;
+                        /// Tests if this is the upper triangular matrix, up to the given epsilon.
+    bool                IsUpperTriangular(const float epsilon = MATRIX_EPSILON) const;
+                        /// Tests if this is the lower triangular matrix, up to the given epsilon.
+    bool                IsLowerTriangular(const float epsilon = MATRIX_EPSILON) const;
                         /// Tests if this is the symmetric matrix, up to the given epsilon.
     bool                IsSymmetric(const float epsilon = MATRIX_EPSILON) const;
                         /// Tests if this is the diagonal matrix, up to the given epsilon.
     bool                IsDiagonal(const float epsilon = MATRIX_EPSILON) const;
-                        /// Tests if this is the singular matrix.
-    bool                IsSingular() const;
-
-    bool                IsAffine() const;
+                        /// Tests if this is the singular matrix, up to the given epsilon.
+    bool                IsSingular(const float epsilon = MATRIX_EPSILON) const;
+                        /// Tests if this is the affine transform matrix, up to the given epsilon.
+    bool                IsAffine(const float epsilon = MATRIX_EPSILON) const;
 
                         /// Sets all the element of this matrix to zero.
     void                SetZero();
@@ -201,7 +205,7 @@ public:
     void                GetTQS(Vec3 &translation, Quat &rotation, Vec3 &scale) const;
 
                         /// Returns the sum of the diagonal elements of this matrix.
-                        /// Mathematically, this means sum of all eigenvalues
+                        /// Mathematically, this means sum of all eigenvalues.
     float               Trace() const;
                         /// Returns the determinant of this matrix
                         /// Mathematically, this means multiplication of all eigenvalues
@@ -226,7 +230,7 @@ public:
                         /// Inverts a affine matrix, in-place.
     bool                AffineInverseSelf();
     
-                        /// Inverts a euclidean matrix
+                        /// Inverts a euclidean matrix.
                         /// If a matrix is made up of only translation, rotation, and reflection,
                         /// then M is euclidean matrix and this function can be used to compute the inverse
     Mat4                EuclideanInverse() const;
@@ -248,11 +252,11 @@ public:
                         /// Performs uniform scaling by the given amount, in-place.
     Mat4 &              UniformScale(const float s) { return Scale(s, s, s); }
 
-                        /// Returns translation matrix
+                        /// Returns translation matrix.
     static Mat4         FromTranslation(float tx, float ty, float tz);
     static Mat4         FromTranslation(const Vec3 &t) { return FromTranslation(t.x, t.y, t.z); }
 
-                        /// Returns scaling matrix
+                        /// Returns scaling matrix.
     static Mat4         FromScale(float sx, float sy, float sz);
     static Mat4         FromScale(const Vec3 &s) { return FromTranslation(s.x, s.y, s.z); }
 
@@ -277,14 +281,14 @@ public:
                         /// Returns "_00 _01 _02 _03 _10 _11 _12 _13 _20 _21 _22 _23 _30 _31 _32 _33" with the given precisions.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Mat4         FromString(const char *str);
 
-                        /// Returns dimension of this type
-    int                 GetDimension() const { return Rows * Cols; }
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return Rows * Cols; }
 
-    static const Mat4   zero;
-    static const Mat4   identity;
+    ALIGN_AS32 static const Mat4 zero;
+    ALIGN_AS32 static const Mat4 identity;
 
     Vec4                mat[Rows];
 };
@@ -362,138 +366,6 @@ BE_INLINE Vec4 &Mat4::operator[](int index) {
     return mat[index];
 }
 
-BE_INLINE Mat4 Mat4::operator-() const {
-    return Mat4(
-        -mat[0][0], -mat[0][1], -mat[0][2], -mat[0][3], 
-        -mat[1][0], -mat[1][1], -mat[1][2], -mat[1][3], 
-        -mat[2][0], -mat[2][1], -mat[2][2], -mat[2][3], 
-        -mat[3][0], -mat[3][1], -mat[3][2], -mat[3][3]);
-}
-
-BE_INLINE Mat4 Mat4::operator+(const Mat4 &a) const {
-    return Mat4(
-        mat[0].x + a[0].x, mat[0].y + a[0].y, mat[0].z + a[0].z, mat[0].w + a[0].w, 
-        mat[1].x + a[1].x, mat[1].y + a[1].y, mat[1].z + a[1].z, mat[1].w + a[1].w, 
-        mat[2].x + a[2].x, mat[2].y + a[2].y, mat[2].z + a[2].z, mat[2].w + a[2].w, 
-        mat[3].x + a[3].x, mat[3].y + a[3].y, mat[3].z + a[3].z, mat[3].w + a[3].w);
-}
-
-BE_INLINE Mat4 Mat4::operator-(const Mat4 &a) const {
-    return Mat4(
-        mat[0].x - a[0].x, mat[0].y - a[0].y, mat[0].z - a[0].z, mat[0].w - a[0].w, 
-        mat[1].x - a[1].x, mat[1].y - a[1].y, mat[1].z - a[1].z, mat[1].w - a[1].w, 
-        mat[2].x - a[2].x, mat[2].y - a[2].y, mat[2].z - a[2].z, mat[2].w - a[2].w, 
-        mat[3].x - a[3].x, mat[3].y - a[3].y, mat[3].z - a[3].z, mat[3].w - a[3].w);
-}
-
-BE_INLINE Mat4 Mat4::operator*(const Mat4 &a) const {
-    Mat4 dst;
-    float *dstPtr = dst.Ptr();
-    const float *m1Ptr = Ptr();
-    const float *m2Ptr = a.Ptr();
-
-    for (int c = 0; c < Cols; c++) {
-        for (int r = 0; r < Rows; r++) {
-            *dstPtr = 
-                m1Ptr[0] * m2Ptr[0 * Cols + r] +
-                m1Ptr[1] * m2Ptr[1 * Cols + r] +
-                m1Ptr[2] * m2Ptr[2 * Cols + r] +
-                m1Ptr[3] * m2Ptr[3 * Cols + r];
-            dstPtr++;
-        }
-        m1Ptr += Cols;
-    }
-    return dst;
-}
-
-BE_INLINE Mat4 Mat4::TransposedMul(const Mat4 &a) const {
-    Mat4 dst;
-    float *dstPtr = dst.Ptr();
-    const float *m1Ptr = Ptr();
-    const float *m2Ptr = a.Ptr();
-
-    for (int c = 0; c < Cols; c++) {
-        for (int r = 0; r < Rows; r++) {
-            *dstPtr = 
-                m1Ptr[0 * Cols] * m2Ptr[0 * Cols + r] +
-                m1Ptr[1 * Cols] * m2Ptr[1 * Cols + r] +
-                m1Ptr[2 * Cols] * m2Ptr[2 * Cols + r] +
-                m1Ptr[3 * Cols] * m2Ptr[3 * Cols + r];
-            dstPtr++;
-        }
-        m1Ptr += 1;
-    }
-    return dst;
-}
-
-BE_INLINE Mat4 Mat4::operator*(float a) const {
-    return Mat4(
-        mat[0].x * a, mat[0].y * a, mat[0].z * a, mat[0].z * a,
-        mat[1].x * a, mat[1].y * a, mat[1].z * a, mat[1].w * a,
-        mat[2].x * a, mat[2].y * a, mat[2].z * a, mat[2].w * a,
-        mat[3].x * a, mat[3].y * a, mat[3].z * a, mat[3].w * a);
-}
-
-BE_INLINE Vec4 Mat4::operator*(const Vec4 &vec) const {
-    return Vec4(
-        mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w * vec.w, 
-        mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w * vec.w, 
-        mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w * vec.w, 
-        mat[3].x * vec.x + mat[3].y * vec.y + mat[3].z * vec.z + mat[3].w * vec.w);
-}
-
-BE_INLINE Vec3 Mat4::operator*(const Vec3 &vec) const {
-    // homogeneous w
-    float hw = mat[3].x * vec.x + mat[3].y * vec.y + mat[3].z * vec.z + mat[3].w;
-
-    if (hw == 0.0f) {
-        return Vec3(0.0f, 0.0f, 0.0f);
-    }
-
-    if (hw == 1.0f) {
-        return Vec3(
-            mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w, 
-            mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w, 
-            mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w);
-    } else {
-        float rhw = 1.0f / hw;
-        return Vec3(
-            (mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w) * rhw, 
-            (mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w) * rhw, 
-            (mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w) * rhw);
-    }
-}
-
-BE_INLINE Vec4 Mat4::TransposedMulVec(const Vec4 &vec) const {
-    return Vec4(
-        mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z + mat[3].x * vec.w,
-        mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z + mat[3].y * vec.w,
-        mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z + mat[3].z * vec.w,
-        mat[0].w * vec.x + mat[1].w * vec.y + mat[2].w * vec.z + mat[3].w * vec.w);
-}
-
-BE_INLINE Vec3 Mat4::TransposedMulVec(const Vec3 &vec) const {
-    // homogeneous w
-    float hw = mat[0].w * vec.x + mat[1].w * vec.y + mat[2].w * vec.z + mat[3].w;
-
-    if (hw == 0.0f) {
-        return Vec3(0.0f, 0.0f, 0.0f);
-    }
-
-    if (hw == 1.0f) {
-        return Vec3(
-            mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z + mat[3].x,
-            mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z + mat[3].y,
-            mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z + mat[3].z);
-    } else {
-        float rhw = 1.0f / hw;
-        return Vec3(
-            (mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z + mat[3].x) * rhw,
-            (mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z + mat[3].y) * rhw,
-            (mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z + mat[3].z) * rhw);
-    }
-}
-
 BE_INLINE Mat4 &Mat4::operator=(const Mat4 &rhs) {
     mat[0][0] = rhs[0][0];
     mat[0][1] = rhs[0][1];
@@ -542,54 +414,6 @@ BE_INLINE Mat4 &Mat4::operator=(const Mat3 &rhs) {
     return *this;
 }
 
-BE_INLINE Mat4 &Mat4::operator+=(const Mat4 &a) {
-    mat[0].x += a[0].x;
-    mat[0].y += a[0].y;
-    mat[0].z += a[0].z;
-    mat[0].w += a[0].w;
-
-    mat[1].x += a[1].x;
-    mat[1].y += a[1].y;
-    mat[1].z += a[1].z;
-    mat[1].w += a[1].w;
-
-    mat[2].x += a[2].x;
-    mat[2].y += a[2].y;
-    mat[2].z += a[2].z;
-    mat[2].w += a[2].w;
-
-    mat[3].x += a[3].x;
-    mat[3].y += a[3].y;
-    mat[3].z += a[3].z;
-    mat[3].w += a[3].w;
-
-    return *this;
-}
-
-BE_INLINE Mat4 &Mat4::operator-=(const Mat4 &a) {
-    mat[0].x -= a[0].x;
-    mat[0].y -= a[0].y;
-    mat[0].z -= a[0].z;
-    mat[0].w -= a[0].w;
-
-    mat[1].x -= a[1].x;
-    mat[1].y -= a[1].y;
-    mat[1].z -= a[1].z;
-    mat[1].w -= a[1].w;
-
-    mat[2].x -= a[2].x;
-    mat[2].y -= a[2].y;
-    mat[2].z -= a[2].z;
-    mat[2].w -= a[2].w;
-
-    mat[3].x -= a[3].x;
-    mat[3].y -= a[3].y;
-    mat[3].z -= a[3].z;
-    mat[3].w -= a[3].w;
-
-    return *this;
-}
-
 BE_INLINE Mat4 &Mat4::operator*=(const Mat4 &a) {
     *this = (*this) * a;
     return *this;
@@ -600,33 +424,10 @@ BE_INLINE Mat4 &Mat4::operator*=(const Mat3x4 &a) {
     return *this;
 }
 
-BE_INLINE Mat4 &Mat4::operator*=(float a) {
-    mat[0].x *= a;
-    mat[0].y *= a;
-    mat[0].z *= a;
-    mat[0].w *= a;
-
-    mat[1].x *= a;
-    mat[1].y *= a;
-    mat[1].z *= a;
-    mat[1].w *= a;
-
-    mat[2].x *= a;
-    mat[2].y *= a;
-    mat[2].z *= a;
-    mat[2].w *= a;
-
-    mat[3].x *= a;
-    mat[3].y *= a;
-    mat[3].z *= a;
-    mat[3].w *= a;
-
-    return *this;
-}
-
 BE_INLINE bool Mat4::Equals(const Mat4 &a) const {
     const float *ptr1 = reinterpret_cast<const float *>(mat);
     const float *ptr2 = reinterpret_cast<const float *>(a.mat);
+
     for (int i = 0; i < Rows * Cols; i++) {
         if (ptr1[i] != ptr2[i]) {
             return false;
@@ -638,6 +439,7 @@ BE_INLINE bool Mat4::Equals(const Mat4 &a) const {
 BE_INLINE bool Mat4::Equals(const Mat4 &a, const float epsilon) const {
     const float *ptr1 = reinterpret_cast<const float *>(mat);
     const float *ptr2 = reinterpret_cast<const float *>(a.mat);
+
     for (int i = 0; i < Rows * Cols; i++) {
         if (Math::Fabs(ptr1[i] - ptr2[i]) > epsilon) {
             return false;
@@ -664,6 +466,24 @@ BE_INLINE bool Mat4::IsIdentity(const float epsilon) const {
     return Equals(Mat4::identity, epsilon);
 }
 
+BE_INLINE bool Mat4::IsUpperTriangular(const float epsilon) const {
+    return (Math::Fabs(mat[1][0]) <= epsilon) &&
+           (Math::Fabs(mat[2][0]) <= epsilon) &&
+           (Math::Fabs(mat[2][1]) <= epsilon) &&
+           (Math::Fabs(mat[3][0]) <= epsilon) &&
+           (Math::Fabs(mat[3][1]) <= epsilon) &&
+           (Math::Fabs(mat[3][2]) <= epsilon);
+}
+
+BE_INLINE bool Mat4::IsLowerTriangular(const float epsilon) const {
+    return (Math::Fabs(mat[0][1]) <= epsilon) &&
+           (Math::Fabs(mat[0][2]) <= epsilon) &&
+           (Math::Fabs(mat[0][3]) <= epsilon) &&
+           (Math::Fabs(mat[1][2]) <= epsilon) &&
+           (Math::Fabs(mat[1][3]) <= epsilon) &&
+           (Math::Fabs(mat[2][3]) <= epsilon);
+}
+
 BE_INLINE bool Mat4::IsSymmetric(const float epsilon) const {
     for (int i = 1; i < 4; i++) {
         for (int j = 0; j < i; j++) {
@@ -686,12 +506,15 @@ BE_INLINE bool Mat4::IsDiagonal(const float epsilon) const {
     return true;
 }
 
-BE_INLINE bool Mat4::IsSingular() const {
-    return Determinant() == 0 ? true : false;
+BE_INLINE bool Mat4::IsSingular(const float epsilon) const {
+    return Math::Fabs(Determinant()) > epsilon ? false : true;
 }
 
-BE_INLINE bool Mat4::IsAffine() const {
-    if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
+BE_INLINE bool Mat4::IsAffine(const float epsilon) const {
+    if (Math::Fabs(mat[3][0]) > epsilon || 
+        Math::Fabs(mat[3][1]) > epsilon || 
+        Math::Fabs(mat[3][2]) > epsilon || 
+        Math::Fabs(mat[3][3] - 1.0f) > epsilon) {
         return false;
     }
     return true;
@@ -742,13 +565,6 @@ BE_INLINE Mat4 Mat3::ToMat4() const {
         mat[0][1], mat[1][1], mat[2][1], 0.0f, 
         mat[0][2], mat[1][2], mat[2][2], 0.0f, 
         0.0f, 0.0f, 0.0f, 1.0f);
-}
-
-BE_INLINE Vec3 Mat4::ToScaleVec3() const {
-    return Vec3(
-        Math::Sqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]),
-        Math::Sqrt(mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]),
-        Math::Sqrt(mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]));
 }
 
 BE_INLINE Vec3 Mat4::ToTranslationVec3() const {
@@ -804,7 +620,7 @@ BE_INLINE Mat4 Mat4::FromScale(float sx, float sy, float sz) {
 }
 
 BE_INLINE const char *Mat4::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), Rows * Cols, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_NAMESPACE_END

@@ -31,6 +31,11 @@ public:
     /// Constructs a Color3 from a single value (s, s, s)
     explicit constexpr Color3(float s);
 
+#ifdef QCOLOR_H
+    /// Constructs from a QColor.
+    Color3(const QColor &qc) { r = qc.red(); g = qc.green(); b = qc.blue(); }
+#endif
+
                         /// Casts this Color3 to a C array.
                         /// This function simply returns a C pointer view to this data structure.
     const float *       Ptr() const { return (const float *)&r; }
@@ -138,71 +143,240 @@ public:
                         /// This function is identical to the member function DivCompSelf().
     Color3 &            operator/=(const Color3 &rhs);
 
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const Color3 &c) const;
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const Color3 &c, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const Color3 &rhs) const { return Equals(rhs); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const Color3 &rhs) const { return !Equals(rhs); }
 
-                        /// Sets all element of this color
+                        /// Sets all element of this color.
     void                Set(float r, float g, float b);
+
+                        /// Performs a RGB swizzled access to this color.
+    Color3              rrr() const { return Color3(r, r, r); }
+    Color3              rrg() const { return Color3(r, r, g); }
+    Color3              rrb() const { return Color3(r, r, b); }
+    Color3              rgr() const { return Color3(r, g, r); }
+    Color3              rgg() const { return Color3(r, g, g); }
+    Color3              rgb() const { return Color3(r, g, b); }
+    Color3              rbr() const { return Color3(r, b, r); }
+    Color3              rbg() const { return Color3(r, b, g); }
+    Color3              rbb() const { return Color3(r, b, b); }
+
+    Color3              grr() const { return Color3(g, r, r); }
+    Color3              grg() const { return Color3(g, r, g); }
+    Color3              grb() const { return Color3(g, r, b); }
+    Color3              ggr() const { return Color3(g, g, r); }
+    Color3              ggg() const { return Color3(g, g, g); }
+    Color3              ggb() const { return Color3(g, g, b); }
+    Color3              gbr() const { return Color3(g, b, r); }
+    Color3              gbg() const { return Color3(g, b, g); }
+    Color3              gbb() const { return Color3(g, b, b); }
+
+    Color3              brr() const { return Color3(b, r, r); }
+    Color3              brg() const { return Color3(b, r, g); }
+    Color3              brb() const { return Color3(b, r, b); }
+    Color3              bgr() const { return Color3(b, g, r); }
+    Color3              bgg() const { return Color3(b, g, g); }
+    Color3              bgb() const { return Color3(b, g, b); }
+    Color3              bbr() const { return Color3(b, b, r); }
+    Color3              bbg() const { return Color3(b, b, g); }
+    Color3              bbb() const { return Color3(b, b, b); }
 
                         /// Clip to [0, 1] range.
     void                Clip();
                         /// Inverts the RGB channels.
     void                Invert();
+                        /// Grayscale this color, in-place.
+    Color3 &            Grayscale();
 
                         /// Returns "r g b".
     const char *        ToString() const { return ToString(4); }
-                        /// Returns "r g b" with the given precision
+                        /// Returns "r g b" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Color3       FromString(const char *str);
 
                         /// Casts this Color3 to a Vec3.
     const Vec3 &        ToVec3() const;
     Vec3 &              ToVec3();
 
+                        /// Creates from RGB888.
+    static Color3       FromRGB888(uint8_t r, uint8_t g, uint8_t b);
+
+                        /// Creates from packed to a 32-bit integer, with R component in the lowest 8 bits.
+    static Color3       FromUInt32(uint32_t rgbx);
+
                         /// Converts color to a 32-bit integer, with R component in the lowest 8 bits. Components are clamped to [0, 1] range.
     uint32_t            ToUInt32() const;
 
-                        /// Converts RGB to HSL
-    Color3              ToHSL() const;
-                        /// Converts HSL to RGB
-    Color3              FromHSL() const;
+#ifdef QCOLOR_H
+                        /// Convert Color3 to QColor.
+    QColor              ToQColor() const { return QColor::fromRgbF(r, g, b); }
+#endif
 
-                        /// Converts sRGB to Linear
+                        /// Converts RGB to HSL (Hue, Saturation, Lightness).
+    Color3              ToHSL() const;
+                        /// Converts HSL (Hue, Saturation, Lightness) to RGB.
+    static Color3       FromHSL(float h, float s, float l);
+
+                        /// Converts sRGB to Linear.
     Color3              SRGBToLinear() const;
-                        /// Converts Linear to sRGB
+                        /// Converts Linear to sRGB.
     Color3              LinearToSRGB() const;
 
                         /// Converts temperature in Kelvins [1000, 15000] of a black body radiator to RGB chromaticity (linear).
     static Color3       FromColorTemperature(float temp);
 
-                        /// Returns dimension of this type
-    int                 GetDimension() const { return Size; }
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return Size; }
 
-    static const Color3 zero;       ///< (0.0, 0.0, 0.0)
-    static const Color3 black;      ///< (0.0, 0.0, 0.0)
-    static const Color3 white;      ///< (1.0, 1.0, 1.0)
-    static const Color3 red;        ///< (1.0, 0.0, 0.0)
-    static const Color3 green;      ///< (0.0, 1.0, 0.0)
-    static const Color3 blue;       ///< (0.0, 0.0, 1.0)
-    static const Color3 yellow;     ///< (1.0, 1.0, 0.0)
-    static const Color3 cyan;       ///< (0.0, 1.0, 1.0)
-    static const Color3 magenta;    ///< (1.0, 0.0, 1.0)
-    static const Color3 orange;     ///< (1.0, 0.5, 0.0)
-    static const Color3 pink;       ///< (1.0, 0.0, 0.5)
-    static const Color3 lawn;       ///< (0.5, 1.0, 0.0)
-    static const Color3 mint;       ///< (0.0, 1.0, 0.5)
-    static const Color3 violet;     ///< (0.5, 0.5, 1.0)
-    static const Color3 teal;       ///< (0.3, 0.5, 0.6)
-    static const Color3 grey;       ///< (0.7, 0.7, 0.7)
-    static const Color3 darkGrey;   ///< (0.3, 0.3, 0.3)
+    static const Color3 zero;
+
+    static const Color3 aliceBlue;
+    static const Color3 antiqueWhite;
+    static const Color3 aqua;
+    static const Color3 aquamarine;
+    static const Color3 azure;
+    static const Color3 beige;
+    static const Color3 bisque;
+    static const Color3 black;
+    static const Color3 blanchedAlmond;
+    static const Color3 blue;
+    static const Color3 blueViolet;
+    static const Color3 brown;
+    static const Color3 burlyWood;
+    static const Color3 cadetBlue;
+    static const Color3 chartreuse;
+    static const Color3 chocolate;
+    static const Color3 coral;
+    static const Color3 cornflowerBlue;
+    static const Color3 cornsilk;
+    static const Color3 crimson;
+    static const Color3 cyan;
+    static const Color3 darkBlue;
+    static const Color3 darkCyan;
+    static const Color3 darkGoldenrod;
+    static const Color3 darkGray;
+    static const Color3 darkGreen;
+    static const Color3 darkKhaki;
+    static const Color3 darkMagenta;
+    static const Color3 darkOliveGreen;
+    static const Color3 darkOrange;
+    static const Color3 darkOrchid;
+    static const Color3 darkRed;
+    static const Color3 darkSalmon;
+    static const Color3 darkSeaGreen;
+    static const Color3 darkSlateBlue;
+    static const Color3 darkSlateGray;
+    static const Color3 darkTurquoise;
+    static const Color3 darkViolet;
+    static const Color3 deepPink;
+    static const Color3 deepSkyBlue;
+    static const Color3 dimGray;
+    static const Color3 dodgerBlue;
+    static const Color3 firebrick;
+    static const Color3 floralWhite;
+    static const Color3 forestGreen;
+    static const Color3 fuchsia;
+    static const Color3 gainsboro;
+    static const Color3 ghostWhite;
+    static const Color3 gold;
+    static const Color3 goldenrod;
+    static const Color3 gray;
+    static const Color3 green;
+    static const Color3 greenYellow;
+    static const Color3 honeydew;
+    static const Color3 hotPink;
+    static const Color3 indianRed;
+    static const Color3 indigo;
+    static const Color3 ivory;
+    static const Color3 khaki;
+    static const Color3 lavender;
+    static const Color3 lavenderBlush;
+    static const Color3 lawnGreen;
+    static const Color3 lemonChiffon;
+    static const Color3 lightBlue;
+    static const Color3 lightCoral;
+    static const Color3 lightCyan;
+    static const Color3 lightGoldenrodYellow;
+    static const Color3 lightGreen;
+    static const Color3 lightGray;
+    static const Color3 lightPink;
+    static const Color3 lightSalmon;
+    static const Color3 lightSeaGreen;
+    static const Color3 lightSkyBlue;
+    static const Color3 lightSlateGray;
+    static const Color3 lightSteelBlue;
+    static const Color3 lightYellow;
+    static const Color3 lime;
+    static const Color3 limeGreen;
+    static const Color3 linen;
+    static const Color3 magenta;
+    static const Color3 maroon;
+    static const Color3 mediumAquamarine;
+    static const Color3 mediumBlue;
+    static const Color3 mediumOrchid;
+    static const Color3 mediumPurple;
+    static const Color3 mediumSeaGreen;
+    static const Color3 mediumSlateBlue;
+    static const Color3 mediumSpringGreen;
+    static const Color3 mediumTurquoise;
+    static const Color3 mediumVioletRed;
+    static const Color3 midnightBlue;
+    static const Color3 mintCream;
+    static const Color3 mistyRose;
+    static const Color3 moccasin;
+    static const Color3 navajoWhite;
+    static const Color3 navy;
+    static const Color3 oldLace;
+    static const Color3 olive;
+    static const Color3 oliveDrab;
+    static const Color3 orange;
+    static const Color3 orangeRed;
+    static const Color3 orchid;
+    static const Color3 paleGoldenrod;
+    static const Color3 paleGreen;
+    static const Color3 paleTurquoise;
+    static const Color3 paleVioletRed;
+    static const Color3 papayaWhip;
+    static const Color3 peachPuff;
+    static const Color3 peru;
+    static const Color3 pink;
+    static const Color3 plum;
+    static const Color3 powderBlue;
+    static const Color3 purple;
+    static const Color3 red;
+    static const Color3 rosyBrown;
+    static const Color3 royalBlue;
+    static const Color3 saddleBrown;
+    static const Color3 salmon;
+    static const Color3 sandyBrown;
+    static const Color3 seaGreen;
+    static const Color3 seaShell;
+    static const Color3 sienna;
+    static const Color3 silver;
+    static const Color3 skyBlue;
+    static const Color3 slateBlue;
+    static const Color3 slateGray;
+    static const Color3 snow;
+    static const Color3 springGreen;
+    static const Color3 steelBlue;
+    static const Color3 tan;
+    static const Color3 teal;
+    static const Color3 thistle;
+    static const Color3 tomato;
+    static const Color3 turquoise;
+    static const Color3 violet;
+    static const Color3 wheat;
+    static const Color3 white;
+    static const Color3 whiteSmoke;
+    static const Color3 yellow;
+    static const Color3 yellowGreen;
 
     float               r;          ///< The red component.
     float               g;          ///< The green component.
@@ -305,7 +479,7 @@ BE_INLINE bool Color3::Equals(const Color3 &rhs, const float epsilon) const {
 }
 
 BE_INLINE const char *Color3::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), Size, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_INLINE const Vec3 &Color3::ToVec3() const {

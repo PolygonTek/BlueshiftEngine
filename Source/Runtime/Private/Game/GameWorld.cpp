@@ -13,7 +13,8 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
+#include "Engine/GameClient.h"
 #include "Render/Render.h"
 #include "Physics/Collider.h"
 #include "Physics/Physics.h"
@@ -23,11 +24,14 @@
 #include "Asset/GuidMapper.h"
 #include "Components/ComTransform.h"
 #include "Components/ComCamera.h"
+#include "Components/ComCanvas.h"
 #include "Components/ComScript.h"
+#include "Components/ComRigidBody.h"
 #include "Game/Entity.h"
 #include "Game/MapRenderSettings.h"
 #include "Game/GameWorld.h"
 #include "Game/GameSettings.h"
+#include "Game/CastResult.h"
 #include "Scripting/LuaVM.h"
 #include "StaticBatching/StaticBatch.h"
 #include "../StaticBatching/MeshCombiner.h"
@@ -36,6 +40,7 @@
 BE_NAMESPACE_BEGIN
 
 const EventDef EV_RestartGame("restartGame", false, "s");
+const EventDef EV_DontDestroyOnLoad("dontDestroyOnLoad", false, "a");
 
 const SignalDef GameWorld::SIG_EntityRegistered("GameWorld::EntityRegistered", "a");
 const SignalDef GameWorld::SIG_EntityUnregistered("GameWorld::EntityUnregistered", "a");
@@ -43,19 +48,20 @@ const SignalDef GameWorld::SIG_EntityUnregistered("GameWorld::EntityUnregistered
 OBJECT_DECLARATION("Game World", GameWorld, Object)
 BEGIN_EVENTS(GameWorld)
     EVENT(EV_RestartGame, GameWorld::Event_RestartGame),
+    EVENT(EV_DontDestroyOnLoad, GameWorld::Event_DontDestroyOnLoad),
 END_EVENTS
 
 void GameWorld::RegisterProperties() {
 }
 
 GameWorld::GameWorld() {
-    // Create render world
+    // Create render world.
     renderWorld = renderSystem.AllocRenderWorld();
 
-    // Create physics world
+    // Create physics world.
     physicsWorld = physicsSystem.AllocPhysicsWorld();
 
-    // Create render settings
+    // Create render settings.
     mapRenderSettings = static_cast<MapRenderSettings *>(MapRenderSettings::metaObject.CreateInstance());
     mapRenderSettings->gameWorld = this;
 
@@ -73,10 +79,10 @@ GameWorld::~GameWorld() {
         MapRenderSettings::DestroyInstanceImmediate(mapRenderSettings);
     }
 
-    // Free render world
+    // Free render world.
     renderSystem.FreeRenderWorld(renderWorld);
 
-    // Free physics world
+    // Free physics world.
     physicsSystem.FreePhysicsWorld(physicsWorld);
 
     luaVM.Shutdown();
@@ -94,31 +100,28 @@ void GameWorld::Reset() {
     physicsWorld->Reset();
 }
 
-int GameWorld::GetDeltaTime() const {
-    int dt = time - prevTime;
-
-    return dt;
-}
-
 void GameWorld::DontDestroyOnLoad(Entity *entity) {
-    if (!entity->node.IsParentedBy(scenes[DontDestroyOnLoadSceneNum].root)) {
-        entity->GetRoot()->node.SetParent(scenes[DontDestroyOnLoadSceneNum].root);
+    if (entity->GetParent()) {
+        BE_WARNLOG("DontDestroyOnLoad only works on root entity\n");
+        return;
     }
+
+    PostEvent(&EV_DontDestroyOnLoad, entity);
 }
 
 void GameWorld::ClearEntities(bool clearAll) {
-    // List up all of the entities to remove in depth first order
+    // List up all of the entities to remove in depth first order.
     EntityPtrArray entitiesToRemove;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         if (clearAll || sceneIndex != DontDestroyOnLoadSceneNum) {
-            for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+            for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
                 entitiesToRemove.Append(ent);
             }
         }
     }
 
-    // Remove entities in reverse depth first order
+    // Remove entities in reverse depth first order.
     for (int i = entitiesToRemove.Count() - 1; i >= 0; i--) {
         Entity *ent = entitiesToRemove[i];
 
@@ -152,7 +155,7 @@ Entity *GameWorld::FindEntityByName(const char *name) const {
 
 Entity *GameWorld::FindRootEntityByName(const char *name) const {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNextSibling()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNextSibling()) {
             if (ent->name == name) {
                 return ent;
             }
@@ -190,7 +193,7 @@ Entity *GameWorld::FindEntityRelativePath(const Entity *entity, const char *path
         name[slashIndex] = '\0';
     }
 
-    for (Entity *ent = entity->node.GetChild(); ent; ent = ent->node.GetNextSibling()) {
+    for (Entity *ent = entity->node.GetFirstChild(); ent; ent = ent->node.GetNextSibling()) {
         if (ent->name == name) {
             if (slashIndex >= 0) {
                 return FindEntityRelativePath(ent, &name[slashIndex + 1]);
@@ -234,21 +237,20 @@ const EntityPtrArray GameWorld::FindEntitiesByTag(const char *tagName) const {
     return resultEntities;
 }
 
-Entity *GameWorld::FindEntityByRenderEntity(int renderEntityHandle) const {
+Entity *GameWorld::FindEntityByRenderObject(int renderObjectHandle) const {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
-            if (ent->HasRenderEntity(renderEntityHandle)) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
+            if (ent->HasRenderObject(renderObjectHandle)) {
                 return ent;
             }
         }
     }
-
     return nullptr;
 }
 
 void GameWorld::OnApplicationResize(int width, int height) {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->OnApplicationResize(width, height);
         }
     }
@@ -256,7 +258,7 @@ void GameWorld::OnApplicationResize(int width, int height) {
 
 void GameWorld::OnApplicationTerminate() {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->OnApplicationTerminate();
         }
     }
@@ -264,7 +266,7 @@ void GameWorld::OnApplicationTerminate() {
 
 void GameWorld::OnApplicationPause(bool pause) {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->OnApplicationPause(pause);
         }
     }
@@ -294,7 +296,7 @@ void GameWorld::RegisterEntity(Entity *ent, int entityIndex) {
     int nameHash = entityHash.GenerateHash(ent->GetName());
     int tagHash = entityTagHash.GenerateHash(ent->GetTag());
 
-    // If entityIndex is not given, find a blank space in entities[]
+    // If entityIndex is not given, find a blank space in entities[].
     if (entityIndex < 0) {
         while (entities[firstFreeIndex] && firstFreeIndex < MaxEntityNum) {
             firstFreeIndex++;
@@ -351,25 +353,25 @@ void GameWorld::UnregisterEntity(Entity *ent) {
 }
 
 Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
-    // Serialize source entity and it's children
+    // Serialize source entity and it's children.
     Json::Value originalEntitiesValue;
     Entity::SerializeHierarchy(originalEntity, originalEntitiesValue);
 
-    // Clone entities value which is replaced by new GUIDs
+    // Clone entities value which is replaced by new GUIDs.
     HashTable<Guid, Guid> guidMap;
     Json::Value clonedEntitiesValue = Entity::CloneEntitiesValue(originalEntitiesValue, guidMap);
 
     EntityPtrArray clonedEntities;
 
     for (int i = 0; i < clonedEntitiesValue.size(); i++) {
-        // Create cloned entity
-        Entity *clonedEntity = Entity::CreateEntity(clonedEntitiesValue[i], this, originalEntity->sceneIndex);
+        // Create cloned entity.
+        Entity *clonedEntity = Entity::CreateEntity(clonedEntitiesValue[i], this, originalEntity->sceneNum);
         clonedEntities.Append(clonedEntity);
 
-        // Remap all GUID references to newly created
-        Entity::RemapGuids(clonedEntity, guidMap);
+        // Remap all GUID references to newly created.
+        clonedEntity->RemapGuids(guidMap);
 
-        // If source entity is prefab source, mark cloned entity originated from prefab entity
+        // If source entity is prefab source, mark cloned entity originated from prefab entity.
         if (originalEntitiesValue[i]["prefab"].asBool()) {
             clonedEntity->SetProperty("prefabSource", Guid::FromString(originalEntitiesValue[i]["guid"].asCString()));
             clonedEntity->SetProperty("prefab", false);
@@ -388,7 +390,6 @@ Entity *GameWorld::CreateEmptyEntity(const char *name) {
 
     value["components"][0]["classname"] = ComTransform::metaObject.ClassName();
     value["components"][0]["origin"] = Vec3::zero.ToString();
-    value["components"][0]["angles"] = Angles::zero.ToString();
 
     Entity *entity = Entity::CreateEntity(value, this);
 
@@ -406,7 +407,7 @@ Entity *GameWorld::InstantiateEntity(const Entity *originalEntity) {
     RegisterEntity(clonedEntity);
 
     EntityPtrArray children;
-    clonedEntity->GetChildren(children);
+    clonedEntity->GetChildrenRecursive(children);
 
     for (int i = 0; i < children.Count(); i++) {
         RegisterEntity(children[i]);
@@ -424,7 +425,7 @@ Entity *GameWorld::InstantiateEntityWithTransform(const Entity *originalEntity, 
     RegisterEntity(clonedEntity);
 
     EntityPtrArray children;
-    clonedEntity->GetChildren(children);
+    clonedEntity->GetChildrenRecursive(children);
 
     for (int i = 0; i < children.Count(); i++) {
         RegisterEntity(children[i]);
@@ -462,6 +463,8 @@ void GameWorld::SpawnEntitiesFromJson(Json::Value &entitiesValue, int sceneIndex
 
 void GameWorld::BeginMapLoading() {
     isMapLoading = true;
+
+    fontManager.ClearAtlasTextures();
 }
 
 void GameWorld::FinishMapLoading() {
@@ -470,24 +473,26 @@ void GameWorld::FinishMapLoading() {
     renderWorld->FinishMapLoading();
 
     animControllerManager.DestroyUnusedAnimControllers();
-    textureManager.DestroyUnusedTextures();
-    shaderManager.DestroyUnusedShaders();
-    materialManager.DestroyUnusedMaterials();
-    meshManager.DestroyUnusedMeshes();
     particleSystemManager.DestroyUnusedParticleSystems();
     skeletonManager.DestroyUnusedSkeletons();
     animManager.DestroyUnusedAnims();
     skinManager.DestroyUnusedSkins();
+    meshManager.DestroyUnusedMeshes();
+    fontManager.DestroyUnusedFonts();
+    materialManager.DestroyUnusedMaterials();
+    shaderManager.DestroyUnusedShaders();
+    textureManager.DestroyUnusedTextures();
     colliderManager.DestroyUnusedColliders();
     soundSystem.DestroyUnusedSounds();
+
     //meshManager.EndLevelLoad();
 
     StaticBatch::ClearAllStaticBatches();
 }
 
-bool GameWorld::CheckScriptError() const {
+bool GameWorld::HasScriptError() const {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ComponentPtrArray scriptComponents = ent->GetComponents(&ComScript::metaObject);
 
             for (int i = 0; i < scriptComponents.Count(); i++) {
@@ -505,15 +510,17 @@ bool GameWorld::CheckScriptError() const {
 void GameWorld::StartGame() {
     gameStarted = true;
 
+    if (gameClient.IsStatisticsVisible()) {
+        BE_PROFILE_START();
+    }
+
     timeScale = 1.0f;
 
     if (isDebuggable) {
         luaVM.StartDebuggee();
     }
 
-    luaVM.ClearTweeners();
-
-    luaVM.ClearWatingThreads();
+    luaVM.ClearWaitingThreads();
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         StaticBatch::CombineAll(scenes[sceneIndex].root);
@@ -522,7 +529,7 @@ void GameWorld::StartGame() {
     gameAwaking = true;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             if (!ent->awaked) {
                 ent->Awake();
             }
@@ -532,7 +539,7 @@ void GameWorld::StartGame() {
     gameAwaking = false;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             if (!ent->started) {
                 ent->Start();
             }
@@ -548,13 +555,13 @@ void GameWorld::StartGame() {
 void GameWorld::StopGame(bool stopAllSounds) {
     gameStarted = false;
 
+    BE_PROFILE_STOP();
+    
     if (isDebuggable) {
         luaVM.StopDebuggee();
     }
 
-    luaVM.ClearTweeners();
-
-    luaVM.ClearWatingThreads();
+    luaVM.ClearWaitingThreads();
 
     if (stopAllSounds) {
         soundSystem.StopAllSounds();
@@ -564,20 +571,34 @@ void GameWorld::StopGame(bool stopAllSounds) {
     physicsWorld->Disconnect(&PhysicsWorld::SIG_PostStep, this);
 }
 
-void GameWorld::RestartGame(const char *mapName) {
-    PostEvent(&EV_RestartGame, mapName);
+void GameWorld::RestartGame(const char *mapFilename) {
+    PostEvent(&EV_RestartGame, mapFilename);
 }
 
 void GameWorld::StopAllSounds() {
     soundSystem.StopAllSounds();
 }
 
-void GameWorld::Event_RestartGame(const char *mapName) {
+void GameWorld::Event_RestartGame(const char *mapFilename) {
     StopGame(false);
     
-    LoadMap(mapName, LoadSceneMode::Single);
+    LoadMap(mapFilename, LoadSceneMode::Single);
     
     StartGame();
+}
+
+void GameWorld::Event_DontDestroyOnLoad(Entity *entity) {
+    if (entity->node.IsParentedBy(scenes[DontDestroyOnLoadSceneNum].root)) {
+        return;
+    }
+    EntityPtrArray children;
+    entity->GetChildrenRecursive(children);
+
+    for (int i = 0; i < children.Count(); i++) {
+        children[i]->sceneNum = DontDestroyOnLoadSceneNum;
+    }
+    // Change parent of root entity to reserved scene root.
+    entity->GetRoot()->node.SetParent(scenes[DontDestroyOnLoadSceneNum].root);
 }
 
 void GameWorld::NewMap() {
@@ -614,7 +635,7 @@ bool GameWorld::LoadMap(const char *filename, LoadSceneMode::Enum mode) {
         return false;
     }
 
-    mapName = filename;
+    mapFilename = filename;
 
     Json::Value map;
     Json::Reader jsonReader;
@@ -625,23 +646,24 @@ bool GameWorld::LoadMap(const char *filename, LoadSceneMode::Enum mode) {
 
     fileSystem.FreeFile(text);
 
-    // Read map version
+    // Read map version.
     int mapVersion = map["version"].asInt();
 
-    // Read map render settings
+    // Read map render settings.
     mapRenderSettings->Deserialize(map["renderSettings"]);
     mapRenderSettings->Init();
 
+    // Find empty scene index.
     int sceneIndex = 0;
     for (; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        if (!scenes[sceneIndex].root.GetChild()) {
+        if (!scenes[sceneIndex].root.GetFirstChild()) {
             break;
         }
     }
 
     assert(sceneIndex < COUNT_OF(scenes));
 
-    // Read and spawn entities
+    // Read and spawn all entities.
     SpawnEntitiesFromJson(map["entities"], sceneIndex);
 
     FinishMapLoading();
@@ -654,14 +676,14 @@ void GameWorld::SaveMap(const char *filename) {
 
     Json::Value map;
 
-    // Write map version
+    // Serialize map version.
     map["version"] = 1;
 
-    // Write map render settings
+    // Serialize map render settings.
     mapRenderSettings->Serialize(map["renderSettings"]);
 
-    // Write entities
-    for (Entity *ent = scenes[0].root.GetChild(); ent; ent = ent->node.GetNextSibling()) {
+    // Serialize all entities in the main scene.
+    for (Entity *ent = scenes[0].root.GetFirstChild(); ent; ent = ent->node.GetNextSibling()) {
         Entity::SerializeHierarchy(ent, map["entities"]);
     }
 
@@ -671,8 +693,16 @@ void GameWorld::SaveMap(const char *filename) {
     fileSystem.WriteFile(filename, jsonText.c_str(), jsonText.Length());
 }
 
-void GameWorld::Update(int elapsedTime) {
-    BE_PROFILE_CPU_SCOPE("GameWorld::Update", Color3::white);
+int GameWorld::GetDeltaTime() const {
+    return deltaTime;
+}
+
+int GameWorld::GetUnscaledDeltaTime() const {
+    return unscaledDeltaTime;
+}
+
+void GameWorld::Update(int elapsedMsec) {
+    BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::Update");
 
     if (isDebuggable) {
         luaVM.PollDebuggee();
@@ -680,61 +710,146 @@ void GameWorld::Update(int elapsedTime) {
 
     prevTime = time;
 
-    int scaledElapsedTime = elapsedTime * timeScale;
+    unscaledDeltaTime = elapsedMsec;
 
-    time += scaledElapsedTime;
+    deltaTime = unscaledDeltaTime * timeScale;
+
+    time += deltaTime;
 
     if (gameStarted) {
-        // FixedUpdate() is called in StepSimulation() internally
-        physicsWorld->StepSimulation(scaledElapsedTime);
+        // FixedUpdate() is called in StepSimulation() internally.
+        physicsWorld->StepSimulation(MILLI2SEC(deltaTime));
 
         UpdateEntities();
 
         LateUpdateEntities();
 
-        // Wake up waiting coroutine in Lua scripts
-        luaVM.WakeUpWatingThreads(MS2SEC(time));
-
-        // Update tweeners in Lua scripts
-        luaVM.UpdateTweeners(MS2SEC(elapsedTime), timeScale);
-
-        luaVM.State().ForceGC();
+        UpdateLuaVM();
     }
 }
 
 void GameWorld::FixedUpdateEntities(float timeStep) {
-    // Call fixed update function for each entities in depth-first order
+    //BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::FixedUpdateEntities");
+
+    // Call fixed update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->FixedUpdate(timeStep * timeScale);
         }
     }
 }
 
 void GameWorld::FixedLateUpdateEntities(float timeStep) {
-    // Call fixed post-update function for each entities in depth-first order
+    //BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::FixedLateUpdateEntities");
+
+    // Call fixed post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->FixedLateUpdate(timeStep * timeScale);
         }
     }
 }
 
 void GameWorld::UpdateEntities() {
-    // Call update function for each entities in depth-first order
+    BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::UpdateEntities");
+
+    // Call update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->Update();
         }
     }
 }
 
 void GameWorld::LateUpdateEntities() {
-    // Call post-update function for each entities in depth-first order
+    BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::LateUpdateEntities");
+
+    // Call post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ent->LateUpdate();
         }
+    }
+}
+
+void GameWorld::UpdateLuaVM() {
+    BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::UpdateLuaVM");
+
+    // Wake up waiting coroutine in Lua scripts.
+    luaVM.WakeUpWaitingThreads(MILLI2SEC(time));
+
+    luaVM.State().ForceGC();
+}
+
+void GameWorld::UpdateCanvas() {
+    for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
+        Entity *ent = scenes[sceneIndex].root.GetFirstChild();
+
+        while (ent) {
+            ComCanvas *canvasComponent = ent->GetComponent<ComCanvas>();
+
+            if (canvasComponent) {
+                canvasComponent->UpdateRenderingOrderForCanvasElements();
+            }
+
+            ent = ent->node.GetNext();
+        }
+    }
+}
+
+void GameWorld::ListUpActiveCameraComponents(StaticArray<ComCamera *, 16> &cameraComponents) const {
+    for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
+            ComCamera *camera = ent->GetComponent<ComCamera>();
+            if (!camera || !camera->IsActiveInHierarchy()) {
+                continue;
+            }
+
+            // NOTE: Support only 16 camera components. Need to fix this ?
+            if (cameraComponents.Append(camera) == -1) {
+                break;
+            }
+        }
+    }
+
+    auto compareFunc = [](const ComCamera *arg1, const ComCamera *arg2) -> bool {
+        return arg1->GetOrder() < arg2->GetOrder() ? true : false;
+    };
+    cameraComponents.Sort(compareFunc);
+}
+
+void GameWorld::ListUpActiveCanvasComponents(StaticArray<ComCanvas *, 16> &canvasComponents) const {
+    for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
+            ComCanvas *canvas = ent->GetComponent<ComCanvas>();
+            if (!canvas || !canvas->IsActiveInHierarchy()) {
+                continue;
+            }
+
+            if (canvasComponents.Append(canvas) == -1) {
+                break;
+            }
+        }
+    }
+}
+
+void GameWorld::RenderCamera() {
+    BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::RenderCamera");
+
+    StaticArray<ComCamera *, 16> cameraComponents;
+    ListUpActiveCameraComponents(cameraComponents);
+
+    // Render camera in order.
+    for (int i = 0; i < cameraComponents.Count(); i++) {
+        cameraComponents[i]->Render();
+    }
+
+    StaticArray<ComCanvas *, 16> canvasComponents;
+    ListUpActiveCanvasComponents(canvasComponents);
+
+    // Render canvas in order.
+    for (int i = 0; i < canvasComponents.Count(); i++) {
+        canvasComponents[i]->Render();
     }
 }
 
@@ -748,31 +863,25 @@ void GameWorld::ProcessPointerInput() {
     }
 
     StaticArray<ComCamera *, 16> cameraComponents;
+    ListUpActiveCameraComponents(cameraComponents);
 
-    for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
-            ComCamera *camera = ent->GetComponent<ComCamera>();
-            if (!camera || !camera->IsActiveInHierarchy()) {
-                continue;
-            }
+    // Process pointer input in reverse order.
+    for (int i = cameraComponents.Count() - 1; i >= 0; i--) {
+        ComCamera *cameraComponent = cameraComponents[i];
 
-            if (cameraComponents.Append(camera) == -1) {
-                break;
-            }
+        if (cameraComponent->ProcessMousePointerInput() || cameraComponent->ProcessTouchPointerInput()) {
+            break;
         }
     }
 
-    // Process pointer input in reverse order
-    auto compareFunc = [](const ComCamera *arg1, const ComCamera *arg2) -> bool {
-        return arg1->GetOrder() > arg2->GetOrder() ? true : false;
-    };
-    cameraComponents.Sort(compareFunc);
+    StaticArray<ComCanvas *, 16> canvasComponents;
+    ListUpActiveCanvasComponents(canvasComponents);
 
-    for (int i = 0; i < cameraComponents.Count(); i++) {
-        ComCamera *cameraComponent = cameraComponents[i];
+    // Process pointer input in reverse order.
+    for (int i = canvasComponents.Count() - 1; i >= 0; i--) {
+        ComCanvas *canvasComponent = canvasComponents[i];
 
-        if (cameraComponent->ProcessMousePointerInput(inputSystem.GetMousePos()) ||
-            cameraComponent->ProcessTouchPointerInput()) {
+        if (canvasComponent->ProcessMousePointerInput() || canvasComponent->ProcessTouchPointerInput()) {
             break;
         }
     }
@@ -783,7 +892,7 @@ Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask) const {
     float minDist = FLT_MAX;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             if (!(BIT(ent->GetLayer()) & layerMask)) {
                 continue;
             }
@@ -806,7 +915,7 @@ Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask, const Array<Entit
     Entity *minEntity = nullptr;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             if (!(BIT(ent->GetLayer()) & layerMask)) {
                 continue;
             }
@@ -827,30 +936,19 @@ Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask, const Array<Entit
     return minEntity;
 }
 
-void GameWorld::Render() {
-    StaticArray<ComCamera *, 16> cameraComponents;
+Entity *GameWorld::RayCast(const Ray &ray, int layerMask) const {
+    CastResult castResult;
 
-    for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNext()) {
-            ComCamera *camera = ent->GetComponent<ComCamera>();
-            if (!camera || !camera->IsActiveInHierarchy()) {
-                continue;
-            }
-
-            if (cameraComponents.Append(camera) == -1) {
-                break;
-            }
-        }
+    if (!GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetPoint(MeterToUnit(10000.0f)), layerMask, castResult)) {
+        return nullptr;
     }
 
-    auto compareFunc = [](const ComCamera *arg1, const ComCamera *arg2) -> bool {
-        return arg1->GetOrder() < arg2->GetOrder() ? true : false;
-    };
-    cameraComponents.Sort(compareFunc);
-
-    for (int i = 0; i < cameraComponents.Count(); i++) {
-        cameraComponents[i]->RenderScene();
+    ComRigidBody *hitTestRigidBody = GetRigidBodyFromCastResult(castResult);
+    if (hitTestRigidBody) {
+        return hitTestRigidBody->GetEntity();
     }
+
+    return nullptr;
 }
 
 void GameWorld::SaveSnapshot() {
@@ -859,7 +957,7 @@ void GameWorld::SaveSnapshot() {
     mapRenderSettings->Serialize(snapshotValues["renderSettings"]);
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetChild(); ent; ent = ent->node.GetNextSibling()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNextSibling()) {
             Entity::SerializeHierarchy(ent, snapshotValues["entities"][sceneIndex]);
         }
     }

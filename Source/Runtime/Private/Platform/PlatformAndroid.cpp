@@ -16,6 +16,7 @@
 #include "Core/Str.h"
 #include "PlatformGeneric.h"
 #include "PlatformAndroid.h"
+#include "Platform/PlatformSystem.h"
 #include "PlatformUtils/Android/AndroidJNI.h"
 #include <android/log.h>
 
@@ -52,6 +53,8 @@ void PlatformAndroid::Error(const char *msg) {
     AndroidJNI::CallVoidMethod(env, AndroidJNI::activity->clazz, AndroidJNI::javaMethod_showAlert, javaMsg);
 
     env->DeleteLocalRef(javaMsg);
+
+    PlatformSystem::DebugBreak();
 
     Quit();
 }

@@ -16,6 +16,9 @@
 #include "Render/Render.h"
 #include "RenderInternal.h"
 
+#define PAR_OCTASPHERE_IMPLEMENTATION
+#include "par_octasphere.h"
+
 BE_NAMESPACE_BEGIN
 
 void Mesh::CreateDefaultBox() {
@@ -25,7 +28,7 @@ void Mesh::CreateDefaultBox() {
     surf->materialIndex = 0;
     surfaces.Append(surf);
 
-    float extent = MeterToUnit(0.1f);
+    constexpr float extent = MeterToUnit(0.1f);
 
     VertexGenericLit *v = surf->subMesh->verts;
     // bottom face
@@ -36,31 +39,31 @@ void Mesh::CreateDefaultBox() {
     
     // top face
     v[4].SetPosition(+extent, -extent, extent * 2); v[4].SetTexCoord(0.0f, 1.0f); v[4].SetNormal(0.0f, 0.0f,  1.0f); v[4].SetColor(0xffffffff);
-    v[5].SetPosition(+extent, +extent, extent * 2); v[5].SetTexCoord(1.0f, 1.0f); v[5].SetNormal(0.0f, 0.0f,  1.0f); v[5].SetColor(0xffffffff);	
+    v[5].SetPosition(+extent, +extent, extent * 2); v[5].SetTexCoord(1.0f, 1.0f); v[5].SetNormal(0.0f, 0.0f,  1.0f); v[5].SetColor(0xffffffff);
     v[6].SetPosition(-extent, +extent, extent * 2); v[6].SetTexCoord(1.0f, 0.0f); v[6].SetNormal(0.0f, 0.0f,  1.0f); v[6].SetColor(0xffffffff);
-    v[7].SetPosition(-extent, -extent, extent * 2); v[7].SetTexCoord(0.0f, 0.0f); v[7].SetNormal(0.0f, 0.0f,  1.0f); v[7].SetColor(0xffffffff);	
+    v[7].SetPosition(-extent, -extent, extent * 2); v[7].SetTexCoord(0.0f, 0.0f); v[7].SetNormal(0.0f, 0.0f,  1.0f); v[7].SetColor(0xffffffff);
     
     // front face
     v[8].SetPosition(+extent, -extent, 0.0f); v[8].SetTexCoord(0.0f, 1.0f); v[8].SetNormal(1.0f, 0.0f, 0.0f); v[8].SetColor(0xffffffff);
-    v[9].SetPosition(+extent, +extent, 0.0f); v[9].SetTexCoord(1.0f, 1.0f); v[9].SetNormal(1.0f, 0.0f, 0.0f); v[9].SetColor(0xffffffff);	
+    v[9].SetPosition(+extent, +extent, 0.0f); v[9].SetTexCoord(1.0f, 1.0f); v[9].SetNormal(1.0f, 0.0f, 0.0f); v[9].SetColor(0xffffffff);
     v[10].SetPosition(+extent, +extent, extent * 2); v[10].SetTexCoord(1.0f, 0.0f); v[10].SetNormal(1.0f, 0.0f, 0.0f); v[10].SetColor(0xffffffff);
     v[11].SetPosition(+extent, -extent, extent * 2); v[11].SetTexCoord(0.0f, 0.0f); v[11].SetNormal(1.0f, 0.0f, 0.0f); v[11].SetColor(0xffffffff);
     
     // right face
-    v[12].SetPosition(+extent, +extent,  0.0f); v[12].SetTexCoord(0.0f, 1.0f); v[12].SetNormal(0.0f, 1.0f, 0.0f); v[12].SetColor(0xffffffff);	
-    v[13].SetPosition(-extent, +extent,  0.0f); v[13].SetTexCoord(1.0f, 1.0f); v[13].SetNormal(0.0f, 1.0f, 0.0f); v[13].SetColor(0xffffffff);	
+    v[12].SetPosition(+extent, +extent,  0.0f); v[12].SetTexCoord(0.0f, 1.0f); v[12].SetNormal(0.0f, 1.0f, 0.0f); v[12].SetColor(0xffffffff);
+    v[13].SetPosition(-extent, +extent,  0.0f); v[13].SetTexCoord(1.0f, 1.0f); v[13].SetNormal(0.0f, 1.0f, 0.0f); v[13].SetColor(0xffffffff);
     v[14].SetPosition(-extent, +extent, extent * 2); v[14].SetTexCoord(1.0f, 0.0f); v[14].SetNormal(0.0f, 1.0f, 0.0f); v[14].SetColor(0xffffffff);
     v[15].SetPosition(+extent, +extent, extent * 2); v[15].SetTexCoord(0.0f, 0.0f); v[15].SetNormal(0.0f, 1.0f, 0.0f); v[15].SetColor(0xffffffff);
     
     // back face
     v[16].SetPosition(-extent, +extent,  0.0f); v[16].SetTexCoord(0.0f, 1.0f); v[16].SetNormal(-1.0f, 0.0f, 0.0f); v[16].SetColor(0xffffffff);
-    v[17].SetPosition(-extent, -extent,  0.0f); v[17].SetTexCoord(1.0f, 1.0f); v[17].SetNormal(-1.0f, 0.0f, 0.0f); v[17].SetColor(0xffffffff);	
+    v[17].SetPosition(-extent, -extent,  0.0f); v[17].SetTexCoord(1.0f, 1.0f); v[17].SetNormal(-1.0f, 0.0f, 0.0f); v[17].SetColor(0xffffffff);
     v[18].SetPosition(-extent, -extent, extent * 2); v[18].SetTexCoord(1.0f, 0.0f); v[18].SetNormal(-1.0f, 0.0f, 0.0f); v[18].SetColor(0xffffffff);
     v[19].SetPosition(-extent, +extent, extent * 2); v[19].SetTexCoord(0.0f, 0.0f); v[19].SetNormal(-1.0f, 0.0f, 0.0f); v[19].SetColor(0xffffffff);
     
     // left face
     v[20].SetPosition(-extent, -extent,  0.0f); v[20].SetTexCoord(0.0f, 1.0f); v[20].SetNormal(0.0f, -1.0f, 0.0f); v[20].SetColor(0xffffffff);
-    v[21].SetPosition(+extent, -extent,  0.0f); v[21].SetTexCoord(1.0f, 1.0f); v[21].SetNormal(0.0f, -1.0f, 0.0f); v[21].SetColor(0xffffffff);		
+    v[21].SetPosition(+extent, -extent,  0.0f); v[21].SetTexCoord(1.0f, 1.0f); v[21].SetNormal(0.0f, -1.0f, 0.0f); v[21].SetColor(0xffffffff);
     v[22].SetPosition(+extent, -extent, extent * 2); v[22].SetTexCoord(1.0f, 0.0f); v[22].SetNormal(0.0f, -1.0f, 0.0f); v[22].SetColor(0xffffffff);
     v[23].SetPosition(-extent, -extent, extent * 2); v[23].SetTexCoord(0.0f, 0.0f); v[23].SetNormal(0.0f, -1.0f, 0.0f); v[23].SetColor(0xffffffff);
         
@@ -154,18 +157,18 @@ void Mesh::CreateBox(const Vec3 &origin, const Mat3 &axis, const Vec3 &extents) 
     
     // top face
     v[4].SetPosition( extents[0], -extents[1],  extents[2]); v[4].SetTexCoord(0.0f, 1.0f); v[4].SetNormal(0.0f, 0.0f,  1.0f); v[4].SetColor(0xffffffff);
-    v[5].SetPosition( extents[0],  extents[1],  extents[2]); v[5].SetTexCoord(1.0f, 1.0f); v[5].SetNormal(0.0f, 0.0f,  1.0f); v[5].SetColor(0xffffffff);	
+    v[5].SetPosition( extents[0],  extents[1],  extents[2]); v[5].SetTexCoord(1.0f, 1.0f); v[5].SetNormal(0.0f, 0.0f,  1.0f); v[5].SetColor(0xffffffff);
     v[6].SetPosition(-extents[0],  extents[1],  extents[2]); v[6].SetTexCoord(1.0f, 0.0f); v[6].SetNormal(0.0f, 0.0f,  1.0f); v[6].SetColor(0xffffffff);
     v[7].SetPosition(-extents[0], -extents[1],  extents[2]); v[7].SetTexCoord(0.0f, 0.0f); v[7].SetNormal(0.0f, 0.0f,  1.0f); v[7].SetColor(0xffffffff);
 
     // front face
     v[8].SetPosition( extents[0], -extents[1], -extents[2]); v[8].SetTexCoord(0.0f, 1.0f); v[8].SetNormal(1.0f, 0.0f, 0.0f); v[8].SetColor(0xffffffff);
-    v[9].SetPosition( extents[0],  extents[1], -extents[2]); v[9].SetTexCoord(1.0f, 1.0f); v[9].SetNormal(1.0f, 0.0f, 0.0f); v[9].SetColor(0xffffffff);	
+    v[9].SetPosition( extents[0],  extents[1], -extents[2]); v[9].SetTexCoord(1.0f, 1.0f); v[9].SetNormal(1.0f, 0.0f, 0.0f); v[9].SetColor(0xffffffff);
     v[10].SetPosition(extents[0],  extents[1],  extents[2]); v[10].SetTexCoord(1.0f, 0.0f); v[10].SetNormal(1.0f, 0.0f, 0.0f); v[10].SetColor(0xffffffff);
     v[11].SetPosition(extents[0], -extents[1],  extents[2]); v[11].SetTexCoord(0.0f, 0.0f); v[11].SetNormal(1.0f, 0.0f, 0.0f); v[11].SetColor(0xffffffff);
     
     // right face
-    v[12].SetPosition( extents[0], extents[1], -extents[2]); v[12].SetTexCoord(0.0f, 1.0f); v[12].SetNormal(0.0f, 1.0f, 0.0f); v[12].SetColor(0xffffffff);	
+    v[12].SetPosition( extents[0], extents[1], -extents[2]); v[12].SetTexCoord(0.0f, 1.0f); v[12].SetNormal(0.0f, 1.0f, 0.0f); v[12].SetColor(0xffffffff);
     v[13].SetPosition(-extents[0], extents[1], -extents[2]); v[13].SetTexCoord(1.0f, 1.0f); v[13].SetNormal(0.0f, 1.0f, 0.0f); v[13].SetColor(0xffffffff);
     v[14].SetPosition(-extents[0], extents[1],  extents[2]); v[14].SetTexCoord(1.0f, 0.0f); v[14].SetNormal(0.0f, 1.0f, 0.0f); v[14].SetColor(0xffffffff);
     v[15].SetPosition( extents[0], extents[1],  extents[2]); v[15].SetTexCoord(0.0f, 0.0f); v[15].SetNormal(0.0f, 1.0f, 0.0f); v[15].SetColor(0xffffffff);
@@ -180,7 +183,7 @@ void Mesh::CreateBox(const Vec3 &origin, const Mat3 &axis, const Vec3 &extents) 
     v[20].SetPosition(-extents[0], -extents[1], -extents[2]); v[20].SetTexCoord(0.0f, 1.0f); v[20].SetNormal(0.0f, -1.0f, 0.0f); v[20].SetColor(0xffffffff);
     v[21].SetPosition( extents[0], -extents[1], -extents[2]); v[21].SetTexCoord(1.0f, 1.0f); v[21].SetNormal(0.0f, -1.0f, 0.0f); v[21].SetColor(0xffffffff);
     v[22].SetPosition( extents[0], -extents[1],  extents[2]); v[22].SetTexCoord(1.0f, 0.0f); v[22].SetNormal(0.0f, -1.0f, 0.0f); v[22].SetColor(0xffffffff);
-    v[23].SetPosition(-extents[0], -extents[1],  extents[2]); v[23].SetTexCoord(0.0f, 0.0f); v[23].SetNormal(0.0f, -1.0f, 0.0f); v[23].SetColor(0xffffffff);	
+    v[23].SetPosition(-extents[0], -extents[1],  extents[2]); v[23].SetTexCoord(0.0f, 0.0f); v[23].SetNormal(0.0f, -1.0f, 0.0f); v[23].SetColor(0xffffffff);
         
     TriIndex *idx = surf->subMesh->indexes;
     idx[0] = 0;     idx[1] = 1;     idx[2] = 2;
@@ -207,9 +210,11 @@ void Mesh::CreateSphere(const Vec3 &origin, const Mat3 &axis, float radius, int 
     CreateCapsule(origin, axis, radius, 0, numSegments);
 }
 
-void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numTess) {
-    assert(numTess > 0);
-
+void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numSubdivisions) {
+    assert(numSubdivisions >= 0);
+#if 1
+    CreateRoundedBox(origin, Vec3::zero, radius, numSubdivisions);
+#else
     static constexpr float x = 0.525731112119133606f;
     static constexpr float z = 0.850650808352039932f;
     static constexpr Vec3 icosa_verts[12] = {
@@ -254,6 +259,61 @@ void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numTess) {
             *idx++ = icosa_tris[i][j];
         }
     }
+
+    FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
+
+    if (!origin.IsZero()) {
+        TransformVerts(Mat3::identity, Vec3::one, origin);
+    }
+#endif
+}
+
+void Mesh::CreateRoundedBox(const Vec3 &origin, const Vec3 extents, float radius, int numSubdivisions) {
+    assert(numSubdivisions >= 0);
+
+    par_octasphere_config cfg;
+    cfg.corner_radius = radius;
+    cfg.width = radius * 2 + extents[0];
+    cfg.height = radius * 2 + extents[1];
+    cfg.depth = radius * 2 + extents[2];
+    cfg.num_subdivisions = numSubdivisions;
+    cfg.uv_mode = PAR_OCTASPHERE_UV_LATLONG;
+    cfg.normals_mode = PAR_OCTASPHERE_NORMALS_SMOOTH;
+
+    uint32_t num_indices;
+    uint32_t num_vertices;
+    par_octasphere_get_counts(&cfg, &num_indices, &num_vertices);
+
+    MeshSurf *surf = AllocSurface(num_vertices, num_indices);
+    surf->materialIndex = 0;
+    surfaces.Append(surf);
+
+    par_octasphere_mesh mesh;
+    mesh.positions = (float *)malloc(sizeof(float) * 3 * num_vertices);
+    mesh.normals = (float *)malloc(sizeof(float) * 3 * num_vertices);
+    mesh.texcoords = (float *)malloc(sizeof(float) * 2 * num_vertices);
+    mesh.indices = (uint16_t *)malloc(sizeof(uint16_t) * num_indices);
+
+    par_octasphere_populate(&cfg, &mesh);
+
+    VertexGenericLit *vptr = surf->subMesh->verts;
+    for (int i = 0; i < surf->subMesh->numVerts; i++) {
+        vptr->SetPosition(mesh.positions[i * 3 + 0], mesh.positions[i * 3 + 1], mesh.positions[i * 3 + 2]);
+        vptr->SetNormal(mesh.normals[i * 3 + 0], mesh.normals[i * 3 + 1], mesh.normals[i * 3 + 2]);
+        vptr->SetTexCoord(mesh.texcoords[i * 2 + 0], mesh.texcoords[i * 2 + 1]);
+        vptr->SetColor(0xffffffff);
+        vptr++;
+    }
+
+    TriIndex *iptr = surf->subMesh->indexes;
+    for (int i = 0; i < surf->subMesh->numIndexes; i++) {
+        *iptr++ = (TriIndex)mesh.indices[i];
+    }
+
+    free(mesh.positions);
+    free(mesh.normals);
+    free(mesh.texcoords);
+    free(mesh.indices);
 
     FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
 

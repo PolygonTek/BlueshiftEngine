@@ -32,7 +32,7 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
-    virtual bool            HasRenderEntity(int renderEntityHandle) const override;
+    virtual bool            HasRenderObject(int renderObjectHandle) const override;
 
                             /// Called once when game started before Start()
                             /// When game already started, called immediately after spawned
@@ -41,12 +41,12 @@ public:
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
-#if 1
+#if WITH_EDITOR
                             /// Visualize the component in editor
-    virtual void            DrawGizmos(const RenderCamera::State &viewState, bool selected) override;
+    virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
-    virtual const AABB      GetAABB() override;
+    virtual const AABB      GetAABB() const override;
 
     EnvProbe::Type::Enum    GetType() const;
     void                    SetType(EnvProbe::Type::Enum type);

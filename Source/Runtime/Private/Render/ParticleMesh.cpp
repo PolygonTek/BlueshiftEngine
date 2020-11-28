@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -195,7 +195,7 @@ void ParticleMesh::Draw(const ParticleSystem *particleSystem, const Array<Partic
             currentSurf->numVerts += numVerts;
             currentSurf->numIndexes += numIndexes;
 
-            ComputeTextureCoordinates(stage.standardModule, MS2SEC(renderObject->GetState().time) - renderObject->GetState().stageStartDelay[stageIndex], s1, t1, s2, t2);
+            ComputeTextureCoordinates(stage.standardModule, MILLI2SEC(renderObject->GetState().time) - renderObject->GetState().stageStartDelay[stageIndex], s1, t1, s2, t2);
 
             float16_t hs1 = F16Converter::FromF32(s1);
             float16_t ht1 = F16Converter::FromF32(t1);

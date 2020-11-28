@@ -1,6 +1,6 @@
 #include "Precompiled.h"
 #include "Math/Math.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 #include "Core/CVars.h"
 #include "Sound/SoundSystem.h"
 
@@ -143,13 +143,13 @@ void SoundSystem::ShutdownDevice() {
     alcCloseDevice(alDevice);
 }
 
-void SoundSystem::PlaceListenerInternal(const Vec3 &origin, const Vec3 &forward, const Vec3 &up) {
+void SoundSystem::PlaceListenerInternal(const Vec3 &position, const Vec3 &forward, const Vec3 &up) {
     ALfloat listenerOri[] = { forward.x, forward.y, forward.z, up.x, up.y, up.z };
-    ALfloat listenerVel[] = { 0, 0, 0 };
+    //ALfloat listenerVel[] = { 0, 0, 0 };
 
-    alListener3f(AL_POSITION, origin.x, origin.y, origin.z);
+    alListener3f(AL_POSITION, position.x, position.y, position.z);
     alListenerfv(AL_ORIENTATION, listenerOri);
-    alListenerfv(AL_VELOCITY, listenerVel);
+    //alListenerfv(AL_VELOCITY, listenerVel);
 }
 
 BE_NAMESPACE_END

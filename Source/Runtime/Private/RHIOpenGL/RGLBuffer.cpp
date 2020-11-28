@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "RHI/RHIOpenGL.h"
 #include "RGLInternal.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -90,9 +90,8 @@ RHI::Handle OpenGLRHI::CreateBuffer(BufferType::Enum type, BufferUsage::Enum usa
     }
 
     if (size > 0) {
-        Handle bufferHandle = currentContext->state->bufferHandles[type];
-        const GLBuffer *buffer = bufferList[bufferHandle];
-        gglBindBuffer(target, buffer->object);
+        Handle *bufferHandlePtr = &currentContext->state->bufferHandles[type];
+        *bufferHandlePtr = handle;
     }
 
     return (Handle)handle;
@@ -108,8 +107,8 @@ void OpenGLRHI::DestroyBuffer(Handle bufferHandle) {
         }
     }
 
+    // If a buffer object that is currently bound is deleted, the binding reverts to 0.
     gglDeleteBuffers(1, &buffer->object);
-    buffer->object = 0;
 
     delete bufferList[bufferHandle];
     bufferList[bufferHandle] = nullptr;
@@ -125,7 +124,7 @@ void OpenGLRHI::BindBuffer(BufferType::Enum type, Handle bufferHandle) {
 }
 
 void OpenGLRHI::BindIndexedBuffer(BufferType::Enum type, int bindingIndex, Handle bufferHandle) {
-    // Allowed only target UniformBuffer or TransformFeedbackBuffer
+    // Allowed only target UniformBuffer or TransformFeedbackBuffer.
     assert(type == BufferType::Uniform || type == BufferType::TransformFeedback);
     int targetIndex = type - BufferType::Uniform;
     Handle *bufferHandlePtr = &currentContext->state->indexedBufferHandles[targetIndex];
@@ -140,7 +139,7 @@ void OpenGLRHI::BindIndexedBuffer(BufferType::Enum type, int bindingIndex, Handl
 }
 
 void OpenGLRHI::BindIndexedBufferRange(BufferType::Enum type, int bindingIndex, Handle bufferHandle, int offset, int size) {
-    // Allowed only target UniformBuffer or TransformFeedbackBuffer
+    // Allowed only target UniformBuffer or TransformFeedbackBuffer.
     assert(type == BufferType::Uniform || type == BufferType::TransformFeedback);
     int targetIndex = type - BufferType::Uniform;
     Handle *bufferHandlePtr = &currentContext->state->indexedBufferHandles[targetIndex];
@@ -157,7 +156,7 @@ void OpenGLRHI::BindIndexedBufferRange(BufferType::Enum type, int bindingIndex, 
 // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glMapBufferRange.xhtml
 // GL_MAP_INVALIDATE_RANGE_BIT -- previous contents of the specified range may be discarded
 // GL_MAP_UNSYNCHRONIZED_BIT -- GL should not attempt to synchronize pending operations on the buffer prior to returning from glMapBufferRange
-// GL_MAP_FLUSH_EXPLICIT_BIT -- modifications to each subrange must be explicitly flushed (DMA) by calling glFlushMappedBufferRange()
+// GL_MAP_FLUSH_EXPLICIT_BIT -- modifications to each subrange must be explicitly flushed by calling glFlushMappedBufferRange()
 // GL_MAP_PERSISTENT_BIT -- keep mapping and that the client intends to hold and use the returned pointer during subsequent GL operation
 // GL_MAP_COHERENT_BIT -- persistent mapping is also to be coherent (automatically visible to GPU)
 void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMode, int offset, int size) {
@@ -176,7 +175,7 @@ void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMo
         access |= GL_MAP_WRITE_BIT;
         break;
     case BufferLockMode::WriteOnlyExplicitFlush:
-        access |= (GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+        access |= (GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
         break;
     case BufferLockMode::WriteOnlyPersistent:
         access |= GL_MAP_WRITE_BIT;
@@ -192,12 +191,11 @@ void *OpenGLRHI::MapBufferRange(Handle bufferHandle, BufferLockMode::Enum lockMo
 
     void *ptr = nullptr;
     if (offset > 0 || offset + size < buffer->size) {
-        ptr = gglMapBufferRange(buffer->target, offset, size, access | GL_MAP_INVALIDATE_RANGE_BIT);
+        ptr = gglMapBufferRange(buffer->target, offset, size, access | GL_MAP_UNSYNCHRONIZED_BIT);
     } else {
-        ptr = gglMapBufferRange(buffer->target, 0, size, access | GL_MAP_INVALIDATE_RANGE_BIT);
+        ptr = gglMapBufferRange(buffer->target, 0, size, access);
     }
 
-    assert(ptr);
     return ptr;
 }
 
@@ -222,17 +220,62 @@ void OpenGLRHI::FlushMappedBufferRange(Handle bufferHandle, int offset, int size
     gglFlushMappedBufferRange(buffer->target, offset, size);
 }
 
+void OpenGLRHI::WriteBuffer(byte *dst, const byte *src, int numBytes) {
+    assert_16_byte_aligned(dst);
+    assert_16_byte_aligned(src);
+
+#if defined(ENABLE_SIMD4_INTRIN)
+    int i = 0;
+    for (; i + 128 <= numBytes; i += 128) {
+        simd4i d0 = load_si128((int32_t *)&src[i + 0 * 16]);
+        simd4i d1 = load_si128((int32_t *)&src[i + 1 * 16]);
+        simd4i d2 = load_si128((int32_t *)&src[i + 2 * 16]);
+        simd4i d3 = load_si128((int32_t *)&src[i + 3 * 16]);
+        simd4i d4 = load_si128((int32_t *)&src[i + 4 * 16]);
+        simd4i d5 = load_si128((int32_t *)&src[i + 5 * 16]);
+        simd4i d6 = load_si128((int32_t *)&src[i + 6 * 16]);
+        simd4i d7 = load_si128((int32_t *)&src[i + 7 * 16]);
+
+        storent_si128(d0, (int32_t *)&dst[i + 0 * 16]);
+        storent_si128(d1, (int32_t *)&dst[i + 1 * 16]);
+        storent_si128(d2, (int32_t *)&dst[i + 2 * 16]);
+        storent_si128(d3, (int32_t *)&dst[i + 3 * 16]);
+        storent_si128(d4, (int32_t *)&dst[i + 4 * 16]);
+        storent_si128(d5, (int32_t *)&dst[i + 5 * 16]);
+        storent_si128(d6, (int32_t *)&dst[i + 6 * 16]);
+        storent_si128(d7, (int32_t *)&dst[i + 7 * 16]);
+    }
+    for (; i + 16 <= numBytes; i += 16) {
+        simd4i d = load_si128((int32_t *)&src[i]);
+        storent_si128(d, (int32_t *)&dst[i]);
+    }
+    for (; i + 4 <= numBytes; i += 4) {
+        *(uint32_t *)&dst[i] = *(const uint32_t *)&src[i];
+    }
+    for (; i < numBytes; i++) {
+        dst[i] = src[i];
+    }
+    sfence();
+#else
+    memcpy(dst, src, numBytes);
+#endif
+}
+
 int OpenGLRHI::BufferDiscardWrite(Handle bufferHandle, int size, const void *data) {
     GLBuffer *buffer = bufferList[bufferHandle];
 
     if (gglMapBufferRange) {
-        // glMapBufferRange 함수는 buffer alloc 되어 있지 않다면 GL_INVALID_VALUE error 발생
+        // NOTE: glMapBufferRange() function causes GL_INVALID_VALUE error if buffer is not alloced.
         gglBufferData(buffer->target, size, nullptr, buffer->usage);
-        void *ptr = gglMapBufferRange(buffer->target, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-        simdProcessor->Memcpy(ptr, data, size);
+        byte *dest = (byte *)gglMapBufferRange(buffer->target, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+        if (!((intptr_t)data & 15)) {
+            WriteBuffer(dest, (const byte *)data, size);
+        } else {
+            memcpy(dest, data, size);
+        }
         gglUnmapBuffer(buffer->target);
     } else {
-        // buffer respecification using glBufferData
+        // Do buffer respecification using glBufferData().
         gglBufferData(buffer->target, size, nullptr, buffer->usage);
         gglBufferData(buffer->target, size, data, buffer->usage);
     }
@@ -272,8 +315,8 @@ int OpenGLRHI::BufferWrite(Handle bufferHandle, int alignSize, int size, const v
     // If date == nullptr, buffer memory is reserved
     if (data) {
         /*if (gglMapBufferRange) {
-            byte *ptr = (byte *)gglMapBufferRange(buffer->target, offset, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-            simdProcessor->Memcpy(ptr, data, size);
+            byte *dest = (byte *)gglMapBufferRange(buffer->target, offset, size, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+            WriteBuffer(dest, (const byte *)data, size);
             gglUnmapBuffer(buffer->target);
         }*/
         gglBufferSubData(writeBuffer->target, base, size, data);

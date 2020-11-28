@@ -78,18 +78,18 @@ bool MetaObject::IsRespondsTo(const EventDef &ev) const {
     return true;
 }
 
-// MetaObject 초기화 함수. Object::Init 에서 불린다.
+// MetaObject initialization function. Called from Object::Init().
 void MetaObject::Init() {
     if (eventCallbacks) {
         return;
     }
 
-    // 부모 클래스 먼저 Init
+    // Init the parent class first.
     if (super && !super->node.Owner()) {
         super->Init();
     }
 
-    // hierarchy node 세팅
+    // Set hierarchy node.
     if (super) {
         node.SetParent(super->node);
     } else {
@@ -202,6 +202,19 @@ PropertyInfo &MetaObject::RegisterProperty(const PropertyInfo &propInfo) {
     int hash = propertyInfoHash.GenerateHash(propInfo.GetName(), false);
     propertyInfoHash.Add(hash, index);
     return propertyInfoList[index];
+}
+
+bool MetaObject::UnregisterProperty(const char *name) {
+    int hash = propertyInfoHash.GenerateHash(name, false);
+
+    for (int index = propertyInfoHash.First(hash); index != HashIndex::EmptyTable[0]; index = propertyInfoHash.Next(index)) {
+        if (!Str::Cmp(propertyInfoList[index].GetName(), name)) {
+            propertyInfoList.RemoveIndex(index);
+            propertyInfoHash.Remove(hash, index);
+            return true;
+        }
+    }
+    return false;
 }
 
 //-----------------------------------------------------------------------------------------------

@@ -26,6 +26,8 @@
 
 BE_NAMESPACE_BEGIN
 
+class PointF;
+
 /// A 2D integral (x,y) - point.
 class BE_API Point {
 public:
@@ -33,7 +35,7 @@ public:
     Point() = default;
     /// Constructs a Point with the value (x, y).
     constexpr Point(int x, int y);
-    /// Assignment operator
+    /// Assignment operator.
     Point &operator=(const Point &rhs);
 
 #ifdef QPOINT_H
@@ -46,7 +48,7 @@ public:
 
     /// Constructs a Point from a C array, to the value (data[0], data[1]).
     explicit constexpr Point(int data[2]);
-    /// Copy constructor
+    /// Copy constructor.
     explicit Point(const Vec2 &v);
 
                         /// Casts this Point to a C array.
@@ -69,22 +71,35 @@ public:
                         /// Unary operator + allows this structure to be used in an expression '+p'.
     Point               operator+() const { return *this; }
 
-    Point &             operator+=(const Point &rhs);
-    Point &             operator-=(const Point &rhs);
-
+                        /// Adds a point to this point.
     Point               operator+(const Point &rhs) const { return Point(x + rhs.x, y + rhs.y); }
+                        /// Subtracts a point from this point.
     Point               operator-(const Point &rhs) const { return Point(x - rhs.x, y - rhs.y); }
+                        /// Multiplies this point by a scalar.
+    Point               operator*(float rhs) const { return Point(x * rhs, y * rhs); }
 
-                        /// Compare with another one
-    bool                operator==(const Point &rhs) { return (x != rhs.x || y != rhs.y) ? false : true; }
-                        /// Compare with another one
-    bool                operator!=(const Point &rhs) { return (x != rhs.x || y != rhs.y) ? true : false; }
+                        /// Adds a point to this point, in-place.
+    Point &             operator+=(const Point &rhs);
+                        /// Subtracts a point from this point, in-place.
+    Point &             operator-=(const Point &rhs);
+                        /// Multiplies this point by a scalar, in-place.
+    Point &             operator*=(float rhs);
+
+                        /// Compare with another one.
+    bool                operator==(const Point &rhs) const { return (x != rhs.x || y != rhs.y) ? false : true; }
+                        /// Compare with another one.
+    bool                operator!=(const Point &rhs) const { return (x != rhs.x || y != rhs.y) ? true : false; }
 
     void                Set(int x, int y);
 
+                        /// Computes the distance between this point and the given point.
     float               Distance(const Point &other) const;
+                        /// Computes the squared distance between this point and the given point.
     float               DistanceSqr(const Point &other) const;
 
+    PointF              ToPointF() const;
+
+                        /// Converts this point to Vec2.
     Vec2                ToVec2() const { return Vec2(x, y); }
 
 #ifdef QPOINT_H
@@ -94,8 +109,11 @@ public:
                         /// Returns "x y".
     const char *        ToString() const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Point        FromString(const char *str);
+
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return 2; }
 
     static const Point  zero;
 
@@ -144,6 +162,12 @@ BE_INLINE Point &Point::operator-=(const Point &rhs) {
     return *this;
 }
 
+BE_INLINE Point &Point::operator*=(float rhs) {
+    x *= rhs;
+    y *= rhs;
+    return *this;
+}
+
 BE_INLINE void Point::Set(int x, int y) {
     this->x = x;
     this->y = y;
@@ -162,7 +186,7 @@ BE_INLINE float Point::DistanceSqr(const Point &other) const {
 }
 
 BE_INLINE const char *Point::ToString() const {
-    return Str::IntegerArrayToString((const int *)(*this), 2);
+    return Str::IntegerArrayToString((const int *)(*this), GetDimension());
 }
 
 BE_NAMESPACE_END

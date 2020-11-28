@@ -50,13 +50,14 @@ extern CVar     r_shadowCubeMapZNear;
 extern CVar     r_shadowCubeMapFloat;
 extern CVar     r_shadowMapQuality;
 extern CVar     r_shadowMapCropAlign;
+
 extern CVar     r_CSM_count;
 extern CVar     r_CSM_maxDistance;
 extern CVar     r_CSM_pancaking;
 extern CVar     r_CSM_nonCachedDistance;
 extern CVar     r_CSM_updateRatio;
 extern CVar     r_CSM_selectionMethod;
-extern CVar     r_CSM_splitLamda;
+extern CVar     r_CSM_splitLambda;
 extern CVar     r_CSM_blend;
 extern CVar     r_CSM_offsetFactor0;
 extern CVar     r_CSM_offsetFactor1;
@@ -74,6 +75,8 @@ extern CVar     r_HOM_debug;
 extern CVar     r_ambientScale;
 extern CVar     r_lightScale;
 extern CVar     r_indirectLit;
+extern CVar     r_specularEnergyCompensation;
+
 extern CVar     r_probeBlending;
 extern CVar     r_probeBoxProjection;
 extern CVar     r_probeBakeBounces;
@@ -136,10 +139,12 @@ extern CVar     r_skipFogLights;
 extern CVar     r_skipBlendPass;
 extern CVar     r_skipFinalPass;
 
-extern CVar     r_showStats;
 extern CVar     r_showBufferCache;
 extern CVar     r_showBufferCacheTiming;
 extern CVar     r_showAABB;
+extern CVar     r_showDynamicAABBTree;
+extern CVar     r_showDynamicAABBTreeMinDepth;
+extern CVar     r_showDynamicAABBTreeMaxDepth;
 extern CVar     r_showWireframe;
 extern CVar     r_showSkeleton;
 extern CVar     r_showTextures;

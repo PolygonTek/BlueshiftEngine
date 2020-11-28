@@ -16,8 +16,8 @@
 #include "Render/Render.h"
 #include "RenderInternal.h"
 #include "Core/Lexer.h"
-#include "File/FileSystem.h"
-#include "Asset/Asset.h"
+#include "IO/FileSystem.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
@@ -44,6 +44,7 @@ static const char *builtInConstantNames[] = {
     "textureMatrixS",                       // TextureMatrixS
     "textureMatrixT",                       // TextureMatrixT
     "constantColor",                        // ConstantColor
+    "intensity",                            // Intensity
     "vertexColorScale",                     // VertexColorScale
     "vertexColorAdd",                       // VertexColorAdd
     "perforatedAlpha",                      // PerforatedAlpha
@@ -89,18 +90,35 @@ static const char *builtInSamplerNames[] = {
     "probe1SpecularCubeMap",                // Probe1SpecularCubeMap
 };
 
-int Shader::GetFlags() const {
-    if (originalShader) {
-        return originalShader->flags;
-    }
-    return flags;
-}
-
-const StrHashMap<PropertyInfo> &Shader::GetPropertyInfoHashMap() const {
+const StrHashMap<Shader::ShaderPropertyInfo> &Shader::GetPropertyInfoHashMap() const {
     if (originalShader) {
         return originalShader->propertyInfoHashMap;
     }
     return propertyInfoHashMap;
+}
+
+bool Shader::IsPropertyUsed(const Str &propName, const StrHashMap<Shader::Property> &shaderProperties) const {
+    const auto &propInfos = GetPropertyInfoHashMap();
+    const auto *keyValue = propInfos.Get(propName);
+    const ShaderPropertyInfo &propInfo = keyValue->second;
+
+    // No conditions.
+    if (propInfo.conditions.Count() == 0) {
+        return true;
+    }
+
+    for (int conditionIndex = 0; conditionIndex < propInfo.conditions.Count(); conditionIndex++) {
+        const Condition &condition = propInfo.conditions[conditionIndex];
+
+        const BE1::Variant &value = shaderProperties.Get(condition.name)->second.data;
+
+        if (!condition.valueList.Find(value.As<int>())) {
+            // Found unmatched condition.
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void Shader::Purge() {
@@ -331,13 +349,14 @@ bool Shader::Create(const char *text, const char *baseDir) {
     return Finish(generatePerforatedVersion, generateGpuSkinningVersion, generateGpuInstancingVersion, generateParallelShadowVersion, generateSpotShadowVersion, generatePointShadowVersion);
 }
 
-bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
-    propInfo.type = Variant::Type::None;
-    propInfo.flags = PropertyInfo::Flag::Editor;
-    propInfo.range = Rangef(0, 0, 1);
-    propInfo.metaObject = nullptr;
+bool Shader::ShaderPropertyInfo::Parse(Lexer &lexer) {
+    type = Variant::Type::None;
+    flags = PropertyInfo::Flag::Editor;
+    shaderFlags = 0;
+    range = Rangef(0, 0, 1);
+    metaObject = nullptr;
 
-    if (!lexer.ReadToken(&propInfo.name, false)) {
+    if (!lexer.ReadToken(&name, false)) {
         return false;
     }
 
@@ -345,7 +364,7 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
         return false;
     }
 
-    if (!lexer.ExpectTokenType(Lexer::TokenType::String, &propInfo.label)) {
+    if (!lexer.ExpectTokenType(Lexer::TokenType::String, &label)) {
         return false;
     }
 
@@ -363,52 +382,71 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
     }
 
     if (!Str::Cmp(typeStr, "bool")) {
-        propInfo.type = Variant::Type::Bool;
+        type = Variant::Type::Bool;
     } else if (!Str::Cmp(typeStr, "int")) {
-        propInfo.type = Variant::Type::Int;
+        type = Variant::Type::Int;
     } else if (!Str::Cmp(typeStr, "point")) {
-        propInfo.type = Variant::Type::Point;
+        type = Variant::Type::Point;
+    } else if (!Str::Cmp(typeStr, "size")) {
+        type = Variant::Type::Size;
     } else if (!Str::Cmp(typeStr, "rect")) {
-        propInfo.type = Variant::Type::Rect;
+        type = Variant::Type::Rect;
     } else if (!Str::Cmp(typeStr, "float")) {
-        propInfo.type = Variant::Type::Float;
+        type = Variant::Type::Float;
     } else if (!Str::Cmp(typeStr, "vec2")) {
-        propInfo.type = Variant::Type::Vec2;
+        type = Variant::Type::Vec2;
     } else if (!Str::Cmp(typeStr, "vec3")) {
-        propInfo.type = Variant::Type::Vec3;
+        type = Variant::Type::Vec3;
     } else if (!Str::Cmp(typeStr, "vec4")) {
-        propInfo.type = Variant::Type::Vec4;
+        type = Variant::Type::Vec4;
     } else if (!Str::Cmp(typeStr, "color3")) {
-        propInfo.type = Variant::Type::Color3;
+        type = Variant::Type::Color3;
     } else if (!Str::Cmp(typeStr, "color4")) {
-        propInfo.type = Variant::Type::Color4;
+        type = Variant::Type::Color4;
     } else if (!Str::Cmp(typeStr, "enum")) {
         Str enumSequence;
         if (!lexer.ExpectTokenType(Lexer::TokenType::String, &enumSequence)) {
             return false;
         }
-        propInfo.type = Variant::Type::Int;
-        propInfo.enumeration.Clear();
-        SplitStringIntoList(propInfo.enumeration, enumSequence, ";");
+        type = Variant::Type::Int;
+        enumeration.Clear();
+        SplitStringIntoList(enumeration, enumSequence, ";");
     } else if (!Str::Cmp(typeStr, "texture")) {
-        propInfo.type = Variant::Type::Guid;
-        propInfo.metaObject = &TextureAsset::metaObject;
+        type = Variant::Type::Guid;
+
+        Str textureTypeStr;
+        if (!lexer.ReadToken(&textureTypeStr, false)) {
+            return false;
+        }
+
+        if (!Str::Icmp(textureTypeStr, "2D")) {
+            metaObject = &Texture2DResource::metaObject;
+        } else if (!Str::Icmp(textureTypeStr, "CUBE")) {
+            metaObject = &TextureCubeMapResource::metaObject;
+        } else if (!Str::Icmp(textureTypeStr, "SPRITE")) {
+            metaObject = &TextureSpriteResource::metaObject;
+        } else {
+            BE_WARNLOG("unknown texture type %s in shader '%s'\n", textureTypeStr.c_str(), lexer.GetFilename());
+            metaObject = &Texture2DResource::metaObject;
+        }
     }
 
-    if (propInfo.type == Variant::Type::Int ||
-        propInfo.type == Variant::Type::Float ||
-        propInfo.type == Variant::Type::Vec2 ||
-        propInfo.type == Variant::Type::Vec3 ||
-        propInfo.type == Variant::Type::Vec4) {
+    if (type == Variant::Type::Int ||
+        type == Variant::Type::Float ||
+        type == Variant::Type::Vec2 ||
+        type == Variant::Type::Vec3 ||
+        type == Variant::Type::Vec4) {
         Str token;
         lexer.ReadToken(&token, false);
 
         if (token == "range") {
-            propInfo.range.minValue = lexer.ParseNumber();
-            propInfo.range.maxValue = lexer.ParseNumber();
-            propInfo.range.step = lexer.ParseNumber();
+            range.minValue = lexer.ParseNumber();
+            range.maxValue = lexer.ParseNumber();
+            range.step = lexer.ParseNumber();
         } else {
-            lexer.UnreadToken(&token);
+            if (!token.IsEmpty()) {
+                lexer.UnreadToken(&token);
+            }
         }
     }
 
@@ -422,9 +460,9 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
     }
 
     if (!Str::Cmp(typeStr, "texture")) {
-        propInfo.defaultValue = resourceGuidMapper.Get(defaultValueString);
+        defaultValue = resourceGuidMapper.Get(defaultValueString);
     } else {
-        propInfo.defaultValue = Variant::FromString(propInfo.type, defaultValueString);
+        defaultValue = Variant::FromString(type, defaultValueString);
     }
 
     Str token;
@@ -433,11 +471,49 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
         while (lexer.ReadToken(&token, false)) {
             if (token == ")") {
                 break;
-            } else if (token == "shaderDefine") {
-                propInfo.flags |= PropertyInfo::Flag::ShaderDefine;
+            } else if (token == "condition") {
+                Str name;
+                Array<int> valueList;
+
+                while (lexer.ReadToken(&token, false)) {
+                    if (token == ")") {
+                        conditions.Append(Condition(name, valueList));
+
+                        lexer.UnreadToken(&token);
+                        break;
+                    } else if (lexer.GetTokenType() & Lexer::TokenType::Identifier) {
+                        name = token;
+                    } else if (lexer.GetTokenType() & Lexer::TokenType::Integer) {
+                        int value = Str::ToI32(token);
+                        valueList.Append(value);
+                    }
+                }
             } else {
                 return false;
             }
+        }
+    } else {
+        if (!token.IsEmpty()) {
+            lexer.UnreadToken(&token);
+        }
+    }
+
+    lexer.ReadToken(&token, false);
+    if (token == "[") {
+        while (lexer.ReadToken(&token, false)) {
+            if (token == "]") {
+                break;
+            } else if (token == "shaderDefine") {
+                shaderFlags |= ShaderPropertyInfo::Flag::ShaderDefine;
+            } else if (token == "normal") {
+                shaderFlags |= ShaderPropertyInfo::Flag::Normal;
+            } else if (token == "linear") {
+                shaderFlags |= ShaderPropertyInfo::Flag::Linear;
+            }
+        }
+    } else {
+        if (!token.IsEmpty()) {
+            lexer.UnreadToken(&token);
         }
     }
 
@@ -445,7 +521,6 @@ bool ParseShaderPropertyInfo(Lexer &lexer, PropertyInfo &propInfo) {
 }
 
 bool Shader::ParseProperties(Lexer &lexer) {
-    PropertyInfo propInfo;
     Str token;
 
     if (!lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen)) {
@@ -464,13 +539,14 @@ bool Shader::ParseProperties(Lexer &lexer) {
 
             lexer.UnreadToken(&token);
 
-            if (!ParseShaderPropertyInfo(lexer, propInfo)) {
+            ShaderPropertyInfo shaderPropInfo;
+            if (!shaderPropInfo.Parse(lexer)) {
                 BE_WARNLOG("error occured in parsing property propInfo in shader '%s'\n", hashName.c_str());
                 lexer.SkipRestOfLine();
                 continue;
             }
 
-            propertyInfoHashMap.Set(token, propInfo);
+            propertyInfoHashMap.Set(token, shaderPropInfo);
         }
     }
 
@@ -534,6 +610,10 @@ Shader *Shader::GenerateSubShader(const Str &shaderNamePostfix, const Str &vsHea
     text += "}";
     if (!shader->Create(text, baseDir)) {
         return nullptr;
+    }
+
+    if (flags & Flag::LitSurface) {
+        shader->flags |= Flag::LitSurface;
     }
 
     if (shadowing) {
@@ -814,19 +894,19 @@ const char *Shader::MangleNameWithDefineList(const Str &basename, const Array<Sh
 
 Shader *Shader::InstantiateShader(const Array<Define> &defineArray) {
     Str mangledName;
-    // instantiated shader name start with '@' character
+    // Instantiated shader name start with '@' character.
     MangleNameWithDefineList("@" + name, defineArray, mangledName);
 
-    // return instantiated shader if it already exist
+    // Return instantiated shader if it already exist.
     Shader *shader = shaderManager.FindShader(mangledName);
     if (shader) {
-        // instantiated shader always has pointer to original shader
+        // Instantiated shader always has pointer to original shader.
         assert(shader->originalShader);
         shader->AddRefCount();
         return shader;
     }
 
-    // allocate new instantiated shader
+    // Allocate new instantiated shader.
     shader = shaderManager.AllocShader(mangledName);
     shader->originalShader = this;
     shader->flags = flags;
@@ -994,12 +1074,14 @@ void Shader::Reinstantiate() {
     assert(originalShader);
     InstantiateShaderInternal(defineArray);
 
+    flags ^= Flag::NeedReinstatiate;
+
     if (originalShader->indirectLitVersion) {
         if (indirectLitVersion) {
             indirectLitVersion->originalShader = originalShader->indirectLitVersion;
             indirectLitVersion->Reinstantiate();
         } else {
-            indirectLitVersion = originalShader->indirectLitVersion->InstantiateShader(defineArray);
+            //indirectLitVersion = originalShader->indirectLitVersion->InstantiateShader(defineArray);
         }
     } else {
         if (indirectLitVersion) {
@@ -1013,7 +1095,7 @@ void Shader::Reinstantiate() {
             directLitVersion->originalShader = originalShader->directLitVersion;
             directLitVersion->Reinstantiate();
         } else {
-            directLitVersion = originalShader->directLitVersion->InstantiateShader(defineArray);
+            //directLitVersion = originalShader->directLitVersion->InstantiateShader(defineArray);
         }
     } else {
         if (directLitVersion) {
@@ -1027,7 +1109,7 @@ void Shader::Reinstantiate() {
             indirectLitDirectLitVersion->originalShader = originalShader->indirectLitDirectLitVersion;
             indirectLitDirectLitVersion->Reinstantiate();
         } else {
-            indirectLitDirectLitVersion = originalShader->indirectLitDirectLitVersion->InstantiateShader(defineArray);
+            //indirectLitDirectLitVersion = originalShader->indirectLitDirectLitVersion->InstantiateShader(defineArray);
         }
     } else {
         if (indirectLitDirectLitVersion) {
@@ -1041,7 +1123,7 @@ void Shader::Reinstantiate() {
             perforatedVersion->originalShader = originalShader->perforatedVersion;
             perforatedVersion->Reinstantiate();
         } else {
-            perforatedVersion = originalShader->perforatedVersion->InstantiateShader(defineArray);
+            //perforatedVersion = originalShader->perforatedVersion->InstantiateShader(defineArray);
         }
     } else {
         if (perforatedVersion) {
@@ -1055,7 +1137,7 @@ void Shader::Reinstantiate() {
             premulAlphaVersion->originalShader = originalShader->premulAlphaVersion;
             premulAlphaVersion->Reinstantiate();
         } else {
-            premulAlphaVersion = originalShader->premulAlphaVersion->InstantiateShader(defineArray);
+            //premulAlphaVersion = originalShader->premulAlphaVersion->InstantiateShader(defineArray);
         }
     } else {
         if (premulAlphaVersion) {
@@ -1069,7 +1151,7 @@ void Shader::Reinstantiate() {
             parallelShadowVersion->originalShader = originalShader->parallelShadowVersion;
             parallelShadowVersion->Reinstantiate();
         } else {
-            parallelShadowVersion = originalShader->parallelShadowVersion->InstantiateShader(defineArray);
+            //parallelShadowVersion = originalShader->parallelShadowVersion->InstantiateShader(defineArray);
         }
     } else {
         if (parallelShadowVersion) {
@@ -1083,7 +1165,7 @@ void Shader::Reinstantiate() {
             spotShadowVersion->originalShader = originalShader->spotShadowVersion;
             spotShadowVersion->Reinstantiate();
         } else {
-            spotShadowVersion = originalShader->spotShadowVersion->InstantiateShader(defineArray);
+            //spotShadowVersion = originalShader->spotShadowVersion->InstantiateShader(defineArray);
         }
     } else {
         if (spotShadowVersion) {
@@ -1097,7 +1179,7 @@ void Shader::Reinstantiate() {
             pointShadowVersion->originalShader = originalShader->pointShadowVersion;
             pointShadowVersion->Reinstantiate();
         } else {
-            pointShadowVersion = originalShader->pointShadowVersion->InstantiateShader(defineArray);
+            //pointShadowVersion = originalShader->pointShadowVersion->InstantiateShader(defineArray);
         }
     } else {
         if (pointShadowVersion) {
@@ -1112,7 +1194,7 @@ void Shader::Reinstantiate() {
                 gpuSkinningVersion[i]->originalShader = originalShader->gpuSkinningVersion[i];
                 gpuSkinningVersion[i]->Reinstantiate();
             } else {
-                gpuSkinningVersion[i] = originalShader->gpuSkinningVersion[i]->InstantiateShader(defineArray);
+                //gpuSkinningVersion[i] = originalShader->gpuSkinningVersion[i]->InstantiateShader(defineArray);
             }
         } else {
             if (gpuSkinningVersion[i]) {
@@ -1127,7 +1209,7 @@ void Shader::Reinstantiate() {
             gpuInstancingVersion->originalShader = originalShader->gpuInstancingVersion;
             gpuInstancingVersion->Reinstantiate();
         } else {
-            gpuInstancingVersion = originalShader->gpuInstancingVersion->InstantiateShader(defineArray);
+            //gpuInstancingVersion = originalShader->gpuInstancingVersion->InstantiateShader(defineArray);
         }
     } else {
         if (gpuInstancingVersion) {
@@ -1171,12 +1253,12 @@ bool Shader::InstantiateShaderInternal(const Array<Define> &defineArray) {
 bool Shader::ProcessShaderText(const char *text, const char *baseDir, const Array<Define> &defineArray, Str &outStr) const {
     outStr = text;
 
-    // insert local define array
+    // Insert local define array.
     for (int i = 0; i < defineArray.Count(); i++) {
         outStr.Insert(va("#define %s %i\n", defineArray[i].name.c_str(), defineArray[i].value), 0);
     }
 
-    // insert global define array
+    // Insert global define array.
     for (int i = shaderManager.globalHeaderList.Count() - 1; i >= 0; i--) {
         outStr.Insert(shaderManager.globalHeaderList[i].c_str(), 0);
     }
@@ -1228,7 +1310,11 @@ bool Shader::ProcessIncludeRecursive(const char *baseDir, Str &outText) const {
     return true;
 }
 
-void Shader::Bind() const {
+void Shader::Bind() {
+    if (flags & Shader::Flag::NeedReinstatiate) {
+        Reinstantiate();
+    }
+
     rhi.BindShader(shaderHandle);
 }
 
@@ -1254,6 +1340,22 @@ void Shader::SetConstant3i(int index, const int *constant) const {
 
 void Shader::SetConstant4i(int index, const int *constant) const {
     rhi.SetShaderConstant4i(index, constant);
+}
+
+void Shader::SetConstant1ui(int index, const unsigned int constant) const {
+    rhi.SetShaderConstant1ui(index, constant);
+}
+
+void Shader::SetConstant2ui(int index, const unsigned int *constant) const {
+    rhi.SetShaderConstant2ui(index, constant);
+}
+
+void Shader::SetConstant3ui(int index, const unsigned int *constant) const {
+    rhi.SetShaderConstant3ui(index, constant);
+}
+
+void Shader::SetConstant4ui(int index, const unsigned int *constant) const {
+    rhi.SetShaderConstant4ui(index, constant);
 }
 
 void Shader::SetConstant1f(int index, float x) const {
@@ -1398,6 +1500,42 @@ void Shader::SetConstant4i(const char *name, const int *constant) const {
         return;
     }
     rhi.SetShaderConstant4i(index, constant);
+}
+
+void Shader::SetConstant1ui(const char *name, unsigned int x) const {
+    int index = rhi.GetShaderConstantIndex(shaderHandle, name);
+    if (index < 0) {
+        //BE_WARNLOG("Shader::SetConstant1ui: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
+        return;
+    }
+    rhi.SetShaderConstant1ui(index, x);
+}
+
+void Shader::SetConstant2ui(const char *name, const unsigned int *constant) const {
+    int index = rhi.GetShaderConstantIndex(shaderHandle, name);
+    if (index < 0) {
+        //BE_WARNLOG("Shader::SetConstant2ui: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
+        return;
+    }
+    rhi.SetShaderConstant2ui(index, constant);
+}
+
+void Shader::SetConstant3ui(const char *name, const unsigned int *constant) const {
+    int index = rhi.GetShaderConstantIndex(shaderHandle, name);
+    if (index < 0) {
+        //BE_WARNLOG("Shader::SetConstant3ui: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
+        return;
+    }
+    rhi.SetShaderConstant3ui(index, constant);
+}
+
+void Shader::SetConstant4ui(const char *name, const unsigned int *constant) const {
+    int index = rhi.GetShaderConstantIndex(shaderHandle, name);
+    if (index < 0) {
+        //BE_WARNLOG("Shader::SetConstant4ui: invalid constant name '%s' in shader '%s'\n", name, this->hashName.c_str());
+        return;
+    }
+    rhi.SetShaderConstant4ui(index, constant);
 }
 
 void Shader::SetConstant1f(const char *name, float x) const {
@@ -1727,15 +1865,15 @@ bool Shader::Reload() {
         shader = originalShader;
     }
 
-    if (!(shader->flags & Flag::LoadedFromFile)) {
-        return false;
+    bool ret = true;
+
+    if (shader->flags & Flag::LoadedFromFile) {
+        Str _hashName = shader->hashName;
+        ret = shader->Load(_hashName);
     }
 
-    Str _hashName = shader->hashName;
-    bool ret = shader->Load(_hashName);
-
     for (int i = 0; i < shader->instantiatedShaders.Count(); i++) {
-        instantiatedShaders[i]->Reinstantiate();
+        instantiatedShaders[i]->flags |= Flag::NeedReinstatiate;
     }
 
     return ret;

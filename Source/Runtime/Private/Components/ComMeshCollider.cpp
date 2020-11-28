@@ -18,7 +18,7 @@
 #include "Components/ComTransform.h"
 #include "Components/ComMeshCollider.h"
 #include "Game/Entity.h"
-#include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
@@ -28,10 +28,10 @@ BEGIN_EVENTS(ComMeshCollider)
 END_EVENTS
 
 void ComMeshCollider::RegisterProperties() {
-    REGISTER_PROPERTY("convex", "Convex", bool, convex, true, 
+    REGISTER_PROPERTY("convex", "Convex", bool, convex, false, 
         "", PropertyInfo::Flag::Editor);
     REGISTER_MIXED_ACCESSOR_PROPERTY("mesh", "Mesh", Guid, GetMeshGuid, SetMeshGuid, GuidMapper::defaultMeshGuid, 
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&MeshAsset::metaObject);
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&MeshResource::metaObject);
 }
 
 ComMeshCollider::ComMeshCollider() {
@@ -39,6 +39,12 @@ ComMeshCollider::ComMeshCollider() {
 }
 
 ComMeshCollider::~ComMeshCollider() {
+}
+
+void ComMeshCollider::Init() {
+    ComCollider::Init();
+
+    CreateCollider();
 }
 
 void ComMeshCollider::CreateCollider() {
@@ -58,8 +64,8 @@ void ComMeshCollider::SetMeshGuid(const Guid &meshGuid) {
     }
 }
 
-#if 1
-void ComMeshCollider::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+#if WITH_EDITOR
+void ComMeshCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     //collider;
 }
 #endif

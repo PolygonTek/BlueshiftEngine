@@ -1,5 +1,3 @@
-local tweeners = {}
-
 local EaseIn = 0
 local EaseOut = 1
 local EaseInOut = 2
@@ -276,49 +274,24 @@ tween.EaseOutInBounce = {}
 tween.EaseOutInBounce.easing = EaseOutIn
 tween.EaseOutInBounce.func = tweenBounce
 
-function tween.clear_tweeners()
-	for key, _ in pairs(tweeners) do
-  		tweeners[key] = nil
-	end
-end
-
-function tween.update_tweeners(deltaTime, timeScale)
-	local tweenersToRemove = {}
-
-    for key, tweener in pairs(tweeners) do
-    	tweener.time = math.min(tweener.time + deltaTime * (tweener.scaledTime and timeScale or 1), tweener.duration)
-
-    	tweener.func(tweenFunc(tweener.easeType, tweener.a, tweener.b, tweener.time / tweener.duration))
-
-        if tweener.time == tweener.duration then
-        	table.insert(tweenersToRemove, key)
-        end
-    end
-
-	for _, key in ipairs(tweenersToRemove) do
-		tweeners[key] = nil
-	end
-end
-
-function tween.add(easeType, duration, scaledTime, a, b, func)
+function tween.create(easeType, duration, a, b, func)
 	func(tweenFunc(easeType, a, b, 0))
 
-	tweeners[func] = {
+	return {
 		easeType = easeType,
 		duration = duration,
-		scaledTime = scaledTime,
 		time = 0,
 		a = a, 
 		b = b, 
 		func = func
 	}
-
-	return tweeners[func]
 end
 
-function tween.cancel(tweener)
-	if tweener then
-		tweeners[tweener.func] = nil
-	end
+function tween.update(tweener, deltaTime)
+	tweener.time = math.min(tweener.time + deltaTime, tweener.duration)
+
+	tweener.func(tweenFunc(tweener.easeType, tweener.a, tweener.b, tweener.time / tweener.duration))
+
+    return tweener.time < tweener.duration
 end
 

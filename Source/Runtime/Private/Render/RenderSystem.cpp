@@ -19,13 +19,14 @@
 #include "RBackEnd.h"
 #include "Render/Font.h"
 #include "Core/Cmds.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Platform/PlatformTime.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
-RenderGlobal        renderGlobal;
-RenderSystem        renderSystem;
+RenderGlobal    renderGlobal;
+RenderSystem    renderSystem;
 
 void RenderSystem::InitRHI(void *windowHandle) {
     RHI::Settings settings;
@@ -35,7 +36,7 @@ void RenderSystem::InitRHI(void *windowHandle) {
     settings.stencilBits = cvarSystem.GetCVarInteger("r_stencilBits");
     settings.multiSamples = cvarSystem.GetCVarInteger("r_multiSamples");
 
-    // Initialize OpenGL renderer
+    // Initialize OpenGL renderer.
     rhi.Init(windowHandle, &settings);
 }
 
@@ -43,20 +44,20 @@ void RenderSystem::Init() {
     cmdSystem.AddCommand("screenshot", Cmd_ScreenShot);
     cmdSystem.AddCommand("genDFGSumGGX", Cmd_GenerateDFGSumGGX);
 
-    // Save current gamma ramp table
+    // Save current gamma ramp table.
     rhi.GetGammaRamp(savedGammaRamp);
 
     if (r_fastSkinning.GetInteger() == 2 && rhi.HWLimit().maxVertexTextureImageUnits > 0) {
-        renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::VertexTextureFetchSkinning;
-    } else if (r_fastSkinning.GetInteger() == 1) {
-        renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::VertexShaderSkinning;
+        renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::VertexTextureFetch;
+    } else if (r_fastSkinning.GetInteger() >= 1) {
+        renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::VertexShader;
     } else {
-        renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::CpuSkinning;
+        renderGlobal.skinningMethod = SkinningJointCache::SkinningMethod::Cpu;
     }
 
-    if (r_vertexTextureUpdate.GetInteger() == 2 && rhi.SupportsTextureBufferObject()) {
+    if (r_vertexTextureUpdate.GetInteger() == 2 && rhi.SupportsTextureBuffer()) {
         renderGlobal.vertexTextureMethod = BufferCacheManager::VertexTextureMethod::Tbo;
-    } else if (r_vertexTextureUpdate.GetInteger() == 1 && rhi.SupportsPixelBufferObject()) {
+    } else if (r_vertexTextureUpdate.GetInteger() >= 1 && rhi.SupportsPixelBuffer()) {
         renderGlobal.vertexTextureMethod = BufferCacheManager::VertexTextureMethod::Pbo;
     } else {
         renderGlobal.vertexTextureMethod = BufferCacheManager::VertexTextureMethod::DirectCopy;
@@ -65,7 +66,7 @@ void RenderSystem::Init() {
     if (r_instancing.GetInteger() == 2 && rhi.SupportsInstancedArrays() && rhi.SupportsMultiDrawIndirect()) {
         renderGlobal.instancingMethod = Mesh::InstancingMethod::InstancedArrays;
         renderGlobal.instanceBufferOffsetAlignment = 64;
-    } else if (r_instancing.GetInteger() == 1) {
+    } else if (r_instancing.GetInteger() >= 1) {
         renderGlobal.instancingMethod = Mesh::InstancingMethod::UniformBuffer;
         renderGlobal.instanceBufferOffsetAlignment = rhi.HWLimit().uniformBufferOffsetAlignment;
     } else {
@@ -196,9 +197,15 @@ void RenderSystem::FreeRenderContext(RenderContext *rc) {
 }
 
 void RenderSystem::BeginCommands(RenderContext *renderContext) {
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderSystem::BeginCommands");
+
     renderSystem.currentContext = renderContext;
 
     rhi.SetContext(renderContext->GetContextHandle());
+
+#ifdef ENABLE_IMGUI
+    rhi.ImGuiBeginFrame(renderContext->GetContextHandle());
+#endif
 
     bufferCacheManager.BeginWrite();
 
@@ -208,13 +215,19 @@ void RenderSystem::BeginCommands(RenderContext *renderContext) {
 }
 
 void RenderSystem::EndCommands() {
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderSystem::EndCommands");
+
     bufferCacheManager.BeginBackEnd();
 
     renderSystem.IssueCommands();
 
-    bufferCacheManager.EndDrawCommand();
+    bufferCacheManager.EndWrite();
 
     frameData.ToggleFrame();
+
+#ifdef ENABLE_IMGUI
+    rhi.ImGuiEndFrame();
+#endif
 
     renderSystem.currentContext = nullptr;
 }
@@ -277,11 +290,13 @@ void RenderSystem::CmdScreenshot(int x, int y, int width, int height, const char
 }
 
 void RenderSystem::IssueCommands() {
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderSystem::IssueCommands");
+
     RenderCommandBuffer *cmds = frameData.GetCommands();
-    // add an end-of-list command
+    // Add an end-of-list command.
     *(int *)(cmds->data + cmds->used) = RenderCommand::End;
 
-    // clear it out, in case this is a sync and not a buffer flip
+    // Clear it out, in case this is a sync and not a buffer flip.
     cmds->used = 0;
 
     if (!r_skipBackEnd.GetBool()) {
@@ -347,18 +362,18 @@ void RenderSystem::CheckModifiedCVars() {
     if (r_useDeferredLighting.IsModified()) {
         r_useDeferredLighting.ClearModified();
 
+        bool foundDefine = shaderManager.FindGlobalHeader("#define USE_DEFERRED_LIGHTING\n");
+
         if (r_useDeferredLighting.GetBool()) {
-            if (!shaderManager.FindGlobalHeader("#define USE_DEFERRED_LIGHTING\n")) {
+            if (!foundDefine) {
                 shaderManager.AddGlobalHeader("#define USE_DEFERRED_LIGHTING\n");
                 shaderManager.ReloadShaders();
-
                 RecreateScreenMapRT();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define USE_DEFERRED_LIGHTING\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define USE_DEFERRED_LIGHTING\n");
                 shaderManager.ReloadShaders();
-
                 RecreateScreenMapRT();
             }
         }
@@ -405,23 +420,21 @@ void RenderSystem::CheckModifiedCVars() {
 
     if (r_motionBlur.IsModified()) {
         r_motionBlur.ClearModified();
+
+        bool foundDefine = shaderManager.FindGlobalHeader("#define OBJECT_MOTION_BLUR\n");
         
         if (r_usePostProcessing.GetBool() && (r_motionBlur.GetInteger() & 2)) {
-            if (!shaderManager.FindGlobalHeader("#define OBJECT_MOTION_BLUR\n")) {
+            if (!foundDefine) {
                 shaderManager.AddGlobalHeader("#define OBJECT_MOTION_BLUR\n");
                 shaderManager.ReloadShaders();
-
                 meshManager.ReinstantiateSkinnedMeshes();
-
                 RecreateScreenMapRT();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define OBJECT_MOTION_BLUR\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define OBJECT_MOTION_BLUR\n");
                 shaderManager.ReloadShaders();
-
                 meshManager.ReinstantiateSkinnedMeshes();
-
                 RecreateScreenMapRT();
             }
         }
@@ -429,14 +442,16 @@ void RenderSystem::CheckModifiedCVars() {
 
     if (r_SSAO_quality.IsModified()) {
         r_SSAO_quality.ClearModified();
+
+        bool foundDefine = shaderManager.FindGlobalHeader("#define HIGH_QUALITY_SSAO\n");
         
         if (r_usePostProcessing.GetBool() && r_SSAO_quality.GetInteger() > 0) {
-            if (!shaderManager.FindGlobalHeader("#define HIGH_QUALITY_SSAO\n")) {
+            if (!foundDefine) {
                 shaderManager.AddGlobalHeader("#define HIGH_QUALITY_SSAO\n");
                 shaderManager.ReloadShaders();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define HIGH_QUALITY_SSAO\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define HIGH_QUALITY_SSAO\n");
                 shaderManager.ReloadShaders();
             }
@@ -446,13 +461,15 @@ void RenderSystem::CheckModifiedCVars() {
     if (r_probeBoxProjection.IsModified()) {
         r_probeBoxProjection.ClearModified();
 
+        bool foundDefine = shaderManager.FindGlobalHeader("#define SPECULAR_PROBE_BOX_PROJECTION\n");
+
         if (r_probeBoxProjection.GetBool()) {
-            if (!shaderManager.FindGlobalHeader("#define SPECULAR_PROBE_BOX_PROJECTION\n")) {
+            if (!foundDefine) {
                 shaderManager.AddGlobalHeader("#define SPECULAR_PROBE_BOX_PROJECTION\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define SPECULAR_PROBE_BOX_PROJECTION\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define SPECULAR_PROBE_BOX_PROJECTION\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
@@ -462,14 +479,34 @@ void RenderSystem::CheckModifiedCVars() {
     if (r_probeBlending.IsModified()) {
         r_probeBlending.ClearModified();
 
+        bool foundDefine = shaderManager.FindGlobalHeader("#define PROBE_BLENDING\n");
+
         if (r_probeBlending.GetBool()) {
-            if (!shaderManager.FindGlobalHeader("#define PROBE_BLENDING\n")) {
+            if (!foundDefine) {
                 shaderManager.AddGlobalHeader("#define PROBE_BLENDING\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define PROBE_BLENDING\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define PROBE_BLENDING\n");
+                shaderManager.ReloadLitSurfaceShaders();
+            }
+        }
+    }
+
+    if (r_specularEnergyCompensation.IsModified()) {
+        r_specularEnergyCompensation.ClearModified();
+
+        bool foundDefine = shaderManager.FindGlobalHeader("#define USE_MULTIPLE_SCATTERING_COMPENSATION\n");
+
+        if (r_specularEnergyCompensation.GetBool()) {
+            if (!foundDefine) {
+                shaderManager.AddGlobalHeader("#define USE_MULTIPLE_SCATTERING_COMPENSATION\n");
+                shaderManager.ReloadLitSurfaceShaders();
+            }
+        } else {
+            if (foundDefine) {
+                shaderManager.RemoveGlobalHeader("#define USE_MULTIPLE_SCATTERING_COMPENSATION\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
         }
@@ -493,15 +530,16 @@ void RenderSystem::CheckModifiedCVars() {
     if (r_shadows.IsModified()) {
         r_shadows.ClearModified();
 
+        bool foundDefine = shaderManager.FindGlobalHeader("#define USE_SHADOW_MAP\n");
+
         if (r_shadows.GetInteger() == 1) {
-            if (!shaderManager.FindGlobalHeader("#define USE_SHADOW_MAP\n")) {
+            if (!foundDefine) {
                 shaderManager.AddGlobalHeader("#define USE_SHADOW_MAP\n");
                 shaderManager.ReloadLitSurfaceShaders();
-
                 RecreateShadowMapRT();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define USE_SHADOW_MAP\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define USE_SHADOW_MAP\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
@@ -511,16 +549,16 @@ void RenderSystem::CheckModifiedCVars() {
     if (r_showShadows.IsModified()) {
         r_showShadows.ClearModified();
 
-        if (r_showShadows.GetInteger() == 1) {
-            if (!shaderManager.FindGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n")) {
-                shaderManager.AddGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n");
+        bool foundDefine = shaderManager.FindGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n");
 
+        if (r_showShadows.GetInteger() == 1) {
+            if (!foundDefine) {
+                shaderManager.AddGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define DEBUG_CASCADE_SHADOW_MAP\n");
-
                 shaderManager.ReloadLitSurfaceShaders();
             }
         }
@@ -551,13 +589,15 @@ void RenderSystem::CheckModifiedCVars() {
     if (r_CSM_blend.IsModified()) {
         r_CSM_blend.ClearModified();
 
+        bool foundDefine = shaderManager.FindGlobalHeader("#define CASCADE_BLENDING\n");
+
         if (r_CSM_blend.GetBool()) {
-            if (!shaderManager.FindGlobalHeader("#define CASCADE_BLENDING\n")) {
+            if (!foundDefine) {
                 shaderManager.AddGlobalHeader("#define CASCADE_BLENDING\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
         } else {
-            if (shaderManager.FindGlobalHeader("#define CASCADE_BLENDING\n")) {
+            if (foundDefine) {
                 shaderManager.RemoveGlobalHeader("#define CASCADE_BLENDING\n");
                 shaderManager.ReloadLitSurfaceShaders();
             }
@@ -577,6 +617,8 @@ void RenderSystem::CheckModifiedCVars() {
 }
 
 void RenderSystem::UpdateEnvProbes() {
+    BE_PROFILE_CPU_SCOPE_STATIC("RenderSystem::UpdateEnvProbes");
+
     // Needs any render context to render environment cubemap
     if (!renderSystem.renderContexts.Count()) {
         return;
@@ -595,7 +637,7 @@ void RenderSystem::UpdateEnvProbes() {
 
 void RenderSystem::ScheduleToRefreshEnvProbe(RenderWorld *renderWorld, int probeHandle) {
     for (int i = 0; i < envProbeJobs.Count(); i++) {
-        EnvProbeJob *job = &envProbeJobs[i];
+        const EnvProbeJob *job = &envProbeJobs[i];
 
         if (job->GetRenderWorld() == renderWorld && job->GetEnvProbe() == renderWorld->GetEnvProbe(probeHandle)) {
             return;
@@ -642,14 +684,19 @@ void RenderSystem::CaptureScreenRT(RenderWorld *renderWorld, int layerMask,
     cameraDef.axis = axis;
     cameraDef.renderRect.Set(0, 0, width, height);
 
-    Vec3 v;
-    renderWorld->GetStaticAABB().GetFarthestVertexFromDir(axis[0], v);
-    cameraDef.zFar = Max(BE1::MeterToUnit(100.0f), origin.Distance(v));
-    cameraDef.zNear = BE1::CentiToUnit(5.0f);
+    AABB worldAABB = renderWorld->GetStaticAABB();
+    if (!worldAABB.IsCleared()) {
+        Vec3 v;
+        worldAABB.GetFarthestVertexFromDir(axis[0], v);
+        cameraDef.zFar = Max(MeterToUnit(100.0f), origin.Distance(v));
+    } else {
+        cameraDef.zFar = MeterToUnit(100.0f);
+    }
+    cameraDef.zNear = CentiToUnit(5.0f);
 
     RenderCamera::ComputeFov(fov, 1.25f, (float)width / height, &cameraDef.fovX, &cameraDef.fovY);
 
-    // Use any render context
+    // Use any render context.
     RenderContext *renderContext = renderSystem.renderContexts[0];
 
     renderCamera.Update(&cameraDef);
@@ -685,9 +732,9 @@ void RenderSystem::CaptureScreenImage(RenderWorld *renderWorld, int layerMask,
     bool colorClear, const Color4 &clearColor, const Vec3 &origin, const Mat3 &axis, float fov, bool useHDR, int width, int height, Image &screenImage) {
     Texture *screenTexture = CaptureScreenTexture(renderWorld, layerMask, colorClear, clearColor, origin, axis, fov, useHDR, width, height);
 
-    int imageFlags = Image::IsFloatFormat(screenTexture->GetFormat()) ? Image::Flag::LinearSpace : 0;
+    Image::GammaSpace::Enum gammaSpace = Image::NeedFloatConversion(screenTexture->GetFormat()) ? Image::GammaSpace::Linear : Image::GammaSpace::sRGB;
 
-    screenImage.Create2D(screenTexture->GetWidth(), screenTexture->GetHeight(), 1, screenTexture->GetFormat(), nullptr, imageFlags);
+    screenImage.Create2D(screenTexture->GetWidth(), screenTexture->GetHeight(), 1, screenTexture->GetFormat(), gammaSpace, nullptr, 0);
 
     screenTexture->Bind();
     screenTexture->GetTexels2D(0, screenTexture->GetFormat(), screenImage.GetPixels(0));
@@ -788,19 +835,19 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
                 float s = (x + 0.5f) * invSize;
                 float t = (y + 0.5f) * invSize;
 
-                // Gets sample direction for each faces 
+                // Gets sample direction for each faces.
                 Vec3 dir = Image::FaceToCubeMapCoords((Image::CubeMapFace::Enum)faceIndex, s, t);
                 dir.Normalize();
 
-                // 9 terms are required for order 3 SH basis functions
+                // 9 terms are required for order 3 SH basis functions.
                 float basisEval[16] = { 0, };
-                // Evaluates the 9 SH basis functions Ylm with the given direction
+                // Evaluates the 9 SH basis functions Ylm with the given direction.
                 SphericalHarmonics::EvalBasis(3, dir, basisEval);
 
-                // Solid angle of the cubemap texel
+                // Solid angle of the cubemap texel.
                 float dw = Image::CubeMapTexelSolidAngle(x, y, envMapSize);
 
-                // Precalculates 9 terms (basisEval * dw) for each envmap pixel in the 4-by-4 envmap sized block texture for each faces  
+                // Precalculates 9 terms (basisEval * dw) for each envmap pixel in the 4-by-4 envmap sized block texture for each faces.
                 for (int j = 0; j < 4; j++) {
                     for (int i = 0; i < 4; i++) {
                         int offset = (((j * envMapSize + y) * envMapSize) << 2) + i * envMapSize + x;
@@ -813,7 +860,7 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
 
         weightTextures[faceIndex] = new Texture;
         weightTextures[faceIndex]->Create(RHI::TextureType::Texture2D,
-            Image(envMapSize * 4, envMapSize * 4, 1, 1, 1, Image::Format::L_32F, (byte *)weightData, Image::Flag::LinearSpace),
+            Image(envMapSize * 4, envMapSize * 4, 1, 1, 1, Image::Format::L_32F, Image::GammaSpace::Linear, (byte *)weightData, 0),
             Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
     }
 
@@ -825,7 +872,7 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
     Shader *weightedSHProjShader = shaderManager.GetShader("Shaders/WeightedSHProj")->InstantiateShader(Array<Shader::Define>());
 
     Image image;
-    image.Create2D(4, 4, 1, Image::Format::RGB_32F_32F_32F, nullptr, Image::Flag::LinearSpace);
+    image.Create2D(4, 4, 1, Image::Format::RGB_32F_32F_32F, Image::GammaSpace::Linear, nullptr, 0);
     Texture *incidentCoeffTexture = new Texture;
     incidentCoeffTexture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::Nearest | Texture::Flag::NoMipmaps | Texture::Flag::HighQuality);
 
@@ -864,7 +911,7 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
     int size = targetCubeRT->GetWidth();
 
     // Precompute ZH coefficients * sqrt(4PI/(2l + 1)) of Lambert diffuse spherical function cos(theta) / PI
-    // which function is rotationally symmetric so only 3 terms are needed
+    // which function is rotationally symmetric so only 3 terms are needed.
     float al[3];
     al[0] = SphericalHarmonics::Lambert_Al_Evaluator(0); // 1
     al[1] = SphericalHarmonics::Lambert_Al_Evaluator(1); // 2/3
@@ -1068,7 +1115,7 @@ void RenderSystem::GenerateGGXDFGSumImage(int size, Image &integrationImage) con
 
     RB_DrawClipRect(0, 0, 1.0f, 1.0f);
 
-    integrationImage.Create2D(size, size, 1, Image::Format::RG_16F_16F, nullptr, Image::Flag::LinearSpace);
+    integrationImage.Create2D(size, size, 1, Image::Format::RG_16F_16F, Image::GammaSpace::Linear, nullptr, 0);
 
     rhi.ReadPixels(0, 0, size, size, Image::Format::RG_16F_16F, integrationImage.GetPixels());
 
@@ -1141,7 +1188,7 @@ void RenderSystem::TakeIrradianceEnvShot(const char *filename, RenderWorld *rend
 
     char path[256];
     Str::snPrintf(path, sizeof(path), "%s.dds", filename);
-    //irradianceEnvCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
+    //irradianceEnvCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, Image::GammaSpace::DontCare, false, Image::HighQuality);
     irradianceEnvCubeImage.WriteDDS(path);
 
     BE_LOG("Generated diffuse irradiance cubemap to \"%s\"\n", path);
@@ -1174,7 +1221,7 @@ void RenderSystem::TakePrefilteredEnvShot(const char *filename, RenderWorld *ren
 
     char path[256];
     Str::snPrintf(path, sizeof(path), "%s.dds", filename);
-    //prefilteredCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, false, Image::HighQuality);
+    //prefilteredCubeImage.ConvertFormatSelf(Image::RGB_11F_11F_10F, Image::GammaSpace::DontCare, false, Image::HighQuality);
     prefilteredCubeImage.WriteDDS(path);
 
     BE_LOG("Generated specular prefiltered cubemap to \"%s\"\n", path);
@@ -1201,7 +1248,7 @@ void RenderSystem::Cmd_GenerateDFGSumGGX(const CmdArgs &args) {
 void RenderSystem::Cmd_ScreenShot(const CmdArgs &args) {
     char path[1024];
 
-    Str documentDir = fileSystem.GetDocumentDir();
+    Str documentDir = fileSystem.GetUserDocumentDir();
     
     if (args.Argc() > 1) {
         Str::snPrintf(path, sizeof(path), "%s/Screenshots/%s", documentDir.c_str(), args.Argv(1));

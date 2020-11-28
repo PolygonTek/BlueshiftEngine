@@ -54,6 +54,8 @@ public:
     Vec3                Center() const { return Vec3((b[1][0] + b[0][0]) * 0.5f, (b[1][1] + b[0][1]) * 0.5f, (b[1][2] + b[0][2]) * 0.5f); }
                         /// Returns extents.
     Vec3                Extents() const { return (b[1] - b[0]) * 0.5f; }
+                        /// Returns sizes.
+    Vec3                Sizes() const { return b[1] - b[0]; }
 
                         /// Radius of circumscribed sphere that center in origin about the AABB.
     float               OuterRadius() const;
@@ -62,7 +64,7 @@ public:
                         /// Radius of inscribed sphere inside the AABB.
     float               InnerRadius() const;
 
-                        /// Returns area of six sides.
+                        /// Returns surface area of six sides.
     float               Area() const;
                         /// Returns volume of the AABB.
     float               Volume() const;
@@ -203,10 +205,13 @@ public:
                         /// Converts to surrounding sphere.
     Sphere              ToSphere() const;
 
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return 6; }
+
     static const AABB   empty;  ///< (Infinity, Infinity, Infinity) (-Infinity, -Infinity, -Infinity)
     static const AABB   zero;   ///< (0 0 0) (0 0 0)
 
-    Vec3                b[2];   ///< minimum/maximum value for each axis
+    Vec3                b[2];   ///< Minimum/Maximum values for each axis.
 };
 
 BE_INLINE AABB::AABB(const Vec3 &mins, const Vec3 &maxs) {
@@ -300,10 +305,8 @@ BE_INLINE void AABB::SetZero() {
 }
 
 BE_INLINE float AABB::Area() const {
-    float w = b[1][0] - b[0][0];
-    float h = b[1][1] - b[0][1];
-    float d = b[1][2] - b[0][2];
-    return (w * h + w * d + h * d) * 2.0f;
+    Vec3 d = b[1] - b[0];
+    return (d.x * d.y + d.y * d.z + d.z * d.x) * 2.0f;
 }
 
 BE_INLINE float AABB::Volume() const {

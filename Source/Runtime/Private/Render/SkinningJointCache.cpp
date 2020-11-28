@@ -16,7 +16,7 @@
 #include "Render/Render.h"
 #include "RenderInternal.h"
 #include "Core/Heap.h"
-#include "Simd/Simd.h"
+#include "SIMD/SIMD.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -27,15 +27,13 @@ SkinningJointCache::SkinningJointCache(int numJoints) {
     this->viewFrameCount = -1;
     this->numJoints = numJoints;
 
-    // NOTE: VTF skinning 일 때만 모션블러 함
-    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetchSkinning) {
+    // Object motion blur is available when VTF skinning is enabled.
+    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetch) {
         if (r_motionBlur.GetInteger() == 2) {
             this->numJoints *= 2;
         }
-        this->skinningJoints = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4) * this->numJoints);
-    } else {
-        this->skinningJoints = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4) * this->numJoints);
     }
+    this->skinningJoints = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4) * this->numJoints);
 }
 
 void SkinningJointCache::Purge() {
@@ -64,7 +62,7 @@ void SkinningJointCache::Update(const Skeleton *skeleton, const Mat3x4 *jointMat
 
     simdProcessor->MultiplyJoints(skinningJoints + jointIndexOffset[0], jointMats, skeleton->GetInvBindPoseMatrices(), numJoints);
 
-    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetchSkinning) {
+    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetch) {
         bufferCacheManager.AllocTexel(numJoints * sizeof(Mat3x4), skinningJoints, &bufferCache);
     }
 }
@@ -72,9 +70,9 @@ void SkinningJointCache::Update(const Skeleton *skeleton, const Mat3x4 *jointMat
 bool SkinningJointCache::CapableGPUJointSkinning(SkinningMethod::Enum skinningMethod, int numJoints) {
     assert(numJoints > 0 && numJoints < 256);
 
-    if (skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetchSkinning) {
+    if (skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetch) {
         return true;
-    } else if (skinningMethod == SkinningJointCache::SkinningMethod::VertexShaderSkinning) {
+    } else if (skinningMethod == SkinningJointCache::SkinningMethod::VertexShader) {
         if (numJoints <= 74) {
             if (rhi.HWLimit().maxVertexUniformComponents >= 256) {
                 return true;

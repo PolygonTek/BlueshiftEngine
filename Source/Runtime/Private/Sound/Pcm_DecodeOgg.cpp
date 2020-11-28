@@ -14,8 +14,8 @@
 
 #include "Precompiled.h"
 #include "Core/Heap.h"
-#include "Simd/Simd.h"
-#include "File/FileSystem.h"
+#include "SIMD/SIMD.h"
+#include "IO/FileSystem.h"
 #include "Sound/Pcm.h"
 #include "vorbis/vorbisfile.h"
 

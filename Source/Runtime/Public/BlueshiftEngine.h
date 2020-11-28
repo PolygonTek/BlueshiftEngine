@@ -16,6 +16,9 @@
 
 #include "../Precompiled.h"
 
+// SIMD
+#include "SIMD/SIMD.h"
+
 // Common
 #include "Core/Checksum_CRC32.h"
 #include "Core/Checksum_MD5.h"
@@ -74,10 +77,10 @@
 // Profiler
 #include "Profiler/Profiler.h"
 
-// File
-#include "File/File.h"
-#include "File/FileSystem.h"
-#include "File/ZipArchiver.h"
+// IO
+#include "IO/File.h"
+#include "IO/FileSystem.h"
+#include "IO/ZipArchiver.h"
 
 // Utils
 #include "Core/ByteOrder.h"
@@ -97,9 +100,6 @@
 #include "Core/SignalObject.h"
 #include "Core/Property.h"
 #include "Core/Object.h"
-
-// SIMD
-#include "Simd/Simd.h"
 
 // Image
 #include "Image/Image.h"
@@ -138,11 +138,13 @@
 // Asset
 #include "Asset/Asset.h"
 #include "Asset/AssetImporter.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 
 // Components
 #include "Components/Component.h"
 #include "Components/ComTransform.h"
+#include "Components/ComRectTransform.h"
 #include "Components/ComCollider.h"
 #include "Components/ComBoxCollider.h"
 #include "Components/ComSphereCollider.h"
@@ -180,6 +182,9 @@
 #include "Components/ComScript.h"
 #include "Components/ComAudioListener.h"
 #include "Components/ComAudioSource.h"
+#include "Components/ComCanvas.h"
+#include "Components/ComText.h"
+#include "Components/ComImage.h"
 
 // GameSettings
 #include "Game/GameSettings.h"
@@ -191,6 +196,7 @@
 #include "Game/GameWorld.h"
 
 #include "Engine/Common.h"
+#include "Engine/Coords2D.h"
 #include "Engine/Console.h"
 #include "Engine/GameClient.h"
 #include "Engine/Engine.h"

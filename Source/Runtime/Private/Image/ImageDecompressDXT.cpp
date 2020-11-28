@@ -20,6 +20,8 @@
 BE_NAMESPACE_BEGIN
 
 void DecompressDXT1(const Image &srcImage, Image &dstImage) {
+    assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 
@@ -39,6 +41,8 @@ void DecompressDXT1(const Image &srcImage, Image &dstImage) {
 }
 
 void DecompressDXT3(const Image &srcImage, Image &dstImage) {
+    assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 
@@ -58,6 +62,8 @@ void DecompressDXT3(const Image &srcImage, Image &dstImage) {
 }
 
 void DecompressDXT5(const Image &srcImage, Image &dstImage) {
+    assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 
@@ -77,6 +83,8 @@ void DecompressDXT5(const Image &srcImage, Image &dstImage) {
 }
 
 void DecompressDXN2(const Image &srcImage, Image &dstImage) {
+    assert(dstImage.GetFormat() == Image::Format::RGBA_8_8_8_8);
+
     int numMipmaps = srcImage.NumMipmaps();
     int numSlices = srcImage.NumSlices();
 

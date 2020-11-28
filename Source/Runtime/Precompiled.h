@@ -26,7 +26,7 @@
 // Platform detection defines
 //----------------------------------------------------------------------------------------------
 
-/* detect x86 32 bit platform */
+// Detect x86 32 bit platform.
 #if defined(__i386__) || defined(_M_IX86)
     #if !defined(__X86__)
         #define __X86__
@@ -36,7 +36,7 @@
     #endif
 #endif
 
-/* detect x86 64 bit platform */
+// Detect x86 64 bit platform.
 #if defined(__x86_64__) || defined(__ia64__) || defined(_M_X64)
     #if !defined(__X86__)
         #define __X86__
@@ -46,17 +46,24 @@
     #endif
 #endif
 
-/* detect ARM platform */
-#if defined(__arm__) || defined(__arm64__) || defined(_M_ARM)
-    #if !defined(__LINUX__)
+// Detect ARM 32 bit platform.
+#if defined(__arm__) || defined(_M_ARM)
+    #if !defined(__ARM__)
         #define __ARM__
     #endif
-    #if defined(__arm64__)
+#endif
+
+// Detect ARM 64 bit platform.
+#if defined(__arm64__) || defined(__aarch64__) || defined(_M_ARM64)
+    #if !defined(__ARM__)
+        #define __ARM__
+    #endif
+    #if !defined(__ARM64__)
         #define __ARM64__
     #endif
 #endif
 
-/* detect Linux platform */
+// Detect Linux platform.
 #if defined(linux) || defined(__linux__) || defined(__LINUX__)
     #if !defined(__LINUX__)
         #define __LINUX__
@@ -66,7 +73,7 @@
     #endif
 #endif
 
-/* detect FreeBSD platform */
+// Detect FreeBSD platform.
 #if defined(__FreeBSD__) || defined(__FREEBSD__)
     #if !defined(__FREEBSD__)
         #define __FREEBSD__
@@ -76,21 +83,21 @@
     #endif
 #endif
 
-/* detect Windows 95/98/NT/2000/XP/Vista/7 platform */
+// Detect Windows 95/98/NT/2000/XP/Vista/7 platform.
 #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)) && !defined(__CYGWIN__)
     #if !defined(__WIN32__)
         #define __WIN32__
     #endif
 #endif
 
-/* detect Cygwin platform */
+// Detect Cygwin platform.
 #if defined(__CYGWIN__)
     #if !defined(__UNIX__)
         #define __UNIX__
     #endif
 #endif
 
-/* detect MacOS X & iOS/iOS simulator platform */
+// Detect MacOS X & iOS/iOS simulator platform.
 #if defined(__APPLE__)
     #define __ASSERT_MACROS_DEFINE_VERSIONS_WITHOUT_UNDERSCORES 0 // conflict with boost_1_58_0
     #include <TargetConditionals.h>
@@ -113,14 +120,14 @@
     #endif
 #endif
 
-/* detect Android platform */
+// Detect Android platform.
 #if defined(ANDROID) || defined(__ANDROID__)
     #if !defined(__ANDROID__)
         #define __ANDROID__
     #endif
 #endif
 
-/* try to detect other Unix systems */
+// Try to detect other Unix systems.
 #if defined(__unix__) || defined (unix) || defined(__unix) || defined(_unix)
     #if !defined(__UNIX__)
         #define __UNIX__
@@ -131,9 +138,10 @@
 // Common platform
 //----------------------------------------------------------------------------------------------
 
-//#pragma setlocale ("kor") // We don't need this because we don't use character literal in other language.
+// We don't need this because we don't use character literal in other language.
+//#pragma setlocale ("kor") 
 
-// C RunTime Header Files
+// C runtime header files.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -146,7 +154,7 @@
 #include <inttypes.h>
 #include <locale.h>
 
-// C++ RunTime Header Files
+// C++ runtime header files.
 #include <cstddef>
 #include <typeinfo>
 #include <type_traits>
@@ -162,9 +170,9 @@
 #include <exception>
 #include <atomic>
 
-#define BE1                         BE1
-#define BE_NAMESPACE_BEGIN          namespace BE1 {
-#define BE_NAMESPACE_END            }
+#define BE1 BE1
+#define BE_NAMESPACE_BEGIN namespace BE1 {
+#define BE_NAMESPACE_END }
 
 #define BE_STATIC_LINK
 
@@ -177,10 +185,20 @@
 #endif
 
 #if defined(__WIN32__) && !defined(__X86_64__)
-    #define BE_FASTCALL             __fastcall
+    #define BE_FASTCALL __fastcall
 #else
     #define BE_FASTCALL
 #endif
+
+#define CONCAT(a, b)                _CONCAT_IMPL(a, b)
+#define _CONCAT_IMPL(a, b)          a ## b
+
+#define OVERLOADED_MACRO(m, ...)    _OVR(m, COUNT_ARGS(__VA_ARGS__)) (__VA_ARGS__)
+#define _OVR(macro, num)            _OVR_EXPAND(macro, num)
+#define _OVR_EXPAND(macro, num)     macro##_ARG##num
+
+#define COUNT_ARGS(...)             _ARG_PATTERN_MATCH(__VA_ARGS__, 8, 7, 6, 5, 4, 3, 2, 1)
+#define _ARG_PATTERN_MATCH(_1, _2, _3, _4, _5, _6, _7, _8, n, ...) n
 
 #define COUNT_OF(a)                 ((int)(sizeof(a) / sizeof((a)[0])))
 
@@ -192,10 +210,10 @@
 #define ADD_BIT(x, num)             (x |= BIT(num))
 #define SUB_BIT(x, num)             (x &= ~BIT(num))
 
-#define MAKE_FOURCC(a, b, c, d)     (((d)<<24) + ((c)<<16) + ((b)<<8) + (a))
+#define MAKE_FOURCC(a, b, c, d)     (((d) << 24) + ((c) << 16) + ((b) << 8) + (a))
 
-#define SWAP_WORD(w)                ((((w)&0xff) << 8) | (((w)&0xff00) >> 8))
-#define SWAP_LONG(l)                ((((l)&0xff) << 24) | (((l)&0xff00) << 8) | (((l)&0xff0000) >> 8) | (((l)&0xff000000) >> 24))
+#define SWAP_WORD(w)                ((((w) & 0xff) << 8) | (((w) & 0xff00) >> 8))
+#define SWAP_LONG(l)                ((((l) & 0xff) << 24) | (((l) & 0xff00) << 8) | (((l) & 0xff0000) >> 8) | (((l) & 0xff000000) >> 24))
 
 #define RANDOM_FLOAT(l, h)          ((l) + (((rand() & 0x7ffe) / ((float)0x7fff)) * (float)((h) - (l))))
 #define RANDOM_INT(l, h)            ((l) + ((((rand() * (int)((h) - (l) + 1)) - 1) / (RAND_MAX))))
@@ -207,25 +225,17 @@
     #define FLT_INFINITY            std::numeric_limits<float>::infinity()
 #endif
 
-#if defined(_MSC_VER) && !defined(__SSE4_2__)
-    #define __SSE4_2__  // enable to activate SSE4.2 under Windows
-#endif
-
-#if defined(_MSC_VER) && !defined(__AVX__)
-    #define __AVX__  // enable to activate AVX under Windows
-#endif
-
-// useful macro for forward declaration of Objective-C class in C/C++
+// Useful macro for forward declaration of Objective-C class in C/C++.
 #ifdef __OBJC__
     #define OBJC_CLASS(name) @class name
 #else
     #define OBJC_CLASS(name) typedef struct objc_object name
 #endif
 
-typedef uint8_t         byte;       // 8 bits
-typedef uint16_t        word;       // 16 bits
-typedef uint32_t        dword;      // 32 bits
-typedef uint64_t        qword;      // 64 bits
+typedef uint8_t     byte;   // 8 bits
+typedef uint16_t    word;   // 16 bits
+typedef uint32_t    dword;  // 32 bits
+typedef uint64_t    qword;  // 64 bits
 
 #ifdef _DEBUG
 
@@ -244,10 +254,10 @@ typedef uint64_t        qword;      // 64 bits
 #endif
 
 #ifdef _MSC_VER
-    #if (_MSC_VER >= 1800)
+    #if (_MSC_VER >= 1800) // VS2013
         #define __alignas_is_defined 1
     #endif
-    #if (_MSC_VER >= 1900)
+    #if (_MSC_VER >= 1900) // VS2015
         #define __alignof_is_defined 1
     #endif
 #else
@@ -291,15 +301,15 @@ inline T *address_of(T &&in) {
 template <bool... B>
 struct static_all_of;
 
-// do recursion if the first argument is true
+// Do recursion if the first argument is true.
 template <bool... Tail>
 struct static_all_of<true, Tail...> : static_all_of<Tail...> {};
 
-// end recursion if first argument is false
+// End recursion if first argument is false.
 template <bool... Tail>
 struct static_all_of<false, Tail...> : std::false_type {};
 
-// end recursion if no more arguments need to be processed
+// End recursion if no more arguments need to be processed.
 template <> struct static_all_of<> : std::true_type {};
 
 template <typename T, typename... Ts>
@@ -336,12 +346,12 @@ constexpr std::size_t count_of(T (&)[N]) {
 #pragma warning (disable: 4996)     // This function or variable may be unsafe
 #endif
 
-#define BE_WIN_X86_SSE_INTRIN       1
-
 #define BE_CDECL
 
 #define BE_FORCE_INLINE             __forceinline
 #define BE_INLINE                   inline
+
+#define BE_DEPRECATED               __declspec(deprecated("This is deprecated and will be removed in a future version."))
 
 #define CURRENT_FUNC                __FUNCTION__
 
@@ -360,7 +370,9 @@ constexpr std::size_t count_of(T (&)[N]) {
 #define wcstoll                     _wcstoi64
 #define wcstoull                    _wcstoui64
 
-#define debugbreak()                __debugbreak()
+#ifdef _DEBUG
+//#define _CRTDBG_MAP_ALLOC
+#endif
 
 // Including SDKDDKVer.h defines the highest available Windows platform.
 
@@ -377,17 +389,53 @@ constexpr std::size_t count_of(T (&)[N]) {
 #define _CRT_NON_CONFORMING_SWPRINTFS
 #endif
 
-// Exclude rarely-used stuff from Windows headers
+// Exclude rarely-used stuff from Windows headers.
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-// NOMINMAX makes sure that windef.h doesn't add macros min and max
+//----------------------------------------------------------------------------------------------
+// Definition for stripping unused code from Windows headers.
+//----------------------------------------------------------------------------------------------
+#define NOGDICAPMASKS
+//#define NOVIRTUALKEYCODES
+//#define NOWINMESSAGES
+//#define NOWINSTYLES
+//#define NOSYSMETRICS
+//#define NOMENUS
+//#define NOICONS
+#define NOKEYSTATES
+//#define NOSYSCOMMANDS
+#define NORASTEROPS
+//#define NOSHOWWINDOW
+#define OEMRESOURCE
+#define NOATOM
+#define NOCLIPBOARD
+//#define NOCOLOR
+//#define NOCTLMGR
+#define NODRAWTEXT
+//#define NOGDI
+#define NOKERNEL
+//#define NOUSER
+//#define NONLS
+//#define NOMB
+#define NOMEMMGR
+#define NOMETAFILE
 #define NOMINMAX
-
-#ifdef _DEBUG
-//#define _CRTDBG_MAP_ALLOC
-#endif
+//#define NOMSG
+#define NOOPENFILE
+#define NOSCROLL
+#define NOSERVICE
+#define NOSOUND
+#define NOTEXTMETRIC
+//#define NOWH
+//#define NOWINOFFSETS
+#define NOCOMM
+#define NOKANJI
+#define NOHELP
+#define NOPROFILER
+#define NODEFERWINDOWPOS
+#define NOMCX
 
 // Windows specific headers
 #include <windows.h>
@@ -406,6 +454,8 @@ constexpr std::size_t count_of(T (&)[N]) {
 #define BE_FORCE_INLINE             inline //__attribute__((always_inline))
 #define BE_INLINE                   inline
 
+#define BE_DEPRECATED               __attribute__((deprecated("This is deprecated and will be removed in a future version.")))
+
 #define CURRENT_FUNC                __func__
 
 #define PATHSEPERATOR_STR           "/"
@@ -418,12 +468,11 @@ constexpr std::size_t count_of(T (&)[N]) {
 #define _alloca16(x)                ((void *)((((intptr_t)alloca((x) + 15)) + 15) & ~15))
 #define _alloca32(x)                ((void *)((((intptr_t)alloca((x) + 31)) + 31) & ~31))
 
-#define debugbreak()                asm("int $3")
 #define TCHAR   char
 #endif // __UNIX__
 
 //----------------------------------------------------------------------------------------------
-// iOS & OSX
+// iOS & macOS
 //----------------------------------------------------------------------------------------------
 
 #ifdef __APPLE__
@@ -485,6 +534,41 @@ BE_FORCE_INLINE CFStringRef WideStringToCFString(const wchar_t *string) {
 
 //----------------------------------------------------------------------------------------------
 
+// For Intel processors FMA were introduced with AVX2 by Intel Haswell.
+// And all AMD processors support FMA/FMA3 if AVX2 is present.
+#if !defined(__FMA__) && defined(__AVX2__)
+    #define __FMA__
+#endif
+
+#if (defined(__SSE__) && defined(__SSE2__) && defined(__SSE3__) && defined(__SSSE3__)) || defined(__NEON__)
+    #define ENABLE_SIMD_INTRIN
+    //#define ENABLE_SIMD_INTRIN_IN_DEBUG
+#endif
+
+#if defined(_DEBUG) && !defined(ENABLE_SIMD_INTRIN_IN_DEBUG)
+    #undef ENABLE_SIMD_INTRIN
+#endif
+
+#ifdef ENABLE_SIMD_INTRIN
+    #if defined(__SSE__) && defined(__SSE2__) && defined(__SSE3__) && defined(__SSSE3__)
+        #define HAVE_X86_SSE_INTRIN
+    #elif defined(__NEON__)
+        #define HAVE_ARM_NEON_INTRIN
+    #endif
+
+    #if defined(__AVX__)
+        #define HAVE_X86_AVX_INTRIN
+    #endif
+
+    #if defined(HAVE_X86_SSE_INTRIN) || defined(HAVE_ARM_NEON_INTRIN)
+        #define ENABLE_SIMD4_INTRIN
+    #endif
+
+    #if defined(HAVE_X86_AVX_INTRIN)
+        #define ENABLE_SIMD8_INTRIN
+    #endif
+#endif
+
 typedef void (*streamOutFunc_t)(int level, const char *msg);
 
 BE_NAMESPACE_BEGIN
@@ -494,16 +578,20 @@ enum {
     MaxRelativePath = 128
 };
 
-enum LogLevel {
-    NormalLog,
-    DevLog,
-    WarningLog,
-    ErrorLog
+struct LogLevel {
+    enum Enum {
+        Normal,
+        Dev,
+        Warning,
+        Error
+    };
 };
 
-enum ErrLevel {
-    RestartErr,
-    FatalErr
+struct ErrorLevel {
+    enum Enum {
+        Restart,
+        Fatal
+    };
 };
 
 BE_FORCE_INLINE constexpr int64_t BE_API    MakeQWord(dword l, dword h) { return (qword)(l & 0xffffffff) | (((qword)(h & 0xffffffff)) << 32); }
@@ -538,12 +626,12 @@ BE_FORCE_INLINE constexpr T Min(const T &x, const T &y) { return (x < y) ? x : y
 template <typename T>
 BE_FORCE_INLINE constexpr T Max(const T &x, const T &y) { return (x > y) ? x : y; }
 
-/// Returns the smaller index of two values. 
-template <typename T>
-BE_FORCE_INLINE constexpr int MaxIndex(const T &x, const T &y) { return (x > y) ? 0 : 1; }
-/// Returns the larger index of two values.
+/// Returns the smaller index of two values.
 template <typename T>
 BE_FORCE_INLINE constexpr int MinIndex(const T &x, const T &y) { return (x < y) ? 0 : 1; }
+/// Returns the larger index of two values.
+template <typename T>
+BE_FORCE_INLINE constexpr int MaxIndex(const T &x, const T &y) { return (x > y) ? 0 : 1; }
 
 /// Returns the smaller of three values.
 template <typename T>
@@ -551,13 +639,19 @@ BE_FORCE_INLINE constexpr T Min3(const T &x, const T &y, const T &z) { return (x
 /// Returns the larger of three values.
 template <typename T>
 BE_FORCE_INLINE constexpr T Max3(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? x : z) : ((y > z) ? y : z); }
+/// Returns the median of three values.
+template <typename T>
+BE_FORCE_INLINE constexpr T Median(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? Max(y, z) : x) : ((y > z) ? Max(x, z) : y); }
 
 /// Returns the smaller index of three values.
 template <typename T>
-BE_FORCE_INLINE constexpr int Max3Index(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? 0 : 2) : ((y > z) ? 1 : 2); }
+BE_FORCE_INLINE constexpr int Min3Index(const T &x, const T &y, const T &z) { return (x < y) ? ((x < z) ? 0 : 2) : ((y < z) ? 1 : 2); }
 /// Returns the larger index of three values.
 template <typename T>
-BE_FORCE_INLINE constexpr int Min3Index(const T &x, const T &y, const T &z) { return (x < y) ? ((x < z) ? 0 : 2) : ((y < z) ? 1 : 2); }
+BE_FORCE_INLINE constexpr int Max3Index(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? 0 : 2) : ((y > z) ? 1 : 2); }
+/// Returns the median index of three values.
+template <typename T>
+BE_FORCE_INLINE constexpr int MedianIndex(const T &x, const T &y, const T &z) { return (x > y) ? ((x > z) ? MaxIndex(y, z) : 0) : ((y > z) ? MaxIndex(x, z) : 1); }
 
 /// Swaps two values.
 template <typename T> 
@@ -566,10 +660,16 @@ BE_FORCE_INLINE void Swap(T &a, T &b) noexcept { T c = std::move(a); a = std::mo
 /// Clamps a number to a range.
 template <typename T>
 BE_FORCE_INLINE void Clamp(T &v, const T &min, const T &max) { v = (v > max) ? max : (v < min ? min : v); }
+/// Clamps a number to the range [0, 1].
+template <typename T>
+BE_FORCE_INLINE void Clamp01(T &v) { Clamp(v, T(0), T(1)); }
 
 /// Returns the clamped number to a range.
 template <typename T>
 BE_FORCE_INLINE constexpr T Clamp(const T &v, const T &min, const T&max) { return (v > max) ? max : (v < min ? min : v); }
+/// Returns the clamped number to the range [0, 1].
+template <typename T>
+BE_FORCE_INLINE constexpr T Clamp01(const T &v) { return Clamp(v, T(0), T(1)); }
 
 /// Returns remainder of the division operation x / y.
 template <typename T>
@@ -645,23 +745,23 @@ void BE_CDECL BE_API Error(int errLevel, const char *msg, ...);
 void BE_CDECL BE_API Assert(bool expr);
 
 #define BE_LOG(...) do { \
-    BE1::Log(BE1::NormalLog, __VA_ARGS__); \
+    BE1::Log(BE1::LogLevel::Normal, __VA_ARGS__); \
 } while (0)
 
 #define BE_DLOG(...) do { \
-    BE1::Log(BE1::DevLog, __VA_ARGS__); \
+    BE1::Log(BE1::LogLevel::Dev, __VA_ARGS__); \
 } while (0)
 
 #define BE_WARNLOG(...) do { \
-    BE1::Log(BE1::WarningLog, __VA_ARGS__); \
+    BE1::Log(BE1::LogLevel::Warning, __VA_ARGS__); \
 } while (0)
 
 #define BE_ERRLOG(...) do { \
-    BE1::Log(BE1::ErrorLog, __VA_ARGS__); \
+    BE1::Log(BE1::LogLevel::Error, __VA_ARGS__); \
 } while (0)
 
 #define BE_FATALERROR(...) do { \
-    BE1::Error(BE1::FatalErr, __VA_ARGS__); \
+    BE1::Error(BE1::ErrorLevel::Fatal, __VA_ARGS__); \
 } while (0)
 
 #define BE_ASSERT BE1::Assert

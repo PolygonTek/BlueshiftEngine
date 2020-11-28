@@ -23,8 +23,10 @@
 */
 
 #include "Core/Str.h"
+#include "Core/Vertex.h"
 #include "Math/Math.h"
 #include "Containers/Array.h"
+#include "Font.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -46,17 +48,19 @@ class RenderObject {
 public:
     struct Flag {
         enum Enum {
-            Static              = BIT(0),
+            UseRenderingOrder   = BIT(0),
             FirstPersonOnly     = BIT(1),
             ThirdPersonOnly     = BIT(2),
-            Billboard           = BIT(3),
-            DepthHack           = BIT(4),
-            EnvProbeLit         = BIT(5),
-            CastShadows         = BIT(6),
-            ReceiveShadows      = BIT(7),
-            Occluder            = BIT(8),   // for use in HOM
-            SkipSelection       = BIT(9),
-            RichText            = BIT(10),
+            NoVisDist           = BIT(3),
+            Billboard           = BIT(4),
+            DepthHack           = BIT(5),
+            EnvProbeLit         = BIT(6),
+            CastShadows         = BIT(7),
+            ReceiveShadows      = BIT(8),
+            Occluder            = BIT(9),   // for use in HOM
+            SkipRendering       = BIT(10),
+            SkipSelection       = BIT(11),
+            RichText            = BIT(12),
         };
     };
 
@@ -69,6 +73,14 @@ public:
             TimeOffset,
             TimeScale,
             Count       // should be less than MAX_EXPR_LOCALPARMS
+        };
+    };
+
+    struct TextDrawMode {
+        enum Enum {
+            Normal,
+            DropShadows,
+            AddOutlines
         };
     };
 
@@ -86,11 +98,33 @@ public:
         };
     };
 
-    struct TextAlignment {
+    struct TextHorzAlignment {
         enum Enum {
             Left,
             Center,
             Right
+        };
+    };
+
+    struct TextVertAlignment {
+        enum Enum {
+            Top,
+            Middle,
+            Bottom
+        };
+    };
+
+    struct TextHorzOverflow {
+        enum Enum {
+            Wrap,
+            Overflow
+        };
+    };
+
+    struct TextVertOverflow {
+        enum Enum {
+            Truncate,
+            Overflow
         };
     };
 
@@ -109,12 +143,13 @@ public:
         int                 staticMask = 0;
         int                 time = 0;
         float               maxVisDist = MeterToUnit(100);
+        int                 renderingOrder = 0;
 
         //
         // Transform info
         //
         Mat3x4              worldMatrix = Mat3x4::identity;
-        AABB                aabb = AABB::zero;          ///< non-scaled AABB in local space
+        AABB                aabb = AABB::empty;          ///< non-scaled AABB in local space
 
         //
         // Wireframe info
@@ -131,12 +166,26 @@ public:
         Mat3x4 *            joints = nullptr;           ///< Joint transform matrices to animate skeletal mesh
 
         //
+        // Raw indexed triangles rendering (typically for GUI rendering)
+        //
+        int                 numVerts = 0;
+        VertexGeneric *     verts = nullptr;
+        int                 numIndexes = 0;
+        TriIndex *          indexes = nullptr;
+
+        //
         // Text rendering
         //
         Font *              font = nullptr;
         Str                 text;                       ///< UTF8 encoded string
+        TextDrawMode::Enum  textDrawMode = TextDrawMode::Normal;
+        Color4              textFxColor = Color4::black;
         TextAnchor::Enum    textAnchor = TextAnchor::UpperLeft;
-        TextAlignment::Enum textAlignment = TextAlignment::Left;
+        TextHorzAlignment::Enum textHorzAlignment = TextHorzAlignment::Center;
+        TextVertAlignment::Enum textVertAlignment = TextVertAlignment::Middle;
+        RectF               textRect = RectF::zero;
+        TextHorzOverflow::Enum textHorzOverflow = TextHorzOverflow::Wrap;
+        TextVertOverflow::Enum textVertOverflow = TextVertOverflow::Truncate;
         float               textScale = 1.0f;
         float               lineSpacing = 1.0f;
 
@@ -188,8 +237,8 @@ private:
 
     State                   state;
 
-    AABB                    worldAABB = AABB::zero;
-    OBB                     worldOBB = OBB::zero;
+    AABB                    worldAABB = AABB::empty;
+    OBB                     worldOBB;
     Mat3x4                  worldMatrix = Mat3x4::identity;
     Mat3x4                  worldMatrixInverse = Mat3x4::identity;
     Mat3x4                  prevWorldMatrix = Mat3x4::identity;

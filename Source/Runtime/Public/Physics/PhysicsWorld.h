@@ -99,11 +99,13 @@ class PhysicsWorld : public SignalObject {
     friend class PhysVehicle;
 
 public:
-    enum ConstraintSolver {
-        SequentialImpulseSolver,        // Default constraint solver.
-        NNCGSolver,                     // Nonsmooth Nonlinear Conjugate Gradient Solver
-        ProjectedGaussSeidelSolver,
-        DantzigSolver
+    struct ConstraintSolver {
+        enum Enum {
+            SequentialImpulseSolver,        // Default constraint solver.
+            NNCGSolver,                     // Nonsmooth Nonlinear Conjugate Gradient Solver
+            ProjectedGaussSeidelSolver,
+            DantzigSolver
+        };
     };
 
     PhysicsWorld();
@@ -111,13 +113,14 @@ public:
 
     void                    ClearScene();
     void                    Reset();
-    void                    StepSimulation(int frameTime);
+
+    void                    StepSimulation(float frameTime);
 
     int                     GetConstraintSolverIterations() const;
     void                    SetConstraintSolverIterations(int iterationCount);
 
-    ConstraintSolver        GetConstraintSolver() const;
-    void                    SetConstraintSolver(ConstraintSolver solver);
+    ConstraintSolver::Enum  GetConstraintSolver() const;
+    void                    SetConstraintSolver(ConstraintSolver::Enum solver);
 
                             /// Returns fixed frame rate in physics simulation
     int                     GetFrameRate() const { return frameRate; }
@@ -163,11 +166,11 @@ private:
     int                     frameRate;
     float                   frameTimeDelta;
     float                   maximumAllowedTimeStep;
-    ConstraintSolver        solverType;
+    ConstraintSolver::Enum  solverType;
     int                     filterMasks[32];
     btDefaultCollisionConfiguration *collisionConfiguration;
-    btCollisionDispatcher *  collisionDispatcher;
-    btBroadphaseInterface *  broadphase;
+    btCollisionDispatcher * collisionDispatcher;
+    btBroadphaseInterface * broadphase;
     btConstraintSolver *    constraintSolver;
     btSoftBodySolver *      softBodySolver;
     btGhostPairCallback *   ghostPairCallback;

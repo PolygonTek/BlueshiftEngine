@@ -26,8 +26,8 @@
 
 BE_NAMESPACE_BEGIN
 
-/// A vector of form (x, y, z, w). 16 bytes aligned.
-class BE_API ALIGN_AS16 Vec4 {
+/// A vector of form (x, y, z, w).
+class BE_API Vec4 {
 public:
     /// Specifies the number of elements in this vector.
     enum { Size = 4 };
@@ -36,8 +36,10 @@ public:
     Vec4() = default;
     /// Constructs a Vec4 with the value (x, y, z, w).
     constexpr Vec4(float x, float y, float z, float w);
-    /// Constructs a Vec4 with the value (xyz.x, xyz.y, xyz.z, w).
+    /// Constructs a Vec4 with the value (xyz[0], xyz[1], xyz[2], w).
     constexpr Vec4(const Vec3 &xyz, float w);
+    /// Constructs a Vec4 with the value (xy[0], xy[1], zw[2], zw[3]).
+    constexpr Vec4(const Vec2 &xy, const Vec2 &zw);
     /// Constructs a Vec4 from a C array, to the value (data[0], data[1], data[2], data[3]).
     explicit constexpr Vec4(const float data[4]);
     /// Constructs a Vec4 from a single value (s, s, s, s)
@@ -204,6 +206,11 @@ public:
                         /// @return Length of this vector
     float               NormalizeFast();
 
+                        /// Returns a normalized copy of this vector.
+    Vec4                Normalized() const;
+                        /// Returns a fast but approximately normalized copy of this vector.
+    Vec4                NormalizedFast() const;
+
                         /// Clamp min <= this[i] <= max for each element.
     void                Clamp(const Vec4 &min, const Vec4 &max);
 
@@ -217,12 +224,15 @@ public:
                         /// Returns linear interpolation between the vector v1 and the vector v2.
     static Vec4         FromLerp(const Vec4 &v1, const Vec4 &v2, const float t);
 
-                        /// Returns "x y z"
+                        /// Return hash value for HashIndex.
+    int                 ToHash() const { return ((int)x) * 31 * 31 * 31 + ((int)y) * 31 * 31 + ((int)z) * 31 + ((int)w); }
+
+                        /// Returns "x y z".
     const char *        ToString() const { return ToString(4); }
-                        /// Returns "x y z" with the given precision
+                        /// Returns "x y z" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Vec4         FromString(const char *str);
 
                         /// Casts this Vec4 to a Vec2.
@@ -241,19 +251,20 @@ public:
     const Color4 &      ToColor4() const;
     Color4 &            ToColor4();
 
-                        /// Returns dimension of this type
-    int                 GetDimension() const { return Size; }
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return Size; }
 
-                        /// Compute 4D barycentric coordinates from the point based on 4 simplex vector
+                        /// Compute 4D barycentric coordinates from the point based on 4 simplex vector.
     static const Vec4   Compute4DBarycentricCoords(const Vec3 &s1, const Vec3 &s2, const Vec3 &s3, const Vec3 &s4, const Vec3 &p);
 
-    static const Vec4   origin;     ///< (0, 0, 0, 0)
-    static const Vec4   zero;       ///< (0, 0, 0, 0)
-    static const Vec4   one;        ///< (1, 1, 1, 1)
-    static const Vec4   unitX;      ///< (1, 0, 0, 0)
-    static const Vec4   unitY;      ///< (0, 1, 0, 0)
-    static const Vec4   unitZ;      ///< (0, 0, 1, 0)
-    static const Vec4   unitW;      ///< (0, 0, 0, 1)
+    ALIGN_AS32 static const Vec4 origin;    ///< (0, 0, 0, 0)
+    ALIGN_AS32 static const Vec4 zero;      ///< (0, 0, 0, 0)
+    ALIGN_AS32 static const Vec4 one;       ///< (1, 1, 1, 1)
+    ALIGN_AS32 static const Vec4 unitX;     ///< (1, 0, 0, 0)
+    ALIGN_AS32 static const Vec4 unitY;     ///< (0, 1, 0, 0)
+    ALIGN_AS32 static const Vec4 unitZ;     ///< (0, 0, 1, 0)
+    ALIGN_AS32 static const Vec4 unitW;     ///< (0, 0, 0, 1)
+    ALIGN_AS32 static const Vec4 infinity;  ///< (1e30f, 1e30f, 1e30f, 1e30f)
 
     float               x;          ///< The x components.
     float               y;          ///< The y components.
@@ -267,6 +278,10 @@ BE_INLINE constexpr Vec4::Vec4(float inX, float inY, float inZ, float inW) :
 
 BE_INLINE constexpr Vec4::Vec4(const Vec3 &inXyz, float inW) :
     x(inXyz.x), y(inXyz.y), z(inXyz.z), w(inW) {
+}
+
+BE_INLINE constexpr Vec4::Vec4(const Vec2 &inXy, const Vec2 &inZw) :
+    x(inXy.x), y(inXy.y), z(inZw.x), w(inZw.y) {
 }
 
 BE_INLINE constexpr Vec4::Vec4(const float data[4]) :
@@ -352,7 +367,7 @@ BE_INLINE Vec4 &Vec4::operator/=(const Vec4 &rhs) {
 }
 
 BE_INLINE bool Vec4::Equals(const Vec4 &a) const {
-    return x != a.x || y != a.y || z != a.z || w == a.w ? false : true;
+    return x != a.x || y != a.y || z != a.z || w != a.w ? false : true;
 }
 
 BE_INLINE bool Vec4::Equals(const Vec4 &a, const float epsilon) const {
@@ -401,6 +416,18 @@ BE_INLINE float Vec4::NormalizeFast() {
     w *= invLength;
 
     return invLength * sqrLength;
+}
+
+BE_INLINE Vec4 Vec4::Normalized() const {
+    Vec4 n = *this;
+    n.Normalize();
+    return n;
+}
+
+BE_INLINE Vec4 Vec4::NormalizedFast() const {
+    Vec4 n = *this;
+    n.NormalizeFast();
+    return n;
 }
 
 BE_INLINE void Vec4::Clamp(const Vec4 &min, const Vec4 &max) {
@@ -484,7 +511,7 @@ BE_INLINE Color4 &Vec4::ToColor4() {
 }
 
 BE_INLINE const char *Vec4::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), Size, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_NAMESPACE_END

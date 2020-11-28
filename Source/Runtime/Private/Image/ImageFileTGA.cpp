@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Core/Heap.h"
 #include "Math/Math.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Image/Image.h"
 #include "ImageInternal.h"
 
@@ -97,7 +97,6 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
         header->image_type == TGA_COMPMAP || 
         header->image_type == TGA_COMPMAP4) && header->colormap_type == 1;	
 
-    // 칼라맵 정보가 있다면 읽어들인다
     if (has_colormap) {
         switch (header->colormap_bpp) {
         case 8:
@@ -152,7 +151,7 @@ bool Image::LoadTGAFromMemory(const char *name, const byte *data, size_t size) {
         }
     }
 
-    Create2D(header->width, header->height, 1, header->bpp == 32 ? Format::BGRA_8_8_8_8 : Format::BGR_8_8_8, nullptr, 0);
+    Create2D(header->width, header->height, 1, header->bpp == 32 ? Format::BGRA_8_8_8_8 : Format::BGR_8_8_8, GammaSpace::sRGB, nullptr, 0);
 
     int byte_per_pixel = BytesPerPixel();
         

@@ -30,44 +30,44 @@ class BE_API SignalObject {
     friend class SignalSystem;
 
 public:
-    /// Signal connection type
+    /// Signal connection type.
     struct ConnectionType {
         enum Enum {
             Direct              = 0,        /// The callback is invoked immediately, when the signal is emitted.
-            Queued              = BIT(0),   /// The callback is queued
-            Unique              = BIT(1),   /// Connect() will fail if the same signal is already connected to the same slot for the same pair of SignalObject
+            Queued              = BIT(0),   /// The callback is queued.
+            Unique              = BIT(1),   /// Connect() will fail if the same signal is already connected to the same slot for the same pair of SignalObject.
         };
     };
 
     SignalObject();
-    /// Prevents copy constructor
+    /// Prevents copy constructor.
     SignalObject(const SignalObject &rhs) = delete;
     virtual ~SignalObject();
 
-                                /// Prevents assignment operator
+                                /// Prevents assignment operator.
     SignalObject &              operator=(const SignalObject &rhs) = delete; 
 
-                                /// Checks if a signal is already connected to the receiver object with given callback function
+                                /// Checks if a signal is already connected to the receiver object with given callback function.
     bool                        IsConnected(const SignalDef *sigdef, SignalObject *receiver, SignalCallback function) const;
-                                /// Checks if a signal is already connected to the receiver object
+                                /// Checks if a signal is already connected to the receiver object.
     bool                        IsConnected(const SignalDef *sigdef, SignalObject *receiver) const;
 
-                                /// Connects a signal to receiver's callback function with given connection type
+                                /// Connects a signal to receiver's callback function with given connection type.
     bool                        Connect(const SignalDef *sigdef, SignalObject *receiver, SignalCallback function, int connectionType = ConnectionType::Direct);
-                                /// Disconnects a signal to receiver's callback function
+                                /// Disconnects a signal to receiver's callback function.
     bool                        Disconnect(const SignalDef *sigdef, SignalObject *receiver, SignalCallback function);
-                                /// Disconnects a signal to receiver
+                                /// Disconnects a signal to receiver.
     bool                        Disconnect(const SignalDef *sigdef, SignalObject *receiver);
                                 /// Disconnects a signal
     bool                        Disconnect(const SignalDef *sigdef);
 
-                                /// Emits a signal
+                                /// Emits a signal.
     template <typename... Args>
     bool                        EmitSignal(const SignalDef *sigdef, Args&&... args);
         
-                                /// Tests if all signals are blocked on this object
+                                /// Tests if all signals are blocked on this object.
     bool                        SignalsBlocked() const { return signalBlocked; }
-                                /// Blocks all signals on this object
+                                /// Blocks all signals on this object.
     bool                        BlockSignals(bool block);
 
 private:

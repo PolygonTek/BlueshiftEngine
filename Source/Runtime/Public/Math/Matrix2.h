@@ -121,32 +121,36 @@ public:
                         /// This function is identical to the member function SubSelf().
     Mat2 &              operator-=(const Mat2 &rhs);
     
-                        /// Multiplies this matrix with the given matrix, in-place
+                        /// Multiplies this matrix with the given matrix, in-place.
     Mat2 &              MulSelf(const Mat2 &m) { *this *= m; return *this; }
-                        /// Multiplies this matrix with the given matrix, in-place
+                        /// Multiplies this matrix with the given matrix, in-place.
                         /// This function is identical to the member function MulSelf().
     Mat2 &              operator*=(const Mat2 &rhs);
     
-                        /// Multiplies this matrix with the given scalar, in-place
+                        /// Multiplies this matrix with the given scalar, in-place.
     Mat2 &              MulScalarSelf(float s) { *this *= s; return *this; }
-                        /// Multiplies this matrix with the given scalar, in-place
+                        /// Multiplies this matrix with the given scalar, in-place.
                         /// This function is identical to the member function MulScalarSelf().
     Mat2 &              operator*=(float rhs);
                         
                         /// Multiplies the vector lhs with the given matrix rhs, in-place on vector. i.e. lhs *= rhs
     friend Vec2 &       operator*=(Vec2 &lhs, const Mat2 &rhs) { lhs = rhs * lhs; return lhs; }
     
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                Equals(const Mat2 &m) const;
-                        /// Compare with epsilon
+                        /// Compare with epsilon.
     bool                Equals(const Mat2 &m, const float epsilon) const;
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator==(const Mat2 &rhs) const { return Equals(rhs); }
-                        /// Exact compare, no epsilon
+                        /// Exact compare, no epsilon.
     bool                operator!=(const Mat2 &rhs) const { return !Equals(rhs); }
 
                         /// Tests if this is the identity matrix, up to the given epsilon.
     bool                IsIdentity(const float epsilon = MATRIX_EPSILON) const;
+                        /// Tests if this is the upper triangular matrix, up to the given epsilon.
+    bool                IsUpperTriangular(const float epsilon = MATRIX_EPSILON) const;
+                        /// Tests if this is the lower triangular matrix, up to the given epsilon.
+    bool                IsLowerTriangular(const float epsilon = MATRIX_EPSILON) const;
                         /// Tests if this is the symmetric matrix, up to the given epsilon.
     bool                IsSymmetric(const float epsilon = MATRIX_EPSILON) const;
                         /// Tests if this is the diagonal matrix, up to the given epsilon.
@@ -160,10 +164,10 @@ public:
     void                SetIdentity();
 
                         /// Returns the sum of the diagonal elements of this matrix.
-                        /// Mathematically, this means sum of all eigenvalues
+                        /// Mathematically, this means sum of all eigenvalues.
     float               Trace() const;
-                        /// Returns the determinant of this matrix
-                        /// Mathematically, this means multiplication of all eigenvalues
+                        /// Returns the determinant of this matrix.
+                        /// Mathematically, this means multiplication of all eigenvalues.
     float               Determinant() const;
 
                         /// Transposes this matrix.
@@ -183,11 +187,11 @@ public:
                         /// Returns "_00 _01 _10 _11" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Mat2         FromString(const char *str);
 
-                        /// Returns dimension of this type
-    int                 GetDimension() const { return Rows * Cols; }
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return Rows * Cols; }
 
     static const Mat2   zero;
     static const Mat2   identity;
@@ -357,13 +361,22 @@ BE_INLINE bool Mat2::IsIdentity(const float epsilon) const {
     return Equals(Mat2::identity, epsilon);
 }
 
+BE_INLINE bool Mat2::IsUpperTriangular(const float epsilon) const {
+    return (Math::Fabs(mat[1][0]) <= epsilon);
+}
+
+BE_INLINE bool Mat2::IsLowerTriangular(const float epsilon) const {
+    return (Math::Fabs(mat[0][1]) <= epsilon);
+}
+
 BE_INLINE bool Mat2::IsSymmetric(const float epsilon) const {
     return (Math::Fabs(mat[0][1] - mat[1][0]) < epsilon);
 }
 
 BE_INLINE bool Mat2::IsDiagonal(const float epsilon) const {
-    if (Math::Fabs(mat[0][1]) > epsilon || Math::Fabs(mat[1][0]) > epsilon)
+    if (Math::Fabs(mat[0][1]) > epsilon || Math::Fabs(mat[1][0]) > epsilon) {
         return false;
+    }
     return true;
 }
 
@@ -400,7 +413,7 @@ BE_INLINE Mat2 Mat2::Inverse() const {
 }
 
 BE_INLINE const char *Mat2::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), Rows * Cols, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_NAMESPACE_END

@@ -12,7 +12,7 @@ android {
         targetSdkVersion 26
         externalNativeBuild {
             cmake {
-                arguments '-DANDROID_TOOLCHAIN=clang', '-DANDROID_STL=c++_shared', '-DBUILD_RUNTIME=1', '-DBUILD_PLAYER=1', '-DBS_USE_ANALYTICS=0', '-DBS_USE_ADMOB=0'
+                arguments '-DANDROID_TOOLCHAIN=clang', '-DANDROID_STL=c++_shared', '-DANDROID_ARM_NEON=ON', '-DBUILD_RUNTIME=1', '-DBUILD_PLAYER=1', '-DBS_USE_ANALYTICS=0', '-DBS_USE_ADMOB=0'
             }
         }        
     }

@@ -17,7 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const Quat Quat::identity(0.0f, 0.0f, 0.0f, 1.0f);
+ALIGN_AS16 const Quat Quat::identity(0.0f, 0.0f, 0.0f, 1.0f);
 
 Quat Quat::FromString(const char *str) {
     Quat q;
@@ -26,13 +26,8 @@ Quat Quat::FromString(const char *str) {
 }
 
 Quat &Quat::SetFromAngleAxis(float angle, const Vec3 &axis) {
-    Rotation rot(Vec3::origin, axis, angle);
+    Rotation rot(Vec3::origin, axis, RAD2DEG(angle));
     *this = rot.ToQuat();
-    return *this;
-}
-
-Quat &Quat::SetFromAngles(const Angles &angles) {
-    *this = angles.ToQuat();
     return *this;
 }
 
@@ -73,6 +68,18 @@ Quat &Quat::SetFromTwoVectors(const Vec3 &from, const Vec3 &to) {
     return *this;
 }
 
+float Quat::AngleBetween(const Quat &target) const {
+    Quat delta = target / *this;
+    delta.Normalize();
+    return delta.Angle();
+}
+
+Vec3 Quat::AxisBetween(const Quat &target) const {
+    Quat delta = target / *this;
+    delta.Normalize();
+    return delta.Axis();
+}
+
 // Spherical linear interpolation between two quaternions.
 Quat &Quat::SetFromSlerp(const Quat &from, const Quat &to, float t) {
     if (t <= 0.0f) {
@@ -91,7 +98,7 @@ Quat &Quat::SetFromSlerp(const Quat &from, const Quat &to, float t) {
     }
 
     // calc cosine
-    float cosom = from.x * to.x + from.y * to.y + from.z * to.z + from.w * to.w;
+    float cosom = from.Dot(to);
 
     // adjust signs (if necessary)
     Quat temp;
@@ -103,17 +110,17 @@ Quat &Quat::SetFromSlerp(const Quat &from, const Quat &to, float t) {
     }
 
     // calculate coefficients
-    float omega, sinom, scale0, scale1;
+    float scale0, scale1;
     if ((1.0f - cosom) > 1e-6f) { //Math::FLT_EPSILON
-#if 0	// standard case (slerp)
-        omega = Math::ACos(cosom);
-        sinom = Math::Sin(omega);
+#if 0   // standard case (slerp)
+        float omega = Math::ACos(cosom);
+        float sinom = Math::Sin(omega);
         scale0 = Math::Sin((1.0f - t) * omega) * sinom;
         scale1 = Math::Sin(t * omega) * sinom;
 #else
         scale0 = 1.0f - cosom * cosom;
-        sinom = Math::InvSqrt(scale0);
-        omega = Math::ATan16(scale0 * sinom, cosom);
+        float sinom = Math::InvSqrt(scale0);
+        float omega = Math::ATan16(scale0 * sinom, cosom);
         scale0 = Math::Sin16((1.0f - t) * omega) * sinom;
         scale1 = Math::Sin16(t * omega) * sinom;
 #endif

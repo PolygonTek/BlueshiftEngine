@@ -1,6 +1,7 @@
 Blueshift Game Engine
 =======================
 
+[![GitHub release](https://img.shields.io/github/release/PolygonTek/BlueshiftEngine.svg)](https://github.com/PolygonTek/BlueshiftEngine/releases)
 [![License](https://img.shields.io/badge/Licence-Apache2.0-blue.svg)](LICENSE)
 [![LoC](https://tokei.rs/b1/github/PolygonTek/BlueshiftEngine)](https://github.com/PolygonTek/BlueshiftEngine)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/586e8c52b0c847a9ac1bc7632c65e79c)](https://app.codacy.com/app/juhl/BlueshiftEngine?utm_source=github.com&utm_medium=referral&utm_content=PolygonTek/BlueshiftEngine&utm_campaign=Badge_Grade_Dashboard)

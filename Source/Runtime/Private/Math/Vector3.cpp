@@ -17,12 +17,13 @@
 
 BE_NAMESPACE_BEGIN
 
-const Vec3 Vec3::origin(0.0f, 0.0f, 0.0f);
-const Vec3 Vec3::zero(0.0f, 0.0f, 0.0f);
-const Vec3 Vec3::one(1.0f, 1.0f, 1.0f);
-const Vec3 Vec3::unitX(1.0f, 0.0f, 0.0f);
-const Vec3 Vec3::unitY(0.0f, 1.0f, 0.0f);
-const Vec3 Vec3::unitZ(0.0f, 0.0f, 1.0f);
+ALIGN_AS32 const Vec3 Vec3::origin(0.0f, 0.0f, 0.0f);
+ALIGN_AS32 const Vec3 Vec3::zero(0.0f, 0.0f, 0.0f);
+ALIGN_AS32 const Vec3 Vec3::one(1.0f, 1.0f, 1.0f);
+ALIGN_AS32 const Vec3 Vec3::unitX(1.0f, 0.0f, 0.0f);
+ALIGN_AS32 const Vec3 Vec3::unitY(0.0f, 1.0f, 0.0f);
+ALIGN_AS32 const Vec3 Vec3::unitZ(0.0f, 0.0f, 1.0f);
+ALIGN_AS32 const Vec3 Vec3::infinity(Math::Infinity, Math::Infinity, Math::Infinity);
 
 bool Vec3::FixDegenerateNormal() {
     if (x == 0.0f) {
@@ -295,9 +296,10 @@ const Vec3 Vec3::Compute3DBarycentricCoords(const Vec2 &s1, const Vec2 &s2, cons
         return Vec3::zero;
     }
 
+    float invDet = 1.0f / det;
     Vec2 c = p - s3;
-    float b1 = (b[1] * c[0] - b[0] * c[1]) / det;
-    float b2 = (a[0] * c[1] - a[1] * c[0]) / det;
+    float b1 = (b[1] * c[0] - b[0] * c[1]) * invDet;
+    float b2 = (a[0] * c[1] - a[1] * c[0]) * invDet;
     return Vec3(b1, b2, 1.0f - b1 - b2);
 }
 

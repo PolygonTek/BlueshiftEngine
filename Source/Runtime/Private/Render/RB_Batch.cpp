@@ -165,10 +165,10 @@ void Batch::DrawStaticSubMesh(SubMesh *subMesh) {
 
 void Batch::DrawDynamicSubMesh(SubMesh *subMesh) {
     if (startIndex < 0) {
-        // startIndex 는 Flush 후에 -1 로 세팅된다
+        // startIndex is set to -1 after Flush()
         startIndex = subMesh->indexCache->offset / sizeof(TriIndex);
     } else {
-        // indexCache 가 순차적으로 연결되지 않는다면 한꺼번에 그릴 수 없으므로 Flush
+        // Flush because indexCache cannot be drawn all at once unless they are connected in sequence.
         if (startIndex + numIndexes != subMesh->indexCache->offset / sizeof(TriIndex) ||
             vertexBuffer != subMesh->vertexCache->buffer ||
             indexBuffer != subMesh->indexCache->buffer) {
@@ -189,15 +189,17 @@ void Batch::DrawDynamicSubMesh(SubMesh *subMesh) {
 
 void Batch::SetSubMeshVertexFormat(const SubMesh *subMesh, int vertexFormatIndex) const {
     // HACK!!
-    // TODO: check vertex type of the subMesh instead of this
+    // TODO: check vertex type of the subMesh instead of this.
     int vertexSize = subMesh->GetType() != Mesh::Type::Dynamic ? sizeof(VertexGenericLit) : sizeof(VertexGeneric);
 
     if (numIndirectCommands > 0 && renderGlobal.instancingMethod == Mesh::InstancingMethod::InstancedArrays) {
         if (subMesh->useGpuSkinning) {
             rhi.SetVertexFormat(vertexFormats[vertexFormatIndex + 4 + subMesh->gpuSkinningVersionIndex + 1].vertexFormatHandle);
 
+            int vertexWeightBase = ((vertexSize * numVerts + 15) >> 4) << 4;
+
             rhi.SetStreamSource(0, vertexBuffer, 0, vertexSize);
-            rhi.SetStreamSource(1, vertexBuffer, vertexSize * numVerts, subMesh->VertexWeightSize());
+            rhi.SetStreamSource(1, vertexBuffer, vertexWeightBase, subMesh->VertexWeightSize());
             rhi.SetStreamSource(2, backEnd.instanceBufferCache->buffer, backEnd.instanceBufferCache->offset, renderGlobal.instanceBufferOffsetAlignment);
         } else {
             rhi.SetVertexFormat(vertexFormats[vertexFormatIndex + 4].vertexFormatHandle);
@@ -209,8 +211,10 @@ void Batch::SetSubMeshVertexFormat(const SubMesh *subMesh, int vertexFormatIndex
         if (subMesh->useGpuSkinning) {
             rhi.SetVertexFormat(vertexFormats[vertexFormatIndex + subMesh->gpuSkinningVersionIndex + 1].vertexFormatHandle);
 
+            int vertexWeightBase = ((vertexSize * numVerts + 15) >> 4) << 4;
+
             rhi.SetStreamSource(0, vertexBuffer, 0, vertexSize);
-            rhi.SetStreamSource(1, vertexBuffer, vertexSize * numVerts, subMesh->VertexWeightSize());
+            rhi.SetStreamSource(1, vertexBuffer, vertexWeightBase, subMesh->VertexWeightSize());
         } else {
             rhi.SetVertexFormat(vertexFormats[vertexFormatIndex].vertexFormatHandle);
 
@@ -291,35 +295,12 @@ void Batch::Flush() {
     instanceEndIndex = -1;
 }
 
-// Converts 24-bit ID to Vec3
-static Vec3 MakeVec3Id(uint32_t id) {
-    assert((id & 0xFF000000) == 0);
-    const uint32_t b = Max<uint32_t>(id >> 16, 0);
-    id -= (b << 16);
-    const uint32_t g = Max<uint32_t>(id >> 8, 0);
-    id -= (g << 8);
-    const uint32_t r = Max<uint32_t>(id, 0);
-
-    return Vec3((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f);
-}
-
-// Converts 32-bit ID to Vec4
-static Vec4 MakeVec4Id(uint32_t id) {
-    const uint32_t a = Max<uint32_t>(id >> 24, 0);
-    id -= (a << 24);
-    const uint32_t b = Max<uint32_t>(id >> 16, 0);
-    id -= (b << 16);
-    const uint32_t g = Max<uint32_t>(id >> 8, 0);
-    id -= (g << 8);
-    const uint32_t r = Max<uint32_t>(id, 0);
-
-    return Vec4((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f, (float)a / 255.0f);
-}
-
 void Batch::Flush_SelectionPass() {
-    const Vec3 id = MakeVec3Id(surfSpace->def->GetIndex());
+    const Color3 idInColor3 = Color3::FromUInt32(surfSpace->def->GetIndex());
 
     const Material::ShaderPass *mtrlPass = material->GetPass();
+
+    int depthTestBits = (surfSpace->def->GetState().flags & RenderObject::Flag::UseRenderingOrder) ? 0 : mtrlPass->depthTestBits;
 
     rhi.SetCullFace(mtrlPass->cullType);
 
@@ -329,7 +310,7 @@ void Batch::Flush_SelectionPass() {
         VertexFormat::Type::GenericXyzSt : VertexFormat::Type::GenericXyz;
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
 
-    int stateBits = mtrlPass->stateBits | RHI::DepthWrite | RHI::ColorWrite | RHI::DF_LEqual;
+    int stateBits = mtrlPass->stateBits | RHI::DepthWrite | RHI::ColorWrite | depthTestBits;
     stateBits &= ~RHI::MaskBF;
 
     if (backEnd.camera->def->GetState().flags & RenderCamera::Flag::WireFrameMode) {
@@ -340,7 +321,7 @@ void Batch::Flush_SelectionPass() {
 
     rhi.SetStateBits(stateBits);
 
-    RenderSelection(mtrlPass, id);
+    RenderSelection(mtrlPass, idInColor3);
 
     if (backEnd.camera->def->GetState().flags & RenderCamera::Flag::WireFrameMode) {
         rhi.SetLineWidth(1);
@@ -350,13 +331,15 @@ void Batch::Flush_SelectionPass() {
 void Batch::Flush_BackgroundPass() {
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
+    int depthTestBits = (surfSpace->def->GetState().flags & RenderObject::Flag::UseRenderingOrder) ? 0 : mtrlPass->depthTestBits;
+
     rhi.SetCullFace(mtrlPass->cullType);
 
     rhi.BindBuffer(RHI::BufferType::Vertex, vertexBuffer);
 
     SetSubMeshVertexFormat(subMesh, VertexFormat::Type::GenericXyzSt);
 
-    rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_LEqual);
+    rhi.SetStateBits(mtrlPass->stateBits | depthTestBits);
 
     RenderGeneric(mtrlPass);
 }
@@ -368,6 +351,8 @@ void Batch::Flush_DepthPass() {
         return;
     }
 
+    int depthTestBits = (surfSpace->def->GetState().flags & RenderObject::Flag::UseRenderingOrder) ? 0 : mtrlPass->depthTestBits;
+
     rhi.SetCullFace(mtrlPass->cullType);
 
     rhi.BindBuffer(RHI::BufferType::Vertex, vertexBuffer);
@@ -376,7 +361,7 @@ void Batch::Flush_DepthPass() {
         VertexFormat::Type::GenericXyzStColor : VertexFormat::Type::GenericXyz;
     SetSubMeshVertexFormat(subMesh, vertexFormatIndex);
 
-    rhi.SetStateBits(RHI::DepthWrite | RHI::DF_LEqual);
+    rhi.SetStateBits(RHI::DepthWrite | depthTestBits);
 
     RenderDepth(mtrlPass);
 }
@@ -388,13 +373,15 @@ void Batch::Flush_DepthNormalPass() {
         return;
     }
 
+    int depthTestBits = (surfSpace->def->GetState().flags & RenderObject::Flag::UseRenderingOrder) ? 0 : mtrlPass->depthTestBits;
+
     rhi.SetCullFace(mtrlPass->cullType);
 
     rhi.BindBuffer(RHI::BufferType::Vertex, vertexBuffer);
 
     SetSubMeshVertexFormat(subMesh, VertexFormat::Type::GenericXyzStNT);
 
-    rhi.SetStateBits(RHI::DepthWrite | RHI::DF_LEqual);
+    rhi.SetStateBits(RHI::DepthWrite | depthTestBits);
 
     RenderDepthNormal(mtrlPass);
 }
@@ -433,24 +420,26 @@ void Batch::Flush_BasePass() {
 
     int stateBits = mtrlPass->stateBits;
 
+    int depthTestBits = (surfSpace->def->GetState().flags & RenderObject::Flag::UseRenderingOrder) ? 0 : mtrlPass->depthTestBits;
+
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaBlend) {
         stateBits |= (RHI::BS_SrcAlpha | RHI::BD_OneMinusSrcAlpha);
 
         if (mtrlPass->transparency == Material::Transparency::TwoPassesOneSide) {
-            rhi.SetStateBits((stateBits & ~(RHI::MaskBF | RHI::ColorWrite)) | RHI::DepthWrite | RHI::DF_LEqual);
+            rhi.SetStateBits((stateBits & ~(RHI::MaskBF | RHI::ColorWrite)) | RHI::DepthWrite | depthTestBits);
             RenderDepth(mtrlPass);
 
             rhi.SetStateBits(stateBits | RHI::DF_Equal);
             RenderBase(mtrlPass, r_ambientScale.GetFloat());
         } else if (mtrlPass->transparency == Material::Transparency::TwoPassesTwoSides) {
-            rhi.SetStateBits(stateBits | RHI::DF_LEqual);
+            rhi.SetStateBits(stateBits | depthTestBits);
             rhi.SetCullFace(RHI::CullType::Front);
             RenderBase(mtrlPass, r_ambientScale.GetFloat());
 
             rhi.SetCullFace(RHI::CullType::Back);
             DrawPrimitives();
         } else {
-            rhi.SetStateBits(stateBits | RHI::DF_LEqual);
+            rhi.SetStateBits(stateBits | depthTestBits);
             RenderBase(mtrlPass, r_ambientScale.GetFloat());
         }
     } else {
@@ -458,7 +447,7 @@ void Batch::Flush_BasePass() {
             stateBits &= ~RHI::DepthWrite;
             stateBits |= RHI::DF_Equal;
         } else {
-            stateBits |= RHI::DF_LEqual;
+            stateBits |= depthTestBits;
         }
 
         rhi.SetStateBits(stateBits);
@@ -473,27 +462,29 @@ void Batch::Flush_UnlitPass() {
 
     SetSubMeshVertexFormat(subMesh, VertexFormat::Type::GenericXyzStColor);
 
+    int depthTestBits = (surfSpace->def->GetState().flags & RenderObject::Flag::UseRenderingOrder) ? 0 : mtrlPass->depthTestBits;
+
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaBlend) {
         if (mtrlPass->transparency == Material::Transparency::TwoPassesOneSide) {
-            rhi.SetStateBits((mtrlPass->stateBits & ~(RHI::MaskBF | RHI::ColorWrite)) | RHI::DepthWrite | RHI::DF_LEqual);
+            rhi.SetStateBits((mtrlPass->stateBits & ~(RHI::MaskBF | RHI::ColorWrite)) | RHI::DepthWrite | depthTestBits);
             RenderDepth(mtrlPass);
 
             rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_Equal);
             RenderGeneric(mtrlPass);
         } else if (mtrlPass->transparency == Material::Transparency::TwoPassesTwoSides) {
-            rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_LEqual);
+            rhi.SetStateBits(mtrlPass->stateBits | depthTestBits);
             rhi.SetCullFace(RHI::CullType::Front);
             RenderGeneric(mtrlPass);
 
             rhi.SetCullFace(RHI::CullType::Back);
             DrawPrimitives();
         } else {
-            rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_LEqual);
+            rhi.SetStateBits(mtrlPass->stateBits | depthTestBits);
             rhi.SetCullFace(mtrlPass->cullType);
             RenderGeneric(mtrlPass);
         }
     } else {
-        rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_LEqual);
+        rhi.SetStateBits(mtrlPass->stateBits | depthTestBits);
         rhi.SetCullFace(mtrlPass->cullType);
         RenderGeneric(mtrlPass);
     }
@@ -518,6 +509,8 @@ void Batch::Flush_LitPass() {
     stateBits &= ~RHI::DepthWrite;
     stateBits &= ~RHI::MaskBF;
 
+    int depthTestBits = (surfSpace->def->GetState().flags & RenderObject::Flag::UseRenderingOrder) ? 0 : mtrlPass->depthTestBits;
+
     const Material *lightMaterial = surfLight->def->GetState().material;
     int lightMaterialType = lightMaterial->GetType();
     switch (lightMaterialType) {
@@ -534,14 +527,14 @@ void Batch::Flush_LitPass() {
                 rhi.SetStateBits(stateBits | RHI::BS_SrcAlpha | RHI::BD_One | RHI::DF_Equal);
                 RenderLightInteraction(mtrlPass);
             } else if (mtrlPass->transparency == Material::Transparency::TwoPassesTwoSides) {
-                rhi.SetStateBits(stateBits | RHI::BS_SrcAlpha | RHI::BD_One | RHI::DF_LEqual);
+                rhi.SetStateBits(stateBits | RHI::BS_SrcAlpha | RHI::BD_One | depthTestBits);
                 rhi.SetCullFace(RHI::CullType::Front);
                 RenderLightInteraction(mtrlPass);
 
                 rhi.SetCullFace(RHI::CullType::Back);
                 DrawPrimitives();
             } else {
-                rhi.SetStateBits(stateBits | RHI::BS_SrcAlpha | RHI::BD_One | RHI::DF_LEqual);
+                rhi.SetStateBits(stateBits | RHI::BS_SrcAlpha | RHI::BD_One | depthTestBits);
                 RenderLightInteraction(mtrlPass);
             }
         } else {
@@ -555,13 +548,15 @@ void Batch::Flush_LitPass() {
 void Batch::Flush_FinalPass() {
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
+    int depthTestBits = (surfSpace->def->GetState().flags & RenderObject::Flag::UseRenderingOrder) ? 0 : mtrlPass->depthTestBits;
+
     rhi.SetCullFace(mtrlPass->cullType);
 
     rhi.BindBuffer(RHI::BufferType::Vertex, vertexBuffer);
 
     SetSubMeshVertexFormat(subMesh, VertexFormat::Type::GenericXyzStNT);
 
-    rhi.SetStateBits(mtrlPass->stateBits | RHI::DF_LEqual);
+    rhi.SetStateBits(mtrlPass->stateBits | depthTestBits);
 
     RenderGeneric(mtrlPass);
 }
@@ -580,6 +575,8 @@ void Batch::Flush_WirePass() {
 void Batch::Flush_VelocityMapPass() {
     const Material::ShaderPass *mtrlPass = material->GetPass();
 
+    int depthTestBits = (surfSpace->def->GetState().flags & RenderObject::Flag::UseRenderingOrder) ? 0 : mtrlPass->depthTestBits;
+
     rhi.SetCullFace(mtrlPass->cullType);
 
     rhi.BindBuffer(RHI::BufferType::Vertex, vertexBuffer);
@@ -589,13 +586,15 @@ void Batch::Flush_VelocityMapPass() {
     int stateBits = mtrlPass->stateBits & (RHI::ColorWrite | RHI::AlphaWrite);
     stateBits |= RHI::DepthWrite;
 
-    rhi.SetStateBits(stateBits | RHI::DF_LEqual);
+    rhi.SetStateBits(stateBits | depthTestBits);
 
     RenderVelocity(mtrlPass);
 }
 
 void Batch::Flush_GuiPass() {
     const Material::ShaderPass *mtrlPass = material->GetPass();
+
+    int depthTestBits = (surfSpace->def->GetState().flags & RenderObject::Flag::UseRenderingOrder) ? 0 : mtrlPass->depthTestBits;
 
     rhi.SetCullFace(RHI::CullType::None);
 
@@ -606,7 +605,7 @@ void Batch::Flush_GuiPass() {
     int stateBits = mtrlPass->stateBits;
     stateBits &= ~RHI::DepthWrite;
 
-    rhi.SetStateBits(stateBits | RHI::DF_LEqual);
+    rhi.SetStateBits(stateBits | depthTestBits);
 
     RenderGui(mtrlPass);
 }

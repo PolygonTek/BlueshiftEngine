@@ -1,22 +1,30 @@
-/***************************************************************************/
-/*                                                                         */
-/*  aflatin2.c                                                             */
-/*                                                                         */
-/*    Auto-fitter hinting routines for latin writing system (body).        */
-/*                                                                         */
-/*  Copyright 2003-2014 by                                                 */
-/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
-/*                                                                         */
-/*  This file is part of the FreeType project, and may only be used,       */
-/*  modified, and distributed under the terms of the FreeType project      */
-/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
-/*  this file you indicate that you have read the license and              */
-/*  understand and accept it fully.                                        */
-/*                                                                         */
-/***************************************************************************/
+/* ATTENTION: This file doesn't compile.  It is only here as a reference */
+/*            of an alternative latin hinting algorithm that was always  */
+/*            marked as experimental.                                    */
+
+
+/****************************************************************************
+ *
+ * aflatin2.c
+ *
+ *   Auto-fitter hinting routines for latin writing system (body).
+ *
+ * Copyright (C) 2003-2019 by
+ * David Turner, Robert Wilhelm, and Werner Lemberg.
+ *
+ * This file is part of the FreeType project, and may only be used,
+ * modified, and distributed under the terms of the FreeType project
+ * license, LICENSE.TXT.  By continuing to use, modify, or distribute
+ * this file you indicate that you have read the license and
+ * understand and accept it fully.
+ *
+ */
 
 
 #include FT_ADVANCES_H
+
+
+#ifdef FT_OPTION_AUTOFIT2
 
 #include "afglobal.h"
 #include "aflatin.h"
@@ -29,14 +37,14 @@
 #endif
 
 
-  /*************************************************************************/
-  /*                                                                       */
-  /* The macro FT_COMPONENT is used in trace mode.  It is an implicit      */
-  /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
-  /* messages during execution.                                            */
-  /*                                                                       */
+  /**************************************************************************
+   *
+   * The macro FT_COMPONENT is used in trace mode.  It is an implicit
+   * parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log
+   * messages during execution.
+   */
 #undef  FT_COMPONENT
-#define FT_COMPONENT  trace_aflatin2
+#define FT_COMPONENT  aflatin2
 
 
   FT_LOCAL_DEF( FT_Error )
@@ -257,7 +265,7 @@
             /* Avoid single-point contours since they are never rasterized. */
             /* In some fonts, they correspond to mark attachment points     */
             /* which are way outside of the glyph's real outline.           */
-            if ( last == first )
+            if ( last <= first )
                 continue;
 
             if ( AF_LATIN_IS_TOP_BLUE( bb ) )
@@ -291,6 +299,7 @@
         /* now check whether the point belongs to a straight or round   */
         /* segment; we first need to find in which contour the extremum */
         /* lies, then inspect its previous and next points              */
+        if ( best_point >= 0 )
         {
           FT_Pos  best_x = points[best_point].x;
           FT_Int  start, end, prev, next;
@@ -350,8 +359,8 @@
       if ( num_flats == 0 && num_rounds == 0 )
       {
         /*
-         *  we couldn't find a single glyph to compute this blue zone,
-         *  we will simply ignore it then
+         * we couldn't find a single glyph to compute this blue zone,
+         * we will simply ignore it then
          */
         FT_TRACE5(( "  empty\n" ));
         continue;
@@ -624,7 +633,7 @@
     /* an extra-light axis corresponds to a standard width that is */
     /* smaller than 5/8 pixels                                     */
     axis->extra_light =
-      (FT_Bool)( FT_MulFix( axis->standard_width, scale ) < 32 + 8 );
+      FT_BOOL( FT_MulFix( axis->standard_width, scale ) < 32 + 8 );
 
     if ( dim == AF_DIMENSION_VERT )
     {
@@ -690,6 +699,22 @@
 
     af_latin2_metrics_scale_dim( metrics, scaler, AF_DIMENSION_HORZ );
     af_latin2_metrics_scale_dim( metrics, scaler, AF_DIMENSION_VERT );
+  }
+
+
+  /* Extract standard_width from writing system/script specific */
+  /* metrics class.                                             */
+
+  FT_LOCAL_DEF( void )
+  af_latin2_get_standard_widths( AF_LatinMetrics  metrics,
+                                 FT_Pos*          stdHW,
+                                 FT_Pos*          stdVW )
+  {
+    if ( stdHW )
+      *stdHW = metrics->axis[AF_DIMENSION_VERT].standard_width;
+
+    if ( stdVW )
+      *stdVW = metrics->axis[AF_DIMENSION_HORZ].standard_width;
   }
 
 
@@ -835,8 +860,8 @@
         {
           AF_Point  pt   = first;
           AF_Point  last = point;
-          AF_Flags  f0   = (AF_Flags)( pt->flags & AF_FLAG_CONTROL );
-          AF_Flags  f1;
+          FT_UInt   f0   = pt->flags & AF_FLAG_CONTROL;
+          FT_UInt   f1;
 
 
           segment->flags &= ~AF_EDGE_ROUND;
@@ -844,7 +869,7 @@
           for ( ; pt != last; f0 = f1 )
           {
             pt = pt->next;
-            f1 = (AF_Flags)( pt->flags & AF_FLAG_CONTROL );
+            f1 = pt->flags & AF_FLAG_CONTROL;
 
             if ( !f0 && !f1 )
               break;
@@ -1048,7 +1073,7 @@
       {
         if ( seg2->link != seg1 )
         {
-          seg1->link  = 0;
+          seg1->link  = NULL;
           seg1->serif = seg2->link;
         }
       }
@@ -1084,13 +1109,13 @@
                                           : AF_DIR_RIGHT;
 
     /*
-     *  We want to ignore very small (mostly serif) segments, we do that
-     *  by ignoring those that whose length is less than a given fraction
-     *  of the standard width. If there is no standard width, we ignore
-     *  those that are less than a given size in pixels
+     * We want to ignore very small (mostly serif) segments, we do that
+     * by ignoring those that whose length is less than a given fraction
+     * of the standard width. If there is no standard width, we ignore
+     * those that are less than a given size in pixels
      *
-     *  also, unlink serif segments that are linked to segments farther
-     *  than 50% of the standard width
+     * also, unlink serif segments that are linked to segments farther
+     * than 50% of the standard width
      */
     if ( dim == AF_DIMENSION_HORZ )
     {
@@ -1102,21 +1127,21 @@
     else
       segment_length_threshold = 0;
 
-    /*********************************************************************/
-    /*                                                                   */
-    /* We will begin by generating a sorted table of edges for the       */
-    /* current direction.  To do so, we simply scan each segment and try */
-    /* to find an edge in our table that corresponds to its position.    */
-    /*                                                                   */
-    /* If no edge is found, we create and insert a new edge in the       */
-    /* sorted table.  Otherwise, we simply add the segment to the edge's */
-    /* list which will be processed in the second step to compute the    */
-    /* edge's properties.                                                */
-    /*                                                                   */
-    /* Note that the edges table is sorted along the segment/edge        */
-    /* position.                                                         */
-    /*                                                                   */
-    /*********************************************************************/
+    /**********************************************************************
+     *
+     * We will begin by generating a sorted table of edges for the
+     * current direction.  To do so, we simply scan each segment and try
+     * to find an edge in our table that corresponds to its position.
+     *
+     * If no edge is found, we create and insert a new edge in the
+     * sorted table.  Otherwise, we simply add the segment to the edge's
+     * list which will be processed in the second step to compute the
+     * edge's properties.
+     *
+     * Note that the edges table is sorted along the segment/edge
+     * position.
+     *
+     */
 
     edge_distance_threshold = FT_MulFix( laxis->edge_distance_threshold,
                                          scale );
@@ -1128,7 +1153,7 @@
 
     for ( seg = segments; seg < segment_limit; seg++ )
     {
-      AF_Edge  found = 0;
+      AF_Edge  found = NULL;
       FT_Int   ee;
 
 
@@ -1179,7 +1204,7 @@
 
         /* insert a new edge in the list and */
         /* sort according to the position    */
-        error = af_axis_hints_new_edge( axis, seg->pos, seg->dir,
+        error = af_axis_hints_new_edge( axis, seg->pos, seg->dir, 0,
                                         memory, &edge );
         if ( error )
           goto Exit;
@@ -1206,17 +1231,17 @@
     }
 
 
-    /*********************************************************************/
-    /*                                                                   */
-    /* Good, we will now compute each edge's properties according to     */
-    /* segments found on its position.  Basically, these are:            */
-    /*                                                                   */
-    /*  - edge's main direction                                          */
-    /*  - stem edge, serif edge or both (which defaults to stem then)    */
-    /*  - rounded edge, straight or both (which defaults to straight)    */
-    /*  - link for edge                                                  */
-    /*                                                                   */
-    /*********************************************************************/
+    /**********************************************************************
+     *
+     * Good, we will now compute each edge's properties according to
+     * segments found on its position.  Basically, these are:
+     *
+     * - edge's main direction
+     * - stem edge, serif edge or both (which defaults to stem then)
+     * - rounded edge, straight or both (which defaults to straight)
+     * - link for edge
+     *
+     */
 
     /* first of all, set the `edge' field in each segment -- this is */
     /* required in order to compute edge links                       */
@@ -1278,11 +1303,11 @@
 
           /* check for links -- if seg->serif is set, then seg->link must */
           /* be ignored                                                   */
-          is_serif = (FT_Bool)( seg->serif               &&
-                                seg->serif->edge         &&
-                                seg->serif->edge != edge );
+          is_serif = FT_BOOL( seg->serif               &&
+                              seg->serif->edge         &&
+                              seg->serif->edge != edge );
 
-          if ( ( seg->link && seg->link->edge != NULL ) || is_serif )
+          if ( ( seg->link && seg->link->edge ) || is_serif )
           {
             AF_Edge     edge2;
             AF_Segment  seg2;
@@ -1355,7 +1380,7 @@
         /*      Example: the `c' in cour.pfa at size 13     */
 
         if ( edge->serif && edge->link )
-          edge->serif = 0;
+          edge->serif = NULL;
       }
     }
 
@@ -1382,7 +1407,7 @@
   }
 
 
-  FT_LOCAL_DEF( void )
+  static void
   af_latin2_hints_compute_blue_edges( AF_GlyphHints    hints,
                                       AF_LatinMetrics  metrics )
   {
@@ -1500,8 +1525,8 @@
     af_glyph_hints_rescale( hints, (AF_StyleMetrics)metrics );
 
     /*
-     *  correct x_scale and y_scale if needed, since they may have
-     *  been modified `af_latin2_metrics_scale_dim' above
+     * correct x_scale and y_scale if needed, since they may have
+     * been modified `af_latin2_metrics_scale_dim' above
      */
     hints->x_scale = metrics->axis[AF_DIMENSION_HORZ].scale;
     hints->x_delta = metrics->axis[AF_DIMENSION_HORZ].delta;
@@ -1513,44 +1538,48 @@
 
 #if 0 /* #ifdef AF_CONFIG_OPTION_USE_WARPER */
     if ( mode == FT_RENDER_MODE_LCD || mode == FT_RENDER_MODE_LCD_V )
-    {
       metrics->root.scaler.render_mode = mode = FT_RENDER_MODE_NORMAL;
-    }
 #endif
 
     scaler_flags = hints->scaler_flags;
     other_flags  = 0;
 
     /*
-     *  We snap the width of vertical stems for the monochrome and
-     *  horizontal LCD rendering targets only.
+     * We snap the width of vertical stems for the monochrome and
+     * horizontal LCD rendering targets only.
      */
     if ( mode == FT_RENDER_MODE_MONO || mode == FT_RENDER_MODE_LCD )
       other_flags |= AF_LATIN_HINTS_HORZ_SNAP;
 
     /*
-     *  We snap the width of horizontal stems for the monochrome and
-     *  vertical LCD rendering targets only.
+     * We snap the width of horizontal stems for the monochrome and
+     * vertical LCD rendering targets only.
      */
     if ( mode == FT_RENDER_MODE_MONO || mode == FT_RENDER_MODE_LCD_V )
       other_flags |= AF_LATIN_HINTS_VERT_SNAP;
 
     /*
-     *  We adjust stems to full pixels only if we don't use the `light' mode.
+     * We adjust stems to full pixels unless in `light' or `lcd' mode.
      */
-    if ( mode != FT_RENDER_MODE_LIGHT )
+    if ( mode != FT_RENDER_MODE_LIGHT && mode != FT_RENDER_MODE_LCD )
       other_flags |= AF_LATIN_HINTS_STEM_ADJUST;
 
     if ( mode == FT_RENDER_MODE_MONO )
       other_flags |= AF_LATIN_HINTS_MONO;
 
     /*
-     *  In `light' hinting mode we disable horizontal hinting completely.
-     *  We also do it if the face is italic.
+     * In `light' or `lcd' mode we disable horizontal hinting completely.
+     * We also do it if the face is italic.
      */
-    if ( mode == FT_RENDER_MODE_LIGHT                      ||
-         ( face->style_flags & FT_STYLE_FLAG_ITALIC ) != 0 )
+    if ( mode == FT_RENDER_MODE_LIGHT || mode == FT_RENDER_MODE_LCD ||
+         ( face->style_flags & FT_STYLE_FLAG_ITALIC ) != 0          )
       scaler_flags |= AF_SCALER_FLAG_NO_HORIZONTAL;
+
+#ifdef AF_CONFIG_OPTION_USE_WARPER
+    /* get (global) warper flag */
+    if ( !metrics->root.globals->module->warping )
+      scaler_flags |= AF_SCALER_FLAG_NO_WARPER;
+#endif
 
     hints->scaler_flags = scaler_flags;
     hints->other_flags  = other_flags;
@@ -1572,13 +1601,13 @@
 
   static FT_Pos
   af_latin2_snap_width( AF_Width  widths,
-                        FT_Int    count,
+                        FT_UInt   count,
                         FT_Pos    width )
   {
-    int     n;
-    FT_Pos  best      = 64 + 32 + 2;
-    FT_Pos  reference = width;
-    FT_Pos  scaled;
+    FT_UInt  n;
+    FT_Pos   best      = 64 + 32 + 2;
+    FT_Pos   reference = width;
+    FT_Pos   scaled;
 
 
     for ( n = 0; n < count; n++ )
@@ -1621,8 +1650,8 @@
   af_latin2_compute_stem_width( AF_GlyphHints  hints,
                                 AF_Dimension   dim,
                                 FT_Pos         width,
-                                AF_Edge_Flags  base_flags,
-                                AF_Edge_Flags  stem_flags )
+                                FT_UInt        base_flags,
+                                FT_UInt        stem_flags )
   {
     AF_LatinMetrics  metrics  = (AF_LatinMetrics) hints->metrics;
     AF_LatinAxis     axis     = & metrics->axis[dim];
@@ -1793,10 +1822,9 @@
   {
     FT_Pos  dist = stem_edge->opos - base_edge->opos;
 
-    FT_Pos  fitted_width = af_latin2_compute_stem_width(
-                             hints, dim, dist,
-                             (AF_Edge_Flags)base_edge->flags,
-                             (AF_Edge_Flags)stem_edge->flags );
+    FT_Pos  fitted_width = af_latin2_compute_stem_width( hints, dim, dist,
+                                                         base_edge->flags,
+                                                         stem_edge->flags );
 
 
     stem_edge->pos = base_edge->pos + fitted_width;
@@ -1830,7 +1858,7 @@
   /*************************************************************************/
 
 
-  FT_LOCAL_DEF( void )
+  static void
   af_latin2_hint_edges( AF_GlyphHints  hints,
                         AF_Dimension   dim )
   {
@@ -1838,7 +1866,7 @@
     AF_Edge       edges      = axis->edges;
     AF_Edge       edge_limit = edges + axis->num_edges;
     AF_Edge       edge;
-    AF_Edge       anchor     = 0;
+    AF_Edge       anchor     = NULL;
     FT_Int        has_serifs = 0;
     FT_Pos        anchor_drift = 0;
 
@@ -1942,10 +1970,9 @@
 
 
         org_len = edge2->opos - edge->opos;
-        cur_len = af_latin2_compute_stem_width(
-                    hints, dim, org_len,
-                    (AF_Edge_Flags)edge->flags,
-                    (AF_Edge_Flags)edge2->flags );
+        cur_len = af_latin2_compute_stem_width( hints, dim, org_len,
+                                                edge->flags,
+                                                edge2->flags );
         if ( cur_len <= 64 )
           u_off = d_off = 32;
         else
@@ -2007,10 +2034,9 @@
         org_len    = edge2->opos - edge->opos;
         org_center = org_pos + ( org_len >> 1 );
 
-        cur_len = af_latin2_compute_stem_width(
-                   hints, dim, org_len,
-                   (AF_Edge_Flags)edge->flags,
-                   (AF_Edge_Flags)edge2->flags );
+        cur_len = af_latin2_compute_stem_width( hints, dim, org_len,
+                                                edge->flags,
+                                                edge2->flags );
 
         org_left  = org_pos + ( ( org_len - cur_len ) >> 1 );
         org_right = org_pos + ( ( org_len + cur_len ) >> 1 );
@@ -2208,8 +2234,8 @@
     if ( has_serifs || !anchor )
     {
       /*
-       *  now hint the remaining edges (serifs and single) in order
-       *  to complete our processing
+       * now hint the remaining edges (serifs and single) in order
+       * to complete our processing
        */
       for ( edge = edges; edge < edge_limit; edge++ )
       {
@@ -2299,12 +2325,15 @@
 
 
   static FT_Error
-  af_latin2_hints_apply( AF_GlyphHints    hints,
+  af_latin2_hints_apply( FT_UInt          glyph_index,
+                         AF_GlyphHints    hints,
                          FT_Outline*      outline,
                          AF_LatinMetrics  metrics )
   {
     FT_Error  error;
     int       dim;
+
+    FT_UNUSED( glyph_index );
 
 
     error = af_glyph_hints_reload( hints, outline );
@@ -2312,12 +2341,7 @@
       goto Exit;
 
     /* analyze glyph outline */
-#ifdef AF_CONFIG_OPTION_USE_WARPER
-    if ( metrics->root.scaler.render_mode == FT_RENDER_MODE_LIGHT ||
-         AF_HINTS_DO_HORIZONTAL( hints ) )
-#else
     if ( AF_HINTS_DO_HORIZONTAL( hints ) )
-#endif
     {
       error = af_latin2_hints_detect_features( hints, AF_DIMENSION_HORZ );
       if ( error )
@@ -2337,8 +2361,9 @@
     for ( dim = 0; dim < AF_DIMENSION_MAX; dim++ )
     {
 #ifdef AF_CONFIG_OPTION_USE_WARPER
-      if ( ( dim == AF_DIMENSION_HORZ &&
-             metrics->root.scaler.render_mode == FT_RENDER_MODE_LIGHT ) )
+      if ( dim == AF_DIMENSION_HORZ                                  &&
+           metrics->root.scaler.render_mode == FT_RENDER_MODE_NORMAL &&
+           AF_HINTS_DO_WARP( hints )                                 )
       {
         AF_WarperRec  warper;
         FT_Fixed      scale;
@@ -2349,7 +2374,7 @@
         af_glyph_hints_scale_dim( hints, dim, scale, delta );
         continue;
       }
-#endif
+#endif /* AF_CONFIG_OPTION_USE_WARPER */
 
       if ( ( dim == AF_DIMENSION_HORZ && AF_HINTS_DO_HORIZONTAL( hints ) ) ||
            ( dim == AF_DIMENSION_VERT && AF_HINTS_DO_VERTICAL( hints ) )   )
@@ -2383,13 +2408,21 @@
 
     sizeof ( AF_LatinMetricsRec ),
 
-    (AF_WritingSystem_InitMetricsFunc) af_latin2_metrics_init,
-    (AF_WritingSystem_ScaleMetricsFunc)af_latin2_metrics_scale,
-    (AF_WritingSystem_DoneMetricsFunc) NULL,
+    (AF_WritingSystem_InitMetricsFunc) af_latin2_metrics_init,        /* style_metrics_init    */
+    (AF_WritingSystem_ScaleMetricsFunc)af_latin2_metrics_scale,       /* style_metrics_scale   */
+    (AF_WritingSystem_DoneMetricsFunc) NULL,                          /* style_metrics_done    */
+    (AF_WritingSystem_GetStdWidthsFunc)af_latin2_get_standard_widths, /* style_metrics_getstdw */
 
-    (AF_WritingSystem_InitHintsFunc)   af_latin2_hints_init,
-    (AF_WritingSystem_ApplyHintsFunc)  af_latin2_hints_apply
+    (AF_WritingSystem_InitHintsFunc)   af_latin2_hints_init,          /* style_hints_init      */
+    (AF_WritingSystem_ApplyHintsFunc)  af_latin2_hints_apply          /* style_hints_apply     */
   )
+
+#else /* !FT_OPTION_AUTOFIT2 */
+
+  /* ANSI C doesn't like empty source files */
+  typedef int  _af_latin2_dummy;
+
+#endif /* !FT_OPTION_AUTOFIT2 */
 
 
 /* END */

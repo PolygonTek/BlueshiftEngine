@@ -32,7 +32,7 @@ public:
 
                             /// Takes a null terminated string and breaks the string up into arg tokens.
                             /// Does not need to be /n terminated.
-                            /// Set keepAsStrings to true to only seperate tokens from whitespace and comments, ignoring punctuation
+                            /// Set keepAsStrings to true to only seperate tokens from whitespace and comments, ignoring punctuation.
     void                    TokenizeString(const char *text, bool keepAsStrings);
 
                             /// Returns the number of arguments.
@@ -42,13 +42,13 @@ public:
                             /// Returns empty string if index is not in valid range.
     const char *            Argv(int index) const { return (index >= 0 && index < numArgs) ? argPtrs[index] : ""; }
 
-                            /// Returns a single string containing argv(start) to argv(end) separated by ' '
+                            /// Returns a single string containing argv(start) to argv(end) separated by ' '.
     const char *            Args(int start = 0, int end = -1) const;
 
                             /// Tests if matched argument found.
     bool                    CheckArg(const char *arg, bool caseSensitive = true) const;
 
-                            /// Append a argument at the end of the arguments list
+                            /// Append a argument at the end of the arguments list.
     void                    AppendArg(const char *arg);
 
 private:

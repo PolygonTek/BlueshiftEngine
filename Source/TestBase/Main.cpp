@@ -39,9 +39,9 @@ int main(int argc, char *argv[]) {
     enginePath.CleanPath();
     BE1::Engine::InitBase(enginePath, false, SystemLog, SystemError);
 
-    TestContainer();
+    //TestContainer();
 
-    TestMath();
+    //TestMath();
     
     TestSIMD();
 
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-    TestLua();
+    //TestLua();
 
     BE1::Engine::ShutdownBase();
 }

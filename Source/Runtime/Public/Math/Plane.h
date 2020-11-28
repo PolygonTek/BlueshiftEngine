@@ -66,8 +66,10 @@ public:
 
     /// The default constructor does not initialize any members of this class.
     Plane() = default;
-    constexpr Plane(float a, float b, float c, float d);
-    constexpr Plane(const Vec3 &n, float d);
+    /// Constructs a plane by directly specifying the normal and offset parameters.
+    constexpr Plane(const Vec3 &normal, float offset);
+    /// Constructs a plane by specifying the surface normal and a single point on the plane.
+    Plane(const Vec3 &normal, const Vec3 &point);
 
     Type::Enum          GetType() const;
     
@@ -87,9 +89,15 @@ public:
     float               operator[](int index) const;
     float &             operator[](int index);
 
+    bool                FixDegenerateNormal() { return normal.FixDegenerateNormal(); }
+
                         /// Sets this plane by specifying three points on the plane.
                         /// The normal of the plane will be oriented in counter-clockwise order.
     bool                SetFromPoints(const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, bool fixDegenerate = true);
+
+                        /// Returns plane by specifying three points on the plane.
+                        /// The normal of the plane will be oriented in counter-clockwise order.
+    static Plane        FromPoints(const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, bool fixDegenerate = true);
 
                         /// Moves this plane by specifying a single point on the plane.
     void                FitThroughPoint(const Vec3 &p) { offset = normal.Dot(p); }
@@ -100,8 +108,6 @@ public:
                         /// Normalize plane. 
                         /// Only normalizes the plane normal, does not adjust d
     float               Normalize(bool fixDegenerate = true);
-
-    bool                FixDegenerateNormal() { return normal.FixDegenerateNormal(); }
 
                         /// Translates this Plane
     Plane               Translate(const Vec3 &translation) const;
@@ -117,12 +123,24 @@ public:
                         /// Examines which side of the plane to the given point.
     Side::Enum          GetSide(const Vec3 &p, const float epsilon) const;
 
+                        /// Projects the given position vector onto this plane.
+    Vec3                Project(const Vec3 &p) const;
+
+                        /// Projects the given point to the negative half-space of this plane.
+                        /// This means that if the point lies on the plane, or in the negative half-space, the same point is
+                        /// returned unchanged. If the point lies on the positive half-space, it is projected orthographically onto the plane.
+    Vec3                ProjectToNegativeHalf(const Vec3 &p) const;
+
+                        /// Projects the given point to the positivehalf-space of this plane.
+    Vec3                ProjectToPositiveHalf(const Vec3 &p) const;
+
                         /// Tests if this plane intersect with the given line segment.
     bool                IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
 
                         /// Intersects a ray with this plane.
                         /// Returns false if there is no intersection.
-    bool                IntersectRay(const Ray &ray, bool ignoreBackside, float *hitDist = nullptr) const;
+    bool                IntersectRay(const Ray &ray, bool ignoreBackside, float *hitDist) const;
+                        /// Returns hit distance, but returns FLT_MAX if no intersection occurs.
     float               IntersectRay(const Ray &ray, bool ignoreBackside) const;
 
                         /// Returns "a b c d".
@@ -130,22 +148,23 @@ public:
                         /// Returns "a b c d" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Plane        FromString(const char *str);
 
-                        /// Returns dimension of this type
-    int                 GetDimension() const { return 4; }
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return 4; }
 
     Vec3                normal;     ///< The direction this plane is facing at.
     float               offset;     ///< The offset of this plane from the origin.
 };
 
-BE_INLINE constexpr Plane::Plane(float a, float b, float c, float d) :
-    normal(a, b, c), offset(d) {
+BE_INLINE constexpr Plane::Plane(const Vec3 &n, float o) :
+    normal(n), offset(o) {
 }
 
-BE_INLINE constexpr Plane::Plane(const Vec3 &n, float d) :
-    normal(n), offset(d) {
+BE_INLINE Plane::Plane(const Vec3 &n, const Vec3 &p) :
+    normal(n) {
+    offset = normal.Dot(p);
 }
 
 BE_INLINE float Plane::operator[](int index) const {
@@ -166,6 +185,12 @@ BE_INLINE bool Plane::SetFromPoints(const Vec3 &p1, const Vec3 &p2, const Vec3 &
 
     offset = normal.Dot(p2);
     return true;
+}
+
+BE_INLINE Plane Plane::FromPoints(const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, bool fixDegenerate) {
+    Plane plane;
+    plane.SetFromPoints(p1, p2, p3, fixDegenerate);
+    return plane;
 }
 
 BE_INLINE void Plane::Flip() {
@@ -214,6 +239,18 @@ BE_INLINE Plane::Side::Enum Plane::GetSide(const Vec3 &v, const float epsilon) c
     } else {
         return Side::On;
     }
+}
+
+BE_INLINE Vec3 Plane::Project(const Vec3 &p) const {
+    return p - (normal.Dot(p) - offset) * normal;
+}
+
+BE_INLINE Vec3 Plane::ProjectToNegativeHalf(const Vec3 &p) const {
+    return p - Max(0.f, (normal.Dot(p) - offset)) * normal;
+}
+
+BE_INLINE Vec3 Plane::ProjectToPositiveHalf(const Vec3 &p) const {
+    return p - Min(0.f, (normal.Dot(p) - offset)) * normal;
 }
 
 BE_NAMESPACE_END

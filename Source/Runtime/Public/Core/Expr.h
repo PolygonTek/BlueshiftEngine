@@ -155,7 +155,7 @@ private:
     void                EvaluateStack();
 
     float               GetValue(int reg) const;
-    void                SetValue(int reg, float value);	
+    void                SetValue(int reg, float value);
 
     int                 numRegisters;
     int                 numConstantRegisters;

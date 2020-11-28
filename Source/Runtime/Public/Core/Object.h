@@ -101,7 +101,7 @@ extern const EventDef EV_ImmediateDestroy;
     BE1::MetaObject classname::metaObject(visualname, #classname, #superclassname, \
         classname::CreateInstance, (BE1::EventInfo<BE1::Object> *)classname::eventMap);
 
-// event definition
+// Event definition macros.
 #define BEGIN_EVENTS(classname) BE1::EventInfo<classname> classname::eventMap[] = {
 #define EVENT(event, function) { &(event), (void (Object::*)())(&function) }
 #define END_EVENTS { nullptr, nullptr } };
@@ -144,8 +144,12 @@ public:
                                 /// Returns property info list including parent meta object.
     void                        GetPropertyInfoList(Array<PropertyInfo> &propertyInfoList) const;
 
-                                /// 
+                                /// Register property.
     PropertyInfo &              RegisterProperty(const PropertyInfo &propertyInfo);
+
+                                /// Unregister property with the given name.
+    bool                        UnregisterProperty(const char *name);
+
 
 private:
     const char *                visualname;
@@ -306,7 +310,7 @@ BE_INLINE bool Object::PostEventMS(const EventDef *evdef, int milliseconds, Args
 template <typename... Args>
 BE_INLINE bool Object::PostEventSec(const EventDef *evdef, int seconds, Args&&... args) {
     static_assert(is_assignable_all<VariantArg, Args...>::value, "args is not assignable to VariantArg");
-    return PostEventArgs(evdef, SEC2MS(seconds), sizeof...(args), address_of(VariantArg(std::forward<Args>(args)))...);
+    return PostEventArgs(evdef, seconds * 1000, sizeof...(args), address_of(VariantArg(std::forward<Args>(args)))...);
 }
 
 template <typename... Args>

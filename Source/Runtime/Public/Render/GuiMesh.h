@@ -17,11 +17,11 @@
 #include "Core/Vertex.h"
 #include "BufferCache.h"
 #include "RenderObject.h"
+#include "Font.h"
 
 BE_NAMESPACE_BEGIN
 
 class Material;
-class Font;
 
 struct GuiMeshSurf {
     const Material *        material;
@@ -36,15 +36,17 @@ struct GuiMeshSurf {
 
 class GuiMesh {
 public:
-    enum CoordFrame {
-        CoordFrame2D,
-        CoordFrame3D
+    struct CoordFrame {
+        enum Enum {
+            CoordFrame2D,
+            CoordFrame3D
+        };
     };
 
     GuiMesh();
 
-    CoordFrame              GetCoordFrame() const { return coordFrame; }
-    void                    SetCoordFrame(CoordFrame frame) { coordFrame = frame; }
+    CoordFrame::Enum        GetCoordFrame() const { return coordFrame; }
+    void                    SetCoordFrame(CoordFrame::Enum frame) { coordFrame = frame; }
 
     int                     NumSurfaces() const { return surfaces.Count(); }
     const GuiMeshSurf *     Surface(int surfaceIndex) const { return &surfaces[surfaceIndex]; }
@@ -54,12 +56,19 @@ public:
     void                    SetClipRect(const Rect &clipRect);
 
     void                    SetColor(const Color4 &rgba);
+    void                    SetTextBorderColor(const Color4 &rgba);
 
     void                    DrawPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, const Material *material);
     
-    float                   DrawChar(float x, float y, float sx, float sy, Font *font, char32_t unicodeChar);
+    float                   DrawChar(float x, float y, float sx, float sy, Font *font, char32_t unicodeChar, RenderObject::TextDrawMode::Enum drawMode = RenderObject::TextDrawMode::Normal);
 
-    void                    Draw(Font *font, RenderObject::TextAnchor::Enum anchor, RenderObject::TextAlignment::Enum alignment, float lineSpacing, float textScale, const Str &text);
+    void                    DrawText(Font *font, RenderObject::TextDrawMode::Enum drawMode, RenderObject::TextAnchor::Enum anchor,
+                                RenderObject::TextHorzAlignment::Enum horzAlignment, float lineSpacing, float textScale, const Str &text);
+
+    void                    DrawTextRect(Font *font, RenderObject::TextDrawMode::Enum drawMode, const RectF &rect,
+                                RenderObject::TextHorzAlignment::Enum horzAlignment, RenderObject::TextVertAlignment::Enum vertAlignment,
+                                RenderObject::TextHorzOverflow::Enum horzOverflow, RenderObject::TextVertOverflow::Enum vertOverflow, 
+                                float lineSpacing, float textScale, const Str &text);
 
                             // Call this function when drawing ends
     void                    CacheIndexes();
@@ -73,11 +82,12 @@ private:
     Array<GuiMeshSurf>      surfaces;
     GuiMeshSurf *           currentSurf;
     uint32_t                currentColor;
+    uint32_t                currentTextBorderColor;
 
     int                     totalVerts;         ///< Total number of the vertices
     int                     totalIndexes;       ///< Total number of the indices
 
-    CoordFrame              coordFrame;
+    CoordFrame::Enum        coordFrame;
     Rect                    clipRect;
 };
 

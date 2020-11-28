@@ -55,12 +55,6 @@ void ComAudioListener::Awake() {
     soundSystem.PlaceListener(transform->GetOrigin(), transform->GetAxis());
 }
 
-void ComAudioListener::Update() {
-    if (!IsActiveInHierarchy()) {
-        return;
-    }
-}
-
 float ComAudioListener::GetVolume() const {
     return soundSystem.GetMasterVolume();
 }

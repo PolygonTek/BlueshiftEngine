@@ -12,6 +12,20 @@ set(COMMON_ENGINE_FILES
 
     Public/BlueshiftEngine.h
 
+    Public/Containers/StaticArray.h
+    Public/Containers/HashIndex.h
+    Public/Containers/HashMap.h
+    Public/Containers/HashTable.h
+    Public/Containers/Hierarchy.h
+    Public/Containers/LinkList.h
+    Public/Containers/Array.h
+    Public/Containers/Pair.h
+    Public/Containers/Stack.h
+    Public/Containers/Queue.h 
+    Public/Containers/StrArray.h
+    Public/Containers/StrPool.h
+    Public/Containers/LinkedList.h
+
     Public/Core/Allocator.h
     Public/Core/BinSearch.h
     Public/Core/Checksum_CRC32.h
@@ -47,20 +61,6 @@ set(COMMON_ENGINE_FILES
     Public/Core/Vec4Color.h
     Public/Core/Vertex.h 
 
-    Public/Containers/StaticArray.h
-    Public/Containers/HashIndex.h
-    Public/Containers/HashMap.h
-    Public/Containers/HashTable.h
-    Public/Containers/Hierarchy.h
-    Public/Containers/LinkList.h
-    Public/Containers/Array.h
-    Public/Containers/Pair.h
-    Public/Containers/Stack.h
-    Public/Containers/Queue.h 
-    Public/Containers/StrArray.h
-    Public/Containers/StrPool.h
-    Public/Containers/LinkedList.h
-
     Public/Image/Image.h 
     Public/Image/DxtCodec.h
     Public/Image/DxtDecoder.h
@@ -80,6 +80,8 @@ set(COMMON_ENGINE_FILES
     Public/Math/Frustum.h
     Public/Math/Half.h
     Public/Math/Hammersley.h
+    Public/Math/Line.h
+    Public/Math/LineSegment.h
     Public/Math/Math.h
     Public/Math/MathCommon.h
     Public/Math/Matrix.h
@@ -91,12 +93,17 @@ set(COMMON_ENGINE_FILES
     Public/Math/Plane.h
     Public/Math/Pluecker.h
     Public/Math/Point.h
+    Public/Math/PointF.h
     Public/Math/Quaternion.h
     Public/Math/Random.h
     Public/Math/Ray.h
+    Public/Math/Triangle.h
     Public/Math/Rect.h
+    Public/Math/RectF.h
     Public/Math/RGBE9995.h
     Public/Math/Rotation.h
+    Public/Math/Size.h
+    Public/Math/SizeF.h
     Public/Math/Sphere.h
     Public/Math/SphericalHarmonics.h
     Public/Math/Vector.h
@@ -104,20 +111,24 @@ set(COMMON_ENGINE_FILES
     Public/Math/Vector3.h
     Public/Math/Vector4.h
 
-    Public/Simd/Simd.h
-    Public/Simd/Simd_AVX.h
-    Public/Simd/Simd_Generic.h
-    Public/Simd/Simd_SSE4.h
-    Public/Simd/smmintrin_emu.h
-    Public/Simd/immintrin_emu.h
-    Public/Simd/AVX/avx.h
-    Public/Simd/AVX/avxb.h
-    Public/Simd/AVX/avxf.h
-    Public/Simd/AVX/avxi.h
-    Public/Simd/SSE/sse.h
-    Public/Simd/SSE/sseb.h
-    Public/Simd/SSE/ssef.h
-    Public/Simd/SSE/ssei.h
+    Public/SIMD/SIMD.h
+    Public/SIMD/SIMD_Generic.h
+    Public/SIMD/SIMD_4.h
+    Public/SIMD/SIMD_8.h
+    Public/SIMD/AVX/avx.h
+    Public/SIMD/AVX/avxb.h
+    Public/SIMD/AVX/avxf.h
+    Public/SIMD/AVX/avxi.h
+    Public/SIMD/AVX/immintrin_emu.h
+    Public/SIMD/SSE/sse.h
+    Public/SIMD/SSE/sseb.h
+    Public/SIMD/SSE/ssef.h
+    Public/SIMD/SSE/ssei.h
+    Public/SIMD/SSE/smmintrin_emu.h
+    Public/SIMD/NEON/neon.h
+    Public/SIMD/NEON/neonb.h
+    Public/SIMD/NEON/neonf.h
+    Public/SIMD/NEON/neoni.h
 
     Public/Platform/cpuid.h
     Public/Platform/Intrinsics.h
@@ -129,9 +140,11 @@ set(COMMON_ENGINE_FILES
     Public/Platform/PlatformTime.h
     Public/Platform/PlatformSystem.h
 
-    Public/File/File.h
-    Public/File/FileSystem.h
-    Public/File/ZipArchiver.h
+    Public/Platform/Platform.h
+
+    Public/IO/File.h
+    Public/IO/FileSystem.h
+    Public/IO/ZipArchiver.h
   
     Public/RHI/RHI.h
     Public/RHI/RHIOpenGL.h
@@ -140,9 +153,11 @@ set(COMMON_ENGINE_FILES
     Public/Engine/GameClient.h
     Public/Engine/Console.h
     Public/Engine/Engine.h
+    Public/Engine/Coords2D.h
 
     Public/Asset/Asset.h
     Public/Asset/AssetImporter.h
+    Public/Asset/Resource.h
     Public/Asset/GuidMapper.h
 
     Public/AnimController/AnimBlendTree.h
@@ -153,6 +168,54 @@ set(COMMON_ENGINE_FILES
 
     Public/Animator/Animator.h
     Public/Animator/AnimStateBlender.h
+
+    Public/Render/Anim.h
+    Public/Render/BufferCache.h
+    Public/Render/SkinningJointCache.h
+    Public/Render/Font.h
+    Public/Render/FontFile.h
+    Public/Render/FreeTypeFont.h
+    Public/Render/ParticleMesh.h
+    Public/Render/GuiMesh.h
+    Public/Render/Material.h
+    Public/Render/Mesh.h
+    Public/Render/Render.h
+    Public/Render/RenderSystem.h
+    Public/Render/RenderContext.h  
+    Public/Render/ParticleSystem.h
+    Public/Render/EnvProbe.h
+    Public/Render/RenderObject.h
+    Public/Render/RenderLight.h
+    Public/Render/RenderCamera.h
+    Public/Render/RenderWorld.h
+    Public/Render/Shader.h
+    Public/Render/Skeleton.h
+    Public/Render/Skin.h
+    Public/Render/SubMesh.h
+    Public/Render/Texture.h
+    
+    Public/Physics/Collider.h
+    Public/Physics/Physics.h
+    Public/Physics/PhysicsCollidable.h
+    Public/Physics/PhysicsCollisionListener.h
+    Public/Physics/PhysicsConstraint.h
+    Public/Physics/PhysicsGenericConstraint.h
+    Public/Physics/PhysicsGenericSpringConstraint.h
+    Public/Physics/PhysicsHingeConstraint.h
+    Public/Physics/PhysicsP2PConstraint.h
+    Public/Physics/PhysicsSliderConstraint.h
+    Public/Physics/PhysicsRigidBody.h
+    Public/Physics/PhysicsSensor.h
+    Public/Physics/PhysicsSystem.h
+    Public/Physics/PhysicsVehicle.h
+    Public/Physics/PhysicsWorld.h
+
+    Public/Sound/Pcm.h
+    Public/Sound/SoundSystem.h
+
+    Public/Input/InputSystem.h
+    Public/Input/KeyCmd.h
+    Public/Input/KeyCodes.h
 
     Public/Components/ComAnimation.h
     Public/Components/ComAnimator.h
@@ -177,8 +240,10 @@ set(COMMON_ENGINE_FILES
     Public/Components/ComMeshCollider.h
     Public/Components/ComMeshRenderer.h
     Public/Components/ComTextRenderer.h
+    Public/Components/ComText.h
     Public/Components/Component.h
     Public/Components/ComParticleSystem.h
+    Public/Components/ComRectTransform.h
     Public/Components/ComRenderable.h
     Public/Components/ComRigidBody.h
     Public/Components/ComSensor.h
@@ -192,6 +257,8 @@ set(COMMON_ENGINE_FILES
     Public/Components/ComTransform.h
     Public/Components/ComWheelJoint.h
     Public/Components/ComVehicleWheel.h
+    Public/Components/ComCanvas.h
+    Public/Components/ComImage.h
 
     Public/Game/Entity.h
     Public/Game/Prefab.h
@@ -202,60 +269,15 @@ set(COMMON_ENGINE_FILES
     Public/Game/TagLayerSettings.h
     Public/Game/PhysicsSettings.h
     Public/Game/PlayerSettings.h
+    Public/Game/InputUtils.h
 
     Public/StaticBatching/StaticBatch.h
-    
-    Public/Physics/Collider.h
-    Public/Physics/Physics.h
-    Public/Physics/PhysicsCollidable.h
-    Public/Physics/PhysicsCollisionListener.h
-    Public/Physics/PhysicsConstraint.h
-    Public/Physics/PhysicsGenericConstraint.h
-    Public/Physics/PhysicsGenericSpringConstraint.h
-    Public/Physics/PhysicsHingeConstraint.h
-    Public/Physics/PhysicsP2PConstraint.h
-    Public/Physics/PhysicsSliderConstraint.h
-    Public/Physics/PhysicsRigidBody.h
-    Public/Physics/PhysicsSensor.h
-    Public/Physics/PhysicsSystem.h
-    Public/Physics/PhysicsVehicle.h
-    Public/Physics/PhysicsWorld.h
-
-    Public/Sound/Pcm.h
-    Public/Sound/SoundSystem.h
-
-    Public/Render/Anim.h
-    Public/Render/BufferCache.h
-    Public/Render/SkinningJointCache.h
-    Public/Render/Font.h
-    Public/Render/ParticleMesh.h
-    Public/Render/GuiMesh.h
-    Public/Render/Material.h
-    Public/Render/Mesh.h
-    Public/Render/Render.h
-    Public/Render/RenderSystem.h
-    Public/Render/RenderContext.h  
-    Public/Render/ParticleSystem.h
-    Public/Render/EnvProbe.h
-    Public/Render/RenderObject.h
-    Public/Render/RenderLight.h
-    Public/Render/RenderCamera.h
-    Public/Render/RenderWorld.h
-    Public/Render/Shader.h
-    Public/Render/Skeleton.h
-    Public/Render/Skin.h
-    Public/Render/SubMesh.h
-    Public/Render/Texture.h
-
-    Public/Platform/Platform.h
-
-    Public/Input/InputSystem.h
-    Public/Input/KeyCmd.h
-    Public/Input/KeyCodes.h
 
     Public/Scripting/LuaVM.h
 
     Public/Profiler/Profiler.h
+
+    Private/Containers/HashIndex.cpp
 
     Private/Core/Checksum_CRC32.cpp
     Private/Core/Checksum_MD5.cpp
@@ -278,8 +300,11 @@ set(COMMON_ENGINE_FILES
     Private/Core/Variant.cpp
     Private/Core/DynamicAABBTree.cpp
     Private/Core/Vec4Color.cpp
-
-    Private/Containers/HashIndex.cpp
+    Private/Core/Event.cpp
+    Private/Core/Object.cpp
+    Private/Core/Serializable.cpp
+    Private/Core/Signal.cpp
+    Private/Core/SignalObject.cpp
 
     Private/Image/ImageInternal.h
     Private/Image/Image.cpp
@@ -318,13 +343,17 @@ set(COMMON_ENGINE_FILES
     Private/Math/Half.cpp
     Private/Math/OBB.cpp
     Private/Math/Ray.cpp
+    Private/Math/Triangle.cpp
     Private/Math/Rect.cpp
+    Private/Math/RectF.cpp
     Private/Math/CQuaternion.cpp
     Private/Math/SphericalHarmonics.cpp
     Private/Math/Math.cpp
     Private/Math/Plane.cpp
     Private/Math/Rotation.cpp
     Private/Math/Complex.cpp
+    Private/Math/Line.cpp
+    Private/Math/LineSegment.cpp
     Private/Math/Matrix2.cpp
     Private/Math/Matrix3x4.cpp
     Private/Math/Pluecker.cpp
@@ -332,12 +361,16 @@ set(COMMON_ENGINE_FILES
     Private/Math/Cylinder.cpp
     Private/Math/Matrix3.cpp
     Private/Math/Point.cpp
+    Private/Math/PointF.cpp
+    Private/Math/Size.cpp
+    Private/Math/SizeF.cpp
     Private/Math/Vector2.cpp
 
-    Private/SIMD/Simd.cpp
-    Private/SIMD/Simd_AVX.cpp
-    Private/SIMD/Simd_Generic.cpp
-    Private/SIMD/Simd_SSE4.cpp
+    Private/SIMD/SIMD.cpp
+    Private/SIMD/SIMD_Generic.cpp
+    Private/SIMD/SIMD_4.cpp
+    Private/SIMD/SIMD_8.cpp
+    Private/SIMD/sse.cpp
 
     Private/Platform/cpuid.cpp
     Private/Platform/PlatformBaseProcess.cpp
@@ -347,9 +380,13 @@ set(COMMON_ENGINE_FILES
     Private/Platform/PlatformBaseTime.cpp
     Private/Platform/PlatformBaseSystem.cpp
 
-    Private/File/File.cpp
-    Private/File/FileSystem.cpp
-    Private/File/ZipArchiver.cpp
+    Private/Platform/Platform.cpp
+    Private/Platform/PlatformGeneric.h
+    Private/Platform/PlatformGeneric.cpp
+
+    Private/IO/File.cpp
+    Private/IO/FileSystem.cpp
+    Private/IO/ZipArchiver.cpp
 
     Private/RHIOpenGL/OpenGL/OpenGL.h
     Private/RHIOpenGL/OpenGL/OpenGL.cpp
@@ -363,6 +400,7 @@ set(COMMON_ENGINE_FILES
     Private/RHIOpenGL/RGLSync.cpp
     Private/RHIOpenGL/RGLTexture.cpp
     Private/RHIOpenGL/RGLVertexFormat.cpp
+    Private/RHIOpenGL/RGLImGui.cpp
 
     Private/Engine/Common.cpp
     Private/Engine/GameClient.cpp
@@ -370,22 +408,26 @@ set(COMMON_ENGINE_FILES
     Private/Engine/Engine.cpp
 
     Private/Asset/Asset.cpp
-    Private/Asset/FolderAsset.cpp
-    Private/Asset/FbxAsset.cpp
-    Private/Asset/TextureAsset.cpp
-    Private/Asset/ShaderAsset.cpp
-    Private/Asset/MaterialAsset.cpp
-    Private/Asset/FontAsset.cpp
-    Private/Asset/MeshAsset.cpp
-    Private/Asset/ParticleSystemAsset.cpp
-    Private/Asset/SkeletonAsset.cpp
-    Private/Asset/AnimAsset.cpp
-    Private/Asset/JointMaskAsset.cpp
-    Private/Asset/AnimControllerAsset.cpp
-    Private/Asset/ScriptAsset.cpp
-    Private/Asset/PrefabAsset.cpp
-    Private/Asset/SoundAsset.cpp
-    Private/Asset/MapAsset.cpp
+    Private/Asset/Resource.cpp
+    Private/Asset/FolderResource.cpp
+    Private/Asset/FbxResource.cpp
+    Private/Asset/TextureResource.cpp
+    Private/Asset/Texture2DResource.cpp
+    Private/Asset/TextureCubeMapResource.cpp
+    Private/Asset/TextureSpriteResource.cpp
+    Private/Asset/ShaderResource.cpp
+    Private/Asset/MaterialResource.cpp
+    Private/Asset/FontResource.cpp
+    Private/Asset/MeshResource.cpp
+    Private/Asset/ParticleSystemResource.cpp
+    Private/Asset/SkeletonResource.cpp
+    Private/Asset/AnimResource.cpp
+    Private/Asset/JointMaskResource.cpp
+    Private/Asset/AnimControllerResource.cpp
+    Private/Asset/ScriptResource.cpp
+    Private/Asset/PrefabResource.cpp
+    Private/Asset/SoundResource.cpp
+    Private/Asset/MapResource.cpp
     Private/Asset/AssetImporter.cpp
     Private/Asset/GuidMapper.cpp
   
@@ -398,93 +440,6 @@ set(COMMON_ENGINE_FILES
     Private/Animator/Animator.cpp
     Private/Animator/AnimStateBlender.cpp
   
-    Private/Components/ComAnimation.cpp
-    Private/Components/ComAnimator.cpp
-    Private/Components/ComAudioListener.cpp
-    Private/Components/ComAudioSource.cpp
-    Private/Components/ComBoxCollider.cpp  
-    Private/Components/ComCamera.cpp
-    Private/Components/ComCapsuleCollider.cpp
-    Private/Components/ComCharacterController.cpp
-    Private/Components/ComCharacterJoint.cpp
-    Private/Components/ComCollider.cpp
-    Private/Components/ComConeCollider.cpp
-    Private/Components/ComConstantForce.cpp
-    Private/Components/ComCylinderCollider.cpp
-    Private/Components/ComFixedJoint.cpp
-    Private/Components/ComHingeJoint.cpp
-    Private/Components/ComJoint.cpp
-    Private/Components/ComLight.cpp
-    Private/Components/ComEnvironmentProbe.cpp
-    Private/Components/ComLogic.cpp
-    Private/Components/ComScript.cpp
-    Private/Components/ComMeshCollider.cpp
-    Private/Components/ComMeshRenderer.cpp
-    Private/Components/ComTextRenderer.cpp
-    Private/Components/Component.cpp
-    Private/Components/ComParticleSystem.cpp
-    Private/Components/ComRenderable.cpp
-    Private/Components/ComRigidBody.cpp
-    Private/Components/ComSensor.cpp
-    Private/Components/ComSkinnedMeshRenderer.cpp
-    Private/Components/ComSliderJoint.cpp
-    Private/Components/ComSocketJoint.cpp
-    Private/Components/ComSphereCollider.cpp
-    Private/Components/ComSpline.cpp
-    Private/Components/ComSpringJoint.cpp
-    Private/Components/ComStaticMeshRenderer.cpp
-    Private/Components/ComTransform.cpp
-    Private/Components/ComWheelJoint.cpp
-    Private/Components/ComVehicleWheel.cpp
-
-    Private/Game/Entity.cpp
-    Private/Game/Prefab.cpp
-    Private/Game/PrefabManager.cpp
-    Private/Game/MapRenderSettings.cpp
-    Private/Game/GameWorld.cpp
-    Private/Game/CastResult.cpp  
-    Private/Game/GameSettings.cpp
-    Private/Game/TagLayerSettings.cpp
-    Private/Game/PhysicsSettings.cpp
-    Private/Game/PlayerSettings.cpp
-
-    Private/StaticBatching/MeshCombiner.h
-    Private/StaticBatching/MeshCombiner.cpp
-    Private/StaticBatching/StaticBatch.cpp
-
-    Private/Core/Event.cpp
-    Private/Core/Object.cpp
-    Private/Core/Serializable.cpp
-    Private/Core/Signal.cpp
-    Private/Core/SignalObject.cpp
-
-    Private/Physics/ColliderInternal.h
-    Private/Physics/PhysicsCVars.h
-    Private/Physics/PhysicsInternal.h
-    Private/Physics/Collider.cpp
-    Private/Physics/ColliderManager.cpp
-    Private/Physics/PhysicsCollidable.cpp
-    Private/Physics/PhysicsCollisionListener.cpp
-    Private/Physics/PhysicsConstraint.cpp
-    Private/Physics/PhysicsCVars.cpp
-    Private/Physics/PhysicsDebugDraw.cpp
-    Private/Physics/PhysicsGenericConstraint.cpp
-    Private/Physics/PhysicsGenericSpringConstraint.cpp
-    Private/Physics/PhysicsHingeConstraint.cpp
-    Private/Physics/PhysicsP2PConstraint.cpp
-    Private/Physics/PhysicsSliderConstraint.cpp
-    Private/Physics/PhysicsRigidBody.cpp
-    Private/Physics/PhysicsSensor.cpp
-    Private/Physics/PhysicsSystem.cpp
-    Private/Physics/PhysicsVehicle.cpp
-    Private/Physics/PhysicsWorld.cpp
-
-    Private/Sound/Pcm.cpp
-    Private/Sound/Pcm_DecodeWav.cpp
-    Private/Sound/Pcm_DecodeOgg.cpp
-    Private/Sound/Sound.cpp
-    Private/Sound/SoundSystem.cpp
-
     Private/Render/BModel.h
     Private/Render/Anim.cpp
     Private/Render/Anim_banim.cpp
@@ -498,6 +453,7 @@ set(COMMON_ENGINE_FILES
     Private/Render/MaterialManager.cpp
     Private/Render/Mesh.cpp
     Private/Render/Mesh_bmesh.cpp
+    Private/Render/par_octasphere.h
     Private/Render/Mesh_CreateMesh.cpp
     Private/Render/Mesh_SortAndMerge.cpp
     Private/Render/MeshManager.cpp
@@ -521,6 +477,7 @@ set(COMMON_ENGINE_FILES
     Private/Render/SubMesh.cpp
     Private/Render/Texture.cpp
     Private/Render/TextureManager.cpp
+    Private/Render/FreeTypeFont.cpp
     Private/Render/FontFace.h
     Private/Render/Font.cpp
     Private/Render/FontManager.cpp
@@ -554,12 +511,94 @@ set(COMMON_ENGINE_FILES
     Private/Render/RenderUtils.cpp
     Private/Render/VertexFormat.cpp  
 
-    Private/Platform/Platform.cpp
-    Private/Platform/PlatformGeneric.h
-    Private/Platform/PlatformGeneric.cpp
+    Private/Physics/ColliderInternal.h
+    Private/Physics/PhysicsCVars.h
+    Private/Physics/PhysicsInternal.h
+    Private/Physics/Collider.cpp
+    Private/Physics/ColliderManager.cpp
+    Private/Physics/PhysicsCollidable.cpp
+    Private/Physics/PhysicsCollisionListener.cpp
+    Private/Physics/PhysicsConstraint.cpp
+    Private/Physics/PhysicsCVars.cpp
+    Private/Physics/PhysicsDebugDraw.cpp
+    Private/Physics/PhysicsGenericConstraint.cpp
+    Private/Physics/PhysicsGenericSpringConstraint.cpp
+    Private/Physics/PhysicsHingeConstraint.cpp
+    Private/Physics/PhysicsP2PConstraint.cpp
+    Private/Physics/PhysicsSliderConstraint.cpp
+    Private/Physics/PhysicsRigidBody.cpp
+    Private/Physics/PhysicsSensor.cpp
+    Private/Physics/PhysicsSystem.cpp
+    Private/Physics/PhysicsVehicle.cpp
+    Private/Physics/PhysicsWorld.cpp
+
+    Private/Sound/Pcm.cpp
+    Private/Sound/Pcm_DecodeWav.cpp
+    Private/Sound/Pcm_DecodeOgg.cpp
+    Private/Sound/Sound.cpp
+    Private/Sound/SoundSystem.cpp
 
     Private/Input/InputSystem.cpp
     Private/Input/KeyCmd.cpp
+
+    Private/Components/ComAnimation.cpp
+    Private/Components/ComAnimator.cpp
+    Private/Components/ComAudioListener.cpp
+    Private/Components/ComAudioSource.cpp
+    Private/Components/ComBoxCollider.cpp  
+    Private/Components/ComCamera.cpp
+    Private/Components/ComCapsuleCollider.cpp
+    Private/Components/ComCharacterController.cpp
+    Private/Components/ComCharacterJoint.cpp
+    Private/Components/ComCollider.cpp
+    Private/Components/ComConeCollider.cpp
+    Private/Components/ComConstantForce.cpp
+    Private/Components/ComCylinderCollider.cpp
+    Private/Components/ComFixedJoint.cpp
+    Private/Components/ComHingeJoint.cpp
+    Private/Components/ComJoint.cpp
+    Private/Components/ComLight.cpp
+    Private/Components/ComEnvironmentProbe.cpp
+    Private/Components/ComLogic.cpp
+    Private/Components/ComScript.cpp
+    Private/Components/ComMeshCollider.cpp
+    Private/Components/ComMeshRenderer.cpp
+    Private/Components/ComTextRenderer.cpp
+    Private/Components/ComText.cpp
+    Private/Components/Component.cpp
+    Private/Components/ComParticleSystem.cpp
+    Private/Components/ComRectTransform.cpp
+    Private/Components/ComRenderable.cpp
+    Private/Components/ComRigidBody.cpp
+    Private/Components/ComSensor.cpp
+    Private/Components/ComSkinnedMeshRenderer.cpp
+    Private/Components/ComSliderJoint.cpp
+    Private/Components/ComSocketJoint.cpp
+    Private/Components/ComSphereCollider.cpp
+    Private/Components/ComSpline.cpp
+    Private/Components/ComSpringJoint.cpp
+    Private/Components/ComStaticMeshRenderer.cpp
+    Private/Components/ComTransform.cpp
+    Private/Components/ComWheelJoint.cpp
+    Private/Components/ComVehicleWheel.cpp
+    Private/Components/ComCanvas.cpp
+    Private/Components/ComImage.cpp
+
+    Private/Game/Entity.cpp
+    Private/Game/Prefab.cpp
+    Private/Game/PrefabManager.cpp
+    Private/Game/MapRenderSettings.cpp
+    Private/Game/GameWorld.cpp
+    Private/Game/CastResult.cpp  
+    Private/Game/GameSettings.cpp
+    Private/Game/TagLayerSettings.cpp
+    Private/Game/PhysicsSettings.cpp
+    Private/Game/PlayerSettings.cpp
+    Private/Game/InputUtils.cpp
+
+    Private/StaticBatching/MeshCombiner.h
+    Private/StaticBatching/MeshCombiner.cpp
+    Private/StaticBatching/StaticBatch.cpp
 
     Private/Scripting/LuaVM.cpp
     Private/Scripting/Math/LuaModule_Math.cpp
@@ -584,7 +623,11 @@ set(COMMON_ENGINE_FILES
     Private/Scripting/Math/LuaModule_Frustum.cpp
     Private/Scripting/Math/LuaModule_Ray.cpp
     Private/Scripting/Math/LuaModule_Point.cpp
+    Private/Scripting/Math/LuaModule_PointF.cpp
+    Private/Scripting/Math/LuaModule_Size.cpp
+    Private/Scripting/Math/LuaModule_SizeF.cpp
     Private/Scripting/Math/LuaModule_Rect.cpp
+    Private/Scripting/Math/LuaModule_RectF.cpp
     Private/Scripting/Engine/LuaModule_Common.cpp
     Private/Scripting/Input/LuaModule_InputSystem.cpp
     Private/Scripting/Screen/LuaModule_Screen.cpp
@@ -592,21 +635,21 @@ set(COMMON_ENGINE_FILES
     Private/Scripting/Core/LuaModule_Str.cpp
     Private/Scripting/Core/LuaModule_Guid.cpp
     Private/Scripting/Core/LuaModule_Object.cpp
-    Private/Scripting/File/LuaModule_FileSystem.cpp
-    Private/Scripting/File/LuaModule_File.cpp
+    Private/Scripting/IO/LuaModule_FileSystem.cpp
+    Private/Scripting/IO/LuaModule_File.cpp
     Private/Scripting/Asset/LuaModule_Asset.cpp
-    Private/Scripting/Asset/LuaModule_TextureAsset.cpp
-    Private/Scripting/Asset/LuaModule_ShaderAsset.cpp
-    Private/Scripting/Asset/LuaModule_MaterialAsset.cpp
-    Private/Scripting/Asset/LuaModule_SkeletonAsset.cpp
-    Private/Scripting/Asset/LuaModule_MeshAsset.cpp
-    Private/Scripting/Asset/LuaModule_AnimAsset.cpp
-    Private/Scripting/Asset/LuaModule_AnimControllerAsset.cpp
-    Private/Scripting/Asset/LuaModule_SoundAsset.cpp
-    Private/Scripting/Asset/LuaModule_MapAsset.cpp
-    Private/Scripting/Asset/LuaModule_PrefabAsset.cpp
+    Private/Scripting/Asset/LuaModule_Texture.cpp
+    Private/Scripting/Asset/LuaModule_Shader.cpp
+    Private/Scripting/Asset/LuaModule_Material.cpp
+    Private/Scripting/Asset/LuaModule_Skeleton.cpp
+    Private/Scripting/Asset/LuaModule_Mesh.cpp
+    Private/Scripting/Asset/LuaModule_Anim.cpp
+    Private/Scripting/Asset/LuaModule_AnimController.cpp
+    Private/Scripting/Asset/LuaModule_Sound.cpp
+    Private/Scripting/Asset/LuaModule_Prefab.cpp
     Private/Scripting/Components/LuaModule_Component.cpp
     Private/Scripting/Components/LuaModule_ComTransform.cpp
+    Private/Scripting/Components/LuaModule_ComRectTransform.cpp
     Private/Scripting/Components/LuaModule_ComCollider.cpp
     Private/Scripting/Components/LuaModule_ComBoxCollider.cpp
     Private/Scripting/Components/LuaModule_ComSphereCollider.cpp
@@ -632,9 +675,12 @@ set(COMMON_ENGINE_FILES
     Private/Scripting/Components/LuaModule_ComAnimation.cpp
     Private/Scripting/Components/LuaModule_ComAnimator.cpp
     Private/Scripting/Components/LuaModule_ComTextRenderer.cpp
+    Private/Scripting/Components/LuaModule_ComText.cpp
+    Private/Scripting/Components/LuaModule_ComImage.cpp
     Private/Scripting/Components/LuaModule_ComParticleSystem.cpp
     Private/Scripting/Components/LuaModule_ComLight.cpp
     Private/Scripting/Components/LuaModule_ComCamera.cpp
+    Private/Scripting/Components/LuaModule_ComCanvas.cpp
     Private/Scripting/Components/LuaModule_ComAudioListener.cpp
     Private/Scripting/Components/LuaModule_ComAudioSource.cpp
     Private/Scripting/Components/LuaModule_ComSpline.cpp
@@ -734,8 +780,10 @@ set(LINUX_ENGINE_FILES
     ${UNIX_ENGINE_FILES}
     Public/Platform/Linux/PlatformLinuxProcess.h
     Public/Platform/Linux/PlatformLinuxThread.h
+    Public/Platform/Linux/PlatformLinuxSystem.h
     Private/Platform/Linux/PlatformLinuxProcess.cpp
-    Private/Platform/Linux/PlatformLinuxThread.cpp)
+    Private/Platform/Linux/PlatformLinuxThread.cpp
+    Private/Platform/Linux/PlatformLinuxSystem.cpp)
 
 set(APPLE_ENGINE_FILES
     ${UNIX_ENGINE_FILES}
@@ -780,10 +828,6 @@ set(MACOS_ENGINE_FILES
     Private/Network/Packet.cpp)
 
 set(WINDOWS_RENDERER_FILES
-    Private/RHIOpenGL/OpenGL/GGL/gglcore32.c
-    Private/RHIOpenGL/OpenGL/GGL/gglcore32.h
-    Private/RHIOpenGL/OpenGL/GGL/gwgl.c
-    Private/RHIOpenGL/OpenGL/GGL/gwgl.h
     Private/RHIOpenGL/OpenGL/OpenGL3.h
     Private/RHIOpenGL/OpenGL/OpenGL3.cpp
     Private/RHIOpenGL/OpenGL/OpenGL4.h
@@ -792,10 +836,6 @@ set(WINDOWS_RENDERER_FILES
     Private/RHIOpenGL/RGLPlatformWin.cpp)
 
 set(ANDROID_RENDERER_FILES
-    Private/RHIOpenGL/OpenGL/GGL/ggles3.c
-    Private/RHIOpenGL/OpenGL/GGL/ggles3.h
-    Private/RHIOpenGL/OpenGL/GGL/gegl.c
-    Private/RHIOpenGL/OpenGL/GGL/gegl.h
     Private/RHIOpenGL/OpenGL/OpenGLES3.h
     Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
     Private/RHIOpenGL/OpenGL/AndroidOpenGL.h
@@ -803,8 +843,6 @@ set(ANDROID_RENDERER_FILES
     Private/RHIOpenGL/RGLPlatformAndroid.cpp)
 
 set(IOS_RENDERER_FILES
-    Private/RHIOpenGL/OpenGL/GGL/ggles3.c
-    Private/RHIOpenGL/OpenGL/GGL/ggles3.h
     Private/RHIOpenGL/OpenGL/OpenGLES3.h
     Private/RHIOpenGL/OpenGL/OpenGLES3.cpp
     Private/RHIOpenGL/OpenGL/IOSOpenGL.h
@@ -812,8 +850,6 @@ set(IOS_RENDERER_FILES
     Private/RHIOpenGL/RGLPlatformIOS.mm)
 
 set(MACOS_RENDERER_FILES
-    Private/RHIOpenGL/OpenGL/GGL/gglcore32.c
-    Private/RHIOpenGL/OpenGL/GGL/gglcore32.h
     Private/RHIOpenGL/OpenGL/OpenGL3.h
     Private/RHIOpenGL/OpenGL/OpenGL3.cpp
     Private/RHIOpenGL/OpenGL/MacOSOpenGL.h
@@ -893,73 +929,14 @@ include_directories(
 
 enable_precompiled_header(Precompiled.h Precompiled.cpp ENGINE_FILES)
 
-if (PLATFORM_ANDROID)
-    include_directories(${ANDROID_NDK}/sources/android/cpufeatures)
-    set(CPU_FEATURES_FILE ${ANDROID_NDK}/sources/android/cpufeatures/cpu-features.c)
-
-    add_library(${PROJECT_NAME} STATIC ${ALL_FILES} ${CPU_FEATURES_FILE})
-
-    target_link_libraries(${PROJECT_NAME}
-        android
-        atomic
-        log
-        EGL
-        GLESv3
-        OpenSLES)
-else ()
+if (PLATFORM_WINDOWS)
     add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
-endif ()
 
-if (APPLE)
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-        XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "gnu++0x"
-        XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
-        XCODE_ATTRIBUTE_CLANG_MODULES_AUTOLINK "NO"
-        XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
-        #XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS NO
-        #XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Debug] YES
-        #XCODE_ATTRIBUTE_GCC_PREFIX_HEADER ${CMAKE_CURRENT_LIST_DIR}/Precompiled.h
-        #XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER "YES"
-        XCODE_ATTRIBUTE_GCC_C_LANGUAGE_STANDARD "gnu99") 
-
-    if (WITHDEBUG)
-        set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP NO)
-    else ()
-        set_target_properties(${PROJECT_NAME} PROPERTIES
-            XCODE_ATTRIBUTE_COPY_PHASE_STRIP YES
-            XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] NO)
-    endif ()
-
-    if (IOS)
-        include_directories(${ENGINE_INCLUDE_DIR}/ThirdParty/OpenGL/include)
-
-        set_target_properties(${PROJECT_NAME} PROPERTIES
-            XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET ${IOS_DEPLOYMENT_TARGET}
-            XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2") # Universal (iPad + iPhone)
-
-        add_framework(${PROJECT_NAME} Foundation)
-        add_framework(${PROJECT_NAME} UIKit)
-        add_framework(${PROJECT_NAME} OpenGLES)
-        add_framework(${PROJECT_NAME} CoreGraphics)
-        add_framework(${PROJECT_NAME} QuartzCore)
-    elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-        add_framework(${PROJECT_NAME} Carbon)
-        add_framework(${PROJECT_NAME} Foundation)
-        add_framework(${PROJECT_NAME} AppKit)
-        add_framework(${PROJECT_NAME} OpenGL)
-        add_framework(${PROJECT_NAME} CoreGraphics)
-        add_framework(${PROJECT_NAME} CoreVideo)
-    endif ()
-
-    add_framework(${PROJECT_NAME} OpenAL)
-elseif (WIN32)
     target_link_libraries(${PROJECT_NAME} ws2_32)
 
     if (USE_DESKTOP_EGL)
         include(FindOpenGLES3)
         include(FindEGL)
-
-        include_directories(${ENGINE_INCLUDE_DIR}/ThirdParty/OpenGL/include)
 
         find_library(OPENGLES3_LIBRARY GLESv2)
         find_library(EGL_LIBRARY EGL)
@@ -979,6 +956,62 @@ elseif (WIN32)
     else ()
         target_link_libraries(${PROJECT_NAME} dxguid dsound)
     endif ()
+elseif (PLATFORM_ANDROID)
+    include_directories(${ANDROID_NDK}/sources/android/cpufeatures)
+    set(CPU_FEATURES_FILE ${ANDROID_NDK}/sources/android/cpufeatures/cpu-features.c)
+
+    add_library(${PROJECT_NAME} STATIC ${ALL_FILES} ${CPU_FEATURES_FILE})
+
+    target_link_libraries(${PROJECT_NAME}
+        android
+        atomic
+        log
+        EGL
+        GLESv3
+        OpenSLES)
+elseif (APPLE)
+    add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
+
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "gnu++14"
+        XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
+        XCODE_ATTRIBUTE_CLANG_MODULES_AUTOLINK "NO"
+        XCODE_ATTRIBUTE_CLANG_ENABLE_MODULES "YES"
+        XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
+        XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_WEAK "YES"
+        XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS "NO"
+        XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Debug] "YES"
+        #XCODE_ATTRIBUTE_GCC_PREFIX_HEADER ${CMAKE_CURRENT_LIST_DIR}/Precompiled.h
+        #XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER "YES"
+        XCODE_ATTRIBUTE_GCC_C_LANGUAGE_STANDARD "gnu11"
+        XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
+        XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT[variant=Debug] "dwarf"
+        XCODE_ATTRIBUTE_COPY_PHASE_STRIP "YES"
+        XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] "NO"
+        XCODE_ATTRIBUTE_MTL_FAST_MATH "YES"
+        XCODE_ATTRIBUTE_MTL_ENABLE_DEBUG_INFO "NO"
+        XCODE_ATTRIBUTE_MTL_ENABLE_DEBUG_INFO[variant=Debug] "INCLUDE_SOURCE")
+
+    if (PLATFORM_IOS)
+        set_target_properties(${PROJECT_NAME} PROPERTIES
+            XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET ${IOS_DEPLOYMENT_TARGET}
+            XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2") # Universal (iPad + iPhone)
+
+        add_framework(${PROJECT_NAME} Foundation)
+        add_framework(${PROJECT_NAME} UIKit)
+        add_framework(${PROJECT_NAME} OpenGLES)
+        add_framework(${PROJECT_NAME} CoreGraphics)
+        add_framework(${PROJECT_NAME} QuartzCore)
+    elseif (PLATFORM_MACOS)
+        add_framework(${PROJECT_NAME} Carbon)
+        add_framework(${PROJECT_NAME} Foundation)
+        add_framework(${PROJECT_NAME} AppKit)
+        add_framework(${PROJECT_NAME} OpenGL)
+        add_framework(${PROJECT_NAME} CoreGraphics)
+        add_framework(${PROJECT_NAME} CoreVideo)
+    endif ()
+
+    add_framework(${PROJECT_NAME} OpenAL)
 endif ()
 
 target_link_libraries(${PROJECT_NAME} 
@@ -994,8 +1027,11 @@ target_link_libraries(${PROJECT_NAME}
     jsoncpp
     tinyxml2
     freetype
+    GGL
+    imgui
     Bullet
     HACD
+    STB
     luasocket
     LuaCpp
     NvTriStrip)

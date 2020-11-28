@@ -98,7 +98,7 @@ public:
                         /// Multiplies the given matrix by a scalar.
     friend Mat3         operator*(float lhs, const Mat3 &rhs) { return rhs * lhs; }
 
-                        /// Transforms the given vector by this matrix
+                        /// Transforms the given vector by this matrix.
     Vec3                MulVec(const Vec3 &v) const { return *this * v; }
                         /// Returns this->Transpose() * v
     Vec3                TransposedMulVec(const Vec3 &v) const;
@@ -149,6 +149,10 @@ public:
 
                         /// Tests if this is the identity matrix, up to the given epsilon.
     bool                IsIdentity(const float epsilon = MATRIX_EPSILON) const;
+                        /// Tests if this is the upper triangular matrix, up to the given epsilon.
+    bool                IsUpperTriangular(const float epsilon = MATRIX_EPSILON) const;
+                        /// Tests if this is the lower triangular matrix, up to the given epsilon.
+    bool                IsLowerTriangular(const float epsilon = MATRIX_EPSILON) const;
                         /// Tests if this is the symmetric matrix, up to the given epsilon.
     bool                IsSymmetric(const float epsilon = MATRIX_EPSILON) const;
                         /// Tests if this is the diagonal matrix, up to the given epsilon.
@@ -165,9 +169,9 @@ public:
                         /// No need to normalize viewDir direction vector.
     bool                SetFromLookAt(const Vec3 &viewDir, const Vec3 &up = Vec3::unitZ);
 
-                        /// Fix degenerate axial cases
+                        /// Fix degenerate axial cases.
     bool                FixDegeneracies();
-                        /// Change tiny numbers to zero
+                        /// Change tiny numbers to zero.
     bool                FixDenormals();
 
                         /// Returns the sum of the diagonal elements of this matrix.
@@ -194,36 +198,84 @@ public:
                         /// Orthonormalizes the basis formed by the column vectors of this matrix, in-place.
     Mat3 &              OrthoNormalizeSelf();
 
-                        /// Rotates about the given axis by the given angle, in-place
-    Mat3 &              Rotate(const Vec3 &axis, const float degree);
-                        /// Rotates about one of the principal axes by the given angle, in-place
-                        /// Calling RotateX, RotateY or RotateZ is slightly faster than calling the more generic Rotate() function.
-    Mat3 &              RotateX(const float degree);
-    Mat3 &              RotateY(const float degree);
-    Mat3 &              RotateZ(const float degree);
+                        /// Rotates about the given axis by the given angle in radians, in-place.
+    Mat3 &              Rotate(const Vec3 &axis, float angle);
 
-                        /// Scales by the given factors, in-place
+                        /// Rotates about one of the principal axes by the given angle in radians, in-place.
+                        /// Calling RotateX, RotateY or RotateZ is slightly faster than calling the more generic Rotate() function.
+    Mat3 &              RotateX(float ex);
+    Mat3 &              RotateY(float ey);
+    Mat3 &              RotateZ(float ez);
+
+                        /// Sets rotation matrix about one of the principal axes by the given angle in radians.
+    void                SetRotationX(float ex);
+    void                SetRotationY(float ey);
+    void                SetRotationZ(float ez);
+
+                        /// Returns 3x3 matrix from the given sequence of Euler rotation angles in radians.
+                        /// The FromRotationABC function returns a matrix M = A(ea) * B(eb) * C(ec).
+                        /// Rotation C is applied first, followed by B and then A.
+    static Mat3         FromRotationXYZ(float ex, float ey, float ez);
+    static Mat3         FromRotationXZY(float ex, float ez, float ey);
+    static Mat3         FromRotationYXZ(float ey, float ex, float ez);
+    static Mat3         FromRotationYZX(float ey, float ez, float ex);
+    static Mat3         FromRotationZXY(float ez, float ex, float ey);
+    static Mat3         FromRotationZYX(float ez, float ey, float ex);
+    static Mat3         FromRotationXYX(float ex2, float ey, float ex1);
+    static Mat3         FromRotationXZX(float ex2, float ez, float ex1);
+    static Mat3         FromRotationYXY(float ey2, float ex, float ey1);
+    static Mat3         FromRotationYZY(float ey2, float ez, float ey1);
+    static Mat3         FromRotationZXZ(float ez2, float ex, float ez1);
+    static Mat3         FromRotationZYZ(float ez2, float ey, float ez1);
+
+                        /// Decomposes the matrix and outputs the angles of rotation in parameters ex, ey and ez, in radians.
+                        /// The matrix must be orthonormal.
+                        /// These functions are adapted from http://www.geometrictools.com/Documentation/EulerAngles.pdf
+    void                ToRotationXYZ(float &ex, float &ey, float &ez) const;
+    void                ToRotationXZY(float &ex, float &ez, float &ey) const;
+    void                ToRotationYXZ(float &ey, float &ex, float &ez) const;
+    void                ToRotationYZX(float &ey, float &ez, float &ex) const;
+    void                ToRotationZXY(float &ez, float &ex, float &ey) const;
+    void                ToRotationZYX(float &ez, float &ey, float &ex) const;
+    void                ToRotationXYX(float &ex2, float &ey, float &ex1) const;
+    void                ToRotationXZX(float &ex2, float &ez, float &ex1) const;
+    void                ToRotationYXY(float &ey2, float &ex, float &ey1) const;
+    void                ToRotationYZY(float &ey2, float &ez, float &ey1) const;
+    void                ToRotationZXZ(float &ez2, float &ex, float &ez1) const;
+    void                ToRotationZYZ(float &ez2, float &ey, float &ez1) const;
+
+                        /// Scales by the given factors, in-place.
     Mat3 &              Scale(const Vec3 &scale);
 
-                        /// Returns scaling matrix
+                        /// Returns scaling matrix.
     static Mat3         FromScale(float sx, float sy, float sz);
     static Mat3         FromScale(const Vec3 &s) { return FromScale(s.x, s.y, s.z); }
 
+                        /// Converts this 3x3 matrix to 4x4 matrix.
     Mat4                ToMat4() const;
-    Angles              ToAngles() const;
+
+                        /// Returns scale part.
+    Vec3                ToScaleVec3() const;
+
+                        /// Converts this 3x3 matrix to to axis-angle rotation representation.
     Rotation            ToRotation() const;
+
+                        /// Converts this 3x3 matrix to quaternion.
     Quat                ToQuat() const;
+
+                        /// Converts this 3x3 matrix to euler angles.
+    Angles              ToAngles() const;
 
                         /// Returns "_00 _01 _02 _10 _11 _12 _20 _21 _22".
     const char *        ToString() const { return ToString(4); }
                         /// Returns "_00 _01 _02 _10 _11 _12 _20 _21 _22" with the given precisions.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Mat3         FromString(const char *str);
 
-                        /// Returns dimension of this type
-    int                 GetDimension() const { return Rows * Cols; }
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return Rows * Cols; }
 
     static const Mat3   zero;
     static const Mat3   identity;
@@ -455,6 +507,18 @@ BE_INLINE bool Mat3::IsIdentity(const float epsilon) const {
     return Equals(Mat3::identity, epsilon);
 }
 
+BE_INLINE bool Mat3::IsUpperTriangular(const float epsilon) const {
+    return (Math::Fabs(mat[0][1]) <= epsilon) &&
+           (Math::Fabs(mat[0][2]) <= epsilon) &&
+           (Math::Fabs(mat[1][2]) <= epsilon);
+}
+
+BE_INLINE bool Mat3::IsLowerTriangular(const float epsilon) const {
+    return (Math::Fabs(mat[1][0]) <= epsilon) &&
+           (Math::Fabs(mat[2][0]) <= epsilon) &&
+           (Math::Fabs(mat[2][1]) <= epsilon);
+}
+
 BE_INLINE bool Mat3::IsSymmetric(const float epsilon) const {
     if (Math::Fabs(mat[0][1] - mat[1][0]) > epsilon) {
         return false;
@@ -561,8 +625,15 @@ BE_INLINE Mat3 Mat3::FromScale(float sx, float sy, float sz) {
     return m;
 }
 
+BE_INLINE Vec3 Mat3::ToScaleVec3() const {
+    return Vec3(
+        Math::Sqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]),
+        Math::Sqrt(mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]),
+        Math::Sqrt(mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]));
+}
+
 BE_INLINE const char *Mat3::ToString(int precision) const {
-    return Str::FloatArrayToString((const float *)(*this), Rows * Cols, precision);
+    return Str::FloatArrayToString((const float *)(*this), GetDimension(), precision);
 }
 
 BE_NAMESPACE_END

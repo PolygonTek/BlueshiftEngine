@@ -19,18 +19,18 @@
 
 BE_NAMESPACE_BEGIN
 
-ComRigidBody *CastResultEx::GetRigidBody() {
-    if (!hitObject || !hitObject->GetUserPointer()) {
+ComRigidBody *GetRigidBodyFromCastResult(const CastResult &castResult) {
+    if (!castResult.hitObject || !castResult.hitObject->GetUserPointer()) {
         return nullptr;
     }
-    return (reinterpret_cast<Component *>(hitObject->GetUserPointer()))->Cast<ComRigidBody>();
+    return (reinterpret_cast<Component *>(castResult.hitObject->GetUserPointer()))->Cast<ComRigidBody>();
 }
 
-ComSensor *CastResultEx::GetSensor() {
-    if (!hitObject || !hitObject->GetUserPointer()) {
+ComSensor *GetSensorFromCastResult(const CastResult &castResult) {
+    if (!castResult.hitObject || !castResult.hitObject->GetUserPointer()) {
         return nullptr;
     }
-    return (reinterpret_cast<Component *>(hitObject->GetUserPointer()))->Cast<ComSensor>();
+    return (reinterpret_cast<Component *>(castResult.hitObject->GetUserPointer()))->Cast<ComSensor>();
 }
 
 BE_NAMESPACE_END

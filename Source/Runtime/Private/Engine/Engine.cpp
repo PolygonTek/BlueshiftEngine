@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "BlueshiftEngine.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -72,25 +73,30 @@ static void RegisterEngineObjects() {
     Object::RegisterProperties();
 
     Asset::RegisterProperties();
-    FolderAsset::RegisterProperties();
-    TextureAsset::RegisterProperties();
-    ShaderAsset::RegisterProperties();
-    MaterialAsset::RegisterProperties();
-    FontAsset::RegisterProperties();
-    SkeletonAsset::RegisterProperties();
-    MeshAsset::RegisterProperties();
-    ParticleSystemAsset::RegisterProperties();
-    AnimAsset::RegisterProperties();
-    FbxAsset::RegisterProperties();
-    JointMaskAsset::RegisterProperties();
-    AnimControllerAsset::RegisterProperties();
-    PrefabAsset::RegisterProperties();
-    SoundAsset::RegisterProperties();
-    MapAsset::RegisterProperties();
-    ScriptAsset::RegisterProperties();
+    Resource::RegisterProperties();
+    FolderResource::RegisterProperties();
+    TextureResource::RegisterProperties();
+    Texture2DResource::RegisterProperties();
+    TextureCubeMapResource::RegisterProperties();
+    TextureSpriteResource::RegisterProperties();
+    ShaderResource::RegisterProperties();
+    MaterialResource::RegisterProperties();
+    FontResource::RegisterProperties();
+    SkeletonResource::RegisterProperties();
+    MeshResource::RegisterProperties();
+    ParticleSystemResource::RegisterProperties();
+    AnimResource::RegisterProperties();
+    FbxResource::RegisterProperties();
+    JointMaskResource::RegisterProperties();
+    AnimControllerResource::RegisterProperties();
+    PrefabResource::RegisterProperties();
+    SoundResource::RegisterProperties();
+    MapResource::RegisterProperties();
+    ScriptResource::RegisterProperties();
 
     Component::RegisterProperties();
     ComTransform::RegisterProperties();
+    ComRectTransform::RegisterProperties();
     ComCollider::RegisterProperties();
     ComBoxCollider::RegisterProperties();
     ComSphereCollider::RegisterProperties();
@@ -122,6 +128,9 @@ static void RegisterEngineObjects() {
     ComLight::RegisterProperties();
     ComEnvironmentProbe::RegisterProperties();
     ComCamera::RegisterProperties();
+    ComCanvas::RegisterProperties();
+    ComImage::RegisterProperties();
+    ComText::RegisterProperties();
     ComSpline::RegisterProperties();
     ComScript::RegisterProperties();
     ComAudioListener::RegisterProperties();
@@ -160,6 +169,8 @@ void Engine::Shutdown() {
 }
 
 void Engine::RunFrame(int elapsedMsec) {
+    BE_PROFILE_SYNC_FRAME();
+
     common.RunFrame(elapsedMsec);
 }
 

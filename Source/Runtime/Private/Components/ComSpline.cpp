@@ -206,8 +206,8 @@ float ComSpline::Length() {
     return originCurve->GetLengthForTime(1.0f);
 }
 
-#if 1
-void ComSpline::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+#if WITH_EDITOR
+void ComSpline::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     if (!curveUpdated) {
         UpdateCurve();
     }

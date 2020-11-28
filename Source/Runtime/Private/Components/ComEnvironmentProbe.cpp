@@ -18,7 +18,7 @@
 #include "Components/ComEnvironmentProbe.h"
 #include "Game/GameWorld.h"
 #include "Game/TagLayerSettings.h"
-#include "Asset/Asset.h"
+#include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 #include "Platform/PlatformTime.h"
 
@@ -60,15 +60,15 @@ void ComEnvironmentProbe::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("blendDistance", "Blend Distance", float, GetBlendDistance, SetBlendDistance, 1.0f,
         "", PropertyInfo::Flag::Editor).SetRange(0.0f, 100.0f, 0.01f);
     REGISTER_MIXED_ACCESSOR_PROPERTY("bakedDiffuseProbeTexture", "Baked Diffuse Probe", Guid, GetBakedDiffuseProbeTextureGuid, SetBakedDiffuseProbeTextureGuid, Guid::zero,
-        "", PropertyInfo::Flag::NonCopying).SetMetaObject(&TextureAsset::metaObject);
+        "", PropertyInfo::Flag::NonCopying).SetMetaObject(&TextureCubeMapResource::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("bakedSpecularProbeTexture", "Baked Specular Probe", Guid, GetBakedSpecularProbeTextureGuid, SetBakedSpecularProbeTextureGuid, Guid::zero,
-        "", PropertyInfo::Flag::NonCopying).SetMetaObject(&TextureAsset::metaObject);
+        "", PropertyInfo::Flag::NonCopying).SetMetaObject(&TextureCubeMapResource::metaObject);
 }
 
 ComEnvironmentProbe::ComEnvironmentProbe() {
     probeHandle = -1;
 
-#if 1
+#if WITH_EDITOR
     sphereHandle = -1;
     sphereMesh = nullptr;
 #endif
@@ -79,7 +79,7 @@ ComEnvironmentProbe::~ComEnvironmentProbe() {
 }
 
 void ComEnvironmentProbe::Purge(bool chainPurge) {
-#if 1
+#if WITH_EDITOR
     if (sphereDef.mesh) {
         meshManager.ReleaseMesh(sphereDef.mesh);
         sphereDef.mesh = nullptr;
@@ -134,7 +134,7 @@ void ComEnvironmentProbe::Init() {
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComEnvironmentProbe::TransformUpdated, SignalObject::ConnectionType::Unique);
 
-#if 1
+#if WITH_EDITOR
     sphereDef.layer = TagLayerSettings::BuiltInLayer::Editor;
     sphereDef.maxVisDist = MeterToUnit(50.0f);
 
@@ -142,7 +142,7 @@ void ComEnvironmentProbe::Init() {
 
     sphereDef.mesh = sphereMesh->InstantiateMesh(Mesh::Type::Static);
     sphereDef.aabb = sphereMesh->GetAABB();
-    sphereDef.worldMatrix = transform->GetMatrix();
+    sphereDef.worldMatrix.SetTRS(transform->GetOrigin(), Mat3::identity, Vec3(0.75f, 0.75f, 0.75f));
     sphereDef.materialParms[RenderObject::MaterialParm::Red] = 1.0f;
     sphereDef.materialParms[RenderObject::MaterialParm::Green] = 1.0f;
     sphereDef.materialParms[RenderObject::MaterialParm::Blue] = 1.0f;
@@ -167,7 +167,7 @@ void ComEnvironmentProbe::OnInactive() {
         probeHandle = -1;
     }
 
-#if 1
+#if WITH_EDITOR
     if (sphereHandle != -1) {
         renderWorld->RemoveRenderObject(sphereHandle);
         sphereHandle = -1;
@@ -175,9 +175,9 @@ void ComEnvironmentProbe::OnInactive() {
 #endif
 }
 
-bool ComEnvironmentProbe::HasRenderEntity(int renderEntityHandle) const {
-#if 1
-    if (this->sphereHandle == renderEntityHandle) {
+bool ComEnvironmentProbe::HasRenderObject(int renderObjectHandle) const {
+#if WITH_EDITOR
+    if (this->sphereHandle == renderObjectHandle) {
         return true;
     }
 #endif
@@ -208,8 +208,8 @@ void ComEnvironmentProbe::Update() {
     }
 }
 
-#if 1
-void ComEnvironmentProbe::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+#if WITH_EDITOR
+void ComEnvironmentProbe::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     if (selected) {
@@ -238,7 +238,7 @@ void ComEnvironmentProbe::DrawGizmos(const RenderCamera::State &viewState, bool 
 }
 #endif
 
-const AABB ComEnvironmentProbe::GetAABB() {
+const AABB ComEnvironmentProbe::GetAABB() const {
     return Sphere(Vec3::origin, MeterToUnit(0.5f)).ToAABB();
 }
 
@@ -247,7 +247,7 @@ void ComEnvironmentProbe::UpdateVisuals() {
         return;
     }
 
-#if 1
+#if WITH_EDITOR
     if (sphereDef.materials.Count() > 0) {
         materialManager.ReleaseMaterial(sphereDef.materials[0], true);
     }
@@ -262,7 +262,7 @@ void ComEnvironmentProbe::UpdateVisuals() {
     const EnvProbe *envProbe = renderWorld->GetEnvProbe(probeHandle);
     const Texture *specularProbeTexture = envProbe->GetSpecularProbeTexture();
 
-#if 1
+#if WITH_EDITOR
     sphereDef.materials.SetCount(1);
     sphereDef.materials[0] = materialManager.GetSingleTextureMaterial(specularProbeTexture, Material::TextureHint::EnvCubeMap);
 
@@ -277,7 +277,7 @@ void ComEnvironmentProbe::UpdateVisuals() {
 void ComEnvironmentProbe::TransformUpdated(const ComTransform *transform) {
     probeDef.origin = transform->GetOrigin();
 
-#if 1
+#if WITH_EDITOR
     sphereDef.worldMatrix.SetTranslation(transform->GetOrigin());
 #endif
 
@@ -291,7 +291,9 @@ EnvProbe::Type::Enum ComEnvironmentProbe::GetType() const {
 void ComEnvironmentProbe::SetType(EnvProbe::Type::Enum type) {
     probeDef.type = type;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 EnvProbe::RefreshMode::Enum ComEnvironmentProbe::GetRefreshMode() const {
@@ -301,7 +303,9 @@ EnvProbe::RefreshMode::Enum ComEnvironmentProbe::GetRefreshMode() const {
 void ComEnvironmentProbe::SetRefreshMode(EnvProbe::RefreshMode::Enum refreshMode) {
     probeDef.refreshMode = refreshMode;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 EnvProbe::TimeSlicing::Enum ComEnvironmentProbe::GetTimeSlicing() const {
@@ -311,7 +315,9 @@ EnvProbe::TimeSlicing::Enum ComEnvironmentProbe::GetTimeSlicing() const {
 void ComEnvironmentProbe::SetTimeSlicing(EnvProbe::TimeSlicing::Enum timeSlicing) {
     probeDef.timeSlicing = timeSlicing;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 int ComEnvironmentProbe::GetImportance() const {
@@ -321,7 +327,9 @@ int ComEnvironmentProbe::GetImportance() const {
 void ComEnvironmentProbe::SetImportance(int importance) {
     probeDef.importance = Max(importance, 0);
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 EnvProbe::Resolution::Enum ComEnvironmentProbe::GetResolution() const {
@@ -331,7 +339,9 @@ EnvProbe::Resolution::Enum ComEnvironmentProbe::GetResolution() const {
 void ComEnvironmentProbe::SetResolution(EnvProbe::Resolution::Enum resolution) {
     probeDef.resolution = resolution;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 bool ComEnvironmentProbe::IsHDR() const {
@@ -341,7 +351,9 @@ bool ComEnvironmentProbe::IsHDR() const {
 void ComEnvironmentProbe::SetHDR(bool useHDR) {
     probeDef.useHDR = useHDR;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 int ComEnvironmentProbe::GetLayerMask() const {
@@ -351,7 +363,9 @@ int ComEnvironmentProbe::GetLayerMask() const {
 void ComEnvironmentProbe::SetLayerMask(int layerMask) {
     probeDef.layerMask = layerMask;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 EnvProbe::ClearMethod::Enum ComEnvironmentProbe::GetClearMethod() const {
@@ -361,7 +375,9 @@ EnvProbe::ClearMethod::Enum ComEnvironmentProbe::GetClearMethod() const {
 void ComEnvironmentProbe::SetClearMethod(EnvProbe::ClearMethod::Enum clearMethod) {
     probeDef.clearMethod = clearMethod;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 Color3 ComEnvironmentProbe::GetClearColor() const {
@@ -371,7 +387,9 @@ Color3 ComEnvironmentProbe::GetClearColor() const {
 void ComEnvironmentProbe::SetClearColor(const Color3 &clearColor) {
     probeDef.clearColor = clearColor;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 float ComEnvironmentProbe::GetClippingNear() const {
@@ -385,7 +403,9 @@ void ComEnvironmentProbe::SetClippingNear(float clippingNear) {
         SetProperty("far", probeDef.clippingNear);
     }
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 float ComEnvironmentProbe::GetClippingFar() const {
@@ -397,7 +417,9 @@ void ComEnvironmentProbe::SetClippingFar(float clippingFar) {
         probeDef.clippingFar = clippingFar;
     }
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 bool ComEnvironmentProbe::IsBoxProjection() const {
@@ -407,7 +429,9 @@ bool ComEnvironmentProbe::IsBoxProjection() const {
 void ComEnvironmentProbe::SetBoxProjection(bool useBoxProjection) {
     probeDef.useBoxProjection = useBoxProjection;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 Vec3 ComEnvironmentProbe::GetBoxExtent() const {
@@ -432,7 +456,9 @@ void ComEnvironmentProbe::SetBoxExtent(const Vec3 &boxExtent) {
         SetProperty("boxOffset", adjustedBoxOffset);
     }
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 Vec3 ComEnvironmentProbe::GetBoxOffset() const {
@@ -457,7 +483,9 @@ void ComEnvironmentProbe::SetBoxOffset(const Vec3 &boxOffset) {
         SetProperty("boxExtent", adjustedBoxExtent);
     }
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 float ComEnvironmentProbe::GetBlendDistance() const {
@@ -467,7 +495,9 @@ float ComEnvironmentProbe::GetBlendDistance() const {
 void ComEnvironmentProbe::SetBlendDistance(float blendDistance) {
     probeDef.blendDistance = blendDistance;
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 Guid ComEnvironmentProbe::GetBakedDiffuseProbeTextureGuid() const {
@@ -494,7 +524,9 @@ void ComEnvironmentProbe::SetBakedDiffuseProbeTextureGuid(const Guid &textureGui
         }
     }
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 Guid ComEnvironmentProbe::GetBakedSpecularProbeTextureGuid() const {
@@ -521,7 +553,9 @@ void ComEnvironmentProbe::SetBakedSpecularProbeTextureGuid(const Guid &textureGu
         }
     }
 
-    UpdateVisuals();
+    if (IsInitialized()) {
+        UpdateVisuals();
+    }
 }
 
 Texture *ComEnvironmentProbe::GetDiffuseProbeTexture() const {

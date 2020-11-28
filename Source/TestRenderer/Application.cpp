@@ -143,7 +143,7 @@ void Application::LoadResources() {
 
     renderTargetTexture = BE1::rhi.CreateTexture(BE1::RHI::TextureType::Texture2D);
     BE1::Image rtImage;
-    rtImage.InitFromMemory(200, 200, 1, 1, 1, BE1::Image::Format::RGBA_8_8_8_8, nullptr, 0);
+    rtImage.InitFromMemory(200, 200, 1, 1, 1, BE1::Image::Format::RGBA_8_8_8_8, BE1::Image::GammaSpace::sRGB, nullptr, 0);
 
     BE1::rhi.BindTexture(renderTargetTexture);
     BE1::rhi.SetTextureImage(BE1::RHI::TextureType::Texture2D, &rtImage, BE1::Image::Format::RGBA_8_8_8_8, false, true);
@@ -218,6 +218,10 @@ void Application::DrawToRenderTarget(BE1::RHI::Handle renderTargetHandle, float 
 void Application::Draw(const BE1::RHI::Handle contextHandle, const BE1::RHI::Handle renderTargetHandle, float t) {
     BE1::rhi.SetContext(contextHandle);
 
+#ifdef ENABLE_IMGUI
+    BE1::rhi.ImGuiBeginFrame(contextHandle);
+#endif
+
     DrawToRenderTarget(renderTargetHandle, t);
 
     BE1::RHI::DisplayMetrics displayMetrics;
@@ -253,9 +257,16 @@ void Application::Draw(const BE1::RHI::Handle contextHandle, const BE1::RHI::Han
     BE1::rhi.DrawArrays(BE1::RHI::Topology::TriangleList, 0, 6);
 #endif
 
+#ifdef ENABLE_IMGUI
+    ImGui::Text("Hello, world !");
+    //ImGui::ShowDemoWindow();
+    
+    BE1::rhi.ImGuiRender();
+#endif
+
     BE1::rhi.SwapBuffers();
 }
 
 void Application::RunFrame() {
-   BE1::cmdSystem.ExecuteCommandBuffer();
+    BE1::cmdSystem.ExecuteCommandBuffer();
 }

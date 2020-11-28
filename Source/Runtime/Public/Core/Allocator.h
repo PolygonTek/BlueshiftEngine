@@ -52,7 +52,7 @@ public:
                         /// Reserves blocks.
     void                ReserveBlocks(int numBlocks);
    
-                        /// Free empty blocks and rebuild free elements chain. 
+                        /// Free empty blocks and rebuild free elements chain.
     void                FreeEmptyBlocks();
 
                         /// Free all allocated blocks.

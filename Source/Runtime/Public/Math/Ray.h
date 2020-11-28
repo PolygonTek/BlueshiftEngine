@@ -58,8 +58,11 @@ public:
                         /// Returns "x y z dx dy dz" with the given precision.
     const char *        ToString(int precision) const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Ray          FromString(const char *str);
+
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return 6; }
 
     Vec3                origin;     ///< The origin of this ray
     Vec3                dir;        ///< The normalized direction of this ray

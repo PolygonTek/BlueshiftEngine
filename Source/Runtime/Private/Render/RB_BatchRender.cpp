@@ -26,39 +26,41 @@ void Batch::DrawPrimitives() const {
     if (numIndirectCommands > 0) {
         rhi.MultiDrawElementsIndirect(RHI::Topology::TriangleList, sizeof(TriIndex), 0, numIndirectCommands, sizeof(RHI::DrawElementsIndirectCommand));
     } else if (numInstances > 0) {
-        rhi.DrawElementsInstanced(RHI::Topology::TriangleList, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(TriIndex), 0, numInstances);
+        rhi.DrawElementsInstanced(RHI::Topology::TriangleList, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(TriIndex), nullptr, numInstances);
     } else {
-        rhi.DrawElements(RHI::Topology::TriangleList, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(TriIndex), 0);
+        rhi.DrawElements(RHI::Topology::TriangleList, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(TriIndex), nullptr);
     }
 
     int instanceCount = Max(numInstances, 1);
 
-    if (flushType == Flush::Shadow) {
-        backEnd.ctx->renderCounter.shadowDrawCalls++;
-        backEnd.ctx->renderCounter.shadowDrawIndexes += numIndexes * instanceCount;
-        backEnd.ctx->renderCounter.shadowDrawVerts += numVerts * instanceCount;
-    }
+    RenderCounter &renderCounter = backEnd.ctx->GetRenderCounter();
 
-    backEnd.ctx->renderCounter.drawCalls++;
-    backEnd.ctx->renderCounter.drawIndexes += numIndexes * instanceCount;
-    backEnd.ctx->renderCounter.drawVerts += numVerts * instanceCount;
+    if (flushType == Flush::Shadow) {
+        renderCounter.shadowDrawCalls++;
+        renderCounter.shadowDrawIndexes += numIndexes * instanceCount;
+        renderCounter.shadowDrawVerts += numVerts * instanceCount;
+    } else {
+        renderCounter.drawCalls++;
+        renderCounter.drawIndexes += numIndexes * instanceCount;
+        renderCounter.drawVerts += numVerts * instanceCount;
+    }
 }
 
 void Batch::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::Property> &shaderProperties) const {
     const auto &propertyInfoHashMap = shader->GetPropertyInfoHashMap();
 
-    // Iterate over all shader property specs
+    // Iterate over all shader property specs.
     for (int i = 0; i < propertyInfoHashMap.Count(); i++) {
         const auto *entry = propertyInfoHashMap.GetByIndex(i);
         const auto &key = entry->first;
         const auto &propInfo = entry->second;
 
-        // Skip if it is a shader define
-        if (propInfo.GetFlags() & PropertyInfo::Flag::ShaderDefine) {
+        // Skip if it is a shader define.
+        if (propInfo.GetFlags() & Shader::ShaderPropertyInfo::Flag::ShaderDefine) {
             continue;
         }
 
-        // Skip if not exist in shader properties
+        // Skip if not exist in shader properties.
         const auto *propEntry = shaderProperties.Get(key);
         if (!propEntry) {
             continue;
@@ -72,6 +74,9 @@ void Batch::SetShaderProperties(const Shader *shader, const StrHashMap<Shader::P
             break;
         case Variant::Type::Point:
             shader->SetConstant2i(key, prop.data.As<Point>());
+            break;
+        case Variant::Type::Size:
+            shader->SetConstant2i(key, prop.data.As<Size>());
             break;
         case Variant::Type::Rect:
             shader->SetConstant4i(key, prop.data.As<Rect>());
@@ -120,7 +125,7 @@ const Texture *Batch::TextureFromShaderProperties(const Material::ShaderPass *mt
     }
 
     const auto &propInfo = entry->second;
-    if ((propInfo.GetFlags() & PropertyInfo::Flag::ShaderDefine) || (propInfo.GetType() != Variant::Type::Guid)) {
+    if ((propInfo.GetFlags() & Shader::ShaderPropertyInfo::Flag::ShaderDefine) || (propInfo.GetType() != Variant::Type::Guid)) {
         return nullptr;
     }
 
@@ -190,13 +195,13 @@ void Batch::SetVertexColorConstants(const Shader *shader, const Material::Vertex
 }
 
 void Batch::SetSkinningConstants(const Shader *shader, const SkinningJointCache *cache) const {
-    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::CpuSkinning) {
+    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::Cpu) {
         return;
     }
 
-    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexShaderSkinning) {
+    if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexShader) {
         shader->SetConstantArray4f(shader->builtInConstantIndices[Shader::BuiltInConstant::Joints], cache->numJoints * 3, cache->skinningJoints[0].Ptr());
-    } else if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetchSkinning) {
+    } else if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetch) {
         const Texture *jointsMapTexture = cache->bufferCache.texture;
 
         shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::JointsMap], jointsMapTexture);
@@ -335,7 +340,7 @@ void Batch::RenderColor(const Material::ShaderPass *mtrlPass, const Color4 &colo
     DrawPrimitives();
 }
 
-void Batch::RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &idInVec3) const {
+void Batch::RenderSelection(const Material::ShaderPass *mtrlPass, const Color3 &idInColor3) const {
     Shader *shader = ShaderManager::selectionIdShader;
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
@@ -370,7 +375,7 @@ void Batch::RenderSelection(const Material::ShaderPass *mtrlPass, const Vec3 &id
         shader->SetConstant1f(shader->builtInConstantIndices[Shader::BuiltInConstant::PerforatedAlpha], mtrlPass->cutoffAlpha);
     }
 
-    shader->SetConstant3f("id", idInVec3);
+    shader->SetConstant3f("id", idInColor3);
 
     DrawPrimitives();
 }
@@ -470,13 +475,13 @@ void Batch::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
 
     SetMatrixConstants(shader);
 
-    Mat4 prevModelViewMatrix = backEnd.camera->def->GetViewMatrix() * surfSpace->def->GetPrevWorldMatrix();
+    ALIGN_AS32 Mat4 prevModelViewMatrix = backEnd.camera->def->GetViewMatrix() * surfSpace->def->GetPrevWorldMatrix();
     //shader->SetConstantMatrix4fv("prevModelViewMatrix", 1, true, prevModelViewMatrix);
 
-    Mat4 prevModelViewProjMatrix = backEnd.camera->def->GetProjMatrix() * prevModelViewMatrix;
+    ALIGN_AS32 Mat4 prevModelViewProjMatrix = backEnd.camera->def->GetProjMatrix() * prevModelViewMatrix;
     shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::PrevModelViewProjectionMatrix], true, prevModelViewProjMatrix);
 
-    shader->SetConstant1f("shutterSpeed", r_motionBlur_ShutterSpeed.GetFloat() / backEnd.ctx->frameTime);
+    shader->SetConstant1f("shutterSpeed", r_motionBlur_ShutterSpeed.GetFloat() / MILLI2SEC(backEnd.ctx->frameMsec));
     //shader->SetConstant1f("motionBlurID", (float)surfSpace->id);
 
     shader->SetTexture("depthMap", backEnd.ctx->screenDepthTexture);
@@ -485,8 +490,8 @@ void Batch::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
         const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
         shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
         
-        Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
-        Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
+        ALIGN_AS32 Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
+        ALIGN_AS32 Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
 
         shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::TextureMatrixS], textureMatrixS);
         shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::TextureMatrixT], textureMatrixT);
@@ -569,7 +574,7 @@ void Batch::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
 }
 
 void Batch::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientScale) const {
-    Shader *shader = ShaderManager::standardDefaultShader;
+    Shader *shader = mtrlPass->shader;
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
         if (shader->GetPerforatedVersion()) {
@@ -591,6 +596,8 @@ void Batch::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientSca
     }
 
     shader->Bind();
+
+    SetShaderProperties(shader, mtrlPass->shaderProperties);
 
     const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
     shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
@@ -722,6 +729,13 @@ void Batch::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float 
         }
     } else {
         shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
+    }
+
+    shader->SetConstant1f("ambientScale", ambientScale);
+
+    // Requires pre-filtered DFG LUT for energy compensation even in direct lighting pass.
+    if (r_specularEnergyCompensation.GetBool()) {
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::PrefilteredDfgMap], backEnd.dfgSumGgxTexture);
     }
 
     SetMatrixConstants(shader);
@@ -942,6 +956,11 @@ void Batch::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const {
         shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
     }
 
+    // Requires pre-filtered DFG LUT for energy compensation even in direct lighting pass.
+    if (r_specularEnergyCompensation.GetBool()) {
+        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::PrefilteredDfgMap], backEnd.dfgSumGgxTexture);
+    }
+
     SetMatrixConstants(shader);
 
     SetEntityConstants(mtrlPass, shader);
@@ -972,11 +991,11 @@ void Batch::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) cons
     shader->Bind();
 
     // light texture transform matrix
-    Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetWorldMatrix();
+    ALIGN_AS32 Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetWorldMatrix();
     shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::LightTextureMatrix], true, viewProjScaleBiasMat);
     shader->SetConstant3f("fogColor", &surfLight->def->GetState().materialParms[RenderObject::MaterialParm::Red]);
 
-    Vec3 vec = surfLight->def->GetState().origin - backEnd.camera->def->GetState().origin;
+    ALIGN_AS32 Vec3 vec = surfLight->def->GetState().origin - backEnd.camera->def->GetState().origin;
     bool fogEnter = vec.Dot(surfLight->def->GetState().axis[0]) < 0.0f ? true : false;
 
     if (fogEnter) {
@@ -1018,7 +1037,7 @@ void Batch::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) co
     shader->Bind();
 
     // light texture transform matrix
-    Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetWorldMatrix();
+    ALIGN_AS32 Mat4 viewProjScaleBiasMat = surfLight->def->GetViewProjScaleBiasMatrix() * surfSpace->def->GetWorldMatrix();
     shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::LightTextureMatrix], true, viewProjScaleBiasMat);
     shader->SetConstant3f("blendColor", blendColor);
 
@@ -1029,7 +1048,7 @@ void Batch::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) co
 }
 
 void Batch::RenderGui(const Material::ShaderPass *mtrlPass) const {
-    const Shader *shader;
+    Shader *shader;
 
     if (mtrlPass->shader) {
         shader = mtrlPass->shader;
@@ -1041,6 +1060,7 @@ void Batch::RenderGui(const Material::ShaderPass *mtrlPass) const {
         shader->Bind();
 
         shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
+        shader->SetConstant1f(shader->builtInConstantIndices[Shader::BuiltInConstant::Intensity], 1.0f);
     }
 
     SetMatrixConstants(shader);

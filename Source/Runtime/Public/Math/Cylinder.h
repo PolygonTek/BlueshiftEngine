@@ -27,7 +27,7 @@ BE_NAMESPACE_BEGIN
 class OBB;
 class Ray;
 
-/// A cylinder
+/// A cylinder.
 class BE_API Cylinder {
 public:
     /// The default constructor does not initialize any members of this class.
@@ -62,8 +62,8 @@ public:
     Sphere              ToSphere() const;
     OBB                 ToOBB() const;
 
-                        /// Returns dimension of this type
-    int                 GetDimension() const { return 7; }
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return 7; }
 
     Vec3                p[2];
     float               radius;

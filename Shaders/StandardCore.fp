@@ -81,7 +81,8 @@ uniform LOWP float wrappedDiffuse;
     #endif
 #elif defined(STANDARD_SPECULAR_LIGHTING) || defined(LEGACY_PHONG_LIGHTING)
     #if _SPECULAR == 0
-        uniform LOWP vec4 specularColor;
+        uniform LOWP vec3 specularColor;
+        uniform LOWP float specularAlpha;
     #elif _SPECULAR == 1
         uniform sampler2D specularMap;
     #endif
@@ -106,7 +107,7 @@ uniform LOWP float wrappedDiffuse;
     #endif
 
     uniform MEDIUMP float clearCoatRoughnessScale;
-    #if _CC_ROUGHNESS == 2
+    #if _CC_ROUGHNESS == 1
         uniform sampler2D clearCoatRoughnessMap;
     #endif
     
@@ -158,8 +159,6 @@ uniform LOWP float wrappedDiffuse;
 // Indirect lighting parameters
 //
 #if defined(INDIRECT_LIGHTING)
-    uniform MEDIUMP sampler2D prefilteredDfgMap;
-
     uniform MEDIUMP samplerCube probe0DiffuseCubeMap;
     uniform MEDIUMP samplerCube probe0SpecularCubeMap;
     uniform LOWP float probe0SpecularCubeMapMaxMipLevel;
@@ -178,6 +177,8 @@ uniform LOWP float wrappedDiffuse;
 #endif
 
 #if defined(DIRECT_LIGHTING) || defined(INDIRECT_LIGHTING)
+    uniform MEDIUMP sampler2D prefilteredDfgMap;
+
     $include "StandardBRDF.glsl"
 
     #ifdef LEGACY_PHONG_LIGHTING
@@ -266,12 +267,22 @@ void main() {
             shadingColor += IndirectLit_PhongFresnel();
         #endif
     #endif
-
-    #if _EMISSION != 0
-        shadingColor += shading.emission;
-    #endif
 #else
     shadingColor += albedo.rgb * ambientScale;
+#endif
+
+#if defined(INDIRECT_LIGHTING) || (!defined(INDIRECT_LIGHTING) && !defined(DIRECT_LIGHTING))
+    #if _EMISSION != 0
+        MEDIUMP vec3 emission;
+
+        #if _EMISSION == 1
+            emission = emissionColor * emissionScale;
+        #elif _EMISSION == 2
+            emission = tex2D(emissionMap, baseTc).rgb * emissionScale;
+        #endif
+
+        shadingColor += emission;
+    #endif
 #endif
 
 #ifdef DIRECT_LIGHTING

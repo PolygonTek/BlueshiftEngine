@@ -14,7 +14,28 @@ public:
         _exception_handler(new ExceptionHandler) {
         _l = luaL_newstate();
         if (should_open_libs) {
+#if 0
+            const luaL_Reg mylualibs[] = {
+              {"", luaopen_base},
+              {LUA_LOADLIBNAME, luaopen_package},
+              {LUA_TABLIBNAME, luaopen_table},
+              //{LUA_IOLIBNAME, luaopen_io},
+              //{LUA_OSLIBNAME, luaopen_os},
+              {LUA_STRLIBNAME, luaopen_string},
+              {LUA_MATHLIBNAME, luaopen_math},
+              {LUA_DBLIBNAME, luaopen_debug},
+              {NULL, NULL}
+            };
+
+            const luaL_Reg *lib = mylualibs;
+            for (; lib->func; lib++) {
+                lua_pushcfunction(_l, lib->func);
+                lua_pushstring(_l, lib->name);
+                lua_call(_l, 1, 0);
+            }
+#else
             luaL_openlibs(_l);
+#endif
         }
         _registry.reset(new Registry(_l));
         HandleExceptionsPrintingToStdOut();

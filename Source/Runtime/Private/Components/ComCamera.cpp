@@ -13,16 +13,14 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Input/InputSystem.h"
 #include "Render/Render.h"
 #include "Components/ComTransform.h"
-#include "Components/ComRigidBody.h"
 #include "Components/ComLogic.h"
 #include "Components/ComScript.h"
 #include "Components/ComCamera.h"
 #include "Game/GameWorld.h"
-#include "Game/CastResult.h"
 #include "Game/TagLayerSettings.h"
+#include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -33,14 +31,14 @@ END_EVENTS
 void ComCamera::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("projection", "Projection", int, GetProjectionMethod, SetProjectionMethod, 0, 
         "", PropertyInfo::Flag::Editor).SetEnumString("Perspective;Orthographic");
-    REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, 0.1,
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0.01, 10000, 0.02);
-    REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetFar, SetFar, 500,
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0.01, 10000, 0.02);
     REGISTER_PROPERTY("fov", "FOV", float, fov, 60.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(1, 179, 1);
-    REGISTER_PROPERTY("size", "Size", float, size, 1000.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(1, 16384, 1);
+        "Field of view for perspective projection mode", PropertyInfo::Flag::Editor).SetRange(1, 179, 1);
+    REGISTER_PROPERTY("size", "Size", float, size, 5.f,
+        "Horizontal size of orthographic projection mode", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("near", "Near", float, GetNear, SetNear, 0.3,
+        "Near plane distance", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0.01, 9999.99, 0.01);
+    REGISTER_ACCESSOR_PROPERTY("far", "Far", float, GetFar, SetFar, 1000,
+        "Far plane distance", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0.02, 10000.0, 0.01);
     REGISTER_PROPERTY("x", "Viewport Rect/X", float, nx, 0.f, 
         "", PropertyInfo::Flag::Editor).SetRange(0, 1.0f, 0.01f);
     REGISTER_PROPERTY("y", "Viewport Rect/Y", float, ny, 0.f, 
@@ -69,7 +67,7 @@ ComCamera::ComCamera() {
     mousePointerState.oldHitEntityGuid = Guid::zero;
     mousePointerState.captureEntityGuid = Guid::zero;
 
-#if 1
+#if WITH_EDITOR
     spriteHandle = -1;
     spriteMesh = nullptr;
 #endif
@@ -80,7 +78,7 @@ ComCamera::~ComCamera() {
 }
 
 void ComCamera::Purge(bool chainPurge) {
-#if 1
+#if WITH_EDITOR
     for (int i = 0; i < spriteDef.materials.Count(); i++) {
         materialManager.ReleaseMaterial(spriteDef.materials[i]);
     }
@@ -136,7 +134,7 @@ void ComCamera::Init() {
     renderCameraDef.origin = transform->GetOrigin();
     renderCameraDef.axis = transform->GetAxis();
 
-#if 1
+#if WITH_EDITOR
     // 3d sprite for editor
     spriteMesh = meshManager.GetMesh("_defaultQuadMesh");
 
@@ -144,7 +142,7 @@ void ComCamera::Init() {
     spriteDef.layer = TagLayerSettings::BuiltInLayer::Editor;
     spriteDef.maxVisDist = MeterToUnit(50.0f);
 
-    Texture *spriteTexture = textureManager.GetTexture("Data/EditorUI/Camera2.png", Texture::Flag::Clamp | Texture::Flag::HighQuality);
+    Texture *spriteTexture = textureManager.GetTextureWithoutTextureInfo("Data/EditorUI/Camera2.png", Texture::Flag::Clamp | Texture::Flag::HighQuality);
     spriteDef.materials.SetCount(1);
     spriteDef.materials[0] = materialManager.GetSingleTextureMaterial(spriteTexture, Material::TextureHint::Sprite);
     textureManager.ReleaseTexture(spriteTexture);
@@ -175,7 +173,7 @@ void ComCamera::OnActive() {
 void ComCamera::OnInactive() {
     touchPointerStateTable.Clear();
 
-#if 1
+#if WITH_EDITOR
     if (spriteHandle != -1) {
         renderWorld->RemoveRenderObject(spriteHandle);
         spriteHandle = -1;
@@ -183,9 +181,9 @@ void ComCamera::OnInactive() {
 #endif
 }
 
-bool ComCamera::HasRenderEntity(int renderEntityHandle) const { 
-#if 1
-    if (this->spriteHandle == renderEntityHandle) {
+bool ComCamera::HasRenderObject(int renderObjectHandle) const { 
+#if WITH_EDITOR
+    if (this->spriteHandle == renderObjectHandle) {
         return true;
     }
 #endif
@@ -197,27 +195,26 @@ void ComCamera::Update() {
     renderCameraDef.time = GetGameWorld()->GetTime();
 }
 
-#if 1
-void ComCamera::DrawGizmos(const RenderCamera::State &renderCameraDef, bool selected) {
+#if WITH_EDITOR
+void ComCamera::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
     
     if (selected) {
-        int renderingWidth = 100;
-        int renderingHeight = 100;
+        int screenWidth = 320;
+        int screenHeight = 200;
 
         const RenderContext *ctx = renderSystem.GetMainRenderContext();
         if (ctx) {
-            renderingWidth = ctx->GetRenderingWidth();
-            renderingHeight = ctx->GetRenderingHeight();
+            screenWidth = ctx->GetScreenWidth();
+            screenHeight = ctx->GetScreenHeight();
         }
 
-        float w = renderingWidth * nw;
-        float h = renderingHeight * nh;
-        float aspectRatio = w / h;
-
         if (this->renderCameraDef.orthogonal) {
-            this->renderCameraDef.sizeX = size;
-            this->renderCameraDef.sizeY = size / aspectRatio;
+            Size orthoSize = GetOrthoSize();
+
+            this->renderCameraDef.sizeX = orthoSize.w;
+            this->renderCameraDef.sizeY = orthoSize.h;
+
             float sizeZ = (this->renderCameraDef.zNear + this->renderCameraDef.zFar) * 0.5f;
 
             OBB cameraBox;
@@ -225,9 +222,13 @@ void ComCamera::DrawGizmos(const RenderCamera::State &renderCameraDef, bool sele
             cameraBox.SetCenter(this->renderCameraDef.origin + this->renderCameraDef.axis[0] * sizeZ);
             cameraBox.SetExtents(Vec3(sizeZ, this->renderCameraDef.sizeX, this->renderCameraDef.sizeY));
 
-            renderWorld->SetDebugColor(Color4::white, Color4::zero);
+            renderWorld->SetDebugColor(selectedByParent ? Color4::white : Color4(1.0, 1.0, 1.0, 0.5), Color4::zero);
             renderWorld->DebugOBB(cameraBox, 1.0f, false, false, true);
         } else {
+            float w = screenWidth * nw;
+            float h = screenHeight * nh;
+            float aspectRatio = w / h;
+
             RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &this->renderCameraDef.fovX, &this->renderCameraDef.fovY);
 
             Frustum cameraFrustum;
@@ -236,14 +237,14 @@ void ComCamera::DrawGizmos(const RenderCamera::State &renderCameraDef, bool sele
             cameraFrustum.SetSize(this->renderCameraDef.zNear, this->renderCameraDef.zFar,
                 this->renderCameraDef.zFar * Math::Tan(DEG2RAD(this->renderCameraDef.fovX * 0.5f)), this->renderCameraDef.zFar * Math::Tan(DEG2RAD(this->renderCameraDef.fovY * 0.5f)));
 
-            renderWorld->SetDebugColor(Color4::white, Color4::zero);
+            renderWorld->SetDebugColor(selectedByParent ? Color4::white : Color4(1.0, 1.0, 1.0, 0.5), Color4::zero);
             renderWorld->DebugFrustum(cameraFrustum, false, 1.0f, false, true);
         }
 
         /*if (ctx) {
             float upscaleFactorX = ctx->GetUpscaleFactorX();
             float upscaleFactorY = ctx->GetUpscaleFactorY();
-            
+
             int w = renderingWidth * 0.25f;
             int h = renderingHeight * 0.25f;
             int x = renderingWidth - (w + 10 / upscaleFactorX);
@@ -262,14 +263,33 @@ void ComCamera::DrawGizmos(const RenderCamera::State &renderCameraDef, bool sele
     }
 
     // Fade icon alpha in near distance
-    float alpha = BE1::Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(renderCameraDef.origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
+    float alpha = Clamp(spriteDef.worldMatrix.ToTranslationVec3().Distance(camera->GetState().origin) / MeterToUnit(8.0f), 0.01f, 1.0f);
 
     spriteDef.materials[0]->GetPass()->constantColor[3] = alpha;
 }
 #endif 
 
-const AABB ComCamera::GetAABB() {
+const AABB ComCamera::GetAABB() const {
     return Sphere(Vec3::origin, MeterToUnit(0.5f)).ToAABB();
+}
+
+Size ComCamera::GetOrthoSize() const {
+    int screenWidth = 320;
+    int screenHeight = 200;
+
+    const RenderContext *ctx = renderSystem.GetMainRenderContext();
+    if (ctx) {
+        screenWidth = ctx->GetScreenWidth();
+        screenHeight = ctx->GetScreenHeight();
+    }
+
+    float invAspectRatio = (float)screenHeight / (float)screenWidth;
+
+    Size orthoSize;
+    orthoSize.w = size;
+    orthoSize.h = size * invAspectRatio;
+
+    return orthoSize;
 }
 
 float ComCamera::GetAspectRatio() const {
@@ -281,12 +301,12 @@ float ComCamera::GetAspectRatio() const {
     int screenWidth = ctx->GetScreenWidth();
     int screenHeight = ctx->GetScreenHeight();
 
-    return (float)screenWidth / screenHeight;
+    return (float)screenWidth / (float)screenHeight;
 }
 
-const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
-    int screenWidth = 100;
-    int screenHeight = 100;
+const Point ComCamera::WorldToScreenPoint(const Vec3 &worldPos) const {
+    int screenWidth = 320;
+    int screenHeight = 200;
 
     const RenderContext *ctx = renderSystem.GetMainRenderContext();
     if (ctx) {
@@ -321,14 +341,25 @@ const Point ComCamera::WorldToScreen(const Vec3 &worldPos) const {
     return screenPoint;
 }
 
-const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
-    int screenWidth = 100;
-    int screenHeight = 100;
+const Ray ComCamera::ScreenPointToRay(const Point &screenPoint) {
+    int screenWidth = 320;
+    int screenHeight = 200;
 
     const RenderContext *ctx = renderSystem.GetMainRenderContext();
     if (ctx) {
         screenWidth = ctx->GetScreenWidth();
         screenHeight = ctx->GetScreenHeight();
+    }
+
+    if (renderCameraDef.orthogonal) {
+        Size orthoSize = GetOrthoSize();
+
+        renderCameraDef.sizeX = orthoSize.w;
+        renderCameraDef.sizeY = orthoSize.h;
+    } else {
+        float aspectRatio = (float)screenWidth / screenHeight;
+
+         RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &renderCameraDef.fovX, &renderCameraDef.fovY);
     }
 
     Rect screenRect;
@@ -337,209 +368,30 @@ const Ray ComCamera::ScreenToRay(const Point &screenPoint) {
     screenRect.w = screenWidth * nw;
     screenRect.h = screenHeight * nh;
 
-    // right/down normalized screen coordinates [-1.0, +1.0]
-    float ndx = ((float)(screenPoint.x - screenRect.x) / screenRect.w) * 2.0f - 1.0f;
-    float ndy = ((float)(screenPoint.y - screenRect.y) / screenRect.h) * 2.0f - 1.0f;
-
-    float aspectRatio = (float)screenWidth / screenHeight;
-
-    if (renderCameraDef.orthogonal) {
-        renderCameraDef.sizeX = size;
-        renderCameraDef.sizeY = size / aspectRatio;
-    } else {
-         RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &renderCameraDef.fovX, &renderCameraDef.fovY);
-    }
-
-    return RenderCamera::RayFromScreenND(renderCameraDef, ndx, ndy);
+    return RenderCamera::RayFromScreenPoint(renderCameraDef, screenRect, screenPoint);
 }
 
-bool ComCamera::ProcessMousePointerInput(const Point &screenPoint) {
-    if (!inputSystem.IsMouseExist()) {
-        return false;
-    }
-
-    Ray ray = ScreenToRay(screenPoint);
-
-    Entity *hitTestEntity = nullptr;
-    CastResultEx castResult;
-
-    if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetPoint(MeterToUnit(1000.0f)), GetLayerMask(), castResult)) {
-        ComRigidBody *hitTestRigidBody = castResult.GetRigidBody();
-        if (hitTestRigidBody) {
-            hitTestEntity = hitTestRigidBody->GetEntity();
-        }
-    }
-
-    Entity *captureEntity = (Entity *)Entity::FindInstance(mousePointerState.captureEntityGuid);
-
-    if (inputSystem.IsKeyUp(KeyCode::Mouse1)) {
-        if (captureEntity) {
-            ComponentPtrArray scriptComponents = captureEntity->GetComponents(&ComScript::metaObject);
-
-            for (int i = 0; i < scriptComponents.Count(); i++) {
-                ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
-
-                scriptComponent->OnPointerUp();
-
-                if (hitTestEntity == captureEntity) {
-                    scriptComponent->OnPointerClick();
-                }
-            }
-        }
-
-        mousePointerState.captureEntityGuid = Guid::zero;
-    }
-
-    Entity *oldHitEntity = (Entity *)Entity::FindInstance(mousePointerState.oldHitEntityGuid);
-
-    if (oldHitEntity) {
-        ComponentPtrArray scriptComponents = oldHitEntity->GetComponents(&ComScript::metaObject);
-
-        for (int i = 0; i < scriptComponents.Count(); i++) {
-            ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
-
-            if (oldHitEntity == hitTestEntity) {
-                scriptComponent->OnPointerOver();
-            } else {
-                scriptComponent->OnPointerExit();
-            }
-        }
-    }
-
-    if (hitTestEntity) {
-        ComponentPtrArray scriptComponents = hitTestEntity->GetComponents(&ComScript::metaObject);
-
-        for (int i = 0; i < scriptComponents.Count(); i++) {
-            ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
-
-            if (hitTestEntity != oldHitEntity) {
-                scriptComponent->OnPointerEnter();
-            }
-
-            if (inputSystem.IsKeyDown(KeyCode::Mouse1)) {
-                scriptComponent->OnPointerDown();
-            } else if (inputSystem.IsKeyPressed(KeyCode::Mouse1)) {
-                scriptComponent->OnPointerDrag();
-            }
-        }
-
-        if (inputSystem.IsKeyDown(KeyCode::Mouse1)) {
-            mousePointerState.captureEntityGuid = hitTestEntity->GetGuid();
-        }
-
-        mousePointerState.oldHitEntityGuid = hitTestEntity->GetGuid();
-    } else {
-        mousePointerState.oldHitEntityGuid = Guid::zero;
-    }
-
-    return (hitTestEntity || !mousePointerState.captureEntityGuid.IsZero());
+bool ComCamera::ProcessMousePointerInput() {
+    return InputUtils::ProcessMousePointerInput(mousePointerState, [this](const Point &screenPoint) {
+        // Convert screen point to ray.
+        Ray ray = ScreenPointToRay(screenPoint);
+        // Cast ray to detect entity.
+        return GetGameWorld()->RayCast(ray, GetLayerMask());
+    });
 }
 
 bool ComCamera::ProcessTouchPointerInput() {
-    bool processed = false;
-
-    for (int touchIndex = 0; touchIndex < inputSystem.GetTouchCount(); touchIndex++) {
-        InputSystem::Touch touch = inputSystem.GetTouch(touchIndex);
-
-        Entity *hitTestEntity = nullptr;
-
-        if (touch.phase == InputSystem::Touch::Started ||
-            touch.phase == InputSystem::Touch::Ended ||
-            touch.phase == InputSystem::Touch::Moved) {
-            Ray ray = ScreenToRay(touch.position);
-
-            CastResultEx castResult;
-
-            if (GetGameWorld()->GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetPoint(MeterToUnit(1000.0f)), GetLayerMask(), castResult)) {
-                ComRigidBody *hitTestRigidBody = castResult.GetRigidBody();
-                if (hitTestRigidBody) {
-                    hitTestEntity = hitTestRigidBody->GetEntity();
-                }
-            }
-        }
-
-        if (touch.phase == InputSystem::Touch::Started) {
-            if (hitTestEntity) {
-                processed = true;
-
-                PointerState touchPointerState;
-                touchPointerState.oldHitEntityGuid = hitTestEntity->GetGuid();
-                touchPointerState.captureEntityGuid = hitTestEntity->GetGuid();
-
-                touchPointerStateTable.Set(touch.id, touchPointerState);
-
-                ComponentPtrArray scriptComponents = hitTestEntity->GetComponents(&ComScript::metaObject);
-
-                for (int i = 0; i < scriptComponents.Count(); i++) {
-                    ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
-
-                    scriptComponent->OnPointerEnter();
-                    scriptComponent->OnPointerDown();
-                }
-            }
-        } else if (touch.phase == InputSystem::Touch::Ended || touch.phase == InputSystem::Touch::Canceled) {
-            PointerState touchPointerState;
-
-            if (touchPointerStateTable.Get(touch.id, &touchPointerState)) {
-                Entity *capturedEntity = (Entity *)Entity::FindInstance(touchPointerState.captureEntityGuid);
-
-                if (capturedEntity) {
-                    processed = true;
-
-                    ComponentPtrArray scriptComponents = capturedEntity->GetComponents(&ComScript::metaObject);
-
-                    for (int i = 0; i < scriptComponents.Count(); i++) {
-                        ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
-
-                        scriptComponent->OnPointerUp();
-
-                        if (touch.phase == InputSystem::Touch::Ended && hitTestEntity == capturedEntity) {
-                            scriptComponent->OnPointerClick();
-                        }
-
-                        scriptComponent->OnPointerExit();
-                    }
-                }
-
-                touchPointerStateTable.Remove(touch.id);
-            }
-        } else if (touch.phase == InputSystem::Touch::Moved) {
-            PointerState touchPointerState;
-
-            if (touchPointerStateTable.Get(touch.id, &touchPointerState)) {
-                Entity *capturedEntity = (Entity *)Entity::FindInstance(touchPointerState.captureEntityGuid);
-                Entity *oldHitEntity = (Entity *)Entity::FindInstance(touchPointerState.oldHitEntityGuid);
-
-                if (capturedEntity) {
-                    processed = true;
-
-                    ComponentPtrArray scriptComponents = capturedEntity->GetComponents(&ComScript::metaObject);
-
-                    for (int i = 0; i < scriptComponents.Count(); i++) {
-                        ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
-
-                        if (hitTestEntity != oldHitEntity) {
-                            if (hitTestEntity == capturedEntity) {
-                                scriptComponent->OnPointerEnter();
-                            } else if (oldHitEntity == capturedEntity) {
-                                scriptComponent->OnPointerExit();
-                            }
-                        }
-
-                        scriptComponent->OnPointerDrag();
-                    }
-                }
-
-                touchPointerState.oldHitEntityGuid = hitTestEntity ? hitTestEntity->GetGuid() : Guid::zero;
-                touchPointerStateTable.Set(touch.id, touchPointerState);
-            }
-        }
-    }
-
-    return processed;
+    return InputUtils::ProcessTouchPointerInput(touchPointerStateTable, [this](const Point &screenPoint) {
+        // Convert screen point to ray.
+        Ray ray = ScreenPointToRay(screenPoint);
+        // Cast ray to detect entity.
+        return GetGameWorld()->RayCast(ray, GetLayerMask());
+    });
 }
 
-void ComCamera::RenderScene() {
+void ComCamera::Render() {
+    BE_PROFILE_CPU_SCOPE_STATIC("ComCamera::Render");
+
     // Get current render context which is unique for each OS-level window in general.
     const RenderContext *ctx = renderSystem.GetCurrentRenderContext();
     if (!ctx) {
@@ -556,14 +408,19 @@ void ComCamera::RenderScene() {
     renderCameraDef.renderRect.w = renderingWidth * nw;
     renderCameraDef.renderRect.h = renderingHeight * nh;
 
-    // Get the aspect ratio from device screen size.
-    float aspectRatio = (float)ctx->GetScreenWidth() / ctx->GetScreenHeight();
+    // Get the logical screen resolution.
+    float screenWidth = ctx->GetScreenWidth();
+    float screenHeight = ctx->GetScreenHeight();
 
     if (renderCameraDef.orthogonal) {
-        // Compute viewport rectangle size in orthogonal projection.
-        renderCameraDef.sizeX = size;
-        renderCameraDef.sizeY = size / aspectRatio;
+        Size orthoSize = GetOrthoSize();
+
+        renderCameraDef.sizeX = orthoSize.w;
+        renderCameraDef.sizeY = orthoSize.h;
     } else {
+        // Get the aspect ratio from the screen resolution.
+        float aspectRatio = screenWidth / screenHeight;
+
         // Compute fovX, fovY with the given fov and aspect ratio.
         RenderCamera::ComputeFov(fov, 1.25f, aspectRatio, &renderCameraDef.fovX, &renderCameraDef.fovY);
     }
@@ -580,7 +437,7 @@ void ComCamera::UpdateVisuals() {
         return;
     }
 
-#if 1
+#if WITH_EDITOR
     if (spriteHandle == -1) {
         spriteHandle = renderWorld->AddRenderObject(&spriteDef);
     } else {
@@ -593,7 +450,7 @@ void ComCamera::TransformUpdated(const ComTransform *transform) {
     renderCameraDef.origin = transform->GetOrigin();
     renderCameraDef.axis = transform->GetAxis();
 
-#if 1
+#if WITH_EDITOR
     spriteDef.worldMatrix.SetTranslation(renderCameraDef.origin);
 #endif
 
@@ -627,8 +484,8 @@ float ComCamera::GetNear() const {
 void ComCamera::SetNear(float zNear) {
     renderCameraDef.zNear = zNear;
 
-    if (renderCameraDef.zNear > renderCameraDef.zFar) {
-        SetProperty("far", renderCameraDef.zNear);
+    if (renderCameraDef.zNear >= renderCameraDef.zFar) {
+        SetProperty("far", renderCameraDef.zNear + 0.01f);
     }
 
     UpdateVisuals();

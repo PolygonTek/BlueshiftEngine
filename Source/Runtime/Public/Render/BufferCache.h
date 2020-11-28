@@ -32,17 +32,19 @@ struct BufferCache {
 
 class BufferCacheManager {
 public:
-    enum VertexTextureMethod {
-        DirectCopy,   // obsolete !
-        Pbo,
-        Tbo
+    struct VertexTextureMethod {
+        enum Enum {
+            DirectCopy,   // obsolete !
+            Pbo,
+            Tbo
+        };
     };
 
     void                        Init();
     void                        Shutdown();
 
     void                        BeginWrite();
-    void                        EndDrawCommand();
+    void                        EndWrite();
 
     void                        BeginBackEnd();
 
@@ -74,7 +76,7 @@ public:
     bool                        IsCacheStatic(const BufferCache *bufferCache) const;
 
                                 // Update PBO to Texture
-    void                        UpdatePBOTexture() const;
+    void                        UpdatePBOTexture();
 
     const Texture *             GetFrameTexture() const;
 
@@ -118,6 +120,7 @@ private:
     int                         mostUsedTexelMem;
 
     bool                        usePersistentMappedBuffers;
+    bool                        useFlushMappedBuffers;
 
     int                         pboWriteOffset;
 };

@@ -25,15 +25,15 @@ BE_NAMESPACE_BEGIN
 #define SIGNED_FLOAT_TO_BYTE(x)         Math::Ftob(((x) + 1.0f) * (255.0f / 2.0f) + 0.5f)
 
 #if 1
-typedef uint32_t TriIndex;
+using TriIndex = uint32_t;
 #else
-typedef uint16_t TriIndex;
+using TriIndex = uint16_t;
 #endif
 
-// this is used for calculating unsmoothed normals and tangents for deformed models
+/// This is used for calculating unsmoothed normals and tangents for deformed models.
 struct DominantTri {
-    TriIndex        v2, v3;                 // dominant triangle index [i, v2, v3]
-    float           normalizationScale[3];  // tangent, bitangent, normal 의 normalization scale
+    TriIndex        v2, v3;                 ///< Dominant triangle index [i, v2, v3]
+    float           normalizationScale[3];  ///< Normalization scales for tangent, bitangent and normal
 };
 
 /*
@@ -111,8 +111,8 @@ BE_INLINE uint32_t VertexGeneric::GetColor() const {
 }
 
 BE_INLINE void VertexGeneric::Lerp(const VertexGeneric &a, const VertexGeneric &b, const float f) {
-    xyz = BE1::Lerp(a.xyz, b.xyz, f);
-    SetTexCoord(BE1::Lerp(a.GetTexCoord(), b.GetTexCoord(), f));
+    xyz = Math::Lerp(a.xyz, b.xyz, f);
+    SetTexCoord(Math::Lerp(a.GetTexCoord(), b.GetTexCoord(), f));
 
     color[0] = (byte)(a.color[0] + f * (b.color[0] - a.color[0]));
     color[1] = (byte)(a.color[1] + f * (b.color[1] - a.color[1]));
@@ -125,7 +125,7 @@ BE_INLINE void VertexGeneric::Transform(const Mat3x4 &transform) {
 }
 
 BE_INLINE void VertexGeneric::Transform(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation) {
-    Mat4 matrix;
+    ALIGN_AS32 Mat4 matrix;
     matrix.SetTRS(translation, rotation, scale);
     xyz = matrix * xyz;
 }
@@ -186,23 +186,18 @@ struct BE_API VertexGenericLit : public VertexGeneric {
 };
 
 BE_INLINE void ConvertNormalToBytes(const float &x, const float &y, const float &z, byte *bval) {
-    assert((((uintptr_t)bval) & 3) == 0);
+#ifdef HAVE_X86_SSE_INTRIN
+    const __m128 vector_float_255_over_2 = { 255.0f / 2.0f, 255.0f / 2.0f, 255.0f / 2.0f, 255.0f / 2.0f };
 
-#if BE_WIN_X86_SSE_INTRIN
-    const __m128 vector_float_one           = { 1.0f, 1.0f, 1.0f, 1.0f };
-    const __m128 vector_float_half          = { 0.5f, 0.5f, 0.5f, 0.5f };
-    const __m128 vector_float_255_over_2    = { 255.0f / 2.0f, 255.0f / 2.0f, 255.0f / 2.0f, 255.0f / 2.0f };
+    const __m128 xyz = _mm_setr_ps(x, y, z, 0);
+    const __m128 xyzScaled = _mm_add_ps(_mm_mul_ps(_mm_add_ps(xyz, SIMD_4::F4_one), vector_float_255_over_2), SIMD_4::F4_half);
+    const __m128i xyzI32 = _mm_cvtps_epi32(xyzScaled);
+    const __m128i xyzU16 = _mm_packus_epi32(xyzI32, xyzI32);
+    const __m128i xyzU8 = _mm_packus_epi16(xyzU16, xyzU16);
 
-    const __m128 xyz = _mm_unpacklo_ps(_mm_unpacklo_ps(_mm_load_ss(&x), _mm_load_ss(&z)), _mm_load_ss(&y));
-    const __m128 xyzScaled = _mm_add_ps(_mm_mul_ps(_mm_add_ps(xyz, vector_float_one), vector_float_255_over_2), vector_float_half);
-    const __m128i xyzInt = _mm_cvtps_epi32(xyzScaled);
-    const __m128i xyzShort = _mm_packs_epi32(xyzInt, xyzInt);
-    const __m128i xyzChar = _mm_packus_epi16(xyzShort, xyzShort);
-    const __m128i xyz16 = _mm_unpacklo_epi8(xyzChar, _mm_setzero_si128());
-
-    bval[0] = (byte)_mm_extract_epi16(xyz16, 0);    // cannot use _mm_extract_epi8 because it is an SSE4 instruction
-    bval[1] = (byte)_mm_extract_epi16(xyz16, 1);
-    bval[2] = (byte)_mm_extract_epi16(xyz16, 2);
+    bval[0] = (byte)_mm_extract_epi8(xyzU8, 0);
+    bval[1] = (byte)_mm_extract_epi8(xyzU8, 1);
+    bval[2] = (byte)_mm_extract_epi8(xyzU8, 2);
 #else
     bval[0] = SIGNED_FLOAT_TO_BYTE(x);
     bval[1] = SIGNED_FLOAT_TO_BYTE(y);
@@ -365,9 +360,9 @@ BE_INLINE void VertexGenericLit::SetBiTangentSign(float sign) {
 BE_INLINE void VertexGenericLit::Lerp(const VertexGenericLit &a, const VertexGenericLit &b, const float f) {
     VertexGeneric::Lerp(a, b, f);
 
-    Vec3 normal = BE1::Lerp(a.GetNormal(), b.GetNormal(), f);
-    Vec3 tangent = BE1::Lerp(a.GetTangent(), b.GetTangent(), f);
-    Vec3 bitangent = BE1::Lerp(a.GetBiTangent(), b.GetBiTangent(), f);
+    Vec3 normal = Math::Lerp(a.GetNormal(), b.GetNormal(), f);
+    Vec3 tangent = Math::Lerp(a.GetTangent(), b.GetTangent(), f);
+    Vec3 bitangent = Math::Lerp(a.GetBiTangent(), b.GetBiTangent(), f);
     
     normal.Normalize();
     tangent.Normalize();
@@ -385,7 +380,7 @@ BE_INLINE void VertexGenericLit::Transform(const Mat3x4 &transform) {
 }
 
 BE_INLINE void VertexGenericLit::Transform(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation) {
-    Mat4 matrix;
+    ALIGN_AS32 Mat4 matrix;
     matrix.SetTRS(translation, rotation, scale);
     xyz = matrix * xyz;
     SetNormal(matrix.ToMat3() * GetNormal());
@@ -401,9 +396,9 @@ BE_INLINE void VertexGenericLit::Transform(const Mat3 &rotation, const Vec3 &sca
 */
 
 #if 1
-typedef byte JointWeightType;
+using JointWeightType = byte;
 #else
-typedef float JointWeightType;
+using JointWeightType = float;
 #endif
 
 struct VertexWeight1 {

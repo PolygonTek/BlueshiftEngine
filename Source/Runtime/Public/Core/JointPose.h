@@ -40,17 +40,17 @@ public:
     void                ClearTranslation() { t[0] = t[1] = t[2] = 0; }
     void                ClearScale() { s[0] = s[1] = s[2] = 1.0f; }
 
-    bool                Compare(const JointPose &jointPose, float q_epsilon, float t_epsilon, float s_epsilon) const;
+    bool                Equals(const JointPose &jointPose, float epsilonQ, float epsilonT, float epsilonS) const;
 
     void                SetFromMat3x4(const Mat3x4 &mat);
 
-    Quat                q;  ///< Rotation in quaternion
-    Vec3                t;  ///< Translation vector
-    Vec3                s;  ///< Scaling vector for each axis
+    ALIGN_AS16 Quat     q;  ///< Rotation in quaternion
+    ALIGN_AS16 Vec3     t;  ///< Translation vector
+    ALIGN_AS16 Vec3     s;  ///< Scaling vector for each axis
 };
 
-BE_INLINE bool JointPose::Compare(const JointPose &jointPose, float q_epsilon, float t_epsilon, float s_epsilon) const {
-    return (q.Equals(jointPose.q, q_epsilon) && t.Equals(jointPose.t, t_epsilon) && s.Equals(jointPose.s, s_epsilon)) ? true : false;
+BE_INLINE bool JointPose::Equals(const JointPose &jointPose, float epsilonQ, float epsilonT, float epsilonS) const {
+    return (q.Equals(jointPose.q, epsilonQ) && t.Equals(jointPose.t, epsilonT) && s.Equals(jointPose.s, epsilonS)) ? true : false;
 } 
 
 BE_INLINE JointPose &JointPose::operator-=(const JointPose &baseJointPose) {
@@ -85,7 +85,7 @@ BE_INLINE void JointPose::SetFromMat3x4(const Mat3x4 &mat) {
     this->t[1] = mat[1][3];
     this->t[2] = mat[2][3];
 
-    // column major order 3x3 matrix that has rotation only
+    // Column major order 3x3 matrix that has rotation only.
     Vec3 invS = 1.0f / this->s;
     Mat3 r;
     r[0][0] = mat[0][0] * invS.x;
@@ -116,8 +116,10 @@ public:
 
     static short            QuatToShort(const float x);
     static float            ShortToQuat(const short x);
+
     static short            TranslationToShort(const float x);
     static float            ShortToTranslation(const short x);
+
     static short            ScaleToShort(const float x);
     static float            ShortToScale(const short x);
 
@@ -164,7 +166,7 @@ BE_INLINE Quat CompressedJointPose::ToQuat() const {
     quat.x = ShortToQuat(q[0]);
     quat.y = ShortToQuat(q[1]);
     quat.z = ShortToQuat(q[2]);
-    // Take the absolute value because floating point rounding may cause the dot of x, y, z to be larger than 1
+    // Take the absolute value because floating point rounding may cause the dot of x, y, z to be larger than 1.
     quat.w = Math::Sqrt(Math::Fabs(1.0f - (quat.x * quat.x + quat.y * quat.y + quat.z * quat.z)));
     return quat;
 }

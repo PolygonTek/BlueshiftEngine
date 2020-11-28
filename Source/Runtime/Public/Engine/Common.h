@@ -25,18 +25,20 @@ class Common {
 public:
     struct PlatformId {
         enum Enum {
-            ID_Windows,
-            ID_Linux,
-            ID_MacOS,
-            ID_IOS,
-            ID_Android
+            WindowsId,
+            LinuxId,
+            MacOSId,
+            IOSId,
+            AndroidId
         };
     };
 
     void                Init(const char *baseDir);
     void                Shutdown();
 
-    void                RunFrame(int frameMsec);
+    void                RunFrame(int elapsedMsec);
+
+    bool                WithEditor() const;
 
     PlatformId::Enum    GetPlatformId() const;
 
@@ -46,7 +48,6 @@ public:
 
     int                 realTime;       // absolute time in milliseconds
     int                 frameTime;      // frame time in milliseconds
-    float               frameSec;       // frame time in seconds
 
 private:
     void                SaveConfig(const char *filename);

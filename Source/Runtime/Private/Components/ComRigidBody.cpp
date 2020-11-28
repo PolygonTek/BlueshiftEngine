@@ -155,7 +155,7 @@ void ComRigidBody::AddChildShapeRecursive(const Mat3x4 &parentWorldMatrixInverse
     
     ComTransform *transform = entity->GetTransform();
 
-    Mat3x4 localTransform = parentWorldMatrixInverse * Mat3x4(transform->GetAxis(), transform->GetOrigin());
+    ALIGN_AS32 Mat3x4 localTransform = parentWorldMatrixInverse * Mat3x4(transform->GetAxis(), transform->GetOrigin());
     localTransform.FixDegeneracies();
 
     PhysShapeDesc &shapeDesc = shapeDescs.Alloc();
@@ -163,7 +163,7 @@ void ComRigidBody::AddChildShapeRecursive(const Mat3x4 &parentWorldMatrixInverse
     shapeDesc.localAxis = localTransform.ToMat3();
     shapeDesc.collider = collider->GetCollider();
 
-    for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+    for (Entity *childEntity = entity->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
         AddChildShapeRecursive(parentWorldMatrixInverse, childEntity, shapeDescs);
     }
 }
@@ -181,8 +181,8 @@ void ComRigidBody::AddChildWheelRecursive(const Mat3x4 &parentWorldMatrixInverse
 
         ComTransform *transform = entity->GetTransform();
 
-        Mat3x4 worldTransform = Mat3x4(transform->GetAxis(), transform->GetOrigin()) * Mat3x4(vehicleWheel->localAxis, vehicleWheel->localOrigin);
-        Mat3x4 localTransform = parentWorldMatrixInverse * worldTransform;
+        ALIGN_AS32 Mat3x4 worldTransform = Mat3x4(transform->GetAxis(), transform->GetOrigin()) * Mat3x4(vehicleWheel->localAxis, vehicleWheel->localOrigin);
+        ALIGN_AS32 Mat3x4 localTransform = parentWorldMatrixInverse * worldTransform;
         localTransform.FixDegeneracies();
 
         PhysWheelDesc &wheelDesc = wheelDescs.Alloc();
@@ -199,7 +199,7 @@ void ComRigidBody::AddChildWheelRecursive(const Mat3x4 &parentWorldMatrixInverse
         wheelDesc.rollingInfluence = vehicleWheel->GetRollingInfluence();
     }
 
-    for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+    for (Entity *childEntity = entity->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
         AddChildWheelRecursive(parentWorldMatrixInverse, childEntity, wheelDescs, vehicleWheels);
     }
 }
@@ -217,7 +217,7 @@ void ComRigidBody::CreateBody() {
 
     ComTransform *transform = GetEntity()->GetTransform();
 
-    Mat3x4 worldMatrixNoScaleInverse = transform->GetMatrixNoScale().Inverse();
+    ALIGN_AS32 Mat3x4 worldMatrixNoScaleInverse = transform->GetMatrixNoScale().Inverse();
 
     physicsDesc.origin = transform->GetOrigin();
     physicsDesc.axis = transform->GetAxis();
@@ -237,7 +237,7 @@ void ComRigidBody::CreateBody() {
     }
 
     // Collect collider shadpes in children recursively
-    for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+    for (Entity *childEntity = entity->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
         AddChildShapeRecursive(worldMatrixNoScaleInverse, childEntity, physicsDesc.shapes);
     }
 
@@ -267,7 +267,7 @@ void ComRigidBody::CreateBody() {
     // Collect vehicle wheels in children recursively
     Array<ComVehicleWheel *> vehicleWheels;
     PhysVehicleDesc vehicleDesc;
-    for (Entity *childEntity = entity->GetNode().GetChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+    for (Entity *childEntity = entity->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
         AddChildWheelRecursive(worldMatrixNoScaleInverse, childEntity, vehicleDesc.wheels, vehicleWheels);
     }
 

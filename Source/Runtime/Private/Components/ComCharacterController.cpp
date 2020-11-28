@@ -86,7 +86,7 @@ void ComCharacterController::Init() {
     ComTransform *transform = GetEntity()->GetTransform();
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComCharacterController::TransformUpdated, SignalObject::ConnectionType::Unique);
 
-    // Mark as initialized
+    // Mark as initialized.
     SetInitialized(true);
 }
 
@@ -177,7 +177,7 @@ void ComCharacterController::GroundTrace() {
     Vec3 p1 = origin;
     Vec3 p2 = p1;
 
-    // 땅에 닿아있는지 체크하기위해 z 축으로 6cm 만큼 내려서 이동시켜 본다
+    // Move down 6 cm on the z axis to check if it is touching the ground.
     p2.z -= CentiToUnit(6.0f);
 
     int filterMask = GetGameWorld()->GetPhysicsWorld()->GetCollisionFilterMask(body->GetCollisionFilterBit());
@@ -190,7 +190,7 @@ void ComCharacterController::GroundTrace() {
 
     isValidGroundTrace = true;
 
-    // FIXME: speration normal 이 아닌 표면의 normal 과 비교해야 한다
+    // FIXME: Should be compared with the surface normal, not the speration normal.
     if (groundTrace.normal.z < slopeDotZ) {
         onGround = false;
         return;
@@ -205,7 +205,7 @@ void ComCharacterController::RecoverFromPenetration() {
     int numPenetrationLoop = 0;
     while (1) {
         numPenetrationLoop++;
-        // 최대 4 번까지 iteration
+        // Repeat up to 4 times.
         if (numPenetrationLoop > 4) {
             break;
         }
@@ -226,14 +226,14 @@ void ComCharacterController::RecoverFromPenetration() {
             if (contact.dist < maxPen) {
                 maxPen = contact.dist;
 
-                // 한번에 밀어내지 않고, 가장 깊이 penetration 된 contact 부터 조금씩 밀어낸다.
+                // Don't pushed out at once, but gradually pushes out from the deepest penetration contact.
                 origin -= contact.normal * contact.dist * 0.25f;
 
                 //BE_LOG("%s (%f) -> %s\n", contact.normal.ToString(), contact.dist, origin.ToString());
             }
         }
 
-        // 다 밀어냈다면 종료
+        // Quit, if pushed it all out.
         if (maxPen == 0) {
             break;
         }
@@ -260,19 +260,19 @@ void ComCharacterController::OnInactive() {
 
 bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
     const float backoffScale = 1.0001f;
-    CastResultEx trace;
+    CastResult trace;
     Vec3 moveVec = moveVector;
     Vec3 slideVec;
 
-    // bump normal 리스트를 작성한다. 
+    // Create a bump normal list.
     Vec3 bumpNormals[5];
     int numBumpNormals = 0;
     
     if (isValidGroundTrace) {
-        // 땅 바닥과 슬라이드
+        // Slide along the ground floor.
         moveVec = moveVec.Slide(groundTrace.normal, backoffScale);
 
-        // 땅 바닥 normal 을 bump normal 리스트에 추가
+        // Add ground floor normal to the bump normal list.
         bumpNormals[numBumpNormals++] = groundTrace.normal;
     }
 
@@ -280,7 +280,7 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
         return false;
     }
 
-    // 시작 move 방향을 bump normal 리스트에 추가
+    // Add starting move direction to the bump normal list.
     bumpNormals[numBumpNormals] = moveVec;
     bumpNormals[numBumpNormals].Normalize();
     numBumpNormals++;
@@ -290,34 +290,34 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
         Vec3 targetPos = origin + moveVec * f;
 
         int filterMask = GetGameWorld()->GetPhysicsWorld()->GetCollisionFilterMask(body->GetCollisionFilterBit());
-        // origin 에서 targetPos 로 capsule cast 
+        // capsule cast from origin to targetPos.
         GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, origin, targetPos, filterMask, trace);
 
-        // 이동 가능한 fraction 만큼 origin 이동
+        // Move origin by a moveable fraction.
         if (trace.fraction > 0.0f) {
             origin = trace.endPos;
             numBumpNormals = 0;
         }
         
-        // cast 결과 충돌이 없다면 종료
+        // Exit if no collision occured after cast.
         if (trace.fraction == 1.0f) {
             break;
         }
 
-        // 이동한 만큼 이동거리를 빼준다.
+        // Subtract the distance traveled by.
         f -= f * trace.fraction;
 
         //BE_LOG("%i %f\n", bumpCount, trace.normal.z);
         //GetGameWorld()->GetRenderWorld()->SetDebugColor(Vec4Color::cyan, Vec4(0, 0, 0, 0));
         //GetGameWorld()->GetRenderWorld()->DebugLine(trace.point, trace.point + trace.normal * 10, 1, false, 10000);
 
-        // 누적된 bump normals 의 최대 개수를 초과했다면..
+        // If the maximum number of accumulated bump normals is exceeded..
         if (numBumpNormals >= COUNT_OF(bumpNormals)) {
-            // 여기로 오면 안된다. 혹시나 만약 오게되면 여기서 종료.
+            // You should not come here. If you come, quit here.
             return true;
         }
 
-        // 같은 평면에 부딛혔다면 moveVec 을 normal 방향으로 약간 nudge 시킨다.
+        // If it hits the same plane, nudge moveVec slightly in the normal direction.
         int i = 0;
         for (; i < numBumpNormals; i++) {
             if (trace.normal.Dot(bumpNormals[i]) > 0.99f) {
@@ -330,16 +330,16 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
             continue;
         }
 
-        // 부딪힌 normal 을 추가
+        // Add bumpped normal.
         bumpNormals[numBumpNormals++] = trace.normal;
 
         for (int i = 0; i < numBumpNormals; i++) {
-            // moveVec 방향으로 부딪힐 수 없는 normal 은 제외
+            // Except normal, which cannot be hit in the direction of moveVec.
             if (moveVec.Dot(bumpNormals[i]) >= 0.0f) {
                 continue;
             }
 
-            // 부딪힌 normal 로 slide
+            // Slide using bumpped normal.
             slideVec = moveVec.Slide(bumpNormals[i], backoffScale);
 
             for (int j = 0; j < numBumpNormals; j++) {
@@ -351,17 +351,16 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
                     continue;
                 }
 
-                // 또 다시 다른 평면으로 slide 
+                // Slide using another bumpped normal.
                 slideVec = slideVec.Slide(bumpNormals[j], backoffScale);
 
                 if (slideVec.Dot(bumpNormals[i]) >= 0.0f) {
                     continue;
                 }
                 
-                // 두번째 slide vector 가 첫번째 부딛힌 normal 과 또 부딛힌다면, cross 방향으로 slide
+                // If the second slide vector collides with the first normal, it should be slided in the direction of the cross of the two normals.
                 Vec3 slideDir = bumpNormals[i].Cross(bumpNormals[j]);
-                slideDir.Normalize();
-                slideVec = slideDir * slideDir.Dot(moveVec);
+                slideVec = moveVec.ProjectTo(slideDir);
 
                 slideVec += (bumpNormals[i] + bumpNormals[j]) * 0.01f;
                 
@@ -374,7 +373,7 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
                         continue;
                     }
 
-                    // 다른 normal 과 또 부딛힌다면 slide 를 멈춘다.
+                    // Collided another normal again, stop the slide.
                     return true;
                 }
             }
@@ -455,14 +454,14 @@ void ComCharacterController::SetSlopeLimit(const float slopeLimit) {
     this->slopeDotZ = Math::Cos(DEG2RAD(slopeLimit));
 }
 
-#if 1
-void ComCharacterController::DrawGizmos(const RenderCamera::State &viewState, bool selected) {
+#if WITH_EDITOR
+void ComCharacterController::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
-    if (selected) {
+    if (selectedByParent) {
         const ComTransform *transform = GetEntity()->GetTransform();
 
-        if (transform->GetOrigin().DistanceSqr(viewState.origin) < MeterToUnit(500.0f * 500.0f)) {
+        if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(500.0f * 500.0f)) {
             float scaledRadius = (transform->GetScale() * capsuleRadius).MaxComponent();
             float scaledHeight = transform->GetScale().z * capsuleHeight;
 

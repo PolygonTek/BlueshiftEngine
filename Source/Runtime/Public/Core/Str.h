@@ -67,7 +67,7 @@ public:
 #endif
 
 #ifdef __ANDROID__
-    /// Constructs from a jstring
+    /// Constructs from a jstring.
     Str(JNIEnv *env, jstring javaString) : Str() {
         const char *raw = env->GetStringUTFChars(javaString, 0);
         jsize l = env->GetStringLength(javaString);
@@ -102,27 +102,37 @@ public:
     /// Destructs.
     ~Str();
 
-                        /// Return the const C string.
+                        /// Returns the const C string.
     const char *        c_str() const { return data; }
-                        /// Return the const C string.
+                        /// Returns the const C string.
                         operator const char *() const { return data; }
-                        /// Return the C string.
+                        /// Returns the C string.
                         operator char *() const { return data; }
 
-                        /// Return const char at index.
+                        /// Returns a const reference to the character at index.
     const char &        operator[](int index) const;
-                        /// Return char at index.
+                        /// Returns a reference to the character at index.
     char &              operator[](int index);
-                        /// Return char at index.
+                        /// Returns a const refernece to the character at index.
+    const char &        At(int index) const { return (*this)[index]; }
+                        /// Returns a reference to the character at index.
     char &              At(int index) { return (*this)[index]; }
+                        /// Returns the first character in the string.
+    const char          FirstChar() const { return (*this)[0]; }
+                        /// Returns a reference to the first character in the string.
+    char &              FirstChar() { return (*this)[0]; }
+                        /// Returns the last character in the string.
+    const char          LastChar() const { return (*this)[len - 1]; }
+                        /// Returns a reference to the last character in the string.
+    char &              LastChar() { return (*this)[len - 1]; }
 
-                        /// Returns length
+                        /// Returns the number of characters in this string.
     int                 Length() const { return len; }
                         /// Returns total size of allocated memory.
     size_t              Allocated() const;
                         /// Returns total size of allocated memory including size of this type.
     size_t              Size() const;
-                        /// Clear the string.
+                        /// Clears the contents of the string and makes it null.
     void                Clear();
                         /// Return whether the string is empty.
     bool                IsEmpty() const;
@@ -270,7 +280,7 @@ public:
                         /// [abc...]   match any of the enclosed characters; a hyphen can
                         ///            be used to specify a range (e.g. a-z, A-Z, 0-9)
     bool                Filter(const char *filter, bool caseSensitive = true) const;
-                        /// Strip whole quoted string to unquoted string
+                        /// Strip whole quoted string to unquoted string.
     Str &               StripQuotes();
 
                         /// Replaces 'n' characters beginning at index position with the string after and returns a reference to this string.
@@ -294,7 +304,7 @@ public:
                         /// Returns a string that contains 'n' characters of this string, starting at the specified 'position' index.
     Str                 Mid(int start, int n) const;
 
-                        /// Returns comma added string. ex) 10000 -> 10,000
+                        /// Returns comma added string. ex) 10000 -> 10,000.
     Str                 Commafy() const;
 
     Str                 NumberedName(int *number) const;
@@ -302,11 +312,11 @@ public:
                         /// Set formatted string.
     int BE_CDECL        sPrintf(const char *formatString, ...);
     
-                        /// Hash key for the filename (skips extension)
+                        /// Hash key for the filename (skips extension).
     int                 FileNameHash() const;
-                        /// Converts '\' to '/'
+                        /// Converts '\' to '/'.
     Str &               BackSlashesToSlashes();
-                        /// Converts '/' to '\'
+                        /// Converts '/' to '\'.
     Str &               SlashesToBackSlashes();
                         /// Converts absolute path to relative path.
     const Str           ToRelativePath(const char *basePath) const;
@@ -380,6 +390,8 @@ public:
     
     friend int BE_CDECL sprintf(Str &dest, const char *fmt, ...);
     friend int BE_CDECL vsprintf(Str &dest, const char *fmt, va_list ap);
+
+    int                 ToHash() const { return Hash(data); }
  
     static int          Hash(const char *string);
     static int          Hash(const char *string, int length);
@@ -397,21 +409,21 @@ public:
     static int          ColorIndex(int c);
 
 #if __OBJC__
-                        /// Convert Str to Objective-C NSString
+                        /// Convert Str to Objective-C NSString.
     NSString *          ToNSString() const {
         return [[NSString alloc] initWithBytes:data length:Length() encoding:NSUTF8StringEncoding];
     }
 #endif
 
 #ifdef QSTRING_H
-                        /// Convert Str to QString
+                        /// Convert Str to QString.
     QString             ToQString() const {
         return QString::fromUtf8(data, len);
     }
 #endif
 
 #ifdef __ANDROID__
-                        /// Convert Str to jstring
+                        /// Convert Str to jstring.
     jstring             ToJavaString(JNIEnv *env) const {
         jstring javaString = env->NewStringUTF(data);
         return javaString;

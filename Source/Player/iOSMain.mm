@@ -49,32 +49,6 @@
 
 @implementation RootViewController
 
-static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
-    static int t0 = 0;
-    
-    if (t0 == 0) {
-        t0 = BE1::PlatformTime::Milliseconds();
-    }
-    
-    int t = BE1::PlatformTime::Milliseconds();
-    int elapsedMsec = t - t0;
-    if (elapsedMsec > 1000) {
-        elapsedMsec = 1000;
-    }
-
-    t0 = t;
-
-    BE1::Engine::RunFrame(elapsedMsec);
-    
-    BE1::gameClient.RunFrame();
-    
-    app.Update();
-
-    app.Draw();
-
-    BE1::gameClient.EndFrame();
-}
-
 - (void)loadView {
     CGRect frame = [[UIScreen mainScreen] bounds];
     
@@ -389,30 +363,49 @@ static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum dev
     return RenderQuality::Low;
 }
 
+static void DisplayContext(BE1::RHI::Handle context, void *dataPtr) {
+    static int t0 = 0;
+    
+    if (t0 == 0) {
+        t0 = BE1::PlatformTime::Milliseconds();
+    }
+    
+    int t = BE1::PlatformTime::Milliseconds();
+    int elapsedMsec = t - t0;
+    BE1::Clamp(elapsedMsec, 0, 1000);
+
+    t0 = t;
+
+    BE1::Engine::RunFrame(elapsedMsec);
+    
+    BE1::gameClient.Update();
+    
+    app.Update();
+
+    app.Draw();
+
+    BE1::gameClient.EndFrame();
+}
+
 - (void)initInstance {
     // ----- Core initialization -----
-    BE1::Engine::InitParms initParms;
-    
     BE1::Str appDir = BE1::PlatformFile::ExecutablePath();
-    initParms.baseDir = appDir;
-    
     BE1::Str dataDir = appDir + "/Data";
+    BE1::Str assetDir = dataDir + "/Contents";
 
-    BE1::Str assetDir = dataDir;
-    assetDir.AppendPath("Contents", '/');
-
+    BE1::Engine::InitParms initParms;
+    initParms.baseDir = appDir;
     initParms.searchPath = assetDir + ";" + dataDir;
-
     BE1::Engine::Init(&initParms);
     // -------------------------------
-    
+
     BE1::resourceGuidMapper.Read("Data/guidmap");
     
     // mainWindow(UIWindow) - rootViewController.view(UIView) - eaglView(EAGLView)
     CGRect screenBounds = [[UIScreen mainScreen] bounds];
     mainWindow = [[UIWindow alloc] initWithFrame:screenBounds];
     mainWindow.backgroundColor = [UIColor blackColor];
-    
+
     rootViewController = [[RootViewController alloc] init];
     mainWindow.rootViewController = rootViewController;
     
@@ -497,7 +490,7 @@ static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum dev
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     [self initInstance];
-    
+
     return YES;
 }
 
@@ -505,7 +498,7 @@ static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum dev
     // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
     // Use this method to pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. Games should use this method to pause the game.
     [rootViewController stopAnimation];
-    
+
     app.OnApplicationPause(true);
 }
 
@@ -523,14 +516,14 @@ static RenderQuality::Enum DetermineRenderQuality(BE1::IOSDevice::Type::Enum dev
 - (void)applicationDidBecomeActive:(UIApplication *)application {
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
     [rootViewController startAnimation];
-    
+
     app.OnApplicationPause(false);
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application {
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     app.OnApplicationTerminate();
-    
+
     [self shutdownInstance];
 }
 

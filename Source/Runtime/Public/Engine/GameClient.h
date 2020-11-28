@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "Input/InputSystem.h"
+
 BE_NAMESPACE_BEGIN
 
 struct KeyFocus {
@@ -51,6 +53,7 @@ struct DrawTextFlag {
 
 class Font;
 class Material;
+class RenderContext;
 
 class GameClient {
 public:
@@ -63,8 +66,10 @@ public:
     void                    EnableConsole(bool flag);
     void                    ClearCommandLine();
 
-    void                    RunFrame();
+    void                    Update();
     void                    EndFrame();
+
+    void                    Render(const RenderContext *renderContext);
 
     KeyFocus::Enum          GetKeyFocus() const { return keyFocus; }
     void                    SetKeyFocus(KeyFocus::Enum keyFocus) { this->keyFocus = keyFocus; }
@@ -91,10 +96,16 @@ public:
     void                    MouseMoveEvent(int x, int y, int time);
     void                    MouseDeltaEvent(int dx, int dy, int time);
     void                    JoyAxisEvent(int dx, int dy, int time);
-    void                    TouchEvent(InputSystem::Touch::Phase phase, uint64_t touchId, int x, int y, int time);
+    void                    TouchEvent(InputSystem::Touch::Phase::Enum phase, uint64_t touchId, int x, int y, int time);
     void                    PacketEvent();
 
-    void                    DrawConsole();
+    int                     GetFPS() const { return fps; }
+
+    bool                    IsMenuBarVisible() const { return showMenuBar; }
+    void                    ShowMenuBar(bool show);
+
+    bool                    IsStatisticsVisible() const { return showStatistics; }
+    void                    ShowStatistics(bool show);
 
 private:
     void                    InitDefaultGuids();
@@ -103,6 +114,9 @@ private:
     void                    ConsoleCompositionEvent(char32_t ch);
     void                    UpdateConsole();
 
+    void                    DrawMenuBar();
+    void                    DrawStatistics(const RenderContext *renderContext);
+    void                    DrawConsole();
     void                    DrawConsoleScreen();
     void                    DrawConsoleNotify();
     void                    DrawConsoleCmdLine();
@@ -116,6 +130,11 @@ private:
     int                     fps;
     int                     fpsFrames;
     int                     fpsFrametime;
+
+    bool                    showMenuBar = false;
+    bool                    showStatistics = false;
+
+    float                   menuBarHeight;
     
     Color4                  currentColor;
     Color4                  currentTextColor;
@@ -139,6 +158,8 @@ private:
     static void             Cmd_Connect(const CmdArgs &args);
     static void             Cmd_Disconnect(const CmdArgs &args);
     static void             Cmd_ToggleConsole(const CmdArgs &args);
+    static void             Cmd_ToggleMenuBar(const CmdArgs &args);
+    static void             Cmd_ToggleStatistics(const CmdArgs &args);
 };
 
 extern GameClient           gameClient;

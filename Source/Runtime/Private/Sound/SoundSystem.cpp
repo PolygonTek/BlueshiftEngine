@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -280,9 +280,9 @@ Sound *SoundSystem::GetSound(const char *hashName) {
     return sound;
 }
 
-// TODO: SoundSystem::Update 함수를 별도 쓰레드로 바꿀것
+// TODO: Use thread for SoundSystem::Update()
 void SoundSystem::Update() {
-    BE_PROFILE_CPU_SCOPE("SoundSystem::Update", Color3::violet);
+    BE_PROFILE_CPU_SCOPE_STATIC("SoundSystem::Update");
 
     if (!initialized) {
         return;
@@ -331,10 +331,12 @@ void SoundSystem::Update() {
         prioritySounds.Append(sound);
     }
 
-    // Sort sounds by priority decending order
-    prioritySounds.StableSort([](const Sound *a, const Sound *b) {
-        return a->priority - b->priority > 0;
-    });
+    if (prioritySounds.Count() > 1) {
+        // Sort sounds by priority decending order
+        prioritySounds.StableSort([](const Sound *a, const Sound *b) {
+            return a->priority - b->priority > 0;
+        });
+    }
 
     // Stop sources that have lower priority first
     int soundIndex = prioritySounds.Count() - 1;
@@ -406,7 +408,9 @@ void SoundSystem::Update() {
         }
     }
 
-    PlaceListenerInternal(listenerPosition, listenerForward, listenerUp);
+    if (prioritySounds.Count() > 0) {
+        PlaceListenerInternal(listenerPosition, listenerForward, listenerUp);
+    }
 }
 
 //--------------------------------------------------------------------------------------------------

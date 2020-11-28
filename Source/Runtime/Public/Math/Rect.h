@@ -27,6 +27,7 @@
 BE_NAMESPACE_BEGIN
 
 class Point;
+class RectF;
 
 /// A 2D integral (x,y), (w,h) - rectangle.
 class BE_API Rect {
@@ -35,7 +36,7 @@ public:
     Rect() = default;
     /// Constructs from coordinates.
     constexpr Rect(int x, int y, int w, int h);
-    /// Assignment operator
+    /// Assignment operator.
     Rect &operator=(const Rect &rhs);
 
 #ifdef QRECT_H
@@ -51,11 +52,19 @@ public:
     /// Constructs from a point.
     explicit constexpr Rect(const Point &p);
 
+                        /// Returns the x-coordinate of edge of the rectangle.
     int                 X2() const { return x + w; }
+                        /// Returns the y-coordinate of edge of the rectangle.
     int                 Y2() const { return y + h; }
 
-                        /// Returns a center point of this rect
-    Point               Center() const { return Point(x + (w >> 1), y + (h >> 1)); }
+                        /// Returns a point of this rect with the given index.
+    Point               GetPoint(int index) const;
+
+                        /// Returns a center point of this rect.
+    Point               GetCenter() const { return Point(x + (w >> 1), y + (h >> 1)); }
+
+                        /// Returns size of this rect.
+    Size                GetSize() const { return Size(w, h); }
 
                         /// Casts this Rect to a C array.
                         /// This function simply returns a C pointer view to this data structure.
@@ -71,11 +80,12 @@ public:
     int                 operator[](int index) const;
     int &               operator[](int index);
 
-                        /// Compare with another one
+                        /// Compare with another one.
     bool                operator==(const Rect &rhs) const { return (x != rhs.x || y != rhs.y || w != rhs.w || h != rhs.h) ? false : true; }
-                        /// Compare with another one
+                        /// Compare with another one.
     bool                operator!=(const Rect &rhs) const { return (x != rhs.x || y != rhs.y || w != rhs.w || h != rhs.h) ? true : false; }
 
+                        /// Returns if this rectangle is empty.
     bool                IsEmpty() const { return (w <= 0 || h <= 0) ? true : false; }
 
                         /// Tests whether a point is inside.
@@ -92,6 +102,8 @@ public:
     bool                IsIntersectRect(const int x, const int y, const int w, const int h) const;
 
     void                Set(int x, int y, int w, int h);
+    void                SetPosition(const Point &position);
+    void                SetSize(const Size &size);
     void                SetFrom4Coords(int x, int y, int x2, int y2);
 
     Rect                Add(const Rect &a) const;
@@ -111,20 +123,26 @@ public:
 
     Rect                Shrink(int ax, int ay) const;
     Rect &              ShrinkSelf(int ax, int ay);
+
     Rect                Expand(int ax, int ay) const;
     Rect &              ExpandSelf(int ax, int ay);
 
-                        /// Returns "x y w h"
+    RectF               ToRectF() const;
+
+                        /// Returns "x y w h".
     const char *        ToString() const;
 
-                        /// Creates from the string
+                        /// Creates from the string.
     static Rect         FromString(const char *str);
+
+                        /// Returns dimension of this type.
+    constexpr int       GetDimension() const { return 4; }
 
 #ifdef QRECT_H
     QRect               ToQRect() const { return QRect(x, y, w, h); }
 #endif
 
-    static const Rect   empty;
+    static const Rect   zero;
 
     int                 x;
     int                 y;
@@ -138,6 +156,16 @@ BE_INLINE constexpr Rect::Rect(int inX, int inY, int inW, int inH) :
 
 BE_INLINE constexpr Rect::Rect(const Point &p) :
     x(p.x), y(p.y), w(1), h(1) {
+}
+
+BE_INLINE Point Rect::GetPoint(int index) const {
+    switch (index) {
+    case 0: return Point(x, y);
+    case 1: return Point(x + w, y);
+    case 2: return Point(x + w, y + h);
+    case 3: return Point(x, y + h);
+    }
+    return Point::zero;
 }
 
 BE_INLINE Rect &Rect::operator=(const Rect &rhs) {
@@ -163,7 +191,7 @@ BE_INLINE bool Rect::IsContainPoint(const Point &pt) const {
 }
 
 BE_INLINE bool Rect::IsContainPoint(const int x, const int y) const {
-    return (x < this->x || y < this->y || x >= x + this->w || y >= y + this->h) ? false : true;
+    return (x < this->x || y < this->y || x >= this->x + this->w || y >= this->y + this->h) ? false : true;
 }
 
 BE_INLINE bool Rect::IsContainRect(const Rect &a) const {
@@ -189,6 +217,16 @@ BE_INLINE void Rect::Set(int x, int y, int w, int h) {
     this->h = h;
 }
 
+BE_INLINE void Rect::SetPosition(const Point &position) {
+    this->x = position.x;
+    this->y = position.y;
+}
+
+BE_INLINE void Rect::SetSize(const Size &size) {
+    this->w = size.w;
+    this->h = size.h;
+}
+
 BE_INLINE void Rect::SetFrom4Coords(int x, int y, int x2, int y2) {
     this->x = x;
     this->y = y;
@@ -197,7 +235,7 @@ BE_INLINE void Rect::SetFrom4Coords(int x, int y, int x2, int y2) {
 }
 
 BE_INLINE const char *Rect::ToString() const {
-    return Str::IntegerArrayToString((const int *)(*this), 4);
+    return Str::IntegerArrayToString((const int *)(*this), GetDimension());
 }
 
 BE_NAMESPACE_END

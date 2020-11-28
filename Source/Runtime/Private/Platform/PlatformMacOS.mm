@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "PlatformGeneric.h"
 #include "PlatformMacOS.h"
+#include "Platform/PlatformSystem.h"
 #include "Math/Math.h"
 
 BE_NAMESPACE_BEGIN
@@ -58,7 +59,9 @@ void PlatformMacOS::Error(const char *msg) {
     [alert setInformativeText:nsmsg];
     [alert setAlertStyle:NSAlertStyleCritical];
     [alert runModal];
-    
+
+    PlatformSystem::DebugBreak();
+
     Quit();
 }
 

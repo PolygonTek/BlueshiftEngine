@@ -123,7 +123,7 @@ public:
 
                     /// Deletes each elements. 
                     /// This is valid operation only for pointer typed array.
-                    /// param @clear call clear function.
+                    /// param @clear call Clear() function.
     void            DeleteContents(bool clear);
 
                     /// Releases any memory not required to store the items.
@@ -333,7 +333,7 @@ BE_INLINE void Array<T>::SetGranularity(int newGranularity) {
     granularity = newGranularity;
 
     if (elements) {
-        // granularity 에 맞게 resize
+        // Resize according to granularity.
         int newCapacity = count + granularity - 1;
         newCapacity -= newCapacity % granularity;
         if (newCapacity != capacity) {
@@ -420,7 +420,7 @@ BE_INLINE void Array<T>::Resize(int newCapacity) {
     }
 
     if (newCapacity == capacity) {
-        // capacity 가 바뀌지 않았다면 그냥 return
+        // Stop here if the capacity is not changed.
         return;
     }
 

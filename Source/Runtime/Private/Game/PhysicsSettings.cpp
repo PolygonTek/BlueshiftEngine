@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "File/FileSystem.h"
+#include "IO/FileSystem.h"
 #include "Game/PhysicsSettings.h"
 #include "Physics/Physics.h"
 
@@ -47,7 +47,7 @@ int PhysicsSettings::GetSolver() const {
 }
 
 void PhysicsSettings::SetSolver(int solver) {
-    return physicsWorld->SetConstraintSolver((PhysicsWorld::ConstraintSolver)solver);
+    return physicsWorld->SetConstraintSolver((PhysicsWorld::ConstraintSolver::Enum)solver);
 }
 
 int PhysicsSettings::GetSolverIterations() const {
