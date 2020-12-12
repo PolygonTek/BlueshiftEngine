@@ -168,6 +168,8 @@ public:
     bool                IsIntersectTriangle(const Vec3 &v0, const Vec3 &v1, const Vec3 &v2) const;
                         /// Tests if this AABB intersect with the given line segment.
     bool                IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
+                        /// Tests if this AABB intersect with the given plane.
+    bool                IsIntersectPlane(const Plane &plane) const;
 
                         /// Intersects a ray with this AABB.
                         /// Returns false if there is no intersection.

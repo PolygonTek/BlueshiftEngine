@@ -199,6 +199,18 @@ bool AABB::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     return true;
 }
 
+bool AABB::IsIntersectPlane(const Plane &plane) const {
+    Vec3 c = Center();
+    Vec3 e = Extents();
+
+    // Compute the projection interval radius of the AABB onto L(t) = aabb.center + t * plane.normal;
+    float r = e[0] * Math::Abs(plane.normal[0]) + e[1] * Math::Abs(plane.normal[1]) + e[2] * Math::Abs(plane.normal[2]);
+    // Compute the distance of the box center from plane.
+    float s = plane.Distance(c);
+
+    return Math::Abs(s) <= r;
+}
+
 bool AABB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const {
     float tmin = -FLT_MAX;
     float tmax = FLT_MAX;
