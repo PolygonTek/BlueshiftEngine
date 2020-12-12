@@ -15,6 +15,10 @@
 #include "Precompiled.h"
 #include "Application.h"
 
+#ifdef ENABLE_IMGUI
+#include "imgui/imgui.h"
+#endif
+
 struct Vertex2D {
     BE1::Vec2       position;
     BE1::Vec2       texCoord;
