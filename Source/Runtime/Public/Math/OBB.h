@@ -145,6 +145,8 @@ public:
     bool                IsIntersectSphere(const Sphere &sphere) const;
                         /// Tests if this OBB intersect with the given line segment.
     bool                IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
+                        /// Tests if this AABB intersect with the given plane.
+    bool                IsIntersectPlane(const Plane &plane) const;
 
                         /// Intersects a ray with this OBB.
                         /// Returns false if there is no intersection.

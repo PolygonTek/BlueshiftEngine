@@ -559,6 +559,17 @@ bool OBB::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     return true;
 }
 
+bool OBB::IsIntersectPlane(const Plane &plane) const {
+    // Compute the projection interval radius of the OBB onto L(t) = center + t * plane.normal;
+    float r = extents[0] * Math::Abs(axis[0].Dot(plane.normal)) +
+              extents[1] * Math::Abs(axis[1].Dot(plane.normal)) +
+              extents[2] * Math::Abs(axis[2].Dot(plane.normal));
+    // Compute the distance of the box center from plane.
+    float s = plane.Distance(center);
+
+    return Math::Abs(s) <= r;
+}
+
 bool OBB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const {
     float tmin = -FLT_MAX;
     float tmax = FLT_MAX;
