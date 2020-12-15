@@ -215,23 +215,29 @@ bool AABB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) co
     float tmin = -FLT_MAX;
     float tmax = FLT_MAX;
 
+    // For all three slabs.
     for (int i = 0; i < 3; i++) {
         if (Math::Fabs(ray.dir[i]) < 0.000001f) {
+            // Ray is parallel to slab. No hit if origin not within slab.
             if (ray.origin[i] < b[0][i] || ray.origin[i] > b[1][i]) {
                 return false;
             }
         } else {
+            // Compute intersection ray.dir value of ray with near and far plane of slab.
             float ood = 1.0f / ray.dir[i];
             float t1 = (b[0][i] - ray.origin[i]) * ood;
             float t2 = (b[1][i] - ray.origin[i]) * ood;
-            
+
+            // Make t1 be intersection with near plane, t2 with far plane.
             if (t1 > t2) {
                 Swap(t1, t2);
             }
-            
+
+            // Compute the intersection of slab intersection intervals.
             tmin = Max(tmin, t1);
             tmax = Min(tmax, t2);
 
+            // Exit with no collision as soon as slab intersection becomes empty.
             if (tmin > tmax) {
                 return false;
             }

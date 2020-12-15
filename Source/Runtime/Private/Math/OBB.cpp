@@ -574,26 +574,32 @@ bool OBB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) con
     float tmin = -FLT_MAX;
     float tmax = FLT_MAX;
 
+    // For all three slabs.
     for (int i = 0; i < 3; i++) {
-        float ld = ray.dir.Dot(axis[i]);
-        float ls = (ray.origin - center).Dot(axis[i]);
+        float localDir = ray.dir.Dot(axis[i]);
+        float localPos = (ray.origin - center).Dot(axis[i]);
 
-        if (Math::Fabs(ld) < 0.000001f) {
-            if (ls < -extents[i] || ls > extents[i]) {
+        if (Math::Fabs(localDir) < 0.000001f) {
+            // Ray is parallel to slab. No hit if origin not within slab.
+            if (localPos < -extents[i] || localPos > extents[i]) {
                 return false;
             }
         } else {
-            float ood = 1.0f / ld;
-            float t1 = (-extents[i] - ls) * ood;
-            float t2 = (+extents[i] - ls) * ood;
-            
+            // Compute intersection ray.dir value of ray with near and far plane of slab.
+            float ood = 1.0f / localDir;
+            float t1 = (-extents[i] - localPos) * ood;
+            float t2 = (+extents[i] - localPos) * ood;
+
+            // Make t1 be intersection with near plane, t2 with far plane.
             if (t1 > t2) {
                 Swap(t1, t2);
             }
 
+            // Compute the intersection of slab intersection intervals.
             tmin = Max(tmin, t1);
             tmax = Min(tmax, t2);
-            
+
+            // Exit with no collision as soon as slab intersection becomes empty.
             if (tmin > tmax) {
                 return false;
             }
