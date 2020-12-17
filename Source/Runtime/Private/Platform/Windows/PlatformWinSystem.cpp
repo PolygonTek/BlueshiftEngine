@@ -71,7 +71,7 @@ const char *PlatformWinSystem::UserDocumentDir() {
         wchar_t wUserDocumentDir[1024];
 
         // Get the My Documents directory
-        if (!SUCCEEDED(::SHGetFolderPathW(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, wUserDocumentDir))) {
+        if (!SUCCEEDED(::SHGetFolderPathW(nullptr, CSIDL_PERSONAL, nullptr, SHGFP_TYPE_CURRENT, wUserDocumentDir))) {
             return nullptr;
         }
         PlatformWinUtils::UCS2ToUTF8(wUserDocumentDir, userDocumentDir, COUNT_OF(userDocumentDir));
@@ -85,7 +85,7 @@ const char *PlatformWinSystem::UserAppDataDir() {
     if (!userAppDataDir[0]) {
         wchar_t wUserAppDataDir[1024];
 
-        if (!SUCCEEDED(::SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, wUserAppDataDir))) {
+        if (!SUCCEEDED(::SHGetFolderPathW(nullptr, CSIDL_LOCAL_APPDATA | CSIDL_FLAG_CREATE, nullptr, SHGFP_TYPE_CURRENT, wUserAppDataDir))) {
             return nullptr;
         }
         PlatformWinUtils::UCS2ToUTF8(wUserAppDataDir, userAppDataDir, COUNT_OF(userAppDataDir));
@@ -114,7 +114,7 @@ int32_t PlatformWinSystem::NumCPUCores() {
     static int32_t numCores = 0;
     if (numCores == 0) {
         // Get only physical cores
-        SYSTEM_LOGICAL_PROCESSOR_INFORMATION *infoBuffer = NULL;
+        SYSTEM_LOGICAL_PROCESSOR_INFORMATION *infoBuffer = nullptr;
         DWORD bufferSize = 0;
 
         // Get the size of the buffer to hold processor information.
@@ -123,7 +123,7 @@ int32_t PlatformWinSystem::NumCPUCores() {
         }
 
         // Allocate the buffer to hold the processor infoBuffer.
-        infoBuffer = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION)malloc(bufferSize);
+        infoBuffer = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION *)malloc(bufferSize);
 
         // Get the actual information.
         if (!GetLogicalProcessorInformation(infoBuffer, &bufferSize)) {
@@ -131,10 +131,10 @@ int32_t PlatformWinSystem::NumCPUCores() {
         }
 
         // Count physical cores
-        const int32_t InfoCount = (int32_t)(bufferSize / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION));
-        for (int32_t Index = 0; Index < InfoCount; ++Index) {
-            SYSTEM_LOGICAL_PROCESSOR_INFORMATION* Info = &infoBuffer[Index];
-            if (Info->Relationship == RelationProcessorCore) {
+        const int32_t infoCount = (int32_t)(bufferSize / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION));
+        for (int32_t index = 0; index < infoCount; index++) {
+            const SYSTEM_LOGICAL_PROCESSOR_INFORMATION *info = &infoBuffer[index];
+            if (info->Relationship == RelationProcessorCore) {
                 numCores++;
             }
         }
@@ -144,7 +144,7 @@ int32_t PlatformWinSystem::NumCPUCores() {
 }
 
 int32_t PlatformWinSystem::NumCPUCoresIncludingHyperthreads() {
-#if (_WIN32_WINNT >= 0x0601)
+#if (_WIN32_WINNT >= _WIN32_WINNT_WIN7)
     static int32_t numCores = 0;
     if (numCores == 0) {
         static int32_t numGroups = GetActiveProcessorGroupCount();

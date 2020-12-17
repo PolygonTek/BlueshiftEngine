@@ -24,7 +24,7 @@ static void SetAffinity(HANDLE thread, int affinity) {
         return;
     }
 
-#if (_WIN32_WINNT >= 0x0601)
+#if (_WIN32_WINNT >= _WIN32_WINNT_WIN7)
     int groups = GetActiveProcessorGroupCount();
     int totalProcessors = 0;
     int group = 0;
