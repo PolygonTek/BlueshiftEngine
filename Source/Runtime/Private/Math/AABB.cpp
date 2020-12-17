@@ -156,43 +156,44 @@ float AABB::Distance(const Vec3 &p) const {
 }
 
 bool AABB::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
-    Vec3 center = (b[0] + b[1]) * 0.5f;
-    Vec3 extents = b[1] - center;
-    Vec3 lineDir = 0.5f * (end - start);
-    Vec3 lineCenter = start + lineDir;
-    Vec3 dir = lineCenter - center;
-    float ld[3];
+    Vec3 e = b[1] - b[0];
+    Vec3 d = end - start;
+    Vec3 m = start + end - b[0] - b[1];
 
     // X 축 투영 거리 비교
-    ld[0] = Math::Fabs(lineDir[0]);
-    if (Math::Fabs(dir[0]) > extents[0] + ld[0]) {
+    float adx = Math::Fabs(d.x);
+    if (Math::Fabs(m.x) > e.x + adx) {
         return false;
     }
 
     // Y 축 투영 거리 비교
-    ld[1] = Math::Fabs(lineDir[1]);
-    if (Math::Fabs(dir[1]) > extents[1] + ld[1]) {
+    float ady = Math::Fabs(d.y);
+    if (Math::Fabs(m.y) > e.y + ady) {
         return false;
     }
     
     // Z 축 투영 거리 비교
-    ld[2] = Math::Fabs(lineDir[2]);
-    if (Math::Fabs(dir[2]) > extents[2] + ld[2]) {
+    float adz = Math::Fabs(d.z);
+    if (Math::Fabs(m.z) > e.z + adz) {
         return false;
     }
+
+    adx += 0.00001f;
+    ady += 0.00001f;
+    adz += 0.00001f;
 
     // 선분의 방향과 AABB 의 축들과의 외적한 축들에 대해서 검사
-    Vec3 cross = lineDir.Cross(dir);
+    //Vec3 cross = m.Cross(d);
 
-    if (Math::Fabs(cross[0]) > extents[1] * ld[2] + extents[2] * ld[1]) {
+    if (Math::Fabs(m.y * d.z - m.z * d.y) > e.y * adz + e.z * ady) {
         return false;
     }
 
-    if (Math::Fabs(cross[1]) > extents[0] * ld[2] + extents[2] * ld[0]) {
+    if (Math::Fabs(m.z * d.x - m.x * d.z) > e.x * adz + e.z * adx) {
         return false;
     }
     
-    if (Math::Fabs(cross[2]) > extents[0] * ld[1] + extents[1] * ld[0]) {
+    if (Math::Fabs(m.x * d.y - m.y * d.x) > e.x * ady + e.y * adx) {
         return false;
     }
 
