@@ -212,6 +212,12 @@ bool PlatformPosixCondition::TimedWait(const PlatformBaseCondition *condition, c
     return true;
 }
 
+void PlatformPosixCondition::Signal(const PlatformBaseCondition *condition) {
+    const PlatformPosixCondition *posixCondition = static_cast<const PlatformPosixCondition *>(condition);
+
+    pthread_cond_signal(posixCondition->cond);
+}
+
 void PlatformPosixCondition::Broadcast(const PlatformBaseCondition *condition) {
     const PlatformPosixCondition *posixCondition = static_cast<const PlatformPosixCondition *>(condition);
 
