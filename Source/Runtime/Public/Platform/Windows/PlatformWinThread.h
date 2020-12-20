@@ -55,12 +55,13 @@ public:
     
                                 /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
     static void                 Wait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex);
+                                /// Returns false when the time-out interval elapses.
     static bool                 TimedWait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex, int ms);
     
                                 /// If any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
     static void                 Signal(const PlatformBaseCondition *condition);
     
-                                /// Same as signal, except wake up all waiting threads
+                                /// Same as signal, except wake up all waiting threads.
     static void                 Broadcast(const PlatformBaseCondition *condition);
     
 private:
