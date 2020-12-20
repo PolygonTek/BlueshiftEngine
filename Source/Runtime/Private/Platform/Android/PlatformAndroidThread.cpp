@@ -85,12 +85,12 @@ void PlatformAndroidThread::Destroy(PlatformBaseThread *thread) {
 void PlatformAndroidThread::Cancel(PlatformBaseThread *thread) {
     assert(thread);
     PlatformAndroidThread *androidThread = static_cast<PlatformAndroidThread *>(thread);
-    pthread_cancel(*androidThread->thread);
+    pthread_kill(*androidThread->thread, SIGUSR1);
     delete androidThread->thread;
     delete androidThread;
 }
 
-static int TranslateThreadPriority(PlatformBaseThread::Priority priority) {
+static int TranslateThreadPriority(PlatformBaseThread::Priority::Enum priority) {
     // 0 is the lowest, 31 is the highest possible priority for pthread
     switch (priority) {
     case PlatformBaseThread::Priority::Highest:
@@ -108,7 +108,7 @@ static int TranslateThreadPriority(PlatformBaseThread::Priority priority) {
     }
 }
 
-void PlatformPosixThread::SetPriority(PlatformBaseThread *thread, PlatformBaseThread::Priority::Enum priority) {
+void PlatformAndroidThread::SetPriority(PlatformBaseThread *thread, PlatformBaseThread::Priority::Enum priority) {
     PlatformAndroidThread *androidThread = static_cast<PlatformAndroidThread *>(thread);
 
     struct sched_param sched;

@@ -105,7 +105,7 @@ void PlatformPosixThread::Cancel(PlatformBaseThread *thread) {
     delete posixThread;
 }
 
-static int TranslateThreadPriority(PlatformBaseThread::Priority priority) {
+static int TranslateThreadPriority(PlatformBaseThread::Priority::Enum priority) {
     // 0 is the lowest, 31 is the highest possible priority for pthread
     switch (priority) {
     case PlatformBaseThread::Priority::Highest:
