@@ -24,6 +24,8 @@ public:
     static void                 Destroy(PlatformBaseThread *thread);
     
     static void                 SetAffinity(int affinity);
+
+    static void                 SetPriority(PlatformBaseThread *thread, Priority::Enum priority);
     
     static void                 Join(PlatformBaseThread *thread);
     static void                 JoinAll(int numThreads, PlatformBaseThread *threads[]);

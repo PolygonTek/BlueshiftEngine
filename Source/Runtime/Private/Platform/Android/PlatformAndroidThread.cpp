@@ -82,6 +82,40 @@ void PlatformAndroidThread::Destroy(PlatformBaseThread *thread) {
     delete androidThread;
 }
 
+static int TranslateThreadPriority(PlatformBaseThread::Priority priority) {
+    // 0 is the lowest, 31 is the highest possible priority for pthread
+    switch (priority) {
+    case PlatformBaseThread::Priority::Highest:
+        return 30;
+    case PlatformBaseThread::Priority::AboveNormal:
+        return 25;
+    case PlatformBaseThread::Priority::Normal:
+        return 15;
+    case PlatformBaseThread::Priority::BelowNormal:
+        return 5;
+    case PlatformBaseThread::Priority::Lowest:
+        return 1;
+    default:
+        return 15;
+    }
+}
+
+void PlatformPosixThread::SetPriority(PlatformBaseThread *thread, PlatformBaseThread::Priority::Enum priority) {
+    PlatformAndroidThread *androidThread = static_cast<PlatformAndroidThread *>(thread);
+
+    struct sched_param sched;
+    memset(&sched, 0, sizeof(sched));
+    int32_t policy = SCHED_RR;
+
+    // Read the current policy.
+    pthread_getschedparam(*androidThread->thread, &policy, &sched);
+
+    // Set the priority appropriately.
+    sched.sched_priority = TranslateThreadPriority(priority);
+    pthread_setschedparam(*androidThread->thread, policy, &sched);
+}
+
+
 void PlatformAndroidThread::SetAffinity(int affinity) {
     BE1::SetAffinity(affinity);
 }

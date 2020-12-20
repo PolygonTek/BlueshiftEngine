@@ -69,7 +69,7 @@ uint64_t PlatformWinThread::GetCurrentThreadId() {
     return ::GetCurrentThreadId();
 }
 
-// Creates a hardware thread running on specific core
+// Creates a hardware thread running on specific core.
 PlatformBaseThread *PlatformWinThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
     HANDLE threadHandle = CreateThread(nullptr, stackSize, (LPTHREAD_START_ROUTINE)startProc, param, 0, nullptr);
     if (threadHandle == nullptr) {
@@ -119,6 +119,29 @@ void PlatformWinThread::SetName(const char *name) {
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
 #pragma warning(pop)
+}
+
+static int TranslateThreadPriority(PlatformBaseThread::Priority::Enum priority) {
+    switch (priority) {
+    case PlatformBaseThread::Priority::Highest:
+        return THREAD_PRIORITY_HIGHEST;
+    case PlatformBaseThread::Priority::AboveNormal:
+        return THREAD_PRIORITY_ABOVE_NORMAL;
+    case PlatformBaseThread::Priority::Normal: return
+        THREAD_PRIORITY_NORMAL;
+    case PlatformBaseThread::Priority::BelowNormal:
+        return THREAD_PRIORITY_BELOW_NORMAL;
+    case PlatformBaseThread::Priority::Lowest:
+        return THREAD_PRIORITY_LOWEST;
+    default:
+        return THREAD_PRIORITY_NORMAL;
+    }
+}
+
+void PlatformWinThread::SetPriority(PlatformBaseThread *thread, PlatformBaseThread::Priority::Enum priority) {
+    PlatformWinThread *winThread = static_cast<PlatformWinThread *>(thread);
+
+    ::SetThreadPriority(winThread->threadHandle, TranslateThreadPriority(priority));
 }
 
 void PlatformWinThread::SetAffinity(int affinity) {

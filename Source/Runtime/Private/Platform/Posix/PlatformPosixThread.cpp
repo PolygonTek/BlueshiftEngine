@@ -97,6 +97,34 @@ void PlatformPosixThread::Destroy(PlatformBaseThread *thread) {
     delete posixThread;
 }
 
+static int TranslateThreadPriority(PlatformBaseThread::Priority priority) {
+    // 0 is the lowest, 31 is the highest possible priority for pthread
+    switch (priority) {
+    case PlatformBaseThread::Priority::Highest: return 30;
+    case PlatformBaseThread::Priority::AboveNormal: return 25;
+    case PlatformBaseThread::Priority::Normal: return 15;
+    case PlatformBaseThread::Priority::BelowNormal: return 5;
+    case PlatformBaseThread::Priority::Lowest: return 1;
+    default:
+        return 15;
+    }
+}
+
+void PlatformPosixThread::SetPriority(PlatformBaseThread *thread, PlatformBaseThread::Priority::Enum priority) {
+    PlatformPosixThread *posixThread = static_cast<PlatformPosixThread *>(thread);
+
+    struct sched_param sched;
+    memset(&sched, 0, sizeof(sched));
+    int32_t policy = SCHED_RR;
+
+    // Read the current policy.
+    pthread_getschedparam(*posixThread->thread, &policy, &sched);
+
+    // Set the priority appropriately.
+    sched.sched_priority = TranslateThreadPriority(priority);
+    pthread_setschedparam(*posixThread->thread, policy, &sched);
+}
+
 void PlatformPosixThread::SetAffinity(int affinity) {
     BE1::SetAffinity(affinity);
 }

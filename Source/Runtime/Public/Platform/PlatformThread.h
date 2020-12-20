@@ -20,6 +20,16 @@ typedef void (*threadFunc_t)(void *);
 
 class BE_API PlatformBaseThread {
 public:
+    struct Priority {
+        enum Enum {
+            Highest,
+            AboveNormal,
+            Normal,
+            BelowNormal,
+            Lowest
+        };
+    };
+
     static uint64_t             GetCurrentThreadId();
 
     static PlatformBaseThread * Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
@@ -27,6 +37,8 @@ public:
 
     static void                 SetName(const char *name);
     static void                 SetAffinity(int affinity);
+
+    static void                 SetPriority(PlatformBaseThread *thread, Priority::Enum priority);
 
     static void                 Join(PlatformBaseThread *thread);
     static void                 JoinAll(int numThreads, PlatformBaseThread *threads[]);
