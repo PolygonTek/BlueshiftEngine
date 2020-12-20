@@ -22,6 +22,7 @@ class BE_API PlatformBaseThread {
 public:
     struct Priority {
         enum Enum {
+            TimeCritical,
             Highest,
             AboveNormal,
             Normal,

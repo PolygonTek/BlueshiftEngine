@@ -93,6 +93,7 @@ void PlatformAndroidThread::Cancel(PlatformBaseThread *thread) {
 static int TranslateThreadPriority(PlatformBaseThread::Priority::Enum priority) {
     // 0 is the lowest, 31 is the highest possible priority for pthread
     switch (priority) {
+    case PlatformBaseThread::Priority::TimeCritical:
     case PlatformBaseThread::Priority::Highest:
         return 30;
     case PlatformBaseThread::Priority::AboveNormal:

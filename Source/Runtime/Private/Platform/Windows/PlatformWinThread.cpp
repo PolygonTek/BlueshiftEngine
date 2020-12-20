@@ -131,6 +131,8 @@ void PlatformWinThread::SetName(const char *name) {
 
 static int TranslateThreadPriority(PlatformBaseThread::Priority::Enum priority) {
     switch (priority) {
+    case PlatformBaseThread::Priority::TimeCritical:
+        return THREAD_PRIORITY_TIME_CRITICAL;
     case PlatformBaseThread::Priority::Highest:
         return THREAD_PRIORITY_HIGHEST;
     case PlatformBaseThread::Priority::AboveNormal:
