@@ -32,6 +32,8 @@ public:
     BE_FORCE_INLINE PlatformAtomic &operator=(const T v) { SetValue(v); return *this; }
 
     BE_FORCE_INLINE T               GetValue() const { return value; }
+
+                                    /// Sets new value and returns the old value.
     BE_FORCE_INLINE T               SetValue(int v) { return atomic_xchg(&value, v); }
 
                                     /// Adds a value from this counter and returns old value.
