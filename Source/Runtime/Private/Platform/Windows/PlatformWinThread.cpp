@@ -28,7 +28,7 @@ static void SetAffinity(HANDLE thread, int affinity) {
     int groups = GetActiveProcessorGroupCount();
     int totalProcessors = 0;
     int group = 0;
-    int	number = 0;
+    int number = 0;
 
     for (int i = 0; i < groups; i++) {
         int processors = GetActiveProcessorCount(i);
@@ -45,7 +45,7 @@ static void SetAffinity(HANDLE thread, int affinity) {
     groupAffinity.Group = (WORD)group;
     groupAffinity.Mask = (KAFFINITY)(uint64_t(1) << number);
     if (!SetThreadGroupAffinity(thread, &groupAffinity, nullptr)) {
-        BE_FATALERROR("cannot set thread group affinity");
+        BE_FATALERROR("Cannot set thread group affinity");
     }
 
     PROCESSOR_NUMBER processorNumber;
@@ -53,14 +53,14 @@ static void SetAffinity(HANDLE thread, int affinity) {
     processorNumber.Number = number;
     processorNumber.Reserved = 0;
     if (!SetThreadIdealProcessorEx(thread, &processorNumber, nullptr)) {
-        BE_FATALERROR("cannot set thread ideal processor");
+        BE_FATALERROR("Cannot set thread ideal processor");
     }
 #else
     if (!SetThreadAffinityMask(thread, DWORD_PTR(uint64(1) << affinity))) {
-        BE_FATALERROR("cannot set thread affinity mask");
+        BE_FATALERROR("Cannot set thread affinity mask");
     }
     if (SetThreadIdealProcessor(thread, (DWORD)affinity) == (DWORD)-1) {
-        BE_FATALERROR("cannot set thread ideal processor");
+        BE_FATALERROR("Cannot set thread ideal processor");
     }
 #endif
 }
