@@ -25,11 +25,10 @@ public:
     static PlatformBaseThread * Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
     static void                 Destroy(PlatformBaseThread *thread);
     static void                 Cancel(PlatformBaseThread *thread);
+    static void                 SetPriority(PlatformBaseThread *thread, Priority::Enum priority);
 
     static void                 SetAffinity(int affinity);
     static void                 SetName(const char *name);
-
-    static void                 SetPriority(PlatformBaseThread *thread, Priority::Enum priority);
     
     static void                 Join(PlatformBaseThread *thread);
     static void                 JoinAll(int numThreads, PlatformBaseThread *threads[]);
