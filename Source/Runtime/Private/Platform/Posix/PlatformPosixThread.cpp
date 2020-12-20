@@ -92,6 +92,14 @@ PlatformBaseThread *PlatformPosixThread::Create(threadFunc_t startProc, void *pa
 void PlatformPosixThread::Destroy(PlatformBaseThread *thread) {
     assert(thread);
     PlatformPosixThread *posixThread = static_cast<PlatformPosixThread *>(thread);
+    pthread_join(*posixThread->thread, nullptr);
+    delete posixThread->thread;
+    delete posixThread;
+}
+
+void PlatformPosixThread::Cancel(PlatformBaseThread *thread) {
+    assert(thread);
+    PlatformPosixThread *posixThread = static_cast<PlatformPosixThread *>(thread);
     pthread_cancel(*posixThread->thread);
     delete posixThread->thread;
     delete posixThread;
@@ -100,11 +108,16 @@ void PlatformPosixThread::Destroy(PlatformBaseThread *thread) {
 static int TranslateThreadPriority(PlatformBaseThread::Priority priority) {
     // 0 is the lowest, 31 is the highest possible priority for pthread
     switch (priority) {
-    case PlatformBaseThread::Priority::Highest: return 30;
-    case PlatformBaseThread::Priority::AboveNormal: return 25;
-    case PlatformBaseThread::Priority::Normal: return 15;
-    case PlatformBaseThread::Priority::BelowNormal: return 5;
-    case PlatformBaseThread::Priority::Lowest: return 1;
+    case PlatformBaseThread::Priority::Highest:
+        return 30;
+    case PlatformBaseThread::Priority::AboveNormal:
+        return 25;
+    case PlatformBaseThread::Priority::Normal:
+        return 15;
+    case PlatformBaseThread::Priority::BelowNormal:
+        return 5;
+    case PlatformBaseThread::Priority::Lowest:
+        return 1;
     default:
         return 15;
     }

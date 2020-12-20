@@ -86,6 +86,14 @@ PlatformBaseThread *PlatformWinThread::Create(threadFunc_t startProc, void *para
 void PlatformWinThread::Destroy(PlatformBaseThread *thread) {
     assert(thread);
     PlatformWinThread *winThread = static_cast<PlatformWinThread *>(thread);
+    WaitForSingleObject(winThread->threadHandle, INFINITE);
+    CloseHandle(winThread->threadHandle);
+    delete winThread;
+}
+
+void PlatformWinThread::Cancel(PlatformBaseThread *thread) {
+    assert(thread);
+    PlatformWinThread *winThread = static_cast<PlatformWinThread *>(thread);
     TerminateThread(winThread->threadHandle, 0);
     CloseHandle(winThread->threadHandle);
     delete winThread;

@@ -77,7 +77,15 @@ PlatformBaseThread *PlatformAndroidThread::Create(threadFunc_t startProc, void *
 void PlatformAndroidThread::Destroy(PlatformBaseThread *thread) {
     assert(thread);
     PlatformAndroidThread *androidThread = static_cast<PlatformAndroidThread *>(thread);
-    //pthread_cancel(*androidThread->thread);
+    pthread_join(*androidThread->thread, nullptr);
+    delete androidThread->thread;
+    delete androidThread;
+}
+
+void PlatformAndroidThread::Cancel(PlatformBaseThread *thread) {
+    assert(thread);
+    PlatformAndroidThread *androidThread = static_cast<PlatformAndroidThread *>(thread);
+    pthread_cancel(*androidThread->thread);
     delete androidThread->thread;
     delete androidThread;
 }

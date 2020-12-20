@@ -34,6 +34,7 @@ public:
 
     static PlatformBaseThread * Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
     static void                 Destroy(PlatformBaseThread *thread);
+    static void                 Cancel(PlatformBaseThread *thread);
 
     static void                 SetName(const char *name);
     static void                 SetAffinity(int affinity);
