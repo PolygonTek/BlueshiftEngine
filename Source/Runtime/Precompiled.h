@@ -355,6 +355,8 @@ constexpr std::size_t count_of(T (&)[N]) {
 
 #define CURRENT_FUNC                __FUNCTION__
 
+#define THREAD_LOCAL                __declspec(thread)
+
 #define PATHSEPERATOR_STR           "\\"
 #define PATHSEPERATOR_CHAR          '\\'
 
@@ -459,6 +461,8 @@ constexpr std::size_t count_of(T (&)[N]) {
 #define BE_DEPRECATED               __attribute__((deprecated("This is deprecated and will be removed in a future version.")))
 
 #define CURRENT_FUNC                __func__
+
+#define THREAD_LOCAL                __thread
 
 #define PATHSEPERATOR_STR           "/"
 #define PATHSEPERATOR_CHAR          '/'
