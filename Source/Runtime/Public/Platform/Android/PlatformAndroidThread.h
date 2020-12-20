@@ -27,8 +27,9 @@ public:
     static void                 Cancel(PlatformBaseThread *thread);
     static void                 SetPriority(PlatformBaseThread *thread, Priority::Enum priority);
 
-    static void                 SetAffinity(int affinity);
     static void                 SetName(const char *name);
+    static void                 SetAffinity(int affinity);
+    static void                 Yield();
     
     static void                 Join(PlatformBaseThread *thread);
     static void                 JoinAll(int numThreads, PlatformBaseThread *threads[]);

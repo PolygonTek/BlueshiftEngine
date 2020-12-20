@@ -142,6 +142,10 @@ void PlatformPosixThread::SetAffinity(int affinity) {
     BE1::SetAffinity(affinity);
 }
 
+void PlatformPosixThread::Yield() {
+    pthread_yield();
+}
+
 void PlatformPosixThread::Join(PlatformBaseThread *thread) {
     PlatformPosixThread *posixThread = static_cast<PlatformPosixThread *>(thread);
     int err = pthread_join(*posixThread->thread, nullptr);

@@ -123,13 +123,16 @@ void PlatformAndroidThread::SetPriority(PlatformBaseThread *thread, PlatformBase
     pthread_setschedparam(*androidThread->thread, policy, &sched);
 }
 
+void PlatformAndroidThread::SetName(const char *name) {
+    pthread_setname_np(pthread_self(), name);
+}
 
 void PlatformAndroidThread::SetAffinity(int affinity) {
     BE1::SetAffinity(affinity);
 }
 
-void PlatformAndroidThread::SetName(const char *name) {
-    pthread_setname_np(pthread_self(), name);
+void PlatformAndroidThread::Yield() {
+    sched_yield();
 }
 
 void PlatformAndroidThread::Join(PlatformBaseThread *thread) {

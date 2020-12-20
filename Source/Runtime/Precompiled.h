@@ -441,6 +441,8 @@ constexpr std::size_t count_of(T (&)[N]) {
 #include <windows.h>
 #include <intrin.h>
 
+#undef Yield
+
 #endif
 
 //----------------------------------------------------------------------------------------------

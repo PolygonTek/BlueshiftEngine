@@ -24,6 +24,7 @@ public:
     static uint64_t             GetCurrentThreadId();
 
     static void                 SetName(const char *name);
+    static void                 Yield();
 };
 
 typedef PlatformAppleThread     PlatformThread;

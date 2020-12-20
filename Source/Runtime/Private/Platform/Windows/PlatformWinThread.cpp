@@ -156,6 +156,10 @@ void PlatformWinThread::SetAffinity(int affinity) {
     BE1::SetAffinity(GetCurrentThread(), affinity);
 }
 
+void PlatformWinThread::Yield() {
+    ::SwitchToThread();
+}
+
 void PlatformWinThread::Join(PlatformBaseThread *thread) {
     const PlatformWinThread *winThread = static_cast<PlatformWinThread *>(thread);
     WaitForSingleObject(winThread->threadHandle, INFINITE);

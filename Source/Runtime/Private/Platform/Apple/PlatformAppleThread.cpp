@@ -26,4 +26,8 @@ void PlatformAppleThread::SetName(const char *name) {
     pthread_setname_np(name);
 }
 
+void PlatformAppleThread::Yield() {
+    sched_yield();
+}
+
 BE_NAMESPACE_END

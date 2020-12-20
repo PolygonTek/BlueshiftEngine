@@ -46,6 +46,10 @@ void PlatformBaseThread::SetAffinity(int affinity) {
     BE_FATALERROR("PlatformThread::SetAffinity not implmeneted on this platform");
 }
 
+void PlatformBaseThread::Yield() {
+    BE_FATALERROR("PlatformThread::Yield not implmeneted on this platform");
+}
+
 void PlatformBaseThread::Join(PlatformBaseThread *thread) {
     BE_FATALERROR("PlatformThread::Join not implmeneted on this platform");
 }
