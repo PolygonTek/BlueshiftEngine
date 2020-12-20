@@ -30,6 +30,14 @@ void PlatformBaseThread::Destroy(PlatformBaseThread *thread) {
     BE_FATALERROR("PlatformThread::Destroy not implmeneted on this platform");
 }
 
+void PlatformBaseThread::Cancel(PlatformBaseThread *thread) {
+    BE_FATALERROR("PlatformThread::Cancel not implmeneted on this platform");
+}
+
+void PlatformBaseThread::SetPriority(PlatformBaseThread *thread, Priority::Enum priority) {
+    BE_FATALERROR("PlatformThread::SetPriority not implmeneted on this platform");
+}
+
 void PlatformBaseThread::SetName(const char *name) {
     BE_FATALERROR("PlatformThread::SetName not implmeneted on this platform");
 }
