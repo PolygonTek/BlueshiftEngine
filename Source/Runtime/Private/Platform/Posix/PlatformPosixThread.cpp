@@ -66,7 +66,7 @@ static void *ThreadStartup(ThreadStartupData *parg) {
     return nullptr;
 }
 
-PlatformBaseThread *PlatformPosixThread::Create(threadFunc_t func, void *param, size_t stackSize, int affinity) {
+PlatformBaseThread *PlatformPosixThread::Create(threadFunc_t func, void *param, const char *name, size_t stackSize, int affinity) {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     if (stackSize > 0) {
@@ -86,6 +86,11 @@ PlatformBaseThread *PlatformPosixThread::Create(threadFunc_t func, void *param, 
     
     PlatformPosixThread *posixThread = new PlatformPosixThread;
     posixThread->thread = tid;
+
+    if (name[0]) {
+        PlatformThread::SetName(posixThread, name);
+    }
+
     return posixThread;
 }
 

@@ -70,7 +70,7 @@ uint64_t PlatformWinThread::GetCurrentThreadId() {
 }
 
 // Creates a hardware thread running on specific core.
-PlatformBaseThread *PlatformWinThread::Create(threadFunc_t func, void *param, size_t stackSize, int affinity) {
+PlatformBaseThread *PlatformWinThread::Create(threadFunc_t func, void *param, const char *name, size_t stackSize, int affinity) {
     HANDLE threadHandle = CreateThread(nullptr, stackSize, (LPTHREAD_START_ROUTINE)func, param, 0, nullptr);
     if (threadHandle == nullptr) {
         BE_FATALERROR("Cannot create thread");
@@ -80,6 +80,11 @@ PlatformBaseThread *PlatformWinThread::Create(threadFunc_t func, void *param, si
  
     PlatformWinThread *thread = new PlatformWinThread;
     thread->threadHandle = threadHandle;
+
+    if (name[0]) {
+        PlatformThread::SetName(thread, name);
+    }
+
     return thread;
 }
 
@@ -99,7 +104,7 @@ void PlatformWinThread::Cancel(PlatformBaseThread *thread) {
     delete winThread;
 }
 
-void PlatformWinThread::SetName(const char *name) {
+void PlatformWinThread::SetName(PlatformBaseThread *thread, const char *name) {
     /**
     * Code setting the thread name for use in the debugger.
     *
@@ -115,10 +120,13 @@ void PlatformWinThread::SetName(const char *name) {
         DWORD dwFlags;      // Reserved for future use, must be zero.
     };
 #pragma pack(pop)
+
+    PlatformWinThread *winThread = static_cast<PlatformWinThread *>(thread);
+
     THREADNAME_INFO threadNameInfo;
     threadNameInfo.dwType = 0x1000;
     threadNameInfo.szName = name;
-    threadNameInfo.dwThreadID = ::GetCurrentThreadId();
+    threadNameInfo.dwThreadID = ::GetThreadId(winThread->threadHandle);
     threadNameInfo.dwFlags = 0;
 #pragma warning(push)
 #pragma warning(disable: 6320 6322)

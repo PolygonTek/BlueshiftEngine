@@ -51,7 +51,7 @@ uint64_t PlatformAndroidThread::GetCurrentThreadId() {
     return static_cast<uint64_t>(gettid());
 }
 
-PlatformBaseThread *PlatformAndroidThread::Create(threadFunc_t func, void *param, size_t stackSize, int affinity) {
+PlatformBaseThread *PlatformAndroidThread::Create(threadFunc_t func, void *param, const char *name, size_t stackSize, int affinity) {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     if (stackSize > 0) {
@@ -67,6 +67,10 @@ PlatformBaseThread *PlatformAndroidThread::Create(threadFunc_t func, void *param
     int err = pthread_create(tid, &attr, (void *(*)(void *))ThreadStartup, startup);
     if (err != 0) {
         BE_FATALERROR("Failed to create pthread - %s", strerror(err));
+    }
+
+    if (name[0]) {
+        PlatformThread::SetName(name);
     }
     
     PlatformAndroidThread *androidThread = new PlatformAndroidThread;
@@ -124,8 +128,10 @@ void PlatformAndroidThread::SetPriority(PlatformBaseThread *thread, PlatformBase
     pthread_setschedparam(*androidThread->thread, policy, &sched);
 }
 
-void PlatformAndroidThread::SetName(const char *name) {
-    pthread_setname_np(pthread_self(), name);
+void PlatformAndroidThread::SetName(PlatformBaseThread *thread, const char *name) {
+    PlatformAndroidThread *androidThread = static_cast<PlatformAndroidThread *>(thread);
+
+    pthread_setname_np(androidThread->thread, name);
 }
 
 void PlatformAndroidThread::SetAffinity(int affinity) {

@@ -20,7 +20,7 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformPosixThread : public PlatformBaseThread {
 public:
-    static PlatformBaseThread * Create(threadFunc_t func, void *param, size_t stackSize = 0, int affinity = -1);
+    static PlatformBaseThread * Create(threadFunc_t func, void *param, const char *name = "", size_t stackSize = 0, int affinity = -1);
     static void                 Destroy(PlatformBaseThread *thread);
     static void                 Cancel(PlatformBaseThread *thread);
     static void                 SetPriority(PlatformBaseThread *thread, Priority::Enum priority);
