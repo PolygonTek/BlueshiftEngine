@@ -137,26 +137,26 @@ void PlatformWinThread::SetName(PlatformBaseThread *thread, const char *name) {
 #pragma warning(pop)
 }
 
-static int TranslateThreadPriority(PlatformBaseThread::Priority::Enum priority) {
+static int TranslateThreadPriority(PlatformThread::Priority::Enum priority) {
     switch (priority) {
-    case PlatformBaseThread::Priority::TimeCritical:
+    case PlatformThread::Priority::TimeCritical:
         return THREAD_PRIORITY_TIME_CRITICAL;
-    case PlatformBaseThread::Priority::Highest:
+    case PlatformThread::Priority::Highest:
         return THREAD_PRIORITY_HIGHEST;
-    case PlatformBaseThread::Priority::AboveNormal:
+    case PlatformThread::Priority::AboveNormal:
         return THREAD_PRIORITY_ABOVE_NORMAL;
-    case PlatformBaseThread::Priority::Normal: return
+    case PlatformThread::Priority::Normal: return
         THREAD_PRIORITY_NORMAL;
-    case PlatformBaseThread::Priority::BelowNormal:
+    case PlatformThread::Priority::BelowNormal:
         return THREAD_PRIORITY_BELOW_NORMAL;
-    case PlatformBaseThread::Priority::Lowest:
+    case PlatformThread::Priority::Lowest:
         return THREAD_PRIORITY_LOWEST;
     default:
         return THREAD_PRIORITY_NORMAL;
     }
 }
 
-void PlatformWinThread::SetPriority(PlatformBaseThread *thread, PlatformBaseThread::Priority::Enum priority) {
+void PlatformWinThread::SetPriority(PlatformBaseThread *thread, PlatformThread::Priority::Enum priority) {
     PlatformWinThread *winThread = static_cast<PlatformWinThread *>(thread);
 
     ::SetThreadPriority(winThread->threadHandle, TranslateThreadPriority(priority));

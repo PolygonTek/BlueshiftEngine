@@ -110,26 +110,26 @@ void PlatformPosixThread::Cancel(PlatformBaseThread *thread) {
     delete posixThread;
 }
 
-static int TranslateThreadPriority(PlatformBaseThread::Priority::Enum priority) {
+static int TranslateThreadPriority(PlatformThread::Priority::Enum priority) {
     // 0 is the lowest, 31 is the highest possible priority for pthread
     switch (priority) {
-    case PlatformBaseThread::Priority::TimeCritical:
-    case PlatformBaseThread::Priority::Highest:
+    case PlatformThread::Priority::TimeCritical:
+    case PlatformThread::Priority::Highest:
         return 30;
-    case PlatformBaseThread::Priority::AboveNormal:
+    case PlatformThread::Priority::AboveNormal:
         return 25;
-    case PlatformBaseThread::Priority::Normal:
+    case PlatformThread::Priority::Normal:
         return 15;
-    case PlatformBaseThread::Priority::BelowNormal:
+    case PlatformThread::Priority::BelowNormal:
         return 5;
-    case PlatformBaseThread::Priority::Lowest:
+    case PlatformThread::Priority::Lowest:
         return 1;
     default:
         return 15;
     }
 }
 
-void PlatformPosixThread::SetPriority(PlatformBaseThread *thread, PlatformBaseThread::Priority::Enum priority) {
+void PlatformPosixThread::SetPriority(PlatformBaseThread *thread, PlatformThread::Priority::Enum priority) {
     PlatformPosixThread *posixThread = static_cast<PlatformPosixThread *>(thread);
 
     struct sched_param sched;
