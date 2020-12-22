@@ -104,7 +104,7 @@ void AABB::GetNearestVertex(const Vec3 &from, Vec3 &point) const {
 void AABB::GetNearestVertexFromDir(const Vec3 &dir, Vec3 &point) const {
     point.x = dir.x < 0 ? b[1].x : b[0].x;
     point.y = dir.y < 0 ? b[1].y : b[0].y;
-    point.z = dir.z < 0 ? b[1].z : b[0].z;	
+    point.z = dir.z < 0 ? b[1].z : b[0].z;
 }
 
 void AABB::GetFarthestVertex(const Vec3 &from, Vec3 &point) const {
@@ -123,20 +123,16 @@ void AABB::GetFarthestVertexFromDir(const Vec3 &dir, Vec3 &point) const {
 void AABB::GetClosestPoint(const Vec3 &from, Vec3 &point) const {
     point = from;
 
-    for (int i = 0; i < 3; i++) {
-        if (from[i] < b[0][i]) {
-            point[i] = b[0][i];
-        } else if (from[i] > b[1][i]) {
-            point[i] = b[1][i];
-        }
-    }
+    Clamp(point.x, b[0].x, b[1].x);
+    Clamp(point.y, b[0].y, b[1].y);
+    Clamp(point.z, b[0].z, b[1].z);
 }
 
 float AABB::DistanceSqr(const Vec3 &p) const {
     float dsq = 0.0f;
     float d;
 
-    for (int i = 0; i < 3; i++)	{
+    for (int i = 0; i < 3; i++) {
         if (p[i] < b[0][i]) {
             d = b[0][i] - p[i];
             dsq += d * d;
@@ -201,15 +197,19 @@ bool AABB::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
 }
 
 bool AABB::IsIntersectPlane(const Plane &plane) const {
-    Vec3 c = Center();
-    Vec3 e = Extents();
+    Vec3 center = (b[0] + b[1]) * 0.5f;
+    Vec3 extents = b[1] - center;
 
     // Compute the projection interval radius of the AABB onto L(t) = aabb.center + t * plane.normal;
-    float r = e[0] * Math::Abs(plane.normal[0]) + e[1] * Math::Abs(plane.normal[1]) + e[2] * Math::Abs(plane.normal[2]);
+    float r = extents[0] * Math::Abs(plane.normal[0]) + extents[1] * Math::Abs(plane.normal[1]) + extents[2] * Math::Abs(plane.normal[2]);
     // Compute the distance of the box center from plane.
-    float s = plane.Distance(c);
+    float s = plane.Distance(center);
 
     return Math::Abs(s) <= r;
+}
+
+bool AABB::IsIntersectOBB(const OBB &obb, float epsilon) const {
+    return obb.IsIntersectAABB(*this, epsilon);
 }
 
 bool AABB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const {
@@ -290,8 +290,7 @@ void AABB::SetFromPointTranslation(const Vec3 &point, const Vec3 &translation) {
         if (translation[i] < 0.0f) {
             b[0][i] = point[i] + translation[i];
             b[1][i] = point[i];
-        }
-        else {
+        } else {
             b[0][i] = point[i];
             b[1][i] = point[i] + translation[i];
         }

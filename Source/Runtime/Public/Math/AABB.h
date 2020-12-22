@@ -162,6 +162,8 @@ public:
 
                         /// Tests if this AABB intersect with the given AABB.
     bool                IsIntersectAABB(const AABB &a, bool ignoreBorders = false) const;
+                        /// Tests if this AABB intersect with the given OBB.
+    bool                IsIntersectOBB(const OBB &a, float epsilon = 1e-3f) const;
                         /// Tests if this AABB intersect with the given sphere.
     bool                IsIntersectSphere(const Sphere &s) const;
                         /// Tests if this AABB intersect with the given triangle.
@@ -472,7 +474,9 @@ BE_INLINE bool AABB::IsIntersectAABB(const AABB &a, bool ignoreBorders) const {
 }
 
 BE_INLINE bool AABB::IsIntersectSphere(const Sphere &s) const {
-    if (DistanceSqr(s.center) > s.radius * s.radius) {
+    Vec3 closestPoint;
+    GetClosestPoint(s.center, closestPoint);
+    if (closestPoint.DistanceSqr(s.center) > s.radius * s.radius) {
         return false;
     }
     return true;
