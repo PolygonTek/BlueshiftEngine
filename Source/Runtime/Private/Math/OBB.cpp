@@ -355,6 +355,165 @@ float OBB::Distance(const Vec3 &p) const {
     return Math::Sqrt(dsq);
 }
 
+bool OBB::IsIntersectAABB(const AABB &aabb, float epsilon) const {
+    float c[3][3];
+    float ac[3][3];
+    float tproj[3];     // axis[i] * t
+    float d, e0, e1;    // distance between centers and projected extents
+
+    Vec3 b_center = aabb.Center();
+    Vec3 b_extents = aabb[1] - b_center;
+
+    // Delta vector between centers.
+    Vec3 t = b_center - center;
+
+    // Compare on axis Ax (axis[0]).
+    c[0][0] = axis[0][0];
+    c[0][1] = axis[0][1];
+    c[0][2] = axis[0][2];
+    ac[0][0] = Math::Fabs(c[0][0]) + epsilon;
+    ac[0][1] = Math::Fabs(c[0][1]) + epsilon;
+    ac[0][2] = Math::Fabs(c[0][2]) + epsilon;
+    tproj[0] = axis[0].Dot(t);
+
+    d = Math::Fabs(tproj[0]);
+    e0 = extents[0];
+    e1 = b_extents[0] * ac[0][0] + b_extents[1] * ac[0][1] + b_extents[2] * ac[0][2];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis Ay (axis[1]).
+    c[1][0] = axis[1][0];
+    c[1][1] = axis[1][1];
+    c[1][2] = axis[1][2];
+    ac[1][0] = Math::Fabs(c[1][0]) + epsilon;
+    ac[1][1] = Math::Fabs(c[1][1]) + epsilon;
+    ac[1][2] = Math::Fabs(c[1][2]) + epsilon;
+    tproj[1] = axis[1].Dot(t);
+
+    d = Math::Fabs(tproj[1]);
+    e0 = extents[1];
+    e1 = b_extents[0] * ac[1][0] + b_extents[1] * ac[1][1] + b_extents[2] * ac[1][2];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis Az (axis[2]).
+    c[2][0] = axis[2][0];
+    c[2][1] = axis[2][1];
+    c[2][2] = axis[2][2];
+    ac[2][0] = Math::Fabs(c[2][0]) + epsilon;
+    ac[2][1] = Math::Fabs(c[2][1]) + epsilon;
+    ac[2][2] = Math::Fabs(c[2][2]) + epsilon;
+    tproj[2] = axis[2].Dot(t);
+
+    d = Math::Fabs(tproj[2]);
+    e0 = extents[2];
+    e1 = b_extents[0] * ac[2][0] + b_extents[1] * ac[2][1] + b_extents[2] * ac[2][2];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis Bx (b.axis[0]).
+    d = Math::Fabs(t.x);
+    e0 = extents[0] * ac[0][0] + extents[1] * ac[1][0] + extents[2] * ac[2][0];
+    e1 = b_extents[0];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis By (b.axis[1]).
+    d = Math::Fabs(t.y);
+    e0 = extents[0] * ac[0][1] + extents[1] * ac[1][1] + extents[2] * ac[2][1];
+    e1 = b_extents[1];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis Bz (b.axis[2]).
+    d = Math::Fabs(t.z);
+    e0 = extents[0] * ac[0][2] + extents[1] * ac[1][2] + extents[2] * ac[2][2];
+    e1 = b_extents[2];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Ax, Bx).
+    d = Math::Fabs(tproj[2] * c[1][0] - tproj[1] * c[2][0]);
+    e0 = extents[1] * ac[2][0] + extents[2] * ac[1][0];
+    e1 = b_extents[1] * ac[0][2] + b_extents[2] * ac[0][1];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Ax, By).
+    d = Math::Fabs(tproj[2] * c[1][1] - tproj[1] * c[2][1]);
+    e0 = extents[1] * ac[2][1] + extents[2] * ac[1][1];
+    e1 = b_extents[0] * ac[0][2] + b_extents[2] * ac[0][0];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Ax, Bz).
+    d = Math::Fabs(tproj[2] * c[1][2] - tproj[1] * c[2][2]);
+    e0 = extents[1] * ac[2][2] + extents[2] * ac[1][2];
+    e1 = b_extents[0] * ac[0][1] + b_extents[1] * ac[0][0];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Ay, Bx).
+    d = Math::Fabs(tproj[0] * c[2][0] - tproj[2] * c[0][0]);
+    e0 = extents[0] * ac[2][0] + extents[2] * ac[0][0];
+    e1 = b_extents[1] * ac[1][2] + b_extents[2] * ac[1][1];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Ay, By).
+    d = Math::Fabs(tproj[0] * c[2][1] - tproj[2] * c[0][1]);
+    e0 = extents[0] * ac[2][1] + extents[2] * ac[0][1];
+    e1 = b_extents[0] * ac[1][2] + b_extents[2] * ac[1][0];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Ay, Bz).
+    d = Math::Fabs(tproj[0] * c[2][2] - tproj[2] * c[0][2]);
+    e0 = extents[0] * ac[2][2] + extents[2] * ac[0][2];
+    e1 = b_extents[0] * ac[1][1] + b_extents[1] * ac[1][0];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Az, Bx).
+    d = Math::Fabs(tproj[1] * c[0][0] - tproj[0] * c[1][0]);
+    e0 = extents[0] * ac[1][0] + extents[1] * ac[0][0];
+    e1 = b_extents[1] * ac[2][2] + b_extents[2] * ac[2][1];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Az, By).
+    d = Math::Fabs(tproj[1] * c[0][1] - tproj[0] * c[1][1]);
+    e0 = extents[0] * ac[1][1] + extents[1] * ac[0][1];
+    e1 = b_extents[0] * ac[2][2] + b_extents[2] * ac[2][0];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Az, Bz).
+    d = Math::Fabs(tproj[1] * c[0][2] - tproj[0] * c[1][2]);
+    e0 = extents[0] * ac[1][2] + extents[1] * ac[0][2];
+    e1 = b_extents[0] * ac[2][1] + b_extents[1] * ac[2][0];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    return true;
+}
+
 bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
     float c[3][3];
     float ac[3][3];

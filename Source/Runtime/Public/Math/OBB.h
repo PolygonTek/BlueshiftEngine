@@ -139,6 +139,8 @@ public:
 
                         /// Tests if this OBB contain the given point.
     bool                IsContainPoint(const Vec3 &p) const;
+                        /// Tests if this OBB intersect with the given AABB.
+    bool                IsIntersectAABB(const AABB &b, float epsilon = 1e-3f) const;
                         /// Tests if this OBB intersect with the given OBB.
     bool                IsIntersectOBB(const OBB &b, float epsilon = 1e-3f) const;
                         /// Tests if this OBB intersect with the given sphere.
