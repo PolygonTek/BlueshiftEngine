@@ -21,7 +21,7 @@ uint64_t PlatformBaseThread::GetCurrentThreadId() {
     return 0;
 }
 
-PlatformBaseThread *PlatformBaseThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
+PlatformBaseThread *PlatformBaseThread::Create(threadFunc_t func, void *param, size_t stackSize, int affinity) {
     BE_FATALERROR("PlatformThread::Create not implmeneted on this platform");
     return nullptr;
 }

@@ -51,7 +51,7 @@ static void SetAffinity(int affinity) {
 
 struct ThreadStartupData {
     int affinity;
-    threadFunc_t startProc;
+    threadFunc_t func;
     void *param;
 };
 
@@ -61,12 +61,12 @@ static void *ThreadStartup(ThreadStartupData *parg) {
     parg = nullptr;
 
     SetAffinity(arg.affinity);
-    arg.startProc(arg.param);
+    arg.func(arg.param);
 
     return nullptr;
 }
 
-PlatformBaseThread *PlatformPosixThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
+PlatformBaseThread *PlatformPosixThread::Create(threadFunc_t func, void *param, size_t stackSize, int affinity) {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     if (stackSize > 0) {
@@ -75,7 +75,7 @@ PlatformBaseThread *PlatformPosixThread::Create(threadFunc_t startProc, void *pa
 
     pthread_t *tid = new pthread_t;
     ThreadStartupData *startup = new ThreadStartupData;
-    startup->startProc = startProc;
+    startup->func = func;
     startup->param = param;
     startup->affinity = affinity;
 
