@@ -144,7 +144,7 @@ public:
     };
 
     struct Define {
-        Define() {}
+        Define() = default;
         Define(const char *name, int value) : name(name), value(value) {}
 
         Str                     name;
@@ -152,7 +152,7 @@ public:
     };
 
     struct Condition {
-        Condition() {}
+        Condition() = default;
         Condition(const char *name, const Array<int> &valueList) : name(name), valueList(valueList) {}
 
         Str                     name;

@@ -35,9 +35,9 @@ class Mat3x4;
 
 class Joint {
 public:
-    Joint() { parent = nullptr; }
+    Joint() = default;
     Str                     name;
-    Joint *                 parent;
+    Joint *                 parent = nullptr;
 };
 
 class Skeleton {
@@ -45,7 +45,7 @@ class Skeleton {
     friend class ::SkeletonImporter;
 
 public:
-    Skeleton();
+    Skeleton() = default;
     ~Skeleton();
 
     const char *            GetName() const { return name; }
@@ -87,9 +87,6 @@ private:
     JointPose *             bindPoses = nullptr;        ///< Local joint transforms of bindpose (quaternion based)
     Mat3x4 *                invBindPoseMats = nullptr;  ///< World inverse transform of bindpose (for use in HW skinning)
 };
-
-BE_INLINE Skeleton::Skeleton() {
-}
 
 BE_INLINE Skeleton::~Skeleton() {
     Purge();
