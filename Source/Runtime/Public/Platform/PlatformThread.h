@@ -16,7 +16,7 @@
 
 BE_NAMESPACE_BEGIN
 
-typedef void (*threadFunc_t)(void *);
+typedef int (*threadFunc_t)(void *);
 
 class BE_API PlatformBaseThread {
 public:

@@ -22,8 +22,8 @@ BE_NAMESPACE_BEGIN
 using TaskFunc = void (*)(void *data);
 
 struct Task {
-    TaskFunc                function;
-    void *                  data;
+    TaskFunc                function;   ///< Task function
+    void *                  data;       ///< Task parameters
 };
 
 class BE_API TaskManager {
@@ -35,15 +35,15 @@ public:
     size_t                  NumThreads() const { return taskThreads.Count(); }
 
                             /// Is task list empty ?
-    bool                    IsEmpty() const { return headTaskIndex == tailTaskIndex; }
+    bool                    IsEmpty() const { return firstTaskIndex == lastTaskIndex; }
 
                             /// Is stopping now ?
-    bool                    IsStopping() const { return stopping; }
+    bool                    IsStopping() const { return isStopping; }
 
                             /// Returns number of active tasks.
     int64_t                 NumActiveTasks() const { return numActiveTasks; }
 
-                            /// Adds a task with the given task function.
+                            /// Adds a task with the given task function and parameters.
     bool                    AddTask(TaskFunc function, void *data);
 
                             /// Starts task threads.
@@ -60,13 +60,13 @@ public:
     bool                    TimedWaitFinish(int msec);
 
 private:
-    Task *                  taskBuffer;         ///< Ring buffer of task list.
+    Task *                  taskRingBuffer;     ///< Ring buffer of task list.
     int                     maxTasks;
-    int                     headTaskIndex;
-    int                     tailTaskIndex;
+    int                     firstTaskIndex;
+    int                     lastTaskIndex;
 
     std::atomic<int>        numActiveTasks;     ///< Number of tasks in active state.
-    std::atomic<int>        stopping;
+    std::atomic<bool>       isStopping;
 
     Array<PlatformThread *> taskThreads;
 
@@ -76,7 +76,7 @@ private:
     PlatformMutex *         finishMutex;        ///< Mutex for finishing task list.
     PlatformCondition *     finishCondition;    ///< Condition variable for finishing task list.
 
-    friend void             TaskThreadProc(void *param);
+    static int              TaskThreadProc(void *param);
 };
 
 BE_NAMESPACE_END
