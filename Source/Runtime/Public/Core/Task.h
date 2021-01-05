@@ -22,8 +22,8 @@ BE_NAMESPACE_BEGIN
 using TaskFunc = void (*)(void *data);
 
 struct Task {
-    TaskFunc                function;   ///< Task function
-    void *                  data;       ///< Task parameters
+    TaskFunc                func;
+    void *                  data;
 };
 
 class BE_API TaskManager {
@@ -43,8 +43,9 @@ public:
                             /// Returns number of active tasks.
     int64_t                 NumActiveTasks() const { return numActiveTasks; }
 
-                            /// Adds a task with the given task function and parameters.
-    bool                    AddTask(TaskFunc function, void *data);
+                            /// Adds a task with the given task function and data parameters.
+    template <typename T>
+    bool                    AddTask(void (*func)(T *), T *data);
 
                             /// Starts task threads.
     void                    Start();
@@ -60,6 +61,8 @@ public:
     bool                    TimedWaitFinish(int msec);
 
 private:
+    bool                    AddTaskInternal(TaskFunc func, void *data);
+
     Task *                  taskRingBuffer;     ///< Ring buffer of task list.
     int                     maxTasks;
     int                     firstTaskIndex;
@@ -78,5 +81,10 @@ private:
 
     static int              TaskThreadProc(void *param);
 };
+
+template <typename T>
+bool TaskManager::AddTask(void (*func)(T *), T *data) {
+    AddTaskInternal(reinterpret_cast<TaskFunc>(func), data);
+}
 
 BE_NAMESPACE_END

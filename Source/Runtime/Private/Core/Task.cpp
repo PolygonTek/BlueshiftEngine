@@ -74,9 +74,9 @@ TaskManager::~TaskManager() {
     delete [] taskRingBuffer;
 }
 
-bool TaskManager::AddTask(TaskFunc function, void *data) {
+bool TaskManager::AddTaskInternal(TaskFunc func, void *data) {
     Task task;
-    task.function = function;
+    task.func = func;
     task.data = data;
 
     // Lock for task addition
@@ -177,7 +177,7 @@ int TaskManager::TaskThreadProc(void *param) {
         PlatformMutex::Unlock(tm->taskMutex);
 
         // Do the task.
-        task.function(task.data);
+        task.func(task.data);
 
         // Decrease active task count after finishing a task function.
         tm->numActiveTasks -= 1;

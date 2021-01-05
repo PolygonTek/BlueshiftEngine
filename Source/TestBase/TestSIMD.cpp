@@ -15,8 +15,8 @@
 #include "BlueshiftEngine.h"
 #include "TestSIMD.h"
 
-#define TEST_COUNT			4096
-#define CUDA_TEST_COUNT		30
+#define TEST_COUNT          4096
+#define CUDA_TEST_COUNT     30
 
 #define GetBest(start, end, best) \
     if (!best || end - start < best) { \
