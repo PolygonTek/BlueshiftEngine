@@ -56,8 +56,8 @@ void PrepareShadingParms(vec4 albedo) {
         MEDIUMP vec3 normalTS = normalize(GetNormal(normalMap, baseTc));
 
         #if _NORMAL == 2
-            MEDIUMP vec3 detailNormalTS = vec3(tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0, 0.0);
-            normalTS = normalize(normalTS + detailNormalTS);
+            MEDIUMP vec2 detailNormalTS = tex2D(detailNormalMap, baseTc * detailRepeat).xy * 2.0 - 1.0;
+            normalTS = BlendNormal(normalTS, detailNormalTS);
         #endif
 
         // Convert coordinates from tangent space to GL world space

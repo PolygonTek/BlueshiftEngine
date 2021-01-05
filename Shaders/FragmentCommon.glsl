@@ -33,6 +33,11 @@ vec3 GetNormal(sampler2D normalMap, in vec2 tc) {
     return n;
 }
 
+vec3 BlendNormal(in vec3 baseNormal, in vec2 detailNormal) {
+    // No need to reconstruct the z component of the detail normal for UDN normal blending
+    return normalize(baseNormal + vec3(detailNormal, 0.0));
+}
+
 vec2 EncodeViewNormal(vec3 n) {
     vec2 enc = n.xy / (n.z + 1.0);
     enc /= 1.7777;;
