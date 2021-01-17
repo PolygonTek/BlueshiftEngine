@@ -230,7 +230,7 @@ BE_INLINE void DynamicAABBTree::Query(const OBB &obb, const F &callback) const {
 
         const Node *node = nodes + nodeId;
         
-        if (obb.IsIntersectOBB(OBB(node->aabb))) {
+        if (obb.IsIntersectAABB(node->aabb)) {
             if (node->IsLeaf()) {
                 bool proceed = callback(nodeId);
                 if (proceed == false) {

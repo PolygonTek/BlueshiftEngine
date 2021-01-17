@@ -112,7 +112,7 @@ void RenderLight::Update(const RenderLight::State *stateDef) {
 
 bool RenderLight::IsIntersectAABB(const AABB &aabb) const {
     if (state.type == Type::Directional || state.type == Type::Point) {
-        if (this->worldOBB.IsIntersectOBB(OBB(aabb))) {
+        if (this->worldOBB.IsIntersectAABB(aabb)) {
             return true;
         }
         return false;
