@@ -383,9 +383,9 @@ static void TestMemset() {
 static void TestMulMat3x4RM() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN_AS32 float matrixA[12 * 1024];
-    ALIGN_AS32 float matrixB[12 * 1024];
-    ALIGN_AS32 float matrixC[12 * 1024];
+    ALIGN_AS32 float matrixA[16 * 1024];
+    ALIGN_AS32 float matrixB[16 * 1024];
+    ALIGN_AS32 float matrixC[16 * 1024];
     float *matrixAPtr;
     float *matrixBPtr;
     float *matrixCPtr;
@@ -402,9 +402,9 @@ static void TestMulMat3x4RM() {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         for (int j = 0; j < 1024; j++) {
             BE1::simdGeneric->MulMat3x4RM(matrixCPtr, matrixAPtr, matrixBPtr);
-            matrixAPtr += 12;
-            matrixBPtr += 12;
-            matrixCPtr += 12;
+            matrixAPtr += 16;
+            matrixBPtr += 16;
+            matrixCPtr += 16;
         }
         uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
@@ -426,9 +426,9 @@ static void TestMulMat3x4RM() {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         for (int j = 0; j < 1024; j++) {
             BE1::simdProcessor->MulMat3x4RM(matrixCPtr, matrixAPtr, matrixBPtr);
-            matrixAPtr += 12;
-            matrixBPtr += 12;
-            matrixCPtr += 12;
+            matrixAPtr += 16;
+            matrixBPtr += 16;
+            matrixCPtr += 16;
         }
         uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
