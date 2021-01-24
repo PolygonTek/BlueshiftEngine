@@ -211,7 +211,7 @@ struct MixedPropertyTrait {
 };
 
 /// Template implementation of the property accessor.
-template <typename Class, typename Type, template <typename T, typename...> class Trait = PropertyTrait>
+template <typename Class, typename Type, template <typename T, typename...> typename Trait = PropertyTrait>
 class PropertyAccessorImpl : public PropertyAccessor {
 public:
     using GetFunctionPtr = typename Trait<Type>::ReturnType(Class::*)() const;
@@ -266,7 +266,7 @@ public:
 };
 
 /// Template implementation of the property lambda accessor.
-template <typename Class, typename Type, template <typename T, typename...> class Trait = PropertyTrait>
+template <typename Class, typename Type, template <typename T, typename...> typename Trait = PropertyTrait>
 class PropertyLambdaAccessorImpl : public PropertyAccessor {
 public:
     /// Class-specific std::function to getter lambda.
@@ -315,7 +315,7 @@ public:
 };
 
 /// Template implementation of the array property accessor.
-template <typename Class, typename Type, template <typename T, typename...> class Trait = PropertyTrait>
+template <typename Class, typename Type, template <typename T, typename...> typename Trait = PropertyTrait>
 class ArrayPropertyAccessorImpl : public PropertyAccessor {
 public:
     using GetFunctionPtr = typename Trait<Type>::ReturnType(Class::*)(int index) const;

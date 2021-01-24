@@ -19,7 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const GLenum ToGLBufferUsage(RHI::BufferUsage::Enum usage) {
+static const GLenum ToGLBufferUsage(RHI::BufferUsage::Enum usage) {
     switch (usage) {
     case RHI::BufferUsage::Static:
         return GL_STATIC_DRAW;
@@ -33,7 +33,7 @@ const GLenum ToGLBufferUsage(RHI::BufferUsage::Enum usage) {
     }
 }
 
-const GLenum ToGLBufferTarget(RHI::BufferType::Enum type) {
+static const GLenum ToGLBufferTarget(RHI::BufferType::Enum type) {
     switch (type) {
     case RHI::BufferType::Vertex:
         return GL_ARRAY_BUFFER;

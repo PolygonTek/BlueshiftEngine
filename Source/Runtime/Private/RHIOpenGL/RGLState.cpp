@@ -18,7 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const GLenum toGLStencilFunc[] = {
+static const GLenum toGLStencilFunc[] = {
     GL_ALWAYS,
     GL_NEVER,
     GL_LESS,
@@ -29,7 +29,7 @@ const GLenum toGLStencilFunc[] = {
     GL_NOTEQUAL
 };
 
-const GLenum toGLStencilOp[] = {
+static const GLenum toGLStencilOp[] = {
     GL_KEEP,
     GL_ZERO,
     GL_REPLACE,
