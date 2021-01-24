@@ -296,7 +296,11 @@ public:
             LineList                        = 3,
             LineStrip                       = 4,
             LineLoop                        = 5,
-            PointList                       = 6
+            PointList                       = 6,
+            LineStripAdjacency              = 7,
+            LineAdjacency                   = 8,
+            TriangleStripAdjacency          = 9,
+            TriangleAdjacency               = 10
         };
     };
 

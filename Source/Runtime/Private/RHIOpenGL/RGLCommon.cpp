@@ -19,7 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const GLenum toGLTopology[] = {
+static const GLenum toGLTopology[] = {
     GL_TRIANGLES,
     GL_TRIANGLE_FAN,
     GL_TRIANGLE_STRIP,
@@ -27,6 +27,12 @@ const GLenum toGLTopology[] = {
     GL_LINE_STRIP,
     GL_LINE_LOOP,
     GL_POINTS,
+#ifdef GL_VERSION_3_2
+    GL_LINE_STRIP_ADJACENCY,
+    GL_LINES_ADJACENCY,
+    GL_TRIANGLE_STRIP_ADJACENCY,
+    GL_TRIANGLES_ADJACENCY
+#endif
 };
 
 OpenGLRHI       rhi;
