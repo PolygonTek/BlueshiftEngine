@@ -50,6 +50,29 @@ protected:
         void *object = nullptr;
         Stub stub = nullptr;
     };
+
+    template <Ret(*Func)(Parms...)>
+    static Ret function_stub(void *thisPtr, Parms... params) {
+        return (Func)(params...);
+    }
+
+    template <typename T, Ret(T:: *MemberFunc)(Parms...)>
+    static Ret method_stub(void *thisPtr, Parms... params) {
+        T *p = static_cast<T *>(thisPtr);
+        return (p->*MemberFunc)(params...);
+    }
+
+    template <typename T, Ret(T:: *ConstMemberFunc)(Parms...) const>
+    static Ret const_method_stub(void *thisPtr, Parms... params) {
+        T *const p = static_cast<T *>(thisPtr);
+        return (p->*ConstMemberFunc)(params...);
+    }
+
+    template <typename Lambda>
+    static Ret lambda_stub(void *thisPtr, Parms... args) {
+        Lambda *p = static_cast<Lambda *>(thisPtr);
+        return (p->operator())(args...);
+    }
 };
 
 template <typename T>
@@ -136,29 +159,6 @@ private:
         invocation.stub = stub;
     }
 
-    template <Ret(*Func)(Parms...)>
-    static Ret function_stub(void *thisPtr, Parms... params) {
-        return (Func)(params...);
-    }
-
-    template <typename T, Ret(T:: *MemberFunc)(Parms...)>
-    static Ret method_stub(void *thisPtr, Parms... params) {
-        T *p = static_cast<T *>(thisPtr);
-        return (p->*MemberFunc)(params...);
-    }
-
-    template <typename T, Ret(T:: *ConstMemberFunc)(Parms...) const>
-    static Ret const_method_stub(void *thisPtr, Parms... params) {
-        T *const p = static_cast<T *>(thisPtr);
-        return (p->*ConstMemberFunc)(params...);
-    }
-
-    template <typename Lambda>
-    static Ret lambda_stub(void *thisPtr, Parms... args) {
-        Lambda *p = static_cast<Lambda *>(thisPtr);
-        return (p->operator())(args...);
-    }
-
     friend class MulticastDelegate<Ret(Parms...)>;
     typename DelegateBase<Ret(Parms...)>::InvocationElement invocation;
 };
@@ -190,25 +190,57 @@ public:
 
     MulticastDelegate &operator=(const MulticastDelegate &) = delete;
 
-    MulticastDelegate &operator+=(const MulticastDelegate &rhs) {
-        for (auto &item : rhs.invocationList) { // Clone, not copy; flattens hierarchy:
+    MulticastDelegate &Combine(const MulticastDelegate &rhs) {
+        for (auto &item : rhs.invocationList) {
             invocationList.push_back(new typename DelegateBase<Ret(Parms...)>::InvocationElement(item->object, item->stub));
         }
         return *this;
     }
 
-    // Template instantiation is not needed, will be deduced/inferred:
-    template <typename Lambda>
-    MulticastDelegate &operator+=(const Lambda &lambda) {
-        Delegate<Ret(Parms...)> d = Delegate<Ret(Parms...)>::template FromLambda<Lambda>(lambda);
-        return *this += d;
-    }
-
-    MulticastDelegate &operator+=(const Delegate<Ret(Parms...)> &rhs) {
+    MulticastDelegate &Combine(const Delegate<Ret(Parms...)> &rhs) {
         if (rhs.IsNull()) {
             return *this;
         }
         invocationList.push_back(new typename DelegateBase<Ret(Parms...)>::InvocationElement(rhs.invocation.object, rhs.invocation.stub));
+        return *this;
+    }
+
+    template <Ret(*Func)(Parms...)>
+    MulticastDelegate &Combine() {
+        invocationList.push_back(new typename DelegateBase<Ret(Parms...)>::InvocationElement(nullptr, function_stub<Func>));
+        return *this;
+    }
+
+    template <typename T, Ret(T:: *MemberFunc)(Parms...)>
+    MulticastDelegate &Combine(T *instance) {
+        invocationList.push_back(new typename DelegateBase<Ret(Parms...)>::InvocationElement(instance, method_stub<T, MemberFunc>));
+        return *this;
+    }
+
+    template <typename T, Ret(T:: *ConstMemberFunc)(Parms...) const>
+    MulticastDelegate &Combine(const T *instance) {
+        invocationList.push_back(new typename DelegateBase<Ret(Parms...)>::InvocationElement(const_cast<T *>(instance), const_method_stub<T, ConstMemberFunc>));
+        return *this;
+    }
+
+    template <typename Lambda>
+    MulticastDelegate &Combine(const Lambda &lambda) {
+        invocationList.push_back(new typename DelegateBase<Ret(Parms...)>::InvocationElement((void *)(&lambda), lambda_stub<Lambda>));
+        return *this;
+    }
+
+    MulticastDelegate &Remove(const MulticastDelegate &rhs) {
+        for (auto &item : rhs.invocationList) {
+            invocationList.remove(item);
+        }
+        return *this;
+    }
+
+    MulticastDelegate &Remove(const Delegate<Ret(Parms...)> &rhs) {
+        if (rhs.IsNull()) {
+            return *this;
+        }
+        invocationList.remove(rhs);
         return *this;
     }
 
@@ -265,8 +297,35 @@ private:
     std::list<typename DelegateBase<Ret(Parms...)>::InvocationElement *> invocationList;
 };
 
-#define DELEGATE_FROM_FUNCTION(func, ret, ...)                  Delegate<ret(__VA_ARGS__)>::FromFunc<func>()
-#define DELEGATE_FROM_METHOD(object, cls, memberFunc, ret, ...) Delegate<ret(__VA_ARGS__)>::FromMemberFunc<cls, &cls::memberFunc>(&object)
-#define DELEGATE_FROM_LAMBDA(lambda, ret, ...)                  Delegate<ret(__VA_ARGS__)>::FromLambda(lambda)
+#define DECLARE_DELEGATE(dtype, ret, ...)                   using dtype = MulticastDelegate<ret(__VA_ARGS__)>
+
+#define DELEGATE_FROM_FUNCTION(dtype, func)                 dtype::FromFunc<func>()
+#define DELEGATE_FROM_METHOD(dtype, type, instance, method) dtype::FromMemberFunc<type, &type::method>(instance)
+#define DELEGATE_FROM_LAMBDA(dtype, lambda)                 dtype::FromLambda(lambda)
+
+#define COMBINE_DELEGATE_FUNCTION(md, func)                 md.Combine<func>()
+#define COMBINE_DELEGATE_METHOD(md, type, instance, method) md.Combine<type, &type::method>(instance)
+#define COMBINE_DELEGATE_LAMBDA(md, lambda)                 md.Combine(lambda)
+
+/*
+Example
+
+float ReturnZero() {
+    return 0.0f;
+}
+
+void TestDelegate() {
+    DECLARE_DELEGATE(MyDelegate, float, void);
+
+    Vec2 test(1.0f, 1.0f);
+
+    MyDelegate d;
+    COMBINE_DELEGATE_FUNCTION(d, ReturnZero);
+    COMBINE_DELEGATE_METHOD(d, Vec2, &test, MinComponent);
+    COMBINE_DELEGATE_LAMBDA(d, []() { return 0.0f; });
+
+    d();
+}
+*/
 
 BE_NAMESPACE_END
