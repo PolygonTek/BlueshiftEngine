@@ -867,6 +867,9 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
                         bracket[1] = '0' + arrayIndex;
 
                         GLint location = gglGetUniformLocation(programObject, uniformName);
+                        if (location < 0) {
+                            continue;
+                        }
                         gglUniform1i(location, numSamplers);
 
                         tempSamplers[numSamplers].name = Mem_AllocString(uniformName);
@@ -877,6 +880,9 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
                 }
             } else {
                 GLint location = gglGetUniformLocation(programObject, uniformName);
+                if (location < 0) {
+                    continue;
+                }
                 gglUniform1i(location, numSamplers);
 
                 tempSamplers[numSamplers].name = Mem_AllocString(uniformName);
@@ -892,8 +898,12 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
                         *bracket = '\0';
                     }
 
+                    GLint location = gglGetUniformLocation(programObject, uniformName);
+                    if (location < 0) {
+                        continue;
+                    }
                     tempUniforms[numUniforms].name = Mem_AllocString(uniformName);
-                    tempUniforms[numUniforms].location = gglGetUniformLocation(programObject, uniformName);
+                    tempUniforms[numUniforms].location = location;
                     tempUniforms[numUniforms].type = type;
                     tempUniforms[numUniforms].count = size;
 
