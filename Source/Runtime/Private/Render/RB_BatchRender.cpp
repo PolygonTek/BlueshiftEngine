@@ -204,7 +204,7 @@ void Batch::SetSkinningConstants(const Shader *shader, const SkinningJointCache 
     } else if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetch) {
         const Texture *jointsMapTexture = cache->bufferCache.texture;
 
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::JointsMap], jointsMapTexture);
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::JointsMap], jointsMapTexture);
 
         if (renderGlobal.vertexTextureMethod == BufferCacheManager::VertexTextureMethod::Tbo) {
             if (numInstances == 0) {
@@ -263,8 +263,8 @@ void Batch::SetProbeConstants(const Shader *shader) const {
     if (surfSpace->envProbeInfo[0].envProbe) {
         const EnvProbe *probe0 = surfSpace->envProbeInfo[0].envProbe;
 
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::Probe0DiffuseCubeMap], probe0->GetDiffuseProbeTexture());
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::Probe0SpecularCubeMap], probe0->GetSpecularProbeTexture());
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::Probe0DiffuseCubeMap], probe0->GetDiffuseProbeTexture());
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::Probe0SpecularCubeMap], probe0->GetSpecularProbeTexture());
 
         shader->SetConstant1f(shader->builtInConstantIndices[Shader::BuiltInConstant::Probe0SpecularCubeMapMaxMipLevel], probe0->GetSpecularProbeTextureMaxMipLevel());
 
@@ -282,8 +282,8 @@ void Batch::SetProbeConstants(const Shader *shader) const {
         if (surfSpace->envProbeInfo[1].envProbe) {
             const EnvProbe *probe1 = surfSpace->envProbeInfo[1].envProbe;
 
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::Probe1DiffuseCubeMap], probe1->GetDiffuseProbeTexture());
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::Probe1SpecularCubeMap], probe1->GetSpecularProbeTexture());
+            shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::Probe1DiffuseCubeMap], probe1->GetDiffuseProbeTexture());
+            shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::Probe1SpecularCubeMap], probe1->GetSpecularProbeTexture());
 
             shader->SetConstant1f(shader->builtInConstantIndices[Shader::BuiltInConstant::Probe1SpecularCubeMapMaxMipLevel], probe1->GetSpecularProbeTextureMaxMipLevel());
 
@@ -364,7 +364,7 @@ void Batch::RenderSelection(const Material::ShaderPass *mtrlPass, const Color3 &
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
         const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::AlbedoMap], baseTexture);
 
         Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
@@ -410,7 +410,7 @@ void Batch::RenderDepth(const Material::ShaderPass *mtrlPass) const {
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
         const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::AlbedoMap], baseTexture);
 
         SetMaterialConstants(mtrlPass, shader);
     }
@@ -448,7 +448,7 @@ void Batch::RenderDepthNormal(const Material::ShaderPass *mtrlPass) const {
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
         const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::AlbedoMap], baseTexture);
 
         SetMaterialConstants(mtrlPass, shader);
     }
@@ -488,7 +488,7 @@ void Batch::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
 
     if (mtrlPass->renderingMode == Material::RenderingMode::AlphaCutoff) {
         const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::AlbedoMap], baseTexture);
         
         ALIGN_AS32 Vec4 textureMatrixS = Vec4(mtrlPass->tcScale[0], 0.0f, 0.0f, mtrlPass->tcTranslation[0]);
         ALIGN_AS32 Vec4 textureMatrixT = Vec4(0.0f, mtrlPass->tcScale[1], 0.0f, mtrlPass->tcTranslation[1]);
@@ -557,7 +557,7 @@ void Batch::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
         }
 
         shader->Bind();
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::AlbedoMap], mtrlPass->texture);
     }
 
     shader->SetConstant1f("ambientScale", 1.0f);
@@ -600,7 +600,7 @@ void Batch::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientSca
     SetShaderProperties(shader, mtrlPass->shaderProperties);
 
     const Texture *baseTexture = mtrlPass->shader ? TextureFromShaderProperties(mtrlPass, "albedoMap") : mtrlPass->texture;
-    shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
+    shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::AlbedoMap], baseTexture);
 
     shader->SetConstant1f("ambientScale", ambientScale);
 
@@ -650,13 +650,13 @@ void Batch::RenderIndirectLit(const Material::ShaderPass *mtrlPass) const {
             SetProbeConstants(shader);
         } else {
             const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
+            shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::AlbedoMap], baseTexture);
         }
     } else {
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::AlbedoMap], mtrlPass->texture);
     }
 
-    shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::PrefilteredDfgMap], backEnd.dfgSumGgxTexture);
+    shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::PrefilteredDfgMap], backEnd.dfgSumGgxTexture);
 
     SetMatrixConstants(shader);
 
@@ -725,17 +725,17 @@ void Batch::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float 
             SetShaderProperties(shader, mtrlPass->shaderProperties);
         } else {
             const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
+            shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::AlbedoMap], baseTexture);
         }
     } else {
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::AlbedoMap], mtrlPass->texture);
     }
 
     shader->SetConstant1f("ambientScale", ambientScale);
 
     // Requires pre-filtered DFG LUT for energy compensation even in direct lighting pass.
     if (r_specularEnergyCompensation.GetBool()) {
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::PrefilteredDfgMap], backEnd.dfgSumGgxTexture);
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::PrefilteredDfgMap], backEnd.dfgSumGgxTexture);
     }
 
     SetMatrixConstants(shader);
@@ -787,7 +787,7 @@ void Batch::RenderIndirectLit_DirectLit(const Material::ShaderPass *mtrlPass) co
 
     shader->Bind();
 
-    shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::PrefilteredDfgMap], backEnd.dfgSumGgxTexture);
+    shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::PrefilteredDfgMap], backEnd.dfgSumGgxTexture);
 
     if (mtrlPass->shader) {
         if (mtrlPass->shader->GetIndirectLitDirectLitVersion()) {
@@ -796,10 +796,10 @@ void Batch::RenderIndirectLit_DirectLit(const Material::ShaderPass *mtrlPass) co
             SetProbeConstants(shader);
         } else {
             const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
+            shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::AlbedoMap], baseTexture);
         }
     } else {
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::AlbedoMap], mtrlPass->texture);
     }
 
     SetMatrixConstants(shader);
@@ -850,12 +850,12 @@ void Batch::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shad
             shader->SetConstant2f("shadowProjectionDepth", backEnd.shadowProjectionDepth);
             shader->SetConstant1f("vscmBiasedScale", backEnd.ctx->vscmBiasedScale);
 
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::CubicNormalCubeMap], textureManager.cubicNormalCubeMapTexture);
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::IndirectionCubeMap], backEnd.ctx->indirectionCubeMapTexture);
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::ShadowMap], backEnd.ctx->vscmRT->DepthStencilTexture());
+            shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::CubicNormalCubeMap], textureManager.cubicNormalCubeMapTexture);
+            shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::IndirectionCubeMap], backEnd.ctx->indirectionCubeMapTexture);
+            shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::ShadowMap], backEnd.ctx->vscmRT->DepthStencilTexture());
         } else if (surfLight->def->GetState().type == RenderLight::Type::Spot) {
             shader->SetConstant4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ShadowProjMatrix], true, backEnd.shadowViewProjectionScaleBiasMatrix[0]);
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::ShadowArrayMap], backEnd.ctx->shadowMapRT->DepthStencilTexture());
+            shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::ShadowArrayMap], backEnd.ctx->shadowMapRT->DepthStencilTexture());
         } else if (surfLight->def->GetState().type == RenderLight::Type::Directional) {
             shader->SetConstantArray4x4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ShadowCascadeProjMatrix], true, r_CSM_count.GetInteger(), backEnd.shadowViewProjectionScaleBiasMatrix);
 
@@ -863,7 +863,7 @@ void Batch::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shad
                 shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::ShadowSplitFar], backEnd.csmFar);
             }
             shader->SetConstantArray1f("shadowMapFilterSize", r_CSM_count.GetInteger(), backEnd.shadowMapFilterSize);
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::ShadowArrayMap], backEnd.ctx->shadowMapRT->DepthStencilTexture());
+            shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::ShadowArrayMap], backEnd.ctx->shadowMapRT->DepthStencilTexture());
         }
 
         if (r_shadowMapQuality.GetInteger() == 3) {
@@ -890,13 +890,13 @@ void Batch::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shad
 
         // WARNING: for the nvidia's stupid dynamic branching... 
         if (r_shadows.GetInteger() == 1) {
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::ShadowArrayMap], backEnd.ctx->shadowMapRT->DepthStencilTexture());
+            shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::ShadowArrayMap], backEnd.ctx->shadowMapRT->DepthStencilTexture());
         }*/
     }
 
     const Material *lightMaterial = surfLight->def->GetMaterial();
 
-    shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::LightProjectionMap], lightMaterial->GetPass()->texture);
+    shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::LightProjectionMap], lightMaterial->GetPass()->texture);
 
     Color4 lightColor = surfLight->lightColor * surfLight->def->GetState().intensity * r_lightScale.GetFloat();
     shader->SetConstant4f(shader->builtInConstantIndices[Shader::BuiltInConstant::LightColor], lightColor);
@@ -905,9 +905,9 @@ void Batch::SetupLightingShader(const Material::ShaderPass *mtrlPass, const Shad
     shader->SetConstant1i("useLightCube", useLightCube);
     
     if (useLightCube) {
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::LightCubeMap], lightStage->textureStage.texture);
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::LightCubeMap], lightStage->textureStage.texture);
     } else {
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::LightCubeMap], textureManager.m_defaultCubeMapTexture);
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::LightCubeMap], textureManager.m_defaultCubeMapTexture);
     }*/
 }
 
@@ -950,15 +950,15 @@ void Batch::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const {
             SetShaderProperties(shader, mtrlPass->shaderProperties);
         } else {
             const Texture *baseTexture = TextureFromShaderProperties(mtrlPass, "albedoMap");
-            shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], baseTexture);
+            shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::AlbedoMap], baseTexture);
         }
     } else {
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::AlbedoMap], mtrlPass->texture);
     }
 
     // Requires pre-filtered DFG LUT for energy compensation even in direct lighting pass.
     if (r_specularEnergyCompensation.GetBool()) {
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::PrefilteredDfgMap], backEnd.dfgSumGgxTexture);
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::PrefilteredDfgMap], backEnd.dfgSumGgxTexture);
     }
 
     SetMatrixConstants(shader);
@@ -1059,7 +1059,7 @@ void Batch::RenderGui(const Material::ShaderPass *mtrlPass) const {
         shader = ShaderManager::unlitShader;
         shader->Bind();
 
-        shader->SetTexture(shader->builtInSamplerUnits[Shader::BuiltInSampler::AlbedoMap], mtrlPass->texture);
+        shader->SetTexture(shader->builtInTextureUnits[Shader::BuiltInTexture::AlbedoMap], mtrlPass->texture);
         shader->SetConstant1f(shader->builtInConstantIndices[Shader::BuiltInConstant::Intensity], 1.0f);
     }
 

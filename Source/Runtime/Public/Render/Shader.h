@@ -123,7 +123,7 @@ public:
         };
     };
 
-    struct BuiltInSampler {
+    struct BuiltInTexture {
         enum Enum {
             CubicNormalCubeMap,
             IndirectionCubeMap,
@@ -223,6 +223,9 @@ public:
 
     void                        Bind();
 
+                                /// Returns texture image unit with the given name.
+    int                         GetShaderTextureUnit(const char *name) const;
+
                                 /// Returns constant index with the given name.
     int                         GetConstantIndex(const char *name) const;
 
@@ -315,11 +318,8 @@ public:
     void                        SetConstantBuffer(int index, int bindingIndex) const;
     void                        SetConstantBuffer(const char *name, int bindingIndex) const;
 
-                                /// Returns sampler unit index with the given name.
-    int                         GetSamplerUnit(const char *name) const;
-
                                 /// Sets texture.
-    void                        SetTexture(int unit, const Texture *texture) const;
+    void                        SetTexture(int textureUnit, const Texture *texture) const;
     void                        SetTexture(const char *name, const Texture *texture) const;
 
                                 /// Sets texture array.
@@ -363,7 +363,7 @@ private:
     Str                         vsText; ///< Vertex shader souce code text
     Str                         fsText; ///< Fragment shader source code text
     int                         builtInConstantIndices[BuiltInConstant::Count];
-    int                         builtInSamplerUnits[BuiltInSampler::Count];
+    int                         builtInTextureUnits[BuiltInTexture::Count];
 
     Array<Define>               defineArray; ///< Define list for instantiated shader
 

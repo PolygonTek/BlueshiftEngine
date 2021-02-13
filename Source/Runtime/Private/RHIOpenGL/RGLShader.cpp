@@ -556,12 +556,12 @@ static void TextToLineList(const char *text, Array<Str> &lines) {
     }
 }
 
-static int CompareSampler(const void *s0, const void *s1) {
-    return strcmp(((GLSampler *)s0)->name, ((GLSampler *)s1)->name);
+static int CompareUniformTexture(const void *s0, const void *s1) {
+    return strcmp(((GLUniformTexture *)s0)->name, ((GLUniformTexture *)s1)->name);
 }
 
-static int CompareUniform(const void *s0, const void *s1) {
-    return strcmp(((GLUniform *)s0)->name, ((GLUniform *)s1)->name);
+static int CompareUniformConstant(const void *s0, const void *s1) {
+    return strcmp(((GLUniformConstant *)s0)->name, ((GLUniformConstant *)s1)->name);
 }
 
 static int CompareUniformBlock(const void *s0, const void *s1) {
@@ -823,24 +823,17 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
     gglGetProgramiv(programObject, GL_ACTIVE_UNIFORMS, &uniformCount);
     gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_MAX_LENGTH, &uniformMaxNameLength); // maximum length of the uniform name
 
-    GLint uniformBlockCount, uniformBlockMaxNameLength;
-    gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_BLOCKS, &uniformBlockCount);
-    gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH, &uniformBlockMaxNameLength);
-
     char *uniformName = (char *)_alloca(uniformMaxNameLength);
-    char *uniformBlockName = (char *)_alloca(uniformBlockMaxNameLength);
 
     static constexpr int MAX_SAMPLERS = 64;
     static constexpr int MAX_UNIFORMS = 4096;
     static constexpr int MAX_UNIFORM_BLOCKS = 16;
 
-    GLSampler *tempSamplers = (GLSampler *)_alloca(sizeof(GLSampler) * MAX_SAMPLERS);
-    GLUniform *tempUniforms = (GLUniform *)_alloca(sizeof(GLUniform) * MAX_UNIFORMS);
-    GLUniformBlock *tempUniformBlocks = (GLUniformBlock *)_alloca(sizeof(GLUniformBlock) * MAX_UNIFORM_BLOCKS);
+    GLUniformTexture *tempUniformTextures = (GLUniformTexture *)_alloca(sizeof(GLUniformTexture) * MAX_SAMPLERS);
+    GLUniformConstant *tempUniformConstants = (GLUniformConstant *)_alloca(sizeof(GLUniformConstant) * MAX_UNIFORMS);
 
-    int numSamplers = 0;
-    int numUniforms = 0;
-    int numUniformBlocks = 0;
+    int numUniformTextures = 0;
+    int numUniformConstants = 0;
 
     gglUseProgram(programObject);
 
@@ -870,12 +863,12 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
                         if (location < 0) {
                             continue;
                         }
-                        gglUniform1i(location, numSamplers);
+                        gglUniform1i(location, numUniformTextures);
 
-                        tempSamplers[numSamplers].name = Mem_AllocString(uniformName);
-                        tempSamplers[numSamplers].unit = numSamplers; // TMU
+                        tempUniformTextures[numUniformTextures].name = Mem_AllocString(uniformName);
+                        tempUniformTextures[numUniformTextures].unit = numUniformTextures; // TMU
 
-                        numSamplers++;
+                        numUniformTextures++;
                     }
                 }
             } else {
@@ -883,12 +876,12 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
                 if (location < 0) {
                     continue;
                 }
-                gglUniform1i(location, numSamplers);
+                gglUniform1i(location, numUniformTextures);
 
-                tempSamplers[numSamplers].name = Mem_AllocString(uniformName);
-                tempSamplers[numSamplers].unit = numSamplers; // TMU
+                tempUniformTextures[numUniformTextures].name = Mem_AllocString(uniformName);
+                tempUniformTextures[numUniformTextures].unit = numUniformTextures; // TMU
 
-                numSamplers++;
+                numUniformTextures++;
             }
         } else {
             if (Str::Cmpn(uniformName, "gl_", 3)) { // built-in uniform 은 제외한다
@@ -902,16 +895,26 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
                     if (location < 0) {
                         continue;
                     }
-                    tempUniforms[numUniforms].name = Mem_AllocString(uniformName);
-                    tempUniforms[numUniforms].location = location;
-                    tempUniforms[numUniforms].type = type;
-                    tempUniforms[numUniforms].count = size;
+                    tempUniformConstants[numUniformConstants].name = Mem_AllocString(uniformName);
+                    tempUniformConstants[numUniformConstants].location = location;
+                    tempUniformConstants[numUniformConstants].type = type;
+                    tempUniformConstants[numUniformConstants].count = size;
 
-                    numUniforms++;
+                    numUniformConstants++;
                 }
             }
         }
     }
+
+    GLint uniformBlockCount, uniformBlockMaxNameLength;
+    gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_BLOCKS, &uniformBlockCount);
+    gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH, &uniformBlockMaxNameLength);
+
+    char *uniformBlockName = (char *)_alloca(uniformBlockMaxNameLength);
+
+    GLUniformBlock *tempUniformBlocks = (GLUniformBlock *)_alloca(sizeof(GLUniformBlock) * MAX_UNIFORM_BLOCKS);
+
+    int numUniformBlocks = 0;
 
     for (int uniformBlockIndex = 0; uniformBlockIndex < uniformBlockCount; uniformBlockIndex++) {
         GLint params;
@@ -938,29 +941,29 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
 
     gglUseProgram(0);
 
-    GLSampler *samplers = nullptr;
-    GLUniform *uniforms = nullptr;
+    GLUniformTexture *uniformTextures = nullptr;
+    GLUniformConstant *uniformConstants = nullptr;
     GLUniformBlock *uniformBlocks = nullptr;
 
-    if (numSamplers > 0) {
-        samplers = (GLSampler *)Mem_Alloc(sizeof(GLSampler) * numSamplers);
-        simdProcessor->Memcpy(samplers, tempSamplers, sizeof(GLSampler) * numSamplers);
+    if (numUniformTextures > 0) {
+        uniformTextures = (GLUniformTexture *)Mem_Alloc(sizeof(GLUniformTexture) * numUniformTextures);
+        simdProcessor->Memcpy(uniformTextures, tempUniformTextures, sizeof(GLUniformTexture) * numUniformTextures);
 
         // Sort for binary search.
-        qsort(samplers, numSamplers, sizeof(samplers[0]), CompareSampler);
+        qsort(uniformTextures, numUniformTextures, sizeof(uniformTextures[0]), CompareUniformTexture);
     }
 
-    if (numUniforms > 0) {
-        uniforms = (GLUniform *)Mem_Alloc(sizeof(GLUniform) * numUniforms);
-        simdProcessor->Memcpy(uniforms, tempUniforms, sizeof(GLUniform) * numUniforms);
+    if (numUniformConstants > 0) {
+        uniformConstants = (GLUniformConstant *)Mem_Alloc(sizeof(GLUniformConstant) * numUniformConstants);
+        simdProcessor->Memcpy(uniformConstants, tempUniformConstants, sizeof(GLUniformConstant) * numUniformConstants);
 
         // Sort for binary search.
-        qsort(uniforms, numUniforms, sizeof(uniforms[0]), CompareUniform);
+        qsort(uniformConstants, numUniformConstants, sizeof(uniformConstants[0]), CompareUniformConstant);
     }
 
     if (numUniformBlocks > 0) {
         uniformBlocks = (GLUniformBlock *)Mem_Alloc(sizeof(GLUniformBlock) * numUniformBlocks);
-        simdProcessor->Memcpy(uniformBlocks, tempUniformBlocks, sizeof(GLUniform) * numUniformBlocks);
+        simdProcessor->Memcpy(uniformBlocks, tempUniformBlocks, sizeof(GLUniformBlock) * numUniformBlocks);
 
         // Sort for binary search.
         qsort(uniformBlocks, numUniformBlocks, sizeof(uniformBlocks[0]), CompareUniformBlock);
@@ -969,10 +972,10 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
     GLShader *shader = new GLShader;
     Str::Copynz(shader->name, name, COUNT_OF(shader->name));
     shader->programObject = programObject;
-    shader->numSamplers = numSamplers;
-    shader->samplers = samplers;
-    shader->numUniforms = numUniforms;
-    shader->uniforms = uniforms;
+    shader->numUniformConstants = numUniformConstants;
+    shader->numUniformTextures = numUniformTextures;
+    shader->uniformConstants = uniformConstants;
+    shader->uniformTextures = uniformTextures;
     shader->numUniformBlocks = numUniformBlocks;
     shader->uniformBlocks = uniformBlocks;
 
@@ -993,14 +996,14 @@ void OpenGLRHI::DestroyShader(Handle shaderHandle) {
 
     GLShader *shader = shaderList[shaderHandle];
     gglDeleteProgram(shader->programObject);
-    for (int i = 0; i < shader->numSamplers; i++) {
-        Mem_Free(shader->samplers[i].name);
+    for (int i = 0; i < shader->numUniformTextures; i++) {
+        Mem_Free(shader->uniformTextures[i].name);
     }
-    for (int i = 0; i < shader->numUniforms; i++) {
-        Mem_Free(shader->uniforms[i].name);
+    for (int i = 0; i < shader->numUniformConstants; i++) {
+        Mem_Free(shader->uniformConstants[i].name);
     }
-    Mem_Free(shader->samplers);
-    Mem_Free(shader->uniforms);
+    Mem_Free(shader->uniformTextures);
+    Mem_Free(shader->uniformConstants);
 
     delete shader;
     shaderList[shaderHandle] = nullptr;
@@ -1017,53 +1020,47 @@ void OpenGLRHI::BindShader(Handle shaderHandle) {
     currentContext->state->shaderHandle = shaderHandle;
 }
 
-int OpenGLRHI::GetSamplerUnit(Handle shaderHandle, const char *name) const {
+int OpenGLRHI::GetShaderTextureUnit(Handle shaderHandle, const char *name) const {
     const GLShader *shader = shaderList[shaderHandle];
-    GLSampler find;
+    GLUniformTexture find;
     find.name = const_cast<char *>(name);
-    int index = BinSearch_Equal<GLSampler>(shader->samplers, shader->numSamplers, find);
-    if (index >= 0) {
-        return shader->samplers[index].unit;
+    int uniformIndex = BinSearch_Equal<GLUniformTexture>(shader->uniformTextures, shader->numUniformTextures, find);
+    if (uniformIndex >= 0) {
+        return shader->uniformTextures[uniformIndex].unit;
     }
     return -1;
 }
 
-void OpenGLRHI::SetTexture(int unit, Handle textureHandle) {
-    SelectTextureUnit(unit);
-    BindTexture(textureHandle);
-}
-
-int OpenGLRHI::GetShaderConstantIndex(int shaderHandle, const char *name) const {
+int OpenGLRHI::GetShaderConstantIndex(Handle shaderHandle, const char *name) const {
     const GLShader *shader = shaderList[shaderHandle];
-    GLUniform find;
+    GLUniformConstant find;
     find.name = const_cast<char *>(name);
-    int index = BinSearch_Equal<GLUniform>(shader->uniforms, shader->numUniforms, find);
-    if (index < 0) {
+    int uniformIndex = BinSearch_Equal<GLUniformConstant>(shader->uniformConstants, shader->numUniformConstants, find);
+    if (uniformIndex < 0) {
         return -1;
     }
-
-    return index;
+    return uniformIndex;
 }
 
-int OpenGLRHI::GetShaderConstantBlockIndex(int shaderHandle, const char *name) const {
+int OpenGLRHI::GetShaderConstantBlockIndex(Handle shaderHandle, const char *name) const {
     const GLShader *shader = shaderList[shaderHandle];
     GLUniformBlock find;
     find.name = const_cast<char *>(name);
-    int index = BinSearch_Equal<GLUniformBlock>(shader->uniformBlocks, shader->numUniformBlocks, find);
-    if (index < 0) {
+    int uniformIndex = BinSearch_Equal<GLUniformBlock>(shader->uniformBlocks, shader->numUniformBlocks, find);
+    if (uniformIndex < 0) {
         return -1;
     }
-
-    return index;
+    return uniformIndex;
 }
 
-void OpenGLRHI::SetShaderConstantGeneric(int index, bool rowMajor, int count, const void *data) const {
-    if (index < 0) {
+void OpenGLRHI::SetShaderConstantGeneric(int constantIndex, bool rowMajor, int count, const void *data) const {
+    if (constantIndex < 0) {
+        //assert(0);
         return;
     }
 
     const GLShader *shader = shaderList[currentContext->state->shaderHandle];
-    const GLUniform *uniform = &shader->uniforms[index];
+    const GLUniformConstant *uniform = &shader->uniformConstants[constantIndex];
     switch (uniform->type) {
     case GL_INT:
     case GL_BOOL:
@@ -1120,145 +1117,145 @@ void OpenGLRHI::SetShaderConstantGeneric(int index, bool rowMajor, int count, co
     }
 }
 
-void OpenGLRHI::SetShaderConstant1i(int index, const int constant) const {
-    SetShaderConstantGeneric(index, false, 1, &constant);
+void OpenGLRHI::SetShaderConstant1i(int constantIndex, const int constant) const {
+    SetShaderConstantGeneric(constantIndex, false, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant2i(int index, const int *constant) const {
-    SetShaderConstantGeneric(index, false, 1, constant);
+void OpenGLRHI::SetShaderConstant2i(int constantIndex, const int *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant3i(int index, const int *constant) const {
-    SetShaderConstantGeneric(index, false, 1, constant);
+void OpenGLRHI::SetShaderConstant3i(int constantIndex, const int *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant4i(int index, const int *constant) const {
-    SetShaderConstantGeneric(index, false, 1, constant);
+void OpenGLRHI::SetShaderConstant4i(int constantIndex, const int *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant1ui(int index, const unsigned int constant) const {
-    SetShaderConstantGeneric(index, false, 1, &constant);
+void OpenGLRHI::SetShaderConstant1ui(int constantIndex, const unsigned int constant) const {
+    SetShaderConstantGeneric(constantIndex, false, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant2ui(int index, const unsigned int *constant) const {
-    SetShaderConstantGeneric(index, false, 1, constant);
+void OpenGLRHI::SetShaderConstant2ui(int constantIndex, const unsigned int *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant3ui(int index, const unsigned int *constant) const {
-    SetShaderConstantGeneric(index, false, 1, constant);
+void OpenGLRHI::SetShaderConstant3ui(int constantIndex, const unsigned int *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant4ui(int index, const unsigned int *constant) const {
-    SetShaderConstantGeneric(index, false, 1, constant);
+void OpenGLRHI::SetShaderConstant4ui(int constantIndex, const unsigned int *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant1f(int index, const float constant) const {
-    SetShaderConstantGeneric(index, false, 1, &constant);
+void OpenGLRHI::SetShaderConstant1f(int constantIndex, const float constant) const {
+    SetShaderConstantGeneric(constantIndex, false, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant2f(int index, const float *constant) const {
-    SetShaderConstantGeneric(index, false, 1, constant);
+void OpenGLRHI::SetShaderConstant2f(int constantIndex, const float *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant3f(int index, const float *constant) const {
-    SetShaderConstantGeneric(index, false, 1, constant);
+void OpenGLRHI::SetShaderConstant3f(int constantIndex, const float *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant4f(int index, const float *constant) const {
-    SetShaderConstantGeneric(index, false, 1, constant);
+void OpenGLRHI::SetShaderConstant4f(int constantIndex, const float *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, 1, constant);
 }
 
-void OpenGLRHI::SetShaderConstant2f(int index, const Vec2 &constant) const {
-    SetShaderConstantGeneric(index, false, 1, &constant);
+void OpenGLRHI::SetShaderConstant2f(int constantIndex, const Vec2 &constant) const {
+    SetShaderConstantGeneric(constantIndex, false, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant3f(int index, const Vec3 &constant) const {
-    SetShaderConstantGeneric(index, false, 1, &constant);
+void OpenGLRHI::SetShaderConstant3f(int constantIndex, const Vec3 &constant) const {
+    SetShaderConstantGeneric(constantIndex, false, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant4f(int index, const Vec4 &constant) const {
-    SetShaderConstantGeneric(index, false, 1, &constant);
+void OpenGLRHI::SetShaderConstant4f(int constantIndex, const Vec4 &constant) const {
+    SetShaderConstantGeneric(constantIndex, false, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant2x2f(int index, bool rowMajor, const Mat2 &constant) const {
-    SetShaderConstantGeneric(index, rowMajor, 1, &constant);
+void OpenGLRHI::SetShaderConstant2x2f(int constantIndex, bool rowMajor, const Mat2 &constant) const {
+    SetShaderConstantGeneric(constantIndex, rowMajor, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant3x3f(int index, bool rowMajor, const Mat3 &constant) const {
-    SetShaderConstantGeneric(index, rowMajor, 1, &constant);
+void OpenGLRHI::SetShaderConstant3x3f(int constantIndex, bool rowMajor, const Mat3 &constant) const {
+    SetShaderConstantGeneric(constantIndex, rowMajor, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant4x4f(int index, bool rowMajor, const Mat4 &constant) const {
-    SetShaderConstantGeneric(index, rowMajor, 1, &constant);
+void OpenGLRHI::SetShaderConstant4x4f(int constantIndex, bool rowMajor, const Mat4 &constant) const {
+    SetShaderConstantGeneric(constantIndex, rowMajor, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstant4x3f(int index, bool rowMajor, const Mat3x4 &constant) const {
-    SetShaderConstantGeneric(index, rowMajor, 1, &constant);
+void OpenGLRHI::SetShaderConstant4x3f(int constantIndex, bool rowMajor, const Mat3x4 &constant) const {
+    SetShaderConstantGeneric(constantIndex, rowMajor, 1, &constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray1i(int index, int count, const int *constant) const {
-    SetShaderConstantGeneric(index, false, count, constant);
+void OpenGLRHI::SetShaderConstantArray1i(int constantIndex, int count, const int *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray2i(int index, int count, const int *constant) const {
-    SetShaderConstantGeneric(index, false, count, constant);
+void OpenGLRHI::SetShaderConstantArray2i(int constantIndex, int count, const int *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray3i(int index, int count, const int *constant) const {
-    SetShaderConstantGeneric(index, false, count, constant);
+void OpenGLRHI::SetShaderConstantArray3i(int constantIndex, int count, const int *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray4i(int index, int count, const int *constant) const {
-    SetShaderConstantGeneric(index, false, count, constant);
+void OpenGLRHI::SetShaderConstantArray4i(int constantIndex, int count, const int *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray1f(int index, int count, const float *constant) const {
-    SetShaderConstantGeneric(index, false, count, constant);
+void OpenGLRHI::SetShaderConstantArray1f(int constantIndex, int count, const float *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray2f(int index, int count, const float *constant) const {
-    SetShaderConstantGeneric(index, false, count, constant);
+void OpenGLRHI::SetShaderConstantArray2f(int constantIndex, int count, const float *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray3f(int index, int count, const float *constant) const {
-    SetShaderConstantGeneric(index, false, count, constant);
+void OpenGLRHI::SetShaderConstantArray3f(int constantIndex, int count, const float *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray4f(int index, int count, const float *constant) const {
-    SetShaderConstantGeneric(index, false, count, constant);
+void OpenGLRHI::SetShaderConstantArray4f(int constantIndex, int count, const float *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray2f(int index, int count, const Vec2 *constant) const {
-    SetShaderConstantGeneric(index, false, count, constant);
+void OpenGLRHI::SetShaderConstantArray2f(int constantIndex, int count, const Vec2 *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray3f(int index, int count, const Vec3 *constant) const {
-    SetShaderConstantGeneric(index, false, count, constant);
+void OpenGLRHI::SetShaderConstantArray3f(int constantIndex, int count, const Vec3 *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray4f(int index, int count, const Vec4 *constant) const {
-    SetShaderConstantGeneric(index, false, count, constant);
+void OpenGLRHI::SetShaderConstantArray4f(int constantIndex, int count, const Vec4 *constant) const {
+    SetShaderConstantGeneric(constantIndex, false, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray2x2f(int index, bool rowMajor, int count, const Mat2 *constant) const {
-    SetShaderConstantGeneric(index, rowMajor, count, constant);
+void OpenGLRHI::SetShaderConstantArray2x2f(int constantIndex, bool rowMajor, int count, const Mat2 *constant) const {
+    SetShaderConstantGeneric(constantIndex, rowMajor, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray3x3f(int index, bool rowMajor, int count, const Mat3 *constant) const {
-    SetShaderConstantGeneric(index, rowMajor, count, constant);
+void OpenGLRHI::SetShaderConstantArray3x3f(int constantIndex, bool rowMajor, int count, const Mat3 *constant) const {
+    SetShaderConstantGeneric(constantIndex, rowMajor, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray4x4f(int index, bool rowMajor, int count, const Mat4 *constant) const {
-    SetShaderConstantGeneric(index, rowMajor, count, constant);
+void OpenGLRHI::SetShaderConstantArray4x4f(int constantIndex, bool rowMajor, int count, const Mat4 *constant) const {
+    SetShaderConstantGeneric(constantIndex, rowMajor, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantArray4x3f(int index, bool rowMajor, int count, const Mat3x4 *constant) const {
-    SetShaderConstantGeneric(index, rowMajor, count, constant);
+void OpenGLRHI::SetShaderConstantArray4x3f(int constantIndex, bool rowMajor, int count, const Mat3x4 *constant) const {
+    SetShaderConstantGeneric(constantIndex, rowMajor, count, constant);
 }
 
-void OpenGLRHI::SetShaderConstantBlock(int index, int bindingIndex) {
+void OpenGLRHI::SetShaderConstantBlock(int constantIndex, int bindingIndex) {
     const GLShader *shader = shaderList[currentContext->state->shaderHandle];
-    const GLUniformBlock *uniformBlock = &shader->uniformBlocks[index];
+    const GLUniformBlock *uniformBlock = &shader->uniformBlocks[constantIndex];
 
     gglUniformBlockBinding(shader->programObject, uniformBlock->index, bindingIndex);
 }

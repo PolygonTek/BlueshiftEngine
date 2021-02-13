@@ -161,6 +161,11 @@ void OpenGLRHI::BindTexture(Handle textureHandle) {
     }
 }
 
+void OpenGLRHI::SetTexture(int textureUnit, Handle textureHandle) {
+    SelectTextureUnit(textureUnit);
+    BindTexture(textureHandle);
+}
+
 void OpenGLRHI::SetTextureAddressMode(AddressMode::Enum addressMode) {
     const GLTexture *texture = textureList[currentContext->state->textureHandles[currentContext->state->tmu]];
     assert(texture);

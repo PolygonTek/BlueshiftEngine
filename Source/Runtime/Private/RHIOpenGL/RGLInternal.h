@@ -169,19 +169,19 @@ struct GLSync {
     GLsync                  sync;
 };
 
-struct GLSampler {
-    bool                    operator==(const GLSampler &other) const { return Str::Cmp(name, other.name) == 0; }
-    bool                    operator<(const GLSampler &other) const { return Str::Cmp(name, other.name) < 0; }
-    bool                    operator>(const GLSampler &other) const { return Str::Cmp(name, other.name) > 0; }
+struct GLUniformTexture {
+    bool                    operator==(const GLUniformTexture &other) const { return Str::Cmp(name, other.name) == 0; }
+    bool                    operator<(const GLUniformTexture &other) const { return Str::Cmp(name, other.name) < 0; }
+    bool                    operator>(const GLUniformTexture &other) const { return Str::Cmp(name, other.name) > 0; }
     
     char *                  name;
-    unsigned int            unit;
+    unsigned int            unit;   // texture unit
 };
 
-struct GLUniform {
-    bool                    operator==(const GLUniform &other) const { return Str::Cmp(name, other.name) == 0; }
-    bool                    operator<(const GLUniform &other) const { return Str::Cmp(name, other.name) < 0; }
-    bool                    operator>(const GLUniform &other) const { return Str::Cmp(name, other.name) > 0; }
+struct GLUniformConstant {
+    bool                    operator==(const GLUniformConstant &other) const { return Str::Cmp(name, other.name) == 0; }
+    bool                    operator<(const GLUniformConstant &other) const { return Str::Cmp(name, other.name) < 0; }
+    bool                    operator>(const GLUniformConstant &other) const { return Str::Cmp(name, other.name) > 0; }
 
     char *                  name;
     GLint                   location;
@@ -205,10 +205,10 @@ struct GLUniformBlock {
 struct GLShader {
     char                    name[64];
     GLuint                  programObject;
-    int                     numSamplers;
-    GLSampler *             samplers;
-    int                     numUniforms;
-    GLUniform *             uniforms;
+    int                     numUniformTextures;
+    GLUniformTexture *      uniformTextures;
+    int                     numUniformConstants;
+    GLUniformConstant *     uniformConstants;
     int                     numUniformBlocks;
     GLUniformBlock *        uniformBlocks;
     static Str              programCacheDir;
