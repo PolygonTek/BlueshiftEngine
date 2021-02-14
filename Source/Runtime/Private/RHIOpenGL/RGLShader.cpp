@@ -398,6 +398,7 @@ static Str PreprocessShaderText(const char *shaderName, bool isVertexShader, con
             lexer.ReadToken(&blockName);
             lexer.ExpectPunctuation(Lexer::PuncType::BraceOpen);
 
+            // Standard layout
             processedText += "layout (std140) uniform " + blockName + " {\n";
 
             while (1) {
@@ -788,52 +789,27 @@ static bool UseCachedProgram(const char *name, const uint32_t hash, GLuint progr
     return true;
 }
 
-RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const char *fsText) {
-    GLuint programObject = gglCreateProgram();
-    uint32_t programHash = 0;
-    Array<InOut> vsInArray(32);
-    Array<InOut> fsOutArray(32);
+static void GetUniformConstantsAndTextures(GLuint programObject, int &numUniformConstants, GLUniformConstant *&uniformConstants, int &numUniformTextures, GLUniformTexture *&uniformTextures) {
+    static constexpr int MAX_UNIFORM_TEXTURES = 64;
+    static constexpr int MAX_UNIFORM_CONSTANTS = 4096;
 
-    Str vsppText = PreprocessShaderText(name, true, vsText, vsInArray);
-    Str fsppText = PreprocessShaderText(name, false, fsText, fsOutArray);
+    numUniformConstants = 0;
+    numUniformTextures = 0;
 
-    bool shouldCompileProgram = true;
-
-    if (OpenGL::SupportsProgramBinary()) {
-        const uint32_t vsHash = MD5_BlockChecksum(vsppText.c_str(), vsppText.Length());
-        const uint32_t fsHash = MD5_BlockChecksum(fsppText.c_str(), fsppText.Length());
-
-        programHash = vsHash ^ fsHash;
-
-        shouldCompileProgram = !UseCachedProgram(name, programHash, programObject);
-    }
-
-    if (shouldCompileProgram) {
-        if (!CompileAndLinkProgram(name, vsppText, vsInArray, fsppText, fsOutArray, programObject)) {
-            gglDeleteProgram(programObject);
-            return NullShader;
-        }
-
-        if (OpenGL::SupportsProgramBinary()) {
-            CacheProgram(name, programHash, programObject);
-        }
-    }
-
-    GLint uniformCount, uniformMaxNameLength;
+    GLint uniformCount;
     gglGetProgramiv(programObject, GL_ACTIVE_UNIFORMS, &uniformCount);
+
+    if (uniformCount == 0) {
+        return;
+    }
+
+    GLint uniformMaxNameLength;
     gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_MAX_LENGTH, &uniformMaxNameLength); // maximum length of the uniform name
 
     char *uniformName = (char *)_alloca(uniformMaxNameLength);
 
-    static constexpr int MAX_SAMPLERS = 64;
-    static constexpr int MAX_UNIFORMS = 4096;
-    static constexpr int MAX_UNIFORM_BLOCKS = 16;
-
-    GLUniformTexture *tempUniformTextures = (GLUniformTexture *)_alloca(sizeof(GLUniformTexture) * MAX_SAMPLERS);
-    GLUniformConstant *tempUniformConstants = (GLUniformConstant *)_alloca(sizeof(GLUniformConstant) * MAX_UNIFORMS);
-
-    int numUniformTextures = 0;
-    int numUniformConstants = 0;
+    GLUniformTexture *tempUniformTextures = (GLUniformTexture *)_alloca(sizeof(GLUniformTexture) * MAX_UNIFORM_TEXTURES);
+    GLUniformConstant *tempUniformConstants = (GLUniformConstant *)_alloca(sizeof(GLUniformConstant) * MAX_UNIFORM_CONSTANTS);
 
     gglUseProgram(programObject);
 
@@ -906,66 +882,110 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
         }
     }
 
-    GLint uniformBlockCount, uniformBlockMaxNameLength;
-    gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_BLOCKS, &uniformBlockCount);
+    if (numUniformConstants > 0) {
+        uniformConstants = (GLUniformConstant *)Mem_Alloc(sizeof(GLUniformConstant) * numUniformConstants);
+        simdProcessor->Memcpy(uniformConstants, tempUniformConstants, sizeof(GLUniformConstant) * numUniformConstants);
+    }
+
+    if (numUniformTextures > 0) {
+        uniformTextures = (GLUniformTexture *)Mem_Alloc(sizeof(GLUniformTexture) * numUniformTextures);
+        simdProcessor->Memcpy(uniformTextures, tempUniformTextures, sizeof(GLUniformTexture) * numUniformTextures);
+    }
+}
+
+void GetUniformBlocks(GLuint programObject, int &numUniformBlocks, GLUniformBlock *&uniformBlocks) {
+    numUniformBlocks = 0;
+
+    gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_BLOCKS, &numUniformBlocks);
+    if (numUniformBlocks == 0) {
+        return;
+    }
+
+    uniformBlocks = (GLUniformBlock *)Mem_Alloc(sizeof(GLUniformBlock) * numUniformBlocks);
+
+    GLint uniformBlockMaxNameLength;
     gglGetProgramiv(programObject, GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH, &uniformBlockMaxNameLength);
 
     char *uniformBlockName = (char *)_alloca(uniformBlockMaxNameLength);
 
-    GLUniformBlock *tempUniformBlocks = (GLUniformBlock *)_alloca(sizeof(GLUniformBlock) * MAX_UNIFORM_BLOCKS);
-
-    int numUniformBlocks = 0;
-
-    for (int uniformBlockIndex = 0; uniformBlockIndex < uniformBlockCount; uniformBlockIndex++) {
-        GLint params;
-
+    for (int uniformBlockIndex = 0; uniformBlockIndex < numUniformBlocks; uniformBlockIndex++) {
         gglGetActiveUniformBlockName(programObject, uniformBlockIndex, uniformBlockMaxNameLength, nullptr, uniformBlockName);
 
-        tempUniformBlocks[numUniformBlocks].name = Mem_AllocString(uniformBlockName);
-        tempUniformBlocks[numUniformBlocks].index = gglGetUniformBlockIndex(programObject, uniformBlockName);
+        uniformBlocks[uniformBlockIndex].name = Mem_AllocString(uniformBlockName);
+        uniformBlocks[uniformBlockIndex].index = gglGetUniformBlockIndex(programObject, uniformBlockName);
 
+        GLint params;
         gglGetActiveUniformBlockiv(programObject, uniformBlockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &params);
-        tempUniformBlocks[numUniformBlocks].size = params;
+        uniformBlocks[uniformBlockIndex].size = params;
 
         gglGetActiveUniformBlockiv(programObject, uniformBlockIndex, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &params);
-        tempUniformBlocks[numUniformBlocks].numUniforms = params; // occupies 16 bytes per uniform
+        uniformBlocks[uniformBlockIndex].numUniforms = params;
 
         gglGetActiveUniformBlockiv(programObject, uniformBlockIndex, GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER, &params);
-        tempUniformBlocks[numUniformBlocks].referencedByVS = params > 0;
+        uniformBlocks[uniformBlockIndex].referencedByVS = params > 0;
 
         gglGetActiveUniformBlockiv(programObject, uniformBlockIndex, GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER, &params);
-        tempUniformBlocks[numUniformBlocks].referencedByFS = params > 0;
+        uniformBlocks[uniformBlockIndex].referencedByFS = params > 0;
+    }
+}
 
-        numUniformBlocks++;
+RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const char *fsText) {
+    GLuint programObject = gglCreateProgram();
+    uint32_t programHash = 0;
+    Array<InOut> vsInArray(32);
+    Array<InOut> fsOutArray(32);
+
+    Str vsppText = PreprocessShaderText(name, true, vsText, vsInArray);
+    Str fsppText = PreprocessShaderText(name, false, fsText, fsOutArray);
+
+    bool shouldCompileProgram = true;
+
+    if (OpenGL::SupportsProgramBinary()) {
+        const uint32_t vsHash = MD5_BlockChecksum(vsppText.c_str(), vsppText.Length());
+        const uint32_t fsHash = MD5_BlockChecksum(fsppText.c_str(), fsppText.Length());
+
+        programHash = vsHash ^ fsHash;
+
+        shouldCompileProgram = !UseCachedProgram(name, programHash, programObject);
     }
 
-    gglUseProgram(0);
+    if (shouldCompileProgram) {
+        if (!CompileAndLinkProgram(name, vsppText, vsInArray, fsppText, fsOutArray, programObject)) {
+            gglDeleteProgram(programObject);
+            return NullShader;
+        }
+
+        if (OpenGL::SupportsProgramBinary()) {
+            CacheProgram(name, programHash, programObject);
+        }
+    }
+
+    int numUniformTextures;
+    int numUniformConstants;
+    int numUniformBlocks;
 
     GLUniformTexture *uniformTextures = nullptr;
     GLUniformConstant *uniformConstants = nullptr;
     GLUniformBlock *uniformBlocks = nullptr;
 
-    if (numUniformTextures > 0) {
-        uniformTextures = (GLUniformTexture *)Mem_Alloc(sizeof(GLUniformTexture) * numUniformTextures);
-        simdProcessor->Memcpy(uniformTextures, tempUniformTextures, sizeof(GLUniformTexture) * numUniformTextures);
+    GetUniformConstantsAndTextures(programObject, numUniformConstants, uniformConstants, numUniformTextures, uniformTextures);
 
-        // Sort for binary search.
-        qsort(uniformTextures, numUniformTextures, sizeof(uniformTextures[0]), CompareUniformTexture);
-    }
+    GetUniformBlocks(programObject, numUniformBlocks, uniformBlocks);
 
-    if (numUniformConstants > 0) {
-        uniformConstants = (GLUniformConstant *)Mem_Alloc(sizeof(GLUniformConstant) * numUniformConstants);
-        simdProcessor->Memcpy(uniformConstants, tempUniformConstants, sizeof(GLUniformConstant) * numUniformConstants);
+    gglUseProgram(0);
 
-        // Sort for binary search.
+    // Sort for binary search.
+    if (numUniformConstants > 1) {
         qsort(uniformConstants, numUniformConstants, sizeof(uniformConstants[0]), CompareUniformConstant);
     }
 
-    if (numUniformBlocks > 0) {
-        uniformBlocks = (GLUniformBlock *)Mem_Alloc(sizeof(GLUniformBlock) * numUniformBlocks);
-        simdProcessor->Memcpy(uniformBlocks, tempUniformBlocks, sizeof(GLUniformBlock) * numUniformBlocks);
+    // Sort for binary search.
+    if (numUniformTextures > 1) {
+        qsort(uniformTextures, numUniformTextures, sizeof(uniformTextures[0]), CompareUniformTexture);
+    }
 
-        // Sort for binary search.
+    // Sort for binary search.
+    if (numUniformBlocks > 1) {
         qsort(uniformBlocks, numUniformBlocks, sizeof(uniformBlocks[0]), CompareUniformBlock);
     }
 
@@ -973,8 +993,8 @@ RHI::Handle OpenGLRHI::CreateShader(const char *name, const char *vsText, const 
     Str::Copynz(shader->name, name, COUNT_OF(shader->name));
     shader->programObject = programObject;
     shader->numUniformConstants = numUniformConstants;
-    shader->numUniformTextures = numUniformTextures;
     shader->uniformConstants = uniformConstants;
+    shader->numUniformTextures = numUniformTextures;
     shader->uniformTextures = uniformTextures;
     shader->numUniformBlocks = numUniformBlocks;
     shader->uniformBlocks = uniformBlocks;
@@ -1113,6 +1133,9 @@ void OpenGLRHI::SetShaderConstantGeneric(int constantIndex, bool rowMajor, int c
         break;
     case GL_FLOAT_MAT4x3: // columns = 4, rows = 3
         gglUniformMatrix4x3fv(uniform->location, count, rowMajor, (const GLfloat *)data);
+        break;
+    default:
+        assert(0);
         break;
     }
 }
