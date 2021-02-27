@@ -352,7 +352,7 @@ BE_INLINE void ParticleSystem::StandardModule::Reset() {
     startDelay.Reset(MinMaxCurve::Type::Constant, 1.0f, 0.0f, 0.0f);
     startColor.Set(1, 1, 1, 1);
     startSpeed.Reset(MinMaxCurve::Type::Constant, 1.0f, 1.0f, 1.0f);
-    startSize.Reset(MinMaxCurve::Type::Constant, 1.0f, 1.0f, 1.0f);
+    startSize.Reset(MinMaxCurve::Type::Constant, 1.0f, 0.1f, 0.1f);
     startAspectRatio.Reset(MinMaxCurve::Type::Constant, 1.0f, 1.0f, 1.0f);
     startRotation.Reset(MinMaxCurve::Type::Constant, 180.0f, 0.0f, 0.0f);
     randomizeRotation = 1.0f;
