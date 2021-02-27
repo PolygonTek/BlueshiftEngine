@@ -30,7 +30,7 @@ public:
     Class(const Class &) = delete;
     Class(Class &&other) = default;
     Class &operator=(const Class &) = delete;
-    Class &operator=(Class &&other) = default;    
+    Class &operator=(Class &&other) = default;
 
     // Register ctor
     template <typename... Args, int N = 0>

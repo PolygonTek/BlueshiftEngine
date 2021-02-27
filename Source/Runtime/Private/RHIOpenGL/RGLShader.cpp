@@ -636,8 +636,8 @@ static bool VerifyLinkedProgram(GLuint programObject, const char *shaderName) {
 }
 
 static bool CompileAndLinkProgram(const char *name, const char *vsText, const Array<InOut> &vsInArray, const char *fsText, const Array<InOut> &fsOutArray, GLuint programObject) {
-    GLuint vs;
-    GLuint fs;
+    GLuint vs = 0;
+    GLuint fs = 0;
 
     if ((!vsText || !vsText[0]) && (!fsText || !fsText[0])) {
         return false;
@@ -665,7 +665,9 @@ static bool CompileAndLinkProgram(const char *name, const char *vsText, const Ar
 
         if (!VerifyCompiledShader(fs, name, fsText)) {
             gglDeleteShader(fs);
-            gglDeleteShader(vs);
+            if (vs != 0) {
+                gglDeleteShader(vs);
+            }
             return false;
         }
     }

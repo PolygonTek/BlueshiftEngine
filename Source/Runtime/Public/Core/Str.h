@@ -503,7 +503,7 @@ BE_INLINE Str::Str(const wchar_t *text) : Str() {
     if (text) {
         int l = (int)wcstombs(nullptr, text, 0);
         EnsureAlloced(l + 1, false);
-        wcstombs(data, text, l + 1);
+        wcstombs(data, text, (size_t)(l + 1));
         len = l;
     }
 }

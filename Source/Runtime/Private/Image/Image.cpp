@@ -303,7 +303,7 @@ Image &Image::operator=(const Image &rhs) {
     return (*this);
 }
 
-Image &Image::operator=(Image &&rhs) {
+Image &Image::operator=(Image &&rhs) noexcept {
     Clear();
 
     width = rhs.width;
