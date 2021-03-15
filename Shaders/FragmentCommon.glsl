@@ -1,6 +1,15 @@
 #ifndef FRAGMENT_COMMON_INCLUDED
 #define FRAGMENT_COMMON_INCLUDED
 
+UNIFORM_BLOCK TestUniformBlock {
+    float f1;
+    float f2;
+    vec2 v2;
+    vec4 ambientScale;
+    mat3x4 testMat3x4;
+    float testArray[4];
+} test;
+
 vec4 Tex2Dbilinear(sampler2D tex, in vec2 uv, in float textureSize) {
     float texelSize = 1.0 / textureSize;
     vec2 f = fract(uv.xy * textureSize);
