@@ -38,7 +38,7 @@ public:
     bool                    IsEmpty() const { return headTaskIndex == tailTaskIndex; }
 
                             /// Is stopping now ?
-    bool                    IsStopping() const { return stopping; }
+    bool                    IsStopping() const { return (bool)stopping; }
 
                             /// Returns number of active tasks.
     int64_t                 NumActiveTasks() const { return numActiveTasks; }
