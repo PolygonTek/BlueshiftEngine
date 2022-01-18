@@ -45,6 +45,7 @@ public:
 
     virtual bool            IntersectRay(const Ray &ray, bool backFaceCull, float *hitDist) const override;
 
+    Color4                  GetWireframeColor() const;
     void                    SetWireframeColor(const Color4 &color);
 
     RenderObject::WireframeMode::Enum GetWireframeMode() const { return renderObjectDef.wireframeMode; }

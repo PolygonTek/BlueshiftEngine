@@ -20,7 +20,6 @@
 BE_NAMESPACE_BEGIN
 
 AnimClip::AnimClip() {
-    this->anim = nullptr;
 }
 
 AnimClip::AnimClip(const AnimClip *other) {

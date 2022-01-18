@@ -79,12 +79,12 @@ public:
             RGBE_9_9_9_5,
             RGB_11F_11F_10F,
             // Compressed (DXT) formats
-            DXT1,
-            DXT3,
-            DXT5,
+            DXT1, // BC1
+            DXT3, // BC2
+            DXT5, // BC3
             XGBR_DXT5,
-            DXN1,
-            DXN2,
+            DXN1, // BC4
+            DXN2, // BC5
             // Compressed (PVRTC) formats
             RGB_PVRTC_2BPPV1,
             RGB_PVRTC_4BPPV1,

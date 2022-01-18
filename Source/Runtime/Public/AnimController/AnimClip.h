@@ -80,7 +80,7 @@ public:
     int                 GetRefCount() const { return refCount; }
     
 private:
-    Anim *              anim;
+    Anim *              anim = nullptr;
     mutable int         refCount;
     //int               startTime;
     //int               endTime;

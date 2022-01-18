@@ -166,6 +166,10 @@ bool ComRenderable::IntersectRay(const Ray &ray, bool backFaceCull, float *hitDi
     return true;
 }
 
+Color4 ComRenderable::GetWireframeColor() const {
+    return renderObjectDef.wireframeColor;
+}
+
 void ComRenderable::SetWireframeColor(const Color4 &color) {
     renderObjectDef.wireframeColor = color;
 
