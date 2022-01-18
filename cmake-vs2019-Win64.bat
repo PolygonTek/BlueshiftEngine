@@ -9,7 +9,7 @@ cd "Build"
 if exist "msvc2019" rd "msvc2019" /s /q
 md msvc2019
 cd msvc2019
-cmake -DBUILD_RUNTIME=1 -DBUILD_PLAYER=1 -G "Visual Studio 16 2019 Win64" ..\..
+cmake -DBUILD_RUNTIME=1 -DBUILD_PLAYER=1 -G "Visual Studio 16 2019" -A "x64" ..\..
 @echo:
 @echo Solution created in %~dp0Build\msvc2019
 @echo:
