@@ -101,7 +101,7 @@ public:
     static Line         FromString(const char *str);
 
                         /// Returns dimension of this type.
-    constexpr int       GetDimension() const { return 2*3; }
+    constexpr int       GetDimension() const { return 3*3; }
 
     Vec3                pos;    ///< Specifies the origin of this line.
     Vec3                dir;    ///< The normalized direction vector of this ray.
