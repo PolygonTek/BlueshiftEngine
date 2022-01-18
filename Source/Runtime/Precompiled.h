@@ -344,6 +344,7 @@ constexpr std::size_t count_of(T (&)[N]) {
 #pragma warning (disable: 4305)     // truncation from const double to float
 #pragma warning (disable: 4819)     // The file contains a character that cannot be represented in the current code page
 #pragma warning (disable: 4996)     // This function or variable may be unsafe
+#pragma warning (disable: 26812)    // Prefer 'enum class' over 'enum' (Enum.3)
 #endif
 
 #define BE_CDECL
