@@ -60,6 +60,7 @@ void GameClient::Init(void *windowHandle, bool useMouseInput) {
     cmdSystem.AddCommand("toggleConsole", Cmd_ToggleConsole);
     cmdSystem.AddCommand("toggleMenuBar", Cmd_ToggleMenuBar);
     cmdSystem.AddCommand("toggleStatistics", Cmd_ToggleStatistics);
+    cmdSystem.AddCommand("toggleImguiDemoWindow", Cmd_ToggleImguiDemoWindow);
 
     state = ClientState::Disconnected;
 
@@ -236,7 +237,9 @@ void GameClient::Render(const RenderContext *renderContext) {
     }
 
     // Draw IMGUI demo window.
-    //ImGui::ShowDemoWindow();
+    if (showImguiDemoWindow) {
+        ImGui::ShowDemoWindow();
+    }
 
     DrawConsole();
 }
@@ -409,7 +412,7 @@ void GameClient::DrawStatistics(const RenderContext *renderContext) {
     int rightOffset = 10;
     int topOffset = menuBarHeight + 10;
 
-    ImGui::SetNextWindowSize(ImVec2(fixedWidth, 120), ImGuiCond_Appearing);
+    ImGui::SetNextWindowSize(ImVec2(fixedWidth, 220), ImGuiCond_Appearing);
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - fixedWidth - rightOffset, topOffset), ImGuiCond_Always);
     ImGui::SetNextWindowSizeConstraints(ImVec2(fixedWidth, -1), ImVec2(fixedWidth, -1));
     ImGui::Begin("Statistics", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
@@ -522,6 +525,10 @@ void GameClient::ShowStatistics(bool show) {
     } else {
         BE_PROFILE_STOP();
     }
+}
+
+void GameClient::ShowImguiDemoWindow(bool show) {
+    showImguiDemoWindow = show;
 }
 
 void GameClient::UpdateConsole() {
@@ -1260,6 +1267,10 @@ void GameClient::Cmd_ToggleMenuBar(const CmdArgs &args) {
 
 void GameClient::Cmd_ToggleStatistics(const CmdArgs &args) {
     gameClient.ShowStatistics(!gameClient.IsStatisticsVisible());
+}
+
+void GameClient::Cmd_ToggleImguiDemoWindow(const CmdArgs& arg) {
+    gameClient.ShowImguiDemoWindow(!gameClient.IsImguiDemoWindowVisible());
 }
 
 BE_NAMESPACE_END

@@ -107,6 +107,9 @@ public:
     bool                    IsStatisticsVisible() const { return showStatistics; }
     void                    ShowStatistics(bool show);
 
+    bool                    IsImguiDemoWindowVisible() const { return showImguiDemoWindow; }
+    void                    ShowImguiDemoWindow(bool show);
+
 private:
     void                    InitDefaultGuids();
     void                    ConsoleKeyEvent(KeyCode::Enum key);
@@ -133,6 +136,7 @@ private:
 
     bool                    showMenuBar = false;
     bool                    showStatistics = false;
+    bool                    showImguiDemoWindow = false;
 
     float                   menuBarHeight;
     
@@ -160,6 +164,7 @@ private:
     static void             Cmd_ToggleConsole(const CmdArgs &args);
     static void             Cmd_ToggleMenuBar(const CmdArgs &args);
     static void             Cmd_ToggleStatistics(const CmdArgs &args);
+    static void             Cmd_ToggleImguiDemoWindow(const CmdArgs& args);
 };
 
 extern GameClient           gameClient;
