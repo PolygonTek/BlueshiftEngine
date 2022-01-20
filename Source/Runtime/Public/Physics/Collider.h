@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -107,21 +107,18 @@ private:
     void                    FreeCollisionMesh(CollisionMesh *mesh) const;
 
     Str                     name;
-    mutable int             refCount;
-    int                     unnamedIndex;
+    mutable int             refCount = 0;
+    int                     unnamedIndex = -1;
 
     Type::Enum              type;
     Vec3                    centroid;           ///< Position of center of mass in system units
     float                   volume;             ///< Volume in system units
     Vec3                    modelScale;
-    btCollisionShape *      shape;
+    btCollisionShape *      shape = nullptr;
     Array<CollisionMesh *>  collisionMeshes;
 };
 
 BE_INLINE Collider::Collider() {
-    refCount                = 0;
-    unnamedIndex            = -1;
-    shape                   = nullptr;
 }
 
 BE_INLINE Collider::~Collider() {

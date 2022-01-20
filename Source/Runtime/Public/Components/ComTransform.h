@@ -149,10 +149,10 @@ protected:
     Angles                  localEulerAnglesHint;
 #endif
 
-    mutable Mat3x4          worldMatrix;
-    mutable bool            worldMatrixInvalidated;
+    mutable Mat3x4          worldMatrix = Mat3x4::identity;
+    mutable bool            worldMatrixInvalidated = true;
 
-    bool                    physicsUpdating;
+    bool                    physicsUpdating = false;
 };
 
 BE_NAMESPACE_END

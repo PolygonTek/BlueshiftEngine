@@ -60,12 +60,6 @@ void ComLight::RegisterProperties() {
 }
 
 ComLight::ComLight() {
-    renderLightHandle = -1;
-
-#if WITH_EDITOR
-    spriteHandle = -1;
-    spriteMesh = nullptr;
-#endif
 }
 
 ComLight::~ComLight() {

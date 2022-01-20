@@ -75,18 +75,8 @@ void Entity::RegisterProperties() {
 }
 
 Entity::Entity() {
-    gameWorld = nullptr;
     entityNum = GameWorld::BadEntityNum;
     node.SetOwner(this);
-    layer = 0;
-    staticMask = 0;
-    prefab = false;
-    prefabSourceGuid = Guid::zero;
-    activeSelf = true;
-    activeInHierarchy = true;
-    awaked = false;
-    started = false;
-    initialized = false;
 }
 
 Entity::~Entity() {

@@ -93,7 +93,7 @@ public:
     float                   GetSuspensionRelativeVelocity() const;
 
 protected:
-    Mat3                    localAxis;
+    Mat3                    localAxis = Mat3::identity;
     Vec3                    localOrigin;
     float                   radius;
     float                   suspensionRestLength;
@@ -104,8 +104,8 @@ protected:
     float                   suspensionDampingCompression;
     float                   rollingFriction;
     float                   rollingInfluence;
-    PhysVehicle *           vehicle;
-    int                     vehicleWheelIndex;
+    PhysVehicle *           vehicle = nullptr;
+    int                     vehicleWheelIndex = -1;
 };
 
 BE_NAMESPACE_END

@@ -51,9 +51,6 @@ void ComVehicleWheel::RegisterProperties() {
 }
 
 ComVehicleWheel::ComVehicleWheel() {
-    localAxis = Mat3::identity;
-    vehicle = nullptr;
-    vehicleWheelIndex = -1;
 }
 
 ComVehicleWheel::~ComVehicleWheel() {

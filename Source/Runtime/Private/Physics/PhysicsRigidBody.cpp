@@ -20,7 +20,6 @@ BE_NAMESPACE_BEGIN
 
 PhysRigidBody::PhysRigidBody(btRigidBody *rigidBody, const Vec3 &centroid) : 
     PhysCollidable(PhysCollidable::Type::RigidBody, rigidBody, centroid) {
-    vehiclePtr = nullptr;
 }
 
 PhysRigidBody::~PhysRigidBody() {

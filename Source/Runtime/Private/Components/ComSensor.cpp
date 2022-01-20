@@ -31,7 +31,6 @@ void ComSensor::RegisterProperties() {
 
 ComSensor::ComSensor() {
     memset(&physicsDesc, 0, sizeof(physicsDesc));
-    sensor = nullptr;
 }
 
 ComSensor::~ComSensor() {

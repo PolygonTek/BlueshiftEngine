@@ -52,8 +52,6 @@ void ComText::RegisterProperties() {
 }
 
 ComText::ComText() {
-    fontGuid = Guid();
-    fontSize = 0;
 }
 
 ComText::~ComText() {

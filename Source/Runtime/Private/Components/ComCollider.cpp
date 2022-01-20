@@ -27,7 +27,6 @@ void ComCollider::RegisterProperties() {
 }
 
 ComCollider::ComCollider() {
-    collider = nullptr;
 }
 
 ComCollider::~ComCollider() {

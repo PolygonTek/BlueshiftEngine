@@ -161,8 +161,8 @@ private:
     bool                    ClosestConvexTest(const btCollisionObject *me, const btConvexShape *convexShape, const btTransform &shapeTransform, const Mat3 &axis, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, CastResult &trace) const;
     void                    CheckModifiedCVars();
 
-    float                   time;
-    float                   accumulatedTimeDelta;
+    float                   time = 0.0f;
+    float                   accumulatedTimeDelta = 0.0f;
     int                     frameRate;
     float                   frameTimeDelta;
     float                   maximumAllowedTimeStep;

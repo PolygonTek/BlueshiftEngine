@@ -29,9 +29,6 @@ void Component::RegisterProperties() {
 }
 
 Component::Component() {
-    entity = nullptr;
-    enabled = true;
-    initialized = false;
 }
 
 Component::~Component() {

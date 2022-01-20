@@ -113,8 +113,8 @@ protected:
     void                    SetOwnerValues();
 
     Guid                    scriptGuid;
-    Asset *                 scriptAsset;
-    LuaCpp::State *         state;
+    Asset *                 scriptAsset = nullptr;
+    LuaCpp::State *         state = nullptr;
     Str                     sandboxName;
     LuaCpp::Selector        sandbox;
     StrArray                propertyNames;

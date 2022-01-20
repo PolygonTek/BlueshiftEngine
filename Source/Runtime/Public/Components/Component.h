@@ -96,9 +96,9 @@ protected:
 
     void                    SetInitialized(bool init) { initialized = init; }
 
-    Entity *                entity;
-    bool                    enabled;
-    bool                    initialized;
+    Entity *                entity = nullptr;
+    bool                    enabled = true;
+    bool                    initialized = false;
 };
 
 BE_NAMESPACE_END

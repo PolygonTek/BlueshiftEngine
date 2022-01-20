@@ -133,13 +133,13 @@ protected:
 
     class CollisionListener;
 
-    PhysRigidBody *         body;
-    PhysVehicle *           vehicle;
+    PhysRigidBody *         body = nullptr;
+    PhysVehicle *           vehicle = nullptr;
     PhysCollidableDesc      physicsDesc;
-    CollisionListener *     collisionListener;
+    CollisionListener *     collisionListener = nullptr;
     Array<Collision>        collisions;
     Array<Collision>        oldCollisions;
-    bool                    physicsUpdating;
+    bool                    physicsUpdating = false;
 };
 
 BE_NAMESPACE_END

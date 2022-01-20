@@ -87,7 +87,7 @@ private:
     btRigidBody *           GetRigidBody();
     const btRigidBody *     GetRigidBody() const;
 
-    PhysVehicle *           vehiclePtr;
+    PhysVehicle *           vehiclePtr = nullptr;
 };
 
 BE_NAMESPACE_END

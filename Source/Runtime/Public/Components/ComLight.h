@@ -100,14 +100,14 @@ protected:
     void                    TransformUpdated(const ComTransform *transform);
 
     RenderLight::State      renderLightDef;
-    int                     renderLightHandle;
+    int                     renderLightHandle = -1;
 
     RenderWorld *           renderWorld;
 
 #if WITH_EDITOR
-    Mesh *                  spriteMesh;
+    Mesh *                  spriteMesh = nullptr;
     RenderObject::State     spriteDef;
-    int                     spriteHandle;
+    int                     spriteHandle = -1;
 #endif
 };
 

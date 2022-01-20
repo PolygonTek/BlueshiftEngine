@@ -91,10 +91,6 @@ void ComRigidBody::RegisterProperties() {
 
 ComRigidBody::ComRigidBody() {
     memset(&physicsDesc, 0, sizeof(physicsDesc));
-    body = nullptr;
-    vehicle = nullptr;
-    collisionListener = nullptr;
-    physicsUpdating = false;
 }
 
 ComRigidBody::~ComRigidBody() {

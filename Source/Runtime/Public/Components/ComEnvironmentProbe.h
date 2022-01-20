@@ -116,11 +116,13 @@ protected:
     void                    TransformUpdated(const ComTransform *transform);
 
     EnvProbe::State         probeDef;
-    int                     probeHandle;
+    int                     probeHandle = -1;
 
-    Mesh *                  sphereMesh;
+#if WITH_EDITOR
+    Mesh *                  sphereMesh = nullptr;
     RenderObject::State     sphereDef;
-    int                     sphereHandle;
+    int                     sphereHandle = -1;
+#endif
 
     int                     gizmoCurrentTime = 0;
     int                     gizmoRefreshTime = 0;

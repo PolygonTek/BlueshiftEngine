@@ -60,7 +60,7 @@ protected:
     void                    TransformUpdated(const ComTransform *transform);
 
     Guid                    connectedBodyGuid;
-    PhysConstraint *        constraint;
+    PhysConstraint *        constraint = nullptr;
     bool                    collisionEnabled;
     float                   breakImpulse;
 };

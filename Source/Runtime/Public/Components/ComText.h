@@ -74,7 +74,7 @@ protected:
     void                    RectTransformUpdated(const ComRectTransform *rectTransform);
 
     Guid                    fontGuid;
-    int                     fontSize;
+    int                     fontSize = 0;
 };
 
 BE_NAMESPACE_END

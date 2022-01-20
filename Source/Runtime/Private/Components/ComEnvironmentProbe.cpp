@@ -66,12 +66,6 @@ void ComEnvironmentProbe::RegisterProperties() {
 }
 
 ComEnvironmentProbe::ComEnvironmentProbe() {
-    probeHandle = -1;
-
-#if WITH_EDITOR
-    sphereHandle = -1;
-    sphereMesh = nullptr;
-#endif
 }
 
 ComEnvironmentProbe::~ComEnvironmentProbe() {

@@ -48,7 +48,7 @@ protected:
     virtual void            CreateCollider() = 0;
 
     Str                     material; // TODO: implement physics material
-    Collider *              collider;
+    Collider *              collider = nullptr;
 };
 
 BE_NAMESPACE_END

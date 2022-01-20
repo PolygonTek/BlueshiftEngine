@@ -136,8 +136,8 @@ protected:
     bool                    rayCastTarget;
     bool                    clipChildren;
 
-    mutable bool            cachedRectInvalidated;
-    mutable RectF           cachedRect;                 ///< Cached rectangle in local space.
+    mutable bool            cachedRectInvalidated = true;
+    mutable RectF           cachedRect = RectF::zero;       ///< Cached rectangle in local space.
 };
 
 BE_NAMESPACE_END

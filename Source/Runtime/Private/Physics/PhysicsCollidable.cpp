@@ -22,11 +22,6 @@ PhysCollidable::PhysCollidable(PhysCollidable::Type::Enum type, btCollisionObjec
     this->type = type;
     this->collisionObject = collisionObject;
     this->centroid = centroid;
-    this->collisionFilterBit = 0;
-    this->collisionFilterMask = BIT(0);
-    this->collisionListener = nullptr;
-    this->userPointer = nullptr;
-    this->physicsWorld = nullptr;
 }
 
 PhysCollidable::~PhysCollidable() {

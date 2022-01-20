@@ -293,29 +293,29 @@ protected:
                                 /// Called when the application pauses.
     void                        OnApplicationPause(bool pause);
 
-    Str                         name;               ///< Entity name
-    int                         nameHash;           ///< Hash key for GameWorld::entityHash
-    Str                         tag;                ///< Tag name
-    int                         tagHash;            ///< Hash key for GameWorld::entityTagHash
-    int                         entityNum;          ///< Index for GameWorld::entities
-    int                         layer;              ///< Layer number
-    int                         staticMask;
+    Str                         name;                       ///< Entity name
+    int                         nameHash;                   ///< Hash key for GameWorld::entityHash
+    Str                         tag;                        ///< Tag name
+    int                         tagHash;                    ///< Hash key for GameWorld::entityTagHash
+    int                         entityNum;                  ///< Index for GameWorld::entities
+    int                         layer = 0;                  ///< Layer number
+    int                         staticMask = 0;
     Hierarchy<Entity>           node;
-    Guid                        prefabSourceGuid;
+    Guid                        prefabSourceGuid = Guid::zero;
 
-    bool                        initialized;
-    bool                        awaked;
-    bool                        started;
-    bool                        activeSelf;         ///< Local active state
-    bool                        activeInHierarchy;  ///< Actual active state 
-    bool                        prefab;
+    bool                        initialized = false;
+    bool                        awaked = false;
+    bool                        started = false;
+    bool                        activeSelf = true;          ///< Local active state
+    bool                        activeInHierarchy = true;   ///< Actual active state 
+    bool                        prefab = false;
 
 #if WITH_EDITOR
     bool                        visibleInEditor = true;
     bool                        selectableInEditor = true;
 #endif
 
-    GameWorld *                 gameWorld;
+    GameWorld *                 gameWorld = nullptr;
     int                         sceneNum = -1;
 
     ComponentPtrArray           components;         ///< 0'th component is always transform component

@@ -48,8 +48,6 @@ void ComTextRenderer::RegisterProperties() {
 }
 
 ComTextRenderer::ComTextRenderer() {
-    fontGuid = Guid();
-    fontSize = 0;
 }
 
 ComTextRenderer::~ComTextRenderer() {

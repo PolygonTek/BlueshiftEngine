@@ -54,7 +54,7 @@ protected:
     void                    ProcessScriptCallback();
     void                    TransformUpdated(const ComTransform *transform);
 
-    PhysSensor *            sensor;
+    PhysSensor *            sensor = nullptr;
     PhysCollidableDesc      physicsDesc;
     Array<Guid>             oldColliders;
 };

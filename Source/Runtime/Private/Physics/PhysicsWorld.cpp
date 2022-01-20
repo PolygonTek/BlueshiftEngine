@@ -119,9 +119,6 @@ PhysicsWorld::PhysicsWorld() {
 
     memset(filterMasks, 0xFFFFFFFF, sizeof(filterMasks));
 
-    accumulatedTimeDelta = 0;
-    time = 0;
-
     SetFrameRate(50);
     maximumAllowedTimeStep = 0.2f;
 

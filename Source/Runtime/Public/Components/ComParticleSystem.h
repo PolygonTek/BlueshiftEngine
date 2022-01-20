@@ -76,15 +76,15 @@ protected:
     void                    TransformUpdated(const ComTransform *transform);
 
     bool                    playOnAwake;
-    Asset *                 particleSystemAsset;
+    Asset *                 particleSystemAsset = nullptr;
     bool                    simulationStarted;
     int                     currentTime;
     int                     stopTime;
 
 #if WITH_EDITOR
     RenderObject::State     spriteDef;
-    int                     spriteHandle;
-    Mesh *                  spriteReferenceMesh;
+    int                     spriteHandle = -1;
+    Mesh *                  spriteReferenceMesh = nullptr;
 #endif
 };
 

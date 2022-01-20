@@ -80,7 +80,7 @@ public:
 protected:
     virtual void            CreateConstraint() override;
 
-    Mat3                    localAxis;
+    Mat3                    localAxis = Mat3::identity;
     Vec3                    localAnchor;
     Mat3                    connectedAxis;
     Vec3                    connectedAnchor;

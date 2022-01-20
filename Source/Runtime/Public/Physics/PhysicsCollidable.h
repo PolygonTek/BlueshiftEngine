@@ -111,12 +111,12 @@ public:
 protected:
     Type::Enum              type;                   ///< Collidable type
     Vec3                    centroid;               ///< Position of the center of mass in system units
-    int                     collisionFilterBit;
-    int                     collisionFilterMask;
+    int                     collisionFilterBit = 0;
+    int                     collisionFilterMask = BIT(0);
     btCollisionObject *     collisionObject;
-    PhysCollisionListener * collisionListener;
-    void *                  userPointer;
-    PhysicsWorld *          physicsWorld;
+    PhysCollisionListener * collisionListener = nullptr;
+    void *                  userPointer = nullptr;
+    PhysicsWorld *          physicsWorld = nullptr;
 };
 
 BE_NAMESPACE_END

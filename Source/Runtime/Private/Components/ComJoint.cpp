@@ -35,7 +35,6 @@ void ComJoint::RegisterProperties() {
 }
 
 ComJoint::ComJoint() {
-    constraint = nullptr;
 }
 
 ComJoint::~ComJoint() {

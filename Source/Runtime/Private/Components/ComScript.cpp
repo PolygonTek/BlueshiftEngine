@@ -35,8 +35,6 @@ void ComScript::RegisterProperties() {
 }
 
 ComScript::ComScript() {
-    state = nullptr;
-    scriptAsset = nullptr;
 }
 
 ComScript::~ComScript() {

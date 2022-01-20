@@ -90,9 +90,9 @@ protected:
     void                    TransformUpdated(const ComTransform *transform);
 
     RenderObject::State     renderObjectDef;
-    int                     renderObjectHandle;
-    int                     staticBatchIndex;
-    RenderWorld *           renderWorld;
+    int                     renderObjectHandle = -1;
+    int                     staticBatchIndex = -1;
+    RenderWorld *           renderWorld = nullptr;
 };
 
 BE_NAMESPACE_END

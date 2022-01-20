@@ -42,9 +42,6 @@ void ComTransform::RegisterProperties() {
 }
 
 ComTransform::ComTransform() {
-    worldMatrix = Mat3x4::identity;
-    worldMatrixInvalidated = true;
-    physicsUpdating = false;
 }
 
 ComTransform::~ComTransform() {

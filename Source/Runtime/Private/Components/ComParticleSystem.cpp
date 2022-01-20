@@ -36,12 +36,6 @@ void ComParticleSystem::RegisterProperties() {
 }
 
 ComParticleSystem::ComParticleSystem() {
-    particleSystemAsset = nullptr;
-
-#if WITH_EDITOR
-    spriteHandle = -1;
-    spriteReferenceMesh = nullptr;
-#endif
 }
 
 ComParticleSystem::~ComParticleSystem() {
