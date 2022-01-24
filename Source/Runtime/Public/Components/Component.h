@@ -15,13 +15,13 @@
 #pragma once
 
 #include "Core/Object.h"
-#include "Render/RenderCamera.h"
 
 BE_NAMESPACE_BEGIN
 
 class Entity;
 class GameWorld;
 class Component;
+class RenderCamera;
 
 using ComponentPtr = Component*;
 using ComponentPtrArray = Array<ComponentPtr>;
@@ -85,8 +85,10 @@ public:
                             ///
     virtual bool            IntersectRay(const Ray &ray, bool backFaceCull, float *hitDist) const { return false; }
 
+#if WITH_EDITOR
                             /// Visualize the component in editor.
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {}
+#endif
 
 protected:
     virtual void            OnActive() {}

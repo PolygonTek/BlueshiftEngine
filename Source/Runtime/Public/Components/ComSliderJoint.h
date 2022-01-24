@@ -18,11 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-class LuaVM;
-
 class ComSliderJoint : public ComJoint {
-    friend class LuaVM;
-
 public:
     OBJECT_PROTOTYPE(ComSliderJoint);
 

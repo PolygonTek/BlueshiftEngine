@@ -15,6 +15,7 @@
 #pragma once
 
 #include "Containers/HashTable.h"
+#include "Render/RenderCamera.h"
 #include "Component.h"
 #include "Game/InputUtils.h"
 

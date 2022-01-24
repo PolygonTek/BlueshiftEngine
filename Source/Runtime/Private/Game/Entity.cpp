@@ -272,6 +272,9 @@ Component *Entity::AddNewComponent(const MetaObject *type) {
 }
 
 void Entity::InsertComponent(Component *component, int index) {
+    /*if (component->GetEntity()) {
+        BE_ERRLOG("Entity::InsertComponent: %s component already has an entity\n", component->ClassName().c_str());
+    }*/
     component->SetEntity(this);
 
     components.Insert(component, index);

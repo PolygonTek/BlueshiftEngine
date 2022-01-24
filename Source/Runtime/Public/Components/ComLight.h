@@ -14,12 +14,12 @@
 
 #pragma once
 
-#include "Render/Mesh.h"
 #include "Render/RenderLight.h"
 #include "Component.h"
 
 BE_NAMESPACE_BEGIN
 
+class Mesh;
 class RenderWorld;
 class ComTransform;
 

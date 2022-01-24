@@ -18,11 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-class LuaVM;
-
 class ComConeCollider : public ComCollider {
-    friend class LuaVM;
-
 public:
     OBJECT_PROTOTYPE(ComConeCollider);
 

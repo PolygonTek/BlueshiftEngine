@@ -201,7 +201,7 @@ public:
     template <typename T>
     bool                        IsInstanceOf() const { return IsInstanceOf(T::metaObject); }
 
-                                /// Returns true if this object can be respondable event evdef.
+                                /// Returns true if this object can be respond to event evdef.
     bool                        IsRespondsTo(const EventDef &evdef) const;
 
                                 /// Returns GUID of the object.
@@ -262,7 +262,7 @@ private:
     int                         instanceID;
 
     static bool                 initialized;
-    static Array<MetaObject *>  types;          // in alphabetical order
+    static Array<MetaObject *>  types;          // MetaObject list in alphabetical order
 };
 
 BE_INLINE bool Object::IsTypeOf(const MetaObject &metaObject) const {

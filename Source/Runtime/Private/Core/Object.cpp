@@ -239,6 +239,8 @@ void Object::RegisterProperties() {
     REGISTER_PROPERTY("guid", "GUID", Guid, guid, Guid::zero, "", PropertyInfo::Flag::ReadOnly);
 }
 
+#define CHECK_GUID_CONFLICT 1
+
 bool Object::InitInstance(Guid guid) {
     if (guid.IsZero()) {
         Object *sameGuidObject;
@@ -248,7 +250,7 @@ bool Object::InitInstance(Guid guid) {
         } while (instanceHash.Get(guid, &sameGuidObject));
     }
 
-#if 1
+#if CHECK_GUID_CONFLICT
     Object *sameGuidObject;
     if (instanceHash.Get(guid, &sameGuidObject)) {
         BE_WARNLOG("Conflicts GUID (%s) for object type '%s'\n", guid.ToString(), sameGuidObject->ClassName().c_str());

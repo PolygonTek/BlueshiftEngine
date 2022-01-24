@@ -18,11 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-class LuaVM;
-
 class ComCharacterJoint : public ComJoint {
-    friend class LuaVM;
-
 public:
     OBJECT_PROTOTYPE(ComCharacterJoint);
 

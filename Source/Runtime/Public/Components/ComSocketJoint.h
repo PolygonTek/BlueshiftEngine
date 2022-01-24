@@ -18,11 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-class LuaVM;
-
 class ComSocketJoint : public ComJoint {
-    friend class LuaVM;
-
 public:
     OBJECT_PROTOTYPE(ComSocketJoint);
 

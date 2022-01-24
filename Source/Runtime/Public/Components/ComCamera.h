@@ -16,6 +16,7 @@
 
 #include "Containers/HashTable.h"
 #include "Render/RenderObject.h"
+#include "Render/RenderCamera.h"
 #include "Component.h"
 #include "Game/InputUtils.h"
 
@@ -36,7 +37,7 @@ public:
     
     virtual void            Purge(bool chainPurge = true) override;
 
-                            /// Initializes this component. Called after deserialization.
+                            /// Initializes this component. Called after de-serialization.
     virtual void            Init() override;
 
     virtual bool            HasRenderObject(int renderObjectHandle) const override;

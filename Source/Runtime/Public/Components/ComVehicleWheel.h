@@ -14,11 +14,11 @@
 
 #pragma once
 
-#include "Physics/Physics.h"
 #include "Component.h"
 
 BE_NAMESPACE_BEGIN
 
+class PhysVehicle;
 class ComRigidBody;
 
 class ComVehicleWheel : public Component {

@@ -20,14 +20,11 @@
 
 BE_NAMESPACE_BEGIN
 
-class LuaVM;
 class ComTransform;
 class PhysRigidBody;
 class PhysSensor;
 
 class ComCharacterController : public Component {
-    friend class LuaVM;
-
 public:
     OBJECT_PROTOTYPE(ComCharacterController);
 
