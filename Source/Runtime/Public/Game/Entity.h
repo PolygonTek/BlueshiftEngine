@@ -24,7 +24,6 @@
 
 #include "Containers/HashTable.h"
 #include "Core/Object.h"
-#include "Render/RenderCamera.h"
 #include "Components/Component.h"
 
 BE_NAMESPACE_BEGIN
@@ -35,6 +34,10 @@ class ComRectTransform;
 class GameWorld;
 class Prefab;
 class Entity;
+
+#if WITH_EDITOR
+class RenderCamera;
+#endif
 
 using EntityPtr = Entity*;
 using EntityPtrArray = Array<EntityPtr>;
@@ -85,11 +88,11 @@ public:
 #if WITH_EDITOR
                                 /// Returns true if this entity is visible in editor.
     bool                        IsVisible() const { return visibleInEditor; }
-                                /// Sets this entity's visiblilty in editor.
+                                /// Sets this entity's visibility in editor.
     void                        SetVisible(bool visible);
                                 /// Returns true if this entity is selectable in editor.
     bool                        IsSelectable() const { return selectableInEditor; }
-                                /// Sets this entity's selectablilty in editor.
+                                /// Sets this entity's select-ability in editor.
     void                        SetSelectable(bool selectable);
 #endif
 
@@ -150,7 +153,7 @@ public:
     Component *                 GetConflictingComponent(const MetaObject *type) const;
                                 /// Returns index of the component pointer.
     int                         GetComponentIndex(const Component *component) const;
-                                /// Returns a component pointer by the given comopnent index.
+                                /// Returns a component pointer by the given component index.
     Component *                 GetComponent(int index) const { return components[index]; }
                                 /// Returns a component pointer by the given meta object.
     Component *                 GetComponent(const MetaObject *type) const;
@@ -217,16 +220,16 @@ public:
 
                                 /// Serializes entity to JSON value.
     virtual void                Serialize(Json::Value &data, bool forCopying = false) const override;
-                                /// Deserializes entity from JSON value.
+                                /// De-serializes entity from JSON value.
     virtual void                Deserialize(const Json::Value &data) override;
                                 /// Serializes given entity hierarchy to JSON value.
     static void                 SerializeHierarchy(const Entity *entity, Json::Value &entitiesValue, bool forCopying = false);
 
-                                /// Returns if this entity is active. 
+                                /// Returns true if this entity is active. 
                                 /// Note that an entity may be inactive because a parent is not active, even if this returns true.
                                 /// Use IsActiveInHierarchy() if you want to check if the entity is actually treated as active in the scene.
     bool                        IsActiveSelf() const { return activeSelf; }
-                                /// Returns if this entity is active in the game.
+                                /// Returns true if this entity is active in the game.
     bool                        IsActiveInHierarchy() const { return activeInHierarchy; }
 
                                 /// Sets local active state of this entity.

@@ -35,7 +35,7 @@ public:
     ComTransform();
     virtual ~ComTransform();
 
-                            /// Initializes this component. Called after deserialization.
+                            /// Initializes this component. Called after de-serialization.
     virtual void            Init() override;
 
                             /// Transform component cannot be disabled.
@@ -115,16 +115,16 @@ public:
                             /// Rotates the transform so the forward vector points at targetPosition.
     void                    LookAt(const Vec3 &targetPosition, const Vec3 &worldUp = Vec3::unitZ);
 
-                            /// Returns forward direction in the choosen transform space.
+                            /// Returns forward direction in the chosen transform space.
     Vec3                    Forward(TransformSpace space = WorldSpace) const;
-                            /// Returns right direction in the choosen transform space.
+                            /// Returns right direction in the chosen transform space.
     Vec3                    Right(TransformSpace space = WorldSpace) const;
-                            /// Returns up direction in the choosen transform space.
+                            /// Returns up direction in the chosen transform space.
     Vec3                    Up(TransformSpace space = WorldSpace) const;
 
                             /// Move in the chosen transform space.
     void                    Translate(const Vec3 &translation, TransformSpace space = WorldSpace);
-                            /// Rotate with given vector and angle in the choosen transform space.
+                            /// Rotate with given vector and angle in the chosen transform space.
     void                    Rotate(const Vec3 &rotVec, float angle, TransformSpace space = WorldSpace);
 
     void                    SetPhysicsUpdating(bool updating) { physicsUpdating = updating; }
