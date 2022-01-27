@@ -30,7 +30,7 @@ public:
     ComVehicleWheel();
     virtual ~ComVehicleWheel();
 
-                            /// Returns true if this component conflicts with the given component
+                            /// Returns true if this component conflicts with the given component.
     virtual bool            IsConflictComponent(const MetaObject &componentClass) const override;
 
                             /// Initializes this component. Called after deserialization.
@@ -40,7 +40,7 @@ public:
     virtual void            Update() override;
 
 #if WITH_EDITOR
-                            /// Visualize the component in editor
+                            /// Visualize the component in editor.
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 

@@ -35,14 +35,14 @@ public:
     virtual bool            HasRenderObject(int renderObjectHandle) const override;
 
                             /// Called once when game started before Start()
-                            /// When game already started, called immediately after spawned
+                            /// When game already started, called immediately after spawned.
     virtual void            Awake() override;
 
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;
 
 #if WITH_EDITOR
-                            /// Visualize the component in editor
+                            /// Visualize the component in editor.
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 

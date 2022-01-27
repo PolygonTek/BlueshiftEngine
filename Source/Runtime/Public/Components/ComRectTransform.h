@@ -34,7 +34,7 @@ public:
     virtual bool            CanDisable() const override { return false; }
 
 #if WITH_EDITOR
-                            /// Visualize the component in editor
+                            /// Visualize the component in editor.
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 

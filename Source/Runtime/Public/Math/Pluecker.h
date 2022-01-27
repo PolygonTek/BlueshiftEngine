@@ -54,7 +54,7 @@ public:
     float                   operator[](const int index) const;
     float &                 operator[](const int index);
 
-                            /// Flips the direction
+                            /// Flips the direction.
     Pluecker                operator-() const;
 
     Pluecker                operator*(const float rhs) const;
@@ -97,7 +97,7 @@ public:
     Pluecker                Normalize() const;
     float                   NormalizeSelf();
 
-                            /// Returns dimension of this type
+                            /// Returns dimension of this type.
     constexpr int           GetDimension() const { return 6; }
 
     static const Pluecker   origin;

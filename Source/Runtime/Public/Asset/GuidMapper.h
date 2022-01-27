@@ -22,28 +22,28 @@ BE_NAMESPACE_BEGIN
 
 class GuidMapper {
 public:
-                            /// Gets number of elements
+                            /// Gets number of elements.
     int                     Count() const { assert(guidToFilePathMap.Count() == filePathToGuidMap.Count()); return guidToFilePathMap.Count(); }
 
-                            /// Converts GUID to path
+                            /// Converts GUID to path.
     const Str               Get(const Guid &guid) const;
 
-                            /// Converts path to GUID
+                            /// Converts path to GUID.
     const Guid              Get(const Str &filePath) const;
 
-                            /// Sets map GUID to path
+                            /// Sets map GUID to path.
     void                    Set(const Guid &guid, const Str &filePath);
 
-                            /// Removes hash using GUID
+                            /// Removes hash using GUID.
     bool                    Remove(const Guid &guid);
 
-                            /// Removes hash using path
+                            /// Removes hash using path.
     bool                    Remove(const Str &filePath);
 
-                            /// Reads GUID map from file
+                            /// Reads GUID map from file.
     bool                    Read(const char *filename);
 
-                            /// Writes GUID map to file
+                            /// Writes GUID map to file.
     bool                    Write(const char *filename);
 
     static Guid             defaultTextureGuid;

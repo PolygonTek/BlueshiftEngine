@@ -37,7 +37,7 @@ public:
     
     virtual void            Purge(bool chainPurge = true) override;
 
-                            /// Initializes this component. Called after de-serialization.
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
     virtual bool            HasRenderObject(int renderObjectHandle) const override;
@@ -46,7 +46,7 @@ public:
     virtual void            Update() override;
 
 #if WITH_EDITOR
-                            /// Visualize the component in editor
+                            /// Visualize the component in editor.
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 

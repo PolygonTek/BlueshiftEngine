@@ -33,11 +33,11 @@ public:
     virtual void            Init() override;
 
                             /// Called once when game started before Start()
-                            /// When game already started, called immediately after spawned
+                            /// When game already started, called immediately after spawned.
     virtual void            Awake() override;
 
 #if WITH_EDITOR
-                            /// Visualize the component in editor
+                            /// Visualize the component in editor.
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 

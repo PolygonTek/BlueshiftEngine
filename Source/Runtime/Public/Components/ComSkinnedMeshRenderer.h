@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ public:
     ComSkinnedMeshRenderer();
     virtual ~ComSkinnedMeshRenderer();
 
-                            /// Returns true if this component conflicts with the given component
+                            /// Returns true if this component conflicts with the given component.
     virtual bool            IsConflictComponent(const MetaObject &componentClass) const override;
 
     virtual void            Purge(bool chainPurge = true) override;

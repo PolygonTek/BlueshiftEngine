@@ -32,7 +32,7 @@ public:
     ComCollider();
     virtual ~ComCollider() = 0;
 
-                            /// Returns true if the same component is allowed
+                            /// Returns true if the same component is allowed.
     virtual bool            AllowSameComponent() const override { return true; }
 
     virtual void            Purge(bool chainPurge = true) override;

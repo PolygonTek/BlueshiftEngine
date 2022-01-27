@@ -66,7 +66,7 @@ public:
 
     bool                    IsActiveInHierarchy() const;
 
-                            /// Purges all the resources of the component, chainPurge for parent class
+                            /// Purges all the resources of the component, chainPurge for parent class.
     virtual void            Purge(bool chainPurge = true);
 
                             /// Initializes this component. Called after deserialization.

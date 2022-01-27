@@ -34,7 +34,7 @@ public:
     virtual void            Init() override;
 
                             /// Called once when game started before Start()
-                            /// When game already started, called immediately after spawned
+                            /// When game already started, called immediately after spawned.
     virtual void            Awake() override;
 
     float                   GetVolume() const;

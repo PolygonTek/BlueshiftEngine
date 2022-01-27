@@ -35,7 +35,7 @@ public:
     ComTransform();
     virtual ~ComTransform();
 
-                            /// Initializes this component. Called after de-serialization.
+                            /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
                             /// Transform component cannot be disabled.
