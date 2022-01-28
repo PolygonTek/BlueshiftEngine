@@ -99,10 +99,10 @@ private:
         void *                  mappedIndexBase;
         void *                  mappedUniformBase;
         void *                  mappedTexelBase;
-        std::atomic<int>        vertexMemUsed;
-        std::atomic<int>        indexMemUsed;
-        std::atomic<int>        uniformMemUsed;
-        std::atomic<int>        texelMemUsed;
+        std::atomic_int         vertexMemUsed;
+        std::atomic_int         indexMemUsed;
+        std::atomic_int         uniformMemUsed;
+        std::atomic_int         texelMemUsed;
         int                     allocations;
     };
 

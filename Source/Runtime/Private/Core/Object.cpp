@@ -232,7 +232,7 @@ bool                Object::initialized = false;
 Array<MetaObject *> Object::types;  // alphabetical order
 
 static HashTable<Guid, Object *> instanceHash;
-static std::atomic<int> instanceCounter(0);
+static std::atomic_int instanceCounter(0);
 
 void Object::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("classname", "Classname", Str, ClassName, SetClassName, "", "", PropertyInfo::Flag::ReadOnly),
@@ -260,9 +260,9 @@ bool Object::InitInstance(Guid guid) {
 #endif
 
     this->guid = guid;
-    this->instanceID = instanceCounter;
+    this->instanceID = instanceCounter.load();
 
-    instanceCounter += 1;
+    instanceCounter.fetch_add(1);
 
     Object *object = this;
     instanceHash.Set(guid, object);

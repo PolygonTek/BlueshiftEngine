@@ -65,8 +65,8 @@ private:
     int                     headTaskIndex;
     int                     tailTaskIndex;
 
-    std::atomic<int>        numActiveTasks;     ///< Number of tasks in active state.
-    std::atomic<int>        stopping;
+    std::atomic_int         numActiveTasks;     ///< Number of tasks in active state.
+    std::atomic_int         stopping;
 
     Array<PlatformThread *> taskThreads;
 

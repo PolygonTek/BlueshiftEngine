@@ -92,7 +92,7 @@ bool TaskManager::AddTask(TaskFunc function, void *data) {
     // Unlock for task addition
     PlatformMutex::Unlock(taskMutex);
 
-    numActiveTasks += 1;
+    numActiveTasks.fetch_add(1);
 
     return true;
 }
@@ -177,7 +177,7 @@ void TaskThreadProc(void *param) {
         task.function(task.data);
 
         // Decrease active task count after finishing a task function.
-        tm->numActiveTasks -= 1;
+        tm->numActiveTasks.fetch_sub(1);
 
         // Wake finish condition variable when there is no active tasks.
         if (tm->numActiveTasks == 0) {

@@ -296,17 +296,17 @@ void BufferCacheManager::BeginBackEnd() {
 
     // Clear current frame data.
     rhi.BufferRewind(frameData[mappedNum].vertexBuffer);
-    frameData[mappedNum].vertexMemUsed = 0;
+    frameData[mappedNum].vertexMemUsed.store(0);
 
     rhi.BufferRewind(frameData[mappedNum].indexBuffer);
-    frameData[mappedNum].indexMemUsed = 0;
+    frameData[mappedNum].indexMemUsed.store(0);
 
     rhi.BufferRewind(frameData[mappedNum].uniformBuffer);
-    frameData[mappedNum].uniformMemUsed = 0;
+    frameData[mappedNum].uniformMemUsed.store(0);
 
     if (frameData[mappedNum].texelBuffer) {
         rhi.BufferRewind(frameData[mappedNum].texelBuffer);
-        frameData[mappedNum].texelMemUsed = 0;
+        frameData[mappedNum].texelMemUsed.store(0);
     }
 
     frameData[mappedNum].allocations = 0;
@@ -352,7 +352,7 @@ bool BufferCacheManager::AllocVertex(int numVertexes, int vertexSize, const void
         return false;
     }
 
-    currentBufferSet->vertexMemUsed = offset + bytes;
+    currentBufferSet->vertexMemUsed.store(offset + bytes);
     currentBufferSet->allocations++;
 
     if (data) {
@@ -389,7 +389,7 @@ bool BufferCacheManager::AllocIndex(int numIndexes, int indexSize, const void *d
         return false;
     }
 
-    currentBufferSet->indexMemUsed = offset + bytes;
+    currentBufferSet->indexMemUsed.store(offset + bytes);
     currentBufferSet->allocations++;
 
     if (data) {
@@ -424,7 +424,7 @@ bool BufferCacheManager::AllocUniform(int bytes, const void *data, BufferCache *
         return false;
     }
 
-    currentBufferSet->uniformMemUsed = offset + bytes;
+    currentBufferSet->uniformMemUsed.store(offset + bytes);
     currentBufferSet->allocations++;
 
     if (data) {
@@ -460,7 +460,7 @@ bool BufferCacheManager::AllocTexel(int bytes, const void *data, BufferCache *bc
         return false;
     }
 
-    currentBufferSet->texelMemUsed = offset + bytes;
+    currentBufferSet->texelMemUsed.store(offset + bytes);
     currentBufferSet->allocations++;
 
     if (data) {
