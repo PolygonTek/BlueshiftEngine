@@ -67,11 +67,11 @@ void R_EnvCubeMapFaceToEngineAxis(RHI::CubeMapFace::Enum face, Mat3 &axis) {
 
 /*
 ----------------------------------------------------------------------------------------------------
- * View matrix
+ * OpenGL view matrix
 
-  R (Rx, Ry, Rz) : right direction vector
-  U (Ux, Uy, Uz) : up direction vector
-  B (Bx, By, Bz) : back direction vector
+  R (Rx, Ry, Rz) : OpenGL x-axis (right direction vector)
+  U (Ux, Uy, Uz) : OpenGL y-axis (up direction vector)
+  B (Bx, By, Bz) : OpenGL z-axis (back direction vector)
 
   camera position : P (Px, Py, Pz)
   

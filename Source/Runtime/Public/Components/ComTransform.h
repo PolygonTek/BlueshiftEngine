@@ -129,7 +129,7 @@ public:
 
     void                    SetPhysicsUpdating(bool updating) { physicsUpdating = updating; }
 
-    static Angles           CalculateLocalEulerAnglesHint(const Quat &q, const Angles &eHint);
+    static Angles           CalculateClosestEulerAnglesFromQuaternion(const Angles& currentEulerAnglesHint, const Quat &newRotation);
 
     static const SignalDef  SIG_TransformUpdated;
 

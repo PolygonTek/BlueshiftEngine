@@ -65,7 +65,7 @@ public:
             Editor              = BIT(3),   ///< Show in editor
             NonCopying          = BIT(4),   ///< Don't allow to copy
             SystemUnits         = BIT(5),
-            MultiLines          = BIT(6),   ///< Str type in multilines
+            MultiLines          = BIT(6),   ///< Str type in multi-lines
             Array               = BIT(7),   ///< Is array property ?
             Network             = BIT(8),   ///< Not used yet
             ForceToSet          = BIT(10),  ///< Internal use

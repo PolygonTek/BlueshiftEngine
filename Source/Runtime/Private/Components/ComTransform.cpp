@@ -92,7 +92,7 @@ void ComTransform::SetLocalRotation(const Quat &rotation) {
     this->localRotation = rotation;
 
 #if WITH_EDITOR
-    localEulerAnglesHint = CalculateLocalEulerAnglesHint(localRotation, localEulerAnglesHint);
+    localEulerAnglesHint = CalculateClosestEulerAnglesFromQuaternion(localEulerAnglesHint, localRotation);
 #endif
 
     if (IsInitialized()) {
@@ -105,7 +105,7 @@ void ComTransform::SetLocalOriginRotation(const Vec3 &origin, const Quat &rotati
     this->localRotation = rotation;
 
 #if WITH_EDITOR
-    localEulerAnglesHint = CalculateLocalEulerAnglesHint(localRotation, localEulerAnglesHint);
+    localEulerAnglesHint = CalculateClosestEulerAnglesFromQuaternion(localEulerAnglesHint, localRotation);
 #endif
 
     if (IsInitialized()) {
@@ -119,7 +119,7 @@ void ComTransform::SetLocalOriginRotationScale(const Vec3 &origin, const Quat &r
     this->localScale = scale;
 
 #if WITH_EDITOR
-    localEulerAnglesHint = CalculateLocalEulerAnglesHint(localRotation, localEulerAnglesHint);
+    localEulerAnglesHint = CalculateClosestEulerAnglesFromQuaternion(localEulerAnglesHint, localRotation);
 #endif
 
     if (IsInitialized()) {
@@ -131,7 +131,7 @@ void ComTransform::SetLocalAxis(const Mat3 &axis) {
     this->localRotation = axis.ToQuat();
 
 #if WITH_EDITOR
-    localEulerAnglesHint = CalculateLocalEulerAnglesHint(localRotation, localEulerAnglesHint);
+    localEulerAnglesHint = CalculateClosestEulerAnglesFromQuaternion(localEulerAnglesHint, localRotation);
 #endif
 
     if (IsInitialized()) {
@@ -152,7 +152,7 @@ void ComTransform::SetLocalOriginAxis(const Vec3 &origin, const Mat3 &axis) {
     this->localRotation = axis.ToQuat();
 
 #if WITH_EDITOR
-    localEulerAnglesHint = CalculateLocalEulerAnglesHint(localRotation, localEulerAnglesHint);
+    localEulerAnglesHint = CalculateClosestEulerAnglesFromQuaternion(localEulerAnglesHint, localRotation);
 #endif
 
     if (IsInitialized()) {
@@ -166,7 +166,7 @@ void ComTransform::SetLocalOriginAxisScale(const Vec3 &origin, const Mat3 &axis,
     this->localScale = scale;
 
 #if WITH_EDITOR
-    localEulerAnglesHint = CalculateLocalEulerAnglesHint(localRotation, localEulerAnglesHint);
+    localEulerAnglesHint = CalculateClosestEulerAnglesFromQuaternion(localEulerAnglesHint, localRotation);
 #endif
 
     if (IsInitialized()) {
@@ -392,46 +392,56 @@ void ComTransform::InvalidateCachedRect() {
     }
 }
 
-static Angles SyncEulerAngles(const Angles &eulerAngles, const Angles &eulerAnglesHint) {
+// 각 컴포넌트 별로 newEulerAngles 를 eulerAnglesHint 에 가까운 angle 로 변환한다.
+static Angles SyncEulerAngles(const Angles& eulerAnglesHint, const Angles& newEulerAngles) {
+    Angles deltaAnglesDiv360;
+    deltaAnglesDiv360[0] = (eulerAnglesHint[0] - newEulerAngles[0]) / 360.0f;
+    deltaAnglesDiv360[1] = (eulerAnglesHint[1] - newEulerAngles[1]) / 360.0f;
+    deltaAnglesDiv360[2] = (eulerAnglesHint[2] - newEulerAngles[2]) / 360.0f;
+
     Angles syncEulerAngles;
-
-    Angles deltaAnglesDiv360 = (eulerAnglesHint - eulerAngles) / 360.0f;
-
-    syncEulerAngles[0] = eulerAngles[0] + Math::Round(deltaAnglesDiv360[0]) * 360.0f;
-    syncEulerAngles[1] = eulerAngles[1] + Math::Round(deltaAnglesDiv360[1]) * 360.0f;
-    syncEulerAngles[2] = eulerAngles[2] + Math::Round(deltaAnglesDiv360[2]) * 360.0f;
+    syncEulerAngles[0] = Math::Round(deltaAnglesDiv360[0]) * 360.0f + newEulerAngles[0];
+    syncEulerAngles[1] = Math::Round(deltaAnglesDiv360[1]) * 360.0f + newEulerAngles[1];
+    syncEulerAngles[2] = Math::Round(deltaAnglesDiv360[2]) * 360.0f + newEulerAngles[2];
 
     return syncEulerAngles;
 }
 
-Angles ComTransform::CalculateLocalEulerAnglesHint(const Quat &newRotation, const Angles &currentEulerHint) {
-    Quat currentQuaternionHint = currentEulerHint.ToQuat();
-    float angleDiff = newRotation.AngleBetween(currentQuaternionHint);
+// newRotation 으로 currentEulerAnglesHint 와 가장 가까운 Euler angles 를 구한다.
+Angles ComTransform::CalculateClosestEulerAnglesFromQuaternion(const Angles& currentEulerAnglesHint, const Quat &newRotation) {
+    // newRotation 과 각도 차이가 0.001 보다 작다면 currentEulerAngles 를 유지한다.
+    float angleDiff = newRotation.AngleBetween(currentEulerAnglesHint.ToQuat());
     if (angleDiff < 1e-3f) {
-        return currentEulerHint;
+        return currentEulerAnglesHint;
     }
 
+    // Euler angles in range [-180, +180].
+    // Quaternion 이 항상 균일한 방식으로 Euler angles 로 변환되는 건 아니다.
     Angles e1 = newRotation.ToAngles();
 
-    // Round off degrees to the fourth decimal place
+    // Round off degrees to the fourth decimal place.
     e1[0] = Math::Round(e1[0] / 1e-3f) * 1e-3f;
     e1[1] = Math::Round(e1[1] / 1e-3f) * 1e-3f;
     e1[2] = Math::Round(e1[2] / 1e-3f) * 1e-3f;
 
-    // Make another Euler angles
+    // Make alternative Euler angles in range ([0, +360], [-360, 0], [0, +360]).
+    // 두번째 후보 +-180 for each axis result in same rotation
     Angles e2 = e1 + Angles(180, 180, 180);
-    e2.y = -e2.y;
+    // 그런데 왜 -pitch 를 하지?
+    e2[1] = -e2[1];
 
-    // Synchronize Euler angles to hint
-    Angles eulerAnglesSynced1 = SyncEulerAngles(e1, currentEulerHint);
-    Angles eulerAnglesSynced2 = SyncEulerAngles(e2, currentEulerHint);
+    // Synchronize Euler angles to hint.
+    Angles eulerAnglesSynced1 = SyncEulerAngles(currentEulerAnglesHint, e1);
+    Angles eulerAnglesSynced2 = SyncEulerAngles(currentEulerAnglesHint, e2);
 
-    // Calculate differences between current Euler angles hint
-    Vec3 diff1 = Vec3(eulerAnglesSynced1 - currentEulerHint);
-    Vec3 diff2 = Vec3(eulerAnglesSynced2 - currentEulerHint);
+    // Calculate differences between current Euler angles hint.
+    Vec3 deltaAngles1 = Vec3(eulerAnglesSynced1 - currentEulerAnglesHint);
+    Vec3 deltaAngles2 = Vec3(eulerAnglesSynced2 - currentEulerAnglesHint);
 
-    // Returns synchronized Euler angles which have smaller angle difference
-    return diff1.Dot(diff1) < diff2.Dot(diff2) ? eulerAnglesSynced1 : eulerAnglesSynced2;
+    // Returns synchronized Euler angles which have smaller angle difference.
+    float diff1 = deltaAngles1.Dot(deltaAngles1);
+    float diff2 = deltaAngles2.Dot(deltaAngles2);
+    return diff1 < diff2 ? eulerAnglesSynced1 : eulerAnglesSynced2;
 }
 
 BE_NAMESPACE_END

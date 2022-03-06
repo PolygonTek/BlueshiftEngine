@@ -29,6 +29,9 @@
     qz = az * sin(angle/2)
     qw = cos(angle/2)
 
+    quaternion multiplication is associative, (q1 * q2) * q3 = q1 * (q2 * q3),
+    but is not commutative, q1 * q2 != q2 * q1.
+
 -------------------------------------------------------------------------------
 */
 
@@ -62,8 +65,8 @@ public:
                         /// Casts this Quat to a C array.
                         /// This function simply returns a C pointer view to this data structure.
                         /// This function is identical to the member function Ptr().
-                        operator const float *() const;
-                        operator float *();
+                        operator const float *() const { return (const float *)&x; }
+                        operator float* () { return (float *)&x; }
 
                         /// Accesses an element of this quaternion.
     float &             At(int index) { return (*this)[index]; }
@@ -79,7 +82,7 @@ public:
                         /// @note Adding two quaternions does not concatenate the two rotation operations. Use quaternion multiplication to achieve that.
     Quat                operator+(const Quat &rhs) const;
                         
-                        /// Subtracts the quaternion from this quternion.
+                        /// Subtracts the quaternion from this quaternion.
     Quat                operator-(const Quat &rhs) const;
 
                         /// Multiplies a quaternion by a scalar.
@@ -279,14 +282,6 @@ BE_INLINE void Quat::Set(float x, float y, float z, float w) {
     this->w = w;
 }
 
-BE_INLINE Quat::operator const float *() const { 
-    return (const float *)&x;
-}
-
-BE_INLINE Quat::operator float *() { 
-    return (float *)&x;
-}
-
 BE_INLINE float Quat::operator[](int index) const {
     assert(index >= 0 && index < 4);
     return (&x)[index];
@@ -350,6 +345,7 @@ BE_INLINE Quat Quat::operator/(const Quat &a) const {
 }
 
 BE_INLINE Vec3 Quat::operator*(const Vec3 &a) const {
+    // TODO: do SIMD optimization.
     return ToMat3() * a;
 }
 
@@ -404,7 +400,9 @@ BE_INLINE bool Quat::Equals(const Quat &a, const float epsilon) const {
 }
 
 BE_INLINE float Quat::CalcW() const {
-    // take the absolute value because floating point rounding may cause the dot of x, y, z to be larger than 1
+    // x* x + y * y + z * z = sin^2(theta/2)
+    // 1 - sin^2(theta/2) = cos^2(theta/2)
+    // Take the absolute value because floating point rounding may cause the dot of x, y, z to be larger than 1.
     return sqrt(fabs(1.0f - (x * x + y * y + z * z)));
 }
 
