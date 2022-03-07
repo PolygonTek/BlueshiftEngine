@@ -599,19 +599,20 @@ void Mat3x4::GetTQS(Vec3 &translation, Quat &rotation, Vec3 &scale) const {
     rotation = r.ToQuat();
 }
 
-// Euclidean inverse (TRS)^{-1} = S^{-1} R^T (-T)
 void Mat3x4::InverseSelf() {
-#if 0
-    *this = Mat3x4(ToMat4().Inverse());
-#else
+    *this = Mat3x4(ToMat4().AffineInverse());
+}
+
+// (TRS)^{-1} = S^{-1} R^T (-T)
+void Mat3x4::InverseOrthogonalSelf() {
     float tmp[3];
 
-    // get squared inverse scale factor
-    float inv_sx2 = 1.0f / (mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]);
-    float inv_sy2 = 1.0f / (mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]);
-    float inv_sz2 = 1.0f / (mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]);
+    // Get squared inverse scale factor.
+    double inv_sx2 = 1.0f / (mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]);
+    double inv_sy2 = 1.0f / (mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]);
+    double inv_sz2 = 1.0f / (mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]);
 
-    // negate inverse rotated translation part
+    // Negate inverse rotated translation part.
     tmp[0] = mat[0][0] * mat[0][3] + mat[1][0] * mat[1][3] + mat[2][0] * mat[2][3];
     tmp[1] = mat[0][1] * mat[0][3] + mat[1][1] * mat[1][3] + mat[2][1] * mat[2][3];
     tmp[2] = mat[0][2] * mat[0][3] + mat[1][2] * mat[1][3] + mat[2][2] * mat[2][3];
@@ -619,20 +620,78 @@ void Mat3x4::InverseSelf() {
     mat[1][3] = -tmp[1] * inv_sy2;
     mat[2][3] = -tmp[2] * inv_sz2;
 
-    // transpose rotation part
-    mat[0][0] *= inv_sx2;
+    // Transpose rotation part.
     tmp[0] = mat[0][1] * inv_sy2;
+    tmp[1] = mat[0][2] * inv_sz2;
+    tmp[2] = mat[1][2] * inv_sz2;
+
+    mat[0][0] *= inv_sx2;
     mat[0][1] = mat[1][0] * inv_sx2;
+    mat[0][2] = mat[2][0] * inv_sx2;
     mat[1][0] = tmp[0];
     mat[1][1] *= inv_sy2;
-    tmp[1] = mat[0][2] * inv_sz2;
-    mat[0][2] = mat[2][0] * inv_sx2;
-    mat[2][0] = tmp[1];
-    tmp[2] = mat[1][2] * inv_sz2;
     mat[1][2] = mat[2][1] * inv_sy2;
+    mat[2][0] = tmp[1];
     mat[2][1] = tmp[2];
     mat[2][2] *= inv_sz2;
-#endif
+}
+
+// (TRS)^{-1} = S^{-1} R^T (-T)
+void Mat3x4::InverseOrthogonalUniformScaleSelf() {
+    ALIGN_AS16 Vec3 t;
+    float temp;
+
+    // The translation components of the original matrix
+    t.x = mat[0][3];
+    t.y = mat[1][3];
+    t.z = mat[2][3];
+
+    // Get squared inverse scale factor.
+    double inv_s = 1.0f / (mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]);
+
+    mat[0][0] *= inv_s;
+    mat[1][1] *= inv_s;
+    mat[2][2] *= inv_s;
+    temp = mat[0][1];
+    mat[0][1] = mat[1][0] * inv_s;
+    mat[1][0] = temp * inv_s;
+    temp = mat[0][2];
+    mat[0][2] = mat[2][0] * inv_s;
+    mat[2][0] = temp * inv_s;
+    temp = mat[1][2];
+    mat[1][2] = mat[2][1] * inv_s;
+    mat[2][1] = temp * inv_s;
+
+    mat[0][3] = -(mat[0][0] * t.x + mat[0][1] * t.y + mat[0][2] * t.z);
+    mat[1][3] = -(mat[1][0] * t.x + mat[1][1] * t.y + mat[1][2] * t.z);
+    mat[2][3] = -(mat[2][0] * t.x + mat[2][1] * t.y + mat[2][2] * t.z);
+}
+
+// (TR)^{-1} = R^T (-T)
+void Mat3x4::InverseOrthonormalSelf() {
+    ALIGN_AS16 Vec3 t;
+    float temp;
+
+    // The translation components of the original matrix
+    t.x = mat[0][3];
+    t.y = mat[1][3];
+    t.z = mat[2][3];
+
+    // The rotational part of the matrix is simply the transpose of the original matrix
+    temp = mat[0][1];
+    mat[0][1] = mat[1][0];
+    mat[1][0] = temp;
+    temp = mat[0][2];
+    mat[0][2] = mat[2][0];
+    mat[2][0] = temp;
+    temp = mat[1][2];
+    mat[1][2] = mat[2][1];
+    mat[2][1] = temp;
+
+    // -(R^T * T)
+    mat[0][3] = -(mat[0][0] * t.x + mat[0][1] * t.y + mat[0][2] * t.z);
+    mat[1][3] = -(mat[1][0] * t.x + mat[1][1] * t.y + mat[1][2] * t.z);
+    mat[2][3] = -(mat[2][0] * t.x + mat[2][1] * t.y + mat[2][2] * t.z);
 }
 
 Mat3x4 &Mat3x4::TransformSelf(const Mat3x4 &a) {

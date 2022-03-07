@@ -999,7 +999,6 @@ bool Mat4::InverseSelf() {
 }
 
 bool Mat4::AffineInverseSelf() {
-    ALIGN_AS16 Mat4 invMat;
     ALIGN_AS16 Vec3 t;
 
     // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
@@ -1007,65 +1006,82 @@ bool Mat4::AffineInverseSelf() {
         return false;
     }
 
-    // The translation components of the original matrix
-    t.x = mat[0][3];
-    t.y = mat[1][3];
-    t.z = mat[2][3];
+    float det2_01_01 = mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
+    float det2_01_02 = mat[0][0] * mat[1][2] - mat[0][2] * mat[1][0];
+    float det2_01_03 = mat[0][0] * mat[1][3] - mat[0][3] * mat[1][0];
+    float det2_01_12 = mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1];
+    float det2_01_13 = mat[0][1] * mat[1][3] - mat[0][3] * mat[1][1];
+    float det2_01_23 = mat[0][2] * mat[1][3] - mat[0][3] * mat[1][2];
 
-    // The rotational part of the matrix should be inverted
-    Mat3 r = ToMat3();
-    r.InverseSelf();
-    mat[0][0] = r.mat[0][0];
-    mat[1][0] = r.mat[0][1];
-    mat[2][0] = r.mat[0][2];
+    // 3x3 sub-determinants
+    float det3_201_012 = mat[2][0] * det2_01_12 - mat[2][1] * det2_01_02 + mat[2][2] * det2_01_01;
+    float det3_201_013 = mat[2][0] * det2_01_13 - mat[2][1] * det2_01_03 + mat[2][3] * det2_01_01;
+    float det3_201_023 = mat[2][0] * det2_01_23 - mat[2][2] * det2_01_03 + mat[2][3] * det2_01_02;
+    float det3_201_123 = mat[2][1] * det2_01_23 - mat[2][2] * det2_01_13 + mat[2][3] * det2_01_12;
 
-    mat[0][1] = r.mat[1][0];
-    mat[1][1] = r.mat[1][1];
-    mat[2][1] = r.mat[1][2];
+    double det = det3_201_012;
 
-    mat[0][2] = r.mat[2][0];
-    mat[1][2] = r.mat[2][1];
-    mat[2][2] = r.mat[2][2];
+    if (Math::Fabs(det) < MATRIX_INVERSE_EPSILON) {
+        return false;
+    }
 
-    // -(Rt * T)
-    mat[0][3] = -(mat[0].x * t.x + mat[0].y * t.y + mat[0].z * t.z);
-    mat[1][3] = -(mat[1].x * t.x + mat[1].y * t.y + mat[1].z * t.z);
-    mat[2][3] = -(mat[2].x * t.x + mat[2].y * t.y + mat[2].z * t.z);
+    double invDet = 1.0f / det;
+
+    // remaining 3x3 sub-determinants
+    float det3_203_013 = mat[2][0] * mat[0][1] - mat[2][1] * mat[0][0];
+    float det3_203_023 = mat[2][0] * mat[0][2] - mat[2][2] * mat[0][0];
+    float det3_203_123 = mat[2][1] * mat[0][2] - mat[2][2] * mat[0][1];
+
+    float det3_213_013 = mat[2][0] * mat[1][1] - mat[2][1] * mat[1][0];
+    float det3_213_023 = mat[2][0] * mat[1][2] - mat[2][2] * mat[1][0];
+    float det3_213_123 = mat[2][1] * mat[1][2] - mat[2][2] * mat[1][1];
+
+    mat[0][0] = -det3_213_123 * invDet;
+    mat[1][0] = +det3_213_023 * invDet;
+    mat[2][0] = -det3_213_013 * invDet;
+
+    mat[0][1] = +det3_203_123 * invDet;
+    mat[1][1] = -det3_203_023 * invDet;
+    mat[2][1] = +det3_203_013 * invDet;
+
+    mat[0][2] = +det2_01_12 * invDet;
+    mat[1][2] = -det2_01_02 * invDet;
+    mat[2][2] = +det2_01_01 * invDet;
+
+    mat[0][3] = -det3_201_123 * invDet;
+    mat[1][3] = +det3_201_023 * invDet;
+    mat[2][3] = -det3_201_013 * invDet;
 
     return true;
 }
 
-bool Mat4::EuclideanInverseSelf() {
-    ALIGN_AS16 Mat4 invMat;
-    ALIGN_AS16 Vec3 t;
-    float temp;
-    
+bool Mat4::InverseOrthogonalSelf() {
     // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
     if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
         return false;
     }
 
-    // The translation components of the original matrix
-    t.x = mat[0][3];
-    t.y = mat[1][3];
-    t.z = mat[2][3];
+    ToMat3x4().InverseOrthogonalSelf();
+    return true;
+}
 
-    // The rotational part of the matrix is simply the transpose of the original matrix
-    temp = mat[0][1];
-    mat[0][1] = mat[1][0];
-    mat[1][0] = temp;
-    temp = mat[0][2];
-    mat[0][2] = mat[2][0];
-    mat[2][0] = temp;
-    temp = mat[1][2];
-    mat[1][2] = mat[2][1];
-    mat[2][1] = temp;
+bool Mat4::InverseOrthogonalUniformScaleSelf() {
+    // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
+    if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
+        return false;
+    }
 
-    // -(Rt * T)
-    mat[0][3] = -(mat[0].x * t.x + mat[0].y * t.y + mat[0].z * t.z);
-    mat[1][3] = -(mat[1].x * t.x + mat[1].y * t.y + mat[1].z * t.z);
-    mat[2][3] = -(mat[2].x * t.x + mat[2].y * t.y + mat[2].z * t.z);
+    ToMat3x4().InverseOrthogonalUniformScaleSelf();
+    return true;
+}
 
+bool Mat4::InverseOrthonormalSelf() {
+    // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
+    if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
+        return false;
+    }
+
+    ToMat3x4().InverseOrthonormalSelf();
     return true;
 }
 

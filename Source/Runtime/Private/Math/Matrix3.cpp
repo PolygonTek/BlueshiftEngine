@@ -122,8 +122,8 @@ bool Mat3::InverseSelf() {
     // 4*2+4*4 = 24 multiplications
     //     2*1 =  2 divisions
     Mat2 r0;
-    float r1[2], r2[2], r3;
-    float det, invDet;
+    double r1[2], r2[2], r3;
+    double det, invDet;
     float *mat = reinterpret_cast<float *>(this);
 
     // r0 = m0.Inverse();   // 2x2
@@ -135,10 +135,10 @@ bool Mat3::InverseSelf() {
 
     invDet = 1.0f / det;
 
-    r0[0][0] =   mat[1*3+1] * invDet;
-    r0[0][1] = - mat[0*3+1] * invDet;
-    r0[1][0] = - mat[1*3+0] * invDet;
-    r0[1][1] =   mat[0*3+0] * invDet;
+    r0[0][0] =  mat[1*3+1] * invDet;
+    r0[0][1] = -mat[0*3+1] * invDet;
+    r0[1][0] = -mat[1*3+0] * invDet;
+    r0[1][1] =  mat[0*3+0] * invDet;
 
     // r1 = r0 * m1;        // 2x1 = 2x2 * 2x1
     r1[0] = r0[0][0] * mat[0*3+2] + r0[0][1] * mat[1*3+2];

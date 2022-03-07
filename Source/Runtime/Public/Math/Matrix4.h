@@ -225,17 +225,31 @@ public:
 
                         /// Inverts a affine matrix.
                         /// If a matrix M is made up of only translation, rotation, reflection, scaling and shearing,
-                        /// then M is affine matrix and this function can be used to compute the inverse
+                        /// then M is affine matrix and this function can be used to compute the inverse.
     Mat4                AffineInverse() const;
                         /// Inverts a affine matrix, in-place.
     bool                AffineInverseSelf();
+
+                        /// Inverts a orthogonal matrix.
+                        /// If a matrix M is made up of only translation, rotation, and scaling,
+                        /// then M is orthogonal matrix and this function can be used to compute the inverse.
+    Mat4                InverseOrthogonal() const;
+                        /// Inverts a orthogonal matrix, in-place.
+    bool                InverseOrthogonalSelf();
+
+                        /// Inverts a orthogonal uniform-scale matrix.
+                        /// If a matrix M is made up of only translation, rotation, and uniform scaling,
+                        /// then M is orthogonal uniform-scale matrix and this function can be used to compute the inverse.
+    Mat4                InverseOrthogonalUniformScale() const;
+                        /// Inverts a orthogonal-uniform-scale matrix, in-place.
+    bool                InverseOrthogonalUniformScaleSelf();
     
-                        /// Inverts a euclidean matrix.
-                        /// If a matrix is made up of only translation, rotation, and reflection,
-                        /// then M is euclidean matrix and this function can be used to compute the inverse
-    Mat4                EuclideanInverse() const;
-                        /// Inverts a euclidean matrix, in-place.
-    bool                EuclideanInverseSelf();
+                        /// Inverts a orthonormal matrix.
+                        /// If a matrix M is made up of only translation and rotation.
+                        /// then M is orthonormal matrix and this function can be used to compute the inverse.
+    Mat4                InverseOrthonormal() const;
+                        /// Inverts a orthonormal matrix, in-place.
+    bool                InverseOrthonormalSelf();
 
                         /// Translates by the given offset, in-place.
     Mat4 &              Translate(const Vec3 &t) { return Translate(t.x, t.y, t.z); }
@@ -545,9 +559,23 @@ BE_INLINE Mat4 Mat4::AffineInverse() const {
     return invMat;
 }
 
-BE_INLINE Mat4 Mat4::EuclideanInverse() const {
+BE_INLINE Mat4 Mat4::InverseOrthogonal() const {
     Mat4 invMat = *this;
-    bool r = invMat.EuclideanInverseSelf();
+    bool r = invMat.InverseOrthogonalSelf();
+    assert(r);
+    return invMat;
+}
+
+BE_INLINE Mat4 Mat4::InverseOrthogonalUniformScale() const {
+    Mat4 invMat = *this;
+    bool r = invMat.InverseOrthogonalUniformScaleSelf();
+    assert(r);
+    return invMat;
+}
+
+BE_INLINE Mat4 Mat4::InverseOrthonormal() const {
+    Mat4 invMat = *this;
+    bool r = invMat.InverseOrthonormalSelf();
     assert(r);
     return invMat;
 }

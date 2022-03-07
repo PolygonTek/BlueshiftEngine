@@ -126,7 +126,7 @@ void ComSensor::CreateSensor() {
 
     // Collect collider shadpes in children recursively
     for (Entity *childEntity = entity->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
-        AddChildShapeRecursive(transform->GetMatrixNoScale().Inverse(), childEntity, physicsDesc.shapes);
+        AddChildShapeRecursive(transform->GetMatrixNoScale().InverseOrthonormal(), childEntity, physicsDesc.shapes);
     }
 
     if (physicsDesc.shapes.Count() == 0) {

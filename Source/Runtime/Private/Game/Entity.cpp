@@ -556,7 +556,7 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
     }
 
     if (includingChildren) {
-        ALIGN_AS32 Mat3x4 rootMatrixInverse = GetTransform()->GetMatrix().Inverse();
+        ALIGN_AS32 Mat3x4 rootMatrixInverse = GetTransform()->GetMatrix().InverseOrthogonal();
 
         Array<Entity *> children;
         GetChildrenRecursive(children);

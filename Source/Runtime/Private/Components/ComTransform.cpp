@@ -228,7 +228,7 @@ Mat3x4 ComTransform::GetMatrixNoScale() const {
 
 void ComTransform::SetOrigin(const Vec3 &origin) {
     const ComTransform *parent = GetParent();
-    SetLocalOrigin(parent ? parent->GetMatrix().Inverse() * origin : origin);
+    SetLocalOrigin(parent ? parent->GetMatrix().InverseOrthogonal() * origin : origin);
 }
 
 void ComTransform::SetScale(const Vec3 &scale) {
@@ -244,7 +244,7 @@ void ComTransform::SetRotation(const Quat &rotation) {
 void ComTransform::SetOriginRotation(const Vec3 &origin, const Quat &rotation) {
     const ComTransform *parent = GetParent();
     if (parent) {
-        SetLocalOriginRotation(parent->GetMatrix().Inverse() * origin, parent->GetRotation().Inverse() * rotation);
+        SetLocalOriginRotation(parent->GetMatrix().InverseOrthogonal() * origin, parent->GetRotation().Inverse() * rotation);
     } else {
         SetLocalOriginRotation(origin, rotation);
     }
@@ -253,7 +253,7 @@ void ComTransform::SetOriginRotation(const Vec3 &origin, const Quat &rotation) {
 void ComTransform::SetOriginRotationScale(const Vec3 &origin, const Quat &rotation, const Vec3 &scale) {
     const ComTransform *parent = GetParent();
     if (parent) {
-        SetLocalOriginRotationScale(parent->GetMatrix().Inverse() * origin, parent->GetRotation().Inverse() * rotation, scale / parent->GetScale());
+        SetLocalOriginRotationScale(parent->GetMatrix().InverseOrthogonal() * origin, parent->GetRotation().Inverse() * rotation, scale / parent->GetScale());
     } else {
         SetLocalOriginRotationScale(origin, rotation, scale);
     }
@@ -271,7 +271,7 @@ void ComTransform::SetAngles(const Angles &angles) {
 void ComTransform::SetOriginAxis(const Vec3 &origin, const Mat3 &axis) {
     const ComTransform *parent = GetParent();
     if (parent) {
-        SetLocalOriginAxis(parent->GetMatrix().Inverse() * origin, parent->GetAxis().Transpose() * axis);
+        SetLocalOriginAxis(parent->GetMatrix().InverseOrthogonal() * origin, parent->GetAxis().Transpose() * axis);
     } else {
         SetLocalOriginAxis(origin, axis);
     }
@@ -280,7 +280,7 @@ void ComTransform::SetOriginAxis(const Vec3 &origin, const Mat3 &axis) {
 void ComTransform::SetOriginAxisScale(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale) {
     const ComTransform *parent = GetParent();
     if (parent) {
-        SetLocalOriginAxisScale(parent->GetMatrix().Inverse() * origin, parent->GetAxis().Transpose() * axis, scale / parent->GetScale());
+        SetLocalOriginAxisScale(parent->GetMatrix().InverseOrthogonal() * origin, parent->GetAxis().Transpose() * axis, scale / parent->GetScale());
     } else {
         SetLocalOriginAxisScale(origin, axis, scale);
     }

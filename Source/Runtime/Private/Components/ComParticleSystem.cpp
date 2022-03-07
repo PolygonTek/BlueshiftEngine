@@ -495,7 +495,7 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
     ALIGN_AS32 Mat3x4 offsetMatrix;
 
     if (stage->standardModule.simulationSpace == ParticleSystem::StandardModule::SimulationSpace::Global) {
-        offsetMatrix = GetEntity()->GetTransform()->GetMatrix().Inverse() * particle->worldMatrix;
+        offsetMatrix = GetEntity()->GetTransform()->GetMatrix().InverseOrthogonal() * particle->worldMatrix;
     }
     
     int trailCount = (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::Trails)) ? stage->trailsModule.count : 0;

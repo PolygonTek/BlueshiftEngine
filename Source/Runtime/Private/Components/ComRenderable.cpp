@@ -145,7 +145,7 @@ bool ComRenderable::IntersectRay(const Ray &ray, bool backFaceCull, float *hitDi
         return false;
     }
 
-    ALIGN_AS32 Mat3x4 worldToLocal = renderObjectDef.worldMatrix.Inverse();
+    ALIGN_AS32 Mat3x4 worldToLocal = renderObjectDef.worldMatrix.InverseOrthogonal();
 
     Ray localRay;
     localRay.origin = worldToLocal.Transform(ray.origin);

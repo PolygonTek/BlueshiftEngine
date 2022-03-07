@@ -19,6 +19,8 @@
 
     Mat3x4 - 3x4 Matrix (row major)
 
+    Affine transform matrix (assuming 4th row is [0 0 0 1])
+
 -------------------------------------------------------------------------------
 */
 
@@ -177,6 +179,21 @@ public:
     Mat3x4              Inverse() const;
                         /// Inverts this matrix, in-place.
     void                InverseSelf();
+
+                        /// Inverts this matrix.
+    Mat3x4              InverseOrthogonal() const;
+                        /// Inverts this matrix, in-place.
+    void                InverseOrthogonalSelf();
+
+                        /// Inverts this matrix.
+    Mat3x4              InverseOrthogonalUniformScale() const;
+                        /// Inverts this matrix, in-place.
+    void                InverseOrthogonalUniformScaleSelf();
+
+                        /// Inverts this matrix.
+    Mat3x4              InverseOrthonormal() const;
+                        /// Inverts this matrix, in-place.
+    void                InverseOrthonormalSelf();
 
                         /// Translates by the given offset, in-place.
     Mat3x4 &            Translate(const Vec3 &t) { return Translate(t.x, t.y, t.z); }
@@ -419,6 +436,24 @@ BE_INLINE bool Mat3x4::FixDenormals() {
 BE_INLINE Mat3x4 Mat3x4::Inverse() const {
     ALIGN_AS32 Mat3x4 invMat = *this;
     invMat.InverseSelf();
+    return invMat;
+}
+
+BE_INLINE Mat3x4 Mat3x4::InverseOrthogonal() const {
+    ALIGN_AS32 Mat3x4 invMat = *this;
+    invMat.InverseOrthogonalSelf();
+    return invMat;
+}
+
+BE_INLINE Mat3x4 Mat3x4::InverseOrthogonalUniformScale() const {
+    ALIGN_AS32 Mat3x4 invMat = *this;
+    invMat.InverseOrthogonalUniformScaleSelf();
+    return invMat;
+}
+
+BE_INLINE Mat3x4 Mat3x4::InverseOrthonormal() const {
+    ALIGN_AS32 Mat3x4 invMat = *this;
+    invMat.InverseOrthonormalSelf();
     return invMat;
 }
 
