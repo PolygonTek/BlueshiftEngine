@@ -154,7 +154,7 @@ public:
 
                         /// Returns length of quaternion.
     float               Length() const;
-                        /// Returns squred length of quaternion.
+                        /// Returns squared length of quaternion.
     float               LengthSqr() const;
 
                         /// Normalizes this quaternion in-place.

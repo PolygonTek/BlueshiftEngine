@@ -263,7 +263,7 @@ public:
                         /// Converts this 3x3 matrix to quaternion.
     Quat                ToQuat() const;
 
-                        /// Converts this 3x3 matrix to euler angles.
+                        /// Converts this 3x3 matrix to Euler angles.
     Angles              ToAngles() const;
 
                         /// Returns "_00 _01 _02 _10 _11 _12 _20 _21 _22".
