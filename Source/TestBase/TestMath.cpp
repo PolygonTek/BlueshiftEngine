@@ -15,7 +15,22 @@
 #include "BlueshiftEngine.h"
 #include "TestMath.h"
 
+void TestInverseMatrix()
+{
+    BE1::Mat3 m3x3;
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            m3x3[i][j] = BE1::Math::Random(-1.0f, 1.0f);
+        }
+    }
+    BE1::Mat3x4 m3x4;
+    m3x4.SetTRS(BE1::Vec3(1, 2, 3), m3x3, BE1::Vec3(1, 2, 3));
+    BE1::Mat3x4 m3x4Inv = m3x4.Inverse();
+    BE1::Mat3x4 m3x4InvInv = m3x4Inv.Inverse();
+}
+
 void TestMath() {
+    //TestInverseMatrix();
     BE1::Mat3 m = BE1::Mat3::FromRotationZYX(15, 80, -30);
 
     BE1::Rotation r = m.ToRotation();

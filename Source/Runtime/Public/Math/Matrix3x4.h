@@ -175,9 +175,9 @@ public:
                         /// Decomposes this matrix to translation, rotation and scale parts.
     void                GetTQS(Vec3 &translation, Quat &rotation, Vec3 &scale) const;
 
-                        /// Inverts this matrix.
+                        /// Inverts this (affine) matrix.
     Mat3x4              Inverse() const;
-                        /// Inverts this matrix, in-place.
+                        /// Inverts this (affine) matrix, in-place.
     void                InverseSelf();
 
                         /// Inverts this matrix.
