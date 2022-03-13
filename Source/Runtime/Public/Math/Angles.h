@@ -110,10 +110,11 @@ public:
                         /// Returns yaw.
     constexpr float     GetYaw() const { return z; }
 
-    void                Set(float roll, float pitch, float yaw);
     void                SetRoll(float roll) { this->x = roll; }
     void                SetPitch(float pitch) { this->y = pitch; }
     void                SetYaw(float yaw) { this->z = yaw; }
+
+    void                Set(float x, float y, float z);
 
     Angles &            SetZero();
 

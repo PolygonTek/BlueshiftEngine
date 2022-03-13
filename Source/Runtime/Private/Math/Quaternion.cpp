@@ -17,6 +17,7 @@
 
 BE_NAMESPACE_BEGIN
 
+ALIGN_AS16 const Quat Quat::zero(0.0f, 0.0f, 0.0f, 0.0f);
 ALIGN_AS16 const Quat Quat::identity(0.0f, 0.0f, 0.0f, 1.0f);
 
 Quat Quat::FromString(const char *str) {
@@ -26,8 +27,11 @@ Quat Quat::FromString(const char *str) {
 }
 
 Quat &Quat::SetFromAngleAxis(float angle, const Vec3 &axis) {
-    Rotation rot(Vec3::origin, axis, RAD2DEG(angle));
-    *this = rot.ToQuat();
+    float s;
+    Math::SinCos(angle * 0.5f, s, w);
+    x = axis.x * s;
+    y = axis.y * s;
+    z = axis.z * s;
     return *this;
 }
 

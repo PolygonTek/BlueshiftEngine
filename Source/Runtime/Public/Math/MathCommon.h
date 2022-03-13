@@ -329,6 +329,8 @@ public:
     static float                AngleNormalize180(float angle);
                                 /// Returns smallest difference (-180, 180] between two angles.
     static float                AngleDelta(float angle1, float angle2);
+                                /// Returns nearest angle in range [baseAngle - 180, baseAngle + 180].
+    static float                SyncAngle(float baseAngle, float angle);
 
                                 /// Flip angle in x-axis.
     static float                FlipAngleX(float angle);
@@ -1071,6 +1073,10 @@ BE_INLINE float Math::AngleNormalize180(float angle) {
 
 BE_INLINE float Math::AngleDelta(float angle1, float angle2) {
     return AngleNormalize180(angle1 - angle2);
+}
+
+BE_INLINE float Math::SyncAngle(float baseAngle, float angle) {
+    return Math::Round((baseAngle - angle) / 360.0f) * 360.0f + angle;
 }
 
 BE_INLINE float Math::FlipAngleX(float angle) {

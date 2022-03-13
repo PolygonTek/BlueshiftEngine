@@ -392,22 +392,7 @@ void ComTransform::InvalidateCachedRect() {
     }
 }
 
-// 각 컴포넌트 별로 newEulerAngles 를 eulerAnglesHint 에 가까운 angle 로 변환한다.
-static Angles SyncEulerAngles(const Angles& eulerAnglesHint, const Angles& newEulerAngles) {
-    Angles deltaAnglesDiv360;
-    deltaAnglesDiv360[0] = (eulerAnglesHint[0] - newEulerAngles[0]) / 360.0f;
-    deltaAnglesDiv360[1] = (eulerAnglesHint[1] - newEulerAngles[1]) / 360.0f;
-    deltaAnglesDiv360[2] = (eulerAnglesHint[2] - newEulerAngles[2]) / 360.0f;
-
-    Angles syncEulerAngles;
-    syncEulerAngles[0] = Math::Round(deltaAnglesDiv360[0]) * 360.0f + newEulerAngles[0];
-    syncEulerAngles[1] = Math::Round(deltaAnglesDiv360[1]) * 360.0f + newEulerAngles[1];
-    syncEulerAngles[2] = Math::Round(deltaAnglesDiv360[2]) * 360.0f + newEulerAngles[2];
-
-    return syncEulerAngles;
-}
-
-// newRotation 으로 currentEulerAnglesHint 와 가장 가까운 Euler angles 를 구한다.
+// newRotation 으로 currentEulerAnglesHint 와 [-180, +180] 범위 내에서 가장 가까운 Euler angles 를 구한다.
 Angles ComTransform::CalculateClosestEulerAnglesFromQuaternion(const Angles& currentEulerAnglesHint, const Quat &newRotation) {
     // newRotation 과 각도 차이가 0.001 보다 작다면 currentEulerAngles 를 유지한다.
     float angleDiff = newRotation.AngleBetween(currentEulerAnglesHint.ToQuat());
@@ -415,8 +400,8 @@ Angles ComTransform::CalculateClosestEulerAnglesFromQuaternion(const Angles& cur
         return currentEulerAnglesHint;
     }
 
-    // Euler angles in range [-180, +180].
-    // Quaternion 이 항상 균일한 방식으로 Euler angles 로 변환되는 건 아니다.
+    // Converting the quaternion to a rotation matrix R = Rz * Ry * Rx and then to
+    // Euler angles gives the range ([-180, +180], [-90, +90], [-180, +180]).
     Angles e1 = newRotation.ToAngles();
 
     // Round off degrees to the fourth decimal place.
@@ -424,15 +409,23 @@ Angles ComTransform::CalculateClosestEulerAnglesFromQuaternion(const Angles& cur
     e1[1] = Math::Round(e1[1] / 1e-3f) * 1e-3f;
     e1[2] = Math::Round(e1[2] / 1e-3f) * 1e-3f;
 
-    // Make alternative Euler angles in range ([0, +360], [-360, 0], [0, +360]).
-    // 두번째 후보 +-180 for each axis result in same rotation
-    Angles e2 = e1 + Angles(180, 180, 180);
-    // 그런데 왜 -pitch 를 하지?
-    e2[1] = -e2[1];
+    // Make alternative one but represents the same rotation in the range
+    // ([0, +360], [+90, +270], [0, +360]).
+    Angles e2;
+    e2[0] = (e1[0] + 180);
+    e2[1] = (180 - e1[1]);
+    e2[2] = (e1[2] + 180);
 
-    // Synchronize Euler angles to hint.
-    Angles eulerAnglesSynced1 = SyncEulerAngles(currentEulerAnglesHint, e1);
-    Angles eulerAnglesSynced2 = SyncEulerAngles(currentEulerAnglesHint, e2);
+    // Synchronize Euler angles using hint.
+    Angles eulerAnglesSynced1;
+    eulerAnglesSynced1[0] = Math::SyncAngle(currentEulerAnglesHint[0], e1[0]);
+    eulerAnglesSynced1[1] = Math::SyncAngle(currentEulerAnglesHint[1], e1[1]);
+    eulerAnglesSynced1[2] = Math::SyncAngle(currentEulerAnglesHint[2], e1[2]);
+
+    Angles eulerAnglesSynced2;
+    eulerAnglesSynced2[0] = Math::SyncAngle(currentEulerAnglesHint[0], e2[0]);
+    eulerAnglesSynced2[1] = Math::SyncAngle(currentEulerAnglesHint[1], e2[1]);
+    eulerAnglesSynced2[2] = Math::SyncAngle(currentEulerAnglesHint[2], e2[2]);
 
     // Calculate differences between current Euler angles hint.
     Vec3 deltaAngles1 = Vec3(eulerAnglesSynced1 - currentEulerAnglesHint);

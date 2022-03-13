@@ -76,6 +76,7 @@ public:
 
                         /// Negates the quaternion.
                         /// @note Negating a quaternion will not produce the inverse rotation. Call Quat::Inverse() to generate the inverse rotation.
+                        /// Negative of a quaternion represents the same rotation.
     Quat                operator-() const;
 
                         /// Adds two quaternions.
@@ -259,6 +260,7 @@ public:
                         /// Returns dimension of this type.
     constexpr int       GetDimension() const { return 4; }
 
+    ALIGN_AS16 static const Quat zero;
     ALIGN_AS16 static const Quat identity;
     
     float               x;          ///< The factor of i.
@@ -442,7 +444,7 @@ BE_INLINE float Quat::LengthSqr() const {
 
 BE_INLINE Quat &Quat::Normalize() {
     float len = Length();
-    if (len) {
+    if (len != 0.0f) {
         float invlength = 1 / len;
         x *= invlength;
         y *= invlength;
