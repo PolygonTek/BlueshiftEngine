@@ -33,18 +33,18 @@ public:
     /// Angles indexes
     struct Index {
         enum Enum {
-            Roll,       // Rotation angle around x-axis
-            Pitch,      // Rotation angle around y-axis
-            Yaw         // Rotation angle around z-axis
+            Roll,       ///< Rotation angle around x-axis
+            Pitch,      ///< Rotation angle around y-axis
+            Yaw         ///< Rotation angle around z-axis
         };
     };
 
     /// The default constructor does not initialize any members of this class.
     Angles() = default;
-    /// Constructs a Angles with the value (roll, pitch, yaw).
-    constexpr Angles(float roll, float pitch, float yaw);
+    /// Constructs a Angles with the value (x, y, z).
+    explicit constexpr Angles(float x, float y, float z);
     /// Copy constructor.
-    explicit Angles(const Vec3 &v);
+    explicit constexpr Angles(const Vec3 &v);
     /// Assignment operator.
     Angles &operator=(const Angles &rhs);
 
@@ -104,11 +104,11 @@ public:
     bool                operator!=(const Angles &rhs) const { return !Equals(rhs); }
 
                         /// Returns roll.
-    float               GetRoll() const { return x; }
+    constexpr float     GetRoll() const { return x; }
                         /// Returns pitch.
-    float               GetPitch() const { return y; }
+    constexpr float     GetPitch() const { return y; }
                         /// Returns yaw.
-    float               GetYaw() const { return z; }
+    constexpr float     GetYaw() const { return z; }
 
     void                Set(float roll, float pitch, float yaw);
     void                SetRoll(float roll) { this->x = roll; }
@@ -130,9 +130,13 @@ public:
                         /// Returns linear interpolation between the angles a1 and the angles a2.
     static Angles       FromLerp(const Angles &a1, const Angles &a2, const float t);
 
+                        /// Returns rotated three axes from concatenated rotation matrix R = Rz Ry Rx.
     void                ToVectors(Vec3 *xAxis, Vec3 *yAxis = nullptr, Vec3 *zAxis = nullptr) const;
+                        /// Returns rotated x-axis from concatenated rotation matrix R = Rz Ry Rx.
     Vec3                ToXAxis() const;
+                        /// Returns rotated y-axis from concatenated rotation matrix R = Rz Ry Rx.
     Vec3                ToYAxis() const;
+                        /// Returns rotated z-axis from concatenated rotation matrix R = Rz Ry Rx.
     Vec3                ToZAxis() const;
 
     Rotation            ToRotation() const;
@@ -140,9 +144,9 @@ public:
     Mat3                ToMat3() const;
     Mat4                ToMat4() const;
 
-                        /// Returns "roll pitch yaw".
+                        /// Returns "x y z".
     const char *        ToString() const { return ToString(2); }
-                        /// Returns "roll pitch yaw" with the given precision.
+                        /// Returns "x y z" with the given precision.
     const char *        ToString(int precision) const;
 
                         /// Creates from the string.
@@ -158,12 +162,12 @@ public:
     float               z;      ///< Angle of rotation around z (up) axis in degrees (yaw)
 };
 
-BE_INLINE constexpr Angles::Angles(float inRoll, float inPitch, float inYaw) :
-    x(inRoll), y(inPitch), z(inYaw) {
+BE_INLINE constexpr Angles::Angles(float inX, float inY, float inZ) :
+    x(inX), y(inY), z(inZ) {
 }
 
-BE_INLINE Angles::Angles(const Vec3 &v) :
-    x(v[0]), y(v[1]), z(v[2]) {
+BE_INLINE constexpr Angles::Angles(const Vec3 &v) :
+    x(v.x), y(v.y), z(v.z) {
 }
 
 BE_INLINE Angles &Angles::operator=(const Angles &a) {
@@ -173,10 +177,10 @@ BE_INLINE Angles &Angles::operator=(const Angles &a) {
     return *this;
 }
 
-BE_INLINE void Angles::Set(float roll, float pitch, float yaw) {
-    this->x = roll;
-    this->y = pitch;
-    this->z = yaw;
+BE_INLINE void Angles::Set(float x, float y, float z) {
+    this->x = x;
+    this->y = y;
+    this->z = z;
 }
 
 BE_INLINE Angles &Angles::SetZero() {
