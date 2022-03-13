@@ -139,7 +139,7 @@ Mat4 Rotation::ToMat4() const {
 }
 
 void Rotation::Normalize180() {
-    angle -= floor(angle / 360.0f) * 360.0f;
+    angle -= Math::Floor(angle / 360.0f) * 360.0f;
     if (angle > 180.0f) {
         angle -= 360.0f;
     } else if (angle < -180.0f) {
@@ -148,7 +148,7 @@ void Rotation::Normalize180() {
 }
 
 void Rotation::Normalize360() {
-    angle -= floor(angle / 360.0f) * 360.0f;
+    angle -= Math::Floor(angle / 360.0f) * 360.0f;
     if (angle > 360.0f) {
         angle -= 360.0f;
     } else if (angle < 0.0f) {

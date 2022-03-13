@@ -31,7 +31,7 @@ void TestInverseMatrix()
 
 void TestMath() {
     //TestInverseMatrix();
-    BE1::Mat3 m = BE1::Mat3::FromRotationZYX(15, 80, -30);
+    BE1::Mat3 m = BE1::Mat3::FromRotationZYX(DEG2RAD(120), DEG2RAD(-20), DEG2RAD(60));
 
     BE1::Rotation r = m.ToRotation();
     BE1::Mat3 m2 = r.ToMat3();
