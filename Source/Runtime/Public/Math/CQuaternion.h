@@ -17,7 +17,7 @@
 /*
 -------------------------------------------------------------------------------
 
-    Compressed Quaternion
+    Compressed Unit Quaternion
 
 -------------------------------------------------------------------------------
 */
@@ -45,8 +45,8 @@ public:
                         /// Casts this Quat to a C array.
                         /// This function simply returns a C pointer view to this data structure.
                         /// This function is identical to the member function Ptr().
-                        operator const float *() const;
-                        operator float *();
+                        operator const float *() const { return &x; }
+                        operator float *() { return &x; }
 
                         /// Accesses an element of this quaternion.
     float &             At(int index) { return (*this)[index]; }
@@ -121,14 +121,6 @@ BE_INLINE bool CQuat::Equals(const CQuat &a, const float epsilon) const {
         return false;
     }
     return true;
-}
-
-BE_INLINE CQuat::operator const float *() const {
-    return &x;
-}
-
-BE_INLINE CQuat::operator float *() {
-    return &x;
 }
 
 BE_INLINE Quat CQuat::ToQuat() const {
