@@ -345,8 +345,19 @@ BE_INLINE Quat Quat::operator/(const Quat &a) const {
 }
 
 BE_INLINE Vec3 Quat::operator*(const Vec3 &a) const {
-    // TODO: do SIMD optimization.
+    assert(IsNormalized());
+#if 0
     return ToMat3() * a;
+#else
+    float vm = 2.0f * (x * a.x + y * a.y + z * a.z);
+    float cm = 2.0f * w;
+    float pm = cm * w - 1.0f;
+
+    return Vec3(
+        pm * a.x + vm * x + cm * (y * a.z - z * a.y),
+        pm * a.y + vm * y + cm * (z * a.x - x * a.z),
+        pm * a.z + vm * z + cm * (x * a.y - y * a.x));
+#endif
 }
 
 BE_INLINE Quat Quat::operator*(float a) const {
