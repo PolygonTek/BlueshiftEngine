@@ -268,14 +268,19 @@ Mat3 Mat3::FromRotationXYZ(float ex, float ey, float ez) {
     Math::SinCos(ey, sy, cy);
     Math::SinCos(ez, sz, cz);
 
+    float cxcz = cx * cz;
+    float cxsz = cx * sz;
+    float sxcz = sx * cz;
+    float sxsz = sx * sz;
+
     Mat3 m;
     m[0][0] = cy * cz;
-    m[0][1] = cz * sx*sy + cx * sz;
-    m[0][2] = -cx * cz*sy + sx * sz;
+    m[0][1] = sxcz * sy + cxsz;
+    m[0][2] = -cxcz * sy + sxsz;
 
     m[1][0] = -cy * sz;
-    m[1][1] = cx * cz - sx * sy*sz;
-    m[1][2] = cz * sx + cx * sy*sz;
+    m[1][1] = cxcz - sxsz * sy;
+    m[1][2] = sxcz + cxsz * sy;
 
     m[2][0] = sy;
     m[2][1] = -cy * sx;
@@ -298,18 +303,23 @@ Mat3 Mat3::FromRotationXZY(float ex, float ez, float ey) {
     Math::SinCos(ey, sy, cy);
     Math::SinCos(ez, sz, cz);
 
+    float cxcy = cx * cy;
+    float cxsy = cx * sy;
+    float sxcy = sx * cy;
+    float sxsy = sx * sy;
+
     Mat3 m;
     m[0][0] = cy * cz;
-    m[0][1] = sx * sy + cx * cy*sz;
-    m[0][2] = -cx * sy + cy * sx*sz;
+    m[0][1] = sxsy + cxcy * sz;
+    m[0][2] = -cxsy + sxcy * sz;
 
     m[1][0] = -sz;
     m[1][1] = cx * cz;
     m[1][2] = cz * sx;
 
     m[2][0] = cz * sy;
-    m[2][1] = -cy * sx + cx * sy*sz;
-    m[2][2] = cx * cy + sx * sy*sz;
+    m[2][1] = -sxcy + cxsy * sz;
+    m[2][2] = cxcy + sxsy * sz;
 
     return m;
 }
@@ -328,14 +338,19 @@ Mat3 Mat3::FromRotationYXZ(float ey, float ex, float ez) {
     Math::SinCos(ey, sy, cy);
     Math::SinCos(ez, sz, cz);
 
-    Mat3 m;
-    m[0][0] = cy * cz + sx * sy*sz;
-    m[0][1] = cx * sz;
-    m[0][2] = -cz * sy + cy * sx*sz;
+    float cycz = cy * cz;
+    float cysz = cy * sz;
+    float sycz = sy * cz;
+    float sysz = sy * sz;
 
-    m[1][0] = cx * sx*sy - cy * sz;
+    Mat3 m;
+    m[0][0] = cycz + sx * sysz;
+    m[0][1] = cx * sz;
+    m[0][2] = -sycz + cysz * sx;
+
+    m[1][0] = sycz * sx - cysz;
     m[1][1] = cx * cz;
-    m[1][2] = cy * cz*sx + sy * sz;
+    m[1][2] = cycz * sx + sysz;
 
     m[2][0] = cx * sy;
     m[2][1] = -sx;
@@ -358,18 +373,23 @@ Mat3 Mat3::FromRotationYZX(float ey, float ez, float ex) {
     Math::SinCos(ey, sy, cy);
     Math::SinCos(ez, sz, cz);
 
+    float cxcy = cx * cy;
+    float cxsy = cx * sy;
+    float sxcy = sx * cy;
+    float sxsy = sx * sy;
+
     Mat3 m;
     m[0][0] = cy * cz;
     m[0][1] = sz;
-    m[0][2] = -cx * sy;
+    m[0][2] = -cxsy;
 
-    m[1][0] = sx * sy - cx * cy*sz;
+    m[1][0] = sxsy - cxcy * sz;
     m[1][1] = cx * cz;
-    m[1][2] = cy * sx + cx * sy*sz;
+    m[1][2] = sxcy + cxsy * sz;
 
-    m[2][0] = cx * sy + cy * sx*sz;
+    m[2][0] = cxsy + sxcy * sz;
     m[2][1] = -cz * sx;
-    m[2][2] = cx * cy - sx * sy*sz;
+    m[2][2] = cxcy - sxsy * sz;
 
     return m;
 }
@@ -388,17 +408,22 @@ Mat3 Mat3::FromRotationZXY(float ez, float ex, float ey) {
     Math::SinCos(ey, sy, cy);
     Math::SinCos(ez, sz, cz);
 
+    float cycz = cy * cz;
+    float cysz = cy * sz;
+    float sycz = sy * cz;
+    float sysz = sy * sz;
+
     Mat3 m;
-    m[0][0] = cy * cz - sx * sy*sz;
-    m[0][1] = cz * sx*sy + cy * sz;
+    m[0][0] = cycz - sx * sysz;
+    m[0][1] = sycz * sx + cysz;
     m[0][2] = -cx * sy;
 
     m[1][0] = -cx * sz;
     m[1][1] = cx * cz;
     m[1][2] = sx;
 
-    m[2][0] = cz * sy + cy * sx*sz;
-    m[2][1] = -cy * cz*sx + sy * sz;
+    m[2][0] = sycz + cysz * sx;
+    m[2][1] = -cycz * sx + sysz;
     m[2][2] = cx * cy;
 
     return m;
@@ -418,17 +443,22 @@ Mat3 Mat3::FromRotationZYX(float ez, float ey, float ex) {
     Math::SinCos(ey, sy, cy);
     Math::SinCos(ez, sz, cz);
 
+    float cxcz = cx * cz;
+    float cxsz = cx * sz;
+    float sxcz = sx * cz;
+    float sxsz = sx * sz;
+
     Mat3 m;
     m[0][0] = cy * cz;
     m[0][1] = cy * sz;
     m[0][2] = -sy;
 
-    m[1][0] = cz * sx*sy - cx * sz;
-    m[1][1] = cx * cz + sx * sy*sz;
-    m[1][2] = cy * sx;
+    m[1][0] = sxcz * sy - cxsz;
+    m[1][1] = sxsz * sy + cxcz;
+    m[1][2] = sx * cy;
 
-    m[2][0] = cx * cz*sy + sx * sz;
-    m[2][1] = -cz * sx + cx * sy*sz;
+    m[2][0] = cxcz * sy + sxsz;
+    m[2][1] = cxsz * sy - sxcz;
     m[2][2] = cx * cy;
 
     return m;
@@ -448,18 +478,23 @@ Mat3 Mat3::FromRotationXYX(float ex2, float ey, float ex1) {
     Math::SinCos(ey, sy, cy);
     Math::SinCos(ex1, sx1, cx1);
 
+    float cx1cx2 = cx1 * cx2;
+    float cx1sx2 = cx1 * sx2;
+    float sx1cx2 = sx1 * cx2;
+    float sx1sx2 = sx1 * sx2;
+
     Mat3 m;
     m[0][0] = cy; 
     m[0][1] = sy * sx2;
     m[0][2] = -sy * cx2;
 
     m[1][0] = sy * sx1;
-    m[1][1] = cx2 * cx1 - cy * sx2*sx1;
-    m[1][2] = cx1 * sx2 + cy * cx2*sx1;
+    m[1][1] = cx1cx2 - cy * sx1sx2;
+    m[1][2] = cx1sx2 + cy * sx1cx2;
 
     m[2][0] = sy * cx1;
-    m[2][1] = -cy * cx1*sx2 - cx2 * sx1;
-    m[2][2] = cy * cx2*cx1 - sx2 * sx1;
+    m[2][1] = -cy * cx1sx2 - sx1cx2;
+    m[2][2] = cy * cx1cx2 - sx1sx2;
 
     return m;
 }
@@ -478,18 +513,23 @@ Mat3 Mat3::FromRotationXZX(float ex2, float ez, float ex1) {
     Math::SinCos(ez, sz, cz);
     Math::SinCos(ex1, sx1, cx1);
 
+    float cx1cx2 = cx1 * cx2;
+    float cx1sx2 = cx1 * sx2;
+    float sx1cx2 = sx1 * cx2;
+    float sx1sx2 = sx1 * sx2;
+
     Mat3 m;
     m[0][0] = cz;
     m[0][1] = sz * cx2;
     m[0][2] = sz * sx2;
 
     m[1][0] = -sz * cx1;
-    m[1][1] = cz * cx2*cx1 - sx2 * sx1;
-    m[1][2] = cz * cx1*sx2 + cx2 * sx1;
+    m[1][1] = cz * cx1cx2 - sx1sx2;
+    m[1][2] = cz * cx1sx2 + sx1cx2;
 
     m[2][0] = sz * sx1;
-    m[2][1] = -cx1 * sx2 - cz * cx2*sx1;
-    m[2][2] = cx2 * cx1 - cz * sx2*sx1;
+    m[2][1] = -cx1sx2 - cz * sx1cx2;
+    m[2][2] = cx1cx2 - cz * sx1sx2;
 
     return m;
 }
@@ -508,18 +548,23 @@ Mat3 Mat3::FromRotationYXY(float ey2, float ex, float ey1) {
     Math::SinCos(ex, sx, cx);
     Math::SinCos(ey1, sy1, cy1);
 
+    float cy1cy2 = cy1 * cy2;
+    float cy1sy2 = cy1 * sy2;
+    float sy1cy2 = sy1 * cy2;
+    float sy1sy2 = sy1 * sy2;
+
     Mat3 m;
-    m[0][0] = cy2 * cy1 - cx * sy2*sy1;
+    m[0][0] = cy1cy2 - cx * sy1sy2;
     m[0][1] = sx * sy1;
-    m[0][2] = -cy1 * sy2 - cx * cy2*sy1;
+    m[0][2] = -cy1sy2 - cx * sy1cy2;
 
     m[1][0] = sx * sy2;
     m[1][1] = cx;
     m[1][2] = sx * cy2;
 
-    m[2][0] = cx * cy1*sy2 + cy2 * sy1;
+    m[2][0] = cx * cy1sy2 + sy1cy2;
     m[2][1] = -sx * cy1;
-    m[2][2] = cx * cy2*cy1 - sy2 * sy1;
+    m[2][2] = cx * cy1cy2 - sy1sy2;
 
     return m;
 }
@@ -538,18 +583,23 @@ Mat3 Mat3::FromRotationYZY(float ey2, float ez, float ey1) {
     Math::SinCos(ez, sz, cz);
     Math::SinCos(ey1, sy1, cy1);
 
+    float cy1cy2 = cy1 * cy2;
+    float cy1sy2 = cy1 * sy2;
+    float sy1cy2 = sy1 * cy2;
+    float sy1sy2 = sy1 * sy2;
+
     Mat3 m;
-    m[0][0] = cz * cy2*cy1 - sy2 * sy1;
+    m[0][0] = cz * cy1cy2 - sy1sy2;
     m[0][1] = sz * cy1;
-    m[0][2] = -cz * cy1*sy2 - cy2 * sy1;
+    m[0][2] = -cz * cy1sy2 - sy1cy2;
 
     m[1][0] = -sz * cy2;
     m[1][1] = cz;
     m[1][2] = sz * sy2;
 
-    m[2][0] = cy1 * sy2 + cz * cy2*sy1;
+    m[2][0] = cy1sy2 + cz * sy1cy2;
     m[2][1] = sz * sy1;
-    m[2][2] = cy2 * cy1 - cz * sy2*sy1;
+    m[2][2] = cy1cy2 - cz * sy1sy2;
 
     return m;
 }
@@ -568,13 +618,18 @@ Mat3 Mat3::FromRotationZXZ(float ez2, float ex, float ez1) {
     Math::SinCos(ex, sx, cx);
     Math::SinCos(ez1, sz1, cz1);
 
+    float cz1cz2 = cz1 * cz2;
+    float cz1sz2 = cz1 * sz2;
+    float sz1cz2 = sz1 * cz2;
+    float sz1sz2 = sz1 * sz2;
+
     Mat3 m;
-    m[0][0] = cz2 * cz1 - cx * sz2*sz1; 
-    m[0][1] = cz1 * sz2 + cx * cz2*sz1;
+    m[0][0] = cz1cz2 - cx * sz1sz2; 
+    m[0][1] = cz1sz2 + cx * sz1cz2;
     m[0][2] = sx * sz1;
 
-    m[1][0] = -cx * cz1*sz2 - cz2 * sz1; 
-    m[1][1] = cx * cz2*cz1 - sz2 * sz1;
+    m[1][0] = -cx * cz1sz2 - sz1cz2; 
+    m[1][1] = cx * cz1cz2 - sz1sz2;
     m[1][2] = sx * cz1;
 
     m[2][0] = sx * sz2;
@@ -598,13 +653,18 @@ Mat3 Mat3::FromRotationZYZ(float ez2, float ey, float ez1) {
     Math::SinCos(ey, sy, cy);
     Math::SinCos(ez1, sz1, cz1);
 
+    float cz1cz2 = cz1 * cz2;
+    float cz1sz2 = cz1 * sz2;
+    float sz1cz2 = sz1 * cz2;
+    float sz1sz2 = sz1 * sz2;
+
     Mat3 m;
-    m[0][0] = cy * cz2*cz1 - sz2 * sz1;
-    m[0][1] = cy * cz1*sz2;
+    m[0][0] = cy * cz1cz2 - sz1sz2;
+    m[0][1] = cy * cz1sz2 + sz1cz2;
     m[0][2] = -sy * cz1;
 
-    m[1][0] = -cz1 * sz2 - cy * cz2*sz1;
-    m[1][1] = cz2 * cz1 - cy * sz2*sz1;
+    m[1][0] = -cz1sz2 - cy * sz1cz2;
+    m[1][1] = cz1cz2 - cy * sz1sz2;
     m[1][2] = sy * sz1;
 
     m[2][0] = sy * cz2;
@@ -976,60 +1036,59 @@ Mat3 &Mat3::Scale(const Vec3 &scale) {
 // * Rotation Matrix to Euler Angles
 //
 // V = Rz * Ry * Rx
-//   = R(yaw) * R(pitch) * R(roll)
 //    
-//     | cosy*cosp  -siny*cosr + sinr*sinp*cosy   sinr*siny + sinp*cosy*cosr |
-// V = | siny*cosp   cosr*cosy + sinr*sinp*siny  -cosy*sinr + cosr*sinp*siny |
-//     |     -sinp                    sinr*cosp                    cosr*cosp |
+//     | cosz*cosy  -sinz*cosx + sinx*siny*cosz   sinx*sinz + siny*cosz*cosx |
+// V = | sinz*cosy   cosx*cosz + sinx*siny*sinz  -cosz*sinx + cosx*siny*sinz |
+//     |     -siny                    sinx*cosy                    cosx*cosy |
 // 
-// Case 1: cosp != 0
+// Case 1: cosy != 0
 //
-// f02       = -sinp
-// f01 / f00 = siny*cosp / cosy*cosp = siny / cosy = tany
-// f12 / f22 = sinr*cosp / cosr*cosp = sinr / cosr = tanr
+// f02       = -siny
+// f01 / f00 = sinz*cosy / cosz*cosy = sinz / cosz = tany
+// f12 / f22 = sinx*cosy / cosx*cosy = sinx / cosx = tanr
 //
-// pitch = -asin( f02 )
-// yaw   = atan( f01 / f00 )
-// roll  = atan( f12 / f22 )
+// angleY = -asin( f02 )
+// angleZ = atan( f01 / f00 )
+// angleX = atan( f12 / f22 )
 //
-// Case 2: cosp == 0
+// Case 2: cosy == 0
 //
-// Case 2.a: sinp == 1
+// Case 2.a: siny == 1
 //
-//     |  0  -siny*cosr + sinr*cosy   sinr*siny + cosy*cosr |
-// V = |  0   cosr*cosy + sinr*siny  -cosy*sinr + cosr*siny |
+//     |  0  -sinz*cosx + sinx*cosz   sinx*sinz + cosz*cosx |
+// V = |  0   cosx*cosz + sinx*sinz  -cosz*sinx + cosx*sinz |
 //     | -1                       0                       0 |
 //
-//     |  0  -sin(y - r)  cos(y - r) |
-// V = |  0   cos(y - r)  sin(y - r) |
+//     |  0  -sin(z - x)  cos(z - x) |
+// V = |  0   cos(z - x)  sin(z - x) |
 //     | -1            0           0 |
 //
-// f10 / f11 = -sin(y - r) / cos(y - r) = -tan(y - r)
+// f10 / f11 = -sin(z - x) / cos(z - x) = -tan(z - x)
 //
-// yaw-roll = -atan( f10 / f11 )
-// pitch    = -asin( f02 )
+// angleZ - angleX = -atan( f10 / f11 )
+// angleY          = -asin( f02 )
 //  
-// Case 2.b: sinp == -1
+// Case 2.b: siny == -1
 //
-//     |  0  -siny*cosr - sinr*cosy   sinr*siny - cosy*cosr |
-// V = |  0   cosr*cosy - sinr*siny  -cosy*sinr - cosr*siny |
+//     |  0  -sinz*cosx - sinx*cosz   sinx*sinz - cosz*cosx |
+// V = |  0   cosx*cosz - sinx*sinz  -cosz*sinx - cosx*sinz |
 //     |  1                       0                       0 |
 //
-//     |  0  -sin(y + r)   cos(y + r) |
-// V = |  0   cos(y + r)  -sin(y + r) |
+//     |  0  -sin(z + x)   cos(z + x) |
+// V = |  0   cos(z + x)  -sin(z + x) |
 //     |  1            0            0 |
 //  
-// f10 / f11 = -sin(y + r) / cos(y + r) = -tan(y + r)
+// f10 / f11 = -sin(z + x) / cos(z + x) = -tan(z + x)
 //
-// yaw+roll = -atan( f10 / f11 )
-// pitch    = -asin( f02 )
+// angleZ + angleX = -atan( f10 / f11 )
+// angleY          = -asin( f02 )
 //
-// The DOF of the yaw and pitch is the same.
-// Locking the roll to zero will in all cases ..
+// The DOF of the z and y is the same.
+// Locking the x to zero will in all cases ..
 //
-// pitch    = -asin( f02 )
-// yaw      = -atan( f10 / f11 )
-// roll     = 0
+// angleY  = -asin( f02 )
+// angleZ  = -atan( f10 / f11 )
+// angleX  = 0
 //
 //--------------------------------------------------------------------------------------------
 Angles Mat3::ToAngles() const {
@@ -1102,15 +1161,15 @@ Angles Mat3::ToAngles() const {
 //  
 //-------------------------------------------------------------------------------------------
 Rotation Mat3::ToRotation() const {
-    static constexpr int next[3] = { 1, 2, 0 };
     Rotation r;
-    float s, t;
+
+#if 0
+    static constexpr int next[3] = { 1, 2, 0 };
     int i, j, k;
 
     // trace == 2c + 1
     float trace = mat[0][0] + mat[1][1] + mat[2][2];
 
-#if 0 
     // 쿼터니언 안 거치고 구현하기
     // theta == 0
     if (trace == 3) {
@@ -1132,7 +1191,7 @@ Rotation Mat3::ToRotation() const {
 
             r.angle = 180.0f;
             r.vec[i] = (mat[i][i] - (mat[j][j] + mat[k][k])) * 0.5f;
-            s = 1.0 / (r.vec[i] * 2.0f);
+            float s = 1.0 / (r.vec[i] * 2.0f);
             r.vec[j] = mat[j][i] * s;
             r.vec[k] = mat[k][i] * s;
         } else {
@@ -1146,38 +1205,9 @@ Rotation Mat3::ToRotation() const {
         r.vec.FixDegenerateNormal();
     }
 #else
-    // 일단 쿼터니언 값을 만든다
-    if (trace > 0.0f) { // TODO: trace > -1.0f 가 아닌 이유는?? 3D Game Engine Design 참고할것
-        t = trace + 1.0f;
-        s = Math::InvSqrt(t) * 0.5f;
-
-        r.angle = s * t;
-        r.vec[0] = (mat[1][2] - mat[2][1]) * s;
-        r.vec[1] = (mat[2][0] - mat[0][2]) * s;
-        r.vec[2] = (mat[0][1] - mat[1][0]) * s;
-    } else {
-        i = 0;
-        if (mat[1][1] > mat[0][0]) {
-            i = 1;
-        }
-    
-        if (mat[2][2] > mat[i][i]) {
-            i = 2;
-        }
-
-        j = next[i];
-        k = next[j];
-
-        t = (mat[i][i] - (mat[j][j] + mat[k][k])) + 1.0f;
-        s = Math::InvSqrt(t) * 0.5f;
-
-        r.vec[i] = s * t;
-        r.vec[j] = (mat[i][j] + mat[j][i]) * s;
-        r.vec[k] = (mat[i][k] + mat[k][i]) * s;
-        r.angle = (mat[j][k] - mat[k][j]) * s;
-    }
-
-    r.angle = Math::ACos(r.angle);
+    Quat q = ToQuat();
+    r.vec.Set(q.x, q.y, q.z);
+    r.angle = Math::ACos(q.w);
 
     // angle is zero, axis can be anything
     if (Math::Fabs(r.angle) < 1e-10f) {
@@ -1185,13 +1215,12 @@ Rotation Mat3::ToRotation() const {
         r.angle = 0.0f;
     } else {
         // r.vec *= (1.0f / sin(angle));
-        // 걍 노멀라이징 한다
         r.vec.Normalize();
         r.vec.FixDegenerateNormal();
         r.angle = RAD2DEG(r.angle) * 2.0f;
     }
 #endif
-    r.origin.SetFromScalar(0);
+    r.origin = Vec3::zero;
     r.axis = *this;
     r.axisValid = true;
     return r;
@@ -1225,8 +1254,7 @@ Quat Mat3::ToQuat() const {
         int i = 0;
         if (mat[1][1] > mat[0][0]) {
             i = 1;
-        }
-    
+        }    
         if (mat[2][2] > mat[i][i]) {
             i = 2;
         }
