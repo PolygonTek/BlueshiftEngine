@@ -999,8 +999,6 @@ bool Mat4::InverseSelf() {
 }
 
 bool Mat4::AffineInverseSelf() {
-    ALIGN_AS16 Vec3 t;
-
     // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
     if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
         return false;

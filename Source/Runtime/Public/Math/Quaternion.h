@@ -163,9 +163,9 @@ public:
                         /// Returns true if the length of this quaternion is one.
     bool                IsNormalized(float epsilonSq = 1e-5f) const;
 
-                        /// Compute conjugate of this quaternion.
+                        /// Compute conjugate (negate imaginary part) of this quaternion.
     Quat                Conjugate() const;
-                        /// Compute conjugate of this quaternion, in-place.
+                        /// Compute conjugate (negate imaginary part) of this quaternion, in-place.
     Quat &              ConjugateSelf();
 
                         /// Inverts this quaternion.

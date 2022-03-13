@@ -20,7 +20,7 @@ class Angles;
 class Quat;
 class Mat3;
 
-/// Describes a complete rotation in degrees about an abritray axis.
+/// Describes a complete rotation in degrees about an arbitrary axis.
 /// A local rotation matrix is stored for fast rotation of multiple points.
 class BE_API Rotation {
     friend class Angles;
