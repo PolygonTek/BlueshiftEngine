@@ -600,7 +600,7 @@ void Mat3x4::GetTQS(Vec3 &translation, Quat &rotation, Vec3 &scale) const {
 }
 
 void Mat3x4::InverseSelf() {
-    *this = Mat3x4(ToMat4().AffineInverse());
+    *this = Mat3x4(ToMat4().InverseAffine());
 }
 
 // (TRS)^{-1} = S^{-1} R^T (-T)

@@ -223,12 +223,12 @@ public:
                         /// @return False if determinant is zero.
     bool                InverseSelf();
 
-                        /// Inverts a affine matrix.
+                        /// Inverts a affine matrix. (affine matrix means equivalent to a 3x4 matrix)
                         /// If a matrix M is made up of only translation, rotation, reflection, scaling and shearing,
                         /// then M is affine matrix and this function can be used to compute the inverse.
-    Mat4                AffineInverse() const;
+    Mat4                InverseAffine() const;
                         /// Inverts a affine matrix, in-place.
-    bool                AffineInverseSelf();
+    bool                InverseAffineSelf();
 
                         /// Inverts a orthogonal matrix.
                         /// If a matrix M is made up of only translation, rotation, and scaling,
@@ -552,9 +552,9 @@ BE_INLINE Mat4 Mat4::Inverse() const {
     return invMat;
 }
 
-BE_INLINE Mat4 Mat4::AffineInverse() const {
+BE_INLINE Mat4 Mat4::InverseAffine() const {
     Mat4 invMat = *this;
-    bool r = invMat.AffineInverseSelf();
+    bool r = invMat.InverseAffineSelf();
     assert(r);
     return invMat;
 }

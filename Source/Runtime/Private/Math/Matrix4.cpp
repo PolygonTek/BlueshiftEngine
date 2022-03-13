@@ -998,7 +998,7 @@ bool Mat4::InverseSelf() {
 #endif
 }
 
-bool Mat4::AffineInverseSelf() {
+bool Mat4::InverseAffineSelf() {
     // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
     if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
         return false;
