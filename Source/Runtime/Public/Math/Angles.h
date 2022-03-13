@@ -33,9 +33,9 @@ public:
     /// Angles indexes
     struct Index {
         enum Enum {
-            Roll,
-            Pitch,
-            Yaw
+            Roll,       // Rotation angle around x-axis
+            Pitch,      // Rotation angle around y-axis
+            Yaw         // Rotation angle around z-axis
         };
     };
 
@@ -122,6 +122,7 @@ public:
                         /// Normalize to the range [-180 < angle <= 180]
     Angles &            Normalize180();
 
+                        /// Clamp Euler angles between min and max.
     void                Clamp(const Angles &min, const Angles &max);
 
                         /// Sets from linear interpolation between the angles a1 and the angles a2.
@@ -129,11 +130,10 @@ public:
                         /// Returns linear interpolation between the angles a1 and the angles a2.
     static Angles       FromLerp(const Angles &a1, const Angles &a2, const float t);
 
-    void                ToVectors(Vec3 *forward, Vec3 *right = nullptr, Vec3 *up = nullptr) const;
-
-    Vec3                ToForward() const;
-    Vec3                ToRight() const;
-    Vec3                ToUp() const;
+    void                ToVectors(Vec3 *xAxis, Vec3 *yAxis = nullptr, Vec3 *zAxis = nullptr) const;
+    Vec3                ToXAxis() const;
+    Vec3                ToYAxis() const;
+    Vec3                ToZAxis() const;
 
     Rotation            ToRotation() const;
     Quat                ToQuat() const;
