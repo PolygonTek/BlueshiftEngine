@@ -27,6 +27,8 @@ PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &ancho
     btTransform frameA = ToBtTransform(axisInA, SystemUnitToPhysicsUnit(anchorInACentroid));
 
     btHingeConstraint *hingeConstraint = new btHingeConstraint(*bodyA->GetRigidBody(), frameA);
+    //btHingeConstraint* hingeConstraint = new btHingeConstraint(*bodyA->GetRigidBody(), ToBtVector3(SystemUnitToPhysicsUnit(anchorInACentroid)), ToBtVector3(axisInA[2]));
+
     hingeConstraint->setUserConstraintPtr(this);
 
 #ifdef CONTROL_CFM_ERP
