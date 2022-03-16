@@ -171,10 +171,6 @@ void PhysicsWorld::Reset() {
     accumulatedTimeDelta = 0;
 }
 
-PhysicsWorld::ConstraintSolver::Enum PhysicsWorld::GetConstraintSolver() const {
-    return solverType;
-}
-
 void PhysicsWorld::SetConstraintSolver(ConstraintSolver::Enum solverType) {
     // Direct MLCP solvers are useful when higher quality simulation is needed, for example in robotics. 
     // The performance is less than the SI solver,

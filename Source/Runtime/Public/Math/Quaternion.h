@@ -174,6 +174,11 @@ public:
                         /// Inverts this quaternion, in-place.
     Quat &              InverseSelf();
 
+                        /// Rotates a point/direction by the quaternion. Quaternion must be normalized.
+    Vec3                RotateVector(const Vec3 &v) const { return *this * v; }
+                        /// Rotates a point/direction by the inverse quaternion. Quaternion must be normalized.
+    Vec3                InverseRotateVector(const Vec3 &v) const { return Inverse() * v; }
+
                         /// Returns the quaternion that rotates about the positive X axis by the given angle in radians.
     static Quat         FromRotationX(float angle) { return FromAngleAxis(angle, Vec3::unitX); }
                         /// Returns the quaternion that rotates about the positive Y axis by the given angle in radians.

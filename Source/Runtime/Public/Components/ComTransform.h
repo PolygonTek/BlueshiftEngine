@@ -117,8 +117,8 @@ public:
 
                             /// Returns forward direction in the chosen transform space.
     Vec3                    Forward(TransformSpace space = WorldSpace) const;
-                            /// Returns right direction in the chosen transform space.
-    Vec3                    Right(TransformSpace space = WorldSpace) const;
+                            /// Returns left direction in the chosen transform space.
+    Vec3                    Left(TransformSpace space = WorldSpace) const;
                             /// Returns up direction in the chosen transform space.
     Vec3                    Up(TransformSpace space = WorldSpace) const;
 

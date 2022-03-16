@@ -307,7 +307,7 @@ Vec3 ComTransform::Forward(TransformSpace space) const {
     }
 }
 
-Vec3 ComTransform::Right(TransformSpace space) const {
+Vec3 ComTransform::Left(TransformSpace space) const {
     if (space == LocalSpace) {
         return localRotation.ToMat3()[1];
     } else {
@@ -350,7 +350,7 @@ void ComTransform::InvalidateWorldMatrix() {
     }
     worldMatrixInvalidated = true;
 
-    // World matrix will be updated so it's safe to emit can safely emit this signal.
+    // It is safe to emit this signal as the world matrix will be updated on demand.
     EmitSignal(&SIG_TransformUpdated, this);
 
     if (physicsUpdating) {
@@ -392,12 +392,12 @@ void ComTransform::InvalidateCachedRect() {
     }
 }
 
-// newRotation 으로 currentEulerAnglesHint 와 [-180, +180] 범위 내에서 가장 가까운 Euler angles 를 구한다.
-Angles ComTransform::CalculateClosestEulerAnglesFromQuaternion(const Angles& currentEulerAnglesHint, const Quat &newRotation) {
+// newRotation 으로 currentEulerAngles 와 [-180, +180] 범위 내에서 가장 가까운 Euler angles 를 구한다.
+Angles ComTransform::CalculateClosestEulerAnglesFromQuaternion(const Angles &currentEulerAngles, const Quat &newRotation) {
     // newRotation 과 각도 차이가 0.001 보다 작다면 currentEulerAngles 를 유지한다.
-    float angleDiff = newRotation.AngleBetween(currentEulerAnglesHint.ToQuat());
+    float angleDiff = newRotation.AngleBetween(currentEulerAngles.ToQuat());
     if (angleDiff < 1e-3f) {
-        return currentEulerAnglesHint;
+        return currentEulerAngles;
     }
 
     // Converting the quaternion to a rotation matrix R = Rz * Ry * Rx and then to
@@ -416,20 +416,20 @@ Angles ComTransform::CalculateClosestEulerAnglesFromQuaternion(const Angles& cur
     e2[1] = (180 - e1[1]);
     e2[2] = (e1[2] + 180);
 
-    // Synchronize Euler angles using hint.
+    // Synchronize Euler angles e1 and e2 using base (current).
     Angles eulerAnglesSynced1;
-    eulerAnglesSynced1[0] = Math::SyncAngle(currentEulerAnglesHint[0], e1[0]);
-    eulerAnglesSynced1[1] = Math::SyncAngle(currentEulerAnglesHint[1], e1[1]);
-    eulerAnglesSynced1[2] = Math::SyncAngle(currentEulerAnglesHint[2], e1[2]);
+    eulerAnglesSynced1[0] = Math::SyncAngle(currentEulerAngles[0], e1[0]);
+    eulerAnglesSynced1[1] = Math::SyncAngle(currentEulerAngles[1], e1[1]);
+    eulerAnglesSynced1[2] = Math::SyncAngle(currentEulerAngles[2], e1[2]);
 
     Angles eulerAnglesSynced2;
-    eulerAnglesSynced2[0] = Math::SyncAngle(currentEulerAnglesHint[0], e2[0]);
-    eulerAnglesSynced2[1] = Math::SyncAngle(currentEulerAnglesHint[1], e2[1]);
-    eulerAnglesSynced2[2] = Math::SyncAngle(currentEulerAnglesHint[2], e2[2]);
+    eulerAnglesSynced2[0] = Math::SyncAngle(currentEulerAngles[0], e2[0]);
+    eulerAnglesSynced2[1] = Math::SyncAngle(currentEulerAngles[1], e2[1]);
+    eulerAnglesSynced2[2] = Math::SyncAngle(currentEulerAngles[2], e2[2]);
 
-    // Calculate differences between current Euler angles hint.
-    Vec3 deltaAngles1 = Vec3(eulerAnglesSynced1 - currentEulerAnglesHint);
-    Vec3 deltaAngles2 = Vec3(eulerAnglesSynced2 - currentEulerAnglesHint);
+    // Calculate differences between current Euler angles and others.
+    Vec3 deltaAngles1 = Vec3(eulerAnglesSynced1 - currentEulerAngles);
+    Vec3 deltaAngles2 = Vec3(eulerAnglesSynced2 - currentEulerAngles);
 
     // Returns synchronized Euler angles which have smaller angle difference.
     float diff1 = deltaAngles1.Dot(deltaAngles1);

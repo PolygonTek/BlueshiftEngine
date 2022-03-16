@@ -119,7 +119,7 @@ public:
     int                     GetConstraintSolverIterations() const;
     void                    SetConstraintSolverIterations(int iterationCount);
 
-    ConstraintSolver::Enum  GetConstraintSolver() const;
+    ConstraintSolver::Enum  GetConstraintSolver() const { return solverType; }
     void                    SetConstraintSolver(ConstraintSolver::Enum solver);
 
                             /// Returns fixed frame rate in physics simulation
