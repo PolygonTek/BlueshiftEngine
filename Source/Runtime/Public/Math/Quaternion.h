@@ -180,11 +180,11 @@ public:
     Vec3                InverseRotateVector(const Vec3 &v) const { return Inverse() * v; }
 
                         /// Returns the quaternion that rotates about the positive X axis by the given angle in radians.
-    static Quat         FromRotationX(float angle) { return FromAngleAxis(angle, Vec3::unitX); }
+    static Quat         FromRotationX(float angle);
                         /// Returns the quaternion that rotates about the positive Y axis by the given angle in radians.
-    static Quat         FromRotationY(float angle) { return FromAngleAxis(angle, Vec3::unitY); }
+    static Quat         FromRotationY(float angle);
                         /// Returns the quaternion that rotates about the positive Z axis by the given angle in radians.
-    static Quat         FromRotationZ(float angle) { return FromAngleAxis(angle, Vec3::unitZ); }
+    static Quat         FromRotationZ(float angle);
 
                         /// Creates the quaternion from the given sequence of Euler rotation angles in radians.
                         /// The FromRotationABC function returns a matrix M = A(a) * B(b) * C(c). 
@@ -195,6 +195,7 @@ public:
     static Quat         FromRotationYZX(float ey, float ez, float ex) { return (FromRotationY(ey) * FromRotationZ(ez) * FromRotationX(ex)).Normalize(); }
     static Quat         FromRotationZXY(float ez, float ex, float ey) { return (FromRotationZ(ez) * FromRotationX(ex) * FromRotationY(ey)).Normalize(); }
     static Quat         FromRotationZYX(float ez, float ey, float ex) { return (FromRotationZ(ez) * FromRotationY(ey) * FromRotationX(ex)).Normalize(); }
+
     static Quat         FromRotationXYX(float ex2, float ey, float ex1) { return (FromRotationX(ex2) * FromRotationY(ey) * FromRotationX(ex1)).Normalize(); }
     static Quat         FromRotationXZX(float ex2, float ez, float ex1) { return (FromRotationX(ex2) * FromRotationZ(ez) * FromRotationZ(ex1)).Normalize(); }
     static Quat         FromRotationYXY(float ey2, float ex, float ey1) { return (FromRotationY(ey2) * FromRotationX(ex) * FromRotationY(ey1)).Normalize(); }
@@ -209,6 +210,7 @@ public:
     void                ToRotationYZX(float &ey, float &ez, float &ex) const { return ToMat3().ToRotationYZX(ey, ez, ex); }
     void                ToRotationZXY(float &ez, float &ex, float &ey) const { return ToMat3().ToRotationZXY(ez, ex, ey); }
     void                ToRotationZYX(float &ez, float &ey, float &ex) const { return ToMat3().ToRotationZYX(ez, ey, ex); }
+
     void                ToRotationXYX(float &ex2, float &ey, float &ex1) const { return ToMat3().ToRotationXYX(ex2, ey, ex1); }
     void                ToRotationXZX(float &ex2, float &ez, float &ex1) const { return ToMat3().ToRotationXZX(ex2, ez, ex1); }
     void                ToRotationYXY(float &ey2, float &ex, float &ey1) const { return ToMat3().ToRotationYXY(ey2, ex, ey1); }
@@ -472,6 +474,30 @@ BE_INLINE void Quat::SetIdentity() {
     y = 0.0f;
     z = 0.0f;
     w = 1.0f;
+}
+
+BE_INLINE Quat Quat::FromRotationX(float angle) {
+    Quat q;
+    Math::SinCos(angle * 0.5f, q.x, q.w);
+    q.y = 0.0f;
+    q.z = 0.0f;
+    return q;
+}
+
+BE_INLINE Quat Quat::FromRotationY(float angle) {
+    Quat q;
+    Math::SinCos(angle * 0.5f, q.y, q.w);
+    q.x = 0.0f;
+    q.z = 0.0f;
+    return q;
+}
+
+BE_INLINE Quat Quat::FromRotationZ(float angle) {
+    Quat q;
+    Math::SinCos(angle * 0.5f, q.z, q.w);
+    q.x = 0.0f;
+    q.y = 0.0f;
+    return q;
 }
 
 BE_INLINE Quat Quat::FromAngleAxis(float angle, const Vec3 &axis) {

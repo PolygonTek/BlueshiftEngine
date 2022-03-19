@@ -38,7 +38,7 @@ public:
     constexpr Vec3(float x, float y, float z);
     /// Constructs a Vec3 with the value (xy[0], xy[1], z).
     explicit constexpr Vec3(const Vec2 &xy, float z);
-    /// Constructs a Vec3 with the value (x, yz[0], yz.[1]).
+    /// Constructs a Vec3 with the value (x, yz[0], yz[1]).
     explicit constexpr Vec3(float x, const Vec2 &yz);
     /// Constructs a Vec3 from a C array, to the value (data[0], data[1], data[2]).
     explicit constexpr Vec3(const float data[3]);

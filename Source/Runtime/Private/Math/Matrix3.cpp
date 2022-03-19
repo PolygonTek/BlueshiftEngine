@@ -189,21 +189,24 @@ bool Mat3::InverseSelf() {
 //      | 0  sinx   cosx |
 //
 //------------------------------------------------
-void Mat3::SetRotationX(float ex) {
+Mat3 Mat3::FromRotationX(float ex) {
     float s, c;
     Math::SinCos(ex, s, c);
 
-    mat[0][0] = 1.0f;
-    mat[0][1] = 0.0f;
-    mat[0][2] = 0.0f;
+    Mat3 m;
+    m[0][0] = 1.0f;
+    m[0][1] = 0.0f;
+    m[0][2] = 0.0f;
 
-    mat[1][0] = 0.0f;
-    mat[1][1] = c;
-    mat[1][2] = s;
+    m[1][0] = 0.0f;
+    m[1][1] = c;
+    m[1][2] = s;
 
-    mat[2][0] = 0.0f;
-    mat[2][1] = -s;
-    mat[2][2] = c;
+    m[2][0] = 0.0f;
+    m[2][1] = -s;
+    m[2][2] = c;
+
+    return m;
 }
 
 //------------------------------------------------
@@ -213,21 +216,24 @@ void Mat3::SetRotationX(float ex) {
 //      | -siny  0  cosy |
 //
 //------------------------------------------------
-void Mat3::SetRotationY(float ey) {
+Mat3 Mat3::FromRotationY(float ey) {
     float s, c;
     Math::SinCos(ey, s, c);
 
-    mat[0][0] = c;
-    mat[0][1] = 0.0f;
-    mat[0][2] = -s;
+    Mat3 m;
+    m[0][0] = c;
+    m[0][1] = 0.0f;
+    m[0][2] = -s;
 
-    mat[1][0] = 0.0f;
-    mat[1][1] = 1.0f;
-    mat[1][2] = 0.0f;
+    m[1][0] = 0.0f;
+    m[1][1] = 1.0f;
+    m[1][2] = 0.0f;
 
-    mat[2][0] = s;
-    mat[2][1] = 0.0f;
-    mat[2][2] = c;
+    m[2][0] = s;
+    m[2][1] = 0.0f;
+    m[2][2] = c;
+
+    return m;
 }
 
 //------------------------------------------------
@@ -237,30 +243,33 @@ void Mat3::SetRotationY(float ey) {
 //      |    0      0  1 |
 //
 //------------------------------------------------
-void Mat3::SetRotationZ(float ez) {
+Mat3 Mat3::FromRotationZ(float ez) {
     float s, c;
     Math::SinCos(ez, s, c);
 
-    mat[0][0] = c;
-    mat[0][1] = s;
-    mat[0][2] = 0.0f;
+    Mat3 m;
+    m[0][0] = c;
+    m[0][1] = s;
+    m[0][2] = 0.0f;
 
-    mat[1][0] = -s;
-    mat[1][1] = c;
-    mat[1][2] = 0.0f;
+    m[1][0] = -s;
+    m[1][1] = c;
+    m[1][2] = 0.0f;
 
-    mat[2][0] = 0.0f;
-    mat[2][1] = 0.0f;
-    mat[2][2] = 1.0f;
+    m[2][0] = 0.0f;
+    m[2][1] = 0.0f;
+    m[2][2] = 1.0f;
+
+    return m;
 }
 
-//------------------------------------------------
+//----------------------------------------------------------------------------
 //
 //            | 1     0      0 | |  cosy  0   siny | | cosz  -sinz  0 |
 // Rx Ry Rz = | 0  cosx  -sinx | |     0  1      0 | | sinz   cosz  0 |
 //            | 0  sinx   cosx | | -siny  0   cosy | |    0      0  1 |
 //
-//------------------------------------------------
+//----------------------------------------------------------------------------
 Mat3 Mat3::FromRotationXYZ(float ex, float ey, float ez) {
     float cx, sx, cy, sy, cz, sz;
 
@@ -289,13 +298,13 @@ Mat3 Mat3::FromRotationXYZ(float ex, float ey, float ez) {
     return m;
 }
 
-//------------------------------------------------
+//----------------------------------------------------------------------------
 //
 //            | 1     0      0 | | cosz  -sinz  0 | |  cosy  0   siny |
 // Rx Rz Ry = | 0  cosx  -sinx | | sinz   cosz  0 | |     0  1      0 |
 //            | 0  sinx   cosx | |    0      0  1 | | -siny  0   cosy |
 //
-//------------------------------------------------
+//----------------------------------------------------------------------------
 Mat3 Mat3::FromRotationXZY(float ex, float ez, float ey) {
     float cx, sx, cy, sy, cz, sz;
 
@@ -324,13 +333,13 @@ Mat3 Mat3::FromRotationXZY(float ex, float ez, float ey) {
     return m;
 }
 
-//------------------------------------------------
+//----------------------------------------------------------------------------
 //
 //            |  cosy  0   siny | | 1     0      0 | | cosz  -sinz  0 |
 // Ry Rx Rz = |     0  1      0 | | 0  cosx  -sinx | | sinz   cosz  0 |
 //            | -siny  0   cosy | | 0  sinx   cosx | |    0      0  1 |
 //
-//------------------------------------------------
+//----------------------------------------------------------------------------
 Mat3 Mat3::FromRotationYXZ(float ey, float ex, float ez) {
     float cx, sx, cy, sy, cz, sz;
 
@@ -359,13 +368,13 @@ Mat3 Mat3::FromRotationYXZ(float ey, float ex, float ez) {
     return m;
 }
 
-//------------------------------------------------
+//----------------------------------------------------------------------------
 //
 //            |  cosy  0   siny | | cosz  -sinz  0 | | 1     0      0 | 
 // Ry Rz Rx = |     0  1      0 | | sinz   cosz  0 | | 0  cosx  -sinx | 
 //            | -siny  0   cosy | |    0      0  1 | | 0  sinx   cosx | 
 //
-//------------------------------------------------
+//----------------------------------------------------------------------------
 Mat3 Mat3::FromRotationYZX(float ey, float ez, float ex) {
     float cx, sx, cy, sy, cz, sz;
 
@@ -394,13 +403,13 @@ Mat3 Mat3::FromRotationYZX(float ey, float ez, float ex) {
     return m;
 }
 
-//------------------------------------------------
+//----------------------------------------------------------------------------
 //
 //            | cosz  -sinz  0 | | 1     0      0 | |  cosy  0   siny | 
 // Rz Rx Ry = | sinz   cosz  0 | | 0  cosx  -sinx | |     0  1      0 | 
 //            |    0      0  1 | | 0  sinx   cosx | | -siny  0   cosy | 
 //
-//------------------------------------------------
+//----------------------------------------------------------------------------
 Mat3 Mat3::FromRotationZXY(float ez, float ex, float ey) {
     float cx, sx, cy, sy, cz, sz;
 
@@ -429,13 +438,13 @@ Mat3 Mat3::FromRotationZXY(float ez, float ex, float ey) {
     return m;
 }
 
-//------------------------------------------------
+//----------------------------------------------------------------------------
 //
 //            | cosz  -sinz  0 | |  cosy  0   siny | | 1     0      0 |
 // Rz Ry Rx = | sinz   cosz  0 | |     0  1      0 | | 0  cosx  -sinx |
 //            |    0      0  1 | | -siny  0   cosy | | 0  sinx   cosx |
 //
-//------------------------------------------------
+//----------------------------------------------------------------------------
 Mat3 Mat3::FromRotationZYX(float ez, float ey, float ex) {
     float cx, sx, cy, sy, cz, sz;
 
@@ -464,13 +473,13 @@ Mat3 Mat3::FromRotationZYX(float ez, float ey, float ex) {
     return m;
 }
 
-//------------------------------------------------
+//----------------------------------------------------------------------------
 //
 //              | 1      0       0 | |  cosy  0   siny | | 1      0       0 |
 // Rx2 Ry Rx1 = | 0  cosx2  -sinx2 | |     0  1      0 | | 0  cosx1  -sinx1 |
 //              | 0  sinx2   cosx2 | | -siny  0   cosy | | 0  sinx1   cosx1 |
 //
-//------------------------------------------------
+//----------------------------------------------------------------------------
 Mat3 Mat3::FromRotationXYX(float ex2, float ey, float ex1) {
     float cx2, sx2, cy, sy, cx1, sx1;
 
@@ -499,13 +508,13 @@ Mat3 Mat3::FromRotationXYX(float ex2, float ey, float ex1) {
     return m;
 }
 
-//------------------------------------------------
+//----------------------------------------------------------------------------
 //
 //              | 1      0       0 | | cosz  -sinz  0 | | 1      0       0 |
 // Rx2 Rz Rx1 = | 0  cosx2  -sinx2 | | sinz   cosz  0 | | 0  cosx1  -sinx1 |
 //              | 0  sinx2   cosx2 | |    0      0  1 | | 0  sinx1   cosx1 |
 //
-//------------------------------------------------
+//----------------------------------------------------------------------------
 Mat3 Mat3::FromRotationXZX(float ex2, float ez, float ex1) {
     float cx2, sx2, cz, sz, cx1, sx1;
 
@@ -534,13 +543,13 @@ Mat3 Mat3::FromRotationXZX(float ex2, float ez, float ex1) {
     return m;
 }
 
-//------------------------------------------------
+//----------------------------------------------------------------------------
 //
 //              |  cosy2  0   siny2 | | 1     0      0 | |  cosy1  0   siny1 |
 // Ry2 Rx Ry1 = |      0  1       0 | | 0  cosx  -sinx | |      0  1       0 |
 //              | -siny2  0   cosy2 | | 0  sinx   cosx | | -siny1  0   cosy1 |
 //
-//------------------------------------------------
+//----------------------------------------------------------------------------
 Mat3 Mat3::FromRotationYXY(float ey2, float ex, float ey1) {
     float cy2, sy2, cx, sx, cy1, sy1;
 
@@ -569,13 +578,13 @@ Mat3 Mat3::FromRotationYXY(float ey2, float ex, float ey1) {
     return m;
 }
 
-//------------------------------------------------
+//----------------------------------------------------------------------------
 //
 //              |  cosy2  0   siny2 | | cosz  -sinz  0 | |  cosy1  0   siny1 |
 // Ry2 Rz Ry1 = |      0  1       0 | | sinz   cosz  0 | |      0  1       0 |
 //              | -siny2  0   cosy2 | |    0      0  1 | | -siny1  0   cosy1 |
 //
-//------------------------------------------------
+//----------------------------------------------------------------------------
 Mat3 Mat3::FromRotationYZY(float ey2, float ez, float ey1) {
     float cy2, sy2, cz, sz, cy1, sy1;
 
@@ -604,13 +613,13 @@ Mat3 Mat3::FromRotationYZY(float ey2, float ez, float ey1) {
     return m;
 }
 
-//------------------------------------------------
+//----------------------------------------------------------------------------
 //
 //              | cosz2  -sinz2  0 | | 1     0      0 | | cosz1  -sinz1  0 |
 // Rz2 Rx Rz1 = | sinz2   cosz2  0 | | 0  cosx  -sinx | | sinz1   cosz1  0 |
 //              |     0       0  1 | | 0  sinx   cosx | |     0       0  1 |
 //
-//------------------------------------------------
+//----------------------------------------------------------------------------
 Mat3 Mat3::FromRotationZXZ(float ez2, float ex, float ez1) {
     float cz2, sz2, cx, sx, cz1, sz1;
 
@@ -639,13 +648,13 @@ Mat3 Mat3::FromRotationZXZ(float ez2, float ex, float ez1) {
     return m;
 }
 
-//------------------------------------------------
+//----------------------------------------------------------------------------
 //
 //              | cosz2  -sinz2  0 | |  cosy  0   siny | | cosz1  -sinz1  0 |
 // Rz2 Ry Rz1 = | sinz2   cosz2  0 | |     0  1      0 | | sinz1   cosz1  0 |
 //              |     0       0  1 | | -siny  0   cosy | |     0       0  1 |
 //
-//------------------------------------------------
+//----------------------------------------------------------------------------
 Mat3 Mat3::FromRotationZYZ(float ez2, float ey, float ez1) {
     float cz2, sz2, cy, sy, cz1, sz1;
 

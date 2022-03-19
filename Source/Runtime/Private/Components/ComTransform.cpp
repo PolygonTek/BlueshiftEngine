@@ -392,7 +392,7 @@ void ComTransform::InvalidateCachedRect() {
     }
 }
 
-// newRotation 으로 currentEulerAngles 와 [-180, +180] 범위 내에서 가장 가까운 Euler angles 를 구한다.
+// newRotation 으로 currentEulerAngles 와 수치적으로 [-180, +180] 범위 내에서 가장 가까운 Euler angles 를 구한다.
 Angles ComTransform::CalculateClosestEulerAnglesFromQuaternion(const Angles &currentEulerAngles, const Quat &newRotation) {
     // newRotation 과 각도 차이가 0.001 보다 작다면 currentEulerAngles 를 유지한다.
     float angleDiff = newRotation.AngleBetween(currentEulerAngles.ToQuat());
@@ -409,23 +409,13 @@ Angles ComTransform::CalculateClosestEulerAnglesFromQuaternion(const Angles &cur
     e1[1] = Math::Round(e1[1] / 1e-3f) * 1e-3f;
     e1[2] = Math::Round(e1[2] / 1e-3f) * 1e-3f;
 
-    // Make alternative one but represents the same rotation in the range
-    // ([0, +360], [+90, +270], [0, +360]).
+    // Make alternative one but represents the same rotation.
     Angles e2;
-    e2[0] = (e1[0] + 180);
-    e2[1] = (180 - e1[1]);
-    e2[2] = (e1[2] + 180);
+    e2 = e1.Alternate();
 
     // Synchronize Euler angles e1 and e2 using base (current).
-    Angles eulerAnglesSynced1;
-    eulerAnglesSynced1[0] = Math::SyncAngle(currentEulerAngles[0], e1[0]);
-    eulerAnglesSynced1[1] = Math::SyncAngle(currentEulerAngles[1], e1[1]);
-    eulerAnglesSynced1[2] = Math::SyncAngle(currentEulerAngles[2], e1[2]);
-
-    Angles eulerAnglesSynced2;
-    eulerAnglesSynced2[0] = Math::SyncAngle(currentEulerAngles[0], e2[0]);
-    eulerAnglesSynced2[1] = Math::SyncAngle(currentEulerAngles[1], e2[1]);
-    eulerAnglesSynced2[2] = Math::SyncAngle(currentEulerAngles[2], e2[2]);
+    Angles eulerAnglesSynced1 = e1.SyncAngles(currentEulerAngles);
+    Angles eulerAnglesSynced2 = e2.SyncAngles(currentEulerAngles);
 
     // Calculate differences between current Euler angles and others.
     Vec3 deltaAngles1 = Vec3(eulerAnglesSynced1 - currentEulerAngles);

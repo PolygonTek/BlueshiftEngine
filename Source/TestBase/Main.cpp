@@ -41,9 +41,9 @@ int main(int argc, char *argv[]) {
 
     //TestContainer();
 
-    TestMath();
+    //TestMath();
     
-    //TestSIMD();
+    TestSIMD();
 
 #if TEST_CUDA
     bool cudaSupported = MyCuda::Init();

@@ -600,6 +600,7 @@ void Mat3x4::GetTQS(Vec3 &translation, Quat &rotation, Vec3 &scale) const {
 }
 
 bool Mat3x4::InverseSelf() {
+    // 2x2 sub-determinants
     float det2_01_01 = mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
     float det2_01_02 = mat[0][0] * mat[1][2] - mat[0][2] * mat[1][0];
     float det2_01_03 = mat[0][0] * mat[1][3] - mat[0][3] * mat[1][0];
@@ -650,62 +651,68 @@ bool Mat3x4::InverseSelf() {
 
 // (T*R*S)^{-1} = S^{-1} * R^T * (-T)
 void Mat3x4::InverseOrthogonalSelf() {
-    float tmp[3];
-
     // Get squared inverse scale factor.
     double inv_sx2 = 1.0f / (mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]);
     double inv_sy2 = 1.0f / (mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]);
     double inv_sz2 = 1.0f / (mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]);
 
-    // Negate inverse rotated translation part.
-    tmp[0] = mat[0][0] * mat[0][3] + mat[1][0] * mat[1][3] + mat[2][0] * mat[2][3];
-    tmp[1] = mat[0][1] * mat[0][3] + mat[1][1] * mat[1][3] + mat[2][1] * mat[2][3];
-    tmp[2] = mat[0][2] * mat[0][3] + mat[1][2] * mat[1][3] + mat[2][2] * mat[2][3];
-    mat[0][3] = -tmp[0] * inv_sx2;
-    mat[1][3] = -tmp[1] * inv_sy2;
-    mat[2][3] = -tmp[2] * inv_sz2;
-
     // Transpose rotation part.
+    float tmp[3];
     tmp[0] = mat[0][1] * inv_sy2;
     tmp[1] = mat[0][2] * inv_sz2;
     tmp[2] = mat[1][2] * inv_sz2;
 
-    mat[0][0] *= inv_sx2;
+    mat[0][0] = mat[0][0] * inv_sx2;
     mat[0][1] = mat[1][0] * inv_sx2;
     mat[0][2] = mat[2][0] * inv_sx2;
+
     mat[1][0] = tmp[0];
-    mat[1][1] *= inv_sy2;
+    mat[1][1] = mat[1][1] * inv_sy2;
     mat[1][2] = mat[2][1] * inv_sy2;
+
     mat[2][0] = tmp[1];
     mat[2][1] = tmp[2];
-    mat[2][2] *= inv_sz2;
-}
-
-// (T*R*s)^{-1} = 1/s * R^T * (-T)
-void Mat3x4::InverseOrthogonalUniformScaleSelf() {
-    ALIGN_AS16 Vec3 t;
-    float temp;
+    mat[2][2] = mat[2][2] * inv_sz2;
 
     // The translation components of the original matrix
+    ALIGN_AS16 Vec3 t;
     t.x = mat[0][3];
     t.y = mat[1][3];
     t.z = mat[2][3];
 
+    mat[0][3] = -(mat[0][0] * t.x + mat[0][1] * t.y + mat[0][2] * t.z);
+    mat[1][3] = -(mat[1][0] * t.x + mat[1][1] * t.y + mat[1][2] * t.z);
+    mat[2][3] = -(mat[2][0] * t.x + mat[2][1] * t.y + mat[2][2] * t.z);
+}
+
+// (T*R*s)^{-1} = 1/s * R^T * (-T)
+void Mat3x4::InverseOrthogonalUniformScaleSelf() {
     // Get squared inverse scale factor.
     double inv_s = 1.0f / (mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]);
 
-    mat[0][0] *= inv_s;
-    mat[1][1] *= inv_s;
-    mat[2][2] *= inv_s;
-    temp = mat[0][1];
+    // R^T / s       
+    float tmp[3];
+    tmp[0] = mat[0][1] * inv_s;
+    tmp[1] = mat[0][2] * inv_s;
+    tmp[2] = mat[1][2] * inv_s;
+
+    mat[0][0] = mat[0][0] * inv_s;
     mat[0][1] = mat[1][0] * inv_s;
-    mat[1][0] = temp * inv_s;
-    temp = mat[0][2];
     mat[0][2] = mat[2][0] * inv_s;
-    mat[2][0] = temp * inv_s;
-    temp = mat[1][2];
+
+    mat[1][0] = tmp[0];
+    mat[1][1] = mat[1][1] * inv_s;
     mat[1][2] = mat[2][1] * inv_s;
-    mat[2][1] = temp * inv_s;
+
+    mat[2][0] = tmp[1];
+    mat[2][1] = tmp[2];
+    mat[2][2] = mat[2][2] * inv_s;
+
+    // The translation components of the original matrix
+    ALIGN_AS16 Vec3 t;
+    t.x = mat[0][3];
+    t.y = mat[1][3];
+    t.z = mat[2][3];
 
     mat[0][3] = -(mat[0][0] * t.x + mat[0][1] * t.y + mat[0][2] * t.z);
     mat[1][3] = -(mat[1][0] * t.x + mat[1][1] * t.y + mat[1][2] * t.z);
@@ -714,24 +721,22 @@ void Mat3x4::InverseOrthogonalUniformScaleSelf() {
 
 // (T*R)^{-1} = R^T * (-T)
 void Mat3x4::InverseOrthogonalNoScaleSelf() {
-    ALIGN_AS16 Vec3 t;
-    float temp;
+    // The rotational part of the matrix is simply the transpose of the original matrix
+    float tmp = mat[0][1];
+    mat[0][1] = mat[1][0];
+    mat[1][0] = tmp;
+    tmp = mat[0][2];
+    mat[0][2] = mat[2][0];
+    mat[2][0] = tmp;
+    tmp = mat[1][2];
+    mat[1][2] = mat[2][1];
+    mat[2][1] = tmp;
 
     // The translation components of the original matrix
+    ALIGN_AS16 Vec3 t;
     t.x = mat[0][3];
     t.y = mat[1][3];
     t.z = mat[2][3];
-
-    // The rotational part of the matrix is simply the transpose of the original matrix
-    temp = mat[0][1];
-    mat[0][1] = mat[1][0];
-    mat[1][0] = temp;
-    temp = mat[0][2];
-    mat[0][2] = mat[2][0];
-    mat[2][0] = temp;
-    temp = mat[1][2];
-    mat[1][2] = mat[2][1];
-    mat[2][1] = temp;
 
     // -(R^T * T)
     mat[0][3] = -(mat[0][0] * t.x + mat[0][1] * t.y + mat[0][2] * t.z);

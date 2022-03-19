@@ -24,7 +24,7 @@ class Mat4;
 class Quat;
 class Rotation;
 
-/// Euler angles
+/// Euler angles represent rotation Rz Ry Rx order.
 class BE_API Angles {
 public:
     /// Specifies the number of elements in this class.
@@ -122,6 +122,12 @@ public:
     Angles &            Normalize360();
                         /// Normalize to the range [-180 < angle <= 180]
     Angles &            Normalize180();
+
+                        /// Replaces Euler angles representing same rotation matrix R = Rz Ry Rx.
+    Angles              Alternate() const;
+
+                        /// Returns numerically closest Euler angles within the range [baseAngles - 180, baseAngles + 180].
+    Angles              SyncAngles(const Angles &baseAngles) const;
 
                         /// Clamp Euler angles between min and max.
     void                Clamp(const Angles &min, const Angles &max);
@@ -248,6 +254,22 @@ BE_INLINE bool Angles::Equals(const Angles &a, const float epsilon) const {
         return false;
     }
     return true;
+}
+
+BE_INLINE Angles Angles::Alternate() const {
+    Angles a;
+    a.x = x + 180;
+    a.y = 180 - y;
+    a.z = z + 180;
+    return a;
+}
+
+BE_INLINE Angles Angles::SyncAngles(const Angles &baseAngles) const {
+    Angles a;
+    a.x = Math::SyncAngle(baseAngles.x, x);
+    a.y = Math::SyncAngle(baseAngles.y, y);
+    a.z = Math::SyncAngle(baseAngles.z, z);
+    return a;
 }
 
 BE_INLINE void Angles::Clamp(const Angles &min, const Angles &max) {

@@ -208,9 +208,9 @@ public:
     Mat3 &              RotateZ(float ez);
 
                         /// Sets rotation matrix about one of the principal axes by the given angle in radians.
-    void                SetRotationX(float ex);
-    void                SetRotationY(float ey);
-    void                SetRotationZ(float ez);
+    static Mat3         FromRotationX(float ex);
+    static Mat3         FromRotationY(float ey);
+    static Mat3         FromRotationZ(float ez);
 
                         /// Returns 3x3 matrix from the given sequence of Euler rotation angles in radians.
                         /// The FromRotationABC function returns a matrix M = A(ea) * B(eb) * C(ec).
@@ -221,6 +221,7 @@ public:
     static Mat3         FromRotationYZX(float ey, float ez, float ex);
     static Mat3         FromRotationZXY(float ez, float ex, float ey);
     static Mat3         FromRotationZYX(float ez, float ey, float ex);
+
     static Mat3         FromRotationXYX(float ex2, float ey, float ex1);
     static Mat3         FromRotationXZX(float ex2, float ez, float ex1);
     static Mat3         FromRotationYXY(float ey2, float ex, float ey1);
@@ -237,6 +238,7 @@ public:
     void                ToRotationYZX(float &ey, float &ez, float &ex) const;
     void                ToRotationZXY(float &ez, float &ex, float &ey) const;
     void                ToRotationZYX(float &ez, float &ey, float &ex) const;
+
     void                ToRotationXYX(float &ex2, float &ey, float &ex1) const;
     void                ToRotationXZX(float &ex2, float &ez, float &ex1) const;
     void                ToRotationYXY(float &ey2, float &ex, float &ey1) const;
