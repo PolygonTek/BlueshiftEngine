@@ -30,17 +30,20 @@ class BE_API Complex {
 public:
     /// The default constructor does not initialize any members of this class.
     Complex() {}
-    /// Set complex number with the given real part and imagenary part.
+    /// Set complex number with the given real part and imaginary part.
     constexpr Complex(const float re, const float im);
-    /// Assginment operator.
+    /// Assignment operator.
     Complex &operator=(const Complex &rhs);
 
-    void                    Set(const float re, const float im);
-    void                    SetZero();
-
+                            /// Casts this Quat to a C array.
+                            /// This function simply returns a C pointer view to this data structure.
+    const float *           Ptr() const { return (const float *)&re; }
+    float *                 Ptr() { return (float *)&re; }
                             /// Casts this Complex to a C array.
-                            operator const float *() const;
-                            operator float *();
+                            /// This function simply returns a C pointer view to this data structure.
+                            /// This function is identical to the member function Ptr().
+                            operator const float *() const { return &re; }
+                            operator float *() { return &re; }
 
                             /// Accesses an element of this complex value using array notation.
     float                   operator[](int index) const;
@@ -79,6 +82,9 @@ public:
     bool                    operator==(const Complex &a) const { return Equals(a); }
                             /// Exact compare, no epsilon.
     bool                    operator!=(const Complex &a) const { return !Equals(a); }
+
+    void                    Set(const float re, const float im);
+    void                    SetZero();
 
                             /// Returns the complex conjugate.
     Complex                 Conjugate() const;
@@ -122,14 +128,6 @@ BE_INLINE void Complex::Set(const float re, const float im) {
 
 BE_INLINE void Complex::SetZero() {
     re = im = 0.0f;
-}
-
-BE_INLINE Complex::operator const float *() const {
-    return &re;
-}
-
-BE_INLINE Complex::operator float *() {
-    return &re;
 }
 
 BE_INLINE float Complex::operator[](int index) const {

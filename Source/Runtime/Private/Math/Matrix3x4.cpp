@@ -599,11 +599,56 @@ void Mat3x4::GetTQS(Vec3 &translation, Quat &rotation, Vec3 &scale) const {
     rotation = r.ToQuat();
 }
 
-void Mat3x4::InverseSelf() {
-    *this = Mat3x4(ToMat4().InverseAffine());
+bool Mat3x4::InverseSelf() {
+    float det2_01_01 = mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
+    float det2_01_02 = mat[0][0] * mat[1][2] - mat[0][2] * mat[1][0];
+    float det2_01_03 = mat[0][0] * mat[1][3] - mat[0][3] * mat[1][0];
+    float det2_01_12 = mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1];
+    float det2_01_13 = mat[0][1] * mat[1][3] - mat[0][3] * mat[1][1];
+    float det2_01_23 = mat[0][2] * mat[1][3] - mat[0][3] * mat[1][2];
+
+    // 3x3 sub-determinants
+    float det3_201_012 = mat[2][0] * det2_01_12 - mat[2][1] * det2_01_02 + mat[2][2] * det2_01_01;
+    float det3_201_013 = mat[2][0] * det2_01_13 - mat[2][1] * det2_01_03 + mat[2][3] * det2_01_01;
+    float det3_201_023 = mat[2][0] * det2_01_23 - mat[2][2] * det2_01_03 + mat[2][3] * det2_01_02;
+    float det3_201_123 = mat[2][1] * det2_01_23 - mat[2][2] * det2_01_13 + mat[2][3] * det2_01_12;
+
+    double det = det3_201_012;
+
+    if (Math::Fabs(det) < MATRIX_INVERSE_EPSILON) {
+        return false;
+    }
+
+    double invDet = 1.0f / det;
+
+    // remaining 3x3 sub-determinants
+    float det3_203_013 = mat[2][0] * mat[0][1] - mat[2][1] * mat[0][0];
+    float det3_203_023 = mat[2][0] * mat[0][2] - mat[2][2] * mat[0][0];
+    float det3_203_123 = mat[2][1] * mat[0][2] - mat[2][2] * mat[0][1];
+
+    float det3_213_013 = mat[2][0] * mat[1][1] - mat[2][1] * mat[1][0];
+    float det3_213_023 = mat[2][0] * mat[1][2] - mat[2][2] * mat[1][0];
+    float det3_213_123 = mat[2][1] * mat[1][2] - mat[2][2] * mat[1][1];
+
+    mat[0][0] = -det3_213_123 * invDet;
+    mat[0][1] = +det3_203_123 * invDet;
+    mat[0][2] = +det2_01_12 * invDet;
+    mat[0][3] = -det3_201_123 * invDet;
+
+    mat[1][0] = +det3_213_023 * invDet;
+    mat[1][1] = -det3_203_023 * invDet;
+    mat[1][2] = -det2_01_02 * invDet;
+    mat[1][3] = +det3_201_023 * invDet;
+
+    mat[2][0] = -det3_213_013 * invDet;
+    mat[2][1] = +det3_203_013 * invDet;
+    mat[2][2] = +det2_01_01 * invDet;
+    mat[2][3] = -det3_201_013 * invDet;
+
+    return true;
 }
 
-// (TRS)^{-1} = S^{-1} R^T (-T)
+// (T*R*S)^{-1} = S^{-1} * R^T * (-T)
 void Mat3x4::InverseOrthogonalSelf() {
     float tmp[3];
 
@@ -636,7 +681,7 @@ void Mat3x4::InverseOrthogonalSelf() {
     mat[2][2] *= inv_sz2;
 }
 
-// (TRS)^{-1} = S^{-1} R^T (-T)
+// (T*R*s)^{-1} = 1/s * R^T * (-T)
 void Mat3x4::InverseOrthogonalUniformScaleSelf() {
     ALIGN_AS16 Vec3 t;
     float temp;
@@ -667,8 +712,8 @@ void Mat3x4::InverseOrthogonalUniformScaleSelf() {
     mat[2][3] = -(mat[2][0] * t.x + mat[2][1] * t.y + mat[2][2] * t.z);
 }
 
-// (TR)^{-1} = R^T (-T)
-void Mat3x4::InverseOrthonormalSelf() {
+// (T*R)^{-1} = R^T * (-T)
+void Mat3x4::InverseOrthogonalNoScaleSelf() {
     ALIGN_AS16 Vec3 t;
     float temp;
 

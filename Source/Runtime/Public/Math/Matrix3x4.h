@@ -175,25 +175,31 @@ public:
                         /// Decomposes this matrix to translation, rotation and scale parts.
     void                GetTQS(Vec3 &translation, Quat &rotation, Vec3 &scale) const;
 
-                        /// Inverts this (affine) matrix.
+                        /// Inverts a (affine) matrix.
     Mat3x4              Inverse() const;
-                        /// Inverts this (affine) matrix, in-place.
-    void                InverseSelf();
+                        /// Inverts a (affine) matrix, in-place.
+    bool                InverseSelf();
 
-                        /// Inverts this matrix.
+                        /// Inverts a orthogonal matrix.
+                        /// If a matrix M is made up of only translation, rotation, and scaling,
+                        /// then M is orthogonal matrix and this function can be used to compute the inverse.
     Mat3x4              InverseOrthogonal() const;
-                        /// Inverts this matrix, in-place.
+                        /// Inverts a orthogonal matrix, in-place.
     void                InverseOrthogonalSelf();
 
-                        /// Inverts this matrix.
+                        /// Inverts a orthogonal uniform-scale matrix.
+                        /// If a matrix M is made up of only translation, rotation, and uniform scaling,
+                        /// then M is orthogonal uniform-scale matrix and this function can be used to compute the inverse.
     Mat3x4              InverseOrthogonalUniformScale() const;
-                        /// Inverts this matrix, in-place.
+                        /// Inverts a orthogonal uniform-scale matrix, in-place.
     void                InverseOrthogonalUniformScaleSelf();
 
-                        /// Inverts this matrix.
-    Mat3x4              InverseOrthonormal() const;
-                        /// Inverts this matrix, in-place.
-    void                InverseOrthonormalSelf();
+                        /// Inverts a orthogonal no-scale matrix.
+                        /// If a matrix M is made up of only translation and rotation.
+                        /// then M is orthogonal no-scale (orthonormal) matrix and this function can be used to compute the inverse.
+    Mat3x4              InverseOrthogonalNoScale() const;
+                        /// Inverts a orthogonal no-scale matrix, in-place.
+    void                InverseOrthogonalNoScaleSelf();
 
                         /// Translates by the given offset, in-place.
     Mat3x4 &            Translate(const Vec3 &t) { return Translate(t.x, t.y, t.z); }
@@ -451,9 +457,9 @@ BE_INLINE Mat3x4 Mat3x4::InverseOrthogonalUniformScale() const {
     return invMat;
 }
 
-BE_INLINE Mat3x4 Mat3x4::InverseOrthonormal() const {
+BE_INLINE Mat3x4 Mat3x4::InverseOrthogonalNoScale() const {
     ALIGN_AS32 Mat3x4 invMat = *this;
-    invMat.InverseOrthonormalSelf();
+    invMat.InverseOrthogonalSelf();
     return invMat;
 }
 

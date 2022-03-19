@@ -244,12 +244,12 @@ public:
                         /// Inverts a orthogonal-uniform-scale matrix, in-place.
     bool                InverseOrthogonalUniformScaleSelf();
     
-                        /// Inverts a orthonormal matrix.
+                        /// Inverts a orthogonal no-scale matrix.
                         /// If a matrix M is made up of only translation and rotation.
-                        /// then M is orthonormal matrix and this function can be used to compute the inverse.
-    Mat4                InverseOrthonormal() const;
-                        /// Inverts a orthonormal matrix, in-place.
-    bool                InverseOrthonormalSelf();
+                        /// then M is orthogonal no-scale matrix and this function can be used to compute the inverse.
+    Mat4                InverseOrthogonalNoScale() const;
+                        /// Inverts a orthogonal no-scale matrix, in-place.
+    bool                InverseOrthogonalNoScaleSelf();
 
                         /// Translates by the given offset, in-place.
     Mat4 &              Translate(const Vec3 &t) { return Translate(t.x, t.y, t.z); }
@@ -573,9 +573,9 @@ BE_INLINE Mat4 Mat4::InverseOrthogonalUniformScale() const {
     return invMat;
 }
 
-BE_INLINE Mat4 Mat4::InverseOrthonormal() const {
+BE_INLINE Mat4 Mat4::InverseOrthogonalNoScale() const {
     Mat4 invMat = *this;
-    bool r = invMat.InverseOrthonormalSelf();
+    bool r = invMat.InverseOrthogonalNoScaleSelf();
     assert(r);
     return invMat;
 }

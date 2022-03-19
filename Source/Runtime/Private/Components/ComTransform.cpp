@@ -215,13 +215,13 @@ const Mat3x4 &ComTransform::GetMatrix() const {
 
 Mat3x4 ComTransform::GetMatrixNoScale() const {
     ALIGN_AS32 Mat3x4 worldMatrixNoScale;
-    ALIGN_AS32 Mat3x4 localTransform = GetLocalMatrixNoScale();
+    ALIGN_AS32 Mat3x4 localMatrix = GetLocalMatrixNoScale();
     
     const ComTransform *parent = GetParent();
     if (parent) {
-        worldMatrixNoScale = parent->GetMatrixNoScale() * localTransform;
+        worldMatrixNoScale = parent->GetMatrixNoScale() * localMatrix;
     } else {
-        worldMatrixNoScale = localTransform;
+        worldMatrixNoScale = localMatrix;
     }
     return worldMatrixNoScale;
 }
@@ -370,13 +370,13 @@ void ComTransform::InvalidateWorldMatrix() {
 }
 
 void ComTransform::UpdateWorldMatrix() const {
-    ALIGN_AS32 Mat3x4 localTransform = GetLocalMatrix();
+    ALIGN_AS32 Mat3x4 localMatrix = GetLocalMatrix();
 
     const ComTransform *parent = GetParent();
     if (parent) {
-        worldMatrix = parent->GetMatrix() * localTransform;
+        worldMatrix = parent->GetMatrix() * localMatrix;
     } else {
-        worldMatrix = localTransform;
+        worldMatrix = localMatrix;
     }
 
     worldMatrixInvalidated = false;

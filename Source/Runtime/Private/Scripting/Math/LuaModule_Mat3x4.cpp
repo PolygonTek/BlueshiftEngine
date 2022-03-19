@@ -48,8 +48,8 @@ void LuaVM::RegisterMat3x4(LuaCpp::Module &module) {
         "inverse_orthogonal_self", &Mat3x4::InverseOrthogonalSelf,
         "inverse_orthogonal_uniform_scale", &Mat3x4::InverseOrthogonalUniformScale,
         "inverse_orthogonal_uniform_scale_self", &Mat3x4::InverseOrthogonalUniformScaleSelf,
-        "inverse_orthonormal", &Mat3x4::InverseOrthonormal,
-        "inverse_orthonormal_self", &Mat3x4::InverseOrthonormalSelf,
+        "inverse_orthogonal_no_scale", &Mat3x4::InverseOrthogonalNoScale,
+        "inverse_orthogonal_no_scale_self", &Mat3x4::InverseOrthogonalNoScaleSelf,
         "to_mat4", &Mat3x4::ToMat4,
         "to_string", static_cast<const char*(Mat3x4::*)(void)const>(&Mat3x4::ToString)
     );

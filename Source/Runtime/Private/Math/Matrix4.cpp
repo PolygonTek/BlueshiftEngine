@@ -1004,53 +1004,7 @@ bool Mat4::InverseAffineSelf() {
         return false;
     }
 
-    float det2_01_01 = mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
-    float det2_01_02 = mat[0][0] * mat[1][2] - mat[0][2] * mat[1][0];
-    float det2_01_03 = mat[0][0] * mat[1][3] - mat[0][3] * mat[1][0];
-    float det2_01_12 = mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1];
-    float det2_01_13 = mat[0][1] * mat[1][3] - mat[0][3] * mat[1][1];
-    float det2_01_23 = mat[0][2] * mat[1][3] - mat[0][3] * mat[1][2];
-
-    // 3x3 sub-determinants
-    float det3_201_012 = mat[2][0] * det2_01_12 - mat[2][1] * det2_01_02 + mat[2][2] * det2_01_01;
-    float det3_201_013 = mat[2][0] * det2_01_13 - mat[2][1] * det2_01_03 + mat[2][3] * det2_01_01;
-    float det3_201_023 = mat[2][0] * det2_01_23 - mat[2][2] * det2_01_03 + mat[2][3] * det2_01_02;
-    float det3_201_123 = mat[2][1] * det2_01_23 - mat[2][2] * det2_01_13 + mat[2][3] * det2_01_12;
-
-    double det = det3_201_012;
-
-    if (Math::Fabs(det) < MATRIX_INVERSE_EPSILON) {
-        return false;
-    }
-
-    double invDet = 1.0f / det;
-
-    // remaining 3x3 sub-determinants
-    float det3_203_013 = mat[2][0] * mat[0][1] - mat[2][1] * mat[0][0];
-    float det3_203_023 = mat[2][0] * mat[0][2] - mat[2][2] * mat[0][0];
-    float det3_203_123 = mat[2][1] * mat[0][2] - mat[2][2] * mat[0][1];
-
-    float det3_213_013 = mat[2][0] * mat[1][1] - mat[2][1] * mat[1][0];
-    float det3_213_023 = mat[2][0] * mat[1][2] - mat[2][2] * mat[1][0];
-    float det3_213_123 = mat[2][1] * mat[1][2] - mat[2][2] * mat[1][1];
-
-    mat[0][0] = -det3_213_123 * invDet;
-    mat[1][0] = +det3_213_023 * invDet;
-    mat[2][0] = -det3_213_013 * invDet;
-
-    mat[0][1] = +det3_203_123 * invDet;
-    mat[1][1] = -det3_203_023 * invDet;
-    mat[2][1] = +det3_203_013 * invDet;
-
-    mat[0][2] = +det2_01_12 * invDet;
-    mat[1][2] = -det2_01_02 * invDet;
-    mat[2][2] = +det2_01_01 * invDet;
-
-    mat[0][3] = -det3_201_123 * invDet;
-    mat[1][3] = +det3_201_023 * invDet;
-    mat[2][3] = -det3_201_013 * invDet;
-
-    return true;
+    return ToMat3x4().InverseSelf();
 }
 
 bool Mat4::InverseOrthogonalSelf() {
@@ -1073,13 +1027,13 @@ bool Mat4::InverseOrthogonalUniformScaleSelf() {
     return true;
 }
 
-bool Mat4::InverseOrthonormalSelf() {
+bool Mat4::InverseOrthogonalNoScaleSelf() {
     // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
     if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
         return false;
     }
 
-    ToMat3x4().InverseOrthonormalSelf();
+    ToMat3x4().InverseOrthogonalNoScaleSelf();
     return true;
 }
 

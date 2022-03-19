@@ -213,7 +213,7 @@ void ComRigidBody::CreateBody() {
 
     ComTransform *transform = GetEntity()->GetTransform();
 
-    ALIGN_AS32 Mat3x4 worldMatrixNoScaleInverse = transform->GetMatrixNoScale().InverseOrthonormal();
+    ALIGN_AS32 Mat3x4 worldMatrixNoScaleInverse = transform->GetMatrixNoScale().InverseOrthogonalNoScale();
 
     physicsDesc.origin = transform->GetOrigin();
     physicsDesc.axis = transform->GetAxis();
