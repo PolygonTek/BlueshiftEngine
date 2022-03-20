@@ -60,7 +60,7 @@ void ComTransform::Init() {
 
 Angles ComTransform::GetLocalAngles() const {
 #if WITH_EDITOR
-    return localEulerAnglesHint;
+    return localAngles;
 #else
     return localRotation.ToAngles();
 #endif
@@ -86,7 +86,7 @@ void ComTransform::SetLocalRotation(const Quat &rotation) {
     this->localRotation = rotation;
 
 #if WITH_EDITOR
-    localEulerAnglesHint = CalculateClosestEulerAnglesFromQuaternion(localEulerAnglesHint, localRotation);
+    localAngles = CalculateClosestEulerAnglesFromQuaternion(localAngles, localRotation);
 #endif
 
     if (IsInitialized()) {
@@ -99,7 +99,7 @@ void ComTransform::SetLocalOriginRotation(const Vec3 &origin, const Quat &rotati
     this->localRotation = rotation;
 
 #if WITH_EDITOR
-    localEulerAnglesHint = CalculateClosestEulerAnglesFromQuaternion(localEulerAnglesHint, localRotation);
+    localAngles = CalculateClosestEulerAnglesFromQuaternion(localAngles, localRotation);
 #endif
 
     if (IsInitialized()) {
@@ -113,7 +113,7 @@ void ComTransform::SetLocalOriginRotationScale(const Vec3 &origin, const Quat &r
     this->localScale = scale;
 
 #if WITH_EDITOR
-    localEulerAnglesHint = CalculateClosestEulerAnglesFromQuaternion(localEulerAnglesHint, localRotation);
+    localAngles = CalculateClosestEulerAnglesFromQuaternion(localAngles, localRotation);
 #endif
 
     if (IsInitialized()) {
@@ -125,7 +125,7 @@ void ComTransform::SetLocalAxis(const Mat3 &axis) {
     this->localRotation = axis.ToQuat();
 
 #if WITH_EDITOR
-    localEulerAnglesHint = CalculateClosestEulerAnglesFromQuaternion(localEulerAnglesHint, localRotation);
+    localAngles = CalculateClosestEulerAnglesFromQuaternion(localAngles, localRotation);
 #endif
 
     if (IsInitialized()) {
@@ -135,7 +135,7 @@ void ComTransform::SetLocalAxis(const Mat3 &axis) {
 
 void ComTransform::SetLocalAngles(const Angles &localAngles) {
 #if WITH_EDITOR
-    localEulerAnglesHint = localAngles;
+    this->localAngles = localAngles;
 #endif
 
     SetLocalRotation(localAngles.ToQuat());
@@ -146,7 +146,7 @@ void ComTransform::SetLocalOriginAxis(const Vec3 &origin, const Mat3 &axis) {
     this->localRotation = axis.ToQuat();
 
 #if WITH_EDITOR
-    localEulerAnglesHint = CalculateClosestEulerAnglesFromQuaternion(localEulerAnglesHint, localRotation);
+    localAngles = CalculateClosestEulerAnglesFromQuaternion(localAngles, localRotation);
 #endif
 
     if (IsInitialized()) {
@@ -160,7 +160,7 @@ void ComTransform::SetLocalOriginAxisScale(const Vec3 &origin, const Mat3 &axis,
     this->localScale = scale;
 
 #if WITH_EDITOR
-    localEulerAnglesHint = CalculateClosestEulerAnglesFromQuaternion(localEulerAnglesHint, localRotation);
+    localAngles = CalculateClosestEulerAnglesFromQuaternion(localAngles, localRotation);
 #endif
 
     if (IsInitialized()) {

@@ -146,7 +146,7 @@ protected:
     Vec3                    localScale;             ///< Scale in local space.
 
 #if WITH_EDITOR
-    Angles                  localEulerAnglesHint;
+    Angles                  localAngles;
 #endif
 
     mutable Mat3x4          worldMatrix = Mat3x4::identity;

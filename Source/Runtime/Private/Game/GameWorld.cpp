@@ -729,7 +729,7 @@ void GameWorld::Update(int elapsedMsec) {
 }
 
 void GameWorld::FixedUpdateEntities(float timeStep) {
-    //BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::FixedUpdateEntities");
+    BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::FixedUpdateEntities");
 
     // Call fixed update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
@@ -740,7 +740,7 @@ void GameWorld::FixedUpdateEntities(float timeStep) {
 }
 
 void GameWorld::FixedLateUpdateEntities(float timeStep) {
-    //BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::FixedLateUpdateEntities");
+    BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::FixedLateUpdateEntities");
 
     // Call fixed post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
