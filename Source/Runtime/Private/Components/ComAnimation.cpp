@@ -43,6 +43,8 @@ void ComAnimation::RegisterProperties() {
 }
 
 ComAnimation::ComAnimation() {
+    updatable = true;
+
     skeleton = nullptr;
 
     skeletonAsset = nullptr;

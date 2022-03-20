@@ -191,6 +191,10 @@ void Entity::Update() {
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
 
+        if (!component->updatable) {
+            continue;
+        }
+
         if (component && component->IsActiveInHierarchy()) {
             component->Update();
         }

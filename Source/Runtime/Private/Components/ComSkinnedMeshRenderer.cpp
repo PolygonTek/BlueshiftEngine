@@ -102,12 +102,6 @@ void ComSkinnedMeshRenderer::UpdateSkeleton() {
     UpdateVisuals();
 }
 
-void ComSkinnedMeshRenderer::Update() { 
-    if (IsVisibleInPreviousFrame()) {
-        UpdateVisuals();
-    }
-}
-
 void ComSkinnedMeshRenderer::UpdateVisuals() {
     if (!IsInitialized() || !IsActiveInHierarchy()) {
         return;

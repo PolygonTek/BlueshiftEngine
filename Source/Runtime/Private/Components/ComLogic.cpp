@@ -25,6 +25,7 @@ void ComLogic::RegisterProperties() {
 }
 
 ComLogic::ComLogic() {
+    updatable = true;
 }
 
 ComLogic::~ComLogic() {

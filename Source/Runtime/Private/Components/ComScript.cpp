@@ -35,6 +35,7 @@ void ComScript::RegisterProperties() {
 }
 
 ComScript::ComScript() {
+    updatable = true;
 }
 
 ComScript::~ComScript() {

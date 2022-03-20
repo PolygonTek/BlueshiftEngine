@@ -99,6 +99,7 @@ protected:
     void                    SetInitialized(bool init) { initialized = init; }
 
     Entity *                entity = nullptr;
+    bool                    updatable = false;
     bool                    enabled = true;
     bool                    initialized = false;
 };

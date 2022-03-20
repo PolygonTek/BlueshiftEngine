@@ -51,6 +51,7 @@ void ComVehicleWheel::RegisterProperties() {
 }
 
 ComVehicleWheel::ComVehicleWheel() {
+    updatable = true;
 }
 
 ComVehicleWheel::~ComVehicleWheel() {

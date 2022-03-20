@@ -66,6 +66,7 @@ void ComEnvironmentProbe::RegisterProperties() {
 }
 
 ComEnvironmentProbe::ComEnvironmentProbe() {
+    updatable = true;
 }
 
 ComEnvironmentProbe::~ComEnvironmentProbe() {

@@ -32,6 +32,7 @@ void ComConstantForce::RegisterProperties() {
 }
 
 ComConstantForce::ComConstantForce() {
+    updatable = true;
 }
 
 ComConstantForce::~ComConstantForce() {

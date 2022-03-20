@@ -90,6 +90,7 @@ void ComRigidBody::RegisterProperties() {
 }
 
 ComRigidBody::ComRigidBody() {
+    updatable = true;
     memset(&physicsDesc, 0, sizeof(physicsDesc));
 }
 

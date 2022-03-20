@@ -42,6 +42,7 @@ void ComCharacterController::RegisterProperties() {
 }
 
 ComCharacterController::ComCharacterController() {
+    updatable = true;
     collider = nullptr;
     body = nullptr;
     correctionSensor = nullptr;
@@ -182,6 +183,7 @@ void ComCharacterController::GroundTrace() {
 
     int filterMask = GetGameWorld()->GetPhysicsWorld()->GetCollisionFilterMask(body->GetCollisionFilterBit());
 
+    // FIXME: Slow
     if (!GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, p1, p2, filterMask, groundTrace)) {
         onGround = false;
         isValidGroundTrace = false;
@@ -190,7 +192,7 @@ void ComCharacterController::GroundTrace() {
 
     isValidGroundTrace = true;
 
-    // FIXME: Should be compared with the surface normal, not the speration normal.
+    // FIXME: Should be compared with the surface normal, not the separation normal.
     if (groundTrace.normal.z < slopeDotZ) {
         onGround = false;
         return;

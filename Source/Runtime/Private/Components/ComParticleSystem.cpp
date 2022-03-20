@@ -36,6 +36,7 @@ void ComParticleSystem::RegisterProperties() {
 }
 
 ComParticleSystem::ComParticleSystem() {
+    updatable = true;
 }
 
 ComParticleSystem::~ComParticleSystem() {

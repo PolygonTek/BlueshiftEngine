@@ -30,6 +30,7 @@ void ComSensor::RegisterProperties() {
 }
 
 ComSensor::ComSensor() {
+    updatable = true;
     memset(&physicsDesc, 0, sizeof(physicsDesc));
 }
 
