@@ -96,76 +96,39 @@ void ComTransform::SetLocalRotation(const Quat &rotation) {
 
 void ComTransform::SetLocalOriginRotation(const Vec3 &origin, const Quat &rotation) {
     this->localOrigin = origin;
-    this->localRotation = rotation;
 
-#if WITH_EDITOR
-    localAngles = CalculateClosestEulerAnglesFromQuaternion(localAngles, localRotation);
-#endif
-
-    if (IsInitialized()) {
-        InvalidateWorldMatrix();
-    }
+    SetLocalRotation(rotation);
 }
 
 void ComTransform::SetLocalOriginRotationScale(const Vec3 &origin, const Quat &rotation, const Vec3 &scale) {
     this->localOrigin = origin;
-    this->localRotation = rotation;
     this->localScale = scale;
 
-#if WITH_EDITOR
-    localAngles = CalculateClosestEulerAnglesFromQuaternion(localAngles, localRotation);
-#endif
-
-    if (IsInitialized()) {
-        InvalidateWorldMatrix();
-    }
-}
-
-void ComTransform::SetLocalAxis(const Mat3 &axis) {
-    this->localRotation = axis.ToQuat();
-
-#if WITH_EDITOR
-    localAngles = CalculateClosestEulerAnglesFromQuaternion(localAngles, localRotation);
-#endif
-
-    if (IsInitialized()) {
-        InvalidateWorldMatrix();
-    }
+    SetLocalRotation(rotation);
 }
 
 void ComTransform::SetLocalAngles(const Angles &localAngles) {
 #if WITH_EDITOR
     this->localAngles = localAngles;
 #endif
+    this->localRotation = localAngles.ToQuat();
 
-    SetLocalRotation(localAngles.ToQuat());
+    if (IsInitialized()) {
+        InvalidateWorldMatrix();
+    }
 }
 
 void ComTransform::SetLocalOriginAxis(const Vec3 &origin, const Mat3 &axis) {
     this->localOrigin = origin;
-    this->localRotation = axis.ToQuat();
 
-#if WITH_EDITOR
-    localAngles = CalculateClosestEulerAnglesFromQuaternion(localAngles, localRotation);
-#endif
-
-    if (IsInitialized()) {
-        InvalidateWorldMatrix();
-    }
+    SetLocalRotation(axis.ToQuat());
 }
 
 void ComTransform::SetLocalOriginAxisScale(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale) {
     this->localOrigin = origin;
-    this->localRotation = axis.ToQuat();
     this->localScale = scale;
 
-#if WITH_EDITOR
-    localAngles = CalculateClosestEulerAnglesFromQuaternion(localAngles, localRotation);
-#endif
-
-    if (IsInitialized()) {
-        InvalidateWorldMatrix();
-    }
+    SetLocalRotation(axis.ToQuat());
 }
 
 Vec3 ComTransform::GetOrigin() const {

@@ -70,7 +70,7 @@ public:
                             /// Sets position, rotation and scale in local space as an atomic operation.
     void                    SetLocalOriginRotationScale(const Vec3 &origin, const Quat &rotation, const Vec3 &scale = Vec3::one);
                             /// Sets rotation axis in local space.
-    void                    SetLocalAxis(const Mat3 &axis);
+    void                    SetLocalAxis(const Mat3 &axis) { SetLocalRotation(axis.ToQuat()); }
                             /// Sets Euler angles in local space.
     void                    SetLocalAngles(const Angles &localAngles);
                             /// Sets position, rotation axis in local space.
