@@ -614,7 +614,7 @@ bool Mat3x4::InverseSelf() {
     float det3_201_023 = mat[2][0] * det2_01_23 - mat[2][2] * det2_01_03 + mat[2][3] * det2_01_02;
     float det3_201_123 = mat[2][1] * det2_01_23 - mat[2][2] * det2_01_13 + mat[2][3] * det2_01_12;
 
-    // 4x4 determinant
+    // 4x4 determinant assuming last row is [0, 0, 0, 1]
     double det = det3_201_012;
 
     if (Math::Fabs(det) < MATRIX_INVERSE_EPSILON) {

@@ -448,7 +448,6 @@ BE_INLINE float Mat3x4::Determinant() const {
     float det2_01_02 = mat[0][0] * mat[1][2] - mat[0][2] * mat[1][0];
     float det2_01_12 = mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1];
 
-    // 3x3 sub-determinants
     return mat[2][0] * det2_01_12 - mat[2][1] * det2_01_02 + mat[2][2] * det2_01_01;
 }
 
