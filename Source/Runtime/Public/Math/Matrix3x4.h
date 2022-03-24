@@ -175,6 +175,9 @@ public:
                         /// Decomposes this matrix to translation, rotation and scale parts.
     void                GetTQS(Vec3 &translation, Quat &rotation, Vec3 &scale) const;
 
+                        /// Returns the determinant of this matrix.
+    float               Determinant() const;
+
                         /// Inverts a (affine) matrix.
     Mat3x4              Inverse() const;
                         /// Inverts a (affine) matrix, in-place.
@@ -437,6 +440,16 @@ BE_INLINE bool Mat3x4::FixDenormals() {
     r |= mat[1].ToVec3().FixDenormals();
     r |= mat[2].ToVec3().FixDenormals();
     return r;
+}
+
+BE_INLINE float Mat3x4::Determinant() const {
+    // 2x2 sub-determinants
+    float det2_01_01 = mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
+    float det2_01_02 = mat[0][0] * mat[1][2] - mat[0][2] * mat[1][0];
+    float det2_01_12 = mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1];
+
+    // 3x3 sub-determinants
+    return mat[2][0] * det2_01_12 - mat[2][1] * det2_01_02 + mat[2][2] * det2_01_01;
 }
 
 BE_INLINE Mat3x4 Mat3x4::Inverse() const {

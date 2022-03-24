@@ -717,24 +717,6 @@ Mat4 &Mat4::TransposeSelf() {
     return *this;
 }
 
-float Mat4::Determinant() const {
-    // 2x2 sub-determinants
-    float det2_01_01 = mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
-    float det2_01_02 = mat[0][0] * mat[1][2] - mat[0][2] * mat[1][0];
-    float det2_01_03 = mat[0][0] * mat[1][3] - mat[0][3] * mat[1][0];
-    float det2_01_12 = mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1];
-    float det2_01_13 = mat[0][1] * mat[1][3] - mat[0][3] * mat[1][1];
-    float det2_01_23 = mat[0][2] * mat[1][3] - mat[0][3] * mat[1][2];
-
-    // 3x3 sub-determinants
-    float det3_201_012 = mat[2][0] * det2_01_12 - mat[2][1] * det2_01_02 + mat[2][2] * det2_01_01;
-    float det3_201_013 = mat[2][0] * det2_01_13 - mat[2][1] * det2_01_03 + mat[2][3] * det2_01_01;
-    float det3_201_023 = mat[2][0] * det2_01_23 - mat[2][2] * det2_01_03 + mat[2][3] * det2_01_02;
-    float det3_201_123 = mat[2][1] * det2_01_23 - mat[2][2] * det2_01_13 + mat[2][3] * det2_01_12;
-
-    return (-det3_201_123 * mat[3][0] + det3_201_023 * mat[3][1] - det3_201_013 * mat[3][2] + det3_201_012 * mat[3][3]);
-}
-
 bool Mat4::InverseSelf() {
 #if 1
     // 84+4+16 = 104 multiplications
