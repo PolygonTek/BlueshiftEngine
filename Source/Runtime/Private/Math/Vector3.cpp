@@ -272,7 +272,7 @@ Mat3 Vec3::ToMat3() const {
     mat[0] = *this;
 
     float l = x * x + y * y;
-    if (!l) {
+    if (l == 0.0f) {
         mat[1][0] = 1.0f;
         mat[1][1] = 0.0f;
         mat[1][2] = 0.0f;
