@@ -365,6 +365,18 @@ BE_FORCE_INLINE void transpose4x4(ssef &r0, ssef &r1, ssef &r2, ssef &r3) {
     r3 = unpackhi_ps(h02, h13); // m03, m13, m23, m33
 }
 
+// Transposes 3x4 matrix (assume last row is [0, 0, 0, 1])
+BE_FORCE_INLINE void transpose3x4(ssef &r0, ssef &r1, ssef &r2) {
+    ssef r3 = setzero_ps(); // w component should be 1, but since it won't get stored, it doesn't matter, so we can just create zeros.
+    ssef l02 = unpacklo_ps(r0, r2); // m00, m20, m01, m21
+    ssef h02 = unpackhi_ps(r0, r2); // m02, m22, m03, m23
+    ssef l13 = unpacklo_ps(r1, r3); // m10, m30, m11, m31
+    ssef h13 = unpackhi_ps(r1, r3); // m12, m32, m13, m33
+    r0 = unpacklo_ps(l02, l13); // m00, m10, m20, m30
+    r1 = unpackhi_ps(l02, l13); // m01, m11, m21, m31
+    r2 = unpacklo_ps(h02, h13); // m02, m12, m22, m32    
+}
+
 // Transposes 3x3 matrix.
 BE_FORCE_INLINE void transpose3x3(ssef &r0, ssef &r1, ssef &r2) {
     ssef t0 = unpacklo_ps(r0, r1); // m00, m10, m01, m11
