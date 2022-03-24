@@ -652,10 +652,49 @@ bool Mat3x4::InverseSelf() {
 
 // (T*R*S)^{-1} = S^{-1} * R^T * (-T)
 void Mat3x4::InverseOrthogonalSelf() {
+#if defined(ENABLE_SIMD4_INTRIN)
+    simd4f m0 = loadu_ps(mat[0]);
+    simd4f m1 = loadu_ps(mat[1]);
+    simd4f m2 = loadu_ps(mat[2]);
+
+    simd4f inv_s = rcp32_ps(madd_ps(m0, m0, madd_ps(m1, m1, _mm_mul_ps(m2, m2))));
+    inv_s[3] = 1.0f;
+
+    simd4f tx = shuffle_ps<3, 3, 3, 3>(m0);
+    simd4f ty = shuffle_ps<3, 3, 3, 3>(m1);
+    simd4f tz = shuffle_ps<3, 3, 3, 3>(m2);
+
+    m0 = _mm_mul_ps(m0, inv_s);
+    m1 = _mm_mul_ps(m1, inv_s);
+    m2 = _mm_mul_ps(m2, inv_s);
+
+    simd4f invT = _mm_mul_ps(m0, tx);
+    invT = madd_ps(m1, ty, invT);
+    invT = nmsub_ps(m2, tz, invT);
+
+    simd4f l01 = unpacklo_ps(m0, m1); // m00, m10, m01, m11
+    simd4f h01 = unpackhi_ps(m0, m1); // m02, m12, m03, m13
+    simd4f l2t = unpacklo_ps(m2, invT); // m20, invTx, m21, invTy
+    simd4f h2t = unpackhi_ps(m2, invT); // m22, invTz, m23, [invTw]
+
+    m0 = _mm_movelh_ps(l01, l2t); // m00, m10, m20, invTx
+    m1 = _mm_movehl_ps(l2t, l01); // m01, m11, m21, invTy
+    m2 = _mm_movelh_ps(h01, h2t); // m02, m12, m22, invTz
+
+    storeu_ps(m0, mat[0]);
+    storeu_ps(m1, mat[1]);
+    storeu_ps(m2, mat[2]);
+#else
     // Get squared inverse scale factor.
     double inv_sx2 = 1.0f / (mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]);
     double inv_sy2 = 1.0f / (mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]);
     double inv_sz2 = 1.0f / (mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]);
+
+    // The translation components of the original matrix
+    ALIGN_AS16 Vec3 t;
+    t.x = mat[0][3];
+    t.y = mat[1][3];
+    t.z = mat[2][3];
 
     // Transpose rotation part.
     float tmp[3];
@@ -666,30 +705,63 @@ void Mat3x4::InverseOrthogonalSelf() {
     mat[0][0] = mat[0][0] * inv_sx2;
     mat[0][1] = mat[1][0] * inv_sx2;
     mat[0][2] = mat[2][0] * inv_sx2;
+    mat[0][3] = -(mat[0][0] * t.x + mat[0][1] * t.y + mat[0][2] * t.z);
 
     mat[1][0] = tmp[0];
     mat[1][1] = mat[1][1] * inv_sy2;
     mat[1][2] = mat[2][1] * inv_sy2;
+    mat[1][3] = -(mat[1][0] * t.x + mat[1][1] * t.y + mat[1][2] * t.z);
 
     mat[2][0] = tmp[1];
     mat[2][1] = tmp[2];
     mat[2][2] = mat[2][2] * inv_sz2;
+    mat[2][3] = -(mat[2][0] * t.x + mat[2][1] * t.y + mat[2][2] * t.z);
+#endif
+}
+
+// (T*R*s)^{-1} = 1/s * R^T * (-T)
+void Mat3x4::InverseOrthogonalUniformScaleSelf() {
+#if defined(ENABLE_SIMD4_INTRIN)
+    simd4f m0 = loadu_ps(mat[0]);
+    simd4f m1 = loadu_ps(mat[1]);
+    simd4f m2 = loadu_ps(mat[2]);
+
+    simd4f inv_s = rcp32_ps(sum_ps(sqr_ps(m0) & SIMD_4::F4_mask_xxx0));
+    inv_s[3] = 1.0f;
+
+    simd4f tx = shuffle_ps<3, 3, 3, 3>(m0);
+    simd4f ty = shuffle_ps<3, 3, 3, 3>(m1);
+    simd4f tz = shuffle_ps<3, 3, 3, 3>(m2);
+
+    m0 = _mm_mul_ps(m0, inv_s);
+    m1 = _mm_mul_ps(m1, inv_s);
+    m2 = _mm_mul_ps(m2, inv_s);
+        
+    simd4f invT = _mm_mul_ps(m0, tx);
+    invT = madd_ps(m1, ty, invT);
+    invT = nmsub_ps(m2, tz, invT);
+
+    simd4f l01 = unpacklo_ps(m0, m1); // m00, m10, m01, m11
+    simd4f h01 = unpackhi_ps(m0, m1); // m02, m12, m03, m13
+    simd4f l2t = unpacklo_ps(m2, invT); // m20, invTx, m21, invTy
+    simd4f h2t = unpackhi_ps(m2, invT); // m22, invTz, m23, [invTw]
+
+    m0 = _mm_movelh_ps(l01, l2t); // m00, m10, m20, invTx
+    m1 = _mm_movehl_ps(l2t, l01); // m01, m11, m21, invTy
+    m2 = _mm_movelh_ps(h01, h2t); // m02, m12, m22, invTz
+
+    storeu_ps(m0, mat[0]);
+    storeu_ps(m1, mat[1]);
+    storeu_ps(m2, mat[2]);
+#else
+    // Get squared inverse scale factor.
+    double inv_s = 1.0f / (mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]);
 
     // The translation components of the original matrix
     ALIGN_AS16 Vec3 t;
     t.x = mat[0][3];
     t.y = mat[1][3];
     t.z = mat[2][3];
-
-    mat[0][3] = -(mat[0][0] * t.x + mat[0][1] * t.y + mat[0][2] * t.z);
-    mat[1][3] = -(mat[1][0] * t.x + mat[1][1] * t.y + mat[1][2] * t.z);
-    mat[2][3] = -(mat[2][0] * t.x + mat[2][1] * t.y + mat[2][2] * t.z);
-}
-
-// (T*R*s)^{-1} = 1/s * R^T * (-T)
-void Mat3x4::InverseOrthogonalUniformScaleSelf() {
-    // Get squared inverse scale factor.
-    double inv_s = 1.0f / (mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]);
 
     // R^T / s       
     float tmp[3];
@@ -700,28 +772,53 @@ void Mat3x4::InverseOrthogonalUniformScaleSelf() {
     mat[0][0] = mat[0][0] * inv_s;
     mat[0][1] = mat[1][0] * inv_s;
     mat[0][2] = mat[2][0] * inv_s;
+    mat[0][3] = -(mat[0][0] * t.x + mat[0][1] * t.y + mat[0][2] * t.z);
 
     mat[1][0] = tmp[0];
     mat[1][1] = mat[1][1] * inv_s;
     mat[1][2] = mat[2][1] * inv_s;
+    mat[1][3] = -(mat[1][0] * t.x + mat[1][1] * t.y + mat[1][2] * t.z);
 
     mat[2][0] = tmp[1];
     mat[2][1] = tmp[2];
-    mat[2][2] = mat[2][2] * inv_s;
+    mat[2][2] = mat[2][2] * inv_s;      
+    mat[2][3] = -(mat[2][0] * t.x + mat[2][1] * t.y + mat[2][2] * t.z);
+#endif
+}
 
+// (T*R)^{-1} = R^T * (-T)
+void Mat3x4::InverseOrthogonalNoScaleSelf() {
+#if defined(ENABLE_SIMD4_INTRIN)
+    simd4f m0 = loadu_ps(mat[0]);
+    simd4f m1 = loadu_ps(mat[1]);
+    simd4f m2 = loadu_ps(mat[2]);
+
+    simd4f tx = shuffle_ps<3, 3, 3, 3>(m0);
+    simd4f ty = shuffle_ps<3, 3, 3, 3>(m1);
+    simd4f tz = shuffle_ps<3, 3, 3, 3>(m2);
+    simd4f invT = _mm_mul_ps(m0, tx);
+    invT = madd_ps(m1, ty, invT);
+    invT = nmsub_ps(m2, tz, invT);
+
+    simd4f l01 = unpacklo_ps(m0, m1); // m00, m10, m01, m11
+    simd4f h01 = unpackhi_ps(m0, m1); // m02, m12, m03, m13
+    simd4f l2t = unpacklo_ps(m2, invT); // m20, invTx, m21, invTy
+    simd4f h2t = unpackhi_ps(m2, invT); // m22, invTz, m23, [invTw]
+
+    m0 = _mm_movelh_ps(l01, l2t); // m00, m10, m20, invTx
+    m1 = _mm_movehl_ps(l01, l2t); // m01, m11, m21, invTy
+    m2 = _mm_movelh_ps(h01, h2t); // m02, m12, m22, invTz
+
+    storeu_ps(m0, mat[0]);
+    storeu_ps(m1, mat[1]);
+    storeu_ps(m2, mat[2]);
+#else
     // The translation components of the original matrix
     ALIGN_AS16 Vec3 t;
     t.x = mat[0][3];
     t.y = mat[1][3];
     t.z = mat[2][3];
 
-    mat[0][3] = -(mat[0][0] * t.x + mat[0][1] * t.y + mat[0][2] * t.z);
-    mat[1][3] = -(mat[1][0] * t.x + mat[1][1] * t.y + mat[1][2] * t.z);
-    mat[2][3] = -(mat[2][0] * t.x + mat[2][1] * t.y + mat[2][2] * t.z);
-}
-
-// (T*R)^{-1} = R^T * (-T)
-void Mat3x4::InverseOrthogonalNoScaleSelf() {
     // The rotational part of the matrix is simply the transpose of the original matrix
     float tmp = mat[0][1];
     mat[0][1] = mat[1][0];
@@ -733,16 +830,11 @@ void Mat3x4::InverseOrthogonalNoScaleSelf() {
     mat[1][2] = mat[2][1];
     mat[2][1] = tmp;
 
-    // The translation components of the original matrix
-    ALIGN_AS16 Vec3 t;
-    t.x = mat[0][3];
-    t.y = mat[1][3];
-    t.z = mat[2][3];
-
     // -(R^T * T)
     mat[0][3] = -(mat[0][0] * t.x + mat[0][1] * t.y + mat[0][2] * t.z);
     mat[1][3] = -(mat[1][0] * t.x + mat[1][1] * t.y + mat[1][2] * t.z);
     mat[2][3] = -(mat[2][0] * t.x + mat[2][1] * t.y + mat[2][2] * t.z);
+#endif
 }
 
 Mat3x4 &Mat3x4::TransformSelf(const Mat3x4 &a) {
