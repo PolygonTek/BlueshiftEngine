@@ -146,7 +146,7 @@ protected:
     Vec3                    localScale;             ///< Scale in local space.
 
 #if WITH_EDITOR
-    Angles                  localAngles;
+    Angles                  localEulerAnglesHint;
 #endif
 
     mutable Mat3x4          worldMatrix = Mat3x4::identity;
@@ -157,7 +157,7 @@ protected:
 
 BE_INLINE Angles ComTransform::GetLocalAngles() const {
 #if WITH_EDITOR
-    return localAngles;
+    return localEulerAnglesHint;
 #else
     return localRotation.ToAngles();
 #endif
@@ -183,7 +183,7 @@ BE_INLINE void ComTransform::SetLocalRotation(const Quat &rotation) {
     this->localRotation = rotation;
 
 #if WITH_EDITOR
-    localAngles = CalculateClosestEulerAnglesFromQuaternion(localAngles, localRotation);
+    this->localEulerAnglesHint = CalculateClosestEulerAnglesFromQuaternion(localEulerAnglesHint, localRotation);
 #endif
 
     if (IsInitialized()) {
@@ -206,8 +206,9 @@ BE_INLINE void ComTransform::SetLocalOriginRotationScale(const Vec3 &origin, con
 
 BE_INLINE void ComTransform::SetLocalAngles(const Angles &localAngles) {
 #if WITH_EDITOR
-    this->localAngles = localAngles;
+    this->localEulerAnglesHint = localAngles;
 #endif
+
     this->localRotation = localAngles.ToQuat();
 
     if (IsInitialized()) {
@@ -352,7 +353,7 @@ BE_INLINE Vec3 ComTransform::Left(TransformSpace space) const {
     }
 }
 
-BE_INLINE Vec3 ComTransform::Up(TransformSpace space) const {
+BE_INLINE Vec3 ComTransform::Up(TransformSpace space) const { 
     if (space == LocalSpace) {
         return localRotation.ToMat3()[2];
     } else {

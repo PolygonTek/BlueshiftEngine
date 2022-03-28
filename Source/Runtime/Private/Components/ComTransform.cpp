@@ -29,8 +29,14 @@ END_EVENTS
 void ComTransform::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("origin", "Origin", Vec3, GetLocalOrigin, SetLocalOrigin, Vec3::zero,
         "xyz position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+#if WITH_EDITOR
+    REGISTER_PROPERTY("localEulerAnglesHint", "LocalEulerAnglesHint", Angles, localEulerAnglesHint, Angles::zero,
+        "", PropertyInfo::Flag::Empty);
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero,
-        "roll, pitch, yaw in degree in local space", PropertyInfo::Flag::Editor);
+        "roll, pitch, yaw in degree in local space", PropertyInfo::Flag::Editor | PropertyInfo::Flag::SkipSerialization);
+#endif
+    REGISTER_ACCESSOR_PROPERTY("rotation", "Rotation", Quat, GetLocalRotation, SetLocalRotation, Quat::identity,
+        "", PropertyInfo::Flag::Empty);
     REGISTER_ACCESSOR_PROPERTY("scale", "Scale", Vec3, GetLocalScale, SetLocalScale, Vec3::one, 
         "xyz scale in local space", PropertyInfo::Flag::Editor);
 }
@@ -61,12 +67,11 @@ void ComTransform::Init() {
 Mat3x4 ComTransform::GetMatrixNoScale() const {
     ALIGN_AS32 Mat3x4 worldMatrixNoScale;
     ALIGN_AS32 Mat3x4 localMatrix = GetLocalMatrixNoScale();
-
+    
     const ComTransform *parent = GetParent();
     if (parent) {
         worldMatrixNoScale = parent->GetMatrixNoScale() * localMatrix;
-    }
-    else {
+    } else {
         worldMatrixNoScale = localMatrix;
     }
     return worldMatrixNoScale;
@@ -90,7 +95,6 @@ void ComTransform::InvalidateWorldMatrix() {
             if (childEntity->GetComponent(&ComRigidBody::metaObject) || childEntity->GetComponent(&ComVehicleWheel::metaObject)) {
                 continue;
             }
-
             childEntity->GetTransform()->InvalidateWorldMatrix();
         }
     } else {
