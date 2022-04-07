@@ -55,6 +55,12 @@ void SIMD::Init(bool forceGeneric) {
         _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
         BE_LOG("enabled Denormals-Are-Zero mode\n");
     }
+#elif defined(HAVE_ARM_NEON_INTRIN)
+    static constexpr uint64_t FP_FZ = 1 << 24;
+    uint64_t val;
+    asm volatile("mrs %0, fpcr" : "=r" (val));
+    val |= FP_FZ;
+    asm volatile("msr fpcr, %0" : /* no output */ : "r" (val));
 #endif
 }
 
