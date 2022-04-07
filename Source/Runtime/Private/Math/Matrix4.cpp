@@ -705,6 +705,27 @@ Mat4 Mat4::Transpose() const {
 }
 
 Mat4 &Mat4::TransposeSelf() {
+#if defined(ENABLE_SIMD4_INTRIN)
+    #ifdef HAVE_ARM_NEON_INTRIN
+        float32x4x4_t m = vld4q_f32((const float32_t *)mat);
+        vst1q_f32((float32_t *)mat[0], m.val[0]);
+        vst1q_f32((float32_t *)mat[1], m.val[1]);
+        vst1q_f32((float32_t *)mat[2], m.val[2]);
+        vst1q_f32((float32_t *)mat[3], m.val[3]);
+    #else
+        simd4f r0 = loadu_ps(mat[0]);
+        simd4f r1 = loadu_ps(mat[1]);
+        simd4f r2 = loadu_ps(mat[2]);
+        simd4f r3 = loadu_ps(mat[3]);
+
+        transpose4x4(r0, r1, r2, r3);
+
+        store_ps(r0, mat[0]);
+        store_ps(r1, mat[1]);
+        store_ps(r2, mat[2]);
+        store_ps(r3, mat[3]);
+    #endif
+#else
     float temp;
     
     for (int i = 0; i < 4; i++) {
@@ -714,6 +735,7 @@ Mat4 &Mat4::TransposeSelf() {
             mat[j][i] = temp;
         }
     }
+#endif
     return *this;
 }
 
