@@ -22,14 +22,14 @@ class BE_API PlatformAndroidThread : public PlatformBaseThread {
 public:
     static uint64_t             GetCurrentThreadId();
 
-    static PlatformBaseThread * Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
-    static void                 Destroy(PlatformBaseThread *thread);
-
-    static void                 SetAffinity(int affinity);
-    static void                 SetName(const char *name);
+    static PlatformBaseThread * Start(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
+    static void                 Terminate(PlatformBaseThread *thread);
     
     static void                 Join(PlatformBaseThread *thread);
     static void                 JoinAll(int numThreads, PlatformBaseThread *threads[]);
+
+    static void                 SetAffinity(int affinity);
+    static void                 SetName(const char *name);
 
 private:
     pthread_t *                 thread;

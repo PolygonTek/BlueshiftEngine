@@ -20,14 +20,14 @@ class BE_API PlatformWinThread : public PlatformBaseThread {
 public:
     static uint64_t             GetCurrentThreadId();
 
-    static PlatformBaseThread *  Create(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
-    static void                 Destroy(PlatformBaseThread *thread);
-
-    static void                 SetName(const char *name);
-    static void                 SetAffinity(int affinity);
+    static PlatformBaseThread * Start(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
+    static void                 Terminate(PlatformBaseThread *thread);
 
     static void                 Join(PlatformBaseThread *thread);
     static void                 JoinAll(int numThreads, PlatformBaseThread *threads[]);
+
+    static void                 SetName(const char *name);
+    static void                 SetAffinity(int affinity);
     
 private:
     HANDLE                      threadHandle;
@@ -37,7 +37,7 @@ class BE_API PlatformWinMutex : public PlatformBaseMutex {
     friend class PlatformWinCondition;
 
 public:
-    static PlatformBaseMutex *   Create();
+    static PlatformBaseMutex *  Create();
     static void                 Destroy(PlatformBaseMutex *mutex);
 
     static void                 Lock(const PlatformBaseMutex *mutex);

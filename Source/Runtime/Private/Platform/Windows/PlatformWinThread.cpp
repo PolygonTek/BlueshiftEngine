@@ -70,10 +70,10 @@ uint64_t PlatformWinThread::GetCurrentThreadId() {
 }
 
 // Creates a hardware thread running on specific core
-PlatformBaseThread *PlatformWinThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
+PlatformBaseThread *PlatformWinThread::Start(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
     HANDLE threadHandle = CreateThread(nullptr, stackSize, (LPTHREAD_START_ROUTINE)startProc, param, 0, nullptr);
     if (threadHandle == nullptr) {
-        BE_FATALERROR("cannot create thread");
+        BE_FATALERROR("Failed to create Win32 thread");
     }
 
     BE1::SetAffinity(threadHandle, affinity);
@@ -83,7 +83,7 @@ PlatformBaseThread *PlatformWinThread::Create(threadFunc_t startProc, void *para
     return thread;
 }
 
-void PlatformWinThread::Destroy(PlatformBaseThread *thread) {
+void PlatformWinThread::Terminate(PlatformBaseThread *thread) {
     assert(thread);
     PlatformWinThread *winThread = static_cast<PlatformWinThread *>(thread);
     TerminateThread(winThread->threadHandle, 0);

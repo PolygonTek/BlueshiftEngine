@@ -45,7 +45,7 @@ TaskManager::TaskManager(int maxTasks, int numThreads) {
 
     // Create task threads.
     for (int i = 0; i < numThreads; i++) {
-        PlatformThread *thread = (PlatformThread *)PlatformThread::Create(TaskThreadProc, (void *)this, 0);
+        PlatformThread *thread = (PlatformThread *)PlatformThread::Start(TaskThreadProc, (void *)this, 0);
         this->taskThreads.Append(thread);
     }
 }
@@ -62,7 +62,7 @@ TaskManager::~TaskManager() {
 
     // Destroy all the task threads.
     for (int i = 0; i < taskThreads.Count(); i++) {
-        PlatformThread::Destroy(taskThreads[i]);
+        PlatformThread::Terminate(taskThreads[i]);
     }
     taskThreads.Clear();
 

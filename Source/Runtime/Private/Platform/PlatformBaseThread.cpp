@@ -21,13 +21,13 @@ uint64_t PlatformBaseThread::GetCurrentThreadId() {
     return 0;
 }
 
-PlatformBaseThread *PlatformBaseThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
-    BE_FATALERROR("PlatformThread::Create not implmeneted on this platform");
+PlatformBaseThread *PlatformBaseThread::Start(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
+    BE_FATALERROR("PlatformThread::Start not implmeneted on this platform");
     return nullptr;
 }
 
-void PlatformBaseThread::Destroy(PlatformBaseThread *thread) {
-    BE_FATALERROR("PlatformThread::Destroy not implmeneted on this platform");
+void PlatformBaseThread::Terminate(PlatformBaseThread *thread) {
+    BE_FATALERROR("PlatformThread::Terminate not implmeneted on this platform");
 }
 
 void PlatformBaseThread::SetName(const char *name) {

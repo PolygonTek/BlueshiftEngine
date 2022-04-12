@@ -51,7 +51,7 @@ uint64_t PlatformAndroidThread::GetCurrentThreadId() {
     return static_cast<uint64_t>(gettid());
 }
 
-PlatformBaseThread *PlatformAndroidThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
+PlatformBaseThread *PlatformAndroidThread::Start(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     if (stackSize > 0) {
@@ -74,7 +74,7 @@ PlatformBaseThread *PlatformAndroidThread::Create(threadFunc_t startProc, void *
     return androidThread;
 }
 
-void PlatformAndroidThread::Destroy(PlatformBaseThread *thread) {
+void PlatformAndroidThread::Terminate(PlatformBaseThread *thread) {
     assert(thread);
     PlatformAndroidThread *androidThread = static_cast<PlatformAndroidThread *>(thread);
     //pthread_cancel(*androidThread->thread);

@@ -66,7 +66,7 @@ static void *ThreadStartup(ThreadStartupData *parg) {
     return nullptr;
 }
 
-PlatformBaseThread *PlatformPosixThread::Create(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
+PlatformBaseThread *PlatformPosixThread::Start(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     if (stackSize > 0) {
@@ -89,7 +89,7 @@ PlatformBaseThread *PlatformPosixThread::Create(threadFunc_t startProc, void *pa
     return posixThread;
 }
 
-void PlatformPosixThread::Destroy(PlatformBaseThread *thread) {
+void PlatformPosixThread::Terminate(PlatformBaseThread *thread) {
     assert(thread);
     PlatformPosixThread *posixThread = static_cast<PlatformPosixThread *>(thread);
     pthread_cancel(*posixThread->thread);
