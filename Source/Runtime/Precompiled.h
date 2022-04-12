@@ -366,6 +366,10 @@ constexpr std::size_t count_of(T (&)[N]) {
 #define _alloca16(x)                ((void *)((((intptr_t)_alloca((x) + 15)) + 15) & ~15))
 #define _alloca32(x)                ((void *)((((intptr_t)_alloca((x) + 31)) + 31) & ~31))
 
+#if !defined(__thread)
+#define __thread                    __declspec(thread)
+#endif
+
 #define strtoll                     _strtoi64
 #define strtoull                    _strtoui64
 
