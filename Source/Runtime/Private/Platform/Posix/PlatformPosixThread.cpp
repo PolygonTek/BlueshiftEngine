@@ -66,7 +66,7 @@ static void *ThreadStartup(ThreadStartupData *parg) {
     return nullptr;
 }
 
-PlatformBaseThread *PlatformPosixThread::Start(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
+PlatformPosixThread *PlatformPosixThread::Start(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     if (stackSize > 0) {
@@ -89,9 +89,8 @@ PlatformBaseThread *PlatformPosixThread::Start(threadFunc_t startProc, void *par
     return posixThread;
 }
 
-void PlatformPosixThread::Terminate(PlatformBaseThread *thread) {
-    assert(thread);
-    PlatformPosixThread *posixThread = static_cast<PlatformPosixThread *>(thread);
+void PlatformPosixThread::Terminate(PlatformPosixThread *posixThread) {
+    assert(posixThread);
     pthread_cancel(*posixThread->thread);
     delete posixThread->thread;
     delete posixThread;
@@ -101,8 +100,11 @@ void PlatformPosixThread::SetAffinity(int affinity) {
     BE1::SetAffinity(affinity);
 }
 
-void PlatformPosixThread::Join(PlatformBaseThread *thread) {
-    PlatformPosixThread *posixThread = static_cast<PlatformPosixThread *>(thread);
+void PlatformPosixThread::Detach(PlatformPosixThread *posixThread) {
+    pthread_detach(posixThread->thread);
+}
+
+void PlatformPosixThread::Join(PlatformPosixThread *posixThread) {
     int err = pthread_join(*posixThread->thread, nullptr);
     if (err != 0) {
         BE_FATALERROR("Failed to joint pthread - %s", strerror(err));
@@ -111,9 +113,9 @@ void PlatformPosixThread::Join(PlatformBaseThread *thread) {
     delete posixThread;
 }
 
-void PlatformPosixThread::JoinAll(int numThreads, PlatformBaseThread *threads[]) {
+void PlatformPosixThread::JoinAll(int numThreads, PlatformPosixThread *posixThreads[]) {
     for (int i = 0; i < numThreads; i++) {
-        PlatformPosixThread *posixThread = static_cast<PlatformPosixThread *>(threads[i]);
+        PlatformPosixThread *posixThread = posixThreads[i];
         int err = pthread_join(*posixThread->thread, nullptr);
         if (err != 0) {
             BE_FATALERROR("Failed to joint pthread - %s", strerror(err));
@@ -124,7 +126,7 @@ void PlatformPosixThread::JoinAll(int numThreads, PlatformBaseThread *threads[])
     } 
 }
 
-PlatformBaseMutex *PlatformPosixMutex::Create() {
+PlatformPosixMutex *PlatformPosixMutex::Create() {
     PlatformPosixMutex *posixMutex = new PlatformPosixMutex;
     posixMutex->mutex = new pthread_mutex_t;
     pthread_mutexattr_t attr;
@@ -134,46 +136,38 @@ PlatformBaseMutex *PlatformPosixMutex::Create() {
     return posixMutex;
 }
 
-void PlatformPosixMutex::Destroy(PlatformBaseMutex *mutex) {
-    assert(mutex);
-    PlatformPosixMutex *posixMutex = static_cast<PlatformPosixMutex *>(mutex);
+void PlatformPosixMutex::Destroy(PlatformPosixMutex *posixMutex) {
+    assert(posixMutex);
     pthread_mutex_destroy(posixMutex->mutex);
     delete posixMutex->mutex;
     delete posixMutex;
 }
 
-void PlatformPosixMutex::Lock(const PlatformBaseMutex *mutex) {
-    const PlatformPosixMutex *posixMutex = static_cast<const PlatformPosixMutex *>(mutex);
+void PlatformPosixMutex::Lock(const PlatformPosixMutex *posixMutex) {
     pthread_mutex_lock(posixMutex->mutex);
 }
 
-bool PlatformPosixMutex::TryLock(const PlatformBaseMutex *mutex) {
-    const PlatformPosixMutex *posixMutex = static_cast<const PlatformPosixMutex *>(mutex);
+bool PlatformPosixMutex::TryLock(const PlatformPosixMutex *posixMutex) {
     return pthread_mutex_trylock(posixMutex->mutex) == 0;
 }
 
-void PlatformPosixMutex::Unlock(const PlatformBaseMutex *mutex) {
-    const PlatformPosixMutex *posixMutex = static_cast<const PlatformPosixMutex *>(mutex);
+void PlatformPosixMutex::Unlock(const PlatformPosixMutex *posixMutex) {
     pthread_mutex_unlock(posixMutex->mutex);
 }
 
-PlatformBaseCondition *PlatformPosixCondition::Create() {
+PlatformPosixCondition *PlatformPosixCondition::Create() {
     PlatformPosixCondition *posixCondition = new PlatformPosixCondition;
     posixCondition->cond = new pthread_cond_t;
     pthread_cond_init(posixCondition->cond, nullptr);
     return posixCondition;
 }
 
-void PlatformPosixCondition::Destroy(PlatformBaseCondition *condition) {
-    const PlatformPosixCondition *posixCondition = static_cast<const PlatformPosixCondition *>(condition);
+void PlatformPosixCondition::Destroy(PlatformPosixCondition *posixCondition) {
     assert(posixCondition);
     delete posixCondition->cond;
 }
 
-void PlatformPosixCondition::Wait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex) {
-    const PlatformPosixCondition *posixCondition = static_cast<const PlatformPosixCondition *>(condition);
-    const PlatformPosixMutex *posixMutex = static_cast<const PlatformPosixMutex *>(mutex);
-
+void PlatformPosixCondition::Wait(const PlatformPosixCondition *posixCondition, const PlatformPosixMutex *posixMutex) {
     pthread_cond_wait(posixCondition->cond, posixMutex->mutex);
 }
 
@@ -198,12 +192,9 @@ struct timespec *MillisecondsFromNow(struct timespec *time, int millisecs) {
     return time;
 }
 
-bool PlatformPosixCondition::TimedWait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex, int ms) {
+bool PlatformPosixCondition::TimedWait(const PlatformPosixCondition *posixCondition, const PlatformPosixMutex *posixMutex, int ms) {
     timespec ts;
     MillisecondsFromNow(&ts, ms);
-
-    const PlatformPosixCondition *posixCondition = static_cast<const PlatformPosixCondition *>(condition);
-    const PlatformPosixMutex *posixMutex = static_cast<const PlatformPosixMutex *>(mutex);
     
     int ret = pthread_cond_timedwait(posixCondition->cond, posixMutex->mutex, &ts);
     if (ret == ETIMEDOUT || ret == EINVAL) {
@@ -212,9 +203,7 @@ bool PlatformPosixCondition::TimedWait(const PlatformBaseCondition *condition, c
     return true;
 }
 
-void PlatformPosixCondition::Broadcast(const PlatformBaseCondition *condition) {
-    const PlatformPosixCondition *posixCondition = static_cast<const PlatformPosixCondition *>(condition);
-
+void PlatformPosixCondition::Broadcast(const PlatformPosixCondition *posixCondition) {
     pthread_cond_broadcast(posixCondition->cond);
 }
 

@@ -16,18 +16,20 @@
 
 BE_NAMESPACE_BEGIN
 
-typedef void (*threadFunc_t)(void *);
+typedef unsigned int (*threadFunc_t)(void *);
 
 class BE_API PlatformBaseThread {
 public:
-    static uint64_t             GetCurrentThreadId();
-
     static PlatformBaseThread * Start(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
     static void                 Terminate(PlatformBaseThread *thread);
+
+    static void                 Detach(PlatformBaseThread *thread);
 
     static void                 Join(PlatformBaseThread *thread);
     static void                 JoinAll(int numThreads, PlatformBaseThread *threads[]);
 
+    static uint64_t             GetCurrentThreadId();
+                                // Set thread name for use in the debugger.
     static void                 SetName(const char *name);
     static void                 SetAffinity(int affinity);
 };

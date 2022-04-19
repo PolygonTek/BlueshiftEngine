@@ -8,6 +8,8 @@ set(ALL_FILES
     TestContainer.cpp
     TestMath.h
     TestMath.cpp
+    TestThread.h
+    TestThread.cpp
     TestSIMD.h
     TestSIMD.cpp
     TestCUDA.h

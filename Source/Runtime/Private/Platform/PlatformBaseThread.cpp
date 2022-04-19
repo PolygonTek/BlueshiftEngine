@@ -38,6 +38,10 @@ void PlatformBaseThread::SetAffinity(int affinity) {
     BE_FATALERROR("PlatformThread::SetAffinity not implmeneted on this platform");
 }
 
+void PlatformBaseThread::Detach(PlatformBaseThread *thread) {
+    BE_FATALERROR("PlatformThread::Detach not implmeneted on this platform");
+}
+
 void PlatformBaseThread::Join(PlatformBaseThread *thread) {
     BE_FATALERROR("PlatformThread::Join not implmeneted on this platform");
 }
@@ -84,6 +88,10 @@ void PlatformBaseCondition::Wait(const PlatformBaseCondition *cond, const Platfo
 bool PlatformBaseCondition::TimedWait(const PlatformBaseCondition *cond, const PlatformBaseMutex *mutex, int ms) {
     BE_FATALERROR("PlatformCondition::TimedWait not implmeneted on this platform");
     return false;
+}
+
+void PlatformBaseCondition::Signal(const PlatformBaseCondition *condition) {
+    BE_FATALERROR("PlatformCondition::Signal not implmeneted on this platform");
 }
 
 void PlatformBaseCondition::Broadcast(const PlatformBaseCondition *cond) {

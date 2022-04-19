@@ -76,7 +76,7 @@ private:
     PlatformMutex *         finishMutex;        ///< Mutex for finishing task list.
     PlatformCondition *     finishCondition;    ///< Condition variable for finishing task list.
 
-    friend void             TaskThreadProc(void *param);
+    friend unsigned int     TaskThreadProc(void *param);
 };
 
 BE_NAMESPACE_END

@@ -19,7 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
-void TaskThreadProc(void *param);
+unsigned int TaskThreadProc(void *param);
 
 TaskManager::TaskManager(int maxTasks, int numThreads) {
     this->maxTasks = maxTasks;
@@ -32,11 +32,11 @@ TaskManager::TaskManager(int maxTasks, int numThreads) {
     this->stopping = 0;
 
     // Create synchronization objects.
-    this->taskMutex = (PlatformMutex *)PlatformMutex::Create();
-    this->taskCondition = (PlatformCondition *)PlatformCondition::Create();
+    this->taskMutex = PlatformMutex::Create();
+    this->taskCondition = PlatformCondition::Create();
 
-    this->finishMutex = (PlatformMutex *)PlatformMutex::Create();
-    this->finishCondition = (PlatformCondition *)PlatformCondition::Create();
+    this->finishMutex = PlatformMutex::Create();
+    this->finishCondition = PlatformCondition::Create();
 
     if (numThreads < 0) {
         // Get thread count as number of logical processors
@@ -45,7 +45,7 @@ TaskManager::TaskManager(int maxTasks, int numThreads) {
 
     // Create task threads.
     for (int i = 0; i < numThreads; i++) {
-        PlatformThread *thread = (PlatformThread *)PlatformThread::Start(TaskThreadProc, (void *)this, 0);
+        PlatformThread *thread = PlatformThread::Start(TaskThreadProc, (void *)this, 0);
         this->taskThreads.Append(thread);
     }
 }
@@ -110,7 +110,7 @@ void TaskManager::Stop() {
     PlatformMutex::Unlock(taskMutex);
 
     // Wait until finishing all the task threads.
-    PlatformThread::JoinAll(taskThreads.Count(), (PlatformBaseThread **)taskThreads.Ptr());
+    PlatformThread::JoinAll(taskThreads.Count(), taskThreads.Ptr());
 }
 
 void TaskManager::WaitFinish() {
@@ -148,7 +148,7 @@ static void InitCPU() {
 #endif
 }
 
-void TaskThreadProc(void *param) {
+unsigned int TaskThreadProc(void *param) {
     InitCPU();
 
     TaskManager *tm = (TaskManager *)param;
@@ -186,6 +186,7 @@ void TaskThreadProc(void *param) {
             PlatformMutex::Unlock(tm->finishMutex);
         }
     }
+    return 0;
 }
 
 BE_NAMESPACE_END
