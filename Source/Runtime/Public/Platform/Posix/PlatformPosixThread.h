@@ -28,7 +28,7 @@ public:
     static void                 Join(PlatformPosixThread *thread);
     static void                 JoinAll(int numThreads, PlatformPosixThread *threads[]);
 
-    static void                 SetAffinity(int affinity);
+    static void                 SetCurrentThreadAffinity(int affinity);
 
 private:
     pthread_t *                 thread;

@@ -18,7 +18,8 @@
 static __thread int counter = 0;
 
 unsigned int threadFunc(void *param) {
-    BE1::PlatformThread::SetName((const char *)param);
+    BE1::PlatformThread::SetCurrentThreadName((const char *)param);
+    BE1::PlatformThread::SetCurrentThreadAffinity(0);
 
     for (int i = 0; i < 1000; i++) {
         BE_LOG("TID: %i - counting %i\n", BE1::PlatformThread::GetCurrentThreadId(), counter);

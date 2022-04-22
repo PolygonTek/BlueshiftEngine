@@ -30,8 +30,8 @@ public:
 
     static uint64_t             GetCurrentThreadId();
                                 // Set thread name for use in the debugger.
-    static void                 SetName(const char *name);
-    static void                 SetAffinity(int affinity);
+    static void                 SetCurrentThreadName(const char *name);
+    static void                 SetCurrentThreadAffinity(int affinity);
 };
 
 class BE_API PlatformBaseMutex {

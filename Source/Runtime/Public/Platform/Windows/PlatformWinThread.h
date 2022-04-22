@@ -27,8 +27,8 @@ public:
     static void                 JoinAll(int numThreads, PlatformWinThread *threads[]);
 
     static uint64_t             GetCurrentThreadId();
-    static void                 SetName(const char *name);
-    static void                 SetAffinity(int affinity);
+    static void                 SetCurrentThreadName(const char *name);
+    static void                 SetCurrentThreadAffinity(int affinity);
     
 private:
     HANDLE                      threadHandle;

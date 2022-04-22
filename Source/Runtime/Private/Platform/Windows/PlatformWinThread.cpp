@@ -20,54 +20,50 @@
 BE_NAMESPACE_BEGIN
 
 // Set the affinity of a given thread
-static void SetAffinity(HANDLE thread, int affinity) {
-    if (affinity < 0) {
+static void SetThreadAffinity(HANDLE thread, int affinityIndex) {
+    if (affinityIndex < 0) {
         return;
     }
 
 #if (_WIN32_WINNT >= 0x0601)
-    int groups = GetActiveProcessorGroupCount();
-    int totalProcessors = 0;
-    int group = 0;
-    int	number = 0;
+    int groupCount = GetActiveProcessorGroupCount();
+    int totalProcessorCount = 0;
+    int affinityGroupIndex = 0;
+    int	affinityProcessorIndex = 0;
 
-    for (int i = 0; i < groups; i++) {
-        int processors = GetActiveProcessorCount(i);
-        if (totalProcessors + processors > affinity) {
-            group = i;
-            number = affinity - totalProcessors;
+    for (int groupIndex = 0; groupIndex < groupCount; groupIndex++) {
+        int groupProcessorCount = GetActiveProcessorCount(groupIndex);
+        if (affinityIndex < groupProcessorCount + totalProcessorCount) {
+            affinityGroupIndex = groupIndex;
+            affinityProcessorIndex = affinityIndex - totalProcessorCount;
             break;
         }
-        totalProcessors += processors;
+        totalProcessorCount += groupProcessorCount;
     }
 
     GROUP_AFFINITY groupAffinity;
     memset(&groupAffinity, 0, sizeof(groupAffinity));
-    groupAffinity.Group = (WORD)group;
-    groupAffinity.Mask = (KAFFINITY)(uint64_t(1) << number);
+    groupAffinity.Group = (WORD)affinityGroupIndex;
+    groupAffinity.Mask = (KAFFINITY)(uint64_t(1) << affinityProcessorIndex);
     if (!SetThreadGroupAffinity(thread, &groupAffinity, nullptr)) {
         BE_FATALERROR("cannot set thread group affinity");
     }
 
     PROCESSOR_NUMBER processorNumber;
-    processorNumber.Group = group;
-    processorNumber.Number = number;
+    processorNumber.Group = affinityGroupIndex;
+    processorNumber.Number = affinityProcessorIndex;
     processorNumber.Reserved = 0;
     if (!SetThreadIdealProcessorEx(thread, &processorNumber, nullptr)) {
         BE_FATALERROR("cannot set thread ideal processor");
     }
 #else
-    if (!SetThreadAffinityMask(thread, DWORD_PTR(uint64(1) << affinity))) {
+    if (!SetThreadAffinityMask(thread, DWORD_PTR(uint64(1) << affinityIndex))) {
         BE_FATALERROR("cannot set thread affinity mask");
     }
-    if (SetThreadIdealProcessor(thread, (DWORD)affinity) == (DWORD)-1) {
+    if (SetThreadIdealProcessor(thread, (DWORD)affinityIndex) == (DWORD)-1) {
         BE_FATALERROR("cannot set thread ideal processor");
     }
 #endif
-}
-
-uint64_t PlatformWinThread::GetCurrentThreadId() {
-    return ::GetCurrentThreadId();
 }
 
 // Creates a hardware thread running on specific core
@@ -78,7 +74,7 @@ PlatformWinThread *PlatformWinThread::Start(threadFunc_t startProc, void *param,
         BE_FATALERROR("Failed to create Win32 thread");
     }
 
-    BE1::SetAffinity(threadHandle, affinity);
+    BE1::SetThreadAffinity(threadHandle, affinity);
  
     PlatformWinThread *winThread = new PlatformWinThread;
     winThread->threadHandle = threadHandle;
@@ -92,7 +88,11 @@ void PlatformWinThread::Terminate(PlatformWinThread *winThread) {
     delete winThread;
 }
 
-void PlatformWinThread::SetName(const char *name) {
+uint64_t PlatformWinThread::GetCurrentThreadId() {
+    return ::GetCurrentThreadId();
+}
+
+void PlatformWinThread::SetCurrentThreadName(const char *name) {
     /**
     * Code setting the thread name for use in the debugger.
     *
@@ -122,8 +122,8 @@ void PlatformWinThread::SetName(const char *name) {
 #pragma warning(pop)
 }
 
-void PlatformWinThread::SetAffinity(int affinity) {
-    BE1::SetAffinity(GetCurrentThread(), affinity);
+void PlatformWinThread::SetCurrentThreadAffinity(int affinity) {
+    BE1::SetThreadAffinity(GetCurrentThread(), affinity);
 }
 
 void PlatformWinThread::Detach(PlatformWinThread *winThread) {

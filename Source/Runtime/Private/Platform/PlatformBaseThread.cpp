@@ -30,12 +30,12 @@ void PlatformBaseThread::Terminate(PlatformBaseThread *thread) {
     BE_FATALERROR("PlatformThread::Terminate not implmeneted on this platform");
 }
 
-void PlatformBaseThread::SetName(const char *name) {
-    BE_FATALERROR("PlatformThread::SetName not implmeneted on this platform");
+void PlatformBaseThread::SetCurrentThreadName(const char *name) {
+    BE_FATALERROR("PlatformThread::SetCurrentThreadName not implmeneted on this platform");
 }
 
-void PlatformBaseThread::SetAffinity(int affinity) {
-    BE_FATALERROR("PlatformThread::SetAffinity not implmeneted on this platform");
+void PlatformBaseThread::SetCurrentThreadAffinity(int affinity) {
+    BE_FATALERROR("PlatformThread::SetCurrentThreadAffinity not implmeneted on this platform");
 }
 
 void PlatformBaseThread::Detach(PlatformBaseThread *thread) {

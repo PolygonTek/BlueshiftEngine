@@ -30,8 +30,8 @@ public:
     static void                 Join(PlatformAndroidThread *thread);
     static void                 JoinAll(int numThreads, PlatformAndroidThread *threads[]);
 
-    static void                 SetAffinity(int affinity);
-    static void                 SetName(const char *name);
+    static void                 SetCurrentThreadAffinity(int affinity);
+    static void                 SetCurrentThreadName(const char *name);
 
 private:
     pthread_t *                 thread;

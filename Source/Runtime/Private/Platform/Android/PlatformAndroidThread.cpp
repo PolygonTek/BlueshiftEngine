@@ -81,11 +81,11 @@ void PlatformAndroidThread::Terminate(PlatformAndroidThread *androidThread) {
     delete androidThread;
 }
 
-void PlatformAndroidThread::SetAffinity(int affinity) {
+void PlatformAndroidThread::SetCurrentThreadAffinity(int affinity) {
     BE1::SetAffinity(affinity);
 }
 
-void PlatformAndroidThread::SetName(const char *name) {
+void PlatformAndroidThread::SetCurrentThreadName(const char *name) {
     pthread_setname_np(pthread_self(), name);
 }
 

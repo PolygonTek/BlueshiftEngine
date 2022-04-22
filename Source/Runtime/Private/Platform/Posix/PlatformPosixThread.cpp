@@ -96,7 +96,7 @@ void PlatformPosixThread::Terminate(PlatformPosixThread *posixThread) {
     delete posixThread;
 }
 
-void PlatformPosixThread::SetAffinity(int affinity) {
+void PlatformPosixThread::SetCurrentThreadAffinity(int affinity) {
     BE1::SetAffinity(affinity);
 }
 
