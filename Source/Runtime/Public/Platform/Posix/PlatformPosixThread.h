@@ -20,7 +20,7 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformPosixThread : public PlatformBaseThread {
 public:
-    static PlatformPosixThread *Start(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
+    static PlatformPosixThread *Start(threadFunc_t startProc, void *param, size_t stackSize = 0, ThreadPriority::Enum priority = ThreadPriority::Enum::Normal, uint64_t affinityMask = 0xFFFFFFFFFFFFFFFF);
     static void                 Terminate(PlatformPosixThread *thread);
 
     static void                 Detach(PlatformPosixThread *thread);
@@ -28,7 +28,8 @@ public:
     static void                 Join(PlatformPosixThread *thread);
     static void                 JoinAll(int numThreads, PlatformPosixThread *threads[]);
 
-    static void                 SetCurrentThreadAffinity(int affinity);
+    static void                 SetCurrentThreadAffinityMask(uint64_t affinityMask);
+    static void                 SetCurrentThreadPriority(ThreadPriority::Enum priority);
 
 private:
     pthread_t *                 thread;

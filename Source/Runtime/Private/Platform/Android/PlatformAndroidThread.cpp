@@ -21,7 +21,7 @@
 
 BE_NAMESPACE_BEGIN
 
-static void SetAffinity(int affinity) {
+static void Android_SetAffinityMask(uint64_t affinityMask) {
     pid_t pid = gettid();
     long syscallres = syscall(__NR_sched_setaffinity, pid, sizeof(affinity), &affinity);
     if (syscallres) {
@@ -51,7 +51,7 @@ uint64_t PlatformAndroidThread::GetCurrentThreadId() {
     return static_cast<uint64_t>(gettid());
 }
 
-PlatformAndroidThread *PlatformAndroidThread::Start(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
+PlatformAndroidThread *PlatformAndroidThread::Start(threadFunc_t startProc, void *param, size_t stackSize, ThreadPriority::Enum priority, uint64_t affinityMask) {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     if (stackSize > 0) {
@@ -81,8 +81,8 @@ void PlatformAndroidThread::Terminate(PlatformAndroidThread *androidThread) {
     delete androidThread;
 }
 
-void PlatformAndroidThread::SetCurrentThreadAffinity(int affinity) {
-    BE1::SetAffinity(affinity);
+void PlatformAndroidThread::SetCurrentThreadAffinityMask(uint64_t affinityMask) {
+    Android_SetAffinityMask(affinityMask);
 }
 
 void PlatformAndroidThread::SetCurrentThreadName(const char *name) {

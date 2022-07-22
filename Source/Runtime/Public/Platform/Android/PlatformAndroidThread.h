@@ -22,7 +22,7 @@ class BE_API PlatformAndroidThread : public PlatformBaseThread {
 public:
     static uint64_t             GetCurrentThreadId();
 
-    static PlatformAndroidThread *Start(threadFunc_t startProc, void *param, size_t stackSize = 0, int affinity = -1);
+    static PlatformAndroidThread *Start(threadFunc_t startProc, void *param, size_t stackSize = 0, ThreadPriority::Enum priority = ThreadPriority::Enum::Normal, uint64_t affinityMask = 0xFFFFFFFFFFFFFFFF);
     static void                 Terminate(PlatformAndroidThread *thread);
 
     static void                 Detach(PlatformAndroidThread *thread);
@@ -30,7 +30,7 @@ public:
     static void                 Join(PlatformAndroidThread *thread);
     static void                 JoinAll(int numThreads, PlatformAndroidThread *threads[]);
 
-    static void                 SetCurrentThreadAffinity(int affinity);
+    static void                 SetCurrentThreadAffinityMask(uint64_t affinityMask);
     static void                 SetCurrentThreadName(const char *name);
 
 private:

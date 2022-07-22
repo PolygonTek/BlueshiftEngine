@@ -15,13 +15,13 @@
 #include "BlueshiftEngine.h"
 #include "TestThread.h"
 
-static __thread int counter = 0;
+static thread_local int counter = 0;
 
 unsigned int threadFunc(void *param) {
     BE1::PlatformThread::SetCurrentThreadName((const char *)param);
-    BE1::PlatformThread::SetCurrentThreadAffinity(0);
+    //BE1::PlatformThread::SetCurrentThreadAffinityMask(1);
 
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 500; i++) {
         BE_LOG("TID: %i - counting %i\n", BE1::PlatformThread::GetCurrentThreadId(), counter);
         counter++;
     }
@@ -34,4 +34,6 @@ void TestThread() {
     threads.Append(BE1::PlatformThread::Start(threadFunc, "Test Thread 2"));
 
     BE1::PlatformThread::JoinAll(2, threads.Ptr());
+
+    threads.Clear();
 }

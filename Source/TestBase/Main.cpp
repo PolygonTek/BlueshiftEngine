@@ -15,6 +15,7 @@
 #include "BlueshiftEngine.h"
 #include "TestContainer.h"
 #include "TestMath.h"
+#include "TestThread.h"
 #include "TestSIMD.h"
 #include "TestCUDA.h"
 #include "TestLua.h"
@@ -43,7 +44,9 @@ int main(int argc, char *argv[]) {
 
     //TestMath();
     
-    TestSIMD();
+    //TestSIMD();
+
+    TestThread();
 
 #if TEST_CUDA
     bool cudaSupported = MyCuda::Init();

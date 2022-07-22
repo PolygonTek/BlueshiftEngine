@@ -21,7 +21,7 @@ uint64_t PlatformBaseThread::GetCurrentThreadId() {
     return 0;
 }
 
-PlatformBaseThread *PlatformBaseThread::Start(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
+PlatformBaseThread *PlatformBaseThread::Start(threadFunc_t startProc, void *param, size_t stackSize, ThreadPriority::Enum priority, uint64_t affinityMask) {
     BE_FATALERROR("PlatformThread::Start not implmeneted on this platform");
     return nullptr;
 }
@@ -34,8 +34,12 @@ void PlatformBaseThread::SetCurrentThreadName(const char *name) {
     BE_FATALERROR("PlatformThread::SetCurrentThreadName not implmeneted on this platform");
 }
 
-void PlatformBaseThread::SetCurrentThreadAffinity(int affinity) {
-    BE_FATALERROR("PlatformThread::SetCurrentThreadAffinity not implmeneted on this platform");
+void PlatformBaseThread::SetCurrentThreadAffinityMask(uint64_t affinityMask) {
+    BE_FATALERROR("PlatformThread::SetCurrentThreadAffinityMask not implmeneted on this platform");
+}
+
+void PlatformBaseThread::SetCurrentThreadPriority(ThreadPriority::Enum priority) {
+    BE_FATALERROR("PlatformThread::SetCurrentThreadPriority not implmeneted on this platform");
 }
 
 void PlatformBaseThread::Detach(PlatformBaseThread *thread) {

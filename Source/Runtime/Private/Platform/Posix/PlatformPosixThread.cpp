@@ -20,17 +20,43 @@
 
 BE_NAMESPACE_BEGIN
 
+static int32 Posix_TranslateThreadPriority(ThreadPriority::Enum priority) {
+    // 0 is the lowest, 31 is the highest possible priority for pthread
+    switch (priority) {
+    case ThreadPriority::Enum::Highest: return 30;
+    case ThreadPriority::Enum::AboveNormal: return 25;
+    case ThreadPriority::Enum::Normal: return 15;
+    case ThreadPriority::Enum::BelowNormal: return 5;
+    case ThreadPriority::Enum::Lowest: return 1;
+    case ThreadPriority::Enum::SlightlyBelowNormal: return 14;
+    default: BE_ERRLOG("Unknown priority passed to Posix_TranslateThreadPriority()"); return 15;
+    }
+}
+
+static void Posix_SetThreadPriority(pthread_t tid, ThreadPriority::Enum priority) {
+    struct sched_param sched;
+    memset(&sched, 0, sizeof(sched_param));
+    int32 policy = SCHED_RR;
+
+    // Read the current policy
+    pthread_getschedparam(tid, &policy, &sched);
+
+    // set the priority appropriately
+    Sched.sched_priority = TranslateThreadPriority(priority);
+    pthread_setschedparam(tid, policy, &sched);
+}
+
 #if defined(__APPLE__)
 
 #include <mach/thread_act.h>
 #include <mach/thread_policy.h>
 #include <mach/mach_init.h>
 
-static void SetAffinity(int affinity) {
+static void Posix_SetThreadAffinity(pthread_t tid, int affinity) {
     if (affinity >= 0) {
         thread_affinity_policy ap;
         ap.affinity_tag = affinity;
-        if (thread_policy_set(mach_thread_self(), THREAD_AFFINITY_POLICY, (integer_t*)&ap, THREAD_AFFINITY_POLICY_COUNT) != KERN_SUCCESS) {
+        if (thread_policy_set(pthread_mach_thread_np(tid), THREAD_AFFINITY_POLICY, (integer_t *)&ap, THREAD_AFFINITY_POLICY_COUNT) != KERN_SUCCESS) {
             std::cerr << "Thread: cannot set affinity" << std::endl;
         }
     }
@@ -38,11 +64,11 @@ static void SetAffinity(int affinity) {
 
 #else
 
-static void SetAffinity(int affinity) {
+static void Posix_SetThreadAffinity(pthread_t tid, int affinityMask) {
     cpu_set_t cset;
     CPU_ZERO(&cset);
     CPU_SET(affinity, &cset);
-    if (pthread_setaffinity_np(pthread_self(), sizeof(cset), &cset) != 0) {
+    if (pthread_setaffinity_np(tid, sizeof(cset), &cset) != 0) {
         std::cerr << "Thread: cannot set affinity" << std::endl;
     }
 }
@@ -50,7 +76,6 @@ static void SetAffinity(int affinity) {
 #endif
 
 struct ThreadStartupData {
-    int affinity;
     threadFunc_t startProc;
     void *param;
 };
@@ -60,13 +85,12 @@ static void *ThreadStartup(ThreadStartupData *parg) {
     delete parg;
     parg = nullptr;
 
-    SetAffinity(arg.affinity);
     arg.startProc(arg.param);
 
     return nullptr;
 }
 
-PlatformPosixThread *PlatformPosixThread::Start(threadFunc_t startProc, void *param, size_t stackSize, int affinity) {
+PlatformPosixThread *PlatformPosixThread::Start(threadFunc_t startProc, void *param, size_t stackSize, ThreadPriority::Enum priority, uint64_t affinityMask) {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     if (stackSize > 0) {
@@ -77,12 +101,14 @@ PlatformPosixThread *PlatformPosixThread::Start(threadFunc_t startProc, void *pa
     ThreadStartupData *startup = new ThreadStartupData;
     startup->startProc = startProc;
     startup->param = param;
-    startup->affinity = affinity;
 
     int err = pthread_create(tid, &attr, (void *(*)(void *))ThreadStartup, startup);
     if (err != 0) {
         BE_FATALERROR("Failed to create pthread - %s", strerror(err));
     }
+
+    Posix_SetThreadAffinity(*tid, affinity);
+    Posix_SetThreadPriority(*tid, priority);
     
     PlatformPosixThread *posixThread = new PlatformPosixThread;
     posixThread->thread = tid;
@@ -96,8 +122,12 @@ void PlatformPosixThread::Terminate(PlatformPosixThread *posixThread) {
     delete posixThread;
 }
 
-void PlatformPosixThread::SetCurrentThreadAffinity(int affinity) {
-    BE1::SetAffinity(affinity);
+void PlatformPosixThread::SetCurrentThreadAffinityMask(uint64_t affinityMask) {
+    Posix_SetThreadAffinityMask(pthread_self(), affinityMask);
+}
+
+void PlatformPosixThread::SetCurrentThreadPriority(ThreadPriority::Enum priority) {
+    Posix_SetThreadPriority(pthread_self(), priority);
 }
 
 void PlatformPosixThread::Detach(PlatformPosixThread *posixThread) {
