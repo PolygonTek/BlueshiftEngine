@@ -131,7 +131,7 @@ public:
                         /// returned unchanged. If the point lies on the positive half-space, it is projected orthographically onto the plane.
     Vec3                ProjectToNegativeHalf(const Vec3 &p) const;
 
-                        /// Projects the given point to the positivehalf-space of this plane.
+                        /// Projects the given point to the positive half-space of this plane.
     Vec3                ProjectToPositiveHalf(const Vec3 &p) const;
 
                         /// Tests if this plane intersect with the given line segment.

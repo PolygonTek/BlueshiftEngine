@@ -18,11 +18,6 @@
 
 BE_NAMESPACE_BEGIN
 
-ParticleMesh::ParticleMesh() {
-    totalVerts = 0;
-    totalIndexes = 0;
-}
-
 void ParticleMesh::Clear() {
     totalVerts = 0;
     totalIndexes = 0;

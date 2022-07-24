@@ -51,6 +51,39 @@ uint64_t PlatformAndroidThread::GetCurrentThreadId() {
     return static_cast<uint64_t>(gettid());
 }
 
+static int TranslateThreadPriority(ThreadPriority::Enum priority) {
+    // 0 is the lowest, 31 is the highest possible priority for pthread
+    switch (priority) {
+    case ThreadPriority::Highest:
+        return 30;
+    case ThreadPriority::AboveNormal:
+        return 25;
+    case ThreadPriority::Normal:
+        return 15;
+    case ThreadPriority::SlightlyBelowNormal:
+        return 15;
+    case ThreadPriority::BelowNormal:
+        return 5;
+    case ThreadPriority::Lowest:
+        return 1;
+    default:
+        return 15;
+    }
+}
+
+static void Android_SetThreadPriority(const pthread_t *pthread, ThreadPriority::Enum priority) {
+    struct sched_param sched;
+    memset(&sched, 0, sizeof(sched));
+    int32_t policy = SCHED_RR;
+
+    // Read the current policy.
+    pthread_getschedparam(*pthread, &policy, &sched);
+
+    // Set the priority appropriately.
+    sched.sched_priority = TranslateThreadPriority(priority);
+    pthread_setschedparam(*pthread, policy, &sched);
+}
+
 PlatformAndroidThread *PlatformAndroidThread::Start(threadFunc_t startProc, void *param, size_t stackSize, ThreadPriority::Enum priority, uint64_t affinityMask) {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
@@ -68,6 +101,8 @@ PlatformAndroidThread *PlatformAndroidThread::Start(threadFunc_t startProc, void
     if (err != 0) {
         BE_FATALERROR("Failed to create pthread - %s", strerror(err));
     }
+
+    Android_SetThreadPriority(tid, priority);
     
     PlatformAndroidThread *androidThread = new PlatformAndroidThread;
     androidThread->thread = tid;
@@ -76,7 +111,7 @@ PlatformAndroidThread *PlatformAndroidThread::Start(threadFunc_t startProc, void
 
 void PlatformAndroidThread::Terminate(PlatformAndroidThread *androidThread) {
     assert(androidThread);
-    //pthread_cancel(*androidThread->thread);
+    pthread_kill(*androidThread->thread, SIGUSR1);
     delete androidThread->thread;
     delete androidThread;
 }

@@ -88,7 +88,7 @@ public:
     int32_t             Day() const { return ToDate().day; }
     double              JulianDay() const { return (double)(1721425.5 + ticks / Timespan::TicksPerDay); }
     double              ModifiedJulianDay() const { return (JulianDay() - 2400000.5); }
-    DayOfWeek::Enum     DayOfWeek() const { return static_cast<DayOfWeek::Enum>((ticks / Timespan::TicksPerDay) % 7); }
+    DayOfWeek::Enum     DayOfWeek() const { return static_cast<DayOfWeek::Enum>((int)(ticks / Timespan::TicksPerDay) % 7); }
     int32_t             DayOfYear() const;
     int32_t             Hour() const { return (int32_t)((ticks / Timespan::TicksPerHour) % 24); }
     int32_t             Hour12() const;

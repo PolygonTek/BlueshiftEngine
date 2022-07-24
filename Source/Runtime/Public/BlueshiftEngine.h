@@ -30,6 +30,7 @@
 #include "Core/Variant.h"
 #include "Core/Guid.h"
 #include "Core/StrColor.h"
+#include "Core/Delegate.h"
 
 // Dynamic & Static Array
 #include "Containers/Array.h"

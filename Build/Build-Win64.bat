@@ -7,11 +7,11 @@
 	)
 )
 @if defined VSInstallDir (
-	@call cmake-vs2017-Win64.bat nopause
+	@call cmake-vs2019-Win64.bat nopause
 	@pushd "%~dp0" 
 	@call "%VSInstallDir%\VC\Auxiliary\Build\vcvars64.bat" 
 	@popd
-	@cd Build\msvc2017
+	@cd Build\msvc2019
 ) else ( 
 	@if defined VS140COMNTOOLS (
 		@call cmake-vs2015-Win64.bat nopause

@@ -41,22 +41,22 @@ public:
         HandleExceptionsPrintingToStdOut();
     }
     
-    State(lua_State *l) : 
-        _l(l), 
-        _l_owner(false), 
+    State(lua_State *l) :
+        _l(l),
+        _l_owner(false),
         _exception_handler(new ExceptionHandler) {
         _registry.reset(new Registry(_l));
         HandleExceptionsPrintingToStdOut();
     }
     
-    State(State &&other) : 
-        _l(other._l), 
-        _l_owner(other._l_owner), 
+    State(State &&other) noexcept :
+        _l(other._l),
+        _l_owner(other._l_owner),
         _registry(std::move(other._registry)) {
         other._l = nullptr;
     }
 
-    State &operator=(State &&other) {
+    State &operator=(State &&other) noexcept {
         if (&other == this) {
             return *this;
         }

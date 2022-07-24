@@ -169,6 +169,11 @@ public:
                     /// Returns false if failed to remove.
     bool            RemoveIndex(int index);
 
+                    /// Removes the element at index position 'index' fast.
+                    /// Instead of moving the entire elements after the element to be removed, removed element is replaced with the last one.
+                    /// Returns false if failed to remove.
+    bool            RemoveIndexFast(int index);
+
                     /// Removes the first element that compares equal to 'value' from the array.
                     /// Returns whether an element was, in fact, removed.
                     /// All elements after the removed one are moved forward to fill the empty space.
@@ -459,6 +464,20 @@ BE_INLINE bool StaticArray<T, capacity>::RemoveIndex(int index) {
     count--;
     for (int i = index; i < count; i++) {
         elements[i] = elements[i + 1];
+    }
+
+    return true;
+}
+
+template <typename T, int capacity>
+BE_INLINE bool StaticArray<T, capacity>::RemoveIndexFast(int index) {
+    if ((index < 0) || (index >= count)) {
+        return false;
+    }
+
+    count--;
+    if (index != count) {
+        elements[index] = elements[count];
     }
 
     return true;

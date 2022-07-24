@@ -162,12 +162,16 @@ public:
 
                         /// Tests if this AABB intersect with the given AABB.
     bool                IsIntersectAABB(const AABB &a, bool ignoreBorders = false) const;
+                        /// Tests if this AABB intersect with the given OBB.
+    bool                IsIntersectOBB(const OBB &a, float epsilon = 1e-3f) const;
                         /// Tests if this AABB intersect with the given sphere.
     bool                IsIntersectSphere(const Sphere &s) const;
                         /// Tests if this AABB intersect with the given triangle.
     bool                IsIntersectTriangle(const Vec3 &v0, const Vec3 &v1, const Vec3 &v2) const;
                         /// Tests if this AABB intersect with the given line segment.
     bool                IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
+                        /// Tests if this AABB intersect with the given plane.
+    bool                IsIntersectPlane(const Plane &plane) const;
 
                         /// Intersects a ray with this AABB.
                         /// Returns false if there is no intersection.
@@ -470,7 +474,9 @@ BE_INLINE bool AABB::IsIntersectAABB(const AABB &a, bool ignoreBorders) const {
 }
 
 BE_INLINE bool AABB::IsIntersectSphere(const Sphere &s) const {
-    if (DistanceSqr(s.center) > s.radius * s.radius) {
+    Vec3 closestPoint;
+    GetClosestPoint(s.center, closestPoint);
+    if (closestPoint.DistanceSqr(s.center) > s.radius * s.radius) {
         return false;
     }
     return true;

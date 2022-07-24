@@ -151,6 +151,7 @@ public:
     void                    DestroyTexture(Handle textureHandle);
     void                    SelectTextureUnit(unsigned int unit);
     void                    BindTexture(Handle textureHandle);
+    void                    SetTexture(int textureUnit, Handle textureHandle);
 
     void                    AdjustTextureSize(TextureType::Enum type, bool useNPOT, int inWidth, int inHeight, int inDepth, int *outWidth, int *outHeight, int *outDepth);
     void                    AdjustTextureFormat(TextureType::Enum type, bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat);
@@ -201,64 +202,64 @@ public:
     void                    DestroyShader(Handle shaderHandle);
     void                    BindShader(Handle shaderHandle);
 
-    int                     GetSamplerUnit(Handle shaderHandle, const char *name) const;
-    void                    SetTexture(int unit, Handle textureHandle);
+                            /// Returns texture image unit with the given name.
+    int                     GetShaderTextureUnit(Handle shaderHandle, const char *name) const;
 
                             /// Returns the index of shader constant with the given name.
-    int                     GetShaderConstantIndex(int shaderHandle, const char *name) const;
+    int                     GetShaderConstantIndex(Handle shaderHandle, const char *name) const;
 
                             /// Returns the block index of shader constant with the given name.
-    int                     GetShaderConstantBlockIndex(int shaderHandle, const char *name) const;
+    int                     GetShaderConstantBlockIndex(Handle shaderHandle, const char *name) const;
 
                             /// Sets the value of integer constant variable for the current bound shader.
-    void                    SetShaderConstant1i(int index, const int constant) const;
-    void                    SetShaderConstant2i(int index, const int *constant) const;
-    void                    SetShaderConstant3i(int index, const int *constant) const;
-    void                    SetShaderConstant4i(int index, const int *constant) const;
+    void                    SetShaderConstant1i(int constantIndex, const int constant) const;
+    void                    SetShaderConstant2i(int constantIndex, const int *constant) const;
+    void                    SetShaderConstant3i(int constantIndex, const int *constant) const;
+    void                    SetShaderConstant4i(int constantIndex, const int *constant) const;
 
                             /// Sets the value of unsigned integer constant variable for the current bound shader.
-    void                    SetShaderConstant1ui(int index, const unsigned int constant) const;
-    void                    SetShaderConstant2ui(int index, const unsigned int *constant) const;
-    void                    SetShaderConstant3ui(int index, const unsigned int *constant) const;
-    void                    SetShaderConstant4ui(int index, const unsigned int *constant) const;
+    void                    SetShaderConstant1ui(int constantIndex, const unsigned int constant) const;
+    void                    SetShaderConstant2ui(int constantIndex, const unsigned int *constant) const;
+    void                    SetShaderConstant3ui(int constantIndex, const unsigned int *constant) const;
+    void                    SetShaderConstant4ui(int constantIndex, const unsigned int *constant) const;
 
                             /// Sets the value of float constant variable for the current bound shader.
-    void                    SetShaderConstant1f(int index, const float constant) const;
-    void                    SetShaderConstant2f(int index, const float *constant) const;
-    void                    SetShaderConstant3f(int index, const float *constant) const;
-    void                    SetShaderConstant4f(int index, const float *constant) const;
-    void                    SetShaderConstant2f(int index, const Vec2 &constant) const;
-    void                    SetShaderConstant3f(int index, const Vec3 &constant) const;
-    void                    SetShaderConstant4f(int index, const Vec4 &constant) const;
+    void                    SetShaderConstant1f(int constantIndex, const float constant) const;
+    void                    SetShaderConstant2f(int constantIndex, const float *constant) const;
+    void                    SetShaderConstant3f(int constantIndex, const float *constant) const;
+    void                    SetShaderConstant4f(int constantIndex, const float *constant) const;
+    void                    SetShaderConstant2f(int constantIndex, const Vec2 &constant) const;
+    void                    SetShaderConstant3f(int constantIndex, const Vec3 &constant) const;
+    void                    SetShaderConstant4f(int constantIndex, const Vec4 &constant) const;
 
                             /// Sets the value of float matrix constant variable for the current bound shader.
-    void                    SetShaderConstant2x2f(int index, bool rowMajor, const Mat2 &constant) const;
-    void                    SetShaderConstant3x3f(int index, bool rowMajor, const Mat3 &constant) const;
-    void                    SetShaderConstant4x4f(int index, bool rowMajor, const Mat4 &constant) const;
-    void                    SetShaderConstant4x3f(int index, bool rowMajor, const Mat3x4 &constant) const;
+    void                    SetShaderConstant2x2f(int constantIndex, bool rowMajor, const Mat2 &constant) const;
+    void                    SetShaderConstant3x3f(int constantIndex, bool rowMajor, const Mat3 &constant) const;
+    void                    SetShaderConstant4x4f(int constantIndex, bool rowMajor, const Mat4 &constant) const;
+    void                    SetShaderConstant4x3f(int constantIndex, bool rowMajor, const Mat3x4 &constant) const;
 
                             /// Sets the value of integer constant array variable for the current bound shader.
-    void                    SetShaderConstantArray1i(int index, int count, const int *constant) const;
-    void                    SetShaderConstantArray2i(int index, int count, const int *constant) const;
-    void                    SetShaderConstantArray3i(int index, int count, const int *constant) const;
-    void                    SetShaderConstantArray4i(int index, int count, const int *constant) const;
+    void                    SetShaderConstantArray1i(int constantIndex, int count, const int *constant) const;
+    void                    SetShaderConstantArray2i(int constantIndex, int count, const int *constant) const;
+    void                    SetShaderConstantArray3i(int constantIndex, int count, const int *constant) const;
+    void                    SetShaderConstantArray4i(int constantIndex, int count, const int *constant) const;
 
                             /// Sets the value of float array constant variable for the current bound shader.
-    void                    SetShaderConstantArray1f(int index, int count, const float *constant) const;
-    void                    SetShaderConstantArray2f(int index, int count, const float *constant) const;
-    void                    SetShaderConstantArray3f(int index, int count, const float *constant) const;
-    void                    SetShaderConstantArray4f(int index, int count, const float *constant) const;
-    void                    SetShaderConstantArray2f(int index, int count, const Vec2 *constant) const;
-    void                    SetShaderConstantArray3f(int index, int count, const Vec3 *constant) const;
-    void                    SetShaderConstantArray4f(int index, int count, const Vec4 *constant) const;
+    void                    SetShaderConstantArray1f(int constantIndex, int count, const float *constant) const;
+    void                    SetShaderConstantArray2f(int constantIndex, int count, const float *constant) const;
+    void                    SetShaderConstantArray3f(int constantIndex, int count, const float *constant) const;
+    void                    SetShaderConstantArray4f(int constantIndex, int count, const float *constant) const;
+    void                    SetShaderConstantArray2f(int constantIndex, int count, const Vec2 *constant) const;
+    void                    SetShaderConstantArray3f(int constantIndex, int count, const Vec3 *constant) const;
+    void                    SetShaderConstantArray4f(int constantIndex, int count, const Vec4 *constant) const;
 
                             /// Sets the value of float matrix constant array variable for the current bound shader.
-    void                    SetShaderConstantArray2x2f(int index, bool rowMajor, int count, const Mat2 *constant) const;
-    void                    SetShaderConstantArray3x3f(int index, bool rowMajor, int count, const Mat3 *constant) const;
-    void                    SetShaderConstantArray4x4f(int index, bool rowMajor, int count, const Mat4 *constant) const;
-    void                    SetShaderConstantArray4x3f(int index, bool rowMajor, int count, const Mat3x4 *constant) const;
+    void                    SetShaderConstantArray2x2f(int constantIndex, bool rowMajor, int count, const Mat2 *constant) const;
+    void                    SetShaderConstantArray3x3f(int constantIndex, bool rowMajor, int count, const Mat3 *constant) const;
+    void                    SetShaderConstantArray4x4f(int constantIndex, bool rowMajor, int count, const Mat4 *constant) const;
+    void                    SetShaderConstantArray4x3f(int constantIndex, bool rowMajor, int count, const Mat3x4 *constant) const;
 
-    void                    SetShaderConstantBlock(int index, int bindingIndex);
+    void                    SetShaderConstantBlock(int constantIndex, int bindingIndex);
 
     //---------------------------------------------------------------------------------------------
     // Buffer

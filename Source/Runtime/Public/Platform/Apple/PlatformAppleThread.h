@@ -23,7 +23,8 @@ class BE_API PlatformAppleThread : public PlatformPosixThread {
 public:
     static uint64_t             GetCurrentThreadId();
 
-    static void                 SetName(const char *name);
+    static void                 SetName(PlatformBaseThread *thread, const char *name);
+    static void                 Yield();
 };
 
 typedef PlatformAppleThread     PlatformThread;

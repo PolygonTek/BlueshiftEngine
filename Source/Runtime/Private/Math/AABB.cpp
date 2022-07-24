@@ -104,7 +104,7 @@ void AABB::GetNearestVertex(const Vec3 &from, Vec3 &point) const {
 void AABB::GetNearestVertexFromDir(const Vec3 &dir, Vec3 &point) const {
     point.x = dir.x < 0 ? b[1].x : b[0].x;
     point.y = dir.y < 0 ? b[1].y : b[0].y;
-    point.z = dir.z < 0 ? b[1].z : b[0].z;	
+    point.z = dir.z < 0 ? b[1].z : b[0].z;
 }
 
 void AABB::GetFarthestVertex(const Vec3 &from, Vec3 &point) const {
@@ -123,20 +123,16 @@ void AABB::GetFarthestVertexFromDir(const Vec3 &dir, Vec3 &point) const {
 void AABB::GetClosestPoint(const Vec3 &from, Vec3 &point) const {
     point = from;
 
-    for (int i = 0; i < 3; i++) {
-        if (from[i] < b[0][i]) {
-            point[i] = b[0][i];
-        } else if (from[i] > b[1][i]) {
-            point[i] = b[1][i];
-        }
-    }
+    Clamp(point.x, b[0].x, b[1].x);
+    Clamp(point.y, b[0].y, b[1].y);
+    Clamp(point.z, b[0].z, b[1].z);
 }
 
 float AABB::DistanceSqr(const Vec3 &p) const {
     float dsq = 0.0f;
     float d;
 
-    for (int i = 0; i < 3; i++)	{
+    for (int i = 0; i < 3; i++) {
         if (p[i] < b[0][i]) {
             d = b[0][i] - p[i];
             dsq += d * d;
@@ -156,70 +152,93 @@ float AABB::Distance(const Vec3 &p) const {
 }
 
 bool AABB::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
-    Vec3 center = (b[0] + b[1]) * 0.5f;
-    Vec3 extents = b[1] - center;
-    Vec3 lineDir = 0.5f * (end - start);
-    Vec3 lineCenter = start + lineDir;
-    Vec3 dir = lineCenter - center;
-    float ld[3];
+    Vec3 e = b[1] - b[0];
+    Vec3 d = end - start;
+    Vec3 m = start + end - b[0] - b[1];
 
     // X 축 투영 거리 비교
-    ld[0] = Math::Fabs(lineDir[0]);
-    if (Math::Fabs(dir[0]) > extents[0] + ld[0]) {
+    float adx = Math::Fabs(d.x);
+    if (Math::Fabs(m.x) > e.x + adx) {
         return false;
     }
 
     // Y 축 투영 거리 비교
-    ld[1] = Math::Fabs(lineDir[1]);
-    if (Math::Fabs(dir[1]) > extents[1] + ld[1]) {
+    float ady = Math::Fabs(d.y);
+    if (Math::Fabs(m.y) > e.y + ady) {
         return false;
     }
     
     // Z 축 투영 거리 비교
-    ld[2] = Math::Fabs(lineDir[2]);
-    if (Math::Fabs(dir[2]) > extents[2] + ld[2]) {
+    float adz = Math::Fabs(d.z);
+    if (Math::Fabs(m.z) > e.z + adz) {
         return false;
     }
+
+    adx += 0.00001f;
+    ady += 0.00001f;
+    adz += 0.00001f;
 
     // 선분의 방향과 AABB 의 축들과의 외적한 축들에 대해서 검사
-    Vec3 cross = lineDir.Cross(dir);
+    //Vec3 cross = m.Cross(d);
 
-    if (Math::Fabs(cross[0]) > extents[1] * ld[2] + extents[2] * ld[1]) {
+    if (Math::Fabs(m.y * d.z - m.z * d.y) > e.y * adz + e.z * ady) {
         return false;
     }
 
-    if (Math::Fabs(cross[1]) > extents[0] * ld[2] + extents[2] * ld[0]) {
+    if (Math::Fabs(m.z * d.x - m.x * d.z) > e.x * adz + e.z * adx) {
         return false;
     }
     
-    if (Math::Fabs(cross[2]) > extents[0] * ld[1] + extents[1] * ld[0]) {
+    if (Math::Fabs(m.x * d.y - m.y * d.x) > e.x * ady + e.y * adx) {
         return false;
     }
 
     return true;
 }
 
+bool AABB::IsIntersectPlane(const Plane &plane) const {
+    Vec3 center = (b[0] + b[1]) * 0.5f;
+    Vec3 extents = b[1] - center;
+
+    // Compute the projection interval radius of the AABB onto L(t) = aabb.center + t * plane.normal;
+    float r = extents[0] * Math::Abs(plane.normal[0]) + extents[1] * Math::Abs(plane.normal[1]) + extents[2] * Math::Abs(plane.normal[2]);
+    // Compute the distance of the box center from plane.
+    float s = plane.Distance(center);
+
+    return Math::Abs(s) <= r;
+}
+
+bool AABB::IsIntersectOBB(const OBB &obb, float epsilon) const {
+    return obb.IsIntersectAABB(*this, epsilon);
+}
+
 bool AABB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const {
     float tmin = -FLT_MAX;
     float tmax = FLT_MAX;
 
+    // For all three slabs.
     for (int i = 0; i < 3; i++) {
         if (Math::Fabs(ray.dir[i]) < 0.000001f) {
+            // Ray is parallel to slab. No hit if origin not within slab.
             if (ray.origin[i] < b[0][i] || ray.origin[i] > b[1][i]) {
                 return false;
             }
         } else {
+            // Compute intersection ray.dir value of ray with near and far plane of slab.
             float ood = 1.0f / ray.dir[i];
             float t1 = (b[0][i] - ray.origin[i]) * ood;
             float t2 = (b[1][i] - ray.origin[i]) * ood;
-            
+
+            // Make t1 be intersection with near plane, t2 with far plane.
             if (t1 > t2) {
                 Swap(t1, t2);
             }
-            
+
+            // Compute the intersection of slab intersection intervals.
             tmin = Max(tmin, t1);
             tmax = Min(tmax, t2);
 
+            // Exit with no collision as soon as slab intersection becomes empty.
             if (tmin > tmax) {
                 return false;
             }
@@ -271,8 +290,7 @@ void AABB::SetFromPointTranslation(const Vec3 &point, const Vec3 &translation) {
         if (translation[i] < 0.0f) {
             b[0][i] = point[i] + translation[i];
             b[1][i] = point[i];
-        }
-        else {
+        } else {
             b[0][i] = point[i];
             b[1][i] = point[i] + translation[i];
         }

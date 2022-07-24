@@ -257,7 +257,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
 
     renderObjectDef.aabb.SetZero();
 
-    const Mat3x4 worldMatrix = GetEntity()->GetTransform()->GetMatrix();
+    const Mat3x4 &worldMatrix = GetEntity()->GetTransform()->GetMatrix();
 
     bool simulationEnded = true;
     

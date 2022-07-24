@@ -18,7 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const GLenum ToGLTextureTarget(RHI::TextureType::Enum type) {
+static const GLenum ToGLTextureTarget(RHI::TextureType::Enum type) {
     switch (type) {
     case RHI::TextureType::Texture2D:
         return GL_TEXTURE_2D;
@@ -41,7 +41,7 @@ const GLenum ToGLTextureTarget(RHI::TextureType::Enum type) {
     }
 }
 
-const GLenum ToGLTextureMinFilter(RHI::TextureFilter::Enum filter) {
+static const GLenum ToGLTextureMinFilter(RHI::TextureFilter::Enum filter) {
     switch (filter) {
     case RHI::TextureFilter::Nearest:
         return GL_NEAREST;
@@ -61,7 +61,7 @@ const GLenum ToGLTextureMinFilter(RHI::TextureFilter::Enum filter) {
     }
 }
 
-const GLenum ToGLTextureMagFilter(RHI::TextureFilter::Enum filter) {
+static const GLenum ToGLTextureMagFilter(RHI::TextureFilter::Enum filter) {
     switch (filter) {
     case RHI::TextureFilter::Nearest:
         return GL_NEAREST;
@@ -81,7 +81,7 @@ const GLenum ToGLTextureMagFilter(RHI::TextureFilter::Enum filter) {
     }
 }
 
-const GLint ToGLAddressMode(RHI::AddressMode::Enum mode) {
+static const GLint ToGLAddressMode(RHI::AddressMode::Enum mode) {
     switch (mode) {
     case RHI::AddressMode::Repeat:
         return GL_REPEAT;
@@ -159,6 +159,11 @@ void OpenGLRHI::BindTexture(Handle textureHandle) {
 
         currentContext->state->textureHandles[currentContext->state->tmu] = textureHandle;
     }
+}
+
+void OpenGLRHI::SetTexture(int textureUnit, Handle textureHandle) {
+    SelectTextureUnit(textureUnit);
+    BindTexture(textureHandle);
 }
 
 void OpenGLRHI::SetTextureAddressMode(AddressMode::Enum addressMode) {

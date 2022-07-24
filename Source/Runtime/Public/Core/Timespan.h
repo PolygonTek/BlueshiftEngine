@@ -36,7 +36,7 @@ public:
     /// The number of Timespan ticks per millisecond.
     static constexpr int64_t TicksPerMillisecond = 10000;
     
-    Timespan() {}
+    Timespan() = default;
     Timespan(int64_t ticks) { this->ticks = ticks; }
     Timespan(int32_t hours, int32_t minutes, int32_t seconds) { Assign(0, hours, minutes, seconds, 0); }
     Timespan(int32_t days, int32_t hours, int32_t minutes, int32_t seconds) { Assign(days, hours, minutes, seconds, 0); }
@@ -105,7 +105,7 @@ BE_INLINE Timespan Timespan::operator-(const Timespan &rhs) const {
 }
 
 BE_INLINE Timespan Timespan::operator*(const float rhs) const {
-    return Timespan((int64_t)(ticks * rhs));
+    return Timespan((int64_t)(ticks * (double)rhs));
 }
 
 BE_INLINE Timespan operator*(float lhs, const Timespan &rhs) {
@@ -123,7 +123,7 @@ BE_INLINE Timespan Timespan::operator-=(const Timespan &rhs) {
 }
 
 BE_INLINE Timespan Timespan::operator*=(const float rhs) {
-    ticks = (int64_t)(ticks * rhs);
+    ticks = (int64_t)(ticks * (double)rhs);
     return *this;
 }
 

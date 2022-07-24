@@ -39,7 +39,7 @@ class ParticleMesh {
     friend class RenderWorld;
 
 public:
-    ParticleMesh();
+    ParticleMesh() = default;
 
     int                     NumSurfaces() const { return surfaces.Count(); }
     const PrtMeshSurf &     Surface(int surfaceIndex) const { return surfaces[surfaceIndex]; }
@@ -57,10 +57,10 @@ private:
     void                    ComputeTextureCoordinates(const ParticleSystem::StandardModule &standardModule, float time, float &s1, float &t1, float &s2, float &t2) const;
 
     Array<PrtMeshSurf>      surfaces;
-    PrtMeshSurf *           currentSurf;
+    PrtMeshSurf *           currentSurf = nullptr;
 
-    int                     totalVerts;         ///< Total number of the vertices
-    int                     totalIndexes;       ///< Total number of the indices
+    int                     totalVerts = 0;         ///< Total number of the vertices
+    int                     totalIndexes = 0;       ///< Total number of the indices
 };
 
 BE_NAMESPACE_END

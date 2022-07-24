@@ -139,12 +139,16 @@ public:
 
                         /// Tests if this OBB contain the given point.
     bool                IsContainPoint(const Vec3 &p) const;
+                        /// Tests if this OBB intersect with the given AABB.
+    bool                IsIntersectAABB(const AABB &b, float epsilon = 1e-3f) const;
                         /// Tests if this OBB intersect with the given OBB.
     bool                IsIntersectOBB(const OBB &b, float epsilon = 1e-3f) const;
                         /// Tests if this OBB intersect with the given sphere.
     bool                IsIntersectSphere(const Sphere &sphere) const;
                         /// Tests if this OBB intersect with the given line segment.
     bool                IsIntersectLine(const Vec3 &p1, const Vec3 &p2) const;
+                        /// Tests if this AABB intersect with the given plane.
+    bool                IsIntersectPlane(const Plane &plane) const;
 
                         /// Intersects a ray with this OBB.
                         /// Returns false if there is no intersection.

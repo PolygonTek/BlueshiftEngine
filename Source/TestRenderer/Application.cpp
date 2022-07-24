@@ -209,7 +209,7 @@ void Application::DrawToRenderTarget(BE1::RHI::Handle renderTargetHandle, float 
     
     BE1::rhi.BindShader(defaultShader);
     BE1::rhi.SetShaderConstant4x4f(BE1::rhi.GetShaderConstantIndex(defaultShader, "modelViewProjMatrix"), true, modelViewProjMatrix);
-    BE1::rhi.SetTexture(BE1::rhi.GetSamplerUnit(defaultShader, "baseMap"), defaultTexture);
+    BE1::rhi.SetTexture(BE1::rhi.GetShaderTextureUnit(defaultShader, "baseMap"), defaultTexture);
     
     BE1::rhi.BindBuffer(BE1::RHI::BufferType::Vertex, defaultVertexBuffer);
     BE1::rhi.SetVertexFormat(vertex3DFormat);
@@ -247,13 +247,13 @@ void Application::Draw(const BE1::RHI::Handle contextHandle, const BE1::RHI::Han
 
 #if 0
     BE1::rhi.BindShader(clipRectShader);
-    BE1::rhi.SetTexture(BE1::rhi.GetSamplerUnit(clipRectShader, "baseMap"), renderTargetTexture);
+    BE1::rhi.SetTexture(BE1::rhi.GetShaderTextureUnit(clipRectShader, "baseMap"), renderTargetTexture);
 
     DrawClipRect(0.0f, 1.0f, 1.0f, 0.0f);
 #else
     BE1::rhi.BindShader(defaultShader);
     BE1::rhi.SetShaderConstant4x4f(BE1::rhi.GetShaderConstantIndex(defaultShader, "modelViewProjMatrix"), true, modelViewProjMatrix);
-    BE1::rhi.SetTexture(BE1::rhi.GetSamplerUnit(defaultShader, "baseMap"), renderTargetTexture);
+    BE1::rhi.SetTexture(BE1::rhi.GetShaderTextureUnit(defaultShader, "baseMap"), renderTargetTexture);
 
     BE1::rhi.BindBuffer(BE1::RHI::BufferType::Vertex, defaultVertexBuffer);
     BE1::rhi.SetVertexFormat(vertex3DFormat);

@@ -15,8 +15,8 @@
 #include "BlueshiftEngine.h"
 #include "TestSIMD.h"
 
-#define TEST_COUNT			4096
-#define CUDA_TEST_COUNT		30
+#define TEST_COUNT          4096
+#define CUDA_TEST_COUNT     30
 
 #define GetBest(start, end, best) \
     if (!best || end - start < best) { \
@@ -383,9 +383,9 @@ static void TestMemset() {
 static void TestMulMat3x4RM() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN_AS32 float matrixA[12 * 1024];
-    ALIGN_AS32 float matrixB[12 * 1024];
-    ALIGN_AS32 float matrixC[12 * 1024];
+    ALIGN_AS32 float matrixA[16 * 1024];
+    ALIGN_AS32 float matrixB[16 * 1024];
+    ALIGN_AS32 float matrixC[16 * 1024];
     float *matrixAPtr;
     float *matrixBPtr;
     float *matrixCPtr;
@@ -402,9 +402,9 @@ static void TestMulMat3x4RM() {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         for (int j = 0; j < 1024; j++) {
             BE1::simdGeneric->MulMat3x4RM(matrixCPtr, matrixAPtr, matrixBPtr);
-            matrixAPtr += 12;
-            matrixBPtr += 12;
-            matrixCPtr += 12;
+            matrixAPtr += 16;
+            matrixBPtr += 16;
+            matrixCPtr += 16;
         }
         uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
@@ -426,9 +426,9 @@ static void TestMulMat3x4RM() {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         for (int j = 0; j < 1024; j++) {
             BE1::simdProcessor->MulMat3x4RM(matrixCPtr, matrixAPtr, matrixBPtr);
-            matrixAPtr += 12;
-            matrixBPtr += 12;
-            matrixCPtr += 12;
+            matrixAPtr += 16;
+            matrixBPtr += 16;
+            matrixCPtr += 16;
         }
         uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
@@ -604,6 +604,42 @@ static void TestTransposeMat4x4() {
     PrintClocksSIMD("TransposeMat4x4", bestClocksGeneric, bestClocksSIMD);
 }
 
+static void TestTransformJoints() {
+    uint64_t bestClocksGeneric;
+    uint64_t bestClocksSIMD;
+    ALIGN_AS32 BE1::Mat3x4 jointMatrix[200];
+    int parents[200];
+
+    parents[0] = -1;
+    for (int i = 1; i < COUNT_OF(parents); i++) {
+        parents[i] = RANDOM_INT(0, i - 1);
+    }
+
+    RandomFloatArrayInit((float *)jointMatrix, 12 * COUNT_OF(jointMatrix), -100.0f, 100.0f);
+
+    bestClocksGeneric = 0;
+    for (int i = 0; i < TEST_COUNT; i++) {
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
+        BE1::simdGeneric->TransformJoints(jointMatrix, parents, 1, 199);
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
+        GetBest(startClocks, endClocks, bestClocksGeneric);
+    }
+
+    PrintClocksGeneric("TransformJoints", bestClocksGeneric);
+
+    RandomFloatArrayInit((float *)jointMatrix, 12 * COUNT_OF(jointMatrix), -100.0f, 100.0f);
+
+    bestClocksSIMD = 0;
+    for (int i = 0; i < TEST_COUNT; i++) {
+        uint64_t startClocks = BE1::PlatformTime::Cycles();
+        BE1::simdProcessor->TransformJoints(jointMatrix, parents, 1, 199);
+        uint64_t endClocks = BE1::PlatformTime::Cycles();
+        GetBest(startClocks, endClocks, bestClocksSIMD);
+    }
+
+    PrintClocksSIMD("TransformJoints", bestClocksGeneric, bestClocksSIMD);
+}
+
 void TestSIMD() {
     BE_LOG("Testing SIMD processors..\n");
 
@@ -618,4 +654,5 @@ void TestSIMD() {
     TestTransposeMat4x4();
     //TestMemcpy();
     //TestMemset();
+    TestTransformJoints();
 }

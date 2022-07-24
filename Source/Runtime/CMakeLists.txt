@@ -30,6 +30,7 @@ set(COMMON_ENGINE_FILES
     Public/Core/BinSearch.h
     Public/Core/Checksum_CRC32.h
     Public/Core/Checksum_MD5.h
+    Public/Core/Delegate.h
     Public/Core/Heap.h
     Public/Core/Range.h
     Public/Core/UTF.h

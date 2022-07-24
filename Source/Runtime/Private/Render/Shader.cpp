@@ -72,8 +72,8 @@ static const char *builtInConstantNames[] = {
     "probeLerp"                             // ProbeLerp
 };
 
-// NOTE: must be same order with Shader::BuiltInSampler enum.
-static const char *builtInSamplerNames[] = {
+// NOTE: must be same order with Shader::BuiltInTexture enum.
+static const char *builtInTextureNames[] = {
     "cubicNormalCubeMap",                   // CubicNormalCubeMap
     "indirectionCubeMap",                   // IndirectionCubeMap
     "albedoMap",                            // AlbedoMap
@@ -1237,14 +1237,14 @@ bool Shader::InstantiateShaderInternal(const Array<Define> &defineArray) {
     shaderHandle = rhi.CreateShader(hashName, processedVsText, processedFsText);
 
     assert(BuiltInConstant::Count == COUNT_OF(builtInConstantNames));
-    assert(BuiltInSampler::Count == COUNT_OF(builtInSamplerNames));
+    assert(BuiltInTexture::Count == COUNT_OF(builtInTextureNames));
 
     for (int i = 0; i < BuiltInConstant::Count; i++) {
         builtInConstantIndices[i] = rhi.GetShaderConstantIndex(shaderHandle, builtInConstantNames[i]);
     }
 
-    for (int i = 0; i < BuiltInSampler::Count; i++) {
-        builtInSamplerUnits[i] = rhi.GetSamplerUnit(shaderHandle, builtInSamplerNames[i]);
+    for (int i = 0; i < BuiltInTexture::Count; i++) {
+        builtInTextureUnits[i] = rhi.GetShaderTextureUnit(shaderHandle, builtInTextureNames[i]);
     }
 
     return true;
@@ -1781,26 +1781,26 @@ void Shader::SetConstantBuffer(const char *name, int bindingIndex) const {
     rhi.SetShaderConstantBlock(index, bindingIndex);
 }
 
-int Shader::GetSamplerUnit(const char *name) const {
-    return rhi.GetSamplerUnit(shaderHandle, name);
+int Shader::GetShaderTextureUnit(const char *name) const {
+    return rhi.GetShaderTextureUnit(shaderHandle, name);
 }
 
-void Shader::SetTexture(int unit, const Texture *texture) const {
-    if (unit < 0) {
+void Shader::SetTexture(int textureUnit, const Texture *texture) const {
+    if (textureUnit < 0) {
         return;
     }
 
-    rhi.SetTexture(unit, texture->textureHandle);
+    rhi.SetTexture(textureUnit, texture->textureHandle);
 }
 
 void Shader::SetTexture(const char *name, const Texture *texture) const {
-    int unit = rhi.GetSamplerUnit(shaderHandle, name);
-    if (unit < 0) {
+    int textureUnit = rhi.GetShaderTextureUnit(shaderHandle, name);
+    if (textureUnit < 0) {
         //BE_WARNLOG("Shader::SetTexture: invalid texture name '%s' in shader '%s'\n", name, this->hashName.c_str());
         return;
     }
 
-    rhi.SetTexture(unit, texture->textureHandle);
+    rhi.SetTexture(textureUnit, texture->textureHandle);
 }
 
 void Shader::SetTextureArray(const char *name, int num, const Texture **textures) const {
@@ -1813,13 +1813,13 @@ void Shader::SetTextureArray(const char *name, int num, const Texture **textures
     for (int i = 0; i < num; i++) {
         *indexPtr = '0' + i;
 
-        int unit = rhi.GetSamplerUnit(shaderHandle, temp);
-        if (unit < 0) {
+        int textureUnit = rhi.GetShaderTextureUnit(shaderHandle, temp);
+        if (textureUnit < 0) {
             //BE_WARNLOG("Shader::SetTextureArray: invalid texture name '%s' in shader '%s'\n", temp, this->hashName.c_str());
             return;
         }
 
-        rhi.SetTexture(unit, textures[i]->textureHandle);
+        rhi.SetTexture(textureUnit, textures[i]->textureHandle);
     }
 }
 

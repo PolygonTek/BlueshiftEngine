@@ -206,10 +206,10 @@ public:
     Image &operator=(const Image &other);
     
     /// Move constructor.
-    Image(Image &&other);
+    Image(Image &&other) noexcept;
     
     /// Move operator.
-    Image &operator=(Image &&other);
+    Image &operator=(Image &&other) noexcept;
     
     /// Destructor.
     ~Image();
@@ -480,7 +480,7 @@ BE_INLINE Image::Image(const Image &rhs) {
     Create(rhs.width, rhs.height, rhs.depth, rhs.numSlices, rhs.numMipmaps, rhs.format, rhs.gammaSpace, rhs.pic, rhs.flags);
 }
 
-BE_INLINE Image::Image(Image &&rhs) : Image() {
+BE_INLINE Image::Image(Image &&rhs) noexcept : Image() {
     BE1::Swap(width, rhs.width);
     BE1::Swap(height, rhs.height);
     BE1::Swap(depth, rhs.depth);
@@ -520,7 +520,8 @@ BE_INLINE byte *Image::GetPixels(int level, int sliceIndex) const {
     if (level >= numMipmaps || sliceIndex >= numSlices) {
         return nullptr;
     }
-    return pic + GetSliceSize(0, numMipmaps) * sliceIndex + GetSliceSize(0, level);
+    int offset = GetSliceSize(0, numMipmaps) * sliceIndex + GetSliceSize(0, level);
+    return pic + offset;
 }
 
 BE_INLINE Image &Image::Create2D(int width, int height, int numMipmaps, Format::Enum format, GammaSpace::Enum gammaSpace, const byte *data, int flags) {

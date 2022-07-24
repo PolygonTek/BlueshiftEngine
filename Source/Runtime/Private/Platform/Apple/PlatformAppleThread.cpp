@@ -22,8 +22,15 @@ uint64_t PlatformAppleThread::GetCurrentThreadId() {
     return (uint64_t)pthread_mach_thread_np(pthread_self());
 }
 
-void PlatformAppleThread::SetName(const char *name) {
-    pthread_setname_np(name);
+void PlatformAppleThread::SetName(PlatformBaseThread *thread, const char *name) {
+    // According to http://stackoverflow.com/a/7989973
+    // this needs to be called in the thread to be named !
+    //
+    //pthread_setname_np(name);
+}
+
+void PlatformAppleThread::Yield() {
+    sched_yield();
 }
 
 BE_NAMESPACE_END

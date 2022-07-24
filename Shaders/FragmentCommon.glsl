@@ -1,6 +1,15 @@
 #ifndef FRAGMENT_COMMON_INCLUDED
 #define FRAGMENT_COMMON_INCLUDED
 
+UNIFORM_BLOCK TestUniformBlock {
+    float f1;
+    float f2;
+    vec2 v2;
+    vec4 ambientScale;
+    mat3x4 testMat3x4;
+    float testArray[4];
+} test;
+
 vec4 Tex2Dbilinear(sampler2D tex, in vec2 uv, in float textureSize) {
     float texelSize = 1.0 / textureSize;
     vec2 f = fract(uv.xy * textureSize);
@@ -31,6 +40,11 @@ vec3 GetNormal(sampler2D normalMap, in vec2 tc) {
     vec3 n = tex2D(normalMap, tc).xyz * 2.0 - 1.0;
 #endif
     return n;
+}
+
+vec3 BlendNormal(in vec3 baseNormal, in vec2 detailNormal) {
+    // No need to reconstruct the z component of the detail normal for UDN normal blending
+    return normalize(baseNormal + vec3(detailNormal, 0.0));
 }
 
 vec2 EncodeViewNormal(vec3 n) {

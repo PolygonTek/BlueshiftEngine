@@ -233,6 +233,10 @@ bool PlatformPosixCondition::TimedWait(const PlatformPosixCondition *posixCondit
     return true;
 }
 
+void PlatformPosixCondition::Signal(const PlatformPosixCondition *posixCondition) {
+    pthread_cond_signal(posixCondition->cond);
+}
+
 void PlatformPosixCondition::Broadcast(const PlatformPosixCondition *posixCondition) {
     pthread_cond_broadcast(posixCondition->cond);
 }

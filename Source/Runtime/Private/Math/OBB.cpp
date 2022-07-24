@@ -355,6 +355,165 @@ float OBB::Distance(const Vec3 &p) const {
     return Math::Sqrt(dsq);
 }
 
+bool OBB::IsIntersectAABB(const AABB &aabb, float epsilon) const {
+    float c[3][3];
+    float ac[3][3];
+    float tproj[3];     // axis[i] * t
+    float d, e0, e1;    // distance between centers and projected extents
+
+    Vec3 b_center = aabb.Center();
+    Vec3 b_extents = aabb[1] - b_center;
+
+    // Delta vector between centers.
+    Vec3 t = b_center - center;
+
+    // Compare on axis Ax (axis[0]).
+    c[0][0] = axis[0][0];
+    c[0][1] = axis[0][1];
+    c[0][2] = axis[0][2];
+    ac[0][0] = Math::Fabs(c[0][0]) + epsilon;
+    ac[0][1] = Math::Fabs(c[0][1]) + epsilon;
+    ac[0][2] = Math::Fabs(c[0][2]) + epsilon;
+    tproj[0] = axis[0].Dot(t);
+
+    d = Math::Fabs(tproj[0]);
+    e0 = extents[0];
+    e1 = b_extents[0] * ac[0][0] + b_extents[1] * ac[0][1] + b_extents[2] * ac[0][2];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis Ay (axis[1]).
+    c[1][0] = axis[1][0];
+    c[1][1] = axis[1][1];
+    c[1][2] = axis[1][2];
+    ac[1][0] = Math::Fabs(c[1][0]) + epsilon;
+    ac[1][1] = Math::Fabs(c[1][1]) + epsilon;
+    ac[1][2] = Math::Fabs(c[1][2]) + epsilon;
+    tproj[1] = axis[1].Dot(t);
+
+    d = Math::Fabs(tproj[1]);
+    e0 = extents[1];
+    e1 = b_extents[0] * ac[1][0] + b_extents[1] * ac[1][1] + b_extents[2] * ac[1][2];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis Az (axis[2]).
+    c[2][0] = axis[2][0];
+    c[2][1] = axis[2][1];
+    c[2][2] = axis[2][2];
+    ac[2][0] = Math::Fabs(c[2][0]) + epsilon;
+    ac[2][1] = Math::Fabs(c[2][1]) + epsilon;
+    ac[2][2] = Math::Fabs(c[2][2]) + epsilon;
+    tproj[2] = axis[2].Dot(t);
+
+    d = Math::Fabs(tproj[2]);
+    e0 = extents[2];
+    e1 = b_extents[0] * ac[2][0] + b_extents[1] * ac[2][1] + b_extents[2] * ac[2][2];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis Bx (b.axis[0]).
+    d = Math::Fabs(t.x);
+    e0 = extents[0] * ac[0][0] + extents[1] * ac[1][0] + extents[2] * ac[2][0];
+    e1 = b_extents[0];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis By (b.axis[1]).
+    d = Math::Fabs(t.y);
+    e0 = extents[0] * ac[0][1] + extents[1] * ac[1][1] + extents[2] * ac[2][1];
+    e1 = b_extents[1];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis Bz (b.axis[2]).
+    d = Math::Fabs(t.z);
+    e0 = extents[0] * ac[0][2] + extents[1] * ac[1][2] + extents[2] * ac[2][2];
+    e1 = b_extents[2];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Ax, Bx).
+    d = Math::Fabs(tproj[2] * c[1][0] - tproj[1] * c[2][0]);
+    e0 = extents[1] * ac[2][0] + extents[2] * ac[1][0];
+    e1 = b_extents[1] * ac[0][2] + b_extents[2] * ac[0][1];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Ax, By).
+    d = Math::Fabs(tproj[2] * c[1][1] - tproj[1] * c[2][1]);
+    e0 = extents[1] * ac[2][1] + extents[2] * ac[1][1];
+    e1 = b_extents[0] * ac[0][2] + b_extents[2] * ac[0][0];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Ax, Bz).
+    d = Math::Fabs(tproj[2] * c[1][2] - tproj[1] * c[2][2]);
+    e0 = extents[1] * ac[2][2] + extents[2] * ac[1][2];
+    e1 = b_extents[0] * ac[0][1] + b_extents[1] * ac[0][0];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Ay, Bx).
+    d = Math::Fabs(tproj[0] * c[2][0] - tproj[2] * c[0][0]);
+    e0 = extents[0] * ac[2][0] + extents[2] * ac[0][0];
+    e1 = b_extents[1] * ac[1][2] + b_extents[2] * ac[1][1];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Ay, By).
+    d = Math::Fabs(tproj[0] * c[2][1] - tproj[2] * c[0][1]);
+    e0 = extents[0] * ac[2][1] + extents[2] * ac[0][1];
+    e1 = b_extents[0] * ac[1][2] + b_extents[2] * ac[1][0];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Ay, Bz).
+    d = Math::Fabs(tproj[0] * c[2][2] - tproj[2] * c[0][2]);
+    e0 = extents[0] * ac[2][2] + extents[2] * ac[0][2];
+    e1 = b_extents[0] * ac[1][1] + b_extents[1] * ac[1][0];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Az, Bx).
+    d = Math::Fabs(tproj[1] * c[0][0] - tproj[0] * c[1][0]);
+    e0 = extents[0] * ac[1][0] + extents[1] * ac[0][0];
+    e1 = b_extents[1] * ac[2][2] + b_extents[2] * ac[2][1];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Az, By).
+    d = Math::Fabs(tproj[1] * c[0][1] - tproj[0] * c[1][1]);
+    e0 = extents[0] * ac[1][1] + extents[1] * ac[0][1];
+    e1 = b_extents[0] * ac[2][2] + b_extents[2] * ac[2][0];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    // Compare on axis that is cross product of (Az, Bz).
+    d = Math::Fabs(tproj[1] * c[0][2] - tproj[0] * c[1][2]);
+    e0 = extents[0] * ac[1][2] + extents[1] * ac[0][2];
+    e1 = b_extents[0] * ac[2][1] + b_extents[1] * ac[2][0];
+    if (d > e0 + e1) {
+        return false;
+    }
+
+    return true;
+}
+
 bool OBB::IsIntersectOBB(const OBB &b, float epsilon) const {
     float c[3][3];
     float ac[3][3];
@@ -559,30 +718,47 @@ bool OBB::IsIntersectLine(const Vec3 &start, const Vec3 &end) const {
     return true;
 }
 
+bool OBB::IsIntersectPlane(const Plane &plane) const {
+    // Compute the projection interval radius of the OBB onto L(t) = center + t * plane.normal;
+    float r = extents[0] * Math::Abs(axis[0].Dot(plane.normal)) +
+              extents[1] * Math::Abs(axis[1].Dot(plane.normal)) +
+              extents[2] * Math::Abs(axis[2].Dot(plane.normal));
+    // Compute the distance of the box center from plane.
+    float s = plane.Distance(center);
+
+    return Math::Abs(s) <= r;
+}
+
 bool OBB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const {
     float tmin = -FLT_MAX;
     float tmax = FLT_MAX;
 
+    // For all three slabs.
     for (int i = 0; i < 3; i++) {
-        float ld = ray.dir.Dot(axis[i]);
-        float ls = (ray.origin - center).Dot(axis[i]);
+        float localDir = ray.dir.Dot(axis[i]);
+        float localPos = (ray.origin - center).Dot(axis[i]);
 
-        if (Math::Fabs(ld) < 0.000001f) {
-            if (ls < -extents[i] || ls > extents[i]) {
+        if (Math::Fabs(localDir) < 0.000001f) {
+            // Ray is parallel to slab. No hit if origin not within slab.
+            if (localPos < -extents[i] || localPos > extents[i]) {
                 return false;
             }
         } else {
-            float ood = 1.0f / ld;
-            float t1 = (-extents[i] - ls) * ood;
-            float t2 = (+extents[i] - ls) * ood;
-            
+            // Compute intersection ray.dir value of ray with near and far plane of slab.
+            float ood = 1.0f / localDir;
+            float t1 = (-extents[i] - localPos) * ood;
+            float t2 = (+extents[i] - localPos) * ood;
+
+            // Make t1 be intersection with near plane, t2 with far plane.
             if (t1 > t2) {
                 Swap(t1, t2);
             }
 
+            // Compute the intersection of slab intersection intervals.
             tmin = Max(tmin, t1);
             tmax = Min(tmax, t2);
-            
+
+            // Exit with no collision as soon as slab intersection becomes empty.
             if (tmin > tmax) {
                 return false;
             }

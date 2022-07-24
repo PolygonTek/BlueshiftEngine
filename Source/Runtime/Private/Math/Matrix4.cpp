@@ -476,13 +476,13 @@ Mat4 Mat4::operator*(const Mat4 &a) const {
     const float *m1Ptr = Ptr();
     const float *m2Ptr = a.Ptr();
 
-    for (int c = 0; c < Cols; c++) {
-        for (int r = 0; r < Rows; r++) {
+    for (int r = 0; r < Rows; r++) {
+        for (int c = 0; c < Cols; c++) {
             *dstPtr =
-                m1Ptr[0] * m2Ptr[0 * Cols + r] +
-                m1Ptr[1] * m2Ptr[1 * Cols + r] +
-                m1Ptr[2] * m2Ptr[2 * Cols + r] +
-                m1Ptr[3] * m2Ptr[3 * Cols + r];
+                m1Ptr[0] * m2Ptr[0 * Cols + c] +
+                m1Ptr[1] * m2Ptr[1 * Cols + c] +
+                m1Ptr[2] * m2Ptr[2 * Cols + c] +
+                m1Ptr[3] * m2Ptr[3 * Cols + c];
             dstPtr++;
         }
         m1Ptr += Cols;

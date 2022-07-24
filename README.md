@@ -30,7 +30,6 @@ Features
   * HDR rendering and filmic tone mapping
   * Post-processing
   * PBR rendering
-  * Environment probes
   * Physics using [Bullet](http://www.bulletphysics.org/)
   * Vehicle physics
   * Scripting using [Lua](https://www.lua.org/) and [LuaJIT](https://luajit.org/)
