@@ -53,7 +53,7 @@ extern const EventDef EV_Destroy;
 extern const EventDef EV_ImmediateDestroy;
 
 // 이 매크로는 Object class 를 상속받는 추상 클래스의 prototype 에 선언해야 한다.
-// 객체화하는데 필요한 type 정보와 run-time type checking 기능을 제공한다. 
+// 객체화하는데 필요한 type 정보와 runtime type checking 기능을 제공한다. 
 // 반드시 단일 상속 abstract class 에만 사용할 것
 #define ABSTRACT_PROTOTYPE(classname) \
     using Class = classname; \
@@ -66,7 +66,7 @@ extern const EventDef EV_ImmediateDestroy;
     static BE1::EventInfo<classname> eventMap[]
 
 // 이 매크로는 Object class 를 상속받는 자식 클래스의 prototype 에 선언해야 한다.
-// 객체화하는데 필요한 type 정보와 run-time type checking 기능을 제공한다.
+// 객체화하는데 필요한 type 정보와 runtime type checking 기능을 제공한다.
 // 반드시 단일 상속 concrete class 에만 사용할 것
 #define OBJECT_PROTOTYPE(classname) \
     using Class = classname; \

@@ -22,7 +22,7 @@
 
 BE_NAMESPACE_BEGIN
 
-#define MAX_PIXEL_FORMAT        1024
+#define MAX_PIXEL_FORMAT        1200
 #define MAX_ATTRIB_SIZE         32
 
 #define FAKE_WINDOW_CLASSNAME   _T("BLUESHIFT_FAKE_WINDOW")
@@ -93,7 +93,7 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
         // Get the number of pixel formats supported by this DC.
         unsigned int numFormats = DescribePixelFormat(hDC, 0, 0, nullptr);
         if (numFormats > MAX_PIXEL_FORMAT) {
-            BE_WARNLOG("numFormats > MAX_PIXEL_FORMAT\n");
+            BE_WARNLOG("numFormats(%i) > MAX_PIXEL_FORMAT(%i)\n", numFormats, MAX_PIXEL_FORMAT);
             numFormats = MAX_PIXEL_FORMAT;
         } else if (numFormats < 1) {
             BE_FATALERROR("no pixel formats found");
@@ -190,7 +190,7 @@ static int ChooseBestPixelFormat(HDC hDC, int inColorBits, int inAlphaBits, int 
         unsigned int numFormats = results[0];
 
         if (numFormats > MAX_PIXEL_FORMAT) {
-            BE_WARNLOG("numFormats > MAX_PIXEL_FORMAT\n");
+            BE_WARNLOG("numFormats(%i) > MAX_PIXEL_FORMAT(%i)\n", numFormats, MAX_PIXEL_FORMAT);
             numFormats = MAX_PIXEL_FORMAT;
         } else if (numFormats < 1) {
             BE_FATALERROR("no pixel formats found");

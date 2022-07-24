@@ -45,10 +45,10 @@ struct OpCodeInfo {
     const char *    name;
     ExprChunk::OpCode opCode;
     bool            unary;
-    int             precedence;     // 연산자 우선순위
+    int             precedence;     // operator precedence
 };
 
-// NOTE: 배열 순서는 헤더파일의 OpCode enum 값과 맞춰져있음
+// NOTE: The array order is the same as the OpCode enum value in the header file.
 static OpCodeInfo   opCodeInfoTable[] = {
     { "",           ExprChunk::OpCode_Invalid,          false, -1 },
     { "(",          ExprChunk::OpCode_LParen,           false,  0 },        // (
@@ -520,10 +520,10 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
                     g_opCodeStack[++g_opCodeStackPointer] = opCode;
                     continue;
                 }
-                
+
                 // built-in 연산자가 아니라면 identifier (레지스터 or 파라미터 or 테이블) 다.
                 lastParseState = OperandState;
-                
+
                 if (token.c_str()[0] == 'r') {
                     // 레지스터 이름에서 찾는다
                     const char *p = token.c_str() + 1;
