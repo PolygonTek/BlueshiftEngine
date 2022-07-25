@@ -20,7 +20,7 @@
 
 BE_NAMESPACE_BEGIN
 
-static int32 Posix_TranslateThreadPriority(ThreadPriority::Enum priority) {
+static int Posix_TranslateThreadPriority(ThreadPriority::Enum priority) {
     // 0 is the lowest, 31 is the highest possible priority for pthread
     switch (priority) {
     case ThreadPriority::Enum::Highest: return 30;
@@ -36,13 +36,13 @@ static int32 Posix_TranslateThreadPriority(ThreadPriority::Enum priority) {
 static void Posix_SetThreadPriority(pthread_t tid, ThreadPriority::Enum priority) {
     struct sched_param sched;
     memset(&sched, 0, sizeof(sched_param));
-    int32 policy = SCHED_RR;
+    int policy = SCHED_RR;
 
     // Read the current policy
     pthread_getschedparam(tid, &policy, &sched);
 
     // set the priority appropriately
-    Sched.sched_priority = TranslateThreadPriority(priority);
+    sched.sched_priority = TranslateThreadPriority(priority);
     pthread_setschedparam(tid, policy, &sched);
 }
 
