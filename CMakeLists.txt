@@ -281,9 +281,9 @@ endforeach()
 ################################################################################
 if (BUILD_RUNTIME)
     # Override subdirectory options
-    set(JSONCPP_WITH_TESTS OFF CACHE "" INTERNAL FORCE)
-    set(JSONCPP_WITH_POST_BUILD_UNITTEST OFF CACHE "" INTERNAL FORCE)
-    set(JSONCPP_WITH_PKGCONFIG_SUPPORT OFF CACHE "" INTERNAL FORCE)
+    set(JSONCPP_WITH_TESTS OFF CACHE INTERNAL "" FORCE)
+    set(JSONCPP_WITH_POST_BUILD_UNITTEST OFF CACHE INTERNAL "" FORCE)
+    set(JSONCPP_WITH_PKGCONFIG_SUPPORT OFF CACHE INTERNAL "" FORCE)
 
     add_subdirectory(Source/ThirdParty/zlib)
     add_subdirectory(Source/ThirdParty/minizip)

@@ -373,8 +373,6 @@ using return_type_t = typename return_type<T>::type;
 
 #define CURRENT_FUNC                __FUNCTION__
 
-#define THREAD_LOCAL                __declspec(thread)
-
 #define PATHSEPERATOR_STR           "\\"
 #define PATHSEPERATOR_CHAR          '\\'
 
@@ -483,8 +481,6 @@ using return_type_t = typename return_type<T>::type;
 #define BE_DEPRECATED               __attribute__((deprecated("This is deprecated and will be removed in a future version.")))
 
 #define CURRENT_FUNC                __func__
-
-#define THREAD_LOCAL                __thread
 
 #define PATHSEPERATOR_STR           "/"
 #define PATHSEPERATOR_CHAR          '/'

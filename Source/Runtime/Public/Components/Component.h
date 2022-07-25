@@ -38,12 +38,13 @@ public:
                             /// Components share the same name with the entity.
     virtual Str             ToString() const override;
     
-                            /// Get the entity that own this component.
+                            /// Gets the entity that own this component.
     Entity *                GetEntity() const { return entity; }
 
+                            /// Sets the entity of the owner of this component.
     void                    SetEntity(Entity *entity) { this->entity = entity; }
     
-                            /// Get the game world object.
+                            /// Gets the game world object from the owner entity.
     GameWorld *             GetGameWorld() const;
 
                             /// Returns true if the same component is allowed.

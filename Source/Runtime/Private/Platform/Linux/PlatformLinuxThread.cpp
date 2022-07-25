@@ -23,7 +23,7 @@ uint64_t PlatformLinuxThread::GetCurrentThreadId() {
     return pthread_self();
 }
 
-void PlatformLinuxThread::SetName(const char *name) {
+void PlatformLinuxThread::SetCurrentThreadName(const char *name) {
     pthread_setname_np(pthread_self(), name);
 }
 

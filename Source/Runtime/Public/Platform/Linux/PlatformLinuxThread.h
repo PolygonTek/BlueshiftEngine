@@ -23,7 +23,7 @@ class BE_API PlatformLinuxThread : public PlatformPosixThread {
 public:
     static uint64_t             GetCurrentThreadId();
 
-    static void                 SetName(const char *name);
+    static void                 SetCurrentThreadName(const char *name);
 };
 
 typedef PlatformLinuxThread     PlatformThread;

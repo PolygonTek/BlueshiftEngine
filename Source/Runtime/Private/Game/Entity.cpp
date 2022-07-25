@@ -84,7 +84,7 @@ Entity::~Entity() {
 }
 
 void Entity::Purge() {
-    // Purge all the components in opposite order.
+    // Purge all the components in reverse order.
     for (int componentIndex = components.Count() - 1; componentIndex >= 0; componentIndex--) {
         Component *component = components[componentIndex];
         if (component) {
