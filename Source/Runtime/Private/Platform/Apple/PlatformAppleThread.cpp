@@ -18,6 +18,10 @@
 
 BE_NAMESPACE_BEGIN
 
+PlatformAppleThread *PlatformAppleThread::Start(threadFunc_t startProc, void *param, size_t stackSize, ThreadPriority::Enum priority, uint64_t affinityMask) {
+    return PlatformPosixThread::Start(startProc, param, stackSize, priority, affinityMask);
+}
+
 uint64_t PlatformAppleThread::GetCurrentThreadId() {
     return (uint64_t)pthread_mach_thread_np(pthread_self());
 }

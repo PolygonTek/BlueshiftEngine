@@ -18,6 +18,10 @@
 
 BE_NAMESPACE_BEGIN
 
+PlatformLinuxThread *PlatformLinuxThread::Start(threadFunc_t startProc, void *param, size_t stackSize, ThreadPriority::Enum priority, uint64_t affinityMask) {
+    return PlatformPosixThread::Start(startProc, param, stackSize, priority, affinityMask);
+}
+
 uint64_t PlatformLinuxThread::GetCurrentThreadId() {
     // NOTE: the POSIX standard no longer requires pthread_t to be an arithmetic type
     return pthread_self();

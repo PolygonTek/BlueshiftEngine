@@ -122,6 +122,15 @@ void PlatformPosixThread::Terminate(PlatformPosixThread *posixThread) {
     delete posixThread;
 }
 
+uint64_t PlatformPosixThread::GetCurrentThreadId() {
+    BE_FATALERROR("PlatformPosixThread::GetCurrentThreadId not implmeneted on this platform");
+    return 0;
+}
+
+void PlatformPosixThread::SetCurrentThreadName(const char *name) {
+    BE_FATALERROR("PlatformPosixThread::SetCurrentThreadName not implmeneted on this platform");
+}
+
 void PlatformPosixThread::SetCurrentThreadAffinityMask(uint64_t affinityMask) {
     Posix_SetThreadAffinityMask(pthread_self(), affinityMask);
 }

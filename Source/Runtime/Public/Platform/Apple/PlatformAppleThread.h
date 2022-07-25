@@ -21,6 +21,9 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformAppleThread : public PlatformPosixThread {
 public:
+    static PlatformAppleThread *Start(threadFunc_t startProc, void *param, size_t stackSize = 0,
+        ThreadPriority::Enum priority = ThreadPriority::Enum::Normal, uint64_t affinityMask = 0xFFFFFFFFFFFFFFFF);
+
     static uint64_t             GetCurrentThreadId();
 
     static void                 SetCurrentThreadName(const char *name);

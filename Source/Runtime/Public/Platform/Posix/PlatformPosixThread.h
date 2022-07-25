@@ -20,7 +20,8 @@ BE_NAMESPACE_BEGIN
 
 class BE_API PlatformPosixThread : public PlatformBaseThread {
 public:
-    static PlatformPosixThread *Start(threadFunc_t startProc, void *param, size_t stackSize = 0, ThreadPriority::Enum priority = ThreadPriority::Enum::Normal, uint64_t affinityMask = 0xFFFFFFFFFFFFFFFF);
+    static PlatformPosixThread *Start(threadFunc_t startProc, void *param, size_t stackSize = 0,
+        ThreadPriority::Enum priority = ThreadPriority::Enum::Normal, uint64_t affinityMask = 0xFFFFFFFFFFFFFFFF);
     static void                 Terminate(PlatformPosixThread *thread);
 
     static void                 Detach(PlatformPosixThread *thread);
@@ -28,6 +29,8 @@ public:
     static void                 Join(PlatformPosixThread *thread);
     static void                 JoinAll(int numThreads, PlatformPosixThread *threads[]);
 
+    static uint64_t             GetCurrentThreadId();
+    static void                 SetCurrentThreadName(const char *name);
     static void                 SetCurrentThreadAffinityMask(uint64_t affinityMask);
     static void                 SetCurrentThreadPriority(ThreadPriority::Enum priority);
 
@@ -55,14 +58,14 @@ public:
     static PlatformPosixCondition *Create();
     static void                 Destroy(PlatformPosixCondition *condition);
     
-    // release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
+                                // Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
     static void                 Wait(const PlatformPosixCondition *condition, const PlatformPosixMutex *mutex);
     static bool                 TimedWait(const PlatformPosixCondition *condition, const PlatformPosixMutex *mutex, int ms);
     
-    // if any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
+                                // If any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
     static void                 Signal(const PlatformPosixCondition *condition);
     
-    // same as signal, except wake up all waiting threads
+                                // Same as signal, except wake up all waiting threads.
     static void                 Broadcast(const PlatformPosixCondition *condition);
     
 private:
