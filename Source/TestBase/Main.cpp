@@ -16,6 +16,7 @@
 #include "TestContainer.h"
 #include "TestMath.h"
 #include "TestThread.h"
+#include "TestTask.h"
 #include "TestSIMD.h"
 #include "TestCUDA.h"
 #include "TestLua.h"
@@ -46,7 +47,9 @@ int main(int argc, char *argv[]) {
     
     //TestSIMD();
 
-    TestThread();
+    //TestThread();
+
+    TestTask();
 
 #if TEST_CUDA
     bool cudaSupported = MyCuda::Init();

@@ -10,6 +10,8 @@ set(ALL_FILES
     TestMath.cpp
     TestThread.h
     TestThread.cpp
+    TestTask.h
+    TestTask.cpp
     TestSIMD.h
     TestSIMD.cpp
     TestCUDA.h
