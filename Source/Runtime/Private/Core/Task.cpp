@@ -29,7 +29,7 @@ TaskManager::TaskManager(int maxTasks, int numThreads) {
     this->tailTaskIndex = 0;
 
     this->numActiveTasks = 0;
-    this->stopping = 0;
+    this->stopping = false;
 
     // Create synchronization objects.
     this->taskMutex = PlatformMutex::Create();
@@ -39,14 +39,14 @@ TaskManager::TaskManager(int maxTasks, int numThreads) {
     this->finishCondition = PlatformCondition::Create();
 
     if (numThreads < 0) {
-        // Get thread count as number of logical processors
+        // Get thread count as number of logical processors.
+        //numThreads = std::thread::hardware_concurrency();
         numThreads = PlatformSystem::NumCPUCoresIncludingHyperthreads();
     }
 
     // Create task threads.
     for (int i = 0; i < numThreads; i++) {
-        PlatformThread *thread = PlatformThread::Start(TaskThreadProc, (void *)this, 0);
-        this->taskThreads.Append(thread);
+        taskThreads.Append(PlatformThread::Start(TaskThreadProc, (void *)this, 0));
     }
 }
 
@@ -60,12 +60,6 @@ TaskManager::~TaskManager() {
     PlatformCondition::Destroy(finishCondition);
     PlatformMutex::Destroy(finishMutex);
 
-    // Destroy all the task threads.
-    for (int i = 0; i < taskThreads.Count(); i++) {
-        PlatformThread::Terminate(taskThreads[i]);
-    }
-    taskThreads.Clear();
-
     delete [] taskBuffer;
 }
 
@@ -78,7 +72,6 @@ bool TaskManager::AddTask(TaskFunc function, void *data) {
     PlatformMutex::Lock(taskMutex);
 
     int nextTaskIndex = (tailTaskIndex + 1) % maxTasks;
-
     if (nextTaskIndex == headTaskIndex) {
         PlatformMutex::Unlock(taskMutex);
         BE_ERRLOG("Too many tasks");
@@ -103,7 +96,7 @@ void TaskManager::Start() {
 
 void TaskManager::Stop() {
     // Set the stopping and wake all the task threads.
-    stopping = 1;
+    stopping = true;
 
     PlatformMutex::Lock(taskMutex);
     PlatformCondition::Broadcast(taskCondition);
@@ -136,7 +129,7 @@ bool TaskManager::TimedWaitFinish(int ms) {
     return ret;
 }
 
-static void InitCPU() {
+static void InitTaskThread() {
 #ifdef __WIN32__
     int cpuid = GetCpuInfo()->cpuid;
     if (cpuid & CPUID_FTZ) {
@@ -149,7 +142,7 @@ static void InitCPU() {
 }
 
 unsigned int TaskThreadProc(void *param) {
-    InitCPU();
+    InitTaskThread();
 
     TaskManager *tm = (TaskManager *)param;
 
@@ -157,7 +150,7 @@ unsigned int TaskThreadProc(void *param) {
         PlatformMutex::Lock(tm->taskMutex);
 
         // Wait for task condition variable.
-        while (tm->IsEmpty() && !tm->stopping) {
+        while (tm->IsTaskEmpty() && !tm->stopping) {
             PlatformCondition::Wait(tm->taskCondition, tm->taskMutex);
         }
 

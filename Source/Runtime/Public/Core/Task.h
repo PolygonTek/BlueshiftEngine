@@ -35,7 +35,7 @@ public:
     size_t                  NumThreads() const { return taskThreads.Count(); }
 
                             /// Is task list empty ?
-    bool                    IsEmpty() const { return headTaskIndex == tailTaskIndex; }
+    bool                    IsTaskEmpty() const { return headTaskIndex == tailTaskIndex; }
 
                             /// Is stopping now ?
     bool                    IsStopping() const { return (bool)stopping; }
@@ -66,7 +66,7 @@ private:
     int                     tailTaskIndex;
 
     std::atomic_int         numActiveTasks;     ///< Number of tasks in active state.
-    std::atomic_int         stopping;
+    std::atomic_bool        stopping;
 
     Array<PlatformThread *> taskThreads;
 
