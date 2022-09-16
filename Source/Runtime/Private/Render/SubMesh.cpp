@@ -993,11 +993,10 @@ int SubMesh::FindEdge(int32_t v1, int32_t v2) const {
     }
 
     for (int i = 1; i < numEdges; i++) {
-        if (edges[i].v[0] == firstVert) {
-            if (edges[i].v[1] == secondVert) {
-                // Returns negative edge index if and if only first vertex index is larger than second one.
-                return v1 < v2 ? i : -i;
-            }
+        if (edges[i].v[0] == firstVert &&
+            edges[i].v[1] == secondVert) {
+            // Returns negative edge index if and if only first vertex index is larger than second one.
+            return v1 < v2 ? i : -i;
         }
     }
 

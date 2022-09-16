@@ -28,20 +28,31 @@ class MeshImporter;
 
 BE_NAMESPACE_BEGIN
 
+/// Edge
+/// 
 /// Represents a line segment of a triangle.
 /// The vertex index represents the line segment from small to large.
 /// Edges in this direction use positive indexes, and shared opposite edges use negative indexes.
 struct Edge {
 /*
-     ------ v1
-           / \
-       t0 /   \
-     \   / t1   
-      \ /
-      v0 -----
+      ------ v1
+            / \
+      t0   /   \
+   \      e     \
+    \    /   t1  \
+     \  /        
+      v0 ------
 */
-    int32_t                 v[2];               ///< vertex indexes to define an edge. v[0] is always less than v[1]. opposite direction edge is not stored in the sub mesh.
-    int32_t                 t[2];               ///< adjacent triangle indexes. t[0] is a CCW triangle.
+    union {
+        struct {
+            int32_t         firstVertexIndex;
+            int32_t         secondVertexIndex;
+            int32_t         firstTriangleIndex;
+            int32_t         secondTriangleIndex;
+        };
+        int32_t             v[2];               ///< vertex indexes to define an edge. v[0] is always less than v[1]. opposite direction edge is not stored in the sub mesh.
+        int32_t             t[2];               ///< adjacent triangle indexes. t[0] is a CCW triangle.
+    };
 };
 
 /// Joint weight
