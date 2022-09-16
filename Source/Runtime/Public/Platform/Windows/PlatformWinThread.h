@@ -31,6 +31,7 @@ public:
     static void                 SetCurrentThreadName(const char *name);
     static void                 SetCurrentThreadAffinityMask(uint64_t affinityMask);
     static void                 SetCurrentThreadPriority(ThreadPriority::Enum priority);
+    static void                 Yield();
     
 private:
     HANDLE                      threadHandle;
@@ -63,7 +64,7 @@ public:
                                 /// If any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
     static void                 Signal(const PlatformWinCondition *condition);
     
-                                /// Same as signal, except wake up all waiting threads
+                                /// Same as signal, except wake up all waiting threads.
     static void                 Broadcast(const PlatformWinCondition *condition);
     
 private:

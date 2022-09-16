@@ -139,6 +139,10 @@ void PlatformPosixThread::SetCurrentThreadPriority(ThreadPriority::Enum priority
     Posix_SetThreadPriority(pthread_self(), priority);
 }
 
+void PlatformPosixThread::Yield() {
+    pthread_yield();
+}
+
 void PlatformPosixThread::Detach(PlatformPosixThread *posixThread) {
     pthread_detach(posixThread->thread);
 }

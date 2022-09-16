@@ -42,6 +42,9 @@ void PlatformBaseThread::SetCurrentThreadPriority(ThreadPriority::Enum priority)
     BE_FATALERROR("PlatformThread::SetCurrentThreadPriority not implmeneted on this platform");
 }
 
+void PlatformBaseThread::Yield() {
+}
+
 void PlatformBaseThread::Detach(PlatformBaseThread *thread) {
     BE_FATALERROR("PlatformThread::Detach not implmeneted on this platform");
 }

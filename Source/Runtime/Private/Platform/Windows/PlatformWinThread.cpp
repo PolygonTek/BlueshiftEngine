@@ -150,6 +150,10 @@ void PlatformWinThread::SetCurrentThreadPriority(ThreadPriority::Enum priority) 
     Win_SetThreadPriority(GetCurrentThread(), priority);
 }
 
+void PlatformWinThread::Yield() {
+    SwitchToThread();
+}
+
 void PlatformWinThread::Detach(PlatformWinThread *winThread) {
     CloseHandle(winThread->threadHandle);
 }

@@ -124,6 +124,10 @@ void PlatformAndroidThread::SetCurrentThreadName(const char *name) {
     pthread_setname_np(pthread_self(), name);
 }
 
+void PlatformAndroidThread::Yield() {
+    pthread_yield();
+}
+
 void PlatformAndroidThread::Detach(PlatformAndroidThread *androidThread) {
     pthread_detach(androidThread->thread);
 }

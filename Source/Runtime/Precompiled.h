@@ -169,6 +169,7 @@
 #include <limits>
 #include <exception>
 #include <atomic>
+#include <thread>
 
 #define BE1 BE1
 #define BE_NAMESPACE_BEGIN namespace BE1 {
