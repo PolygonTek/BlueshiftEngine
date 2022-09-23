@@ -182,7 +182,7 @@ set(COMMON_ENGINE_FILES
     Public/Render/Mesh.h
     Public/Render/Render.h
     Public/Render/RenderSystem.h
-    Public/Render/RenderContext.h  
+    Public/Render/RenderContext.h
     Public/Render/ParticleSystem.h
     Public/Render/EnvProbe.h
     Public/Render/RenderObject.h
@@ -328,8 +328,8 @@ set(COMMON_ENGINE_FILES
     Private/Image/ImageFormat.cpp
     Private/Image/ImageProcess.cpp
     Private/Image/ImageResize.cpp
-    Private/Image/DXTDecoder.cpp
-    Private/Image/DXTEncoder.cpp
+    Private/Image/DxtDecoder.cpp
+    Private/Image/DxtEncoder.cpp
 
     Private/Math/Vector3.cpp
     Private/Math/Vector4.cpp
