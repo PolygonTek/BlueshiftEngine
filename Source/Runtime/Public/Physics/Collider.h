@@ -65,27 +65,33 @@ public:
 
     void                    Purge();
 
-                            /// Create box shaped collider with the given parameters.
+                            /// Creates box shaped collider with the given parameters.
     void                    CreateBox(const Vec3 &center, const Vec3 &extents, float margin = CentiToUnit(0.1f));
 
-                            /// Create cylinder shaped collider with the given parameters.
+                            /// Creates cylinder shaped collider with the given parameters.
     void                    CreateCylinder(const Vec3 &center, float radius, float height, float margin = CentiToUnit(0.1f));
 
-                            /// Create cone shaped collider with the given parameters.
+                            /// Creates cone shaped collider with the given parameters.
     void                    CreateCone(const Vec3 &center, float radius, float height, float margin = CentiToUnit(0.1f));
 
-                            /// Create sphere shaped collider with the given parameters.
+                            /// Creates sphere shaped collider with the given parameters.
     void                    CreateSphere(const Vec3 &center, float radius);
 
-                            /// Create capsule shaped collider with the given parameters.
+                            /// Creates capsule shaped collider with the given parameters.
     void                    CreateCapsule(const Vec3 &center, float radius, float height);
+
+                            /// Creates convex hull collider with the given mesh and parameters.
+    void                    CreateConvexHull(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = CentiToUnit(0.0f));
+
+                            /// Creates convex decomposition collider with the given mesh and parameters.
+    void                    CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = CentiToUnit(0.0f));
 
     void                    SetLocalScaling(float sx, float sy, float sz);
 
-                            /// Returns axis-aligned bounding box in system units
+                            /// Returns axis-aligned bounding box in system units.
     const AABB              GetAABB() const;
 
-                            /// Returns volume in system units
+                            /// Returns volume in system units.
     float                   GetVolume() const { return volume; }
 
     bool                    Load(const char *filename, bool convexHull, const Vec3 &scale);
@@ -99,8 +105,6 @@ private:
     int                     NumCollisionMeshes() const { return collisionMeshes.Count(); }
     CollisionMesh *         GetCollisionMesh(int index) const { assert(index >= 0 && index < collisionMeshes.Count()); return collisionMeshes[index]; }
     CollisionMesh *         AllocCollisionMesh(int numVerts, int numIndexes, bool materialIndexes = false) const;
-    void                    CreateConvexHull(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = CentiToUnit(0.1f));
-    void                    CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = CentiToUnit(0.1f));
     void                    CreateBVH(const Mesh *mesh, bool multiMaterials = false, const Vec3 &scale = Vec3::one);
     void                    CreateBVHCMSingleMaterial(const Mesh *mesh, const Vec3 &scale = Vec3::one);
     void                    CreateBVHCMMultiMaterials(const Mesh *mesh, const Vec3 &scale = Vec3::one);

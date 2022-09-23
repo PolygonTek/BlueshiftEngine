@@ -64,18 +64,18 @@ CollisionMesh *Collider::AllocCollisionMesh(int numVerts, int numIndexes, bool m
     return collisionMesh;
 }
 
-void Collider::FreeCollisionMesh(CollisionMesh *cmesh) const {
-    if (cmesh->verts) {
-        Mem_AlignedFree(cmesh->verts);
+void Collider::FreeCollisionMesh(CollisionMesh *collisionMesh) const {
+    if (collisionMesh->verts) {
+        Mem_AlignedFree(collisionMesh->verts);
     }
-    if (cmesh->indexes) {
-        Mem_AlignedFree(cmesh->indexes);
+    if (collisionMesh->indexes) {
+        Mem_AlignedFree(collisionMesh->indexes);
     }
-    if (cmesh->materialIndexes) {
-        Mem_AlignedFree(cmesh->materialIndexes);
+    if (collisionMesh->materialIndexes) {
+        Mem_AlignedFree(collisionMesh->materialIndexes);
     }
 
-    SAFE_DELETE(cmesh);
+    SAFE_DELETE(collisionMesh);
 }
 
 void Collider::SetLocalScaling(float sx, float sy, float sz) {
@@ -185,56 +185,59 @@ void Collider::CreateCone(const Vec3 &center, float radius, float height, float 
 void Collider::CreateConvexHull(const Mesh *mesh, const Vec3 &scale, float margin) {
     Purge();
 
-    modelScale = scale;
-    volume = scale.x * scale.y * scale.z * mesh->ComputeVolume();
-    centroid = scale * mesh->ComputeCentroid();
+    this->modelScale = scale;
+    this->volume = scale.x * scale.y * scale.z * mesh->ComputeVolume();
+    this->centroid = scale * mesh->ComputeCentroid();
 
     int numPoints = 0;
-    for (int i = 0; i < mesh->NumSurfaces(); i++) {
-        const SubMesh *subMesh = mesh->GetSurface(i)->subMesh;
+    for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
+        const SubMesh *subMesh = mesh->GetSurface(surfaceIndex)->subMesh;
         numPoints += subMesh->NumOriginalVerts();
     }
 
-    Array<Vec3> points;
-    points.SetCount(numPoints);
-    numPoints = 0;
+    // Collect all vertices to be input to compute convex hull points.
+    Array<Vec3> inputPoints;
+    inputPoints.SetCount(numPoints);
+    Vec3 *inputPointPtr = (Vec3 *)inputPoints.Ptr();
 
-    for (int i = 0; i < mesh->NumSurfaces(); i++) {
-        const MeshSurf *surf = mesh->GetSurface(i);
+    for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
+        const MeshSurf *surf = mesh->GetSurface(surfaceIndex);
         const SubMesh *subMesh = surf->subMesh;
+        const VertexGenericLit *verts = subMesh->Verts();
 
-        for (int j = 0; j < subMesh->NumOriginalVerts(); j++) {
-            points[numPoints++] = SystemUnitToPhysicsUnit(scale * subMesh->Verts()[j].xyz - centroid);
+        for (int vertexIndex = 0; vertexIndex < subMesh->NumOriginalVerts(); vertexIndex++) {
+            Vec3 positionRelativeToCentroid = scale * verts[vertexIndex].xyz - centroid;
+            *inputPointPtr++ = SystemUnitToPhysicsUnit(positionRelativeToCentroid);
         }
     }
 
-    btConvexHullComputer *chc = new btConvexHullComputer;
-    float shrink = chc->compute((const float *)points.Ptr(), sizeof(points[0]), points.Count(), SystemUnitToPhysicsUnit(margin), 1.0f);
+    btConvexHullComputer *computer = new btConvexHullComputer;
+    float shrunken = computer->compute((const float *)inputPoints.Ptr(), sizeof(inputPoints[0]), inputPoints.Count(), SystemUnitToPhysicsUnit(margin), 1.0f);
 
-    // convex hull have no indexes
-    CollisionMesh *cmesh = AllocCollisionMesh(chc->vertices.size(), 0);
-    collisionMeshes.Append(cmesh);
+    CollisionMesh *collisionMesh = AllocCollisionMesh(computer->vertices.size(), 0);
+    this->collisionMeshes.Append(collisionMesh);
 
-    for (int i = 0; i < chc->vertices.size(); i++) {
-        const btVector3 &btvec3 = chc->vertices[i];
-        cmesh->verts[i].Set(btvec3.x(), btvec3.y(), btvec3.z());
+    for (int i = 0; i < computer->vertices.size(); i++) {
+        const btVector3 &btvec3 = computer->vertices[i];
+        collisionMesh->verts[i].Set(btvec3.x(), btvec3.y(), btvec3.z());
     }
     
-    delete chc;
+    delete computer;
 
-    btConvexHullShape *chShape = new btConvexHullShape((const btScalar *)cmesh->verts, cmesh->numVerts, sizeof(cmesh->verts[0]));
-    chShape->setMargin(shrink);
+    btConvexHullShape *chShape = new btConvexHullShape((const btScalar *)collisionMesh->verts, collisionMesh->numVerts, sizeof(collisionMesh->verts[0]));
+    chShape->setMargin(shrunken);
+    chShape->initializePolyhedralFeatures(0);
 
-    type = Type::ConvexHull;
-    shape = chShape;
+    this->type = Type::ConvexHull;
+    this->shape = chShape;
 }
 
 void Collider::CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale, float margin) {
     Purge();
 
-    modelScale = scale;
-    volume = scale.x * scale.y * scale.z * mesh->ComputeVolume();
-    centroid = scale * mesh->ComputeCentroid();
+    this->modelScale = scale;
+    this->volume = scale.x * scale.y * scale.z * mesh->ComputeVolume();
+    this->centroid = scale * mesh->ComputeCentroid();
 
     Array<HACD::Vec3<HACD::Real> > hacdPoints;
     Array<HACD::Vec3<long> > hacdTris;
@@ -294,21 +297,21 @@ void Collider::CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale, float mar
         btConvexHullComputer *chc = new btConvexHullComputer;
         shrink = chc->compute((const float *)&chPoints[0], sizeof(chPoints[0]), numPoints, margin, 1.0f);
 
-        CollisionMesh *cmesh = AllocCollisionMesh(chc->vertices.size(), 0);
-        collisionMeshes.Append(cmesh);
+        CollisionMesh *collisionMesh = AllocCollisionMesh(chc->vertices.size(), 0);
+        collisionMeshes.Append(collisionMesh);
 
         for (int i = 0; i < chc->vertices.size(); i++) {
             const btVector3 &btvec3 = chc->vertices[i];
-            cmesh->verts[i].Set(btvec3.x(), btvec3.y(), btvec3.z());
+            collisionMesh->verts[i].Set(btvec3.x(), btvec3.y(), btvec3.z());
         }
 
         delete chc;*/
 
-        CollisionMesh *cmesh = AllocCollisionMesh((int)numPoints, 0);
-        collisionMeshes.Append(cmesh);
+        CollisionMesh *collisionMesh = AllocCollisionMesh((int)numPoints, 0);
+        collisionMeshes.Append(collisionMesh);
 
         for (int i = 0; i < numPoints; i++) {
-            cmesh->verts[i].Set(chPoints[i].X(), chPoints[i].Y(), chPoints[i].Z());
+            collisionMesh->verts[i].Set(chPoints[i].X(), chPoints[i].Y(), chPoints[i].Z());
         }
 
         delete [] chPoints;
@@ -318,9 +321,9 @@ void Collider::CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale, float mar
     btCompoundShape *compoundShape = new btCompoundShape;
 
     for (int i = 0; i < collisionMeshes.Count(); i++) {
-        const CollisionMesh *cmesh = GetCollisionMesh(i);
+        const CollisionMesh *collisionMesh = GetCollisionMesh(i);
 
-        btConvexHullShape *chShape = new btConvexHullShape((const btScalar *)cmesh->verts, cmesh->numVerts, sizeof(cmesh->verts[0]));
+        btConvexHullShape *chShape = new btConvexHullShape((const btScalar *)collisionMesh->verts, collisionMesh->numVerts, sizeof(collisionMesh->verts[0]));
         chShape->setMargin(SystemUnitToPhysicsUnit(margin));
     
         btTransform localTransform;
@@ -329,8 +332,8 @@ void Collider::CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale, float mar
         compoundShape->addChildShape(localTransform, chShape);
     }
 
-    type = Type::ConvexHull;
-    shape = compoundShape;
+    this->type = Type::ConvexHull;
+    this->shape = compoundShape;
 }
 
 void Collider::CreateBVH(const Mesh *mesh, bool multiMaterials, const Vec3 &scale) {
@@ -356,36 +359,36 @@ void Collider::CreateBVHCMSingleMaterial(const Mesh *mesh, const Vec3 &scale) {
         const MeshSurf *surf = mesh->GetSurface(i);
         const SubMesh *subMesh = surf->subMesh;
 
-        CollisionMesh *cmesh = AllocCollisionMesh(subMesh->NumVerts(), subMesh->NumIndexes());
-        collisionMeshes.Append(cmesh);
+        CollisionMesh *collisionMesh = AllocCollisionMesh(subMesh->NumVerts(), subMesh->NumIndexes());
+        collisionMeshes.Append(collisionMesh);
 
         for (int j = 0; j < subMesh->NumVerts(); j++) {
-            cmesh->verts[j] = SystemUnitToPhysicsUnit(scale * subMesh->Verts()[j].xyz);
+            collisionMesh->verts[j] = SystemUnitToPhysicsUnit(scale * subMesh->Verts()[j].xyz);
         }
 
         // TODO: Remove duplicated vertex position using vertex hash.
         for (int j = 0; j < subMesh->NumIndexes(); j++) {
-            cmesh->indexes[j] = subMesh->Indexes()[j];
+            collisionMesh->indexes[j] = subMesh->Indexes()[j];
         }
     }
 
     btTriangleIndexVertexArray *indexedMeshArray = new btTriangleIndexVertexArray;
 
     for (int i = 0; i < collisionMeshes.Count(); i++) {
-        const CollisionMesh *cmesh = GetCollisionMesh(i);
+        const CollisionMesh *collisionMesh = GetCollisionMesh(i);
 
-        PHY_ScalarType indexType = sizeof(cmesh->indexes[0]) == sizeof(int32_t) ? PHY_INTEGER : PHY_SHORT;
+        PHY_ScalarType indexType = sizeof(collisionMesh->indexes[0]) == sizeof(int32_t) ? PHY_INTEGER : PHY_SHORT;
 
         btIndexedMesh indexedMesh;
-        indexedMesh.m_numTriangles = cmesh->numIndexes / 3; // assume TRIANGLES primitive type
+        indexedMesh.m_numTriangles = collisionMesh->numIndexes / 3; // assume TRIANGLES primitive type
         indexedMesh.m_indexType = indexType;
-        indexedMesh.m_triangleIndexStride = sizeof(cmesh->indexes[0]) * 3;
-        indexedMesh.m_triangleIndexBase = (const byte *)cmesh->indexes;
+        indexedMesh.m_triangleIndexStride = sizeof(collisionMesh->indexes[0]) * 3;
+        indexedMesh.m_triangleIndexBase = (const byte *)collisionMesh->indexes;
     
-        indexedMesh.m_numVertices = cmesh->numVerts;
+        indexedMesh.m_numVertices = collisionMesh->numVerts;
         indexedMesh.m_vertexType = PHY_FLOAT;
-        indexedMesh.m_vertexStride = sizeof(cmesh->verts[0]);
-        indexedMesh.m_vertexBase = (const byte *)cmesh->verts;
+        indexedMesh.m_vertexStride = sizeof(collisionMesh->verts[0]);
+        indexedMesh.m_vertexBase = (const byte *)collisionMesh->verts;
 
         indexedMeshArray->addIndexedMesh(indexedMesh, indexType);
     }
@@ -400,40 +403,40 @@ void Collider::CreateBVHCMMultiMaterials(const Mesh *mesh, const Vec3 &scale) {
         const MeshSurf *surf = mesh->GetSurface(i);
         const SubMesh *subMesh = surf->subMesh;
 
-        CollisionMesh *cmesh = AllocCollisionMesh(subMesh->NumVerts(), subMesh->NumIndexes(), true);
-        collisionMeshes.Append(cmesh);
+        CollisionMesh *collisionMesh = AllocCollisionMesh(subMesh->NumVerts(), subMesh->NumIndexes(), true);
+        collisionMeshes.Append(collisionMesh);
 
         for (int j = 0; j < subMesh->NumVerts(); j++) {
-            cmesh->verts[j] = SystemUnitToPhysicsUnit(scale * subMesh->Verts()[j].xyz);
+            collisionMesh->verts[j] = SystemUnitToPhysicsUnit(scale * subMesh->Verts()[j].xyz);
         }
 
         // TODO: Remove duplicated vertex position using vertex hash.
         for (int j = 0; j < subMesh->NumIndexes(); j++) {
-            cmesh->indexes[j] = subMesh->Indexes()[j];
+            collisionMesh->indexes[j] = subMesh->Indexes()[j];
         }
 
         for (int j = 0; j < subMesh->NumIndexes() / 3; j++) {
-            cmesh->materialIndexes[j] = 0; // TODO
+            collisionMesh->materialIndexes[j] = 0; // TODO
         }
     }
 
     btTriangleIndexVertexMaterialArray *indexedMeshArray = new btTriangleIndexVertexMaterialArray;
 
     for (int i = 0; i < collisionMeshes.Count(); i++) {
-        const CollisionMesh *cmesh = GetCollisionMesh(i);
+        const CollisionMesh *collisionMesh = GetCollisionMesh(i);
 
-        PHY_ScalarType indexType = sizeof(cmesh->indexes[0]) == sizeof(int32_t) ? PHY_INTEGER : PHY_SHORT;
+        PHY_ScalarType indexType = sizeof(collisionMesh->indexes[0]) == sizeof(int32_t) ? PHY_INTEGER : PHY_SHORT;
 
         btIndexedMesh indexedMesh;
-        indexedMesh.m_numTriangles = cmesh->numIndexes / 3; // assume TRIANGLES primitive type
+        indexedMesh.m_numTriangles = collisionMesh->numIndexes / 3; // assume TRIANGLES primitive type
         indexedMesh.m_indexType = indexType;
-        indexedMesh.m_triangleIndexStride = sizeof(cmesh->indexes[0]) * 3;
-        indexedMesh.m_triangleIndexBase = (const byte *)cmesh->indexes;
+        indexedMesh.m_triangleIndexStride = sizeof(collisionMesh->indexes[0]) * 3;
+        indexedMesh.m_triangleIndexBase = (const byte *)collisionMesh->indexes;
         
-        indexedMesh.m_numVertices = cmesh->numVerts;
+        indexedMesh.m_numVertices = collisionMesh->numVerts;
         indexedMesh.m_vertexType = PHY_FLOAT;
-        indexedMesh.m_vertexStride = sizeof(cmesh->verts[0]);
-        indexedMesh.m_vertexBase = (const byte *)cmesh->verts;
+        indexedMesh.m_vertexStride = sizeof(collisionMesh->verts[0]);
+        indexedMesh.m_vertexBase = (const byte *)collisionMesh->verts;
 
         indexedMeshArray->addIndexedMesh(indexedMesh, indexType);
 
@@ -442,9 +445,9 @@ void Collider::CreateBVHCMMultiMaterials(const Mesh *mesh, const Vec3 &scale) {
         mat.m_materialBase = (const byte *)colliderManager.materials.Ptr();
         mat.m_materialStride = sizeof(CollisionMaterial);
         mat.m_materialType = PHY_FLOAT;
-        mat.m_numTriangles = cmesh->numIndexes / 3;
-        mat.m_triangleMaterialsBase = (const byte *)cmesh->materialIndexes;
-        mat.m_triangleMaterialStride = sizeof(cmesh->materialIndexes[0]);
+        mat.m_numTriangles = collisionMesh->numIndexes / 3;
+        mat.m_triangleMaterialsBase = (const byte *)collisionMesh->materialIndexes;
+        mat.m_triangleMaterialStride = sizeof(collisionMesh->materialIndexes[0]);
         
         indexedMeshArray->addMaterialProperties(mat, PHY_INTEGER);
     }

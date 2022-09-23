@@ -126,7 +126,7 @@ void ColliderManager::DestroyUnusedColliders() {
 
 static Str MangleName(const char *name, const Vec3 &scale, bool convexHull) {
     Str _name = name;
-    _name += va("<scale='%.4f %.4f %.4f' convex=%i", scale.x, scale.y, scale.z, convexHull ? 1 : 0);	
+    _name += va("<scale='%.4f %.4f %.4f' convex=%i", scale.x, scale.y, scale.z, convexHull ? 1 : 0);
     return _name;
 }
 
@@ -135,7 +135,7 @@ Collider *ColliderManager::FindCollider(const char *name, const Vec3 &scale, boo
     if (entry) {
         return entry->second;
     }
-    
+
     return nullptr;
 }
 
