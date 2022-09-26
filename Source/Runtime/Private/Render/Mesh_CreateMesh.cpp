@@ -15,6 +15,8 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "RenderInternal.h"
+#include "Containers/HashTable.h"
+#include "delabella/delabella.h"
 
 #define PAR_OCTASPHERE_IMPLEMENTATION
 #include "par_octasphere.h"
@@ -213,7 +215,7 @@ void Mesh::CreateSphere(const Vec3 &origin, const Mat3 &axis, float radius, int 
 void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numSubdivisions) {
     assert(numSubdivisions >= 0);
 #if 1
-    CreateRoundedBox(origin, Vec3::zero, radius, numSubdivisions);
+    CreateRoundedBox(origin, Mat3::identity, Vec3::zero, radius, numSubdivisions);
 #else
     static constexpr float x = 0.525731112119133606f;
     static constexpr float z = 0.850650808352039932f;
@@ -268,14 +270,14 @@ void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numSubdivisions
 #endif
 }
 
-void Mesh::CreateRoundedBox(const Vec3 &origin, const Vec3 extents, float radius, int numSubdivisions) {
+void Mesh::CreateRoundedBox(const Vec3 &origin, const Mat3 &axis, const Vec3 extents, float radius, int numSubdivisions) {
     assert(numSubdivisions >= 0);
 
     par_octasphere_config cfg;
     cfg.corner_radius = radius;
-    cfg.width = radius * 2 + extents[0];
-    cfg.height = radius * 2 + extents[1];
-    cfg.depth = radius * 2 + extents[2];
+    cfg.width = (extents[0] + radius) * 2;
+    cfg.height = (extents[1] + radius) * 2;
+    cfg.depth = (extents[2] + radius) * 2;
     cfg.num_subdivisions = numSubdivisions;
     cfg.uv_mode = PAR_OCTASPHERE_UV_LATLONG;
     cfg.normals_mode = PAR_OCTASPHERE_NORMALS_SMOOTH;
@@ -317,8 +319,8 @@ void Mesh::CreateRoundedBox(const Vec3 &origin, const Vec3 extents, float radius
 
     FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
 
-    if (!origin.IsZero()) {
-        TransformVerts(Mat3::identity, Vec3::one, origin);
+    if (!axis.IsIdentity() || !origin.IsZero()) {
+        TransformVerts(axis, Vec3::one, origin);
     }
 }
 
@@ -530,6 +532,286 @@ void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, flo
     if (!axis.IsIdentity() || !origin.IsZero()) {
         TransformVerts(axis, Vec3::one, origin);
     }
+}
+
+bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool generateCap, bool generateOtherMesh, Mesh *outSlicedMesh, Mesh *outOtherMesh) {
+    assert(outSlicedMesh);
+
+    if (generateOtherMesh) {
+        assert(outOtherMesh);
+    }
+
+    // If the entire mesh is outside the plane, the operation is skipped.
+    int planeSide = srcMesh.aabb.PlaneSide(slicePlane);
+    if (planeSide == Plane::Side::Back || planeSide == Plane::Side::Front) {
+        return false;
+    }
+
+    Array<VertexGenericLit> tempInsideVerts;
+    Array<TriIndex> tempInsideIndexes;
+    Array<VertexGenericLit> tempOutsideVerts;
+    Array<TriIndex> tempOutsideIndexes;
+
+    for (int surfaceIndex = 0; surfaceIndex < srcMesh.surfaces.Count(); surfaceIndex++) {
+        const MeshSurf *srcSurf = srcMesh.surfaces[surfaceIndex];
+
+        int planeSide = srcSurf->subMesh->aabb.PlaneSide(slicePlane);
+        if (planeSide == Plane::Side::Back) {
+            // sub mesh totally inside of plane. just copy from source mesh.
+            MeshSurf* surf = outSlicedMesh->AllocSurface(srcSurf->subMesh->numVerts, srcSurf->subMesh->numIndexes);
+            surf->materialIndex = srcSurf->materialIndex;
+            outSlicedMesh->surfaces.Append(surf);
+            surf->subMesh->CopyFrom(srcSurf->subMesh);
+            continue;
+        }
+
+        if (planeSide == Plane::Side::Front) {
+            // sub mesh totally outside of plane.
+            if (generateOtherMesh) {
+                MeshSurf *surf = outOtherMesh->AllocSurface(srcSurf->subMesh->numVerts, srcSurf->subMesh->numIndexes);
+                surf->materialIndex = srcSurf->materialIndex;
+                outOtherMesh->surfaces.Append(surf);
+                surf->subMesh->CopyFrom(srcSurf->subMesh);
+            }
+            continue;
+        }
+
+        const VertexGenericLit *srcVerts = srcSurf->subMesh->verts;
+        const TriIndex *srcIndexes = srcSurf->subMesh->indexes;
+        int numSrcVerts = srcSurf->subMesh->NumVerts();
+        int numSrcIndexes = srcSurf->subMesh->NumIndexes();
+
+        tempInsideVerts.Reserve(numSrcVerts);
+        tempInsideIndexes.Reserve(numSrcIndexes);
+
+        tempOutsideVerts.Reserve(numSrcVerts);
+        tempOutsideIndexes.Reserve(numSrcIndexes);
+
+        // source vertex index -> sliced vertex index
+        HashTable<int, int> srcToInsideVertIndex;
+        HashTable<int, int> srcToOutsideVertIndex;
+
+        Array<float> vertexDistances;
+        vertexDistances.SetCount(numSrcVerts);
+
+        for (int srcVertIndex = 0; srcVertIndex < numSrcVerts; srcVertIndex++) {
+            // Distance of each vertex from slice plane
+            vertexDistances[srcVertIndex] = slicePlane.Distance(srcVerts[srcVertIndex].xyz);
+
+            if (vertexDistances[srcVertIndex] <= 0.0f) {
+                int slicedVertIndex = tempInsideVerts.Append(srcVerts[srcVertIndex]);
+
+                srcToInsideVertIndex.Set(srcVertIndex, slicedVertIndex);
+            } else {
+                if (generateOtherMesh) {
+                    int otherVertIndex = tempOutsideVerts.Append(srcVerts[srcVertIndex]);
+
+                    srcToOutsideVertIndex.Set(srcVertIndex, otherVertIndex);
+                }
+            }
+        }
+
+        Array<Vec3> clippedVerts;
+
+        for (int baseIndex = 0; baseIndex < numSrcIndexes; baseIndex += 3) {
+            int srcIndex[3];
+            srcIndex[0] = srcIndexes[baseIndex + 0];
+            srcIndex[1] = srcIndexes[baseIndex + 1];
+            srcIndex[2] = srcIndexes[baseIndex + 2];
+            int insideIndex[3] = { -1, -1, -1 };
+
+            srcToInsideVertIndex.Get(srcIndex[0], &insideIndex[0]);
+            srcToInsideVertIndex.Get(srcIndex[1], &insideIndex[1]);
+            srcToInsideVertIndex.Get(srcIndex[2], &insideIndex[2]);
+
+            // If all verts is inside of plane
+            if (insideIndex[0] >= 0 && insideIndex[1] >= 0 && insideIndex[2] >= 0) {
+                tempInsideIndexes.Append(insideIndex[0]);
+                tempInsideIndexes.Append(insideIndex[1]);
+                tempInsideIndexes.Append(insideIndex[2]);
+            } else if (insideIndex[0] < 0 && insideIndex[1] < 0 && insideIndex[2] < 0) {
+                if (generateOtherMesh) {
+                    int outsideIndex[3] = { -1, -1, -1 };
+                    srcToOutsideVertIndex.Get(srcIndex[0], &outsideIndex[0]);
+                    srcToOutsideVertIndex.Get(srcIndex[1], &outsideIndex[1]);
+                    srcToOutsideVertIndex.Get(srcIndex[2], &outsideIndex[2]);
+
+                    tempOutsideIndexes.Append(outsideIndex[0]);
+                    tempOutsideIndexes.Append(outsideIndex[1]);
+                    tempOutsideIndexes.Append(outsideIndex[2]);
+                }
+            } else {
+                TriIndex insideTriFan[4];
+                int numInsideTriFanIndex = 0;
+
+                TriIndex outsideTriFan[4];
+                int numOutsideTriFanIndex = 0;
+
+                // If partially being inside of plane, clip to create 1 or 2 new triangles.
+                for (int i = 0; i < 3; i++) {
+                    int localCurrentVertex = i % 3;
+                    int localNextVertex = (localCurrentVertex + 1) % 3;
+                    bool shouldSlice;
+
+                    if (insideIndex[localCurrentVertex] >= 0) {
+                        insideTriFan[numInsideTriFanIndex++] = insideIndex[localCurrentVertex];
+
+                        shouldSlice = insideIndex[localNextVertex] < 0;
+                    } else {
+                        if (generateOtherMesh) {
+                            int outsideIndex = -1;
+                            srcToOutsideVertIndex.Get(srcIndex[localCurrentVertex], &outsideIndex);
+                            outsideTriFan[numOutsideTriFanIndex++] = outsideIndex;
+                        }
+
+                        shouldSlice = insideIndex[localNextVertex] >= 0;
+                    }
+
+                    if (shouldSlice) {
+                        int currentVertexIndex = srcIndex[localCurrentVertex];
+                        int nextVertexIndex = srcIndex[localNextVertex];
+
+                        float currentVertexDist = vertexDistances[currentVertexIndex];
+                        float nextVertexdist = vertexDistances[nextVertexIndex];
+                        float t = currentVertexDist / (currentVertexDist - nextVertexdist);
+
+                        const VertexGenericLit *v0 = &srcVerts[currentVertexIndex];
+                        const VertexGenericLit *v1 = &srcVerts[nextVertexIndex];
+
+                        VertexGenericLit clippedVertex;
+                        clippedVertex.SetPosition(Math::Lerp(v0->GetPosition(), v1->GetPosition(), t));
+                        clippedVertex.SetTexCoord(Math::Lerp(v0->GetTexCoord(), v1->GetTexCoord(), t));
+                        clippedVertex.SetFloatColor(Math::Lerp(v0->GetFloatColor(), v1->GetFloatColor(), t));
+
+                        TriIndex insideClippedVertexIndex = tempInsideVerts.Append(clippedVertex);
+                        insideTriFan[numInsideTriFanIndex++] = insideClippedVertexIndex;
+
+                        if (generateOtherMesh) {
+                             outsideTriFan[numOutsideTriFanIndex++] = tempOutsideVerts.Append(clippedVertex);
+                        }
+
+                        // TODO: Optimization
+                        bool foundSameClippedVertex = false;
+                        for (int clippedVertIndex = 0; clippedVertIndex < clippedVerts.Count(); clippedVertIndex++) {
+                            if (clippedVerts[clippedVertIndex].Equals(clippedVertex.GetPosition(), 0.00001f)) {
+                                foundSameClippedVertex = true;
+                                break;
+                            }
+                        }
+                        if (!foundSameClippedVertex) {
+                            clippedVerts.Append(clippedVertex.GetPosition());
+                        }
+                    }
+                }
+
+                tempInsideIndexes.Append(insideTriFan[0]);
+                tempInsideIndexes.Append(insideTriFan[1]);
+                tempInsideIndexes.Append(insideTriFan[2]);
+
+                if (numInsideTriFanIndex > 3) {
+                    tempInsideIndexes.Append(insideTriFan[0]);
+                    tempInsideIndexes.Append(insideTriFan[2]);
+                    tempInsideIndexes.Append(insideTriFan[3]);
+                }
+
+                if (generateOtherMesh) {
+                    tempOutsideIndexes.Append(outsideTriFan[0]);
+                    tempOutsideIndexes.Append(outsideTriFan[1]);
+                    tempOutsideIndexes.Append(outsideTriFan[2]);
+
+                    if (numOutsideTriFanIndex > 3) {
+                        tempOutsideIndexes.Append(outsideTriFan[0]);
+                        tempOutsideIndexes.Append(outsideTriFan[2]);
+                        tempOutsideIndexes.Append(outsideTriFan[3]);
+                    }
+                }
+            }
+        }
+
+        if (generateCap) {
+            if (clippedVerts.Count() >= 3) {
+                Vec3 planeOrigin = clippedVerts[0];
+                Vec3 planeXAxis, planeYAxis;
+                slicePlane.normal.OrthogonalBasis(planeXAxis, planeYAxis);
+                planeXAxis = -planeXAxis;
+
+                // pointsOnPlane has same order with clippedVerts.
+                Array<Vec2> pointsOnPlane;
+                pointsOnPlane.SetCount(clippedVerts.Count());
+
+                for (int i = 0; i < clippedVerts.Count(); i++) {
+                    Vec3 offset = clippedVerts[i] - planeOrigin;
+                    pointsOnPlane[i].x = planeXAxis.Dot(offset);
+                    pointsOnPlane[i].y = planeYAxis.Dot(offset);
+                }
+
+                int insideCapBaseVertex = tempInsideVerts.Count();
+                int outsideCapBaseVertex = tempOutsideVerts.Count();
+
+                IDelaBella2<float> *idb = IDelaBella2<float>::Create();
+                int numTriangulatedVerts = idb->Triangulate(pointsOnPlane.Count(), &pointsOnPlane[0].x, &pointsOnPlane[0].y, sizeof(Vec2));
+                if (numTriangulatedVerts > 0) {
+                    for (int i = 0; i < clippedVerts.Count(); i++) {
+                        const IDelaBella2<float>::Vertex *v = idb->GetVertexByIndex(i);
+
+                        VertexGenericLit capVertex;
+                        capVertex.SetPosition(clippedVerts[v->i]);
+                        tempInsideVerts.Append(capVertex);
+
+                        if (generateOtherMesh) {
+                            tempOutsideVerts.Append(capVertex);
+                        }
+                    }
+
+                    const IDelaBella2<float>::Simplex *dela = idb->GetFirstDelaunaySimplex();
+                    int numTriangulatedTris = idb->GetNumPolygons();
+
+                    for (int i = 0; i < numTriangulatedTris; i++) {
+                        tempInsideIndexes.Append(insideCapBaseVertex + dela->v[0]->i);
+                        tempInsideIndexes.Append(insideCapBaseVertex + dela->v[1]->i);
+                        tempInsideIndexes.Append(insideCapBaseVertex + dela->v[2]->i);
+
+                        if (generateOtherMesh) {
+                            tempOutsideIndexes.Append(outsideCapBaseVertex + dela->v[2]->i);
+                            tempOutsideIndexes.Append(outsideCapBaseVertex + dela->v[1]->i);
+                            tempOutsideIndexes.Append(outsideCapBaseVertex + dela->v[0]->i);
+                        }
+                        dela = dela->next;
+                    }
+                }
+                idb->Destroy();
+            }
+        }
+
+        if (tempInsideVerts.Count() > 0 && tempInsideIndexes.Count() > 0) {
+            MeshSurf *surf = outSlicedMesh->AllocSurface(tempInsideVerts.Count(), tempInsideIndexes.Count());
+            surf->materialIndex = srcSurf->materialIndex;
+            outSlicedMesh->surfaces.Append(surf);
+
+            simdProcessor->Memcpy(surf->subMesh->verts, tempInsideVerts.Ptr(), sizeof(tempInsideVerts[0]) * tempInsideVerts.Count());
+            simdProcessor->Memcpy(surf->subMesh->indexes, tempInsideIndexes.Ptr(), sizeof(tempInsideIndexes[0]) * tempInsideIndexes.Count());
+        }
+
+        if (tempOutsideVerts.Count() > 0 && tempOutsideIndexes.Count() > 0) {
+            MeshSurf *surf = outOtherMesh->AllocSurface(tempOutsideVerts.Count(), tempOutsideIndexes.Count());
+            surf->materialIndex = srcSurf->materialIndex;
+            outOtherMesh->surfaces.Append(surf);
+
+            simdProcessor->Memcpy(surf->subMesh->verts, tempOutsideVerts.Ptr(), sizeof(tempOutsideVerts[0]) * tempOutsideVerts.Count());
+            simdProcessor->Memcpy(surf->subMesh->indexes, tempOutsideIndexes.Ptr(), sizeof(tempOutsideIndexes[0]) * tempOutsideIndexes.Count());
+        }
+    }
+
+    if (outSlicedMesh->surfaces.Count() == 0) {
+        return false;
+    }
+    outSlicedMesh->FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeNormals | FinishFlag::ComputeTangents | FinishFlag::UseUnsmoothedTangents);
+
+    if (generateOtherMesh) {
+        outOtherMesh->FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeNormals | FinishFlag::ComputeTangents | FinishFlag::UseUnsmoothedTangents);
+    }
+
+    return true;
 }
 
 BE_NAMESPACE_END

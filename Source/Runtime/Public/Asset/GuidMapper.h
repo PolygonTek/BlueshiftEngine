@@ -87,6 +87,8 @@ public:
     static Guid             geoSphereMeshGuid;
     static Guid             cylinderMeshGuid;
     static Guid             capsuleMeshGuid;
+    static Guid             roundedBoxMeshGuid;
+    //static Guid             testSlicedMeshGuid;
 
     static Guid             defaultParticleSystemGuid;
 

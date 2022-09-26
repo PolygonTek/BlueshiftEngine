@@ -65,8 +65,11 @@ struct BE_API VertexGeneric {
     void            SetTexCoordS(float s);
     void            SetTexCoordT(float t);
 
-    void            SetColor(uint32_t color);
     uint32_t        GetColor() const;
+    void            SetColor(uint32_t color);
+
+    Color4          GetFloatColor() const { return Color4::FromUInt32(GetColor()); }
+    void            SetFloatColor(const Color4 &rgba) { SetColor(rgba.ToUInt32()); }
 
     void            Lerp(const VertexGeneric &a, const VertexGeneric &b, const float f);
 

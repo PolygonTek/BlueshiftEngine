@@ -172,7 +172,7 @@ public:
     bool                Get(const KeyT &key, ValueT *value = nullptr) const;
 
                         /// Adds key / value. If the key already exists, only the value will be changed.
-    void                Set(const KeyT &key, ValueT &value);
+    void                Set(const KeyT &key, const ValueT &value);
     
                         /// Searches by key and return value reference. If not, add a new bucket and return a reference
     ValueT &            operator[](const KeyT &key);
@@ -290,7 +290,7 @@ BE_INLINE bool HashTable<KeyT, ValueT, BucketGranularity>::Get(const KeyT &key, 
 }
 
 template <typename KeyT, typename ValueT, int BucketGranularity>
-BE_INLINE void HashTable<KeyT, ValueT, BucketGranularity>::Set(const KeyT &key, ValueT &value) {
+BE_INLINE void HashTable<KeyT, ValueT, BucketGranularity>::Set(const KeyT &key, const ValueT &value) {
     int hash = THashBucket::GenerateHash(key, tableSizeMask);
     THashBucket **nextPtr = &(heads[hash]);
     THashBucket *node;

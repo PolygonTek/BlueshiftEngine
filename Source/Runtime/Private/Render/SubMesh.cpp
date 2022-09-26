@@ -171,6 +171,25 @@ void SubMesh::FreeSubMesh() {
     }
 }
 
+void SubMesh::CopyFrom(const SubMesh *other) {
+    if (!alloced) {
+        BE_ERRLOG("SubMesh::CopyFrom: Should be allocated first");
+        return;
+    }
+
+    if (numVerts != other->numVerts || numIndexes != other->numIndexes) {
+        BE_ERRLOG("SubMesh::CopyFrom: different verts and indices count with source sub mesh");
+        return;
+    }
+
+    tangentsCalculated = other->tangentsCalculated;
+    normalsCalculated = other->normalsCalculated;
+    edgesCalculated = false;
+
+    simdProcessor->Memcpy(verts, other->verts, sizeof(verts[0]) * other->numVerts);
+    simdProcessor->Memcpy(indexes, other->indexes, sizeof(indexes[0]) * other->numIndexes);
+}
+
 void SubMesh::CacheStaticDataToGpu() {
     // Fill in static vertex buffer.
     if (!bufferCacheManager.IsCached(vertexCache)) {

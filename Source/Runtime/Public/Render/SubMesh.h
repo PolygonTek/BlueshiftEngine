@@ -83,6 +83,9 @@ public:
 
     bool                    IsShared(const SubMesh *other) const { return refSubMesh == other->refSubMesh; }
 
+                            /// Copy sub mesh data. Should be allocated first.
+    void                    CopyFrom(const SubMesh *other);
+
     int                     NumVerts() const { return numVerts; }
     int                     NumOriginalVerts() const { return numVerts - numMirroredVerts; }
 
@@ -170,7 +173,7 @@ private:
     bool                    useGpuSkinning;
     int                     gpuSkinningVersionIndex;    // 0: VertexWeight1, 1: VertexWeight4, 2: VertexWeight8
 
-    AABB                    aabb;                       // AABB in local submesh space
+    AABB                    aabb;                       // AABB in local space of mesh
 
     BufferCache *           vertexCache;
     BufferCache *           indexCache;

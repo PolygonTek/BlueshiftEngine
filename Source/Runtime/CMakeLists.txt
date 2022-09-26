@@ -1035,7 +1035,8 @@ target_link_libraries(${PROJECT_NAME}
     STB
     luasocket
     LuaCpp
-    NvTriStrip)
+    NvTriStrip
+    delabella)
 
 if (USE_LUAJIT)
     target_include_directories(${PROJECT_NAME} PUBLIC ${ENGINE_INCLUDE_DIR}/ThirdParty/luaJIT/src)

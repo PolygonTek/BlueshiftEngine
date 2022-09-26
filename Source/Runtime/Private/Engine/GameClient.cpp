@@ -157,6 +157,8 @@ void GameClient::InitDefaultGuids() {
     resourceGuidMapper.Set(GuidMapper::geoSphereMeshGuid, "_defaultGeoSphereMesh");
     resourceGuidMapper.Set(GuidMapper::cylinderMeshGuid, "_defaultCylinderMesh");
     resourceGuidMapper.Set(GuidMapper::capsuleMeshGuid, "_defaultCapsuleMesh");
+    resourceGuidMapper.Set(GuidMapper::roundedBoxMeshGuid, "_defaultRoundedBoxMesh");
+    //resourceGuidMapper.Set(GuidMapper::testSlicedMeshGuid, "_testSlicedMesh");
     resourceGuidMapper.Set(GuidMapper::defaultParticleSystemGuid, "_defaultParticleSystem");
     resourceGuidMapper.Set(GuidMapper::defaultAnimControllerGuid, "_defaultAnimController");
     resourceGuidMapper.Set(GuidMapper::defaultSoundGuid, "_defaultSound");

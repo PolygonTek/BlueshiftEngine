@@ -62,6 +62,8 @@ Guid        GuidMapper::sphereMeshGuid(0, 0, 0, 404);
 Guid        GuidMapper::geoSphereMeshGuid(0, 0, 0, 405);
 Guid        GuidMapper::cylinderMeshGuid(0, 0, 0, 406);
 Guid        GuidMapper::capsuleMeshGuid(0, 0, 0, 407);
+Guid        GuidMapper::roundedBoxMeshGuid(0, 0, 0, 408);
+//Guid        GuidMapper::testSlicedMeshGuid(0, 0, 0, 409);
 // predefined particle system GUID
 Guid        GuidMapper::defaultParticleSystemGuid(0, 0, 0, 500);
 // predefined skeleton GUID

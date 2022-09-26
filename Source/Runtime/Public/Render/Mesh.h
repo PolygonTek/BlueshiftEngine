@@ -147,7 +147,9 @@ public:
     void                    CreateGeosphere(const Vec3 &origin, float radius, int numSubdivisions);
     void                    CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, float height, int numSegments);
     void                    CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, float height, int numSegments);
-    void                    CreateRoundedBox(const Vec3 &origin, const Vec3 extents, float radius, int numSubdivisions);
+    void                    CreateRoundedBox(const Vec3 &origin, const Mat3 &axis, const Vec3 extents, float radius, int numSubdivisions);
+
+    static bool             TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool generateCap, bool generateOtherMesh, Mesh *outSlicedMesh, Mesh *outOtherMesh);
 
     bool                    Load(const char *filename);
     bool                    Reload();
@@ -237,6 +239,8 @@ public:
     static Mesh *           defaultGeoSphereMesh;
     static Mesh *           defaultCylinderMesh;
     static Mesh *           defaultCapsuleMesh;
+    static Mesh *           defaultRoundedBoxMesh;
+    //static Mesh *           testSlicedMesh;
 
 private:
     static void             Cmd_ListMeshes(const CmdArgs &args);
