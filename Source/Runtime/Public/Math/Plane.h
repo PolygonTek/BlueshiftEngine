@@ -29,7 +29,7 @@
 
 BE_NAMESPACE_BEGIN
 
-#define ON_EPSILON                  0.1f
+#define ON_EPSILON                  0.001f
 #define DEGENERATE_DIST_EPSILON     1e-4f
 
 class Ray;
