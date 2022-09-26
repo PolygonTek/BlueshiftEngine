@@ -763,20 +763,20 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                         }
                     }
 
-                    const IDelaBella2<float>::Simplex *dela = idb->GetFirstDelaunaySimplex();
+                    const IDelaBella2<float>::Simplex *simplex = idb->GetFirstDelaunaySimplex();
                     int numTriangulatedTris = idb->GetNumPolygons();
 
                     for (int i = 0; i < numTriangulatedTris; i++) {
-                        tempInsideIndexes.Append(insideCapBaseVertex + dela->v[0]->i);
-                        tempInsideIndexes.Append(insideCapBaseVertex + dela->v[1]->i);
-                        tempInsideIndexes.Append(insideCapBaseVertex + dela->v[2]->i);
+                        tempInsideIndexes.Append(insideCapBaseVertex + simplex->v[0]->i);
+                        tempInsideIndexes.Append(insideCapBaseVertex + simplex->v[1]->i);
+                        tempInsideIndexes.Append(insideCapBaseVertex + simplex->v[2]->i);
 
                         if (generateOtherMesh) {
-                            tempOutsideIndexes.Append(outsideCapBaseVertex + dela->v[2]->i);
-                            tempOutsideIndexes.Append(outsideCapBaseVertex + dela->v[1]->i);
-                            tempOutsideIndexes.Append(outsideCapBaseVertex + dela->v[0]->i);
+                            tempOutsideIndexes.Append(outsideCapBaseVertex + simplex->v[2]->i);
+                            tempOutsideIndexes.Append(outsideCapBaseVertex + simplex->v[1]->i);
+                            tempOutsideIndexes.Append(outsideCapBaseVertex + simplex->v[0]->i);
                         }
-                        dela = dela->next;
+                        simplex = simplex->next;
                     }
                 }
                 idb->Destroy();

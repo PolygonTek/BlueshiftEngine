@@ -119,7 +119,7 @@ void LuaVM::RegisterEntity(LuaCpp::Module &module) {
         "text_renderer", static_cast<ComTextRenderer*(Entity::*)()const>(&Entity::GetComponent<ComTextRenderer>),
         "text", static_cast<ComText*(Entity::*)()const>(&Entity::GetComponent<ComText>),
         "image", static_cast<ComImage*(Entity::*)()const>(&Entity::GetComponent<ComImage>),
-        "particle_system", static_cast<ComParticleSystem*(Entity::*)()const>(&Entity::GetComponent<ComParticleSystem>),        
+        "particle_system", static_cast<ComParticleSystem*(Entity::*)()const>(&Entity::GetComponent<ComParticleSystem>),
         "audio_source", static_cast<ComAudioSource*(Entity::*)()const>(&Entity::GetComponent<ComAudioSource>),
         "audio_listener", static_cast<ComAudioListener*(Entity::*)()const>(&Entity::GetComponent<ComAudioListener>),
         "spline", static_cast<ComSpline*(Entity::*)()const>(&Entity::GetComponent<ComSpline>),
