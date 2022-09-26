@@ -42,11 +42,11 @@ public:
 
     virtual const AABB      GetAABB() const override;
 
+    virtual void            CreateCollider() = 0;
+
     Collider *              GetCollider() const { return collider; }
 
 protected:
-    virtual void            CreateCollider() = 0;
-
     Str                     material; // TODO: implement physics material
     Collider *              collider = nullptr;
 };

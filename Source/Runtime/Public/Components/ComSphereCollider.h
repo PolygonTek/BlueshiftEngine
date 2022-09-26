@@ -37,6 +37,8 @@ public:
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
+    virtual void            CreateCollider() override;
+
     Vec3                    GetCenter() const { return center; }
     void                    SetCenter(const Vec3 &center);
 
@@ -44,8 +46,6 @@ public:
     void                    SetRadius(float radius);
 
 protected:
-    virtual void            CreateCollider() override;
-
     Vec3                    center;     ///< Local center position in system units
     float                   radius;     ///< Radius in system units
 };

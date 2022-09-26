@@ -22,6 +22,8 @@ void LuaVM::RegisterColliderComponent(LuaCpp::Module &module) {
     LuaCpp::Selector _ComCollider = module["ComCollider"];
 
     _ComCollider.SetClass<ComCollider>(module["Component"]);
+    _ComCollider.AddClassMembers<ComCollider>(
+        "create_collider", &ComCollider::CreateCollider);
 
     _ComCollider["meta_object"] = ComCollider::metaObject;
 }

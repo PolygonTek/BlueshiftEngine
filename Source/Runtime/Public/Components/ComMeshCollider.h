@@ -33,12 +33,12 @@ public:
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
+    virtual void            CreateCollider() override;
+
     Guid                    GetMeshGuid() const { return meshGuid; }
     void                    SetMeshGuid(const Guid &meshGuid);
 
 protected:
-    virtual void            CreateCollider() override;
-
     Guid                    meshGuid;
     bool                    convex;
 };
