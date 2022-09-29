@@ -680,6 +680,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
 
                         VertexGenericLit clippedVertex;
                         clippedVertex.SetPosition(Math::Lerp(v0->GetPosition(), v1->GetPosition(), t));
+                        clippedVertex.SetNormal(Math::Lerp(v0->GetNormal(), v1->GetNormal(), t));
                         clippedVertex.SetTexCoord(Math::Lerp(v0->GetTexCoord(), v1->GetTexCoord(), t));
                         clippedVertex.SetFloatColor(Math::Lerp(v0->GetFloatColor(), v1->GetFloatColor(), t));
 
@@ -687,7 +688,9 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                         insideTriFan[numInsideTriFanIndex++] = insideClippedVertexIndex;
 
                         if (generateOtherMesh) {
-                             outsideTriFan[numOutsideTriFanIndex++] = tempOutsideVerts.Append(clippedVertex);
+                            // Invert normal direction for the other side.
+                            clippedVertex.SetNormal(-clippedVertex.GetNormal());
+                            outsideTriFan[numOutsideTriFanIndex++] = tempOutsideVerts.Append(clippedVertex);
                         }
 
                         // TODO: Optimization
@@ -756,6 +759,8 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
 
                         VertexGenericLit capVertex;
                         capVertex.SetPosition(clippedVerts[v->i]);
+                        capVertex.SetNormal(slicePlane.normal);
+                        //capVertex.SetTexCoord();
                         tempInsideVerts.Append(capVertex);
 
                         if (generateOtherMesh) {
@@ -805,10 +810,10 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
     if (outSlicedMesh->surfaces.Count() == 0) {
         return false;
     }
-    outSlicedMesh->FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeNormals | FinishFlag::ComputeTangents | FinishFlag::UseUnsmoothedTangents);
+    outSlicedMesh->FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
 
     if (generateOtherMesh) {
-        outOtherMesh->FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeNormals | FinishFlag::ComputeTangents | FinishFlag::UseUnsmoothedTangents);
+        outOtherMesh->FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
     }
 
     return true;
