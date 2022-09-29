@@ -109,7 +109,7 @@ void ComSensor::CreateSensor() {
     physicsDesc.origin = transform->GetOrigin();
     physicsDesc.axis = transform->GetAxis();
 
-    // Collect collider shadpes in this entity
+    // Collect collider shapes in this entity.
     ComponentPtrArray colliders = entity->GetComponents(&ComCollider::metaObject);
     if (colliders.Count() > 0) {
         for (int i = 0; i < colliders.Count(); i++) {
@@ -125,7 +125,7 @@ void ComSensor::CreateSensor() {
         }
     }
 
-    // Collect collider shapes in children recursively
+    // Collect collider shapes in children recursively.
     for (Entity *childEntity = entity->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
         AddChildShapeRecursive(transform->GetMatrixNoScale().InverseOrthogonalNoScale(), childEntity, physicsDesc.shapes);
     }
