@@ -474,6 +474,10 @@ bool Collider::Load(const char *filename, bool convexHull, const Vec3 &scale) {
 }
 
 bool Collider::Reload() {
+    if (unnamedIndex >= 0) {
+        return false;
+    }
+
     Str _name = name;
 
     // remove mangled name <CH>
