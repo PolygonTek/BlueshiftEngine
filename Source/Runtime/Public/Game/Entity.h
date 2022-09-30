@@ -255,7 +255,7 @@ public:
     bool                        IntersectRay(const Ray &ray, bool backFaceCull, float &lastDist) const;
 
                                 /// Creates an entity by JSON text.
-    static Entity *             CreateEntity(Json::Value &data, GameWorld *gameWorld = nullptr, int sceneIndex = 0);
+    static Entity *             CreateEntity(const Json::Value &data, GameWorld *gameWorld = nullptr, int sceneIndex = 0);
 
                                 /// Makes copy of JSON value of an entity and then replace each GUIDs of entity/components to the new ones.
     static Json::Value          CloneEntityValue(const Json::Value &entityValue, HashTable<Guid, Guid> &oldToNewGuidMap);

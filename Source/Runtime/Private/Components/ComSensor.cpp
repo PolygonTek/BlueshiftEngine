@@ -126,7 +126,7 @@ void ComSensor::CreateSensor() {
     }
 
     // Collect collider shapes in children recursively.
-    for (Entity *childEntity = entity->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
+    for (const Entity *childEntity = entity->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
         AddChildShapeRecursive(transform->GetMatrixNoScale().InverseOrthogonalNoScale(), childEntity, physicsDesc.shapes);
     }
 

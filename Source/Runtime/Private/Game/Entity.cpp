@@ -823,7 +823,7 @@ void Entity::SetSelectable(bool selectable) {
 }
 #endif
 
-Entity *Entity::CreateEntity(Json::Value &entityValue, GameWorld *gameWorld, int sceneNum) {
+Entity *Entity::CreateEntity(const Json::Value &entityValue, GameWorld *gameWorld, int sceneNum) {
     Guid entityGuid = Guid::FromString(entityValue.get("guid", Guid::zero.ToString()).asCString());
     if (entityGuid.IsZero()) {
         entityGuid = Guid::CreateGuid();
