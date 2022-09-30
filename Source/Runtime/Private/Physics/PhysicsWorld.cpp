@@ -335,13 +335,13 @@ bool PhysicsWorld::RayCast(const Vec3 &start, const Vec3 &end, int mask, CastRes
     return ClosestRayTest(nullptr, start, end, internalGroup, internalMask, trace);
 }
 
-bool PhysicsWorld::RayCastAll(const Vec3 &start, const Vec3 &end, int mask, Array<CastResult> &resultArray) const {
+bool PhysicsWorld::RayCastAll(const Vec3 &start, const Vec3 &end, int mask, Array<CastResult> &traceList) const {
     int internalGroup = btBroadphaseProxy::DefaultFilter;
     int internalMask = (mask & ~1) << 5;
     if (mask & BIT(0)) { // & BIT(TagLayerSettings::DefaultLayer)
         internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
     }
-    return AllHitsRayTest(nullptr, start, end, internalGroup, internalMask, resultArray);
+    return AllHitsRayTest(nullptr, start, end, internalGroup, internalMask, traceList);
 }
 
 bool PhysicsWorld::BoxCast(const Vec3 &boxCenter, const Vec3 &boxExtents, const Mat3& axis, const Vec3 &end, int mask, CastResult &trace) const {
@@ -361,6 +361,23 @@ bool PhysicsWorld::BoxCast(const Vec3 &boxCenter, const Vec3 &boxExtents, const 
     return ClosestConvexTest(nullptr, static_cast<btConvexShape *>(&boxShape), shapeTransform, axis, boxCenter, end, internalGroup, internalMask, trace);
 }
 
+bool PhysicsWorld::BoxCastAll(const Vec3 &boxCenter, const Vec3 &boxExtents, const Mat3 &axis, const Vec3 &end, int mask, Array<CastResult> &traceList) const {
+    int internalGroup = btBroadphaseProxy::DefaultFilter;
+    int internalMask = (mask & ~1) << 5;
+    if (mask & BIT(0)) { // & BIT(TagLayerSettings::DefaultLayer)
+        internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+    }
+
+    btTransform shapeTransform;
+    shapeTransform.setIdentity();
+    shapeTransform.setOrigin(btVector3(0, 0, 0));
+
+    btVector3 halfExtents = ToBtVector3(SystemUnitToPhysicsUnit(boxExtents));
+    btBoxShape boxShape(halfExtents);
+
+    return AllHitsConvexTest(nullptr, static_cast<btConvexShape *>(&boxShape), shapeTransform, axis, boxCenter, end, internalGroup, internalMask, traceList);
+}
+
 bool PhysicsWorld::SphereCast(const Vec3 &sphereCenter, float sphereRadius, const Vec3 &end, int mask, CastResult &trace) const {
     int internalGroup = btBroadphaseProxy::DefaultFilter;
     int internalMask = (mask & ~1) << 5;
@@ -375,6 +392,22 @@ bool PhysicsWorld::SphereCast(const Vec3 &sphereCenter, float sphereRadius, cons
     btSphereShape sphereShape(sphereRadius);
 
     return ClosestConvexTest(nullptr, static_cast<btConvexShape *>(&sphereShape), shapeTransform, Mat3::identity, sphereCenter, end, internalGroup, internalMask, trace);
+}
+
+bool PhysicsWorld::SphereCastAll(const Vec3 &sphereCenter, float sphereRadius, const Vec3 &end, int mask, Array<CastResult> &traceList) const {
+    int internalGroup = btBroadphaseProxy::DefaultFilter;
+    int internalMask = (mask & ~1) << 5;
+    if (mask & BIT(0)) { // & BIT(TagLayerSettings::DefaultLayer)
+        internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+    }
+
+    btTransform shapeTransform;
+    shapeTransform.setIdentity();
+    shapeTransform.setOrigin(btVector3(0, 0, 0));
+
+    btSphereShape sphereShape(sphereRadius);
+
+    return AllHitsConvexTest(nullptr, static_cast<btConvexShape *>(&sphereShape), shapeTransform, Mat3::identity, sphereCenter, end, internalGroup, internalMask, traceList);
 }
 
 bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider, const Mat3 &axis, const Vec3 &start, const Vec3 &end, int mask, CastResult &trace) const {
@@ -409,6 +442,41 @@ bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider
     }
 
     return ClosestConvexTest(me ? me->collisionObject : nullptr, static_cast<btConvexShape *>(shape), shapeTransform, axis, start, end, internalGroup, internalMask, trace);
+}
+
+bool PhysicsWorld::ConvexCastAll(const PhysCollidable *me, const Collider *collider, const Mat3 &axis, const Vec3 &start, const Vec3 &end, int mask, Array<CastResult> &traceList) const {
+    btTransform shapeTransform;
+
+    btCollisionShape *shape = collider->shape;
+    if (shape->isCompound()) {
+        btCompoundShape *compoundShape = static_cast<btCompoundShape *>(shape);
+        if (compoundShape->getNumChildShapes() != 1) {
+            BE_WARNLOG("PhysicsWorld::ConvexCast: multiple compound shape is not allowed\n");
+            return false;
+        }
+
+        shape = compoundShape->getChildShape(0);
+        shapeTransform = compoundShape->getChildTransform(0).inverse();
+    }
+    else {
+        const Vec3 centroid = collider->GetCentroid();
+
+        shapeTransform.setIdentity();
+        shapeTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(centroid)));
+    }
+
+    if (!shape->isConvex()) {
+        BE_WARNLOG("PhysicsWorld::ConvexCast: non convex collision shape is not allowed\n");
+        return false;
+    }
+
+    int internalGroup = me ? (((BIT(me->collisionFilterBit) & ~1) << 5) | (BIT(me->collisionFilterBit) & 1)) : btBroadphaseProxy::DefaultFilter;
+    int internalMask = (mask & ~1) << 5;
+    if (mask & BIT(0)) { // & BIT(TagLayerSettings::DefaultLayer)
+        internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+    }
+
+    return AllHitsConvexTest(me ? me->collisionObject : nullptr, static_cast<btConvexShape *>(shape), shapeTransform, axis, start, end, internalGroup, internalMask, traceList);
 }
 
 void PhysicsWorld::OverlapShape(btCollisionObject *collisionObject, int filterGroup, int filterMask, Array<PhysCollidable *> &colliders) const {
@@ -491,11 +559,10 @@ bool PhysicsWorld::ClosestRayTest(const btCollisionObject *me, const Vec3 &origi
         }
         return true;
     }
-
     return false;
 }
 
-bool PhysicsWorld::AllHitsRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, Array<CastResult> &resultArray) const {
+bool PhysicsWorld::AllHitsRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, Array<CastResult> &traceList) const {
     class MyAllHitsRayResultCallback : public btCollisionWorld::AllHitsRayResultCallback {
     public:
         MyAllHitsRayResultCallback(const btCollisionObject *me, const btVector3 &rayFromWorld, const btVector3 &rayToWorld) : 
@@ -507,11 +574,12 @@ bool PhysicsWorld::AllHitsRayTest(const btCollisionObject *me, const Vec3 &origi
             if (rayResult.m_collisionObject == m_me) {
                 return 1.0f;
             }
-            m_localShapeInfo = rayResult.m_localShapeInfo;
+            m_localShapeInfo.push_back(rayResult.m_localShapeInfo);
+
             return AllHitsRayResultCallback::addSingleResult(rayResult, normalInWorldSpace);
         }
 
-        btCollisionWorld::LocalShapeInfo *m_localShapeInfo;
+        btAlignedObjectArray<btCollisionWorld::LocalShapeInfo *> m_localShapeInfo;
         const btCollisionObject *m_me;
     };
 
@@ -534,11 +602,11 @@ bool PhysicsWorld::AllHitsRayTest(const btCollisionObject *me, const Vec3 &origi
             trace.fraction = cb.m_hitFractions[i];
             trace.endPos = origin + trace.fraction * (dest - origin);
 
-            const btCollisionShape *shape = cb.m_collisionObject->getCollisionShape();
+            const btCollisionShape *shape = cb.m_collisionObjects[i]->getCollisionShape();
             if (shape) {
                 if (shape->getShapeType() == MULTIMATERIAL_TRIANGLE_MESH_PROXYTYPE) {
                     btMultimaterialTriangleMeshShape *_shape = (btMultimaterialTriangleMeshShape *)shape;
-                    const CollisionMaterial *props = (CollisionMaterial *)_shape->getMaterialProperties(cb.m_localShapeInfo->m_shapePart, cb.m_localShapeInfo->m_triangleIndex);
+                    const CollisionMaterial *props = (CollisionMaterial *)_shape->getMaterialProperties(cb.m_localShapeInfo[i]->m_shapePart, cb.m_localShapeInfo[i]->m_triangleIndex);
                     trace.surfaceFlags = props->surfaceFlags;
                 } else {
                     trace.surfaceFlags = 0;
@@ -546,8 +614,7 @@ bool PhysicsWorld::AllHitsRayTest(const btCollisionObject *me, const Vec3 &origi
             } else {
                 trace.surfaceFlags = 0;
             }
-
-            resultArray.Append(trace);
+            traceList.Append(trace);
         }
         return true;
     }
@@ -562,8 +629,8 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
 
     class MyClosestConvexResultCallback : public btCollisionWorld::ClosestConvexResultCallback {
     public:
-        MyClosestConvexResultCallback(const btCollisionObject *me, const btVector3 &rayFromWorld, const btVector3 &rayToWorld) : 
-            ClosestConvexResultCallback(rayFromWorld, rayToWorld) {
+        MyClosestConvexResultCallback(const btCollisionObject *me, const btVector3 &convexFromWorld, const btVector3 &convexToWorld) : 
+            ClosestConvexResultCallback(convexFromWorld, convexToWorld) {
                 m_me = me;
             }
 
@@ -572,8 +639,8 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
                 return 1.0f;
             }
 
-            const btCollisionShape *shape = convexResult.m_hitCollisionObject->getCollisionShape();
-            /*if (shape->getShapeType() == TRIANGLE_MESH_SHAPE_PROXYTYPE) {
+            /*const btCollisionShape *shape = convexResult.m_hitCollisionObject->getCollisionShape();
+            if (shape->getShapeType() == TRIANGLE_MESH_SHAPE_PROXYTYPE) {
                 const btTriangleMeshShape *triMeshShape = static_cast<const btTriangleMeshShape *>(shape);
                 const btTriangleIndexVertexArray *triIndexVertexArray = static_cast<const btTriangleIndexVertexArray *>(triMeshShape->getMeshInterface());
                 const btIndexedMesh &indexedMesh = triIndexVertexArray->getIndexedMeshArray()[convexResult.m_localShapeInfo->m_shapePart];
@@ -650,6 +717,99 @@ bool PhysicsWorld::ClosestConvexTest(const btCollisionObject *me, const btConvex
                 const CollisionMaterial *props = (CollisionMaterial *)_shape->getMaterialProperties(cb.m_localShapeInfo->m_shapePart, cb.m_localShapeInfo->m_triangleIndex);
                 trace.surfaceFlags = props->surfaceFlags;
             }
+        }
+        return true;
+    }
+    return false;
+}
+
+bool PhysicsWorld::AllHitsConvexTest(const btCollisionObject *me, const btConvexShape *convexShape, const btTransform &shapeTransform, const Mat3 &axis, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, Array<CastResult> &traceList) const {
+    class MyAllHitsConvexResultCallback : public btCollisionWorld::ConvexResultCallback {
+    public:
+        MyAllHitsConvexResultCallback(const btCollisionObject *me, const btVector3 &convexFromWorld, const btVector3 &convexToWorld) :
+            ConvexResultCallback() {
+            m_convexFromWorld = convexFromWorld;
+            m_convexToWorld = convexToWorld;
+            m_me = me;
+        }
+
+        virtual	btScalar addSingleResult(btCollisionWorld::LocalConvexResult &convexResult, bool normalInWorldSpace) {
+            if (convexResult.m_hitCollisionObject == m_me) {
+                return 1.0f;
+            }
+
+            m_localShapeInfo.push_back(convexResult.m_localShapeInfo);
+
+            m_collisionObjects.push_back(convexResult.m_hitCollisionObject);
+            btVector3 hitNormalWorld;
+            if (normalInWorldSpace)
+            {
+                hitNormalWorld = convexResult.m_hitNormalLocal;
+            }
+            else
+            {
+                ///need to transform normal into worldspace
+                hitNormalWorld = convexResult.m_hitCollisionObject->getWorldTransform().getBasis() * convexResult.m_hitNormalLocal;
+            }
+            m_hitNormalWorld.push_back(hitNormalWorld);
+            btVector3 hitPointWorld;
+            hitPointWorld.setInterpolate3(m_convexFromWorld, m_convexToWorld, convexResult.m_hitFraction);
+            m_hitPointWorld.push_back(hitPointWorld);
+            m_hitFractions.push_back(convexResult.m_hitFraction);
+            return m_closestHitFraction;
+        }
+
+        btVector3 m_convexFromWorld;
+        btVector3 m_convexToWorld;
+        btAlignedObjectArray<const btCollisionObject *> m_collisionObjects;
+        btAlignedObjectArray<btVector3> m_hitNormalWorld;
+        btAlignedObjectArray<btVector3> m_hitPointWorld;
+        btAlignedObjectArray<btScalar> m_hitFractions;
+        btAlignedObjectArray<btCollisionWorld::LocalShapeInfo *> m_localShapeInfo;
+        const btCollisionObject *m_me;
+    };
+
+    if (origin.DistanceSqr(dest) < Math::FloatEpsilon) {
+        return false;
+    }
+
+    btTransform fromTrans;
+    fromTrans = ToBtTransform(axis, SystemUnitToPhysicsUnit(origin));
+    fromTrans.mult(shapeTransform, fromTrans);
+
+    btTransform toTrans;
+    toTrans = ToBtTransform(axis, SystemUnitToPhysicsUnit(dest));
+    toTrans.mult(shapeTransform, toTrans);
+
+    MyAllHitsConvexResultCallback cb(me, fromTrans.getOrigin(), toTrans.getOrigin());
+
+    cb.m_collisionFilterGroup = filterGroup;
+    cb.m_collisionFilterMask = filterMask;
+
+    dynamicsWorld->convexSweepTest(convexShape, fromTrans, toTrans, cb, dynamicsWorld->getDispatchInfo().m_allowedCcdPenetration);
+
+    if (cb.hasHit()) {
+        for (int i = 0; i < cb.m_collisionObjects.size(); i++) {
+            CastResult trace;
+            trace.hitObject = (PhysCollidable *)(cb.m_collisionObjects[i]->getUserPointer());
+            trace.point = PhysicsUnitToSystemUnit(ToVec3(cb.m_hitPointWorld[i]));
+            trace.normal = ToVec3(cb.m_hitNormalWorld[i]);
+            trace.fraction = cb.m_hitFractions[i];
+            trace.endPos = origin + trace.fraction * (dest - origin);
+
+            const btCollisionShape *shape = cb.m_collisionObjects[i]->getCollisionShape();
+            if (shape) {
+                if (shape->getShapeType() == MULTIMATERIAL_TRIANGLE_MESH_PROXYTYPE) {
+                    btMultimaterialTriangleMeshShape *_shape = (btMultimaterialTriangleMeshShape *)shape;
+                    const CollisionMaterial *props = (CollisionMaterial *)_shape->getMaterialProperties(cb.m_localShapeInfo[i]->m_shapePart, cb.m_localShapeInfo[i]->m_triangleIndex);
+                    trace.surfaceFlags = props->surfaceFlags;
+                } else {
+                    trace.surfaceFlags = 0;
+                }
+            } else {
+                trace.surfaceFlags = 0;
+            }
+            traceList.Append(trace);
         }
         return true;
     }
