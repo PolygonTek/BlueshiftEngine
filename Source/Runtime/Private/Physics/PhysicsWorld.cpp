@@ -277,6 +277,61 @@ void PhysicsWorld::SetCollisionFilterMask(int bit, int mask) {
     filterMasks[bit] = mask;
 }
 
+bool PhysicsWorld::CheckBox(const Vec3 &boxCenter, const Vec3 &boxExtents, int mask) const {
+    Array<PhysCollidable *> colliders;
+    return OverlapBox(boxCenter, boxExtents, mask, colliders) > 0;
+}
+
+bool PhysicsWorld::CheckSphere(const Vec3 &sphereCenter, float sphereRadius, int mask) const {
+    Array<PhysCollidable *> colliders;
+    return OverlapSphere(sphereCenter, sphereRadius, mask, colliders) > 0;
+}
+
+int PhysicsWorld::OverlapBox(const Vec3 &boxCenter, const Vec3 &boxExtents, int mask, Array<PhysCollidable *> &colliders) const {
+    int internalGroup = btBroadphaseProxy::DefaultFilter;
+    int internalMask = (mask & ~1) << 5;
+    if (mask & BIT(0)) { // & BIT(TagLayerSettings::DefaultLayer)
+        internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+    }
+
+    btVector3 halfExtents = ToBtVector3(SystemUnitToPhysicsUnit(boxExtents));
+    btBoxShape *boxShape = new btBoxShape(halfExtents);
+    btTransform worldTransform(btMatrix3x3::getIdentity(), ToBtVector3(SystemUnitToPhysicsUnit(boxCenter)));
+
+    btCollisionObject *collisionObject = new btCollisionObject;
+    collisionObject->setCollisionShape(boxShape);
+    collisionObject->setWorldTransform(worldTransform);
+
+    OverlapShape(collisionObject, internalGroup, internalMask, colliders);
+
+    delete collisionObject;
+    delete boxShape;
+
+    return colliders.Count();
+}
+
+int PhysicsWorld::OverlapSphere(const Vec3 &sphereCenter, float sphereRadius, int mask, Array<PhysCollidable *> &colliders) const {
+    int internalGroup = btBroadphaseProxy::DefaultFilter;
+    int internalMask = (mask & ~1) << 5;
+    if (mask & BIT(0)) { // & BIT(TagLayerSettings::DefaultLayer)
+        internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+    }
+
+    btSphereShape *sphereShape = new btSphereShape(SystemUnitToPhysicsUnit(sphereRadius));
+    btTransform worldTransform(btMatrix3x3::getIdentity(), ToBtVector3(SystemUnitToPhysicsUnit(sphereCenter)));
+
+    btCollisionObject *collisionObject = new btCollisionObject;
+    collisionObject->setCollisionShape(sphereShape);
+    collisionObject->setWorldTransform(worldTransform);
+
+    OverlapShape(collisionObject, internalGroup, internalMask, colliders);
+
+    delete collisionObject;
+    delete sphereShape;
+
+    return colliders.Count();
+}
+
 bool PhysicsWorld::RayCast(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, int mask, CastResult &trace) const {
     int internalGroup = me ? (((BIT(me->collisionFilterBit) & ~1) << 5) | (BIT(me->collisionFilterBit) & 1)) : btBroadphaseProxy::DefaultFilter;
     int internalMask = (mask & ~1) << 5;
@@ -329,6 +384,30 @@ bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider
     }
 
     return ClosestConvexTest(me ? me->collisionObject : nullptr, static_cast<btConvexShape *>(shape), shapeTransform, axis, start, end, internalGroup, internalMask, trace);
+}
+
+void PhysicsWorld::OverlapShape(btCollisionObject *collisionObject, int filterGroup, int filterMask, Array<PhysCollidable *> &colliders) const {
+    class MyContactResultCallback : public btCollisionWorld::ContactResultCallback {
+    public:
+        virtual btScalar addSingleResult(btManifoldPoint &cp,
+            const btCollisionObjectWrapper *colObj0Wrap, int partId0, int index0,
+            const btCollisionObjectWrapper *colObj1Wrap, int partId1, int index1) {
+            const btCollisionObject *collisionObject = colObj1Wrap->getCollisionObject();
+            if (collisionObject->getUserPointer()) {
+                m_colliders->Append((PhysCollidable *)collisionObject->getUserPointer());
+            }
+            return 1.0f;
+        }
+
+        Array<PhysCollidable *> *m_colliders;
+    };
+
+    MyContactResultCallback cb;
+    cb.m_collisionFilterGroup = filterGroup;
+    cb.m_collisionFilterMask = filterMask;
+    cb.m_colliders = &colliders;
+
+    dynamicsWorld->contactTest(collisionObject, cb);
 }
 
 bool PhysicsWorld::ClosestRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, CastResult &trace) const {

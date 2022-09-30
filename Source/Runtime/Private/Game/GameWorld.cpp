@@ -434,7 +434,7 @@ Entity *GameWorld::InstantiateEntityWithTransform(const Entity *originalEntity, 
     return clonedEntity;
 }
 
-Entity *GameWorld::SpawnEntityFromJson(Json::Value &entityValue, int sceneIndex) {
+Entity *GameWorld::SpawnEntityFromJson(const Json::Value &entityValue, int sceneIndex) {
     const char *classname = entityValue["classname"].asCString();
     if (Str::Cmp(classname, Entity::metaObject.ClassName()) != 0) {
         BE_WARNLOG("GameWorld::SpawnEntityFromJson: Bad classname '%s' for entity\n", classname);
@@ -453,7 +453,7 @@ Entity *GameWorld::SpawnEntityFromJson(Json::Value &entityValue, int sceneIndex)
     return entity;
 }
 
-void GameWorld::SpawnEntitiesFromJson(Json::Value &entitiesValue, int sceneIndex) {
+void GameWorld::SpawnEntitiesFromJson(const Json::Value &entitiesValue, int sceneIndex) {
     for (int i = 0; i < entitiesValue.size(); i++) {
         Json::Value entityValue = entitiesValue[i];
 
@@ -949,6 +949,27 @@ Entity *GameWorld::RayCast(const Ray &ray, int layerMask) const {
     }
 
     return nullptr;
+}
+
+int GameWorld::OverlapSphere(const Sphere &sphere, int layerMask, Array<Entity *> &entities) const {
+    Array<PhysCollidable *> colliders;
+
+    GetPhysicsWorld()->OverlapSphere(sphere.center, sphere.radius, layerMask, colliders);
+
+    for (int i = 0; i < colliders.Count(); i++) {
+        const PhysCollidable *collidable = colliders[i];
+
+        if (!collidable->GetUserPointer()) {
+            continue;
+        }
+        ComRigidBody *rigidBodyComponent = (reinterpret_cast<Component *>(collidable->GetUserPointer()))->Cast<ComRigidBody>();
+        if (!rigidBodyComponent) {
+            continue;
+        }
+        entities.Append(rigidBodyComponent->GetEntity());
+    }
+    
+    return entities.Count();
 }
 
 void GameWorld::SaveSnapshot() {

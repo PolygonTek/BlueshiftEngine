@@ -118,7 +118,11 @@ public:
                                 /// Ray intersection test for all entities.
     Entity *                    IntersectRay(const Ray &ray, int layerMask, const Array<Entity *> &excludingEntities, float *scale) const;
 
+                                /// Returns an entity intersecting the ray.
     Entity *                    RayCast(const Ray &ray, int layerMask) const;
+
+                                /// Returns an array with all entities touching or inside the sphere.
+    int                         OverlapSphere(const Sphere &sphere, int layerMask, Array<Entity *> &entities) const;
 
                                 /// Render camera component from all registered entities.
     void                        RenderCamera();
@@ -167,8 +171,8 @@ public:
     Entity *                    InstantiateEntity(const Entity *originalEntity);
     Entity *                    InstantiateEntityWithTransform(const Entity *originalEntity, const Vec3 &origin, const Quat &rotation);
 
-    Entity *                    SpawnEntityFromJson(Json::Value &entityValue, int sceneIndex = 0);
-    void                        SpawnEntitiesFromJson(Json::Value &entitiesValue, int sceneIndex = 0);
+    Entity *                    SpawnEntityFromJson(const Json::Value &entityValue, int sceneIndex = 0);
+    void                        SpawnEntitiesFromJson(const Json::Value &entitiesValue, int sceneIndex = 0);
 
     void                        SaveSnapshot();
     void                        RestoreSnapshot();

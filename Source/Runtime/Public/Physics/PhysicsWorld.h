@@ -142,6 +142,16 @@ public:
     int                     GetCollisionFilterMask(int bit) const;
     void                    SetCollisionFilterMask(int bit, int mask);
 
+                            /// Returns true if there are any colliders overlapping the box
+    bool                    CheckBox(const Vec3 &boxCenter, const Vec3 &boxExtents, int mask) const;
+                            /// Returns true if there are any colliders overlapping the sphere.
+    bool                    CheckSphere(const Vec3 &sphereOrigin, float sphereRadius, int mask) const;
+
+                            /// Returns an array with all colliders touching or inside the box.
+    int                     OverlapBox(const Vec3 &boxCenter, const Vec3 &boxExtents, int mask, Array<PhysCollidable *> &colliders) const;
+                            /// Returns an array with all colliders touching or inside the sphere.
+    int                     OverlapSphere(const Vec3 &sphereCenter, float sphereRadius, int mask, Array<PhysCollidable *> &colliders) const;
+
     bool                    RayCast(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, int mask, CastResult &trace) const;
     bool                    RayCastAll(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, int mask, Array<CastResult> &traceList) const;
     bool                    ConvexCast(const PhysCollidable *me, const Collider *collider, const Mat3 &axis, const Vec3 &start, const Vec3 &end, int mask, CastResult &trace) const;
@@ -156,9 +166,11 @@ public:
 
 private:
     void                    ProcessCollision();
+    void                    OverlapShape(btCollisionObject *collisionObject, int filterGroup, int filterMask, Array<PhysCollidable *> &colliders) const;
     bool                    ClosestRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, CastResult &trace) const;
     bool                    AllHitsRayTest(const btCollisionObject *me, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, Array<CastResult> &traceList) const;
     bool                    ClosestConvexTest(const btCollisionObject *me, const btConvexShape *convexShape, const btTransform &shapeTransform, const Mat3 &axis, const Vec3 &origin, const Vec3 &dest, int filterGroup, int filterMask, CastResult &trace) const;
+
     void                    CheckModifiedCVars();
 
     float                   time = 0.0f;
