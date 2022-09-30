@@ -121,7 +121,9 @@ public:
                                 /// Returns an entity intersecting the ray.
     Entity *                    RayCast(const Ray &ray, int layerMask) const;
 
-                                /// Returns an array with all entities touching or inside the sphere.
+                                /// Returns an array with all rigid body entities touching or inside the OBB.
+    int                         OverlapOBB(const OBB &obb, int layerMask, Array<Entity *> &entities) const;
+                                /// Returns an array with all rigid body entities touching or inside the sphere.
     int                         OverlapSphere(const Sphere &sphere, int layerMask, Array<Entity *> &entities) const;
 
                                 /// Render camera component from all registered entities.

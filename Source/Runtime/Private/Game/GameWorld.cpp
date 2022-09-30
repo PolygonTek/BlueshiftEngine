@@ -951,6 +951,26 @@ Entity *GameWorld::RayCast(const Ray &ray, int layerMask) const {
     return nullptr;
 }
 
+int GameWorld::OverlapOBB(const OBB &obb, int layerMask, Array<Entity *> &entities) const {
+    Array<PhysCollidable *> colliders;
+
+    GetPhysicsWorld()->OverlapBox(obb.Center(), obb.Extents(), layerMask, colliders);
+
+    for (int i = 0; i < colliders.Count(); i++) {
+        const PhysCollidable *collidable = colliders[i];
+
+        if (!collidable->GetUserPointer()) {
+            continue;
+        }
+        ComRigidBody *rigidBodyComponent = (reinterpret_cast<Component *>(collidable->GetUserPointer()))->Cast<ComRigidBody>();
+        if (!rigidBodyComponent) {
+            continue;
+        }
+        entities.Append(rigidBodyComponent->GetEntity());
+    }
+    return entities.Count();
+}
+
 int GameWorld::OverlapSphere(const Sphere &sphere, int layerMask, Array<Entity *> &entities) const {
     Array<PhysCollidable *> colliders;
 
@@ -967,8 +987,7 @@ int GameWorld::OverlapSphere(const Sphere &sphere, int layerMask, Array<Entity *
             continue;
         }
         entities.Append(rigidBodyComponent->GetEntity());
-    }
-    
+    }    
     return entities.Count();
 }
 
