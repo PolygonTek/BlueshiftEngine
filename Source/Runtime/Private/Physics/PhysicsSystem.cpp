@@ -79,7 +79,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
     if (desc.shapes.Count() == 0) {
         shape = emptyShape;
 
-        initialTransform.setIdentity();
+        initialTransform.setBasis(btMatrix3x3::getIdentity());
         initialTransform.setOrigin(btVector3(0, 0, 0));
     } else if (desc.shapes.Count() == 1) {
         const PhysShapeDesc *shapeDesc = &desc.shapes[0];

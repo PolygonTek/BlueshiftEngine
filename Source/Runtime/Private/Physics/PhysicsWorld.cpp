@@ -352,7 +352,7 @@ bool PhysicsWorld::BoxCast(const Vec3 &boxCenter, const Vec3 &boxExtents, const 
     }
 
     btTransform shapeTransform;
-    shapeTransform.setIdentity();
+    shapeTransform.setBasis(btMatrix3x3::getIdentity());
     shapeTransform.setOrigin(btVector3(0, 0, 0));
 
     btVector3 halfExtents = ToBtVector3(SystemUnitToPhysicsUnit(boxExtents));
@@ -369,7 +369,7 @@ bool PhysicsWorld::BoxCastAll(const Vec3 &boxCenter, const Vec3 &boxExtents, con
     }
 
     btTransform shapeTransform;
-    shapeTransform.setIdentity();
+    shapeTransform.setBasis(btMatrix3x3::getIdentity());
     shapeTransform.setOrigin(btVector3(0, 0, 0));
 
     btVector3 halfExtents = ToBtVector3(SystemUnitToPhysicsUnit(boxExtents));
@@ -386,7 +386,7 @@ bool PhysicsWorld::SphereCast(const Vec3 &sphereCenter, float sphereRadius, cons
     }
 
     btTransform shapeTransform;
-    shapeTransform.setIdentity();
+    shapeTransform.setBasis(btMatrix3x3::getIdentity());
     shapeTransform.setOrigin(btVector3(0, 0, 0));
 
     btSphereShape sphereShape(sphereRadius);
@@ -402,7 +402,7 @@ bool PhysicsWorld::SphereCastAll(const Vec3 &sphereCenter, float sphereRadius, c
     }
 
     btTransform shapeTransform;
-    shapeTransform.setIdentity();
+    shapeTransform.setBasis(btMatrix3x3::getIdentity());
     shapeTransform.setOrigin(btVector3(0, 0, 0));
 
     btSphereShape sphereShape(sphereRadius);
@@ -426,7 +426,7 @@ bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider
     } else {
         const Vec3 centroid = collider->GetCentroid();
     
-        shapeTransform.setIdentity();
+        shapeTransform.setBasis(btMatrix3x3::getIdentity());
         shapeTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(centroid)));
     }
 
@@ -451,7 +451,7 @@ bool PhysicsWorld::ConvexCastAll(const PhysCollidable *me, const Collider *colli
     if (shape->isCompound()) {
         btCompoundShape *compoundShape = static_cast<btCompoundShape *>(shape);
         if (compoundShape->getNumChildShapes() != 1) {
-            BE_WARNLOG("PhysicsWorld::ConvexCast: multiple compound shape is not allowed\n");
+            BE_WARNLOG("PhysicsWorld::ConvexCastAll: multiple compound shape is not allowed\n");
             return false;
         }
 
@@ -461,12 +461,12 @@ bool PhysicsWorld::ConvexCastAll(const PhysCollidable *me, const Collider *colli
     else {
         const Vec3 centroid = collider->GetCentroid();
 
-        shapeTransform.setIdentity();
+        shapeTransform.setBasis(btMatrix3x3::getIdentity());
         shapeTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(centroid)));
     }
 
     if (!shape->isConvex()) {
-        BE_WARNLOG("PhysicsWorld::ConvexCast: non convex collision shape is not allowed\n");
+        BE_WARNLOG("PhysicsWorld::ConvexCastAll: non convex collision shape is not allowed\n");
         return false;
     }
 

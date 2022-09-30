@@ -86,7 +86,7 @@ const AABB Collider::GetAABB() const {
     btVector3 aabbMin, aabbMax;
     btTransform transform;
 
-    transform.setIdentity();
+    transform.setBasis(btMatrix3x3::getIdentity());
     transform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(centroid)));
 
     shape->getAabb(transform, aabbMin, aabbMax);
