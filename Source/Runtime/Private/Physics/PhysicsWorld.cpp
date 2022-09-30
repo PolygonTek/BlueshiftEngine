@@ -295,17 +295,14 @@ int PhysicsWorld::OverlapBox(const Vec3 &boxCenter, const Vec3 &boxExtents, int 
     }
 
     btVector3 halfExtents = ToBtVector3(SystemUnitToPhysicsUnit(boxExtents));
-    btBoxShape *boxShape = new btBoxShape(halfExtents);
+    btBoxShape boxShape(halfExtents);
     btTransform worldTransform(btMatrix3x3::getIdentity(), ToBtVector3(SystemUnitToPhysicsUnit(boxCenter)));
 
-    btCollisionObject *collisionObject = new btCollisionObject;
-    collisionObject->setCollisionShape(boxShape);
-    collisionObject->setWorldTransform(worldTransform);
+    btCollisionObject collisionObject;
+    collisionObject.setCollisionShape(&boxShape);
+    collisionObject.setWorldTransform(worldTransform);
 
-    OverlapShape(collisionObject, internalGroup, internalMask, colliders);
-
-    delete collisionObject;
-    delete boxShape;
+    OverlapShape(&collisionObject, internalGroup, internalMask, colliders);
 
     return colliders.Count();
 }
@@ -317,39 +314,67 @@ int PhysicsWorld::OverlapSphere(const Vec3 &sphereCenter, float sphereRadius, in
         internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
     }
 
-    btSphereShape *sphereShape = new btSphereShape(SystemUnitToPhysicsUnit(sphereRadius));
+    btSphereShape sphereShape(SystemUnitToPhysicsUnit(sphereRadius));
     btTransform worldTransform(btMatrix3x3::getIdentity(), ToBtVector3(SystemUnitToPhysicsUnit(sphereCenter)));
 
-    btCollisionObject *collisionObject = new btCollisionObject;
-    collisionObject->setCollisionShape(sphereShape);
-    collisionObject->setWorldTransform(worldTransform);
+    btCollisionObject collisionObject;
+    collisionObject.setCollisionShape(&sphereShape);
+    collisionObject.setWorldTransform(worldTransform);
 
-    OverlapShape(collisionObject, internalGroup, internalMask, colliders);
-
-    delete collisionObject;
-    delete sphereShape;
+    OverlapShape(&collisionObject, internalGroup, internalMask, colliders);
 
     return colliders.Count();
 }
 
-bool PhysicsWorld::RayCast(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, int mask, CastResult &trace) const {
-    int internalGroup = me ? (((BIT(me->collisionFilterBit) & ~1) << 5) | (BIT(me->collisionFilterBit) & 1)) : btBroadphaseProxy::DefaultFilter;
+bool PhysicsWorld::RayCast(const Vec3 &start, const Vec3 &end, int mask, CastResult &trace) const {
+    int internalGroup = btBroadphaseProxy::DefaultFilter;
     int internalMask = (mask & ~1) << 5;
     if (mask & BIT(0)) { // & BIT(TagLayerSettings::DefaultLayer)
         internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
     }
-
-    return ClosestRayTest(me ? me->collisionObject : nullptr, start, end, internalGroup, internalMask, trace);
+    return ClosestRayTest(nullptr, start, end, internalGroup, internalMask, trace);
 }
 
-bool PhysicsWorld::RayCastAll(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, int mask, Array<CastResult> &resultArray) const {
-    int internalGroup = me ? (((BIT(me->collisionFilterBit) & ~1) << 5) | (BIT(me->collisionFilterBit) & 1)) : btBroadphaseProxy::DefaultFilter;
+bool PhysicsWorld::RayCastAll(const Vec3 &start, const Vec3 &end, int mask, Array<CastResult> &resultArray) const {
+    int internalGroup = btBroadphaseProxy::DefaultFilter;
+    int internalMask = (mask & ~1) << 5;
+    if (mask & BIT(0)) { // & BIT(TagLayerSettings::DefaultLayer)
+        internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+    }
+    return AllHitsRayTest(nullptr, start, end, internalGroup, internalMask, resultArray);
+}
+
+bool PhysicsWorld::BoxCast(const Vec3 &boxCenter, const Vec3 &boxExtents, const Mat3& axis, const Vec3 &end, int mask, CastResult &trace) const {
+    int internalGroup = btBroadphaseProxy::DefaultFilter;
     int internalMask = (mask & ~1) << 5;
     if (mask & BIT(0)) { // & BIT(TagLayerSettings::DefaultLayer)
         internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
     }
 
-    return AllHitsRayTest(me ? me->collisionObject : nullptr, start, end, internalGroup, internalMask, resultArray);
+    btTransform shapeTransform;
+    shapeTransform.setIdentity();
+    shapeTransform.setOrigin(btVector3(0, 0, 0));
+
+    btVector3 halfExtents = ToBtVector3(SystemUnitToPhysicsUnit(boxExtents));
+    btBoxShape boxShape(halfExtents);
+
+    return ClosestConvexTest(nullptr, static_cast<btConvexShape *>(&boxShape), shapeTransform, axis, boxCenter, end, internalGroup, internalMask, trace);
+}
+
+bool PhysicsWorld::SphereCast(const Vec3 &sphereCenter, float sphereRadius, const Vec3 &end, int mask, CastResult &trace) const {
+    int internalGroup = btBroadphaseProxy::DefaultFilter;
+    int internalMask = (mask & ~1) << 5;
+    if (mask & BIT(0)) { // & BIT(TagLayerSettings::DefaultLayer)
+        internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+    }
+
+    btTransform shapeTransform;
+    shapeTransform.setIdentity();
+    shapeTransform.setOrigin(btVector3(0, 0, 0));
+
+    btSphereShape sphereShape(sphereRadius);
+
+    return ClosestConvexTest(nullptr, static_cast<btConvexShape *>(&sphereShape), shapeTransform, Mat3::identity, sphereCenter, end, internalGroup, internalMask, trace);
 }
 
 bool PhysicsWorld::ConvexCast(const PhysCollidable *me, const Collider *collider, const Mat3 &axis, const Vec3 &start, const Vec3 &end, int mask, CastResult &trace) const {

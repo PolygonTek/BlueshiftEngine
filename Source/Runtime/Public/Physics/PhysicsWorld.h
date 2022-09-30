@@ -152,8 +152,11 @@ public:
                             /// Returns an array with all colliders touching or inside the sphere.
     int                     OverlapSphere(const Vec3 &sphereCenter, float sphereRadius, int mask, Array<PhysCollidable *> &colliders) const;
 
-    bool                    RayCast(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, int mask, CastResult &trace) const;
-    bool                    RayCastAll(const PhysCollidable *me, const Vec3 &start, const Vec3 &end, int mask, Array<CastResult> &traceList) const;
+    bool                    RayCast(const Vec3 &start, const Vec3 &end, int mask, CastResult &trace) const;
+    bool                    RayCastAll(const Vec3 &start, const Vec3 &end, int mask, Array<CastResult> &traceList) const;
+
+    bool                    BoxCast(const Vec3 &boxCenter, const Vec3 &boxExtents, const Mat3 &axis, const Vec3 &end, int mask, CastResult &trace) const;
+    bool                    SphereCast(const Vec3 &sphereCenter, float sphereRadius, const Vec3 &end, int mask, CastResult &trace) const;
     bool                    ConvexCast(const PhysCollidable *me, const Collider *collider, const Mat3 &axis, const Vec3 &start, const Vec3 &end, int mask, CastResult &trace) const;
 
     void                    PreStep(float timeStep);

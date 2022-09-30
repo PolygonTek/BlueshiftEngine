@@ -939,7 +939,7 @@ Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask, const Array<Entit
 Entity *GameWorld::RayCast(const Ray &ray, int layerMask) const {
     CastResult castResult;
 
-    if (!GetPhysicsWorld()->RayCast(nullptr, ray.origin, ray.GetPoint(MeterToUnit(10000.0f)), layerMask, castResult)) {
+    if (!GetPhysicsWorld()->RayCast(ray.origin, ray.GetPoint(MeterToUnit(10000.0f)), layerMask, castResult)) {
         return nullptr;
     }
 
