@@ -84,7 +84,6 @@ PhysicsWorld::PhysicsWorld() {
     constraintSolver = new btSequentialImpulseConstraintSolver;
     dynamicsWorld = new btDiscreteDynamicsWorld(collisionDispatcher, broadphase, constraintSolver, collisionConfiguration);
 
-    softBodySolver = nullptr;
     //softBodySolver = new btDefaultSoftBodySolver;
     //dynamicsWorld = new btSoftRigidDynamicsWorld(collisionDispatcher, broadphase, solver, collisionConfiguration, softBodySolver);
 
@@ -112,7 +111,12 @@ PhysicsWorld::PhysicsWorld() {
     dynamicsWorld->getSolverInfo().m_solverMode |= SOLVER_RANDMIZE_ORDER;
 #endif
 
+#if 0
+    //m_splitImpulse removes the penetration resolution from the applied impulse, otherwise objects might fracture due to deep penetrations.
+    dynamicsWorld->getSolverInfo().m_splitImpulse = true;
+#else
     dynamicsWorld->getSolverInfo().m_splitImpulse = false;
+#endif
     //dynamicsWorld->setSynchronizeAllMotionStates(true);
 
     dynamicsWorld->setDebugDrawer(&physicsDebugDraw);

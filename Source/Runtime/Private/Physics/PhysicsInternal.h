@@ -34,17 +34,17 @@
 BE_NAMESPACE_BEGIN
 
 /// Converts Vec3 to btVector3.
-BE_INLINE btVector3 ToBtVector3(const Vec3 &vector) {
+BE_FORCE_INLINE btVector3 ToBtVector3(const Vec3 &vector) {
     return btVector3(vector.x, vector.y, vector.z);
 }
 
 /// Converts Quat to btQuaternion.
-BE_INLINE btQuaternion ToBtQuaternion(const Quat &quaternion) {
+BE_FORCE_INLINE btQuaternion ToBtQuaternion(const Quat &quaternion) {
     return btQuaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
 }
 
 /// Converts Mat3 to btMatrix3x3.
-BE_INLINE btMatrix3x3 ToBtMatrix3x3(const Mat3 &matrix) {
+BE_FORCE_INLINE btMatrix3x3 ToBtMatrix3x3(const Mat3 &matrix) {
     return btMatrix3x3(
         matrix[0][0], matrix[1][0], matrix[2][0],
         matrix[0][1], matrix[1][1], matrix[2][1],
@@ -52,17 +52,17 @@ BE_INLINE btMatrix3x3 ToBtMatrix3x3(const Mat3 &matrix) {
 }
 
 /// Converts btVector3 to Vec3.
-BE_INLINE Vec3 ToVec3(const btVector3 &vector) {
+BE_FORCE_INLINE Vec3 ToVec3(const btVector3 &vector) {
     return Vec3(vector.x(), vector.y(), vector.z());
 }
 
 /// Converts btQuaternion to Quat.
-BE_INLINE Quat ToQuat(const btQuaternion &quaternion) {
+BE_FORCE_INLINE Quat ToQuat(const btQuaternion &quaternion) {
     return Quat(quaternion.w(), quaternion.x(), quaternion.y(), quaternion.z());
 }
 
 /// Converts btMatrix3x3 to Mat3.
-BE_INLINE Mat3 ToMat3(const btMatrix3x3 &matrix) {
+BE_FORCE_INLINE Mat3 ToMat3(const btMatrix3x3 &matrix) {
     return Mat3(
         matrix[0][0], matrix[1][0], matrix[2][0],
         matrix[0][1], matrix[1][1], matrix[2][1],
@@ -70,7 +70,7 @@ BE_INLINE Mat3 ToMat3(const btMatrix3x3 &matrix) {
 }
 
 /// Converts Mat3 and Vec3 to btTransform.
-BE_INLINE btTransform ToBtTransform(const Mat3 &rotation, const Vec3 &translation = Vec3::origin) {
+BE_FORCE_INLINE btTransform ToBtTransform(const Mat3 &rotation, const Vec3 &translation = Vec3::origin) {
     return btTransform(btMatrix3x3(
         rotation[0][0], rotation[1][0], rotation[2][0],
         rotation[0][1], rotation[1][1], rotation[2][1],
@@ -78,14 +78,14 @@ BE_INLINE btTransform ToBtTransform(const Mat3 &rotation, const Vec3 &translatio
 }
 
 template <typename T>
-BE_INLINE T SystemUnitToPhysicsUnit(T x) { return UnitToMeter(x) * 22.5f; }
+BE_FORCE_INLINE T SystemUnitToPhysicsUnit(T x) { return UnitToMeter(x) * 22.5f; }
 
 template <typename T>
-BE_INLINE T PhysicsUnitToSystemUnit(T x) { return x / SystemUnitToPhysicsUnit(1.0f); }
+BE_FORCE_INLINE T PhysicsUnitToSystemUnit(T x) { return x / SystemUnitToPhysicsUnit(1.0f); }
 
 class PhysDebugDraw : public btIDebugDraw {
 public:
-    PhysDebugDraw() { debugMode = 0; }
+    PhysDebugDraw() = default;
     virtual ~PhysDebugDraw();
 
     virtual void            setDebugMode(int debugMode);
@@ -102,7 +102,7 @@ public:
     virtual void            reportErrorWarning(const char *warningString);
     virtual void            draw3dText(const btVector3 &location, const char *textString);
 
-    int                     debugMode;
+    int                     debugMode = 0;
 };
 
 extern PhysDebugDraw        physicsDebugDraw;

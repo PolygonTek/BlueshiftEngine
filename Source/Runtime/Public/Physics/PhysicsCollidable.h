@@ -113,7 +113,7 @@ protected:
     Vec3                    centroid;               ///< Position of the center of mass in system units
     int                     collisionFilterBit = 0;
     int                     collisionFilterMask = BIT(0);
-    btCollisionObject *     collisionObject;
+    btCollisionObject *     collisionObject = nullptr;
     PhysCollisionListener * collisionListener = nullptr;
     void *                  userPointer = nullptr;
     PhysicsWorld *          physicsWorld = nullptr;

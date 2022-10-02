@@ -189,14 +189,14 @@ private:
     float                   maximumAllowedTimeStep;
     ConstraintSolver::Enum  solverType;
     int                     filterMasks[32];
-    btDefaultCollisionConfiguration *collisionConfiguration;
-    btCollisionDispatcher * collisionDispatcher;
-    btBroadphaseInterface * broadphase;
-    btConstraintSolver *    constraintSolver;
-    btSoftBodySolver *      softBodySolver;
-    btGhostPairCallback *   ghostPairCallback;
-    //btOverlapFilterCallback *filterCallback;
-    btDynamicsWorld *       dynamicsWorld;
+    btDefaultCollisionConfiguration *collisionConfiguration = nullptr;
+    btCollisionDispatcher * collisionDispatcher = nullptr;
+    btBroadphaseInterface * broadphase = nullptr;
+    btConstraintSolver *    constraintSolver = nullptr;
+    btSoftBodySolver *      softBodySolver = nullptr;
+    btGhostPairCallback *   ghostPairCallback = nullptr;
+    //btOverlapFilterCallback *filterCallback = nullptr;
+    btDynamicsWorld *       dynamicsWorld = nullptr;
 };
 
 BE_NAMESPACE_END

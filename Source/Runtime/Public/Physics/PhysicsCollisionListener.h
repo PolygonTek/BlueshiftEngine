@@ -21,7 +21,7 @@ class PhysCollidable;
 
 class PhysCollisionPair {
 public:
-    PhysCollisionPair() {}
+    PhysCollisionPair() = delete;
     PhysCollisionPair(const PhysCollidable *a, const PhysCollidable *b);
 
                             operator int() const { return PhysCollisionPair::Hash(*this); }
@@ -38,7 +38,7 @@ public:
 
 class PhysCollisionListener {
 public:
-    PhysCollisionListener() {}
+    PhysCollisionListener() = default;
     virtual ~PhysCollisionListener() {};
 
     virtual void            Collide(const PhysCollidable *objectA, const PhysCollidable *objectB, const Vec3 &point, const Vec3 &normal, float distance, float impulse) = 0;
