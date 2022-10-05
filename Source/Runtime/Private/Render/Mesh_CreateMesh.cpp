@@ -547,11 +547,6 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
         return false;
     }
 
-    Array<VertexGenericLit> tempInsideVerts;
-    Array<TriIndex> tempInsideIndexes;
-    Array<VertexGenericLit> tempOutsideVerts;
-    Array<TriIndex> tempOutsideIndexes;
-
     for (int surfaceIndex = 0; surfaceIndex < srcMesh.surfaces.Count(); surfaceIndex++) {
         const MeshSurf *srcSurf = srcMesh.surfaces[surfaceIndex];
 
@@ -580,6 +575,11 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
         const TriIndex *srcIndexes = srcSurf->subMesh->indexes;
         int numSrcVerts = srcSurf->subMesh->NumVerts();
         int numSrcIndexes = srcSurf->subMesh->NumIndexes();
+
+        Array<VertexGenericLit> tempInsideVerts;
+        Array<TriIndex> tempInsideIndexes;
+        Array<VertexGenericLit> tempOutsideVerts;
+        Array<TriIndex> tempOutsideIndexes;
 
         tempInsideVerts.Reserve(numSrcVerts);
         tempInsideIndexes.Reserve(numSrcIndexes);
