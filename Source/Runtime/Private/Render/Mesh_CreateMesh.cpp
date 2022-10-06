@@ -760,7 +760,8 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                         VertexGenericLit capVertex;
                         capVertex.SetPosition(clippedVerts[v->i]);
                         capVertex.SetNormal(slicePlane.normal);
-                        //capVertex.SetTexCoord();
+                        capVertex.SetTexCoord(0.5f, 0.5f);
+                        capVertex.SetFloatColor(Color4::white);
                         tempInsideVerts.Append(capVertex);
 
                         if (generateOtherMesh) {
