@@ -291,6 +291,11 @@ bool PhysicsWorld::CheckSphere(const Vec3 &sphereCenter, float sphereRadius, int
     return OverlapSphere(sphereCenter, sphereRadius, mask, colliders) > 0;
 }
 
+bool PhysicsWorld::CheckTriangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, int mask) const {
+    Array<PhysCollidable *> colliders;
+    return OverlapTriangle(a, b, c, mask, colliders) > 0;
+}
+
 int PhysicsWorld::OverlapBox(const Vec3 &boxCenter, const Vec3 &boxExtents, int mask, Array<PhysCollidable *> &colliders) const {
     int internalGroup = btBroadphaseProxy::DefaultFilter;
     int internalMask = (mask & ~1) << 5;
@@ -323,6 +328,28 @@ int PhysicsWorld::OverlapSphere(const Vec3 &sphereCenter, float sphereRadius, in
 
     btCollisionObject collisionObject;
     collisionObject.setCollisionShape(&sphereShape);
+    collisionObject.setWorldTransform(worldTransform);
+
+    OverlapShape(&collisionObject, internalGroup, internalMask, colliders);
+
+    return colliders.Count();
+}
+
+int PhysicsWorld::OverlapTriangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, int mask, Array<PhysCollidable *> &colliders) const {
+    int internalGroup = btBroadphaseProxy::DefaultFilter;
+    int internalMask = (mask & ~1) << 5;
+    if (mask & BIT(0)) { // & BIT(TagLayerSettings::DefaultLayer)
+        internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+    }
+
+    btVector3 bta = ToBtVector3(SystemUnitToPhysicsUnit(a));
+    btVector3 btb = ToBtVector3(SystemUnitToPhysicsUnit(b));
+    btVector3 btc = ToBtVector3(SystemUnitToPhysicsUnit(c));
+    btTriangleShape triangleShape(bta, btb, btc);
+    btTransform worldTransform(btMatrix3x3::getIdentity(), ToBtVector3(Vec3::zero));
+
+    btCollisionObject collisionObject;
+    collisionObject.setCollisionShape(&triangleShape);
     collisionObject.setWorldTransform(worldTransform);
 
     OverlapShape(&collisionObject, internalGroup, internalMask, colliders);

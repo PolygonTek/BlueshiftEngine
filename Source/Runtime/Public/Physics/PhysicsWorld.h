@@ -146,11 +146,15 @@ public:
     bool                    CheckBox(const Vec3 &boxCenter, const Vec3 &boxExtents, int mask) const;
                             /// Returns true if there are any colliders overlapping the sphere.
     bool                    CheckSphere(const Vec3 &sphereOrigin, float sphereRadius, int mask) const;
+                            /// Returns true if there are any colliders overlapping the triangle.
+    bool                    CheckTriangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, int mask) const;
 
                             /// Returns an array with all colliders touching or inside the box.
     int                     OverlapBox(const Vec3 &boxCenter, const Vec3 &boxExtents, int mask, Array<PhysCollidable *> &colliders) const;
                             /// Returns an array with all colliders touching or inside the sphere.
     int                     OverlapSphere(const Vec3 &sphereCenter, float sphereRadius, int mask, Array<PhysCollidable *> &colliders) const;
+                            /// Returns an array with all colliders touching the triangle.
+    int                     OverlapTriangle(const Vec3 &a, const Vec3& b, const Vec3& c, int mask, Array<PhysCollidable *> &colliders) const;
 
     bool                    RayCast(const Vec3 &start, const Vec3 &end, int mask, CastResult &trace) const;
     bool                    RayCastAll(const Vec3 &start, const Vec3 &end, int mask, Array<CastResult> &traceList) const;

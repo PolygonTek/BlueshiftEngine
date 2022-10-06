@@ -125,6 +125,8 @@ public:
     int                         OverlapOBB(const OBB &obb, int layerMask, Array<Entity *> &entities) const;
                                 /// Returns an array with all rigid body entities touching or inside the sphere.
     int                         OverlapSphere(const Sphere &sphere, int layerMask, Array<Entity *> &entities) const;
+                                /// Returns an array with all rigid body entities touching the triangle.
+    int                         OverlapTriangle(const Vec3& a, const Vec3& b, const Vec3& c, int layerMask, Array<Entity *> &entities) const;
 
                                 /// Render camera component from all registered entities.
     void                        RenderCamera();

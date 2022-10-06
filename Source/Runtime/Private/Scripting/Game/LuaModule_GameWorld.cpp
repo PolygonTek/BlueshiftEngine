@@ -38,6 +38,7 @@ void LuaVM::RegisterGameWorld(LuaCpp::Module &module) {
         "intersect_ray", static_cast<Entity*(GameWorld::*)(const Ray &, int)const>(&GameWorld::IntersectRay),
         "overlap_obb", &GameWorld::OverlapOBB,
         "overlap_sphere", &GameWorld::OverlapSphere,
+        "overlap_triangle", &GameWorld::OverlapTriangle,
         "instantiate_entity", &GameWorld::InstantiateEntity,
         "instantiate_entity_with_transform", &GameWorld::InstantiateEntityWithTransform,
         "dont_destroy_on_load", &GameWorld::DontDestroyOnLoad,

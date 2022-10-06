@@ -991,6 +991,26 @@ int GameWorld::OverlapSphere(const Sphere &sphere, int layerMask, Array<Entity *
     return entities.Count();
 }
 
+int GameWorld::OverlapTriangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, int layerMask, Array<Entity *> &entities) const {
+    Array<PhysCollidable *> colliders;
+
+    GetPhysicsWorld()->OverlapTriangle(a, b, c, layerMask, colliders);
+
+    for (int i = 0; i < colliders.Count(); i++) {
+        const PhysCollidable *collidable = colliders[i];
+
+        if (!collidable->GetUserPointer()) {
+            continue;
+        }
+        ComRigidBody *rigidBodyComponent = (reinterpret_cast<Component *>(collidable->GetUserPointer()))->Cast<ComRigidBody>();
+        if (!rigidBodyComponent) {
+            continue;
+        }
+        entities.Append(rigidBodyComponent->GetEntity());
+    }
+    return entities.Count();
+}
+
 void GameWorld::SaveSnapshot() {
     snapshotValues.clear();
 
