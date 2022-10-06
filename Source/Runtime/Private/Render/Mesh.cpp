@@ -73,7 +73,7 @@ MeshSurf *Mesh::AllocInstantiatedSurface(const MeshSurf *refSurf, int meshType) 
     return surf;
 }
 
-Mesh *Mesh::InstantiateMesh(int meshType) {
+Mesh *Mesh::InstantiateMesh(Type::Enum meshType) {
     Mesh *mesh = meshManager.AllocInstantiatedMesh(this);
 
     instantiatedMeshes.Append(mesh);
@@ -83,7 +83,7 @@ Mesh *Mesh::InstantiateMesh(int meshType) {
     return mesh;
 }
 
-void Mesh::Instantiate(int meshType) {
+void Mesh::Instantiate(Type::Enum meshType) {
     if (meshType == Type::Skinned && numJoints > 0) {
         isSkinnedMesh = true;
     } else {
@@ -117,7 +117,7 @@ void Mesh::Instantiate(int meshType) {
 }
 
 void Mesh::Reinstantiate() {
-    int meshType;
+    Type::Enum meshType;
     if (isSkinnedMesh) {
         meshType = Type::Skinned;
     } else {

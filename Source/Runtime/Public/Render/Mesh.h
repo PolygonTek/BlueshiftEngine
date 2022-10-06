@@ -108,7 +108,7 @@ public:
     const Joint *           GetJoints() const { return joints; }
 
                             // Create instantiated mesh.
-    Mesh *                  InstantiateMesh(int meshType);
+    Mesh *                  InstantiateMesh(Type::Enum meshType);
 
                             // Reinstantiate itself.
     void                    Reinstantiate();
@@ -163,7 +163,7 @@ private:
     void                    FreeSurface(MeshSurf *surf) const;
     MeshSurf *              AllocInstantiatedSurface(const MeshSurf *refSurf, int meshType) const;
 
-    void                    Instantiate(int meshType);
+    void                    Instantiate(Type::Enum meshType);
 
     void                    SortAndMerge();
     void                    SplitMirroredVerts();
@@ -240,7 +240,7 @@ public:
     static Mesh *           defaultCylinderMesh;
     static Mesh *           defaultCapsuleMesh;
     static Mesh *           defaultRoundedBoxMesh;
-    //static Mesh *           testSlicedMesh;
+    static Mesh *           testSlicedMesh;
 
 private:
     static void             Cmd_ListMeshes(const CmdArgs &args);
