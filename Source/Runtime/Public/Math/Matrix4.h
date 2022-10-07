@@ -274,6 +274,8 @@ public:
     static Mat4         FromScale(float sx, float sy, float sz);
     static Mat4         FromScale(const Vec3 &s) { return FromTranslation(s.x, s.y, s.z); }
 
+    static Mat4         FromOuterProduct(const Vec4 &a, const Vec4 &b);
+
                         /// LU decomposition, in-place.
     bool                DecompLU();
 
@@ -662,6 +664,15 @@ BE_INLINE Mat4 Mat4::FromScale(float sx, float sy, float sz) {
     m.mat[3][1] = 0;
     m.mat[3][2] = 0;
     m.mat[3][3] = 1;
+    return m;
+}
+
+BE_INLINE Mat4 Mat4::FromOuterProduct(const Vec4 &a, const Vec4 &b) {
+    Mat4 m;
+    m.mat[0] = a[0] * b;
+    m.mat[1] = a[1] * b;
+    m.mat[2] = a[2] * b;
+    m.mat[3] = a[3] * b;
     return m;
 }
 

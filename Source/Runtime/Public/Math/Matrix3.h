@@ -253,6 +253,8 @@ public:
     static Mat3         FromScale(float sx, float sy, float sz);
     static Mat3         FromScale(const Vec3 &s) { return FromScale(s.x, s.y, s.z); }
 
+    static Mat3         FromOuterProduct(const Vec3 &a, const Vec3 &b);
+
                         /// Converts this 3x3 matrix to 4x4 matrix.
     Mat4                ToMat4() const;
 
@@ -624,6 +626,14 @@ BE_INLINE Mat3 Mat3::FromScale(float sx, float sy, float sz) {
     m.mat[2][0] = 0;
     m.mat[2][1] = 0;
     m.mat[2][2] = sz;
+    return m;
+}
+
+BE_INLINE Mat3 Mat3::FromOuterProduct(const Vec3 &a, const Vec3 &b) {
+    Mat3 m;
+    m.mat[0] = a * b[0];
+    m.mat[1] = a * b[1];
+    m.mat[2] = a * b[2];
     return m;
 }
 

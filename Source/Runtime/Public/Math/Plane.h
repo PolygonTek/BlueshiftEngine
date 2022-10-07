@@ -105,15 +105,15 @@ public:
                         /// Reverses the direction of the plane.
     void                Flip();
 
-                        /// Normalize plane. 
+                        /// Normalize plane.
                         /// Only normalizes the plane normal, does not adjust d
     float               Normalize(bool fixDegenerate = true);
 
-                        /// Translates this Plane
+                        /// Translates this Plane.
     Plane               Translate(const Vec3 &translation) const;
     Plane &             TranslateSelf(const Vec3 &translation);
 
-                        /// Rotates this Plane
+                        /// Rotates this Plane.
     Plane               Rotate(const Vec3 &origin, const Mat3 &axis) const;
     Plane &             RotateSelf(const Vec3 &origin, const Mat3 &axis);
 

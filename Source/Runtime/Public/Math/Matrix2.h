@@ -182,6 +182,8 @@ public:
                         /// @return False if determinant is zero.
     bool                InverseSelf();
 
+    static Mat2         FromOuterProduct(const Vec2 &a, const Vec2 &b);
+
                         /// Returns "_00 _01 _10 _11".
     const char *        ToString() const { return ToString(4); }
                         /// Returns "_00 _01 _10 _11" with the given precision.
@@ -410,6 +412,13 @@ BE_INLINE Mat2 Mat2::Inverse() const {
     bool r = invMat.InverseSelf();
     assert(r);
     return invMat;
+}
+
+BE_INLINE Mat2 Mat2::FromOuterProduct(const Vec2 &a, const Vec2 &b) {
+    Mat2 m;
+    m.mat[0] = a[0] * b;
+    m.mat[1] = a[1] * b;
+    return m;
 }
 
 BE_INLINE const char *Mat2::ToString(int precision) const {
