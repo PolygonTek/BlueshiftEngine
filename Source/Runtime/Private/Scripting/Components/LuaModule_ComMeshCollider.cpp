@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
 #include "Components/ComMeshCollider.h"
+#include "Render/Mesh.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -22,6 +23,9 @@ void LuaVM::RegisterMeshColliderComponent(LuaCpp::Module &module) {
     LuaCpp::Selector _ComMeshCollider = module["ComMeshCollider"];
 
     _ComMeshCollider.SetClass<ComMeshCollider>(module["ComCollider"]);
+    _ComMeshCollider.AddClassMembers<ComMeshCollider>(
+        "mesh", &ComMeshCollider::GetMesh,
+        "set_mesh", &ComMeshCollider::SetMesh);
 
     _ComMeshCollider["meta_object"] = ComMeshCollider::metaObject;
 }

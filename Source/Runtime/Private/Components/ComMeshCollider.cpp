@@ -64,6 +64,22 @@ void ComMeshCollider::SetMeshGuid(const Guid &meshGuid) {
     }
 }
 
+Mesh *ComMeshCollider::GetMesh() const {
+    Guid meshGuid = GetMeshGuid();
+    if (meshGuid.IsZero()) {
+        return nullptr;
+    }
+
+    const Str meshHashName = resourceGuidMapper.Get(meshGuid);
+    return meshManager.GetMesh(meshHashName);
+}
+
+void ComMeshCollider::SetMesh(const Mesh *mesh) {
+    const Guid meshGuid = resourceGuidMapper.Get(mesh->GetHashName());
+
+    SetMeshGuid(meshGuid);
+}
+
 #if WITH_EDITOR
 void ComMeshCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     //collider;

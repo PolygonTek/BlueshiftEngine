@@ -199,8 +199,8 @@ Material *ComMeshRenderer::GetMaterial(int index) const {
         return nullptr;
     }
     
-    const Str materialPath = resourceGuidMapper.Get(materialGuid);
-    return materialManager.GetMaterial(materialPath); // FIXME: release ?
+    const Str materialHashName = resourceGuidMapper.Get(materialGuid);
+    return materialManager.GetMaterial(materialHashName); // FIXME: release ?
 }
 
 void ComMeshRenderer::SetMaterial(int index, const Material *material) {

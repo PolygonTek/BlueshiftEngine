@@ -18,6 +18,8 @@
 
 BE_NAMESPACE_BEGIN
 
+class Mesh;
+
 class ComMeshCollider : public ComCollider {
 public:
     OBJECT_PROTOTYPE(ComMeshCollider);
@@ -37,6 +39,9 @@ public:
 
     Guid                    GetMeshGuid() const { return meshGuid; }
     void                    SetMeshGuid(const Guid &meshGuid);
+
+    Mesh *                  GetMesh() const;
+    void                    SetMesh(const Mesh *mesh);
 
 protected:
     Guid                    meshGuid;
