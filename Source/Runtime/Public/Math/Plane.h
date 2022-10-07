@@ -123,6 +123,9 @@ public:
                         /// Examines which side of the plane to the given point.
     Side::Enum          GetSide(const Vec3 &p, const float epsilon) const;
 
+                        /// Are two points on the same side of the plane?
+    bool                SameSide(const Vec3 &p1, const Vec3 &p2, const float epsilon) const { return GetSide(p1, epsilon) == GetSide(p2, epsilon); }
+
                         /// Projects the given position vector onto this plane.
     Vec3                Project(const Vec3 &p) const;
 
