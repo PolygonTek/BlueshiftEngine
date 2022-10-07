@@ -951,10 +951,10 @@ Entity *GameWorld::RayCast(const Ray &ray, int layerMask) const {
     return nullptr;
 }
 
-int GameWorld::OverlapOBB(const OBB &obb, int layerMask, Array<Entity *> &entities) const {
+int GameWorld::OverlapBox(const Vec3 &boxCenter, const Vec3 &boxExtents, int layerMask, Array<Entity *> &entities) const {
     Array<PhysCollidable *> colliders;
 
-    GetPhysicsWorld()->OverlapBox(obb.Center(), obb.Extents(), layerMask, colliders);
+    GetPhysicsWorld()->OverlapBox(boxCenter, boxExtents, layerMask, colliders);
 
     for (int i = 0; i < colliders.Count(); i++) {
         const PhysCollidable *collidable = colliders[i];
@@ -971,10 +971,10 @@ int GameWorld::OverlapOBB(const OBB &obb, int layerMask, Array<Entity *> &entiti
     return entities.Count();
 }
 
-int GameWorld::OverlapSphere(const Sphere &sphere, int layerMask, Array<Entity *> &entities) const {
+int GameWorld::OverlapSphere(const Vec3 &sphereCenter, float sphereRadius, int layerMask, Array<Entity *> &entities) const {
     Array<PhysCollidable *> colliders;
 
-    GetPhysicsWorld()->OverlapSphere(sphere.center, sphere.radius, layerMask, colliders);
+    GetPhysicsWorld()->OverlapSphere(sphereCenter, sphereRadius, layerMask, colliders);
 
     for (int i = 0; i < colliders.Count(); i++) {
         const PhysCollidable *collidable = colliders[i];

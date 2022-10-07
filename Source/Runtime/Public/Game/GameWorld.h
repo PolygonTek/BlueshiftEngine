@@ -124,9 +124,9 @@ public:
     Entity *                    RayCast(const Ray &ray, int layerMask) const;
 
                                 /// Returns an array with all rigid body entities touching or inside the OBB.
-    int                         OverlapOBB(const OBB &obb, int layerMask, Array<Entity *> &entities) const;
+    int                         OverlapBox(const Vec3 &boxCenter, const Vec3 &boxExtents, int layerMask, Array<Entity *> &entities) const;
                                 /// Returns an array with all rigid body entities touching or inside the sphere.
-    int                         OverlapSphere(const Sphere &sphere, int layerMask, Array<Entity *> &entities) const;
+    int                         OverlapSphere(const Vec3 &sphereCenter, float sphereRadius, int layerMask, Array<Entity *> &entities) const;
                                 /// Returns an array with all rigid body entities touching the triangle.
     int                         OverlapTriangle(const Vec3& a, const Vec3& b, const Vec3& c, int layerMask, Array<Entity *> &entities) const;
 
