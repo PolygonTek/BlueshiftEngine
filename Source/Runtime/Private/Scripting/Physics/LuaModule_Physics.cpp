@@ -48,6 +48,15 @@ void LuaVM::RegisterPhysics(LuaCpp::Module &module) {
 
     _Physics["gravity"].SetFunc([physicsWorld]() { return physicsWorld->GetGravity(); });
     _Physics["set_gravity"].SetFunc([physicsWorld](const Vec3 &gravity) { return physicsWorld->SetGravity(gravity); });
+    _Physics["check_box"].SetFunc([physicsWorld](const Vec3 &boxCenter, const Vec3 &boxExtents, int mask) {
+        return physicsWorld->CheckBox(boxCenter, boxExtents, mask);
+    });
+    _Physics["check_sphere"].SetFunc([physicsWorld](const Vec3 &sphereCenter, float sphereRadius, int mask) {
+        return physicsWorld->CheckSphere(sphereCenter, sphereRadius, mask);
+    });
+    _Physics["check_triangle"].SetFunc([physicsWorld](const Vec3 &a, const Vec3 &b, const Vec3 &c, int mask) {
+        return physicsWorld->CheckTriangle(a, b, c, mask);
+    });
     _Physics["ray_cast"].SetFunc([physicsWorld](const Vec3 &start, const Vec3 &end, int mask, CastResult &castResult) {
         return physicsWorld->RayCast(start, end, mask, castResult);
     });
