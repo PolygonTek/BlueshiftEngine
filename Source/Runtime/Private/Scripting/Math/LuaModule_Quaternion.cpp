@@ -54,6 +54,9 @@ void LuaVM::RegisterQuaternion(LuaCpp::Module &module) {
         "__mul", static_cast<Quat(Quat::*)(const Quat&)const>(&Quat::operator*)
     );
 
+    _Quat["zero"] = Quat::zero;
+    _Quat["identity"] = Quat::identity;
+
     _Quat["from_angle_axis"].SetFunc(Quat::FromAngleAxis);
     _Quat["from_two_vectors"].SetFunc(Quat::FromTwoVectors);
     _Quat["from_slerp"].SetFunc(Quat::FromSlerp);

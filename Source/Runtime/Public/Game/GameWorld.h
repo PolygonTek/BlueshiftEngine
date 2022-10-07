@@ -53,6 +53,8 @@ public:
     static constexpr int MaxEntities = (1 << EntityNumBits);
     static constexpr int BadEntityNum = (MaxEntities - 1);
     static constexpr int MaxEntityNum = (MaxEntities - 2);
+    static constexpr int MaxActiveCameraComponents = 16;
+    static constexpr int MaxActiveCanvasComponents = 16;
 
     struct LoadSceneMode {
         enum Enum {
@@ -171,6 +173,10 @@ public:
 
                                 /// Creates an entity that has no components but transform component.
     Entity *                    CreateEmptyEntity(const char *name);
+                                /// Creates an entity that has no components but transform component with position.
+    Entity *                    CreateEmptyEntityWithPosition(const char *name, const Vec3 &position);
+                                /// Creates an entity that has no components but transform component with position and rotation.
+    Entity *                    CreateEmptyEntityWithPositionAndRotation(const char *name, const Vec3 &position, const Quat &rotation);
 
     Entity *                    InstantiateEntity(const Entity *originalEntity);
     Entity *                    InstantiateEntityWithTransform(const Entity *originalEntity, const Vec3 &origin, const Quat &rotation);
@@ -221,8 +227,8 @@ private:
     void                        LateUpdateEntities();
     void                        UpdateLuaVM();
 
-    void                        ListUpActiveCameraComponents(StaticArray<ComCamera *, 16> &cameraComponents) const;
-    void                        ListUpActiveCanvasComponents(StaticArray<ComCanvas *, 16> &canvasComponents) const;
+    void                        ListUpActiveCameraComponents(StaticArray<ComCamera *, MaxActiveCameraComponents> &cameraComponents) const;
+    void                        ListUpActiveCanvasComponents(StaticArray<ComCanvas *, MaxActiveCanvasComponents> &canvasComponents) const;
 
     Entity *                    entities[MaxEntities] = { nullptr, };
     HashIndex                   entityHash;
@@ -278,6 +284,14 @@ BE_INLINE Entity *GameWorld::FindEntity(Func func) const {
         }
     }
     return nullptr;
+}
+
+BE_INLINE Entity *GameWorld::CreateEmptyEntity(const char *name) {
+    return CreateEmptyEntityWithPositionAndRotation(name, Vec3::zero, Quat::identity);
+}
+
+BE_INLINE Entity *GameWorld::CreateEmptyEntityWithPosition(const char *name, const Vec3 &position) {
+    return CreateEmptyEntityWithPositionAndRotation(name, position, Quat::identity);
 }
 
 BE_NAMESPACE_END

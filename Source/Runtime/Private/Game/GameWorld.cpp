@@ -34,7 +34,6 @@
 #include "Game/CastResult.h"
 #include "Scripting/LuaVM.h"
 #include "StaticBatching/StaticBatch.h"
-#include "../StaticBatching/MeshCombiner.h"
 #include "Profiler/Profiler.h"
 
 BE_NAMESPACE_BEGIN
@@ -384,12 +383,13 @@ Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
     return clonedEntities[0];
 }
 
-Entity *GameWorld::CreateEmptyEntity(const char *name) {
+Entity *GameWorld::CreateEmptyEntityWithPositionAndRotation(const char *name, const Vec3 &position, const Quat &rotation) {
     Json::Value value;
     value["name"] = name;
 
     value["components"][0]["classname"] = ComTransform::metaObject.ClassName();
-    value["components"][0]["origin"] = Vec3::zero.ToString();
+    value["components"][0]["origin"] = position.ToString();
+    value["components"][0]["rotation"] = rotation.ToString() ;
 
     Entity *entity = Entity::CreateEntity(value, this);
 
@@ -797,7 +797,7 @@ void GameWorld::UpdateCanvas() {
     }
 }
 
-void GameWorld::ListUpActiveCameraComponents(StaticArray<ComCamera *, 16> &cameraComponents) const {
+void GameWorld::ListUpActiveCameraComponents(StaticArray<ComCamera *, MaxActiveCameraComponents> &cameraComponents) const {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ComCamera *camera = ent->GetComponent<ComCamera>();
@@ -805,7 +805,7 @@ void GameWorld::ListUpActiveCameraComponents(StaticArray<ComCamera *, 16> &camer
                 continue;
             }
 
-            // NOTE: Support only 16 camera components. Need to fix this ?
+            // NOTE: Support just only (MaxActiveCameraComponents == 16) camera components. Need to fix this ?
             if (cameraComponents.Append(camera) == -1) {
                 break;
             }
@@ -818,7 +818,7 @@ void GameWorld::ListUpActiveCameraComponents(StaticArray<ComCamera *, 16> &camer
     cameraComponents.Sort(compareFunc);
 }
 
-void GameWorld::ListUpActiveCanvasComponents(StaticArray<ComCanvas *, 16> &canvasComponents) const {
+void GameWorld::ListUpActiveCanvasComponents(StaticArray<ComCanvas *, MaxActiveCanvasComponents> &canvasComponents) const {
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
             ComCanvas *canvas = ent->GetComponent<ComCanvas>();
@@ -836,7 +836,7 @@ void GameWorld::ListUpActiveCanvasComponents(StaticArray<ComCanvas *, 16> &canva
 void GameWorld::RenderCamera() {
     BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::RenderCamera");
 
-    StaticArray<ComCamera *, 16> cameraComponents;
+    StaticArray<ComCamera *, MaxActiveCameraComponents> cameraComponents;
     ListUpActiveCameraComponents(cameraComponents);
 
     // Render camera in order.
@@ -844,7 +844,7 @@ void GameWorld::RenderCamera() {
         cameraComponents[i]->Render();
     }
 
-    StaticArray<ComCanvas *, 16> canvasComponents;
+    StaticArray<ComCanvas *, MaxActiveCanvasComponents> canvasComponents;
     ListUpActiveCanvasComponents(canvasComponents);
 
     // Render canvas in order.
@@ -862,7 +862,7 @@ void GameWorld::ProcessPointerInput() {
         return;
     }
 
-    StaticArray<ComCamera *, 16> cameraComponents;
+    StaticArray<ComCamera *, MaxActiveCameraComponents> cameraComponents;
     ListUpActiveCameraComponents(cameraComponents);
 
     // Process pointer input in reverse order.
@@ -874,7 +874,7 @@ void GameWorld::ProcessPointerInput() {
         }
     }
 
-    StaticArray<ComCanvas *, 16> canvasComponents;
+    StaticArray<ComCanvas *, MaxActiveCanvasComponents> canvasComponents;
     ListUpActiveCanvasComponents(canvasComponents);
 
     // Process pointer input in reverse order.
