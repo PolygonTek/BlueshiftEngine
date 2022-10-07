@@ -23,6 +23,15 @@ void LuaVM::RegisterMesh(LuaCpp::Module &module) {
     LuaCpp::Selector _Mesh = module["Mesh"];
 
     _Mesh.SetClass<Mesh>();
+    _Mesh.AddClassMembers<Mesh>(
+        "name", &Mesh::GetName,
+        "aabb", &Mesh::GetAABB,
+        "is_static_mesh", &Mesh::IsStaticMesh,
+        "is_skinned_mesh", &Mesh::IsSkinnedMesh);
+
+    _Mesh["try_slice_mesh"].SetFunc([](const Mesh &srcMesh, const Plane &slicePlane, bool generateCap, bool generateOtherMesh, Mesh *outSlicedMesh, Mesh *outOtherMesh) {
+        return Mesh::TrySliceMesh(srcMesh, slicePlane, generateCap, generateOtherMesh, outSlicedMesh, outOtherMesh);
+    });
 }
 
 BE_NAMESPACE_END

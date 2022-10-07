@@ -140,11 +140,11 @@ public:
     const char *                GetName() const { return name; }
     const char *                GetHashName() const { return hashName; }
     int                         GetFlags() const { return flags; }
-    int                         GetType() const { return type; }
+    Type::Enum                  GetType() const { return type; }
     RenderingMode::Enum         GetRenderingMode() const { return pass->renderingMode; }
     void                        SetRenderingMode(RenderingMode::Enum mode);
     int                         GetCullType() const { return pass->cullType; }
-    int                         GetSort() const { return sort; }
+    Sort::Enum                  GetSort() const { return sort; }
 
     const Point &               GetImageBorderLT() const { return pass->imageBorderLT; }
     const Point &               GetImageBorderRB() const { return pass->imageBorderRB; }

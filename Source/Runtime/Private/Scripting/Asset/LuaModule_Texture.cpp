@@ -23,6 +23,13 @@ void LuaVM::RegisterTexture(LuaCpp::Module &module) {
     LuaCpp::Selector _Texture = module["Texture"];
 
     _Texture.SetClass<Texture>();
+    _Texture.AddClassMembers<Texture>(
+        "name", &Texture::GetName,
+        "width", &Texture::GetWidth,
+        "height", &Texture::GetHeight,
+        "depth", &Texture::GetDepth,
+        "num_slices", &Texture::NumSlices,
+        "is_default_texture", &Texture::IsDefaultTexture);
 }
 
 BE_NAMESPACE_END

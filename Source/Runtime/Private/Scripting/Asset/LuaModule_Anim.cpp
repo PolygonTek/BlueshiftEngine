@@ -23,6 +23,8 @@ void LuaVM::RegisterAnim(LuaCpp::Module &module) {
     LuaCpp::Selector _Anim = module["Anim"];
 
     _Anim.SetClass<Anim>();
+    _Anim.AddClassMembers<Anim>(
+        "name", &Anim::GetName);
 }
 
 BE_NAMESPACE_END

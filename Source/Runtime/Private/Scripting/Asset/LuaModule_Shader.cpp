@@ -23,6 +23,11 @@ void LuaVM::RegisterShader(LuaCpp::Module &module) {
     LuaCpp::Selector _Shader = module["Shader"];
 
     _Shader.SetClass<Shader>();
+    _Shader.AddClassMembers<Shader>(
+        "name", &Shader::GetName,
+        "has_vertex_shader", &Shader::HasVertexShader,
+        "has_fragment_shader", &Shader::HasFragmentShader,
+        "has_geometry_shader", &Shader::HasGeometryShader);
 }
 
 BE_NAMESPACE_END

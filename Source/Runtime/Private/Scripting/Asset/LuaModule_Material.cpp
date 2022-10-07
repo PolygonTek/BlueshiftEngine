@@ -23,6 +23,11 @@ void LuaVM::RegisterMaterial(LuaCpp::Module &module) {
     LuaCpp::Selector _Material = module["Material"];
 
     _Material.SetClass<Material>();
+    _Material.AddClassMembers<Material>(
+        "name", &Material::GetName,
+        "is_lit_surface", &Material::IsLitSurface,
+        "is_sky_surface", &Material::IsSkySurface,
+        "is_shadow_caster", &Material::IsShadowCaster);
 }
 
 BE_NAMESPACE_END

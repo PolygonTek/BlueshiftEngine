@@ -24,6 +24,7 @@ void LuaVM::RegisterSound(LuaCpp::Module &module) {
 
     _Sound.SetClass<Sound>();
     _Sound.AddClassMembers<Sound>(
+        "name", &Sound::GetName,
         "instantiate", &Sound::Instantiate,
         "play2d", &Sound::Play2D,
         "play3d", &Sound::Play3D,

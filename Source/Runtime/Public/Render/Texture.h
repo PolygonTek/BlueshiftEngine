@@ -70,7 +70,7 @@ public:
     const char *            GetName() const { return name; }
     const char *            GetHashName() const { return hashName; }
 
-    int                     GetType() const { return type; }
+    RHI::TextureType::Enum  GetType() const { return type; }
     int                     GetWidth() const { return width; }
     int                     GetHeight() const { return height; }
     int                     GetDepth() const { return depth; }

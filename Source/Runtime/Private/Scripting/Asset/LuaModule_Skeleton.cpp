@@ -23,6 +23,9 @@ void LuaVM::RegisterSkeleton(LuaCpp::Module &module) {
     LuaCpp::Selector _Skeleton = module["Skeleton"];
 
     _Skeleton.SetClass<Skeleton>();
+    _Skeleton.AddClassMembers<Skeleton>(
+        "name", &Skeleton::GetName,
+        "num_joints", &Skeleton::NumJoints);
 }
 
 BE_NAMESPACE_END
