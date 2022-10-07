@@ -117,6 +117,14 @@ public:
     Plane               Rotate(const Vec3 &origin, const Mat3 &axis) const;
     Plane &             RotateSelf(const Vec3 &origin, const Mat3 &axis);
 
+                        /// Transform this plane.
+    Plane               Transform(const Mat3 &matrix) const;
+    Plane               Transform(const Mat3x4 &matrix) const;
+
+                        /// Transform this plane, in-place.
+    Plane &             TransformSelf(const Mat3 &matrix);
+    Plane &             TransformSelf(const Mat3x4 &matrix);
+
                         /// Returns the distance of this plane to the given point.
     float               Distance(const Vec3 &p) const { return normal.Dot(p) - offset; }
 
@@ -230,6 +238,33 @@ BE_INLINE Plane &Plane::RotateSelf(const Vec3 &origin, const Mat3 &axis) {
     offset -= origin.Dot(normal);
     normal = axis * normal;
     offset += origin.Dot(normal);
+    return *this;
+}
+
+BE_INLINE Plane Plane::Transform(const Mat3 &matrix) const {
+    Plane p;
+    p.normal = matrix.Inverse().TransposedMulVec(normal);
+    p.offset = offset;
+    return p;
+}
+
+BE_INLINE Plane Plane::Transform(const Mat3x4 &matrix) const {
+    Plane p;
+    Mat3 invMat3 = matrix.ToMat3().Inverse();
+    p.normal = invMat3.TransposedMulVec(normal);
+    p.offset = offset + normal.Dot(invMat3 * matrix.ToTranslationVec3());
+    return p;
+}
+
+BE_INLINE Plane &Plane::TransformSelf(const Mat3 &matrix) {
+    normal = matrix.Inverse().TransposedMulVec(normal);
+    return *this;
+}
+
+BE_INLINE Plane &Plane::TransformSelf(const Mat3x4 &matrix) {
+    Mat3 invMat3 = matrix.ToMat3().Inverse();
+    offset = offset + normal.Dot(invMat3 * matrix.ToTranslationVec3());
+    normal = invMat3.TransposedMulVec(normal);
     return *this;
 }
 
