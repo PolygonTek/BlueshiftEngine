@@ -120,7 +120,7 @@ public:
                                 /// Returns parent entity.
     Entity *                    GetParent() const { return node.GetParent(); }
                                 /// Sets parent entity.
-    void                        SetParent(Entity *parentEntity);
+    void                        SetParent(const Entity *parentEntity);
 
                                 /// Returns parent entity GUID.
     Guid                        GetParentGuid() const;

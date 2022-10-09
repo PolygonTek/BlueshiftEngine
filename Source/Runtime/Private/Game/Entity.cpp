@@ -737,7 +737,7 @@ void Entity::SetStaticMask(int staticMask) {
     EmitSignal(&SIG_StaticMaskChanged, this, staticMask);
 }
 
-void Entity::SetParent(Entity *parentEntity) {
+void Entity::SetParent(const Entity *parentEntity) {
     Guid parentGuid = parentEntity ? parentEntity->GetGuid() : Guid::zero;
 
     SetParentGuid(parentGuid);

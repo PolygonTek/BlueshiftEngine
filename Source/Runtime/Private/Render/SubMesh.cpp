@@ -1002,20 +1002,20 @@ int SubMesh::FindEdge(int32_t v1, int32_t v2) const {
         return false;
     }
 
-    int32_t firstVert, secondVert;
+    int32_t firstVertexIndex, secondVertexIndex;
     if (v1 < v2) {
-        firstVert = v1;
-        secondVert = v2;
+        firstVertexIndex = v1;
+        secondVertexIndex = v2;
     } else {
-        firstVert = v2;
-        secondVert = v1;
+        firstVertexIndex = v2;
+        secondVertexIndex = v1;
     }
 
-    for (int i = 1; i < numEdges; i++) {
-        if (edges[i].v[0] == firstVert &&
-            edges[i].v[1] == secondVert) {
+    for (int edgeIndex = 1; edgeIndex < numEdges; edgeIndex++) {
+        if (edges[edgeIndex].firstVertexIndex == firstVertexIndex &&
+            edges[edgeIndex].secondVertexIndex == secondVertexIndex) {
             // Returns negative edge index if and if only first vertex index is larger than second one.
-            return v1 < v2 ? i : -i;
+            return v1 < v2 ? edgeIndex : -edgeIndex;
         }
     }
 

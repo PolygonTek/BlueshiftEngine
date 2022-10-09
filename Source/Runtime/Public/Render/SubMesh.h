@@ -35,13 +35,13 @@ BE_NAMESPACE_BEGIN
 /// Edges in this direction use positive indexes, and shared opposite edges use negative indexes.
 struct Edge {
 /*
-      ------ v1
+      ------ v0
             / \
-      t0   /   \
+      t1   /   \
    \      e     \
-    \    /   t1  \
+    \    /   t0  \
      \  /        
-      v0 ------
+      v1 ------
 */
     union {
         struct {
@@ -98,7 +98,7 @@ public:
     int                     MaxVertexWeights() const;
     void *                  VertexWeights() const { return vertWeights; }
 
-                            /// Finds a edge index by two vertex indexes.
+                            /// Finds an edge index by two vertex indexes.
                             /// if v1 is larger than v2, negative number will be returned.
                             /// To use this function, edge information must be pre-calculated.
     int                     FindEdge(int32_t v1, int32_t v2) const;
