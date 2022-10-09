@@ -624,12 +624,13 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
             srcToInsideVertIndex.Get(srcIndex[1], &insideIndex[1]);
             srcToInsideVertIndex.Get(srcIndex[2], &insideIndex[2]);
 
-            // If all verts is inside of plane
             if (insideIndex[0] >= 0 && insideIndex[1] >= 0 && insideIndex[2] >= 0) {
+                // If all verts are in the back side of the plane
                 tempInsideIndexes.Append(insideIndex[0]);
                 tempInsideIndexes.Append(insideIndex[1]);
                 tempInsideIndexes.Append(insideIndex[2]);
             } else if (insideIndex[0] < 0 && insideIndex[1] < 0 && insideIndex[2] < 0) {
+                // If all verts are in the front side of the plane
                 if (generateOtherMesh) {
                     int outsideIndex[3] = { -1, -1, -1 };
                     srcToOutsideVertIndex.Get(srcIndex[0], &outsideIndex[0]);
@@ -688,8 +689,6 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                         insideTriFan[numInsideTriFanIndex++] = insideClippedVertexIndex;
 
                         if (generateOtherMesh) {
-                            // Invert normal direction for the other side.
-                            clippedVertex.SetNormal(-clippedVertex.GetNormal());
                             outsideTriFan[numOutsideTriFanIndex++] = tempOutsideVerts.Append(clippedVertex);
                         }
 
@@ -765,6 +764,8 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                         tempInsideVerts.Append(capVertex);
 
                         if (generateOtherMesh) {
+                            capVertex.SetNormal(-capVertex.GetNormal());
+
                             tempOutsideVerts.Append(capVertex);
                         }
                     }
