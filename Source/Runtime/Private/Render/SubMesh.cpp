@@ -948,36 +948,36 @@ void SubMesh::ComputeEdges() {
             const unsigned int order = (triVertIndexes[j] == v0 ? 0 : 1);
 
             // Find the shared edge.
-            int edgeIndex = vertIndexToEdgeIndex[v0];
-            while (edgeIndex >= 0) {
-                if (tempEdges[edgeIndex].v[1] == v1) {
+            int currentEdgeIndex = vertIndexToEdgeIndex[v0];
+            while (currentEdgeIndex >= 0) {
+                if (tempEdges[currentEdgeIndex].v[1] == v1) {
                     break;
                 }
-                edgeIndex = edgeChain[edgeIndex];
+                currentEdgeIndex = edgeChain[currentEdgeIndex];
             }
 
             // Add new edge if no shared edge is found or two edges are already shared.
-            if (edgeIndex < 0 || tempEdges[edgeIndex].t[order] != -1) {
-                if (edgeIndex >= 0) {
+            if (currentEdgeIndex < 0 || tempEdges[currentEdgeIndex].t[order] != -1) {
+                if (currentEdgeIndex >= 0) {
                     numDisjunctiveEdges++;
                 }
 
                 // Add an edge to the temporary edge buffer.
                 edge.t[0] = edge.t[1] = -1;
-                edgeIndex = numTempEdges;
+                currentEdgeIndex = numTempEdges;
                 tempEdges[numTempEdges++] = edge;
 
                 // Update edge chain for later use.
-                edgeChain[edgeIndex] = vertIndexToEdgeIndex[v0];
-                vertIndexToEdgeIndex[v0] = edgeIndex;
+                edgeChain[currentEdgeIndex] = vertIndexToEdgeIndex[v0];
+                vertIndexToEdgeIndex[v0] = currentEdgeIndex;
             }
 
             // Update a triangle index of an edge.
-            //assert(tempEdges[edgeIndex].t[order] == -1);
-            tempEdges[edgeIndex].t[order] = i / 3;
+            //assert(tempEdges[currentEdgeIndex].t[order] == -1);
+            tempEdges[currentEdgeIndex].t[order] = i / 3;
 
             // Update an edge index.
-            edgeIndexes[i + j] = order ? -edgeIndex : edgeIndex;
+            edgeIndexes[i + j] = order ? -currentEdgeIndex : currentEdgeIndex;
         }
     }
 
