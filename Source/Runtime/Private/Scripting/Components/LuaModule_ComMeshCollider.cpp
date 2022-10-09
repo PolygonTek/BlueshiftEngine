@@ -24,6 +24,8 @@ void LuaVM::RegisterMeshColliderComponent(LuaCpp::Module &module) {
 
     _ComMeshCollider.SetClass<ComMeshCollider>(module["ComCollider"]);
     _ComMeshCollider.AddClassMembers<ComMeshCollider>(
+        "is_convex", &ComMeshCollider::IsConvex,
+        "set_convex", &ComMeshCollider::SetConvex,
         "mesh", &ComMeshCollider::GetMesh,
         "set_mesh", &ComMeshCollider::SetMesh);
 

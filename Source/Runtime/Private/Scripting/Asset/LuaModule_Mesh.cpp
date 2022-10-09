@@ -16,6 +16,7 @@
 #include "Scripting/LuaVM.h"
 #include "Render/Mesh.h"
 #include "Asset/Resource.h"
+#include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -27,8 +28,16 @@ void LuaVM::RegisterMesh(LuaCpp::Module &module) {
         "name", &Mesh::GetName,
         "aabb", &Mesh::GetAABB,
         "is_static_mesh", &Mesh::IsStaticMesh,
-        "is_skinned_mesh", &Mesh::IsSkinnedMesh);
+        "is_skinned_mesh", &Mesh::IsSkinnedMesh,
+        "compute_volume", &Mesh::ComputeVolume,
+        "compute_centroid", &Mesh::ComputeCentroid);
 
+    _Mesh["new_mesh"].SetFunc([]() {
+        Guid newGuid = Guid::CreateGuid();
+        Str meshName = Str("Mesh-") + newGuid.ToString();
+        resourceGuidMapper.Set(newGuid, meshName);
+        return meshManager.AllocMesh(meshName);
+    });
     _Mesh["try_slice_mesh"].SetFunc([](const Mesh &srcMesh, const Plane &slicePlane, bool generateCap, bool generateOtherMesh, Mesh *outSlicedMesh, Mesh *outOtherMesh) {
         return Mesh::TrySliceMesh(srcMesh, slicePlane, generateCap, generateOtherMesh, outSlicedMesh, outOtherMesh);
     });

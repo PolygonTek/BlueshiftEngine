@@ -43,6 +43,9 @@ public:
     Mesh *                  GetMesh() const;
     void                    SetMesh(const Mesh *mesh);
 
+    bool                    IsConvex() const { return convex; }
+    void                    SetConvex(bool convex);
+
 protected:
     Guid                    meshGuid;
     bool                    convex;

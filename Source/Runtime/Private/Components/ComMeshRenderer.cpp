@@ -153,6 +153,22 @@ void ComMeshRenderer::SetMeshGuid(const Guid &guid) {
     MeshUpdated();
 }
 
+Mesh *ComMeshRenderer::GetMesh() const {
+    Guid meshGuid = GetMeshGuid();
+    if (meshGuid.IsZero()) {
+        return nullptr;
+    }
+
+    const Str meshHashName = resourceGuidMapper.Get(meshGuid);
+    return meshManager.GetMesh(meshHashName);
+}
+
+void ComMeshRenderer::SetMesh(const Mesh *mesh) {
+    const Guid meshGuid = resourceGuidMapper.Get(mesh->GetHashName());
+
+    SetMeshGuid(meshGuid);
+}
+
 int ComMeshRenderer::GetMaterialCount() const {
     return renderObjectDef.materials.Count();
 }

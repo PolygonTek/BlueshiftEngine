@@ -43,6 +43,9 @@ public:
     Guid                    GetMeshGuid() const;
     void                    SetMeshGuid(const Guid &guid);
 
+    Mesh *                  GetMesh() const;
+    void                    SetMesh(const Mesh *mesh);
+
     int                     GetMaterialCount() const;
     void                    SetMaterialCount(int count);
     Guid                    GetMaterialGuid(int index) const;

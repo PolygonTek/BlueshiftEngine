@@ -17,6 +17,7 @@
 #include "Asset/Resource.h"
 #include "Components/ComMeshRenderer.h"
 #include "Render/Material.h"
+#include "Render/Mesh.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -25,6 +26,8 @@ void LuaVM::RegisterMeshRendererComponent(LuaCpp::Module &module) {
 
     _ComMeshRenderer.SetClass<ComMeshRenderer>(module["ComRenderable"]);
     _ComMeshRenderer.AddClassMembers<ComMeshRenderer>(
+        "mesh", &ComMeshRenderer::GetMesh,
+        "set_mesh", &ComMeshRenderer::SetMesh,
         "num_materials", &ComMeshRenderer::GetMaterialCount,
         "material", &ComMeshRenderer::GetMaterial,
         "set_material", &ComMeshRenderer::SetMaterial);
