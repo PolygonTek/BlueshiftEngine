@@ -27,7 +27,6 @@ Mesh *          MeshManager::defaultGeoSphereMesh;
 Mesh *          MeshManager::defaultCylinderMesh;
 Mesh *          MeshManager::defaultCapsuleMesh;
 Mesh *          MeshManager::defaultRoundedBoxMesh;
-//Mesh *          MeshManager::testSlicedMesh;
 
 MeshManager     meshManager;
 
@@ -91,20 +90,6 @@ void MeshManager::CreateEngineMeshes() {
     defaultRoundedBoxMesh = AllocMesh("_defaultRoundedBoxMesh");
     defaultRoundedBoxMesh->permanence = true;
     defaultRoundedBoxMesh->CreateRoundedBox(Vec3::origin, Mat3::identity, Vec3(MeterToUnit(0.5f) - MeterToUnit(0.05f)), MeterToUnit(0.05f), 2);
-
-    // ------------- TEST CODE -------------
-    /*Quat quat = Quat::FromRotationX(DEG2RAD(30));
-    Plane slicePlane = Plane(quat * Vec3(0, 0, 1), MeterToUnit(0.25f));
-    //const Str planeString = slicePlane.ToString();
-    //const Str slicedMeshName = Str(defaultBoxMesh->GetHashName()) + "-SI-" + planeString;
-    testSlicedMesh = meshManager.AllocMesh("_testSlicedMesh");
-
-    if (!Mesh::TrySliceMesh(*defaultRoundedBoxMesh, slicePlane, true, false, testSlicedMesh, nullptr)) {
-        meshManager.DestroyMesh(testSlicedMesh);
-        testSlicedMesh = nullptr;
-    }
-    // --------------------------------------
-    */
 }
 
 void MeshManager::Shutdown() {
@@ -281,7 +266,7 @@ Mesh *MeshManager::CreateCombinedMesh(const char *hashName, const Array<BatchSub
     mesh->surfaces.Append(surf);
 
     VertexGenericLit *dstVertPtr = surf->subMesh->verts;
-    TriIndex *dstIndexPtr = surf->subMesh->indexes;
+    VertIndex *dstIndexPtr = surf->subMesh->indexes;
     int baseVertex = 0;
 
     for (int subMeshIndex = 0; subMeshIndex < batchSubMeshes.Count(); subMeshIndex++) {

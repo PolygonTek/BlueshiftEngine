@@ -69,7 +69,7 @@ void Mesh::CreateDefaultBox() {
     v[22].SetPosition(+extent, -extent, extent * 2); v[22].SetTexCoord(1.0f, 0.0f); v[22].SetNormal(0.0f, -1.0f, 0.0f); v[22].SetColor(0xffffffff);
     v[23].SetPosition(-extent, -extent, extent * 2); v[23].SetTexCoord(0.0f, 0.0f); v[23].SetNormal(0.0f, -1.0f, 0.0f); v[23].SetColor(0xffffffff);
         
-    TriIndex *idx = surf->subMesh->indexes;
+    VertIndex *idx = surf->subMesh->indexes;
     idx[0] = 0;     idx[1] = 1;     idx[2] = 2;
     idx[3] = 2;     idx[4] = 3;     idx[5] = 0;
     idx[6] = 4;     idx[7] = 5;     idx[8] = 6;
@@ -117,7 +117,7 @@ void Mesh::CreatePlane(const Vec3 &origin, const Mat3 &axis, float size, int num
         }
     }
 
-    TriIndex *idx = surf->subMesh->indexes;
+    VertIndex *idx = surf->subMesh->indexes;
 
     for (int i = 0; i < numSegments; i++) { // y
         int a = (numSegments + 1) * i;
@@ -187,7 +187,7 @@ void Mesh::CreateBox(const Vec3 &origin, const Mat3 &axis, const Vec3 &extents) 
     v[22].SetPosition( extents[0], -extents[1],  extents[2]); v[22].SetTexCoord(1.0f, 0.0f); v[22].SetNormal(0.0f, -1.0f, 0.0f); v[22].SetColor(0xffffffff);
     v[23].SetPosition(-extents[0], -extents[1],  extents[2]); v[23].SetTexCoord(0.0f, 0.0f); v[23].SetNormal(0.0f, -1.0f, 0.0f); v[23].SetColor(0xffffffff);
         
-    TriIndex *idx = surf->subMesh->indexes;
+    VertIndex *idx = surf->subMesh->indexes;
     idx[0] = 0;     idx[1] = 1;     idx[2] = 2;
     idx[3] = 2;     idx[4] = 3;     idx[5] = 0;
     idx[6] = 4;     idx[7] = 5;     idx[8] = 6;
@@ -224,7 +224,7 @@ void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numSubdivisions
         Vec3(0, z, x), Vec3(0, z, -x), Vec3(0, -z, x), Vec3(0, -z, -x),
         Vec3(z, x, 0), Vec3(-z, x, 0), Vec3(z, -x, 0), Vec3(-z, -x, 0)
     };
-    static constexpr TriIndex icosa_tris[20][3] = {
+    static constexpr VertIndex icosa_tris[20][3] = {
         { 0, 1, 4 }, { 0, 4, 9 }, { 9, 4, 5 }, { 4, 8, 5 }, { 4, 1, 8 },
         { 8, 1, 10 }, { 8, 10, 3 }, { 5, 8, 3 }, { 5, 3, 2 }, { 2, 3, 7 },
         { 7, 3, 10 }, { 7, 10, 6 }, { 7, 6, 11 }, { 11, 6, 0 }, { 0, 6, 1 },
@@ -255,7 +255,7 @@ void Mesh::CreateGeosphere(const Vec3 &origin, float radius, int numSubdivisions
         v++;
     }
 
-    TriIndex *idx = surf->subMesh->indexes;
+    VertIndex *idx = surf->subMesh->indexes;
     for (int i = 0; i < COUNT_OF(icosa_tris); i++) {
         for (int j = 0; j < 3; j++) {
             *idx++ = icosa_tris[i][j];
@@ -307,9 +307,9 @@ void Mesh::CreateRoundedBox(const Vec3 &origin, const Mat3 &axis, const Vec3 ext
         vptr++;
     }
 
-    TriIndex *iptr = surf->subMesh->indexes;
+    VertIndex *iptr = surf->subMesh->indexes;
     for (int i = 0; i < surf->subMesh->numIndexes; i++) {
-        *iptr++ = (TriIndex)mesh.indices[i];
+        *iptr++ = (VertIndex)mesh.indices[i];
     }
 
     free(mesh.positions);
@@ -390,7 +390,7 @@ void Mesh::CreateCylinder(const Vec3 &origin, const Mat3 &axis, float radius, fl
         v++;
     }
 
-    TriIndex *idx = surf->subMesh->indexes;
+    VertIndex *idx = surf->subMesh->indexes;
 
     // top cap indexes
     for (int j = 0; j < numSegments; j++) {
@@ -505,7 +505,7 @@ void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, flo
         }
     }
 
-    TriIndex *idx = surf->subMesh->indexes;
+    VertIndex *idx = surf->subMesh->indexes;
 
     for (int i = 0; i < numLat * 2 - 1; i++) {
         int a = numLng * i;
@@ -572,14 +572,14 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
         }
 
         const VertexGenericLit *srcVerts = srcSurf->subMesh->verts;
-        const TriIndex *srcIndexes = srcSurf->subMesh->indexes;
+        const VertIndex *srcIndexes = srcSurf->subMesh->indexes;
         int numSrcVerts = srcSurf->subMesh->NumVerts();
         int numSrcIndexes = srcSurf->subMesh->NumIndexes();
 
         Array<VertexGenericLit> tempInsideVerts;
-        Array<TriIndex> tempInsideIndexes;
+        Array<VertIndex> tempInsideIndexes;
         Array<VertexGenericLit> tempOutsideVerts;
-        Array<TriIndex> tempOutsideIndexes;
+        Array<VertIndex> tempOutsideIndexes;
 
         tempInsideVerts.Reserve(numSrcVerts);
         tempInsideIndexes.Reserve(numSrcIndexes);
@@ -642,10 +642,10 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                     tempOutsideIndexes.Append(outsideIndex[2]);
                 }
             } else {
-                TriIndex insideTriFan[4];
+                VertIndex insideTriFan[4];
                 int numInsideTriFanIndex = 0;
 
-                TriIndex outsideTriFan[4];
+                VertIndex outsideTriFan[4];
                 int numOutsideTriFanIndex = 0;
 
                 // If partially being inside of plane, clip to create 1 or 2 new triangles.
@@ -685,7 +685,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                         clippedVertex.SetTexCoord(Math::Lerp(v0->GetTexCoord(), v1->GetTexCoord(), t));
                         clippedVertex.SetFloatColor(Math::Lerp(v0->GetFloatColor(), v1->GetFloatColor(), t));
 
-                        TriIndex insideClippedVertexIndex = tempInsideVerts.Append(clippedVertex);
+                        VertIndex insideClippedVertexIndex = tempInsideVerts.Append(clippedVertex);
                         insideTriFan[numInsideTriFanIndex++] = insideClippedVertexIndex;
 
                         if (generateOtherMesh) {

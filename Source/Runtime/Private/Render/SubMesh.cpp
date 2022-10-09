@@ -64,7 +64,7 @@ void SubMesh::AllocSubMesh(int numVerts, int numIndexes) {
     this->mirroredVerts             = nullptr;
 
     this->numIndexes                = numIndexes;
-    this->indexes                   = (TriIndex *)Mem_Alloc16(sizeof(TriIndex) * numIndexes);
+    this->indexes                   = (VertIndex *)Mem_Alloc16(sizeof(VertIndex) * numIndexes);
 
     this->dominantTris              = nullptr;
     this->numEdges                  = 0;
@@ -219,7 +219,7 @@ void SubMesh::CacheStaticDataToGpu() {
 
     // Fill in static index buffer.
     if (!bufferCacheManager.IsCached(indexCache)) {
-        bufferCacheManager.AllocStaticIndex(numIndexes * sizeof(TriIndex), indexes, indexCache);
+        bufferCacheManager.AllocStaticIndex(numIndexes * sizeof(VertIndex), indexes, indexCache);
     }
 }
 
@@ -247,10 +247,10 @@ void SubMesh::CacheDynamicDataToGpu(const Mat3x4 *joints, const Material *materi
     int filledVertexCount = vertexCache->offset / sizeof(VertexGenericLit);
 
     // Fill in dynamic index buffer
-    bufferCacheManager.AllocIndex(numIndexes, sizeof(TriIndex), nullptr, indexCache);
+    bufferCacheManager.AllocIndex(numIndexes, sizeof(VertIndex), nullptr, indexCache);
 
-    TriIndex *dst_idxptr = (TriIndex *)bufferCacheManager.MapIndexBuffer(indexCache);
-    TriIndex *src_idxptr = indexes;
+    VertIndex *dst_idxptr = (VertIndex *)bufferCacheManager.MapIndexBuffer(indexCache);
+    VertIndex *src_idxptr = indexes;
 
     for (int i = 0; i < numIndexes; i += 3, dst_idxptr += 3, src_idxptr += 3) {
         dst_idxptr[0] = filledVertexCount + src_idxptr[0];
@@ -265,10 +265,10 @@ void SubMesh::SplitMirroredVerts() {
     Vec3        tangents[2];
     float       handedness;
 
-    static const TriIndex invalidIndex = std::numeric_limits<TriIndex>::max();
+    static const VertIndex invalidIndex = std::numeric_limits<VertIndex>::max();
     float *vertHandednesses = (float *)_alloca16(sizeof(float) * numVerts);
-    TriIndex *mirroredVertsIndexMap = (TriIndex *)_alloca16(sizeof(TriIndex) * numVerts);
-    TriIndex *mirroredVertsIndexes = (TriIndex *)_alloca16(sizeof(TriIndex) * numVerts);
+    VertIndex *mirroredVertsIndexMap = (VertIndex *)_alloca16(sizeof(VertIndex) * numVerts);
+    VertIndex *mirroredVertsIndexes = (VertIndex *)_alloca16(sizeof(VertIndex) * numVerts);
 
     VertexGenericLit *dupVerts = (VertexGenericLit *)Mem_Alloc16(sizeof(VertexGenericLit) * numVerts);
 
@@ -293,7 +293,7 @@ void SubMesh::SplitMirroredVerts() {
             tangents[0], tangents[1], &handedness);
 
         for (int k = 0; k < 3; k++) {
-            TriIndex idx = indexes[i + k];
+            VertIndex idx = indexes[i + k];
 
             if (vertHandednesses[idx] == 0) {
                 vertHandednesses[idx] = handedness;
@@ -317,8 +317,8 @@ void SubMesh::SplitMirroredVerts() {
         simdProcessor->Memcpy(newVerts, verts, sizeof(VertexGenericLit) * numVerts);
         simdProcessor->Memcpy(newVerts + numVerts, dupVerts, sizeof(VertexGenericLit) * numMirroredVerts);
 
-        TriIndex *newMirroredVerts = (TriIndex *)Mem_Alloc16(sizeof(TriIndex) * numMirroredVerts);
-        simdProcessor->Memcpy(newMirroredVerts, mirroredVertsIndexes, sizeof(TriIndex) * numMirroredVerts);
+        VertIndex *newMirroredVerts = (VertIndex *)Mem_Alloc16(sizeof(VertIndex) * numMirroredVerts);
+        simdProcessor->Memcpy(newMirroredVerts, mirroredVertsIndexes, sizeof(VertIndex) * numMirroredVerts);
 
         if (numJointWeights > 0) {
             int numAppendedJointWeights = 0;
@@ -469,7 +469,7 @@ void SubMesh::ComputeNormals() {
     normalsCalculated = true;
 }
 
-static void R_DeriveTangentsWithoutNormals(VertexGenericLit *verts, const int numVerts, const TriIndex *indexes, const int numIndexes) {
+static void R_DeriveTangentsWithoutNormals(VertexGenericLit *verts, const int numVerts, const VertIndex *indexes, const int numIndexes) {
     int numTris = numIndexes / 3;
 
     Vec3 *triangleTangents = (Vec3 *)Mem_Alloc16(numTris * sizeof(Vec3));
@@ -583,7 +583,7 @@ static void R_DeriveTangentsWithoutNormals(VertexGenericLit *verts, const int nu
     Mem_AlignedFree(triangleBitangents);
 }
 
-static void R_DeriveNormalsAndTangents(VertexGenericLit *verts, const int numVerts, const TriIndex *indexes, const int numIndexes) {
+static void R_DeriveNormalsAndTangents(VertexGenericLit *verts, const int numVerts, const VertIndex *indexes, const int numIndexes) {
     Vec3 *vertexNormals = (Vec3 *)Mem_Alloc16(numVerts * sizeof(Vec3));
     Vec3 *vertexTangents = (Vec3 *)Mem_Alloc16(numVerts * sizeof(Vec3));
     Vec3 *vertexBitangents = (Vec3 *)Mem_Alloc16(numVerts * sizeof(Vec3));
@@ -785,8 +785,8 @@ void SubMesh::ComputeDominantTris() {
     // The dominant triangle should have most larger surface area among the adjacent triangles of a vertex
     for (int i = 0; i < numVerts; i++) {
         float dominantTriArea = -1.0f;
-        TriIndex dominantTriVertex2 = -1;
-        TriIndex dominantTriVertex3 = -1;
+        VertIndex dominantTriVertex2 = -1;
+        VertIndex dominantTriVertex3 = -1;
 
         for (int j = 0; j < numIndexes; j += 3) {
             if (indexes[j] == i || indexes[j+1] == i || indexes[j+2] == i) {
@@ -881,9 +881,9 @@ void SubMesh::ComputeTangents(bool includeNormals, bool useUnsmoothedTangents) {
         R_DeriveUnsmoothedNormalsAndTangents(verts, dominantTris, numVerts);
         normalsCalculated = true;
     } else if (!includeNormals) {
-        R_DeriveTangentsWithoutNormals(verts, numVerts, (const TriIndex *)indexes, numIndexes);
+        R_DeriveTangentsWithoutNormals(verts, numVerts, (const VertIndex *)indexes, numIndexes);
     } else {
-        R_DeriveNormalsAndTangents(verts, numVerts, (const TriIndex *)indexes, numIndexes);
+        R_DeriveNormalsAndTangents(verts, numVerts, (const VertIndex *)indexes, numIndexes);
         normalsCalculated = true;
     }
 
@@ -898,85 +898,86 @@ void SubMesh::ComputeEdges() {
     }
 
     // Temporary edge buffer to compute real 'edges'.
-    // Maximum edge count is same as index count. but we need one more space for 0'th edge for dummy.
-    Edge *tempEdges = (Edge *)Mem_Alloc16((numIndexes + 1) * sizeof(tempEdges[0]));
-
-    Edge triEdges[3];
+    // Maximum edge count is same as index count (all triangles are separated).
+    // But we need one more space for 0'th edge for dummy.
+    Edge *tempEdges = (Edge *)Mem_Alloc16((numIndexes + 1) * sizeof(Edge));
     // 0'th edge is not possible to have negative index, so we'll ignore it.
-    memset(&triEdges[0], 0, sizeof(triEdges[0]));
-    tempEdges[0] = triEdges[0];
+    memset(&tempEdges[0], 0, sizeof(Edge));
 
-    // edge's vertex index v0 to the edge table.
-    int32_t *vertexEdges = (int32_t *)Mem_Alloc16(numVerts * sizeof(vertexEdges[0]));
-    memset(vertexEdges, -1, numVerts * sizeof(int32_t));
-    // vertices might have many edges.
+    // Edge's vertex index v0 to the edge index table.
+    int32_t *vertIndexToEdgeIndex = (int32_t *)Mem_Alloc16(numVerts * sizeof(vertIndexToEdgeIndex[0]));
+    memset(vertIndexToEdgeIndex, -1, numVerts * sizeof(int32_t));
+
+    // Vertices might have many edges.
     int32_t *edgeChain = (int32_t *)Mem_Alloc16((numIndexes + 1) * sizeof(edgeChain[0]));
 
-    // edge indexes.
+    // Edge indexes.
     edgeIndexes = (int32_t *)Mem_Alloc16(numIndexes * sizeof(edgeIndexes[0]));
 
+    Edge triEdges[3];
     int numTempEdges = 1;
     int numDisjunctiveEdges = 0;
 
     for (int i = 0; i < numIndexes; i += 3) {
-        // Vertex indexes for a current triangle
-        const TriIndex *triIndexes = indexes + i;
+        // Vertex indexes for a current triangle.
+        const VertIndex *triVertIndexes = indexes + i;
 
-        const int32_t i0 = triIndexes[0];
-        const int32_t i1 = triIndexes[1];
-        const int32_t i2 = triIndexes[2];
+        const int32_t i0 = triVertIndexes[0];
+        const int32_t i1 = triVertIndexes[1];
+        const int32_t i2 = triVertIndexes[2];
 
         // Ordering to small index comes first.
         int32_t s = INT32_SIGNBITSET(i1 - i0);
-        triEdges[0].v[0] = triIndexes[s];
-        triEdges[0].v[1] = triIndexes[s^1];
+        triEdges[0].v[0] = triVertIndexes[s];
+        triEdges[0].v[1] = triVertIndexes[s^1];
         s = INT32_SIGNBITSET(i2 - i1) + 1;
-        triEdges[1].v[0] = triIndexes[s];
-        triEdges[1].v[1] = triIndexes[s^3];
+        triEdges[1].v[0] = triVertIndexes[s];
+        triEdges[1].v[1] = triVertIndexes[s^3];
         s = INT32_SIGNBITSET(i2 - i0) << 1;
-        triEdges[2].v[0] = triIndexes[s];
-        triEdges[2].v[1] = triIndexes[s^2];
+        triEdges[2].v[0] = triVertIndexes[s];
+        triEdges[2].v[1] = triVertIndexes[s^2];
 
         for (int j = 0; j < 3; j++) {
             Edge &edge = triEdges[j];
 
-            const int32_t v0 = edge.v[0]; // edge vertex index 0
-            const int32_t v1 = edge.v[1]; // edge vertex index 1
+            const int32_t v0 = edge.v[0]; // current edge vertex index 0
+            const int32_t v1 = edge.v[1]; // current edge vertex index 1
 
             // edge vertex winding 이 triangle winding (CCW) 과 같다면 0
             // edge vertex winding 이 triangle winding (CCW) 과 다르다면 1
-            const unsigned int order = (v0 == triIndexes[j] ? 0 : 1);
+            const unsigned int order = (triVertIndexes[j] == v0 ? 0 : 1);
 
             // Find the shared edge.
-            int edgeNum;
-            for (edgeNum = vertexEdges[v0]; edgeNum >= 0; edgeNum = edgeChain[edgeNum]) {
-                if (tempEdges[edgeNum].v[1] == v1) {
+            int edgeIndex = vertIndexToEdgeIndex[v0];
+            while (edgeIndex >= 0) {
+                if (tempEdges[edgeIndex].v[1] == v1) {
                     break;
                 }
+                edgeIndex = edgeChain[edgeIndex];
             }
 
             // Add new edge if no shared edge is found or two edges are already shared.
-            if (edgeNum < 0 || tempEdges[edgeNum].t[order] != -1) {
-                if (edgeNum >= 0) {
+            if (edgeIndex < 0 || tempEdges[edgeIndex].t[order] != -1) {
+                if (edgeIndex >= 0) {
                     numDisjunctiveEdges++;
                 }
 
                 // Add an edge to the temporary edge buffer.
                 edge.t[0] = edge.t[1] = -1;
-                edgeNum = numTempEdges;
+                edgeIndex = numTempEdges;
                 tempEdges[numTempEdges++] = edge;
 
                 // Update edge chain for later use.
-                edgeChain[edgeNum] = vertexEdges[v0];
-                vertexEdges[v0] = edgeNum;
+                edgeChain[edgeIndex] = vertIndexToEdgeIndex[v0];
+                vertIndexToEdgeIndex[v0] = edgeIndex;
             }
 
             // Update a triangle index of an edge.
-            //assert(tempEdges[edgeNum].t[order] == -1);
-            tempEdges[edgeNum].t[order] = i / 3;
+            //assert(tempEdges[edgeIndex].t[order] == -1);
+            tempEdges[edgeIndex].t[order] = i / 3;
 
             // Update an edge index.
-            edgeIndexes[i + j] = order ? -edgeNum : edgeNum;
+            edgeIndexes[i + j] = order ? -edgeIndex : edgeIndex;
         }
     }
 
@@ -990,7 +991,7 @@ void SubMesh::ComputeEdges() {
     simdProcessor->Memcpy(edges, tempEdges, sizeof(Edge) * numEdges);
 
     // Cleans up temporary memory
-    Mem_AlignedFree(vertexEdges);
+    Mem_AlignedFree(vertIndexToEdgeIndex);
     Mem_AlignedFree(edgeChain);
     Mem_AlignedFree(tempEdges);
 
@@ -1002,20 +1003,23 @@ int SubMesh::FindEdge(int32_t v1, int32_t v2) const {
         return false;
     }
 
-    int32_t firstVertexIndex, secondVertexIndex;
-    if (v1 < v2) {
-        firstVertexIndex = v1;
-        secondVertexIndex = v2;
+    bool ascendingOrder = v1 < v2;
+    int32_t minVertexIndex, maxVertexIndex;
+    if (ascendingOrder) {
+        minVertexIndex = v1;
+        maxVertexIndex = v2;
     } else {
-        firstVertexIndex = v2;
-        secondVertexIndex = v1;
+        minVertexIndex = v2;
+        maxVertexIndex = v1;
     }
 
     for (int edgeIndex = 1; edgeIndex < numEdges; edgeIndex++) {
-        if (edges[edgeIndex].firstVertexIndex == firstVertexIndex &&
-            edges[edgeIndex].secondVertexIndex == secondVertexIndex) {
+        const Edge *edge = &edges[edgeIndex];
+
+        if (edge->v[0] == minVertexIndex &&
+            edge->v[1] == maxVertexIndex) {
             // Returns negative edge index if and if only first vertex index is larger than second one.
-            return v1 < v2 ? edgeIndex : -edgeIndex;
+            return ascendingOrder ? edgeIndex : -edgeIndex;
         }
     }
 
@@ -1028,8 +1032,11 @@ bool SubMesh::IsClosed() const {
     }
 
     // All the edges should have two adjacent triangles if the mesh is closed
-    for (int i = 0; i < numEdges; i++) {
-        if (edges[i].t[0] < 0 || edges[i].t[1] < 0) {
+    for (int edgeIndex = 1; edgeIndex < numEdges; edgeIndex++) {
+        const Edge *edge = &edges[edgeIndex];
+
+        if (edge->t[0] < 0 ||
+            edge->t[1] < 0) {
             return false;
         }
     }

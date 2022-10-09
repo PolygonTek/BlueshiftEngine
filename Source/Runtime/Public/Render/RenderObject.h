@@ -171,7 +171,7 @@ public:
         int                 numVerts = 0;
         VertexGeneric *     verts = nullptr;
         int                 numIndexes = 0;
-        TriIndex *          indexes = nullptr;
+        VertIndex *         indexes = nullptr;
 
         //
         // Text rendering

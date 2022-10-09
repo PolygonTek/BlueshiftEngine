@@ -240,7 +240,6 @@ public:
     static Mesh *           defaultCylinderMesh;
     static Mesh *           defaultCapsuleMesh;
     static Mesh *           defaultRoundedBoxMesh;
-    static Mesh *           testSlicedMesh;
 
 private:
     static void             Cmd_ListMeshes(const CmdArgs &args);

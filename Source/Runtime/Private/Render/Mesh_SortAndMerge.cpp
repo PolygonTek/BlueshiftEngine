@@ -121,7 +121,7 @@ void Mesh::SortAndMerge() {
             newSurf->materialIndex = surfaces[m0]->materialIndex;
 
             VertexGenericLit *vp = newSurf->subMesh->verts;
-            TriIndex *ip = newSurf->subMesh->indexes;
+            VertIndex *ip = newSurf->subMesh->indexes;
 
             int filledVertexCount = 0;
 

@@ -165,7 +165,7 @@ void ComImage::UpdateRawVertexes() {
             if (renderObjectDef.indexes) {
                 Mem_AlignedFree(renderObjectDef.indexes);
             }
-            renderObjectDef.indexes = (TriIndex *)Mem_Alloc16(sizeof(renderObjectDef.indexes[0]) * 6);
+            renderObjectDef.indexes = (VertIndex *)Mem_Alloc16(sizeof(renderObjectDef.indexes[0]) * 6);
         }
 
         renderObjectDef.numVerts = 4;
@@ -204,7 +204,7 @@ void ComImage::UpdateRawVertexes() {
             if (renderObjectDef.indexes) {
                 Mem_AlignedFree(renderObjectDef.indexes);
             }
-            renderObjectDef.indexes = (TriIndex *)Mem_Alloc16(sizeof(renderObjectDef.indexes[0]) * 54);
+            renderObjectDef.indexes = (VertIndex *)Mem_Alloc16(sizeof(renderObjectDef.indexes[0]) * 54);
         }
 
         // HACK

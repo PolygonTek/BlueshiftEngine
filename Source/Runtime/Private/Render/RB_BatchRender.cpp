@@ -24,11 +24,11 @@ void Batch::DrawPrimitives() const {
     rhi.BindBuffer(RHI::BufferType::Index, indexBuffer);
 
     if (numIndirectCommands > 0) {
-        rhi.MultiDrawElementsIndirect(RHI::Topology::TriangleList, sizeof(TriIndex), 0, numIndirectCommands, sizeof(RHI::DrawElementsIndirectCommand));
+        rhi.MultiDrawElementsIndirect(RHI::Topology::TriangleList, sizeof(VertIndex), 0, numIndirectCommands, sizeof(RHI::DrawElementsIndirectCommand));
     } else if (numInstances > 0) {
-        rhi.DrawElementsInstanced(RHI::Topology::TriangleList, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(TriIndex), nullptr, numInstances);
+        rhi.DrawElementsInstanced(RHI::Topology::TriangleList, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(VertIndex), nullptr, numInstances);
     } else {
-        rhi.DrawElements(RHI::Topology::TriangleList, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(TriIndex), nullptr);
+        rhi.DrawElements(RHI::Topology::TriangleList, startIndex, r_singleTriangle.GetBool() ? 3 : numIndexes, sizeof(VertIndex), nullptr);
     }
 
     int instanceCount = Max(numInstances, 1);

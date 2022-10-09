@@ -25,14 +25,14 @@ BE_NAMESPACE_BEGIN
 #define SIGNED_FLOAT_TO_BYTE(x)         Math::Ftob(((x) + 1.0f) * (255.0f / 2.0f) + 0.5f)
 
 #if 1
-using TriIndex = uint32_t;
+using VertIndex = uint32_t;
 #else
-using TriIndex = uint16_t;
+using VertIndex = uint16_t;
 #endif
 
 /// This is used for calculating unsmoothed normals and tangents for deformed models.
 struct DominantTri {
-    TriIndex        v2, v3;                 ///< Dominant triangle index [i, v2, v3]
+    VertIndex       v2, v3;                 ///< Dominant triangle index [i, v2, v3]
     float           normalizationScale[3];  ///< Normalization scales for tangent, bitangent and normal
 };
 

@@ -28,6 +28,10 @@ class MeshImporter;
 
 BE_NAMESPACE_BEGIN
 
+struct BufferCache;
+
+class Material;
+
 /// Edge
 /// 
 /// Represents a line segment of a triangle.
@@ -43,16 +47,8 @@ struct Edge {
      \  /        
       v1 ------
 */
-    union {
-        struct {
-            int32_t         firstVertexIndex;
-            int32_t         secondVertexIndex;
-            int32_t         firstTriangleIndex;
-            int32_t         secondTriangleIndex;
-        };
-        int32_t             v[2];               ///< vertex indexes to define an edge. v[0] is always less than v[1]. opposite direction edge is not stored in the sub mesh.
-        int32_t             t[2];               ///< adjacent triangle indexes. t[0] is a CCW triangle.
-    };
+    int32_t                 v[2];               ///< vertex indexes to define an edge. v[0] is always less than v[1]. opposite direction edge is not stored in the sub mesh.
+    int32_t                 t[2];               ///< adjacent triangle indexes. t[0] is a CCW triangle.
 };
 
 /// Joint weight
@@ -60,10 +56,6 @@ struct JointWeight {
     int32_t                 jointMatOffset;     ///< offset of matrix array referenced by weight index.
     int32_t                 nextVertOffset;     ///< 0 means the same vertex.
 };
-
-struct BufferCache;
-
-class Material;
 
 class SubMesh {
     friend class Mesh;
@@ -92,14 +84,14 @@ public:
     VertexGenericLit *      Verts() const { return verts; }
 
     int                     NumIndexes() const { return numIndexes; }
-    TriIndex *              Indexes() const { return indexes; }
+    VertIndex *             Indexes() const { return indexes; }
 
     int                     VertexWeightSize() const;
     int                     MaxVertexWeights() const;
     void *                  VertexWeights() const { return vertWeights; }
 
                             /// Finds an edge index by two vertex indexes.
-                            /// if v1 is larger than v2, negative number will be returned.
+                            /// If v1 is larger than v2, negative number will be returned.
                             /// To use this function, edge information must be pre-calculated.
     int                     FindEdge(int32_t v1, int32_t v2) const;
 
@@ -117,7 +109,7 @@ public:
 
     const AABB &            GetAABB() const { return aabb; }
 
-                            // Compute mass properties (useful only for closed mesh)
+                            /// Compute mass properties (useful only for closed mesh)
     float                   ComputeVolume() const;
     const Vec3              ComputeCentroid() const;
     const Mat3              ComputeInertiaTensor(const Vec3 &centroid, float mass) const;
@@ -155,11 +147,11 @@ private:
     int                     numVerts;                   // mirrored vertices 스플릿팅 후에,
     VertexGenericLit *      verts;                      // verts 배열 뒷 부분에 스플릿팅된 vertex 들이 추가된다.
     int                     numMirroredVerts;           // numVerts 에 합산되어 있다 (numOriginalVerts = numVerts - numMirroredVerts)
-    TriIndex *              mirroredVerts;              // 추가된 mirrored vertex 들의 original vertex index 배열
+    VertIndex *             mirroredVerts;              // 추가된 mirrored vertex 들의 original vertex index 배열
     DominantTri *           dominantTris;               // dominant triangles for each vertices
 
     int                     numIndexes;                 // number of triangle indexes
-    TriIndex *              indexes;                    // counter clock-wise order triangle indexes
+    VertIndex *             indexes;                    // counter clock-wise order triangle indexes
                             
     int                     numEdges;                   // number of edges that is not including shared edges
     Edge *                  edges;                      // shared edges are not stored explicitly

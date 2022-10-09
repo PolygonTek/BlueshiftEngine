@@ -166,15 +166,15 @@ void Batch::DrawStaticSubMesh(SubMesh *subMesh) {
 void Batch::DrawDynamicSubMesh(SubMesh *subMesh) {
     if (startIndex < 0) {
         // startIndex is set to -1 after Flush()
-        startIndex = subMesh->indexCache->offset / sizeof(TriIndex);
+        startIndex = subMesh->indexCache->offset / sizeof(VertIndex);
     } else {
         // Flush because indexCache cannot be drawn all at once unless they are connected in sequence.
-        if (startIndex + numIndexes != subMesh->indexCache->offset / sizeof(TriIndex) ||
+        if (startIndex + numIndexes != subMesh->indexCache->offset / sizeof(VertIndex) ||
             vertexBuffer != subMesh->vertexCache->buffer ||
             indexBuffer != subMesh->indexCache->buffer) {
             Flush();
 
-            startIndex = subMesh->indexCache->offset / sizeof(TriIndex);
+            startIndex = subMesh->indexCache->offset / sizeof(VertIndex);
         }
     }
 

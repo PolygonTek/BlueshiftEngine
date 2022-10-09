@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -108,12 +108,12 @@ void GuiMesh::CacheIndexes() {
     }
 
     assert(totalIndexes % 6 == 0);
-    static constexpr TriIndex quadTrisIndexes[6] = { 0, 1, 2, 0, 2, 3 };
+    static constexpr VertIndex quadTrisIndexes[6] = { 0, 1, 2, 0, 2, 3 };
 
     // Cache all indices in the dynamic index buffer.
     BufferCache indexCache;
-    bufferCacheManager.AllocIndex(totalIndexes, sizeof(TriIndex), nullptr, &indexCache);
-    TriIndex *indexPointer = (TriIndex *)bufferCacheManager.MapIndexBuffer(&indexCache);
+    bufferCacheManager.AllocIndex(totalIndexes, sizeof(VertIndex), nullptr, &indexCache);
+    VertIndex *indexPointer = (VertIndex *)bufferCacheManager.MapIndexBuffer(&indexCache);
 
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
         GuiMeshSurf *surf = &surfaces[surfaceIndex];
@@ -140,7 +140,7 @@ void GuiMesh::CacheIndexes() {
     
         surf->indexCache = indexCache;
         surf->indexCache.offset = offset;
-        surf->indexCache.bytes = sizeof(TriIndex) * surf->numIndexes;
+        surf->indexCache.bytes = sizeof(VertIndex) * surf->numIndexes;
         // TODO: Prebuilt index cache in max batch size and just make use of base vertex index to use calling RHI::DrawElementsBaseVertex
         //surf->indexCache.baseVertexIndex = surf->vertexCache.offset / sizeof(VertexGeneric);
 

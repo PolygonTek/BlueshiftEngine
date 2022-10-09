@@ -376,8 +376,8 @@ void RenderWorld::AddRawMeshes(VisCamera *camera) {
 
         // Cache indexes.
         BufferCache indexCache;
-        bufferCacheManager.AllocIndex(renderObjectDef.numIndexes, sizeof(TriIndex), nullptr, &indexCache);
-        TriIndex *indexPointer = (TriIndex *)bufferCacheManager.MapIndexBuffer(&indexCache);
+        bufferCacheManager.AllocIndex(renderObjectDef.numIndexes, sizeof(VertIndex), nullptr, &indexCache);
+        VertIndex *indexPointer = (VertIndex *)bufferCacheManager.MapIndexBuffer(&indexCache);
 
         int baseVertexIndex = vertexCache.offset / sizeof(VertexGeneric);
 
