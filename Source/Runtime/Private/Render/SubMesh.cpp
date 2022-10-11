@@ -898,15 +898,14 @@ void SubMesh::ComputeEdges() {
     }
 
     // Temporary edge buffer to compute real 'edges'.
-    // Maximum edge count is same as index count (all triangles are separated).
-    // But we need one more space for 0'th edge for dummy.
+    // Maximum edge count is same as index count (if all triangles are separated).
+    // But we need one more space for 0'th edge for dummy (not used).
     Edge *tempEdges = (Edge *)Mem_Alloc16((numIndexes + 1) * sizeof(Edge));
-    // 0'th edge is not possible to have negative index, so we'll ignore it.
     memset(&tempEdges[0], 0, sizeof(Edge));
 
     // Edge's vertex index v0 to the edge index table.
-    int32_t *vertIndexToEdgeIndex = (int32_t *)Mem_Alloc16(numVerts * sizeof(vertIndexToEdgeIndex[0]));
-    memset(vertIndexToEdgeIndex, -1, numVerts * sizeof(int32_t));
+    int32_t *indexToEdgeIndex = (int32_t *)Mem_Alloc16(numVerts * sizeof(indexToEdgeIndex[0]));
+    memset(indexToEdgeIndex, -1, numVerts * sizeof(int32_t));
 
     // Vertices might have many edges.
     int32_t *edgeChain = (int32_t *)Mem_Alloc16((numIndexes + 1) * sizeof(edgeChain[0]));
@@ -920,35 +919,35 @@ void SubMesh::ComputeEdges() {
 
     for (int i = 0; i < numIndexes; i += 3) {
         // Vertex indexes for a current triangle.
-        const VertIndex *triVertIndexes = indexes + i;
+        const VertIndex *indexesForTri = indexes + i;
+        // Current triangle index.
+        const int32_t triIndex = i / 3;
 
-        const int32_t i0 = triVertIndexes[0];
-        const int32_t i1 = triVertIndexes[1];
-        const int32_t i2 = triVertIndexes[2];
+        const int32_t i0 = indexesForTri[0];
+        const int32_t i1 = indexesForTri[1];
+        const int32_t i2 = indexesForTri[2];
 
         // Ordering to small index comes first.
         int32_t s = INT32_SIGNBITSET(i1 - i0);
-        triEdges[0].v[0] = triVertIndexes[s];
-        triEdges[0].v[1] = triVertIndexes[s^1];
+        triEdges[0].v[0] = indexesForTri[s];
+        triEdges[0].v[1] = indexesForTri[s^1];
         s = INT32_SIGNBITSET(i2 - i1) + 1;
-        triEdges[1].v[0] = triVertIndexes[s];
-        triEdges[1].v[1] = triVertIndexes[s^3];
+        triEdges[1].v[0] = indexesForTri[s];
+        triEdges[1].v[1] = indexesForTri[s^3];
         s = INT32_SIGNBITSET(i2 - i0) << 1;
-        triEdges[2].v[0] = triVertIndexes[s];
-        triEdges[2].v[1] = triVertIndexes[s^2];
+        triEdges[2].v[0] = indexesForTri[s];
+        triEdges[2].v[1] = indexesForTri[s^2];
 
         for (int j = 0; j < 3; j++) {
             Edge &edge = triEdges[j];
 
-            const int32_t v0 = edge.v[0]; // current edge vertex index 0
-            const int32_t v1 = edge.v[1]; // current edge vertex index 1
+            const int32_t v0 = edge.v[0]; // current edge's smaller vertex index
+            const int32_t v1 = edge.v[1]; // current edge's bigger vertex index
 
-            // edge vertex winding 이 triangle winding (CCW) 과 같다면 0
-            // edge vertex winding 이 triangle winding (CCW) 과 다르다면 1
-            const unsigned int order = (triVertIndexes[j] == v0 ? 0 : 1);
+            const unsigned int order = (v0 == indexesForTri[j] ? 0 : 1);
 
             // Find the shared edge.
-            int currentEdgeIndex = vertIndexToEdgeIndex[v0];
+            int currentEdgeIndex = indexToEdgeIndex[v0];
             while (currentEdgeIndex >= 0) {
                 if (tempEdges[currentEdgeIndex].v[1] == v1) {
                     break;
@@ -968,16 +967,16 @@ void SubMesh::ComputeEdges() {
                 tempEdges[numTempEdges++] = edge;
 
                 // Update edge chain for later use.
-                edgeChain[currentEdgeIndex] = vertIndexToEdgeIndex[v0];
-                vertIndexToEdgeIndex[v0] = currentEdgeIndex;
+                edgeChain[currentEdgeIndex] = indexToEdgeIndex[v0];
+                indexToEdgeIndex[v0] = currentEdgeIndex;
             }
 
             // Update a triangle index of an edge.
             //assert(tempEdges[currentEdgeIndex].t[order] == -1);
-            tempEdges[currentEdgeIndex].t[order] = i / 3;
+            tempEdges[currentEdgeIndex].t[order] = triIndex;
 
             // Update an edge index.
-            edgeIndexes[i + j] = order ? -currentEdgeIndex : currentEdgeIndex;
+            edgeIndexes[i + j] = (order == 0 ? currentEdgeIndex : -currentEdgeIndex);
         }
     }
 
@@ -991,7 +990,7 @@ void SubMesh::ComputeEdges() {
     simdProcessor->Memcpy(edges, tempEdges, sizeof(Edge) * numEdges);
 
     // Cleans up temporary memory
-    Mem_AlignedFree(vertIndexToEdgeIndex);
+    Mem_AlignedFree(indexToEdgeIndex);
     Mem_AlignedFree(edgeChain);
     Mem_AlignedFree(tempEdges);
 
@@ -1061,33 +1060,48 @@ bool SubMesh::IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist) 
         return false;
     }
 
-    byte *sidedness = (byte *)_alloca(numEdges * sizeof(byte));
     float dist = Math::Infinity;
+
+    byte *sidedness = (byte *)_alloca(numEdges * sizeof(byte));
 
     Pluecker rayPl, pl;
     rayPl.SetFromRay(ray.origin, ray.dir);
 
     // ray sidedness for edges
     for (int i = 0; i < numEdges; i++) {
-        pl.SetFromLine(verts[edges[i].v[1]].xyz, verts[edges[i].v[0]].xyz);
+        const Vec3& p0 = verts[edges[i].v[1]].xyz;
+        const Vec3& p1 = verts[edges[i].v[0]].xyz;
+        pl.SetFromLine(p0, p1);
         float d = pl.PermutedInnerProduct(rayPl);
-        sidedness[i] = IEEE_FLT_SIGNBITSET(d);
+        sidedness[i] = (byte)IEEE_FLT_SIGNBITSET(d);
     }
 
     Plane plane;
 
     // test triangles
     for (int i = 0; i < numIndexes; i += 3) {
-        const int32_t i0 = edgeIndexes[i + 0];
-        const int32_t i1 = edgeIndexes[i + 1];
-        const int32_t i2 = edgeIndexes[i + 2];
+#if 0
+        const int32_t i0 = indexes[i + 0];
+        const int32_t i1 = indexes[i + 1];
+        const int32_t i2 = indexes[i + 2];
 
-        const int32_t s0 = sidedness[Math::Abs(i0)] ^ INT32_SIGNBITSET(i0);
-        const int32_t s1 = sidedness[Math::Abs(i1)] ^ INT32_SIGNBITSET(i1);
-        const int32_t s2 = sidedness[Math::Abs(i2)] ^ INT32_SIGNBITSET(i2);
+        const int32_t e0 = FindEdge(i0, i1);
+        const int32_t e1 = FindEdge(i1, i2);
+        const int32_t e2 = FindEdge(i2, i0);
+#else
+        const int32_t e0 = edgeIndexes[i + 0];
+        const int32_t e1 = edgeIndexes[i + 1];
+        const int32_t e2 = edgeIndexes[i + 2];
+#endif
+        const int32_t s0 = sidedness[Math::Abs(e0)] ^ INT32_SIGNBITSET(e0);
+        const int32_t s1 = sidedness[Math::Abs(e1)] ^ INT32_SIGNBITSET(e1);
+        const int32_t s2 = sidedness[Math::Abs(e2)] ^ INT32_SIGNBITSET(e2);
 
         if ((s0 & s1 & s2) || (!ignoreBackFace && !(s0 | s1 | s2))) {
-            plane.SetFromPoints(verts[indexes[i + 0]].xyz, verts[indexes[i + 1]].xyz, verts[indexes[i + 2]].xyz);
+            const Vec3 &v0 = verts[indexes[i + 0]].xyz;
+            const Vec3 &v1 = verts[indexes[i + 1]].xyz;
+            const Vec3 &v2 = verts[indexes[i + 2]].xyz;
+            plane.SetFromPoints(v0, v1, v2);
 
             float d;
             if (plane.IntersectRay(ray, false, &d)) {
