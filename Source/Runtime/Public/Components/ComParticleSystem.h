@@ -20,8 +20,11 @@
 BE_NAMESPACE_BEGIN
 
 class Asset;
+class LuaVM;
 
 class ComParticleSystem : public ComRenderable {
+    friend class LuaVM;
+
 public:
     OBJECT_PROTOTYPE(ComParticleSystem);
 
@@ -62,6 +65,9 @@ public:
 
     Guid                    GetParticleSystemGuid() const;
     void                    SetParticleSystemGuid(const Guid &guid);
+
+    ParticleSystem *        GetParticleSystem() const;
+    void                    SetParticleSystem(const ParticleSystem *particleSystem);
 
 protected:
     virtual void            OnActive() override;

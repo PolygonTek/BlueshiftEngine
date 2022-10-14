@@ -745,4 +745,20 @@ void ComParticleSystem::SetParticleSystemGuid(const Guid &guid) {
     UpdateVisuals();
 }
 
+ParticleSystem *ComParticleSystem::GetParticleSystem() const {
+    Guid particleSystemGuid = GetParticleSystemGuid();
+    if (particleSystemGuid.IsZero()) {
+        return nullptr;
+    }
+
+    const Str particleSystemHashName = resourceGuidMapper.Get(particleSystemGuid);
+    return particleSystemManager.GetParticleSystem(particleSystemHashName);
+}
+
+void ComParticleSystem::SetParticleSystem(const ParticleSystem *particleSystem) {
+    const Guid particleSystemGuid = resourceGuidMapper.Get(particleSystem->GetHashName());
+
+    SetParticleSystemGuid(particleSystemGuid);
+}
+
 BE_NAMESPACE_END

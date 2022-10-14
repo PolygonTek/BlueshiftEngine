@@ -23,6 +23,9 @@ void LuaVM::RegisterParticleSystemComponent(LuaCpp::Module &module) {
 
     _ComTextRenderer.SetClass<ComParticleSystem>(module["ComRenderable"]);
     _ComTextRenderer.AddClassMembers<ComParticleSystem>(
+        "particle_system", &ComParticleSystem::GetParticleSystem,
+        "set_particle_system", &ComParticleSystem::SetParticleSystem,
+        "play_on_awake", &ComParticleSystem::playOnAwake,
         "is_alive", &ComParticleSystem::IsAlive,
         "play", &ComParticleSystem::Play,
         "stop", &ComParticleSystem::Stop,

@@ -31,6 +31,7 @@ class Shader;
 class Skeleton;
 class Sound;
 class Texture;
+class ParticleSystem;
 
 class Asset : public Object {
     friend class ::AssetDatabase;
@@ -77,6 +78,7 @@ public:
     Skeleton *                  GetSkeleton() const;
     Sound *                     GetSound() const;
     Texture *                   GetTexture() const;
+    ParticleSystem *            GetParticleSystem() const;
 
                                 /// Gets the hierarchy node.
     const Hierarchy<Asset> &    GetNode() const { return node; }

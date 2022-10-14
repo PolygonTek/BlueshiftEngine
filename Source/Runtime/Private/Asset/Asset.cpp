@@ -136,6 +136,14 @@ Texture *Asset::GetTexture() const {
     return nullptr;
 }
 
+ParticleSystem *Asset::GetParticleSystem() const {
+    ParticleSystemResource *particleSystemResource = resource->Cast<ParticleSystemResource>();
+    if (particleSystemResource) {
+        return particleSystemResource->GetParticleSystem();
+    }
+    return nullptr;
+}
+
 const Str Asset::NormalizeAssetPath(const Str &assetPath) {
     Str normalizedAssetPath = assetPath;
 

@@ -16,14 +16,15 @@
 #include "Scripting/LuaVM.h"
 #include "Asset/Asset.h"
 #include "Render/Anim.h"
-#include "AnimController/AnimController.h"
-#include "Game/Prefab.h"
 #include "Render/Material.h"
 #include "Render/Mesh.h"
 #include "Render/Shader.h"
 #include "Render/Skeleton.h"
 #include "Render/Texture.h"
+#include "Render/ParticleSystem.h"
 #include "Sound/SoundSystem.h"
+#include "AnimController/AnimController.h"
+#include "Game/Prefab.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -34,14 +35,15 @@ void LuaVM::RegisterAsset(LuaCpp::Module &module) {
     _Asset.AddClassMembers<Asset>(
         "to_string", &Asset::ToString,
         "anim", &Asset::GetAnim,
-        "animController", &Asset::GetAnimController,
         "material", &Asset::GetMaterial,
         "mesh", &Asset::GetMesh,
-        "prefab", &Asset::GetPrefab,
         "shader", &Asset::GetShader,
         "skeleton", &Asset::GetSkeleton,
+        "texture", &Asset::GetTexture,
+        "particle_system", &Asset::GetParticleSystem,
         "sound", &Asset::GetSound,
-        "texture", &Asset::GetTexture);
+        "anim_controller", &Asset::GetAnimController,
+        "prefab", &Asset::GetPrefab);
 }
 
 BE_NAMESPACE_END
