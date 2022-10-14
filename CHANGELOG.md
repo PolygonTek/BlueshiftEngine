@@ -1,6 +1,11 @@
 Version History
 ---------------
 
+### 0.8.0
+- Added support for slicing mesh
+- Added support for fracturing mesh
+- Added support for IK
+
 ### 0.7.0
 - Added support for 2D mode for editing GUI
 - Added support for rect tool gizmo

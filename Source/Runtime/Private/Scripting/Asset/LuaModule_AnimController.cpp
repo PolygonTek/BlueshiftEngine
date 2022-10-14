@@ -16,6 +16,7 @@
 #include "Scripting/LuaVM.h"
 #include "AnimController/AnimController.h"
 #include "Asset/Resource.h"
+#include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -23,6 +24,16 @@ void LuaVM::RegisterAnimController(LuaCpp::Module &module) {
     LuaCpp::Selector _AnimController = module["AnimController"];
 
     _AnimController.SetClass<AnimController>();
+
+    _AnimController["new"].SetFunc([]() {
+        Guid newGuid = Guid::CreateGuid();
+        Str animControllerName = Str("AnimController-") + newGuid.ToString();
+        resourceGuidMapper.Set(newGuid, animControllerName);
+        return animControllerManager.AllocAnimController(animControllerName);
+    });
+    _AnimController["release"].SetFunc([](AnimController *animController) {
+        animControllerManager.ReleaseAnimController(animController);
+    });
 }
 
 BE_NAMESPACE_END

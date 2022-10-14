@@ -16,6 +16,7 @@
 #include "Scripting/LuaVM.h"
 #include "Sound/SoundSystem.h"
 #include "Asset/Resource.h"
+#include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -38,6 +39,16 @@ void LuaVM::RegisterSound(LuaCpp::Module &module) {
         "get_playing_time", &Sound::GetPlayingTime,
         "set_playing_time", &Sound::SetPlayingTime,
         "update_position", &Sound::UpdatePosition);
+
+    _Sound["new"].SetFunc([]() {
+        Guid newGuid = Guid::CreateGuid();
+        Str soundName = Str("Sound-") + newGuid.ToString();
+        resourceGuidMapper.Set(newGuid, soundName);
+        return soundSystem.AllocSound(soundName);
+    });
+    _Sound["release"].SetFunc([](Sound *sound) {
+        soundSystem.ReleaseSound(sound);
+    });
 }
 
 BE_NAMESPACE_END

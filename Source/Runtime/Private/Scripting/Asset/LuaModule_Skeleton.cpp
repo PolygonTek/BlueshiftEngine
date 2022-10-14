@@ -16,6 +16,7 @@
 #include "Scripting/LuaVM.h"
 #include "Render/Skeleton.h"
 #include "Asset/Resource.h"
+#include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -26,6 +27,16 @@ void LuaVM::RegisterSkeleton(LuaCpp::Module &module) {
     _Skeleton.AddClassMembers<Skeleton>(
         "name", &Skeleton::GetName,
         "num_joints", &Skeleton::NumJoints);
+
+    _Skeleton["new"].SetFunc([]() {
+        Guid newGuid = Guid::CreateGuid();
+        Str skeletonName = Str("Skeleton-") + newGuid.ToString();
+        resourceGuidMapper.Set(newGuid, skeletonName);
+        return skeletonManager.AllocSkeleton(skeletonName);
+    });
+    _Skeleton["release"].SetFunc([](Skeleton *skeleton) {
+        skeletonManager.ReleaseSkeleton(skeleton);
+    });
 }
 
 BE_NAMESPACE_END

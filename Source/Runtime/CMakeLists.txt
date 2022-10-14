@@ -647,6 +647,7 @@ set(COMMON_ENGINE_FILES
     Private/Scripting/Asset/LuaModule_Anim.cpp
     Private/Scripting/Asset/LuaModule_AnimController.cpp
     Private/Scripting/Asset/LuaModule_Sound.cpp
+    Private/Scripting/Asset/LuaModule_ParticleSystem.cpp
     Private/Scripting/Asset/LuaModule_Prefab.cpp
     Private/Scripting/Components/LuaModule_Component.cpp
     Private/Scripting/Components/LuaModule_ComTransform.cpp

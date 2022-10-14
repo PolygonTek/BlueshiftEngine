@@ -32,11 +32,14 @@ void LuaVM::RegisterMesh(LuaCpp::Module &module) {
         "compute_volume", &Mesh::ComputeVolume,
         "compute_centroid", &Mesh::ComputeCentroid);
 
-    _Mesh["new_mesh"].SetFunc([]() {
+    _Mesh["new"].SetFunc([]() {
         Guid newGuid = Guid::CreateGuid();
         Str meshName = Str("Mesh-") + newGuid.ToString();
         resourceGuidMapper.Set(newGuid, meshName);
         return meshManager.AllocMesh(meshName);
+    });
+    _Mesh["release"].SetFunc([](Mesh *mesh) {
+        meshManager.ReleaseMesh(mesh);
     });
     _Mesh["try_slice_mesh"].SetFunc([](const Mesh &srcMesh, const Plane &slicePlane, bool generateCap, bool generateOtherMesh, Mesh *outSlicedMesh, Mesh *outOtherMesh) {
         return Mesh::TrySliceMesh(srcMesh, slicePlane, generateCap, generateOtherMesh, outSlicedMesh, outOtherMesh);

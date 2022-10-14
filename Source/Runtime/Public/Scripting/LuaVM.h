@@ -106,6 +106,7 @@ private:
     void                    RegisterAnim(LuaCpp::Module &module);
     void                    RegisterAnimController(LuaCpp::Module &module);
     void                    RegisterSound(LuaCpp::Module &module);
+    void                    RegisterParticleSystem(LuaCpp::Module &module);
     void                    RegisterPrefab(LuaCpp::Module &module);
 
     void                    RegisterComponent(LuaCpp::Module &module);

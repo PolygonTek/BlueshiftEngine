@@ -16,6 +16,7 @@
 #include "Scripting/LuaVM.h"
 #include "Render/Anim.h"
 #include "Asset/Resource.h"
+#include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -25,6 +26,16 @@ void LuaVM::RegisterAnim(LuaCpp::Module &module) {
     _Anim.SetClass<Anim>();
     _Anim.AddClassMembers<Anim>(
         "name", &Anim::GetName);
+
+    _Anim["new"].SetFunc([]() {
+        Guid newGuid = Guid::CreateGuid();
+        Str animName = Str("Anim-") + newGuid.ToString();
+        resourceGuidMapper.Set(newGuid, animName);
+        return animManager.AllocAnim(animName);
+    });
+    _Anim["release"].SetFunc([](Anim *anim) {
+        animManager.ReleaseAnim(anim);
+    });
 }
 
 BE_NAMESPACE_END

@@ -14,32 +14,27 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Render/Texture.h"
+#include "Render/ParticleSystem.h"
 #include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
 
-void LuaVM::RegisterTexture(LuaCpp::Module &module) {
-    LuaCpp::Selector _Texture = module["Texture"];
+void LuaVM::RegisterParticleSystem(LuaCpp::Module &module) {
+    LuaCpp::Selector _ParticleSystem = module["ParticleSystem"];
 
-    _Texture.SetClass<Texture>();
-    _Texture.AddClassMembers<Texture>(
-        "name", &Texture::GetName,
-        "width", &Texture::GetWidth,
-        "height", &Texture::GetHeight,
-        "depth", &Texture::GetDepth,
-        "num_slices", &Texture::NumSlices,
-        "is_default_texture", &Texture::IsDefaultTexture);
+    _ParticleSystem.SetClass<ParticleSystem>();
+    _ParticleSystem.AddClassMembers<ParticleSystem>(
+        "name", &ParticleSystem::GetName);
 
-    _Texture["new"].SetFunc([]() {
+    _ParticleSystem["new"].SetFunc([]() {
         Guid newGuid = Guid::CreateGuid();
-        Str textureName = Str("Texture-") + newGuid.ToString();
-        resourceGuidMapper.Set(newGuid, textureName);
-        return textureManager.AllocTexture(textureName);
+        Str particleSystemName = Str("ParticleSystem-") + newGuid.ToString();
+        resourceGuidMapper.Set(newGuid, particleSystemName);
+        return particleSystemManager.AllocParticleSystem(particleSystemName);
     });
-    _Texture["release"].SetFunc([](Texture *texture) {
-        textureManager.ReleaseTexture(texture);
+    _ParticleSystem["release"].SetFunc([](ParticleSystem *particleSystem) {
+        particleSystemManager.ReleaseParticleSystem(particleSystem);
     });
 }
 

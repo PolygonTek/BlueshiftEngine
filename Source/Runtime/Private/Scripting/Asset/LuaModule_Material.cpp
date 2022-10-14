@@ -16,6 +16,7 @@
 #include "Scripting/LuaVM.h"
 #include "Render/Material.h"
 #include "Asset/Resource.h"
+#include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -28,6 +29,16 @@ void LuaVM::RegisterMaterial(LuaCpp::Module &module) {
         "is_lit_surface", &Material::IsLitSurface,
         "is_sky_surface", &Material::IsSkySurface,
         "is_shadow_caster", &Material::IsShadowCaster);
+
+    _Material["new"].SetFunc([]() {
+        Guid newGuid = Guid::CreateGuid();
+        Str textureName = Str("Material-") + newGuid.ToString();
+        resourceGuidMapper.Set(newGuid, textureName);
+        return materialManager.AllocMaterial(textureName);
+    });
+    _Material["release"].SetFunc([](Material *material) {
+        materialManager.ReleaseMaterial(material);
+    });
 }
 
 BE_NAMESPACE_END

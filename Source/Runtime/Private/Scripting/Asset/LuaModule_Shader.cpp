@@ -16,6 +16,7 @@
 #include "Scripting/LuaVM.h"
 #include "Render/Shader.h"
 #include "Asset/Resource.h"
+#include "Asset/GuidMapper.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -28,6 +29,16 @@ void LuaVM::RegisterShader(LuaCpp::Module &module) {
         "has_vertex_shader", &Shader::HasVertexShader,
         "has_fragment_shader", &Shader::HasFragmentShader,
         "has_geometry_shader", &Shader::HasGeometryShader);
+
+    _Shader["new"].SetFunc([]() {
+        Guid newGuid = Guid::CreateGuid();
+        Str shaderName = Str("Shader-") + newGuid.ToString();
+        resourceGuidMapper.Set(newGuid, shaderName);
+        return shaderManager.AllocShader(shaderName);
+     });
+    _Shader["release"].SetFunc([](Shader *shader) {
+        shaderManager.ReleaseShader(shader);
+    });
 }
 
 BE_NAMESPACE_END
