@@ -291,10 +291,10 @@ void Mesh::CreateRoundedBox(const Vec3 &origin, const Mat3 &axis, const Vec3 ext
     surfaces.Append(surf);
 
     par_octasphere_mesh mesh;
-    mesh.positions = (float *)malloc(sizeof(float) * 3 * num_vertices);
-    mesh.normals = (float *)malloc(sizeof(float) * 3 * num_vertices);
-    mesh.texcoords = (float *)malloc(sizeof(float) * 2 * num_vertices);
-    mesh.indices = (uint16_t *)malloc(sizeof(uint16_t) * num_indices);
+    mesh.positions = (float *)Mem_Alloc(sizeof(float) * 3 * num_vertices);
+    mesh.normals = (float *)Mem_Alloc(sizeof(float) * 3 * num_vertices);
+    mesh.texcoords = (float *)Mem_Alloc(sizeof(float) * 2 * num_vertices);
+    mesh.indices = (uint16_t *)Mem_Alloc(sizeof(uint16_t) * num_indices);
 
     par_octasphere_populate(&cfg, &mesh);
 
@@ -312,10 +312,10 @@ void Mesh::CreateRoundedBox(const Vec3 &origin, const Mat3 &axis, const Vec3 ext
         *iptr++ = (VertIndex)mesh.indices[i];
     }
 
-    free(mesh.positions);
-    free(mesh.normals);
-    free(mesh.texcoords);
-    free(mesh.indices);
+    Mem_Free(mesh.positions);
+    Mem_Free(mesh.normals);
+    Mem_Free(mesh.texcoords);
+    Mem_Free(mesh.indices);
 
     FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
 
