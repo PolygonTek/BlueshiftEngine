@@ -534,10 +534,10 @@ void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, flo
     }
 }
 
-bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool generateCap, bool generateOtherMesh, Mesh *outBelowMesh, Mesh *outAboveMesh) {
+bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool generateCap, float capTextureScale, bool generateAboveMesh, Mesh *outBelowMesh, Mesh *outAboveMesh) {
     assert(outBelowMesh);
 
-    if (generateOtherMesh) {
+    if (generateAboveMesh) {
         assert(outAboveMesh);
     }
 
@@ -562,7 +562,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
 
         if (planeSide == Plane::Side::Front) {
             // sub mesh totally is above the plane.
-            if (generateOtherMesh) {
+            if (generateAboveMesh) {
                 MeshSurf *surf = outAboveMesh->AllocSurface(srcSurf->subMesh->numVerts, srcSurf->subMesh->numIndexes);
                 surf->materialIndex = srcSurf->materialIndex;
                 outAboveMesh->surfaces.Append(surf);
@@ -602,7 +602,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
 
                 srcToBelowVertIndex.Set(srcVertIndex, slicedVertIndex);
             } else {
-                if (generateOtherMesh) {
+                if (generateAboveMesh) {
                     int otherVertIndex = tempAboveVerts.Append(srcVerts[srcVertIndex]);
 
                     srcToAboveVertIndex.Set(srcVertIndex, otherVertIndex);
@@ -630,7 +630,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                 tempBelowIndexes.Append(belowIndex[2]);
             } else if (belowIndex[0] < 0 && belowIndex[1] < 0 && belowIndex[2] < 0) {
                 // If all verts are above the plane
-                if (generateOtherMesh) {
+                if (generateAboveMesh) {
                     int outsideIndex[3] = { -1, -1, -1 };
                     srcToAboveVertIndex.Get(srcIndex[0], &outsideIndex[0]);
                     srcToAboveVertIndex.Get(srcIndex[1], &outsideIndex[1]);
@@ -658,7 +658,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
 
                         shouldSlice = belowIndex[localNextVertex] < 0;
                     } else {
-                        if (generateOtherMesh) {
+                        if (generateAboveMesh) {
                             int outsideIndex = -1;
                             srcToAboveVertIndex.Get(srcIndex[localCurrentVertex], &outsideIndex);
                             aboveTriFan[numAboveTriFanIndex++] = outsideIndex;
@@ -687,7 +687,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                         VertIndex belowClippedVertexIndex = tempBelowVerts.Append(clippedVertex);
                         belowTriFan[numBelowTriFanIndex++] = belowClippedVertexIndex;
 
-                        if (generateOtherMesh) {
+                        if (generateAboveMesh) {
                             aboveTriFan[numAboveTriFanIndex++] = tempAboveVerts.Append(clippedVertex);
                         }
 
@@ -715,7 +715,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                     tempBelowIndexes.Append(belowTriFan[3]);
                 }
 
-                if (generateOtherMesh) {
+                if (generateAboveMesh) {
                     tempAboveIndexes.Append(aboveTriFan[0]);
                     tempAboveIndexes.Append(aboveTriFan[1]);
                     tempAboveIndexes.Append(aboveTriFan[2]);
@@ -731,7 +731,8 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
 
         if (generateCap) {
             if (clippedVerts.Count() >= 3) {
-                Vec3 planeOrigin = clippedVerts[0];
+                Vec3 planeOrigin = slicePlane.Project(srcMesh.GetAABB().Center());
+                //Vec3 planeOrigin = clippedVerts[0];
                 Vec3 planeXAxis, planeYAxis;
                 slicePlane.normal.OrthogonalBasis(planeXAxis, planeYAxis);
                 planeXAxis = -planeXAxis;
@@ -755,14 +756,20 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                     for (int i = 0; i < clippedVerts.Count(); i++) {
                         const IDelaBella2<float>::Vertex *v = idb->GetVertexByIndex(i);
 
+                        // Texture coordinates are based on the 2D coordinates used for triangulation.
+                        // During triangulation, coordinates are normalized to [-1, 1], so need to multiply
+                        // by normalization scale factor to get back to the appropriate scale.
+                        Vec2 st = Vec2(v->x, v->y) * 0.5f + 0.5f;
+                        st *= capTextureScale;
+
                         VertexGenericLit capVertex;
                         capVertex.SetPosition(clippedVerts[v->i]);
                         capVertex.SetNormal(slicePlane.normal);
-                        capVertex.SetTexCoord(0.5f, 0.5f);
+                        capVertex.SetTexCoord(st);
                         capVertex.SetFloatColor(Color4::white);
                         tempBelowVerts.Append(capVertex);
 
-                        if (generateOtherMesh) {
+                        if (generateAboveMesh) {
                             capVertex.SetNormal(-capVertex.GetNormal());
 
                             tempAboveVerts.Append(capVertex);
@@ -777,7 +784,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                         tempBelowIndexes.Append(belowCapBaseVertex + simplex->v[1]->i);
                         tempBelowIndexes.Append(belowCapBaseVertex + simplex->v[2]->i);
 
-                        if (generateOtherMesh) {
+                        if (generateAboveMesh) {
                             tempAboveIndexes.Append(aboveCapBaseVertex + simplex->v[2]->i);
                             tempAboveIndexes.Append(aboveCapBaseVertex + simplex->v[1]->i);
                             tempAboveIndexes.Append(aboveCapBaseVertex + simplex->v[0]->i);
@@ -813,7 +820,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
     }
     outBelowMesh->FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
 
-    if (generateOtherMesh) {
+    if (generateAboveMesh) {
         outAboveMesh->FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
     }
 

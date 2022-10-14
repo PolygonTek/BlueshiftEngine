@@ -149,7 +149,7 @@ public:
     void                    CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, float height, int numSegments);
     void                    CreateRoundedBox(const Vec3 &origin, const Mat3 &axis, const Vec3 extents, float radius, int numSubdivisions);
 
-    static bool             TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool generateCap, bool generateAboveMesh, Mesh *outBelowMesh, Mesh *outAboveMesh);
+    static bool             TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool generateCap, float capTextureScale, bool generateAboveMesh, Mesh *outBelowMesh, Mesh *outAboveMesh);
 
     bool                    Load(const char *filename);
     bool                    Reload();

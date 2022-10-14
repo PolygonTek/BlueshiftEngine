@@ -41,8 +41,8 @@ void LuaVM::RegisterMesh(LuaCpp::Module &module) {
     _Mesh["release"].SetFunc([](Mesh *mesh) {
         meshManager.ReleaseMesh(mesh);
     });
-    _Mesh["try_slice_mesh"].SetFunc([](const Mesh &srcMesh, const Plane &slicePlane, bool generateCap, bool generateOtherMesh, Mesh *outSlicedMesh, Mesh *outOtherMesh) {
-        return Mesh::TrySliceMesh(srcMesh, slicePlane, generateCap, generateOtherMesh, outSlicedMesh, outOtherMesh);
+    _Mesh["try_slice_mesh"].SetFunc([](const Mesh &srcMesh, const Plane &slicePlane, bool generateCap, float capTextureScale, bool generateOtherMesh, Mesh *outSlicedMesh, Mesh *outOtherMesh) {
+        return Mesh::TrySliceMesh(srcMesh, slicePlane, generateCap, capTextureScale, generateOtherMesh, outSlicedMesh, outOtherMesh);
     });
 }
 
