@@ -534,14 +534,14 @@ void Mesh::CreateCapsule(const Vec3 &origin, const Mat3 &axis, float radius, flo
     }
 }
 
-bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool generateCap, bool generateOtherMesh, Mesh *outSlicedMesh, Mesh *outOtherMesh) {
-    assert(outSlicedMesh);
+bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool generateCap, bool generateOtherMesh, Mesh *outBelowMesh, Mesh *outAboveMesh) {
+    assert(outBelowMesh);
 
     if (generateOtherMesh) {
-        assert(outOtherMesh);
+        assert(outAboveMesh);
     }
 
-    // If the entire mesh is outside the plane, the operation is skipped.
+    // If the entire mesh is above the plane, the operation is skipped.
     int planeSide = srcMesh.aabb.PlaneSide(slicePlane);
     if (planeSide == Plane::Side::Back || planeSide == Plane::Side::Front) {
         return false;
@@ -552,20 +552,20 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
 
         int planeSide = srcSurf->subMesh->aabb.PlaneSide(slicePlane);
         if (planeSide == Plane::Side::Back) {
-            // sub mesh totally inside of plane. just copy from source mesh.
-            MeshSurf* surf = outSlicedMesh->AllocSurface(srcSurf->subMesh->numVerts, srcSurf->subMesh->numIndexes);
+            // sub mesh is totally below the plane. just copy it from the source mesh.
+            MeshSurf* surf = outBelowMesh->AllocSurface(srcSurf->subMesh->numVerts, srcSurf->subMesh->numIndexes);
             surf->materialIndex = srcSurf->materialIndex;
-            outSlicedMesh->surfaces.Append(surf);
+            outBelowMesh->surfaces.Append(surf);
             surf->subMesh->CopyFrom(srcSurf->subMesh);
             continue;
         }
 
         if (planeSide == Plane::Side::Front) {
-            // sub mesh totally outside of plane.
+            // sub mesh totally is above the plane.
             if (generateOtherMesh) {
-                MeshSurf *surf = outOtherMesh->AllocSurface(srcSurf->subMesh->numVerts, srcSurf->subMesh->numIndexes);
+                MeshSurf *surf = outAboveMesh->AllocSurface(srcSurf->subMesh->numVerts, srcSurf->subMesh->numIndexes);
                 surf->materialIndex = srcSurf->materialIndex;
-                outOtherMesh->surfaces.Append(surf);
+                outAboveMesh->surfaces.Append(surf);
                 surf->subMesh->CopyFrom(srcSurf->subMesh);
             }
             continue;
@@ -576,20 +576,19 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
         int numSrcVerts = srcSurf->subMesh->NumVerts();
         int numSrcIndexes = srcSurf->subMesh->NumIndexes();
 
-        Array<VertexGenericLit> tempInsideVerts;
-        Array<VertIndex> tempInsideIndexes;
-        Array<VertexGenericLit> tempOutsideVerts;
-        Array<VertIndex> tempOutsideIndexes;
+        Array<VertexGenericLit> tempBelowVerts;
+        Array<VertexGenericLit> tempAboveVerts;
+        Array<VertIndex> tempBelowIndexes;
+        Array<VertIndex> tempAboveIndexes;
 
-        tempInsideVerts.Reserve(numSrcVerts);
-        tempInsideIndexes.Reserve(numSrcIndexes);
-
-        tempOutsideVerts.Reserve(numSrcVerts);
-        tempOutsideIndexes.Reserve(numSrcIndexes);
+        tempBelowVerts.Reserve(numSrcVerts);
+        tempAboveVerts.Reserve(numSrcVerts);
+        tempBelowIndexes.Reserve(numSrcIndexes);
+        tempAboveIndexes.Reserve(numSrcIndexes);
 
         // source vertex index -> sliced vertex index
-        HashTable<int, int> srcToInsideVertIndex;
-        HashTable<int, int> srcToOutsideVertIndex;
+        HashTable<int, int> srcToBelowVertIndex;
+        HashTable<int, int> srcToAboveVertIndex;
 
         Array<float> vertexDistances;
         vertexDistances.SetCount(numSrcVerts);
@@ -599,14 +598,14 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
             vertexDistances[srcVertIndex] = slicePlane.Distance(srcVerts[srcVertIndex].xyz);
 
             if (vertexDistances[srcVertIndex] <= 0.0f) {
-                int slicedVertIndex = tempInsideVerts.Append(srcVerts[srcVertIndex]);
+                int slicedVertIndex = tempBelowVerts.Append(srcVerts[srcVertIndex]);
 
-                srcToInsideVertIndex.Set(srcVertIndex, slicedVertIndex);
+                srcToBelowVertIndex.Set(srcVertIndex, slicedVertIndex);
             } else {
                 if (generateOtherMesh) {
-                    int otherVertIndex = tempOutsideVerts.Append(srcVerts[srcVertIndex]);
+                    int otherVertIndex = tempAboveVerts.Append(srcVerts[srcVertIndex]);
 
-                    srcToOutsideVertIndex.Set(srcVertIndex, otherVertIndex);
+                    srcToAboveVertIndex.Set(srcVertIndex, otherVertIndex);
                 }
             }
         }
@@ -618,54 +617,54 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
             srcIndex[0] = srcIndexes[baseIndex + 0];
             srcIndex[1] = srcIndexes[baseIndex + 1];
             srcIndex[2] = srcIndexes[baseIndex + 2];
-            int insideIndex[3] = { -1, -1, -1 };
+            int belowIndex[3] = { -1, -1, -1 };
 
-            srcToInsideVertIndex.Get(srcIndex[0], &insideIndex[0]);
-            srcToInsideVertIndex.Get(srcIndex[1], &insideIndex[1]);
-            srcToInsideVertIndex.Get(srcIndex[2], &insideIndex[2]);
+            srcToBelowVertIndex.Get(srcIndex[0], &belowIndex[0]);
+            srcToBelowVertIndex.Get(srcIndex[1], &belowIndex[1]);
+            srcToBelowVertIndex.Get(srcIndex[2], &belowIndex[2]);
 
-            if (insideIndex[0] >= 0 && insideIndex[1] >= 0 && insideIndex[2] >= 0) {
-                // If all verts are in the back side of the plane
-                tempInsideIndexes.Append(insideIndex[0]);
-                tempInsideIndexes.Append(insideIndex[1]);
-                tempInsideIndexes.Append(insideIndex[2]);
-            } else if (insideIndex[0] < 0 && insideIndex[1] < 0 && insideIndex[2] < 0) {
-                // If all verts are in the front side of the plane
+            if (belowIndex[0] >= 0 && belowIndex[1] >= 0 && belowIndex[2] >= 0) {
+                // If all verts are below the plane
+                tempBelowIndexes.Append(belowIndex[0]);
+                tempBelowIndexes.Append(belowIndex[1]);
+                tempBelowIndexes.Append(belowIndex[2]);
+            } else if (belowIndex[0] < 0 && belowIndex[1] < 0 && belowIndex[2] < 0) {
+                // If all verts are above the plane
                 if (generateOtherMesh) {
                     int outsideIndex[3] = { -1, -1, -1 };
-                    srcToOutsideVertIndex.Get(srcIndex[0], &outsideIndex[0]);
-                    srcToOutsideVertIndex.Get(srcIndex[1], &outsideIndex[1]);
-                    srcToOutsideVertIndex.Get(srcIndex[2], &outsideIndex[2]);
+                    srcToAboveVertIndex.Get(srcIndex[0], &outsideIndex[0]);
+                    srcToAboveVertIndex.Get(srcIndex[1], &outsideIndex[1]);
+                    srcToAboveVertIndex.Get(srcIndex[2], &outsideIndex[2]);
 
-                    tempOutsideIndexes.Append(outsideIndex[0]);
-                    tempOutsideIndexes.Append(outsideIndex[1]);
-                    tempOutsideIndexes.Append(outsideIndex[2]);
+                    tempAboveIndexes.Append(outsideIndex[0]);
+                    tempAboveIndexes.Append(outsideIndex[1]);
+                    tempAboveIndexes.Append(outsideIndex[2]);
                 }
             } else {
-                VertIndex insideTriFan[4];
-                int numInsideTriFanIndex = 0;
+                VertIndex belowTriFan[4];
+                int numBelowTriFanIndex = 0;
 
-                VertIndex outsideTriFan[4];
-                int numOutsideTriFanIndex = 0;
+                VertIndex aboveTriFan[4];
+                int numAboveTriFanIndex = 0;
 
-                // If partially being inside of plane, clip to create 1 or 2 new triangles.
+                // If partially being below the plane, clip to create 1 or 2 new triangles.
                 for (int i = 0; i < 3; i++) {
                     int localCurrentVertex = i % 3;
                     int localNextVertex = (localCurrentVertex + 1) % 3;
                     bool shouldSlice;
 
-                    if (insideIndex[localCurrentVertex] >= 0) {
-                        insideTriFan[numInsideTriFanIndex++] = insideIndex[localCurrentVertex];
+                    if (belowIndex[localCurrentVertex] >= 0) {
+                        belowTriFan[numBelowTriFanIndex++] = belowIndex[localCurrentVertex];
 
-                        shouldSlice = insideIndex[localNextVertex] < 0;
+                        shouldSlice = belowIndex[localNextVertex] < 0;
                     } else {
                         if (generateOtherMesh) {
                             int outsideIndex = -1;
-                            srcToOutsideVertIndex.Get(srcIndex[localCurrentVertex], &outsideIndex);
-                            outsideTriFan[numOutsideTriFanIndex++] = outsideIndex;
+                            srcToAboveVertIndex.Get(srcIndex[localCurrentVertex], &outsideIndex);
+                            aboveTriFan[numAboveTriFanIndex++] = outsideIndex;
                         }
 
-                        shouldSlice = insideIndex[localNextVertex] >= 0;
+                        shouldSlice = belowIndex[localNextVertex] >= 0;
                     }
 
                     if (shouldSlice) {
@@ -685,11 +684,11 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                         clippedVertex.SetTexCoord(Math::Lerp(v0->GetTexCoord(), v1->GetTexCoord(), t));
                         clippedVertex.SetFloatColor(Math::Lerp(v0->GetFloatColor(), v1->GetFloatColor(), t));
 
-                        VertIndex insideClippedVertexIndex = tempInsideVerts.Append(clippedVertex);
-                        insideTriFan[numInsideTriFanIndex++] = insideClippedVertexIndex;
+                        VertIndex belowClippedVertexIndex = tempBelowVerts.Append(clippedVertex);
+                        belowTriFan[numBelowTriFanIndex++] = belowClippedVertexIndex;
 
                         if (generateOtherMesh) {
-                            outsideTriFan[numOutsideTriFanIndex++] = tempOutsideVerts.Append(clippedVertex);
+                            aboveTriFan[numAboveTriFanIndex++] = tempAboveVerts.Append(clippedVertex);
                         }
 
                         // TODO: Optimization
@@ -706,25 +705,25 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                     }
                 }
 
-                tempInsideIndexes.Append(insideTriFan[0]);
-                tempInsideIndexes.Append(insideTriFan[1]);
-                tempInsideIndexes.Append(insideTriFan[2]);
+                tempBelowIndexes.Append(belowTriFan[0]);
+                tempBelowIndexes.Append(belowTriFan[1]);
+                tempBelowIndexes.Append(belowTriFan[2]);
 
-                if (numInsideTriFanIndex > 3) {
-                    tempInsideIndexes.Append(insideTriFan[0]);
-                    tempInsideIndexes.Append(insideTriFan[2]);
-                    tempInsideIndexes.Append(insideTriFan[3]);
+                if (numBelowTriFanIndex > 3) {
+                    tempBelowIndexes.Append(belowTriFan[0]);
+                    tempBelowIndexes.Append(belowTriFan[2]);
+                    tempBelowIndexes.Append(belowTriFan[3]);
                 }
 
                 if (generateOtherMesh) {
-                    tempOutsideIndexes.Append(outsideTriFan[0]);
-                    tempOutsideIndexes.Append(outsideTriFan[1]);
-                    tempOutsideIndexes.Append(outsideTriFan[2]);
+                    tempAboveIndexes.Append(aboveTriFan[0]);
+                    tempAboveIndexes.Append(aboveTriFan[1]);
+                    tempAboveIndexes.Append(aboveTriFan[2]);
 
-                    if (numOutsideTriFanIndex > 3) {
-                        tempOutsideIndexes.Append(outsideTriFan[0]);
-                        tempOutsideIndexes.Append(outsideTriFan[2]);
-                        tempOutsideIndexes.Append(outsideTriFan[3]);
+                    if (numAboveTriFanIndex > 3) {
+                        tempAboveIndexes.Append(aboveTriFan[0]);
+                        tempAboveIndexes.Append(aboveTriFan[2]);
+                        tempAboveIndexes.Append(aboveTriFan[3]);
                     }
                 }
             }
@@ -747,8 +746,8 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                     pointsOnPlane[i].y = planeYAxis.Dot(offset);
                 }
 
-                int insideCapBaseVertex = tempInsideVerts.Count();
-                int outsideCapBaseVertex = tempOutsideVerts.Count();
+                int belowCapBaseVertex = tempBelowVerts.Count();
+                int aboveCapBaseVertex = tempAboveVerts.Count();
 
                 IDelaBella2<float> *idb = IDelaBella2<float>::Create();
                 int numTriangulatedVerts = idb->Triangulate(pointsOnPlane.Count(), &pointsOnPlane[0].x, &pointsOnPlane[0].y, sizeof(Vec2));
@@ -761,12 +760,12 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                         capVertex.SetNormal(slicePlane.normal);
                         capVertex.SetTexCoord(0.5f, 0.5f);
                         capVertex.SetFloatColor(Color4::white);
-                        tempInsideVerts.Append(capVertex);
+                        tempBelowVerts.Append(capVertex);
 
                         if (generateOtherMesh) {
                             capVertex.SetNormal(-capVertex.GetNormal());
 
-                            tempOutsideVerts.Append(capVertex);
+                            tempAboveVerts.Append(capVertex);
                         }
                     }
 
@@ -774,14 +773,14 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                     int numTriangulatedTris = idb->GetNumPolygons();
 
                     for (int i = 0; i < numTriangulatedTris; i++) {
-                        tempInsideIndexes.Append(insideCapBaseVertex + simplex->v[0]->i);
-                        tempInsideIndexes.Append(insideCapBaseVertex + simplex->v[1]->i);
-                        tempInsideIndexes.Append(insideCapBaseVertex + simplex->v[2]->i);
+                        tempBelowIndexes.Append(belowCapBaseVertex + simplex->v[0]->i);
+                        tempBelowIndexes.Append(belowCapBaseVertex + simplex->v[1]->i);
+                        tempBelowIndexes.Append(belowCapBaseVertex + simplex->v[2]->i);
 
                         if (generateOtherMesh) {
-                            tempOutsideIndexes.Append(outsideCapBaseVertex + simplex->v[2]->i);
-                            tempOutsideIndexes.Append(outsideCapBaseVertex + simplex->v[1]->i);
-                            tempOutsideIndexes.Append(outsideCapBaseVertex + simplex->v[0]->i);
+                            tempAboveIndexes.Append(aboveCapBaseVertex + simplex->v[2]->i);
+                            tempAboveIndexes.Append(aboveCapBaseVertex + simplex->v[1]->i);
+                            tempAboveIndexes.Append(aboveCapBaseVertex + simplex->v[0]->i);
                         }
                         simplex = simplex->next;
                     }
@@ -790,32 +789,32 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
             }
         }
 
-        if (tempInsideVerts.Count() > 0 && tempInsideIndexes.Count() > 0) {
-            MeshSurf *surf = outSlicedMesh->AllocSurface(tempInsideVerts.Count(), tempInsideIndexes.Count());
+        if (tempBelowVerts.Count() > 0 && tempBelowIndexes.Count() > 0) {
+            MeshSurf *surf = outBelowMesh->AllocSurface(tempBelowVerts.Count(), tempBelowIndexes.Count());
             surf->materialIndex = srcSurf->materialIndex;
-            outSlicedMesh->surfaces.Append(surf);
+            outBelowMesh->surfaces.Append(surf);
 
-            simdProcessor->Memcpy(surf->subMesh->verts, tempInsideVerts.Ptr(), sizeof(tempInsideVerts[0]) * tempInsideVerts.Count());
-            simdProcessor->Memcpy(surf->subMesh->indexes, tempInsideIndexes.Ptr(), sizeof(tempInsideIndexes[0]) * tempInsideIndexes.Count());
+            simdProcessor->Memcpy(surf->subMesh->verts, tempBelowVerts.Ptr(), sizeof(tempBelowVerts[0]) * tempBelowVerts.Count());
+            simdProcessor->Memcpy(surf->subMesh->indexes, tempBelowIndexes.Ptr(), sizeof(tempBelowIndexes[0]) * tempBelowIndexes.Count());
         }
 
-        if (tempOutsideVerts.Count() > 0 && tempOutsideIndexes.Count() > 0) {
-            MeshSurf *surf = outOtherMesh->AllocSurface(tempOutsideVerts.Count(), tempOutsideIndexes.Count());
+        if (tempAboveVerts.Count() > 0 && tempAboveIndexes.Count() > 0) {
+            MeshSurf *surf = outAboveMesh->AllocSurface(tempAboveVerts.Count(), tempAboveIndexes.Count());
             surf->materialIndex = srcSurf->materialIndex;
-            outOtherMesh->surfaces.Append(surf);
+            outAboveMesh->surfaces.Append(surf);
 
-            simdProcessor->Memcpy(surf->subMesh->verts, tempOutsideVerts.Ptr(), sizeof(tempOutsideVerts[0]) * tempOutsideVerts.Count());
-            simdProcessor->Memcpy(surf->subMesh->indexes, tempOutsideIndexes.Ptr(), sizeof(tempOutsideIndexes[0]) * tempOutsideIndexes.Count());
+            simdProcessor->Memcpy(surf->subMesh->verts, tempAboveVerts.Ptr(), sizeof(tempAboveVerts[0]) * tempAboveVerts.Count());
+            simdProcessor->Memcpy(surf->subMesh->indexes, tempAboveIndexes.Ptr(), sizeof(tempAboveIndexes[0]) * tempAboveIndexes.Count());
         }
     }
 
-    if (outSlicedMesh->surfaces.Count() == 0) {
+    if (outBelowMesh->surfaces.Count() == 0 || outAboveMesh->surfaces.Count() == 0) {
         return false;
     }
-    outSlicedMesh->FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
+    outBelowMesh->FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
 
     if (generateOtherMesh) {
-        outOtherMesh->FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
+        outAboveMesh->FinishSurfaces(FinishFlag::ComputeAABB | FinishFlag::ComputeTangents);
     }
 
     return true;
