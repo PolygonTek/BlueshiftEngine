@@ -25,7 +25,7 @@ const SignalDef Serializable::SIG_PropertyArrayCountChanged("Serializable::Prope
 const SignalDef Serializable::SIG_PropertyInfoUpdated("Serializable::PropertyInfoUpdated", "i");
 
 bool Serializable::GetPropertyInfo(int index, PropertyInfo &propertyInfo) const {
-    Array<PropertyInfo> propertyInfoList;
+    Array<PropertyInfo> propertyInfoList(64);
     GetPropertyInfoList(propertyInfoList);
 
     if (index < 0 || index > propertyInfoList.Count() - 1) {
@@ -37,7 +37,7 @@ bool Serializable::GetPropertyInfo(int index, PropertyInfo &propertyInfo) const 
 }
 
 bool Serializable::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo) const {
-    Array<PropertyInfo> propertyInfoList;
+    Array<PropertyInfo> propertyInfoList(64);
     GetPropertyInfoList(propertyInfoList);
 
     for (int i = 0; i < propertyInfoList.Count(); i++) {
@@ -51,8 +51,7 @@ bool Serializable::GetPropertyInfo(const char *name, PropertyInfo &propertyInfo)
 }
 
 void Serializable::Serialize(Json::Value &out, bool forCopying) const {
-    Array<PropertyInfo> propertyInfoList;
-
+    Array<PropertyInfo> propertyInfoList(64);
     GetPropertyInfoList(propertyInfoList);
 
     for (int propertyIndex = 0; propertyIndex < propertyInfoList.Count(); propertyIndex++) {
@@ -87,8 +86,7 @@ void Serializable::Serialize(Json::Value &out, bool forCopying) const {
 }
 
 void Serializable::Deserialize(const Json::Value &node) {
-    Array<PropertyInfo> propertyInfoList;
-
+    Array<PropertyInfo> propertyInfoList(64);
     GetPropertyInfoList(propertyInfoList);
 
     for (int propertyIndex = 0; propertyIndex < propertyInfoList.Count(); propertyIndex++) {

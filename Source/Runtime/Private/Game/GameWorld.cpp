@@ -110,7 +110,7 @@ void GameWorld::DontDestroyOnLoad(Entity *entity) {
 
 void GameWorld::ClearEntities(bool clearAll) {
     // List up all of the entities to remove in depth first order.
-    EntityPtrArray entitiesToRemove;
+    EntityPtrArray entitiesToRemove(1024);
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         if (clearAll || sceneIndex != DontDestroyOnLoadSceneNum) {

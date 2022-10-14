@@ -22,6 +22,8 @@ BE_NAMESPACE_BEGIN
 
 class GuidMapper {
 public:
+    GuidMapper();
+
                             /// Gets number of elements.
     int                     Count() const { assert(guidToFilePathMap.Count() == filePathToGuidMap.Count()); return guidToFilePathMap.Count(); }
 
@@ -102,6 +104,11 @@ private:
     HashMap<Guid, Str>      guidToFilePathMap;
     HashMap<Str, Guid>      filePathToGuidMap;
 };
+
+BE_INLINE GuidMapper::GuidMapper() {
+    guidToFilePathMap.Init(16384, 16384, 1024);
+    filePathToGuidMap.Init(16384, 16384, 1024);
+}
 
 BE_INLINE const Str GuidMapper::Get(const Guid &guid) const {
     const auto *kv = guidToFilePathMap.Get(guid);

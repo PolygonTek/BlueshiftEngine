@@ -552,7 +552,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
 
         int planeSide = srcSurf->subMesh->aabb.PlaneSide(slicePlane);
         if (planeSide == Plane::Side::Back) {
-            // sub mesh is totally below the plane. just copy it from the source mesh.
+            // SubMesh is totally below the plane. just copy it from the source mesh.
             MeshSurf* surf = outBelowMesh->AllocSurface(srcSurf->subMesh->numVerts, srcSurf->subMesh->numIndexes);
             surf->materialIndex = srcSurf->materialIndex;
             outBelowMesh->surfaces.Append(surf);
@@ -561,7 +561,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
         }
 
         if (planeSide == Plane::Side::Front) {
-            // sub mesh totally is above the plane.
+            // SubMesh totally is above the plane.
             if (generateAboveMesh) {
                 MeshSurf *surf = outAboveMesh->AllocSurface(srcSurf->subMesh->numVerts, srcSurf->subMesh->numIndexes);
                 surf->materialIndex = srcSurf->materialIndex;
@@ -581,10 +581,10 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
         Array<VertIndex> tempBelowIndexes;
         Array<VertIndex> tempAboveIndexes;
 
-        tempBelowVerts.Reserve(numSrcVerts);
-        tempAboveVerts.Reserve(numSrcVerts);
-        tempBelowIndexes.Reserve(numSrcIndexes);
-        tempAboveIndexes.Reserve(numSrcIndexes);
+        tempBelowVerts.Reserve(numSrcVerts * 2);
+        tempAboveVerts.Reserve(numSrcVerts * 2);
+        tempBelowIndexes.Reserve(numSrcIndexes * 2);
+        tempAboveIndexes.Reserve(numSrcIndexes * 2);
 
         // source vertex index -> sliced vertex index
         HashTable<int, int> srcToBelowVertIndex;
@@ -594,7 +594,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
         vertexDistances.SetCount(numSrcVerts);
 
         for (int srcVertIndex = 0; srcVertIndex < numSrcVerts; srcVertIndex++) {
-            // Distance of each vertex from slice plane
+            // Distance of each vertex from slice plane.
             vertexDistances[srcVertIndex] = slicePlane.Distance(srcVerts[srcVertIndex].xyz);
 
             if (vertexDistances[srcVertIndex] <= 0.0f) {
@@ -611,6 +611,24 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
         }
 
         Array<Vec3> clippedVerts;
+        
+        int maxClippedVerts = 0;
+        for (int baseIndex = 0; baseIndex < numSrcIndexes; baseIndex += 3) {
+            int srcIndex[3];
+            srcIndex[0] = srcIndexes[baseIndex + 0];
+            srcIndex[1] = srcIndexes[baseIndex + 1];
+            srcIndex[2] = srcIndexes[baseIndex + 2];
+            int belowIndex[3] = { -1, -1, -1 };
+
+            srcToBelowVertIndex.Get(srcIndex[0], &belowIndex[0]);
+            srcToBelowVertIndex.Get(srcIndex[1], &belowIndex[1]);
+            srcToBelowVertIndex.Get(srcIndex[2], &belowIndex[2]);
+
+            if ((belowIndex[0] >= 0) ^ (belowIndex[1] >= 0) ^ (belowIndex[2] >= 0)) {
+                maxClippedVerts += 2;
+            }
+        }
+        clippedVerts.Reserve(maxClippedVerts);
 
         for (int baseIndex = 0; baseIndex < numSrcIndexes; baseIndex += 3) {
             int srcIndex[3];
@@ -624,12 +642,12 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
             srcToBelowVertIndex.Get(srcIndex[2], &belowIndex[2]);
 
             if (belowIndex[0] >= 0 && belowIndex[1] >= 0 && belowIndex[2] >= 0) {
-                // If all verts are below the plane
+                // All vertices are below the plane.
                 tempBelowIndexes.Append(belowIndex[0]);
                 tempBelowIndexes.Append(belowIndex[1]);
                 tempBelowIndexes.Append(belowIndex[2]);
             } else if (belowIndex[0] < 0 && belowIndex[1] < 0 && belowIndex[2] < 0) {
-                // If all verts are above the plane
+                // All vertices are above the plane.
                 if (generateAboveMesh) {
                     int outsideIndex[3] = { -1, -1, -1 };
                     srcToAboveVertIndex.Get(srcIndex[0], &outsideIndex[0]);
