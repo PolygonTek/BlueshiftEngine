@@ -195,6 +195,11 @@ void Collider::CreateConvexHull(const Mesh *mesh, const Vec3 &scale, float margi
         numPoints += subMesh->NumOriginalVerts();
     }
 
+    if (numPoints < 3) {
+        BE_ERRLOG("Failed to cerate convex collider due to too few vertices");
+        return;
+    }
+
     // Collect all vertices to be input to compute convex hull points.
     Array<Vec3> inputPoints;
     inputPoints.SetCount(numPoints);
@@ -248,20 +253,25 @@ void Collider::CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale, float mar
         const SubMesh *subMesh = surf->subMesh;
 
         for (int i = 0; i < subMesh->NumOriginalVerts(); i++) {
-            const Vec3 &xyz = SystemUnitToPhysicsUnit(scale * subMesh->Verts()[i].xyz - centroid);
+            const Vec3 &xyz = SystemUnitToPhysicsUnit(scale * subMesh->verts[i].xyz - centroid);
             HACD::Vec3<HACD::Real> p(xyz.x, xyz.y, xyz.z);
             hacdPoints.Append(p);
         }
 
         for (int i = 0; i < subMesh->NumIndexes(); i += 3) {
-            long i0 = indexOffset + subMesh->Indexes()[i];
-            long i1 = indexOffset + subMesh->Indexes()[i + 1];
-            long i2 = indexOffset + subMesh->Indexes()[i + 2];
+            long i0 = indexOffset + subMesh->indexes[i];
+            long i1 = indexOffset + subMesh->indexes[i + 1];
+            long i2 = indexOffset + subMesh->indexes[i + 2];
             HACD::Vec3<long> tri(i0, i1, i2);
             hacdTris.Append(tri);
         }
 
         indexOffset += subMesh->NumOriginalVerts();
+    }
+
+    if (hacdPoints.Count() < 3) {
+        BE_ERRLOG("Failed to cerate convex collider due to too few vertices");
+        return;
     }
 
     // reference: http://kmamou.blogspot.kr/2011/11/hacd-parameters.html
