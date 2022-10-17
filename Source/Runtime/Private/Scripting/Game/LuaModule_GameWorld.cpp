@@ -38,6 +38,7 @@ void LuaVM::RegisterGameWorld(LuaCpp::Module &module) {
         "find_entity_by_tag", &GameWorld::FindEntityByTag,
         "find_entities_by_tag", &GameWorld::FindEntitiesByTag,
         "intersect_ray", static_cast<Entity*(GameWorld::*)(const Ray &, int)const>(&GameWorld::IntersectRay),
+        "ray_cast", &GameWorld::RayCast,
         "overlap_box", &GameWorld::OverlapBox,
         "overlap_sphere", &GameWorld::OverlapSphere,
         "overlap_triangle", &GameWorld::OverlapTriangle,

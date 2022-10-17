@@ -34,7 +34,7 @@ void LuaVM::RegisterQuaternion(LuaCpp::Module &module) {
         "set_identity", &Quat::SetIdentity,
         "to_string", static_cast<const char*(Quat::*)()const>(&Quat::ToString),
         "calc_w", &Quat::CalcW,
-        "transform", static_cast<Vec3(Quat::*)(const Vec3&)const>(&Quat::operator*),
+        "rotate_vector", &Quat::RotateVector,
         "length", &Quat::Length,
         "normalize", &Quat::Normalize,
         "inverse", &Quat::Inverse,
