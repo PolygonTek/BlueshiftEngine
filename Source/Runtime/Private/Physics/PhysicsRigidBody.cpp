@@ -261,7 +261,7 @@ void PhysRigidBody::ApplyCentralForce(const Vec3 &force) {
 
 void PhysRigidBody::ApplyForce(const Vec3 &force, const Vec3 &worldPos) {
     const btTransform &worldTransform = GetRigidBody()->getWorldTransform();
-    btVector3 relativePos = worldTransform.getBasis().transpose() * (ToBtVector3(SystemUnitToPhysicsUnit(worldPos)) - worldTransform.getOrigin());
+    btVector3 relativePos = ToBtVector3(SystemUnitToPhysicsUnit(worldPos)) - worldTransform.getOrigin();
 
     GetRigidBody()->activate();
     GetRigidBody()->applyForce(ToBtVector3(SystemUnitToPhysicsUnit(force)), relativePos);
@@ -279,7 +279,7 @@ void PhysRigidBody::ApplyCentralImpulse(const Vec3 &impulse) {
 
 void PhysRigidBody::ApplyImpulse(const Vec3 &impulse, const Vec3 &worldPos) {
     const btTransform &worldTransform = GetRigidBody()->getWorldTransform();
-    btVector3 relativePos = worldTransform.getBasis().transpose() * (ToBtVector3(SystemUnitToPhysicsUnit(worldPos)) - worldTransform.getOrigin());
+    btVector3 relativePos = ToBtVector3(SystemUnitToPhysicsUnit(worldPos)) - worldTransform.getOrigin();
 
     GetRigidBody()->activate();
     GetRigidBody()->applyImpulse(ToBtVector3(SystemUnitToPhysicsUnit(impulse)), relativePos);
