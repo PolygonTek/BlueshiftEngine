@@ -18,11 +18,13 @@
 
 BE_NAMESPACE_BEGIN
 
-void LuaVM::RegisterParticleSystemComponent(LuaCpp::Module &module) {
-    LuaCpp::Selector _ComTextRenderer = module["ComParticleSystem"];
+struct StopMode {};
 
-    _ComTextRenderer.SetClass<ComParticleSystem>(module["ComRenderable"]);
-    _ComTextRenderer.AddClassMembers<ComParticleSystem>(
+void LuaVM::RegisterParticleSystemComponent(LuaCpp::Module &module) {
+    LuaCpp::Selector _ComParticleSystem = module["ComParticleSystem"];
+
+    _ComParticleSystem.SetClass<ComParticleSystem>(module["ComRenderable"]);
+    _ComParticleSystem.AddClassMembers<ComParticleSystem>(
         "particle_system", &ComParticleSystem::GetParticleSystem,
         "set_particle_system", &ComParticleSystem::SetParticleSystem,
         "play_on_awake", &ComParticleSystem::playOnAwake,
@@ -32,7 +34,12 @@ void LuaVM::RegisterParticleSystemComponent(LuaCpp::Module &module) {
         "resume", &ComParticleSystem::Resume,
         "pause", &ComParticleSystem::Pause);
 
-    _ComTextRenderer["meta_object"] = ComParticleSystem::metaObject;
+    _ComParticleSystem["meta_object"] = ComParticleSystem::metaObject;
+
+    LuaCpp::Selector _ComParticleSystem_StopMode = _ComParticleSystem["StopMode"];
+    _ComParticleSystem_StopMode.SetClass<StopMode>();
+    _ComParticleSystem_StopMode["StopEmitting"] = ComParticleSystem::StopMode::StopEmitting;
+    _ComParticleSystem_StopMode["StopEmittingAndClear"] = ComParticleSystem::StopMode::StopEmittingAndClear;
 }
 
 BE_NAMESPACE_END

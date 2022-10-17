@@ -83,7 +83,7 @@ void ComParticleSystem::Init() {
     ComRenderable::Init();
 
     currentTime = 0;
-    stopTime = 0;
+    stopEmitTime = 0;
 
     simulationStarted = false;
 
@@ -179,9 +179,23 @@ void ComParticleSystem::ResetParticles() {
     }
 }
 
+void ComParticleSystem::ClearParticles() {
+    for (int stageIndex = 0; stageIndex < renderObjectDef.particleSystem->NumStages(); stageIndex++) {
+        const ParticleSystem::Stage *stage = renderObjectDef.particleSystem->GetStage(stageIndex);
+
+        renderObjectDef.stageStartDelay[stageIndex] = stage->standardModule.startDelay.Evaluate(RANDOM_FLOAT(0, 1), 0);
+
+        int trailCount = (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::Trails)) ? stage->trailsModule.count : 0;
+        int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * trailCount;
+        int size = stage->standardModule.count * particleSize;
+
+        memset(renderObjectDef.stageParticles[stageIndex], 0, size);
+    }
+}
+
 void ComParticleSystem::Awake() {
     if (playOnAwake) {
-        simulationStarted = true;
+        Play();
     }
 }
 
@@ -241,10 +255,6 @@ void ComParticleSystem::Update() {
         return;
     }
 
-    if (!simulationStarted) {
-        return;
-    }
-
     int elapsedTime = GetGameWorld()->GetTime() - GetGameWorld()->GetPrevTime();
 
     currentTime += elapsedTime;
@@ -253,8 +263,11 @@ void ComParticleSystem::Update() {
 }
 
 void ComParticleSystem::UpdateSimulation(int currentTime) {
-    renderObjectDef.time = currentTime;
+    if (!simulationStarted) {
+        return;
+    }
 
+    renderObjectDef.time = currentTime;
     renderObjectDef.aabb.SetZero();
 
     const Mat3x4 &worldMatrix = GetEntity()->GetTransform()->GetMatrix();
@@ -263,34 +276,34 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
     
     for (int stageIndex = 0; stageIndex < renderObjectDef.particleSystem->NumStages(); stageIndex++) {
         const ParticleSystem::Stage *stage = renderObjectDef.particleSystem->GetStage(stageIndex);
-
-        // Standard module
         const ParticleSystem::StandardModule &standardModule = stage->standardModule;
 
-        // Is in delay time ?
         int simulationTime = standardModule.simulationSpeed * currentTime - SEC2MILLI(renderObjectDef.stageStartDelay[stageIndex]);
         if (simulationTime < 0) {
+            // in delay time
             simulationEnded = false;
             continue;
         }
 
         int cycleDuration = standardModule.lifeTime + standardModule.deadTime;
-
         int curCycles = simulationTime / cycleDuration;
+        bool stageEnded = false;
 
         if (!standardModule.looping) {
             if (curCycles > standardModule.maxCycles) {
-                continue;
+                stageEnded = true;
             }
         }
 
-        if (stopTime != 0) {
-            if (currentTime > stopTime + cycleDuration) {
-                continue;
+        if (IsStopEmitting()) {
+            if (simulationTime - stopEmitTime > cycleDuration) {
+                stageEnded = true;
             }
         }
 
-        simulationEnded = false;
+        if (!stageEnded) {
+            simulationEnded = false;
+        }
 
         int inCycleTime = simulationTime - curCycles * cycleDuration;
 
@@ -300,7 +313,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
             int particleGenTime = standardModule.lifeTime * standardModule.spawnBunching * particleIndex / standardModule.count;
             int particleAge = inCycleTime - particleGenTime;
 
-            // Wrap elapsed time of this particle if it is needed
+            // Wrap elapsed time of this particle if it is needed.
             if (particleAge <= 0) {
                 if (standardModule.prewarm || curCycles > 0) {
                     particleAge += cycleDuration;
@@ -309,21 +322,19 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
 
             int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * trailCount;
 
-            // Get the particle pointer with the given particle index
+            // Get the particle pointer with the given particle index.
             Particle *particle = (Particle *)((byte *)renderObjectDef.stageParticles[stageIndex] + particleIndex * particleSize);
 
-            // Check this particle is alive now 
-            if (particleAge >= 0 && particleAge < standardModule.lifeTime) {
+            // Check this particle is alive now.
+            if (!stageEnded && particleAge >= 0 && particleAge < standardModule.lifeTime) {
                 // Generate if this particle is not generated yet. 
                 bool regenerate = !particle->generated;
 
                 if (curCycles > particle->cycle) {
                     if (inCycleTime > particleGenTime) {
-                        if (!standardModule.looping) {
-                            if (curCycles >= standardModule.maxCycles) {
-                                particle->alive = false;
-                                continue;
-                            }
+                        if (!standardModule.looping && curCycles >= standardModule.maxCycles) {
+                            particle->alive = false;
+                            continue;
                         }
 
                         particle->cycle = curCycles;
@@ -338,8 +349,8 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
                     }
                 }
 
-                if (stopTime > 0) {
-                    if (particleGenTime + particle->cycle * cycleDuration > stopTime) {
+                if (IsStopEmitting()) {
+                    if (particle->cycle * cycleDuration + particleGenTime > stopEmitTime) {
                         continue;
                     }
                 }
@@ -365,7 +376,7 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
 
     if (simulationEnded) {
         simulationStarted = false;
-        stopTime = 0;
+        stopEmitTime = 0;
         return;
     }
 
@@ -684,14 +695,24 @@ bool ComParticleSystem::IsAlive() const {
 }
 
 void ComParticleSystem::Play() {
-    simulationStarted = true;
+    ClearParticles();
+
     currentTime = 0;
-    stopTime = 0;
+    stopEmitTime = 0;
+    simulationStarted = true;
 }
 
-void ComParticleSystem::Stop() {
-    if (stopTime == 0) {
-        stopTime = currentTime;
+void ComParticleSystem::Stop(StopMode::Enum stopMode) {
+    if (stopMode == StopMode::Enum::StopEmitting) {
+        if (!IsStopEmitting()) {
+            stopEmitTime = currentTime;
+        }
+    } else if (stopMode == StopMode::Enum::StopEmittingAndClear) {
+        ClearParticles();
+
+        currentTime = 0;
+        stopEmitTime = 0;
+        simulationStarted = false;
     }
 }
 

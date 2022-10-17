@@ -28,6 +28,13 @@ class ComParticleSystem : public ComRenderable {
 public:
     OBJECT_PROTOTYPE(ComParticleSystem);
 
+    struct StopMode {
+        enum Enum {
+            StopEmitting,
+            StopEmittingAndClear
+        };
+    };
+
     ComParticleSystem();
     virtual ~ComParticleSystem();
 
@@ -53,15 +60,17 @@ public:
     void                    UpdateSimulation(int currentTime);
 
     bool                    IsAlive() const;
+    bool                    IsStopEmitting() const { return stopEmitTime != 0; }
 
     void                    Play();
-    void                    Stop();
+    void                    Stop(StopMode::Enum stopMode);
     void                    Resume();
     void                    Pause();
 
     int                     GetAliveParticleCount() const;
 
     void                    ResetParticles();
+    void                    ClearParticles();
 
     Guid                    GetParticleSystemGuid() const;
     void                    SetParticleSystemGuid(const Guid &guid);
@@ -85,7 +94,7 @@ protected:
     Asset *                 particleSystemAsset = nullptr;
     bool                    simulationStarted;
     int                     currentTime;
-    int                     stopTime;
+    int                     stopEmitTime;
 
 #if WITH_EDITOR
     RenderObject::State     spriteDef;
