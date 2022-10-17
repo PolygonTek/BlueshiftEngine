@@ -367,8 +367,6 @@ public:
                         /// Sets from the spherical coordinates.
     void                SetFromSpherical(float radius, float theta, float phi);
 
-    void                NormalVectors(Vec3 &left, Vec3 &down) const;
-
                         /// This function computes two new vectors left and up which are both orthogonal to this vector and to each other.
                         /// That is, the set { this, left, up } is an orthogonal set. The vectors left and up that are outputted are also normalized.
                         /// @param left[out]    Receives vector left.
@@ -758,21 +756,6 @@ BE_INLINE float Vec3::ToSpherical(float &theta, float &phi) const {
     theta = Math::ACos(z / radius);
     phi = Math::ATan(y, x);
     return radius;
-}
-    
-BE_INLINE void Vec3::NormalVectors(Vec3 &left, Vec3 &down) const {
-    float d = x * x + y * y;
-    if (!d) {
-        left[0] = 1;
-        left[1] = 0;
-        left[2] = 0;
-    } else {
-        d = Math::InvSqrt(d);
-        left[0] = -y * d;
-        left[1] = x * d;
-        left[2] = 0;
-    }
-    down = left.Cross(*this);
 }
 
 BE_INLINE void Vec3::OrthogonalBasis(Vec3 &left, Vec3 &up) const {

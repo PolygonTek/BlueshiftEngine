@@ -63,6 +63,7 @@ void LuaVM::RegisterVec3(LuaCpp::Module &module) {
         "set_from_slerp", &Vec3::SetFromSLerp,
         "compute_yaw", &Vec3::ComputeYaw,
         "compute_pitch", &Vec3::ComputePitch,
+        "orthogonal_basis", &Vec3::OrthogonalBasis,
         "to_angles", &Vec3::ToAngles,
         "to_vec2", static_cast<const Vec2&(Vec3::*)(void)const>(&Vec3::ToVec2),
         "to_string", static_cast<const char*(Vec3::*)(void)const>(&Vec3::ToString)

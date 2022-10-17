@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2017 POLYGONTEK
+// Copyright(c) 2017 POLYGONTEK
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -620,8 +620,7 @@ void RenderWorld::DebugCone(const Vec3 &apex, const Vec3 &bottom, float radius1,
     Mat3 axis;
     axis[2] = apex - bottom;
     float height = axis[2].Normalize();
-    axis[2].NormalVectors(axis[0], axis[1]);
-    axis[1] = -axis[1];
+    axis[2].OrthogonalBasis(axis[0], axis[1]);
 
     DebugCone(bottom, axis, height, radius1, radius2, drawCap, lineWidth, twoSided, depthTest, lifeTime);
 }
@@ -692,8 +691,7 @@ void RenderWorld::DebugCapsule(const Vec3 &a, const Vec3 &b, float radius, float
     Mat3 axis;
     axis[2] = a - b;
     axis[2].Normalize();
-    axis[2].NormalVectors(axis[0], axis[1]);
-    axis[1] = -axis[1];
+    axis[2].OrthogonalBasis(axis[0], axis[1]);
 
     DebugCone(a, b, radius, radius, false, lineWidth, twoSided, depthTest, lifeTime);
 
