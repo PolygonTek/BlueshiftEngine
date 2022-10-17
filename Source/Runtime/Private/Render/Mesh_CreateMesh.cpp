@@ -577,10 +577,15 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
         int numSrcIndexes = srcSurf->subMesh->NumIndexes();
 
         Array<VertexGenericLit> tempBelowVerts;
+        Array<VertexGenericLit> tempBelowCapVerts;
         Array<VertexGenericLit> tempAboveVerts;
+        Array<VertexGenericLit> tempAboveCapVerts;
         Array<VertIndex> tempBelowIndexes;
+        Array<VertIndex> tempBelowCapIndexes;
         Array<VertIndex> tempAboveIndexes;
+        Array<VertIndex> tempAboveCapIndexes;
 
+        // FIXME
         tempBelowVerts.Reserve(numSrcVerts * 2);
         tempAboveVerts.Reserve(numSrcVerts * 2);
         tempBelowIndexes.Reserve(numSrcIndexes * 2);
@@ -747,71 +752,74 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
             }
         }
 
-        if (generateCap) {
-            if (clippedVerts.Count() >= 3) {
-                Vec3 planeOrigin = slicePlane.Project(srcMesh.GetAABB().Center());
-                //Vec3 planeOrigin = clippedVerts[0];
-                Vec3 planeXAxis, planeYAxis;
-                slicePlane.normal.OrthogonalBasis(planeXAxis, planeYAxis);
-                planeXAxis = -planeXAxis;
+        if (generateCap && clippedVerts.Count() >= 3) {
+            Array<VertexGenericLit> *tempBelowCapVertsPtr = &tempBelowVerts;
+            Array<VertexGenericLit> *tempAboveCapVertsPtr = &tempAboveVerts;
+            Array<VertIndex> *tempBelowCapIndexesPtr = &tempBelowIndexes;
+            Array<VertIndex> *tempAboveCapIndexesPtr = &tempAboveIndexes;
 
-                // pointsOnPlane has same order with clippedVerts.
-                Array<Vec2> pointsOnPlane;
-                pointsOnPlane.SetCount(clippedVerts.Count());
+            int belowCapBaseVertex = tempBelowCapVertsPtr->Count();
+            int aboveCapBaseVertex = tempAboveCapVertsPtr->Count();
 
-                for (int i = 0; i < clippedVerts.Count(); i++) {
-                    Vec3 offset = clippedVerts[i] - planeOrigin;
-                    pointsOnPlane[i].x = planeXAxis.Dot(offset);
-                    pointsOnPlane[i].y = planeYAxis.Dot(offset);
-                }
+            Vec3 planeOrigin = slicePlane.Project(srcMesh.GetAABB().Center());
+            //Vec3 planeOrigin = clippedVerts[0];
+            Vec3 planeXAxis, planeYAxis;
+            slicePlane.normal.OrthogonalBasis(planeXAxis, planeYAxis);
+            planeXAxis = -planeXAxis;
 
-                int belowCapBaseVertex = tempBelowVerts.Count();
-                int aboveCapBaseVertex = tempAboveVerts.Count();
+            // pointsOnPlane has same order with clippedVerts.
+            Array<Vec2> pointsOnPlane;
+            pointsOnPlane.SetCount(clippedVerts.Count());
 
-                IDelaBella2<float> *idb = IDelaBella2<float>::Create();
-                int numTriangulatedVerts = idb->Triangulate(pointsOnPlane.Count(), &pointsOnPlane[0].x, &pointsOnPlane[0].y, sizeof(Vec2));
-                if (numTriangulatedVerts > 0) {
-                    for (int i = 0; i < clippedVerts.Count(); i++) {
-                        const IDelaBella2<float>::Vertex *v = idb->GetVertexByIndex(i);
-
-                        // Texture coordinates are based on the 2D coordinates used for triangulation.
-                        // During triangulation, coordinates are normalized to [-1, 1], so need to multiply
-                        // by normalization scale factor to get back to the appropriate scale.
-                        Vec2 st = Vec2(v->x, v->y) * 0.5f + 0.5f;
-                        st *= capTextureScale;
-
-                        VertexGenericLit capVertex;
-                        capVertex.SetPosition(clippedVerts[v->i]);
-                        capVertex.SetNormal(slicePlane.normal);
-                        capVertex.SetTexCoord(st);
-                        capVertex.SetFloatColor(Color4::white);
-                        tempBelowVerts.Append(capVertex);
-
-                        if (generateAboveMesh) {
-                            capVertex.SetNormal(-capVertex.GetNormal());
-
-                            tempAboveVerts.Append(capVertex);
-                        }
-                    }
-
-                    const IDelaBella2<float>::Simplex *simplex = idb->GetFirstDelaunaySimplex();
-                    int numTriangulatedTris = idb->GetNumPolygons();
-
-                    for (int i = 0; i < numTriangulatedTris; i++) {
-                        tempBelowIndexes.Append(belowCapBaseVertex + simplex->v[0]->i);
-                        tempBelowIndexes.Append(belowCapBaseVertex + simplex->v[1]->i);
-                        tempBelowIndexes.Append(belowCapBaseVertex + simplex->v[2]->i);
-
-                        if (generateAboveMesh) {
-                            tempAboveIndexes.Append(aboveCapBaseVertex + simplex->v[2]->i);
-                            tempAboveIndexes.Append(aboveCapBaseVertex + simplex->v[1]->i);
-                            tempAboveIndexes.Append(aboveCapBaseVertex + simplex->v[0]->i);
-                        }
-                        simplex = simplex->next;
-                    }
-                }
-                idb->Destroy();
+            for (int i = 0; i < clippedVerts.Count(); i++) {
+                Vec3 offset = clippedVerts[i] - planeOrigin;
+                pointsOnPlane[i].x = planeXAxis.Dot(offset);
+                pointsOnPlane[i].y = planeYAxis.Dot(offset);
             }
+
+            IDelaBella2<float> *idb = IDelaBella2<float>::Create();
+            int numTriangulatedVerts = idb->Triangulate(pointsOnPlane.Count(), &pointsOnPlane[0].x, &pointsOnPlane[0].y, sizeof(Vec2));
+            if (numTriangulatedVerts > 0) {
+                for (int i = 0; i < clippedVerts.Count(); i++) {
+                    const IDelaBella2<float>::Vertex *v = idb->GetVertexByIndex(i);
+
+                    // Texture coordinates are based on the 2D coordinates used for triangulation.
+                    // During triangulation, coordinates are normalized to [-1, 1], so need to multiply
+                    // by normalization scale factor to get back to the appropriate scale.
+                    Vec2 st = Vec2(v->x, v->y) * 0.5f + 0.5f;
+                    st *= capTextureScale;
+
+                    VertexGenericLit capVertex;
+                    capVertex.SetPosition(clippedVerts[v->i]);
+                    capVertex.SetNormal(slicePlane.normal);
+                    capVertex.SetTexCoord(st);
+                    capVertex.SetFloatColor(Color4::white);
+                    tempBelowCapVertsPtr->Append(capVertex);
+
+                    if (generateAboveMesh) {
+                        capVertex.SetNormal(-capVertex.GetNormal());
+
+                        tempAboveCapVertsPtr->Append(capVertex);
+                    }
+                }
+
+                const IDelaBella2<float>::Simplex *simplex = idb->GetFirstDelaunaySimplex();
+                int numTriangulatedTris = idb->GetNumPolygons();
+
+                for (int i = 0; i < numTriangulatedTris; i++) {
+                    tempBelowCapIndexesPtr->Append(belowCapBaseVertex + simplex->v[0]->i);
+                    tempBelowCapIndexesPtr->Append(belowCapBaseVertex + simplex->v[1]->i);
+                    tempBelowCapIndexesPtr->Append(belowCapBaseVertex + simplex->v[2]->i);
+
+                    if (generateAboveMesh) {
+                        tempAboveCapIndexesPtr->Append(aboveCapBaseVertex + simplex->v[2]->i);
+                        tempAboveCapIndexesPtr->Append(aboveCapBaseVertex + simplex->v[1]->i);
+                        tempAboveCapIndexesPtr->Append(aboveCapBaseVertex + simplex->v[0]->i);
+                    }
+                    simplex = simplex->next;
+                }
+            }
+            idb->Destroy();
         }
 
         if (tempBelowVerts.Count() > 0 && tempBelowIndexes.Count() > 0) {
@@ -830,6 +838,26 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
 
             simdProcessor->Memcpy(surf->subMesh->verts, tempAboveVerts.Ptr(), sizeof(tempAboveVerts[0]) * tempAboveVerts.Count());
             simdProcessor->Memcpy(surf->subMesh->indexes, tempAboveIndexes.Ptr(), sizeof(tempAboveIndexes[0]) * tempAboveIndexes.Count());
+        }
+
+        if (generateCap) {
+            if (tempBelowCapVerts.Count() > 0 && tempBelowCapIndexes.Count() > 0) {
+                MeshSurf *surf = outBelowMesh->AllocSurface(tempBelowCapVerts.Count(), tempBelowCapIndexes.Count());
+                surf->materialIndex = srcSurf->materialIndex;
+                outBelowMesh->surfaces.Append(surf);
+
+                simdProcessor->Memcpy(surf->subMesh->verts, tempBelowCapVerts.Ptr(), sizeof(tempBelowCapVerts[0]) * tempBelowCapVerts.Count());
+                simdProcessor->Memcpy(surf->subMesh->indexes, tempBelowCapIndexes.Ptr(), sizeof(tempBelowCapIndexes[0]) * tempBelowCapIndexes.Count());
+            }
+
+            if (tempAboveCapVerts.Count() > 0 && tempAboveCapIndexes.Count() > 0) {
+                MeshSurf *surf = outAboveMesh->AllocSurface(tempAboveCapVerts.Count(), tempAboveCapIndexes.Count());
+                surf->materialIndex = srcSurf->materialIndex;
+                outAboveMesh->surfaces.Append(surf);
+
+                simdProcessor->Memcpy(surf->subMesh->verts, tempAboveCapVerts.Ptr(), sizeof(tempAboveCapVerts[0]) * tempAboveCapVerts.Count());
+                simdProcessor->Memcpy(surf->subMesh->indexes, tempAboveCapIndexes.Ptr(), sizeof(tempAboveCapIndexes[0]) *tempAboveCapIndexes.Count());
+            }
         }
     }
 

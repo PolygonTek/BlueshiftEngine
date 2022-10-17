@@ -473,7 +473,7 @@ bool Collider::Load(const char *filename, bool convexHull, const Vec3 &scale) {
     Mesh *mesh = meshManager.GetMesh(filename);
 
     if (convexHull) {
-        CreateConvexHull(mesh, scale, CentiToUnit(1.0f));
+        CreateConvexHull(mesh, scale, CentiToUnit(0.0f));
         //CreateConvexDecomp(mesh, scale);
     } else {
         CreateBVH(mesh, false, scale);
