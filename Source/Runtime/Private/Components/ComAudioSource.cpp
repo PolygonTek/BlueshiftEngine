@@ -33,6 +33,8 @@ void ComAudioSource::RegisterProperties() {
         "", PropertyInfo::Flag::Editor).SetMetaObject(&SoundResource::metaObject);
     REGISTER_PROPERTY("playOnAwake", "Play On Awake", bool, playOnAwake, false, 
         "Play the sound when the map loaded.", PropertyInfo::Flag::Editor);
+    REGISTER_PROPERTY("ignoreInactive", "Ignore Inactive", bool, ignoreInactive, true,
+        "", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("spatial", "Spatial", bool, spatial, true, 
         "", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("looping", "Looping", bool, looping, false, 
@@ -46,8 +48,6 @@ void ComAudioSource::RegisterProperties() {
 }
 
 ComAudioSource::ComAudioSource() {
-    referenceSound = nullptr;
-    sound = nullptr;
 }
 
 ComAudioSource::~ComAudioSource() {
@@ -89,13 +89,13 @@ void ComAudioSource::Awake() {
 }
 
 void ComAudioSource::OnActive() {
-    if (sound) {
+    if (sound && !ignoreInactive) {
         sound->SetVolume(volume);
     }
 }
 
 void ComAudioSource::OnInactive() {
-    if (sound) {
+    if (sound && !ignoreInactive) {
         sound->SetVolume(0);
     }
 }
@@ -107,8 +107,7 @@ void ComAudioSource::Play() {
         sound = referenceSound->Instantiate();
 
         if (spatial) {
-            sound->Play3D(transform->GetOrigin(), minDistance, maxDistance, 
-                volume * (IsActiveInHierarchy() ? 1.0f : 0.0f), looping);
+            sound->Play3D(transform->GetOrigin(), minDistance, maxDistance, volume * (IsActiveInHierarchy() ? 1.0f : 0.0f), looping);
         } else {
             sound->Play2D(volume, looping);
         }

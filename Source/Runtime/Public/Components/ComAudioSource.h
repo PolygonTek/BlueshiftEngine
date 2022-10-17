@@ -53,14 +53,15 @@ protected:
 
     void                    TransformUpdated(const ComTransform *transform);
 
-    Sound *                 referenceSound;
-    Sound *                 sound;
+    Sound *                 referenceSound = nullptr;
+    Sound *                 sound = nullptr;
     bool                    playOnAwake;
     float                   minDistance;
     float                   maxDistance;
     float                   volume;
     bool                    spatial;
     bool                    looping;
+    bool                    ignoreInactive;
 };
 
 BE_NAMESPACE_END
