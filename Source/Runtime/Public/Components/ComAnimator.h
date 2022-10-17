@@ -63,7 +63,7 @@ protected:
     void                    AnimControllerReloaded();
 
     Animator                animator;
-    Asset *                 animControllerAsset;
+    Asset *                 animControllerAsset = nullptr;
 };
 
 BE_INLINE Vec3 ComAnimator::GetTranslation(int currentTime) const {

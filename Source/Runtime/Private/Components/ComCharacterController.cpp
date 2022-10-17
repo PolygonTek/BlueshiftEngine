@@ -43,9 +43,6 @@ void ComCharacterController::RegisterProperties() {
 
 ComCharacterController::ComCharacterController() {
     updatable = true;
-    collider = nullptr;
-    body = nullptr;
-    correctionSensor = nullptr;
 }
 
 ComCharacterController::~ComCharacterController() {

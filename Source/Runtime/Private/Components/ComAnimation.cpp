@@ -44,17 +44,6 @@ void ComAnimation::RegisterProperties() {
 
 ComAnimation::ComAnimation() {
     updatable = true;
-
-    skeleton = nullptr;
-
-    skeletonAsset = nullptr;
-
-    jointMats = nullptr;
-
-    currentAnimIndex = 0;
-
-    timeOffset = 0;
-    timeScale = 1.0f;
 }
 
 ComAnimation::~ComAnimation() {

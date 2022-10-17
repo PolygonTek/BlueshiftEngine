@@ -63,7 +63,6 @@ void ComCamera::RegisterProperties() {
 
 ComCamera::ComCamera() {
     updatable = true;
-    renderCamera = nullptr;
 
     mousePointerState.oldHitEntityGuid = Guid::zero;
     mousePointerState.captureEntityGuid = Guid::zero;

@@ -71,20 +71,20 @@ protected:
     void                    ChangeSkeleton(const Guid &skeletonGuid);
     void                    SkeletonReloaded();
 
-    Skeleton *              skeleton;
+    Skeleton *              skeleton = nullptr;
     Array<Anim *>           anims;
 
-    Asset *                 skeletonAsset;
+    Asset *                 skeletonAsset = nullptr;
     Array<Asset *>          animAssets;
 
     Array<int>              jointIndexes;
     Array<int>              jointParents;
-    Mat3x4 *                jointMats;
+    Mat3x4 *                jointMats = nullptr;
 
-    int                     currentAnimIndex;
+    int                     currentAnimIndex = 0;
     int                     playStartTime;
-    float                   timeOffset;
-    float                   timeScale;
+    float                   timeOffset = 0.0f;
+    float                   timeScale = 1.0f;
 };
 
 BE_NAMESPACE_END

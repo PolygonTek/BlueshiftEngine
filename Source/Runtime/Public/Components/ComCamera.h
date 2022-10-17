@@ -93,7 +93,7 @@ protected:
 
     void                    TransformUpdated(const ComTransform *transform);
 
-    RenderCamera *          renderCamera;
+    RenderCamera *          renderCamera = nullptr;
     RenderCamera::State     renderCameraDef;
     float                   fov;
     float                   size;

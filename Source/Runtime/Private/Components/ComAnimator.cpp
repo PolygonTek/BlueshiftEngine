@@ -35,7 +35,6 @@ void ComAnimator::RegisterProperties() {
 
 ComAnimator::ComAnimator() {
     updatable = true;
-    animControllerAsset = nullptr;
 }
 
 ComAnimator::~ComAnimator() {

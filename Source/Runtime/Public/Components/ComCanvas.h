@@ -100,7 +100,7 @@ protected:
     void                    RectTransformUpdated(ComRectTransform *rectTransform);
 #endif
 
-    RenderCamera *          renderCamera;
+    RenderCamera *          renderCamera = nullptr;
     RenderCamera::State     renderCameraDef;
 
 private:

@@ -81,9 +81,9 @@ protected:
 
     void                    TransformUpdated(const ComTransform *transform);
 
-    Collider *              collider;
-    PhysRigidBody *         body;
-    PhysSensor *            correctionSensor;
+    Collider *              collider = nullptr;
+    PhysRigidBody *         body = nullptr;
+    PhysSensor *            correctionSensor = nullptr;
 
     Vec3                    origin;
     CastResult              groundTrace;

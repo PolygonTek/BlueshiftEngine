@@ -48,8 +48,6 @@ void ComCanvas::RegisterProperties() {
 }
 
 ComCanvas::ComCanvas() {
-    renderCamera = nullptr;
-
     mousePointerState.oldHitEntityGuid = Guid::zero;
     mousePointerState.captureEntityGuid = Guid::zero;
 }
