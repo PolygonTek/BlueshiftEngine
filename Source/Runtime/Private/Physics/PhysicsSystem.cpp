@@ -157,7 +157,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
             rigidBody->setCollisionFlags(rigidBody->getCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
         }
 
-        rigidBody->setSleepingThresholds(1.0f, 2.0f);
+        rigidBody->setSleepingThresholds(SystemUnitToPhysicsUnit(0.2f), 2.0f);
 
         PhysRigidBody *body = new PhysRigidBody(rigidBody, totalCentroid);
         body->SetRestitution(desc.restitution);
