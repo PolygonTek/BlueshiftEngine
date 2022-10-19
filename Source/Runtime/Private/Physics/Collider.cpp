@@ -186,8 +186,9 @@ void Collider::CreateConvexHull(const Mesh *mesh, const Vec3 &scale, float margi
     Purge();
 
     this->modelScale = scale;
-    this->volume = scale.x * scale.y * scale.z * mesh->ComputeVolume();
-    this->centroid = scale * mesh->ComputeCentroid();
+    this->volume = mesh->ComputeVolumeAndCentroid(this->centroid);
+    this->volume *= scale.x * scale.y * scale.z;
+    this->centroid *= scale;
 
     int numPoints = 0;
     for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
@@ -196,14 +197,14 @@ void Collider::CreateConvexHull(const Mesh *mesh, const Vec3 &scale, float margi
     }
 
     if (numPoints < 3) {
-        BE_ERRLOG("Failed to cerate convex collider due to too few vertices");
+        BE_ERRLOG("Failed to create convex collider due to too few vertices");
         return;
     }
 
     // Collect all vertices to be input to compute convex hull points.
-    Array<Vec3> inputPoints;
-    inputPoints.SetCount(numPoints);
-    Vec3 *inputPointPtr = (Vec3 *)inputPoints.Ptr();
+    Array<Vec3> inputVertices;
+    inputVertices.SetCount(numPoints);
+    Vec3 *inputVertexPtr = (Vec3 *)inputVertices.Ptr();
 
     for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
         const MeshSurf *surf = mesh->GetSurface(surfaceIndex);
@@ -212,37 +213,38 @@ void Collider::CreateConvexHull(const Mesh *mesh, const Vec3 &scale, float margi
 
         for (int vertexIndex = 0; vertexIndex < subMesh->NumOriginalVerts(); vertexIndex++) {
             Vec3 positionRelativeToCentroid = scale * verts[vertexIndex].xyz - centroid;
-            *inputPointPtr++ = SystemUnitToPhysicsUnit(positionRelativeToCentroid);
+            *inputVertexPtr++ = SystemUnitToPhysicsUnit(positionRelativeToCentroid);
         }
     }
 
-    btConvexHullComputer *computer = new btConvexHullComputer;
-    float shrunken = computer->compute((const float *)inputPoints.Ptr(), sizeof(inputPoints[0]), inputPoints.Count(), SystemUnitToPhysicsUnit(margin), 1.0f);
+    btConvexHullComputer *convexHullComputer = new btConvexHullComputer;
+    float shrunken = convexHullComputer->compute((const float *)inputVertices.Ptr(), sizeof(inputVertices[0]), inputVertices.Count(), SystemUnitToPhysicsUnit(margin), 1.0f);
 
-    CollisionMesh *collisionMesh = AllocCollisionMesh(computer->vertices.size(), 0);
+    CollisionMesh *collisionMesh = AllocCollisionMesh(convexHullComputer->vertices.size(), 0);
     this->collisionMeshes.Append(collisionMesh);
 
-    for (int i = 0; i < computer->vertices.size(); i++) {
-        const btVector3 &btvec3 = computer->vertices[i];
+    for (int i = 0; i < convexHullComputer->vertices.size(); i++) {
+        const btVector3 &btvec3 = convexHullComputer->vertices[i];
         collisionMesh->verts[i].Set(btvec3.x(), btvec3.y(), btvec3.z());
     }
     
-    delete computer;
+    delete convexHullComputer;
 
-    btConvexHullShape *chShape = new btConvexHullShape((const btScalar *)collisionMesh->verts, collisionMesh->numVerts, sizeof(collisionMesh->verts[0]));
-    chShape->setMargin(shrunken);
-    chShape->initializePolyhedralFeatures(0);
+    btConvexHullShape *convexHullShape = new btConvexHullShape((const btScalar *)collisionMesh->verts, collisionMesh->numVerts, sizeof(collisionMesh->verts[0]));
+    convexHullShape->setMargin(shrunken);
+    convexHullShape->initializePolyhedralFeatures(0);
 
     this->type = Type::ConvexHull;
-    this->shape = chShape;
+    this->shape = convexHullShape;
 }
 
 void Collider::CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale, float margin) {
     Purge();
 
     this->modelScale = scale;
-    this->volume = scale.x * scale.y * scale.z * mesh->ComputeVolume();
-    this->centroid = scale * mesh->ComputeCentroid();
+    this->volume = mesh->ComputeVolumeAndCentroid(this->centroid);
+    this->volume *= scale.x * scale.y * scale.z;
+    this->centroid *= scale;
 
     Array<HACD::Vec3<HACD::Real> > hacdPoints;
     Array<HACD::Vec3<long> > hacdTris;
@@ -333,13 +335,13 @@ void Collider::CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale, float mar
     for (int i = 0; i < collisionMeshes.Count(); i++) {
         const CollisionMesh *collisionMesh = GetCollisionMesh(i);
 
-        btConvexHullShape *chShape = new btConvexHullShape((const btScalar *)collisionMesh->verts, collisionMesh->numVerts, sizeof(collisionMesh->verts[0]));
-        chShape->setMargin(SystemUnitToPhysicsUnit(margin));
+        btConvexHullShape *convexHullShape = new btConvexHullShape((const btScalar *)collisionMesh->verts, collisionMesh->numVerts, sizeof(collisionMesh->verts[0]));
+        convexHullShape->setMargin(SystemUnitToPhysicsUnit(margin));
     
         btTransform localTransform;
         localTransform.setIdentity();
         //localTransform.setOrigin(btVector3(-centroid.x, -centroid.y, -centroid.z));
-        compoundShape->addChildShape(localTransform, chShape);
+        compoundShape->addChildShape(localTransform, convexHullShape);
     }
 
     this->type = Type::ConvexHull;

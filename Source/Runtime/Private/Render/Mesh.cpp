@@ -334,6 +334,12 @@ float Mesh::ComputeVolume() const {
 }
 
 const Vec3 Mesh::ComputeCentroid() const {
+    Vec3 centroid;
+    ComputeVolumeAndCentroid(centroid);
+    return centroid;
+}
+
+float Mesh::ComputeVolumeAndCentroid(Vec3 &outCentroid) const {
     float   totalVolume = 0;
     Vec3    totalVolumeCentroid(0.0f);
     float   volume;
@@ -357,10 +363,11 @@ const Vec3 Mesh::ComputeCentroid() const {
     }
 
     if (totalVolume > 0.0f) {
-        return totalVolumeCentroid / totalVolume;
+        outCentroid = totalVolumeCentroid / totalVolume;
+    } else {
+        outCentroid = Vec3::origin;
     }
-
-    return Vec3::origin;
+    return totalVolume;
 }
 
 bool Mesh::Load(const char *filename) {

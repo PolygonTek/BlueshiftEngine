@@ -134,9 +134,11 @@ public:
                             /// Returns volume of solid mesh.
                             /// Should be a closed polytope to calculate exactly. If not AABB approximation will be used.
     float                   ComputeVolume() const;
-                            /// Returns centroid of solid mesh. 
+                            /// Returns centroid of solid mesh.
                             /// Should be a closed polytope to calculate exactly. If not AABB approximation will be used.
     const Vec3              ComputeCentroid() const;
+
+    float                   ComputeVolumeAndCentroid(Vec3 &outCentroid) const;
 
     void                    Purge();
 
