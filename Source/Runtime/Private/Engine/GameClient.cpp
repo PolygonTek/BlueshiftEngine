@@ -393,8 +393,10 @@ void GameClient::DrawMenuBar() {
 
         Str versionText = va("%s %s v%s", BE_NAME, PlatformProcess::PlatformName(), BE_VERSION);
 
-#ifdef _DEBUG
+#if defined(_DEBUG)
         versionText += " (DEBUG)";
+#elif defined(_DEVELOPMENT)
+        versionText += " (DEVELOPMENT)";
 #endif
 
         ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize(versionText.c_str()).x);
