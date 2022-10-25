@@ -79,12 +79,12 @@ void ComBoxCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool 
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
     if (selectedByParent) {
-        ComTransform *transform = GetEntity()->GetTransform();
+        const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(500.0f * 500.0f)) {
             Vec3 scaledExtents = transform->GetScale() * extents;
 
-            OBB obb(transform->GetMatrix() * center, scaledExtents + CentiToUnit(0.15f), transform->GetAxis());
+            OBB obb(transform->GetMatrix() * center, scaledExtents + CmToUnit(0.15f), transform->GetAxis());
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
             renderWorld->DebugOBB(obb, 1.25f);

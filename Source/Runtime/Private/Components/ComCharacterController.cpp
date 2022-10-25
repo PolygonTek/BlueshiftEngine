@@ -35,8 +35,8 @@ void ComCharacterController::RegisterProperties() {
         "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("capsuleHeight", "Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, MeterToUnit(0.8f),
         "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("stepOffset", "Step Offset", float, GetStepOffset, SetStepOffset, CentiToUnit(40.0f),
-        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0, CentiToUnit(50.0f), CentiToUnit(1.0f));
+    REGISTER_ACCESSOR_PROPERTY("stepOffset", "Step Offset", float, GetStepOffset, SetStepOffset, CmToUnit(40.0f),
+        "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0, CmToUnit(50.0f), CmToUnit(1.0f));
     REGISTER_ACCESSOR_PROPERTY("slopeLimit", "Slope Limit Angle", float, GetSlopeLimit, SetSlopeLimit, 60.0f, 
         "", PropertyInfo::Flag::Editor).SetRange(0, 90, 1);
 }
@@ -176,7 +176,7 @@ void ComCharacterController::GroundTrace() {
     Vec3 p2 = p1;
 
     // Move down 6 cm on the z axis to check if it is touching the ground.
-    p2.z -= CentiToUnit(6.0f);
+    p2.z -= CmToUnit(6.0f);
 
     int filterMask = GetGameWorld()->GetPhysicsWorld()->GetCollisionFilterMask(body->GetCollisionFilterBit());
 

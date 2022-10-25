@@ -778,7 +778,8 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
             }
 
             IDelaBella2<float> *idb = IDelaBella2<float>::Create();
-            int numTriangulatedVerts = idb->Triangulate(pointsOnPlane.Count(), &pointsOnPlane[0].x, &pointsOnPlane[0].y, sizeof(Vec2));
+            int numTriangulatedVerts = idb->Triangulate(pointsOnPlane.Count(), &pointsOnPlane[0].x, &pointsOnPlane[0].y, sizeof(pointsOnPlane[0]));
+            //int numTriangulatedVerts = idb->GetNumOutputIndices();
             if (numTriangulatedVerts > 0) {
                 for (int i = 0; i < clippedVerts.Count(); i++) {
                     const IDelaBella2<float>::Vertex *v = idb->GetVertexByIndex(i);

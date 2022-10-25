@@ -767,7 +767,7 @@ void RenderContext::TakeScreenShot(const char *filename, RenderWorld *renderWorl
     } else {
         cameraDef.zFar = MeterToUnit(100.0f);
     }
-    cameraDef.zNear = CentiToUnit(5.0f);
+    cameraDef.zNear = CmToUnit(5.0f);
 
     RenderCamera::ComputeFov(fov, 1.25f, (float)width / height, &cameraDef.fovX, &cameraDef.fovY);
 

@@ -161,9 +161,9 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         module["log"].SetFunc([](const std::string &msg) {
             BE_LOG("%s\n", msg.c_str());
         });
-        module["unit_to_centi"].SetFunc(static_cast<float(*)(float)>(&UnitToCenti));
+        module["unit_to_centi"].SetFunc(static_cast<float(*)(float)>(&UnitToCm));
         module["unit_to_meter"].SetFunc(static_cast<float(*)(float)>(&UnitToMeter));
-        module["centi_to_unit"].SetFunc(static_cast<float(*)(float)>(&CentiToUnit));
+        module["centi_to_unit"].SetFunc(static_cast<float(*)(float)>(&CmToUnit));
         module["meter_to_unit"].SetFunc(static_cast<float(*)(float)>(&MeterToUnit));
 
         // Math

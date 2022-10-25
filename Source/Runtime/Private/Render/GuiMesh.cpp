@@ -514,8 +514,8 @@ AABB GuiMesh::Compute3DTextAABB(Font *font, RenderObject::TextAnchor::Enum ancho
     float maxHeight = textScale * (font->GetFontHeight() * numLines + lineSpacing * (numLines - 1));
 
     AABB bounds;
-    bounds[0].z = -CentiToUnit(0.1f);
-    bounds[1].z = +CentiToUnit(0.1f);
+    bounds[0].z = -MmToUnit(1.0f);
+    bounds[1].z = +MmToUnit(1.0f);
 
     if (anchor == RenderObject::TextAnchor::UpperLeft || 
         anchor == RenderObject::TextAnchor::MiddleLeft || 

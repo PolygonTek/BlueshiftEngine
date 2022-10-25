@@ -245,7 +245,7 @@ void Mesh::ComputeAABB() {
     }
 
     // add small epsilon
-    aabb.ExpandSelf(CentiToUnit(0.01f));
+    aabb.ExpandSelf(MmToUnit(0.1f));
 }
 
 void Mesh::ComputeNormals() {

@@ -163,7 +163,7 @@ private:
     void                    ComputeRemovableFrames(const JointPose *frameJoints, const int *jointIndexes, JointPose *lerpedJoints,
                                 float epsilonT, float epsilonQ, float epsilonS, int frameNum1, int frameNum2, Array<int> &removableFrameNums);
     void                    RemoveFrames(const Array<int> &removableFrameNums);
-    void                    OptimizeFrames(float epsilonT = CentiToUnit(0.01f), float epsilonQ = 0.0015f, float epsilonS = 0.0001f);
+    void                    OptimizeFrames(float epsilonT = MmToUnit(0.1f), float epsilonQ = 0.0015f, float epsilonS = 0.0001f);
 
     Str                     hashName;
     Str                     name;

@@ -1010,9 +1010,9 @@ void PP_SSAO(const Texture *depthTexture, const Texture *downscaledDepthTexture,
     shader->SetConstant2f("screenTanHalfFov", Vec2(camera->def->GetFrustum().GetLeft() / camera->def->GetFrustum().GetFarDistance(), camera->def->GetFrustum().GetUp() / camera->def->GetFrustum().GetFarDistance()));
     shader->SetConstant4f("projComp1", Vec4(camera->def->GetProjMatrix()[0][0], camera->def->GetProjMatrix()[1][1], camera->def->GetProjMatrix()[0][2], camera->def->GetProjMatrix()[1][2]));
     shader->SetConstant4f("projComp2", Vec4(camera->def->GetProjMatrix()[2][2], camera->def->GetProjMatrix()[2][3], 0.0f, 0.0f));
-    shader->SetConstant1f("radius", CentiToUnit(r_SSAO_radius.GetFloat()));
-    shader->SetConstant1f("validRange", CentiToUnit(r_SSAO_validRange.GetFloat()));
-    shader->SetConstant1f("threshold", CentiToUnit(r_SSAO_threshold.GetFloat()));
+    shader->SetConstant1f("radius", CmToUnit(r_SSAO_radius.GetFloat()));
+    shader->SetConstant1f("validRange", CmToUnit(r_SSAO_validRange.GetFloat()));
+    shader->SetConstant1f("threshold", CmToUnit(r_SSAO_threshold.GetFloat()));
     shader->SetConstant1f("power", r_SSAO_power.GetFloat());
     shader->SetConstant1f("intensity", r_SSAO_intensity.GetFloat());
 

@@ -66,13 +66,13 @@ public:
     void                    Purge();
 
                             /// Creates box shaped collider with the given parameters.
-    void                    CreateBox(const Vec3 &center, const Vec3 &extents, float margin = CentiToUnit(0.1f));
+    void                    CreateBox(const Vec3 &center, const Vec3 &extents, float margin = MmToUnit(1.0f));
 
                             /// Creates cylinder shaped collider with the given parameters.
-    void                    CreateCylinder(const Vec3 &center, float radius, float height, float margin = CentiToUnit(0.1f));
+    void                    CreateCylinder(const Vec3 &center, float radius, float height, float margin = MmToUnit(1.0f));
 
                             /// Creates cone shaped collider with the given parameters.
-    void                    CreateCone(const Vec3 &center, float radius, float height, float margin = CentiToUnit(0.1f));
+    void                    CreateCone(const Vec3 &center, float radius, float height, float margin = MmToUnit(1.0f));
 
                             /// Creates sphere shaped collider with the given parameters.
     void                    CreateSphere(const Vec3 &center, float radius);
@@ -81,10 +81,10 @@ public:
     void                    CreateCapsule(const Vec3 &center, float radius, float height);
 
                             /// Creates convex hull collider with the given mesh and parameters.
-    void                    CreateConvexHull(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = CentiToUnit(0.0f));
+    void                    CreateConvexHull(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = MmToUnit(0.0f));
 
                             /// Creates convex decomposition collider with the given mesh and parameters.
-    void                    CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = CentiToUnit(0.0f));
+    void                    CreateConvexDecomp(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = MmToUnit(0.0f));
 
     void                    SetLocalScaling(float sx, float sy, float sz);
 

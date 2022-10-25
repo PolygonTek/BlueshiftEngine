@@ -123,7 +123,7 @@ void ComCanvas::DrawGizmos(const RenderCamera *camera, bool selected, bool selec
 
     RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
-    ComRectTransform *rectTransform = GetEntity()->GetRectTransform();
+    const ComRectTransform *rectTransform = GetEntity()->GetRectTransform();
     if (rectTransform) {
         Vec3 worldCorners[4];
         rectTransform->GetWorldCorners(worldCorners);

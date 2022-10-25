@@ -208,6 +208,7 @@
 #ifndef BIT
     #define BIT(num)                (1 << (num))
 #endif
+
 #define ADD_BIT(x, num)             (x |= BIT(num))
 #define SUB_BIT(x, num)             (x &= ~BIT(num))
 
@@ -333,14 +334,19 @@ constexpr std::size_t count_of(T (&)[N]) {
 
 template <typename T>
 struct return_type;
+
 template <typename R, typename... Args>
 struct return_type<R(*)(Args...)> { using type = R; };
+
 template <typename R, typename C, typename... Args>
 struct return_type<R(C:: *)(Args...)> { using type = R; };
+
 template <typename R, typename C, typename... Args>
 struct return_type<R(C:: *)(Args...) const> { using type = R; };
+
 template <typename R, typename C, typename... Args>
 struct return_type<R(C:: *)(Args...) volatile> { using type = R; };
+
 template <typename R, typename C, typename... Args>
 struct return_type<R(C:: *)(Args...) const volatile> { using type = R; };
 
@@ -493,7 +499,7 @@ using return_type_t = typename return_type<T>::type;
 #define _alloca16(x)                ((void *)((((intptr_t)alloca((x) + 15)) + 15) & ~15))
 #define _alloca32(x)                ((void *)((((intptr_t)alloca((x) + 31)) + 31) & ~31))
 
-#define TCHAR   char
+#define TCHAR                       char
 #endif // __UNIX__
 
 //----------------------------------------------------------------------------------------------
@@ -754,10 +760,16 @@ template <typename T>
 BE_FORCE_INLINE constexpr T MeterToUnit(T x) { return x / UnitToMeter(1.0f); }
 
 template <typename T>
-BE_FORCE_INLINE constexpr T UnitToCenti(T x) { return UnitToMeter(x) * 100.0f; }
+BE_FORCE_INLINE constexpr T UnitToCm(T x) { return UnitToMeter(x) * 100.0f; }
 
 template <typename T>
-BE_FORCE_INLINE constexpr T CentiToUnit(T x) { return MeterToUnit(x * 0.01f); }
+BE_FORCE_INLINE constexpr T CmToUnit(T x) { return MeterToUnit(x * 0.01f); }
+
+template <typename T>
+BE_FORCE_INLINE constexpr T UnitToMm(T x) { return UnitToMeter(x) * 1000.0f; }
+
+template <typename T>
+BE_FORCE_INLINE constexpr T MmToUnit(T x) { return MeterToUnit(x * 0.001f); }
 
 template <typename T>
 BE_FORCE_INLINE constexpr T UnitToKm(T x) { return UnitToMeter(x) * 0.001f; }

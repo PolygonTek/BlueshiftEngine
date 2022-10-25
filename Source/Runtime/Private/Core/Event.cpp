@@ -64,7 +64,7 @@ EventDef::EventDef(const char *name, bool guiEvent, const char *formatSpec, char
             this->argSize += sizeof(int);
             break;
         case VariantArg::FloatType:
-            argBits |= 1 << i;
+            ADD_BIT(argBits, i);
             this->argSize += sizeof(float);
             break;
         case VariantArg::PointerType:
