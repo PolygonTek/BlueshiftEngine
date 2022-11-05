@@ -6,6 +6,8 @@ set(ALL_FILES
     Main.cpp
     TestContainer.h
     TestContainer.cpp
+    TestRValue.h
+    TestRValue.cpp
     TestMath.h
     TestMath.cpp
     TestThread.h
