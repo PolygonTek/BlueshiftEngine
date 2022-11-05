@@ -204,7 +204,7 @@ public:
     friend Str          operator+(const Str &lhs, const char *rhs);
                         /// Returns a string which is the result of concatenating lhs and rhs.
     friend Str          operator+(const char *lhs, const Str &rhs);
-                        /// Returns a string which is the result of concatenating the string s and the character ch.
+                        /// Returns a string which is the result of concatenating the string lhs and the character rhs.
     friend Str          operator+(const Str &lhs, const char rhs);
 
                         /// Make string in lowercase.
