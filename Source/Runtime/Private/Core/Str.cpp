@@ -316,7 +316,7 @@ Str &Str::SlashesToBackSlashes() {
     return *this;
 }
 
-const Str Str::ToRelativePath(const char *basePath) const {
+Str Str::ToRelativePath(const char *basePath) const {
     Str a_path = data;
     Str base_path = basePath;
 
@@ -359,7 +359,7 @@ const Str Str::ToRelativePath(const char *basePath) const {
     return result;
 }
 
-const Str Str::ToAbsolutePath(const char *basePath) const {
+Str Str::ToAbsolutePath(const char *basePath) const {
     Str result = basePath;
     result.AppendPath(data);
     result.CleanPath(PATHSEPERATOR_CHAR);
