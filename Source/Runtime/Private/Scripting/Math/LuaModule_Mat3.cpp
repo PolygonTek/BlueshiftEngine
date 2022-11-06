@@ -26,17 +26,17 @@ void LuaVM::RegisterMat3(LuaCpp::Module &module) {
     _Mat3.AddClassMembers<Mat3>(
         "at", static_cast<Vec3&(Mat3::*)(int)>(&Mat3::At), // index start from zero
         "assign", static_cast<Mat3&(Mat3::*)(const Mat3&)>(&Mat3::operator=),
-        "add", &Mat3::Add,
+        "add", static_cast<Mat3(Mat3::*)(const Mat3 &)const&>(&Mat3::Add),
         "add_self", &Mat3::AddSelf,
-        "sub", &Mat3::Sub,
+        "sub", static_cast<Mat3(Mat3::*)(const Mat3 &)const&>(&Mat3::Sub),
         "sub_self", &Mat3::SubSelf,
-        "mul", &Mat3::Mul,
+        "mul", static_cast<Mat3(Mat3::*)(const Mat3 &)const&>(&Mat3::Mul),
         "mul_self", &Mat3::MulSelf,
-        "mul_scalar", &Mat3::MulScalar,
+        "mul_scalar", static_cast<Mat3(Mat3::*)(float)const&>(&Mat3::MulScalar),
         "mul_scalar_self", &Mat3::MulScalarSelf,
         "mul_vec", static_cast<Vec3(Mat3::*)(const Vec3&)const>(&Mat3::MulVec),
-        "tmul", &Mat3::TransposedMul,
-        "tmul_vec", static_cast<Vec3(Mat3::*)(const Vec3&)const>(&Mat3::TransposedMulVec),
+        "transposed_mul", &Mat3::TransposedMul,
+        "transposed_mul_vec", static_cast<Vec3(Mat3::*)(const Vec3&)const>(&Mat3::TransposedMulVec),
         "equals", static_cast<bool(Mat3::*)(const Mat3 &, const float)const>(&Mat3::Equals),
         "is_identity", &Mat3::IsIdentity,
         "is_symmetric", &Mat3::IsSymmetric,
@@ -68,10 +68,10 @@ void LuaVM::RegisterMat3(LuaCpp::Module &module) {
     );
     _Mat3.AddClassMembers<Mat3>(
         "__tostring", static_cast<const char*(Mat3::*)(void)const>(&Mat3::ToString),
-        "__unm", static_cast<Mat3(Mat3::*)(void)const>(&Mat3::operator-),
-        "__add", &Mat3::Add,
-        "__sub", &Mat3::Sub,
-        "__mul", &Mat3::Mul,
+        "__unm", static_cast<Mat3(Mat3::*)(void)const&>(&Mat3::operator-),
+        "__add", static_cast<Mat3(Mat3::*)(const Mat3 &)const&>(&Mat3::Add),
+        "__sub", static_cast<Mat3(Mat3::*)(const Mat3 &)const&>(&Mat3::Sub),
+        "__mul", static_cast<Mat3(Mat3::*)(const Mat3 &)const&>(&Mat3::Mul),
         "__eq", static_cast<bool(Mat3::*)(const Mat3&)const>(&Mat3::operator==)
     );
 

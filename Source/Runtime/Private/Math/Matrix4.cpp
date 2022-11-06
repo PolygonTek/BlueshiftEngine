@@ -44,7 +44,7 @@ Mat4 &Mat4::operator=(const Mat3x4 &rhs) {
     return *this;
 }
 
-Mat4 Mat4::operator-() const {
+Mat4 Mat4::operator-() const & {
 #if defined(ENABLE_SIMD8_INTRIN)
     ALIGN_AS32 Mat4 dst;
 
@@ -91,7 +91,48 @@ Mat4 Mat4::operator-() const {
     return dst;
 }
 
-Mat4 Mat4::operator+(const Mat4 &a) const {
+Mat4 &&Mat4::operator-() && {
+#if defined(ENABLE_SIMD8_INTRIN)
+    simd8f r01 = loadu_256ps(mat[0]);
+    simd8f r23 = loadu_256ps(mat[2]);
+
+    storeu_256ps(-r01, mat[0]);
+    storeu_256ps(-r23, mat[2]);
+#elif defined(ENABLE_SIMD4_INTRIN)
+    simd4f r0 = loadu_ps(mat[0]);
+    simd4f r1 = loadu_ps(mat[1]);
+    simd4f r2 = loadu_ps(mat[2]);
+    simd4f r3 = loadu_ps(mat[3]);
+
+    storeu_ps(-r0, mat[0]);
+    storeu_ps(-r1, mat[1]);
+    storeu_ps(-r2, mat[2]);
+    storeu_ps(-r3, mat[3]);
+#else
+    mat[0][0] = -mat[0][0];
+    mat[0][1] = -mat[0][1];
+    mat[0][2] = -mat[0][2];
+    mat[0][3] = -mat[0][3];
+
+    mat[1][0] = -mat[1][0];
+    mat[1][1] = -mat[1][1];
+    mat[1][2] = -mat[1][2];
+    mat[1][3] = -mat[1][3];
+
+    mat[2][0] = -mat[2][0];
+    mat[2][1] = -mat[2][1];
+    mat[2][2] = -mat[2][2];
+    mat[2][3] = -mat[2][3];
+
+    mat[3][0] = -mat[3][0];
+    mat[3][1] = -mat[3][1];
+    mat[3][2] = -mat[3][2];
+    mat[3][3] = -mat[3][3];
+#endif
+    return std::move(*this);
+}
+
+Mat4 Mat4::operator+(const Mat4 &a) const & {
 #if defined(ENABLE_SIMD8_INTRIN)
     ALIGN_AS32 Mat4 dst;
 
@@ -195,7 +236,7 @@ Mat4 &Mat4::operator+=(const Mat4 &rhs) {
     return *this;
 }
 
-Mat4 Mat4::operator-(const Mat4 &a) const {
+Mat4 Mat4::operator-(const Mat4 &a) const & {
 #if defined(ENABLE_SIMD8_INTRIN)
     ALIGN_AS32 Mat4 dst;
 
@@ -299,7 +340,7 @@ Mat4 &Mat4::operator-=(const Mat4 &rhs) {
     return *this;
 }
 
-Mat4 Mat4::operator*(float rhs) const {
+Mat4 Mat4::operator*(float rhs) const & {
 #if defined(ENABLE_SIMD8_INTRIN)
     ALIGN_AS32 Mat4 dst;
 
@@ -438,7 +479,7 @@ Vec3 Mat4::operator*(const Vec3 &vec) const {
     return dst;
 }
 
-Mat4 Mat4::operator*(const Mat4 &a) const {
+Mat4 Mat4::operator*(const Mat4 &a) const & {
 #if defined(ENABLE_SIMD8_INTRIN)
     ALIGN_AS32 Mat4 dst;
 
@@ -491,7 +532,7 @@ Mat4 Mat4::operator*(const Mat4 &a) const {
     return dst;
 }
 
-Mat4 Mat4::operator*(const Mat3x4 &a) const {
+Mat4 Mat4::operator*(const Mat3x4 &a) const & {
 #if defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Mat4 dst;
 
