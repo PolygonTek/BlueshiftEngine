@@ -211,12 +211,12 @@ static void TestVec3(LuaCpp::State &lua) {
     );
     luaVec3.AddClassMembers<BE1::Vec3>(
         "__tostring", static_cast<const char *(BE1::Vec3::*)() const>(&BE1::Vec3::ToString),
-        "__unm", static_cast<BE1::Vec3(BE1::Vec3::*)() const>(&BE1::Vec3::operator-),
-        "__add", &BE1::Vec3::Add,
-        "__sub", &BE1::Vec3::Sub,
-        "__mul", static_cast<BE1::Vec3(BE1::Vec3::*)(const float) const>(&BE1::Vec3::operator*),
-        "__div", static_cast<BE1::Vec3(BE1::Vec3::*)(const float) const>(&BE1::Vec3::operator/),
-        "__eq", static_cast<bool(BE1::Vec3::*)(const BE1::Vec3 &) const>(&BE1::Vec3::operator==)
+        "__unm", static_cast<BE1::Vec3(BE1::Vec3::*)() const&>(&BE1::Vec3::operator-),
+        "__add", static_cast<BE1::Vec3(BE1::Vec3::*)(const BE1::Vec3&)const&>(&BE1::Vec3::Add),
+        "__sub", static_cast<BE1::Vec3(BE1::Vec3::*)(const BE1::Vec3&)const&>(&BE1::Vec3::Sub),
+        "__mul", static_cast<BE1::Vec3(BE1::Vec3::*)(float) const&>(&BE1::Vec3::operator*),
+        "__div", static_cast<BE1::Vec3(BE1::Vec3::*)(float) const&>(&BE1::Vec3::operator/),
+        "__eq", static_cast<bool(BE1::Vec3::*)(const BE1::Vec3&) const>(&BE1::Vec3::operator==)
     );
 
     // Register static member function (like global function)

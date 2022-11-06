@@ -296,8 +296,7 @@ void R_TangentsFromTriangle(const Vec3 &v0, const Vec3 &v1, const Vec3 &v2, cons
         div = 1.0f / det;
     }
 
-    Vec3 n = side0.Cross(side1);
-    n.Normalize();
+    Vec3 n = side0.Cross(side1).Normalized();
 
     t0.Set(dt2*side0.x - dt1*side1.x, dt2*side0.y - dt1*side1.y, dt2*side0.z - dt1*side1.z);
     t0 *= div;

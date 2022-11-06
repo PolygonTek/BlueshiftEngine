@@ -136,9 +136,7 @@ BE_INLINE bool LineSegment::Equals(const LineSegment &t, const float epsilon) co
 }
 
 BE_INLINE Vec3 LineSegment::Dir() const {
-    Vec3 dir = b - a;
-    dir.Normalize();
-    return dir;
+    return (b - a).Normalized();
 }
 
 BE_INLINE const char *LineSegment::ToString(int precision) const {

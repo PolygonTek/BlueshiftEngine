@@ -666,9 +666,7 @@ void ComParticleSystem::ComputeTrailPositionFromCustomPath(const ParticleSystem:
         float s, c;
         Math::SinCos(radialTheta, s, c);
 
-        Vec3 tmp = particle->initialPosition;
-        tmp.Normalize();
-        Vec3 rotDir = Vec3::unitZ.Cross(tmp);
+        Vec3 rotDir = Vec3::unitZ.Cross(particle->initialPosition.Normalized());
         Rotation rotation(Vec3::origin, rotDir, axialTheta);
         Vec3 vec = rotation.RotatePoint(particle->initialPosition);
 

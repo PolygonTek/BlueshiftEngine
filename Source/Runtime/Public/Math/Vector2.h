@@ -57,73 +57,96 @@ public:
     float               operator[](int index) const;
     float &             operator[](int index);
 
+                        /// Unary operator + allows this structure to be used in an expression '+v'.
+    const Vec2 &        operator+() const { return *this; }
+
                         /// Performs an unary negation of this vector.
-    Vec2                Negate() const { return Vec2(-x, -y); }
+    Vec2                Negate() const & { return Vec2(-x, -y); }
+    Vec2 &&             Negate() && { x = -x; y = -y; return std::move(*this); }
                         /// Performs an unary negation of this vector.
                         /// This function is identical to the member function Negate().
-    Vec2                operator-() const { return Vec2(-x, -y); }
+    Vec2                operator-() const & { return Vec2(-x, -y); }
+    Vec2 &&             operator-() && { x = -x; y = -y; return std::move(*this); }
 
                         /// Returns Vec2(|x|, |y|)
-    Vec2                Abs() const { return Vec2(Math::Fabs(x), Math::Fabs(y)); }
-
-                        /// Unary operator + allows this structure to be used in an expression '+v'.
-    Vec2                operator+() const { return *this; }
+    Vec2                Abs() const & { return Vec2(Math::Fabs(x), Math::Fabs(y)); }
+    Vec2 &&             Abs() && { x = Math::Fabs(x); y = Math::Fabs(y); return std::move(*this); }
 
                         /// Adds a vector to this vector.
-    Vec2                Add(const Vec2 &v) const { return *this + v; }
+    Vec2                Add(const Vec2 &v) const & { return *this + v; }
+    Vec2 &&             Add(const Vec2 &v) && { x += v.x; y += v.y; return std::move(*this); }
                         /// Adds a vector to this vector.
                         /// This function is identical to the member function Add().
-    Vec2                operator+(const Vec2 &rhs) const { return Vec2(x + rhs.x, y + rhs.y); }
+    Vec2                operator+(const Vec2 &rhs) const & { return Vec2(x + rhs.x, y + rhs.y); }
+    Vec2 &&             operator+(const Vec2 &rhs) && { x += rhs.x; y += rhs.y; return std::move(*this); }
 
                         /// Adds the vector (s, s, s, s) to this vector.
-    Vec2                AddScalar(float s) const { return *this + s; }
+    Vec2                AddScalar(float s) const & { return *this + s; }
+    Vec2 &&             AddScalar(float s) && { x += s; y += s; return std::move(*this); }
                         /// Adds the vector (s, s, s, s) to this vector.
                         /// This function is identical to the member function AddScalar().
-    Vec2                operator+(float rhs) const { return Vec2(x + rhs, y + rhs); }
+    Vec2                operator+(float rhs) const & { return Vec2(x + rhs, y + rhs); }
+    Vec2 &&             operator+(float rhs) && { x += rhs; y += rhs; return std::move(*this); }
                         /// Adds the vector v to vector (s, s, s, s).
     friend Vec2         operator+(float lhs, const Vec2 &rhs) { return Vec2(lhs + rhs.x, lhs + rhs.y); }
+    friend Vec2 &&      operator+(float lhs, Vec2 &&rhs) { rhs.x += lhs; rhs.y += lhs; return std::move(rhs); }
 
                         /// Subtracts a vector from this vector.
-    Vec2                Sub(const Vec2 &v) const { return *this - v; }
+    Vec2                Sub(const Vec2 &v) const & { return *this - v; }
+    Vec2 &&             Sub(const Vec2 &v) && { x -= v.x; y -= v.y; return std::move(*this); }
                         /// Subtracts the given vector from this vector.
                         /// This function is identical to the member function Sub()
-    Vec2                operator-(const Vec2 &rhs) const { return Vec2(x - rhs.x, y - rhs.y); }
+    Vec2                operator-(const Vec2 &rhs) const & { return Vec2(x - rhs.x, y - rhs.y); }
+    Vec2 &&             operator-(const Vec2 &rhs) && { x -= rhs.x; y -= rhs.y; return std::move(*this); }
 
                         /// Subtracts the vector (s, s, s, s) from this vector.
-    Vec2                SubScalar(float s) const { return *this - s; }
+    Vec2                SubScalar(float s) const & { return *this - s; }
+    Vec2 &&             SubScalar(float s) && { x -= s; y -= s; return std::move(*this); }
                         /// Subtracts the vector (s, s, s, s) from this vector.
                         /// This function is identical to the member function SubScalar()
-    Vec2                operator-(float rhs) const { return Vec2(x - rhs, y - rhs); }
+    Vec2                operator-(float rhs) const & { return Vec2(x - rhs, y - rhs); }
+    Vec2 &&             operator-(float rhs) && { x -= rhs; y -= rhs; return std::move(*this); }
                         /// Subtracts the vector v from vector (s, s, s, s).
     friend Vec2         operator-(float lhs, const Vec2 &rhs) { return Vec2(lhs - rhs.x, lhs - rhs.y); }
+    friend Vec2 &&      operator-(float lhs, Vec2 &&rhs) { rhs.x = lhs - rhs.x; rhs.y = lhs - rhs.y; return std::move(rhs); }
 
                         /// Multiplies this vector by a scalar.
-    Vec2                Mul(float s) const { return *this * s; }
+    Vec2                Mul(float s) const & { return *this * s; }
+    Vec2 &&             Mul(float s) && { x *= s; y *= s; return std::move(*this); }
                         /// Multiplies this vector by a scalar.
                         /// This function is identical to the member function Mul().
-    Vec2                operator*(float rhs) const { return Vec2(x * rhs, y * rhs); }
+    Vec2                operator*(float rhs) const & { return Vec2(x * rhs, y * rhs); }
+    Vec2 &&             operator*(float rhs) && { x *= rhs; y *= rhs; return std::move(*this); }
                         /// Multiplies vector v by a scalar.
     friend Vec2         operator*(float lhs, const Vec2 &rhs) { return Vec2(lhs * rhs.x, lhs * rhs.y); }
+    friend Vec2 &&      operator*(float lhs, Vec2 &&rhs) { rhs.x *= lhs; rhs.y *= lhs; return std::move(rhs); }
 
                         /// Multiplies this vector by a vector, element-wise.
-    Vec2                MulComp(const Vec2 &v) const { return *this * v; }
+    Vec2                MulComp(const Vec2 &v) const & { return *this * v; }
+    Vec2 &&             MulComp(const Vec2 &v) &&{ x *= v.x; y *= v.y; return std::move(*this); }
                         /// Multiplies this vector by a vector, element-wise.
                         /// This function is identical to the member function MulComp().
-    Vec2                operator*(const Vec2 &rhs) const { return Vec2(x * rhs.x, y * rhs.y); }
+    Vec2                operator*(const Vec2 &rhs) const & { return Vec2(x * rhs.x, y * rhs.y); }
+    Vec2 &&             operator*(const Vec2 &rhs) && { x *= rhs.x; y *= rhs.y; return std::move(*this); }
 
                         /// Divides this vector by a scalar.
-    Vec2                Div(float s) const { return *this / s; }
+    Vec2                Div(float s) const & { return *this / s; }
+    Vec2 &&             Div(float s) && { float inv = 1.f / s; x *= inv; y *= inv; return std::move(*this); }
                         /// Divides this vector by a scalar.
                         /// This function is identical to the member function Div().
-    Vec2                operator/(float rhs) const { float inv = 1.f / rhs; return Vec2(x * inv, y * inv); }
+    Vec2                operator/(float rhs) const & { float inv = 1.f / rhs; return Vec2(x * inv, y * inv); }
+    Vec2 &&             operator/(float rhs) && { float inv = 1.f / rhs; x *= inv; y *= inv; return std::move(*this); }
 
                         /// Divides this vector by a vector, element-wise.
-    Vec2                DivComp(const Vec2 &v) const { return *this / v; }
+    Vec2                DivComp(const Vec2 &v) const & { return *this / v; }
+    Vec2 &&             DivComp(const Vec2 &v) && { x /= v.x; y /= v.y; return std::move(*this); }
                         /// This function is identical to the member function DivComp().
                         /// Divides this vector by a vector, element-wise.
-    Vec2                operator/(const Vec2 &rhs) const { return Vec2(x / rhs.x, y / rhs.y); }
+    Vec2                operator/(const Vec2 &rhs) const & { return Vec2(x / rhs.x, y / rhs.y); }
+    Vec2 &&             operator/(const Vec2 &rhs) && { x /= rhs.x; y /= rhs.y; return std::move(*this); }
                         /// Divides vector (s, s, s, s) by a vector, element-wise.
     friend Vec2         operator/(float lhs, const Vec2 &rhs) { return Vec2(lhs / rhs.x, lhs / rhs.y); }
+    friend Vec2 &&      operator/(float lhs, Vec2 &&rhs) { rhs.x = lhs / rhs.x; rhs.y = lhs / rhs.y; return std::move(rhs); }
 
                         /// Assign from another vector.
     Vec2 &              operator=(const Vec2 &rhs);
@@ -219,9 +242,11 @@ public:
     float               NormalizeFast();
 
                         /// Returns a normalized copy of this vector.
-    Vec2                Normalized() const;
+    Vec2                Normalized() const &;
+    Vec2 &&             Normalized() && { Normalize(); return std::move(*this); }
                         /// Returns a fast but approximately normalized copy of this vector.
-    Vec2                NormalizedFast() const;
+    Vec2                NormalizedFast() const &;
+    Vec2 &&             NormalizedFast() && { NormalizeFast(); return std::move(*this); }
 
                         /// Scales this vector so that its new length is as given.
     Vec2 &              ScaleToLength(float length);
@@ -433,13 +458,13 @@ BE_INLINE float Vec2::NormalizeFast() {
     return invLength * sqrLength;
 }
 
-BE_INLINE Vec2 Vec2::Normalized() const {
+BE_INLINE Vec2 Vec2::Normalized() const & {
     Vec2 n = *this;
     n.Normalize();
     return n;
 }
 
-BE_INLINE Vec2 Vec2::NormalizedFast() const {
+BE_INLINE Vec2 Vec2::NormalizedFast() const & {
     Vec2 n = *this;
     n.NormalizeFast();
     return n;
