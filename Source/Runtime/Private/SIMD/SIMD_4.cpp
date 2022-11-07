@@ -23,6 +23,8 @@ BE_NAMESPACE_BEGIN
 
 const simd4f SIMD_4::F4_zero                = { 0.0f, 0.0f, 0.0f, 0.0f };
 const simd4f SIMD_4::F4_one                 = { 1.0f, 1.0f, 1.0f, 1.0f };
+const simd4f SIMD_4::F4_3zero_one           = { 0.0f, 0.0f, 0.0f, 1.0f };
+const simd4f SIMD_4::F4_3one_zero           = { 1.0f, 1.0f, 1.0f, 0.0f };
 const simd4f SIMD_4::F4_half                = { 0.5f, 0.5f, 0.5f, 0.5f };
 const simd4f SIMD_4::F4_255                 = { 255.0f, 255.0f, 255.0f, 255.0f };
 const simd4f SIMD_4::F4_min_char            = { -128.0f, -128.0f, -128.0f, -128.0f };

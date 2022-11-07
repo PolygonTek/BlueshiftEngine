@@ -21,6 +21,8 @@ BE_NAMESPACE_BEGIN
 
 const simd8f SIMD_8::F8_zero                = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 const simd8f SIMD_8::F8_one                 = { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
+const simd8f SIMD_8::F8_3zero_one           = { 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+const simd8f SIMD_8::F8_3one_zero           = { 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f };
 const simd8f SIMD_8::F8_half                = { 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f };
 const simd8f SIMD_8::F8_255                 = { 255.0f, 255.0f, 255.0f, 255.0f, 255.0f, 255.0f, 255.0f, 255.0f };
 const simd8f SIMD_8::F8_min_char            = { -128.0f, -128.0f, -128.0f, -128.0f, -128.0f, -128.0f, -128.0f, -128.0f };

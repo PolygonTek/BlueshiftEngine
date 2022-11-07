@@ -43,6 +43,8 @@ public:
 
     static const simd8f                 F8_zero;
     static const simd8f                 F8_one;
+    static const simd8f                 F8_3zero_one;
+    static const simd8f                 F8_3one_zero;
     static const simd8f                 F8_half;
     static const simd8f                 F8_255;
     static const simd8f                 F8_min_char;

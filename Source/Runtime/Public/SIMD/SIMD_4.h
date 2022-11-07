@@ -61,6 +61,8 @@ public:
 
     static const simd4f                 F4_zero;
     static const simd4f                 F4_one;
+    static const simd4f                 F4_3zero_one;
+    static const simd4f                 F4_3one_zero;
     static const simd4f                 F4_half;
     static const simd4f                 F4_255;
     static const simd4f                 F4_min_char;

@@ -685,9 +685,9 @@ BE_INLINE Mat3 Mat3::FromOuterProduct(const Vec3 &a, const Vec3 &b) {
 
 BE_INLINE Vec3 Mat3::ToScaleVec3() const {
     return Vec3(
-        Math::Sqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]),
-        Math::Sqrt(mat[0][1] * mat[0][1] + mat[1][1] * mat[1][1] + mat[2][1] * mat[2][1]),
-        Math::Sqrt(mat[0][2] * mat[0][2] + mat[1][2] * mat[1][2] + mat[2][2] * mat[2][2]));
+        Math::Sqrt(mat[0][0] * mat[0][0] + mat[0][1] * mat[0][1] + mat[0][2] * mat[0][2]),
+        Math::Sqrt(mat[1][0] * mat[1][0] + mat[1][1] * mat[1][1] + mat[1][2] * mat[1][2]),
+        Math::Sqrt(mat[2][0] * mat[2][0] + mat[2][1] * mat[2][1] + mat[2][2] * mat[2][2]));
 }
 
 BE_INLINE const char *Mat3::ToString(int precision) const {

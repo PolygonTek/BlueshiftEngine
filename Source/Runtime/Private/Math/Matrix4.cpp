@@ -21,6 +21,16 @@ ALIGN_AS32 const Mat4 Mat4::zero(Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 
 ALIGN_AS32 const Mat4 Mat4::identity(Vec4(1, 0, 0, 0), Vec4(0, 1, 0, 0), Vec4(0, 0, 1, 0), Vec4(0, 0, 0, 1));
 
 Mat4 &Mat4::operator=(const Mat3x4 &rhs) {
+#if defined(ENABLE_SIMD4_INTRIN)
+    simd4f r0 = loadu_ps(rhs[0]);
+    simd4f r1 = loadu_ps(rhs[1]);
+    simd4f r2 = loadu_ps(rhs[2]);
+
+    storeu_ps(r0, mat[0]);
+    storeu_ps(r1, mat[1]);
+    storeu_ps(r2, mat[2]);
+    storeu_ps(SIMD_4::F4_3zero_one, mat[3]);
+#else
     mat[0][0] = rhs[0][0];
     mat[0][1] = rhs[0][1];
     mat[0][2] = rhs[0][2];
@@ -40,7 +50,7 @@ Mat4 &Mat4::operator=(const Mat3x4 &rhs) {
     mat[3][1] = 0;
     mat[3][2] = 0;
     mat[3][3] = 1;
-
+#endif
     return *this;
 }
 
@@ -457,26 +467,16 @@ Vec4 Mat4::operator*(const Vec4 &vec) const {
 }
 
 Vec3 Mat4::operator*(const Vec3 &vec) const {
-    Vec3 dst;
-    // homogeneous w
-    float hw = mat[3].x * vec.x + mat[3].y * vec.y + mat[3].z * vec.z + mat[3].w;
-
+    Vec4 result = (*this) * Vec4(vec, 1.0f);
+    Vec3 &ret = result.ToVec3();
+    float hw = result.w;
     if (hw == 0.0f) {
-        dst[0] = 0.0f;
-        dst[1] = 0.0f;
-        dst[2] = 0.0f;
-    } else {
-        dst[0] = mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z + mat[0].w;
-        dst[1] = mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z + mat[1].w;
-        dst[2] = mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z + mat[2].w;
-
-        if (hw != 1.0f) {
-            float rhw = 1.0f / hw;
-            dst *= rhw;
-        }
+        ret.Set(0.0f, 0.0f, 0.0f);
     }
-
-    return dst;
+    if (hw != 1.0f) {
+        ret /= hw;
+    }
+    return ret;
 }
 
 Mat4 Mat4::operator*(const Mat4 &rhs) const & {
@@ -737,26 +737,16 @@ Vec4 Mat4::TransposedMulVec(const Vec4 &vec) const {
 }
 
 Vec3 Mat4::TransposedMulVec(const Vec3 &vec) const {
-    Vec3 dst;
-    // homogeneous w
-    float hw = mat[0].w * vec.x + mat[1].w * vec.y + mat[2].w * vec.z + mat[3].w;
-
+    Vec4 result = (*this).TransposedMulVec(Vec4(vec, 1.0f));
+    Vec3 &ret = result.ToVec3();
+    float hw = result.w;
     if (hw == 0.0f) {
-        dst[0] = 0.0f;
-        dst[1] = 0.0f;
-        dst[2] = 0.0f;
-    } else {
-        dst[0] = mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z + mat[3].x;
-        dst[1] = mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z + mat[3].y;
-        dst[2] = mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z + mat[3].z;
-
-        if (hw != 1.0f) {
-            float rhw = 1.0f / hw;
-            dst *= rhw;
-        }
+        ret.Set(0.0f, 0.0f, 0.0f);
     }
-
-    return dst;
+    if (hw != 1.0f) {
+        ret /= hw;
+    }
+    return ret;
 }
 
 Mat4 Mat4::TransposedMul(const Mat4 &a) const {
