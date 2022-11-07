@@ -58,9 +58,7 @@ int AABB::PlaneSide(const Plane &plane, const float epsilon) const {
     Vec3 center = (b[0] + b[1]) * 0.5f;
 
     float d1 = plane.Distance(center);
-    float d2 = Math::Fabs((b[1][0] - center[0]) * plane.normal[0]) + 
-        Math::Fabs((b[1][1] - center[1]) * plane.normal[1]) +
-        Math::Fabs((b[1][2] - center[2]) * plane.normal[2]);
+    float d2 = (b[1] - center).AbsDot(plane.normal);
 
     if (d1 - d2 > epsilon) {
         return Plane::Side::Front;
@@ -79,9 +77,7 @@ float AABB::PlaneDistance(const Plane &plane) const {
     // d1 = center 와 평면의 거리
     float d1 = plane.Distance(center);
     // d2 = extent 벡터를 분리축(평면의 normal) 에 투영한 거리
-    float d2 = Math::Fabs((b[1][0] - center[0]) * plane.normal[0]) +
-        Math::Fabs((b[1][1] - center[1]) * plane.normal[1]) +
-        Math::Fabs((b[1][2] - center[2]) * plane.normal[2]);
+    float d2 = (b[1] - center).AbsDot(plane.normal);
 
     if (d1 - d2 > 0.0f) {
         return d1 - d2;
@@ -359,9 +355,7 @@ void AABB::ProjectOnAxis(const Vec3 &axis, float &min, float &max) const {
     Vec3 extents = b[1] - center;
 
     float d1 = axis.Dot(center);
-    float d2 = Math::Fabs(extents[0] * axis[0]) +
-               Math::Fabs(extents[1] * axis[1]) +
-               Math::Fabs(extents[2] * axis[2]);
+    float d2 = extents.AbsDot(axis);
 
     min = d1 - d2;
     max = d1 + d2;
@@ -387,13 +381,13 @@ void AABB::ProjectOnAxis(const Vec3 &transformOrigin, const Mat3 &transformAxis,
 //       4------7
 //      /|     /|
 //     / |    / |
-//    5------6  |       
+//    5------6  |
 //    |  0---|--3  +Y
 //    | /    | /
-//    |/     |/  
+//    |/     |/
 //    1------2
 //
-// +X 
+// +X
 //
 void AABB::ToPoints(Vec3 points[8]) const {
     for (int i = 0; i < 8; i++) {

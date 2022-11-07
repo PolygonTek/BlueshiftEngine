@@ -269,8 +269,8 @@ BE_INLINE AABB AABB::operator*(const float &rhs) const & {
 }
 
 BE_INLINE AABB &AABB::operator*=(const float &rhs) {
-    this->b[0] *= rhs;
-    this->b[1] *= rhs;
+    b[0] *= rhs;
+    b[1] *= rhs;
     return *this;
 }
 
@@ -282,8 +282,8 @@ BE_INLINE AABB AABB::operator*(const Vec3 &rhs) const & {
 }
 
 BE_INLINE AABB &AABB::operator*=(const Vec3 &rhs) {
-    this->b[0] *= rhs;
-    this->b[1] *= rhs;
+    b[0] *= rhs;
+    b[1] *= rhs;
     return *this;
 }
 
@@ -294,7 +294,7 @@ BE_INLINE AABB AABB::operator*(const Mat3 &rhs) const & {
 }
 
 BE_INLINE AABB &AABB::operator*=(const Mat3 &rhs) {
-    this->SetFromTransformedAABB(*this, Vec3::origin, rhs);
+    SetFromTransformedAABB(*this, Vec3::origin, rhs);
     return *this;
 }
 

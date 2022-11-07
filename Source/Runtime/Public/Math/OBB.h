@@ -196,30 +196,30 @@ BE_INLINE constexpr OBB::OBB(const Vec3 &inCenter, const Vec3 &inExtents, const 
     center(inCenter), extents(inExtents), axis(inAxis) {
 }
 
-BE_INLINE OBB::OBB(const Vec3 &point) {
-    this->center = point;
-    this->extents.SetFromScalar(0);
-    this->axis.SetIdentity();
+BE_INLINE OBB::OBB(const Vec3 &inPoint) {
+    center = inPoint;
+    extents.SetFromScalar(0);
+    axis.SetIdentity();
 }
 
-BE_INLINE OBB::OBB(const AABB &aabb) {
-    this->center = (aabb[0] + aabb[1]) * 0.5f;
-    this->extents = aabb[1] - this->center;
-    this->axis.SetIdentity();
+BE_INLINE OBB::OBB(const AABB &inAabb) {
+    center = (inAabb[0] + inAabb[1]) * 0.5f;
+    extents = inAabb[1] - center;
+    axis.SetIdentity();
 }
 
-BE_INLINE OBB::OBB(const AABB &aabb, const Vec3 &origin, const Mat3 &axis) {
-    this->center = (aabb[0] + aabb[1]) * 0.5f;
-    this->extents = aabb[1] - this->center;
-    this->center = origin + axis * this->center;
-    this->axis = axis;
+BE_INLINE OBB::OBB(const AABB &inAabb, const Vec3 &inOrigin, const Mat3 &inAxis) {
+    center = (inAabb[0] + inAabb[1]) * 0.5f;
+    extents = inAabb[1] - center;
+    center = inOrigin + inAxis * center;
+    axis = inAxis;
 }
 
-BE_INLINE OBB::OBB(const AABB &aabb, const Mat3x4 &transform) {
-    this->center = (aabb[0] + aabb[1]) * 0.5f;
-    this->extents = aabb[1] - this->center;
-    this->center = transform * this->center;
-    this->axis = transform.ToMat3().OrthoNormalize();
+BE_INLINE OBB::OBB(const AABB &inAabb, const Mat3x4 &inTransform) {
+    center = (inAabb[0] + inAabb[1]) * 0.5f;
+    extents = inAabb[1] - center;
+    center = inTransform * center;
+    axis = inTransform.ToMat3().OrthoNormalize();
 }
 
 BE_INLINE OBB OBB::operator+(const OBB &a) const & {
@@ -302,23 +302,23 @@ BE_INLINE bool OBB::IsContainPoint(const Vec3 &p) const {
     return true;
 }
 
-BE_INLINE void OBB::ProjectOnAxis(const Vec3 &axis, float &min, float &max) const {
-    float d1 = axis.Dot(center);
-    float d2 = Math::Fabs(extents[0] * this->axis[0].Dot(axis)) +
-               Math::Fabs(extents[1] * this->axis[1].Dot(axis)) +
-               Math::Fabs(extents[2] * this->axis[2].Dot(axis));
-    min = d1 - d2;
-    max = d1 + d2;
+BE_INLINE void OBB::ProjectOnAxis(const Vec3 &inAxis, float &outMin, float &outMax) const {
+    float d1 = inAxis.Dot(center);
+    float d2 = Math::Fabs(extents[0] * axis[0].Dot(inAxis)) +
+               Math::Fabs(extents[1] * axis[1].Dot(inAxis)) +
+               Math::Fabs(extents[2] * axis[2].Dot(inAxis));
+    outMin = d1 - d2;
+    outMax = d1 + d2;
 }
 
-BE_INLINE void OBB::ProjectOnAxis(const Mat3 &axis, AABB &minmaxs) const {
+BE_INLINE void OBB::ProjectOnAxis(const Mat3 &inAxis, AABB &outMinMaxs) const {
     for (int i = 0; i < 3; i++) {
-        float d1 = axis[i].Dot(center);
-        float d2 = Math::Fabs(extents[0] * this->axis[0].Dot(axis[i])) +
-                   Math::Fabs(extents[1] * this->axis[1].Dot(axis[i])) +
-                   Math::Fabs(extents[2] * this->axis[2].Dot(axis[i]));
-        minmaxs[0][i] = d1 - d2;
-        minmaxs[1][i] = d1 + d2;
+        float d1 = inAxis[i].Dot(center);
+        float d2 = Math::Fabs(extents[0] * axis[0].Dot(inAxis[i])) +
+                   Math::Fabs(extents[1] * axis[1].Dot(inAxis[i])) +
+                   Math::Fabs(extents[2] * axis[2].Dot(inAxis[i]));
+        outMinMaxs[0][i] = d1 - d2;
+        outMinMaxs[1][i] = d1 + d2;
     }
 }
 
