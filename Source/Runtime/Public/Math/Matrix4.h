@@ -126,9 +126,9 @@ public:
                         /// This function is identical to the member function MulVec().
     Vec4                operator*(const Vec4 &rhs) const;
     Vec3                operator*(const Vec3 &rhs) const;
-                        /// Transforms the given vector by the given matrix m.
-    friend Vec4         operator*(const Vec4 &lhs, const Mat4 &rhs) { return rhs * lhs; }
-    friend Vec3         operator*(const Vec3 &lhs, const Mat4 &rhs) { return rhs * lhs; }
+                        /// Transforms the given vector by the given matrix in the order v * M (!= M * v).
+    friend Vec4         operator*(const Vec4 &lhs, const Mat4 &rhs) { return rhs.TransposedMulVec(lhs); }
+    friend Vec3         operator*(const Vec3 &lhs, const Mat4 &rhs) { return rhs.TransposedMulVec(lhs); }
 
     Vec3                TransformNormal(const Vec3 &n) const;
 
@@ -162,11 +162,6 @@ public:
                         /// Multiplies this matrix with the given scalar, in-place.
                         /// This function is identical to the member function MulScalarSelf().
     Mat4 &              operator*=(float rhs);
-
-                        /// Multiplies the vector lhs with the given matrix rhs, in-place on vector. i.e. lhs *= rhs
-    friend Vec4 &       operator*=(Vec4 &lhs, const Mat4 &rhs) { lhs = rhs * lhs; return lhs; }
-                        /// Multiplies the vector lhs with the given matrix rhs, in-place on vector. i.e. lhs *= rhs
-    friend Vec3 &       operator*=(Vec3 &lhs, const Mat4 &rhs) { lhs = rhs * lhs; return lhs; }
 
                         /// Exact compare, no epsilon.
     bool                Equals(const Mat4 &m) const;

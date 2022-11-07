@@ -116,8 +116,8 @@ public:
                         /// Transforms the given vector by this matrix.
                         /// This function is identical to the member function MulVec().
     Vec3                operator*(const Vec3 &rhs) const;
-                        /// Transforms the given vector by the given matrix rhs.
-    friend Vec3         operator*(const Vec3 &lhs, const Mat3 &rhs) { return rhs * lhs; }
+                        /// Transforms the given vector by the given matrix in the order v * M (!= M * v).
+    friend Vec3         operator*(const Vec3 &lhs, const Mat3 &rhs) { return rhs.TransposedMulVec(lhs); }
 
                         /// Assign from another matrix.
     Mat3 &              operator=(const Mat3 &rhs);
@@ -145,9 +145,6 @@ public:
                         /// Multiplies this matrix with the given scalar, in-place.
                         /// This function is identical to the member function MulScalarSelf().
     Mat3 &              operator*=(float rhs);
-                        
-                        /// Multiplies the vector lhs with the given matrix rhs, in-place on vector. i.e. lhs *= rhs
-    friend Vec3 &       operator*=(Vec3 &lhs, const Mat3 &rhs) { lhs = rhs * lhs; return lhs; }
 
                         /// Exact compare, no epsilon.
     bool                Equals(const Mat3 &m) const;

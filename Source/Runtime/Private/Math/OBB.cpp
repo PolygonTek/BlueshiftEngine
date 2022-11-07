@@ -156,11 +156,11 @@ bool OBB::AddPoint(const Vec3 &p) {
     if (aabb1.Volume() < aabb2.Volume()) {
         center = (aabb1[0] + aabb1[1]) * 0.5f;
         extents = aabb1[1] - center;
-        center *= axis;
+        center = axis * center;
     } else {
         center = (aabb2[0] + aabb2[1]) * 0.5f;
         extents = aabb2[1] - center;
-        center *= axis2;
+        center = axis2 * center;
         axis = axis2;
     }
     return true;
@@ -250,7 +250,7 @@ bool OBB::AddOBB(const OBB &a) {
     // 가장 작은 volume 의 aabb 를 기반으로 OBB 를 만든다.
     center = (aabbs[besti][0] + aabbs[besti][1]) * 0.5f;
     extents = aabbs[besti][1] - center;
-    center *= ax[besti];
+    center = ax[besti] * center;
     axis = ax[besti];
 
     return false;
@@ -946,7 +946,7 @@ void OBB::SetFromPoints(const Vec3 *points, int numPoints) {
     }
     center = (aabb[0] + aabb[1]) * 0.5f;
     extents = aabb[1] - center;
-    center *= axis;
+    center = axis * center;
 #endif
 }
 
