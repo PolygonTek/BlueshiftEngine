@@ -77,23 +77,29 @@ public:
                         /// Negates the quaternion.
                         /// @note Negating a quaternion will not produce the inverse rotation. Call Quat::Inverse() to generate the inverse rotation.
                         /// Negative of a quaternion represents the same rotation.
-    Quat                operator-() const;
+    Quat                operator-() const &;
+    Quat &&             operator-() &&;
 
                         /// Adds two quaternions.
                         /// @note Adding two quaternions does not concatenate the two rotation operations. Use quaternion multiplication to achieve that.
-    Quat                operator+(const Quat &rhs) const;
-                        
+    Quat                operator+(const Quat &rhs) const &;
+    Quat &&             operator+(const Quat &rhs) && { *this += rhs; return std::move(*this); }
+
                         /// Subtracts the quaternion from this quaternion.
-    Quat                operator-(const Quat &rhs) const;
+    Quat                operator-(const Quat &rhs) const &;
+    Quat &&             operator-(const Quat &rhs) && { *this -= rhs; return std::move(*this); }
 
                         /// Multiplies a quaternion by a scalar.
-    Quat                operator*(float rhs) const;
+    Quat                operator*(float rhs) const &;
+    Quat &&             operator*(float rhs) && { *this *= rhs; return std::move(*this); }
     friend Quat         operator*(const float lhs, const Quat &rhs);
+    friend Quat &&      operator*(const float lhs, Quat &&rhs) { rhs *= lhs; return std::move(rhs); }
 
                         /// Multiplies two quaternions together.
                         /// The product q1 * q2 returns a quaternion that concatenates the two orientation rotations. The rotation
                         /// q2 is applied first before q1.
-    Quat                operator*(const Quat &rhs) const;
+    Quat                operator*(const Quat &rhs) const &;
+    Quat &&             operator*(Quat &rhs) && { *this *= rhs; return std::move(*this); }
 
                         /// Transforms the given vector by this Quaternion.
                         /// @note Technically, this function does not perform a simple multiplication of 'q * v',
@@ -104,7 +110,8 @@ public:
 
                         /// Divides a quaternion by another. Division "q1 / q2" results in a quaternion that rotates the orientation q2
                         /// to coincide with the orientation q1.
-    Quat                operator/(const Quat &rhs) const;
+    Quat                operator/(const Quat &rhs) const &;
+    Quat &&             operator/(Quat &&rhs) && { *this /= rhs; return std::move(*this); }
 
                         /// Adds a quaternion to this quaternion, in-place.
     Quat &              operator+=(const Quat &rhs);
@@ -165,12 +172,14 @@ public:
     bool                IsNormalized(float epsilonSq = 1e-5f) const;
 
                         /// Compute conjugate (negate imaginary part) of this quaternion.
-    Quat                Conjugate() const;
+    Quat                Conjugate() const &;
+    Quat &&             Conjugate() && { return std::move(ConjugateSelf()); }
                         /// Compute conjugate (negate imaginary part) of this quaternion, in-place.
     Quat &              ConjugateSelf();
 
                         /// Inverts this quaternion.
-    Quat                Inverse() const;
+    Quat                Inverse() const &;
+    Quat &&             Inverse() && { return std::move(InverseSelf()); }
                         /// Inverts this quaternion, in-place.
     Quat &              InverseSelf();
 
@@ -301,11 +310,19 @@ BE_INLINE float &Quat::operator[](int index) {
     return (&x)[index];
 }
 
-BE_INLINE Quat Quat::operator-() const {
+BE_INLINE Quat Quat::operator-() const & {
     return Quat(-x, -y, -z, -w);
 }
 
-BE_INLINE Quat Quat::operator+(const Quat &a) const {
+BE_INLINE Quat &&Quat::operator-() && {
+    x = -x;
+    y = -y;
+    z = -z;
+    w = -w;
+    return std::move(*this);
+}
+
+BE_INLINE Quat Quat::operator+(const Quat &a) const & {
     return Quat(x + a.x, y + a.y, z + a.z, w + a.w);
 }
 
@@ -325,7 +342,7 @@ BE_INLINE Quat& Quat::operator+=(const Quat &a) {
     return *this;
 }
 
-BE_INLINE Quat Quat::operator-(const Quat &a) const {
+BE_INLINE Quat Quat::operator-(const Quat &a) const & {
     return Quat(x - a.x, y - a.y, z - a.z, w - a.w);
 }
 
@@ -337,7 +354,7 @@ BE_INLINE Quat& Quat::operator-=(const Quat &a) {
     return *this;
 }
 
-BE_INLINE Quat Quat::operator*(const Quat &a) const {
+BE_INLINE Quat Quat::operator*(const Quat &a) const & {
     return Quat(
         x * a.w + y * a.z - z * a.y + w * a.x,
        -x * a.z + y * a.w + z * a.x + w * a.y,
@@ -345,7 +362,7 @@ BE_INLINE Quat Quat::operator*(const Quat &a) const {
        -x * a.x - y * a.y - z * a.z + w * a.w);
 }
 
-BE_INLINE Quat Quat::operator/(const Quat &a) const {
+BE_INLINE Quat Quat::operator/(const Quat &a) const & {
     return Quat(
         x * a.w - y * a.z + z * a.y - w * a.x,
         x * a.z + y * a.w - z * a.x - w * a.y,
@@ -369,7 +386,7 @@ BE_INLINE Vec3 Quat::operator*(const Vec3 &a) const {
 #endif
 }
 
-BE_INLINE Quat Quat::operator*(float a) const {
+BE_INLINE Quat Quat::operator*(float a) const & {
     return Quat(x * a, y * a, z * a, w * a);
 }
 
@@ -524,7 +541,7 @@ BE_INLINE Quat Quat::FromSlerpFast(const Quat &from, const Quat &to, float t) {
     return q;
 }
 
-BE_INLINE Quat Quat::Conjugate() const {
+BE_INLINE Quat Quat::Conjugate() const & {
     return Quat(-x, -y, -z, w);
 }
 
@@ -535,7 +552,7 @@ BE_INLINE Quat &Quat::ConjugateSelf() {
     return *this;
 }
 
-BE_INLINE Quat Quat::Inverse() const {
+BE_INLINE Quat Quat::Inverse() const & {
     assert(IsNormalized());
     return Quat(-x, -y, -z, w);
 }

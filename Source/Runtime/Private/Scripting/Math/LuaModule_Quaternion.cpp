@@ -37,7 +37,7 @@ void LuaVM::RegisterQuaternion(LuaCpp::Module &module) {
         "rotate_vector", &Quat::RotateVector,
         "length", &Quat::Length,
         "normalize", &Quat::Normalize,
-        "inverse", &Quat::Inverse,
+        "inverse", static_cast<Quat(Quat::*)()const&>(&Quat::Inverse),
         "set_from_angle_axis", &Quat::SetFromAngleAxis,
         "set_from_two_vectors", &Quat::SetFromTwoVectors,
         "set_from_slerp", &Quat::SetFromSlerp,
@@ -48,10 +48,10 @@ void LuaVM::RegisterQuaternion(LuaCpp::Module &module) {
     );
     _Quat.AddClassMembers<Quat>(
         "__tostring", static_cast<const char*(Quat::*)(void)const>(&Quat::ToString),
-        "__unm", static_cast<Quat(Quat::*)(void)const>(&Quat::operator-),
-        "__add", static_cast<Quat(Quat::*)(const Quat&)const>(&Quat::operator+),
-        "__sub", static_cast<Quat(Quat::*)(const Quat&)const>(&Quat::operator-),
-        "__mul", static_cast<Quat(Quat::*)(const Quat&)const>(&Quat::operator*)
+        "__unm", static_cast<Quat(Quat::*)(void)const&>(&Quat::operator-),
+        "__add", static_cast<Quat(Quat::*)(const Quat&)const&>(&Quat::operator+),
+        "__sub", static_cast<Quat(Quat::*)(const Quat&)const&>(&Quat::operator-),
+        "__mul", static_cast<Quat(Quat::*)(const Quat&)const&>(&Quat::operator*)
     );
 
     _Quat["zero"] = Quat::zero;
