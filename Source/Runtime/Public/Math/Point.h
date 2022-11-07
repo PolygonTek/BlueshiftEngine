@@ -65,23 +65,31 @@ public:
     int                 operator[](int index) const;
     int &               operator[](int index);
 
-                        /// Performs an unary negation of this Point.
-    Point               operator-() const { return Point(-x, -y); }
-
                         /// Unary operator + allows this structure to be used in an expression '+p'.
     Point               operator+() const { return *this; }
 
+                        /// Performs an unary negation of this Point.
+    Point               operator-() const & { return Point(-x, -y); }
+    Point &&            operator-() && { x = -x; y = -y; return std::move(*this); }
+
                         /// Adds a point to this point.
-    Point               operator+(const Point &rhs) const { return Point(x + rhs.x, y + rhs.y); }
+    Point               operator+(const Point &rhs) const & { return Point(x + rhs.x, y + rhs.y); }
+    Point &&            operator+(const Point &rhs) && { *this += rhs; return std::move(*this); }
+
                         /// Subtracts a point from this point.
-    Point               operator-(const Point &rhs) const { return Point(x - rhs.x, y - rhs.y); }
+    Point               operator-(const Point &rhs) const & { return Point(x - rhs.x, y - rhs.y); }
+    Point &&            operator-(const Point &rhs) && { *this -= rhs; return std::move(*this); }
+
                         /// Multiplies this point by a scalar.
-    Point               operator*(float rhs) const { return Point(x * rhs, y * rhs); }
+    Point               operator*(float rhs) const & { return Point(x * rhs, y * rhs); }
+    Point &&            operator*(float rhs) && { *this *= rhs; return std::move(*this); }
 
                         /// Adds a point to this point, in-place.
     Point &             operator+=(const Point &rhs);
+
                         /// Subtracts a point from this point, in-place.
     Point &             operator-=(const Point &rhs);
+
                         /// Multiplies this point by a scalar, in-place.
     Point &             operator*=(float rhs);
 

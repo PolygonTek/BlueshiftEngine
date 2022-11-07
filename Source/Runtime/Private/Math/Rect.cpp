@@ -19,7 +19,7 @@ BE_NAMESPACE_BEGIN
 
 const Rect Rect::zero = Rect(0, 0, 0, 0);
 
-Rect Rect::Add(const Rect &a) const {
+Rect Rect::Add(const Rect &a) const & {
     Rect rc;
     rc.x = Min(a.x, x);
     rc.y = Min(a.y, y);
@@ -46,7 +46,7 @@ Rect &Rect::AddSelf(const Rect &a) {
     return *this;
 }
 
-Rect Rect::AddPoint(const Point &a) const {
+Rect Rect::AddPoint(const Point &a) const & {
     Rect rc;
     rc.x = Min(a.x, x);
     rc.y = Min(a.y, y);
@@ -73,7 +73,7 @@ Rect &Rect::AddPointSelf(const Point &a) {
     return *this;
 }
 
-Rect Rect::Intersect(const Rect &a) const {
+Rect Rect::Intersect(const Rect &a) const & {
     Rect rc;
     rc.x = Max(a.x, x);
     rc.y = Max(a.y, y);
@@ -100,7 +100,7 @@ Rect &Rect::IntersectSelf(const Rect &a) {
     return *this;
 }
 
-Rect Rect::Move(int ax, int ay) const {
+Rect Rect::Move(int ax, int ay) const & {
     Rect rect;
     rect.x = x + ax;
     rect.y = y + ay;
@@ -115,7 +115,7 @@ Rect &Rect::MoveSelf(int ax, int ay) {
     return *this;
 }
 
-Rect Rect::Shrink(int ax, int ay) const {
+Rect Rect::Shrink(int ax, int ay) const & {
     Rect rect;
     rect.x = x + ax;
     rect.y = y + ay;
@@ -132,7 +132,7 @@ Rect &Rect::ShrinkSelf(int ax, int ay) {
     return *this;
 }
 
-Rect Rect::Expand(int ax, int ay) const {
+Rect Rect::Expand(int ax, int ay) const & {
     Rect rect;
     rect.x = x - ax;
     rect.y = y - ay;

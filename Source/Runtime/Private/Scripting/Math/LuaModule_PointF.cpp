@@ -27,9 +27,9 @@ void LuaVM::RegisterPointF(LuaCpp::Module &module) {
         "x", &PointF::x,
         "y", &PointF::y,
         "__tostring", static_cast<const char*(PointF::*)(void)const>(&PointF::ToString),
-        "__unm", static_cast<PointF(PointF::*)(void)const>(&PointF::operator-),
-        "__add", static_cast<PointF(PointF::*)(const PointF&)const>(&PointF::operator+),
-        "__sub", static_cast<PointF(PointF::*)(const PointF&)const>(&PointF::operator-),
+        "__unm", static_cast<PointF(PointF::*)(void)const&>(&PointF::operator-),
+        "__add", static_cast<PointF(PointF::*)(const PointF&)const&>(&PointF::operator+),
+        "__sub", static_cast<PointF(PointF::*)(const PointF&)const&>(&PointF::operator-),
         "element", static_cast<float &(PointF::*)(int)>(&PointF::operator[]), // index start from zero
         "assign", static_cast<PointF&(PointF::*)(const PointF&)>(&PointF::operator=),
         "set", &PointF::Set,

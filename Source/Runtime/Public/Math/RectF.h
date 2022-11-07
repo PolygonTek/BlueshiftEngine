@@ -106,25 +106,31 @@ public:
     void                SetSize(const SizeF &size);
     void                SetFrom4Coords(float x, float y, float x2, float y2);
 
-    RectF               Add(const RectF &a) const;
+    RectF               Add(const RectF &a) const &;
+    RectF &&            Add(const RectF &a) && { AddSelf(a); return std::move(*this); }
     RectF &             Add(const RectF &a, const RectF &b);
     RectF &             AddSelf(const RectF &a);
 
-    RectF               AddPoint(const PointF &a) const;
+    RectF               AddPoint(const PointF &a) const &;
+    RectF &&            AddPoint(const PointF &a) && { AddPointSelf(a); return std::move(*this); }
     RectF &             AddPoint(const PointF &a, const PointF &b);
     RectF &             AddPointSelf(const PointF &a);
 
-    RectF               Intersect(const RectF &a) const;
+    RectF               Intersect(const RectF &a) const &;
+    RectF &&            Intersect(const RectF &a) && { IntersectSelf(a); return std::move(*this); }
     RectF &             Intersect(const RectF &a, const RectF &b);
     RectF &             IntersectSelf(const RectF &a);
 
-    RectF               Move(float x, float y) const;
+    RectF               Move(float x, float y) const &;
+    RectF &&            Move(float x, float y) && { MoveSelf(x, y); return std::move(*this); }
     RectF &             MoveSelf(float x, float y);
 
-    RectF               Shrink(float ax, float ay) const;
+    RectF               Shrink(float ax, float ay) const &;
+    RectF &&            Shrink(float ax, float ay) && { ShrinkSelf(ax, ay); return std::move(*this); }
     RectF &             ShrinkSelf(float ax, float ay);
 
-    RectF               Expand(float ax, float ay) const;
+    RectF               Expand(float ax, float ay) const &;
+    RectF &&            Expand(float ax, float ay) && { ExpandSelf(ax, ay); return std::move(*this); }
     RectF &             ExpandSelf(float ax, float ay);
 
     Rect                ToRect() const { return Rect(x, y, w, h); }

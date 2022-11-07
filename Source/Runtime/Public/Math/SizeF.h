@@ -65,19 +65,33 @@ public:
     float               operator[](int index) const;
     float &             operator[](int index);
 
-                        /// Performs an unary negation of this SizeF.
-    SizeF               operator-() const { return SizeF(-w, -h); }
-
                         /// Unary operator + allows this structure to be used in an expression '+p'.
     SizeF               operator+() const { return *this; }
 
-    SizeF &             operator+=(const SizeF &rhs);
-    SizeF &             operator-=(const SizeF &rhs);
-    SizeF &             operator*=(float rhs);
+                        /// Performs an unary negation of this SizeF.
+    SizeF               operator-() const & { return SizeF(-w, -h); }
+    SizeF &&            operator-() && { w = -w; h = -h; return std::move(*this); }
 
-    SizeF               operator+(const SizeF &rhs) const { return SizeF(w + rhs.w, h + rhs.h); }
-    SizeF               operator-(const SizeF &rhs) const { return SizeF(w - rhs.w, h - rhs.h); }
-    SizeF               operator*(float rhs) const { return SizeF(w * rhs, h * rhs); }
+                        /// Adds a size to this size.
+    SizeF               operator+(const SizeF &rhs) const & { return SizeF(w + rhs.w, h + rhs.h); }
+    SizeF &&            operator+(const SizeF &rhs) && { *this += rhs; return std::move(*this); }
+
+                        /// Subtracts a size to this size.
+    SizeF               operator-(const SizeF &rhs) const & { return SizeF(w - rhs.w, h - rhs.h); }
+    SizeF &&            operator-(const SizeF &rhs) && { *this -= rhs; return std::move(*this); }
+
+                        /// Multiplies this size by a scalar.
+    SizeF               operator*(float rhs) const & { return SizeF(w * rhs, h * rhs); }
+    SizeF &&            operator*(float rhs) && { *this *= rhs; return std::move(*this); }
+
+                        /// Adds a size to this size, in-place.
+    SizeF &             operator+=(const SizeF &rhs);
+
+                        /// Subtracts a size to this size, in-place.
+    SizeF &             operator-=(const SizeF &rhs);
+
+                        /// Multiplies this size by a scalar, in-place.
+    SizeF &             operator*=(float rhs);
 
                         /// Compare with another one.
     bool                operator==(const SizeF &rhs) const { return (w != rhs.w || h != rhs.h) ? false : true; }

@@ -65,23 +65,31 @@ public:
     float               operator[](int index) const;
     float &             operator[](int index);
 
-                        /// Performs an unary negation of this PointF.
-    PointF              operator-() const { return PointF(-x, -y); }
-
                         /// Unary operator + allows this structure to be used in an expression '+p'.
     PointF              operator+() const { return *this; }
 
+                        /// Performs an unary negation of this PointF.
+    PointF              operator-() const & { return PointF(-x, -y); }
+    PointF &&           operator-() && { x = -x; y = -y; return std::move(*this); }
+
                         /// Adds a point to this point.
-    PointF              operator+(const PointF &rhs) const { return PointF(x + rhs.x, y + rhs.y); }
+    PointF              operator+(const PointF &rhs) const & { return PointF(x + rhs.x, y + rhs.y); }
+    PointF &&           operator+(const PointF &rhs) && { *this += rhs; return std::move(*this); }
+
                         /// Subtracts a point from this point.
-    PointF              operator-(const PointF &rhs) const { return PointF(x - rhs.x, y - rhs.y); }
+    PointF              operator-(const PointF &rhs) const & { return PointF(x - rhs.x, y - rhs.y); }
+    PointF &&           operator-(const PointF &rhs) && { *this -= rhs; return std::move(*this); }
+
                         /// Multiplies this point by a scalar.
-    PointF              operator*(float rhs) const { return PointF(x * rhs, y * rhs); }
+    PointF              operator*(float rhs) const & { return PointF(x * rhs, y * rhs); }
+    PointF &&           operator*(float rhs) && { *this *= rhs; return std::move(*this); }
 
                         /// Adds a point to this point, in-place.
     PointF &            operator+=(const PointF &rhs);
+
                         /// Subtracts a point from this point, in-place.
     PointF &            operator-=(const PointF &rhs);
+
                         /// Multiplies this point by a scalar, in-place.
     PointF &            operator*=(float rhs);
 

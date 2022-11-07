@@ -106,25 +106,31 @@ public:
     void                SetSize(const Size &size);
     void                SetFrom4Coords(int x, int y, int x2, int y2);
 
-    Rect                Add(const Rect &a) const;
+    Rect                Add(const Rect &a) const &;
+    Rect &&             Add(const Rect &a) && { AddSelf(a); return std::move(*this); }
     Rect &              Add(const Rect &a, const Rect &b);
     Rect &              AddSelf(const Rect &a);
 
-    Rect                AddPoint(const Point &a) const;
+    Rect                AddPoint(const Point &a) const &;
+    Rect &&             AddPoint(const Point &a) && { AddPointSelf(a); return std::move(*this); }
     Rect &              AddPoint(const Point &a, const Point &b);
     Rect &              AddPointSelf(const Point &a);
 
-    Rect                Intersect(const Rect &a) const;
+    Rect                Intersect(const Rect &a) const &;
+    Rect &&             Intersect(const Rect &a) && { IntersectSelf(a); return std::move(*this); }
     Rect &              Intersect(const Rect &a, const Rect &b);
     Rect &              IntersectSelf(const Rect &a);
 
-    Rect                Move(int x, int y) const;
+    Rect                Move(int x, int y) const &;
+    Rect &&             Move(int x, int y) && { MoveSelf(x, y); return std::move(*this); }
     Rect &              MoveSelf(int x, int y);
 
-    Rect                Shrink(int ax, int ay) const;
+    Rect                Shrink(int ax, int ay) const &;
+    Rect &&             Shrink(int ax, int ay) && { ShrinkSelf(ax, ay); return std::move(*this); }
     Rect &              ShrinkSelf(int ax, int ay);
 
-    Rect                Expand(int ax, int ay) const;
+    Rect                Expand(int ax, int ay) const &;
+    Rect &&             Expand(int ax, int ay) && { ExpandSelf(ax, ay); return std::move(*this); }
     Rect &              ExpandSelf(int ax, int ay);
 
     RectF               ToRectF() const;

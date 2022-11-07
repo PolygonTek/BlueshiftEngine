@@ -19,7 +19,7 @@ BE_NAMESPACE_BEGIN
 
 const RectF RectF::zero = RectF(0.0f, 0.0f, 0.0f, 0.0f);
 
-RectF RectF::Add(const RectF &a) const {
+RectF RectF::Add(const RectF &a) const & {
     RectF rc;
     rc.x = Min(a.x, x);
     rc.y = Min(a.y, y);
@@ -46,7 +46,7 @@ RectF &RectF::AddSelf(const RectF &a) {
     return *this;
 }
 
-RectF RectF::AddPoint(const PointF &a) const {
+RectF RectF::AddPoint(const PointF &a) const & {
     RectF rc;
     rc.x = Min(a.x, x);
     rc.y = Min(a.y, y);
@@ -73,7 +73,7 @@ RectF &RectF::AddPointSelf(const PointF &a) {
     return *this;
 }
 
-RectF RectF::Intersect(const RectF &a) const {
+RectF RectF::Intersect(const RectF &a) const & {
     RectF rc;
     rc.x = Max(a.x, x);
     rc.y = Max(a.y, y);
@@ -100,7 +100,7 @@ RectF &RectF::IntersectSelf(const RectF &a) {
     return *this;
 }
 
-RectF RectF::Move(float ax, float ay) const {
+RectF RectF::Move(float ax, float ay) const & {
     RectF rect;
     rect.x = x + ax;
     rect.y = y + ay;
@@ -115,7 +115,7 @@ RectF &RectF::MoveSelf(float ax, float ay) {
     return *this;
 }
 
-RectF RectF::Shrink(float ax, float ay) const {
+RectF RectF::Shrink(float ax, float ay) const & {
     RectF rect;
     rect.x = x + ax;
     rect.y = y + ay;
@@ -132,7 +132,7 @@ RectF &RectF::ShrinkSelf(float ax, float ay) {
     return *this;
 }
 
-RectF RectF::Expand(float ax, float ay) const {
+RectF RectF::Expand(float ax, float ay) const & {
     RectF rect;
     rect.x = x - ax;
     rect.y = y - ay;
