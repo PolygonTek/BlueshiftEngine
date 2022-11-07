@@ -20,16 +20,26 @@ BE_NAMESPACE_BEGIN
 ALIGN_AS16 const Mat2 Mat2::zero(Vec2(0, 0), Vec2(0, 0));
 ALIGN_AS16 const Mat2 Mat2::identity(Vec2(1, 0), Vec2(0, 1));
 
-Mat2 Mat2::FromString(const char *str) {
-    Mat2 m;
-    sscanf(str, "%f %f %f %f", &m[0].x, &m[0].y, &m[1].x, &m[1].y);
-    return m;
+Mat2 &Mat2::operator*=(const Mat2 &rhs) {
+    float dst[2];
+
+    dst[0] = mat[0][0] * rhs.mat[0][0] + mat[0][1] * rhs.mat[1][0];
+    dst[1] = mat[0][0] * rhs.mat[0][1] + mat[0][1] * rhs.mat[1][1];
+    mat[0][0] = dst[0];
+    mat[0][1] = dst[1];
+
+    dst[0] = mat[1][0] * rhs.mat[0][0] + mat[1][1] * rhs.mat[1][0];
+    dst[1] = mat[1][0] * rhs.mat[0][1] + mat[1][1] * rhs.mat[1][1];
+    mat[1][0] = dst[0];
+    mat[1][1] = dst[1];
+
+    return *this;
 }
 
 bool Mat2::InverseSelf() {
 #if 1
     // 2+4 = 6 multiplications
-    //		 1 division
+    //       1 division
     double det, invDet, a;
 
     det = mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
@@ -49,7 +59,7 @@ bool Mat2::InverseSelf() {
     return true;
 #else
     // 2*4 = 8 multiplications
-    //		 2 division
+    //       2 division
     float *mat = reinterpret_cast<float *>(this);
     double d, di;
     float s;
@@ -73,6 +83,12 @@ bool Mat2::InverseSelf() {
 
     return (s != 0.0f && !FLOAT_IS_NAN(s));
 #endif
+}
+
+Mat2 Mat2::FromString(const char *str) {
+    Mat2 m;
+    sscanf(str, "%f %f %f %f", &m[0].x, &m[0].y, &m[1].x, &m[1].y);
+    return m;
 }
 
 BE_NAMESPACE_END

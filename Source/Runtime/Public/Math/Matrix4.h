@@ -444,16 +444,6 @@ BE_INLINE Mat4 &Mat4::operator=(const Mat3 &rhs) {
     return *this;
 }
 
-BE_INLINE Mat4 &Mat4::operator*=(const Mat4 &a) {
-    *this = (*this) * a;
-    return *this;
-}
-
-BE_INLINE Mat4 &Mat4::operator*=(const Mat3x4 &a) {
-    *this = (*this) * a;
-    return *this;
-}
-
 BE_INLINE bool Mat4::Equals(const Mat4 &a) const {
     const float *ptr1 = reinterpret_cast<const float *>(mat);
     const float *ptr2 = reinterpret_cast<const float *>(a.mat);

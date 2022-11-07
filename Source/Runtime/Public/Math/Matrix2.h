@@ -318,28 +318,23 @@ BE_INLINE Mat2 &Mat2::operator=(const Mat2 &rhs) {
     return *this;
 }
 
-BE_INLINE Mat2 &Mat2::operator+=(const Mat2 &a) {
-    mat[0].x += a[0].x;
-    mat[0].y += a[0].y;
+BE_INLINE Mat2 &Mat2::operator+=(const Mat2 &rhs) {
+    mat[0].x += rhs[0].x;
+    mat[0].y += rhs[0].y;
 
-    mat[1].x += a[1].x;
-    mat[1].y += a[1].y;
-
-    return *this;
-}
-
-BE_INLINE Mat2 &Mat2::operator-=(const Mat2 &a) {
-    mat[0].x -= a[0].x;
-    mat[0].y -= a[0].y;
-
-    mat[1].x -= a[1].x;
-    mat[1].y -= a[1].y;
+    mat[1].x += rhs[1].x;
+    mat[1].y += rhs[1].y;
 
     return *this;
 }
 
-BE_INLINE Mat2 &Mat2::operator*=(const Mat2 &a) {
-    *this = (*this) * a;
+BE_INLINE Mat2 &Mat2::operator-=(const Mat2 &rhs) {
+    mat[0].x -= rhs[0].x;
+    mat[0].y -= rhs[0].y;
+
+    mat[1].x -= rhs[1].x;
+    mat[1].y -= rhs[1].y;
+
     return *this;
 }
 

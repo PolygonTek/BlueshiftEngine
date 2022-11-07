@@ -481,9 +481,6 @@ BE_INLINE Mat3 &Mat3::operator-=(const Mat3 &a) {
 }
 
 BE_INLINE Mat3 &Mat3::operator*=(const Mat3 &rhs) {
-#if 0
-    *this = (*this) * rhs;
-#else
     float dst[3];
 
     dst[0] = mat[0][0] * rhs.mat[0][0] + mat[1][0] * rhs.mat[0][1] + mat[2][0] * rhs.mat[0][2];
@@ -506,7 +503,7 @@ BE_INLINE Mat3 &Mat3::operator*=(const Mat3 &rhs) {
     mat[0][2] = dst[0];
     mat[1][2] = dst[1];
     mat[2][2] = dst[2];
-#endif
+
     return *this;
 }
 
