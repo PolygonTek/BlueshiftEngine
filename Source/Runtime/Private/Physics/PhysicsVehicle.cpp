@@ -137,6 +137,10 @@ float PhysVehicle::GetTorque(int wheelIndex) const {
 
 void PhysVehicle::SetTorque(int wheelIndex, float torque) {
     vehicle->applyEngineForce(SystemUnitToPhysicsUnit(torque), wheelIndex);
+
+    if (torque != 0) {
+        chassisBody->GetRigidBody()->setActivationState(ACTIVE_TAG);
+    }
 }
 
 float PhysVehicle::GetBrakingTorque(int wheelIndex) const {
