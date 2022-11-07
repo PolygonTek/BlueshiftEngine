@@ -63,40 +63,51 @@ public:
     const Vec3 &        operator[](int index) const;
     Vec3 &              operator[](int index);
 
+                        /// Unary operator + allows this structure to be used in an expression '+m'.
+    const Mat3 &        operator+() const { return *this; }
+
                         /// Performs an unary negation of this matrix.
-    Mat3                Negate() const { return -(*this); }
+    Mat3                Negate() const & { return -(*this); }
+    Mat3 &&             Negate() && { return -std::move(*this); }
                         /// Performs an unary negation of this matrix.
                         /// This function is identical to the member function Negate().
-    Mat3                operator-() const;
-
-                        /// Unary operator + allows this structure to be used in an expression '+m'.
-    Mat3                operator+() const { return *this; }
+    Mat3                operator-() const &;
+    Mat3 &&             operator-() &&;
         
                         /// Adds a matrix to this matrix.
-    Mat3                Add(const Mat3 &m) const { return *this + m; }
+    Mat3                Add(const Mat3 &m) const & { return *this + m; }
+    Mat3 &&             Add(const Mat3 &m) && { *this += m; return std::move(*this); }
                         /// Adds a matrix to this matrix.
-    Mat3                operator+(const Mat3 &rhs) const;
+    Mat3                operator+(const Mat3 &rhs) const &;
+    Mat3 &&             operator+(const Mat3 &rhs) && { *this += rhs; return std::move(*this); }
 
                         /// Subtracts a matrix from this matrix.
-    Mat3                Sub(const Mat3 &m) const { return *this - m; }
+    Mat3                Sub(const Mat3 &m) const & { return *this - m; }
+    Mat3 &&             Sub(const Mat3 &m) && { *this -= m; return std::move(*this); }
                         /// Subtracts a matrix from this matrix.
-    Mat3                operator-(const Mat3 &rhs) const;
+    Mat3                operator-(const Mat3 &rhs) const &;
+    Mat3 &&             operator-(const Mat3 &rhs) && { *this -= rhs; return std::move(*this); }
 
                         /// Multiplies a matrix to this matrix.
-    Mat3                Mul(const Mat3 &m) const { return *this * m; }
+    Mat3                Mul(const Mat3 &m) const & { return *this * m; }
+    Mat3 &&             Mul(const Mat3 &m) && { *this *= m; return std::move(*this); }
                         /// Returns this->Transpose() * m
     Mat3                TransposedMul(const Mat3 &m) const;
                         /// Multiplies a matrix to this matrix.
                         /// This function is identical to the member function Mul().
-    Mat3                operator*(const Mat3 &rhs) const;
+    Mat3                operator*(const Mat3 &rhs) const &;
+    Mat3 &&             operator*(const Mat3 &rhs) && { *this *= rhs; return std::move(*this); }
 
                         /// Multiplies this matrix by a scalar.
-    Mat3                MulScalar(float s) const { return *this * s; }
+    Mat3                MulScalar(float s) const & { return *this * s; }
+    Mat3 &&             MulScalar(float s) && { *this *= s; return std::move(*this); }
                         /// Multiplies this matrix by a scalar.
                         /// This function is identical to the member function MulScalar().
-    Mat3                operator*(float rhs) const;
+    Mat3                operator*(float rhs) const &;
+    Mat3 &&             operator*(float rhs) && { *this *= rhs; return std::move(*this); }
                         /// Multiplies the given matrix by a scalar.
     friend Mat3         operator*(float lhs, const Mat3 &rhs) { return rhs * lhs; }
+    friend Mat3 &&      operator*(float lhs, Mat3 &&rhs) { rhs *= lhs; return std::move(rhs); }
 
                         /// Transforms the given vector by this matrix.
     Vec3                MulVec(const Vec3 &v) const { return *this * v; }
@@ -105,8 +116,8 @@ public:
                         /// Transforms the given vector by this matrix.
                         /// This function is identical to the member function MulVec().
     Vec3                operator*(const Vec3 &rhs) const;
-                        /// Transforms the given vector by the given matrix rhs.
-    friend Vec3         operator*(const Vec3 &lhs, const Mat3 &rhs) { return rhs * lhs; }
+                        /// Transforms the given vector by the given matrix in the order v * M (!= M * v).
+    friend Vec3         operator*(const Vec3 &lhs, const Mat3 &rhs) { return rhs.TransposedMulVec(lhs); }
 
                         /// Assign from another matrix.
     Mat3 &              operator=(const Mat3 &rhs);
@@ -134,9 +145,6 @@ public:
                         /// Multiplies this matrix with the given scalar, in-place.
                         /// This function is identical to the member function MulScalarSelf().
     Mat3 &              operator*=(float rhs);
-                        
-                        /// Multiplies the vector lhs with the given matrix rhs, in-place on vector. i.e. lhs *= rhs
-    friend Vec3 &       operator*=(Vec3 &lhs, const Mat3 &rhs) { lhs = rhs * lhs; return lhs; }
 
                         /// Exact compare, no epsilon.
     bool                Equals(const Mat3 &m) const;
@@ -328,28 +336,41 @@ BE_INLINE Vec3 &Mat3::operator[](int index) {
     return mat[index];
 }
 
-BE_INLINE Mat3 Mat3::operator-() const {
+BE_INLINE Mat3 Mat3::operator-() const & {
     return Mat3(
         -mat[0][0], -mat[0][1], -mat[0][2],
         -mat[1][0], -mat[1][1], -mat[1][2],
         -mat[2][0], -mat[2][1], -mat[2][2]);
 }
 
-BE_INLINE Mat3 Mat3::operator+(const Mat3 &a) const {
+BE_INLINE Mat3 &&Mat3::operator-() && {
+    mat[0][0] = -mat[0][0];
+    mat[0][1] = -mat[0][1];
+    mat[0][2] = -mat[0][2];
+    mat[1][0] = -mat[1][0];
+    mat[1][1] = -mat[1][1];
+    mat[1][2] = -mat[1][2];
+    mat[2][0] = -mat[2][0];
+    mat[2][1] = -mat[2][1];
+    mat[2][2] = -mat[2][2];
+    return std::move(*this);
+}
+
+BE_INLINE Mat3 Mat3::operator+(const Mat3 &a) const & {
     return Mat3(
         mat[0].x + a[0].x, mat[0].y + a[0].y, mat[0].z + a[0].z,
         mat[1].x + a[1].x, mat[1].y + a[1].y, mat[1].z + a[1].z,
         mat[2].x + a[2].x, mat[2].y + a[2].y, mat[2].z + a[2].z);
 }
 
-BE_INLINE Mat3 Mat3::operator-(const Mat3 &a) const {
+BE_INLINE Mat3 Mat3::operator-(const Mat3 &a) const & {
     return Mat3(
         mat[0].x - a[0].x, mat[0].y - a[0].y, mat[0].z - a[0].z,
         mat[1].x - a[1].x, mat[1].y - a[1].y, mat[1].z - a[1].z,
         mat[2].x - a[2].x, mat[2].y - a[2].y, mat[2].z - a[2].z);
 }
 
-BE_INLINE Mat3 Mat3::operator*(const Mat3 &a) const {
+BE_INLINE Mat3 Mat3::operator*(const Mat3 &a) const & {
     Mat3 dst;
     float *dstPtr = dst.Ptr();
     const float *m1Ptr = Ptr();
@@ -401,7 +422,7 @@ BE_INLINE Vec3 Mat3::TransposedMulVec(const Vec3 &vec) const {
         mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z);
 }
 
-BE_INLINE Mat3 Mat3::operator*(float a) const {
+BE_INLINE Mat3 Mat3::operator*(float a) const & {
     return Mat3(
         mat[0].x * a, mat[0].y * a, mat[0].z * a,
         mat[1].x * a, mat[1].y * a, mat[1].z * a,
@@ -456,23 +477,48 @@ BE_INLINE Mat3 &Mat3::operator-=(const Mat3 &a) {
     return *this;
 }
 
-BE_INLINE Mat3 &Mat3::operator*=(const Mat3 &a) {
-    *this = (*this) * a;
+BE_INLINE Mat3 &Mat3::operator*=(const Mat3 &rhs) {
+#if 0
+    *this = (*this) * rhs;
+#else
+    float dst[3];
+
+    dst[0] = mat[0][0] * rhs.mat[0][0] + mat[1][0] * rhs.mat[0][1] + mat[2][0] * rhs.mat[0][2];
+    dst[1] = mat[0][0] * rhs.mat[1][0] + mat[1][0] * rhs.mat[1][1] + mat[2][0] * rhs.mat[1][2];
+    dst[2] = mat[0][0] * rhs.mat[2][0] + mat[1][0] * rhs.mat[2][1] + mat[2][0] * rhs.mat[2][2];
+    mat[0][0] = dst[0];
+    mat[1][0] = dst[1];
+    mat[2][0] = dst[2];
+
+    dst[0] = mat[0][1] * rhs.mat[0][0] + mat[1][1] * rhs.mat[0][1] + mat[2][1] * rhs.mat[0][2];
+    dst[1] = mat[0][1] * rhs.mat[1][0] + mat[1][1] * rhs.mat[1][1] + mat[2][1] * rhs.mat[1][2];
+    dst[2] = mat[0][1] * rhs.mat[2][0] + mat[1][1] * rhs.mat[2][1] + mat[2][1] * rhs.mat[2][2];
+    mat[0][1] = dst[0];
+    mat[1][1] = dst[1];
+    mat[2][1] = dst[2];
+
+    dst[0] = mat[0][2] * rhs.mat[0][0] + mat[1][2] * rhs.mat[0][1] + mat[2][2] * rhs.mat[0][2];
+    dst[1] = mat[0][2] * rhs.mat[1][0] + mat[1][2] * rhs.mat[1][1] + mat[2][2] * rhs.mat[1][2];
+    dst[2] = mat[0][2] * rhs.mat[2][0] + mat[1][2] * rhs.mat[2][1] + mat[2][2] * rhs.mat[2][2];
+    mat[0][2] = dst[0];
+    mat[1][2] = dst[1];
+    mat[2][2] = dst[2];
+#endif
     return *this;
 }
 
-BE_INLINE Mat3 &Mat3::operator*=(float a) {
-    mat[0].x *= a; 
-    mat[0].y *= a; 
-    mat[0].z *= a;
+BE_INLINE Mat3 &Mat3::operator*=(float rhs) {
+    mat[0].x *= rhs;
+    mat[0].y *= rhs;
+    mat[0].z *= rhs;
 
-    mat[1].x *= a; 
-    mat[1].y *= a; 
-    mat[1].z *= a; 
+    mat[1].x *= rhs;
+    mat[1].y *= rhs;
+    mat[1].z *= rhs;
 
-    mat[2].x *= a; 
-    mat[2].y *= a; 
-    mat[2].z *= a;
+    mat[2].x *= rhs;
+    mat[2].y *= rhs;
+    mat[2].z *= rhs;
 
     return *this;
 }

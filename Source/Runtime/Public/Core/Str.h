@@ -200,12 +200,27 @@ public:
     
                         /// Returns a string which is the result of concatenating lhs and rhs.
     friend Str          operator+(const Str &lhs, const Str &rhs);
+    friend Str &&       operator+(Str &&lhs, const Str &rhs);
                         /// Returns a string which is the result of concatenating lhs and rhs.
     friend Str          operator+(const Str &lhs, const char *rhs);
+    friend Str &&       operator+(Str &&lhs, const char *rhs);
                         /// Returns a string which is the result of concatenating lhs and rhs.
     friend Str          operator+(const char *lhs, const Str &rhs);
-                        /// Returns a string which is the result of concatenating the string s and the character ch.
+                        /// Returns a string which is the result of concatenating the string lhs and the float rhs.
+    friend Str          operator+(const Str &lhs, const float rhs);
+    friend Str &&       operator+(Str &&lhs, const float rhs);
+                        /// Returns a string which is the result of concatenating the string lhs and the int rhs.
+    friend Str          operator+(const Str &lhs, const int rhs);
+    friend Str &&       operator+(Str &&lhs, const int rhs);
+                        /// Returns a string which is the result of concatenating the string lhs and the unsigned int rhs.
+    friend Str          operator+(const Str &lhs, const unsigned rhs);
+    friend Str &&       operator+(Str &&lhs, const unsigned rhs);
+                        /// Returns a string which is the result of concatenating the string lhs and the character rhs.
     friend Str          operator+(const Str &lhs, const char rhs);
+    friend Str &&       operator+(Str &&lhs, const char rhs);
+                        /// Returns a string which is the result of concatenating the string lhs and the bool rhs.
+    friend Str          operator+(const Str &lhs, const bool rhs);
+    friend Str &&       operator+(Str &&lhs, const bool rhs);
 
                         /// Make string in lowercase.
     void                ToLower();
@@ -319,9 +334,9 @@ public:
                         /// Converts '/' to '\'.
     Str &               SlashesToBackSlashes();
                         /// Converts absolute path to relative path.
-    const Str           ToRelativePath(const char *basePath) const;
+    Str                 ToRelativePath(const char *basePath) const;
                         /// Converts relative path to absolute path.
-    const Str           ToAbsolutePath(const char *basePath) const;
+    Str                 ToAbsolutePath(const char *basePath) const;
                         /// Removes any file extension.
     Str &               StripFileExtension();
                         /// Removes the filename from a path.
@@ -608,7 +623,6 @@ BE_INLINE Str &Str::operator+=(const char *rhs) {
 
 BE_INLINE Str &Str::operator+=(const float rhs) {
     char text[64];
-
     Str::snPrintf(text, sizeof(text), "%f", rhs);
     Append(text);
     return *this;
@@ -621,7 +635,6 @@ BE_INLINE Str &Str::operator+=(const char rhs) {
 
 BE_INLINE Str &Str::operator+=(const int rhs) {
     char text[64];
-
     Str::snPrintf(text, sizeof(text), "%i", rhs);
     Append(text);
     return *this;
@@ -642,64 +655,97 @@ BE_INLINE Str &Str::operator+=(const bool rhs) {
 
 BE_INLINE Str operator+(const Str &lhs, const Str &rhs) {
     Str result(lhs);
-
     result.Append(rhs);
     return result;
+}
+
+BE_INLINE Str &&operator+(Str &&lhs, const Str &rhs) {
+    lhs.Append(rhs);
+    return std::move(lhs);
 }
 
 BE_INLINE Str operator+(const Str &lhs, const char *rhs) {
     Str result(lhs);
-
     result.Append(rhs);
     return result;
 }
 
+BE_INLINE Str &&operator+(Str &&lhs, const char *rhs) {
+    lhs.Append(rhs);
+    return std::move(lhs);
+}
+
 BE_INLINE Str operator+(const char *lhs, const Str &rhs) {
     Str result(lhs);
-
     result.Append(rhs);
     return result;
 }
 
 BE_INLINE Str operator+(const Str &lhs, const float rhs) {
-    char text[64];
     Str result(lhs);
-    
+    char text[64];
     Str::snPrintf(text, sizeof(text), "%f", rhs);
     result.Append(text);
     return result;
 }
 
-BE_INLINE Str operator+(const Str &lhs, const int rhs) {
+BE_INLINE Str &&operator+(Str &&lhs, const float rhs) {
     char text[64];
+    Str::snPrintf(text, sizeof(text), "%f", rhs);
+    lhs.Append(text);
+    return std::move(lhs);
+}
+
+BE_INLINE Str operator+(const Str &lhs, const int rhs) {
     Str result(lhs);
-    
+    char text[64];
     Str::snPrintf(text, sizeof(text), "%i", rhs);
     result.Append(text);
     return result;
 }
 
-BE_INLINE Str operator+(const Str &lhs, const unsigned rhs) {
+BE_INLINE Str &&operator+(Str &&lhs, const int rhs) {
     char text[64];
+    Str::snPrintf(text, sizeof(text), "%i", rhs);
+    lhs.Append(text);
+    return std::move(lhs);
+}
+
+BE_INLINE Str operator+(const Str &lhs, const unsigned rhs) {
     Str result(lhs);
-    
+    char text[64];
     Str::snPrintf(text, sizeof(text), "%u", rhs);
     result.Append(text);
     return result;
 }
 
+BE_INLINE Str &&operator+(Str &&lhs, const unsigned rhs) {
+    char text[64];
+    Str::snPrintf(text, sizeof(text), "%u", rhs);
+    lhs.Append(text);
+    return std::move(lhs);
+}
+
 BE_INLINE Str operator+(const Str &lhs, const bool rhs) {
     Str result(lhs);
-    
     result.Append(rhs ? "true" : "false");
     return result;
 }
 
+BE_INLINE Str &&operator+(Str &&lhs, const bool rhs) {
+    lhs.Append(rhs ? "true" : "false");
+    return std::move(lhs);
+}
+
 BE_INLINE Str operator+(const Str &lhs, const char rhs) {
     Str result(lhs);
-
     result.Append(rhs);
     return result;
+}
+
+BE_INLINE Str &&operator+(Str &&lhs, const char rhs) {
+    lhs.Append(rhs);
+    return std::move(lhs);
 }
 
 BE_INLINE int Str::Cmp(const char *text) const {

@@ -26,15 +26,15 @@ void LuaVM::RegisterMat2(LuaCpp::Module &module) {
     _Mat2.AddClassMembers<Mat2>(
         "at", static_cast<Vec2&(Mat2::*)(int)>(&Mat2::At), // index start from zero
         "assign", static_cast<Mat2&(Mat2::*)(const Mat2&)>(&Mat2::operator=),
-        "add", static_cast<Mat2(Mat2::*)(const Mat2&)const>(&Mat2::operator+),
-        "add_self", static_cast<Mat2&(Mat2::*)(const Mat2&)>(&Mat2::operator+=),
-        "subtract", static_cast<Mat2(Mat2::*)(const Mat2&)const>(&Mat2::operator-),
-        "subtract_self", static_cast<Mat2&(Mat2::*)(const Mat2&)>(&Mat2::operator-=),
-        "multiply", static_cast<Mat2(Mat2::*)(const Mat2&)const>(&Mat2::operator*),
-        "multiply_self", static_cast<Mat2&(Mat2::*)(const Mat2&)>(&Mat2::operator*=),
-        "multiply_comp", static_cast<Mat2(Mat2::*)(const float)const>(&Mat2::operator*),
-        "multiply_comp_self", static_cast<Mat2&(Mat2::*)(const float)>(&Mat2::operator*=),
-        "multiply_vec2", static_cast<Vec2(Mat2::*)(const Vec2&)const>(&Mat2::operator*),
+        "add", static_cast<Mat2(Mat2::*)(const Mat2&)const&>(&Mat2::Add),
+        "add_self", static_cast<Mat2&(Mat2::*)(const Mat2&)>(&Mat2::AddSelf),
+        "sub", static_cast<Mat2(Mat2::*)(const Mat2&)const&>(&Mat2::Sub),
+        "sub_self", static_cast<Mat2&(Mat2::*)(const Mat2&)>(&Mat2::SubSelf),
+        "mul", static_cast<Mat2(Mat2::*)(const Mat2&)const&>(&Mat2::Mul),
+        "mul_self", static_cast<Mat2&(Mat2::*)(const Mat2&)>(&Mat2::MulSelf),
+        "mul_scalar", static_cast<Mat2(Mat2::*)(const float)const&>(&Mat2::MulScalar),
+        "mul_scalar_self", static_cast<Mat2&(Mat2::*)(const float)>(&Mat2::MulScalarSelf),
+        "mul_vec2", static_cast<Vec2(Mat2::*)(const Vec2&)const>(&Mat2::MulVec),
         "equals", static_cast<bool(Mat2::*)(const Mat2&, const float)const>(&Mat2::Equals),
         "is_identity", &Mat2::IsIdentity,
         "is_symmetric", &Mat2::IsSymmetric,
@@ -52,10 +52,10 @@ void LuaVM::RegisterMat2(LuaCpp::Module &module) {
     );
     _Mat2.AddClassMembers<Mat2>(
         "__tostring", static_cast<const char*(Mat2::*)(void)const>(&Mat2::ToString),
-        "__unm", static_cast<Mat2(Mat2::*)(void)const>(&Mat2::operator-),
-        "__add", &Mat2::Add,
-        "__sub", &Mat2::Sub,
-        "__mul", &Mat2::Mul,
+        "__unm", static_cast<Mat2(Mat2::*)(void)const&>(&Mat2::operator-),
+        "__add", static_cast<Mat2(Mat2::*)(const Mat2&)const&>(&Mat2::Add),
+        "__sub", static_cast<Mat2(Mat2::*)(const Mat2&)const&>(&Mat2::Sub),
+        "__mul", static_cast<Mat2(Mat2::*)(const Mat2&)const&>(&Mat2::Mul),
         "__eq", static_cast<bool(Mat2::*)(const Mat2&)const>(&Mat2::operator==)
     );
 

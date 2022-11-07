@@ -106,8 +106,7 @@ BE_INLINE Rotation &Rotation::operator=(const Rotation &rhs) {
 
 BE_INLINE void Rotation::Set(const Vec3 &rotOrigin, const Vec3 &rotVec, const float rotAngle) {
     origin = rotOrigin;
-    vec = rotVec;
-    vec.Normalize();
+    vec = rotVec.Normalized();
     angle = rotAngle;
     axisValid = false;
 }
@@ -117,8 +116,7 @@ BE_INLINE void Rotation::SetOrigin(const Vec3 &rotOrigin) {
 }
 
 BE_INLINE void Rotation::SetVec(const Vec3 &rotVec) {
-    vec = rotVec;
-    vec.Normalize();
+    vec = rotVec.Normalized();
     axisValid = false;
 }
 

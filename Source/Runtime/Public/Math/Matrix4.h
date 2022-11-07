@@ -65,43 +65,56 @@ public:
     const Vec4 &        operator[](int index) const;
     Vec4 &              operator[](int index);
 
+                        /// Unary operator + allows this structure to be used in an expression '+m'.
+    const Mat4 &        operator+() const { return *this; }
+
                         /// Performs an unary negation of this matrix.
-    Mat4                Negate() const { return -(*this); }
+    Mat4                Negate() const & { return -(*this); }
+    Mat4 &&             Negate() && { return -std::move(*this); }
                         /// Performs an unary negation of this matrix.
                         /// This function is identical to the member function Negate().
-    Mat4                operator-() const;
-
-                        /// Unary operator + allows this structure to be used in an expression '+m'.
-    Mat4                operator+() const { return *this; }
+    Mat4                operator-() const &;
+    Mat4 &&             operator-() &&;
 
                         /// Adds a matrix to this matrix.
-    Mat4                Add(const Mat4 &m) const { return *this + m; }
+    Mat4                Add(const Mat4 &m) const & { return *this + m; }
+    Mat4 &&             Add(const Mat4 &m) && { *this += m; return std::move(*this); }
                         /// Adds a matrix to this matrix.
-    Mat4                operator+(const Mat4 &rhs) const;
+    Mat4                operator+(const Mat4 &rhs) const &;
+    Mat4 &&             operator+(const Mat4 &rhs) && { *this += rhs; return std::move(*this); }
 
                         /// Subtracts a matrix from this matrix.
-    Mat4                Sub(const Mat4 &m) const { return *this - m; }
+    Mat4                Sub(const Mat4 &m) const & { return *this - m; }
+    Mat4 &&             Sub(const Mat4 &m) && { *this -= m; return std::move(*this); }
                         /// Subtracts a matrix from this matrix.
-    Mat4                operator-(const Mat4 &rhs) const;
+    Mat4                operator-(const Mat4 &rhs) const &;
+    Mat4 &&             operator-(const Mat4 &rhs) &&{ *this -= rhs; return std::move(*this); }
 
                         /// Multiplies a matrix to this matrix.
-    Mat4                Mul(const Mat4 &m) const { return *this * m; }
-    Mat4                Mul(const Mat3x4 &m) const { return *this * m; }
+    Mat4                Mul(const Mat4 &m) const & { return *this * m; }
+    Mat4 &&             Mul(const Mat4 &m) && { *this *= m; return std::move(*this); }
+    Mat4                Mul(const Mat3x4 &m) const & { return *this * m; }
+    Mat4 &&             Mul(const Mat3x4 &m) && { *this *= m; return std::move(*this); }
                         /// Returns this->Transpose() * m
     Mat4                TransposedMul(const Mat4 &m) const;
     Mat4                TransposedMul(const Mat3x4 &m) const;
                         /// Multiplies a matrix to this matrix.
                         /// This function is identical to the member function Mul().
-    Mat4                operator*(const Mat4 &rhs) const;
-    Mat4                operator*(const Mat3x4 &rhs) const;
+    Mat4                operator*(const Mat4 &rhs) const &;
+    Mat4 &&             operator*(const Mat4 &rhs) && { *this *= rhs; return std::move(*this); }
+    Mat4                operator*(const Mat3x4 &rhs) const &;
+    Mat4 &&             operator*(const Mat3x4 &rhs) &&{ *this *= rhs; return std::move(*this); }
 
                         /// Multiplies this matrix by a scalar.
-    Mat4                MulScalar(float s) const { return *this * s; }
+    Mat4                MulScalar(float s) const & { return *this * s; }
+    Mat4 &&             MulScalar(float s) && { *this *= s; return std::move(*this); }
                         /// Multiplies this matrix by a scalar.
                         /// This function is identical to the member function MulScalar().
-    Mat4                operator*(float rhs) const;
+    Mat4                operator*(float rhs) const &;
+    Mat4 &&             operator*(float rhs) && { *this *= rhs; return std::move(*this); }
                         /// Multiplies the given matrix by a scalar.
     friend Mat4         operator*(float lhs, const Mat4 &rhs) { return rhs * lhs; }
+    friend Mat4 &&      operator*(float lhs, Mat4 &&rhs) { rhs *= lhs; return std::move(rhs); }
 
                         /// Transforms the given vector by this matrix
     Vec4                MulVec(const Vec4 &v) const { return *this * v; }
@@ -113,9 +126,9 @@ public:
                         /// This function is identical to the member function MulVec().
     Vec4                operator*(const Vec4 &rhs) const;
     Vec3                operator*(const Vec3 &rhs) const;
-                        /// Transforms the given vector by the given matrix m.
-    friend Vec4         operator*(const Vec4 &lhs, const Mat4 &rhs) { return rhs * lhs; }
-    friend Vec3         operator*(const Vec3 &lhs, const Mat4 &rhs) { return rhs * lhs; }
+                        /// Transforms the given vector by the given matrix in the order v * M (!= M * v).
+    friend Vec4         operator*(const Vec4 &lhs, const Mat4 &rhs) { return rhs.TransposedMulVec(lhs); }
+    friend Vec3         operator*(const Vec3 &lhs, const Mat4 &rhs) { return rhs.TransposedMulVec(lhs); }
 
     Vec3                TransformNormal(const Vec3 &n) const;
 
@@ -149,11 +162,6 @@ public:
                         /// Multiplies this matrix with the given scalar, in-place.
                         /// This function is identical to the member function MulScalarSelf().
     Mat4 &              operator*=(float rhs);
-                        
-                        /// Multiplies the vector lhs with the given matrix rhs, in-place on vector. i.e. lhs *= rhs
-    friend Vec4 &       operator*=(Vec4 &lhs, const Mat4 &rhs) { lhs = rhs * lhs; return lhs; }
-                        /// Multiplies the vector lhs with the given matrix rhs, in-place on vector. i.e. lhs *= rhs
-    friend Vec3 &       operator*=(Vec3 &lhs, const Mat4 &rhs) { lhs = rhs * lhs; return lhs; }
 
                         /// Exact compare, no epsilon.
     bool                Equals(const Mat4 &m) const;

@@ -33,13 +33,19 @@ public:
 
     void                    Clear();
 
+    int                     GetCurrentLineIndex() const { return currentLineIndex; }
     int                     GetFirstLineIndex() const;
     int                     NumLines() const;
+
+    const StrArray &        GetTextLines() const { return textLines; }
 
     void                    Print(const Str &string);
 
     void                    DumpToFile(const char *filename);
 
+    static const SignalDef  SIG_TextAdded;
+
+private:
     bool                    initialized = false;
 
     StrArray                textLines;
@@ -47,8 +53,6 @@ public:
 
     static void             Cmd_ConClear(const CmdArgs &args);
     static void             Cmd_ConDump(const CmdArgs &args);
-
-    static const SignalDef  SIG_TextAdded;
 };
 
 extern Console              console;

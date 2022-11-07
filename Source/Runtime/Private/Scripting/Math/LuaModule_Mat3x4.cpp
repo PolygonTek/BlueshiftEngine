@@ -26,18 +26,18 @@ void LuaVM::RegisterMat3x4(LuaCpp::Module &module) {
     _Mat3x4.AddClassMembers<Mat3x4>(
         "at", static_cast<Vec4&(Mat3x4::*)(int)>(&Mat3x4::At), // index start from zero
         "assign", static_cast<Mat3x4&(Mat3x4::*)(const Mat3x4&)>(&Mat3x4::operator=),
-        "add", &Mat3x4::Add,
+        "add", static_cast<Mat3x4(Mat3x4::*)(const Mat3x4&)const &>(&Mat3x4::Add),
         "add_self", &Mat3x4::AddSelf,
-        "sub", &Mat3x4::Sub,
+        "sub", static_cast<Mat3x4(Mat3x4::*)(const Mat3x4&)const &>(&Mat3x4::Sub),
         "sub_self", &Mat3x4::SubSelf,
-        "mul", &Mat3x4::Mul,
+        "mul", static_cast<Mat3x4(Mat3x4::*)(const Mat3x4&)const &>(&Mat3x4::Mul),
         "mul_self", &Mat3x4::MulSelf,
-        "mul_scalar", &Mat3x4::MulScalar,
+        "mul_scalar", static_cast<Mat3x4(Mat3x4::*)(float)const &>(&Mat3x4::MulScalar),
         "mul_scalar_self", &Mat3x4::MulScalarSelf,
         "mul_vec3", static_cast<Vec3(Mat3x4::*)(const Vec3&)const>(&Mat3x4::MulVec),
         "mul_vec4", static_cast<Vec4(Mat3x4::*)(const Vec4&)const>(&Mat3x4::MulVec),
-        "tmul_vec3", static_cast<Vec3(Mat3x4::*)(const Vec3&)const>(&Mat3x4::TransposedMulVec),
-        "tmul_vec4", static_cast<Vec4(Mat3x4::*)(const Vec4&)const>(&Mat3x4::TransposedMulVec),
+        "transposed_mul_vec3", static_cast<Vec3(Mat3x4::*)(const Vec3&)const>(&Mat3x4::TransposedMulVec),
+        "transposed_mul_vec4", static_cast<Vec4(Mat3x4::*)(const Vec4&)const>(&Mat3x4::TransposedMulVec),
         "equals", static_cast<bool(Mat3x4::*)(const Mat3x4 &, const float)const>(&Mat3x4::Equals),
         "is_identity", &Mat3x4::IsIdentity,
         "set_zero", &Mat3x4::SetZero,
@@ -55,10 +55,10 @@ void LuaVM::RegisterMat3x4(LuaCpp::Module &module) {
     );
     _Mat3x4.AddClassMembers<Mat3x4>(
         "__tostring", static_cast<const char*(Mat3x4::*)(void)const>(&Mat3x4::ToString),
-        "__unm", static_cast<Mat3x4(Mat3x4::*)(void)const>(&Mat3x4::operator-),
-        "__add", &Mat3x4::Add,
-        "__sub", &Mat3x4::Sub,
-        "__mul", &Mat3x4::Mul,
+        "__unm", static_cast<Mat3x4(Mat3x4::*)(void)const&>(&Mat3x4::operator-),
+        "__add", static_cast<Mat3x4(Mat3x4::*)(const Mat3x4&)const&>(&Mat3x4::Add),
+        "__sub", static_cast<Mat3x4(Mat3x4::*)(const Mat3x4&)const&>(&Mat3x4::Sub),
+        "__mul", static_cast<Mat3x4(Mat3x4::*)(const Mat3x4&)const&>(&Mat3x4::Mul),
         "__eq", static_cast<bool(Mat3x4::*)(const Mat3x4&)const>(&Mat3x4::operator==)
     );
 

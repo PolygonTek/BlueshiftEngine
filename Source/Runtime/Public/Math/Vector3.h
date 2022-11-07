@@ -61,74 +61,97 @@ public:
     float               operator[](int index) const;
     float &             operator[](int index);
 
+                        /// Unary operator + allows this structure to be used in an expression '+v'.
+    const Vec3 &        operator+() const { return *this; }
+
+                        /// Performs an unary negation of this vector.
+    Vec3                Negate() const & { return Vec3(-x, -y, -z); }
+    Vec3 &&             Negate() && { x = -x; y = -y; z = -z; return std::move(*this); }
                         /// Performs an unary negation of this vector.
                         /// This function is identical to the member function Negate().
-    Vec3                operator-() const { return Vec3(-x, -y, -z); }
-                        /// Performs an unary negation of this vector.
-    Vec3                Negate() const { return Vec3(-x, -y, -z); }
+    Vec3                operator-() const & { return Vec3(-x, -y, -z); }
+    Vec3 &&             operator-() && { x = -x; y = -y; z = -z; return std::move(*this); }
 
                         /// Returns Vec3(|x|, |y|, |z|)
-    Vec3                Abs() const { return Vec3(Math::Fabs(x), Math::Fabs(y), Math::Fabs(z)); }
-
-                        /// Unary operator + allows this structure to be used in an expression '+v'.
-    Vec3                operator+() const { return *this; }
+    Vec3                Abs() const & { return Vec3(Math::Fabs(x), Math::Fabs(y), Math::Fabs(z)); }
+    Vec3 &&             Abs() && { x = Math::Fabs(x); y = Math::Fabs(y); z = Math::Fabs(z); return std::move(*this); }
 
                         /// Adds a vector to this vector.
-    Vec3                Add(const Vec3 &v) const { return *this + v; }
+    Vec3                Add(const Vec3 &v) const & { return *this + v; }
+    Vec3 &&             Add(const Vec3 &v) && { x += v.x; y += v.y; z += v.z; return std::move(*this); }
                         /// Adds a vector to this vector.
                         /// This function is identical to the member function Add().
-    Vec3                operator+(const Vec3 &rhs) const { return Vec3(x + rhs.x, y + rhs.y, z + rhs.z); }
+    Vec3                operator+(const Vec3 &rhs) const & { return Vec3(x + rhs.x, y + rhs.y, z + rhs.z); }
+    Vec3 &&             operator+(const Vec3 &rhs) && { x += rhs.x; y += rhs.y; z += rhs.z; return std::move(*this); }
 
                         /// Adds the vector (s, s, s, s) to this vector.
-    Vec3                AddScalar(float s) const { return *this + s; }
+    Vec3                AddScalar(float s) const & { return *this + s; }
+    Vec3 &&             AddScalar(float s) && { x += s; y += s; z += s; return std::move(*this); }
                         /// Adds the vector (s, s, s, s) to this vector.
                         /// This function is identical to the member function AddScalar().
-    Vec3                operator+(float rhs) const { return Vec3(x + rhs, y + rhs, z + rhs); }
+    Vec3                operator+(float rhs) const & { return Vec3(x + rhs, y + rhs, z + rhs); }
+    Vec3 &&             operator+(float rhs) && { x += rhs; y += rhs; z += rhs; return std::move(*this); }
                         /// Adds the vector v to vector (s, s, s, s).
     friend Vec3         operator+(float lhs, const Vec3 &rhs) { return Vec3(lhs + rhs.x, lhs + rhs.y, lhs + rhs.z); }
+    friend Vec3 &&      operator+(float lhs, Vec3 &&rhs) { rhs.x += lhs; rhs.y += lhs; rhs.z += lhs; return std::move(rhs); }
 
                         /// Subtracts a vector from this vector.
-    Vec3                Sub(const Vec3 &v) const { return *this - v; }
+    Vec3                Sub(const Vec3 &v) const & { return *this - v; }
+    Vec3 &&             Sub(const Vec3 &v) && { x -= v.x; y -= v.y; z -= v.z; return std::move(*this); }
                         /// Subtracts the given vector from this vector.
                         /// This function is identical to the member function Sub()
-    Vec3                operator-(const Vec3 &rhs) const { return Vec3(x - rhs.x, y - rhs.y, z - rhs.z); }
+    Vec3                operator-(const Vec3 &rhs) const & { return Vec3(x - rhs.x, y - rhs.y, z - rhs.z); }
+    Vec3 &&             operator-(const Vec3 &rhs) && { x -= rhs.x; y -= rhs.y; z -= rhs.z; return std::move(*this); }
 
                         /// Subtracts the vector (s, s, s, s) from this vector.
-    Vec3                SubScalar(float s) const { return *this - s; }
+    Vec3                SubScalar(float s) const & { return *this - s; }
+    Vec3 &&             SubScalar(float s) && { x -= s; y -= s; z -= s; return std::move(*this); }
                         /// Subtracts the vector (s, s, s, s) from this vector.
                         /// This function is identical to the member function SubScalar()
-    Vec3                operator-(float rhs) const { return Vec3(x - rhs, y - rhs, z - rhs); }
+    Vec3                operator-(float rhs) const & { return Vec3(x - rhs, y - rhs, z - rhs); }
+    Vec3 &&             operator-(float rhs) && { x -= rhs; y -= rhs; z -= rhs; return std::move(*this); }
                         /// Subtracts the vector v from vector (s, s, s, s).
     friend Vec3         operator-(float lhs, const Vec3 &rhs) { return Vec3(lhs - rhs.x, lhs - rhs.y, lhs - rhs.z); }
+    friend Vec3 &&      operator-(float lhs, Vec3 &&rhs) { rhs.x = lhs - rhs.x; rhs.y = lhs - rhs.y; rhs.z = lhs - rhs.z; return std::move(rhs); }
 
                         /// Multiplies this vector by a scalar.
-    Vec3                Mul(float s) const { return *this * s; }
+    Vec3                Mul(float s) const & { return *this * s; }
+    Vec3 &&             Mul(float s) && { x *= s; y *= s; z *= s; return std::move(*this); }
                         /// Multiplies this vector by a scalar.
                         /// This function is identical to the member function Mul().
-    Vec3                operator*(float rhs) const { return Vec3(x * rhs, y * rhs, z * rhs); }
+    Vec3                operator*(float rhs) const & { return Vec3(x * rhs, y * rhs, z * rhs); }
+    Vec3 &&             operator*(float rhs) && { x *= rhs; y *= rhs; z *= rhs; return std::move(*this); }
                         /// Multiplies vector by a scalar.
     friend Vec3         operator*(float lhs, const Vec3 &rhs) { return Vec3(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z); }
+    friend Vec3 &&      operator*(float lhs, Vec3 &&rhs) { rhs.x *= lhs; rhs.y *= lhs; rhs.z *= lhs; return std::move(rhs); }
 
                         /// Multiplies this vector by a vector, element-wise.
-    Vec3                MulComp(const Vec3 &v) const { return *this * v; }
+    Vec3                MulComp(const Vec3 &v) const & { return *this * v; }
+    Vec3 &&             MulComp(const Vec3 &v) && { x *= v.x; y *= v.y; z *= v.z; return std::move(*this); }
                         /// Multiplies this vector by a vector, element-wise.
                         /// This function is identical to the member function MulComp().
-    Vec3                operator*(const Vec3 &rhs) const { return Vec3(x * rhs.x, y * rhs.y, z * rhs.z); }
+    Vec3                operator*(const Vec3 &rhs) const & { return Vec3(x * rhs.x, y * rhs.y, z * rhs.z); }
+    Vec3 &&             operator*(const Vec3 &rhs) && { x *= rhs.x; y *= rhs.y; z *= rhs.z; return std::move(*this); }
 
                         /// Divides this vector by a scalar.
-    Vec3                Div(float s) const { return *this / s; }
+    Vec3                Div(float s) const & { return *this / s; }
+    Vec3 &&             Div(float s) && { float inv = 1.f / s; x *= inv; y *= inv; z *= inv; return std::move(*this); }
                         /// Divides this vector by a scalar.
                         /// This function is identical to the member function Div().
-    Vec3                operator/(float rhs) const { float inv = 1.f / rhs; return Vec3(x * inv, y * inv, z * inv); }
+    Vec3                operator/(float rhs) const & { float inv = 1.f / rhs; return Vec3(x * inv, y * inv, z * inv); }
+    Vec3 &&             operator/(float rhs) && { float inv = 1.f / rhs; x *= inv; y *= inv; z *= inv; return std::move(*this); }
 
                         /// Divides this vector by a vector, element-wise.
-    Vec3                DivComp(const Vec3 &v) const { return *this / v; }
+    Vec3                DivComp(const Vec3 &v) const & { return *this / v; }
+    Vec3 &&             DivComp(const Vec3 &v) && { x /= v.x; y /= v.y; z /= v.z; return std::move(*this); }
                         /// This function is identical to the member function DivComp().
                         /// Divides this vector by a vector, element-wise.
-    Vec3                operator/(const Vec3 &rhs) const { return Vec3(x / rhs.x, y / rhs.y, z / rhs.z); }
+    Vec3                operator/(const Vec3 &rhs) const & { return Vec3(x / rhs.x, y / rhs.y, z / rhs.z); }
+    Vec3 &&             operator/(const Vec3 &rhs) && { x /= rhs.x; y /= rhs.y; z /= rhs.z; return std::move(*this); }
                         /// Divides vector (s, s, s, s) by a vector, element-wise.
     friend Vec3         operator/(float lhs, const Vec3 &rhs) { return Vec3(lhs / rhs.x, lhs / rhs.y, lhs / rhs.z); }
-    
+    friend Vec3 &&      operator/(float lhs, Vec3 &&rhs) { rhs.x = lhs / rhs.x; rhs.y = lhs / rhs.y; rhs.z = lhs / rhs.z; return std::move(rhs); }
+
                         /// Assign from another vector.
     Vec3 &              operator=(const Vec3 &rhs);
 
@@ -264,9 +287,11 @@ public:
     float               NormalizeFast();
 
                         /// Returns a normalized copy of this vector.
-    Vec3                Normalized() const;
+    Vec3                Normalized() const &;
+    Vec3 &&             Normalized() && { Normalize(); return std::move(*this); }
                         /// Returns a fast but approximately normalized copy of this vector.
-    Vec3                NormalizedFast() const;
+    Vec3                NormalizedFast() const &;
+    Vec3 &&             NormalizedFast() && { NormalizeFast(); return std::move(*this); }
 
                         /// Scales this vector so that its new length is as given.
     Vec3 &              ScaleToLength(float length);
@@ -560,13 +585,13 @@ BE_INLINE float Vec3::NormalizeFast() {
     return invLength * sqrLength;
 }
 
-BE_INLINE Vec3 Vec3::Normalized() const {
+BE_INLINE Vec3 Vec3::Normalized() const & {
     Vec3 n = *this;
     n.Normalize();
     return n;
 }
 
-BE_INLINE Vec3 Vec3::NormalizedFast() const {
+BE_INLINE Vec3 Vec3::NormalizedFast() const & {
     Vec3 n = *this;
     n.NormalizeFast();
     return n;

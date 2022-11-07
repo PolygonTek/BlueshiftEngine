@@ -838,13 +838,13 @@ void GameClient::DrawConsoleScreen() {
     int numDrawLines = consoleHeight / (CONSOLE_FONT_HEIGHT + CONSOLE_FONT_Y_SPACING) - 3;
 
     // Draw content of console text.
-    for (int i = console.currentLineIndex; i >= console.currentLineIndex - numDrawLines; i--) {
-        int index = (i - consoleUpScroll) % console.textLines.Count();
+    for (int i = console.GetCurrentLineIndex(); i >= console.GetCurrentLineIndex() - numDrawLines; i--) {
+        int index = (i - consoleUpScroll) % console.GetTextLines().Count();
         if (index < 0) {
-            index += console.textLines.Count();
+            index += console.GetTextLines().Count();
         }
 
-        const Str &string = console.textLines[index];
+        const Str &string = console.GetTextLines()[index];
 
         DrawString(CONSOLE_TEXT_BORDER, y, string);
 

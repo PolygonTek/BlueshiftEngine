@@ -67,36 +67,46 @@ public:
     const Vec4 &        operator[](int index) const;
     Vec4 &              operator[](int index);
 
+                        /// Unary operator + allows this structure to be used in an expression '+m'.
+    const Mat3x4 &      operator+() const { return *this; }
+
                         /// Performs an unary negation of this matrix.
-    Mat3x4              Negate() const { return -(*this); }
+    Mat3x4              Negate() const & { return -(*this); }
+    Mat3x4 &&           Negate() && { return -std::move(*this); }
                         /// Performs an unary negation of this matrix.
                         /// This function is identical to the member function Negate().
-    Mat3x4              operator-() const;
-
-                        /// Unary operator + allows this structure to be used in an expression '+m'.
-    Mat3x4              operator+() const { return *this; }
+    Mat3x4              operator-() const &;
+    Mat3x4 &&           operator-() &&;
 
                         /// Adds a matrix to this matrix.
-    Mat3x4              Add(const Mat3x4 &m) const { return *this + m; }
+    Mat3x4              Add(const Mat3x4 &m) const & { return *this + m; }
+    Mat3x4 &&           Add(const Mat3x4 &m) && { *this += m; return std::move(*this); }
                         /// Adds a matrix to this matrix.
-    Mat3x4              operator+(const Mat3x4 &rhs) const;
+    Mat3x4              operator+(const Mat3x4 &rhs) const &;
+    Mat3x4 &&           operator+(const Mat3x4 &rhs) && { *this += rhs; return std::move(*this); }
 
                         /// Subtracts a matrix from this matrix.
-    Mat3x4              Sub(const Mat3x4 &m) const { return *this - m; }
+    Mat3x4              Sub(const Mat3x4 &m) const & { return *this - m; }
+    Mat3x4 &&           Sub(const Mat3x4 &m) && { *this -= m; return std::move(*this); }
                         /// Subtracts a matrix from this matrix.
-    Mat3x4              operator-(const Mat3x4 &rhs) const;
+    Mat3x4              operator-(const Mat3x4 &rhs) const &;
+    Mat3x4 &&           operator-(const Mat3x4 &rhs) && { *this -= rhs; return std::move(*this); }
 
                         /// Multiplies a matrix to this matrix.
-    Mat3x4              Mul(const Mat3x4 &m) const { return *this * m; }
+    Mat3x4              Mul(const Mat3x4 &m) const & { return *this * m; }
+    Mat3x4 &&           Mul(const Mat3x4 &m) && { *this *= m; return std::move(*this); }
                         /// Multiplies a matrix to this matrix.
                         /// This function is identical to the member function Mul().
-    Mat3x4              operator*(const Mat3x4 &rhs) const;
-    
+    Mat3x4              operator*(const Mat3x4 &rhs) const &;
+    Mat3x4 &&           operator*(const Mat3x4 &rhs) && { *this *= rhs; return std::move(*this); }
+
                         /// Multiplies this matrix by a scalar.
-    Mat3x4              MulScalar(float s) const { return *this * s; }
+    Mat3x4              MulScalar(float s) const & { return *this * s; }
+    Mat3x4 &&           MulScalar(float s) && { *this *= s; return std::move(*this); }
                         /// Multiplies this matrix by a scalar.
                         /// This function is identical to the member function MulScalar().
-    Mat3x4              operator*(float rhs) const;
+    Mat3x4              operator*(float rhs) const &;
+    Mat3x4 &&           operator*(float rhs) && { *this *= rhs; return std::move(*this); }
 
                         /// Transforms the given vector by this matrix
     Vec4                MulVec(const Vec4 &v) const { return *this * v; }
@@ -108,9 +118,9 @@ public:
                         /// This function is identical to the member function MulVec().
     Vec4                operator*(const Vec4 &rhs) const { return Transform(rhs); }
     Vec3                operator*(const Vec3 &rhs) const { return Transform(rhs); }
-                        /// Transforms the given vector by the given matrix m.
-    friend Vec4         operator*(const Vec4 &lhs, const Mat3x4 &rhs) { return rhs * lhs; }
-    friend Vec3         operator*(const Vec3 &lhs, const Mat3x4 &rhs) { return rhs * lhs; }
+                        /// Transforms the given vector by the given matrix in the order v * M (!= M * v).
+    friend Vec4         operator*(const Vec4 &lhs, const Mat3x4 &rhs) { return rhs.TransposedMulVec(lhs); }
+    friend Vec3         operator*(const Vec3 &lhs, const Mat3x4 &rhs) { return rhs.TransposedMulVec(lhs); }
 
                         /// Assign from another matrix.
     Mat3x4 &            operator=(const Mat3x4 &rhs);
@@ -231,8 +241,9 @@ public:
     Vec3                Transform(const Vec3 &v) const;
     Vec3                TransformNormal(const Vec3 &v) const;
 
+                        /// (*this) = a * (*this)
     Mat3x4 &            TransformSelf(const Mat3x4 &a);
-
+                        /// (*this) = a^{-1} * (*this)
     Mat3x4 &            UntransformSelf(const Mat3x4 &a);
 
                         /// Returns upper left 2x2 part.
@@ -510,11 +521,6 @@ BE_INLINE Mat3x4 &Mat3x4::operator=(const Mat3 &rhs) {
     mat[2][2] = rhs[2][2];
     mat[2][3] = 0;
 
-    return *this;
-}
-
-BE_INLINE Mat3x4 &Mat3x4::operator*=(const Mat3x4 &rhs) {
-    TransformSelf(rhs);
     return *this;
 }
 

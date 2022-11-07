@@ -82,16 +82,6 @@ public:
                         /// Exact compare, no epsilon
     bool                operator!=(const OBB &a) const { return !Equals(a); }
 
-                        /// Returns translated OBB.
-    OBB                 operator+(const Vec3 &t) const;
-                        /// Translates OBB.
-    OBB &               operator+=(const Vec3 &t);
-
-                        /// Returns rotated OBB.
-    OBB                 operator*(const Mat3 &r) const;
-                        /// Rotates OBB.
-    OBB &               operator*=(const Mat3 &r);
-
                         /// Returns added OBB.
     OBB                 operator+(const OBB &a) const;
                         /// Adds OBB.
@@ -226,25 +216,6 @@ BE_INLINE OBB::OBB(const AABB &aabb, const Mat3x4 &transform) {
     this->axis = transform.ToMat3().OrthoNormalize();
 }
 
-BE_INLINE OBB OBB::operator+(const Vec3 &t) const {
-    return OBB(center + t, extents, axis);
-}
-
-BE_INLINE OBB &OBB::operator+=(const Vec3 &t) {
-    center += t;
-    return *this;
-}
-
-BE_INLINE OBB OBB::operator*(const Mat3 &r) const {
-    return OBB(center * r, extents, axis * r);
-}
-
-BE_INLINE OBB &OBB::operator*=(const Mat3 &r) {
-    center *= r;
-    axis *= r;
-    return *this;
-}
-
 BE_INLINE OBB OBB::operator+(const OBB &a) const {
     OBB newBox;
     newBox = *this;
@@ -306,12 +277,12 @@ BE_INLINE OBB &OBB::TranslateSelf(const Vec3 &translation) {
 }
 
 BE_INLINE OBB OBB::Rotate(const Mat3 &rotation) const {
-    return OBB(center * rotation, extents, axis * rotation);
+    return OBB(rotation * center, extents, rotation * axis);
 }
 
 BE_INLINE OBB &OBB::RotateSelf(const Mat3 &rotation) {
-    center *= rotation;
-    axis *= rotation;
+    center = rotation * center;
+    axis = rotation * axis;
     return *this;
 }
 

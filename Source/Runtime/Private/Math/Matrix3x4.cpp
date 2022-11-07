@@ -68,7 +68,7 @@ Mat3x4 &Mat3x4::Scale(float sx, float sy, float sz) {
     return *this;
 }
 
-Mat3x4 Mat3x4::operator-() const {
+Mat3x4 Mat3x4::operator-() const & {
 #if defined(ENABLE_SIMD8_INTRIN)
     ALIGN_AS32 Mat3x4 dst;
 
@@ -108,7 +108,41 @@ Mat3x4 Mat3x4::operator-() const {
     return dst;
 }
 
-Mat3x4 Mat3x4::operator+(const Mat3x4 &a) const {
+Mat3x4 &&Mat3x4::operator-() && {
+#if defined(ENABLE_SIMD8_INTRIN)
+    simd8f r01 = loadu_256ps(mat[0]);
+    simd4f r2 = loadu_ps(mat[2]);
+
+    storeu_256ps(-r01, mat[0]);
+    storeu_ps(-r2, mat[2]);
+#elif defined(ENABLE_SIMD4_INTRIN)
+    simd4f r0 = loadu_ps(mat[0]);
+    simd4f r1 = loadu_ps(mat[1]);
+    simd4f r2 = loadu_ps(mat[2]);
+
+    storeu_ps(-r0, mat[0]);
+    storeu_ps(-r1, mat[1]);
+    storeu_ps(-r2, mat[2]);
+#else
+    mat[0][0] = -mat[0][0];
+    mat[0][1] = -mat[0][1];
+    mat[0][2] = -mat[0][2];
+    mat[0][3] = -mat[0][3];
+
+    mat[1][0] = -mat[1][0];
+    mat[1][1] = -mat[1][1];
+    mat[1][2] = -mat[1][2];
+    mat[1][3] = -mat[1][3];
+
+    mat[2][0] = -mat[2][0];
+    mat[2][1] = -mat[2][1];
+    mat[2][2] = -mat[2][2];
+    mat[2][3] = -mat[2][3];
+#endif
+    return std::move(*this);
+}
+
+Mat3x4 Mat3x4::operator+(const Mat3x4 &a) const & {
 #if defined(ENABLE_SIMD8_INTRIN)
     ALIGN_AS32 Mat3x4 dst;
 
@@ -196,7 +230,7 @@ Mat3x4 &Mat3x4::operator+=(const Mat3x4 &rhs) {
     return *this;
 }
 
-Mat3x4 Mat3x4::operator-(const Mat3x4 &a) const {
+Mat3x4 Mat3x4::operator-(const Mat3x4 &a) const & {
 #if defined(ENABLE_SIMD8_INTRIN)
     ALIGN_AS32 Mat3x4 dst;
 
@@ -284,7 +318,7 @@ Mat3x4 &Mat3x4::operator-=(const Mat3x4 &rhs) {
     return *this;
 }
 
-Mat3x4 Mat3x4::operator*(float rhs) const {
+Mat3x4 Mat3x4::operator*(float rhs) const & {
 #if defined(ENABLE_SIMD8_INTRIN)
     ALIGN_AS32 Mat3x4 dst;
 
@@ -507,19 +541,75 @@ Vec3 Mat3x4::TransposedMulVec(const Vec3 &vec) const {
 #endif
 }
 
-Mat3x4 Mat3x4::operator*(const Mat3x4 &a) const {
+Mat3x4 &Mat3x4::operator*=(const Mat3x4 &rhs) {
+#if defined(ENABLE_SIMD8_INTRIN)
+    simd8f ar01 = loadu_256ps(mat[0]);
+    simd4f ar2 = loadu_ps(mat[2]);
+
+    simd8f br00 = broadcast_256ps((simd4f *)&rhs.mat[0]);
+    simd8f br11 = broadcast_256ps((simd4f *)&rhs.mat[1]);
+    simd8f br22 = broadcast_256ps((simd4f *)&rhs.mat[2]);
+
+    storeu_256ps(lincomb2x3x4(ar01, br00, br11, br22), &mat[0][0]);
+    storeu_ps(lincomb3x4(ar2, extract_256ps<0>(br00), extract_256ps<0>(br11), extract_256ps<0>(br22)), &mat[2][0]);
+#elif defined(ENABLE_SIMD4_INTRIN)
+    simd4f ar0 = loadu_ps(mat[0]);
+    simd4f ar1 = loadu_ps(mat[1]);
+    simd4f ar2 = loadu_ps(mat[2]);
+
+    simd4f br0 = loadu_ps(rhs.mat[0]);
+    simd4f br1 = loadu_ps(rhs.mat[1]);
+    simd4f br2 = loadu_ps(rhs.mat[2]);
+
+    storeu_ps(lincomb3x4(ar0, br0, br1, br2), mat[0]);
+    storeu_ps(lincomb3x4(ar1, br0, br1, br2), mat[1]);
+    storeu_ps(lincomb3x4(ar2, br0, br1, br2), mat[2]);
+#else
+    float dst[4];
+
+    dst[0] = mat[0][0] * rhs.mat[0][0] + mat[0][1] * rhs.mat[1][0] + mat[0][2] * rhs.mat[2][0];
+    dst[1] = mat[0][0] * rhs.mat[0][1] + mat[0][1] * rhs.mat[1][1] + mat[0][2] * rhs.mat[2][1];
+    dst[2] = mat[0][0] * rhs.mat[0][2] + mat[0][1] * rhs.mat[1][2] + mat[0][2] * rhs.mat[2][2];
+    dst[3] = mat[0][0] * rhs.mat[0][3] + mat[0][1] * rhs.mat[1][3] + mat[0][2] * rhs.mat[2][3] + mat[0][3];
+    mat[0][0] = dst[0];
+    mat[0][1] = dst[1];
+    mat[0][2] = dst[2];
+    mat[0][3] = dst[3];
+
+    dst[0] = mat[1][0] * rhs.mat[0][0] + mat[1][1] * rhs.mat[1][0] + mat[1][2] * rhs.mat[2][0];
+    dst[1] = mat[1][0] * rhs.mat[0][1] + mat[1][1] * rhs.mat[1][1] + mat[1][2] * rhs.mat[2][1];
+    dst[2] = mat[1][0] * rhs.mat[0][2] + mat[1][1] * rhs.mat[1][2] + mat[1][2] * rhs.mat[2][2];
+    dst[3] = mat[1][0] * rhs.mat[0][3] + mat[1][1] * rhs.mat[1][3] + mat[1][2] * rhs.mat[2][3] + mat[1][3];
+    mat[1][0] = dst[0];
+    mat[1][1] = dst[1];
+    mat[1][2] = dst[2];
+    mat[1][3] = dst[3];
+
+    dst[0] = mat[2][0] * rhs.mat[0][0] + mat[2][1] * rhs.mat[1][0] + mat[2][2] * rhs.mat[2][0];
+    dst[1] = mat[2][0] * rhs.mat[0][1] + mat[2][1] * rhs.mat[1][1] + mat[2][2] * rhs.mat[2][1];
+    dst[2] = mat[2][0] * rhs.mat[0][2] + mat[2][1] * rhs.mat[1][2] + mat[2][2] * rhs.mat[2][2];
+    dst[3] = mat[2][0] * rhs.mat[0][3] + mat[2][1] * rhs.mat[1][3] + mat[2][2] * rhs.mat[2][3] + mat[2][3];
+    mat[2][0] = dst[0];
+    mat[2][1] = dst[1];
+    mat[2][2] = dst[2];
+    mat[2][3] = dst[3];
+#endif
+    return *this;
+}
+
+Mat3x4 Mat3x4::operator*(const Mat3x4 &rhs) const & {
 #if defined(ENABLE_SIMD8_INTRIN)
     ALIGN_AS32 Mat3x4 dst;
 
     simd8f ar01 = loadu_256ps(mat[0]);
     simd4f ar2 = loadu_ps(mat[2]);
 
-    simd8f br00 = broadcast_256ps((simd4f *)&a.mat[0]);
-    simd8f br11 = broadcast_256ps((simd4f *)&a.mat[1]);
-    simd8f br22 = broadcast_256ps((simd4f *)&a.mat[2]);
+    simd8f br00 = broadcast_256ps((simd4f *)&rhs.mat[0]);
+    simd8f br11 = broadcast_256ps((simd4f *)&rhs.mat[1]);
+    simd8f br22 = broadcast_256ps((simd4f *)&rhs.mat[2]);
 
-    store_256ps(lincomb2x3x4(ar01, br00, br11, br22), dst);
-    store_ps(lincomb3x4(ar2, extract_256ps<0>(br00), extract_256ps<0>(br11), extract_256ps<0>(br22)), dst + 8);
+    store_256ps(lincomb2x3x4(ar01, br00, br11, br22), &dst[0][0]);
+    store_ps(lincomb3x4(ar2, extract_256ps<0>(br00), extract_256ps<0>(br11), extract_256ps<0>(br22)), &dst[2][0]);
 #elif defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Mat3x4 dst;
 
@@ -527,9 +617,9 @@ Mat3x4 Mat3x4::operator*(const Mat3x4 &a) const {
     simd4f ar1 = loadu_ps(mat[1]);
     simd4f ar2 = loadu_ps(mat[2]);
 
-    simd4f br0 = loadu_ps(a.mat[0]);
-    simd4f br1 = loadu_ps(a.mat[1]);
-    simd4f br2 = loadu_ps(a.mat[2]);
+    simd4f br0 = loadu_ps(rhs.mat[0]);
+    simd4f br1 = loadu_ps(rhs.mat[1]);
+    simd4f br2 = loadu_ps(rhs.mat[2]);
 
     store_ps(lincomb3x4(ar0, br0, br1, br2), dst.mat[0]);
     store_ps(lincomb3x4(ar1, br0, br1, br2), dst.mat[1]);
@@ -537,20 +627,20 @@ Mat3x4 Mat3x4::operator*(const Mat3x4 &a) const {
 #else
     Mat3x4 dst;
 
-    dst.mat[0][0] = mat[0][0] * a.mat[0][0] + mat[0][1] * a.mat[1][0] + mat[0][2] * a.mat[2][0];
-    dst.mat[0][1] = mat[0][0] * a.mat[0][1] + mat[0][1] * a.mat[1][1] + mat[0][2] * a.mat[2][1];
-    dst.mat[0][2] = mat[0][0] * a.mat[0][2] + mat[0][1] * a.mat[1][2] + mat[0][2] * a.mat[2][2];
-    dst.mat[0][3] = mat[0][0] * a.mat[0][3] + mat[0][1] * a.mat[1][3] + mat[0][2] * a.mat[2][3] + mat[0][3];
+    dst.mat[0][0] = mat[0][0] * rhs.mat[0][0] + mat[0][1] * rhs.mat[1][0] + mat[0][2] * rhs.mat[2][0];
+    dst.mat[0][1] = mat[0][0] * rhs.mat[0][1] + mat[0][1] * rhs.mat[1][1] + mat[0][2] * rhs.mat[2][1];
+    dst.mat[0][2] = mat[0][0] * rhs.mat[0][2] + mat[0][1] * rhs.mat[1][2] + mat[0][2] * rhs.mat[2][2];
+    dst.mat[0][3] = mat[0][0] * rhs.mat[0][3] + mat[0][1] * rhs.mat[1][3] + mat[0][2] * rhs.mat[2][3] + mat[0][3];
 
-    dst.mat[1][0] = mat[1][0] * a.mat[0][0] + mat[1][1] * a.mat[1][0] + mat[1][2] * a.mat[2][0];
-    dst.mat[1][1] = mat[1][0] * a.mat[0][1] + mat[1][1] * a.mat[1][1] + mat[1][2] * a.mat[2][1];
-    dst.mat[1][2] = mat[1][0] * a.mat[0][2] + mat[1][1] * a.mat[1][2] + mat[1][2] * a.mat[2][2];
-    dst.mat[1][3] = mat[1][0] * a.mat[0][3] + mat[1][1] * a.mat[1][3] + mat[1][2] * a.mat[2][3] + mat[1][3];
+    dst.mat[1][0] = mat[1][0] * rhs.mat[0][0] + mat[1][1] * rhs.mat[1][0] + mat[1][2] * rhs.mat[2][0];
+    dst.mat[1][1] = mat[1][0] * rhs.mat[0][1] + mat[1][1] * rhs.mat[1][1] + mat[1][2] * rhs.mat[2][1];
+    dst.mat[1][2] = mat[1][0] * rhs.mat[0][2] + mat[1][1] * rhs.mat[1][2] + mat[1][2] * rhs.mat[2][2];
+    dst.mat[1][3] = mat[1][0] * rhs.mat[0][3] + mat[1][1] * rhs.mat[1][3] + mat[1][2] * rhs.mat[2][3] + mat[1][3];
 
-    dst.mat[2][0] = mat[2][0] * a.mat[0][0] + mat[2][1] * a.mat[1][0] + mat[2][2] * a.mat[2][0];
-    dst.mat[2][1] = mat[2][0] * a.mat[0][1] + mat[2][1] * a.mat[1][1] + mat[2][2] * a.mat[2][1];
-    dst.mat[2][2] = mat[2][0] * a.mat[0][2] + mat[2][1] * a.mat[1][2] + mat[2][2] * a.mat[2][2];
-    dst.mat[2][3] = mat[2][0] * a.mat[0][3] + mat[2][1] * a.mat[1][3] + mat[2][2] * a.mat[2][3] + mat[2][3];
+    dst.mat[2][0] = mat[2][0] * rhs.mat[0][0] + mat[2][1] * rhs.mat[1][0] + mat[2][2] * rhs.mat[2][0];
+    dst.mat[2][1] = mat[2][0] * rhs.mat[0][1] + mat[2][1] * rhs.mat[1][1] + mat[2][2] * rhs.mat[2][1];
+    dst.mat[2][2] = mat[2][0] * rhs.mat[0][2] + mat[2][1] * rhs.mat[1][2] + mat[2][2] * rhs.mat[2][2];
+    dst.mat[2][3] = mat[2][0] * rhs.mat[0][3] + mat[2][1] * rhs.mat[1][3] + mat[2][2] * rhs.mat[2][3] + mat[2][3];
 #endif
     return dst;
 }
