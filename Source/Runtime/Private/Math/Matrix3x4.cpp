@@ -853,7 +853,7 @@ void Mat3x4::InverseOrthogonalUniformScaleSelf() {
     t.y = mat[1][3];
     t.z = mat[2][3];
 
-    // R^T / s       
+    // R^T / s
     float tmp[3];
     tmp[0] = mat[0][1] * inv_s;
     tmp[1] = mat[0][2] * inv_s;
@@ -871,7 +871,7 @@ void Mat3x4::InverseOrthogonalUniformScaleSelf() {
 
     mat[2][0] = tmp[1];
     mat[2][1] = tmp[2];
-    mat[2][2] = mat[2][2] * inv_s;      
+    mat[2][2] = mat[2][2] * inv_s;
     mat[2][3] = -(mat[2][0] * t.x + mat[2][1] * t.y + mat[2][2] * t.z);
 #endif
 }
@@ -886,6 +886,7 @@ void Mat3x4::InverseOrthogonalNoScaleSelf() {
     simd4f tx = shuffle_ps<3, 3, 3, 3>(m0);
     simd4f ty = shuffle_ps<3, 3, 3, 3>(m1);
     simd4f tz = shuffle_ps<3, 3, 3, 3>(m2);
+
     simd4f invT = _mm_mul_ps(m0, tx);
     invT = madd_ps(m1, ty, invT);
     invT = nmsub_ps(m2, tz, invT);
@@ -896,7 +897,7 @@ void Mat3x4::InverseOrthogonalNoScaleSelf() {
     simd4f h2t = unpackhi_ps(m2, invT); // m22, invTz, m23, [invTw]
 
     m0 = _mm_movelh_ps(l01, l2t); // m00, m10, m20, invTx
-    m1 = _mm_movehl_ps(l01, l2t); // m01, m11, m21, invTy
+    m1 = _mm_movehl_ps(l2t, l01); // m01, m11, m21, invTy
     m2 = _mm_movelh_ps(h01, h2t); // m02, m12, m22, invTz
 
     storeu_ps(m0, mat[0]);
