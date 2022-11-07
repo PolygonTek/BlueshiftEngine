@@ -67,7 +67,8 @@ public:
     float               Perimeter() const;
 
                         /// Translates this triangle with the given translation offset.
-    Triangle            Translate(const Vec3 &translation) const;
+    Triangle            Translate(const Vec3 &translation) const &;
+    Triangle &&         Translate(const Vec3 &translation) && { TranslateSelf(translation); return std::move(*this); }
                         /// Translates this triangle with the given translation offset, in-place.
     Triangle &          TranslateSelf(const Vec3 &translation);
 
@@ -144,12 +145,47 @@ BE_INLINE Vec3 &Triangle::operator[](int index) {
     return ((Vec3 *)this)[index];
 }
 
-BE_INLINE bool Triangle::Equals(const Triangle &t) const { 
+BE_INLINE bool Triangle::Equals(const Triangle &t) const {
     return a.Equals(t.a) && b.Equals(t.b) && c.Equals(t.c); 
 }
 
-BE_INLINE bool Triangle::Equals(const Triangle &t, const float epsilon) const { 
+BE_INLINE bool Triangle::Equals(const Triangle &t, const float epsilon) const {
     return a.Equals(t.a, epsilon) && b.Equals(t.b, epsilon) && c.Equals(t.c, epsilon); 
+}
+
+BE_INLINE Triangle Triangle::Translate(const Vec3 &translation) const & {
+    return Triangle(a + translation, b + translation, c + translation);
+}
+
+BE_INLINE Triangle &Triangle::TranslateSelf(const Vec3 &translation) {
+    a += translation;
+    b += translation;
+    c += translation;
+    return *this;
+}
+
+BE_INLINE void Triangle::Transform(const Mat3 &transform) {
+    a = transform * a;
+    b = transform * b;
+    c = transform * c;
+}
+
+BE_INLINE void Triangle::Transform(const Mat3x4 &transform) {
+    a = transform.Transform(a);
+    b = transform.Transform(b);
+    c = transform.Transform(c);
+}
+
+BE_INLINE void Triangle::Transform(const Mat4 &transform) {
+    a = transform * a;
+    b = transform * b;
+    c = transform * c;
+}
+
+BE_INLINE void Triangle::Transform(const Quat &transform) {
+    a = transform * a;
+    b = transform * b;
+    c = transform * c;
 }
 
 BE_INLINE const char *Triangle::ToString(int precision) const {

@@ -64,6 +64,30 @@ public:
     float               operator[](int index) const;
     float &             operator[](int index);
 
+                        /// Negate angles, in general not the inverse rotation.
+    Angles              operator-() const & { return Angles(-x, -y, -z); }
+    Angles &&           operator-() && { x = -x; y = -y; z = -z; return std::move(*this); }
+
+                        /// Adds a angles from this angles.
+    Angles              operator+(const Angles &rhs) const & { return Angles(x + rhs.x, y + rhs.y, z + rhs.z); }
+    Angles &&           operator+(const Angles &rhs) && { *this += rhs; return std::move(*this); }
+
+                        /// Subtracts a angles from this angles.
+    Angles              operator-(const Angles &rhs) const & { return Angles(x - rhs.x, y - rhs.y, z - rhs.z); }
+    Angles &&           operator-(const Angles &rhs) && { *this -= rhs; return std::move(*this); }
+
+                        /// Multiplies this angles by a scalar.
+    Angles              operator*(const float rhs) const & { return Angles(x * rhs, y * rhs, z * rhs); }
+    Angles &&           operator*(const float rhs) && { *this *= rhs; return std::move(*this); }
+    
+                        /// Multiplies angles by a scalar.
+    friend Angles       operator*(const float lhs, const Angles &rhs) { return rhs * lhs; }
+    friend Angles &&    operator*(const float lhs, Angles &&rhs) { rhs *= lhs; return std::move(rhs); }
+
+                        /// Divides angles by a scalar.
+    Angles              operator/(const float rhs) const &;
+    Angles &&           operator/(const float rhs) && { *this /= rhs; return std::move(*this); }
+
                         /// Adds a angles to this angles, in-place.
     Angles &            operator+=(const Angles &rhs);
 
@@ -76,24 +100,6 @@ public:
                         /// Divides this angles by a scalar, in-place.
     Angles &            operator/=(const float rhs);
 
-                        /// Negate angles, in general not the inverse rotation.
-    Angles              operator-() const { return Angles(-x , -y, -z); }
-
-                        /// Adds a angles from this angles.
-    Angles              operator+(const Angles &rhs) const { return Angles(x + rhs.x, y + rhs.y, z + rhs.z); }
-
-                        /// Subtracts a angles from this angles.
-    Angles              operator-(const Angles &rhs) const { return Angles(x - rhs.x, y - rhs.y, z - rhs.z); }
-
-                        /// Multiplies this angles by a scalar.
-    Angles              operator*(const float rhs) const { return Angles(x * rhs, y * rhs, z * rhs); }
-    
-                        /// Multiplies angles by a scalar.
-    friend Angles       operator*(const float lhs, const Angles &rhs) { return Angles(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z); }
-
-                        /// Divides angles by a scalar.
-    Angles              operator/(const float rhs) const;
-    
                         /// Exact compare, no epsilon.
     bool                Equals(const Angles &a) const { return ((a.x == x) && (a.y == y) && (a.z == z)); }
                         /// Compare with epsilon.
@@ -230,7 +236,7 @@ BE_INLINE Angles &Angles::operator*=(float a) {
     return *this;
 }
 
-BE_INLINE Angles Angles::operator/(const float a) const {
+BE_INLINE Angles Angles::operator/(const float a) const & {
     float invA = 1.0f / a;
     return Angles(x * invA, y * invA, z * invA);
 }

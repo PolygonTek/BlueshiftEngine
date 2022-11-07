@@ -54,106 +54,67 @@ public:
     float               operator[](int index) const;
     float &             operator[](int index);
 
-                        /// Performs an unary negation of this color.
-                        /// This function is identical to the member function Negate().
-    Color4              operator-() const { return Color4(-r, -g, -b, -a); }
-                        /// Performs an unary negation of this color.
-    Color4              Negate() const { return Color4(-r, -g, -b, -a); }
-                        /// return Color4(|r|, |g|, |b|, |a|)
-    Color4              Abs() const { return Color4(Math::Fabs(r), Math::Fabs(g), Math::Fabs(b), Math::Fabs(a)); }
-
-                        /// Unary operator + allows this structure to be used in an expression '+v'.
-    Color4              operator+() const { return *this; }
-
                         /// Adds a color to this color.
-    Color4              Add(const Color4 &v) const { return *this + v; }
-                        /// Adds a color to this color.
-                        /// This function is identical to the member function Add().
-    Color4              operator+(const Color4 &rhs) const { return Color4(r + rhs.r, g + rhs.g, b + rhs.b, a + rhs.a); }
+    Color4              operator+(const Color4 &rhs) const & { return Color4(r + rhs.r, g + rhs.g, b + rhs.b, a + rhs.a); }
+    Color4 &&           operator+(const Color4 &rhs) && { *this += rhs; return std::move(*this); }
                         /// Adds the color (s, s, s, s) to this color.
-    Color4              AddScalar(float s) const { return *this + s; }
-                        /// Adds the color (s, s, s, s) to this color.
-                        /// This function is identical to the member function AddScalar().
-    Color4              operator+(float rhs) const { return Color4(r + rhs, g + rhs, b + rhs, a + rhs); }
+    Color4              operator+(float rhs) const & { return Color4(r + rhs, g + rhs, b + rhs, a + rhs); }
+    Color4 &&           operator+(float rhs) && { *this += rhs; return std::move(*this); }
                         /// Adds the color v to color (s, s, s, s).
     friend Color4       operator+(float lhs, const Color4 &rhs) { return Color4(lhs + rhs.r, lhs + rhs.g, lhs + rhs.b, lhs + rhs.a); }
+    friend Color4 &&    operator+(float lhs, Color4 &&rhs) { rhs += lhs; return std::move(rhs); }
 
-                        /// Subtracts a color from this color.
-    Color4              Sub(const Color4 &v) const { return *this - v; }
                         /// Subtracts the given color from this color.
-                        /// This function is identical to the member function Sub()
-    Color4              operator-(const Color4 &rhs) const { return Color4(r - rhs.r, g - rhs.g, b - rhs.b, a - rhs.a); }
+    Color4              operator-(const Color4 &rhs) const & { return Color4(r - rhs.r, g - rhs.g, b - rhs.b, a - rhs.a); }
+    Color4 &&           operator-(const Color4 &rhs) && { *this -= rhs; return std::move(*this); }
                         /// Subtracts the color (s, s, s, s) from this color.
-    Color4              SubScalar(float s) const { return *this - s; }
-                        /// Subtracts the color (s, s, s, s) from this color.
-                        /// This function is identical to the member function SubScalar()
-    Color4              operator-(float rhs) const { return Color4(r - rhs, g - rhs, b - rhs, a - rhs); }
+    Color4              operator-(float rhs) const & { return Color4(r - rhs, g - rhs, b - rhs, a - rhs); }
+    Color4 &&           operator-(float rhs) && { *this -= rhs; return std::move(*this); }
                         /// Subtracts the color v from color (s, s, s, s).
     friend Color4       operator-(float lhs, const Color4 &rhs) { return Color4(lhs - rhs.r, lhs - rhs.g, lhs - rhs.b, lhs - rhs.a); }
+    friend Color4 &&    operator-(float lhs, Color4 &&rhs) { rhs -= lhs; return std::move(rhs); }
 
                         /// Multiplies this color by a scalar.
-    Color4              Mul(float s) const { return *this * s; }
-                        /// Multiplies this color by a scalar.
-                        /// This function is identical to the member function Mul().
-    Color4              operator*(float rhs) const { return Color4(r * rhs, g * rhs, b * rhs, a * rhs); }
+    Color4              operator*(float rhs) const & { return Color4(r * rhs, g * rhs, b * rhs, a * rhs); }
+    Color4 &&           operator*(float rhs) && { *this *= rhs; return std::move(*this); }
                         /// Multiplies color v by a scalar.
     friend Color4       operator*(float lhs, const Color4 &rhs) { return Color4(lhs * rhs.r, lhs * rhs.g, lhs * rhs.b, lhs * rhs.a); }
+    friend Color4 &&    operator*(float lhs, Color4 &&rhs) { rhs *= lhs; return std::move(rhs); }
                         /// Multiplies this color by a color, element-wise.
-    Color4              MulComp(const Color4 &v) const { return *this * v; }
-                        /// Multiplies this color by a color, element-wise.
-                        /// This function is identical to the member function MulComp().
-    Color4              operator*(const Color4 &rhs) const { return Color4(r * rhs.r, g * rhs.g, b * rhs.b, a * rhs.a); }
+    Color4              operator*(const Color4 &rhs) const & { return Color4(r * rhs.r, g * rhs.g, b * rhs.b, a * rhs.a); }
+    Color4 &&           operator*(const Color4 &rhs) && { *this *= rhs; return std::move(*this); }
 
                         /// Divides this color by a scalar.
-    Color4              Div(float s) const { return *this / s; }
-                        /// Divides this color by a scalar.
-                        /// This function is identical to the member function Div().
-    Color4              operator/(float rhs) const { float inv = 1.f / rhs; return Color4(r * inv, g * inv, b * inv, a * inv); }
+    Color4              operator/(float rhs) const & { float inv = 1.f / rhs; return Color4(r * inv, g * inv, b * inv, a * inv); }
+    Color4 &&           operator/(float rhs) && { *this /= rhs; return std::move(*this); }
                         /// Divides this color by a color, element-wise.
-    Color4              DivComp(const Color4 &v) const { return *this / v; }
-                        /// This function is identical to the member function DivComp().
-                        /// Divides this color by a color, element-wise.
-    Color4              operator/(const Color4 &rhs) const { return Color4(r / rhs.r, g / rhs.g, b / rhs.b, a / rhs.a); }
+    Color4              operator/(const Color4 &rhs) const & { return Color4(r / rhs.r, g / rhs.g, b / rhs.b, a / rhs.a); }
+    Color4 &&           operator/(const Color4 &rhs) && { *this /= rhs; return std::move(*this); }
                         /// Divides color (s, s, s, s) by a color, element-wise.
     friend Color4       operator/(float lhs, const Color4 &rhs) { return Color4(lhs / rhs.r, lhs / rhs.g, lhs / rhs.b, lhs / rhs.a); }
+    friend Color4 &&    operator/(float lhs, Color4 &&rhs) { rhs /= lhs; return std::move(rhs); }
 
                         /// Assign from another color.
     Color4 &            operator=(const Color4 &rhs);
 
                         /// Adds a color to this color, in-place.
-    Color4 &            AddSelf(const Color4 &v) { *this += v; return *this; }
-                        /// Adds a color to this color, in-place.
-                        /// This function is identical to the member function AddSelf().
     Color4 &            operator+=(const Color4 &rhs);
+    Color4 &            operator+=(float rhs);
 
                         /// Subtracts a color from this color, in-place.
-    Color4 &            SubSelf(const Color4 &v) { *this -= v; return *this; }
-                        /// Subtracts a color from this color, in-place.
-                        /// This function is identical to the member function SubSelf().
     Color4 &            operator-=(const Color4 &rhs);
+    Color4 &            operator-=(float rhs);
 
                         /// Multiplies this color by a scalar, in-place.
-    Color4 &            MulSelf(float s) { *this *= s; return *this; }
-                        /// Multiplies this color by a scalar, in-place.
-                        /// This function is identical to the member function MulSelf().
     Color4 &            operator*=(float rhs);
 
                         /// Multiplies this color by a color, element-wise, in-place.
-    Color4 &            MulCompSelf(const Color4 &v) { *this *= v; return *this; }
-                        /// Multiplies this color by a color, element-wise, in-place.
-                        /// This function is identical to the member function MulCompSelf().
     Color4 &            operator*=(const Color4 &rhs);
 
                         /// Divides this color by a scalar, in-place.
-    Color4 &            DivSelf(float s) { *this /= s; return *this; }
-                        /// Divides this color by a scalar, in-place.
-                        /// This function is identical to the member function DivSelf().
     Color4 &            operator/=(float rhs);
 
                         /// Divides this color by a color, element-wise, in-place.
-    Color4 &            DivCompSelf(const Color4 &v) { *this /= v; return *this; }
-                        /// Divides this color by a color, element-wise, in-place.
-                        /// This function is identical to the member function DivCompSelf().
     Color4 &            operator/=(const Color4 &rhs);
 
                         /// Exact compare, no epsilon.
@@ -420,11 +381,27 @@ BE_INLINE Color4 &Color4::operator+=(const Color4 &rhs) {
     return *this;
 }
 
+BE_INLINE Color4 &Color4::operator+=(float rhs) {
+    r += rhs;
+    g += rhs;
+    b += rhs;
+    a += rhs;
+    return *this;
+}
+
 BE_INLINE Color4 &Color4::operator-=(const Color4 &rhs) {
     r -= rhs.r;
     g -= rhs.g;
     b -= rhs.b;
     a -= rhs.a;
+    return *this;
+}
+
+BE_INLINE Color4 &Color4::operator-=(float rhs) {
+    r -= rhs;
+    g -= rhs;
+    b -= rhs;
+    a -= rhs;
     return *this;
 }
 

@@ -110,16 +110,20 @@ public:
     float               Normalize(bool fixDegenerate = true);
 
                         /// Translates this Plane.
-    Plane               Translate(const Vec3 &translation) const;
+    Plane               Translate(const Vec3 &translation) const &;
+    Plane &&            Translate(const Vec3 &translation) && { TranslateSelf(translation); return std::move(*this); }
     Plane &             TranslateSelf(const Vec3 &translation);
 
                         /// Rotates this Plane.
-    Plane               Rotate(const Vec3 &origin, const Mat3 &axis) const;
+    Plane               Rotate(const Vec3 &origin, const Mat3 &axis) const &;
+    Plane &&            Rotate(const Vec3 &origin, const Mat3 &axis) && { RotateSelf(origin, axis); return std::move(*this); }
     Plane &             RotateSelf(const Vec3 &origin, const Mat3 &axis);
 
                         /// Transform this plane.
-    Plane               Transform(const Mat3 &matrix) const;
-    Plane               Transform(const Mat3x4 &matrix) const;
+    Plane               Transform(const Mat3 &matrix) const &;
+    Plane &&            Transform(const Mat3 &matrix) && { TransformSelf(matrix); return std::move(*this); }
+    Plane               Transform(const Mat3x4 &matrix) const &;
+    Plane &&            Transform(const Mat3x4 &matrix) && { TransformSelf(matrix); return std::move(*this); }
 
                         /// Transform this plane, in-place.
     Plane &             TransformSelf(const Mat3 &matrix);
@@ -218,7 +222,7 @@ BE_INLINE float Plane::Normalize(bool fixDegenerate) {
     return length;
 }
 
-BE_INLINE Plane Plane::Translate(const Vec3 &translation) const {
+BE_INLINE Plane Plane::Translate(const Vec3 &translation) const & {
     return Plane(normal, offset + translation.Dot(normal));
 }
 
@@ -227,7 +231,7 @@ BE_INLINE Plane &Plane::TranslateSelf(const Vec3 &translation) {
     return *this;
 }
 
-BE_INLINE Plane Plane::Rotate(const Vec3 &origin, const Mat3 &axis) const {
+BE_INLINE Plane Plane::Rotate(const Vec3 &origin, const Mat3 &axis) const & {
     Plane p;
     p.normal = axis * normal;
     p.offset = offset - origin.Dot(normal) + origin.Dot(p.normal);
@@ -241,14 +245,14 @@ BE_INLINE Plane &Plane::RotateSelf(const Vec3 &origin, const Mat3 &axis) {
     return *this;
 }
 
-BE_INLINE Plane Plane::Transform(const Mat3 &matrix) const {
+BE_INLINE Plane Plane::Transform(const Mat3 &matrix) const & {
     Plane p;
     p.normal = matrix.Inverse().TransposedMulVec(normal);
     p.offset = offset;
     return p;
 }
 
-BE_INLINE Plane Plane::Transform(const Mat3x4 &matrix) const {
+BE_INLINE Plane Plane::Transform(const Mat3x4 &matrix) const & {
     Plane p;
     Mat3 invMat3 = matrix.ToMat3().Inverse();
     p.normal = invMat3.TransposedMulVec(normal);

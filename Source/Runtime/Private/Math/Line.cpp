@@ -22,40 +22,6 @@ Line::Line(const LineSegment &lineSegment) {
     dir = lineSegment.Dir();
 }
 
-Line::Line(const Ray &ray) {
-    pos = ray.origin;
-    dir = ray.dir;
-}
-
-Line Line::Translate(const Vec3 &translation) const {
-    return Line(pos + translation, dir);
-}
-
-Line &Line::TranslateSelf(const Vec3 &translation) {
-    pos += translation;
-    return *this;
-}
-
-void Line::Transform(const Mat3 &transform) {
-    pos = transform * pos;
-    dir = transform * dir;
-}
-
-void Line::Transform(const Mat3x4 &transform) {
-    pos = transform.Transform(pos);
-    dir = transform.TransformNormal(dir);
-}
-
-void Line::Transform(const Mat4 &transform) {
-    pos = transform * pos;
-    dir = transform.TransformNormal(dir);
-}
-
-void Line::Transform(const Quat &transform) {
-    pos = transform * pos;
-    dir = transform * dir;
-}
-
 Vec3 Line::ClosestPoint(const Vec3 &point) const {
     float d = dir.Dot(point - pos);
     return GetPoint(d);

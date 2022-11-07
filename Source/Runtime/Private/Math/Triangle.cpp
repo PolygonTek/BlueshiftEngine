@@ -17,41 +17,6 @@
 
 BE_NAMESPACE_BEGIN
 
-Triangle Triangle::Translate(const Vec3 &translation) const {
-    return Triangle(a + translation, b + translation, c + translation);
-}
-
-Triangle &Triangle::TranslateSelf(const Vec3 &translation) {
-    a += translation;
-    b += translation;
-    c += translation;
-    return *this;
-}
-
-void Triangle::Transform(const Mat3 &transform) {
-    a = transform * a;
-    b = transform * b;
-    c = transform * c;
-}
-
-void Triangle::Transform(const Mat3x4 &transform) {
-    a = transform.Transform(a);
-    b = transform.Transform(b);
-    c = transform.Transform(c);
-}
-
-void Triangle::Transform(const Mat4 &transform) {
-    a = transform * a;
-    b = transform * b;
-    c = transform * c;
-}
-
-void Triangle::Transform(const Quat &transform) {
-    a = transform * a;
-    b = transform * b;
-    c = transform * c;
-}
-
 static float TriArea2D(float x1, float y1, float x2, float y2, float x3, float y3) {
     return (x1 - x2) * (y2 - y3) - (x2 - x3) * (y1 - y2);
 }

@@ -43,13 +43,13 @@ void LuaVM::RegisterAngles(LuaCpp::Module &module) {
         "to_mat3", &Angles::ToMat3,
         "to_mat4", &Angles::ToMat4,
         "to_string", static_cast<const char*(Angles::*)(void)const>(&Angles::ToString),
-        "add", static_cast<Angles(Angles::*)(const Angles&)const>(&Angles::operator+),
+        "add", static_cast<Angles(Angles::*)(const Angles&)const&>(&Angles::operator+),
         "add_self", static_cast<Angles&(Angles::*)(const Angles&)>(&Angles::operator+=),
-        "subtract", static_cast<Angles(Angles::*)(const Angles&)const>(&Angles::operator-),
+        "subtract", static_cast<Angles(Angles::*)(const Angles&)const&>(&Angles::operator-),
         "subtract_self", static_cast<Angles&(Angles::*)(const Angles&)>(&Angles::operator-=),
-        "scale", static_cast<Angles(Angles::*)(const float)const>(&Angles::operator*),
+        "scale", static_cast<Angles(Angles::*)(const float)const&>(&Angles::operator*),
         "scale_self", static_cast<Angles&(Angles::*)(const float)>(&Angles::operator*=),
-        "inv_scale", static_cast<Angles(Angles::*)(const float)const>(&Angles::operator/),
+        "inv_scale", static_cast<Angles(Angles::*)(const float)const&>(&Angles::operator/),
         "inv_scale_self", static_cast<Angles&(Angles::*)(const float)>(&Angles::operator/=),
         "normalize360", &Angles::Normalize360,
         "normalize180", &Angles::Normalize180,
@@ -58,11 +58,11 @@ void LuaVM::RegisterAngles(LuaCpp::Module &module) {
     );
     _Angles.AddClassMembers<Angles>(
         "__tostring", static_cast<const char*(Angles::*)(void)const>(&Angles::ToString),
-        "__unm", static_cast<Angles(Angles::*)() const>(&Angles::operator-),
-        "__add", static_cast<Angles(Angles::*)(const Angles&)const>(&Angles::operator+),
-        "__sub", static_cast<Angles(Angles::*)(const Angles&)const>(&Angles::operator-),
-        "__mul", static_cast<Angles(Angles::*)(float)const>(&Angles::operator*),
-        "__div", static_cast<Angles(Angles::*)(float)const>(&Angles::operator/),
+        "__unm", static_cast<Angles(Angles::*)()const&>(&Angles::operator-),
+        "__add", static_cast<Angles(Angles::*)(const Angles&)const&>(&Angles::operator+),
+        "__sub", static_cast<Angles(Angles::*)(const Angles&)const&>(&Angles::operator-),
+        "__mul", static_cast<Angles(Angles::*)(float)const&>(&Angles::operator*),
+        "__div", static_cast<Angles(Angles::*)(float)const&>(&Angles::operator/),
         "__eq", static_cast<bool(Angles::*)(const Angles&)const>(&Angles::operator==)
     );
 

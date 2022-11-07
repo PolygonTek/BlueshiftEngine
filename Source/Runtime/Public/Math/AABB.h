@@ -83,55 +83,66 @@ public:
                         /// Exact compare, no epsilon.
     bool                operator!=(const AABB &rhs) const { return !Equals(rhs); }
 
+                        /// Returns added AABB.
+    AABB                operator+(const AABB &rhs) const &;
+    AABB &&             operator+(const AABB &rhs) && { *this += rhs; return std::move(*this); }
+                        /// Adds this AABB.
+    AABB &              operator+=(const AABB &rhs);
+
                         /// Returns translated AABB.
-    AABB                operator+(const Vec3 &rhs) const { return AABB(b[0] + rhs, b[1] + rhs); }
-                        /// Returns translated AABB.
-    AABB                operator-(const Vec3 &rhs) const { return AABB(b[0] - rhs, b[1] - rhs); }
-                        /// Translates AABB.
+    AABB                operator+(const Vec3 &rhs) const & { return AABB(b[0] + rhs, b[1] + rhs); }
+    AABB &&             operator+(const Vec3 &rhs) && { *this += rhs; return std::move(*this); }
+    AABB                operator-(const Vec3 &rhs) const & { return AABB(b[0] - rhs, b[1] - rhs); }
+    AABB &&             operator-(const Vec3 &rhs) && { *this -= rhs; return std::move(*this); }
+                        /// Translates this AABB.
     AABB &              operator+=(const Vec3 &rhs);
-                        /// Translates AABB.
     AABB &              operator-=(const Vec3 &rhs);
 
                         /// Returns scaled AABB.
-    AABB                operator*(const float &rhs) const;
-                        /// Scales AABB.
+    AABB                operator*(const float &rhs) const &;
+    AABB &&             operator*(const float &rhs) && { *this *= rhs; return std::move(*this); }
+                        /// Scales this AABB.
     AABB &              operator*=(const float &rhs);
                         /// Returns scaled AABB.
-    AABB                operator*(const Vec3 &rhs) const;
-                        /// Scales AABB.
+    AABB                operator*(const Vec3 &rhs) const &;
+    AABB &&             operator*(const Vec3 &rhs) && { *this *= rhs; return std::move(*this); }
+                        /// Scales this AABB.
     AABB &              operator*=(const Vec3 &rhs);
 
-                        /// Returns rotated AABB
-    AABB                operator*(const Mat3 &rhs) const;
-                        /// Rotates AABB.
+                        /// Returns rotated AABB.
+    AABB                operator*(const Mat3 &rhs) const &;
+    AABB &&             operator*(const Mat3 &rhs) && { *this *= rhs; return std::move(*this); }
+                        /// Rotates this AABB.
     AABB &              operator*=(const Mat3 &rhs);
 
-                        /// Returns added AABB.
-    AABB                operator+(const AABB &rhs) const;
-                        /// Adds AABB.
-    AABB &              operator+=(const AABB &rhs);
+                        /// Returns translated AABB.
+    AABB                Translate(const Vec3 &translation) const & { return AABB(b[0] + translation, b[1] + translation); }
+    AABB &&             Translate(const Vec3 &translation) && { TranslateSelf(translation); return std::move(*this); }
+                        /// Translates this AABB.
+    AABB &              TranslateSelf(const Vec3 &translation);
+
+                        /// Returns rotated AABB.
+    AABB                Rotate(const Mat3 &rotation) const &;
+    AABB &&             Rotate(const Mat3 &rotation) && { RotateSelf(rotation); return std::move(*this); }
+                        /// Rotates this AABB.
+    AABB &              RotateSelf(const Mat3 &rotation);
+
+                        /// Returns intersecting AABB with given AABB.
+    AABB                Intersect(const AABB &a) const &;
+    AABB &&             Intersect(const AABB &a) && { IntersectSelf(a); return std::move(*this); }
+                        /// Intersects this AABB with the given AABB.
+    AABB &              IntersectSelf(const AABB &a);
+
+                        /// Returns expanded AABB.
+    AABB                Expand(const float d) const & { return AABB(Vec3(b[0][0] - d, b[0][1] - d, b[0][2] - d), Vec3(b[1][0] + d, b[1][1] + d, b[1][2] + d)); }
+    AABB &&             Expand(const float d) && { ExpandSelf(d); return std::move(*this); }
+                        /// Expands this AABB.
+    AABB &              ExpandSelf(const float d);
 
                         /// Adds a point. Returns true if this AABB is expanded.
     bool                AddPoint(const Vec3 &v);
                         /// Adds a AABB. Returns true if this AABB is expanded.
     bool                AddAABB(const AABB &a);
-
-                        /// Returns intersecting AABB with given AABB.
-    AABB                Intersect(const AABB &a) const;
-                        /// Intersects this AABB with the given AABB.
-    AABB &              IntersectSelf(const AABB &a);
-                        /// Returns expanded AABB.
-    AABB                Expand(const float d) const { return AABB(Vec3(b[0][0] - d, b[0][1] - d, b[0][2] - d), Vec3(b[1][0] + d, b[1][1] + d, b[1][2] + d)); }
-                        /// Expands this AABB.
-    AABB &              ExpandSelf(const float d);
-                        /// Returns translated AABB.
-    AABB                Translate(const Vec3 &translation) const { return AABB(b[0] + translation, b[1] + translation); }
-                        /// Translates this AABB.
-    AABB &              TranslateSelf(const Vec3 &translation);
-                        /// Returns rotated AABB.
-    AABB                Rotate(const Mat3 &rotation) const;
-                        /// Rotates this AABB.
-    AABB &              RotateSelf(const Mat3 &rotation);
 
                         /// Returns this AABB is in which side of the plane.
     int                 PlaneSide(const Plane &plane, const float epsilon = ON_EPSILON) const;
@@ -203,7 +214,7 @@ public:
                         /// Calculates minimum / maximum value by projecting transformed AABB onto the given axis.
     void                ProjectOnAxis(const Vec3 &transformOrigin, const Mat3 &transformAxis, const Vec3 &axis, float &min, float &max) const;
 
-                        /// Calcuates 8 vertices of AABB.
+                        /// Calculates 8 vertices of AABB.
     void                ToPoints(Vec3 points[8]) const;
 
                         /// Converts to surrounding sphere.
@@ -250,7 +261,7 @@ BE_INLINE AABB &AABB::operator-=(const Vec3 &rhs) {
     return *this;
 }
 
-BE_INLINE AABB AABB::operator*(const float &rhs) const {
+BE_INLINE AABB AABB::operator*(const float &rhs) const & {
     AABB aabb = *this;
     aabb.b[0] *= rhs;
     aabb.b[1] *= rhs;
@@ -263,7 +274,7 @@ BE_INLINE AABB &AABB::operator*=(const float &rhs) {
     return *this;
 }
 
-BE_INLINE AABB AABB::operator*(const Vec3 &rhs) const {
+BE_INLINE AABB AABB::operator*(const Vec3 &rhs) const & {
     AABB aabb = *this;
     aabb.b[0] *= rhs;
     aabb.b[1] *= rhs;
@@ -276,7 +287,7 @@ BE_INLINE AABB &AABB::operator*=(const Vec3 &rhs) {
     return *this;
 }
 
-BE_INLINE AABB AABB::operator*(const Mat3 &rhs) const {
+BE_INLINE AABB AABB::operator*(const Mat3 &rhs) const & {
     AABB aabb;
     aabb.SetFromTransformedAABB(*this, Vec3::origin, rhs);
     return aabb;
@@ -287,7 +298,7 @@ BE_INLINE AABB &AABB::operator*=(const Mat3 &rhs) {
     return *this;
 }
 
-BE_INLINE AABB AABB::operator+(const AABB &rhs) const {
+BE_INLINE AABB AABB::operator+(const AABB &rhs) const & {
     AABB newAABB;
     newAABB = *this;
     newAABB.AddAABB(rhs);
@@ -382,7 +393,7 @@ BE_INLINE bool AABB::AddAABB(const AABB &a) {
     return expanded;
 }
 
-BE_INLINE AABB AABB::Intersect(const AABB &a) const {
+BE_INLINE AABB AABB::Intersect(const AABB &a) const & {
     AABB n;
     n.b[0][0] = (a.b[0][0] > b[0][0]) ? a.b[0][0] : b[0][0];
     n.b[0][1] = (a.b[0][1] > b[0][1]) ? a.b[0][1] : b[0][1];
@@ -431,7 +442,7 @@ BE_INLINE AABB &AABB::TranslateSelf(const Vec3 &translation) {
     return *this;
 }
 
-BE_INLINE AABB AABB::Rotate(const Mat3 &rotation) const {
+BE_INLINE AABB AABB::Rotate(const Mat3 &rotation) const & {
     AABB aabb;
     aabb.SetFromTransformedAABB(*this, Vec3::origin, rotation);
     return aabb;

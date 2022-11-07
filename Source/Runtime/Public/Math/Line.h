@@ -67,7 +67,8 @@ public:
     Vec3                GetPoint(float fraction) const { return pos + dir * fraction; }
 
                         /// Translates this line with the given translation offset.
-    Line                Translate(const Vec3 &translation) const;
+    Line                Translate(const Vec3 &translation) const &;
+    Line &&             Translate(const Vec3 &translation) && { TranslateSelf(translation); return std::move(*this); };
                         /// Translates this line with the given translation offset, in-place.
     Line &              TranslateSelf(const Vec3 &translation);
 
@@ -111,6 +112,11 @@ BE_INLINE Line::Line(const Vec3 &inPos, const Vec3 &inDir) :
     pos(inPos), dir(inDir) {
 }
 
+BE_INLINE Line::Line(const Ray &ray) {
+    pos = ray.origin;
+    dir = ray.dir;
+}
+
 BE_INLINE const Vec3 &Line::operator[](int index) const {
     assert(index >= 0 && index < 2);
     return ((const Vec3 *)this)[index];
@@ -127,6 +133,35 @@ BE_INLINE bool Line::Equals(const Line &line) const {
 
 BE_INLINE bool Line::Equals(const Line &line, const float epsilon) const {
     return pos.Equals(line.pos , epsilon) && dir.Equals(line.dir, epsilon);
+}
+
+BE_INLINE Line Line::Translate(const Vec3 &translation) const & {
+    return Line(pos + translation, dir);
+}
+
+BE_INLINE Line &Line::TranslateSelf(const Vec3 &translation) {
+    pos += translation;
+    return *this;
+}
+
+BE_INLINE void Line::Transform(const Mat3 &transform) {
+    pos = transform * pos;
+    dir = transform * dir;
+}
+
+BE_INLINE void Line::Transform(const Mat3x4 &transform) {
+    pos = transform.Transform(pos);
+    dir = transform.TransformNormal(dir);
+}
+
+BE_INLINE void Line::Transform(const Mat4 &transform) {
+    pos = transform * pos;
+    dir = transform.TransformNormal(dir);
+}
+
+BE_INLINE void Line::Transform(const Quat &transform) {
+    pos = transform * pos;
+    dir = transform * dir;
 }
 
 BE_INLINE const char *Line::ToString(int precision) const {

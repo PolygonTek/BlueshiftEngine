@@ -77,7 +77,8 @@ public:
     Vec3                GetPoint(float fraction) const { return (1.0f - fraction) * a + fraction * b; }
 
                         /// Translates this line segment with the given translation offset.
-    LineSegment         Translate(const Vec3 &translation) const;
+    LineSegment         Translate(const Vec3 &translation) const &;
+    LineSegment &&      Translate(const Vec3 &translation) && { TranslateSelf(translation); return std::move(*this); }
                         /// Translates this line segment with the given translation offset, in-place.
     LineSegment &       TranslateSelf(const Vec3 &translation);
 
@@ -137,6 +138,36 @@ BE_INLINE bool LineSegment::Equals(const LineSegment &t, const float epsilon) co
 
 BE_INLINE Vec3 LineSegment::Dir() const {
     return (b - a).Normalized();
+}
+
+BE_INLINE LineSegment LineSegment::Translate(const Vec3 &translation) const & {
+    return LineSegment(a + translation, b + translation);
+}
+
+BE_INLINE LineSegment &LineSegment::TranslateSelf(const Vec3 &translation) {
+    a += translation;
+    b += translation;
+    return *this;
+}
+
+BE_INLINE void LineSegment::Transform(const Mat3 &transform) {
+    a = transform * a;
+    b = transform * b;
+}
+
+BE_INLINE void LineSegment::Transform(const Mat3x4 &transform) {
+    a = transform.Transform(a);
+    b = transform.Transform(b);
+}
+
+BE_INLINE void LineSegment::Transform(const Mat4 &transform) {
+    a = transform * a;
+    b = transform * b;
+}
+
+BE_INLINE void LineSegment::Transform(const Quat &transform) {
+    a = transform * a;
+    b = transform * b;
 }
 
 BE_INLINE const char *LineSegment::ToString(int precision) const {

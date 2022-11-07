@@ -83,27 +83,33 @@ public:
     bool                operator!=(const OBB &a) const { return !Equals(a); }
 
                         /// Returns added OBB.
-    OBB                 operator+(const OBB &a) const;
-                        /// Adds OBB.
+    OBB                 operator+(const OBB &rhs) const &;
+    OBB &&              operator+(const OBB &rhs) && { *this += rhs; return std::move(*this); }
+                        /// Adds this OBB.
     OBB &               operator+=(const OBB &a);
+
+                        /// Returns expanded OBB.
+    OBB                 Expand(const float d) const &;
+    OBB &&              Expand(const float d) && { ExpandSelf(d); return std::move(*this); }
+                        /// Expands this OBB.
+    OBB &               ExpandSelf(const float d);
+
+                        /// Returns translated OBB.
+    OBB                 Translate(const Vec3 &translation) const &;
+    OBB &&              Translate(const Vec3 &translation) && { TranslateSelf(translation); return std::move(*this); }
+                        /// Translates this OBB.
+    OBB &               TranslateSelf(const Vec3 &translation);
+
+                        /// Returns rotated OBB.
+    OBB                 Rotate(const Mat3 &rotation) const &;
+    OBB &&              Rotate(const Mat3 &rotation) && { RotateSelf(rotation); return std::move(*this); }
+                        /// Rotates this OBB.
+    OBB &               RotateSelf(const Mat3 &rotation);
 
                         /// Adds a point. Returns true if this OBB is expanded.
     bool                AddPoint(const Vec3 &v);
                         /// Adds a OBB. Returns true if this OBB is expanded.
     bool                AddOBB(const OBB &a);
-
-                        /// Returns expanded OBB.
-    OBB                 Expand(const float d) const;
-                        /// Expands this OBB.
-    OBB &               ExpandSelf(const float d);
-                        /// Returns translated OBB.
-    OBB                 Translate(const Vec3 &translation) const;
-                        /// Translates this OBB.
-    OBB &               TranslateSelf(const Vec3 &translation);
-                        /// Returns rotated OBB.
-    OBB                 Rotate(const Mat3 &rotation) const;
-                        /// Rotates this OBB.
-    OBB &               RotateSelf(const Mat3 &rotation);
 
                         /// Returns this OBB is in which side of the plane.
     int                 PlaneSide(const Plane &plane, const float epsilon = ON_EPSILON) const;
@@ -169,7 +175,7 @@ public:
                         /// Returns false if the frustum is completely outside this OBB.
     bool                ProjectionBounds(const Frustum &frustum, AABB &localBounds) const;
 
-                        /// Calcuates 8 vertices of OBB.
+                        /// Calculates 8 vertices of OBB.
     void                ToPoints(Vec3 points[8]) const;
 
                         /// Converts to AABB.
@@ -216,7 +222,7 @@ BE_INLINE OBB::OBB(const AABB &aabb, const Mat3x4 &transform) {
     this->axis = transform.ToMat3().OrthoNormalize();
 }
 
-BE_INLINE OBB OBB::operator+(const OBB &a) const {
+BE_INLINE OBB OBB::operator+(const OBB &a) const & {
     OBB newBox;
     newBox = *this;
     newBox.AddOBB(a);
@@ -256,7 +262,7 @@ BE_INLINE bool OBB::IsCleared() const {
     return extents[0] < 0.0f;
 }
 
-BE_INLINE OBB OBB::Expand(const float d) const {
+BE_INLINE OBB OBB::Expand(const float d) const & {
     return OBB(center, extents + Vec3(d, d, d), axis);
 }
 
@@ -267,7 +273,7 @@ BE_INLINE OBB &OBB::ExpandSelf(const float d) {
     return *this;
 }
 
-BE_INLINE OBB OBB::Translate(const Vec3 &translation) const {
+BE_INLINE OBB OBB::Translate(const Vec3 &translation) const & {
     return OBB(center + translation, extents, axis);
 }
 
@@ -276,7 +282,7 @@ BE_INLINE OBB &OBB::TranslateSelf(const Vec3 &translation) {
     return *this;
 }
 
-BE_INLINE OBB OBB::Rotate(const Mat3 &rotation) const {
+BE_INLINE OBB OBB::Rotate(const Mat3 &rotation) const & {
     return OBB(rotation * center, extents, rotation * axis);
 }
 

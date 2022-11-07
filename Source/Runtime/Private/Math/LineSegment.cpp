@@ -22,36 +22,6 @@ LineSegment::LineSegment(const Ray &ray, float d) {
     b = ray.GetPoint(d);
 }
 
-LineSegment LineSegment::Translate(const Vec3 &translation) const {
-    return LineSegment(a + translation, b + translation);
-}
-
-LineSegment &LineSegment::TranslateSelf(const Vec3 &translation) {
-    a += translation;
-    b += translation;
-    return *this;
-}
-
-void LineSegment::Transform(const Mat3 &transform) {
-    a = transform * a;
-    b = transform * b;
-}
-
-void LineSegment::Transform(const Mat3x4 &transform) {
-    a = transform.Transform(a);
-    b = transform.Transform(b);
-}
-
-void LineSegment::Transform(const Mat4 &transform) {
-    a = transform * a;
-    b = transform * b;
-}
-
-void LineSegment::Transform(const Quat &transform) {
-    a = transform * a;
-    b = transform * b;
-}
-
 Vec3 LineSegment::ClosestPoint(const Vec3 &point) const {
     Vec3 dir = b - a;
     float s = Clamp01(dir.Dot(point - a) / dir.LengthSqr());
