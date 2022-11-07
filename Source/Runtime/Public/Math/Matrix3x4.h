@@ -189,28 +189,32 @@ public:
     float               Determinant() const;
 
                         /// Inverts a (affine) matrix.
-    Mat3x4              Inverse() const;
+    Mat3x4              Inverse() const &;
+    Mat3x4 &&           Inverse() && { InverseSelf(); return std::move(*this); }
                         /// Inverts a (affine) matrix, in-place.
     bool                InverseSelf();
 
                         /// Inverts a orthogonal matrix.
                         /// If a matrix M is made up of only translation, rotation, and scaling,
                         /// then M is orthogonal matrix and this function can be used to compute the inverse.
-    Mat3x4              InverseOrthogonal() const;
+    Mat3x4              InverseOrthogonal() const &;
+    Mat3x4 &&           InverseOrthogonal() && { InverseOrthogonalSelf(); return std::move(*this); }
                         /// Inverts a orthogonal matrix, in-place.
     void                InverseOrthogonalSelf();
 
                         /// Inverts a orthogonal uniform-scale matrix.
                         /// If a matrix M is made up of only translation, rotation, and uniform scaling,
                         /// then M is orthogonal uniform-scale matrix and this function can be used to compute the inverse.
-    Mat3x4              InverseOrthogonalUniformScale() const;
+    Mat3x4              InverseOrthogonalUniformScale() const &;
+    Mat3x4 &&           InverseOrthogonalUniformScale() && { InverseOrthogonalUniformScaleSelf(); return std::move(*this); }
                         /// Inverts a orthogonal uniform-scale matrix, in-place.
     void                InverseOrthogonalUniformScaleSelf();
 
                         /// Inverts a orthogonal no-scale matrix.
                         /// If a matrix M is made up of only translation and rotation.
                         /// then M is orthogonal no-scale (orthonormal) matrix and this function can be used to compute the inverse.
-    Mat3x4              InverseOrthogonalNoScale() const;
+    Mat3x4              InverseOrthogonalNoScale() const &;
+    Mat3x4 &&           InverseOrthogonalNoScale() && { InverseOrthogonalNoScaleSelf(); return std::move(*this); }
                         /// Inverts a orthogonal no-scale matrix, in-place.
     void                InverseOrthogonalNoScaleSelf();
 
@@ -462,25 +466,25 @@ BE_INLINE float Mat3x4::Determinant() const {
     return mat[2][0] * det2_01_12 - mat[2][1] * det2_01_02 + mat[2][2] * det2_01_01;
 }
 
-BE_INLINE Mat3x4 Mat3x4::Inverse() const {
+BE_INLINE Mat3x4 Mat3x4::Inverse() const & {
     ALIGN_AS32 Mat3x4 invMat = *this;
     invMat.InverseSelf();
     return invMat;
 }
 
-BE_INLINE Mat3x4 Mat3x4::InverseOrthogonal() const {
+BE_INLINE Mat3x4 Mat3x4::InverseOrthogonal() const & {
     ALIGN_AS32 Mat3x4 invMat = *this;
     invMat.InverseOrthogonalSelf();
     return invMat;
 }
 
-BE_INLINE Mat3x4 Mat3x4::InverseOrthogonalUniformScale() const {
+BE_INLINE Mat3x4 Mat3x4::InverseOrthogonalUniformScale() const & {
     ALIGN_AS32 Mat3x4 invMat = *this;
     invMat.InverseOrthogonalUniformScaleSelf();
     return invMat;
 }
 
-BE_INLINE Mat3x4 Mat3x4::InverseOrthogonalNoScale() const {
+BE_INLINE Mat3x4 Mat3x4::InverseOrthogonalNoScale() const & {
     ALIGN_AS32 Mat3x4 invMat = *this;
     invMat.InverseOrthogonalSelf();
     return invMat;

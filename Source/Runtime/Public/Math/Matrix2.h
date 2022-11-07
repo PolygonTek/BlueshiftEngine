@@ -180,12 +180,14 @@ public:
 
                         /// Transposes this matrix.
                         /// This operation swaps all elements with respect to the diagonal.
-    Mat2                Transpose() const;
+    Mat2                Transpose() const &;
+    Mat2 &&             Transpose() && { return std::move(TransposeSelf()); }
                         /// Transposes this matrix, in-place.
     Mat2 &              TransposeSelf();
 
                         /// Inverts this matrix.
-    Mat2                Inverse() const;
+    Mat2                Inverse() const &;
+    Mat2 &&             Inverse() && { InverseSelf(); return std::move(*this); }
                         /// Inverts this matrix, in-place.
                         /// @return False if determinant is zero.
     bool                InverseSelf();
@@ -410,7 +412,7 @@ BE_INLINE float Mat2::Determinant() const {
     return mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
 }
 
-BE_INLINE Mat2 Mat2::Transpose() const {
+BE_INLINE Mat2 Mat2::Transpose() const & {
     return Mat2(
         mat[0][0], mat[1][0], 
         mat[0][1], mat[1][1]);
@@ -423,7 +425,7 @@ BE_INLINE Mat2 &Mat2::TransposeSelf() {
     return *this;
 }
 
-BE_INLINE Mat2 Mat2::Inverse() const {
+BE_INLINE Mat2 Mat2::Inverse() const & {
     Mat2 invMat = *this;
     bool r = invMat.InverseSelf();
     assert(r);

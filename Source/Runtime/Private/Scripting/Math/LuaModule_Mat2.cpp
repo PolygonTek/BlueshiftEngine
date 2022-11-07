@@ -44,9 +44,9 @@ void LuaVM::RegisterMat2(LuaCpp::Module &module) {
         "set_identity", &Mat2::SetIdentity,
         "trace", &Mat2::Trace,
         "determinant", &Mat2::Determinant,
-        "transpose", &Mat2::Transpose,
+        "transpose", static_cast<Mat2(Mat2::*)(void)const&>(&Mat2::Transpose),
         "transpose_self", &Mat2::TransposeSelf,
-        "inverse", &Mat2::Inverse,
+        "inverse", static_cast<Mat2(Mat2::*)(void)const&>(&Mat2::Inverse),
         "inverse_self", &Mat2::InverseSelf,
         "to_string", static_cast<const char*(Mat2::*)()const>(&Mat2::ToString)
     );

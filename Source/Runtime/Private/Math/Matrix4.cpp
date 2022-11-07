@@ -710,7 +710,7 @@ Mat4 Mat4::TransposedMul(const Mat3x4 &a) const {
     return dst;
 }
 
-Mat4 Mat4::Transpose() const {
+Mat4 Mat4::Transpose() const & {
 #if defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Mat4 result;
 

@@ -88,7 +88,7 @@ public:
     Mat4 &&             Sub(const Mat4 &m) && { *this -= m; return std::move(*this); }
                         /// Subtracts a matrix from this matrix.
     Mat4                operator-(const Mat4 &rhs) const &;
-    Mat4 &&             operator-(const Mat4 &rhs) &&{ *this -= rhs; return std::move(*this); }
+    Mat4 &&             operator-(const Mat4 &rhs) && { *this -= rhs; return std::move(*this); }
 
                         /// Multiplies a matrix to this matrix.
     Mat4                Mul(const Mat4 &m) const & { return *this * m; }
@@ -103,7 +103,7 @@ public:
     Mat4                operator*(const Mat4 &rhs) const &;
     Mat4 &&             operator*(const Mat4 &rhs) && { *this *= rhs; return std::move(*this); }
     Mat4                operator*(const Mat3x4 &rhs) const &;
-    Mat4 &&             operator*(const Mat3x4 &rhs) &&{ *this *= rhs; return std::move(*this); }
+    Mat4 &&             operator*(const Mat3x4 &rhs) && { *this *= rhs; return std::move(*this); }
 
                         /// Multiplies this matrix by a scalar.
     Mat4                MulScalar(float s) const & { return *this * s; }
@@ -221,12 +221,14 @@ public:
     
                         /// Transposes this matrix.
                         /// This operation swaps all elements with respect to the diagonal.
-    Mat4                Transpose() const;
+    Mat4                Transpose() const &;
+    Mat4 &&             Transpose() && { return std::move(TransposeSelf()); }
                         /// Transposes this matrix, in-place.
     Mat4 &              TransposeSelf();
 
                         /// Inverts this matrix.
-    Mat4                Inverse() const;
+    Mat4                Inverse() const &;
+    Mat4 &&             Inverse() && { InverseSelf(); return std::move(*this); }
                         /// Inverts this matrix, in-place.
                         /// @return False if determinant is zero.
     bool                InverseSelf();
@@ -234,28 +236,32 @@ public:
                         /// Inverts a affine matrix. (affine matrix means equivalent to a 3x4 matrix)
                         /// If a matrix M is made up of only translation, rotation, reflection, scaling and shearing,
                         /// then M is affine matrix and this function can be used to compute the inverse.
-    Mat4                InverseAffine() const;
+    Mat4                InverseAffine() const &;
+    Mat4 &&             InverseAffine() && { InverseAffineSelf(); return std::move(*this); }
                         /// Inverts a affine matrix, in-place.
     bool                InverseAffineSelf();
 
                         /// Inverts a orthogonal matrix.
                         /// If a matrix M is made up of only translation, rotation, and scaling,
                         /// then M is orthogonal matrix and this function can be used to compute the inverse.
-    Mat4                InverseOrthogonal() const;
+    Mat4                InverseOrthogonal() const &;
+    Mat4 &&             InverseOrthogonal() && { InverseOrthogonalSelf(); return std::move(*this); }
                         /// Inverts a orthogonal matrix, in-place.
     bool                InverseOrthogonalSelf();
 
                         /// Inverts a orthogonal uniform-scale matrix.
                         /// If a matrix M is made up of only translation, rotation, and uniform scaling,
                         /// then M is orthogonal uniform-scale matrix and this function can be used to compute the inverse.
-    Mat4                InverseOrthogonalUniformScale() const;
+    Mat4                InverseOrthogonalUniformScale() const &;
+    Mat4 &&             InverseOrthogonalUniformScale() && { InverseOrthogonalUniformScaleSelf(); return std::move(*this); }
                         /// Inverts a orthogonal-uniform-scale matrix, in-place.
     bool                InverseOrthogonalUniformScaleSelf();
     
                         /// Inverts a orthogonal no-scale matrix.
                         /// If a matrix M is made up of only translation and rotation.
                         /// then M is orthogonal no-scale matrix and this function can be used to compute the inverse.
-    Mat4                InverseOrthogonalNoScale() const;
+    Mat4                InverseOrthogonalNoScale() const &;
+    Mat4 &&             InverseOrthogonalNoScale() && { InverseOrthogonalNoScaleSelf(); return std::move(*this); }
                         /// Inverts a orthogonal no-scale matrix, in-place.
     bool                InverseOrthogonalNoScaleSelf();
 
@@ -573,35 +579,35 @@ BE_INLINE Vec3 Mat4::TransformNormal(const Vec3 &n) const {
         mat[2].x * n.x + mat[2].y * n.y + mat[2].z * n.z);
 }
 
-BE_INLINE Mat4 Mat4::Inverse() const {
+BE_INLINE Mat4 Mat4::Inverse() const & {
     Mat4 invMat = *this;
     bool r = invMat.InverseSelf();
     assert(r);
     return invMat;
 }
 
-BE_INLINE Mat4 Mat4::InverseAffine() const {
+BE_INLINE Mat4 Mat4::InverseAffine() const & {
     Mat4 invMat = *this;
     bool r = invMat.InverseAffineSelf();
     assert(r);
     return invMat;
 }
 
-BE_INLINE Mat4 Mat4::InverseOrthogonal() const {
+BE_INLINE Mat4 Mat4::InverseOrthogonal() const & {
     Mat4 invMat = *this;
     bool r = invMat.InverseOrthogonalSelf();
     assert(r);
     return invMat;
 }
 
-BE_INLINE Mat4 Mat4::InverseOrthogonalUniformScale() const {
+BE_INLINE Mat4 Mat4::InverseOrthogonalUniformScale() const & {
     Mat4 invMat = *this;
     bool r = invMat.InverseOrthogonalUniformScaleSelf();
     assert(r);
     return invMat;
 }
 
-BE_INLINE Mat4 Mat4::InverseOrthogonalNoScale() const {
+BE_INLINE Mat4 Mat4::InverseOrthogonalNoScale() const & {
     Mat4 invMat = *this;
     bool r = invMat.InverseOrthogonalNoScaleSelf();
     assert(r);

@@ -191,18 +191,21 @@ public:
         
                         /// Transposes this matrix.
                         /// This operation swaps all elements with respect to the diagonal.
-    Mat3                Transpose() const;
+    Mat3                Transpose() const &;
+    Mat3 &&             Transpose() && { return std::move(TransposeSelf()); }
                         /// Transposes this matrix, in-place.
     Mat3 &              TransposeSelf();
 
                         /// Inverts this matrix.
-    Mat3                Inverse() const;
+    Mat3                Inverse() const &;
+    Mat3 &&             Inverse() && { InverseSelf(); return std::move(*this); }
                         /// Inverts this matrix, in-place.
                         /// @return False if determinant is zero.
     bool                InverseSelf();
 
                         /// Orthonormalizes the basis formed by the column vectors of this matrix.
-    Mat3                OrthoNormalize() const;
+    Mat3                OrthoNormalize() const &;
+    Mat3 &&             OrthoNormalize() && { return std::move(OrthoNormalizeSelf()); }
                         /// Orthonormalizes the basis formed by the column vectors of this matrix, in-place.
     Mat3 &              OrthoNormalizeSelf();
 
@@ -612,14 +615,14 @@ BE_INLINE bool Mat3::FixDenormals() {
     return r;
 }
 
-BE_INLINE Mat3 Mat3::Inverse() const {
+BE_INLINE Mat3 Mat3::Inverse() const & {
     Mat3 invMat = *this;
     bool r = invMat.InverseSelf();
     assert(r);
     return invMat;
 }
 
-BE_INLINE Mat3 Mat3::OrthoNormalize() const {
+BE_INLINE Mat3 Mat3::OrthoNormalize() const & {
     Mat3 ortho = *this;
     ortho[0].Normalize();
     ortho[2].SetFromCross(mat[0], mat[1]);
@@ -638,10 +641,10 @@ BE_INLINE Mat3 &Mat3::OrthoNormalizeSelf() {
     return *this;
 }
 
-BE_INLINE Mat3 Mat3::Transpose() const {
+BE_INLINE Mat3 Mat3::Transpose() const & {
     return Mat3(
-        mat[0][0], mat[1][0], mat[2][0], 
-        mat[0][1], mat[1][1], mat[2][1], 
+        mat[0][0], mat[1][0], mat[2][0],
+        mat[0][1], mat[1][1], mat[2][1],
         mat[0][2], mat[1][2], mat[2][2]);
 }
 
