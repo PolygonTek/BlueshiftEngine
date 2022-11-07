@@ -123,7 +123,7 @@ public:
 
                         /// Multiplies this vector by a vector, element-wise.
     Vec2                MulComp(const Vec2 &v) const & { return *this * v; }
-    Vec2 &&             MulComp(const Vec2 &v) &&{ x *= v.x; y *= v.y; return std::move(*this); }
+    Vec2 &&             MulComp(const Vec2 &v) && { x *= v.x; y *= v.y; return std::move(*this); }
                         /// Multiplies this vector by a vector, element-wise.
                         /// This function is identical to the member function MulComp().
     Vec2                operator*(const Vec2 &rhs) const & { return Vec2(x * rhs.x, y * rhs.y); }

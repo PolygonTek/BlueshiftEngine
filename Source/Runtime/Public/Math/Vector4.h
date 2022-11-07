@@ -109,7 +109,7 @@ public:
                         /// Subtracts the vector (s, s, s, s) from this vector.
                         /// This function is identical to the member function SubScalar()
     Vec4                operator-(float rhs) const & { return Vec4(x - rhs, y - rhs, z - rhs, w - rhs); }
-    Vec4 &&             operator-(float rhs) &&{ x -= rhs; y -= rhs; z -= rhs; w -= rhs; return std::move(*this); }
+    Vec4 &&             operator-(float rhs) && { x -= rhs; y -= rhs; z -= rhs; w -= rhs; return std::move(*this); }
                         /// Subtracts the vector v from vector (s, s, s, s).
     friend Vec4         operator-(float lhs, const Vec4 &rhs) { return Vec4(lhs - rhs.x, lhs - rhs.y, lhs - rhs.z, lhs - rhs.w); }
     friend Vec4 &&      operator-(float lhs, Vec4 &&rhs) { rhs.x = lhs - rhs.x; rhs.y = lhs - rhs.y; rhs.z = lhs - rhs.z; rhs.z = lhs - rhs.z; return std::move(rhs); }

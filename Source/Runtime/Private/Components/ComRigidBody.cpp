@@ -219,7 +219,7 @@ void ComRigidBody::CreateBody() {
     physicsDesc.origin = transform->GetOrigin();
     physicsDesc.axis = transform->GetAxis();
 
-    // Collect collider shadpes in this entity
+    // Collect collider shapes in this entity
     ComponentPtrArray colliders = entity->GetComponents(&ComCollider::metaObject);
     for (int colliderIndex = 0; colliderIndex < colliders.Count(); colliderIndex++) {
         ComCollider *collider = colliders[colliderIndex]->Cast<ComCollider>();
@@ -233,7 +233,7 @@ void ComRigidBody::CreateBody() {
         physicsDesc.shapes.Append(shapeDesc);
     }
 
-    // Collect collider shadpes in children recursively
+    // Collect collider shapes in children recursively
     for (Entity *childEntity = entity->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
         AddChildShapeRecursive(worldMatrixNoScaleInverse, childEntity, physicsDesc.shapes);
     }
@@ -306,7 +306,7 @@ void ComRigidBody::Update() {
     if (!body->IsStatic() && !body->IsKinematic() && body->IsActive()) {
         ComTransform *transform = GetEntity()->GetTransform();
 
-        // Block SIG_TransformUpdated during chainging transform in below
+        // Block SIG_TransformUpdated during changing transform in below
         physicsUpdating = true;
 
         transform->SetPhysicsUpdating(true);
