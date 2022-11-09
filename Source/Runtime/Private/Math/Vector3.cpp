@@ -124,7 +124,8 @@ void Vec3::SetFromSLerp(const Vec3 &v1, const Vec3 &v2, const float t) {
 
 Vec3 Vec3::FromString(const char *str) {
     Vec3 v;
-    sscanf(str, "%f %f %f", &v.x, &v.y, &v.z);
+    int count = sscanf(str, "%f %f %f", &v.x, &v.y, &v.z);
+    assert(count == GetDimension());
     return v;
 }
 

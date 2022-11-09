@@ -211,7 +211,8 @@ uint32_t Color4::ToUInt32() const {
 
 Color4 Color4::FromString(const char *str) {
     Color4 v;
-    sscanf(str, "%f %f %f %f", &v.r, &v.g, &v.b, &v.a);
+    int count = sscanf(str, "%f %f %f %f", &v.r, &v.g, &v.b, &v.a);
+    assert(count == GetDimension());
     return v;
 }
 

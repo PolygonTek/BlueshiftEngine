@@ -151,7 +151,8 @@ RectF &RectF::ExpandSelf(float ax, float ay) {
 
 RectF RectF::FromString(const char *str) {
     RectF r;
-    sscanf(str, "%f %f %f %f", &r.x, &r.y, &r.w, &r.h);
+    int count = sscanf(str, "%f %f %f %f", &r.x, &r.y, &r.w, &r.h);
+    assert(count == GetDimension());
     return r;
 }
 

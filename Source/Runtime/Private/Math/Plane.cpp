@@ -98,7 +98,8 @@ const char *Plane::ToString(int precision) const {
 
 Plane Plane::FromString(const char *str) {
     Plane p;
-    sscanf(str, "%f %f %f %f", &p.normal.x, &p.normal.y, &p.normal.z, &p.offset);
+    int count = sscanf(str, "%f %f %f %f", &p.normal.x, &p.normal.y, &p.normal.z, &p.offset);
+    assert(count == GetDimension());
     return p;
 }
 

@@ -21,7 +21,8 @@ const SizeF SizeF::zero = SizeF(0.0f, 0.0f);
 
 SizeF SizeF::FromString(const char *str) {
     SizeF s;
-    sscanf(str, "%f %f", &s.w, &s.h);
+    int count = sscanf(str, "%f %f", &s.w, &s.h);
+    assert(count == GetDimension());
     return s;
 }
 

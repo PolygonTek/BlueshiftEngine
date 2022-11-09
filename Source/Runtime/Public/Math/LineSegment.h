@@ -108,7 +108,7 @@ public:
     static LineSegment  FromString(const char *str);
 
                         /// Returns dimension of this type.
-    constexpr int       GetDimension() const { return 3*3; }
+    constexpr int       GetDimension() const { return 3+3; }
 
     Vec3                a;  ///< The starting point of this line segment.
     Vec3                b;  ///< The end point of this line segment.

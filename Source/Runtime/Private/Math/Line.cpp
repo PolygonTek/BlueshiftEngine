@@ -51,7 +51,8 @@ Ray Line::ToRay() const {
 
 Line Line::FromString(const char *str) {
     Line line;
-    sscanf(str, "%f %f %f %f %f %f", &line.pos.x, &line.pos.y, &line.pos.z, &line.dir.x, &line.dir.y, &line.dir.z);
+    int count = sscanf(str, "%f %f %f %f %f %f", &line.pos.x, &line.pos.y, &line.pos.z, &line.dir.x, &line.dir.y, &line.dir.z);
+    assert(count == GetDimension());
     return line;
 }
 

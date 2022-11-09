@@ -21,7 +21,8 @@ const PointF PointF::zero = PointF(0.0f, 0.0f);
 
 PointF PointF::FromString(const char *str) {
     PointF p;
-    sscanf(str, "%f %f", &p.x, &p.y);
+    int count = sscanf(str, "%f %f", &p.x, &p.y);
+    assert(count == GetDimension());
     return p;
 }
 

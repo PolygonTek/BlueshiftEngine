@@ -54,7 +54,8 @@ Angles &Angles::Normalize180() {
 
 Angles Angles::FromString(const char *str) {
     Angles a;
-    sscanf(str, "%f %f %f", &a.x, &a.y, &a.z);
+    int count = sscanf(str, "%f %f %f", &a.x, &a.y, &a.z);
+    assert(count == GetDimension());
     return a;
 }
 

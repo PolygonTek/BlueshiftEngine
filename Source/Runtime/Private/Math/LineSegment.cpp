@@ -44,7 +44,8 @@ Ray LineSegment::ToRay() const {
 
 LineSegment LineSegment::FromString(const char *str) {
     LineSegment t;
-    sscanf(str, "%f %f %f %f %f %f", &t.a.x, &t.a.y, &t.a.z, &t.b.x, &t.b.y, &t.b.z);
+    int count = sscanf(str, "%f %f %f %f %f %f", &t.a.x, &t.a.y, &t.a.z, &t.b.x, &t.b.y, &t.b.z);
+    assert(count == GetDimension());
     return t;
 }
 
