@@ -36,7 +36,7 @@ public:
 
     int             NumSamples() const { return N; }
 
-    Vec2            GetSample(int index) const;
+    const Vec2 &    GetSample(int index) const;
 
 private:
                     /// Radical Inverse function for Hammersley and Halton squences.
@@ -72,7 +72,7 @@ BE_INLINE float Hammersley<N>::RadicalInverse(int index, int base) const {
 }
 
 template <int N>
-BE_INLINE Vec2 Hammersley<N>::GetSample(int index) const {
+BE_INLINE const Vec2 &Hammersley<N>::GetSample(int index) const {
     return samples[index % N];
 }
 

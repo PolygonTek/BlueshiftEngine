@@ -39,7 +39,7 @@ public:
     SizeF &operator=(const SizeF &rhs);
 
 #ifdef QSIZE_H
-    /// Constructs from a QSize.
+    /// Constructs from a QSizeF.
     SizeF(const QSizeF &qsize) {
         this->w = qsize.width();
         this->h = qsize.height();

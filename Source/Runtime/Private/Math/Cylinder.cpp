@@ -195,8 +195,8 @@ OBB Cylinder::ToOBB() const {
     Vec3 center = (p[0] + p[1]) * 0.5f;
     Vec3 dir = p[1] - p[0];
     float l = dir.Normalize();
-    
-    Vec3 left, up;	
+
+    Vec3 left, up;
     dir.OrthogonalBasis(left, up);
     
     return OBB(center, Vec3(l, radius, radius), Mat3(dir, left, up));

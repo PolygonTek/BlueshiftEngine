@@ -17,12 +17,12 @@
 
 BE_NAMESPACE_BEGIN
 
-const Angles Angles::zero(0.0f, 0.0f, 0.0f);
+ALIGN_AS16 const Angles Angles::zero(0.0f, 0.0f, 0.0f);
 
 Angles &Angles::Normalize360() {
     for (int i = 0; i < Size; i++) {
         if (((*this)[i] >= 360.0f) || ((*this)[i] < 0.0f)) {
-            (*this)[i] -= floor((*this)[i] / 360.0f) * 360.0f;
+            (*this)[i] -= Math::Floor((*this)[i] / 360.0f) * 360.0f;
 
             if ((*this)[i] >= 360.0f) {
                 (*this)[i] -= 360.0f;

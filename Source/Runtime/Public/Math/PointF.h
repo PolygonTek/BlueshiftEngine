@@ -39,7 +39,7 @@ public:
     PointF &operator=(const PointF &rhs);
 
 #ifdef QPOINT_H
-    /// Constructs from a QPoint.
+    /// Constructs from a QPointF.
     PointF(const QPointF &qpoint) {
         this->x = qpoint.x();
         this->y = qpoint.y();

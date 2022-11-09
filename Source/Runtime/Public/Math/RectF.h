@@ -40,7 +40,7 @@ public:
     RectF &operator=(const RectF &rhs);
 
 #ifdef QRECT_H
-    /// Constructs from a QPoint.
+    /// Constructs from a QRectF.
     RectF(const QRectF &qrect) {
         this->x = qrect.x();
         this->y = qrect.y();

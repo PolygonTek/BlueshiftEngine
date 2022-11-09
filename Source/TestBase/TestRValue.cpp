@@ -104,8 +104,8 @@ void TestRValue() {
     Number num6 = num2 - num3; // 임시 객체를 대입했지만 copy-ctor 도, move-ctor 도 호출되지 않는다. RVO 때문에 임시객체 자체가 리턴값을 받는 객체와 동일한 객체가 된다.
 
     BE_LOG("\nNumber num7 = num2 + num3 + num4 + num5\n");
-    Number num7 = num2 + num3 + num4 + num5; // 임시 객체 생성이 연속으로 늘어남
+    Number num7 = num2 + num3 + num4 + num5 + num6; // 임시 객체 생성이 연속으로 늘어남
 
     BE_LOG("\nNumber num8 = num2 - num3 - num4 - num5\n");
-    Number num8 = num2 - num3 - num4 - num5; // ref-qualifier 에 의해 임시객체 생성이 최소화됨
+    Number num8 = num2 - num3 - num4 - num5 - num6; // ref-qualifier 에 의해 임시객체 생성이 최소화됨
 }

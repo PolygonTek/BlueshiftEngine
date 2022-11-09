@@ -20,7 +20,7 @@ BE_NAMESPACE_BEGIN
 ALIGN_AS16 const Mat2 Mat2::zero(Vec2(0, 0), Vec2(0, 0));
 ALIGN_AS16 const Mat2 Mat2::identity(Vec2(1, 0), Vec2(0, 1));
 
-Mat2 Mat2::operator-() const &{
+Mat2 Mat2::operator-() const & {
 #if defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Mat2 dst;
 
@@ -39,7 +39,7 @@ Mat2 Mat2::operator-() const &{
     return dst;
 }
 
-Mat2 &&Mat2::operator-() &&{
+Mat2 &&Mat2::operator-() && {
 #if defined(ENABLE_SIMD4_INTRIN)
     simd4f r0 = loadu_ps(mat[0]);
 

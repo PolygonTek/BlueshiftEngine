@@ -100,8 +100,8 @@ public:
                             /// Returns dimension of this type.
     constexpr int           GetDimension() const { return 6; }
 
-    static const Pluecker   origin;
-    static const Pluecker   zero;
+    ALIGN_AS16 static const Pluecker origin;
+    ALIGN_AS16 static const Pluecker zero;
     
 private:
     float                   p[6];

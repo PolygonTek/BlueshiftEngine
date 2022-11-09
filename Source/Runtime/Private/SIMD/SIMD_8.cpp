@@ -656,6 +656,119 @@ void BE_FASTCALL SIMD_8::MulMat4x4RM(float *dst, const float *src0, const float 
     store_256ps(lincomb2x4x4(ar23, br00, br11, br22, br33), dst + 8);
 }
 
+void BE_FASTCALL SIMD_8::Memset(void *dest0, const int val, const int count0) {
+#if 1
+    memset(dest0, val, count0);
+#else
+    byte *dest = (byte *)dest0;
+    int count = count0;
+
+    while (count > 0 && (((intptr_t)dest) & 31)) {
+        *dest = val;
+        dest++;
+        count--;
+    }
+
+    if (!count) {
+        return;
+    }
+
+    simd8i data = set1_256epi8((char)val);
+
+    if (count >= 512) {
+        int c512 = count >> 9;
+        while (c512 > 0) {
+            store_si256(data, (int32_t *)dest);
+            store_si256(data, (int32_t *)(dest + 32));
+            store_si256(data, (int32_t *)(dest + 64));
+            store_si256(data, (int32_t *)(dest + 96));
+            store_si256(data, (int32_t *)(dest + 128));
+            store_si256(data, (int32_t *)(dest + 160));
+            store_si256(data, (int32_t *)(dest + 192));
+            store_si256(data, (int32_t *)(dest + 224));
+            store_si256(data, (int32_t *)(dest + 256));
+            store_si256(data, (int32_t *)(dest + 288));
+            store_si256(data, (int32_t *)(dest + 320));
+            store_si256(data, (int32_t *)(dest + 352));
+            store_si256(data, (int32_t *)(dest + 384));
+            store_si256(data, (int32_t *)(dest + 416));
+            store_si256(data, (int32_t *)(dest + 448));
+            store_si256(data, (int32_t *)(dest + 480));
+
+            dest += 512;
+            c512--;
+        }
+
+        count &= 511;
+    }
+
+    if (count >= 256) {
+        int c256 = count >> 8;
+        while (c256 > 0) {
+            store_si256(data, (int32_t *)dest);
+            store_si256(data, (int32_t *)(dest + 32));
+            store_si256(data, (int32_t *)(dest + 64));
+            store_si256(data, (int32_t *)(dest + 96));
+            store_si256(data, (int32_t *)(dest + 128));
+            store_si256(data, (int32_t *)(dest + 160));
+            store_si256(data, (int32_t *)(dest + 192));
+            store_si256(data, (int32_t *)(dest + 224));
+
+            dest += 256;
+            c256--;
+        }
+
+        count &= 255;
+    }
+
+    if (count >= 128) {
+        int c128 = count >> 7;
+        while (c128 > 0) {
+            store_si256(data, (int32_t *)dest);
+            store_si256(data, (int32_t *)(dest + 32));
+            store_si256(data, (int32_t *)(dest + 64));
+            store_si256(data, (int32_t *)(dest + 96));
+
+            dest += 128;
+            c128--;
+        }
+
+        count &= 127;
+    }
+
+    if (count >= 64) {
+        int c64 = count >> 6;
+        while (c64 > 0) {
+            store_si256(data, (int32_t *)dest);
+            store_si256(data, (int32_t *)(dest + 32));
+
+            dest += 64;
+            c64--;
+        }
+
+        count &= 63;
+    }
+
+    if (count >= 32) {
+        int c16 = count >> 5;
+        while (c16 > 0) {
+            store_si256(data, (int32_t *)dest);
+
+            dest += 32;
+            c16--;
+        }
+
+        count &= 31;
+    }
+
+    while (count > 0) {
+        *dest = val;
+        dest++;
+        count--;
+    }
+#endif
+}
+
 BE_NAMESPACE_END
 
 #endif

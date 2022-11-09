@@ -49,30 +49,46 @@ public:
     float                   operator[](int index) const;
     float &                 operator[](int index);
 
-    Complex &               operator*=(const Complex &rhs);
-    Complex &               operator*=(const float rhs);
-    Complex &               operator/=(const Complex &rhs);
-    Complex &               operator/=(const float rhs);
-    Complex &               operator+=(const Complex &rhs);
-    Complex &               operator+=(const float rhs);
-    Complex &               operator-=(const Complex &rhs);
-    Complex &               operator-=(const float rhs);
-
+                            /// Unary operator + allows this structure to be used in an expression '+c'.
     Complex                 operator+() const;
+                            /// Performs an unary negation of this complex number.
     Complex                 operator-() const;
 
-    Complex                 operator*(const Complex &rhs) const;
-    Complex                 operator*(const float rhs) const;
-    friend Complex          operator*(const float lhs, const Complex &rhs);
-    Complex                 operator/(const Complex &rhs) const;
-    Complex                 operator/(const float rhs) const;
-    friend Complex          operator/(const float lhs, const Complex &rhs);
+                            /// Adds the complex number to this complex number.
     Complex                 operator+(const Complex &rhs) const;
+
+                            /// Subtract the complex number from this complex number.
+    Complex                 operator-(const Complex &rhs) const;
+    
+                            /// Multiplies this complex number by other complex number.
+    Complex                 operator*(const Complex &rhs) const;
+
+                            /// Divides this complex number by other complex number.
+    Complex                 operator/(const Complex &rhs) const;
+
     Complex                 operator+(const float rhs) const;
     friend Complex          operator+(const float lhs, const Complex &rhs);
-    Complex                 operator-(const Complex &rhs) const;
+
     Complex                 operator-(const float rhs) const;
     friend Complex          operator-(const float lhs, const Complex &rhs);
+
+    Complex                 operator*(const float rhs) const;
+    friend Complex          operator*(const float lhs, const Complex &rhs);
+
+    Complex                 operator/(const float rhs) const;
+    friend Complex          operator/(const float lhs, const Complex &rhs);
+
+    Complex &               operator*=(const Complex &rhs);
+    Complex &               operator*=(const float rhs);
+
+    Complex &               operator/=(const Complex &rhs);
+    Complex &               operator/=(const float rhs);
+
+    Complex &               operator+=(const Complex &rhs);
+    Complex &               operator+=(const float rhs);
+
+    Complex &               operator-=(const Complex &rhs);
+    Complex &               operator-=(const float rhs);
 
                             /// Exact compare, no epsilon.
     bool                    Equals(const Complex &a) const;
@@ -127,7 +143,8 @@ BE_INLINE void Complex::Set(const float re, const float im) {
 }
 
 BE_INLINE void Complex::SetZero() {
-    re = im = 0.0f;
+    re = 0.0f;
+    im = 0.0f;
 }
 
 BE_INLINE float Complex::operator[](int index) const {
@@ -138,6 +155,14 @@ BE_INLINE float Complex::operator[](int index) const {
 BE_INLINE float& Complex::operator[](int index) {
     assert(index >= 0 && index < 2);
     return (&re)[index];
+}
+
+BE_INLINE Complex Complex::operator+() const {
+    return Complex(re, im);
+}
+
+BE_INLINE Complex Complex::operator-() const {
+    return Complex(-re, -im);
 }
 
 BE_INLINE Complex &Complex::operator*=(const Complex &rhs) {
@@ -192,14 +217,6 @@ BE_INLINE Complex &Complex::operator+=(const float rhs) {
 BE_INLINE Complex &Complex::operator-=(const float rhs) {
     re -= rhs;
     return *this;
-}
-
-BE_INLINE Complex Complex::operator+() const {
-    return Complex(re, im);
-}
-
-BE_INLINE Complex Complex::operator-() const {
-    return Complex(-re, -im);
 }
 
 BE_INLINE Complex Complex::operator*(const Complex &rhs) const {

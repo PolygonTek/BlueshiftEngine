@@ -1213,7 +1213,7 @@ void BE_FASTCALL SIMD_4::MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, c
 #endif
 }
 
-#if 0
+#if 1
 
 static void SSE_Memcpy64B(void *dst, const void *src, const int count) {
     char *src_ptr = (char *)src;
@@ -1373,6 +1373,9 @@ static void SSE_MemcpyStream2kB(void *dst, const void *src, const int count) {
 
 // optimized memory copy routine that handles all alignment cases and block sizes efficiently
 void BE_FASTCALL SIMD_4::Memcpy(void *dest0, const void *src0, const int count0) {
+#if 1
+    memcpy(dest0, src0, count0);
+#else
     if (count0 > 4096 && !(((intptr_t)dest0 ^ (intptr_t)src0) & 15)) {
         byte *dest = (byte *)dest0;
         byte *src = (byte *)src0;
@@ -1409,9 +1412,13 @@ void BE_FASTCALL SIMD_4::Memcpy(void *dest0, const void *src0, const int count0)
         // use the regular one if we cannot copy 16 byte aligned
         memcpy(dest0, src0, count0);
     }
+#endif
 }
 
 void BE_FASTCALL SIMD_4::Memset(void *dest0, const int val, const int count0) {
+#if 1
+    memset(dest0, val, count0);
+#else
     byte *dest = (byte *)dest0;
     int count = count0;
 
@@ -1463,16 +1470,7 @@ void BE_FASTCALL SIMD_4::Memset(void *dest0, const int val, const int count0) {
         dest++;
         count--;
     }
-}
-
-#else
-
-void BE_FASTCALL SIMD_4::Memcpy(void *dst, const void *src, const int count) {
-    memcpy(dst, src, count);
-}
-
-void BE_FASTCALL SIMD_4::Memset(void *dst, const int val, const int count) {
-    memset(dst, val, count);
+#endif
 }
 
 #endif

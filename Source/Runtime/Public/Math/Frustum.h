@@ -65,15 +65,20 @@ public:
     bool            IsValid() const { return dFar > dNear; }
 
                     /// Returns expanded frustum.
-    Frustum         Expand(float d) const;
+    Frustum         Expand(float d) const &;
+    Frustum &&      Expand(float d) && { ExpandSelf(d); return std::move(*this); }
                     /// Expands this frustum.
     Frustum &       ExpandSelf(float d);
+
                     /// Returns translated frustum.
-    Frustum         Translate(const Vec3 &translation) const;
+    Frustum         Translate(const Vec3 &translation) const &;
+    Frustum &&      Translate(const Vec3 &translation) && { TranslateSelf(translation); return std::move(*this); }
                     /// Translates this frustum.
     Frustum &       TranslateSelf(const Vec3 &translation);
+
                     /// Returns rotated frustum.
-    Frustum         Rotate(const Mat3 &rotation) const;
+    Frustum         Rotate(const Mat3 &rotation) const &;
+    Frustum &&      Rotate(const Mat3 &rotation) && { RotateSelf(rotation); return std::move(*this); }
                     /// Rotates this frustum.
     Frustum &       RotateSelf(const Mat3 &rotation);
 
@@ -210,7 +215,7 @@ BE_INLINE Vec3 Frustum::GetCenter() const {
     return (origin + axis[0] * ((dFar - dNear) * 0.5f));
 }
 
-BE_INLINE Frustum Frustum::Expand(float d) const {
+BE_INLINE Frustum Frustum::Expand(float d) const & {
     Frustum f = *this;
     f.origin -= d * f.axis[0];
     f.dFar += 2.0f * d;
@@ -229,7 +234,7 @@ BE_INLINE Frustum &Frustum::ExpandSelf(float d) {
     return *this;
 }
 
-BE_INLINE Frustum Frustum::Translate(const Vec3 &translation) const {
+BE_INLINE Frustum Frustum::Translate(const Vec3 &translation) const & {
     Frustum f = *this;
     f.origin += translation;
     return f;
@@ -240,7 +245,7 @@ BE_INLINE Frustum &Frustum::TranslateSelf(const Vec3 &translation) {
     return *this;
 }
 
-BE_INLINE Frustum Frustum::Rotate(const Mat3 &rotation) const {
+BE_INLINE Frustum Frustum::Rotate(const Mat3 &rotation) const & {
     Frustum f = *this;
     f.axis *= rotation;
     return f;

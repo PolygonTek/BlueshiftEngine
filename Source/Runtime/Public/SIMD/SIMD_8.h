@@ -41,6 +41,8 @@ public:
     virtual void BE_FASTCALL            MulMat3x4RM(float *dst, const float *src0, const float *src1) override;
     virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1) override;
 
+    virtual void BE_FASTCALL            Memset(void *dst, const int val, const int count) override;
+
     static const simd8f                 F8_zero;
     static const simd8f                 F8_one;
     static const simd8f                 F8_3zero_one;

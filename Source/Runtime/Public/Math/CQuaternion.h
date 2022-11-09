@@ -63,13 +63,22 @@ public:
                         /// Exact compare, no epsilon.
     bool                operator!=(const CQuat &rhs) const { return !Equals(rhs); }
 
+                        /// Sets all elements of this compressed unit quaternion.
     void                Set(float x, float y, float z);
 
+                        /// Converts this compressed unit quaternion to Euler angles.
     Angles              ToAngles() const;
+
+                        /// Converts this compressed unit quaternion to axis-angle rotation representation.
     Rotation            ToRotation() const;
+
+                        /// Converts this compressed unit quaternion to 3x3 matrix.
     Mat3                ToMat3() const;
+                        /// Converts this compressed unit quaternion to 4x4 matrix.
     Mat4                ToMat4() const;
+                        /// Converts this compressed unit quaternion to normal quaternion.
     Quat                ToQuat() const;
+
                         /// Returns "x y z".
     const char *        ToString() const { return ToString(4); }
                         /// Returns "x y z" with the given precision.

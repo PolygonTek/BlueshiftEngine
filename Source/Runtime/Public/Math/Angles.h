@@ -168,7 +168,7 @@ public:
                         /// Returns dimension of this type.
     constexpr int       GetDimension() const { return Size; }
 
-    static const Angles zero;
+    ALIGN_AS16 static const Angles zero;
 
     float               x;      ///< Angle of rotation around x (forward) axis in degrees (roll)
     float               y;      ///< Angle of rotation around y (left) axis in degrees (pitch)

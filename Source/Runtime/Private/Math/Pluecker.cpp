@@ -17,8 +17,8 @@
 
 BE_NAMESPACE_BEGIN
 
-const Pluecker Pluecker::origin(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-const Pluecker Pluecker::zero(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+ALIGN_AS16 const Pluecker Pluecker::origin(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+ALIGN_AS16 const Pluecker Pluecker::zero(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 
 // pluecker coordinate for the intersection of two planes
 bool Pluecker::SetFromPlanes(const Plane &p1, const Plane &p2) {

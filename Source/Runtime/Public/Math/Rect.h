@@ -40,7 +40,7 @@ public:
     Rect &operator=(const Rect &rhs);
 
 #ifdef QRECT_H
-    /// Constructs from a QPoint.
+    /// Constructs from a QRect.
     Rect(const QRect &qrect) {
         this->x = qrect.x();
         this->y = qrect.y();
