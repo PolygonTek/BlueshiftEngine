@@ -20,7 +20,50 @@ BE_NAMESPACE_BEGIN
 ALIGN_AS16 const Mat2 Mat2::zero(Vec2(0, 0), Vec2(0, 0));
 ALIGN_AS16 const Mat2 Mat2::identity(Vec2(1, 0), Vec2(0, 1));
 
+Mat2 Mat2::operator-() const &{
+#if defined(ENABLE_SIMD4_INTRIN)
+    ALIGN_AS16 Mat2 dst;
+
+    simd4f r0 = loadu_ps(mat[0]);
+
+    store_ps(-r0, dst[0]);
+#else
+    Mat2 dst;
+
+    dst[0][0] = -mat[0][0];
+    dst[0][1] = -mat[0][1];
+
+    dst[1][0] = -mat[1][0];
+    dst[1][1] = -mat[1][1];
+#endif
+    return dst;
+}
+
+Mat2 &&Mat2::operator-() &&{
+#if defined(ENABLE_SIMD4_INTRIN)
+    simd4f r0 = loadu_ps(mat[0]);
+
+    storeu_ps(-r0, mat[0]);
+#else
+    mat[0][0] = -mat[0][0];
+    mat[0][1] = -mat[0][1];
+
+    mat[1][0] = -mat[1][0];
+    mat[1][1] = -mat[1][1];
+#endif
+    return std::move(*this);
+}
+
 Mat2 &Mat2::operator*=(const Mat2 &rhs) {
+#if defined(ENABLE_SIMD4_INTRIN)
+    simd4f a = loadu_ps(mat[0]);
+    simd4f b = loadu_ps(rhs.mat[0]);
+
+    simd4f result = shuffle_ps<0, 0, 2, 2>(a) * shuffle_ps<0, 1, 0, 1>(b);
+    result = madd_ps(shuffle_ps<1, 1, 3, 3>(a), shuffle_ps<2, 3, 2, 3>(b), result);
+
+    storeu_ps(result, mat[0]);
+#else
     float dst[2];
 
     dst[0] = mat[0][0] * rhs.mat[0][0] + mat[0][1] * rhs.mat[1][0];
@@ -32,7 +75,7 @@ Mat2 &Mat2::operator*=(const Mat2 &rhs) {
     dst[1] = mat[1][0] * rhs.mat[0][1] + mat[1][1] * rhs.mat[1][1];
     mat[1][0] = dst[0];
     mat[1][1] = dst[1];
-
+#endif
     return *this;
 }
 

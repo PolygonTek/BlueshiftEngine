@@ -250,20 +250,6 @@ BE_INLINE Vec2 &Mat2::operator[](int index) {
     return mat[index];
 }
 
-BE_INLINE Mat2 Mat2::operator-() const & {
-    return Mat2(
-        -mat[0][0], -mat[0][1], 
-        -mat[1][0], -mat[1][1]);
-}
-
-BE_INLINE Mat2 &&Mat2::operator-() && {
-    mat[0][0] = -mat[0][0];
-    mat[0][1] = -mat[0][1];
-    mat[1][0] = -mat[1][0];
-    mat[1][1] = -mat[1][1];
-    return std::move(*this);
-}
-
 BE_INLINE Mat2 Mat2::operator+(const Mat2 &a) const & {
     return Mat2(
         mat[0].x + a[0].x, mat[0].y + a[0].y, 
