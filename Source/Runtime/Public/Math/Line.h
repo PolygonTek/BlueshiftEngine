@@ -150,13 +150,13 @@ BE_INLINE void Line::Transform(const Mat3 &transform) {
 }
 
 BE_INLINE void Line::Transform(const Mat3x4 &transform) {
-    pos = transform.Transform(pos);
-    dir = transform.TransformNormal(dir);
+    pos = transform.TransformPos(pos);
+    dir = transform.TransformDir(dir);
 }
 
 BE_INLINE void Line::Transform(const Mat4 &transform) {
-    pos = transform * pos;
-    dir = transform.TransformNormal(dir);
+    pos = transform.TransformPos(pos);
+    dir = transform.TransformDir(dir);
 }
 
 BE_INLINE void Line::Transform(const Quat &transform) {

@@ -96,7 +96,7 @@ void ComCylinderCollider::DrawGizmos(const RenderCamera *camera, bool selected, 
             float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
             float scaledHeight = transform->GetScale().z * height;
 
-            Vec3 worldCenter = transform->GetMatrix() * center;
+            Vec3 worldCenter = transform->GetMatrix().TransformPos(center);
 
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
             renderWorld->DebugCylinderSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius + CmToUnit(0.15f), 1.25f, true);

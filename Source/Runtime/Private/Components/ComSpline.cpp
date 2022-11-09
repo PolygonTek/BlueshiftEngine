@@ -77,7 +77,7 @@ Vec3 ComSpline::GetCurrentOrigin(float time) const {
         Clamp(time, 0.0f, 1.0f);
     }
     const ComTransform *transform = GetEntity()->GetTransform();
-    return transform->GetMatrix() * originCurve->GetCurrentValue(time);
+    return transform->GetMatrix().TransformPos(originCurve->GetCurrentValue(time));
 }
 
 Mat3 ComSpline::GetCurrentAxis(float time) const {
@@ -235,8 +235,8 @@ void ComSpline::DrawGizmos(const RenderCamera *camera, bool selected, bool selec
             break;
         }
 
-        Vec3 p0 = transform->GetMatrix() * originCurve->GetCurrentValue(t);
-        Vec3 p1 = transform->GetMatrix() * originCurve->GetCurrentValue(t + dt);
+        Vec3 p0 = transform->GetMatrix().TransformPos(originCurve->GetCurrentValue(t));
+        Vec3 p1 = transform->GetMatrix().TransformPos(originCurve->GetCurrentValue(t + dt));
 
         renderWorld->SetDebugColor(Color4::white, Color4::orange);
         renderWorld->DebugLine(p0, p1, MeterToUnit(0.02), true);

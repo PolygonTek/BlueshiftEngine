@@ -465,7 +465,7 @@ void ComCharacterController::DrawGizmos(const RenderCamera *camera, bool selecte
             float scaledHeight = transform->GetScale().z * capsuleHeight;
 
             Vec3 localCenter = Vec3(0, 0, capsuleRadius + capsuleHeight * 0.5f);
-            Vec3 worldCenter = transform->GetMatrix() * localCenter;
+            Vec3 worldCenter = transform->GetMatrix().TransformPos(localCenter);
 
             renderWorld->SetDebugColor(Color4::yellow, Color4::zero);
             renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius, 1.0f, true);

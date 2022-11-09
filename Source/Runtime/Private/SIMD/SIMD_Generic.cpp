@@ -258,10 +258,10 @@ void BE_FASTCALL SIMD_Generic::TransformVerts(VertexGenericLit *verts, const int
     int i, j;
 
     for (j = i = 0; i < numVerts; i++) {
-        v = ((Mat3x4 *)(jointsPtr + index[j * 2 + 0]))->Transform(base[j]).ToVec3();
+        v = (*((Mat3x4 *)(jointsPtr + index[j * 2 + 0])) * base[j]).ToVec3();
         while (index[j * 2 + 1] == 0) {
             j++;
-            v += ((Mat3x4 *)(jointsPtr + index[j * 2 + 0]))->Transform(base[j]).ToVec3();
+            v += (*((Mat3x4 *)(jointsPtr + index[j * 2 + 0])) * base[j]).ToVec3();
         }
 
         j++;

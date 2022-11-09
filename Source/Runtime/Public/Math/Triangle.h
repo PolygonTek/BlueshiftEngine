@@ -171,21 +171,21 @@ BE_INLINE void Triangle::Transform(const Mat3 &transform) {
 }
 
 BE_INLINE void Triangle::Transform(const Mat3x4 &transform) {
-    a = transform.Transform(a);
-    b = transform.Transform(b);
-    c = transform.Transform(c);
+    a = transform.TransformPos(a);
+    b = transform.TransformPos(b);
+    c = transform.TransformPos(c);
 }
 
 BE_INLINE void Triangle::Transform(const Mat4 &transform) {
-    a = transform * a;
-    b = transform * b;
-    c = transform * c;
+    a = transform.TransformPos(a);
+    b = transform.TransformPos(b);
+    c = transform.TransformPos(c);
 }
 
 BE_INLINE void Triangle::Transform(const Quat &transform) {
-    a = transform * a;
-    b = transform * b;
-    c = transform * c;
+    a = transform.RotateVector(a);
+    b = transform.RotateVector(b);
+    c = transform.RotateVector(c);
 }
 
 BE_INLINE const char *Triangle::ToString(int precision) const {

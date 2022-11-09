@@ -334,7 +334,7 @@ void AABB::SetFromTransformedAABBFast(const AABB &aabb, const Mat3x4 &transform)
             Math::Fabs(extents[2] * transform[i][2]);
     }
 
-    center = transform * center;
+    center = transform.TransformPos(center);
     b[0] = center - rotatedExtents;
     b[1] = center + rotatedExtents;
 }
@@ -346,7 +346,7 @@ void AABB::SetFromTransformedAABB(const AABB &aabb, const Mat3x4 &transform) {
     Clear();
 
     for (int i = 0; i < 8; i++) {
-        AddPoint(transform * points[i]);
+        AddPoint(transform.TransformPos(points[i]));
     }
 }
 

@@ -610,7 +610,7 @@ const AABB Entity::GetAABBInSpace(const Vec3 &origin, const Mat3 &axis, bool inc
         localAABB.ToPoints(points);
 
         for (int pointIndex = 0; pointIndex < COUNT_OF(points); pointIndex++) {
-            Vec3 worldPoint = GetTransform()->GetMatrix() * points[pointIndex];
+            Vec3 worldPoint = GetTransform()->GetMatrix().TransformPos(points[pointIndex]);
 
             Vec3 spacePoint = axis.TransposedMulVec(worldPoint - origin);
 

@@ -368,7 +368,7 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
                                 w *= 1.0f / 255.0f;
                             }
 
-                            resultPos += w * jointMats2[vw->jointIndexes[weightIndex]].Transform(pos);
+                            resultPos += w * jointMats2[vw->jointIndexes[weightIndex]].TransformPos(pos);
                         }
                     }
 
@@ -389,7 +389,7 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
                             if (sizeof(JointWeightType) == sizeof(byte)) {
                                 w *= 1.0f / 255.0f;
                             }
-                            resultPos += w * jointMats2[vw->jointIndexes[weightIndex]].Transform(pos);
+                            resultPos += w * jointMats2[vw->jointIndexes[weightIndex]].TransformPos(pos);
                         }
                     }
 
@@ -402,7 +402,7 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
                 for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
                     const VertexWeight1 *vw = &vertWeights[vertexIndex];
                     const Vec3 &pos = subMesh->Verts()[vertexIndex].xyz;
-                    Vec3 resultPos = jointMats2[vw->jointIndex].Transform(pos);
+                    Vec3 resultPos = jointMats2[vw->jointIndex].TransformPos(pos);
 
                     frameAABB.AddPoint(resultPos);
                 }

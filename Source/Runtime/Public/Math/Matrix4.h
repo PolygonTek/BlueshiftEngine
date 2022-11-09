@@ -118,19 +118,24 @@ public:
 
                         /// Transforms the given vector by this matrix
     Vec4                MulVec(const Vec4 &v) const { return *this * v; }
-    Vec3                MulVec(const Vec3 &v) const { return *this * v; }
                         /// Returns this->Transpose() * v
     Vec4                TransposedMulVec(const Vec4 &v) const;
-    Vec3                TransposedMulVec(const Vec3 &v) const;
                         /// Transforms the given vector by this matrix.
                         /// This function is identical to the member function MulVec().
     Vec4                operator*(const Vec4 &rhs) const;
-    Vec3                operator*(const Vec3 &rhs) const;
                         /// Transforms the given vector by the given matrix in the order v * M (!= M * v).
     friend Vec4         operator*(const Vec4 &lhs, const Mat4 &rhs) { return rhs.TransposedMulVec(lhs); }
-    friend Vec3         operator*(const Vec3 &lhs, const Mat4 &rhs) { return rhs.TransposedMulVec(lhs); }
 
-    Vec3                TransformNormal(const Vec3 &n) const;
+                        /// Transforms the given point vector by this matrix M, i.e. returns M * (x, y, z, 1).
+                        /// The suffix "Pos" in this function means that the w component of the input vector is
+                        /// assumed to be 1, i.e. the input vector represents a point (a position).
+    Vec3                TransformPos(const Vec3 &pos) const;
+
+                        /// Transforms the given direction vector by this matrix M, i.e. returns M * (x, y, z, 0).
+                        /// The suffix "Dir" in this function just means that the w component of the input vector is
+                        /// assumed to be 0, i.e. the input vector represents a direction.
+                        /// The input vector does not need to be normalized.
+    Vec3                TransformDir(const Vec3 &dir) const;
 
                         /// Assign from another matrix.
     Mat4 &              operator=(const Mat4 &rhs);
@@ -562,11 +567,24 @@ BE_INLINE float Mat4::Determinant() const {
     return (-det3_201_123 * mat[3][0] + det3_201_023 * mat[3][1] - det3_201_013 * mat[3][2] + det3_201_012 * mat[3][3]);
 }
 
-BE_INLINE Vec3 Mat4::TransformNormal(const Vec3 &n) const {
+BE_INLINE Vec3 Mat4::TransformPos(const Vec3 &pos) const {
+    Vec4 result = (*this) * Vec4(pos, 1.0f);
+    Vec3 &ret = result.ToVec3();
+    float hw = result.w;
+    if (hw == 0.0f) {
+        ret.Set(0.0f, 0.0f, 0.0f);
+    }
+    if (hw != 1.0f) {
+        ret /= hw;
+    }
+    return ret;
+}
+
+BE_INLINE Vec3 Mat4::TransformDir(const Vec3 &dir) const {
     return Vec3(
-        mat[0].x * n.x + mat[0].y * n.y + mat[0].z * n.z, 
-        mat[1].x * n.x + mat[1].y * n.y + mat[1].z * n.z,
-        mat[2].x * n.x + mat[2].y * n.y + mat[2].z * n.z);
+        mat[0].x * dir.x + mat[0].y * dir.y + mat[0].z * dir.z, 
+        mat[1].x * dir.x + mat[1].y * dir.y + mat[1].z * dir.z,
+        mat[2].x * dir.x + mat[2].y * dir.y + mat[2].z * dir.z);
 }
 
 BE_INLINE Mat4 Mat4::Inverse() const & {

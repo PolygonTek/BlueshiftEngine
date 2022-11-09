@@ -156,13 +156,13 @@ BE_INLINE void LineSegment::Transform(const Mat3 &transform) {
 }
 
 BE_INLINE void LineSegment::Transform(const Mat3x4 &transform) {
-    a = transform.Transform(a);
-    b = transform.Transform(b);
+    a = transform.TransformPos(a);
+    b = transform.TransformPos(b);
 }
 
 BE_INLINE void LineSegment::Transform(const Mat4 &transform) {
-    a = transform * a;
-    b = transform * b;
+    a = transform.TransformPos(a);
+    b = transform.TransformPos(b);
 }
 
 BE_INLINE void LineSegment::Transform(const Quat &transform) {

@@ -760,13 +760,13 @@ void RenderWorld::DebugJoints(const RenderObject *renderObject, bool showJointsN
     const Mat3x4 *jointMat = renderObject->state.joints;
 
     for (int i = 0; i < renderObject->state.numJoints; i++, joint++, jointMat++) {
-        Vec3 pos = renderObject->state.worldMatrix * jointMat->ToTranslationVec3();
+        Vec3 pos = renderObject->state.worldMatrix.TransformPos(jointMat->ToTranslationVec3());
         Mat3 mat = jointMat->ToMat3();
 
         if (joint->parent) {
             int parentIndex = (int)(joint->parent - renderObject->state.mesh->GetJoints());
             SetDebugColor(Color4::white, Color4::zero);
-            DebugLine(pos, renderObject->state.worldMatrix * renderObject->state.joints[parentIndex].ToTranslationVec3(), 1);
+            DebugLine(pos, renderObject->state.worldMatrix.TransformPos(renderObject->state.joints[parentIndex].ToTranslationVec3()), 1);
         }
 
         SetDebugColor(Color4::red, Color4::zero);

@@ -121,7 +121,7 @@ void ComSocketJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool 
     const ComTransform *transform = GetEntity()->GetTransform();
     
     if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
-        Vec3 worldOrigin = transform->GetMatrix() * localAnchor;
+        Vec3 worldOrigin = transform->GetMatrix().TransformPos(localAnchor);
 
         float viewScale = camera->CalcViewScale(worldOrigin);
 

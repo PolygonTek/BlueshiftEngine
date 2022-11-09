@@ -110,17 +110,24 @@ public:
 
                         /// Transforms the given vector by this matrix
     Vec4                MulVec(const Vec4 &v) const { return *this * v; }
-    Vec3                MulVec(const Vec3 &v) const { return *this * v; }
                         /// Returns this->Transpose() * v
     Vec4                TransposedMulVec(const Vec4 &v) const;
-    Vec3                TransposedMulVec(const Vec3 &v) const;
                         /// Transforms the given vector by this matrix.
                         /// This function is identical to the member function MulVec().
-    Vec4                operator*(const Vec4 &rhs) const { return Transform(rhs); }
-    Vec3                operator*(const Vec3 &rhs) const { return Transform(rhs); }
+    Vec4                operator*(const Vec4 &rhs) const;
                         /// Transforms the given vector by the given matrix in the order v * M (!= M * v).
     friend Vec4         operator*(const Vec4 &lhs, const Mat3x4 &rhs) { return rhs.TransposedMulVec(lhs); }
-    friend Vec3         operator*(const Vec3 &lhs, const Mat3x4 &rhs) { return rhs.TransposedMulVec(lhs); }
+
+                        /// Transforms the given point vector by this matrix M, i.e. returns M * (x, y, z, 1).
+                        /// The suffix "Pos" in this function means that the w component of the input vector is
+                        /// assumed to be 1, i.e. the input vector represents a point (a position).
+    Vec3                TransformPos(const Vec3 &pos) const;
+
+                        /// Transforms the given direction vector by this matrix M, i.e. returns M * (x, y, z, 0).
+                        /// The suffix "Dir" in this function just means that the w component of the input vector is
+                        /// assumed to be 0, i.e. the input vector represents a direction.
+                        /// The input vector does not need to be normalized.
+    Vec3                TransformDir(const Vec3 &dir) const;
 
                         /// Assign from another matrix.
     Mat3x4 &            operator=(const Mat3x4 &rhs);
@@ -240,10 +247,6 @@ public:
                         /// Returns scaling matrix.
     static Mat3x4       FromScale(float sx, float sy, float sz);
     static Mat3x4       FromScale(const Vec3 &s) { return FromScale(s.x, s.y, s.z); }
-
-    Vec4                Transform(const Vec4 &v) const;
-    Vec3                Transform(const Vec3 &v) const;
-    Vec3                TransformNormal(const Vec3 &v) const;
 
                         /// (*this) = a * (*this)
     Mat3x4 &            TransformSelf(const Mat3x4 &a);

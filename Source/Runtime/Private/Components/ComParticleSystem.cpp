@@ -619,7 +619,7 @@ void ComParticleSystem::ProcessTrail(Particle *particle, const ParticleSystem::S
         trail->position.z -= MeterToUnit(stage->standardModule.gravity) * 0.5f * trailFrac * trailFrac;
 
         if (stage->standardModule.simulationSpace == ParticleSystem::StandardModule::SimulationSpace::Global) {
-            trail->position = offsetMatrix * trail->position;
+            trail->position = offsetMatrix.TransformPos(trail->position);
         }
 
         // Add trail bounds to the entity bounds.

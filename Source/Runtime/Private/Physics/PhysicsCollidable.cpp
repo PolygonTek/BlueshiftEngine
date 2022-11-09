@@ -56,7 +56,7 @@ void PhysCollidable::SetAxis(const Mat3 &axis) {
 }
 
 void PhysCollidable::SetTransform(const Mat3x4 &transform) {
-    btVector3 worldCentroid = ToBtVector3(SystemUnitToPhysicsUnit(transform * centroid));
+    btVector3 worldCentroid = ToBtVector3(SystemUnitToPhysicsUnit(transform.TransformPos(centroid)));
 
     collisionObject->getWorldTransform().setOrigin(worldCentroid);
     collisionObject->getWorldTransform().setBasis(btMatrix3x3(

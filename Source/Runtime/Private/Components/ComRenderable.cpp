@@ -148,8 +148,8 @@ bool ComRenderable::IntersectRay(const Ray &ray, bool backFaceCull, float *hitDi
     ALIGN_AS32 Mat3x4 worldToLocal = renderObjectDef.worldMatrix.InverseOrthogonal();
 
     Ray localRay;
-    localRay.origin = worldToLocal.Transform(ray.origin);
-    localRay.dir = worldToLocal.TransformNormal(ray.dir);
+    localRay.origin = worldToLocal.TransformPos(ray.origin);
+    localRay.dir = worldToLocal.TransformDir(ray.dir);
     //localRay.dir.Normalize();
 
     if (!renderObjectDef.mesh->GetAABB().IntersectRay(localRay, hitDist)) {

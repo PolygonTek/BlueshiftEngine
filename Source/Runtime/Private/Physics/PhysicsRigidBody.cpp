@@ -114,7 +114,7 @@ void PhysRigidBody::SetTransform(const Mat3x4 &transform) {
     btRigidBody *rigidBody = GetRigidBody();
 
     btTransform worldTransform = rigidBody->getWorldTransform();
-    worldTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(transform * centroid)));
+    worldTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(transform.TransformPos(centroid))));
     worldTransform.setBasis(btMatrix3x3(
         transform[0][0], transform[0][1], transform[0][2],
         transform[1][0], transform[1][1], transform[1][2],
