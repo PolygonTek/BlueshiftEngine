@@ -360,7 +360,8 @@ Str Variant::ToString() const {
         return Str(value.d1);
     case Type::VoidPtr: {
         char str[32];
-        sscanf(str, "%p", (void **)&value.ptr1);
+        int count = sscanf(str, "%p", (void **)&value.ptr1);
+        assert(count == 1);
         return Str(str);
     }
     case Type::Vec2:

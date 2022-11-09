@@ -95,15 +95,16 @@ public:
     Mat4 &&             Mul(const Mat4 &m) && { *this *= m; return std::move(*this); }
     Mat4                Mul(const Mat3x4 &m) const & { return *this * m; }
     Mat4 &&             Mul(const Mat3x4 &m) && { *this *= m; return std::move(*this); }
-                        /// Returns this->Transpose() * m
-    Mat4                TransposedMul(const Mat4 &m) const;
-    Mat4                TransposedMul(const Mat3x4 &m) const;
                         /// Multiplies a matrix to this matrix.
                         /// This function is identical to the member function Mul().
     Mat4                operator*(const Mat4 &rhs) const &;
     Mat4 &&             operator*(const Mat4 &rhs) && { *this *= rhs; return std::move(*this); }
     Mat4                operator*(const Mat3x4 &rhs) const &;
     Mat4 &&             operator*(const Mat3x4 &rhs) && { *this *= rhs; return std::move(*this); }
+
+                        /// Returns this->Transpose() * m
+    Mat4                TransposedMul(const Mat4 &m) const;
+    Mat4                TransposedMul(const Mat3x4 &m) const;
 
                         /// Multiplies this matrix by a scalar.
     Mat4                MulScalar(float s) const & { return *this * s; }
@@ -118,11 +119,12 @@ public:
 
                         /// Transforms the given vector by this matrix
     Vec4                MulVec(const Vec4 &v) const { return *this * v; }
-                        /// Returns this->Transpose() * v
-    Vec4                TransposedMulVec(const Vec4 &v) const;
                         /// Transforms the given vector by this matrix.
                         /// This function is identical to the member function MulVec().
     Vec4                operator*(const Vec4 &rhs) const;
+
+                        /// Returns this->Transpose() * v
+    Vec4                TransposedMulVec(const Vec4 &v) const;
                         /// Transforms the given vector by the given matrix in the order v * M (!= M * v).
     friend Vec4         operator*(const Vec4 &lhs, const Mat4 &rhs) { return rhs.TransposedMulVec(lhs); }
 

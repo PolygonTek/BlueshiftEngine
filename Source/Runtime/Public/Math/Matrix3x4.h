@@ -110,11 +110,12 @@ public:
 
                         /// Transforms the given vector by this matrix
     Vec4                MulVec(const Vec4 &v) const { return *this * v; }
-                        /// Returns this->Transpose() * v
-    Vec4                TransposedMulVec(const Vec4 &v) const;
                         /// Transforms the given vector by this matrix.
                         /// This function is identical to the member function MulVec().
     Vec4                operator*(const Vec4 &rhs) const;
+
+                        /// Returns this->Transpose() * v
+    Vec4                TransposedMulVec(const Vec4 &v) const;
                         /// Transforms the given vector by the given matrix in the order v * M (!= M * v).
     friend Vec4         operator*(const Vec4 &lhs, const Mat3x4 &rhs) { return rhs.TransposedMulVec(lhs); }
 

@@ -89,12 +89,13 @@ public:
                         /// Multiplies a matrix to this matrix.
     Mat2                Mul(const Mat2 &m) const & { return *this * m; }
     Mat2 &&             Mul(const Mat2 &m) && { *this *= m; return std::move(*this); }
-                        /// Returns this->Transpose() * m
-    Mat2                TransposedMul(const Mat2 &m) const;
                         /// Multiplies a matrix to this matrix.
                         /// This function is identical to the member function Mul().
     Mat2                operator*(const Mat2 &rhs) const &;
     Mat2 &&             operator*(const Mat2 &rhs) && { *this *= rhs; return std::move(*this); }
+
+                        /// Returns this->Transpose() * m
+    Mat2                TransposedMul(const Mat2 &m) const;
 
                         /// Multiplies this matrix by a scalar.
     Mat2                MulScalar(float s) const & { return *this * s; }
@@ -109,11 +110,12 @@ public:
 
                         /// Transforms the given vector by this matrix
     Vec2                MulVec(const Vec2 &v) const { return *this * v; }
-                        /// Returns this->Transpose() * v
-    Vec2                TransposedMulVec(const Vec2 &v) const;
                         /// Transforms the given vector by this matrix.
                         /// This function is identical to the member function MulVec().
     Vec2                operator*(const Vec2 &rhs) const;
+
+                        /// Returns this->Transpose() * v
+    Vec2                TransposedMulVec(const Vec2 &v) const;
                         /// Transforms the given vector by the given matrix in the order v * M (!= M * v).
     friend Vec2         operator*(const Vec2 &lhs, const Mat2 &rhs) { return rhs.TransposedMulVec(lhs); }
 
