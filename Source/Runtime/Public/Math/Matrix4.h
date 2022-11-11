@@ -644,60 +644,27 @@ BE_INLINE Vec3 Mat4::ToTranslationVec3() const {
 }
 
 BE_INLINE Mat4 Mat4::FromTranslation(float tx, float ty, float tz) {
-    Mat4 m;
-    m.mat[0][0] = 1;
-    m.mat[0][1] = 0;
-    m.mat[0][2] = 0;
-    m.mat[0][3] = tx;
-
-    m.mat[1][0] = 0;
-    m.mat[1][1] = 1;
-    m.mat[1][2] = 0;
-    m.mat[1][3] = ty;
-
-    m.mat[2][0] = 0;
-    m.mat[2][1] = 0;
-    m.mat[2][2] = 1;
-    m.mat[2][3] = tz;
-
-    m.mat[3][0] = 0;
-    m.mat[3][1] = 0;
-    m.mat[3][2] = 0;
-    m.mat[3][3] = 1;
-    return m;
+    return Mat4(
+        1, 0, 0, tx,
+        0, 1, 0, ty,
+        0, 0, 1, tz,
+        0, 0, 0, 1);
 }
 
 BE_INLINE Mat4 Mat4::FromScale(float sx, float sy, float sz) {
-    Mat4 m;
-    m.mat[0][0] = sx;
-    m.mat[0][1] = 0;
-    m.mat[0][2] = 0;
-    m.mat[0][3] = 0;
-
-    m.mat[0][0] = 0;
-    m.mat[0][1] = sy;
-    m.mat[0][2] = 0;
-    m.mat[0][3] = 0;
-
-    m.mat[0][0] = 0;
-    m.mat[0][1] = 0;
-    m.mat[0][2] = sz;
-    m.mat[0][3] = 0;
-
-    m.mat[3][0] = 0;
-    m.mat[3][1] = 0;
-    m.mat[3][2] = 0;
-    m.mat[3][3] = 1;
-    return m;
+    return Mat4(
+        sx, 0, 0, 0,
+        0, sy, 0, 0,
+        0, 0, sz, 0,
+        0, 0, 0, 1);
 }
 
 BE_INLINE Mat4 Mat4::FromOuterProduct(const Vec4 &a, const Vec4 &b) {
-    Mat4 m;
-    m.mat[0] = a[0] * b;
-    m.mat[1] = a[1] * b;
-    m.mat[2] = a[2] * b;
-    m.mat[3] = a[3] * b;
-    return m;
+    return Mat4(
+        a[0] * b,
+        a[1] * b,
+        a[2] * b,
+        a[3] * b);
 }
 
 BE_INLINE const char *Mat4::ToString(int precision) const {

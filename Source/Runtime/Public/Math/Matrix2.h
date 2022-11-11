@@ -416,10 +416,9 @@ BE_INLINE Mat2 Mat2::Inverse() const & {
 }
 
 BE_INLINE Mat2 Mat2::FromOuterProduct(const Vec2 &a, const Vec2 &b) {
-    Mat2 m;
-    m.mat[0] = a[0] * b;
-    m.mat[1] = a[1] * b;
-    return m;
+    return Mat2(
+        a[0] * b,
+        a[1] * b);
 }
 
 BE_INLINE const char *Mat2::ToString(int precision) const {

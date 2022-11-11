@@ -566,41 +566,17 @@ BE_INLINE Vec3 Mat3x4::ToTranslationVec3() const {
 }
 
 BE_INLINE Mat3x4 Mat3x4::FromTranslation(float tx, float ty, float tz) {
-    Mat3x4 m;
-    m.mat[0][0] = 1;
-    m.mat[0][1] = 0;
-    m.mat[0][2] = 0;
-    m.mat[0][3] = tx;
-
-    m.mat[1][0] = 0;
-    m.mat[1][1] = 1;
-    m.mat[1][2] = 0;
-    m.mat[1][3] = ty;
-
-    m.mat[2][0] = 0;
-    m.mat[2][1] = 0;
-    m.mat[2][2] = 1;
-    m.mat[2][3] = tz;
-    return m;
+    return Mat3x4(
+        1, 0, 0, tx,
+        0, 1, 0, ty,
+        0, 0, 1, tz);
 }
 
 BE_INLINE Mat3x4 Mat3x4::FromScale(float sx, float sy, float sz) {
-    Mat3x4 m;
-    m.mat[0][0] = sx;
-    m.mat[0][1] = 0;
-    m.mat[0][2] = 0;
-    m.mat[0][3] = 0;
-
-    m.mat[0][0] = 0;
-    m.mat[0][1] = sy;
-    m.mat[0][2] = 0;
-    m.mat[0][3] = 0;
-
-    m.mat[0][0] = 0;
-    m.mat[0][1] = 0;
-    m.mat[0][2] = sz;
-    m.mat[0][3] = 0;
-    return m;
+    return Mat3x4(
+        sx, 0, 0, 0,
+        0, sy, 0, 0,
+        0, 0, sz, 0);
 }
 
 BE_INLINE const char *Mat3x4::ToString(int precision) const {

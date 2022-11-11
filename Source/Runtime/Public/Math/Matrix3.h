@@ -662,27 +662,17 @@ BE_INLINE Mat3 &Mat3::TransposeSelf() {
 }
 
 BE_INLINE Mat3 Mat3::FromScale(float sx, float sy, float sz) {
-    Mat3 m;
-    m.mat[0][0] = sx;
-    m.mat[0][1] = 0;
-    m.mat[0][2] = 0;
-
-    m.mat[1][0] = 0;
-    m.mat[1][1] = sy;
-    m.mat[1][2] = 0;
-
-    m.mat[2][0] = 0;
-    m.mat[2][1] = 0;
-    m.mat[2][2] = sz;
-    return m;
+    return Mat3(
+        sx, 0, 0,
+        0, sy, 0,
+        0, 0, sz);
 }
 
 BE_INLINE Mat3 Mat3::FromOuterProduct(const Vec3 &a, const Vec3 &b) {
-    Mat3 m;
-    m.mat[0] = a * b[0];
-    m.mat[1] = a * b[1];
-    m.mat[2] = a * b[2];
-    return m;
+    return Mat3(
+        a * b[0],
+        a * b[1],
+        a * b[2]);
 }
 
 BE_INLINE Vec3 Mat3::ToScaleVec3() const {
