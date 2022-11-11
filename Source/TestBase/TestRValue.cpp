@@ -22,6 +22,10 @@ public:
         BE_LOG("Called default ctor\n");
         n = 0;
     }
+    // dtor
+    ~Number() {
+        BE_LOG("Called dtor\n");
+    }
     // ctor with number
     Number(int n) {
         BE_LOG("Called ctor with number\n");
@@ -49,19 +53,31 @@ public:
         BE1::Swap(n, rhs.n);
         return *this;
     }
-    // *
-    Number operator+(const Number &rhs) const {
-        BE_LOG("Called operator+ with [*this == const]\n");
-        return Number(n + rhs.n); // 새 임시 객체를 만들어 리턴
-        // *임시 객체를 바로 만들어서* 리턴했으므로 RVO 에 의해 받는 쪽(caller)에서 ctor 나 assignment operator 가 따로 호출되지 않는다
+    // 이름 없는 임시 객체를 만들어서 리턴한다.
+    // RVO 가 적용되면 받는 쪽(caller)에서 ctor 나 assignment operator 가 따로 호출되지 않는다.
+    Number RVO(const Number &rhs) const {
+        BE_LOG("Called RVO\n");
+        return Number(n + rhs.n);
+    }
+    // 이름 있는 임시 객체를 만들어서 리턴한다.
+    // NRVO 가 적용되면 받는 쪽(caller)에서 ctor 나 assignment operator 가 따로 호출되지 않는다.
+    Number NRVO(const Number &rhs) const {
+        BE_LOG("Called NRVO\n");
+        Number named(n + rhs.n);
+        return named;
     }
     // +
+    Number operator+(const Number &rhs) const {
+        BE_LOG("Called operator+ with [*this == const]\n");
+        return Number(n + rhs.n);
+    }
+    // - for lvalue
     Number operator-(const Number &rhs) const & { // *this 가 lvalue 이고 다른 객체와의 덧셈시 호출된다.
         BE_LOG("Called operator- with [*this == const &]\n");
         return Number(n - rhs.n); 
         
     }
-    // +
+    // - for rvalue
     Number &&operator-(const Number &rhs) && { // *this 가 rvalue 이고 다른 객체와의 덧셈시 호출된다.
         BE_LOG("Called operator- with [*this == &&]\n");
         n -= rhs.n;
@@ -97,15 +113,29 @@ void TestRValue() {
     BE_LOG("\nnum4 = Number(1)\n");
     num4 = Number(1); // move assignment
 
-    BE_LOG("\nNumber num5 = num2 + num3\n");
-    Number num5 = num2 + num3; // 임시 객체를 대입했지만 copy-ctor 도, move-ctor 도 호출되지 않는다. RVO 때문에 임시객체 자체가 리턴값을 받는 객체와 동일한 객체가 된다.
+    BE_LOG("\nNumber num5 = num2.RVO(num3)\n");
+    Number num5 = num2.RVO(num3); // test RVO
 
-    BE_LOG("\nNumber num6 = num2 - num3\n");
-    Number num6 = num2 - num3; // 임시 객체를 대입했지만 copy-ctor 도, move-ctor 도 호출되지 않는다. RVO 때문에 임시객체 자체가 리턴값을 받는 객체와 동일한 객체가 된다.
+    BE_LOG("\nnum5 = num2.RVO(num3)\n");
+    num5 = num2.RVO(num3);
 
-    BE_LOG("\nNumber num7 = num2 + num3 + num4 + num5\n");
-    Number num7 = num2 + num3 + num4 + num5 + num6; // 임시 객체 생성이 연속으로 늘어남
+    BE_LOG("\nNumber num6 = num2.NRVO(num3)\n");
+    Number num6 = num2.NRVO(num3); // test NRVO
 
-    BE_LOG("\nNumber num8 = num2 - num3 - num4 - num5\n");
-    Number num8 = num2 - num3 - num4 - num5 - num6; // ref-qualifier 에 의해 임시객체 생성이 최소화됨
+    BE_LOG("\nnum6 = num2.NRVO(num3)\n");
+    num6 = num2.NRVO(num3);
+
+    BE_LOG("\nNumber num7 = num2 + num3\n");
+    Number num7 = num2 + num3; // 임시 객체를 대입했지만 copy-ctor 는 호출되지 않는다. RVO 때문에 임시객체 자체가 리턴값을 받는 객체와 동일한 객체가 된다.
+
+    BE_LOG("\nNumber num8 = num2 - num3\n");
+    Number num8 = num2 - num3; // 임시 객체를 대입했지만 copy-ctor 는 호출되지 않는다. RVO 때문에 임시객체 자체가 리턴값을 받는 객체와 동일한 객체가 된다.
+
+    BE_LOG("\nNumber num9 = num2 + num3 + num4 + num5\n");
+    Number num9 = num2 + num3 + num4 + num5 + num6; // 임시 객체 생성이 연속으로 늘어남
+
+    BE_LOG("\nNumber num10 = num2 - num3 - num4 - num5\n");
+    Number num10 = num2 - num3 - num4 - num5 - num6; // ref-qualifier 에 의해 임시객체 생성이 최소화됨
+
+    BE_LOG("\n");
 }

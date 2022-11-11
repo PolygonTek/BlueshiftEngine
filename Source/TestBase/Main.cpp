@@ -44,11 +44,11 @@ int main(int argc, char *argv[]) {
 
     //TestContainer();
 
-    //TestRValue();
+    TestRValue();
 
     //TestMath();
 
-    TestSIMD();
+    //TestSIMD();
 
     //TestThread();
 
