@@ -50,10 +50,10 @@ Ray Line::ToRay() const {
 }
 
 Line Line::FromString(const char *str) {
-    Line line;
-    int count = sscanf(str, "%f %f %f %f %f %f", &line.pos.x, &line.pos.y, &line.pos.z, &line.dir.x, &line.dir.y, &line.dir.z);
-    assert(count == GetDimension());
-    return line;
+    Line l;
+    int count = sscanf(str, "%f %f %f %f %f %f", &l.pos.x, &l.pos.y, &l.pos.z, &l.dir.x, &l.dir.y, &l.dir.z);
+    assert(count == l.GetDimension());
+    return l;
 }
 
 BE_NAMESPACE_END

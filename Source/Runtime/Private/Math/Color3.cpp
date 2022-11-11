@@ -202,7 +202,7 @@ uint32_t Color3::ToUInt32() const {
 Color3 Color3::FromString(const char *str) {
     Color3 v;
     int count = sscanf(str, "%f %f %f", &v.r, &v.g, &v.b);
-    assert(count == GetDimension());
+    assert(count == v.GetDimension());
     return v;
 }
 

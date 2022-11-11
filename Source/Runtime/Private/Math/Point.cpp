@@ -26,7 +26,7 @@ PointF Point::ToPointF() const {
 Point Point::FromString(const char *str) {
     Point p;
     int count = sscanf(str, "%i %i", &p.x, &p.y);
-    assert(count == GetDimension());
+    assert(count == p.GetDimension());
     return p;
 }
 

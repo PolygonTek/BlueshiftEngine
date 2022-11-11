@@ -22,7 +22,7 @@ const SizeF SizeF::zero = SizeF(0.0f, 0.0f);
 SizeF SizeF::FromString(const char *str) {
     SizeF s;
     int count = sscanf(str, "%f %f", &s.w, &s.h);
-    assert(count == GetDimension());
+    assert(count == s.GetDimension());
     return s;
 }
 

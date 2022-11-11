@@ -23,7 +23,7 @@ ALIGN_AS16 const Quat Quat::identity(0.0f, 0.0f, 0.0f, 1.0f);
 Quat Quat::FromString(const char *str) {
     Quat q;
     int count = sscanf(str, "%f %f %f %f", &q.x, &q.y, &q.z, &q.w);
-    assert(count == GetDimension());
+    assert(count == q.GetDimension());
     return q;
 }
 

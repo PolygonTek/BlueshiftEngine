@@ -27,7 +27,7 @@ const Vec2 Vec2::infinity(Math::Infinity, Math::Infinity);
 Vec2 Vec2::FromString(const char *str) {
     Vec2 v;
     int count = sscanf(str, "%f %f", &v.x, &v.y);
-    assert(count == GetDimension());
+    assert(count == v.GetDimension());
     return v;
 }
 

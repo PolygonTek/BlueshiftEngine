@@ -1303,7 +1303,7 @@ Mat3 Mat3::FromString(const char *str) {
     Mat3 m;
     int count = sscanf(str, "%f %f %f %f %f %f %f %f %f",
         &m[0].x, &m[0].y, &m[0].z, &m[1].x, &m[1].y, &m[1].z, &m[2].x, &m[2].y, &m[2].z);
-    assert(count == GetDimension());
+    assert(count == m.GetDimension());
     return m;
 }
 

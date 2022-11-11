@@ -29,7 +29,7 @@ ALIGN_AS32 const Vec4 Vec4::infinity(Math::Infinity, Math::Infinity, Math::Infin
 Vec4 Vec4::FromString(const char *str) {
     Vec4 v;
     int count = sscanf(str, "%f %f %f %f", &v.x, &v.y, &v.z, &v.w);
-    assert(count == GetDimension());
+    assert(count == v.GetDimension());
     return v;
 }
 

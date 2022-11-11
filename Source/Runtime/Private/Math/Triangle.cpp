@@ -192,7 +192,7 @@ AABB Triangle::ToAABB() const {
 Triangle Triangle::FromString(const char *str) {
     Triangle t;
     int count = sscanf(str, "%f %f %f %f %f %f %f %f %f", &t.a.x, &t.a.y, &t.a.z, &t.b.x, &t.b.y, &t.b.z, &t.c.x, &t.c.y, &t.c.z);
-    assert(count == GetDimension());
+    assert(count == t.GetDimension());
     return t;
 }
 

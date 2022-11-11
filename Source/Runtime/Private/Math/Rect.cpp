@@ -156,7 +156,7 @@ RectF Rect::ToRectF() const {
 Rect Rect::FromString(const char *str) {
     Rect r;
     int count = sscanf(str, "%i %i %i %i", &r.x, &r.y, &r.w, &r.h);
-    assert(count == GetDimension());
+    assert(count == r.GetDimension());
     return r;
 }
 

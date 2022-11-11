@@ -24,7 +24,7 @@ const char *Ray::ToString(int precision) const {
 Ray Ray::FromString(const char *str) {
     Ray r;
     int count = sscanf(str, "%f %f %f %f %f %f", &r.origin.x, &r.origin.y, &r.origin.z, &r.dir.x, &r.dir.y, &r.dir.z);
-    assert(count == GetDimension());
+    assert(count == r.GetDimension());
     return r;
 }
 

@@ -26,7 +26,7 @@ SizeF Size::ToSizeF() const {
 Size Size::FromString(const char *str) {
     Size s;
     int count = sscanf(str, "%i %i", &s.w, &s.h);
-    assert(count == GetDimension());
+    assert(count == s.GetDimension());
     return s;
 }
 

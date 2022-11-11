@@ -131,7 +131,7 @@ bool Mat2::InverseSelf() {
 Mat2 Mat2::FromString(const char *str) {
     Mat2 m;
     int count = sscanf(str, "%f %f %f %f", &m[0].x, &m[0].y, &m[1].x, &m[1].y);
-    assert(count == GetDimension());
+    assert(count == m.GetDimension());
     return m;
 }
 
