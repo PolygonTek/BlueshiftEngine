@@ -48,49 +48,49 @@ public:
 
     virtual const AABB      GetAABB() const override;
 
-    EnvProbe::Type::Enum    GetType() const;
+    EnvProbe::Type::Enum    GetType() const { return probeDef.type; }
     void                    SetType(EnvProbe::Type::Enum type);
 
-    EnvProbe::RefreshMode::Enum GetRefreshMode() const;
+    EnvProbe::RefreshMode::Enum GetRefreshMode() const { return probeDef.refreshMode; }
     void                    SetRefreshMode(EnvProbe::RefreshMode::Enum refreshMode);
 
-    EnvProbe::TimeSlicing::Enum GetTimeSlicing() const;
+    EnvProbe::TimeSlicing::Enum GetTimeSlicing() const { return probeDef.timeSlicing; }
     void                    SetTimeSlicing(EnvProbe::TimeSlicing::Enum timeSlicing);
 
-    int                     GetImportance() const;
+    int                     GetImportance() const { return probeDef.importance; }
     void                    SetImportance(int importance);
 
-    EnvProbe::Resolution::Enum GetResolution() const;
+    EnvProbe::Resolution::Enum GetResolution() const { return probeDef.resolution; }
     void                    SetResolution(EnvProbe::Resolution::Enum resolution);
 
-    bool                    IsHDR() const;
+    bool                    IsHDR() const { return probeDef.useHDR; }
     void                    SetHDR(bool useHDR);
 
-    int                     GetLayerMask() const;
+    int                     GetLayerMask() const { return probeDef.layerMask; }
     void                    SetLayerMask(int layerMask);
 
-    EnvProbe::ClearMethod::Enum GetClearMethod() const;
+    EnvProbe::ClearMethod::Enum GetClearMethod() const { return probeDef.clearMethod; }
     void                    SetClearMethod(EnvProbe::ClearMethod::Enum clearMethod);
 
-    Color3                  GetClearColor() const;
+    Color3                  GetClearColor() const { return probeDef.clearColor; }
     void                    SetClearColor(const Color3 &clearColor);
 
-    float                   GetClippingNear() const;
+    float                   GetClippingNear() const { return probeDef.clippingNear; }
     void                    SetClippingNear(float clippingNear);
 
-    float                   GetClippingFar() const;
+    float                   GetClippingFar() const { return probeDef.clippingFar; }
     void                    SetClippingFar(float clippingFar);
 
-    bool                    IsBoxProjection() const;
+    bool                    IsBoxProjection() const { return probeDef.useBoxProjection; }
     void                    SetBoxProjection(bool useBoxProjection);
 
-    Vec3                    GetBoxExtent() const;
+    Vec3                    GetBoxExtent() const { return probeDef.boxExtent; }
     void                    SetBoxExtent(const Vec3 &boxExtent);
 
-    Vec3                    GetBoxOffset() const;
+    Vec3                    GetBoxOffset() const { return probeDef.boxOffset; }
     void                    SetBoxOffset(const Vec3 &boxOffset);
 
-    float                   GetBlendDistance() const;
+    float                   GetBlendDistance() const { return probeDef.blendDistance; }
     void                    SetBlendDistance(float blendDistance);
 
     Guid                    GetBakedDiffuseProbeTextureGuid() const;
@@ -106,6 +106,8 @@ public:
 
     Str                     WriteDiffuseProbeTexture(const Str &probesDir) const;
     Str                     WriteSpecularProbeTexture(const Str &probesDir) const;
+
+    bool                    ShouldUpdateEveryFrame() const;
 
 protected:
     virtual void            OnActive() override;

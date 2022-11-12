@@ -66,7 +66,6 @@ void ComEnvironmentProbe::RegisterProperties() {
 }
 
 ComEnvironmentProbe::ComEnvironmentProbe() {
-    updatable = true;
 }
 
 ComEnvironmentProbe::~ComEnvironmentProbe() {
@@ -196,10 +195,8 @@ void ComEnvironmentProbe::Update() {
         return;
     }
 
-    if (probeDef.type == EnvProbe::Type::Realtime) {
-        if (probeDef.refreshMode == EnvProbe::RefreshMode::EveryFrame) {
-            renderSystem.ScheduleToRefreshEnvProbe(renderWorld, probeHandle);
-        }
+    if (ShouldUpdateEveryFrame()) {
+        renderSystem.ScheduleToRefreshEnvProbe(renderWorld, probeHandle);
     }
 }
 
@@ -279,32 +276,24 @@ void ComEnvironmentProbe::TransformUpdated(const ComTransform *transform) {
     UpdateVisuals();
 }
 
-EnvProbe::Type::Enum ComEnvironmentProbe::GetType() const {
-    return probeDef.type;
-}
-
 void ComEnvironmentProbe::SetType(EnvProbe::Type::Enum type) {
     probeDef.type = type;
+
+    updatable = ShouldUpdateEveryFrame();
 
     if (IsInitialized()) {
         UpdateVisuals();
     }
-}
-
-EnvProbe::RefreshMode::Enum ComEnvironmentProbe::GetRefreshMode() const {
-    return probeDef.refreshMode;
 }
 
 void ComEnvironmentProbe::SetRefreshMode(EnvProbe::RefreshMode::Enum refreshMode) {
     probeDef.refreshMode = refreshMode;
 
+    updatable = ShouldUpdateEveryFrame();
+
     if (IsInitialized()) {
         UpdateVisuals();
     }
-}
-
-EnvProbe::TimeSlicing::Enum ComEnvironmentProbe::GetTimeSlicing() const {
-    return probeDef.timeSlicing;
 }
 
 void ComEnvironmentProbe::SetTimeSlicing(EnvProbe::TimeSlicing::Enum timeSlicing) {
@@ -315,20 +304,12 @@ void ComEnvironmentProbe::SetTimeSlicing(EnvProbe::TimeSlicing::Enum timeSlicing
     }
 }
 
-int ComEnvironmentProbe::GetImportance() const {
-    return probeDef.importance;
-}
-
 void ComEnvironmentProbe::SetImportance(int importance) {
     probeDef.importance = Max(importance, 0);
 
     if (IsInitialized()) {
         UpdateVisuals();
     }
-}
-
-EnvProbe::Resolution::Enum ComEnvironmentProbe::GetResolution() const {
-    return probeDef.resolution;
 }
 
 void ComEnvironmentProbe::SetResolution(EnvProbe::Resolution::Enum resolution) {
@@ -339,20 +320,12 @@ void ComEnvironmentProbe::SetResolution(EnvProbe::Resolution::Enum resolution) {
     }
 }
 
-bool ComEnvironmentProbe::IsHDR() const {
-    return probeDef.useHDR;
-}
-
 void ComEnvironmentProbe::SetHDR(bool useHDR) {
     probeDef.useHDR = useHDR;
 
     if (IsInitialized()) {
         UpdateVisuals();
     }
-}
-
-int ComEnvironmentProbe::GetLayerMask() const {
-    return probeDef.layerMask;
 }
 
 void ComEnvironmentProbe::SetLayerMask(int layerMask) {
@@ -363,10 +336,6 @@ void ComEnvironmentProbe::SetLayerMask(int layerMask) {
     }
 }
 
-EnvProbe::ClearMethod::Enum ComEnvironmentProbe::GetClearMethod() const {
-    return probeDef.clearMethod;
-}
-
 void ComEnvironmentProbe::SetClearMethod(EnvProbe::ClearMethod::Enum clearMethod) {
     probeDef.clearMethod = clearMethod;
 
@@ -375,20 +344,12 @@ void ComEnvironmentProbe::SetClearMethod(EnvProbe::ClearMethod::Enum clearMethod
     }
 }
 
-Color3 ComEnvironmentProbe::GetClearColor() const {
-    return probeDef.clearColor;
-}
-
 void ComEnvironmentProbe::SetClearColor(const Color3 &clearColor) {
     probeDef.clearColor = clearColor;
 
     if (IsInitialized()) {
         UpdateVisuals();
     }
-}
-
-float ComEnvironmentProbe::GetClippingNear() const {
-    return probeDef.clippingNear;
 }
 
 void ComEnvironmentProbe::SetClippingNear(float clippingNear) {
@@ -403,10 +364,6 @@ void ComEnvironmentProbe::SetClippingNear(float clippingNear) {
     }
 }
 
-float ComEnvironmentProbe::GetClippingFar() const {
-    return probeDef.clippingFar;
-}
-
 void ComEnvironmentProbe::SetClippingFar(float clippingFar) {
     if (clippingFar >= probeDef.clippingNear) {
         probeDef.clippingFar = clippingFar;
@@ -417,20 +374,12 @@ void ComEnvironmentProbe::SetClippingFar(float clippingFar) {
     }
 }
 
-bool ComEnvironmentProbe::IsBoxProjection() const {
-    return probeDef.useBoxProjection;
-}
-
 void ComEnvironmentProbe::SetBoxProjection(bool useBoxProjection) {
     probeDef.useBoxProjection = useBoxProjection;
 
     if (IsInitialized()) {
         UpdateVisuals();
     }
-}
-
-Vec3 ComEnvironmentProbe::GetBoxExtent() const {
-    return probeDef.boxExtent;
 }
 
 void ComEnvironmentProbe::SetBoxExtent(const Vec3 &boxExtent) {
@@ -456,10 +405,6 @@ void ComEnvironmentProbe::SetBoxExtent(const Vec3 &boxExtent) {
     }
 }
 
-Vec3 ComEnvironmentProbe::GetBoxOffset() const {
-    return probeDef.boxOffset;
-}
-
 void ComEnvironmentProbe::SetBoxOffset(const Vec3 &boxOffset) {
     probeDef.boxOffset = boxOffset;
 
@@ -481,10 +426,6 @@ void ComEnvironmentProbe::SetBoxOffset(const Vec3 &boxOffset) {
     if (IsInitialized()) {
         UpdateVisuals();
     }
-}
-
-float ComEnvironmentProbe::GetBlendDistance() const {
-    return probeDef.blendDistance;
 }
 
 void ComEnvironmentProbe::SetBlendDistance(float blendDistance) {
@@ -594,6 +535,15 @@ Str ComEnvironmentProbe::WriteSpecularProbeTexture(const Str &probesDir) const {
     specularProbeImage.WriteDDS(specularProbeFilename);
 
     return specularProbeFilename;
+}
+
+bool ComEnvironmentProbe::ShouldUpdateEveryFrame() const {
+    if (probeDef.type == EnvProbe::Type::Realtime) {
+        if (probeDef.refreshMode == EnvProbe::RefreshMode::EveryFrame) {
+            return true;
+        }
+    }
+    return false;
 }
 
 BE_NAMESPACE_END
