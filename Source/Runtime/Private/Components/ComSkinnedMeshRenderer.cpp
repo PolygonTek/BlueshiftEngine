@@ -88,16 +88,18 @@ void ComSkinnedMeshRenderer::UpdateSkeleton() {
         }
     }
 
-    bool isCompatibleSkeleton = skeleton && referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
-
     if (renderObjectDef.mesh) {
         meshManager.ReleaseMesh(renderObjectDef.mesh);
     }
 
-    renderObjectDef.mesh = referenceMesh->InstantiateMesh(isCompatibleSkeleton ? Mesh::Type::Skinned : Mesh::Type::Static);
-    renderObjectDef.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
-    renderObjectDef.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
-    renderObjectDef.joints = joints;
+    if (referenceMesh) {
+        bool isCompatibleSkeleton = skeleton && referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
+
+        renderObjectDef.mesh = referenceMesh->InstantiateMesh(isCompatibleSkeleton ? Mesh::Type::Skinned : Mesh::Type::Static);
+        renderObjectDef.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
+        renderObjectDef.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
+        renderObjectDef.joints = joints;
+    }
 
     UpdateVisuals();
 }
@@ -107,8 +109,10 @@ void ComSkinnedMeshRenderer::UpdateVisuals() {
         return;
     }
 
-    // FIXME
-    renderObjectDef.aabb = referenceMesh->GetAABB();
+    if (referenceMesh) {
+        // FIXME
+        renderObjectDef.aabb = referenceMesh->GetAABB();
+    }
 
     ComRenderable::UpdateVisuals();
 }

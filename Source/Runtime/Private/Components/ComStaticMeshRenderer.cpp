@@ -53,7 +53,9 @@ void ComStaticMeshRenderer::Purge(bool chainPurge) {
 void ComStaticMeshRenderer::Init() {
     ComMeshRenderer::Init();
 
-    renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::Type::Static);
+    if (referenceMesh) {
+        renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::Type::Static);
+    }
 
     // Mark as initialized
     SetInitialized(true);

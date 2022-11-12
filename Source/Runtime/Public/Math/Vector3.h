@@ -814,8 +814,7 @@ BE_INLINE void Vec3::OrthogonalBasis(Vec3 &left, Vec3 &up) const {
 
 BE_INLINE Vec3 Vec3::Slide(const Vec3 &normal, float backoffScale) const {
     float backoff = Dot(normal) * backoffScale;
-    Vec3 slideVector = *this - normal * backoff;
-    return slideVector;
+    return Vec3(*this - normal * backoff);
 }
 
 BE_NAMESPACE_END
