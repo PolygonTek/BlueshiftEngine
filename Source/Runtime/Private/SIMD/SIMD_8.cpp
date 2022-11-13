@@ -769,6 +769,38 @@ void BE_FASTCALL SIMD_8::Memset(void *dest0, const int val, const int count0) {
 #endif
 }
 
+void BE_FASTCALL SIMD_8::MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, const Mat3x4 *joints2, const int numJoints) {
+#if 0
+    int i;
+
+    for (i = 0; i < numJoints; i++) {
+        result[i] = joints1[i] * joints2[i];
+    }
+#else
+    assert_16_byte_aligned(result);
+    assert_16_byte_aligned(joints1);
+    assert_16_byte_aligned(joints2);
+
+    const float *joint1Ptr = (float *)joints1;
+    const float *joint2Ptr = (float *)joints2;
+    float *resultPtr = (float *)result;
+
+    int i;
+
+    for (i = 0; i < numJoints; i++) {
+        simd8f ar01 = loadu_256ps(&joint1Ptr[i * 12 + 0]);
+        simd4f ar2 = loadu_ps(&joint1Ptr[i * 12 + 8]);
+
+        simd8f br00 = broadcast_256ps((simd4f *)&joint2Ptr[i * 12 + 0]);
+        simd8f br11 = broadcast_256ps((simd4f *)&joint2Ptr[i * 12 + 4]);
+        simd8f br22 = broadcast_256ps((simd4f *)&joint2Ptr[i * 12 + 8]);
+
+        store_256ps(lincomb2x3x4(ar01, br00, br11, br22), &resultPtr[i * 12 + 0]);
+        store_ps(lincomb3x4(ar2, extract_256ps<0>(br00), extract_256ps<0>(br11), extract_256ps<0>(br22)), &resultPtr[i * 12 + 8]);
+    }
+#endif
+}
+
 BE_NAMESPACE_END
 
-#endif
+#endif // HAVE_X86_AVX_INTRIN
