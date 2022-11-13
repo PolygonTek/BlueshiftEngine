@@ -42,6 +42,11 @@ public:
     const Vec3 &        P2() const { return p[1]; }
     float               Radius() const { return radius; }
 
+                        /// Returns surface area of cylinder.
+    float               Area() const { return 2.0f * Math::Pi * radius * (radius + p[1].Distance(p[0])); }
+                        /// Returns volume of the cylinder.
+    float               Volume() const { return Math::Pi * radius * radius * p[1].Distance(p[0]); }
+
                         /// Exact compare, no epsilon.
     bool                Equals(const Cylinder &other) const;
                         /// Compare with epsilon.
