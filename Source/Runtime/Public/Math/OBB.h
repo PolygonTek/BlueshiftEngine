@@ -255,7 +255,7 @@ BE_INLINE void OBB::SetZero() {
 }
 
 BE_INLINE float OBB::Volume() const {
-    return (extents * 2.0f).LengthSqr();
+    return extents.x * extents.y * extents.z * 8.0f;
 }
 
 BE_INLINE bool OBB::IsCleared() const {
