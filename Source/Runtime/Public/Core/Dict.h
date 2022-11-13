@@ -217,7 +217,8 @@ BE_INLINE int Dict::GetInt(const char *key, const char *defaultString) const {
 
 BE_INLINE int64_t Dict::GetInt64(const char *key, const char *defaultString) const {
     int64_t v;
-    sscanf(GetString(key, defaultString), "%" PRIi64, &v);
+    int ret = sscanf(GetString(key, defaultString), "%" PRIi64, &v);
+    assert(ret == 1);
     return v;
 }
 
