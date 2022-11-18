@@ -268,6 +268,13 @@ public:
 
     static Mat3         FromOuterProduct(const Vec3 &a, const Vec3 &b);
 
+                        /// Transforms the given 3-vector by this matrix M, i.e. returns M * (x, y, z).
+                        /// This function is identical to the member function MulVec().
+    Vec3                Transform(const Vec3 &vector) const;
+
+                        /// Performs a batch transform of the given array of vectors.
+    void                BatchTransform(Vec3 *vectorArray, int numElements) const;
+
                         /// Converts this 3x3 matrix to 4x4 matrix.
     Mat4                ToMat4() const;
 
@@ -425,6 +432,19 @@ BE_INLINE Vec3 Mat3::TransposedMulVec(const Vec3 &vec) const {
         mat[0].x * vec.x + mat[0].y * vec.y + mat[0].z * vec.z,
         mat[1].x * vec.x + mat[1].y * vec.y + mat[1].z * vec.z,
         mat[2].x * vec.x + mat[2].y * vec.y + mat[2].z * vec.z);
+}
+
+BE_INLINE Vec3 Mat3::Transform(const Vec3 &vec) const {
+    return Vec3(
+        mat[0].x * vec.x + mat[1].x * vec.y + mat[2].x * vec.z,
+        mat[0].y * vec.x + mat[1].y * vec.y + mat[2].y * vec.z,
+        mat[0].z * vec.x + mat[1].z * vec.y + mat[2].z * vec.z);
+}
+
+BE_INLINE void Mat3::BatchTransform(Vec3 *vectorArray, int numElements) const {
+    for (int i = 0; i < numElements; i++) {
+        vectorArray[i] = Transform(vectorArray[i]);
+    }
 }
 
 BE_INLINE Mat3 Mat3::operator*(float a) const & {

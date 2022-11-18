@@ -128,17 +128,6 @@ public:
                         /// Transforms the given vector by the given matrix in the order v * M (!= M * v).
     friend Vec4         operator*(const Vec4 &lhs, const Mat4 &rhs) { return rhs.TransposedMulVec(lhs); }
 
-                        /// Transforms the given point vector by this matrix M, i.e. returns M * (x, y, z, 1).
-                        /// The suffix "Pos" in this function means that the w component of the input vector is
-                        /// assumed to be 1, i.e. the input vector represents a point (a position).
-    Vec3                TransformPos(const Vec3 &pos) const;
-
-                        /// Transforms the given direction vector by this matrix M, i.e. returns M * (x, y, z, 0).
-                        /// The suffix "Dir" in this function just means that the w component of the input vector is
-                        /// assumed to be 0, i.e. the input vector represents a direction.
-                        /// The input vector does not need to be normalized.
-    Vec3                TransformDir(const Vec3 &dir) const;
-
                         /// Assign from another matrix.
     Mat4 &              operator=(const Mat4 &rhs);
     Mat4 &              operator=(const Mat3x4 &rhs);
@@ -297,6 +286,23 @@ public:
 
     static Mat4         FromOuterProduct(const Vec4 &a, const Vec4 &b);
 
+                        /// Transforms the given point vector by this matrix M, i.e. returns M * (x, y, z, 1).
+                        /// The suffix "Pos" in this function means that the w component of the input vector is
+                        /// assumed to be 1, i.e. the input vector represents a point (a position).
+    Vec3                TransformPos(const Vec3 &pos) const;
+
+                        /// Transforms the given direction vector by this matrix M, i.e. returns M * (x, y, z, 0).
+                        /// The suffix "Dir" in this function just means that the w component of the input vector is
+                        /// assumed to be 0, i.e. the input vector represents a direction.
+                        /// The input vector does not need to be normalized.
+    Vec3                TransformDir(const Vec3 &dir) const;
+
+                        /// Performs a batch transform of the given array of point vectors.
+    void                BatchTransformPos(Vec3 *posArray, int numElements) const;
+
+                        /// Performs a batch transform of the given array of direction vectors.
+    void                BatchTransformDir(Vec3 *dirArray, int numElements) const;
+
                         /// LU decomposition, in-place.
     bool                DecompLU();
 
@@ -312,6 +318,8 @@ public:
     Vec3                ToScaleVec3() const;
                         /// Returns translation vector part.
     Vec3                ToTranslationVec3() const;
+                        /// Returns rotation part in 3x3 matrix;
+    Mat3                ToRotationMat3() const;
 
                         /// Returns "_00 _01 _02 _03 _10 _11 _12 _13 _20 _21 _22 _23 _30 _31 _32 _33".
     const char *        ToString() const { return ToString(4); }
@@ -582,11 +590,10 @@ BE_INLINE Vec3 Mat4::TransformPos(const Vec3 &pos) const {
     return ret;
 }
 
-BE_INLINE Vec3 Mat4::TransformDir(const Vec3 &dir) const {
-    return Vec3(
-        mat[0].x * dir.x + mat[0].y * dir.y + mat[0].z * dir.z, 
-        mat[1].x * dir.x + mat[1].y * dir.y + mat[1].z * dir.z,
-        mat[2].x * dir.x + mat[2].y * dir.y + mat[2].z * dir.z);
+BE_INLINE void Mat4::BatchTransformPos(Vec3 *posArray, int numElements) const {
+    for (int i = 0; i < numElements; i++) {
+        posArray[i] = TransformPos(posArray[i]);
+    }
 }
 
 BE_INLINE Mat4 Mat4::Inverse() const & {
@@ -641,6 +648,15 @@ BE_INLINE Mat4 Mat3::ToMat4() const {
 
 BE_INLINE Vec3 Mat4::ToTranslationVec3() const {
     return Vec3(mat[0][3], mat[1][3], mat[2][3]);
+}
+
+BE_INLINE Mat3 Mat4::ToRotationMat3() const {
+    Vec3 scale = ToScaleVec3();
+    Mat3 rotation = ToMat3();
+    rotation[0] *= 1.0f / scale.x;
+    rotation[1] *= 1.0f / scale.y;
+    rotation[2] *= 1.0f / scale.z;
+    return rotation;
 }
 
 BE_INLINE Mat4 Mat4::FromTranslation(float tx, float ty, float tz) {

@@ -342,11 +342,12 @@ void AABB::SetFromTransformedAABBFast(const AABB &aabb, const Mat3x4 &transform)
 void AABB::SetFromTransformedAABB(const AABB &aabb, const Mat3x4 &transform) {
     Vec3 points[8];
     aabb.ToPoints(points);
+    transform.BatchTransformPos(points, COUNT_OF(points));
 
     Clear();
 
     for (int i = 0; i < 8; i++) {
-        AddPoint(transform.TransformPos(points[i]));
+        AddPoint(points[i]);
     }
 }
 

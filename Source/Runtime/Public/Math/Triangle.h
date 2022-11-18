@@ -165,21 +165,15 @@ BE_INLINE Triangle &Triangle::TranslateSelf(const Vec3 &translation) {
 }
 
 BE_INLINE void Triangle::Transform(const Mat3 &transform) {
-    a = transform * a;
-    b = transform * b;
-    c = transform * c;
+    transform.BatchTransform((Vec3 *)&a, 3);
 }
 
 BE_INLINE void Triangle::Transform(const Mat3x4 &transform) {
-    a = transform.TransformPos(a);
-    b = transform.TransformPos(b);
-    c = transform.TransformPos(c);
+    transform.BatchTransformPos((Vec3 *)&a, 3);
 }
 
 BE_INLINE void Triangle::Transform(const Mat4 &transform) {
-    a = transform.TransformPos(a);
-    b = transform.TransformPos(b);
-    c = transform.TransformPos(c);
+    transform.BatchTransformPos((Vec3 *)&a, 3);
 }
 
 BE_INLINE void Triangle::Transform(const Quat &transform) {

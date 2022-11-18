@@ -119,17 +119,6 @@ public:
                         /// Transforms the given vector by the given matrix in the order v * M (!= M * v).
     friend Vec4         operator*(const Vec4 &lhs, const Mat3x4 &rhs) { return rhs.TransposedMulVec(lhs); }
 
-                        /// Transforms the given point vector by this matrix M, i.e. returns M * (x, y, z, 1).
-                        /// The suffix "Pos" in this function means that the w component of the input vector is
-                        /// assumed to be 1, i.e. the input vector represents a point (a position).
-    Vec3                TransformPos(const Vec3 &pos) const;
-
-                        /// Transforms the given direction vector by this matrix M, i.e. returns M * (x, y, z, 0).
-                        /// The suffix "Dir" in this function just means that the w component of the input vector is
-                        /// assumed to be 0, i.e. the input vector represents a direction.
-                        /// The input vector does not need to be normalized.
-    Vec3                TransformDir(const Vec3 &dir) const;
-
                         /// Assign from another matrix.
     Mat3x4 &            operator=(const Mat3x4 &rhs);
     Mat3x4 &            operator=(const Mat3 &rhs);
@@ -175,18 +164,27 @@ public:
                         /// Sets this matrix to equal the identity.
     void                SetIdentity();
 
-                        /// Fix degenerate axial cases.
-    bool                FixDegeneracies();
-                        /// Change tiny numbers to zero.
-    bool                FixDenormals();
-
+                        /// Sets the translation part of this linear transformation matrix.
+    void                SetTranslation(const Vec3 &translation);
+                        /// Sets the rotation part of this linear transformation matrix.
+    void                SetRotation(const Mat3 &rotation, bool keepScale);
+                        /// Sets the scale part of this linear transformation matrix.
+    void                SetScale(const Vec3 &scale, bool keepRotation);
+                        /// Sets the translation and rotation part of this linear transformation matrix.
+    void                SetTranslationRotation(const Vec3 &translation, const Mat3 &rotation, bool keepScale);
+                        /// Sets the rotation and scale part of this linear transformation matrix.
     void                SetRotationScale(const Mat3 &rotation, const Vec3 &scale);
-                        /// Sets the translation part of this matrix.
-    void                SetTranslation(const Vec3 &t);
                         /// Sets linear transformation matrix which is a combination of translation, rotation and scale.
     void                SetTRS(const Vec3 &translation, const Mat3 &rotation, const Vec3 &scale);
                         /// Sets linear transformation matrix which is a combination of translation, rotation and scale.
     void                SetTQS(const Vec3 &translation, const Quat &rotation, const Vec3 &scale);
+                        /// Remove the scale part of this matrix.
+    Mat3x4 &            RemoveScale();
+
+                        /// Fix degenerate axial cases.
+    bool                FixDegeneracies();
+                        /// Change tiny numbers to zero.
+    bool                FixDenormals();
 
                         /// Decomposes this matrix to translation, rotation and scale parts.
     void                GetTRS(Vec3 &translation, Mat3 &rotation, Vec3 &scale) const;
@@ -249,9 +247,29 @@ public:
     static Mat3x4       FromScale(float sx, float sy, float sz);
     static Mat3x4       FromScale(const Vec3 &s) { return FromScale(s.x, s.y, s.z); }
 
-                        /// (*this) = a * (*this)
+                        /// Transforms the given point vector by this matrix M, i.e. returns M * (x, y, z, 1).
+                        /// The suffix "Pos" in this function means that the w component of the input vector is
+                        /// assumed to be 1, i.e. the input vector represents a point (a position).
+    Vec3                TransformPos(const Vec3 &pos) const;
+
+                        /// Transforms the given direction vector by this matrix M, i.e. returns M * (x, y, z, 0).
+                        /// The suffix "Dir" in this function just means that the w component of the input vector is
+                        /// assumed to be 0, i.e. the input vector represents a direction.
+                        /// The input vector does not need to be normalized.
+    Vec3                TransformDir(const Vec3 &dir) const;
+
+                        /// Performs a batch transform of the given array of point vectors.
+    void                BatchTransformPos(Vec3 *posArray, int numElements) const;
+
+                        /// Performs a batch transform of the given array of direction vectors.
+    void                BatchTransformDir(Vec3 *dirArray, int numElements) const;
+
+                        /// Transform current matrix by matrix M, in-place.
+                        /// i.e. (*this) = M * (*this)
     Mat3x4 &            TransformSelf(const Mat3x4 &a);
-                        /// (*this) = a^{-1} * (*this)
+                        /// Transform current matrix by inverse of matrix M, in-place.
+                        /// i.e. (*this) = M^{-1} * (*this)
+                        /// M^{-1} = R^T * T^{-1}
     Mat3x4 &            UntransformSelf(const Mat3x4 &a);
 
                         /// Returns upper left 2x2 part.
@@ -264,6 +282,8 @@ public:
     Vec3                ToScaleVec3() const;
                         /// Returns translation vector part.
     Vec3                ToTranslationVec3() const;
+                        /// Returns rotation part in 3x3 matrix.
+    Mat3                ToRotationMat3() const;
 
                         /// Returns "_00 _01 _02 _03 _10 _11 _12 _13 _20 _21 _22 _23".
     const char *        ToString() const { return ToString(4); }
@@ -399,6 +419,24 @@ BE_INLINE void Mat3x4::SetTranslation(const Vec3 &t) {
     mat[2][3] = t[2];
 }
 
+BE_INLINE Mat3x4 &Mat3x4::RemoveScale() {
+    Vec3 invScale = 1.0f / ToScaleVec3();
+
+    mat[0][0] *= invScale.x;
+    mat[0][1] *= invScale.y;
+    mat[0][2] *= invScale.z;
+
+    mat[1][0] *= invScale.x;
+    mat[1][1] *= invScale.y;
+    mat[1][2] *= invScale.z;
+
+    mat[2][0] *= invScale.x;
+    mat[2][1] *= invScale.y;
+    mat[2][2] *= invScale.z;
+
+    return *this;
+}
+
 BE_INLINE const Vec4 &Mat3x4::operator[](int index) const {
     assert(index >= 0 && index < Rows);
     return mat[index];
@@ -490,7 +528,7 @@ BE_INLINE Mat3x4 Mat3x4::InverseOrthogonalUniformScale() const & {
 
 BE_INLINE Mat3x4 Mat3x4::InverseOrthogonalNoScale() const & {
     ALIGN_AS32 Mat3x4 invMat = *this;
-    invMat.InverseOrthogonalSelf();
+    invMat.InverseOrthogonalNoScaleSelf();
     return invMat;
 }
 
@@ -563,6 +601,15 @@ BE_INLINE Mat3x4 &Mat4::ToMat3x4() {
 
 BE_INLINE Vec3 Mat3x4::ToTranslationVec3() const {
     return Vec3(mat[0][3], mat[1][3], mat[2][3]);
+}
+
+BE_INLINE Mat3 Mat3x4::ToRotationMat3() const {
+    Vec3 invScale = 1.0f / ToScaleVec3();
+    Mat3 rotation = ToMat3();
+    rotation[0] *= invScale.x;
+    rotation[1] *= invScale.y;
+    rotation[2] *= invScale.z;
+    return rotation;
 }
 
 BE_INLINE Mat3x4 Mat3x4::FromTranslation(float tx, float ty, float tz) {

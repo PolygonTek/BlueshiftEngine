@@ -246,17 +246,14 @@ BE_INLINE Plane &Plane::RotateSelf(const Vec3 &origin, const Mat3 &axis) {
 }
 
 BE_INLINE Plane Plane::Transform(const Mat3 &matrix) const & {
-    Plane p;
-    p.normal = matrix.Inverse().TransposedMulVec(normal);
-    p.offset = offset;
+    Plane p = *this;
+    p.TransformSelf(matrix);
     return p;
 }
 
 BE_INLINE Plane Plane::Transform(const Mat3x4 &matrix) const & {
-    Plane p;
-    Mat3 invMat3 = matrix.ToMat3().Inverse();
-    p.normal = invMat3.TransposedMulVec(normal);
-    p.offset = offset + normal.Dot(invMat3 * matrix.ToTranslationVec3());
+    Plane p = *this;
+    p.TransformSelf(matrix);
     return p;
 }
 

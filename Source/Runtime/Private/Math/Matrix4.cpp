@@ -810,6 +810,14 @@ Mat4 Mat4::TransposedMul(const Mat3x4 &a) const {
     return dst;
 }
 
+Vec3 Mat4::TransformDir(const Vec3 &dir) const {
+    return ToMat3x4().TransformDir(dir);
+}
+
+void Mat4::BatchTransformDir(Vec3 *dirArray, int numElements) const {
+    ToMat3x4().BatchTransformDir(dirArray, numElements);
+}
+
 Mat4 Mat4::Transpose() const & {
 #if defined(ENABLE_SIMD4_INTRIN)
     ALIGN_AS16 Mat4 result;
