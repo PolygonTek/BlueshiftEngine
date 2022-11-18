@@ -40,15 +40,15 @@ int main(int argc, char *argv[]) {
     BE1::Str enginePath = BE1::PlatformFile::ExecutablePath();
     enginePath.AppendPath("../../.."); // Strip "Bin/macOS/<Configuration>"
     enginePath.CleanPath();
-    BE1::Engine::InitBase(enginePath, false, SystemLog, SystemError);
+    BE1::Engine::InitBase(enginePath, SystemLog, SystemError);
 
     //TestContainer();
 
-    TestRValue();
+    //TestRValue();
 
     //TestMath();
 
-    //TestSIMD();
+    TestSIMD();
 
     //TestThread();
 

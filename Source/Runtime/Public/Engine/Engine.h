@@ -30,7 +30,7 @@ public:
     static void             Init(const InitParms *initParms);
     static void             Shutdown();
 
-    static void             InitBase(const char *path, bool forceGenericSIMD, const streamOutFunc_t logFunc, const streamOutFunc_t errorFunc);
+    static void             InitBase(const char *path, const streamOutFunc_t logFunc, const streamOutFunc_t errorFunc);
     static void             ShutdownBase();
 
     static void             RunFrame(int elapsedMsec);

@@ -213,7 +213,7 @@ BOOL InitInstance(int nCmdShow) {
     BE1::Str basePath = BE1::PlatformFile::ExecutablePath();
     basePath.AppendPath("../../..");
     basePath.CleanPath();
-    BE1::Engine::InitBase(basePath.c_str(), false, SystemLog, SystemError);
+    BE1::Engine::InitBase(basePath.c_str(), SystemLog, SystemError);
 
     char temp[128];
     BE1::Str::snPrintf(temp, sizeof(temp), "%ls %s %s %s", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);

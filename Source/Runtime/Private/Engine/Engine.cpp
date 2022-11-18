@@ -25,7 +25,10 @@ Str         Engine::searchPath;
 static streamOutFunc_t logFuncPtr = nullptr;
 static streamOutFunc_t errFuncPtr = nullptr;
 
-void Engine::InitBase(const char *baseDir, bool forceGenericSIMD, const streamOutFunc_t logFunc, const streamOutFunc_t errFunc) {
+static CVAR(forceGenericSIMD, "0", CVar::Flag::Bool, "");
+static CVAR(forceGenericSIMDForDebug, "1", CVar::Flag::Bool, "");
+
+void Engine::InitBase(const char *baseDir, const streamOutFunc_t logFunc, const streamOutFunc_t errFunc) {
     // Set user-default ANSI code page obtained from the operating system
     setlocale(LC_ALL, "");
 
@@ -50,7 +53,14 @@ void Engine::InitBase(const char *baseDir, bool forceGenericSIMD, const streamOu
 
     DetectCpu();
 
-    SIMD::Init(forceGenericSIMD);
+    bool genericSIMD = forceGenericSIMD.GetBool();
+#ifdef _DEBUG
+    if (!genericSIMD) {
+        genericSIMD = forceGenericSIMDForDebug.GetBool();
+    }
+#endif
+
+    SIMD::Init(genericSIMD);
 
     PlatformTime::Init();
 
