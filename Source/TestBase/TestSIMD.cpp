@@ -402,9 +402,9 @@ static void TestMulMat3x4RM() {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         for (int j = 0; j < 1024; j++) {
             BE1::simdGeneric->MulMat3x4RM(matrixCPtr, matrixAPtr, matrixBPtr);
-            matrixAPtr += 16;
-            matrixBPtr += 16;
-            matrixCPtr += 16;
+            matrixAPtr += 4 * 3;
+            matrixBPtr += 4 * 3;
+            matrixCPtr += 4 * 3;
         }
         uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
@@ -426,9 +426,9 @@ static void TestMulMat3x4RM() {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         for (int j = 0; j < 1024; j++) {
             BE1::simdProcessor->MulMat3x4RM(matrixCPtr, matrixAPtr, matrixBPtr);
-            matrixAPtr += 16;
-            matrixBPtr += 16;
-            matrixCPtr += 16;
+            matrixAPtr += 4 * 3;
+            matrixBPtr += 4 * 3;
+            matrixCPtr += 4 * 3;
         }
         uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
@@ -461,9 +461,9 @@ static void TestMulMat4x4RM() {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         for (int j = 0; j < 1024; j++) {
             BE1::simdGeneric->MulMat4x4RM(matrixCPtr, matrixAPtr, matrixBPtr);
-            matrixAPtr += 16;
-            matrixBPtr += 16;
-            matrixCPtr += 16;
+            matrixAPtr += 4 * 4;
+            matrixBPtr += 4 * 4;
+            matrixCPtr += 4 * 4;
         }
         uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
@@ -485,9 +485,9 @@ static void TestMulMat4x4RM() {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         for (int j = 0; j < 1024; j++) {
             BE1::simdProcessor->MulMat4x4RM(matrixCPtr, matrixAPtr, matrixBPtr);
-            matrixAPtr += 16;
-            matrixBPtr += 16;
-            matrixCPtr += 16;
+            matrixAPtr += 4 * 4;
+            matrixBPtr += 4 * 4;
+            matrixCPtr += 4 * 4;
         }
         uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
@@ -520,7 +520,7 @@ static void TestMulMat4x4RMVec4() {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         for (int j = 0; j < 1024; j++) {
             BE1::simdGeneric->MulMat4x4RMVec4(vectorCPtr, matrixAPtr, vectorBPtr);
-            matrixAPtr += 16;
+            matrixAPtr += 4 * 4;
             vectorBPtr += 4;
             vectorCPtr += 4;
         }
@@ -544,7 +544,7 @@ static void TestMulMat4x4RMVec4() {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         for (int j = 0; j < 1024; j++) {
             BE1::simdProcessor->MulMat4x4RMVec4(vectorCPtr, matrixAPtr, vectorBPtr);
-            matrixAPtr += 16;
+            matrixAPtr += 4 * 4;
             vectorBPtr += 4;
             vectorCPtr += 4;
         }
@@ -575,8 +575,8 @@ static void TestTransposeMat4x4() {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         for (int j = 0; j < 1024; j++) {
             BE1::simdGeneric->TransposeMat4x4(matrixBPtr, matrixAPtr);
-            matrixAPtr += 16;
-            matrixBPtr += 16;
+            matrixAPtr += 4 * 4;
+            matrixBPtr += 4 * 4;
         }
         uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
@@ -594,8 +594,8 @@ static void TestTransposeMat4x4() {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
         for (int j = 0; j < 1024; j++) {
             BE1::simdProcessor->TransposeMat4x4(matrixBPtr, matrixAPtr);
-            matrixAPtr += 16;
-            matrixBPtr += 16;
+            matrixAPtr += 4 * 4;
+            matrixBPtr += 4 * 4;
         }
         uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
@@ -607,8 +607,8 @@ static void TestTransposeMat4x4() {
 static void TestTransformJoints() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    ALIGN_AS32 BE1::Mat3x4 jointMatrix[200];
-    int parents[200];
+    ALIGN_AS32 BE1::Mat3x4 jointMatrix[1024];
+    int parents[1024];
 
     parents[0] = -1;
     for (int i = 1; i < COUNT_OF(parents); i++) {
@@ -620,7 +620,7 @@ static void TestTransformJoints() {
     bestClocksGeneric = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
-        BE1::simdGeneric->TransformJoints(jointMatrix, parents, 1, 199);
+        BE1::simdGeneric->TransformJoints(jointMatrix, parents, 1, COUNT_OF(jointMatrix) - 1);
         uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
@@ -632,7 +632,7 @@ static void TestTransformJoints() {
     bestClocksSIMD = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
-        BE1::simdProcessor->TransformJoints(jointMatrix, parents, 1, 199);
+        BE1::simdProcessor->TransformJoints(jointMatrix, parents, 1, COUNT_OF(jointMatrix) - 1);
         uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }

@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Math/Math.h"
+#include "Core/JointPose.h"
 #include "SIMD/SIMD.h"
 
 #if defined(HAVE_X86_AVX_INTRIN)
@@ -767,6 +769,34 @@ void BE_FASTCALL SIMD_8::Memset(void *dest0, const int val, const int count0) {
         count--;
     }
 #endif
+}
+
+void BE_FASTCALL SIMD_8::TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
+    const float *__restrict firstMatrix = jointMats->Ptr() + (firstJoint - 1) * 3 * 4;
+
+    simd8f pmab = load_256ps(firstMatrix + 0);
+    simd4f pmc = load_ps(firstMatrix + 8);
+
+    for (int joint = firstJoint; joint <= lastJoint; joint++) {
+        const int parent = parents[joint];
+        const float *__restrict parentMatrix = jointMats->Ptr() + parent * 3 * 4;
+        float *__restrict childMatrix = jointMats->Ptr() + joint * 3 * 4;
+
+        if (parent != joint - 1) {
+            pmab = load_256ps(parentMatrix + 0);
+            pmc = load_ps(parentMatrix + 8);
+        }
+
+        simd8f cmaa = broadcast_256ps((simd4f *)(childMatrix + 0));
+        simd8f cmbb = broadcast_256ps((simd4f *)(childMatrix + 4));
+        simd8f cmcc = broadcast_256ps((simd4f *)(childMatrix + 8));
+
+        pmab = lincomb2x3x4(pmab, cmaa, cmbb, cmcc);
+        pmc = lincomb3x4(pmc, extract_256ps<0>(cmaa), extract_256ps<0>(cmbb), extract_256ps<0>(cmcc));
+
+        store_256ps(pmab, childMatrix + 0);
+        store_ps(pmc, childMatrix + 8);
+    }
 }
 
 void BE_FASTCALL SIMD_8::MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, const Mat3x4 *joints2, const int numJoints) {
