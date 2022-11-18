@@ -140,7 +140,7 @@ private:
     mutable int             refCount = 0;               // reference count
     bool                    permanence = false;         //
     int                     frameCount;
-    int                     flags = 0;                  // texture load flags
+    uint32_t                flags = 0;                  // texture load flags
 
     RHI::Handle             textureHandle = RHI::NullTexture; // texture handle
     RHI::TextureType::Enum  type = RHI::TextureType::Texture2D;
@@ -148,14 +148,14 @@ private:
 
     Image::Format::Enum     format = Image::Format::Unknown;    // internal image format
 
-    int                     srcWidth = 0;               // original width
-    int                     srcHeight = 0;              // original height
-    int                     srcDepth = 0;               // original depth
-    int                     numSlices = 0;
+    int32_t                 srcWidth = 0;               // original width
+    int32_t                 srcHeight = 0;              // original height
+    int32_t                 srcDepth = 0;               // original depth
+    int32_t                 numSlices = 0;
 
-    int                     width = 0;                  // scaled width
-    int                     height = 0;                 // scaled height
-    int                     depth = 0;                  // scaled depth
+    int32_t                 width = 0;                  // scaled width
+    int32_t                 height = 0;                 // scaled height
+    int32_t                 depth = 0;                  // scaled depth
 
     bool                    hasMipmaps = false;
 

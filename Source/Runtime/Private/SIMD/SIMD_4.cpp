@@ -1114,8 +1114,8 @@ void BE_FASTCALL SIMD_4::UntransformJoints(Mat3x4 *jointMats, const int *parents
     for (int joint = lastJoint; joint >= firstJoint; joint--) {
         assert(parents[joint] < joint);
         const int parent = parents[joint];
-        const float *__restrict parentMatrix = jointMats->Ptr() + (parent + parent + parent) * 4;
-        float *__restrict childMatrix = jointMats->Ptr() + (joint + joint + joint) * 4;
+        const float *__restrict parentMatrix = jointMats->Ptr() + parent * 3 * 4;
+        float *__restrict childMatrix = jointMats->Ptr() + joint * 3 * 4;
 
         simd4f pma = load_ps(parentMatrix + 0);
         simd4f pmb = load_ps(parentMatrix + 4);

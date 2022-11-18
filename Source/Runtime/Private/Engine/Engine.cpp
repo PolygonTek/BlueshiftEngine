@@ -25,7 +25,7 @@ Str         Engine::searchPath;
 static streamOutFunc_t logFuncPtr = nullptr;
 static streamOutFunc_t errFuncPtr = nullptr;
 
-static CVAR(forceGenericSIMD, "0", CVar::Flag::Bool, "");
+static CVAR(forceGenericSIMD, "0", CVar::Flag::Bool, "Disable SIMD-optimized code path, but individual SIMD-optimized code will be applied");
 static CVAR(forceGenericSIMDForDebug, "1", CVar::Flag::Bool, "");
 
 void Engine::InitBase(const char *baseDir, const streamOutFunc_t logFunc, const streamOutFunc_t errFunc) {
