@@ -1079,7 +1079,9 @@ void BE_FASTCALL SIMD_4::ConvertJointMatsToJointPoses(JointPose *jointPoses, con
 }
 
 void BE_FASTCALL SIMD_4::TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
-    const float *__restrict firstMatrix = jointMats->Ptr() + (firstJoint - 1) * 3 * 4;
+    assert_16_byte_aligned(jointMats);
+
+    const float *__restrict firstMatrix = jointMats->Ptr() + firstJoint * 3 * 4;
 
     simd4f pma = load_ps(firstMatrix + 0);
     simd4f pmb = load_ps(firstMatrix + 4);
@@ -1087,6 +1089,10 @@ void BE_FASTCALL SIMD_4::TransformJoints(Mat3x4 *jointMats, const int *parents, 
 
     for (int joint = firstJoint; joint <= lastJoint; joint++) {
         const int parent = parents[joint];
+        if (parent < 0) {
+            continue;
+        }
+
         const float *__restrict parentMatrix = jointMats->Ptr() + parent * 3 * 4;
         float *__restrict childMatrix = jointMats->Ptr() + joint * 3 * 4;
 
@@ -1110,10 +1116,47 @@ void BE_FASTCALL SIMD_4::TransformJoints(Mat3x4 *jointMats, const int *parents, 
     }
 }
 
+void BE_FASTCALL SIMD_4::TransformJoints(const Mat3x4 *localJointMats, Mat3x4 *worldJointMats, const int *parents, const int firstJoint, const int lastJoint) {
+    assert_16_byte_aligned(worldJointMats);
+
+    for (int joint = firstJoint; joint <= lastJoint; joint++) {
+        const int parent = parents[joint];
+        if (parent < 0) {
+            worldJointMats[joint] = localJointMats[joint];
+            continue;
+        }
+
+        const float *__restrict parentMatrix = worldJointMats->Ptr() + parent * 3 * 4;
+        float *__restrict childMatrix = worldJointMats->Ptr() + joint * 3 * 4;
+
+        simd4f pma = load_ps(parentMatrix + 0);
+        simd4f pmb = load_ps(parentMatrix + 4);
+        simd4f pmc = load_ps(parentMatrix + 8);
+
+        simd4f cma = load_ps(childMatrix + 0);
+        simd4f cmb = load_ps(childMatrix + 4);
+        simd4f cmc = load_ps(childMatrix + 8);
+
+        pma = lincomb3x4(pma, cma, cmb, cmc);
+        pmb = lincomb3x4(pmb, cma, cmb, cmc);
+        pmc = lincomb3x4(pmc, cma, cmb, cmc);
+
+        store_ps(pma, childMatrix + 0);
+        store_ps(pmb, childMatrix + 4);
+        store_ps(pmc, childMatrix + 8);
+    }
+}
+
 void BE_FASTCALL SIMD_4::UntransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
+    assert_16_byte_aligned(jointMats);
+
     for (int joint = lastJoint; joint >= firstJoint; joint--) {
         assert(parents[joint] < joint);
         const int parent = parents[joint];
+        if (parent < 0) {
+            continue;
+        }
+
         const float *__restrict parentMatrix = jointMats->Ptr() + parent * 3 * 4;
         float *__restrict childMatrix = jointMats->Ptr() + joint * 3 * 4;
 

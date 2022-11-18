@@ -235,12 +235,27 @@ void BE_FASTCALL SIMD_Generic::TransformJoints(Mat3x4 *jointMats, const int *par
     }
 }
 
+void BE_FASTCALL SIMD_Generic::TransformJoints(const Mat3x4 *localJointMats, Mat3x4 *worldJointMats, const int *parents, const int firstJoint, const int lastJoint) {
+    int i;
+
+    for (i = firstJoint; i <= lastJoint; i++) {
+        assert(parents[i] < i);
+        if (parents[i] >= 0) {
+            worldJointMats[i] = localJointMats[i] * localJointMats[parents[i]];
+        } else {
+            worldJointMats[i] = localJointMats[i];
+        }
+    }
+}
+
 void BE_FASTCALL SIMD_Generic::UntransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
     int i;
 
     for (i = lastJoint; i >= firstJoint; i--) {
         assert(parents[i] < i);
-        jointMats[i].UntransformSelf(jointMats[parents[i]]);
+        if (parents[i] >= 0) {
+            jointMats[i].UntransformSelf(jointMats[parents[i]]);
+        }
     }
 }
 

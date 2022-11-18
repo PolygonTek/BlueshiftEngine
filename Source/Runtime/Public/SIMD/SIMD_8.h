@@ -42,6 +42,7 @@ public:
     virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1) override;
 
     virtual void BE_FASTCALL            TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) override;
+    virtual void BE_FASTCALL            TransformJoints(const Mat3x4 *localJointMats, Mat3x4 *worldJointMats, const int *parents, const int firstJoint, const int lastJoint) override;
     virtual void BE_FASTCALL            MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, const Mat3x4 *joints2, const int numJoints) override;
 
     virtual void BE_FASTCALL            Memset(void *dst, const int val, const int count) override;

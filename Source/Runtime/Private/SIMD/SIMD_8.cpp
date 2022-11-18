@@ -772,18 +772,24 @@ void BE_FASTCALL SIMD_8::Memset(void *dest0, const int val, const int count0) {
 }
 
 void BE_FASTCALL SIMD_8::TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
-    const float *__restrict firstMatrix = jointMats->Ptr() + (firstJoint - 1) * 3 * 4;
+    assert_16_byte_aligned(jointMats);
 
-    simd8f pmab = load_256ps(firstMatrix + 0);
+    const float *__restrict firstMatrix = jointMats->Ptr() + firstJoint * 3 * 4;
+
+    simd8f pmab = loadu_256ps(firstMatrix + 0);
     simd4f pmc = load_ps(firstMatrix + 8);
 
     for (int joint = firstJoint; joint <= lastJoint; joint++) {
         const int parent = parents[joint];
+        if (parent < 0) {
+            continue;
+        }
+
         const float *__restrict parentMatrix = jointMats->Ptr() + parent * 3 * 4;
         float *__restrict childMatrix = jointMats->Ptr() + joint * 3 * 4;
 
         if (parent != joint - 1) {
-            pmab = load_256ps(parentMatrix + 0);
+            pmab = loadu_256ps(parentMatrix + 0);
             pmc = load_ps(parentMatrix + 8);
         }
 
@@ -794,7 +800,35 @@ void BE_FASTCALL SIMD_8::TransformJoints(Mat3x4 *jointMats, const int *parents, 
         pmab = lincomb2x3x4(pmab, cmaa, cmbb, cmcc);
         pmc = lincomb3x4(pmc, extract_256ps<0>(cmaa), extract_256ps<0>(cmbb), extract_256ps<0>(cmcc));
 
-        store_256ps(pmab, childMatrix + 0);
+        storeu_256ps(pmab, childMatrix + 0);
+        store_ps(pmc, childMatrix + 8);
+    }
+}
+
+void BE_FASTCALL SIMD_8::TransformJoints(const Mat3x4 *localJointMats, Mat3x4 *worldJointMats, const int *parents, const int firstJoint, const int lastJoint) {
+    assert_16_byte_aligned(worldJointMats);
+
+    for (int joint = firstJoint; joint <= lastJoint; joint++) {
+        const int parent = parents[joint];
+        if (parent < 0) {
+            worldJointMats[joint] = localJointMats[joint];
+            continue;
+        }
+
+        const float *__restrict parentMatrix = worldJointMats->Ptr() + parent * 3 * 4;
+        float *__restrict childMatrix = worldJointMats->Ptr() + joint * 3 * 4;
+
+        simd8f pmab = loadu_256ps(parentMatrix + 0);
+        simd4f pmc = load_ps(parentMatrix + 8);
+
+        simd8f cmaa = broadcast_256ps((simd4f *)(childMatrix + 0));
+        simd8f cmbb = broadcast_256ps((simd4f *)(childMatrix + 4));
+        simd8f cmcc = broadcast_256ps((simd4f *)(childMatrix + 8));
+
+        pmab = lincomb2x3x4(pmab, cmaa, cmbb, cmcc);
+        pmc = lincomb3x4(pmc, extract_256ps<0>(cmaa), extract_256ps<0>(cmbb), extract_256ps<0>(cmcc));
+
+        storeu_256ps(pmab, childMatrix + 0);
         store_ps(pmc, childMatrix + 8);
     }
 }
@@ -825,7 +859,7 @@ void BE_FASTCALL SIMD_8::MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, c
         simd8f br11 = broadcast_256ps((simd4f *)&joint2Ptr[i * 12 + 4]);
         simd8f br22 = broadcast_256ps((simd4f *)&joint2Ptr[i * 12 + 8]);
 
-        store_256ps(lincomb2x3x4(ar01, br00, br11, br22), &resultPtr[i * 12 + 0]);
+        storeu_256ps(lincomb2x3x4(ar01, br00, br11, br22), &resultPtr[i * 12 + 0]);
         store_ps(lincomb3x4(ar2, extract_256ps<0>(br00), extract_256ps<0>(br11), extract_256ps<0>(br22)), &resultPtr[i * 12 + 8]);
     }
 #endif
