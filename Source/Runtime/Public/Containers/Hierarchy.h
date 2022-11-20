@@ -90,6 +90,9 @@ public:
                         /// Returns next node in depth-first order.
     T *                 GetNext() const;
 
+                        /// Returns next node in depth-first order.
+    T *                 GetNextIn(const Hierarchy &root) const;
+
                         /// Returns next leaf in depth-first order.
     T *                 GetNextLeaf() const;
 
@@ -104,6 +107,8 @@ private:
 
                         /// Returns next node in depth-first order.
     Hierarchy *         GetNextNode() const;
+                        /// Returns next node in depth-first order.
+    Hierarchy *         GetNextNodeIn(const Hierarchy &root) const;
                         /// Previous node with the same parent. Returns nullptr if no parent, or if it is the first child.
     Hierarchy *         GetPrevSiblingNode() const;
 };
@@ -386,8 +391,34 @@ Hierarchy<T> *Hierarchy<T>::GetNextNode() const {
 }
 
 template <typename T>
+Hierarchy<T> *Hierarchy<T>::GetNextNodeIn(const Hierarchy &root) const {
+    if (child) {
+        return child;
+    }
+
+    const Hierarchy<T> *node = this;
+    while (node && node->parent != &root && node->nextSibling == nullptr) {
+        node = node->parent;
+    }
+
+    if (node) {
+        return node->nextSibling;
+    }
+    return nullptr;
+}
+
+template <typename T>
 T *Hierarchy<T>::GetNext() const {
     Hierarchy<T> *nextNode = GetNextNode();
+    if (nextNode) {
+        return nextNode->owner;
+    }
+    return nullptr;
+}
+
+template <typename T>
+T *Hierarchy<T>::GetNextIn(const Hierarchy &root) const {
+    Hierarchy<T> *nextNode = GetNextNodeIn(root);
     if (nextNode) {
         return nextNode->owner;
     }
