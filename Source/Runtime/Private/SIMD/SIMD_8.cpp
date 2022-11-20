@@ -805,31 +805,32 @@ void BE_FASTCALL SIMD_8::TransformJoints(Mat3x4 *jointMats, const int *parents, 
     }
 }
 
-void BE_FASTCALL SIMD_8::TransformJoints(const Mat3x4 *localJointMats, Mat3x4 *worldJointMats, const int *parents, const int firstJoint, const int lastJoint) {
+void BE_FASTCALL SIMD_8::TransformJoints(const Mat3x4 *localJointMats, Mat3x4 *worldJointMats, const int *parents, const int firstJointIndex, const int lastJointIndex) {
     assert_16_byte_aligned(worldJointMats);
 
-    for (int joint = firstJoint; joint <= lastJoint; joint++) {
-        const int parent = parents[joint];
-        if (parent < 0) {
-            worldJointMats[joint] = localJointMats[joint];
+    for (int i = firstJointIndex; i <= lastJointIndex; i++) {
+        const int parentIndex = parents[i];
+        if (parentIndex < 0) {
+            worldJointMats[i] = localJointMats[i];
             continue;
         }
 
-        const float *__restrict parentMatrix = worldJointMats->Ptr() + parent * 3 * 4;
-        float *__restrict childMatrix = worldJointMats->Ptr() + joint * 3 * 4;
+        const float *__restrict parentWorldMatrix = worldJointMats->Ptr() + parentIndex * 3 * 4;
+        const float *__restrict childLocalMatrix = localJointMats->Ptr() + i * 3 * 4;
+        float *__restrict childWorldMatrix = worldJointMats->Ptr() + i * 3 * 4;
 
-        simd8f pmab = loadu_256ps(parentMatrix + 0);
-        simd4f pmc = load_ps(parentMatrix + 8);
+        simd8f pmab = loadu_256ps(parentWorldMatrix + 0);
+        simd4f pmc = load_ps(parentWorldMatrix + 8);
 
-        simd8f cmaa = broadcast_256ps((simd4f *)(childMatrix + 0));
-        simd8f cmbb = broadcast_256ps((simd4f *)(childMatrix + 4));
-        simd8f cmcc = broadcast_256ps((simd4f *)(childMatrix + 8));
+        simd8f cmaa = broadcast_256ps((simd4f *)(childLocalMatrix + 0));
+        simd8f cmbb = broadcast_256ps((simd4f *)(childLocalMatrix + 4));
+        simd8f cmcc = broadcast_256ps((simd4f *)(childLocalMatrix + 8));
 
         pmab = lincomb2x3x4(pmab, cmaa, cmbb, cmcc);
         pmc = lincomb3x4(pmc, extract_256ps<0>(cmaa), extract_256ps<0>(cmbb), extract_256ps<0>(cmcc));
 
-        storeu_256ps(pmab, childMatrix + 0);
-        store_ps(pmc, childMatrix + 8);
+        storeu_256ps(pmab, childWorldMatrix + 0);
+        store_ps(pmc, childWorldMatrix + 8);
     }
 }
 

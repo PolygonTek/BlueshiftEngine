@@ -1078,25 +1078,25 @@ void BE_FASTCALL SIMD_4::ConvertJointMatsToJointPoses(JointPose *jointPoses, con
     }
 }
 
-void BE_FASTCALL SIMD_4::TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
+void BE_FASTCALL SIMD_4::TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJointIndex, const int lastJointIndex) {
     assert_16_byte_aligned(jointMats);
 
-    const float *__restrict firstMatrix = jointMats->Ptr() + firstJoint * 3 * 4;
+    const float *__restrict firstMatrix = jointMats->Ptr() + firstJointIndex * 3 * 4;
 
     simd4f pma = load_ps(firstMatrix + 0);
     simd4f pmb = load_ps(firstMatrix + 4);
     simd4f pmc = load_ps(firstMatrix + 8);
 
-    for (int joint = firstJoint; joint <= lastJoint; joint++) {
-        const int parent = parents[joint];
-        if (parent < 0) {
+    for (int i = firstJointIndex; i <= lastJointIndex; i++) {
+        const int parentIndex = parents[i];
+        if (parentIndex < 0) {
             continue;
         }
 
-        const float *__restrict parentMatrix = jointMats->Ptr() + parent * 3 * 4;
-        float *__restrict childMatrix = jointMats->Ptr() + joint * 3 * 4;
+        const float *__restrict parentMatrix = jointMats->Ptr() + parentIndex * 3 * 4;
+        float *__restrict childMatrix = jointMats->Ptr() + i * 3 * 4;
 
-        if (parent != joint - 1) {
+        if (parentIndex != i - 1) {
             pma = load_ps(parentMatrix + 0);
             pmb = load_ps(parentMatrix + 4);
             pmc = load_ps(parentMatrix + 8);
@@ -1126,24 +1126,25 @@ void BE_FASTCALL SIMD_4::TransformJoints(const Mat3x4 *localJointMats, Mat3x4 *w
             continue;
         }
 
-        const float *__restrict parentMatrix = worldJointMats->Ptr() + parent * 3 * 4;
-        float *__restrict childMatrix = worldJointMats->Ptr() + joint * 3 * 4;
+        const float *__restrict parentWorldMatrix = worldJointMats->Ptr() + parent * 3 * 4;
+        const float *__restrict childLocalMatrix = localJointMats->Ptr() + joint * 3 * 4;
+        float *__restrict childWorldMatrix = worldJointMats->Ptr() + joint * 3 * 4;
 
-        simd4f pma = load_ps(parentMatrix + 0);
-        simd4f pmb = load_ps(parentMatrix + 4);
-        simd4f pmc = load_ps(parentMatrix + 8);
+        simd4f pma = load_ps(parentWorldMatrix + 0);
+        simd4f pmb = load_ps(parentWorldMatrix + 4);
+        simd4f pmc = load_ps(parentWorldMatrix + 8);
 
-        simd4f cma = load_ps(childMatrix + 0);
-        simd4f cmb = load_ps(childMatrix + 4);
-        simd4f cmc = load_ps(childMatrix + 8);
+        simd4f cma = load_ps(childLocalMatrix + 0);
+        simd4f cmb = load_ps(childLocalMatrix + 4);
+        simd4f cmc = load_ps(childLocalMatrix + 8);
 
         pma = lincomb3x4(pma, cma, cmb, cmc);
         pmb = lincomb3x4(pmb, cma, cmb, cmc);
         pmc = lincomb3x4(pmc, cma, cmb, cmc);
 
-        store_ps(pma, childMatrix + 0);
-        store_ps(pmb, childMatrix + 4);
-        store_ps(pmc, childMatrix + 8);
+        store_ps(pma, childWorldMatrix + 0);
+        store_ps(pmb, childWorldMatrix + 4);
+        store_ps(pmc, childWorldMatrix + 8);
     }
 }
 

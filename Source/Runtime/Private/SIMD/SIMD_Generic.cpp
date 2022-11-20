@@ -239,11 +239,13 @@ void BE_FASTCALL SIMD_Generic::TransformJoints(const Mat3x4 *localJointMats, Mat
     int i;
 
     for (i = firstJoint; i <= lastJoint; i++) {
-        assert(parents[i] < i);
-        if (parents[i] >= 0) {
-            worldJointMats[i] = localJointMats[i] * localJointMats[parents[i]];
-        } else {
+        const int parentIndex = parents[i];
+        assert(parentIndex < i);
+
+        if (parentIndex < 0) {
             worldJointMats[i] = localJointMats[i];
+        } else {
+            worldJointMats[i] = worldJointMats[parentIndex] * localJointMats[i];
         }
     }
 }
