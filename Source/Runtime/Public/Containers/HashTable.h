@@ -136,6 +136,34 @@ public:
     HashBucket<Str, ValueT> *next;
 };
 
+/// HashBucket class template specialization with hash key type is pointer type.
+template <typename KeyT, typename ValueT>
+class HashBucket<KeyT*, ValueT> {
+public:
+    HashBucket() {}
+    HashBucket(const KeyT* const &key, const ValueT &value, HashBucket *next)
+        : key(key), value(value), next(next) {}
+
+    static int GenerateHash(const KeyT* const &key, const int tableMask) {
+        return ((intptr_t)key) & tableMask;
+    }
+
+    static int Compare(const KeyT* const &key1, const KeyT* const &key2) {
+        if (key1 < key2) {
+            return -1;
+        }
+        else if (key1 > key2) {
+            return 1;
+        }
+        return 0;
+    }
+
+public:
+    KeyT *                  key;
+    ValueT                  value;
+    HashBucket<KeyT*, ValueT> *next;
+};
+
 /// Hash table
 template <typename KeyT, typename ValueT, int BucketGranularity = 256>
 class HashTable {
