@@ -620,7 +620,7 @@ static void TestTransformJoints() {
     bestClocksGeneric = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
-        BE1::simdGeneric->TransformJoints(jointMatrix, parents, 1, COUNT_OF(jointMatrix) - 1);
+        BE1::simdGeneric->TransformJoints(jointMatrix, parents, 0, COUNT_OF(jointMatrix) - 1);
         uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
@@ -632,7 +632,7 @@ static void TestTransformJoints() {
     bestClocksSIMD = 0;
     for (int i = 0; i < TEST_COUNT; i++) {
         uint64_t startClocks = BE1::PlatformTime::Cycles();
-        BE1::simdProcessor->TransformJoints(jointMatrix, parents, 1, COUNT_OF(jointMatrix) - 1);
+        BE1::simdProcessor->TransformJoints(jointMatrix, parents, 0, COUNT_OF(jointMatrix) - 1);
         uint64_t endClocks = BE1::PlatformTime::Cycles();
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }

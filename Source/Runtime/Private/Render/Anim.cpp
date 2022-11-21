@@ -343,7 +343,7 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
 
         simdProcessor->ConvertJointPosesToJointMats(jointMats, jointFrame, numJoints);
 
-        simdProcessor->TransformJoints(jointMats, jointParents, 1, numJoints - 1);
+        simdProcessor->TransformJoints(jointMats, jointParents, 0, numJoints - 1);
 
         simdProcessor->MultiplyJoints(jointMats2, jointMats, skeleton->GetInvBindPoseMatrices(), numJoints);
 
@@ -813,7 +813,7 @@ void Anim::GetSingleFrame(int frameNum, int numJointIndexes, const int *jointInd
     }
 }
 
-static int DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIndexes, const int *jointIndexes, const float *frameComponents1, const float *frameComponents2,
+static int BE_FASTCALL DecodeInterpolatedFrame(const Anim::JointInfo *joints, int numJointIndexes, const int *jointIndexes, const float *frameComponents1, const float *frameComponents2,
     JointPose *frame, JointPose *blendFrame, int *lerpIndex) {
     int numLerpJoints = 0;
 

@@ -20,15 +20,15 @@ BE_NAMESPACE_BEGIN
 
 /// Coordinates frame of 2D.
 struct Coords2D {
-    BE_FORCE_INLINE static int XAxisIndex() {
+    BE_FORCE_INLINE static constexpr int XAxisIndex() {
         return 1;
     }
 
-    BE_FORCE_INLINE static int YAxisIndex() {
+    BE_FORCE_INLINE static constexpr int YAxisIndex() {
         return 2;
     }
 
-    BE_FORCE_INLINE static int ZAxisIndex() {
+    BE_FORCE_INLINE static constexpr int ZAxisIndex() {
         return 0;
     }
 
