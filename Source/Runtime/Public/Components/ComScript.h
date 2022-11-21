@@ -79,6 +79,8 @@ public:
     virtual void            OnSensorExit(const Entity *entity);
     virtual void            OnSensorStay(const Entity *entity);
 
+    virtual void            OnCharacterControllerHit();
+
     virtual void            OnParticleCollision(const Entity *entity);
 
     void                    OnApplicationResize(int width, int height);
@@ -145,6 +147,7 @@ protected:
     LuaCpp::Selector        onSensorEnterFunc;
     LuaCpp::Selector        onSensorExitFunc;
     LuaCpp::Selector        onSensorStayFunc;
+    LuaCpp::Selector        onCharacterControllerHitFunc;
     LuaCpp::Selector        onParticleCollisionFunc;
     LuaCpp::Selector        onApplicationResizeFunc;
     LuaCpp::Selector        onApplicationTerminateFunc;

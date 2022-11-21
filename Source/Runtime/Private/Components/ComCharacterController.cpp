@@ -19,6 +19,7 @@
 #include "Components/Collider/ComCollider.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComCharacterController.h"
+#include "Components/ComScript.h"
 #include "Game/GameWorld.h"
 #include "Game/CastResult.h"
 
@@ -33,9 +34,9 @@ void ComCharacterController::RegisterProperties() {
         "", PropertyInfo::Flag::Editor).SetRange(0, 100, 0.1f);
     REGISTER_PROPERTY("enablePenetrationRecovery", "Enable Penetration Recovery", bool, enablePenetrationRecovery, true,
         "", PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("capsuleRadius", "Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, MeterToUnit(0.35f),
+    REGISTER_ACCESSOR_PROPERTY("capsuleRadius", "Capsule Radius", float, GetCapsuleRadius, SetCapsuleRadius, MeterToUnit(0.4f),
         "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("capsuleHeight", "Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, MeterToUnit(1.1f),
+    REGISTER_ACCESSOR_PROPERTY("capsuleHeight", "Capsule Height", float, GetCapsuleHeight, SetCapsuleHeight, MeterToUnit(1.0f),
         "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("stepOffset", "Step Offset", float, GetStepOffset, SetStepOffset, CmToUnit(40.0f),
         "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor).SetRange(0, CmToUnit(50.0f), CmToUnit(1.0f));
@@ -293,10 +294,15 @@ bool ComCharacterController::SlideMove(const Vec3 &moveVector) {
         Vec3 targetPos = origin + moveVec * f;
 
         int filterMask = GetGameWorld()->GetPhysicsWorld()->GetCollisionFilterMask(body->GetCollisionFilterBit());
-        // capsule cast from origin to targetPos.
-        GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, origin, targetPos, filterMask, trace);
+        // Cast capsule from origin to targetPos.
+        bool hit = GetGameWorld()->GetPhysicsWorld()->ConvexCast(body, collider, Mat3::identity, origin, targetPos, filterMask, trace);
+        if (hit) {
+            ComRigidBody *hitBody = GetRigidBodyFromCastResult(trace);
+            // TODO:
+            //ProcessScriptCallback();
+        }
 
-        // Move origin by a moveable fraction.
+        // Move origin by a movable fraction.
         if (trace.fraction > 0.0f) {
             origin = trace.endPos;
             numBumpNormals = 0;
@@ -408,6 +414,15 @@ bool ComCharacterController::Move(const Vec3 &moveVector) {
     GetEntity()->GetTransform()->SetOrigin(origin);
 
     return stuck;
+}
+
+void ComCharacterController::ProcessScriptCallback() {
+    ComponentPtrArray scriptComponents = GetEntity()->GetComponents(&ComScript::metaObject);
+    for (int i = 0; i < scriptComponents.Count(); i++) {
+        ComScript *scriptComponent = scriptComponents[i]->Cast<ComScript>();
+
+        scriptComponent->OnCharacterControllerHit();
+    }
 }
 
 void ComCharacterController::TransformUpdated(const ComTransform *transform) {
