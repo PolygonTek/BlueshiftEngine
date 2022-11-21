@@ -106,7 +106,7 @@ Vec3 *RB_ReserveDebugPrimsVerts(int topology, int numVerts, const Color4 &color,
     if (rb_numDebugPrims < MaxDebugPrims) {
         debugPrims = &rb_debugPrims[rb_numDebugPrims++];
 
-        *reinterpret_cast<uint32_t *>(debugPrims->color) = color.ToUInt32();
+        *reinterpret_cast<uint32_t *>(debugPrims->color) = (rhi.IsSRGBWriteEnabled() ? color.SRGBToLinear() : color).ToUInt32();
         debugPrims->topology    = topology;
         debugPrims->startVert   = rb_numDebugPrimsVerts;
         debugPrims->numVerts    = numVerts;
@@ -288,7 +288,7 @@ void RB_AddDebugText(const char *text, const Vec3 &origin, const Mat3 &viewAxis,
     if (rb_numDebugText < MaxDebugText) {
         debugText = &rb_debugText[rb_numDebugText++];
 
-        *reinterpret_cast<uint32_t *>(debugText->color) = color.ToUInt32();
+        *reinterpret_cast<uint32_t *>(debugText->color) = (rhi.IsSRGBWriteEnabled() ? color.SRGBToLinear() : color).ToUInt32();
         debugText->text         = text;
         debugText->origin       = origin;
         debugText->viewAxis     = viewAxis;
