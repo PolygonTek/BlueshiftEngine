@@ -39,6 +39,11 @@ void Skeleton::Purge() {
         Mem_AlignedFree(invBindPoseMats);
         invBindPoseMats = nullptr;
     }
+
+    if (jointParents) {
+        Mem_AlignedFree(jointParents);
+        jointParents = nullptr;
+    }
 }
 
 bool Skeleton::CheckHierarchy(const Skeleton *otherSkeleton) const {
@@ -94,6 +99,9 @@ void Skeleton::CreateDefaultSkeleton() {
     
     invBindPoseMats = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4));
     invBindPoseMats[0].SetIdentity();
+
+    jointParents = (int *)Mem_Alloc16(sizeof(int));
+    jointParents[0] = -1;
 }
 
 bool Skeleton::Load(const char *filename) {
@@ -126,6 +134,7 @@ bool Skeleton::Load(const char *filename) {
         joints = new Joint[numJoints];
         bindPoses = (JointPose *)Mem_Alloc16(sizeof(JointPose) * numJoints);
         invBindPoseMats = (Mat3x4 *)Mem_Alloc16(sizeof(Mat3x4) * numJoints);
+        jointParents = (int *)Mem_Alloc16(sizeof(int) * numJoints);
 
         // --- joints ---
         for (int jointIndex = 0; jointIndex < numJoints; jointIndex++) {
@@ -135,6 +144,16 @@ bool Skeleton::Load(const char *filename) {
             joints[jointIndex].parent = bJoint->parentIndex >= 0 ? &this->joints[bJoint->parentIndex] : nullptr;
 
             ptr += sizeof(BJoint);
+        }
+
+        for (int jointIndex = 0; jointIndex < numJoints; jointIndex++) {
+            const Joint *joint = &joints[jointIndex];
+
+            if (joint->parent) {
+                jointParents[jointIndex] = static_cast<int>(joint->parent - joints);
+            } else {
+                jointParents[jointIndex] = -1;
+            }
         }
 
         // --- bindpose ---

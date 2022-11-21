@@ -58,6 +58,7 @@ public:
     const Joint *           GetJoint(int index) const { return &joints[index]; }
     int                     GetJointIndex(const char *name) const;
     const char *            GetJointName(int jointIndex) const;
+    const int *             GetJointParentIndexes() const { return jointParents; }
 
     const JointPose *       GetBindPoses() const { return bindPoses; }
 
@@ -84,6 +85,7 @@ private:
 
     int32_t                 numJoints = 0;              ///< Number of joints
     Joint *                 joints = nullptr;           ///< Joint information array
+    int *                   jointParents = nullptr;     ///< Parent indexes for each joints
     JointPose *             bindPoses = nullptr;        ///< Local joint transforms of bindpose (quaternion based)
     Mat3x4 *                invBindPoseMats = nullptr;  ///< World inverse transform of bindpose (for use in HW skinning)
 };
