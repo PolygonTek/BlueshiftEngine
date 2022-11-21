@@ -104,7 +104,8 @@ public:
             SequentialImpulseSolver,        // Default constraint solver.
             NNCGSolver,                     // Nonsmooth Nonlinear Conjugate Gradient Solver
             ProjectedGaussSeidelSolver,
-            DantzigSolver
+            DantzigSolver,
+            LemkeSolver
         };
     };
 

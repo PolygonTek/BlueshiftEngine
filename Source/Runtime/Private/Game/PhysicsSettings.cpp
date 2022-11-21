@@ -29,7 +29,7 @@ void PhysicsSettings::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("maximumAllowedTimeStep", "Maximum Allowed Timestep", float, GetMaximumAllowedTimeStep, SetMaximumAllowedTimeStep, 1.0f/5.0f, 
         "", PropertyInfo::Flag::Editor).SetRange(1.0f/120, 1.0f, 1.0f/120);
     REGISTER_ACCESSOR_PROPERTY("solver", "Solver", int, GetSolver, SetSolver, 0, 
-        "", PropertyInfo::Flag::Editor).SetEnumString("Sequential Impulse;NNCG Solver;MLCP (PGS);MLCP (Dantzig)");
+        "", PropertyInfo::Flag::Editor).SetEnumString("Sequential Impulse;NNCG Solver;MLCP (PGS);MLCP (Dantzig);MLCP (Lemke)");
     REGISTER_ACCESSOR_PROPERTY("solverIterations", "solverIterations", int, GetSolverIterations, SetSolverIterations, 10, 
         "", PropertyInfo::Flag::Editor).SetRange(1, 100, 1);
     REGISTER_MIXED_ACCESSOR_PROPERTY("gravity", "Gravity", Vec3, GetGravity, SetGravity, Vec3(0, 0, -9.8),
@@ -47,7 +47,7 @@ int PhysicsSettings::GetSolver() const {
 }
 
 void PhysicsSettings::SetSolver(int solver) {
-    return physicsWorld->SetConstraintSolver((PhysicsWorld::ConstraintSolver::Enum)solver);
+    physicsWorld->SetConstraintSolver((PhysicsWorld::ConstraintSolver::Enum)solver);
 }
 
 int PhysicsSettings::GetSolverIterations() const {
@@ -55,7 +55,7 @@ int PhysicsSettings::GetSolverIterations() const {
 }
 
 void PhysicsSettings::SetSolverIterations(int iterations) {
-    return physicsWorld->SetConstraintSolverIterations(iterations);
+    physicsWorld->SetConstraintSolverIterations(iterations);
 }
 
 int PhysicsSettings::GetFrameRate() const {
@@ -63,7 +63,7 @@ int PhysicsSettings::GetFrameRate() const {
 }
 
 void PhysicsSettings::SetFrameRate(int frameRate) {
-    return physicsWorld->SetFrameRate(frameRate);
+    physicsWorld->SetFrameRate(frameRate);
 }
 
 float PhysicsSettings::GetMaximumAllowedTimeStep() const {
@@ -71,7 +71,7 @@ float PhysicsSettings::GetMaximumAllowedTimeStep() const {
 }
 
 void PhysicsSettings::SetMaximumAllowedTimeStep(float timeStep) {
-    return physicsWorld->SetMaximumAllowedTimeStep(timeStep);
+    physicsWorld->SetMaximumAllowedTimeStep(timeStep);
 }
 
 Vec3 PhysicsSettings::GetGravity() const {

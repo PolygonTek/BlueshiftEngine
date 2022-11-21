@@ -23,6 +23,7 @@
 #include "BulletDynamics/ConstraintSolver/btNNCGConstraintSolver.h"
 #include "BulletDynamics/MLCPSolvers/btDantzigSolver.h"
 #include "BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h"
+#include "BulletDynamics/MLCPSolvers/btLemkeSolver.h"
 #include "BulletDynamics/MLCPSolvers/btMLCPSolver.h"
 
 #include "BulletSoftBody/btDefaultSoftBodySolver.h"

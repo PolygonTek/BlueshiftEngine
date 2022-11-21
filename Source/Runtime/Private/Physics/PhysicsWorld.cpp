@@ -192,6 +192,9 @@ void PhysicsWorld::SetConstraintSolver(ConstraintSolver::Enum solverType) {
     case ConstraintSolver::DantzigSolver:
         constraintSolver = new btMLCPSolver(new btDantzigSolver());
         break;
+    case ConstraintSolver::LemkeSolver:
+        constraintSolver = new btMLCPSolver(new btLemkeSolver());
+        break;
     default:
         assert(0);
         break;
