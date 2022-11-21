@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComTransform.h"
+#include "Components/Transform/ComTransform.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -48,7 +48,7 @@ void LuaVM::RegisterTransformComponent(LuaCpp::Module &module) {
         "rotation", &ComTransform::GetRotation,
         "axis", &ComTransform::GetAxis,
         "angles", &ComTransform::GetAngles,
-        "transform", &ComTransform::GetMatrix,
+        "world_matrix", &ComTransform::GetWorldMatrix,
         "set_origin", &ComTransform::SetOrigin,
         "set_scale", &ComTransform::SetScale,
         "set_rotation", &ComTransform::SetRotation,

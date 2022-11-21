@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Render/Render.h"
-#include "Components/ComTransform.h"
+#include "Components/Transform/ComTransform.h"
 #include "Components/ComEnvironmentProbe.h"
 #include "Game/GameWorld.h"
 #include "Game/TagLayerSettings.h"

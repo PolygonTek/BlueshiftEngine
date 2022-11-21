@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComStaticMeshRenderer.h"
+#include "Components/Renderable/ComStaticMeshRenderer.h"
 
 BE_NAMESPACE_BEGIN
 

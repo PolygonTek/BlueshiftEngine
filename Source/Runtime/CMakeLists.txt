@@ -218,48 +218,53 @@ set(COMMON_ENGINE_FILES
     Public/Input/KeyCmd.h
     Public/Input/KeyCodes.h
 
+    Public/Components/Transform/ComTransform.h
+    Public/Components/Transform/ComRectTransform.h
+    Public/Components/Transform/JointHierarchy.h
+
+    Public/Components/Collider/ComCollider.h
+    Public/Components/Collider/ComSphereCollider.h
+    Public/Components/Collider/ComBoxCollider.h
+    Public/Components/Collider/ComCapsuleCollider.h
+    Public/Components/Collider/ComConeCollider.h
+    Public/Components/Collider/ComCylinderCollider.h
+    Public/Components/Collider/ComMeshCollider.h
+
+    Public/Components/Joint/ComJoint.h
+    Public/Components/Joint/ComFixedJoint.h
+    Public/Components/Joint/ComHingeJoint.h
+    Public/Components/Joint/ComSocketJoint.h
+    Public/Components/Joint/ComSliderJoint.h
+    Public/Components/Joint/ComSpringJoint.h
+    Public/Components/Joint/ComCharacterJoint.h
+    Public/Components/Joint/ComWheelJoint.h
+
+    Public/Components/Renderable/ComRenderable.h
+    Public/Components/Renderable/ComMeshRenderer.h
+    Public/Components/Renderable/ComStaticMeshRenderer.h
+    Public/Components/Renderable/ComSkinnedMeshRenderer.h
+    Public/Components/Renderable/ComTextRenderer.h
+    Public/Components/Renderable/ComParticleSystem.h
+    Public/Components/Renderable/ComText.h
+    Public/Components/Renderable/ComImage.h
+
+    Public/Components/Component.h
+    Public/Components/ComCamera.h
+    Public/Components/ComCanvas.h
+    Public/Components/ComCharacterController.h
     Public/Components/ComAnimation.h
     Public/Components/ComAnimator.h
     Public/Components/ComAudioListener.h
     Public/Components/ComAudioSource.h
-    Public/Components/ComBoxCollider.h
-    Public/Components/ComCamera.h
-    Public/Components/ComCapsuleCollider.h
-    Public/Components/ComCharacterController.h
-    Public/Components/ComCharacterJoint.h
-    Public/Components/ComCollider.h
-    Public/Components/ComConeCollider.h
-    Public/Components/ComConstantForce.h
-    Public/Components/ComCylinderCollider.h
-    Public/Components/ComFixedJoint.h
-    Public/Components/ComHingeJoint.h
-    Public/Components/ComJoint.h
     Public/Components/ComLight.h
     Public/Components/ComEnvironmentProbe.h
     Public/Components/ComLogic.h
     Public/Components/ComScript.h
-    Public/Components/ComMeshCollider.h
-    Public/Components/ComMeshRenderer.h
-    Public/Components/ComTextRenderer.h
-    Public/Components/ComText.h
-    Public/Components/Component.h
-    Public/Components/ComParticleSystem.h
-    Public/Components/ComRectTransform.h
-    Public/Components/ComRenderable.h
     Public/Components/ComRigidBody.h
     Public/Components/ComSensor.h
-    Public/Components/ComSkinnedMeshRenderer.h
-    Public/Components/ComSliderJoint.h
-    Public/Components/ComSocketJoint.h
-    Public/Components/ComSphereCollider.h
-    Public/Components/ComSpline.h
-    Public/Components/ComSpringJoint.h
-    Public/Components/ComStaticMeshRenderer.h
-    Public/Components/ComTransform.h
-    Public/Components/ComWheelJoint.h
+    Public/Components/ComConstantForce.h
     Public/Components/ComVehicleWheel.h
-    Public/Components/ComCanvas.h
-    Public/Components/ComImage.h
+    Public/Components/ComSpline.h
 
     Public/Game/Entity.h
     Public/Game/Prefab.h
@@ -542,48 +547,53 @@ set(COMMON_ENGINE_FILES
     Private/Input/InputSystem.cpp
     Private/Input/KeyCmd.cpp
 
+    Private/Components/Transform/ComTransform.cpp
+    Private/Components/Transform/ComRectTransform.cpp
+    Private/Components/Transform/JointHierarchy.cpp
+
+    Private/Components/Collider/ComCollider.cpp
+    Private/Components/Collider/ComSphereCollider.cpp
+    Private/Components/Collider/ComBoxCollider.cpp
+    Private/Components/Collider/ComCapsuleCollider.cpp
+    Private/Components/Collider/ComConeCollider.cpp
+    Private/Components/Collider/ComCylinderCollider.cpp
+    Private/Components/Collider/ComMeshCollider.cpp
+
+    Private/Components/Joint/ComJoint.cpp
+    Private/Components/Joint/ComFixedJoint.cpp
+    Private/Components/Joint/ComHingeJoint.cpp
+    Private/Components/Joint/ComSocketJoint.cpp
+    Private/Components/Joint/ComSliderJoint.cpp
+    Private/Components/Joint/ComSpringJoint.cpp
+    Private/Components/Joint/ComCharacterJoint.cpp
+    Private/Components/Joint/ComWheelJoint.cpp
+
+    Private/Components/Renderable/ComRenderable.cpp
+    Private/Components/Renderable/ComMeshRenderer.cpp
+    Private/Components/Renderable/ComStaticMeshRenderer.cpp
+    Private/Components/Renderable/ComSkinnedMeshRenderer.cpp
+    Private/Components/Renderable/ComTextRenderer.cpp
+    Private/Components/Renderable/ComParticleSystem.cpp
+    Private/Components/Renderable/ComText.cpp
+    Private/Components/Renderable/ComImage.cpp
+
+    Private/Components/Component.cpp
+    Private/Components/ComCamera.cpp
+    Private/Components/ComCanvas.cpp
+    Private/Components/ComCharacterController.cpp
     Private/Components/ComAnimation.cpp
     Private/Components/ComAnimator.cpp
     Private/Components/ComAudioListener.cpp
     Private/Components/ComAudioSource.cpp
-    Private/Components/ComBoxCollider.cpp  
-    Private/Components/ComCamera.cpp
-    Private/Components/ComCapsuleCollider.cpp
-    Private/Components/ComCharacterController.cpp
-    Private/Components/ComCharacterJoint.cpp
-    Private/Components/ComCollider.cpp
-    Private/Components/ComConeCollider.cpp
-    Private/Components/ComConstantForce.cpp
-    Private/Components/ComCylinderCollider.cpp
-    Private/Components/ComFixedJoint.cpp
-    Private/Components/ComHingeJoint.cpp
-    Private/Components/ComJoint.cpp
     Private/Components/ComLight.cpp
     Private/Components/ComEnvironmentProbe.cpp
     Private/Components/ComLogic.cpp
     Private/Components/ComScript.cpp
-    Private/Components/ComMeshCollider.cpp
-    Private/Components/ComMeshRenderer.cpp
-    Private/Components/ComTextRenderer.cpp
-    Private/Components/ComText.cpp
-    Private/Components/Component.cpp
-    Private/Components/ComParticleSystem.cpp
-    Private/Components/ComRectTransform.cpp
-    Private/Components/ComRenderable.cpp
     Private/Components/ComRigidBody.cpp
     Private/Components/ComSensor.cpp
-    Private/Components/ComSkinnedMeshRenderer.cpp
-    Private/Components/ComSliderJoint.cpp
-    Private/Components/ComSocketJoint.cpp
-    Private/Components/ComSphereCollider.cpp
-    Private/Components/ComSpline.cpp
-    Private/Components/ComSpringJoint.cpp
-    Private/Components/ComStaticMeshRenderer.cpp
-    Private/Components/ComTransform.cpp
-    Private/Components/ComWheelJoint.cpp
+    Private/Components/ComConstantForce.cpp
     Private/Components/ComVehicleWheel.cpp
-    Private/Components/ComCanvas.cpp
-    Private/Components/ComImage.cpp
+    Private/Components/ComSpline.cpp
 
     Private/Game/Entity.cpp
     Private/Game/Prefab.cpp

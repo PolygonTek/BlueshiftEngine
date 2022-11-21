@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComHingeJoint.h"
+#include "Components/Joint/ComHingeJoint.h"
 
 BE_NAMESPACE_BEGIN
 

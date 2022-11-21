@@ -14,8 +14,10 @@
 
 #include "Precompiled.h"
 #include "Render/Render.h"
+#include "Components/Transform/ComTransform.h"
+#include "Components/Transform/JointHierarchy.h"
+#include "Components/Renderable/ComSkinnedMeshRenderer.h"
 #include "Components/ComAnimation.h"
-#include "Components/ComSkinnedMeshRenderer.h"
 #include "Game/GameWorld.h"
 #include "Asset/Asset.h"
 #include "Asset/Resource.h"
@@ -30,8 +32,10 @@ BEGIN_EVENTS(ComAnimation)
 END_EVENTS
 
 void ComAnimation::RegisterProperties() {
+    REGISTER_PROPERTY("rootBoneTransform", "Root Bone Transform", Guid, rootBoneTransformGuid, Guid::zero,
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&ComTransform::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("skeleton", "Skeleton", Guid, GetSkeletonGuid, SetSkeletonGuid, Guid::zero,
-        "", PropertyInfo::Flag::Editor).SetMetaObject(&SkeletonResource::metaObject);
+        "", PropertyInfo::Flag::Empty).SetMetaObject(&SkeletonResource::metaObject);
     REGISTER_MIXED_ACCESSOR_ARRAY_PROPERTY("anims", "Animations", Guid, GetAnimGuid, SetAnimGuid, GetAnimCount, SetAnimCount, Guid::zero,
         "", PropertyInfo::Flag::Editor).SetMetaObject(&AnimResource::metaObject);
     REGISTER_PROPERTY("animIndex", "Animation Index", int, currentAnimIndex, 0,
@@ -58,11 +62,6 @@ bool ComAnimation::IsConflictComponent(const MetaObject &componentClass) const {
 }
 
 void ComAnimation::Purge(bool chainPurge) {
-    if (jointMats) {
-        Mem_AlignedFree(jointMats);
-        jointMats = nullptr;
-    }
-
     if (skeleton) {
         skeletonManager.ReleaseSkeleton(skeleton);
         skeleton = nullptr;
@@ -90,6 +89,13 @@ void ComAnimation::Init() {
     SetInitialized(true);
 }
 
+void ComAnimation::LateInit() {
+    rootBoneTransform = (ComTransform *)ComTransform::FindInstance(rootBoneTransformGuid);
+    if (rootBoneTransform && !rootBoneTransform->GetJointHierarchy()) {
+        rootBoneTransform->ConstructJointHierarchy();
+    }
+}
+
 void ComAnimation::Update() {
     if (!IsInitialized() || !IsActiveInHierarchy()) {
         return;
@@ -109,17 +115,23 @@ void ComAnimation::UpdateAnim(int animTime) {
     if (!currentAnim) {
         return;
     }
-    
-    Anim::FrameInterpolation frameInterpolation;
-    currentAnim->TimeToFrameInterpolation(animTime, frameInterpolation);
 
-    JointPose *jointFrame = (JointPose *)_alloca16(skeleton->NumJoints() * sizeof(jointFrame[0]));
-    currentAnim->GetInterpolatedFrame(frameInterpolation, jointIndexes.Count(), jointIndexes.Ptr(), jointFrame);
+    if (rootBoneTransform) {
+        JointHierarchy *jointHierarchy = rootBoneTransform->GetJointHierarchy();
 
-    simdProcessor->ConvertJointPosesToJointMats(jointMats, jointFrame, skeleton->NumJoints());
+        if (jointHierarchy) {
+            Anim::FrameInterpolation frameInterpolation;
+            currentAnim->TimeToFrameInterpolation(animTime, frameInterpolation);
 
-    // Convert joint matrices from local space to world space
-    simdProcessor->TransformJoints(jointMats, jointParents.Ptr(), 1, skeleton->NumJoints() - 1);
+            JointPose *jointFrame = (JointPose *)_alloca16(jointHierarchy->NumJoints() * sizeof(jointFrame[0]));
+            currentAnim->GetInterpolatedFrame(frameInterpolation, jointIndexes.Count(), jointIndexes.Ptr(), jointFrame);
+
+            // Convert the joint quaternions to joint matrices.
+            simdProcessor->ConvertJointPosesToJointMats(jointHierarchy->GetLocalJointMatrices(), jointFrame, jointHierarchy->NumJoints());
+
+            rootBoneTransform->UpdateJointHierarchy(skeleton->GetJointParentIndexes());
+        }
+    }
 }
 
 Guid ComAnimation::GetSkeletonGuid() const {
@@ -161,35 +173,21 @@ void ComAnimation::ChangeSkeleton(const Guid &skeletonGuid) {
     jointIndexes.SetGranularity(1);
     jointIndexes.SetCount(skeleton->NumJoints());
 
-    jointParents.SetGranularity(1);
-    jointParents.SetCount(skeleton->NumJoints());
-
-    const Joint *skeletonJoints = skeleton->GetJoints();
-    const Joint *skeletonJoint = skeletonJoints;
-
-    for (int i = 0; i < skeleton->NumJoints(); i++, skeletonJoint++) {
+    for (int i = 0; i < skeleton->NumJoints(); i++) {
         jointIndexes[i] = i;
-
-        if (skeletonJoint->parent) {
-            jointParents[i] = static_cast<int>(skeletonJoint->parent - skeletonJoints);
-        } else {
-            jointParents[i] = -1;
-        }
     }
 
-    if (jointMats) {
-        Mem_AlignedFree(jointMats);
+    if (rootBoneTransform) {
+        JointHierarchy *jointHierarchy = rootBoneTransform->GetJointHierarchy();
+
+        // Set up joints to T-pose
+        const JointPose *bindPoses = skeleton->GetBindPoses();
+        simdProcessor->ConvertJointPosesToJointMats(jointHierarchy->GetLocalJointMatrices(), bindPoses, skeleton->NumJoints());
+
+        rootBoneTransform->UpdateJointHierarchy(skeleton->GetJointParentIndexes());
+
+        //anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
     }
-    jointMats = (Mat3x4 *)Mem_Alloc16(skeleton->NumJoints() * sizeof(jointMats[0]));
-
-    // Set up joints to T-pose
-    const JointPose *bindPoses = skeleton->GetBindPoses();
-    simdProcessor->ConvertJointPosesToJointMats(jointMats, bindPoses, skeleton->NumJoints());
-
-    // Convert joint matrices from local space to world space
-    simdProcessor->TransformJoints(jointMats, jointParents.Ptr(), 1, skeleton->NumJoints() - 1);
-
-    //anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
 
 #if WITH_EDITOR
     // Need to connect skeleton asset to be reloaded in Editor
@@ -282,15 +280,9 @@ void ComAnimation::ChangeAnim(int index, const Guid &animGuid) {
     }
 
     if (anims[index]) {
-        if (skeleton) {
-            if (skeleton->NumJoints() != anims[index]->NumJoints()) {
-                // Set up joints to T-pose
-                const JointPose *bindPoses = skeleton->GetBindPoses();
-                simdProcessor->ConvertJointPosesToJointMats(jointMats, bindPoses, skeleton->NumJoints());
-
-                // Convert joint matrices from local space to world space
-                simdProcessor->TransformJoints(jointMats, jointParents.Ptr(), 1, skeleton->NumJoints() - 1);
-
+        if (rootBoneTransform) {
+            JointHierarchy *jointHierarchy = rootBoneTransform->GetJointHierarchy();
+            if (jointHierarchy && jointHierarchy->NumJoints() != anims[index]->NumJoints()) {
                 animManager.ReleaseAnim(anims[index]);
                 anims[index] = nullptr;
                 return;
@@ -314,16 +306,26 @@ float ComAnimation::GetTimeOffset() const {
     return timeOffset;
 }
 
-void ComAnimation::SetTimeOffset(float timeOffset) {
-    this->timeOffset = timeOffset;
+void ComAnimation::SetTimeOffset(float inTimeOffset) {
+    timeOffset = inTimeOffset;
 }
 
 float ComAnimation::GetTimeScale() const {
     return timeScale;
 }
 
-void ComAnimation::SetTimeScale(float timeScale) {
-    this->timeScale = timeScale;
+void ComAnimation::SetTimeScale(float inTimeScale) {
+    timeScale = inTimeScale;
+}
+
+Mat3x4 *ComAnimation::GetJointMatrices() const {
+    if (rootBoneTransform) {
+        JointHierarchy *jointHierarchy = rootBoneTransform->GetJointHierarchy();
+        if (jointHierarchy) {
+            return jointHierarchy->GetWorldJointMatrices();
+        }
+    }
+    return nullptr;
 }
 
 const Anim *ComAnimation::GetCurrentAnim() const {

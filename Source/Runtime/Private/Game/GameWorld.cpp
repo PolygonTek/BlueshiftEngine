@@ -22,7 +22,7 @@
 #include "Sound/SoundSystem.h"
 #include "AnimController/AnimController.h"
 #include "Asset/GuidMapper.h"
-#include "Components/ComTransform.h"
+#include "Components/Transform/ComTransform.h"
 #include "Components/ComCamera.h"
 #include "Components/ComCanvas.h"
 #include "Components/ComScript.h"
@@ -351,33 +351,37 @@ void GameWorld::UnregisterEntity(Entity *ent) {
     EmitSignal(&SIG_EntityUnregistered, ent);
 }
 
-Entity *GameWorld::CloneEntity(const Entity *originalEntity) {
+Entity *GameWorld::CloneEntity(const Entity *sourceEntity) {
     // Serialize source entity and it's children.
-    Json::Value originalEntitiesValue;
-    Entity::SerializeHierarchy(originalEntity, originalEntitiesValue);
+    Json::Value sourceEntitiesValue;
+    Entity::SerializeHierarchy(sourceEntity, sourceEntitiesValue);
 
     // Clone entities value which is replaced by new GUIDs.
     HashTable<Guid, Guid> guidMap;
-    Json::Value clonedEntitiesValue = Entity::CloneEntitiesValue(originalEntitiesValue, guidMap);
+    Json::Value clonedEntitiesValue = Entity::CloneEntitiesValue(sourceEntitiesValue, guidMap);
 
     EntityPtrArray clonedEntities;
 
     for (int i = 0; i < clonedEntitiesValue.size(); i++) {
         // Create cloned entity.
-        Entity *clonedEntity = Entity::CreateEntity(clonedEntitiesValue[i], this, originalEntity->sceneNum);
+        Entity *clonedEntity = Entity::CreateEntity(clonedEntitiesValue[i], this, sourceEntity->sceneNum);
         clonedEntities.Append(clonedEntity);
 
         // Remap all GUID references to newly created.
         clonedEntity->RemapGuids(guidMap);
 
         // If source entity is prefab source, mark cloned entity originated from prefab entity.
-        if (originalEntitiesValue[i]["prefab"].asBool()) {
-            clonedEntity->SetProperty("prefabSource", Guid::FromString(originalEntitiesValue[i]["guid"].asCString()));
+        if (sourceEntitiesValue[i]["prefab"].asBool()) {
+            clonedEntity->SetProperty("prefabSource", Guid::FromString(sourceEntitiesValue[i]["guid"].asCString()));
             clonedEntity->SetProperty("prefab", false);
         }
 
         clonedEntity->Init();
         clonedEntity->InitComponents();
+    }
+
+    for (int i = 0; i < clonedEntities.Count(); i++) {
+        clonedEntities[i]->LateInitComponents();
     }
 
     return clonedEntities[0];
@@ -395,6 +399,7 @@ Entity *GameWorld::CreateEmptyEntityWithPositionAndRotation(const char *name, co
 
     entity->Init();
     entity->InitComponents();
+    entity->LateInitComponents();
 
     RegisterEntity(entity);
 
@@ -441,12 +446,13 @@ Entity *GameWorld::SpawnEntityFromJson(const Json::Value &entityValue, int scene
         return nullptr;
     }
 
-    int spawn_entnum = entityValue.get("spawn_entnum", -1).asInt();
-
     Entity *entity = Entity::CreateEntity(entityValue, this, sceneIndex);
 
     entity->Init();
     entity->InitComponents();
+    entity->LateInitComponents();
+
+    int spawn_entnum = entityValue.get("spawn_entnum", -1).asInt();
 
     RegisterEntity(entity, spawn_entnum);
 
@@ -454,10 +460,33 @@ Entity *GameWorld::SpawnEntityFromJson(const Json::Value &entityValue, int scene
 }
 
 void GameWorld::SpawnEntitiesFromJson(const Json::Value &entitiesValue, int sceneIndex) {
+    EntityPtrArray entities;
+
     for (int i = 0; i < entitiesValue.size(); i++) {
         Json::Value entityValue = entitiesValue[i];
 
-        SpawnEntityFromJson(entityValue, sceneIndex);
+        const char *classname = entityValue["classname"].asCString();
+        if (Str::Cmp(classname, Entity::metaObject.ClassName()) != 0) {
+            BE_WARNLOG("GameWorld::SpawnEntitiesFromJson: Bad classname '%s' for entity\n", classname);
+            continue;
+        }
+
+        Entity *entity = Entity::CreateEntity(entityValue, this, sceneIndex);
+
+        entity->Init();
+        entity->InitComponents();
+
+        entities.Append(entity);
+    }
+
+    for (int i = 0; i < entities.Count(); i++) {
+        Entity *entity = entities[i];
+        entity->LateInitComponents();
+
+        Json::Value entityValue = entitiesValue[i];
+        int spawn_entnum = entityValue.get("spawn_entnum", -1).asInt();
+
+        RegisterEntity(entity, spawn_entnum);
     }
 }
 
@@ -549,7 +578,7 @@ void GameWorld::StartGame() {
     luaVM.State().ForceGC();
 
     physicsWorld->Connect(&PhysicsWorld::SIG_PreStep, this, (SignalCallback)&GameWorld::FixedUpdateEntities);
-    physicsWorld->Connect(&PhysicsWorld::SIG_PostStep, this, (SignalCallback)&GameWorld::FixedLateUpdateEntities);
+    //physicsWorld->Connect(&PhysicsWorld::SIG_PostStep, this, (SignalCallback)&GameWorld::FixedLateUpdateEntities);
 }
 
 void GameWorld::StopGame(bool stopAllSounds) {
@@ -731,21 +760,21 @@ void GameWorld::Update(int elapsedMsec) {
 void GameWorld::FixedUpdateEntities(float timeStep) {
     BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::FixedUpdateEntities");
 
+    float scaledTimeStep = timeStep * timeScale;
+
+    Entity *next;
+
     // Call fixed update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
-            ent->FixedUpdate(timeStep * timeScale);
-        }
-    }
-}
-
-void GameWorld::FixedLateUpdateEntities(float timeStep) {
-    BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::FixedLateUpdateEntities");
-
-    // Call fixed post-update function for each entities in depth-first order.
-    for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
-            ent->FixedLateUpdate(timeStep * timeScale);
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = next) {
+            if (ent->IsLockedInHierarchy()) {
+                next = ent->node.GetNextSibling();
+                if (next) {
+                    continue;
+                }
+            }
+            ent->FixedUpdate(scaledTimeStep);
+            next = ent->node.GetNext();
         }
     }
 }
@@ -753,10 +782,19 @@ void GameWorld::FixedLateUpdateEntities(float timeStep) {
 void GameWorld::UpdateEntities() {
     BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::UpdateEntities");
 
+    Entity *next;
+
     // Call update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = next) {
+            if (ent->IsLockedInHierarchy()) {
+                next = ent->node.GetNextSibling();
+                if (next) {
+                    continue;
+                }
+            }
             ent->Update();
+            next = ent->node.GetNext();
         }
     }
 }
@@ -764,10 +802,19 @@ void GameWorld::UpdateEntities() {
 void GameWorld::LateUpdateEntities() {
     BE_PROFILE_CPU_SCOPE_STATIC("GameWorld::LateUpdateEntities");
 
+    Entity *next;
+
     // Call post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = next) {
+            if (ent->IsLockedInHierarchy()) {
+                next = ent->node.GetNextSibling();
+                if (next) {
+                    continue;
+                }
+            }
             ent->LateUpdate();
+            next = ent->node.GetNext();
         }
     }
 }
@@ -782,24 +829,40 @@ void GameWorld::UpdateLuaVM() {
 }
 
 void GameWorld::UpdateCanvas() {
+    Entity *next;
+
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        Entity *ent = scenes[sceneIndex].root.GetFirstChild();
-
-        while (ent) {
-            ComCanvas *canvasComponent = ent->GetComponent<ComCanvas>();
-
-            if (canvasComponent) {
-                canvasComponent->UpdateRenderingOrderForCanvasElements();
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = next) {
+            if (ent->IsLockedInHierarchy()) {
+                next = ent->node.GetNextSibling();
+                if (next) {
+                    continue;
+                }
             }
+            next = ent->node.GetNext();
 
-            ent = ent->node.GetNext();
+            ComCanvas *canvas = ent->GetComponent<ComCanvas>();
+            if (!canvas) {
+                continue;
+            }
+            canvas->UpdateRenderingOrderForCanvasElements();
         }
     }
 }
 
 void GameWorld::ListUpActiveCameraComponents(StaticArray<ComCamera *, MaxActiveCameraComponents> &cameraComponents) const {
+    Entity *next;
+
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = next) {
+            if (ent->IsLockedInHierarchy()) {
+                next = ent->node.GetNextSibling();
+                if (next) {
+                    continue;
+                }
+            }
+            next = ent->node.GetNext();
+
             ComCamera *camera = ent->GetComponent<ComCamera>();
             if (!camera || !camera->IsActiveInHierarchy()) {
                 continue;
@@ -819,8 +882,18 @@ void GameWorld::ListUpActiveCameraComponents(StaticArray<ComCamera *, MaxActiveC
 }
 
 void GameWorld::ListUpActiveCanvasComponents(StaticArray<ComCanvas *, MaxActiveCanvasComponents> &canvasComponents) const {
+    Entity *next;
+
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
-        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
+        for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = next) {
+            if (ent->IsLockedInHierarchy()) {
+                next = ent->node.GetNextSibling();
+                if (next) {
+                    continue;
+                }
+            }
+            next = ent->node.GetNext();
+
             ComCanvas *canvas = ent->GetComponent<ComCanvas>();
             if (!canvas || !canvas->IsActiveInHierarchy()) {
                 continue;

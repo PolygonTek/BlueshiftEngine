@@ -26,8 +26,6 @@ BE_NAMESPACE_BEGIN
 
 Animator::Animator() {
     animController = nullptr;
-    numJoints = 0;
-    jointMats = nullptr;
     ignoreRootTranslation = false;
 
     for (int i = 0; i < MaxLayers; i++) {
@@ -52,17 +50,11 @@ void Animator::FreeData() {
         }
     }
 
-    if (jointMats) {
-        Mem_AlignedFree(jointMats);
-        jointMats = nullptr;
-    }
-
-    numJoints = 0;
     animController = nullptr;
 }
 
 size_t Animator::Allocated() const {
-    return numJoints * sizeof(jointMats[0]);
+    return animAABBs.Allocated() + parameters.Allocated();
 }
 
 size_t Animator::Size() const {
@@ -204,9 +196,6 @@ void Animator::SetAnimController(const Str &name) {
         return;
     }
 
-    // Initialize jointMats from bindposes.
-    animController->BuildBindPoseMats(&numJoints, &jointMats);
-
     // Clear all animation state blenders for each layers.
     for (int i = 0; i < MaxLayers; i++) {
         for (int j = 0; j < MaxBlendersPerLayer; j++) {
@@ -221,11 +210,17 @@ void Animator::SetAnimController(const Str &name) {
     }
 }
 
+int Animator::NumJoints() const {
+    if (!animController || !animController->GetSkeleton()) {
+        return 0;
+    }
+    return animController->GetSkeleton()->NumJoints();
+}
+
 const char *Animator::GetJointName(int jointIndex) const {
     if (!animController || !animController->GetSkeleton()) {
         return "";
     }
-    
     return animController->GetSkeleton()->GetJointName(jointIndex);
 }
 
@@ -233,23 +228,20 @@ int Animator::GetJointIndex(const char *name) const {
     if (!animController || !animController->GetSkeleton()) {
         return -1;
     }
-
     return animController->GetSkeleton()->GetJointIndex(name);
 }
 
-int Animator::NumAnimLayers() const { 
+int Animator::NumAnimLayers() const {
     if (!animController) {
         return 0;
     }
-
-    return animController->NumAnimLayers(); 
+    return animController->NumAnimLayers();
 }
 
 const AnimLayer *Animator::GetAnimLayer(int index) const {
     if (!animController) {
         return nullptr;
     }
-
     return animController->GetAnimLayerByIndex(index);
 }
 
@@ -347,7 +339,7 @@ void Animator::PushStateBlenders(int layerNum, int currentTime, int blendDuratio
     stateBlenders[1].BlendOut(currentTime, blendDuration);
 }
 
-void Animator::ComputeFrame(int currentTime) {
+void Animator::ComputeFrame(int currentTime, int numJoints, Mat3x4 *localJointMatrices) {
     const JointPose *bindPoses = animController->GetBindPoses();
     if (!bindPoses) {
         BE_WARNLOG("Animator::ComputeFrame: no bindPoses on '%s'\n", animController->GetHashName());
@@ -419,14 +411,11 @@ void Animator::ComputeFrame(int currentTime) {
         return;
     }
 
-    // Convert the joint quaternions to rotation matrices.
-    simdProcessor->ConvertJointPosesToJointMats(jointMats, jointFrame1, numJoints);
+    // Convert the joint quaternions to joint matrices.
+    simdProcessor->ConvertJointPosesToJointMats(localJointMatrices, jointFrame1, numJoints);
 
-    // Add in the animController offset.
-    jointMats[0].SetTranslation(jointMats[0].ToTranslationVec3() + animController->GetRootOffset());
-
-    // Transform the rest of the hierarchy.
-    simdProcessor->TransformJoints(jointMats, animController->GetJointParents(), 0, numJoints - 1);
+    // Add the animController offset to root joint translation.
+    localJointMatrices[0].SetTranslation(localJointMatrices[0].ToTranslationVec3() + animController->GetRootOffset());
 }
 
 void Animator::GetTranslation(int currentTime, Vec3 &translation) const {

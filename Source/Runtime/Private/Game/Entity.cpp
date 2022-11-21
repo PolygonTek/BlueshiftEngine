@@ -14,9 +14,7 @@
 
 #include "Precompiled.h"
 #include "Components/Component.h"
-#include "Components/ComTransform.h"
-#include "Components/ComRectTransform.h"
-#include "Components/ComRenderable.h"
+#include "Components/Renderable/ComRenderable.h"
 #include "Components/ComScript.h"
 #include "Game/Entity.h"
 #include "Game/GameWorld.h"
@@ -33,7 +31,7 @@ const SignalDef Entity::SIG_ActiveInHierarchyChanged("Entity::ActiveInHierachyCh
 const SignalDef Entity::SIG_NameChanged("Entity::NameChanged", "as");
 const SignalDef Entity::SIG_VisibilityChanged("Entity::VisibilityChanged", "ai");
 const SignalDef Entity::SIG_SelectabilityChanged("Entity::SelectabilityChanged", "ai");
-const SignalDef Entity::SIG_ParentChanged("Entity::ParentChanged", "aa");
+const SignalDef Entity::SIG_ParentChanged("Entity::ParentChanged", "aaa");
 const SignalDef Entity::SIG_SiblingIndexChanged("Entity::SiblingIndexChanged", "ai");
 const SignalDef Entity::SIG_ComponentInserted("Entity::ComponentInserted", "ai");
 const SignalDef Entity::SIG_ComponentRemoved("Entity::ComponentRemoved", "a");
@@ -65,6 +63,8 @@ void Entity::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("active", "Active", bool, IsActiveSelf, SetActive, true,
         "", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("activeInHierarchy", "Active In Hierarchy", bool, activeInHierarchy, true,
+        "", PropertyInfo::Flag::Editor);
+    REGISTER_PROPERTY("lockedInHierarchy", "Locked In Hierarchy", bool, lockedInHierarchy, false,
         "", PropertyInfo::Flag::Editor);
 #if WITH_EDITOR
     REGISTER_ACCESSOR_PROPERTY("visibleInEditor", "Visible", bool, IsVisible, SetVisible, true,
@@ -143,6 +143,19 @@ void Entity::InitComponents() {
 #endif
 }
 
+void Entity::LateInitComponents() {
+    assert(gameWorld);
+
+    for (int i = 0; i < components.Count(); i++) {
+        Component *component = components[i];
+        if (component) {
+            if (component->IsInitialized()) {
+                component->LateInit();
+            }
+        }
+    }
+}
+
 void Entity::Awake() {
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
@@ -177,16 +190,6 @@ void Entity::FixedUpdate(float timeStep) {
     }
 }
 
-void Entity::FixedLateUpdate(float timeStep) {
-    for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
-        ComScript *scriptComponent = components[componentIndex]->Cast<ComScript>();
-
-        if (scriptComponent && scriptComponent->IsActiveInHierarchy()) {
-            scriptComponent->FixedLateUpdate(timeStep);
-        }
-    }
-}
-
 void Entity::Update() {
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
@@ -209,17 +212,6 @@ void Entity::LateUpdate() {
             scriptComponent->LateUpdate();
         }
     }
-}
-
-ComTransform *Entity::GetTransform() const {
-    ComTransform *transform = static_cast<ComTransform *>(GetComponent(0));
-    assert(transform);
-    return transform;
-}
-
-ComRectTransform *Entity::GetRectTransform() const {
-    ComRectTransform *transform = static_cast<ComTransform *>(GetComponent(0))->Cast<ComRectTransform>();
-    return transform;
 }
 
 Entity *Entity::RayCastRect(const Ray &ray) {
@@ -316,31 +308,15 @@ bool Entity::SwapComponent(int fromIndex, int toIndex) {
     return true;
 }
 
-bool Entity::HasChildren() const {
-    return node.GetFirstChild() ? true : false;
-}
-
-int Entity::GetChildCount() const {
-    return node.GetChildCount();
-}
-
-Entity *Entity::GetChild(int childIndex) const {
-    return node.GetChild(childIndex);
-}
-
-Entity *Entity::FindChild(const char *name) const {
-    for (Entity *child = node.GetFirstChild(); child; child = child->node.GetNextSibling()) {
-        if (!Str::Cmp(child->GetName(), name)) {
-            return child;
+int Entity::GetChildCount(bool includingDescendants) const {
+    if (includingDescendants) {
+        int childCount = 0;
+        for (Entity *child = GetNode().GetFirstChild(); child; child = child->GetNode().GetNextIn(GetNode())) {
+            childCount++;
         }
+        return childCount;
     }
-    return nullptr;
-}
-
-void Entity::GetChildren(EntityPtrArray &children) const {
-    for (Entity *child = node.GetFirstChild(); child; child = child->node.GetNextSibling()) {
-        children.Append(child);
-    }
+    return node.GetChildCount();
 }
 
 void Entity::GetChildrenRecursive(EntityPtrArray &children) const {
@@ -349,32 +325,6 @@ void Entity::GetChildrenRecursive(EntityPtrArray &children) const {
 
         child->GetChildrenRecursive(children);
     }
-}
-
-Component *Entity::GetComponent(const MetaObject *type) const {
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
-
-        if (component->GetMetaObject()->IsTypeOf(*type)) {
-            return component;
-        }
-    }
-
-    return nullptr;
-}
-
-ComponentPtrArray Entity::GetComponents(const MetaObject *type) const {
-    ComponentPtrArray subComponents;
-
-    for (int i = 0; i < components.Count(); i++) {
-        Component *component = components[i];
-
-        if (component->GetMetaObject()->IsTypeOf(*type)) {
-            subComponents.Append(component);
-        }
-    }
-
-    return subComponents;
 }
 
 ComponentPtrArray Entity::GetComponentsInChildren(const MetaObject *type, bool skipIfParentDontHave) const {
@@ -560,7 +510,7 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
     }
 
     if (includingChildren) {
-        ALIGN_AS32 Mat3x4 rootMatrixInverse = GetTransform()->GetMatrix().InverseOrthogonal();
+        ALIGN_AS32 Mat3x4 rootMatrixInverse = GetTransform()->GetWorldMatrix().InverseOrthogonal();
 
         Array<Entity *> children;
         GetChildrenRecursive(children);
@@ -570,7 +520,7 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
 
             AABB childLocalAabb = child->GetLocalAABB();
             if (!childLocalAabb.IsCleared()) {
-                ALIGN_AS32 Mat3x4 localMatrix = rootMatrixInverse * child->GetTransform()->GetMatrix();
+                ALIGN_AS32 Mat3x4 localMatrix = rootMatrixInverse * child->GetTransform()->GetWorldMatrix();
 
                 childLocalAabb.SetFromTransformedAABB(childLocalAabb, localMatrix);
 
@@ -591,12 +541,8 @@ const AABB Entity::GetWorldAABBFast(bool includingChildren) const {
     }
 
     AABB worldAABB;
-    worldAABB.SetFromTransformedAABBFast(localAABB, transform->GetMatrix());
+    worldAABB.SetFromTransformedAABBFast(localAABB, transform->GetWorldMatrix());
     return worldAABB;
-}
-
-const AABB Entity::GetWorldAABB(bool includingChildren) const { 
-    return GetAABBInSpace(Vec3::origin, Mat3::identity, includingChildren); 
 }
 
 const AABB Entity::GetAABBInSpace(const Vec3 &origin, const Mat3 &axis, bool includingChildren) const {
@@ -609,10 +555,10 @@ const AABB Entity::GetAABBInSpace(const Vec3 &origin, const Mat3 &axis, bool inc
         Vec3 points[8];
         localAABB.ToPoints(points);
 
-        for (int pointIndex = 0; pointIndex < COUNT_OF(points); pointIndex++) {
-            Vec3 worldPoint = GetTransform()->GetMatrix().TransformPos(points[pointIndex]);
+        GetTransform()->GetWorldMatrix().BatchTransformPos(points, COUNT_OF(points));
 
-            Vec3 spacePoint = axis.TransposedMulVec(worldPoint - origin);
+        for (int pointIndex = 0; pointIndex < COUNT_OF(points); pointIndex++) {
+            Vec3 spacePoint = axis.TransposedMulVec(points[pointIndex] - origin);
 
             spaceAABB.AddPoint(spacePoint);
         }
@@ -632,7 +578,7 @@ const AABB Entity::GetAABBInSpace(const Vec3 &origin, const Mat3 &axis, bool inc
 }
 
 const Vec3 Entity::GetWorldPosition(WorldPosTrait::Enum posTrait, bool includingChildren) const {
-    Vec3 position;
+    Vec3 position = Vec3::zero;
 
     if (posTrait == WorldPosTrait::Pivot) {
         position = GetTransform()->GetOrigin();
@@ -737,12 +683,6 @@ void Entity::SetStaticMask(int staticMask) {
     EmitSignal(&SIG_StaticMaskChanged, this, staticMask);
 }
 
-void Entity::SetParent(const Entity *parentEntity) {
-    Guid parentGuid = parentEntity ? parentEntity->GetGuid() : Guid::zero;
-
-    SetParentGuid(parentGuid);
-}
-
 Guid Entity::GetParentGuid() const {
     Entity *parentEntity = node.GetParent();
     if (parentEntity) {
@@ -752,11 +692,12 @@ Guid Entity::GetParentGuid() const {
 }
 
 void Entity::SetParentGuid(const Guid &parentGuid) {
-    Object *parentObject = Entity::FindInstance(parentGuid);
-    Entity *parentEntity = parentObject ? parentObject->Cast<Entity>() : nullptr;
+    Entity *oldParentEntity = GetParent();
+    Object *newParentObject = Entity::FindInstance(parentGuid);
+    Entity *newParentEntity = newParentObject ? newParentObject->Cast<Entity>() : nullptr;
     
-    if (parentEntity) {
-        node.SetParent(parentEntity->node);
+    if (newParentEntity) {
+        node.SetParent(newParentEntity->node);
     } else {
         if (gameWorld) {
             assert(sceneNum >= 0);
@@ -766,13 +707,9 @@ void Entity::SetParentGuid(const Guid &parentGuid) {
 
 #if WITH_EDITOR
     if (initialized) {
-        EmitSignal(&SIG_ParentChanged, this, parentEntity);
+        EmitSignal(&SIG_ParentChanged, this, oldParentEntity, newParentEntity);
     }
 #endif
-}
-
-int Entity::GetSiblingIndex() const {
-    return node.GetSiblingIndex();
 }
 
 void Entity::SetSiblingIndex(int siblingIndex) {

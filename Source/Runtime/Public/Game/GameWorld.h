@@ -222,7 +222,6 @@ private:
     void                        FinishMapLoading();
     Entity *                    CloneEntity(const Entity *originalEntity);
     void                        FixedUpdateEntities(float timeStep);
-    void                        FixedLateUpdateEntities(float timeStep);
     void                        UpdateEntities();
     void                        LateUpdateEntities();
     void                        UpdateLuaVM();

@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComSocketJoint.h"
+#include "Components/Joint/ComSocketJoint.h"
 
 BE_NAMESPACE_BEGIN
 

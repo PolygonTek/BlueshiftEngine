@@ -18,6 +18,7 @@
 
 BE_NAMESPACE_BEGIN
 
+class ComTransform;
 class Asset;
 class Skeleton;
 class Anim;
@@ -36,6 +37,9 @@ public:
 
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
+
+                            /// Late-initializes this component. Called after all entities are initialized.
+    virtual void            LateInit() override;
 
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;
@@ -58,7 +62,7 @@ public:
 
     Skeleton *              GetSkeleton() const { return skeleton; }
 
-    Mat3x4 *                GetJointMatrices() const { return jointMats; }
+    Mat3x4 *                GetJointMatrices() const;
 
     const Anim *            GetCurrentAnim() const;
 
@@ -71,6 +75,8 @@ protected:
     void                    ChangeSkeleton(const Guid &skeletonGuid);
     void                    SkeletonReloaded();
 
+    Guid                    rootBoneTransformGuid;
+    ComTransform *          rootBoneTransform = nullptr;
     Skeleton *              skeleton = nullptr;
     Array<Anim *>           anims;
 
@@ -78,8 +84,6 @@ protected:
     Array<Asset *>          animAssets;
 
     Array<int>              jointIndexes;
-    Array<int>              jointParents;
-    Mat3x4 *                jointMats = nullptr;
 
     int                     currentAnimIndex = 0;
     int                     playStartTime;

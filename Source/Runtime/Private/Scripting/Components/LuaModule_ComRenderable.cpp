@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComRenderable.h"
+#include "Components/Renderable/ComRenderable.h"
 
 BE_NAMESPACE_BEGIN
 

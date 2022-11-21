@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComBoxCollider.h"
+#include "Components/Collider/ComBoxCollider.h"
 
 BE_NAMESPACE_BEGIN
 

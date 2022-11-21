@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComMeshCollider.h"
+#include "Components/Collider/ComMeshCollider.h"
 #include "Render/Mesh.h"
 
 BE_NAMESPACE_BEGIN

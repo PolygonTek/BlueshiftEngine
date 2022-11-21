@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComWheelJoint.h"
+#include "Components/Joint/ComWheelJoint.h"
 
 BE_NAMESPACE_BEGIN
 

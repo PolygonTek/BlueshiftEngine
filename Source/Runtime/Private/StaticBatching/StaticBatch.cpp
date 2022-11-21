@@ -16,9 +16,9 @@
 #include "Containers/Hierarchy.h"
 #include "Render/Render.h"
 #include "Game/Entity.h"
-#include "Components/ComStaticMeshRenderer.h"
+#include "Components/Renderable/ComStaticMeshRenderer.h"
 #include "StaticBatching/StaticBatch.h"
-#include "../StaticBatching/MeshCombiner.h"
+#include "MeshCombiner.h"
 
 BE_NAMESPACE_BEGIN
 

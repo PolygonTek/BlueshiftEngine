@@ -15,8 +15,8 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "Physics/Collider.h"
-#include "Components/ComTransform.h"
-#include "Components/ComCollider.h"
+#include "Components/Transform/ComTransform.h"
+#include "Components/Collider/ComCollider.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComCharacterController.h"
 #include "Game/GameWorld.h"
@@ -465,7 +465,7 @@ void ComCharacterController::DrawGizmos(const RenderCamera *camera, bool selecte
             float scaledHeight = transform->GetScale().z * capsuleHeight;
 
             Vec3 localCenter = Vec3(0, 0, capsuleRadius + capsuleHeight * 0.5f);
-            Vec3 worldCenter = transform->GetMatrix().TransformPos(localCenter);
+            Vec3 worldCenter = transform->GetWorldMatrix().TransformPos(localCenter);
 
             renderWorld->SetDebugColor(Color4::yellow, Color4::zero);
             renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius, 1.0f, true);

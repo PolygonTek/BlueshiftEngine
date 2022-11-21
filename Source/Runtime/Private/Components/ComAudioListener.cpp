@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Sound/SoundSystem.h"
-#include "Components/ComTransform.h"
+#include "Components/Transform/ComTransform.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComAudioListener.h"
 #include "Game/Entity.h"

@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComCylinderCollider.h"
+#include "Components/Collider/ComCylinderCollider.h"
 
 BE_NAMESPACE_BEGIN
 

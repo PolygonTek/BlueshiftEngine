@@ -15,8 +15,10 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "AnimController/AnimController.h"
+#include "Components/Transform/ComTransform.h"
+#include "Components/Transform/JointHierarchy.h"
+#include "Components/Renderable/ComSkinnedMeshRenderer.h"
 #include "Components/ComAnimator.h"
-#include "Components/ComSkinnedMeshRenderer.h"
 #include "Game/GameWorld.h"
 #include "Asset/Asset.h"
 #include "Asset/Resource.h"
@@ -29,6 +31,8 @@ BEGIN_EVENTS(ComAnimator)
 END_EVENTS
 
 void ComAnimator::RegisterProperties() {
+    REGISTER_PROPERTY("rootBoneTransform", "Root Bone Transform", Guid, rootBoneTransformGuid, Guid::zero,
+        "", PropertyInfo::Flag::Editor).SetMetaObject(&ComTransform::metaObject);
     REGISTER_MIXED_ACCESSOR_PROPERTY("animController", "Anim Controller", Guid, GetAnimControllerGuid, SetAnimControllerGuid, GuidMapper::defaultAnimControllerGuid, 
         "", PropertyInfo::Flag::Editor).SetMetaObject(&AnimControllerResource::metaObject);
 }
@@ -63,6 +67,13 @@ void ComAnimator::Init() {
     SetInitialized(true);
 }
 
+void ComAnimator::LateInit() {
+    rootBoneTransform = (ComTransform *)ComTransform::FindInstance(rootBoneTransformGuid);
+    if (rootBoneTransform && !rootBoneTransform->GetJointHierarchy()) {
+        rootBoneTransform->ConstructJointHierarchy();
+    }
+}
+
 void ComAnimator::Update() {
     if (!IsActiveInHierarchy()) {
         return;
@@ -87,14 +98,22 @@ void ComAnimator::Update() {
 }
 
 void ComAnimator::UpdateAnim(int currentTime) {
-    animator.ComputeFrame(currentTime);
+    if (rootBoneTransform) {
+        JointHierarchy *jointHierarchy = rootBoneTransform->GetJointHierarchy();
 
-    // Modify jointMats for IK here !
+        if (jointHierarchy) {
+            animator.ComputeFrame(currentTime, jointHierarchy->NumJoints(), jointHierarchy->GetLocalJointMatrices());
 
-    // Get AABB from animator
-    /*animator.ComputeAABB(currentTime);
+            rootBoneTransform->UpdateJointHierarchy(animator.GetAnimController()->GetSkeleton()->GetJointParentIndexes());
+        }
 
-    animator.GetAABB(renderObjectDef.localAABB);*/
+        // Modify jointMats for IK here !
+
+        // Get AABB from animator
+        /*animator.ComputeAABB(currentTime);
+
+        animator.GetAABB(renderObjectDef.localAABB);*/
+    }
 }
 
 const char *ComAnimator::GetCurrentAnimState(int layerNum) const {
@@ -154,6 +173,17 @@ void ComAnimator::ChangeAnimController(const Guid &animControllerGuid) {
         animControllerAsset->Connect(&Asset::SIG_Reloaded, this, (SignalCallback)&ComAnimator::AnimControllerReloaded, SignalObject::ConnectionType::Queued);
     }
 #endif
+}
+
+Mat3x4 *ComAnimator::GetJointMatrices() const {
+    if (rootBoneTransform) {
+        JointHierarchy *jointHierarchy = rootBoneTransform->GetJointHierarchy();
+        if (jointHierarchy) {
+            return jointHierarchy->GetWorldJointMatrices();
+        }
+    }
+    return nullptr;
+    //return animator.GetFrame();
 }
 
 BE_NAMESPACE_END

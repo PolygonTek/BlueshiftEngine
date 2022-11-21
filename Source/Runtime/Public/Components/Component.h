@@ -39,10 +39,10 @@ public:
     virtual Str             ToString() const override;
     
                             /// Gets the entity that own this component.
-    Entity *                GetEntity() const { return entity; }
+    BE_FORCE_INLINE Entity *GetEntity() const { return entity; }
 
                             /// Sets the entity of the owner of this component.
-    void                    SetEntity(Entity *entity) { this->entity = entity; }
+    BE_FORCE_INLINE void    SetEntity(Entity *entity) { this->entity = entity; }
     
                             /// Gets the game world object from the owner entity.
     GameWorld *             GetGameWorld() const;
@@ -61,7 +61,7 @@ public:
                             /// Can disable ?
     virtual bool            CanDisable() const { return true; }
                             /// Is enabled ?
-    bool                    IsEnabled() const { return enabled; }
+    BE_FORCE_INLINE bool    IsEnabled() const { return enabled; }
                             /// Set enabled/disabled this component.
     void                    SetEnabled(bool enable);
 
@@ -72,6 +72,9 @@ public:
 
                             /// Initializes this component. Called after deserialization.
     virtual void            Init();
+
+                            /// Late-Initializes this component. Called after all entities are initialized.
+    virtual void            LateInit() {}
 
                             /// Called once when game started before Start().
                             /// When game already started, called immediately after spawned.

@@ -61,9 +61,6 @@ public:
                             /// Called on physics update, fixed timestep.
     void                    FixedUpdate(float timeStep);
 
-                            /// Called on physics late-update, fixed timestep.
-    void                    FixedLateUpdate(float timeStep);
-
     virtual void            OnValidate();
 
     virtual void            OnPointerEnter();
@@ -132,7 +129,6 @@ protected:
     LuaCpp::Selector        updateFunc;
     LuaCpp::Selector        lateUpdateFunc;
     LuaCpp::Selector        fixedUpdateFunc;
-    LuaCpp::Selector        fixedLateUpdateFunc;
     LuaCpp::Selector        onValidateFunc;
     LuaCpp::Selector        onEnableFunc;
     LuaCpp::Selector        onDisableFunc;

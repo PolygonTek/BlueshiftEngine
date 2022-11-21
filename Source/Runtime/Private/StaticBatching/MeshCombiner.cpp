@@ -15,8 +15,8 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "Game/Entity.h"
-#include "Components/ComTransform.h"
-#include "Components/ComStaticMeshRenderer.h"
+#include "Components/Transform/ComTransform.h"
+#include "Components/Renderable/ComStaticMeshRenderer.h"
 #include "MeshCombiner.h"
 #include "StaticBatching/StaticBatch.h"
 
@@ -136,7 +136,7 @@ void MeshCombiner::MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMesh
 
     StaticBatch *staticBatch = StaticBatch::AllocStaticBatch(staticBatchRoot);
 
-    ALIGN_AS32 Mat3x4 worldToLocalMatrix = staticBatchRoot->GetTransform()->GetMatrix().InverseOrthogonal();
+    ALIGN_AS32 Mat3x4 worldToLocalMatrix = staticBatchRoot->GetTransform()->GetWorldMatrix().InverseOrthogonal();
 
     Array<BatchSubMesh> batchSubMeshes;
 
@@ -146,7 +146,7 @@ void MeshCombiner::MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMesh
 
         BatchSubMesh batchSubMesh;
         batchSubMesh.subMesh = batchMesh->referenceMesh->GetSurface(0)->subMesh;
-        batchSubMesh.localTransform = worldToLocalMatrix * batchMesh->GetEntity()->GetTransform()->GetMatrix();
+        batchSubMesh.localTransform = worldToLocalMatrix * batchMesh->GetEntity()->GetTransform()->GetWorldMatrix();
 
         batchSubMeshes.Append(batchSubMesh);
     }

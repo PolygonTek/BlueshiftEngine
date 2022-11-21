@@ -19,6 +19,7 @@
 
 BE_NAMESPACE_BEGIN
 
+class ComTransform;
 class Asset;
 
 class ComAnimator : public Component {
@@ -35,6 +36,9 @@ public:
 
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
+
+                            /// Late-initializes this component. Called after all entities are initialized.
+    virtual void            LateInit() override;
 
                             /// Called on game world update, variable timestep.
     virtual void            Update() override;
@@ -56,7 +60,7 @@ public:
 
     Animator &              GetAnimator() { return animator; }
 
-    Mat3x4 *                GetJointMatrices() const { return animator.GetFrame(); }
+    Mat3x4 *                GetJointMatrices() const;
 
 protected:
     void                    ChangeAnimController(const Guid &animControllerGuid);
@@ -64,6 +68,8 @@ protected:
 
     Animator                animator;
     Asset *                 animControllerAsset = nullptr;
+    Guid                    rootBoneTransformGuid;
+    ComTransform *          rootBoneTransform;
 };
 
 BE_INLINE Vec3 ComAnimator::GetTranslation(int currentTime) const {

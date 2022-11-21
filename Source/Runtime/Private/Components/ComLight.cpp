@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Render/Render.h"
-#include "Components/ComTransform.h"
+#include "Components/Transform/ComTransform.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComLight.h"
 #include "Game/GameWorld.h"

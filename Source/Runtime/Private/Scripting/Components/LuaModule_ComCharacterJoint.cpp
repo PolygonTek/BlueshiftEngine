@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComCharacterJoint.h"
+#include "Components/Joint/ComCharacterJoint.h"
 
 BE_NAMESPACE_BEGIN
 

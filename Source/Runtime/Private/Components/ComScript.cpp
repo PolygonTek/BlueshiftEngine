@@ -18,8 +18,8 @@
 #include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
 #include "Components/ComScript.h"
-#include "Components/ComTransform.h"
-#include "Components/ComRectTransform.h"
+#include "Components/Transform/ComTransform.h"
+#include "Components/Transform/ComRectTransform.h"
 #include "Components/ComRigidBody.h"
 #include "Game/GameWorld.h"
 
@@ -760,7 +760,6 @@ void ComScript::ClearFunctionMap() {
     updateFunc = LuaCpp::Selector();
     lateUpdateFunc = LuaCpp::Selector();
     fixedUpdateFunc = LuaCpp::Selector();
-    fixedLateUpdateFunc = LuaCpp::Selector();
     onValidateFunc = LuaCpp::Selector();
     onEnableFunc = LuaCpp::Selector();
     onDisableFunc = LuaCpp::Selector();
@@ -797,7 +796,6 @@ void ComScript::UpdateFunctionMap() {
     updateFunc = CacheFunction("update");
     lateUpdateFunc = CacheFunction("late_update");
     fixedUpdateFunc = CacheFunction("fixed_update");
-    fixedLateUpdateFunc = CacheFunction("fixed_late_update");
     onValidateFunc = CacheFunction("on_validate");
     onEnableFunc = CacheFunction("on_enable");
     onDisableFunc = CacheFunction("on_disable");
@@ -947,12 +945,6 @@ void ComScript::LateUpdate() {
 void ComScript::FixedUpdate(float timeStep) {
     if (fixedUpdateFunc.IsValid()) {
         fixedUpdateFunc(timeStep);
-    }
-}
-
-void ComScript::FixedLateUpdate(float timeStep) {
-    if (fixedLateUpdateFunc.IsValid()) {
-        fixedLateUpdateFunc(timeStep);
     }
 }
 

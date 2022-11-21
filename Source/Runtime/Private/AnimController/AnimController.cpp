@@ -165,7 +165,6 @@ void AnimController::Purge() {
     animParameters.DeleteContents(true);
 
     joints.Clear();
-    jointParents.Clear();
 
     offset.SetFromScalar(0);
 }
@@ -193,9 +192,6 @@ void AnimController::Copy(const AnimController *def) {
 
     joints.SetCount(def->joints.Count());
     memcpy(joints.Ptr(), def->joints.Ptr(), def->joints.Count() * sizeof(joints[0]));
-
-    jointParents.SetCount(def->jointParents.Count());
-    memcpy(jointParents.Ptr(), def->jointParents.Ptr(), def->jointParents.Count() * sizeof(jointParents[0]));
 
     offset = def->offset;
 }
@@ -503,7 +499,7 @@ void AnimController::BuildBindPoseMats(int *numJoints, Mat3x4 **jointMats) const
     mats[0].SetTranslation(bindPoses[0].t + offset);
     
     // Transform the joint hierarchy (local matrices -> world matrices).
-    simdProcessor->TransformJoints(mats, jointParents.Ptr(), 0, joints.Count() - 1);
+    simdProcessor->TransformJoints(mats, skeleton->GetJointParentIndexes(), 0, joints.Count() - 1);
 
     *numJoints = num;
     *jointMats = mats;
@@ -596,24 +592,12 @@ void AnimController::SetSkeleton(Skeleton *skeleton) {
     joints.SetGranularity(1);
     joints.SetCount(skeleton->NumJoints());
 
-    // jointParents are stored separately as an array for SIMD operations.
-    jointParents.SetGranularity(1);
-    jointParents.SetCount(skeleton->NumJoints());
-
     const Joint *skeletonJoint = skeleton->GetJoints();
 
     for (int jointIndex = 0; jointIndex < skeleton->NumJoints(); jointIndex++, skeletonJoint++) {
         JointInfo &joint = joints[jointIndex];
-
         joint.index = jointIndex;
-
-        if (skeletonJoint->parent) {
-            joint.parentIndex = static_cast<int>(skeletonJoint->parent - skeleton->GetJoints());
-        } else {
-            joint.parentIndex = -1;
-        }
-
-        jointParents[jointIndex] = joint.parentIndex;
+        joint.parentIndex = skeleton->GetJointParentIndexes()[jointIndex];
     }
 }
 

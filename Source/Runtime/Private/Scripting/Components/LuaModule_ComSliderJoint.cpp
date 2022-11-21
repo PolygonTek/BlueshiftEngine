@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComSliderJoint.h"
+#include "Components/Joint/ComSliderJoint.h"
 
 BE_NAMESPACE_BEGIN
 

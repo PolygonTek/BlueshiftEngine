@@ -76,8 +76,6 @@ public:
     const JointInfo *           GetJoint(int jointIndex) const;
                                 /// Returns the joint name with the given index
     const char *                GetJointName(int jointIndex) const;
-                                /// Returns the joint parent indexes
-    const int *                 GetJointParents() const { return jointParents.Ptr(); }
                                 /// Gets the joint nums with the given joint names
     void                        GetJointNumListByString(const char *jointNames, Array<int> &jointNumArray) const;
 
@@ -142,7 +140,6 @@ private:
 
     Skeleton *                  skeleton;       ///< Skeleton
     Array<JointInfo>            joints;         ///< Joint informations
-    Array<int>                  jointParents;   ///< Parent indexes for each joints
 
     Array<AnimParm *>           animParameters; ///< Animation parameters
     Array<AnimClip *>           animClips;      ///< Animation clips

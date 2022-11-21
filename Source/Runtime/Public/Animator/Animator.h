@@ -87,7 +87,7 @@ public:
     AnimController *        GetAnimController() const { return animController; }
 
                             /// Returns the number of joints
-    int                     NumJoints() const { return numJoints; }
+    int                     NumJoints() const;
                             /// Returns the joint name with the given joint index
     const char *            GetJointName(int jointIndex) const;
                             /// Returns the joint index with the given joint name
@@ -110,10 +110,7 @@ public:
     void                    TransitState(int layerNum, const char *stateName, int currentTime, float startOffset, int blendDuration, bool isAtomic);
 
                             // 모든 blending 을 계산한 current time 의 joint matrices 를 만든다 
-    void                    ComputeFrame(int currentTime);
-
-                            // ComputeFrame() 결과 행렬들을 리턴
-    Mat3x4 *                GetFrame() const { return jointMats; }
+    void                    ComputeFrame(int currentTime, int numJoints, Mat3x4 *localJointMatrices);
 
                             // 모든 blending 을 계산한 current time 의 root bone 의 translation 을 구한다
     void                    GetTranslation(int currentTime, Vec3 &translation) const;
@@ -139,9 +136,6 @@ private:
     AnimController *        animController;
     Array<AnimAABB>         animAABBs;
     AABB                    meshAABB;               // TEMP: to be replaced by animAABBs
-
-    int                     numJoints;              // number of joints
-    Mat3x4 *                jointMats;              // result of ComputeFrame() 
     AABB                    frameAABB;
     
     bool                    ignoreRootTranslation;

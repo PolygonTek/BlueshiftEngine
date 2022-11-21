@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Components/ComTransform.h"
+#include "Components/Transform/ComTransform.h"
 #include "Components/Component.h"
 #include "Game/Entity.h"
 

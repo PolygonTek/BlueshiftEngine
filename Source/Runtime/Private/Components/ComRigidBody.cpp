@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Components/ComTransform.h"
-#include "Components/ComCollider.h"
+#include "Components/Transform/ComTransform.h"
+#include "Components/Collider/ComCollider.h"
 #include "Components/ComRigidBody.h"
 #include "Components/ComCharacterController.h"
 #include "Components/ComSensor.h"

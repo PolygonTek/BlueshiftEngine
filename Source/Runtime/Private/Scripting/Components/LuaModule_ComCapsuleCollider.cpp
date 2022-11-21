@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComCapsuleCollider.h"
+#include "Components/Collider/ComCapsuleCollider.h"
 
 BE_NAMESPACE_BEGIN
 

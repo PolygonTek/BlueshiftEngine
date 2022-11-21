@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComRectTransform.h"
+#include "Components/Transform/ComRectTransform.h"
 
 BE_NAMESPACE_BEGIN
 

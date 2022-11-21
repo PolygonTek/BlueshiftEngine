@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComParticleSystem.h"
+#include "Components/Renderable/ComParticleSystem.h"
 
 BE_NAMESPACE_BEGIN
 

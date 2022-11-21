@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComSpringJoint.h"
+#include "Components/Joint/ComSpringJoint.h"
 
 BE_NAMESPACE_BEGIN
 

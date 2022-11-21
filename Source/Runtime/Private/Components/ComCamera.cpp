@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Render/Render.h"
-#include "Components/ComTransform.h"
+#include "Components/Transform/ComTransform.h"
 #include "Components/ComLogic.h"
 #include "Components/ComScript.h"
 #include "Components/ComCamera.h"
