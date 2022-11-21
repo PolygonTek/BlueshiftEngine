@@ -503,7 +503,7 @@ void AnimController::BuildBindPoseMats(int *numJoints, Mat3x4 **jointMats) const
     mats[0].SetTranslation(bindPoses[0].t + offset);
     
     // Transform the joint hierarchy (local matrices -> world matrices).
-    simdProcessor->TransformJoints(mats, jointParents.Ptr(), 1, joints.Count() - 1);
+    simdProcessor->TransformJoints(mats, jointParents.Ptr(), 0, joints.Count() - 1);
 
     *numJoints = num;
     *jointMats = mats;
@@ -512,9 +512,9 @@ void AnimController::BuildBindPoseMats(int *numJoints, Mat3x4 **jointMats) const
 bool AnimController::Create(const char *text) {
     Str token;
     Str token2;
-    
+
     Purge();
-    
+
     Lexer lexer;
     lexer.Init(Lexer::Flag::NoErrors);
     lexer.Load(text, Str::Length(text), hashName);
@@ -570,7 +570,7 @@ bool AnimController::Create(const char *text) {
 
 bool AnimController::ParseSkeleton(Lexer &lexer) {
     Str token;
-    
+
     if (!lexer.ReadToken(&token)) {
         lexer.Warning("Unexpected end of file");
         return false;
@@ -578,21 +578,21 @@ bool AnimController::ParseSkeleton(Lexer &lexer) {
 
     const Guid skeletonGuid = Guid::FromString(token);
     const Str skeletonPath = resourceGuidMapper.Get(skeletonGuid);
-    
+
     skeleton = skeletonManager.GetSkeleton(skeletonPath);
     if (skeleton->IsDefaultSkeleton()) {
         lexer.Warning("Skeleton '%s' defaulted", skeleton->GetHashName());
         return false;
     }
-    
+
     SetSkeleton(skeleton);
-    
+
     return true;
 }
 
 void AnimController::SetSkeleton(Skeleton *skeleton) {
     this->skeleton = skeleton;
-    
+
     joints.SetGranularity(1);
     joints.SetCount(skeleton->NumJoints());
 
@@ -619,7 +619,7 @@ void AnimController::SetSkeleton(Skeleton *skeleton) {
 
 bool AnimController::ParseBaseAnimLayer(Lexer &lexer) {
     Str token;
-    
+
     if (!lexer.CheckTokenString("{")) {
         lexer.Warning("Expected { after '%s'\n", token.c_str());
         return false;
@@ -786,7 +786,7 @@ void AnimController::Write(const char *filename) {
             if (stateIndex == baseLayer->defaultStateNum) {
                 fp->Printf("%sdefault\n", indentSpace.c_str());
             }
-            
+
             if (animState->IsAnimBlendTree()) {
                 const AnimBlendTree *blendTree = animState->GetAnimBlendTree();
 
@@ -797,13 +797,13 @@ void AnimController::Write(const char *filename) {
                     break;
                 case AnimBlendTree::BlendType::Blend1D:
                     blendTypeStr = "blend1D";
-                    break; 
+                    break;
                 case AnimBlendTree::BlendType::Blend2DDirectional:
                     blendTypeStr = "blend2DDirectional";
                     break;
                 case AnimBlendTree::BlendType::Blend2DBarycentric:
                     blendTypeStr = "blend2DBarycentric";
-                    break;                 
+                    break;
                 case AnimBlendTree::BlendType::Blend3DBarycentric:
                     blendTypeStr = "blend3DBarycentric";
                     break;

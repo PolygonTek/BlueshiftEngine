@@ -386,7 +386,7 @@ void Animator::ComputeFrame(int currentTime) {
             break;
         }
 
-        blendedWeight = 0.0f;        
+        blendedWeight = 0.0f;
         stateBlender = layerAnimStateBlenders[i];
         for (int j = 0; j < MaxBlendersPerLayer; j++, stateBlender++) {
             if (stateBlender->animState) {
@@ -426,7 +426,7 @@ void Animator::ComputeFrame(int currentTime) {
     jointMats[0].SetTranslation(jointMats[0].ToTranslationVec3() + animController->GetRootOffset());
 
     // Transform the rest of the hierarchy.
-    simdProcessor->TransformJoints(jointMats, animController->GetJointParents(), 1, numJoints - 1);
+    simdProcessor->TransformJoints(jointMats, animController->GetJointParents(), 0, numJoints - 1);
 }
 
 void Animator::GetTranslation(int currentTime, Vec3 &translation) const {
