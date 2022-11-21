@@ -87,6 +87,7 @@ protected:
 
     Vec3                    origin;
     CastResult              groundTrace;
+    bool                    enablePenetrationRecovery;
     bool                    isValidGroundTrace;
     bool                    onGround;
 
