@@ -300,11 +300,11 @@ void Entity::InsertComponent(Component *component, int index) {
             flags |= Flag::Updatable;
             flags |= Flag::UpdatableInHierarchy;
         }
-        if (scriptComponent->IsUpdateFuncValid()) {
+        if (scriptComponent->IsLateUpdateFuncValid()) {
             flags |= Flag::LateUpdatable;
             flags |= Flag::LateUpdatableInHierarchy;
         }
-        if (scriptComponent->IsUpdateFuncValid()) {
+        if (scriptComponent->IsFixedUpdateFuncValid()) {
             flags |= Flag::FixedUpdatable;
             flags |= Flag::FixedUpdatableInHierarchy;
         }
