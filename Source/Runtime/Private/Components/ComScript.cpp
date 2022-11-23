@@ -107,9 +107,7 @@ void ComScript::SetOwnerValues() {
 void ComScript::GetPropertyInfoList(Array<PropertyInfo> &propInfos) const {
     Component::GetPropertyInfoList(propInfos);
 
-    for (int index = 0; index < fieldInfos.Count(); index++) {
-        propInfos.Append(fieldInfos[index]);
-    }
+    propInfos.AppendArray(fieldInfos);
 }
 
 void ComScript::Deserialize(const Json::Value &in) {

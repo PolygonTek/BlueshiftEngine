@@ -185,8 +185,6 @@ void ComAnimation::ChangeSkeleton(const Guid &skeletonGuid) {
         simdProcessor->ConvertJointPosesToJointMats(jointHierarchy->GetLocalJointMatrices(), bindPoses, skeleton->NumJoints());
 
         rootBoneTransform->UpdateJointHierarchy(skeleton->GetJointParentIndexes());
-
-        //anim->ComputeFrameAABBs(skeleton, referenceMesh, frameAABBs);
     }
 
 #if WITH_EDITOR

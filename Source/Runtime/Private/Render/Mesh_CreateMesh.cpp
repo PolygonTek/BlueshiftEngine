@@ -648,9 +648,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
 
             if (belowIndex[0] >= 0 && belowIndex[1] >= 0 && belowIndex[2] >= 0) {
                 // All vertices are below the plane.
-                tempBelowIndexes.Append(belowIndex[0]);
-                tempBelowIndexes.Append(belowIndex[1]);
-                tempBelowIndexes.Append(belowIndex[2]);
+                tempBelowIndexes.Append(belowIndex[0], belowIndex[1], belowIndex[2]);
             } else if (belowIndex[0] < 0 && belowIndex[1] < 0 && belowIndex[2] < 0) {
                 // All vertices are above the plane.
                 if (generateAboveMesh) {
@@ -659,9 +657,7 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                     srcToAboveVertIndex.Get(srcIndex[1], &outsideIndex[1]);
                     srcToAboveVertIndex.Get(srcIndex[2], &outsideIndex[2]);
 
-                    tempAboveIndexes.Append(outsideIndex[0]);
-                    tempAboveIndexes.Append(outsideIndex[1]);
-                    tempAboveIndexes.Append(outsideIndex[2]);
+                    tempAboveIndexes.Append(outsideIndex[0], outsideIndex[1], outsideIndex[2]);
                 }
             } else {
                 VertIndex belowTriFan[4];
@@ -728,25 +724,17 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                     }
                 }
 
-                tempBelowIndexes.Append(belowTriFan[0]);
-                tempBelowIndexes.Append(belowTriFan[1]);
-                tempBelowIndexes.Append(belowTriFan[2]);
+                tempBelowIndexes.Append(belowTriFan[0], belowTriFan[1], belowTriFan[2]);
 
                 if (numBelowTriFanIndex > 3) {
-                    tempBelowIndexes.Append(belowTriFan[0]);
-                    tempBelowIndexes.Append(belowTriFan[2]);
-                    tempBelowIndexes.Append(belowTriFan[3]);
+                    tempBelowIndexes.Append(belowTriFan[0], belowTriFan[2], belowTriFan[3]);
                 }
 
                 if (generateAboveMesh) {
-                    tempAboveIndexes.Append(aboveTriFan[0]);
-                    tempAboveIndexes.Append(aboveTriFan[1]);
-                    tempAboveIndexes.Append(aboveTriFan[2]);
+                    tempAboveIndexes.Append(aboveTriFan[0], aboveTriFan[1], aboveTriFan[2]);
 
                     if (numAboveTriFanIndex > 3) {
-                        tempAboveIndexes.Append(aboveTriFan[0]);
-                        tempAboveIndexes.Append(aboveTriFan[2]);
-                        tempAboveIndexes.Append(aboveTriFan[3]);
+                        tempAboveIndexes.Append(aboveTriFan[0], aboveTriFan[2], aboveTriFan[3]);
                     }
                 }
             }
@@ -808,14 +796,10 @@ bool Mesh::TrySliceMesh(const Mesh &srcMesh, const Plane &slicePlane, bool gener
                 int numTriangulatedTris = idb->GetNumPolygons();
 
                 for (int i = 0; i < numTriangulatedTris; i++) {
-                    tempBelowCapIndexesPtr->Append(belowCapBaseVertex + simplex->v[0]->i);
-                    tempBelowCapIndexesPtr->Append(belowCapBaseVertex + simplex->v[1]->i);
-                    tempBelowCapIndexesPtr->Append(belowCapBaseVertex + simplex->v[2]->i);
+                    tempBelowCapIndexesPtr->Append(belowCapBaseVertex + simplex->v[0]->i, belowCapBaseVertex + simplex->v[1]->i, belowCapBaseVertex + simplex->v[2]->i);
 
                     if (generateAboveMesh) {
-                        tempAboveCapIndexesPtr->Append(aboveCapBaseVertex + simplex->v[2]->i);
-                        tempAboveCapIndexesPtr->Append(aboveCapBaseVertex + simplex->v[1]->i);
-                        tempAboveCapIndexesPtr->Append(aboveCapBaseVertex + simplex->v[0]->i);
+                        tempAboveCapIndexesPtr->Append(aboveCapBaseVertex + simplex->v[2]->i, aboveCapBaseVertex + simplex->v[1]->i, aboveCapBaseVertex + simplex->v[0]->i);
                     }
                     simplex = simplex->next;
                 }
