@@ -77,6 +77,9 @@ void Entity::RegisterProperties() {
 Entity::Entity() {
     entityNum = GameWorld::BadEntityNum;
     node.SetOwner(this);
+#if WITH_EDITOR
+    flags |= Flag::VisibleInEditor | Flag::SelectableInEditor;
+#endif
 }
 
 Entity::~Entity() {
@@ -92,8 +95,8 @@ void Entity::Purge() {
         }
     }
 
-    awaked = false;
-    started = false;
+    flags &= ~Flag::Awaked;
+    flags &= ~Flag::Started;
     initialized = false;
 }
 
@@ -134,7 +137,7 @@ void Entity::InitComponents() {
     }
 
 #if WITH_EDITOR
-    if (!selectableInEditor) {
+    if (!(flags & Flag::SelectableInEditor)) {
         ComRenderable *renderable = GetComponent<ComRenderable>();
         if (renderable) {
             renderable->SetProperty("skipSelection", true);
@@ -165,7 +168,7 @@ void Entity::Awake() {
         }
     }
 
-    awaked = true;
+    flags |= Flag::Awaked;
 }
 
 void Entity::Start() {
@@ -177,10 +180,14 @@ void Entity::Start() {
         }
     }
 
-    started = true;
+    flags |= Flag::Started;
 }
 
 void Entity::FixedUpdate(float timeStep) {
+    if (!(flags & Flag::FixedUpdatable)) {
+        return;
+    }
+
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         ComScript *scriptComponent = components[componentIndex]->Cast<ComScript>();
 
@@ -191,12 +198,12 @@ void Entity::FixedUpdate(float timeStep) {
 }
 
 void Entity::Update() {
+    if (!(flags & Flag::Updatable)) {
+        return;
+    }
+
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];
-
-        if (!component->updatable) {
-            continue;
-        }
 
         if (component && component->IsActiveInHierarchy()) {
             component->Update();
@@ -205,6 +212,10 @@ void Entity::Update() {
 }
 
 void Entity::LateUpdate() {
+    if (!(flags & Flag::LateUpdatable)) {
+        return;
+    }
+
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         ComScript *scriptComponent = components[componentIndex]->Cast<ComScript>();
 
@@ -279,8 +290,20 @@ void Entity::InsertComponent(Component *component, int index) {
         component->Init();
     }
 
-    if (awaked) {
+    if (flags & Flag::Awaked) {
         component->Awake();
+    }
+
+    if (component->IsTypeOf<ComScript>()) {
+        flags |= Flag::Updatable;
+        flags |= Flag::UpdatableInHierarchy;
+        flags |= Flag::LateUpdatable;
+        flags |= Flag::LateUpdatableInHierarchy;
+        flags |= Flag::FixedUpdatable;
+        flags |= Flag::FixedUpdatableInHierarchy;
+    } else if (component->updatable) {
+        flags |= Flag::Updatable;
+        flags |= Flag::UpdatableInHierarchy;
     }
 
 #if WITH_EDITOR
@@ -289,7 +312,31 @@ void Entity::InsertComponent(Component *component, int index) {
 }
 
 bool Entity::RemoveComponent(Component *component) {
-    return components.Remove(component);
+    bool removed = components.Remove(component);
+    if (removed) {
+        flags &= ~(Flag::Updatable | Flag::LateUpdatable | Flag::FixedUpdatable);
+
+        for (int i = 0; i < components.Count(); i++) {
+            const Component *component = components[i];
+
+            if (component->IsTypeOf<ComScript>()) {
+                flags |= Flag::Updatable;
+                flags |= Flag::UpdatableInHierarchy;
+                flags |= Flag::LateUpdatable;
+                flags |= Flag::LateUpdatableInHierarchy;
+                flags |= Flag::FixedUpdatable;
+                flags |= Flag::FixedUpdatableInHierarchy;
+            }
+            else if (component->updatable) {
+                flags |= Flag::Updatable;
+                flags |= Flag::UpdatableInHierarchy;
+            }
+        }
+
+        UpdateUpdatableFlagsRecursive();
+        return true;
+    }
+    return false;
 }
 
 bool Entity::SwapComponent(int fromIndex, int toIndex) {
@@ -494,6 +541,47 @@ void Entity::SetActiveInHierarchy(bool active) {
 
     for (Entity *childEnt = node.GetFirstChild(); childEnt; childEnt = childEnt->node.GetNextSibling()) {
         childEnt->SetActiveInHierarchy(active && childEnt->activeSelf);
+    }
+}
+
+void Entity::UpdateUpdatableFlagsRecursive() {
+    bool updatableInHierarchy = !!(flags & Flag::Updatable);
+    bool lateUpdatableInHierarchy = !!(flags & Flag::LateUpdatable);
+    bool fixedUpdatableInHierarchy = !!(flags & Flag::FixedUpdatable);
+
+    for (Entity *child = node.GetFirstChild(); child; child = child->node.GetNextSibling()) {
+        if (child->flags & Flag::UpdatableInHierarchy) {
+            updatableInHierarchy = true;
+        }
+        if (child->flags & Flag::LateUpdatableInHierarchy) {
+            lateUpdatableInHierarchy = true;
+        }
+        if (child->flags & Flag::FixedUpdatableInHierarchy) {
+            fixedUpdatableInHierarchy = true;
+        }
+    }
+
+    if (updatableInHierarchy) {
+        flags |= Flag::UpdatableInHierarchy;
+    } else {
+        flags &= ~Flag::UpdatableInHierarchy;
+    }
+
+    if (lateUpdatableInHierarchy) {
+        flags |= Flag::LateUpdatableInHierarchy;
+    } else {
+        flags &= ~Flag::LateUpdatableInHierarchy;
+    }
+
+    if (fixedUpdatableInHierarchy) {
+        flags |= Flag::FixedUpdatableInHierarchy;
+    } else {
+        flags &= ~Flag::FixedUpdatableInHierarchy;
+    }
+
+    Entity *parent = GetParent();
+    if (parent) {
+        parent->UpdateUpdatableFlagsRecursive();
     }
 }
 
@@ -705,6 +793,13 @@ void Entity::SetParentGuid(const Guid &parentGuid) {
         }
     }
 
+    if (oldParentEntity) {
+        oldParentEntity->UpdateUpdatableFlagsRecursive();
+    }
+    if (newParentEntity) {
+        newParentEntity->UpdateUpdatableFlagsRecursive();
+    }
+
 #if WITH_EDITOR
     if (initialized) {
         EmitSignal(&SIG_ParentChanged, this, oldParentEntity, newParentEntity);
@@ -734,7 +829,11 @@ void Entity::SetPrefabSourceGuid(const Guid &prefabSourceGuid) {
 
 #if WITH_EDITOR
 void Entity::SetVisible(bool visible) {
-    this->visibleInEditor = visible;
+    if (visible) {
+        flags |= Flag::VisibleInEditor;
+    } else {
+        flags &= ~Flag::VisibleInEditor;
+    }
 
     if (initialized) {
         ComRenderable *renderable = GetComponent<ComRenderable>();
@@ -747,7 +846,11 @@ void Entity::SetVisible(bool visible) {
 }
 
 void Entity::SetSelectable(bool selectable) {
-    this->selectableInEditor = selectable;
+    if (selectable) {
+        flags |= Flag::SelectableInEditor;
+    } else {
+        flags &= ~Flag::SelectableInEditor;
+    }
 
     if (initialized) {
         ComRenderable *renderable = GetComponent<ComRenderable>();

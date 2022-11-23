@@ -51,6 +51,21 @@ class Entity : public Object {
     friend class Component;
 
 public:
+    struct Flag {
+        enum Enum {
+            Updatable                   = BIT(0),
+            UpdatableInHierarchy        = BIT(1),
+            FixedUpdatable              = BIT(2),
+            FixedUpdatableInHierarchy   = BIT(3),
+            LateUpdatable               = BIT(4),
+            LateUpdatableInHierarchy    = BIT(5),
+            Awaked                      = BIT(6),
+            Started                     = BIT(7),
+            VisibleInEditor             = BIT(8),
+            SelectableInEditor          = BIT(9)
+        };
+    };
+
     struct WorldPosTrait {
         enum Enum {
             Pivot,
@@ -89,11 +104,11 @@ public:
 
 #if WITH_EDITOR
                                 /// Returns true if this entity is visible in editor.
-    BE_FORCE_INLINE bool        IsVisible() const { return visibleInEditor; }
+    BE_FORCE_INLINE bool        IsVisible() const { return !!(flags & Flag::VisibleInEditor); }
                                 /// Sets this entity's visibility in editor.
     void                        SetVisible(bool visible);
                                 /// Returns true if this entity is selectable in editor.
-    BE_FORCE_INLINE bool        IsSelectable() const { return selectableInEditor; }
+    BE_FORCE_INLINE bool        IsSelectable() const { return !!(flags & Flag::SelectableInEditor); }
                                 /// Sets this entity's select-ability in editor.
     void                        SetSelectable(bool selectable);
 #endif
@@ -293,6 +308,8 @@ public:
 protected:
     void                        SetActiveInHierarchy(bool active);
 
+    void                        UpdateUpdatableFlagsRecursive();
+
     virtual void                Event_ImmediateDestroy() override;
 
                                 /// Called when the application resizes.
@@ -309,21 +326,15 @@ protected:
     int                         entityNum;                  ///< Index for GameWorld::entities
     int                         layer = 0;                  ///< Layer number
     int                         staticMask = 0;
+    int                         flags = 0;
     Hierarchy<Entity>           node;
     Guid                        prefabSourceGuid = Guid::zero;
 
     bool                        initialized = false;
-    bool                        awaked = false;
-    bool                        started = false;
     bool                        activeSelf = true;          ///< Local active state
     bool                        activeInHierarchy = true;   ///< Actual active state
     bool                        lockedInHierarchy = false;
     bool                        prefab = false;
-
-#if WITH_EDITOR
-    bool                        visibleInEditor = true;
-    bool                        selectableInEditor = true;
-#endif
 
     GameWorld *                 gameWorld = nullptr;
     int                         sceneNum = -1;

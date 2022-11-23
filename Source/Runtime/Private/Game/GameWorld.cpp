@@ -559,7 +559,7 @@ void GameWorld::StartGame() {
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
-            if (!ent->awaked) {
+            if (!(ent->flags & Entity::Flag::Awaked)) {
                 ent->Awake();
             }
         }
@@ -569,7 +569,7 @@ void GameWorld::StartGame() {
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
-            if (!ent->started) {
+            if (!(ent->flags & Entity::Flag::Started)) {
                 ent->Start();
             }
         }
@@ -767,6 +767,12 @@ void GameWorld::FixedUpdateEntities(float timeStep) {
     // Call fixed update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = next) {
+            if (!(ent->flags & Entity::Flag::FixedUpdatableInHierarchy)) {
+                next = ent->node.GetNextSibling();
+                if (next) {
+                    continue;
+                }
+            }
             ent->FixedUpdate(scaledTimeStep);
             next = ent->node.GetNext();
         }
@@ -781,6 +787,12 @@ void GameWorld::UpdateEntities() {
     // Call update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = next) {
+            if (!(ent->flags & Entity::Flag::UpdatableInHierarchy)) {
+                next = ent->node.GetNextSibling();
+                if (next) {
+                    continue;
+                }
+            }
             ent->Update();
             next = ent->node.GetNext();
         }
@@ -795,6 +807,12 @@ void GameWorld::LateUpdateEntities() {
     // Call post-update function for each entities in depth-first order.
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = next) {
+            if (!(ent->flags & Entity::Flag::LateUpdatableInHierarchy)) {
+                next = ent->node.GetNextSibling();
+                if (next) {
+                    continue;
+                }
+            }
             ent->LateUpdate();
             next = ent->node.GetNext();
         }
@@ -815,6 +833,7 @@ void GameWorld::UpdateCanvas() {
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = next) {
+            // FIXME
             if (ent->IsLockedInHierarchy()) {
                 next = ent->node.GetNextSibling();
                 if (next) {
@@ -837,6 +856,7 @@ void GameWorld::ListUpActiveCameraComponents(StaticArray<ComCamera *, MaxActiveC
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = next) {
+            // FIXME
             if (ent->IsLockedInHierarchy()) {
                 next = ent->node.GetNextSibling();
                 if (next) {
@@ -868,6 +888,7 @@ void GameWorld::ListUpActiveCanvasComponents(StaticArray<ComCanvas *, MaxActiveC
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = next) {
+            // FIXME
             if (ent->IsLockedInHierarchy()) {
                 next = ent->node.GetNextSibling();
                 if (next) {
