@@ -97,9 +97,9 @@ static int ParseRGBEHeaderInfo(char **ptr, RgbeHeaderInfo *info) {
         }
             
         if (!Str::Cmpn(text, "GAMMA", 5)) {
-            sscanf(text, "GAMMA=%g", &info->gamma);
+            (void)sscanf(text, "GAMMA=%g", &info->gamma);
         } else if (!Str::Cmpn(text, "EXPOSURE", 8)) {
-            sscanf(text, "EXPOSURE=%g", &info->exposure);
+            (void)sscanf(text, "EXPOSURE=%g", &info->exposure);
         } else if (!Str::Cmpn(text, "FORMAT", 6)) {
             Str::Cmpn(text, "FORMAT=32-bit_rle_rgbe", 22);
         } else {
@@ -115,7 +115,7 @@ static int ParseRGBEHeaderInfo(char **ptr, RgbeHeaderInfo *info) {
     text[len] = 0;
 
     if (!Str::Cmpn(text, "-Y", strlen("-Y"))) {
-        sscanf(text, "-Y %i +X %i", &info->height, &info->width);
+        (void)sscanf(text, "-Y %i +X %i", &info->height, &info->width);
     } else {
         return false;
     }

@@ -413,7 +413,7 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
                         goto SYNTAX_ERROR;
                     }
 
-                    parenType = lastParseState == BuiltInOpState ? OpCode_BuiltInLParen : OpCode_LParen;
+                    parenType = (lastParseState & BuiltInOpState) ? OpCode_BuiltInLParen : OpCode_LParen;
                     lastParseState = LParenState;
 
                     assert(g_opCodeStackPointer + 1 < COUNT_OF(g_opCodeStack));

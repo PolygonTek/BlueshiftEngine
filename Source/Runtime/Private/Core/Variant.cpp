@@ -359,10 +359,9 @@ Str Variant::ToString() const {
     case Type::Double:
         return Str(value.d1);
     case Type::VoidPtr: {
-        char str[32];
-        int count = sscanf(str, "%p", (void **)&value.ptr1);
-        assert(count == 1);
-        return Str(str);
+        char temp[32];
+        Str::snPrintf(temp, sizeof(temp), "%p", (void *)value.ptr1);
+        return Str(temp);
     }
     case Type::Vec2:
         return (reinterpret_cast<const Vec2 *>(&value))->ToString(7);

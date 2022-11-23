@@ -230,7 +230,8 @@ bool Dict::GetInt(const char *key, const char *defaultString, int &out) const {
 bool Dict::GetInt64(const char *key, const char *defaultString, int64_t &out) const {
     const char *s;
     bool found = GetString(key, defaultString, &s);
-    sscanf(s, "%" PRIi64, &out);
+    int ret = sscanf(s, "%" PRIi64, &out);
+    assert(ret == 1);
     return found;
 }
 
@@ -250,7 +251,8 @@ bool Dict::GetPoint(const char *key, const char *defaultString, Point &out) cons
     bool found = GetString(key, defaultString, &s);
     out.x = 0;
     out.y = 0;
-    sscanf(s, "%i %i", &out.x, &out.y);
+    int ret = sscanf(s, "%i %i", &out.x, &out.y);
+    assert(ret == 2);
     return found;
 }
 
@@ -262,7 +264,8 @@ bool Dict::GetRect(const char *key, const char *defaultString, Rect &out) const 
     const char *s;
     bool found = GetString(key, defaultString, &s);
     out.Set(0, 0, 0, 0);
-    sscanf(s, "%i %i %i %i", &out.x, &out.y, &out.w, &out.h);
+    int ret = sscanf(s, "%i %i %i %i", &out.x, &out.y, &out.w, &out.h);
+    assert(ret == 4);
     return found;
 }
 
@@ -274,7 +277,8 @@ bool Dict::GetAngles(const char *key, const char *defaultString, Angles &out) co
     const char *s;
     bool found = GetString(key, defaultString, &s);
     out.SetZero();
-    sscanf(s, "%f %f %f", &out[0], &out[1], &out[2]);
+    int ret = sscanf(s, "%f %f %f", &out[0], &out[1], &out[2]);
+    assert(ret == 3);
     return found;
 }
 
@@ -286,7 +290,8 @@ bool Dict::GetVec3(const char *key, const char *defaultString, Vec3 &out) const 
     const char *s;
     bool found = GetString(key, defaultString, &s);
     out.SetFromScalar(0);
-    sscanf(s, "%f %f %f", &out.x, &out.y, &out.z);
+    int ret = sscanf(s, "%f %f %f", &out.x, &out.y, &out.z);
+    assert(ret == 3);
     return found;
 }
 
@@ -298,7 +303,8 @@ bool Dict::GetVec2(const char *key, const char *defaultString, Vec2 &out) const 
     const char *s;
     bool found = GetString(key, defaultString, &s);
     out.SetFromScalar(0);
-    sscanf(s, "%f %f", &out.x, &out.y);
+    int ret = sscanf(s, "%f %f", &out.x, &out.y);
+    assert(ret == 2);
     return found;
 }
 
@@ -310,7 +316,8 @@ bool Dict::GetVec4(const char *key, const char *defaultString, Vec4 &out) const 
     const char *s;
     bool found = GetString(key, defaultString, &s);
     out.SetFromScalar(0);
-    sscanf(s, "%f %f %f %f", &out.x, &out.y, &out.z, &out.w);
+    int ret = sscanf(s, "%f %f %f %f", &out.x, &out.y, &out.z, &out.w);
+    assert(ret == 4);
     return found;
 }
 
@@ -322,7 +329,8 @@ bool Dict::GetMatrix(const char *key, const char *defaultString, Mat3 &out) cons
     const char *s;
     bool found = GetString(key, defaultString, &s);
     out.SetIdentity();
-    sscanf(s, "%f %f %f %f %f %f %f %f %f", &out[0].x, &out[0].y, &out[0].z, &out[1].x, &out[1].y, &out[1].z, &out[2].x, &out[2].y, &out[2].z);
+    int ret = sscanf(s, "%f %f %f %f %f %f %f %f %f", &out[0].x, &out[0].y, &out[0].z, &out[1].x, &out[1].y, &out[1].z, &out[2].x, &out[2].y, &out[2].z);
+    assert(ret == 9);
     return found;
 }
 

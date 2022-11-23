@@ -442,17 +442,18 @@ Str &Str::DefaultPath(const char *basepath) {
 }
 
 Str &Str::AppendPath(const char *text, char pathSeparator) {
-    if (len > 0 && text && text[0]) {
-        if (data[len - 1] != '/' && data[len - 1] != '\\') {
-            Append(pathSeparator);
+    if (text) {
+        if (len > 0 && text[0]) {
+            if (data[len - 1] != '/' && data[len - 1] != '\\') {
+                Append(pathSeparator);
+            }
         }
-    }
 
-    if (text[0] == '/' || text[0] == '\\') {
-        text++;
+        if (text[0] == '/' || text[0] == '\\') {
+            text++;
+        }
+        Append(text);
     }
-    
-    Append(text);
     return *this;
 }
 

@@ -462,6 +462,10 @@ Vec3 Image::FaceToCubeMapCoords(CubeMapFace::Enum cubeMapFace, float s, float t)
     case CubeMapFace::NegativeY: glCubeMapCoords = Vec3(+sc, -1.0f, -tc); break; // -Z direction in z-up axis.
     case CubeMapFace::PositiveZ: glCubeMapCoords = Vec3(+sc, -tc, +1.0f); break; // +X direction in z-up axis.
     case CubeMapFace::NegativeZ: glCubeMapCoords = Vec3(-sc, -tc, -1.0f); break; // -X direction in z-up axis.
+    default:
+        assert(0);
+        glCubeMapCoords = Vec3::zero;
+        break;
     }
     // Convert cubemap coordinates from GL axis to z-up axis.
     return Vec3(glCubeMapCoords.z, glCubeMapCoords.x, glCubeMapCoords.y);
@@ -500,6 +504,11 @@ Image::CubeMapFace::Enum Image::CubeMapToFaceCoords(const Vec3 &cubeMapCoords, f
     case CubeMapFace::NegativeZ:
         sc = -glCubeMapCoords.x;
         tc = -glCubeMapCoords.y;
+        break;
+    default:
+        assert(0);
+        sc = 0;
+        tc = 0;
         break;
     }
 

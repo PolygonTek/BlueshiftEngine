@@ -194,7 +194,12 @@ Size ComCanvas::GetOrthoSize() const {
             orthoSize.w = Max(w1, w2) * 0.5f;
             orthoSize.h = Max(h1, h2) * 0.5f;
             break;
+        default:
+            assert(0);
+            break;
         }
+    } else {
+        assert(0);
     }
 
     return orthoSize;
