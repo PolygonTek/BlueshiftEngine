@@ -1070,6 +1070,8 @@ void ComScript::ScriptReloaded() {
 
     Deserialize(value);
 
+    GetEntity()->UpdateUpdatableFlagsSelf();
+
 #if WITH_EDITOR
     // Update editor UI.
     EmitSignal(&Serializable::SIG_PropertyInfoUpdated, 1);

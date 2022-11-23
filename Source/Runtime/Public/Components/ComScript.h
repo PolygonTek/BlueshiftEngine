@@ -24,6 +24,8 @@ class Asset;
 class Collision;
 
 class ComScript : public ComLogic {
+    friend class Entity;
+
 public:
     OBJECT_PROTOTYPE(ComScript);
 
@@ -60,6 +62,10 @@ public:
 
                             /// Called on physics update, fixed timestep.
     void                    FixedUpdate(float timeStep);
+
+    bool                    IsUpdateFuncValid() const { return updateFunc.IsValid(); }
+    bool                    IsLateUpdateFuncValid() const { return lateUpdateFunc.IsValid(); }
+    bool                    IsFixedUpdateFuncValid() const { return fixedUpdateFunc.IsValid(); }
 
     virtual void            OnValidate();
 

@@ -78,7 +78,7 @@ Entity::Entity() {
     entityNum = GameWorld::BadEntityNum;
     node.SetOwner(this);
 #if WITH_EDITOR
-    flags |= Flag::VisibleInEditor | Flag::SelectableInEditor;
+    flags |= (Flag::VisibleInEditor | Flag::SelectableInEditor);
 #endif
 }
 
@@ -95,8 +95,7 @@ void Entity::Purge() {
         }
     }
 
-    flags &= ~Flag::Awaked;
-    flags &= ~Flag::Started;
+    flags &= ~(Flag::Awaked | Flag::Started);
     initialized = false;
 }
 
@@ -295,12 +294,20 @@ void Entity::InsertComponent(Component *component, int index) {
     }
 
     if (component->IsTypeOf<ComScript>()) {
-        flags |= Flag::Updatable;
-        flags |= Flag::UpdatableInHierarchy;
-        flags |= Flag::LateUpdatable;
-        flags |= Flag::LateUpdatableInHierarchy;
-        flags |= Flag::FixedUpdatable;
-        flags |= Flag::FixedUpdatableInHierarchy;
+        const ComScript *scriptComponent = component->Cast<ComScript>();
+
+        if (scriptComponent->IsUpdateFuncValid()) {
+            flags |= Flag::Updatable;
+            flags |= Flag::UpdatableInHierarchy;
+        }
+        if (scriptComponent->IsUpdateFuncValid()) {
+            flags |= Flag::LateUpdatable;
+            flags |= Flag::LateUpdatableInHierarchy;
+        }
+        if (scriptComponent->IsUpdateFuncValid()) {
+            flags |= Flag::FixedUpdatable;
+            flags |= Flag::FixedUpdatableInHierarchy;
+        }
     } else if (component->updatable) {
         flags |= Flag::Updatable;
         flags |= Flag::UpdatableInHierarchy;
@@ -314,26 +321,7 @@ void Entity::InsertComponent(Component *component, int index) {
 bool Entity::RemoveComponent(Component *component) {
     bool removed = components.Remove(component);
     if (removed) {
-        flags &= ~(Flag::Updatable | Flag::LateUpdatable | Flag::FixedUpdatable);
-
-        for (int i = 0; i < components.Count(); i++) {
-            const Component *component = components[i];
-
-            if (component->IsTypeOf<ComScript>()) {
-                flags |= Flag::Updatable;
-                flags |= Flag::UpdatableInHierarchy;
-                flags |= Flag::LateUpdatable;
-                flags |= Flag::LateUpdatableInHierarchy;
-                flags |= Flag::FixedUpdatable;
-                flags |= Flag::FixedUpdatableInHierarchy;
-            }
-            else if (component->updatable) {
-                flags |= Flag::Updatable;
-                flags |= Flag::UpdatableInHierarchy;
-            }
-        }
-
-        UpdateUpdatableFlagsRecursive();
+        UpdateUpdatableFlagsSelf();
         return true;
     }
     return false;
@@ -544,7 +532,37 @@ void Entity::SetActiveInHierarchy(bool active) {
     }
 }
 
-void Entity::UpdateUpdatableFlagsRecursive() {
+void Entity::UpdateUpdatableFlagsSelf() {
+    flags &= ~(Flag::Updatable | Flag::LateUpdatable | Flag::FixedUpdatable);
+
+    for (int i = 0; i < components.Count(); i++) {
+        const Component *component = components[i];
+
+        if (component->IsTypeOf<ComScript>()) {
+            const ComScript *scriptComponent = component->Cast<ComScript>();
+
+            if (scriptComponent->IsUpdateFuncValid()) {
+                flags |= Flag::Updatable;
+                flags |= Flag::UpdatableInHierarchy;
+            }
+            if (scriptComponent->IsLateUpdateFuncValid()) {
+                flags |= Flag::LateUpdatable;
+                flags |= Flag::LateUpdatableInHierarchy;
+            }
+            if (scriptComponent->IsFixedUpdateFuncValid()) {
+                flags |= Flag::FixedUpdatable;
+                flags |= Flag::FixedUpdatableInHierarchy;
+            }
+        } else if (component->updatable) {
+            flags |= Flag::Updatable;
+            flags |= Flag::UpdatableInHierarchy;
+        }
+    }
+
+    UpdateUpdatableInHierarchyFlags();
+}
+
+void Entity::UpdateUpdatableInHierarchyFlags() {
     bool updatableInHierarchy = !!(flags & Flag::Updatable);
     bool lateUpdatableInHierarchy = !!(flags & Flag::LateUpdatable);
     bool fixedUpdatableInHierarchy = !!(flags & Flag::FixedUpdatable);
@@ -581,7 +599,7 @@ void Entity::UpdateUpdatableFlagsRecursive() {
 
     Entity *parent = GetParent();
     if (parent) {
-        parent->UpdateUpdatableFlagsRecursive();
+        parent->UpdateUpdatableInHierarchyFlags();
     }
 }
 
@@ -794,10 +812,10 @@ void Entity::SetParentGuid(const Guid &parentGuid) {
     }
 
     if (oldParentEntity) {
-        oldParentEntity->UpdateUpdatableFlagsRecursive();
+        oldParentEntity->UpdateUpdatableInHierarchyFlags();
     }
     if (newParentEntity) {
-        newParentEntity->UpdateUpdatableFlagsRecursive();
+        newParentEntity->UpdateUpdatableInHierarchyFlags();
     }
 
 #if WITH_EDITOR

@@ -27,6 +27,7 @@
 #include "Components/Component.h"
 #include "Components/Transform/ComTransform.h"
 #include "Components/Transform/ComRectTransform.h"
+#include "Components/ComScript.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -83,59 +84,59 @@ public:
     virtual Str                 ToString() const override { return GetName(); }
     
                                 /// Returns name.
-    BE_FORCE_INLINE Str         GetName() const { return name; }
+    Str                         GetName() const { return name; }
                                 /// Sets name.
     void                        SetName(const Str &name);
 
                                 /// Returns tag name.
-    BE_FORCE_INLINE Str         GetTag() const { return tag; }
+    Str                         GetTag() const { return tag; }
                                 /// Sets tag name.
     void                        SetTag(const Str &tag);
 
                                 /// Returns layer index.
-    BE_FORCE_INLINE int         GetLayer() const { return layer; }
+    int                         GetLayer() const { return layer; }
                                 /// Sets layer index.
     void                        SetLayer(int layer);
 
                                 /// Returns static mask.
-    BE_FORCE_INLINE int         GetStaticMask() const { return staticMask; }
+    int                         GetStaticMask() const { return staticMask; }
                                 /// Sets static mask.
     void                        SetStaticMask(int staticMask);
 
 #if WITH_EDITOR
                                 /// Returns true if this entity is visible in editor.
-    BE_FORCE_INLINE bool        IsVisible() const { return !!(flags & Flag::VisibleInEditor); }
+    bool                        IsVisible() const { return !!(flags & Flag::VisibleInEditor); }
                                 /// Sets this entity's visibility in editor.
     void                        SetVisible(bool visible);
                                 /// Returns true if this entity is selectable in editor.
-    BE_FORCE_INLINE bool        IsSelectable() const { return !!(flags & Flag::SelectableInEditor); }
+    bool                        IsSelectable() const { return !!(flags & Flag::SelectableInEditor); }
                                 /// Sets this entity's select-ability in editor.
     void                        SetSelectable(bool selectable);
 #endif
 
                                 /// Returns true if this entity is a prefab source.
-    BE_FORCE_INLINE bool        IsPrefabSource() const { return prefab; }
+    bool                        IsPrefabSource() const { return prefab; }
 
     Guid                        GetPrefabSourceGuid() const;
     void                        SetPrefabSourceGuid(const Guid &prefabSourceGuid);
 
                                 /// Returns GameWorld of this entity is in.
-    BE_FORCE_INLINE GameWorld * GetGameWorld() const { return gameWorld; }
+    GameWorld *                 GetGameWorld() const { return gameWorld; }
 
-    BE_FORCE_INLINE int         GetEntityNum() const { return entityNum; }
+    int                         GetEntityNum() const { return entityNum; }
 
-    BE_FORCE_INLINE int         GetSceneNum() const { return sceneNum; }
+    int                         GetSceneNum() const { return sceneNum; }
 
                                 /// Returns hierarchy node.
-    BE_FORCE_INLINE const Hierarchy<Entity> &GetNode() const { return node; }
+    const Hierarchy<Entity> &   GetNode() const { return node; }
 
                                 /// Returns root entity.
     Entity *                    GetRoot() const;
                                 /// Returns true if this entity is a root entity.
-    BE_FORCE_INLINE bool        IsRoot() const { return GetRoot() == this; }
+    bool                        IsRoot() const { return GetRoot() == this; }
 
                                 /// Returns parent entity.
-    BE_FORCE_INLINE Entity *    GetParent() const { return node.GetParent(); }
+    Entity *                    GetParent() const { return node.GetParent(); }
                                 /// Sets parent entity.
     void                        SetParent(const Entity *parentEntity);
 
@@ -163,7 +164,7 @@ public:
     void                        GetChildrenRecursive(EntityPtrArray &children) const;
 
                                 /// Returns number of components.
-    BE_FORCE_INLINE int         NumComponents() const { return components.Count(); }
+    int                         NumComponents() const { return components.Count(); }
                                 /// Checks if component exist by the given meta object.
     bool                        HasComponent(const MetaObject *type) const;
                                 /// Returns a component pointer that is conflicting with other components.
@@ -171,7 +172,7 @@ public:
                                 /// Returns index of the component pointer.
     int                         GetComponentIndex(const Component *component) const;
                                 /// Returns a component pointer by the given component index.
-    BE_FORCE_INLINE Component * GetComponent(int index) const { return components[index]; }
+    Component *                 GetComponent(int index) const { return components[index]; }
                                 /// Returns a component pointer by the given meta object.
     Component *                 GetComponent(const MetaObject *type) const;
                                 /// Returns a component pointer by the given type T.
@@ -179,7 +180,7 @@ public:
                                 /// Returns a component pointer by the given type T.
     template <typename T> T *   GetComponent(int index) const;
                                 /// Returns all component pointers.
-    BE_FORCE_INLINE ComponentPtrArray &GetComponents() { return components; }
+    ComponentPtrArray &         GetComponents() { return components; }
                                 /// Returns all component pointers by the given meta object.
     ComponentPtrArray           GetComponents(const MetaObject *type) const;
                                 /// Returns all component pointers by the given meta object in this entity or any children.
@@ -193,11 +194,11 @@ public:
                                 /// Returns a rect transform component.
     ComRectTransform *          GetRectTransform() const;
 
-                                /// Returns an entity has rect transform which is hit by ray. 
+                                /// Returns an entity has rect transform which is hit by ray.
     Entity *                    RayCastRect(const Ray &ray);
 
                                 /// Adds a component to the entity.
-    BE_FORCE_INLINE void        AddComponent(Component *component) { InsertComponent(component, components.Count()); }
+    void                        AddComponent(Component *component) { InsertComponent(component, components.Count()); }
                                 /// Inserts a component after the index to the entity.
     void                        InsertComponent(Component *component, int index);
                                 /// Removes a component.
@@ -246,15 +247,15 @@ public:
                                 /// Returns true if this entity is active. 
                                 /// Note that an entity may be inactive because a parent is not active, even if this returns true.
                                 /// Use IsActiveInHierarchy() if you want to check if the entity is actually treated as active in the scene.
-    BE_FORCE_INLINE bool        IsActiveSelf() const { return activeSelf; }
+    bool                        IsActiveSelf() const { return activeSelf; }
                                 /// Returns true if this entity is active in the game.
-    BE_FORCE_INLINE bool        IsActiveInHierarchy() const { return activeInHierarchy; }
+    bool                        IsActiveInHierarchy() const { return activeInHierarchy; }
 
                                 /// Sets local active state of this entity.
     void                        SetActive(bool active);
 
                                 ///
-    BE_FORCE_INLINE bool        IsLockedInHierarchy() const { return lockedInHierarchy; }
+    bool                        IsLockedInHierarchy() const { return lockedInHierarchy; }
 
                                 /// Returns AABB in local space.
     const AABB                  GetLocalAABB(bool includingChildren = false) const;
@@ -308,7 +309,10 @@ public:
 protected:
     void                        SetActiveInHierarchy(bool active);
 
-    void                        UpdateUpdatableFlagsRecursive();
+    void                        UpdateUpdatableFlagsSelf();
+    void                        UpdateUpdatableInHierarchyFlags();
+
+    friend void                 ComScript::ScriptReloaded();
 
     virtual void                Event_ImmediateDestroy() override;
 
@@ -339,7 +343,7 @@ protected:
     GameWorld *                 gameWorld = nullptr;
     int                         sceneNum = -1;
 
-    ComponentPtrArray           components;         ///< 0'th component is always transform component
+    ComponentPtrArray           components;                 ///< 0'th component is always transform component
 };
 
 BE_INLINE Entity *Entity::GetRoot() const {
@@ -379,7 +383,6 @@ BE_INLINE T *Entity::GetComponent() const {
     if (component) {
         return component->Cast<T>();
     }
-
     return nullptr;
 }
 
@@ -390,7 +393,6 @@ BE_INLINE T *Entity::GetComponent(int index) const {
     if (numComponents > 0 && index < numComponents) {
         return components[index]->Cast<T>();
     }
-
     return nullptr;
 }
 
@@ -419,7 +421,6 @@ BE_INLINE int Entity::GetComponentIndex(const Component *component) const {
 template <typename T>
 BE_INLINE ComponentPtrArray Entity::GetComponentsInChildren(bool skipIfParentDontHave) const {
     ComponentPtrArray subComponents = GetComponentsInChildren(&T::metaObject, skipIfParentDontHave);
-
     return subComponents;
 }
 
@@ -430,7 +431,6 @@ BE_INLINE Component *Entity::GetConflictingComponent(const MetaObject *type) con
             return component;
         }
     }
-
     return nullptr;
 }
 
@@ -442,7 +442,6 @@ BE_INLINE Component *Entity::GetComponent(const MetaObject *type) const {
             return component;
         }
     }
-
     return nullptr;
 }
 
@@ -456,7 +455,6 @@ BE_INLINE ComponentPtrArray Entity::GetComponents(const MetaObject *type) const 
             subComponents.Append(component);
         }
     }
-
     return subComponents;
 }
 
@@ -466,7 +464,6 @@ BE_INLINE const AABB Entity::GetWorldAABB(bool includingChildren) const {
 
 BE_INLINE void Entity::SetParent(const Entity *parentEntity) {
     Guid parentGuid = parentEntity ? parentEntity->GetGuid() : Guid::zero;
-
     SetParentGuid(parentGuid);
 }
 
