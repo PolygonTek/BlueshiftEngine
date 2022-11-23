@@ -295,11 +295,7 @@ void ComRigidBody::CreateBody() {
 }
 
 void ComRigidBody::Update() {
-    if (!IsActiveInHierarchy()) {
-        return;
-    }
-
-    if (!body) {
+    if (!body || !IsActiveInHierarchy()) {
         return;
     }
 
@@ -314,9 +310,9 @@ void ComRigidBody::Update() {
         transform->SetPhysicsUpdating(false);
 
         physicsUpdating = false;
-    }
 
-    ProcessScriptCallback();
+        ProcessScriptCallback();
+    }
 }
 
 void ComRigidBody::ProcessScriptCallback() {
