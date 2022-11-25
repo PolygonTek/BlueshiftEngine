@@ -79,83 +79,6 @@ void Engine::ShutdownBase() {
     cmdSystem.Shutdown();
 }
 
-static void RegisterEngineObjects() {
-    Object::RegisterProperties();
-
-    Asset::RegisterProperties();
-    Resource::RegisterProperties();
-    FolderResource::RegisterProperties();
-    TextureResource::RegisterProperties();
-    Texture2DResource::RegisterProperties();
-    TextureCubeMapResource::RegisterProperties();
-    TextureSpriteResource::RegisterProperties();
-    ShaderResource::RegisterProperties();
-    MaterialResource::RegisterProperties();
-    FontResource::RegisterProperties();
-    SkeletonResource::RegisterProperties();
-    MeshResource::RegisterProperties();
-    ParticleSystemResource::RegisterProperties();
-    AnimResource::RegisterProperties();
-    FbxResource::RegisterProperties();
-    JointMaskResource::RegisterProperties();
-    AnimControllerResource::RegisterProperties();
-    PrefabResource::RegisterProperties();
-    SoundResource::RegisterProperties();
-    MapResource::RegisterProperties();
-    ScriptResource::RegisterProperties();
-
-    Component::RegisterProperties();
-    ComTransform::RegisterProperties();
-    ComRectTransform::RegisterProperties();
-    ComCollider::RegisterProperties();
-    ComBoxCollider::RegisterProperties();
-    ComSphereCollider::RegisterProperties();
-    ComCapsuleCollider::RegisterProperties();
-    ComConeCollider::RegisterProperties();
-    ComCylinderCollider::RegisterProperties();
-    ComMeshCollider::RegisterProperties();
-    ComRigidBody::RegisterProperties();
-    ComSensor::RegisterProperties();
-    ComVehicleWheel::RegisterProperties();
-    ComConstantForce::RegisterProperties();
-    ComJoint::RegisterProperties();
-    ComFixedJoint::RegisterProperties();
-    ComHingeJoint::RegisterProperties();
-    ComSocketJoint::RegisterProperties();
-    ComSliderJoint::RegisterProperties();
-    ComSpringJoint::RegisterProperties();
-    ComWheelJoint::RegisterProperties();
-    ComCharacterJoint::RegisterProperties();
-    ComCharacterController::RegisterProperties();
-    ComRenderable::RegisterProperties();
-    ComMeshRenderer::RegisterProperties();
-    ComStaticMeshRenderer::RegisterProperties();
-    ComSkinnedMeshRenderer::RegisterProperties();
-    ComAnimation::RegisterProperties();
-    ComAnimator::RegisterProperties();
-    ComParticleSystem::RegisterProperties();
-    ComTextRenderer::RegisterProperties();
-    ComLight::RegisterProperties();
-    ComEnvironmentProbe::RegisterProperties();
-    ComCamera::RegisterProperties();
-    ComCanvas::RegisterProperties();
-    ComImage::RegisterProperties();
-    ComText::RegisterProperties();
-    ComSpline::RegisterProperties();
-    ComScript::RegisterProperties();
-    ComAudioListener::RegisterProperties();
-    ComAudioSource::RegisterProperties();
-
-    Entity::RegisterProperties();
-    Prefab::RegisterProperties();
-    GameWorld::RegisterProperties();
-
-    MapRenderSettings::RegisterProperties();
-    TagLayerSettings::RegisterProperties();
-    PhysicsSettings::RegisterProperties();
-    PlayerSettings::RegisterProperties();
-}
-
 void Engine::Init(const InitParms *initParms) {
     Engine::baseDir = initParms->baseDir;
     Engine::searchPath = initParms->searchPath;
@@ -168,8 +91,6 @@ void Engine::Init(const InitParms *initParms) {
     if (!Engine::searchPath.IsEmpty()) {
         fileSystem.SetSearchPath(Engine::searchPath);
     }
-
-    RegisterEngineObjects();
 }
 
 void Engine::Shutdown() {

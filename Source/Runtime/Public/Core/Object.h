@@ -87,7 +87,7 @@ extern const EventDef EV_ImmediateDestroy;
         return nullptr; \
     } \
     BE1::MetaObject classname::metaObject(visualname, #classname, #superclassname, \
-        classname::CreateInstance, (BE1::EventInfo<BE1::Object> *)classname::eventMap);
+        classname::CreateInstance, classname::RegisterProperties, (BE1::EventInfo<BE1::Object> *)classname::eventMap);
 
 // 이 매크로는 static 멤버 변수를 초기화할 수 있는 곳에 정의되어야 한다.
 // concrete 클래스에만 사용할 것
@@ -99,7 +99,7 @@ extern const EventDef EV_ImmediateDestroy;
         return ptr; \
     } \
     BE1::MetaObject classname::metaObject(visualname, #classname, #superclassname, \
-        classname::CreateInstance, (BE1::EventInfo<BE1::Object> *)classname::eventMap);
+        classname::CreateInstance, classname::RegisterProperties, (BE1::EventInfo<BE1::Object> *)classname::eventMap);
 
 // Event definition macros.
 #define BEGIN_EVENTS(classname) BE1::EventInfo<classname> classname::eventMap[] = {
@@ -111,7 +111,8 @@ class BE_API MetaObject {
     friend class Object;
 
 public:
-    MetaObject(const char *visualname, const char *classname, const char *superclassname, Object *(*CreateInstance)(const Guid &guid), EventInfo<Object> *eventMap);
+    MetaObject(const char *visualname, const char *classname, const char *superclassname,
+        Object *(*CreateInstance)(const Guid &guid), void (*RegisterProperties)(), EventInfo<Object> *eventMap);
     ~MetaObject();
 
     void                        Init();
@@ -150,12 +151,14 @@ public:
                                 /// Unregister property with the given name.
     bool                        UnregisterProperty(const char *name);
 
-
 private:
+    void                        RegisterProperties() const { funcRegisterProperties(); }
+
     const char *                visualname;
     const char *                classname;
     const char *                superclassname;
     Object *                    (*funcCreateInstance)(const Guid &guid);
+    void                        (*funcRegisterProperties)();
     
     Hierarchy<MetaObject>       node;               // hierarchy node
     int                         hierarchyIndex;     // hierarchy index (depth-first-order): Hierarchy::GetNext() 참고

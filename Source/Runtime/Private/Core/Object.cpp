@@ -24,7 +24,8 @@ static MetaObject *             staticTypeList = nullptr;
 static Hierarchy<MetaObject>    classHierarchy;
 static int                      eventCallbackMemory = 0;
 
-MetaObject::MetaObject(const char *visualname, const char *classname, const char *superclassname, Object *(*CreateInstance)(const Guid &guid), EventInfo<Object> *eventMap) {
+MetaObject::MetaObject(const char *visualname, const char *classname, const char *superclassname,
+    Object *(*CreateInstance)(const Guid &guid), void (*RegisterProperties)(), EventInfo<Object> *eventMap) {
     this->visualname            = visualname;
     this->classname             = classname;
     this->superclassname        = superclassname;
@@ -32,6 +33,7 @@ MetaObject::MetaObject(const char *visualname, const char *classname, const char
     this->hierarchyIndex        = 0;
     this->lastChildIndex        = 0;
     this->funcCreateInstance    = CreateInstance;
+    this->funcRegisterProperties = RegisterProperties;
     this->eventMap              = eventMap;
     this->eventCallbacks        = nullptr;
     this->freeEventCallbacks    = false;
@@ -290,9 +292,11 @@ void Object::Init() {
         t->Init();
     }
 
-    // number the types according to the class hierarchy so we can quickly determine if a class is a subclass of another
+    // Number the types according to the class hierarchy so we can quickly determine if a class is a subclass of another.
     num = 0;
     for (MetaObject *t = classHierarchy.GetNext(); t != nullptr; t = t->node.GetNext(), num++) {
+        t->RegisterProperties();
+
         t->hierarchyIndex = num;
         t->lastChildIndex += num;
     }
