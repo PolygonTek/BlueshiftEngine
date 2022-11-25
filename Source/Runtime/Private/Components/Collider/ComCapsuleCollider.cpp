@@ -32,6 +32,8 @@ void ComCapsuleCollider::RegisterProperties() {
         "The radius of the Collider's local width.", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("height", "Height", float, GetHeight, SetHeight, MeterToUnit(1.0f),
         "The height of the Collider excluding 2x radius.", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+    REGISTER_PROPERTY("direction", "Direction", Direction::Enum, direction, Direction::Enum::ZAxis,
+        "", PropertyInfo::Flag::Editor).SetEnumString("X-Axis;Y-Axis;Z-Axis");
 }
 
 ComCapsuleCollider::ComCapsuleCollider() {
@@ -55,10 +57,19 @@ void ComCapsuleCollider::CreateCollider() {
 
     Vec3 scaledCenter = transform->GetScale() * center;
     float scaledRadius = (transform->GetScale() * radius).MaxComponent();
-    float scaledHeight = transform->GetScale().z * height;
+    float scaledHeight = transform->GetScale().z * Max(height, 0.0f);
+
+    Collider::Axis::Enum axis;
+    if (direction == Direction::XAxis) {
+        axis = Collider::Axis::X;
+    } else if (direction == Direction::YAxis) {
+        axis = Collider::Axis::Y;
+    } else {
+        axis = Collider::Axis::Z;
+    }
 
     collider = colliderManager.AllocUnnamedCollider();
-    collider->CreateCapsule(scaledCenter, scaledRadius, scaledHeight);
+    collider->CreateCapsule(scaledCenter, scaledRadius, scaledHeight, axis);
 }
 
 void ComCapsuleCollider::SetCenter(const Vec3 &center) {
@@ -92,13 +103,22 @@ void ComCapsuleCollider::DrawGizmos(const RenderCamera *camera, bool selected, b
 
         if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(500.0f * 500.0f)) {
             float scaledRadius = (transform->GetScale() * radius).MaxComponent();
-            float scaledHeight = transform->GetScale().z * height;
+            float scaledHeight = transform->GetScale().z * Max(height, 0.0f);
 
             Vec3 worldCenter = transform->GetWorldMatrix().TransformPos(center);
 
+            Mat3 axisRotation;
+            if (direction == Direction::XAxis) {
+                axisRotation = Mat3::FromRotationY(Math::HalfPi);
+            } else if (direction == Direction::YAxis) {
+                axisRotation = Mat3::FromRotationX(-Math::HalfPi);
+            } else {
+                axisRotation = Mat3::identity;
+            }
+
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-            renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius + CmToUnit(0.15f), 1.25f, true);
+            renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis() * axisRotation, scaledHeight, scaledRadius + CmToUnit(0.15f), 1.25f, true);
         }
     }
 }

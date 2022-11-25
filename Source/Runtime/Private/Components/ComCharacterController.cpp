@@ -106,7 +106,7 @@ void ComCharacterController::CreateBodyAndSensor() {
     float scaledHeight = transform->GetScale().z * capsuleHeight;
 
     collider = colliderManager.AllocUnnamedCollider();
-    collider->CreateCapsule(scaledCenter, scaledRadius, scaledHeight);
+    collider->CreateCapsule(scaledCenter, scaledRadius, scaledHeight, Collider::Axis::Z);
 
     PhysCollidableDesc desc;
     desc.type = PhysCollidable::Type::RigidBody;

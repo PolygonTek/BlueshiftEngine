@@ -57,6 +57,14 @@ public:
         };
     };
 
+    struct Axis {
+        enum Enum {
+            X,
+            Y,
+            Z
+        };
+    };
+
     Collider();
     ~Collider();
 
@@ -65,20 +73,20 @@ public:
 
     void                    Purge();
 
-                            /// Creates box shaped collider with the given parameters.
-    void                    CreateBox(const Vec3 &center, const Vec3 &extents, float margin = MmToUnit(1.0f));
-
-                            /// Creates cylinder shaped collider with the given parameters.
-    void                    CreateCylinder(const Vec3 &center, float radius, float height, float margin = MmToUnit(1.0f));
-
-                            /// Creates cone shaped collider with the given parameters.
-    void                    CreateCone(const Vec3 &center, float radius, float height, float margin = MmToUnit(1.0f));
-
                             /// Creates sphere shaped collider with the given parameters.
     void                    CreateSphere(const Vec3 &center, float radius);
 
+                            /// Creates box shaped collider with the given parameters.
+    void                    CreateBox(const Vec3 &center, const Vec3 &extents, float margin = MmToUnit(1.0f));
+
+                            /// Creates cone shaped collider with the given parameters.
+    void                    CreateCone(const Vec3 &center, float radius, float height, Axis::Enum axis, float margin = MmToUnit(1.0f));
+
+                            /// Creates cylinder shaped collider with the given parameters.
+    void                    CreateCylinder(const Vec3 &center, float radius, float height, Axis::Enum axis, float margin = MmToUnit(1.0f));
+
                             /// Creates capsule shaped collider with the given parameters.
-    void                    CreateCapsule(const Vec3 &center, float radius, float height);
+    void                    CreateCapsule(const Vec3 &center, float radius, float height, Axis::Enum axis);
 
                             /// Creates convex hull collider with the given mesh and parameters.
     void                    CreateConvexHull(const Mesh *mesh, const Vec3 &scale = Vec3::one, float margin = MmToUnit(0.0f));

@@ -20,6 +20,14 @@ BE_NAMESPACE_BEGIN
 
 class ComConeCollider : public ComCollider {
 public:
+    struct Direction {
+        enum Enum {
+            XAxis,
+            YAxis,
+            ZAxis
+        };
+    };
+
     OBJECT_PROTOTYPE(ComConeCollider);
 
     ComConeCollider();
@@ -48,6 +56,7 @@ protected:
     Vec3                    center;     ///< Local center position in system units
     float                   radius;     ///< Radius in system units
     float                   height;     ///< Height in system units
+    Direction::Enum         direction;
 };
 
 BE_NAMESPACE_END

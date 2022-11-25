@@ -24,6 +24,14 @@ class ComCapsuleCollider : public ComCollider {
     friend class LuaVM;
 
 public:
+    struct Direction {
+        enum Enum {
+            XAxis,
+            YAxis,
+            ZAxis
+        };
+    };
+
     OBJECT_PROTOTYPE(ComCapsuleCollider);
 
     ComCapsuleCollider();
@@ -52,6 +60,7 @@ protected:
     Vec3                    center;     ///< Local center position in system units
     float                   radius;     ///< Radius in system units
     float                   height;     ///< Height in system units
+    Direction::Enum         direction;
 };
 
 BE_NAMESPACE_END

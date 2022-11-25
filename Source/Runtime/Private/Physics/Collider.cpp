@@ -127,30 +127,57 @@ void Collider::CreateSphere(const Vec3 &center, float radius) {
     centroid = center;
 }
 
-void Collider::CreateCapsule(const Vec3 &center, float radius, float height) {
+void Collider::CreateCone(const Vec3 &center, float radius, float height, Axis::Enum axis, float margin) {
     Purge();
-    
-    type = Type::Capsule;
-    btCapsuleShapeZ *capsuleShape = new btCapsuleShapeZ(
-        SystemUnitToPhysicsUnit(radius), 
-        SystemUnitToPhysicsUnit(height));
-    // No need to set margin, because entire shape can be represented by margin
 
-    shape = capsuleShape;
+    type = Type::Cone;
+    btConeShape *coneShape;
+    if (axis == Axis::X) {
+        coneShape = new btConeShapeX(
+            SystemUnitToPhysicsUnit(radius),
+            SystemUnitToPhysicsUnit(height));
+    } else if (axis == Axis::Y) {
+        coneShape = new btConeShape(
+            SystemUnitToPhysicsUnit(radius),
+            SystemUnitToPhysicsUnit(height));
+    } else if (axis == Axis::Z) {
+        coneShape = new btConeShapeZ(
+            SystemUnitToPhysicsUnit(radius),
+            SystemUnitToPhysicsUnit(height));
+    }
+
+    if (SystemUnitToPhysicsUnit(margin) < coneShape->getMargin()) {
+        coneShape->setMargin(SystemUnitToPhysicsUnit(margin));
+    }
+
+    shape = coneShape;
 
     modelScale = Vec3::one;
-    volume = Math::Pi * radius * radius * (height + (radius * 4.0f / 3.0f));
+    volume = Math::Pi * radius * radius * height / 3.0f;
     centroid = center;
 }
 
-void Collider::CreateCylinder(const Vec3 &center, float radius, float height, float margin) {
+void Collider::CreateCylinder(const Vec3 &center, float radius, float height, Axis::Enum axis, float margin) {
     Purge();
 
     type = Type::Cylinder;
-    btCylinderShapeZ *cylinderShape = new btCylinderShapeZ(btVector3(
-        SystemUnitToPhysicsUnit(radius + margin), 
-        SystemUnitToPhysicsUnit(radius + margin), 
-        SystemUnitToPhysicsUnit(height * 0.5f + margin)));
+    btCylinderShape *cylinderShape;
+    if (axis == Axis::X) {
+        cylinderShape = new btCylinderShapeX(btVector3(
+            SystemUnitToPhysicsUnit(radius + margin),
+            SystemUnitToPhysicsUnit(radius + margin),
+            SystemUnitToPhysicsUnit(height * 0.5f + margin)));
+    } else if (axis == Axis::Y) {
+        cylinderShape = new btCylinderShape(btVector3(
+            SystemUnitToPhysicsUnit(radius + margin),
+            SystemUnitToPhysicsUnit(radius + margin),
+            SystemUnitToPhysicsUnit(height * 0.5f + margin)));
+    } else if (axis == Axis::Z) {
+        cylinderShape = new btCylinderShapeZ(btVector3(
+            SystemUnitToPhysicsUnit(radius + margin),
+            SystemUnitToPhysicsUnit(radius + margin),
+            SystemUnitToPhysicsUnit(height * 0.5f + margin)));
+    }
 
     if (SystemUnitToPhysicsUnit(margin) < cylinderShape->getMargin()) {
         cylinderShape->setMargin(SystemUnitToPhysicsUnit(margin));
@@ -163,22 +190,30 @@ void Collider::CreateCylinder(const Vec3 &center, float radius, float height, fl
     centroid = center;
 }
 
-void Collider::CreateCone(const Vec3 &center, float radius, float height, float margin) {
+void Collider::CreateCapsule(const Vec3 &center, float radius, float height, Axis::Enum axis) {
     Purge();
 
-    type = Type::Cone;
-    btConeShapeZ *coneShape = new btConeShapeZ(
-        SystemUnitToPhysicsUnit(radius), 
-        SystemUnitToPhysicsUnit(height));
-
-    if (SystemUnitToPhysicsUnit(margin) < coneShape->getMargin()) {
-        coneShape->setMargin(SystemUnitToPhysicsUnit(margin));
+    type = Type::Capsule;
+    btCapsuleShape *capsuleShape;
+    if (axis == Axis::X) {
+        capsuleShape = new btCapsuleShapeX(
+            SystemUnitToPhysicsUnit(radius),
+            SystemUnitToPhysicsUnit(height));
+    } else if (axis == Axis::Y) {
+        capsuleShape = new btCapsuleShape(
+            SystemUnitToPhysicsUnit(radius),
+            SystemUnitToPhysicsUnit(height));
+    } else if (axis == Axis::Z) {
+        capsuleShape = new btCapsuleShapeZ(
+            SystemUnitToPhysicsUnit(radius),
+            SystemUnitToPhysicsUnit(height));
     }
+    // No need to set margin, because entire shape can be represented by margin.
 
-    shape = coneShape;
+    shape = capsuleShape;
 
     modelScale = Vec3::one;
-    volume = Math::Pi * radius * radius * height / 3.0f;
+    volume = Math::Pi * radius * radius * (height + (radius * 4.0f / 3.0f));
     centroid = center;
 }
 

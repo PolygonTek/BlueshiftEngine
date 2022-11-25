@@ -32,6 +32,8 @@ void ComCylinderCollider::RegisterProperties() {
         "The radius of the Collider's local width.", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("height", "Height", float, GetHeight, SetHeight, MeterToUnit(1.0f),
         "The height of the Collider.", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+    REGISTER_PROPERTY("direction", "Direction", Direction::Enum, direction, Direction::Enum::ZAxis,
+        "", PropertyInfo::Flag::Editor).SetEnumString("X-Axis;Y-Axis;Z-Axis");
 }
 
 ComCylinderCollider::ComCylinderCollider() {
@@ -57,8 +59,17 @@ void ComCylinderCollider::CreateCollider() {
     float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
     float scaledHeight = transform->GetScale().z * height;
 
+    Collider::Axis::Enum axis;
+    if (direction == Direction::XAxis) {
+        axis = Collider::Axis::X;
+    } else if (direction == Direction::YAxis) {
+        axis = Collider::Axis::Y;
+    } else {
+        axis = Collider::Axis::Z;
+    }
+
     collider = colliderManager.AllocUnnamedCollider();
-    collider->CreateCylinder(scaledCenter, scaledRadius, scaledHeight);
+    collider->CreateCylinder(scaledCenter, scaledRadius, scaledHeight, axis);
 }
 
 void ComCylinderCollider::SetCenter(const Vec3 &center) {
@@ -96,9 +107,18 @@ void ComCylinderCollider::DrawGizmos(const RenderCamera *camera, bool selected, 
 
             Vec3 worldCenter = transform->GetWorldMatrix().TransformPos(center);
 
+            Mat3 axisRotation;
+            if (direction == Direction::XAxis) {
+                axisRotation = Mat3::FromRotationY(Math::HalfPi);
+            } else if (direction == Direction::YAxis) {
+                axisRotation = Mat3::FromRotationX(-Math::HalfPi);
+            } else {
+                axisRotation = Mat3::identity;
+            }
+
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-            renderWorld->DebugCylinderSimple(worldCenter, transform->GetAxis(), scaledHeight, scaledRadius + CmToUnit(0.15f), 1.25f, true);
+            renderWorld->DebugCylinderSimple(worldCenter, transform->GetAxis() * axisRotation, scaledHeight, scaledRadius + CmToUnit(0.15f), 1.25f, true);
         }
     }
 }

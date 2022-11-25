@@ -32,6 +32,8 @@ void ComConeCollider::RegisterProperties() {
         "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("height", "Height", float, GetHeight, SetHeight, MeterToUnit(1.0f),
         "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+    REGISTER_PROPERTY("direction", "Direction", Direction::Enum, direction, Direction::Enum::ZAxis,
+        "", PropertyInfo::Flag::Editor).SetEnumString("X-Axis;Y-Axis;Z-Axis");
 }
 
 ComConeCollider::ComConeCollider() {
@@ -57,8 +59,17 @@ void ComConeCollider::CreateCollider() {
     float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
     float scaledHeight = transform->GetScale().z * height;
 
+    Collider::Axis::Enum axis;
+    if (direction == Direction::XAxis) {
+        axis = Collider::Axis::X;
+    } else if (direction == Direction::YAxis) {
+        axis = Collider::Axis::Y;
+    } else {
+        axis = Collider::Axis::Z;
+    }
+
     collider = colliderManager.AllocUnnamedCollider();
-    collider->CreateCone(scaledCenter, scaledRadius, scaledHeight);
+    collider->CreateCone(scaledCenter, scaledRadius, scaledHeight, axis);
 }
 
 void ComConeCollider::SetCenter(const Vec3 &center) {
@@ -96,9 +107,18 @@ void ComConeCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool
 
             Vec3 worldOrigin = transform->GetWorldMatrix().TransformPos(center) - transform->GetAxis()[2] * scaledHeight * 0.5f;
 
+            Mat3 axisRotation;
+            if (direction == Direction::XAxis) {
+                axisRotation = Mat3::FromRotationY(Math::HalfPi);
+            } else if (direction == Direction::YAxis) {
+                axisRotation = Mat3::FromRotationX(-Math::HalfPi);
+            } else {
+                axisRotation = Mat3::identity;
+            }
+
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-            renderWorld->DebugCone(worldOrigin, transform->GetAxis(), scaledHeight, 0, scaledRadius + CmToUnit(0.15f), false, 1.25f);
+            renderWorld->DebugCone(worldOrigin, transform->GetAxis() * axisRotation, scaledHeight, 0, scaledRadius + CmToUnit(0.15f), false, 1.25f);
         }
     }
 }
