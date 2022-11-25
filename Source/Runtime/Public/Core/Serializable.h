@@ -58,6 +58,11 @@ public:
     bool                    SetProperty(int index, const Variant &value, bool forceWrite = false);
                             /// Sets a property value by property info. Returns true if successfully set.
     bool                    SetProperty(const PropertyInfo &propertyInfo, const Variant &value, bool forceWrite = false);
+
+                            /// Sets a property value to default by name. Returns true if successfully set.
+    bool                    SetPropertyDefault(const char *name, bool forceWrite = false);
+                            /// Sets a property value to default by index. Returns true if successfully set.
+    bool                    SetPropertyDefault(int index, bool forceWrite = false);
     
                             /// Gets a indexed property value by name. Returns empty variant if not found.
     Variant                 GetArrayProperty(const char *name, int elementIndex) const;

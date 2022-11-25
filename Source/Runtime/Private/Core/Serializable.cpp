@@ -862,6 +862,28 @@ bool Serializable::SetProperty(const PropertyInfo &propertyInfo, const Variant &
     return true;
 }
 
+bool Serializable::SetPropertyDefault(const char *name, bool forceWrite) {
+    PropertyInfo propertyInfo;
+
+    if (!GetPropertyInfo(name, propertyInfo)) {
+        BE_WARNLOG("Serializable::SetPropertyDefault: invalid property name '%s'\n", name);
+        return false;
+    }
+
+    return SetProperty(propertyInfo, propertyInfo.defaultValue, forceWrite);
+}
+
+bool Serializable::SetPropertyDefault(int index, bool forceWrite) {
+    PropertyInfo propertyInfo;
+
+    if (!GetPropertyInfo(index, propertyInfo)) {
+        BE_WARNLOG("Serializable::SetPropertyDefault: invalid property index %i\n", index);
+        return false;
+    }
+
+    return SetProperty(propertyInfo, propertyInfo.defaultValue, forceWrite);
+}
+
 bool Serializable::SetArrayProperty(const char *name, int elementIndex, const Variant &value, bool forceWrite) {
     PropertyInfo propertyInfo;
 
