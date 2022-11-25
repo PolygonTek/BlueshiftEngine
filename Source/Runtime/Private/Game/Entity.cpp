@@ -382,6 +382,18 @@ ComponentPtrArray Entity::GetComponentsInChildren(const MetaObject *type, bool s
     return subComponents;
 }
 
+Array<ComTransform *> Entity::GetTransformsInChildren() const {
+    Array<ComTransform *> transformComponents;
+
+    transformComponents.Append((ComTransform *)components[0]);
+
+    for (Entity *child = node.GetFirstChild(); child; child = child->node.GetNextSibling()) {
+        transformComponents.AppendArray(child->GetTransformsInChildren());
+    }
+
+    return transformComponents;
+}
+
 bool Entity::HasRenderObject(int renderObjectHandle) const {
     for (int componentIndex = 1; componentIndex < components.Count(); componentIndex++) {
         Component *component = components[componentIndex];

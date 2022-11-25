@@ -188,6 +188,8 @@ public:
                                 /// Returns all component pointers by the given type T in this entity or any children.
     template <typename T> 
     ComponentPtrArray           GetComponentsInChildren(bool skipIfParentDontHave = false) const;
+                                /// Returns all transform component pointers in this entity or any children.
+    Array<ComTransform *>       GetTransformsInChildren() const;
 
                                 /// Returns a transform component.
     ComTransform *              GetTransform() const;
