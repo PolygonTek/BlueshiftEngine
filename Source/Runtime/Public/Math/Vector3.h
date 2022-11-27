@@ -215,10 +215,18 @@ public:
     float               MinComponent() const { return Min3(x, y, z); }
                         /// Get the maximum component of a vector
     float               MaxComponent() const { return Max3(x, y, z); }
+                        /// Get the minimum absolute component of a vector
+    float               MinAbsComponent() const { return Min3(Math::Fabs(x), Math::Fabs(y), Math::Fabs(z)); }
+                        /// Get the maximum absolute component of a vector
+    float               MaxAbsComponent() const { return Max3(Math::Fabs(x), Math::Fabs(y), Math::Fabs(z)); }
                         /// Get the minimum component index of a vector
     int                 MinComponentIndex() const { return Min3Index(x, y, z); }
                         /// Get the maximum component index of a vector
     int                 MaxComponentIndex() const { return Max3Index(x, y, z); }
+                        /// Get the minimum absolute component index of a vector
+    int                 MinAbsComponentIndex() const { return Min3Index(Math::Fabs(x), Math::Fabs(y), Math::Fabs(z)); }
+                        /// Get the maximum absolute component index of a vector
+    int                 MaxAbsComponentIndex() const { return Max3Index(Math::Fabs(x), Math::Fabs(y), Math::Fabs(z)); }
 
                         /// Performs a 2D swizzled access to this vector.
     Vec2                xx() const { return Vec2(x, x); }

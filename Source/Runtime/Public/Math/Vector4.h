@@ -215,6 +215,10 @@ public:
     float               MinComponent() const { return Min(Min(x, y), Min(z, w)); }
                         /// Get the maximum component of a vector
     float               MaxComponent() const { return Max(Max(x, y), Max(z, w)); }
+                        /// Get the minimum absolute component of a vector
+    float               MinAbsComponent() const { return Min(Min(Math::Fabs(x), Math::Fabs(y)), Min(Math::Fabs(z), Math::Fabs(w))); }
+                        /// Get the maximum absolute component of a vector
+    float               MaxAbsComponent() const { return Max(Max(Math::Fabs(x), Math::Fabs(y)), Max(Math::Fabs(z), Math::Fabs(w))); }
 
                         /// Computes the length of this vector.
     float               Length() const;
