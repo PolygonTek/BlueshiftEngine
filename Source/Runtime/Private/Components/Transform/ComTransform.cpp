@@ -88,7 +88,7 @@ void ComTransform::SetLocalOrigin(const Vec3 &inLocalOrigin) {
     }
 
     if (IsInitialized()) {
-        InvalidateWorldMatrix();
+        InvalidateWorldMatrix(this);
     }
 }
 
@@ -101,7 +101,7 @@ void ComTransform::SetLocalScale(const Vec3 &inLocalScale) {
     }
 
     if (IsInitialized()) {
-        InvalidateWorldMatrix();
+        InvalidateWorldMatrix(this);
     }
 }
 
@@ -118,7 +118,7 @@ void ComTransform::SetLocalRotation(const Quat &inLocalRotation) {
 #endif
 
     if (IsInitialized()) {
-        InvalidateWorldMatrix();
+        InvalidateWorldMatrix(this);
     }
 }
 
@@ -136,7 +136,7 @@ void ComTransform::SetLocalOriginRotation(const Vec3 &inLocalOrigin, const Quat 
 #endif
 
     if (IsInitialized()) {
-        InvalidateWorldMatrix();
+        InvalidateWorldMatrix(this);
     }
 }
 
@@ -154,7 +154,7 @@ void ComTransform::SetLocalOriginAxis(const Vec3 &inLocalOrigin, const Mat3 &inL
 #endif
 
     if (IsInitialized()) {
-        InvalidateWorldMatrix();
+        InvalidateWorldMatrix(this);
     }
 }
 
@@ -173,7 +173,7 @@ void ComTransform::SetLocalOriginAxisScale(const Vec3 &inLocalOrigin, const Mat3
 #endif
 
     if (IsInitialized()) {
-        InvalidateWorldMatrix();
+        InvalidateWorldMatrix(this);
     }
 }
 
@@ -192,7 +192,7 @@ void ComTransform::SetLocalOriginRotationScale(const Vec3 &inLocalOrigin, const 
 #endif
 
     if (IsInitialized()) {
-        InvalidateWorldMatrix();
+        InvalidateWorldMatrix(this);
     }
 }
 
@@ -209,7 +209,7 @@ void ComTransform::SetLocalAngles(const Angles &inLocalAngles) {
 #endif
 
     if (IsInitialized()) {
-        InvalidateWorldMatrix();
+        InvalidateWorldMatrix(this);
     }
 }
 
@@ -256,7 +256,7 @@ Mat3x4 ComTransform::GetWorldJointMatrix() const {
     return worldJointMatrix;
 }
 
-void ComTransform::InvalidateWorldMatrix() {
+void ComTransform::InvalidateWorldMatrix(const ComTransform *instigatedBy) {
     // Precondition:
     // a) whenever a transform is marked worldMatrixInvalidated, all its children are marked worldMatrixInvalidated as well.
     // b) whenever a transform is cleared from being worldMatrixInvalidated, all its parents must have been cleared as well.
@@ -277,7 +277,7 @@ void ComTransform::InvalidateWorldMatrix() {
 
     for (Entity *childEntity = entity->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
         // Don't update children that has rigid body. they will be updated by own.
-        if (physicsUpdating) {
+        if (instigatedBy && instigatedBy->physicsUpdating) {
             if (childEntity->GetComponent(&ComRigidBody::metaObject) || childEntity->GetComponent(&ComVehicleWheel::metaObject)) {
                 continue;
             }
@@ -286,7 +286,7 @@ void ComTransform::InvalidateWorldMatrix() {
         ComTransform *childTransform = childEntity->GetTransform();
 
         if (childTransform->jointHierarchy == nullptr || childTransform->jointHierarchy == jointHierarchy) {
-            childTransform->InvalidateWorldMatrix();
+            childTransform->InvalidateWorldMatrix(instigatedBy);
         }
     }
 }
@@ -320,7 +320,7 @@ void ComTransform::WorldJointMatrixUpdated() {
         if (childTransform->jointHierarchy) {
             childTransform->WorldJointMatrixUpdated();
         } else {
-            childTransform->InvalidateWorldMatrix();
+            childTransform->InvalidateWorldMatrix(this);
         }
     }
 }

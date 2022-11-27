@@ -153,7 +153,7 @@ public:
 
 protected:
                             /// Mark this component and children to need world transform recalculation.
-    void                    InvalidateWorldMatrix();
+    void                    InvalidateWorldMatrix(const ComTransform *instigatedBy);
                             /// Recalculate world matrix.
     void                    UpdateWorldMatrix() const;
                             /// Marks this component and children to need cached rect recalculation.
