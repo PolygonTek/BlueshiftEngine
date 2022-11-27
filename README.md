@@ -3,8 +3,6 @@ Blueshift Game Engine
 
 [![GitHub release](https://img.shields.io/github/release/PolygonTek/BlueshiftEngine.svg)](https://github.com/PolygonTek/BlueshiftEngine/releases)
 [![License](https://img.shields.io/badge/Licence-Apache2.0-blue.svg)](LICENSE)
-[![LoC](https://tokei.rs/b1/github/PolygonTek/BlueshiftEngine)](https://github.com/PolygonTek/BlueshiftEngine)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/586e8c52b0c847a9ac1bc7632c65e79c)](https://app.codacy.com/app/juhl/BlueshiftEngine?utm_source=github.com&utm_medium=referral&utm_content=PolygonTek/BlueshiftEngine&utm_campaign=Badge_Grade_Dashboard)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/9m56bx55uxe88rgs/branch/master?svg=true)](https://ci.appveyor.com/project/juhl48312/blueshiftengine/branch/master)
 
 Blueshift is a cross-platform 3D game engine implemented in C++. it's free, open-source, and works on Windows, macOS, iOS, and Android.
@@ -31,6 +29,7 @@ Features
   * Post-processing
   * PBR rendering
   * Physics using [Bullet](http://www.bulletphysics.org/)
+  * Ragdoll physics
   * Vehicle physics
   * Scripting using [Lua](https://www.lua.org/) and [LuaJIT](https://luajit.org/)
   * 2D and 3D audio playback using DirectSound, [OpenAL](https://www.openal.org/) and OpenSLES

@@ -81,7 +81,7 @@ void ComRigidBody::RegisterProperties() {
         "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("linearDamping", "Linear Damping", float, GetLinearDamping, SetLinearDamping, 0.04f, 
         "Reduced amount of linear velocity", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("angularDamping", "Angular Damping", float, GetAngularDamping, SetAngularDamping, 0.04f, 
+    REGISTER_ACCESSOR_PROPERTY("angularDamping", "Angular Damping", float, GetAngularDamping, SetAngularDamping, 0.01f, 
         "Reduced amount of angular velocity", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("kinematic", "Kinematic", bool, IsKinematic, SetKinematic, false, 
         "", PropertyInfo::Flag::Editor);
