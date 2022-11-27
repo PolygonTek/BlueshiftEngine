@@ -117,8 +117,12 @@ void ComConeCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool
             }
 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
+            if (selected) {
+                renderWorld->SetDebugColor(Color4(Color4::orange.ToColor3(), 0.1f), Color4::zero);
+                renderWorld->DebugCone(worldOrigin, transform->GetAxis() * axisRotation, scaledHeight, 0, scaledRadius + CmToUnit(0.15f), false, 1.25f, true, false);
+            }
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-            renderWorld->DebugCone(worldOrigin, transform->GetAxis() * axisRotation, scaledHeight, 0, scaledRadius + CmToUnit(0.15f), false, 1.25f);
+            renderWorld->DebugCone(worldOrigin, transform->GetAxis() * axisRotation, scaledHeight, 0, scaledRadius + CmToUnit(0.15f), false, 1.25f, true, true);
         }
     }
 }

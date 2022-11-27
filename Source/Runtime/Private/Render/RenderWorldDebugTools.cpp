@@ -428,7 +428,7 @@ void RenderWorld::DebugAABB(const AABB &aabb, float lineWidth, bool twoSided, bo
     }
 }
 
-void RenderWorld::DebugOBB(const OBB &obb, float lineWidth, bool depthTest, bool twoSided, int lifeTime) {
+void RenderWorld::DebugOBB(const OBB &obb, float lineWidth, bool twoSided, bool depthTest, int lifeTime) {
     Vec3 v[8];
 
     obb.ToPoints(v);
