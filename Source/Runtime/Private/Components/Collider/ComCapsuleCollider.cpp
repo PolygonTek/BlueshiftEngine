@@ -118,7 +118,7 @@ void ComCapsuleCollider::DrawGizmos(const RenderCamera *camera, bool selected, b
 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
             if (selected) {
-                renderWorld->SetDebugColor(Color4(Color4::orange.ToColor3(), 0.1f), Color4::zero);
+                renderWorld->SetDebugColor(Color4(Color4::orange.ToColor3(), 0.2f), Color4::zero);
                 renderWorld->DebugCapsuleSimple(worldCenter, transform->GetAxis() * axisRotation, scaledHeight, scaledRadius + CmToUnit(0.15f), 1.25f, false);
             }
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);

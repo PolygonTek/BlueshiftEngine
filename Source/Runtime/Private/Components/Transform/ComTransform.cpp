@@ -278,7 +278,8 @@ void ComTransform::InvalidateWorldMatrix(const ComTransform *instigatedBy) {
     for (Entity *childEntity = entity->GetNode().GetFirstChild(); childEntity; childEntity = childEntity->GetNode().GetNextSibling()) {
         // Don't update children that has rigid body. they will be updated by own.
         if (instigatedBy && instigatedBy->physicsUpdating) {
-            if (childEntity->GetComponent(&ComRigidBody::metaObject) || childEntity->GetComponent(&ComVehicleWheel::metaObject)) {
+            if (childEntity->GetComponent(&ComRigidBody::metaObject) ||
+                childEntity->GetComponent(&ComVehicleWheel::metaObject)) {
                 continue;
             }
         }

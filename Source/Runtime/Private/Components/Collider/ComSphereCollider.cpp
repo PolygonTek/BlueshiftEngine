@@ -84,7 +84,7 @@ void ComSphereCollider::DrawGizmos(const RenderCamera *camera, bool selected, bo
 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
             if (selected) {
-                renderWorld->SetDebugColor(Color4(Color4::orange.ToColor3(), 0.1f), Color4::zero);
+                renderWorld->SetDebugColor(Color4(Color4::orange.ToColor3(), 0.2f), Color4::zero);
                 renderWorld->DebugSphereSimple(transform->GetWorldMatrix().TransformPos(center), transform->GetAxis(), scaledRadius + CmToUnit(0.15f), 1.25f, false);
             }
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
