@@ -190,23 +190,25 @@ void ComSpringJoint::SetDamping(float damping) {
 
 #if WITH_EDITOR
 void ComSpringJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
-    RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
+    if (selectedByParent) {
+        const ComTransform *transform = GetEntity()->GetTransform();
 
-    const ComTransform *transform = GetEntity()->GetTransform();
+        if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
+            Vec3 worldOrigin = transform->GetWorldMatrix().TransformPos(localAnchor);
+            Mat3 worldAxis = transform->GetAxis() * localAxis;
 
-    if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
-        Vec3 worldOrigin = transform->GetWorldMatrix().TransformPos(localAnchor);
-        Mat3 worldAxis = transform->GetAxis() * localAxis;
+            float viewScale = camera->CalcViewScale(worldOrigin);
 
-        float viewScale = camera->CalcViewScale(worldOrigin);
+            RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
-        renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin - worldAxis[0] * MeterToUnit(5) * viewScale, worldOrigin + worldAxis[0] * MeterToUnit(5) * viewScale);
-        renderWorld->DebugLine(worldOrigin - worldAxis[1] * MeterToUnit(5) * viewScale, worldOrigin + worldAxis[1] * MeterToUnit(5) * viewScale);
+            renderWorld->SetDebugColor(Color4::red, Color4::zero);
+            renderWorld->DebugLine(worldOrigin - worldAxis[0] * MeterToUnit(5) * viewScale, worldOrigin + worldAxis[0] * MeterToUnit(5) * viewScale);
+            renderWorld->DebugLine(worldOrigin - worldAxis[1] * MeterToUnit(5) * viewScale, worldOrigin + worldAxis[1] * MeterToUnit(5) * viewScale);
 
-        renderWorld->DebugCircle(worldOrigin - worldAxis[2] * MeterToUnit(3) * viewScale, worldAxis[2], MeterToUnit(5) * viewScale);
-        renderWorld->DebugCircle(worldOrigin, worldAxis[2], MeterToUnit(5) * viewScale);
-        renderWorld->DebugCircle(worldOrigin + worldAxis[2] * MeterToUnit(3) * viewScale, worldAxis[2], MeterToUnit(5) * viewScale);
+            renderWorld->DebugCircle(worldOrigin - worldAxis[2] * MeterToUnit(3) * viewScale, worldAxis[2], MeterToUnit(5) * viewScale);
+            renderWorld->DebugCircle(worldOrigin, worldAxis[2], MeterToUnit(5) * viewScale);
+            renderWorld->DebugCircle(worldOrigin + worldAxis[2] * MeterToUnit(3) * viewScale, worldAxis[2], MeterToUnit(5) * viewScale);
+        }
     }
 }
 #endif

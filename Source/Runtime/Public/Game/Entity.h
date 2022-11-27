@@ -173,6 +173,8 @@ public:
     int                         GetComponentIndex(const Component *component) const;
                                 /// Returns a component pointer by the given component index.
     Component *                 GetComponent(int index) const { return components[index]; }
+                                /// Returns a last component.
+    Component *                 GetLastComponent() const { return components.Last(); }
                                 /// Returns a component pointer by the given meta object.
     Component *                 GetComponent(const MetaObject *type) const;
                                 /// Returns a component pointer by the given type T.
@@ -180,9 +182,11 @@ public:
                                 /// Returns a component pointer by the given type T.
     template <typename T> T *   GetComponent(int index) const;
                                 /// Returns all component pointers.
-    ComponentPtrArray &         GetComponents() { return components; }
+    ComponentPtrArray           GetComponents() { return components; }
                                 /// Returns all component pointers by the given meta object.
     ComponentPtrArray           GetComponents(const MetaObject *type) const;
+                                /// Returns all component pointers by the given type T.
+    template <typename T> ComponentPtrArray GetComponents() const { return GetComponents(&T::metaObject); }
                                 /// Returns all component pointers by the given meta object in this entity or any children.
     ComponentPtrArray           GetComponentsInChildren(const MetaObject *type, bool skipIfParentDontHave = false) const;
                                 /// Returns all component pointers by the given type T in this entity or any children.

@@ -252,31 +252,33 @@ void ComCharacterJoint::SetTwistDamping(float damping) {
 
 #if WITH_EDITOR
 void ComCharacterJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
-    RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
+    if (selectedByParent) {
+        const ComTransform *transform = GetEntity()->GetTransform();
 
-    const ComTransform *transform = GetEntity()->GetTransform();
+        if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
+            Vec3 worldOrigin = transform->GetWorldMatrix().TransformPos(localAnchor);
+            Mat3 worldAxis = transform->GetAxis() * localAxis;
 
-    if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
-        Vec3 worldOrigin = transform->GetWorldMatrix().TransformPos(localAnchor);
-        Mat3 worldAxis = transform->GetAxis() * localAxis;
+            float viewScale = camera->CalcViewScale(worldOrigin);
 
-        float viewScale = camera->CalcViewScale(worldOrigin);
+            Mat3 constraintAxis = Mat3::identity;
 
-        Mat3 constraintAxis = Mat3::identity;
+            const ComRigidBody *connectedBody = GetConnectedBody();
+            if (connectedBody) {
+                constraintAxis = connectedBody->GetEntity()->GetTransform()->GetAxis();
+            }
 
-        const ComRigidBody *connectedBody = GetConnectedBody();
-        if (connectedBody) {
-            constraintAxis = connectedBody->GetEntity()->GetTransform()->GetAxis();
+            RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
+
+            renderWorld->SetDebugColor(Color4::yellow, Color4::yellow * 0.5f);
+            renderWorld->DebugArc(worldOrigin, -constraintAxis[2], -constraintAxis[1], MeterToUnit(10) * viewScale, lowerLimit.x, upperLimit.x, true);
+            renderWorld->DebugArc(worldOrigin, -constraintAxis[2], +constraintAxis[0], MeterToUnit(10) * viewScale, lowerLimit.y, upperLimit.y, true);
+            renderWorld->DebugArc(worldOrigin, +constraintAxis[0], -constraintAxis[1], MeterToUnit(10) * viewScale, lowerLimit.z, upperLimit.z, true);
+
+            renderWorld->SetDebugColor(Color4::red, Color4::zero);
+            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * MeterToUnit(10) * viewScale);
+            renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[2] * MeterToUnit(10) * viewScale);
         }
-
-        renderWorld->SetDebugColor(Color4::yellow, Color4::yellow * 0.5f);
-        renderWorld->DebugArc(worldOrigin, -constraintAxis[2], -constraintAxis[1], MeterToUnit(10) * viewScale, lowerLimit.x, upperLimit.x, true);
-        renderWorld->DebugArc(worldOrigin, -constraintAxis[2], +constraintAxis[0], MeterToUnit(10) * viewScale, lowerLimit.y, upperLimit.y, true);
-        renderWorld->DebugArc(worldOrigin, +constraintAxis[0], -constraintAxis[1], MeterToUnit(10) * viewScale, lowerLimit.z, upperLimit.z, true);
-
-        renderWorld->SetDebugColor(Color4::red, Color4::zero);
-        renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * MeterToUnit(10) * viewScale);
-        renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[2] * MeterToUnit(10) * viewScale);
     }
 }
 #endif

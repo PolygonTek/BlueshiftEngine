@@ -71,7 +71,7 @@ void ComRigidBody::CollisionListener::Collide(const PhysCollidable *objectA, con
 void ComRigidBody::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("mass", "Mass", float, GetMass, SetMass, 1.f, 
         "Mass (kg)", PropertyInfo::Flag::Editor).SetRange(0, 200, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("restitution", "Restitution", float, GetRestitution, SetRestitution, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("restitution", "Restitution", float, GetRestitution, SetRestitution, 0.02f, 
         "Parameter for make objects bounce", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("friction", "Friction", float, GetFriction, SetFriction, 1.f, 
         "Parameter for make objects slide along each other realistically", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
