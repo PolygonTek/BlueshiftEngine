@@ -129,8 +129,8 @@ void PhysSliderConstraint::SetAngularLimits(float lowerLimit, float upperLimit) 
     this->angularUpperLimit = upperLimit;
 
     if (sliderConstraint->getLowerAngLimit() <= sliderConstraint->getUpperAngLimit()) {
-        sliderConstraint->setLowerAngLimit(SystemUnitToPhysicsUnit(lowerLimit));
-        sliderConstraint->setUpperAngLimit(SystemUnitToPhysicsUnit(upperLimit));
+        sliderConstraint->setLowerAngLimit(lowerLimit);
+        sliderConstraint->setUpperAngLimit(upperLimit);
     }
 }
 
@@ -138,8 +138,8 @@ void PhysSliderConstraint::EnableAngularLimits(bool enable) {
     btSliderConstraint *sliderConstraint = static_cast<btSliderConstraint *>(constraint);
 
     if (enable) {
-        sliderConstraint->setLowerAngLimit(SystemUnitToPhysicsUnit(angularLowerLimit));
-        sliderConstraint->setUpperAngLimit(SystemUnitToPhysicsUnit(angularUpperLimit));
+        sliderConstraint->setLowerAngLimit(angularLowerLimit);
+        sliderConstraint->setUpperAngLimit(angularUpperLimit);
     } else {
         sliderConstraint->setLowerAngLimit(1);
         sliderConstraint->setUpperAngLimit(-1);
@@ -149,8 +149,8 @@ void PhysSliderConstraint::EnableAngularLimits(bool enable) {
 void PhysSliderConstraint::SetLinearMotor(float motorTargetVelocity, float maxMotorForce) {
     btSliderConstraint *sliderConstraint = static_cast<btSliderConstraint *>(constraint);
 
-    sliderConstraint->setTargetLinMotorVelocity(SystemUnitToPhysicsUnit(motorTargetVelocity));
-    sliderConstraint->setMaxLinMotorForce(SystemUnitToPhysicsUnit(maxMotorForce));
+    sliderConstraint->setTargetLinMotorVelocity(motorTargetVelocity);
+    sliderConstraint->setMaxLinMotorForce(maxMotorForce);
 }
 
 void PhysSliderConstraint::EnableLinearMotor(bool enable) {
