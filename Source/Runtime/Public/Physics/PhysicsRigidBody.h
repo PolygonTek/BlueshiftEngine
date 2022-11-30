@@ -28,6 +28,7 @@ class PhysRigidBody : public PhysCollidable {
     friend class PhysP2PConstraint;
     friend class PhysHingeConstraint;
     friend class PhysSliderConstraint;
+    friend class PhysSwingTwistConstraint;
     friend class PhysVehicle;
 
 public:

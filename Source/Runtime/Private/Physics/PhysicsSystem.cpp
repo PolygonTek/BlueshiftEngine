@@ -281,6 +281,13 @@ PhysConstraint *PhysicsSystem::CreateConstraint(const PhysConstraintDesc &desc) 
             constraint = new PhysSliderConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }
         break;
+    case PhysConstraint::Type::SwingTwist:
+        if (!desc.bodyA) {
+            constraint = new PhysSwingTwistConstraint(desc.bodyB, desc.anchorInB, desc.axisInB);
+        } else {
+            constraint = new PhysSwingTwistConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
+        }
+        break;
     default:
         assert(0);
         return nullptr;

@@ -32,7 +32,8 @@ public:
             GenericSpring,
             Point2Point,
             Hinge,
-            Slider
+            Slider,
+            SwingTwist
         };
     };
 

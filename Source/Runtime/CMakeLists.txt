@@ -205,6 +205,7 @@ set(COMMON_ENGINE_FILES
     Public/Physics/PhysicsHingeConstraint.h
     Public/Physics/PhysicsP2PConstraint.h
     Public/Physics/PhysicsSliderConstraint.h
+    Public/Physics/PhysicsSwingTwistConstraint.h
     Public/Physics/PhysicsRigidBody.h
     Public/Physics/PhysicsSensor.h
     Public/Physics/PhysicsSystem.h
@@ -532,6 +533,7 @@ set(COMMON_ENGINE_FILES
     Private/Physics/PhysicsHingeConstraint.cpp
     Private/Physics/PhysicsP2PConstraint.cpp
     Private/Physics/PhysicsSliderConstraint.cpp
+    Private/Physics/PhysicsSwingTwistConstraint.cpp
     Private/Physics/PhysicsRigidBody.cpp
     Private/Physics/PhysicsSensor.cpp
     Private/Physics/PhysicsSystem.cpp

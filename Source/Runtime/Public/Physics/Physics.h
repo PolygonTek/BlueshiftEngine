@@ -24,6 +24,7 @@
 #include "PhysicsP2PConstraint.h"
 #include "PhysicsHingeConstraint.h"
 #include "PhysicsSliderConstraint.h"
+#include "PhysicsSwingTwistConstraint.h"
 #include "PhysicsVehicle.h"
 #include "PhysicsWorld.h"
 #include "PhysicsSystem.h"

@@ -42,8 +42,9 @@ btConeTwistConstraint::btConeTwistConstraint(btRigidBody& rbA, btRigidBody& rbB,
 btConeTwistConstraint::btConeTwistConstraint(btRigidBody& rbA, const btTransform& rbAFrame)
 	: btTypedConstraint(CONETWIST_CONSTRAINT_TYPE, rbA), m_rbAFrame(rbAFrame), m_angularOnly(false), m_useSolveConstraintObsolete(CONETWIST_USE_OBSOLETE_SOLVER)
 {
-	m_rbBFrame = m_rbAFrame;
-	m_rbBFrame.setOrigin(btVector3(0., 0., 0.));
+	//m_rbBFrame = m_rbAFrame;
+	//m_rbBFrame.setOrigin(btVector3(0., 0., 0.));
+    m_rbBFrame = m_rbA.getCenterOfMassTransform() * m_rbAFrame;
 	init();
 }
 
