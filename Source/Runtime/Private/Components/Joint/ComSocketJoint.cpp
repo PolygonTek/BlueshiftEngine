@@ -33,7 +33,6 @@ void ComSocketJoint::RegisterProperties() {
 }
 
 ComSocketJoint::ComSocketJoint() {
-    impulseClamp = 0;
 }
 
 ComSocketJoint::~ComSocketJoint() {
@@ -79,13 +78,9 @@ void ComSocketJoint::CreateConstraint() {
 
     // Create a constraint with the given description.
     PhysP2PConstraint *p2pConstraint = (PhysP2PConstraint *)physicsSystem.CreateConstraint(desc);
-    p2pConstraint->SetImpulseClamp(impulseClamp);
-
     constraint = p2pConstraint;
-}
 
-const Vec3 &ComSocketJoint::GetAnchor() const {
-    return anchor;
+    p2pConstraint->SetImpulseClamp(impulseClamp);
 }
 
 void ComSocketJoint::SetAnchor(const Vec3 &anchor) {

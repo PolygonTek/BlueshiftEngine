@@ -33,7 +33,7 @@ public:
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
-    const Vec3 &            GetAnchor() const;
+    const Vec3 &            GetAnchor() const { return anchor; }
     void                    SetAnchor(const Vec3 &anchor);
 
     const Vec3 &            GetConnectedAnchor() const;
@@ -47,7 +47,7 @@ protected:
 
     Vec3                    anchor;
     Vec3                    connectedAnchor;
-    float                   impulseClamp;
+    float                   impulseClamp = 0.0f;
 };
 
 BE_NAMESPACE_END

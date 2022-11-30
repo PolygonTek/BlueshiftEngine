@@ -103,6 +103,7 @@ void ComWheelJoint::CreateConstraint() {
 
     // Create a constraint with the given description.
     PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(desc);
+    constraint = genericSpringConstraint;
 
     // Apply limit suspension distances.
     genericSpringConstraint->SetLinearLowerLimits(Vec3(0, 0, minSusDist));
@@ -123,12 +124,6 @@ void ComWheelJoint::CreateConstraint() {
         genericSpringConstraint->SetMotor(Vec3(DEG2RAD(motorTargetVelocity), 0, 0), Vec3(maxMotorImpulse, 0, 0));
         genericSpringConstraint->EnableMotor(true, false, false);
     }
-
-    constraint = genericSpringConstraint;
-}
-
-const Vec3 &ComWheelJoint::GetAnchor() const {
-    return anchor;
 }
 
 void ComWheelJoint::SetAnchor(const Vec3 &anchor) {
@@ -136,10 +131,6 @@ void ComWheelJoint::SetAnchor(const Vec3 &anchor) {
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetFrameB(anchor, axis);
     }
-}
-
-Angles ComWheelJoint::GetAngles() const {
-    return axis.ToAngles();
 }
 
 void ComWheelJoint::SetAngles(const Angles &angles) {
@@ -151,10 +142,6 @@ void ComWheelJoint::SetAngles(const Angles &angles) {
     }
 }
 
-const Vec3 &ComWheelJoint::GetConnectedAnchor() const {
-    return connectedAnchor;
-}
-
 void ComWheelJoint::SetConnectedAnchor(const Vec3 &anchor) {
     this->connectedAnchor = anchor;
     if (constraint) {
@@ -162,12 +149,8 @@ void ComWheelJoint::SetConnectedAnchor(const Vec3 &anchor) {
     }
 }
 
-Angles ComWheelJoint::GetConnectedAngles() const {
-    return connectedAxis.ToAngles();
-}
-
-void ComWheelJoint::SetConnectedAngles(const Angles &angles) {
-    this->connectedAxis = angles.ToMat3();
+void ComWheelJoint::SetConnectedAxis(const Mat3 &axis) {
+    this->connectedAxis = axis;
     this->connectedAxis.FixDegeneracies();
 
     if (constraint) {

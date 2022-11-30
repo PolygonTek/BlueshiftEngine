@@ -53,7 +53,6 @@ void ComSliderJoint::RegisterProperties() {
 }
 
 ComSliderJoint::ComSliderJoint() {
-    axis = Mat3::identity;
 }
 
 ComSliderJoint::~ComSliderJoint() {
@@ -118,6 +117,7 @@ void ComSliderJoint::CreateConstraint() {
 
     // Create a constraint with the given description.
     PhysSliderConstraint *sliderConstraint = (PhysSliderConstraint *)physicsSystem.CreateConstraint(desc);
+    constraint = sliderConstraint;
 
     // Apply limit distances.
     sliderConstraint->SetLinearLimits(minDist, maxDist);
@@ -138,12 +138,6 @@ void ComSliderJoint::CreateConstraint() {
         sliderConstraint->SetAngularMotor(DEG2RAD(angularMotorTargetVelocity), maxAngularMotorImpulse / GetGameWorld()->GetPhysicsWorld()->GetFrameTimeDelta());
         sliderConstraint->EnableAngularMotor(true);
     }
-
-    constraint = sliderConstraint;
-}
-
-const Vec3 &ComSliderJoint::GetAnchor() const {
-    return anchor;
 }
 
 void ComSliderJoint::SetAnchor(const Vec3 &anchor) {
@@ -151,10 +145,6 @@ void ComSliderJoint::SetAnchor(const Vec3 &anchor) {
     if (constraint) {
         ((PhysSliderConstraint *)constraint)->SetFrameB(anchor, axis);
     }
-}
-
-Angles ComSliderJoint::GetAngles() const {
-    return axis.ToAngles();
 }
 
 void ComSliderJoint::SetAngles(const Angles &angles) {
@@ -166,24 +156,16 @@ void ComSliderJoint::SetAngles(const Angles &angles) {
     }
 }
 
-const Vec3 &ComSliderJoint::GetConnectedAnchor() const {
-    return connectedAnchor;
-}
-
 void ComSliderJoint::SetConnectedAnchor(const Vec3 &anchor) {
     this->connectedAnchor = anchor;
+
     if (constraint) {
         ((PhysSliderConstraint *)constraint)->SetFrameA(anchor, connectedAxis);
     }
 }
 
-Angles ComSliderJoint::GetConnectedAngles() const {
-    return connectedAxis.ToAngles();
-}
-
-void ComSliderJoint::SetConnectedAngles(const Angles &angles) {
-    this->connectedAxis = angles.ToMat3();
-    this->connectedAxis.FixDegeneracies();
+void ComSliderJoint::SetConnectedAxis(const Mat3 &axis) {
+    this->connectedAxis = axis;
 
     if (constraint) {
         ((PhysSliderConstraint *)constraint)->SetFrameA(connectedAnchor, connectedAxis);
@@ -192,6 +174,7 @@ void ComSliderJoint::SetConnectedAngles(const Angles &angles) {
 
 void ComSliderJoint::SetEnableLimitDistances(bool enable) {
     this->enableLimitDistances = enable;
+
     if (constraint) {
         ((PhysSliderConstraint *)constraint)->EnableLinearLimits(enableLimitDistances);
     }
@@ -199,6 +182,7 @@ void ComSliderJoint::SetEnableLimitDistances(bool enable) {
 
 void ComSliderJoint::SetMinimumDistance(float minDist) {
     this->minDist = minDist;
+
     if (constraint) {
         ((PhysSliderConstraint *)constraint)->SetLinearLimits(minDist, maxDist);
     }
@@ -206,6 +190,7 @@ void ComSliderJoint::SetMinimumDistance(float minDist) {
 
 void ComSliderJoint::SetMaximumDistance(float maxDist) {
     this->maxDist = maxDist;
+
     if (constraint) {
         ((PhysSliderConstraint *)constraint)->SetLinearLimits(minDist, maxDist);
     }
@@ -213,6 +198,7 @@ void ComSliderJoint::SetMaximumDistance(float maxDist) {
 
 void ComSliderJoint::SetEnableLimitAngles(bool enable) {
     this->enableLimitAngles = enable;
+
     if (constraint) {
         ((PhysSliderConstraint *)constraint)->EnableAngularLimits(enableLimitAngles);
     }
@@ -220,6 +206,7 @@ void ComSliderJoint::SetEnableLimitAngles(bool enable) {
 
 void ComSliderJoint::SetMinimumAngle(float angle) {
     this->minAngle = angle;
+
     if (constraint) {
         ((PhysSliderConstraint *)constraint)->SetAngularLimits(DEG2RAD(minAngle), DEG2RAD(maxAngle));
     }
@@ -227,6 +214,7 @@ void ComSliderJoint::SetMinimumAngle(float angle) {
 
 void ComSliderJoint::SetMaximumAngle(float angle) {
     this->maxAngle = angle;
+
     if (constraint) {
         ((PhysSliderConstraint *)constraint)->SetAngularLimits(DEG2RAD(minAngle), DEG2RAD(maxAngle));
     }
@@ -234,6 +222,7 @@ void ComSliderJoint::SetMaximumAngle(float angle) {
 
 void ComSliderJoint::SetLinearMotorTargetVelocity(float linearMotorTargetVelocity) {
     this->linearMotorTargetVelocity = linearMotorTargetVelocity;
+
     if (constraint) {
         ((PhysSliderConstraint *)constraint)->SetLinearMotor(DEG2RAD(linearMotorTargetVelocity), maxLinearMotorImpulse / GetGameWorld()->GetPhysicsWorld()->GetFrameTimeDelta());
         ((PhysSliderConstraint *)constraint)->EnableLinearMotor(linearMotorTargetVelocity != 0.0f ? true : false);
@@ -242,6 +231,7 @@ void ComSliderJoint::SetLinearMotorTargetVelocity(float linearMotorTargetVelocit
 
 void ComSliderJoint::SetMaxLinearMotorImpulse(float maxLinearMotorImpulse) {
     this->maxLinearMotorImpulse = maxLinearMotorImpulse;
+
     if (constraint) {
         ((PhysSliderConstraint *)constraint)->SetLinearMotor(DEG2RAD(linearMotorTargetVelocity), maxLinearMotorImpulse / GetGameWorld()->GetPhysicsWorld()->GetFrameTimeDelta());
         ((PhysSliderConstraint *)constraint)->EnableLinearMotor(linearMotorTargetVelocity != 0.0f ? true : false);
@@ -250,6 +240,7 @@ void ComSliderJoint::SetMaxLinearMotorImpulse(float maxLinearMotorImpulse) {
 
 void ComSliderJoint::SetAngularMotorTargetVelocity(float angularMotorTargetVelocity) {
     this->angularMotorTargetVelocity = angularMotorTargetVelocity;
+
     if (constraint) {
         ((PhysSliderConstraint *)constraint)->SetAngularMotor(DEG2RAD(angularMotorTargetVelocity), maxAngularMotorImpulse / GetGameWorld()->GetPhysicsWorld()->GetFrameTimeDelta());
         ((PhysSliderConstraint *)constraint)->EnableAngularMotor(angularMotorTargetVelocity != 0.0f ? true : false);
@@ -258,6 +249,7 @@ void ComSliderJoint::SetAngularMotorTargetVelocity(float angularMotorTargetVeloc
 
 void ComSliderJoint::SetMaxAngularMotorImpulse(float maxAngularMotorImpulse) {
     this->maxAngularMotorImpulse = maxAngularMotorImpulse;
+
     if (constraint) {
         ((PhysSliderConstraint *)constraint)->SetAngularMotor(DEG2RAD(angularMotorTargetVelocity), maxAngularMotorImpulse / GetGameWorld()->GetPhysicsWorld()->GetFrameTimeDelta());
         ((PhysSliderConstraint *)constraint)->EnableAngularMotor(angularMotorTargetVelocity != 0.0f ? true : false);

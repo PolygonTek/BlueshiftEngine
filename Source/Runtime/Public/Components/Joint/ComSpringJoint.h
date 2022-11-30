@@ -33,17 +33,17 @@ public:
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
-    const Vec3 &            GetAnchor() const;
+    const Vec3 &            GetAnchor() const { return anchor; }
     void                    SetAnchor(const Vec3 &anchor);
 
-    Angles                  GetAngles() const;
+    Angles                  GetAngles() const { return axis.ToAngles(); }
     void                    SetAngles(const Angles &angles);
 
-    const Vec3 &            GetConnectedAnchor() const;
+    const Vec3 &            GetConnectedAnchor() const { return connectedAnchor; }
     void                    SetConnectedAnchor(const Vec3 &anchor);
 
-    Angles                  GetConnectedAngles() const;
-    void                    SetConnectedAngles(const Angles &angles);
+    const Mat3 &            GetConnectedAxis() const { return connectedAxis; }
+    void                    SetConnectedAxis(const Mat3 &axis);
 
     bool                    GetEnableLimitDistances() const { return enableLimitDistances; }
     void                    SetEnableLimitDistances(bool enable);

@@ -43,7 +43,6 @@ void ComHingeJoint::RegisterProperties() {
 }
 
 ComHingeJoint::ComHingeJoint() {
-    axis = Mat3::identity;
 }
 
 ComHingeJoint::~ComHingeJoint() {
@@ -108,6 +107,7 @@ void ComHingeJoint::CreateConstraint() {
 
     // Create a constraint with the given description.
     PhysHingeConstraint *hingeConstraint = (PhysHingeConstraint *)physicsSystem.CreateConstraint(desc);
+    constraint = hingeConstraint;
 
     // Apply limit angles.
     hingeConstraint->SetAngularLimits(DEG2RAD(minAngle), DEG2RAD(maxAngle));
@@ -118,12 +118,6 @@ void ComHingeJoint::CreateConstraint() {
         hingeConstraint->SetMotor(DEG2RAD(motorTargetVelocity), maxMotorImpulse);
         hingeConstraint->EnableMotor(true);
     }
-
-    constraint = hingeConstraint;
-}
-
-const Vec3 &ComHingeJoint::GetAnchor() const {
-    return anchor;
 }
 
 void ComHingeJoint::SetAnchor(const Vec3 &anchor) {
@@ -132,10 +126,6 @@ void ComHingeJoint::SetAnchor(const Vec3 &anchor) {
     if (constraint) {
         ((PhysHingeConstraint *)constraint)->SetFrameB(anchor, axis);
     }
-}
-
-Angles ComHingeJoint::GetAngles() const {
-    return axis.ToAngles();
 }
 
 void ComHingeJoint::SetAngles(const Angles &angles) {
@@ -147,10 +137,6 @@ void ComHingeJoint::SetAngles(const Angles &angles) {
     }
 }
 
-const Vec3 &ComHingeJoint::GetConnectedAnchor() const {
-    return connectedAnchor;
-}
-
 void ComHingeJoint::SetConnectedAnchor(const Vec3 &anchor) {
     this->connectedAnchor = anchor;
     if (constraint) {
@@ -158,13 +144,8 @@ void ComHingeJoint::SetConnectedAnchor(const Vec3 &anchor) {
     }
 }
 
-Angles ComHingeJoint::GetConnectedAngles() const {
-    return connectedAxis.ToAngles();
-}
-
-void ComHingeJoint::SetConnectedAngles(const Angles &angles) {
-    this->connectedAxis = angles.ToMat3();
-    this->connectedAxis.FixDegeneracies();
+void ComHingeJoint::SetConnectedAxis(const Mat3 &axis) {
+    this->connectedAxis = axis;
 
     if (constraint) {
         ((PhysHingeConstraint *)constraint)->SetFrameA(connectedAnchor, connectedAxis);

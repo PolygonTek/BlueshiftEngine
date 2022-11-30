@@ -43,7 +43,6 @@ void ComSpringJoint::RegisterProperties() {
 }
 
 ComSpringJoint::ComSpringJoint() {
-    axis = Mat3::identity;
 }
 
 ComSpringJoint::~ComSpringJoint() {
@@ -94,6 +93,7 @@ void ComSpringJoint::CreateConstraint() {
 
     // Create a constraint with the given description.
     PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(desc);
+    constraint = genericSpringConstraint;
 
     // Apply limit distances.
     genericSpringConstraint->SetLinearLowerLimits(Vec3(0, 0, minDist));
@@ -103,12 +103,6 @@ void ComSpringJoint::CreateConstraint() {
     // Apply spring stiffness & damping.
     genericSpringConstraint->SetLinearStiffness(Vec3(0, 0, stiffness));
     genericSpringConstraint->SetLinearDamping(Vec3(0, 0, damping));
-
-    constraint = genericSpringConstraint;
-}
-
-const Vec3 &ComSpringJoint::GetAnchor() const {
-    return anchor;
 }
 
 void ComSpringJoint::SetAnchor(const Vec3 &anchor) {
@@ -117,10 +111,6 @@ void ComSpringJoint::SetAnchor(const Vec3 &anchor) {
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetFrameB(anchor, axis);
     }
-}
-
-Angles ComSpringJoint::GetAngles() const {
-    return axis.ToAngles();
 }
 
 void ComSpringJoint::SetAngles(const Angles &angles) {
@@ -132,10 +122,6 @@ void ComSpringJoint::SetAngles(const Angles &angles) {
     }
 }
 
-const Vec3 &ComSpringJoint::GetConnectedAnchor() const {
-    return connectedAnchor;
-}
-
 void ComSpringJoint::SetConnectedAnchor(const Vec3 &anchor) {
     this->connectedAnchor = anchor;
     if (constraint) {
@@ -143,13 +129,8 @@ void ComSpringJoint::SetConnectedAnchor(const Vec3 &anchor) {
     }
 }
 
-Angles ComSpringJoint::GetConnectedAngles() const {
-    return connectedAxis.ToAngles();
-}
-
-void ComSpringJoint::SetConnectedAngles(const Angles &angles) {
-    this->connectedAxis = angles.ToMat3();
-    this->connectedAxis.FixDegeneracies();
+void ComSpringJoint::SetConnectedAxis(const Mat3 &axis) {
+    this->connectedAxis = axis;
 
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetFrameA(connectedAnchor, connectedAxis);
