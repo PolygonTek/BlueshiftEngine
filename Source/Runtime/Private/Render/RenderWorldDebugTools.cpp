@@ -769,11 +769,11 @@ void RenderWorld::DebugJoints(const RenderObject *renderObject, bool showJointsN
             DebugLine(pos, renderObject->state.worldMatrix.TransformPos(renderObject->state.joints[parentIndex].ToTranslationVec3()), 1);
         }
 
-        SetDebugColor(Color4::red, Color4::zero);
+        SetDebugColor(Color4(1.0f, 0.0f, 0.0f, 1.0f), Color4::zero);
         DebugLine(pos, pos + renderObject->state.worldMatrix.ToMat3() * mat[0] * MeterToUnit(0.04f), 1);
-        SetDebugColor(Color4::green, Color4::zero);
+        SetDebugColor(Color4(0.0f, 1.0f, 0.0f, 1.0f), Color4::zero);
         DebugLine(pos, pos + renderObject->state.worldMatrix.ToMat3() * mat[1] * MeterToUnit(0.04f), 1);
-        SetDebugColor(Color4::blue, Color4::zero);
+        SetDebugColor(Color4(0.0f, 0.0f, 1.0f, 1.0f), Color4::zero);
         DebugLine(pos, pos + renderObject->state.worldMatrix.ToMat3() * mat[2] * MeterToUnit(0.04f), 1);
 
         if (showJointsNames) {
