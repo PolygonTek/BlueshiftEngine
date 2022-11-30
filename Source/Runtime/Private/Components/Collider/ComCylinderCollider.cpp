@@ -105,7 +105,7 @@ void ComCylinderCollider::DrawGizmos(const RenderCamera *camera, bool selected, 
             float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
             float scaledHeight = transform->GetScale().z * height;
 
-            Vec3 worldCenter = transform->GetWorldMatrix().TransformPos(center);
+            Vec3 worldCenter = transform->GetMatrix().TransformPos(center);
 
             Mat3 axisRotation;
             if (direction == Direction::XAxis) {

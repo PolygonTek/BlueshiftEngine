@@ -28,16 +28,18 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+    virtual void            Awake() override;
+
 #if WITH_EDITOR
                             /// Visualize the component in editor.
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
-    const Vec3 &            GetLocalAnchor() const;
-    void                    SetLocalAnchor(const Vec3 &anchor);
+    const Vec3 &            GetAnchor() const;
+    void                    SetAnchor(const Vec3 &anchor);
 
-    Angles                  GetLocalAngles() const;
-    void                    SetLocalAngles(const Angles &angles);
+    Angles                  GetAngles() const;
+    void                    SetAngles(const Angles &angles);
 
     const Vec3 &            GetConnectedAnchor() const;
     void                    SetConnectedAnchor(const Vec3 &anchor);
@@ -62,8 +64,8 @@ public:
 protected:
     virtual void            CreateConstraint() override;
 
-    Mat3                    localAxis;
-    Vec3                    localAnchor;
+    Mat3                    axis;
+    Vec3                    anchor;
     Mat3                    connectedAxis;
     Vec3                    connectedAnchor;
     float                   minAngle;
@@ -71,6 +73,10 @@ protected:
     bool                    enableLimitAngles;
     float                   motorTargetVelocity;
     float                   maxMotorImpulse;
+
+#if WITH_EDITOR
+    Mat3                    startLocalAxisInConnectedBody;
+#endif
 };
 
 BE_NAMESPACE_END

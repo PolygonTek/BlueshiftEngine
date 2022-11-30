@@ -81,7 +81,7 @@ void ComRenderable::Init() {
     renderObjectDef.wireframeColor.Set(1, 1, 1, 1);
 
     ComTransform *transform = GetEntity()->GetTransform();
-    renderObjectDef.worldMatrix = transform->GetWorldMatrix();
+    renderObjectDef.worldMatrix = transform->GetMatrix();
 
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComRenderable::TransformUpdated, SignalObject::ConnectionType::Unique);
 
@@ -192,7 +192,7 @@ void ComRenderable::StaticMaskChanged(const Entity *entity) {
 }
 
 void ComRenderable::TransformUpdated(const ComTransform *transform) {
-    renderObjectDef.worldMatrix = transform->GetWorldMatrix();
+    renderObjectDef.worldMatrix = transform->GetMatrix();
 
     UpdateVisuals();
 }

@@ -23,10 +23,10 @@ void LuaVM::RegisterWheelJointComponent(LuaCpp::Module &module) {
 
     _ComWheelJoint.SetClass<ComWheelJoint>(module["ComJoint"]);
     _ComWheelJoint.AddClassMembers<ComWheelJoint>(
-        "local_anchor", &ComWheelJoint::GetLocalAnchor,
-        "set_local_anchor", &ComWheelJoint::SetLocalAnchor,
-        "local_angles", &ComWheelJoint::GetLocalAngles,
-        "set_local_angles", &ComWheelJoint::SetLocalAngles,
+        "anchor", &ComWheelJoint::GetAnchor,
+        "set_anchor", &ComWheelJoint::SetAnchor,
+        "angles", &ComWheelJoint::GetAngles,
+        "set_angles", &ComWheelJoint::SetAngles,
         "connected_anchor", &ComWheelJoint::GetConnectedAnchor,
         "set_connected_anchor", &ComWheelJoint::SetConnectedAnchor,
         "connected_angles", &ComWheelJoint::GetConnectedAngles,

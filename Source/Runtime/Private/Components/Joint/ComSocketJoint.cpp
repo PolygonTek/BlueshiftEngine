@@ -26,7 +26,7 @@ BEGIN_EVENTS(ComSocketJoint)
 END_EVENTS
 
 void ComSocketJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, 
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, 
         "Joint position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("impulseClamp", "Impulse Clamp", float, GetImpulseClamp, SetImpulseClamp, 0, 
         "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
@@ -51,7 +51,7 @@ void ComSocketJoint::CreateConstraint() {
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
-    Vec3 scaledLocalAnchor = transform->GetScale() * localAnchor;
+    Vec3 scaledAnchor = transform->GetScale() * anchor;
 
     PhysConstraintDesc desc;
     desc.type = PhysConstraint::Type::Point2Point;
@@ -59,11 +59,11 @@ void ComSocketJoint::CreateConstraint() {
     desc.breakImpulse = breakImpulse;
 
     desc.bodyB = rigidBody->GetBody();
-    desc.anchorInB = scaledLocalAnchor;
+    desc.anchorInB = scaledAnchor;
 
     const ComRigidBody *connectedBody = GetConnectedBody();
     if (connectedBody) {
-        Vec3 worldAnchor = desc.bodyB->GetOrigin() + desc.bodyB->GetAxis() * scaledLocalAnchor;
+        Vec3 worldAnchor = desc.bodyB->GetOrigin() + desc.bodyB->GetAxis() * scaledAnchor;
 
         Mat3 connectedBodyWorldAxis = connectedBody->GetBody()->GetAxis();
 
@@ -84,12 +84,12 @@ void ComSocketJoint::CreateConstraint() {
     constraint = p2pConstraint;
 }
 
-const Vec3 &ComSocketJoint::GetLocalAnchor() const {
-    return localAnchor;
+const Vec3 &ComSocketJoint::GetAnchor() const {
+    return anchor;
 }
 
-void ComSocketJoint::SetLocalAnchor(const Vec3 &anchor) {
-    this->localAnchor = anchor;
+void ComSocketJoint::SetAnchor(const Vec3 &anchor) {
+    this->anchor = anchor;
     if (constraint) {
         ((PhysP2PConstraint *)constraint)->SetAnchorB(anchor);
     }
@@ -123,9 +123,9 @@ void ComSocketJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool 
         const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
-            Vec3 worldAnchor = transform->GetWorldMatrix().TransformPos(localAnchor);
+            Vec3 worldAnchor = transform->GetMatrix().TransformPos(anchor);
 
-            float viewScale = camera->CalcViewScale(worldAnchor);
+            float viewScale = camera->CalcClampedViewScale(worldAnchor);
 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 

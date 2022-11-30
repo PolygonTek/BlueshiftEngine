@@ -105,7 +105,7 @@ void ComCapsuleCollider::DrawGizmos(const RenderCamera *camera, bool selected, b
             float scaledRadius = (transform->GetScale() * radius).MaxComponent();
             float scaledHeight = transform->GetScale().z * Max(height, 0.0f);
 
-            Vec3 worldCenter = transform->GetWorldMatrix().TransformPos(center);
+            Vec3 worldCenter = transform->GetMatrix().TransformPos(center);
 
             Mat3 axisRotation;
             if (direction == Direction::XAxis) {

@@ -35,16 +35,16 @@ public:
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
-    const Vec3 &            GetLocalAnchor() const;
-    void                    SetLocalAnchor(const Vec3 &anchor);
+    const Vec3 &            GetAnchor() const { return anchor; }
+    void                    SetAnchor(const Vec3 &anchor);
 
-    Angles                  GetLocalAngles() const;
-    void                    SetLocalAngles(const Angles &angles);
+    Angles                  GetAngles() const { return axis.ToAngles(); }
+    void                    SetAngles(const Angles &angles);
 
-    const Vec3 &            GetConnectedAnchor() const;
+    const Vec3 &            GetConnectedAnchor() const { return connectedAnchor; }
     void                    SetConnectedAnchor(const Vec3 &anchor);
 
-    Angles                  GetConnectedAngles() const;
+    Angles                  GetConnectedAngles() const { return connectedAxis.ToAngles(); }
     void                    SetConnectedAngles(const Angles &angles);
 
     float                   GetSwing1LowerLimit() const { return lowerLimit.x; }
@@ -77,15 +77,18 @@ public:
 protected:
     virtual void            CreateConstraint() override;
 
-    Mat3                    localAxis;
-    Vec3                    localAnchor;
+    Mat3                    axis;
+    Vec3                    anchor;
     Mat3                    connectedAxis;
     Vec3                    connectedAnchor;
-    Mat3                    startLocalAxis;
     Vec3                    lowerLimit;
     Vec3                    upperLimit;
     Vec3                    stiffness;
     Vec3                    damping;
+
+#if WITH_EDITOR
+    Mat3                    startLocalAxisInConnectedBody;
+#endif
 };
 
 BE_NAMESPACE_END

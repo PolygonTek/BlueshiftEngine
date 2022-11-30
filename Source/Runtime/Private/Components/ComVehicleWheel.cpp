@@ -202,11 +202,11 @@ void ComVehicleWheel::DrawGizmos(const RenderCamera *camera, bool selected, bool
     const ComTransform *transform = GetEntity()->GetTransform();
 
     if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
-        Vec3 worldOrigin = transform->GetWorldMatrix().TransformPos(localOrigin);
+        Vec3 worldOrigin = transform->GetMatrix().TransformPos(localOrigin);
         Mat3 worldAxis = transform->GetAxis() * localAxis;
 
         // Draw wheel circle
-        renderWorld->SetDebugColor(Color4::green, Color4::zero);
+        renderWorld->SetDebugColor(Color4::lime, Color4::zero);
         renderWorld->DebugCircle(worldOrigin, worldAxis[1], radius, 1, true, true);
 
         if (selectedByParent) {
@@ -215,7 +215,7 @@ void ComVehicleWheel::DrawGizmos(const RenderCamera *camera, bool selected, bool
             renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * radius);
 
             // Draw axle axis
-            renderWorld->SetDebugColor(Color4::green, Color4::zero);
+            renderWorld->SetDebugColor(Color4::lime, Color4::zero);
             renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[1] * radius);
 
             // Draw suspension direction

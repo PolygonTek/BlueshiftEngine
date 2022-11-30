@@ -99,7 +99,7 @@ public:
                             /// Returns rotation angles in world space.
     Angles                  GetAngles() const { return GetAxis().ToAngles(); }
                             /// Returns world space transform matrix.
-    Mat3x4                  GetWorldMatrix() const;
+    Mat3x4                  GetMatrix() const;
                             /// Returns world space transform matrix without scaling.
     Mat3x4                  GetMatrixNoScale() const;
 
@@ -238,28 +238,28 @@ BE_INLINE Mat3x4 ComTransform::GetLocalMatrixNoScale() const {
 }
 
 BE_INLINE Vec3 ComTransform::GetOrigin() const {
-    return GetWorldMatrix().ToTranslationVec3();
+    return GetMatrix().ToTranslationVec3();
 }
 
 BE_INLINE Vec3 ComTransform::GetScale() const {
-    return GetWorldMatrix().ToScaleVec3();
+    return GetMatrix().ToScaleVec3();
 }
 
 BE_INLINE Quat ComTransform::GetRotation() const {
-    Mat3 rotation = GetWorldMatrix().ToMat3();
+    Mat3 rotation = GetMatrix().ToMat3();
     rotation.OrthoNormalizeSelf();
     return rotation.ToQuat();
 }
 
 BE_INLINE Mat3 ComTransform::GetAxis() const {
-    Mat3 axis = GetWorldMatrix().ToMat3();
+    Mat3 axis = GetMatrix().ToMat3();
     axis.OrthoNormalizeSelf();
     return axis;
 }
 
 BE_INLINE void ComTransform::SetOrigin(const Vec3 &origin) {
     const ComTransform *parent = GetParent();
-    SetLocalOrigin(parent ? parent->GetWorldMatrix().InverseOrthogonal().TransformPos(origin) : origin);
+    SetLocalOrigin(parent ? parent->GetMatrix().InverseOrthogonal().TransformPos(origin) : origin);
 }
 
 BE_INLINE void ComTransform::SetScale(const Vec3 &scale) {
@@ -275,7 +275,7 @@ BE_INLINE void ComTransform::SetRotation(const Quat &rotation) {
 BE_INLINE void ComTransform::SetOriginRotation(const Vec3 &origin, const Quat &rotation) {
     const ComTransform *parent = GetParent();
     if (parent) {
-        SetLocalOriginRotation(parent->GetWorldMatrix().InverseOrthogonal().TransformPos(origin), parent->GetRotation().Inverse() * rotation);
+        SetLocalOriginRotation(parent->GetMatrix().InverseOrthogonal().TransformPos(origin), parent->GetRotation().Inverse() * rotation);
     } else {
         SetLocalOriginRotation(origin, rotation);
     }
@@ -284,7 +284,7 @@ BE_INLINE void ComTransform::SetOriginRotation(const Vec3 &origin, const Quat &r
 BE_INLINE void ComTransform::SetOriginRotationScale(const Vec3 &origin, const Quat &rotation, const Vec3 &scale) {
     const ComTransform *parent = GetParent();
     if (parent) {
-        SetLocalOriginRotationScale(parent->GetWorldMatrix().InverseOrthogonal().TransformPos(origin), parent->GetRotation().Inverse() * rotation, scale / parent->GetScale());
+        SetLocalOriginRotationScale(parent->GetMatrix().InverseOrthogonal().TransformPos(origin), parent->GetRotation().Inverse() * rotation, scale / parent->GetScale());
     } else {
         SetLocalOriginRotationScale(origin, rotation, scale);
     }
@@ -298,7 +298,7 @@ BE_INLINE void ComTransform::SetAxis(const Mat3 &axis) {
 BE_INLINE void ComTransform::SetOriginAxis(const Vec3 &origin, const Mat3 &axis) {
     const ComTransform *parent = GetParent();
     if (parent) {
-        SetLocalOriginAxis(parent->GetWorldMatrix().InverseOrthogonal().TransformPos(origin), parent->GetAxis().Transpose() * axis);
+        SetLocalOriginAxis(parent->GetMatrix().InverseOrthogonal().TransformPos(origin), parent->GetAxis().Transpose() * axis);
     } else {
         SetLocalOriginAxis(origin, axis);
     }
@@ -307,7 +307,7 @@ BE_INLINE void ComTransform::SetOriginAxis(const Vec3 &origin, const Mat3 &axis)
 BE_INLINE void ComTransform::SetOriginAxisScale(const Vec3 &origin, const Mat3 &axis, const Vec3 &scale) {
     const ComTransform *parent = GetParent();
     if (parent) {
-        SetLocalOriginAxisScale(parent->GetWorldMatrix().InverseOrthogonal().TransformPos(origin), parent->GetAxis().Transpose() * axis, scale / parent->GetScale());
+        SetLocalOriginAxisScale(parent->GetMatrix().InverseOrthogonal().TransformPos(origin), parent->GetAxis().Transpose() * axis, scale / parent->GetScale());
     } else {
         SetLocalOriginAxisScale(origin, axis, scale);
     }

@@ -136,7 +136,7 @@ void MeshCombiner::MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMesh
 
     StaticBatch *staticBatch = StaticBatch::AllocStaticBatch(staticBatchRoot);
 
-    ALIGN_AS32 Mat3x4 worldToLocalMatrix = staticBatchRoot->GetTransform()->GetWorldMatrix().InverseOrthogonal();
+    ALIGN_AS32 Mat3x4 worldToLocalMatrix = staticBatchRoot->GetTransform()->GetMatrix().InverseOrthogonal();
 
     Array<BatchSubMesh> batchSubMeshes;
 
@@ -146,7 +146,7 @@ void MeshCombiner::MakeCombinedMesh(Entity *staticBatchRoot, Array<ComStaticMesh
 
         BatchSubMesh batchSubMesh;
         batchSubMesh.subMesh = batchMesh->referenceMesh->GetSurface(0)->subMesh;
-        batchSubMesh.localTransform = worldToLocalMatrix * batchMesh->GetEntity()->GetTransform()->GetWorldMatrix();
+        batchSubMesh.localTransform = worldToLocalMatrix * batchMesh->GetEntity()->GetTransform()->GetMatrix();
 
         batchSubMeshes.Append(batchSubMesh);
     }

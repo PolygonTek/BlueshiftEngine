@@ -82,7 +82,7 @@ void ComBoxCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool 
         if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(500.0f * 500.0f)) {
             Vec3 scaledExtents = transform->GetScale() * extents;
 
-            OBB obb(transform->GetWorldMatrix().TransformPos(center), scaledExtents + CmToUnit(0.15f), transform->GetAxis());
+            OBB obb(transform->GetMatrix().TransformPos(center), scaledExtents + CmToUnit(0.15f), transform->GetAxis());
 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
             if (selected) {

@@ -33,8 +33,8 @@ public:
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
-    const Vec3 &            GetLocalAnchor() const;
-    void                    SetLocalAnchor(const Vec3 &anchor);
+    const Vec3 &            GetAnchor() const;
+    void                    SetAnchor(const Vec3 &anchor);
 
     const Vec3 &            GetConnectedAnchor() const;
     void                    SetConnectedAnchor(const Vec3 &anchor);
@@ -45,7 +45,7 @@ public:
 protected:
     virtual void            CreateConstraint() override;
 
-    Vec3                    localAnchor;
+    Vec3                    anchor;
     Vec3                    connectedAnchor;
     float                   impulseClamp;
 };

@@ -23,8 +23,8 @@ void LuaVM::RegisterSocketJointComponent(LuaCpp::Module &module) {
 
     _ComSocketJoint.SetClass<ComSocketJoint>(module["ComJoint"]);
     _ComSocketJoint.AddClassMembers<ComSocketJoint>(
-        "local_anchor", &ComSocketJoint::GetLocalAnchor,
-        "set_local_anchor", &ComSocketJoint::SetLocalAnchor,
+        "anchor", &ComSocketJoint::GetAnchor,
+        "set_anchor", &ComSocketJoint::SetAnchor,
         "connected_anchor", &ComSocketJoint::GetConnectedAnchor,
         "set_connected_anchor", &ComSocketJoint::SetConnectedAnchor,
         "impulse_clamp", &ComSocketJoint::GetImpulseClamp,

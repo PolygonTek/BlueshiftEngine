@@ -123,6 +123,7 @@ public:
     bool                    CalcDepthBoundsFromLight(const RenderLight *light, const Mat4 &mvp, float *depthMin, float *depthMax) const;
 
     float                   CalcViewScale(const Vec3 &position) const;
+    float                   CalcClampedViewScale(const Vec3 &position, float viewScaleMin = 0.001f, float viewScaleMax = 0.01f) const { return Clamp(CalcViewScale(position), viewScaleMin, viewScaleMax); }
 
     const OBB               GetBox() const { return box; }
 

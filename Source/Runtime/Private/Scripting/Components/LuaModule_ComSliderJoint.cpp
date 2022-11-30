@@ -23,10 +23,10 @@ void LuaVM::RegisterSliderJointComponent(LuaCpp::Module &module) {
 
     _ComSliderJoint.SetClass<ComSliderJoint>(module["ComJoint"]);
     _ComSliderJoint.AddClassMembers<ComSliderJoint>(
-        "local_anchor", &ComSliderJoint::GetLocalAnchor,
-        "set_local_anchor", &ComSliderJoint::SetLocalAnchor,
-        "local_angles", &ComSliderJoint::GetLocalAngles,
-        "set_local_angles", &ComSliderJoint::SetLocalAngles,
+        "anchor", &ComSliderJoint::GetAnchor,
+        "set_anchor", &ComSliderJoint::SetAnchor,
+        "angles", &ComSliderJoint::GetAngles,
+        "set_angles", &ComSliderJoint::SetAngles,
         "connected_anchor", &ComSliderJoint::GetConnectedAnchor,
         "set_connected_anchor", &ComSliderJoint::SetConnectedAnchor,
         "connected_angles", &ComSliderJoint::GetConnectedAngles,

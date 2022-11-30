@@ -226,7 +226,7 @@ Mat3x4 ComTransform::GetMatrixNoScale() const {
     return worldMatrixNoScale;
 }
 
-Mat3x4 ComTransform::GetWorldMatrix() const {
+Mat3x4 ComTransform::GetMatrix() const {
     if (worldMatrixInvalidated) {
         UpdateWorldMatrix();
     }
@@ -237,7 +237,7 @@ Mat3x4 ComTransform::GetWorldMatrix() const {
         if (!jointRootParent) {
             return worldJointMatrix;
         }
-        return jointRootParent->GetWorldMatrix() * worldJointMatrix;
+        return jointRootParent->GetMatrix() * worldJointMatrix;
     }
     return worldMatrix;
 }
@@ -334,7 +334,7 @@ void ComTransform::UpdateWorldMatrix() const {
         const ComTransform *parent = GetParent();
 
         if (parent) {
-            worldMatrix = parent->GetWorldMatrix() * localMatrix;
+            worldMatrix = parent->GetMatrix() * localMatrix;
         } else {
             worldMatrix = localMatrix;
         }
@@ -510,8 +510,8 @@ void ComTransform::DrawGizmos(const RenderCamera *camera, bool selected, bool se
     if (selectedByParent) {
         const ComTransform *parent = GetParent();
         if (parent && parent->jointHierarchy) {
-            Mat3x4 worldMatrix = GetWorldMatrix();
-            Mat3x4 parentWorldMatrix = parent->GetWorldMatrix();
+            Mat3x4 worldMatrix = GetMatrix();
+            Mat3x4 parentWorldMatrix = parent->GetMatrix();
 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
             renderWorld->SetDebugColor(selected ? Color4::purple : Color4::mediumPurple, Color4::zero);

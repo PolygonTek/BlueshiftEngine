@@ -628,7 +628,7 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
     }
 
     if (includingChildren) {
-        ALIGN_AS32 Mat3x4 rootMatrixInverse = GetTransform()->GetWorldMatrix().InverseOrthogonal();
+        ALIGN_AS32 Mat3x4 rootMatrixInverse = GetTransform()->GetMatrix().InverseOrthogonal();
 
         Array<Entity *> children;
         GetChildrenRecursive(children);
@@ -638,7 +638,7 @@ const AABB Entity::GetLocalAABB(bool includingChildren) const {
 
             AABB childLocalAabb = child->GetLocalAABB();
             if (!childLocalAabb.IsCleared()) {
-                ALIGN_AS32 Mat3x4 localMatrix = rootMatrixInverse * child->GetTransform()->GetWorldMatrix();
+                ALIGN_AS32 Mat3x4 localMatrix = rootMatrixInverse * child->GetTransform()->GetMatrix();
 
                 childLocalAabb.SetFromTransformedAABB(childLocalAabb, localMatrix);
 
@@ -659,7 +659,7 @@ const AABB Entity::GetWorldAABBFast(bool includingChildren) const {
     }
 
     AABB worldAABB;
-    worldAABB.SetFromTransformedAABBFast(localAABB, transform->GetWorldMatrix());
+    worldAABB.SetFromTransformedAABBFast(localAABB, transform->GetMatrix());
     return worldAABB;
 }
 
@@ -673,7 +673,7 @@ const AABB Entity::GetAABBInSpace(const Vec3 &origin, const Mat3 &axis, bool inc
         Vec3 points[8];
         localAABB.ToPoints(points);
 
-        GetTransform()->GetWorldMatrix().BatchTransformPos(points, COUNT_OF(points));
+        GetTransform()->GetMatrix().BatchTransformPos(points, COUNT_OF(points));
 
         for (int pointIndex = 0; pointIndex < COUNT_OF(points); pointIndex++) {
             Vec3 spacePoint = axis.TransposedMulVec(points[pointIndex] - origin);

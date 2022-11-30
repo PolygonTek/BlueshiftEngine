@@ -48,7 +48,7 @@ void LuaVM::RegisterTransformComponent(LuaCpp::Module &module) {
         "rotation", &ComTransform::GetRotation,
         "axis", &ComTransform::GetAxis,
         "angles", &ComTransform::GetAngles,
-        "world_matrix", &ComTransform::GetWorldMatrix,
+        "matrix", &ComTransform::GetMatrix,
         "set_origin", &ComTransform::SetOrigin,
         "set_scale", &ComTransform::SetScale,
         "set_rotation", &ComTransform::SetRotation,

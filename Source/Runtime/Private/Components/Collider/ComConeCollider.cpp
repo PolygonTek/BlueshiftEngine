@@ -105,7 +105,7 @@ void ComConeCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool
             float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
             float scaledHeight = transform->GetScale().z * height;
 
-            Vec3 worldOrigin = transform->GetWorldMatrix().TransformPos(center) - transform->GetAxis()[2] * scaledHeight * 0.5f;
+            Vec3 worldOrigin = transform->GetMatrix().TransformPos(center) - transform->GetAxis()[2] * scaledHeight * 0.5f;
 
             Mat3 axisRotation;
             if (direction == Direction::XAxis) {

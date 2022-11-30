@@ -26,9 +26,9 @@ BEGIN_EVENTS(ComHingeJoint)
 END_EVENTS
 
 void ComHingeJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, 
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, 
         "Joint position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero, 
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Angles::zero, 
         "Joint angles in local space", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("useLimits", "Limits/Use Limits", bool, GetEnableLimitAngles, SetEnableLimitAngles, false, 
         "Activate joint limits", PropertyInfo::Flag::Editor);
@@ -43,7 +43,7 @@ void ComHingeJoint::RegisterProperties() {
 }
 
 ComHingeJoint::ComHingeJoint() {
-    localAxis = Mat3::identity;
+    axis = Mat3::identity;
 }
 
 ComHingeJoint::~ComHingeJoint() {
@@ -56,12 +56,26 @@ void ComHingeJoint::Init() {
     SetInitialized(true);
 }
 
+void ComHingeJoint::Awake() {
+    ComJoint::Awake();
+
+#if WITH_EDITOR
+    const ComTransform *transform = GetEntity()->GetTransform();
+    startLocalAxisInConnectedBody = transform->GetAxis() * axis;
+
+    const ComRigidBody *connectedBody = GetConnectedBody();
+    if (connectedBody) {
+        startLocalAxisInConnectedBody = connectedBody->GetEntity()->GetTransform()->GetAxis().TransposedMul(startLocalAxisInConnectedBody);
+    }
+#endif
+}
+
 void ComHingeJoint::CreateConstraint() {
     const ComTransform *transform = GetEntity()->GetTransform();
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
-    Vec3 scaledLocalAnchor = transform->GetScale() * localAnchor;
+    Vec3 scaledAnchor = transform->GetScale() * anchor;
 
     PhysConstraintDesc desc;
     desc.type = PhysConstraint::Type::Hinge;
@@ -69,13 +83,13 @@ void ComHingeJoint::CreateConstraint() {
     desc.breakImpulse = breakImpulse;
 
     desc.bodyB = rigidBody->GetBody();
-    desc.anchorInB = scaledLocalAnchor;
-    desc.axisInB = localAxis;
+    desc.anchorInB = scaledAnchor;
+    desc.axisInB = axis;
 
     const ComRigidBody *connectedBody = GetConnectedBody();
     if (connectedBody) {
-        Vec3 worldAnchor = desc.bodyB->GetOrigin() + desc.bodyB->GetAxis() * scaledLocalAnchor;
-        Mat3 worldAxis = desc.bodyB->GetAxis() * localAxis;
+        Vec3 worldAnchor = desc.bodyB->GetOrigin() + desc.bodyB->GetAxis() * scaledAnchor;
+        Mat3 worldAxis = desc.bodyB->GetAxis() * axis;
 
         Mat3 connectedBodyWorldAxis = connectedBody->GetBody()->GetAxis();
 
@@ -108,28 +122,28 @@ void ComHingeJoint::CreateConstraint() {
     constraint = hingeConstraint;
 }
 
-const Vec3 &ComHingeJoint::GetLocalAnchor() const {
-    return localAnchor;
+const Vec3 &ComHingeJoint::GetAnchor() const {
+    return anchor;
 }
 
-void ComHingeJoint::SetLocalAnchor(const Vec3 &anchor) {
-    this->localAnchor = anchor;
+void ComHingeJoint::SetAnchor(const Vec3 &anchor) {
+    this->anchor = anchor;
 
     if (constraint) {
-        ((PhysHingeConstraint *)constraint)->SetFrameB(anchor, localAxis);
+        ((PhysHingeConstraint *)constraint)->SetFrameB(anchor, axis);
     }
 }
 
-Angles ComHingeJoint::GetLocalAngles() const {
-    return localAxis.ToAngles();
+Angles ComHingeJoint::GetAngles() const {
+    return axis.ToAngles();
 }
 
-void ComHingeJoint::SetLocalAngles(const Angles &angles) {
-    this->localAxis = angles.ToMat3();
-    this->localAxis.FixDegeneracies();
+void ComHingeJoint::SetAngles(const Angles &angles) {
+    this->axis = angles.ToMat3();
+    this->axis.FixDegeneracies();
 
     if (constraint) {
-        ((PhysHingeConstraint *)constraint)->SetFrameB(localAnchor, localAxis);
+        ((PhysHingeConstraint *)constraint)->SetFrameB(anchor, axis);
     }
 }
 
@@ -200,32 +214,35 @@ void ComHingeJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool s
         const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
-            Vec3 worldAnchor = transform->GetWorldMatrix().TransformPos(localAnchor);
-            Mat3 worldAxis = transform->GetAxis() * localAxis;
+            Vec3 worldAnchor = transform->GetMatrix().TransformPos(anchor);
+            Mat3 worldAxis = transform->GetAxis() * axis;
 
-            Mat3 constraintAxis = Mat3::identity;
-            const ComRigidBody *connectedBody = GetConnectedBody();
-            if (connectedBody) {
-                constraintAxis = connectedBody->GetEntity()->GetTransform()->GetAxis();
-            }
-
-            float viewScale = camera->CalcViewScale(worldAnchor);
+            float viewScale = camera->CalcClampedViewScale(worldAnchor);
 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
             if (enableLimitAngles) {
-                renderWorld->SetDebugColor(Color4::yellow, Color4::yellow * 0.5f);
-                renderWorld->DebugArc(worldAnchor, constraintAxis[0], constraintAxis[1], MeterToUnit(5) * viewScale, minAngle, maxAngle, true);
+                Mat3 constraintWorldAxis;
+                if (constraint) {
+                    const ComRigidBody *connectedBody = GetConnectedBody();
+                    if (connectedBody) {
+                        constraintWorldAxis = connectedBody->GetEntity()->GetTransform()->GetAxis() * startLocalAxisInConnectedBody;
+                    } else {
+                        constraintWorldAxis = startLocalAxisInConnectedBody;
+                    }
+                } else {
+                    constraintWorldAxis = transform->GetAxis() * axis;
+                }
 
-                renderWorld->SetDebugColor(Color4::red, Color4::zero);
-                renderWorld->DebugLine(worldAnchor, worldAnchor + worldAxis[0] * MeterToUnit(5) * viewScale);
+                renderWorld->SetDebugColor(Color4::blue * 0.5f, Color4::blue * 0.5f);
+                renderWorld->DebugArc(worldAnchor, worldAxis[0], -worldAxis[1], MeterToUnit(12) * viewScale, minAngle, maxAngle, true);
+
+                renderWorld->SetDebugColor(Color4::blue, Color4::zero);
+                renderWorld->DebugLine(worldAnchor, worldAnchor + constraintWorldAxis[0] * MeterToUnit(20) * viewScale);
             }
 
             renderWorld->SetDebugColor(Color4::red, Color4::red);
-            renderWorld->DebugArrow(
-                worldAnchor - worldAxis[2] * MeterToUnit(6) * viewScale,
-                worldAnchor + worldAxis[2] * MeterToUnit(6) * viewScale,
-                MeterToUnit(6) * viewScale, MeterToUnit(1.5) * viewScale);
+            renderWorld->DebugArrow(worldAnchor, worldAnchor + worldAxis[2] * MeterToUnit(10) * viewScale, MeterToUnit(6) * viewScale, MeterToUnit(1.5) * viewScale);
         }
     }
 }

@@ -26,9 +26,9 @@ BEGIN_EVENTS(ComWheelJoint)
 END_EVENTS
 
 void ComWheelJoint::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetLocalAnchor, SetLocalAnchor, Vec3::zero, 
+    REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, 
         "Joint position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero,
+    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Angles::zero,
         "Joint angles in local space", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("useSusLimits", "Suspension/Use Limits", bool, GetEnableSuspensionLimit, SetEnableSuspensionLimit, false, 
         "", PropertyInfo::Flag::Editor);
@@ -70,7 +70,7 @@ void ComWheelJoint::CreateConstraint() {
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
-    Vec3 scaledLocalAnchor = transform->GetScale() * localAnchor;
+    Vec3 scaledAnchor = transform->GetScale() * anchor;
 
     PhysConstraintDesc desc;
     desc.type = PhysConstraint::Type::GenericSpring;
@@ -78,13 +78,13 @@ void ComWheelJoint::CreateConstraint() {
     desc.breakImpulse = breakImpulse;
 
     desc.bodyB = rigidBody->GetBody();
-    desc.anchorInB = scaledLocalAnchor;
-    desc.axisInB = localAxis;
+    desc.anchorInB = scaledAnchor;
+    desc.axisInB = axis;
 
     const ComRigidBody *connectedBody = GetConnectedBody();
     if (connectedBody) {
-        Vec3 worldAnchor = desc.bodyB->GetOrigin() + desc.bodyB->GetAxis() * scaledLocalAnchor;
-        Mat3 worldAxis = desc.bodyB->GetAxis() * localAxis;
+        Vec3 worldAnchor = desc.bodyB->GetOrigin() + desc.bodyB->GetAxis() * scaledAnchor;
+        Mat3 worldAxis = desc.bodyB->GetAxis() * axis;
 
         Mat3 connectedBodyWorldAxis = connectedBody->GetBody()->GetAxis();
 
@@ -127,27 +127,27 @@ void ComWheelJoint::CreateConstraint() {
     constraint = genericSpringConstraint;
 }
 
-const Vec3 &ComWheelJoint::GetLocalAnchor() const {
-    return localAnchor;
+const Vec3 &ComWheelJoint::GetAnchor() const {
+    return anchor;
 }
 
-void ComWheelJoint::SetLocalAnchor(const Vec3 &anchor) {
-    this->localAnchor = anchor;
+void ComWheelJoint::SetAnchor(const Vec3 &anchor) {
+    this->anchor = anchor;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(anchor, localAxis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(anchor, axis);
     }
 }
 
-Angles ComWheelJoint::GetLocalAngles() const {
-    return localAxis.ToAngles();
+Angles ComWheelJoint::GetAngles() const {
+    return axis.ToAngles();
 }
 
-void ComWheelJoint::SetLocalAngles(const Angles &angles) {
-    this->localAxis = angles.ToMat3();
-    this->localAxis.FixDegeneracies();
+void ComWheelJoint::SetAngles(const Angles &angles) {
+    this->axis = angles.ToMat3();
+    this->axis.FixDegeneracies();
 
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(localAnchor, localAxis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(anchor, axis);
     }
 }
 
@@ -253,10 +253,10 @@ void ComWheelJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool s
         const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
-            Vec3 worldAnchor = transform->GetWorldMatrix().TransformPos(localAnchor);
-            Mat3 worldAxis = transform->GetAxis() * localAxis;
+            Vec3 worldAnchor = transform->GetMatrix().TransformPos(anchor);
+            Mat3 worldAxis = transform->GetAxis() * axis;
 
-            float viewScale = camera->CalcViewScale(worldAnchor);
+            float viewScale = camera->CalcClampedViewScale(worldAnchor);
 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
@@ -272,7 +272,7 @@ void ComWheelJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool s
                 worldAnchor + worldAxis[0] * MeterToUnit(10) * viewScale);
 
             // Draw forward direction
-            renderWorld->SetDebugColor(Color4::green, Color4::zero);
+            renderWorld->SetDebugColor(Color4::lime, Color4::zero);
             renderWorld->DebugLine(worldAnchor, worldAnchor - worldAxis[1] * MeterToUnit(10) * viewScale);
 
             // Draw suspension direction

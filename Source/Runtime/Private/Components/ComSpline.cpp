@@ -77,7 +77,7 @@ Vec3 ComSpline::GetCurrentOrigin(float time) const {
         Clamp(time, 0.0f, 1.0f);
     }
     const ComTransform *transform = GetEntity()->GetTransform();
-    return transform->GetWorldMatrix().TransformPos(originCurve->GetCurrentValue(time));
+    return transform->GetMatrix().TransformPos(originCurve->GetCurrentValue(time));
 }
 
 Mat3 ComSpline::GetCurrentAxis(float time) const {
@@ -87,7 +87,7 @@ Mat3 ComSpline::GetCurrentAxis(float time) const {
         Clamp(time, 0.0f, 1.0f);
     }
     const ComTransform *transform = GetEntity()->GetTransform();
-    return transform->GetWorldMatrix().ToMat3() * anglesCurve->GetCurrentValue(time).ToMat3();
+    return transform->GetMatrix().ToMat3() * anglesCurve->GetCurrentValue(time).ToMat3();
 }
 
 int ComSpline::GetPointCount() const {
@@ -235,18 +235,18 @@ void ComSpline::DrawGizmos(const RenderCamera *camera, bool selected, bool selec
             break;
         }
 
-        Vec3 p0 = transform->GetWorldMatrix().TransformPos(originCurve->GetCurrentValue(t));
-        Vec3 p1 = transform->GetWorldMatrix().TransformPos(originCurve->GetCurrentValue(t + dt));
+        Vec3 p0 = transform->GetMatrix().TransformPos(originCurve->GetCurrentValue(t));
+        Vec3 p1 = transform->GetMatrix().TransformPos(originCurve->GetCurrentValue(t + dt));
 
         renderWorld->SetDebugColor(Color4::white, Color4::orange);
         renderWorld->DebugLine(p0, p1, MeterToUnit(0.02), true);
 
-        Mat3 axis = transform->GetWorldMatrix().ToMat3() * anglesCurve->GetCurrentValue(t).ToMat3();
+        Mat3 axis = transform->GetMatrix().ToMat3() * anglesCurve->GetCurrentValue(t).ToMat3();
 
         renderWorld->SetDebugColor(Color4::red, Color4::orange);
         renderWorld->DebugLine(p0, p0 + axis[0] * MeterToUnit(0.3), 2, true);
 
-        renderWorld->SetDebugColor(Color4::green, Color4::orange);
+        renderWorld->SetDebugColor(Color4::lime, Color4::orange);
         renderWorld->DebugLine(p0, p0 + axis[1] * MeterToUnit(0.3), 2, true);
         
         renderWorld->SetDebugColor(Color4::blue, Color4::orange);

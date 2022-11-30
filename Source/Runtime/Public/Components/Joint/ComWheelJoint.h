@@ -33,11 +33,11 @@ public:
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
 #endif
 
-    const Vec3 &            GetLocalAnchor() const;
-    void                    SetLocalAnchor(const Vec3 &anchor);
+    const Vec3 &            GetAnchor() const;
+    void                    SetAnchor(const Vec3 &anchor);
 
-    Angles                  GetLocalAngles() const;
-    void                    SetLocalAngles(const Angles &angles);
+    Angles                  GetAngles() const;
+    void                    SetAngles(const Angles &angles);
 
     const Vec3 &            GetConnectedAnchor() const;
     void                    SetConnectedAnchor(const Vec3 &anchor);
@@ -76,8 +76,8 @@ public:
 protected:
     virtual void            CreateConstraint() override;
 
-    Mat3                    localAxis = Mat3::identity;
-    Vec3                    localAnchor;
+    Mat3                    axis = Mat3::identity;
+    Vec3                    anchor;
     Mat3                    connectedAxis;
     Vec3                    connectedAnchor;
     bool                    enableSusLimit;
