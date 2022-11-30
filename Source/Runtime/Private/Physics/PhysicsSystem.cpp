@@ -247,36 +247,36 @@ PhysConstraint *PhysicsSystem::CreateConstraint(const PhysConstraintDesc &desc) 
 
     switch (desc.type) {
     case PhysConstraint::Type::Generic:
-        if (!desc.bodyB) {
-            constraint = new PhysGenericConstraint(desc.bodyA, desc.anchorInA, desc.axisInA);
+        if (!desc.bodyA) {
+            constraint = new PhysGenericConstraint(desc.bodyB, desc.anchorInB, desc.axisInB);
         } else {
             constraint = new PhysGenericConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }
         break;
     case PhysConstraint::Type::GenericSpring:
-        if (!desc.bodyB) {
-            constraint = new PhysGenericSpringConstraint(desc.bodyA, desc.anchorInA, desc.axisInA);
+        if (!desc.bodyA) {
+            constraint = new PhysGenericSpringConstraint(desc.bodyB, desc.anchorInB, desc.axisInB);
         } else {
             constraint = new PhysGenericSpringConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }
         break;
     case PhysConstraint::Type::Point2Point:
-        if (!desc.bodyB) {
-            constraint = new PhysP2PConstraint(desc.bodyA, desc.anchorInA);
+        if (!desc.bodyA) {
+            constraint = new PhysP2PConstraint(desc.bodyB, desc.anchorInB);
         } else {
             constraint = new PhysP2PConstraint(desc.bodyA, desc.anchorInA, desc.bodyB, desc.anchorInB);
         }
         break;
     case PhysConstraint::Type::Hinge:
-        if (!desc.bodyB) {
-            constraint = new PhysHingeConstraint(desc.bodyA, desc.anchorInA, desc.axisInA);
+        if (!desc.bodyA) {
+            constraint = new PhysHingeConstraint(desc.bodyB, desc.anchorInB, desc.axisInB);
         } else {
             constraint = new PhysHingeConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }
         break;
     case PhysConstraint::Type::Slider:
-        if (!desc.bodyB) {
-            constraint = new PhysSliderConstraint(desc.bodyA, desc.anchorInA, desc.axisInA);
+        if (!desc.bodyA) {
+            constraint = new PhysSliderConstraint(desc.bodyB, desc.anchorInB, desc.axisInB);
         } else {
             constraint = new PhysSliderConstraint(desc.bodyA, desc.anchorInA, desc.axisInA, desc.bodyB, desc.anchorInB, desc.axisInB);
         }

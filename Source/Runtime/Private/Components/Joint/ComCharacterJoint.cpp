@@ -31,25 +31,25 @@ void ComCharacterJoint::RegisterProperties() {
     REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetLocalAngles, SetLocalAngles, Angles::zero, 
         "Joint angles in local space", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("swing1LowerLimit", "X Swing/Lower Limit", float, GetSwing1LowerLimit, SetSwing1LowerLimit, -45.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(-180, 0, 1);
+        "", PropertyInfo::Flag::Editor).SetRange(-177, 0, 1);
     REGISTER_ACCESSOR_PROPERTY("swing1UpperLimit", "X Swing/Upper Limit", float, GetSwing1UpperLimit, SetSwing1UpperLimit, 45.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 180, 1);
+        "", PropertyInfo::Flag::Editor).SetRange(0, 177, 1);
     REGISTER_ACCESSOR_PROPERTY("swing1Stiffness", "X Swing/Stiffness", float, GetSwing1Stiffness, SetSwing1Stiffness, 0.f, 
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("swing1Damping", "X Swing/Damping", float, GetSwing1Damping, SetSwing1Damping, 0.2f, 
         "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("swing2LowerLimit", "Y Swing/Lower Limit", float, GetSwing2LowerLimit, SetSwing2LowerLimit, -45.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(-180, 0, 1);
+        "", PropertyInfo::Flag::Editor).SetRange(-177, 0, 1);
     REGISTER_ACCESSOR_PROPERTY("swing2UpperLimit", "Y Swing/Upper Limit", float, GetSwing2UpperLimit, SetSwing2UpperLimit, 45.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 180, 1);
+        "", PropertyInfo::Flag::Editor).SetRange(0, 177, 1);
     REGISTER_ACCESSOR_PROPERTY("swing2Stiffness", "Y Swing/Stiffness", float, GetSwing2Stiffness, SetSwing2Stiffness, 0.f, 
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("swing2Damping", "Y Swing/Damping", float, GetSwing2Damping, SetSwing2Damping, 0.2f, 
         "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("twistLowerLimit", "Twist/Lower Limit", float, GetTwistLowerLimit, SetTwistLowerLimit, -45.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(-180, 0, 1);
+        "", PropertyInfo::Flag::Editor).SetRange(-45, 0, 1);
     REGISTER_ACCESSOR_PROPERTY("twistUpperLimit", "Twist/Upper Limit", float, GetTwistUpperLimit, SetTwistUpperLimit, 45.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 180, 1);
+        "", PropertyInfo::Flag::Editor).SetRange(0, 45, 1);
     REGISTER_ACCESSOR_PROPERTY("twistStiffness", "Twist/Stiffness", float, GetTwistStiffness, SetTwistStiffness, 0.f, 
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("twistDamping", "Twist/Damping", float, GetTwistDamping, SetTwistDamping, 0.2f, 
@@ -70,48 +70,58 @@ void ComCharacterJoint::Init() {
     SetInitialized(true);
 }
 
+void ComCharacterJoint::Awake() {
+    ComJoint::Awake();
+
+    const ComTransform *transform = GetEntity()->GetTransform();
+    startLocalAxis = transform->GetLocalAxis() * localAxis;
+}
+
 void ComCharacterJoint::CreateConstraint() {
     const ComTransform *transform = GetEntity()->GetTransform();
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
-    // Fill up a constraint description 
+    Vec3 scaledLocalAnchor = transform->GetScale() * localAnchor;
+
     PhysConstraintDesc desc;
     desc.type = PhysConstraint::Type::GenericSpring;
     desc.collision = collisionEnabled;
     desc.breakImpulse = breakImpulse;
 
-    desc.bodyA = rigidBody->GetBody();
-    desc.axisInA = localAxis;
-    desc.anchorInA = transform->GetScale() * localAnchor;
+    desc.bodyB = rigidBody->GetBody();
+    desc.anchorInB = scaledLocalAnchor;
+    desc.axisInB = localAxis;
 
     const ComRigidBody *connectedBody = GetConnectedBody();
     if (connectedBody) {
-        Mat3 worldAxis = desc.bodyA->GetAxis() * localAxis;
-        Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
+        Vec3 worldAnchor = desc.bodyB->GetOrigin() + desc.bodyB->GetAxis() * scaledLocalAnchor;
+        Mat3 worldAxis = desc.bodyB->GetAxis() * localAxis;
 
-        desc.bodyB = connectedBody->GetBody();
-        desc.axisInB = connectedBody->GetBody()->GetAxis().TransposedMul(worldAxis);
-        desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+        Mat3 connectedBodyWorldAxis = connectedBody->GetBody()->GetAxis();
 
-        connectedAxis = desc.axisInB;
+        desc.bodyA = connectedBody->GetBody();
+        desc.anchorInA = connectedBodyWorldAxis.TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+        desc.axisInA = connectedBodyWorldAxis.TransposedMul(worldAxis);
+
         connectedAnchor = desc.anchorInB;
+        connectedAxis = desc.axisInB;
     } else {
-        desc.bodyB = nullptr;
+        desc.bodyA = nullptr;
 
-        connectedAxis = Mat3::identity;
         connectedAnchor = Vec3::origin;
+        connectedAxis = Mat3::identity;
     }
 
-    // Create a constraint with the given description
+    // Create a constraint with the given description.
     PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(desc);
 
     genericSpringConstraint->SetAngularStiffness(stiffness);
     genericSpringConstraint->SetAngularDamping(damping);
 
     // Apply limit angles.
-    genericSpringConstraint->SetAngularLowerLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
-    genericSpringConstraint->SetAngularUpperLimit(Vec3(DEG2RAD(upperLimit.x), DEG2RAD(upperLimit.y), DEG2RAD(upperLimit.z)));
+    genericSpringConstraint->SetAngularLowerLimits(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
+    genericSpringConstraint->SetAngularUpperLimits(Vec3(DEG2RAD(upperLimit.x), DEG2RAD(upperLimit.y), DEG2RAD(upperLimit.z)));
     genericSpringConstraint->EnableAngularLimits(true, true, true);
 
     constraint = genericSpringConstraint;
@@ -125,7 +135,7 @@ void ComCharacterJoint::SetLocalAnchor(const Vec3 &anchor) {
     this->localAnchor = anchor;
 
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, localAxis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(anchor, localAxis);
     }
 }
 
@@ -138,7 +148,7 @@ void ComCharacterJoint::SetLocalAngles(const Angles &angles) {
     this->localAxis.FixDegeneracies();
 
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(localAnchor, localAxis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(localAnchor, localAxis);
     }
 }
 
@@ -149,7 +159,7 @@ const Vec3 &ComCharacterJoint::GetConnectedAnchor() const {
 void ComCharacterJoint::SetConnectedAnchor(const Vec3 &anchor) {
     this->connectedAnchor = anchor;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(anchor, connectedAxis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, connectedAxis);
     }
 }
 
@@ -162,21 +172,21 @@ void ComCharacterJoint::SetConnectedAngles(const Angles &angles) {
     this->connectedAxis.FixDegeneracies();
 
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(connectedAnchor, connectedAxis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(connectedAnchor, connectedAxis);
     }
 }
 
 void ComCharacterJoint::SetSwing1LowerLimit(float limit) {
     this->lowerLimit.x = limit;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
+        ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimits(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
     }
 }
 
 void ComCharacterJoint::SetSwing1UpperLimit(float limit) {
     this->upperLimit.x = limit;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetAngularUpperLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
+        ((PhysGenericSpringConstraint *)constraint)->SetAngularUpperLimits(Vec3(DEG2RAD(upperLimit.x), DEG2RAD(upperLimit.y), DEG2RAD(upperLimit.z)));
     }
 }
 
@@ -197,14 +207,14 @@ void ComCharacterJoint::SetSwing1Damping(float damping) {
 void ComCharacterJoint::SetSwing2LowerLimit(float limit) {
     this->lowerLimit.y = limit;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
+        ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimits(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
     }
 }
 
 void ComCharacterJoint::SetSwing2UpperLimit(float limit) {
     this->upperLimit.y = limit;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetAngularUpperLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
+        ((PhysGenericSpringConstraint *)constraint)->SetAngularUpperLimits(Vec3(DEG2RAD(upperLimit.x), DEG2RAD(upperLimit.y), DEG2RAD(upperLimit.z)));
     }
 }
 
@@ -225,14 +235,14 @@ void ComCharacterJoint::SetSwing2Damping(float damping) {
 void ComCharacterJoint::SetTwistLowerLimit(float limit) {
     this->lowerLimit.z = limit;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
+        ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimits(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
     }
 }
 
 void ComCharacterJoint::SetTwistUpperLimit(float limit) {
     this->upperLimit.z = limit;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetAngularUpperLimit(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
+        ((PhysGenericSpringConstraint *)constraint)->SetAngularUpperLimits(Vec3(DEG2RAD(upperLimit.x), DEG2RAD(upperLimit.y), DEG2RAD(upperLimit.z)));
     }
 }
 
@@ -256,28 +266,42 @@ void ComCharacterJoint::DrawGizmos(const RenderCamera *camera, bool selected, bo
         const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
-            Vec3 worldOrigin = transform->GetWorldMatrix().TransformPos(localAnchor);
+            Vec3 worldAnchor = transform->GetWorldMatrix().TransformPos(localAnchor);
             Mat3 worldAxis = transform->GetAxis() * localAxis;
 
-            float viewScale = camera->CalcViewScale(worldOrigin);
+            float viewScale = camera->CalcViewScale(worldAnchor);
 
-            Mat3 constraintAxis = Mat3::identity;
+            if (!constraint) {
+                startLocalAxis = transform->GetLocalAxis() * localAxis;
+            }
 
+            Mat3 constraintAxis;
             const ComRigidBody *connectedBody = GetConnectedBody();
             if (connectedBody) {
-                constraintAxis = connectedBody->GetEntity()->GetTransform()->GetAxis();
+                constraintAxis = connectedBody->GetEntity()->GetTransform()->GetAxis() * startLocalAxis;
+            } else {
+                constraintAxis = startLocalAxis;
             }
 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
-            renderWorld->SetDebugColor(Color4::yellow, Color4::yellow * 0.5f);
-            renderWorld->DebugArc(worldOrigin, -constraintAxis[2], -constraintAxis[1], MeterToUnit(10) * viewScale, lowerLimit.x, upperLimit.x, true);
-            renderWorld->DebugArc(worldOrigin, -constraintAxis[2], +constraintAxis[0], MeterToUnit(10) * viewScale, lowerLimit.y, upperLimit.y, true);
-            renderWorld->DebugArc(worldOrigin, +constraintAxis[0], -constraintAxis[1], MeterToUnit(10) * viewScale, lowerLimit.z, upperLimit.z, true);
+            renderWorld->SetDebugColor(Color4::red, Color4::red * 0.5f);
+            renderWorld->DebugArc(worldAnchor, worldAxis[1], -worldAxis[2], MeterToUnit(12) * viewScale, lowerLimit.x, upperLimit.x, true);
+
+            renderWorld->SetDebugColor(Color4::green, Color4::green * 0.5f);
+            renderWorld->DebugArc(worldAnchor, worldAxis[2], -worldAxis[0], MeterToUnit(12) * viewScale, lowerLimit.y, upperLimit.y, true);
+
+            renderWorld->SetDebugColor(Color4::blue, Color4::blue * 0.5f);
+            renderWorld->DebugArc(worldAnchor, worldAxis[0], -worldAxis[1], MeterToUnit(12) * viewScale, lowerLimit.z, upperLimit.z, true);
 
             renderWorld->SetDebugColor(Color4::red, Color4::zero);
-            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * MeterToUnit(10) * viewScale);
-            renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[2] * MeterToUnit(10) * viewScale);
+            renderWorld->DebugLine(worldAnchor, worldAnchor + constraintAxis[1] * MeterToUnit(18) * viewScale);
+
+            renderWorld->SetDebugColor(Color4::green, Color4::zero);
+            renderWorld->DebugLine(worldAnchor, worldAnchor + constraintAxis[2] * MeterToUnit(18) * viewScale);
+
+            renderWorld->SetDebugColor(Color4::blue, Color4::zero);
+            renderWorld->DebugLine(worldAnchor, worldAnchor + constraintAxis[0] * MeterToUnit(18) * viewScale);
         }
     }
 }

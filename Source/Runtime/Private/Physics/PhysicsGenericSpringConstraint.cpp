@@ -18,23 +18,23 @@
 
 BE_NAMESPACE_BEGIN
     
-PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, const Mat3 &axisInA) :
-    PhysConstraint(bodyA, nullptr) {
-    Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
+PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyB, const Vec3 &anchorInB, const Mat3 &axisInB) :
+    PhysConstraint(nullptr, bodyB) {
+    Vec3 anchorInBCentroid = anchorInB - bodyB->centroid;
 
-    btTransform frameA = ToBtTransform(axisInA, SystemUnitToPhysicsUnit(anchorInACentroid));
+    btTransform frameB = ToBtTransform(axisInB, SystemUnitToPhysicsUnit(anchorInBCentroid));
 
-    btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = new btGeneric6DofSpring2Constraint(*bodyA->GetRigidBody(), frameA, RO_ZYX);
+    btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = new btGeneric6DofSpring2Constraint(*bodyB->GetRigidBody(), frameB, RO_XZY);
     generic6DofSpringConstraint->setUserConstraintPtr(this);
 
     constraint = generic6DofSpringConstraint;
 
-    linearLowerLimit.SetFromScalar(0);
-    linearUpperLimit.SetFromScalar(0);
+    linearLowerLimits.SetFromScalar(0);
+    linearUpperLimits.SetFromScalar(0);
     linearStiffness.SetFromScalar(0);
     linearDamping.SetFromScalar(0);
 
-    angularLowerLimit.SetFromScalar(0);
+    angularLowerLimits.SetFromScalar(0);
     angularUpperLimits.SetFromScalar(0);
     angularStiffness.SetFromScalar(0);
     angularDamping.SetFromScalar(0);
@@ -48,17 +48,17 @@ PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyA, c
     btTransform frameA = ToBtTransform(axisInA, SystemUnitToPhysicsUnit(anchorInACentroid));
     btTransform frameB = ToBtTransform(axisInB, SystemUnitToPhysicsUnit(anchorInBCentroid));
 
-    btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = new btGeneric6DofSpring2Constraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(), frameA, frameB, RO_ZYX);
+    btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = new btGeneric6DofSpring2Constraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(), frameA, frameB, RO_XZY);
     generic6DofSpringConstraint->setUserConstraintPtr(this);
 
     constraint = generic6DofSpringConstraint;
    
-    linearLowerLimit.SetFromScalar(0);
-    linearUpperLimit.SetFromScalar(0);
+    linearLowerLimits.SetFromScalar(0);
+    linearUpperLimits.SetFromScalar(0);
     linearStiffness.SetFromScalar(0);
     linearDamping.SetFromScalar(0);
 
-    angularLowerLimit.SetFromScalar(0);
+    angularLowerLimits.SetFromScalar(0);
     angularUpperLimits.SetFromScalar(0);
     angularStiffness.SetFromScalar(0);
     angularDamping.SetFromScalar(0);
@@ -67,43 +67,43 @@ PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyA, c
 void PhysGenericSpringConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA) {
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
-    Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
+    Vec3 anchorInACentroid = bodyA ? anchorInA - bodyB->centroid : anchorInA;
     btTransform frameA = ToBtTransform(axisInA, SystemUnitToPhysicsUnit(anchorInACentroid));
 
-    if (!bodyB) {
-        generic6DofSpringConstraint->setFrames(generic6DofSpringConstraint->getFrameOffsetA(), frameA);
+    if (!bodyA) {
+        generic6DofSpringConstraint->setFrames(frameA, generic6DofSpringConstraint->getFrameOffsetA());
     } else {
-        generic6DofSpringConstraint->setFrames(frameA, generic6DofSpringConstraint->getFrameOffsetB());
+        generic6DofSpringConstraint->setFrames(generic6DofSpringConstraint->getFrameOffsetB(), frameA);
     }
 }
 
 void PhysGenericSpringConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB) {
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
-    Vec3 anchorInBCentroid = bodyB ? anchorInB - bodyA->centroid : anchorInB;
+    Vec3 anchorInBCentroid = anchorInB - bodyB->centroid;
     btTransform frameB = ToBtTransform(axisInB, SystemUnitToPhysicsUnit(anchorInBCentroid));
 
-    if (!bodyB) {
-        generic6DofSpringConstraint->setFrames(frameB, generic6DofSpringConstraint->getFrameOffsetB());
+    if (!bodyA) {
+        generic6DofSpringConstraint->setFrames(generic6DofSpringConstraint->getFrameOffsetB(), frameB);
     } else {
-        generic6DofSpringConstraint->setFrames(generic6DofSpringConstraint->getFrameOffsetA(), frameB);
+        generic6DofSpringConstraint->setFrames(frameB, generic6DofSpringConstraint->getFrameOffsetA());
     }
 }
 
-void PhysGenericSpringConstraint::SetLinearLowerLimit(const Vec3 &lower) {
+void PhysGenericSpringConstraint::SetLinearLowerLimits(const Vec3 &lower) {
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
-    this->linearLowerLimit = lower;
+    this->linearLowerLimits = lower;
 
     if (generic6DofSpringConstraint->isLimited(0) || generic6DofSpringConstraint->isLimited(1) || generic6DofSpringConstraint->isLimited(2)) {
         generic6DofSpringConstraint->setLinearLowerLimit(ToBtVector3(SystemUnitToPhysicsUnit(lower)));
     }
 }
 
-void PhysGenericSpringConstraint::SetLinearUpperLimit(const Vec3 &upper) {
+void PhysGenericSpringConstraint::SetLinearUpperLimits(const Vec3 &upper) {
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
-    this->linearUpperLimit = upper;
+    this->linearUpperLimits = upper;
 
     if (generic6DofSpringConstraint->isLimited(0) || generic6DofSpringConstraint->isLimited(1) || generic6DofSpringConstraint->isLimited(2)) {
         generic6DofSpringConstraint->setLinearUpperLimit(ToBtVector3(SystemUnitToPhysicsUnit(upper)));
@@ -114,17 +114,17 @@ void PhysGenericSpringConstraint::EnableLinearLimits(bool enableX, bool enableY,
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
     if (enableX) {
-        generic6DofSpringConstraint->setLimit(0, SystemUnitToPhysicsUnit(linearLowerLimit[0]), SystemUnitToPhysicsUnit(linearUpperLimit[0]));
+        generic6DofSpringConstraint->setLimit(0, SystemUnitToPhysicsUnit(linearLowerLimits[0]), SystemUnitToPhysicsUnit(linearUpperLimits[0]));
     } else {
         generic6DofSpringConstraint->setLimit(0, 1.0f, -1.0f);
     }
     if (enableY) {
-        generic6DofSpringConstraint->setLimit(1, SystemUnitToPhysicsUnit(linearLowerLimit[1]), SystemUnitToPhysicsUnit(linearUpperLimit[1]));
+        generic6DofSpringConstraint->setLimit(1, SystemUnitToPhysicsUnit(linearLowerLimits[1]), SystemUnitToPhysicsUnit(linearUpperLimits[1]));
     } else {
         generic6DofSpringConstraint->setLimit(1, 1.0f, -1.0f);
     }
     if (enableZ) {
-        generic6DofSpringConstraint->setLimit(2, SystemUnitToPhysicsUnit(linearLowerLimit[2]), SystemUnitToPhysicsUnit(linearUpperLimit[2]));
+        generic6DofSpringConstraint->setLimit(2, SystemUnitToPhysicsUnit(linearLowerLimits[2]), SystemUnitToPhysicsUnit(linearUpperLimits[2]));
     } else {
         generic6DofSpringConstraint->setLimit(2, 1.0f, -1.0f);
     }
@@ -135,8 +135,8 @@ void PhysGenericSpringConstraint::EnableLinearLimits(bool enableX, bool enableY,
 void PhysGenericSpringConstraint::SetLinearStiffness(const Vec3 &stiffness) {
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
-    float mA = bodyA->GetMass();
-    float mB = bodyB ? bodyB->GetMass() : FLT_INFINITY;
+    float mA = bodyA ? bodyA->GetMass() : FLT_INFINITY;
+    float mB = bodyB->GetMass();
     float m = Min(mA, mB);
     Vec3 omega = Math::TwoPi * stiffness;
     Vec3 k = m * omega * omega;
@@ -162,23 +162,25 @@ void PhysGenericSpringConstraint::SetLinearDamping(const Vec3 &dampingRatio) {
     linearDamping = dampingRatio;
 }
 
-void PhysGenericSpringConstraint::SetAngularLowerLimit(const Vec3 &lower) {
+void PhysGenericSpringConstraint::SetAngularLowerLimits(const Vec3 &lower) {
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
-    this->angularLowerLimit = lower;
+    this->angularLowerLimits = lower;
 
     if (generic6DofSpringConstraint->isLimited(3) || generic6DofSpringConstraint->isLimited(4) || generic6DofSpringConstraint->isLimited(5)) {
-        generic6DofSpringConstraint->setAngularLowerLimit(ToBtVector3(lower));
+        // NOTE: setAngularLowerLimit 은 시계방향으로 회전하도록 가정했으므로 역으로 세팅한다
+        generic6DofSpringConstraint->setAngularUpperLimit(-ToBtVector3(lower));
     }
 }
 
-void PhysGenericSpringConstraint::SetAngularUpperLimit(const Vec3 &upper) {
+void PhysGenericSpringConstraint::SetAngularUpperLimits(const Vec3 &upper) {
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
     this->angularUpperLimits = upper;
 
     if (generic6DofSpringConstraint->isLimited(3) || generic6DofSpringConstraint->isLimited(4) || generic6DofSpringConstraint->isLimited(5)) {
-        generic6DofSpringConstraint->setAngularUpperLimit(ToBtVector3(upper));
+        // NOTE: setAngularUpperLimit 은 시계방향으로 회전하도록 가정했으므로 역으로 세팅한다
+        generic6DofSpringConstraint->setAngularLowerLimit(-ToBtVector3(upper));
     }
 }
 
@@ -186,17 +188,17 @@ void PhysGenericSpringConstraint::EnableAngularLimits(bool enableX, bool enableY
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
     if (enableX) {
-        generic6DofSpringConstraint->setLimit(3, angularLowerLimit[0], angularUpperLimits[0]);
+        generic6DofSpringConstraint->setLimit(3, -angularUpperLimits[0], -angularLowerLimits[0]);
     } else {
         generic6DofSpringConstraint->setLimit(3, 1.0f, -1.0f);
     }
     if (enableY) {
-        generic6DofSpringConstraint->setLimit(4, angularLowerLimit[1], angularUpperLimits[1]);
+        generic6DofSpringConstraint->setLimit(4, -angularUpperLimits[1], -angularLowerLimits[1]);
     } else {
         generic6DofSpringConstraint->setLimit(4, 1.0f, -1.0f);
     } 
     if (enableZ) {
-        generic6DofSpringConstraint->setLimit(5, angularLowerLimit[2], angularUpperLimits[2]);
+        generic6DofSpringConstraint->setLimit(5, -angularUpperLimits[2], -angularLowerLimits[2]);
     } else {
         generic6DofSpringConstraint->setLimit(5, 1.0f, -1.0f);
     }
@@ -207,8 +209,8 @@ void PhysGenericSpringConstraint::EnableAngularLimits(bool enableX, bool enableY
 void PhysGenericSpringConstraint::SetAngularStiffness(const Vec3 &stiffness) {
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = static_cast<btGeneric6DofSpring2Constraint *>(constraint);
 
-    float mA = bodyA->GetMass();
-    float mB = bodyB ? bodyB->GetMass() : FLT_INFINITY;
+    float mA = bodyA ? bodyA->GetMass() : FLT_INFINITY;
+    float mB = bodyB->GetMass();
     float m = Min(mA, mB);
     Vec3 omega = Math::TwoPi * stiffness;
     Vec3 k = m * omega * omega;

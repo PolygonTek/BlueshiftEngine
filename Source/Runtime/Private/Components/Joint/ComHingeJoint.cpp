@@ -61,31 +61,35 @@ void ComHingeJoint::CreateConstraint() {
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
+    Vec3 scaledLocalAnchor = transform->GetScale() * localAnchor;
+
     PhysConstraintDesc desc;
     desc.type = PhysConstraint::Type::Hinge;
     desc.collision = collisionEnabled;
     desc.breakImpulse = breakImpulse;
 
-    desc.bodyA = rigidBody->GetBody();
-    desc.axisInA = localAxis;
-    desc.anchorInA = transform->GetScale() * localAnchor;
+    desc.bodyB = rigidBody->GetBody();
+    desc.anchorInB = scaledLocalAnchor;
+    desc.axisInB = localAxis;
 
     const ComRigidBody *connectedBody = GetConnectedBody();
     if (connectedBody) {
-        Mat3 worldAxis = desc.bodyA->GetAxis() * localAxis;
-        Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
+        Vec3 worldAnchor = desc.bodyB->GetOrigin() + desc.bodyB->GetAxis() * scaledLocalAnchor;
+        Mat3 worldAxis = desc.bodyB->GetAxis() * localAxis;
 
-        desc.bodyB = connectedBody->GetBody();
-        desc.axisInB = connectedBody->GetBody()->GetAxis().TransposedMul(worldAxis);
-        desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+        Mat3 connectedBodyWorldAxis = connectedBody->GetBody()->GetAxis();
 
-        connectedAxis = desc.axisInB;
+        desc.bodyA = connectedBody->GetBody();
+        desc.anchorInA = connectedBodyWorldAxis.TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+        desc.axisInA = connectedBodyWorldAxis.TransposedMul(worldAxis);
+
         connectedAnchor = desc.anchorInB;
+        connectedAxis = desc.axisInB;
     } else {
-        desc.bodyB = nullptr;
+        desc.bodyA = nullptr;
 
-        connectedAxis = Mat3::identity;
         connectedAnchor = Vec3::origin;
+        connectedAxis = Mat3::identity;
     }
 
     // Create a constraint with the given description.
@@ -112,7 +116,7 @@ void ComHingeJoint::SetLocalAnchor(const Vec3 &anchor) {
     this->localAnchor = anchor;
 
     if (constraint) {
-        ((PhysHingeConstraint *)constraint)->SetFrameA(anchor, localAxis);
+        ((PhysHingeConstraint *)constraint)->SetFrameB(anchor, localAxis);
     }
 }
 
@@ -125,7 +129,7 @@ void ComHingeJoint::SetLocalAngles(const Angles &angles) {
     this->localAxis.FixDegeneracies();
 
     if (constraint) {
-        ((PhysHingeConstraint *)constraint)->SetFrameA(localAnchor, localAxis);
+        ((PhysHingeConstraint *)constraint)->SetFrameB(localAnchor, localAxis);
     }
 }
 
@@ -136,7 +140,7 @@ const Vec3 &ComHingeJoint::GetConnectedAnchor() const {
 void ComHingeJoint::SetConnectedAnchor(const Vec3 &anchor) {
     this->connectedAnchor = anchor;
     if (constraint) {
-        ((PhysP2PConstraint *)constraint)->SetAnchorB(anchor);
+        ((PhysP2PConstraint *)constraint)->SetAnchorA(anchor);
     }
 }
 
@@ -149,7 +153,7 @@ void ComHingeJoint::SetConnectedAngles(const Angles &angles) {
     this->connectedAxis.FixDegeneracies();
 
     if (constraint) {
-        ((PhysHingeConstraint *)constraint)->SetFrameB(connectedAnchor, connectedAxis);
+        ((PhysHingeConstraint *)constraint)->SetFrameA(connectedAnchor, connectedAxis);
     }
 }
 
@@ -196,32 +200,31 @@ void ComHingeJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool s
         const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
-            Vec3 worldOrigin = transform->GetWorldMatrix().TransformPos(localAnchor);
+            Vec3 worldAnchor = transform->GetWorldMatrix().TransformPos(localAnchor);
             Mat3 worldAxis = transform->GetAxis() * localAxis;
 
             Mat3 constraintAxis = Mat3::identity;
-
             const ComRigidBody *connectedBody = GetConnectedBody();
             if (connectedBody) {
                 constraintAxis = connectedBody->GetEntity()->GetTransform()->GetAxis();
             }
 
-            float viewScale = camera->CalcViewScale(worldOrigin);
+            float viewScale = camera->CalcViewScale(worldAnchor);
 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
             if (enableLimitAngles) {
                 renderWorld->SetDebugColor(Color4::yellow, Color4::yellow * 0.5f);
-                renderWorld->DebugArc(worldOrigin, constraintAxis[0], constraintAxis[1], MeterToUnit(5) * viewScale, minAngle, maxAngle, true);
+                renderWorld->DebugArc(worldAnchor, constraintAxis[0], constraintAxis[1], MeterToUnit(5) * viewScale, minAngle, maxAngle, true);
 
                 renderWorld->SetDebugColor(Color4::red, Color4::zero);
-                renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[0] * MeterToUnit(5) * viewScale);
+                renderWorld->DebugLine(worldAnchor, worldAnchor + worldAxis[0] * MeterToUnit(5) * viewScale);
             }
 
             renderWorld->SetDebugColor(Color4::red, Color4::red);
             renderWorld->DebugArrow(
-                worldOrigin - worldAxis[2] * MeterToUnit(6) * viewScale,
-                worldOrigin + worldAxis[2] * MeterToUnit(6) * viewScale,
+                worldAnchor - worldAxis[2] * MeterToUnit(6) * viewScale,
+                worldAnchor + worldAxis[2] * MeterToUnit(6) * viewScale,
                 MeterToUnit(6) * viewScale, MeterToUnit(1.5) * viewScale);
         }
     }

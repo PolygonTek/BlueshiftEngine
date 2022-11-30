@@ -20,14 +20,14 @@ BE_NAMESPACE_BEGIN
 
 #define CONTROL_CFM_ERP
 
-PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, const Mat3 &axisInA) : 
-    PhysConstraint(bodyA, nullptr) {
-    Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
+PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyB, const Vec3 &anchorInB, const Mat3 &axisInB) : 
+    PhysConstraint(nullptr, bodyB) {
+    Vec3 anchorInBCentroid = anchorInB - bodyB->centroid;
 
-    btTransform frameA = ToBtTransform(axisInA, SystemUnitToPhysicsUnit(anchorInACentroid));
+    btTransform frameB = ToBtTransform(axisInB, SystemUnitToPhysicsUnit(anchorInBCentroid));
 
-    btHingeConstraint *hingeConstraint = new btHingeConstraint(*bodyA->GetRigidBody(), frameA);
-    //btHingeConstraint* hingeConstraint = new btHingeConstraint(*bodyA->GetRigidBody(), ToBtVector3(SystemUnitToPhysicsUnit(anchorInACentroid)), ToBtVector3(axisInA[2]));
+    btHingeConstraint *hingeConstraint = new btHingeConstraint(*bodyB->GetRigidBody(), frameB);
+    //btHingeConstraint* hingeConstraint = new btHingeConstraint(*bodyB->GetRigidBody(), ToBtVector3(SystemUnitToPhysicsUnit(anchorInBCentroid)), ToBtVector3(axisInB[2]));
 
     hingeConstraint->setUserConstraintPtr(this);
 
@@ -71,19 +71,19 @@ PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &ancho
 void PhysHingeConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA) {
     btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
 
-    Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
+    Vec3 anchorInACentroid = bodyA ? anchorInA - bodyB->centroid : anchorInA;
     btTransform frameA = ToBtTransform(axisInA, SystemUnitToPhysicsUnit(anchorInACentroid));
 
-    hingeConstraint->setFrames(frameA, hingeConstraint->getFrameOffsetB());
+    hingeConstraint->setFrames(hingeConstraint->getFrameOffsetB(), frameA);
 }
 
 void PhysHingeConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB) {
     btHingeConstraint *hingeConstraint = static_cast<btHingeConstraint *>(constraint);
 
-    Vec3 anchorInBCentroid = bodyB ? anchorInB - bodyA->centroid : anchorInB;
+    Vec3 anchorInBCentroid = anchorInB - bodyB->centroid;
     btTransform frameB = ToBtTransform(axisInB, SystemUnitToPhysicsUnit(anchorInBCentroid));
 
-    hingeConstraint->setFrames(hingeConstraint->getFrameOffsetA(), frameB);
+    hingeConstraint->setFrames(frameB, hingeConstraint->getFrameOffsetA());
 }
 
 void PhysHingeConstraint::SetAngularLimits(float lowerLimit, float upperLimit) {

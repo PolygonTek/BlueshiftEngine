@@ -51,17 +51,17 @@ void ComFixedJoint::CreateConstraint() {
     desc.collision = collisionEnabled;
     desc.breakImpulse = breakImpulse;
 
-    desc.bodyA = rigidBody->GetBody();
-    desc.axisInA = Mat3::identity;
-    desc.anchorInA = Vec3::zero;
+    desc.bodyB = rigidBody->GetBody();
+    desc.axisInB = Mat3::identity;
+    desc.anchorInB = Vec3::zero;
 
     const ComRigidBody *connectedBody = GetConnectedBody();
     if (connectedBody) {
-        desc.bodyB = connectedBody->GetBody();
-        desc.axisInB = Mat3::identity;
-        desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(desc.bodyA->GetOrigin() - connectedBody->GetBody()->GetOrigin());
+        desc.bodyA = connectedBody->GetBody();
+        desc.axisInA = Mat3::identity;
+        desc.anchorInA = connectedBody->GetBody()->GetAxis().TransposedMulVec(desc.bodyB->GetOrigin() - connectedBody->GetBody()->GetOrigin());
     } else {
-        desc.bodyB = nullptr;
+        desc.bodyA = nullptr;
     }
 
     // Create a constraint with the given description.

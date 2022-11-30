@@ -28,6 +28,8 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+    virtual void            Awake() override;
+
 #if WITH_EDITOR
                             /// Visualize the component in editor.
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
@@ -79,6 +81,7 @@ protected:
     Vec3                    localAnchor;
     Mat3                    connectedAxis;
     Vec3                    connectedAnchor;
+    Mat3                    startLocalAxis;
     Vec3                    lowerLimit;
     Vec3                    upperLimit;
     Vec3                    stiffness;

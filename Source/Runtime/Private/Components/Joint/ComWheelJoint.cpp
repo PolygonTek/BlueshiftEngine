@@ -40,12 +40,12 @@ void ComWheelJoint::RegisterProperties() {
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("susDamping", "Suspension/Damping", float, GetSuspensionDamping, SetSuspensionDamping, 0.2f,
         "", PropertyInfo::Flag::Editor);// .SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("useSteeringLimits", "Steering/Use Limits", bool, GetEnableSteeringLimit, SetEnableSteeringLimit, false, 
+    REGISTER_ACCESSOR_PROPERTY("useSteeringLimits", "Steering/Use Limits", bool, GetEnableSteeringLimit, SetEnableSteeringLimit, false,
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("minSteeringAngle", "Steering/Min Angle", float, GetMinimumSteeringAngle, SetMinimumSteeringAngle, 0.f, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyInfo::Flag::Editor).SetRange(-90, 0, 1);
     REGISTER_ACCESSOR_PROPERTY("maxSteeringAngle", "Steering/Max Angle", float, GetMaximumSteeringAngle, SetMaximumSteeringAngle, 0.f, 
-        "", PropertyInfo::Flag::Editor);
+        "", PropertyInfo::Flag::Editor).SetRange(0, 90, 1);
     REGISTER_ACCESSOR_PROPERTY("motorTargetVelocity", "Motor/Target Velocity", float, GetMotorTargetVelocity, SetMotorTargetVelocity, 0.f,
         "Target angular velocity (degree/s) of motor", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("maxMotorImpulse", "Motor/Maximum Impulse", float, GetMaxMotorImpulse, SetMaxMotorImpulse, 0.f,
@@ -70,45 +70,48 @@ void ComWheelJoint::CreateConstraint() {
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
-    // Fill up a constraint description.
+    Vec3 scaledLocalAnchor = transform->GetScale() * localAnchor;
+
     PhysConstraintDesc desc;
     desc.type = PhysConstraint::Type::GenericSpring;
     desc.collision = collisionEnabled;
     desc.breakImpulse = breakImpulse;
 
-    desc.bodyA = rigidBody->GetBody();
-    desc.axisInA = localAxis;
-    desc.anchorInA = transform->GetScale() * localAnchor;
+    desc.bodyB = rigidBody->GetBody();
+    desc.anchorInB = scaledLocalAnchor;
+    desc.axisInB = localAxis;
 
     const ComRigidBody *connectedBody = GetConnectedBody();
     if (connectedBody) {
-        Mat3 worldAxis = desc.bodyA->GetAxis() * localAxis;
-        Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
+        Vec3 worldAnchor = desc.bodyB->GetOrigin() + desc.bodyB->GetAxis() * scaledLocalAnchor;
+        Mat3 worldAxis = desc.bodyB->GetAxis() * localAxis;
 
-        desc.bodyB = connectedBody->GetBody();
-        desc.axisInB = connectedBody->GetBody()->GetAxis().TransposedMul(worldAxis);
-        desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+        Mat3 connectedBodyWorldAxis = connectedBody->GetBody()->GetAxis();
 
-        connectedAxis = desc.axisInB;
+        desc.bodyA = connectedBody->GetBody();
+        desc.anchorInA = connectedBodyWorldAxis.TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+        desc.axisInA = connectedBodyWorldAxis.TransposedMul(worldAxis);
+
         connectedAnchor = desc.anchorInB;
+        connectedAxis = desc.axisInB;
     } else {
-        desc.bodyB = nullptr;
+        desc.bodyA = nullptr;
 
-        connectedAxis = Mat3::identity;
         connectedAnchor = Vec3::origin;
+        connectedAxis = Mat3::identity;
     }
 
     // Create a constraint with the given description.
     PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(desc);
 
     // Apply limit suspension distances.
-    genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, minSusDist));
-    genericSpringConstraint->SetLinearUpperLimit(Vec3(0, 0, maxSusDist));
+    genericSpringConstraint->SetLinearLowerLimits(Vec3(0, 0, minSusDist));
+    genericSpringConstraint->SetLinearUpperLimits(Vec3(0, 0, maxSusDist));
     genericSpringConstraint->EnableLinearLimits(true, true, enableSusLimit);
 
     // Apply limit steering angles.
-    genericSpringConstraint->SetAngularLowerLimit(Vec3(0, 0, DEG2RAD(minSteeringAngle)));
-    genericSpringConstraint->SetAngularUpperLimit(Vec3(0, 0, DEG2RAD(maxSteeringAngle)));
+    genericSpringConstraint->SetAngularLowerLimits(Vec3(0, 0, DEG2RAD(minSteeringAngle)));
+    genericSpringConstraint->SetAngularUpperLimits(Vec3(0, 0, DEG2RAD(maxSteeringAngle)));
     genericSpringConstraint->EnableAngularLimits(false, true, enableSteeringLimit);
 
     // Apply suspension stiffness & damping.
@@ -131,7 +134,7 @@ const Vec3 &ComWheelJoint::GetLocalAnchor() const {
 void ComWheelJoint::SetLocalAnchor(const Vec3 &anchor) {
     this->localAnchor = anchor;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, localAxis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(anchor, localAxis);
     }
 }
 
@@ -144,7 +147,7 @@ void ComWheelJoint::SetLocalAngles(const Angles &angles) {
     this->localAxis.FixDegeneracies();
 
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(localAnchor, localAxis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(localAnchor, localAxis);
     }
 }
 
@@ -155,7 +158,7 @@ const Vec3 &ComWheelJoint::GetConnectedAnchor() const {
 void ComWheelJoint::SetConnectedAnchor(const Vec3 &anchor) {
     this->connectedAnchor = anchor;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(anchor, connectedAxis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, connectedAxis);
     }
 }
 
@@ -168,7 +171,7 @@ void ComWheelJoint::SetConnectedAngles(const Angles &angles) {
     this->connectedAxis.FixDegeneracies();
 
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(connectedAnchor, connectedAxis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(connectedAnchor, connectedAxis);
     }
 }
 
@@ -182,14 +185,14 @@ void ComWheelJoint::SetEnableSuspensionLimit(bool enable) {
 void ComWheelJoint::SetMinimumSuspensionDistance(float minSusDist) {
     this->minSusDist = minSusDist;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetLinearLowerLimit(Vec3(0, 0, minSusDist));
+        ((PhysGenericSpringConstraint *)constraint)->SetLinearLowerLimits(Vec3(0, 0, minSusDist));
     }
 }
 
 void ComWheelJoint::SetMaximumSuspensionDistance(float maxSusDist) {
     this->maxSusDist = maxSusDist;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetLinearUpperLimit(Vec3(0, 0, maxSusDist));
+        ((PhysGenericSpringConstraint *)constraint)->SetLinearUpperLimits(Vec3(0, 0, maxSusDist));
     }
 }
 
@@ -217,14 +220,14 @@ void ComWheelJoint::SetEnableSteeringLimit(bool enable) {
 void ComWheelJoint::SetMinimumSteeringAngle(float angle) {
     this->minSteeringAngle = angle;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimit(Vec3(0, 0, DEG2RAD(minSteeringAngle)));
+        ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimits(Vec3(0, 0, DEG2RAD(minSteeringAngle)));
     }
 }
 
 void ComWheelJoint::SetMaximumSteeringAngle(float angle) {
     this->maxSteeringAngle = angle;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetAngularUpperLimit(Vec3(0, 0, DEG2RAD(maxSteeringAngle)));
+        ((PhysGenericSpringConstraint *)constraint)->SetAngularUpperLimits(Vec3(0, 0, DEG2RAD(maxSteeringAngle)));
     }
 }
 
@@ -250,31 +253,31 @@ void ComWheelJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool s
         const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
-            Vec3 worldOrigin = transform->GetWorldMatrix().TransformPos(localAnchor);
+            Vec3 worldAnchor = transform->GetWorldMatrix().TransformPos(localAnchor);
             Mat3 worldAxis = transform->GetAxis() * localAxis;
 
-            float viewScale = camera->CalcViewScale(worldOrigin);
+            float viewScale = camera->CalcViewScale(worldAnchor);
 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
             // Draw wheel circle
             renderWorld->SetDebugColor(Color4::red, Color4::zero);
-            renderWorld->DebugCircle(worldOrigin, worldAxis[0], MeterToUnit(5) * viewScale);
-            renderWorld->DebugCircle(worldOrigin, worldAxis[0], MeterToUnit(15) * viewScale);
+            renderWorld->DebugCircle(worldAnchor, worldAxis[0], MeterToUnit(5) * viewScale);
+            renderWorld->DebugCircle(worldAnchor, worldAxis[0], MeterToUnit(15) * viewScale);
 
             // Draw axle axis
             renderWorld->SetDebugColor(Color4::red, Color4::zero);
             renderWorld->DebugLine(
-                worldOrigin - worldAxis[0] * MeterToUnit(10) * viewScale,
-                worldOrigin + worldAxis[0] * MeterToUnit(10) * viewScale);
+                worldAnchor - worldAxis[0] * MeterToUnit(10) * viewScale,
+                worldAnchor + worldAxis[0] * MeterToUnit(10) * viewScale);
 
             // Draw forward direction
             renderWorld->SetDebugColor(Color4::green, Color4::zero);
-            renderWorld->DebugLine(worldOrigin, worldOrigin - worldAxis[1] * MeterToUnit(10) * viewScale);
+            renderWorld->DebugLine(worldAnchor, worldAnchor - worldAxis[1] * MeterToUnit(10) * viewScale);
 
             // Draw suspension direction
             renderWorld->SetDebugColor(Color4::blue, Color4::zero);
-            renderWorld->DebugLine(worldOrigin, worldOrigin + worldAxis[2] * MeterToUnit(10) * viewScale);
+            renderWorld->DebugLine(worldAnchor, worldAnchor + worldAxis[2] * MeterToUnit(10) * viewScale);
         }
     }
 }

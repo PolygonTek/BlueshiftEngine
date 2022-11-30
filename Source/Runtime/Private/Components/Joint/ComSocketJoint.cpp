@@ -51,25 +51,28 @@ void ComSocketJoint::CreateConstraint() {
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
-    // Fill up a constraint description.
+    Vec3 scaledLocalAnchor = transform->GetScale() * localAnchor;
+
     PhysConstraintDesc desc;
     desc.type = PhysConstraint::Type::Point2Point;
     desc.collision = collisionEnabled;
     desc.breakImpulse = breakImpulse;
 
-    desc.bodyA = rigidBody->GetBody();
-    desc.anchorInA = transform->GetScale() * localAnchor;
+    desc.bodyB = rigidBody->GetBody();
+    desc.anchorInB = scaledLocalAnchor;
 
     const ComRigidBody *connectedBody = GetConnectedBody();
     if (connectedBody) {
-        Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
+        Vec3 worldAnchor = desc.bodyB->GetOrigin() + desc.bodyB->GetAxis() * scaledLocalAnchor;
 
-        desc.bodyB = connectedBody->GetBody();
-        desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+        Mat3 connectedBodyWorldAxis = connectedBody->GetBody()->GetAxis();
+
+        desc.bodyA = connectedBody->GetBody();
+        desc.anchorInA = connectedBodyWorldAxis.TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
 
         connectedAnchor = desc.anchorInB;
     } else {
-        desc.bodyB = nullptr;
+        desc.bodyA = nullptr;
 
         connectedAnchor = Vec3::origin;
     }
@@ -88,7 +91,7 @@ const Vec3 &ComSocketJoint::GetLocalAnchor() const {
 void ComSocketJoint::SetLocalAnchor(const Vec3 &anchor) {
     this->localAnchor = anchor;
     if (constraint) {
-        ((PhysP2PConstraint *)constraint)->SetAnchorA(anchor);
+        ((PhysP2PConstraint *)constraint)->SetAnchorB(anchor);
     }
 }
 
@@ -99,7 +102,7 @@ const Vec3 &ComSocketJoint::GetConnectedAnchor() const {
 void ComSocketJoint::SetConnectedAnchor(const Vec3 &anchor) {
     this->connectedAnchor = anchor;
     if (constraint) {
-        ((PhysP2PConstraint *)constraint)->SetAnchorB(anchor);
+        ((PhysP2PConstraint *)constraint)->SetAnchorA(anchor);
     }
 }
 
@@ -120,16 +123,16 @@ void ComSocketJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool 
         const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
-            Vec3 worldOrigin = transform->GetWorldMatrix().TransformPos(localAnchor);
+            Vec3 worldAnchor = transform->GetWorldMatrix().TransformPos(localAnchor);
 
-            float viewScale = camera->CalcViewScale(worldOrigin);
+            float viewScale = camera->CalcViewScale(worldAnchor);
 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
             renderWorld->SetDebugColor(Color4::red, Color4::zero);
-            renderWorld->DebugLine(worldOrigin - Mat3::identity[0] * MeterToUnit(3) * viewScale, worldOrigin + Mat3::identity[0] * MeterToUnit(3) * viewScale);
-            renderWorld->DebugLine(worldOrigin - Mat3::identity[1] * MeterToUnit(3) * viewScale, worldOrigin + Mat3::identity[1] * MeterToUnit(3) * viewScale);
-            renderWorld->DebugLine(worldOrigin - Mat3::identity[2] * MeterToUnit(3) * viewScale, worldOrigin + Mat3::identity[2] * MeterToUnit(3) * viewScale);
+            renderWorld->DebugLine(worldAnchor - Mat3::identity[0] * MeterToUnit(3) * viewScale, worldAnchor + Mat3::identity[0] * MeterToUnit(3) * viewScale);
+            renderWorld->DebugLine(worldAnchor - Mat3::identity[1] * MeterToUnit(3) * viewScale, worldAnchor + Mat3::identity[1] * MeterToUnit(3) * viewScale);
+            renderWorld->DebugLine(worldAnchor - Mat3::identity[2] * MeterToUnit(3) * viewScale, worldAnchor + Mat3::identity[2] * MeterToUnit(3) * viewScale);
         }
     }
 }

@@ -61,40 +61,43 @@ void ComSpringJoint::CreateConstraint() {
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     assert(rigidBody);
 
-    // Fill up a constraint description.
+    Vec3 scaledLocalAnchor = transform->GetScale() * localAnchor;
+
     PhysConstraintDesc desc;
     desc.type = PhysConstraint::Type::GenericSpring;
     desc.collision = collisionEnabled;
     desc.breakImpulse = breakImpulse;
 
-    desc.bodyA = rigidBody->GetBody();
-    desc.axisInA = localAxis;
-    desc.anchorInA = transform->GetScale() * localAnchor;
+    desc.bodyB = rigidBody->GetBody();
+    desc.anchorInB = scaledLocalAnchor;
+    desc.axisInB = localAxis;
 
     const ComRigidBody *connectedBody = GetConnectedBody();
     if (connectedBody) {
-        Mat3 worldAxis = desc.bodyA->GetAxis() * localAxis;
-        Vec3 worldAnchor = desc.bodyA->GetOrigin() + desc.bodyA->GetAxis() * desc.anchorInA;
+        Vec3 worldAnchor = desc.bodyB->GetOrigin() + desc.bodyB->GetAxis() * scaledLocalAnchor;
+        Mat3 worldAxis = desc.bodyB->GetAxis() * localAxis;
 
-        desc.bodyB = connectedBody->GetBody();
-        desc.axisInB = connectedBody->GetBody()->GetAxis().TransposedMul(worldAxis);
-        desc.anchorInB = connectedBody->GetBody()->GetAxis().TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+        Mat3 connectedBodyWorldAxis = connectedBody->GetBody()->GetAxis();
 
-        connectedAxis = desc.axisInB;
+        desc.bodyA = connectedBody->GetBody();
+        desc.anchorInA = connectedBodyWorldAxis.TransposedMulVec(worldAnchor - connectedBody->GetBody()->GetOrigin());
+        desc.axisInA = connectedBodyWorldAxis.TransposedMul(worldAxis);
+
         connectedAnchor = desc.anchorInB;
+        connectedAxis = desc.axisInB;
     } else {
-        desc.bodyB = nullptr;
+        desc.bodyA = nullptr;
 
-        connectedAxis = Mat3::identity;
         connectedAnchor = Vec3::origin;
+        connectedAxis = Mat3::identity;
     }
 
     // Create a constraint with the given description.
     PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(desc);
 
     // Apply limit distances.
-    genericSpringConstraint->SetLinearLowerLimit(Vec3(0, 0, minDist));
-    genericSpringConstraint->SetLinearUpperLimit(Vec3(0, 0, maxDist));
+    genericSpringConstraint->SetLinearLowerLimits(Vec3(0, 0, minDist));
+    genericSpringConstraint->SetLinearUpperLimits(Vec3(0, 0, maxDist));
     genericSpringConstraint->EnableLinearLimits(true, true, enableLimitDistances);
 
     // Apply spring stiffness & damping.
@@ -112,7 +115,7 @@ void ComSpringJoint::SetLocalAnchor(const Vec3 &anchor) {
     this->localAnchor = anchor;
 
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, localAxis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(anchor, localAxis);
     }
 }
 
@@ -125,7 +128,7 @@ void ComSpringJoint::SetLocalAngles(const Angles &angles) {
     this->localAxis.FixDegeneracies();
 
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(localAnchor, localAxis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(localAnchor, localAxis);
     }
 }
 
@@ -136,7 +139,7 @@ const Vec3 &ComSpringJoint::GetConnectedAnchor() const {
 void ComSpringJoint::SetConnectedAnchor(const Vec3 &anchor) {
     this->connectedAnchor = anchor;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(anchor, connectedAxis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, connectedAxis);
     }
 }
 
@@ -149,7 +152,7 @@ void ComSpringJoint::SetConnectedAngles(const Angles &angles) {
     this->connectedAxis.FixDegeneracies();
 
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetFrameB(connectedAnchor, connectedAxis);
+        ((PhysGenericSpringConstraint *)constraint)->SetFrameA(connectedAnchor, connectedAxis);
     }
 }
 
@@ -163,14 +166,14 @@ void ComSpringJoint::SetEnableLimitDistances(bool enable) {
 void ComSpringJoint::SetMinimumDistance(float minDist) {
     this->minDist = minDist;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetLinearLowerLimit(Vec3(0, 0, minDist));
+        ((PhysGenericSpringConstraint *)constraint)->SetLinearLowerLimits(Vec3(0, 0, minDist));
     }
 }
 
 void ComSpringJoint::SetMaximumDistance(float maxDist) {
     this->maxDist = maxDist;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetLinearUpperLimit(Vec3(0, 0, maxDist));
+        ((PhysGenericSpringConstraint *)constraint)->SetLinearUpperLimits(Vec3(0, 0, maxDist));
     }
 }
 
@@ -194,20 +197,20 @@ void ComSpringJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool 
         const ComTransform *transform = GetEntity()->GetTransform();
 
         if (transform->GetOrigin().DistanceSqr(camera->GetState().origin) < MeterToUnit(100.0f * 100.0f)) {
-            Vec3 worldOrigin = transform->GetWorldMatrix().TransformPos(localAnchor);
+            Vec3 worldAnchor = transform->GetWorldMatrix().TransformPos(localAnchor);
             Mat3 worldAxis = transform->GetAxis() * localAxis;
 
-            float viewScale = camera->CalcViewScale(worldOrigin);
+            float viewScale = camera->CalcViewScale(worldAnchor);
 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
             renderWorld->SetDebugColor(Color4::red, Color4::zero);
-            renderWorld->DebugLine(worldOrigin - worldAxis[0] * MeterToUnit(5) * viewScale, worldOrigin + worldAxis[0] * MeterToUnit(5) * viewScale);
-            renderWorld->DebugLine(worldOrigin - worldAxis[1] * MeterToUnit(5) * viewScale, worldOrigin + worldAxis[1] * MeterToUnit(5) * viewScale);
+            renderWorld->DebugLine(worldAnchor - worldAxis[0] * MeterToUnit(5) * viewScale, worldAnchor + worldAxis[0] * MeterToUnit(5) * viewScale);
+            renderWorld->DebugLine(worldAnchor - worldAxis[1] * MeterToUnit(5) * viewScale, worldAnchor + worldAxis[1] * MeterToUnit(5) * viewScale);
 
-            renderWorld->DebugCircle(worldOrigin - worldAxis[2] * MeterToUnit(3) * viewScale, worldAxis[2], MeterToUnit(5) * viewScale);
-            renderWorld->DebugCircle(worldOrigin, worldAxis[2], MeterToUnit(5) * viewScale);
-            renderWorld->DebugCircle(worldOrigin + worldAxis[2] * MeterToUnit(3) * viewScale, worldAxis[2], MeterToUnit(5) * viewScale);
+            renderWorld->DebugCircle(worldAnchor - worldAxis[2] * MeterToUnit(3) * viewScale, worldAxis[2], MeterToUnit(5) * viewScale);
+            renderWorld->DebugCircle(worldAnchor, worldAxis[2], MeterToUnit(5) * viewScale);
+            renderWorld->DebugCircle(worldAnchor + worldAxis[2] * MeterToUnit(3) * viewScale, worldAxis[2], MeterToUnit(5) * viewScale);
         }
     }
 }

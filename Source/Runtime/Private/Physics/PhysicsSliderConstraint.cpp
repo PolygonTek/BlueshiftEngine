@@ -20,13 +20,13 @@ BE_NAMESPACE_BEGIN
 
 #define CONTROL_CFM_ERP
 
-PhysSliderConstraint::PhysSliderConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, const Mat3 &axisInA) : 
-    PhysConstraint(bodyA, nullptr) {
-    Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
+PhysSliderConstraint::PhysSliderConstraint(PhysRigidBody *bodyB, const Vec3 &anchorInB, const Mat3 &axisInB) :
+    PhysConstraint(nullptr, bodyB) {
+    Vec3 anchorInBCentroid = anchorInB - bodyB->centroid;
 
-    btTransform frameA = ToBtTransform(axisInA, SystemUnitToPhysicsUnit(anchorInACentroid));
+    btTransform frameB = ToBtTransform(axisInB, SystemUnitToPhysicsUnit(anchorInBCentroid));
 
-    btSliderConstraint *sliderConstraint = new btSliderConstraint(*bodyA->GetRigidBody(), frameA, true);
+    btSliderConstraint *sliderConstraint = new btSliderConstraint(*bodyB->GetRigidBody(), frameB, true);
     sliderConstraint->setUserConstraintPtr(this);
 
 #ifdef CONTROL_CFM_ERP
@@ -75,26 +75,26 @@ PhysSliderConstraint::PhysSliderConstraint(PhysRigidBody *bodyA, const Vec3 &anc
 void PhysSliderConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA) {
     btSliderConstraint *sliderConstraint = static_cast<btSliderConstraint *>(constraint);
 
-    Vec3 anchorInACentroid = anchorInA - bodyA->centroid;
+    Vec3 anchorInACentroid = bodyA ? anchorInA - bodyB->centroid : anchorInA;
     btTransform frameA = ToBtTransform(axisInA, SystemUnitToPhysicsUnit(anchorInACentroid));
 
-    if (!bodyB) {
-        sliderConstraint->setFrames(sliderConstraint->getFrameOffsetA(), frameA);
+    if (!bodyA) {
+        sliderConstraint->setFrames(frameA, sliderConstraint->getFrameOffsetA());
     } else {
-        sliderConstraint->setFrames(frameA, sliderConstraint->getFrameOffsetB());
+        sliderConstraint->setFrames(sliderConstraint->getFrameOffsetB(), frameA);
     }
 }
 
 void PhysSliderConstraint::SetFrameB(const Vec3 &anchorInB, const Mat3 &axisInB) {
     btSliderConstraint *sliderConstraint = static_cast<btSliderConstraint *>(constraint);
 
-    Vec3 anchorInBCentroid = bodyB ? anchorInB - bodyA->centroid : anchorInB;
+    Vec3 anchorInBCentroid = anchorInB - bodyB->centroid;
     btTransform frameB = ToBtTransform(axisInB, SystemUnitToPhysicsUnit(anchorInBCentroid));
 
-    if (!bodyB) {
-        sliderConstraint->setFrames(frameB, sliderConstraint->getFrameOffsetB());
+    if (!bodyA) {
+        sliderConstraint->setFrames(sliderConstraint->getFrameOffsetB(), frameB);
     } else {
-        sliderConstraint->setFrames(sliderConstraint->getFrameOffsetA(), frameB);
+        sliderConstraint->setFrames(frameB, sliderConstraint->getFrameOffsetA());
     }
 }
 

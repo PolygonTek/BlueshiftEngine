@@ -21,7 +21,7 @@ BE_NAMESPACE_BEGIN
 /// Slider constraint
 class PhysSliderConstraint : public PhysConstraint {
 public:
-    PhysSliderConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, const Mat3 &axisInA);
+    PhysSliderConstraint(PhysRigidBody *bodyB, const Vec3 &anchorInB, const Mat3 &axisInB);
     PhysSliderConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, const Mat3 &axisInA, PhysRigidBody *bodyB, const Vec3 &anchorInB, const Mat3 &axisInB);
 
     void                SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA);
