@@ -47,7 +47,7 @@ public:
     void                    SetConvex(bool convex);
 
 protected:
-    Guid                    meshGuid = GuidMapper::defaultMeshGuid;
+    Guid                    meshGuid;
     bool                    convex = false;
 };
 

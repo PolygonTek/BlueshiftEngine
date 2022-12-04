@@ -52,6 +52,7 @@ void ComText::RegisterProperties() {
 }
 
 ComText::ComText() {
+    fontGuid = GuidMapper::defaultFontGuid;
 }
 
 ComText::~ComText() {

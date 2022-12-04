@@ -35,7 +35,7 @@ void ComMeshCollider::RegisterProperties() {
 }
 
 ComMeshCollider::ComMeshCollider() {
-    meshGuid = Guid::zero;
+    meshGuid = GuidMapper::defaultMeshGuid;
 }
 
 ComMeshCollider::~ComMeshCollider() {
