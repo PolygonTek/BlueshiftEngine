@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Components/Transform/ComTransform.h"
 #include "Components/Joint/ComJoint.h"
-#include "Components/ComRigidBody.h"
+#include "Components/Physics/ComRigidBody.h"
 #include "Game/Entity.h"
 #include "Game/GameWorld.h"
 

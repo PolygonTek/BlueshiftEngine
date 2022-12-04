@@ -17,7 +17,7 @@
 #include "Physics/Collider.h"
 #include "Components/Transform/ComTransform.h"
 #include "Components/Collider/ComCollider.h"
-#include "Components/ComRigidBody.h"
+#include "Components/Physics/ComRigidBody.h"
 #include "Components/ComCharacterController.h"
 #include "Components/ComScript.h"
 #include "Game/GameWorld.h"

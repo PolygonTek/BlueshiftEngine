@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComConstantForce.h"
+#include "Components/Physics/ComConstantForce.h"
 
 BE_NAMESPACE_BEGIN
 

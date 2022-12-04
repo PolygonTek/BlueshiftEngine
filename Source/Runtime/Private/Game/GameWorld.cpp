@@ -26,7 +26,7 @@
 #include "Components/ComCamera.h"
 #include "Components/ComCanvas.h"
 #include "Components/ComScript.h"
-#include "Components/ComRigidBody.h"
+#include "Components/Physics/ComRigidBody.h"
 #include "Game/Entity.h"
 #include "Game/MapRenderSettings.h"
 #include "Game/GameWorld.h"

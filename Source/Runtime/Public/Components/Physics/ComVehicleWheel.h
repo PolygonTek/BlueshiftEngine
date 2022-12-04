@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "Component.h"
+#include "Components/Component.h"
 
 BE_NAMESPACE_BEGIN
 

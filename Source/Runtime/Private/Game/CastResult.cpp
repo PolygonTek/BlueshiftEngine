@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "Components/ComRigidBody.h"
-#include "Components/ComSensor.h"
+#include "Components/Physics/ComRigidBody.h"
+#include "Components/Physics/ComSensor.h"
 #include "Game/CastResult.h"
 
 BE_NAMESPACE_BEGIN

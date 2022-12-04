@@ -32,6 +32,10 @@
 #include "Components/Joint/ComSpringJoint.h"
 #include "Components/Joint/ComWheelJoint.h"
 #include "Components/Joint/ComCharacterJoint.h"
+#include "Components/Physics/ComRigidBody.h"
+#include "Components/Physics/ComSensor.h"
+#include "Components/Physics/ComVehicleWheel.h"
+#include "Components/Physics/ComConstantForce.h"
 #include "Components/Renderable/ComRenderable.h"
 #include "Components/Renderable/ComMeshRenderer.h"
 #include "Components/Renderable/ComStaticMeshRenderer.h"
@@ -40,10 +44,8 @@
 #include "Components/Renderable/ComText.h"
 #include "Components/Renderable/ComImage.h"
 #include "Components/Renderable/ComParticleSystem.h"
-#include "Components/ComRigidBody.h"
-#include "Components/ComSensor.h"
-#include "Components/ComVehicleWheel.h"
-#include "Components/ComConstantForce.h"
+#include "Components/Audio/ComAudioListener.h"
+#include "Components/Audio/ComAudioSource.h"
 #include "Components/ComCharacterController.h"
 #include "Components/ComCamera.h"
 #include "Components/ComCanvas.h"
@@ -53,8 +55,6 @@
 #include "Components/ComLogic.h"
 #include "Components/ComSpline.h"
 #include "Components/ComScript.h"
-#include "Components/ComAudioListener.h"
-#include "Components/ComAudioSource.h"
 
 BE_NAMESPACE_BEGIN
 

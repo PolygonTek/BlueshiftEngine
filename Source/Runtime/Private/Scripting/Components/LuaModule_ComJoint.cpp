@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
 #include "Components/Joint/ComJoint.h"
-#include "Components/ComRigidBody.h"
+#include "Components/Physics/ComRigidBody.h"
 
 BE_NAMESPACE_BEGIN
 

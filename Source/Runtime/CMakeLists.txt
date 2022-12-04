@@ -240,6 +240,11 @@ set(COMMON_ENGINE_FILES
     Public/Components/Joint/ComCharacterJoint.h
     Public/Components/Joint/ComWheelJoint.h
 
+    Public/Components/Physics/ComRigidBody.h
+    Public/Components/Physics/ComSensor.h
+    Public/Components/Physics/ComConstantForce.h
+    Public/Components/Physics/ComVehicleWheel.h
+
     Public/Components/Renderable/ComRenderable.h
     Public/Components/Renderable/ComMeshRenderer.h
     Public/Components/Renderable/ComStaticMeshRenderer.h
@@ -249,22 +254,19 @@ set(COMMON_ENGINE_FILES
     Public/Components/Renderable/ComText.h
     Public/Components/Renderable/ComImage.h
 
+    Public/Components/Audio/ComAudioListener.h
+    Public/Components/Audio/ComAudioSource.h
+
     Public/Components/Component.h
     Public/Components/ComCamera.h
     Public/Components/ComCanvas.h
     Public/Components/ComCharacterController.h
     Public/Components/ComAnimation.h
     Public/Components/ComAnimator.h
-    Public/Components/ComAudioListener.h
-    Public/Components/ComAudioSource.h
     Public/Components/ComLight.h
     Public/Components/ComEnvironmentProbe.h
     Public/Components/ComLogic.h
     Public/Components/ComScript.h
-    Public/Components/ComRigidBody.h
-    Public/Components/ComSensor.h
-    Public/Components/ComConstantForce.h
-    Public/Components/ComVehicleWheel.h
     Public/Components/ComSpline.h
 
     Public/Game/Entity.h
@@ -570,6 +572,11 @@ set(COMMON_ENGINE_FILES
     Private/Components/Joint/ComCharacterJoint.cpp
     Private/Components/Joint/ComWheelJoint.cpp
 
+    Private/Components/Physics/ComRigidBody.cpp
+    Private/Components/Physics/ComSensor.cpp
+    Private/Components/Physics/ComConstantForce.cpp
+    Private/Components/Physics/ComVehicleWheel.cpp
+
     Private/Components/Renderable/ComRenderable.cpp
     Private/Components/Renderable/ComMeshRenderer.cpp
     Private/Components/Renderable/ComStaticMeshRenderer.cpp
@@ -579,22 +586,19 @@ set(COMMON_ENGINE_FILES
     Private/Components/Renderable/ComText.cpp
     Private/Components/Renderable/ComImage.cpp
 
+    Private/Components/Audio/ComAudioListener.cpp
+    Private/Components/Audio/ComAudioSource.cpp
+
     Private/Components/Component.cpp
     Private/Components/ComCamera.cpp
     Private/Components/ComCanvas.cpp
     Private/Components/ComCharacterController.cpp
     Private/Components/ComAnimation.cpp
     Private/Components/ComAnimator.cpp
-    Private/Components/ComAudioListener.cpp
-    Private/Components/ComAudioSource.cpp
     Private/Components/ComLight.cpp
     Private/Components/ComEnvironmentProbe.cpp
     Private/Components/ComLogic.cpp
     Private/Components/ComScript.cpp
-    Private/Components/ComRigidBody.cpp
-    Private/Components/ComSensor.cpp
-    Private/Components/ComConstantForce.cpp
-    Private/Components/ComVehicleWheel.cpp
     Private/Components/ComSpline.cpp
 
     Private/Game/Entity.cpp

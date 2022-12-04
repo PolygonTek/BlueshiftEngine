@@ -15,7 +15,7 @@
 #pragma once
 
 #include "Physics/Physics.h"
-#include "Component.h"
+#include "Components/Component.h"
 
 BE_NAMESPACE_BEGIN
 

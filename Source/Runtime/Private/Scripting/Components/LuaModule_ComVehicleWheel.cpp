@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComVehicleWheel.h"
+#include "Components/Physics/ComVehicleWheel.h"
 
 BE_NAMESPACE_BEGIN
 

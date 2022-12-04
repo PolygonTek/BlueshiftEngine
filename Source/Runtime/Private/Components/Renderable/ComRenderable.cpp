@@ -16,7 +16,6 @@
 #include "Render/Render.h"
 #include "Components/Transform/ComTransform.h"
 #include "Components/Renderable/ComRenderable.h"
-#include "Components/ComRigidBody.h"
 #include "Game/GameWorld.h"
 #include "StaticBatching/StaticBatch.h"
 

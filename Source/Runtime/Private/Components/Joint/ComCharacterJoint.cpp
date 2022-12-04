@@ -16,7 +16,7 @@
 #include "Render/Render.h"
 #include "Components/Transform/ComTransform.h"
 #include "Components/Joint/ComCharacterJoint.h"
-#include "Components/ComRigidBody.h"
+#include "Components/Physics/ComRigidBody.h"
 #include "Game/GameWorld.h"
 
 BE_NAMESPACE_BEGIN

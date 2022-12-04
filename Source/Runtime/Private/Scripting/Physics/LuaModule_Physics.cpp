@@ -14,8 +14,8 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComRigidBody.h"
-#include "Components/ComSensor.h"
+#include "Components/Physics/ComRigidBody.h"
+#include "Components/Physics/ComSensor.h"
 #include "Physics/PhysicsWorld.h"
 #include "Game/GameWorld.h"
 #include "Game/CastResult.h"

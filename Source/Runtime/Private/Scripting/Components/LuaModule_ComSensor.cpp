@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
 #include "Game/CastResult.h"
-#include "Components/ComSensor.h"
+#include "Components/Physics/ComSensor.h"
 
 BE_NAMESPACE_BEGIN
 

@@ -14,7 +14,7 @@
 
 #include "Precompiled.h"
 #include "Scripting/LuaVM.h"
-#include "Components/ComAudioSource.h"
+#include "Components/Audio/ComAudioSource.h"
 
 BE_NAMESPACE_BEGIN
 

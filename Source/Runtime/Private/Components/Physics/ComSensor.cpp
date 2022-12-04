@@ -15,8 +15,8 @@
 #include "Precompiled.h"
 #include "Components/Transform/ComTransform.h"
 #include "Components/Collider/ComCollider.h"
-#include "Components/ComSensor.h"
-#include "Components/ComRigidBody.h"
+#include "Components/Physics/ComSensor.h"
+#include "Components/Physics/ComRigidBody.h"
 #include "Components/ComScript.h"
 #include "Game/GameWorld.h"
 

@@ -17,8 +17,8 @@
 #include "Components/Transform/ComTransform.h"
 #include "Components/Transform/ComRectTransform.h"
 #include "Components/Transform/JointHierarchy.h"
-#include "Components/ComRigidBody.h"
-#include "Components/ComVehicleWheel.h"
+#include "Components/Physics/ComRigidBody.h"
+#include "Components/Physics/ComVehicleWheel.h"
 #include "Game/Entity.h"
 #include "Game/GameWorld.h"
 

@@ -15,8 +15,8 @@
 #include "Precompiled.h"
 #include "Render/Render.h"
 #include "Components/Transform/ComTransform.h"
-#include "Components/ComRigidBody.h"
-#include "Components/ComVehicleWheel.h"
+#include "Components/Physics/ComRigidBody.h"
+#include "Components/Physics/ComVehicleWheel.h"
 #include "Game/GameWorld.h"
 
 BE_NAMESPACE_BEGIN

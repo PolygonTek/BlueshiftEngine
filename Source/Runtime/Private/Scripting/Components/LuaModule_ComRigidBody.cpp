@@ -17,7 +17,7 @@
 #include "Game/Entity.h"
 #include "Game/CastResult.h"
 #include "Components/ComCharacterController.h"
-#include "Components/ComRigidBody.h"
+#include "Components/Physics/ComRigidBody.h"
 
 BE_NAMESPACE_BEGIN
 

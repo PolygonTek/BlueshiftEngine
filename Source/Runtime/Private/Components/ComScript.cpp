@@ -20,7 +20,7 @@
 #include "Components/ComScript.h"
 #include "Components/Transform/ComTransform.h"
 #include "Components/Transform/ComRectTransform.h"
-#include "Components/ComRigidBody.h"
+#include "Components/Physics/ComRigidBody.h"
 #include "Game/GameWorld.h"
 
 BE_NAMESPACE_BEGIN

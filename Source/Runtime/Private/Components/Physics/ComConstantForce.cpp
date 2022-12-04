@@ -14,8 +14,8 @@
 
 #include "Precompiled.h"
 #include "Components/Transform/ComTransform.h"
-#include "Components/ComRigidBody.h"
-#include "Components/ComConstantForce.h"
+#include "Components/Physics/ComRigidBody.h"
+#include "Components/Physics/ComConstantForce.h"
 #include "Game/Entity.h"
 
 BE_NAMESPACE_BEGIN
