@@ -28,28 +28,26 @@ END_EVENTS
 void ComCharacterJoint::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("anchor", "Anchor", Vec3, GetAnchor, SetAnchor, Vec3::zero, 
         "Joint position in local space", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
-    REGISTER_MIXED_ACCESSOR_PROPERTY("angles", "Angles", Angles, GetAngles, SetAngles, Angles::zero, 
-        "Joint angles in local space", PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("swing1LowerLimit", "X Swing/Lower Limit", float, GetSwing1LowerLimit, SetSwing1LowerLimit, -45.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(-177, 0, 1);
-    REGISTER_ACCESSOR_PROPERTY("swing1UpperLimit", "X Swing/Upper Limit", float, GetSwing1UpperLimit, SetSwing1UpperLimit, 45.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 177, 1);
-    REGISTER_ACCESSOR_PROPERTY("swing1Stiffness", "X Swing/Stiffness", float, GetSwing1Stiffness, SetSwing1Stiffness, 0.f, 
+    REGISTER_PROPERTY("baseAngles", "Base Angles", Angles, baseAngles, Angles::zero,
         "", PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("swing1Damping", "X Swing/Damping", float, GetSwing1Damping, SetSwing1Damping, 0.2f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("swing2LowerLimit", "Y Swing/Lower Limit", float, GetSwing2LowerLimit, SetSwing2LowerLimit, -45.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(-177, 0, 1);
-    REGISTER_ACCESSOR_PROPERTY("swing2UpperLimit", "Y Swing/Upper Limit", float, GetSwing2UpperLimit, SetSwing2UpperLimit, 45.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 177, 1);
-    REGISTER_ACCESSOR_PROPERTY("swing2Stiffness", "Y Swing/Stiffness", float, GetSwing2Stiffness, SetSwing2Stiffness, 0.f, 
+    REGISTER_ACCESSOR_PROPERTY("swing1Axis", "Swing 1/Axis", Vec3, GetSwing1Axis, SetSwing1Axis, Vec3::unitX,
         "", PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("swing2Damping", "Y Swing/Damping", float, GetSwing2Damping, SetSwing2Damping, 0.2f, 
+    REGISTER_ACCESSOR_PROPERTY("swing1Limit", "Swing 1/Limit", float, GetSwing1Limit, SetSwing1Limit, 0, 
+        "", PropertyInfo::Flag::Editor).SetRange(0, 179, 1);
+    REGISTER_ACCESSOR_PROPERTY("swing1Stiffness", "Swing 1/Stiffness", float, GetSwing1Stiffness, SetSwing1Stiffness, 0.f, 
+        "", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("swing1Damping", "Swing 1/Damping", float, GetSwing1Damping, SetSwing1Damping, 0.2f, 
         "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("twistLowerLimit", "Twist/Lower Limit", float, GetTwistLowerLimit, SetTwistLowerLimit, -45.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(-45, 0, 1);
-    REGISTER_ACCESSOR_PROPERTY("twistUpperLimit", "Twist/Upper Limit", float, GetTwistUpperLimit, SetTwistUpperLimit, 45.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 45, 1);
+    REGISTER_ACCESSOR_PROPERTY("swing2Axis", "Swing 2/Axis", Vec3, GetSwing2Axis, SetSwing2Axis, Vec3::unitY,
+        "", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("swing2Limit", "Swing 2/Limit", float, GetSwing2Limit, SetSwing2Limit, -45.f, 
+        "", PropertyInfo::Flag::Editor).SetRange(0, 179, 1);
+    REGISTER_ACCESSOR_PROPERTY("swing2Stiffness", "Swing 2/Stiffness", float, GetSwing2Stiffness, SetSwing2Stiffness, 0.f, 
+        "", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("swing2Damping", "Swing 2/Damping", float, GetSwing2Damping, SetSwing2Damping, 0.2f, 
+        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("twistLimit", "Twist/Limit", float, GetTwistLimit, SetTwistLimit, 0, 
+        "", PropertyInfo::Flag::Editor).SetRange(0, 89, 1);
     REGISTER_ACCESSOR_PROPERTY("twistStiffness", "Twist/Stiffness", float, GetTwistStiffness, SetTwistStiffness, 0.f, 
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("twistDamping", "Twist/Damping", float, GetTwistDamping, SetTwistDamping, 0.2f, 
@@ -57,7 +55,6 @@ void ComCharacterJoint::RegisterProperties() {
 }
 
 ComCharacterJoint::ComCharacterJoint() {
-    axis = Mat3::identity;
 }
 
 ComCharacterJoint::~ComCharacterJoint() {
@@ -122,16 +119,27 @@ void ComCharacterJoint::CreateConstraint() {
 
     // Create a constraint with the given description.
     PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)physicsSystem.CreateConstraint(desc);
+    constraint = genericSpringConstraint;
 
     genericSpringConstraint->SetAngularStiffness(stiffness);
+    // FIXME: Bullet physics's angular damping is not working !!
     genericSpringConstraint->SetAngularDamping(damping);
 
-    // Apply limit angles.
-    genericSpringConstraint->SetAngularLowerLimits(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
-    genericSpringConstraint->SetAngularUpperLimits(Vec3(DEG2RAD(upperLimit.x), DEG2RAD(upperLimit.y), DEG2RAD(upperLimit.z)));
-    genericSpringConstraint->EnableAngularLimits(true, true, true);
+    // Apply angle limits.
+    ApplyAngleLimits();
+}
 
-    constraint = genericSpringConstraint;
+void ComCharacterJoint::ApplyAngleLimits() {
+    PhysGenericSpringConstraint *genericSpringConstraint = (PhysGenericSpringConstraint *)constraint;
+    if (genericSpringConstraint) {
+        Vec3 lowerLimits = *(Vec3 *)baseAngles.Ptr() - angleLimits;
+        Vec3 upperLimits = *(Vec3 *)baseAngles.Ptr() + angleLimits;
+
+        genericSpringConstraint->SetAngularLowerLimits(Vec3(DEG2RAD(lowerLimits.x), DEG2RAD(lowerLimits.y), DEG2RAD(lowerLimits.z)));
+        genericSpringConstraint->SetAngularUpperLimits(Vec3(DEG2RAD(upperLimits.x), DEG2RAD(upperLimits.y), DEG2RAD(upperLimits.z)));
+
+        genericSpringConstraint->EnableAngularLimits(true, true, true);
+    }
 }
 
 void ComCharacterJoint::SetAnchor(const Vec3 &anchor) {
@@ -142,9 +150,8 @@ void ComCharacterJoint::SetAnchor(const Vec3 &anchor) {
     }
 }
 
-void ComCharacterJoint::SetAngles(const Angles &angles) {
-    this->axis = angles.ToMat3();
-    this->axis.FixDegeneracies();
+void ComCharacterJoint::SetAxis(const Mat3 &axis) {
+    this->axis = axis;
 
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetFrameB(anchor, axis);
@@ -153,36 +160,38 @@ void ComCharacterJoint::SetAngles(const Angles &angles) {
 
 void ComCharacterJoint::SetConnectedAnchor(const Vec3 &anchor) {
     this->connectedAnchor = anchor;
+
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetFrameA(anchor, connectedAxis);
     }
 }
 
-void ComCharacterJoint::SetConnectedAngles(const Angles &angles) {
-    this->connectedAxis = angles.ToMat3();
-    this->connectedAxis.FixDegeneracies();
+void ComCharacterJoint::SetConnectedAxis(const Mat3 &axis) {
+    this->connectedAxis = axis;
 
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetFrameA(connectedAnchor, connectedAxis);
     }
 }
 
-void ComCharacterJoint::SetSwing1LowerLimit(float limit) {
-    this->lowerLimit.x = limit;
-    if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimits(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
-    }
+void ComCharacterJoint::SetSwing1Axis(const Vec3 &swing1Axis) {
+    this->swing1Axis = swing1Axis;
+
+    axis[0] = swing1Axis;
+    axis.OrthoNormalizeSelf();
 }
 
-void ComCharacterJoint::SetSwing1UpperLimit(float limit) {
-    this->upperLimit.x = limit;
+void ComCharacterJoint::SetSwing1Limit(float limit) {
+    this->angleLimits.x = limit;
+
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetAngularUpperLimits(Vec3(DEG2RAD(upperLimit.x), DEG2RAD(upperLimit.y), DEG2RAD(upperLimit.z)));
+        ApplyAngleLimits();
     }
 }
 
 void ComCharacterJoint::SetSwing1Stiffness(float stiffness) {
     this->stiffness.x = stiffness;
+
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularStiffness(this->stiffness);
     }
@@ -190,27 +199,30 @@ void ComCharacterJoint::SetSwing1Stiffness(float stiffness) {
 
 void ComCharacterJoint::SetSwing1Damping(float damping) {
     this->damping.x = damping;
+
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularDamping(this->damping);
     }
 }
 
-void ComCharacterJoint::SetSwing2LowerLimit(float limit) {
-    this->lowerLimit.y = limit;
-    if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimits(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
-    }
+void ComCharacterJoint::SetSwing2Axis(const Vec3 &swing2Axis) {
+    this->swing2Axis = swing2Axis;
+
+    axis[1] = swing2Axis;
+    axis.OrthoNormalizeSelf();
 }
 
-void ComCharacterJoint::SetSwing2UpperLimit(float limit) {
-    this->upperLimit.y = limit;
+void ComCharacterJoint::SetSwing2Limit(float limit) {
+    this->angleLimits.y = limit;
+
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetAngularUpperLimits(Vec3(DEG2RAD(upperLimit.x), DEG2RAD(upperLimit.y), DEG2RAD(upperLimit.z)));
+        ApplyAngleLimits();
     }
 }
 
 void ComCharacterJoint::SetSwing2Stiffness(float stiffness) {
     this->stiffness.y = stiffness;
+
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularStiffness(this->stiffness);
     }
@@ -218,27 +230,23 @@ void ComCharacterJoint::SetSwing2Stiffness(float stiffness) {
 
 void ComCharacterJoint::SetSwing2Damping(float damping) {
     this->damping.y = damping;
+
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularDamping(this->damping);
     }
 }
 
-void ComCharacterJoint::SetTwistLowerLimit(float limit) {
-    this->lowerLimit.z = limit;
-    if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetAngularLowerLimits(Vec3(DEG2RAD(lowerLimit.x), DEG2RAD(lowerLimit.y), DEG2RAD(lowerLimit.z)));
-    }
-}
+void ComCharacterJoint::SetTwistLimit(float limit) {
+    this->angleLimits.z = limit;
 
-void ComCharacterJoint::SetTwistUpperLimit(float limit) {
-    this->upperLimit.z = limit;
     if (constraint) {
-        ((PhysGenericSpringConstraint *)constraint)->SetAngularUpperLimits(Vec3(DEG2RAD(upperLimit.x), DEG2RAD(upperLimit.y), DEG2RAD(upperLimit.z)));
+        ApplyAngleLimits();
     }
 }
 
 void ComCharacterJoint::SetTwistStiffness(float stiffness) {
     this->stiffness.z = stiffness;
+
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularStiffness(this->stiffness);
     }
@@ -246,6 +254,7 @@ void ComCharacterJoint::SetTwistStiffness(float stiffness) {
 
 void ComCharacterJoint::SetTwistDamping(float damping) {
     this->damping.z = damping;
+
     if (constraint) {
         ((PhysGenericSpringConstraint *)constraint)->SetAngularDamping(this->damping);
     }
@@ -276,31 +285,36 @@ void ComCharacterJoint::DrawGizmos(const RenderCamera *camera, bool selected, bo
 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
-            if (upperLimit.x > lowerLimit.x) {
-                // Draw rotation limit range in X-axis
-                renderWorld->SetDebugColor(Color4::red * 0.5f, Color4::red * 0.5f);
-                renderWorld->DebugArc(worldAnchor, worldAxis[1], -worldAxis[2], MeterToUnit(12) * viewScale, lowerLimit.x, upperLimit.x, true);
+            if (angleLimits.x > 0 || angleLimits.y > 0 || angleLimits.z > 0) {
+                Vec3 lowerLimits = *(Vec3 *)baseAngles.Ptr() - angleLimits;
+                Vec3 upperLimits = *(Vec3 *)baseAngles.Ptr() + angleLimits;
 
-                renderWorld->SetDebugColor(Color4::red, Color4::zero);
-                renderWorld->DebugLine(worldAnchor, worldAnchor + constraintWorldAxis[1] * MeterToUnit(20) * viewScale);
-            }
+                if (angleLimits.x > 0) {
+                    // Draw rotation limit range in X-axis
+                    renderWorld->SetDebugColor(Color4::zero, Color4::red * 0.5f);
+                    renderWorld->DebugArc(worldAnchor, worldAxis[1], -worldAxis[2], MeterToUnit(12) * viewScale, lowerLimits.x, upperLimits.x, true);
 
-            if (upperLimit.y > lowerLimit.y) {
-                // Draw rotation limit range in Y-axis
-                renderWorld->SetDebugColor(Color4::lime * 0.5f, Color4::lime * 0.5f);
-                renderWorld->DebugArc(worldAnchor, worldAxis[2], -worldAxis[0], MeterToUnit(12) * viewScale, lowerLimit.y, upperLimit.y, true);
+                    renderWorld->SetDebugColor(Color4::red, Color4::zero);
+                    renderWorld->DebugLine(worldAnchor, worldAnchor + constraintWorldAxis[1] * MeterToUnit(20) * viewScale);
+                }
 
-                renderWorld->SetDebugColor(Color4::lime, Color4::zero);
-                renderWorld->DebugLine(worldAnchor, worldAnchor + constraintWorldAxis[2] * MeterToUnit(20) * viewScale);
-            }
+                if (angleLimits.y > 0) {
+                    // Draw rotation limit range in Y-axis
+                    renderWorld->SetDebugColor(Color4::zero, Color4::lime * 0.5f);
+                    renderWorld->DebugArc(worldAnchor, worldAxis[2], -worldAxis[0], MeterToUnit(12) * viewScale, lowerLimits.y, upperLimits.y, true);
 
-            if (upperLimit.z > lowerLimit.z) {
-                // Draw rotation limit range in Z-axis
-                renderWorld->SetDebugColor(Color4::blue * 0.5f, Color4::blue * 0.5f);
-                renderWorld->DebugArc(worldAnchor, worldAxis[0], -worldAxis[1], MeterToUnit(12) * viewScale, lowerLimit.z, upperLimit.z, true);
+                    renderWorld->SetDebugColor(Color4::lime, Color4::zero);
+                    renderWorld->DebugLine(worldAnchor, worldAnchor + constraintWorldAxis[2] * MeterToUnit(20) * viewScale);
+                }
 
-                renderWorld->SetDebugColor(Color4::blue, Color4::zero);
-                renderWorld->DebugLine(worldAnchor, worldAnchor + constraintWorldAxis[0] * MeterToUnit(20) * viewScale);
+                if (angleLimits.z > 0) {
+                    // Draw rotation limit range in Z-axis
+                    renderWorld->SetDebugColor(Color4::zero, Color4::blue * 0.5f);
+                    renderWorld->DebugArc(worldAnchor, worldAxis[0], -worldAxis[1], MeterToUnit(12) * viewScale, lowerLimits.z, upperLimits.z, true);
+
+                    renderWorld->SetDebugColor(Color4::blue, Color4::zero);
+                    renderWorld->DebugLine(worldAnchor, worldAnchor + constraintWorldAxis[0] * MeterToUnit(20) * viewScale);
+                }
             }
         }
     }

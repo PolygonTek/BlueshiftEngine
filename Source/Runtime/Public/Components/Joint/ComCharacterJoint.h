@@ -38,51 +38,54 @@ public:
     const Vec3 &            GetAnchor() const { return anchor; }
     void                    SetAnchor(const Vec3 &anchor);
 
-    Angles                  GetAngles() const { return axis.ToAngles(); }
-    void                    SetAngles(const Angles &angles);
+    const Mat3 &            GetAxis() const { return axis; }
+    void                    SetAxis(const Mat3 &axis);
 
     const Vec3 &            GetConnectedAnchor() const { return connectedAnchor; }
     void                    SetConnectedAnchor(const Vec3 &anchor);
 
-    Angles                  GetConnectedAngles() const { return connectedAxis.ToAngles(); }
-    void                    SetConnectedAngles(const Angles &angles);
+    const Mat3 &            GetConnectedAxis() const { return connectedAxis; }
+    void                    SetConnectedAxis(const Mat3 &axis);
 
-    float                   GetSwing1LowerLimit() const { return lowerLimit.x; }
-    void                    SetSwing1LowerLimit(const float limit);
-    float                   GetSwing1UpperLimit() const { return upperLimit.x; }
-    void                    SetSwing1UpperLimit(const float limit);
+    const Vec3 &            GetSwing1Axis() const { return swing1Axis; }
+    void                    SetSwing1Axis(const Vec3 &swing1Axis);
+
+    const Vec3 &            GetSwing2Axis() const { return swing2Axis; }
+    void                    SetSwing2Axis(const Vec3 &swing2Axis);
+
+    float                   GetSwing1Limit() const { return angleLimits.x; }
+    void                    SetSwing1Limit(const float limit);
     float                   GetSwing1Stiffness() const { return stiffness.x; }
     void                    SetSwing1Stiffness(const float stiffness);
     float                   GetSwing1Damping() const { return damping.x; }
     void                    SetSwing1Damping(const float damping);
 
-    float                   GetSwing2LowerLimit() const { return lowerLimit.y; }
-    void                    SetSwing2LowerLimit(const float limit);
-    float                   GetSwing2UpperLimit() const { return upperLimit.y; }
-    void                    SetSwing2UpperLimit(const float limit);
+    float                   GetSwing2Limit() const { return angleLimits.y; }
+    void                    SetSwing2Limit(const float limit);
     float                   GetSwing2Stiffness() const { return stiffness.y; }
     void                    SetSwing2Stiffness(float stiffness);
     float                   GetSwing2Damping() const { return damping.y; }
     void                    SetSwing2Damping(float damping);
 
-    float                   GetTwistLowerLimit() const { return lowerLimit.z; }
-    void                    SetTwistLowerLimit(float limit);
-    float                   GetTwistUpperLimit() const { return upperLimit.z; }
-    void                    SetTwistUpperLimit(float limit);
+    float                   GetTwistLimit() const { return angleLimits.z; }
+    void                    SetTwistLimit(float limit);
     float                   GetTwistStiffness() const { return stiffness.z; }
     void                    SetTwistStiffness(float stiffness);
     float                   GetTwistDamping() const { return damping.z; }
     void                    SetTwistDamping(float damping);
 
 protected:
+    void                    ApplyAngleLimits();
     virtual void            CreateConstraint() override;
 
     Mat3                    axis;
     Vec3                    anchor;
     Mat3                    connectedAxis;
     Vec3                    connectedAnchor;
-    Vec3                    lowerLimit;
-    Vec3                    upperLimit;
+    Angles                  baseAngles;
+    Vec3                    swing1Axis;
+    Vec3                    swing2Axis;
+    Vec3                    angleLimits;
     Vec3                    stiffness;
     Vec3                    damping;
 
