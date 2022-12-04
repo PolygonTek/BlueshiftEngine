@@ -39,8 +39,8 @@ void ComAudioSource::RegisterProperties() {
         "", PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("looping", "Looping", bool, looping, false, 
         "", PropertyInfo::Flag::Editor);
-    REGISTER_PROPERTY("volume", "Volume", float, volume, 1.f, 
-        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.1);
+    REGISTER_PROPERTY("volume", "Volume", float, volume, 1.0f, 
+        "", PropertyInfo::Flag::Editor).SetRange(0.0f, 1.0f, 0.1f);
     REGISTER_PROPERTY("minDistance", "Min Distance", float, minDistance, MeterToUnit(4.0f),
         "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
     REGISTER_PROPERTY("maxDistance", "Max Distance", float, maxDistance, MeterToUnit(16.0f),

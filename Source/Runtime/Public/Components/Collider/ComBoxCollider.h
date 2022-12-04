@@ -46,8 +46,8 @@ public:
     void                    SetExtents(const Vec3 &extents);
 
 protected:
-    Vec3                    center;     ///< Local center position in system units
-    Vec3                    extents;    ///< Local size for each axis in system units
+    Vec3                    center = Vec3::zero;                ///< Local center position in system units
+    Vec3                    extents = Vec3(MeterToUnit(0.5f));  ///< Local size for each axis in system units
 };
 
 BE_NAMESPACE_END

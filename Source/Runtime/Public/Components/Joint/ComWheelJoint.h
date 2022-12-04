@@ -76,20 +76,20 @@ public:
 protected:
     virtual void            CreateConstraint() override;
 
-    Mat3                    axis;
-    Vec3                    anchor;
+    Mat3                    axis = Mat3::identity;
+    Vec3                    anchor = Vec3::zero;
     Mat3                    connectedAxis;
     Vec3                    connectedAnchor;
-    bool                    enableSusLimit;
-    float                   minSusDist;
-    float                   maxSusDist;
-    float                   susStiffness;
-    float                   susDamping;
-    bool                    enableSteeringLimit;
-    float                   minSteeringAngle;
-    float                   maxSteeringAngle;
-    float                   motorTargetVelocity;
-    float                   maxMotorImpulse;
+    bool                    enableSusLimit = false;
+    float                   minSusDist = 0.0f;
+    float                   maxSusDist = 0.0f;
+    float                   susStiffness = 30.0f;
+    float                   susDamping = 0.2f;
+    bool                    enableSteeringLimit = false;
+    float                   minSteeringAngle = 0.0f;
+    float                   maxSteeringAngle = 0.0f;
+    float                   motorTargetVelocity = 0.0f;
+    float                   maxMotorImpulse = 0.0f;
 };
 
 BE_NAMESPACE_END

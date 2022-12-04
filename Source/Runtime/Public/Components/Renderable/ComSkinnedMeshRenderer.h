@@ -50,7 +50,7 @@ protected:
 
     virtual void            MeshUpdated() override;
 
-    Guid                    rootGuid;
+    Guid                    rootGuid = Guid::zero;
     Array<AABB>             frameAABBs;
 };
 

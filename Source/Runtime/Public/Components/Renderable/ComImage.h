@@ -54,7 +54,7 @@ protected:
     void                    RectTransformUpdated(const ComRectTransform *rectTransform);
     void                    UpdateRawVertexes();
 
-    ImageType::Enum         imageType;
+    ImageType::Enum         imageType = ImageType::Simple;
 };
 
 BE_NAMESPACE_END

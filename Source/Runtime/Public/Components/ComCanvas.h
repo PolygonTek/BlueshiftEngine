@@ -111,10 +111,10 @@ private:
 
     void                    Render();
 
-    Size                    referenceResolution;
-    ScaleMode::Enum         scaleMode;
-    MatchMode::Enum         matchMode;
-    float                   match;
+    Size                    referenceResolution = Size(1280, 720);
+    ScaleMode::Enum         scaleMode = ScaleMode::ScaleWithScreenSize;
+    MatchMode::Enum         matchMode = MatchMode::MatchWidthOrHeight;
+    float                   match = 0.0f;
 
     InputUtils::PointerState mousePointerState;
     HashTable<int32_t, InputUtils::PointerState> touchPointerStateTable;

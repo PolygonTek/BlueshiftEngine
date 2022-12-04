@@ -45,7 +45,7 @@ public:
 protected:
     virtual void            CreateConstraint() override;
 
-    Vec3                    anchor;
+    Vec3                    anchor = Vec3::zero;
     Vec3                    connectedAnchor;
     float                   impulseClamp = 0.0f;
 };

@@ -78,16 +78,16 @@ protected:
     void                    ApplyAngleLimits();
     virtual void            CreateConstraint() override;
 
-    Mat3                    axis;
-    Vec3                    anchor;
+    Mat3                    axis = Mat3::identity;
+    Vec3                    anchor = Vec3::zero;
     Mat3                    connectedAxis;
     Vec3                    connectedAnchor;
-    Angles                  baseAngles;
-    Vec3                    swing1Axis;
-    Vec3                    swing2Axis;
-    Vec3                    angleLimits;
-    Vec3                    stiffness;
-    Vec3                    damping;
+    Angles                  baseAngles = Angles::zero;
+    Vec3                    swing1Axis = Vec3::unitX;
+    Vec3                    swing2Axis = Vec3::unitY;
+    Vec3                    angleLimits = Vec3::zero;
+    Vec3                    stiffness = Vec3::zero;
+    Vec3                    damping = Vec3(0.2f, 0.2f, 0.2f);
 
 #if WITH_EDITOR
     Mat3                    startLocalAxisInConnectedBody;

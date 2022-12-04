@@ -90,7 +90,7 @@ protected:
     void                    ParticleSystemReloaded();
     void                    TransformUpdated(const ComTransform *transform);
 
-    bool                    playOnAwake;
+    bool                    playOnAwake = true;
     Asset *                 particleSystemAsset = nullptr;
     bool                    simulationStarted;
     int                     currentTime;

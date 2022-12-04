@@ -75,7 +75,7 @@ protected:
     void                    ChangeSkeleton(const Guid &skeletonGuid);
     void                    SkeletonReloaded();
 
-    Guid                    rootBoneTransformGuid;
+    Guid                    rootBoneTransformGuid = Guid::zero;
     ComTransform *          rootBoneTransform = nullptr;
     Skeleton *              skeleton = nullptr;
     Array<Anim *>           anims;

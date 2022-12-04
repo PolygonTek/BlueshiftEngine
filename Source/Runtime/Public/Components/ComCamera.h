@@ -95,13 +95,14 @@ protected:
 
     RenderCamera *          renderCamera = nullptr;
     RenderCamera::State     renderCameraDef;
-    float                   fov;
-    float                   size;
-    float                   nx, ny, nw, nh;     ///< normalized screen coordinates
-    int                     order;              ///< rendering order
-    bool                    applyPostProcessing;
+    float                   fov = 60.f;
+    float                   size = 5.f;
+    float                   nx = 0.0f, ny = 0.0f;   ///< normalized screen coordinates
+    float                   nw = 1.0f, nh = 1.0f;   ///< normalized screen coordinates
+    int                     order = 0;              ///< rendering order
+    bool                    applyPostProcessing = true;
 
-    RenderWorld *           renderWorld;
+    RenderWorld *           renderWorld = nullptr;
 
     InputUtils::PointerState mousePointerState;
     HashTable<int32_t, InputUtils::PointerState> touchPointerStateTable;

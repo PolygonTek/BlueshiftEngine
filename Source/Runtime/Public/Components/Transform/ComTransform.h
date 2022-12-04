@@ -168,12 +168,12 @@ private:
     void                    UpdateWorldJointMatrix() const;
     void                    WorldJointMatrixUpdated();
 
-    Quat                    localRotation;          ///< Rotation in local space.
-    Vec3                    localOrigin;            ///< Position in local space.
-    Vec3                    localScale;             ///< Scale in local space.
+    Quat                    localRotation = Quat::identity; ///< Rotation in local space.
+    Vec3                    localOrigin = Vec3::zero;       ///< Position in local space.
+    Vec3                    localScale = Vec3::one;         ///< Scale in local space.
 
 #if WITH_EDITOR
-    Angles                  localEulerAnglesHint;
+    Angles                  localEulerAnglesHint = Angles::zero;
 #endif
 
     JointHierarchy *        jointHierarchy = nullptr;

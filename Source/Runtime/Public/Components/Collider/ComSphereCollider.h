@@ -46,8 +46,8 @@ public:
     void                    SetRadius(float radius);
 
 protected:
-    Vec3                    center;     ///< Local center position in system units
-    float                   radius;     ///< Radius in system units
+    Vec3                    center = Vec3::zero;        ///< Local center position in system units
+    float                   radius = MeterToUnit(0.5f); ///< Radius in system units
 };
 
 BE_NAMESPACE_END

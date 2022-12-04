@@ -40,7 +40,7 @@ void ComCharacterJoint::RegisterProperties() {
         "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("swing2Axis", "Swing 2/Axis", Vec3, GetSwing2Axis, SetSwing2Axis, Vec3::unitY,
         "", PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("swing2Limit", "Swing 2/Limit", float, GetSwing2Limit, SetSwing2Limit, -45.f, 
+    REGISTER_ACCESSOR_PROPERTY("swing2Limit", "Swing 2/Limit", float, GetSwing2Limit, SetSwing2Limit, 0, 
         "", PropertyInfo::Flag::Editor).SetRange(0, 179, 1);
     REGISTER_ACCESSOR_PROPERTY("swing2Stiffness", "Swing 2/Stiffness", float, GetSwing2Stiffness, SetSwing2Stiffness, 0.f, 
         "", PropertyInfo::Flag::Editor);

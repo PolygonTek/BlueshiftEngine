@@ -68,8 +68,8 @@ protected:
 
     Animator                animator;
     Asset *                 animControllerAsset = nullptr;
-    Guid                    rootBoneTransformGuid;
-    ComTransform *          rootBoneTransform;
+    Guid                    rootBoneTransformGuid = Guid::zero;
+    ComTransform *          rootBoneTransform = nullptr;
 };
 
 BE_INLINE Vec3 ComAnimator::GetTranslation(int currentTime) const {

@@ -70,8 +70,8 @@ protected:
 
     void                    MeshReloaded();
 
-    Asset *                 meshAsset;
-    Mesh *                  referenceMesh;      // shared mesh to retain shared information for instantiated mesh
+    Asset *                 meshAsset = nullptr;
+    Mesh *                  referenceMesh = nullptr;    // shared mesh to retain shared information for instantiated mesh
 };
 
 BE_NAMESPACE_END

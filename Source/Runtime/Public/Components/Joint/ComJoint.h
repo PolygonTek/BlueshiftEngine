@@ -59,10 +59,10 @@ protected:
 
     void                    TransformUpdated(const ComTransform *transform);
 
-    Guid                    connectedBodyGuid;
+    Guid                    connectedBodyGuid = Guid::zero;
     PhysConstraint *        constraint = nullptr;
-    bool                    collisionEnabled;
-    float                   breakImpulse;
+    bool                    collisionEnabled = false;
+    float                   breakImpulse = 1e30f;
 };
 
 BE_NAMESPACE_END

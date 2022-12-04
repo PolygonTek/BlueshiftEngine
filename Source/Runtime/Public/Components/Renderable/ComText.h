@@ -73,7 +73,7 @@ protected:
 
     void                    RectTransformUpdated(const ComRectTransform *rectTransform);
 
-    Guid                    fontGuid;
+    Guid                    fontGuid = GuidMapper::defaultFontGuid;
     int                     fontSize = 0;
 };
 

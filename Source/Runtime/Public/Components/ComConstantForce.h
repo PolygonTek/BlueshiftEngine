@@ -35,8 +35,8 @@ public:
     virtual void            Update() override;
 
 protected:
-    Vec3                    force;
-    Vec3                    torque;
+    Vec3                    force = Vec3::zero;
+    Vec3                    torque = Vec3::zero;
 };
 
 BE_NAMESPACE_END

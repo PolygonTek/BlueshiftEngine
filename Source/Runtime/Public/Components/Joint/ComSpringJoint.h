@@ -62,15 +62,15 @@ public:
 protected:
     virtual void            CreateConstraint() override;
 
-    Mat3                    axis;
-    Vec3                    anchor;
+    Mat3                    axis = Mat3::identity;
+    Vec3                    anchor = Vec3::zero;
     Mat3                    connectedAxis;
     Vec3                    connectedAnchor;
-    bool                    enableLimitDistances;
-    float                   minDist;
-    float                   maxDist;
-    float                   stiffness;
-    float                   damping;
+    bool                    enableLimitDistances = false;
+    float                   minDist = 0.0f;
+    float                   maxDist = 0.0f;
+    float                   stiffness = 30.0f;
+    float                   damping = 0.2f;
 };
 
 BE_NAMESPACE_END

@@ -78,20 +78,20 @@ public:
 protected:
     virtual void            CreateConstraint() override;
 
-    Mat3                    axis;
-    Vec3                    anchor;
+    Mat3                    axis = Mat3::identity;
+    Vec3                    anchor = Vec3::zero;
     Mat3                    connectedAxis;
     Vec3                    connectedAnchor;
-    bool                    enableLimitDistances;
-    float                   minDist;
-    float                   maxDist;
-    bool                    enableLimitAngles;
-    float                   minAngle;
-    float                   maxAngle;
-    float                   linearMotorTargetVelocity;
-    float                   maxLinearMotorImpulse;
-    float                   angularMotorTargetVelocity;
-    float                   maxAngularMotorImpulse;
+    bool                    enableLimitDistances = false;
+    float                   minDist = 0.0f;
+    float                   maxDist = 0.0f;
+    bool                    enableLimitAngles = true;
+    float                   minAngle = 0.0f;
+    float                   maxAngle = 0.0f;
+    float                   linearMotorTargetVelocity = 0.0f;
+    float                   maxLinearMotorImpulse = 0.0f;
+    float                   angularMotorTargetVelocity = 0.0f;
+    float                   maxAngularMotorImpulse = 0.0f;
 
 #if WITH_EDITOR
     Mat3                    startLocalAxisInConnectedBody;

@@ -130,13 +130,13 @@ protected:
                             /// Computes local origin in parent space in 3D.
     Vec3                    ComputeLocalOrigin3D() const;
 
-    Vec2                    anchorMins;
-    Vec2                    anchorMaxs;
-    Vec2                    anchoredPosition;
-    Vec2                    sizeDelta;
-    Vec2                    pivot;
-    bool                    rayCastTarget;
-    bool                    clipChildren;
+    Vec2                    anchorMins = Vec2(0.5, 0.5);
+    Vec2                    anchorMaxs = Vec2(0.5, 0.5);
+    Vec2                    anchoredPosition = Vec2(0, 0);
+    Vec2                    sizeDelta = Vec2(100, 100);
+    Vec2                    pivot = Vec2(0.5, 0.5);
+    bool                    rayCastTarget = true;
+    bool                    clipChildren = true;
 
     mutable bool            cachedRectInvalidated = true;
     mutable RectF           cachedRect = RectF::zero;       ///< Cached rectangle in local space.

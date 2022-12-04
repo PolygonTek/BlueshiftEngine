@@ -55,13 +55,13 @@ protected:
 
     Sound *                 referenceSound = nullptr;
     Sound *                 sound = nullptr;
-    bool                    playOnAwake;
-    float                   minDistance;
-    float                   maxDistance;
-    float                   volume;
-    bool                    spatial;
-    bool                    looping;
-    bool                    ignoreInactive;
+    bool                    playOnAwake = false;
+    float                   minDistance = MeterToUnit(4.0f);
+    float                   maxDistance = MeterToUnit(16.0f);
+    float                   volume = 1.0f;
+    bool                    spatial = true;
+    bool                    looping = false;
+    bool                    ignoreInactive = true;
 };
 
 BE_NAMESPACE_END

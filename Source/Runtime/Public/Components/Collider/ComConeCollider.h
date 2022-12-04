@@ -53,10 +53,10 @@ public:
     void                    SetHeight(float height);
 
 protected:
-    Vec3                    center;     ///< Local center position in system units
-    float                   radius;     ///< Radius in system units
-    float                   height;     ///< Height in system units
-    Direction::Enum         direction;
+    Vec3                    center = Vec3::zero;        ///< Local center position in system units
+    float                   radius = MeterToUnit(0.5f); ///< Radius in system units
+    float                   height = MeterToUnit(1.0f); ///< Height in system units
+    Direction::Enum         direction = Direction::Enum::ZAxis;
 };
 
 BE_NAMESPACE_END

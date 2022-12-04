@@ -94,16 +94,16 @@ public:
 
 protected:
     Mat3                    localAxis = Mat3::identity;
-    Vec3                    localOrigin;
-    float                   radius;
-    float                   suspensionRestLength;
-    float                   suspensionMaxDistance;
-    float                   suspensionMaxForce;
-    float                   suspensionStiffness;
-    float                   suspensionDampingRelaxation;
-    float                   suspensionDampingCompression;
-    float                   rollingFriction;
-    float                   rollingInfluence;
+    Vec3                    localOrigin = Vec3::origin;
+    float                   radius = MeterToUnit(0.5f);
+    float                   suspensionRestLength = MeterToUnit(0.0f);
+    float                   suspensionMaxDistance = MeterToUnit(0.3f);
+    float                   suspensionMaxForce = MeterToUnit(100.0f);
+    float                   suspensionStiffness = 60.f;
+    float                   suspensionDampingRelaxation = 2.3f;
+    float                   suspensionDampingCompression = 4.4f;
+    float                   rollingFriction = 2.0f;
+    float                   rollingInfluence = 0.1f;
     PhysVehicle *           vehicle = nullptr;
     int                     vehicleWheelIndex = -1;
 };

@@ -89,15 +89,15 @@ protected:
 
     Vec3                    origin;
     CastResult              groundTrace;
-    bool                    enablePenetrationRecovery;
+    bool                    enablePenetrationRecovery = true;
     bool                    isValidGroundTrace;
     bool                    onGround;
 
-    float                   mass;
-    float                   capsuleRadius;
-    float                   capsuleHeight;
-    float                   stepOffset;
-    float                   slopeDotZ;
+    float                   mass = 1.0f;
+    float                   capsuleRadius = MeterToUnit(0.4f);
+    float                   capsuleHeight = MeterToUnit(1.0f);
+    float                   stepOffset = CmToUnit(40.0f);
+    float                   slopeDotZ = 60.0f;
 };
 
 BE_NAMESPACE_END
