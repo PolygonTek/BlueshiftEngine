@@ -244,6 +244,7 @@ set(COMMON_ENGINE_FILES
     Public/Components/Physics/ComSensor.h
     Public/Components/Physics/ComConstantForce.h
     Public/Components/Physics/ComVehicleWheel.h
+    Public/Components/Physics/ComCloth.h
 
     Public/Components/Renderable/ComRenderable.h
     Public/Components/Renderable/ComMeshRenderer.h
@@ -576,6 +577,7 @@ set(COMMON_ENGINE_FILES
     Private/Components/Physics/ComSensor.cpp
     Private/Components/Physics/ComConstantForce.cpp
     Private/Components/Physics/ComVehicleWheel.cpp
+    Private/Components/Physics/ComCloth.cpp
 
     Private/Components/Renderable/ComRenderable.cpp
     Private/Components/Renderable/ComMeshRenderer.cpp

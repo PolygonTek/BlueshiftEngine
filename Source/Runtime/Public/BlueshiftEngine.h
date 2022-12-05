@@ -175,6 +175,7 @@
 #include "Components/Physics/ComSensor.h"
 #include "Components/Physics/ComVehicleWheel.h"
 #include "Components/Physics/ComConstantForce.h"
+#include "Components/Physics/ComCloth.h"
 #include "Components/ComCharacterController.h"
 #include "Components/ComCamera.h"
 #include "Components/ComLight.h"

@@ -14,6 +14,7 @@
 
 #pragma once
 
+struct btOverlapFilterCallback;
 class btCollisionObject;
 class btConvexShape;
 class btTransform;
@@ -23,7 +24,6 @@ class btBroadphaseInterface;
 class btConstraintSolver;
 class btSoftBodySolver;
 class btGhostPairCallback;
-struct btOverlapFilterCallback;
 class btDynamicsWorld;
 
 #include "Core/SignalObject.h"
@@ -197,7 +197,7 @@ private:
     btDefaultCollisionConfiguration *collisionConfiguration = nullptr;
     btCollisionDispatcher * collisionDispatcher = nullptr;
     btBroadphaseInterface * broadphase = nullptr;
-    btConstraintSolver *    constraintSolver = nullptr;
+    btConstraintSolver *    constraintSolver = nullptr; 
     btSoftBodySolver *      softBodySolver = nullptr;
     btGhostPairCallback *   ghostPairCallback = nullptr;
     //btOverlapFilterCallback *filterCallback = nullptr;

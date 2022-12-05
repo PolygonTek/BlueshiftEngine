@@ -21,6 +21,7 @@
 #include "Profiler/Profiler.h"
 
 //#define DETERMINISTIC
+#define ALLOW_SOFTBODY
 
 BE_NAMESPACE_BEGIN
 
@@ -59,8 +60,11 @@ public:
 
 PhysicsWorld::PhysicsWorld() {
     // collision configuration contains default setup for memory, collision setup
+#ifdef ALLOW_SOFTBODY
+    collisionConfiguration = new btSoftBodyRigidBodyCollisionConfiguration();
+#else
     collisionConfiguration = new btDefaultCollisionConfiguration();
-    //collisionConfiguration = new btSoftBodyRigidBodyCollisionConfiguration();
+#endif
 
     //collisionConfiguration->setConvexConvexMultipointIterations();
 
@@ -82,10 +86,14 @@ PhysicsWorld::PhysicsWorld() {
     // the default constraint solver. For parallel processing you can use a different solver (see Extras/BulletMultiThreaded)
     solverType = ConstraintSolver::SequentialImpulseSolver;
     constraintSolver = new btSequentialImpulseConstraintSolver;
-    dynamicsWorld = new btDiscreteDynamicsWorld(collisionDispatcher, broadphase, constraintSolver, collisionConfiguration);
 
-    //softBodySolver = new btDefaultSoftBodySolver;
-    //dynamicsWorld = new btSoftRigidDynamicsWorld(collisionDispatcher, broadphase, solver, collisionConfiguration, softBodySolver);
+#ifdef ALLOW_SOFTBODY
+    softBodySolver = new btDefaultSoftBodySolver;
+
+    dynamicsWorld = new btSoftRigidDynamicsWorld(collisionDispatcher, broadphase, constraintSolver, collisionConfiguration, softBodySolver);
+#else
+    dynamicsWorld = new btDiscreteDynamicsWorld(collisionDispatcher, broadphase, constraintSolver, collisionConfiguration);
+#endif
 
     // for direct solver it is better to have a small A matrix 
     //dynamicsWorld ->getSolverInfo().m_minimumSolverBatchSize = 1; 
@@ -127,6 +135,16 @@ PhysicsWorld::PhysicsWorld() {
     maximumAllowedTimeStep = 0.2f;
 
     SetGravity(Vec3(0, 0, 0));
+
+#ifdef ALLOW_SOFTBODY
+    btSoftBodyWorldInfo &softBodyWorldInfo = ((btSoftRigidDynamicsWorld *)dynamicsWorld)->getWorldInfo();
+    softBodyWorldInfo.air_density = (btScalar)1.2;
+    softBodyWorldInfo.water_density = 0;
+    softBodyWorldInfo.water_offset = 0;
+    softBodyWorldInfo.water_normal = btVector3(0, 0, 0);
+    softBodyWorldInfo.m_sparsesdf.Initialize();
+    softBodyWorldInfo.m_gravity.setValue(0, 0, 0);
+#endif
 }
 
 PhysicsWorld::~PhysicsWorld() {
