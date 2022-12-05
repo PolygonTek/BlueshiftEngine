@@ -58,6 +58,7 @@ public:
     Guid                    GetAnimControllerGuid() const;
     void                    SetAnimControllerGuid(const Guid &animControllerGuid);
 
+    const Animator &        GetAnimator() const { return animator; }
     Animator &              GetAnimator() { return animator; }
 
     Mat3x4 *                GetJointMatrices() const;

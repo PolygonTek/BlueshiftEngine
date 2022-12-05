@@ -18,6 +18,9 @@
 
 BE_NAMESPACE_BEGIN
 
+class ComAnimation;
+class ComAnimator;
+
 class ComSkinnedMeshRenderer : public ComMeshRenderer {
     friend class LuaVM;
 
@@ -45,6 +48,9 @@ public:
 
 protected:
     void                    UpdateSkeleton();
+
+    void                    UpdateVisualsByAnimation(const ComAnimation *animationComponent);
+    void                    UpdateVisualsByAnimator(const ComAnimator *animatorComponent);
 
     virtual void            UpdateVisuals() override;
 
