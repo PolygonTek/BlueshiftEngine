@@ -164,9 +164,9 @@ void AnimState::GetAABB(const Animator *animator, float normalizedTime, AABB &ou
     } else {
         const AnimClip *animClip = animLayer->GetNodeAnimClip(nodeNum);
         if (animClip) {
-            //int index = animator->GetAnimController()->FindAnimClipIndex(animClip);
-            //animClip->GetAABB(normalizedTime * animClip->Length(), animator->GetAnimAABB(index)->frameAABBs, outAabb);
-            animator->GetMeshAABB(outAabb);
+            int index = animator->GetAnimController()->FindAnimClipIndex(animClip);
+            animClip->GetAABB(normalizedTime * animClip->Length(), animator->GetAnimAABB(index)->frameAABBs, outAabb);
+            //animator->GetMeshAABB(outAabb);
         }
     }
 }

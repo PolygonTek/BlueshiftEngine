@@ -586,7 +586,7 @@ void AnimBlendTree::GetRotation(const Animator *animator, float normalizedTime, 
 
 void AnimBlendTree::GetAABB(const Animator *animator, float normalizedTime, AABB &aabb) const {
     const AnimBlendTree *   childBlendTree;
-    //const AnimClip *        childClip;
+    const AnimClip *        childClip;
 
     const AnimLayer::AnimNode *node = animLayer->GetNode(nodeNum);
 
@@ -597,10 +597,10 @@ void AnimBlendTree::GetAABB(const Animator *animator, float normalizedTime, AABB
             childBlendTree = animLayer->GetNodeAnimBlendTree(nodeNum);
             childBlendTree->GetAABB(animator, normalizedTime, aabb);
         } else {
-            //childClip = animLayer->GetNodeAnimClip(nodeNum);
-            //int index = animator->GetAnimController()->FindAnimClipIndex(childClip);
-            //childClip->GetAABB(normalizedTime * childClip->Length(), animator->GetAnimAABB(index)->frameAABBs, aabb);
-            animator->GetMeshAABB(aabb);
+            childClip = animLayer->GetNodeAnimClip(nodeNum);
+            int index = animator->GetAnimController()->FindAnimClipIndex(childClip);
+            childClip->GetAABB(normalizedTime * childClip->Length(), animator->GetAnimAABB(index)->frameAABBs, aabb);
+            //animator->GetMeshAABB(aabb);
         }
     } else {
         float weights[AnimLayer::MaxBlendTreeChildren] = { 0, };
@@ -620,10 +620,10 @@ void AnimBlendTree::GetAABB(const Animator *animator, float normalizedTime, AABB
                     childBlendTree = animLayer->GetNodeAnimBlendTree(nodeNum);
                     childBlendTree->GetAABB(animator, normalizedTime, childAABB);
                 } else {
-                    //childClip = animLayer->GetNodeAnimClip(nodeNum);
-                    //int index = animator->GetAnimController()->FindAnimClipIndex(childClip);
-                    //childClip->GetAABB(normalizedTime * childClip->Length(), animator->GetAnimAABB(index)->frameAABBs, childAABB);
-                    animator->GetMeshAABB(childAABB);
+                    childClip = animLayer->GetNodeAnimClip(nodeNum);
+                    int index = animator->GetAnimController()->FindAnimClipIndex(childClip);
+                    childClip->GetAABB(normalizedTime * childClip->Length(), animator->GetAnimAABB(index)->frameAABBs, childAABB);
+                    //animator->GetMeshAABB(childAABB);
                 }
 
                 aabb += childAABB;

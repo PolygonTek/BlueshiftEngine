@@ -122,12 +122,7 @@ public:
     bool                    GetRotationDelta(int fromTime, int toTime, Mat3 &rotationDelta) const;
         
                             // 모든 blending 을 계산한 current time 의 AABB 를 구한다
-    void                    ComputeAABB(int currentTime);
-
-                            // CoumputeAABB() 결과를 리턴
-    void                    GetAABB(AABB &aabb) const;
-
-    void                    GetMeshAABB(AABB &aabb) const { aabb = meshAABB; }
+    bool                    GetAABB(int currentTime, AABB &aabb) const;
 
 private:
     void                    PushStateBlenders(int layerNum, int currentTime, int blendDuration);
@@ -135,7 +130,6 @@ private:
 
     AnimController *        animController;
     Array<AnimAABB>         animAABBs;
-    AABB                    meshAABB;               // TEMP: to be replaced by animAABBs
     AABB                    frameAABB;
     
     bool                    ignoreRootTranslation;

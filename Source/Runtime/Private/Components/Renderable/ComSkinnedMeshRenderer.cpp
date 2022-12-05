@@ -113,6 +113,26 @@ void ComSkinnedMeshRenderer::UpdateSkeleton() {
         }
     }
 
+    if (renderObjectDef.skeleton) {
+        Entity *rootEntity = rootObject->Cast<Entity>();
+
+        frameAabbs.Clear();
+
+        if (rootEntity->HasComponent(&ComAnimation::metaObject)) {
+            ComAnimation *animationComponent = rootEntity->GetComponent<ComAnimation>();
+            const Anim *currentAnim = animationComponent->GetCurrentAnim();
+
+            if (currentAnim) {
+                currentAnim->ComputeFrameAABBs(skeleton, renderObjectDef.mesh, frameAabbs);
+            }
+        } else if (rootEntity->HasComponent(&ComAnimator::metaObject)) {
+            ComAnimator *animatorComponent = rootEntity->GetComponent<ComAnimator>();
+            Animator &animator = animatorComponent->GetAnimator();
+            // FIXME
+            //animator.ComputeAnimAABBs(renderObjectDef.mesh);
+        }
+    }
+
     UpdateVisuals();
 }
 
@@ -122,8 +142,10 @@ void ComSkinnedMeshRenderer::UpdateVisuals() {
     }
 
     if (referenceMesh) {
-        // FIXME: don't calculate AABB if animation is applied.
-        if (jointAabbs.Count() > 0 && renderObjectDef.joints) {
+        if (isAabbCalculatedByAnimation) {
+            // AABB is calculated by current animation.
+        } else if (jointAabbs.Count() > 0 && renderObjectDef.joints) {
+            // AABB is calculated by joint movements.
             renderObjectDef.aabb.Clear();
 
             for (int i = 0; i < jointAabbs.Count(); i++) {
@@ -135,6 +157,7 @@ void ComSkinnedMeshRenderer::UpdateVisuals() {
                 }
             }
         } else {
+            // AABB is static.
             renderObjectDef.aabb = referenceMesh->GetAABB();
         }
     }
@@ -142,17 +165,26 @@ void ComSkinnedMeshRenderer::UpdateVisuals() {
     ComRenderable::UpdateVisuals();
 }
 
-void ComSkinnedMeshRenderer::UpdateVisualsByAnimation(const ComAnimation *animationComponent) {
+void ComSkinnedMeshRenderer::UpdateVisualsByAnimation(const ComAnimation *animationComponent, int time) {
     const Anim *currentAnim = animationComponent->GetCurrentAnim();
     if (currentAnim) {
-        //currentAnim->GetAABB();
+        currentAnim->GetAABB(renderObjectDef.aabb, frameAabbs, time);
+
+        isAabbCalculatedByAnimation = true;
+    } else {
+        isAabbCalculatedByAnimation = false;
     }
 
     UpdateVisuals();
 }
 
-void ComSkinnedMeshRenderer::UpdateVisualsByAnimator(const ComAnimator *animatorComponent) {
+void ComSkinnedMeshRenderer::UpdateVisualsByAnimator(const ComAnimator *animatorComponent, int time) {
     const Animator &animator = animatorComponent->GetAnimator();
+    /*if (animator.GetAABB(time, renderObjectDef.aabb)) {
+        isAabbCalculatedByAnimation = true;
+    } else {
+        isAabbCalculatedByAnimation = false;
+    }*/
 
     UpdateVisuals();
 }

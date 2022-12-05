@@ -246,23 +246,17 @@ const AnimLayer *Animator::GetAnimLayer(int index) const {
 }
 
 void Animator::ComputeAnimAABBs(const Mesh *mesh) {
-    // TODO: 
-#if 0
     animAABBs.SetGranularity(1);
     animAABBs.SetCount(animController->NumAnimClips());
 
-    if (animController->NumAnimClips() > 0) {
-        for (int animClipIndex = 0; animClipIndex < animController->NumAnimClips(); animClipIndex++) {
-            const AnimClip *animClip = animController->GetAnimClip(animClipIndex);
+    for (int animClipIndex = 0; animClipIndex < animController->NumAnimClips(); animClipIndex++) {
+        const AnimClip *animClip = animController->GetAnimClip(animClipIndex);
 
-            animClip->GetAnim()->ComputeFrameAABBs(animController->GetSkeleton(), mesh, animAABBs[animClipIndex].frameAABBs);
-        }
+        animClip->GetAnim()->ComputeFrameAABBs(animController->GetSkeleton(), mesh, animAABBs[animClipIndex].frameAABBs);
     }
-#endif
+
     // bindpose AABB.
     frameAABB = mesh->GetAABB();
-
-    meshAABB = mesh->GetAABB();
 }
 
 void Animator::ResetState(int currentTime) {
@@ -533,13 +527,13 @@ bool Animator::GetRotationDelta(int fromTime, int toTime, Mat3 &delta) const {
     }
 }
 
-void Animator::ComputeAABB(int currentTime) {
+bool Animator::GetAABB(int currentTime, AABB &outAabb) const {
     if (!animController || !animController->GetSkeleton()) {
-        return;
+        return false;
     }
 
-    AABB aabb;
-    aabb.Clear();
+    outAabb.Clear();
+
     int count = 0;
     const AnimStateBlender *stateBlender = layerAnimStateBlenders[0];
     for (int i = 0; i < MaxLayers; i++) {
@@ -549,21 +543,18 @@ void Animator::ComputeAABB(int currentTime) {
         }
 
         for (int j = 0; j < MaxBlendersPerLayer; j++, stateBlender++) {
-            if (stateBlender->AddAABB(currentTime, aabb, ignoreRootTranslation)) {
+            if (stateBlender->AddAABB(currentTime, outAabb, ignoreRootTranslation)) {
                 count++;
             }
         }
     }
 
-    if (count) {
-        aabb.TranslateSelf(animController->GetRootOffset());
-
-        frameAABB = aabb;
+    if (!count) {
+        return false;
     }
-}
+    outAabb.TranslateSelf(animController->GetRootOffset());
 
-void Animator::GetAABB(AABB &aabb) const {
-    aabb = frameAABB;
+    return true;
 }
 
 BE_NAMESPACE_END

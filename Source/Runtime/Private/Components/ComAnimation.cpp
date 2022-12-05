@@ -27,7 +27,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef ComAnimation::SIG_AnimUpdated("ComAnimation::SIG_AnimUpdated", "a");
+const SignalDef ComAnimation::SIG_AnimUpdated("ComAnimation::SIG_AnimUpdated", "ai");
 
 OBJECT_DECLARATION("Animation", ComAnimation, Component)
 BEGIN_EVENTS(ComAnimation)
@@ -135,7 +135,7 @@ void ComAnimation::UpdateAnim(int animTime) {
         }
     }
 
-    EmitSignal(&ComAnimation::SIG_AnimUpdated, this);
+    EmitSignal(&ComAnimation::SIG_AnimUpdated, this, animTime);
 }
 
 Guid ComAnimation::GetSkeletonGuid() const {

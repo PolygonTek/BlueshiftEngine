@@ -26,7 +26,7 @@
 
 BE_NAMESPACE_BEGIN
 
-const SignalDef ComAnimator::SIG_AnimUpdated("ComAnimator::SIG_AnimUpdated", "a");
+const SignalDef ComAnimator::SIG_AnimUpdated("ComAnimator::SIG_AnimUpdated", "ai");
 
 OBJECT_DECLARATION("Animator", ComAnimator, Component)
 BEGIN_EVENTS(ComAnimator)
@@ -119,7 +119,7 @@ void ComAnimator::UpdateAnim(int currentTime) {
 
     animator.GetAABB(renderObjectDef.localAABB);*/
 
-    EmitSignal(&ComAnimator::SIG_AnimUpdated, this);
+    EmitSignal(&ComAnimator::SIG_AnimUpdated, this, currentTime);
 }
 
 const char *ComAnimator::GetCurrentAnimState(int layerNum) const {

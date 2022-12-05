@@ -49,16 +49,17 @@ public:
 protected:
     void                    UpdateSkeleton();
 
-    void                    UpdateVisualsByAnimation(const ComAnimation *animationComponent);
-    void                    UpdateVisualsByAnimator(const ComAnimator *animatorComponent);
+    void                    UpdateVisualsByAnimation(const ComAnimation *animationComponent, int time);
+    void                    UpdateVisualsByAnimator(const ComAnimator *animatorComponent, int time);
 
     virtual void            UpdateVisuals() override;
 
     virtual void            MeshUpdated() override;
 
     Guid                    rootGuid = Guid::zero;
-    Array<AABB>             frameAABBs;
+    Array<AABB>             frameAabbs;
     Array<AABB>             jointAabbs;
+    bool                    isAabbCalculatedByAnimation = false;
 };
 
 BE_NAMESPACE_END
