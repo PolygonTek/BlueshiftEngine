@@ -25,7 +25,7 @@ option(BUILD_EDITOR "Build Blueshift Editor executable" OFF)
 option(BUILD_TEST "Build test projects" OFF)
 
 set(VERSION_MAJOR 0 CACHE INTERNAL "Project major version number.")
-set(VERSION_MINOR 7 CACHE INTERNAL "Project minor version number.")
+set(VERSION_MINOR 8 CACHE INTERNAL "Project minor version number.")
 set(VERSION_PATCH 0 CACHE INTERNAL "Project patch version number.")
 
 string(TIMESTAMP NOW "%Y-%m-%d %H:%M:%S")
