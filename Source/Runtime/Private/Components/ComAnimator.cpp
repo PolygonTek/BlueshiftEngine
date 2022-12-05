@@ -26,6 +26,8 @@
 
 BE_NAMESPACE_BEGIN
 
+const SignalDef ComAnimator::SIG_AnimUpdated("ComAnimator::SIG_AnimUpdated");
+
 OBJECT_DECLARATION("Animator", ComAnimator, Component)
 BEGIN_EVENTS(ComAnimator)
 END_EVENTS
@@ -98,22 +100,26 @@ void ComAnimator::Update() {
 }
 
 void ComAnimator::UpdateAnim(int currentTime) {
-    if (rootBoneTransform) {
-        JointHierarchy *jointHierarchy = rootBoneTransform->GetJointHierarchy();
-
-        if (jointHierarchy) {
-            animator.ComputeFrame(currentTime, jointHierarchy->NumJoints(), jointHierarchy->GetLocalJointMatrices());
-
-            rootBoneTransform->UpdateJointHierarchy(animator.GetAnimController()->GetSkeleton()->GetJointParentIndexes());
-        }
-
-        // Modify jointMats for IK here !
-
-        // Get AABB from animator
-        /*animator.ComputeAABB(currentTime);
-
-        animator.GetAABB(renderObjectDef.localAABB);*/
+    if (!rootBoneTransform) {
+        return;
     }
+
+    JointHierarchy *jointHierarchy = rootBoneTransform->GetJointHierarchy();
+
+    if (jointHierarchy) {
+        animator.ComputeFrame(currentTime, jointHierarchy->NumJoints(), jointHierarchy->GetLocalJointMatrices());
+
+        rootBoneTransform->UpdateJointHierarchy(animator.GetAnimController()->GetSkeleton()->GetJointParentIndexes());
+    }
+
+    // Modify jointMats for IK here !
+
+    // Get AABB from animator
+    /*animator.ComputeAABB(currentTime);
+
+    animator.GetAABB(renderObjectDef.localAABB);*/
+
+    EmitSignal(&ComAnimator::SIG_AnimUpdated);
 }
 
 const char *ComAnimator::GetCurrentAnimState(int layerNum) const {

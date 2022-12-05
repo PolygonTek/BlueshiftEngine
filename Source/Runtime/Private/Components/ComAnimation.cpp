@@ -27,6 +27,8 @@
 
 BE_NAMESPACE_BEGIN
 
+const SignalDef ComAnimation::SIG_AnimUpdated("ComAnimation::SIG_AnimUpdated");
+
 OBJECT_DECLARATION("Animation", ComAnimation, Component)
 BEGIN_EVENTS(ComAnimation)
 END_EVENTS
@@ -111,12 +113,12 @@ void ComAnimation::UpdateAnim(int animTime) {
         return;
     }
 
-    const Anim *currentAnim = anims[currentAnimIndex];
-    if (!currentAnim) {
+    if (!rootBoneTransform) {
         return;
     }
 
-    if (rootBoneTransform) {
+    const Anim *currentAnim = anims[currentAnimIndex];
+    if (currentAnim) {
         JointHierarchy *jointHierarchy = rootBoneTransform->GetJointHierarchy();
 
         if (jointHierarchy) {
@@ -132,6 +134,8 @@ void ComAnimation::UpdateAnim(int animTime) {
             rootBoneTransform->UpdateJointHierarchy(skeleton->GetJointParentIndexes());
         }
     }
+
+    EmitSignal(&ComAnimation::SIG_AnimUpdated);
 }
 
 Guid ComAnimation::GetSkeletonGuid() const {

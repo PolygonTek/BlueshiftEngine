@@ -52,6 +52,7 @@ protected:
 
     Guid                    rootGuid = Guid::zero;
     Array<AABB>             frameAABBs;
+    Array<AABB>             jointAabbs;
 };
 
 BE_NAMESPACE_END

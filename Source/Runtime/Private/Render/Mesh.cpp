@@ -172,6 +172,64 @@ void Mesh::TransformVerts(const Mat3 &rotation, const Vec3 &scale, const Vec3 &t
     ComputeAABB();
 }
 
+void Mesh::GetJointAABBs(const Mat3x4 *invBindPoseMats, Array<AABB> &jointAabbs) const {
+    for (int aabbIndex = 0; aabbIndex < jointAabbs.Count(); aabbIndex++) {
+        jointAabbs[aabbIndex].Clear();
+    }
+
+    if (jointAabbs.Count() != numJoints) {
+        BE_WARNLOG("Mesh::GetJointAABBs: different joint count\n");
+        return;
+    }
+
+    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
+        SubMesh *subMesh = surfaces[surfaceIndex]->subMesh;
+
+        switch (subMesh->MaxVertexWeights()) {
+        case 8: {
+            const VertexWeight8 *vertWeights = (const VertexWeight8 *)subMesh->VertexWeights();
+
+            for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
+                const VertexWeight8 *vw = &vertWeights[vertexIndex];
+                const Vec3 &position = subMesh->Verts()[vertexIndex].xyz;
+
+                for (int weightIndex = 0; weightIndex < 8; weightIndex++) {
+                    int jointIndex = vw->jointIndexes[weightIndex];
+
+                    jointAabbs[jointIndex].AddPoint(invBindPoseMats[jointIndex].TransformPos(position));
+                }
+            }
+            break; }
+        case 4: {
+            const VertexWeight4 *vertWeights = (const VertexWeight4 *)subMesh->VertexWeights();
+
+            for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
+                const VertexWeight4 *vw = &vertWeights[vertexIndex];
+                const Vec3 &position = subMesh->Verts()[vertexIndex].xyz;
+
+                for (int weightIndex = 0; weightIndex < 4; weightIndex++) {
+                    int jointIndex = vw->jointIndexes[weightIndex];
+
+                    jointAabbs[jointIndex].AddPoint(invBindPoseMats[jointIndex].TransformPos(position));
+                }
+            }
+            break; }
+        case 1: {
+            const VertexWeight1 *vertWeights = (const VertexWeight1 *)subMesh->VertexWeights();
+
+            for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
+                const VertexWeight1 *vw = &vertWeights[vertexIndex];
+                const Vec3 &position = subMesh->Verts()[vertexIndex].xyz;
+
+                int jointIndex = vw->jointIndex;
+
+                jointAabbs[jointIndex].AddPoint(invBindPoseMats[jointIndex].TransformPos(position));
+            }
+            break; }
+        }
+    }
+}
+
 void Mesh::OptimizeIndexedTriangles() {
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
         SubMesh *subMesh = surfaces[surfaceIndex]->subMesh;

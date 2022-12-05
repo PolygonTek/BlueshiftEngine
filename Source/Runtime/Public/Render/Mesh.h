@@ -118,6 +118,9 @@ public:
 
     void                    TransformVerts(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation);
 
+                            /// Get local bind-pose AABBs for all joints.
+    void                    GetJointAABBs(const Mat3x4 *invBindPoseMats, Array<AABB> &jointAabbs) const;
+
     void                    OptimizeIndexedTriangles();
 
     void                    Voxelize();

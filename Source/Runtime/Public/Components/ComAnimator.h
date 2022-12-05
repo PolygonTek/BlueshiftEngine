@@ -62,6 +62,8 @@ public:
 
     Mat3x4 *                GetJointMatrices() const;
 
+    static const SignalDef  SIG_AnimUpdated;
+
 protected:
     void                    ChangeAnimController(const Guid &animControllerGuid);
     void                    AnimControllerReloaded();

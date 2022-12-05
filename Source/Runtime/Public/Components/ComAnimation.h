@@ -68,6 +68,8 @@ public:
 
     float                   GetCurrentAnimSeconds() const;
 
+    static const SignalDef  SIG_AnimUpdated;
+
 protected:
     void                    ChangeAnim(int index, const Guid &animGuid);
     void                    AnimReloaded();
