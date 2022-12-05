@@ -96,10 +96,15 @@ void ComSkinnedMeshRenderer::UpdateSkeleton() {
 
     if (referenceMesh) {
         bool isCompatibleSkeleton = skeleton && referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
-
-        renderObjectDef.mesh = referenceMesh->InstantiateMesh(isCompatibleSkeleton ? Mesh::Type::Skinned : Mesh::Type::Static);
-        renderObjectDef.skeleton = isCompatibleSkeleton ? skeleton : nullptr;
-        renderObjectDef.numJoints = isCompatibleSkeleton ? skeleton->NumJoints() : 0;
+        if (isCompatibleSkeleton) {
+            renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::Type::Skinned);
+            renderObjectDef.skeleton = skeleton;
+            renderObjectDef.numJoints = skeleton->NumJoints();
+        } else {
+            renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::Type::Static);
+            renderObjectDef.skeleton = nullptr;
+            renderObjectDef.numJoints = 0;
+        }
         renderObjectDef.joints = joints;
     }
 

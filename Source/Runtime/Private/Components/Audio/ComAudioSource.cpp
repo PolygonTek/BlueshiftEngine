@@ -15,7 +15,6 @@
 #include "Precompiled.h"
 #include "Sound/SoundSystem.h"
 #include "Components/Transform/ComTransform.h"
-#include "Components/Physics/ComRigidBody.h"
 #include "Components/Audio/ComAudioSource.h"
 #include "Asset/Resource.h"
 #include "Asset/GuidMapper.h"
