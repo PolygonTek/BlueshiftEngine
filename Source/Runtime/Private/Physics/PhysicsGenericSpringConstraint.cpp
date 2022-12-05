@@ -141,13 +141,29 @@ void PhysGenericSpringConstraint::SetLinearStiffness(const Vec3 &stiffness) {
     Vec3 omega = Math::TwoPi * stiffness;
     Vec3 k = m * omega * omega;
 
-    generic6DofSpringConstraint->enableSpring(0, stiffness.x > 0.0f ? true : false);
-    generic6DofSpringConstraint->enableSpring(1, stiffness.y > 0.0f ? true : false);
-    generic6DofSpringConstraint->enableSpring(2, stiffness.z > 0.0f ? true : false);
+    if (stiffness.x > 0.0f) {
+        generic6DofSpringConstraint->enableSpring(0, true);
+        generic6DofSpringConstraint->setStiffness(0, k.x);
+    } else {
+        generic6DofSpringConstraint->enableSpring(0, false);
+        generic6DofSpringConstraint->setStiffness(0, 0);
+    }
 
-    generic6DofSpringConstraint->setStiffness(0, k.x);
-    generic6DofSpringConstraint->setStiffness(1, k.y);
-    generic6DofSpringConstraint->setStiffness(2, k.z);
+    if (stiffness.y > 0.0f) {
+        generic6DofSpringConstraint->enableSpring(1, true);
+        generic6DofSpringConstraint->setStiffness(1, k.y);
+    } else {
+        generic6DofSpringConstraint->enableSpring(1, false);
+        generic6DofSpringConstraint->setStiffness(1, 0);
+    }
+
+    if (stiffness.z > 0.0f) {
+        generic6DofSpringConstraint->enableSpring(2, true);
+        generic6DofSpringConstraint->setStiffness(2, k.z);
+    } else {
+        generic6DofSpringConstraint->enableSpring(2, false);
+        generic6DofSpringConstraint->setStiffness(2, 0);
+    }
 
     linearStiffness = stiffness;
 }
@@ -215,13 +231,29 @@ void PhysGenericSpringConstraint::SetAngularStiffness(const Vec3 &stiffness) {
     Vec3 omega = Math::TwoPi * stiffness;
     Vec3 k = m * omega * omega;
 
-    generic6DofSpringConstraint->enableSpring(3, stiffness.x > 0.0f ? true : false);
-    generic6DofSpringConstraint->enableSpring(4, stiffness.y > 0.0f ? true : false);
-    generic6DofSpringConstraint->enableSpring(5, stiffness.z > 0.0f ? true : false);
+    if (stiffness.x > 0.0f) {
+        generic6DofSpringConstraint->enableSpring(3, true);
+        generic6DofSpringConstraint->setStiffness(3, k.x);
+    } else {
+        generic6DofSpringConstraint->enableSpring(3, false);
+        generic6DofSpringConstraint->setStiffness(3, 0);
+    }
 
-    generic6DofSpringConstraint->setStiffness(3, k.x);
-    generic6DofSpringConstraint->setStiffness(4, k.y);
-    generic6DofSpringConstraint->setStiffness(5, k.z);
+    if (stiffness.y > 0.0f) {
+        generic6DofSpringConstraint->enableSpring(4, true);
+        generic6DofSpringConstraint->setStiffness(4, k.y);
+    } else {
+        generic6DofSpringConstraint->enableSpring(4, false);
+        generic6DofSpringConstraint->setStiffness(4, 0);
+    }
+
+    if (stiffness.z > 0.0f) {
+        generic6DofSpringConstraint->enableSpring(5, true);
+        generic6DofSpringConstraint->setStiffness(5, k.z);
+    } else {
+        generic6DofSpringConstraint->enableSpring(5, false);
+        generic6DofSpringConstraint->setStiffness(5, 0);
+    }
 
     angularStiffness = stiffness;
 }
