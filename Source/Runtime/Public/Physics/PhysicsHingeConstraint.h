@@ -42,8 +42,8 @@ public:
     void                EnableMotor(bool enable);
 
 private:
-    float               lowerLimit;
-    float               upperLimit;
+    float               lowerLimit = 0;
+    float               upperLimit = 0;
 };
 
 BE_NAMESPACE_END

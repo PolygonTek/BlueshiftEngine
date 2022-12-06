@@ -39,9 +39,6 @@ PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyB, const Vec3 &ancho
 #endif
 
     constraint = hingeConstraint;
-
-    lowerLimit = 0;
-    upperLimit = 0;
 }
 
 PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, const Mat3 &axisInA, PhysRigidBody *bodyB, const Vec3 &anchorInB, const Mat3 &axisInB) : 
@@ -63,9 +60,6 @@ PhysHingeConstraint::PhysHingeConstraint(PhysRigidBody *bodyA, const Vec3 &ancho
 #endif
 
     constraint = hingeConstraint;
-
-    lowerLimit = 0;
-    upperLimit = 0;
 }
 
 void PhysHingeConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA) {

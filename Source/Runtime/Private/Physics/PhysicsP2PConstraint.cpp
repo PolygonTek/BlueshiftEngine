@@ -18,12 +18,21 @@
 
 BE_NAMESPACE_BEGIN
 
+#define CONTROL_CFM_ERP
+
 PhysP2PConstraint::PhysP2PConstraint(PhysRigidBody *bodyB, const Vec3 &anchorInB) : 
     PhysConstraint(nullptr, bodyB) { 
     Vec3 anchorInBCentroid = anchorInB - bodyB->centroid;
     
     btPoint2PointConstraint *p2pConstraint = new btPoint2PointConstraint(*bodyB->GetRigidBody(), ToBtVector3(SystemUnitToPhysicsUnit(anchorInBCentroid)));
     p2pConstraint->setUserConstraintPtr(this);
+
+#ifdef CONTROL_CFM_ERP
+    p2pConstraint->setParam(BT_CONSTRAINT_CFM, 0);
+    p2pConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0);
+    p2pConstraint->setParam(BT_CONSTRAINT_ERP, 1);
+    p2pConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1);
+#endif
 
     constraint = p2pConstraint;
 }
@@ -36,6 +45,13 @@ PhysP2PConstraint::PhysP2PConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA
     btPoint2PointConstraint *p2pConstraint = new btPoint2PointConstraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(),
         ToBtVector3(SystemUnitToPhysicsUnit(anchorInACentroid)), ToBtVector3(SystemUnitToPhysicsUnit(anchorInBCentroid)));
     p2pConstraint->setUserConstraintPtr(this);
+
+#ifdef CONTROL_CFM_ERP
+    p2pConstraint->setParam(BT_CONSTRAINT_CFM, 0);
+    p2pConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0);
+    p2pConstraint->setParam(BT_CONSTRAINT_ERP, 1);
+    p2pConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1);
+#endif
 
     constraint = p2pConstraint;
 }

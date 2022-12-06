@@ -32,10 +32,12 @@ PhysSwingTwistConstraint::PhysSwingTwistConstraint(PhysRigidBody *bodyB, const V
     coneTwistConstraint->setUserConstraintPtr(this);
 
 #ifdef CONTROL_CFM_ERP
-    coneTwistConstraint->setParam(BT_CONSTRAINT_CFM, 0);
-    coneTwistConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0);
-    coneTwistConstraint->setParam(BT_CONSTRAINT_ERP, 1);
-    coneTwistConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1);
+    for (int i = 0; i < 3; i++) {
+        coneTwistConstraint->setParam(BT_CONSTRAINT_CFM, 0, i);
+        coneTwistConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0, i);
+        coneTwistConstraint->setParam(BT_CONSTRAINT_ERP, 1, i);
+        coneTwistConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1, i);
+    }
 #endif
 
     constraint = coneTwistConstraint;
@@ -57,10 +59,12 @@ PhysSwingTwistConstraint::PhysSwingTwistConstraint(PhysRigidBody *bodyA, const V
     coneTwistConstraint->setUserConstraintPtr(this);
 
 #ifdef CONTROL_CFM_ERP
-    coneTwistConstraint->setParam(BT_CONSTRAINT_CFM, 0);
-    coneTwistConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0);
-    coneTwistConstraint->setParam(BT_CONSTRAINT_ERP, 1);
-    coneTwistConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1);
+    for (int i = 0; i < 3; i++) {
+        coneTwistConstraint->setParam(BT_CONSTRAINT_CFM, 0, i);
+        coneTwistConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0, i);
+        coneTwistConstraint->setParam(BT_CONSTRAINT_ERP, 1, i);
+        coneTwistConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1, i);
+    }
 #endif
 
     constraint = coneTwistConstraint;

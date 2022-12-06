@@ -69,14 +69,14 @@ public:
     void                SetImpulseClamp(float impulse);
 
 protected:
-    Vec3                linearLowerLimits;
-    Vec3                linearUpperLimits;
-    Vec3                linearStiffness;
-    Vec3                linearDamping;
-    Vec3                angularLowerLimits;
-    Vec3                angularUpperLimits;
-    Vec3                angularStiffness;
-    Vec3                angularDamping;
+    Vec3                linearLowerLimits = Vec3::zero;
+    Vec3                linearUpperLimits = Vec3::zero;
+    Vec3                linearStiffness = Vec3::zero;
+    Vec3                linearDamping = Vec3::zero;
+    Vec3                angularLowerLimits = Vec3::zero;
+    Vec3                angularUpperLimits = Vec3::zero;
+    Vec3                angularStiffness = Vec3::zero;
+    Vec3                angularDamping = Vec3::zero;
 };
 
 BE_NAMESPACE_END

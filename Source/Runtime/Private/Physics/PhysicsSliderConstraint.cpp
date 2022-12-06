@@ -38,11 +38,6 @@ PhysSliderConstraint::PhysSliderConstraint(PhysRigidBody *bodyB, const Vec3 &anc
 #endif
 
     constraint = sliderConstraint;
-
-    linearLowerLimit = 0;
-    linearUpperLimit = 0;
-    angularLowerLimit = 1;
-    angularUpperLimit = -1;
 }
 
 PhysSliderConstraint::PhysSliderConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, const Mat3 &axisInA, PhysRigidBody *bodyB, const Vec3 &anchorInB, const Mat3 &axisInB) : 
@@ -65,11 +60,6 @@ PhysSliderConstraint::PhysSliderConstraint(PhysRigidBody *bodyA, const Vec3 &anc
 #endif
 
     constraint = sliderConstraint;
-
-    linearLowerLimit = 0;
-    linearUpperLimit = 0;
-    angularLowerLimit = 1;
-    angularUpperLimit = -1;
 }
 
 void PhysSliderConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA) {

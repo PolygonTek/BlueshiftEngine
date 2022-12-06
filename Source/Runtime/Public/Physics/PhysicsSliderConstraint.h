@@ -56,10 +56,10 @@ public:
     void                EnableAngularMotor(bool enable);
 
 private:
-    float               linearLowerLimit;
-    float               linearUpperLimit;
-    float               angularLowerLimit;
-    float               angularUpperLimit;
+    float               linearLowerLimit = 0;
+    float               linearUpperLimit = 0;
+    float               angularLowerLimit = 1;
+    float               angularUpperLimit = -1;
 };
 
 BE_NAMESPACE_END

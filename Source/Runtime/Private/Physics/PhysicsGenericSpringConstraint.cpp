@@ -17,7 +17,9 @@
 #include "PhysicsInternal.h"
 
 BE_NAMESPACE_BEGIN
-    
+
+#define CONTROL_CFM_ERP
+
 PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyB, const Vec3 &anchorInB, const Mat3 &axisInB) :
     PhysConstraint(nullptr, bodyB) {
     Vec3 anchorInBCentroid = anchorInB - bodyB->centroid;
@@ -27,17 +29,16 @@ PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyB, c
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = new btGeneric6DofSpring2Constraint(*bodyB->GetRigidBody(), frameB, RO_XZY);
     generic6DofSpringConstraint->setUserConstraintPtr(this);
 
+#ifdef CONTROL_CFM_ERP
+    for (int i = 0; i < 6; i++) {
+        generic6DofSpringConstraint->setParam(BT_CONSTRAINT_CFM, 0, i);
+        generic6DofSpringConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0, i);
+        generic6DofSpringConstraint->setParam(BT_CONSTRAINT_ERP, 1, i);
+        generic6DofSpringConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1, i);
+    }
+#endif
+
     constraint = generic6DofSpringConstraint;
-
-    linearLowerLimits.SetFromScalar(0);
-    linearUpperLimits.SetFromScalar(0);
-    linearStiffness.SetFromScalar(0);
-    linearDamping.SetFromScalar(0);
-
-    angularLowerLimits.SetFromScalar(0);
-    angularUpperLimits.SetFromScalar(0);
-    angularStiffness.SetFromScalar(0);
-    angularDamping.SetFromScalar(0);
 }
 
 PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyA, const Vec3 &anchorInA, const Mat3 &axisInA, PhysRigidBody *bodyB, const Vec3 &anchorInB, const Mat3 &axisInB) : 
@@ -51,17 +52,16 @@ PhysGenericSpringConstraint::PhysGenericSpringConstraint(PhysRigidBody *bodyA, c
     btGeneric6DofSpring2Constraint *generic6DofSpringConstraint = new btGeneric6DofSpring2Constraint(*bodyA->GetRigidBody(), *bodyB->GetRigidBody(), frameA, frameB, RO_XZY);
     generic6DofSpringConstraint->setUserConstraintPtr(this);
 
-    constraint = generic6DofSpringConstraint;
-   
-    linearLowerLimits.SetFromScalar(0);
-    linearUpperLimits.SetFromScalar(0);
-    linearStiffness.SetFromScalar(0);
-    linearDamping.SetFromScalar(0);
+#ifdef CONTROL_CFM_ERP
+    for (int i = 0; i < 6; i++) {
+        generic6DofSpringConstraint->setParam(BT_CONSTRAINT_CFM, 0, i);
+        generic6DofSpringConstraint->setParam(BT_CONSTRAINT_STOP_CFM, 0, i);
+        generic6DofSpringConstraint->setParam(BT_CONSTRAINT_ERP, 1, i);
+        generic6DofSpringConstraint->setParam(BT_CONSTRAINT_STOP_ERP, 1, i);
+    }
+#endif
 
-    angularLowerLimits.SetFromScalar(0);
-    angularUpperLimits.SetFromScalar(0);
-    angularStiffness.SetFromScalar(0);
-    angularDamping.SetFromScalar(0);
+    constraint = generic6DofSpringConstraint;
 }
 
 void PhysGenericSpringConstraint::SetFrameA(const Vec3 &anchorInA, const Mat3 &axisInA) {
@@ -129,7 +129,9 @@ void PhysGenericSpringConstraint::EnableLinearLimits(bool enableX, bool enableY,
         generic6DofSpringConstraint->setLimit(2, 1.0f, -1.0f);
     }
 
-    generic6DofSpringConstraint->setEquilibriumPoint();
+    generic6DofSpringConstraint->setEquilibriumPoint(0);
+    generic6DofSpringConstraint->setEquilibriumPoint(1);
+    generic6DofSpringConstraint->setEquilibriumPoint(2);
 }
 
 void PhysGenericSpringConstraint::SetLinearStiffness(const Vec3 &stiffness) {
@@ -146,7 +148,7 @@ void PhysGenericSpringConstraint::SetLinearStiffness(const Vec3 &stiffness) {
         generic6DofSpringConstraint->setStiffness(0, k.x);
     } else {
         generic6DofSpringConstraint->enableSpring(0, false);
-        generic6DofSpringConstraint->setStiffness(0, 0);
+        generic6DofSpringConstraint->setStiffness(0, 0, false);
     }
 
     if (stiffness.y > 0.0f) {
@@ -154,7 +156,7 @@ void PhysGenericSpringConstraint::SetLinearStiffness(const Vec3 &stiffness) {
         generic6DofSpringConstraint->setStiffness(1, k.y);
     } else {
         generic6DofSpringConstraint->enableSpring(1, false);
-        generic6DofSpringConstraint->setStiffness(1, 0);
+        generic6DofSpringConstraint->setStiffness(1, 0, false);
     }
 
     if (stiffness.z > 0.0f) {
@@ -162,7 +164,7 @@ void PhysGenericSpringConstraint::SetLinearStiffness(const Vec3 &stiffness) {
         generic6DofSpringConstraint->setStiffness(2, k.z);
     } else {
         generic6DofSpringConstraint->enableSpring(2, false);
-        generic6DofSpringConstraint->setStiffness(2, 0);
+        generic6DofSpringConstraint->setStiffness(2, 0, false);
     }
 
     linearStiffness = stiffness;
@@ -219,7 +221,9 @@ void PhysGenericSpringConstraint::EnableAngularLimits(bool enableX, bool enableY
         generic6DofSpringConstraint->setLimit(5, 1.0f, -1.0f);
     }
 
-    generic6DofSpringConstraint->setEquilibriumPoint();
+    generic6DofSpringConstraint->setEquilibriumPoint(3);
+    generic6DofSpringConstraint->setEquilibriumPoint(4);
+    generic6DofSpringConstraint->setEquilibriumPoint(5);
 }
 
 void PhysGenericSpringConstraint::SetAngularStiffness(const Vec3 &stiffness) {
@@ -236,7 +240,7 @@ void PhysGenericSpringConstraint::SetAngularStiffness(const Vec3 &stiffness) {
         generic6DofSpringConstraint->setStiffness(3, k.x);
     } else {
         generic6DofSpringConstraint->enableSpring(3, false);
-        generic6DofSpringConstraint->setStiffness(3, 0);
+        generic6DofSpringConstraint->setStiffness(3, 0, false);
     }
 
     if (stiffness.y > 0.0f) {
@@ -244,7 +248,7 @@ void PhysGenericSpringConstraint::SetAngularStiffness(const Vec3 &stiffness) {
         generic6DofSpringConstraint->setStiffness(4, k.y);
     } else {
         generic6DofSpringConstraint->enableSpring(4, false);
-        generic6DofSpringConstraint->setStiffness(4, 0);
+        generic6DofSpringConstraint->setStiffness(4, 0, false);
     }
 
     if (stiffness.z > 0.0f) {
@@ -252,7 +256,7 @@ void PhysGenericSpringConstraint::SetAngularStiffness(const Vec3 &stiffness) {
         generic6DofSpringConstraint->setStiffness(5, k.z);
     } else {
         generic6DofSpringConstraint->enableSpring(5, false);
-        generic6DofSpringConstraint->setStiffness(5, 0);
+        generic6DofSpringConstraint->setStiffness(5, 0, false);
     }
 
     angularStiffness = stiffness;

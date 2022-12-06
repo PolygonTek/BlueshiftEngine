@@ -80,8 +80,8 @@ public:
     float                   GetSpinningFriction() const;
     void                    SetSpinningFriction(float friction);
 
-    void *                  GetUserPointer() const;
-    void                    SetUserPointer(void *ptr);
+    void *                  GetUserPointer() const { return userPointer; }
+    void                    SetUserPointer(void *ptr) { userPointer = ptr; }
 
     void                    Activate();
 
@@ -105,12 +105,12 @@ public:
 
     void                    SetDebugDraw(bool draw);
 
-    PhysCollisionListener * GetCollisionListener() const;
-    void                    SetCollisionListener(PhysCollisionListener *listener);
+    PhysCollisionListener * GetCollisionListener() const { return collisionListener; }
+    void                    SetCollisionListener(PhysCollisionListener *listener) { collisionListener = listener; }
 
 protected:
-    Type::Enum              type;                   ///< Collidable type
-    Vec3                    centroid;               ///< Position of the center of mass in system units
+    Type::Enum              type;                       ///< Collidable type
+    Vec3                    centroid = Vec3::zero;      ///< Position of the center of mass in system units
     int                     collisionFilterBit = 0;
     int                     collisionFilterMask = BIT(0);
     btCollisionObject *     collisionObject = nullptr;

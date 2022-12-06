@@ -90,17 +90,16 @@ const Mat3 PhysRigidBody::GetAxis() const {
 
 void PhysRigidBody::SetAxis(const Mat3 &axis) {
     btRigidBody *rigidBody = GetRigidBody();
-
     btTransform worldTransform = rigidBody->getWorldTransform();
     worldTransform.setBasis(ToBtMatrix3x3(axis));
-
     rigidBody->setWorldTransform(worldTransform);
     
     if (!IsStatic()) {
         btTransform motionTransform;
-        rigidBody->getMotionState()->getWorldTransform(motionTransform);
+        btMotionState *motionState = rigidBody->getMotionState();
+        motionState->getWorldTransform(motionTransform);
         motionTransform.setBasis(worldTransform.getBasis());
-        rigidBody->getMotionState()->setWorldTransform(motionTransform);
+        motionState->setWorldTransform(motionTransform);
 
         if (!IsKinematic()) { // HACK
             btTransform interpTransform = rigidBody->getInterpolationWorldTransform();
@@ -112,22 +111,21 @@ void PhysRigidBody::SetAxis(const Mat3 &axis) {
 
 void PhysRigidBody::SetTransform(const Mat3x4 &transform) {
     btRigidBody *rigidBody = GetRigidBody();
-
     btTransform worldTransform = rigidBody->getWorldTransform();
     worldTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(transform.TransformPos(centroid))));
     worldTransform.setBasis(btMatrix3x3(
         transform[0][0], transform[0][1], transform[0][2],
         transform[1][0], transform[1][1], transform[1][2],
         transform[2][0], transform[2][1], transform[2][2]));
-
     rigidBody->setWorldTransform(worldTransform);
 
     if (!IsStatic()) {
         btTransform motionTransform;
-        rigidBody->getMotionState()->getWorldTransform(motionTransform);
+        btMotionState *motionState = rigidBody->getMotionState();
+        motionState->getWorldTransform(motionTransform);
         motionTransform.setOrigin(worldTransform.getOrigin());
         motionTransform.setBasis(worldTransform.getBasis());
-        rigidBody->getMotionState()->setWorldTransform(motionTransform);
+        motionState->setWorldTransform(motionTransform);
 
         btTransform interpTransform = rigidBody->getInterpolationWorldTransform();
         interpTransform.setOrigin(worldTransform.getOrigin());
@@ -137,11 +135,7 @@ void PhysRigidBody::SetTransform(const Mat3x4 &transform) {
 }
 
 float PhysRigidBody::GetMass() const {
-    float invMass = GetRigidBody()->getInvMass();
-    if (invMass > 0.0f) {
-        return 1.0f / invMass;
-    }
-    return 0.0f;
+    return GetRigidBody()->getMass();
 }
 
 void PhysRigidBody::SetMass(float mass) {

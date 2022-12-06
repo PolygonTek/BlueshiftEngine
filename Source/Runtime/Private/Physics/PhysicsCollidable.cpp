@@ -97,14 +97,6 @@ void PhysCollidable::SetSpinningFriction(float friction) {
     collisionObject->setSpinningFriction(friction);
 }
 
-void *PhysCollidable::GetUserPointer() const {
-    return userPointer;
-}
-
-void PhysCollidable::SetUserPointer(void *pointer) {
-    userPointer = pointer;
-}
-
 void PhysCollidable::Activate() {
     collisionObject->activate();
 }
@@ -294,14 +286,6 @@ void PhysCollidable::SetDebugDraw(bool draw) {
     } else {
         collisionObject->setCollisionFlags(collisionObject->getCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
     }
-}
-
-PhysCollisionListener *PhysCollidable::GetCollisionListener() const {
-    return collisionListener;
-}
-
-void PhysCollidable::SetCollisionListener(PhysCollisionListener *listener) {
-    collisionListener = listener;
 }
 
 BE_NAMESPACE_END
