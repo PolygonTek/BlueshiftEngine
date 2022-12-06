@@ -552,7 +552,7 @@ void RenderWorld::RenderScene(const RenderCamera *renderCamera) {
 
             float alpha = (float)(depth - minDepth + 1) / (maxDepth - minDepth + 1);
 
-            SetDebugColor(Color4(1.0f, 0.1f, 0.0f, alpha), Color4::zero);
+            SetDebugColor(Color4(1.0f, 0.1f, 0.0f, 1.0f) * alpha, Color4::zero);
             DebugAABB(proxyAABB, 1, true, r_showDynamicAABBTree.GetInteger() <= 1);
 
             return true;

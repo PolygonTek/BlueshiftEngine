@@ -135,7 +135,7 @@ CVAR(r_showBufferCacheTiming, "1", CVar::Flag::Bool, "print dynamic buffer map/u
 CVAR(r_showAABB, "0", CVar::Flag::Integer, "show axis-aligned bounding boxes");
 CVAR(r_showDynamicAABBTree, "0", CVar::Flag::Bool, "show dynamic AABB tree");
 CVAR(r_showDynamicAABBTreeMinDepth, "0", CVar::Flag::Integer, "");
-CVAR(r_showDynamicAABBTreeMaxDepth, "0", CVar::Flag::Integer, "");
+CVAR(r_showDynamicAABBTreeMaxDepth, "10", CVar::Flag::Integer, "");
 CVAR(r_showWireframe, "0", CVar::Flag::Integer, "show wireframe");
 CVAR(r_showSkeleton, "0", CVar::Flag::Integer, "show skeleton");
 CVAR(r_showTextures, "0", CVar::Flag::Integer, "show textures");
