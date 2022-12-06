@@ -307,9 +307,9 @@ static void TestSum() {
 static void TestMemcpy() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    int bufferSize = 1024 * 32 + 255;
-    unsigned char *bufferSrc = (unsigned char *)BE1::Mem_Alloc(bufferSize);
-    unsigned char *bufferDst = (unsigned char *)BE1::Mem_Alloc(bufferSize);
+    int bufferSize = 1024 * 16 + 255;
+    unsigned char *bufferSrc = (unsigned char *)BE1::Mem_Alloc16(bufferSize);
+    unsigned char *bufferDst = (unsigned char *)BE1::Mem_Alloc16(bufferSize);
 
     bestClocksGeneric = 0;
     for (int i = 0; i < 64; i++) {
@@ -323,7 +323,7 @@ static void TestMemcpy() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric("Memcpy 32k + 255 Bytes", bestClocksGeneric);
+    PrintClocksGeneric(BE1::va("Memcpy %i Bytes", bufferSize), bestClocksGeneric);
 
     bestClocksSIMD = 0;
     for (int i = 0; i < 64; i++) {
@@ -337,17 +337,17 @@ static void TestMemcpy() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD("Memcpy 32k + 255 Bytes", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD(BE1::va("Memcpy %i Bytes", bufferSize), bestClocksGeneric, bestClocksSIMD);
 
-    BE1::Mem_Free(bufferSrc);
-    BE1::Mem_Free(bufferDst);
+    BE1::Mem_AlignedFree(bufferSrc);
+    BE1::Mem_AlignedFree(bufferDst);
 }
 
 static void TestMemset() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
     int bufferSize = 1024 * 32 + 255;
-    unsigned char *buffer = (unsigned char *)BE1::Mem_Alloc(bufferSize);
+    unsigned char *buffer = (unsigned char *)BE1::Mem_Alloc16(bufferSize);
 
     bestClocksGeneric = 0;
     for (int i = 0; i < 64; i++) {
@@ -361,7 +361,7 @@ static void TestMemset() {
         GetBest(startClocks, endClocks, bestClocksGeneric);
     }
 
-    PrintClocksGeneric("Memset 32k + 255 Bytes", bestClocksGeneric);
+    PrintClocksGeneric(BE1::va("Memset %i Bytes", bufferSize), bestClocksGeneric);
 
     bestClocksSIMD = 0;
     for (int i = 0; i < 64; i++) {
@@ -375,9 +375,9 @@ static void TestMemset() {
         GetBest(startClocks, endClocks, bestClocksSIMD);
     }
 
-    PrintClocksSIMD("Memset 32k + 255 Bytes", bestClocksGeneric, bestClocksSIMD);
+    PrintClocksSIMD(BE1::va("Memset %i Bytes", bufferSize), bestClocksGeneric, bestClocksSIMD);
 
-    BE1::Mem_Free(buffer);
+    BE1::Mem_AlignedFree(buffer);
 }
 
 static void TestMulMat3x4RM() {
