@@ -125,7 +125,7 @@ void RenderWorld::FindVisLightsAndObjects(VisCamera *camera) {
         VisLight *visLight = RegisterVisLight(camera, renderLight);
         visLight->scissorRect = screenClipRect;
         // Since the x and y coordinates of glScissor are lower left corner, we flip the y coordinates to increase from the bottom.
-        visLight->scissorRect.y = renderSystem.currentContext->GetRenderingHeight() - (screenClipRect.y + screenClipRect.h);
+        visLight->scissorRect.y = camera->def->state.renderRect.h - (screenClipRect.y + screenClipRect.h);
 
         return true;
     };
@@ -933,7 +933,7 @@ void RenderWorld::OptimizeLights(VisCamera *camera) {
         }
 
         Rect visScissorRect = screenClipRect;
-        visScissorRect.y = renderSystem.currentContext->GetRenderingHeight() - (screenClipRect.y + screenClipRect.h);
+        visScissorRect.y = camera->def->state.renderRect.h - (screenClipRect.y + screenClipRect.h);
         visLight->scissorRect.IntersectSelf(visScissorRect);
 
         if (visLight->scissorRect.IsEmpty()) {
