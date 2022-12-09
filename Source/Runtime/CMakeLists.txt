@@ -719,6 +719,7 @@ set(WINDOWS_ENGINE_FILES
     Public/Platform/Windows/PlatformWinTime.h
     Public/Platform/Windows/PlatformWinSystem.h
     Public/Platform/Windows/PlatformWinUtils.h
+    Public/Platform/Windows/XInputInterface.h
 
     Private/Platform/Windows/PlatformWinProcess.cpp
     Private/Platform/Windows/PlatformWinFile.cpp
@@ -727,6 +728,7 @@ set(WINDOWS_ENGINE_FILES
     Private/Platform/Windows/PlatformWinTime.cpp
     Private/Platform/Windows/PlatformWinSystem.cpp
     Private/Platform/Windows/PlatformWinUtils.cpp
+    Private/Platform/Windows/XInputInterface.cpp
 
     Private/Platform/PlatformWin.h
     Private/Platform/PlatformWin.cpp
@@ -952,7 +954,7 @@ enable_precompiled_header(Precompiled.h Precompiled.cpp ENGINE_FILES)
 if (PLATFORM_WINDOWS)
     add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
 
-    target_link_libraries(${PROJECT_NAME} ws2_32)
+    target_link_libraries(${PROJECT_NAME} ws2_32.lib Xinput9_1_0.lib)
 
     if (USE_DESKTOP_EGL)
         include(FindOpenGLES3)

@@ -205,6 +205,8 @@ void GameClient::Update() {
 
     UpdateConsole();
 
+    inputSystem.Update();
+
     // FIXME: use thread
     soundSystem.Update();
 

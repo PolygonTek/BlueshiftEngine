@@ -258,7 +258,7 @@ if (APPLE)
     endif ()
 elseif (PLATFORM_WINDOWS)
     find_package(OpenGL REQUIRED)
-    target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} winmm.lib imm32.lib dxguid.lib dsound.lib ws2_32.lib)
+    target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} winmm.lib imm32.lib dxguid.lib dsound.lib ws2_32.lib Xinput9_1_0.lib)
 
     if (MSVC)
         set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE YES)

@@ -58,6 +58,7 @@ public:
     void                    Init();
     void                    Shutdown();
 
+    void                    Update();
     void                    EndFrame();
 
     bool                    IsUpdated() const;

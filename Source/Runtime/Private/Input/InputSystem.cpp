@@ -17,9 +17,17 @@
 #include "Input/KeyCmd.h"
 #include "Input/InputSystem.h"
 
+#ifdef _WIN32
+#include "Platform/Windows/XInputInterface.h"
+#endif
+
 BE_NAMESPACE_BEGIN
 
 InputSystem inputSystem;
+
+#ifdef _WIN32
+static XInputInterface xInputInterface;
+#endif
 
 InputSystem::Touch InputSystem::nullTouch = { 0, };
 
@@ -36,6 +44,12 @@ void InputSystem::Init() {
 void InputSystem::Shutdown() {
     keyEventAllocator.FreeAllBlocks();
     touchEventAllocator.FreeAllBlocks();
+}
+
+void InputSystem::Update() {
+#ifdef _WIN32
+    xInputInterface.SendControllerEvents();
+#endif
 }
 
 void InputSystem::EndFrame() {
