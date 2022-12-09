@@ -1297,7 +1297,7 @@ namespace Etc
 		assert(SELECTORS == 4);
 		afrgbaDecodedPixel[0] = (m_frgbaColor1 + fDistance).ClampRGB();
 		afrgbaDecodedPixel[1] = (m_frgbaColor1 - fDistance).ClampRGB();
-		afrgbaDecodedPixel[2] = ColorFloatRGBA();;
+		afrgbaDecodedPixel[2] = ColorFloatRGBA();
 		afrgbaDecodedPixel[3] = (m_frgbaColor2 - fDistance).ClampRGB();
 
 

@@ -188,7 +188,7 @@ bool Image::LoadHDRFromMemory(const char *name, const byte *data, size_t size) {
                     } else {
                         count = packet[0];
                         while (count--) {
-                            *linePtr++ = *ptr++;;
+                            *linePtr++ = *ptr++;
                         }
                     }
                 }

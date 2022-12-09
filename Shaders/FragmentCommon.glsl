@@ -49,7 +49,7 @@ vec3 BlendNormal(in vec3 baseNormal, in vec2 detailNormal) {
 
 vec2 EncodeViewNormal(vec3 n) {
     vec2 enc = n.xy / (n.z + 1.0);
-    enc /= 1.7777;;
+    enc /= 1.7777;
     return enc * 0.5 + 0.5;
 }
 

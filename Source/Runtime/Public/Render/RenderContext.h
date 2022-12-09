@@ -226,17 +226,17 @@ public:
     RenderTarget *          hdrLumAverageRT[6] = { nullptr, };
     RenderTarget *          hdrLuminanceRT[3] = { nullptr, };
 
-    Texture *               indirectionCubeMapTexture = nullptr;;
+    Texture *               indirectionCubeMapTexture = nullptr;
     float                   vscmBiasedScale;
     float                   vscmBiasedFov;
 
     bool                    vscmCleared[6] = { false, };
 
-    Texture *               shadowRenderTexture = nullptr;;
-    Texture *               vscmTexture = nullptr;;
+    Texture *               shadowRenderTexture = nullptr;
+    Texture *               vscmTexture = nullptr;
 
-    RenderTarget *          shadowMapRT = nullptr;;
-    RenderTarget *          vscmRT = nullptr;;          // VSCM (Virtual Shadow Cube Map)
+    RenderTarget *          shadowMapRT = nullptr;
+    RenderTarget *          vscmRT = nullptr;           // VSCM (Virtual Shadow Cube Map)
 };
 
 BE_INLINE Color4 RenderContext::GetColor() const {

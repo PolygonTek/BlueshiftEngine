@@ -47,7 +47,7 @@ const Vec3 PhysRigidBody::GetOrigin() const {
 
         worldCentroid = PhysicsUnitToSystemUnit(ToVec3(motionTransform.getOrigin()));
     }
-    return worldCentroid - transformedCentroid;;
+    return worldCentroid - transformedCentroid;
 }
 
 void PhysRigidBody::SetOrigin(const Vec3 &origin) {
@@ -55,7 +55,6 @@ void PhysRigidBody::SetOrigin(const Vec3 &origin) {
 
     btTransform worldTransform = rigidBody->getWorldTransform();
     worldTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(origin + GetAxis() * centroid)));
-
     rigidBody->setWorldTransform(worldTransform);
 
     if (!IsStatic()) {
@@ -90,6 +89,7 @@ const Mat3 PhysRigidBody::GetAxis() const {
 
 void PhysRigidBody::SetAxis(const Mat3 &axis) {
     btRigidBody *rigidBody = GetRigidBody();
+
     btTransform worldTransform = rigidBody->getWorldTransform();
     worldTransform.setBasis(ToBtMatrix3x3(axis));
     rigidBody->setWorldTransform(worldTransform);
@@ -111,6 +111,7 @@ void PhysRigidBody::SetAxis(const Mat3 &axis) {
 
 void PhysRigidBody::SetTransform(const Mat3x4 &transform) {
     btRigidBody *rigidBody = GetRigidBody();
+
     btTransform worldTransform = rigidBody->getWorldTransform();
     worldTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(transform.TransformPos(centroid))));
     worldTransform.setBasis(btMatrix3x3(
