@@ -135,6 +135,50 @@ void PhysRigidBody::SetTransform(const Mat3x4 &transform) {
     }
 }
 
+void PhysRigidBody::AddToWorld(PhysicsWorld *physicsWorld) {
+    if (IsInWorld()) {
+        BE_WARNLOG("PhysRigidBody::AddToWorld: already added\n");
+        return;
+    }
+
+    btRigidBody *rigidBody = static_cast<btRigidBody *>(collisionObject);
+
+    bool isStatic = rigidBody->isStaticObject();
+    bool isKinematic = rigidBody->isKinematicObject();
+    bool isDynamic = !isStatic && !isKinematic;
+
+    int internalGroup;
+    if (collisionFilterBit == 0) {
+        internalGroup = isStatic ? (isKinematic ? (btBroadphaseProxy::KinematicFilter | btBroadphaseProxy::StaticFilter) : btBroadphaseProxy::StaticFilter) : btBroadphaseProxy::DefaultFilter;
+    } else {
+        internalGroup = (BIT(collisionFilterBit) & ~1) << 5;
+    }
+
+    int collisionFilterMask = physicsWorld->GetCollisionFilterMask(collisionFilterBit);
+    int internalMask = (collisionFilterMask & ~1) << 5;
+
+    if (collisionFilterMask & BIT(0)) {
+        internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::SensorTrigger);
+
+        if (isDynamic) {
+            internalMask |= (btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+        }
+    }
+
+    physicsWorld->dynamicsWorld->addRigidBody(rigidBody, internalGroup, internalMask);
+    this->physicsWorld = physicsWorld;
+}
+
+void PhysRigidBody::RemoveFromWorld() {
+    if (!IsInWorld()) {
+        BE_WARNLOG("PhysRigidBody::RemoveFromWorld: already removed\n");
+        return;
+    }
+
+    physicsWorld->dynamicsWorld->removeRigidBody(static_cast<btRigidBody *>(collisionObject));
+    physicsWorld = nullptr;
+}
+
 float PhysRigidBody::GetMass() const {
     return GetRigidBody()->getMass();
 }
@@ -149,11 +193,11 @@ void PhysRigidBody::SetMass(float mass) {
 
 const Vec3 PhysRigidBody::GetGravity() const {
     btVector3 gravityAcceleration = GetRigidBody()->getGravity();
-    return ToVec3(gravityAcceleration);
+    return PhysicsUnitToSystemUnit(ToVec3(gravityAcceleration));
 }
 
 void PhysRigidBody::SetGravity(const Vec3 &gravityAcceleration) {
-    GetRigidBody()->setGravity(ToBtVector3(gravityAcceleration));
+    GetRigidBody()->setGravity(ToBtVector3(SystemUnitToPhysicsUnit(gravityAcceleration)));
 }
 
 float PhysRigidBody::GetLinearDamping() const {

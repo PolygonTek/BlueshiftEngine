@@ -17,7 +17,9 @@
 #include "Components/Transform/ComTransform.h"
 #include "Components/Renderable/ComSkinnedMeshRenderer.h"
 #include "Components/Renderable/ComStaticMeshRenderer.h"
+#include "Components/Physics/ComSoftBody.h"
 #include "StaticBatching/StaticBatch.h"
+#include "Game/Entity.h"
 
 BE_NAMESPACE_BEGIN
 
@@ -54,7 +56,7 @@ void ComStaticMeshRenderer::Init() {
     ComMeshRenderer::Init();
 
     if (referenceMesh) {
-        renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::Type::Static);
+        InstantiateMesh();
     }
 
     // Mark as initialized
@@ -71,10 +73,17 @@ void ComStaticMeshRenderer::MeshUpdated() {
     renderWorld->RemoveRenderObject(renderObjectHandle);
     renderObjectHandle = -1;
 
-    renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::Type::Static);
+    InstantiateMesh();
     renderObjectDef.aabb = referenceMesh->GetAABB();
 
     UpdateVisuals();
+}
+
+void ComStaticMeshRenderer::InstantiateMesh() {
+    const ComSoftBody *softBody = entity->GetComponent<ComSoftBody>();
+    Mesh::Type::Enum meshType = softBody ? Mesh::Type::Dynamic : Mesh::Type::Static;
+
+    renderObjectDef.mesh = referenceMesh->InstantiateMesh(meshType);
 }
 
 bool ComStaticMeshRenderer::IsOccluder() const {

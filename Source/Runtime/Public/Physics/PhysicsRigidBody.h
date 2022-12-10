@@ -43,6 +43,9 @@ public:
 
     virtual void            SetTransform(const Mat3x4 &transform) override;
 
+    virtual void            AddToWorld(PhysicsWorld *physicsWorld) override;
+    virtual void            RemoveFromWorld() override;
+
     float                   GetMass() const;
     void                    SetMass(float mass);
 

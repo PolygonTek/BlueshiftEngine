@@ -58,7 +58,7 @@ public:
     };
 
     PhysCollidable(Type::Enum type, btCollisionObject *collisionObject, const Vec3 &centroid);
-    virtual ~PhysCollidable();
+    virtual ~PhysCollidable() = 0;
 
     virtual const Vec3      GetOrigin() const;
     virtual void            SetOrigin(const Vec3 &origin);
@@ -67,6 +67,9 @@ public:
     virtual void            SetAxis(const Mat3 &axis);
 
     virtual void            SetTransform(const Mat3x4 &transform);
+
+    virtual void            AddToWorld(PhysicsWorld *physicsWorld) = 0;
+    virtual void            RemoveFromWorld() = 0;
 
     float                   GetRestitution() const;
     void                    SetRestitution(float rest);
@@ -95,8 +98,6 @@ public:
     bool                    IsActive() const;
 
     bool                    IsInWorld() const;
-    void                    AddToWorld(PhysicsWorld *physicsWorld);
-    void                    RemoveFromWorld();
 
     void                    SetIgnoreCollisionCheck(const PhysCollidable &collidable, bool ignoreCollisionCheck);
 

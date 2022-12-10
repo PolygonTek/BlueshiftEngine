@@ -25,6 +25,40 @@ PhysSensor::PhysSensor(btPairCachingGhostObject *pairCachingGhostObject, const V
 PhysSensor::~PhysSensor() {
 }
 
+void PhysSensor::AddToWorld(PhysicsWorld *physicsWorld) {
+    if (IsInWorld()) {
+        BE_WARNLOG("PhysSensor::AddToWorld: already added\n");
+        return;
+    }
+
+    int internalGroup;
+    if (collisionFilterBit == 0) {
+        internalGroup = btBroadphaseProxy::SensorTrigger;
+    } else {
+        internalGroup = (BIT(collisionFilterBit) & ~1) << 5;
+    }
+
+    int collisionFilterMask = physicsWorld->GetCollisionFilterMask(collisionFilterBit);
+    int internalMask = (collisionFilterMask & ~1) << 5;
+
+    if (collisionFilterMask & BIT(0)) {
+        internalMask |= (btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::StaticFilter | btBroadphaseProxy::KinematicFilter);
+    }
+
+    physicsWorld->dynamicsWorld->addCollisionObject(collisionObject, internalGroup, internalMask);
+    this->physicsWorld = physicsWorld;
+}
+
+void PhysSensor::RemoveFromWorld() {
+    if (!IsInWorld()) {
+        BE_WARNLOG("PhysCollidable::RemoveFromWorld: already removed\n");
+        return;
+    }
+
+    physicsWorld->dynamicsWorld->removeCollisionObject(collisionObject);
+    physicsWorld = nullptr;
+}
+
 btPairCachingGhostObject *PhysSensor::GetPairCachingGhostObject() {
     return static_cast<btPairCachingGhostObject *>(collisionObject);
 }

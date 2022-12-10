@@ -28,6 +28,9 @@ public:
     PhysSensor(btPairCachingGhostObject *pairCachingGhostObject, const Vec3 &centroid);
     virtual ~PhysSensor();
 
+    virtual void                    AddToWorld(PhysicsWorld *physicsWorld) override;
+    virtual void                    RemoveFromWorld() override;
+
     void                            GetContacts(Array<Contact> &contacts);
     void                            GetOverlaps(Array<PhysCollidable *> &collidables);
 

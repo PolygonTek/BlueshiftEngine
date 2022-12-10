@@ -72,131 +72,220 @@ void PhysicsSystem::FreePhysicsWorld(PhysicsWorld *physicsWorld) {
 }
 
 PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) {
-    btCollisionShape *shape;
-    btTransform initialTransform;
     Vec3 totalCentroid = Vec3::origin;
 
-    if (desc.shapes.Count() == 0) {
-        shape = emptyShape;
+    if (desc.type == PhysCollidable::Type::RigidBody ||
+        desc.type == PhysCollidable::Type::Sensor) {
+        btCollisionShape *shape;
+        btTransform initialTransform;
 
-        initialTransform.setBasis(btMatrix3x3::getIdentity());
-        initialTransform.setOrigin(btVector3(0, 0, 0));
-    } else if (desc.shapes.Count() == 1) {
-        const PhysShapeDesc *shapeDesc = &desc.shapes[0];
-        shape = shapeDesc->collider->shape;
+        if (desc.shapes.Count() == 0) {
+            shape = emptyShape;
 
-        totalCentroid = shapeDesc->localOrigin + shapeDesc->localAxis * shapeDesc->collider->GetCentroid();
+            initialTransform.setBasis(btMatrix3x3::getIdentity());
+            initialTransform.setOrigin(btVector3(0, 0, 0));
+        } else if (desc.shapes.Count() == 1) {
+            const PhysShapeDesc *shapeDesc = &desc.shapes[0];
+            shape = shapeDesc->collider->shape;
 
-        // Construct initial world transform 
-        Vec3 worldCentroid = desc.origin + desc.axis * totalCentroid;
-        Mat3 worldAxis = desc.axis * shapeDesc->localAxis;
-        initialTransform.setBasis(ToBtMatrix3x3(worldAxis));
-        initialTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(worldCentroid)));
-    } else {
-        btCompoundShape *compoundShape = new btCompoundShape;
-        shape = compoundShape;
+            totalCentroid = shapeDesc->localOrigin + shapeDesc->localAxis * shapeDesc->collider->GetCentroid();
 
-        // Compute total centroid & volume
-        float totalVolume = 0.0f;
-
-        for (int i = 0; i < desc.shapes.Count(); i++) {
-            const PhysShapeDesc *shapeDesc = &desc.shapes[i];
-
-            Vec3 centroid = shapeDesc->localOrigin + shapeDesc->localAxis * shapeDesc->collider->GetCentroid();
-            float volume = shapeDesc->collider->GetVolume();
-
-            totalVolume += volume;
-            totalCentroid += centroid * volume;
-        }
-
-        if (totalVolume > 0.0f) {
-            totalCentroid /= totalVolume;
-        }
-
-        for (int i = 0; i < desc.shapes.Count(); i++) {
-            const PhysShapeDesc *shapeDesc = &desc.shapes[i];
-
-            Vec3 centroid = shapeDesc->localOrigin + shapeDesc->localAxis * shapeDesc->collider->GetCentroid();
-            Vec3 localCentroid = centroid - totalCentroid;
-
-            // Construct local transform for each child shapes
-            btTransform localTransform;
-            localTransform.setBasis(ToBtMatrix3x3(shapeDesc->localAxis));
-            localTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(localCentroid)));
-
-            compoundShape->addChildShape(localTransform, shapeDesc->collider->shape);
-        }
-
-        // Construct initial world transform 
-        Vec3 worldCentroid = desc.origin + desc.axis * totalCentroid;
-        initialTransform.setBasis(ToBtMatrix3x3(desc.axis));
-        initialTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(worldCentroid)));
-    }
-
-    btVector3 inertia(0, 0, 0);
-    if (shape != emptyShape) {
-        if (desc.mass != 0.0f) {
-            // NOTE: The bullet assumes that the shape is aligned to the center of mass, 
-            // and in most cases computes the inertia tensor by AABB approximation.
-            shape->calculateLocalInertia(desc.mass, inertia);
-        }
-    }
-
-    if (desc.type == PhysCollidable::Type::RigidBody) {
-        btDefaultMotionState *motionState = new btDefaultMotionState(initialTransform);
-        btRigidBody *rigidBody = new btRigidBody(desc.mass, motionState, shape, inertia);
-
-        if (desc.mass == 0) {
-            rigidBody->setCollisionFlags(rigidBody->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
+            // Construct initial world transform 
+            Vec3 worldCentroid = desc.origin + desc.axis * totalCentroid;
+            Mat3 worldAxis = desc.axis * shapeDesc->localAxis;
+            initialTransform.setBasis(ToBtMatrix3x3(worldAxis));
+            initialTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(worldCentroid)));
         } else {
-            // the constraint solver can discard solving contacts, if the distance is above this threshold. 
-            //rigidBody->setContactProcessingThreshold(BT_LARGE_FLOAT);
+            btCompoundShape *compoundShape = new btCompoundShape;
+            shape = compoundShape;
+
+            // Compute total centroid & volume
+            float totalVolume = 0.0f;
+
+            for (int i = 0; i < desc.shapes.Count(); i++) {
+                const PhysShapeDesc *shapeDesc = &desc.shapes[i];
+
+                Vec3 centroid = shapeDesc->localOrigin + shapeDesc->localAxis * shapeDesc->collider->GetCentroid();
+                float volume = shapeDesc->collider->GetVolume();
+
+                totalVolume += volume;
+                totalCentroid += centroid * volume;
+            }
+
+            if (totalVolume > 0.0f) {
+                totalCentroid /= totalVolume;
+            }
+
+            for (int i = 0; i < desc.shapes.Count(); i++) {
+                const PhysShapeDesc *shapeDesc = &desc.shapes[i];
+
+                Vec3 centroid = shapeDesc->localOrigin + shapeDesc->localAxis * shapeDesc->collider->GetCentroid();
+                Vec3 localCentroid = centroid - totalCentroid;
+
+                // Construct local transform for each child shapes
+                btTransform localTransform;
+                localTransform.setBasis(ToBtMatrix3x3(shapeDesc->localAxis));
+                localTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(localCentroid)));
+
+                compoundShape->addChildShape(localTransform, shapeDesc->collider->shape);
+            }
+
+            // Construct initial world transform 
+            Vec3 worldCentroid = desc.origin + desc.axis * totalCentroid;
+            initialTransform.setBasis(ToBtMatrix3x3(desc.axis));
+            initialTransform.setOrigin(ToBtVector3(SystemUnitToPhysicsUnit(worldCentroid)));
         }
 
-        if (shape->isConcave()) {
-            rigidBody->setCollisionFlags(rigidBody->getCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
+        btVector3 inertia(0, 0, 0);
+        if (shape != emptyShape) {
+            if (desc.mass != 0.0f) {
+                // NOTE: The bullet assumes that the shape is aligned to the center of mass, 
+                // and in most cases computes the inertia tensor by AABB approximation.
+                shape->calculateLocalInertia(desc.mass, inertia);
+            }
         }
 
-        rigidBody->setSleepingThresholds(SystemUnitToPhysicsUnit(0.2f), 2.0f);
+        if (desc.type == PhysCollidable::Type::RigidBody) {
+            btDefaultMotionState *motionState = new btDefaultMotionState(initialTransform);
+            btRigidBody *rigidBody = new btRigidBody(desc.mass, motionState, shape, inertia);
 
-        PhysRigidBody *body = new PhysRigidBody(rigidBody, totalCentroid);
-        body->SetRestitution(desc.restitution);
-        body->SetFriction(desc.friction);
-        body->SetRollingFriction(desc.rollingFriction);
-        body->SetSpinningFriction(desc.spinningFriction);
-        body->SetLinearDamping(desc.linearDamping);
-        body->SetAngularDamping(desc.angularDamping);
-        body->SetKinematic(desc.kinematic);
-        body->SetCharacter(desc.character);
-        // NOTE: CCD cannot be used with the compound shape.
-        body->SetCCD(desc.ccd);
+            if (desc.mass == 0) {
+                rigidBody->setCollisionFlags(rigidBody->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
+            } else {
+                // the constraint solver can discard solving contacts, if the distance is above this threshold. 
+                //rigidBody->setContactProcessingThreshold(BT_LARGE_FLOAT);
+            }
 
-        rigidBody->setUserPointer(body);
+            if (shape->isConcave()) {
+                rigidBody->setCollisionFlags(rigidBody->getCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
+            }
 
-        return body;
+            rigidBody->setSleepingThresholds(SystemUnitToPhysicsUnit(0.2f), 2.0f);
+
+            PhysRigidBody *rb = new PhysRigidBody(rigidBody, totalCentroid);
+            rb->SetRestitution(desc.restitution);
+            rb->SetFriction(desc.friction);
+            rb->SetRollingFriction(desc.rollingFriction);
+            rb->SetSpinningFriction(desc.spinningFriction);
+            rb->SetLinearDamping(desc.linearDamping);
+            rb->SetAngularDamping(desc.angularDamping);
+            rb->SetKinematic(desc.kinematic);
+            rb->SetCharacter(desc.character);
+            // NOTE: CCD cannot be used with the compound shape.
+            rb->SetCCD(desc.ccd);
+
+            rigidBody->setUserPointer(rb);
+
+            return rb;
+        }
+
+        if (desc.type == PhysCollidable::Type::Sensor) {
+            btPairCachingGhostObject *ghost = new btPairCachingGhostObject;
+            ghost->setWorldTransform(initialTransform);
+            ghost->setCollisionShape(shape);
+            ghost->setCollisionFlags(ghost->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
+            ghost->setActivationState(DISABLE_DEACTIVATION);
+
+            PhysSensor *sensor = new PhysSensor(ghost, totalCentroid);
+
+            ghost->setUserPointer(sensor);
+
+            return sensor;
+        }
+    } else if (desc.type == PhysCollidable::Type::SoftBody) {
+        btSoftBody *softBody = new btSoftBody(nullptr);
+
+        // Default material
+        btSoftBody::Material *softBodyMaterial = softBody->appendMaterial();
+        softBodyMaterial->m_kLST = 0.9f;
+        softBodyMaterial->m_kAST = 0.9f;
+        softBodyMaterial->m_kVST = 0.9f;
+        softBodyMaterial->m_flags = btSoftBody::fMaterial::Default;
+
+        // Nodes
+        const btScalar margin = softBody->getCollisionShape()->getMargin();
+        softBody->m_nodes.resize(desc.points.Count());
+        for (int nodeIndex = 0; nodeIndex < softBody->m_nodes.size(); nodeIndex++) {
+            btSoftBody::Node &node = softBody->m_nodes[nodeIndex];
+            memset(&node, 0, sizeof(node));
+            node.m_x = ToBtVector3(SystemUnitToPhysicsUnit(desc.points[nodeIndex]));
+            node.m_q = node.m_x;
+            node.m_im = 1;
+            node.m_im = 1;
+            node.m_leaf = softBody->m_ndbvt.insert(btDbvtVolume::FromCR(node.m_x, margin), &node);
+            node.m_material = softBodyMaterial;
+        }
+        softBody->updateBounds();
+
+        int maxidx = desc.points.Count();
+        if (maxidx > 0) {
+            btAlignedObjectArray<bool> chks;
+            chks.resize(maxidx * maxidx, false);
+
+            for (int i = 0; i < desc.pointIndexes.Count(); i += 3) {
+                const int triIdx[] = { desc.pointIndexes[i], desc.pointIndexes[i + 1], desc.pointIndexes[i + 2] };
+
+#define IDX(_x_, _y_) ((_y_)*maxidx + (_x_))
+                for (int j = 2, k = 0; k < 3; j = k++) {
+                    if (!chks[IDX(triIdx[j], triIdx[k])]) {
+                        chks[IDX(triIdx[j], triIdx[k])] = true;
+                        chks[IDX(triIdx[k], triIdx[j])] = true;
+                        softBody->appendLink(triIdx[j], triIdx[k]);
+                    }
+                }
+#undef IDX
+                softBody->appendFace(triIdx[0], triIdx[1], triIdx[2]);
+            }
+
+            // Generate bending constraints based on distance in the adjency graph.
+            softBody->generateBendingConstraints(2, softBodyMaterial);
+
+            // Randomize constraints to reduce solver bias.
+            softBody->randomizeConstraints();
+        }
+
+        softBody->m_cfg.aeromodel = btSoftBody::eAeroModel::F_TwoSidedLiftDrag;
+        softBody->m_cfg.kAHR = btScalar(.69);           // Anchor hardness [0, 1]
+        softBody->m_cfg.kCHR = btScalar(1.0);           // Rigid contact hardness [0, 1]
+        softBody->m_cfg.kDF = desc.friction;            // Dynamic friction coefficient [0, 1]
+        softBody->m_cfg.kDG = btScalar(0.01);           // Drag coefficient [0, +inf]
+        softBody->m_cfg.kDP = btScalar(0.0);            // Damping coefficient [0, 1]
+        softBody->m_cfg.kKHR = btScalar(0.1);           // Kinetic contact hardness [0, 1]
+        softBody->m_cfg.kLF = btScalar(0.1);            // Lift coefficient [0, +inf]
+        softBody->m_cfg.kMT = btScalar(0.0);            // Pose matching coefficient [0, 1]
+        softBody->m_cfg.kPR = btScalar(0.0);            // Pressure coefficient [-inf, +inf]
+        softBody->m_cfg.kSHR = btScalar(1.0);           // Soft contacts hardness [0, 1]
+        softBody->m_cfg.kVC = btScalar(0.0);            // Volume conversation coefficient [0, +inf]
+        softBody->m_cfg.kVCF = btScalar(1.0);           // Velocities correction factor (Baumgarte)
+        softBody->m_cfg.kSKHR_CL = btScalar(1.0);       // Soft vs kinetic hardness [0, 1] (cluster only)
+        softBody->m_cfg.kSK_SPLT_CL = btScalar(0.5);    // Soft vs rigid impulse split [0, 1] (cluster only)
+        softBody->m_cfg.kSRHR_CL = btScalar(0.1);       // Soft vs rigid hardness [0, 1] (cluster only)
+        softBody->m_cfg.kSR_SPLT_CL = btScalar(0.5);    // Soft vs rigid impulse split [0, 1] (cluster only)
+        softBody->m_cfg.kSSHR_CL = btScalar(0.5);       // Soft vs soft hardness [0, 1] (cluster only)
+        softBody->m_cfg.kSS_SPLT_CL = btScalar(0.5);    // Soft vs rigid impulse split [0, 1] (cluster only)
+
+        if (desc.pointWeights.Count() > 0) {
+            for (int i = 0; i < desc.pointWeights.Count(); i++) {
+                softBody->setMass(i, desc.pointWeights[i]);
+            }
+            // this must be AFTER softbody->setMass(), so that weights will be averaged.
+            softBody->setTotalMass(desc.mass);
+
+            softBody->setPose(true, true);
+        }
+
+        PhysSoftBody *sb = new PhysSoftBody(softBody, totalCentroid);
+        sb->SetRestitution(desc.restitution);
+        sb->SetFriction(desc.friction);
+        sb->SetCCD(desc.ccd);
+
+        softBody->setUserPointer(sb);
+
+        return sb;
     }
-    
-    if (desc.type == PhysCollidable::Type::Sensor) {
-        btPairCachingGhostObject *ghost = new btPairCachingGhostObject;
-        ghost->setWorldTransform(initialTransform);
-        ghost->setCollisionShape(shape);
-        ghost->setCollisionFlags(ghost->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
-        ghost->setActivationState(DISABLE_DEACTIVATION);
 
-        PhysSensor *sensor = new PhysSensor(ghost, totalCentroid);
-
-        ghost->setUserPointer(sensor);
-
-        return sensor;
-    }
-
-    btCollisionObject *collisionObject = new btCollisionObject;
-    collisionObject->setCollisionShape(shape);
-
-    PhysCollidable *object = new PhysCollidable(desc.type, collisionObject, totalCentroid);
-    collisionObject->setUserPointer(object);
-
-    return object;
+    BE_FATALERROR("Invalid physics collidable type: %i", (int)desc.type);
+    return nullptr;
 }
 
 void PhysicsSystem::DestroyCollidable(PhysCollidable *collidable) {
@@ -205,8 +294,10 @@ void PhysicsSystem::DestroyCollidable(PhysCollidable *collidable) {
     }
 
     btCollisionShape *shape = collidable->collisionObject->getCollisionShape();
-    if (shape->isCompound()) {
-        delete shape;
+    if (shape) {
+        if (shape->isCompound()) {
+            delete shape;
+        }
     }
 
     if (collidable->type == PhysCollidable::Type::RigidBody) {

@@ -79,6 +79,8 @@ public:
 
     void                    SetRenderingOrder(int order);
 
+    RenderObject::State &   GetRenderObjectDef() { return renderObjectDef; }
+
 protected:
     virtual void            OnActive() override;
     virtual void            OnInactive() override;

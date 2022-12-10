@@ -35,7 +35,10 @@ class btDynamicsWorld;
 BE_NAMESPACE_BEGIN
 
 class Collider;
+class PhysCollidable;
 class PhysRigidBody;
+class PhysSoftBody;
+class PhysSensor;
 
 struct PhysShapeDesc {
     Vec3                    localOrigin;    // local position in system units
@@ -48,16 +51,19 @@ struct PhysCollidableDesc {
     Array<PhysShapeDesc>    shapes;
     Vec3                    origin;         // position in system units
     Mat3                    axis;
-    bool                    character;
-    bool                    kinematic;
-    bool                    ccd;
-    float                   mass;           // if mass is zero, then static object
+    Array<Vec3>             points;         // soft body: points in world space
+    Array<uint32_t>         pointIndexes;   // soft body: point indexes
+    Array<float>            pointWeights;   // soft body: point weights (0: disable weight (no physics, only animation), 1: default weight)
+    float                   mass;           // if mass is zero, then static object, but soft body must have greater than zero
     float                   restitution;
     float                   friction;
     float                   rollingFriction;
     float                   spinningFriction;
     float                   linearDamping;
     float                   angularDamping;
+    bool                    character;
+    bool                    kinematic;
+    bool                    ccd;
 };
 
 struct PhysConstraintDesc {
@@ -94,6 +100,9 @@ struct PhysVehicleDesc {
 class PhysicsWorld : public SignalObject {
     friend class PhysicsSystem;
     friend class PhysCollidable;
+    friend class PhysRigidBody;
+    friend class PhysSoftBody;
+    friend class PhysSensor;
     friend class PhysConstraint;
     friend class PhysSensor;
     friend class PhysVehicle;

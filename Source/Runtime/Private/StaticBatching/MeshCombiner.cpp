@@ -17,6 +17,7 @@
 #include "Game/Entity.h"
 #include "Components/Transform/ComTransform.h"
 #include "Components/Renderable/ComStaticMeshRenderer.h"
+#include "Components/Physics/ComSoftBody.h"
 #include "MeshCombiner.h"
 #include "StaticBatching/StaticBatch.h"
 
@@ -176,6 +177,11 @@ void MeshCombiner::EnumerateCombinableEntities(const Hierarchy<Entity> &rootNode
         }
 
         if (meshRenderer->renderObjectDef.materials.Count() > 1) {
+            continue;
+        }
+
+        ComSoftBody *softBody = entity->GetComponent<ComSoftBody>();
+        if (softBody) {
             continue;
         }
 

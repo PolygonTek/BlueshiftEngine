@@ -17,6 +17,7 @@
 #include "PhysicsCollisionListener.h"
 #include "PhysicsCollidable.h"
 #include "PhysicsRigidBody.h"
+#include "PhysicsSoftBody.h"
 #include "PhysicsSensor.h"
 #include "PhysicsConstraint.h"
 #include "PhysicsGenericConstraint.h"

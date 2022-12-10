@@ -207,6 +207,7 @@ set(COMMON_ENGINE_FILES
     Public/Physics/PhysicsSliderConstraint.h
     Public/Physics/PhysicsSwingTwistConstraint.h
     Public/Physics/PhysicsRigidBody.h
+    Public/Physics/PhysicsSoftBody.h
     Public/Physics/PhysicsSensor.h
     Public/Physics/PhysicsSystem.h
     Public/Physics/PhysicsVehicle.h
@@ -244,7 +245,7 @@ set(COMMON_ENGINE_FILES
     Public/Components/Physics/ComSensor.h
     Public/Components/Physics/ComConstantForce.h
     Public/Components/Physics/ComVehicleWheel.h
-    Public/Components/Physics/ComCloth.h
+    Public/Components/Physics/ComSoftBody.h
 
     Public/Components/Renderable/ComRenderable.h
     Public/Components/Renderable/ComMeshRenderer.h
@@ -538,6 +539,7 @@ set(COMMON_ENGINE_FILES
     Private/Physics/PhysicsSliderConstraint.cpp
     Private/Physics/PhysicsSwingTwistConstraint.cpp
     Private/Physics/PhysicsRigidBody.cpp
+    Private/Physics/PhysicsSoftBody.cpp
     Private/Physics/PhysicsSensor.cpp
     Private/Physics/PhysicsSystem.cpp
     Private/Physics/PhysicsVehicle.cpp
@@ -577,7 +579,7 @@ set(COMMON_ENGINE_FILES
     Private/Components/Physics/ComSensor.cpp
     Private/Components/Physics/ComConstantForce.cpp
     Private/Components/Physics/ComVehicleWheel.cpp
-    Private/Components/Physics/ComCloth.cpp
+    Private/Components/Physics/ComSoftBody.cpp
 
     Private/Components/Renderable/ComRenderable.cpp
     Private/Components/Renderable/ComMeshRenderer.cpp

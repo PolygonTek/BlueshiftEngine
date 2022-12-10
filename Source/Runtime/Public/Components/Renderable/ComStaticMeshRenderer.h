@@ -38,6 +38,8 @@ public:
 
 protected:
     virtual void            MeshUpdated() override;
+
+    void                    InstantiateMesh();
 };
 
 BE_NAMESPACE_END
