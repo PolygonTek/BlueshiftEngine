@@ -873,7 +873,7 @@ void RenderWorld::CacheInstanceBuffer(VisCamera *camera) {
                 instanceData += sizeof(Color4);
             }
 
-            if (surf->subMesh->IsGpuSkinning()) {
+            if (surf->subMesh->IsGpuSkinningEnabled()) {
                 const SkinningJointCache *skinningJointCache = renderObject->state.mesh->skinningJointCache;
 
                 if (renderGlobal.vertexTextureMethod == BufferCacheManager::VertexTextureMethod::Tbo) {
@@ -1060,7 +1060,7 @@ void RenderWorld::AddDrawSurf(VisCamera *camera, VisLight *visLight, VisObject *
 
     if (renderGlobal.instancingMethod != Mesh::InstancingMethod::NoInstancing) {
         if (actualMaterial->GetPass()->instancingEnabled) {
-            if (subMesh->IsGpuSkinning()) {
+            if (subMesh->IsGpuSkinningEnabled()) {
                 if (renderGlobal.skinningMethod == SkinningJointCache::SkinningMethod::VertexTextureFetch) {
                     flags |= DrawSurf::Flag::UseInstancing;
                 }

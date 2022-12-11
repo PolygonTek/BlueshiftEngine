@@ -68,6 +68,15 @@ public:
         };
     };
 
+    struct Flag {
+        enum Enum {
+            IsInstantiatedMesh      = BIT(0),
+            IsStaticMesh            = BIT(1),
+            IsDynamicMesh           = BIT(2),
+            IsSkinnedMesh           = BIT(3)
+        };
+    };
+
     struct InstancingMethod {
         enum Enum {
             NoInstancing,
@@ -96,8 +105,9 @@ public:
     const AABB &            GetAABB() const { return aabb; }
 
     bool                    IsDefaultMesh() const;
-    bool                    IsStaticMesh() const { return isStaticMesh; }
-    bool                    IsSkinnedMesh() const { return isSkinnedMesh; }
+    bool                    IsInstantiatedMesh() const { return !!(flags & Flag::IsInstantiatedMesh); }
+    bool                    IsStaticMesh() const { return !!(flags & Flag::IsStaticMesh); }
+    bool                    IsSkinnedMesh() const { return !!(flags & Flag::IsSkinnedMesh); }
 
     bool                    IsCompatibleSkeleton(const Skeleton *skeleton) const;
 
@@ -189,13 +199,11 @@ private:
     Mesh *                  originalMesh = nullptr;
     Array<Mesh *>           instantiatedMeshes;
 
-    bool                    isInstantiated = false;
-    bool                    isStaticMesh = false;
-    bool                    isSkinnedMesh = false;
+    int                     flags = 0;
     AABB                    aabb = AABB::empty;
     Array<MeshSurf *>       surfaces;
 
-    bool                    useGpuSkinning = false;
+    bool                    gpuSkinningEnabled = false;
     SkinningJointCache *    skinningJointCache = nullptr;   // joint cache for HW skinning
 
     int32_t                 numJoints = 0;

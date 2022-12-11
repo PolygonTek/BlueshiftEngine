@@ -137,11 +137,11 @@ Mesh *MeshManager::AllocMesh(const char *hashName) {
     if (meshHashMap.Get(hashName)) {
         BE_FATALERROR("%s mesh already allocated", hashName);
     }
-    
+
     Mesh *mesh = new Mesh;
-    mesh->refCount          = 1;
-    mesh->hashName          = hashName;
-    mesh->name              = hashName;
+    mesh->refCount = 1;
+    mesh->hashName = hashName;
+    mesh->name = hashName;
     mesh->name.StripPath();
     mesh->name.StripFileExtension();
     meshHashMap.Set(mesh->hashName, mesh);
@@ -151,28 +151,27 @@ Mesh *MeshManager::AllocMesh(const char *hashName) {
 
 Mesh *MeshManager::AllocInstantiatedMesh(Mesh *refMesh) {
     Mesh *mesh = new Mesh;
-    mesh->refCount          = 1;
-    mesh->hashName          = refMesh->hashName;
-    mesh->name              = refMesh->name;
-    mesh->isInstantiated    = true;
-    mesh->originalMesh      = refMesh;
-    mesh->useGpuSkinning    = refMesh->useGpuSkinning;
-    mesh->numJoints         = refMesh->numJoints;
-    mesh->joints            = refMesh->joints;
-    mesh->aabb              = refMesh->aabb;
+    mesh->refCount = 1;
+    mesh->hashName = refMesh->hashName;
+    mesh->name = refMesh->name;
+    mesh->flags = Mesh::Flag::IsInstantiatedMesh;
+    mesh->originalMesh = refMesh;
+    mesh->gpuSkinningEnabled = refMesh->gpuSkinningEnabled;
+    mesh->numJoints = refMesh->numJoints;
+    mesh->joints = refMesh->joints;
+    mesh->aabb = refMesh->aabb;
     instantiatedMeshList.Append(mesh);
-    
+
     return mesh;
 }
 
 void MeshManager::DestroyMesh(Mesh *mesh) {
-    if (mesh->isInstantiated) {
+    if (mesh->IsInstantiatedMesh()) {
         instantiatedMeshList.RemoveFast(mesh);
     } else {
         if (mesh->refCount > 1) {
             BE_WARNLOG("MeshManager::DestroyMesh: mesh '%s' has %i reference count\n", mesh->name.c_str(), mesh->refCount);
         }
-
         meshHashMap.Remove(mesh->hashName);
     }
 
@@ -184,7 +183,7 @@ void MeshManager::ReleaseMesh(Mesh *mesh, bool immediateDestroy) {
         return;
     }
 
-    if (mesh->isInstantiated) {
+    if (mesh->IsInstantiatedMesh()) {
         instantiatedMeshList.RemoveFast(mesh);
         delete mesh;
         return;

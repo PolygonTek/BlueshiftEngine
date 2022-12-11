@@ -190,10 +190,10 @@ void Batch::DrawDynamicSubMesh(SubMesh *subMesh) {
 void Batch::SetSubMeshVertexFormat(const SubMesh *subMesh, int vertexFormatIndex) const {
     // HACK!!
     // TODO: check vertex type of the subMesh instead of this.
-    int vertexSize = subMesh->GetType() != Mesh::Type::Dynamic ? sizeof(VertexGenericLit) : sizeof(VertexGeneric);
+    int vertexSize = subMesh->verts == nullptr ? sizeof(VertexGeneric) : sizeof(VertexGenericLit);
 
     if (numIndirectCommands > 0 && renderGlobal.instancingMethod == Mesh::InstancingMethod::InstancedArrays) {
-        if (subMesh->useGpuSkinning) {
+        if (subMesh->IsGpuSkinningEnabled()) {
             rhi.SetVertexFormat(vertexFormats[vertexFormatIndex + 4 + subMesh->gpuSkinningVersionIndex + 1].vertexFormatHandle);
 
             int vertexWeightBase = ((vertexSize * numVerts + 15) >> 4) << 4;
@@ -208,7 +208,7 @@ void Batch::SetSubMeshVertexFormat(const SubMesh *subMesh, int vertexFormatIndex
             rhi.SetStreamSource(1, backEnd.instanceBufferCache->buffer, backEnd.instanceBufferCache->offset, renderGlobal.instanceBufferOffsetAlignment);
         }
     } else {
-        if (subMesh->useGpuSkinning) {
+        if (subMesh->IsGpuSkinningEnabled()) {
             rhi.SetVertexFormat(vertexFormats[vertexFormatIndex + subMesh->gpuSkinningVersionIndex + 1].vertexFormatHandle);
 
             int vertexWeightBase = ((vertexSize * numVerts + 15) >> 4) << 4;

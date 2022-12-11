@@ -31,7 +31,7 @@ void Mesh::Purge() {
     }
     surfaces.Clear();
 
-    if (isInstantiated) {
+    if (IsInstantiatedMesh()) {
         SAFE_DELETE(skinningJointCache);
 
         if (originalMesh) {
@@ -85,19 +85,20 @@ Mesh *Mesh::InstantiateMesh(Type::Enum meshType) {
 
 void Mesh::Instantiate(Type::Enum meshType) {
     if (meshType == Type::Skinned && numJoints > 0) {
-        isSkinnedMesh = true;
+        flags |= Flag::IsSkinnedMesh;
+    } else if (meshType == Type::Dynamic) {
+        flags |= Flag::IsDynamicMesh;
     } else {
-        isStaticMesh = true;
-        meshType = Type::Static; // override to static mesh
+        flags |= Flag::IsStaticMesh;
     }
 
     // Free previously allocated skinning joint cache
     SAFE_DELETE(skinningJointCache);
 
-    if (isSkinnedMesh) {
-        useGpuSkinning = SkinningJointCache::CapableGPUJointSkinning((SkinningJointCache::SkinningMethod::Enum)renderGlobal.skinningMethod, numJoints);
+    if (flags & Flag::IsSkinnedMesh) {
+        gpuSkinningEnabled = SkinningJointCache::CapableGPUJointSkinning((SkinningJointCache::SkinningMethod::Enum)renderGlobal.skinningMethod, numJoints);
 
-        if (useGpuSkinning) {
+        if (gpuSkinningEnabled) {
             skinningJointCache = new SkinningJointCache(numJoints);
         }
     }
@@ -118,7 +119,7 @@ void Mesh::Instantiate(Type::Enum meshType) {
 
 void Mesh::Reinstantiate() {
     Type::Enum meshType;
-    if (isSkinnedMesh) {
+    if (flags & Flag::IsSkinnedMesh) {
         meshType = Type::Skinned;
     } else {
         meshType = Type::Static;
@@ -364,7 +365,7 @@ bool Mesh::IsCompatibleSkeleton(const Skeleton *skeleton) const {
 }
 
 void Mesh::UpdateSkinningJointCache(const Skeleton *skeleton, const Mat3x4 *jointMats) {
-    if (!useGpuSkinning || !skinningJointCache) {
+    if (!gpuSkinningEnabled || !skinningJointCache) {
         return;
     }
 

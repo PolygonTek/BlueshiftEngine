@@ -76,7 +76,7 @@ void SubMesh::AllocSubMesh(int numVerts, int numIndexes) {
     this->jointWeightVerts          = nullptr;
 
     this->vertWeights               = nullptr;
-    this->useGpuSkinning            = false;
+    this->gpuSkinningEnabled            = false;
     this->gpuSkinningVersionIndex   = 0;
 
     this->vertexCache               = (BufferCache *)Mem_ClearedAlloc(sizeof(BufferCache));
@@ -112,12 +112,12 @@ void SubMesh::AllocInstantiatedSubMesh(const SubMesh *ref, int meshType) {
     this->jointWeightVerts          = ref->jointWeightVerts;
 
     this->vertWeights               = ref->vertWeights;
-    this->useGpuSkinning            = (ref->vertWeights && meshType == Mesh::Type::Skinned) ? true : false;
+    this->gpuSkinningEnabled        = (ref->vertWeights && meshType == Mesh::Type::Skinned) ? true : false;
     this->gpuSkinningVersionIndex   = ref->gpuSkinningVersionIndex;
 
     this->aabb                      = ref->aabb;
 
-    if (this->type == Mesh::Type::Static || this->useGpuSkinning) {
+    if (this->type == Mesh::Type::Static || this->gpuSkinningEnabled) {
         this->verts                 = ref->verts;
 
         this->vertexCache           = ref->vertexCache;
@@ -126,7 +126,7 @@ void SubMesh::AllocInstantiatedSubMesh(const SubMesh *ref, int meshType) {
         this->verts                 = (VertexGenericLit *)Mem_Alloc16(sizeof(VertexGenericLit) * ref->numVerts);
 
         this->vertexCache           = (BufferCache *)Mem_ClearedAlloc(sizeof(BufferCache));
-        this->indexCache            = nullptr;
+        this->indexCache            = ref->indexCache;
 
         simdProcessor->Memcpy(this->verts, ref->verts, sizeof(VertexGenericLit) * ref->numVerts);
     }
@@ -165,7 +165,7 @@ void SubMesh::FreeSubMesh() {
         return;
     }
 
-    if (type == Mesh::Type::Dynamic || (type == Mesh::Type::Skinned && !useGpuSkinning)) {
+    if (type == Mesh::Type::Dynamic || (type == Mesh::Type::Skinned && !gpuSkinningEnabled)) {
         Mem_AlignedFree(verts);
         Mem_Free(vertexCache);
     }
@@ -244,6 +244,7 @@ void SubMesh::CacheDynamicDataToGpu(const Mat3x4 *joints, const Material *materi
     // Fill in dynamic vertex buffer
     bufferCacheManager.AllocVertex(numVerts, sizeof(VertexGenericLit), verts, vertexCache);
 
+#if 0
     int filledVertexCount = vertexCache->offset / sizeof(VertexGenericLit);
 
     // Fill in dynamic index buffer
@@ -259,6 +260,12 @@ void SubMesh::CacheDynamicDataToGpu(const Mat3x4 *joints, const Material *materi
     }
 
     bufferCacheManager.UnmapIndexBuffer(indexCache);
+#else
+    // Fill in static index buffer.
+    if (!bufferCacheManager.IsCached(indexCache)) {
+        bufferCacheManager.AllocStaticIndex(numIndexes * sizeof(VertIndex), indexes, indexCache);
+    }
+#endif
 }
 
 void SubMesh::SplitMirroredVerts() {

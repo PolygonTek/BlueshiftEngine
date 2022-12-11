@@ -225,7 +225,7 @@ void Batch::SetSkinningConstants(const Shader *shader, const SkinningJointCache 
 }
 
 void Batch::SetEntityConstants(const Material::ShaderPass *mtrlPass, const Shader *shader) const {
-    if (subMesh->useGpuSkinning) {
+    if (subMesh->IsGpuSkinningEnabled()) {
         SetSkinningConstants(shader, surfSpace->def->GetState().mesh->skinningJointCache);
     }
 
@@ -316,7 +316,7 @@ void Batch::SetMaterialConstants(const Material::ShaderPass *mtrlPass, const Sha
 void Batch::RenderColor(const Material::ShaderPass *mtrlPass, const Color4 &color) const {
     Shader *shader = ShaderManager::constantColorShader;
 
-    if (subMesh->useGpuSkinning) {
+    if (subMesh->IsGpuSkinningEnabled()) {
         Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         if (skinningShader) {
             shader = skinningShader;
@@ -349,7 +349,7 @@ void Batch::RenderSelection(const Material::ShaderPass *mtrlPass, const Color3 &
         }
     }
 
-    if (subMesh->useGpuSkinning) {
+    if (subMesh->IsGpuSkinningEnabled()) {
         Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         if (skinningShader) {
             shader = skinningShader;
@@ -389,7 +389,7 @@ void Batch::RenderDepth(const Material::ShaderPass *mtrlPass) const {
         }
     }
 
-    if (subMesh->useGpuSkinning) {
+    if (subMesh->IsGpuSkinningEnabled()) {
         Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         if (skinningShader) {
             shader = skinningShader;
@@ -427,7 +427,7 @@ void Batch::RenderDepthNormal(const Material::ShaderPass *mtrlPass) const {
         }
     }
 
-    if (subMesh->useGpuSkinning) {
+    if (subMesh->IsGpuSkinningEnabled()) {
         Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         if (skinningShader) {
             shader = skinningShader;
@@ -465,7 +465,7 @@ void Batch::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
         }
     }
 
-    if (subMesh->useGpuSkinning) {
+    if (subMesh->IsGpuSkinningEnabled()) {
         if (shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex]) {
             shader = shader->gpuSkinningVersion[subMesh->gpuSkinningVersionIndex];
         }
@@ -499,7 +499,7 @@ void Batch::RenderVelocity(const Material::ShaderPass *mtrlPass) const {
         shader->SetConstant1f(shader->builtInConstantIndices[Shader::BuiltInConstant::PerforatedAlpha], mtrlPass->cutoffAlpha);
     }
 
-    if (subMesh->useGpuSkinning) {
+    if (subMesh->IsGpuSkinningEnabled()) {
         SetSkinningConstants(shader, surfSpace->def->GetState().mesh->skinningJointCache);
     }
 
@@ -518,7 +518,7 @@ void Batch::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
             }
         }
 
-        if (subMesh->useGpuSkinning) {
+        if (subMesh->IsGpuSkinningEnabled()) {
             Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
             if (skinningShader) {
                 shader = skinningShader;
@@ -543,7 +543,7 @@ void Batch::RenderGeneric(const Material::ShaderPass *mtrlPass) const {
             }
         }
 
-        if (subMesh->useGpuSkinning) {
+        if (subMesh->IsGpuSkinningEnabled()) {
             Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
             if (skinningShader) {
                 shader = skinningShader;
@@ -582,7 +582,7 @@ void Batch::RenderAmbient(const Material::ShaderPass *mtrlPass, float ambientSca
         }
     }
 
-    if (subMesh->useGpuSkinning) {
+    if (subMesh->IsGpuSkinningEnabled()) {
         Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         if (skinningShader) {
             shader = skinningShader;
@@ -628,7 +628,7 @@ void Batch::RenderIndirectLit(const Material::ShaderPass *mtrlPass) const {
         }
     }
 
-    if (subMesh->useGpuSkinning) {
+    if (subMesh->IsGpuSkinningEnabled()) {
         Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         if (skinningShader) {
             shader = skinningShader;
@@ -705,7 +705,7 @@ void Batch::RenderAmbient_DirectLit(const Material::ShaderPass *mtrlPass, float 
         }
     }
 
-    if (subMesh->useGpuSkinning) {
+    if (subMesh->IsGpuSkinningEnabled()) {
         Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         if (skinningShader) {
             shader = skinningShader;
@@ -772,7 +772,7 @@ void Batch::RenderIndirectLit_DirectLit(const Material::ShaderPass *mtrlPass) co
         }
     }
 
-    if (subMesh->useGpuSkinning) {
+    if (subMesh->IsGpuSkinningEnabled()) {
         Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         if (skinningShader) {
             shader = skinningShader;
@@ -928,7 +928,7 @@ void Batch::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const {
         }
     }
 
-    if (subMesh->useGpuSkinning) {
+    if (subMesh->IsGpuSkinningEnabled()) {
         Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         if (skinningShader) {
             shader = skinningShader;
@@ -975,7 +975,7 @@ void Batch::RenderLightInteraction(const Material::ShaderPass *mtrlPass) const {
 void Batch::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) const {
     Shader *shader = ShaderManager::fogLightShader;
 
-    if (subMesh->useGpuSkinning) {
+    if (subMesh->IsGpuSkinningEnabled()) {
         Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         if (skinningShader) {
             shader = skinningShader;
@@ -1015,7 +1015,7 @@ void Batch::RenderFogLightInteraction(const Material::ShaderPass *mtrlPass) cons
 void Batch::RenderBlendLightInteraction(const Material::ShaderPass *mtrlPass) const {
     Shader *shader = ShaderManager::blendLightShader;
 
-    if (subMesh->useGpuSkinning) {
+    if (subMesh->IsGpuSkinningEnabled()) {
         Shader *skinningShader = shader->GetGPUSkinningVersion(subMesh->gpuSkinningVersionIndex);
         if (skinningShader) {
             shader = skinningShader;

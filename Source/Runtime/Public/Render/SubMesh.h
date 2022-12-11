@@ -117,7 +117,7 @@ public:
 
     void                    OptimizeIndexedTriangles();
 
-    bool                    IsGpuSkinning() const { return useGpuSkinning; }
+    bool                    IsGpuSkinningEnabled() const { return gpuSkinningEnabled; }
 
     void                    CacheStaticDataToGpu();
     void                    CacheDynamicDataToGpu(const Mat3x4 *joints, const Material *material);
@@ -163,7 +163,7 @@ private:
     Vec4 *                  jointWeightVerts;           // local vertex of weight.
 
     void *                  vertWeights;                // vertex weights for GPU skinning (numVerts * sizeof(VertexWeightX))
-    bool                    useGpuSkinning;
+    bool                    gpuSkinningEnabled;
     int                     gpuSkinningVersionIndex;    // 0: VertexWeight1, 1: VertexWeight4, 2: VertexWeight8
 
     AABB                    aabb;                       // AABB in local space of mesh
