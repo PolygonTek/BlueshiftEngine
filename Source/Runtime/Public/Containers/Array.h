@@ -631,7 +631,7 @@ BE_INLINE int Array<T>::FindIndexIf(Functor &&finder, int from) {
 
     T *e = std::find_if(first, last, std::forward<Functor>(finder));
     if (e != last) {
-        return (e - elements) / sizeof(T);
+        return (e - elements);
     }
     return -1;
 }
