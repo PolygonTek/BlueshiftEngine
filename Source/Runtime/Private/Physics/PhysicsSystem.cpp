@@ -201,7 +201,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
         softBody->m_cfg.kAHR = btScalar(.69);           // Anchor hardness [0, 1]
         softBody->m_cfg.kCHR = btScalar(1.0);           // Rigid contact hardness [0, 1]
         softBody->m_cfg.kDF = desc.friction;            // Dynamic friction coefficient [0, 1]
-        softBody->m_cfg.kDG = btScalar(0.01);           // Drag coefficient [0, +inf]
+        softBody->m_cfg.kDG = btScalar(0.00001);        // Drag coefficient [0, +inf]
         softBody->m_cfg.kDP = btScalar(0.0005);         // Damping coefficient [0, 1]
         softBody->m_cfg.kKHR = btScalar(0.1);           // Kinetic contact hardness [0, 1]
         softBody->m_cfg.kLF = btScalar(0.05);           // Lift coefficient [0, +inf]
@@ -216,7 +216,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
         softBody->m_cfg.kSR_SPLT_CL = btScalar(0.5);    // Soft vs rigid impulse split [0, 1] (cluster only)
         softBody->m_cfg.kSSHR_CL = btScalar(0.5);       // Soft vs soft hardness [0, 1] (cluster only)
         softBody->m_cfg.kSS_SPLT_CL = btScalar(0.5);    // Soft vs soft impulse split [0, 1] (cluster only)
-        softBody->m_cfg.collisions = btSoftBody::fCollision::SDF_RS;
+        softBody->m_cfg.collisions = btSoftBody::fCollision::SDF_RS;// | btSoftBody::fCollision::VF_SS | btSoftBody::fCollision::CL_SS;
 
         //softBody->m_cfg.piterations = 10;
         //softBody->m_cfg.citerations = 10;
@@ -241,7 +241,6 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
             memset(&node, 0, sizeof(node));
             node.m_x = ToBtVector3(SystemUnitToPhysicsUnit(desc.points[nodeIndex]));
             node.m_q = node.m_x;
-            node.m_im = 1;
             node.m_im = 1;
             node.m_leaf = softBody->m_ndbvt.insert(btDbvtVolume::FromCR(node.m_x, margin), &node);
             node.m_material = softBodyMaterial;
