@@ -26,7 +26,9 @@ shader "downscale4x4ExpLum" {
 
             // Geometric mean of screen luminances = e^{ sum^N { log(pixel(x, y)) } / N }
             float avgLuminance = exp(logLum / float(SAMPLES));
-            //float avgLuminance = 0.18;
+
+			// Apply minimum luminance
+			avgLuminance = max(avgLuminance, 0.08);
 
 			o_fragColor = vec4(avgLuminance, avgLuminance, avgLuminance, 1.0);
 		}
