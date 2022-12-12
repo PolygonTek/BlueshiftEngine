@@ -38,7 +38,7 @@ void ComSoftBody::RegisterProperties() {
         "", PropertyInfo::Flag::Editor).SetRange(1, 30, 1);
     REGISTER_ACCESSOR_PROPERTY("ccd", "CCD", bool, IsCCDEnabled, SetCCDEnabled, true,
         "Continuous collision detection", PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("enableSelfCollision", "Enable Self Collision", bool, IsSelfCollisionEnabled, SetSelfCollisionEnabled, false,
+    REGISTER_ACCESSOR_PROPERTY("selfCollision", "Self Collision", bool, IsSelfCollisionEnabled, SetSelfCollisionEnabled, false,
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_ARRAY_PROPERTY("pointWeights", "Point Weights", float, GetPointWeight, SetPointWeight, GetPointWeightCount, SetPointWeightCount, 1.0f,
         "", PropertyInfo::Flag::Empty);
@@ -368,7 +368,7 @@ void ComSoftBody::DrawGizmos(const RenderCamera *camera, bool selected, bool sel
             float viewScale = camera->CalcClampedViewScale(worldPosition);
 
             renderWorld->SetDebugColor(Color4::white, Color4::red * physicsDesc.pointWeights[nodeIndex]);
-            renderWorld->DebugQuad(worldPosition, camera->GetState().axis[1], camera->GetState().axis[2], MeterToUnit(2.0f) * viewScale);
+            renderWorld->DebugQuad(worldPosition, camera->GetState().axis[1], camera->GetState().axis[2], MeterToUnit(1.8f) * viewScale);
         }
     }
 }

@@ -698,6 +698,10 @@ void RenderWorld::AddDynamicAndSkinnedMeshesForLights(VisCamera *camera) {
             return true;
         }
 
+        if (!renderObject->state.mesh) {
+            return true;
+        }
+
         if (renderObject->state.flags & RenderObject::Flag::SkipRendering) {
             return true;
         }
