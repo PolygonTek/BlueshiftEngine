@@ -32,11 +32,6 @@
 
 BE_NAMESPACE_BEGIN
 
-class Vec2;
-class Vec3;
-class Vec4;
-class Guid;
-
 /// Hash index table.
 class BE_API HashIndex {
 public:

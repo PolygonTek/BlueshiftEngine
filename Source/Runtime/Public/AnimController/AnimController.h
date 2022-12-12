@@ -26,6 +26,7 @@
 
 BE_NAMESPACE_BEGIN
 
+class Guid;
 class AnimClip;
 class AnimLayer;
 
