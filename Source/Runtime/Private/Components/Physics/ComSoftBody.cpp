@@ -13,11 +13,10 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "Render/Render.h"
 #include "Components/Transform/ComTransform.h"
 #include "Components/Physics/ComSoftBody.h"
 #include "Components/Renderable/ComMeshRenderer.h"
-#include "Render/Mesh.h"
-#include "Render/SubMesh.h"
 #include "Game/GameWorld.h"
 
 BE_NAMESPACE_BEGIN
@@ -27,15 +26,15 @@ BEGIN_EVENTS(ComSoftBody)
 END_EVENTS
 
 void ComSoftBody::RegisterProperties() {
-    REGISTER_ACCESSOR_PROPERTY("mass", "Mass", float, GetMass, SetMass, 1.f,
+    REGISTER_ACCESSOR_PROPERTY("mass", "Mass", float, GetMass, SetMass, 20.f,
         "Mass (kg)", PropertyInfo::Flag::Editor).SetRange(0, 200, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("friction", "Friction", float, GetFriction, SetFriction, 0.5f,
         "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
-    REGISTER_PROPERTY("stretchingStiffness", "Stretching Stiffness", float, stretchingStiffness, 1.0f,
-        "", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("stretchingStiffness", "Stretching Stiffness", float, GetStretchingStiffness, SetStretchingStiffness, 0.02f,
+        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("solverIterationCount", "Solver Iteration Count", int, GetSolverIterationCount, SetSolverIterationCount, 5,
         "", PropertyInfo::Flag::Editor).SetRange(1, 30, 1);
-    REGISTER_ACCESSOR_PROPERTY("ccd", "CCD", bool, IsCCD, SetCCD, true,
+    REGISTER_ACCESSOR_PROPERTY("ccd", "CCD", bool, IsCCDEnabled, SetCCDEnabled, true,
         "Continuous collision detection", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_ARRAY_PROPERTY("pointWeights", "Point Weights", float, GetPointWeight, SetPointWeight, GetPointWeightCount, SetPointWeightCount, 1.0f,
         "", PropertyInfo::Flag::Empty);
@@ -84,24 +83,38 @@ void ComSoftBody::Update() {
     }
 
     if (body->IsActive()) {
-        ComMeshRenderer *meshRenderer = entity->GetComponent<ComMeshRenderer>();
-        Mesh *mesh = meshRenderer->GetRenderObjectDef().mesh;
+        body->SetGravity(GetGameWorld()->GetPhysicsWorld()->GetGravity());
 
-        int nodeIndex = 0;
+        UpdateMeshVertsFromPoints();
+    }
+}
 
-        for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
-            const MeshSurf *meshSurf = mesh->GetSurface(surfaceIndex);
-            const SubMesh *subMesh = meshSurf->subMesh;
+void ComSoftBody::UpdateMeshVertsFromPoints() {
+    const ComTransform *transform = GetEntity()->GetTransform();
+    ALIGN_AS32 Mat3x4 inverseWorldMatrix = transform->GetMatrix().InverseOrthogonal();
 
-            VertexGenericLit *verts = subMesh->Verts();
+    ComMeshRenderer *meshRenderer = entity->GetComponent<ComMeshRenderer>();
+    Mesh *mesh = meshRenderer->GetRenderObjectDef().mesh;
 
-            for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
-                Vec3 position = body->GetNodePosition(nodeIndex++);
+    int nodeIndex = 0;
 
-                verts[vertexIndex].SetPosition(position);
-            }
+    for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
+        const MeshSurf *meshSurf = mesh->GetSurface(surfaceIndex);
+        const SubMesh *subMesh = meshSurf->subMesh;
+
+        VertexGenericLit *verts = subMesh->Verts();
+
+        for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
+            Vec3 localPosition = inverseWorldMatrix.TransformPos(body->GetNodePosition(nodeIndex++));
+
+            verts[vertexIndex].SetPosition(localPosition);
         }
     }
+
+    AABB worldAabb;
+    body->GetWorldAABB(worldAabb);
+    meshRenderer->GetRenderObjectDef().aabb.SetFromTransformedAABB(worldAabb, inverseWorldMatrix);
+    meshRenderer->UpdateVisuals();
 }
 
 float ComSoftBody::GetMass() const {
@@ -128,6 +141,18 @@ void ComSoftBody::SetFriction(float friction) {
     }
 }
 
+float ComSoftBody::GetStretchingStiffness() const {
+    return body ? body->GetStiffness() : physicsDesc.stiffness;
+}
+
+void ComSoftBody::SetStretchingStiffness(float stiffness) {
+    if (body) {
+        body->SetStiffness(stiffness);
+    } else {
+        physicsDesc.stiffness = stiffness;
+    }
+}
+
 int ComSoftBody::GetSolverIterationCount() const {
     return body ? body->GetPositionSolverIterationCount() : positionSolverIterationCount;
 }
@@ -140,15 +165,15 @@ void ComSoftBody::SetSolverIterationCount(int iterationCount) {
     }
 }
 
-bool ComSoftBody::IsCCD() const {
-    return body ? body->IsCCD() : physicsDesc.ccd;
+bool ComSoftBody::IsCCDEnabled() const {
+    return body ? body->IsContinuousCollisionDetectionEnabled() : physicsDesc.enableCCD;
 }
 
-void ComSoftBody::SetCCD(bool enableCcd) {
+void ComSoftBody::SetCCDEnabled(bool enabled) {
     if (body) {
-        body->SetCCD(enableCcd);
+        body->SetContinuousCollisionDetectionEnabled(enabled);
     } else {
-        physicsDesc.ccd = enableCcd;
+        physicsDesc.enableCCD = enabled;
     }
 }
 
@@ -255,7 +280,16 @@ void ComSoftBody::TransformUpdated(const ComTransform *transform) {
 #if WITH_EDITOR
 void ComSoftBody::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     if (selected) {
-        // Draw points
+        RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
+
+        for (int nodeIndex = 0; nodeIndex < physicsDesc.points.Count(); nodeIndex++) {
+            Vec3 worldPosition = body ? body->GetNodePosition(nodeIndex) : physicsDesc.points[nodeIndex];
+
+            float viewScale = camera->CalcClampedViewScale(worldPosition);
+
+            renderWorld->SetDebugColor(Color4::white, Color4::red * physicsDesc.pointWeights[nodeIndex]);
+            renderWorld->DebugQuad(worldPosition, camera->GetState().axis[1], camera->GetState().axis[2], MeterToUnit(2.0f) * viewScale);
+        }
     }
 }
 #endif

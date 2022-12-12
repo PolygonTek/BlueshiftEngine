@@ -246,6 +246,7 @@ void LuaVM::InitEngineModule(const GameWorld *gameWorld) {
         RegisterCapsuleColliderComponent(module);
         RegisterMeshColliderComponent(module);
         RegisterRigidBodyComponent(module);
+        RegisterSoftBodyComponent(module);
         RegisterSensorComponent(module);
         RegisterVehicleWheelComponent(module);
         RegisterJointComponent(module);

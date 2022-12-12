@@ -39,14 +39,20 @@ public:
     float                   GetFriction() const;
     void                    SetFriction(float friction);
 
+    float                   GetStiffness() const;
+    void                    SetStiffness(float stiffness);
+
     float                   GetMass() const;
     void                    SetMass(float mass);
 
     const Vec3              GetGravity() const;
     void                    SetGravity(const Vec3 &gravityAcceleration);
 
-    bool                    IsCCD() const;
-    void                    SetCCD(bool enableCcd);
+    bool                    IsContinuousCollisionDetectionEnabled() const;
+    void                    SetContinuousCollisionDetectionEnabled(bool enabled);
+
+    bool                    IsSelfCollisionEnabled() const;
+    void                    SetSelfCollisionEnabled(bool enabled);
 
     void                    AddForce(const Vec3 &force);
     void                    AddVelocity(const Vec3 &velocity);
@@ -57,6 +63,8 @@ public:
     int                     GetPositionSolverIterationCount() const;
     void                    SetPositionSolverIterationCount(int iterationCount);
 
+    int                     GetNodeCount() const;
+
     float                   GetNodeMass(int nodeIndex) const;
     void                    SetNodeMass(int nodeIndex, float mass);
 
@@ -65,6 +73,8 @@ public:
 
     const Vec3              GetNodePosition(int nodeIndex) const;
     const Vec3              GetNodeNormal(int nodeIndex) const;
+
+    void                    GetWorldAABB(AABB &worldAabb) const;
 
 private:
     btSoftBody *            GetSoftBody();

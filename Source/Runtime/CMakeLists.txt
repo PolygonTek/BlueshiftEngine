@@ -679,6 +679,7 @@ set(COMMON_ENGINE_FILES
     Private/Scripting/Components/LuaModule_ComCapsuleCollider.cpp
     Private/Scripting/Components/LuaModule_ComMeshCollider.cpp
     Private/Scripting/Components/LuaModule_ComRigidBody.cpp
+    Private/Scripting/Components/LuaModule_ComSoftBody.cpp
     Private/Scripting/Components/LuaModule_ComSensor.cpp
     Private/Scripting/Components/LuaModule_ComJoint.cpp
     Private/Scripting/Components/LuaModule_ComFixedJoint.cpp

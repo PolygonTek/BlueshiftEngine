@@ -172,7 +172,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
             rb->SetKinematic(desc.kinematic);
             rb->SetCharacter(desc.character);
             // NOTE: CCD cannot be used with the compound shape.
-            rb->SetCCD(desc.ccd);
+            rb->SetContinuousCollisionDetectionEnabled(desc.enableCCD);
 
             rigidBody->setUserPointer(rb);
 
@@ -195,11 +195,38 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
     } else if (desc.type == PhysCollidable::Type::SoftBody) {
         btSoftBody *softBody = new btSoftBody(nullptr);
 
+        softBody->getCollisionShape()->setMargin(SystemUnitToPhysicsUnit(CmToUnit(6.5f)));
+
+        softBody->m_cfg.aeromodel = btSoftBody::eAeroModel::F_TwoSidedLiftDrag;
+        softBody->m_cfg.kAHR = btScalar(.69);           // Anchor hardness [0, 1]
+        softBody->m_cfg.kCHR = btScalar(1.0);           // Rigid contact hardness [0, 1]
+        softBody->m_cfg.kDF = desc.friction;            // Dynamic friction coefficient [0, 1]
+        softBody->m_cfg.kDG = btScalar(0.01);           // Drag coefficient [0, +inf]
+        softBody->m_cfg.kDP = btScalar(0.0005);         // Damping coefficient [0, 1]
+        softBody->m_cfg.kKHR = btScalar(0.1);           // Kinetic contact hardness [0, 1]
+        softBody->m_cfg.kLF = btScalar(0.1);            // Lift coefficient [0, +inf]
+        softBody->m_cfg.kMT = btScalar(0.0);            // Pose matching coefficient [0, 1]
+        softBody->m_cfg.kPR = btScalar(0.0);            // Pressure coefficient [-inf, +inf]
+        softBody->m_cfg.kSHR = btScalar(1.0);           // Soft contacts hardness [0, 1]
+        softBody->m_cfg.kVC = btScalar(0.0);            // Volume conversation coefficient [0, +inf]
+        softBody->m_cfg.kVCF = btScalar(1.0);           // Velocities correction factor (Baumgarte)
+        softBody->m_cfg.kSKHR_CL = btScalar(1.0);       // Soft vs kinetic hardness [0, 1] (cluster only)
+        softBody->m_cfg.kSK_SPLT_CL = btScalar(0.5);    // Soft vs rigid impulse split [0, 1] (cluster only)
+        softBody->m_cfg.kSRHR_CL = btScalar(0.1);       // Soft vs rigid hardness [0, 1] (cluster only)
+        softBody->m_cfg.kSR_SPLT_CL = btScalar(0.5);    // Soft vs rigid impulse split [0, 1] (cluster only)
+        softBody->m_cfg.kSSHR_CL = btScalar(0.5);       // Soft vs soft hardness [0, 1] (cluster only)
+        softBody->m_cfg.kSS_SPLT_CL = btScalar(0.5);    // Soft vs rigid impulse split [0, 1] (cluster only)
+        softBody->m_cfg.collisions = btSoftBody::fCollision::SDF_RS;
+
+        if (desc.enableSelfCollision) {
+            softBody->m_cfg.collisions |= btSoftBody::fCollision::CL_SELF;
+        }
+
         // Default material
         btSoftBody::Material *softBodyMaterial = softBody->appendMaterial();
-        softBodyMaterial->m_kLST = 0.9f;
-        softBodyMaterial->m_kAST = 0.9f;
-        softBodyMaterial->m_kVST = 0.9f;
+        softBodyMaterial->m_kLST = desc.stiffness;
+        softBodyMaterial->m_kAST = desc.stiffness;
+        softBodyMaterial->m_kVST = desc.stiffness;
         softBodyMaterial->m_flags = btSoftBody::fMaterial::Default;
 
         // Nodes
@@ -223,7 +250,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
             chks.resize(maxidx * maxidx, false);
 
             for (int i = 0; i < desc.pointIndexes.Count(); i += 3) {
-                const int triIdx[] = { desc.pointIndexes[i], desc.pointIndexes[i + 1], desc.pointIndexes[i + 2] };
+                const int triIdx[] = { (int)desc.pointIndexes[i], (int)desc.pointIndexes[i + 1], (int)desc.pointIndexes[i + 2] };
 
 #define IDX(_x_, _y_) ((_y_)*maxidx + (_x_))
                 for (int j = 2, k = 0; k < 3; j = k++) {
@@ -244,32 +271,12 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
             softBody->randomizeConstraints();
         }
 
-        softBody->m_cfg.aeromodel = btSoftBody::eAeroModel::F_TwoSidedLiftDrag;
-        softBody->m_cfg.kAHR = btScalar(.69);           // Anchor hardness [0, 1]
-        softBody->m_cfg.kCHR = btScalar(1.0);           // Rigid contact hardness [0, 1]
-        softBody->m_cfg.kDF = desc.friction;            // Dynamic friction coefficient [0, 1]
-        softBody->m_cfg.kDG = btScalar(0.01);           // Drag coefficient [0, +inf]
-        softBody->m_cfg.kDP = btScalar(0.0);            // Damping coefficient [0, 1]
-        softBody->m_cfg.kKHR = btScalar(0.1);           // Kinetic contact hardness [0, 1]
-        softBody->m_cfg.kLF = btScalar(0.1);            // Lift coefficient [0, +inf]
-        softBody->m_cfg.kMT = btScalar(0.0);            // Pose matching coefficient [0, 1]
-        softBody->m_cfg.kPR = btScalar(0.0);            // Pressure coefficient [-inf, +inf]
-        softBody->m_cfg.kSHR = btScalar(1.0);           // Soft contacts hardness [0, 1]
-        softBody->m_cfg.kVC = btScalar(0.0);            // Volume conversation coefficient [0, +inf]
-        softBody->m_cfg.kVCF = btScalar(1.0);           // Velocities correction factor (Baumgarte)
-        softBody->m_cfg.kSKHR_CL = btScalar(1.0);       // Soft vs kinetic hardness [0, 1] (cluster only)
-        softBody->m_cfg.kSK_SPLT_CL = btScalar(0.5);    // Soft vs rigid impulse split [0, 1] (cluster only)
-        softBody->m_cfg.kSRHR_CL = btScalar(0.1);       // Soft vs rigid hardness [0, 1] (cluster only)
-        softBody->m_cfg.kSR_SPLT_CL = btScalar(0.5);    // Soft vs rigid impulse split [0, 1] (cluster only)
-        softBody->m_cfg.kSSHR_CL = btScalar(0.5);       // Soft vs soft hardness [0, 1] (cluster only)
-        softBody->m_cfg.kSS_SPLT_CL = btScalar(0.5);    // Soft vs rigid impulse split [0, 1] (cluster only)
-
         if (desc.pointWeights.Count() > 0) {
             for (int i = 0; i < desc.pointWeights.Count(); i++) {
                 softBody->setMass(i, desc.pointWeights[i]);
             }
             // this must be AFTER softbody->setMass(), so that weights will be averaged.
-            softBody->setTotalMass(desc.mass);
+            softBody->setTotalMass(desc.mass, true);
 
             softBody->setPose(true, true);
         }
@@ -277,7 +284,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
         PhysSoftBody *sb = new PhysSoftBody(softBody, totalCentroid);
         sb->SetRestitution(desc.restitution);
         sb->SetFriction(desc.friction);
-        sb->SetCCD(desc.ccd);
+        sb->SetContinuousCollisionDetectionEnabled(desc.enableCCD);
 
         softBody->setUserPointer(sb);
 

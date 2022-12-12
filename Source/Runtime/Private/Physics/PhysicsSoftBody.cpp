@@ -138,12 +138,23 @@ void PhysSoftBody::SetFriction(float friction) {
     GetSoftBody()->m_cfg.kDF = friction;
 }
 
+float PhysSoftBody::GetStiffness() const {
+    return GetSoftBody()->m_materials[0]->m_kLST;
+}
+
+void PhysSoftBody::SetStiffness(float stiffness) {
+    btSoftBody::Material *softBodyMaterial = GetSoftBody()->m_materials[0];
+    softBodyMaterial->m_kLST = stiffness;
+    softBodyMaterial->m_kAST = stiffness;
+    softBodyMaterial->m_kVST = stiffness;
+}
+
 float PhysSoftBody::GetMass() const {
     return GetSoftBody()->getTotalMass();
 }
 
 void PhysSoftBody::SetMass(float mass) {
-    GetSoftBody()->setTotalMass(mass);
+    GetSoftBody()->setTotalMass(mass, true);
 }
 
 const Vec3 PhysSoftBody::GetGravity() const {
@@ -155,21 +166,33 @@ void PhysSoftBody::SetGravity(const Vec3 &gravityAcceleration) {
     GetSoftBody()->m_worldInfo->m_gravity = ToBtVector3(SystemUnitToPhysicsUnit(gravityAcceleration));
 }
 
-bool PhysSoftBody::IsCCD() const {
+bool PhysSoftBody::IsContinuousCollisionDetectionEnabled() const {
     return GetSoftBody()->getCcdMotionThreshold() > 0.0f ? true : false;
 }
 
-void PhysSoftBody::SetCCD(bool enableCcd) {
-    btVector3 center;
-    btScalar radius;
+void PhysSoftBody::SetContinuousCollisionDetectionEnabled(bool enabled) {
+    if (enabled) {
+        btVector3 sphereCenter;
+        btScalar sphereRadius;
 
-    if (enableCcd) {
-        GetSoftBody()->getCollisionShape()->getBoundingSphere(center, radius);
+        GetSoftBody()->getCollisionShape()->getBoundingSphere(sphereCenter, sphereRadius);
         // TODO:
-        GetSoftBody()->setCcdMotionThreshold(radius * 0.5f);
-        GetSoftBody()->setCcdSweptSphereRadius(radius * 0.25f);
+        GetSoftBody()->setCcdMotionThreshold(sphereRadius * 0.5f);
+        GetSoftBody()->setCcdSweptSphereRadius(sphereRadius * 0.25f);
     } else {
         GetSoftBody()->setCcdMotionThreshold(0.0f);
+    }
+}
+
+bool PhysSoftBody::IsSelfCollisionEnabled() const {
+    return !!(GetSoftBody()->m_cfg.collisions & btSoftBody::fCollision::CL_SELF);
+}
+
+void PhysSoftBody::SetSelfCollisionEnabled(bool enabled) {
+    if (enabled) {
+        GetSoftBody()->m_cfg.collisions |= btSoftBody::fCollision::CL_SELF;
+    } else {
+        GetSoftBody()->m_cfg.collisions &= ~btSoftBody::fCollision::CL_SELF;
     }
 }
 
@@ -195,6 +218,10 @@ int PhysSoftBody::GetPositionSolverIterationCount() const {
 
 void PhysSoftBody::SetPositionSolverIterationCount(int iterationCount) {
     GetSoftBody()->m_cfg.piterations = iterationCount;
+}
+
+int PhysSoftBody::GetNodeCount() const {
+    return GetSoftBody()->m_nodes.size();
 }
 
 float PhysSoftBody::GetNodeMass(int nodeIndex) const {
@@ -223,6 +250,15 @@ const Vec3 PhysSoftBody::GetNodeNormal(int nodeIndex) const {
     const btAlignedObjectArray<btSoftBody::Node> &nodes = GetSoftBody()->m_nodes;
     Vec3 normal = ToVec3(nodes[nodeIndex].m_n);
     return normal;
+}
+
+void PhysSoftBody::GetWorldAABB(AABB &worldAabb) const {
+    btVector3 aabb_min;
+    btVector3 aabb_max;
+    GetSoftBody()->getAabb(aabb_min, aabb_max);
+
+    worldAabb.b[0] = PhysicsUnitToSystemUnit(ToVec3(aabb_min));
+    worldAabb.b[1] = PhysicsUnitToSystemUnit(ToVec3(aabb_max));
 }
 
 BE_NAMESPACE_END

@@ -73,8 +73,8 @@ public:
     const Vec3              GetTotalForce() const;
     const Vec3              GetTotalTorque() const;
 
-    bool                    IsCCD() const;
-    void                    SetCCD(bool enableCcd);
+    bool                    IsContinuousCollisionDetectionEnabled() const;
+    void                    SetContinuousCollisionDetectionEnabled(bool enabled);
 
     void                    ClearForces();
     void                    ClearVelocities();

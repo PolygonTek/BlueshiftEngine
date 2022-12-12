@@ -112,7 +112,7 @@ void ComCharacterController::CreateBodyAndSensor() {
     desc.type = PhysCollidable::Type::RigidBody;
     desc.character = true;
     desc.kinematic = true;
-    desc.ccd = false;
+    desc.enableCCD = false;
     desc.mass = mass;
     desc.restitution = 0.5f;
     desc.friction = 1.0f;
@@ -139,7 +139,7 @@ void ComCharacterController::CreateBodyAndSensor() {
     desc.type = PhysCollidable::Type::Sensor;
     desc.character = false;
     desc.kinematic = false;
-    desc.ccd = false;
+    desc.enableCCD = false;
     desc.mass = 0.0f;
     desc.restitution = 0.0f;
     desc.friction = 0.0f;

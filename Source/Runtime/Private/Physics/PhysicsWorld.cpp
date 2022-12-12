@@ -21,7 +21,6 @@
 #include "Profiler/Profiler.h"
 
 //#define DETERMINISTIC
-#define ALLOW_SOFTBODY
 
 BE_NAMESPACE_BEGIN
 
@@ -60,7 +59,7 @@ public:
 
 PhysicsWorld::PhysicsWorld() {
     // collision configuration contains default setup for memory, collision setup
-#ifdef ALLOW_SOFTBODY
+#if 1
     collisionConfiguration = new btSoftBodyRigidBodyCollisionConfiguration();
 #else
     collisionConfiguration = new btDefaultCollisionConfiguration();
@@ -87,7 +86,7 @@ PhysicsWorld::PhysicsWorld() {
     solverType = ConstraintSolver::SequentialImpulseSolver;
     constraintSolver = new btSequentialImpulseConstraintSolver;
 
-#ifdef ALLOW_SOFTBODY
+#if 1
     softBodySolver = new btDefaultSoftBodySolver;
 
     dynamicsWorld = new btSoftRigidDynamicsWorld(collisionDispatcher, broadphase, constraintSolver, collisionConfiguration, softBodySolver);
@@ -136,15 +135,12 @@ PhysicsWorld::PhysicsWorld() {
 
     SetGravity(Vec3(0, 0, 0));
 
-#ifdef ALLOW_SOFTBODY
     btSoftBodyWorldInfo &softBodyWorldInfo = ((btSoftRigidDynamicsWorld *)dynamicsWorld)->getWorldInfo();
-    softBodyWorldInfo.air_density = (btScalar)1.2;
+    softBodyWorldInfo.air_density = (btScalar)1.0;
     softBodyWorldInfo.water_density = 0;
     softBodyWorldInfo.water_offset = 0;
     softBodyWorldInfo.water_normal = btVector3(0, 0, 0);
     softBodyWorldInfo.m_sparsesdf.Initialize();
-    softBodyWorldInfo.m_gravity.setValue(0, 0, 0);
-#endif
 }
 
 PhysicsWorld::~PhysicsWorld() {
@@ -287,7 +283,22 @@ void PhysicsWorld::SetGravity(const Vec3 &gravityAcceleration) {
         return;
     }
 
-    dynamicsWorld->setGravity(ToBtVector3(SystemUnitToPhysicsUnit(gravityAcceleration)));
+    btVector3 bulletGravity = ToBtVector3(SystemUnitToPhysicsUnit(gravityAcceleration));
+
+    dynamicsWorld->setGravity(bulletGravity);
+
+    btSoftBodyWorldInfo &softBodyWorldInfo = ((btSoftRigidDynamicsWorld *)dynamicsWorld)->getWorldInfo();
+    softBodyWorldInfo.m_gravity = bulletGravity;
+}
+
+float PhysicsWorld::GetAirDensity() const {
+    btSoftBodyWorldInfo &softBodyWorldInfo = ((btSoftRigidDynamicsWorld *)dynamicsWorld)->getWorldInfo();
+    return softBodyWorldInfo.air_density;
+}
+
+void PhysicsWorld::SetAirDensity(float airDensity) {
+    btSoftBodyWorldInfo &softBodyWorldInfo = ((btSoftRigidDynamicsWorld *)dynamicsWorld)->getWorldInfo();
+    softBodyWorldInfo.air_density = (btScalar)airDensity;
 }
 
 int PhysicsWorld::GetCollisionFilterMask(int bit) const {

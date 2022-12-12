@@ -34,6 +34,8 @@ void PhysicsSettings::RegisterProperties() {
         "", PropertyInfo::Flag::Editor).SetRange(1, 100, 1);
     REGISTER_MIXED_ACCESSOR_PROPERTY("gravity", "Gravity", Vec3, GetGravity, SetGravity, Vec3(0, 0, -9.8),
         "", PropertyInfo::Flag::SystemUnits | PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("airDensity", "Air Density", float, GetAirDensity, SetAirDensity, 0.5f,
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_ARRAY_PROPERTY("filterMasks", "Filter Mask", int, GetFilterMaskElement, SetFilterMaskElement, GetFilterMaskCount, SetFilterMaskCount, -1, 
         "", PropertyInfo::Flag::Editor);
 }
@@ -80,6 +82,14 @@ Vec3 PhysicsSettings::GetGravity() const {
 
 void PhysicsSettings::SetGravity(const Vec3 &gravity) {
     physicsWorld->SetGravity(gravity);
+}
+
+float PhysicsSettings::GetAirDensity() const {
+    return physicsWorld->GetAirDensity();
+}
+
+void PhysicsSettings::SetAirDensity(float airDensity) {
+    physicsWorld->SetAirDensity(airDensity);
 }
 
 int PhysicsSettings::GetFilterMaskElement(int index) const {

@@ -80,12 +80,11 @@ public:
     void                    SetRenderingOrder(int order);
 
     RenderObject::State &   GetRenderObjectDef() { return renderObjectDef; }
+    virtual void            UpdateVisuals();
 
 protected:
     virtual void            OnActive() override;
     virtual void            OnInactive() override;
-
-    virtual void            UpdateVisuals();
 
     void                    LayerChanged(const Entity *entity);
     void                    StaticMaskChanged(const Entity *entity);

@@ -266,19 +266,19 @@ const Vec3 PhysRigidBody::GetTotalTorque() const {
     return PhysicsUnitToSystemUnit(ToVec3(totalTorque));
 }
 
-bool PhysRigidBody::IsCCD() const {
+bool PhysRigidBody::IsContinuousCollisionDetectionEnabled() const {
     return GetRigidBody()->getCcdMotionThreshold() > 0.0f ? true : false;
 }
 
-void PhysRigidBody::SetCCD(bool enableCcd) {
-    btVector3 center;
-    btScalar radius;
+void PhysRigidBody::SetContinuousCollisionDetectionEnabled(bool enabled) {
+    if (enabled) {
+        btVector3 sphereCenter;
+        btScalar sphereRadius;
 
-    if (enableCcd) {
-        GetRigidBody()->getCollisionShape()->getBoundingSphere(center, radius);
+        GetRigidBody()->getCollisionShape()->getBoundingSphere(sphereCenter, sphereRadius);
         // TODO:
-        GetRigidBody()->setCcdMotionThreshold(radius * 0.5f);
-        GetRigidBody()->setCcdSweptSphereRadius(radius * 0.25f);
+        GetRigidBody()->setCcdMotionThreshold(sphereRadius * 0.5f);
+        GetRigidBody()->setCcdSweptSphereRadius(sphereRadius * 0.25f);
     } else {
         GetRigidBody()->setCcdMotionThreshold(0.0f);
     }

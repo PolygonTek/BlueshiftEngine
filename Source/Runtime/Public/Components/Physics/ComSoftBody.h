@@ -46,11 +46,14 @@ public:
     float                   GetFriction() const;
     void                    SetFriction(float friction);
 
+    float                   GetStretchingStiffness() const;
+    void                    SetStretchingStiffness(float stiffness);
+
     int                     GetSolverIterationCount() const;
     void                    SetSolverIterationCount(int iterationCount);
 
-    bool                    IsCCD() const;
-    void                    SetCCD(bool enableCcd);
+    bool                    IsCCDEnabled() const;
+    void                    SetCCDEnabled(bool enabled);
 
     const Vec3              GetGravity() const { return body ? body->GetGravity() : Vec3::zero; }
     void                    SetGravity(const Vec3 &gravityAcceleration) { if (body) body->SetGravity(gravityAcceleration); }
@@ -68,6 +71,7 @@ public:
 protected:
     void                    CreateBody();
     void                    InitPoints();
+    void                    UpdateMeshVertsFromPoints();
 
     void                    TransformUpdated(const ComTransform *transform);
 

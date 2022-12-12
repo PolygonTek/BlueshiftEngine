@@ -41,7 +41,7 @@ class PhysSoftBody;
 class PhysSensor;
 
 struct PhysShapeDesc {
-    Vec3                    localOrigin;    // local position in system units
+    Vec3                    localOrigin;        // local position in system units
     Mat3                    localAxis;
     Collider *              collider;
 };
@@ -49,31 +49,33 @@ struct PhysShapeDesc {
 struct PhysCollidableDesc {
     PhysCollidable::Type::Enum type;
     Array<PhysShapeDesc>    shapes;
-    Vec3                    origin;         // position in system units
+    Vec3                    origin;             // position in system units
     Mat3                    axis;
-    Array<Vec3>             points;         // soft body: points in world space
-    Array<uint32_t>         pointIndexes;   // soft body: point indexes
-    Array<float>            pointWeights;   // soft body: point weights (0: disable weight (no physics, only animation), 1: default weight)
-    float                   mass;           // if mass is zero, then static object, but soft body must have greater than zero
+    Array<Vec3>             points;             // soft body: points in world space
+    Array<uint32_t>         pointIndexes;       // soft body: point indexes
+    Array<float>            pointWeights;       // soft body: point weights (0: disable weight (no physics, only animation), 1: default weight)
+    float                   mass;               // if mass is zero, then static object, but soft body must have greater than zero
     float                   restitution;
     float                   friction;
     float                   rollingFriction;
     float                   spinningFriction;
     float                   linearDamping;
     float                   angularDamping;
+    float                   stiffness;          // soft body
     bool                    character;
     bool                    kinematic;
-    bool                    ccd;
+    bool                    enableCCD;
+    bool                    enableSelfCollision;// soft body
 };
 
 struct PhysConstraintDesc {
     PhysConstraint::Type::Enum type;
     PhysRigidBody *         bodyA;
-    Vec3                    anchorInA;      // local position in A in system units
-    Mat3                    axisInA;        // local axis in A
+    Vec3                    anchorInA;          // local position in A in system units
+    Mat3                    axisInA;            // local axis in A
     PhysRigidBody *         bodyB;
-    Vec3                    anchorInB;      // local position in B in system units
-    Mat3                    axisInB;        // local axis in B
+    Vec3                    anchorInB;          // local position in B in system units
+    Mat3                    axisInB;            // local axis in B
     bool                    collision;
     float                   breakImpulse;
 };
@@ -110,8 +112,8 @@ class PhysicsWorld : public SignalObject {
 public:
     struct ConstraintSolver {
         enum Enum {
-            SequentialImpulseSolver,        // Default constraint solver.
-            NNCGSolver,                     // Nonsmooth Nonlinear Conjugate Gradient Solver
+            SequentialImpulseSolver,            // Default constraint solver.
+            NNCGSolver,                         // Nonsmooth Nonlinear Conjugate Gradient Solver
             ProjectedGaussSeidelSolver,
             DantzigSolver,
             LemkeSolver
@@ -148,6 +150,9 @@ public:
 
     const Vec3              GetGravity() const;
     void                    SetGravity(const Vec3 &gravityAcceleration);
+
+    float                   GetAirDensity() const;
+    void                    SetAirDensity(float airDensity);
 
     int                     GetCollisionFilterMask(int bit) const;
     void                    SetCollisionFilterMask(int bit, int mask);
