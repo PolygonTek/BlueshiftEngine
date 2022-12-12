@@ -222,7 +222,7 @@ void OpenGLRHI::FlushMappedBufferRange(Handle bufferHandle, int offset, int size
 
 void OpenGLRHI::WriteBuffer(byte *dst, const byte *src, int numBytes) {
 #if defined(ENABLE_SIMD4_INTRIN)
-    if (IsAligned(dst, 16) && IsAligned(src, 16)) {
+    if (IsAligned((intptr_t)dst, 16) && IsAligned((intptr_t)src, 16)) {
         assert_16_byte_aligned(dst);
         assert_16_byte_aligned(src);
 

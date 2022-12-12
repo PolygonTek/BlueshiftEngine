@@ -195,7 +195,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
     } else if (desc.type == PhysCollidable::Type::SoftBody) {
         btSoftBody *softBody = new btSoftBody(nullptr);
 
-        softBody->getCollisionShape()->setMargin(SystemUnitToPhysicsUnit(CmToUnit(6.5f)));
+        softBody->getCollisionShape()->setMargin(SystemUnitToPhysicsUnit(CmToUnit(8.0f)));
 
         softBody->m_cfg.aeromodel = btSoftBody::eAeroModel::F_TwoSidedLiftDrag;
         softBody->m_cfg.kAHR = btScalar(.69);           // Anchor hardness [0, 1]
