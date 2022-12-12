@@ -154,7 +154,9 @@ const Str Asset::NormalizeAssetPath(const Str &assetPath) {
 
 const Str Asset::GetMetaFileNameFromAssetPath(const char *assetPath) {
     Str metaFileName = Asset::NormalizeAssetPath(assetPath);
-    metaFileName += ".meta";
+    if (!Str::CheckExtension(assetPath, ".meta")) {
+        metaFileName += ".meta";
+    }
 
     return metaFileName;
 }
