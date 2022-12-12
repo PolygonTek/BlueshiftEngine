@@ -38,6 +38,8 @@ void ComSoftBody::RegisterProperties() {
         "", PropertyInfo::Flag::Editor).SetRange(1, 30, 1);
     REGISTER_ACCESSOR_PROPERTY("ccd", "CCD", bool, IsCCDEnabled, SetCCDEnabled, true,
         "Continuous collision detection", PropertyInfo::Flag::Editor);
+    REGISTER_ACCESSOR_PROPERTY("enableSelfCollision", "Enable Self Collision", bool, IsSelfCollisionEnabled, SetSelfCollisionEnabled, false,
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_ARRAY_PROPERTY("pointWeights", "Point Weights", float, GetPointWeight, SetPointWeight, GetPointWeightCount, SetPointWeightCount, 1.0f,
         "", PropertyInfo::Flag::Empty);
 }
@@ -305,6 +307,18 @@ void ComSoftBody::SetCCDEnabled(bool enabled) {
         body->SetContinuousCollisionDetectionEnabled(enabled);
     } else {
         physicsDesc.enableCCD = enabled;
+    }
+}
+
+bool ComSoftBody::IsSelfCollisionEnabled() const {
+    return body ? body->IsSelfCollisionEnabled() : physicsDesc.enableSelfCollision;
+}
+
+void ComSoftBody::SetSelfCollisionEnabled(bool enabled) {
+    if (body) {
+        body->SetSelfCollisionEnabled(enabled);
+    } else {
+        physicsDesc.enableSelfCollision = enabled;
     }
 }
 

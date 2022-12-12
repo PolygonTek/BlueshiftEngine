@@ -61,6 +61,9 @@ public:
     bool                    IsCCDEnabled() const;
     void                    SetCCDEnabled(bool enabled);
 
+    bool                    IsSelfCollisionEnabled() const;
+    void                    SetSelfCollisionEnabled(bool enabled);
+
     const Vec3              GetGravity() const { return body ? body->GetGravity() : Vec3::zero; }
     void                    SetGravity(const Vec3 &gravityAcceleration) { if (body) body->SetGravity(gravityAcceleration); }
 
