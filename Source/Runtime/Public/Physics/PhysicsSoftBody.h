@@ -39,6 +39,9 @@ public:
     float                   GetFriction() const;
     void                    SetFriction(float friction);
 
+    int                     GetBendingConstraintDistance() const;
+    void                    SetBendingConstraintDistance(int distance);
+
     float                   GetStiffness() const;
     void                    SetStiffness(float stiffness);
 
@@ -79,6 +82,8 @@ public:
 private:
     btSoftBody *            GetSoftBody();
     const btSoftBody *      GetSoftBody() const;
+
+    int                     bendingConstraintDistance;
 };
 
 BE_NAMESPACE_END

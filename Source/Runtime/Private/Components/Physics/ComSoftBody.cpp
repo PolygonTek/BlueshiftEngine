@@ -32,6 +32,8 @@ void ComSoftBody::RegisterProperties() {
         "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("friction", "Friction", float, GetFriction, SetFriction, 0.8f,
         "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("bendingConstraintDistance", "Bending Constraint Distance", int, GetBendingConstraintDistance, SetBendingConstraintDistance, 2,
+        "", PropertyInfo::Flag::Editor).SetRange(1, 10, 1);
     REGISTER_ACCESSOR_PROPERTY("stiffness", "Stiffness", float, GetStiffness, SetStiffness, 0.025f,
         "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.005f);
     REGISTER_ACCESSOR_PROPERTY("solverIterationCount", "Solver Iteration Count", int, GetSolverIterationCount, SetSolverIterationCount, 5,
@@ -281,6 +283,18 @@ void ComSoftBody::SetFriction(float friction) {
         body->SetFriction(friction);
     } else {
         physicsDesc.friction = friction;
+    }
+}
+
+int ComSoftBody::GetBendingConstraintDistance() const {
+    return body ? body->GetBendingConstraintDistance() : physicsDesc.bendingConstraintDistance;
+}
+
+void ComSoftBody::SetBendingConstraintDistance(int distance) {
+    if (body) {
+        body->SetBendingConstraintDistance(distance);
+    } else {
+        physicsDesc.bendingConstraintDistance = distance;
     }
 }
 

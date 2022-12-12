@@ -216,11 +216,13 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
         softBody->m_cfg.kSR_SPLT_CL = btScalar(0.5);    // Soft vs rigid impulse split [0, 1] (cluster only)
         softBody->m_cfg.kSSHR_CL = btScalar(0.5);       // Soft vs soft hardness [0, 1] (cluster only)
         softBody->m_cfg.kSS_SPLT_CL = btScalar(0.5);    // Soft vs soft impulse split [0, 1] (cluster only)
-        softBody->m_cfg.collisions = btSoftBody::fCollision::SDF_RS;// | btSoftBody::fCollision::VF_SS | btSoftBody::fCollision::CL_SS;
 
+        //softBody->m_cfg.viterations = 10;
         //softBody->m_cfg.piterations = 10;
         //softBody->m_cfg.citerations = 10;
         //softBody->m_cfg.diterations = 10;
+
+        softBody->m_cfg.collisions = btSoftBody::fCollision::SDF_RS;// | btSoftBody::fCollision::VF_SS | btSoftBody::fCollision::CL_SS;
 
         if (desc.enableSelfCollision) {
             softBody->m_cfg.collisions |= btSoftBody::fCollision::CL_SELF;
@@ -268,7 +270,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
             }
 
             // Generate bending constraints based on distance in the adjency graph.
-            softBody->generateBendingConstraints(2, softBodyMaterial);
+            softBody->generateBendingConstraints(desc.bendingConstraintDistance, softBodyMaterial);
 
             // Randomize constraints to reduce solver bias.
             softBody->randomizeConstraints();
@@ -288,6 +290,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
         sb->SetRestitution(desc.restitution);
         sb->SetFriction(desc.friction);
         sb->SetContinuousCollisionDetectionEnabled(desc.enableCCD);
+        sb->bendingConstraintDistance = desc.bendingConstraintDistance;
 
         softBody->setUserPointer(sb);
 

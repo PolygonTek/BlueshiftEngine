@@ -138,6 +138,17 @@ void PhysSoftBody::SetFriction(float friction) {
     GetSoftBody()->m_cfg.kDF = friction;
 }
 
+int PhysSoftBody::GetBendingConstraintDistance() const {
+    return bendingConstraintDistance;
+}
+
+void PhysSoftBody::SetBendingConstraintDistance(int distance) {
+    bendingConstraintDistance = distance;
+
+    GetSoftBody()->generateBendingConstraints(distance, GetSoftBody()->m_materials[0]);
+    GetSoftBody()->randomizeConstraints();
+}
+
 float PhysSoftBody::GetStiffness() const {
     return GetSoftBody()->m_materials[0]->m_kLST;
 }

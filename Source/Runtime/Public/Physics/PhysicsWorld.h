@@ -61,6 +61,7 @@ struct PhysCollidableDesc {
     Array<Vec3>             points;             // proxy points in world space
     Array<uint32_t>         pointIndexes;       // proxy point indexes
     Array<float>            pointWeights;       // proxy point weights (0: disable weight (no physics, only animation), 1: default weight)
+    int                     bendingConstraintDistance;
     float                   stiffness;
     bool                    enableSelfCollision;
 
