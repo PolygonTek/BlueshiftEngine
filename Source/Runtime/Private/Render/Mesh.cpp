@@ -431,12 +431,12 @@ float Mesh::ComputeVolumeAndCentroid(Vec3 &outCentroid) const {
     return totalVolume;
 }
 
-void Mesh::RecomputeNormalsAndTangents() {
+void Mesh::RecomputeTangents() {
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
         MeshSurf *surf = surfaces[surfaceIndex];
 
         surf->subMesh->tangentsCalculated = false;
-        surf->subMesh->ComputeTangents(true, false);
+        surf->subMesh->ComputeTangents(false, false);
     }
 }
 

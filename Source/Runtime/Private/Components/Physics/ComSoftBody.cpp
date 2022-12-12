@@ -223,17 +223,23 @@ void ComSoftBody::UpdateMeshVertsFromPoints() {
 
         for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
             int graphicsIndex = baseGraphicsIndex + vertexIndex;
+            int physicsIndex = graphicsToPhysicsVertexMapping[graphicsIndex];
 
-            Vec3 nodePosition = body->GetNodePosition(graphicsToPhysicsVertexMapping[graphicsIndex]);
+            Vec3 nodePosition = body->GetNodePosition(physicsIndex);
+            Vec3 nodeNormal = body->GetNodeNormal(physicsIndex);
+
             Vec3 localPosition = inverseWorldMatrix.TransformPos(nodePosition);
+            Vec3 localNormal = inverseWorldMatrix.TransformDir(nodeNormal);
 
             verts[vertexIndex].SetPosition(localPosition);
+            verts[vertexIndex].SetNormal(localNormal);
         }
 
         baseGraphicsIndex += subMesh->NumVerts();
     }
 
-    mesh->RecomputeNormalsAndTangents();
+    // FIXME
+    mesh->RecomputeTangents();
 
     AABB worldAabb;
     body->GetWorldAABB(worldAabb);

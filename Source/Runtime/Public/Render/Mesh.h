@@ -155,7 +155,7 @@ public:
 
     float                   ComputeVolumeAndCentroid(Vec3 &outCentroid) const;
 
-    void                    RecomputeNormalsAndTangents();
+    void                    RecomputeTangents();
 
     void                    Purge();
 
