@@ -191,10 +191,6 @@ void ComEnvironmentProbe::Awake() {
 }
 
 void ComEnvironmentProbe::Update() {
-    if (!IsActiveInHierarchy()) {
-        return;
-    }
-
     if (ShouldUpdateEveryFrame()) {
         renderSystem.ScheduleToRefreshEnvProbe(renderWorld, probeHandle);
     }

@@ -140,10 +140,6 @@ void ComSensor::CreateSensor() {
 }
 
 void ComSensor::Update() {
-    if (!IsActiveInHierarchy()) {
-        return;
-    }
-
     ProcessScriptCallback();
 }
 

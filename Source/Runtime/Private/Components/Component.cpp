@@ -78,7 +78,7 @@ GameWorld *Component::GetGameWorld() const {
 
 void Component::Event_ImmediateDestroy() {
     if (entity) {
-        if (!entity->components.Remove(this)) {
+        if (!entity->GetComponents().Remove(this)) {
             assert(0);
             return;
         }

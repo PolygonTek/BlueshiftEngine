@@ -235,7 +235,7 @@ void SubMesh::CacheDynamicDataToGpu(const Mat3x4 *joints, const Material *materi
         return;
     }
 
-    if (joints) {
+    if (joints && jointWeightVerts) {
         simdProcessor->TransformVerts(verts, numVerts, joints, jointWeightVerts, reinterpret_cast<int *>(jointWeights), numJointWeights);
     }
 

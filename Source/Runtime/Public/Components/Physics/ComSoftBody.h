@@ -20,10 +20,14 @@
 BE_NAMESPACE_BEGIN
 
 class ComTransform;
+class ComMeshRenderer;
 class ComStaticMeshRenderer;
+class ComSkinnedMeshRenderer;
 
 class ComSoftBody : public Component {
+    friend class ComMeshRenderer;
     friend class ComStaticMeshRenderer;
+    friend class ComSkinnedMeshRenderer;
 
 public:
     OBJECT_PROTOTYPE(ComSoftBody);

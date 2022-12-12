@@ -77,10 +77,6 @@ void ComAnimator::LateInit() {
 }
 
 void ComAnimator::Update() {
-    if (!IsActiveInHierarchy()) {
-        return;
-    }
-
     if (!animator.GetAnimController()->GetSkeleton()) {
         return;
     }

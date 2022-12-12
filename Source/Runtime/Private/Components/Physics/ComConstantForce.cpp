@@ -44,10 +44,6 @@ void ComConstantForce::Init() {
 }
 
 void ComConstantForce::Update() {
-    if (!IsActiveInHierarchy()) {
-        return;
-    }
-
     const ComRigidBody *rigidBody = GetEntity()->GetComponent<ComRigidBody>();
     if (rigidBody) {
         rigidBody->GetBody()->ApplyCentralForce(force);

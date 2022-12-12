@@ -555,11 +555,17 @@ void GameWorld::StartGame() {
         StaticBatch::CombineAll(scenes[sceneIndex].root);
     }
 
+    for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
+        for (Entity *ent = scenes[sceneIndex].root.GetNextLeaf(); ent; ent = ent->node.GetNextLeaf()) {
+            ent->UpdateUpdatableInHierarchyFlags();
+        }
+    }
+
     gameAwaking = true;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
-            if (!(ent->flags & Entity::Flag::Awaked)) {
+            if (!ent->IsAwaked()) {
                 ent->Awake();
             }
         }
@@ -569,7 +575,7 @@ void GameWorld::StartGame() {
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
-            if (!(ent->flags & Entity::Flag::Started)) {
+            if (!ent->IsStarted()) {
                 ent->Start();
             }
         }

@@ -73,10 +73,6 @@ void ComVehicleWheel::Init() {
 }
 
 void ComVehicleWheel::Update() {
-    if (!IsActiveInHierarchy()) {
-        return;
-    }
-
     if (!vehicle) {
         return;
     }

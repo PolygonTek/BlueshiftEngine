@@ -251,10 +251,6 @@ int ComParticleSystem::GetAliveParticleCount() const {
 }
 
 void ComParticleSystem::Update() {
-    if (!IsActiveInHierarchy()) {
-        return;
-    }
-
     int elapsedTime = GetGameWorld()->GetTime() - GetGameWorld()->GetPrevTime();
 
     currentTime += elapsedTime;

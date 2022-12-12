@@ -289,7 +289,7 @@ void Entity::InsertComponent(Component *component, int index) {
         component->Init();
     }
 
-    if (flags & Flag::Awaked) {
+    if (IsAwaked()) {
         component->Awake();
     }
 
@@ -298,19 +298,19 @@ void Entity::InsertComponent(Component *component, int index) {
 
         if (scriptComponent->IsUpdateFuncValid()) {
             flags |= Flag::Updatable;
-            flags |= Flag::UpdatableInHierarchy;
         }
         if (scriptComponent->IsLateUpdateFuncValid()) {
             flags |= Flag::LateUpdatable;
-            flags |= Flag::LateUpdatableInHierarchy;
         }
         if (scriptComponent->IsFixedUpdateFuncValid()) {
             flags |= Flag::FixedUpdatable;
-            flags |= Flag::FixedUpdatableInHierarchy;
         }
     } else if (component->updatable) {
         flags |= Flag::Updatable;
-        flags |= Flag::UpdatableInHierarchy;
+    }
+
+    if (IsAwaked()) {
+        UpdateUpdatableInHierarchyFlags();
     }
 
 #if WITH_EDITOR
@@ -545,6 +545,7 @@ void Entity::SetActiveInHierarchy(bool active) {
 }
 
 void Entity::UpdateUpdatableFlagsSelf() {
+    // Clear updatable flags
     flags &= ~(Flag::Updatable | Flag::LateUpdatable | Flag::FixedUpdatable);
 
     for (int i = 0; i < components.Count(); i++) {
@@ -555,23 +556,21 @@ void Entity::UpdateUpdatableFlagsSelf() {
 
             if (scriptComponent->IsUpdateFuncValid()) {
                 flags |= Flag::Updatable;
-                flags |= Flag::UpdatableInHierarchy;
             }
             if (scriptComponent->IsLateUpdateFuncValid()) {
                 flags |= Flag::LateUpdatable;
-                flags |= Flag::LateUpdatableInHierarchy;
             }
             if (scriptComponent->IsFixedUpdateFuncValid()) {
                 flags |= Flag::FixedUpdatable;
-                flags |= Flag::FixedUpdatableInHierarchy;
             }
         } else if (component->updatable) {
             flags |= Flag::Updatable;
-            flags |= Flag::UpdatableInHierarchy;
         }
     }
 
-    UpdateUpdatableInHierarchyFlags();
+    if (IsAwaked()) {
+        UpdateUpdatableInHierarchyFlags();
+    }
 }
 
 void Entity::UpdateUpdatableInHierarchyFlags() {
@@ -823,10 +822,10 @@ void Entity::SetParentGuid(const Guid &parentGuid) {
         }
     }
 
-    if (oldParentEntity) {
+    if (oldParentEntity && oldParentEntity->IsAwaked()) {
         oldParentEntity->UpdateUpdatableInHierarchyFlags();
     }
-    if (newParentEntity) {
+    if (newParentEntity && newParentEntity->IsAwaked()) {
         newParentEntity->UpdateUpdatableInHierarchyFlags();
     }
 

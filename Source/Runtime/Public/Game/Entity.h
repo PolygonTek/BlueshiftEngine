@@ -49,7 +49,6 @@ using EntityPtrArray = Array<EntityPtr>;
 class Entity : public Object {
     friend class GameWorld;
     friend class Prefab;
-    friend class Component;
 
 public:
     struct Flag {
@@ -102,6 +101,11 @@ public:
     int                         GetStaticMask() const { return staticMask; }
                                 /// Sets static mask.
     void                        SetStaticMask(int staticMask);
+
+                                /// Returns true if this entity is awaked.
+    bool                        IsAwaked() const { return !!(flags & Flag::Awaked); }
+                                /// Returns true if this entity is started.
+    bool                        IsStarted() const { return !!(flags & Flag::Started); }
 
 #if WITH_EDITOR
                                 /// Returns true if this entity is visible in editor.
@@ -182,7 +186,8 @@ public:
                                 /// Returns a component pointer by the given type T.
     template <typename T> T *   GetComponent(int index) const;
                                 /// Returns all component pointers.
-    ComponentPtrArray           GetComponents() { return components; }
+    const ComponentPtrArray &   GetComponents() const { return components; }
+    ComponentPtrArray &         GetComponents() { return components; }
                                 /// Returns all component pointers by the given meta object.
     ComponentPtrArray           GetComponents(const MetaObject *type) const;
                                 /// Returns all component pointers by the given type T.

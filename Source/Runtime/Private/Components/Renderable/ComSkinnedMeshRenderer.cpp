@@ -231,6 +231,11 @@ void ComSkinnedMeshRenderer::MeshUpdated() {
 
     UpdateSkeleton();
 
+    ComSoftBody *softBody = entity->GetComponent<ComSoftBody>();
+    if (softBody) {
+        softBody->ResetPoints();
+    }
+
     UpdateVisuals();
 }
 

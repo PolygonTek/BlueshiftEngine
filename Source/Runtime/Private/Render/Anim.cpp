@@ -365,7 +365,7 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
                         float w = vw->jointWeights[weightIndex];
                         if (w != 0.0f) {
                             if (sizeof(JointWeightType) == sizeof(byte)) {
-                                w *= 1.0f / 255.0f;
+                                w *= (1.0f / 255.0f);
                             }
 
                             resultPos += w * jointMats2[vw->jointIndexes[weightIndex]].TransformPos(pos);
@@ -387,7 +387,7 @@ void Anim::ComputeFrameAABBs(const Skeleton *skeleton, const Mesh *mesh, Array<A
                         float w = vw->jointWeights[weightIndex];
                         if (w != 0.0f) {
                             if (sizeof(JointWeightType) == sizeof(byte)) {
-                                w *= 1.0f / 255.0f;
+                                w *= (1.0f / 255.0f);
                             }
                             resultPos += w * jointMats2[vw->jointIndexes[weightIndex]].TransformPos(pos);
                         }
