@@ -108,6 +108,7 @@ public:
     bool                    IsDefaultMesh() const;
     bool                    IsInstantiatedMesh() const { return !!(flags & Flag::IsInstantiatedMesh); }
     bool                    IsStaticMesh() const { return !!(flags & Flag::IsStaticMesh); }
+    bool                    IsDynamicMesh() const { return !!(flags & Flag::IsDynamicMesh); }
     bool                    IsSkinnedMesh() const { return !!(flags & Flag::IsSkinnedMesh); }
 
     bool                    IsCompatibleSkeleton(const Skeleton *skeleton) const;

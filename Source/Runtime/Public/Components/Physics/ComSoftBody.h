@@ -20,8 +20,11 @@
 BE_NAMESPACE_BEGIN
 
 class ComTransform;
+class ComStaticMeshRenderer;
 
 class ComSoftBody : public Component {
+    friend class ComStaticMeshRenderer;
+
 public:
     OBJECT_PROTOTYPE(ComSoftBody);
 
@@ -49,8 +52,8 @@ public:
     float                   GetFriction() const;
     void                    SetFriction(float friction);
 
-    float                   GetStretchingStiffness() const;
-    void                    SetStretchingStiffness(float stiffness);
+    float                   GetStiffness() const;
+    void                    SetStiffness(float stiffness);
 
     int                     GetSolverIterationCount() const;
     void                    SetSolverIterationCount(int iterationCount);
@@ -73,7 +76,7 @@ public:
 
 protected:
     void                    CreateBody();
-    void                    InitPoints();
+    void                    ResetPoints();
     void                    UpdateMeshVertsFromPoints();
 
     void                    TransformUpdated(const ComTransform *transform);

@@ -28,12 +28,12 @@ END_EVENTS
 void ComSoftBody::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("mass", "Mass", float, GetMass, SetMass, 20.f,
         "Mass (kg)", PropertyInfo::Flag::Editor).SetRange(0, 200, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("restitution", "Restitution", float, GetRestitution, SetRestitution, 0.02f,
+    REGISTER_ACCESSOR_PROPERTY("restitution", "Restitution", float, GetRestitution, SetRestitution, 0.01f,
         "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("friction", "Friction", float, GetFriction, SetFriction, 0.5f,
+    REGISTER_ACCESSOR_PROPERTY("friction", "Friction", float, GetFriction, SetFriction, 0.8f,
         "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("stretchingStiffness", "Stretching Stiffness", float, GetStretchingStiffness, SetStretchingStiffness, 0.02f,
-        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("stiffness", "Stiffness", float, GetStiffness, SetStiffness, 0.025f,
+        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.005f);
     REGISTER_ACCESSOR_PROPERTY("solverIterationCount", "Solver Iteration Count", int, GetSolverIterationCount, SetSolverIterationCount, 5,
         "", PropertyInfo::Flag::Editor).SetRange(1, 30, 1);
     REGISTER_ACCESSOR_PROPERTY("ccd", "CCD", bool, IsCCDEnabled, SetCCDEnabled, true,
@@ -67,7 +67,10 @@ void ComSoftBody::Init() {
 
     physicsDesc.type = PhysCollidable::Type::SoftBody;
 
-    InitPoints();
+    //const ComMeshRenderer *meshRenderer = entity->GetComponent<ComMeshRenderer>();
+    //meshRenderer->Reinstantiate();
+
+    ResetPoints();
 
     ComTransform *transform = GetEntity()->GetTransform();
     transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSoftBody::TransformUpdated, SignalObject::ConnectionType::Unique);
@@ -76,9 +79,78 @@ void ComSoftBody::Init() {
     SetInitialized(true);
 }
 
+void ComSoftBody::ResetPoints() {
+    const ComTransform *transform = GetEntity()->GetTransform();
+    ALIGN_AS32 Mat3x4 worldMatrix = transform->GetMatrix();
+
+    const ComMeshRenderer *meshRenderer = entity->GetComponent<ComMeshRenderer>();
+    const Mesh *mesh = meshRenderer->GetReferenceMesh();
+
+    int numVerts = 0;
+    int numIndexes = 0;
+
+    for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
+        const MeshSurf *meshSurf = mesh->GetSurface(surfaceIndex);
+        numVerts += meshSurf->subMesh->NumOriginalVerts();
+        numIndexes += meshSurf->subMesh->NumIndexes();
+    }
+
+    physicsDesc.points.SetCount(numVerts);
+    physicsDesc.pointIndexes.SetCount(numIndexes);
+
+    int nodeIndex = 0;
+    int nodeIndexIndex = 0;
+
+    for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
+        const MeshSurf *meshSurf = mesh->GetSurface(surfaceIndex);
+        const SubMesh *subMesh = meshSurf->subMesh;
+
+        const VertexGenericLit *verts = subMesh->Verts();
+        const VertIndex *indexes = subMesh->Indexes();
+
+        for (int vertexIndex = 0; vertexIndex < subMesh->NumOriginalVerts(); vertexIndex++) {
+            const VertexGenericLit *vertex = &verts[vertexIndex];
+
+            Vec3 worldPosition = worldMatrix.TransformPos(vertex->GetPosition());
+            //Vec3 worldNormal = worldMatrix.TransformDir(vertex->GetNormal());
+
+            physicsDesc.points[nodeIndex++] = worldPosition;
+        }
+
+        for (int indexIndex = 0; indexIndex < subMesh->NumIndexes(); indexIndex++) {
+            int index = indexes[indexIndex];
+
+            physicsDesc.pointIndexes[nodeIndexIndex++] = index;
+        }
+    }
+
+    SetPropertyArrayCount("pointWeights", numVerts);
+}
+
 void ComSoftBody::Awake() {
     if (!body) {
         CreateBody();
+    }
+}
+
+void ComSoftBody::CreateBody() {
+    if (body) {
+        physicsSystem.DestroyCollidable(body);
+        body = nullptr;
+    }
+
+    ComTransform *transform = GetEntity()->GetTransform();
+
+    physicsDesc.origin = transform->GetOrigin();
+    physicsDesc.axis = transform->GetAxis();
+
+    body = static_cast<PhysSoftBody *>(physicsSystem.CreateCollidable(physicsDesc));
+    body->SetUserPointer(this);
+    body->SetCollisionFilterBit(entity->GetLayer());
+    body->SetPositionSolverIterationCount(positionSolverIterationCount);
+
+    if (IsActiveInHierarchy()) {
+        body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
 }
 
@@ -97,7 +169,7 @@ void ComSoftBody::UpdateMeshVertsFromPoints() {
     ALIGN_AS32 Mat3x4 inverseWorldMatrix = transform->GetMatrix().InverseOrthogonal();
 
     ComMeshRenderer *meshRenderer = entity->GetComponent<ComMeshRenderer>();
-    Mesh *mesh = meshRenderer->GetRenderObjectDef().mesh;
+    Mesh *mesh = meshRenderer->renderObjectDef.mesh;
 
     int nodeIndex = 0;
 
@@ -118,7 +190,8 @@ void ComSoftBody::UpdateMeshVertsFromPoints() {
 
     AABB worldAabb;
     body->GetWorldAABB(worldAabb);
-    meshRenderer->GetRenderObjectDef().aabb.SetFromTransformedAABB(worldAabb, inverseWorldMatrix);
+
+    meshRenderer->renderObjectDef.aabb.SetFromTransformedAABB(worldAabb, inverseWorldMatrix);
     meshRenderer->UpdateVisuals();
 }
 
@@ -158,11 +231,11 @@ void ComSoftBody::SetFriction(float friction) {
     }
 }
 
-float ComSoftBody::GetStretchingStiffness() const {
+float ComSoftBody::GetStiffness() const {
     return body ? body->GetStiffness() : physicsDesc.stiffness;
 }
 
-void ComSoftBody::SetStretchingStiffness(float stiffness) {
+void ComSoftBody::SetStiffness(float stiffness) {
     if (body) {
         body->SetStiffness(stiffness);
     } else {
@@ -214,79 +287,8 @@ void ComSoftBody::SetPointWeightCount(int count) {
     }
 }
 
-void ComSoftBody::InitPoints() {
-    const ComTransform *transform = GetEntity()->GetTransform();
-    ALIGN_AS32 Mat3x4 worldMatrix = transform->GetMatrix();
-
-    const ComMeshRenderer *meshRenderer = entity->GetComponent<ComMeshRenderer>();
-    //meshRenderer->Reinstantiate();
-
-    const Mesh *mesh = meshRenderer->GetReferenceMesh();
-
-    int numVerts = 0;
-    int numIndexes = 0;
-
-    for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
-        const MeshSurf *meshSurf = mesh->GetSurface(surfaceIndex);
-        numVerts += meshSurf->subMesh->NumOriginalVerts();
-        numIndexes += meshSurf->subMesh->NumIndexes();
-    }
-
-    physicsDesc.points.SetCount(numVerts);
-    physicsDesc.pointIndexes.SetCount(numIndexes);
-
-    int nodeIndex = 0;
-    int nodeIndexIndex = 0;
-
-    for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
-        const MeshSurf *meshSurf = mesh->GetSurface(surfaceIndex);
-        const SubMesh *subMesh = meshSurf->subMesh;
-
-        const VertexGenericLit *verts = subMesh->Verts();
-        const VertIndex *indexes = subMesh->Indexes();
-
-        for (int vertexIndex = 0; vertexIndex < subMesh->NumOriginalVerts(); vertexIndex++) {
-            const VertexGenericLit *vertex = &verts[vertexIndex];
-
-            Vec3 worldPosition = worldMatrix.TransformPos(vertex->GetPosition());
-            //Vec3 worldNormal = worldMatrix.TransformDir(vertex->GetNormal());
-
-            physicsDesc.points[nodeIndex++] = worldPosition;
-        }
-
-        for (int indexIndex = 0; indexIndex < subMesh->NumIndexes(); indexIndex++) {
-            int index = indexes[indexIndex];
-
-            physicsDesc.pointIndexes[nodeIndexIndex++] = index;
-        }
-    }
-
-    SetPropertyArrayCount("pointWeights", numVerts);
-}
-
-void ComSoftBody::CreateBody() {
-    if (body) {
-        physicsSystem.DestroyCollidable(body);
-        body = nullptr;
-    }
-
-    ComTransform *transform = GetEntity()->GetTransform();
-
-    physicsDesc.origin = transform->GetOrigin();
-    physicsDesc.axis = transform->GetAxis();
-
-    body = static_cast<PhysSoftBody *>(physicsSystem.CreateCollidable(physicsDesc));
-    body->SetUserPointer(this);
-    body->SetCollisionFilterBit(entity->GetLayer());
-    body->SetPositionSolverIterationCount(positionSolverIterationCount);
-
-    if (IsActiveInHierarchy()) {
-        body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
-    }
-}
-
 void ComSoftBody::TransformUpdated(const ComTransform *transform) {
-    InitPoints();
+    ResetPoints();
 
     if (body) {
         body->SetTransform(Mat3x4(transform->GetAxis(), transform->GetOrigin()));

@@ -23,10 +23,12 @@ class RenderWorld;
 class StaticBatch;
 class MeshCombiner;
 class ComTransform;
+class ComSoftBody;
 
 class ComRenderable : public Component {
     friend class StaticBatch;
     friend class MeshCombiner;
+    friend class ComSoftBody;
 
 public:
     ABSTRACT_PROTOTYPE(ComRenderable);
@@ -79,10 +81,9 @@ public:
 
     void                    SetRenderingOrder(int order);
 
-    RenderObject::State &   GetRenderObjectDef() { return renderObjectDef; }
+protected:
     virtual void            UpdateVisuals();
 
-protected:
     virtual void            OnActive() override;
     virtual void            OnInactive() override;
 

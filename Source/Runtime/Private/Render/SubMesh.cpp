@@ -122,13 +122,19 @@ void SubMesh::AllocInstantiatedSubMesh(const SubMesh *ref, int meshType) {
 
         this->vertexCache           = ref->vertexCache;
         this->indexCache            = ref->indexCache;
-    } else {
+    } else if (this->type == Mesh::Type::Dynamic) {
         this->verts                 = (VertexGenericLit *)Mem_Alloc16(sizeof(VertexGenericLit) * ref->numVerts);
 
         this->vertexCache           = (BufferCache *)Mem_ClearedAlloc(sizeof(BufferCache));
-        this->indexCache            = ref->indexCache;
+        this->indexCache            = (BufferCache *)Mem_ClearedAlloc(sizeof(BufferCache));
 
         simdProcessor->Memcpy(this->verts, ref->verts, sizeof(VertexGenericLit) * ref->numVerts);
+    } else {
+        assert(0);
+        this->verts                 = ref->verts;
+
+        this->vertexCache           = nullptr;
+        this->indexCache            = nullptr;
     }
 }
 
@@ -168,6 +174,7 @@ void SubMesh::FreeSubMesh() {
     if (type == Mesh::Type::Dynamic || (type == Mesh::Type::Skinned && !gpuSkinningEnabled)) {
         Mem_AlignedFree(verts);
         Mem_Free(vertexCache);
+        Mem_Free(indexCache);
     }
 }
 
@@ -244,7 +251,7 @@ void SubMesh::CacheDynamicDataToGpu(const Mat3x4 *joints, const Material *materi
     // Fill in dynamic vertex buffer
     bufferCacheManager.AllocVertex(numVerts, sizeof(VertexGenericLit), verts, vertexCache);
 
-#if 0
+#if 1
     int filledVertexCount = vertexCache->offset / sizeof(VertexGenericLit);
 
     // Fill in dynamic index buffer

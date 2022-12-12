@@ -1039,12 +1039,16 @@ void RenderWorld::AddDrawSurf(VisCamera *camera, VisLight *visLight, VisObject *
     actualMaterial->GetExprChunk()->Evaluate(localParms, outputValues);*/
 
     if (!bufferCacheManager.IsCached(subMesh->vertexCache)) {
-        if (subMesh->GetType() == Mesh::Type::Reference ||
-            subMesh->GetType() == Mesh::Type::Static ||
-            subMesh->GetType() == Mesh::Type::Skinned) {
+        Mesh::Type::Enum subMeshType = (Mesh::Type::Enum)subMesh->GetType();
+
+        if (subMeshType == Mesh::Type::Reference ||
+            subMeshType == Mesh::Type::Static ||
+            subMeshType == Mesh::Type::Skinned) {
             subMesh->CacheStaticDataToGpu();
-        } else {
+        } else if (subMeshType == Mesh::Type::Dynamic) {
             subMesh->CacheDynamicDataToGpu(visObject->def->state.joints, actualMaterial);
+        } else {
+            assert(0);
         }
     }
 

@@ -76,6 +76,11 @@ void ComStaticMeshRenderer::MeshUpdated() {
     InstantiateMesh();
     renderObjectDef.aabb = referenceMesh->GetAABB();
 
+    ComSoftBody *softBody = entity->GetComponent<ComSoftBody>();
+    if (softBody) {
+        softBody->ResetPoints();
+    }
+
     UpdateVisuals();
 }
 

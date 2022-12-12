@@ -195,7 +195,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
     } else if (desc.type == PhysCollidable::Type::SoftBody) {
         btSoftBody *softBody = new btSoftBody(nullptr);
 
-        softBody->getCollisionShape()->setMargin(SystemUnitToPhysicsUnit(CmToUnit(8.0f)));
+        softBody->getCollisionShape()->setMargin(SystemUnitToPhysicsUnit(CmToUnit(10.0f)));
 
         softBody->m_cfg.aeromodel = btSoftBody::eAeroModel::F_TwoSidedLiftDrag;
         softBody->m_cfg.kAHR = btScalar(.69);           // Anchor hardness [0, 1]
@@ -204,19 +204,23 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
         softBody->m_cfg.kDG = btScalar(0.01);           // Drag coefficient [0, +inf]
         softBody->m_cfg.kDP = btScalar(0.0005);         // Damping coefficient [0, 1]
         softBody->m_cfg.kKHR = btScalar(0.1);           // Kinetic contact hardness [0, 1]
-        softBody->m_cfg.kLF = btScalar(0.1);            // Lift coefficient [0, +inf]
+        softBody->m_cfg.kLF = btScalar(0.05);           // Lift coefficient [0, +inf]
         softBody->m_cfg.kMT = btScalar(0.0);            // Pose matching coefficient [0, 1]
         softBody->m_cfg.kPR = btScalar(0.0);            // Pressure coefficient [-inf, +inf]
         softBody->m_cfg.kSHR = btScalar(1.0);           // Soft contacts hardness [0, 1]
         softBody->m_cfg.kVC = btScalar(0.0);            // Volume conversation coefficient [0, +inf]
         softBody->m_cfg.kVCF = btScalar(1.0);           // Velocities correction factor (Baumgarte)
         softBody->m_cfg.kSKHR_CL = btScalar(1.0);       // Soft vs kinetic hardness [0, 1] (cluster only)
-        softBody->m_cfg.kSK_SPLT_CL = btScalar(0.5);    // Soft vs rigid impulse split [0, 1] (cluster only)
+        softBody->m_cfg.kSK_SPLT_CL = btScalar(0.5);    // Soft vs kinetic impulse split [0, 1] (cluster only)
         softBody->m_cfg.kSRHR_CL = btScalar(0.1);       // Soft vs rigid hardness [0, 1] (cluster only)
         softBody->m_cfg.kSR_SPLT_CL = btScalar(0.5);    // Soft vs rigid impulse split [0, 1] (cluster only)
         softBody->m_cfg.kSSHR_CL = btScalar(0.5);       // Soft vs soft hardness [0, 1] (cluster only)
-        softBody->m_cfg.kSS_SPLT_CL = btScalar(0.5);    // Soft vs rigid impulse split [0, 1] (cluster only)
+        softBody->m_cfg.kSS_SPLT_CL = btScalar(0.5);    // Soft vs soft impulse split [0, 1] (cluster only)
         softBody->m_cfg.collisions = btSoftBody::fCollision::SDF_RS;
+
+        //softBody->m_cfg.piterations = 10;
+        //softBody->m_cfg.citerations = 10;
+        //softBody->m_cfg.diterations = 10;
 
         if (desc.enableSelfCollision) {
             softBody->m_cfg.collisions |= btSoftBody::fCollision::CL_SELF;
