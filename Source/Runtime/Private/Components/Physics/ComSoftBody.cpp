@@ -28,6 +28,8 @@ END_EVENTS
 void ComSoftBody::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("mass", "Mass", float, GetMass, SetMass, 20.f,
         "Mass (kg)", PropertyInfo::Flag::Editor).SetRange(0, 200, 0.01f);
+    REGISTER_ACCESSOR_PROPERTY("restitution", "Restitution", float, GetRestitution, SetRestitution, 0.02f,
+        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("friction", "Friction", float, GetFriction, SetFriction, 0.5f,
         "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("stretchingStiffness", "Stretching Stiffness", float, GetStretchingStiffness, SetStretchingStiffness, 0.02f,
@@ -67,6 +69,9 @@ void ComSoftBody::Init() {
 
     InitPoints();
 
+    ComTransform *transform = GetEntity()->GetTransform();
+    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSoftBody::TransformUpdated, SignalObject::ConnectionType::Unique);
+
     // Mark as initialized
     SetInitialized(true);
 }
@@ -83,8 +88,6 @@ void ComSoftBody::Update() {
     }
 
     if (body->IsActive()) {
-        body->SetGravity(GetGameWorld()->GetPhysicsWorld()->GetGravity());
-
         UpdateMeshVertsFromPoints();
     }
 }
@@ -111,6 +114,8 @@ void ComSoftBody::UpdateMeshVertsFromPoints() {
         }
     }
 
+    mesh->RecomputeNormalsAndTangents();
+
     AABB worldAabb;
     body->GetWorldAABB(worldAabb);
     meshRenderer->GetRenderObjectDef().aabb.SetFromTransformedAABB(worldAabb, inverseWorldMatrix);
@@ -126,6 +131,18 @@ void ComSoftBody::SetMass(float mass) {
         body->SetMass(mass);
     } else {
         physicsDesc.mass = mass;
+    }
+}
+
+float ComSoftBody::GetRestitution() const {
+    return body ? body->GetRestitution() : physicsDesc.restitution;
+}
+
+void ComSoftBody::SetRestitution(float restitution) {
+    if (body) {
+        body->SetRestitution(restitution);
+    } else {
+        physicsDesc.restitution = restitution;
     }
 }
 
@@ -266,14 +283,16 @@ void ComSoftBody::CreateBody() {
     if (IsActiveInHierarchy()) {
         body->AddToWorld(GetGameWorld()->GetPhysicsWorld());
     }
-
-    transform->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComSoftBody::TransformUpdated, SignalObject::ConnectionType::Unique);
 }
 
 void ComSoftBody::TransformUpdated(const ComTransform *transform) {
+    InitPoints();
+
     if (body) {
         body->SetTransform(Mat3x4(transform->GetAxis(), transform->GetOrigin()));
         body->Activate();
+
+        UpdateMeshVertsFromPoints();
     }
 }
 

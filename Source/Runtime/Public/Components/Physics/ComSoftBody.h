@@ -43,6 +43,9 @@ public:
     float                   GetMass() const;
     void                    SetMass(float mass);
 
+    float                   GetRestitution() const;
+    void                    SetRestitution(float restitution);
+
     float                   GetFriction() const;
     void                    SetFriction(float friction);
 
