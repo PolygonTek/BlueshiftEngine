@@ -30,6 +30,7 @@ Features
   * PBR rendering
   * Physics using [Bullet](http://www.bulletphysics.org/)
   * Ragdoll physics
+  * Cloth & Soft body physics
   * Vehicle physics
   * Scripting using [Lua](https://www.lua.org/) and [LuaJIT](https://luajit.org/)
   * 2D and 3D audio playback using DirectSound, [OpenAL](https://www.openal.org/) and OpenSLES
