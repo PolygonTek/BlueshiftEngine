@@ -84,7 +84,7 @@ protected:
     PhysSoftBody *          body = nullptr;
     PhysCollidableDesc      physicsDesc;
     int                     positionSolverIterationCount = 5;
-    float                   stretchingStiffness = 1.0f;
+    Array<uint32_t>         graphicsToPhysicsVertexMapping;
 };
 
 BE_NAMESPACE_END

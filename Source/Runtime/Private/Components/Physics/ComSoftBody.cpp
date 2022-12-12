@@ -86,45 +86,81 @@ void ComSoftBody::ResetPoints() {
     const ComMeshRenderer *meshRenderer = entity->GetComponent<ComMeshRenderer>();
     const Mesh *mesh = meshRenderer->GetReferenceMesh();
 
-    int numVerts = 0;
-    int numIndexes = 0;
+    int numTotalVerts = 0;
+    int numTotalIndexes = 0;
 
     for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
         const MeshSurf *meshSurf = mesh->GetSurface(surfaceIndex);
-        numVerts += meshSurf->subMesh->NumOriginalVerts();
-        numIndexes += meshSurf->subMesh->NumIndexes();
+        numTotalVerts += meshSurf->subMesh->NumVerts();
+        numTotalIndexes += meshSurf->subMesh->NumIndexes();
     }
 
-    physicsDesc.points.SetCount(numVerts);
-    physicsDesc.pointIndexes.SetCount(numIndexes);
+    graphicsToPhysicsVertexMapping.SetCount(numTotalVerts);
 
-    int nodeIndex = 0;
-    int nodeIndexIndex = 0;
+    HashIndex pointsHash;
+    physicsDesc.points.Reserve(numTotalVerts);
+    physicsDesc.points.SetCount(0);
+    physicsDesc.pointIndexes.Reserve(numTotalIndexes);
+    physicsDesc.pointIndexes.SetCount(0);
+
+    int baseGraphicsIndex = 0;
 
     for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
         const MeshSurf *meshSurf = mesh->GetSurface(surfaceIndex);
         const SubMesh *subMesh = meshSurf->subMesh;
 
         const VertexGenericLit *verts = subMesh->Verts();
-        const VertIndex *indexes = subMesh->Indexes();
 
-        for (int vertexIndex = 0; vertexIndex < subMesh->NumOriginalVerts(); vertexIndex++) {
+        for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
             const VertexGenericLit *vertex = &verts[vertexIndex];
 
-            Vec3 worldPosition = worldMatrix.TransformPos(vertex->GetPosition());
-            //Vec3 worldNormal = worldMatrix.TransformDir(vertex->GetNormal());
+            Vec3 localPosition = vertex->GetPosition();
+            Vec3 worldPosition = worldMatrix.TransformPos(localPosition);
 
-            physicsDesc.points[nodeIndex++] = worldPosition;
+            bool foundSamePosition = false;
+            int physicsIndex = -1;
+            int hash = pointsHash.GenerateHash(worldPosition);
+            for (int i = pointsHash.First(hash); i != -1; i = pointsHash.Next(i)) {
+                foundSamePosition = physicsDesc.points[i].Equals(worldPosition, MmToUnit(0.1f));
+                if (foundSamePosition) {
+                    physicsIndex = i;
+                    break;
+                }
+            }
+
+            if (!foundSamePosition) {
+                physicsIndex = physicsDesc.points.Append(worldPosition);
+                pointsHash.Add(hash, physicsIndex);
+            }
+            int graphicsIndex = baseGraphicsIndex + vertexIndex;
+
+            graphicsToPhysicsVertexMapping[graphicsIndex++] = physicsIndex;
         }
 
-        for (int indexIndex = 0; indexIndex < subMesh->NumIndexes(); indexIndex++) {
-            int index = indexes[indexIndex];
-
-            physicsDesc.pointIndexes[nodeIndexIndex++] = index;
-        }
+        baseGraphicsIndex += subMesh->NumVerts();
     }
 
-    SetPropertyArrayCount("pointWeights", numVerts);
+    baseGraphicsIndex = 0;
+
+    for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
+        const MeshSurf *meshSurf = mesh->GetSurface(surfaceIndex);
+        const SubMesh *subMesh = meshSurf->subMesh;
+
+        const VertIndex *indexes = subMesh->Indexes();
+
+        for (int indexIndex = 0; indexIndex < subMesh->NumIndexes(); indexIndex++) {
+            int graphicsIndex = baseGraphicsIndex + indexes[indexIndex];
+
+            physicsDesc.pointIndexes.Append(graphicsToPhysicsVertexMapping[graphicsIndex]);
+        }
+
+        baseGraphicsIndex += subMesh->NumIndexes();
+    }
+
+    physicsDesc.points.Squeeze();
+    physicsDesc.pointIndexes.Squeeze();
+
+    SetPropertyArrayCount("pointWeights", physicsDesc.points.Count());
 }
 
 void ComSoftBody::Awake() {
@@ -171,7 +207,7 @@ void ComSoftBody::UpdateMeshVertsFromPoints() {
     ComMeshRenderer *meshRenderer = entity->GetComponent<ComMeshRenderer>();
     Mesh *mesh = meshRenderer->renderObjectDef.mesh;
 
-    int nodeIndex = 0;
+    int baseGraphicsIndex = 0;
 
     for (int surfaceIndex = 0; surfaceIndex < mesh->NumSurfaces(); surfaceIndex++) {
         const MeshSurf *meshSurf = mesh->GetSurface(surfaceIndex);
@@ -180,10 +216,15 @@ void ComSoftBody::UpdateMeshVertsFromPoints() {
         VertexGenericLit *verts = subMesh->Verts();
 
         for (int vertexIndex = 0; vertexIndex < subMesh->NumVerts(); vertexIndex++) {
-            Vec3 localPosition = inverseWorldMatrix.TransformPos(body->GetNodePosition(nodeIndex++));
+            int graphicsIndex = baseGraphicsIndex + vertexIndex;
+
+            Vec3 nodePosition = body->GetNodePosition(graphicsToPhysicsVertexMapping[graphicsIndex]);
+            Vec3 localPosition = inverseWorldMatrix.TransformPos(nodePosition);
 
             verts[vertexIndex].SetPosition(localPosition);
         }
+
+        baseGraphicsIndex += subMesh->NumVerts();
     }
 
     mesh->RecomputeNormalsAndTangents();

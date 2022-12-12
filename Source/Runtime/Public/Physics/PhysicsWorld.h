@@ -47,25 +47,30 @@ struct PhysShapeDesc {
 };
 
 struct PhysCollidableDesc {
+    // common
     PhysCollidable::Type::Enum type;
     Array<PhysShapeDesc>    shapes;
     Vec3                    origin;             // position in system units
     Mat3                    axis;
-    Array<Vec3>             points;             // soft body: points in world space
-    Array<uint32_t>         pointIndexes;       // soft body: point indexes
-    Array<float>            pointWeights;       // soft body: point weights (0: disable weight (no physics, only animation), 1: default weight)
     float                   mass;               // if mass is zero, then static object, but soft body must have greater than zero
     float                   restitution;
     float                   friction;
+    bool                    enableCCD;
+
+    // soft body
+    Array<Vec3>             points;             // proxy points in world space
+    Array<uint32_t>         pointIndexes;       // proxy point indexes
+    Array<float>            pointWeights;       // proxy point weights (0: disable weight (no physics, only animation), 1: default weight)
+    float                   stiffness;
+    bool                    enableSelfCollision;
+
+    // rigid body
     float                   rollingFriction;
     float                   spinningFriction;
     float                   linearDamping;
     float                   angularDamping;
-    float                   stiffness;          // soft body
     bool                    character;
     bool                    kinematic;
-    bool                    enableCCD;
-    bool                    enableSelfCollision;// soft body
 };
 
 struct PhysConstraintDesc {
