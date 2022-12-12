@@ -88,11 +88,12 @@ public:
     struct FinishFlag {
         enum Enum {
             ComputeAABB             = BIT(0),
-            ComputeNormals          = BIT(1),
-            ComputeTangents         = BIT(2),
-            UseUnsmoothedTangents   = BIT(3),
-            SortAndMerge            = BIT(4),
-            OptimizeIndices         = BIT(5)
+            ComputeEdges            = BIT(1),
+            ComputeNormals          = BIT(2),
+            ComputeTangents         = BIT(3),
+            UseUnsmoothedTangents   = BIT(4),
+            SortAndMerge            = BIT(5),
+            OptimizeIndices         = BIT(6),
         };
     };
 
@@ -152,6 +153,8 @@ public:
     const Vec3              ComputeCentroid() const;
 
     float                   ComputeVolumeAndCentroid(Vec3 &outCentroid) const;
+
+    void                    RecomputeNormalsAndTangents();
 
     void                    Purge();
 

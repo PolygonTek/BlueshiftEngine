@@ -899,6 +899,10 @@ void SubMesh::ComputeTangents(bool includeNormals, bool useUnsmoothedTangents) {
 
 // Assumes each edge is shared by at most two triangles.
 void SubMesh::ComputeEdges() {
+    if (edgesCalculated) {
+        return;
+    }
+
     if (numVerts == 0 || numIndexes == 0) {
         assert(0);
         return;

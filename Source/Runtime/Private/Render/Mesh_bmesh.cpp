@@ -161,7 +161,7 @@ bool Mesh::LoadBinaryMesh(const char *filename) {
 
     fileSystem.FreeFile(data);
 
-    FinishSurfaces();
+    FinishSurfaces(BE1::Mesh::FinishFlag::ComputeEdges);
 
     return true;
 }

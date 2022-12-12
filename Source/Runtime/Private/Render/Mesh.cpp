@@ -158,7 +158,9 @@ void Mesh::FinishSurfaces(int flags) {
     }
 
     // TODO: consider to remove this
-    ComputeEdges();
+    if (flags & FinishFlag::ComputeEdges) {
+        ComputeEdges();
+    }
 }
 
 void Mesh::TransformVerts(const Mat3 &rotation, const Vec3 &scale, const Vec3 &translation) {
@@ -427,6 +429,15 @@ float Mesh::ComputeVolumeAndCentroid(Vec3 &outCentroid) const {
         outCentroid = Vec3::origin;
     }
     return totalVolume;
+}
+
+void Mesh::RecomputeNormalsAndTangents() {
+    for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
+        MeshSurf *surf = surfaces[surfaceIndex];
+
+        surf->subMesh->tangentsCalculated = false;
+        surf->subMesh->ComputeTangents(true, false);
+    }
 }
 
 bool Mesh::Load(const char *filename) {
