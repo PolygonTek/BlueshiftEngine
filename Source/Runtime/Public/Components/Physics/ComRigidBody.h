@@ -84,8 +84,8 @@ public:
     bool                    IsKinematic() const;
     void                    SetKinematic(bool kinematic);
 
-    bool                    IsCCD() const;
-    void                    SetCCD(bool enableCcd);
+    bool                    IsCCDEnabled() const;
+    void                    SetCCDEnabled(bool enabled);
 
     const Vec3              GetGravity() const { return body ? body->GetGravity() : Vec3::zero; }
     void                    SetGravity(const Vec3 &gravityAcceleration) { if (body) body->SetGravity(gravityAcceleration); }

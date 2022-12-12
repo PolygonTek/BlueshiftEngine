@@ -119,6 +119,7 @@ private:
     void                    RegisterCapsuleColliderComponent(LuaCpp::Module &module);
     void                    RegisterMeshColliderComponent(LuaCpp::Module &module);
     void                    RegisterRigidBodyComponent(LuaCpp::Module &module);
+    void                    RegisterSoftBodyComponent(LuaCpp::Module &module);
     void                    RegisterSensorComponent(LuaCpp::Module &module);
     void                    RegisterVehicleWheelComponent(LuaCpp::Module &module);
     void                    RegisterJointComponent(LuaCpp::Module &module);

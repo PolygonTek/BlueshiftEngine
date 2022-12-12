@@ -85,7 +85,7 @@ void ComRigidBody::RegisterProperties() {
         "Reduced amount of angular velocity", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("kinematic", "Kinematic", bool, IsKinematic, SetKinematic, false, 
         "", PropertyInfo::Flag::Editor);
-    REGISTER_ACCESSOR_PROPERTY("ccd", "CCD", bool, IsCCD, SetCCD, false, 
+    REGISTER_ACCESSOR_PROPERTY("ccd", "CCD", bool, IsCCDEnabled, SetCCDEnabled, false, 
         "Continuous collision detection", PropertyInfo::Flag::Editor);
 }
 
@@ -488,15 +488,15 @@ void ComRigidBody::SetKinematic(bool kinematic) {
     }
 }
 
-bool ComRigidBody::IsCCD() const { 
-    return body ? body->IsCCD() : physicsDesc.ccd;
+bool ComRigidBody::IsCCDEnabled() const { 
+    return body ? body->IsContinuousCollisionDetectionEnabled() : physicsDesc.enableCCD;
 }
 
-void ComRigidBody::SetCCD(bool enableCcd) { 
+void ComRigidBody::SetCCDEnabled(bool enabled) { 
     if (body) {
-        body->SetCCD(enableCcd);
+        body->SetContinuousCollisionDetectionEnabled(enabled);
     } else {
-        physicsDesc.ccd = enableCcd;
+        physicsDesc.enableCCD = enabled;
     }
 }
 

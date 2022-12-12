@@ -43,6 +43,9 @@ public:
     Vec3                        GetGravity() const;
     void                        SetGravity(const Vec3 &gravity);
 
+    float                       GetAirDensity() const;
+    void                        SetAirDensity(float airDensity);
+
     int                         GetFilterMaskElement(int index) const;
     void                        SetFilterMaskElement(int index, int mask);
     int                         GetFilterMaskCount() const;
