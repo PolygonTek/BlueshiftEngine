@@ -285,11 +285,6 @@ void RenderWorld::AddStaticMeshes(VisCamera *camera) {
         surf->viewCount = this->viewCount;
         surf->drawSurf = camera->drawSurfs[camera->numDrawSurfs - 1];
 
-        if (r_showAABB.GetInteger() > 0) {
-            SetDebugColor(Color4(1.0f, 1.0f, 1.0f, 0.5f), Color4::zero);
-            DebugAABB(proxy->worldAABB, 1, true, r_showAABB.GetInteger() == 1 ? true : false);
-        }
-
         return true;
     };
 
@@ -300,8 +295,8 @@ void RenderWorld::AddStaticMeshes(VisCamera *camera) {
     }
 }
 
-// Add drawing surfaces of visible skinned meshes.
-void RenderWorld::AddSkinnedMeshes(VisCamera *camera) {
+// Add drawing surfaces of visible dynamic and skinned meshes.
+void RenderWorld::AddDynamicAndSkinnedMeshes(VisCamera *camera) {
     BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::AddSkinnedMeshes");
 
     for (VisObject *visObject = camera->visObjects.Next(); visObject; visObject = visObject->node.Next()) {
@@ -311,7 +306,7 @@ void RenderWorld::AddSkinnedMeshes(VisCamera *camera) {
 
         const RenderObject::State &renderObjectDef = visObject->def->state;
 
-        if (!renderObjectDef.mesh || !renderObjectDef.joints) {
+        if (!renderObjectDef.mesh) {
             continue;
         }
 
@@ -687,8 +682,8 @@ void RenderWorld::AddStaticMeshesForLights(VisCamera *camera) {
     }
 }
 
-// Add lit drawing surfaces of visible skinned meshes for each light.
-void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
+// Add lit drawing surfaces of visible dynamic and skinned meshes for each light.
+void RenderWorld::AddDynamicAndSkinnedMeshesForLights(VisCamera *camera) {
     BE_PROFILE_CPU_SCOPE_STATIC("RenderWorld::AddSkinnedMeshesForLights");
 
     VisLight *visLight;
@@ -700,11 +695,6 @@ void RenderWorld::AddSkinnedMeshesForLights(VisCamera *camera) {
         RenderObject *renderObject = proxy->renderObject;
 
         if (!renderObject) {
-            return true;
-        }
-
-        // Skip if not skinned mesh.
-        if (!renderObject->state.joints) {
             return true;
         }
 
@@ -960,7 +950,7 @@ void RenderWorld::DrawCamera(VisCamera *camera) {
     AddStaticMeshes(camera);
 
     // Add drawing surfaces of skinned meshes by searching in visObjects.
-    AddSkinnedMeshes(camera);
+    AddDynamicAndSkinnedMeshes(camera);
 
     //AddSubCamera(camera);
 
@@ -982,7 +972,7 @@ void RenderWorld::DrawCamera(VisCamera *camera) {
 
     // Add drawing surfaces of skinned meshes by querying light BV in objectMeshDBVT.
     // Added drawing surface might be the shadow caster only surface if it is not the visible in the previous steps.
-    AddSkinnedMeshesForLights(camera);
+    AddDynamicAndSkinnedMeshesForLights(camera);
 
     // Compute scissor rect of each visLights and exclude if it is not visible.
     OptimizeLights(camera);

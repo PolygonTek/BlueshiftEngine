@@ -162,13 +162,13 @@ private:
     VisLight *              RegisterVisLight(VisCamera *camera, RenderLight *light);
     void                    FindVisLightsAndObjects(VisCamera *camera);
     void                    AddStaticMeshes(VisCamera *camera);
-    void                    AddSkinnedMeshes(VisCamera *camera);
+    void                    AddDynamicAndSkinnedMeshes(VisCamera *camera);
     void                    AddRawMeshes(VisCamera *camera);
     void                    AddParticleMeshes(VisCamera *camera);
     void                    AddTextMeshes(VisCamera *camera);
     void                    AddSkyBoxMeshes(VisCamera *camera);
     void                    AddStaticMeshesForLights(VisCamera *camera);
-    void                    AddSkinnedMeshesForLights(VisCamera *camera);
+    void                    AddDynamicAndSkinnedMeshesForLights(VisCamera *camera);
     void                    AddSubCamera(VisCamera *camera);
     void                    CacheInstanceBuffer(VisCamera *camera);
     void                    OptimizeLights(VisCamera *camera);

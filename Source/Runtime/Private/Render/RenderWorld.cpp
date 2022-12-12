@@ -117,7 +117,7 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
         renderObject->proxy->id = objectDbvt.CreateProxy(renderObject->proxy->worldAABB, MeterToUnit(0.0f), renderObject->proxy);
 
         // If this object is a static mesh, add proxy for each sub meshes in the DBVT for the static meshes
-        if (def->mesh && !def->joints) {
+        if (def->mesh && def->mesh->IsStaticMesh()) {
             renderObject->numMeshSurfProxies = def->mesh->NumSurfaces();
             renderObject->meshSurfProxies = (DbvtProxy *)Mem_ClearedAlloc(def->mesh->NumSurfaces() * sizeof(DbvtProxy));
 
@@ -148,7 +148,7 @@ void RenderWorld::UpdateRenderObject(int handle, const RenderObject::State *def)
 
         if (proxyMoved || !meshMatch) {
             // If this object is a static mesh
-            if (renderObject->state.mesh && !renderObject->state.joints) {
+            if (renderObject->state.mesh && renderObject->state.mesh->IsStaticMesh()) {
                 // mesh surface count changed so we recreate static proxies
                 if (def->mesh->NumSurfaces() != renderObject->numMeshSurfProxies) {
                     Mem_Free(renderObject->meshSurfProxies);
