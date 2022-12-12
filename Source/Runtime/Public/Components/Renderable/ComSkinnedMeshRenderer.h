@@ -54,6 +54,8 @@ protected:
 
     virtual void            UpdateVisuals() override;
 
+    virtual void            InstantiateMesh() override;
+
     virtual void            MeshUpdated() override;
 
     Guid                    rootGuid = Guid::zero;

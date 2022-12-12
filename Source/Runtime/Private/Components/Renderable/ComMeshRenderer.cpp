@@ -16,6 +16,7 @@
 #include "Render/Render.h"
 #include "Components/Transform/ComTransform.h"
 #include "Components/Renderable/ComMeshRenderer.h"
+#include "Components/Physics/ComSoftBody.h"
 #include "Game/Entity.h"
 #include "Asset/Asset.h"
 #include "Asset/Resource.h"
@@ -76,6 +77,16 @@ void ComMeshRenderer::Init() {
 
     // Mark as initialized
     SetInitialized(true);
+}
+
+void ComMeshRenderer::ReinstantiateMesh() {
+    // Release instantiated mesh
+    if (renderObjectDef.mesh) {
+        meshManager.ReleaseMesh(renderObjectDef.mesh);
+        renderObjectDef.mesh = nullptr;
+    }
+
+    InstantiateMesh();
 }
 
 void ComMeshRenderer::ChangeMesh(const Guid &meshGuid) {

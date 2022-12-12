@@ -69,8 +69,12 @@ void ComSoftBody::Init() {
 
     physicsDesc.type = PhysCollidable::Type::SoftBody;
 
-    //const ComMeshRenderer *meshRenderer = entity->GetComponent<ComMeshRenderer>();
-    //meshRenderer->Reinstantiate();
+    ComMeshRenderer *meshRenderer = entity->GetComponent<ComMeshRenderer>();
+    if (meshRenderer->IsInitialized()) {
+        if (meshRenderer->renderObjectDef.mesh && !meshRenderer->renderObjectDef.mesh->IsDynamicMesh()) {
+            meshRenderer->ReinstantiateMesh();
+        }
+    }
 
     ResetPoints();
 
@@ -156,7 +160,7 @@ void ComSoftBody::ResetPoints() {
             physicsDesc.pointIndexes.Append(graphicsToPhysicsVertexMapping[graphicsIndex]);
         }
 
-        baseGraphicsIndex += subMesh->NumIndexes();
+        baseGraphicsIndex += subMesh->NumVerts();
     }
 
     physicsDesc.points.Squeeze();

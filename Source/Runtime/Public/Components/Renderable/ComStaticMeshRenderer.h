@@ -37,9 +37,9 @@ public:
     void                    SetOccluder(bool occluder);
 
 protected:
-    virtual void            MeshUpdated() override;
+    virtual void            InstantiateMesh() override;
 
-    void                    InstantiateMesh();
+    virtual void            MeshUpdated() override;
 };
 
 BE_NAMESPACE_END

@@ -36,6 +36,8 @@ public:
                             /// Initializes this component. Called after deserialization.
     virtual void            Init() override;
 
+    void                    ReinstantiateMesh();
+
     const Mesh *            GetReferenceMesh() const { return referenceMesh; }
 
     bool                    GetClosestVertex(const RenderCamera *view, const Point &mousePixelLocation, Vec3 &closestVertex, float &closestDistance) const;
@@ -65,6 +67,8 @@ public:
 
 protected:
     void                    ChangeMesh(const Guid &meshGuid);
+
+    virtual void            InstantiateMesh() = 0;
 
     virtual void            MeshUpdated() = 0;
 

@@ -17,6 +17,7 @@
 #include "Components/Transform/ComTransform.h"
 #include "Components/Renderable/ComStaticMeshRenderer.h"
 #include "Components/Renderable/ComSkinnedMeshRenderer.h"
+#include "Components/Physics/ComSoftBody.h"
 #include "Components/ComAnimation.h"
 #include "Components/ComAnimator.h"
 #include "AnimController/AnimController.h"
@@ -68,6 +69,13 @@ void ComSkinnedMeshRenderer::LateInit() {
     UpdateVisuals();
 }
 
+void ComSkinnedMeshRenderer::InstantiateMesh() {
+    const ComSoftBody *softBody = entity->GetComponent<ComSoftBody>();
+    Mesh::Type::Enum meshType = softBody ? Mesh::Type::Dynamic : Mesh::Type::Skinned;
+
+    renderObjectDef.mesh = referenceMesh->InstantiateMesh(meshType);
+}
+
 void ComSkinnedMeshRenderer::UpdateSkeleton() {
     const Skeleton *skeleton = nullptr;
     Mat3x4 *joints = nullptr;
@@ -95,10 +103,10 @@ void ComSkinnedMeshRenderer::UpdateSkeleton() {
     }
 
     if (referenceMesh) {
-        bool isCompatibleSkeleton = skeleton && referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
+        InstantiateMesh();
 
+        bool isCompatibleSkeleton = skeleton && referenceMesh->IsCompatibleSkeleton(skeleton) ? true : false;
         if (isCompatibleSkeleton) {
-            renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::Type::Skinned);
             renderObjectDef.skeleton = skeleton;
             renderObjectDef.numJoints = skeleton->NumJoints();
             renderObjectDef.joints = joints;
@@ -106,7 +114,6 @@ void ComSkinnedMeshRenderer::UpdateSkeleton() {
             jointAabbs.SetCount(renderObjectDef.numJoints);
             renderObjectDef.mesh->GetJointAABBs(renderObjectDef.skeleton->GetInvBindPoseMatrices(), jointAabbs);
         } else {
-            renderObjectDef.mesh = referenceMesh->InstantiateMesh(Mesh::Type::Static);
             renderObjectDef.skeleton = nullptr;
             renderObjectDef.numJoints = 0;
             renderObjectDef.joints = nullptr;
