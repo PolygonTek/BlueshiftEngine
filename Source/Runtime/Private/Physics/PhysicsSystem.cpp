@@ -195,21 +195,47 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
     } else if (desc.type == PhysCollidable::Type::SoftBody) {
         btSoftBody *softBody = new btSoftBody(nullptr);
 
-        softBody->getCollisionShape()->setMargin(SystemUnitToPhysicsUnit(CmToUnit(10.0f)));
+        softBody->getCollisionShape()->setMargin(SystemUnitToPhysicsUnit(desc.thickness));
 
         softBody->m_cfg.aeromodel = btSoftBody::eAeroModel::F_TwoSidedLiftDrag;
-        softBody->m_cfg.kAHR = btScalar(.69);           // Anchor hardness [0, 1]
-        softBody->m_cfg.kCHR = btScalar(1.0);           // Rigid contact hardness [0, 1]
-        softBody->m_cfg.kDF = desc.friction;            // Dynamic friction coefficient [0, 1]
-        softBody->m_cfg.kDG = btScalar(0.00001);        // Drag coefficient [0, +inf]
-        softBody->m_cfg.kDP = btScalar(0.0005);         // Damping coefficient [0, 1]
-        softBody->m_cfg.kKHR = btScalar(0.1);           // Kinetic contact hardness [0, 1]
-        softBody->m_cfg.kLF = btScalar(0.05);           // Lift coefficient [0, +inf]
-        softBody->m_cfg.kMT = btScalar(0.0);            // Pose matching coefficient [0, 1]
-        softBody->m_cfg.kPR = btScalar(0.0);            // Pressure coefficient [-inf, +inf]
-        softBody->m_cfg.kSHR = btScalar(1.0);           // Soft contacts hardness [0, 1]
-        softBody->m_cfg.kVC = btScalar(0.0);            // Volume conversation coefficient [0, +inf]
-        softBody->m_cfg.kVCF = btScalar(1.0);           // Velocities correction factor (Baumgarte)
+
+        // Dynamic friction coefficient [0, 1]
+        // kDF = 0 mean sliding, kDF = 1 mean sticking.
+        softBody->m_cfg.kDF = desc.friction;
+        // Damping coefficient [0, 1]
+        // zero = no damping, one = full damping.
+        softBody->m_cfg.kDP = btScalar(0.0005);
+        // Velocities correction factor (Baumgarte)
+        // Define the amount of correction per time step for drift solver(sometimes referred as ERP in rigid bodies solvers).
+        softBody->m_cfg.kVCF = btScalar(1.0);
+        // Anchor hardness [0, 1]
+        // Define how 'soft' anchor constraint(joint) are, kAHR = 0 mean no drift correction, 1 mean full correction.
+        softBody->m_cfg.kAHR = btScalar(.69);
+        // Rigid contact hardness [0, 1]
+        // Define how 'soft' contact with rigid bodies are, kCHR = 0 mean no penetration correction, 1 mean full correction.
+        softBody->m_cfg.kCHR = btScalar(1.0);
+        // Kinetic contact hardness [0, 1]
+        // Define how 'soft' contact with kinetic / static bodies are, kKHR = 0 mean no penetration correction, 1 mean full correction.
+        softBody->m_cfg.kKHR = btScalar(0.1);
+        // Soft contacts hardness [0, 1]
+        // Define how 'soft' contact with other soft bodies are, kSHR = 0 mean no penetration correction, 1 mean full correction.
+        softBody->m_cfg.kSHR = btScalar(1.0);
+        // Drag coefficient [0, +inf]
+        // [aerodynamic] kDG = 0 mean no drag.
+        softBody->m_cfg.kDG = btScalar(0.00001);
+        // Lift coefficient [0, +inf]
+        // [aerodynamic] = > is a factor of the lift force kLF = 0 mean no lift
+        softBody->m_cfg.kLF = btScalar(0.01);
+        // Pressure coefficient [-inf, +inf]
+        // [aerodynamic] = > is a factor of pressure.
+        softBody->m_cfg.kPR = btScalar(0.0);
+        // Pose matching coefficient [0, 1]
+        // When 'setPose(..., true)' as been called, define the factor used for pose matching.
+        softBody->m_cfg.kMT = btScalar(0.0);
+        // Volume conservation coefficient [0, +inf]
+        // When 'setPose(true, ...)' as been called, define the magnitude of the force used to conserve volume.
+        softBody->m_cfg.kVC = btScalar(0.0);
+        
         softBody->m_cfg.kSKHR_CL = btScalar(1.0);       // Soft vs kinetic hardness [0, 1] (cluster only)
         softBody->m_cfg.kSK_SPLT_CL = btScalar(0.5);    // Soft vs kinetic impulse split [0, 1] (cluster only)
         softBody->m_cfg.kSRHR_CL = btScalar(0.1);       // Soft vs rigid hardness [0, 1] (cluster only)
@@ -222,9 +248,10 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
         //softBody->m_cfg.citerations = 10;
         //softBody->m_cfg.diterations = 10;
 
-        softBody->m_cfg.collisions = btSoftBody::fCollision::SDF_RS;// | btSoftBody::fCollision::VF_SS | btSoftBody::fCollision::CL_SS;
+        softBody->m_cfg.collisions = btSoftBody::fCollision::SDF_RS | btSoftBody::fCollision::CL_SS;
 
         if (desc.enableSelfCollision) {
+            // FIXME: not working
             softBody->m_cfg.collisions |= btSoftBody::fCollision::CL_SELF;
         }
 
@@ -268,6 +295,10 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
 #undef IDX
                 softBody->appendFace(triIdx[0], triIdx[1], triIdx[2]);
             }
+
+            // Generate clusters (K - mean).
+            // Call this function if you want enable soft vs soft collision
+            //softBody->generateClusters(16);
 
             // Generate bending constraints based on distance in the adjency graph.
             softBody->generateBendingConstraints(desc.bendingConstraintDistance, softBodyMaterial);

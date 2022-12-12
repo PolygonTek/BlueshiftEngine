@@ -149,6 +149,14 @@ void PhysSoftBody::SetBendingConstraintDistance(int distance) {
     GetSoftBody()->randomizeConstraints();
 }
 
+float PhysSoftBody::GetThickness() const {
+    return PhysicsUnitToSystemUnit(GetSoftBody()->getCollisionShape()->getMargin());
+}
+
+void PhysSoftBody::SetThickness(float thickness) {
+    GetSoftBody()->getCollisionShape()->setMargin(SystemUnitToPhysicsUnit(thickness));
+}
+
 float PhysSoftBody::GetStiffness() const {
     return GetSoftBody()->m_materials[0]->m_kLST;
 }

@@ -42,6 +42,9 @@ public:
     int                     GetBendingConstraintDistance() const;
     void                    SetBendingConstraintDistance(int distance);
 
+    float                   GetThickness() const;
+    void                    SetThickness(float thickness);
+
     float                   GetStiffness() const;
     void                    SetStiffness(float stiffness);
 

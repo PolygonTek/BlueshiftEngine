@@ -46,14 +46,14 @@ public:
     float                   GetMass() const;
     void                    SetMass(float mass);
 
-    float                   GetRestitution() const;
-    void                    SetRestitution(float restitution);
-
     float                   GetFriction() const;
     void                    SetFriction(float friction);
 
     int                     GetBendingConstraintDistance() const;
     void                    SetBendingConstraintDistance(int distance);
+
+    float                   GetThickness() const;
+    void                    SetThickness(float thickness);
 
     float                   GetStiffness() const;
     void                    SetStiffness(float stiffness);

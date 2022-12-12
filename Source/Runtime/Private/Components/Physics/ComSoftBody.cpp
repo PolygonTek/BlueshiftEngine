@@ -28,12 +28,12 @@ END_EVENTS
 void ComSoftBody::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("mass", "Mass", float, GetMass, SetMass, 20.f,
         "Mass (kg)", PropertyInfo::Flag::Editor).SetRange(0, 200, 0.01f);
-    REGISTER_ACCESSOR_PROPERTY("restitution", "Restitution", float, GetRestitution, SetRestitution, 0.01f,
-        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("friction", "Friction", float, GetFriction, SetFriction, 0.8f,
         "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.01f);
     REGISTER_ACCESSOR_PROPERTY("bendingConstraintDistance", "Bending Constraint Distance", int, GetBendingConstraintDistance, SetBendingConstraintDistance, 2,
         "", PropertyInfo::Flag::Editor).SetRange(1, 10, 1);
+    REGISTER_ACCESSOR_PROPERTY("thickness", "Thickness", float, GetThickness, SetThickness, CmToUnit(1.0f),
+        "", PropertyInfo::Flag::Editor).SetRange(CmToUnit(0.1f), CmToUnit(100.0f), CmToUnit(0.1f));
     REGISTER_ACCESSOR_PROPERTY("stiffness", "Stiffness", float, GetStiffness, SetStiffness, 0.025f,
         "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.005f);
     REGISTER_ACCESSOR_PROPERTY("solverIterationCount", "Solver Iteration Count", int, GetSolverIterationCount, SetSolverIterationCount, 5,
@@ -262,18 +262,6 @@ void ComSoftBody::SetMass(float mass) {
     }
 }
 
-float ComSoftBody::GetRestitution() const {
-    return body ? body->GetRestitution() : physicsDesc.restitution;
-}
-
-void ComSoftBody::SetRestitution(float restitution) {
-    if (body) {
-        body->SetRestitution(restitution);
-    } else {
-        physicsDesc.restitution = restitution;
-    }
-}
-
 float ComSoftBody::GetFriction() const {
     return body ? body->GetFriction() : physicsDesc.friction;
 }
@@ -295,6 +283,18 @@ void ComSoftBody::SetBendingConstraintDistance(int distance) {
         body->SetBendingConstraintDistance(distance);
     } else {
         physicsDesc.bendingConstraintDistance = distance;
+    }
+}
+
+float ComSoftBody::GetThickness() const {
+    return body ? body->GetThickness() : physicsDesc.thickness;
+}
+
+void ComSoftBody::SetThickness(float thickness) {
+    if (body) {
+        body->SetThickness(thickness);
+    } else {
+        physicsDesc.thickness = thickness;
     }
 }
 
