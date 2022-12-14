@@ -224,11 +224,11 @@ void PhysSoftBody::AddVelocity(const Vec3 &velocity) {
 }
 
 const Vec3 PhysSoftBody::GetWindVelocity() const {
-    return ToVec3(GetSoftBody()->m_windVelocity);
+    return ToVec3(PhysicsUnitToSystemUnit(GetSoftBody()->m_windVelocity));
 }
 
 void PhysSoftBody::SetWindVelocity(const Vec3 &windVelocity) {
-    GetSoftBody()->m_windVelocity = ToBtVector3(windVelocity);
+    GetSoftBody()->m_windVelocity = ToBtVector3(SystemUnitToPhysicsUnit(windVelocity));
 }
 
 int PhysSoftBody::GetPositionSolverIterationCount() const {

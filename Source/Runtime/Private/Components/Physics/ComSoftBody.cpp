@@ -36,6 +36,8 @@ void ComSoftBody::RegisterProperties() {
         "", PropertyInfo::Flag::Editor).SetRange(CmToUnit(0.1f), CmToUnit(100.0f), CmToUnit(0.1f));
     REGISTER_ACCESSOR_PROPERTY("stiffness", "Stiffness", float, GetStiffness, SetStiffness, 0.025f,
         "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.005f);
+    REGISTER_MIXED_ACCESSOR_PROPERTY("windVelocity", "Wind Velocity", Vec3, GetWindVelocity, SetWindVelocity, Vec3::zero,
+        "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("solverIterationCount", "Solver Iteration Count", int, GetSolverIterationCount, SetSolverIterationCount, 5,
         "", PropertyInfo::Flag::Editor).SetRange(1, 30, 1);
     REGISTER_ACCESSOR_PROPERTY("ccd", "CCD", bool, IsCCDEnabled, SetCCDEnabled, true,
@@ -307,6 +309,18 @@ void ComSoftBody::SetStiffness(float stiffness) {
         body->SetStiffness(stiffness);
     } else {
         physicsDesc.stiffness = stiffness;
+    }
+}
+
+Vec3 ComSoftBody::GetWindVelocity() const {
+    return body ? body->GetWindVelocity() : physicsDesc.windVelocity;
+}
+
+void ComSoftBody::SetWindVelocity(const Vec3 &windVelocity) {
+    if (body) {
+        body->SetWindVelocity(windVelocity);
+    } else {
+        physicsDesc.windVelocity = windVelocity;
     }
 }
 

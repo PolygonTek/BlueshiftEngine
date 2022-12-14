@@ -62,6 +62,9 @@ public:
     float                   GetStiffness() const;
     void                    SetStiffness(float stiffness);
 
+    Vec3                    GetWindVelocity() const;
+    void                    SetWindVelocity(const Vec3 &windVelocity);
+
     int                     GetSolverIterationCount() const;
     void                    SetSolverIterationCount(int iterationCount);
 

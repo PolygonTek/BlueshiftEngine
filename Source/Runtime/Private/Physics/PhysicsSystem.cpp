@@ -312,7 +312,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
                 softBody->setMass(i, desc.pointWeights[i]);
             }
             // this must be AFTER softbody->setMass(), so that weights will be averaged.
-            softBody->setTotalMass(desc.mass, true);
+            softBody->setTotalMass(desc.mass);
 
             softBody->setPose(true, true);
         }
@@ -320,6 +320,7 @@ PhysCollidable *PhysicsSystem::CreateCollidable(const PhysCollidableDesc &desc) 
         PhysSoftBody *sb = new PhysSoftBody(softBody, totalCentroid);
         sb->SetRestitution(desc.restitution);
         sb->SetFriction(desc.friction);
+        sb->SetWindVelocity(desc.windVelocity);
         sb->SetContinuousCollisionDetectionEnabled(desc.enableCCD);
         sb->bendingConstraintDistance = desc.bendingConstraintDistance;
 

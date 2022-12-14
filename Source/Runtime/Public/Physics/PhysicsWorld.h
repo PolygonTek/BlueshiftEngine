@@ -64,6 +64,7 @@ struct PhysCollidableDesc {
     int                     bendingConstraintDistance;
     float                   thickness;
     float                   stiffness;
+    Vec3                    windVelocity;
     bool                    enableSelfCollision;
 
     // rigid body
