@@ -2,11 +2,11 @@ Version History
 ---------------
 
 ### 0.8.0
-- Added support for slicing mesh with plane
+- Added support for slicing mesh with the given plane
 - Added support for fracturing mesh
 - Added support for ragdoll with easy setup tool
 - Added support for cloth and soft body physics
-- Added support for joint manipulation in an entity-hierarchical manner
+- Added support for joint manipulation for skinned mesh in an entity-hierarchical manner
 - Added direction option for CylinderCollider, CapsuleCollider components
 
 ### 0.7.0
