@@ -161,10 +161,6 @@ void ComCharacterController::CreateBodyAndSensor() {
 }
 
 void ComCharacterController::Update() {
-    if (!IsActiveInHierarchy()) {
-        return;
-    }
-
     origin = GetEntity()->GetTransform()->GetOrigin();
 
     if (enablePenetrationRecovery) {

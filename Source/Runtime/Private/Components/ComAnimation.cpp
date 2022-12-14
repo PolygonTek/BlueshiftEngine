@@ -99,10 +99,6 @@ void ComAnimation::LateInit() {
 }
 
 void ComAnimation::Update() {
-    if (!IsInitialized() || !IsActiveInHierarchy()) {
-        return;
-    }
-
     int currentTime = (GetGameWorld()->GetTime() - playStartTime) * GetTimeScale() + Math::FtoiFast(SEC2MILLI(GetTimeOffset()));
 
     UpdateAnim(currentTime);

@@ -201,7 +201,7 @@ void ComSoftBody::CreateBody() {
 }
 
 void ComSoftBody::Update() {
-    if (!body || !IsActiveInHierarchy()) {
+    if (!body) {
         return;
     }
 
