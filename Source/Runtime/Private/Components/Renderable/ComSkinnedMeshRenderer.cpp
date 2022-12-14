@@ -164,8 +164,11 @@ void ComSkinnedMeshRenderer::UpdateVisuals() {
                 }
             }
         } else {
-            // AABB is static.
-            renderObjectDef.aabb = referenceMesh->GetAABB();
+            ComSoftBody *softBody = entity->GetComponent<ComSoftBody>();
+            if (!softBody) {
+                // AABB is static.
+                renderObjectDef.aabb = referenceMesh->GetAABB();
+            }
         }
     }
 
