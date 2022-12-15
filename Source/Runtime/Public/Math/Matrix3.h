@@ -36,7 +36,7 @@ public:
     enum { Cols = 3 };
 
     /// The default constructor does not initialize any members of this class.
-    Mat3() {}
+    Mat3() = default;
     /// Constructs a Mat3 by explicitly specifying the three column vectors.
     Mat3(const Vec3 &col0, const Vec3 &col1, const Vec3 &col2);
     /// Constructs a Mat3 by explicitly specifying all the matrix elements.

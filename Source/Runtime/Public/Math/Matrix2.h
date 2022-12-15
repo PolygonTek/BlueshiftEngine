@@ -36,7 +36,7 @@ public:
     enum { Cols = 2 };
 
     /// The default constructor does not initialize any members of this class.
-    Mat2() {}
+    Mat2() = default;
     /// Constructs a Mat2 by explicitly specifying the two row vectors.
     Mat2(const Vec2 &row0, const Vec2 &row1);
     /// Constructs a Mat2 by explicitly specifying all the matrix elements.

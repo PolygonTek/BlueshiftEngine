@@ -29,7 +29,7 @@ class BE_API Rotation {
 
 public:
     /// The default constructor does not initialize any members of this class.
-    Rotation() {}
+    Rotation() = default;
     Rotation(const Vec3 &rotOrigin, const Vec3 &rotVec, const float rotAngle);
     /// Assignment operator.
     Rotation &operator=(const Rotation &rhs);

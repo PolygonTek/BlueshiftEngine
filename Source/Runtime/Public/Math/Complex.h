@@ -29,7 +29,7 @@ BE_NAMESPACE_BEGIN
 class BE_API Complex {
 public:
     /// The default constructor does not initialize any members of this class.
-    Complex() {}
+    Complex() = default;
     /// Set complex number with the given real part and imaginary part.
     constexpr Complex(const float re, const float im);
     /// Assignment operator.

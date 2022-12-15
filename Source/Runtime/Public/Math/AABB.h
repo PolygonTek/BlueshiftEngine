@@ -35,7 +35,7 @@ class Ray;
 class BE_API AABB {
 public:
     /// The default constructor does not initialize any members of this class.
-    AABB() {}
+    AABB() = default;
     /// Constructs this AABB by specifying the minimum and maximum extending corners of the box.
     AABB(const Vec3 &mins, const Vec3 &maxs);
     /// Constructs this AABB by single point.

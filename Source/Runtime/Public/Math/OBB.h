@@ -36,7 +36,7 @@ class Ray;
 class BE_API OBB {
 public:
     /// The default constructor does not initialize any members of this class.
-    OBB() {}
+    OBB() = default;
     /// Constructs an OBB by explicitly specifying all its member values.
     constexpr OBB(const Vec3 &center, const Vec3 &extents, const Mat3 &axis);
     /// Constructs an OBB from an AABB and it's transformation.

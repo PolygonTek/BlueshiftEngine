@@ -28,7 +28,7 @@ BE_NAMESPACE_BEGIN
 class BE_API Ray {
 public:
     /// The default constructor does not initialize any members of this class.
-    Ray() {}
+    Ray() = default;
     /// Constructs a new ray by explicitly specifying the member variables.
     constexpr Ray(const Vec3 &origin, const Vec3 &dir);
 

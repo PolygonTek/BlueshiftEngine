@@ -23,7 +23,7 @@ public:
     enum { Size = 3 };
 
     /// The default constructor does not initialize any members of this class.
-    Color3() {}
+    Color3() = default;
     /// Constructs a Color3 with the value (r, g, b).
     constexpr Color3(float r, float g, float b);
     /// Constructs a Color3 from a C array, to the value (data[0], data[1], data[2]).

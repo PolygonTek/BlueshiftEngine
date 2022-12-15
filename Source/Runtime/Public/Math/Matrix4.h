@@ -36,7 +36,7 @@ public:
     enum { Cols = 4 };
 
     /// The default constructor does not initialize any members of this class.
-    Mat4() {}
+    Mat4() = default;
     /// Constructs a Mat4 by explicitly specifying the four row vectors.
     Mat4(const Vec4 &row0, const Vec4 &row1, const Vec4 &row2, const Vec4 &row3);
     /// Constructs a Mat4 by explicitly specifying all the matrix elements.
