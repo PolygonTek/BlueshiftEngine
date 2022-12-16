@@ -44,22 +44,12 @@ void *Mem_ClearedAlloc(size_t size) {
     return ptr;
 }
 
-void *Mem_Alloc16(size_t size) {
-    byte *ptr = (byte *)Mem_Alloc(size + sizeof(intptr_t) + 15);
+void *Mem_AlignedAlloc(size_t size, size_t alignment) {
+    byte *ptr = (byte *)Mem_Alloc(size + sizeof(intptr_t) + (alignment - 1));
     if (!ptr) {
         return nullptr;
     }
-    byte *alignedPtr = (byte *)((((intptr_t)ptr) + sizeof(intptr_t) + 15) & ~15);
-    *((intptr_t *)(alignedPtr - sizeof(intptr_t))) = (intptr_t)ptr;
-    return alignedPtr;
-}
-
-void *Mem_Alloc32(size_t size) {
-    byte *ptr = (byte *)Mem_Alloc(size + sizeof(intptr_t) + 31);
-    if (!ptr) {
-        return nullptr;
-    }
-    byte *alignedPtr = (byte *)((((intptr_t)ptr) + sizeof(intptr_t) + 31) & ~31);
+    byte *alignedPtr = (byte *)((((intptr_t)ptr) + sizeof(intptr_t) + (alignment - 1)) & ~(alignment - 1));
     *((intptr_t *)(alignedPtr - sizeof(intptr_t))) = (intptr_t)ptr;
     return alignedPtr;
 }
@@ -114,22 +104,12 @@ void *DebugMem_ClearedAlloc(size_t size, const char *filename, const int lineNum
     return r;
 }
 
-void *DebugMem_Alloc16(size_t size, const char *filename, const int lineNumber) {
-    byte *ptr = (byte *)DebugMem_Alloc(size + sizeof(intptr_t) + 15, filename, lineNumber);
+void *DebugMem_AlignedAlloc(size_t size, size_t alignment, const char *filename, const int lineNumber) {
+    byte *ptr = (byte *)DebugMem_Alloc(size + sizeof(intptr_t) + (alignment - 1), filename, lineNumber);
     if (!ptr) {
         return nullptr;
     }
-    byte *alignedPtr = (byte *)((((intptr_t)ptr) + sizeof(intptr_t) + 15) & ~15);
-    *((intptr_t *)(alignedPtr - sizeof(intptr_t))) = (intptr_t)ptr;
-    return alignedPtr;
-}
-
-void *DebugMem_Alloc32(size_t size, const char *filename, const int lineNumber) {
-    byte *ptr = (byte *)DebugMem_Alloc(size + sizeof(intptr_t) + 31, filename, lineNumber);
-    if (!ptr) {
-        return nullptr;
-    }
-    byte *alignedPtr = (byte *)((((intptr_t)ptr) + sizeof(intptr_t) + 31) & ~31);
+    byte *alignedPtr = (byte *)((((intptr_t)ptr) + sizeof(intptr_t) + (alignment - 1)) & ~(alignment - 1));
     *((intptr_t *)(alignedPtr - sizeof(intptr_t))) = (intptr_t)ptr;
     return alignedPtr;
 }
