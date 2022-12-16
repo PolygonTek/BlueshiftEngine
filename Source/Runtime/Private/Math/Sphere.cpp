@@ -17,10 +17,25 @@
 
 BE_NAMESPACE_BEGIN
 
+bool Sphere::AddPoint(const Vec3 &p) {
+    Vec3 dv = p - center;
+    float dsq = dv.LengthSqr();
+    if (dsq < radius * radius) {
+        return false;
+    }
+
+    float d = Math::Sqrt(dsq);
+    float newRadius = (radius + d) * 0.5f;
+
+    center += (newRadius - radius) / d * dv;
+    radius = newRadius;
+    return true;
+}
+
 bool Sphere::IsIntersectAABB(const AABB &aabb) const {
     return aabb.IsIntersectSphere(*this);
 }
-    
+
 bool Sphere::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const {
     Vec3 m = center - ray.origin;
     float b = m.Dot(ray.dir); // omit multiplying by 2.

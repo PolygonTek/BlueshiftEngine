@@ -70,6 +70,9 @@ public:
                     /// Computes the volume of this sphere.
     float           Volume() const { return 4.0f * Math::Pi * radius * radius * radius / 3.0f; }
 
+                    /// Adds a point. Returns true if this sphere is expanded.
+    bool            AddPoint(const Vec3 &p);
+
                     /// Tests if this sphere contain the given point.
     bool            IsContainPoint(const Vec3 &p) const;
 
