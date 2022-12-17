@@ -91,17 +91,23 @@ public:
 
     void                    RecalcZFar(float zFar);
 
-                            /// Transforms world coordinates to clip coordinates.
-    Vec4                    TransformWorldToClip(const Vec3 &worldCoords) const;
+                            /// Transforms world coordinates to normalized device coordinates.
+    bool                    TransformWorldToNDC(const Vec3 &worldCoords, Vec3 &normalizedDeviceCoords) const;
 
-                            /// Transforms clip coordinates to normlized device coordinates.
-    bool                    TransformClipToNDC(const Vec4 &clipCoords, Vec3 &normalizedDeviceCoords) const;
-
-                            /// Transform normlized device coordinates to pixel coordinates.
-    void                    TransformNDCToPixel(const Vec3 normalizedDeviceCoords, PointF &pixelCoords) const;
+                            /// Transform normalized device coordinates to pixel coordinates.
+    void                    TransformNDCToPixel(const Vec3 &normalizedDeviceCoords, Vec3 &pixelCoords) const;
 
                             /// Transforms world coordinates to pixel coordinates.
-    bool                    TransformWorldToPixel(const Vec3 &worldCoords, PointF &pixelCoords) const;
+    bool                    TransformWorldToPixel(const Vec3 &worldCoords, Vec3 &pixelCoords) const;
+
+                            /// Un-transform pixel coordinates to normalized device coordinates.
+    void                    UntransformPixelToNDC(const Vec3 &pixelCoords, Vec3 &normalizedDeviceCoords) const;
+
+                            /// Un-transform normalized device coordinates to world coordinates.
+    bool                    UntransformNDCToWorld(const Vec3 &normalizedDeviceCoords, Vec3 &worldCoords) const;
+
+                            /// Un-transforms pixel coordinates to world coordinates.
+    bool                    UntransformPixelToWorld(const Vec3 &pixelCoords, Vec3 &worldCoords) const;
 
                             /// Calculates clipping rectangle from bounding sphere (Different camera axis with Eric Lengyel's method)
     bool                    CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) const;

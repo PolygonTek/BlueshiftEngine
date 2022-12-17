@@ -79,8 +79,11 @@ public:
 
     float                   GetPointWeight(int index) const;
     void                    SetPointWeight(int index, float weight);
+
     int                     GetPointWeightCount() const { return physicsDesc.pointWeights.Count(); }
     void                    SetPointWeightCount(int count);
+
+    Vec3                    GetPointPosition(int index) const;
 
 #if WITH_EDITOR
                             /// Visualize the component in editor

@@ -380,6 +380,10 @@ void ComSoftBody::SetPointWeightCount(int count) {
     }
 }
 
+Vec3 ComSoftBody::GetPointPosition(int index) const {
+    return body ? body->GetNodePosition(index) : physicsDesc.points[index];
+}
+
 void ComSoftBody::TransformUpdated(const ComTransform *transform) {
     ResetPoints();
 
@@ -397,7 +401,7 @@ void ComSoftBody::DrawGizmos(const RenderCamera *camera, bool selected, bool sel
         RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
         for (int nodeIndex = 0; nodeIndex < physicsDesc.points.Count(); nodeIndex++) {
-            Vec3 worldPosition = body ? body->GetNodePosition(nodeIndex) : physicsDesc.points[nodeIndex];
+            Vec3 worldPosition = GetPointPosition(nodeIndex);
 
             float viewScale = camera->CalcClampedViewScale(worldPosition);
 

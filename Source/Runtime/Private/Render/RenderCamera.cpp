@@ -85,44 +85,70 @@ void RenderCamera::RecalcZFar(float zFar) {
     viewProjMatrix = projMatrix * viewMatrix;
 }
 
-Vec4 RenderCamera::TransformWorldToClip(const Vec3 &worldPosition) const {
-    return viewProjMatrix * Vec4(worldPosition, 1.0f);
-}
-
-bool RenderCamera::TransformClipToNDC(const Vec4 &clipCoords, Vec3 &normalizedDeviceCoords) const {
+bool RenderCamera::TransformWorldToNDC(const Vec3 &worldPosition, Vec3 &normalizedDeviceCoords) const {
+    Vec4 clipCoords = viewProjMatrix * Vec4(worldPosition, 1.0f);
     if (clipCoords.w > 0) {
-        const float invW = 1.0f / clipCoords.w;
+        float invW = 1.0f / clipCoords.w;
 
         normalizedDeviceCoords.x = clipCoords.x * invW; // Clipping range is [-1, 1]
         normalizedDeviceCoords.y = clipCoords.y * invW; // Clipping range is [-1, 1]
         normalizedDeviceCoords.z = clipCoords.z * invW; // Clipping range is [-1, 1] or [0, 1] in D3D
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
-void RenderCamera::TransformNDCToPixel(const Vec3 normalizedDeviceCoords, PointF &pixelCoords) const {
+void RenderCamera::TransformNDCToPixel(const Vec3 &normalizedDeviceCoords, Vec3 &pixelCoords) const {
     float fx = (normalizedDeviceCoords.x + 1.0f) * 0.5f; // Valid range is [0, 1]
-    float fy = (normalizedDeviceCoords.y + 1.0f) * 0.5f; // Valid range is [0, 1]
-
-    // Invert y coordinate.
-    fy = 1.0f - fy;
+    float fy = 1.0f - (normalizedDeviceCoords.y + 1.0f) * 0.5f; // Valid range is [0, 1]
+    float fz = (normalizedDeviceCoords.z + 1.0f) * 0.5f; // Valid range is [0, 1]
 
     pixelCoords.x = fx * (state.renderRect.x + state.renderRect.w);
     pixelCoords.y = fy * (state.renderRect.y + state.renderRect.h);
+    pixelCoords.z = fz; // depth value
 }
 
-bool RenderCamera::TransformWorldToPixel(const Vec3 &worldPosition, PointF &pixelCoords) const {
-    Vec4 clipCoords = TransformWorldToClip(worldPosition);
-
+bool RenderCamera::TransformWorldToPixel(const Vec3 &worldPosition, Vec3 &pixelCoords) const {
     Vec3 normalizedDeviceCoords;
-    if (!TransformClipToNDC(clipCoords, normalizedDeviceCoords)) {
+    if (!TransformWorldToNDC(worldPosition, normalizedDeviceCoords)) {
         return false;
     }
 
     TransformNDCToPixel(normalizedDeviceCoords, pixelCoords);
     return true;
+}
+
+void RenderCamera::UntransformPixelToNDC(const Vec3 &pixelCoords, Vec3 &normalizedDeviceCoords) const {
+    float fx = pixelCoords.x / (state.renderRect.x + state.renderRect.w);
+    float fy = 1.0f - pixelCoords.y / (state.renderRect.y + state.renderRect.h);
+    float fz = pixelCoords.z; // depth value
+
+    normalizedDeviceCoords.x = (fx * 2.0f) - 1.0f;
+    normalizedDeviceCoords.y = (fy * 2.0f) - 1.0f;
+    normalizedDeviceCoords.z = (fz * 2.0f) - 1.0f;
+}
+
+bool RenderCamera::UntransformNDCToWorld(const Vec3 &normalizedDeviceCoords, Vec3 &worldCoords) const {
+    Vec4 worldPosition = viewProjMatrix.Inverse() * Vec4(normalizedDeviceCoords, 1.0f);
+    if (worldPosition.w > 0) {
+        float invW = 1.0f / worldPosition.w;
+
+        worldCoords.x = worldPosition.x * invW;
+        worldCoords.y = worldPosition.y * invW;
+        worldCoords.z = worldPosition.z * invW;
+        return true;
+    }
+    return false;
+}
+
+bool RenderCamera::UntransformPixelToWorld(const Vec3 &pixelCoords, Vec3 &worldCoords) const {
+    Vec3 normalizedDeviceCoords;
+    UntransformPixelToNDC(pixelCoords, normalizedDeviceCoords);
+
+    if (UntransformNDCToWorld(normalizedDeviceCoords, worldCoords)) {
+        return true;
+    }
+    return false;
 }
 
 bool RenderCamera::CalcClipRectFromSphere(const Sphere &sphere, Rect &clipRect) const {
@@ -434,7 +460,7 @@ float RenderCamera::CalcViewScale(const Vec3 &position) const {
     Vec3 forwardProj = vec.ProjectToNorm(state.axis[0]);
     Vec3 forwardProjPos = state.origin + forwardProj;
 
-    PointF screenPos1, screenPos2;
+    Vec3 screenPos1, screenPos2;
     bool screenPos1Valid = TransformWorldToPixel(forwardProjPos, screenPos1);
     bool screenPos2Valid = TransformWorldToPixel(forwardProjPos + state.axis[1], screenPos2);
 
@@ -442,7 +468,7 @@ float RenderCamera::CalcViewScale(const Vec3 &position) const {
     if (!screenPos1Valid || !screenPos2Valid) {
         pixelDist = state.renderRect.GetSize().ToVec2().Length();
     } else {
-        pixelDist = screenPos1.Distance(screenPos2);
+        pixelDist = screenPos1.ToVec2().Distance(screenPos2.ToVec2());
     }
 
     return 2.0f / Max(pixelDist, 0.0001f);
