@@ -20,6 +20,75 @@ BE_NAMESPACE_BEGIN
 ALIGN_AS16 const Quat Quat::zero(0.0f, 0.0f, 0.0f, 0.0f);
 ALIGN_AS16 const Quat Quat::identity(0.0f, 0.0f, 0.0f, 1.0f);
 
+Quat Quat::operator*(const Quat &a) const & {
+#if defined(ENABLE_SIMD4_INTRIN)
+    const simd4f signx = simd4i(0, 0x80000000, 0, 0x80000000); // [+ - + -]
+    const simd4f signy = simd4i(0, 0, 0x80000000, 0x80000000); // [+ + - -]
+    const simd4f signz = simd4i(0x80000000, 0, 0, 0x80000000); // [+ + - -]
+
+    simd4f q = load_ps(*this);
+    simd4f qx = signx ^ shuffle_ps<0, 0, 0, 0>(q);
+    simd4f qy = signy ^ shuffle_ps<1, 1, 1, 1>(q);
+    simd4f qz = signz ^ shuffle_ps<2, 2, 2, 2>(q);
+    simd4f qw = shuffle_ps<3, 3, 3, 3>(q);
+
+    simd4f a4 = load_ps(a);
+    simd4f a3 = shuffle_ps<1, 0, 3, 2>(a4);
+    simd4f a2 = shuffle_ps<2, 3, 0, 1>(a4);
+    simd4f a1 = shuffle_ps<3, 2, 1, 0>(a4);
+
+    simd4f r = qx * a1;
+    r = madd_ps(qy, a2, r);
+    r = madd_ps(qz, a3, r);
+    r = madd_ps(qw, a4, r);
+
+    ALIGN_AS16 Quat dst;
+    store_ps(r, dst);
+    return dst;
+#else
+    return Quat(
+        x * a.w + y * a.z - z * a.y + w * a.x,
+        -x * a.z + y * a.w + z * a.x + w * a.y,
+        x * a.y - y * a.x + z * a.w + w * a.z,
+        -x * a.x - y * a.y - z * a.z + w * a.w);
+#endif
+}
+
+Quat Quat::operator/(const Quat &a) const & {
+#if defined(ENABLE_SIMD4_INTRIN)
+    const simd4f signx = simd4i(0, 0, 0x80000000, 0); // [+ + + -]
+    const simd4f signy = simd4i(0x80000000, 0, 0, 0); // [- + + +]
+    const simd4f signz = simd4i(0, 0x80000000, 0, 0); // [+ - + +]
+    const simd4f signw = simd4i(0x80000000, 0x80000000, 0x80000000, 0); // [- - - +]
+
+    simd4f q = load_ps(*this);
+    simd4f qx = signx ^ shuffle_ps<0, 0, 0, 0>(q);
+    simd4f qy = signy ^ shuffle_ps<1, 1, 1, 1>(q);
+    simd4f qz = signz ^ shuffle_ps<2, 2, 2, 2>(q);
+    simd4f qw = signw ^ shuffle_ps<3, 3, 3, 3>(q);
+
+    simd4f a4 = load_ps(a);
+    simd4f a3 = shuffle_ps<1, 0, 3, 2>(a4);
+    simd4f a2 = shuffle_ps<2, 3, 0, 1>(a4);
+    simd4f a1 = shuffle_ps<3, 2, 1, 0>(a4);
+
+    simd4f r = qx * a1;
+    r = madd_ps(qy, a2, r);
+    r = madd_ps(qz, a3, r);
+    r = madd_ps(qw, a4, r);
+
+    ALIGN_AS16 Quat dst;
+    store_ps(r, dst);
+    return dst;
+#else
+    return Quat(
+        x * a.w - y * a.z + z * a.y - w * a.x,
+        x * a.z + y * a.w - z * a.x - w * a.y,
+        -x * a.y + y * a.x + z * a.w - w * a.z,
+        x * a.x + y * a.y + z * a.z + w * a.w);
+#endif
+}
+
 Quat Quat::FromString(const char *str) {
     Quat q;
     int count = sscanf(str, "%f %f %f %f", &q.x, &q.y, &q.z, &q.w);

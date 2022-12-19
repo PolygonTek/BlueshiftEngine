@@ -354,22 +354,6 @@ BE_INLINE Quat& Quat::operator-=(const Quat &a) {
     return *this;
 }
 
-BE_INLINE Quat Quat::operator*(const Quat &a) const & {
-    return Quat(
-        x * a.w + y * a.z - z * a.y + w * a.x,
-       -x * a.z + y * a.w + z * a.x + w * a.y,
-        x * a.y - y * a.x + z * a.w + w * a.z,
-       -x * a.x - y * a.y - z * a.z + w * a.w);
-}
-
-BE_INLINE Quat Quat::operator/(const Quat &a) const & {
-    return Quat(
-        x * a.w - y * a.z + z * a.y - w * a.x,
-        x * a.z + y * a.w - z * a.x - w * a.y,
-       -x * a.y + y * a.x + z * a.w - w * a.z,
-        x * a.x + y * a.y + z * a.z + w * a.w);
-}
-
 BE_INLINE Vec3 Quat::operator*(const Vec3 &a) const {
     assert(IsNormalized());
 #if 0
