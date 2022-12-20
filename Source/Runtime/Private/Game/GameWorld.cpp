@@ -972,6 +972,7 @@ void GameWorld::ProcessPointerInput() {
 Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask) const {
     Entity *minEntity = nullptr;
     float minDist = FLT_MAX;
+    Vec3 minDistNormal = Vec3::unitX;
 
     for (int sceneIndex = 0; sceneIndex < COUNT_OF(scenes); sceneIndex++) {
         for (Entity *ent = scenes[sceneIndex].root.GetFirstChild(); ent; ent = ent->node.GetNext()) {
@@ -979,7 +980,7 @@ Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask) const {
                 continue;
             }
 
-            if (ent->IntersectRay(ray, true, minDist)) {
+            if (ent->IntersectRay(ray, true, minDist, minDistNormal)) {
                 minEntity = ent;
             }
         }
@@ -988,8 +989,10 @@ Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask) const {
     return minEntity;
 }
 
-Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask, const Array<Entity *> &excludingEntities, float *hitDist) const {
+Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask, const Array<Entity *> &excludingEntities, float *hitDist, Vec3 *hitNormal) const {
     float minDist = FLT_MAX;
+    Vec3 minDistNormal = Vec3::unitX;
+
     if (hitDist) {
         *hitDist = minDist;
     }
@@ -1006,10 +1009,13 @@ Entity *GameWorld::IntersectRay(const Ray &ray, int layerMask, const Array<Entit
                 continue;
             }
 
-            if (ent->IntersectRay(ray, true, minDist)) {
+            if (ent->IntersectRay(ray, true, minDist, minDistNormal)) {
                 minEntity = ent;
                 if (hitDist) {
                     *hitDist = minDist;
+                }
+                if (hitNormal) {
+                    *hitNormal = minDistNormal;
                 }
             }
         }

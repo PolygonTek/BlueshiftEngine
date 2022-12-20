@@ -1073,12 +1073,13 @@ bool SubMesh::IsIntersectLine(const Vec3 &start, const Vec3 &end, bool ignoreBac
     return IntersectRay(ray, ignoreBackFace);
 }
 
-bool SubMesh::IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist) const {
+bool SubMesh::IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist, Vec3 *hitNormal) const {
     if (!edgesCalculated) {
         return false;
     }
 
-    float dist = Math::Infinity;
+    float minDist = Math::Infinity;
+    Vec3 minDistNormal = Vec3::unitX;
 
     byte *sidedness = (byte *)_alloca(numEdges * sizeof(byte));
 
@@ -1123,22 +1124,28 @@ bool SubMesh::IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist) 
 
             float d;
             if (plane.IntersectRay(ray, false, &d)) {
-                if (!hitDist) {
+                if (!hitDist && !hitNormal) {
                     return true;
                 }
 
-                if (d < dist) {
-                    dist = d;
+                if (d < minDist) {
+                    minDist = d;
+                    minDistNormal = plane.normal;
                 }
             }
         }
     }
 
-    if (dist == Math::Infinity) {
+    if (minDist == Math::Infinity) {
         return false;
     }
 
-    *hitDist = dist;
+    if (hitDist) {
+        *hitDist = minDist;
+    }
+    if (hitNormal) {
+        *hitNormal = minDistNormal;
+    }
     return true;
 }
 

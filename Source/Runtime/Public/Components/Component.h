@@ -87,7 +87,7 @@ public:
     virtual const AABB      GetAABB() const { return AABB::empty; }
 
                             ///
-    virtual bool            IntersectRay(const Ray &ray, bool backFaceCull, float *hitDist) const { return false; }
+    virtual bool            IntersectRay(const Ray &ray, bool backFaceCull, float *hitDist, Vec3 *hitNormal) const { return false; }
 
 #if WITH_EDITOR
                             /// Visualize the component in editor.

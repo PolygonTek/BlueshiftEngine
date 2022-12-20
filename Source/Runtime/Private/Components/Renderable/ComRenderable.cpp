@@ -139,7 +139,7 @@ const AABB ComRenderable::GetAABB() const {
     return renderObjectDef.aabb;
 }
 
-bool ComRenderable::IntersectRay(const Ray &ray, bool backFaceCull, float *hitDist) const {
+bool ComRenderable::IntersectRay(const Ray &ray, bool backFaceCull, float *hitDist, Vec3 *hitNormal) const {
     if (!renderObjectDef.mesh) {
         return false;
     }
@@ -151,11 +151,11 @@ bool ComRenderable::IntersectRay(const Ray &ray, bool backFaceCull, float *hitDi
     localRay.dir = worldToLocal.TransformDir(ray.dir);
     //localRay.dir.Normalize();
 
-    if (!renderObjectDef.mesh->GetAABB().IntersectRay(localRay, hitDist)) {
+    if (!renderObjectDef.mesh->GetAABB().IntersectRay(localRay)) {
         return false;
     }
 
-    if (!renderObjectDef.mesh->IntersectRay(localRay, backFaceCull, hitDist)) {
+    if (!renderObjectDef.mesh->IntersectRay(localRay, backFaceCull, hitDist, hitNormal)) {
         return false;
     }
 

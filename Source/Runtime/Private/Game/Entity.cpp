@@ -732,17 +732,20 @@ void Entity::DrawGizmos(const RenderCamera *camera, bool selected, bool selected
 }
 #endif
 
-bool Entity::IntersectRay(const Ray &ray, bool backFaceCull, float &lastDist) const {
+bool Entity::IntersectRay(const Ray &ray, bool backFaceCull, float &lastDist, Vec3 &lastDistNormal) const {
     float minDist = lastDist;
+    Vec3 minDistNormal = lastDistNormal;
     float dist;
+    Vec3 normal;
 
     for (int componentIndex = 0; componentIndex < components.Count(); componentIndex++) {
         const Component *component = components[componentIndex];
 
         if (component && component->IsActiveInHierarchy()) {
-            if (component->IntersectRay(ray, backFaceCull, &dist)) {
+            if (component->IntersectRay(ray, backFaceCull, &dist, &normal)) {
                 if (dist < minDist) {
                     minDist = dist;
+                    minDistNormal = normal;
                 }
             }
         }
@@ -750,6 +753,7 @@ bool Entity::IntersectRay(const Ray &ray, bool backFaceCull, float &lastDist) co
 
     if (minDist < lastDist) {
         lastDist = minDist;
+        lastDistNormal = minDistNormal;
         return true;
     }
 

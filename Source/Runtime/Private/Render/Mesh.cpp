@@ -254,20 +254,23 @@ bool Mesh::IsIntersectLine(const Vec3 &start, const Vec3 &end, bool backFaceCull
     return false;
 }
 
-bool Mesh::IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist) const {
+bool Mesh::IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist, Vec3 *hitNormal) const {
     float minDist = Math::Infinity;
+    Vec3 minDistNormal = Vec3::unitX;
 
     for (int surfaceIndex = 0; surfaceIndex < surfaces.Count(); surfaceIndex++) {
         MeshSurf *surf = surfaces[surfaceIndex];
 
         float dist;
-        if (surf->subMesh->IntersectRay(ray, ignoreBackFace, &dist)) {
+        Vec3 normal;
+        if (surf->subMesh->IntersectRay(ray, ignoreBackFace, &dist, &normal)) {
             if (!hitDist) {
                 return true;
             }
 
             if (dist > 0.0f && dist < minDist) {
                 minDist = dist;
+                minDistNormal = normal;
             }
         }
     }
@@ -276,14 +279,20 @@ bool Mesh::IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist) con
         return false;
     }
 
-    *hitDist = minDist;
+    if (hitDist) {
+        *hitDist = minDist;
+    }
+    if (hitNormal) {
+        *hitNormal = minDistNormal;
+    }
     return true;
 }
 
 float Mesh::IntersectRay(const Ray &ray, bool ignoreBackFace) const {
     float hitDist;
+    Vec3 hitNormal;
 
-    if (IntersectRay(ray, ignoreBackFace, &hitDist)) {
+    if (IntersectRay(ray, ignoreBackFace, &hitDist, &hitNormal)) {
         return hitDist;
     }
     return FLT_MAX;

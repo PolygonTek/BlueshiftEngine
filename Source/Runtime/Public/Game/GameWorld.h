@@ -118,7 +118,7 @@ public:
                                 /// Ray intersection test for all entities.
     Entity *                    IntersectRay(const Ray &ray, int layerMask) const;
                                 /// Ray intersection test for all entities.
-    Entity *                    IntersectRay(const Ray &ray, int layerMask, const Array<Entity *> &excludingEntities, float *scale) const;
+    Entity *                    IntersectRay(const Ray &ray, int layerMask, const Array<Entity *> &excludingEntities, float *hitDist, Vec3 *hitNormal) const;
 
                                 /// Returns an entity intersecting the ray.
     Entity *                    RayCast(const Ray &ray, int layerMask) const;

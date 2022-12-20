@@ -143,7 +143,7 @@ public:
 
                             /// Intersects a ray with this mesh.
                             /// Returns false if there is no intersection.
-    bool                    IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist) const;
+    bool                    IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist, Vec3 *hitNormal) const;
     float                   IntersectRay(const Ray &ray, bool ignoreBackFace) const;
 
                             /// Returns volume of solid mesh.

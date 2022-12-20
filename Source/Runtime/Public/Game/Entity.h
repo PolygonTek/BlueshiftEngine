@@ -285,7 +285,7 @@ public:
 #endif
 
                                 /// Ray cast to this entity.
-    bool                        IntersectRay(const Ray &ray, bool backFaceCull, float &lastDist) const;
+    bool                        IntersectRay(const Ray &ray, bool backFaceCull, float &lastDist, Vec3 &lastDistNormal) const;
 
                                 /// Creates an entity by JSON text.
     static Entity *             CreateEntity(const Json::Value &data, GameWorld *gameWorld = nullptr, int sceneIndex = 0);

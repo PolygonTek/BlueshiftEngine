@@ -186,7 +186,7 @@ public:
 
                         /// Intersects a ray with this AABB.
                         /// Returns false if there is no intersection.
-    bool                IntersectRay(const Ray &ray, float *hitDistMin = nullptr, float *hitDistMax = nullptr) const;
+    bool                IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) const;
     float               IntersectRay(const Ray &ray) const;
     
                         /// Sets AABB enclosing all points.

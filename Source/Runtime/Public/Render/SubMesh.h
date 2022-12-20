@@ -106,7 +106,7 @@ public:
 
                             /// Ray intersection.
                             /// To use this function, edge information must be pre-calculated.
-    bool                    IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist = nullptr) const;
+    bool                    IntersectRay(const Ray &ray, bool ignoreBackFace, float *hitDist = nullptr, Vec3 *hitNormal = nullptr) const;
 
     const AABB &            GetAABB() const { return aabb; }
 

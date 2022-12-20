@@ -253,7 +253,7 @@ bool AABB::IntersectRay(const Ray &ray, float *hitDistMin, float *hitDistMax) co
 float AABB::IntersectRay(const Ray &ray) const {
     float hitDistMin;
 
-    if (IntersectRay(ray, &hitDistMin)) {
+    if (IntersectRay(ray, &hitDistMin, nullptr)) {
         return hitDistMin;
     }
     return FLT_MAX;
