@@ -494,7 +494,7 @@ static void RB_DrawDebugTextWithDepthTest(bool depthTest) {
 
     const DebugText *text = rb_debugText;
     for (int i = 0; i < rb_numDebugText; i++, text++) {
-        //if (text->origin.DistanceSqr(backEnd.camera->def->state.origin) > MeterToUnit(100*100)) {
+        //if (text->origin.DistanceSqr(backEnd.camera->def->state.origin) > MeterToUnit(100.0f*100.0f)) {
         //  continue;
         //}
 

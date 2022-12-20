@@ -89,7 +89,7 @@ void Mesh::SortAndMerge() {
 
             // 합칠 기준 AABB 를 확장
             AABB aabb1 = surfaces[m0]->subMesh->aabb;
-            aabb1.ExpandSelf(MeterToUnit(10));
+            aabb1.ExpandSelf(MeterToUnit(10.0f));
 
             while (m1 + 1 < surfaces.Count() && 
                 surfaces[m0]->materialIndex == surfaces[m1 + 1]->materialIndex && 

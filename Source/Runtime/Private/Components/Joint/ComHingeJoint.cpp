@@ -216,14 +216,14 @@ void ComHingeJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool s
                 }
 
                 renderWorld->SetDebugColor(Color4::blue * 0.5f, Color4::blue * 0.5f);
-                renderWorld->DebugArc(worldAnchor, worldAxis[0], -worldAxis[1], MeterToUnit(12) * viewScale, minAngle, maxAngle, true);
+                renderWorld->DebugArc(worldAnchor, worldAxis[0], -worldAxis[1], MeterToUnit(12.0f) * viewScale, minAngle, maxAngle, true);
 
                 renderWorld->SetDebugColor(Color4::blue, Color4::zero);
-                renderWorld->DebugLine(worldAnchor, worldAnchor + constraintWorldAxis[0] * MeterToUnit(20) * viewScale);
+                renderWorld->DebugLine(worldAnchor, worldAnchor + constraintWorldAxis[0] * MeterToUnit(20.0f) * viewScale);
             }
 
             renderWorld->SetDebugColor(Color4::red, Color4::red);
-            renderWorld->DebugArrow(worldAnchor, worldAnchor + worldAxis[2] * MeterToUnit(10) * viewScale, MeterToUnit(6) * viewScale, MeterToUnit(1.5) * viewScale);
+            renderWorld->DebugArrow(worldAnchor, worldAnchor + worldAxis[2] * MeterToUnit(10.0f) * viewScale, MeterToUnit(6.0f) * viewScale, MeterToUnit(1.5f) * viewScale);
         }
     }
 }

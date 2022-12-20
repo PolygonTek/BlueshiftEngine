@@ -157,7 +157,7 @@ void RB_OccluderPass(int numDrawSurfs, DrawSurf **drawSurfs) {
                 continue;
             }
 
-            /*if (surf->subMesh->GetAABB().Volume() < MeterToUnit(1) * MeterToUnit(1) * MeterToUnit(1)) {
+            /*if (surf->subMesh->GetAABB().Volume() < MeterToUnit(1.0f) * MeterToUnit(1.0f) * MeterToUnit(1.0f)) {
                 continue;
             }*/
 

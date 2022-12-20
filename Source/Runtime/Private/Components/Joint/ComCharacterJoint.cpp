@@ -292,28 +292,28 @@ void ComCharacterJoint::DrawGizmos(const RenderCamera *camera, bool selected, bo
                 if (angleLimits.x > 0) {
                     // Draw rotation limit range in X-axis
                     renderWorld->SetDebugColor(Color4::zero, Color4::red * 0.5f);
-                    renderWorld->DebugArc(worldAnchor, worldAxis[1], -worldAxis[2], MeterToUnit(12) * viewScale, lowerLimits.x, upperLimits.x, true);
+                    renderWorld->DebugArc(worldAnchor, worldAxis[1], -worldAxis[2], MeterToUnit(12.0f) * viewScale, lowerLimits.x, upperLimits.x, true);
 
                     renderWorld->SetDebugColor(Color4::red, Color4::zero);
-                    renderWorld->DebugLine(worldAnchor, worldAnchor + constraintWorldAxis[1] * MeterToUnit(20) * viewScale);
+                    renderWorld->DebugLine(worldAnchor, worldAnchor + constraintWorldAxis[1] * MeterToUnit(20.0f) * viewScale);
                 }
 
                 if (angleLimits.y > 0) {
                     // Draw rotation limit range in Y-axis
                     renderWorld->SetDebugColor(Color4::zero, Color4::lime * 0.5f);
-                    renderWorld->DebugArc(worldAnchor, worldAxis[2], -worldAxis[0], MeterToUnit(12) * viewScale, lowerLimits.y, upperLimits.y, true);
+                    renderWorld->DebugArc(worldAnchor, worldAxis[2], -worldAxis[0], MeterToUnit(12.0f) * viewScale, lowerLimits.y, upperLimits.y, true);
 
                     renderWorld->SetDebugColor(Color4::lime, Color4::zero);
-                    renderWorld->DebugLine(worldAnchor, worldAnchor + constraintWorldAxis[2] * MeterToUnit(20) * viewScale);
+                    renderWorld->DebugLine(worldAnchor, worldAnchor + constraintWorldAxis[2] * MeterToUnit(20.0f) * viewScale);
                 }
 
                 if (angleLimits.z > 0) {
                     // Draw rotation limit range in Z-axis
                     renderWorld->SetDebugColor(Color4::zero, Color4::blue * 0.5f);
-                    renderWorld->DebugArc(worldAnchor, worldAxis[0], -worldAxis[1], MeterToUnit(12) * viewScale, lowerLimits.z, upperLimits.z, true);
+                    renderWorld->DebugArc(worldAnchor, worldAxis[0], -worldAxis[1], MeterToUnit(12.0f) * viewScale, lowerLimits.z, upperLimits.z, true);
 
                     renderWorld->SetDebugColor(Color4::blue, Color4::zero);
-                    renderWorld->DebugLine(worldAnchor, worldAnchor + constraintWorldAxis[0] * MeterToUnit(20) * viewScale);
+                    renderWorld->DebugLine(worldAnchor, worldAnchor + constraintWorldAxis[0] * MeterToUnit(20.0f) * viewScale);
                 }
             }
         }

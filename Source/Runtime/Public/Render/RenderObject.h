@@ -142,7 +142,7 @@ public:
         int                 layer = 0;
         int                 staticMask = 0;
         int                 time = 0;
-        float               maxVisDist = MeterToUnit(100);
+        float               maxVisDist = MeterToUnit(100.0f);
         int                 renderingOrder = 0;
 
         //

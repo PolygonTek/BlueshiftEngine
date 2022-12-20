@@ -111,7 +111,7 @@ BE_INLINE void JointPose::SetFromMat3x4(const Mat3x4 &mat) {
 
 class BE_API CompressedJointPose {
 public:
-    static constexpr int    MaxBoneTranslation = MeterToUnit(4);
+    static constexpr int    MaxBoneTranslation = MeterToUnit(4.0f);
     static constexpr int    MaxBoneScale = 2;
 
     static short            QuatToShort(const float x);

@@ -125,9 +125,9 @@ void ComSocketJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
             renderWorld->SetDebugColor(Color4::red, Color4::zero);
-            renderWorld->DebugLine(worldAnchor - Mat3::identity[0] * MeterToUnit(3) * viewScale, worldAnchor + Mat3::identity[0] * MeterToUnit(3) * viewScale);
-            renderWorld->DebugLine(worldAnchor - Mat3::identity[1] * MeterToUnit(3) * viewScale, worldAnchor + Mat3::identity[1] * MeterToUnit(3) * viewScale);
-            renderWorld->DebugLine(worldAnchor - Mat3::identity[2] * MeterToUnit(3) * viewScale, worldAnchor + Mat3::identity[2] * MeterToUnit(3) * viewScale);
+            renderWorld->DebugLine(worldAnchor - Mat3::identity[0] * MeterToUnit(3.0f) * viewScale, worldAnchor + Mat3::identity[0] * MeterToUnit(3.0f) * viewScale);
+            renderWorld->DebugLine(worldAnchor - Mat3::identity[1] * MeterToUnit(3.0f) * viewScale, worldAnchor + Mat3::identity[1] * MeterToUnit(3.0f) * viewScale);
+            renderWorld->DebugLine(worldAnchor - Mat3::identity[2] * MeterToUnit(3.0f) * viewScale, worldAnchor + Mat3::identity[2] * MeterToUnit(3.0f) * viewScale);
         }
     }
 }

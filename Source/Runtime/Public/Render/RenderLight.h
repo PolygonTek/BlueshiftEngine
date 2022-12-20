@@ -58,7 +58,7 @@ public:
         int                 layer = 0;
         int                 staticMask = 0;
         Type::Enum          type = Type::Point;
-        float               maxVisDist = MeterToUnit(10);
+        float               maxVisDist = MeterToUnit(10.0f);
 
         Vec3                origin = Vec3::origin;          ///< Light position in world space
         Vec3                size = Vec3::one;               ///< Light extents for each axis

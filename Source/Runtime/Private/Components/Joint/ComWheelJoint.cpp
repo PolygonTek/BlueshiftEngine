@@ -245,22 +245,22 @@ void ComWheelJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool s
 
             // Draw wheel circle
             renderWorld->SetDebugColor(Color4::red, Color4::zero);
-            renderWorld->DebugCircle(worldAnchor, worldAxis[0], MeterToUnit(5) * viewScale);
-            renderWorld->DebugCircle(worldAnchor, worldAxis[0], MeterToUnit(15) * viewScale);
+            renderWorld->DebugCircle(worldAnchor, worldAxis[0], MeterToUnit(5.0f) * viewScale);
+            renderWorld->DebugCircle(worldAnchor, worldAxis[0], MeterToUnit(15.0f) * viewScale);
 
             // Draw axle axis
             renderWorld->SetDebugColor(Color4::red, Color4::zero);
             renderWorld->DebugLine(
-                worldAnchor - worldAxis[0] * MeterToUnit(10) * viewScale,
-                worldAnchor + worldAxis[0] * MeterToUnit(10) * viewScale);
+                worldAnchor - worldAxis[0] * MeterToUnit(10.0f) * viewScale,
+                worldAnchor + worldAxis[0] * MeterToUnit(10.0f) * viewScale);
 
             // Draw forward direction
             renderWorld->SetDebugColor(Color4::lime, Color4::zero);
-            renderWorld->DebugLine(worldAnchor, worldAnchor - worldAxis[1] * MeterToUnit(10) * viewScale);
+            renderWorld->DebugLine(worldAnchor, worldAnchor - worldAxis[1] * MeterToUnit(10.0f) * viewScale);
 
             // Draw suspension direction
             renderWorld->SetDebugColor(Color4::blue, Color4::zero);
-            renderWorld->DebugLine(worldAnchor, worldAnchor + worldAxis[2] * MeterToUnit(10) * viewScale);
+            renderWorld->DebugLine(worldAnchor, worldAnchor + worldAxis[2] * MeterToUnit(10.0f) * viewScale);
         }
     }
 }

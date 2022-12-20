@@ -186,12 +186,12 @@ void ComSpringJoint::DrawGizmos(const RenderCamera *camera, bool selected, bool 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
 
             renderWorld->SetDebugColor(Color4::red, Color4::zero);
-            renderWorld->DebugLine(worldAnchor - worldAxis[0] * MeterToUnit(5) * viewScale, worldAnchor + worldAxis[0] * MeterToUnit(5) * viewScale);
-            renderWorld->DebugLine(worldAnchor - worldAxis[1] * MeterToUnit(5) * viewScale, worldAnchor + worldAxis[1] * MeterToUnit(5) * viewScale);
+            renderWorld->DebugLine(worldAnchor - worldAxis[0] * MeterToUnit(5.0f) * viewScale, worldAnchor + worldAxis[0] * MeterToUnit(5.0f) * viewScale);
+            renderWorld->DebugLine(worldAnchor - worldAxis[1] * MeterToUnit(5.0f) * viewScale, worldAnchor + worldAxis[1] * MeterToUnit(5.0f) * viewScale);
 
-            renderWorld->DebugCircle(worldAnchor - worldAxis[2] * MeterToUnit(3) * viewScale, worldAxis[2], MeterToUnit(5) * viewScale);
-            renderWorld->DebugCircle(worldAnchor, worldAxis[2], MeterToUnit(5) * viewScale);
-            renderWorld->DebugCircle(worldAnchor + worldAxis[2] * MeterToUnit(3) * viewScale, worldAxis[2], MeterToUnit(5) * viewScale);
+            renderWorld->DebugCircle(worldAnchor - worldAxis[2] * MeterToUnit(3.0f) * viewScale, worldAxis[2], MeterToUnit(5.0f) * viewScale);
+            renderWorld->DebugCircle(worldAnchor, worldAxis[2], MeterToUnit(5.0f) * viewScale);
+            renderWorld->DebugCircle(worldAnchor + worldAxis[2] * MeterToUnit(3.0f) * viewScale, worldAxis[2], MeterToUnit(5.0f) * viewScale);
         }
     }
 }

@@ -1153,7 +1153,7 @@ void RenderSystem::TakeScreenShot(const char *filename, RenderWorld *renderWorld
 
 void RenderSystem::TakeEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size) {
     Image envCubeImage;
-    CaptureEnvCubeImage(renderWorld, layerMask, staticMask, false, Color4::black, origin, CmToUnit(5), MeterToUnit(100), useHDR, size, envCubeImage);
+    CaptureEnvCubeImage(renderWorld, layerMask, staticMask, false, Color4::black, origin, CmToUnit(5.0f), MeterToUnit(100.0f), useHDR, size, envCubeImage);
 
     char path[256];
     Str::snPrintf(path, sizeof(path), "%s.dds", filename);
@@ -1164,7 +1164,7 @@ void RenderSystem::TakeEnvShot(const char *filename, RenderWorld *renderWorld, i
 }
 
 void RenderSystem::TakeIrradianceEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size, int envSize) {
-    Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, layerMask, staticMask, false, Color4::black, origin, CmToUnit(5), MeterToUnit(100), useHDR, envSize);
+    Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, layerMask, staticMask, false, Color4::black, origin, CmToUnit(5.0f), MeterToUnit(100.0f), useHDR, envSize);
 
     Texture *irradianceEnvCubeTexture = new Texture;
     irradianceEnvCubeTexture->CreateEmpty(RHI::TextureType::TextureCubeMap, size, size, 1, 1, 1, 
@@ -1195,7 +1195,7 @@ void RenderSystem::TakeIrradianceEnvShot(const char *filename, RenderWorld *rend
 }
 
 void RenderSystem::TakePrefilteredEnvShot(const char *filename, RenderWorld *renderWorld, int layerMask, int staticMask, const Vec3 &origin, bool useHDR, int size, int envSize) {
-    Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, layerMask, staticMask, false, Color4::black, origin, CmToUnit(5), MeterToUnit(100), useHDR, envSize);
+    Texture *envCubeTexture = CaptureEnvCubeTexture(renderWorld, layerMask, staticMask, false, Color4::black, origin, CmToUnit(5.0f), MeterToUnit(100.0f), useHDR, envSize);
 
     int numMipLevels = Math::Log(2, size) + 1;
 
