@@ -405,7 +405,9 @@ void ComSoftBody::DrawGizmos(const RenderCamera *camera, bool selected, bool sel
 
             float viewScale = camera->CalcClampedViewScale(worldPosition);
 
-            renderWorld->SetDebugColor(Color4::white, Color4::red * physicsDesc.pointWeights[nodeIndex]);
+            Color4 color = Math::Lerp(Color4::red, Color4::green, physicsDesc.pointWeights[nodeIndex]);
+
+            renderWorld->SetDebugColor(Color4::white, color);
             renderWorld->DebugQuad(worldPosition, camera->GetState().axis[1], camera->GetState().axis[2], MeterToUnit(1.8f) * viewScale);
         }
     }
