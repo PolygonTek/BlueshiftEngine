@@ -5,8 +5,9 @@ Version History
 - Added support for slicing mesh with the given plane
 - Added support for fracturing mesh
 - Added support for ragdoll with easy setup tool
-- Added support for cloth and soft body physics
+- Added support for cloth and soft body physics with painting vertex properties
 - Added support for joint manipulation for skinned mesh in an entity-hierarchical manner
+- Added support for collider manipulator gizmo
 - Added direction option for CylinderCollider, CapsuleCollider components
 
 ### 0.7.0
