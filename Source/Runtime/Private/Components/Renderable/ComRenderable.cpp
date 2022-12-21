@@ -145,11 +145,11 @@ bool ComRenderable::IntersectRay(const Ray &ray, bool backFaceCull, float *hitDi
     }
 
     ALIGN_AS32 Mat3x4 worldToLocal = renderObjectDef.worldMatrix.InverseOrthogonal();
+    Vec3 localOrigin = worldToLocal.TransformPos(ray.origin);
+    Vec3 localNormal = worldToLocal.TransformDir(ray.dir);
+    //localNormal.Normalize();
 
-    Ray localRay;
-    localRay.origin = worldToLocal.TransformPos(ray.origin);
-    localRay.dir = worldToLocal.TransformDir(ray.dir);
-    //localRay.dir.Normalize();
+    Ray localRay(localOrigin, localNormal);
 
     if (!renderObjectDef.mesh->GetAABB().IntersectRay(localRay)) {
         return false;
@@ -159,6 +159,16 @@ bool ComRenderable::IntersectRay(const Ray &ray, bool backFaceCull, float *hitDi
         return false;
     }
 
+    if (hitDist) {
+        Vec3 localHitPosition = localRay.GetPoint(*hitDist);
+        Vec3 worldHitPosition = renderObjectDef.worldMatrix.TransformPos(localHitPosition);
+        *hitDist = worldHitPosition.Distance(ray.origin);
+    }
+
+    if (hitNormal) {
+        Vec3 worldHitNormal = renderObjectDef.worldMatrix.TransformDir(*hitNormal);
+        *hitNormal = worldHitNormal.Normalized();
+    }
     return true;
 }
 
