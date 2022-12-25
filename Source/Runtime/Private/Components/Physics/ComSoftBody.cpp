@@ -35,7 +35,7 @@ void ComSoftBody::RegisterProperties() {
     REGISTER_ACCESSOR_PROPERTY("thickness", "Thickness", float, GetThickness, SetThickness, CmToUnit(1.0f),
         "", PropertyInfo::Flag::Editor).SetRange(CmToUnit(0.1f), CmToUnit(100.0f), CmToUnit(0.1f));
     REGISTER_ACCESSOR_PROPERTY("stiffness", "Stiffness", float, GetStiffness, SetStiffness, 0.025f,
-        "", PropertyInfo::Flag::Editor).SetRange(0, 1, 0.005f);
+        "", PropertyInfo::Flag::Editor).SetRange(0.001f, 1, 0.001f);
     REGISTER_MIXED_ACCESSOR_PROPERTY("windVelocity", "Wind Velocity", Vec3, GetWindVelocity, SetWindVelocity, Vec3::zero,
         "", PropertyInfo::Flag::Editor);
     REGISTER_ACCESSOR_PROPERTY("solverIterationCount", "Solver Iteration Count", int, GetSolverIterationCount, SetSolverIterationCount, 5,
