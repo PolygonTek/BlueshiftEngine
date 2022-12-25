@@ -136,13 +136,11 @@ bool OBB::AddPoint(const Vec3 &p) {
     // center 에서 p 방향으로 oriented 된 OBB 를 상정한다.
     Mat3 axis2;
     // 첫번째 축은 p 방향으로 고른다.
-    axis2[0] = p - center;
-    axis2[0].Normalize();
+    axis2[0] = (p - center).Normalized();
     // 두번째 축은 OBB 의 각 축에 투영해보고 가장 independant 한 벡터를 하나 고른다.
     axis2[1] = axis[Min3Index(axis2[0].Dot(axis[0]), axis2[0].Dot(axis[1]), axis2[0].Dot(axis[2]))];
     // 첫번째 축에 투영해서 orthonormal 하게 만든다.
-    axis2[1] = axis2[1] - (axis2[1].Dot(axis2[0])) * axis2[0];
-    axis2[1].Normalize();
+    axis2[1] = (axis2[1] - (axis2[1].Dot(axis2[0])) * axis2[0]).Normalized();
     // 세번째 축은 외적으로 얻는다.
     axis2[2].SetFromCross(axis2[0], axis2[1]);
     

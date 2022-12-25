@@ -366,7 +366,7 @@ BE_INLINE void VertexGenericLit::Lerp(const VertexGenericLit &a, const VertexGen
     Vec3 normal = Math::Lerp(a.GetNormal(), b.GetNormal(), f);
     Vec3 tangent = Math::Lerp(a.GetTangent(), b.GetTangent(), f);
     Vec3 bitangent = Math::Lerp(a.GetBiTangent(), b.GetBiTangent(), f);
-    
+
     normal.Normalize();
     tangent.Normalize();
     bitangent.Normalize();

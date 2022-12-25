@@ -836,8 +836,7 @@ void RenderSystem::GenerateSHConvolvIrradianceEnvCubeRT(const Texture *envCubeTe
                 float t = (y + 0.5f) * invSize;
 
                 // Gets sample direction for each faces.
-                Vec3 dir = Image::FaceToCubeMapCoords((Image::CubeMapFace::Enum)faceIndex, s, t);
-                dir.Normalize();
+                Vec3 dir = Image::FaceToCubeMapCoords((Image::CubeMapFace::Enum)faceIndex, s, t).Normalized();
 
                 // 9 terms are required for order 3 SH basis functions.
                 float basisEval[16] = { 0, };

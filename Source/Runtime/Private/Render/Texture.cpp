@@ -267,8 +267,7 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
                 float s = (x + 0.5f) * invSize;
                 float t = (y + 0.5f) * invSize;
 
-                dir = Image::FaceToCubeMapCoords((Image::CubeMapFace::Enum)faceIndex, s, t);
-                dir.Normalize();
+                dir = Image::FaceToCubeMapCoords((Image::CubeMapFace::Enum)faceIndex, s, t).Normalized();
 
                 // Convert cubemap coordinates from z-up to GL axis
                 dir = Vec3(dir.y, dir.z, dir.x);

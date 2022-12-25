@@ -1005,8 +1005,7 @@ bool Frustum::FromProjection(const OBB &box, const Vec3 &projectionOrigin, const
 
     for (j = 0; j < 2; j++) {
         axis[0] = dir;
-        axis[1] = box.Axis()[bestAxis] - (box.Axis()[bestAxis] * axis[0]) * axis[0];
-        axis[1].Normalize();
+        axis[1] = (box.Axis()[bestAxis] - (box.Axis()[bestAxis] * axis[0]) * axis[0]).Normalized();
         axis[2].SetFromCross(axis[0], axis[1]);
 
         BoxToPoints(axis.TransposedMulVec(box.Center() - projectionOrigin), box.Extents(), axis.TransposedMul(box.Axis()), points);
@@ -1061,8 +1060,7 @@ bool Frustum::FromProjection(const OBB &box, const Vec3 &projectionOrigin, const
 
     for (j = 0; j < 2; j++) {
         axis[0] = dir;
-        axis[1] = box.Axis()[bestAxis] - (box.Axis()[bestAxis] * axis[0]) * axis[0];
-        axis[1].Normalize();
+        axis[1] = (box.Axis()[bestAxis] - (box.Axis()[bestAxis] * axis[0]) * axis[0]).Normalized();
         axis[2].Cross(axis[0], axis[1]);
 
         BoxToPoints(axis.TransposedMulVec(box.Center() - projectionOrigin), box.Extents(), axis.TransposedMul(box.Axis()), points);
@@ -1100,8 +1098,7 @@ bool Frustum::FromProjection(const OBB &box, const Vec3 &projectionOrigin, const
     Vec3 org;
 
     axis[0] = dir;
-    axis[1] = box.Axis()[bestAxis] - (box.Axis()[bestAxis] * axis[0]) * axis[0];
-    axis[1].Normalize();
+    axis[1] = (box.Axis()[bestAxis] - (box.Axis()[bestAxis] * axis[0]) * axis[0]).Normalized();
     axis[2].Cross(axis[0], axis[1]);
 
     for (i = 0; i < 3; i++) {

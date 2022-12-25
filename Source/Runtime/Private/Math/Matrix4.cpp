@@ -21,7 +21,14 @@ ALIGN_AS32 const Mat4 Mat4::zero(Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 
 ALIGN_AS32 const Mat4 Mat4::identity(Vec4(1, 0, 0, 0), Vec4(0, 1, 0, 0), Vec4(0, 0, 1, 0), Vec4(0, 0, 0, 1));
 
 Mat4 &Mat4::operator=(const Mat3x4 &rhs) {
-#if defined(ENABLE_SIMD4_INTRIN)
+#if defined(ENABLE_SIMD8_INTRIN)
+    simd8f r01 = loadu_256ps(rhs[0]);
+    simd4f r2 = loadu_ps(rhs[2]);
+    simd8f r23 = set2x128_256ps(r2, SIMD_4::F4_3zero_one);
+
+    storeu_256ps(r01, mat[0]);
+    storeu_256ps(r23, mat[2]);
+#elif defined(ENABLE_SIMD4_INTRIN)
     simd4f r0 = loadu_ps(rhs[0]);
     simd4f r1 = loadu_ps(rhs[1]);
     simd4f r2 = loadu_ps(rhs[2]);
@@ -1151,45 +1158,6 @@ bool Mat4::InverseSelf() {
 #endif
 }
 
-bool Mat4::InverseAffineSelf() {
-    // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
-    if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
-        return false;
-    }
-
-    return ToMat3x4().InverseSelf();
-}
-
-bool Mat4::InverseOrthogonalSelf() {
-    // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
-    if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
-        return false;
-    }
-
-    ToMat3x4().InverseOrthogonalSelf();
-    return true;
-}
-
-bool Mat4::InverseOrthogonalUniformScaleSelf() {
-    // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
-    if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
-        return false;
-    }
-
-    ToMat3x4().InverseOrthogonalUniformScaleSelf();
-    return true;
-}
-
-bool Mat4::InverseOrthogonalNoScaleSelf() {
-    // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
-    if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
-        return false;
-    }
-
-    ToMat3x4().InverseOrthogonalNoScaleSelf();
-    return true;
-}
-
 // Doolittle Algorithm
 // Doolittle uses unit diagonals for the lower triangle
 bool Mat4::DecompLU() {
@@ -1211,7 +1179,7 @@ bool Mat4::DecompLU() {
                 sum += mat[i][k] * mat[k][j];
             }
             mat[i][j] = (mat[i][j] - sum) / mat[j][j];
-        }        
+        }
     }
     return true;
 }
@@ -1237,58 +1205,6 @@ Vec4 Mat4::SolveLU(const Vec4 &b) const {
         x[i] = (y[i] - sum) / mat[i][i];
     }
     return x;
-}
-
-//---------------------------------------------------
-//
-//        |  1  0  0  tx | | m00  m01  m02  m03 |
-// T M  = |  0  1  0  ty | | m10  m11  m12  m13 |
-//        |  0  0  1  tz | | m20  m21  m22  m23 |
-//        |  0  0  0   1 | | m30  m31  m32  m33 |
-//
-//---------------------------------------------------
-
-Mat4 &Mat4::Translate(float tx, float ty, float tz) {
-    mat[0][3] += mat[3][3] * tx;
-    mat[1][3] += mat[3][3] * ty;
-    mat[2][3] += mat[3][3] * tz;
-
-    return *this;
-}
-
-//---------------------------------------------------
-//
-//       | m00  m01  m02  m03 | |  1  0  0  tx |
-// M T = | m10  m11  m12  m13 | |  0  1  0  ty |
-//       | m20  m21  m22  m23 | |  0  0  1  tz |
-//       | m30  m31  m32  m33 | |  0  0  0   1 |
-//
-//---------------------------------------------------
-
-Mat4 &Mat4::TranslateRight(float tx, float ty, float tz) {
-    mat[0][3] += mat[0][0] * tx + mat[0][1] * ty + mat[0][2] * tz;
-    mat[1][3] += mat[1][0] * tx + mat[1][1] * ty + mat[1][2] * tz;
-    mat[2][3] += mat[2][0] * tx + mat[2][1] * ty + mat[2][2] * tz;
-    mat[3][3] += mat[3][0] * tx + mat[3][1] * ty + mat[3][2] * tz;
-
-    return *this;
-}
-
-//---------------------------------------------------
-//
-//       | sx   0   0  0 | | m00  m01  m02  m03 |
-// S M = |  0  sy   0  0 | | m10  m11  m12  m13 |
-//       |  0   0  sz  0 | | m20  m21  m22  m23 |
-//       |  0   0   0  1 | | m30  m31  m32  m33 |
-//
-//---------------------------------------------------
-
-Mat4 &Mat4::Scale(float sx, float sy, float sz) {
-    mat[0] *= sx;
-    mat[1] *= sy;
-    mat[2] *= sz;
-
-    return *this;
 }
 
 void Mat4::SetFrustum(float left, float right, float bottom, float top, float zNear, float zFar) {

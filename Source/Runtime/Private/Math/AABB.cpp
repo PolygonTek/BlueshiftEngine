@@ -548,8 +548,7 @@ bool AABB::IsIntersectTriangle(const Vec3 &_v0, const Vec3 &_v1, const Vec3 &_v2
     }
 
     // Compare in the normal axis of the triangle.
-    Vec3 n = f0.Cross(f1);
-    n.Normalize();
+    Vec3 n = f0.Cross(f1).Normalized();
     Plane p = Plane(n, -n.Dot(_v0));
     return PlaneSide(p, 0.0f) == Plane::Side::Cross ? true : false;
 }

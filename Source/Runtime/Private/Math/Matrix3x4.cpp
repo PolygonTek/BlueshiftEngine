@@ -20,6 +20,23 @@ BE_NAMESPACE_BEGIN
 ALIGN_AS32 const Mat3x4 Mat3x4::zero(Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0), Vec4(0, 0, 0, 0));
 ALIGN_AS32 const Mat3x4 Mat3x4::identity(Vec4(1, 0, 0, 0), Vec4(0, 1, 0, 0), Vec4(0, 0, 1, 0));
 
+Mat3x4::Mat3x4(const Mat4 &m) {
+    mat[0][0] = m[0][0];
+    mat[0][1] = m[0][1];
+    mat[0][2] = m[0][2];
+    mat[0][3] = m[0][3];
+
+    mat[1][0] = m[1][0];
+    mat[1][1] = m[1][1];
+    mat[1][2] = m[1][2];
+    mat[1][3] = m[1][3];
+
+    mat[2][0] = m[2][0];
+    mat[2][1] = m[2][1];
+    mat[2][2] = m[2][2];
+    mat[2][3] = m[2][3];
+}
+
 //---------------------------------------------------
 //
 //        |  1  0  0  tx | | m00  m01  m02  m03 |
@@ -1208,6 +1225,14 @@ Vec3 Mat3x4::ToScaleVec3() const {
 
     return dst;
 #endif
+}
+
+Mat4 Mat3x4::ToMat4() const {
+    return Mat4(
+        mat[0][0], mat[0][1], mat[0][2], mat[0][3],
+        mat[1][0], mat[1][1], mat[1][2], mat[1][3],
+        mat[2][0], mat[2][1], mat[2][2], mat[2][3],
+        0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 Mat3x4 Mat3x4::FromString(const char *str) {

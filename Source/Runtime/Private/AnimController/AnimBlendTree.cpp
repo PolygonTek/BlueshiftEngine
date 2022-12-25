@@ -320,8 +320,8 @@ void AnimBlendTree::ComputeChildren2DDirectionalWeights(const Animator *animator
 
         if (originIndex != -1) {
             // If the sample point (0, 0) exist..
-            Vec2 a = animLayer->GetNodeBlendSpaceVector(node->children[indexA]).ToVec2(); a.Normalize();
-            Vec2 b = animLayer->GetNodeBlendSpaceVector(node->children[indexB]).ToVec2(); b.Normalize();
+            Vec2 a = animLayer->GetNodeBlendSpaceVector(node->children[indexA]).ToVec2().Normalized();
+            Vec2 b = animLayer->GetNodeBlendSpaceVector(node->children[indexB]).ToVec2().Normalized();
             Vec2 c = animLayer->GetNodeBlendSpaceVector(node->children[originIndex]).ToVec2();
             Vec3 barycentricCoord = Vec3::Compute3DBarycentricCoords(a, b, c, currentPoint);
 

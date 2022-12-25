@@ -610,11 +610,28 @@ BE_INLINE Mat4 Mat4::InverseAffine() const & {
     return invMat;
 }
 
+BE_INLINE bool Mat4::InverseAffineSelf() {
+    // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
+    if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
+        return false;
+    }
+    return ToMat3x4().InverseSelf();
+}
+
 BE_INLINE Mat4 Mat4::InverseOrthogonal() const & {
     Mat4 invMat = *this;
     bool r = invMat.InverseOrthogonalSelf();
     assert(r);
     return invMat;
+}
+
+BE_INLINE bool Mat4::InverseOrthogonalSelf() {
+    // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
+    if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
+        return false;
+    }
+    ToMat3x4().InverseOrthogonalSelf();
+    return true;
 }
 
 BE_INLINE Mat4 Mat4::InverseOrthogonalUniformScale() const & {
@@ -624,6 +641,15 @@ BE_INLINE Mat4 Mat4::InverseOrthogonalUniformScale() const & {
     return invMat;
 }
 
+BE_INLINE bool Mat4::InverseOrthogonalUniformScaleSelf() {
+    // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
+    if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
+        return false;
+    }
+    ToMat3x4().InverseOrthogonalUniformScaleSelf();
+    return true;
+}
+
 BE_INLINE Mat4 Mat4::InverseOrthogonalNoScale() const & {
     Mat4 invMat = *this;
     bool r = invMat.InverseOrthogonalNoScaleSelf();
@@ -631,11 +657,80 @@ BE_INLINE Mat4 Mat4::InverseOrthogonalNoScale() const & {
     return invMat;
 }
 
+BE_INLINE bool Mat4::InverseOrthogonalNoScaleSelf() {
+    // The bottom row vector of the matrix should always be [ 0 0 0 1 ]
+    if (mat[3][0] != 0.0f || mat[3][1] != 0.0f || mat[3][2] != 0.0f || mat[3][3] != 1.0f) {
+        return false;
+    }
+    ToMat3x4().InverseOrthogonalNoScaleSelf();
+    return true;
+}
+
+//---------------------------------------------------
+//
+//        |  1  0  0  tx | | m00  m01  m02  m03 |
+// T M  = |  0  1  0  ty | | m10  m11  m12  m13 |
+//        |  0  0  1  tz | | m20  m21  m22  m23 |
+//        |  0  0  0   1 | | m30  m31  m32  m33 |
+//
+//---------------------------------------------------
+
+BE_INLINE Mat4 &Mat4::Translate(float tx, float ty, float tz) {
+    mat[0][3] += mat[3][3] * tx;
+    mat[1][3] += mat[3][3] * ty;
+    mat[2][3] += mat[3][3] * tz;
+
+    return *this;
+}
+
+//---------------------------------------------------
+//
+//       | m00  m01  m02  m03 | |  1  0  0  tx |
+// M T = | m10  m11  m12  m13 | |  0  1  0  ty |
+//       | m20  m21  m22  m23 | |  0  0  1  tz |
+//       | m30  m31  m32  m33 | |  0  0  0   1 |
+//
+//---------------------------------------------------
+
+BE_INLINE Mat4 &Mat4::TranslateRight(float tx, float ty, float tz) {
+    mat[0][3] += mat[0][0] * tx + mat[0][1] * ty + mat[0][2] * tz;
+    mat[1][3] += mat[1][0] * tx + mat[1][1] * ty + mat[1][2] * tz;
+    mat[2][3] += mat[2][0] * tx + mat[2][1] * ty + mat[2][2] * tz;
+    mat[3][3] += mat[3][0] * tx + mat[3][1] * ty + mat[3][2] * tz;
+
+    return *this;
+}
+
+//---------------------------------------------------
+//
+//       | sx   0   0  0 | | m00  m01  m02  m03 |
+// S M = |  0  sy   0  0 | | m10  m11  m12  m13 |
+//       |  0   0  sz  0 | | m20  m21  m22  m23 |
+//       |  0   0   0  1 | | m30  m31  m32  m33 |
+//
+//---------------------------------------------------
+
+BE_INLINE Mat4 &Mat4::Scale(float sx, float sy, float sz) {
+    mat[0] *= sx;
+    mat[1] *= sy;
+    mat[2] *= sz;
+
+    return *this;
+}
+
 BE_INLINE Mat3 Mat4::ToMat3() const {
     return Mat3(
         mat[0][0], mat[1][0], mat[2][0], 
         mat[0][1], mat[1][1], mat[2][1], 
         mat[0][2], mat[1][2], mat[2][2]);
+}
+
+BE_INLINE const Mat3x4 &Mat4::ToMat3x4() const {
+    return *reinterpret_cast<const Mat3x4 *>(this);
+}
+
+BE_INLINE Mat3x4 &Mat4::ToMat3x4() {
+    return *reinterpret_cast<Mat3x4 *>(this);
 }
 
 BE_INLINE Mat4 Mat3::ToMat4() const {

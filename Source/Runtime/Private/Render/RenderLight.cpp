@@ -176,8 +176,7 @@ bool RenderLight::DirLight_ShadowBVFromCaster(const OBB &casterOBB, OBB &shadowO
 bool RenderLight::PointLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &shadowFrustum) const {
     assert(state.type == RenderLight::Type::Point);
 
-    Vec3 dir = casterOBB.Center() - state.origin;
-    dir.Normalize();
+    Vec3 dir = (casterOBB.Center() - state.origin).Normalized();
 
     float dFar = worldOBB.Extents().Length();
     if (!shadowFrustum.FromProjection(casterOBB, state.origin, dFar)) {
@@ -191,8 +190,7 @@ bool RenderLight::PointLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &s
 bool RenderLight::SpotLight_ShadowBVFromCaster(const OBB &casterOBB, Frustum &shadowFrustum) const {
     assert(state.type == RenderLight::Type::Spot);
 
-    Vec3 dir = worldFrustum.GetAxis()[0];
-    dir.Normalize();
+    Vec3 dir = worldFrustum.GetAxis()[0].Normalized();
 
     float dmin, dmax;
     casterOBB.ProjectOnAxis(dir, dmin, dmax);

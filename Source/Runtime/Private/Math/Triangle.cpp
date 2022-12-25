@@ -36,8 +36,8 @@ Vec3 Triangle::BarycentricUVW(const Vec3 &point) const {
 
     if (x >= y && x >= z) { 
         // Project to the yz plane.
-        nu = TriArea2D(point.y, point.z, b.y, b.z, c.y, c.z); // Area of PBC in yz-plane.        
-        nv = TriArea2D(point.y, point.z, c.y, c.z, a.y, a.z); // Area of PCA in yz-plane.        
+        nu = TriArea2D(point.y, point.z, b.y, b.z, c.y, c.z); // Area of PBC in yz-plane.
+        nv = TriArea2D(point.y, point.z, c.y, c.z, a.y, a.z); // Area of PCA in yz-plane.
         ood = 1.0f / m.x; // 1 / (2 * area of ABC in yz plane)
     } else if (y >= z) { 
         // Note: The book has a redundant 'if (y >= x)' comparison

@@ -378,23 +378,6 @@ BE_INLINE Mat3x4::Mat3x4(const Mat3 &m) {
     mat[2][3] = 0;
 }
 
-BE_INLINE Mat3x4::Mat3x4(const Mat4 &m) {
-    mat[0][0] = m[0][0];
-    mat[0][1] = m[0][1];
-    mat[0][2] = m[0][2];
-    mat[0][3] = m[0][3];
-
-    mat[1][0] = m[1][0];
-    mat[1][1] = m[1][1];
-    mat[1][2] = m[1][2];
-    mat[1][3] = m[1][3];
-
-    mat[2][0] = m[2][0];
-    mat[2][1] = m[2][1];
-    mat[2][2] = m[2][2];
-    mat[2][3] = m[2][3];
-}
-
 BE_INLINE Mat3x4::Mat3x4(const float *data) {
     memcpy(mat, data, sizeof(float) * Rows * Cols);
 }
@@ -581,22 +564,6 @@ BE_INLINE Mat3 Mat3x4::ToMat3() const {
         mat[0][0], mat[1][0], mat[2][0],
         mat[0][1], mat[1][1], mat[2][1],
         mat[0][2], mat[1][2], mat[2][2]);
-}
-
-BE_INLINE Mat4 Mat3x4::ToMat4() const {
-    return Mat4(
-        mat[0][0], mat[0][1], mat[0][2], mat[0][3],
-        mat[1][0], mat[1][1], mat[1][2], mat[1][3],
-        mat[2][0], mat[2][1], mat[2][2], mat[2][3],
-        0.0f, 0.0f, 0.0f, 1.0f);
-}
-
-BE_INLINE const Mat3x4 &Mat4::ToMat3x4() const {
-    return *reinterpret_cast<const Mat3x4 *>(this);
-}
-
-BE_INLINE Mat3x4 &Mat4::ToMat3x4() {
-    return *reinterpret_cast<Mat3x4 *>(this);
 }
 
 BE_INLINE Vec3 Mat3x4::ToTranslationVec3() const {
