@@ -96,7 +96,51 @@ void ComCylinderCollider::SetHeight(float height) {
     }
 }
 
+Mat3 ComCylinderCollider::GetColliderAxis() const {
+    Mat3 axisRotation;
+    if (direction == Direction::XAxis) {
+        axisRotation = Mat3::FromRotationY(Math::HalfPi);
+    } else if (direction == Direction::YAxis) {
+        axisRotation = Mat3::FromRotationX(-Math::HalfPi);
+    } else {
+        axisRotation = Mat3::identity;
+    }
+    return axisRotation;
+}
+
 #if WITH_EDITOR
+
+bool ComCylinderCollider::GetHandlePosition(int handleIndex, Vec3 &handlePosition) const {
+    const ComTransform *transform = GetEntity()->GetTransform();
+
+    Mat3 axis = transform->GetAxis() * GetColliderAxis();
+
+    float scaledRadius = (transform->GetScale().ToVec2() * radius).MaxComponent();
+    float scaledHeight = transform->GetScale().z * height * 0.5f;
+
+    switch (handleIndex) {
+    case 0: // PX
+        handlePosition = transform->GetMatrix().TransformPos(center) + axis[0] * scaledRadius;
+        return true;
+    case 1: // NX
+        handlePosition = transform->GetMatrix().TransformPos(center) - axis[0] * scaledRadius;
+        return true;
+    case 2: // PY
+        handlePosition = transform->GetMatrix().TransformPos(center) + axis[1] * scaledRadius;
+        return true;
+    case 3: // NY
+        handlePosition = transform->GetMatrix().TransformPos(center) - axis[1] * scaledRadius;
+        return true;
+    case 4: // PZ
+        handlePosition = transform->GetMatrix().TransformPos(center) + axis[2] * scaledHeight;
+        return true;
+    case 5: // NZ
+        handlePosition = transform->GetMatrix().TransformPos(center) - axis[2] * scaledHeight;
+        return true;
+    }
+    return false;
+}
+
 void ComCylinderCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     if (selectedByParent) {
         const ComTransform *transform = GetEntity()->GetTransform();
@@ -106,23 +150,15 @@ void ComCylinderCollider::DrawGizmos(const RenderCamera *camera, bool selected, 
             float scaledHeight = transform->GetScale().z * height;
 
             Vec3 worldCenter = transform->GetMatrix().TransformPos(center);
-
-            Mat3 axisRotation;
-            if (direction == Direction::XAxis) {
-                axisRotation = Mat3::FromRotationY(Math::HalfPi);
-            } else if (direction == Direction::YAxis) {
-                axisRotation = Mat3::FromRotationX(-Math::HalfPi);
-            } else {
-                axisRotation = Mat3::identity;
-            }
+            Mat3 worldAxis = transform->GetAxis() * GetColliderAxis();
 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
             if (selected) {
                 renderWorld->SetDebugColor(Color4(Color4::orange.ToColor3(), 0.2f), Color4::zero);
-                renderWorld->DebugCylinderSimple(worldCenter, transform->GetAxis() * axisRotation, scaledHeight, scaledRadius + CmToUnit(0.15f), 1.25f, false);
+                renderWorld->DebugCylinderSimple(worldCenter, worldAxis, scaledHeight, scaledRadius + CmToUnit(0.15f), 1.25f, false);
             }
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-            renderWorld->DebugCylinderSimple(worldCenter, transform->GetAxis() * axisRotation, scaledHeight, scaledRadius + CmToUnit(0.15f), 1.25f, true);
+            renderWorld->DebugCylinderSimple(worldCenter, worldAxis, scaledHeight, scaledRadius + CmToUnit(0.15f), 1.25f, true);
         }
     }
 }

@@ -75,6 +75,34 @@ void ComSphereCollider::SetRadius(float radius) {
 }
 
 #if WITH_EDITOR
+
+bool ComSphereCollider::GetHandlePosition(int handleIndex, Vec3 &handlePosition) const {
+    const ComTransform *transform = GetEntity()->GetTransform();
+    float scaledRadius = (transform->GetScale() * radius).MaxComponent();
+
+    switch (handleIndex) {
+    case 0: // PX
+        handlePosition = transform->GetMatrix().TransformPos(center) + transform->GetAxis()[0] * scaledRadius;
+        return true;
+    case 1: // NX
+        handlePosition = transform->GetMatrix().TransformPos(center) - transform->GetAxis()[0] * scaledRadius;
+        return true;
+    case 2: // PY
+        handlePosition = transform->GetMatrix().TransformPos(center) + transform->GetAxis()[1] * scaledRadius;
+        return true;
+    case 3: // NY
+        handlePosition = transform->GetMatrix().TransformPos(center) - transform->GetAxis()[1] * scaledRadius;
+        return true;
+    case 4: // PZ
+        handlePosition = transform->GetMatrix().TransformPos(center) + transform->GetAxis()[2] * scaledRadius;
+        return true;
+    case 5: // NZ
+        handlePosition = transform->GetMatrix().TransformPos(center) - transform->GetAxis()[2] * scaledRadius;
+        return true;
+    }
+    return false;
+}
+
 void ComSphereCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     if (selectedByParent) {
         const ComTransform *transform = GetEntity()->GetTransform();

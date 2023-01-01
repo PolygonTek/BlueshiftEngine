@@ -43,9 +43,14 @@ public:
 #if WITH_EDITOR
                             /// Visualize the component in editor.
     virtual void            DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) override;
+
+    virtual bool            GetHandlePosition(int handleIndex, Vec3 &handlePosition) const override;
 #endif
 
     virtual void            CreateCollider() override;
+
+    virtual Vec3            GetColliderCenter() const override { return center; }
+    virtual Mat3            GetColliderAxis() const override;
 
     Vec3                    GetCenter() const { return center; }
     void                    SetCenter(const Vec3 &center);

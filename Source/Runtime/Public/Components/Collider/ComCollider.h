@@ -44,6 +44,18 @@ public:
 
     virtual void            CreateCollider() = 0;
 
+                            /// Returns collider center position in local space.
+    virtual Vec3            GetColliderCenter() const { return Vec3::origin; }
+
+                            /// Returns collider axis in local space.
+    virtual Mat3            GetColliderAxis() const { return Mat3::identity; }
+
+#if WITH_EDITOR
+                            /// Returns handle position in world space.
+                            /// handleIndex = PX, NX, PY, NY, PZ, NZ [0, 5]
+    virtual bool            GetHandlePosition(int handleIndex, Vec3 &handlePosition) const;
+#endif
+
     Collider *              GetCollider() const { return collider; }
 
 protected:

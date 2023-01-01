@@ -43,6 +43,9 @@ public:
 
     virtual void            CreateCollider() override;
 
+    virtual Vec3            GetColliderCenter() const override { return center; }
+    virtual Mat3            GetColliderAxis() const override;
+
     Vec3                    GetCenter() const { return center; }
     void                    SetCenter(const Vec3 &center);
 

@@ -58,4 +58,12 @@ const AABB ComCollider::GetAABB() const {
     return AABB::zero;
 }
 
+#if WITH_EDITOR
+
+bool ComCollider::GetHandlePosition(int handleIndex, Vec3 &handlePosition) const {
+    return false;
+}
+
+#endif
+
 BE_NAMESPACE_END

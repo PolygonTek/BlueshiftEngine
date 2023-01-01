@@ -96,6 +96,18 @@ void ComConeCollider::SetHeight(float height) {
     }
 }
 
+Mat3 ComConeCollider::GetColliderAxis() const {
+    Mat3 axisRotation;
+    if (direction == Direction::XAxis) {
+        axisRotation = Mat3::FromRotationY(Math::HalfPi);
+    } else if (direction == Direction::YAxis) {
+        axisRotation = Mat3::FromRotationX(-Math::HalfPi);
+    } else {
+        axisRotation = Mat3::identity;
+    }
+    return axisRotation;
+}
+
 #if WITH_EDITOR
 void ComConeCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     if (selectedByParent) {
@@ -106,23 +118,15 @@ void ComConeCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool
             float scaledHeight = transform->GetScale().z * height;
 
             Vec3 worldOrigin = transform->GetMatrix().TransformPos(center) - transform->GetAxis()[2] * scaledHeight * 0.5f;
-
-            Mat3 axisRotation;
-            if (direction == Direction::XAxis) {
-                axisRotation = Mat3::FromRotationY(Math::HalfPi);
-            } else if (direction == Direction::YAxis) {
-                axisRotation = Mat3::FromRotationX(-Math::HalfPi);
-            } else {
-                axisRotation = Mat3::identity;
-            }
+            Mat3 worldAxis = transform->GetAxis() * GetColliderAxis();
 
             RenderWorld *renderWorld = GetGameWorld()->GetRenderWorld();
             if (selected) {
                 renderWorld->SetDebugColor(Color4(Color4::orange.ToColor3(), 0.2f), Color4::zero);
-                renderWorld->DebugCone(worldOrigin, transform->GetAxis() * axisRotation, scaledHeight, 0, scaledRadius + CmToUnit(0.15f), false, 1.25f, true, false);
+                renderWorld->DebugCone(worldOrigin, worldAxis, scaledHeight, 0, scaledRadius + CmToUnit(0.15f), false, 1.25f, true, false);
             }
             renderWorld->SetDebugColor(Color4::orange, Color4::zero);
-            renderWorld->DebugCone(worldOrigin, transform->GetAxis() * axisRotation, scaledHeight, 0, scaledRadius + CmToUnit(0.15f), false, 1.25f, true, true);
+            renderWorld->DebugCone(worldOrigin, worldAxis, scaledHeight, 0, scaledRadius + CmToUnit(0.15f), false, 1.25f, true, true);
         }
     }
 }

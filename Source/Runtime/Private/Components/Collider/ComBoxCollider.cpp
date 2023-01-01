@@ -75,6 +75,34 @@ void ComBoxCollider::SetExtents(const Vec3 &extents) {
 }
 
 #if WITH_EDITOR
+
+bool ComBoxCollider::GetHandlePosition(int handleIndex, Vec3 &handlePosition) const {
+    const ComTransform *transform = GetEntity()->GetTransform();
+    Vec3 scaledExtents = transform->GetScale() * extents;
+
+    switch (handleIndex) {
+    case 0: // PX
+        handlePosition = transform->GetMatrix().TransformPos(center) + transform->GetAxis()[0] * scaledExtents[0];
+        return true;
+    case 1: // NX
+        handlePosition = transform->GetMatrix().TransformPos(center) - transform->GetAxis()[0] * scaledExtents[0];
+        return true;
+    case 2: // PY
+        handlePosition = transform->GetMatrix().TransformPos(center) + transform->GetAxis()[1] * scaledExtents[1];
+        return true;
+    case 3: // NY
+        handlePosition = transform->GetMatrix().TransformPos(center) - transform->GetAxis()[1] * scaledExtents[1];
+        return true;
+    case 4: // PZ
+        handlePosition = transform->GetMatrix().TransformPos(center) + transform->GetAxis()[2] * scaledExtents[2];
+        return true;
+    case 5: // NZ
+        handlePosition = transform->GetMatrix().TransformPos(center) - transform->GetAxis()[2] * scaledExtents[2];
+        return true;
+    }
+    return false;
+}
+
 void ComBoxCollider::DrawGizmos(const RenderCamera *camera, bool selected, bool selectedByParent) {
     if (selectedByParent) {
         const ComTransform *transform = GetEntity()->GetTransform();
