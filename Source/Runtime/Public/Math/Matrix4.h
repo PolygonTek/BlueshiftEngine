@@ -303,12 +303,6 @@ public:
                         /// Performs a batch transform of the given array of direction vectors.
     void                BatchTransformDir(Vec3 *dirArray, int numElements) const;
 
-                        /// LU decomposition, in-place.
-    bool                DecompLU();
-
-                        /// Solve Ax = b with LU decomposition.
-    Vec4                SolveLU(const Vec4 &b) const;
-    
                         /// Returns upper left 3x3 part.
     Mat3                ToMat3() const;
                         /// Returns upper 3x4 part.
@@ -520,7 +514,7 @@ BE_INLINE bool Mat4::IsLowerTriangular(const float epsilon) const {
 }
 
 BE_INLINE bool Mat4::IsSymmetric(const float epsilon) const {
-    for (int i = 1; i < 4; i++) {
+    for (int i = 1; i < Rows; i++) {
         for (int j = 0; j < i; j++) {
             if (Math::Fabs(mat[i][j] - mat[j][i]) > epsilon) {
                 return false;
@@ -531,8 +525,8 @@ BE_INLINE bool Mat4::IsSymmetric(const float epsilon) const {
 }
 
 BE_INLINE bool Mat4::IsDiagonal(const float epsilon) const {
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
+    for (int i = 0; i < Rows; i++) {
+        for (int j = 0; j < Cols; j++) {
             if (i != j && Math::Fabs(mat[i][j]) > epsilon) {
                 return false;
             }

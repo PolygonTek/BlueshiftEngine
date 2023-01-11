@@ -1158,55 +1158,6 @@ bool Mat4::InverseSelf() {
 #endif
 }
 
-// Doolittle Algorithm
-// Doolittle uses unit diagonals for the lower triangle
-bool Mat4::DecompLU() {
-    float sum;
-
-    for (int i = 0; i < Rows; i++) {
-        // Compute a line of U
-        for (int j = i; j < Cols; j++) {
-            sum = 0;
-            for (int k = 0; k < i; k++) {
-                sum += mat[i][k] * mat[k][j];
-            }
-            mat[i][j] = mat[i][j] - sum; // not dividing by diagonals
-        }
-        // Compute a line of L
-        for (int j = 0; j < i; j++) {
-            sum = 0;
-            for (int k = 0; k < j; k++) {
-                sum += mat[i][k] * mat[k][j];
-            }
-            mat[i][j] = (mat[i][j] - sum) / mat[j][j];
-        }
-    }
-    return true;
-}
-
-Vec4 Mat4::SolveLU(const Vec4 &b) const {
-    Vec4 x, y;
-    float sum;
-
-    // Solve Ly = b
-    for (int i = 0; i < Rows; i++) {
-        sum = 0;
-        for (int j = 0; j < i; j++) {
-            sum += mat[i][j] * y[j];
-        }
-        y[i] = b[i] - sum; // not dividing by diagonals
-    }
-    // Solve Ux = y
-    for (int i = Rows - 1; i >= 0; i--) {
-        sum = 0;
-        for (int j = i; j < Cols; j++) {
-            sum += mat[i][j] * x[j];
-        }
-        x[i] = (y[i] - sum) / mat[i][i];
-    }
-    return x;
-}
-
 void Mat4::SetFrustum(float left, float right, float bottom, float top, float zNear, float zFar) {
     float nudge = 0.999f;   // prevent artifacts with infinite far plane
     

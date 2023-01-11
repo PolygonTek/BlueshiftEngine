@@ -45,3 +45,89 @@ BE_NAMESPACE_END
 #include "Matrix3.h"
 #include "Matrix3x4.h"
 #include "Matrix4.h"
+
+BE_NAMESPACE_BEGIN
+
+template <typename Matrix>
+BE_INLINE bool IsMatrixSymmetric(const Matrix &mat, const float epsilon = MATRIX_EPSILON) {
+    for (int i = 1; i < Matrix::Rows; i++) {
+        for (int j = 0; j < i; j++) {
+            if (Math::Fabs(mat[i][j] - mat[j][i]) > epsilon) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+template <typename Matrix>
+BE_INLINE bool IsMatrixDiagonal(const Matrix &mat, const float epsilon = MATRIX_EPSILON) {
+    for (int i = 0; i < Matrix::Rows; i++) {
+        for (int j = 0; j < Matrix::Cols; j++) {
+            if (i != j && Math::Fabs(mat[i][j]) > epsilon) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+/// LU decomposition, in-place.
+/// Doolittle Algorithm : uses unit diagonals for the lower triangle.
+template <typename Matrix>
+bool DecompLUDoolittle(Matrix &mat, const float epsilon = MATRIX_EPSILON) {
+    float sum;
+
+    for (int i = 0; i < Matrix::Rows; i++) {
+        // Compute a line of U
+        for (int j = i; j < Matrix::Cols; j++) {
+            sum = 0;
+            for (int k = 0; k < i; k++) {
+                sum += mat[i][k] * mat[k][j];
+            }
+            mat[i][j] = mat[i][j] - sum; // not dividing by diagonals
+        }
+        if (Math::Fabs(mat[i][i]) <= epsilon) {
+            return false;
+        }
+        // Compute a line of L
+        for (int j = 0; j < i; j++) {
+            sum = 0;
+            for (int k = 0; k < j; k++) {
+                sum += mat[i][k] * mat[k][j];
+            }
+            mat[i][j] = (mat[i][j] - sum) / mat[j][j];
+        }
+    }
+    return true;
+}
+
+/// Solve Ax = b with Doolittle decomposed LU matrix.
+template <typename Matrix, typename Vector>
+Vector SolveLUDoolittle(const Matrix &mat, const Vector &b) {
+    static_assert(Matrix::Rows == Vector::Size);
+    static_assert(Matrix::Cols == Vector::Size);
+
+    Vector x, y;
+    float sum;
+
+    // Solve Ly = b
+    for (int i = 0; i < Matrix::Rows; i++) {
+        sum = 0;
+        for (int j = 0; j < i; j++) {
+            sum += mat[i][j] * y[j];
+        }
+        y[i] = b[i] - sum; // not dividing by diagonals
+    }
+    // Solve Ux = y
+    for (int i = Matrix::Rows - 1; i >= 0; i--) {
+        sum = 0;
+        for (int j = i; j < Matrix::Cols; j++) {
+            sum += mat[i][j] * x[j];
+        }
+        x[i] = (y[i] - sum) / mat[i][i];
+    }
+    return x;
+}
+
+BE_NAMESPACE_END
