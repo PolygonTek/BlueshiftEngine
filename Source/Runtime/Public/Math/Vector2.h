@@ -326,8 +326,8 @@ public:
                         /// Returns dimension of this type.
     constexpr int       GetDimension() const { return Size; }
 
-                        /// Compute 2D barycentric coordinates from the point based on 2 simplex vector.
-    static const Vec2   Compute2DBarycentricCoords(const float s1, const float s2, const float p);
+                        /// Compute 2D barycentric coordinates from the point based on 2 simplex points.
+    static const Vec2   Compute2DBarycentricCoords(const float p1, const float p2, const float p);
 
     static const Vec2   origin;     ///< (0, 0)
     static const Vec2   zero;       ///< (0, 0)

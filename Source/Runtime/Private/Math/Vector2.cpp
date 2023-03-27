@@ -65,14 +65,20 @@ Vec2 Vec2::FromConcentricSampleDisk(float u1, float u2) {
     return Vec2(r * c, r * s);
 }
 
-const Vec2 Vec2::Compute2DBarycentricCoords(const float s1, const float s2, const float p) {
-    float a = s1 - s2;
-    if (Math::Fabs(a) < VECTOR_EPSILON) {
+// Affinely independent points p0 and p1 can determine a simplex (line in 1D space).
+// Any given point p can be represented by affine combination of p0 and p1.
+// p = c0 * p0 + c1 * p1
+// p = (1 - c1) * p0 + c1 * p1
+// p = p0 + c1 * (p1 - p0)
+// p - p0 = (p1 - p0) * c1
+const Vec2 Vec2::Compute2DBarycentricCoords(const float p0, const float p1, const float p) {
+    float v1 = p1 - p0;
+    if (Math::Fabs(v1) < VECTOR_EPSILON) {
         return Vec2::zero;
     }
-    float b = (p - s2) / a;
+    float c1 = (p - p0) / v1;
 
-    return Vec2(b, 1.0f - b);
+    return Vec2(1.0f - c1, c1);
 }
 
 BE_NAMESPACE_END

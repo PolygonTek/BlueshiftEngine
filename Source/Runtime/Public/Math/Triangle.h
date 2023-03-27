@@ -78,16 +78,6 @@ public:
     void                Transform(const Mat4 &transform);
     void                Transform(const Quat &transform);
 
-                        /// Expresses the given point in barycentric (u, v, w) coordinates.
-    Vec3                BarycentricUVW(const Vec3 &point) const;
-                        /// Expresses the given point in barycentric (u, v) coordinates.
-    Vec2                BarycentricUV(const Vec3 &point) const;
-
-                        /// Returns the point at the given barycentric (u, v, w) coordinates.
-    Vec3                PointFromBarycentricUVW(const Vec3 &uvw) const;
-                        /// Returns the point at the given barycentric (u, v) coordinates.
-    Vec3                PointFromBarycentricUV(const Vec2 &uv) const;
-
                         /// Computes an unnormalized counter-clockwise oriented triangle normal vector.
     Vec3                UnnormalizedNormalCCW() const;
                         /// Computes an unnormalized clockwise-oriented triangle normal vector.
@@ -102,6 +92,14 @@ public:
     Plane               PlaneCCW() const;
                         /// Returns the clockwise-oriented plane this triangle lies on.
     Plane               PlaneCW() const;
+
+                        /// Expresses the given point in barycentric (u, v, w) coordinates.
+                        /// point = u*a + v*b + w*c (u = 1-v-w)
+    Vec3                ComputeBarycentricCoordsFromPoint(const Vec3 &point) const;
+
+                        /// Returns the point at the given barycentric (u, v, w) coordinates.
+                        /// point = u*a + v*b + w*c (u = 1-v-w)
+    Vec3                ComputePointFromBarycentricCoords(const Vec3 &uvw) const;
 
                         /// Tests if this triangle contain the given point.
     bool                IsContainPoint(const Vec3 &point, float thicknessSq = 1e-5f) const;
@@ -153,6 +151,18 @@ BE_INLINE bool Triangle::Equals(const Triangle &t, const float epsilon) const {
     return a.Equals(t.a, epsilon) && b.Equals(t.b, epsilon) && c.Equals(t.c, epsilon); 
 }
 
+BE_INLINE Vec3 Triangle::Centroid() const {
+    return (a + b + c) * (1.f / 3.f);
+}
+
+BE_INLINE float Triangle::Area() const {
+    return 0.5f * (b - a).Cross(c - a).Length();
+}
+
+BE_INLINE float Triangle::Perimeter() const {
+    return a.Distance(b) + b.Distance(c) + c.Distance(a);
+}
+
 BE_INLINE Triangle Triangle::Translate(const Vec3 &translation) const & {
     return Triangle(a + translation, b + translation, c + translation);
 }
@@ -180,6 +190,42 @@ BE_INLINE void Triangle::Transform(const Quat &transform) {
     a = transform.RotateVector(a);
     b = transform.RotateVector(b);
     c = transform.RotateVector(c);
+}
+
+BE_INLINE Vec3 Triangle::UnnormalizedNormalCCW() const {
+    return (b - a).Cross(c - a);
+}
+
+BE_INLINE Vec3 Triangle::UnnormalizedNormalCW() const {
+    return (c - a).Cross(b - a);
+}
+
+BE_INLINE Vec3 Triangle::NormalCCW() const {
+    Vec3 normal = UnnormalizedNormalCCW();
+    normal.Normalize();
+    return normal;
+}
+
+BE_INLINE Vec3 Triangle::NormalCW() const {
+    Vec3 normal = UnnormalizedNormalCW();
+    normal.Normalize();
+    return normal;
+}
+
+BE_INLINE Plane Triangle::PlaneCCW() const {
+    Plane plane;
+    plane.SetFromPoints(a, b, c);
+    return plane;
+}
+
+BE_INLINE Plane Triangle::PlaneCW() const {
+    Plane plane;
+    plane.SetFromPoints(a, c, b);
+    return plane;
+}
+
+BE_INLINE Vec3 Triangle::ComputePointFromBarycentricCoords(const Vec3 &uvw) const {
+    return uvw[0] * a + uvw[1] * b + uvw[2] * c;
 }
 
 BE_INLINE const char *Triangle::ToString(int precision) const {

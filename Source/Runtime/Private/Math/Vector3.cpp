@@ -288,20 +288,27 @@ Mat3 Vec3::ToMat3() const {
     return mat;
 }
 
-const Vec3 Vec3::Compute3DBarycentricCoords(const Vec2 &s1, const Vec2 &s2, const Vec2 &s3, const Vec2 &p) {
-    Vec2 a = s1 - s3;
-    Vec2 b = s2 - s3;
-    float det = a[0] * b[1] - b[0] * a[1];
+// Affinely independent points p0, p1 and p2 can determine a simplex (triangle in 2D space).
+// Any given point p can be represented by affine combination of p0, p1, and p2.
+// p = c0 * p0 + c1 * p1 + c2 * p2
+// p = (1 - c1 - c2) * p0 + c1 * p1 + c2 * p2
+// p = p0 + c1 * (p1 - p0) + c2 * (p2 - p0)
+// p - p0 = [p1 - p0 p2 - p0] [c1 c2]^T
+const Vec3 Vec3::Compute3DBarycentricCoords(const Vec2 &p0, const Vec2 &p1, const Vec2 &p2, const Vec2 &p) {
+    Vec2 v1 = p1 - p0;
+    Vec2 v2 = p2 - p0;
+    float det = v1[0] * v2[1] - v1[0] * v2[1];
 
     if (Math::Fabs(det) < VECTOR_EPSILON) {
         return Vec3::zero;
     }
 
+    Vec2 v3 = p - p0;
+
     float invDet = 1.0f / det;
-    Vec2 c = p - s3;
-    float b1 = (b[1] * c[0] - b[0] * c[1]) * invDet;
-    float b2 = (a[0] * c[1] - a[1] * c[0]) * invDet;
-    return Vec3(b1, b2, 1.0f - b1 - b2);
+    float c1 = (v2[1] * v3[0] - v2[0] * v3[1]) * invDet;
+    float c2 = (v1[0] * v3[1] - v1[1] * v3[0]) * invDet;
+    return Vec3(1.0f - c1 - c2, c1, c2);
 }
 
 BE_NAMESPACE_END

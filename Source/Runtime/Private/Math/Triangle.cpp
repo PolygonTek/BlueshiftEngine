@@ -21,8 +21,9 @@ static float TriArea2D(float x1, float y1, float x2, float y2, float x3, float y
     return (x1 - x2) * (y2 - y3) - (x2 - x3) * (y1 - y2);
 }
 
+// point = u*a + v*b + w*c
 // Christer Ericson's Real-Time Collision Detection, pp. 51-52.
-Vec3 Triangle::BarycentricUVW(const Vec3 &point) const {
+Vec3 Triangle::ComputeBarycentricCoordsFromPoint(const Vec3 &point) const {
     // Unnormalized triangle normal.
     Vec3 m = (b - a).Cross(c - a);
 
@@ -59,66 +60,6 @@ Vec3 Triangle::BarycentricUVW(const Vec3 &point) const {
     return Vec3(u, v, w);
 }
 
-Vec2 Triangle::BarycentricUV(const Vec3 &point) const {
-    Vec3 uvw = BarycentricUVW(point);
-    return Vec2(uvw.y, uvw.z);
-}
-
-Vec3 Triangle::PointFromBarycentricUVW(const Vec3 &uvw) const {
-    return uvw[0] * a + uvw[1] * b + uvw[2] * c;
-}
-
-Vec3 Triangle::PointFromBarycentricUV(const Vec2 &uv) const {
-    // In case the triangle is far away from the origin but is small in size, the elements of 'a' will have large magnitudes,
-    // and the elements of (b-a) and (c-a) will be much smaller quantities. Therefore be extra careful with the
-    // parentheses and first sum the small floats together before adding it to the large one.
-    return a + ((b - a) * uv[0] + (c - a) * uv[1]);
-}
-
-Vec3 Triangle::Centroid() const {
-    return (a + b + c) * (1.f / 3.f);
-}
-
-float Triangle::Area() const {
-    return 0.5f * (b - a).Cross(c - a).Length();
-}
-
-float Triangle::Perimeter() const {
-    return a.Distance(b) + b.Distance(c) + c.Distance(a);
-}
-
-Plane Triangle::PlaneCCW() const {
-    Plane plane;
-    plane.SetFromPoints(a, b, c);
-    return plane;
-}
-
-Plane Triangle::PlaneCW() const {
-    Plane plane;
-    plane.SetFromPoints(a, c, b);
-    return plane;
-}
-
-Vec3 Triangle::UnnormalizedNormalCCW() const {
-    return (b - a).Cross(c - a);
-}
-
-Vec3 Triangle::UnnormalizedNormalCW() const {
-    return (c - a).Cross(b - a);
-}
-
-Vec3 Triangle::NormalCCW() const {
-    Vec3 normal = UnnormalizedNormalCCW();
-    normal.Normalize();
-    return normal;
-}
-
-Vec3 Triangle::NormalCW() const {
-    Vec3 normal = UnnormalizedNormalCW();
-    normal.Normalize();
-    return normal;
-}
-
 bool Triangle::IsContainPoint(const Vec3 &point, float thicknessSq) const {
     Vec3 normal = UnnormalizedNormalCCW();
     float lengthSqr = normal.LengthSqr();
@@ -127,7 +68,7 @@ bool Triangle::IsContainPoint(const Vec3 &point, float thicknessSq) const {
         return false;
     }
 
-    Vec3 br = BarycentricUVW(point);
+    Vec3 br = ComputeBarycentricCoordsFromPoint(point);
     // Allow for a small epsilon to properly account for points very near the edges of the triangle.
     return br.x >= -1e-3f && br.y >= -1e-3f && br.z >= -1e-3f; 
 }
