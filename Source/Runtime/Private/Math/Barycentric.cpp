@@ -28,7 +28,7 @@ BE_NAMESPACE_BEGIN
 Vec2 Barycentric::LineSegment1D(float p0, float p1, float p) {
     float v1 = p1 - p0;
     if (Math::Fabs(v1) < VECTOR_EPSILON) {
-        return Vec2::zero;
+        return Vec2(1, 0);
     }
     float c1 = (p - p0) / v1;
 
@@ -53,7 +53,7 @@ Vec3 Barycentric::Triangle2D(const Vec2 &p0, const Vec2 &p1, const Vec2 &p2, con
     float det = v1[0] * v2[1] - v1[0] * v2[1];
 
     if (Math::Fabs(det) < VECTOR_EPSILON) {
-        return Vec3::zero;
+        return Vec3(1, 0, 0);
     }
     float invDet = 1.0f / det;
 
@@ -126,11 +126,10 @@ Vec4 Barycentric::Tetrahedron3D(const Vec3 &p0, const Vec3 &p1, const Vec3 &p2, 
     float w = (p3 - p).Cross(p0 - p).Dot(p1 - p) * inv_denom;
 
     return Vec4(u, v, w, 1.0f - u - v - w);
-
 #else
     Mat3 matInv(p1 - p0, p2 - p0, p3 - p0);
     if (!matInv.InverseSelf()) {
-        return Vec4::zero;
+        return Vec4(1, 0, 0, 0);
     }
     Vec3 c = matInv * (p - p0);
 
