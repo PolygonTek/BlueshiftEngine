@@ -33,20 +33,4 @@ Vec4 Vec4::FromString(const char *str) {
     return v;
 }
 
-// Affinely independent points p0, p1, p2 and p3 can determine a simplex (tetrahedron in 3D space).
-// Any given point p can be represented by affine combination of p0, p1, p2, and p3.
-// p = c0 * p0 + c1 * p1 + c2 * p2 + c3 * p3
-// p = (1 - c1 - c2 - c3) * p0 + c1 * p1 + c2 * p2 + c3 * p3
-// p = p0 + c1 * (p1 - p0) + c2 * (p2 - p0) + c3 * (p3 - p0)
-// p - p0 = [p1 - p0 p2 - p0 p3 - p0] [c1 c2 c3]^T
-const Vec4 Vec4::Compute4DBarycentricCoords(const Vec3 &p0, const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, const Vec3 &p) {
-    Mat3 matInv(p1 - p0, p2 - p0, p3 - p0);
-    if (!matInv.InverseSelf()) {
-        return Vec4::zero;
-    }
-    Vec3 c = matInv * (p - p0);
-
-    return Vec4(1.0f - c[0] - c[1] - c[2], c[0], c[1], c[2]);
-}
-
 BE_NAMESPACE_END

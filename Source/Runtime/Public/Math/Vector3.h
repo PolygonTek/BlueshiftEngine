@@ -409,9 +409,6 @@ public:
                         /// Returns dimension of this type.
     constexpr int       GetDimension() const { return Size; }
 
-                        /// Compute 3D barycentric coordinates from the point based on 3 simplex points.
-    static const Vec3   Compute3DBarycentricCoords(const Vec2 &s1, const Vec2 &s2, const Vec2 &s3, const Vec2 &p);
-
     static float        ComputeBitangentSign(const Vec3 &n, const Vec3 &t0, const Vec3 &t1);
 
     ALIGN_AS32 static const Vec3 origin;    ///< (0, 0, 0)

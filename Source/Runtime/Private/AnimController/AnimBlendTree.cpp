@@ -236,7 +236,7 @@ void AnimBlendTree::ComputeChildrenBarycentricWeights(const Animator *animator, 
             Vec2 a = animLayer->GetNodeBlendSpaceVector(node->children[indexA]).ToVec2();
             Vec2 b = animLayer->GetNodeBlendSpaceVector(node->children[indexB]).ToVec2();
             Vec2 c = animLayer->GetNodeBlendSpaceVector(node->children[indexC]).ToVec2();
-            Vec3 barycentricCoord = Vec3::Compute3DBarycentricCoords(a, b, c, currentPoint.ToVec2());
+            Vec3 barycentricCoord = Barycentric::Triangle2D(a, b, c, currentPoint.ToVec2());
 
             weights[indexA] = barycentricCoord[0];
             weights[indexB] = barycentricCoord[1];
@@ -253,7 +253,7 @@ void AnimBlendTree::ComputeChildrenBarycentricWeights(const Animator *animator, 
 
             float a = animLayer->GetNodeBlendSpaceVector(node->children[indexA])[0];
             float b = animLayer->GetNodeBlendSpaceVector(node->children[indexB])[0];
-            Vec2 barycentricCoord = Vec2::Compute2DBarycentricCoords(a, b, currentPoint[0]);
+            Vec2 barycentricCoord = Barycentric::LineSegment1D(a, b, currentPoint[0]);
 
             weights[indexA] = barycentricCoord[0];
             weights[indexB] = barycentricCoord[1];
@@ -323,7 +323,7 @@ void AnimBlendTree::ComputeChildren2DDirectionalWeights(const Animator *animator
             Vec2 a = animLayer->GetNodeBlendSpaceVector(node->children[indexA]).ToVec2().Normalized();
             Vec2 b = animLayer->GetNodeBlendSpaceVector(node->children[indexB]).ToVec2().Normalized();
             Vec2 c = animLayer->GetNodeBlendSpaceVector(node->children[originIndex]).ToVec2();
-            Vec3 barycentricCoord = Vec3::Compute3DBarycentricCoords(a, b, c, currentPoint);
+            Vec3 barycentricCoord = Barycentric::Triangle2D(a, b, c, currentPoint);
 
             //BE_LOG("%f %f %f\n", barycentricCoord.x, barycentricCoord.y, barycentricCoord.z);
 

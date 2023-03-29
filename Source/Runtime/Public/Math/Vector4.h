@@ -283,9 +283,6 @@ public:
                         /// Returns dimension of this type.
     constexpr int       GetDimension() const { return Size; }
 
-                        /// Compute 4D barycentric coordinates from the point based on 4 simplex points.
-    static const Vec4   Compute4DBarycentricCoords(const Vec3 &s1, const Vec3 &s2, const Vec3 &s3, const Vec3 &s4, const Vec3 &p);
-
     ALIGN_AS32 static const Vec4 origin;    ///< (0, 0, 0, 0)
     ALIGN_AS32 static const Vec4 zero;      ///< (0, 0, 0, 0)
     ALIGN_AS32 static const Vec4 one;       ///< (1, 1, 1, 1)

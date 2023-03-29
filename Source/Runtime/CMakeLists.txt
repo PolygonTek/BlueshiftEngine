@@ -69,6 +69,7 @@ set(COMMON_ENGINE_FILES
 
     Public/Math/AABB.h
     Public/Math/Angles.h
+    Public/Math/Barycentric.h
     Public/Math/Complex.h
     Public/Math/Color.h
     Public/Math/Color3.h
@@ -343,6 +344,7 @@ set(COMMON_ENGINE_FILES
 
     Private/Math/Vector3.cpp
     Private/Math/Vector4.cpp
+    Private/Math/Barycentric.cpp
     Private/Math/Color3.cpp
     Private/Math/Color4.cpp
     Private/Math/RGBE9995.cpp

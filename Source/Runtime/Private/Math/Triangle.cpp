@@ -17,47 +17,9 @@
 
 BE_NAMESPACE_BEGIN
 
-static float TriArea2D(float x1, float y1, float x2, float y2, float x3, float y3) {
-    return (x1 - x2) * (y2 - y3) - (x2 - x3) * (y1 - y2);
-}
-
 // point = u*a + v*b + w*c
-// Christer Ericson's Real-Time Collision Detection, pp. 51-52.
 Vec3 Triangle::ComputeBarycentricCoordsFromPoint(const Vec3 &point) const {
-    // Unnormalized triangle normal.
-    Vec3 m = (b - a).Cross(c - a);
-
-    // Absolute components for determining projection plane.
-    float x = Math::Fabs(m.x);
-    float y = Math::Fabs(m.y);
-    float z = Math::Fabs(m.z);
-
-    // Nominators and one-over-denominator for u and v ratios.
-    float nu, nv, ood;
-
-    if (x >= y && x >= z) { 
-        // Project to the yz plane.
-        nu = TriArea2D(point.y, point.z, b.y, b.z, c.y, c.z); // Area of PBC in yz-plane.
-        nv = TriArea2D(point.y, point.z, c.y, c.z, a.y, a.z); // Area of PCA in yz-plane.
-        ood = 1.0f / m.x; // 1 / (2 * area of ABC in yz plane)
-    } else if (y >= z) { 
-        // Note: The book has a redundant 'if (y >= x)' comparison
-        // y is largest, project to the xz-plane.
-        nu = TriArea2D(point.x, point.z, b.x, b.z, c.x, c.z);
-        nv = TriArea2D(point.x, point.z, c.x, c.z, a.x, a.z);
-        ood = 1.0f / -m.y;
-    } else { 
-        // z is largest, project to the xy-plane.
-        nu = TriArea2D(point.x, point.y, b.x, b.y, c.x, c.y);
-        nv = TriArea2D(point.x, point.y, c.x, c.y, a.x, a.y);
-        ood = 1.0f / m.z;
-    }
-
-    float u = nu * ood;
-    float v = nv * ood;
-    float w = 1.0f - u - v;
-
-    return Vec3(u, v, w);
+    return Barycentric::Triangle3D(a, b, c, point);
 }
 
 bool Triangle::IsContainPoint(const Vec3 &point, float thicknessSq) const {
