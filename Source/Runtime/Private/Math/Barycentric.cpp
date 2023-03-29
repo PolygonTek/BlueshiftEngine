@@ -50,7 +50,7 @@ Vec2 Barycentric::LineSegment2D(const Vec2 &p0, const Vec2 &p1, const Vec2 &p) {
 Vec3 Barycentric::Triangle2D(const Vec2 &p0, const Vec2 &p1, const Vec2 &p2, const Vec2 &p) {
     Vec2 v1 = p1 - p0;
     Vec2 v2 = p2 - p0;
-    float det = v1[0] * v2[1] - v1[0] * v2[1];
+    float det = v1[0] * v2[1] - v1[1] * v2[0];
 
     if (Math::Fabs(det) < VECTOR_EPSILON) {
         return Vec3(1, 0, 0);
