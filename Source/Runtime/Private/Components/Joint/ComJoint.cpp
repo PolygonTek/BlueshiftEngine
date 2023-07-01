@@ -67,8 +67,6 @@ void ComJoint::Purge(bool chainPurge) {
 
 void ComJoint::Init() {
     Component::Init();
-
-    GetEntity()->GetTransform()->Connect(&ComTransform::SIG_TransformUpdated, this, (SignalCallback)&ComJoint::TransformUpdated, SignalObject::ConnectionType::Unique);
 }
 
 void ComJoint::Awake() {
@@ -151,14 +149,6 @@ void ComJoint::SetBreakImpulse(float breakImpulse) {
 
     if (constraint) {
         constraint->SetBreakImpulse(breakImpulse);
-    }
-}
-
-void ComJoint::TransformUpdated(const ComTransform *transform) {
-    if (constraint) {
-        if (GetConnectedBody()) {
-            GetConnectedBody()->Activate();
-        }
     }
 }
 

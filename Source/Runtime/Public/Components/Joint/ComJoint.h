@@ -57,8 +57,6 @@ protected:
 
     virtual void            CreateConstraint() = 0;
 
-    void                    TransformUpdated(const ComTransform *transform);
-
     Guid                    connectedBodyGuid = Guid::zero;
     PhysConstraint *        constraint = nullptr;
     bool                    collisionEnabled = false;
