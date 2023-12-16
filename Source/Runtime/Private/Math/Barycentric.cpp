@@ -18,7 +18,7 @@
 BE_NAMESPACE_BEGIN
 
 // Affinely independent points p0, p1, ..., p{n-1} can determine a simplex (such as a point, line segment, triangle, tetrahedron, ...).
-// Any given point p can be represented by affine combination of p0, p2, ..., p{n-1}
+// Any given point p can be represented by affine combination of p0, p1, ..., p{n-1}
 // p = c0 * p0 + c1 * p1 + ... + c{n-1} * p{n-1}, s.t. c0 + c1 + ... c{n-1} = 1
 // p = (1 - c1 - ... - c{n-1}) * p0 + c1 * p1 + ... + c{n-1} * p{n-1}
 // p = p0 + c1 * (p1 - p0) + ... + c{n-1} * (p{n-1} - p0)
@@ -115,15 +115,20 @@ Vec3 Barycentric::Triangle3D(const Vec3 &p0, const Vec3 &p1, const Vec3 &p2, con
 }
 
 Vec4 Barycentric::Tetrahedron3D(const Vec3 &p0, const Vec3 &p1, const Vec3 &p2, const Vec3 &p3, const Vec3 &p) {
-#if 0
+#if 1
     Vec3 v1 = p1 - p0;
     Vec3 v2 = p2 - p0;
     Vec3 v3 = p3 - p0;
 
+    Vec3 q0 = p0 - p;
+    Vec3 q1 = p1 - p;
+    Vec3 q2 = p2 - p;
+    Vec3 q3 = p3 - p;
+
     float inv_denom = 1.0f / v1.Cross(v2).Dot(v3);
-    float u = (p1 - p).Cross(p2 - p).Dot(p3 - p) * inv_denom;
-    float v = (p2 - p).Cross(p3 - p).Dot(p0 - p) * inv_denom;
-    float w = (p3 - p).Cross(p0 - p).Dot(p1 - p) * inv_denom;
+    float u = q1.Cross(q2).Dot(q3) * inv_denom;
+    float v = q2.Cross(q3).Dot(q0) * inv_denom;
+    float w = q3.Cross(q0).Dot(q1) * inv_denom;
 
     return Vec4(u, v, w, 1.0f - u - v - w);
 #else
