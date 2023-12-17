@@ -319,6 +319,9 @@ public:
                         /// Returns the cross product of two vectors.
     static Vec3         FromCross(const Vec3 &a, const Vec3 &b);
 
+                        /// Computes the scalar triple product of three vectors.
+    static float        Triple(const Vec3 &a, const Vec3 &b, const Vec3 &c);
+
                         /// Returns this vector reflected about a plane with the given normal.
     Vec3                Reflect(const Vec3 &normal) const;
                         /// Returns this vector reflected about a plane with the given normal, in-place.
@@ -657,6 +660,10 @@ BE_INLINE Vec3 &Vec3::SetFromCross(const Vec3 &a, const Vec3 &b) {
 
 BE_INLINE Vec3 Vec3::FromCross(const Vec3 &a, const Vec3 &b) {
     return Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+}
+
+BE_INLINE float Vec3::Triple(const Vec3 &a, const Vec3 &b, const Vec3 &c) {
+    return a.Cross(b).Dot(c);
 }
 
 BE_INLINE Vec3 Vec3::Reflect(const Vec3 &normal) const {

@@ -125,10 +125,10 @@ Vec4 Barycentric::Tetrahedron3D(const Vec3 &p0, const Vec3 &p1, const Vec3 &p2, 
     Vec3 q2 = p2 - p;
     Vec3 q3 = p3 - p;
 
-    float inv_denom = 1.0f / v1.Cross(v2).Dot(v3);
-    float u = q1.Cross(q2).Dot(q3) * inv_denom;
-    float v = q2.Cross(q3).Dot(q0) * inv_denom;
-    float w = q3.Cross(q0).Dot(q1) * inv_denom;
+    float inv_denom = 1.0f / Vec3::Triple(v1, v2, v3);
+    float u = Vec3::Triple(q1, q2, q3) * inv_denom;
+    float v = Vec3::Triple(q2, q3, q0) * inv_denom;
+    float w = Vec3::Triple(q3, q0, q1) * inv_denom;
 
     return Vec4(u, v, w, 1.0f - u - v - w);
 #else
