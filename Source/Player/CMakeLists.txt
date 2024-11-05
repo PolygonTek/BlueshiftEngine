@@ -292,7 +292,8 @@ elseif (BUILD_PLAYER)
         HACD
         STB
         LuaCpp
-        luasocket)
+        luasocket
+        delabella)
 
     if (USE_LUAJIT)
         include(FindLuaJIT)
