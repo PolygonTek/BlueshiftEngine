@@ -131,6 +131,7 @@ protected:
 
     Array<PropertyInfo>     fieldInfos;                 ///< Script variable infos
     HashMap<Str, Variant>   fieldGuids;                 ///< Script variable GUIDs
+    Array<Asset*>           assets;
 
     LuaCpp::Selector        awakeFunc;
     LuaCpp::Selector        startFunc;

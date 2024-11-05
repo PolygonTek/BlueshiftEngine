@@ -58,6 +58,11 @@ void ComScript::Purge(bool chainPurge) {
     fieldInfos.Clear();
     fieldGuids.Clear();
 
+    for (int i = 0; i < assets.Count(); i++) {
+        DestroyInstanceImmediate(assets[i]);
+    }
+    assets.Clear();
+
     if (chainPurge) {
         Component::Purge();
     }
@@ -896,9 +901,12 @@ void ComScript::SetScriptProperties() {
             } else {
                 if (propInfo->GetMetaObject()->IsTypeOf(Resource::metaObject)) {
                     if (!objectGuid.IsZero()) {
-                        Asset *asset = (Asset *)Asset::CreateInstance(objectGuid); // FIXME: when to delete ?
+                        Asset *asset = (Asset *)Asset::CreateInstance(objectGuid);
                         asset->CreateResource(*propInfo->GetMetaObject());
                         property["value"] = asset;
+
+                        // FIXME: when we should delete asset ?
+                        assets.Append(asset);
                     }
                 }
             }

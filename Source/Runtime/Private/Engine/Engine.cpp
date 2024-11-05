@@ -36,13 +36,13 @@ void Engine::InitBase(const char *baseDir, const streamOutFunc_t logFunc, const 
     errFuncPtr = errFunc;
 
 #if defined(__WIN32__) && defined(_DEBUG)
-    //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     //_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
 
-    // NOTE: can be replaced by setting '{,,ucrtbased}_crtBreakAlloc' (msvc2015) in debug watch window
-    //_CrtSetBreakAlloc(123456);
+    // NOTE: can be replaced by setting '({,,ucrtbased.dll}_crtBreakAlloc)' (msvc2015) in debug watch window
+    //_CrtSetBreakAlloc(286008);
 #endif
-    
+
     ByteOrder::Init();
 
     cmdSystem.Init();
@@ -77,6 +77,10 @@ void Engine::ShutdownBase() {
     cvarSystem.Shutdown();
 
     cmdSystem.Shutdown();
+
+#if defined(__WIN32__) && defined(_DEBUG)
+    _ASSERT(_CrtCheckMemory());
+#endif
 }
 
 void Engine::Init(const InitParms *initParms) {
