@@ -305,9 +305,12 @@ int TextureManager::LoadTextureInfo(const char *filename) const {
     Json::Value node;
     Json::Reader jsonReader;
     if (!jsonReader.parse(text, node)) {
+        fileSystem.FreeFile(text);
         BE_WARNLOG("Failed to parse JSON text\n");
         return flags;
     }
+
+    fileSystem.FreeFile(text);
 
     flags = 0;
 

@@ -141,6 +141,7 @@ void LuaVM::LoadWaitSupport() {
                 wakeUpWaitingThreads = LuaCpp::Selector();
             }
         }
+        fileSystem.FreeFile(data);
     }
 }
 
@@ -151,6 +152,8 @@ void LuaVM::LoadTween() {
     size_t size = fileSystem.LoadFile(filename, true, (void **)&data);
     if (data) {
         state->RunBuffer(filename, data, size);
+
+        fileSystem.FreeFile(data);
     }
 }
 

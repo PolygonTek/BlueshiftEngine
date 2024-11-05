@@ -139,7 +139,12 @@
 //----------------------------------------------------------------------------------------------
 
 // We don't need this because we don't use character literal in other language.
-//#pragma setlocale ("kor") 
+//#pragma setlocale ("kor")
+
+#if defined(__WIN32__) && defined(_DEBUG)
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+#endif
 
 // C runtime header files.
 #include <stdio.h>
@@ -398,10 +403,6 @@ using return_type_t = typename return_type<T>::type;
 
 #define wcstoll                     _wcstoi64
 #define wcstoull                    _wcstoui64
-
-#ifdef _DEBUG
-//#define _CRTDBG_MAP_ALLOC
-#endif
 
 // Including SDKDDKVer.h defines the highest available Windows platform.
 

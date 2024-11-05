@@ -29,9 +29,9 @@ void CUDA_TestAdd() {
     int size = sizeof(float) * numComponents;
 
     float *dst, *src0, *src1;
-    dst = (float *)BE1::Mem_Alloc(size);
-    src0 = (float *)BE1::Mem_Alloc(size);
-    src1 = (float *)BE1::Mem_Alloc(size);
+    dst = (float *)Mem_Alloc(size);
+    src0 = (float *)Mem_Alloc(size);
+    src1 = (float *)Mem_Alloc(size);
 
     RandomFloatArrayInit(src0, numComponents, -100.0f, 100.0f);
     RandomFloatArrayInit(src1, numComponents, -100.0f, 100.0f);
@@ -83,7 +83,7 @@ void CUDA_TestSum() {
     float sum;
 
     float *src;
-    src = (float *)BE1::Mem_Alloc(size);
+    src = (float *)Mem_Alloc(size);
 
     RandomFloatArrayInit(src, numComponents, -100.0f, 100.0f);
     for (int i = 0; i < numComponents; i++) {
@@ -122,9 +122,9 @@ void CUDA_TestMatrixMultiply() {
     int size = sizeof(float) * numComponents * numComponents;
 
     float *dst, *src0, *src1;
-    dst = (float *)BE1::Mem_Alloc(size);
-    src0 = (float *)BE1::Mem_Alloc(size);
-    src1 = (float *)BE1::Mem_Alloc(size);
+    dst = (float *)Mem_Alloc(size);
+    src0 = (float *)Mem_Alloc(size);
+    src1 = (float *)Mem_Alloc(size);
 
     RandomFloatArrayInit(src0, numComponents * numComponents, -100.0f, 100.0f);
     RandomFloatArrayInit(src1, numComponents * numComponents, -100.0f, 100.0f);

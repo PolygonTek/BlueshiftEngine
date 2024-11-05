@@ -1024,8 +1024,12 @@ void OpenGLRHI::DestroyShader(Handle shaderHandle) {
     for (int i = 0; i < shader->numUniformConstants; i++) {
         Mem_Free(shader->uniformConstants[i].name);
     }
+    for (int i = 0; i < shader->numUniformBlocks; i++) {
+        Mem_Free(shader->uniformBlocks[i].name);
+    }
     Mem_Free(shader->uniformTextures);
     Mem_Free(shader->uniformConstants);
+    Mem_Free(shader->uniformBlocks);
 
     delete shader;
     shaderList[shaderHandle] = nullptr;

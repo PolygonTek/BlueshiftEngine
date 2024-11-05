@@ -158,6 +158,7 @@ void Application::LoadResources() {
 void Application::FreeResources() {
     BE1::rhi.DestroyTexture(defaultTexture);
     BE1::rhi.DestroyShader(defaultShader);
+    BE1::rhi.DestroyShader(clipRectShader);
     BE1::rhi.DestroyBuffer(defaultVertexBuffer);
     BE1::rhi.DestroyVertexFormat(vertex2DFormat);
     BE1::rhi.DestroyVertexFormat(vertex3DFormat);

@@ -463,7 +463,7 @@ void GameWorld::SpawnEntitiesFromJson(const Json::Value &entitiesValue, int scen
     EntityPtrArray entities;
 
     for (int i = 0; i < entitiesValue.size(); i++) {
-        Json::Value entityValue = entitiesValue[i];
+        const Json::Value& entityValue = entitiesValue[i];
 
         const char *classname = entityValue["classname"].asCString();
         if (Str::Cmp(classname, Entity::metaObject.ClassName()) != 0) {
@@ -483,7 +483,7 @@ void GameWorld::SpawnEntitiesFromJson(const Json::Value &entitiesValue, int scen
         Entity *entity = entities[i];
         entity->LateInitComponents();
 
-        Json::Value entityValue = entitiesValue[i];
+        const Json::Value& entityValue = entitiesValue[i];
         int spawn_entnum = entityValue.get("spawn_entnum", -1).asInt();
 
         RegisterEntity(entity, spawn_entnum);
