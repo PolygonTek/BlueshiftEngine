@@ -9,7 +9,7 @@ cd "Build"
 if exist "msvc2022" rd "msvc2022" /s /q
 md msvc2022
 cd msvc2022
-cmake -DBUILD_RUNTIME=1 -DBUILD_TEST=1 -DBUILD_PLAYER=1 -DBUILD_EDITOR=1 -G "Visual Studio 17 2022" -A "x64" ..\..
+cmake -DBUILD_RUNTIME=1 -DBUILD_TEST=1 -DBUILD_PLAYER=1 -DBUILD_EDITOR=1 -G "Visual Studio 17 2022" ..\..
 @echo:
 @echo Solution created in %~dp0Build\msvc2022
 @echo:
