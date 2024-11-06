@@ -1,20 +1,30 @@
 ################################################################################
 # Top-level CMakeLists.txt file for Blueshift Engine
 ################################################################################
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 
 if (COMMAND cmake_policy)
     if (POLICY CMP0025)
         # Compiler id for Apple Clang is now AppleClang.
         cmake_policy(SET CMP0025 NEW)
     endif ()
+
+    if (POLICY CMP0149)
+        # VS generator looks for most recent Windows SDK, ignoring
+        # CMAKE_SYSTEM_VERSION and allowing override by WindowsSDKVersion
+        # environment variable. New in 3.27. This is to allow override
+        # in the Windows CI builds. For further information see
+        # .github/workflows/windows.yml.
+        cmake_policy(SET CMP0149 NEW)
+    endif ()
 endif ()
+
 
 set(CMAKE_OBJECT_PATH_MAX 512)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 include(CMakeDependentOption)
 include(BlueshiftCommon)
@@ -23,6 +33,7 @@ option(BUILD_RUNTIME "Build Blueshift Runtime libraies" OFF)
 option(BUILD_PLAYER "Build Blueshift Player executable" OFF)
 option(BUILD_EDITOR "Build Blueshift Editor executable" OFF)
 option(BUILD_TEST "Build test projects" OFF)
+option(BUILD_TESTD3D12 "Build Direct3D 12 test projects" OFF)
 
 set(VERSION_MAJOR 0 CACHE INTERNAL "Project major version number.")
 set(VERSION_MINOR 8 CACHE INTERNAL "Project minor version number.")
@@ -334,6 +345,12 @@ if (BUILD_TEST)
         add_subdirectory(Source/TestBase)
     endif ()
     add_subdirectory(Source/TestRenderer)
+endif ()
+
+if (BUILD_TESTD3D12)
+    if (MSVC)
+        add_subdirectory(Source/TestD3D12)
+    endif ()
 endif ()
 
 if (MSVC)
