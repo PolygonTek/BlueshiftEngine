@@ -1,6 +1,6 @@
-﻿//{{NO_DEPENDENCIES}}
+//{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by test-renderer.rc
+// Used by testrenderer.rc
 //
 #define IDC_MYICON                      2
 #define IDD_TESTRENDERER_DIALOG         102

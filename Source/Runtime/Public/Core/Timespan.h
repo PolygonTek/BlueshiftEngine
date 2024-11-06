@@ -71,11 +71,11 @@ public:
     
     int64_t             Ticks() const { return ticks; }
     
-    double              TotalDays() const { return ((float)ticks / TicksPerDay); }
-    double              TotalHours() const { return ((float)ticks / TicksPerHour); }
-    double              TotalMinutes() const { return ((float)ticks / TicksPerMinute); }
-    double              TotalSeconds() const { return ((float)ticks / TicksPerSecond); }
-    double              TotalMilliseconds() const { return ((float)ticks / TicksPerMillisecond); }
+    double              TotalDays() const { return ((double)ticks / TicksPerDay); }
+    double              TotalHours() const { return ((double)ticks / TicksPerHour); }
+    double              TotalMinutes() const { return ((double)ticks / TicksPerMinute); }
+    double              TotalSeconds() const { return ((double)ticks / TicksPerSecond); }
+    double              TotalMilliseconds() const { return ((double)ticks / TicksPerMillisecond); }
     
     static Timespan     FromDays(double days);
     static Timespan     FromHours(double hours);

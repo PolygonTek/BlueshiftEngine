@@ -47,8 +47,8 @@ public:
     }
 
 private:
-    _ctor_type _ctor;
     std::string _name;
+    _ctor_type _ctor;
     bool _is_table_call;
 };
 

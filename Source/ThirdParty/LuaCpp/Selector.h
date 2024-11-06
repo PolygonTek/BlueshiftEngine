@@ -490,10 +490,10 @@ public:
 
 private:
     Selector(lua_State *s, Module *module, Registry &r, ExceptionHandler &eh, const std::string &name)
-        : _l(s), _module(module), _registry(&r), _exception_handler(&eh), _name(name), _key(make_Ref(s, name)) {}
+        : _l(s), _registry(&r), _exception_handler(&eh), _name(name), _module(module), _key(make_Ref(s, name)) {}
 
     Selector(lua_State *s, Module *module, Registry &r, ExceptionHandler &eh, const std::string &name, std::vector<LuaRef> traversal, LuaRef key)
-        : _l(s), _module(module), _registry(&r), _exception_handler(&eh), _name(name), _traversal(traversal), _key(key) {}
+        : _l(s), _registry(&r), _exception_handler(&eh), _name(name), _module(module), _traversal(traversal), _key(key) {}
 
     std::string _fullname() const;
 

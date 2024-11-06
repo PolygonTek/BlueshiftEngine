@@ -131,23 +131,23 @@ BE_INLINE PropertyInfo::PropertyInfo() :
 
 BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Variant::Type::Enum _type, intptr_t _offset, const Variant &_defaultValue, const char *_desc, int _flags) :
     type(_type),
+    defaultValue(_defaultValue),
     name(_name),
     label(_label),
-    defaultValue(_defaultValue),
-    offset(_offset),
     desc(_desc),
+    offset(_offset),
     metaObject(nullptr),
     flags(_flags) {
 }
 
 BE_INLINE PropertyInfo::PropertyInfo(const char *_name, const char *_label, Variant::Type::Enum _type, PropertyAccessor *_accessor, const Variant &_defaultValue, const char *_desc, int _flags) :
     type(_type),
+    defaultValue(_defaultValue),
     name(_name),
     label(_label),
-    defaultValue(_defaultValue),
+    desc(_desc),
     offset(0),
     accessor(_accessor),
-    desc(_desc),
     metaObject(nullptr),
     flags(_flags) {
 }

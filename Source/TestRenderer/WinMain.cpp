@@ -209,7 +209,7 @@ static HWND CreateSubWindow(const TCHAR *title, int width, int height) {
     return hwnd;
 }
 
-BOOL InitInstance(int nCmdShow) {
+static BOOL InitInstance(int nCmdShow) {
     BE1::Str basePath = BE1::PlatformFile::ExecutablePath();
     basePath.AppendPath("../../..");
     basePath.CleanPath();
@@ -247,7 +247,7 @@ BOOL InitInstance(int nCmdShow) {
     return TRUE;
 }
 
-void ShutdownInstance() {
+static void ShutdownInstance() {
     app.FreeResources();
     
 #ifdef CREATE_SUB_WINDOW
@@ -279,11 +279,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // Disable automatic DPI scaling.
-    SetProcessDPIAware();
-
     MSG msg;
     HACCEL hAccelTable;
+
+    // Disable automatic DPI scaling.
+    SetProcessDPIAware();
 
     // Initialize global strings
     LoadString(hInstance, IDS_APP_TITLE, szTitle, COUNT_OF(szTitle));

@@ -543,7 +543,7 @@ bool ExprChunk::ParseExpressions(Lexer &lexer, int numExpressions, int *outputRe
                     }
                 } else if (!token.Cmp("time")) {
                     // 로컬 파라미터에서 찾는다
-                    const char *p = token.c_str() + 4;
+                    //const char *p = token.c_str() + 4;
                     g_operandStack[++g_operandStackPointer] = MAKE_REG_LOCALPARM(0);
                     continue;
                 } else if (!token.Cmpn("parm", 4)) {

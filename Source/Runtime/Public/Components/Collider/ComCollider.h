@@ -27,7 +27,7 @@ class ComCollider : public Component {
     friend class ComSensor;
 
 public:
-    ABSTRACT_PROTOTYPE(ComCollider);
+    ABSTRACT_PROTOTYPE_OVERRIDE(ComCollider);
 
     ComCollider();
     virtual ~ComCollider() = 0;

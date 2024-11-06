@@ -30,7 +30,7 @@ class Component : public Object {
     friend class Entity;
 
 public:
-    ABSTRACT_PROTOTYPE(Component);
+    ABSTRACT_PROTOTYPE_OVERRIDE(Component);
 
     Component();
     virtual ~Component() = 0;

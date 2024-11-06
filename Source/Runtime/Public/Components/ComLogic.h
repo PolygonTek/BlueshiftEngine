@@ -20,7 +20,7 @@ BE_NAMESPACE_BEGIN
 
 class ComLogic : public Component {
 public:
-    ABSTRACT_PROTOTYPE(ComLogic);
+    ABSTRACT_PROTOTYPE_OVERRIDE(ComLogic);
 
     ComLogic();
     virtual ~ComLogic() = 0;

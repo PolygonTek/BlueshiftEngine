@@ -32,8 +32,8 @@ public:
     }
 
 private:
-    _func_type _func;
     std::string _name;
+    _func_type _func;
 };
 
 template <typename... Args>

@@ -36,8 +36,8 @@ void TestThread() {
     count_mutex = BE1::PlatformMutex::Create();
 
     BE1::Array<BE1::PlatformThread *> threads;
-    threads.Append(BE1::PlatformThread::Start(CounterFunc, "Counter Thread 1"));
-    threads.Append(BE1::PlatformThread::Start(CounterFunc, "Counter Thread 2"));
+    threads.Append(BE1::PlatformThread::Start(CounterFunc, (void*)"Counter Thread 1"));
+    threads.Append(BE1::PlatformThread::Start(CounterFunc, (void*)"Counter Thread 2"));
 
     BE1::PlatformThread::Join(threads[0]);
     BE1::PlatformThread::Join(threads[1]);

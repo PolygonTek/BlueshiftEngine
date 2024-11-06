@@ -24,7 +24,7 @@ class AssetImporter : public Object {
     friend class ::AssetDatabase;
 
 public:
-    ABSTRACT_PROTOTYPE(AssetImporter);
+    ABSTRACT_PROTOTYPE_OVERRIDE(AssetImporter);
 
     AssetImporter();
     virtual ~AssetImporter() = 0;

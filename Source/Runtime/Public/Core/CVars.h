@@ -153,7 +153,7 @@ private:
 extern CVarSystem           cvarSystem;
 
 BE_INLINE CVar::CVar(const char *name, const char *value, int flags, const char *description) {
-    Init(name, value, flags, description, INT_MAX, INT_MIN);
+    Init(name, value, flags, description, static_cast<float>(INT_MAX), static_cast<float>(INT_MIN));
 }
 
 BE_INLINE CVar::CVar(const char *name, const char *value, int flags, const char *description, float valueMin, float valueMax) {

@@ -114,7 +114,7 @@ public:
         Stack<int>              indexStack;                         // marker index stack for recursive usage
         int                     frameIndexes[MaxRecordedFrames];    // start marker indexes for frames
 
-        CpuThreadInfo() : indexStack(MaxDepth), currentIndex(0) {}
+        CpuThreadInfo() : currentIndex(0), indexStack(MaxDepth) {}
     };
 
     struct GpuThreadInfo {
@@ -123,7 +123,7 @@ public:
         Stack<int>              indexStack;                         // marker index stack for recursive usage
         int                     frameIndexes[MaxRecordedFrames];    // start marker indexes for frames
 
-        GpuThreadInfo() : indexStack(MaxDepth), currentIndex(0) {}
+        GpuThreadInfo() : currentIndex(0), indexStack(MaxDepth) {}
     };
 
     struct FrameData {

@@ -31,7 +31,7 @@ class ComRenderable : public Component {
     friend class ComSoftBody;
 
 public:
-    ABSTRACT_PROTOTYPE(ComRenderable);
+    ABSTRACT_PROTOTYPE_OVERRIDE(ComRenderable);
 
     ComRenderable();
     virtual ~ComRenderable() = 0;

@@ -24,7 +24,7 @@ class ComRigidBody;
 
 class ComJoint : public Component {
 public:
-    ABSTRACT_PROTOTYPE(ComJoint);
+    ABSTRACT_PROTOTYPE_OVERRIDE(ComJoint);
 
     ComJoint();
     virtual ~ComJoint() = 0;

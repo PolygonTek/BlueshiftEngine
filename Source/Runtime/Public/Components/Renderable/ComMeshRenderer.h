@@ -26,7 +26,7 @@ class ComMeshRenderer : public ComRenderable {
     friend class MeshCombiner;
 
 public:
-    ABSTRACT_PROTOTYPE(ComMeshRenderer);
+    ABSTRACT_PROTOTYPE_OVERRIDE(ComMeshRenderer);
 
     ComMeshRenderer();
     virtual ~ComMeshRenderer() = 0;

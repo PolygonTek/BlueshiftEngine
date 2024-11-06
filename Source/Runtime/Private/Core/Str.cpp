@@ -1156,7 +1156,7 @@ bool Str::Filter(const char *filter, const char *name, bool caseSensitive) {
         if (*filter == '*') {
             filter++;
             buf.Clear();
-            for (int i = 0; *filter; i++) {
+            while (*filter) {
                 if (*filter == '*' || *filter == '?' || (*filter == '[' && *(filter+1) != '[')) {
                     break;
                 }

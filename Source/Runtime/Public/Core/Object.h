@@ -65,6 +65,16 @@ extern const EventDef EV_ImmediateDestroy;
     static BE1::MetaObject metaObject; \
     static BE1::EventInfo<classname> eventMap[]
 
+#define ABSTRACT_PROTOTYPE_OVERRIDE(classname) \
+    using Class = classname; \
+    classname(const classname &rhs) = delete; \
+    classname &operator=(const classname &rhs) = delete; \
+    static void RegisterProperties(); \
+    virtual BE1::MetaObject *GetMetaObject() const override; \
+    static BE1::Object *CreateInstance(const BE1::Guid &guid = BE1::Guid()); \
+    static BE1::MetaObject metaObject; \
+    static BE1::EventInfo<classname> eventMap[]
+
 // 이 매크로는 Object class 를 상속받는 자식 클래스의 prototype 에 선언해야 한다.
 // 객체화하는데 필요한 type 정보와 runtime type checking 기능을 제공한다.
 // 반드시 단일 상속 concrete class 에만 사용할 것
@@ -278,9 +288,6 @@ BE_INLINE bool Object::IsInstanceOf(const MetaObject &metaObject) const {
 
 template <typename T>
 BE_INLINE T *Object::Cast() {
-    if (this == nullptr) {
-        return nullptr;
-    }
     if (!GetMetaObject()->IsTypeOf(T::metaObject)) {
         return nullptr;
     }
@@ -289,9 +296,6 @@ BE_INLINE T *Object::Cast() {
 
 template <typename T>
 BE_INLINE const T *Object::Cast() const {
-    if (this == nullptr) {
-        return nullptr;
-    }
     if (!GetMetaObject()->IsTypeOf(T::metaObject)) {
         return nullptr;
     }

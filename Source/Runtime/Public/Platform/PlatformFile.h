@@ -26,14 +26,14 @@ BE_NAMESPACE_BEGIN
 
 struct BE_API FileInfo {
     FileInfo() = default;
-    FileInfo(const Str &filename, bool isSubDir) : filename(filename), isSubDir(isSubDir) {}
+    FileInfo(const Str &inFilename, bool inIsSubDir) : filename(inFilename), isSubDir(inIsSubDir) {}
 
     bool                        operator==(const FileInfo &rhs) const { return (isSubDir == rhs.isSubDir && filename.IcmpPath(rhs.filename) == 0); }
 
     bool                        operator<(const FileInfo &rhs) const { return filename.IcmpPath(rhs.filename) < 0; }
-        
-    bool                        isSubDir;
+
     Str                         filename;
+    bool                        isSubDir;
 };
 
 class BE_API PlatformBaseFile {

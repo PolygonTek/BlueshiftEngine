@@ -549,7 +549,7 @@ bool SignalObject::ExecuteCallback(const SignalCallback &callback, const SignalD
         return true;
     case 0b110010101:
         using EventCallback_fififi = void (SignalObject::*)(const float, const intptr_t, const float, const intptr_t, const float, const intptr_t);
-        (this->*(EventCallback_fifiii)callback)(*(float *)&data[0], data[1], *(float *)&data[2], data[3], *(float *)&data[4], data[5]);
+        (this->*(EventCallback_fififi)callback)(*(float *)&data[0], data[1], *(float *)&data[2], data[3], *(float *)&data[4], data[5]);
         return true;
     case 0b110010110:
         using EventCallback_iffifi = void (SignalObject::*)(const intptr_t, const float, const float, const intptr_t, const float, const intptr_t);
@@ -677,7 +677,7 @@ bool SignalObject::ExecuteCallback(const SignalCallback &callback, const SignalD
         return true;
     case 0b110110101:
         using EventCallback_fififf = void (SignalObject::*)(const float, const intptr_t, const float, const intptr_t, const float, const float);
-        (this->*(EventCallback_fifiif)callback)(*(float *)&data[0], data[1], *(float *)&data[2], data[3], *(float *)&data[4], *(float *)&data[5]);
+        (this->*(EventCallback_fififf)callback)(*(float *)&data[0], data[1], *(float *)&data[2], data[3], *(float *)&data[4], *(float *)&data[5]);
         return true;
     case 0b110110110:
         using EventCallback_iffiff = void (SignalObject::*)(const intptr_t, const float, const float, const intptr_t, const float, const float);
