@@ -38,16 +38,5 @@
 #define Mem_AlignedFree(ptr)                free(ptr)
 #endif
 
-// Not used yet..
-#define BE_OVERRIDE_NEW_DELETE \
-    BE_INLINE void *operator new (size_t inCount) { return Mem_Alloc(inCount); } \
-    BE_INLINE void operator delete (void *inPointer) noexcept { Mem_Free(inPointer); } \
-    BE_INLINE void *operator new[] (size_t inCount) { return Mem_Alloc(inCount); } \
-    BE_INLINE void operator delete[] (void *inPointer) noexcept { Mem_Free(inPointer); } \
-    BE_INLINE void *operator new (size_t inCount, std::align_val_t inAlignment) { return Mem_AlignedAlloc(inCount, static_cast<size_t>(inAlignment)); } \
-    BE_INLINE void operator delete (void *inPointer, std::align_val_t inAlignment) noexcept { Mem_AlignedFree(inPointer); } \
-    BE_INLINE void *operator new[] (size_t inCount, std::align_val_t inAlignment) { return Mem_AlignedAlloc(inCount, static_cast<size_t>(inAlignment)); } \
-    BE_INLINE void operator delete[] (void *inPointer, std::align_val_t inAlignment) noexcept { Mem_AlignedFree(inPointer); }
-
 BE_NAMESPACE_BEGIN
 BE_NAMESPACE_END
