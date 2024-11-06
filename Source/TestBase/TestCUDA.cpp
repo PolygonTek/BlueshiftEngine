@@ -71,9 +71,9 @@ void CUDA_TestAdd() {
     cudaFree(d_src0);
     cudaFree(d_src1);
 
-    BE1::Mem_Free(dst);
-    BE1::Mem_Free(src0);
-    BE1::Mem_Free(src1);
+    Mem_Free(dst);
+    Mem_Free(src0);
+    Mem_Free(src1);
 }
 
 void CUDA_TestSum() {
@@ -113,7 +113,7 @@ void CUDA_TestSum() {
 
     cudaFree(d_src);
 
-    BE1::Mem_Free(src);
+    Mem_Free(src);
 }
 
 void CUDA_TestMatrixMultiply() {
@@ -156,9 +156,9 @@ void CUDA_TestMatrixMultiply() {
     cudaFree(d_src0);
     cudaFree(d_src1);
 
-    BE1::Mem_Free(dst);
-    BE1::Mem_Free(src0);
-    BE1::Mem_Free(src1);
+    Mem_Free(dst);
+    Mem_Free(src0);
+    Mem_Free(src1);
 }
 
 void TestCUDA() {

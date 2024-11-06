@@ -162,6 +162,8 @@
 
 // C++ runtime header files.
 #include <cstddef>
+#include <cstdio>
+#include <cstdlib>
 #include <typeinfo>
 #include <type_traits>
 #include <iostream>
