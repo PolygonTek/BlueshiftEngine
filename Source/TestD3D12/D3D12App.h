@@ -1,0 +1,44 @@
+// Copyright(c) 2017 POLYGONTEK
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+// http ://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#pragma once
+
+class D3D12App {
+public:
+    void                        Init(HWND windowHandle);
+    void                        Shutdown();
+
+    void                        Draw(float t);
+
+    void                        RunFrame();
+
+    void                        Finish();
+
+private:
+    ID3D12Device5*              pD3DDevice = nullptr;
+    ID3D12CommandQueue*         pCommandQueue = nullptr;
+    ID3D12CommandAllocator*     pCommandAllocator = nullptr;
+    ID3D12GraphicsCommandList*  pCommandList = nullptr;
+    DXGI_ADAPTER_DESC1          adapterDesc;
+    ID3D12DescriptorHeap*       pRTVDescriptorHeap = nullptr;
+    IDXGISwapChain3*            pSwapChain = nullptr;
+    UINT                        DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
+    ID3D12Resource*             pRenderTargets[2] = {};
+    HANDLE                      hFenceEvent = nullptr;
+    ID3D12Fence*                pFence = nullptr;
+    UINT64                      fenceValue = 0;
+    UINT                        currentBackBufferIndex = 0;
+};
+
+extern D3D12App             app;
