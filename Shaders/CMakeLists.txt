@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.8.12)
-
 project(Shaders)
 
 file(GLOB_RECURSE ALL_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/**)
