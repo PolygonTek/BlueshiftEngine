@@ -20,3 +20,5 @@
 #include <dxgi1_4.h>
 #include <d3d11on12.h>
 #include <d3dx12.h>
+#include <d3dcompiler.h>
+#include <DirectXMath.h>

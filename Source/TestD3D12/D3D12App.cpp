@@ -17,6 +17,15 @@
 #include "D3D12App.h"
 #include <dxgidebug.h>
 
+// D3D12.dll 이 D3D12Core.dll 을 찾기 위한 설정
+extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 614; }
+extern "C" { __declspec(dllexport) extern const char *D3D12SDKPath = u8"."; }
+
+struct Vertex3D {
+    DirectX::XMFLOAT3   position;
+    DirectX::XMFLOAT4   color;
+};
+
 D3D12App app;
 
 void D3D12App::Init(HWND hwnd) {
@@ -32,10 +41,12 @@ void D3D12App::Init(HWND hwnd) {
 
         // GPU Validation 활성화
         if (bWithGPUValidation) {
-            ID3D12Debug1*pDebugController1;
-            pDebugController->QueryInterface(IID_PPV_ARGS(&pDebugController1));
-            pDebugController1->SetEnableGPUBasedValidation(TRUE);
-            pDebugController1->Release();
+            ID3D12Debug1 *pDebugController1 = nullptr;
+            if (SUCCEEDED(pDebugController->QueryInterface(IID_PPV_ARGS(&pDebugController1))))
+            {
+                pDebugController1->SetEnableGPUBasedValidation(TRUE);
+                pDebugController1->Release();
+            }
         }
         pDebugController->Release();
     }
@@ -92,7 +103,7 @@ void D3D12App::Init(HWND hwnd) {
         BE_FATALERROR("CreateCommandQueue : failed");
     }
 
-    // 두개의 버퍼를 갖는 스왑 체인 생성
+    // 스왑 체인 (백버퍼) 생성
     RECT rc;
     GetClientRect(hwnd, &rc);
 
@@ -103,7 +114,7 @@ void D3D12App::Init(HWND hwnd) {
     //swapChainDesc.BufferDesc.RefreshRate.Numerator = m_uiRefreshRate;
     //swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapChainDesc.BufferCount = 2;
+    swapChainDesc.BufferCount = backBufferCount;
     swapChainDesc.SampleDesc.Count = 1;
     swapChainDesc.SampleDesc.Quality = 0;
     swapChainDesc.Scaling = DXGI_SCALING_NONE;
@@ -123,9 +134,21 @@ void D3D12App::Init(HWND hwnd) {
     pSwapChain1->Release();
     pFactory->Release();
 
+    // Viewport 설정을 백버퍼 크기에 맞게 설정
+    viewport.Width = (float)swapChainDesc.Width;
+    viewport.Height = (float)swapChainDesc.Height;
+    viewport.MinDepth = 0.0f;
+    viewport.MaxDepth = 1.0f;
+
+    // ScissorRect 설정을 백버퍼 크기에 맞게 설정
+    scissorRect.left = 0;
+    scissorRect.top = 0;
+    scissorRect.right = viewport.Width;
+    scissorRect.bottom = viewport.Height;
+
     // 렌더타겟 용 디스크립터 힙 생성 (렌더 타겟 2개)
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
-    descriptorHeapDesc.NumDescriptors = 2;
+    descriptorHeapDesc.NumDescriptors = backBufferCount;
     descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     hr = pD3DDevice->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&pRTVDescriptorHeap));
@@ -136,9 +159,9 @@ void D3D12App::Init(HWND hwnd) {
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle(pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
     // 스왑 체인의 버퍼 (백버퍼, 프론트버퍼) 를 가져와서 각 RTV 에 연결한다.
-    for (UINT renderTargetIndex = 0; renderTargetIndex < 2; ++renderTargetIndex) {
-        pSwapChain->GetBuffer(renderTargetIndex, IID_PPV_ARGS(&pRenderTargets[renderTargetIndex]));
-        pD3DDevice->CreateRenderTargetView(pRenderTargets[renderTargetIndex], nullptr, rtvDescriptorHandle);
+    for (UINT renderTargetIndex = 0; renderTargetIndex < backBufferCount; ++renderTargetIndex) {
+        pSwapChain->GetBuffer(renderTargetIndex, IID_PPV_ARGS(&pBackBuffers[renderTargetIndex]));
+        pD3DDevice->CreateRenderTargetView(pBackBuffers[renderTargetIndex], nullptr, rtvDescriptorHandle);
         rtvDescriptorHandle.Offset(1, DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
     }
 
@@ -171,44 +194,127 @@ void D3D12App::Init(HWND hwnd) {
 
     // 현재 백버퍼 인덱스 초기화
     currentBackBufferIndex = pSwapChain->GetCurrentBackBufferIndex();
+
+    // Root Signature 만들기
+    // NOTE: 현재는 Input Assembler 에서 Input Layout 을 사용할 수 있다라는 정보 밖에 없다.
+    D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc;
+    rootSignatureDesc.NumParameters = 0;
+    rootSignatureDesc.pParameters = nullptr;
+    rootSignatureDesc.NumStaticSamplers = 0;
+    rootSignatureDesc.pStaticSamplers = nullptr;
+    rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+    ID3DBlob *pSignatureBlob = nullptr;
+    ID3DBlob *pErrorBlob = nullptr;
+
+    if (SUCCEEDED(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &pSignatureBlob, &pErrorBlob))) {
+        pD3DDevice->CreateRootSignature(0, pSignatureBlob->GetBufferPointer(), pSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&pRootSignature));
+    }
+
+    SAFE_RELEASE(pSignatureBlob);
+    SAFE_RELEASE(pErrorBlob);
+
+    // Shader Compile
+    const char *shaderText = R"(
+struct PSInput
+{
+    float4 position : SV_POSITION;
+    float4 color : COLOR;
+};
+
+PSInput VSMain(float4 position : POSITION, float4 color : COLOR)
+{
+    PSInput result;
+
+    result.position = position;
+    result.color = color;
+
+    return result;
+}
+
+float4 PSMain(PSInput input) : SV_TARGET
+{
+    return input.color;
+})";
+
+#if defined(_DEBUG)
+    // Enable better shader debugging with the graphics debugging tools.
+    UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#else
+    UINT compileFlags = 0;
+#endif
+
+    ID3DBlob *pVertexShader = nullptr;
+    D3DCompile(shaderText, strlen(shaderText), "shaderText", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &pVertexShader, nullptr);
+
+    ID3DBlob *pPixelShader = nullptr;
+    D3DCompile(shaderText, strlen(shaderText), "shaderText", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pPixelShader, nullptr);
+
+    // Define the vertex input layout.
+    D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
+    {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+    };
+
+    // PSO 만들기
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+    // NOTE: 나중에 호출할 SetGraphicsRootSignature() 에서 PSO 에 지정된 RootSignature 와 다르면 안된다.
+    // 여기서 RootSignature 를 지정하는 이유는 파이프라인 호환성 검사 및 최적화 때문이다.
+    psoDesc.pRootSignature = pRootSignature;
+    psoDesc.VS = CD3DX12_SHADER_BYTECODE(pVertexShader->GetBufferPointer(), pVertexShader->GetBufferSize());
+    psoDesc.PS = CD3DX12_SHADER_BYTECODE(pPixelShader->GetBufferPointer(), pPixelShader->GetBufferSize());
+    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+    psoDesc.SampleMask = UINT_MAX;
+    psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+    psoDesc.DepthStencilState.DepthEnable = FALSE;
+    psoDesc.DepthStencilState.StencilEnable = FALSE;
+    psoDesc.InputLayout = { inputElementDescs, COUNT_OF(inputElementDescs) };
+    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    psoDesc.NumRenderTargets = 1;
+    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    psoDesc.SampleDesc.Count = 1;
+    pD3DDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pPipelineState));
+
+    SAFE_RELEASE(pVertexShader);
+    SAFE_RELEASE(pPixelShader);
+
+    // Create the vertex buffer.
+    // Define the geometry for a triangle.
+    const Vertex3D vertices[] = {
+        { { 0.0f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
+        { { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+        { { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } }
+    };
+
+    const uint16_t indexes[] = {
+        0, 1, 2
+    };
+
+    pVertexBuffer = CreateVertexBuffer(sizeof(Vertex3D), 3, (void*)vertices, &vertexBufferView);
+    pIndexBuffer = CreateIndexBuffer(sizeof(uint16_t), 3, (void *)indexes, &indexBufferView);
+
+    initialized = true;
 }
 
 void D3D12App::Shutdown() {
     Finish();
 
-    if (pRTVDescriptorHeap) {
-        pRTVDescriptorHeap->Release();
-        pRTVDescriptorHeap = nullptr;
-    }
-    for (int i = 0; i < COUNT_OF(pRenderTargets); ++i) {
-        if (pRenderTargets[i]) {
-            pRenderTargets[i]->Release();
-            pRenderTargets[i] = nullptr;
-        }
-    }
-    if (pSwapChain) {
-        pSwapChain->Release();
-        pSwapChain = nullptr;
-    }
-    if (pCommandList) {
-        pCommandList->Release();
-        pCommandList = nullptr;
-    }
-    if (pCommandAllocator) {
-        pCommandAllocator->Release();
-        pCommandAllocator = nullptr;
-    }
-    if (pCommandQueue) {
-        pCommandQueue->Release();
-        pCommandQueue = nullptr;
-    }
+    SAFE_RELEASE(pVertexBuffer);
+    SAFE_RELEASE(pIndexBuffer);
+    SAFE_RELEASE(pRootSignature);
+    SAFE_RELEASE(pPipelineState);
+    SAFE_RELEASE(pRTVDescriptorHeap);
+    SAFE_RELEASE_ARRAY(pBackBuffers);
+    SAFE_RELEASE(pSwapChain);
+    SAFE_RELEASE(pCommandList);
+    SAFE_RELEASE(pCommandAllocator);
+    SAFE_RELEASE(pCommandQueue);
+    SAFE_RELEASE(pFence);
+
     if (hFenceEvent) {
         CloseHandle(hFenceEvent);
         hFenceEvent = nullptr;
-    }
-    if (pFence) {
-        pFence->Release();
-        pFence = nullptr;
     }
 
     ULONG refCount = pD3DDevice->Release();
@@ -230,14 +336,26 @@ void D3D12App::Draw(float t) {
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle(pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
 
     // 백버퍼 RTV 를 렌더 타겟 상태로 전환
-    pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pRenderTargets[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pBackBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
     // RTV 를 파란색으로 Clear
     const float BackColor[] = { 0.0f, 0.0f, 1.0f, 1.0f };
     pCommandList->ClearRenderTargetView(rtvDescriptorHandle, BackColor, 0, nullptr);
 
+    pCommandList->RSSetViewports(1, &viewport);
+    pCommandList->RSSetScissorRects(1, &scissorRect);
+    pCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, nullptr);
+
+    // 삼각형 그리기
+    pCommandList->SetGraphicsRootSignature(pRootSignature);
+    pCommandList->SetPipelineState(pPipelineState);
+    pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    pCommandList->IASetVertexBuffers(0, 1, &vertexBufferView);
+    pCommandList->IASetIndexBuffer(&indexBufferView);
+    pCommandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
+
     // 백버퍼 RTV 를 Present 할 수 있는 상태로 전환
-    pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pRenderTargets[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+    pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pBackBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
     // 커맨드 리스트 기록을 마친다.
     pCommandList->Close();
@@ -247,12 +365,11 @@ void D3D12App::Draw(float t) {
     pCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
     // 백버퍼를 전면버퍼와 교환한다.
-    HRESULT hr = pSwapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING);
-    if (hr == DXGI_ERROR_DEVICE_REMOVED) {
+    if (pSwapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING) == DXGI_ERROR_DEVICE_REMOVED) {
         BE_FATALERROR("DXGI Device Removed");
     }
 
-    // 다음 프레임에 사용할 백버퍼 인덱스
+    // 다음 프레임에 사용할 백버퍼 인덱스 초기화
     currentBackBufferIndex = pSwapChain->GetCurrentBackBufferIndex();
 
     // 커맨드 큐 실행이 다 끝날 때까지 기다린다.
@@ -274,4 +391,183 @@ void D3D12App::Finish() {
         pFence->SetEventOnCompletion(expectedFenceValue, hFenceEvent);
         WaitForSingleObject(hFenceEvent, INFINITE);
     }
+}
+
+ID3D12Resource* D3D12App::CreateVertexBuffer(int vertexSize, int numVerts, void *data, D3D12_VERTEX_BUFFER_VIEW *pOutVertexBufferView)
+{
+    ID3D12Resource* pOutVertexBuffer = nullptr;
+    UINT bufferSize = vertexSize * numVerts;
+    D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT; // D3D12_HEAP_TYPE_UPLOAD
+    D3D12_RESOURCE_STATES initialBufferState = D3D12_RESOURCE_STATE_COMMON; // D3D12_RESOURCE_STATE_GENERIC_READ;
+
+    // GPU 에 버텍스 버퍼 생성
+    if (FAILED(pD3DDevice->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(heapType),
+        D3D12_HEAP_FLAG_NONE,
+        &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
+        initialBufferState,
+        nullptr, IID_PPV_ARGS(&pOutVertexBuffer)))) {
+        return nullptr;
+    }
+
+    ID3D12Resource *pUploadBuffer = nullptr;
+
+    if (data) {
+        if (heapType == D3D12_HEAP_TYPE_DEFAULT) {
+            // CPU 에서 GPU 로 업로드할 버텍스 버퍼 생성
+            if (FAILED(pD3DDevice->CreateCommittedResource(
+                &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+                D3D12_HEAP_FLAG_NONE,
+                &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
+                D3D12_RESOURCE_STATE_COMMON,
+                nullptr, IID_PPV_ARGS(&pUploadBuffer)))) {
+                pOutVertexBuffer->Release();
+                return nullptr;
+            }
+
+            UINT8 *mappedPtr = nullptr;
+            CD3DX12_RANGE writeRange(0, 0);
+            pUploadBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedPtr));
+            memcpy(mappedPtr, data, bufferSize);
+            pUploadBuffer->Unmap(0, nullptr);
+
+            // 데이터 카피
+            pCommandAllocator->Reset();
+            pCommandList->Reset(pCommandAllocator, nullptr);
+            pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutVertexBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
+            pCommandList->CopyBufferRegion(pOutVertexBuffer, 0, pUploadBuffer, 0, bufferSize);
+            pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutVertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+            pCommandList->Close();
+
+            // 커맨드 큐 실행
+            ID3D12CommandList *ppCommandLists[] = { pCommandList };
+            pCommandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
+        } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
+            UINT8 *mappedPtr = nullptr;
+            CD3DX12_RANGE readRange(0, 0);
+            pOutVertexBuffer->Map(0, &readRange, reinterpret_cast<void **>(&mappedPtr));
+            memcpy(mappedPtr, data, bufferSize);
+            pOutVertexBuffer->Unmap(0, nullptr);
+        } else {
+            return nullptr;
+        }
+    }
+
+    pOutVertexBufferView->BufferLocation = pOutVertexBuffer->GetGPUVirtualAddress();
+    pOutVertexBufferView->StrideInBytes = vertexSize;
+    pOutVertexBufferView->SizeInBytes = bufferSize;
+
+    if (pUploadBuffer)
+    {
+        // 업로드 버퍼 사용이 끝날 때 까지 기다린 후 Release 한다.
+        Finish();
+
+        pUploadBuffer->Release();
+    }
+
+    return pOutVertexBuffer;
+}
+
+ID3D12Resource *D3D12App::CreateIndexBuffer(int indexSize, int numIndexes, void *data, D3D12_INDEX_BUFFER_VIEW *pOutIndexBufferView)
+{
+    assert(indexSize == 2 || indexSize == 4);
+
+    ID3D12Resource *pOutIndexBuffer = nullptr;
+    UINT bufferSize = indexSize * numIndexes;
+    D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT; // D3D12_HEAP_TYPE_UPLOAD
+    D3D12_RESOURCE_STATES initialBufferState = D3D12_RESOURCE_STATE_COMMON; // D3D12_RESOURCE_STATE_GENERIC_READ;
+
+    // GPU 에 버텍스 버퍼 생성
+    if (FAILED(pD3DDevice->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(heapType),
+        D3D12_HEAP_FLAG_NONE,
+        &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
+        initialBufferState,
+        nullptr, IID_PPV_ARGS(&pOutIndexBuffer)))) {
+        return nullptr;
+    }
+
+    ID3D12Resource *pUploadBuffer = nullptr;
+
+    if (data) {
+        if (heapType == D3D12_HEAP_TYPE_DEFAULT) {
+            // CPU 에서 GPU 로 업로드할 버텍스 버퍼 생성
+            if (FAILED(pD3DDevice->CreateCommittedResource(
+                &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+                D3D12_HEAP_FLAG_NONE,
+                &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
+                D3D12_RESOURCE_STATE_COMMON,
+                nullptr, IID_PPV_ARGS(&pUploadBuffer)))) {
+                pOutIndexBuffer->Release();
+                return nullptr;
+            }
+
+            UINT8 *mappedPtr = nullptr;
+            CD3DX12_RANGE writeRange(0, 0);
+            pUploadBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedPtr));
+            memcpy(mappedPtr, data, bufferSize);
+            pUploadBuffer->Unmap(0, nullptr);
+
+            // 데이터 카피
+            pCommandAllocator->Reset();
+            pCommandList->Reset(pCommandAllocator, nullptr);
+            pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutIndexBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
+            pCommandList->CopyBufferRegion(pOutIndexBuffer, 0, pUploadBuffer, 0, bufferSize);
+            pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutIndexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER));
+            pCommandList->Close();
+
+            // 커맨드 큐 실행
+            ID3D12CommandList *ppCommandLists[] = { pCommandList };
+            pCommandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
+        } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
+            UINT8 *mappedPtr = nullptr;
+            CD3DX12_RANGE readRange(0, 0);
+            pOutIndexBuffer->Map(0, &readRange, reinterpret_cast<void **>(&mappedPtr));
+            memcpy(mappedPtr, data, bufferSize);
+            pOutIndexBuffer->Unmap(0, nullptr);
+        } else {
+            return nullptr;
+        }
+    }
+
+    pOutIndexBufferView->BufferLocation = pOutIndexBuffer->GetGPUVirtualAddress();
+    pOutIndexBufferView->Format = (indexSize == sizeof(uint16_t) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT);
+    pOutIndexBufferView->SizeInBytes = bufferSize;
+
+    if (pUploadBuffer)
+    {
+        // 업로드 버퍼 사용이 끝날 때 까지 기다린 후 Release 한다.
+        Finish();
+
+        pUploadBuffer->Release();
+    }
+
+    return pOutIndexBuffer;
+}
+
+void D3D12App::OnResize(int width, int height)
+{
+    // 기존 백버퍼 해제
+    SAFE_RELEASE_ARRAY(pBackBuffers);
+
+    // 스왑 체인 버퍼의 사이즈를 조정한다.
+    pSwapChain->ResizeBuffers(backBufferCount, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+    // 스왑 체인에 연결된 백버퍼로 다시 각각의 RTV 에 연결한다.
+    for (UINT backBufferIndex = 0; backBufferIndex < backBufferCount; ++backBufferIndex)
+    {
+        pSwapChain->GetBuffer(backBufferIndex, IID_PPV_ARGS(&pBackBuffers[backBufferIndex]));
+        pD3DDevice->CreateRenderTargetView(pBackBuffers[backBufferIndex], nullptr, rtvHandle);
+        rtvHandle.Offset(1, DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
+    }
+
+    currentBackBufferIndex = pSwapChain->GetCurrentBackBufferIndex();
+
+    viewport.Width = static_cast<float>(width);
+    viewport.Height = static_cast<float>(height);
+
+    scissorRect.right = width;
+    scissorRect.bottom = height;
 }

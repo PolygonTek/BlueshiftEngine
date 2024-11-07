@@ -14,10 +14,17 @@
 
 #pragma once
 
+#define SAFE_RELEASE(p)         if (p) { p->Release(); p = nullptr; }
+#define SAFE_RELEASE_ARRAY(p)   for (int i = 0; i < _countof(p); i++) if (p[i]) { (p[i])->Release(); (p[i]) = nullptr; }
+
 class D3D12App {
 public:
     void                        Init(HWND windowHandle);
     void                        Shutdown();
+
+    bool                        IsInitialized() const { return initialized; }
+
+    void                        OnResize(int width, int height);
 
     void                        Draw(float t);
 
@@ -25,20 +32,36 @@ public:
 
     void                        Finish();
 
+    ID3D12Resource *            CreateVertexBuffer(int vertexSize, int numVerts, void *data, D3D12_VERTEX_BUFFER_VIEW *pOutVertexBufferView);
+    ID3D12Resource *            CreateIndexBuffer(int indexSize, int numIndexes, void *data, D3D12_INDEX_BUFFER_VIEW *pOutIndexBufferView);
+
 private:
-    ID3D12Device5*              pD3DDevice = nullptr;
-    ID3D12CommandQueue*         pCommandQueue = nullptr;
-    ID3D12CommandAllocator*     pCommandAllocator = nullptr;
-    ID3D12GraphicsCommandList*  pCommandList = nullptr;
+    static constexpr UINT       backBufferCount = 2;
+
+    ID3D12Device5 *             pD3DDevice = nullptr;
+    ID3D12CommandQueue *        pCommandQueue = nullptr;
+    ID3D12CommandAllocator *    pCommandAllocator = nullptr;
+    ID3D12GraphicsCommandList * pCommandList = nullptr;
     DXGI_ADAPTER_DESC1          adapterDesc;
-    ID3D12DescriptorHeap*       pRTVDescriptorHeap = nullptr;
-    IDXGISwapChain3*            pSwapChain = nullptr;
+    ID3D12DescriptorHeap *      pRTVDescriptorHeap = nullptr;
+    IDXGISwapChain3 *           pSwapChain = nullptr;
     UINT                        DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
-    ID3D12Resource*             pRenderTargets[2] = {};
+    ID3D12Resource *            pBackBuffers[backBufferCount] = {};
     HANDLE                      hFenceEvent = nullptr;
-    ID3D12Fence*                pFence = nullptr;
+    ID3D12Fence *               pFence = nullptr;
     UINT64                      fenceValue = 0;
     UINT                        currentBackBufferIndex = 0;
+
+    ID3D12RootSignature *       pRootSignature = nullptr;
+    ID3D12PipelineState *       pPipelineState = nullptr;
+    ID3D12Resource *            pVertexBuffer = nullptr;
+    D3D12_VERTEX_BUFFER_VIEW    vertexBufferView;
+    ID3D12Resource *            pIndexBuffer = nullptr;
+    D3D12_INDEX_BUFFER_VIEW     indexBufferView;
+    D3D12_VIEWPORT              viewport = {};
+    D3D12_RECT                  scissorRect = {};
+
+    bool                        initialized = false;
 };
 
-extern D3D12App             app;
+extern D3D12App                 app;

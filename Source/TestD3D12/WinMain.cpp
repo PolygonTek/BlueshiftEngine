@@ -233,6 +233,13 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
     switch (message) {
     case WM_CLOSE:
         break;
+    case WM_SIZE:
+        if (wParam != SIZE_MINIMIZED) {
+            if (app.IsInitialized()) {
+                app.OnResize(LOWORD(lParam), HIWORD(lParam));
+            }
+        }
+        return 0;
     case WM_TIMER:
         break;
     case WM_COMMAND: {
