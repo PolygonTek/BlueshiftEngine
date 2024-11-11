@@ -344,6 +344,8 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
         return false;
     }
 
+    gammaSpace = Image::GammaSpace::DontCare;
+
     if (header->ddsPixelFormat.fourCC == MAKE_FOURCC('D', 'X', '1', '0')) {
         DdsFileHeaderDX10 *dx10Header = (DdsFileHeaderDX10 *)ptr;
         ptr += sizeof(DdsFileHeaderDX10);
@@ -353,11 +355,13 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
         case DX10_FORMAT_R8_SNORM: format = Format::R_8_SNORM; break;
         case DX10_FORMAT_R8G8_UNORM: format = Format::RG_8_8; break;
         case DX10_FORMAT_R8G8_SNORM: format = Format::RG_8_8_SNORM; break;
-        case DX10_FORMAT_R8G8B8A8_UNORM: format = Format::RGBA_8_8_8_8; break;
+        case DX10_FORMAT_R8G8B8A8_UNORM:
+        case DX10_FORMAT_R8G8B8A8_UNORM_SRGB: format = Format::RGBA_8_8_8_8; break;
         case DX10_FORMAT_R8G8B8A8_SNORM: format = Format::RGBA_8_8_8_8_SNORM; break;
-        //case DX10_FORMAT_R16_UNORM: format = Format::R_16; break;
-        //case DX10_FORMAT_R16G16_UNORM: format = Format::RG_16_16; break;
-        //case DX10_FORMAT_R16G16B16A16_UNORM: format = Format::RGBA_16_16_16_16; break;
+        case DX10_FORMAT_B8G8R8A8_UNORM:
+        case DX10_FORMAT_B8G8R8A8_UNORM_SRGB: format = Format::BGRA_8_8_8_8; break;
+        case DX10_FORMAT_B8G8R8X8_UNORM:
+        case DX10_FORMAT_B8G8R8X8_UNORM_SRGB: format = Format::BGRX_8_8_8_8; break;
         case DX10_FORMAT_R16_FLOAT: format = Format::R_16F; break;
         case DX10_FORMAT_R16G16_FLOAT: format = Format::RG_16F_16F; break;
         case DX10_FORMAT_R16G16B16A16_FLOAT: format = Format::RGBA_16F_16F_16F_16F; break;
@@ -368,14 +372,36 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
         case DX10_FORMAT_R9G9B9E5_SHAREDEXP: format = Format::RGBE_9_9_9_5; break;
         case DX10_FORMAT_R11G11B10_FLOAT: format = Format::RGB_11F_11F_10F; break;
         case DX10_FORMAT_R10G10B10A2_UNORM: format = Format::RGBA_10_10_10_2; break;
-        case DX10_FORMAT_BC1_UNORM: format = Format::DXT1; break;
-        case DX10_FORMAT_BC2_UNORM: format = Format::DXT3; break;
-        case DX10_FORMAT_BC3_UNORM: format = Format::DXT5; break;
+        case DX10_FORMAT_BC1_UNORM:
+        case DX10_FORMAT_BC1_UNORM_SRGB: format = Format::DXT1; break;
+        case DX10_FORMAT_BC2_UNORM:
+        case DX10_FORMAT_BC2_UNORM_SRGB: format = Format::DXT3; break;
+        case DX10_FORMAT_BC3_UNORM:
+        case DX10_FORMAT_BC3_UNORM_SRGB: format = Format::DXT5; break;
         case DX10_FORMAT_BC4_UNORM: format = Format::DXN1; break;
         case DX10_FORMAT_BC5_UNORM: format = Format::DXN2; break;
         default:
             BE_WARNLOG("Image::LoadDDSFromMemory: Unsupported pixel format %s\n", name);
             return false;
+        }
+
+        if (dx10Header->dxgiFormat == DX10_FORMAT_R8G8B8A8_UNORM_SRGB ||
+            dx10Header->dxgiFormat == DX10_FORMAT_B8G8R8A8_UNORM_SRGB ||
+            dx10Header->dxgiFormat == DX10_FORMAT_B8G8R8X8_UNORM_SRGB ||
+            dx10Header->dxgiFormat == DX10_FORMAT_BC1_UNORM_SRGB ||
+            dx10Header->dxgiFormat == DX10_FORMAT_BC2_UNORM_SRGB ||
+            dx10Header->dxgiFormat == DX10_FORMAT_BC3_UNORM_SRGB) {
+            gammaSpace = Image::GammaSpace::sRGB;
+        } else if (
+            dx10Header->dxgiFormat == DX10_FORMAT_R8_UNORM ||
+            dx10Header->dxgiFormat == DX10_FORMAT_R8G8_UNORM ||
+            dx10Header->dxgiFormat == DX10_FORMAT_R8G8B8A8_UNORM ||
+            dx10Header->dxgiFormat == DX10_FORMAT_B8G8R8A8_UNORM ||
+            dx10Header->dxgiFormat == DX10_FORMAT_B8G8R8X8_UNORM ||
+            dx10Header->dxgiFormat == DX10_FORMAT_BC1_UNORM ||
+            dx10Header->dxgiFormat == DX10_FORMAT_BC2_UNORM ||
+            dx10Header->dxgiFormat == DX10_FORMAT_BC3_UNORM) {
+            gammaSpace = Image::GammaSpace::Linear;
         }
     } else {
         switch (header->ddsPixelFormat.fourCC) {
@@ -570,10 +596,12 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     this->numSlices = isCube ? 6 : 1;
     this->flags = isCube ? Flag::CubeMap : 0;
 
-    if (NeedFloatConversion() || format == Format::DXN1 || format == Format::DXN2) {
-        this->gammaSpace = Image::GammaSpace::Linear;
-    } else {
-        this->gammaSpace = Image::GammaSpace::sRGB;
+    if (this->gammaSpace == Image::GammaSpace::DontCare) {
+        if (NeedFloatConversion() || format == Format::DXN1 || format == Format::DXN2) {
+            this->gammaSpace = Image::GammaSpace::Linear;
+        } else {
+            this->gammaSpace = Image::GammaSpace::sRGB;
+        }
     }
 
     int bufSize = GetSize(0, numMipmaps);

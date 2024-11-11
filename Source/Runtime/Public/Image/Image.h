@@ -22,7 +22,7 @@ BE_NAMESPACE_BEGIN
 class Image {
 public:
     /// Various image format type
-    /// Channels (RGBALX) are described by little-endian format (opposed to D3D style)
+    /// Channels (RGBALX) are described by little-endian format (as opposed to D3DFMT_XXX)
     struct Format {
         enum Enum {
             Unknown,
