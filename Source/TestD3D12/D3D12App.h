@@ -38,44 +38,47 @@ public:
     ID3D12Resource *            CreateTexture2D(const BE1::Image *image, BE1::Image::Format::Enum dstFormat, bool useMipmaps);
     ID3D12Resource *            CreateTexture2D(const BE1::Image *image);
 
-    bool                        ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT* dxgiFormat) const;
-    bool                        IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) const { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
-    BE1::Image::Format::Enum    ToSupportedUncompressedFormat(BE1::Image::Format::Enum imageFormat);
+    static bool                 ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT* dxgiFormat);
+    static bool                 IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
+    static BE1::Image::Format::Enum ToUncompressedImageFormat(BE1::Image::Format::Enum imageFormat);
+    static BE1::Image::Format::Enum ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap);
+    static void                 AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format::Enum inFormat, BE1::Image::Format::Enum *outFormat);
 
 private:
     void                        InitMesh();
     void                        FreeMesh();
     void                        DrawMesh();
 
-    static constexpr UINT       backBufferCount = 2;
+    static constexpr UINT       BackBufferCount = 2;
 
-    ID3D12Device5 *             pD3DDevice = nullptr;
-    ID3D12CommandQueue *        pCommandQueue = nullptr;
-    ID3D12CommandAllocator *    pCommandAllocator = nullptr;
-    ID3D12GraphicsCommandList * pCommandList = nullptr;
-    DXGI_ADAPTER_DESC1          adapterDesc;
-    ID3D12DescriptorHeap *      pRTVDescriptorHeap = nullptr;
-    IDXGISwapChain3 *           pSwapChain = nullptr;
-    UINT                        DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
-    ID3D12Resource *            pBackBuffers[backBufferCount] = {};
-    HANDLE                      hFenceEvent = nullptr;
-    ID3D12Fence *               pFence = nullptr;
+    DXGI_ADAPTER_DESC1          adapterDesc = {};
+    ID3D12Device5 *             device = nullptr;
+    ID3D12CommandQueue *        commandQueue = nullptr;
+    ID3D12CommandAllocator *    commandAllocator = nullptr;
+    ID3D12GraphicsCommandList * commandList = nullptr;
+    ID3D12DescriptorHeap *      backBuffersDescriptorHeap = nullptr;
+    IDXGISwapChain3 *           swapChain = nullptr;
+    UINT                        descriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
+    ID3D12Resource *            backBuffers[BackBufferCount] = {};
+    HANDLE                      fenceEventHandle = nullptr;
+    ID3D12Fence *               fence = nullptr;
     UINT64                      fenceValue = 0;
     UINT                        currentBackBufferIndex = 0;
     D3D12_VIEWPORT              viewport = {};
     D3D12_RECT                  scissorRect = {};
 
     ID3D12Resource *            defaultTexture = nullptr;
-    ID3D12Resource *            pConstantBuffer = nullptr;
-    ID3D12DescriptorHeap *      meshDescriptorHeap = nullptr;
-    ID3D12RootSignature *       pRootSignature = nullptr;
-    ID3D12PipelineState *       pPipelineState = nullptr;
-    ID3D12Resource *            pVertexBuffer = nullptr;
-    D3D12_VERTEX_BUFFER_VIEW    vertexBufferView;
-    ID3D12Resource *            pIndexBuffer = nullptr;
-    D3D12_INDEX_BUFFER_VIEW     indexBufferView;
+    ID3D12Resource *            constantBuffer = nullptr;
+    void *                      mappedConstantBase = nullptr;
 
-    void *                      mappedConstantBase;
+    ID3D12DescriptorHeap *      meshDescriptorHeap = nullptr;
+    ID3D12RootSignature *       rootSignature = nullptr;
+    ID3D12PipelineState *       pipelineState = nullptr;
+
+    ID3D12Resource *            vertexBuffer = nullptr;
+    D3D12_VERTEX_BUFFER_VIEW    vertexBufferView = {};
+    ID3D12Resource *            indexBuffer = nullptr;
+    D3D12_INDEX_BUFFER_VIEW     indexBufferView = {};
 
     bool                        initialized = false;
 };

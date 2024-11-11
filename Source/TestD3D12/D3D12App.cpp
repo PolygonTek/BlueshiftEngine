@@ -65,7 +65,7 @@ void D3D12App::Init(HWND hwnd) {
     pAdapter->GetDesc1(&adapterDesc);
 
     // D3D12 디바이스 생성
-    hr = D3D12CreateDevice(pAdapter, D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&pD3DDevice));
+    hr = D3D12CreateDevice(pAdapter, D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&device));
     if (FAILED(hr)) {
         BE_FATALERROR("D3D12CreateDevice : failed");
     }
@@ -73,7 +73,7 @@ void D3D12App::Init(HWND hwnd) {
 
     // 디버그 표시 정보 설정
     ID3D12InfoQueue *pInfoQueue = nullptr;
-    pD3DDevice->QueryInterface(IID_PPV_ARGS(&pInfoQueue));
+    device->QueryInterface(IID_PPV_ARGS(&pInfoQueue));
     if (pInfoQueue) {
         pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
         pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
@@ -92,18 +92,18 @@ void D3D12App::Init(HWND hwnd) {
         pInfoQueue->Release();
     }
 
-    // 디스크립터 힙 타입 별 디스크립터 사이즈 정보 얻기
-    DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = pD3DDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = pD3DDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-    DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = pD3DDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = pD3DDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+    // 디스크립터 힙 타입 별 디스크립터 사이즈 정보 얻기 (보통은 32바이트 차지)
+    descriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    descriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+    descriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    descriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
     // 커맨드 큐 생성
     D3D12_COMMAND_QUEUE_DESC queueDesc = {};
     queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
     queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-    hr = pD3DDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&pCommandQueue));
+    hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue));
     if (FAILED(hr)) {
         BE_FATALERROR("CreateCommandQueue : failed");
     }
@@ -119,7 +119,7 @@ void D3D12App::Init(HWND hwnd) {
     //swapChainDesc.BufferDesc.RefreshRate.Numerator = m_uiRefreshRate;
     //swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapChainDesc.BufferCount = backBufferCount;
+    swapChainDesc.BufferCount = BackBufferCount;
     swapChainDesc.SampleDesc.Count = 1;
     swapChainDesc.SampleDesc.Quality = 0;
     swapChainDesc.Scaling = DXGI_SCALING_NONE;
@@ -131,11 +131,11 @@ void D3D12App::Init(HWND hwnd) {
     swapChainFullscreenDesc.Windowed = TRUE;
 
     IDXGISwapChain1 *pSwapChain1 = nullptr;
-    hr = pFactory->CreateSwapChainForHwnd(pCommandQueue, hwnd, &swapChainDesc, &swapChainFullscreenDesc, nullptr, &pSwapChain1);
+    hr = pFactory->CreateSwapChainForHwnd(commandQueue, hwnd, &swapChainDesc, &swapChainFullscreenDesc, nullptr, &pSwapChain1);
     if (FAILED(hr)) {
         BE_FATALERROR("CreateSwapChainForHwnd : failed");
     }
-    pSwapChain1->QueryInterface(IID_PPV_ARGS(&pSwapChain));
+    pSwapChain1->QueryInterface(IID_PPV_ARGS(&swapChain));
     pSwapChain1->Release();
     pFactory->Release();
 
@@ -153,41 +153,43 @@ void D3D12App::Init(HWND hwnd) {
 
     // 렌더타겟 용 디스크립터 힙 생성 (렌더 타겟 2개)
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
-    descriptorHeapDesc.NumDescriptors = backBufferCount;
+    descriptorHeapDesc.NumDescriptors = BackBufferCount;
     descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    hr = pD3DDevice->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&pRTVDescriptorHeap));
+    hr = device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&backBuffersDescriptorHeap));
     if (FAILED(hr)) {
         BE_FATALERROR("CreateDescriptorHeap : failed");
     }
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle(pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle(backBuffersDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
     // 스왑 체인의 버퍼 (백버퍼, 프론트버퍼) 를 가져와서 각 RTV 에 연결한다.
-    for (UINT renderTargetIndex = 0; renderTargetIndex < backBufferCount; ++renderTargetIndex) {
-        pSwapChain->GetBuffer(renderTargetIndex, IID_PPV_ARGS(&pBackBuffers[renderTargetIndex]));
-        pD3DDevice->CreateRenderTargetView(pBackBuffers[renderTargetIndex], nullptr, rtvDescriptorHandle);
-        rtvDescriptorHandle.Offset(1, DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
+    for (UINT renderTargetIndex = 0; renderTargetIndex < BackBufferCount; ++renderTargetIndex) {
+        swapChain->GetBuffer(renderTargetIndex, IID_PPV_ARGS(&backBuffers[renderTargetIndex]));
+
+        device->CreateRenderTargetView(backBuffers[renderTargetIndex], nullptr, rtvDescriptorHandle);
+
+        rtvDescriptorHandle.Offset(1, descriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
     }
 
     // 그래픽스 커맨드 리스트를 위한 커맨드 할당자 생성
-    hr = pD3DDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&pCommandAllocator));
+    hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
     if (FAILED(hr)) {
         BE_FATALERROR("CreateCommandAllocator : failed");
     }
 
     // 그래픽스 커맨드 리스트 생성
-    hr = pD3DDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, pCommandAllocator, nullptr, IID_PPV_ARGS(&pCommandList));
+    hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator, nullptr, IID_PPV_ARGS(&commandList));
     if (FAILED(hr)) {
         BE_FATALERROR("CreateCommandList : failed");
     }
 
     // Command lists are created in the recording state, but there is nothing
     // to record yet. The main loop expects it to be closed, so close it now.
-    pCommandList->Close();
+    commandList->Close();
 
     // Fence 객체 생성
-    hr = pD3DDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pFence));
+    hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
     if (FAILED(hr)) {
         BE_FATALERROR("CreateFence : failed");
     }
@@ -195,10 +197,10 @@ void D3D12App::Init(HWND hwnd) {
     fenceValue = 0;
 
     // Fence 를 대기하기 위한 이벤트 객체 생성
-    hFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    fenceEventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
     // 현재 백버퍼 인덱스 초기화
-    currentBackBufferIndex = pSwapChain->GetCurrentBackBufferIndex();
+    currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
     InitMesh();
 
@@ -210,20 +212,20 @@ void D3D12App::Shutdown() {
 
     FreeMesh();
 
-    SAFE_RELEASE(pRTVDescriptorHeap);
-    SAFE_RELEASE_ARRAY(pBackBuffers);
-    SAFE_RELEASE(pSwapChain);
-    SAFE_RELEASE(pCommandList);
-    SAFE_RELEASE(pCommandAllocator);
-    SAFE_RELEASE(pCommandQueue);
-    SAFE_RELEASE(pFence);
+    SAFE_RELEASE(backBuffersDescriptorHeap);
+    SAFE_RELEASE_ARRAY(backBuffers);
+    SAFE_RELEASE(swapChain);
+    SAFE_RELEASE(commandList);
+    SAFE_RELEASE(commandAllocator);
+    SAFE_RELEASE(commandQueue);
+    SAFE_RELEASE(fence);
 
-    if (hFenceEvent) {
-        CloseHandle(hFenceEvent);
-        hFenceEvent = nullptr;
+    if (fenceEventHandle) {
+        CloseHandle(fenceEventHandle);
+        fenceEventHandle = nullptr;
     }
 
-    ULONG refCount = pD3DDevice->Release();
+    ULONG refCount = device->Release();
     if (refCount > 0) {
         IDXGIDebug1 *pDebug = nullptr;
         if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&pDebug)))) {
@@ -236,41 +238,41 @@ void D3D12App::Shutdown() {
 
 void D3D12App::Draw(float t) {
     // 커맨드 리스트 초기화
-    pCommandAllocator->Reset();
-    pCommandList->Reset(pCommandAllocator, nullptr);
+    commandAllocator->Reset();
+    commandList->Reset(commandAllocator, nullptr);
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle(pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
+    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle(backBuffersDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, descriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
 
     // 백버퍼 RTV 를 렌더 타겟 상태로 전환
-    pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pBackBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
     // RTV 를 파란색으로 Clear
     const float BackColor[] = { 0.0f, 0.0f, 1.0f, 1.0f };
-    pCommandList->ClearRenderTargetView(rtvDescriptorHandle, BackColor, 0, nullptr);
+    commandList->ClearRenderTargetView(rtvDescriptorHandle, BackColor, 0, nullptr);
 
-    pCommandList->RSSetViewports(1, &viewport);
-    pCommandList->RSSetScissorRects(1, &scissorRect);
-    pCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, nullptr);
+    commandList->RSSetViewports(1, &viewport);
+    commandList->RSSetScissorRects(1, &scissorRect);
+    commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, nullptr);
 
     DrawMesh();
 
     // 백버퍼 RTV 를 Present 할 수 있는 상태로 전환
-    pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pBackBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+    commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(backBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
     // 커맨드 리스트 기록을 마친다.
-    pCommandList->Close();
+    commandList->Close();
 
     // 커맨드 큐에 커맨드 리스트 전달
-    ID3D12CommandList *ppCommandLists[] = { pCommandList };
-    pCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+    ID3D12CommandList *ppCommandLists[] = { commandList };
+    commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
     // 백버퍼를 전면버퍼와 교환한다.
-    if (pSwapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING) == DXGI_ERROR_DEVICE_REMOVED) {
+    if (swapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING) == DXGI_ERROR_DEVICE_REMOVED) {
         BE_FATALERROR("DXGI Device Removed");
     }
 
     // 다음 프레임에 사용할 백버퍼 인덱스 초기화
-    currentBackBufferIndex = pSwapChain->GetCurrentBackBufferIndex();
+    currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
     // 커맨드 큐 실행이 다 끝날 때까지 기다린다.
     Finish();
@@ -283,13 +285,13 @@ void D3D12App::RunFrame() {
 void D3D12App::Finish() {
     // 커맨드 큐가 완전히 끝날 때 까지 기다리기 위한 fence 추가
     fenceValue++;
-    pCommandQueue->Signal(pFence, fenceValue);
+    commandQueue->Signal(fence, fenceValue);
 
     const UINT64 expectedFenceValue = fenceValue;
 
-    if (pFence->GetCompletedValue() < expectedFenceValue) {
-        pFence->SetEventOnCompletion(expectedFenceValue, hFenceEvent);
-        WaitForSingleObject(hFenceEvent, INFINITE);
+    if (fence->GetCompletedValue() < expectedFenceValue) {
+        fence->SetEventOnCompletion(expectedFenceValue, fenceEventHandle);
+        WaitForSingleObject(fenceEventHandle, INFINITE);
     }
 }
 
@@ -299,7 +301,7 @@ ID3D12Resource* D3D12App::CreateVertexBuffer(int vertexSize, int numVerts, void 
     D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT; // D3D12_HEAP_TYPE_UPLOAD
 
     // GPU 에 버텍스 버퍼 생성
-    if (FAILED(pD3DDevice->CreateCommittedResource(
+    if (FAILED(device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(heapType),
         D3D12_HEAP_FLAG_NONE,
         &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
@@ -313,7 +315,7 @@ ID3D12Resource* D3D12App::CreateVertexBuffer(int vertexSize, int numVerts, void 
     if (data) {
         if (heapType == D3D12_HEAP_TYPE_DEFAULT) {
             // CPU 에서 GPU 로 업로드할 버텍스 버퍼 생성
-            if (FAILED(pD3DDevice->CreateCommittedResource(
+            if (FAILED(device->CreateCommittedResource(
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
                 D3D12_HEAP_FLAG_NONE,
                 &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
@@ -330,15 +332,15 @@ ID3D12Resource* D3D12App::CreateVertexBuffer(int vertexSize, int numVerts, void 
             pUploadBuffer->Unmap(0, nullptr);
 
             // 업로드 버퍼에서 버텍스 버퍼로 데이터 카피
-            pCommandAllocator->Reset();
-            pCommandList->Reset(pCommandAllocator, nullptr);
-            pCommandList->CopyBufferRegion(pOutVertexBuffer, 0, pUploadBuffer, 0, bufferSize);
-            pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutVertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
-            pCommandList->Close();
+            commandAllocator->Reset();
+            commandList->Reset(commandAllocator, nullptr);
+            commandList->CopyBufferRegion(pOutVertexBuffer, 0, pUploadBuffer, 0, bufferSize);
+            commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutVertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+            commandList->Close();
 
             // 커맨드 큐 실행
-            ID3D12CommandList *ppCommandLists[] = { pCommandList };
-            pCommandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
+            ID3D12CommandList *ppCommandLists[] = { commandList };
+            commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
         } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
             UINT8 *mappedPtr = nullptr;
             CD3DX12_RANGE readRange(0, 0);
@@ -372,7 +374,7 @@ ID3D12Resource *D3D12App::CreateIndexBuffer(int indexSize, int numIndexes, void 
     D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT; // D3D12_HEAP_TYPE_UPLOAD
 
     // GPU 에 버텍스 버퍼 생성
-    if (FAILED(pD3DDevice->CreateCommittedResource(
+    if (FAILED(device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(heapType),
         D3D12_HEAP_FLAG_NONE,
         &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
@@ -386,7 +388,7 @@ ID3D12Resource *D3D12App::CreateIndexBuffer(int indexSize, int numIndexes, void 
     if (data) {
         if (heapType == D3D12_HEAP_TYPE_DEFAULT) {
             // CPU 에서 GPU 로 업로드할 버텍스 버퍼 생성
-            if (FAILED(pD3DDevice->CreateCommittedResource(
+            if (FAILED(device->CreateCommittedResource(
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
                 D3D12_HEAP_FLAG_NONE,
                 &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
@@ -403,15 +405,15 @@ ID3D12Resource *D3D12App::CreateIndexBuffer(int indexSize, int numIndexes, void 
             pUploadBuffer->Unmap(0, nullptr);
 
             // 업로드 버퍼에서 인덱스 버퍼로 데이터 카피
-            pCommandAllocator->Reset();
-            pCommandList->Reset(pCommandAllocator, nullptr);
-            pCommandList->CopyBufferRegion(pOutIndexBuffer, 0, pUploadBuffer, 0, bufferSize);
-            pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutIndexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER));
-            pCommandList->Close();
+            commandAllocator->Reset();
+            commandList->Reset(commandAllocator, nullptr);
+            commandList->CopyBufferRegion(pOutIndexBuffer, 0, pUploadBuffer, 0, bufferSize);
+            commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutIndexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER));
+            commandList->Close();
 
             // 커맨드 큐 실행
-            ID3D12CommandList *ppCommandLists[] = { pCommandList };
-            pCommandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
+            ID3D12CommandList *ppCommandLists[] = { commandList };
+            commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
         } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
             UINT8 *mappedPtr = nullptr;
             CD3DX12_RANGE readRange(0, 0);
@@ -439,24 +441,32 @@ ID3D12Resource *D3D12App::CreateIndexBuffer(int indexSize, int numIndexes, void 
 
 ID3D12Resource *D3D12App::CreateTexture2D(const BE1::Image *srcImage, BE1::Image::Format::Enum dstFormat, bool useMipmaps) {
     BE1::Image::Format::Enum srcFormat = srcImage->GetFormat();
+
     bool srcCompressed = BE1::Image::IsCompressed(srcFormat);
     bool dstCompressed = BE1::Image::IsCompressed(dstFormat);
 
     bool srcFormatSupported = IsSupportedImageFormat(srcFormat);
     bool dstFormatSupported = IsSupportedImageFormat(dstFormat);
 
+    if (!dstFormatSupported) {
+        BE_WARNLOG("Unsupported internal image format %s\n", BE1::Image::FormatName(dstFormat));
+        return nullptr;
+    }
+
     BE1::Image uncompressedImage;
 
-    // srcImage 가 지원하지 않는 이미지 포맷이거나 밉맵을 생성해야 한다면, 지원되는 가장 비슷한 무압축 포맷으로 컨버팅한다.
-    if (!srcFormatSupported || (useMipmaps && srcImage->NumMipmaps() == 1 && (srcImage->IsPacked() || srcImage->IsCompressed()))) {
-        BE1::Image::Format::Enum supportedUncompressedFormat = ToSupportedUncompressedFormat(srcFormat);
+    if (useMipmaps && srcImage->NumMipmaps() == 1) {
+        if (srcImage->IsPacked() || srcImage->IsCompressed()) {
+            // 밉맵을 생성해야 한다면, 지원되는 가장 비슷한 무압축 포맷으로 컨버팅한다.
+            BE1::Image::Format::Enum supportedUncompressedFormat = ToUncompressedImageFormat(srcFormat);
 
-        srcImage->ConvertFormat(supportedUncompressedFormat, uncompressedImage);
-        srcImage = &uncompressedImage;
+            srcImage->ConvertFormat(supportedUncompressedFormat, uncompressedImage);
+            srcImage = &uncompressedImage;
 
-        srcFormat = supportedUncompressedFormat;
-        srcFormatSupported = IsSupportedImageFormat(srcFormat);
-        srcCompressed = false;
+            srcFormat = supportedUncompressedFormat;
+            srcFormatSupported = IsSupportedImageFormat(srcFormat);
+            srcCompressed = false;
+        }
     }
 
     BE1::Image mipmapedImage;
@@ -473,6 +483,15 @@ ID3D12Resource *D3D12App::CreateTexture2D(const BE1::Image *srcImage, BE1::Image
         mipmapedImage.GenerateMipmaps();
         srcImage = &mipmapedImage;
     }
+
+    BE1::Image dstImage;
+
+    // dstFormat 으로 컨버팅
+    if (srcFormat != dstFormat) {
+        srcImage->ConvertFormat(dstFormat, dstImage);
+        srcImage = &dstImage;
+    }
+
     return CreateTexture2D(srcImage);
 }
 
@@ -502,7 +521,7 @@ ID3D12Resource *D3D12App::CreateTexture2D(const BE1::Image* srcImage) {
     textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 
     ID3D12Resource *pOutTexture = nullptr;
-    if (FAILED(pD3DDevice->CreateCommittedResource(
+    if (FAILED(device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
         D3D12_HEAP_FLAG_NONE,
         &textureDesc,
@@ -515,11 +534,11 @@ ID3D12Resource *D3D12App::CreateTexture2D(const BE1::Image* srcImage) {
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipFootprints[16];
     UINT64 size;
 
-    pD3DDevice->GetCopyableFootprints(&textureDesc, 0, textureDesc.MipLevels, 0, mipFootprints, nullptr, nullptr, &size);
+    device->GetCopyableFootprints(&textureDesc, 0, textureDesc.MipLevels, 0, mipFootprints, nullptr, nullptr, &size);
 
     // 업로드 버퍼 생성
     ID3D12Resource *pUploadBuffer = nullptr;
-    if (FAILED(pD3DDevice->CreateCommittedResource(
+    if (FAILED(device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
         D3D12_HEAP_FLAG_NONE,
         &CD3DX12_RESOURCE_DESC::Buffer(size),
@@ -554,8 +573,8 @@ ID3D12Resource *D3D12App::CreateTexture2D(const BE1::Image* srcImage) {
     pUploadBuffer->Unmap(0, nullptr);
 
     // 업로드 버퍼에서 텍스쳐로 데이터 카피
-    pCommandAllocator->Reset();
-    pCommandList->Reset(pCommandAllocator, nullptr);
+    commandAllocator->Reset();
+    commandList->Reset(commandAllocator, nullptr);
 
     for (int mipLevel = 0; mipLevel < maxMipLevels; ++mipLevel) {
         D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
@@ -569,15 +588,15 @@ ID3D12Resource *D3D12App::CreateTexture2D(const BE1::Image* srcImage) {
         dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
         dstLocation.SubresourceIndex = mipLevel;
 
-        pCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+        commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
     }
 
-    pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutTexture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE));
-    pCommandList->Close();
+    commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutTexture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE));
+    commandList->Close();
 
     // 커맨드 큐 실행
-    ID3D12CommandList *ppCommandLists[] = { pCommandList };
-    pCommandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
+    ID3D12CommandList *ppCommandLists[] = { commandList };
+    commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
 
     if (pUploadBuffer) {
         // 업로드 버퍼 사용이 끝날 때 까지 기다린 후 Release 한다.
@@ -589,7 +608,7 @@ ID3D12Resource *D3D12App::CreateTexture2D(const BE1::Image* srcImage) {
     return pOutTexture;
 }
 
-bool D3D12App::ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat) const {
+bool D3D12App::ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat) {
     switch (imageFormat) {
     case BE1::Image::Format::L_8:
     case BE1::Image::Format::R_8:
@@ -671,6 +690,12 @@ bool D3D12App::ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, boo
     case BE1::Image::Format::DXT5: // BC3
         if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC3_UNORM_SRGB : DXGI_FORMAT_BC3_UNORM;
         return true;
+    case BE1::Image::Format::DXN1: // BC4
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_BC4_UNORM;
+        return true;
+    case BE1::Image::Format::DXN2: // BC5
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_BC5_UNORM;
+        return true;
     case BE1::Image::Format::Depth_16:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D16_UNORM;
         return true;
@@ -684,7 +709,7 @@ bool D3D12App::ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, boo
     return false;
 }
 
-BE1::Image::Format::Enum D3D12App::ToSupportedUncompressedFormat(BE1::Image::Format::Enum inFormat) {
+BE1::Image::Format::Enum D3D12App::ToUncompressedImageFormat(BE1::Image::Format::Enum inFormat) {
     BE1::Image::Format::Enum outFormat;
 
     switch (inFormat) {
@@ -756,27 +781,76 @@ BE1::Image::Format::Enum D3D12App::ToSupportedUncompressedFormat(BE1::Image::For
         outFormat = inFormat;
         break;
     }
+    return outFormat;
+}
+
+BE1::Image::Format::Enum D3D12App::ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) {
+    if (BE1::Image::IsCompressed(inFormat)) {
+        assert(0);
+        return inFormat;
+    }
+
+    int redBits, greenBits, blueBits, alphaBits;
+    BE1::Image::GetBits(inFormat, &redBits, &greenBits, &blueBits, &alphaBits);
+
+    BE1::Image::Format::Enum outFormat = inFormat;
+
+    if (redBits > 0 && greenBits > 0 && blueBits > 0) {
+        if (BE1::Image::IsFloatFormat(inFormat) || BE1::Image::IsHalfFormat(inFormat)) {
+            if (alphaBits == 0) {
+                outFormat = BE1::Image::Format::RGBE_9_9_9_5;
+            }
+        } else if (useNormalMap) {
+            outFormat = BE1::Image::Format::DXN2;
+        } else {
+            if (alphaBits <= 1) {
+                outFormat = BE1::Image::Format::DXT1;
+            } else if (alphaBits <= 4) {
+                outFormat = BE1::Image::Format::DXT3;
+            } else {
+                outFormat = BE1::Image::Format::DXT5;
+            }
+        }
+    }
 
     return outFormat;
 }
 
-void D3D12App::OnResize(int width, int height) {
-    // 기존 백버퍼 해제
-    SAFE_RELEASE_ARRAY(pBackBuffers);
-
-    // 스왑 체인 버퍼의 사이즈를 조정한다.
-    pSwapChain->ResizeBuffers(backBufferCount, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
-
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-    // 스왑 체인에 연결된 백버퍼로 다시 각각의 RTV 에 연결한다.
-    for (UINT backBufferIndex = 0; backBufferIndex < backBufferCount; ++backBufferIndex) {
-        pSwapChain->GetBuffer(backBufferIndex, IID_PPV_ARGS(&pBackBuffers[backBufferIndex]));
-        pD3DDevice->CreateRenderTargetView(pBackBuffers[backBufferIndex], nullptr, rtvHandle);
-        rtvHandle.Offset(1, DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
+void D3D12App::AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format::Enum inFormat, BE1::Image::Format::Enum *outFormat) {
+    if (BE1::Image::IsDepthFormat(inFormat) || BE1::Image::IsDepthStencilFormat(inFormat)) {
+        *outFormat = inFormat;
+        return;
     }
 
-    currentBackBufferIndex = pSwapChain->GetCurrentBackBufferIndex();
+    if (BE1::Image::IsCompressed(inFormat)) {
+        if (IsSupportedImageFormat(inFormat)) {
+            *outFormat = inFormat;
+            return;
+        }
+
+        inFormat = ToUncompressedImageFormat(inFormat);
+    }
+
+    *outFormat = useCompression ? ToCompressedImageFormat(inFormat, useNormalMap) : ToUncompressedImageFormat(inFormat);
+}
+
+void D3D12App::OnResize(int width, int height) {
+    // 기존 백버퍼 해제
+    SAFE_RELEASE_ARRAY(backBuffers);
+
+    // 스왑 체인 버퍼의 사이즈를 조정한다.
+    swapChain->ResizeBuffers(BackBufferCount, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(backBuffersDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+    // 스왑 체인에 연결된 백버퍼로 다시 각각의 RTV 에 연결한다.
+    for (UINT backBufferIndex = 0; backBufferIndex < BackBufferCount; ++backBufferIndex) {
+        swapChain->GetBuffer(backBufferIndex, IID_PPV_ARGS(&backBuffers[backBufferIndex]));
+        device->CreateRenderTargetView(backBuffers[backBufferIndex], nullptr, rtvHandle);
+        rtvHandle.Offset(1, descriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
+    }
+
+    currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
     viewport.Width = static_cast<float>(width);
     viewport.Height = static_cast<float>(height);
@@ -789,40 +863,44 @@ void D3D12App::InitMesh() {
     // 이미지 파일로 텍스쳐 만들기
     BE1::Image *image = BE1::Image::NewImageFromFile("Data/EngineTextures/checker.dds");
     if (image) {
-        defaultTexture = CreateTexture2D(image, image->GetFormat(), true);
+        BE1::Image::Format::Enum dstFormat;
+        AdjustTextureFormat(true, false, image->GetFormat(), &dstFormat);
+
+        defaultTexture = CreateTexture2D(image, dstFormat, true);
         delete image;
     }
 
     // CB 용 업로드 버퍼 생성
     UINT constantBufferSize = (UINT)BE1::AlignUp(sizeof(DefaultConstantBuffer), 256);
-    pD3DDevice->CreateCommittedResource(
+    device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
         D3D12_HEAP_FLAG_NONE,
         &CD3DX12_RESOURCE_DESC::Buffer(constantBufferSize),
         D3D12_RESOURCE_STATE_COMMON,
-        nullptr, IID_PPV_ARGS(&pConstantBuffer));
+        nullptr, IID_PPV_ARGS(&constantBuffer));
 
-    // 디스크립터 힙 만들기
+    // 디스크립터 힙 만들기 (한 가지 타입의 디스크립터 여러개를 담을 수 있다)
+    // TODO: 엔진에서 미리 만들어 놓고 디스크립터를 풀링하는 전략으로 접근해야 함
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
     descriptorHeapDesc.NumDescriptors = 2;
     descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    pD3DDevice->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&meshDescriptorHeap));
+    device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&meshDescriptorHeap));
 
-    // 디스크립터에 CBV 만들기
+    // 디스크립터에 CBV 정보 기록하기
     D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-    cbvDesc.BufferLocation = pConstantBuffer->GetGPUVirtualAddress();
+    cbvDesc.BufferLocation = constantBuffer->GetGPUVirtualAddress();
     cbvDesc.SizeInBytes = constantBufferSize;
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle(meshDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 0, DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
-    pD3DDevice->CreateConstantBufferView(&cbvDesc, cbvDescriptorHandle);
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle(meshDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 0, descriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
+    device->CreateConstantBufferView(&cbvDesc, cbvDescriptorHandle);
 
     // Map and initialize the constant buffer. We don't unmap this until the
     // app closes. Keeping things mapped for the lifetime of the resource is okay.
     CD3DX12_RANGE writeRange(0, 0); // We do not intend to read from this resource on the CPU.
-    pConstantBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedConstantBase));
+    constantBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedConstantBase));
 
-    // 디스크립터에 SRV 만들기
+    // 디스크립터에 SRV 정보 기록하기
     D3D12_RESOURCE_DESC defaultTextureDesc = defaultTexture->GetDesc();
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.Format = defaultTextureDesc.Format;
@@ -830,16 +908,37 @@ void D3D12App::InitMesh() {
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
     srvDesc.Texture2D.MipLevels = defaultTextureDesc.MipLevels;
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE srvDescriptorHandle(meshDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 1, DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
-    pD3DDevice->CreateShaderResourceView(defaultTexture, &srvDesc, srvDescriptorHandle);
+    CD3DX12_CPU_DESCRIPTOR_HANDLE srvDescriptorHandle(meshDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 1, descriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
+    device->CreateShaderResourceView(defaultTexture, &srvDesc, srvDescriptorHandle);
 
-    // Mesh 를 렌더링하기 위한 Root Signature (샘플러와 파라미터 정보) 만들기
-    CD3DX12_DESCRIPTOR_RANGE ranges[2] = {};
-    ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); // b0 : constant buffer
-    ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // t0 : texture
+    // 루트 시그니쳐를 만들기 위해 우선 Descriptor Range 를 정의한다.
+    // TODO: 필요한 루트 시그니쳐를 캐싱하는 방식으로 접근하자.
+    // Descriptor Range 는 같은 타입의 Descriptor 여러개를 나타낸다.
+    D3D12_DESCRIPTOR_RANGE descriptorRanges[2] = {};
 
-    CD3DX12_ROOT_PARAMETER rootParameters[1] = {};
-    rootParameters[0].InitAsDescriptorTable(COUNT_OF(ranges), ranges, D3D12_SHADER_VISIBILITY_ALL);
+    // constant buffer
+    descriptorRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+    descriptorRanges[0].NumDescriptors = 1;
+    descriptorRanges[0].BaseShaderRegister = 0; // b0 부터 시작
+    descriptorRanges[0].RegisterSpace = 0;
+    // NOTE: D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND 를 주면 Root Signature 를 만들 때,
+    // rootParameters[0].DescriptorTable.pDescriptorRanges 의 순서대로 Descriptor Table 의 참조 정보가 만들어진다.
+    descriptorRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+    // texture
+    descriptorRanges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    descriptorRanges[1].NumDescriptors = 1;
+    descriptorRanges[1].BaseShaderRegister = 0; // t0 부터 시작
+    descriptorRanges[1].RegisterSpace = 0;
+    descriptorRanges[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+    // Root Parameter 하나 당 Descriptor Table 하나를 참조하게 된다.
+    D3D12_ROOT_PARAMETER rootParameters[1] = {};
+    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    // Descriptor Table 하나는 여러개의 Descriptor Range 로 구성된다.
+    rootParameters[0].DescriptorTable.NumDescriptorRanges = COUNT_OF(descriptorRanges);
+    rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRanges;
 
     D3D12_STATIC_SAMPLER_DESC samplerDesc = {};
     samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // Trilinear 필터링
@@ -867,7 +966,7 @@ void D3D12App::InitMesh() {
     ID3DBlob *pErrorBlob = nullptr;
 
     if (SUCCEEDED(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &pSignatureBlob, &pErrorBlob))) {
-        pD3DDevice->CreateRootSignature(0, pSignatureBlob->GetBufferPointer(), pSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&pRootSignature));
+        device->CreateRootSignature(0, pSignatureBlob->GetBufferPointer(), pSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
     }
 
     SAFE_RELEASE(pSignatureBlob);
@@ -934,7 +1033,7 @@ float4 PSMain(PSInput input) : SV_TARGET {
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
     // NOTE: 나중에 호출할 SetGraphicsRootSignature() 에서 PSO 에 지정된 RootSignature 와 다르면 안된다.
     // 여기서 RootSignature 를 지정하는 이유는 파이프라인 호환성 검사 및 최적화 때문이다.
-    psoDesc.pRootSignature = pRootSignature;
+    psoDesc.pRootSignature = rootSignature;
     psoDesc.VS = CD3DX12_SHADER_BYTECODE(pVertexShader->GetBufferPointer(), pVertexShader->GetBufferSize());
     psoDesc.PS = CD3DX12_SHADER_BYTECODE(pPixelShader->GetBufferPointer(), pPixelShader->GetBufferSize());
     psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
@@ -947,7 +1046,7 @@ float4 PSMain(PSInput input) : SV_TARGET {
     psoDesc.NumRenderTargets = 1;
     psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
     psoDesc.SampleDesc.Count = 1;
-    pD3DDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pPipelineState));
+    device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
 
     SAFE_RELEASE(pVertexShader);
     SAFE_RELEASE(pPixelShader);
@@ -964,18 +1063,18 @@ float4 PSMain(PSInput input) : SV_TARGET {
         0, 1, 2
     };
 
-    pVertexBuffer = CreateVertexBuffer(sizeof(Vertex3D), 3, (void *)vertices, &vertexBufferView);
-    pIndexBuffer = CreateIndexBuffer(sizeof(uint16_t), 3, (void *)indexes, &indexBufferView);
+    vertexBuffer = CreateVertexBuffer(sizeof(Vertex3D), 3, (void *)vertices, &vertexBufferView);
+    indexBuffer = CreateIndexBuffer(sizeof(uint16_t), 3, (void *)indexes, &indexBufferView);
 }
 
 void D3D12App::FreeMesh() {
-    SAFE_RELEASE(pVertexBuffer);
-    SAFE_RELEASE(pIndexBuffer);
-    SAFE_RELEASE(pRootSignature);
-    SAFE_RELEASE(pPipelineState);
+    SAFE_RELEASE(vertexBuffer);
+    SAFE_RELEASE(indexBuffer);
+    SAFE_RELEASE(rootSignature);
+    SAFE_RELEASE(pipelineState);
     SAFE_RELEASE(meshDescriptorHeap);
     SAFE_RELEASE(defaultTexture);
-    SAFE_RELEASE(pConstantBuffer);
+    SAFE_RELEASE(constantBuffer);
 }
 
 void D3D12App::DrawMesh() {
@@ -985,17 +1084,19 @@ void D3D12App::DrawMesh() {
     offset->x = 0.5f * BE1::Math::Cos(currentTime);
     offset->y = 0.5f * BE1::Math::Sin(currentTime * 3);
 
-    // 삼각형 그리기
-    pCommandList->SetGraphicsRootSignature(pRootSignature);
+    commandList->SetDescriptorHeaps(1, &meshDescriptorHeap);
 
-    pCommandList->SetDescriptorHeaps(1, &meshDescriptorHeap);
+    commandList->SetGraphicsRootSignature(rootSignature);
 
     CD3DX12_GPU_DESCRIPTOR_HANDLE gpuDescriptorTable(meshDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-    pCommandList->SetGraphicsRootDescriptorTable(0, gpuDescriptorTable);
+    commandList->SetGraphicsRootDescriptorTable(0, gpuDescriptorTable);
 
-    pCommandList->SetPipelineState(pPipelineState);
-    pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    pCommandList->IASetVertexBuffers(0, 1, &vertexBufferView);
-    pCommandList->IASetIndexBuffer(&indexBufferView);
-    pCommandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
+    //gpuDescriptorTable.Offset(1, DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
+    //pCommandList->SetGraphicsRootDescriptorTable(1, gpuDescriptorTable);
+
+    commandList->SetPipelineState(pipelineState);
+    commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
+    commandList->IASetIndexBuffer(&indexBufferView);
+    commandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
 }
