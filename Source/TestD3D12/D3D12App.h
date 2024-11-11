@@ -65,14 +65,17 @@ private:
     D3D12_VIEWPORT              viewport = {};
     D3D12_RECT                  scissorRect = {};
 
-    ID3D12Resource*             defaultTexture = nullptr;
-    ID3D12DescriptorHeap *      pTextureDescriptorHeap = nullptr;
+    ID3D12Resource *            defaultTexture = nullptr;
+    ID3D12Resource *            pConstantBuffer = nullptr;
+    ID3D12DescriptorHeap *      meshDescriptorHeap = nullptr;
     ID3D12RootSignature *       pRootSignature = nullptr;
     ID3D12PipelineState *       pPipelineState = nullptr;
     ID3D12Resource *            pVertexBuffer = nullptr;
     D3D12_VERTEX_BUFFER_VIEW    vertexBufferView;
     ID3D12Resource *            pIndexBuffer = nullptr;
     D3D12_INDEX_BUFFER_VIEW     indexBufferView;
+
+    void *                      mappedConstantBase;
 
     bool                        initialized = false;
 };

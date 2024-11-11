@@ -27,6 +27,10 @@ struct Vertex3D {
     BE1::Vec2   texCoord;
 };
 
+struct DefaultConstantBuffer {
+    BE1::Vec4   offset;
+};
+
 D3D12App        app;
 
 void D3D12App::Init(HWND hwnd) {
@@ -782,20 +786,43 @@ void D3D12App::OnResize(int width, int height) {
 }
 
 void D3D12App::InitMesh() {
+    // 이미지 파일로 텍스쳐 만들기
     BE1::Image *image = BE1::Image::NewImageFromFile("Data/EngineTextures/checker.dds");
     if (image) {
         defaultTexture = CreateTexture2D(image, image->GetFormat(), true);
         delete image;
     }
 
-    // 텍스쳐의 디스크립터 힙 만들기
+    // CB 용 업로드 버퍼 생성
+    UINT constantBufferSize = (UINT)BE1::AlignUp(sizeof(DefaultConstantBuffer), 256);
+    pD3DDevice->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+        D3D12_HEAP_FLAG_NONE,
+        &CD3DX12_RESOURCE_DESC::Buffer(constantBufferSize),
+        D3D12_RESOURCE_STATE_COMMON,
+        nullptr, IID_PPV_ARGS(&pConstantBuffer));
+
+    // 디스크립터 힙 만들기
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
-    descriptorHeapDesc.NumDescriptors = 1;
+    descriptorHeapDesc.NumDescriptors = 2;
     descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    pD3DDevice->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&pTextureDescriptorHeap));
+    pD3DDevice->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&meshDescriptorHeap));
 
-    // 텍스쳐의 디스크립터에 SRV 저장
+    // 디스크립터에 CBV 만들기
+    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+    cbvDesc.BufferLocation = pConstantBuffer->GetGPUVirtualAddress();
+    cbvDesc.SizeInBytes = constantBufferSize;
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle(meshDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 0, DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
+    pD3DDevice->CreateConstantBufferView(&cbvDesc, cbvDescriptorHandle);
+
+    // Map and initialize the constant buffer. We don't unmap this until the
+    // app closes. Keeping things mapped for the lifetime of the resource is okay.
+    CD3DX12_RANGE writeRange(0, 0); // We do not intend to read from this resource on the CPU.
+    pConstantBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedConstantBase));
+
+    // 디스크립터에 SRV 만들기
     D3D12_RESOURCE_DESC defaultTextureDesc = defaultTexture->GetDesc();
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.Format = defaultTextureDesc.Format;
@@ -803,12 +830,13 @@ void D3D12App::InitMesh() {
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
     srvDesc.Texture2D.MipLevels = defaultTextureDesc.MipLevels;
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE srvDescriptorHandle(pTextureDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 0, DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
+    CD3DX12_CPU_DESCRIPTOR_HANDLE srvDescriptorHandle(meshDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 1, DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
     pD3DDevice->CreateShaderResourceView(defaultTexture, &srvDesc, srvDescriptorHandle);
 
     // Mesh 를 렌더링하기 위한 Root Signature (샘플러와 파라미터 정보) 만들기
-    CD3DX12_DESCRIPTOR_RANGE ranges[1] = {};
-    ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // t0 : texture
+    CD3DX12_DESCRIPTOR_RANGE ranges[2] = {};
+    ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); // b0 : constant buffer
+    ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // t0 : texture
 
     CD3DX12_ROOT_PARAMETER rootParameters[1] = {};
     rootParameters[0].InitAsDescriptorTable(COUNT_OF(ranges), ranges, D3D12_SHADER_VISIBILITY_ALL);
@@ -833,7 +861,7 @@ void D3D12App::InitMesh() {
     rootSignatureDesc.pParameters = rootParameters;
     rootSignatureDesc.NumStaticSamplers = 1;
     rootSignatureDesc.pStaticSamplers = &samplerDesc;
-    rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT; // Input Assembler 에서 Input Layout 을 사용할 수 있다
+    rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
     ID3DBlob *pSignatureBlob = nullptr;
     ID3DBlob *pErrorBlob = nullptr;
@@ -859,18 +887,23 @@ struct PSInput {
     float2 texCoord : TEXCOORD0;
 };
 
+cbuffer CONSTANT_BUFFER_DEFAULT : register(b0) {
+    float4 offset;
+};
+
+Texture2D defaultTexture : register(t0);
+SamplerState defaultSampler : register(s0);
+
 PSInput VSMain(VSInput input) {
     PSInput result = (PSInput)0;
 
     result.position = input.position;
+    result.position.xy += offset.xy;
     result.color = input.color;
     result.texCoord = input.texCoord;
 
     return result;
 }
-
-Texture2D defaultTexture : register(t0);
-SamplerState defaultSampler : register(s0);
 
 float4 PSMain(PSInput input) : SV_TARGET {
     float4 color = defaultTexture.Sample(defaultSampler, input.texCoord);
@@ -940,17 +973,24 @@ void D3D12App::FreeMesh() {
     SAFE_RELEASE(pIndexBuffer);
     SAFE_RELEASE(pRootSignature);
     SAFE_RELEASE(pPipelineState);
-    SAFE_RELEASE(pTextureDescriptorHeap);
+    SAFE_RELEASE(meshDescriptorHeap);
     SAFE_RELEASE(defaultTexture);
+    SAFE_RELEASE(pConstantBuffer);
 }
 
 void D3D12App::DrawMesh() {
+    float currentTime = BE1::PlatformTime::Seconds();
+
+    BE1::Vec4* offset = reinterpret_cast<BE1::Vec4*>(mappedConstantBase);
+    offset->x = 0.5f * BE1::Math::Cos(currentTime);
+    offset->y = 0.5f * BE1::Math::Sin(currentTime * 3);
+
     // 삼각형 그리기
     pCommandList->SetGraphicsRootSignature(pRootSignature);
 
-    pCommandList->SetDescriptorHeaps(1, &pTextureDescriptorHeap);
+    pCommandList->SetDescriptorHeaps(1, &meshDescriptorHeap);
 
-    CD3DX12_GPU_DESCRIPTOR_HANDLE gpuDescriptorTable(pTextureDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+    CD3DX12_GPU_DESCRIPTOR_HANDLE gpuDescriptorTable(meshDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
     pCommandList->SetGraphicsRootDescriptorTable(0, gpuDescriptorTable);
 
     pCommandList->SetPipelineState(pPipelineState);
