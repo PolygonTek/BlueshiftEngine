@@ -35,7 +35,18 @@ public:
     ID3D12Resource *            CreateVertexBuffer(int vertexSize, int numVerts, void *data, D3D12_VERTEX_BUFFER_VIEW *pOutVertexBufferView);
     ID3D12Resource *            CreateIndexBuffer(int indexSize, int numIndexes, void *data, D3D12_INDEX_BUFFER_VIEW *pOutIndexBufferView);
 
+    ID3D12Resource *            CreateTexture2D(const BE1::Image *image, BE1::Image::Format::Enum dstFormat, bool useMipmaps);
+    ID3D12Resource *            CreateTexture2D(const BE1::Image *image);
+
+    bool                        ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT* dxgiFormat) const;
+    bool                        IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) const { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
+    BE1::Image::Format::Enum    ToSupportedUncompressedFormat(BE1::Image::Format::Enum imageFormat);
+
 private:
+    void                        InitMesh();
+    void                        FreeMesh();
+    void                        DrawMesh();
+
     static constexpr UINT       backBufferCount = 2;
 
     ID3D12Device5 *             pD3DDevice = nullptr;
@@ -51,15 +62,17 @@ private:
     ID3D12Fence *               pFence = nullptr;
     UINT64                      fenceValue = 0;
     UINT                        currentBackBufferIndex = 0;
+    D3D12_VIEWPORT              viewport = {};
+    D3D12_RECT                  scissorRect = {};
 
+    ID3D12Resource*             defaultTexture = nullptr;
+    ID3D12DescriptorHeap *      pTextureDescriptorHeap = nullptr;
     ID3D12RootSignature *       pRootSignature = nullptr;
     ID3D12PipelineState *       pPipelineState = nullptr;
     ID3D12Resource *            pVertexBuffer = nullptr;
     D3D12_VERTEX_BUFFER_VIEW    vertexBufferView;
     ID3D12Resource *            pIndexBuffer = nullptr;
     D3D12_INDEX_BUFFER_VIEW     indexBufferView;
-    D3D12_VIEWPORT              viewport = {};
-    D3D12_RECT                  scissorRect = {};
 
     bool                        initialized = false;
 };

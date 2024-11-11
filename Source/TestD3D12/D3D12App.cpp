@@ -22,11 +22,12 @@ extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 614; }
 extern "C" { __declspec(dllexport) extern const char *D3D12SDKPath = u8"."; }
 
 struct Vertex3D {
-    DirectX::XMFLOAT3   position;
-    DirectX::XMFLOAT4   color;
+    BE1::Vec3   position;
+    BE1::Vec4   color;
+    BE1::Vec2   texCoord;
 };
 
-D3D12App app;
+D3D12App        app;
 
 void D3D12App::Init(HWND hwnd) {
     DWORD dwCreateFactoryFlags = 0;
@@ -195,104 +196,7 @@ void D3D12App::Init(HWND hwnd) {
     // 현재 백버퍼 인덱스 초기화
     currentBackBufferIndex = pSwapChain->GetCurrentBackBufferIndex();
 
-    // Root Signature 만들기
-    // NOTE: 현재는 Input Assembler 에서 Input Layout 을 사용할 수 있다라는 정보 밖에 없다.
-    D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-    rootSignatureDesc.NumParameters = 0;
-    rootSignatureDesc.pParameters = nullptr;
-    rootSignatureDesc.NumStaticSamplers = 0;
-    rootSignatureDesc.pStaticSamplers = nullptr;
-    rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-    ID3DBlob *pSignatureBlob = nullptr;
-    ID3DBlob *pErrorBlob = nullptr;
-
-    if (SUCCEEDED(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &pSignatureBlob, &pErrorBlob))) {
-        pD3DDevice->CreateRootSignature(0, pSignatureBlob->GetBufferPointer(), pSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&pRootSignature));
-    }
-
-    SAFE_RELEASE(pSignatureBlob);
-    SAFE_RELEASE(pErrorBlob);
-
-    // Shader Compile
-    const char *shaderText = R"(
-struct PSInput
-{
-    float4 position : SV_POSITION;
-    float4 color : COLOR;
-};
-
-PSInput VSMain(float4 position : POSITION, float4 color : COLOR)
-{
-    PSInput result;
-
-    result.position = position;
-    result.color = color;
-
-    return result;
-}
-
-float4 PSMain(PSInput input) : SV_TARGET
-{
-    return input.color;
-})";
-
-#if defined(_DEBUG)
-    // Enable better shader debugging with the graphics debugging tools.
-    UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-    UINT compileFlags = 0;
-#endif
-
-    ID3DBlob *pVertexShader = nullptr;
-    D3DCompile(shaderText, strlen(shaderText), "shaderText", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &pVertexShader, nullptr);
-
-    ID3DBlob *pPixelShader = nullptr;
-    D3DCompile(shaderText, strlen(shaderText), "shaderText", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pPixelShader, nullptr);
-
-    // Define the vertex input layout.
-    D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
-    {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-    };
-
-    // PSO 만들기
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-    // NOTE: 나중에 호출할 SetGraphicsRootSignature() 에서 PSO 에 지정된 RootSignature 와 다르면 안된다.
-    // 여기서 RootSignature 를 지정하는 이유는 파이프라인 호환성 검사 및 최적화 때문이다.
-    psoDesc.pRootSignature = pRootSignature;
-    psoDesc.VS = CD3DX12_SHADER_BYTECODE(pVertexShader->GetBufferPointer(), pVertexShader->GetBufferSize());
-    psoDesc.PS = CD3DX12_SHADER_BYTECODE(pPixelShader->GetBufferPointer(), pPixelShader->GetBufferSize());
-    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-    psoDesc.SampleMask = UINT_MAX;
-    psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-    psoDesc.DepthStencilState.DepthEnable = FALSE;
-    psoDesc.DepthStencilState.StencilEnable = FALSE;
-    psoDesc.InputLayout = { inputElementDescs, COUNT_OF(inputElementDescs) };
-    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    psoDesc.NumRenderTargets = 1;
-    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-    psoDesc.SampleDesc.Count = 1;
-    pD3DDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pPipelineState));
-
-    SAFE_RELEASE(pVertexShader);
-    SAFE_RELEASE(pPixelShader);
-
-    // Create the vertex buffer.
-    // Define the geometry for a triangle.
-    const Vertex3D vertices[] = {
-        { { 0.0f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
-        { { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
-        { { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } }
-    };
-
-    const uint16_t indexes[] = {
-        0, 1, 2
-    };
-
-    pVertexBuffer = CreateVertexBuffer(sizeof(Vertex3D), 3, (void*)vertices, &vertexBufferView);
-    pIndexBuffer = CreateIndexBuffer(sizeof(uint16_t), 3, (void *)indexes, &indexBufferView);
+    InitMesh();
 
     initialized = true;
 }
@@ -300,10 +204,8 @@ float4 PSMain(PSInput input) : SV_TARGET
 void D3D12App::Shutdown() {
     Finish();
 
-    SAFE_RELEASE(pVertexBuffer);
-    SAFE_RELEASE(pIndexBuffer);
-    SAFE_RELEASE(pRootSignature);
-    SAFE_RELEASE(pPipelineState);
+    FreeMesh();
+
     SAFE_RELEASE(pRTVDescriptorHeap);
     SAFE_RELEASE_ARRAY(pBackBuffers);
     SAFE_RELEASE(pSwapChain);
@@ -346,13 +248,7 @@ void D3D12App::Draw(float t) {
     pCommandList->RSSetScissorRects(1, &scissorRect);
     pCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, nullptr);
 
-    // 삼각형 그리기
-    pCommandList->SetGraphicsRootSignature(pRootSignature);
-    pCommandList->SetPipelineState(pPipelineState);
-    pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    pCommandList->IASetVertexBuffers(0, 1, &vertexBufferView);
-    pCommandList->IASetIndexBuffer(&indexBufferView);
-    pCommandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
+    DrawMesh();
 
     // 백버퍼 RTV 를 Present 할 수 있는 상태로 전환
     pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pBackBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
@@ -393,19 +289,17 @@ void D3D12App::Finish() {
     }
 }
 
-ID3D12Resource* D3D12App::CreateVertexBuffer(int vertexSize, int numVerts, void *data, D3D12_VERTEX_BUFFER_VIEW *pOutVertexBufferView)
-{
+ID3D12Resource* D3D12App::CreateVertexBuffer(int vertexSize, int numVerts, void *data, D3D12_VERTEX_BUFFER_VIEW *pOutVertexBufferView) {
     ID3D12Resource* pOutVertexBuffer = nullptr;
     UINT bufferSize = vertexSize * numVerts;
     D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT; // D3D12_HEAP_TYPE_UPLOAD
-    D3D12_RESOURCE_STATES initialBufferState = D3D12_RESOURCE_STATE_COMMON; // D3D12_RESOURCE_STATE_GENERIC_READ;
 
     // GPU 에 버텍스 버퍼 생성
     if (FAILED(pD3DDevice->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(heapType),
         D3D12_HEAP_FLAG_NONE,
         &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
-        initialBufferState,
+        D3D12_RESOURCE_STATE_COPY_DEST,
         nullptr, IID_PPV_ARGS(&pOutVertexBuffer)))) {
         return nullptr;
     }
@@ -419,7 +313,7 @@ ID3D12Resource* D3D12App::CreateVertexBuffer(int vertexSize, int numVerts, void 
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
                 D3D12_HEAP_FLAG_NONE,
                 &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
-                D3D12_RESOURCE_STATE_COMMON,
+                D3D12_RESOURCE_STATE_GENERIC_READ,
                 nullptr, IID_PPV_ARGS(&pUploadBuffer)))) {
                 pOutVertexBuffer->Release();
                 return nullptr;
@@ -431,10 +325,9 @@ ID3D12Resource* D3D12App::CreateVertexBuffer(int vertexSize, int numVerts, void 
             memcpy(mappedPtr, data, bufferSize);
             pUploadBuffer->Unmap(0, nullptr);
 
-            // 데이터 카피
+            // 업로드 버퍼에서 버텍스 버퍼로 데이터 카피
             pCommandAllocator->Reset();
             pCommandList->Reset(pCommandAllocator, nullptr);
-            pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutVertexBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
             pCommandList->CopyBufferRegion(pOutVertexBuffer, 0, pUploadBuffer, 0, bufferSize);
             pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutVertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
             pCommandList->Close();
@@ -457,8 +350,7 @@ ID3D12Resource* D3D12App::CreateVertexBuffer(int vertexSize, int numVerts, void 
     pOutVertexBufferView->StrideInBytes = vertexSize;
     pOutVertexBufferView->SizeInBytes = bufferSize;
 
-    if (pUploadBuffer)
-    {
+    if (pUploadBuffer) {
         // 업로드 버퍼 사용이 끝날 때 까지 기다린 후 Release 한다.
         Finish();
 
@@ -468,21 +360,19 @@ ID3D12Resource* D3D12App::CreateVertexBuffer(int vertexSize, int numVerts, void 
     return pOutVertexBuffer;
 }
 
-ID3D12Resource *D3D12App::CreateIndexBuffer(int indexSize, int numIndexes, void *data, D3D12_INDEX_BUFFER_VIEW *pOutIndexBufferView)
-{
+ID3D12Resource *D3D12App::CreateIndexBuffer(int indexSize, int numIndexes, void *data, D3D12_INDEX_BUFFER_VIEW *pOutIndexBufferView) {
     assert(indexSize == 2 || indexSize == 4);
 
     ID3D12Resource *pOutIndexBuffer = nullptr;
     UINT bufferSize = indexSize * numIndexes;
     D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT; // D3D12_HEAP_TYPE_UPLOAD
-    D3D12_RESOURCE_STATES initialBufferState = D3D12_RESOURCE_STATE_COMMON; // D3D12_RESOURCE_STATE_GENERIC_READ;
 
     // GPU 에 버텍스 버퍼 생성
     if (FAILED(pD3DDevice->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(heapType),
         D3D12_HEAP_FLAG_NONE,
         &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
-        initialBufferState,
+        D3D12_RESOURCE_STATE_COPY_DEST,
         nullptr, IID_PPV_ARGS(&pOutIndexBuffer)))) {
         return nullptr;
     }
@@ -496,7 +386,7 @@ ID3D12Resource *D3D12App::CreateIndexBuffer(int indexSize, int numIndexes, void 
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
                 D3D12_HEAP_FLAG_NONE,
                 &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
-                D3D12_RESOURCE_STATE_COMMON,
+                D3D12_RESOURCE_STATE_GENERIC_READ,
                 nullptr, IID_PPV_ARGS(&pUploadBuffer)))) {
                 pOutIndexBuffer->Release();
                 return nullptr;
@@ -508,10 +398,9 @@ ID3D12Resource *D3D12App::CreateIndexBuffer(int indexSize, int numIndexes, void 
             memcpy(mappedPtr, data, bufferSize);
             pUploadBuffer->Unmap(0, nullptr);
 
-            // 데이터 카피
+            // 업로드 버퍼에서 인덱스 버퍼로 데이터 카피
             pCommandAllocator->Reset();
             pCommandList->Reset(pCommandAllocator, nullptr);
-            pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutIndexBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
             pCommandList->CopyBufferRegion(pOutIndexBuffer, 0, pUploadBuffer, 0, bufferSize);
             pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutIndexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER));
             pCommandList->Close();
@@ -534,8 +423,7 @@ ID3D12Resource *D3D12App::CreateIndexBuffer(int indexSize, int numIndexes, void 
     pOutIndexBufferView->Format = (indexSize == sizeof(uint16_t) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT);
     pOutIndexBufferView->SizeInBytes = bufferSize;
 
-    if (pUploadBuffer)
-    {
+    if (pUploadBuffer) {
         // 업로드 버퍼 사용이 끝날 때 까지 기다린 후 Release 한다.
         Finish();
 
@@ -545,8 +433,330 @@ ID3D12Resource *D3D12App::CreateIndexBuffer(int indexSize, int numIndexes, void 
     return pOutIndexBuffer;
 }
 
-void D3D12App::OnResize(int width, int height)
-{
+ID3D12Resource *D3D12App::CreateTexture2D(const BE1::Image *srcImage, BE1::Image::Format::Enum dstFormat, bool useMipmaps) {
+    BE1::Image::Format::Enum srcFormat = srcImage->GetFormat();
+    bool srcCompressed = BE1::Image::IsCompressed(srcFormat);
+    bool dstCompressed = BE1::Image::IsCompressed(dstFormat);
+
+    bool srcFormatSupported = IsSupportedImageFormat(srcFormat);
+    bool dstFormatSupported = IsSupportedImageFormat(dstFormat);
+
+    BE1::Image uncompressedImage;
+
+    // srcImage 가 지원하지 않는 이미지 포맷이거나 밉맵을 생성해야 한다면, 지원되는 가장 비슷한 무압축 포맷으로 컨버팅한다.
+    if (!srcFormatSupported || (useMipmaps && srcImage->NumMipmaps() == 1 && (srcImage->IsPacked() || srcImage->IsCompressed()))) {
+        BE1::Image::Format::Enum supportedUncompressedFormat = ToSupportedUncompressedFormat(srcFormat);
+
+        srcImage->ConvertFormat(supportedUncompressedFormat, uncompressedImage);
+        srcImage = &uncompressedImage;
+
+        srcFormat = supportedUncompressedFormat;
+        srcFormatSupported = IsSupportedImageFormat(srcFormat);
+        srcCompressed = false;
+    }
+
+    BE1::Image mipmapedImage;
+
+    // 밉맵을 직접 생성한다.
+    if (useMipmaps && srcImage->NumMipmaps() == 1) {
+        int w = srcImage->GetWidth();
+        int h = srcImage->GetHeight();
+        int d = srcImage->GetDepth();
+        int maxGenLevels = BE1::Image::MaxMipMapLevels(w, h, d);
+
+        mipmapedImage.Create(w, h, d, srcImage->NumSlices(), maxGenLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
+        mipmapedImage.CopyFrom(*srcImage, 0, 1);
+        mipmapedImage.GenerateMipmaps();
+        srcImage = &mipmapedImage;
+    }
+    return CreateTexture2D(srcImage);
+}
+
+ID3D12Resource *D3D12App::CreateTexture2D(const BE1::Image* srcImage) {
+    BE1::Image::Format::Enum srcFormat = srcImage->GetFormat();
+    bool isLinearSpace = srcImage->GetGammaSpace() == BE1::Image::GammaSpace::Linear;
+
+    DXGI_FORMAT dxgiFormat;
+    bool srcFormatSupported = ImageFormatToDXGIFormat(srcFormat, !isLinearSpace, &dxgiFormat);
+    if (!srcFormatSupported) {
+        BE_WARNLOG("Unsupported image format %s\n", BE1::Image::FormatName(srcFormat));
+        return nullptr;
+    }
+
+    int maxMipLevels = srcImage->NumMipmaps();
+
+    // GPU 에 텍스쳐 리소스 생성
+    D3D12_RESOURCE_DESC textureDesc = {};
+    textureDesc.MipLevels = static_cast<UINT16>(maxMipLevels);
+    textureDesc.Format = dxgiFormat;
+    textureDesc.Width = static_cast<UINT>(srcImage->GetWidth());
+    textureDesc.Height = static_cast<UINT>(srcImage->GetHeight());
+    textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+    textureDesc.DepthOrArraySize = 1;
+    textureDesc.SampleDesc.Count = 1;
+    textureDesc.SampleDesc.Quality = 0;
+    textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+
+    ID3D12Resource *pOutTexture = nullptr;
+    if (FAILED(pD3DDevice->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+        D3D12_HEAP_FLAG_NONE,
+        &textureDesc,
+        D3D12_RESOURCE_STATE_COPY_DEST,
+        nullptr, IID_PPV_ARGS(&pOutTexture)))) {
+        return nullptr;
+    }
+
+    // 텍스쳐 리소스에 write 할 수 있는 (Footprint = 차지하는 공간) 메모리 정보를 얻어온다.
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipFootprints[16];
+    UINT64 size;
+
+    pD3DDevice->GetCopyableFootprints(&textureDesc, 0, textureDesc.MipLevels, 0, mipFootprints, nullptr, nullptr, &size);
+
+    // 업로드 버퍼 생성
+    ID3D12Resource *pUploadBuffer = nullptr;
+    if (FAILED(pD3DDevice->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+        D3D12_HEAP_FLAG_NONE,
+        &CD3DX12_RESOURCE_DESC::Buffer(size),
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr, IID_PPV_ARGS(&pUploadBuffer)))) {
+        pOutTexture->Release();
+        return nullptr;
+    }
+
+    // 이미지 데이터를 업로드 버퍼에 write
+    UINT8 *mappedPtr = nullptr;
+    CD3DX12_RANGE writeRange(0, 0);
+    pUploadBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedPtr));
+
+    byte *dstPtr = mappedPtr;
+    int bpp = srcImage->IsCompressed() ? srcImage->BytesPerBlock() : srcImage->BytesPerPixel();
+
+    for (int mipLevel = 0; mipLevel < maxMipLevels; ++mipLevel) {
+        int srcWidth = srcImage->GetWidth(mipLevel);
+        int srcHeight = srcImage->GetHeight(mipLevel);
+        int srcPitch = (srcImage->IsCompressed() ? (srcWidth >> 2) : srcWidth) * bpp;
+        int srcRows = srcImage->IsCompressed() ? (srcHeight >> 2) : srcHeight;
+        const byte *srcPtr = srcImage->GetPixels(mipLevel);
+
+        while (srcRows--) {
+            memcpy(dstPtr, srcPtr, srcPitch);
+            srcPtr += srcPitch;
+            dstPtr += mipFootprints[mipLevel].Footprint.RowPitch;
+        }
+    }
+
+    pUploadBuffer->Unmap(0, nullptr);
+
+    // 업로드 버퍼에서 텍스쳐로 데이터 카피
+    pCommandAllocator->Reset();
+    pCommandList->Reset(pCommandAllocator, nullptr);
+
+    for (int mipLevel = 0; mipLevel < maxMipLevels; ++mipLevel) {
+        D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
+        srcLocation.PlacedFootprint = mipFootprints[mipLevel];
+        srcLocation.pResource = pUploadBuffer;
+        srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+
+        D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
+        dstLocation.PlacedFootprint = mipFootprints[mipLevel];
+        dstLocation.pResource = pOutTexture;
+        dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        dstLocation.SubresourceIndex = mipLevel;
+
+        pCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+    }
+
+    pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutTexture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE));
+    pCommandList->Close();
+
+    // 커맨드 큐 실행
+    ID3D12CommandList *ppCommandLists[] = { pCommandList };
+    pCommandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
+
+    if (pUploadBuffer) {
+        // 업로드 버퍼 사용이 끝날 때 까지 기다린 후 Release 한다.
+        Finish();
+
+        pUploadBuffer->Release();
+    }
+    
+    return pOutTexture;
+}
+
+bool D3D12App::ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat) const {
+    switch (imageFormat) {
+    case BE1::Image::Format::L_8:
+    case BE1::Image::Format::R_8:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_UNORM;
+        return true;
+    case BE1::Image::Format::A_8:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_A8_UNORM;
+        return true;
+    case BE1::Image::Format::RG_8_8:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8_UNORM;
+        return true;
+    case BE1::Image::Format::RGBA_8_8_8_8:
+        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+        return true;
+    case BE1::Image::Format::BGRA_8_8_8_8:
+        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_B8G8R8A8_UNORM_SRGB : DXGI_FORMAT_B8G8R8A8_UNORM;
+        return true;
+    case BE1::Image::Format::BGRX_8_8_8_8:
+        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_B8G8R8X8_UNORM_SRGB : DXGI_FORMAT_B8G8R8X8_UNORM;
+        return true;
+    case BE1::Image::Format::R_8_SNORM:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_SNORM;
+        return true;
+    case BE1::Image::Format::RG_8_8_SNORM:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8_SNORM;
+        return true;
+    case BE1::Image::Format::RGBA_8_8_8_8_SNORM:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8B8A8_SNORM;
+        return true;
+    case BE1::Image::Format::BGR_5_6_5:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B5G6R5_UNORM;
+        return true;
+    case BE1::Image::Format::BGRA_4_4_4_4:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B4G4R4A4_UNORM;
+        return true;
+    case BE1::Image::Format::ABGR_4_4_4_4:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_A4B4G4R4_UNORM;
+        return true;
+    case BE1::Image::Format::BGRA_5_5_5_1:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B5G5R5A1_UNORM;
+        return true;
+    case BE1::Image::Format::RGBA_10_10_10_2:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
+        return true;
+    case BE1::Image::Format::L_16F:
+    case BE1::Image::Format::R_16F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16_FLOAT;
+        return true;
+    case BE1::Image::Format::RG_16F_16F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16G16_FLOAT;
+        return true;
+    case BE1::Image::Format::RGBA_16F_16F_16F_16F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+        return true;
+    case BE1::Image::Format::R_32F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32_FLOAT;
+        return true;
+    case BE1::Image::Format::RG_32F_32F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32G32_FLOAT;
+        return true;
+    case BE1::Image::Format::RGB_32F_32F_32F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+        return true;
+    case BE1::Image::Format::RGBA_32F_32F_32F_32F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
+        return true;
+    case BE1::Image::Format::RGBE_9_9_9_5:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R9G9B9E5_SHAREDEXP;
+        return true;
+    case BE1::Image::Format::RGB_11F_11F_10F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R11G11B10_FLOAT;
+        return true;
+    case BE1::Image::Format::DXT1: // BC1
+        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC1_UNORM_SRGB : DXGI_FORMAT_BC1_UNORM;
+        return true;
+    case BE1::Image::Format::DXT3: // BC2
+        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC2_UNORM_SRGB : DXGI_FORMAT_BC2_UNORM;
+        return true;
+    case BE1::Image::Format::DXT5: // BC3
+        if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC3_UNORM_SRGB : DXGI_FORMAT_BC3_UNORM;
+        return true;
+    case BE1::Image::Format::Depth_16:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D16_UNORM;
+        return true;
+    case BE1::Image::Format::Depth_32F:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D32_FLOAT;
+        return true;
+    case BE1::Image::Format::DepthStencil_24_8:
+        if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        return true;
+    }
+    return false;
+}
+
+BE1::Image::Format::Enum D3D12App::ToSupportedUncompressedFormat(BE1::Image::Format::Enum inFormat) {
+    BE1::Image::Format::Enum outFormat;
+
+    switch (inFormat) {
+    case BE1::Image::Format::RGB_5_6_5:
+    case BE1::Image::Format::RGB_8_8_8:
+    case BE1::Image::Format::BGR_5_6_5:
+    case BE1::Image::Format::BGR_8_8_8:
+    case BE1::Image::Format::RGBX_4_4_4_4:
+    case BE1::Image::Format::RGBX_5_5_5_1:
+    case BE1::Image::Format::RGBX_8_8_8_8:
+    case BE1::Image::Format::BGRX_4_4_4_4:
+    case BE1::Image::Format::BGRX_5_5_5_1:
+        outFormat = BE1::Image::Format::BGRX_8_8_8_8;
+        break;
+    case BE1::Image::Format::LA_8_8:
+    case BE1::Image::Format::RGBA_4_4_4_4:
+    case BE1::Image::Format::RGBA_5_5_5_1:
+    case BE1::Image::Format::BGRA_4_4_4_4:
+    case BE1::Image::Format::BGRA_5_5_5_1:
+    case BE1::Image::Format::ABGR_4_4_4_4:
+    case BE1::Image::Format::ABGR_1_5_5_5:
+    case BE1::Image::Format::ABGR_8_8_8_8:
+    case BE1::Image::Format::ARGB_4_4_4_4:
+    case BE1::Image::Format::ARGB_1_5_5_5:
+    case BE1::Image::Format::ARGB_8_8_8_8:
+        outFormat = BE1::Image::Format::BGRA_8_8_8_8;
+        break;
+    case BE1::Image::Format::RGB_8_8_8_SNORM:
+        outFormat = BE1::Image::Format::RGBA_8_8_8_8_SNORM;
+        break;
+    case BE1::Image::Format::RGB_16F_16F_16F:
+        outFormat = BE1::Image::Format::RGBA_16F_16F_16F_16F;
+        break;
+    case BE1::Image::Format::RGB_32F_32F_32F:
+        outFormat = BE1::Image::Format::RGBA_32F_32F_32F_32F;
+        break;
+    case BE1::Image::Format::DXN1:
+    case BE1::Image::Format::DXN2:
+    case BE1::Image::Format::RGB_PVRTC_2BPPV1:
+    case BE1::Image::Format::RGB_PVRTC_4BPPV1:
+    case BE1::Image::Format::RGB_8_ETC1:
+    case BE1::Image::Format::RGB_8_ETC2:
+    case BE1::Image::Format::RGB_ATC:
+        outFormat = BE1::Image::Format::BGRX_8_8_8_8;
+        break;
+    case BE1::Image::Format::DXT1:
+    case BE1::Image::Format::DXT3:
+    case BE1::Image::Format::DXT5:
+    case BE1::Image::Format::RGBA_PVRTC_2BPPV1:
+    case BE1::Image::Format::RGBA_PVRTC_4BPPV1:
+    case BE1::Image::Format::RGBA_PVRTC_2BPPV2:
+    case BE1::Image::Format::RGBA_PVRTC_4BPPV2:
+    case BE1::Image::Format::RGBA_8_1_ETC2:
+    case BE1::Image::Format::RGBA_8_8_ETC2:
+    case BE1::Image::Format::RGBA_EA_ATC:
+    case BE1::Image::Format::RGBA_IA_ATC:
+        outFormat = BE1::Image::Format::RGBA_8_8_8_8;
+        break;
+    case BE1::Image::Format::R_11_EAC:
+    case BE1::Image::Format::SignedR_11_EAC:
+        outFormat = BE1::Image::Format::R_16F;
+        break;
+    case BE1::Image::Format::RG_11_11_EAC:
+    case BE1::Image::Format::SignedRG_11_11_EAC:
+        outFormat = BE1::Image::Format::RG_16F_16F;
+        break;
+    default:
+        assert(0);
+        outFormat = inFormat;
+        break;
+    }
+
+    return outFormat;
+}
+
+void D3D12App::OnResize(int width, int height) {
     // 기존 백버퍼 해제
     SAFE_RELEASE_ARRAY(pBackBuffers);
 
@@ -556,8 +766,7 @@ void D3D12App::OnResize(int width, int height)
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
     // 스왑 체인에 연결된 백버퍼로 다시 각각의 RTV 에 연결한다.
-    for (UINT backBufferIndex = 0; backBufferIndex < backBufferCount; ++backBufferIndex)
-    {
+    for (UINT backBufferIndex = 0; backBufferIndex < backBufferCount; ++backBufferIndex) {
         pSwapChain->GetBuffer(backBufferIndex, IID_PPV_ARGS(&pBackBuffers[backBufferIndex]));
         pD3DDevice->CreateRenderTargetView(pBackBuffers[backBufferIndex], nullptr, rtvHandle);
         rtvHandle.Offset(1, DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
@@ -570,4 +779,183 @@ void D3D12App::OnResize(int width, int height)
 
     scissorRect.right = width;
     scissorRect.bottom = height;
+}
+
+void D3D12App::InitMesh() {
+    BE1::Image *image = BE1::Image::NewImageFromFile("Data/EngineTextures/checker.dds");
+    if (image) {
+        defaultTexture = CreateTexture2D(image, image->GetFormat(), true);
+        delete image;
+    }
+
+    // 텍스쳐의 디스크립터 힙 만들기
+    D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
+    descriptorHeapDesc.NumDescriptors = 1;
+    descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+    pD3DDevice->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&pTextureDescriptorHeap));
+
+    // 텍스쳐의 디스크립터에 SRV 저장
+    D3D12_RESOURCE_DESC defaultTextureDesc = defaultTexture->GetDesc();
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format = defaultTextureDesc.Format;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = defaultTextureDesc.MipLevels;
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE srvDescriptorHandle(pTextureDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 0, DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
+    pD3DDevice->CreateShaderResourceView(defaultTexture, &srvDesc, srvDescriptorHandle);
+
+    // Mesh 를 렌더링하기 위한 Root Signature (샘플러와 파라미터 정보) 만들기
+    CD3DX12_DESCRIPTOR_RANGE ranges[1] = {};
+    ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); // t0 : texture
+
+    CD3DX12_ROOT_PARAMETER rootParameters[1] = {};
+    rootParameters[0].InitAsDescriptorTable(COUNT_OF(ranges), ranges, D3D12_SHADER_VISIBILITY_ALL);
+
+    D3D12_STATIC_SAMPLER_DESC samplerDesc = {};
+    samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // Trilinear 필터링
+    samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    samplerDesc.MipLODBias = 0.0f;
+    samplerDesc.MaxAnisotropy = 16;
+    samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+    samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE;
+    samplerDesc.MinLOD = -FLT_MAX;
+    samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
+    samplerDesc.ShaderRegister = 0;
+    samplerDesc.RegisterSpace = 0;
+    samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+    D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc;
+    rootSignatureDesc.NumParameters = COUNT_OF(rootParameters);
+    rootSignatureDesc.pParameters = rootParameters;
+    rootSignatureDesc.NumStaticSamplers = 1;
+    rootSignatureDesc.pStaticSamplers = &samplerDesc;
+    rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT; // Input Assembler 에서 Input Layout 을 사용할 수 있다
+
+    ID3DBlob *pSignatureBlob = nullptr;
+    ID3DBlob *pErrorBlob = nullptr;
+
+    if (SUCCEEDED(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &pSignatureBlob, &pErrorBlob))) {
+        pD3DDevice->CreateRootSignature(0, pSignatureBlob->GetBufferPointer(), pSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&pRootSignature));
+    }
+
+    SAFE_RELEASE(pSignatureBlob);
+    SAFE_RELEASE(pErrorBlob);
+
+    // Shader Compile
+    const char *shaderText = R"(
+struct VSInput {
+    float4 position : POSITION;
+    float4 color : COLOR;
+    float2 texCoord : TEXCOORD0;
+};
+
+struct PSInput {
+    float4 position : SV_POSITION;
+    float4 color : COLOR;
+    float2 texCoord : TEXCOORD0;
+};
+
+PSInput VSMain(VSInput input) {
+    PSInput result = (PSInput)0;
+
+    result.position = input.position;
+    result.color = input.color;
+    result.texCoord = input.texCoord;
+
+    return result;
+}
+
+Texture2D defaultTexture : register(t0);
+SamplerState defaultSampler : register(s0);
+
+float4 PSMain(PSInput input) : SV_TARGET {
+    float4 color = defaultTexture.Sample(defaultSampler, input.texCoord);
+    return color * input.color;
+})";
+
+#if defined(_DEBUG)
+    // Enable better shader debugging with the graphics debugging tools.
+    UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#else
+    UINT compileFlags = 0;
+#endif
+
+    ID3DBlob *pVertexShader = nullptr;
+    D3DCompile(shaderText, strlen(shaderText), "shaderText", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &pVertexShader, nullptr);
+
+    ID3DBlob *pPixelShader = nullptr;
+    D3DCompile(shaderText, strlen(shaderText), "shaderText", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pPixelShader, nullptr);
+
+    // Define the vertex input layout.
+    D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 28, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+    };
+
+    // PSO 만들기
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+    // NOTE: 나중에 호출할 SetGraphicsRootSignature() 에서 PSO 에 지정된 RootSignature 와 다르면 안된다.
+    // 여기서 RootSignature 를 지정하는 이유는 파이프라인 호환성 검사 및 최적화 때문이다.
+    psoDesc.pRootSignature = pRootSignature;
+    psoDesc.VS = CD3DX12_SHADER_BYTECODE(pVertexShader->GetBufferPointer(), pVertexShader->GetBufferSize());
+    psoDesc.PS = CD3DX12_SHADER_BYTECODE(pPixelShader->GetBufferPointer(), pPixelShader->GetBufferSize());
+    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+    psoDesc.SampleMask = UINT_MAX;
+    psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+    psoDesc.DepthStencilState.DepthEnable = FALSE;
+    psoDesc.DepthStencilState.StencilEnable = FALSE;
+    psoDesc.InputLayout = { inputElementDescs, COUNT_OF(inputElementDescs) };
+    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    psoDesc.NumRenderTargets = 1;
+    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    psoDesc.SampleDesc.Count = 1;
+    pD3DDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pPipelineState));
+
+    SAFE_RELEASE(pVertexShader);
+    SAFE_RELEASE(pPixelShader);
+
+    // 삼각형의 버텍스/인덱스 버퍼 내용을 작성
+    // NOTE: UV 좌표의 V 는 아래쪽으로 증가함을 주의한다. 나중에 통합 렌더러를 작성한다면, shader code 에서 하는게 좋을 듯..
+    const Vertex3D vertices[] = {
+        { { 0.0f, 0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.5f, 0.0f } },
+        { { 0.5f, -0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
+        { { -0.5f, -0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } },
+    };
+
+    const uint16_t indexes[] = {
+        0, 1, 2
+    };
+
+    pVertexBuffer = CreateVertexBuffer(sizeof(Vertex3D), 3, (void *)vertices, &vertexBufferView);
+    pIndexBuffer = CreateIndexBuffer(sizeof(uint16_t), 3, (void *)indexes, &indexBufferView);
+}
+
+void D3D12App::FreeMesh() {
+    SAFE_RELEASE(pVertexBuffer);
+    SAFE_RELEASE(pIndexBuffer);
+    SAFE_RELEASE(pRootSignature);
+    SAFE_RELEASE(pPipelineState);
+    SAFE_RELEASE(pTextureDescriptorHeap);
+    SAFE_RELEASE(defaultTexture);
+}
+
+void D3D12App::DrawMesh() {
+    // 삼각형 그리기
+    pCommandList->SetGraphicsRootSignature(pRootSignature);
+
+    pCommandList->SetDescriptorHeaps(1, &pTextureDescriptorHeap);
+
+    CD3DX12_GPU_DESCRIPTOR_HANDLE gpuDescriptorTable(pTextureDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+    pCommandList->SetGraphicsRootDescriptorTable(0, gpuDescriptorTable);
+
+    pCommandList->SetPipelineState(pPipelineState);
+    pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    pCommandList->IASetVertexBuffers(0, 1, &vertexBufferView);
+    pCommandList->IASetIndexBuffer(&indexBufferView);
+    pCommandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
 }
