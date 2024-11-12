@@ -7,6 +7,8 @@ set(ALL_FILES
     Precompiled.cpp
     D3D12App.h
     D3D12App.cpp
+    D3D12DescriptorPool.h
+    D3D12DescriptorPool.cpp
     WinMain.cpp
     WinResource.h
     WinRes/small.ico

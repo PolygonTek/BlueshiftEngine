@@ -202,6 +202,9 @@ void D3D12App::Init(HWND hwnd) {
     // 현재 백버퍼 인덱스 초기화
     currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
+    descriptorPool = new D3D12DescriptorPool;
+    descriptorPool->Init(device, 256);
+
     InitMesh();
 
     initialized = true;
@@ -211,6 +214,8 @@ void D3D12App::Shutdown() {
     Finish();
 
     FreeMesh();
+
+    delete descriptorPool;
 
     SAFE_RELEASE(backBuffersDescriptorHeap);
     SAFE_RELEASE_ARRAY(backBuffers);
@@ -879,20 +884,13 @@ void D3D12App::InitMesh() {
         D3D12_RESOURCE_STATE_COMMON,
         nullptr, IID_PPV_ARGS(&constantBuffer));
 
-    // 디스크립터 힙 만들기 (한 가지 타입의 디스크립터 여러개를 담을 수 있다)
-    // TODO: 엔진에서 미리 만들어 놓고 디스크립터를 풀링하는 전략으로 접근해야 함
-    D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
-    descriptorHeapDesc.NumDescriptors = 2;
-    descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&meshDescriptorHeap));
-
     // 디스크립터에 CBV 정보 기록하기
     D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
     cbvDesc.BufferLocation = constantBuffer->GetGPUVirtualAddress();
     cbvDesc.SizeInBytes = constantBufferSize;
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle(meshDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 0, descriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
+    D3D12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle;
+    descriptorPool->AllocDescriptors(1, &cbvDescriptorHandle, nullptr);
     device->CreateConstantBufferView(&cbvDesc, cbvDescriptorHandle);
 
     // Map and initialize the constant buffer. We don't unmap this until the
@@ -908,7 +906,8 @@ void D3D12App::InitMesh() {
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
     srvDesc.Texture2D.MipLevels = defaultTextureDesc.MipLevels;
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE srvDescriptorHandle(meshDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 1, descriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
+    D3D12_CPU_DESCRIPTOR_HANDLE srvDescriptorHandle;
+    descriptorPool->AllocDescriptors(1, &srvDescriptorHandle, nullptr);
     device->CreateShaderResourceView(defaultTexture, &srvDesc, srvDescriptorHandle);
 
     // 루트 시그니쳐를 만들기 위해 우선 Descriptor Range 를 정의한다.
@@ -1072,7 +1071,6 @@ void D3D12App::FreeMesh() {
     SAFE_RELEASE(indexBuffer);
     SAFE_RELEASE(rootSignature);
     SAFE_RELEASE(pipelineState);
-    SAFE_RELEASE(meshDescriptorHeap);
     SAFE_RELEASE(defaultTexture);
     SAFE_RELEASE(constantBuffer);
 }
@@ -1084,11 +1082,12 @@ void D3D12App::DrawMesh() {
     offset->x = 0.5f * BE1::Math::Cos(currentTime);
     offset->y = 0.5f * BE1::Math::Sin(currentTime * 3);
 
-    commandList->SetDescriptorHeaps(1, &meshDescriptorHeap);
+    ID3D12DescriptorHeap *descriptorHeaps[] = { descriptorPool->descriptorHeap };
+    commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 
     commandList->SetGraphicsRootSignature(rootSignature);
 
-    CD3DX12_GPU_DESCRIPTOR_HANDLE gpuDescriptorTable(meshDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+    CD3DX12_GPU_DESCRIPTOR_HANDLE gpuDescriptorTable(descriptorPool->gpuDescriptorHandleForHeapStart);
     commandList->SetGraphicsRootDescriptorTable(0, gpuDescriptorTable);
 
     //gpuDescriptorTable.Offset(1, DescriptorSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);

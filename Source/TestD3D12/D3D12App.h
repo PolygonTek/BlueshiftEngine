@@ -14,8 +14,7 @@
 
 #pragma once
 
-#define SAFE_RELEASE(p)         if (p) { p->Release(); p = nullptr; }
-#define SAFE_RELEASE_ARRAY(p)   for (int i = 0; i < _countof(p); i++) if (p[i]) { (p[i])->Release(); (p[i]) = nullptr; }
+#include "D3D12DescriptorPool.h"
 
 class D3D12App {
 public:
@@ -44,6 +43,8 @@ public:
     static BE1::Image::Format::Enum ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap);
     static void                 AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format::Enum inFormat, BE1::Image::Format::Enum *outFormat);
 
+    ID3D12Device5 *             device = nullptr;
+
 private:
     void                        InitMesh();
     void                        FreeMesh();
@@ -52,7 +53,6 @@ private:
     static constexpr UINT       BackBufferCount = 2;
 
     DXGI_ADAPTER_DESC1          adapterDesc = {};
-    ID3D12Device5 *             device = nullptr;
     ID3D12CommandQueue *        commandQueue = nullptr;
     ID3D12CommandAllocator *    commandAllocator = nullptr;
     ID3D12GraphicsCommandList * commandList = nullptr;
@@ -67,11 +67,12 @@ private:
     D3D12_VIEWPORT              viewport = {};
     D3D12_RECT                  scissorRect = {};
 
+    D3D12DescriptorPool *       descriptorPool = nullptr;
+
     ID3D12Resource *            defaultTexture = nullptr;
     ID3D12Resource *            constantBuffer = nullptr;
     void *                      mappedConstantBase = nullptr;
 
-    ID3D12DescriptorHeap *      meshDescriptorHeap = nullptr;
     ID3D12RootSignature *       rootSignature = nullptr;
     ID3D12PipelineState *       pipelineState = nullptr;
 

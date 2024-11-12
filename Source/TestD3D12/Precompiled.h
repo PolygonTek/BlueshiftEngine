@@ -22,3 +22,6 @@
 #include <d3dx12.h>
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
+
+#define SAFE_RELEASE(p)         if (p) { p->Release(); p = nullptr; }
+#define SAFE_RELEASE_ARRAY(p)   for (int i = 0; i < _countof(p); i++) if (p[i]) { (p[i])->Release(); (p[i]) = nullptr; }
