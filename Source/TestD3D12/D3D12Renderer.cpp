@@ -26,10 +26,12 @@ D3D12Renderer       renderer;
 void D3D12Renderer::Init(HWND hwnd) {
     DWORD dwCreateFactoryFlags = 0;
     bool bWithGPUValidation = true;
+    HRESULT hr;
 
+#if 1
     // 디버그 레이어 활성화
     ID3D12Debug* pDebugController = nullptr;
-    HRESULT hr = D3D12GetDebugInterface(IID_PPV_ARGS(&pDebugController));
+    hr = D3D12GetDebugInterface(IID_PPV_ARGS(&pDebugController));
     if (SUCCEEDED(hr)) {
         pDebugController->EnableDebugLayer();
         dwCreateFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
@@ -45,6 +47,7 @@ void D3D12Renderer::Init(HWND hwnd) {
         }
         pDebugController->Release();
     }
+#endif
 
     IDXGIFactory4* pFactory = nullptr;
     CreateDXGIFactory2(dwCreateFactoryFlags, IID_PPV_ARGS(&pFactory));
@@ -151,17 +154,6 @@ void D3D12Renderer::Init(HWND hwnd) {
         BE_FATALERROR("CreateDescriptorHeap for back buffers: failed");
     }
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-    // 스왑 체인의 버퍼를 가져와서 각 RTV 에 연결한다.
-    for (UINT renderTargetIndex = 0; renderTargetIndex < NumSwapChainBuffers; ++renderTargetIndex) {
-        swapChain->GetBuffer(renderTargetIndex, IID_PPV_ARGS(&renderTargetBuffers[renderTargetIndex]));
-
-        device->CreateRenderTargetView(renderTargetBuffers[renderTargetIndex], nullptr, rtvDescriptorHandle);
-
-        rtvDescriptorHandle.Offset(1, descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
-    }
-
     // 뎁스/스텐실 버퍼 용 디스크립터 힙 생성
     D3D12_DESCRIPTOR_HEAP_DESC dsvDescriptorHeapDesc = {};
     dsvDescriptorHeapDesc.NumDescriptors = 1;
@@ -172,45 +164,9 @@ void D3D12Renderer::Init(HWND hwnd) {
         BE_FATALERROR("CreateDescriptorHeap for depth/stencil buffer : failed");
     }
 
-    // 뎁스/스텐실 버퍼 생성
-    D3D12_CLEAR_VALUE depthStencilOptimizedClearValue = {};
-    depthStencilOptimizedClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depthStencilOptimizedClearValue.DepthStencil.Depth = 1.0f;
-    depthStencilOptimizedClearValue.DepthStencil.Stencil = 0;
+    CreateRTVs();
 
-    D3D12_RESOURCE_DESC depthStencilBufferDesc = {};
-    depthStencilBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-    depthStencilBufferDesc.Alignment = 0;
-    depthStencilBufferDesc.Width = swapChainDesc.Width;
-    depthStencilBufferDesc.Height = swapChainDesc.Height;
-    depthStencilBufferDesc.DepthOrArraySize = 1;
-    depthStencilBufferDesc.MipLevels = 1;
-    depthStencilBufferDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depthStencilBufferDesc.SampleDesc.Count = 1;
-    depthStencilBufferDesc.SampleDesc.Quality = 0;
-    depthStencilBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-    depthStencilBufferDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-
-    hr = device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-        D3D12_HEAP_FLAG_NONE,
-        &depthStencilBufferDesc,
-        D3D12_RESOURCE_STATE_DEPTH_WRITE,
-        &depthStencilOptimizedClearValue,
-        IID_PPV_ARGS(&depthStencilBuffer));
-    if (FAILED(hr)) {
-        BE_FATALERROR("Create depth/stencil buffer : failed");
-    }
-    //depthStencilBuffer->SetName(L"depthStencilBuffer");
-
-    // 뎁스/스텐실 버퍼를 DSV 에 연결한다.
-    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-    dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-    dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-
-    CD3DX12_CPU_DESCRIPTOR_HANDLE dsvDescriptorHandle(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-    device->CreateDepthStencilView(depthStencilBuffer, &dsvDesc, dsvDescriptorHandle);
+    CreateDSV(swapChainDesc.Width, swapChainDesc.Height);
 
     // 그래픽스 커맨드 리스트를 위한 커맨드 할당자 생성
     hr = renderer.device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
@@ -288,6 +244,61 @@ void D3D12Renderer::Shutdown() {
         }
         BE1::PlatformSystem::DebugBreak();
     }
+}
+
+void D3D12Renderer::CreateRTVs() {
+    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+    // 스왑 체인의 버퍼를 가져와서 각 RTV 에 연결한다.
+    for (UINT renderTargetIndex = 0; renderTargetIndex < NumSwapChainBuffers; ++renderTargetIndex) {
+        swapChain->GetBuffer(renderTargetIndex, IID_PPV_ARGS(&renderTargetBuffers[renderTargetIndex]));
+
+        device->CreateRenderTargetView(renderTargetBuffers[renderTargetIndex], nullptr, rtvDescriptorHandle);
+
+        rtvDescriptorHandle.Offset(1, descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
+    }
+}
+
+void D3D12Renderer::CreateDSV(int width, int height) {
+    // 뎁스/스텐실 버퍼 생성
+    D3D12_CLEAR_VALUE depthStencilOptimizedClearValue = {};
+    depthStencilOptimizedClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthStencilOptimizedClearValue.DepthStencil.Depth = 1.0f;
+    depthStencilOptimizedClearValue.DepthStencil.Stencil = 0;
+
+    D3D12_RESOURCE_DESC depthStencilBufferDesc = {};
+    depthStencilBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    depthStencilBufferDesc.Alignment = 0;
+    depthStencilBufferDesc.Width = width;
+    depthStencilBufferDesc.Height = height;
+    depthStencilBufferDesc.DepthOrArraySize = 1;
+    depthStencilBufferDesc.MipLevels = 1;
+    depthStencilBufferDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthStencilBufferDesc.SampleDesc.Count = 1;
+    depthStencilBufferDesc.SampleDesc.Quality = 0;
+    depthStencilBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    depthStencilBufferDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+    HRESULT hr = device->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+        D3D12_HEAP_FLAG_NONE,
+        &depthStencilBufferDesc,
+        D3D12_RESOURCE_STATE_DEPTH_WRITE,
+        &depthStencilOptimizedClearValue,
+        IID_PPV_ARGS(&depthStencilBuffer));
+    if (FAILED(hr)) {
+        BE_FATALERROR("Create depth/stencil buffer : failed");
+    }
+    //depthStencilBuffer->SetName(L"depthStencilBuffer");
+
+    // 뎁스/스텐실 버퍼를 DSV 에 연결한다.
+    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+    dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+    dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE dsvDescriptorHandle(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+    device->CreateDepthStencilView(depthStencilBuffer, &dsvDesc, dsvDescriptorHandle);
 }
 
 void D3D12Renderer::BeginRender() {
@@ -523,17 +534,15 @@ void D3D12Renderer::OnResize(int width, int height) {
     // 기존 백버퍼 해제
     SAFE_RELEASE_ARRAY(renderTargetBuffers);
 
+    // 기존 뎁스/스텐실 버퍼 해제
+    SAFE_RELEASE(depthStencilBuffer);
+
     // 스왑 체인 버퍼의 사이즈를 조정한다.
     swapChain->ResizeBuffers(NumSwapChainBuffers, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+    CreateRTVs();
 
-    // 스왑 체인에 연결된 백버퍼로 다시 각각의 RTV 에 연결한다.
-    for (UINT backBufferIndex = 0; backBufferIndex < NumSwapChainBuffers; ++backBufferIndex) {
-        swapChain->GetBuffer(backBufferIndex, IID_PPV_ARGS(&renderTargetBuffers[backBufferIndex]));
-        device->CreateRenderTargetView(renderTargetBuffers[backBufferIndex], nullptr, rtvHandle);
-        rtvHandle.Offset(1, descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
-    }
+    CreateDSV(width, height);
 
     currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
 

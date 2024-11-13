@@ -32,6 +32,9 @@ public:
 
     void                            OnResize(int width, int height);
 
+    void                            CreateRTVs();
+    void                            CreateDSV(int width, int height);
+
     ID3D12Resource*                 CreateVertexBuffer(int vertexSize, int numVerts, void *data, D3D12_VERTEX_BUFFER_VIEW *pOutVertexBufferView);
     ID3D12Resource*                 CreateIndexBuffer(int indexSize, int numIndexes, void *data, D3D12_INDEX_BUFFER_VIEW *pOutIndexBufferView);
 
