@@ -18,23 +18,23 @@
 #include "D3D12App.h"
 #include <tchar.h>
 
-static const TCHAR *        mainWindowClassName  = _T("BLUESHIFT_MAIN_WINDOW");
+static const TCHAR*         mainWindowClassName  = _T("BLUESHIFT_MAIN_WINDOW");
 
 static TCHAR                szTitle[100];    // The title bar text
 
 LRESULT CALLBACK            MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-static void SystemLog(int logLevel, const char *text) {
+static void SystemLog(int logLevel, const char* text) {
     int len = BE1::PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
-    wchar_t *wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
+    wchar_t* wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
     BE1::PlatformWinUtils::UTF8ToUCS2(text, wText, len);
 
     OutputDebugString(wText);
 }
 
-static void SystemError(int errLevel, const char *text) {
+static void SystemError(int errLevel, const char* text) {
     int len = BE1::PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
-    wchar_t *wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
+    wchar_t* wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
     BE1::PlatformWinUtils::UTF8ToUCS2(text, wText, len);
 
     HWND hwnd = FindWindow(mainWindowClassName, nullptr);
@@ -44,7 +44,7 @@ static void SystemError(int errLevel, const char *text) {
     }
 }
 
-static HWND CreateRenderWindow(const TCHAR *title, const TCHAR *classname, int width, int height, bool fullscreen) {
+static HWND CreateRenderWindow(const TCHAR* title, const TCHAR* classname, int width, int height, bool fullscreen) {
     int style = WS_VISIBLE;
     int styleEx;
     BE1::Rect windowRect;
@@ -126,7 +126,7 @@ static void ChangeRenderWindow(HWND hwnd, int width, int height, bool fullscreen
     ::SetFocus(hwnd);
 }
 
-static HWND CreateMainWindow(const TCHAR *title, int width, int height) {
+static HWND CreateMainWindow(const TCHAR* title, int width, int height) {
     HINSTANCE hInstance = GetModuleHandle(nullptr);
 
     WNDCLASSEX wcex;

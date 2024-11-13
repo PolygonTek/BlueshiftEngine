@@ -11,6 +11,8 @@ set(ALL_FILES
     D3D12Renderer.cpp
     D3D12DescriptorPool.h
     D3D12DescriptorPool.cpp
+    D3D12SingleDescriptorAllocator.h
+    D3D12SingleDescriptorAllocator.cpp
     D3D12Texture.h
     D3D12Texture.cpp
     WinMain.cpp

@@ -17,6 +17,10 @@
 #include "D3D12Renderer.h"
 
 void D3D12Texture::Release() {
+    if (descriptorHandlePtr) {
+        renderer.singleDescriptorAllocator->Free(descriptorHandlePtr);
+        descriptorHandlePtr = nullptr;
+    }
     SAFE_RELEASE(textureResource);
 }
 
@@ -201,9 +205,20 @@ D3D12Texture* D3D12Texture::CreateTexture2D(const BE1::Image* srcImage) {
         pUploadBuffer->Release();
     }
 
+    // 디스크립터에 SRV 정보 기록하기
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format = textureDesc.Format;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = textureDesc.MipLevels;
+
+    D3D12_CPU_DESCRIPTOR_HANDLE *descriptorHandlePtr = renderer.singleDescriptorAllocator->Alloc();
+    renderer.device->CreateShaderResourceView(textureResource, &srvDesc, *descriptorHandlePtr);
+
     D3D12Texture *texture = new D3D12Texture;
     texture->textureResource = textureResource;
     texture->textureDesc = textureResource->GetDesc();
+    texture->descriptorHandlePtr = descriptorHandlePtr;
 
     return texture;
 }

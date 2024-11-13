@@ -24,10 +24,10 @@ public:
     void                        Reset();
     bool                        AllocDescriptors(UINT descriptorCount, D3D12_CPU_DESCRIPTOR_HANDLE* outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle);
 
-    ID3D12DescriptorHeap *      descriptorHeap = nullptr;
+    ID3D12DescriptorHeap*       descriptorHeap = nullptr;
     D3D12_CPU_DESCRIPTOR_HANDLE baseCpuDescriptorHandle;
     D3D12_GPU_DESCRIPTOR_HANDLE baseGpuDescriptorHandle;
-    UINT                        srvDescriptorHandleSize;
+    UINT                        descriptorHandleSize;
     UINT                        maxDescriptorCount;
     UINT                        usedCount = 0;
 };

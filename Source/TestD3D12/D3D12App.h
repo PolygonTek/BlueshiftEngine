@@ -18,31 +18,32 @@
 
 class D3D12App {
 public:
-    void                        Init(HWND windowHandle);
-    void                        Shutdown();
+    void                            Init(HWND windowHandle);
+    void                            Shutdown();
 
-    void                        Draw(float t);
+    void                            Draw(float t);
 
-    void                        RunFrame();
+    void                            RunFrame();
 
 private:
-    void                        InitMesh();
-    void                        InitRootSignature();
-    void                        InitPipelineState();
-    void                        FreeMesh();
-    void                        DrawMesh();
+    void                            InitMesh();
+    void                            InitRootSignature();
+    void                            InitPipelineState();
+    void                            FreeMesh();
+    void                            DrawMesh();
 
-    D3D12Texture *              defaultTexture = nullptr;
-    ID3D12Resource *            constantBuffer = nullptr;
-    void *                      mappedConstantBase = nullptr;
+    D3D12Texture*                   defaultTexture = nullptr;
+    ID3D12Resource*                 constantBuffer = nullptr;
+    D3D12_CPU_DESCRIPTOR_HANDLE*    cbvDescriptorHandlePtr = nullptr;
+    void*                           mappedConstantBase = nullptr;
 
-    ID3D12RootSignature *       rootSignature = nullptr;
-    ID3D12PipelineState *       pipelineState = nullptr;
+    ID3D12RootSignature*            rootSignature = nullptr;
+    ID3D12PipelineState*            pipelineState = nullptr;
 
-    ID3D12Resource *            vertexBuffer = nullptr;
-    D3D12_VERTEX_BUFFER_VIEW    vertexBufferView = {};
-    ID3D12Resource *            indexBuffer = nullptr;
-    D3D12_INDEX_BUFFER_VIEW     indexBufferView = {};
+    ID3D12Resource*                 vertexBuffer = nullptr;
+    D3D12_VERTEX_BUFFER_VIEW        vertexBufferView = {};
+    ID3D12Resource*                 indexBuffer = nullptr;
+    D3D12_INDEX_BUFFER_VIEW         indexBufferView = {};
 };
 
-extern D3D12App                 app;
+extern D3D12App                     app;

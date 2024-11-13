@@ -20,11 +20,13 @@ void D3D12DescriptorPool::Init(UINT maxDescriptorCount) {
     this->maxDescriptorCount = maxDescriptorCount;
     this->usedCount = 0;
 
-    srvDescriptorHandleSize = renderer.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+
+    descriptorHandleSize = renderer.device->GetDescriptorHandleIncrementSize(descriptorHeapType);
 
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
     descriptorHeapDesc.NumDescriptors = maxDescriptorCount;
-    descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    descriptorHeapDesc.Type = descriptorHeapType;
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     renderer.device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
 
@@ -46,10 +48,10 @@ bool D3D12DescriptorPool::AllocDescriptors(UINT descriptorCount, D3D12_CPU_DESCR
     }
 
     if (outCpuDescriptorHandle) {
-        *outCpuDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(baseCpuDescriptorHandle, usedCount, srvDescriptorHandleSize);
+        *outCpuDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(baseCpuDescriptorHandle, usedCount, descriptorHandleSize);
     }
     if (outGpuDescriptorHandle) {
-        *outGpuDescriptorHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(baseGpuDescriptorHandle, usedCount, srvDescriptorHandleSize);
+        *outGpuDescriptorHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(baseGpuDescriptorHandle, usedCount, descriptorHandleSize);
     }
 
     usedCount += descriptorCount;

@@ -28,7 +28,7 @@ void D3D12Renderer::Init(HWND hwnd) {
     bool bWithGPUValidation = true;
 
     // 디버그 레이어 활성화
-    ID3D12Debug *pDebugController = nullptr;
+    ID3D12Debug* pDebugController = nullptr;
     HRESULT hr = D3D12GetDebugInterface(IID_PPV_ARGS(&pDebugController));
     if (SUCCEEDED(hr)) {
         pDebugController->EnableDebugLayer();
@@ -36,7 +36,7 @@ void D3D12Renderer::Init(HWND hwnd) {
 
         // GPU Validation 활성화
         if (bWithGPUValidation) {
-            ID3D12Debug1 *pDebugController1 = nullptr;
+            ID3D12Debug1* pDebugController1 = nullptr;
             if (SUCCEEDED(pDebugController->QueryInterface(IID_PPV_ARGS(&pDebugController1))))
             {
                 pDebugController1->SetEnableGPUBasedValidation(TRUE);
@@ -46,11 +46,11 @@ void D3D12Renderer::Init(HWND hwnd) {
         pDebugController->Release();
     }
 
-    IDXGIFactory4 *pFactory = nullptr;
+    IDXGIFactory4* pFactory = nullptr;
     CreateDXGIFactory2(dwCreateFactoryFlags, IID_PPV_ARGS(&pFactory));
 
     // 어댑터 정보 얻어오기
-    IDXGIAdapter1 *pAdapter = nullptr;
+    IDXGIAdapter1* pAdapter = nullptr;
     pFactory->EnumAdapters1(0, &pAdapter);
     pAdapter->GetDesc1(&adapterDesc);
 
@@ -197,6 +197,9 @@ void D3D12Renderer::Init(HWND hwnd) {
     rootDescriptorPool = new D3D12DescriptorPool;
     rootDescriptorPool->Init(1000);
 
+    singleDescriptorAllocator = new D3D12SingleDescriptorAllocator;
+    singleDescriptorAllocator->Init(10000);
+
     initialized = true;
 }
 
@@ -204,6 +207,7 @@ void D3D12Renderer::Shutdown() {
     Finish();
 
     SAFE_DELETE(rootDescriptorPool);
+    SAFE_DELETE(singleDescriptorAllocator);
 
     SAFE_RELEASE(backBuffersDescriptorHeap);
     SAFE_RELEASE_ARRAY(backBuffers);
@@ -269,6 +273,9 @@ void D3D12Renderer::EndRender() {
 
     // 커맨드 큐 실행이 다 끝날 때까지 기다린다.
     Finish();
+
+    // 루트 디스크립터 풀을 비운다.
+    rootDescriptorPool->Reset();
 }
 
 void D3D12Renderer::Finish() {
@@ -294,12 +301,12 @@ ID3D12Resource*D3D12Renderer::CreateVertexBuffer(int vertexSize, int numVerts, v
         &CD3DX12_HEAP_PROPERTIES(heapType),
         D3D12_HEAP_FLAG_NONE,
         &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
-        D3D12_RESOURCE_STATE_COPY_DEST,
+        D3D12_RESOURCE_STATE_COMMON,
         nullptr, IID_PPV_ARGS(&pOutVertexBuffer)))) {
         return nullptr;
     }
 
-    ID3D12Resource *pUploadBuffer = nullptr;
+    ID3D12Resource* pUploadBuffer = nullptr;
 
     if (data) {
         if (heapType == D3D12_HEAP_TYPE_DEFAULT) {
@@ -314,7 +321,7 @@ ID3D12Resource*D3D12Renderer::CreateVertexBuffer(int vertexSize, int numVerts, v
                 return nullptr;
             }
 
-            UINT8 *mappedPtr = nullptr;
+            UINT8* mappedPtr = nullptr;
             CD3DX12_RANGE writeRange(0, 0);
             pUploadBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedPtr));
             memcpy(mappedPtr, data, bufferSize);
@@ -323,6 +330,7 @@ ID3D12Resource*D3D12Renderer::CreateVertexBuffer(int vertexSize, int numVerts, v
             // 업로드 버퍼에서 버텍스 버퍼로 데이터 카피
             commandAllocator->Reset();
             commandList->Reset(commandAllocator, nullptr);
+            commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutVertexBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
             commandList->CopyBufferRegion(pOutVertexBuffer, 0, pUploadBuffer, 0, bufferSize);
             commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutVertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
             commandList->Close();
@@ -358,7 +366,7 @@ ID3D12Resource*D3D12Renderer::CreateVertexBuffer(int vertexSize, int numVerts, v
 ID3D12Resource *D3D12Renderer::CreateIndexBuffer(int indexSize, int numIndexes, void *data, D3D12_INDEX_BUFFER_VIEW *pOutIndexBufferView) {
     assert(indexSize == 2 || indexSize == 4);
 
-    ID3D12Resource *pOutIndexBuffer = nullptr;
+    ID3D12Resource* pOutIndexBuffer = nullptr;
     UINT bufferSize = indexSize * numIndexes;
     D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT; // D3D12_HEAP_TYPE_UPLOAD
 
@@ -367,12 +375,12 @@ ID3D12Resource *D3D12Renderer::CreateIndexBuffer(int indexSize, int numIndexes, 
         &CD3DX12_HEAP_PROPERTIES(heapType),
         D3D12_HEAP_FLAG_NONE,
         &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
-        D3D12_RESOURCE_STATE_COPY_DEST,
+        D3D12_RESOURCE_STATE_COMMON,
         nullptr, IID_PPV_ARGS(&pOutIndexBuffer)))) {
         return nullptr;
     }
 
-    ID3D12Resource *pUploadBuffer = nullptr;
+    ID3D12Resource* pUploadBuffer = nullptr;
 
     if (data) {
         if (heapType == D3D12_HEAP_TYPE_DEFAULT) {
@@ -387,7 +395,7 @@ ID3D12Resource *D3D12Renderer::CreateIndexBuffer(int indexSize, int numIndexes, 
                 return nullptr;
             }
 
-            UINT8 *mappedPtr = nullptr;
+            UINT8* mappedPtr = nullptr;
             CD3DX12_RANGE writeRange(0, 0);
             pUploadBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedPtr));
             memcpy(mappedPtr, data, bufferSize);
@@ -396,6 +404,7 @@ ID3D12Resource *D3D12Renderer::CreateIndexBuffer(int indexSize, int numIndexes, 
             // 업로드 버퍼에서 인덱스 버퍼로 데이터 카피
             commandAllocator->Reset();
             commandList->Reset(commandAllocator, nullptr);
+            commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutIndexBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
             commandList->CopyBufferRegion(pOutIndexBuffer, 0, pUploadBuffer, 0, bufferSize);
             commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pOutIndexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER));
             commandList->Close();
@@ -404,7 +413,7 @@ ID3D12Resource *D3D12Renderer::CreateIndexBuffer(int indexSize, int numIndexes, 
             ID3D12CommandList *ppCommandLists[] = { commandList };
             commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
         } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
-            UINT8 *mappedPtr = nullptr;
+            UINT8* mappedPtr = nullptr;
             CD3DX12_RANGE readRange(0, 0);
             pOutIndexBuffer->Map(0, &readRange, reinterpret_cast<void **>(&mappedPtr));
             memcpy(mappedPtr, data, bufferSize);

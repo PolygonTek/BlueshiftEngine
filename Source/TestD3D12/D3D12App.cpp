@@ -56,17 +56,6 @@ void D3D12App::RunFrame() {
 void D3D12App::InitMesh() {
     defaultTexture = D3D12Texture::CreateTexture2D("Data/EngineTextures/checker.dds");
 
-    // 루트 디스크립터에 SRV 정보 기록하기
-    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-    srvDesc.Format = defaultTexture->textureDesc.Format;
-    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-    srvDesc.Texture2D.MipLevels = defaultTexture->textureDesc.MipLevels;
-
-    D3D12_CPU_DESCRIPTOR_HANDLE srvDescriptorHandle;
-    renderer.rootDescriptorPool->AllocDescriptors(1, &srvDescriptorHandle, nullptr);
-    renderer.device->CreateShaderResourceView(defaultTexture->textureResource, &srvDesc, srvDescriptorHandle);
-
     // CB 용 업로드 버퍼 생성
     // NOTE: 256 바이트 주소/사이즈 정렬되어 있어야 한다.
     // 상수 버퍼의 float 최대 개수는 4096
@@ -78,14 +67,13 @@ void D3D12App::InitMesh() {
         D3D12_RESOURCE_STATE_COMMON,
         nullptr, IID_PPV_ARGS(&constantBuffer));
 
-    // 루트 디스크립터에 CBV 정보 기록하기
+    // 디스크립터에 CBV 정보 기록하기
     D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
     cbvDesc.BufferLocation = constantBuffer->GetGPUVirtualAddress();
     cbvDesc.SizeInBytes = constantBufferSize;
 
-    D3D12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle;
-    renderer.rootDescriptorPool->AllocDescriptors(1, &cbvDescriptorHandle, nullptr);
-    renderer.device->CreateConstantBufferView(&cbvDesc, cbvDescriptorHandle);
+    cbvDescriptorHandlePtr = renderer.singleDescriptorAllocator->Alloc();
+    renderer.device->CreateConstantBufferView(&cbvDesc, *cbvDescriptorHandlePtr);
 
     // Map and initialize the constant buffer. We don't unmap this until the
     // app closes. Keeping things mapped for the lifetime of the resource is okay.
@@ -163,8 +151,8 @@ void D3D12App::InitRootSignature() {
     rootSignatureDesc.pStaticSamplers = &samplerDesc;
     rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-    ID3DBlob *pSignatureBlob = nullptr;
-    ID3DBlob *pErrorBlob = nullptr;
+    ID3DBlob* pSignatureBlob = nullptr;
+    ID3DBlob* pErrorBlob = nullptr;
 
     // TODO: 필요한 루트 시그니쳐를 캐싱하는 방식으로 접근하자.
     if (SUCCEEDED(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &pSignatureBlob, &pErrorBlob))) {
@@ -177,7 +165,7 @@ void D3D12App::InitRootSignature() {
 
 void D3D12App::InitPipelineState() {
     // Shader Compile
-    const char *shaderText = R"(
+    const char* shaderText = R"(
 struct VSInput {
     float4 position : POSITION;
     float4 color : COLOR;
@@ -220,11 +208,11 @@ float4 PSMain(PSInput input) : SV_TARGET {
     UINT compileFlags = 0;
 #endif
 
-    ID3DBlob *pVertexShader = nullptr;
-    D3DCompile(shaderText, strlen(shaderText), "shaderText", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &pVertexShader, nullptr);
+    ID3DBlob* vertexShader = nullptr;
+    D3DCompile(shaderText, strlen(shaderText), "shaderText", nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr);
 
-    ID3DBlob *pPixelShader = nullptr;
-    D3DCompile(shaderText, strlen(shaderText), "shaderText", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pPixelShader, nullptr);
+    ID3DBlob* pixelShader = nullptr;
+    D3DCompile(shaderText, strlen(shaderText), "shaderText", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr);
 
     // Define the vertex input layout.
     D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
@@ -238,8 +226,8 @@ float4 PSMain(PSInput input) : SV_TARGET {
     // NOTE: 나중에 호출할 SetGraphicsRootSignature() 에서 PSO 에 지정된 RootSignature 와 다르면 안된다.
     // 여기서 RootSignature 를 지정하는 이유는 파이프라인 호환성 검사 및 최적화 때문이다.
     psoDesc.pRootSignature = rootSignature;
-    psoDesc.VS = CD3DX12_SHADER_BYTECODE(pVertexShader->GetBufferPointer(), pVertexShader->GetBufferSize());
-    psoDesc.PS = CD3DX12_SHADER_BYTECODE(pPixelShader->GetBufferPointer(), pPixelShader->GetBufferSize());
+    psoDesc.VS = CD3DX12_SHADER_BYTECODE(vertexShader->GetBufferPointer(), vertexShader->GetBufferSize());
+    psoDesc.PS = CD3DX12_SHADER_BYTECODE(pixelShader->GetBufferPointer(), pixelShader->GetBufferSize());
     psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
     psoDesc.SampleMask = UINT_MAX;
     psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
@@ -252,16 +240,19 @@ float4 PSMain(PSInput input) : SV_TARGET {
     psoDesc.SampleDesc.Count = 1;
     renderer.device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
 
-    SAFE_RELEASE(pVertexShader);
-    SAFE_RELEASE(pPixelShader);
+    SAFE_RELEASE(vertexShader);
+    SAFE_RELEASE(pixelShader);
 }
 
 void D3D12App::FreeMesh() {
+    renderer.singleDescriptorAllocator->Free(cbvDescriptorHandlePtr);
+
     SAFE_RELEASE(vertexBuffer);
     SAFE_RELEASE(indexBuffer);
     SAFE_RELEASE(rootSignature);
     SAFE_RELEASE(pipelineState);
     SAFE_RELEASE(constantBuffer);
+
     SAFE_DELETE(defaultTexture);
 }
 
@@ -272,16 +263,26 @@ void D3D12App::DrawMesh() {
     offset->x = 0.5f * BE1::Math::Cos(currentTime);
     offset->y = 0.5f * BE1::Math::Sin(currentTime * 3);
 
-    // 렌더링에 사용할 디스크립터 힙을 지정한다.
-    ID3D12DescriptorHeap *descriptorHeaps[] = { renderer.rootDescriptorPool->descriptorHeap };
+    // 루트 디스크립터 테이블을 할당한다. 여기서 디스크립터 테이블은 연속된 디스크립터 핸들을 말한다.
+    D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorHandle;
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuRootDescriptorHandle;
+    renderer.rootDescriptorPool->AllocDescriptors(2, &cpuRootDescriptorHandle, &gpuRootDescriptorHandle);
+
+    // 루트 디스크립터 힙을 지정한다.
+    ID3D12DescriptorHeap* descriptorHeaps[] = { renderer.rootDescriptorPool->descriptorHeap };
     renderer.commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 
-    // 렌더링할 루트 시그니쳐를 세팅한다.
+    // 루트 시그니쳐를 세팅한다.
     renderer.commandList->SetGraphicsRootSignature(rootSignature);
 
-    // 렌더링에 사용할 루트 디스크립터 테이블을 세팅한다. 여기서 디스크립터 테이블은 연속된 디스크립터 핸들을 말한다.
-    CD3DX12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle(renderer.rootDescriptorPool->baseGpuDescriptorHandle);
-    renderer.commandList->SetGraphicsRootDescriptorTable(0, gpuDescriptorHandle);
+    CD3DX12_CPU_DESCRIPTOR_HANDLE srvDest(cpuRootDescriptorHandle, 0, renderer.rootDescriptorPool->descriptorHandleSize);
+    renderer.device->CopyDescriptorsSimple(1, srvDest, *defaultTexture->descriptorHandlePtr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDest(cpuRootDescriptorHandle, 1, renderer.rootDescriptorPool->descriptorHandleSize);
+    renderer.device->CopyDescriptorsSimple(1, cbvDest, *cbvDescriptorHandlePtr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    
+    // 루트 디스크립터 테이블을 세팅한다.
+    renderer.commandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
 
     //gpuDescriptorHandle.Offset(1, descriptorPool->srvDescriptorHandleSize);
     //renderer.commandList->SetGraphicsRootDescriptorTable(1, gpuDescriptorHandle);

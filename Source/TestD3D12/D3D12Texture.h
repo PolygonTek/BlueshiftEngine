@@ -20,9 +20,9 @@ public:
 
     void                            Release();
 
-    static D3D12Texture *           CreateTexture2D(const char *filename, bool useCompression = true, bool useNormalMap = false);
-    static D3D12Texture *           CreateTexture2D(const BE1::Image *image, BE1::Image::Format::Enum dstFormat, bool useMipmaps);
-    static D3D12Texture *           CreateTexture2D(const BE1::Image *image);
+    static D3D12Texture*            CreateTexture2D(const char* filename, bool useCompression = true, bool useNormalMap = false);
+    static D3D12Texture*            CreateTexture2D(const BE1::Image* image, BE1::Image::Format::Enum dstFormat, bool useMipmaps);
+    static D3D12Texture*            CreateTexture2D(const BE1::Image* image);
 
     static bool                     ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT* dxgiFormat);
     static bool                     IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
@@ -30,6 +30,7 @@ public:
     static BE1::Image::Format::Enum ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap);
     static void                     AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format::Enum inFormat, BE1::Image::Format::Enum *outFormat);
 
-    ID3D12Resource *                textureResource = nullptr;
+    ID3D12Resource*                 textureResource = nullptr;
     D3D12_RESOURCE_DESC             textureDesc;
+    D3D12_CPU_DESCRIPTOR_HANDLE*    descriptorHandlePtr = nullptr;
 };
