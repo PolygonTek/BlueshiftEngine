@@ -15,6 +15,8 @@ set(ALL_FILES
     D3D12SingleDescriptorAllocator.cpp
     D3D12Texture.h
     D3D12Texture.cpp
+    D3D12FrameData.h
+    D3D12FrameData.cpp
     WinMain.cpp
     WinResource.h
     WinRes/small.ico

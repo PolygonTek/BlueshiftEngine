@@ -17,46 +17,57 @@
 #include "D3D12DescriptorPool.h"
 #include "D3D12SingleDescriptorAllocator.h"
 #include "D3D12Texture.h"
+#include "D3D12FrameData.h"
 
 class D3D12Renderer {
 public:
-    void                        Init(HWND hwnd);
-    void                        Shutdown();
+    void                            Init(HWND hwnd);
+    void                            Shutdown();
 
-    bool                        IsInitialized() const { return initialized; }
+    bool                            IsInitialized() const { return initialized; }
 
-    void                        BeginRender();
-    void                        EndRender();
+    void                            BeginRender();
+    void                            EndRender();
+    void                            Present();
 
-    void                        OnResize(int width, int height);
+    void                            OnResize(int width, int height);
 
-    ID3D12Resource*             CreateVertexBuffer(int vertexSize, int numVerts, void *data, D3D12_VERTEX_BUFFER_VIEW *pOutVertexBufferView);
-    ID3D12Resource*             CreateIndexBuffer(int indexSize, int numIndexes, void *data, D3D12_INDEX_BUFFER_VIEW *pOutIndexBufferView);
+    ID3D12Resource*                 CreateVertexBuffer(int vertexSize, int numVerts, void *data, D3D12_VERTEX_BUFFER_VIEW *pOutVertexBufferView);
+    ID3D12Resource*                 CreateIndexBuffer(int indexSize, int numIndexes, void *data, D3D12_INDEX_BUFFER_VIEW *pOutIndexBufferView);
 
-    void                        Finish();
+    UINT64                          SignalFence();
+    void                            WaitFence(UINT64 expectedFenceValue);
+    void                            Finish();
 
-    static constexpr UINT       BackBufferCount = 2;
+    static constexpr UINT           NumSwapChainBuffers = 3;
+    static constexpr UINT           NumFrames = 2;
 
-    ID3D12Device5*              device = nullptr;
-    DXGI_ADAPTER_DESC1          adapterDesc = {};
-    ID3D12CommandQueue*         commandQueue = nullptr;
-    ID3D12CommandAllocator*     commandAllocator = nullptr;
-    ID3D12GraphicsCommandList*  commandList = nullptr;
-    ID3D12DescriptorHeap*       backBuffersDescriptorHeap = nullptr;
-    ID3D12DescriptorHeap*       depthBufferDescriptorHeap = nullptr;
-    IDXGISwapChain3*            swapChain = nullptr;
-    UINT                        descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
-    ID3D12Resource*             backBuffers[BackBufferCount] = {};
-    ID3D12Resource*             depthStencilBuffer = nullptr;
-    HANDLE                      fenceEventHandle = nullptr;
-    ID3D12Fence*                fence = nullptr;
-    UINT64                      fenceValue = 0;
-    UINT                        currentBackBufferIndex = 0;
-    D3D12_VIEWPORT              viewport = {};
-    D3D12_RECT                  scissorRect = {};
-    D3D12DescriptorPool*        rootDescriptorPool = nullptr;
+    ID3D12Device5*                  device = nullptr;
+    DXGI_ADAPTER_DESC1              adapterDesc = {};
+    IDXGISwapChain3 *               swapChain = nullptr;
+    ID3D12CommandQueue*             commandQueue = nullptr;
+    UINT                            descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
+    ID3D12CommandAllocator *        commandAllocator = nullptr;
+    ID3D12GraphicsCommandList *     commandList = nullptr;
+    ID3D12Fence *                   fence = nullptr;
+    UINT64                          fenceValue = 0;
+    HANDLE                          fenceEventHandle = nullptr;
+
+    ID3D12DescriptorHeap*           rtvDescriptorHeap = nullptr;
+    ID3D12DescriptorHeap*           dsvDescriptorHeap = nullptr;
+    ID3D12Resource*                 renderTargetBuffers[NumSwapChainBuffers] = {};
+    ID3D12Resource*                 depthStencilBuffer = nullptr;
+
+    UINT                            currentBackBufferIndex = 0;
+    D3D12_VIEWPORT                  viewport = {};
+    D3D12_RECT                      scissorRect = {};
     D3D12SingleDescriptorAllocator* singleDescriptorAllocator = nullptr;
-    bool                        initialized = false;
+    UINT                            frameCount = 0;
+    D3D12FrameData                  frameData[NumFrames];
+    UINT                            currentFrameIndex = 0;
+    D3D12FrameData*                 currentFrameData = nullptr;
+
+    bool                            initialized = false;
 };
 
-extern D3D12Renderer            renderer;
+extern D3D12Renderer                renderer;

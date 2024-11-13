@@ -17,6 +17,10 @@
 #include "D3D12Renderer.h"
 
 void D3D12Texture::Release() {
+    for (int frameIndex = 0; frameIndex < D3D12Renderer::NumFrames; ++frameIndex) {
+        renderer.WaitFence(renderer.frameData[frameIndex].fenceValue);
+    }
+
     if (descriptorHandlePtr) {
         renderer.singleDescriptorAllocator->Free(descriptorHandlePtr);
         descriptorHandlePtr = nullptr;
