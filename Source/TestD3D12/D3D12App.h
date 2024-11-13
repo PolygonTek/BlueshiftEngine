@@ -21,9 +21,9 @@ public:
     void                            Init(HWND windowHandle);
     void                            Shutdown();
 
-    void                            Draw(float t);
+    void                            Draw(int elapsedMsec);
 
-    void                            RunFrame();
+    void                            RunFrame(int elapsedMsec);
 
 private:
     void                            InitMesh();

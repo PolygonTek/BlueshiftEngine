@@ -345,7 +345,7 @@ void D3D12Renderer::Present() {
         BE_FATALERROR("DXGI Device Removed");
     }
 
-    // 다음 프레임에 사용할 백버퍼 인덱스 초기화
+    // 다음 프레임에 사용할 백버퍼 인덱스 얻어오기
     currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
     frameCount++;

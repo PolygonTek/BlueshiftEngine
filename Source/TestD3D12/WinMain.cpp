@@ -22,6 +22,9 @@ static const TCHAR*         mainWindowClassName  = _T("BLUESHIFT_MAIN_WINDOW");
 
 static TCHAR                szTitle[100];    // The title bar text
 
+static HWND                 hwndMain;
+static HACCEL               hAccelTable;
+
 LRESULT CALLBACK            MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 static void SystemLog(int logLevel, const char* text) {
@@ -147,7 +150,7 @@ static HWND CreateMainWindow(const TCHAR* title, int width, int height) {
     return hwnd;
 }
 
-BOOL InitInstance(int nCmdShow) {
+static BOOL InitInstance(int nCmdShow) {
     BE1::Str basePath = BE1::PlatformFile::ExecutablePath();
     basePath.AppendPath("../../..");
     basePath.CleanPath();
@@ -159,17 +162,62 @@ BOOL InitInstance(int nCmdShow) {
     wchar_t szFullTitle[128];
     BE1::PlatformWinUtils::UTF8ToUCS2(temp, szFullTitle, COUNT_OF(szFullTitle));
 
-    HWND hwndMain = CreateMainWindow(szFullTitle, 1024, 768);
+    hwndMain = CreateMainWindow(szFullTitle, 1024, 768);
 
     app.Init(hwndMain);
 
     return TRUE;
 }
 
-void ShutdownInstance() {
+static void ShutdownInstance() {
     app.Shutdown();
 
     BE1::Engine::ShutdownBase();
+}
+
+static bool ProcessEventLoop() {
+    MSG msg;
+
+    while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+        if (msg.message == WM_QUIT) {
+            return false;
+        }
+
+        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+    }
+
+    return true;
+}
+
+static bool RunFrameInstance(int elapsedMsec) {
+    static int fpsElapsedMsec = 0;
+    static int fpsFrames = 0;
+    static int fps = 0;
+
+    fpsElapsedMsec += elapsedMsec;
+    fpsFrames++;
+
+    if (fpsElapsedMsec >= 1000) {
+        fps = fpsFrames / MILLI2SEC(fpsElapsedMsec);
+        fpsFrames = 0;
+        fpsElapsedMsec = 0;
+    }
+
+    if (!ProcessEventLoop()) {
+        return false;
+    }
+
+    app.RunFrame(elapsedMsec);
+    app.Draw(elapsedMsec);
+
+    WCHAR windowText[64];
+    swprintf_s(windowText, L"FPS: %u", fps);
+    SetWindowText(hwndMain, windowText);
+
+    return true;
 }
 
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow) {
@@ -179,39 +227,35 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     // Disable automatic DPI scaling.
     SetProcessDPIAware();
 
-    MSG msg;
-    HACCEL hAccelTable;
-
     // Initialize global strings
     LoadString(hInstance, IDS_APP_TITLE, szTitle, COUNT_OF(szTitle));
+
+    hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_TESTD3D12));
 
     // Perform application initialization
     if (!InitInstance(nCmdShow)) {
         return FALSE;
     }
 
-    hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_TESTD3D12));
+    ::SetFocus(hwndMain);
+
+    int t0 = BE1::PlatformTime::Milliseconds();
 
     while (1) {
-        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-            if (msg.message == WM_QUIT) {
-                goto QUIT;
-            }
+        int t = BE1::PlatformTime::Milliseconds();
+        int elapsedMsec = t - t0;
+        BE1::Clamp(elapsedMsec, 0, 1000);
 
-            if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) {
-                TranslateMessage(&msg);
-                DispatchMessage(&msg);
-            }
+        t0 = t;
+
+        if (!RunFrameInstance(elapsedMsec)) {
+            break;
         }
-
-        app.RunFrame();
-        app.Draw(0);
     }
 
-QUIT:
     ShutdownInstance();
 
-    return (int)msg.wParam;
+    return 0;
 }
 
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {

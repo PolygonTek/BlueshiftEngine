@@ -192,7 +192,7 @@ void GameClient::Update() {
     if (fpsFrametime >= cl_updateFps.GetInteger()) {
         fps = fpsFrames / MILLI2SEC(fpsFrametime);
         fpsFrames = 0;
-        fpsFrametime -= cl_updateFps.GetInteger();
+        fpsFrametime = 0;
     }
 
     frameCount++;

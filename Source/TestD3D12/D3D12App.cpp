@@ -41,7 +41,7 @@ void D3D12App::Shutdown() {
     renderer.Shutdown();
 }
 
-void D3D12App::Draw(float t) {
+void D3D12App::Draw(int elapsedMsec) {
     renderer.BeginRender();
     
     DrawMesh();
@@ -50,7 +50,7 @@ void D3D12App::Draw(float t) {
     renderer.Present();
 }
 
-void D3D12App::RunFrame() {
+void D3D12App::RunFrame(int elapsedMsec) {
     BE1::cmdSystem.ExecuteCommandBuffer();
 }
 
