@@ -18,16 +18,16 @@ class D3D12DescriptorPool {
 public:
     ~D3D12DescriptorPool() { Shutdown(); }
 
-    void                        Init(ID3D12Device5 *device, UINT maxCount);
+    void                        Init(UINT maxCount);
     void                        Shutdown();
 
     void                        Reset();
     bool                        AllocDescriptors(UINT descriptorCount, D3D12_CPU_DESCRIPTOR_HANDLE* outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle);
 
     ID3D12DescriptorHeap *      descriptorHeap = nullptr;
-    D3D12_CPU_DESCRIPTOR_HANDLE cpuDescriptorHandleForHeapStart;
-    D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandleForHeapStart;
-    UINT                        srvDescriptorSize;
+    D3D12_CPU_DESCRIPTOR_HANDLE baseCpuDescriptorHandle;
+    D3D12_GPU_DESCRIPTOR_HANDLE baseGpuDescriptorHandle;
+    UINT                        srvDescriptorHandleSize;
     UINT                        maxDescriptorCount;
     UINT                        usedCount = 0;
 };

@@ -13,23 +13,23 @@
 // limitations under the License.
 
 #include "Precompiled.h"
-#include "D3D12App.h"
+#include "D3D12Renderer.h"
 #include "D3D12DescriptorPool.h"
 
-void D3D12DescriptorPool::Init(ID3D12Device5* device, UINT maxCount) {
-    maxDescriptorCount = maxCount;
-    usedCount = 0;
+void D3D12DescriptorPool::Init(UINT maxDescriptorCount) {
+    this->maxDescriptorCount = maxDescriptorCount;
+    this->usedCount = 0;
 
-    srvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    srvDescriptorHandleSize = renderer.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
-    descriptorHeapDesc.NumDescriptors = maxCount;
+    descriptorHeapDesc.NumDescriptors = maxDescriptorCount;
     descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
+    renderer.device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
 
-    cpuDescriptorHandleForHeapStart = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
-    gpuDescriptorHandleForHeapStart = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
+    baseCpuDescriptorHandle = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    baseGpuDescriptorHandle = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
 }
 
 void D3D12DescriptorPool::Shutdown() {
@@ -46,10 +46,10 @@ bool D3D12DescriptorPool::AllocDescriptors(UINT descriptorCount, D3D12_CPU_DESCR
     }
 
     if (outCpuDescriptorHandle) {
-        *outCpuDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(cpuDescriptorHandleForHeapStart, usedCount, srvDescriptorSize);
+        *outCpuDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(baseCpuDescriptorHandle, usedCount, srvDescriptorHandleSize);
     }
     if (outGpuDescriptorHandle) {
-        *outGpuDescriptorHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(gpuDescriptorHandleForHeapStart, usedCount, srvDescriptorSize);
+        *outGpuDescriptorHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(baseGpuDescriptorHandle, usedCount, srvDescriptorHandleSize);
     }
 
     usedCount += descriptorCount;
