@@ -43,9 +43,11 @@ public:
     ID3D12CommandAllocator*     commandAllocator = nullptr;
     ID3D12GraphicsCommandList*  commandList = nullptr;
     ID3D12DescriptorHeap*       backBuffersDescriptorHeap = nullptr;
+    ID3D12DescriptorHeap*       depthBufferDescriptorHeap = nullptr;
     IDXGISwapChain3*            swapChain = nullptr;
     UINT                        descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
     ID3D12Resource*             backBuffers[BackBufferCount] = {};
+    ID3D12Resource*             depthStencilBuffer = nullptr;
     HANDLE                      fenceEventHandle = nullptr;
     ID3D12Fence*                fence = nullptr;
     UINT64                      fenceValue = 0;
