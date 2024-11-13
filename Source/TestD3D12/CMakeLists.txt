@@ -15,6 +15,10 @@ set(ALL_FILES
     D3D12SingleDescriptorAllocator.cpp
     D3D12Texture.h
     D3D12Texture.cpp
+    D3D12VertexBuffer.h
+    D3D12VertexBuffer.cpp
+    D3D12IndexBuffer.h
+    D3D12IndexBuffer.cpp
     D3D12FrameData.h
     D3D12FrameData.cpp
     WinMain.cpp

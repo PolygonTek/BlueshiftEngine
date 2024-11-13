@@ -32,18 +32,16 @@ private:
     void                            FreeMesh();
     void                            DrawMesh();
 
-    D3D12Texture*                   defaultTexture = nullptr;
+    D3D12VertexBuffer *             vertexBuffer = nullptr;
+    D3D12IndexBuffer *              indexBuffer = nullptr;
+    D3D12Texture *                  defaultTexture = nullptr;
+
     ID3D12Resource*                 constantBuffer = nullptr;
     D3D12_CPU_DESCRIPTOR_HANDLE*    cbvDescriptorHandlePtr = nullptr;
     void*                           mappedConstantBase = nullptr;
 
     ID3D12RootSignature*            rootSignature = nullptr;
     ID3D12PipelineState*            pipelineState = nullptr;
-
-    ID3D12Resource*                 vertexBuffer = nullptr;
-    D3D12_VERTEX_BUFFER_VIEW        vertexBufferView = {};
-    ID3D12Resource*                 indexBuffer = nullptr;
-    D3D12_INDEX_BUFFER_VIEW         indexBufferView = {};
 };
 
 extern D3D12App                     app;

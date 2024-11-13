@@ -43,7 +43,7 @@ void D3D12App::Shutdown() {
 
 void D3D12App::Draw(int elapsedMsec) {
     renderer.BeginRender();
-    
+
     DrawMesh();
 
     renderer.EndRender();
@@ -97,8 +97,8 @@ void D3D12App::InitMesh() {
         0, 1, 2
     };
 
-    vertexBuffer = renderer.CreateVertexBuffer(sizeof(Vertex3D), 3, (void *)vertices, &vertexBufferView);
-    indexBuffer = renderer.CreateIndexBuffer(sizeof(uint16_t), 3, (void *)indexes, &indexBufferView);
+    vertexBuffer = D3D12VertexBuffer::CreateVertexBuffer(sizeof(vertices[0]), 3, (void *)vertices);
+    indexBuffer = D3D12IndexBuffer::CreateIndexBuffer(sizeof(indexes[0]), 3, (void *)indexes);
 }
 
 void D3D12App::InitRootSignature() {
@@ -252,8 +252,9 @@ float4 PSMain(PSInput input) : SV_TARGET {
 void D3D12App::FreeMesh() {
     renderer.singleDescriptorAllocator->Free(cbvDescriptorHandlePtr);
 
-    SAFE_RELEASE(vertexBuffer);
-    SAFE_RELEASE(indexBuffer);
+    SAFE_DELETE(vertexBuffer);
+    SAFE_DELETE(indexBuffer);
+
     SAFE_RELEASE(rootSignature);
     SAFE_RELEASE(pipelineState);
     SAFE_RELEASE(constantBuffer);
@@ -300,7 +301,7 @@ void D3D12App::DrawMesh() {
     currentCommandList->SetPipelineState(pipelineState);
 
     currentCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    currentCommandList->IASetVertexBuffers(0, 1, &vertexBufferView);
-    currentCommandList->IASetIndexBuffer(&indexBufferView);
+    currentCommandList->IASetVertexBuffers(0, 1, &vertexBuffer->vbv);
+    currentCommandList->IASetIndexBuffer(&indexBuffer->ibv);
     currentCommandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
 }

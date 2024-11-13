@@ -314,23 +314,20 @@ void D3D12Renderer::BeginRender() {
     currentFrameData->commandAllocator->Reset();
     currentFrameData->commandList->Reset(frameData[currentFrameIndex].commandAllocator, nullptr);
 
+    // 뷰포트 & ScissorRect 설정
+    currentFrameData->commandList->RSSetViewports(1, &viewport);
+    currentFrameData->commandList->RSSetScissorRects(1, &scissorRect);
+
     // 백버퍼를 렌더 타겟 상태로 전환
     currentFrameData->commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
     CD3DX12_CPU_DESCRIPTOR_HANDLE dsvDescriptorHandle(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-    // 백버퍼를 파란색으로 Clear
-    const float BackColor[] = { 0.0f, 0.0f, 1.0f, 1.0f };
-    currentFrameData->commandList->ClearRenderTargetView(rtvDescriptorHandle, BackColor, 0, nullptr);
-
-    // 뎁스버퍼 Clear
+    // 백버퍼와 깊이버퍼를 Clear
+    currentFrameData->commandList->ClearRenderTargetView(rtvDescriptorHandle, BE1::Color4::blue, 0, nullptr);
     currentFrameData->commandList->ClearDepthStencilView(dsvDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
     currentFrameData->commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
-
-    currentFrameData->commandList->RSSetViewports(1, &viewport);
-    currentFrameData->commandList->RSSetScissorRects(1, &scissorRect);
 }
 
 void D3D12Renderer::EndRender() {
@@ -380,152 +377,6 @@ void D3D12Renderer::WaitFence(UINT64 expectedFenceValue) {
 
 void D3D12Renderer::Finish() {
     WaitFence(SignalFence());
-}
-
-ID3D12Resource*D3D12Renderer::CreateVertexBuffer(int vertexSize, int numVerts, void *data, D3D12_VERTEX_BUFFER_VIEW *outVertexBufferView) {
-    ID3D12Resource* vertexBuffer = nullptr;
-    UINT bufferSize = vertexSize * numVerts;
-    D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT; // D3D12_HEAP_TYPE_UPLOAD
-
-    // GPU 에 버텍스 버퍼 생성
-    if (FAILED(device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(heapType),
-        D3D12_HEAP_FLAG_NONE,
-        &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
-        D3D12_RESOURCE_STATE_COMMON,
-        nullptr, IID_PPV_ARGS(&vertexBuffer)))) {
-        return nullptr;
-    }
-
-    ID3D12Resource* uploadBuffer = nullptr;
-
-    if (data) {
-        if (heapType == D3D12_HEAP_TYPE_DEFAULT) {
-            // CPU 에서 GPU 로 업로드할 버텍스 버퍼 생성
-            if (FAILED(device->CreateCommittedResource(
-                &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-                D3D12_HEAP_FLAG_NONE,
-                &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
-                D3D12_RESOURCE_STATE_GENERIC_READ,
-                nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
-                vertexBuffer->Release();
-                return nullptr;
-            }
-
-            UINT8* mappedPtr = nullptr;
-            CD3DX12_RANGE writeRange(0, 0);
-            uploadBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedPtr));
-            memcpy(mappedPtr, data, bufferSize);
-            uploadBuffer->Unmap(0, nullptr);
-
-            // 업로드 버퍼에서 버텍스 버퍼로 데이터 카피
-            commandAllocator->Reset();
-            commandList->Reset(commandAllocator, nullptr);
-            commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(vertexBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
-            commandList->CopyBufferRegion(vertexBuffer, 0, uploadBuffer, 0, bufferSize);
-            commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(vertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
-            commandList->Close();
-
-            // 커맨드 큐 실행
-            ID3D12CommandList *ppCommandLists[] = { commandList };
-            commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
-        } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
-            UINT8 *mappedPtr = nullptr;
-            CD3DX12_RANGE readRange(0, 0);
-            vertexBuffer->Map(0, &readRange, reinterpret_cast<void **>(&mappedPtr));
-            memcpy(mappedPtr, data, bufferSize);
-            vertexBuffer->Unmap(0, nullptr);
-        } else {
-            return nullptr;
-        }
-    }
-
-    outVertexBufferView->BufferLocation = vertexBuffer->GetGPUVirtualAddress();
-    outVertexBufferView->StrideInBytes = vertexSize;
-    outVertexBufferView->SizeInBytes = bufferSize;
-
-    if (uploadBuffer) {
-        // 업로드 버퍼 사용이 끝날 때 까지 기다린 후 Release 한다.
-        Finish();
-
-        uploadBuffer->Release();
-    }
-
-    return vertexBuffer;
-}
-
-ID3D12Resource *D3D12Renderer::CreateIndexBuffer(int indexSize, int numIndexes, void *data, D3D12_INDEX_BUFFER_VIEW *outIndexBufferView) {
-    assert(indexSize == 2 || indexSize == 4);
-
-    ID3D12Resource* indexBuffer = nullptr;
-    UINT bufferSize = indexSize * numIndexes;
-    D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT; // D3D12_HEAP_TYPE_UPLOAD
-
-    // GPU 에 버텍스 버퍼 생성
-    if (FAILED(device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(heapType),
-        D3D12_HEAP_FLAG_NONE,
-        &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
-        D3D12_RESOURCE_STATE_COMMON,
-        nullptr, IID_PPV_ARGS(&indexBuffer)))) {
-        return nullptr;
-    }
-
-    ID3D12Resource* uploadBuffer = nullptr;
-
-    if (data) {
-        if (heapType == D3D12_HEAP_TYPE_DEFAULT) {
-            // CPU 에서 GPU 로 업로드할 버텍스 버퍼 생성
-            if (FAILED(device->CreateCommittedResource(
-                &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-                D3D12_HEAP_FLAG_NONE,
-                &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
-                D3D12_RESOURCE_STATE_GENERIC_READ,
-                nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
-                indexBuffer->Release();
-                return nullptr;
-            }
-
-            UINT8* mappedPtr = nullptr;
-            CD3DX12_RANGE writeRange(0, 0);
-            uploadBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedPtr));
-            memcpy(mappedPtr, data, bufferSize);
-            uploadBuffer->Unmap(0, nullptr);
-
-            // 업로드 버퍼에서 인덱스 버퍼로 데이터 카피
-            commandAllocator->Reset();
-            commandList->Reset(commandAllocator, nullptr);
-            commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(indexBuffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
-            commandList->CopyBufferRegion(indexBuffer, 0, uploadBuffer, 0, bufferSize);
-            commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(indexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER));
-            commandList->Close();
-
-            // 커맨드 큐 실행
-            ID3D12CommandList *ppCommandLists[] = { commandList };
-            commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
-        } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
-            UINT8* mappedPtr = nullptr;
-            CD3DX12_RANGE readRange(0, 0);
-            indexBuffer->Map(0, &readRange, reinterpret_cast<void **>(&mappedPtr));
-            memcpy(mappedPtr, data, bufferSize);
-            indexBuffer->Unmap(0, nullptr);
-        } else {
-            return nullptr;
-        }
-    }
-
-    outIndexBufferView->BufferLocation = indexBuffer->GetGPUVirtualAddress();
-    outIndexBufferView->Format = (indexSize == sizeof(uint16_t) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT);
-    outIndexBufferView->SizeInBytes = bufferSize;
-
-    if (uploadBuffer) {
-        // 업로드 버퍼 사용이 끝날 때 까지 기다린 후 Release 한다.
-        Finish();
-
-        uploadBuffer->Release();
-    }
-
-    return indexBuffer;
 }
 
 void D3D12Renderer::OnResize(int width, int height) {

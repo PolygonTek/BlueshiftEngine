@@ -17,6 +17,8 @@
 #include "D3D12DescriptorPool.h"
 #include "D3D12SingleDescriptorAllocator.h"
 #include "D3D12Texture.h"
+#include "D3D12VertexBuffer.h"
+#include "D3D12IndexBuffer.h"
 #include "D3D12FrameData.h"
 
 class D3D12Renderer {
@@ -34,9 +36,6 @@ public:
 
     void                            CreateRTVs();
     void                            CreateDSV(int width, int height);
-
-    ID3D12Resource*                 CreateVertexBuffer(int vertexSize, int numVerts, void *data, D3D12_VERTEX_BUFFER_VIEW *pOutVertexBufferView);
-    ID3D12Resource*                 CreateIndexBuffer(int indexSize, int numIndexes, void *data, D3D12_INDEX_BUFFER_VIEW *pOutIndexBufferView);
 
     UINT64                          SignalFence();
     void                            WaitFence(UINT64 expectedFenceValue);
