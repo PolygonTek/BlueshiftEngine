@@ -223,6 +223,8 @@ static BOOL InitInstance(int nCmdShow) {
 
     HWND hwndMain = CreateMainWindow(szFullTitle, 1024, 768);
 
+    ::ShowWindow(hwndMain, nCmdShow);
+
     app.Init(hwndMain);
 
     app.LoadResources();
@@ -236,6 +238,8 @@ static BOOL InitInstance(int nCmdShow) {
 
 #ifdef CREATE_SUB_WINDOW
     HWND hwndSub = CreateSubWindow(_T("sub window"), 512, 384);
+
+    ::ShowWindow(hwndSub, nCmdShow);
 
     subContext = BE1::rhi.CreateContext(hwndSub, USE_SHARED_CONTEXT);
 

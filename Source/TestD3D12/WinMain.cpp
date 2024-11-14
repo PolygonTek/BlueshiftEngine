@@ -164,6 +164,8 @@ static BOOL InitInstance(int nCmdShow) {
 
     hwndMain = CreateMainWindow(szFullTitle, 1024, 768);
 
+    ::ShowWindow(hwndMain, nCmdShow);
+
     app.Init(hwndMain);
 
     return TRUE;
