@@ -242,7 +242,7 @@ void D3D12Renderer::Shutdown() {
             pDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_SUMMARY);
             pDebug->Release();
         }
-        BE1::PlatformSystem::DebugBreak();
+        PlatformSystem::DebugBreak();
     }
 }
 
@@ -325,7 +325,7 @@ void D3D12Renderer::BeginRender() {
     CD3DX12_CPU_DESCRIPTOR_HANDLE dsvDescriptorHandle(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
     // 백버퍼와 깊이버퍼를 Clear
-    currentFrameData->commandList->ClearRenderTargetView(rtvDescriptorHandle, BE1::Color4::blue, 0, nullptr);
+    currentFrameData->commandList->ClearRenderTargetView(rtvDescriptorHandle, Color4::blue, 0, nullptr);
     currentFrameData->commandList->ClearDepthStencilView(dsvDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
     currentFrameData->commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 }

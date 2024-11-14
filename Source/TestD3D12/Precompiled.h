@@ -23,5 +23,7 @@
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
 
+using namespace BE1;
+
 #define SAFE_RELEASE(p)         if (p) { p->Release(); p = nullptr; }
 #define SAFE_RELEASE_ARRAY(p)   for (int i = 0; i < _countof(p); i++) if (p[i]) { (p[i])->Release(); (p[i]) = nullptr; }

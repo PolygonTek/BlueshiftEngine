@@ -29,12 +29,12 @@ void D3D12Texture::Release() {
 }
 
 D3D12Texture *D3D12Texture::CreateTexture2D(const char *filename, bool useCompression, bool useNormalMap) {
-    BE1::Image *image = BE1::Image::NewImageFromFile(filename);
+    Image *image = Image::NewImageFromFile(filename);
     if (!image) {
         return nullptr;
     }
 
-    BE1::Image::Format::Enum dstFormat;
+    Image::Format::Enum dstFormat;
     D3D12Texture::AdjustTextureFormat(useCompression, useNormalMap, image->GetFormat(), &dstFormat);
 
     D3D12Texture* texture = D3D12Texture::CreateTexture2D(image, dstFormat, true);
@@ -43,26 +43,26 @@ D3D12Texture *D3D12Texture::CreateTexture2D(const char *filename, bool useCompre
     return texture;
 }
 
-D3D12Texture *D3D12Texture::CreateTexture2D(const BE1::Image *srcImage, BE1::Image::Format::Enum dstFormat, bool useMipmaps) {
-    BE1::Image::Format::Enum srcFormat = srcImage->GetFormat();
+D3D12Texture *D3D12Texture::CreateTexture2D(const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps) {
+    Image::Format::Enum srcFormat = srcImage->GetFormat();
 
-    bool srcCompressed = BE1::Image::IsCompressed(srcFormat);
-    bool dstCompressed = BE1::Image::IsCompressed(dstFormat);
+    bool srcCompressed = Image::IsCompressed(srcFormat);
+    bool dstCompressed = Image::IsCompressed(dstFormat);
 
     bool srcFormatSupported = IsSupportedImageFormat(srcFormat);
     bool dstFormatSupported = IsSupportedImageFormat(dstFormat);
 
     if (!dstFormatSupported) {
-        BE_WARNLOG("Unsupported internal image format %s\n", BE1::Image::FormatName(dstFormat));
+        BE_WARNLOG("Unsupported internal image format %s\n", Image::FormatName(dstFormat));
         return nullptr;
     }
 
-    BE1::Image uncompressedImage;
+    Image uncompressedImage;
 
     if (useMipmaps && srcImage->NumMipmaps() == 1) {
         if (srcImage->IsPacked() || srcImage->IsCompressed()) {
             // 밉맵을 생성해야 한다면, 지원되는 가장 비슷한 무압축 포맷으로 컨버팅한다.
-            BE1::Image::Format::Enum supportedUncompressedFormat = ToUncompressedImageFormat(srcFormat);
+            Image::Format::Enum supportedUncompressedFormat = ToUncompressedImageFormat(srcFormat);
 
             srcImage->ConvertFormat(supportedUncompressedFormat, uncompressedImage);
             srcImage = &uncompressedImage;
@@ -73,14 +73,14 @@ D3D12Texture *D3D12Texture::CreateTexture2D(const BE1::Image *srcImage, BE1::Ima
         }
     }
 
-    BE1::Image mipmapedImage;
+    Image mipmapedImage;
 
     // 밉맵을 직접 생성한다.
     if (useMipmaps && srcImage->NumMipmaps() == 1) {
         int w = srcImage->GetWidth();
         int h = srcImage->GetHeight();
         int d = srcImage->GetDepth();
-        int maxGenLevels = BE1::Image::MaxMipMapLevels(w, h, d);
+        int maxGenLevels = Image::MaxMipMapLevels(w, h, d);
 
         mipmapedImage.Create(w, h, d, srcImage->NumSlices(), maxGenLevels, srcImage->GetFormat(), srcImage->GetGammaSpace(), nullptr, srcImage->GetFlags());
         mipmapedImage.CopyFrom(*srcImage, 0, 1);
@@ -88,7 +88,7 @@ D3D12Texture *D3D12Texture::CreateTexture2D(const BE1::Image *srcImage, BE1::Ima
         srcImage = &mipmapedImage;
     }
 
-    BE1::Image dstImage;
+    Image dstImage;
 
     // dstFormat 으로 컨버팅
     if (srcFormat != dstFormat) {
@@ -99,14 +99,14 @@ D3D12Texture *D3D12Texture::CreateTexture2D(const BE1::Image *srcImage, BE1::Ima
     return CreateTexture2D(srcImage);
 }
 
-D3D12Texture* D3D12Texture::CreateTexture2D(const BE1::Image* srcImage) {
-    BE1::Image::Format::Enum srcFormat = srcImage->GetFormat();
-    bool isLinearSpace = srcImage->GetGammaSpace() == BE1::Image::GammaSpace::Linear;
+D3D12Texture* D3D12Texture::CreateTexture2D(const Image* srcImage) {
+    Image::Format::Enum srcFormat = srcImage->GetFormat();
+    bool isLinearSpace = srcImage->GetGammaSpace() == Image::GammaSpace::Linear;
 
     DXGI_FORMAT dxgiFormat;
     bool srcFormatSupported = ImageFormatToDXGIFormat(srcFormat, !isLinearSpace, &dxgiFormat);
     if (!srcFormatSupported) {
-        BE_WARNLOG("Unsupported image format %s\n", BE1::Image::FormatName(srcFormat));
+        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(srcFormat));
         return nullptr;
     }
 
@@ -114,15 +114,15 @@ D3D12Texture* D3D12Texture::CreateTexture2D(const BE1::Image* srcImage) {
 
     // GPU 에 텍스쳐 리소스 생성
     D3D12_RESOURCE_DESC textureDesc = {};
-    textureDesc.MipLevels = static_cast<UINT16>(maxMipLevels);
+    textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
     textureDesc.Format = dxgiFormat;
+    textureDesc.MipLevels = static_cast<UINT16>(maxMipLevels);
     textureDesc.Width = static_cast<UINT>(srcImage->GetWidth());
     textureDesc.Height = static_cast<UINT>(srcImage->GetHeight());
-    textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
     textureDesc.DepthOrArraySize = 1;
     textureDesc.SampleDesc.Count = 1;
     textureDesc.SampleDesc.Quality = 0;
-    textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
     ID3D12Resource *textureResource = nullptr;
     if (FAILED(renderer.device->CreateCommittedResource(
@@ -227,173 +227,173 @@ D3D12Texture* D3D12Texture::CreateTexture2D(const BE1::Image* srcImage) {
     return texture;
 }
 
-bool D3D12Texture::ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat) {
+bool D3D12Texture::ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT *dxgiFormat) {
     switch (imageFormat) {
-    case BE1::Image::Format::L_8:
-    case BE1::Image::Format::R_8:
+    case Image::Format::L_8:
+    case Image::Format::R_8:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_UNORM;
         return true;
-    case BE1::Image::Format::A_8:
+    case Image::Format::A_8:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_A8_UNORM;
         return true;
-    case BE1::Image::Format::RG_8_8:
+    case Image::Format::RG_8_8:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8_UNORM;
         return true;
-    case BE1::Image::Format::RGBA_8_8_8_8:
+    case Image::Format::RGBA_8_8_8_8:
         if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
         return true;
-    case BE1::Image::Format::BGRA_8_8_8_8:
+    case Image::Format::BGRA_8_8_8_8:
         if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_B8G8R8A8_UNORM_SRGB : DXGI_FORMAT_B8G8R8A8_UNORM;
         return true;
-    case BE1::Image::Format::BGRX_8_8_8_8:
+    case Image::Format::BGRX_8_8_8_8:
         if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_B8G8R8X8_UNORM_SRGB : DXGI_FORMAT_B8G8R8X8_UNORM;
         return true;
-    case BE1::Image::Format::R_8_SNORM:
+    case Image::Format::R_8_SNORM:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8_SNORM;
         return true;
-    case BE1::Image::Format::RG_8_8_SNORM:
+    case Image::Format::RG_8_8_SNORM:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8_SNORM;
         return true;
-    case BE1::Image::Format::RGBA_8_8_8_8_SNORM:
+    case Image::Format::RGBA_8_8_8_8_SNORM:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R8G8B8A8_SNORM;
         return true;
-    case BE1::Image::Format::BGR_5_6_5:
+    case Image::Format::BGR_5_6_5:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B5G6R5_UNORM;
         return true;
-    case BE1::Image::Format::BGRA_4_4_4_4:
+    case Image::Format::BGRA_4_4_4_4:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B4G4R4A4_UNORM;
         return true;
-    case BE1::Image::Format::ABGR_4_4_4_4:
+    case Image::Format::ABGR_4_4_4_4:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_A4B4G4R4_UNORM;
         return true;
-    case BE1::Image::Format::BGRA_5_5_5_1:
+    case Image::Format::BGRA_5_5_5_1:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_B5G5R5A1_UNORM;
         return true;
-    case BE1::Image::Format::RGBA_10_10_10_2:
+    case Image::Format::RGBA_10_10_10_2:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
         return true;
-    case BE1::Image::Format::L_16F:
-    case BE1::Image::Format::R_16F:
+    case Image::Format::L_16F:
+    case Image::Format::R_16F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16_FLOAT;
         return true;
-    case BE1::Image::Format::RG_16F_16F:
+    case Image::Format::RG_16F_16F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16G16_FLOAT;
         return true;
-    case BE1::Image::Format::RGBA_16F_16F_16F_16F:
+    case Image::Format::RGBA_16F_16F_16F_16F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
         return true;
-    case BE1::Image::Format::R_32F:
+    case Image::Format::R_32F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32_FLOAT;
         return true;
-    case BE1::Image::Format::RG_32F_32F:
+    case Image::Format::RG_32F_32F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32G32_FLOAT;
         return true;
-    case BE1::Image::Format::RGB_32F_32F_32F:
+    case Image::Format::RGB_32F_32F_32F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32G32B32_FLOAT;
         return true;
-    case BE1::Image::Format::RGBA_32F_32F_32F_32F:
+    case Image::Format::RGBA_32F_32F_32F_32F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
         return true;
-    case BE1::Image::Format::RGBE_9_9_9_5:
+    case Image::Format::RGBE_9_9_9_5:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R9G9B9E5_SHAREDEXP;
         return true;
-    case BE1::Image::Format::RGB_11F_11F_10F:
+    case Image::Format::RGB_11F_11F_10F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_R11G11B10_FLOAT;
         return true;
-    case BE1::Image::Format::DXT1: // BC1
+    case Image::Format::DXT1: // BC1
         if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC1_UNORM_SRGB : DXGI_FORMAT_BC1_UNORM;
         return true;
-    case BE1::Image::Format::DXT3: // BC2
+    case Image::Format::DXT3: // BC2
         if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC2_UNORM_SRGB : DXGI_FORMAT_BC2_UNORM;
         return true;
-    case BE1::Image::Format::DXT5: // BC3
+    case Image::Format::DXT5: // BC3
         if (dxgiFormat) *dxgiFormat = isSRGB ? DXGI_FORMAT_BC3_UNORM_SRGB : DXGI_FORMAT_BC3_UNORM;
         return true;
-    case BE1::Image::Format::DXN1: // BC4
+    case Image::Format::DXN1: // BC4
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_BC4_UNORM;
         return true;
-    case BE1::Image::Format::DXN2: // BC5
+    case Image::Format::DXN2: // BC5
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_BC5_UNORM;
         return true;
-    case BE1::Image::Format::Depth_16:
+    case Image::Format::Depth_16:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D16_UNORM;
         return true;
-    case BE1::Image::Format::Depth_32F:
+    case Image::Format::Depth_32F:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D32_FLOAT;
         return true;
-    case BE1::Image::Format::DepthStencil_24_8:
+    case Image::Format::DepthStencil_24_8:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
         return true;
     }
     return false;
 }
 
-BE1::Image::Format::Enum D3D12Texture::ToUncompressedImageFormat(BE1::Image::Format::Enum inFormat) {
-    BE1::Image::Format::Enum outFormat;
+Image::Format::Enum D3D12Texture::ToUncompressedImageFormat(Image::Format::Enum inFormat) {
+    Image::Format::Enum outFormat;
 
     switch (inFormat) {
-    case BE1::Image::Format::RGB_5_6_5:
-    case BE1::Image::Format::RGB_8_8_8:
-    case BE1::Image::Format::BGR_5_6_5:
-    case BE1::Image::Format::BGR_8_8_8:
-    case BE1::Image::Format::RGBX_4_4_4_4:
-    case BE1::Image::Format::RGBX_5_5_5_1:
-    case BE1::Image::Format::RGBX_8_8_8_8:
-    case BE1::Image::Format::BGRX_4_4_4_4:
-    case BE1::Image::Format::BGRX_5_5_5_1:
-        outFormat = BE1::Image::Format::BGRX_8_8_8_8;
+    case Image::Format::RGB_5_6_5:
+    case Image::Format::RGB_8_8_8:
+    case Image::Format::BGR_5_6_5:
+    case Image::Format::BGR_8_8_8:
+    case Image::Format::RGBX_4_4_4_4:
+    case Image::Format::RGBX_5_5_5_1:
+    case Image::Format::RGBX_8_8_8_8:
+    case Image::Format::BGRX_4_4_4_4:
+    case Image::Format::BGRX_5_5_5_1:
+        outFormat = Image::Format::BGRX_8_8_8_8;
         break;
-    case BE1::Image::Format::LA_8_8:
-    case BE1::Image::Format::RGBA_4_4_4_4:
-    case BE1::Image::Format::RGBA_5_5_5_1:
-    case BE1::Image::Format::BGRA_4_4_4_4:
-    case BE1::Image::Format::BGRA_5_5_5_1:
-    case BE1::Image::Format::ABGR_4_4_4_4:
-    case BE1::Image::Format::ABGR_1_5_5_5:
-    case BE1::Image::Format::ABGR_8_8_8_8:
-    case BE1::Image::Format::ARGB_4_4_4_4:
-    case BE1::Image::Format::ARGB_1_5_5_5:
-    case BE1::Image::Format::ARGB_8_8_8_8:
-        outFormat = BE1::Image::Format::BGRA_8_8_8_8;
+    case Image::Format::LA_8_8:
+    case Image::Format::RGBA_4_4_4_4:
+    case Image::Format::RGBA_5_5_5_1:
+    case Image::Format::BGRA_4_4_4_4:
+    case Image::Format::BGRA_5_5_5_1:
+    case Image::Format::ABGR_4_4_4_4:
+    case Image::Format::ABGR_1_5_5_5:
+    case Image::Format::ABGR_8_8_8_8:
+    case Image::Format::ARGB_4_4_4_4:
+    case Image::Format::ARGB_1_5_5_5:
+    case Image::Format::ARGB_8_8_8_8:
+        outFormat = Image::Format::BGRA_8_8_8_8;
         break;
-    case BE1::Image::Format::RGB_8_8_8_SNORM:
-        outFormat = BE1::Image::Format::RGBA_8_8_8_8_SNORM;
+    case Image::Format::RGB_8_8_8_SNORM:
+        outFormat = Image::Format::RGBA_8_8_8_8_SNORM;
         break;
-    case BE1::Image::Format::RGB_16F_16F_16F:
-        outFormat = BE1::Image::Format::RGBA_16F_16F_16F_16F;
+    case Image::Format::RGB_16F_16F_16F:
+        outFormat = Image::Format::RGBA_16F_16F_16F_16F;
         break;
-    case BE1::Image::Format::RGB_32F_32F_32F:
-        outFormat = BE1::Image::Format::RGBA_32F_32F_32F_32F;
+    case Image::Format::RGB_32F_32F_32F:
+        outFormat = Image::Format::RGBA_32F_32F_32F_32F;
         break;
-    case BE1::Image::Format::DXN1:
-    case BE1::Image::Format::DXN2:
-    case BE1::Image::Format::RGB_PVRTC_2BPPV1:
-    case BE1::Image::Format::RGB_PVRTC_4BPPV1:
-    case BE1::Image::Format::RGB_8_ETC1:
-    case BE1::Image::Format::RGB_8_ETC2:
-    case BE1::Image::Format::RGB_ATC:
-        outFormat = BE1::Image::Format::BGRX_8_8_8_8;
+    case Image::Format::DXN1:
+    case Image::Format::DXN2:
+    case Image::Format::RGB_PVRTC_2BPPV1:
+    case Image::Format::RGB_PVRTC_4BPPV1:
+    case Image::Format::RGB_8_ETC1:
+    case Image::Format::RGB_8_ETC2:
+    case Image::Format::RGB_ATC:
+        outFormat = Image::Format::BGRX_8_8_8_8;
         break;
-    case BE1::Image::Format::DXT1:
-    case BE1::Image::Format::DXT3:
-    case BE1::Image::Format::DXT5:
-    case BE1::Image::Format::RGBA_PVRTC_2BPPV1:
-    case BE1::Image::Format::RGBA_PVRTC_4BPPV1:
-    case BE1::Image::Format::RGBA_PVRTC_2BPPV2:
-    case BE1::Image::Format::RGBA_PVRTC_4BPPV2:
-    case BE1::Image::Format::RGBA_8_1_ETC2:
-    case BE1::Image::Format::RGBA_8_8_ETC2:
-    case BE1::Image::Format::RGBA_EA_ATC:
-    case BE1::Image::Format::RGBA_IA_ATC:
-        outFormat = BE1::Image::Format::RGBA_8_8_8_8;
+    case Image::Format::DXT1:
+    case Image::Format::DXT3:
+    case Image::Format::DXT5:
+    case Image::Format::RGBA_PVRTC_2BPPV1:
+    case Image::Format::RGBA_PVRTC_4BPPV1:
+    case Image::Format::RGBA_PVRTC_2BPPV2:
+    case Image::Format::RGBA_PVRTC_4BPPV2:
+    case Image::Format::RGBA_8_1_ETC2:
+    case Image::Format::RGBA_8_8_ETC2:
+    case Image::Format::RGBA_EA_ATC:
+    case Image::Format::RGBA_IA_ATC:
+        outFormat = Image::Format::RGBA_8_8_8_8;
         break;
-    case BE1::Image::Format::R_11_EAC:
-    case BE1::Image::Format::SignedR_11_EAC:
-        outFormat = BE1::Image::Format::R_16F;
+    case Image::Format::R_11_EAC:
+    case Image::Format::SignedR_11_EAC:
+        outFormat = Image::Format::R_16F;
         break;
-    case BE1::Image::Format::RG_11_11_EAC:
-    case BE1::Image::Format::SignedRG_11_11_EAC:
-        outFormat = BE1::Image::Format::RG_16F_16F;
+    case Image::Format::RG_11_11_EAC:
+    case Image::Format::SignedRG_11_11_EAC:
+        outFormat = Image::Format::RG_16F_16F;
         break;
     default:
         assert(0);
@@ -403,31 +403,31 @@ BE1::Image::Format::Enum D3D12Texture::ToUncompressedImageFormat(BE1::Image::For
     return outFormat;
 }
 
-BE1::Image::Format::Enum D3D12Texture::ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap) {
-    if (BE1::Image::IsCompressed(inFormat)) {
+Image::Format::Enum D3D12Texture::ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap) {
+    if (Image::IsCompressed(inFormat)) {
         assert(0);
         return inFormat;
     }
 
     int redBits, greenBits, blueBits, alphaBits;
-    BE1::Image::GetBits(inFormat, &redBits, &greenBits, &blueBits, &alphaBits);
+    Image::GetBits(inFormat, &redBits, &greenBits, &blueBits, &alphaBits);
 
-    BE1::Image::Format::Enum outFormat = inFormat;
+    Image::Format::Enum outFormat = inFormat;
 
     if (redBits > 0 && greenBits > 0 && blueBits > 0) {
-        if (BE1::Image::IsFloatFormat(inFormat) || BE1::Image::IsHalfFormat(inFormat)) {
+        if (Image::IsFloatFormat(inFormat) || Image::IsHalfFormat(inFormat)) {
             if (alphaBits == 0) {
-                outFormat = BE1::Image::Format::RGBE_9_9_9_5;
+                outFormat = Image::Format::RGBE_9_9_9_5;
             }
         } else if (useNormalMap) {
-            outFormat = BE1::Image::Format::DXN2;
+            outFormat = Image::Format::DXN2;
         } else {
             if (alphaBits <= 1) {
-                outFormat = BE1::Image::Format::DXT1;
+                outFormat = Image::Format::DXT1;
             } else if (alphaBits <= 4) {
-                outFormat = BE1::Image::Format::DXT3;
+                outFormat = Image::Format::DXT3;
             } else {
-                outFormat = BE1::Image::Format::DXT5;
+                outFormat = Image::Format::DXT5;
             }
         }
     }
@@ -435,13 +435,13 @@ BE1::Image::Format::Enum D3D12Texture::ToCompressedImageFormat(BE1::Image::Forma
     return outFormat;
 }
 
-void D3D12Texture::AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format::Enum inFormat, BE1::Image::Format::Enum *outFormat) {
-    if (BE1::Image::IsDepthFormat(inFormat) || BE1::Image::IsDepthStencilFormat(inFormat)) {
+void D3D12Texture::AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat) {
+    if (Image::IsDepthFormat(inFormat) || Image::IsDepthStencilFormat(inFormat)) {
         *outFormat = inFormat;
         return;
     }
 
-    if (BE1::Image::IsCompressed(inFormat)) {
+    if (Image::IsCompressed(inFormat)) {
         if (IsSupportedImageFormat(inFormat)) {
             *outFormat = inFormat;
             return;

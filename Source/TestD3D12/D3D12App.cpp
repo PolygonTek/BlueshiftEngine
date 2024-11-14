@@ -16,13 +16,13 @@
 #include "D3D12App.h"
 
 struct Vertex3D {
-    BE1::Vec3   position;
-    BE1::Vec4   color;
-    BE1::Vec2   texCoord;
+    Vec3        position;
+    Vec4        color;
+    Vec2        texCoord;
 };
 
 struct DefaultConstantBuffer {
-    BE1::Vec4   offset;
+    Vec4        offset;
 };
 
 D3D12App        app;
@@ -53,7 +53,7 @@ void D3D12App::Draw(int frameMsec) {
 void D3D12App::RunFrame(int frameMsec) {
     elapsedMsec += frameMsec;
 
-    BE1::cmdSystem.ExecuteCommandBuffer();
+    cmdSystem.ExecuteCommandBuffer();
 }
 
 void D3D12App::InitMesh() {
@@ -62,7 +62,7 @@ void D3D12App::InitMesh() {
     // CB 용 업로드 버퍼 생성
     // NOTE: 256 바이트 주소/사이즈 정렬되어 있어야 한다.
     // 상수 버퍼의 float 최대 개수는 4096
-    UINT constantBufferSize = (UINT)BE1::AlignUp(sizeof(DefaultConstantBuffer), D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+    UINT constantBufferSize = (UINT)AlignUp(sizeof(DefaultConstantBuffer), D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
     renderer.device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
         D3D12_HEAP_FLAG_NONE,
@@ -266,9 +266,9 @@ void D3D12App::FreeMesh() {
 void D3D12App::DrawMesh() {
     float currentSec = MILLI2SEC(elapsedMsec);
 
-    BE1::Vec4* offset = reinterpret_cast<BE1::Vec4*>(mappedConstantBase);
-    offset->x = 0.5f * BE1::Math::Cos(currentSec);
-    offset->y = 0.5f * BE1::Math::Sin(currentSec * 3);
+    Vec4* offset = reinterpret_cast<Vec4*>(mappedConstantBase);
+    offset->x = 0.5f * Math::Cos(currentSec);
+    offset->y = 0.5f * Math::Sin(currentSec * 3);
 
     ID3D12GraphicsCommandList* currentCommandList = renderer.currentFrameData->commandList;
     D3D12DescriptorPool* currentRootDescriptorPool = renderer.currentFrameData->rootDescriptorPool;
@@ -296,8 +296,8 @@ void D3D12App::DrawMesh() {
     // 루트 디스크립터 테이블을 세팅한다.
     currentCommandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
 
-    //gpuDescriptorHandle.Offset(1, descriptorPool->srvDescriptorHandleSize);
-    //currentCommandList->SetGraphicsRootDescriptorTable(1, gpuDescriptorHandle);
+    //gpuDescriptorHandle.Offset(1, currentRootDescriptorPool->descriptorHandleSize);
+    //currentCommandList->SetGraphicsRootDescriptorTable(1, gpuRootDescriptorHandle);
 
     currentCommandList->SetPipelineState(pipelineState);
 

@@ -21,14 +21,14 @@ public:
     void                            Release();
 
     static D3D12Texture*            CreateTexture2D(const char* filename, bool useCompression = true, bool useNormalMap = false);
-    static D3D12Texture*            CreateTexture2D(const BE1::Image* image, BE1::Image::Format::Enum dstFormat, bool useMipmaps);
-    static D3D12Texture*            CreateTexture2D(const BE1::Image* image);
+    static D3D12Texture*            CreateTexture2D(const Image* image, Image::Format::Enum dstFormat, bool useMipmaps);
+    static D3D12Texture*            CreateTexture2D(const Image* image);
 
-    static bool                     ImageFormatToDXGIFormat(BE1::Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT* dxgiFormat);
-    static bool                     IsSupportedImageFormat(BE1::Image::Format::Enum imageFormat) { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
-    static BE1::Image::Format::Enum ToUncompressedImageFormat(BE1::Image::Format::Enum imageFormat);
-    static BE1::Image::Format::Enum ToCompressedImageFormat(BE1::Image::Format::Enum inFormat, bool useNormalMap);
-    static void                     AdjustTextureFormat(bool useCompression, bool useNormalMap, BE1::Image::Format::Enum inFormat, BE1::Image::Format::Enum *outFormat);
+    static bool                     ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT* dxgiFormat);
+    static bool                     IsSupportedImageFormat(Image::Format::Enum imageFormat) { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
+    static Image::Format::Enum      ToUncompressedImageFormat(Image::Format::Enum imageFormat);
+    static Image::Format::Enum      ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
+    static void                     AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat);
 
     ID3D12Resource*                 textureResource = nullptr;
     D3D12_RESOURCE_DESC             textureDesc;

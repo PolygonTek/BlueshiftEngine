@@ -29,21 +29,21 @@ static WCHAR                windowTitleString[256];
 LRESULT CALLBACK            MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 static void SystemLog(int logLevel, const char* text) {
-    int len = BE1::PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
+    int len = PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
     wchar_t* wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
-    BE1::PlatformWinUtils::UTF8ToUCS2(text, wText, len);
+    PlatformWinUtils::UTF8ToUCS2(text, wText, len);
 
     OutputDebugString(wText);
 }
 
 static void SystemError(int errLevel, const char* text) {
-    int len = BE1::PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
+    int len = PlatformWinUtils::UTF8ToUCS2(text, nullptr, 0);
     wchar_t* wText = (wchar_t *)alloca(sizeof(wchar_t) * len);
-    BE1::PlatformWinUtils::UTF8ToUCS2(text, wText, len);
+    PlatformWinUtils::UTF8ToUCS2(text, wText, len);
 
     HWND hwnd = FindWindow(mainWindowClassName, nullptr);
     MessageBox(hwnd, wText, L"Error", MB_OK);
-    if (errLevel == BE1::ErrorLevel::Fatal) {
+    if (errLevel == ErrorLevel::Fatal) {
         exit(0);
     }
 }
@@ -51,7 +51,7 @@ static void SystemError(int errLevel, const char* text) {
 static HWND CreateRenderWindow(const TCHAR* title, const TCHAR* classname, int width, int height, bool fullscreen) {
     int style = WS_VISIBLE;
     int styleEx;
-    BE1::Rect windowRect;
+    Rect windowRect;
 
     if (fullscreen) {
         styleEx = WS_EX_TOPMOST;
@@ -112,7 +112,7 @@ static void ChangeRenderWindow(HWND hwnd, int width, int height, bool fullscreen
     ::SetRect(&rect, 0, 0, width, height);
     ::AdjustWindowRect(&rect, style, 0);
     
-    BE1::Rect windowRect;
+    Rect windowRect;
     windowRect.w = rect.right - rect.left;
     windowRect.h = rect.bottom - rect.top;
 
@@ -152,16 +152,16 @@ static HWND CreateMainWindow(const TCHAR* title, int width, int height) {
 }
 
 static BOOL InitInstance(int nCmdShow) {
-    BE1::Str basePath = BE1::PlatformFile::ExecutablePath();
+    Str basePath = PlatformFile::ExecutablePath();
     basePath.AppendPath("../../..");
     basePath.CleanPath();
-    BE1::Engine::InitBase(basePath.c_str(), SystemLog, SystemError);
+    Engine::InitBase(basePath.c_str(), SystemLog, SystemError);
 
     char temp[128];
-    BE1::Str::snPrintf(temp, sizeof(temp), "%ls %s %s %s", szTitle, BE1::PlatformProcess::PlatformName(), __DATE__, __TIME__);
+    Str::snPrintf(temp, sizeof(temp), "%ls %s %s %s", szTitle, PlatformProcess::PlatformName(), __DATE__, __TIME__);
 
     wchar_t szFullTitle[128];
-    BE1::PlatformWinUtils::UTF8ToUCS2(temp, szFullTitle, COUNT_OF(szFullTitle));
+    PlatformWinUtils::UTF8ToUCS2(temp, szFullTitle, COUNT_OF(szFullTitle));
 
     hwndMain = CreateMainWindow(szFullTitle, 1024, 768);
 
@@ -175,7 +175,7 @@ static BOOL InitInstance(int nCmdShow) {
 static void ShutdownInstance() {
     app.Shutdown();
 
-    BE1::Engine::ShutdownBase();
+    Engine::ShutdownBase();
 }
 
 static bool ProcessEventLoop() {
@@ -243,12 +243,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
     GetWindowText(hwndMain, windowTitleString, COUNT_OF(windowTitleString));
 
-    int t0 = BE1::PlatformTime::Milliseconds();
+    int t0 = PlatformTime::Milliseconds();
 
     while (1) {
-        int t = BE1::PlatformTime::Milliseconds();
+        int t = PlatformTime::Milliseconds();
         int elapsedMsec = t - t0;
-        BE1::Clamp(elapsedMsec, 0, 1000);
+        Clamp(elapsedMsec, 0, 1000);
 
         t0 = t;
 
