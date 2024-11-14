@@ -42,6 +42,8 @@ private:
 
     ID3D12RootSignature*            rootSignature = nullptr;
     ID3D12PipelineState*            pipelineState = nullptr;
+
+    int                             elapsedMsec = 0;
 };
 
 extern D3D12App                     app;

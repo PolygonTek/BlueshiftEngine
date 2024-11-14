@@ -41,7 +41,7 @@ void D3D12App::Shutdown() {
     renderer.Shutdown();
 }
 
-void D3D12App::Draw(int elapsedMsec) {
+void D3D12App::Draw(int frameMsec) {
     renderer.BeginRender();
 
     DrawMesh();
@@ -50,7 +50,9 @@ void D3D12App::Draw(int elapsedMsec) {
     renderer.Present();
 }
 
-void D3D12App::RunFrame(int elapsedMsec) {
+void D3D12App::RunFrame(int frameMsec) {
+    elapsedMsec += frameMsec;
+
     BE1::cmdSystem.ExecuteCommandBuffer();
 }
 
@@ -252,22 +254,21 @@ float4 PSMain(PSInput input) : SV_TARGET {
 void D3D12App::FreeMesh() {
     renderer.singleDescriptorAllocator->Free(cbvDescriptorHandlePtr);
 
+    SAFE_DELETE(defaultTexture);
     SAFE_DELETE(vertexBuffer);
     SAFE_DELETE(indexBuffer);
 
     SAFE_RELEASE(rootSignature);
     SAFE_RELEASE(pipelineState);
     SAFE_RELEASE(constantBuffer);
-
-    SAFE_DELETE(defaultTexture);
 }
 
 void D3D12App::DrawMesh() {
-    float currentTime = BE1::PlatformTime::Seconds();
+    float currentSec = MILLI2SEC(elapsedMsec);
 
     BE1::Vec4* offset = reinterpret_cast<BE1::Vec4*>(mappedConstantBase);
-    offset->x = 0.5f * BE1::Math::Cos(currentTime);
-    offset->y = 0.5f * BE1::Math::Sin(currentTime * 3);
+    offset->x = 0.5f * BE1::Math::Cos(currentSec);
+    offset->y = 0.5f * BE1::Math::Sin(currentSec * 3);
 
     ID3D12GraphicsCommandList* currentCommandList = renderer.currentFrameData->commandList;
     D3D12DescriptorPool* currentRootDescriptorPool = renderer.currentFrameData->rootDescriptorPool;

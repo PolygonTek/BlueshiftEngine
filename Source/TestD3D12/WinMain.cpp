@@ -24,6 +24,7 @@ static TCHAR                szTitle[100];    // The title bar text
 
 static HWND                 hwndMain;
 static HACCEL               hAccelTable;
+static WCHAR                windowTitleString[256];
 
 LRESULT CALLBACK            MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -194,30 +195,30 @@ static bool ProcessEventLoop() {
     return true;
 }
 
-static bool RunFrameInstance(int elapsedMsec) {
+static bool RunFrameInstance(int frameMsec) {
     static int fpsElapsedMsec = 0;
     static int fpsFrames = 0;
     static int fps = 0;
 
-    fpsElapsedMsec += elapsedMsec;
+    fpsElapsedMsec += frameMsec;
     fpsFrames++;
 
     if (fpsElapsedMsec >= 1000) {
         fps = fpsFrames / MILLI2SEC(fpsElapsedMsec);
         fpsFrames = 0;
         fpsElapsedMsec = 0;
+
+        WCHAR windowText[256];
+        swprintf_s(windowText, L"%s - FPS: %i", windowTitleString, fps);
+        SetWindowText(hwndMain, windowText);
     }
 
     if (!ProcessEventLoop()) {
         return false;
     }
 
-    app.RunFrame(elapsedMsec);
-    app.Draw(elapsedMsec);
-
-    WCHAR windowText[64];
-    swprintf_s(windowText, L"FPS: %u", fps);
-    SetWindowText(hwndMain, windowText);
+    app.RunFrame(frameMsec);
+    app.Draw(frameMsec);
 
     return true;
 }
@@ -225,7 +226,6 @@ static bool RunFrameInstance(int elapsedMsec) {
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow) {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
-
     // Disable automatic DPI scaling.
     SetProcessDPIAware();
 
@@ -240,6 +240,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     }
 
     ::SetFocus(hwndMain);
+
+    GetWindowText(hwndMain, windowTitleString, COUNT_OF(windowTitleString));
 
     int t0 = BE1::PlatformTime::Milliseconds();
 
