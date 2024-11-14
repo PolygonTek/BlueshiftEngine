@@ -24,7 +24,6 @@ public:
     void                            Shutdown();
 
     ID3D12CommandAllocator*         commandAllocator = nullptr;
-    ID3D12GraphicsCommandList*      commandList = nullptr;
-    D3D12DescriptorPool *           rootDescriptorPool = nullptr;
+    D3D12DescriptorPool*            rootDescriptorPool = nullptr;
     UINT64                          fenceValue = 0;
 };

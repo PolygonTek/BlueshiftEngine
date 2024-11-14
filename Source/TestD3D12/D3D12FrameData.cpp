@@ -23,16 +23,6 @@ void D3D12FrameData::Init() {
         BE_FATALERROR("CreateCommandAllocator : failed");
     }
 
-    // 그래픽스 커맨드 리스트 생성
-    hr = renderer.device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator, nullptr, IID_PPV_ARGS(&commandList));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateCommandList : failed");
-    }
-
-    // Command lists are created in the recording state, but there is nothing
-    // to record yet. The main loop expects it to be closed, so close it now.
-    commandList->Close();
-
     // 렌더링에 사용할 디스크립터 힙을 생성한다.
     // 최대 1000 개의 CBV_SRV_UAV 용 디스크립터를 담을 수 있다.
     rootDescriptorPool = new D3D12DescriptorPool;
@@ -41,7 +31,5 @@ void D3D12FrameData::Init() {
 
 void D3D12FrameData::Shutdown() {
     SAFE_DELETE(rootDescriptorPool);
-
-    SAFE_RELEASE(commandList);
     SAFE_RELEASE(commandAllocator);
 }
