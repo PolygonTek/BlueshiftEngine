@@ -28,7 +28,7 @@ struct DefaultConstantBuffer {
 D3D12App        app;
 
 void D3D12App::Init(HWND hwnd) {
-    renderer.Init(hwnd);
+    renderer.Init(hwnd, true, true);
 
     InitMesh();
 }

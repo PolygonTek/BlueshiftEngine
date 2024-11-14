@@ -23,31 +23,30 @@ extern "C" { __declspec(dllexport) extern const char *D3D12SDKPath = u8"."; }
 
 D3D12Renderer       renderer;
 
-void D3D12Renderer::Init(HWND hwnd) {
+void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidation) {
     DWORD dwCreateFactoryFlags = 0;
-    bool bWithGPUValidation = true;
     HRESULT hr;
 
-#if 1
-    // 디버그 레이어 활성화
-    ID3D12Debug* pDebugController = nullptr;
-    hr = D3D12GetDebugInterface(IID_PPV_ARGS(&pDebugController));
-    if (SUCCEEDED(hr)) {
-        pDebugController->EnableDebugLayer();
-        dwCreateFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
+    if (enableDebugLayer) {
+        // 디버그 레이어 활성화
+        ID3D12Debug* pDebugController = nullptr;
+        hr = D3D12GetDebugInterface(IID_PPV_ARGS(&pDebugController));
+        if (SUCCEEDED(hr)) {
+            pDebugController->EnableDebugLayer();
+            dwCreateFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
 
-        // GPU Validation 활성화
-        if (bWithGPUValidation) {
-            ID3D12Debug1* pDebugController1 = nullptr;
-            if (SUCCEEDED(pDebugController->QueryInterface(IID_PPV_ARGS(&pDebugController1))))
-            {
-                pDebugController1->SetEnableGPUBasedValidation(TRUE);
-                pDebugController1->Release();
+            // GPU Validation 활성화
+            if (withGpuValidation) {
+                ID3D12Debug1* pDebugController1 = nullptr;
+                if (SUCCEEDED(pDebugController->QueryInterface(IID_PPV_ARGS(&pDebugController1))))
+                {
+                    pDebugController1->SetEnableGPUBasedValidation(TRUE);
+                    pDebugController1->Release();
+                }
             }
+            pDebugController->Release();
         }
-        pDebugController->Release();
     }
-#endif
 
     IDXGIFactory4* pFactory = nullptr;
     CreateDXGIFactory2(dwCreateFactoryFlags, IID_PPV_ARGS(&pFactory));
