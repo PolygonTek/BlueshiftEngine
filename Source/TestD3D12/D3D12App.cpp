@@ -270,6 +270,7 @@ void D3D12App::DrawMesh() {
     offset->x = 0.5f * Math::Cos(currentSec);
     offset->y = 0.5f * Math::Sin(currentSec * 3);
 
+    ID3D12GraphicsCommandList* currentCommandList = renderer.currentFrameCommandList->commandList;
     D3D12DescriptorPool* currentRootDescriptorPool = renderer.currentFrameData->rootDescriptorPool;
 
     // 루트 디스크립터 테이블을 할당한다. 여기서 디스크립터 테이블은 연속된 디스크립터 핸들을 말한다.
@@ -279,10 +280,10 @@ void D3D12App::DrawMesh() {
 
     // 루트 디스크립터 힙을 지정한다.
     ID3D12DescriptorHeap* descriptorHeaps[] = { currentRootDescriptorPool->descriptorHeap };
-    renderer.commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
+    currentCommandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 
     // 루트 시그니쳐를 세팅한다.
-    renderer.commandList->SetGraphicsRootSignature(rootSignature);
+    currentCommandList->SetGraphicsRootSignature(rootSignature);
 
     // 루트 디스크립터 테이블에 SRV 디스크립터 카피 - 0
     CD3DX12_CPU_DESCRIPTOR_HANDLE srvDest(cpuRootDescriptorHandle, 0, currentRootDescriptorPool->descriptorHandleSize);
@@ -293,15 +294,15 @@ void D3D12App::DrawMesh() {
     renderer.device->CopyDescriptorsSimple(1, cbvDest, *cbvDescriptorHandlePtr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     
     // 루트 디스크립터 테이블을 세팅한다.
-    renderer.commandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
+    currentCommandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
 
     //gpuDescriptorHandle.Offset(1, currentRootDescriptorPool->descriptorHandleSize);
-    //renderer.commandList->SetGraphicsRootDescriptorTable(1, gpuRootDescriptorHandle);
+    //renderer.currentCommandList->SetGraphicsRootDescriptorTable(1, gpuRootDescriptorHandle);
 
-    renderer.commandList->SetPipelineState(pipelineState);
+    currentCommandList->SetPipelineState(pipelineState);
 
-    renderer.commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    renderer.commandList->IASetVertexBuffers(0, 1, &vertexBuffer->vbv);
-    renderer.commandList->IASetIndexBuffer(&indexBuffer->ibv);
-    renderer.commandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
+    currentCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    currentCommandList->IASetVertexBuffers(0, 1, &vertexBuffer->vbv);
+    currentCommandList->IASetIndexBuffer(&indexBuffer->ibv);
+    currentCommandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
 }

@@ -309,38 +309,45 @@ void D3D12Renderer::BeginRender() {
     // 루트 디스크립터 풀을 비운다.
     currentFrameData->rootDescriptorPool->Reset();
 
+    // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
+    currentFrameCommandList = currentFrameData->commandListPool->Alloc();
+
     // 커맨드 할당자를 재사용하도록 리셋
-    currentFrameData->commandAllocator->Reset();
+    currentFrameCommandList->commandAllocator->Reset();
 
     // 커맨드 리스트를 커맨드 할당자를 이용하여 초기 상태로 리셋
-    commandList->Reset(currentFrameData->commandAllocator, nullptr);
+    currentFrameCommandList->commandList->Reset(currentFrameCommandList->commandAllocator, nullptr);
 
     // 뷰포트 & ScissorRect 설정
-    commandList->RSSetViewports(1, &viewport);
-    commandList->RSSetScissorRects(1, &scissorRect);
+    currentFrameCommandList->commandList->RSSetViewports(1, &viewport);
+    currentFrameCommandList->commandList->RSSetScissorRects(1, &scissorRect);
 
     // 백버퍼를 렌더 타겟 상태로 전환
-    commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    currentFrameCommandList->commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
     CD3DX12_CPU_DESCRIPTOR_HANDLE dsvDescriptorHandle(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
     // 백버퍼와 깊이버퍼를 Clear
-    commandList->ClearRenderTargetView(rtvDescriptorHandle, Color4::blue, 0, nullptr);
-    commandList->ClearDepthStencilView(dsvDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-    commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+    currentFrameCommandList->commandList->ClearRenderTargetView(rtvDescriptorHandle, Color4::blue, 0, nullptr);
+    currentFrameCommandList->commandList->ClearDepthStencilView(dsvDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+    currentFrameCommandList->commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 }
 
 void D3D12Renderer::EndRender() {
     // 백버퍼 RTV 를 Present 할 수 있는 상태로 전환
-    commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+    currentFrameCommandList->commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
     // 커맨드 리스트 기록을 마친다.
-    commandList->Close();
+    currentFrameCommandList->commandList->Close();
 
     // 커맨드 큐에 커맨드 리스트 전달 (한번에 여러개의 커맨드 리스트들을 전달할 수 있다)
-    ID3D12CommandList *ppCommandLists[] = { commandList };
+    ID3D12CommandList *ppCommandLists[] = { currentFrameCommandList->commandList };
     commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+    // 커맨드 리스트 풀에 커맨드 리스트 반납
+    currentFrameData->commandListPool->Free(currentFrameCommandList);
+    currentFrameCommandList = nullptr;
 }
 
 void D3D12Renderer::Present() {

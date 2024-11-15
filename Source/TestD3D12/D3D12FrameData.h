@@ -16,6 +16,7 @@
 
 #include "D3D12FrameData.h"
 
+class D3D12CommandListPool;
 class D3D12DescriptorPool;
 
 class D3D12FrameData {
@@ -23,7 +24,7 @@ public:
     void                            Init();
     void                            Shutdown();
 
-    ID3D12CommandAllocator*         commandAllocator = nullptr;
+    D3D12CommandListPool*           commandListPool = nullptr;
     D3D12DescriptorPool*            rootDescriptorPool = nullptr;
     UINT64                          fenceValue = 0;
 };

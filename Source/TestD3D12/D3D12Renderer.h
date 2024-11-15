@@ -15,6 +15,7 @@
 #pragma once
 
 #include "D3D12DescriptorPool.h"
+#include "D3D12CommandListPool.h"
 #include "D3D12SingleDescriptorAllocator.h"
 #include "D3D12Texture.h"
 #include "D3D12VertexBuffer.h"
@@ -68,6 +69,7 @@ public:
     D3D12FrameData                  frameData[NumFrames];
     UINT                            currentFrameIndex = 0;
     D3D12FrameData*                 currentFrameData = nullptr;
+    D3D12CommandList*               currentFrameCommandList = nullptr;
 
     bool                            initialized = false;
 };

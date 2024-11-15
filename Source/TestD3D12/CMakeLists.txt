@@ -19,6 +19,8 @@ set(ALL_FILES
     D3D12VertexBuffer.cpp
     D3D12IndexBuffer.h
     D3D12IndexBuffer.cpp
+    D3D12CommandListPool.h
+    D3D12CommandListPool.cpp
     D3D12FrameData.h
     D3D12FrameData.cpp
     WinMain.cpp
