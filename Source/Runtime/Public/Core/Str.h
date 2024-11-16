@@ -374,7 +374,7 @@ public:
     static uint32_t     ToUI32(const char *s);
     static int64_t      ToI64(const char *s);
     static uint64_t     ToUI64(const char *s);
-    static Str          FormatBytes(int bytes);
+    static Str          FormatBytes(uint64_t bytes);
 
     static int          Cmp(const char *s1, const char *s2);
     static int          Cmpn(const char *s1, const char *s2, int n);

@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "D3D12Common.h"
+
 class D3D12SingleDescriptorAllocator {
 public:
     ~D3D12SingleDescriptorAllocator() { Shutdown(); }

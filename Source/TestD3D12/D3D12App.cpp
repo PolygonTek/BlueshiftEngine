@@ -31,6 +31,10 @@ void D3D12App::Init(HWND hwnd) {
     renderer.Init(hwnd, true, true);
 
     InitMesh();
+
+#ifdef USE_D3D12_MEMALLOC
+    renderer.PrintMemoryAllocatorStats();
+#endif
 }
 
 void D3D12App::Shutdown() {
@@ -89,18 +93,27 @@ void D3D12App::InitMesh() {
 
     // 삼각형의 버텍스/인덱스 버퍼 내용을 작성
     // NOTE: UV 좌표의 V 는 아래쪽으로 증가함을 주의한다. 나중에 통합 렌더러를 작성한다면, shader code 에서 하는게 좋을 듯..
-    const Vertex3D vertices[] = {
+    ALIGN_AS32 const Vertex3D vertices[] = {
         { { 0.0f, 0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.5f, 0.0f } },
         { { 0.5f, -0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
         { { -0.5f, -0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } },
     };
 
-    const uint16_t indexes[] = {
+    ALIGN_AS32 const uint16_t indexes[] = {
         0, 1, 2
     };
 
     vertexBuffer = D3D12VertexBuffer::CreateVertexBuffer(sizeof(vertices[0]), 3, (void *)vertices);
     indexBuffer = D3D12IndexBuffer::CreateIndexBuffer(sizeof(indexes[0]), 3, (void *)indexes);
+
+#if 0
+    void* tempBuffer = Mem_Alloc32(1024 * 1024 * 64);
+
+    for (int i = 0; i < 5000; i++) {
+        D3D12VertexBuffer* tempVertexBuffer = D3D12VertexBuffer::CreateVertexBuffer(sizeof(vertices[0]), BE1::Math::RandomRange(10, 50000), (void *)tempBuffer);
+        D3D12IndexBuffer *tempIndexBuffer = D3D12IndexBuffer::CreateIndexBuffer(sizeof(indexes[0]), BE1::Math::RandomRange(10, 1000), (void *)tempBuffer);
+    }
+#endif
 }
 
 void D3D12App::InitRootSignature() {

@@ -14,6 +14,12 @@
 
 #pragma once
 
+#include "D3D12Common.h"
+
+#ifdef USE_D3D12_MEMALLOC
+#include "D3D12MemoryAllocator/D3D12MemAlloc.h"
+#endif
+
 #include "D3D12DescriptorPool.h"
 #include "D3D12CommandListPool.h"
 #include "D3D12SingleDescriptorAllocator.h"
@@ -51,6 +57,10 @@ public:
     void                            MarkForRelease(ID3D12Resource* resource);
     void                            FreePendingResources();
 
+#ifdef USE_D3D12_MEMALLOC
+    void                            PrintMemoryAllocatorStats();
+#endif
+
     static constexpr UINT           NumSwapChainBuffers = 3;
     static constexpr UINT           NumFrames = 2;
 
@@ -65,6 +75,9 @@ public:
     UINT64                          fenceValue = 0;
     HANDLE                          fenceEventHandle = nullptr;
 
+#ifdef USE_D3D12_MEMALLOC
+    D3D12MA::Allocator*             allocator = nullptr;
+#endif
     ID3D12DescriptorHeap*           rtvDescriptorHeap = nullptr;
     ID3D12DescriptorHeap*           dsvDescriptorHeap = nullptr;
     ID3D12Resource*                 renderTargetBuffers[NumSwapChainBuffers] = {};

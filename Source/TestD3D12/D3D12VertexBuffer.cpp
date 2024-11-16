@@ -17,29 +17,64 @@
 #include "D3D12Renderer.h"
 
 void D3D12VertexBuffer::Release() {
+#ifdef USE_D3D12_MEMALLOC
+    SAFE_RELEASE(vertexBufferAllocation);
+#else
     SAFE_RELEASE(vertexBufferResource);
+#endif
 }
 
 D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(int vertexSize, int numVerts, void *data) {
-    ID3D12Resource* vertexBufferResource = nullptr;
     UINT bufferSize = vertexSize * numVerts;
     D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT; // D3D12_HEAP_TYPE_UPLOAD
 
     // GPU 에 버텍스 버퍼 생성
+    D3D12_RESOURCE_DESC vertexBufferDesc = {};
+    vertexBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    vertexBufferDesc.Alignment = 0;
+    vertexBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+    vertexBufferDesc.MipLevels = 1;
+    vertexBufferDesc.Width = bufferSize;
+    vertexBufferDesc.Height = 1;
+    vertexBufferDesc.DepthOrArraySize = 1;
+    vertexBufferDesc.SampleDesc.Count = 1;
+    vertexBufferDesc.SampleDesc.Quality = 0;
+    vertexBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    vertexBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+#ifdef USE_D3D12_MEMALLOC
+    D3D12MA::ALLOCATION_DESC allocationDesc = {};
+    //allocationDesc.Flags = D3D12MA::ALLOCATION_FLAG_CAN_ALIAS;
+    allocationDesc.HeapType = heapType;
+
+    D3D12MA::Allocation *allocation;
+    if (FAILED(renderer.allocator->CreateResource(
+        &allocationDesc,
+        &vertexBufferDesc,
+        D3D12_RESOURCE_STATE_COMMON,
+        nullptr,
+        &allocation,
+        IID_NULL, nullptr))) {
+        return nullptr;
+    }
+    ID3D12Resource *vertexBufferResource = allocation->GetResource();
+#else
+    ID3D12Resource *vertexBufferResource = nullptr;
     if (FAILED(renderer.device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(heapType),
         D3D12_HEAP_FLAG_NONE,
-        &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
+        &vertexBufferDesc,
         D3D12_RESOURCE_STATE_COMMON,
         nullptr, IID_PPV_ARGS(&vertexBufferResource)))) {
         return nullptr;
     }
+#endif
 
     ID3D12Resource* uploadBuffer = nullptr;
 
     if (data) {
         if (heapType == D3D12_HEAP_TYPE_DEFAULT) {
-            // CPU 에서 GPU 로 업로드할 버텍스 버퍼 생성
+            // 업로드 버퍼 생성
             if (FAILED(renderer.device->CreateCommittedResource(
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
                 D3D12_HEAP_FLAG_NONE,
@@ -84,7 +119,11 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(int vertexSize, int num
     }
 
     D3D12VertexBuffer* vertexBuffer = new D3D12VertexBuffer;
+#ifdef USE_D3D12_MEMALLOC
+    vertexBuffer->vertexBufferAllocation = allocation;
+#else
     vertexBuffer->vertexBufferResource = vertexBufferResource;
+#endif
     vertexBuffer->vbv.BufferLocation = vertexBufferResource->GetGPUVirtualAddress();
     vertexBuffer->vbv.StrideInBytes = vertexSize;
     vertexBuffer->vbv.SizeInBytes = bufferSize;

@@ -29,23 +29,23 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
 
     if (enableDebugLayer) {
         // 디버그 레이어 활성화
-        ID3D12Debug* pDebugController = nullptr;
-        hr = D3D12GetDebugInterface(IID_PPV_ARGS(&pDebugController));
+        ID3D12Debug* debugController = nullptr;
+        hr = D3D12GetDebugInterface(IID_PPV_ARGS(&debugController));
         if (SUCCEEDED(hr)) {
-            pDebugController->EnableDebugLayer();
+            debugController->EnableDebugLayer();
             dwCreateFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
 
             // GPU Validation 활성화
             if (withGpuValidation) {
-                ID3D12Debug5* pDebugController5 = nullptr;
-                if (SUCCEEDED(pDebugController->QueryInterface(IID_PPV_ARGS(&pDebugController5))))
+                ID3D12Debug5* debugController5 = nullptr;
+                if (SUCCEEDED(debugController->QueryInterface(IID_PPV_ARGS(&debugController5))))
                 {
-                    pDebugController5->SetEnableGPUBasedValidation(TRUE);
-                    pDebugController5->SetEnableAutoName(TRUE);
-                    pDebugController5->Release();
+                    debugController5->SetEnableGPUBasedValidation(TRUE);
+                    debugController5->SetEnableAutoName(TRUE);
+                    debugController5->Release();
                 }
             }
-            pDebugController->Release();
+            debugController->Release();
         }
     }
 
@@ -53,23 +53,22 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
     CreateDXGIFactory2(dwCreateFactoryFlags, IID_PPV_ARGS(&pFactory));
 
     // 어댑터 정보 얻어오기
-    IDXGIAdapter1* pAdapter = nullptr;
-    pFactory->EnumAdapters1(0, &pAdapter);
-    pAdapter->GetDesc1(&adapterDesc);
+    IDXGIAdapter1* adapter = nullptr;
+    pFactory->EnumAdapters1(0, &adapter);
+    adapter->GetDesc1(&adapterDesc);
 
     // D3D12 디바이스 생성
-    hr = D3D12CreateDevice(pAdapter, D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&device));
+    hr = D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&device));
     if (FAILED(hr)) {
         BE_FATALERROR("D3D12CreateDevice : failed");
     }
-    pAdapter->Release();
 
     // 디버그 표시 정보 설정
-    ID3D12InfoQueue *pInfoQueue = nullptr;
-    device->QueryInterface(IID_PPV_ARGS(&pInfoQueue));
-    if (pInfoQueue) {
-        pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
-        pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+    ID3D12InfoQueue *infoQueue = nullptr;
+    device->QueryInterface(IID_PPV_ARGS(&infoQueue));
+    if (infoQueue) {
+        infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+        infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
 
         D3D12_MESSAGE_ID hide[] = {
             D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
@@ -81,8 +80,8 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
         D3D12_INFO_QUEUE_FILTER filter = {};
         filter.DenyList.NumIDs = (UINT)COUNT_OF(hide);
         filter.DenyList.pIDList = hide;
-        pInfoQueue->AddStorageFilterEntries(&filter);
-        pInfoQueue->Release();
+        infoQueue->AddStorageFilterEntries(&filter);
+        infoQueue->Release();
     }
 
     // 디스크립터 힙 타입 별 디스크립터 핸들 사이즈 정보 얻기 (보통은 32바이트를 차지)
@@ -123,13 +122,13 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
     DXGI_SWAP_CHAIN_FULLSCREEN_DESC swapChainFullscreenDesc = {};
     swapChainFullscreenDesc.Windowed = TRUE;
 
-    IDXGISwapChain1 *pSwapChain1 = nullptr;
-    hr = pFactory->CreateSwapChainForHwnd(commandQueue, hwnd, &swapChainDesc, &swapChainFullscreenDesc, nullptr, &pSwapChain1);
+    IDXGISwapChain1 *swapChain1 = nullptr;
+    hr = pFactory->CreateSwapChainForHwnd(commandQueue, hwnd, &swapChainDesc, &swapChainFullscreenDesc, nullptr, &swapChain1);
     if (FAILED(hr)) {
         BE_FATALERROR("CreateSwapChainForHwnd : failed");
     }
-    pSwapChain1->QueryInterface(IID_PPV_ARGS(&swapChain));
-    pSwapChain1->Release();
+    swapChain1->QueryInterface(IID_PPV_ARGS(&swapChain));
+    swapChain1->Release();
     pFactory->Release();
 
     // Viewport 설정을 백버퍼 크기에 맞게 설정
@@ -198,6 +197,21 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
     // 현재 백버퍼 인덱스 초기화
     currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
+#ifdef USE_D3D12_MEMALLOC
+    // D3D12MA Allocator 생성
+    D3D12MA::ALLOCATOR_DESC allocatorDesc = {};
+    allocatorDesc.pDevice = device;
+    allocatorDesc.pAdapter = adapter;
+    allocatorDesc.Flags = D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED | D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED;
+
+    hr = D3D12MA::CreateAllocator(&allocatorDesc, &allocator);
+    if (FAILED(hr)) {
+        BE_FATALERROR("D3D12MA::CreateAllocator : failed");
+    }
+#endif
+
+    adapter->Release();
+
     singleDescriptorAllocator = new D3D12SingleDescriptorAllocator;
     singleDescriptorAllocator->Init(10000);
 
@@ -227,6 +241,9 @@ void D3D12Renderer::Shutdown() {
 
     SAFE_DELETE(singleDescriptorAllocator);
 
+#ifdef USE_D3D12_MEMALLOC
+    SAFE_RELEASE(allocator);
+#endif
     SAFE_RELEASE(rtvDescriptorHeap);
     SAFE_RELEASE(dsvDescriptorHeap);
     SAFE_RELEASE_ARRAY(renderTargetBuffers);
@@ -459,3 +476,20 @@ void D3D12Renderer::OnResize(int width, int height) {
     scissorRect.right = width;
     scissorRect.bottom = height;
 }
+
+#ifdef USE_D3D12_MEMALLOC
+void D3D12Renderer::PrintMemoryAllocatorStats() {
+    D3D12MA::Budget localBudget;
+    D3D12MA::Budget nonLocalBudget;
+
+    allocator->GetBudget(&localBudget, &nonLocalBudget);
+
+    // TODO: 확인 필요
+    // GPU 에서 사용 중인 메모리 크기, 사용 가능한 메모리 크기
+    BE_LOG("D3D12 reports total usage %s with budget %s (%.2f %%)\n", Str::FormatBytes(localBudget.UsageBytes).c_str(), Str::FormatBytes(localBudget.BudgetBytes).c_str(), (100.0f * localBudget.UsageBytes) / localBudget.BudgetBytes);
+    // D3D12 heap 에 할당된 리소스의 개수, 크기
+    BE_LOG("allocated out of %u D3D12 memory heaps taking %s\n", localBudget.Stats.BlockCount, Str::FormatBytes(localBudget.Stats.BlockBytes).c_str());
+    // 프로그램에서 실제 사용 중인 리소스 메모리의 개수, 크기
+    BE_LOG("GPU memory currently has %u allocations taking %s\n", localBudget.Stats.AllocationCount, Str::FormatBytes(localBudget.Stats.AllocationBytes).c_str());
+}
+#endif

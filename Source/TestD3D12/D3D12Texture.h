@@ -14,6 +14,12 @@
 
 #pragma once
 
+#include "D3D12Common.h"
+
+#ifdef USE_D3D12_MEMALLOC
+#include "D3D12MemoryAllocator/D3D12MemAlloc.h"
+#endif
+
 class D3D12Texture {
 public:
     ~D3D12Texture() { Release(); }
@@ -30,7 +36,11 @@ public:
     static Image::Format::Enum      ToCompressedImageFormat(Image::Format::Enum inFormat, bool useNormalMap);
     static void                     AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat);
 
+#ifdef USE_D3D12_MEMALLOC
+    D3D12MA::Allocation*            textureAllocation = nullptr;
+#else
     ID3D12Resource*                 textureResource = nullptr;
+#endif
     D3D12_RESOURCE_DESC             textureDesc;
     D3D12_CPU_DESCRIPTOR_HANDLE*    descriptorHandlePtr = nullptr;
 };

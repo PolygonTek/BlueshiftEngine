@@ -217,7 +217,7 @@ int BE_CDECL Str::sPrintf(const char *fmt, ...) {
     return len;
 }
 
-Str Str::FormatBytes(int bytes) {
+Str Str::FormatBytes(uint64_t bytes) {
     Str s;
     if (bytes < 1024) {
         s.sPrintf("%i bytes", bytes);
@@ -225,10 +225,15 @@ Str Str::FormatBytes(int bytes) {
         s.sPrintf("%.1f Kb", bytes / (float)(1024));
     } else if (bytes < 1024 * 1024 * 1024) {
         s.sPrintf("%.1f Mb", bytes / (float)(1024 * 1024));
-    } else {
+    } else if (bytes < 1024ULL * 1024 * 1024 * 1024) {
         s.sPrintf("%.1f Gb", bytes / (float)(1024 * 1024 * 1024));
+    } else if (bytes < 1024ULL * 1024 * 1024 * 1024 * 1024) {
+        s.sPrintf("%.1f Tb", bytes / (float)(1024ULL * 1024 * 1024 * 1024));
+    } else if (bytes < 1024ULL * 1024 * 1024 * 1024 * 1024 * 1024) {
+        s.sPrintf("%.1f Pb", bytes / (float)(1024ULL * 1024 * 1024 * 1024 * 1024));
+    } else {
+        s.sPrintf("%.1f Eb", bytes / (float)(1024ULL * 1024 * 1024 * 1024 * 1024 * 1024));
     }
-
     return s;
 }
 

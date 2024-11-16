@@ -25,7 +25,12 @@ void D3D12Texture::Release() {
         renderer.singleDescriptorAllocator->Free(descriptorHandlePtr);
         descriptorHandlePtr = nullptr;
     }
+
+#ifdef USE_D3D12_MEMALLOC
+    SAFE_RELEASE(textureAllocation);
+#else
     SAFE_RELEASE(textureResource);
+#endif
 }
 
 D3D12Texture *D3D12Texture::CreateTexture2D(const char *filename, bool useCompression, bool useNormalMap) {
@@ -124,6 +129,23 @@ D3D12Texture* D3D12Texture::CreateTexture2D(const Image* srcImage) {
     textureDesc.SampleDesc.Quality = 0;
     textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
+#ifdef USE_D3D12_MEMALLOC
+    D3D12MA::ALLOCATION_DESC allocationDesc = {};
+    allocationDesc.Flags = D3D12MA::ALLOCATION_FLAG_NONE;
+    allocationDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+
+    D3D12MA::Allocation *allocation;
+    if (FAILED(renderer.allocator->CreateResource(
+        &allocationDesc,
+        &textureDesc,
+        D3D12_RESOURCE_STATE_COPY_DEST,
+        nullptr,
+        &allocation,
+        IID_NULL, nullptr))) {
+        return nullptr;
+    }
+    ID3D12Resource *textureResource = allocation->GetResource();
+#else
     ID3D12Resource *textureResource = nullptr;
     if (FAILED(renderer.device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
@@ -133,6 +155,7 @@ D3D12Texture* D3D12Texture::CreateTexture2D(const Image* srcImage) {
         nullptr, IID_PPV_ARGS(&textureResource)))) {
         return nullptr;
     }
+#endif
 
     // 텍스쳐 리소스에 write 할 수 있는 (Footprint = 차지하는 공간) 메모리 정보를 얻어온다.
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipFootprints[16];
@@ -217,7 +240,11 @@ D3D12Texture* D3D12Texture::CreateTexture2D(const Image* srcImage) {
     renderer.device->CreateShaderResourceView(textureResource, &srvDesc, *descriptorHandlePtr);
 
     D3D12Texture *texture = new D3D12Texture;
+#ifdef USE_D3D12_MEMALLOC
+    texture->textureAllocation = allocation;
+#else
     texture->textureResource = textureResource;
+#endif
     texture->textureDesc = textureResource->GetDesc();
     texture->descriptorHandlePtr = descriptorHandlePtr;
 

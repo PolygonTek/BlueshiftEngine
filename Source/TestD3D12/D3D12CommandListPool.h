@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "D3D12Common.h"
+
 struct D3D12CommandList {
     ID3D12CommandAllocator*         commandAllocator = nullptr;
     ID3D12GraphicsCommandList*      commandList = nullptr;

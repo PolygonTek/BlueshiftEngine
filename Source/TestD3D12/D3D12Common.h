@@ -14,18 +14,4 @@
 
 #pragma once
 
-#include "D3D12Common.h"
-
-class D3D12CommandListPool;
-class D3D12DescriptorPool;
-
-class D3D12FrameData {
-public:
-    void                            Init();
-    void                            Shutdown();
-
-    D3D12CommandListPool*           commandListPool = nullptr;
-    D3D12DescriptorPool*            rootDescriptorPool = nullptr;
-
-    UINT64                          fenceValue = 0;
-};
+#define USE_D3D12_MEMALLOC
