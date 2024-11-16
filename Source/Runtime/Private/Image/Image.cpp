@@ -123,7 +123,7 @@ Image &Image::Create(int width, int height, int depth, int numSlices, int numMip
     this->flags = flags;
     
     int size = GetSize(0, numMipmaps);
-    this->pic = (byte *)Mem_Alloc16(size);
+    this->pic = (byte *)Mem_Alloc256(size);
     this->alloced = true;
     
     if (data) {
@@ -146,7 +146,7 @@ Image &Image::CreateCubeFrom6Faces(const Image *images) {
     this->flags = images[0].flags | Flag::CubeMap;
     
     int sliceSize = GetSliceSize(0, numMipmaps);
-    this->pic = (byte *)Mem_Alloc16(sliceSize * 6);
+    this->pic = (byte *)Mem_Alloc256(sliceSize * 6);
     this->alloced = true;
     
     byte *dst = this->pic;
@@ -177,7 +177,7 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
     this->flags = equirectangularImage.flags | Flag::CubeMap;
 
     int sliceSize = GetSliceSize(0, numMipmaps);
-    this->pic = (byte *)Mem_Alloc16(sliceSize * 6);
+    this->pic = (byte *)Mem_Alloc256(sliceSize * 6);
     this->alloced = true;
 
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
@@ -229,7 +229,7 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
     this->flags = cubeImage.flags & ~Flag::CubeMap;
 
     int size = GetSize(0, numMipmaps);
-    this->pic = (byte *)Mem_Alloc16(size);
+    this->pic = (byte *)Mem_Alloc256(size);
     this->alloced = true;
 
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);

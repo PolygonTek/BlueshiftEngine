@@ -76,7 +76,7 @@ void SubMesh::AllocSubMesh(int numVerts, int numIndexes) {
     this->jointWeightVerts          = nullptr;
 
     this->vertWeights               = nullptr;
-    this->gpuSkinningEnabled            = false;
+    this->gpuSkinningEnabled        = false;
     this->gpuSkinningVersionIndex   = 0;
 
     this->vertexCache               = (BufferCache *)Mem_ClearedAlloc(sizeof(BufferCache));

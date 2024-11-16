@@ -26,15 +26,20 @@
 #define Mem_ClearedAlloc(size)              calloc(size, 1)
 #define Mem_AllocString(str)                strdup(str)
 #define Mem_Free(ptr)                       free(ptr)
+
 #ifdef __WIN32__
 #define Mem_AlignedAlloc(size, alignment)   _aligned_malloc(size, alignment)
 #define Mem_Alloc16(size)                   _aligned_malloc(size, 16)
 #define Mem_Alloc32(size)                   _aligned_malloc(size, 32)
+#define Mem_Alloc64(size)                   _aligned_malloc(size, 64)
+#define Mem_Alloc256(size)                  _aligned_malloc(size, 256)
 #define Mem_AlignedFree(ptr)                _aligned_free(ptr)
 #else
 #define Mem_AlignedAlloc(size, alignment)   std::aligned_alloc(alignment, size)
 #define Mem_Alloc16(size)                   std::aligned_alloc(16, size)
 #define Mem_Alloc32(size)                   std::aligned_alloc(32, size)
+#define Mem_Alloc64(size)                   std::aligned_alloc(64, size)
+#define Mem_Alloc256(size)                   std::aligned_alloc(256, size)
 #define Mem_AlignedFree(ptr)                free(ptr)
 #endif
 

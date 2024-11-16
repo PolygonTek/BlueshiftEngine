@@ -605,7 +605,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     }
 
     int bufSize = GetSize(0, numMipmaps);
-    this->pic = (byte *)Mem_Alloc16(bufSize);
+    this->pic = (byte *)Mem_Alloc256(bufSize);
     this->alloced = true;
 
     if (isCube) {

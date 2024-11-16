@@ -83,7 +83,7 @@ bool Image::LoadPVR2FromMemory(const char *name, const byte *data, size_t fileSi
     this->numMipmaps = Max(1, (int)header->dwMipMapCount);
     this->numSlices = Max(1, (int)header->dwNumSurfs);
     
-    this->pic = (byte *)Mem_Alloc16(header->dwTextureDataSize);
+    this->pic = (byte *)Mem_Alloc256(header->dwTextureDataSize);
     simdProcessor->Memcpy(this->pic, ptr, header->dwTextureDataSize);
     this->alloced = true;
     
@@ -299,7 +299,7 @@ bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSi
     
     size_t dataSize = fileSize - (ptr - data);
     
-    this->pic = (byte *)Mem_Alloc16(dataSize);
+    this->pic = (byte *)Mem_Alloc256(dataSize);
     simdProcessor->Memcpy(this->pic, ptr, (int)dataSize);
     this->alloced = true;
     

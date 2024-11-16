@@ -302,6 +302,7 @@ typedef uint64_t    qword;  // 64 bits
 
 #define ALIGN_AS16 ALIGN_AS(16)
 #define ALIGN_AS32 ALIGN_AS(32)
+#define ALIGN_AS64 ALIGN_AS(64)
 
 template <typename T>
 inline T *address_of(T &&in) {
