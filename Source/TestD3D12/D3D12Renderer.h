@@ -22,6 +22,11 @@
 #include "D3D12IndexBuffer.h"
 #include "D3D12FrameData.h"
 
+struct D3D12PendingResource {
+    UINT64                          fenceValue = 0;
+    ID3D12Resource*                 resource = nullptr;
+};
+
 class D3D12Renderer {
 public:
     void                            Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidation);
@@ -39,8 +44,12 @@ public:
     void                            CreateDSV(int width, int height);
 
     UINT64                          SignalFence();
+    bool                            IsFenceComplete(UINT64 checkFenceValue);
     void                            WaitFence(UINT64 expectedFenceValue);
     void                            Finish();
+
+    void                            MarkForRelease(ID3D12Resource* resource);
+    void                            FreePendingResources();
 
     static constexpr UINT           NumSwapChainBuffers = 3;
     static constexpr UINT           NumFrames = 2;
@@ -70,6 +79,11 @@ public:
     UINT                            currentFrameIndex = 0;
     D3D12FrameData*                 currentFrameData = nullptr;
     D3D12CommandList*               currentFrameCommandList = nullptr;
+
+    D3D12PendingResource *          pendingResourceBuffer = nullptr;
+    int                             maxPendingResources = 0;
+    int                             headPendingIndex = 0;
+    int                             tailPendingIndex = 0;
 
     bool                            initialized = false;
 };

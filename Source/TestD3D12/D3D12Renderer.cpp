@@ -37,11 +37,12 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
 
             // GPU Validation 활성화
             if (withGpuValidation) {
-                ID3D12Debug1* pDebugController1 = nullptr;
-                if (SUCCEEDED(pDebugController->QueryInterface(IID_PPV_ARGS(&pDebugController1))))
+                ID3D12Debug5* pDebugController5 = nullptr;
+                if (SUCCEEDED(pDebugController->QueryInterface(IID_PPV_ARGS(&pDebugController5))))
                 {
-                    pDebugController1->SetEnableGPUBasedValidation(TRUE);
-                    pDebugController1->Release();
+                    pDebugController5->SetEnableGPUBasedValidation(TRUE);
+                    pDebugController5->SetEnableAutoName(TRUE);
+                    pDebugController5->Release();
                 }
             }
             pDebugController->Release();
@@ -207,11 +208,18 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
     currentFrameIndex = 0;
     frameData[currentFrameIndex].fenceValue = SignalFence();
 
+    maxPendingResources = 1024;
+    pendingResourceBuffer = new D3D12PendingResource[maxPendingResources];
+
     initialized = true;
 }
 
 void D3D12Renderer::Shutdown() {
     Finish();
+
+    FreePendingResources();
+    SAFE_DELETE(pendingResourceBuffer);
+    maxPendingResources = 0;
 
     for (int frameIndex = 0; frameIndex < NumFrames; ++frameIndex) {
         frameData[frameIndex].Shutdown();
@@ -367,6 +375,8 @@ void D3D12Renderer::Present() {
     frameCount++;
 
     currentFrameIndex = (frameCount % NumFrames);
+
+    FreePendingResources();
 }
 
 UINT64 D3D12Renderer::SignalFence() {
@@ -374,6 +384,10 @@ UINT64 D3D12Renderer::SignalFence() {
     commandQueue->Signal(fence, fenceValue);
 
     return fenceValue;
+}
+
+bool D3D12Renderer::IsFenceComplete(UINT64 checkFenceValue) {
+    return fence->GetCompletedValue() < checkFenceValue ? false : true;
 }
 
 void D3D12Renderer::WaitFence(UINT64 expectedFenceValue) {
@@ -385,6 +399,40 @@ void D3D12Renderer::WaitFence(UINT64 expectedFenceValue) {
 
 void D3D12Renderer::Finish() {
     WaitFence(SignalFence());
+}
+
+void D3D12Renderer::MarkForRelease(ID3D12Resource *resource) {
+    D3D12PendingResource *newPendingResource = &pendingResourceBuffer[headPendingIndex];
+    newPendingResource->fenceValue = SignalFence();
+    newPendingResource->resource = resource;
+
+    headPendingIndex = headPendingIndex + 1;
+
+    // 버퍼가 꽉 찼다면, 가장 오래된 pending resource 를 기다린 후 Release 한다.
+    if (headPendingIndex % maxPendingResources == tailPendingIndex) {
+        D3D12PendingResource *oldestPendingResource = &pendingResourceBuffer[tailPendingIndex];
+
+        WaitFence(oldestPendingResource->fenceValue);
+        oldestPendingResource->resource->Release();
+        oldestPendingResource->fenceValue = 0;
+
+        tailPendingIndex = (tailPendingIndex + 1) % maxPendingResources;
+    }
+
+    headPendingIndex = headPendingIndex % maxPendingResources;
+}
+
+void D3D12Renderer::FreePendingResources() {
+    while (headPendingIndex != tailPendingIndex) {
+        D3D12PendingResource *pendingResource = &pendingResourceBuffer[tailPendingIndex];
+        if (!IsFenceComplete(pendingResource->fenceValue)) {
+            return;
+        }
+
+        pendingResource->resource->Release();
+
+        tailPendingIndex = (tailPendingIndex + 1) % maxPendingResources;
+    }
 }
 
 void D3D12Renderer::OnResize(int width, int height) {

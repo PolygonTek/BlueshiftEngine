@@ -81,18 +81,15 @@ D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(int indexSize, int numInde
         }
     }
 
+    if (uploadBuffer) {
+        renderer.MarkForRelease(uploadBuffer);
+    }
+
     D3D12IndexBuffer *indexBuffer = new D3D12IndexBuffer;
     indexBuffer->indexBufferResource = indexBufferResource;
     indexBuffer->ibv.BufferLocation = indexBufferResource->GetGPUVirtualAddress();
     indexBuffer->ibv.Format = (indexSize == sizeof(uint16_t) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT);
     indexBuffer->ibv.SizeInBytes = bufferSize;
-
-    if (uploadBuffer) {
-        // 업로드 버퍼 사용이 끝날 때 까지 기다린 후 Release 한다.
-        renderer.Finish();
-
-        uploadBuffer->Release();
-    }
 
     return indexBuffer;
 }

@@ -26,5 +26,6 @@ public:
 
     D3D12CommandListPool*           commandListPool = nullptr;
     D3D12DescriptorPool*            rootDescriptorPool = nullptr;
+
     UINT64                          fenceValue = 0;
 };

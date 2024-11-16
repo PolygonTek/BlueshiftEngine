@@ -18,10 +18,10 @@
 
 void D3D12CommandListPool::Init(D3D12_COMMAND_LIST_TYPE commandListType, int maxCommandLists) {
     this->maxCommandLists = maxCommandLists;
-    this->commandLists = new D3D12CommandList[maxCommandLists];
+    this->commandListPool = new D3D12CommandList[maxCommandLists];
 
     for (int i = 0; i < maxCommandLists; ++i) {
-        D3D12CommandList* currentCommandList = &commandLists[i];
+        D3D12CommandList* currentCommandList = &commandListPool[i];
 
         // 그래픽스 커맨드 리스트를 위한 커맨드 할당자 생성
         if (FAILED(renderer.device->CreateCommandAllocator(commandListType, IID_PPV_ARGS(&currentCommandList->commandAllocator)))) {
@@ -40,7 +40,7 @@ void D3D12CommandListPool::Init(D3D12_COMMAND_LIST_TYPE commandListType, int max
 
     // 모든 commandLists 를 free 상태로 초기화
     for (int i = 0; i < maxCommandLists; ++i) {
-        D3D12CommandList *currentCommandList = &commandLists[i];
+        D3D12CommandList *currentCommandList = &commandListPool[i];
 
         currentCommandList->node.SetOwner(currentCommandList);
         currentCommandList->node.AddToEnd(freeCommandLists);
@@ -53,18 +53,18 @@ void D3D12CommandListPool::Shutdown() {
     Clear();
 
     for (int i = 0; i < maxCommandLists; ++i) {
-        D3D12CommandList *currentCommandList = &commandLists[i];
+        D3D12CommandList *currentCommandList = &commandListPool[i];
 
         SAFE_RELEASE(currentCommandList->commandList);
         SAFE_RELEASE(currentCommandList->commandAllocator);
     }
-    SAFE_DELETE_ARRAY(commandLists);
+    SAFE_DELETE_ARRAY(commandListPool);
 }
 
 void D3D12CommandListPool::Clear() {
     for (int i = 0; i < maxCommandLists; ++i) {
-        if (!commandLists[i].node.InList()) {
-            Free(&commandLists[i]);
+        if (!commandListPool[i].node.InList()) {
+            Free(&commandListPool[i]);
         }
     }
 

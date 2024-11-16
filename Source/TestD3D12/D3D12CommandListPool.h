@@ -34,7 +34,7 @@ public:
     int                             UsedCount() const { return usedCount; }
 
 private:
-    D3D12CommandList*               commandLists = nullptr;
+    D3D12CommandList*               commandListPool = nullptr;
     int                             maxCommandLists = 0;
     LinkList<D3D12CommandList>      freeCommandLists;
     int                             usedCount = 0;

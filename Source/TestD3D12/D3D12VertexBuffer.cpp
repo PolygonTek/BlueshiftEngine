@@ -79,18 +79,15 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(int vertexSize, int num
         }
     }
 
+    if (uploadBuffer) {
+        renderer.MarkForRelease(uploadBuffer);
+    }
+
     D3D12VertexBuffer* vertexBuffer = new D3D12VertexBuffer;
     vertexBuffer->vertexBufferResource = vertexBufferResource;
     vertexBuffer->vbv.BufferLocation = vertexBufferResource->GetGPUVirtualAddress();
     vertexBuffer->vbv.StrideInBytes = vertexSize;
     vertexBuffer->vbv.SizeInBytes = bufferSize;
-
-    if (uploadBuffer) {
-        // 업로드 버퍼 사용이 끝날 때 까지 기다린 후 Release 한다.
-        renderer.Finish();
-
-        uploadBuffer->Release();
-    }
 
     return vertexBuffer;
 }

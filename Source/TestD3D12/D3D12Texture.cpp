@@ -141,13 +141,13 @@ D3D12Texture* D3D12Texture::CreateTexture2D(const Image* srcImage) {
     renderer.device->GetCopyableFootprints(&textureDesc, 0, textureDesc.MipLevels, 0, mipFootprints, nullptr, nullptr, &size);
 
     // 업로드 버퍼 생성
-    ID3D12Resource *pUploadBuffer = nullptr;
+    ID3D12Resource *uploadBuffer = nullptr;
     if (FAILED(renderer.device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
         D3D12_HEAP_FLAG_NONE,
         &CD3DX12_RESOURCE_DESC::Buffer(size),
         D3D12_RESOURCE_STATE_GENERIC_READ,
-        nullptr, IID_PPV_ARGS(&pUploadBuffer)))) {
+        nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
         textureResource->Release();
         return nullptr;
     }
@@ -155,7 +155,7 @@ D3D12Texture* D3D12Texture::CreateTexture2D(const Image* srcImage) {
     // 이미지 데이터를 업로드 버퍼에 write
     UINT8 *mappedPtr = nullptr;
     CD3DX12_RANGE writeRange(0, 0);
-    pUploadBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedPtr));
+    uploadBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedPtr));
 
     byte *dstPtr = mappedPtr;
     int bpp = srcImage->IsCompressed() ? srcImage->BytesPerBlock() : srcImage->BytesPerPixel();
@@ -174,7 +174,7 @@ D3D12Texture* D3D12Texture::CreateTexture2D(const Image* srcImage) {
         }
     }
 
-    pUploadBuffer->Unmap(0, nullptr);
+    uploadBuffer->Unmap(0, nullptr);
 
     // 업로드 버퍼에서 텍스쳐로 데이터 카피
     renderer.commandAllocator->Reset();
@@ -183,7 +183,7 @@ D3D12Texture* D3D12Texture::CreateTexture2D(const Image* srcImage) {
     for (int mipLevel = 0; mipLevel < maxMipLevels; ++mipLevel) {
         D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
         srcLocation.PlacedFootprint = mipFootprints[mipLevel];
-        srcLocation.pResource = pUploadBuffer;
+        srcLocation.pResource = uploadBuffer;
         srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
 
         D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
@@ -202,11 +202,8 @@ D3D12Texture* D3D12Texture::CreateTexture2D(const Image* srcImage) {
     ID3D12CommandList *ppCommandLists[] = { renderer.commandList };
     renderer.commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
 
-    if (pUploadBuffer) {
-        // 업로드 버퍼 사용이 끝날 때 까지 기다린 후 Release 한다.
-        renderer.Finish();
-
-        pUploadBuffer->Release();
+    if (uploadBuffer) {
+        renderer.MarkForRelease(uploadBuffer);
     }
 
     // 디스크립터에 SRV 정보 기록하기
