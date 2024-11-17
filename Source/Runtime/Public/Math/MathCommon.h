@@ -318,6 +318,15 @@ public:
                                 /// Float to byte conversion, the result is clamped to the range [0-255].
     static byte                 Ftob(float f);
 
+                                /// Returns random float number in [0, 1]
+    static float                RandomFloat();
+                                /// Returns random integer number in [0..a)
+    static int                  RandomInt(int a);
+                                /// Returns random float number in range [min, max]
+    static float                RandomRange(float min, float max);
+                                /// Returns random integer number in range [min, max]
+    static int                  RandomRange(int min, int max);
+
                                 /// Returns factorial number without recursive manner.
     static double               Factorial(unsigned int n);
 
@@ -1037,6 +1046,22 @@ BE_INLINE byte Math::Ftob(float f) {
     }
     return static_cast<byte>(i);
 #endif
+}
+
+BE_INLINE float Math::RandomFloat() {
+    return (rand() & 0x7ffe) / (float)0x7fff;
+}
+
+BE_INLINE int Math::RandomInt(int a) {
+    return a > 0 ? Min((int)(RandomFloat() * (float)(a)), a - 1) : 0;
+}
+
+BE_INLINE float Math::RandomRange(float min, float max) {
+    return min + (RandomFloat() * (max - min));
+}
+
+BE_INLINE int Math::RandomRange(int min, int max) {
+    return min + RandomInt(max - min + 1);
 }
 
 BE_INLINE double Math::Factorial(unsigned int n) {

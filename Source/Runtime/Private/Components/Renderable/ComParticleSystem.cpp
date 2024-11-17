@@ -168,7 +168,7 @@ void ComParticleSystem::ResetParticles() {
     for (int stageIndex = 0; stageIndex < renderObjectDef.particleSystem->NumStages(); stageIndex++) {
         const ParticleSystem::Stage *stage = renderObjectDef.particleSystem->GetStage(stageIndex);
 
-        renderObjectDef.stageStartDelay[stageIndex] = stage->standardModule.startDelay.Evaluate(RANDOM_FLOAT(0, 1), 0);
+        renderObjectDef.stageStartDelay[stageIndex] = stage->standardModule.startDelay.Evaluate(BE1::Math::RandomRange(0.0f, 1.0f), 0);
 
         int trailCount = (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::Trails)) ? stage->trailsModule.count : 0;
         int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * trailCount;
@@ -183,7 +183,7 @@ void ComParticleSystem::ClearParticles() {
     for (int stageIndex = 0; stageIndex < renderObjectDef.particleSystem->NumStages(); stageIndex++) {
         const ParticleSystem::Stage *stage = renderObjectDef.particleSystem->GetStage(stageIndex);
 
-        renderObjectDef.stageStartDelay[stageIndex] = stage->standardModule.startDelay.Evaluate(RANDOM_FLOAT(0, 1), 0);
+        renderObjectDef.stageStartDelay[stageIndex] = stage->standardModule.startDelay.Evaluate(BE1::Math::RandomRange(0.0f, 1.0f), 0);
 
         int trailCount = (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::Trails)) ? stage->trailsModule.count : 0;
         int particleSize = sizeof(Particle) + sizeof(Particle::Trail) * trailCount;
@@ -382,94 +382,94 @@ void ComParticleSystem::UpdateSimulation(int currentTime) {
 void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSystem::Stage *stage, float inCycleFrac) const {
     particle->generated = true;
 
-    particle->initialSpeed = MeterToUnit(stage->standardModule.startSpeed.Evaluate(RANDOM_FLOAT(0, 1), inCycleFrac));
+    particle->initialSpeed = MeterToUnit(stage->standardModule.startSpeed.Evaluate(BE1::Math::RandomRange(0.0f, 1.0f), inCycleFrac));
 
-    particle->initialSize = MeterToUnit(stage->standardModule.startSize.Evaluate(RANDOM_FLOAT(0, 1), inCycleFrac));
+    particle->initialSize = MeterToUnit(stage->standardModule.startSize.Evaluate(BE1::Math::RandomRange(0.0f, 1.0f), inCycleFrac));
 
-    particle->initialAspectRatio = stage->standardModule.startAspectRatio.Evaluate(RANDOM_FLOAT(0, 1), inCycleFrac);
+    particle->initialAspectRatio = stage->standardModule.startAspectRatio.Evaluate(BE1::Math::RandomRange(0.0f, 1.0f), inCycleFrac);
 
-    particle->initialAngle = stage->standardModule.startRotation.Evaluate(RANDOM_FLOAT(0, 1), inCycleFrac);
-    particle->initialAngle += RANDOM_FLOAT(-180, 180) * stage->standardModule.randomizeRotation;
+    particle->initialAngle = stage->standardModule.startRotation.Evaluate(BE1::Math::RandomRange(0.0f, 1.0f), inCycleFrac);
+    particle->initialAngle += BE1::Math::RandomRange(-180.0f, 180.0f) * stage->standardModule.randomizeRotation;
 
     particle->initialColor = stage->standardModule.startColor; //
 
     if (stage->moduleFlags & (BIT(ParticleSystem::ModuleBit::LTSize) | BIT(ParticleSystem::ModuleBit::SizeBySpeed))) {
-        particle->randomSize = RANDOM_FLOAT(0, 1);
+        particle->randomSize = BE1::Math::RandomRange(0.0f, 1.0f);
     }
 
     if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::LTAspectRatio)) {
-        particle->randomAspectRatio = RANDOM_FLOAT(0, 1);
+        particle->randomAspectRatio = BE1::Math::RandomRange(0.0f, 1.0f);
     }
 
     if (stage->moduleFlags & (BIT(ParticleSystem::ModuleBit::LTRotation) | BIT(ParticleSystem::ModuleBit::RotationBySpeed))) {
-        particle->randomAngularVelocity = RANDOM_FLOAT(0, 1);
+        particle->randomAngularVelocity = BE1::Math::RandomRange(0.0f, 1.0f);
     }
 
     if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::LTSpeed)) {
-        particle->randomSpeed = RANDOM_FLOAT(0, 1);
+        particle->randomSpeed = BE1::Math::RandomRange(0.0f, 1.0f);
     }
 
     if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::LTForce)) {
-        particle->randomForce.x = RANDOM_FLOAT(0, 1);
-        particle->randomForce.y = RANDOM_FLOAT(0, 1);
-        particle->randomForce.z = RANDOM_FLOAT(0, 1);
+        particle->randomForce.x = BE1::Math::RandomRange(0.0f, 1.0f);
+        particle->randomForce.y = BE1::Math::RandomRange(0.0f, 1.0f);
+        particle->randomForce.z = BE1::Math::RandomRange(0.0f, 1.0f);
     }
 
     if (stage->moduleFlags & BIT(ParticleSystem::ModuleBit::Shape)) {
         const ParticleSystem::ShapeModule &shapeModule = stage->shapeModule;
 
         if (shapeModule.shape == ParticleSystem::ShapeModule::Shape::Box) {
-            particle->initialPosition.x = MeterToUnit(RANDOM_FLOAT(-shapeModule.extents.x, shapeModule.extents.x));
-            particle->initialPosition.y = MeterToUnit(RANDOM_FLOAT(-shapeModule.extents.y, shapeModule.extents.y));
-            particle->initialPosition.z = MeterToUnit(RANDOM_FLOAT(-shapeModule.extents.z, shapeModule.extents.z));
+            particle->initialPosition.x = MeterToUnit(BE1::Math::RandomRange(-shapeModule.extents.x, shapeModule.extents.x));
+            particle->initialPosition.y = MeterToUnit(BE1::Math::RandomRange(-shapeModule.extents.y, shapeModule.extents.y));
+            particle->initialPosition.z = MeterToUnit(BE1::Math::RandomRange(-shapeModule.extents.z, shapeModule.extents.z));
 
             if (shapeModule.randomizeDir == 0) {
                 particle->direction = Vec3::unitZ;
             } else {
-                Vec3 randomDir = Vec3::FromUniformSampleSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
+                Vec3 randomDir = Vec3::FromUniformSampleSphere(BE1::Math::RandomRange(0, 1), BE1::Math::RandomRange(0, 1));
 
                 particle->direction = Math::Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
             }
         } else if (shapeModule.shape == ParticleSystem::ShapeModule::Shape::Sphere) {
             float r = MeterToUnit(shapeModule.radius);
             if (shapeModule.thickness > 0) {
-                r = RANDOM_FLOAT(r * (1.0f - shapeModule.thickness), r);
+                r = BE1::Math::RandomRange(r * (1.0f - shapeModule.thickness), r);
             }
 
-            particle->initialPosition = Vec3::FromUniformSampleSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
+            particle->initialPosition = Vec3::FromUniformSampleSphere(BE1::Math::RandomRange(0.0f, 1.0f), BE1::Math::RandomRange(0.0f, 1.0f));
             particle->initialPosition *= r;
 
             if (shapeModule.randomizeDir == 0) {
                 particle->direction = Vec3::unitZ;
             } else {
-                Vec3 randomDir = Vec3::FromUniformSampleSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
+                Vec3 randomDir = Vec3::FromUniformSampleSphere(BE1::Math::RandomRange(0.0f, 1.0f), BE1::Math::RandomRange(0.0f, 1.0f));
 
                 particle->direction = Math::Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
             }
         } else if (shapeModule.shape == ParticleSystem::ShapeModule::Shape::Circle) {
             float r = MeterToUnit(shapeModule.radius);
             if (shapeModule.thickness > 0) {
-                r = RANDOM_FLOAT(r * (1.0f - shapeModule.thickness), r);
+                r = BE1::Math::RandomRange(r * (1.0f - shapeModule.thickness), r);
             }
 
-            particle->initialPosition.ToVec2() = Vec2::FromUniformSampleCircle(RANDOM_FLOAT(0, 1));
+            particle->initialPosition.ToVec2() = Vec2::FromUniformSampleCircle(BE1::Math::RandomRange(0.0f, 1.0f));
             particle->initialPosition.z = 0;
             particle->initialPosition *= r;
 
             if (shapeModule.randomizeDir == 0) {
                 particle->direction = Vec3::unitZ;
             } else {
-                Vec3 randomDir = Vec3::FromUniformSampleSphere(RANDOM_FLOAT(0, 1), RANDOM_FLOAT(0, 1));
+                Vec3 randomDir = Vec3::FromUniformSampleSphere(BE1::Math::RandomRange(0.0f, 1.0f), BE1::Math::RandomRange(0.0f, 1.0f));
 
                 particle->direction = Math::Lerp(Vec3::unitZ, randomDir, shapeModule.randomizeDir);
             }
         } else if (shapeModule.shape == ParticleSystem::ShapeModule::Shape::Cone) {
             float r = MeterToUnit(shapeModule.radius);
             if (shapeModule.thickness > 0) {
-                r = RANDOM_FLOAT(r * (1.0f - shapeModule.thickness), r);
+                r = BE1::Math::RandomRange(r * (1.0f - shapeModule.thickness), r);
             }
 
-            Vec2 p = Vec2::FromUniformSampleCircle(RANDOM_FLOAT(0, 1));
+            Vec2 p = Vec2::FromUniformSampleCircle(BE1::Math::RandomRange(0.0f, 1.0f));
             particle->initialPosition.ToVec2() = p;
             particle->initialPosition.z = 0;
             particle->initialPosition *= r;
@@ -482,7 +482,7 @@ void ComParticleSystem::InitializeParticle(Particle *particle, const ParticleSys
                 if (l2 > FLT_EPSILON) {
                     float angleScale = l2 / (r * r);
                     if (shapeModule.randomizeDir > 0) {
-                        angleScale = Math::Lerp(angleScale, RANDOM_FLOAT(-1.f, 1.f), shapeModule.randomizeDir);
+                        angleScale = Math::Lerp(angleScale, BE1::Math::RandomRange(-1.0f, 1.0f), shapeModule.randomizeDir);
                     }
 
                     float rotAngle = shapeModule.angle * angleScale;

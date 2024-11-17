@@ -225,9 +225,6 @@
 #define SWAP_WORD(w)                ((((w) & 0xff) << 8) | (((w) & 0xff00) >> 8))
 #define SWAP_LONG(l)                ((((l) & 0xff) << 24) | (((l) & 0xff00) << 8) | (((l) & 0xff0000) >> 8) | (((l) & 0xff000000) >> 24))
 
-#define RANDOM_FLOAT(l, h)          ((l) + (((rand() & 0x7ffe) / ((float)0x7fff)) * (float)((h) - (l))))
-#define RANDOM_INT(l, h)            ((l) + ((((rand() * (int)((h) - (l) + 1)) - 1) / (RAND_MAX))))
-
 #define SAFE_DELETE(p)              if (p) { delete p; p = nullptr; }
 #define SAFE_DELETE_ARRAY(p)        if (p) { delete[] p; p = nullptr; }
 

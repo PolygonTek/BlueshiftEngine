@@ -612,7 +612,7 @@ static void TestTransformJoints() {
 
     parents[0] = -1;
     for (int i = 1; i < COUNT_OF(parents); i++) {
-        parents[i] = RANDOM_INT(0, i - 1);
+        parents[i] = BE1::Math::RandomRange(0, i - 1);
     }
 
     RandomFloatArrayInit((float *)jointMatrix, 12 * COUNT_OF(jointMatrix), -100.0f, 100.0f);
