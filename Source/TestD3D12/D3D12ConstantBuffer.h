@@ -15,25 +15,25 @@
 #pragma once
 
 #include "D3D12Common.h"
-#include "D3D12ConstantBuffer.h"
 
-class D3D12TriangleMesh;
+#ifdef USE_D3D12_MEMALLOC
+#include "D3D12MemoryAllocator/D3D12MemAlloc.h"
+#endif
 
-class D3D12App {
+class D3D12ConstantBuffer {
 public:
-    void                            Init(HWND windowHandle);
-    void                            Shutdown();
+    ~D3D12ConstantBuffer() { Release(); }
 
-    void                            Draw(int elapsedMsec);
+    void                            Release();
 
-    void                            RunFrame(int elapsedMsec);
+    void*                           Map(SIZE_T begin, SIZE_T end);
+    void                            Unmap();
 
-    int                             GetElapsedMsec() const { return elapsedMsec; }
+    static D3D12ConstantBuffer *    CreateConstantBuffer(int size);
 
-private:
-    D3D12TriangleMesh *             triangleMesh = nullptr;
-
-    int                             elapsedMsec = 0;
+#ifdef USE_D3D12_MEMALLOC
+    D3D12MA::Allocation *           constantBufferAllocation = nullptr;
+#else
+    ID3D12Resource *                constantBufferResource = nullptr;
+#endif
 };
-
-extern D3D12App                     app;

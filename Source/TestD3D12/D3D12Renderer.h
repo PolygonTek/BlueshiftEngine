@@ -23,9 +23,6 @@
 #include "D3D12DescriptorPool.h"
 #include "D3D12CommandListPool.h"
 #include "D3D12SingleDescriptorAllocator.h"
-#include "D3D12Texture.h"
-#include "D3D12VertexBuffer.h"
-#include "D3D12IndexBuffer.h"
 #include "D3D12FrameData.h"
 
 struct D3D12PendingResource {
@@ -64,10 +61,10 @@ public:
     static constexpr UINT           NumSwapChainBuffers = 3;
     static constexpr UINT           NumFrames = 2;
 
-    ID3D12Device5*                  device = nullptr;
+    ID3D12Device5 *                 device = nullptr;
     DXGI_ADAPTER_DESC1              adapterDesc = {};
     IDXGISwapChain3 *               swapChain = nullptr;
-    ID3D12CommandQueue*             commandQueue = nullptr;
+    ID3D12CommandQueue *            commandQueue = nullptr;
     UINT                            descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
     ID3D12CommandAllocator *        commandAllocator = nullptr;
     ID3D12GraphicsCommandList *     commandList = nullptr;
@@ -76,22 +73,22 @@ public:
     HANDLE                          fenceEventHandle = nullptr;
 
 #ifdef USE_D3D12_MEMALLOC
-    D3D12MA::Allocator*             allocator = nullptr;
+    D3D12MA::Allocator *            allocator = nullptr;
 #endif
-    ID3D12DescriptorHeap*           rtvDescriptorHeap = nullptr;
-    ID3D12DescriptorHeap*           dsvDescriptorHeap = nullptr;
-    ID3D12Resource*                 renderTargetBuffers[NumSwapChainBuffers] = {};
-    ID3D12Resource*                 depthStencilBuffer = nullptr;
+    ID3D12DescriptorHeap *          rtvDescriptorHeap = nullptr;
+    ID3D12DescriptorHeap *          dsvDescriptorHeap = nullptr;
+    ID3D12Resource *                renderTargetBuffers[NumSwapChainBuffers] = {};
+    ID3D12Resource *                depthStencilBuffer = nullptr;
 
     UINT                            currentBackBufferIndex = 0;
     D3D12_VIEWPORT                  viewport = {};
     D3D12_RECT                      scissorRect = {};
-    D3D12SingleDescriptorAllocator* singleDescriptorAllocator = nullptr;
+    D3D12SingleDescriptorAllocator *singleDescriptorAllocator = nullptr;
     UINT                            frameCount = 0;
     D3D12FrameData                  frameData[NumFrames];
     UINT                            currentFrameIndex = 0;
-    D3D12FrameData*                 currentFrameData = nullptr;
-    D3D12CommandList*               currentFrameCommandList = nullptr;
+    D3D12FrameData *                currentFrameData = nullptr;
+    D3D12CommandList *              currentFrameCommandList = nullptr;
 
     D3D12PendingResource *          pendingResourceBuffer = nullptr;
     int                             maxPendingResources = 0;

@@ -47,6 +47,7 @@ void D3D12SingleDescriptorAllocator::Shutdown() {
 D3D12_CPU_DESCRIPTOR_HANDLE* D3D12SingleDescriptorAllocator::Alloc() {
     int newIndex = descriptorHandleList.FindNull();
     if (newIndex < 0) {
+        BE_WARNLOG("D3D12SingleDescriptorAllocator::Alloc: no usable descriptor\n");
         return nullptr;
     }
     CD3DX12_CPU_DESCRIPTOR_HANDLE* newDescriptorHandle = new CD3DX12_CPU_DESCRIPTOR_HANDLE(baseDescriptorHandle, newIndex, descriptorHandleSize);

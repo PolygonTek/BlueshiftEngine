@@ -26,9 +26,9 @@ public:
 
     void                            Release();
 
-    static D3D12Texture*            CreateTexture2D(const char* filename, bool useCompression = true, bool useNormalMap = false);
-    static D3D12Texture*            CreateTexture2D(const Image* image, Image::Format::Enum dstFormat, bool useMipmaps);
-    static D3D12Texture*            CreateTexture2D(const Image* image);
+    static D3D12Texture *           CreateTexture2D(const char* filename, bool useCompression = true, bool useNormalMap = false);
+    static D3D12Texture *           CreateTexture2D(const Image* image, Image::Format::Enum dstFormat, bool useMipmaps);
+    static D3D12Texture *           CreateTexture2D(const Image* image);
 
     static bool                     ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT* dxgiFormat);
     static bool                     IsSupportedImageFormat(Image::Format::Enum imageFormat) { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }
@@ -37,10 +37,10 @@ public:
     static void                     AdjustTextureFormat(bool useCompression, bool useNormalMap, Image::Format::Enum inFormat, Image::Format::Enum *outFormat);
 
 #ifdef USE_D3D12_MEMALLOC
-    D3D12MA::Allocation*            textureAllocation = nullptr;
+    D3D12MA::Allocation *           textureAllocation = nullptr;
 #else
-    ID3D12Resource*                 textureResource = nullptr;
+    ID3D12Resource *                textureResource = nullptr;
 #endif
     D3D12_RESOURCE_DESC             textureDesc;
-    D3D12_CPU_DESCRIPTOR_HANDLE*    descriptorHandlePtr = nullptr;
+    D3D12_CPU_DESCRIPTOR_HANDLE *   descriptorHandlePtr = nullptr;
 };

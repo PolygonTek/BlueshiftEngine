@@ -24,7 +24,7 @@ extern "C" { __declspec(dllexport) extern const char *D3D12SDKPath = u8"."; }
 D3D12Renderer       renderer;
 
 void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidation) {
-    DWORD dwCreateFactoryFlags = 0;
+    DWORD createFactoryFlags = 0;
     HRESULT hr;
 
     if (enableDebugLayer) {
@@ -33,7 +33,7 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
         hr = D3D12GetDebugInterface(IID_PPV_ARGS(&debugController));
         if (SUCCEEDED(hr)) {
             debugController->EnableDebugLayer();
-            dwCreateFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
+            createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
 
             // GPU Validation 활성화
             if (withGpuValidation) {
@@ -49,16 +49,16 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
         }
     }
 
-    IDXGIFactory4* pFactory = nullptr;
-    CreateDXGIFactory2(dwCreateFactoryFlags, IID_PPV_ARGS(&pFactory));
+    IDXGIFactory4* factory4 = nullptr;
+    CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&factory4));
 
     // 어댑터 정보 얻어오기
-    IDXGIAdapter1* adapter = nullptr;
-    pFactory->EnumAdapters1(0, &adapter);
-    adapter->GetDesc1(&adapterDesc);
+    IDXGIAdapter1* adapter1 = nullptr;
+    factory4->EnumAdapters1(0, &adapter1);
+    adapter1->GetDesc1(&adapterDesc);
 
     // D3D12 디바이스 생성
-    hr = D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&device));
+    hr = D3D12CreateDevice(adapter1, D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&device));
     if (FAILED(hr)) {
         BE_FATALERROR("D3D12CreateDevice : failed");
     }
@@ -70,7 +70,7 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
         infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
         infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
 
-        D3D12_MESSAGE_ID hide[] = {
+        D3D12_MESSAGE_ID hideMessages[] = {
             D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
             D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
             // Workarounds for debug layer issues on hybrid-graphics systems
@@ -78,8 +78,8 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
             D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE
         };
         D3D12_INFO_QUEUE_FILTER filter = {};
-        filter.DenyList.NumIDs = (UINT)COUNT_OF(hide);
-        filter.DenyList.pIDList = hide;
+        filter.DenyList.NumIDs = (UINT)COUNT_OF(hideMessages);
+        filter.DenyList.pIDList = hideMessages;
         infoQueue->AddStorageFilterEntries(&filter);
         infoQueue->Release();
     }
@@ -123,13 +123,13 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
     swapChainFullscreenDesc.Windowed = TRUE;
 
     IDXGISwapChain1 *swapChain1 = nullptr;
-    hr = pFactory->CreateSwapChainForHwnd(commandQueue, hwnd, &swapChainDesc, &swapChainFullscreenDesc, nullptr, &swapChain1);
+    hr = factory4->CreateSwapChainForHwnd(commandQueue, hwnd, &swapChainDesc, &swapChainFullscreenDesc, nullptr, &swapChain1);
     if (FAILED(hr)) {
         BE_FATALERROR("CreateSwapChainForHwnd : failed");
     }
     swapChain1->QueryInterface(IID_PPV_ARGS(&swapChain));
     swapChain1->Release();
-    pFactory->Release();
+    factory4->Release();
 
     // Viewport 설정을 백버퍼 크기에 맞게 설정
     viewport.Width = (float)swapChainDesc.Width;
@@ -201,8 +201,9 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
     // D3D12MA Allocator 생성
     D3D12MA::ALLOCATOR_DESC allocatorDesc = {};
     allocatorDesc.pDevice = device;
-    allocatorDesc.pAdapter = adapter;
+    allocatorDesc.pAdapter = adapter1;
     allocatorDesc.Flags = D3D12MA::ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED | D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED;
+    allocatorDesc.Flags |= D3D12MA::ALLOCATOR_FLAG_DONT_PREFER_SMALL_BUFFERS_COMMITTED;
 
     hr = D3D12MA::CreateAllocator(&allocatorDesc, &allocator);
     if (FAILED(hr)) {
@@ -210,7 +211,7 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
     }
 #endif
 
-    adapter->Release();
+    adapter1->Release();
 
     singleDescriptorAllocator = new D3D12SingleDescriptorAllocator;
     singleDescriptorAllocator->Init(10000);
@@ -327,6 +328,7 @@ void D3D12Renderer::CreateDSV(int width, int height) {
 
 void D3D12Renderer::BeginRender() {
     currentFrameData = &frameData[currentFrameIndex];
+    currentFrameData->BeginRender();
 
     // 이번 프레임에 사용할 프레임 데이터의 사용이 이전 프레임에서 완료될 때까지 기다린다.
     WaitFence(currentFrameData->fenceValue);

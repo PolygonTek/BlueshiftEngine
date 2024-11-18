@@ -46,7 +46,8 @@ D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(int indexSize, int numInde
 
 #ifdef USE_D3D12_MEMALLOC
     D3D12MA::ALLOCATION_DESC allocationDesc = {};
-    //allocationDesc.Flags = D3D12MA::ALLOCATION_FLAG_CAN_ALIAS;
+    //allocationDesc.Flags |= D3D12MA::ALLOCATION_FLAG_CAN_ALIAS;
+    allocationDesc.Flags |= D3D12MA::ALLOCATION_FLAG_STRATEGY_MIN_TIME;
     allocationDesc.HeapType = heapType;
 
     D3D12MA::Allocation *allocation;
@@ -106,8 +107,8 @@ D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(int indexSize, int numInde
             renderer.commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
         } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
             UINT8* mappedPtr = nullptr;
-            CD3DX12_RANGE readRange(0, 0);
-            indexBufferResource->Map(0, &readRange, reinterpret_cast<void **>(&mappedPtr));
+            CD3DX12_RANGE range(0, 0);
+            indexBufferResource->Map(0, &range, reinterpret_cast<void **>(&mappedPtr));
             memcpy(mappedPtr, data, bufferSize);
             indexBufferResource->Unmap(0, nullptr);
         } else {

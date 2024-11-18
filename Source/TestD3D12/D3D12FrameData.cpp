@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "D3D12FrameData.h"
 #include "D3D12Renderer.h"
+#include "D3D12ConstantBuffer.h"
 
 void D3D12FrameData::Init() {
     commandListPool = new D3D12CommandListPool;
@@ -23,10 +24,70 @@ void D3D12FrameData::Init() {
     // 렌더링에 사용할 디스크립터 힙을 생성한다.
     // 최대 1000 개의 CBV_SRV_UAV 용 디스크립터를 담을 수 있다.
     rootDescriptorPool = new D3D12DescriptorPool;
-    rootDescriptorPool->Init(1000);
+    rootDescriptorPool->Init(4096);
+
+    // 다이나믹 상수 버퍼 생성
+    constantBuffer = D3D12ConstantBuffer::CreateConstantBuffer(65536 * 4);
+
+    // Map and initialize the constant buffer. We don't unmap this until the
+    // app closes. Keeping things mapped for the lifetime of the resource is okay.
+    mappedConstantBase = constantBuffer->Map(0, 0);
+
+    cbvDescriptorHandlePtrs.SetGranularity(64);
 }
 
 void D3D12FrameData::Shutdown() {
+    for (int i = 0; i < cbvDescriptorHandlePtrs.Count(); ++i) {
+        renderer.singleDescriptorAllocator->Free(cbvDescriptorHandlePtrs[i]);
+    }
+    cbvDescriptorHandlePtrs.SetCount(0, false);
+
+    SAFE_DELETE(constantBuffer);
     SAFE_DELETE(commandListPool);
     SAFE_DELETE(rootDescriptorPool);
+}
+
+void *D3D12FrameData::AllocConstant(int size, D3D12_CPU_DESCRIPTOR_HANDLE** outDescriptorHandlePtr) {
+    UINT alignedSize = (UINT)AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+    if (alignedSize > D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16) {
+        BE_WARNLOG("Constant buffer view size cannot exceeds 64KB limit\n");
+        return nullptr;
+    }
+
+#ifdef USE_D3D12_MEMALLOC
+    ID3D12Resource *resource = constantBuffer->constantBufferAllocation->GetResource();
+    UINT maxSize = constantBuffer->constantBufferAllocation->GetSize();
+#else
+    ID3D12Resource *resource = constantBuffer->constantBufferResource;
+    D3D12_RESOURCE_DESC resourceDesc = resource->GetDesc();
+    UINT maxSize = resourceDesc.Width;
+#endif
+
+    if (usedConstantBytes + alignedSize > maxSize) {
+        BE_WARNLOG("Out of constant buffer cache\n");
+        return nullptr;
+    }
+
+    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+    cbvDesc.BufferLocation = resource->GetGPUVirtualAddress() + usedConstantBytes;
+    cbvDesc.SizeInBytes = alignedSize;
+
+    D3D12_CPU_DESCRIPTOR_HANDLE *descriptorHandlePtr = renderer.singleDescriptorAllocator->Alloc();
+    renderer.device->CreateConstantBufferView(&cbvDesc, *descriptorHandlePtr);
+    cbvDescriptorHandlePtrs.Append(descriptorHandlePtr);
+    *outDescriptorHandlePtr = descriptorHandlePtr;
+
+    void *outPtr = (byte *)mappedConstantBase + usedConstantBytes;
+    usedConstantBytes += alignedSize;
+
+    return outPtr;
+}
+
+void D3D12FrameData::BeginRender() {
+    for (int i = 0; i < cbvDescriptorHandlePtrs.Count(); ++i) {
+        renderer.singleDescriptorAllocator->Free(cbvDescriptorHandlePtrs[i]);
+    }
+    cbvDescriptorHandlePtrs.SetCount(0, false);
+
+    usedConstantBytes = 0;
 }

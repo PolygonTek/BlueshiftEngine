@@ -20,10 +20,16 @@ set(SRC_FILES
     D3D12VertexBuffer.cpp
     D3D12IndexBuffer.h
     D3D12IndexBuffer.cpp
+    D3D12ConstantBuffer.h
+    D3D12ConstantBuffer.cpp
     D3D12CommandListPool.h
     D3D12CommandListPool.cpp
     D3D12FrameData.h
     D3D12FrameData.cpp
+    D3D12Mesh.h
+    D3D12Mesh.cpp
+    D3D12TriangleMesh.h
+    D3D12TriangleMesh.cpp
     WinMain.cpp
     WinResource.h
     WinRes/small.ico

@@ -26,12 +26,12 @@ public:
 
     void                            Release();
 
-    static D3D12VertexBuffer*       CreateVertexBuffer(int vertexSize, int numVerts, void *data);
+    static D3D12VertexBuffer *      CreateVertexBuffer(int vertexSize, int numVerts, void *data);
 
 #ifdef USE_D3D12_MEMALLOC
-    D3D12MA::Allocation*            vertexBufferAllocation = nullptr;
+    D3D12MA::Allocation *           vertexBufferAllocation = nullptr;
 #else
-    ID3D12Resource*                 vertexBufferResource = nullptr;
+    ID3D12Resource *                vertexBufferResource = nullptr;
 #endif
     D3D12_VERTEX_BUFFER_VIEW        vbv;
 };

@@ -23,12 +23,12 @@ public:
     void                            Init(UINT maxCount);
     void                            Shutdown();
 
-    D3D12_CPU_DESCRIPTOR_HANDLE*    Alloc();
+    D3D12_CPU_DESCRIPTOR_HANDLE *   Alloc();
     void                            Free(const D3D12_CPU_DESCRIPTOR_HANDLE *cpuDescriptorHandle);
 
-    ID3D12DescriptorHeap*           descriptorHeap = nullptr;
+    ID3D12DescriptorHeap *          descriptorHeap = nullptr;
     D3D12_CPU_DESCRIPTOR_HANDLE     baseDescriptorHandle;
     UINT                            descriptorHandleSize;
     UINT                            maxDescriptorCount;
-    Array<CD3DX12_CPU_DESCRIPTOR_HANDLE*> descriptorHandleList;
+    Array<CD3DX12_CPU_DESCRIPTOR_HANDLE *> descriptorHandleList;
 };

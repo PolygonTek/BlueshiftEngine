@@ -131,7 +131,7 @@ D3D12Texture* D3D12Texture::CreateTexture2D(const Image* srcImage) {
 
 #ifdef USE_D3D12_MEMALLOC
     D3D12MA::ALLOCATION_DESC allocationDesc = {};
-    allocationDesc.Flags = D3D12MA::ALLOCATION_FLAG_NONE;
+    allocationDesc.Flags |= D3D12MA::ALLOCATION_FLAG_STRATEGY_MIN_TIME;
     allocationDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
 
     D3D12MA::Allocation *allocation;
@@ -177,8 +177,8 @@ D3D12Texture* D3D12Texture::CreateTexture2D(const Image* srcImage) {
 
     // 이미지 데이터를 업로드 버퍼에 write
     UINT8 *mappedPtr = nullptr;
-    CD3DX12_RANGE writeRange(0, 0);
-    uploadBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedPtr));
+    CD3DX12_RANGE range(0, 0);
+    uploadBuffer->Map(0, &range, reinterpret_cast<void **>(&mappedPtr));
 
     byte *dstPtr = mappedPtr;
     int bpp = srcImage->IsCompressed() ? srcImage->BytesPerBlock() : srcImage->BytesPerPixel();

@@ -44,6 +44,7 @@ void D3D12DescriptorPool::Reset() {
 
 bool D3D12DescriptorPool::AllocDescriptors(UINT descriptorCount, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle) {
     if (usedCount + descriptorCount > maxDescriptorCount) {
+        BE_WARNLOG("D3D12DescriptorPool::AllocDescriptors: exceeds max descriptor count\n");
         return false;
     }
 

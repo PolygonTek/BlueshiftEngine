@@ -44,7 +44,8 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(int vertexSize, int num
 
 #ifdef USE_D3D12_MEMALLOC
     D3D12MA::ALLOCATION_DESC allocationDesc = {};
-    //allocationDesc.Flags = D3D12MA::ALLOCATION_FLAG_CAN_ALIAS;
+    //allocationDesc.Flags |= D3D12MA::ALLOCATION_FLAG_CAN_ALIAS;
+    allocationDesc.Flags |= D3D12MA::ALLOCATION_FLAG_STRATEGY_MIN_TIME;
     allocationDesc.HeapType = heapType;
 
     D3D12MA::Allocation *allocation;
@@ -104,8 +105,8 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(int vertexSize, int num
             renderer.commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
         } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
             UINT8 *mappedPtr = nullptr;
-            CD3DX12_RANGE readRange(0, 0);
-            vertexBufferResource->Map(0, &readRange, reinterpret_cast<void **>(&mappedPtr));
+            CD3DX12_RANGE range(0, 0);
+            vertexBufferResource->Map(0, &range, reinterpret_cast<void **>(&mappedPtr));
             memcpy(mappedPtr, data, bufferSize);
             vertexBufferResource->Unmap(0, nullptr);
         } else {

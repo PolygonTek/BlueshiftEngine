@@ -17,8 +17,8 @@
 #include "D3D12Common.h"
 
 struct D3D12CommandList {
-    ID3D12CommandAllocator*         commandAllocator = nullptr;
-    ID3D12GraphicsCommandList*      commandList = nullptr;
+    ID3D12CommandAllocator *        commandAllocator = nullptr;
+    ID3D12GraphicsCommandList *     commandList = nullptr;
     LinkList<D3D12CommandList>      node;
 };
 
@@ -30,13 +30,13 @@ public:
     void                            Shutdown();
 
     void                            Clear();
-    D3D12CommandList*               Alloc();
+    D3D12CommandList *              Alloc();
     void                            Free(D3D12CommandList *commandList);
 
     int                             UsedCount() const { return usedCount; }
 
 private:
-    D3D12CommandList*               commandListPool = nullptr;
+    D3D12CommandList *              commandListPool = nullptr;
     int                             maxCommandLists = 0;
     LinkList<D3D12CommandList>      freeCommandLists;
     int                             usedCount = 0;

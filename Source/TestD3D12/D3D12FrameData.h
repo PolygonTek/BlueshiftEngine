@@ -18,14 +18,24 @@
 
 class D3D12CommandListPool;
 class D3D12DescriptorPool;
+class D3D12ConstantBuffer;
 
 class D3D12FrameData {
 public:
     void                            Init();
     void                            Shutdown();
 
-    D3D12CommandListPool*           commandListPool = nullptr;
-    D3D12DescriptorPool*            rootDescriptorPool = nullptr;
+    void *                          AllocConstant(int size, D3D12_CPU_DESCRIPTOR_HANDLE **outDescriptorHandlePtr);
+
+    void                            BeginRender();
+
+    D3D12CommandListPool *          commandListPool = nullptr;
+    D3D12DescriptorPool *           rootDescriptorPool = nullptr;
+    D3D12ConstantBuffer *           constantBuffer = nullptr;
+    void *                          mappedConstantBase = nullptr;
+    UINT                            usedConstantBytes = 0;
 
     UINT64                          fenceValue = 0;
+
+    Array<D3D12_CPU_DESCRIPTOR_HANDLE *> cbvDescriptorHandlePtrs;
 };

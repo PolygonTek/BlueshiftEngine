@@ -14,26 +14,9 @@
 
 #pragma once
 
-#include "D3D12Common.h"
-#include "D3D12ConstantBuffer.h"
-
-class D3D12TriangleMesh;
-
-class D3D12App {
+class D3D12Mesh {
 public:
-    void                            Init(HWND windowHandle);
-    void                            Shutdown();
-
-    void                            Draw(int elapsedMsec);
-
-    void                            RunFrame(int elapsedMsec);
-
-    int                             GetElapsedMsec() const { return elapsedMsec; }
-
-private:
-    D3D12TriangleMesh *             triangleMesh = nullptr;
-
-    int                             elapsedMsec = 0;
+    virtual void                    InitMesh() = 0;
+    virtual void                    FreeMesh() = 0;
+    virtual void                    DrawMesh(float elapsedTime) = 0;
 };
-
-extern D3D12App                     app;
