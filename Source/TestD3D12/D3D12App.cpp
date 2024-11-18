@@ -52,7 +52,7 @@ void D3D12App::Draw(int frameMsec) {
 
     float elapsedSeconds = MILLI2SEC(elapsedMsec);
 
-    for (int i = 0; i < 100; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         triangleMesh->DrawMesh(elapsedSeconds + i * 0.1f);
     }
 

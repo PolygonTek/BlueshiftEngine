@@ -30,7 +30,7 @@ private:
     void                            InitRootSignature();
     void                            InitPipelineState();
 
-    D3D12Texture *                  defaultTexture = nullptr;
+    D3D12Texture *                  texture = nullptr;
     D3D12VertexBuffer *             vertexBuffer = nullptr;
     D3D12IndexBuffer *              indexBuffer = nullptr;
  

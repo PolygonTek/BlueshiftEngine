@@ -23,11 +23,11 @@
 
 struct TriangleVertex {
     Vec3        position;
-    Vec4        color;
+    uint32_t    color;
     Vec2        texCoord;
 };
 
-struct TriangleConstantBuffer {
+struct TriangleConstants {
     Vec4        offset;
 };
 
@@ -35,9 +35,9 @@ void D3D12TriangleMesh::InitMesh() {
     // 삼각형의 버텍스/인덱스 버퍼 내용을 작성
     // NOTE: UV 좌표의 V 는 아래쪽으로 증가함을 주의한다. 나중에 통합 렌더러를 작성한다면, shader code 에서 하는게 좋을 듯..
     ALIGN_AS32 const TriangleVertex vertices[] = {
-        { { 0.0f, 0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.5f, 0.0f } },
-        { { 0.5f, -0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } },
-        { { -0.5f, -0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } },
+        { { 0.0f, 0.5f, 0.0f }, 0xffffffff, { 0.5f, 0.0f } },
+        { { 0.5f, -0.5f, 0.0f }, 0xffffffff, { 1.0f, 1.0f } },
+        { { -0.5f, -0.5f, 0.0f }, 0xffffffff, { 0.0f, 1.0f } },
     };
 
     ALIGN_AS32 const uint16_t indexes[] = {
@@ -46,7 +46,7 @@ void D3D12TriangleMesh::InitMesh() {
 
     vertexBuffer = D3D12VertexBuffer::CreateVertexBuffer(sizeof(vertices[0]), 3, (void *)vertices);
     indexBuffer = D3D12IndexBuffer::CreateIndexBuffer(sizeof(indexes[0]), 3, (void *)indexes);
-    defaultTexture = D3D12Texture::CreateTexture2D("Data/EngineTextures/checker.dds");
+    texture = D3D12Texture::CreateTexture2D("Data/EngineTextures/checker.dds");
 
     InitRootSignature();
 
@@ -54,7 +54,7 @@ void D3D12TriangleMesh::InitMesh() {
 }
 
 void D3D12TriangleMesh::FreeMesh() {
-    SAFE_DELETE(defaultTexture);
+    SAFE_DELETE(texture);
     SAFE_DELETE(vertexBuffer);
     SAFE_DELETE(indexBuffer);
 
@@ -179,8 +179,8 @@ float4 PSMain(PSInput input) : SV_TARGET {
     // Define the vertex input layout.
     D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 28, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+        { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
     };
 
     // PSO 만들기
@@ -215,12 +215,12 @@ void D3D12TriangleMesh::DrawMesh(float elapsedTime) {
     D3D12DescriptorPool* currentRootDescriptorPool = renderer.currentFrameData->rootDescriptorPool;
 
     D3D12_CPU_DESCRIPTOR_HANDLE *cbvDescriptorHandlePtr = nullptr;
-    void *writePtr = renderer.currentFrameData->AllocConstant(sizeof(TriangleConstantBuffer), &cbvDescriptorHandlePtr);
+    void *writePtr = renderer.currentFrameData->AllocConstant(sizeof(TriangleConstants), &cbvDescriptorHandlePtr);
     if (!writePtr) {
         return;
     }
 
-    TriangleConstantBuffer *constantPtr = (reinterpret_cast<TriangleConstantBuffer*>(writePtr));
+    TriangleConstants *constantPtr = (reinterpret_cast<TriangleConstants*>(writePtr));
     constantPtr->offset.x = 0.5f * Math::Cos(elapsedTime);
     constantPtr->offset.y = 0.5f * Math::Sin(elapsedTime * 3);
 
@@ -240,7 +240,7 @@ void D3D12TriangleMesh::DrawMesh(float elapsedTime) {
 
     // 루트 디스크립터 테이블에 SRV 디스크립터 카피 - 0
     CD3DX12_CPU_DESCRIPTOR_HANDLE srvDest(cpuRootDescriptorHandle, 0, currentRootDescriptorPool->descriptorHandleSize);
-    renderer.device->CopyDescriptorsSimple(1, srvDest, *defaultTexture->descriptorHandlePtr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    renderer.device->CopyDescriptorsSimple(1, srvDest, *texture->descriptorHandlePtr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     // 루트 디스크립터 테이블에 CBV 디스크립터 카피 - 1
     CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDest(cpuRootDescriptorHandle, 1, currentRootDescriptorPool->descriptorHandleSize);
