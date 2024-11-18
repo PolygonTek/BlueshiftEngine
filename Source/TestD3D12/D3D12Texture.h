@@ -26,6 +26,8 @@ public:
 
     void                            Release();
 
+    bool                            UpdateTexture2D(UINT level, UINT x, UINT y, UINT width, UINT height, Image::Format::Enum imageFormat, const void* pixels);
+
     static D3D12Texture *           CreateTexture2D(const char* filename, bool useCompression = true, bool useNormalMap = false);
     static D3D12Texture *           CreateTexture2D(const Image* image, Image::Format::Enum dstFormat, bool useMipmaps);
     static D3D12Texture *           CreateTexture2D(const Image* image);

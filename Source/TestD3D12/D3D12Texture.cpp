@@ -34,6 +34,93 @@ void D3D12Texture::Release() {
 #endif
 }
 
+bool D3D12Texture::UpdateTexture2D(UINT level, UINT x, UINT y, UINT width, UINT height, Image::Format::Enum srcFormat, const void *pixels) {
+    // 텍스쳐의 특정 level 에 대한 Footprint 정보를 얻어온다.
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
+    renderer.device->GetCopyableFootprints(&textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, nullptr);
+
+    int srcPitch = Image::MemRequired(width, 1, 1, 1, srcFormat);
+    int dstPitch = mipLevelFootprint.Footprint.RowPitch;
+    int uploadBufferSize = Image::MemRequired(dstPitch, height, 1, 1, srcFormat);
+
+    D3D12_RESOURCE_DESC uploadBufferDesc;
+    uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    uploadBufferDesc.Alignment = 0;
+    uploadBufferDesc.Width = uploadBufferSize;
+    uploadBufferDesc.Height = 1;
+    uploadBufferDesc.DepthOrArraySize = 1;
+    uploadBufferDesc.MipLevels = 1;
+    uploadBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+    uploadBufferDesc.SampleDesc.Count = 1;
+    uploadBufferDesc.SampleDesc.Quality = 0;
+    uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+    // 업로드 버퍼 생성 (pitch 를 타겟 텍스쳐와 동일하게 잡는다)
+    ID3D12Resource *uploadBuffer = nullptr;
+    if (FAILED(renderer.device->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+        D3D12_HEAP_FLAG_NONE,
+        &uploadBufferDesc,
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
+        return false;
+    }
+
+    // 이미지 데이터를 업로드 버퍼에 write
+    UINT8 *mappedPtr = nullptr;
+    CD3DX12_RANGE writeRange(0, 0);
+    uploadBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedPtr));
+
+    byte *dstPtr = mappedPtr;
+    const byte *srcPtr = (byte *)pixels;
+
+    for (UINT h = 0; h < height; ++h) {
+        memcpy(dstPtr, srcPtr, srcPitch);
+        srcPtr += srcPitch;
+        dstPtr += dstPitch;
+    }
+
+    uploadBuffer->Unmap(0, nullptr);
+
+#ifdef USE_D3D12_MEMALLOC
+    ID3D12Resource *textureResource = textureAllocation->GetResource();
+#endif
+
+    // 업로드 버퍼에서 텍스쳐로 데이터 카피
+    renderer.commandAllocator->Reset();
+    renderer.commandList->Reset(renderer.commandAllocator, nullptr);
+    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST));
+
+    D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
+    srcLocation.PlacedFootprint = mipLevelFootprint;
+    srcLocation.PlacedFootprint.Footprint.Width = width;
+    srcLocation.PlacedFootprint.Footprint.Height = height;
+    srcLocation.PlacedFootprint.Footprint.Depth = 1;
+    srcLocation.pResource = uploadBuffer;
+    srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+
+    D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
+    dstLocation.PlacedFootprint = mipLevelFootprint;
+    dstLocation.pResource = textureResource;
+    dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    dstLocation.SubresourceIndex = level;
+
+    D3D12_BOX box = { 0, 0, 0, width, height, 1 };
+    renderer.commandList->CopyTextureRegion(&dstLocation, x, y, 0, &srcLocation, &box);
+
+    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE));
+    renderer.commandList->Close();
+
+    // 커맨드 큐 실행
+    ID3D12CommandList *ppCommandLists[] = { renderer.commandList };
+    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
+
+    renderer.MarkForRelease(uploadBuffer);
+
+    return true;
+}
+
 D3D12Texture *D3D12Texture::CreateTexture2D(const char *filename, bool useCompression, bool useNormalMap) {
     Image *image = Image::NewImageFromFile(filename);
     if (!image) {
