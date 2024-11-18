@@ -15,6 +15,9 @@
 #include "Precompiled.h"
 #include "D3D12FrameData.h"
 #include "D3D12Renderer.h"
+#include "D3D12CommandListPool.h"
+#include "D3D12DescriptorPool.h"
+#include "D3D12SingleDescriptorAllocator.h"
 #include "D3D12ConstantBuffer.h"
 
 void D3D12FrameData::Init() {

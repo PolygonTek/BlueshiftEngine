@@ -15,6 +15,7 @@
 #include "Precompiled.h"
 #include "D3D12Texture.h"
 #include "D3D12Renderer.h"
+#include "D3D12SingleDescriptorAllocator.h"
 
 void D3D12Texture::Release() {
     for (int frameIndex = 0; frameIndex < D3D12Renderer::NumFrames; ++frameIndex) {

@@ -350,6 +350,7 @@ endif ()
 if (BUILD_TESTD3D12)
     if (MSVC)
         add_subdirectory(Source/TestD3D12)
+        add_subdirectory(Source/ThirdParty/D3D12MemoryAllocator)
     endif ()
 endif ()
 

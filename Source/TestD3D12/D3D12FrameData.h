@@ -31,11 +31,11 @@ public:
 
     D3D12CommandListPool *          commandListPool = nullptr;
     D3D12DescriptorPool *           rootDescriptorPool = nullptr;
+
     D3D12ConstantBuffer *           constantBuffer = nullptr;
     void *                          mappedConstantBase = nullptr;
     UINT                            usedConstantBytes = 0;
+    Array<D3D12_CPU_DESCRIPTOR_HANDLE *> cbvDescriptorHandlePtrs;
 
     UINT64                          fenceValue = 0;
-
-    Array<D3D12_CPU_DESCRIPTOR_HANDLE *> cbvDescriptorHandlePtrs;
 };

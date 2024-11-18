@@ -14,6 +14,8 @@
 
 #include "Precompiled.h"
 #include "D3D12Renderer.h"
+#include "D3D12CommandListPool.h"
+#include "D3D12DescriptorPool.h"
 #include "D3D12VertexBuffer.h"
 #include "D3D12IndexBuffer.h"
 #include "D3D12Texture.h"

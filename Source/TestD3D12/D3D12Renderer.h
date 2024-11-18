@@ -20,10 +20,10 @@
 #include "D3D12MemoryAllocator/D3D12MemAlloc.h"
 #endif
 
-#include "D3D12DescriptorPool.h"
-#include "D3D12CommandListPool.h"
-#include "D3D12SingleDescriptorAllocator.h"
 #include "D3D12FrameData.h"
+
+struct D3D12CommandList;
+class D3D12SingleDescriptorAllocator;
 
 struct D3D12PendingResource {
     UINT64                          fenceValue = 0;

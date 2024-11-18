@@ -15,6 +15,9 @@
 #include "Precompiled.h"
 #include "Platform/PlatformSystem.h"
 #include "D3D12Renderer.h"
+#include "D3D12SingleDescriptorAllocator.h"
+#include "D3D12CommandListPool.h"
+#include "D3D12DescriptorPool.h"
 #include <dxgidebug.h>
 
 // D3D12.dll 이 D3D12Core.dll 을 찾기 위한 설정
