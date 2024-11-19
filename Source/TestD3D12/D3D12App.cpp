@@ -129,8 +129,9 @@ void D3D12App::DrawCubes() {
     for (int y = 0; y < dimensionY; ++y) {
         for (int x = 0; x < dimensionX; ++x) {
             float t = elapsedSeconds + (dimensionX * y + x) * 0.1f;
+            float scale = 1.0f + 0.25f * Math::Sin(t * 4);
 
-            cubeMesh->worldMatrix.SetTRS(Vec3(0, startX + spacing * x, startY + spacing * y), Mat3::FromRotationZYX(t, 0, t), Vec3::one);
+            cubeMesh->worldMatrix.SetTRS(Vec3(0, startX + spacing * x, startY + spacing * y), Mat3::FromRotationZYX(t, 0, t * 0.5f), Vec3(scale));
 
             cubeMesh->DrawMesh();
             numDrawCalls++;

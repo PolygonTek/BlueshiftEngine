@@ -121,7 +121,97 @@ bool D3D12Texture::UpdateTexture2D(UINT level, UINT x, UINT y, UINT width, UINT 
     return true;
 }
 
-D3D12Texture *D3D12Texture::CreateTexture2D(const char *filename, bool useCompression, bool useNormalMap) {
+bool D3D12Texture::UpdateTexture3D(UINT level, UINT x, UINT y, UINT z, UINT width, UINT height, UINT depth, Image::Format::Enum srcFormat, const void *pixels)
+{
+    // 텍스쳐의 특정 level 에 대한 Footprint 정보를 얻어온다.
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
+    renderer.device->GetCopyableFootprints(&textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, nullptr);
+
+    int srcPitch = Image::MemRequired(width, 1, 1, 1, srcFormat);
+    int dstPitch = mipLevelFootprint.Footprint.RowPitch;
+    int uploadBufferSize = Image::MemRequired(dstPitch, height, depth, 1, srcFormat);
+
+    D3D12_RESOURCE_DESC uploadBufferDesc;
+    uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    uploadBufferDesc.Alignment = 0;
+    uploadBufferDesc.Width = uploadBufferSize;
+    uploadBufferDesc.Height = 1;
+    uploadBufferDesc.DepthOrArraySize = 1;
+    uploadBufferDesc.MipLevels = 1;
+    uploadBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+    uploadBufferDesc.SampleDesc.Count = 1;
+    uploadBufferDesc.SampleDesc.Quality = 0;
+    uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+    // 업로드 버퍼 생성 (pitch 를 타겟 텍스쳐와 동일하게 잡는다)
+    ID3D12Resource *uploadBuffer = nullptr;
+    if (FAILED(renderer.device->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+        D3D12_HEAP_FLAG_NONE,
+        &uploadBufferDesc,
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
+        return false;
+    }
+
+    // 이미지 데이터를 업로드 버퍼에 write
+    UINT8 *mappedPtr = nullptr;
+    CD3DX12_RANGE writeRange(0, 0);
+    uploadBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedPtr));
+
+    byte *dstPtr = mappedPtr;
+    const byte *srcPtr = (byte *)pixels;
+
+    for (UINT d = 0; d < depth; ++d) {
+        for (UINT h = 0; h < height; ++h) {
+            memcpy(dstPtr, srcPtr, srcPitch);
+            srcPtr += srcPitch;
+            dstPtr += dstPitch;
+        }
+    }
+
+    uploadBuffer->Unmap(0, nullptr);
+
+#ifdef USE_D3D12_MEMALLOC
+    ID3D12Resource *textureResource = textureAllocation->GetResource();
+#endif
+
+    // 업로드 버퍼에서 텍스쳐로 데이터 카피
+    renderer.commandAllocator->Reset();
+    renderer.commandList->Reset(renderer.commandAllocator, nullptr);
+    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST));
+
+    D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
+    srcLocation.PlacedFootprint = mipLevelFootprint;
+    srcLocation.PlacedFootprint.Footprint.Width = width;
+    srcLocation.PlacedFootprint.Footprint.Height = height;
+    srcLocation.PlacedFootprint.Footprint.Depth = depth;
+    srcLocation.pResource = uploadBuffer;
+    srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+
+    D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
+    dstLocation.PlacedFootprint = mipLevelFootprint;
+    dstLocation.pResource = textureResource;
+    dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    dstLocation.SubresourceIndex = level;
+
+    D3D12_BOX box = { 0, 0, 0, width, height, depth };
+    renderer.commandList->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &box);
+
+    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE));
+    renderer.commandList->Close();
+
+    // 커맨드 큐 실행
+    ID3D12CommandList *ppCommandLists[] = { renderer.commandList };
+    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
+
+    renderer.MarkForRelease(uploadBuffer);
+
+    return true;
+}
+
+D3D12Texture *D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, const char *filename, bool useCompression, bool useNormalMap) {
     Image *image = Image::NewImageFromFile(filename);
     if (!image) {
         return nullptr;
@@ -130,13 +220,13 @@ D3D12Texture *D3D12Texture::CreateTexture2D(const char *filename, bool useCompre
     Image::Format::Enum dstFormat;
     D3D12Texture::AdjustTextureFormat(useCompression, useNormalMap, image->GetFormat(), &dstFormat);
 
-    D3D12Texture* texture = D3D12Texture::CreateTexture2D(image, dstFormat, true);
+    D3D12Texture* texture = D3D12Texture::CreateTexture(D3D12TextureType::Texture2D, image, dstFormat, true);
     delete image;
 
     return texture;
 }
 
-D3D12Texture *D3D12Texture::CreateTexture2D(const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps) {
+D3D12Texture *D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps) {
     Image::Format::Enum srcFormat = srcImage->GetFormat();
 
     bool srcCompressed = Image::IsCompressed(srcFormat);
@@ -189,10 +279,10 @@ D3D12Texture *D3D12Texture::CreateTexture2D(const Image *srcImage, Image::Format
         srcImage = &dstImage;
     }
 
-    return CreateTexture2D(srcImage);
+    return CreateTexture(D3D12TextureType::Enum::Texture2D, srcImage);
 }
 
-D3D12Texture* D3D12Texture::CreateTexture2D(const Image* srcImage) {
+D3D12Texture* D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, const Image* srcImage) {
     Image::Format::Enum srcFormat = srcImage->GetFormat();
     bool isLinearSpace = srcImage->GetGammaSpace() == Image::GammaSpace::Linear;
 
@@ -203,16 +293,32 @@ D3D12Texture* D3D12Texture::CreateTexture2D(const Image* srcImage) {
         return nullptr;
     }
 
+    D3D12_RESOURCE_DIMENSION textureDimension;
+    switch (textureType) {
+    case D3D12TextureType::Texture2D:
+    case D3D12TextureType::Texture2DArray:
+    case D3D12TextureType::TextureCube:
+    case D3D12TextureType::TextureCubeArray:
+        textureDimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+        break;
+    case D3D12TextureType::Texture3D:
+        textureDimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+        break;
+    case D3D12TextureType::TextureBuffer:
+        textureDimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+        break;
+    }
+
     int maxMipLevels = srcImage->NumMipmaps();
 
     // GPU 에 텍스쳐 리소스 생성
     D3D12_RESOURCE_DESC textureDesc = {};
-    textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    textureDesc.Dimension = textureDimension;
     textureDesc.Format = dxgiFormat;
     textureDesc.MipLevels = static_cast<UINT16>(maxMipLevels);
     textureDesc.Width = static_cast<UINT>(srcImage->GetWidth());
     textureDesc.Height = static_cast<UINT>(srcImage->GetHeight());
-    textureDesc.DepthOrArraySize = 1;
+    textureDesc.DepthOrArraySize = static_cast<UINT>(textureDimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? srcImage->GetDepth() : srcImage->NumSlices());
     textureDesc.SampleDesc.Count = 1;
     textureDesc.SampleDesc.Quality = 0;
     textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
@@ -274,14 +380,19 @@ D3D12Texture* D3D12Texture::CreateTexture2D(const Image* srcImage) {
     for (int mipLevel = 0; mipLevel < maxMipLevels; ++mipLevel) {
         int srcWidth = srcImage->GetWidth(mipLevel);
         int srcHeight = srcImage->GetHeight(mipLevel);
+        int srcDepth = srcImage->GetDepth(mipLevel);
         int srcPitch = (srcImage->IsCompressed() ? (srcWidth >> 2) : srcWidth) * bpp;
         int srcRows = srcImage->IsCompressed() ? (srcHeight >> 2) : srcHeight;
         const byte *srcPtr = srcImage->GetPixels(mipLevel);
 
-        while (srcRows--) {
-            memcpy(dstPtr, srcPtr, srcPitch);
-            srcPtr += srcPitch;
-            dstPtr += mipFootprints[mipLevel].Footprint.RowPitch;
+        for (int sliceIndex = 0; sliceIndex < srcImage->NumSlices(); ++sliceIndex) {
+            for (int z = 0; z < srcDepth; ++z) {
+                for (int r = 0; r < srcRows; ++r) {
+                    memcpy(dstPtr, srcPtr, srcPitch);
+                    srcPtr += srcPitch;
+                    dstPtr += mipFootprints[mipLevel].Footprint.RowPitch;
+                }
+            }
         }
     }
 
@@ -321,8 +432,33 @@ D3D12Texture* D3D12Texture::CreateTexture2D(const Image* srcImage) {
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
     srvDesc.Format = textureDesc.Format;
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-    srvDesc.Texture2D.MipLevels = textureDesc.MipLevels;
+
+    // TODO : NOT IMPLEMENTED FOR WHOLE TEXTURE TYPE YET !
+    switch (textureType) {
+    case D3D12TextureType::Texture2D:
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        srvDesc.Texture2D.MipLevels = textureDesc.MipLevels;
+        break;
+    case D3D12TextureType::Texture2DArray:
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+        srvDesc.Texture2DArray.MipLevels = textureDesc.MipLevels;
+        break;
+    case D3D12TextureType::Texture3D:
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+        srvDesc.Texture3D.MipLevels = textureDesc.MipLevels;
+        break;
+    case D3D12TextureType::TextureCube:
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+        srvDesc.TextureCube.MipLevels = textureDesc.MipLevels;
+        break;
+    case D3D12TextureType::TextureCubeArray:
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+        srvDesc.TextureCubeArray.MipLevels = textureDesc.MipLevels;
+        break;
+    case D3D12TextureType::TextureBuffer:
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+        break;
+    }
 
     D3D12_CPU_DESCRIPTOR_HANDLE *descriptorHandlePtr = renderer.singleDescriptorAllocator->Alloc();
     renderer.device->CreateShaderResourceView(textureResource, &srvDesc, *descriptorHandlePtr);

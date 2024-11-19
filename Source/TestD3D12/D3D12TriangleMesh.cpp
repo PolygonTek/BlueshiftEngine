@@ -35,9 +35,9 @@ void D3D12TriangleMesh::InitMesh() {
     // 삼각형의 버텍스/인덱스 버퍼 내용을 작성
     // NOTE: UV 좌표의 V 는 아래쪽으로 증가함을 주의한다. 나중에 통합 렌더러를 작성한다면, shader code 에서 하는게 좋을 듯..
     ALIGN_AS32 const TriangleVertex verts[] = {
-        { { 0.0f, 0.5f, 0.0f }, 0xffffffff, { 0.5f, 0.0f } },
-        { { 0.5f, -0.5f, 0.0f }, 0xffffffff, { 1.0f, 1.0f } },
-        { { -0.5f, -0.5f, 0.0f }, 0xffffffff, { 0.0f, 1.0f } },
+        { { 0.0f, 0.5f, 0.0f }, Color4::red.ToUInt32(), { 0.5f, 0.0f }},
+        { { 0.5f, -0.5f, 0.0f }, Color4::green.ToUInt32(), { 1.0f, 1.0f } },
+        { { -0.5f, -0.5f, 0.0f }, Color4::blue.ToUInt32(), { 0.0f, 1.0f } },
     };
 
     ALIGN_AS32 const uint16_t indexes[] = {
@@ -46,7 +46,7 @@ void D3D12TriangleMesh::InitMesh() {
 
     vertexBuffer = D3D12VertexBuffer::CreateVertexBuffer(sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
     indexBuffer = D3D12IndexBuffer::CreateIndexBuffer(sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
-    texture = D3D12Texture::CreateTexture2D("Data/EngineTextures/checker.dds");
+    texture = D3D12Texture::CreateTexture(D3D12TextureType::Texture2D, "Data/EngineTextures/checker.dds");
 
     InitRootSignature();
 

@@ -546,7 +546,7 @@ int Image::NumPixels(int firstLevel, int numLevels) const {
     int d = GetDepth(firstLevel);
     
     int size = 0;
-    while (numLevels){
+    while (numLevels) {
         size += w * h * d;
 
         w >>= 1;

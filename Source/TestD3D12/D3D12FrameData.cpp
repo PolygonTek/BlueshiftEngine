@@ -71,6 +71,7 @@ void *D3D12FrameData::AllocConstant(int size, D3D12_CPU_DESCRIPTOR_HANDLE** outD
         return nullptr;
     }
 
+    // 상수 버퍼 리소스 (업로드 버퍼) 를 쪼개서 CBV 를 만들어 사용한다.
     D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
     cbvDesc.BufferLocation = resource->GetGPUVirtualAddress() + usedConstantBytes;
     cbvDesc.SizeInBytes = alignedSize;
