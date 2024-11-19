@@ -125,7 +125,10 @@ void ComJoint::SetConnectedBodyGuid(const Guid &guid) {
 ComRigidBody *ComJoint::GetConnectedBody() const {
     ComRigidBody *connectedBody = nullptr;
     if (!connectedBodyGuid.IsZero()) {
-        connectedBody = Object::FindInstance(connectedBodyGuid)->Cast<ComRigidBody>();
+        Object* connectedBodyObject = Object::FindInstance(connectedBodyGuid);
+        if (connectedBodyObject) {
+            connectedBody = connectedBodyObject->Cast<ComRigidBody>();
+        }
     }
     return connectedBody;
 }
