@@ -19,29 +19,61 @@
 #include "D3D12VertexBuffer.h"
 #include "D3D12IndexBuffer.h"
 #include "D3D12Texture.h"
-#include "D3D12TriangleMesh.h"
+#include "D3D12CubeMesh.h"
+#include "D3D12App.h"
 
-struct TriangleVertex {
+struct CubeVertex {
     Vec3        position;
     uint32_t    color;
     Vec2        texCoord;
 };
 
-struct TriangleConstants {
-    Vec4        offset;
+struct CubeConstants {
+    Mat3x4      worldMatrix;
+    Mat4        viewProjMatrix;
 };
 
-void D3D12TriangleMesh::InitMesh() {
-    // 삼각형의 버텍스/인덱스 버퍼 내용을 작성
+void D3D12CubeMesh::InitMesh() {
     // NOTE: UV 좌표의 V 는 아래쪽으로 증가함을 주의한다. 나중에 통합 렌더러를 작성한다면, shader code 에서 하는게 좋을 듯..
-    ALIGN_AS32 const TriangleVertex verts[] = {
-        { { 0.0f, 0.5f, 0.0f }, 0xffffffff, { 0.5f, 0.0f } },
-        { { 0.5f, -0.5f, 0.0f }, 0xffffffff, { 1.0f, 1.0f } },
-        { { -0.5f, -0.5f, 0.0f }, 0xffffffff, { 0.0f, 1.0f } },
+    ALIGN_AS32 const CubeVertex verts[] = {
+        { { -1.0f, -1.0f, -1.0f }, 0xffffffff, { 0.0f, 1.0f } },
+        { { -1.0f,  1.0f, -1.0f }, 0xffffffff, { 1.0f, 1.0f } },
+        { {  1.0f,  1.0f, -1.0f }, 0xffffffff, { 1.0f, 0.0f } },
+        { {  1.0f, -1.0f, -1.0f }, 0xffffffff, { 0.0f, 0.0f } },
+
+        { {  1.0f, -1.0f,  1.0f }, 0xffffffff, { 0.0f, 1.0f } },
+        { {  1.0f,  1.0f,  1.0f }, 0xffffffff, { 1.0f, 1.0f } },
+        { { -1.0f,  1.0f,  1.0f }, 0xffffffff, { 1.0f, 0.0f } },
+        { { -1.0f, -1.0f,  1.0f }, 0xffffffff, { 0.0f, 0.0f } },
+
+        { {  1.0f, -1.0f, -1.0f }, 0xffffffff, { 0.0f, 1.0f } },
+        { {  1.0f,  1.0f, -1.0f }, 0xffffffff, { 1.0f, 1.0f } },
+        { {  1.0f,  1.0f,  1.0f }, 0xffffffff, { 1.0f, 0.0f } },
+        { {  1.0f, -1.0f,  1.0f }, 0xffffffff, { 0.0f, 0.0f } },
+
+        { {  1.0f,  1.0f, -1.0f }, 0xffffffff, { 0.0f, 1.0f } },
+        { { -1.0f,  1.0f, -1.0f }, 0xffffffff, { 1.0f, 1.0f } },
+        { { -1.0f,  1.0f,  1.0f }, 0xffffffff, { 1.0f, 0.0f } },
+        { {  1.0f,  1.0f,  1.0f }, 0xffffffff, { 0.0f, 0.0f } },
+
+        { { -1.0f,  1.0f, -1.0f }, 0xffffffff, { 0.0f, 1.0f } },
+        { { -1.0f, -1.0f, -1.0f }, 0xffffffff, { 1.0f, 1.0f } },
+        { { -1.0f, -1.0f,  1.0f }, 0xffffffff, { 1.0f, 0.0f } },
+        { { -1.0f,  1.0f,  1.0f }, 0xffffffff, { 0.0f, 0.0f } },
+
+        { { -1.0f, -1.0f, -1.0f }, 0xffffffff, { 0.0f, 1.0f } },
+        { {  1.0f, -1.0f, -1.0f }, 0xffffffff, { 1.0f, 1.0f } },
+        { {  1.0f, -1.0f,  1.0f }, 0xffffffff, { 1.0f, 0.0f } },
+        { { -1.0f, -1.0f,  1.0f }, 0xffffffff, { 0.0f, 0.0f } },
     };
 
     ALIGN_AS32 const uint16_t indexes[] = {
-        0, 1, 2
+        0, 1, 2, 2, 3, 0,
+        4, 5, 6, 6, 7, 4,
+        8, 9, 10, 10, 11, 8,
+        12, 13, 14, 14, 15, 12,
+        16, 17, 18, 18, 19, 16,
+        20, 21, 22, 22, 23, 20
     };
 
     vertexBuffer = D3D12VertexBuffer::CreateVertexBuffer(sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
@@ -53,7 +85,7 @@ void D3D12TriangleMesh::InitMesh() {
     InitPipelineState();
 }
 
-void D3D12TriangleMesh::FreeMesh() {
+void D3D12CubeMesh::FreeMesh() {
     SAFE_DELETE(texture);
     SAFE_DELETE(vertexBuffer);
     SAFE_DELETE(indexBuffer);
@@ -62,7 +94,7 @@ void D3D12TriangleMesh::FreeMesh() {
     SAFE_RELEASE(pipelineState);
 }
 
-void D3D12TriangleMesh::InitRootSignature() {
+void D3D12CubeMesh::InitRootSignature() {
     // 디스크립터 레인지로 루트 디스크립터 테이블을 정의한다.
     // 디스크립터 레인지는 같은 타입의 디스크립터 여러개를 순차적으로 나타낸다.
     D3D12_DESCRIPTOR_RANGE descriptorRanges[2] = {};
@@ -125,7 +157,7 @@ void D3D12TriangleMesh::InitRootSignature() {
     SAFE_RELEASE(pErrorBlob);
 }
 
-void D3D12TriangleMesh::InitPipelineState() {
+void D3D12CubeMesh::InitPipelineState() {
     // Shader Compile
     const char* shaderText = R"(
 struct VSInput {
@@ -141,7 +173,8 @@ struct PSInput {
 };
 
 cbuffer CONSTANT_BUFFER_DEFAULT : register(b0) {
-    float4 offset;
+    row_major float3x4 worldMatrix;
+    row_major float4x4 viewProjMatrix;
 };
 
 Texture2D defaultTexture : register(t0);
@@ -150,8 +183,9 @@ SamplerState defaultSampler : register(s0);
 PSInput VSMain(VSInput input) {
     PSInput result = (PSInput)0;
 
-    result.position = input.position;
-    result.position.xy += offset.xy;
+    float3 positionWS3 = mul(worldMatrix, input.position);
+    float4 positionWS = float4(positionWS3, 1.0);
+    result.position = mul(viewProjMatrix, positionWS);
     result.color = input.color;
     result.texCoord = input.texCoord;
 
@@ -178,7 +212,7 @@ float4 PSMain(PSInput input) : SV_TARGET {
     SAFE_RELEASE(errorBlob);
 
     ID3DBlob* compiledPixelShader = nullptr;
-    if (FAILED(D3DCompile(shaderText, strlen(shaderText), "shaderText", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &compiledPixelShader, &errorBlob))) {
+    if (FAILED(D3DCompile(shaderText, strlen(shaderText), "shaderText", nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &compiledPixelShader, nullptr))) {
         renderer.PrintCompileErrorMessages(errorBlob);
     }
     SAFE_RELEASE(errorBlob);
@@ -200,6 +234,7 @@ float4 PSMain(PSInput input) : SV_TARGET {
     psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
     psoDesc.SampleMask = UINT_MAX;
     psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+    psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
     psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
     psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
     psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
@@ -217,19 +252,19 @@ float4 PSMain(PSInput input) : SV_TARGET {
     SAFE_RELEASE(compiledPixelShader);
 }
 
-void D3D12TriangleMesh::DrawMesh() {
+void D3D12CubeMesh::DrawMesh() {
     ID3D12GraphicsCommandList* currentCommandList = renderer.currentFrameCommandList->commandList;
     D3D12DescriptorPool* currentRootDescriptorPool = renderer.currentFrameData->rootDescriptorPool;
 
     D3D12_CPU_DESCRIPTOR_HANDLE *cbvDescriptorHandlePtr = nullptr;
-    void *writePtr = renderer.currentFrameData->AllocConstant(sizeof(TriangleConstants), &cbvDescriptorHandlePtr);
+    void *writePtr = renderer.currentFrameData->AllocConstant(sizeof(CubeConstants), &cbvDescriptorHandlePtr);
     if (!writePtr) {
         return;
     }
 
-    TriangleConstants *constantPtr = (reinterpret_cast<TriangleConstants*>(writePtr));
-    constantPtr->offset.x = offset.x;
-    constantPtr->offset.y = offset.y;
+    CubeConstants *constantPtr = (reinterpret_cast<CubeConstants*>(writePtr));
+    constantPtr->worldMatrix = worldMatrix;
+    constantPtr->viewProjMatrix = app.viewProjMatrix;
 
     // 루트 디스크립터 테이블을 할당한다. 여기서 디스크립터 테이블은 연속된 디스크립터 핸들을 말한다.
     D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorHandle;
@@ -264,5 +299,5 @@ void D3D12TriangleMesh::DrawMesh() {
     currentCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     currentCommandList->IASetVertexBuffers(0, 1, &vertexBuffer->vbv);
     currentCommandList->IASetIndexBuffer(&indexBuffer->ibv);
-    currentCommandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
+    currentCommandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
 }

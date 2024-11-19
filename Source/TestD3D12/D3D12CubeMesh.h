@@ -20,7 +20,7 @@ class D3D12Texture;
 class D3D12VertexBuffer;
 class D3D12IndexBuffer;
 
-class D3D12TriangleMesh : public D3D12Mesh {
+class D3D12CubeMesh : public D3D12Mesh {
 public:
     virtual void                    InitMesh() override;
     virtual void                    FreeMesh() override;
@@ -36,5 +36,5 @@ public:
     ID3D12RootSignature *           rootSignature = nullptr;
     ID3D12PipelineState *           pipelineState = nullptr;
 
-    Vec3                            offset;
+    Mat3x4                          worldMatrix;
 };

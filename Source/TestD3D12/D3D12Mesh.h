@@ -18,5 +18,5 @@ class D3D12Mesh {
 public:
     virtual void                    InitMesh() = 0;
     virtual void                    FreeMesh() = 0;
-    virtual void                    DrawMesh(float elapsedTime) = 0;
+    virtual void                    DrawMesh() = 0;
 };

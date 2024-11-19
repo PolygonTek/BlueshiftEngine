@@ -30,6 +30,8 @@ set(SRC_FILES
     D3D12Mesh.cpp
     D3D12TriangleMesh.h
     D3D12TriangleMesh.cpp
+    D3D12CubeMesh.h
+    D3D12CubeMesh.cpp
     WinMain.cpp
     WinResource.h
     WinRes/small.ico

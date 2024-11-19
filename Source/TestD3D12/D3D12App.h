@@ -18,6 +18,7 @@
 #include "D3D12ConstantBuffer.h"
 
 class D3D12TriangleMesh;
+class D3D12CubeMesh;
 
 class D3D12App {
 public:
@@ -30,8 +31,14 @@ public:
 
     int                             GetElapsedMsec() const { return elapsedMsec; }
 
-private:
+    void                            SetViewMatrix(const Mat3 &viewAxis, const Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) const;
+
+    void                            DrawTriangles();
+    void                            DrawCubes();
+
     D3D12TriangleMesh *             triangleMesh = nullptr;
+    D3D12CubeMesh *                 cubeMesh = nullptr;
+    Mat4                            viewProjMatrix;
 
     int                             elapsedMsec = 0;
 };

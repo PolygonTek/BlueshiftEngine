@@ -46,6 +46,8 @@ public:
     void                            CreateRTVs();
     void                            CreateDSV(int width, int height);
 
+    void                            FlushCommandList();
+
     UINT64                          SignalFence();
     bool                            IsFenceComplete(UINT64 checkFenceValue);
     void                            WaitFence(UINT64 expectedFenceValue);
@@ -53,6 +55,8 @@ public:
 
     void                            MarkForRelease(ID3D12Resource* resource);
     void                            FreePendingResources();
+
+    void                            PrintCompileErrorMessages(ID3DBlob *errorBlob);
 
 #ifdef USE_D3D12_MEMALLOC
     void                            PrintMemoryAllocatorStats();

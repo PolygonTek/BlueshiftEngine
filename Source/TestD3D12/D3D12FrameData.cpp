@@ -22,7 +22,7 @@
 
 void D3D12FrameData::Init() {
     commandListPool = new D3D12CommandListPool;
-    commandListPool->Init(D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
+    commandListPool->Init(D3D12_COMMAND_LIST_TYPE_DIRECT, 16);
 
     // 렌더링에 사용할 디스크립터 힙을 생성한다.
     // 최대 1000 개의 CBV_SRV_UAV 용 디스크립터를 담을 수 있다.
