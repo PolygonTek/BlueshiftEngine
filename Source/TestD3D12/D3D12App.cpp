@@ -114,13 +114,13 @@ void D3D12App::DrawCubes() {
     projMatrix.SetPerspectiveRH(45, aspectRatio, 1, 1000, false);
 
     Mat4 viewMatrix;
-    SetViewMatrix(Mat3(-1, 0, 0, 0, -1, 0, 0, 0, 1), Vec3(120, 0, 0), viewMatrix);
+    SetViewMatrix(Mat3(-1, 0, 0, 0, -1, 0, 0, 0, 1), Vec3(100, 0, 0), viewMatrix);
 
     viewProjMatrix = projMatrix * viewMatrix;
 
     constexpr int dimensionX = 32;
     constexpr int dimensionY = 32;
-    constexpr float spacing = 3.0f;
+    constexpr float spacing = 2.5f;
     constexpr float startX = -spacing * (dimensionX - 1) * 0.5f;
     constexpr float startY = -spacing * (dimensionY - 1) * 0.5f;
 
@@ -128,7 +128,9 @@ void D3D12App::DrawCubes() {
 
     for (int y = 0; y < dimensionY; ++y) {
         for (int x = 0; x < dimensionX; ++x) {
-            cubeMesh->worldMatrix.SetTRS(Vec3(0, startX + spacing * x, startY + spacing * y), Mat3::FromRotationX(elapsedSeconds), Vec3::one);
+            float t = elapsedSeconds + (dimensionX * y + x) * 0.1f;
+
+            cubeMesh->worldMatrix.SetTRS(Vec3(0, startX + spacing * x, startY + spacing * y), Mat3::FromRotationZYX(t, 0, t), Vec3::one);
 
             cubeMesh->DrawMesh();
             numDrawCalls++;
