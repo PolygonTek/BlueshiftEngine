@@ -1158,73 +1158,176 @@ bool Mat4::InverseSelf() {
 #endif
 }
 
-void Mat4::SetFrustum(float left, float right, float bottom, float top, float zNear, float zFar) {
-    float nudge = 0.999f;   // prevent artifacts with infinite far plane
-    
+void Mat4::SetFrustumRH(float left, float right, float bottom, float top, float zNear, float zFar, bool zNegativeOneToOne) {
     // check for division by 0
     if (left == right || top == bottom || zNear == zFar) {
         return;
     }
 
-    mat[0][0] = (2 * zNear) / (right - left);
-    mat[0][1] = 0.f;
-    mat[0][2] = (right + left) / (right - left);
-    mat[0][3] = 0.f;
+    float n2 = 2.0f * zNear;
+    float inv_rl = 1.0f / (right - left);
+    float inv_tb = 1.0f / (top - bottom);
+    float inv_fn = 1.0f / (zFar - zNear);
+
+    mat[0][0] = n2 * inv_rl;
+    mat[0][1] = 0.0f;
+    mat[0][2] = (right + left) * inv_rl;
+    mat[0][3] = 0.0f;
         
-    mat[1][0] = 0.f;
-    mat[1][1] = (2 * zNear) / (top - bottom);
-    mat[1][2] = (top + bottom) / (top - bottom);
-    mat[1][3] = 0.f;
-    
-    mat[2][0] = 0.f;
-    mat[2][1] = 0.f;
-    if (zFar != -1) {
-        mat[2][2] = -(zFar + zNear) / (zFar - zNear);
-    } else { // if zFar == -1, use an infinite far plane
-        mat[2][2] = -nudge;
+    mat[1][0] = 0.0f;
+    mat[1][1] = n2 * inv_tb;
+    mat[1][2] = (top + bottom) * inv_tb;
+    mat[1][3] = 0.0f;
+
+    mat[2][0] = 0.0f;
+    mat[2][1] = 0.0f;
+    if (zNegativeOneToOne) {
+        // Z range [-1, 1]
+        mat[2][2] = -(zFar + zNear) * inv_fn;
+        mat[2][3] = -(2.0f * zFar * zNear) * inv_fn;
+    } else {
+        // Z range [0, 1]
+        mat[2][2] = -zFar * inv_fn;
+        mat[2][3] = -(zFar * zNear) * inv_fn;
     }
 
-    if (zFar != -1) {
-        mat[2][3] = -(2 * zFar * zNear) / (zFar - zNear);
-    } else { // if zFar == -1, use an infinite far plane
-        mat[2][3] = -2 * zNear * nudge;
-    }
-    
-    mat[3][0] = 0.f;
-    mat[3][1] = 0.f;
-    mat[3][2] = -1;
-    mat[3][3] = 0.f;
+    mat[3][0] = 0.0f;
+    mat[3][1] = 0.0f;
+    mat[3][2] = -1.0f;
+    mat[3][3] = 0.0f;
 }
 
-void Mat4::SetPerspective(float fovy, float aspect, float zNear, float zFar) {
-    float top       = zNear * Math::Tan(DEG2RAD(fovy / (aspect * 2)));
+void Mat4::SetFrustumLH(float left, float right, float bottom, float top, float zNear, float zFar, bool zNegativeOneToOne) {
+    // check for division by 0
+    if (left == right || top == bottom || zNear == zFar) {
+        return;
+    }
+
+    float n2 = 2.0f * zNear;
+    float inv_rl = 1.0f / (right - left);
+    float inv_tb = 1.0f / (top - bottom);
+    float inv_fn = 1.0f / (zFar - zNear);
+
+    mat[0][0] = n2 * inv_rl;
+    mat[0][1] = 0.0f;
+    mat[0][2] = (right + left) * inv_rl;
+    mat[0][3] = 0.0f;
+
+    mat[1][0] = 0.0f;
+    mat[1][1] = n2 * inv_tb;
+    mat[1][2] = (top + bottom) * inv_tb;
+    mat[1][3] = 0.0f;
+
+    mat[2][0] = 0.0f;
+    mat[2][1] = 0.0f;
+    if (zNegativeOneToOne) {
+        // Z range [-1, 1]
+        mat[2][2] = (zFar + zNear) * inv_fn;
+        mat[2][3] = -(2.0f * zFar * zNear) * inv_fn;
+    } else {
+        // Z range [0, 1]
+        mat[2][2] = zFar * inv_fn;
+        mat[2][3] = -(zFar * zNear) * inv_fn;
+    }
+
+    mat[3][0] = 0.0f;
+    mat[3][1] = 0.0f;
+    mat[3][2] = 1.0f;
+    mat[3][3] = 0.0f;
+}
+
+void Mat4::SetPerspectiveRH(float fovy, float aspect, float zNear, float zFar, bool zNegativeOneToOne) {
+    float top       = zNear * Math::Tan(DEG2RAD(fovy * 0.5f));
     float bottom    = -top;
-    float left      = bottom * aspect;
     float right     = top * aspect;
-    
-    SetFrustum(left, right, bottom, top, zNear, zFar);
+    float left      = -right;
+
+    SetFrustumRH(left, right, bottom, top, zNear, zFar, zNegativeOneToOne);
 }
 
-void Mat4::SetOrtho(float left, float right, float bottom, float top, float zNear, float zFar) {
-    mat[0][0] = 2.f / (right - left);
-    mat[0][1] = 0.f;
-    mat[0][2] = 0.f;
-    mat[0][3] = -(right + left) / (right - left);
+void Mat4::SetPerspectiveLH(float fovy, float aspect, float zNear, float zFar, bool zNegativeOneToOne) {
+    float top = zNear * Math::Tan(DEG2RAD(fovy * 0.5f));
+    float bottom = -top;
+    float right = top * aspect;
+    float left = -right;
 
-    mat[1][0] = 0.f;
-    mat[1][1] = 2.f / (top - bottom);
-    mat[1][2] = 0.f;
-    mat[1][3] = -(top + bottom) / (top - bottom);
+    SetFrustumLH(left, right, bottom, top, zNear, zFar, zNegativeOneToOne);
+}
 
-    mat[2][0] = 0.f;
-    mat[2][1] = 0.f;
-    mat[2][2] = -2.f / (zFar - zNear);
-    mat[2][3] = -(zFar + zNear) / (zFar - zNear);
+void Mat4::SetOrthoRH(float left, float right, float bottom, float top, float zNear, float zFar, bool zNegativeOneToOne) {
+    // check for division by 0
+    if (left == right || top == bottom || zNear == zFar) {
+        return;
+    }
 
-    mat[3][0] = 0.f;
-    mat[3][1] = 0.f;
-    mat[3][2] = 0.f;
-    mat[3][3] = 1.f;
+    float inv_rl = 1.0f / (right - left);
+    float inv_tb = 1.0f / (top - bottom);
+    float inv_fn = 1.0f / (zFar - zNear);
+
+    mat[0][0] = 2.0f * inv_rl;
+    mat[0][1] = 0.0f;
+    mat[0][2] = 0.0f;
+    mat[0][3] = -(right + left) * inv_rl;
+
+    mat[1][0] = 0.0f;
+    mat[1][1] = 2.0f * inv_tb;
+    mat[1][2] = 0.0f;
+    mat[1][3] = -(top + bottom) * inv_tb;
+
+    mat[2][0] = 0.0f;
+    mat[2][1] = 0.0f;
+    if (zNegativeOneToOne) {
+        // Z range [-1, 1]
+        mat[2][2] = -2.0f * inv_fn;
+        mat[2][3] = -(zFar + zNear) * inv_fn;
+    } else {
+        // Z range [0, 1]
+        mat[2][2] = inv_fn;
+        mat[2][3] = -zNear * inv_fn;
+    }
+
+    mat[3][0] = 0.0f;
+    mat[3][1] = 0.0f;
+    mat[3][2] = 0.0f;
+    mat[3][3] = 1.0f;
+}
+
+void Mat4::SetOrthoLH(float left, float right, float bottom, float top, float zNear, float zFar, bool zNegativeOneToOne) {
+    // check for division by 0
+    if (left == right || top == bottom || zNear == zFar) {
+        return;
+    }
+
+    float inv_rl = 1.0f / (right - left);
+    float inv_tb = 1.0f / (top - bottom);
+    float inv_fn = 1.0f / (zFar - zNear);
+
+    mat[0][0] = 2.0f * inv_rl;
+    mat[0][1] = 0.0f;
+    mat[0][2] = 0.0f;
+    mat[0][3] = -(right + left) * inv_rl;
+
+    mat[1][0] = 0.0f;
+    mat[1][1] = 2.0f * inv_tb;
+    mat[1][2] = 0.0f;
+    mat[1][3] = -(top + bottom) * inv_tb;
+
+    mat[2][0] = 0.0f;
+    mat[2][1] = 0.0f;
+    if (zNegativeOneToOne) {
+        // Z range [-1, 1]
+        mat[2][2] = 2.0f * inv_fn;
+        mat[2][3] = -(zFar + zNear) * inv_fn;
+    } else {
+        // Z range [0, 1]
+        mat[2][2] = inv_fn;
+        mat[2][3] = -zNear * inv_fn;
+    }
+
+    mat[3][0] = 0.0f;
+    mat[3][1] = 0.0f;
+    mat[3][2] = 0.0f;
+    mat[3][3] = 1.0f;
 }
 
 //--------------------------------------------------------------------------------------------

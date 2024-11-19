@@ -609,7 +609,7 @@ void RenderWorld::DrawGUICamera(GuiMesh &guiMesh) {
 
     // GUI visible object
     ALIGN_AS32 Mat4 projMatrix;
-    projMatrix.SetOrtho(0, renderSystem.currentContext->GetDeviceWidth(), renderSystem.currentContext->GetDeviceHeight(), 0, -1.0, 1.0);
+    projMatrix.SetOrthoRH(0, renderSystem.currentContext->GetDeviceWidth(), renderSystem.currentContext->GetDeviceHeight(), 0, -1.0, 1.0, true);
 
     VisObject *visObject = RegisterVisObject(guiCamera, &renderObject);
     visObject->modelViewMatrix.SetIdentity();

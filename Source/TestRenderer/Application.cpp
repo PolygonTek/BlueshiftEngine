@@ -198,7 +198,7 @@ void Application::DrawToRenderTarget(BE1::RHI::Handle renderTargetHandle, float 
 
     // Set projection matrix to flip vertically
     BE1::Mat4 projMatrix;
-    projMatrix.SetOrtho(-400, +400, +400, -400, -1, +1);
+    projMatrix.SetOrthoRH(-400, +400, +400, -400, -1, +1, true);
     
     BE1::Mat4 modelMatrix = BE1::Rotation(BE1::Vec3(0, 0, 0), BE1::Vec3(0, 0, 1), -t * 80.0f).ToMat4();
     
@@ -238,7 +238,7 @@ void Application::Draw(const BE1::RHI::Handle contextHandle, const BE1::RHI::Han
     BE1::Mat4 modelMatrix = BE1::Rotation(BE1::Vec3(0, 0, 0), BE1::Vec3(0, 0, 1), t * 40.0f).ToMat4();
 
     BE1::Mat4 projMatrix;
-    projMatrix.SetOrtho(-displayMetrics.backingWidth * 0.5f, displayMetrics.backingWidth * 0.5f, -displayMetrics.backingHeight * 0.5f, displayMetrics.backingHeight * 0.5f, -1, 1);
+    projMatrix.SetOrthoRH(-displayMetrics.backingWidth * 0.5f, displayMetrics.backingWidth * 0.5f, -displayMetrics.backingHeight * 0.5f, displayMetrics.backingHeight * 0.5f, -1, 1, true);
 
     modelViewProjMatrix = projMatrix * modelMatrix;
 

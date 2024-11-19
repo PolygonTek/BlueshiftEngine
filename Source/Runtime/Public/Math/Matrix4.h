@@ -190,12 +190,18 @@ public:
                         /// Sets the translation part of this matrix.
     void                SetTranslation(float tx, float ty, float tz);
 
-                        /// Sets perspective projection matrix with given frustum definition.
-    void                SetFrustum(float left, float right, float bottom, float top, float znear, float zfar);
-                        /// Sets perspective projection matrix.
-    void                SetPerspective(float fovy, float aspect, float znear, float zfar);
-                        /// Sets orthogonal projection matrix.
-    void                SetOrtho(float left, float right, float bottom, float top, float znear, float zfar);
+                        /// Sets perspective projection matrix for right-handed coordinate system with given frustum definition.
+    void                SetFrustumRH(float left, float right, float bottom, float top, float zNear, float zFar, bool zNegativeOneToOne);
+                        /// Sets perspective projection matrix for left-handed coordinate system with given frustum definition.
+    void                SetFrustumLH(float left, float right, float bottom, float top, float zNear, float zFar, bool zNegativeOneToOne);
+                        /// Sets perspective projection matrix for right-handed coordinate system.
+    void                SetPerspectiveRH(float fovy, float aspect, float zNear, float zFar, bool zNegativeOneToOne);
+                        /// Sets perspective projection matrix for left-handed coordinate system.
+    void                SetPerspectiveLH(float fovy, float aspect, float zNear, float zFar, bool zNegativeOneToOne);
+                        /// Sets orthogonal projection matrix for right-handed coordinate system.
+    void                SetOrthoRH(float left, float right, float bottom, float top, float zNear, float zFar, bool zNegativeOneToOne);
+                        /// Sets orthogonal projection matrix for left-handed coordinate system.
+    void                SetOrthoLH(float left, float right, float bottom, float top, float zNear, float zFar, bool zNegativeOneToOne);
                         /// Sets reflection matrix with the given reflection plane.
     void                SetReflect(const Plane &plane);
                         /// Sets linear transformation matrix which is a combination of translation, rotation and scale.
