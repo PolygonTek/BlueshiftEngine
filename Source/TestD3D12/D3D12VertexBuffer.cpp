@@ -14,63 +14,23 @@
 
 #include "Precompiled.h"
 #include "D3D12VertexBuffer.h"
+#include "D3D12Buffer.h"
 #include "D3D12Renderer.h"
 
 void D3D12VertexBuffer::Release() {
-#ifdef USE_D3D12_MEMALLOC
-    SAFE_RELEASE(vertexBufferAllocation);
-#else
-    SAFE_RELEASE(vertexBufferResource);
-#endif
+    SAFE_DELETE(buffer);
 }
 
 D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(int vertexSize, int numVerts, void *data) {
     UINT bufferSize = vertexSize * numVerts;
     D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT; // D3D12_HEAP_TYPE_UPLOAD
 
-    // GPU 에 버텍스 버퍼 생성
-    D3D12_RESOURCE_DESC vertexBufferDesc = {};
-    vertexBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    vertexBufferDesc.Alignment = 0;
-    vertexBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
-    vertexBufferDesc.MipLevels = 1;
-    vertexBufferDesc.Width = bufferSize;
-    vertexBufferDesc.Height = 1;
-    vertexBufferDesc.DepthOrArraySize = 1;
-    vertexBufferDesc.SampleDesc.Count = 1;
-    vertexBufferDesc.SampleDesc.Quality = 0;
-    vertexBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-    vertexBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-
-#ifdef USE_D3D12_MEMALLOC
-    D3D12MA::ALLOCATION_DESC allocationDesc = {};
-    //allocationDesc.Flags |= D3D12MA::ALLOCATION_FLAG_CAN_ALIAS;
-    allocationDesc.Flags |= D3D12MA::ALLOCATION_FLAG_STRATEGY_MIN_TIME;
-    allocationDesc.HeapType = heapType;
-
-    D3D12MA::Allocation *allocation;
-    if (FAILED(renderer.allocator->CreateResource(
-        &allocationDesc,
-        &vertexBufferDesc,
-        D3D12_RESOURCE_STATE_COMMON,
-        nullptr,
-        &allocation,
-        IID_NULL, nullptr))) {
+    D3D12Buffer *buffer = D3D12Buffer::CreateGPUBuffer(bufferSize);
+    if (!buffer) {
         return nullptr;
     }
-    ID3D12Resource *vertexBufferResource = allocation->GetResource();
-#else
-    ID3D12Resource *vertexBufferResource = nullptr;
-    if (FAILED(renderer.device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(heapType),
-        D3D12_HEAP_FLAG_NONE,
-        &vertexBufferDesc,
-        D3D12_RESOURCE_STATE_COMMON,
-        nullptr, IID_PPV_ARGS(&vertexBufferResource)))) {
-        return nullptr;
-    }
-#endif
 
+    ID3D12Resource *bufferResource = buffer->GetResource();
     ID3D12Resource* uploadBuffer = nullptr;
 
     if (data) {
@@ -82,7 +42,7 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(int vertexSize, int num
                 &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
                 D3D12_RESOURCE_STATE_GENERIC_READ,
                 nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
-                vertexBufferResource->Release();
+                SAFE_DELETE(buffer);
                 return nullptr;
             }
 
@@ -95,9 +55,9 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(int vertexSize, int num
             // 업로드 버퍼에서 버텍스 버퍼로 데이터 카피
             renderer.commandAllocator->Reset();
             renderer.commandList->Reset(renderer.commandAllocator, nullptr);
-            renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(vertexBufferResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
-            renderer.commandList->CopyBufferRegion(vertexBufferResource, 0, uploadBuffer, 0, bufferSize);
-            renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(vertexBufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+            renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(bufferResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
+            renderer.commandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
+            renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
             renderer.commandList->Close();
 
             // 커맨드 큐 실행
@@ -106,11 +66,11 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(int vertexSize, int num
         } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
             UINT8 *mappedPtr = nullptr;
             CD3DX12_RANGE range(0, 0);
-            vertexBufferResource->Map(0, &range, reinterpret_cast<void **>(&mappedPtr));
+            bufferResource->Map(0, &range, reinterpret_cast<void **>(&mappedPtr));
             memcpy(mappedPtr, data, bufferSize);
-            vertexBufferResource->Unmap(0, nullptr);
+            bufferResource->Unmap(0, nullptr);
         } else {
-            vertexBufferResource->Release();
+            SAFE_DELETE(buffer);
             return nullptr;
         }
     }
@@ -120,12 +80,9 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(int vertexSize, int num
     }
 
     D3D12VertexBuffer* vertexBuffer = new D3D12VertexBuffer;
-#ifdef USE_D3D12_MEMALLOC
-    vertexBuffer->vertexBufferAllocation = allocation;
-#else
-    vertexBuffer->vertexBufferResource = vertexBufferResource;
-#endif
-    vertexBuffer->vbv.BufferLocation = vertexBufferResource->GetGPUVirtualAddress();
+    vertexBuffer->buffer = buffer;
+
+    vertexBuffer->vbv.BufferLocation = bufferResource->GetGPUVirtualAddress();
     vertexBuffer->vbv.StrideInBytes = vertexSize;
     vertexBuffer->vbv.SizeInBytes = bufferSize;
 

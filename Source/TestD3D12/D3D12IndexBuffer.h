@@ -20,6 +20,8 @@
 #include "D3D12MemoryAllocator/D3D12MemAlloc.h"
 #endif
 
+class D3D12Buffer;
+
 class D3D12IndexBuffer {
 public:
     ~D3D12IndexBuffer() { Release(); }
@@ -28,10 +30,6 @@ public:
 
     static D3D12IndexBuffer *       CreateIndexBuffer(int indexSize, int numIndexes, void *data);
 
-#ifdef USE_D3D12_MEMALLOC
-    D3D12MA::Allocation *           indexBufferAllocation = nullptr;
-#else
-    ID3D12Resource *                indexBufferResource = nullptr;
-#endif
+    D3D12Buffer *                   buffer = nullptr;
     D3D12_INDEX_BUFFER_VIEW         ibv;
 };

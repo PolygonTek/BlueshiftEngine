@@ -19,6 +19,7 @@
 #include "D3D12DescriptorPool.h"
 #include "D3D12SingleDescriptorAllocator.h"
 #include "D3D12ConstantBuffer.h"
+#include "D3D12Buffer.h"
 
 void D3D12FrameData::Init() {
     commandListPool = new D3D12CommandListPool;
@@ -56,14 +57,8 @@ void *D3D12FrameData::AllocConstant(int size, D3D12_CPU_DESCRIPTOR_HANDLE** outD
         return nullptr;
     }
 
-#ifdef USE_D3D12_MEMALLOC
-    ID3D12Resource *resource = constantBuffer->constantBufferAllocation->GetResource();
-    UINT maxSize = constantBuffer->constantBufferAllocation->GetSize();
-#else
-    ID3D12Resource *resource = constantBuffer->constantBufferResource;
-    D3D12_RESOURCE_DESC resourceDesc = resource->GetDesc();
-    UINT maxSize = resourceDesc.Width;
-#endif
+    ID3D12Resource *resource = constantBuffer->buffer->GetResource();
+    UINT maxSize = constantBuffer->buffer->GetSize();
 
     if (usedConstantBytes + alignedSize > maxSize) {
         BE_WARNLOG("Out of constant buffer cache\n");

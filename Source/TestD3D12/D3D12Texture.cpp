@@ -220,7 +220,7 @@ D3D12Texture *D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, co
     Image::Format::Enum dstFormat;
     D3D12Texture::AdjustTextureFormat(useCompression, useNormalMap, image->GetFormat(), &dstFormat);
 
-    D3D12Texture* texture = D3D12Texture::CreateTexture(D3D12TextureType::Texture2D, image, dstFormat, true);
+    D3D12Texture* texture = D3D12Texture::CreateTexture(textureType, image, dstFormat, true);
     delete image;
 
     return texture;
@@ -279,7 +279,7 @@ D3D12Texture *D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, co
         srcImage = &dstImage;
     }
 
-    return CreateTexture(D3D12TextureType::Enum::Texture2D, srcImage);
+    return CreateTexture(textureType, srcImage);
 }
 
 D3D12Texture* D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, const Image* srcImage) {
@@ -443,7 +443,6 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, co
     srvDesc.Format = textureDesc.Format;
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
-    // TODO : NOT IMPLEMENTED FOR WHOLE TEXTURE TYPE YET !
     switch (textureType) {
     case D3D12TextureType::Texture2D:
         srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
@@ -452,6 +451,7 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, co
     case D3D12TextureType::Texture2DArray:
         srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
         srvDesc.Texture2DArray.MipLevels = textureDesc.MipLevels;
+        srvDesc.Texture2DArray.ArraySize = textureDesc.DepthOrArraySize;
         break;
     case D3D12TextureType::Texture3D:
         srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
@@ -464,8 +464,10 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, co
     case D3D12TextureType::TextureCubeArray:
         srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
         srvDesc.TextureCubeArray.MipLevels = textureDesc.MipLevels;
+        srvDesc.TextureCubeArray.NumCubes = textureDesc.DepthOrArraySize;
         break;
     case D3D12TextureType::TextureBuffer:
+        // FIXME
         srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
         break;
     }

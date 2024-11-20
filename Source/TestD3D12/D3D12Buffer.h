@@ -20,18 +20,21 @@
 #include "D3D12MemoryAllocator/D3D12MemAlloc.h"
 #endif
 
-class D3D12Buffer;
-
-class D3D12ConstantBuffer {
+class D3D12Buffer {
 public:
-    ~D3D12ConstantBuffer() { Release(); }
+    ~D3D12Buffer() { Release(); }
 
     void                            Release();
 
-    void*                           Map(SIZE_T begin, SIZE_T end);
-    void                            Unmap();
+    ID3D12Resource *                GetResource();
+    UINT                            GetSize();
 
-    static D3D12ConstantBuffer *    CreateConstantBuffer(int size);
+    static D3D12Buffer *            CreateGPUBuffer(int size);
+    static D3D12Buffer *            CreateCPUBuffer(int size);
 
-    D3D12Buffer *                   buffer = nullptr;
+#ifdef USE_D3D12_MEMALLOC
+    D3D12MA::Allocation *           bufferAllocation = nullptr;
+#else
+    ID3D12Resource *                bufferResource = nullptr;
+#endif
 };
