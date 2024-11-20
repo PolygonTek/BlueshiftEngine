@@ -346,9 +346,13 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
 
     gammaSpace = Image::GammaSpace::DontCare;
 
+    int arraySize = 1;
+
     if (header->ddsPixelFormat.fourCC == MAKE_FOURCC('D', 'X', '1', '0')) {
         DdsFileHeaderDX10 *dx10Header = (DdsFileHeaderDX10 *)ptr;
         ptr += sizeof(DdsFileHeaderDX10);
+
+        arraySize = dx10Header->arraySize;
 
         switch (dx10Header->dxgiFormat) {
         case DX10_FORMAT_R8_UNORM: format = Format::R_8; break;
@@ -593,7 +597,7 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
     this->height = header->height;
     this->depth = Max((int)header->depth, 1);
     this->numMipmaps = Max((int)header->mipMapCount, 1);
-    this->numSlices = isCube ? 6 : 1;
+    this->numSlices = arraySize;
     this->flags = isCube ? Flag::CubeMap : 0;
 
     if (this->gammaSpace == Image::GammaSpace::DontCare) {
@@ -604,14 +608,14 @@ bool Image::LoadDDSFromMemory(const char *name, const byte *data, size_t size) {
         }
     }
 
-    int bufSize = GetSize(0, numMipmaps);
+    int bufSize = SizeInBytes(0, numMipmaps);
     this->pic = (byte *)Mem_Alloc256(bufSize);
     this->alloced = true;
 
     if (isCube) {
         for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
             for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-                int faceSize = GetSliceSize(mipLevel);
+                int faceSize = SizeInBytesForFace(mipLevel);
                 byte *dest = GetPixels(mipLevel) + faceIndex * faceSize;
 
                 simdProcessor->Memcpy(dest, ptr, faceSize);
@@ -655,14 +659,14 @@ bool Image::WriteDDS(const char *filename) const {
         header.depth = depth;
     }
 
-    if ((flags & Flag::CubeMap) && numSlices == 6) {
+    if (flags & Flag::CubeMap) {
         header.ddsCaps.caps1 |= DDSCAPS_COMPLEX;
         header.ddsCaps.caps2 |= DDSCAPS2_CUBEMAP | DDSCAPS2_CUBEMAP_ALL_FACES;
     }
 
     if (IsCompressed()) {
         header.flags |= DDSD_LINEARSIZE;
-        header.pitchOrLinearSize = GetSliceSize();
+        header.pitchOrLinearSize = SizeInBytesForFace();
     } else {
         header.flags |= DDSD_PITCH;
         header.pitchOrLinearSize = (width * BytesPerPixel() + 7) / 8;
@@ -673,8 +677,8 @@ bool Image::WriteDDS(const char *filename) const {
     DdsFileHeaderDX10 dx10Header;
     memset(&dx10Header, 0, sizeof(dx10Header));
     dx10Header.resourceDimension = depth > 1 ? DX10_RESOURCE_DIMENSION_TEXTURE3D : DX10_RESOURCE_DIMENSION_TEXTURE2D;
-    dx10Header.miscFlag = numSlices == 6 ? DX10_RESOURCE_MISC_TEXTURECUBE : 0;
-    dx10Header.arraySize = 1;
+    dx10Header.miscFlag = (flags & Flag::CubeMap) ? DX10_RESOURCE_MISC_TEXTURECUBE : 0;
+    dx10Header.arraySize = numSlices;
     dx10Header.miscFlag2 = DX10_RESOURCE_MISC2_UNKNOWN;
 
     switch (format) {
@@ -995,7 +999,7 @@ bool Image::WriteDDS(const char *filename) const {
         fp->Write(&dx10Header, sizeof(dx10Header));
     }
 
-    fp->Write(pic, GetSize(0, numMipmaps));
+    fp->Write(pic, SizeInBytes(0, numMipmaps));
 
     fileSystem.CloseFile(fp);
 

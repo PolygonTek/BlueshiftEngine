@@ -79,7 +79,7 @@ static void EncodeETC(const Image &srcImage, Image &dstImage, Image::Compression
 
         // Write to destination memory.
         size_t encodedBytes = image.GetEncodingBitsBytes();
-        assert(encodedBytes == dstImage.GetSize(mipLevel));
+        assert(encodedBytes == dstImage.SizeInBytes(mipLevel));
         memcpy(dst, image.GetEncodingBits(), encodedBytes);
     }
 

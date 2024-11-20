@@ -446,7 +446,7 @@ void OpenGLRHI::SetTextureImage(TextureType::Enum textureType, const Image *srcI
             for (int level = 0; level < maxLevel; level++) {
                 int w = srcImage->GetWidth(level);
                 int h = srcImage->GetHeight(level);
-                int size = srcImage->GetSize(level);
+                int size = srcImage->SizeInBytes(level);
                 if (srcCompressed) {
                     gglCompressedTexSubImage2D(GL_TEXTURE_2D, level, 0, 0, w, h, format, size, pic);
                 } else {
@@ -467,7 +467,7 @@ void OpenGLRHI::SetTextureImage(TextureType::Enum textureType, const Image *srcI
                 int w = srcImage->GetWidth(level);
                 int h = srcImage->GetHeight(level);
                 int d = srcImage->GetDepth(level);
-                int size = srcImage->GetSize(level);
+                int size = srcImage->SizeInBytes(level);
                 if (srcCompressed) {
                     gglCompressedTexSubImage3D(GL_TEXTURE_3D, level, 0, 0, 0, w, h, d, format, size, pic);
                 } else {
@@ -487,7 +487,7 @@ void OpenGLRHI::SetTextureImage(TextureType::Enum textureType, const Image *srcI
             for (int level = 0; level < maxLevel; level++) {
                 int w = srcImage->GetWidth(level);
                 int h = srcImage->GetHeight(level);
-                int size = srcImage->GetSize(level);
+                int size = srcImage->SizeInBytes(level);
                 if (srcCompressed) {
                     gglCompressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, 0, w, h, srcImage->NumSlices(), format, size, pic);
                 } else {
@@ -507,7 +507,7 @@ void OpenGLRHI::SetTextureImage(TextureType::Enum textureType, const Image *srcI
             for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
                 for (int level = 0; level < maxLevel; level++) {
                     int w = srcImage->GetWidth(level);
-                    int size = srcImage->GetSliceSize(level);
+                    int size = srcImage->SizeInBytesForFace(level);
                     if (srcCompressed) {
                         gglCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + faceIndex, level, 0, 0, w, w, format, size, pic);
                     } else {
@@ -527,7 +527,7 @@ void OpenGLRHI::SetTextureImage(TextureType::Enum textureType, const Image *srcI
         if (pic) {
             int w = srcImage->GetWidth(0);
             int h = srcImage->GetHeight(0);
-            int size = srcImage->GetSize(0);
+            int size = srcImage->SizeInBytes(0);
             if (srcCompressed) {
                 gglCompressedTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, w, h, format, size, pic);
             } else {

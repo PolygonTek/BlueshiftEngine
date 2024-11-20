@@ -447,8 +447,7 @@ void TextureManager::Cmd_ListTextures(const CmdArgs &args) {
         case RHI::AddressMode::MirroredRepeat:      addr = "MR  "; break;
         }
 
-        int numMipmaps = texture->hasMipmaps ? Image::MaxMipMapLevels(texture->width, texture->height, texture->depth) : 1;
-        int bytes = Image::MemRequired(texture->width, texture->height, texture->depth, numMipmaps, texture->format) * texture->numSlices;
+        int bytes = texture->MemRequired(true);
         
         BE_LOG("%4d %4d %s %4d %4d %4d %10s %-20s %s %s %s\n",
             i,
@@ -535,7 +534,7 @@ void TextureManager::Cmd_DumpTexture(const CmdArgs &args) {
         break;
     case RHI::TextureType::TextureCubeMap:
         for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-            texture->GetTexelsCubemap(faceIndex, 0, texture->GetFormat(), bitmapImage.GetPixels(0, faceIndex));
+            texture->GetTexelsCubemap(faceIndex, 0, texture->GetFormat(), bitmapImage.GetPixels(0, faceIndex, 0));
         }
         break;
     case RHI::TextureType::TextureRectangle:

@@ -33,19 +33,15 @@ Image &Image::FlipY() {
     for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
         int w = GetWidth(mipLevel);
         int h = GetHeight(mipLevel);
-        int sliceSize = GetSize(mipLevel);
+        int sliceSize = SizeInBytes(mipLevel);
 
         int h2 = h / 2;
         int pitch = Image::MemRequired(w, 1, 1, 1, format);
 
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            for (int y = 0; y < h2; y++) {
-                memcpy(tmp, src + y*pitch, pitch);
-                memcpy(src + y*pitch, src + (h - y - 1)*pitch, pitch);
-                memcpy(src + (h - y - 1)*pitch, tmp, pitch);
-            }
-
-            src += sliceSize;
+        for (int y = 0; y < h2; y++) {
+            memcpy(tmp, src + y*pitch, pitch);
+            memcpy(src + y*pitch, src + (h - y - 1)*pitch, pitch);
+            memcpy(src + (h - y - 1)*pitch, tmp, pitch);
         }
     }
 
@@ -66,21 +62,17 @@ Image &Image::FlipX() {
     for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
         int w = GetWidth(mipLevel);
         int h = GetHeight(mipLevel);
-        int sliceSize = GetSize(mipLevel);
+        int sliceSize = SizeInBytes(mipLevel);
 
         int w2 = w / 2;
         int pitch = bpp * w;
 
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            for (int y = 0; y < h; y++) {
-                for (int x = 0; x < w2; x++) {
-                    memcpy(tmp, src + y*pitch + x*bpp, bpp);
-                    memcpy(src + y*pitch + x*bpp, src + y*pitch + (w - x - 1)*bpp, bpp);
-                    memcpy(src + y*pitch + (w - x - 1)*bpp, tmp, bpp);
-                }
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w2; x++) {
+                memcpy(tmp, src + y*pitch + x*bpp, bpp);
+                memcpy(src + y*pitch + x*bpp, src + y*pitch + (w - x - 1)*bpp, bpp);
+                memcpy(src + y*pitch + (w - x - 1)*bpp, tmp, bpp);
             }
-
-            src += sliceSize;
         }
     }
 
@@ -573,30 +565,31 @@ Image &Image::GenerateMipmaps() {
     }
 
     int numComponents = NumComponents();
+    int numFaces = NumFaces();
 
-    for (int mipLevel = 0; mipLevel < numMipmaps - 1; mipLevel++) {
-        int w = GetWidth(mipLevel);
-        int h = GetHeight(mipLevel);
-        int d = GetDepth(mipLevel);
+    for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
+        for (int faceIndex = 0; faceIndex < numFaces; faceIndex++) {
+            for (int mipLevel = 1; mipLevel < numMipmaps; mipLevel++) {
+                int srcMipLevel = mipLevel - 1;
+                int w = GetWidth(srcMipLevel);
+                int h = GetHeight(srcMipLevel);
+                int d = GetDepth(srcMipLevel);
 
-        int srcSize = GetSliceSize(mipLevel, 1);
-        int dstSize = GetSliceSize(mipLevel + 1, 1);
+                byte *src = GetPixels(srcMipLevel, faceIndex, sliceIndex);
+                byte *dst = GetPixels(mipLevel, faceIndex, sliceIndex);
 
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            byte *src = GetPixels(mipLevel, sliceIndex);
-            byte *dst = GetPixels(mipLevel + 1, sliceIndex);
-
-            if (IsFloatFormat()) {
-                BuildMipMap<float>((float *)dst, (float *)src, w, h, d, numComponents);
-            } else if (IsHalfFormat()) {
-                BuildMipMap<half>((half *)dst, (half *)src, w, h, d, numComponents);
-            } else {
-                if (gammaSpace == GammaSpace::sRGB) {
-                    BuildMipMapWithGamma(dst, src, w, h, d, numComponents, Image::sRGBToLinearTable, Image::LinearToGammaApprox);
-                } else if (gammaSpace == GammaSpace::Pow22) {
-                    BuildMipMapWithGamma(dst, src, w, h, d, numComponents, Image::pow22ToLinearTable, Image::LinearToGammaFast);
+                if (IsFloatFormat()) {
+                    BuildMipMap<float>((float *)dst, (float *)src, w, h, d, numComponents);
+                } else if (IsHalfFormat()) {
+                    BuildMipMap<half>((half *)dst, (half *)src, w, h, d, numComponents);
                 } else {
-                    BuildMipMap(dst, src, w, h, d, numComponents);
+                    if (gammaSpace == GammaSpace::sRGB) {
+                        BuildMipMapWithGamma(dst, src, w, h, d, numComponents, Image::sRGBToLinearTable, Image::LinearToGammaApprox);
+                    } else if (gammaSpace == GammaSpace::Pow22) {
+                        BuildMipMapWithGamma(dst, src, w, h, d, numComponents, Image::pow22ToLinearTable, Image::LinearToGammaFast);
+                    } else {
+                        BuildMipMap(dst, src, w, h, d, numComponents);
+                    }
                 }
             }
         }

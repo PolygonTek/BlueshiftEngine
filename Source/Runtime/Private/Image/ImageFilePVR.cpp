@@ -293,8 +293,7 @@ bool Image::LoadPVR3FromMemory(const char *name, const byte *data, size_t fileSi
     this->gammaSpace = header->u32ColourSpace == ePVRTCSpacelRGB ? GammaSpace::Linear : GammaSpace::sRGB;
     this->numMipmaps = Max(1, (int)header->u32MIPMapCount);
     //Max(1, (int)header->u32NumSurfaces);
-    this->numSlices = Max(1, (int)header->u32NumFaces);
-
+    this->numSlices = Max(1, (int)header->u32NumSurfaces);
     this->flags = header->u32NumFaces == 6 ? Flag::CubeMap : 0;
     
     size_t dataSize = fileSize - (ptr - data);
@@ -636,7 +635,7 @@ bool Image::WritePVR(const char *filename) const {
     fp->Write(&header, sizeof(header));
 #endif
     
-    fp->Write(pic, GetSize(0, numMipmaps));
+    fp->Write(pic, SizeInBytes(0, numMipmaps));
 
     fileSystem.CloseFile(fp);
 

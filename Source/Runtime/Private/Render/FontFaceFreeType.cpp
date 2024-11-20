@@ -42,7 +42,7 @@ static void Atlas_Add(int textureSize) {
 
     Image image;
     image.Create2D(textureSize, textureSize, 1, GLYPH_CACHE_TEXTURE_FORMAT, Image::GammaSpace::Linear, nullptr, 0);
-    memset(image.GetPixels(), 0, image.GetSize());
+    memset(image.GetPixels(), 0, image.SizeInBytes());
 
     atlas.texture = textureManager.AllocTexture(va("_glyph_cache_%i", atlasArray.Count() - 1));
     atlas.texture->Create(RHI::TextureType::Texture2D, image, Texture::Flag::Clamp | Texture::Flag::HighQuality | Texture::Flag::NoMipmaps);

@@ -122,7 +122,7 @@ Image &Image::Create(int width, int height, int depth, int numSlices, int numMip
     this->gammaSpace = gammaSpace;
     this->flags = flags;
     
-    int size = GetSize(0, numMipmaps);
+    int size = SizeInBytes(0, numMipmaps);
     this->pic = (byte *)Mem_Alloc256(size);
     this->alloced = true;
     
@@ -139,14 +139,14 @@ Image &Image::CreateCubeFrom6Faces(const Image *images) {
     this->width = images[0].width;
     this->height = this->width;
     this->depth = 1;
-    this->numSlices = 6;
+    this->numSlices = 1;
     this->numMipmaps = images[0].numMipmaps;
     this->format = images[0].format;
     this->gammaSpace = images[0].gammaSpace;
     this->flags = images[0].flags | Flag::CubeMap;
-    
-    int sliceSize = GetSliceSize(0, numMipmaps);
-    this->pic = (byte *)Mem_Alloc256(sliceSize * 6);
+
+    int bytesForFace = SizeInBytesForFace(0, numMipmaps);
+    this->pic = (byte *)Mem_Alloc256(bytesForFace * 6);
     this->alloced = true;
     
     byte *dst = this->pic;
@@ -157,8 +157,8 @@ Image &Image::CreateCubeFrom6Faces(const Image *images) {
         assert(images[i].format == images[0].format);
         assert(images[i].numMipmaps == images[0].numMipmaps);
 
-        simdProcessor->Memcpy(dst, images[i].pic, sliceSize);
-        dst += sliceSize;
+        simdProcessor->Memcpy(dst, images[i].pic, bytesForFace);
+        dst += bytesForFace;
     }
 
     return *this;
@@ -170,14 +170,14 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
     this->width = faceSize;
     this->height = this->width;
     this->depth = 1;
-    this->numSlices = 6;
+    this->numSlices = 1;
     this->numMipmaps = 1;
     this->format = equirectangularImage.format;
     this->gammaSpace = equirectangularImage.gammaSpace;
     this->flags = equirectangularImage.flags | Flag::CubeMap;
 
-    int sliceSize = GetSliceSize(0, numMipmaps);
-    this->pic = (byte *)Mem_Alloc256(sliceSize * 6);
+    int bytesForFace = SizeInBytesForFace(0, numMipmaps);
+    this->pic = (byte *)Mem_Alloc256(bytesForFace * 6);
     this->alloced = true;
 
     const ImageFormatInfo *formatInfo = GetImageFormatInfo(format);
@@ -185,7 +185,7 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
     float invSize = 1.0f / (faceSize - 1);
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
-        byte *dst = GetPixels(0, faceIndex);
+        byte *dst = GetPixels(0, faceIndex, 0);
 
         for (int dstY = 0; dstY < faceSize; dstY++) {
             for (int dstX = 0; dstX < faceSize; dstX++) {
@@ -197,7 +197,7 @@ Image &Image::CreateCubeFromEquirectangular(const Image &equirectangularImage, i
                 float theta, phi;
                 dir.ToSpherical(theta, phi);
 
-                // Environment equirectangluar image has reversed phi.
+                // Environment equirectangular image has reversed phi.
                 phi = Math::TwoPi - phi;
 
                 // Convert range [-1/4 pi, 7/4 pi] to [0.0, 1.0].
@@ -228,7 +228,7 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
     this->gammaSpace = cubeImage.gammaSpace;
     this->flags = cubeImage.flags & ~Flag::CubeMap;
 
-    int size = GetSize(0, numMipmaps);
+    int size = SizeInBytes(0, numMipmaps);
     this->pic = (byte *)Mem_Alloc256(size);
     this->alloced = true;
 
@@ -260,16 +260,18 @@ Image &Image::CreateEquirectangularFromCube(const Image &cubeImage) {
 }
 
 Image &Image::CopyFrom(const Image &srcImage, int firstLevel, int numLevels) {
-    if (srcImage.GetWidth() != width || srcImage.GetHeight() != height || srcImage.GetDepth() != depth || srcImage.NumSlices() != numSlices) {
+    if (srcImage.GetWidth() != width || srcImage.GetHeight() != height || srcImage.GetDepth() != depth || srcImage.IsCubeMap() != IsCubeMap() || srcImage.NumSlices() != numSlices) {
         return *this;
     }
 
     for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-        byte *src = srcImage.GetPixels(firstLevel, sliceIndex);
-        byte *dst = GetPixels(firstLevel, sliceIndex);
-        int size = srcImage.GetSliceSize(firstLevel, numLevels);
+        for (int faceIndex = 0; faceIndex < NumFaces(); faceIndex++) {
+            byte *src = srcImage.GetPixels(firstLevel, faceIndex, sliceIndex);
+            byte *dst = GetPixels(firstLevel, faceIndex, sliceIndex);
+            int bytesForFace = srcImage.SizeInBytesForFace(firstLevel, numLevels);
 
-        simdProcessor->Memcpy(dst, src, size);
+            simdProcessor->Memcpy(dst, src, bytesForFace);
+        }
     }
 
     return *this;
@@ -280,7 +282,7 @@ void Image::Update2D(int level, int x, int y, int width, int height, const byte 
     int srcPitch = width * bpp;
     int dstPitch = GetWidth(level) * bpp;
     int dstStartOffset = y * dstPitch + x * bpp;
-    int dstSize = GetSize(level);
+    int dstSize = SizeInBytes(level);
 
     if (dstStartOffset + height * dstPitch > dstSize) {
         assert(0);
@@ -439,7 +441,7 @@ Color4 Image::SampleCube(const Vec3 &str, SampleFilter::Enum filter, int level) 
     st[0] *= width;
     st[1] *= height;
 
-    const byte *src = GetPixels(level, cubeMapFace);
+    const byte *src = GetPixels(level, (int)cubeMapFace, 0);
 
     if (filter == SampleFilter::Nearest) {
         outputColor = Sample2DNearest(src, st, SampleWrapMode::Clamp, SampleWrapMode::Clamp);
@@ -561,15 +563,15 @@ int Image::NumPixels(int firstLevel, int numLevels) const {
         numLevels--;
     }
 
-    return size * numSlices;
+    return size * NumFaces() * numSlices;
 }
 
-int Image::GetSize(int firstLevel, int numLevels) const {
+int Image::SizeInBytes(int firstLevel, int numLevels) const {
     int size = MemRequired(GetWidth(firstLevel), GetHeight(firstLevel), GetDepth(firstLevel), numLevels, format);
-    return size * numSlices;
+    return size * NumFaces() * numSlices;
 }
 
-int Image::GetSliceSize(int firstLevel, int numLevels) const {
+int Image::SizeInBytesForFace(int firstLevel, int numLevels) const {
     int size = MemRequired(GetWidth(firstLevel), GetHeight(firstLevel), GetDepth(firstLevel), numLevels, format);
     return size;
 }

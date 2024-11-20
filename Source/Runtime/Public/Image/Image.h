@@ -246,7 +246,7 @@ public:
                         /// Returns true if image format needs floating conversion in order to not lose precision.
     bool                NeedFloatConversion() const { return Image::NeedFloatConversion(format); }
                         /// Returns true if image is cube map.
-    bool                IsCubeMap() const { return !!(flags & Flag::CubeMap) && numSlices == 6; }
+    bool                IsCubeMap() const { return !!(flags & Flag::CubeMap); }
 
                         /// Returns image width.
     int                 GetWidth() const { return width; }
@@ -262,6 +262,8 @@ public:
     int                 GetDepth(int mipMapLevel) const;
                         /// Returns number of mip levels.
     int                 NumMipmaps() const { return numMipmaps; }
+                        /// Returns number of faces.
+    int                 NumFaces() const { return IsCubeMap() ? 6 : 1; }
                         /// Returns number of slices.
     int                 NumSlices() const { return numSlices; }
                         /// Returns image flags.
@@ -277,8 +279,8 @@ public:
     byte *              GetPixels() const { return pic; }
                         /// Returns pixel data pointer with the given mip level.
     byte *              GetPixels(int level) const;
-                        /// Returns pixel data pointer with the given mip level and slice index.
-    byte *              GetPixels(int level, int sliceIndex) const;
+                        /// Returns pixel data pointer with the given mip level and face index and slice index.
+    byte *              GetPixels(int level, int faceIndex, int sliceIndex) const;
 
                         /// Returns linearly interpolated Color4 sample with the given 2D coordinates.
     Color4              Sample2D(const Vec2 &st, SampleWrapMode::Enum wrapModeS = SampleWrapMode::Clamp, SampleWrapMode::Enum wrapModeT = SampleWrapMode::Clamp, SampleFilter::Enum filter = SampleFilter::Bilinear, int level = 0) const;
@@ -289,10 +291,9 @@ public:
     int                 NumPixels(int firstLevel = 0, int numLevels = 1) const;
 
                         /// Returns number of bytes with the given mipmap levels.
-    int                 GetSize(int firstLevel = 0, int numLevels = 1) const;
-                        /// Returns number of bytes of a slice with the given mipmap levels.
-                        /// A slice means single cubemap face or single texture of an array texture.
-    int                 GetSliceSize(int firstLevel = 0, int numLevels = 1) const;
+    int                 SizeInBytes(int firstLevel = 0, int numLevels = 1) const;
+                        /// Returns number of bytes of single cubemap face with the given mipmap levels.
+    int                 SizeInBytesForFace(int firstLevel = 0, int numLevels = 1) const;
                         
                         /// Clears allocated pixel data.
     void                Clear();
@@ -513,14 +514,14 @@ BE_INLINE int Image::GetDepth(int mipMapLevel) const {
 }
 
 BE_INLINE byte *Image::GetPixels(int level) const {
-    return (level < numMipmaps) ? pic + GetSize(0, level) : nullptr;
+    return (level < numMipmaps) ? pic + SizeInBytes(0, level) : nullptr;
 }
 
-BE_INLINE byte *Image::GetPixels(int level, int sliceIndex) const {
-    if (level >= numMipmaps || sliceIndex >= numSlices) {
+BE_INLINE byte *Image::GetPixels(int level, int faceIndex, int sliceIndex) const {
+    if (level >= numMipmaps || faceIndex >= NumFaces() || sliceIndex >= numSlices) {
         return nullptr;
     }
-    int offset = GetSliceSize(0, numMipmaps) * sliceIndex + GetSliceSize(0, level);
+    int offset = SizeInBytesForFace(0, numMipmaps) * (NumFaces() * sliceIndex + faceIndex) + SizeInBytesForFace(0, level);
     return pic + offset;
 }
 

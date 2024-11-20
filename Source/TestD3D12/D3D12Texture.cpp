@@ -376,21 +376,25 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, co
 
     byte *dstPtr = mappedPtr;
     int bpp = srcImage->IsCompressed() ? srcImage->BytesPerBlock() : srcImage->BytesPerPixel();
+    int numSlices = srcImage->NumSlices();
+    int numFaces = srcImage->NumFaces();
 
-    for (int mipLevel = 0; mipLevel < maxMipLevels; ++mipLevel) {
-        int srcWidth = srcImage->GetWidth(mipLevel);
-        int srcHeight = srcImage->GetHeight(mipLevel);
-        int srcDepth = srcImage->GetDepth(mipLevel);
-        int srcPitch = (srcImage->IsCompressed() ? (srcWidth >> 2) : srcWidth) * bpp;
-        int srcRows = srcImage->IsCompressed() ? (srcHeight >> 2) : srcHeight;
-        const byte *srcPtr = srcImage->GetPixels(mipLevel);
+    for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex) {
+        for (int faceIndex = 0; faceIndex < numFaces; ++faceIndex) {
+            for (int mipLevel = 0; mipLevel < maxMipLevels; ++mipLevel) {
+                int srcWidth = srcImage->GetWidth(mipLevel);
+                int srcHeight = srcImage->GetHeight(mipLevel);
+                int srcDepth = srcImage->GetDepth(mipLevel);
+                int srcPitch = (srcImage->IsCompressed() ? (srcWidth >> 2) : srcWidth) * bpp;
+                int srcRows = srcImage->IsCompressed() ? (srcHeight >> 2) : srcHeight;
+                const byte *srcPtr = srcImage->GetPixels(mipLevel);
 
-        for (int sliceIndex = 0; sliceIndex < srcImage->NumSlices(); ++sliceIndex) {
-            for (int z = 0; z < srcDepth; ++z) {
-                for (int r = 0; r < srcRows; ++r) {
-                    memcpy(dstPtr, srcPtr, srcPitch);
-                    srcPtr += srcPitch;
-                    dstPtr += mipFootprints[mipLevel].Footprint.RowPitch;
+                for (int z = 0; z < srcDepth; ++z) {
+                    for (int r = 0; r < srcRows; ++r) {
+                        memcpy(dstPtr, srcPtr, srcPitch);
+                        srcPtr += srcPitch;
+                        dstPtr += mipFootprints[mipLevel].Footprint.RowPitch;
+                    }
                 }
             }
         }
@@ -402,19 +406,25 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, co
     renderer.commandAllocator->Reset();
     renderer.commandList->Reset(renderer.commandAllocator, nullptr);
 
-    for (int mipLevel = 0; mipLevel < maxMipLevels; ++mipLevel) {
-        D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
-        srcLocation.PlacedFootprint = mipFootprints[mipLevel];
-        srcLocation.pResource = uploadBuffer;
-        srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+    for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex) {
+        for (int faceIndex = 0; faceIndex < numFaces; ++faceIndex) {
+            for (int mipLevel = 0; mipLevel < maxMipLevels; ++mipLevel) {
+                int subresourceIndex = maxMipLevels * (numFaces * sliceIndex + faceIndex) + mipLevel;
 
-        D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
-        dstLocation.PlacedFootprint = mipFootprints[mipLevel];
-        dstLocation.pResource = textureResource;
-        dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-        dstLocation.SubresourceIndex = mipLevel;
+                D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
+                srcLocation.PlacedFootprint = mipFootprints[mipLevel];
+                srcLocation.pResource = uploadBuffer;
+                srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
 
-        renderer.commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+                D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
+                dstLocation.PlacedFootprint = mipFootprints[mipLevel];
+                dstLocation.pResource = textureResource;
+                dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+                dstLocation.SubresourceIndex = subresourceIndex;
+
+                renderer.commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+            }
+        }
     }
 
     renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE));

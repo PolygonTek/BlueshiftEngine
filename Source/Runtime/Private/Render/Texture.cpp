@@ -27,7 +27,8 @@ bool Texture::IsDefaultTexture() const {
 
 int Texture::MemRequired(bool includingMipmaps) const {
     int numMipmaps = includingMipmaps ? Image::MaxMipMapLevels(width, height, depth) : 1;
-    int size = Image::MemRequired(width, height, depth, numMipmaps, format);
+    int numFaces = type == RHI::TextureType::TextureCubeMap ? 6 : 1;
+    int size = Image::MemRequired(width, height, depth, numMipmaps, format) * numFaces * numSlices;
     return size;
 }
 
@@ -56,7 +57,7 @@ void Texture::CreateEmpty(RHI::TextureType::Enum type, int width, int height, in
 
     Image image;
     Image::GammaSpace::Enum gammaSpace = (flags & Texture::Flag::SRGBColorSpace) ? Image::GammaSpace::sRGB : Image::GammaSpace::Linear;
-    image.InitFromMemory(width, height, depth, type == RHI::TextureType::TextureCubeMap ? 6 : numSlices, numMipmaps, format, gammaSpace, nullptr, 0);
+    image.InitFromMemory(width, height, depth, (type == RHI::TextureType::TextureCubeMap ? 6 : numSlices), numMipmaps, format, gammaSpace, nullptr, 0);
     Upload(&image);
 }
 
@@ -206,7 +207,7 @@ void Texture::CreateDefaultCubeMapTexture(int size, int flags) {
     image.CreateCube(size, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, 0);
     byte *dst = image.GetPixels();
 
-    int faceSize = image.GetSliceSize();
+    int faceSize = image.SizeInBytesForFace();
 
     for (int i = 0; i < 6; i++) {
         for (int y = 0; y < size; y++) {
@@ -234,11 +235,11 @@ void Texture::CreateBlackCubeMapTexture(int size, int flags) {
     image.CreateCube(size, 1, Image::Format::L_8, Image::GammaSpace::sRGB, nullptr, 0);
     byte *dst = image.GetPixels();
 
-    int facesize = image.GetSliceSize();
+    int faceSize = image.SizeInBytesForFace();
 
     for (int i = 0; i < 6; i++) {
-        memset(dst, 0, facesize);
-        dst += facesize;
+        memset(dst, 0, faceSize);
+        dst += faceSize;
     }
 
     Create(RHI::TextureType::TextureCubeMap, image, Texture::Flag::Clamp | Texture::Flag::NoCompression | Texture::Flag::NoScaleDown | flags);
@@ -257,7 +258,7 @@ void Texture::CreateNormalizationCubeMapTexture(int size, int flags) {
     image.CreateCube(size, 1, Image::Format::RGB_8_8_8, Image::GammaSpace::Linear, nullptr, 0);
     byte *dst = image.GetPixels();
 
-    int sliceSize = image.GetSliceSize();
+    int sliceSize = image.SizeInBytesForFace();
     float invSize = 1.0f / (size - 1);
     Vec3 dir;
 
@@ -323,7 +324,7 @@ void Texture::CreateCubicNormalCubeMapTexture(int size, int flags) {
     image.CreateCube(size, 1, Image::Format::RGB_8_8_8_SNORM, Image::GammaSpace::Linear, nullptr, 0);
     int8_t *dst = (int8_t *)image.GetPixels();
 
-    int facesize = image.GetSliceSize();
+    int facesize = image.SizeInBytesForFace();
 
     for (int i = 0; i < 6; i++) {
         for (int y = 0; y < size; y++) {
@@ -623,7 +624,7 @@ void Texture::GetTexelsRect(Image::Format::Enum format, void *pixels) const {
 }
 
 void Texture::CopyTo(int mipLevel, Texture *dstTexture) {
-    rhi.CopyImageSubData(textureHandle, mipLevel, 0, 0, 0, dstTexture->textureHandle, mipLevel, 0, 0, 0, width, height, type == RHI::TextureType::TextureCubeMap ? numSlices : depth);
+    rhi.CopyImageSubData(textureHandle, mipLevel, 0, 0, 0, dstTexture->textureHandle, mipLevel, 0, 0, 0, width, height, type == RHI::TextureType::TextureCubeMap ? 6 : depth);
 }
 
 void Texture::Purge() {

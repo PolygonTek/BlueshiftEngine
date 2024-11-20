@@ -31,18 +31,21 @@ void CompressDXT1(const Image &srcImage, Image &dstImage, Image::CompressionQual
     }
 
     int numMipmaps = srcImage.NumMipmaps();
+    int numFaces = srcImage.NumFaces();
     int numSlices = srcImage.NumSlices();
 
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
+    for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
+        for (int faceIndex = 0; faceIndex < numFaces; faceIndex++) {
+            for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+                int w = srcImage.GetWidth(mipLevel);
+                int h = srcImage.GetHeight(mipLevel);
+                int d = srcImage.GetDepth(mipLevel);
 
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
+                byte *src = srcImage.GetPixels(mipLevel, faceIndex, sliceIndex);
+                byte *dst = dstImage.GetPixels(mipLevel, faceIndex, sliceIndex);
 
-            CompressImage(src, w, h, d, dst);
+                CompressImage(src, w, h, d, dst);
+            }
         }
     }
 }
@@ -59,18 +62,21 @@ void CompressDXT3(const Image &srcImage, Image &dstImage, Image::CompressionQual
     }
 
     int numMipmaps = srcImage.NumMipmaps();
+    int numFaces = srcImage.NumFaces();
     int numSlices = srcImage.NumSlices();
 
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
+    for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
+        for (int faceIndex = 0; faceIndex < numFaces; faceIndex++) {
+            for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+                int w = srcImage.GetWidth(mipLevel);
+                int h = srcImage.GetHeight(mipLevel);
+                int d = srcImage.GetDepth(mipLevel);
 
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
+                byte *src = srcImage.GetPixels(mipLevel, faceIndex, sliceIndex);
+                byte *dst = dstImage.GetPixels(mipLevel, faceIndex, sliceIndex);
 
-            CompressImage(src, w, h, d, dst);
+                CompressImage(src, w, h, d, dst);
+            }
         }
     }
 }
@@ -87,18 +93,21 @@ void CompressDXT5(const Image &srcImage, Image &dstImage, Image::CompressionQual
     }
 
     int numMipmaps = srcImage.NumMipmaps();
+    int numFaces = srcImage.NumFaces();
     int numSlices = srcImage.NumSlices();
 
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
+    for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
+        for (int faceIndex = 0; faceIndex < numFaces; faceIndex++) {
+            for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+                int w = srcImage.GetWidth(mipLevel);
+                int h = srcImage.GetHeight(mipLevel);
+                int d = srcImage.GetDepth(mipLevel);
 
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
+                byte *src = srcImage.GetPixels(mipLevel, faceIndex, sliceIndex);
+                byte *dst = dstImage.GetPixels(mipLevel, faceIndex, sliceIndex);
 
-            CompressImage(src, w, h, d, dst);
+                CompressImage(src, w, h, d, dst);
+            }
         }
     }
 }
@@ -115,18 +124,21 @@ void CompressDXN2(const Image &srcImage, Image &dstImage, Image::CompressionQual
     }
 
     int numMipmaps = srcImage.NumMipmaps();
+    int numFaces = srcImage.NumFaces();
     int numSlices = srcImage.NumSlices();
 
-    for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
-        int w = srcImage.GetWidth(mipLevel);
-        int h = srcImage.GetHeight(mipLevel);
-        int d = srcImage.GetDepth(mipLevel);
+    for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
+        for (int faceIndex = 0; faceIndex < numFaces; faceIndex++) {
+            for (int mipLevel = 0; mipLevel < numMipmaps; mipLevel++) {
+                int w = srcImage.GetWidth(mipLevel);
+                int h = srcImage.GetHeight(mipLevel);
+                int d = srcImage.GetDepth(mipLevel);
 
-        for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++) {
-            byte *src = srcImage.GetPixels(mipLevel, sliceIndex);
-            byte *dst = dstImage.GetPixels(mipLevel, sliceIndex);
+                byte *src = srcImage.GetPixels(mipLevel, faceIndex, sliceIndex);
+                byte *dst = dstImage.GetPixels(mipLevel, faceIndex, sliceIndex);
 
-            CompressImage(src, w, h, d, dst);
+                CompressImage(src, w, h, d, dst);
+            }
         }
     }
 }
