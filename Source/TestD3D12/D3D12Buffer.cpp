@@ -42,7 +42,6 @@ UINT D3D12Buffer::GetSize() {
 }
 
 D3D12Buffer* D3D12Buffer::CreateGPUBuffer(int size) {
-    // GPU 에 버텍스 버퍼 생성
     D3D12_RESOURCE_DESC bufferDesc = {};
     bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
     bufferDesc.Alignment = 0;
@@ -94,7 +93,6 @@ D3D12Buffer* D3D12Buffer::CreateGPUBuffer(int size) {
 }
 
 D3D12Buffer* D3D12Buffer::CreateCPUBuffer(int size) {
-    // CPU 에 버퍼 생성
     D3D12_RESOURCE_DESC bufferDesc = {};
     bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
     bufferDesc.Alignment = 0;

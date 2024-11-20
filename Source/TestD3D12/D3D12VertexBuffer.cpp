@@ -21,11 +21,16 @@ void D3D12VertexBuffer::Release() {
     SAFE_DELETE(buffer);
 }
 
-D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(int vertexSize, int numVerts, void *data) {
+D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type::Enum type, int vertexSize, int numVerts, void *data) {
     UINT bufferSize = vertexSize * numVerts;
-    D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT; // D3D12_HEAP_TYPE_UPLOAD
+    D3D12Buffer *buffer = nullptr;
 
-    D3D12Buffer *buffer = D3D12Buffer::CreateGPUBuffer(bufferSize);
+    if (type == D3D12VertexBuffer::Type::Static) {
+        buffer = D3D12Buffer::CreateGPUBuffer(bufferSize);
+    } else {
+        buffer = D3D12Buffer::CreateCPUBuffer(bufferSize);
+    }
+
     if (!buffer) {
         return nullptr;
     }
@@ -34,7 +39,7 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(int vertexSize, int num
     ID3D12Resource* uploadBuffer = nullptr;
 
     if (data) {
-        if (heapType == D3D12_HEAP_TYPE_DEFAULT) {
+        if (type == D3D12VertexBuffer::Type::Static) {
             // 업로드 버퍼 생성
             if (FAILED(renderer.device->CreateCommittedResource(
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -63,7 +68,7 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(int vertexSize, int num
             // 커맨드 큐 실행
             ID3D12CommandList *ppCommandLists[] = { renderer.commandList };
             renderer.commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
-        } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
+        } else if (type == D3D12VertexBuffer::Type::Dynamic) {
             UINT8 *mappedPtr = nullptr;
             CD3DX12_RANGE range(0, 0);
             bufferResource->Map(0, &range, reinterpret_cast<void **>(&mappedPtr));

@@ -21,13 +21,18 @@ void D3D12IndexBuffer::Release() {
     SAFE_DELETE(buffer);
 }
 
-D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(int indexSize, int numIndexes, void *data) {
+D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type::Enum type, int indexSize, int numIndexes, void *data) {
     assert(indexSize == 2 || indexSize == 4);
 
     UINT bufferSize = indexSize * numIndexes;
-    D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT; // D3D12_HEAP_TYPE_UPLOAD
+    D3D12Buffer *buffer = nullptr;
 
-    D3D12Buffer* buffer = D3D12Buffer::CreateGPUBuffer(bufferSize);
+    if (type == D3D12IndexBuffer::Type::Static) {
+        buffer = D3D12Buffer::CreateGPUBuffer(bufferSize);
+    } else {
+        buffer = D3D12Buffer::CreateCPUBuffer(bufferSize);
+    }
+
     if (!buffer) {
         return nullptr;
     }
@@ -36,7 +41,7 @@ D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(int indexSize, int numInde
     ID3D12Resource* uploadBuffer = nullptr;
 
     if (data) {
-        if (heapType == D3D12_HEAP_TYPE_DEFAULT) {
+        if (type == D3D12IndexBuffer::Type::Static) {
             // CPU 에서 GPU 로 업로드할 버텍스 버퍼 생성
             if (FAILED(renderer.device->CreateCommittedResource(
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -65,7 +70,7 @@ D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(int indexSize, int numInde
             // 커맨드 큐 실행
             ID3D12CommandList *ppCommandLists[] = { renderer.commandList };
             renderer.commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
-        } else if (heapType == D3D12_HEAP_TYPE_UPLOAD) {
+        } else if (type == D3D12IndexBuffer::Type::Dynamic) {
             UINT8* mappedPtr = nullptr;
             CD3DX12_RANGE range(0, 0);
             bufferResource->Map(0, &range, reinterpret_cast<void **>(&mappedPtr));

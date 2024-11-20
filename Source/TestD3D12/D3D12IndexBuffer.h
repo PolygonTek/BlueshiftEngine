@@ -24,11 +24,18 @@ class D3D12Buffer;
 
 class D3D12IndexBuffer {
 public:
+    struct Type {
+        enum Enum {
+            Static = 0,
+            Dynamic = 1
+        };
+    };
+
     ~D3D12IndexBuffer() { Release(); }
 
     void                            Release();
 
-    static D3D12IndexBuffer *       CreateIndexBuffer(int indexSize, int numIndexes, void *data);
+    static D3D12IndexBuffer *       CreateIndexBuffer(Type::Enum type, int indexSize, int numIndexes, void *data);
 
     D3D12Buffer *                   buffer = nullptr;
     D3D12_INDEX_BUFFER_VIEW         ibv;
