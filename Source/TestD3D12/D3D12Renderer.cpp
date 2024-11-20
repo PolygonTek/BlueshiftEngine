@@ -217,7 +217,7 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
     adapter1->Release();
 
     singleDescriptorAllocator = new D3D12SingleDescriptorAllocator;
-    singleDescriptorAllocator->Init(10000);
+    singleDescriptorAllocator->Init(100000);
 
     for (int frameIndex = 0; frameIndex < NumFrames; ++frameIndex) {
         frameData[frameIndex].Init();

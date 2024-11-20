@@ -25,12 +25,11 @@ void D3D12FrameData::Init() {
     commandListPool->Init(D3D12_COMMAND_LIST_TYPE_DIRECT, 16);
 
     // 렌더링에 사용할 디스크립터 힙을 생성한다.
-    // 최대 1000 개의 CBV_SRV_UAV 용 디스크립터를 담을 수 있다.
     rootDescriptorPool = new D3D12DescriptorPool;
-    rootDescriptorPool->Init(4096);
+    rootDescriptorPool->Init(65536);
 
     // 다이나믹 상수 버퍼 생성
-    constantBuffer = D3D12ConstantBuffer::CreateConstantBuffer(65536 * 4);
+    constantBuffer = D3D12ConstantBuffer::CreateConstantBuffer(65536 * 64);
 
     // Map and initialize the constant buffer. We don't unmap this until the
     // app closes. Keeping things mapped for the lifetime of the resource is okay.

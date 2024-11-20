@@ -30,5 +30,5 @@ public:
     D3D12_CPU_DESCRIPTOR_HANDLE     baseDescriptorHandle;
     UINT                            descriptorHandleSize;
     UINT                            maxDescriptorCount;
-    Array<CD3DX12_CPU_DESCRIPTOR_HANDLE *> descriptorHandleList;
+    Array<D3D12_CPU_DESCRIPTOR_HANDLE *> descriptorHandleList;
 };

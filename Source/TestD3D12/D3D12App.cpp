@@ -96,7 +96,7 @@ void D3D12App::Draw(int frameMsec) {
 void D3D12App::DrawTriangles() {
     float elapsedSeconds = MILLI2SEC(elapsedMsec);
 
-    for (int i = 0; i < 1000; ++i) {
+    for (int i = 0; i < 1024; ++i) {
         float t = elapsedSeconds + i * 0.1f;
 
         triangleMesh->offset.x = 0.5f * Math::Cos(t);
@@ -137,7 +137,7 @@ void D3D12App::DrawCubes() {
             numDrawCalls++;
         }
 
-        if (numDrawCalls >= 300) {
+        if (numDrawCalls >= 2048) {
             numDrawCalls = 0;
             renderer.FlushCommandList();
         }
