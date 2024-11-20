@@ -46,7 +46,7 @@ void D3D12TriangleMesh::InitMesh() {
 
     vertexBuffer = D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type::Static, sizeof(verts[0]), COUNT_OF(verts), (void *)verts);
     indexBuffer = D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type::Static, sizeof(indexes[0]), COUNT_OF(indexes), (void *)indexes);
-    texture = D3D12Texture::CreateTexture(D3D12TextureType::Texture2D, "Data/EngineTextures/checker.dds");
+    texture = D3D12Texture::CreateTexture(D3D12Texture::Type::Texture2D, "Data/EngineTextures/checker.dds");
 
     InitRootSignature();
 

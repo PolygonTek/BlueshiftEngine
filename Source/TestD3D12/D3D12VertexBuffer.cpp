@@ -26,9 +26,9 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type
     D3D12Buffer *buffer = nullptr;
 
     if (type == D3D12VertexBuffer::Type::Static) {
-        buffer = D3D12Buffer::CreateGPUBuffer(bufferSize);
+        buffer = D3D12Buffer::CreateBuffer(D3D12Buffer::Usage::Default, bufferSize);
     } else {
-        buffer = D3D12Buffer::CreateCPUBuffer(bufferSize);
+        buffer = D3D12Buffer::CreateBuffer(D3D12Buffer::Usage::Upload, bufferSize);
     }
 
     if (!buffer) {
@@ -60,7 +60,6 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type
             // 업로드 버퍼에서 GPU 버퍼로 데이터 카피
             renderer.commandAllocator->Reset();
             renderer.commandList->Reset(renderer.commandAllocator, nullptr);
-            renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(bufferResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
             renderer.commandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
             renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
             renderer.commandList->Close();

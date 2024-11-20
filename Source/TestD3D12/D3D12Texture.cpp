@@ -211,7 +211,15 @@ bool D3D12Texture::UpdateTexture3D(UINT level, UINT x, UINT y, UINT z, UINT widt
     return true;
 }
 
-D3D12Texture *D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, const char *filename, bool useCompression, bool useNormalMap) {
+void D3D12Texture::GetTexture2D(UINT level, Image::Format::Enum imageFormat, void *outPixels) {
+    // 텍스쳐 리소스의 (Footprint = 차지하는 공간) 메모리 정보를 얻어온다.
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipFootprints[16];
+    UINT64 size;
+
+    renderer.device->GetCopyableFootprints(&textureDesc, 0, textureDesc.MipLevels, 0, mipFootprints, nullptr, nullptr, &size);
+}
+
+D3D12Texture *D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, const char *filename, bool useCompression, bool useNormalMap) {
     Image *image = Image::NewImageFromFile(filename);
     if (!image) {
         return nullptr;
@@ -226,7 +234,7 @@ D3D12Texture *D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, co
     return texture;
 }
 
-D3D12Texture *D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps) {
+D3D12Texture *D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps) {
     Image::Format::Enum srcFormat = srcImage->GetFormat();
 
     bool srcCompressed = Image::IsCompressed(srcFormat);
@@ -282,7 +290,7 @@ D3D12Texture *D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, co
     return CreateTexture(textureType, srcImage);
 }
 
-D3D12Texture* D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, const Image* srcImage) {
+D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, const Image* srcImage) {
     Image::Format::Enum srcFormat = srcImage->GetFormat();
     bool isLinearSpace = srcImage->GetGammaSpace() == Image::GammaSpace::Linear;
 
@@ -295,16 +303,16 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, co
 
     D3D12_RESOURCE_DIMENSION textureDimension;
     switch (textureType) {
-    case D3D12TextureType::Texture2D:
-    case D3D12TextureType::Texture2DArray:
-    case D3D12TextureType::TextureCube:
-    case D3D12TextureType::TextureCubeArray:
+    case D3D12Texture::Type::Texture2D:
+    case D3D12Texture::Type::Texture2DArray:
+    case D3D12Texture::Type::TextureCube:
+    case D3D12Texture::Type::TextureCubeArray:
         textureDimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
         break;
-    case D3D12TextureType::Texture3D:
+    case D3D12Texture::Type::Texture3D:
         textureDimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D;
         break;
-    case D3D12TextureType::TextureBuffer:
+    case D3D12Texture::Type::TextureBuffer:
         textureDimension = D3D12_RESOURCE_DIMENSION_BUFFER;
         break;
     }
@@ -444,29 +452,29 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12TextureType::Enum textureType, co
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
     switch (textureType) {
-    case D3D12TextureType::Texture2D:
+    case D3D12Texture::Type::Texture2D:
         srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
         srvDesc.Texture2D.MipLevels = textureDesc.MipLevels;
         break;
-    case D3D12TextureType::Texture2DArray:
+    case D3D12Texture::Type::Texture2DArray:
         srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
         srvDesc.Texture2DArray.MipLevels = textureDesc.MipLevels;
         srvDesc.Texture2DArray.ArraySize = textureDesc.DepthOrArraySize;
         break;
-    case D3D12TextureType::Texture3D:
+    case D3D12Texture::Type::Texture3D:
         srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
         srvDesc.Texture3D.MipLevels = textureDesc.MipLevels;
         break;
-    case D3D12TextureType::TextureCube:
+    case D3D12Texture::Type::TextureCube:
         srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
         srvDesc.TextureCube.MipLevels = textureDesc.MipLevels;
         break;
-    case D3D12TextureType::TextureCubeArray:
+    case D3D12Texture::Type::TextureCubeArray:
         srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
         srvDesc.TextureCubeArray.MipLevels = textureDesc.MipLevels;
         srvDesc.TextureCubeArray.NumCubes = textureDesc.DepthOrArraySize;
         break;
-    case D3D12TextureType::TextureBuffer:
+    case D3D12Texture::Type::TextureBuffer:
         // FIXME
         srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
         break;

@@ -36,7 +36,7 @@ D3D12ConstantBuffer* D3D12ConstantBuffer::CreateConstantBuffer(int size) {
     // 상수 버퍼는 어차피 GPU 에 요청하면 256 바이트로 주소 & 사이즈가 정렬된다.
     UINT alignedSize = (UINT)AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
-    D3D12Buffer *buffer = D3D12Buffer::CreateCPUBuffer(alignedSize);
+    D3D12Buffer *buffer = D3D12Buffer::CreateBuffer(D3D12Buffer::Usage::Upload, alignedSize);
     if (!buffer) {
         return nullptr;
     }

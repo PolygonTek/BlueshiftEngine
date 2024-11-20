@@ -20,19 +20,19 @@
 #include "D3D12MemoryAllocator/D3D12MemAlloc.h"
 #endif
 
-struct D3D12TextureType {
-    enum Enum {
-        Texture2D,
-        Texture2DArray,
-        Texture3D,
-        TextureCube,
-        TextureCubeArray,
-        TextureBuffer
-    };
-};
-
 class D3D12Texture {
 public:
+    struct Type {
+        enum Enum {
+            Texture2D,
+            Texture2DArray,
+            Texture3D,
+            TextureCube,
+            TextureCubeArray,
+            TextureBuffer
+        };
+    };
+
     ~D3D12Texture() { Release(); }
 
     void                            Release();
@@ -40,9 +40,11 @@ public:
     bool                            UpdateTexture2D(UINT level, UINT x, UINT y, UINT width, UINT height, Image::Format::Enum imageFormat, const void* pixels);
     bool                            UpdateTexture3D(UINT level, UINT x, UINT y, UINT z, UINT width, UINT height, UINT depth, Image::Format::Enum imageFormat, const void* pixels);
 
-    static D3D12Texture *           CreateTexture(D3D12TextureType::Enum textureType, const char* filename, bool useCompression = true, bool useNormalMap = false);
-    static D3D12Texture *           CreateTexture(D3D12TextureType::Enum textureType, const Image* image, Image::Format::Enum dstFormat, bool useMipmaps);
-    static D3D12Texture *           CreateTexture(D3D12TextureType::Enum textureType, const Image* image);
+    void                            GetTexture2D(UINT level, Image::Format::Enum imageFormat, void *outPixels);
+
+    static D3D12Texture *           CreateTexture(D3D12Texture::Type::Enum textureType, const char* filename, bool useCompression = true, bool useNormalMap = false);
+    static D3D12Texture *           CreateTexture(D3D12Texture::Type::Enum textureType, const Image* image, Image::Format::Enum dstFormat, bool useMipmaps);
+    static D3D12Texture *           CreateTexture(D3D12Texture::Type::Enum textureType, const Image* image);
 
     static bool                     ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT* dxgiFormat);
     static bool                     IsSupportedImageFormat(Image::Format::Enum imageFormat) { return ImageFormatToDXGIFormat(imageFormat, false, nullptr); }

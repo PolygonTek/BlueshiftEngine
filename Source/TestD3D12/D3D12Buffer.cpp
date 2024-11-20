@@ -41,7 +41,25 @@ UINT D3D12Buffer::GetSize() {
 #endif
 }
 
-D3D12Buffer* D3D12Buffer::CreateGPUBuffer(int size) {
+D3D12Buffer* D3D12Buffer::CreateBuffer(D3D12Buffer::Usage::Enum usage, int size) {
+    D3D12_HEAP_TYPE heapType;
+    D3D12_RESOURCE_STATES initialState;
+
+    switch (usage) {
+    case D3D12Buffer::Usage::Default:
+        heapType = D3D12_HEAP_TYPE_DEFAULT;
+        initialState = D3D12_RESOURCE_STATE_COPY_DEST;
+        break;
+    case D3D12Buffer::Usage::Upload:
+        heapType = D3D12_HEAP_TYPE_UPLOAD;
+        initialState = D3D12_RESOURCE_STATE_COMMON;
+        break;
+    case D3D12Buffer::Usage::Readback:
+        heapType = D3D12_HEAP_TYPE_READBACK;
+        initialState = D3D12_RESOURCE_STATE_COPY_DEST;
+        break;
+    }
+
     D3D12_RESOURCE_DESC bufferDesc = {};
     bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
     bufferDesc.Alignment = 0;
@@ -59,13 +77,13 @@ D3D12Buffer* D3D12Buffer::CreateGPUBuffer(int size) {
     D3D12MA::ALLOCATION_DESC allocationDesc = {};
     //allocationDesc.Flags |= D3D12MA::ALLOCATION_FLAG_CAN_ALIAS;
     allocationDesc.Flags |= D3D12MA::ALLOCATION_FLAG_STRATEGY_MIN_TIME;
-    allocationDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+    allocationDesc.HeapType = heapType;
 
     D3D12MA::Allocation *bufferAllocation;
     if (FAILED(renderer.allocator->CreateResource(
         &allocationDesc,
         &bufferDesc,
-        D3D12_RESOURCE_STATE_COMMON,
+        initialState,
         nullptr,
         &bufferAllocation,
         IID_NULL, nullptr))) {
@@ -74,67 +92,16 @@ D3D12Buffer* D3D12Buffer::CreateGPUBuffer(int size) {
 #else
     ID3D12Resource *bufferResource = nullptr;
     if (FAILED(renderer.device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+        &CD3DX12_HEAP_PROPERTIES(heapType),
         D3D12_HEAP_FLAG_NONE,
         &bufferDesc,
-        D3D12_RESOURCE_STATE_COMMON,
+        initialState,
         nullptr, IID_PPV_ARGS(&bufferResource)))) {
         return nullptr;
     }
 #endif
 
     D3D12Buffer* buffer = new D3D12Buffer;
-#ifdef USE_D3D12_MEMALLOC
-    buffer->bufferAllocation = bufferAllocation;
-#else
-    buffer->bufferResource = bufferResource;
-#endif
-    return buffer;
-}
-
-D3D12Buffer* D3D12Buffer::CreateCPUBuffer(int size) {
-    D3D12_RESOURCE_DESC bufferDesc = {};
-    bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    bufferDesc.Alignment = 0;
-    bufferDesc.Format = DXGI_FORMAT_UNKNOWN;
-    bufferDesc.MipLevels = 1;
-    bufferDesc.Width = size;
-    bufferDesc.Height = 1;
-    bufferDesc.DepthOrArraySize = 1;
-    bufferDesc.SampleDesc.Count = 1;
-    bufferDesc.SampleDesc.Quality = 0;
-    bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-    bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-
-#ifdef USE_D3D12_MEMALLOC
-    D3D12MA::ALLOCATION_DESC allocationDesc = {};
-    //allocationDesc.Flags |= D3D12MA::ALLOCATION_FLAG_CAN_ALIAS;
-    //allocationDesc.Flags |= D3D12MA::ALLOCATION_FLAG_STRATEGY_MIN_TIME;
-    allocationDesc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
-
-    D3D12MA::Allocation *bufferAllocation;
-    if (FAILED(renderer.allocator->CreateResource(
-        &allocationDesc,
-        &bufferDesc,
-        D3D12_RESOURCE_STATE_COMMON,
-        nullptr,
-        &bufferAllocation,
-        IID_NULL, nullptr))) {
-        return nullptr;
-    }
-#else
-    ID3D12Resource *bufferResource;
-    if (FAILED(renderer.device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-        D3D12_HEAP_FLAG_NONE,
-        &bufferDesc,
-        D3D12_RESOURCE_STATE_COMMON,
-        nullptr, IID_PPV_ARGS(&bufferResource)))) {
-        return nullptr;
-    }
-#endif
-
-    D3D12Buffer *buffer = new D3D12Buffer;
 #ifdef USE_D3D12_MEMALLOC
     buffer->bufferAllocation = bufferAllocation;
 #else
