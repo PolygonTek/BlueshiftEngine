@@ -40,7 +40,7 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type
 
     if (data) {
         if (type == D3D12VertexBuffer::Type::Static) {
-            // 업로드 버퍼 생성
+            // CPU 에서 GPU 로 전송할 업로드 버퍼 생성
             if (FAILED(renderer.device->CreateCommittedResource(
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
                 D3D12_HEAP_FLAG_NONE,
@@ -57,7 +57,7 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type
             memcpy(mappedPtr, data, bufferSize);
             uploadBuffer->Unmap(0, nullptr);
 
-            // 업로드 버퍼에서 버텍스 버퍼로 데이터 카피
+            // 업로드 버퍼에서 GPU 버퍼로 데이터 카피
             renderer.commandAllocator->Reset();
             renderer.commandList->Reset(renderer.commandAllocator, nullptr);
             renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(bufferResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
