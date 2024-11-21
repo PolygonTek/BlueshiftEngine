@@ -16,19 +16,20 @@
 
 #include "D3D12Common.h"
 
-class D3D12SingleDescriptorAllocator {
+class D3D12RootDescriptorPool {
 public:
-    ~D3D12SingleDescriptorAllocator() { Shutdown(); }
+    ~D3D12RootDescriptorPool() { Shutdown(); }
 
     void                            Init(UINT maxCount);
     void                            Shutdown();
 
-    D3D12_CPU_DESCRIPTOR_HANDLE     Alloc();
-    void                            Free(const D3D12_CPU_DESCRIPTOR_HANDLE& descriptorHandle);
+    void                            Reset();
+    bool                            AllocRange(UINT count, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle);
 
     ID3D12DescriptorHeap *          descriptorHeap = nullptr;
-    D3D12_CPU_DESCRIPTOR_HANDLE     baseDescriptorHandle;
+    D3D12_CPU_DESCRIPTOR_HANDLE     baseCpuDescriptorHandle;
+    D3D12_GPU_DESCRIPTOR_HANDLE     baseGpuDescriptorHandle;
     UINT                            descriptorHandleSize;
     UINT                            maxDescriptorCount;
-    IDAllocator                     descriptorAllocator;
+    UINT                            usedCount = 0;
 };

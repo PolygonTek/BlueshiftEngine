@@ -16,7 +16,7 @@
 #include "D3D12Texture.h"
 #include "D3D12Buffer.h"
 #include "D3D12Renderer.h"
-#include "D3D12SingleDescriptorAllocator.h"
+#include "D3D12DescriptorPool.h"
 
 void D3D12Texture::Release() {
     for (int frameIndex = 0; frameIndex < D3D12Renderer::NumFrames; ++frameIndex) {
@@ -24,7 +24,7 @@ void D3D12Texture::Release() {
     }
 
     if (descriptorHandle.ptr != 0) {
-        renderer.singleDescriptorAllocator->Free(descriptorHandle);
+        renderer.srvDescriptorPool->Free(descriptorHandle);
         descriptorHandle.ptr = 0;
     }
 
@@ -35,7 +35,99 @@ void D3D12Texture::Release() {
 #endif
 }
 
-bool D3D12Texture::UpdateTexture2D(UINT level, UINT x, UINT y, UINT width, UINT height, Image::Format::Enum srcFormat, const void *pixels) {
+void D3D12Texture::GetTextureImage2D(UINT level, Image::Format::Enum dstFormat, void *outPixels) {
+    Image::Format::Enum textureImageFormat;
+    bool isSRGB;
+    if (!DXGIFormatToImageFormat(textureDesc.Format, &textureImageFormat, &isSRGB)) {
+        BE_WARNLOG("D3D12Texture::GetTexture2D: Unsupported DXGI format %i\n", textureDesc.Format);
+        return;
+    }
+
+    // 텍스쳐 리소스의 특정 밉레벨 (서브 리소스) 의 메모리 정보를 얻어온다.
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
+    UINT64 mipLevelSize;
+    renderer.device->GetCopyableFootprints(&textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, &mipLevelSize);
+
+    D3D12Buffer *readbackBuffer = D3D12Buffer::CreateBuffer(D3D12Buffer::Usage::Readback, mipLevelSize);
+    if (!readbackBuffer) {
+        BE_WARNLOG("D3D12Texture::GetTextureImage2D: Failed to create readback buffer\n");
+        return;
+    }
+
+#ifdef USE_D3D12_MEMALLOC
+    ID3D12Resource *textureResource = textureAllocation->GetResource();
+#endif
+
+    // 텍스쳐에서 리드백 버퍼로 복사한다.
+    D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
+    srcLocation.pResource = textureResource;
+    srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    srcLocation.SubresourceIndex = 0;
+
+    D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
+    dstLocation.pResource = readbackBuffer->GetResource();
+    dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+    dstLocation.PlacedFootprint = mipLevelFootprint;
+
+    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE));
+    renderer.commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+    renderer.commandList->Close();
+
+    // 커맨드 큐 실행
+    ID3D12CommandList *ppCommandLists[] = { renderer.commandList };
+    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
+
+    // GPU 에서 복사가 끝날 때까지 기다린다.
+    renderer.Finish();
+
+    // 복사된 리드백 버퍼를 메모리로 읽어오기 위해 Map 을 한다.
+    void *mappedPtr = nullptr;
+    D3D12_RANGE readRange = { 0, mipLevelSize };
+    readbackBuffer->GetResource()->Map(0, &readRange, &mappedPtr);
+
+    const byte *srcPtr = (byte *)mappedPtr;
+    byte *dstPtr = nullptr;
+
+    Image textureImage;
+    if (textureImageFormat != dstFormat) {
+        // 컨버팅이 필요하다면 리드백 버퍼에서 textureImage 에 카피한다.
+        textureImage.InitFromMemory(textureDesc.Width, textureDesc.Height, 1, 1, 1, textureImageFormat, isSRGB ? Image::GammaSpace::sRGB : Image::GammaSpace::Linear, nullptr, 0);
+        dstPtr = textureImage.GetPixels();
+    } else {
+        // 컨버팅할 필요가 없다면 리드백 버퍼에서 그대로 outPixels 로 카피한다.
+        dstPtr = (byte *)outPixels;
+    }
+
+    int srcPitch = mipLevelFootprint.Footprint.RowPitch;
+    int dstPitch = Image::MemRequired(textureDesc.Width, 1, 1, 1, textureImageFormat);
+
+    for (UINT y = 0; y < textureDesc.Height; ++y) {
+        memcpy(dstPtr, srcPtr, srcPitch);
+        srcPtr += srcPitch;
+        dstPtr += dstPitch;
+    }
+
+    D3D12_RANGE writtenRange = { 0, 0 };
+    readbackBuffer->GetResource()->Unmap(0, &writtenRange);
+
+    // 리드백 버퍼 삭제
+    SAFE_DELETE(readbackBuffer);
+
+    // 컨버팅이 필요없다면 바로 리턴한다.
+    if (textureImageFormat == dstFormat) {
+        return;
+    }
+
+    // 필요하다면 컨버팅한다.
+    Image dstImage;
+    if (textureImage.ConvertFormat(dstFormat, dstImage)) {
+        memcpy(outPixels, dstImage.GetPixels(), dstImage.SizeInBytes());
+        return;
+    }
+}
+
+bool D3D12Texture::SetTextureSubImage2D(UINT level, UINT x, UINT y, UINT width, UINT height, Image::Format::Enum srcFormat, const void *pixels) {
     // 텍스쳐 리소스의 특정 mipLevel 에 대한 메모리 정보를 얻어온다.
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
     renderer.device->GetCopyableFootprints(&textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, nullptr);
@@ -122,7 +214,7 @@ bool D3D12Texture::UpdateTexture2D(UINT level, UINT x, UINT y, UINT width, UINT 
     return true;
 }
 
-bool D3D12Texture::UpdateTexture3D(UINT level, UINT x, UINT y, UINT z, UINT width, UINT height, UINT depth, Image::Format::Enum srcFormat, const void *pixels) {
+bool D3D12Texture::SetTextureSubImage3D(UINT level, UINT x, UINT y, UINT z, UINT width, UINT height, UINT depth, Image::Format::Enum srcFormat, const void *pixels) {
     // 텍스쳐 리소스의 특정 mipLevel 에 대한 메모리 정보를 얻어온다.
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
     renderer.device->GetCopyableFootprints(&textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, nullptr);
@@ -209,97 +301,6 @@ bool D3D12Texture::UpdateTexture3D(UINT level, UINT x, UINT y, UINT z, UINT widt
     renderer.MarkForRelease(uploadBuffer);
 
     return true;
-}
-
-void D3D12Texture::GetTextureImage2D(UINT level, Image::Format::Enum dstFormat, void *outPixels) {
-    Image::Format::Enum textureImageFormat;
-    bool isSRGB;
-    if (!DXGIFormatToImageFormat(textureDesc.Format, &textureImageFormat, &isSRGB)) {
-        BE_WARNLOG("D3D12Texture::GetTexture2D: Unsupported DXGI format %i\n", textureDesc.Format);
-        return;
-    }
-
-    // 텍스쳐 리소스의 특정 밉레벨 (서브 리소스) 의 메모리 정보를 얻어온다.
-    D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
-    UINT64 mipLevelSize;
-    renderer.device->GetCopyableFootprints(&textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, &mipLevelSize);
-
-    D3D12Buffer *readbackBuffer = D3D12Buffer::CreateBuffer(D3D12Buffer::Usage::Readback, mipLevelSize);
-    if (!readbackBuffer) {
-        BE_WARNLOG("D3D12Texture::GetTextureImage2D: Failed to create readback buffer\n");
-        return;
-    }
-
-#ifdef USE_D3D12_MEMALLOC
-    ID3D12Resource *textureResource = textureAllocation->GetResource();
-#endif
-
-    // 텍스쳐에서 리드백 버퍼로 복사한다.
-    D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
-    srcLocation.pResource = textureResource;
-    srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-    srcLocation.SubresourceIndex = 0;
-
-    D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
-    dstLocation.pResource = readbackBuffer->GetResource();
-    dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-    dstLocation.PlacedFootprint = mipLevelFootprint;
-
-    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE));
-    renderer.commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
-    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
-    renderer.commandList->Close();
-
-    // 커맨드 큐 실행
-    ID3D12CommandList *ppCommandLists[] = { renderer.commandList };
-    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
-
-    // GPU 에서 복사가 끝날 때까지 기다린다.
-    renderer.Finish();
-
-    // 복사된 리드백 버퍼를 메모리로 읽어오기 위해 Map 을 한다.
-    void *mappedPtr = nullptr;
-    D3D12_RANGE readRange = { 0, mipLevelSize };
-    readbackBuffer->GetResource()->Map(0, &readRange, &mappedPtr);
-
-    const byte *srcPtr = (byte *)mappedPtr;
-    byte *dstPtr = nullptr;
-
-    Image textureImage;
-    if (textureImageFormat != dstFormat) {
-        // 컨버팅이 필요하다면 리드백 버퍼에서 textureImage 에 카피한다.
-        textureImage.InitFromMemory(textureDesc.Width, textureDesc.Height, 1, 1, 1, textureImageFormat, isSRGB ? Image::GammaSpace::sRGB : Image::GammaSpace::Linear, nullptr, 0);
-        dstPtr = textureImage.GetPixels();
-    } else {
-        // 컨버팅할 필요가 없다면 리드백 버퍼에서 그대로 outPixels 로 카피한다.
-        dstPtr = (byte *)outPixels;
-    }
-
-    int srcPitch = mipLevelFootprint.Footprint.RowPitch;
-    int dstPitch = Image::MemRequired(textureDesc.Width, 1, 1, 1, textureImageFormat);
-
-    for (UINT y = 0; y < textureDesc.Height; ++y) {
-        memcpy(dstPtr, srcPtr, srcPitch);
-        srcPtr += srcPitch;
-        dstPtr += dstPitch;
-    }
-
-    D3D12_RANGE writtenRange = { 0, 0 };
-    readbackBuffer->GetResource()->Unmap(0, &writtenRange);
-
-    // 리드백 버퍼 삭제
-    SAFE_DELETE(readbackBuffer);
-
-    if (textureImageFormat == dstFormat) {
-        return;
-    }
-
-    // 필요하다면 컨버팅한다.
-    Image dstImage;
-    if (textureImage.ConvertFormat(dstFormat, dstImage)) {
-        memcpy(outPixels, dstImage.GetPixels(), dstImage.SizeInBytes());
-        return;
-    }
 }
 
 D3D12Texture *D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, const char *filename, bool useCompression, bool useNormalMap) {
@@ -562,7 +563,7 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
         break;
     }
 
-    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = renderer.singleDescriptorAllocator->Alloc();
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = renderer.srvDescriptorPool->Alloc();
     renderer.device->CreateShaderResourceView(textureResource, &srvDesc, descriptorHandle);
 
     D3D12Texture *texture = new D3D12Texture;

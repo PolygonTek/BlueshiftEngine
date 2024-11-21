@@ -17,7 +17,7 @@
 #include "D3D12Common.h"
 
 class D3D12CommandListPool;
-class D3D12DescriptorPool;
+class D3D12RootDescriptorPool;
 class D3D12ConstantBuffer;
 
 class D3D12FrameData {
@@ -30,12 +30,12 @@ public:
     void                            BeginRender();
 
     D3D12CommandListPool *          commandListPool = nullptr;
-    D3D12DescriptorPool *           rootDescriptorPool = nullptr;
+    D3D12RootDescriptorPool *       rootDescriptorPool = nullptr;
 
     D3D12ConstantBuffer *           constantBuffer = nullptr;
+    Array<D3D12_CPU_DESCRIPTOR_HANDLE> cbvDescriptorHandles;
     void *                          mappedConstantBase = nullptr;
     UINT                            usedConstantBytes = 0;
-    Array<D3D12_CPU_DESCRIPTOR_HANDLE> cbvDescriptorHandles;
 
     UINT64                          fenceValue = 0;
 };

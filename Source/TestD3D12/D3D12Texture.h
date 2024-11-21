@@ -37,10 +37,10 @@ public:
 
     void                            Release();
 
-    bool                            UpdateTexture2D(UINT level, UINT x, UINT y, UINT width, UINT height, Image::Format::Enum imageFormat, const void* pixels);
-    bool                            UpdateTexture3D(UINT level, UINT x, UINT y, UINT z, UINT width, UINT height, UINT depth, Image::Format::Enum imageFormat, const void* pixels);
-
     void                            GetTextureImage2D(UINT level, Image::Format::Enum imageFormat, void *outPixels);
+
+    bool                            SetTextureSubImage2D(UINT level, UINT x, UINT y, UINT width, UINT height, Image::Format::Enum imageFormat, const void* pixels);
+    bool                            SetTextureSubImage3D(UINT level, UINT x, UINT y, UINT z, UINT width, UINT height, UINT depth, Image::Format::Enum imageFormat, const void* pixels);
 
     static D3D12Texture *           CreateTexture(D3D12Texture::Type::Enum textureType, const char* filename, bool useCompression = true, bool useNormalMap = false);
     static D3D12Texture *           CreateTexture(D3D12Texture::Type::Enum textureType, const Image* image, Image::Format::Enum dstFormat, bool useMipmaps);

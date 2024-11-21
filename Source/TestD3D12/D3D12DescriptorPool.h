@@ -18,18 +18,31 @@
 
 class D3D12DescriptorPool {
 public:
+    struct Type {
+        enum Enum {
+            SRV,
+            RTV,
+            DSV,
+            Sampler
+        };
+    };
+
     ~D3D12DescriptorPool() { Shutdown(); }
 
-    void                            Init(UINT maxCount);
+    void                            Init(Type::Enum type, UINT maxCount, bool isShaderVisible);
     void                            Shutdown();
 
-    void                            Reset();
-    bool                            AllocDescriptors(UINT descriptorCount, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle);
+    void                            Clear();
+
+    D3D12_CPU_DESCRIPTOR_HANDLE     Alloc();
+    void                            Free(const D3D12_CPU_DESCRIPTOR_HANDLE& descriptorHandle);
+
+    D3D12_CPU_DESCRIPTOR_HANDLE     AllocRange(int count);
+    void                            FreeRange(const D3D12_CPU_DESCRIPTOR_HANDLE &descriptorHandle, int count);
 
     ID3D12DescriptorHeap *          descriptorHeap = nullptr;
-    D3D12_CPU_DESCRIPTOR_HANDLE     baseCpuDescriptorHandle;
-    D3D12_GPU_DESCRIPTOR_HANDLE     baseGpuDescriptorHandle;
+    D3D12_CPU_DESCRIPTOR_HANDLE     baseDescriptorHandle;
     UINT                            descriptorHandleSize;
     UINT                            maxDescriptorCount;
-    UINT                            usedCount = 0;
+    IDAllocator                     idAllocator;
 };

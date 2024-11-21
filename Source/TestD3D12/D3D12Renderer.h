@@ -23,7 +23,7 @@
 #include "D3D12FrameData.h"
 
 struct D3D12CommandList;
-class D3D12SingleDescriptorAllocator;
+class D3D12DescriptorPool;
 
 struct D3D12PendingResource {
     UINT64                          fenceValue = 0;
@@ -87,7 +87,10 @@ public:
     UINT                            currentBackBufferIndex = 0;
     D3D12_VIEWPORT                  viewport = {};
     D3D12_RECT                      scissorRect = {};
-    D3D12SingleDescriptorAllocator *singleDescriptorAllocator = nullptr;
+    D3D12DescriptorPool *           srvDescriptorPool = nullptr;
+    D3D12DescriptorPool *           rtvDescriptorPool = nullptr;
+    D3D12DescriptorPool *           dsvDescriptorPool = nullptr;
+
     UINT                            frameCount = 0;
     D3D12FrameData                  frameData[NumFrames];
     UINT                            currentFrameIndex = 0;

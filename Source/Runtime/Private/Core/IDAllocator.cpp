@@ -35,9 +35,17 @@ static int FindFirstZeroBit(uint64_t block) {
 void IDAllocator::Init(size_t maxIdCount) {
     maxId = maxIdCount - 1;
     bitmap.SetCount((maxIdCount + 63) / 64);
-    bitmap.Fill(0); // Initialize in blocks of 64 bits
     maxFreeBitsPerBlock.SetCount(bitmap.Count());
-    maxFreeBitsPerBlock.Fill(64); // Initial value: all bits are 0
+
+    Clear();
+}
+
+void IDAllocator::Clear() {
+    // Initialize in blocks of 64 bits
+    bitmap.Fill(0);
+
+    // Initial value: all bits are 0
+    maxFreeBitsPerBlock.Fill(64);
 }
 
 bool IDAllocator::AllocateID(uint32_t &id) {

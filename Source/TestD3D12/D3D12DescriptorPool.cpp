@@ -16,46 +16,82 @@
 #include "D3D12Renderer.h"
 #include "D3D12DescriptorPool.h"
 
-void D3D12DescriptorPool::Init(UINT maxDescriptorCount) {
+void D3D12DescriptorPool::Init(D3D12DescriptorPool::Type::Enum type, UINT maxDescriptorCount, bool isShaderVisible) {
     this->maxDescriptorCount = maxDescriptorCount;
-    this->usedCount = 0;
 
-    D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType;
+    switch (type) {
+    case Type::SRV:
+        descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+        break;
+    case Type::RTV:
+        descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+        break;
+    case Type::DSV:
+        descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+        break;
+    case Type::Sampler:
+        descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+        break;
+    }
 
     descriptorHandleSize = renderer.device->GetDescriptorHandleIncrementSize(descriptorHeapType);
 
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
     descriptorHeapDesc.NumDescriptors = maxDescriptorCount;
     descriptorHeapDesc.Type = descriptorHeapType;
-    descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+    descriptorHeapDesc.Flags = isShaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     renderer.device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
 
-    baseCpuDescriptorHandle = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
-    baseGpuDescriptorHandle = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
+    // 내부적으로 D3D12_DESCRIPTOR_HEAP_FLAG_NONE 타입은 CPU 쪽에만 힙을 만든다.
+    // descriptorHeap->GetGPUDescriptorHandleForHeapStart() 를 호출하면 크래시 발생함
+    baseDescriptorHandle = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
+
+    idAllocator.Init(maxDescriptorCount);
 }
 
 void D3D12DescriptorPool::Shutdown() {
     SAFE_RELEASE(descriptorHeap);
 }
 
-void D3D12DescriptorPool::Reset() {
-    usedCount = 0;
+void D3D12DescriptorPool::Clear() {
+    idAllocator.Clear();
 }
 
-bool D3D12DescriptorPool::AllocDescriptors(UINT descriptorCount, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle) {
-    if (usedCount + descriptorCount > maxDescriptorCount) {
-        BE_WARNLOG("D3D12DescriptorPool::AllocDescriptors: exceeds max descriptor count\n");
-        return false;
+D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorPool::Alloc() {
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {0};
+
+    uint32_t newId;
+    if (!idAllocator.AllocateID(newId)) {
+        BE_WARNLOG("D3D12DescriptorPool::Alloc: no usable descriptors\n");
+        return descriptorHandle;
     }
 
-    if (outCpuDescriptorHandle) {
-        *outCpuDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(baseCpuDescriptorHandle, usedCount, descriptorHandleSize);
-    }
-    if (outGpuDescriptorHandle) {
-        *outGpuDescriptorHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(baseGpuDescriptorHandle, usedCount, descriptorHandleSize);
-    }
-
-    usedCount += descriptorCount;
-    return true;
+    descriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(baseDescriptorHandle, (INT)newId, descriptorHandleSize);
+    return descriptorHandle;
 }
 
+void D3D12DescriptorPool::Free(const D3D12_CPU_DESCRIPTOR_HANDLE &descriptorHandle) {
+    uint32_t freeId = (uint32_t)(descriptorHandle.ptr - baseDescriptorHandle.ptr) / descriptorHandleSize;
+
+    idAllocator.FreeID(freeId);
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorPool::AllocRange(int count) {
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = { 0 };
+
+    uint32_t newId;
+    if (!idAllocator.AllocateRange(newId, count)) {
+        BE_WARNLOG("D3D12DescriptorPool::AllocRange: no usable consecutive descriptors\n");
+        return descriptorHandle;
+    }
+
+    descriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(baseDescriptorHandle, (INT)newId, descriptorHandleSize);
+    return descriptorHandle;
+}
+
+void D3D12DescriptorPool::FreeRange(const D3D12_CPU_DESCRIPTOR_HANDLE &descriptorHandle, int count) {
+    uint32_t freeId = (uint32_t)(descriptorHandle.ptr - baseDescriptorHandle.ptr) / descriptorHandleSize;
+
+    idAllocator.FreeRange(freeId, count);
+}

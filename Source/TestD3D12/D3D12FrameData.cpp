@@ -16,8 +16,8 @@
 #include "D3D12FrameData.h"
 #include "D3D12Renderer.h"
 #include "D3D12CommandListPool.h"
+#include "D3D12RootDescriptorPool.h"
 #include "D3D12DescriptorPool.h"
-#include "D3D12SingleDescriptorAllocator.h"
 #include "D3D12ConstantBuffer.h"
 #include "D3D12Buffer.h"
 
@@ -25,8 +25,8 @@ void D3D12FrameData::Init() {
     commandListPool = new D3D12CommandListPool;
     commandListPool->Init(D3D12_COMMAND_LIST_TYPE_DIRECT, 16);
 
-    // 렌더링에 사용할 디스크립터 힙을 생성한다.
-    rootDescriptorPool = new D3D12DescriptorPool;
+    // 쉐이더에서 사용할 디스크립터 힙을 생성한다.
+    rootDescriptorPool = new D3D12RootDescriptorPool;
     rootDescriptorPool->Init(65536);
 
     // 다이나믹 상수 버퍼 생성
@@ -40,7 +40,7 @@ void D3D12FrameData::Init() {
 
 void D3D12FrameData::Shutdown() {
     for (int i = 0; i < cbvDescriptorHandles.Count(); ++i) {
-        renderer.singleDescriptorAllocator->Free(cbvDescriptorHandles[i]);
+        renderer.srvDescriptorPool->Free(cbvDescriptorHandles[i]);
     }
     cbvDescriptorHandles.SetCount(0, false);
 
@@ -65,12 +65,17 @@ void *D3D12FrameData::AllocConstant(int size, D3D12_CPU_DESCRIPTOR_HANDLE* outDe
     }
 
     // 상수 버퍼 리소스 (업로드 버퍼) 를 쪼개서 CBV 를 만들어 사용한다.
-    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {0};
     cbvDesc.BufferLocation = resource->GetGPUVirtualAddress() + usedConstantBytes;
     cbvDesc.SizeInBytes = alignedSize;
 
-    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = renderer.singleDescriptorAllocator->Alloc();
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = renderer.srvDescriptorPool->Alloc();
+    if (descriptorHandle.ptr == 0) {
+        return nullptr;
+    }
+
     renderer.device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
+
     cbvDescriptorHandles.Append(descriptorHandle);
     *outDescriptorHandlePtr = descriptorHandle;
 
@@ -82,7 +87,7 @@ void *D3D12FrameData::AllocConstant(int size, D3D12_CPU_DESCRIPTOR_HANDLE* outDe
 
 void D3D12FrameData::BeginRender() {
     for (int i = 0; i < cbvDescriptorHandles.Count(); ++i) {
-        renderer.singleDescriptorAllocator->Free(cbvDescriptorHandles[i]);
+        renderer.srvDescriptorPool->Free(cbvDescriptorHandles[i]);
     }
     cbvDescriptorHandles.SetCount(0, false);
 

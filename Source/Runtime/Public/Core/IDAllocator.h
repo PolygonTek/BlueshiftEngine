@@ -26,6 +26,9 @@ public:
                         /// Initialize ID allocator.
     void                Init(size_t maxIdCount);
 
+                        /// Clear all IDs
+    void                Clear();
+
                         /// Allocate a single ID.
     bool                AllocateID(uint32_t &id);
 

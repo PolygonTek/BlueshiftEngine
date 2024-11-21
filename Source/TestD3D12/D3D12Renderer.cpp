@@ -15,8 +15,8 @@
 #include "Precompiled.h"
 #include "Platform/PlatformSystem.h"
 #include "D3D12Renderer.h"
-#include "D3D12SingleDescriptorAllocator.h"
 #include "D3D12CommandListPool.h"
+#include "D3D12RootDescriptorPool.h"
 #include "D3D12DescriptorPool.h"
 #include <dxgidebug.h>
 
@@ -216,8 +216,14 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
 
     adapter1->Release();
 
-    singleDescriptorAllocator = new D3D12SingleDescriptorAllocator;
-    singleDescriptorAllocator->Init(100000);
+    srvDescriptorPool = new D3D12DescriptorPool;
+    srvDescriptorPool->Init(D3D12DescriptorPool::Type::SRV, 100000, false);
+
+    rtvDescriptorPool = new D3D12DescriptorPool;
+    rtvDescriptorPool->Init(D3D12DescriptorPool::Type::RTV, 16, false);
+
+    dsvDescriptorPool = new D3D12DescriptorPool;
+    dsvDescriptorPool->Init(D3D12DescriptorPool::Type::DSV, 16, false);
 
     for (int frameIndex = 0; frameIndex < NumFrames; ++frameIndex) {
         frameData[frameIndex].Init();
@@ -243,7 +249,9 @@ void D3D12Renderer::Shutdown() {
         frameData[frameIndex].Shutdown();
     }
 
-    SAFE_DELETE(singleDescriptorAllocator);
+    SAFE_DELETE(srvDescriptorPool);
+    SAFE_DELETE(rtvDescriptorPool);
+    SAFE_DELETE(dsvDescriptorPool);
 
 #ifdef USE_D3D12_MEMALLOC
     SAFE_RELEASE(allocator);

@@ -10,10 +10,10 @@ set(SRC_FILES
     D3D12App.cpp
     D3D12Renderer.h
     D3D12Renderer.cpp
+    D3D12RootDescriptorPool.h
+    D3D12RootDescriptorPool.cpp
     D3D12DescriptorPool.h
     D3D12DescriptorPool.cpp
-    D3D12SingleDescriptorAllocator.h
-    D3D12SingleDescriptorAllocator.cpp
     D3D12Buffer.h
     D3D12Buffer.cpp
     D3D12Texture.h

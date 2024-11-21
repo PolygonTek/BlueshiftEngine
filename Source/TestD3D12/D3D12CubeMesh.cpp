@@ -15,7 +15,7 @@
 #include "Precompiled.h"
 #include "D3D12Renderer.h"
 #include "D3D12CommandListPool.h"
-#include "D3D12DescriptorPool.h"
+#include "D3D12RootDescriptorPool.h"
 #include "D3D12VertexBuffer.h"
 #include "D3D12IndexBuffer.h"
 #include "D3D12Texture.h"
@@ -254,7 +254,7 @@ float4 PSMain(PSInput input) : SV_TARGET {
 
 void D3D12CubeMesh::DrawMesh() {
     ID3D12GraphicsCommandList* currentCommandList = renderer.currentFrameCommandList->commandList;
-    D3D12DescriptorPool* currentRootDescriptorPool = renderer.currentFrameData->rootDescriptorPool;
+    D3D12RootDescriptorPool* currentRootDescriptorPool = renderer.currentFrameData->rootDescriptorPool;
 
     D3D12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle = {0};
     void *writePtr = renderer.currentFrameData->AllocConstant(sizeof(CubeConstants), &cbvDescriptorHandle);
@@ -269,7 +269,7 @@ void D3D12CubeMesh::DrawMesh() {
     // 루트 디스크립터 테이블을 할당한다. 여기서 디스크립터 테이블은 연속된 디스크립터 핸들을 말한다.
     D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorHandle;
     D3D12_GPU_DESCRIPTOR_HANDLE gpuRootDescriptorHandle;
-    if (!currentRootDescriptorPool->AllocDescriptors(2, &cpuRootDescriptorHandle, &gpuRootDescriptorHandle)) {
+    if (!currentRootDescriptorPool->AllocRange(2, &cpuRootDescriptorHandle, &gpuRootDescriptorHandle)) {
         return;
     }
 
