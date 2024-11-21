@@ -14,6 +14,8 @@ set(SRC_FILES
     D3D12DescriptorPool.cpp
     D3D12SingleDescriptorAllocator.h
     D3D12SingleDescriptorAllocator.cpp
+    D3D12Buffer.h
+    D3D12Buffer.cpp
     D3D12Texture.h
     D3D12Texture.cpp
     D3D12VertexBuffer.h
