@@ -59,5 +59,5 @@ public:
     ID3D12Resource *                textureResource = nullptr;
 #endif
     D3D12_RESOURCE_DESC             textureDesc;
-    D3D12_CPU_DESCRIPTOR_HANDLE *   descriptorHandlePtr = nullptr;
+    D3D12_CPU_DESCRIPTOR_HANDLE     descriptorHandle = {0};
 };

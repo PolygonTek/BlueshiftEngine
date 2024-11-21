@@ -256,8 +256,8 @@ void D3D12CubeMesh::DrawMesh() {
     ID3D12GraphicsCommandList* currentCommandList = renderer.currentFrameCommandList->commandList;
     D3D12DescriptorPool* currentRootDescriptorPool = renderer.currentFrameData->rootDescriptorPool;
 
-    D3D12_CPU_DESCRIPTOR_HANDLE *cbvDescriptorHandlePtr = nullptr;
-    void *writePtr = renderer.currentFrameData->AllocConstant(sizeof(CubeConstants), &cbvDescriptorHandlePtr);
+    D3D12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle = {0};
+    void *writePtr = renderer.currentFrameData->AllocConstant(sizeof(CubeConstants), &cbvDescriptorHandle);
     if (!writePtr) {
         return;
     }
@@ -282,11 +282,11 @@ void D3D12CubeMesh::DrawMesh() {
 
     // 루트 디스크립터 테이블에 SRV 디스크립터 카피 - 0
     CD3DX12_CPU_DESCRIPTOR_HANDLE srvDest(cpuRootDescriptorHandle, 0, currentRootDescriptorPool->descriptorHandleSize);
-    renderer.device->CopyDescriptorsSimple(1, srvDest, *texture->descriptorHandlePtr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    renderer.device->CopyDescriptorsSimple(1, srvDest, texture->descriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     // 루트 디스크립터 테이블에 CBV 디스크립터 카피 - 1
     CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDest(cpuRootDescriptorHandle, 1, currentRootDescriptorPool->descriptorHandleSize);
-    renderer.device->CopyDescriptorsSimple(1, cbvDest, *cbvDescriptorHandlePtr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    renderer.device->CopyDescriptorsSimple(1, cbvDest, cbvDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     
     // 루트 디스크립터 테이블을 세팅한다.
     currentCommandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);

@@ -35,21 +35,21 @@ void D3D12FrameData::Init() {
     // 상수 버퍼를 프로그램이 끝날 때 까지 Map 해놓고 쓴다. (Pinned) 
     constantBuffer->buffer->GetResource()->Map(0, nullptr, reinterpret_cast<void **>(&mappedConstantBase));
 
-    cbvDescriptorHandlePtrs.SetGranularity(64);
+    cbvDescriptorHandles.SetGranularity(64);
 }
 
 void D3D12FrameData::Shutdown() {
-    for (int i = 0; i < cbvDescriptorHandlePtrs.Count(); ++i) {
-        renderer.singleDescriptorAllocator->Free(cbvDescriptorHandlePtrs[i]);
+    for (int i = 0; i < cbvDescriptorHandles.Count(); ++i) {
+        renderer.singleDescriptorAllocator->Free(cbvDescriptorHandles[i]);
     }
-    cbvDescriptorHandlePtrs.SetCount(0, false);
+    cbvDescriptorHandles.SetCount(0, false);
 
     SAFE_DELETE(constantBuffer);
     SAFE_DELETE(commandListPool);
     SAFE_DELETE(rootDescriptorPool);
 }
 
-void *D3D12FrameData::AllocConstant(int size, D3D12_CPU_DESCRIPTOR_HANDLE** outDescriptorHandlePtr) {
+void *D3D12FrameData::AllocConstant(int size, D3D12_CPU_DESCRIPTOR_HANDLE* outDescriptorHandlePtr) {
     UINT alignedSize = (UINT)AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
     if (alignedSize > D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16) {
         BE_WARNLOG("Constant buffer view size cannot exceeds 64KB limit\n");
@@ -69,10 +69,10 @@ void *D3D12FrameData::AllocConstant(int size, D3D12_CPU_DESCRIPTOR_HANDLE** outD
     cbvDesc.BufferLocation = resource->GetGPUVirtualAddress() + usedConstantBytes;
     cbvDesc.SizeInBytes = alignedSize;
 
-    D3D12_CPU_DESCRIPTOR_HANDLE *descriptorHandlePtr = renderer.singleDescriptorAllocator->Alloc();
-    renderer.device->CreateConstantBufferView(&cbvDesc, *descriptorHandlePtr);
-    cbvDescriptorHandlePtrs.Append(descriptorHandlePtr);
-    *outDescriptorHandlePtr = descriptorHandlePtr;
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = renderer.singleDescriptorAllocator->Alloc();
+    renderer.device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
+    cbvDescriptorHandles.Append(descriptorHandle);
+    *outDescriptorHandlePtr = descriptorHandle;
 
     void *outPtr = (byte *)mappedConstantBase + usedConstantBytes;
     usedConstantBytes += alignedSize;
@@ -81,10 +81,10 @@ void *D3D12FrameData::AllocConstant(int size, D3D12_CPU_DESCRIPTOR_HANDLE** outD
 }
 
 void D3D12FrameData::BeginRender() {
-    for (int i = 0; i < cbvDescriptorHandlePtrs.Count(); ++i) {
-        renderer.singleDescriptorAllocator->Free(cbvDescriptorHandlePtrs[i]);
+    for (int i = 0; i < cbvDescriptorHandles.Count(); ++i) {
+        renderer.singleDescriptorAllocator->Free(cbvDescriptorHandles[i]);
     }
-    cbvDescriptorHandlePtrs.SetCount(0, false);
+    cbvDescriptorHandles.SetCount(0, false);
 
     usedConstantBytes = 0;
 }

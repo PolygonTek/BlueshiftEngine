@@ -25,7 +25,7 @@ public:
     void                            Init();
     void                            Shutdown();
 
-    void *                          AllocConstant(int size, D3D12_CPU_DESCRIPTOR_HANDLE **outDescriptorHandlePtr);
+    void *                          AllocConstant(int size, D3D12_CPU_DESCRIPTOR_HANDLE *outDescriptorHandlePtr);
 
     void                            BeginRender();
 
@@ -35,7 +35,7 @@ public:
     D3D12ConstantBuffer *           constantBuffer = nullptr;
     void *                          mappedConstantBase = nullptr;
     UINT                            usedConstantBytes = 0;
-    Array<D3D12_CPU_DESCRIPTOR_HANDLE *> cbvDescriptorHandlePtrs;
+    Array<D3D12_CPU_DESCRIPTOR_HANDLE> cbvDescriptorHandles;
 
     UINT64                          fenceValue = 0;
 };

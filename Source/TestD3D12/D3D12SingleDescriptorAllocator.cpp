@@ -33,32 +33,28 @@ void D3D12SingleDescriptorAllocator::Init(UINT maxDescriptorCount) {
     // descriptorHeap->GetGPUDescriptorHandleForHeapStart() 를 호출하면 크래시 발생함
     baseDescriptorHandle = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
-    descriptorHandleList.SetCount(maxDescriptorCount);
-
-    for (int i = 0; i < maxDescriptorCount; ++i) {
-        descriptorHandleList[i] = nullptr;
-    }
+    descriptorAllocator.Init(maxDescriptorCount);
 }
 
 void D3D12SingleDescriptorAllocator::Shutdown() {
     SAFE_RELEASE(descriptorHeap);
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE* D3D12SingleDescriptorAllocator::Alloc() {
-    int newIndex = descriptorHandleList.FindNull();
-    if (newIndex < 0) {
-        BE_WARNLOG("D3D12SingleDescriptorAllocator::Alloc: no usable descriptor\n");
-        return nullptr;
-    }
-    CD3DX12_CPU_DESCRIPTOR_HANDLE* newDescriptorHandle = new CD3DX12_CPU_DESCRIPTOR_HANDLE(baseDescriptorHandle, newIndex, descriptorHandleSize);
-    descriptorHandleList[newIndex] = newDescriptorHandle;
+D3D12_CPU_DESCRIPTOR_HANDLE D3D12SingleDescriptorAllocator::Alloc() {
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = {0};
 
-    return newDescriptorHandle;
+    uint32_t newId;
+    if (!descriptorAllocator.AllocateID(newId)) {
+        BE_WARNLOG("D3D12SingleDescriptorAllocator::Alloc: no usable descriptor\n");
+        return descriptorHandle;
+    }
+
+    descriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(baseDescriptorHandle, (INT)newId, descriptorHandleSize);
+    return descriptorHandle;
 }
 
-void D3D12SingleDescriptorAllocator::Free(const D3D12_CPU_DESCRIPTOR_HANDLE *cpuDescriptorHandle) {
-    UINT freeIndex = (UINT)(cpuDescriptorHandle->ptr - baseDescriptorHandle.ptr) / descriptorHandleSize;
+void D3D12SingleDescriptorAllocator::Free(const D3D12_CPU_DESCRIPTOR_HANDLE &descriptorHandle) {
+    uint32_t freeId = (uint32_t)(descriptorHandle.ptr - baseDescriptorHandle.ptr) / descriptorHandleSize;
 
-    delete cpuDescriptorHandle;
-    descriptorHandleList[freeIndex] = nullptr;
+    descriptorAllocator.FreeID(freeId);
 }

@@ -23,9 +23,9 @@ void D3D12Texture::Release() {
         renderer.WaitFence(renderer.frameData[frameIndex].fenceValue);
     }
 
-    if (descriptorHandlePtr) {
-        renderer.singleDescriptorAllocator->Free(descriptorHandlePtr);
-        descriptorHandlePtr = nullptr;
+    if (descriptorHandle.ptr != 0) {
+        renderer.singleDescriptorAllocator->Free(descriptorHandle);
+        descriptorHandle.ptr = 0;
     }
 
 #ifdef USE_D3D12_MEMALLOC
@@ -562,8 +562,8 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
         break;
     }
 
-    D3D12_CPU_DESCRIPTOR_HANDLE *descriptorHandlePtr = renderer.singleDescriptorAllocator->Alloc();
-    renderer.device->CreateShaderResourceView(textureResource, &srvDesc, *descriptorHandlePtr);
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = renderer.singleDescriptorAllocator->Alloc();
+    renderer.device->CreateShaderResourceView(textureResource, &srvDesc, descriptorHandle);
 
     D3D12Texture *texture = new D3D12Texture;
 #ifdef USE_D3D12_MEMALLOC
@@ -572,7 +572,7 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
     texture->textureResource = textureResource;
 #endif
     texture->textureDesc = textureResource->GetDesc();
-    texture->descriptorHandlePtr = descriptorHandlePtr;
+    texture->descriptorHandle = descriptorHandle;
 
     return texture;
 }
