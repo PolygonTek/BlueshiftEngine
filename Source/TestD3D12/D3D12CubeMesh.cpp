@@ -252,9 +252,9 @@ float4 PSMain(PSInput input) : SV_TARGET {
     SAFE_RELEASE(compiledPixelShader);
 }
 
-void D3D12CubeMesh::DrawMesh() {
-    ID3D12GraphicsCommandList* currentCommandList = renderer.currentFrameCommandList->commandList;
-    D3D12RootDescriptorPool* currentRootDescriptorPool = renderer.currentFrameData->rootDescriptorPool;
+void D3D12CubeMesh::DrawMesh(int drawIndex) {
+    D3D12CommandList* currentFrameCommandList = renderer.currentFrameCommandList;
+    D3D12RootDescriptorPool* currentFrameRootDescriptorPool = renderer.currentFrameData->rootDescriptorPool;
 
     D3D12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle = {0};
     void *writePtr = renderer.currentFrameData->AllocConstant(sizeof(CubeConstants), &cbvDescriptorHandle);
@@ -269,35 +269,36 @@ void D3D12CubeMesh::DrawMesh() {
     // 루트 디스크립터 테이블을 할당한다. 여기서 디스크립터 테이블은 연속된 디스크립터 핸들을 말한다.
     D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorHandle;
     D3D12_GPU_DESCRIPTOR_HANDLE gpuRootDescriptorHandle;
-    if (!currentRootDescriptorPool->AllocRange(2, &cpuRootDescriptorHandle, &gpuRootDescriptorHandle)) {
+    if (!currentFrameRootDescriptorPool->AllocRange(2, &cpuRootDescriptorHandle, &gpuRootDescriptorHandle)) {
         return;
     }
 
-    // 루트 디스크립터 힙을 지정한다.
-    ID3D12DescriptorHeap* descriptorHeaps[] = { currentRootDescriptorPool->descriptorHeap };
-    currentCommandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
-
-    // 루트 시그니쳐를 세팅한다.
-    currentCommandList->SetGraphicsRootSignature(rootSignature);
-
     // 루트 디스크립터 테이블에 SRV 디스크립터 카피 - 0
-    CD3DX12_CPU_DESCRIPTOR_HANDLE srvDest(cpuRootDescriptorHandle, 0, currentRootDescriptorPool->descriptorHandleSize);
+    CD3DX12_CPU_DESCRIPTOR_HANDLE srvDest(cpuRootDescriptorHandle, 0, currentFrameRootDescriptorPool->descriptorHandleSize);
     renderer.device->CopyDescriptorsSimple(1, srvDest, texture->descriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     // 루트 디스크립터 테이블에 CBV 디스크립터 카피 - 1
-    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDest(cpuRootDescriptorHandle, 1, currentRootDescriptorPool->descriptorHandleSize);
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDest(cpuRootDescriptorHandle, 1, currentFrameRootDescriptorPool->descriptorHandleSize);
     renderer.device->CopyDescriptorsSimple(1, cbvDest, cbvDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    
+
+    // 루트 디스크립터 힙을 지정한다.
+    ID3D12DescriptorHeap *descriptorHeaps[] = { currentFrameRootDescriptorPool->descriptorHeap };
+    currentFrameCommandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
+
+    // 루트 시그니쳐를 세팅한다.
+    currentFrameCommandList->SetGraphicsRootSignature(rootSignature);
+
     // 루트 디스크립터 테이블을 세팅한다.
-    currentCommandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
+    currentFrameCommandList->commandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
 
-    //gpuDescriptorHandle.Offset(1, currentRootDescriptorPool->descriptorHandleSize);
-    //renderer.currentCommandList->SetGraphicsRootDescriptorTable(1, gpuRootDescriptorHandle);
+    //gpuRootDescriptorHandle.Offset(1, currentRootDescriptorPool->descriptorHandleSize);
+    //currentCommandList->commandList->SetGraphicsRootDescriptorTable(1, gpuRootDescriptorHandle);
 
-    currentCommandList->SetPipelineState(pipelineState);
+    currentFrameCommandList->SetPipelineState(pipelineState);
+    currentFrameCommandList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    currentCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    currentCommandList->IASetVertexBuffers(0, 1, &vertexBuffer->vbv);
-    currentCommandList->IASetIndexBuffer(&indexBuffer->ibv);
-    currentCommandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+    currentFrameCommandList->commandList->IASetVertexBuffers(0, 1, &vertexBuffer->vbv);
+    currentFrameCommandList->commandList->IASetIndexBuffer(&indexBuffer->ibv);
+
+    currentFrameCommandList->commandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
 }

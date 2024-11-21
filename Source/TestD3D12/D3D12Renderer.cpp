@@ -351,11 +351,8 @@ void D3D12Renderer::BeginRender() {
     currentFrameData->commandListPool->Clear();
     currentFrameCommandList = currentFrameData->commandListPool->Alloc();
 
-    // 커맨드 할당자를 재사용하도록 리셋
-    currentFrameCommandList->commandAllocator->Reset();
-
-    // 커맨드 리스트를 커맨드 할당자를 이용하여 초기 상태로 리셋
-    currentFrameCommandList->commandList->Reset(currentFrameCommandList->commandAllocator, nullptr);
+    // 커맨드 할당자를 재사용하도록 리셋하고, 커맨드 리스트를 커맨드 할당자를 이용하여 초기 상태로 리셋
+    currentFrameCommandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
     currentFrameCommandList->commandList->RSSetViewports(1, &viewport);

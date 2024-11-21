@@ -17,6 +17,8 @@
 #include "D3D12App.h"
 #include "D3D12TriangleMesh.h"
 #include "D3D12CubeMesh.h"
+#include "D3D12RootDescriptorPool.h"
+#include "D3D12CommandListPool.h"
 
 D3D12App        app;
 
@@ -102,7 +104,7 @@ void D3D12App::DrawTriangles() {
         triangleMesh->offset.x = 0.5f * Math::Cos(t);
         triangleMesh->offset.y = 0.5f * Math::Sin(t * 3);
 
-        triangleMesh->DrawMesh();
+        triangleMesh->DrawMesh(i);
     }
 }
 
@@ -133,11 +135,11 @@ void D3D12App::DrawCubes() {
 
             cubeMesh->worldMatrix.SetTRS(Vec3(0, startX + spacing * x, startY + spacing * y), Mat3::FromRotationZYX(t, 0, t * 0.5f), Vec3(scale));
 
-            cubeMesh->DrawMesh();
+            cubeMesh->DrawMesh(dimensionX * y + x);
             numDrawCalls++;
         }
 
-        if (numDrawCalls >= 2048) {
+        if (numDrawCalls >= 1024) {
             numDrawCalls = 0;
             renderer.FlushCommandList();
         }

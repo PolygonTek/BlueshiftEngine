@@ -24,7 +24,7 @@ class D3D12CubeMesh : public D3D12Mesh {
 public:
     virtual void                    InitMesh() override;
     virtual void                    FreeMesh() override;
-    virtual void                    DrawMesh() override;
+    virtual void                    DrawMesh(int drawIndex) override;
 
     void                            InitRootSignature();
     void                            InitPipelineState();
