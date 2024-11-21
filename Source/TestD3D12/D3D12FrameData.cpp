@@ -32,9 +32,8 @@ void D3D12FrameData::Init() {
     // 다이나믹 상수 버퍼 생성
     constantBuffer = D3D12ConstantBuffer::CreateConstantBuffer(65536 * 64);
 
-    // Map and initialize the constant buffer. We don't unmap this until the
-    // app closes. Keeping things mapped for the lifetime of the resource is okay.
-    mappedConstantBase = constantBuffer->Map(0, 0);
+    // 상수 버퍼를 프로그램이 끝날 때 까지 Map 해놓고 쓴다. (Pinned) 
+    constantBuffer->buffer->GetResource()->Map(0, nullptr, reinterpret_cast<void **>(&mappedConstantBase));
 
     cbvDescriptorHandlePtrs.SetGranularity(64);
 }

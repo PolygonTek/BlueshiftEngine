@@ -70,8 +70,7 @@ bool D3D12Texture::UpdateTexture2D(UINT level, UINT x, UINT y, UINT width, UINT 
 
     // 이미지 데이터를 업로드 버퍼에 write
     UINT8 *mappedPtr = nullptr;
-    CD3DX12_RANGE writeRange(0, 0);
-    uploadBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedPtr));
+    uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
 
     byte *dstPtr = mappedPtr;
     const byte *srcPtr = (byte *)pixels;
@@ -82,7 +81,8 @@ bool D3D12Texture::UpdateTexture2D(UINT level, UINT x, UINT y, UINT width, UINT 
         dstPtr += dstPitch;
     }
 
-    uploadBuffer->Unmap(0, nullptr);
+    CD3DX12_RANGE writtenRange(0, uploadBufferSize);
+    uploadBuffer->Unmap(0, &writtenRange);
 
 #ifdef USE_D3D12_MEMALLOC
     ID3D12Resource *textureResource = textureAllocation->GetResource();
@@ -157,8 +157,7 @@ bool D3D12Texture::UpdateTexture3D(UINT level, UINT x, UINT y, UINT z, UINT widt
 
     // 이미지 데이터를 업로드 버퍼에 write
     UINT8 *mappedPtr = nullptr;
-    CD3DX12_RANGE writeRange(0, 0);
-    uploadBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedPtr));
+    uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
 
     byte *dstPtr = mappedPtr;
     const byte *srcPtr = (byte *)pixels;
@@ -171,7 +170,8 @@ bool D3D12Texture::UpdateTexture3D(UINT level, UINT x, UINT y, UINT z, UINT widt
         }
     }
 
-    uploadBuffer->Unmap(0, nullptr);
+    CD3DX12_RANGE writtenRange(0, uploadBufferSize);
+    uploadBuffer->Unmap(0, &writtenRange);
 
 #ifdef USE_D3D12_MEMALLOC
     ID3D12Resource *textureResource = textureAllocation->GetResource();
@@ -221,12 +221,12 @@ void D3D12Texture::GetTextureImage2D(UINT level, Image::Format::Enum dstFormat, 
 
     // 텍스쳐 리소스의 특정 밉레벨 (서브 리소스) 의 메모리 정보를 얻어온다.
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
-    UINT64 size;
+    UINT64 mipLevelSize;
+    renderer.device->GetCopyableFootprints(&textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, &mipLevelSize);
 
-    renderer.device->GetCopyableFootprints(&textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, &size);
-
-    D3D12Buffer *readbackBuffer = D3D12Buffer::CreateBuffer(D3D12Buffer::Usage::Readback, size);
+    D3D12Buffer *readbackBuffer = D3D12Buffer::CreateBuffer(D3D12Buffer::Usage::Readback, mipLevelSize);
     if (!readbackBuffer) {
+        BE_WARNLOG("D3D12Texture::GetTextureImage2D: Failed to create readback buffer\n");
         return;
     }
 
@@ -259,7 +259,7 @@ void D3D12Texture::GetTextureImage2D(UINT level, Image::Format::Enum dstFormat, 
 
     // 복사된 리드백 버퍼를 메모리로 읽어오기 위해 Map 을 한다.
     void *mappedPtr = nullptr;
-    D3D12_RANGE readRange = { 0, mipLevelFootprint.Footprint.RowPitch * textureDesc.Height };
+    D3D12_RANGE readRange = { 0, mipLevelSize };
     readbackBuffer->GetResource()->Map(0, &readRange, &mappedPtr);
 
     const byte *srcPtr = (byte *)mappedPtr;
@@ -284,8 +284,8 @@ void D3D12Texture::GetTextureImage2D(UINT level, Image::Format::Enum dstFormat, 
         dstPtr += dstPitch;
     }
 
-    D3D12_RANGE writeRange = { 0, 0 };
-    readbackBuffer->GetResource()->Unmap(0, &writeRange);
+    D3D12_RANGE writtenRange = { 0, 0 };
+    readbackBuffer->GetResource()->Unmap(0, &writtenRange);
 
     // 리드백 버퍼 삭제
     SAFE_DELETE(readbackBuffer);
@@ -445,7 +445,6 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
     // 텍스쳐 리소스의 서브 리소스 별 메모리 정보를 얻어온다.
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprints[16];
     UINT64 size;
-
     renderer.device->GetCopyableFootprints(&textureDesc, 0, textureDesc.MipLevels, 0, mipLevelFootprints, nullptr, nullptr, &size);
 
     // 업로드 버퍼 생성
@@ -462,8 +461,7 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
 
     // 이미지 데이터를 업로드 버퍼에 write
     UINT8 *mappedPtr = nullptr;
-    CD3DX12_RANGE range(0, 0);
-    uploadBuffer->Map(0, &range, reinterpret_cast<void **>(&mappedPtr));
+    uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
 
     byte *dstPtr = mappedPtr;
     int bpp = srcImage->IsCompressed() ? srcImage->BytesPerBlock() : srcImage->BytesPerPixel();
@@ -491,7 +489,8 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
         }
     }
 
-    uploadBuffer->Unmap(0, nullptr);
+    CD3DX12_RANGE writtenRange(0, size);
+    uploadBuffer->Unmap(0, &writtenRange);
 
     // 업로드 버퍼에서 텍스쳐로 데이터 카피
     renderer.commandAllocator->Reset();

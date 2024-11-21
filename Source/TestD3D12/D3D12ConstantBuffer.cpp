@@ -21,17 +21,6 @@ void D3D12ConstantBuffer::Release() {
     SAFE_DELETE(buffer);
 }
 
-void *D3D12ConstantBuffer::Map(SIZE_T begin, SIZE_T end) {
-    void* mappedPtr = nullptr;
-    CD3DX12_RANGE range(0, 0); // We do not intend to read from this resource on the CPU.
-    buffer->GetResource()->Map(0, &range, reinterpret_cast<void **>(&mappedPtr));
-    return mappedPtr;
-}
-
-void D3D12ConstantBuffer::Unmap() {
-    buffer->GetResource()->Unmap(0, nullptr);
-}
-
 D3D12ConstantBuffer* D3D12ConstantBuffer::CreateConstantBuffer(int size) {
     // 상수 버퍼는 어차피 GPU 에 요청하면 256 바이트로 주소 & 사이즈가 정렬된다.
     UINT alignedSize = (UINT)AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);

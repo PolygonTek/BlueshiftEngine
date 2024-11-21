@@ -54,10 +54,12 @@ D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type::En
             }
 
             UINT8* mappedPtr = nullptr;
-            CD3DX12_RANGE writeRange(0, 0);
-            uploadBuffer->Map(0, &writeRange, reinterpret_cast<void **>(&mappedPtr));
+            uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
+
             memcpy(mappedPtr, data, bufferSize);
-            uploadBuffer->Unmap(0, nullptr);
+
+            CD3DX12_RANGE writtenRange(0, bufferSize);
+            uploadBuffer->Unmap(0, &writtenRange);
 
             // 업로드 버퍼에서 GPU 버퍼로 데이터 카피
             renderer.commandAllocator->Reset();
@@ -71,10 +73,12 @@ D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type::En
             renderer.commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
         } else if (type == D3D12IndexBuffer::Type::Dynamic) {
             UINT8* mappedPtr = nullptr;
-            CD3DX12_RANGE range(0, 0);
-            bufferResource->Map(0, &range, reinterpret_cast<void **>(&mappedPtr));
+            bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
+
             memcpy(mappedPtr, data, bufferSize);
-            bufferResource->Unmap(0, nullptr);
+
+            CD3DX12_RANGE writtenRange(0, bufferSize);
+            bufferResource->Unmap(0, &writtenRange);
         } else {
             SAFE_DELETE(buffer);
             return nullptr;

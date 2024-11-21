@@ -28,9 +28,6 @@ public:
 
     void                            Release();
 
-    void*                           Map(SIZE_T begin, SIZE_T end);
-    void                            Unmap();
-
     static D3D12ConstantBuffer *    CreateConstantBuffer(int size);
 
     D3D12Buffer *                   buffer = nullptr;
