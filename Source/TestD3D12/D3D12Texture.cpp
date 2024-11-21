@@ -14,6 +14,7 @@
 
 #include "Precompiled.h"
 #include "D3D12Texture.h"
+#include "D3D12Buffer.h"
 #include "D3D12Renderer.h"
 #include "D3D12SingleDescriptorAllocator.h"
 
@@ -35,7 +36,7 @@ void D3D12Texture::Release() {
 }
 
 bool D3D12Texture::UpdateTexture2D(UINT level, UINT x, UINT y, UINT width, UINT height, Image::Format::Enum srcFormat, const void *pixels) {
-    // 텍스쳐의 특정 level 에 대한 Footprint 정보를 얻어온다.
+    // 텍스쳐 리소스의 특정 mipLevel 에 대한 메모리 정보를 얻어온다.
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
     renderer.device->GetCopyableFootprints(&textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, nullptr);
 
@@ -75,7 +76,7 @@ bool D3D12Texture::UpdateTexture2D(UINT level, UINT x, UINT y, UINT width, UINT 
     byte *dstPtr = mappedPtr;
     const byte *srcPtr = (byte *)pixels;
 
-    for (UINT h = 0; h < height; ++h) {
+    for (UINT y = 0; y < height; ++y) {
         memcpy(dstPtr, srcPtr, srcPitch);
         srcPtr += srcPitch;
         dstPtr += dstPitch;
@@ -121,9 +122,8 @@ bool D3D12Texture::UpdateTexture2D(UINT level, UINT x, UINT y, UINT width, UINT 
     return true;
 }
 
-bool D3D12Texture::UpdateTexture3D(UINT level, UINT x, UINT y, UINT z, UINT width, UINT height, UINT depth, Image::Format::Enum srcFormat, const void *pixels)
-{
-    // 텍스쳐의 특정 level 에 대한 Footprint 정보를 얻어온다.
+bool D3D12Texture::UpdateTexture3D(UINT level, UINT x, UINT y, UINT z, UINT width, UINT height, UINT depth, Image::Format::Enum srcFormat, const void *pixels) {
+    // 텍스쳐 리소스의 특정 mipLevel 에 대한 메모리 정보를 얻어온다.
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
     renderer.device->GetCopyableFootprints(&textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, nullptr);
 
@@ -211,12 +211,95 @@ bool D3D12Texture::UpdateTexture3D(UINT level, UINT x, UINT y, UINT z, UINT widt
     return true;
 }
 
-void D3D12Texture::GetTexture2D(UINT level, Image::Format::Enum imageFormat, void *outPixels) {
-    // 텍스쳐 리소스의 (Footprint = 차지하는 공간) 메모리 정보를 얻어온다.
-    D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipFootprints[16];
+void D3D12Texture::GetTextureImage2D(UINT level, Image::Format::Enum dstFormat, void *outPixels) {
+    Image::Format::Enum textureImageFormat;
+    bool isSRGB;
+    if (!DXGIFormatToImageFormat(textureDesc.Format, &textureImageFormat, &isSRGB)) {
+        BE_WARNLOG("D3D12Texture::GetTexture2D: Unsupported DXGI format %i\n", textureDesc.Format);
+        return;
+    }
+
+    // 텍스쳐 리소스의 특정 밉레벨 (서브 리소스) 의 메모리 정보를 얻어온다.
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprint;
     UINT64 size;
 
-    renderer.device->GetCopyableFootprints(&textureDesc, 0, textureDesc.MipLevels, 0, mipFootprints, nullptr, nullptr, &size);
+    renderer.device->GetCopyableFootprints(&textureDesc, level, 1, 0, &mipLevelFootprint, nullptr, nullptr, &size);
+
+    D3D12Buffer *readbackBuffer = D3D12Buffer::CreateBuffer(D3D12Buffer::Usage::Readback, size);
+    if (!readbackBuffer) {
+        return;
+    }
+
+#ifdef USE_D3D12_MEMALLOC
+    ID3D12Resource *textureResource = textureAllocation->GetResource();
+#endif
+
+    // 텍스쳐에서 리드백 버퍼로 복사한다.
+    D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
+    srcLocation.pResource = textureResource;
+    srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    srcLocation.SubresourceIndex = 0;
+
+    D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
+    dstLocation.pResource = readbackBuffer->GetResource();
+    dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+    dstLocation.PlacedFootprint = mipLevelFootprint;
+
+    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE));
+    renderer.commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+    renderer.commandList->Close();
+
+    // 커맨드 큐 실행
+    ID3D12CommandList *ppCommandLists[] = { renderer.commandList };
+    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
+
+    // GPU 에서 복사가 끝날 때까지 기다린다.
+    renderer.Finish();
+
+    // 복사된 리드백 버퍼를 메모리로 읽어오기 위해 Map 을 한다.
+    void *mappedPtr = nullptr;
+    D3D12_RANGE readRange = { 0, mipLevelFootprint.Footprint.RowPitch * textureDesc.Height };
+    readbackBuffer->GetResource()->Map(0, &readRange, &mappedPtr);
+
+    const byte *srcPtr = (byte *)mappedPtr;
+    byte *dstPtr = nullptr;
+
+    Image textureImage;
+    if (textureImageFormat != dstFormat) {
+        // 컨버팅이 필요하다면 리드백 버퍼에서 textureImage 에 카피한다.
+        textureImage.InitFromMemory(textureDesc.Width, textureDesc.Height, 1, 1, 1, textureImageFormat, isSRGB ? Image::GammaSpace::sRGB : Image::GammaSpace::Linear, nullptr, 0);
+        dstPtr = textureImage.GetPixels();
+    } else {
+        // 컨버팅할 필요가 없다면 리드백 버퍼에서 그대로 outPixels 로 카피한다.
+        dstPtr = (byte *)outPixels;
+    }
+
+    int srcPitch = mipLevelFootprint.Footprint.RowPitch;
+    int dstPitch = Image::MemRequired(textureDesc.Width, 1, 1, 1, textureImageFormat);
+
+    for (UINT y = 0; y < textureDesc.Height; ++y) {
+        memcpy(dstPtr, srcPtr, srcPitch);
+        srcPtr += srcPitch;
+        dstPtr += dstPitch;
+    }
+
+    D3D12_RANGE writeRange = { 0, 0 };
+    readbackBuffer->GetResource()->Unmap(0, &writeRange);
+
+    // 리드백 버퍼 삭제
+    SAFE_DELETE(readbackBuffer);
+
+    if (textureImageFormat == dstFormat) {
+        return;
+    }
+
+    // 필요하다면 컨버팅한다.
+    Image dstImage;
+    if (textureImage.ConvertFormat(dstFormat, dstImage)) {
+        memcpy(outPixels, dstImage.GetPixels(), dstImage.SizeInBytes());
+        return;
+    }
 }
 
 D3D12Texture *D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, const char *filename, bool useCompression, bool useNormalMap) {
@@ -244,7 +327,7 @@ D3D12Texture *D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
     bool dstFormatSupported = IsSupportedImageFormat(dstFormat);
 
     if (!dstFormatSupported) {
-        BE_WARNLOG("Unsupported internal image format %s\n", Image::FormatName(dstFormat));
+        BE_WARNLOG("D3D12Texture::CreateTexture: Unsupported internal image format %s\n", Image::FormatName(dstFormat));
         return nullptr;
     }
 
@@ -297,7 +380,7 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
     DXGI_FORMAT dxgiFormat;
     bool srcFormatSupported = ImageFormatToDXGIFormat(srcFormat, !isLinearSpace, &dxgiFormat);
     if (!srcFormatSupported) {
-        BE_WARNLOG("Unsupported image format %s\n", Image::FormatName(srcFormat));
+        BE_WARNLOG("D3D12Texture::CreateTexture: Unsupported image format %s\n", Image::FormatName(srcFormat));
         return nullptr;
     }
 
@@ -359,11 +442,11 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
     }
 #endif
 
-    // 텍스쳐 리소스에 write 할 수 있는 (Footprint = 차지하는 공간) 메모리 정보를 얻어온다.
-    D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipFootprints[16];
+    // 텍스쳐 리소스의 서브 리소스 별 메모리 정보를 얻어온다.
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT mipLevelFootprints[16];
     UINT64 size;
 
-    renderer.device->GetCopyableFootprints(&textureDesc, 0, textureDesc.MipLevels, 0, mipFootprints, nullptr, nullptr, &size);
+    renderer.device->GetCopyableFootprints(&textureDesc, 0, textureDesc.MipLevels, 0, mipLevelFootprints, nullptr, nullptr, &size);
 
     // 업로드 버퍼 생성
     ID3D12Resource *uploadBuffer = nullptr;
@@ -401,7 +484,7 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
                     for (int r = 0; r < srcRows; ++r) {
                         memcpy(dstPtr, srcPtr, srcPitch);
                         srcPtr += srcPitch;
-                        dstPtr += mipFootprints[mipLevel].Footprint.RowPitch;
+                        dstPtr += mipLevelFootprints[mipLevel].Footprint.RowPitch;
                     }
                 }
             }
@@ -420,12 +503,12 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
                 int subresourceIndex = maxMipLevels * (numFaces * sliceIndex + faceIndex) + mipLevel;
 
                 D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
-                srcLocation.PlacedFootprint = mipFootprints[mipLevel];
+                srcLocation.PlacedFootprint = mipLevelFootprints[mipLevel];
                 srcLocation.pResource = uploadBuffer;
                 srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
 
                 D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
-                dstLocation.PlacedFootprint = mipFootprints[mipLevel];
+                dstLocation.PlacedFootprint = mipLevelFootprints[mipLevel];
                 dstLocation.pResource = textureResource;
                 dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
                 dstLocation.SubresourceIndex = subresourceIndex;
@@ -591,6 +674,125 @@ bool D3D12Texture::ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool
         return true;
     case Image::Format::DepthStencil_24_8:
         if (dxgiFormat) *dxgiFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        return true;
+    }
+    return false;
+}
+
+bool D3D12Texture::DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, Image::Format::Enum *imageFormat, bool *isSRGB) {
+    if (isSRGB) {
+        *isSRGB = false;
+        switch (dxgiFormat) {
+        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+        case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+        case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+        case DXGI_FORMAT_BC1_UNORM_SRGB:
+        case DXGI_FORMAT_BC2_UNORM_SRGB:
+        case DXGI_FORMAT_BC3_UNORM_SRGB:
+            *isSRGB = true;
+            break;
+        }
+    }
+
+    switch (dxgiFormat) {
+    case DXGI_FORMAT_R8_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::R_8;
+        return true;
+    case DXGI_FORMAT_A8_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::A_8;
+        return true;
+    case DXGI_FORMAT_R8G8_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::RG_8_8;
+        return true;
+    case DXGI_FORMAT_R8G8B8A8_UNORM:
+    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+        if (imageFormat) *imageFormat = Image::Format::RGBA_8_8_8_8;
+        return true;
+    case DXGI_FORMAT_B8G8R8A8_UNORM:
+    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+        if (imageFormat) *imageFormat = Image::Format::BGRA_8_8_8_8;
+        return true;
+    case DXGI_FORMAT_B8G8R8X8_UNORM:
+    case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+        if (imageFormat) *imageFormat = Image::Format::BGRX_8_8_8_8;
+        return true;
+    case DXGI_FORMAT_R8_SNORM:
+        if (imageFormat) *imageFormat = Image::Format::R_8_SNORM;
+        return true;
+    case DXGI_FORMAT_R8G8_SNORM:
+        if (imageFormat) *imageFormat = Image::Format::RG_8_8_SNORM;
+        return true;
+    case DXGI_FORMAT_R8G8B8A8_SNORM:
+        if (imageFormat) *imageFormat = Image::Format::RGBA_8_8_8_8_SNORM;
+        return true;
+    case DXGI_FORMAT_B5G6R5_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::BGR_5_6_5;
+        return true;
+    case DXGI_FORMAT_B4G4R4A4_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::BGRA_4_4_4_4;
+        return true;
+    case DXGI_FORMAT_A4B4G4R4_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::ABGR_4_4_4_4;
+        return true;
+    case DXGI_FORMAT_B5G5R5A1_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::BGRA_5_5_5_1;
+        return true;
+    case DXGI_FORMAT_R10G10B10A2_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::RGBA_10_10_10_2;
+        return true;
+    case DXGI_FORMAT_R16_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::R_16F;
+        return true;
+    case DXGI_FORMAT_R16G16_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::RG_16F_16F;
+        return true;
+    case DXGI_FORMAT_R16G16B16A16_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::RGBA_16F_16F_16F_16F;
+        return true;
+    case DXGI_FORMAT_R32_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::R_32F;
+        return true;
+    case DXGI_FORMAT_R32G32_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::RG_32F_32F;
+        return true;
+    case DXGI_FORMAT_R32G32B32_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::RGB_32F_32F_32F;
+        return true;
+    case DXGI_FORMAT_R32G32B32A32_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::RGBA_32F_32F_32F_32F;
+        return true;
+    case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
+        if (imageFormat) *imageFormat = Image::Format::RGBE_9_9_9_5;
+        return true;
+    case DXGI_FORMAT_R11G11B10_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::RGB_11F_11F_10F;
+        return true;
+    case DXGI_FORMAT_BC1_UNORM:
+    case DXGI_FORMAT_BC1_UNORM_SRGB:
+        if (imageFormat) *imageFormat = Image::Format::DXT1;
+        return true;
+    case DXGI_FORMAT_BC2_UNORM:
+    case DXGI_FORMAT_BC2_UNORM_SRGB:
+        if (imageFormat) *imageFormat = Image::Format::DXT3;
+        return true;
+    case DXGI_FORMAT_BC3_UNORM:
+    case DXGI_FORMAT_BC3_UNORM_SRGB:
+        if (imageFormat) *imageFormat = Image::Format::DXT5;
+        return true;
+    case DXGI_FORMAT_BC4_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::DXN1;
+        return true;
+    case DXGI_FORMAT_BC5_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::DXN2;
+        return true;
+    case DXGI_FORMAT_D16_UNORM:
+        if (imageFormat) *imageFormat = Image::Format::Depth_16;
+        return true;
+    case DXGI_FORMAT_D32_FLOAT:
+        if (imageFormat) *imageFormat = Image::Format::Depth_32F;
+        return true;
+    case DXGI_FORMAT_D24_UNORM_S8_UINT:
+        if (imageFormat) *imageFormat = Image::Format::DepthStencil_24_8;
         return true;
     }
     return false;

@@ -22,10 +22,10 @@ void D3D12ConstantBuffer::Release() {
 }
 
 void *D3D12ConstantBuffer::Map(SIZE_T begin, SIZE_T end) {
-    void* mappedBase = nullptr;
+    void* mappedPtr = nullptr;
     CD3DX12_RANGE range(0, 0); // We do not intend to read from this resource on the CPU.
-    buffer->GetResource()->Map(0, &range, reinterpret_cast<void **>(&mappedBase));
-    return mappedBase;
+    buffer->GetResource()->Map(0, &range, reinterpret_cast<void **>(&mappedPtr));
+    return mappedPtr;
 }
 
 void D3D12ConstantBuffer::Unmap() {
