@@ -321,21 +321,21 @@ BE_FORCE_INLINE float reduce_min_ps(const ssef &a) { return _mm_cvtss_f32(vreduc
 BE_FORCE_INLINE float reduce_max_ps(const ssef &a) { return _mm_cvtss_f32(vreduce_max_ps(a)); }
 
 // Returns index of minimum component.
-BE_FORCE_INLINE size_t select_min_ps(const ssef &a) { return CountTrailingZeros(_mm_movemask_ps(a == vreduce_min_ps(a))); }
+BE_FORCE_INLINE size_t select_min_ps(const ssef &a) { return CountTrailingZeros((uint32_t)_mm_movemask_ps(a == vreduce_min_ps(a))); }
 
 // Returns index of maximum component.
-BE_FORCE_INLINE size_t select_max_ps(const ssef &a) { return CountTrailingZeros(_mm_movemask_ps(a == vreduce_max_ps(a))); }
+BE_FORCE_INLINE size_t select_max_ps(const ssef &a) { return CountTrailingZeros((uint32_t)_mm_movemask_ps(a == vreduce_max_ps(a))); }
 
 // Returns index of minimum component with valid index mask.
 BE_FORCE_INLINE size_t select_min_ps(const ssef &a, const sseb &validmask) {
     const ssef v = select_ps(set1_ps(FLT_INFINITY), a, validmask);
-    return CountTrailingZeros(_mm_movemask_ps(_mm_and_ps(validmask.m128, (v == vreduce_min_ps(v)))));
+    return CountTrailingZeros((uint32_t)_mm_movemask_ps(_mm_and_ps(validmask.m128, (v == vreduce_min_ps(v)))));
 }
 
 // Returns index of maximum component with valid index mask.
 BE_FORCE_INLINE size_t select_max_ps(const ssef &a, const sseb &validmask) {
     const ssef v = select_ps(set1_ps(-FLT_INFINITY), a, validmask);
-    return CountTrailingZeros(_mm_movemask_ps(_mm_and_ps(validmask.m128, (v == vreduce_max_ps(v)))));
+    return CountTrailingZeros((uint32_t)_mm_movemask_ps(_mm_and_ps(validmask.m128, (v == vreduce_max_ps(v)))));
 }
 
 // Broadcasts sums of all components.

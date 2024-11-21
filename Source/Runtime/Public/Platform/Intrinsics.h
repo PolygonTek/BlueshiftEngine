@@ -77,10 +77,58 @@ BE_INLINE uint32_t CountTrailingZeros(uint32_t value) {
     if (value == 0) {
         return 32;
     }
-    uint32_t bitIndex;    // 0-based, where the LSB is 0 and MSB is 31.
-    _BitScanForward((::DWORD *)&bitIndex, value);   // Scans from LSB to MSB.
+    DWORD bitIndex;
+    // Scans from LSB to MSB.
+    _BitScanForward(&bitIndex, value);
     return bitIndex;
 }
+
+BE_INLINE uint32_t CountSetBits(uint32_t value) {
+    return _mm_popcnt_u32(value);
+}
+
+#if defined(__X86_64__) || defined(__ARM64__)
+
+#pragma intrinsic(_BitScanReverse64)
+#pragma intrinsic(_BitScanForward64)
+
+// Computes the base 2 logarithm for an integer value that is greater than 0.
+// The result is rounded down to the nearest integer.
+BE_INLINE uint32_t FloorLog2(uint64_t value) {
+    // Use BSR to return the log2 of the integer.
+    DWORD log2;
+    if (_BitScanReverse64(&log2, value) != 0) {
+        return log2;
+    }
+    return 0;
+}
+
+// Counts the number of leading zeros in the bit representation of the value.
+BE_INLINE uint32_t CountLeadingZeros(uint64_t value) {
+    // Use BSR to return the log2 of the integer.
+    DWORD log2;
+    if (_BitScanReverse64(&log2, value) != 0) {
+        return 63 - log2;
+    }
+    return 64;
+}
+
+// Counts the number of trailing zeros in the bit representation of the value.
+BE_INLINE uint32_t CountTrailingZeros(uint64_t value) {
+    if (value == 0) {
+        return 64;
+    }
+    DWORD bitIndex;
+    // Scans from LSB to MSB.
+    _BitScanForward64(&bitIndex, value);
+    return bitIndex;
+}
+
+BE_INLINE uint32_t CountSetBits(uint64_t value) {
+    return _mm_popcnt_u64(value);
+}
+
+#endif
 
 #endif
 
@@ -155,5 +203,42 @@ BE_INLINE uint32_t CountTrailingZeros(uint32_t value) {
     }
     return __builtin_ctz(value);
 }
+
+BE_INLINE uint32_t CountSetBits(uint32_t value) {
+    return __builtin_popcount(value);
+}
+
+#if defined(__X86_64__) || defined(__ARM64__)
+
+BE_INLINE uint32_t FloorLog2(uint64_t value) {
+    uint32_t pos = 0;
+    if (value >= 1ULL << 32) { value >>= 32; pos += 32; }
+    if (value >= 1 << 16) { value >>= 16; pos += 16; }
+    if (value >= 1 << 8) { value >>= 8; pos += 8; }
+    if (value >= 1 << 4) { value >>= 4; pos += 4; }
+    if (value >= 1 << 2) { value >>= 2; pos += 2; }
+    if (value >= 1 << 1) { pos += 1; }
+    return (value == 0) ? 0 : pos;
+}
+
+BE_INLINE uint32_t CountLeadingZeros(uint64_t value) {
+    if (value == 0) {
+        return 64;
+    }
+    return __builtin_clzll(value);
+}
+
+BE_INLINE uint32_t CountTrailingZeros(uint64_t value) {
+    if (value == 0) {
+        return 64;
+    }
+    return __builtin_ctzll(value);
+}
+
+BE_INLINE uint32_t CountSetBits(uint64_t value) {
+    return __builtin_popcountll(value);
+}
+
+#endif
 
 #endif // __UNIX__

@@ -26,6 +26,7 @@
 #include "Core/Range.h"
 #include "Core/Heap.h"
 #include "Core/Allocator.h"
+#include "Core/IDAllocator.h"
 #include "Core/Str.h"
 #include "Core/Variant.h"
 #include "Core/Guid.h"

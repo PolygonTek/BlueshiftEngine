@@ -27,6 +27,7 @@ set(COMMON_ENGINE_FILES
     Public/Containers/LinkedList.h
 
     Public/Core/Allocator.h
+    Public/Core/IDAllocator.h
     Public/Core/BinSearch.h
     Public/Core/Checksum_CRC32.h
     Public/Core/Checksum_MD5.h
@@ -293,6 +294,7 @@ set(COMMON_ENGINE_FILES
 
     Private/Core/Checksum_CRC32.cpp
     Private/Core/Checksum_MD5.cpp
+    Private/Core/IDAllocator.cpp
     Private/Core/Heap.cpp
     Private/Core/UTF8.cpp
     Private/Core/UTF16.cpp
