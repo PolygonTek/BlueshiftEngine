@@ -772,7 +772,7 @@ void BE_FASTCALL SIMD_8::Memset(void *dest0, const int val, const int count0) {
 }
 
 void BE_FASTCALL SIMD_8::TransformJoints(Mat3x4 *jointMats, const int *parents, const int firstJoint, const int lastJoint) {
-    assert_16_byte_aligned(jointMats);
+    assert_32_byte_aligned(jointMats);
 
     const float *__restrict firstMatrix = jointMats->Ptr() + firstJoint * 3 * 4;
 
@@ -806,7 +806,7 @@ void BE_FASTCALL SIMD_8::TransformJoints(Mat3x4 *jointMats, const int *parents, 
 }
 
 void BE_FASTCALL SIMD_8::TransformJoints(const Mat3x4 *localJointMats, Mat3x4 *worldJointMats, const int *parents, const int firstJointIndex, const int lastJointIndex) {
-    assert_16_byte_aligned(worldJointMats);
+    assert_32_byte_aligned(worldJointMats);
 
     for (int i = firstJointIndex; i <= lastJointIndex; i++) {
         const int parentIndex = parents[i];
@@ -842,9 +842,9 @@ void BE_FASTCALL SIMD_8::MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, c
         result[i] = joints1[i] * joints2[i];
     }
 #else
-    assert_16_byte_aligned(result);
-    assert_16_byte_aligned(joints1);
-    assert_16_byte_aligned(joints2);
+    assert_32_byte_aligned(result);
+    assert_32_byte_aligned(joints1);
+    assert_32_byte_aligned(joints2);
 
     const float *joint1Ptr = (float *)joints1;
     const float *joint2Ptr = (float *)joints2;
@@ -1149,8 +1149,8 @@ void BE_FASTCALL SIMD_8::MemcpyStream(void *dst, const void *src, const int size
 #if 0
     memcpy(dst, src, size);
 #else
-    assert_16_byte_aligned(src);
-    assert_16_byte_aligned(dst);
+    assert_32_byte_aligned(src);
+    assert_32_byte_aligned(dst);
 
     if (size > 4096) {
         const byte *srcPtr = (const byte *)src;
