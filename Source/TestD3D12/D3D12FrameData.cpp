@@ -23,7 +23,7 @@
 
 void D3D12FrameData::Init() {
     commandListPool = new D3D12CommandListPool;
-    commandListPool->Init(D3D12_COMMAND_LIST_TYPE_DIRECT, 16);
+    commandListPool->Init(D3D12_COMMAND_LIST_TYPE_DIRECT, 32);
 
     // 쉐이더에서 사용할 디스크립터 힙을 생성한다.
     rootDescriptorPool = new D3D12RootDescriptorPool;
