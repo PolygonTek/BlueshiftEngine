@@ -54,7 +54,7 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type
             UINT8* mappedPtr = nullptr;
             uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
 
-            memcpy(mappedPtr, data, bufferSize);
+            simdProcessor->MemcpyStream(mappedPtr, data, bufferSize);
 
             CD3DX12_RANGE writtenRange(0, bufferSize);
             uploadBuffer->Unmap(0, &writtenRange);
@@ -73,7 +73,7 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type
             UINT8 *mappedPtr = nullptr;
             bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
 
-            memcpy(mappedPtr, data, bufferSize);
+            simdProcessor->MemcpyStream(mappedPtr, data, bufferSize);
 
             CD3DX12_RANGE writtenRange(0, 0);
             bufferResource->Unmap(0, &writtenRange);

@@ -191,7 +191,7 @@ void AnimController::Copy(const AnimController *def) {
     }
 
     joints.SetCount(def->joints.Count());
-    memcpy(joints.Ptr(), def->joints.Ptr(), def->joints.Count() * sizeof(joints[0]));
+    simdProcessor->Memcpy(joints.Ptr(), def->joints.Ptr(), def->joints.Count() * sizeof(joints[0]));
 
     offset = def->offset;
 }

@@ -45,7 +45,15 @@ public:
     virtual void BE_FASTCALL            TransformJoints(const Mat3x4 *localJointMats, Mat3x4 *worldJointMats, const int *parents, const int firstJoint, const int lastJoint) override;
     virtual void BE_FASTCALL            MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, const Mat3x4 *joints2, const int numJoints) override;
 
+    virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const int size) override;
+    virtual void BE_FASTCALL            MemcpyStream(void *dst, const void *src, const int size) override;
     virtual void BE_FASTCALL            Memset(void *dst, const int val, const int count) override;
+
+    static void                         Memcpy64B(void *dst, const void *src, const int size);
+    static void                         Memcpy2KB(void *dst, const void *src, const int size);
+    static void                         MemcpyStream64B(void *dst, const void *src, const int size);
+    static void                         MemcpyStream2KB(void *dst, const void *src, const int size);
+    static void                         MemcpyStreamTemp2KB(void *dst, const void *src, const int size);
 
     static const simd8f                 F8_zero;
     static const simd8f                 F8_one;

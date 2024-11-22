@@ -48,8 +48,15 @@ public:
     virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1) override;
     virtual void BE_FASTCALL            MulMat4x4RMVec4(float *dst, const float *src0, const float *src1) override;
 
-    virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const int count) override;
-    virtual void BE_FASTCALL            Memset(void *dst, const int val, const int count) override;
+    virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const int size) override;
+    virtual void BE_FASTCALL            MemcpyStream(void *dst, const void *src, const int size) override;
+    virtual void BE_FASTCALL            Memset(void *dst, const int val, const int size) override;
+
+    static void                         Memcpy64B(void *dst, const void *src, const int size);
+    static void                         Memcpy2KB(void *dst, const void *src, const int size);
+    static void                         MemcpyStream64B(void *dst, const void *src, const int size);
+    static void                         MemcpyStream2KB(void *dst, const void *src, const int size);
+    static void                         MemcpyStreamTemp2KB(void *dst, const void *src, const int size);
 
     virtual void BE_FASTCALL            BlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) override;
     virtual void BE_FASTCALL            BlendJointsFast(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) override;

@@ -213,8 +213,8 @@ void SubMesh::CacheStaticDataToGpu() {
             rhi.BindBuffer(RHI::BufferType::Vertex, vertexCache->buffer);
             byte *ptr = (byte *)rhi.MapBuffer(vertexCache->buffer, RHI::BufferLockMode::WriteOnly);
 
-            rhi.WriteBuffer(ptr, (const byte *)verts, sizeVerts);
-            rhi.WriteBuffer(ptr + sizeVertsAligned, (const byte *)vertWeights, sizeWeights);
+            simdProcessor->MemcpyStream(ptr, (const byte *)verts, sizeVerts);
+            simdProcessor->MemcpyStream(ptr + sizeVertsAligned, (const byte *)vertWeights, sizeWeights);
 
             if (!rhi.UnmapBuffer(vertexCache->buffer)) {
                 BE_WARNLOG("Error unmapping buffer\n");

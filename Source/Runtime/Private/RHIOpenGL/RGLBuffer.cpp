@@ -220,51 +220,6 @@ void OpenGLRHI::FlushMappedBufferRange(Handle bufferHandle, int offset, int size
     gglFlushMappedBufferRange(buffer->target, offset, size);
 }
 
-void OpenGLRHI::WriteBuffer(byte *dst, const byte *src, int numBytes) {
-#if defined(ENABLE_SIMD4_INTRIN)
-    if (IsAligned((intptr_t)dst, 16) && IsAligned((intptr_t)src, 16)) {
-        assert_16_byte_aligned(dst);
-        assert_16_byte_aligned(src);
-
-        int i = 0;
-        for (; i + 128 <= numBytes; i += 128) {
-            simd4i d0 = load_si128((int32_t *)&src[i + 0 * 16]);
-            simd4i d1 = load_si128((int32_t *)&src[i + 1 * 16]);
-            simd4i d2 = load_si128((int32_t *)&src[i + 2 * 16]);
-            simd4i d3 = load_si128((int32_t *)&src[i + 3 * 16]);
-            simd4i d4 = load_si128((int32_t *)&src[i + 4 * 16]);
-            simd4i d5 = load_si128((int32_t *)&src[i + 5 * 16]);
-            simd4i d6 = load_si128((int32_t *)&src[i + 6 * 16]);
-            simd4i d7 = load_si128((int32_t *)&src[i + 7 * 16]);
-
-            storent_si128(d0, (int32_t *)&dst[i + 0 * 16]);
-            storent_si128(d1, (int32_t *)&dst[i + 1 * 16]);
-            storent_si128(d2, (int32_t *)&dst[i + 2 * 16]);
-            storent_si128(d3, (int32_t *)&dst[i + 3 * 16]);
-            storent_si128(d4, (int32_t *)&dst[i + 4 * 16]);
-            storent_si128(d5, (int32_t *)&dst[i + 5 * 16]);
-            storent_si128(d6, (int32_t *)&dst[i + 6 * 16]);
-            storent_si128(d7, (int32_t *)&dst[i + 7 * 16]);
-        }
-        for (; i + 16 <= numBytes; i += 16) {
-            simd4i d = load_si128((int32_t *)&src[i]);
-            storent_si128(d, (int32_t *)&dst[i]);
-        }
-        for (; i + 4 <= numBytes; i += 4) {
-            *(uint32_t *)&dst[i] = *(const uint32_t *)&src[i];
-        }
-        for (; i < numBytes; i++) {
-            dst[i] = src[i];
-        }
-        sfence();
-    } else {
-        memcpy(dst, src, numBytes);
-    }
-#else
-    memcpy(dst, src, numBytes);
-#endif
-}
-
 int OpenGLRHI::BufferDiscardWrite(Handle bufferHandle, int size, const void *data) {
     GLBuffer *buffer = bufferList[bufferHandle];
 
@@ -272,11 +227,7 @@ int OpenGLRHI::BufferDiscardWrite(Handle bufferHandle, int size, const void *dat
         // NOTE: glMapBufferRange() function causes GL_INVALID_VALUE error if buffer is not alloced.
         gglBufferData(buffer->target, size, nullptr, buffer->usage);
         byte *dest = (byte *)gglMapBufferRange(buffer->target, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-        if (!((intptr_t)data & 15)) {
-            WriteBuffer(dest, (const byte *)data, size);
-        } else {
-            memcpy(dest, data, size);
-        }
+        simdProcessor->MemcpyStream(dest, (const byte *)data, size);
         gglUnmapBuffer(buffer->target);
     } else {
         // Do buffer respecification using glBufferData().

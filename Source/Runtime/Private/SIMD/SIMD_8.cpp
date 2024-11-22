@@ -866,6 +866,329 @@ void BE_FASTCALL SIMD_8::MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, c
 #endif
 }
 
+void SIMD_8::Memcpy64B(void *dst, const void *src, const int count) {
+    assert_32_byte_aligned(src);
+    assert_32_byte_aligned(dst);
+
+    const byte *srcPtr = (byte *)src;
+    byte *dstPtr = (byte *)dst;
+    simd8i r0, r1;
+
+    int c64 = count >> 6;
+    while (c64 > 0) {
+        if (c64 > 1) {
+            // Loads one cache line (64B) of data from next 64B block of memory to CPU prefetch buffer.
+            prefetchNTA(srcPtr + 64);
+        }
+
+        r0 = load_si256((const int32_t *)srcPtr);
+        r1 = load_si256((const int32_t *)(srcPtr + 32));
+
+        store_si256(r0, (int32_t *)dstPtr);
+        store_si256(r1, (int32_t *)(dstPtr + 32));
+
+        srcPtr += 64;
+        dstPtr += 64;
+
+        c64--;
+    }
+}
+
+void SIMD_8::Memcpy2KB(void *dst, const void *src, const int count) {
+    assert_32_byte_aligned(src);
+    assert_32_byte_aligned(dst);
+
+    const byte *srcPtr = (byte *)src;
+    byte *dstPtr = (byte *)dst;
+    simd8i r0, r1, r2, r3, r4, r5, r6, r7;
+
+    int c256;
+    int c2k = count >> 11;
+    while (c2k > 0) {
+        c256 = 8;
+        while (c256 > 0) {
+            // Loads two cache lines (64B x 4) of data from next 256B block of memory to CPU prefetch buffer.
+            prefetchNTA(srcPtr + 128);
+            prefetchNTA(srcPtr + 192);
+            prefetchNTA(srcPtr + 256);
+            prefetchNTA(srcPtr + 320);
+
+            r0 = load_si256((const int32_t *)(srcPtr + 0));
+            r1 = load_si256((const int32_t *)(srcPtr + 32));
+            r2 = load_si256((const int32_t *)(srcPtr + 64));
+            r3 = load_si256((const int32_t *)(srcPtr + 96));
+            r4 = load_si256((const int32_t *)(srcPtr + 128));
+            r5 = load_si256((const int32_t *)(srcPtr + 160));
+            r6 = load_si256((const int32_t *)(srcPtr + 192));
+            r7 = load_si256((const int32_t *)(srcPtr + 224));
+
+            store_si256(r0, (int32_t *)(dstPtr + 0));
+            store_si256(r1, (int32_t *)(dstPtr + 32));
+            store_si256(r2, (int32_t *)(dstPtr + 64));
+            store_si256(r3, (int32_t *)(dstPtr + 96));
+            store_si256(r4, (int32_t *)(dstPtr + 128));
+            store_si256(r5, (int32_t *)(dstPtr + 160));
+            store_si256(r6, (int32_t *)(dstPtr + 192));
+            store_si256(r7, (int32_t *)(dstPtr + 224));
+
+            srcPtr += 256;
+            dstPtr += 256;
+
+            c256--;
+        }
+
+        c2k--;
+    }
+}
+
+void BE_FASTCALL SIMD_8::Memcpy(void *dst, const void *src, const int size) {
+#if 0
+    memcpy(dst, src, size);
+#else
+    if (size > 4096 && !(((intptr_t)dst ^ (intptr_t)src) & 31)) {
+        const byte *srcPtr = (const byte *)src;
+        byte *dstPtr = (byte *)dst;
+
+        // Copy up to the first 31 byte aligned boundary.
+        int remainingSize = ((intptr_t)dstPtr) & 31;
+        if (remainingSize > 0) {
+            memcpy(dstPtr, srcPtr, remainingSize);
+            dstPtr += remainingSize;
+            srcPtr += remainingSize;
+        }
+
+        remainingSize = size - remainingSize;
+
+        // If there are multiple blocks of 2kB, ..
+        if (remainingSize & ~4095) {
+            SIMD_8::Memcpy2KB(dstPtr, srcPtr, remainingSize);
+            srcPtr += (remainingSize & ~2047);
+            dstPtr += (remainingSize & ~2047);
+            remainingSize &= 2047;
+        }
+
+        // If there are blocks of 64 bytes, ..
+        if (remainingSize & ~63) {
+            SIMD_8::Memcpy64B(dstPtr, srcPtr, remainingSize);
+            srcPtr += (remainingSize & ~63);
+            dstPtr += (remainingSize & ~63);
+            remainingSize &= 63;
+        }
+
+        // Copy any remaining bytes.
+        memcpy(dstPtr, srcPtr, remainingSize);
+    } else {
+        // Use the regular one if we cannot copy 16 byte aligned.
+        memcpy(dst, src, size);
+    }
+#endif
+}
+
+void SIMD_8::MemcpyStream64B(void *dst, const void *src, const int count) {
+    assert_32_byte_aligned(src);
+    assert_32_byte_aligned(dst);
+
+    const byte *srcPtr = (byte *)src;
+    byte *dstPtr = (byte *)dst;
+    simd8i r0, r1;
+
+    int c64 = count >> 6;
+    while (c64 > 0) {
+        if (c64 > 1) {
+            // Loads one cache line (64B) of data from next 64B block of memory to CPU prefetch buffer.
+            prefetchNTA(srcPtr + 64);
+        }
+
+        r0 = load_si256((const int32_t *)srcPtr);
+        r1 = load_si256((const int32_t *)(srcPtr + 32));
+
+        storent_si256(r0, (int32_t *)dstPtr);
+        storent_si256(r1, (int32_t *)(dstPtr + 32));
+
+        srcPtr += 64;
+        dstPtr += 64;
+
+        c64--;
+    }
+}
+
+void SIMD_8::MemcpyStream2KB(void *dst, const void *src, const int count) {
+    assert_32_byte_aligned(src);
+    assert_32_byte_aligned(dst);
+
+    const byte *srcPtr = (byte *)src;
+    byte *dstPtr = (byte *)dst;
+    simd8i r0, r1, r2, r3, r4, r5, r6, r7;
+
+    int c256;
+    int c2k = count >> 11;
+    while (c2k > 0) {
+        c256 = 8;
+        while (c256 > 0) {
+            // Loads two cache lines (64B x 4) of data from next 128B block of memory to CPU prefetch buffer.
+            prefetchNTA(srcPtr + 128);
+            prefetchNTA(srcPtr + 192);
+            prefetchNTA(srcPtr + 256);
+            prefetchNTA(srcPtr + 320);
+
+            r0 = load_si256((const int32_t *)srcPtr);
+            r1 = load_si256((const int32_t *)(srcPtr + 32));
+            r2 = load_si256((const int32_t *)(srcPtr + 64));
+            r3 = load_si256((const int32_t *)(srcPtr + 96));
+            r4 = load_si256((const int32_t *)(srcPtr + 128));
+            r5 = load_si256((const int32_t *)(srcPtr + 160));
+            r6 = load_si256((const int32_t *)(srcPtr + 192));
+            r7 = load_si256((const int32_t *)(srcPtr + 224));
+
+            storent_si256(r0, (int32_t *)dstPtr);
+            storent_si256(r1, (int32_t *)(dstPtr + 32));
+            storent_si256(r2, (int32_t *)(dstPtr + 64));
+            storent_si256(r3, (int32_t *)(dstPtr + 96));
+            storent_si256(r4, (int32_t *)(dstPtr + 128));
+            storent_si256(r5, (int32_t *)(dstPtr + 160));
+            storent_si256(r6, (int32_t *)(dstPtr + 192));
+            storent_si256(r7, (int32_t *)(dstPtr + 224));
+
+            srcPtr += 256;
+            dstPtr += 256;
+
+            c256--;
+        }
+
+        c2k--;
+    }
+}
+
+void SIMD_8::MemcpyStreamTemp2KB(void *dst, const void *src, const int count) {
+    assert_32_byte_aligned(src);
+    assert_32_byte_aligned(dst);
+
+    byte *tbuf = (byte *)_alloca32(2048);
+    const byte *srcPtr;
+    const byte *srcNext = (byte *)src;
+    byte *dstPtr = (byte *)dst;
+    byte *dstNext;
+    simd8i r0, r1, r2, r3, r4, r5, r6, r7;
+
+    int c256;
+    int c2k = count >> 11;
+    while (c2k > 0) {
+        // copy 2k into temporary buffer
+        dstNext = dstPtr;
+        srcPtr = srcNext;
+        dstPtr = tbuf;
+
+        c256 = 8;
+        while (c256 > 0) {
+            // Loads two cache lines (64B x 2) of data from next 128B block of memory to CPU prefetch buffer.
+            prefetchNTA(srcPtr + 128);
+            prefetchNTA(srcPtr + 192);
+            prefetchNTA(srcPtr + 256);
+            prefetchNTA(srcPtr + 320);
+
+            r0 = load_si256((const int32_t *)(srcPtr + 0));
+            r1 = load_si256((const int32_t *)(srcPtr + 32));
+            r2 = load_si256((const int32_t *)(srcPtr + 64));
+            r3 = load_si256((const int32_t *)(srcPtr + 96));
+            r4 = load_si256((const int32_t *)(srcPtr + 128));
+            r5 = load_si256((const int32_t *)(srcPtr + 160));
+            r6 = load_si256((const int32_t *)(srcPtr + 192));
+            r7 = load_si256((const int32_t *)(srcPtr + 224));
+
+            store_si256(r0, (int32_t *)(dstPtr + 0));
+            store_si256(r1, (int32_t *)(dstPtr + 32));
+            store_si256(r2, (int32_t *)(dstPtr + 64));
+            store_si256(r3, (int32_t *)(dstPtr + 96));
+            store_si256(r4, (int32_t *)(dstPtr + 128));
+            store_si256(r5, (int32_t *)(dstPtr + 160));
+            store_si256(r6, (int32_t *)(dstPtr + 192));
+            store_si256(r7, (int32_t *)(dstPtr + 224));
+
+            srcPtr += 256;
+            dstPtr += 256;
+
+            c256--;
+        }
+
+        // Now copy from L1 to system memory
+        srcNext = srcPtr;
+        srcPtr = tbuf;
+        dstPtr = dstNext;
+
+        c256 = 8;
+        while (c256 > 0) {
+            r0 = load_si256((const int32_t *)(srcPtr + 0));
+            r1 = load_si256((const int32_t *)(srcPtr + 32));
+            r2 = load_si256((const int32_t *)(srcPtr + 64));
+            r3 = load_si256((const int32_t *)(srcPtr + 96));
+            r4 = load_si256((const int32_t *)(srcPtr + 128));
+            r5 = load_si256((const int32_t *)(srcPtr + 160));
+            r6 = load_si256((const int32_t *)(srcPtr + 192));
+            r7 = load_si256((const int32_t *)(srcPtr + 224));
+
+            storent_si256(r0, (int32_t *)(dstPtr + 0));
+            storent_si256(r1, (int32_t *)(dstPtr + 32));
+            storent_si256(r2, (int32_t *)(dstPtr + 64));
+            storent_si256(r3, (int32_t *)(dstPtr + 96));
+            storent_si256(r4, (int32_t *)(dstPtr + 128));
+            storent_si256(r5, (int32_t *)(dstPtr + 160));
+            storent_si256(r6, (int32_t *)(dstPtr + 192));
+            storent_si256(r7, (int32_t *)(dstPtr + 224));
+
+            srcPtr += 256;
+            dstPtr += 256;
+
+            c256--;
+        }
+
+        c2k--;
+    }
+}
+
+void BE_FASTCALL SIMD_8::MemcpyStream(void *dst, const void *src, const int size) {
+#if 0
+    memcpy(dst, src, size);
+#else
+    assert_16_byte_aligned(src);
+    assert_16_byte_aligned(dst);
+
+    if (size > 4096) {
+        const byte *srcPtr = (const byte *)src;
+        byte *dstPtr = (byte *)dst;
+
+        int remainingSize = size;
+
+        // If there are multiple blocks of 2kB, ..
+        if (remainingSize & ~4095) {
+            SIMD_8::MemcpyStreamTemp2KB(dstPtr, srcPtr, remainingSize);
+            srcPtr += (remainingSize & ~2047);
+            dstPtr += (remainingSize & ~2047);
+            remainingSize &= 2047;
+        }
+
+        // If there are blocks of 64 bytes, ..
+        if (remainingSize & ~63) {
+            SIMD_8::MemcpyStream64B(dstPtr, srcPtr, remainingSize);
+            srcPtr += (remainingSize & ~63);
+            dstPtr += (remainingSize & ~63);
+            remainingSize &= 63;
+        }
+
+        // Ensure completion of asynchronous non-temporal store operations.
+        sfence();
+
+        // Copy any remaining bytes
+        while (remainingSize > 0) {
+            *dstPtr++ = *srcPtr++;
+            remainingSize--;
+        }
+    } else {
+        // Use the regular one if we cannot copy 16 byte aligned
+        memcpy(dst, src, size);
+    }
+#endif
+}
+
 BE_NAMESPACE_END
 
 #endif // HAVE_X86_AVX_INTRIN

@@ -165,6 +165,10 @@ void BE_FASTCALL SIMD_Generic::Memset(void *dst, const int val, const int count)
     memset(dst, val, count);
 }
 
+void BE_FASTCALL SIMD_Generic::MemcpyStream(void *dst, const void *src, const int count) {
+    memcpy(dst, src, count);
+}
+
 void BE_FASTCALL SIMD_Generic::DecompressJoints(JointPose *joints, const CompressedJointPose *compressedJoints, const int *index, const int numJoints) {
     for (int i = 0; i < numJoints; i++) {
         int j = index[i];

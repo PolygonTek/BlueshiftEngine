@@ -39,9 +39,9 @@ Image &Image::FlipY() {
         int pitch = Image::MemRequired(w, 1, 1, 1, format);
 
         for (int y = 0; y < h2; y++) {
-            memcpy(tmp, src + y*pitch, pitch);
-            memcpy(src + y*pitch, src + (h - y - 1)*pitch, pitch);
-            memcpy(src + (h - y - 1)*pitch, tmp, pitch);
+            simdProcessor->Memcpy(tmp, src + y*pitch, pitch);
+            simdProcessor->Memcpy(src + y*pitch, src + (h - y - 1)*pitch, pitch);
+            simdProcessor->Memcpy(src + (h - y - 1)*pitch, tmp, pitch);
         }
     }
 
@@ -69,9 +69,9 @@ Image &Image::FlipX() {
 
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w2; x++) {
-                memcpy(tmp, src + y*pitch + x*bpp, bpp);
-                memcpy(src + y*pitch + x*bpp, src + y*pitch + (w - x - 1)*bpp, bpp);
-                memcpy(src + y*pitch + (w - x - 1)*bpp, tmp, bpp);
+                simdProcessor->Memcpy(tmp, src + y*pitch + x*bpp, bpp);
+                simdProcessor->Memcpy(src + y*pitch + x*bpp, src + y*pitch + (w - x - 1)*bpp, bpp);
+                simdProcessor->Memcpy(src + y*pitch + (w - x - 1)*bpp, tmp, bpp);
             }
         }
     }

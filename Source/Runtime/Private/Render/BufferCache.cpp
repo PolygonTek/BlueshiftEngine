@@ -358,12 +358,12 @@ bool BufferCacheManager::AllocVertex(int numVertexes, int vertexSize, const void
     if (data) {
 #if USE_PINNED_MEMORY
         assert(currentBufferSet->mappedVertexBase);
-        rhi.WriteBuffer((byte *)currentBufferSet->mappedVertexBase + offset, (byte *)data, bytes);
+        simdProcessor->MemcpyStream((byte *)currentBufferSet->mappedVertexBase + offset, (byte *)data, bytes);
 #else
         rhi.BindBuffer(RHI::BufferType::Vertex, currentBufferSet->vertexBuffer);
         void *base = rhi.MapBufferRange(currentBufferSet->vertexBuffer, RHI::BufferLockMode::WriteOnly, offset, bytes);
 
-        rhi.WriteBuffer((byte *)base, (byte *)data, bytes);
+        simdProcessor->MemcpyStream((byte *)base, (byte *)data, bytes);
         
         rhi.UnmapBuffer(currentBufferSet->vertexBuffer);
         rhi.BindBuffer(RHI::BufferType::Vertex, RHI::NullBuffer);
@@ -395,12 +395,12 @@ bool BufferCacheManager::AllocIndex(int numIndexes, int indexSize, const void *d
     if (data) {
 #if USE_PINNED_MEMORY
         assert(currentBufferSet->mappedIndexBase);
-        rhi.WriteBuffer((byte *)currentBufferSet->mappedIndexBase + offset, (byte *)data, bytes);
+        simdProcessor->MemcpyStream((byte *)currentBufferSet->mappedIndexBase + offset, (byte *)data, bytes);
 #else
         rhi.BindBuffer(RHI::BufferType::Index, currentBufferSet->indexBuffer);
         void *base = rhi.MapBufferRange(currentBufferSet->indexBuffer, RHI::BufferLockMode::WriteOnly, offset, bytes);
 
-        rhi.WriteBuffer((byte *)base, (byte *)data, bytes);
+        simdProcessor->MemcpyStream((byte *)base, (byte *)data, bytes);
 
         rhi.UnmapBuffer(currentBufferSet->indexBuffer);
         rhi.BindBuffer(RHI::BufferType::Index, RHI::NullBuffer);
@@ -430,12 +430,12 @@ bool BufferCacheManager::AllocUniform(int bytes, const void *data, BufferCache *
     if (data) {
 #if USE_PINNED_MEMORY
         assert(currentBufferSet->mappedUniformBase);
-        rhi.WriteBuffer((byte *)currentBufferSet->mappedUniformBase + offset, (byte *)data, bytes);
+        simdProcessor->MemcpyStream((byte *)currentBufferSet->mappedUniformBase + offset, (byte *)data, bytes);
 #else
         rhi.BindBuffer(RHI::BufferType::Uniform, currentBufferSet->uniformBuffer);
         void *base = rhi.MapBufferRange(currentBufferSet->uniformBuffer, RHI::BufferLockMode::WriteOnly, offset, bytes);
 
-        rhi.WriteBuffer((byte *)base, (byte *)data, bytes);
+        simdProcessor->MemcpyStream((byte *)base, (byte *)data, bytes);
 
         rhi.UnmapBuffer(currentBufferSet->uniformBuffer);
         rhi.BindBuffer(RHI::BufferType::Uniform, RHI::NullBuffer);
@@ -466,12 +466,12 @@ bool BufferCacheManager::AllocTexel(int bytes, const void *data, BufferCache *bc
     if (data) {
 #if USE_PINNED_MEMORY
         assert(currentBufferSet->mappedTexelBase);
-        rhi.WriteBuffer((byte *)currentBufferSet->mappedTexelBase + offset, (byte *)data, bytes);
+        simdProcessor->MemcpyStream((byte *)currentBufferSet->mappedTexelBase + offset, (byte *)data, bytes);
 #else
         rhi.BindBuffer(currentBufferSet->texelBufferType, currentBufferSet->texelBuffer);
         void *base = rhi.MapBufferRange(currentBufferSet->texelBuffer, RHI::BufferLockMode::WriteOnly, offset, bytes);
 
-        rhi.WriteBuffer((byte *)base, (byte *)data, bytes);
+        simdProcessor->MemcpyStream((byte *)base, (byte *)data, bytes);
 
         rhi.UnmapBuffer(currentBufferSet->texelBuffer);
         rhi.BindBuffer(currentBufferSet->texelBufferType, RHI::NullBuffer);

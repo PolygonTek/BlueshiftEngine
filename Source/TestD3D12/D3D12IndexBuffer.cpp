@@ -56,7 +56,7 @@ D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type::En
             UINT8* mappedPtr = nullptr;
             uploadBuffer->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
 
-            memcpy(mappedPtr, data, bufferSize);
+            simdProcessor->MemcpyStream(mappedPtr, data, bufferSize);
 
             CD3DX12_RANGE writtenRange(0, bufferSize);
             uploadBuffer->Unmap(0, &writtenRange);
@@ -75,7 +75,7 @@ D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type::En
             UINT8* mappedPtr = nullptr;
             bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));
 
-            memcpy(mappedPtr, data, bufferSize);
+            simdProcessor->MemcpyStream(mappedPtr, data, bufferSize);
 
             CD3DX12_RANGE writtenRange(0, bufferSize);
             bufferResource->Unmap(0, &writtenRange);

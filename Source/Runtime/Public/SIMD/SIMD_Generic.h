@@ -38,8 +38,9 @@ public:
     virtual void BE_FASTCALL            MulMat4x4RM(float *dst, const float *src0, const float *src1) override;
     virtual void BE_FASTCALL            MulMat4x4RMVec4(float *dst, const float *src0, const float *src1) override;
 
-    virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const int count) override;
-    virtual void BE_FASTCALL            Memset(void *dst, const int val, const int count) override;
+    virtual void BE_FASTCALL            Memcpy(void *dst, const void *src, const int size) override;
+    virtual void BE_FASTCALL            MemcpyStream(void *dst, const void *src, const int size) override;
+    virtual void BE_FASTCALL            Memset(void *dst, const int val, const int size) override;
 
     virtual void BE_FASTCALL            DecompressJoints(JointPose *joints, const CompressedJointPose *compressedJoints, const int *index, const int numJoints) override;
     virtual void BE_FASTCALL            AdditiveBlendJoints(JointPose *joints, const JointPose *blendJoints, const float fraction, const int *index, const int numJoints) override;

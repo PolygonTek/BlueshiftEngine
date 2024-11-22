@@ -293,7 +293,7 @@ void Image::Update2D(int level, int x, int y, int width, int height, const byte 
     const byte *srcPtr = data;
 
     while (height--) {
-        memcpy(dstPtr, srcPtr, srcPitch);
+        simdProcessor->Memcpy(dstPtr, srcPtr, srcPitch);
         dstPtr += dstPitch;
         srcPtr += srcPitch;
     }

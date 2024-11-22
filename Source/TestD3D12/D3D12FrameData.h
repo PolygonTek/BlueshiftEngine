@@ -33,9 +33,9 @@ public:
     D3D12RootDescriptorPool *       rootDescriptorPool = nullptr;
 
     D3D12ConstantBuffer *           constantBuffer = nullptr;
-    Array<D3D12_CPU_DESCRIPTOR_HANDLE> cbvDescriptorHandles;
     void *                          mappedConstantBase = nullptr;
     UINT                            usedConstantBytes = 0;
+    Array<D3D12_CPU_DESCRIPTOR_HANDLE> cbvDescriptorHandles;
 
     UINT64                          fenceValue = 0;
 };

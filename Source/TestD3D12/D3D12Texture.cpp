@@ -103,7 +103,7 @@ void D3D12Texture::GetTextureImage2D(UINT level, Image::Format::Enum dstFormat, 
     int dstPitch = Image::MemRequired(textureDesc.Width, 1, 1, 1, textureImageFormat);
 
     for (UINT y = 0; y < textureDesc.Height; ++y) {
-        memcpy(dstPtr, srcPtr, srcPitch);
+        simdProcessor->Memcpy(dstPtr, srcPtr, srcPitch);
         srcPtr += srcPitch;
         dstPtr += dstPitch;
     }
@@ -122,7 +122,7 @@ void D3D12Texture::GetTextureImage2D(UINT level, Image::Format::Enum dstFormat, 
     // 필요하다면 컨버팅한다.
     Image dstImage;
     if (textureImage.ConvertFormat(dstFormat, dstImage)) {
-        memcpy(outPixels, dstImage.GetPixels(), dstImage.SizeInBytes());
+        simdProcessor->Memcpy(outPixels, dstImage.GetPixels(), dstImage.SizeInBytes());
         return;
     }
 }
@@ -168,7 +168,7 @@ bool D3D12Texture::SetTextureSubImage2D(UINT level, UINT x, UINT y, UINT width, 
     const byte *srcPtr = (byte *)pixels;
 
     for (UINT y = 0; y < height; ++y) {
-        memcpy(dstPtr, srcPtr, srcPitch);
+        simdProcessor->MemcpyStream(dstPtr, srcPtr, srcPitch);
         srcPtr += srcPitch;
         dstPtr += dstPitch;
     }
@@ -256,7 +256,7 @@ bool D3D12Texture::SetTextureSubImage3D(UINT level, UINT x, UINT y, UINT z, UINT
 
     for (UINT d = 0; d < depth; ++d) {
         for (UINT h = 0; h < height; ++h) {
-            memcpy(dstPtr, srcPtr, srcPitch);
+            simdProcessor->MemcpyStream(dstPtr, srcPtr, srcPitch);
             srcPtr += srcPitch;
             dstPtr += dstPitch;
         }
@@ -481,7 +481,7 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
 
                 for (int z = 0; z < srcDepth; ++z) {
                     for (int r = 0; r < srcRows; ++r) {
-                        memcpy(dstPtr, srcPtr, srcPitch);
+                        simdProcessor->Memcpy(dstPtr, srcPtr, srcPitch);
                         srcPtr += srcPitch;
                         dstPtr += mipLevelFootprints[mipLevel].Footprint.RowPitch;
                     }

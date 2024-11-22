@@ -39,8 +39,8 @@ const simd4f SIMD_4::F4_mask_000x           = simd4i(0x00000000, 0x00000000, 0x0
 
 void BE_FASTCALL SIMD_4::Add(float *dst, const float constant, const float *src, const int count0) {
     int count = count0;
-    float *dst_ptr = dst;
-    const float *src_ptr = src;
+    float *dstPtr = dst;
+    const float *srcPtr = src;
 
     if (count > 16) {
         assert_16_byte_aligned(dst);
@@ -50,20 +50,20 @@ void BE_FASTCALL SIMD_4::Add(float *dst, const float constant, const float *src,
 
         int c16 = count >> 4;
         while (c16 > 0) {
-            //prefetchNTA(src_ptr + 16);
+            //prefetchNTA(srcPtr + 16);
 
-            simd4f x0 = c + load_ps(src_ptr + 0);
-            simd4f x1 = c + load_ps(src_ptr + 4);
-            simd4f x2 = c + load_ps(src_ptr + 8);
-            simd4f x3 = c + load_ps(src_ptr + 12);
+            simd4f x0 = c + load_ps(srcPtr + 0);
+            simd4f x1 = c + load_ps(srcPtr + 4);
+            simd4f x2 = c + load_ps(srcPtr + 8);
+            simd4f x3 = c + load_ps(srcPtr + 12);
         
-            store_ps(x0, dst_ptr + 0);
-            store_ps(x1, dst_ptr + 4);
-            store_ps(x2, dst_ptr + 8);
-            store_ps(x3, dst_ptr + 12);
+            store_ps(x0, dstPtr + 0);
+            store_ps(x1, dstPtr + 4);
+            store_ps(x2, dstPtr + 8);
+            store_ps(x3, dstPtr + 12);
 
-            src_ptr += 16;
-            dst_ptr += 16;
+            srcPtr += 16;
+            dstPtr += 16;
             c16--;
         }
 
@@ -71,14 +71,14 @@ void BE_FASTCALL SIMD_4::Add(float *dst, const float constant, const float *src,
     }
 
     while (count > 0) {
-        *dst_ptr++ = constant + *src_ptr++;
+        *dstPtr++ = constant + *srcPtr++;
         count--;
     }
 }
 
 void BE_FASTCALL SIMD_4::Add(float *dst, const float *src0, const float *src1, const int count0) {
     int count = count0;
-    float *dst_ptr = dst;
+    float *dstPtr = dst;
     const float *src0_ptr = src0;
     const float *src1_ptr = src1;
 
@@ -102,14 +102,14 @@ void BE_FASTCALL SIMD_4::Add(float *dst, const float *src0, const float *src1, c
             x2 = x2 + load_ps(src1_ptr + 8);
             x3 = x3 + load_ps(src1_ptr + 12);
         
-            store_ps(x0, dst_ptr + 0);
-            store_ps(x1, dst_ptr + 4);
-            store_ps(x2, dst_ptr + 8);
-            store_ps(x3, dst_ptr + 12);
+            store_ps(x0, dstPtr + 0);
+            store_ps(x1, dstPtr + 4);
+            store_ps(x2, dstPtr + 8);
+            store_ps(x3, dstPtr + 12);
 
             src0_ptr += 16;
             src1_ptr += 16;
-            dst_ptr += 16;
+            dstPtr += 16;
             c16--;
         }
 
@@ -117,15 +117,15 @@ void BE_FASTCALL SIMD_4::Add(float *dst, const float *src0, const float *src1, c
     }
 
     while (count > 0) {
-        *dst_ptr++ = *src0_ptr++ + *src1_ptr++;
+        *dstPtr++ = *src0_ptr++ + *src1_ptr++;
         count--;
     }
 }
 
 void BE_FASTCALL SIMD_4::Sub(float *dst, const float constant, const float *src, const int count0) {
     int count = count0;
-    float *dst_ptr = dst;
-    const float *src_ptr = src;
+    float *dstPtr = dst;
+    const float *srcPtr = src;
 
     if (count > 16) {
         assert_16_byte_aligned(dst);
@@ -137,18 +137,18 @@ void BE_FASTCALL SIMD_4::Sub(float *dst, const float constant, const float *src,
         while (c16 > 0) {
             //prefetchNTA(src0_ptr + 16);
 
-            simd4f x0 = c - load_ps(src_ptr + 0);
-            simd4f x1 = c - load_ps(src_ptr + 4);
-            simd4f x2 = c - load_ps(src_ptr + 8);
-            simd4f x3 = c - load_ps(src_ptr + 12);
+            simd4f x0 = c - load_ps(srcPtr + 0);
+            simd4f x1 = c - load_ps(srcPtr + 4);
+            simd4f x2 = c - load_ps(srcPtr + 8);
+            simd4f x3 = c - load_ps(srcPtr + 12);
         
-            store_ps(x0, dst_ptr + 0);
-            store_ps(x1, dst_ptr + 4);
-            store_ps(x2, dst_ptr + 8);
-            store_ps(x3, dst_ptr + 12);
+            store_ps(x0, dstPtr + 0);
+            store_ps(x1, dstPtr + 4);
+            store_ps(x2, dstPtr + 8);
+            store_ps(x3, dstPtr + 12);
 
-            src_ptr += 16;
-            dst_ptr += 16;
+            srcPtr += 16;
+            dstPtr += 16;
             c16--;
         }
 
@@ -156,14 +156,14 @@ void BE_FASTCALL SIMD_4::Sub(float *dst, const float constant, const float *src,
     }
 
     while (count > 0) {
-        *dst_ptr++ = constant + *src_ptr++;
+        *dstPtr++ = constant + *srcPtr++;
         count--;
     }
 }
 
 void BE_FASTCALL SIMD_4::Sub(float *dst, const float *src0, const float *src1, const int count0) {
     int count = count0;
-    float *dst_ptr = dst;
+    float *dstPtr = dst;
     const float *src0_ptr = src0;
     const float *src1_ptr = src1;
 
@@ -187,14 +187,14 @@ void BE_FASTCALL SIMD_4::Sub(float *dst, const float *src0, const float *src1, c
             x2 = x2 - load_ps(src1_ptr + 8);
             x3 = x3 - load_ps(src1_ptr + 12);
         
-            store_ps(x0, dst_ptr + 0);
-            store_ps(x1, dst_ptr + 4);
-            store_ps(x2, dst_ptr + 8);
-            store_ps(x3, dst_ptr + 12);
+            store_ps(x0, dstPtr + 0);
+            store_ps(x1, dstPtr + 4);
+            store_ps(x2, dstPtr + 8);
+            store_ps(x3, dstPtr + 12);
 
             src0_ptr += 16;
             src1_ptr += 16;
-            dst_ptr += 16;
+            dstPtr += 16;
             c16--;
         }
 
@@ -202,15 +202,15 @@ void BE_FASTCALL SIMD_4::Sub(float *dst, const float *src0, const float *src1, c
     }
 
     while (count > 0) {
-        *dst_ptr++ = *src0_ptr++ + *src1_ptr++;
+        *dstPtr++ = *src0_ptr++ + *src1_ptr++;
         count--;
     }
 }
 
 void BE_FASTCALL SIMD_4::Mul(float *dst, const float constant, const float *src, const int count0) {
     int count = count0;
-    float *dst_ptr = dst;
-    const float *src_ptr = src;
+    float *dstPtr = dst;
+    const float *srcPtr = src;
 
     if (count > 16) {
         assert_16_byte_aligned(dst);
@@ -222,18 +222,18 @@ void BE_FASTCALL SIMD_4::Mul(float *dst, const float constant, const float *src,
         while (c16 > 0) {
             //prefetchNTA(src0_ptr + 16);
 
-            simd4f x0 = c * load_ps(src_ptr + 0);
-            simd4f x1 = c * load_ps(src_ptr + 4);
-            simd4f x2 = c * load_ps(src_ptr + 8);
-            simd4f x3 = c * load_ps(src_ptr + 12);
+            simd4f x0 = c * load_ps(srcPtr + 0);
+            simd4f x1 = c * load_ps(srcPtr + 4);
+            simd4f x2 = c * load_ps(srcPtr + 8);
+            simd4f x3 = c * load_ps(srcPtr + 12);
         
-            store_ps(x0, dst_ptr + 0);
-            store_ps(x1, dst_ptr + 4);
-            store_ps(x2, dst_ptr + 8);
-            store_ps(x3, dst_ptr + 12);
+            store_ps(x0, dstPtr + 0);
+            store_ps(x1, dstPtr + 4);
+            store_ps(x2, dstPtr + 8);
+            store_ps(x3, dstPtr + 12);
 
-            src_ptr += 16;
-            dst_ptr += 16;
+            srcPtr += 16;
+            dstPtr += 16;
             c16--;
         }
 
@@ -241,14 +241,14 @@ void BE_FASTCALL SIMD_4::Mul(float *dst, const float constant, const float *src,
     }
 
     while (count > 0) {
-        *dst_ptr++ = constant + *src_ptr++;
+        *dstPtr++ = constant + *srcPtr++;
         count--;
     }
 }
 
 void BE_FASTCALL SIMD_4::Mul(float *dst, const float *src0, const float *src1, const int count0) {
     int count = count0;
-    float *dst_ptr = dst;
+    float *dstPtr = dst;
     const float *src0_ptr = src0;
     const float *src1_ptr = src1;
 
@@ -272,14 +272,14 @@ void BE_FASTCALL SIMD_4::Mul(float *dst, const float *src0, const float *src1, c
             x2 = x2 * load_ps(src1_ptr + 8);
             x3 = x3 * load_ps(src1_ptr + 12);
         
-            store_ps(x0, dst_ptr + 0);
-            store_ps(x1, dst_ptr + 4);
-            store_ps(x2, dst_ptr + 8);
-            store_ps(x3, dst_ptr + 12);
+            store_ps(x0, dstPtr + 0);
+            store_ps(x1, dstPtr + 4);
+            store_ps(x2, dstPtr + 8);
+            store_ps(x3, dstPtr + 12);
 
             src0_ptr += 16;
             src1_ptr += 16;
-            dst_ptr += 16;
+            dstPtr += 16;
             c16--;
         }
 
@@ -287,15 +287,15 @@ void BE_FASTCALL SIMD_4::Mul(float *dst, const float *src0, const float *src1, c
     }
 
     while (count > 0) {
-        *dst_ptr++ = *src0_ptr++ + *src1_ptr++;
+        *dstPtr++ = *src0_ptr++ + *src1_ptr++;
         count--;
     }
 }
 
 void BE_FASTCALL SIMD_4::Div(float *dst, const float constant, const float *src, const int count0) {
     int count = count0;
-    float *dst_ptr = dst;
-    const float *src_ptr = src;
+    float *dstPtr = dst;
+    const float *srcPtr = src;
 
     if (count > 16) {
         assert_16_byte_aligned(dst);
@@ -307,18 +307,18 @@ void BE_FASTCALL SIMD_4::Div(float *dst, const float constant, const float *src,
         while (c16 > 0) {
             //prefetchNTA(src0_ptr + 16);
 
-            simd4f x0 = c / load_ps(src_ptr + 0);
-            simd4f x1 = c / load_ps(src_ptr + 4);
-            simd4f x2 = c / load_ps(src_ptr + 8);
-            simd4f x3 = c / load_ps(src_ptr + 12);
+            simd4f x0 = c / load_ps(srcPtr + 0);
+            simd4f x1 = c / load_ps(srcPtr + 4);
+            simd4f x2 = c / load_ps(srcPtr + 8);
+            simd4f x3 = c / load_ps(srcPtr + 12);
         
-            store_ps(x0, dst_ptr + 0);
-            store_ps(x1, dst_ptr + 4);
-            store_ps(x2, dst_ptr + 8);
-            store_ps(x3, dst_ptr + 12);
+            store_ps(x0, dstPtr + 0);
+            store_ps(x1, dstPtr + 4);
+            store_ps(x2, dstPtr + 8);
+            store_ps(x3, dstPtr + 12);
 
-            src_ptr += 16;
-            dst_ptr += 16;
+            srcPtr += 16;
+            dstPtr += 16;
             c16--;
         }
 
@@ -326,14 +326,14 @@ void BE_FASTCALL SIMD_4::Div(float *dst, const float constant, const float *src,
     }
 
     while (count > 0) {
-        *dst_ptr++ = constant + *src_ptr++;
+        *dstPtr++ = constant + *srcPtr++;
         count--;
     }
 }
 
 void BE_FASTCALL SIMD_4::Div(float *dst, const float *src0, const float *src1, const int count0) {
     int count = count0;
-    float *dst_ptr = dst;
+    float *dstPtr = dst;
     const float *src0_ptr = src0;
     const float *src1_ptr = src1;
 
@@ -357,14 +357,14 @@ void BE_FASTCALL SIMD_4::Div(float *dst, const float *src0, const float *src1, c
             x2 = x2 / load_ps(src1_ptr + 8);
             x3 = x3 / load_ps(src1_ptr + 12);
         
-            store_ps(x0, dst_ptr + 0);
-            store_ps(x1, dst_ptr + 4);
-            store_ps(x2, dst_ptr + 8);
-            store_ps(x3, dst_ptr + 12);
+            store_ps(x0, dstPtr + 0);
+            store_ps(x1, dstPtr + 4);
+            store_ps(x2, dstPtr + 8);
+            store_ps(x3, dstPtr + 12);
 
             src0_ptr += 16;
             src1_ptr += 16;
-            dst_ptr += 16;
+            dstPtr += 16;
             c16--;
         }
 
@@ -372,14 +372,14 @@ void BE_FASTCALL SIMD_4::Div(float *dst, const float *src0, const float *src1, c
     }
 
     while (count > 0) {
-        *dst_ptr++ = *src0_ptr++ + *src1_ptr++;
+        *dstPtr++ = *src0_ptr++ + *src1_ptr++;
         count--;
     }
 }
 
 float BE_FASTCALL SIMD_4::Sum(const float *src, const int count0) {
     int count = count0;
-    const float *src_ptr = src;
+    const float *srcPtr = src;
     float ret = 0;
     
     if (count > 4) {
@@ -387,8 +387,8 @@ float BE_FASTCALL SIMD_4::Sum(const float *src, const int count0) {
 
         int c4 = count >> 2;
         while (c4 > 0) {
-            ret += extract_ps<0>(sum_ps(load_ps(src_ptr)));
-            src_ptr += 4;
+            ret += extract_ps<0>(sum_ps(load_ps(srcPtr)));
+            srcPtr += 4;
             c4--;
         }
 
@@ -396,7 +396,7 @@ float BE_FASTCALL SIMD_4::Sum(const float *src, const int count0) {
     }
 
     while (count > 0) {
-        ret += *src_ptr++;
+        ret += *srcPtr++;
         count--;
     }
 
@@ -1237,41 +1237,44 @@ void BE_FASTCALL SIMD_4::MultiplyJoints(Mat3x4 *result, const Mat3x4 *joints1, c
 #endif
 }
 
-#if 1
+void SIMD_4::Memcpy64B(void *dst, const void *src, const int count) {
+    assert_16_byte_aligned(src);
+    assert_16_byte_aligned(dst);
 
-static void SSE_Memcpy64B(void *dst, const void *src, const int count) {
-    char *src_ptr = (char *)src;
-    char *dst_ptr = (char *)dst;
-
+    const byte *srcPtr = (byte *)src;
+    byte *dstPtr = (byte *)dst;
     simd4i r0, r1, r2, r3;
 
     int c64 = count >> 6;
     while (c64 > 0) {
-        prefetchNTA(src_ptr + 64);
+        if (c64 > 1) {
+            // Loads one cache line (64B) of data from next 64B block of memory to CPU prefetch buffer.
+            prefetchNTA(srcPtr + 64);
+        }
         
-        r0 = load_si128((int32_t *)src_ptr);
-        r1 = load_si128((int32_t *)(src_ptr + 16));
-        r2 = load_si128((int32_t *)(src_ptr + 32));
-        r3 = load_si128((int32_t *)(src_ptr + 48));
+        r0 = load_si128((const int32_t *)srcPtr);
+        r1 = load_si128((const int32_t *)(srcPtr + 16));
+        r2 = load_si128((const int32_t *)(srcPtr + 32));
+        r3 = load_si128((const int32_t *)(srcPtr + 48));
 
-        store_si128(r0, (int32_t *)dst_ptr);
-        store_si128(r1, (int32_t *)(dst_ptr + 16));
-        store_si128(r2, (int32_t *)(dst_ptr + 32));
-        store_si128(r3, (int32_t *)(dst_ptr + 48));
+        store_si128(r0, (int32_t *)dstPtr);
+        store_si128(r1, (int32_t *)(dstPtr + 16));
+        store_si128(r2, (int32_t *)(dstPtr + 32));
+        store_si128(r3, (int32_t *)(dstPtr + 48));
 
-        src_ptr += 64;
-        dst_ptr += 64;
+        srcPtr += 64;
+        dstPtr += 64;
 
         c64--;
     }
-
-    sfence();
 }
 
-static void SSE_Memcpy2kB(void *dst, const void *src, const int count) {
-    char *src_ptr = (char *)src;
-    char *dst_ptr = (char *)dst;
+void SIMD_4::Memcpy2KB(void *dst, const void *src, const int count) {
+    assert_16_byte_aligned(src);
+    assert_16_byte_aligned(dst);
 
+    const byte *srcPtr = (byte *)src;
+    byte *dstPtr = (byte *)dst;
     simd4i r0, r1, r2, r3, r4, r5, r6, r7;
 
     int c128;
@@ -1279,162 +1282,283 @@ static void SSE_Memcpy2kB(void *dst, const void *src, const int count) {
     while (c2k > 0) {
         c128 = 16;
         while (c128 > 0) {
-            prefetchNTA(src_ptr + 128);
-            prefetchNTA(src_ptr + 192);
-            
-            r0 = load_si128((int32_t *)(src_ptr + 0));
-            r1 = load_si128((int32_t *)(src_ptr + 16));
-            r2 = load_si128((int32_t *)(src_ptr + 32));
-            r3 = load_si128((int32_t *)(src_ptr + 48));
-            r4 = load_si128((int32_t *)(src_ptr + 64));
-            r5 = load_si128((int32_t *)(src_ptr + 80));
-            r6 = load_si128((int32_t *)(src_ptr + 96));
-            r7 = load_si128((int32_t *)(src_ptr + 112));
+            // Loads two cache lines (64B x 2) of data from next 128B block of memory to CPU prefetch buffer.
+            prefetchNTA(srcPtr + 128);
+            prefetchNTA(srcPtr + 192);
 
-            store_si128(r0, (int32_t *)(dst_ptr + 0));
-            store_si128(r1, (int32_t *)(dst_ptr + 16));
-            store_si128(r2, (int32_t *)(dst_ptr + 32));
-            store_si128(r3, (int32_t *)(dst_ptr + 48));
-            store_si128(r4, (int32_t *)(dst_ptr + 64));
-            store_si128(r5, (int32_t *)(dst_ptr + 80));
-            store_si128(r6, (int32_t *)(dst_ptr + 96));
-            store_si128(r7, (int32_t *)(dst_ptr + 112));
-                    
-            src_ptr += 128;
-            dst_ptr += 128;
+            r0 = load_si128((const int32_t *)(srcPtr + 0));
+            r1 = load_si128((const int32_t *)(srcPtr + 16));
+            r2 = load_si128((const int32_t *)(srcPtr + 32));
+            r3 = load_si128((const int32_t *)(srcPtr + 48));
+            r4 = load_si128((const int32_t *)(srcPtr + 64));
+            r5 = load_si128((const int32_t *)(srcPtr + 80));
+            r6 = load_si128((const int32_t *)(srcPtr + 96));
+            r7 = load_si128((const int32_t *)(srcPtr + 112));
+
+            store_si128(r0, (int32_t *)(dstPtr + 0));
+            store_si128(r1, (int32_t *)(dstPtr + 16));
+            store_si128(r2, (int32_t *)(dstPtr + 32));
+            store_si128(r3, (int32_t *)(dstPtr + 48));
+            store_si128(r4, (int32_t *)(dstPtr + 64));
+            store_si128(r5, (int32_t *)(dstPtr + 80));
+            store_si128(r6, (int32_t *)(dstPtr + 96));
+            store_si128(r7, (int32_t *)(dstPtr + 112));
+
+            srcPtr += 128;
+            dstPtr += 128;
 
             c128--;
         }
-                
+
         c2k--;
     }
-
-    sfence();
 }
 
-static void SSE_MemcpyStream2kB(void *dst, const void *src, const int count) {
-    char *tbuf = (char *)_alloca16(2048);
-    char *src_ptr;
-    char *src_next = (char *)src;
-    char *dst_ptr = (char *)dst;
-    char *dst_next;
+// optimized memory copy routine that handles all alignment cases and block sizes efficiently
+void BE_FASTCALL SIMD_4::Memcpy(void *dst, const void *src, const int size) {
+#if 0
+    memcpy(dst, src, size);
+#else
+    if (size > 4096 && !(((intptr_t)dst ^ (intptr_t)src) & 15)) {
+        const byte *srcPtr = (const byte *)src;
+        byte *dstPtr = (byte *)dst;
 
+        // Copy up to the first 16 byte aligned boundary.
+        int remainingSize = ((intptr_t)dstPtr) & 15;
+        if (remainingSize > 0) {
+            memcpy(dstPtr, srcPtr, remainingSize);
+            dstPtr += remainingSize;
+            srcPtr += remainingSize;
+        }
+
+        remainingSize = size - remainingSize;
+
+        // If there are multiple blocks of 2kB, ..
+        if (remainingSize & ~4095) {
+            SIMD_4::Memcpy2KB(dstPtr, srcPtr, remainingSize);
+            srcPtr += (remainingSize & ~2047);
+            dstPtr += (remainingSize & ~2047);
+            remainingSize &= 2047;
+        }
+
+        // If there are blocks of 64 bytes, ..
+        if (remainingSize & ~63) {
+            SIMD_4::Memcpy64B(dstPtr, srcPtr, remainingSize);
+            srcPtr += (remainingSize & ~63);
+            dstPtr += (remainingSize & ~63);
+            remainingSize &= 63;
+        }
+
+        // Copy any remaining bytes.
+        memcpy(dstPtr, srcPtr, remainingSize);
+    } else {
+        // Use the regular one if we cannot copy 16 byte aligned.
+        memcpy(dst, src, size);
+    }
+#endif
+}
+
+void SIMD_4::MemcpyStream64B(void *dst, const void *src, const int count) {
+    assert_16_byte_aligned(src);
+    assert_16_byte_aligned(dst);
+
+    const byte *srcPtr = (byte *)src;
+    byte *dstPtr = (byte *)dst;
+    simd4i r0, r1, r2, r3;
+
+    int c64 = count >> 6;
+    while (c64 > 0) {
+        if (c64 > 1) {
+            // Loads one cache line (64B) of data from next 64B block of memory to CPU prefetch buffer.
+            prefetchNTA(srcPtr + 64);
+        }
+
+        r0 = load_si128((const int32_t *)srcPtr);
+        r1 = load_si128((const int32_t *)(srcPtr + 16));
+        r2 = load_si128((const int32_t *)(srcPtr + 32));
+        r3 = load_si128((const int32_t *)(srcPtr + 48));
+
+        storent_si128(r0, (int32_t *)dstPtr);
+        storent_si128(r1, (int32_t *)(dstPtr + 16));
+        storent_si128(r2, (int32_t *)(dstPtr + 32));
+        storent_si128(r3, (int32_t *)(dstPtr + 48));
+
+        srcPtr += 64;
+        dstPtr += 64;
+
+        c64--;
+    }
+}
+
+void SIMD_4::MemcpyStream2KB(void *dst, const void *src, const int count) {
+    assert_16_byte_aligned(src);
+    assert_16_byte_aligned(dst);
+
+    const byte *srcPtr = (byte *)src;
+    byte *dstPtr = (byte *)dst;
+    simd4i r0, r1, r2, r3, r4, r5, r6, r7;
+
+    int c128;
+    int c2k = count >> 11;
+    while (c2k > 0) {
+        c128 = 16;
+        while (c128 > 0) {
+            // Loads two cache lines (64B x 2) of data from next 128B block of memory to CPU prefetch buffer.
+            prefetchNTA(srcPtr + 128);
+            prefetchNTA(srcPtr + 192);
+
+            r0 = load_si128((const int32_t *)srcPtr);
+            r1 = load_si128((const int32_t *)(srcPtr + 16));
+            r2 = load_si128((const int32_t *)(srcPtr + 32));
+            r3 = load_si128((const int32_t *)(srcPtr + 48));
+            r4 = load_si128((const int32_t *)(srcPtr + 64));
+            r5 = load_si128((const int32_t *)(srcPtr + 80));
+            r6 = load_si128((const int32_t *)(srcPtr + 96));
+            r7 = load_si128((const int32_t *)(srcPtr + 112));
+
+            storent_si128(r0, (int32_t *)dstPtr);
+            storent_si128(r1, (int32_t *)(dstPtr + 16));
+            storent_si128(r2, (int32_t *)(dstPtr + 32));
+            storent_si128(r3, (int32_t *)(dstPtr + 48));
+            storent_si128(r4, (int32_t *)(dstPtr + 64));
+            storent_si128(r5, (int32_t *)(dstPtr + 80));
+            storent_si128(r6, (int32_t *)(dstPtr + 96));
+            storent_si128(r7, (int32_t *)(dstPtr + 112));
+
+            srcPtr += 128;
+            dstPtr += 128;
+
+            c128--;
+        }
+
+        c2k--;
+    }
+}
+
+void SIMD_4::MemcpyStreamTemp2KB(void *dst, const void *src, const int count) {
+    assert_16_byte_aligned(src);
+    assert_16_byte_aligned(dst);
+
+    byte *tbuf = (byte *)_alloca16(2048);
+    const byte *srcPtr;
+    const byte *srcNext = (byte *)src;
+    byte *dstPtr = (byte *)dst;
+    byte *dstNext;
     simd4i r0, r1, r2, r3, r4, r5, r6, r7;
 
     int c128;
     int c2k = count >> 11;
     while (c2k > 0) {
         // copy 2k into temporary buffer
-        dst_next = dst_ptr;
-        src_ptr = src_next;
-        dst_ptr = tbuf;
+        dstNext = dstPtr;
+        srcPtr = srcNext;
+        dstPtr = tbuf;
 
         c128 = 16;
         while (c128 > 0) {
-            prefetchNTA(src_ptr + 128);
-            prefetchNTA(src_ptr + 192);
-        
-            r0 = load_si128((int32_t *)src_ptr);
-            r1 = load_si128((int32_t *)(src_ptr + 16));
-            r2 = load_si128((int32_t *)(src_ptr + 32));
-            r3 = load_si128((int32_t *)(src_ptr + 48));
-            r4 = load_si128((int32_t *)(src_ptr + 64));
-            r5 = load_si128((int32_t *)(src_ptr + 80));
-            r6 = load_si128((int32_t *)(src_ptr + 96));
-            r7 = load_si128((int32_t *)(src_ptr + 112));
+            // Loads two cache lines (64B x 2) of data from next 128B block of memory to CPU prefetch buffer.
+            prefetchNTA(srcPtr + 128);
+            prefetchNTA(srcPtr + 192);
 
-            store_si128(r0, (int32_t *)dst_ptr);
-            store_si128(r1, (int32_t *)(dst_ptr + 16));
-            store_si128(r2, (int32_t *)(dst_ptr + 32));
-            store_si128(r3, (int32_t *)(dst_ptr + 48));
-            store_si128(r4, (int32_t *)(dst_ptr + 64));
-            store_si128(r5, (int32_t *)(dst_ptr + 80));
-            store_si128(r6, (int32_t *)(dst_ptr + 96));
-            store_si128(r7, (int32_t *)(dst_ptr + 112));
+            r0 = load_si128((const int32_t *)srcPtr);
+            r1 = load_si128((const int32_t *)(srcPtr + 16));
+            r2 = load_si128((const int32_t *)(srcPtr + 32));
+            r3 = load_si128((const int32_t *)(srcPtr + 48));
+            r4 = load_si128((const int32_t *)(srcPtr + 64));
+            r5 = load_si128((const int32_t *)(srcPtr + 80));
+            r6 = load_si128((const int32_t *)(srcPtr + 96));
+            r7 = load_si128((const int32_t *)(srcPtr + 112));
 
-            src_ptr += 128;
-            dst_ptr += 128;
+            store_si128(r0, (int32_t *)dstPtr);
+            store_si128(r1, (int32_t *)(dstPtr + 16));
+            store_si128(r2, (int32_t *)(dstPtr + 32));
+            store_si128(r3, (int32_t *)(dstPtr + 48));
+            store_si128(r4, (int32_t *)(dstPtr + 64));
+            store_si128(r5, (int32_t *)(dstPtr + 80));
+            store_si128(r6, (int32_t *)(dstPtr + 96));
+            store_si128(r7, (int32_t *)(dstPtr + 112));
+
+            srcPtr += 128;
+            dstPtr += 128;
 
             c128--;
         }
 
         // Now copy from L1 to system memory
-        src_next = src_ptr;
-        src_ptr = tbuf;
-        dst_ptr = dst_next;
-    
+        srcNext = srcPtr;
+        srcPtr = tbuf;
+        dstPtr = dstNext;
+
         c128 = 16;
         while (c128 > 0) {
-            r0 = load_si128((int32_t *)src_ptr);
-            r1 = load_si128((int32_t *)(src_ptr + 16));
-            r2 = load_si128((int32_t *)(src_ptr + 32));
-            r3 = load_si128((int32_t *)(src_ptr + 48));
-            r4 = load_si128((int32_t *)(src_ptr + 64));
-            r5 = load_si128((int32_t *)(src_ptr + 80));
-            r6 = load_si128((int32_t *)(src_ptr + 96));
-            r7 = load_si128((int32_t *)(src_ptr + 112));
+            r0 = load_si128((const int32_t *)srcPtr);
+            r1 = load_si128((const int32_t *)(srcPtr + 16));
+            r2 = load_si128((const int32_t *)(srcPtr + 32));
+            r3 = load_si128((const int32_t *)(srcPtr + 48));
+            r4 = load_si128((const int32_t *)(srcPtr + 64));
+            r5 = load_si128((const int32_t *)(srcPtr + 80));
+            r6 = load_si128((const int32_t *)(srcPtr + 96));
+            r7 = load_si128((const int32_t *)(srcPtr + 112));
 
-            storent_si128(r0, (int32_t *)dst_ptr);
-            storent_si128(r1, (int32_t *)(dst_ptr + 16));
-            storent_si128(r2, (int32_t *)(dst_ptr + 32));
-            storent_si128(r3, (int32_t *)(dst_ptr + 48));
-            storent_si128(r4, (int32_t *)(dst_ptr + 64));
-            storent_si128(r5, (int32_t *)(dst_ptr + 80));
-            storent_si128(r6, (int32_t *)(dst_ptr + 96));
-            storent_si128(r7, (int32_t *)(dst_ptr + 112));
-        
-            src_ptr += 128;
-            dst_ptr += 128;
+            storent_si128(r0, (int32_t *)dstPtr);
+            storent_si128(r1, (int32_t *)(dstPtr + 16));
+            storent_si128(r2, (int32_t *)(dstPtr + 32));
+            storent_si128(r3, (int32_t *)(dstPtr + 48));
+            storent_si128(r4, (int32_t *)(dstPtr + 64));
+            storent_si128(r5, (int32_t *)(dstPtr + 80));
+            storent_si128(r6, (int32_t *)(dstPtr + 96));
+            storent_si128(r7, (int32_t *)(dstPtr + 112));
+
+            srcPtr += 128;
+            dstPtr += 128;
 
             c128--;
         }
-                
+
         c2k--;
     }
-
-    sfence();
 }
 
-// optimized memory copy routine that handles all alignment cases and block sizes efficiently
-void BE_FASTCALL SIMD_4::Memcpy(void *dest0, const void *src0, const int count0) {
-#if 1
-    memcpy(dest0, src0, count0);
+void BE_FASTCALL SIMD_4::MemcpyStream(void *dst, const void *src, const int size) {
+#if 0
+    memcpy(dst, src, size);
 #else
-    if (count0 > 4096 && !(((intptr_t)dest0 ^ (intptr_t)src0) & 15)) {
-        byte *dest = (byte *)dest0;
-        byte *src = (byte *)src0;
+    assert_16_byte_aligned(src);
+    assert_16_byte_aligned(dst);
 
-        // copy up to the first 16 byte aligned boundary
-        int count = ((intptr_t)dest) & 15;
-        if (count > 0) {
-            memcpy(dest, src, count);
-            dest += count;
-            src += count;
+    if (size > 4096) {
+        const byte *srcPtr = (const byte *)src;
+        byte *dstPtr = (byte *)dst;
+
+        int remainingSize = size;
+
+        // If there are multiple blocks of 2kB, ..
+        if (remainingSize & ~4095) {
+            SIMD_4::MemcpyStreamTemp2KB(dstPtr, srcPtr, remainingSize);
+            srcPtr += (remainingSize & ~2047);
+            dstPtr += (remainingSize & ~2047);
+            remainingSize &= 2047;
         }
 
-        count = count0 - count;
-
-        // if there are multiple blocks of 2kB
-        if (count & ~4095) {
-            SSE_Memcpy2kB(dest, src, count);
-            src += (count & ~2047);
-            dest += (count & ~2047);
-            count &= 2047;
+        // If there are blocks of 64 bytes, ..
+        if (remainingSize & ~63) {
+            SIMD_4::MemcpyStream64B(dstPtr, srcPtr, remainingSize);
+            srcPtr += (remainingSize & ~63);
+            dstPtr += (remainingSize & ~63);
+            remainingSize &= 63;
         }
 
-        // if there are blocks of 64 bytes
-        if (count & ~63) {
-            SSE_Memcpy64B(dest, src, count);
-            src += (count & ~63);
-            dest += (count & ~63);
-            count &= 63;
-        }
+        // Ensure completion of asynchronous non-temporal store operations.
+        sfence();
 
-        // copy any remaining bytes
-        memcpy(dest, src, count);
+        // Copy any remaining bytes
+        while (remainingSize > 0) {
+            *dstPtr++ = *srcPtr++;
+            remainingSize--;
+        }
     } else {
-        // use the regular one if we cannot copy 16 byte aligned
-        memcpy(dest0, src0, count0);
+        // Use the regular one if we cannot copy 16 byte aligned
+        memcpy(dst, src, size);
     }
 #endif
 }
@@ -1496,8 +1620,6 @@ void BE_FASTCALL SIMD_4::Memset(void *dest0, const int val, const int count0) {
     }
 #endif
 }
-
-#endif
 
 BE_NAMESPACE_END
 
