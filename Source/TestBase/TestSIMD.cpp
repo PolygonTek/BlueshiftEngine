@@ -318,7 +318,7 @@ static void ClearCache() {
 static void TestMemcpy() {
     uint64_t bestClocksGeneric;
     uint64_t bestClocksSIMD;
-    int bufferSize = 1024 * 128 + 255;
+    int bufferSize = 1024 * 256 + 255;
 
     ClearCache();
 

@@ -204,7 +204,7 @@ void SubMesh::CacheStaticDataToGpu() {
 
         // Write vertex weights after vertex data in the vertex buffer.
         if (vertWeights) {//surfSpace->def->state.joints && useGpuSkinning) {
-            int sizeVertsAligned = ((sizeVerts + 15) >> 4) << 4;
+            int sizeVertsAligned = AlignUp(sizeVerts, 32);
             int sizeWeights = VertexWeightSize() * numVerts;
             int size = sizeVertsAligned + sizeWeights;
             

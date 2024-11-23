@@ -1460,7 +1460,7 @@ void SIMD_4::MemcpyStreamTemp2KB(void *dst, const void *src, const int count) {
             prefetchNTA(srcPtr + 128);
             prefetchNTA(srcPtr + 192);
 
-            r0 = load_si128((const int32_t *)srcPtr);
+            r0 = load_si128((const int32_t *)(srcPtr + 0));
             r1 = load_si128((const int32_t *)(srcPtr + 16));
             r2 = load_si128((const int32_t *)(srcPtr + 32));
             r3 = load_si128((const int32_t *)(srcPtr + 48));
@@ -1469,7 +1469,7 @@ void SIMD_4::MemcpyStreamTemp2KB(void *dst, const void *src, const int count) {
             r6 = load_si128((const int32_t *)(srcPtr + 96));
             r7 = load_si128((const int32_t *)(srcPtr + 112));
 
-            store_si128(r0, (int32_t *)dstPtr);
+            store_si128(r0, (int32_t *)(dstPtr + 0));
             store_si128(r1, (int32_t *)(dstPtr + 16));
             store_si128(r2, (int32_t *)(dstPtr + 32));
             store_si128(r3, (int32_t *)(dstPtr + 48));
@@ -1491,7 +1491,7 @@ void SIMD_4::MemcpyStreamTemp2KB(void *dst, const void *src, const int count) {
 
         c128 = 16;
         while (c128 > 0) {
-            r0 = load_si128((const int32_t *)srcPtr);
+            r0 = load_si128((const int32_t *)(srcPtr + 0));
             r1 = load_si128((const int32_t *)(srcPtr + 16));
             r2 = load_si128((const int32_t *)(srcPtr + 32));
             r3 = load_si128((const int32_t *)(srcPtr + 48));
@@ -1500,7 +1500,7 @@ void SIMD_4::MemcpyStreamTemp2KB(void *dst, const void *src, const int count) {
             r6 = load_si128((const int32_t *)(srcPtr + 96));
             r7 = load_si128((const int32_t *)(srcPtr + 112));
 
-            storent_si128(r0, (int32_t *)dstPtr);
+            storent_si128(r0, (int32_t *)(dstPtr + 0));
             storent_si128(r1, (int32_t *)(dstPtr + 16));
             storent_si128(r2, (int32_t *)(dstPtr + 32));
             storent_si128(r3, (int32_t *)(dstPtr + 48));

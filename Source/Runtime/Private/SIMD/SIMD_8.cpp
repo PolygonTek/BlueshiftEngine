@@ -881,10 +881,10 @@ void SIMD_8::Memcpy64B(void *dst, const void *src, const int count) {
             prefetchNTA(srcPtr + 64);
         }
 
-        r0 = load_si256((const int32_t *)srcPtr);
+        r0 = load_si256((const int32_t *)(srcPtr + 0));
         r1 = load_si256((const int32_t *)(srcPtr + 32));
 
-        store_si256(r0, (int32_t *)dstPtr);
+        store_si256(r0, (int32_t *)(dstPtr + 0));
         store_si256(r1, (int32_t *)(dstPtr + 32));
 
         srcPtr += 64;
@@ -908,10 +908,10 @@ void SIMD_8::Memcpy2KB(void *dst, const void *src, const int count) {
         c256 = 8;
         while (c256 > 0) {
             // Loads two cache lines (64B x 4) of data from next 256B block of memory to CPU prefetch buffer.
-            prefetchNTA(srcPtr + 128);
-            prefetchNTA(srcPtr + 192);
             prefetchNTA(srcPtr + 256);
             prefetchNTA(srcPtr + 320);
+            prefetchNTA(srcPtr + 384);
+            prefetchNTA(srcPtr + 448);
 
             r0 = load_si256((const int32_t *)(srcPtr + 0));
             r1 = load_si256((const int32_t *)(srcPtr + 32));
@@ -999,10 +999,10 @@ void SIMD_8::MemcpyStream64B(void *dst, const void *src, const int count) {
             prefetchNTA(srcPtr + 64);
         }
 
-        r0 = load_si256((const int32_t *)srcPtr);
+        r0 = load_si256((const int32_t *)(srcPtr + 0));
         r1 = load_si256((const int32_t *)(srcPtr + 32));
 
-        storent_si256(r0, (int32_t *)dstPtr);
+        storent_si256(r0, (int32_t *)(dstPtr + 0));
         storent_si256(r1, (int32_t *)(dstPtr + 32));
 
         srcPtr += 64;
@@ -1026,12 +1026,12 @@ void SIMD_8::MemcpyStream2KB(void *dst, const void *src, const int count) {
         c256 = 8;
         while (c256 > 0) {
             // Loads two cache lines (64B x 4) of data from next 128B block of memory to CPU prefetch buffer.
-            prefetchNTA(srcPtr + 128);
-            prefetchNTA(srcPtr + 192);
             prefetchNTA(srcPtr + 256);
             prefetchNTA(srcPtr + 320);
+            prefetchNTA(srcPtr + 384);
+            prefetchNTA(srcPtr + 448);
 
-            r0 = load_si256((const int32_t *)srcPtr);
+            r0 = load_si256((const int32_t *)(srcPtr + 0));
             r1 = load_si256((const int32_t *)(srcPtr + 32));
             r2 = load_si256((const int32_t *)(srcPtr + 64));
             r3 = load_si256((const int32_t *)(srcPtr + 96));
@@ -1040,7 +1040,7 @@ void SIMD_8::MemcpyStream2KB(void *dst, const void *src, const int count) {
             r6 = load_si256((const int32_t *)(srcPtr + 192));
             r7 = load_si256((const int32_t *)(srcPtr + 224));
 
-            storent_si256(r0, (int32_t *)dstPtr);
+            storent_si256(r0, (int32_t *)(dstPtr + 0));
             storent_si256(r1, (int32_t *)(dstPtr + 32));
             storent_si256(r2, (int32_t *)(dstPtr + 64));
             storent_si256(r3, (int32_t *)(dstPtr + 96));
@@ -1080,11 +1080,11 @@ void SIMD_8::MemcpyStreamTemp2KB(void *dst, const void *src, const int count) {
 
         c256 = 8;
         while (c256 > 0) {
-            // Loads two cache lines (64B x 2) of data from next 128B block of memory to CPU prefetch buffer.
-            prefetchNTA(srcPtr + 128);
-            prefetchNTA(srcPtr + 192);
+            // Loads two cache lines (64B x 4) of data from next 128B block of memory to CPU prefetch buffer.
             prefetchNTA(srcPtr + 256);
             prefetchNTA(srcPtr + 320);
+            prefetchNTA(srcPtr + 384);
+            prefetchNTA(srcPtr + 448);
 
             r0 = load_si256((const int32_t *)(srcPtr + 0));
             r1 = load_si256((const int32_t *)(srcPtr + 32));
