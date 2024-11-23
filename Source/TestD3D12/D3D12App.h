@@ -16,7 +16,9 @@
 
 #include "D3D12Common.h"
 #include "D3D12ConstantBuffer.h"
+#include "D3D12RenderObject.h"
 
+class D3D12GameObject;
 class D3D12TriangleMesh;
 class D3D12CubeMesh;
 
@@ -25,19 +27,40 @@ public:
     void                            Init(HWND windowHandle);
     void                            Shutdown();
 
-    void                            Draw(int elapsedMsec);
+    int                             AddRenderObject(const D3D12RenderObject::State &def);
+    void                            UpdateRenderObject(int handle, const D3D12RenderObject::State &def);
+    void                            RemoveRenderObject(int handle);
+    void                            RenderRenderObjects();
 
     void                            RunFrame(int elapsedMsec);
+    void                            Draw(int elapsedMsec);
 
     int                             GetElapsedMsec() const { return elapsedMsec; }
 
     void                            SetViewMatrix(const Mat3 &viewAxis, const Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) const;
 
+    void                            UpdateCamera();
+
+    void                            ClearGameObjects();
+
+    void                            InitGameObjects();
+    void                            InitTriangles();
+    void                            InitCubes();
+
+    void                            UpdateGameObjects();
+    void                            UpdateTriangles();
+    void                            UpdateCubes();
+
+    void                            DrawMeshes();
     void                            DrawTriangles();
     void                            DrawCubes();
 
+    Array<D3D12RenderObject *>      renderObjects;
+    Array<D3D12GameObject *>        gameObjects;
+
     D3D12TriangleMesh *             triangleMesh = nullptr;
     D3D12CubeMesh *                 cubeMesh = nullptr;
+
     Mat4                            viewProjMatrix;
 
     int                             elapsedMsec = 0;

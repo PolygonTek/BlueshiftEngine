@@ -252,10 +252,11 @@ float4 PSMain(PSInput input) : SV_TARGET {
     SAFE_RELEASE(compiledPixelShader);
 }
 
-void D3D12CubeMesh::DrawMesh(int drawIndex) {
+void D3D12CubeMesh::DrawMesh(int drawIndex, const Mat3x4& worldMatrix) {
     D3D12CommandList* currentFrameCommandList = renderer.currentFrameCommandList;
     D3D12RootDescriptorPool* currentFrameRootDescriptorPool = renderer.currentFrameData->rootDescriptorPool;
 
+    // 상수 버퍼 공간을 할당한다.
     D3D12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle = {0};
     void *writePtr = renderer.currentFrameData->AllocConstant(sizeof(CubeConstants), &cbvDescriptorHandle);
     if (!writePtr) {

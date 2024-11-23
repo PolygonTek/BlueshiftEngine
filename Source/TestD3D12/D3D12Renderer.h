@@ -37,9 +37,8 @@ public:
 
     bool                            IsInitialized() const { return initialized; }
 
-    void                            BeginRender();
-    void                            EndRender();
-    void                            Present();
+    void                            BeginFrame();
+    void                            EndFrame();
 
     void                            OnResize(int width, int height);
 

@@ -217,10 +217,11 @@ float4 PSMain(PSInput input) : SV_TARGET {
     SAFE_RELEASE(compiledPixelShader);
 }
 
-void D3D12TriangleMesh::DrawMesh(int drawIndex) {
+void D3D12TriangleMesh::DrawMesh(int drawIndex, const Vec2& offset) {
     D3D12CommandList* currentFrameCommandList = renderer.currentFrameCommandList;
     D3D12RootDescriptorPool* currentFrameRootDescriptorPool = renderer.currentFrameData->rootDescriptorPool;
 
+    // 상수 버퍼 공간을 할당한다.
     D3D12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle = {0};
     void *writePtr = renderer.currentFrameData->AllocConstant(sizeof(TriangleConstants), &cbvDescriptorHandle);
     if (!writePtr) {

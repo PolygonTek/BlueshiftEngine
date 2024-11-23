@@ -337,7 +337,7 @@ void D3D12Renderer::CreateDSV(int width, int height) {
     device->CreateDepthStencilView(depthStencilBuffer, &dsvDesc, dsvDescriptorHandle);
 }
 
-void D3D12Renderer::BeginRender() {
+void D3D12Renderer::BeginFrame() {
     currentFrameData = &frameData[currentFrameIndex];
     currentFrameData->BeginRender();
 
@@ -370,7 +370,9 @@ void D3D12Renderer::BeginRender() {
     currentFrameCommandList->commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 }
 
-void D3D12Renderer::EndRender() {
+void D3D12Renderer::EndFrame() {
+    // TODO: 렌더 커맨드버퍼의 종료 마킹을 하고, 렌더 커맨드 버퍼를 실행한다.
+
     // 백버퍼 RTV 를 Present 할 수 있는 상태로 전환
     currentFrameCommandList->commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
@@ -380,12 +382,9 @@ void D3D12Renderer::EndRender() {
     // 커맨드 큐에 커맨드 리스트 전달 (한번에 여러개의 커맨드 리스트들을 전달할 수 있다)
     ID3D12CommandList *ppCommandLists[] = { currentFrameCommandList->commandList };
     commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-}
 
-void D3D12Renderer::Present() {
     // 이번 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
     SignalFence();
-
     currentFrameData->fenceValue = fenceValue;
 
     // 백버퍼를 전면버퍼와 교환한다.

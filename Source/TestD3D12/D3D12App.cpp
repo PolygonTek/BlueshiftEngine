@@ -15,12 +15,22 @@
 #include "Precompiled.h"
 #include "D3D12Renderer.h"
 #include "D3D12App.h"
+#include "D3D12GameObject.h"
 #include "D3D12TriangleMesh.h"
 #include "D3D12CubeMesh.h"
 #include "D3D12RootDescriptorPool.h"
 #include "D3D12CommandListPool.h"
 
-D3D12App        app;
+#define TRIANGLE_OR_CUBE    0
+
+static constexpr int        TriangleCount = 1024;
+
+static constexpr int        CubeDimensionX = 64;
+static constexpr int        CubeDimensionY = 64;
+static constexpr int        CubeCount = CubeDimensionX * CubeDimensionY;
+static constexpr float      CubeSpacing = 2.5f;
+
+D3D12App                    app;
 
 void D3D12App::Init(HWND hwnd) {
 #ifdef _DEBUG
@@ -33,11 +43,7 @@ void D3D12App::Init(HWND hwnd) {
 
     renderer.Init(hwnd, enableDebugLayer, withGpuValidation);
 
-    triangleMesh = new D3D12TriangleMesh;
-    triangleMesh->InitMesh();
-
-    cubeMesh = new D3D12CubeMesh;
-    cubeMesh->InitMesh();
+    InitGameObjects();
 
 #ifdef USE_D3D12_MEMALLOC
     renderer.PrintMemoryAllocatorStats();
@@ -46,6 +52,8 @@ void D3D12App::Init(HWND hwnd) {
 
 void D3D12App::Shutdown() {
     renderer.Finish();
+
+    ClearGameObjects();
 
     if (triangleMesh) {
         triangleMesh->FreeMesh();
@@ -58,6 +66,75 @@ void D3D12App::Shutdown() {
     }
 
     renderer.Shutdown();
+}
+
+int D3D12App::AddRenderObject(const D3D12RenderObject::State &def) {
+    int handle = renderObjects.FindNull();
+    if (handle == -1) {
+        handle = renderObjects.Append(nullptr);
+    }
+
+    UpdateRenderObject(handle, def);
+    return handle;
+}
+
+void D3D12App::UpdateRenderObject(int handle, const D3D12RenderObject::State &def) {
+    while (handle >= renderObjects.Count()) {
+        renderObjects.Append(nullptr);
+    }
+
+    D3D12RenderObject *renderObject = renderObjects[handle];
+    if (!renderObject) {
+        renderObject = new D3D12RenderObject(handle);
+        renderObjects[handle] = renderObject;
+
+        renderObject->Update(def);
+    } else {
+        renderObject->Update(def);
+    }
+}
+
+void D3D12App::RemoveRenderObject(int handle) {
+    if (handle < 0 || handle >= renderObjects.Count()) {
+        BE_WARNLOG("D3D12App::RemoveRenderObject: handle %i > %i\n", handle, renderObjects.Count() - 1);
+        return;
+    }
+
+    D3D12RenderObject *renderObject = renderObjects[handle];
+    if (!renderObject) {
+        BE_WARNLOG("D3D12App::RemoveRenderObject: handle %i is nullptr\n", handle);
+        return;
+    }
+
+    delete renderObjects[handle];
+    renderObjects[handle] = nullptr;
+}
+
+void D3D12App::RenderRenderObjects() {
+    for (int i = 0; i < renderObjects.Count(); ++i) {
+        D3D12RenderObject *renderObject = renderObjects[i];
+        renderObject->Render(i);
+    }
+}
+
+void D3D12App::RunFrame(int frameMsec) {
+    elapsedMsec += frameMsec;
+
+    UpdateCamera();
+
+    UpdateGameObjects();
+
+    cmdSystem.ExecuteCommandBuffer();
+}
+
+void D3D12App::Draw(int frameMsec) {
+    renderer.BeginFrame();
+
+    RenderRenderObjects();
+
+    //DrawMeshes();
+
+    renderer.EndFrame();
 }
 
 void D3D12App::SetViewMatrix(const Mat3 &viewAxis, const Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) const {
@@ -85,32 +162,7 @@ void D3D12App::SetViewMatrix(const Mat3 &viewAxis, const Vec3 &viewOrigin, float
     rowMajor4x4ViewMatrix[15] = 1.0f;
 }
 
-void D3D12App::Draw(int frameMsec) {
-    renderer.BeginRender();
-
-    //DrawTriangles();
-    DrawCubes();
-
-    renderer.EndRender();
-    renderer.Present();
-}
-
-void D3D12App::DrawTriangles() {
-    float elapsedSeconds = MILLI2SEC(elapsedMsec);
-
-    for (int i = 0; i < 1024; ++i) {
-        float t = elapsedSeconds + i * 0.1f;
-
-        triangleMesh->offset.x = 0.5f * Math::Cos(t);
-        triangleMesh->offset.y = 0.5f * Math::Sin(t * 3);
-
-        triangleMesh->DrawMesh(i);
-    }
-}
-
-void D3D12App::DrawCubes() {
-    float elapsedSeconds = MILLI2SEC(elapsedMsec);
-
+void D3D12App::UpdateCamera() {
     Mat4 projMatrix;
     float aspectRatio = renderer.viewport.Width / renderer.viewport.Height;
     projMatrix.SetPerspectiveRH(45, aspectRatio, 1, 1000, false);
@@ -119,35 +171,141 @@ void D3D12App::DrawCubes() {
     SetViewMatrix(Mat3(-1, 0, 0, 0, -1, 0, 0, 0, 1), Vec3(200, 0, 0), viewMatrix);
 
     viewProjMatrix = projMatrix * viewMatrix;
+}
 
-    constexpr int dimensionX = 64;
-    constexpr int dimensionY = 64;
-    constexpr float spacing = 2.5f;
-    constexpr float startX = -spacing * (dimensionX - 1) * 0.5f;
-    constexpr float startY = -spacing * (dimensionY - 1) * 0.5f;
+void D3D12App::ClearGameObjects() {
+    for (int i = 0; i < gameObjects.Count(); ++i) {
+        D3D12GameObject *gameObject = gameObjects[i];
 
-    int numDrawCalls = 0;
+        RemoveRenderObject(gameObject->renderObjectHandle);
+    }
 
-    for (int y = 0; y < dimensionY; ++y) {
-        for (int x = 0; x < dimensionX; ++x) {
-            float t = elapsedSeconds + (dimensionX * y + x) * 0.1f;
-            float scale = 1.0f + 0.25f * Math::Sin(t * 4);
+    gameObjects.DeleteContents(true);
+}
 
-            cubeMesh->worldMatrix.SetTRS(Vec3(0, startX + spacing * x, startY + spacing * y), Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), Vec3(scale));
+void D3D12App::InitGameObjects() {
+#if TRIANGLE_OR_CUBE == 1
+    InitTriangles();
+#else
+    InitCubes();
+#endif
+}
 
-            cubeMesh->DrawMesh(dimensionX * y + x);
-            numDrawCalls++;
-        }
+void D3D12App::UpdateGameObjects() {
+#if TRIANGLE_OR_CUBE == 1
+    UpdateTriangles();
+#else
+    UpdateCubes();
+#endif
+}
 
-        /*if (numDrawCalls >= 2048) {
-            numDrawCalls = 0;
-            renderer.FlushCommandList();
-        }*/
+void D3D12App::InitTriangles() {
+    triangleMesh = new D3D12TriangleMesh;
+    triangleMesh->InitMesh();
+
+    gameObjects.Reserve(TriangleCount);
+
+    for (int i = 0; i < TriangleCount; ++i) {
+        D3D12GameObject *gameObject = new D3D12GameObject;
+        gameObjects.Append(gameObject);
+
+        gameObject->renderObjectDef.meshType = D3D12MeshType::TriangleMesh;
+        gameObject->renderObjectDef.mesh = triangleMesh;
+        gameObject->renderObjectDef.offset.Set(0, 0);
+        gameObject->renderObjectHandle = AddRenderObject(gameObject->renderObjectDef);
     }
 }
 
-void D3D12App::RunFrame(int frameMsec) {
-    elapsedMsec += frameMsec;
+void D3D12App::InitCubes() {
+    cubeMesh = new D3D12CubeMesh;
+    cubeMesh->InitMesh();
 
-    cmdSystem.ExecuteCommandBuffer();
+    gameObjects.Reserve(CubeCount);
+
+    for (int i = 0; i < CubeCount; ++i) {
+        D3D12GameObject *gameObject = new D3D12GameObject;
+        gameObjects.Append(gameObject);
+
+        gameObject->renderObjectDef.meshType = D3D12MeshType::CubeMesh;
+        gameObject->renderObjectDef.mesh = cubeMesh;
+        gameObject->renderObjectDef.worldMatrix.SetIdentity();
+        gameObject->renderObjectHandle = AddRenderObject(gameObject->renderObjectDef);
+    }
+}
+
+void D3D12App::UpdateTriangles() {
+    float elapsedSeconds = MILLI2SEC(elapsedMsec);
+
+    for (int i = 0; i < TriangleCount; ++i) {
+        float t = elapsedSeconds + i * 0.1f;
+
+        D3D12GameObject *gameObject = gameObjects[i];
+
+        gameObject->renderObjectDef.offset.x = 0.5f * Math::Cos(t);
+        gameObject->renderObjectDef.offset.y = 0.5f * Math::Sin(t * 3);
+
+        UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDef);
+    }
+}
+
+void D3D12App::UpdateCubes() {
+    float elapsedSeconds = MILLI2SEC(elapsedMsec);
+
+    constexpr float startX = -CubeSpacing * (CubeDimensionX - 1) * 0.5f;
+    constexpr float startY = -CubeSpacing * (CubeDimensionY - 1) * 0.5f;
+
+    for (int y = 0; y < CubeDimensionY; ++y) {
+        for (int x = 0; x < CubeDimensionX; ++x) {
+            int index = CubeDimensionX * y + x;
+            float t = elapsedSeconds + index * 0.05f;
+            float scale = 1.0f + 0.25f * Math::Sin(t * 4);
+
+            D3D12GameObject* gameObject = gameObjects[index];
+            gameObject->renderObjectDef.worldMatrix.SetTRS(Vec3(0, startX + CubeSpacing * x, startY + CubeSpacing * y), Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), Vec3(scale));
+
+            UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDef);
+        }
+    }
+}
+
+void D3D12App::DrawMeshes() {
+#if TRIANGLE_OR_CUBE == 1
+    DrawTriangles();
+#else
+    DrawCubes();
+#endif
+}
+
+void D3D12App::DrawTriangles() {
+    float elapsedSeconds = MILLI2SEC(elapsedMsec);
+
+    for (int i = 0; i < TriangleCount; ++i) {
+        float t = elapsedSeconds + i * 0.1f;
+
+        Vec2 offset;
+        offset.x = 0.5f * Math::Cos(t);
+        offset.y = 0.5f * Math::Sin(t * 3);
+
+        triangleMesh->DrawMesh(i, offset);
+    }
+}
+
+void D3D12App::DrawCubes() {
+    float elapsedSeconds = MILLI2SEC(elapsedMsec);
+
+    constexpr float startX = -CubeSpacing * (CubeDimensionX - 1) * 0.5f;
+    constexpr float startY = -CubeSpacing * (CubeDimensionY - 1) * 0.5f;
+
+    for (int y = 0; y < CubeDimensionY; ++y) {
+        for (int x = 0; x < CubeDimensionX; ++x) {
+            int index = CubeDimensionX * y + x;
+            float t = elapsedSeconds + index * 0.1f;
+            float scale = 1.0f + 0.25f * Math::Sin(t * 4);
+
+            Mat3x4 worldMatrix;
+            worldMatrix.SetTRS(Vec3(0, startX + CubeSpacing * x, startY + CubeSpacing * y), Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), Vec3(scale));
+
+            cubeMesh->DrawMesh(index, worldMatrix);
+        }
+    }
 }

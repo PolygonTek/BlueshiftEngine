@@ -24,7 +24,8 @@ class D3D12CubeMesh : public D3D12Mesh {
 public:
     virtual void                    InitMesh() override;
     virtual void                    FreeMesh() override;
-    virtual void                    DrawMesh(int drawIndex) override;
+
+    void                            DrawMesh(int drawIndex, const Mat3x4& worldMatrix);
 
     void                            InitRootSignature();
     void                            InitPipelineState();
@@ -35,6 +36,4 @@ public:
  
     ID3D12RootSignature *           rootSignature = nullptr;
     ID3D12PipelineState *           pipelineState = nullptr;
-
-    Mat3x4                          worldMatrix;
 };

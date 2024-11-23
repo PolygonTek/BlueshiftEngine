@@ -10,6 +10,8 @@ set(SRC_FILES
     D3D12App.cpp
     D3D12Renderer.h
     D3D12Renderer.cpp
+    D3D12RenderObject.h
+    D3D12RenderObject.cpp
     D3D12RootDescriptorPool.h
     D3D12RootDescriptorPool.cpp
     D3D12DescriptorPool.h
@@ -34,6 +36,8 @@ set(SRC_FILES
     D3D12TriangleMesh.cpp
     D3D12CubeMesh.h
     D3D12CubeMesh.cpp
+    D3D12GameObject.h
+    D3D12GameObject.cpp
     WinMain.cpp
     WinResource.h
     WinRes/small.ico

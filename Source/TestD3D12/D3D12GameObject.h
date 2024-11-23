@@ -14,8 +14,10 @@
 
 #pragma once
 
-class D3D12Mesh {
+#include "D3D12RenderObject.h"
+
+class D3D12GameObject {
 public:
-    virtual void                    InitMesh() = 0;
-    virtual void                    FreeMesh() = 0;
+    D3D12RenderObject::State    renderObjectDef;
+    int                         renderObjectHandle = -1;
 };
