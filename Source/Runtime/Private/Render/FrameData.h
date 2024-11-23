@@ -38,8 +38,10 @@ private:
         byte *              base;
     };
 
-    MemBlock *              mem;
-    MemBlock *              alloc;
+    MemBlock *              AllocBlock();
+
+    MemBlock *              headBlock;
+    MemBlock *              currentBlock;
     RenderCommandBuffer     commands;
 };
 

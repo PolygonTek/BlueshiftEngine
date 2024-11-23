@@ -20,89 +20,81 @@
 
 BE_NAMESPACE_BEGIN
 
-static constexpr int MEMORY_BLOCK_SIZE = 0x100000;
+static constexpr int MaxMemSizePerBlock = 0x100000;
+static constexpr int AlignSize = 32;
 
 FrameData   frameData;
 
 void FrameData::Init() {
     Shutdown();
 
-    int size = MEMORY_BLOCK_SIZE;
-    MemBlock *block = (MemBlock *)Mem_Alloc(sizeof(*block) + 15 + size);
-    if (!block) {
-        BE_FATALERROR("FrameData::Init: failed to allocate memory");
-    }
-    block->base = (byte *)AlignUp((intptr_t)block + sizeof(*block), 16);
-    block->size = size;
-    block->used = 0;
-    block->next = nullptr;
-
-    this->mem = block;
-    this->alloc = block;
-    this->commands.used = 0;
+    headBlock = AllocBlock();
+    currentBlock = headBlock;
+    commands.used = 0;
 }
 
 void FrameData::Shutdown() {
     MemBlock *nextBlock;
-    for (MemBlock *block = this->mem; block; block = nextBlock) {
+
+    for (MemBlock *block = headBlock; block; block = nextBlock) {
         nextBlock = block->next;
         Mem_Free(block);
     }
-    
-    this->mem = nullptr;
+
+    headBlock = nullptr;
+    currentBlock = nullptr;
+}
+
+FrameData::MemBlock *FrameData::AllocBlock() {
+    MemBlock *block = (MemBlock *)Mem_Alloc(sizeof(*block) + AlignSize - 1 + MaxMemSizePerBlock);
+    if (!block) {
+        BE_FATALERROR("FrameData::AllocBlock: failed to allocate memory");
+    }
+
+    block->base = (byte *)AlignUp((intptr_t)block + sizeof(*block), AlignSize);
+    block->size = MaxMemSizePerBlock;
+    block->used = 0;
+    block->next = nullptr;
+    return block;
 }
 
 void FrameData::ToggleFrame() {
     // Reset the mem allocation to the first block.
-    this->alloc = this->mem;
+    currentBlock = headBlock;
 
     // Clear all the blocks.
-    for (MemBlock *block = this->mem; block; block = block->next) {
+    for (MemBlock *block = headBlock; block; block = block->next) {
         block->used = 0;
     }
 }
 
-void *FrameData::Alloc(int bytes) {
-    bytes = AlignUp(bytes, 16);
-    MemBlock *block = this->alloc;
-
-    if (block->size - block->used >= bytes) {
-        void *buf = block->base + block->used;
-        block->used += bytes;
-        return buf;
+void *FrameData::Alloc(int size) {
+    size = AlignUp(size, AlignSize);
+    if (size > MaxMemSizePerBlock) {
+        BE_FATALERROR("FrameData::Alloc: %i exceeded MaxMemSizePerBlock", size);
     }
 
-    // Advance to the next mem block if available.
-    block = block->next;
-    // Create a new block if we are at the end of the chain.
-    if (!block) {
-        int size = MEMORY_BLOCK_SIZE;
-        block = (MemBlock *)Mem_Alloc(sizeof(*block) + 15 + size);
-        if (!block) {
-            BE_FATALERROR("FrameData::Alloc: Mem_Alloc() failed");
+    for (MemBlock* block = currentBlock; block; block = block->next) {
+        if (block->size - block->used >= size) {
+            void *alloc = block->base + block->used;
+            block->used += size;
+            currentBlock = block;
+            return alloc;
         }
-        block->base = (byte *)AlignUp((intptr_t)block + sizeof(*block), 16);
-        block->size = size;
-        block->used = 0;
-        block->next = nullptr;
-        this->alloc->next = block;
     }
 
-    if (bytes > block->size) {
-        BE_FATALERROR("FrameData::Alloc of %i exceeded MEMORY_BLOCK_SIZE", bytes);
-    }
+    MemBlock *newBlock = AllocBlock();
+    currentBlock->next = newBlock;
+    currentBlock = newBlock;
+    currentBlock->used = size;
 
-    this->alloc = block;
-    block->used = bytes;
-
-    return block->base;
+    return currentBlock->base;
 }
 
-void *FrameData::ClearedAlloc(int bytes) {
-    void *r = Alloc(bytes);
-    simdProcessor->Memset(r, 0, bytes);
-    //memset(r, 0, bytes);
-    return r;
+void *FrameData::ClearedAlloc(int size) {
+    void *mem = Alloc(size);
+    simdProcessor->Memset(mem, 0, size);
+    return mem;
 }
 
 BE_NAMESPACE_END
