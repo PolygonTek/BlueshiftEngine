@@ -47,6 +47,9 @@ public:
                     /// Returns true if the array has count 0; otherwise returns false.
     bool            IsEmpty() const { return count == 0; }
 
+                    /// Returns true if the index is in valid range.
+    bool            IsValidIndex(int index) const { return (index < 0 || index >= count) ? false : true; }
+
                     /// Number of elements.
     int             Count() const { return count; }
 

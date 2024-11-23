@@ -25,7 +25,7 @@ public:
     virtual void                    InitMesh() override;
     virtual void                    FreeMesh() override;
 
-    void                            DrawMesh(int drawIndex, const Mat3x4& worldMatrix);
+    void                            DrawMesh(D3D12CommandList* commandList, int drawIndex, const Mat3x4& worldMatrix);
 
     void                            InitRootSignature();
     void                            InitPipelineState();

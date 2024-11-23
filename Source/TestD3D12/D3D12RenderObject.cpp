@@ -16,28 +16,29 @@
 #include "D3D12RenderObject.h"
 #include "D3D12TriangleMesh.h"
 #include "D3D12CubeMesh.h"
+#include "D3D12Renderer.h"
 
 void D3D12RenderObject::Update(const State &stateDef) {
     state = stateDef;
 }
 
-void D3D12RenderObject::Render(int renderIndex) {
+void D3D12RenderObject::Render(D3D12CommandList* commandList, int renderIndex) {
     switch (state.meshType) {
     case D3D12MeshType::TriangleMesh:
-        DrawTriangleMesh(renderIndex);
+        DrawTriangleMesh(commandList, renderIndex);
         break;
     case D3D12MeshType::CubeMesh:
-        DrawCubeMesh(renderIndex);
+        DrawCubeMesh(commandList, renderIndex);
         break;
     }
 }
 
-void D3D12RenderObject::DrawTriangleMesh(int renderIndex) {
+void D3D12RenderObject::DrawTriangleMesh(D3D12CommandList* commandList, int renderIndex) {
     D3D12TriangleMesh *triangleMesh = static_cast<D3D12TriangleMesh *>(state.mesh);
-    triangleMesh->DrawMesh(renderIndex, state.offset);
+    triangleMesh->DrawMesh(commandList, renderIndex, state.offset);
 }
 
-void D3D12RenderObject::DrawCubeMesh(int renderIndex) {
+void D3D12RenderObject::DrawCubeMesh(D3D12CommandList *commandList, int renderIndex) {
     D3D12CubeMesh *cubeMesh = static_cast<D3D12CubeMesh *>(state.mesh);
-    cubeMesh->DrawMesh(renderIndex, state.worldMatrix);
+    cubeMesh->DrawMesh(commandList, renderIndex, state.worldMatrix);
 }

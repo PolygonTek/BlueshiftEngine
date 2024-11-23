@@ -252,8 +252,7 @@ float4 PSMain(PSInput input) : SV_TARGET {
     SAFE_RELEASE(compiledPixelShader);
 }
 
-void D3D12CubeMesh::DrawMesh(int drawIndex, const Mat3x4& worldMatrix) {
-    D3D12CommandList* currentFrameCommandList = renderer.currentFrameCommandList;
+void D3D12CubeMesh::DrawMesh(D3D12CommandList* commandList, int drawIndex, const Mat3x4& worldMatrix) {
     D3D12RootDescriptorPool* currentFrameRootDescriptorPool = renderer.currentFrameData->rootDescriptorPool;
 
     // 상수 버퍼 공간을 할당한다.
@@ -284,22 +283,22 @@ void D3D12CubeMesh::DrawMesh(int drawIndex, const Mat3x4& worldMatrix) {
 
     // 루트 디스크립터 힙을 지정한다.
     ID3D12DescriptorHeap *descriptorHeaps[] = { currentFrameRootDescriptorPool->descriptorHeap };
-    currentFrameCommandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
+    commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 
     // 루트 시그니쳐를 세팅한다.
-    currentFrameCommandList->SetGraphicsRootSignature(rootSignature);
+    commandList->SetGraphicsRootSignature(rootSignature);
 
     // 루트 디스크립터 테이블을 세팅한다.
-    currentFrameCommandList->commandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
+    commandList->commandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
 
     //gpuRootDescriptorHandle.Offset(1, currentRootDescriptorPool->descriptorHandleSize);
     //currentCommandList->commandList->SetGraphicsRootDescriptorTable(1, gpuRootDescriptorHandle);
 
-    currentFrameCommandList->SetPipelineState(pipelineState);
-    currentFrameCommandList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    commandList->SetPipelineState(pipelineState);
+    commandList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    currentFrameCommandList->commandList->IASetVertexBuffers(0, 1, &vertexBuffer->vbv);
-    currentFrameCommandList->commandList->IASetIndexBuffer(&indexBuffer->ibv);
+    commandList->commandList->IASetVertexBuffers(0, 1, &vertexBuffer->vbv);
+    commandList->commandList->IASetIndexBuffer(&indexBuffer->ibv);
 
-    currentFrameCommandList->commandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+    commandList->commandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
 }

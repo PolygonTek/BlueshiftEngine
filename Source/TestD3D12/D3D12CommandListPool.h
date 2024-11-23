@@ -16,7 +16,8 @@
 
 #include "D3D12Common.h"
 
-struct D3D12CommandList {
+class D3D12CommandList {
+public:
     void                            Reset();
 
     bool                            IsSameDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);

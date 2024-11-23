@@ -18,6 +18,6 @@
 
 class D3D12GameObject {
 public:
-    D3D12RenderObject::State    renderObjectDef;
+    D3D12RenderObject::State    renderObjectDef;            // RenderObject 를 정의
     int                         renderObjectHandle = -1;
 };

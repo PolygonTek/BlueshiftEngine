@@ -16,6 +16,7 @@
 
 #include "D3D12Mesh.h"
 
+class D3D12CommandList;
 class D3D12Texture;
 class D3D12VertexBuffer;
 class D3D12IndexBuffer;
@@ -25,7 +26,7 @@ public:
     virtual void                    InitMesh() override;
     virtual void                    FreeMesh() override;
 
-    void                            DrawMesh(int drawIndex, const Vec2& offset);
+    void                            DrawMesh(D3D12CommandList *commandList, int drawIndex, const Vec2& offset);
 
     void                            InitRootSignature();
     void                            InitPipelineState();

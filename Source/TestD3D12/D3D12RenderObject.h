@@ -14,6 +14,7 @@
 
 #pragma once
 
+class D3D12CommandList;
 class D3D12Mesh;
 
 struct D3D12MeshType {
@@ -26,8 +27,6 @@ struct D3D12MeshType {
 
 class D3D12RenderObject {
 public:
-    D3D12RenderObject(int index);
-
     struct State {
         D3D12MeshType::Enum meshType;
         D3D12Mesh*          mesh = nullptr;
@@ -37,15 +36,11 @@ public:
 
     void                    Update(const State &state);
 
-    void                    Render(int renderIndex);
+    void                    Render(D3D12CommandList* commandList, int renderIndex);
 
-    void                    DrawTriangleMesh(int renderIndex);
-    void                    DrawCubeMesh(int renderIndex);
+    void                    DrawTriangleMesh(D3D12CommandList* commandList, int renderIndex);
+    void                    DrawCubeMesh(D3D12CommandList* commandList, int renderIndex);
 
-    State                   state;
-    int                     index = -1;
+    State                   state;      // 오브젝트를 렌더링할 때 필요한 실제 상태를 들고 있음 (Update 함수에서 갱신됨)
+    int                     index = -1; // D3D12App::renderObjects 의 인덱스
 };
-
-BE_INLINE D3D12RenderObject::D3D12RenderObject(int index) {
-    this->index = index;
-}

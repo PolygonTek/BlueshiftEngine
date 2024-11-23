@@ -22,7 +22,7 @@
 
 #include "D3D12FrameData.h"
 
-struct D3D12CommandList;
+class D3D12CommandList;
 class D3D12DescriptorPool;
 
 struct D3D12PendingResource {
