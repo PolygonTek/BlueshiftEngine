@@ -30,6 +30,8 @@ class SIMD {
 public:
     static void         Init(bool forceGeneric = false);
     static void         Shutdown();
+
+    static void         SetDenormalFlushMode(bool toZero);
 };
 
 /*

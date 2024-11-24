@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "Platform/PlatformThread.h"
+
 BE_NAMESPACE_BEGIN
 
 class ScopeLock {

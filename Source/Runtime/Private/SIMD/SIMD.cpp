@@ -22,7 +22,7 @@ SIMDProcessor *     simdProcessor = nullptr;
 
 void SIMD::Init(bool forceGeneric) {
     simdGeneric = new SIMD_Generic;
-        
+
     int cpuid = GetCpuInfo()->cpuid;
 
     if (forceGeneric) {
@@ -46,20 +46,28 @@ void SIMD::Init(bool forceGeneric) {
 
     BE_LOG("using %s for SIMD processing\n", simdProcessor->GetName());
 
+    SetDenormalFlushMode(true);
+}
+
+void SIMD::SetDenormalFlushMode(bool toZero) {
 #ifdef HAVE_X86_SSE_INTRIN
+    int cpuid = GetCpuInfo()->cpuid;
     if (cpuid & CPUID_FTZ) {
-        _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-        BE_LOG("enabled Flush-To-Zero mode\n");
+        _MM_SET_FLUSH_ZERO_MODE(toZero ? _MM_FLUSH_ZERO_ON : _MM_FLUSH_ZERO_OFF);
     }
     if (cpuid & CPUID_DAZ) {
-        _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-        BE_LOG("enabled Denormals-Are-Zero mode\n");
+        _MM_SET_DENORMALS_ZERO_MODE(toZero ? _MM_DENORMALS_ZERO_ON : _MM_DENORMALS_ZERO_OFF);
     }
 #elif defined(HAVE_ARM_NEON_INTRIN)
+    // Activate FTZ and DAZ modes by setting the FZ bit
     static constexpr uint64_t FP_FZ = 1 << 24;
     uint64_t val;
     asm volatile("mrs %0, fpcr" : "=r" (val));
-    val |= FP_FZ;
+    if (toZero) {
+        val |= FP_FZ;
+    } else {
+        val &= ~FP_FZ;
+    }
     asm volatile("msr fpcr, %0" : /* no output */ : "r" (val));
 #endif
 }

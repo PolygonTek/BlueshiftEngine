@@ -230,6 +230,10 @@ bool PlatformAndroidCondition::TimedWait(const PlatformAndroidCondition *android
     return true;
 }
 
+void PlatformAndroidCondition::Signal(const PlatformAndroidCondition *androidCondition) {
+    pthread_cond_signal(androidCondition->cond);
+}
+
 void PlatformAndroidCondition::Broadcast(const PlatformAndroidCondition *androidCondition) {
     pthread_cond_broadcast(androidCondition->cond);
 }

@@ -56,20 +56,42 @@ class BE_API PlatformWinCondition : public PlatformBaseCondition {
 public:
     static PlatformWinCondition *Create();
     static void                 Destroy(PlatformWinCondition *condition);
-    
+
                                 /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
     static void                 Wait(const PlatformWinCondition *condition, const PlatformWinMutex *mutex);
     static bool                 TimedWait(const PlatformWinCondition *condition, const PlatformWinMutex *mutex, int ms);
-    
+
+    template <typename Predicate>
+    static void                 Wait(const PlatformWinCondition *condition, const PlatformWinMutex *mutex, Predicate &&waitFinishCondition);
+    template <typename Predicate>
+    static bool                 TimedWait(const PlatformWinCondition *condition, const PlatformWinMutex *mutex, int ms, Predicate &&waitFinishCondition);
+
                                 /// If any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
     static void                 Signal(const PlatformWinCondition *condition);
-    
+
                                 /// Same as signal, except wake up all waiting threads.
     static void                 Broadcast(const PlatformWinCondition *condition);
     
 private:
     PCONDITION_VARIABLE         condVar;
 };
+
+template <typename Predicate>
+BE_INLINE void PlatformWinCondition::Wait(const PlatformWinCondition *condition, const PlatformWinMutex *mutex, Predicate &&waitFinishCondition) {
+    while (!waitFinishCondition()) {
+        PlatformWinCondition::Wait(condition, mutex);
+    }
+}
+
+template <typename Predicate>
+BE_INLINE bool PlatformWinCondition::TimedWait(const PlatformWinCondition *condition, const PlatformWinMutex *mutex, int ms, Predicate &&waitFinishCondition) {
+    while (!waitFinishCondition()) {
+        if (PlatformWinCondition::TimedWait(condition, mutex, ms) == false) { // time-out
+            return false;
+        }
+    }
+    return true;
+}
 
 typedef PlatformWinThread       PlatformThread;
 typedef PlatformWinMutex        PlatformMutex;

@@ -144,6 +144,7 @@ int32_t PlatformWinSystem::NumCPUCores() {
 }
 
 int32_t PlatformWinSystem::NumCPUCoresIncludingHyperthreads() {
+    //return std::thread::hardware_concurrency();
 #if (_WIN32_WINNT >= _WIN32_WINNT_WIN7)
     static int32_t numCores = 0;
     if (numCores == 0) {

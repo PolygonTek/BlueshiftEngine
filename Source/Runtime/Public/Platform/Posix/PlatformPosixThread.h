@@ -59,19 +59,41 @@ public:
     static PlatformPosixCondition *Create();
     static void                 Destroy(PlatformPosixCondition *condition);
     
-                                // Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
+                                /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
     static void                 Wait(const PlatformPosixCondition *condition, const PlatformPosixMutex *mutex);
     static bool                 TimedWait(const PlatformPosixCondition *condition, const PlatformPosixMutex *mutex, int ms);
+
+    template <typename Predicate>
+    static void                 Wait(const PlatformPosixCondition *condition, const PlatformPosixMutex *mutex, Predicate &&waitFinishCondition);
+    template <typename Predicate>
+    static bool                 TimedWait(const PlatformPosixCondition *condition, const PlatformPosixMutex *mutex, int ms, Predicate &&waitFinishCondition);
     
-                                // If any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
+                                /// If any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
     static void                 Signal(const PlatformPosixCondition *condition);
     
-                                // Same as signal, except wake up all waiting threads.
+                                /// Same as signal, except wake up all waiting threads.
     static void                 Broadcast(const PlatformPosixCondition *condition);
     
 private:
     pthread_cond_t *            cond;
 };
+
+template <typename Predicate>
+BE_INLINE void PlatformPosixCondition::Wait(const PlatformPosixCondition *condition, const PlatformPosixMutex *mutex, Predicate &&waitFinishCondition) {
+    while (!waitFinishCondition()) {
+        PlatformPosixCondition::Wait(condition, mutex);
+    }
+}
+
+template <typename Predicate>
+BE_INLINE bool PlatformPosixCondition::TimedWait(const PlatformPosixCondition *condition, const PlatformPosixMutex *mutex, int ms, Predicate &&waitFinishCondition) {
+    while (!waitFinishCondition()) {
+        if (PlatformPosixCondition::TimedWait(condition, mutex, ms) == false) { // time-out
+            return false;
+        }
+    }
+    return true;
+}
 
 #ifndef USE_BASE_PLATFORM_POSIX_THREAD
 typedef PlatformPosixThread     PlatformThread;

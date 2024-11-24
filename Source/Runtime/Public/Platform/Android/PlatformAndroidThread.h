@@ -57,20 +57,42 @@ class BE_API PlatformAndroidCondition : public PlatformBaseCondition {
 public:
     static PlatformAndroidCondition *Create();
     static void                 Destroy(PlatformAndroidCondition *condition);
-    
-    // release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
+
+                                /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
     static void                 Wait(const PlatformAndroidCondition *condition, const PlatformAndroidMutex *mutex);
     static bool                 TimedWait(const PlatformAndroidCondition *condition, const PlatformAndroidMutex *mutex, int ms);
-    
-    // if any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
+
+    template <typename Predicate>
+    static void                 Wait(const PlatformAndroidCondition *condition, const PlatformAndroidMutex *mutex, Predicate &&waitFinishCondition);
+    template <typename Predicate>
+    static bool                 TimedWait(const PlatformAndroidCondition *condition, const PlatformAndroidMutex *mutex, int ms, Predicate &&waitFinishCondition);
+
+                                /// If any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
     static void                 Signal(const PlatformAndroidCondition *condition);
-    
-    // same as signal, except wake up all waiting threads
+
+                                /// Same as signal, except wake up all waiting threads
     static void                 Broadcast(const PlatformAndroidCondition *condition);
-    
+
 private:
     pthread_cond_t *            cond;
 };
+
+template <typename Predicate>
+BE_INLINE void PlatformAndroidCondition::Wait(const PlatformAndroidCondition *condition, const PlatformAndroidMutex *mutex, Predicate &&waitFinishCondition) {
+    while (!waitFinishCondition()) {
+        PlatformAndroidCondition::Wait(condition, mutex);
+    }
+}
+
+template <typename Predicate>
+BE_INLINE bool PlatformAndroidCondition::TimedWait(const PlatformAndroidCondition *condition, const PlatformAndroidMutex *mutex, int ms, Predicate &&waitFinishCondition) {
+    while (!waitFinishCondition()) {
+        if (PlatformAndroidCondition::TimedWait(condition, mutex, ms) == false) { // time-out
+            return false;
+        }
+    }
+    return true;
+}
 
 typedef PlatformAndroidThread   PlatformThread;
 typedef PlatformAndroidMutex    PlatformMutex;

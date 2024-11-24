@@ -15,6 +15,8 @@
 #include "Precompiled.h"
 #include "Platform/PlatformSystem.h"
 #include "Platform/cpuid.h"
+#include "SIMD/SIMD.h"
+#include "Core/ScopeLock.h"
 #include "Core/Task.h"
 
 BE_NAMESPACE_BEGIN
@@ -23,7 +25,7 @@ unsigned int TaskThreadProc(void *param);
 
 TaskManager::TaskManager(int maxTasks, int numThreads) {
     this->maxTasks = maxTasks;
-    this->taskBuffer = new Task[maxTasks];
+    this->taskRingBuffer = new Task[maxTasks];
 
     this->headTaskIndex = 0;
     this->tailTaskIndex = 0;
@@ -34,59 +36,50 @@ TaskManager::TaskManager(int maxTasks, int numThreads) {
     // Create synchronization objects.
     this->taskMutex = PlatformMutex::Create();
     this->taskCondition = PlatformCondition::Create();
-
-    this->finishMutex = PlatformMutex::Create();
     this->finishCondition = PlatformCondition::Create();
 
     if (numThreads < 0) {
         // Get thread count as number of logical processors.
-        //numThreads = std::thread::hardware_concurrency();
         numThreads = PlatformSystem::NumCPUCoresIncludingHyperthreads();
     }
 
-    // Create task threads.
+    // Start running threads.
+    threads.Reserve(numThreads);
     for (int i = 0; i < numThreads; i++) {
-        taskThreads.Append(PlatformThread::Start(TaskThreadProc, (void *)this, 0));
+        threads.Append(PlatformThread::Start(TaskThreadProc, (void *)this, 0));
     }
 }
 
 TaskManager::~TaskManager() {
     Stop();
 
-    // Destroy all the synchronization objects.
     PlatformCondition::Destroy(taskCondition);
+    PlatformCondition::Destroy(finishCondition);
     PlatformMutex::Destroy(taskMutex);
 
-    PlatformCondition::Destroy(finishCondition);
-    PlatformMutex::Destroy(finishMutex);
-
-    delete [] taskBuffer;
+    delete[] taskRingBuffer;
 }
 
-bool TaskManager::AddTask(TaskFunc function, void *data) {
+bool TaskManager::AddTask(TaskFunc taskFunction, void *data) {
     Task task;
-    task.function = function;
+    task.function = taskFunction;
     task.data = data;
 
-    // Lock for task addition
-    PlatformMutex::Lock(taskMutex);
+    // Lock to add the task.
+    {
+        ScopeLock scopeLock(taskMutex);
 
-    int nextTaskIndex = (tailTaskIndex + 1) % maxTasks;
-    if (nextTaskIndex == headTaskIndex) {
-        PlatformMutex::Unlock(taskMutex);
-        BE_ERRLOG("Too many tasks");
-        return false;
+        int nextTaskIndex = (tailTaskIndex + 1) % maxTasks;
+        if (nextTaskIndex == headTaskIndex) {
+            BE_ERRLOG("TaskManager::AddTask: Too many tasks");
+            return false;
+        }
+
+        taskRingBuffer[tailTaskIndex] = task;
+        tailTaskIndex = nextTaskIndex;
+
+        numActiveTasks++;
     }
-
-    taskBuffer[tailTaskIndex] = task;
-
-    tailTaskIndex = nextTaskIndex;
-
-    // Unlock for task addition
-    PlatformMutex::Unlock(taskMutex);
-
-    numActiveTasks.fetch_add(1);
-
     return true;
 }
 
@@ -96,87 +89,73 @@ void TaskManager::Start() {
 
 void TaskManager::Stop() {
     // Set the stopping and wake all the task threads.
-    stopping = true;
-
-    PlatformMutex::Lock(taskMutex);
-    PlatformCondition::Broadcast(taskCondition);
-    PlatformMutex::Unlock(taskMutex);
+    {
+        ScopeLock scopeLock(taskMutex);
+        stopping = true;
+        PlatformCondition::Broadcast(taskCondition);
+    }
 
     // Wait until finishing all the task threads.
-    PlatformThread::JoinAll(taskThreads.Count(), taskThreads.Ptr());
+    PlatformThread::JoinAll(threads.Count(), threads.Ptr());
+
+    threads.Clear();
 }
 
 void TaskManager::WaitFinish() {
-    PlatformMutex::Lock(finishMutex);
-
-    while (numActiveTasks > 0) {
-        PlatformCondition::Wait(finishCondition, finishMutex);
-    }
-
-    PlatformMutex::Unlock(finishMutex);
+    ScopeLock scopeLock(taskMutex);
+    PlatformCondition::Wait(finishCondition, taskMutex, [this]{ return IsTaskEmpty() && numActiveTasks <= 0; });
 }
 
+// Return false if a timeout occurs.
 bool TaskManager::TimedWaitFinish(int ms) {
-    bool ret = true;
-
-    PlatformMutex::Lock(finishMutex);
-
-    while (numActiveTasks > 0 && ret == true) {
-        ret = PlatformCondition::TimedWait(finishCondition, finishMutex, ms);
-    }
-
-    PlatformMutex::Unlock(finishMutex);
+    ScopeLock scopeLock(taskMutex);
+    bool ret = PlatformCondition::TimedWait(finishCondition, taskMutex, ms, [this]{ return IsTaskEmpty() && numActiveTasks <= 0; });
     return ret;
 }
 
-static void InitTaskThread() {
-#ifdef __WIN32__
-    int cpuid = GetCpuInfo()->cpuid;
-    if (cpuid & CPUID_FTZ) {
-        _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-    }
-    if (cpuid & CPUID_DAZ) {
-        _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-    }
-#endif
+BE1::Task TaskManager::GetTaskInternal() {
+    Task task = taskRingBuffer[headTaskIndex];
+    headTaskIndex = (headTaskIndex + 1) % maxTasks;
+
+    return task;
 }
 
 unsigned int TaskThreadProc(void *param) {
-    InitTaskThread();
+    SIMD::SetDenormalFlushMode(true);
 
-    TaskManager *tm = (TaskManager *)param;
+    TaskManager *taskManager = reinterpret_cast<TaskManager *>(param);
+    Task task;
 
     while (1) {
-        PlatformMutex::Lock(tm->taskMutex);
+        // Lock to get the task.
+        {
+            ScopeLock scopeLock(taskManager->taskMutex);
 
-        // Wait for task condition variable.
-        while (tm->IsTaskEmpty() && !tm->stopping) {
-            PlatformCondition::Wait(tm->taskCondition, tm->taskMutex);
+            // Wait for task condition variable.
+            PlatformCondition::Wait(taskManager->taskCondition, taskManager->taskMutex, [taskManager]{ return !taskManager->IsTaskEmpty() || taskManager->stopping; });
+
+            if (taskManager->stopping) {
+                return 0;
+            }
+
+            // Get the task from the ring buffer.
+            task = taskManager->GetTaskInternal();
         }
-
-        if (tm->stopping) {
-            PlatformMutex::Unlock(tm->taskMutex);
-            break;
-        }
-
-        // Get the task from the ring buffer.
-        Task task = tm->taskBuffer[tm->headTaskIndex];
-
-        tm->headTaskIndex = (tm->headTaskIndex + 1) % tm->maxTasks;
-
-        PlatformMutex::Unlock(tm->taskMutex);
 
         // Do the task.
         task.function(task.data);
 
-        // Decrease active task count after finishing a task function.
-        tm->numActiveTasks.fetch_sub(1);
+        {
+            ScopeLock scopeLock(taskManager->taskMutex);
 
-        // Wake finish condition variable when there is no active tasks.
-        if (tm->numActiveTasks == 0) {
-            PlatformMutex::Lock(tm->finishMutex);
-            PlatformCondition::Signal(tm->finishCondition);
-            PlatformMutex::Unlock(tm->finishMutex);
+            // Decrease active task count after finishing a task function.
+            --taskManager->numActiveTasks;
+
+            // Wake finish condition variable when there is no active tasks.
+            if (taskManager->numActiveTasks == 0 && taskManager->IsTaskEmpty()) {
+            
+                PlatformCondition::Signal(taskManager->finishCondition);
+            }
         }
     }
     return 0;

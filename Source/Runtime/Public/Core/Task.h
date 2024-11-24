@@ -29,10 +29,12 @@ struct Task {
 class BE_API TaskManager {
 public:
     explicit TaskManager(int maxTasks, int numThreads = -1);
+    TaskManager(const TaskManager &) = delete;
+    TaskManager &operator=(const TaskManager &) = delete;
     ~TaskManager();
 
                             /// Returns number of threads.
-    size_t                  NumThreads() const { return taskThreads.Count(); }
+    size_t                  NumThreads() const { return threads.Count(); }
 
                             /// Is task list empty ?
     bool                    IsTaskEmpty() const { return headTaskIndex == tailTaskIndex; }
@@ -60,20 +62,20 @@ public:
     bool                    TimedWaitFinish(int msec);
 
 private:
-    Task *                  taskBuffer;         ///< Ring buffer of task list.
+    Task                    GetTaskInternal();
+
+    Task *                  taskRingBuffer;     ///< Ring buffer of task list.
     int                     maxTasks;
-    int                     headTaskIndex;
-    int                     tailTaskIndex;
+    int                     headTaskIndex = 0;
+    int                     tailTaskIndex = 0;
 
-    std::atomic_int         numActiveTasks;     ///< Number of tasks in active state.
-    std::atomic_bool        stopping;
+    int                     numActiveTasks;     ///< Number of tasks in active state.
+    bool                    stopping;
 
-    Array<PlatformThread *> taskThreads;
+    Array<PlatformThread *> threads;
 
     PlatformMutex *         taskMutex;          ///< Mutex for accessing task list and execution.
     PlatformCondition *     taskCondition;      ///< Condition variable for task execution.
-                            
-    PlatformMutex *         finishMutex;        ///< Mutex for finishing task list.
     PlatformCondition *     finishCondition;    ///< Condition variable for finishing task list.
 
     friend unsigned int     TaskThreadProc(void *param);
