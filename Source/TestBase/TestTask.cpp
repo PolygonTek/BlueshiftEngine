@@ -16,28 +16,40 @@
 #include "TestTask.h"
 
 void TaskFunc1(void *data) {
-    for (int i = 0; i < 10; i++) {
-        BE_LOG("TID: %i - TaskFunc1\n", BE1::PlatformThread::GetCurrentThreadId());
-    }
+    BE_LOG("TID: %i - Start TaskFunc1\n", BE1::PlatformThread::GetCurrentThreadId());
+    BE1::PlatformProcess::Sleep(0.1f);
+    BE_LOG("TID: %i - End TaskFunc1\n", BE1::PlatformThread::GetCurrentThreadId());
 }
 
 void TaskFunc2(void *data) {
-    for (int i = 0; i < 10; i++) {
-        BE_LOG("TID: %i - TaskFunc2\n", BE1::PlatformThread::GetCurrentThreadId());
-    }
+    BE_LOG("TID: %i - Start TaskFunc2\n", BE1::PlatformThread::GetCurrentThreadId());
+    BE1::PlatformProcess::Sleep(0.1f);
+    BE_LOG("TID: %i - End TaskFunc2\n", BE1::PlatformThread::GetCurrentThreadId());
 }
 
 void TaskFunc3(void *data) {
-    for (int i = 0; i < 10; i++) {
-        BE_LOG("TID: %i - TaskFunc3\n", BE1::PlatformThread::GetCurrentThreadId());
-    }
+    BE_LOG("TID: %i - Start TaskFunc3\n", BE1::PlatformThread::GetCurrentThreadId());
+    BE1::PlatformProcess::Sleep(0.1f);
+    BE_LOG("TID: %i - End TaskFunc3\n", BE1::PlatformThread::GetCurrentThreadId());
 }
 
 void TestTask() {
-    BE1::TaskManager taskManager(1024);
+    BE1::TaskManager taskManager(256);
+    taskManager.Start();
+
     taskManager.AddTask(TaskFunc1, nullptr);
     taskManager.AddTask(TaskFunc2, nullptr);
     taskManager.AddTask(TaskFunc3, nullptr);
+    taskManager.WaitFinish();
 
+    taskManager.AddTask([]() {
+        TaskFunc1(nullptr);
+    });
+    taskManager.AddTask([]() {
+        TaskFunc2(nullptr);
+    });
+    taskManager.AddTask([]() {
+        TaskFunc3(nullptr);
+    });
     taskManager.WaitFinish();
 }

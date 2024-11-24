@@ -23,31 +23,12 @@ BE_NAMESPACE_BEGIN
 
 unsigned int TaskThreadProc(void *param);
 
-TaskManager::TaskManager(int maxTasks, int numThreads) {
-    this->maxTasks = maxTasks;
-    this->taskRingBuffer = new Task[maxTasks];
+TaskManager::TaskManager(int maxTasks) {
+    taskRingBuffer.SetCount(maxTasks);
 
-    this->headTaskIndex = 0;
-    this->tailTaskIndex = 0;
-
-    this->numActiveTasks = 0;
-    this->stopping = false;
-
-    // Create synchronization objects.
-    this->taskMutex = PlatformMutex::Create();
-    this->taskCondition = PlatformCondition::Create();
-    this->finishCondition = PlatformCondition::Create();
-
-    if (numThreads < 0) {
-        // Get thread count as number of logical processors.
-        numThreads = PlatformSystem::NumCPUCoresIncludingHyperthreads();
-    }
-
-    // Start running threads.
-    threads.Reserve(numThreads);
-    for (int i = 0; i < numThreads; i++) {
-        threads.Append(PlatformThread::Start(TaskThreadProc, (void *)this, 0));
-    }
+    taskMutex = PlatformMutex::Create();
+    taskCondition = PlatformCondition::Create();
+    finishCondition = PlatformCondition::Create();
 }
 
 TaskManager::~TaskManager() {
@@ -56,35 +37,28 @@ TaskManager::~TaskManager() {
     PlatformCondition::Destroy(taskCondition);
     PlatformCondition::Destroy(finishCondition);
     PlatformMutex::Destroy(taskMutex);
-
-    delete[] taskRingBuffer;
 }
 
-bool TaskManager::AddTask(TaskFunc taskFunction, void *data) {
-    Task task;
-    task.function = taskFunction;
-    task.data = data;
-
-    // Lock to add the task.
-    {
-        ScopeLock scopeLock(taskMutex);
-
-        int nextTaskIndex = (tailTaskIndex + 1) % maxTasks;
-        if (nextTaskIndex == headTaskIndex) {
-            BE_ERRLOG("TaskManager::AddTask: Too many tasks");
-            return false;
-        }
-
-        taskRingBuffer[tailTaskIndex] = task;
-        tailTaskIndex = nextTaskIndex;
-
-        numActiveTasks++;
+void TaskManager::Start(int numThreads) {
+    // Return if the threads already started.
+    if (!threads.IsEmpty()) {
+        return;
     }
-    return true;
-}
 
-void TaskManager::Start() {
-    PlatformCondition::Broadcast(taskCondition);
+    if (numThreads <= 0) {
+        // Get thread count as number of logical processors.
+        numThreads = PlatformSystem::NumCPUCoresIncludingHyperthreads();
+    }
+
+    tailTaskIndex = 0;
+    headTaskIndex = 0;
+    numActiveTasks = 0;
+
+    threads.Reserve(numThreads);
+
+    for (int i = 0; i < numThreads; i++) {
+        threads.Append(PlatformThread::Start(TaskThreadProc, (void *)this, 0));
+    }
 }
 
 void TaskManager::Stop() {
@@ -99,23 +73,55 @@ void TaskManager::Stop() {
     PlatformThread::JoinAll(threads.Count(), threads.Ptr());
 
     threads.Clear();
+
+    stopping = false;
+}
+
+bool TaskManager::AddTask(TaskFunc taskFunction, void *data) {
+    // Lock to add the task.
+    ScopeLock scopeLock(taskMutex);
+
+    int nextTaskIndex = (tailTaskIndex + 1) % taskRingBuffer.Count();
+    if (nextTaskIndex == headTaskIndex) {
+        BE_ERRLOG("TaskManager::AddTask: Task queue is full, task rejected\n");
+        return false;
+    }
+
+    taskRingBuffer[tailTaskIndex] = {taskFunction, data};
+    tailTaskIndex = nextTaskIndex;
+
+    ++numActiveTasks;
+    PlatformCondition::Signal(taskCondition);
+
+    return true;
 }
 
 void TaskManager::WaitFinish() {
     ScopeLock scopeLock(taskMutex);
+
+    // Check if all tasks are already finished
+    if (IsTaskEmpty() && numActiveTasks <= 0) {
+        return; // No tasks to wait for, return immediately
+    }
+
     PlatformCondition::Wait(finishCondition, taskMutex, [this]{ return IsTaskEmpty() && numActiveTasks <= 0; });
 }
 
 // Return false if a timeout occurs.
 bool TaskManager::TimedWaitFinish(int ms) {
     ScopeLock scopeLock(taskMutex);
-    bool ret = PlatformCondition::TimedWait(finishCondition, taskMutex, ms, [this]{ return IsTaskEmpty() && numActiveTasks <= 0; });
-    return ret;
+
+    // Check if all tasks are already finished
+    if (IsTaskEmpty() && numActiveTasks <= 0) {
+        return true; // No tasks to wait for, return immediately
+    }
+
+    return PlatformCondition::TimedWait(finishCondition, taskMutex, ms, [this]{ return IsTaskEmpty() && numActiveTasks <= 0; });
 }
 
 BE1::Task TaskManager::GetTaskInternal() {
     Task task = taskRingBuffer[headTaskIndex];
-    headTaskIndex = (headTaskIndex + 1) % maxTasks;
+    headTaskIndex = (headTaskIndex + 1) % taskRingBuffer.Count();
 
     return task;
 }
@@ -135,7 +141,8 @@ unsigned int TaskThreadProc(void *param) {
             PlatformCondition::Wait(taskManager->taskCondition, taskManager->taskMutex, [taskManager]{ return !taskManager->IsTaskEmpty() || taskManager->stopping; });
 
             if (taskManager->stopping) {
-                return 0;
+                // Exit loop when stopping condition is met.
+                break;
             }
 
             // Get the task from the ring buffer.
@@ -145,6 +152,7 @@ unsigned int TaskThreadProc(void *param) {
         // Do the task.
         task.function(task.data);
 
+        // Handle task completion
         {
             ScopeLock scopeLock(taskManager->taskMutex);
 

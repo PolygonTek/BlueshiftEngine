@@ -28,7 +28,7 @@ struct Task {
 
 class BE_API TaskManager {
 public:
-    explicit TaskManager(int maxTasks, int numThreads = -1);
+    explicit TaskManager(int maxTasks);
     TaskManager(const TaskManager &) = delete;
     TaskManager &operator=(const TaskManager &) = delete;
     ~TaskManager();
@@ -45,14 +45,18 @@ public:
                             /// Returns number of active tasks.
     int64_t                 NumActiveTasks() const { return numActiveTasks; }
 
-                            /// Adds a task with the given task function.
-    bool                    AddTask(TaskFunc function, void *data);
-
                             /// Starts task threads.
-    void                    Start();
+    void                    Start(int numThreads = 0);
 
                             /// Stops all the tasks.
     void                    Stop();
+
+                            /// Adds a task with the given task function, and the task will be started immediately.
+    bool                    AddTask(TaskFunc function, void *data);
+
+                            /// Adds a task with a lambda function.
+    template <typename Lambda>
+    bool                    AddTask(Lambda &&lambda);
     
                             /// Waits until finishing all tasks.
     void                    WaitFinish();
@@ -64,13 +68,12 @@ public:
 private:
     Task                    GetTaskInternal();
 
-    Task *                  taskRingBuffer;     ///< Ring buffer of task list.
-    int                     maxTasks;
+    Array<Task>             taskRingBuffer;     ///< Ring buffer of task list.
     int                     headTaskIndex = 0;
     int                     tailTaskIndex = 0;
 
-    int                     numActiveTasks;     ///< Number of tasks in active state.
-    bool                    stopping;
+    int                     numActiveTasks = 0; ///< Number of tasks in active state.
+    bool                    stopping = false;
 
     Array<PlatformThread *> threads;
 
@@ -80,5 +83,29 @@ private:
 
     friend unsigned int     TaskThreadProc(void *param);
 };
+
+template <typename Lambda>
+bool BE1::TaskManager::AddTask(Lambda &&lambda) {
+    struct LambdaWrapper {
+        static void Call(void *data) {
+            Lambda* lambda = reinterpret_cast<Lambda *>(data);
+            (*lambda)();
+            // Delete lambda after the task is executed.
+            delete lambda;
+        }
+    };
+
+    // Allocate memory for lambda and store it in a unique_ptr for automatic cleanup.
+    std::unique_ptr<Lambda> lambdaPtr(new Lambda(std::forward<Lambda>(lambda)));
+    void *data = lambdaPtr.get();
+
+    if (!AddTask(&LambdaWrapper::Call, data)) {
+        return false;
+    }
+
+    // Release ownership as the task manager is now responsible for cleaning up.
+    lambdaPtr.release();
+    return true;
+}
 
 BE_NAMESPACE_END
