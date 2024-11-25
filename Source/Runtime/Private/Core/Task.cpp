@@ -45,9 +45,10 @@ void TaskManager::Start(int numThreads) {
         return;
     }
 
+    int numLogicalProcessors = PlatformSystem::NumCPUCoresIncludingHyperthreads();
     if (numThreads <= 0) {
         // Get thread count as number of logical processors.
-        numThreads = PlatformSystem::NumCPUCoresIncludingHyperthreads();
+        numThreads = numLogicalProcessors;
     }
 
     tailTaskIndex = 0;
@@ -57,7 +58,9 @@ void TaskManager::Start(int numThreads) {
     threads.Reserve(numThreads);
 
     for (int i = 0; i < numThreads; i++) {
-        threads.Append(PlatformThread::Start(TaskThreadProc, (void *)this, 0));
+        uint64_t affinityMask = 1ULL << (i % numLogicalProcessors);
+
+        threads.Append(PlatformThread::Start(TaskThreadProc, (void *)this, 0, ThreadPriority::Normal, affinityMask));
     }
 }
 
