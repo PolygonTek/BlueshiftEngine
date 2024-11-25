@@ -28,6 +28,8 @@ public:
     void                            SetGraphicsRootSignature(ID3D12RootSignature* graphicsRootSignature);
     void                            SetPipelineState(ID3D12PipelineState* piplelineState);
     void                            SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY primitiveTopology);
+    void                            SetVertexBuffers(UINT startSlot, UINT numViews, const D3D12_VERTEX_BUFFER_VIEW* vertexBufferView);
+    void                            SetIndexBuffer(const D3D12_INDEX_BUFFER_VIEW* indexBufferView);
 
     ID3D12CommandAllocator *        commandAllocator = nullptr;
     ID3D12GraphicsCommandList *     commandList = nullptr;
@@ -37,10 +39,14 @@ public:
 #ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
     bool                            IsSameDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
 
-    StaticArray<ID3D12DescriptorHeap *, 16> currentRootDescriptorHeaps;
-    ID3D12RootSignature *           currentGraphicsRootSignature = nullptr;
-    ID3D12PipelineState *           currentPipelineState = nullptr;
-    D3D12_PRIMITIVE_TOPOLOGY        currentPrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    StaticArray<ID3D12DescriptorHeap *, 16> cachedRootDescriptorHeaps;
+    ID3D12RootSignature *           cachedGraphicsRootSignature = nullptr;
+    ID3D12PipelineState *           cachedPipelineState = nullptr;
+    D3D12_PRIMITIVE_TOPOLOGY        cachedPrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    UINT                            cachedVertexBufferStartSlot = -1;
+    UINT                            cachedVertexBufferNumViews = -1;
+    D3D12_VERTEX_BUFFER_VIEW        cachedVertexBufferViews[D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = {};
+    D3D12_INDEX_BUFFER_VIEW         cachedIndexBufferView = {};
 #endif
 };
 
@@ -56,20 +62,24 @@ BE_INLINE void D3D12CommandList::Reset() {
 
 #ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
     // 각종 상태를 초기값으로 변경
-    currentRootDescriptorHeaps.SetCount(0);
-    currentGraphicsRootSignature = nullptr;
-    currentPipelineState = nullptr;
-    currentPrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    cachedRootDescriptorHeaps.SetCount(0);
+    cachedGraphicsRootSignature = nullptr;
+    cachedPipelineState = nullptr;
+    cachedPrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    for (int i = 0; i < D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; ++i) {
+        cachedVertexBufferViews[i] = {};
+    }
+    cachedIndexBufferView = {};
 #endif
 }
 
 #ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
 BE_INLINE bool D3D12CommandList::IsSameDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]) {
-    if (numDescriptorHeaps != currentRootDescriptorHeaps.Count()) {
+    if (numDescriptorHeaps != cachedRootDescriptorHeaps.Count()) {
         return false;
     }
     for (int i = 0; i < numDescriptorHeaps; ++i) {
-        if (descriptorHeaps[i] != currentRootDescriptorHeaps[i]) {
+        if (descriptorHeaps[i] != cachedRootDescriptorHeaps[i]) {
             return false;
         }
     }
@@ -82,9 +92,9 @@ BE_INLINE void D3D12CommandList::SetDescriptorHeaps(int numDescriptorHeaps, ID3D
     if (IsSameDescriptorHeaps(numDescriptorHeaps, descriptorHeaps)) {
         return;
     }
-    currentRootDescriptorHeaps.SetCount(numDescriptorHeaps);
+    cachedRootDescriptorHeaps.SetCount(numDescriptorHeaps);
     for (int i = 0; i < numDescriptorHeaps; ++i) {
-        currentRootDescriptorHeaps[i] = descriptorHeaps[i];
+        cachedRootDescriptorHeaps[i] = descriptorHeaps[i];
     }
 #endif
     commandList->SetDescriptorHeaps(numDescriptorHeaps, descriptorHeaps);
@@ -92,32 +102,64 @@ BE_INLINE void D3D12CommandList::SetDescriptorHeaps(int numDescriptorHeaps, ID3D
 
 BE_INLINE void D3D12CommandList::SetGraphicsRootSignature(ID3D12RootSignature *graphicsRootSignature) {
 #ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
-    if (graphicsRootSignature == currentGraphicsRootSignature) {
+    if (graphicsRootSignature == cachedGraphicsRootSignature) {
         return;
     }
-    currentGraphicsRootSignature = graphicsRootSignature;
+    cachedGraphicsRootSignature = graphicsRootSignature;
 #endif
     commandList->SetGraphicsRootSignature(graphicsRootSignature);
 }
 
 BE_INLINE void D3D12CommandList::SetPipelineState(ID3D12PipelineState *piplelineState) {
 #ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
-    if (piplelineState == currentPipelineState) {
+    if (piplelineState == cachedPipelineState) {
         return;
     }
-    currentPipelineState = piplelineState;
+    cachedPipelineState = piplelineState;
 #endif
     commandList->SetPipelineState(piplelineState);
 }
 
 BE_INLINE void D3D12CommandList::SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY primitiveTopology) {
 #ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
-    if (primitiveTopology == currentPrimitiveTopology) {
+    if (primitiveTopology == cachedPrimitiveTopology) {
         return;
     }
-    currentPrimitiveTopology = primitiveTopology;
+    cachedPrimitiveTopology = primitiveTopology;
 #endif
     commandList->IASetPrimitiveTopology(primitiveTopology);
+}
+
+BE_INLINE void D3D12CommandList::SetVertexBuffers(UINT startSlot, UINT numViews, const D3D12_VERTEX_BUFFER_VIEW *vertexBufferViews) {
+#ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
+    bool needsUpdate = false;
+    for (int i = 0; i < numViews; ++i) {
+        int slot = startSlot + i;
+
+        if (cachedVertexBufferViews[slot].BufferLocation != vertexBufferViews[i].BufferLocation ||
+            cachedVertexBufferViews[slot].SizeInBytes != vertexBufferViews[i].SizeInBytes ||
+            cachedVertexBufferViews[slot].StrideInBytes != vertexBufferViews[i].StrideInBytes) {
+            cachedVertexBufferViews[slot] = vertexBufferViews[i];
+            needsUpdate = true;
+        }
+    }
+    if (!needsUpdate) {
+        return;
+    }
+#endif
+    commandList->IASetVertexBuffers(startSlot, numViews, vertexBufferViews);
+}
+
+BE_INLINE void D3D12CommandList::SetIndexBuffer(const D3D12_INDEX_BUFFER_VIEW *indexBufferView) {
+#ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
+    if (!(cachedIndexBufferView.BufferLocation != indexBufferView->BufferLocation ||
+        cachedIndexBufferView.SizeInBytes != indexBufferView->SizeInBytes ||
+        cachedIndexBufferView.Format != indexBufferView->Format)) {
+        return;
+    }
+    cachedIndexBufferView = *indexBufferView;
+#endif
+    commandList->IASetIndexBuffer(indexBufferView);
 }
 
 class D3D12CommandListPool {

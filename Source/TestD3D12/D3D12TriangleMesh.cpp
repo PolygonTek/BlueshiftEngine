@@ -262,8 +262,8 @@ void D3D12TriangleMesh::DrawMesh(int threadIndex, int drawIndex, D3D12CommandLis
     commandList->SetPipelineState(pipelineState);
     commandList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    commandList->commandList->IASetVertexBuffers(0, 1, &vertexBuffer->vbv);
-    commandList->commandList->IASetIndexBuffer(&indexBuffer->ibv);
+    commandList->SetVertexBuffers(0, 1, &vertexBuffer->vbv);
+    commandList->SetIndexBuffer(&indexBuffer->ibv);
 
     commandList->commandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
 }

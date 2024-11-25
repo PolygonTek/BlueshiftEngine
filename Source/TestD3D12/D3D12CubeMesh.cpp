@@ -294,11 +294,11 @@ void D3D12CubeMesh::DrawMesh(int threadIndex, int drawIndex, D3D12CommandList* c
     //gpuRootDescriptorHandle.Offset(1, currentRootDescriptorPool->descriptorHandleSize);
     //currentCommandList->commandList->SetGraphicsRootDescriptorTable(1, gpuRootDescriptorHandle);
 
+    commandList->SetVertexBuffers(0, 1, &vertexBuffer->vbv);
+    commandList->SetIndexBuffer(&indexBuffer->ibv);
+
     commandList->SetPipelineState(pipelineState);
     commandList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-    commandList->commandList->IASetVertexBuffers(0, 1, &vertexBuffer->vbv);
-    commandList->commandList->IASetIndexBuffer(&indexBuffer->ibv);
 
     commandList->commandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
 }

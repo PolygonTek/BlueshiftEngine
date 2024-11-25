@@ -210,11 +210,11 @@ void D3D12App::UpdateCubes() {
     for (int y = 0; y < CubeDimensionY; ++y) {
         for (int x = 0; x < CubeDimensionX; ++x) {
             int index = CubeDimensionX * y + x;
+
             float t = elapsedSeconds + index * 0.1f;
-            float scale = 1.0f + 0.25f * Math::Sin(t * 4);
 
             D3D12GameObject* gameObject = gameObjects[index];
-            gameObject->renderObjectDef.worldMatrix.SetTRS(Vec3(0, startX + CubeSpacing * x, startY + CubeSpacing * y), Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), Vec3(scale));
+            gameObject->renderObjectDef.worldMatrix.SetTranslationRotation(Vec3(0, startX + CubeSpacing * x, startY + CubeSpacing * y), Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), false);
 
             renderer.UpdateRenderObject(gameObject->renderObjectHandle, gameObject->renderObjectDef);
         }
@@ -245,7 +245,7 @@ void D3D12App::DrawMeshes() {
 
     // CommandQueue 실행
     ID3D12CommandList *execCommandLists[] = { commandList->commandList };
-    renderer.commandQueue->ExecuteCommandLists(_countof(execCommandLists), execCommandLists);
+    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 }
 
 void D3D12App::DrawTriangles(D3D12CommandList* commandList) {
@@ -268,14 +268,15 @@ void D3D12App::DrawCubes(D3D12CommandList *commandList) {
     constexpr float startX = -CubeSpacing * (CubeDimensionX - 1) * 0.5f;
     constexpr float startY = -CubeSpacing * (CubeDimensionY - 1) * 0.5f;
 
+    Mat3x4 worldMatrix;
+
     for (int y = 0; y < CubeDimensionY; ++y) {
         for (int x = 0; x < CubeDimensionX; ++x) {
             int index = CubeDimensionX * y + x;
             float t = elapsedSeconds + index * 0.1f;
             float scale = 1.0f + 0.25f * Math::Sin(t * 4);
 
-            Mat3x4 worldMatrix;
-            worldMatrix.SetTRS(Vec3(0, startX + CubeSpacing * x, startY + CubeSpacing * y), Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), Vec3(scale));
+            worldMatrix.SetTranslationRotation(Vec3(0, startX + CubeSpacing * x, startY + CubeSpacing * y), Mat3::FromRotationZYX(t * 1.0f, 0, t * 0.25f), false);
 
             cubeMesh->DrawMesh(0, index, commandList, worldMatrix);
         }

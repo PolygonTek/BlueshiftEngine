@@ -381,7 +381,7 @@ void D3D12Renderer::BeginFrame() {
 
     // CommandQueue 실행
     ID3D12CommandList *execCommandLists[] = { commandList->commandList };
-    commandQueue->ExecuteCommandLists(_countof(execCommandLists), execCommandLists);
+    commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 }
 
 void D3D12Renderer::EndFrame() {
@@ -401,7 +401,7 @@ void D3D12Renderer::EndFrame() {
 
     // CommandQueue 실행
     ID3D12CommandList *execCommandLists[] = { commandList->commandList };
-    commandQueue->ExecuteCommandLists(_countof(execCommandLists), execCommandLists);
+    commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 
     // 이번 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
     currentFrameData->EndFrame();
@@ -427,7 +427,7 @@ D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList)
 
     // CommandQueue 에 CommandList 전달 (한번에 여러개의 CommandList 들을 전달할 수 있다)
     ID3D12CommandList *execCommandLists[] = { commandList->commandList };
-    commandQueue->ExecuteCommandLists(_countof(execCommandLists), execCommandLists);
+    commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 
     // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
     commandList = commandList->parentPool->Alloc();
@@ -618,7 +618,8 @@ void D3D12Renderer::DrawRenderObjects() {
     int lastEndIndex = -1;
 
     // 태스크 정보 초기화
-    renderObjectTaskDescs.SetCount(0);
+    renderObjectTaskDescs.Reserve(numTasks);
+    renderObjectTaskDescs.SetCount(0, false);
 
     // 최대 쓰레드 개수만큼 task 를 실행한다.
     while (lastEndIndex < numRenderObjects - 1) {
@@ -665,7 +666,7 @@ void D3D12Renderer::DrawRenderObjects() {
 
     // CommandQueue 실행
     ID3D12CommandList *execCommandLists[] = { commandList->commandList };
-    commandQueue->ExecuteCommandLists(_countof(execCommandLists), execCommandLists);
+    commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 #endif
 }
 
