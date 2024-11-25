@@ -46,7 +46,7 @@ public:
     void                            UpdateTriangles();
     void                            UpdateCubes();
 
-    void                            DrawMeshes(D3D12CommandList *commandList);
+    void                            DrawMeshes();
     void                            DrawTriangles(D3D12CommandList *commandList);
     void                            DrawCubes(D3D12CommandList *commandList);
 

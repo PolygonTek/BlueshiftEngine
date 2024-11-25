@@ -221,12 +221,31 @@ void D3D12App::UpdateCubes() {
     }
 }
 
-void D3D12App::DrawMeshes(D3D12CommandList *commandList) {
+void D3D12App::DrawMeshes() {
+    // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
+    D3D12CommandList *commandList = renderer.currentFrameData->threadData[0].commandListPool->Alloc();
+
+    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
+    commandList->Reset();
+
+    // 뷰포트 & ScissorRect 설정
+    commandList->commandList->RSSetViewports(1, &renderer.viewport);
+    commandList->commandList->RSSetScissorRects(1, &renderer.scissorRect);
+
+    commandList->commandList->OMSetRenderTargets(1, &renderer.rtvDescriptorHandle, FALSE, &renderer.dsvDescriptorHandle);
+
 #if TRIANGLE_OR_CUBE == 1
     DrawTriangles(commandList);
 #else
     DrawCubes(commandList);
 #endif
+
+    // CommandList 기록을 마친다.
+    commandList->commandList->Close();
+
+    // CommandQueue 실행
+    ID3D12CommandList *execCommandLists[] = { commandList->commandList };
+    renderer.commandQueue->ExecuteCommandLists(_countof(execCommandLists), execCommandLists);
 }
 
 void D3D12App::DrawTriangles(D3D12CommandList* commandList) {
