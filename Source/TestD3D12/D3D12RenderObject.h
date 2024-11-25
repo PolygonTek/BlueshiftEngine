@@ -36,10 +36,10 @@ public:
 
     void                    Update(const State &state);
 
-    void                    Render(D3D12CommandList* commandList, int renderIndex);
+    void                    Draw(int threadIndex, int drawIndex, D3D12CommandList* commandList);
 
-    void                    DrawTriangleMesh(D3D12CommandList* commandList, int renderIndex);
-    void                    DrawCubeMesh(D3D12CommandList* commandList, int renderIndex);
+    void                    DrawTriangleMesh(int threadIndex, int drawIndex, D3D12CommandList* commandList);
+    void                    DrawCubeMesh(int threadIndex, int drawIndex, D3D12CommandList* commandList);
 
     State                   state;      // 오브젝트를 렌더링할 때 필요한 실제 상태를 들고 있음 (Update 함수에서 갱신됨)
     int                     index = -1; // D3D12App::renderObjects 의 인덱스

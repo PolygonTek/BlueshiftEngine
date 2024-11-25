@@ -217,12 +217,12 @@ float4 PSMain(PSInput input) : SV_TARGET {
     SAFE_RELEASE(compiledPixelShader);
 }
 
-void D3D12TriangleMesh::DrawMesh(D3D12CommandList *commandList, int drawIndex, const Vec2& offset) {
-    D3D12RootDescriptorPool* currentFrameRootDescriptorPool = renderer.currentFrameData->rootDescriptorPool;
+void D3D12TriangleMesh::DrawMesh(int threadIndex, int drawIndex, D3D12CommandList *commandList, const Vec2& offset) {
+    D3D12RootDescriptorPool* rootDescriptorPool = renderer.currentFrameData->threadData[threadIndex].rootDescriptorPool;
 
     // 상수 버퍼 공간을 할당한다.
     D3D12_CPU_DESCRIPTOR_HANDLE cbvDescriptorHandle = {0};
-    void *writePtr = renderer.currentFrameData->AllocConstant(sizeof(TriangleConstants), &cbvDescriptorHandle);
+    void *writePtr = renderer.currentFrameData->AllocConstant(threadIndex, sizeof(TriangleConstants), &cbvDescriptorHandle);
     if (!writePtr) {
         return;
     }
@@ -234,20 +234,20 @@ void D3D12TriangleMesh::DrawMesh(D3D12CommandList *commandList, int drawIndex, c
     // 루트 디스크립터 테이블을 할당한다. 여기서 디스크립터 테이블은 연속된 디스크립터 핸들을 말한다.
     D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorHandle;
     D3D12_GPU_DESCRIPTOR_HANDLE gpuRootDescriptorHandle;
-    if (!currentFrameRootDescriptorPool->AllocRange(2, &cpuRootDescriptorHandle, &gpuRootDescriptorHandle)) {
+    if (!rootDescriptorPool->AllocRange(2, &cpuRootDescriptorHandle, &gpuRootDescriptorHandle)) {
         return;
     }
 
     // 루트 디스크립터 테이블에 SRV 디스크립터 카피 - 0
-    CD3DX12_CPU_DESCRIPTOR_HANDLE srvDest(cpuRootDescriptorHandle, 0, currentFrameRootDescriptorPool->descriptorHandleSize);
+    CD3DX12_CPU_DESCRIPTOR_HANDLE srvDest(cpuRootDescriptorHandle, 0, rootDescriptorPool->descriptorHandleSize);
     renderer.device->CopyDescriptorsSimple(1, srvDest, texture->descriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     // 루트 디스크립터 테이블에 CBV 디스크립터 카피 - 1
-    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDest(cpuRootDescriptorHandle, 1, currentFrameRootDescriptorPool->descriptorHandleSize);
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDest(cpuRootDescriptorHandle, 1, rootDescriptorPool->descriptorHandleSize);
     renderer.device->CopyDescriptorsSimple(1, cbvDest, cbvDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     // 루트 디스크립터 힙을 지정한다.
-    ID3D12DescriptorHeap *descriptorHeaps[] = { currentFrameRootDescriptorPool->descriptorHeap };
+    ID3D12DescriptorHeap *descriptorHeaps[] = { rootDescriptorPool->descriptorHeap };
     commandList->SetDescriptorHeaps(COUNT_OF(descriptorHeaps), descriptorHeaps);
 
     // 루트 시그니쳐를 세팅한다.

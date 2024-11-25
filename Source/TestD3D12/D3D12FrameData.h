@@ -18,24 +18,30 @@
 
 class D3D12CommandListPool;
 class D3D12RootDescriptorPool;
+class D3D12DescriptorPool;
 class D3D12ConstantBuffer;
 
 class D3D12FrameData {
 public:
+    struct DataPerThread {
+        D3D12CommandListPool *      commandListPool = nullptr;
+        D3D12RootDescriptorPool *   rootDescriptorPool = nullptr;
+        D3D12DescriptorPool *       cbvDescriptorPool = nullptr;
+        D3D12ConstantBuffer *       constantBuffer = nullptr;
+        void *                      mappedConstantBase = nullptr;
+        UINT                        usedConstantBytes = 0;
+        Array<D3D12_CPU_DESCRIPTOR_HANDLE> cbvDescriptorHandles;
+    };
+
     void                            Init();
     void                            Shutdown();
 
-    void *                          AllocConstant(int size, D3D12_CPU_DESCRIPTOR_HANDLE *outDescriptorHandlePtr);
+    void *                          AllocConstant(int threadIndex, int size, D3D12_CPU_DESCRIPTOR_HANDLE *outDescriptorHandlePtr);
 
-    void                            BeginRender();
+    void                            BeginFrame();
+    void                            EndFrame();
 
-    D3D12CommandListPool *          commandListPool = nullptr;
-    D3D12RootDescriptorPool *       rootDescriptorPool = nullptr;
+    DataPerThread                   threadData[MaxRenderTaskThreads];
 
-    D3D12ConstantBuffer *           constantBuffer = nullptr;
-    void *                          mappedConstantBase = nullptr;
-    UINT                            usedConstantBytes = 0;
-    Array<D3D12_CPU_DESCRIPTOR_HANDLE> cbvDescriptorHandles;
-
-    UINT64                          fenceValue = 0;
+    UINT64                          lastFrameFenceValue = 0;
 };

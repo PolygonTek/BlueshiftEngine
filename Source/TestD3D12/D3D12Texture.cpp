@@ -19,9 +19,7 @@
 #include "D3D12DescriptorPool.h"
 
 void D3D12Texture::Release() {
-    for (int frameIndex = 0; frameIndex < D3D12Renderer::NumFrames; ++frameIndex) {
-        renderer.WaitFence(renderer.frameData[frameIndex].fenceValue);
-    }
+    renderer.WaitAllFrameFences();
 
     if (descriptorHandle.ptr != 0) {
         renderer.srvDescriptorPool->Free(descriptorHandle);
@@ -74,9 +72,9 @@ void D3D12Texture::GetTextureImage2D(UINT level, Image::Format::Enum dstFormat, 
     renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
     renderer.commandList->Close();
 
-    // 커맨드 큐 실행
-    ID3D12CommandList *ppCommandLists[] = { renderer.commandList };
-    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
+    // CommandQueue 실행
+    ID3D12CommandList *execCommandLists[] = { renderer.commandList };
+    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 
     // GPU 에서 복사가 끝날 때까지 기다린다.
     renderer.Finish();
@@ -205,9 +203,9 @@ bool D3D12Texture::SetTextureSubImage2D(UINT level, UINT x, UINT y, UINT width, 
     renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE));
     renderer.commandList->Close();
 
-    // 커맨드 큐 실행
-    ID3D12CommandList *ppCommandLists[] = { renderer.commandList };
-    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
+    // CommandQueue 실행
+    ID3D12CommandList *execCommandLists[] = { renderer.commandList };
+    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 
     renderer.MarkForRelease(uploadBuffer);
 
@@ -294,9 +292,9 @@ bool D3D12Texture::SetTextureSubImage3D(UINT level, UINT x, UINT y, UINT z, UINT
     renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE));
     renderer.commandList->Close();
 
-    // 커맨드 큐 실행
-    ID3D12CommandList *ppCommandLists[] = { renderer.commandList };
-    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
+    // CommandQueue 실행
+    ID3D12CommandList *execCommandLists[] = { renderer.commandList };
+    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 
     renderer.MarkForRelease(uploadBuffer);
 
@@ -521,9 +519,9 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
     renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE));
     renderer.commandList->Close();
 
-    // 커맨드 큐 실행
-    ID3D12CommandList *ppCommandLists[] = { renderer.commandList };
-    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
+    // CommandQueue 실행
+    ID3D12CommandList *execCommandLists[] = { renderer.commandList };
+    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 
     if (uploadBuffer) {
         renderer.MarkForRelease(uploadBuffer);

@@ -118,10 +118,8 @@ int32_t PlatformWinSystem::NumCPUCores() {
         DWORD bufferSize = 0;
 
         // Get the size of the buffer to hold processor information.
-        if (!GetLogicalProcessorInformation(infoBuffer, &bufferSize)) {
-            return 0;
-        }
-
+        GetLogicalProcessorInformation(infoBuffer, &bufferSize);
+        
         // Allocate the buffer to hold the processor infoBuffer.
         infoBuffer = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION *)malloc(bufferSize);
 

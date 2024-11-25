@@ -22,74 +22,108 @@
 #include "D3D12Buffer.h"
 
 void D3D12FrameData::Init() {
-    commandListPool = new D3D12CommandListPool;
-    commandListPool->Init(D3D12_COMMAND_LIST_TYPE_DIRECT, 32);
+    for (int threadIndex = 0; threadIndex < MaxRenderTaskThreads; ++threadIndex) {
+        DataPerThread* data = &threadData[threadIndex];
 
-    // 쉐이더에서 사용할 디스크립터 힙을 생성한다.
-    rootDescriptorPool = new D3D12RootDescriptorPool;
-    rootDescriptorPool->Init(65536);
+        // 커맨드 리스트 풀을 생성한다.
+        data->commandListPool = new D3D12CommandListPool;
+        data->commandListPool->Init(D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
 
-    // 다이나믹 상수 버퍼 생성
-    constantBuffer = D3D12ConstantBuffer::CreateConstantBuffer(65536 * 64);
+        // 쉐이더에서 사용할 디스크립터 힙을 생성한다.
+        data->rootDescriptorPool = new D3D12RootDescriptorPool;
+        data->rootDescriptorPool->Init(16384);
 
-    // 상수 버퍼를 프로그램이 끝날 때 까지 Map 해놓고 쓴다. (Pinned) 
-    constantBuffer->buffer->GetResource()->Map(0, nullptr, reinterpret_cast<void **>(&mappedConstantBase));
+        // 상수 버퍼 디스크립터 풀을 생성한다.
+        data->cbvDescriptorPool = new D3D12DescriptorPool;
+        data->cbvDescriptorPool->Init(D3D12DescriptorPool::Type::SRV, 8192, false);
 
-    cbvDescriptorHandles.SetGranularity(64);
+        // 다이나믹 상수 버퍼 생성
+        data->constantBuffer = D3D12ConstantBuffer::CreateConstantBuffer(65536 * 16);
+
+        // 상수 버퍼를 프로그램이 끝날 때 까지 Map 해놓고 쓴다. (Pinned) 
+        data->constantBuffer->buffer->GetResource()->Map(0, nullptr, reinterpret_cast<void **>(&data->mappedConstantBase));
+
+        data->cbvDescriptorHandles.SetGranularity(2048);
+        data->cbvDescriptorHandles.Reserve(4096);
+    }
 }
 
 void D3D12FrameData::Shutdown() {
-    for (int i = 0; i < cbvDescriptorHandles.Count(); ++i) {
-        renderer.srvDescriptorPool->Free(cbvDescriptorHandles[i]);
-    }
-    cbvDescriptorHandles.SetCount(0, false);
+    for (int threadIndex = 0; threadIndex < MaxRenderTaskThreads; ++threadIndex) {
+        DataPerThread *data = &threadData[threadIndex];
 
-    SAFE_DELETE(constantBuffer);
-    SAFE_DELETE(commandListPool);
-    SAFE_DELETE(rootDescriptorPool);
+        for (int i = 0; i < data->cbvDescriptorHandles.Count(); ++i) {
+            data->cbvDescriptorPool->Free(data->cbvDescriptorHandles[i]);
+        }
+        data->cbvDescriptorHandles.SetCount(0, false);
+
+        SAFE_DELETE(data->constantBuffer);
+        SAFE_DELETE(data->cbvDescriptorPool);
+        SAFE_DELETE(data->rootDescriptorPool);
+        SAFE_DELETE(data->commandListPool);
+    }
 }
 
-void *D3D12FrameData::AllocConstant(int size, D3D12_CPU_DESCRIPTOR_HANDLE* outDescriptorHandlePtr) {
+void D3D12FrameData::BeginFrame() {
+    // 쓰레드 별로 사용할 자원을 Reset 한다.
+    for (int threadIndex = 0; threadIndex < MaxRenderTaskThreads; ++threadIndex) {
+        DataPerThread *data = &threadData[threadIndex];
+
+        // 이번에 프레임에 사용할 상수 버퍼 디스크립터들을 초기화
+        for (int i = 0; i < data->cbvDescriptorHandles.Count(); ++i) {
+            data->cbvDescriptorPool->Free(data->cbvDescriptorHandles[i]);
+        }
+        data->cbvDescriptorHandles.SetCount(0, false);
+
+        // 루트 디스크립터 풀을 비운다.
+        data->rootDescriptorPool->Reset();
+
+        // 커맨드 리스트 풀을 비운다.
+        data->commandListPool->Clear();
+
+        data->usedConstantBytes = 0;
+    }
+
+    // 이번 프레임에 사용할 프레임 데이터를 사용하기 위해서는, GPU 에서 이전 프레임에 대한 렌더링이 완료되야 한다.
+    renderer.WaitFence(lastFrameFenceValue);
+}
+
+void D3D12FrameData::EndFrame() {
+    lastFrameFenceValue = renderer.SignalFence();
+}
+
+void *D3D12FrameData::AllocConstant(int threadIndex, int size, D3D12_CPU_DESCRIPTOR_HANDLE* outDescriptorHandlePtr) {
     UINT alignedSize = (UINT)AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
     if (alignedSize > D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16) {
         BE_WARNLOG("Constant buffer view size cannot exceeds 64KB limit\n");
         return nullptr;
     }
 
-    ID3D12Resource *resource = constantBuffer->buffer->GetResource();
-    UINT maxSize = constantBuffer->buffer->GetSize();
+    ID3D12Resource *resource = threadData[threadIndex].constantBuffer->buffer->GetResource();
+    UINT maxSize = threadData[threadIndex].constantBuffer->buffer->GetSize();
 
-    if (usedConstantBytes + alignedSize > maxSize) {
+    if (threadData[threadIndex].usedConstantBytes + alignedSize > maxSize) {
         BE_WARNLOG("Out of constant buffer cache\n");
         return nullptr;
     }
 
     // 상수 버퍼 리소스 (업로드 버퍼) 를 쪼개서 CBV 를 만들어 사용한다.
     D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {0};
-    cbvDesc.BufferLocation = resource->GetGPUVirtualAddress() + usedConstantBytes;
+    cbvDesc.BufferLocation = resource->GetGPUVirtualAddress() + threadData[threadIndex].usedConstantBytes;
     cbvDesc.SizeInBytes = alignedSize;
 
-    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = renderer.srvDescriptorPool->Alloc();
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = threadData[threadIndex].cbvDescriptorPool->Alloc();
     if (descriptorHandle.ptr == 0) {
         return nullptr;
     }
 
     renderer.device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
 
-    cbvDescriptorHandles.Append(descriptorHandle);
+    threadData[threadIndex].cbvDescriptorHandles.Append(descriptorHandle);
     *outDescriptorHandlePtr = descriptorHandle;
 
-    void *outPtr = (byte *)mappedConstantBase + usedConstantBytes;
-    usedConstantBytes += alignedSize;
+    void *outPtr = (byte *)threadData[threadIndex].mappedConstantBase + threadData[threadIndex].usedConstantBytes;
+    threadData[threadIndex].usedConstantBytes += alignedSize;
 
     return outPtr;
-}
-
-void D3D12FrameData::BeginRender() {
-    for (int i = 0; i < cbvDescriptorHandles.Count(); ++i) {
-        renderer.srvDescriptorPool->Free(cbvDescriptorHandles[i]);
-    }
-    cbvDescriptorHandles.SetCount(0, false);
-
-    usedConstantBytes = 0;
 }

@@ -21,29 +21,30 @@ void D3D12CommandListPool::Init(D3D12_COMMAND_LIST_TYPE commandListType, int max
     this->commandListPool = new D3D12CommandList[maxCommandLists];
 
     for (int i = 0; i < maxCommandLists; ++i) {
-        D3D12CommandList* currentCommandList = &commandListPool[i];
+        D3D12CommandList* commandList = &commandListPool[i];
+        commandList->parentPool = this;
 
-        // 그래픽스 커맨드 리스트를 위한 커맨드 할당자 생성
-        if (FAILED(renderer.device->CreateCommandAllocator(commandListType, IID_PPV_ARGS(&currentCommandList->commandAllocator)))) {
+        // 그래픽스 CommandList 를 위한 CommandAllocator 생성
+        if (FAILED(renderer.device->CreateCommandAllocator(commandListType, IID_PPV_ARGS(&commandList->commandAllocator)))) {
             BE_FATALERROR("CreateCommandAllocator : failed");
         }
 
-        // 그래픽스 커맨드 리스트 생성
-        if (FAILED(renderer.device->CreateCommandList(0, commandListType, currentCommandList->commandAllocator, nullptr, IID_PPV_ARGS(&currentCommandList->commandList)))) {
+        // 그래픽스 CommandList 생성
+        if (FAILED(renderer.device->CreateCommandList(0, commandListType, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&commandList->commandList)))) {
             BE_FATALERROR("CreateCommandList : failed");
         }
 
         // Command lists are created in the recording state, but there is nothing
         // to record yet. The main loop expects it to be closed, so close it now.
-        currentCommandList->commandList->Close();
+        commandList->commandList->Close();
     }
 
     // 모든 commandLists 를 free 상태로 초기화
     for (int i = 0; i < maxCommandLists; ++i) {
-        D3D12CommandList *currentCommandList = &commandListPool[i];
+        D3D12CommandList *commandList = &commandListPool[i];
 
-        currentCommandList->node.SetOwner(currentCommandList);
-        currentCommandList->node.AddToEnd(freeCommandLists);
+        commandList->node.SetOwner(commandList);
+        commandList->node.AddToEnd(freeCommandLists);
     }
 
     usedCount = 0;

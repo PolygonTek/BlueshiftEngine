@@ -16,8 +16,8 @@
 
 #include "D3D12Common.h"
 #include "D3D12ConstantBuffer.h"
-#include "D3D12RenderObject.h"
 
+class D3D12CommandList;
 class D3D12GameObject;
 class D3D12TriangleMesh;
 class D3D12CubeMesh;
@@ -26,11 +26,6 @@ class D3D12App {
 public:
     void                            Init(HWND windowHandle);
     void                            Shutdown();
-
-    int                             AddRenderObject(const D3D12RenderObject::State &def);
-    void                            UpdateRenderObject(int handle, const D3D12RenderObject::State &def);
-    void                            RemoveRenderObject(int handle);
-    void                            RenderRenderObjects();
 
     void                            RunFrame(int elapsedMsec);
     void                            Draw(int elapsedMsec);
@@ -51,11 +46,10 @@ public:
     void                            UpdateTriangles();
     void                            UpdateCubes();
 
-    void                            DrawMeshes();
-    void                            DrawTriangles();
-    void                            DrawCubes();
+    void                            DrawMeshes(D3D12CommandList *commandList);
+    void                            DrawTriangles(D3D12CommandList *commandList);
+    void                            DrawCubes(D3D12CommandList *commandList);
 
-    Array<D3D12RenderObject *>      renderObjects;
     Array<D3D12GameObject *>        gameObjects;
 
     D3D12TriangleMesh *             triangleMesh = nullptr;

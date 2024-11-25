@@ -66,9 +66,9 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type
             renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
             renderer.commandList->Close();
 
-            // 커맨드 큐 실행
-            ID3D12CommandList *ppCommandLists[] = { renderer.commandList };
-            renderer.commandQueue->ExecuteCommandLists(COUNT_OF(ppCommandLists), ppCommandLists);
+            // CommandQueue 실행
+            ID3D12CommandList *execCommandLists[] = { renderer.commandList };
+            renderer.commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
         } else if (type == D3D12VertexBuffer::Type::Dynamic) {
             UINT8 *mappedPtr = nullptr;
             bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));

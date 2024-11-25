@@ -15,3 +15,12 @@
 #pragma once
 
 #define USE_D3D12_MEMALLOC
+
+#define USE_MULTI_THREADED_RENDERING
+
+#ifdef USE_MULTI_THREADED_RENDERING
+static constexpr int            MaxRenderTasks = 64;
+static constexpr int            MaxRenderTaskThreads = 20;
+#else
+static constexpr int            MaxRenderTaskThreads = 1;
+#endif

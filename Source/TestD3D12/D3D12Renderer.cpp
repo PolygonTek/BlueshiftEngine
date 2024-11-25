@@ -93,7 +93,7 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
     descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
     descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
-    // 커맨드 큐 생성
+    // CommandQueue 생성
     D3D12_COMMAND_QUEUE_DESC queueDesc = {};
     queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
     queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -170,13 +170,13 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
 
     CreateDSV(swapChainDesc.Width, swapChainDesc.Height);
 
-    // 그래픽스 커맨드 리스트를 위한 커맨드 할당자 생성
+    // 그래픽스 CommandList 를 위한 CommandAllocator 생성
     hr = renderer.device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
     if (FAILED(hr)) {
         BE_FATALERROR("CreateCommandAllocator : failed");
     }
 
-    // 그래픽스 커맨드 리스트 생성
+    // 그래픽스 CommandList 생성
     hr = renderer.device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator, nullptr, IID_PPV_ARGS(&commandList));
     if (FAILED(hr)) {
         BE_FATALERROR("CreateCommandList : failed");
@@ -230,15 +230,26 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
     }
 
     currentFrameIndex = 0;
-    frameData[currentFrameIndex].fenceValue = SignalFence();
+    frameData[currentFrameIndex].lastFrameFenceValue = SignalFence();
 
     maxPendingResources = 1024;
     pendingResourceBuffer = new D3D12PendingResource[maxPendingResources];
+
+    renderObjects.Reserve(16384);
+    renderObjectTaskDescs.Reserve(MaxRenderTaskThreads);
+
+#ifdef USE_MULTI_THREADED_RENDERING
+    taskManager.Start();//(MaxRenderTaskThreads);
+#endif
 
     initialized = true;
 }
 
 void D3D12Renderer::Shutdown() {
+#ifdef USE_MULTI_THREADED_RENDERING
+    taskManager.Stop();
+#endif
+
     Finish();
 
     FreePendingResources();
@@ -339,53 +350,61 @@ void D3D12Renderer::CreateDSV(int width, int height) {
 
 void D3D12Renderer::BeginFrame() {
     currentFrameData = &frameData[currentFrameIndex];
-    currentFrameData->BeginRender();
 
-    // 이번 프레임에 사용할 프레임 데이터의 사용이 이전 프레임에서 완료될 때까지 기다린다.
-    WaitFence(currentFrameData->fenceValue);
-
-    // 루트 디스크립터 풀을 비운다.
-    currentFrameData->rootDescriptorPool->Reset();
+    // 프레임 데이터를 초기화하고, 이전 프레임에 대한 펜스를 기다린다.
+    currentFrameData->BeginFrame();
 
     // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
-    currentFrameData->commandListPool->Clear();
-    currentFrameCommandList = currentFrameData->commandListPool->Alloc();
+    D3D12CommandList* commandList = currentFrameData->threadData[0].commandListPool->Alloc();
 
-    // 커맨드 할당자를 재사용하도록 리셋하고, 커맨드 리스트를 커맨드 할당자를 이용하여 초기 상태로 리셋
-    currentFrameCommandList->Reset();
+    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
+    commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    currentFrameCommandList->commandList->RSSetViewports(1, &viewport);
-    currentFrameCommandList->commandList->RSSetScissorRects(1, &scissorRect);
+    commandList->commandList->RSSetViewports(1, &viewport);
+    commandList->commandList->RSSetScissorRects(1, &scissorRect);
 
     // 백버퍼를 렌더 타겟 상태로 전환
-    currentFrameCommandList->commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    commandList->commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
-    CD3DX12_CPU_DESCRIPTOR_HANDLE dsvDescriptorHandle(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+    rtvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
+    dsvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
     // 백버퍼와 깊이버퍼를 Clear
-    currentFrameCommandList->commandList->ClearRenderTargetView(rtvDescriptorHandle, Color4::blue, 0, nullptr);
-    currentFrameCommandList->commandList->ClearDepthStencilView(dsvDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-    currentFrameCommandList->commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+    commandList->commandList->ClearRenderTargetView(rtvDescriptorHandle, Color4::blue, 0, nullptr);
+    commandList->commandList->ClearDepthStencilView(dsvDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+    commandList->commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+
+    // CommandList 기록을 마친다.
+    commandList->commandList->Close();
+
+    // CommandQueue 실행
+    ID3D12CommandList *execCommandLists[] = { commandList->commandList };
+    commandQueue->ExecuteCommandLists(_countof(execCommandLists), execCommandLists);
 }
 
 void D3D12Renderer::EndFrame() {
     // TODO: 렌더 커맨드버퍼의 종료 마킹을 하고, 렌더 커맨드 버퍼를 실행한다.
 
+    // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
+    D3D12CommandList *commandList = currentFrameData->threadData[0].commandListPool->Alloc();
+
+    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
+    commandList->Reset();
+
     // 백버퍼 RTV 를 Present 할 수 있는 상태로 전환
-    currentFrameCommandList->commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+    commandList->commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
-    // 커맨드 리스트 기록을 마친다.
-    currentFrameCommandList->commandList->Close();
+    // CommandList 기록을 마친다.
+    commandList->commandList->Close();
 
-    // 커맨드 큐에 커맨드 리스트 전달 (한번에 여러개의 커맨드 리스트들을 전달할 수 있다)
-    ID3D12CommandList *ppCommandLists[] = { currentFrameCommandList->commandList };
-    commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+    // CommandQueue 실행
+    ID3D12CommandList *execCommandLists[] = { commandList->commandList };
+    commandQueue->ExecuteCommandLists(_countof(execCommandLists), execCommandLists);
 
     // 이번 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
-    SignalFence();
-    currentFrameData->fenceValue = fenceValue;
+    currentFrameData->EndFrame();
 
     // 백버퍼를 전면버퍼와 교환한다.
     if (swapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING) == DXGI_ERROR_DEVICE_REMOVED) {
@@ -402,28 +421,26 @@ void D3D12Renderer::EndFrame() {
     FreePendingResources();
 }
 
-void D3D12Renderer::FlushCommandList() {
-    // 커맨드 리스트 기록을 마친다.
-    currentFrameCommandList->commandList->Close();
+D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList) {
+    // CommandList 기록을 마친다.
+    commandList->commandList->Close();
 
-    // 커맨드 큐에 커맨드 리스트 전달 (한번에 여러개의 커맨드 리스트들을 전달할 수 있다)
-    ID3D12CommandList *ppCommandLists[] = { currentFrameCommandList->commandList };
-    commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+    // CommandQueue 에 CommandList 전달 (한번에 여러개의 CommandList 들을 전달할 수 있다)
+    ID3D12CommandList *execCommandLists[] = { commandList->commandList };
+    commandQueue->ExecuteCommandLists(_countof(execCommandLists), execCommandLists);
 
     // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
-    currentFrameCommandList = currentFrameData->commandListPool->Alloc();
+    commandList = commandList->parentPool->Alloc();
 
-    // 커맨드 할당자를 재사용하도록 리셋하고, 커맨드 리스트를 커맨드 할당자를 이용하여 초기 상태로 리셋
-    currentFrameCommandList->Reset();
+    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
+    commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    currentFrameCommandList->commandList->RSSetViewports(1, &viewport);
-    currentFrameCommandList->commandList->RSSetScissorRects(1, &scissorRect);
+    commandList->commandList->RSSetViewports(1, &viewport);
+    commandList->commandList->RSSetScissorRects(1, &scissorRect);
+    commandList->commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
-    CD3DX12_CPU_DESCRIPTOR_HANDLE dsvDescriptorHandle(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-    currentFrameCommandList->commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+    return commandList;
 }
 
 UINT64 D3D12Renderer::SignalFence() {
@@ -446,6 +463,12 @@ void D3D12Renderer::WaitFence(UINT64 expectedFenceValue) {
 
 void D3D12Renderer::Finish() {
     WaitFence(SignalFence());
+}
+
+void D3D12Renderer::WaitAllFrameFences() {
+    for (int frameIndex = 0; frameIndex < D3D12Renderer::NumFrames; ++frameIndex) {
+        WaitFence(frameData[frameIndex].lastFrameFenceValue);
+    }
 }
 
 void D3D12Renderer::MarkForRelease(ID3D12Resource *resource) {
@@ -538,3 +561,139 @@ void D3D12Renderer::PrintMemoryAllocatorStats() {
     BE_LOG("GPU memory currently has %u allocations taking %s\n", localBudget.Stats.AllocationCount, Str::FormatBytes(localBudget.Stats.AllocationBytes).c_str());
 }
 #endif
+
+int D3D12Renderer::AddRenderObject(const D3D12RenderObject::State &def) {
+    int index = renderObjects.FindNull();
+    if (index == -1) {
+        index = renderObjects.Append(nullptr);
+    }
+
+    UpdateRenderObject(index, def);
+    return index;
+}
+
+void D3D12Renderer::UpdateRenderObject(int index, const D3D12RenderObject::State &def) {
+    while (index >= renderObjects.Count()) {
+        renderObjects.Append(nullptr);
+    }
+
+    D3D12RenderObject *renderObject = renderObjects[index];
+    if (!renderObject) {
+        renderObject = new D3D12RenderObject;
+        renderObject->index = index;
+        renderObjects[index] = renderObject;
+    }
+
+    renderObject->Update(def);
+}
+
+void D3D12Renderer::RemoveRenderObject(int index) {
+    if (!renderObjects.IsValidIndex(index)) {
+        BE_WARNLOG("D3D12Renderer::RemoveRenderObject: invalid index %i\n", index);
+        return;
+    }
+
+    D3D12RenderObject *renderObject = renderObjects[index];
+    if (!renderObject) {
+        BE_WARNLOG("D3D12Renderer::RemoveRenderObject: index %i is nullptr\n", index);
+        return;
+    }
+
+    delete renderObjects[index];
+    renderObjects[index] = nullptr;
+}
+
+static void ThreadRenderObjects(void *data) {
+    D3D12Renderer::RenderObjectTaskDesc *threadDesc = reinterpret_cast<D3D12Renderer::RenderObjectTaskDesc *>(data);
+    renderer.DrawRenderObjects(threadDesc);
+}
+
+void D3D12Renderer::DrawRenderObjects() {
+#ifdef USE_MULTI_THREADED_RENDERING
+    int numRenderObjects = renderObjects.Count();
+    int numTasks = Min(taskManager.NumThreads(), (int)Math::Ceil((float)numRenderObjects / MaxRenderObjectsPerTask));
+    int numRenderObjectsPerTasks = (int)Math::Ceil((float)numRenderObjects / numTasks);
+
+    int threadIndex = 0;
+    int lastEndIndex = -1;
+
+    // 태스크 정보 초기화
+    renderObjectTaskDescs.SetCount(0);
+
+    // 최대 쓰레드 개수만큼 task 를 실행한다.
+    while (lastEndIndex < numRenderObjects - 1) {
+        RenderObjectTaskDesc &currentThreadDesc = renderObjectTaskDescs.Alloc();
+
+        currentThreadDesc.threadIndex = threadIndex++;
+        currentThreadDesc.renderObjectStartIndex = lastEndIndex + 1;
+        currentThreadDesc.renderObjectEndIndex = Min(currentThreadDesc.renderObjectStartIndex + numRenderObjectsPerTasks, numRenderObjects) - 1;
+        taskManager.AddTask(ThreadRenderObjects, &currentThreadDesc);
+
+        lastEndIndex = currentThreadDesc.renderObjectEndIndex;
+    }
+
+    taskManager.WaitFinish();
+
+    // 태스크 별로 execute 할 CommandList 들을 모두 모은다.
+    int renderTaskCount = renderObjectTaskDescs.Count();
+    ID3D12CommandList *execCommandLists[MaxRenderTaskThreads];
+    for (int threadIndex = 0; threadIndex < renderTaskCount; ++threadIndex) {
+        execCommandLists[threadIndex] = renderObjectTaskDescs[threadIndex].activeCommandList->commandList;
+    }
+
+    // CommandList 들을 한꺼번에 실행
+    renderer.commandQueue->ExecuteCommandLists(renderTaskCount, execCommandLists);
+#else
+    // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
+    D3D12CommandList *commandList = currentFrameData->threadData[0].commandListPool->Alloc();
+
+    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
+    commandList->Reset();
+
+    // 뷰포트 & ScissorRect 설정
+    commandList->commandList->RSSetViewports(1, &renderer.viewport);
+    commandList->commandList->RSSetScissorRects(1, &renderer.scissorRect);
+    commandList->commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+
+    for (int i = 0; i < renderObjects.Count(); ++i) {
+        D3D12RenderObject *renderObject = renderObjects[i];
+        renderObject->Draw(0, i, commandList);
+    }
+
+    // CommandList 기록을 마친다.
+    commandList->commandList->Close();
+
+    // CommandQueue 실행
+    ID3D12CommandList *execCommandLists[] = { commandList->commandList };
+    commandQueue->ExecuteCommandLists(_countof(execCommandLists), execCommandLists);
+#endif
+}
+
+void D3D12Renderer::DrawRenderObjects(D3D12Renderer::RenderObjectTaskDesc *taskDesc) {
+    int threadIndex = taskDesc->threadIndex;
+    D3D12CommandListPool *commandListPool = renderer.currentFrameData->threadData[threadIndex].commandListPool;
+    D3D12CommandList *commandList = commandListPool->Alloc();
+
+    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
+    commandList->Reset();
+
+    // 뷰포트 & ScissorRect 설정
+    commandList->commandList->RSSetViewports(1, &renderer.viewport);
+    commandList->commandList->RSSetScissorRects(1, &renderer.scissorRect);
+
+    commandList->commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+
+    for (int i = taskDesc->renderObjectStartIndex; i <= taskDesc->renderObjectEndIndex; ++i) {
+        D3D12RenderObject *renderObject = renderObjects[i];
+        renderObject->Draw(taskDesc->threadIndex, i, commandList);
+    }
+
+    // 렌더링 시나리오에 따라 중간에 Flush 할 수도 있다.
+    //commandList = FlushCommandList(commandList);
+
+    // CommandList 기록을 마친다.
+    commandList->commandList->Close();
+
+    // 사용 중인 커맨드 리스트를 나중에 실행하기 위해 저장한다.
+    taskDesc->activeCommandList = commandList;
+}

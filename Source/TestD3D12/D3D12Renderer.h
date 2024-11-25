@@ -21,6 +21,7 @@
 #endif
 
 #include "D3D12FrameData.h"
+#include "D3D12RenderObject.h"
 
 class D3D12CommandList;
 class D3D12DescriptorPool;
@@ -45,12 +46,14 @@ public:
     void                            CreateRTVs();
     void                            CreateDSV(int width, int height);
 
-    void                            FlushCommandList();
+    D3D12CommandList *              FlushCommandList(D3D12CommandList *commandList);
 
     UINT64                          SignalFence();
     bool                            IsFenceComplete(UINT64 checkFenceValue);
     void                            WaitFence(UINT64 expectedFenceValue);
     void                            Finish();
+
+    void                            WaitAllFrameFences();
 
     void                            MarkForRelease(ID3D12Resource* resource);
     void                            FreePendingResources();
@@ -61,8 +64,22 @@ public:
     void                            PrintMemoryAllocatorStats();
 #endif
 
+    struct RenderObjectTaskDesc {
+        int                         threadIndex = -1;
+        int                         renderObjectStartIndex = -1;
+        int                         renderObjectEndIndex = -1;
+        D3D12CommandList *          activeCommandList = nullptr;
+    };
+
+    int                             AddRenderObject(const D3D12RenderObject::State &def);
+    void                            UpdateRenderObject(int handle, const D3D12RenderObject::State &def);
+    void                            RemoveRenderObject(int handle);
+    void                            DrawRenderObjects();
+    void                            DrawRenderObjects(D3D12Renderer::RenderObjectTaskDesc *taskDesc);
+
     static constexpr UINT           NumSwapChainBuffers = 3;
     static constexpr UINT           NumFrames = 2;
+    static constexpr UINT           MaxRenderObjectsPerTask = 256;
 
     ID3D12Device5 *                 device = nullptr;
     DXGI_ADAPTER_DESC1              adapterDesc = {};
@@ -83,6 +100,9 @@ public:
     ID3D12Resource *                renderTargetBuffers[NumSwapChainBuffers] = {};
     ID3D12Resource *                depthStencilBuffer = nullptr;
 
+    D3D12_CPU_DESCRIPTOR_HANDLE     rtvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE();
+    D3D12_CPU_DESCRIPTOR_HANDLE     dsvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE();
+
     UINT                            currentBackBufferIndex = 0;
     D3D12_VIEWPORT                  viewport = {};
     D3D12_RECT                      scissorRect = {};
@@ -94,12 +114,18 @@ public:
     D3D12FrameData                  frameData[NumFrames];
     UINT                            currentFrameIndex = 0;
     D3D12FrameData *                currentFrameData = nullptr;
-    D3D12CommandList *              currentFrameCommandList = nullptr;
 
     D3D12PendingResource *          pendingResourceBuffer = nullptr;
     int                             maxPendingResources = 0;
     int                             headPendingIndex = 0;
     int                             tailPendingIndex = 0;
+
+    Array<RenderObjectTaskDesc>     renderObjectTaskDescs;
+    Array<D3D12RenderObject *>      renderObjects;
+
+#ifdef USE_MULTI_THREADED_RENDERING
+    TaskManager                     taskManager = TaskManager(MaxRenderTasks);
+#endif
 
     bool                            initialized = false;
 };
