@@ -93,7 +93,7 @@ public:
     template <typename Lambda>
     Delegate(const Lambda &lambda) {
         invocation.object = (void *)(&lambda);
-        invocation.stub = lambda_stub<Lambda>;
+        invocation.stub = this->lambda_stub<Lambda>;
     }
 
     Delegate &operator=(const Delegate &rhs) {
@@ -105,7 +105,7 @@ public:
     template <typename Lambda>
     Delegate &operator=(const Lambda &instance) {
         invocation.object = (void *)(&instance);
-        invocation.stub = lambda_stub<Lambda>;
+        invocation.stub = this->lambda_stub<Lambda>;
         return *this;
     }
 
@@ -114,7 +114,7 @@ public:
     }
 
     bool operator==(void *ptr) const {
-        return ptr == nullptr && IsNull();this
+        return ptr == nullptr && IsNull();
     }
 
     bool operator!=(void *ptr) const {
@@ -135,22 +135,22 @@ public:
 
     template <Ret(*Func)(Parms...)>
     static Delegate FromFunc() {
-        return Delegate(nullptr, function_stub<Func>);
+        return Delegate(nullptr, this->function_stub<Func>);
     }
 
     template <typename T, Ret(T::*MemberFunc)(Parms...)>
     static Delegate FromMemberFunc(T *instance) {
-        return Delegate(instance, method_stub<T, MemberFunc>);
+        return Delegate(instance, this->method_stub<T, MemberFunc>);
     }
 
     template <typename T, Ret(T::*ConstMemberFunc)(Parms...) const>
     static Delegate FromMemberFunc(const T *instance) {
-        return Delegate(const_cast<T *>(instance), const_method_stub<T, ConstMemberFunc>);
+        return Delegate(const_cast<T *>(instance), this->const_method_stub<T, ConstMemberFunc>);
     }
 
     template <typename Lambda>
     static Delegate FromLambda(const Lambda &instance) {
-        return Delegate((void *)(&instance), lambda_stub<Lambda>);
+        return Delegate((void *)(&instance), this->lambda_stub<Lambda>);
     }
 
 private:
@@ -207,25 +207,25 @@ public:
 
     template <Ret(*Func)(Parms...)>
     MulticastDelegate &Combine() {
-        invocationList.push_back(new typename DelegateBase<Ret(Parms...)>::InvocationElement(nullptr, function_stub<Func>));
+        invocationList.push_back(new typename DelegateBase<Ret(Parms...)>::InvocationElement(nullptr, this->function_stub<Func>));
         return *this;
     }
 
     template <typename T, Ret(T:: *MemberFunc)(Parms...)>
     MulticastDelegate &Combine(T *instance) {
-        invocationList.push_back(new typename DelegateBase<Ret(Parms...)>::InvocationElement(instance, method_stub<T, MemberFunc>));
+        invocationList.push_back(new typename DelegateBase<Ret(Parms...)>::InvocationElement(instance, this->method_stub<T, MemberFunc>));
         return *this;
     }
 
     template <typename T, Ret(T:: *ConstMemberFunc)(Parms...) const>
     MulticastDelegate &Combine(const T *instance) {
-        invocationList.push_back(new typename DelegateBase<Ret(Parms...)>::InvocationElement(const_cast<T *>(instance), const_method_stub<T, ConstMemberFunc>));
+        invocationList.push_back(new typename DelegateBase<Ret(Parms...)>::InvocationElement(const_cast<T *>(instance), this->const_method_stub<T, ConstMemberFunc>));
         return *this;
     }
 
     template <typename Lambda>
     MulticastDelegate &Combine(const Lambda &lambda) {
-        invocationList.push_back(new typename DelegateBase<Ret(Parms...)>::InvocationElement((void *)(&lambda), lambda_stub<Lambda>));
+        invocationList.push_back(new typename DelegateBase<Ret(Parms...)>::InvocationElement((void *)(&lambda), this->lambda_stub<Lambda>));
         return *this;
     }
 
@@ -245,7 +245,7 @@ public:
     }
 
     bool operator==(void *ptr) const {
-        return ptr == nullptr && IsNull();
+        return ptr == nullptr && this->IsNull();
     }
 
     bool operator==(const MulticastDelegate &rhs) const {
@@ -260,7 +260,7 @@ public:
     }
         
     bool operator!=(void *ptr) const {
-        return ptr != nullptr || !IsNull();
+        return ptr != nullptr || !this->IsNull();
     }
 
     bool operator!=(const MulticastDelegate &rhs) const {

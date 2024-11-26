@@ -147,10 +147,17 @@ bool D3D12Texture::SetTextureSubImage2D(UINT level, UINT x, UINT y, UINT width, 
     uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
     uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
+    D3D12_HEAP_PROPERTIES heapProperties;
+    heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+    heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heapProperties.CreationNodeMask = 1;
+    heapProperties.VisibleNodeMask = 1;
+
     // 업로드 버퍼 생성 (pitch 를 타겟 텍스쳐와 동일하게 잡는다)
     ID3D12Resource *uploadBuffer = nullptr;
     if (FAILED(renderer.device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+        &heapProperties,
         D3D12_HEAP_FLAG_NONE,
         &uploadBufferDesc,
         D3D12_RESOURCE_STATE_GENERIC_READ,
