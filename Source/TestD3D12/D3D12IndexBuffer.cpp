@@ -84,7 +84,7 @@ D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type::En
 
             // 업로드 버퍼에서 GPU 버퍼로 데이터 카피
             renderer.resourceCommandList->Reset();
-            renderer.resourceCommandList->commandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
+            renderer.resourceCommandList->graphicsCommandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
             renderer.resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER);
             renderer.resourceCommandList->CloseAndExecute();
         } else if (type == D3D12IndexBuffer::Type::Dynamic) {

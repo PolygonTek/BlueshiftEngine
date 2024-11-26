@@ -30,13 +30,13 @@ void D3D12CommandListPool::Init(D3D12_COMMAND_LIST_TYPE commandListType, int max
         }
 
         // 그래픽스 CommandList 생성
-        if (FAILED(renderer.device->CreateCommandList(0, commandListType, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&commandList->commandList)))) {
+        if (FAILED(renderer.device->CreateCommandList(0, commandListType, commandList->commandAllocator, nullptr, IID_PPV_ARGS(&commandList->graphicsCommandList)))) {
             BE_FATALERROR("CreateCommandList : failed");
         }
 
         // Command lists are created in the recording state, but there is nothing
         // to record yet. The main loop expects it to be closed, so close it now.
-        commandList->commandList->Close();
+        commandList->graphicsCommandList->Close();
     }
 
     // 모든 commandLists 를 free 상태로 초기화
@@ -56,7 +56,7 @@ void D3D12CommandListPool::Shutdown() {
     for (int i = 0; i < maxCommandLists; ++i) {
         D3D12CommandList *currentCommandList = &commandListPool[i];
 
-        SAFE_RELEASE(currentCommandList->commandList);
+        SAFE_RELEASE(currentCommandList->graphicsCommandList);
         SAFE_RELEASE(currentCommandList->commandAllocator);
     }
     SAFE_DELETE_ARRAY(commandListPool);

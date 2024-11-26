@@ -37,7 +37,7 @@ public:
     void                            SetIndexBuffer(const D3D12_INDEX_BUFFER_VIEW* indexBufferView);
 
     ID3D12CommandAllocator *        commandAllocator = nullptr;
-    ID3D12GraphicsCommandList *     commandList = nullptr;
+    ID3D12GraphicsCommandList *     graphicsCommandList = nullptr;
     D3D12CommandListPool *          parentPool = nullptr;
     LinkList<D3D12CommandList>      node;
 
@@ -63,7 +63,7 @@ BE_INLINE void D3D12CommandList::Reset() {
     commandAllocator->Reset();
 
     // CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
-    commandList->Reset(commandAllocator, nullptr);
+    graphicsCommandList->Reset(commandAllocator, nullptr);
 
 #ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
     // 각종 상태를 초기값으로 변경
@@ -79,9 +79,9 @@ BE_INLINE void D3D12CommandList::Reset() {
 }
 
 BE_INLINE void D3D12CommandList::CloseAndExecute() {
-    commandList->Close();
+    graphicsCommandList->Close();
 
-    ID3D12CommandList *execCommandLists[] = { commandList };
+    ID3D12CommandList *execCommandLists[] = { graphicsCommandList };
     renderer.commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
 }
 
@@ -93,7 +93,7 @@ BE_INLINE void D3D12CommandList::ResourceBarrier(ID3D12Resource *resource, D3D12
     barrier.Transition.StateBefore = stateBefore;
     barrier.Transition.StateAfter = stateAfter;
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-    commandList->ResourceBarrier(1, &barrier);
+    graphicsCommandList->ResourceBarrier(1, &barrier);
 }
 
 #ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
@@ -120,7 +120,7 @@ BE_INLINE void D3D12CommandList::SetDescriptorHeaps(int numDescriptorHeaps, ID3D
         cachedRootDescriptorHeaps[i] = descriptorHeaps[i];
     }
 #endif
-    commandList->SetDescriptorHeaps(numDescriptorHeaps, descriptorHeaps);
+    graphicsCommandList->SetDescriptorHeaps(numDescriptorHeaps, descriptorHeaps);
 }
 
 BE_INLINE void D3D12CommandList::SetGraphicsRootSignature(ID3D12RootSignature *graphicsRootSignature) {
@@ -130,7 +130,7 @@ BE_INLINE void D3D12CommandList::SetGraphicsRootSignature(ID3D12RootSignature *g
     }
     cachedGraphicsRootSignature = graphicsRootSignature;
 #endif
-    commandList->SetGraphicsRootSignature(graphicsRootSignature);
+    graphicsCommandList->SetGraphicsRootSignature(graphicsRootSignature);
 }
 
 BE_INLINE void D3D12CommandList::SetPipelineState(ID3D12PipelineState *piplelineState) {
@@ -140,7 +140,7 @@ BE_INLINE void D3D12CommandList::SetPipelineState(ID3D12PipelineState *pipleline
     }
     cachedPipelineState = piplelineState;
 #endif
-    commandList->SetPipelineState(piplelineState);
+    graphicsCommandList->SetPipelineState(piplelineState);
 }
 
 BE_INLINE void D3D12CommandList::SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY primitiveTopology) {
@@ -150,7 +150,7 @@ BE_INLINE void D3D12CommandList::SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY p
     }
     cachedPrimitiveTopology = primitiveTopology;
 #endif
-    commandList->IASetPrimitiveTopology(primitiveTopology);
+    graphicsCommandList->IASetPrimitiveTopology(primitiveTopology);
 }
 
 BE_INLINE void D3D12CommandList::SetVertexBuffers(UINT startSlot, UINT numViews, const D3D12_VERTEX_BUFFER_VIEW *vertexBufferViews) {
@@ -170,7 +170,7 @@ BE_INLINE void D3D12CommandList::SetVertexBuffers(UINT startSlot, UINT numViews,
         return;
     }
 #endif
-    commandList->IASetVertexBuffers(startSlot, numViews, vertexBufferViews);
+    graphicsCommandList->IASetVertexBuffers(startSlot, numViews, vertexBufferViews);
 }
 
 BE_INLINE void D3D12CommandList::SetIndexBuffer(const D3D12_INDEX_BUFFER_VIEW *indexBufferView) {
@@ -182,11 +182,13 @@ BE_INLINE void D3D12CommandList::SetIndexBuffer(const D3D12_INDEX_BUFFER_VIEW *i
     }
     cachedIndexBufferView = *indexBufferView;
 #endif
-    commandList->IASetIndexBuffer(indexBufferView);
+    graphicsCommandList->IASetIndexBuffer(indexBufferView);
 }
 
 class D3D12CommandListPool {
 public:
+    D3D12CommandListPool() = default;
+    D3D12CommandListPool(D3D12_COMMAND_LIST_TYPE commandListType, int maxCommandLists) { Init(commandListType, maxCommandLists); }
     ~D3D12CommandListPool() { Shutdown(); }
 
     void                            Init(D3D12_COMMAND_LIST_TYPE commandListType, int maxCommandLists);

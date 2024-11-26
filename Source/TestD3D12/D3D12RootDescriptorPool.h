@@ -18,6 +18,8 @@
 
 class D3D12RootDescriptorPool {
 public:
+    D3D12RootDescriptorPool() = default;
+    D3D12RootDescriptorPool(UINT maxCount) { Init(maxCount); }
     ~D3D12RootDescriptorPool() { Shutdown(); }
 
     void                            Init(UINT maxCount);

@@ -229,10 +229,10 @@ void D3D12App::DrawMeshes() {
     commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    commandList->commandList->RSSetViewports(1, &renderer.viewport);
-    commandList->commandList->RSSetScissorRects(1, &renderer.scissorRect);
+    commandList->graphicsCommandList->RSSetViewports(1, &renderer.viewport);
+    commandList->graphicsCommandList->RSSetScissorRects(1, &renderer.scissorRect);
 
-    commandList->commandList->OMSetRenderTargets(1, &renderer.rtvDescriptorHandle, FALSE, &renderer.dsvDescriptorHandle);
+    commandList->graphicsCommandList->OMSetRenderTargets(1, &renderer.rtvDescriptorHandle, FALSE, &renderer.dsvDescriptorHandle);
 
 #if TRIANGLE_OR_CUBE == 1
     DrawTriangles(commandList);

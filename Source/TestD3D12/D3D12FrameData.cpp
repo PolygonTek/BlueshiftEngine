@@ -26,16 +26,13 @@ void D3D12FrameData::Init() {
         DataPerThread* data = &threadData[threadIndex];
 
         // 커맨드 리스트 풀을 생성한다.
-        data->commandListPool = new D3D12CommandListPool;
-        data->commandListPool->Init(D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
+        data->commandListPool = new D3D12CommandListPool(D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
 
         // 쉐이더에서 사용할 디스크립터 힙을 생성한다.
-        data->rootDescriptorPool = new D3D12RootDescriptorPool;
-        data->rootDescriptorPool->Init(16384);
+        data->rootDescriptorPool = new D3D12RootDescriptorPool(16384);
 
         // 상수 버퍼 디스크립터 풀을 생성한다.
-        data->cbvDescriptorPool = new D3D12DescriptorPool;
-        data->cbvDescriptorPool->Init(D3D12DescriptorPool::Type::SRV, 8192, false);
+        data->cbvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::SRV, 8192, false);
 
         // 다이나믹 상수 버퍼 생성
         data->constantBuffer = D3D12ConstantBuffer::CreateConstantBuffer(65536 * 16);

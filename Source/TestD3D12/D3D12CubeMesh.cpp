@@ -289,10 +289,10 @@ void D3D12CubeMesh::DrawMesh(int threadIndex, int drawIndex, D3D12CommandList* c
     commandList->SetGraphicsRootSignature(rootSignature);
 
     // 루트 디스크립터 테이블을 세팅한다.
-    commandList->commandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
+    commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
 
     //gpuRootDescriptorHandle.Offset(1, currentRootDescriptorPool->descriptorHandleSize);
-    //currentCommandList->commandList->SetGraphicsRootDescriptorTable(1, gpuRootDescriptorHandle);
+    //commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(1, gpuRootDescriptorHandle);
 
     commandList->SetVertexBuffers(0, 1, &vertexBuffer->vbv);
     commandList->SetIndexBuffer(&indexBuffer->ibv);
@@ -300,5 +300,5 @@ void D3D12CubeMesh::DrawMesh(int threadIndex, int drawIndex, D3D12CommandList* c
     commandList->SetPipelineState(pipelineState);
     commandList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    commandList->commandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+    commandList->graphicsCommandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
 }

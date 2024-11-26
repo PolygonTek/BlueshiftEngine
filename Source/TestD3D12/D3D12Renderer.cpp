@@ -170,8 +170,7 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
 
     CreateDSV(swapChainDesc.Width, swapChainDesc.Height);
 
-    commandListPool = new D3D12CommandListPool;
-    commandListPool->Init(D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
+    commandListPool = new D3D12CommandListPool(D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
     resourceCommandList = commandListPool->Alloc();
 
     // Fence 객체 생성
@@ -204,14 +203,9 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
 
     adapter1->Release();
 
-    srvDescriptorPool = new D3D12DescriptorPool;
-    srvDescriptorPool->Init(D3D12DescriptorPool::Type::SRV, 100000, false);
-
-    rtvDescriptorPool = new D3D12DescriptorPool;
-    rtvDescriptorPool->Init(D3D12DescriptorPool::Type::RTV, 16, false);
-
-    dsvDescriptorPool = new D3D12DescriptorPool;
-    dsvDescriptorPool->Init(D3D12DescriptorPool::Type::DSV, 16, false);
+    srvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::SRV, 100000, false);
+    rtvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::RTV, 16, false);
+    dsvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::DSV, 16, false);
 
     for (int frameIndex = 0; frameIndex < NumFrames; ++frameIndex) {
         frameData[frameIndex].Init();
@@ -355,8 +349,8 @@ void D3D12Renderer::BeginFrame() {
     commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    commandList->commandList->RSSetViewports(1, &viewport);
-    commandList->commandList->RSSetScissorRects(1, &scissorRect);
+    commandList->graphicsCommandList->RSSetViewports(1, &viewport);
+    commandList->graphicsCommandList->RSSetScissorRects(1, &scissorRect);
 
     // 백버퍼를 렌더 타겟 상태로 전환
     commandList->ResourceBarrier(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -365,10 +359,10 @@ void D3D12Renderer::BeginFrame() {
     dsvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
     // 백버퍼와 깊이버퍼를 Clear
-    commandList->commandList->ClearRenderTargetView(rtvDescriptorHandle, Color4::blue, 0, nullptr);
-    commandList->commandList->ClearDepthStencilView(dsvDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+    commandList->graphicsCommandList->ClearRenderTargetView(rtvDescriptorHandle, Color4::blue, 0, nullptr);
+    commandList->graphicsCommandList->ClearDepthStencilView(dsvDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-    commandList->commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+    commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
     // CommandList 기록을 마치고 CommandQueue 로 실행
     commandList->CloseAndExecute();
@@ -418,9 +412,9 @@ D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList)
     commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    commandList->commandList->RSSetViewports(1, &viewport);
-    commandList->commandList->RSSetScissorRects(1, &scissorRect);
-    commandList->commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+    commandList->graphicsCommandList->RSSetViewports(1, &viewport);
+    commandList->graphicsCommandList->RSSetScissorRects(1, &scissorRect);
+    commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
     return commandList;
 }
@@ -621,7 +615,7 @@ void D3D12Renderer::DrawRenderObjects() {
     int renderTaskCount = renderObjectTaskDescs.Count();
     ID3D12CommandList *execCommandLists[MaxRenderTaskThreads];
     for (int threadIndex = 0; threadIndex < renderTaskCount; ++threadIndex) {
-        execCommandLists[threadIndex] = renderObjectTaskDescs[threadIndex].activeCommandList->commandList;
+        execCommandLists[threadIndex] = renderObjectTaskDescs[threadIndex].activeCommandList->graphicsCommandList;
     }
 
     // CommandList 들을 한꺼번에 실행
@@ -657,10 +651,10 @@ void D3D12Renderer::DrawRenderObjects(D3D12Renderer::RenderObjectTaskDesc *taskD
     commandList->Reset();
 
     // 뷰포트 & ScissorRect 설정
-    commandList->commandList->RSSetViewports(1, &renderer.viewport);
-    commandList->commandList->RSSetScissorRects(1, &renderer.scissorRect);
+    commandList->graphicsCommandList->RSSetViewports(1, &renderer.viewport);
+    commandList->graphicsCommandList->RSSetScissorRects(1, &renderer.scissorRect);
 
-    commandList->commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+    commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
     for (int i = taskDesc->renderObjectStartIndex; i <= taskDesc->renderObjectEndIndex; ++i) {
         D3D12RenderObject *renderObject = renderObjects[i];
@@ -671,7 +665,7 @@ void D3D12Renderer::DrawRenderObjects(D3D12Renderer::RenderObjectTaskDesc *taskD
     //commandList = FlushCommandList(commandList);
 
     // CommandList 기록을 마친다.
-    commandList->commandList->Close();
+    commandList->graphicsCommandList->Close();
 
     // 사용 중인 커맨드 리스트를 나중에 실행하기 위해 저장한다.
     taskDesc->activeCommandList = commandList;

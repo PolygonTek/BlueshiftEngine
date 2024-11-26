@@ -70,7 +70,7 @@ void D3D12Texture::GetTextureImage2D(UINT level, Image::Format::Enum dstFormat, 
 
     renderer.resourceCommandList->Reset();
     renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
-    renderer.resourceCommandList->commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+    renderer.resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
     renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
     renderer.resourceCommandList->CloseAndExecute();
 
@@ -202,7 +202,7 @@ bool D3D12Texture::SetTextureSubImage2D(UINT level, UINT x, UINT y, UINT width, 
     dstLocation.SubresourceIndex = level;
 
     D3D12_BOX box = { 0, 0, 0, width, height, 1 };
-    renderer.resourceCommandList->commandList->CopyTextureRegion(&dstLocation, x, y, 0, &srcLocation, &box);
+    renderer.resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, x, y, 0, &srcLocation, &box);
 
     renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
     renderer.resourceCommandList->CloseAndExecute();
@@ -293,7 +293,7 @@ bool D3D12Texture::SetTextureSubImage3D(UINT level, UINT x, UINT y, UINT z, UINT
     dstLocation.SubresourceIndex = level;
 
     D3D12_BOX box = { 0, 0, 0, width, height, depth };
-    renderer.resourceCommandList->commandList->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &box);
+    renderer.resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &box);
 
     renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
     renderer.resourceCommandList->CloseAndExecute();
@@ -532,7 +532,7 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
                 dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
                 dstLocation.SubresourceIndex = subresourceIndex;
 
-                renderer.resourceCommandList->commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+                renderer.resourceCommandList->graphicsCommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
             }
         }
     }
