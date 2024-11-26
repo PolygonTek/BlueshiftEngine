@@ -96,31 +96,32 @@ void *D3D12FrameData::AllocConstant(int threadIndex, int size, D3D12_CPU_DESCRIP
         return nullptr;
     }
 
-    ID3D12Resource *resource = threadData[threadIndex].constantBuffer->buffer->GetResource();
-    UINT maxSize = threadData[threadIndex].constantBuffer->buffer->GetSize();
+    DataPerThread* data = &threadData[threadIndex];
+    ID3D12Resource *resource = data->constantBuffer->buffer->GetResource();
+    UINT maxSize = data->constantBuffer->buffer->GetSize();
 
-    if (threadData[threadIndex].usedConstantBytes + alignedSize > maxSize) {
+    if (data->usedConstantBytes + alignedSize > maxSize) {
         BE_WARNLOG("Out of constant buffer cache\n");
         return nullptr;
     }
 
     // 상수 버퍼 리소스 (업로드 버퍼) 를 쪼개서 CBV 를 만들어 사용한다.
     D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {0};
-    cbvDesc.BufferLocation = resource->GetGPUVirtualAddress() + threadData[threadIndex].usedConstantBytes;
+    cbvDesc.BufferLocation = resource->GetGPUVirtualAddress() + data->usedConstantBytes;
     cbvDesc.SizeInBytes = alignedSize;
 
-    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = threadData[threadIndex].cbvDescriptorPool->Alloc();
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = data->cbvDescriptorPool->Alloc();
     if (descriptorHandle.ptr == 0) {
         return nullptr;
     }
 
     renderer.device->CreateConstantBufferView(&cbvDesc, descriptorHandle);
 
-    threadData[threadIndex].cbvDescriptorHandles.Append(descriptorHandle);
+    data->cbvDescriptorHandles.Append(descriptorHandle);
     *outDescriptorHandlePtr = descriptorHandle;
 
-    void *outPtr = (byte *)threadData[threadIndex].mappedConstantBase + threadData[threadIndex].usedConstantBytes;
-    threadData[threadIndex].usedConstantBytes += alignedSize;
+    void *outPtr = (byte *)data->mappedConstantBase + data->usedConstantBytes;
+    data->usedConstantBytes += alignedSize;
 
     return outPtr;
 }

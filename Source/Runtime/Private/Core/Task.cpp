@@ -39,7 +39,7 @@ TaskManager::~TaskManager() {
     PlatformMutex::Destroy(taskMutex);
 }
 
-void TaskManager::Start(int numThreads) {
+void TaskManager::Start(int numThreads, bool useAffinity) {
     // Return if the threads already started.
     if (!threads.IsEmpty()) {
         return;
@@ -58,13 +58,18 @@ void TaskManager::Start(int numThreads) {
     threads.Reserve(numThreads);
 
     for (int i = 0; i < numThreads; i++) {
-        uint64_t affinityMask = 1ULL << (i % numLogicalProcessors);
+        uint64_t affinityMask = useAffinity ? 1ULL << (i % numLogicalProcessors) : 0xFFFFFFFFFFFFFFFF;
 
         threads.Append(PlatformThread::Start(TaskThreadProc, (void *)this, 0, ThreadPriority::Normal, affinityMask));
     }
 }
 
 void TaskManager::Stop() {
+    // Return if the threads already stopped.
+    if (threads.IsEmpty()) {
+        return;
+    }
+
     // Set the stopping and wake all the task threads.
     {
         ScopeLock scopeLock(taskMutex);
@@ -122,7 +127,7 @@ bool TaskManager::TimedWaitFinish(int ms) {
     return PlatformCondition::TimedWait(finishCondition, taskMutex, ms, [this]{ return IsTaskEmpty() && numActiveTasks <= 0; });
 }
 
-BE1::Task TaskManager::GetTaskInternal() {
+Task TaskManager::GetTaskInternal() {
     Task task = taskRingBuffer[headTaskIndex];
     headTaskIndex = (headTaskIndex + 1) % taskRingBuffer.Count();
 
@@ -130,6 +135,8 @@ BE1::Task TaskManager::GetTaskInternal() {
 }
 
 unsigned int TaskThreadProc(void *param) {
+    PlatformThread::SetCurrentThreadName("TaskThreadProc");
+
     SIMD::SetDenormalFlushMode(true);
 
     TaskManager *taskManager = reinterpret_cast<TaskManager *>(param);

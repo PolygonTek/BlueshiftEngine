@@ -46,7 +46,7 @@ public:
     int64_t                 NumActiveTasks() const { return numActiveTasks; }
 
                             /// Starts task threads.
-    void                    Start(int numThreads = 0);
+    void                    Start(int numThreads = 0, bool useAffinity = false);
 
                             /// Stops all the tasks.
     void                    Stop();
