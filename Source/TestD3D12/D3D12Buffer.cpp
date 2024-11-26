@@ -90,9 +90,16 @@ D3D12Buffer* D3D12Buffer::CreateBuffer(D3D12Buffer::Usage::Enum usage, int size)
         return nullptr;
     }
 #else
+    D3D12_HEAP_PROPERTIES heapProperties;
+    heapProperties.Type = heapType;
+    heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heapProperties.CreationNodeMask = 1;
+    heapProperties.VisibleNodeMask = 1;
+
     ID3D12Resource *bufferResource = nullptr;
     if (FAILED(renderer.device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(heapType),
+        &heapProperties,
         D3D12_HEAP_FLAG_NONE,
         &bufferDesc,
         initialState,

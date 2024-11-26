@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "D3D12CommandListPool.h"
 #include "D3D12VertexBuffer.h"
 #include "D3D12Buffer.h"
 #include "D3D12Renderer.h"
@@ -40,6 +41,19 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type
 
     if (data) {
         if (type == D3D12VertexBuffer::Type::Static) {
+            D3D12_RESOURCE_DESC uploadBufferDesc;
+            uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+            uploadBufferDesc.Alignment = 0;
+            uploadBufferDesc.Width = bufferSize;
+            uploadBufferDesc.Height = 1;
+            uploadBufferDesc.DepthOrArraySize = 1;
+            uploadBufferDesc.MipLevels = 1;
+            uploadBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+            uploadBufferDesc.SampleDesc.Count = 1;
+            uploadBufferDesc.SampleDesc.Quality = 0;
+            uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+            uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
             D3D12_HEAP_PROPERTIES heapProperties;
             heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
             heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -51,7 +65,7 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type
             if (FAILED(renderer.device->CreateCommittedResource(
                 &heapProperties,
                 D3D12_HEAP_FLAG_NONE,
-                &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
+                &uploadBufferDesc,
                 D3D12_RESOURCE_STATE_GENERIC_READ,
                 nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
                 SAFE_DELETE(buffer);
@@ -67,15 +81,10 @@ D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type
             uploadBuffer->Unmap(0, &writtenRange);
 
             // 업로드 버퍼에서 GPU 버퍼로 데이터 카피
-            renderer.commandAllocator->Reset();
-            renderer.commandList->Reset(renderer.commandAllocator, nullptr);
-            renderer.commandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
-            renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
-            renderer.commandList->Close();
-
-            // CommandQueue 실행
-            ID3D12CommandList *execCommandLists[] = { renderer.commandList };
-            renderer.commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+            renderer.resourceCommandList->Reset();
+            renderer.resourceCommandList->commandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
+            renderer.resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+            renderer.resourceCommandList->CloseAndExecute();
         } else if (type == D3D12VertexBuffer::Type::Dynamic) {
             UINT8 *mappedPtr = nullptr;
             bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));

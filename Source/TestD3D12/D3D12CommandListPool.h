@@ -15,6 +15,7 @@
 #pragma once
 
 #include "D3D12Common.h"
+#include "D3D12Renderer.h"
 
 #define ENABLE_STATE_CACHE_FOR_COMMAND_LIST
 
@@ -23,6 +24,10 @@ class D3D12CommandListPool;
 class D3D12CommandList {
 public:
     void                            Reset();
+
+    void                            CloseAndExecute();
+
+    void                            ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 
     void                            SetDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap* descriptorHeaps[]);
     void                            SetGraphicsRootSignature(ID3D12RootSignature* graphicsRootSignature);
@@ -71,6 +76,24 @@ BE_INLINE void D3D12CommandList::Reset() {
     }
     cachedIndexBufferView = {};
 #endif
+}
+
+BE_INLINE void D3D12CommandList::CloseAndExecute() {
+    commandList->Close();
+
+    ID3D12CommandList *execCommandLists[] = { commandList };
+    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+}
+
+BE_INLINE void D3D12CommandList::ResourceBarrier(ID3D12Resource *resource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter) {
+    D3D12_RESOURCE_BARRIER barrier = {};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrier.Transition.pResource = resource;
+    barrier.Transition.StateBefore = stateBefore;
+    barrier.Transition.StateAfter = stateAfter;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    commandList->ResourceBarrier(1, &barrier);
 }
 
 #ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST

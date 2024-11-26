@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "D3D12CommandListPool.h"
 #include "D3D12IndexBuffer.h"
 #include "D3D12Buffer.h"
 #include "D3D12Renderer.h"
@@ -42,11 +43,31 @@ D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type::En
 
     if (data) {
         if (type == D3D12IndexBuffer::Type::Static) {
+            D3D12_RESOURCE_DESC uploadBufferDesc;
+            uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+            uploadBufferDesc.Alignment = 0;
+            uploadBufferDesc.Width = bufferSize;
+            uploadBufferDesc.Height = 1;
+            uploadBufferDesc.DepthOrArraySize = 1;
+            uploadBufferDesc.MipLevels = 1;
+            uploadBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+            uploadBufferDesc.SampleDesc.Count = 1;
+            uploadBufferDesc.SampleDesc.Quality = 0;
+            uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+            uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+            D3D12_HEAP_PROPERTIES heapProperties;
+            heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+            heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+            heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+            heapProperties.CreationNodeMask = 1;
+            heapProperties.VisibleNodeMask = 1;
+
             // CPU 에서 GPU 로 전송할 업로드 버퍼 생성
             if (FAILED(renderer.device->CreateCommittedResource(
-                &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+                &heapProperties,
                 D3D12_HEAP_FLAG_NONE,
-                &CD3DX12_RESOURCE_DESC::Buffer(bufferSize),
+                &uploadBufferDesc,
                 D3D12_RESOURCE_STATE_GENERIC_READ,
                 nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
                 SAFE_DELETE(buffer);
@@ -62,15 +83,10 @@ D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type::En
             uploadBuffer->Unmap(0, &writtenRange);
 
             // 업로드 버퍼에서 GPU 버퍼로 데이터 카피
-            renderer.commandAllocator->Reset();
-            renderer.commandList->Reset(renderer.commandAllocator, nullptr);
-            renderer.commandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
-            renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER));
-            renderer.commandList->Close();
-
-            // CommandQueue 실행
-            ID3D12CommandList *execCommandLists[] = { renderer.commandList };
-            renderer.commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+            renderer.resourceCommandList->Reset();
+            renderer.resourceCommandList->commandList->CopyBufferRegion(bufferResource, 0, uploadBuffer, 0, bufferSize);
+            renderer.resourceCommandList->ResourceBarrier(bufferResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+            renderer.resourceCommandList->CloseAndExecute();
         } else if (type == D3D12IndexBuffer::Type::Dynamic) {
             UINT8* mappedPtr = nullptr;
             bufferResource->Map(0, nullptr, reinterpret_cast<void **>(&mappedPtr));

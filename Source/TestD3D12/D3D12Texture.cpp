@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Precompiled.h"
+#include "D3D12CommandListPool.h"
 #include "D3D12Texture.h"
 #include "D3D12Buffer.h"
 #include "D3D12Renderer.h"
@@ -67,14 +68,11 @@ void D3D12Texture::GetTextureImage2D(UINT level, Image::Format::Enum dstFormat, 
     dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
     dstLocation.PlacedFootprint = mipLevelFootprint;
 
-    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE));
-    renderer.commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
-    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
-    renderer.commandList->Close();
-
-    // CommandQueue 실행
-    ID3D12CommandList *execCommandLists[] = { renderer.commandList };
-    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+    renderer.resourceCommandList->Reset();
+    renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    renderer.resourceCommandList->commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+    renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    renderer.resourceCommandList->CloseAndExecute();
 
     // GPU 에서 복사가 끝날 때까지 기다린다.
     renderer.Finish();
@@ -186,9 +184,8 @@ bool D3D12Texture::SetTextureSubImage2D(UINT level, UINT x, UINT y, UINT width, 
 #endif
 
     // 업로드 버퍼에서 텍스쳐로 데이터 카피
-    renderer.commandAllocator->Reset();
-    renderer.commandList->Reset(renderer.commandAllocator, nullptr);
-    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST));
+    renderer.resourceCommandList->Reset();
+    renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
 
     D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
     srcLocation.PlacedFootprint = mipLevelFootprint;
@@ -205,14 +202,10 @@ bool D3D12Texture::SetTextureSubImage2D(UINT level, UINT x, UINT y, UINT width, 
     dstLocation.SubresourceIndex = level;
 
     D3D12_BOX box = { 0, 0, 0, width, height, 1 };
-    renderer.commandList->CopyTextureRegion(&dstLocation, x, y, 0, &srcLocation, &box);
+    renderer.resourceCommandList->commandList->CopyTextureRegion(&dstLocation, x, y, 0, &srcLocation, &box);
 
-    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE));
-    renderer.commandList->Close();
-
-    // CommandQueue 실행
-    ID3D12CommandList *execCommandLists[] = { renderer.commandList };
-    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+    renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    renderer.resourceCommandList->CloseAndExecute();
 
     renderer.MarkForRelease(uploadBuffer);
 
@@ -241,10 +234,17 @@ bool D3D12Texture::SetTextureSubImage3D(UINT level, UINT x, UINT y, UINT z, UINT
     uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
     uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
+    D3D12_HEAP_PROPERTIES heapProperties;
+    heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+    heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heapProperties.CreationNodeMask = 1;
+    heapProperties.VisibleNodeMask = 1;
+
     // 업로드 버퍼 생성 (pitch 를 타겟 텍스쳐와 동일하게 잡는다)
     ID3D12Resource *uploadBuffer = nullptr;
     if (FAILED(renderer.device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+        &heapProperties,
         D3D12_HEAP_FLAG_NONE,
         &uploadBufferDesc,
         D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -275,9 +275,8 @@ bool D3D12Texture::SetTextureSubImage3D(UINT level, UINT x, UINT y, UINT z, UINT
 #endif
 
     // 업로드 버퍼에서 텍스쳐로 데이터 카피
-    renderer.commandAllocator->Reset();
-    renderer.commandList->Reset(renderer.commandAllocator, nullptr);
-    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST));
+    renderer.resourceCommandList->Reset();
+    renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
 
     D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
     srcLocation.PlacedFootprint = mipLevelFootprint;
@@ -294,14 +293,10 @@ bool D3D12Texture::SetTextureSubImage3D(UINT level, UINT x, UINT y, UINT z, UINT
     dstLocation.SubresourceIndex = level;
 
     D3D12_BOX box = { 0, 0, 0, width, height, depth };
-    renderer.commandList->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &box);
+    renderer.resourceCommandList->commandList->CopyTextureRegion(&dstLocation, x, y, z, &srcLocation, &box);
 
-    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE));
-    renderer.commandList->Close();
-
-    // CommandQueue 실행
-    ID3D12CommandList *execCommandLists[] = { renderer.commandList };
-    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+    renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    renderer.resourceCommandList->CloseAndExecute();
 
     renderer.MarkForRelease(uploadBuffer);
 
@@ -453,12 +448,32 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
     UINT64 size;
     renderer.device->GetCopyableFootprints(&textureDesc, 0, textureDesc.MipLevels, 0, mipLevelFootprints, nullptr, nullptr, &size);
 
+    D3D12_RESOURCE_DESC uploadBufferDesc;
+    uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    uploadBufferDesc.Alignment = 0;
+    uploadBufferDesc.Width = size;
+    uploadBufferDesc.Height = 1;
+    uploadBufferDesc.DepthOrArraySize = 1;
+    uploadBufferDesc.MipLevels = 1;
+    uploadBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+    uploadBufferDesc.SampleDesc.Count = 1;
+    uploadBufferDesc.SampleDesc.Quality = 0;
+    uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+    D3D12_HEAP_PROPERTIES heapProperties;
+    heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+    heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heapProperties.CreationNodeMask = 1;
+    heapProperties.VisibleNodeMask = 1;
+
     // 업로드 버퍼 생성
     ID3D12Resource *uploadBuffer = nullptr;
     if (FAILED(renderer.device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+        &heapProperties,
         D3D12_HEAP_FLAG_NONE,
-        &CD3DX12_RESOURCE_DESC::Buffer(size),
+        &uploadBufferDesc,
         D3D12_RESOURCE_STATE_GENERIC_READ,
         nullptr, IID_PPV_ARGS(&uploadBuffer)))) {
         textureResource->Release();
@@ -499,8 +514,7 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
     uploadBuffer->Unmap(0, &writtenRange);
 
     // 업로드 버퍼에서 텍스쳐로 데이터 카피
-    renderer.commandAllocator->Reset();
-    renderer.commandList->Reset(renderer.commandAllocator, nullptr);
+    renderer.resourceCommandList->Reset();
 
     for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex) {
         for (int faceIndex = 0; faceIndex < numFaces; ++faceIndex) {
@@ -518,17 +532,13 @@ D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
                 dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
                 dstLocation.SubresourceIndex = subresourceIndex;
 
-                renderer.commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+                renderer.resourceCommandList->commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
             }
         }
     }
 
-    renderer.commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE));
-    renderer.commandList->Close();
-
-    // CommandQueue 실행
-    ID3D12CommandList *execCommandLists[] = { renderer.commandList };
-    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+    renderer.resourceCommandList->ResourceBarrier(textureResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    renderer.resourceCommandList->CloseAndExecute();
 
     if (uploadBuffer) {
         renderer.MarkForRelease(uploadBuffer);

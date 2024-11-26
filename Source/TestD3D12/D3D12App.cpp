@@ -240,12 +240,8 @@ void D3D12App::DrawMeshes() {
     DrawCubes(commandList);
 #endif
 
-    // CommandList 기록을 마친다.
-    commandList->commandList->Close();
-
-    // CommandQueue 실행
-    ID3D12CommandList *execCommandLists[] = { commandList->commandList };
-    renderer.commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+    // CommandList 기록을 마치고 CommandQueue 로 실행
+    commandList->CloseAndExecute();
 }
 
 void D3D12App::DrawTriangles(D3D12CommandList* commandList) {

@@ -85,9 +85,8 @@ public:
     DXGI_ADAPTER_DESC1              adapterDesc = {};
     IDXGISwapChain3 *               swapChain = nullptr;
     ID3D12CommandQueue *            commandQueue = nullptr;
-    UINT                            descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
-    ID3D12CommandAllocator *        commandAllocator = nullptr;
-    ID3D12GraphicsCommandList *     commandList = nullptr;
+    D3D12CommandListPool *          commandListPool = nullptr;
+    D3D12CommandList *              resourceCommandList = nullptr;
     ID3D12Fence *                   fence = nullptr;
     UINT64                          fenceValue = 0;
     HANDLE                          fenceEventHandle = nullptr;
@@ -95,6 +94,7 @@ public:
 #ifdef USE_D3D12_MEMALLOC
     D3D12MA::Allocator *            allocator = nullptr;
 #endif
+    UINT                            descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
     ID3D12DescriptorHeap *          rtvDescriptorHeap = nullptr;
     ID3D12DescriptorHeap *          dsvDescriptorHeap = nullptr;
     ID3D12Resource *                renderTargetBuffers[NumSwapChainBuffers] = {};
@@ -112,8 +112,8 @@ public:
 
     UINT                            frameCount = 0;
     D3D12FrameData                  frameData[NumFrames];
-    UINT                            currentFrameIndex = 0;
     D3D12FrameData *                currentFrameData = nullptr;
+    UINT                            currentFrameIndex = 0;
 
     D3D12PendingResource *          pendingResourceBuffer = nullptr;
     int                             maxPendingResources = 0;

@@ -170,21 +170,9 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
 
     CreateDSV(swapChainDesc.Width, swapChainDesc.Height);
 
-    // 그래픽스 CommandList 를 위한 CommandAllocator 생성
-    hr = renderer.device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateCommandAllocator : failed");
-    }
-
-    // 그래픽스 CommandList 생성
-    hr = renderer.device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator, nullptr, IID_PPV_ARGS(&commandList));
-    if (FAILED(hr)) {
-        BE_FATALERROR("CreateCommandList : failed");
-    }
-
-    // Command lists are created in the recording state, but there is nothing
-    // to record yet. The main loop expects it to be closed, so close it now.
-    commandList->Close();
+    commandListPool = new D3D12CommandListPool;
+    commandListPool->Init(D3D12_COMMAND_LIST_TYPE_DIRECT, 8);
+    resourceCommandList = commandListPool->Alloc();
 
     // Fence 객체 생성
     hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
@@ -273,8 +261,7 @@ void D3D12Renderer::Shutdown() {
     SAFE_RELEASE(depthStencilBuffer);
     SAFE_RELEASE(swapChain);
     SAFE_RELEASE(commandQueue);
-    SAFE_RELEASE(commandList);
-    SAFE_RELEASE(commandAllocator);
+    SAFE_DELETE(commandListPool);
     SAFE_RELEASE(fence);
 
     if (fenceEventHandle) {
@@ -372,7 +359,7 @@ void D3D12Renderer::BeginFrame() {
     commandList->commandList->RSSetScissorRects(1, &scissorRect);
 
     // 백버퍼를 렌더 타겟 상태로 전환
-    commandList->commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    commandList->ResourceBarrier(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
     rtvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), currentBackBufferIndex, descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
     dsvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
@@ -383,12 +370,8 @@ void D3D12Renderer::BeginFrame() {
 
     commandList->commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
 
-    // CommandList 기록을 마친다.
-    commandList->commandList->Close();
-
-    // CommandQueue 실행
-    ID3D12CommandList *execCommandLists[] = { commandList->commandList };
-    commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+    // CommandList 기록을 마치고 CommandQueue 로 실행
+    commandList->CloseAndExecute();
 }
 
 void D3D12Renderer::EndFrame() {
@@ -401,14 +384,10 @@ void D3D12Renderer::EndFrame() {
     commandList->Reset();
 
     // 백버퍼 RTV 를 Present 할 수 있는 상태로 전환
-    commandList->commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+    commandList->ResourceBarrier(renderTargetBuffers[currentBackBufferIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 
-    // CommandList 기록을 마친다.
-    commandList->commandList->Close();
-
-    // CommandQueue 실행
-    ID3D12CommandList *execCommandLists[] = { commandList->commandList };
-    commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+    // CommandList 기록을 마치고 CommandQueue 로 실행
+    commandList->CloseAndExecute();
 
     // 이번 프레임에서 수행하는 렌더링 커맨드들에 대한 펜스를 친다.
     currentFrameData->EndFrame();
@@ -429,12 +408,8 @@ void D3D12Renderer::EndFrame() {
 }
 
 D3D12CommandList* D3D12Renderer::FlushCommandList(D3D12CommandList* commandList) {
-    // CommandList 기록을 마친다.
-    commandList->commandList->Close();
-
-    // CommandQueue 에 CommandList 전달 (한번에 여러개의 CommandList 들을 전달할 수 있다)
-    ID3D12CommandList *execCommandLists[] = { commandList->commandList };
-    commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+    // CommandList 기록을 마치고 CommandQueue 로 실행
+    commandList->CloseAndExecute();
 
     // 커맨드 리스트 풀에서 새로운 커맨드 리스트를 얻어온다.
     commandList = commandList->parentPool->Alloc();
@@ -668,12 +643,8 @@ void D3D12Renderer::DrawRenderObjects() {
         renderObject->Draw(0, i, commandList);
     }
 
-    // CommandList 기록을 마친다.
-    commandList->commandList->Close();
-
-    // CommandQueue 실행
-    ID3D12CommandList *execCommandLists[] = { commandList->commandList };
-    commandQueue->ExecuteCommandLists(COUNT_OF(execCommandLists), execCommandLists);
+    // CommandList 기록을 마치고 CommandQueue 로 실행
+    commandList->CloseAndExecute();
 #endif
 }
 
