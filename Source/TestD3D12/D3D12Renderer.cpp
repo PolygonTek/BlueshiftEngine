@@ -607,7 +607,7 @@ void D3D12Renderer::FlushRenderObjects() {
 #ifdef USE_RENDER_THREAD
     WaitRenderCompleted();
 
-    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex.load() ^ 1];
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex ^ 1];
     currentFlushedRenderObjects.SetCount(0, false);
 
     for (int i = 0; i < renderObjects.Count(); ++i) {
@@ -616,9 +616,14 @@ void D3D12Renderer::FlushRenderObjects() {
         }
     }
 
-    frameSyncState.store(FrameSyncState::WaitingForRenderCompleted);
+    // NOTE: Signal 보내기 전에 Lock 을 걸지 않으면 Signal 이 분실될 수 있다.
+    {
+        ScopeLock scopeLock(renderer.smpMutex);
 
-    PlatformCondition::Signal(updateCompletedCondition);
+        frameSyncState = FrameSyncState::WaitingForRenderCompleted;
+
+        PlatformCondition::Signal(updateCompletedCondition);
+    }
 #else
     Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[0];
     currentFlushedRenderObjects.SetCount(0, false);
@@ -667,7 +672,7 @@ static void RenderObjectsByTask(void *data) {
 
 void D3D12Renderer::DrawRenderObjects() {
 #ifdef USE_RENDER_THREAD
-    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex.load()];
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex];
 #else
     Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[0];
 #endif
@@ -761,7 +766,7 @@ void D3D12Renderer::WaitRenderCompleted() {
 
     // 업데이트가 끝나길 기다리는 상황인지 체크하면서 렌더링이 끝나기를 기다린다.
     PlatformCondition::Wait(renderCompletedCondition, smpMutex, [this] {
-        return frameSyncState.load() == FrameSyncState::WaitingForUpdateCompleted;
+        return frameSyncState == FrameSyncState::WaitingForUpdateCompleted;
     });
 }
 
@@ -775,8 +780,8 @@ unsigned int RenderThreadProc(void *param) {
             ScopeLock scopeLock(renderer.smpMutex);
 
             // 렌더링이 끝나길 기다리는 상황인지 체크하면서 업데이트가 끝나기를 기다린다.
-            PlatformCondition::Wait(renderer.updateCompletedCondition, renderer.smpMutex, []{
-                return renderer.frameSyncState.load() == FrameSyncState::WaitingForRenderCompleted || renderer.isStoppingRenderThread;
+            PlatformCondition::Wait(renderer.updateCompletedCondition, renderer.smpMutex, [] {
+                return renderer.frameSyncState == FrameSyncState::WaitingForRenderCompleted || renderer.isStoppingRenderThread;
             });
 
             if (renderer.isStoppingRenderThread) {
@@ -788,10 +793,11 @@ unsigned int RenderThreadProc(void *param) {
         renderer.DrawRenderObjects();
         renderer.EndFrame();
 
+        // NOTE: Signal 보내기 전에 Lock 을 걸지 않으면 Signal 이 분실될 수 있다.
         {
             ScopeLock scopeLock(renderer.smpMutex);
 
-            renderer.renderFrameIndex.fetch_xor(1);
+            renderer.renderFrameIndex ^= renderer.renderFrameIndex;
             renderer.frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
 
             PlatformCondition::Signal(renderer.renderCompletedCondition);

@@ -147,8 +147,8 @@ public:
     PlatformCondition *                 updateCompletedCondition = nullptr;
     PlatformThread *                    renderThread = nullptr;
     bool                                isStoppingRenderThread = false;
-    std::atomic<FrameSyncState>         frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
-    std::atomic_int                     renderFrameIndex = 1;
+    int                                 renderFrameIndex = 1;
+    FrameSyncState                      frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
 #endif
 
     bool                                initialized = false;
