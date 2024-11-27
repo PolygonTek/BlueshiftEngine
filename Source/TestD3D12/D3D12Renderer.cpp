@@ -760,7 +760,9 @@ void D3D12Renderer::WaitRenderCompleted() {
     ScopeLock scopeLock(smpMutex);
 
     // 업데이트가 끝나길 기다리는 상황인지 체크하면서 렌더링이 끝나기를 기다린다.
-    PlatformCondition::Wait(renderCompletedCondition, smpMutex, [this] { return frameSyncState.load() == FrameSyncState::WaitingForUpdateCompleted; });
+    PlatformCondition::Wait(renderCompletedCondition, smpMutex, [this] {
+        return frameSyncState.load() == FrameSyncState::WaitingForUpdateCompleted;
+    });
 }
 
 unsigned int RenderThreadProc(void *param) {
@@ -773,7 +775,9 @@ unsigned int RenderThreadProc(void *param) {
             ScopeLock scopeLock(renderer.smpMutex);
 
             // 렌더링이 끝나길 기다리는 상황인지 체크하면서 업데이트가 끝나기를 기다린다.
-            PlatformCondition::Wait(renderer.updateCompletedCondition, renderer.smpMutex, []{ return renderer.frameSyncState.load() == FrameSyncState::WaitingForRenderCompleted || renderer.isStoppingRenderThread; });
+            PlatformCondition::Wait(renderer.updateCompletedCondition, renderer.smpMutex, []{
+                return renderer.frameSyncState.load() == FrameSyncState::WaitingForRenderCompleted || renderer.isStoppingRenderThread;
+            });
 
             if (renderer.isStoppingRenderThread) {
                 break;
@@ -784,10 +788,14 @@ unsigned int RenderThreadProc(void *param) {
         renderer.DrawRenderObjects();
         renderer.EndFrame();
 
-        renderer.renderFrameIndex.fetch_xor(1);
-        renderer.frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
+        {
+            ScopeLock scopeLock(renderer.smpMutex);
 
-        PlatformCondition::Signal(renderer.renderCompletedCondition);
+            renderer.renderFrameIndex.fetch_xor(1);
+            renderer.frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
+
+            PlatformCondition::Signal(renderer.renderCompletedCondition);
+        }
     }
     return 0;
 }
