@@ -207,6 +207,19 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
     rtvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::RTV, 16, false);
     dsvDescriptorPool = new D3D12DescriptorPool(D3D12DescriptorPool::Type::DSV, 16, false);
 
+    maxPendingResources = 1024;
+    pendingResourceBuffer = new D3D12PendingResource[maxPendingResources];
+
+    renderObjects.Reserve(16384);
+    flushedRenderObjects[0].Reserve(16384);
+    flushedRenderObjects[1].Reserve(16384);
+
+#ifdef USE_RENDER_TASK
+    // 태스크 스레드를 최대 물리코어 개수만큼만 생성한다.
+    int numCores = PlatformSystem::NumCPUCores();
+    taskManager.Start(Min(numCores, MaxRenderTaskThreads));
+#endif
+
     for (int frameIndex = 0; frameIndex < NumFrames; ++frameIndex) {
         frameData[frameIndex].Init();
     }
@@ -214,27 +227,25 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
     currentFrameIndex = 0;
     frameData[currentFrameIndex].lastFrameFenceValue = SignalFence();
 
-    maxPendingResources = 1024;
-    pendingResourceBuffer = new D3D12PendingResource[maxPendingResources];
-
-    renderObjects.Reserve(16384);
-    renderObjectTaskDescs.Reserve(MaxRenderTaskThreads);
-
-#ifdef USE_MULTI_THREADED_RENDERING
-    taskManager.Start();//(MaxRenderTaskThreads);
+#ifdef USE_RENDER_THREAD
+    InitRenderThread();
 #endif
 
     initialized = true;
 }
 
 void D3D12Renderer::Shutdown() {
-#ifdef USE_MULTI_THREADED_RENDERING
+#ifdef USE_RENDER_THREAD
+    ShutdownRenderThread();
+#endif
+
+#ifdef USE_RENDER_TASK
     taskManager.Stop();
 #endif
 
     Finish();
 
-    FreePendingResources();
+    FreePendingResources(true);
     SAFE_DELETE(pendingResourceBuffer);
     maxPendingResources = 0;
 
@@ -246,9 +257,6 @@ void D3D12Renderer::Shutdown() {
     SAFE_DELETE(rtvDescriptorPool);
     SAFE_DELETE(dsvDescriptorPool);
 
-#ifdef USE_D3D12_MEMALLOC
-    SAFE_RELEASE(allocator);
-#endif
     SAFE_RELEASE(rtvDescriptorHeap);
     SAFE_RELEASE(dsvDescriptorHeap);
     SAFE_RELEASE_ARRAY(renderTargetBuffers);
@@ -257,6 +265,10 @@ void D3D12Renderer::Shutdown() {
     SAFE_RELEASE(commandQueue);
     SAFE_DELETE(commandListPool);
     SAFE_RELEASE(fence);
+
+#ifdef USE_D3D12_MEMALLOC
+    SAFE_RELEASE(allocator);
+#endif
 
     if (fenceEventHandle) {
         CloseHandle(fenceEventHandle);
@@ -468,11 +480,15 @@ void D3D12Renderer::MarkForRelease(ID3D12Resource *resource) {
     headPendingIndex = headPendingIndex % maxPendingResources;
 }
 
-void D3D12Renderer::FreePendingResources() {
+void D3D12Renderer::FreePendingResources(bool waitPendings) {
     while (headPendingIndex != tailPendingIndex) {
         D3D12PendingResource *pendingResource = &pendingResourceBuffer[tailPendingIndex];
-        if (!IsFenceComplete(pendingResource->fenceValue)) {
-            return;
+        if (waitPendings) {
+            WaitFence(pendingResource->fenceValue);
+        } else {
+            if (!IsFenceComplete(pendingResource->fenceValue)) {
+                continue;
+            }
         }
 
         pendingResource->resource->Release();
@@ -482,6 +498,10 @@ void D3D12Renderer::FreePendingResources() {
 }
 
 void D3D12Renderer::OnResize(int width, int height) {
+#ifdef USE_RENDER_THREAD
+    WaitRenderCompleted();
+#endif
+
     Finish();
 
     // 기존 백버퍼 해제
@@ -575,74 +595,43 @@ void D3D12Renderer::RemoveRenderObject(int index) {
         return;
     }
 
+#ifdef USE_RENDER_THREAD
+    // TODO: 렌더 스레드에서 읽는 중일 수 있으므로, 지연시켜서 delete 해야 한다.
+#endif
+
     delete renderObjects[index];
     renderObjects[index] = nullptr;
 }
 
-static void ThreadRenderObjects(void *data) {
-    D3D12Renderer::RenderObjectTaskDesc *threadDesc = reinterpret_cast<D3D12Renderer::RenderObjectTaskDesc *>(data);
-    renderer.DrawRenderObjects(threadDesc);
-}
+void D3D12Renderer::FlushRenderObjects() {
+#ifdef USE_RENDER_THREAD
+    WaitRenderCompleted();
 
-void D3D12Renderer::DrawRenderObjects() {
-#ifdef USE_MULTI_THREADED_RENDERING
-    int numRenderObjects = renderObjects.Count();
-    int numTasks = Min(taskManager.NumThreads(), (int)Math::Ceil((float)numRenderObjects / MaxRenderObjectsPerTask));
-    int numRenderObjectsPerTasks = (int)Math::Ceil((float)numRenderObjects / numTasks);
-
-    int threadIndex = 0;
-    int lastEndIndex = -1;
-
-    // 태스크 정보 초기화
-    renderObjectTaskDescs.Reserve(numTasks);
-    renderObjectTaskDescs.SetCount(0, false);
-
-    // 최대 쓰레드 개수만큼 task 를 실행한다.
-    while (lastEndIndex < numRenderObjects - 1) {
-        RenderObjectTaskDesc &currentThreadDesc = renderObjectTaskDescs.Alloc();
-
-        currentThreadDesc.threadIndex = threadIndex++;
-        currentThreadDesc.renderObjectStartIndex = lastEndIndex + 1;
-        currentThreadDesc.renderObjectEndIndex = Min(currentThreadDesc.renderObjectStartIndex + numRenderObjectsPerTasks, numRenderObjects) - 1;
-        taskManager.AddTask(ThreadRenderObjects, &currentThreadDesc);
-
-        lastEndIndex = currentThreadDesc.renderObjectEndIndex;
-    }
-
-    taskManager.WaitFinish();
-
-    // 태스크 별로 execute 할 CommandList 들을 모두 모은다.
-    int renderTaskCount = renderObjectTaskDescs.Count();
-    ID3D12CommandList *execCommandLists[MaxRenderTaskThreads];
-    for (int threadIndex = 0; threadIndex < renderTaskCount; ++threadIndex) {
-        execCommandLists[threadIndex] = renderObjectTaskDescs[threadIndex].activeCommandList->graphicsCommandList;
-    }
-
-    // CommandList 들을 한꺼번에 실행
-    renderer.commandQueue->ExecuteCommandLists(renderTaskCount, execCommandLists);
-#else
-    // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
-    D3D12CommandList *commandList = currentFrameData->threadData[0].commandListPool->Alloc();
-
-    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
-    commandList->Reset();
-
-    // 뷰포트 & ScissorRect 설정
-    commandList->commandList->RSSetViewports(1, &renderer.viewport);
-    commandList->commandList->RSSetScissorRects(1, &renderer.scissorRect);
-    commandList->commandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex.load() ^ 1];
+    currentFlushedRenderObjects.SetCount(0, false);
 
     for (int i = 0; i < renderObjects.Count(); ++i) {
-        D3D12RenderObject *renderObject = renderObjects[i];
-        renderObject->Draw(0, i, commandList);
+        if (renderObjects[i]) {
+            currentFlushedRenderObjects.Append(renderObjects[i]);
+        }
     }
 
-    // CommandList 기록을 마치고 CommandQueue 로 실행
-    commandList->CloseAndExecute();
+    frameSyncState.store(FrameSyncState::WaitingForRenderCompleted);
+
+    PlatformCondition::Signal(updateCompletedCondition);
+#else
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[0];
+    currentFlushedRenderObjects.SetCount(0, false);
+
+    for (int i = 0; i < renderObjects.Count(); ++i) {
+        if (renderObjects[i]) {
+            currentFlushedRenderObjects.Append(renderObjects[i]);
+        }
+    }
 #endif
 }
 
-void D3D12Renderer::DrawRenderObjects(D3D12Renderer::RenderObjectTaskDesc *taskDesc) {
+void D3D12Renderer::DrawRenderObjectsByTask(D3D12Renderer::RenderObjectTaskDesc *taskDesc) {
     int threadIndex = taskDesc->threadIndex;
     D3D12CommandListPool *commandListPool = renderer.currentFrameData->threadData[threadIndex].commandListPool;
     D3D12CommandList *commandList = commandListPool->Alloc();
@@ -670,3 +659,136 @@ void D3D12Renderer::DrawRenderObjects(D3D12Renderer::RenderObjectTaskDesc *taskD
     // 사용 중인 커맨드 리스트를 나중에 실행하기 위해 저장한다.
     taskDesc->activeCommandList = commandList;
 }
+
+static void RenderObjectsByTask(void *data) {
+    D3D12Renderer::RenderObjectTaskDesc *taskDesc = reinterpret_cast<D3D12Renderer::RenderObjectTaskDesc *>(data);
+    renderer.DrawRenderObjectsByTask(taskDesc);
+}
+
+void D3D12Renderer::DrawRenderObjects() {
+#ifdef USE_RENDER_THREAD
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex.load()];
+#else
+    Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[0];
+#endif
+
+#ifdef USE_RENDER_TASK
+    int numRenderObjects = currentFlushedRenderObjects.Count();
+    int numTasks = Min(renderer.taskManager.NumThreads(), (int)Math::Ceil((float)numRenderObjects / MaxRenderObjectsPerTask));
+    int numRenderObjectsPerTasks = (int)Math::Ceil((float)numRenderObjects / numTasks);
+
+    int threadIndex = 0;
+    int lastEndIndex = -1;
+
+    // 태스크 정보 초기화
+    renderer.renderObjectTaskDescs.Reserve(renderer.taskManager.NumThreads());
+    renderer.renderObjectTaskDescs.SetCount(0, false);
+
+    // 최대 쓰레드 개수만큼 task 를 실행한다.
+    while (lastEndIndex < numRenderObjects - 1) {
+        RenderObjectTaskDesc &currentThreadDesc = renderer.renderObjectTaskDescs.Alloc();
+
+        currentThreadDesc.threadIndex = threadIndex++;
+        currentThreadDesc.renderObjectStartIndex = lastEndIndex + 1;
+        currentThreadDesc.renderObjectEndIndex = Min(currentThreadDesc.renderObjectStartIndex + numRenderObjectsPerTasks, numRenderObjects) - 1;
+        renderer.taskManager.AddTask(RenderObjectsByTask, &currentThreadDesc);
+
+        lastEndIndex = currentThreadDesc.renderObjectEndIndex;
+    }
+
+    renderer.taskManager.WaitFinish();
+
+    // 태스크 별로 execute 할 CommandList 들을 모두 모은다.
+    int renderTaskCount = renderer.renderObjectTaskDescs.Count();
+    ID3D12CommandList *execCommandLists[MaxRenderTaskThreads];
+    for (int threadIndex = 0; threadIndex < renderTaskCount; ++threadIndex) {
+        execCommandLists[threadIndex] = renderer.renderObjectTaskDescs[threadIndex].activeCommandList->graphicsCommandList;
+    }
+
+    // CommandList 들을 한꺼번에 실행
+    renderer.commandQueue->ExecuteCommandLists(renderTaskCount, execCommandLists);
+#else
+    // 커맨드 리스트 풀에서 커맨드 리스트를 얻어온다.
+    D3D12CommandList *commandList = currentFrameData->threadData[0].commandListPool->Alloc();
+
+    // CommandAllocator 를 재사용하도록 리셋하고, CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
+    commandList->Reset();
+
+    // 뷰포트 & ScissorRect 설정
+    commandList->graphicsCommandList->RSSetViewports(1, &renderer.viewport);
+    commandList->graphicsCommandList->RSSetScissorRects(1, &renderer.scissorRect);
+    commandList->graphicsCommandList->OMSetRenderTargets(1, &rtvDescriptorHandle, FALSE, &dsvDescriptorHandle);
+
+    for (int i = 0; i < currentFlushedRenderObjects.Count(); ++i) {
+        D3D12RenderObject *renderObject = currentFlushedRenderObjects[i];
+        renderObject->Draw(0, i, commandList);
+    }
+
+    // CommandList 기록을 마치고 CommandQueue 로 실행
+    commandList->CloseAndExecute();
+#endif
+}
+
+#ifdef USE_RENDER_THREAD
+void D3D12Renderer::InitRenderThread() {
+    smpMutex = PlatformMutex::Create();
+    renderCompletedCondition = PlatformCondition::Create();
+    updateCompletedCondition = PlatformCondition::Create();
+
+    renderThread = PlatformThread::Start(RenderThreadProc, this);
+}
+
+void D3D12Renderer::ShutdownRenderThread() {
+    {
+        ScopeLock scopeLock(smpMutex);
+        isStoppingRenderThread = true;
+        PlatformCondition::Signal(updateCompletedCondition);
+    }
+    PlatformThread::Join(renderThread);
+    renderThread = nullptr;
+
+    PlatformCondition::Destroy(renderCompletedCondition);
+    PlatformCondition::Destroy(updateCompletedCondition);
+    PlatformMutex::Destroy(smpMutex);
+}
+
+void D3D12Renderer::WaitRenderCompleted() {
+    if (!renderThread) {
+        return;
+    }
+
+    ScopeLock scopeLock(smpMutex);
+
+    // 업데이트가 끝나길 기다리는 상황인지 체크하면서 렌더링이 끝나기를 기다린다.
+    PlatformCondition::Wait(renderCompletedCondition, smpMutex, [this] { return frameSyncState.load() == FrameSyncState::WaitingForUpdateCompleted; });
+}
+
+unsigned int RenderThreadProc(void *param) {
+    PlatformThread::SetCurrentThreadName("RenderThreadProc");
+
+    SIMD::SetDenormalFlushMode(true);
+
+    while (1) {
+        {
+            ScopeLock scopeLock(renderer.smpMutex);
+
+            // 렌더링이 끝나길 기다리는 상황인지 체크하면서 업데이트가 끝나기를 기다린다.
+            PlatformCondition::Wait(renderer.updateCompletedCondition, renderer.smpMutex, []{ return renderer.frameSyncState.load() == FrameSyncState::WaitingForRenderCompleted || renderer.isStoppingRenderThread; });
+
+            if (renderer.isStoppingRenderThread) {
+                break;
+            }
+        }
+
+        renderer.BeginFrame();
+        renderer.DrawRenderObjects();
+        renderer.EndFrame();
+
+        renderer.renderFrameIndex.fetch_xor(1);
+        renderer.frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
+
+        PlatformCondition::Signal(renderer.renderCompletedCondition);
+    }
+    return 0;
+}
+#endif

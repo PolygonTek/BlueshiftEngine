@@ -27,107 +27,131 @@ class D3D12CommandList;
 class D3D12DescriptorPool;
 
 struct D3D12PendingResource {
-    UINT64                          fenceValue = 0;
-    ID3D12Resource*                 resource = nullptr;
+    UINT64                              fenceValue = 0;
+    ID3D12Resource*                     resource = nullptr;
+};
+
+enum class FrameSyncState : byte {
+    WaitingForUpdateCompleted,
+    WaitingForRenderCompleted
 };
 
 class D3D12Renderer {
 public:
-    void                            Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidation);
-    void                            Shutdown();
+    void                                Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidation);
+    void                                Shutdown();
 
-    bool                            IsInitialized() const { return initialized; }
+    bool                                IsInitialized() const { return initialized; }
 
-    void                            BeginFrame();
-    void                            EndFrame();
+    void                                BeginFrame();
+    void                                EndFrame();
 
-    void                            OnResize(int width, int height);
+    void                                OnResize(int width, int height);
 
-    void                            CreateRTVs();
-    void                            CreateDSV(int width, int height);
+    void                                CreateRTVs();
+    void                                CreateDSV(int width, int height);
 
-    D3D12CommandList *              FlushCommandList(D3D12CommandList *commandList);
+    D3D12CommandList *                  FlushCommandList(D3D12CommandList *commandList);
 
-    UINT64                          SignalFence();
-    bool                            IsFenceComplete(UINT64 checkFenceValue);
-    void                            WaitFence(UINT64 expectedFenceValue);
-    void                            Finish();
+    UINT64                              SignalFence();
+    bool                                IsFenceComplete(UINT64 checkFenceValue);
+    void                                WaitFence(UINT64 expectedFenceValue);
+    void                                Finish();
 
-    void                            WaitAllFrameFences();
+    void                                WaitAllFrameFences();
 
-    void                            MarkForRelease(ID3D12Resource* resource);
-    void                            FreePendingResources();
+    void                                MarkForRelease(ID3D12Resource* resource);
+    void                                FreePendingResources(bool waitPendings = false);
 
-    void                            PrintCompileErrorMessages(ID3DBlob *errorBlob);
+    void                                PrintCompileErrorMessages(ID3DBlob *errorBlob);
 
 #ifdef USE_D3D12_MEMALLOC
-    void                            PrintMemoryAllocatorStats();
+    void                                PrintMemoryAllocatorStats();
 #endif
 
     struct RenderObjectTaskDesc {
-        int                         threadIndex = -1;
-        int                         renderObjectStartIndex = -1;
-        int                         renderObjectEndIndex = -1;
-        D3D12CommandList *          activeCommandList = nullptr;
+        int                             threadIndex = -1;
+        int                             renderObjectStartIndex = -1;
+        int                             renderObjectEndIndex = -1;
+        D3D12CommandList *              activeCommandList = nullptr;
     };
 
-    int                             AddRenderObject(const D3D12RenderObject::State &def);
-    void                            UpdateRenderObject(int handle, const D3D12RenderObject::State &def);
-    void                            RemoveRenderObject(int handle);
-    void                            DrawRenderObjects();
-    void                            DrawRenderObjects(D3D12Renderer::RenderObjectTaskDesc *taskDesc);
+    int                                 AddRenderObject(const D3D12RenderObject::State &def);
+    void                                UpdateRenderObject(int handle, const D3D12RenderObject::State &def);
+    void                                RemoveRenderObject(int handle);
+    void                                FlushRenderObjects();
 
-    static constexpr UINT           NumSwapChainBuffers = 3;
-    static constexpr UINT           NumFrames = 2;
-    static constexpr UINT           MaxRenderObjectsPerTask = 400;
+    void                                DrawRenderObjects();
+    void                                DrawRenderObjectsByTask(D3D12Renderer::RenderObjectTaskDesc *taskDesc);
 
-    ID3D12Device5 *                 device = nullptr;
-    DXGI_ADAPTER_DESC1              adapterDesc = {};
-    IDXGISwapChain3 *               swapChain = nullptr;
-    ID3D12CommandQueue *            commandQueue = nullptr;
-    D3D12CommandListPool *          commandListPool = nullptr;
-    D3D12CommandList *              resourceCommandList = nullptr;
-    ID3D12Fence *                   fence = nullptr;
-    UINT64                          fenceValue = 0;
-    HANDLE                          fenceEventHandle = nullptr;
+    static constexpr UINT               NumSwapChainBuffers = 3;
+    static constexpr UINT               NumFrames = 2;
+    static constexpr UINT               MaxRenderObjectsPerTask = 400;
+
+    ID3D12Device5 *                     device = nullptr;
+    DXGI_ADAPTER_DESC1                  adapterDesc = {};
+    IDXGISwapChain3 *                   swapChain = nullptr;
+    ID3D12CommandQueue *                commandQueue = nullptr;
+    D3D12CommandListPool *              commandListPool = nullptr;
+    D3D12CommandList *                  resourceCommandList = nullptr;
+    ID3D12Fence *                       fence = nullptr;
+    UINT64                              fenceValue = 0;
+    HANDLE                              fenceEventHandle = nullptr;
 
 #ifdef USE_D3D12_MEMALLOC
-    D3D12MA::Allocator *            allocator = nullptr;
+    D3D12MA::Allocator *                allocator = nullptr;
 #endif
-    UINT                            descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
-    ID3D12DescriptorHeap *          rtvDescriptorHeap = nullptr;
-    ID3D12DescriptorHeap *          dsvDescriptorHeap = nullptr;
-    ID3D12Resource *                renderTargetBuffers[NumSwapChainBuffers] = {};
-    ID3D12Resource *                depthStencilBuffer = nullptr;
+    UINT                                descriptorHandleSize[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
+    ID3D12DescriptorHeap *              rtvDescriptorHeap = nullptr;
+    ID3D12DescriptorHeap *              dsvDescriptorHeap = nullptr;
+    ID3D12Resource *                    renderTargetBuffers[NumSwapChainBuffers] = {};
+    ID3D12Resource *                    depthStencilBuffer = nullptr;
 
-    D3D12_CPU_DESCRIPTOR_HANDLE     rtvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE();
-    D3D12_CPU_DESCRIPTOR_HANDLE     dsvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE();
+    D3D12_CPU_DESCRIPTOR_HANDLE         rtvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE();
+    D3D12_CPU_DESCRIPTOR_HANDLE         dsvDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE();
 
-    UINT                            currentBackBufferIndex = 0;
-    D3D12_VIEWPORT                  viewport = {};
-    D3D12_RECT                      scissorRect = {};
-    D3D12DescriptorPool *           srvDescriptorPool = nullptr;
-    D3D12DescriptorPool *           rtvDescriptorPool = nullptr;
-    D3D12DescriptorPool *           dsvDescriptorPool = nullptr;
+    UINT                                currentBackBufferIndex = 0;
+    D3D12_VIEWPORT                      viewport = {};
+    D3D12_RECT                          scissorRect = {};
+    D3D12DescriptorPool *               srvDescriptorPool = nullptr;
+    D3D12DescriptorPool *               rtvDescriptorPool = nullptr;
+    D3D12DescriptorPool *               dsvDescriptorPool = nullptr;
 
-    UINT                            frameCount = 0;
-    D3D12FrameData                  frameData[NumFrames];
-    D3D12FrameData *                currentFrameData = nullptr;
-    UINT                            currentFrameIndex = 0;
+    UINT                                frameCount = 0;
+    D3D12FrameData                      frameData[NumFrames];
+    D3D12FrameData *                    currentFrameData = nullptr;
+    UINT                                currentFrameIndex = 0;
 
-    D3D12PendingResource *          pendingResourceBuffer = nullptr;
-    int                             maxPendingResources = 0;
-    int                             headPendingIndex = 0;
-    int                             tailPendingIndex = 0;
+    D3D12PendingResource *              pendingResourceBuffer = nullptr;
+    int                                 maxPendingResources = 0;
+    int                                 headPendingIndex = 0;
+    int                                 tailPendingIndex = 0;
 
-    Array<RenderObjectTaskDesc>     renderObjectTaskDescs;
-    Array<D3D12RenderObject *>      renderObjects;
+    Array<D3D12RenderObject *>          renderObjects;
+    Array<D3D12RenderObject *>          flushedRenderObjects[2];
+    Array<RenderObjectTaskDesc>         renderObjectTaskDescs;
 
-#ifdef USE_MULTI_THREADED_RENDERING
-    TaskManager                     taskManager = TaskManager(MaxRenderTasks);
+#ifdef USE_RENDER_TASK
+    TaskManager                         taskManager = TaskManager(MaxRenderTasks);
 #endif
 
-    bool                            initialized = false;
+#ifdef USE_RENDER_THREAD
+    friend unsigned int                 RenderThreadProc(void *param);
+
+    void                                InitRenderThread();
+    void                                ShutdownRenderThread();
+    void                                WaitRenderCompleted();
+
+    PlatformMutex *                     smpMutex = nullptr;
+    PlatformCondition *                 renderCompletedCondition = nullptr;
+    PlatformCondition *                 updateCompletedCondition = nullptr;
+    PlatformThread *                    renderThread = nullptr;
+    bool                                isStoppingRenderThread = false;
+    std::atomic<FrameSyncState>         frameSyncState = FrameSyncState::WaitingForUpdateCompleted;
+    std::atomic_int                     renderFrameIndex = 1;
+#endif
+
+    bool                                initialized = false;
 };
 
-extern D3D12Renderer                renderer;
+extern D3D12Renderer                    renderer;

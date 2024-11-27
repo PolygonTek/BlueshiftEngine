@@ -75,17 +75,16 @@ void D3D12App::RunFrame(int frameMsec) {
 
     UpdateGameObjects();
 
-    cmdSystem.ExecuteCommandBuffer();
-}
+    renderer.FlushRenderObjects();
 
-void D3D12App::Draw(int frameMsec) {
+#ifndef USE_RENDER_THREAD
     renderer.BeginFrame();
-
     renderer.DrawRenderObjects();
-
     //DrawMeshes();
-
     renderer.EndFrame();
+#endif
+
+    cmdSystem.ExecuteCommandBuffer();
 }
 
 void D3D12App::SetViewMatrix(const Mat3 &viewAxis, const Vec3 &viewOrigin, float *rowMajor4x4ViewMatrix) const {

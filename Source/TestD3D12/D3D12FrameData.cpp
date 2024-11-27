@@ -22,7 +22,13 @@
 #include "D3D12Buffer.h"
 
 void D3D12FrameData::Init() {
-    for (int threadIndex = 0; threadIndex < MaxRenderTaskThreads; ++threadIndex) {
+#ifdef USE_RENDER_TASK
+    numThreads = renderer.taskManager.NumThreads();
+#else
+    numThreads = 1;
+#endif
+
+    for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
         DataPerThread* data = &threadData[threadIndex];
 
         // 커맨드 리스트 풀을 생성한다.
@@ -46,7 +52,7 @@ void D3D12FrameData::Init() {
 }
 
 void D3D12FrameData::Shutdown() {
-    for (int threadIndex = 0; threadIndex < MaxRenderTaskThreads; ++threadIndex) {
+    for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
         DataPerThread *data = &threadData[threadIndex];
 
         for (int i = 0; i < data->cbvDescriptorHandles.Count(); ++i) {
@@ -63,7 +69,7 @@ void D3D12FrameData::Shutdown() {
 
 void D3D12FrameData::BeginFrame() {
     // 쓰레드 별로 사용할 자원을 Reset 한다.
-    for (int threadIndex = 0; threadIndex < MaxRenderTaskThreads; ++threadIndex) {
+    for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
         DataPerThread *data = &threadData[threadIndex];
 
         // 이번에 프레임에 사용할 상수 버퍼 디스크립터들을 초기화

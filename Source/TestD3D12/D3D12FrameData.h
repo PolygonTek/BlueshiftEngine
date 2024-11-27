@@ -41,7 +41,12 @@ public:
     void                            BeginFrame();
     void                            EndFrame();
 
+#ifdef USE_RENDER_TASK
     DataPerThread                   threadData[MaxRenderTaskThreads];
+#else
+    DataPerThread                   threadData[1];
+#endif
+    int                             numThreads = 0;
 
     UINT64                          lastFrameFenceValue = 0;
 };

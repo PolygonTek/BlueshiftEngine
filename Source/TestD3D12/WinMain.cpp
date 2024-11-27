@@ -219,7 +219,6 @@ static bool RunFrameInstance(int frameMsec) {
     }
 
     app.RunFrame(frameMsec);
-    app.Draw(frameMsec);
 
     return true;
 }

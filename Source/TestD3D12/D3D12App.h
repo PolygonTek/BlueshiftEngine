@@ -28,7 +28,6 @@ public:
     void                            Shutdown();
 
     void                            RunFrame(int elapsedMsec);
-    void                            Draw(int elapsedMsec);
 
     int                             GetElapsedMsec() const { return elapsedMsec; }
 

@@ -16,11 +16,13 @@
 
 #define USE_D3D12_MEMALLOC
 
-#define USE_MULTI_THREADED_RENDERING
+#define USE_RENDER_THREAD
 
-#ifdef USE_MULTI_THREADED_RENDERING
+#define USE_RENDER_TASK
+
+#ifdef USE_RENDER_TASK
+// 렌더링할 때 쓰이는 최대 태스크 개수
 static constexpr int            MaxRenderTasks = 64;
+// 렌더링 태스크 매니져에서 사용할 최대 스레드 개수 (실제로는 물리 코어 개수가 최대로 사용하는 스레드 개수다)
 static constexpr int            MaxRenderTaskThreads = 20;
-#else
-static constexpr int            MaxRenderTaskThreads = 1;
 #endif
