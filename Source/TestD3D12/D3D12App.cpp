@@ -80,7 +80,6 @@ void D3D12App::RunFrame(int frameMsec) {
 #ifndef USE_RENDER_THREAD
     renderer.BeginFrame();
     renderer.DrawRenderObjects();
-    //DrawMeshes();
     renderer.EndFrame();
 #endif
 

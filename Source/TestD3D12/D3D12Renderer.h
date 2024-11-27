@@ -26,14 +26,16 @@
 class D3D12CommandList;
 class D3D12DescriptorPool;
 
-struct D3D12PendingResource {
-    UINT64                              fenceValue = 0;
-    ID3D12Resource*                     resource = nullptr;
-};
-
+#ifdef USE_RENDER_THREAD
 enum class FrameSyncState : byte {
     WaitingForUpdateCompleted,
     WaitingForRenderCompleted
+};
+#endif
+
+struct D3D12PendingResource {
+    UINT64                              fenceValue = 0;
+    ID3D12Resource*                     resource = nullptr;
 };
 
 class D3D12Renderer {
@@ -84,8 +86,7 @@ public:
     void                                DrawRenderObjects();
     void                                DrawRenderObjectsByTask(D3D12Renderer::RenderObjectTaskDesc *taskDesc);
 
-    static constexpr UINT               NumSwapChainBuffers = 3;
-    static constexpr UINT               NumFrames = 2;
+    static constexpr UINT               NumSwapChainBuffers = 2;
     static constexpr UINT               MaxRenderObjectsPerTask = 400;
 
     ID3D12Device5 *                     device = nullptr;
@@ -118,7 +119,7 @@ public:
     D3D12DescriptorPool *               dsvDescriptorPool = nullptr;
 
     UINT                                frameCount = 0;
-    D3D12FrameData                      frameData[NumFrames];
+    D3D12FrameData                      frameData[NumFrameResources];
     D3D12FrameData *                    currentFrameData = nullptr;
     UINT                                currentFrameIndex = 0;
 

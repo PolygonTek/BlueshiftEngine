@@ -220,7 +220,7 @@ void D3D12Renderer::Init(HWND hwnd, bool enableDebugLayer, bool withGpuValidatio
     taskManager.Start(Min(numCores, MaxRenderTaskThreads));
 #endif
 
-    for (int frameIndex = 0; frameIndex < NumFrames; ++frameIndex) {
+    for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
         frameData[frameIndex].Init();
     }
 
@@ -249,7 +249,7 @@ void D3D12Renderer::Shutdown() {
     SAFE_DELETE(pendingResourceBuffer);
     maxPendingResources = 0;
 
-    for (int frameIndex = 0; frameIndex < NumFrames; ++frameIndex) {
+    for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
         frameData[frameIndex].Shutdown();
     }
 
@@ -408,7 +408,7 @@ void D3D12Renderer::EndFrame() {
 
     frameCount++;
 
-    currentFrameIndex = (frameCount % NumFrames);
+    currentFrameIndex = (frameCount % NumFrameResources);
 
     FreePendingResources();
 }
@@ -454,7 +454,7 @@ void D3D12Renderer::Finish() {
 }
 
 void D3D12Renderer::WaitAllFrameFences() {
-    for (int frameIndex = 0; frameIndex < D3D12Renderer::NumFrames; ++frameIndex) {
+    for (int frameIndex = 0; frameIndex < NumFrameResources; ++frameIndex) {
         WaitFence(frameData[frameIndex].lastFrameFenceValue);
     }
 }

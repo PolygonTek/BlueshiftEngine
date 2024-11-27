@@ -36,5 +36,5 @@ public:
     static D3D12IndexBuffer *       CreateIndexBuffer(Type type, int indexSize, int numIndexes, void *data);
 
     D3D12Buffer *                   buffer = nullptr;
-    D3D12_INDEX_BUFFER_VIEW         ibv;
+    D3D12_INDEX_BUFFER_VIEW         ibv = {};
 };

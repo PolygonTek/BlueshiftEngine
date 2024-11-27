@@ -36,5 +36,5 @@ public:
     static D3D12VertexBuffer *      CreateVertexBuffer(D3D12VertexBuffer::Type type, int vertexSize, int numVerts, void *data);
 
     D3D12Buffer *                   buffer = nullptr;
-    D3D12_VERTEX_BUFFER_VIEW        vbv;
+    D3D12_VERTEX_BUFFER_VIEW        vbv = {};
 };

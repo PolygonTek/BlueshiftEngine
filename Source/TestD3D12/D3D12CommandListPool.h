@@ -17,8 +17,6 @@
 #include "D3D12Common.h"
 #include "D3D12Renderer.h"
 
-#define ENABLE_STATE_CACHE_FOR_COMMAND_LIST
-
 class D3D12CommandListPool;
 
 class D3D12CommandList {
@@ -41,7 +39,7 @@ public:
     D3D12CommandListPool *          parentPool = nullptr;
     LinkList<D3D12CommandList>      node;
 
-#ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     bool                            IsSameDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]);
 
     StaticArray<ID3D12DescriptorHeap *, 16> cachedRootDescriptorHeaps;
@@ -65,7 +63,7 @@ BE_INLINE void D3D12CommandList::Reset() {
     // CommandList 를 CommandAllocator 를 이용하여 초기 상태로 리셋
     graphicsCommandList->Reset(commandAllocator, nullptr);
 
-#ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     // 각종 상태를 초기값으로 변경
     cachedRootDescriptorHeaps.SetCount(0);
     cachedGraphicsRootSignature = nullptr;
@@ -96,7 +94,7 @@ BE_INLINE void D3D12CommandList::ResourceBarrier(ID3D12Resource *resource, D3D12
     graphicsCommandList->ResourceBarrier(1, &barrier);
 }
 
-#ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
 BE_INLINE bool D3D12CommandList::IsSameDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]) {
     if (numDescriptorHeaps != cachedRootDescriptorHeaps.Count()) {
         return false;
@@ -111,7 +109,7 @@ BE_INLINE bool D3D12CommandList::IsSameDescriptorHeaps(int numDescriptorHeaps, I
 #endif
 
 BE_INLINE void D3D12CommandList::SetDescriptorHeaps(int numDescriptorHeaps, ID3D12DescriptorHeap *descriptorHeaps[]) {
-#ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     if (IsSameDescriptorHeaps(numDescriptorHeaps, descriptorHeaps)) {
         return;
     }
@@ -124,7 +122,7 @@ BE_INLINE void D3D12CommandList::SetDescriptorHeaps(int numDescriptorHeaps, ID3D
 }
 
 BE_INLINE void D3D12CommandList::SetGraphicsRootSignature(ID3D12RootSignature *graphicsRootSignature) {
-#ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     if (graphicsRootSignature == cachedGraphicsRootSignature) {
         return;
     }
@@ -134,7 +132,7 @@ BE_INLINE void D3D12CommandList::SetGraphicsRootSignature(ID3D12RootSignature *g
 }
 
 BE_INLINE void D3D12CommandList::SetPipelineState(ID3D12PipelineState *piplelineState) {
-#ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     if (piplelineState == cachedPipelineState) {
         return;
     }
@@ -144,7 +142,7 @@ BE_INLINE void D3D12CommandList::SetPipelineState(ID3D12PipelineState *pipleline
 }
 
 BE_INLINE void D3D12CommandList::SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY primitiveTopology) {
-#ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     if (primitiveTopology == cachedPrimitiveTopology) {
         return;
     }
@@ -154,7 +152,7 @@ BE_INLINE void D3D12CommandList::SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY p
 }
 
 BE_INLINE void D3D12CommandList::SetVertexBuffers(UINT startSlot, UINT numViews, const D3D12_VERTEX_BUFFER_VIEW *vertexBufferViews) {
-#ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     bool needsUpdate = false;
     for (int i = 0; i < numViews; ++i) {
         int slot = startSlot + i;
@@ -174,7 +172,7 @@ BE_INLINE void D3D12CommandList::SetVertexBuffers(UINT startSlot, UINT numViews,
 }
 
 BE_INLINE void D3D12CommandList::SetIndexBuffer(const D3D12_INDEX_BUFFER_VIEW *indexBufferView) {
-#ifdef ENABLE_STATE_CACHE_FOR_COMMAND_LIST
+#ifdef USE_STATE_CACHE_FOR_COMMAND_LIST
     if (!(cachedIndexBufferView.BufferLocation != indexBufferView->BufferLocation ||
         cachedIndexBufferView.SizeInBytes != indexBufferView->SizeInBytes ||
         cachedIndexBufferView.Format != indexBufferView->Format)) {
