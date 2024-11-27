@@ -41,7 +41,7 @@ UINT D3D12Buffer::GetSize() {
 #endif
 }
 
-D3D12Buffer* D3D12Buffer::CreateBuffer(D3D12Buffer::Usage::Enum usage, int size) {
+D3D12Buffer* D3D12Buffer::CreateBuffer(D3D12Buffer::Usage usage, int size) {
     D3D12_HEAP_TYPE heapType;
     D3D12_RESOURCE_STATES initialState;
 

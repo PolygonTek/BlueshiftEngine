@@ -18,20 +18,18 @@
 
 class D3D12DescriptorPool {
 public:
-    struct Type {
-        enum Enum {
-            SRV,
-            RTV,
-            DSV,
-            Sampler
-        };
+    enum class Type : byte {
+        SRV,
+        RTV,
+        DSV,
+        Sampler
     };
 
     D3D12DescriptorPool() = default;
-    D3D12DescriptorPool(Type::Enum type, UINT maxCount, bool isShaderVisible) { Init(type, maxCount, isShaderVisible); }
+    D3D12DescriptorPool(Type type, UINT maxCount, bool isShaderVisible) { Init(type, maxCount, isShaderVisible); }
     ~D3D12DescriptorPool() { Shutdown(); }
 
-    void                            Init(Type::Enum type, UINT maxCount, bool isShaderVisible);
+    void                            Init(Type type, UINT maxCount, bool isShaderVisible);
     void                            Shutdown();
 
     void                            Clear();

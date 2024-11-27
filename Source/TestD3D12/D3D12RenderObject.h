@@ -17,18 +17,16 @@
 class D3D12CommandList;
 class D3D12Mesh;
 
-struct D3D12MeshType {
-    enum Enum {
-        None,
-        TriangleMesh,
-        CubeMesh
-    };
+enum class D3D12MeshType : byte {
+    None,
+    TriangleMesh,
+    CubeMesh
 };
 
 class D3D12RenderObject {
 public:
     struct State {
-        D3D12MeshType::Enum meshType;
+        D3D12MeshType       meshType;
         D3D12Mesh*          mesh = nullptr;
         Mat3x4              worldMatrix;
         Vec2                offset;

@@ -22,12 +22,10 @@
 
 class D3D12Buffer {
 public:
-    struct Usage {
-        enum Enum {
-            Default = 0,
-            Upload = 1,
-            Readback = 2
-        };
+    enum class Usage : byte {
+        Default = 0,
+        Upload = 1,
+        Readback = 2
     };
 
     ~D3D12Buffer() { Release(); }
@@ -37,7 +35,7 @@ public:
     ID3D12Resource *                GetResource();
     UINT                            GetSize();
 
-    static D3D12Buffer *            CreateBuffer(Usage::Enum usage, int size);
+    static D3D12Buffer *            CreateBuffer(Usage usage, int size);
 
 #ifdef USE_D3D12_MEMALLOC
     D3D12MA::Allocation *           bufferAllocation = nullptr;

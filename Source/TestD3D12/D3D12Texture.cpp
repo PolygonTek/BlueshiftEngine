@@ -303,7 +303,7 @@ bool D3D12Texture::SetTextureSubImage3D(UINT level, UINT x, UINT y, UINT z, UINT
     return true;
 }
 
-D3D12Texture *D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, const char *filename, bool useCompression, bool useNormalMap) {
+D3D12Texture *D3D12Texture::CreateTexture(D3D12Texture::Type textureType, const char *filename, bool useCompression, bool useNormalMap) {
     Image *image = Image::NewImageFromFile(filename);
     if (!image) {
         return nullptr;
@@ -318,7 +318,7 @@ D3D12Texture *D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
     return texture;
 }
 
-D3D12Texture *D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps) {
+D3D12Texture *D3D12Texture::CreateTexture(D3D12Texture::Type textureType, const Image *srcImage, Image::Format::Enum dstFormat, bool useMipmaps) {
     Image::Format::Enum srcFormat = srcImage->GetFormat();
 
     bool srcCompressed = Image::IsCompressed(srcFormat);
@@ -374,7 +374,7 @@ D3D12Texture *D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, 
     return CreateTexture(textureType, srcImage);
 }
 
-D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type::Enum textureType, const Image* srcImage) {
+D3D12Texture* D3D12Texture::CreateTexture(D3D12Texture::Type textureType, const Image* srcImage) {
     Image::Format::Enum srcFormat = srcImage->GetFormat();
     bool isLinearSpace = srcImage->GetGammaSpace() == Image::GammaSpace::Linear;
 

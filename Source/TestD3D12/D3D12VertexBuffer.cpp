@@ -22,7 +22,7 @@ void D3D12VertexBuffer::Release() {
     SAFE_DELETE(buffer);
 }
 
-D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type::Enum type, int vertexSize, int numVerts, void *data) {
+D3D12VertexBuffer* D3D12VertexBuffer::CreateVertexBuffer(D3D12VertexBuffer::Type type, int vertexSize, int numVerts, void *data) {
     UINT bufferSize = vertexSize * numVerts;
     D3D12Buffer *buffer = nullptr;
 

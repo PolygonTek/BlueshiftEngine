@@ -16,7 +16,7 @@
 #include "D3D12Renderer.h"
 #include "D3D12DescriptorPool.h"
 
-void D3D12DescriptorPool::Init(D3D12DescriptorPool::Type::Enum type, UINT maxDescriptorCount, bool isShaderVisible) {
+void D3D12DescriptorPool::Init(D3D12DescriptorPool::Type type, UINT maxDescriptorCount, bool isShaderVisible) {
     this->maxDescriptorCount = maxDescriptorCount;
 
     D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType;

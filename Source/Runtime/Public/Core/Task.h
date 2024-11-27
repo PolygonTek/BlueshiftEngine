@@ -68,18 +68,18 @@ public:
 private:
     Task                    GetTaskInternal();
 
-    Array<Task>             taskRingBuffer;     ///< Ring buffer of task list.
+    Array<Task>             taskRingBuffer;             ///< Ring buffer of task list.
     int                     headTaskIndex = 0;
     int                     tailTaskIndex = 0;
 
-    int                     numActiveTasks = 0; ///< Number of tasks in active state.
+    int                     numActiveTasks = 0;         ///< Number of tasks in active state.
     bool                    stopping = false;
 
     Array<PlatformThread *> threads;
 
-    PlatformMutex *         taskMutex;          ///< Mutex for accessing task list and execution.
-    PlatformCondition *     taskCondition;      ///< Condition variable for task execution.
-    PlatformCondition *     finishCondition;    ///< Condition variable for finishing task list.
+    PlatformMutex *         taskMutex = nullptr;        ///< Mutex for accessing task list and execution.
+    PlatformCondition *     taskCondition = nullptr;    ///< Condition variable for task execution.
+    PlatformCondition *     finishCondition = nullptr;  ///< Condition variable for finishing task list.
 
     friend unsigned int     TaskThreadProc(void *param);
 };

@@ -24,18 +24,16 @@ class D3D12Buffer;
 
 class D3D12VertexBuffer {
 public:
-    struct Type {
-        enum Enum {
-            Static = 0,
-            Dynamic = 1
-        };
+    enum class Type : byte {
+        Static = 0,
+        Dynamic = 1
     };
 
     ~D3D12VertexBuffer() { Release(); }
 
     void                            Release();
 
-    static D3D12VertexBuffer *      CreateVertexBuffer(D3D12VertexBuffer::Type::Enum type, int vertexSize, int numVerts, void *data);
+    static D3D12VertexBuffer *      CreateVertexBuffer(D3D12VertexBuffer::Type type, int vertexSize, int numVerts, void *data);
 
     D3D12Buffer *                   buffer = nullptr;
     D3D12_VERTEX_BUFFER_VIEW        vbv;

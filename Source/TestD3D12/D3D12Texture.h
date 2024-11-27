@@ -22,15 +22,13 @@
 
 class D3D12Texture {
 public:
-    struct Type {
-        enum Enum {
-            Texture2D,
-            Texture2DArray,
-            Texture3D,
-            TextureCube,
-            TextureCubeArray,
-            TextureBuffer
-        };
+    enum class Type : byte {
+        Texture2D,
+        Texture2DArray,
+        Texture3D,
+        TextureCube,
+        TextureCubeArray,
+        TextureBuffer
     };
 
     ~D3D12Texture() { Release(); }
@@ -42,9 +40,9 @@ public:
     bool                            SetTextureSubImage2D(UINT level, UINT x, UINT y, UINT width, UINT height, Image::Format::Enum imageFormat, const void* pixels);
     bool                            SetTextureSubImage3D(UINT level, UINT x, UINT y, UINT z, UINT width, UINT height, UINT depth, Image::Format::Enum imageFormat, const void* pixels);
 
-    static D3D12Texture *           CreateTexture(D3D12Texture::Type::Enum textureType, const char* filename, bool useCompression = true, bool useNormalMap = false);
-    static D3D12Texture *           CreateTexture(D3D12Texture::Type::Enum textureType, const Image* image, Image::Format::Enum dstFormat, bool useMipmaps);
-    static D3D12Texture *           CreateTexture(D3D12Texture::Type::Enum textureType, const Image* image);
+    static D3D12Texture *           CreateTexture(D3D12Texture::Type textureType, const char* filename, bool useCompression = true, bool useNormalMap = false);
+    static D3D12Texture *           CreateTexture(D3D12Texture::Type textureType, const Image* image, Image::Format::Enum dstFormat, bool useMipmaps);
+    static D3D12Texture *           CreateTexture(D3D12Texture::Type textureType, const Image* image);
 
     static bool                     ImageFormatToDXGIFormat(Image::Format::Enum imageFormat, bool isSRGB, DXGI_FORMAT* dxgiFormat);
     static bool                     DXGIFormatToImageFormat(DXGI_FORMAT dxgiFormat, Image::Format::Enum* imageFormat, bool *isSRGB);

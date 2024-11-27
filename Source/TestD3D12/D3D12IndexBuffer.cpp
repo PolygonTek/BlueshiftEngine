@@ -22,7 +22,7 @@ void D3D12IndexBuffer::Release() {
     SAFE_DELETE(buffer);
 }
 
-D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type::Enum type, int indexSize, int numIndexes, void *data) {
+D3D12IndexBuffer *D3D12IndexBuffer::CreateIndexBuffer(D3D12IndexBuffer::Type type, int indexSize, int numIndexes, void *data) {
     assert(indexSize == 2 || indexSize == 4);
 
     UINT bufferSize = indexSize * numIndexes;
