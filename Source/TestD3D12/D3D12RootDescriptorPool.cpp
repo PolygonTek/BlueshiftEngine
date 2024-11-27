@@ -24,6 +24,7 @@ void D3D12RootDescriptorPool::Init(UINT maxDescriptorCount) {
 
     descriptorHandleSize = renderer.device->GetDescriptorHandleIncrementSize(descriptorHeapType);
 
+    // 미리 크게 할당해 놓고, 순차적으로 사용할 예정
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
     descriptorHeapDesc.NumDescriptors = maxDescriptorCount;
     descriptorHeapDesc.Type = descriptorHeapType;
@@ -43,7 +44,7 @@ void D3D12RootDescriptorPool::Reset() {
 }
 
 // 중간에 디스크립터를 반납할 일이 없으므로 IDAllocator 를 안쓰고, 통으로 사용한다.
-// 한프레임이 끝나면 풀에 있는 전체 디스크립터 핸들을 지운다.
+// 한 프레임이 끝나면 풀에 있는 전체 디스크립터 핸들을 지운다.
 bool D3D12RootDescriptorPool::AllocRange(UINT count, D3D12_CPU_DESCRIPTOR_HANDLE *outCpuDescriptorHandle, D3D12_GPU_DESCRIPTOR_HANDLE *outGpuDescriptorHandle) {
     if (usedCount + count > maxDescriptorCount) {
         BE_WARNLOG("D3D12DescriptorPool::AllocDescriptors: exceeds max descriptor count\n");

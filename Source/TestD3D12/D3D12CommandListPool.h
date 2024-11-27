@@ -46,8 +46,6 @@ public:
     ID3D12RootSignature *           cachedGraphicsRootSignature = nullptr;
     ID3D12PipelineState *           cachedPipelineState = nullptr;
     D3D12_PRIMITIVE_TOPOLOGY        cachedPrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-    UINT                            cachedVertexBufferStartSlot = -1;
-    UINT                            cachedVertexBufferNumViews = -1;
     D3D12_VERTEX_BUFFER_VIEW        cachedVertexBufferViews[D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = {};
     D3D12_INDEX_BUFFER_VIEW         cachedIndexBufferView = {};
 #endif

@@ -97,29 +97,27 @@ void D3D12CubeMesh::FreeMesh() {
 void D3D12CubeMesh::InitRootSignature() {
     // 디스크립터 레인지로 루트 디스크립터 테이블을 정의한다.
     // 디스크립터 레인지는 같은 타입의 디스크립터 여러개를 순차적으로 나타낸다.
+    // 디스크립터 테이블 하나는 여러개의 디스크립터 레인지로 구성된다.
     D3D12_DESCRIPTOR_RANGE descriptorRanges[2] = {};
 
-    // texture
+    // SRV (texture) 디스크립터
     descriptorRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
     descriptorRanges[0].NumDescriptors = 1;
     descriptorRanges[0].BaseShaderRegister = 0; // t0 부터 시작
     descriptorRanges[0].RegisterSpace = 0;
     descriptorRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-    // constant buffer
+    // CBV 디스크립터
     descriptorRanges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
     descriptorRanges[1].NumDescriptors = 1;
     descriptorRanges[1].BaseShaderRegister = 0; // b0 부터 시작
     descriptorRanges[1].RegisterSpace = 0;
-    // NOTE: D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND 를 주면 Root Signature 를 만들 때,
-    // rootParameters[1].DescriptorTable.pDescriptorRanges 의 순서대로 Descriptor Table 의 참조 정보가 만들어진다.
     descriptorRanges[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
     // Root Parameter 하나 당 Descriptor Table 하나를 참조하게 된다.
     D3D12_ROOT_PARAMETER rootParameters[1] = {};
     rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-    // Descriptor Table 하나는 여러개의 Descriptor Range 로 구성된다.
     rootParameters[0].DescriptorTable.NumDescriptorRanges = COUNT_OF(descriptorRanges);
     rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRanges;
 
@@ -266,18 +264,18 @@ void D3D12CubeMesh::DrawMesh(int threadIndex, int drawIndex, D3D12CommandList* c
     constantPtr->worldMatrix = worldMatrix;
     constantPtr->viewProjMatrix = app.viewProjMatrix;
 
-    // 루트 디스크립터 테이블을 할당한다. 여기서 디스크립터 테이블은 연속된 디스크립터 핸들을 말한다.
+    // 2개의 디스크립터를 갖는 루트 디스크립터 테이블을 할당한다. 여기서 디스크립터 테이블은 연속된 디스크립터 핸들을 말한다.
     D3D12_CPU_DESCRIPTOR_HANDLE cpuRootDescriptorHandle;
     D3D12_GPU_DESCRIPTOR_HANDLE gpuRootDescriptorHandle;
     if (!rootDescriptorPool->AllocRange(2, &cpuRootDescriptorHandle, &gpuRootDescriptorHandle)) {
         return;
     }
 
-    // 루트 디스크립터 테이블에 SRV 디스크립터 카피 - 0
+    // 루트 디스크립터 테이블에 SRV 디스크립터 카피 - 0번
     CD3DX12_CPU_DESCRIPTOR_HANDLE srvDest(cpuRootDescriptorHandle, 0, rootDescriptorPool->descriptorHandleSize);
     renderer.device->CopyDescriptorsSimple(1, srvDest, texture->descriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    // 루트 디스크립터 테이블에 CBV 디스크립터 카피 - 1
+    // 루트 디스크립터 테이블에 CBV 디스크립터 카피 - 1번
     CD3DX12_CPU_DESCRIPTOR_HANDLE cbvDest(cpuRootDescriptorHandle, 1, rootDescriptorPool->descriptorHandleSize);
     renderer.device->CopyDescriptorsSimple(1, cbvDest, cbvDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
@@ -288,10 +286,10 @@ void D3D12CubeMesh::DrawMesh(int threadIndex, int drawIndex, D3D12CommandList* c
     // 루트 시그니쳐를 세팅한다.
     commandList->SetGraphicsRootSignature(rootSignature);
 
-    // 루트 디스크립터 테이블을 세팅한다.
+    // 위에서 할당한 루트 디스크립터 테이블을 세팅한다.
     commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(0, gpuRootDescriptorHandle);
 
-    //gpuRootDescriptorHandle.Offset(1, currentRootDescriptorPool->descriptorHandleSize);
+    //gpuRootDescriptorHandle.Offset(1, rootDescriptorPool->descriptorHandleSize * 2);
     //commandList->graphicsCommandList->SetGraphicsRootDescriptorTable(1, gpuRootDescriptorHandle);
 
     commandList->SetVertexBuffers(0, 1, &vertexBuffer->vbv);
