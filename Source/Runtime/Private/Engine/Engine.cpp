@@ -18,9 +18,10 @@
 
 BE_NAMESPACE_BEGIN
 
-CmdArgs     Engine::args;
-Str         Engine::baseDir;
-Str         Engine::searchPath;
+CmdArgs             Engine::args;
+Str                 Engine::baseDir;
+Str                 Engine::searchPath;
+thread_local bool   Engine::isMainThread = false;
 
 static streamOutFunc_t logFuncPtr = nullptr;
 static streamOutFunc_t errFuncPtr = nullptr;

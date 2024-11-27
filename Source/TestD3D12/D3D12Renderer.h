@@ -86,7 +86,7 @@ public:
     void                                DrawRenderObjects();
     void                                DrawRenderObjectsByTask(D3D12Renderer::RenderObjectTaskDesc *taskDesc);
 
-    static constexpr UINT               NumSwapChainBuffers = 2;
+    static constexpr UINT               NumSwapChainBuffers = 3;
     static constexpr UINT               MaxRenderObjectsPerTask = 400;
 
     ID3D12Device5 *                     device = nullptr;

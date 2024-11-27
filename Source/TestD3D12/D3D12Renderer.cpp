@@ -317,7 +317,7 @@ void D3D12Renderer::CreateDSV(int width, int height) {
     depthStencilBufferDesc.SampleDesc.Count = 1;
     depthStencilBufferDesc.SampleDesc.Quality = 0;
     depthStencilBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-    depthStencilBufferDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+    depthStencilBufferDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
 
     D3D12_HEAP_PROPERTIES heapProperties;
     heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
@@ -559,6 +559,8 @@ void D3D12Renderer::PrintMemoryAllocatorStats() {
 #endif
 
 int D3D12Renderer::AddRenderObject(const D3D12RenderObject::State &def) {
+    assert(Engine::IsInMainThread());
+
     int index = renderObjects.FindNull();
     if (index == -1) {
         index = renderObjects.Append(nullptr);
@@ -569,6 +571,8 @@ int D3D12Renderer::AddRenderObject(const D3D12RenderObject::State &def) {
 }
 
 void D3D12Renderer::UpdateRenderObject(int index, const D3D12RenderObject::State &def) {
+    assert(Engine::IsInMainThread());
+
     while (index >= renderObjects.Count()) {
         renderObjects.Append(nullptr);
     }
@@ -584,6 +588,8 @@ void D3D12Renderer::UpdateRenderObject(int index, const D3D12RenderObject::State
 }
 
 void D3D12Renderer::RemoveRenderObject(int index) {
+    assert(Engine::IsInMainThread());
+
     if (!renderObjects.IsValidIndex(index)) {
         BE_WARNLOG("D3D12Renderer::RemoveRenderObject: invalid index %i\n", index);
         return;
@@ -596,7 +602,8 @@ void D3D12Renderer::RemoveRenderObject(int index) {
     }
 
 #ifdef USE_RENDER_THREAD
-    // TODO: 렌더 스레드에서 읽는 중일 수 있으므로, 지연시켜서 delete 해야 한다.
+    // 렌더 스레드에서 읽는 중 (FlushRenderObjects() 호출로 포인터가 복사된 상태) 일 수 있으므로, 렌더링이 완료될 때까지 delete 를 지연시켜야 한다.
+    WaitRenderCompleted();
 #endif
 
     delete renderObjects[index];
@@ -604,6 +611,8 @@ void D3D12Renderer::RemoveRenderObject(int index) {
 }
 
 void D3D12Renderer::FlushRenderObjects() {
+    assert(Engine::IsInMainThread());
+
 #ifdef USE_RENDER_THREAD
     WaitRenderCompleted();
 
@@ -671,6 +680,8 @@ static void RenderObjectsByTask(void *data) {
 }
 
 void D3D12Renderer::DrawRenderObjects() {
+    assert(Engine::IsInMainThread());
+
 #ifdef USE_RENDER_THREAD
     Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex];
 #else

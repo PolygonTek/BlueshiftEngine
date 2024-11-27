@@ -153,6 +153,7 @@ static HWND CreateMainWindow(const TCHAR* title, int width, int height) {
 }
 
 static BOOL InitInstance(int nCmdShow) {
+    Engine::isMainThread = true;
     Str basePath = PlatformFile::ExecutablePath();
     basePath.AppendPath("../../..");
     basePath.CleanPath();
