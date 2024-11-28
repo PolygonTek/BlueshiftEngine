@@ -39,5 +39,5 @@ static constexpr int            NumFrameResources = 1;
 // 렌더링할 때 쓰이는 최대 태스크 개수
 static constexpr int            MaxRenderTasks = 64;
 // 렌더링 태스크 매니져에서 사용할 최대 스레드 개수 (실제 코드는 물리 코어 개수 이하로 사용한다)
-static constexpr int            MaxRenderTaskThreads = 20;
+static constexpr int            MaxRenderTaskThreads = 16;
 #endif

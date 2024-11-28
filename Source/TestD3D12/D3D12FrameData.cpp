@@ -55,9 +55,7 @@ void D3D12FrameData::Shutdown() {
     for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
         DataPerThread *data = &threadData[threadIndex];
 
-        for (int i = 0; i < data->cbvDescriptorHandles.Count(); ++i) {
-            data->cbvDescriptorPool->Free(data->cbvDescriptorHandles[i]);
-        }
+        data->cbvDescriptorPool->Clear();
         data->cbvDescriptorHandles.SetCount(0, false);
 
         SAFE_DELETE(data->constantBuffer);
@@ -73,9 +71,7 @@ void D3D12FrameData::BeginFrame() {
         DataPerThread *data = &threadData[threadIndex];
 
         // 이번에 프레임에 사용할 상수 버퍼 디스크립터들을 초기화
-        for (int i = 0; i < data->cbvDescriptorHandles.Count(); ++i) {
-            data->cbvDescriptorPool->Free(data->cbvDescriptorHandles[i]);
-        }
+        data->cbvDescriptorPool->Clear();
         data->cbvDescriptorHandles.SetCount(0, false);
 
         // 루트 디스크립터 풀을 비운다.

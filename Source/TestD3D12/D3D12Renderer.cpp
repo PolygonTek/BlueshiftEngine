@@ -707,12 +707,12 @@ void D3D12Renderer::DrawRenderObjects() {
         currentThreadDesc.threadIndex = threadIndex++;
         currentThreadDesc.renderObjectStartIndex = lastEndIndex + 1;
         currentThreadDesc.renderObjectEndIndex = Min(currentThreadDesc.renderObjectStartIndex + numRenderObjectsPerTasks, numRenderObjects) - 1;
-        renderer.taskManager.AddTask(RenderObjectsByTask, &currentThreadDesc);
+        renderer.taskManager.AddTask(RenderObjectsByTask, &currentThreadDesc, false);
 
         lastEndIndex = currentThreadDesc.renderObjectEndIndex;
     }
 
-    renderer.taskManager.WaitFinish();
+    renderer.taskManager.WaitFinish(true);
 
     // 태스크 별로 execute 할 CommandList 들을 모두 모은다.
     int renderTaskCount = renderer.renderObjectTaskDescs.Count();

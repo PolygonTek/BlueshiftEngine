@@ -58,7 +58,7 @@ void TaskManager::Start(int numThreads, bool useAffinity) {
     threads.Reserve(numThreads);
 
     for (int i = 0; i < numThreads; i++) {
-        uint64_t affinityMask = useAffinity ? 1ULL << (i % numLogicalProcessors) : 0xFFFFFFFFFFFFFFFF;
+        uint64_t affinityMask = useAffinity ? (1ULL << (i % numLogicalProcessors)) : 0xFFFFFFFFFFFFFFFF;
 
         threads.Append(PlatformThread::Start(TaskThreadProc, (void *)this, 0, ThreadPriority::Normal, affinityMask));
     }
@@ -85,7 +85,7 @@ void TaskManager::Stop() {
     stopping = false;
 }
 
-bool TaskManager::AddTask(TaskFunc taskFunction, void *data) {
+bool TaskManager::AddTask(TaskFunc taskFunction, void *data, bool withWake) {
     // Lock to add the task.
     ScopeLock scopeLock(taskMutex);
 
@@ -99,12 +99,15 @@ bool TaskManager::AddTask(TaskFunc taskFunction, void *data) {
     tailTaskIndex = nextTaskIndex;
 
     ++numActiveTasks;
-    PlatformCondition::Signal(taskCondition);
+
+    if (withWake) {
+        PlatformCondition::Signal(taskCondition);
+    }
 
     return true;
 }
 
-void TaskManager::WaitFinish() {
+void TaskManager::WaitFinish(bool withWake) {
     ScopeLock scopeLock(taskMutex);
 
     // Check if all tasks are already finished
@@ -112,11 +115,17 @@ void TaskManager::WaitFinish() {
         return; // No tasks to wait for, return immediately
     }
 
-    PlatformCondition::Wait(finishCondition, taskMutex, [this]{ return IsTaskEmpty() && numActiveTasks <= 0; });
+    if (withWake) {
+        PlatformCondition::Broadcast(taskCondition);
+    }
+
+    PlatformCondition::Wait(finishCondition, taskMutex, [this] {
+        return IsTaskEmpty() && numActiveTasks <= 0;
+    });
 }
 
 // Return false if a timeout occurs.
-bool TaskManager::TimedWaitFinish(int ms) {
+bool TaskManager::TimedWaitFinish(int ms, bool withWake) {
     ScopeLock scopeLock(taskMutex);
 
     // Check if all tasks are already finished
@@ -124,7 +133,13 @@ bool TaskManager::TimedWaitFinish(int ms) {
         return true; // No tasks to wait for, return immediately
     }
 
-    return PlatformCondition::TimedWait(finishCondition, taskMutex, ms, [this]{ return IsTaskEmpty() && numActiveTasks <= 0; });
+    if (withWake) {
+        PlatformCondition::Broadcast(taskCondition);
+    }
+
+    return PlatformCondition::TimedWait(finishCondition, taskMutex, ms, [this] {
+        return IsTaskEmpty() && numActiveTasks <= 0;
+    });
 }
 
 Task TaskManager::GetTaskInternal() {
@@ -148,7 +163,9 @@ unsigned int TaskThreadProc(void *param) {
             ScopeLock scopeLock(taskManager->taskMutex);
 
             // Wait for task condition variable.
-            PlatformCondition::Wait(taskManager->taskCondition, taskManager->taskMutex, [taskManager]{ return !taskManager->IsTaskEmpty() || taskManager->stopping; });
+            PlatformCondition::Wait(taskManager->taskCondition, taskManager->taskMutex, [taskManager] {
+                return !taskManager->IsTaskEmpty() || taskManager->stopping;
+            });
 
             if (taskManager->stopping) {
                 // Exit loop when stopping condition is met.

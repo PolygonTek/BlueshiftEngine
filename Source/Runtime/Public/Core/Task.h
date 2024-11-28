@@ -52,18 +52,18 @@ public:
     void                    Stop();
 
                             /// Adds a task with the given task function, and the task will be started immediately.
-    bool                    AddTask(TaskFunc function, void *data);
+    bool                    AddTask(TaskFunc function, void *data, bool withWake = true);
 
                             /// Adds a task with a lambda function.
     template <typename Lambda>
-    bool                    AddTask(Lambda &&lambda);
+    bool                    AddTask(Lambda &&lambda, bool withWake = true);
     
                             /// Waits until finishing all tasks.
-    void                    WaitFinish();
+    void                    WaitFinish(bool withWake = false);
 
                             /// Waits given time (milliseconds) for finishing all tasks.
                             /// Returns true if it finished in given time.
-    bool                    TimedWaitFinish(int msec);
+    bool                    TimedWaitFinish(int msec, bool withWake = false);
 
 private:
     Task                    GetTaskInternal();
@@ -85,7 +85,7 @@ private:
 };
 
 template <typename Lambda>
-bool BE1::TaskManager::AddTask(Lambda &&lambda) {
+bool BE1::TaskManager::AddTask(Lambda &&lambda, bool withWake) {
     struct LambdaWrapper {
         static void Call(void *data) {
             Lambda* lambda = reinterpret_cast<Lambda *>(data);
@@ -99,7 +99,7 @@ bool BE1::TaskManager::AddTask(Lambda &&lambda) {
     std::unique_ptr<Lambda> lambdaPtr(new Lambda(std::forward<Lambda>(lambda)));
     void *data = lambdaPtr.get();
 
-    if (!AddTask(&LambdaWrapper::Call, data)) {
+    if (!AddTask(&LambdaWrapper::Call, data, withWake)) {
         return false;
     }
 
