@@ -680,8 +680,6 @@ static void RenderObjectsByTask(void *data) {
 }
 
 void D3D12Renderer::DrawRenderObjects() {
-    assert(Engine::IsInMainThread());
-
 #ifdef USE_RENDER_THREAD
     Array<D3D12RenderObject *> &currentFlushedRenderObjects = flushedRenderObjects[renderFrameIndex];
 #else
