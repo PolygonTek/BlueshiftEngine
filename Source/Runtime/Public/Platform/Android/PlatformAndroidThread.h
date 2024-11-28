@@ -42,7 +42,7 @@ class BE_API PlatformAndroidMutex : public PlatformBaseMutex {
     friend class PlatformAndroidCondition;
     
 public:
-    static PlatformAndroidMutex *Create();
+    static PlatformAndroidMutex *Create(int spinCount = 4000);
     static void                 Destroy(PlatformAndroidMutex *mutex);
     
     static void                 Lock(PlatformAndroidMutex *mutex);
@@ -51,6 +51,7 @@ public:
 
 private:
     pthread_mutex_t             mutex;
+    int                         spinCount = 0;
 };
 
 class BE_API PlatformAndroidSRWLock : public PlatformBaseSRWLock {

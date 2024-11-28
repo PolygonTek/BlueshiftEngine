@@ -43,7 +43,7 @@ class BE_API PlatformPosixMutex : public PlatformBaseMutex {
     friend class PlatformPosixCondition;
     
 public:
-    static PlatformPosixMutex * Create();
+    static PlatformPosixMutex * Create(int spinCount == 4000);
     static void                 Destroy(PlatformPosixMutex *mutex);
     
     static void                 Lock(PlatformPosixMutex *mutex);
@@ -52,6 +52,7 @@ public:
 
 private:
     pthread_mutex_t             mutex;
+    int                         spinCount = 0;
 };
 
 class BE_API PlatformPosixSRWLock : public PlatformBaseSRWLock {

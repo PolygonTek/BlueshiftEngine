@@ -153,12 +153,13 @@ void PlatformAndroidThread::JoinAll(int numThreads, PlatformAndroidThread *andro
     } 
 }
 
-PlatformAndroidMutex *PlatformAndroidMutex::Create() {
+PlatformAndroidMutex *PlatformAndroidMutex::Create(int spinCount) {
     PlatformAndroidMutex *androidMutex = new PlatformAndroidMutex;
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     pthread_mutex_init(&androidMutex->mutex, &attr);
+    this->spintCount = spinCount;
     return androidMutex;
 }
 
@@ -169,6 +170,12 @@ void PlatformAndroidMutex::Destroy(PlatformAndroidMutex *androidMutex) {
 }
 
 void PlatformAndroidMutex::Lock(PlatformAndroidMutex *androidMutex) {
+    for (int i = 0; i < spinCount; ++i) {
+        if (pthread_mutex_trylock(&androidMutex->mutex) == 0) {
+            return;
+        }
+        std::this_thread::yield();
+    }
     pthread_mutex_lock(&androidMutex->mutex);
 }
 

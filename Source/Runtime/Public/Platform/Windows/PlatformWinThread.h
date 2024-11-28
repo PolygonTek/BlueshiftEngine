@@ -41,7 +41,7 @@ class BE_API PlatformWinMutex : public PlatformBaseMutex {
     friend class PlatformWinCondition;
 
 public:
-    static PlatformWinMutex *   Create();
+    static PlatformWinMutex *   Create(int spinCount = 4000);
     static void                 Destroy(PlatformWinMutex *mutex);
 
     static void                 Lock(PlatformWinMutex *mutex);

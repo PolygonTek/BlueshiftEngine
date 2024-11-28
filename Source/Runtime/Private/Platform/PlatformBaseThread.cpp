@@ -57,7 +57,7 @@ void PlatformBaseThread::JoinAll(int numThreads, PlatformBaseThread *threads[]) 
     BE_FATALERROR("PlatformThread::JoinAll not implmeneted on this platform");
 }
 
-PlatformBaseMutex *PlatformBaseMutex::Create() {
+PlatformBaseMutex *PlatformBaseMutex::Create(int spinCount) {
     BE_FATALERROR("PlatformMutex::Create not implmeneted on this platform");
     return nullptr;
 }

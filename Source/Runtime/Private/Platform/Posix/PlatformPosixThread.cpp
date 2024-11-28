@@ -168,12 +168,13 @@ void PlatformPosixThread::JoinAll(int numThreads, PlatformPosixThread *posixThre
     } 
 }
 
-PlatformPosixMutex *PlatformPosixMutex::Create() {
+PlatformPosixMutex *PlatformPosixMutex::Create(int spinCount) {
     PlatformPosixMutex *posixMutex = new PlatformPosixMutex;
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     pthread_mutex_init(&posixMutex->mutex, &attr);
+    this->spinCount = spinCount;
     return posixMutex;
 }
 
@@ -184,6 +185,16 @@ void PlatformPosixMutex::Destroy(PlatformPosixMutex *posixMutex) {
 }
 
 void PlatformPosixMutex::Lock(PlatformPosixMutex *posixMutex) {
+    pthread_mutex_lock(&posixMutex->mutex);
+}
+
+void PlatformPosixMutex::Lock(PlatformPosixMutex *posixMutex) {
+    for (int i = 0; i < spinCount; ++i) {
+        if (pthread_mutex_trylock(&posixMutex->mutex) == 0) {
+            return;
+        }
+        std::this_thread::yield();
+    }
     pthread_mutex_lock(&posixMutex->mutex);
 }
 

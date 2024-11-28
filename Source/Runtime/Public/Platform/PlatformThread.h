@@ -50,7 +50,7 @@ public:
 
 class BE_API PlatformBaseMutex {
 public:
-    static PlatformBaseMutex *  Create();
+    static PlatformBaseMutex *  Create(int spinCount = 4000);
     static void                 Destroy(PlatformBaseMutex *mutex);
 
     static void                 Lock(PlatformBaseMutex *mutex);
