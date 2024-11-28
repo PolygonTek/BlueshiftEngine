@@ -81,6 +81,10 @@ public:
     static void                 Wait(PlatformBaseCondition *condition, PlatformBaseMutex *mutex);
     static bool                 TimedWait(PlatformBaseCondition *condition, PlatformBaseMutex *mutex, int ms);
 
+                                /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
+    static void                 Wait(PlatformBaseCondition *condition, PlatformBaseSRWLock *lock, bool isWriteLock);
+    static bool                 TimedWait(PlatformBaseCondition *condition, PlatformBaseSRWLock *lock, bool isWriteLock, int ms);
+
                                 /// If any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
     static void                 Signal(PlatformBaseCondition *condition);
 

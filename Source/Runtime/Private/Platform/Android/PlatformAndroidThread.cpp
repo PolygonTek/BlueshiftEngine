@@ -273,7 +273,7 @@ bool PlatformAndroidCondition::TimedWait(PlatformAndroidCondition *androidCondit
     return true;
 }
 
-bool PlatformAndroidCondition::TimedWait(PlatformAndroidCondition *androidCondition, PlatformAndroidSRWLock *androidLock, int ms) {
+bool PlatformAndroidCondition::TimedWait(PlatformAndroidCondition *androidCondition, PlatformAndroidSRWLock *androidLock, bool isWriteLock, int ms) {
     timespec ts;
     MillisecondsFromNow(&ts, ms);
 
@@ -284,7 +284,7 @@ bool PlatformAndroidCondition::TimedWait(PlatformAndroidCondition *androidCondit
     return true;
 }
 
-void PlatformAndroidCondition::Wait(PlatformAndroidCondition *androidCondition, PlatformAndroidSRWLock *androidLock) {
+void PlatformAndroidCondition::Wait(PlatformAndroidCondition *androidCondition, PlatformAndroidSRWLock *androidLock, bool isWriteLock) {
     pthread_cond_wait(&androidCondition->cond, &androidLock->mutex);
 }
 

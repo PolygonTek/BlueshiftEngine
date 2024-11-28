@@ -143,7 +143,7 @@ public:
     void                                ShutdownRenderThread();
     void                                WaitRenderCompleted();
 
-    PlatformMutex *                     smpMutex = nullptr;
+    PlatformSRWLock *                   smpLock = nullptr;
     PlatformCondition *                 renderCompletedCondition = nullptr;
     PlatformCondition *                 updateCompletedCondition = nullptr;
     PlatformThread *                    renderThread = nullptr;

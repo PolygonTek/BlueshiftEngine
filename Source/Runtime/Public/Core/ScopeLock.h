@@ -34,4 +34,36 @@ private:
     PlatformMutex *mutex;
 };
 
+class ScopeReadLock {
+public:
+    ScopeReadLock(PlatformSRWLock *lock) : readLock(lock) {
+        PlatformSRWLock::AquireReadLock(readLock);
+    }
+    ~ScopeReadLock() {
+        PlatformSRWLock::ReleaseReadLock(readLock);
+    }
+    ScopeReadLock() = delete;
+    ScopeReadLock(const ScopeReadLock &) = delete;
+    ScopeReadLock &operator=(const ScopeReadLock &) = delete;
+
+private:
+    PlatformSRWLock *readLock;
+};
+
+class ScopeWriteLock {
+public:
+    ScopeWriteLock(PlatformSRWLock *lock) : writeLock(lock) {
+        PlatformSRWLock::AquireWriteLock(writeLock);
+    }
+    ~ScopeWriteLock() {
+        PlatformSRWLock::ReleaseWriteLock(writeLock);
+    }
+    ScopeWriteLock() = delete;
+    ScopeWriteLock(const ScopeReadLock &) = delete;
+    ScopeWriteLock &operator=(const ScopeReadLock &) = delete;
+
+private:
+    PlatformSRWLock *writeLock;
+};
+
 BE_NAMESPACE_END

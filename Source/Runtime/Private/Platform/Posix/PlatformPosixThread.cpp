@@ -293,11 +293,11 @@ bool PlatformPosixCondition::TimedWait(PlatformPosixCondition *posixCondition, P
     return true;
 }
 
-void PlatformPosixCondition::Wait(PlatformPosixCondition *posixCondition, PlatformPosixSRWLock *posixLock) {
+void PlatformPosixCondition::Wait(PlatformPosixCondition *posixCondition, PlatformPosixSRWLock *posixLock, bool isWriteLock) {
     pthread_cond_wait(&posixCondition->cond, &posixLock->mutex);
 }
 
-bool PlatformPosixCondition::TimedWait(PlatformPosixCondition *winCondition, PlatformPosixSRWLock *posixLock, int ms) {
+bool PlatformPosixCondition::TimedWait(PlatformPosixCondition *winCondition, PlatformPosixSRWLock *posixLock, bool isWriteLock, int ms) {
     timespec ts;
     MillisecondsFromNow(&ts, ms);
 

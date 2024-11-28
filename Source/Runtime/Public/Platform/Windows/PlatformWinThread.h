@@ -86,13 +86,13 @@ public:
     static bool                 TimedWait(PlatformWinCondition *condition, PlatformWinMutex *mutex, int ms, Predicate &&waitFinishCondition);
 
                                 /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
-    static void                 Wait(PlatformWinCondition *condition, PlatformWinSRWLock *lock);
-    static bool                 TimedWait(PlatformWinCondition *condition, PlatformWinSRWLock *lock, int ms);
+    static void                 Wait(PlatformWinCondition *condition, PlatformWinSRWLock *lock, bool isWriteLock);
+    static bool                 TimedWait(PlatformWinCondition *condition, PlatformWinSRWLock *lock, bool isWriteLock, int ms);
 
     template <typename Predicate>
-    static void                 Wait(PlatformWinCondition *condition, PlatformWinSRWLock *lock, Predicate &&waitFinishCondition);
+    static void                 Wait(PlatformWinCondition *condition, PlatformWinSRWLock *lock, bool isWriteLock, Predicate &&waitFinishCondition);
     template <typename Predicate>
-    static bool                 TimedWait(PlatformWinCondition *condition, PlatformWinSRWLock *lock, int ms, Predicate &&waitFinishCondition);
+    static bool                 TimedWait(PlatformWinCondition *condition, PlatformWinSRWLock *lock, bool isWriteLock, int ms, Predicate &&waitFinishCondition);
 
                                 /// If any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
     static void                 Signal(PlatformWinCondition *condition);
@@ -122,16 +122,16 @@ BE_INLINE bool PlatformWinCondition::TimedWait(PlatformWinCondition *condition, 
 }
 
 template <typename Predicate>
-BE_INLINE void PlatformWinCondition::Wait(PlatformWinCondition *condition, PlatformWinSRWLock *lock, Predicate &&waitFinishCondition) {
+BE_INLINE void PlatformWinCondition::Wait(PlatformWinCondition *condition, PlatformWinSRWLock *lock, bool isWriteLock, Predicate &&waitFinishCondition) {
     while (!waitFinishCondition()) {
-        PlatformWinCondition::Wait(condition, lock);
+        PlatformWinCondition::Wait(condition, lock, isWriteLock);
     }
 }
 
 template <typename Predicate>
-BE_INLINE bool PlatformWinCondition::TimedWait(PlatformWinCondition *condition, PlatformWinSRWLock *lock, int ms, Predicate &&waitFinishCondition) {
+BE_INLINE bool PlatformWinCondition::TimedWait(PlatformWinCondition *condition, PlatformWinSRWLock *lock, bool isWriteLock, int ms, Predicate &&waitFinishCondition) {
     while (!waitFinishCondition()) {
-        if (PlatformWinCondition::TimedWait(condition, lock, ms) == false) { // time-out
+        if (PlatformWinCondition::TimedWait(condition, lock, isWriteLock, ms) == false) { // time-out
             return false;
         }
     }
@@ -140,6 +140,7 @@ BE_INLINE bool PlatformWinCondition::TimedWait(PlatformWinCondition *condition, 
 
 typedef PlatformWinThread       PlatformThread;
 typedef PlatformWinMutex        PlatformMutex;
+typedef PlatformWinSRWLock      PlatformSRWLock;
 typedef PlatformWinCondition    PlatformCondition;
 
 BE_NAMESPACE_END

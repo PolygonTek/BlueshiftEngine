@@ -132,6 +132,15 @@ bool PlatformBaseCondition::TimedWait(PlatformBaseCondition *cond, PlatformBaseM
     return false;
 }
 
+void PlatformBaseCondition::Wait(PlatformBaseCondition *cond, PlatformBaseSRWLock *lock, bool isWriteLock) {
+    BE_FATALERROR("PlatformCondition::Wait not implmeneted on this platform");
+}
+
+bool PlatformBaseCondition::TimedWait(PlatformBaseCondition *cond, PlatformBaseSRWLock *lock, bool isWriteLock, int ms) {
+    BE_FATALERROR("PlatformCondition::TimedWait not implmeneted on this platform");
+    return false;
+}
+
 void PlatformBaseCondition::Signal(PlatformBaseCondition *condition) {
     BE_FATALERROR("PlatformCondition::Signal not implmeneted on this platform");
 }

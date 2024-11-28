@@ -89,13 +89,13 @@ public:
     static bool                 TimedWait(PlatformAndroidCondition *condition, PlatformAndroidMutex *mutex, int ms, Predicate &&waitFinishCondition);
 
                                 /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
-    static void                 Wait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock);
-    static bool                 TimedWait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock, int ms);
+    static void                 Wait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock, bool isWriteLock);
+    static bool                 TimedWait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock, bool isWriteLock, int ms);
 
     template <typename Predicate>
-    static void                 Wait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock, Predicate &&waitFinishCondition);
+    static void                 Wait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock, bool isWriteLock, Predicate &&waitFinishCondition);
     template <typename Predicate>
-    static bool                 TimedWait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock, int ms, Predicate &&waitFinishCondition);
+    static bool                 TimedWait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock, bool isWriteLock, int ms, Predicate &&waitFinishCondition);
 
                                 /// If any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
     static void                 Signal(PlatformAndroidCondition *condition);
@@ -125,14 +125,14 @@ BE_INLINE bool PlatformAndroidCondition::TimedWait(PlatformAndroidCondition *con
 }
 
 template <typename Predicate>
-BE_INLINE void PlatformAndroidCondition::Wait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock, Predicate &&waitFinishCondition) {
+BE_INLINE void PlatformAndroidCondition::Wait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock, bool isWriteLock, Predicate &&waitFinishCondition) {
     while (!waitFinishCondition()) {
         PlatformAndroidCondition::Wait(condition, lock);
     }
 }
 
 template <typename Predicate>
-BE_INLINE bool PlatformAndroidCondition::TimedWait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock, int ms, Predicate &&waitFinishCondition) {
+BE_INLINE bool PlatformAndroidCondition::TimedWait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock, bool isWriteLock, int ms, Predicate &&waitFinishCondition) {
     while (!waitFinishCondition()) {
         if (PlatformAndroidCondition::TimedWait(condition, lock, ms) == false) { // time-out
             return false;
@@ -141,8 +141,9 @@ BE_INLINE bool PlatformAndroidCondition::TimedWait(PlatformAndroidCondition *con
     return true;
 }
 
-typedef PlatformAndroidThread   PlatformThread;
-typedef PlatformAndroidMutex    PlatformMutex;
-typedef PlatformAndroidCondition PlatformCondition;
+typedef PlatformAndroidThread       PlatformThread;
+typedef PlatformAndroidMutex        PlatformMutex;
+typedef PlatformAndroidSRWLock      PlatformSRWLock;
+typedef PlatformAndroidCondition    PlatformCondition;
 
 BE_NAMESPACE_END

@@ -90,13 +90,13 @@ public:
     static bool                 TimedWait(PlatformPosixCondition *condition, PlatformPosixMutex *mutex, int ms, Predicate &&waitFinishCondition);
 
                                 /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
-    static void                 Wait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock);
-    static bool                 TimedWait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock, int ms);
+    static void                 Wait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock, bool isWriteLock);
+    static bool                 TimedWait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock, bool isWriteLock, int ms);
 
     template <typename Predicate>
-    static void                 Wait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock, Predicate &&waitFinishCondition);
+    static void                 Wait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock, bool isWriteLock, Predicate &&waitFinishCondition);
     template <typename Predicate>
-    static bool                 TimedWait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock, int ms, Predicate &&waitFinishCondition);
+    static bool                 TimedWait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock, bool isWriteLock, int ms, Predicate &&waitFinishCondition);
     
                                 /// If any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
     static void                 Signal(PlatformPosixCondition *condition);
@@ -126,16 +126,16 @@ BE_INLINE bool PlatformPosixCondition::TimedWait(PlatformPosixCondition *conditi
 }
 
 template <typename Predicate>
-BE_INLINE void PlatformPosixCondition::Wait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock, Predicate &&waitFinishCondition) {
+BE_INLINE void PlatformPosixCondition::Wait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock, bool isWriteLock, Predicate &&waitFinishCondition) {
     while (!waitFinishCondition()) {
-        PlatformPosixCondition::Wait(condition, lock);
+        PlatformPosixCondition::Wait(condition, lock, isWriteLock);
     }
 }
 
 template <typename Predicate>
-BE_INLINE bool PlatformPosixCondition::TimedWait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock, int ms, Predicate &&waitFinishCondition) {
+BE_INLINE bool PlatformPosixCondition::TimedWait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock, bool isWriteLock, int ms, Predicate &&waitFinishCondition) {
     while (!waitFinishCondition()) {
-        if (PlatformPosixCondition::TimedWait(condition, lock, ms) == false) { // time-out
+        if (PlatformPosixCondition::TimedWait(condition, lock, isWriteLock, ms) == false) { // time-out
             return false;
         }
     }
@@ -145,6 +145,7 @@ BE_INLINE bool PlatformPosixCondition::TimedWait(PlatformPosixCondition *conditi
 #ifndef USE_BASE_PLATFORM_POSIX_THREAD
 typedef PlatformPosixThread     PlatformThread;
 typedef PlatformPosixMutex      PlatformMutex;
+typedef PlatformPosixSRWLock    PlatformSRWLock;
 typedef PlatformPosixCondition  PlatformCondition;
 #endif
 

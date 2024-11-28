@@ -257,12 +257,12 @@ bool PlatformWinCondition::TimedWait(PlatformWinCondition *winCondition, Platfor
     return SleepConditionVariableCS(&winCondition->condVar, &winMutex->cs, (DWORD)ms) ? true : false;
 }
 
-void PlatformWinCondition::Wait(PlatformWinCondition *winCondition, PlatformWinSRWLock *winLock) {
-    SleepConditionVariableSRW(&winCondition->condVar, &winLock->srwLock, INFINITE, CONDITION_VARIABLE_LOCKMODE_SHARED);
+void PlatformWinCondition::Wait(PlatformWinCondition *winCondition, PlatformWinSRWLock *winLock, bool isWriteLock) {
+    SleepConditionVariableSRW(&winCondition->condVar, &winLock->srwLock, INFINITE, isWriteLock ? 0 : CONDITION_VARIABLE_LOCKMODE_SHARED);
 }
 
-bool PlatformWinCondition::TimedWait(PlatformWinCondition *winCondition, PlatformWinSRWLock *winLock, int ms) {
-    return SleepConditionVariableSRW(&winCondition->condVar, &winLock->srwLock, (DWORD)ms, CONDITION_VARIABLE_LOCKMODE_SHARED) ? true : false;
+bool PlatformWinCondition::TimedWait(PlatformWinCondition *winCondition, PlatformWinSRWLock *winLock, bool isWriteLock, int ms) {
+    return SleepConditionVariableSRW(&winCondition->condVar, &winLock->srwLock, (DWORD)ms, isWriteLock ? 0 : CONDITION_VARIABLE_LOCKMODE_SHARED) ? true : false;
 }
 
 void PlatformWinCondition::Signal(PlatformWinCondition *winCondition) {
