@@ -53,9 +53,23 @@ public:
     static PlatformBaseMutex *  Create();
     static void                 Destroy(PlatformBaseMutex *mutex);
 
-    static void                 Lock(const PlatformBaseMutex *mutex);
-    static bool                 TryLock(const PlatformBaseMutex *mutex);
-    static void                 Unlock(const PlatformBaseMutex *mutex);
+    static void                 Lock(PlatformBaseMutex *mutex);
+    static bool                 TryLock(PlatformBaseMutex *mutex);
+    static void                 Unlock(PlatformBaseMutex *mutex);
+};
+
+class BE_API PlatformBaseSRWLock {
+public:
+    static PlatformBaseSRWLock *Create();
+    static void                 Destroy(PlatformBaseSRWLock *lock);
+
+    static void                 AquireReadLock(PlatformBaseSRWLock *lock);
+    static bool                 TryAquireReadLock(PlatformBaseSRWLock *lock);
+    static void                 ReleaseReadLock(PlatformBaseSRWLock *lock);
+
+    static void                 AquireWriteLock(PlatformBaseSRWLock *lock);
+    static bool                 TryAquireWriteLock(PlatformBaseSRWLock *lock);
+    static void                 ReleaseWriteLock(PlatformBaseSRWLock *lock);
 };
 
 class BE_API PlatformBaseCondition {
@@ -64,14 +78,14 @@ public:
     static void                 Destroy(PlatformBaseCondition *condition);
 
                                 /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
-    static void                 Wait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex);
-    static bool                 TimedWait(const PlatformBaseCondition *condition, const PlatformBaseMutex *mutex, int ms);
+    static void                 Wait(PlatformBaseCondition *condition, PlatformBaseMutex *mutex);
+    static bool                 TimedWait(PlatformBaseCondition *condition, PlatformBaseMutex *mutex, int ms);
 
                                 /// If any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
-    static void                 Signal(const PlatformBaseCondition *condition);
+    static void                 Signal(PlatformBaseCondition *condition);
 
                                 /// Same as signal, except wake up all waiting threads
-    static void                 Broadcast(const PlatformBaseCondition *condition);
+    static void                 Broadcast(PlatformBaseCondition *condition);
 };
 
 BE_NAMESPACE_END

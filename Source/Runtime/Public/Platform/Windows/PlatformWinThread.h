@@ -44,12 +44,31 @@ public:
     static PlatformWinMutex *   Create();
     static void                 Destroy(PlatformWinMutex *mutex);
 
-    static void                 Lock(const PlatformWinMutex *mutex);
-    static bool                 TryLock(const PlatformWinMutex *mutex);
-    static void                 Unlock(const PlatformWinMutex *mutex);
-    
+    static void                 Lock(PlatformWinMutex *mutex);
+    static bool                 TryLock(PlatformWinMutex *mutex);
+    static void                 Unlock(PlatformWinMutex *mutex);
+
 private:
-    PCRITICAL_SECTION           cs;
+    CRITICAL_SECTION            cs;
+};
+
+class BE_API PlatformWinSRWLock : public PlatformBaseSRWLock {
+    friend class PlatformWinCondition;
+
+public:
+    static PlatformWinSRWLock * Create();
+    static void                 Destroy(PlatformWinSRWLock *lock);
+
+    static void                 AquireReadLock(PlatformWinSRWLock *lock);
+    static bool                 TryAquireReadLock(PlatformWinSRWLock *lock);
+    static void                 ReleaseReadLock(PlatformWinSRWLock *lock);
+
+    static void                 AquireWriteLock(PlatformWinSRWLock *lock);
+    static bool                 TryAquireWriteLock(PlatformWinSRWLock *lock);
+    static void                 ReleaseWriteLock(PlatformWinSRWLock *lock);
+
+private:
+    SRWLOCK                     srwLock;
 };
 
 class BE_API PlatformWinCondition : public PlatformBaseCondition {
@@ -58,35 +77,61 @@ public:
     static void                 Destroy(PlatformWinCondition *condition);
 
                                 /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
-    static void                 Wait(const PlatformWinCondition *condition, const PlatformWinMutex *mutex);
-    static bool                 TimedWait(const PlatformWinCondition *condition, const PlatformWinMutex *mutex, int ms);
+    static void                 Wait(PlatformWinCondition *condition, PlatformWinMutex *mutex);
+    static bool                 TimedWait(PlatformWinCondition *condition, PlatformWinMutex *mutex, int ms);
 
     template <typename Predicate>
-    static void                 Wait(const PlatformWinCondition *condition, const PlatformWinMutex *mutex, Predicate &&waitFinishCondition);
+    static void                 Wait(PlatformWinCondition *condition, PlatformWinMutex *mutex, Predicate &&waitFinishCondition);
     template <typename Predicate>
-    static bool                 TimedWait(const PlatformWinCondition *condition, const PlatformWinMutex *mutex, int ms, Predicate &&waitFinishCondition);
+    static bool                 TimedWait(PlatformWinCondition *condition, PlatformWinMutex *mutex, int ms, Predicate &&waitFinishCondition);
+
+                                /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
+    static void                 Wait(PlatformWinCondition *condition, PlatformWinSRWLock *lock);
+    static bool                 TimedWait(PlatformWinCondition *condition, PlatformWinSRWLock *lock, int ms);
+
+    template <typename Predicate>
+    static void                 Wait(PlatformWinCondition *condition, PlatformWinSRWLock *lock, Predicate &&waitFinishCondition);
+    template <typename Predicate>
+    static bool                 TimedWait(PlatformWinCondition *condition, PlatformWinSRWLock *lock, int ms, Predicate &&waitFinishCondition);
 
                                 /// If any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
-    static void                 Signal(const PlatformWinCondition *condition);
+    static void                 Signal(PlatformWinCondition *condition);
 
                                 /// Same as signal, except wake up all waiting threads.
-    static void                 Broadcast(const PlatformWinCondition *condition);
+    static void                 Broadcast(PlatformWinCondition *condition);
     
 private:
-    PCONDITION_VARIABLE         condVar;
+    CONDITION_VARIABLE          condVar;
 };
 
 template <typename Predicate>
-BE_INLINE void PlatformWinCondition::Wait(const PlatformWinCondition *condition, const PlatformWinMutex *mutex, Predicate &&waitFinishCondition) {
+BE_INLINE void PlatformWinCondition::Wait(PlatformWinCondition *condition, PlatformWinMutex *mutex, Predicate &&waitFinishCondition) {
     while (!waitFinishCondition()) {
         PlatformWinCondition::Wait(condition, mutex);
     }
 }
 
 template <typename Predicate>
-BE_INLINE bool PlatformWinCondition::TimedWait(const PlatformWinCondition *condition, const PlatformWinMutex *mutex, int ms, Predicate &&waitFinishCondition) {
+BE_INLINE bool PlatformWinCondition::TimedWait(PlatformWinCondition *condition, PlatformWinMutex *mutex, int ms, Predicate &&waitFinishCondition) {
     while (!waitFinishCondition()) {
         if (PlatformWinCondition::TimedWait(condition, mutex, ms) == false) { // time-out
+            return false;
+        }
+    }
+    return true;
+}
+
+template <typename Predicate>
+BE_INLINE void PlatformWinCondition::Wait(PlatformWinCondition *condition, PlatformWinSRWLock *lock, Predicate &&waitFinishCondition) {
+    while (!waitFinishCondition()) {
+        PlatformWinCondition::Wait(condition, lock);
+    }
+}
+
+template <typename Predicate>
+BE_INLINE bool PlatformWinCondition::TimedWait(PlatformWinCondition *condition, PlatformWinSRWLock *lock, int ms, Predicate &&waitFinishCondition) {
+    while (!waitFinishCondition()) {
+        if (PlatformWinCondition::TimedWait(condition, lock, ms) == false) { // time-out
             return false;
         }
     }

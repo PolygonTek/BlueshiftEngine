@@ -35,7 +35,7 @@ public:
     static void                 Yield();
 
 private:
-    pthread_t *                 thread;
+    pthread_t                   thread;
 };
 
 class BE_API PlatformAndroidMutex : public PlatformBaseMutex {
@@ -45,12 +45,32 @@ public:
     static PlatformAndroidMutex *Create();
     static void                 Destroy(PlatformAndroidMutex *mutex);
     
-    static void                 Lock(const PlatformAndroidMutex *mutex);
-    static bool                 TryLock(const PlatformAndroidMutex *mutex);
-    static void                 Unlock(const PlatformAndroidMutex *mutex);
+    static void                 Lock(PlatformAndroidMutex *mutex);
+    static bool                 TryLock(PlatformAndroidMutex *mutex);
+    static void                 Unlock(PlatformAndroidMutex *mutex);
 
 private:
-    pthread_mutex_t *           mutex;
+    pthread_mutex_t             mutex;
+};
+
+class BE_API PlatformAndroidSRWLock : public PlatformBaseSRWLock {
+    friend class PlatformAndroidCondition;
+
+public:
+    static PlatformAndroidSRWLock *Create();
+    static void                 Destroy(PlatformAndroidSRWLock *lock);
+
+    static void                 AquireReadLock(PlatformAndroidSRWLock *lock);
+    static bool                 TryAquireReadLock(PlatformAndroidSRWLock *lock);
+    static void                 ReleaseReadLock(PlatformAndroidSRWLock *lock);
+
+    static void                 AquireWriteLock(PlatformAndroidSRWLock *lock);
+    static bool                 TryAquireWriteLock(PlatformAndroidSRWLock *lock);
+    static void                 ReleaseWriteLock(PlatformAndroidSRWLock *lock);
+
+private:
+    pthread_rwlock_t            lock;
+    pthread_mutex_t             mutex;
 };
 
 class BE_API PlatformAndroidCondition : public PlatformBaseCondition {
@@ -59,35 +79,61 @@ public:
     static void                 Destroy(PlatformAndroidCondition *condition);
 
                                 /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
-    static void                 Wait(const PlatformAndroidCondition *condition, const PlatformAndroidMutex *mutex);
-    static bool                 TimedWait(const PlatformAndroidCondition *condition, const PlatformAndroidMutex *mutex, int ms);
+    static void                 Wait(PlatformAndroidCondition *condition, PlatformAndroidMutex *mutex);
+    static bool                 TimedWait(PlatformAndroidCondition *condition, PlatformAndroidMutex *mutex, int ms);
 
     template <typename Predicate>
-    static void                 Wait(const PlatformAndroidCondition *condition, const PlatformAndroidMutex *mutex, Predicate &&waitFinishCondition);
+    static void                 Wait(PlatformAndroidCondition *condition, PlatformAndroidMutex *mutex, Predicate &&waitFinishCondition);
     template <typename Predicate>
-    static bool                 TimedWait(const PlatformAndroidCondition *condition, const PlatformAndroidMutex *mutex, int ms, Predicate &&waitFinishCondition);
+    static bool                 TimedWait(PlatformAndroidCondition *condition, PlatformAndroidMutex *mutex, int ms, Predicate &&waitFinishCondition);
+
+                                /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
+    static void                 Wait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock);
+    static bool                 TimedWait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock, int ms);
+
+    template <typename Predicate>
+    static void                 Wait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock, Predicate &&waitFinishCondition);
+    template <typename Predicate>
+    static bool                 TimedWait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock, int ms, Predicate &&waitFinishCondition);
 
                                 /// If any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
-    static void                 Signal(const PlatformAndroidCondition *condition);
+    static void                 Signal(PlatformAndroidCondition *condition);
 
                                 /// Same as signal, except wake up all waiting threads
-    static void                 Broadcast(const PlatformAndroidCondition *condition);
+    static void                 Broadcast(PlatformAndroidCondition *condition);
 
 private:
-    pthread_cond_t *            cond;
+    pthread_cond_t              cond;
 };
 
 template <typename Predicate>
-BE_INLINE void PlatformAndroidCondition::Wait(const PlatformAndroidCondition *condition, const PlatformAndroidMutex *mutex, Predicate &&waitFinishCondition) {
+BE_INLINE void PlatformAndroidCondition::Wait(PlatformAndroidCondition *condition, PlatformAndroidMutex *mutex, Predicate &&waitFinishCondition) {
     while (!waitFinishCondition()) {
         PlatformAndroidCondition::Wait(condition, mutex);
     }
 }
 
 template <typename Predicate>
-BE_INLINE bool PlatformAndroidCondition::TimedWait(const PlatformAndroidCondition *condition, const PlatformAndroidMutex *mutex, int ms, Predicate &&waitFinishCondition) {
+BE_INLINE bool PlatformAndroidCondition::TimedWait(PlatformAndroidCondition *condition, PlatformAndroidMutex *mutex, int ms, Predicate &&waitFinishCondition) {
     while (!waitFinishCondition()) {
         if (PlatformAndroidCondition::TimedWait(condition, mutex, ms) == false) { // time-out
+            return false;
+        }
+    }
+    return true;
+}
+
+template <typename Predicate>
+BE_INLINE void PlatformAndroidCondition::Wait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock, Predicate &&waitFinishCondition) {
+    while (!waitFinishCondition()) {
+        PlatformAndroidCondition::Wait(condition, lock);
+    }
+}
+
+template <typename Predicate>
+BE_INLINE bool PlatformAndroidCondition::TimedWait(PlatformAndroidCondition *condition, PlatformAndroidSRWLock *lock, int ms, Predicate &&waitFinishCondition) {
+    while (!waitFinishCondition()) {
+        if (PlatformAndroidCondition::TimedWait(condition, lock, ms) == false) { // time-out
             return false;
         }
     }

@@ -66,17 +66,52 @@ void PlatformBaseMutex::Destroy(PlatformBaseMutex *mutex) {
     BE_FATALERROR("PlatformMutex::Destroy not implmeneted on this platform");
 }
 
-void PlatformBaseMutex::Lock(const PlatformBaseMutex *mutex) {
+void PlatformBaseMutex::Lock(PlatformBaseMutex *mutex) {
     BE_FATALERROR("PlatformMutex::Lock not implmeneted on this platform");
 }
 
-bool PlatformBaseMutex::TryLock(const PlatformBaseMutex *mutex) {
+bool PlatformBaseMutex::TryLock(PlatformBaseMutex *mutex) {
     BE_FATALERROR("PlatformMutex::TryLock not implmeneted on this platform");
     return false;
 }
 
-void PlatformBaseMutex::Unlock(const PlatformBaseMutex *mutex) {
+void PlatformBaseMutex::Unlock(PlatformBaseMutex *mutex) {
     BE_FATALERROR("PlatformMutex::Unlock not implmeneted on this platform");
+}
+
+PlatformBaseSRWLock *PlatformBaseSRWLock::Create() {
+    BE_FATALERROR("PlatformSRWLock::Create not implmeneted on this platform");
+    return nullptr;
+}
+
+void PlatformBaseSRWLock::Destroy(PlatformBaseSRWLock *lock) {
+    BE_FATALERROR("PlatformSRWLock::Destroy not implmeneted on this platform");
+}
+
+void PlatformBaseSRWLock::AquireReadLock(PlatformBaseSRWLock *lock) {
+    BE_FATALERROR("PlatformSRWLock::AquireReadLock not implmeneted on this platform");
+}
+
+bool PlatformBaseSRWLock::TryAquireReadLock(PlatformBaseSRWLock *lock) {
+    BE_FATALERROR("PlatformSRWLock::TryAquireReadLock not implmeneted on this platform");
+    return false;
+}
+
+void PlatformBaseSRWLock::ReleaseReadLock(PlatformBaseSRWLock *lock) {
+    BE_FATALERROR("PlatformSRWLock::ReleaseReadLock not implmeneted on this platform");
+}
+
+void PlatformBaseSRWLock::AquireWriteLock(PlatformBaseSRWLock *lock) {
+    BE_FATALERROR("PlatformSRWLock::AquireWriteLock not implmeneted on this platform");
+}
+
+bool PlatformBaseSRWLock::TryAquireWriteLock(PlatformBaseSRWLock *lock) {
+    BE_FATALERROR("PlatformSRWLock::TryAquireWriteLock not implmeneted on this platform");
+    return false;
+}
+
+void PlatformBaseSRWLock::ReleaseWriteLock(PlatformBaseSRWLock *lock) {
+    BE_FATALERROR("PlatformSRWLock::ReleaseWriteLock not implmeneted on this platform");
 }
 
 PlatformBaseCondition *PlatformBaseCondition::Create() {
@@ -88,20 +123,20 @@ void PlatformBaseCondition::Destroy(PlatformBaseCondition *cond) {
     BE_FATALERROR("PlatformCondition::Destroy not implmeneted on this platform");
 }
 
-void PlatformBaseCondition::Wait(const PlatformBaseCondition *cond, const PlatformBaseMutex *mutex) {
+void PlatformBaseCondition::Wait(PlatformBaseCondition *cond, PlatformBaseMutex *mutex) {
     BE_FATALERROR("PlatformCondition::Wait not implmeneted on this platform");
 }
 
-bool PlatformBaseCondition::TimedWait(const PlatformBaseCondition *cond, const PlatformBaseMutex *mutex, int ms) {
+bool PlatformBaseCondition::TimedWait(PlatformBaseCondition *cond, PlatformBaseMutex *mutex, int ms) {
     BE_FATALERROR("PlatformCondition::TimedWait not implmeneted on this platform");
     return false;
 }
 
-void PlatformBaseCondition::Signal(const PlatformBaseCondition *condition) {
+void PlatformBaseCondition::Signal(PlatformBaseCondition *condition) {
     BE_FATALERROR("PlatformCondition::Signal not implmeneted on this platform");
 }
 
-void PlatformBaseCondition::Broadcast(const PlatformBaseCondition *cond) {
+void PlatformBaseCondition::Broadcast(PlatformBaseCondition *cond) {
     BE_FATALERROR("PlatformCondition::Broadcast not implmeneted on this platform");
 }
 

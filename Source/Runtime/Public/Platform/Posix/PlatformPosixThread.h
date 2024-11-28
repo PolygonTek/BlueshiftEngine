@@ -36,7 +36,7 @@ public:
     static void                 Yield();
 
 private:
-    pthread_t *                 thread;
+    pthread_t                   thread;
 };
 
 class BE_API PlatformPosixMutex : public PlatformBaseMutex {
@@ -46,12 +46,32 @@ public:
     static PlatformPosixMutex * Create();
     static void                 Destroy(PlatformPosixMutex *mutex);
     
-    static void                 Lock(const PlatformPosixMutex *mutex);
-    static bool                 TryLock(const PlatformPosixMutex *mutex);
-    static void                 Unlock(const PlatformPosixMutex *mutex);
+    static void                 Lock(PlatformPosixMutex *mutex);
+    static bool                 TryLock(PlatformPosixMutex *mutex);
+    static void                 Unlock(PlatformPosixMutex *mutex);
 
 private:
-    pthread_mutex_t *           mutex;
+    pthread_mutex_t             mutex;
+};
+
+class BE_API PlatformPosixSRWLock : public PlatformBaseSRWLock {
+    friend class PlatformPosixCondition;
+
+public:
+    static PlatformPosixSRWLock *Create();
+    static void                 Destroy(PlatformPosixSRWLock *lock);
+
+    static void                 AquireReadLock(PlatformPosixSRWLock *lock);
+    static bool                 TryAquireReadLock(PlatformPosixSRWLock *lock);
+    static void                 ReleaseReadLock(PlatformPosixSRWLock *lock);
+
+    static void                 AquireWriteLock(PlatformPosixSRWLock *lock);
+    static bool                 TryAquireWriteLock(PlatformPosixSRWLock *lock);
+    static void                 ReleaseWriteLock(PlatformPosixSRWLock *lock);
+
+private:
+    pthread_rwlock_t            lock;
+    pthread_mutex_t             mutex;
 };
 
 class BE_API PlatformPosixCondition : public PlatformBaseCondition {
@@ -60,35 +80,61 @@ public:
     static void                 Destroy(PlatformPosixCondition *condition);
     
                                 /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
-    static void                 Wait(const PlatformPosixCondition *condition, const PlatformPosixMutex *mutex);
-    static bool                 TimedWait(const PlatformPosixCondition *condition, const PlatformPosixMutex *mutex, int ms);
+    static void                 Wait(PlatformPosixCondition *condition, PlatformPosixMutex *mutex);
+    static bool                 TimedWait(PlatformPosixCondition *condition, PlatformPosixMutex *mutex, int ms);
 
     template <typename Predicate>
-    static void                 Wait(const PlatformPosixCondition *condition, const PlatformPosixMutex *mutex, Predicate &&waitFinishCondition);
+    static void                 Wait(PlatformPosixCondition *condition, PlatformPosixMutex *mutex, Predicate &&waitFinishCondition);
     template <typename Predicate>
-    static bool                 TimedWait(const PlatformPosixCondition *condition, const PlatformPosixMutex *mutex, int ms, Predicate &&waitFinishCondition);
+    static bool                 TimedWait(PlatformPosixCondition *condition, PlatformPosixMutex *mutex, int ms, Predicate &&waitFinishCondition);
+
+                                /// Release lock, put thread to sleep until condition is signaled; when thread wakes up again, re-acquire lock before returning.
+    static void                 Wait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock);
+    static bool                 TimedWait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock, int ms);
+
+    template <typename Predicate>
+    static void                 Wait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock, Predicate &&waitFinishCondition);
+    template <typename Predicate>
+    static bool                 TimedWait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock, int ms, Predicate &&waitFinishCondition);
     
                                 /// If any threads are waiting on condition, wake up one of them. Caller must hold lock, which must be the same as the lock used in the wait call.
-    static void                 Signal(const PlatformPosixCondition *condition);
+    static void                 Signal(PlatformPosixCondition *condition);
     
                                 /// Same as signal, except wake up all waiting threads.
-    static void                 Broadcast(const PlatformPosixCondition *condition);
+    static void                 Broadcast(PlatformPosixCondition *condition);
     
 private:
-    pthread_cond_t *            cond;
+    pthread_cond_t              cond;
 };
 
 template <typename Predicate>
-BE_INLINE void PlatformPosixCondition::Wait(const PlatformPosixCondition *condition, const PlatformPosixMutex *mutex, Predicate &&waitFinishCondition) {
+BE_INLINE void PlatformPosixCondition::Wait(PlatformPosixCondition *condition, PlatformPosixMutex *mutex, Predicate &&waitFinishCondition) {
     while (!waitFinishCondition()) {
         PlatformPosixCondition::Wait(condition, mutex);
     }
 }
 
 template <typename Predicate>
-BE_INLINE bool PlatformPosixCondition::TimedWait(const PlatformPosixCondition *condition, const PlatformPosixMutex *mutex, int ms, Predicate &&waitFinishCondition) {
+BE_INLINE bool PlatformPosixCondition::TimedWait(PlatformPosixCondition *condition, PlatformPosixMutex *mutex, int ms, Predicate &&waitFinishCondition) {
     while (!waitFinishCondition()) {
         if (PlatformPosixCondition::TimedWait(condition, mutex, ms) == false) { // time-out
+            return false;
+        }
+    }
+    return true;
+}
+
+template <typename Predicate>
+BE_INLINE void PlatformPosixCondition::Wait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock, Predicate &&waitFinishCondition) {
+    while (!waitFinishCondition()) {
+        PlatformPosixCondition::Wait(condition, lock);
+    }
+}
+
+template <typename Predicate>
+BE_INLINE bool PlatformPosixCondition::TimedWait(PlatformPosixCondition *condition, PlatformPosixSRWLock *lock, int ms, Predicate &&waitFinishCondition) {
+    while (!waitFinishCondition()) {
+        if (PlatformPosixCondition::TimedWait(condition, lock, ms) == false) { // time-out
             return false;
         }
     }

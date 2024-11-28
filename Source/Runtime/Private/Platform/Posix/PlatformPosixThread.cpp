@@ -97,18 +97,18 @@ PlatformPosixThread *PlatformPosixThread::Start(threadFunc_t startProc, void *pa
         pthread_attr_setstacksize(&attr, stackSize);
     }
 
-    pthread_t *tid = new pthread_t;
+    pthread_t tid;
     ThreadStartupData *startup = new ThreadStartupData;
     startup->startProc = startProc;
     startup->param = param;
 
-    int err = pthread_create(tid, &attr, (void *(*)(void *))ThreadStartup, startup);
+    int err = pthread_create(&tid, &attr, (void *(*)(void *))ThreadStartup, startup);
     if (err != 0) {
         BE_FATALERROR("Failed to create pthread - %s", strerror(err));
     }
 
-    Posix_SetThreadAffinity(*tid, affinity);
-    Posix_SetThreadPriority(*tid, priority);
+    Posix_SetThreadAffinity(tid, affinity);
+    Posix_SetThreadPriority(tid, priority);
     
     PlatformPosixThread *posixThread = new PlatformPosixThread;
     posixThread->thread = tid;
@@ -117,8 +117,7 @@ PlatformPosixThread *PlatformPosixThread::Start(threadFunc_t startProc, void *pa
 
 void PlatformPosixThread::Terminate(PlatformPosixThread *posixThread) {
     assert(posixThread);
-    pthread_cancel(*posixThread->thread);
-    delete posixThread->thread;
+    pthread_cancel(posixThread->thread);
     delete posixThread;
 }
 
@@ -148,7 +147,7 @@ void PlatformPosixThread::Detach(PlatformPosixThread *posixThread) {
 }
 
 void PlatformPosixThread::Join(PlatformPosixThread *posixThread) {
-    int err = pthread_join(*posixThread->thread, nullptr);
+    int err = pthread_join(posixThread->thread, nullptr);
     if (err != 0) {
         BE_FATALERROR("Failed to joint pthread - %s", strerror(err));
     }
@@ -159,7 +158,7 @@ void PlatformPosixThread::Join(PlatformPosixThread *posixThread) {
 void PlatformPosixThread::JoinAll(int numThreads, PlatformPosixThread *posixThreads[]) {
     for (int i = 0; i < numThreads; i++) {
         PlatformPosixThread *posixThread = posixThreads[i];
-        int err = pthread_join(*posixThread->thread, nullptr);
+        int err = pthread_join(posixThread->thread, nullptr);
         if (err != 0) {
             BE_FATALERROR("Failed to joint pthread - %s", strerror(err));
         }
@@ -171,47 +170,84 @@ void PlatformPosixThread::JoinAll(int numThreads, PlatformPosixThread *posixThre
 
 PlatformPosixMutex *PlatformPosixMutex::Create() {
     PlatformPosixMutex *posixMutex = new PlatformPosixMutex;
-    posixMutex->mutex = new pthread_mutex_t;
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(posixMutex->mutex, &attr);
+    pthread_mutex_init(&posixMutex->mutex, &attr);
     return posixMutex;
 }
 
 void PlatformPosixMutex::Destroy(PlatformPosixMutex *posixMutex) {
     assert(posixMutex);
-    pthread_mutex_destroy(posixMutex->mutex);
-    delete posixMutex->mutex;
+    pthread_mutex_destroy(&posixMutex->mutex);
     delete posixMutex;
 }
 
-void PlatformPosixMutex::Lock(const PlatformPosixMutex *posixMutex) {
-    pthread_mutex_lock(posixMutex->mutex);
+void PlatformPosixMutex::Lock(PlatformPosixMutex *posixMutex) {
+    pthread_mutex_lock(&posixMutex->mutex);
 }
 
-bool PlatformPosixMutex::TryLock(const PlatformPosixMutex *posixMutex) {
-    return pthread_mutex_trylock(posixMutex->mutex) == 0;
+bool PlatformPosixMutex::TryLock(PlatformPosixMutex *posixMutex) {
+    return pthread_mutex_trylock(&posixMutex->mutex) == 0;
 }
 
-void PlatformPosixMutex::Unlock(const PlatformPosixMutex *posixMutex) {
-    pthread_mutex_unlock(posixMutex->mutex);
+void PlatformPosixMutex::Unlock(PlatformPosixMutex *posixMutex) {
+    pthread_mutex_unlock(&posixMutex->mutex);
+}
+
+PlatformPosixSRWLock *PlatformPosixSRWLock::Create() {
+    PlatformPosixSRWLock *posixLock = new PlatformPosixSRWLock;
+    pthread_rwlock_init(&lock, nullptr);
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&posixLock->mutex, &attr);
+    return posixLock;
+}
+
+void PlatformPosixSRWLock::Destroy(PlatformPosixSRWLock *posixLock) {
+    assert(posixLock);
+    pthread_rwlock_destroy(&posixLock->srwLock);
+    pthread_mutex_destroy(&posixLock->mutex);
+    delete posixLock;
+}
+
+void PlatformPosixSRWLock::AquireReadLock(PlatformPosixSRWLock *posixLock) {
+    pthread_rwlock_rdlock(&posixLock->srwLock);
+}
+
+bool PlatformPosixSRWLock::TryAquireReadLock(PlatformPosixSRWLock *posixLock) {
+    return (pthread_rwlock_tryrdlock(&posixLock->srwLock) == 0);
+}
+
+void PlatformPosixSRWLock::ReleaseReadLock(PlatformPosixSRWLock *posixLock) {
+    pthread_rwlock_unlock(&posixLock->srwLock);
+}
+
+void PlatformPosixSRWLock::AquireWriteLock(PlatformPosixSRWLock *posixLock) {
+    pthread_rwlock_wrlock(&posixLock->srwLock);
+}
+
+bool PlatformPosixSRWLock::TryAquireWriteLock(PlatformPosixSRWLock *posixLock) {
+    return (pthread_rwlock_trywrlock(&posixLock->srwLock) == 0);
+}
+
+void PlatformPosixSRWLock::ReleaseWriteLock(PlatformPosixSRWLock *posixLock) {
+    pthread_rwlock_unlock(&posixLock->srwLock);
 }
 
 PlatformPosixCondition *PlatformPosixCondition::Create() {
     PlatformPosixCondition *posixCondition = new PlatformPosixCondition;
-    posixCondition->cond = new pthread_cond_t;
-    pthread_cond_init(posixCondition->cond, nullptr);
+    pthread_cond_init(&posixCondition->cond, nullptr);
     return posixCondition;
 }
 
 void PlatformPosixCondition::Destroy(PlatformPosixCondition *posixCondition) {
-    assert(posixCondition);
-    delete posixCondition->cond;
+    pthread_cond_destroy(&posixCondition->cond);
 }
 
-void PlatformPosixCondition::Wait(const PlatformPosixCondition *posixCondition, const PlatformPosixMutex *posixMutex) {
-    pthread_cond_wait(posixCondition->cond, posixMutex->mutex);
+void PlatformPosixCondition::Wait(PlatformPosixCondition *posixCondition, PlatformPosixMutex *posixMutex) {
+    pthread_cond_wait(&posixCondition->cond, &posixMutex->mutex);
 }
 
 struct timespec *MillisecondsFromNow(struct timespec *time, int millisecs) {
@@ -235,23 +271,38 @@ struct timespec *MillisecondsFromNow(struct timespec *time, int millisecs) {
     return time;
 }
 
-bool PlatformPosixCondition::TimedWait(const PlatformPosixCondition *posixCondition, const PlatformPosixMutex *posixMutex, int ms) {
+bool PlatformPosixCondition::TimedWait(PlatformPosixCondition *posixCondition, PlatformPosixSRWLock *posixLock, int ms) {
     timespec ts;
     MillisecondsFromNow(&ts, ms);
     
-    int ret = pthread_cond_timedwait(posixCondition->cond, posixMutex->mutex, &ts);
+    int ret = pthread_cond_timedwait(&posixCondition->cond, &posixLock->mutex, &ts);
     if (ret == ETIMEDOUT || ret == EINVAL) {
         return false;
     }
     return true;
 }
 
-void PlatformPosixCondition::Signal(const PlatformPosixCondition *posixCondition) {
-    pthread_cond_signal(posixCondition->cond);
+void PlatformPosixCondition::Wait(PlatformPosixCondition *posixCondition, PlatformPosixSRWLock *posixLock) {
+    pthread_cond_wait(&posixCondition->cond, &posixLock->mutex);
 }
 
-void PlatformPosixCondition::Broadcast(const PlatformPosixCondition *posixCondition) {
-    pthread_cond_broadcast(posixCondition->cond);
+bool PlatformPosixCondition::TimedWait(PlatformPosixCondition *winCondition, PlatformPosixSRWLock *posixLock, int ms) {
+    timespec ts;
+    MillisecondsFromNow(&ts, ms);
+
+    int ret = pthread_cond_timedwait(&posixCondition->cond, &posixLock->mutex, &ts);
+    if (ret == ETIMEDOUT || ret == EINVAL) {
+        return false;
+    }
+    return true;
+}
+
+void PlatformPosixCondition::Signal(PlatformPosixCondition *posixCondition) {
+    pthread_cond_signal(&posixCondition->cond);
+}
+
+void PlatformPosixCondition::Broadcast(PlatformPosixCondition *posixCondition) {
+    pthread_cond_broadcast(&posixCondition->cond);
 }
 
 BE_NAMESPACE_END

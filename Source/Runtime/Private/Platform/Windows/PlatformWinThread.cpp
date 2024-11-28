@@ -180,59 +180,97 @@ void PlatformWinThread::JoinAll(int numThreads, PlatformWinThread *winThreads[])
 
 PlatformWinMutex *PlatformWinMutex::Create() {
     PlatformWinMutex *winMutex = new PlatformWinMutex;
-    winMutex->cs = new CRITICAL_SECTION;
-    InitializeCriticalSectionAndSpinCount(winMutex->cs, 4000);
+    InitializeCriticalSectionAndSpinCount(&winMutex->cs, 4000);
     return winMutex;
 }
 
 void PlatformWinMutex::Destroy(PlatformWinMutex *winMutex) {
-    DeleteCriticalSection(winMutex->cs);
-    delete winMutex->cs;
+    DeleteCriticalSection(&winMutex->cs);
     delete winMutex;
 }
 
-void PlatformWinMutex::Lock(const PlatformWinMutex *winMutex) {
+void PlatformWinMutex::Lock(PlatformWinMutex *winMutex) {
     // Spin first before entering critical section, causing ring-0 transition and context switch.
-    if (TryEnterCriticalSection(winMutex->cs) == 0) {
-        EnterCriticalSection(winMutex->cs);
+    if (TryEnterCriticalSection(&winMutex->cs) == 0) {
+        EnterCriticalSection(&winMutex->cs);
     }
 }
 
-bool PlatformWinMutex::TryLock(const PlatformWinMutex *winMutex) {
-    return TryEnterCriticalSection(winMutex->cs) ? true : false;
+bool PlatformWinMutex::TryLock(PlatformWinMutex *winMutex) {
+    return (bool)TryEnterCriticalSection(&winMutex->cs);
 }
 
-void PlatformWinMutex::Unlock(const PlatformWinMutex *winMutex) {
-    LeaveCriticalSection(winMutex->cs);
+void PlatformWinMutex::Unlock(PlatformWinMutex *winMutex) {
+    LeaveCriticalSection(&winMutex->cs);
+}
+
+PlatformWinSRWLock *PlatformWinSRWLock::Create() {
+    PlatformWinSRWLock *winLock = new PlatformWinSRWLock;
+    InitializeSRWLock(&winLock->srwLock);
+    return winLock;
+}
+
+void PlatformWinSRWLock::Destroy(PlatformWinSRWLock *winLock) {
+    delete winLock;
+}
+
+void PlatformWinSRWLock::AquireReadLock(PlatformWinSRWLock *lock) {
+    AcquireSRWLockShared(&lock->srwLock);
+}
+
+bool PlatformWinSRWLock::TryAquireReadLock(PlatformWinSRWLock *lock) {
+    return (bool)TryAcquireSRWLockShared(&lock->srwLock);
+}
+
+void PlatformWinSRWLock::ReleaseReadLock(PlatformWinSRWLock *lock) {
+    ReleaseSRWLockShared(&lock->srwLock);
+}
+
+void PlatformWinSRWLock::AquireWriteLock(PlatformWinSRWLock *lock) {
+    AcquireSRWLockExclusive(&lock->srwLock);
+}
+
+bool PlatformWinSRWLock::TryAquireWriteLock(PlatformWinSRWLock *lock) {
+    return (bool)TryAcquireSRWLockExclusive(&lock->srwLock);
+}
+
+void PlatformWinSRWLock::ReleaseWriteLock(PlatformWinSRWLock *lock) {
+    ReleaseSRWLockExclusive(&lock->srwLock);
 }
 
 PlatformWinCondition *PlatformWinCondition::Create() {
     PlatformWinCondition *winCondition = new PlatformWinCondition;
-    winCondition->condVar = new CONDITION_VARIABLE;
-    InitializeConditionVariable(winCondition->condVar);
+    InitializeConditionVariable(&winCondition->condVar);
     return winCondition;
 }
 
 void PlatformWinCondition::Destroy(PlatformWinCondition *winCondition) {
     assert(winCondition);
-    delete winCondition->condVar;
     delete winCondition;
 }
 
-void PlatformWinCondition::Wait(const PlatformWinCondition *winCondition, const PlatformWinMutex *winMutex) {
-    SleepConditionVariableCS(winCondition->condVar, winMutex->cs, INFINITE);
+void PlatformWinCondition::Wait(PlatformWinCondition *winCondition, PlatformWinMutex *winMutex) {
+    SleepConditionVariableCS(&winCondition->condVar, &winMutex->cs, INFINITE);
 }
 
-bool PlatformWinCondition::TimedWait(const PlatformWinCondition *winCondition, const PlatformWinMutex *winMutex, int ms) {
-    return SleepConditionVariableCS(winCondition->condVar, winMutex->cs, (DWORD)ms) ? true : false;
+bool PlatformWinCondition::TimedWait(PlatformWinCondition *winCondition, PlatformWinMutex *winMutex, int ms) {
+    return SleepConditionVariableCS(&winCondition->condVar, &winMutex->cs, (DWORD)ms) ? true : false;
 }
 
-void PlatformWinCondition::Signal(const PlatformWinCondition *winCondition) {
-    WakeConditionVariable(winCondition->condVar);
+void PlatformWinCondition::Wait(PlatformWinCondition *winCondition, PlatformWinSRWLock *winLock) {
+    SleepConditionVariableSRW(&winCondition->condVar, &winLock->srwLock, INFINITE, CONDITION_VARIABLE_LOCKMODE_SHARED);
 }
 
-void PlatformWinCondition::Broadcast(const PlatformWinCondition *winCondition) {
-    WakeAllConditionVariable(winCondition->condVar);
+bool PlatformWinCondition::TimedWait(PlatformWinCondition *winCondition, PlatformWinSRWLock *winLock, int ms) {
+    return SleepConditionVariableSRW(&winCondition->condVar, &winLock->srwLock, (DWORD)ms, CONDITION_VARIABLE_LOCKMODE_SHARED) ? true : false;
+}
+
+void PlatformWinCondition::Signal(PlatformWinCondition *winCondition) {
+    WakeConditionVariable(&winCondition->condVar);
+}
+
+void PlatformWinCondition::Broadcast(PlatformWinCondition *winCondition) {
+    WakeAllConditionVariable(&winCondition->condVar);
 }
 
 BE_NAMESPACE_END
