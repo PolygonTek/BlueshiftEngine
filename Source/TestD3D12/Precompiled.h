@@ -23,8 +23,10 @@
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
 
+#if defined(_DEBUG) || defined(_DEVELOPMENT)
 #define PROFILE_BUILD
 #include <pix3.h>
+#endif
 
 using namespace BE1;
 

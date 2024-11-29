@@ -17,7 +17,7 @@
 // D3D12 디버그 레이어 사용 여부
 //#define USE_DEBUG_LAYER
 
-// PIX 마커 사용 여부
+// PIX 마커 사용 여부 (Release 모드에서는 사용할 수 없음)
 #define USE_PIX_MARKERS
 
 // D3D12 Memory Allocator 사용 여부
@@ -35,7 +35,7 @@
 // 스테이트 캐싱 사용 여부
 #define USE_STATE_CACHE_FOR_COMMAND_LIST
 
-#ifdef USE_PIX_MARKERS
+#if defined(USE_PIX_MARKERS) && defined(USE_PIX)
 #define PIX_CPU_BEGIN_EVENT(colorIndex, string) PIXBeginEvent(PIX_COLOR_INDEX(colorIndex), string)
 #define PIX_CPU_END_EVENT() PIXEndEvent()
 #define PIX_CPU_SCOPED_EVENT(colorIndex, string) PIXScopedEvent(PIX_COLOR_INDEX(colorIndex), string)
